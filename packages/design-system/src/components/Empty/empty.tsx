@@ -32,7 +32,7 @@ export interface EmptyProps extends React.HTMLAttributes<HTMLDivElement> {
   /**
    * Disabled context(2026-06-03 加 — FileUpload disabled 等情境消費):title / description 轉
    * `text-fg-disabled`(語意 disabled token,非 opacity)。icon glyph 也 → fg-disabled(icon 是文字一環);icon-circle bg 維持 muted。
-   * 預設 false,不影響既有 consumer。
+   * 預設 false:停用是外層容器(例 FileUpload disabled)傳進來的情境狀態,Empty 自己沒有理由預設停用。【AI 推導 2026-11-16:原註解只寫了相容,這句是讀用法推出來的】
    */
   disabled?: boolean
 }

@@ -160,7 +160,7 @@ export const RangePicker: Story = {
           <DatePicker.Range value={range} onChange={setRange} clearable />
         </div>
         <div className="flex flex-col gap-[var(--layout-space-tight)]">
-          <p className="text-caption text-fg-muted">Empty 初始狀態(無 X 因為沒值):</p>
+          <p className="text-caption text-fg-muted">還沒選日期(沒有值,所以不顯示清除鈕):</p>
           <LiveDatePickerRange
             value={[null, null]}
             placeholder={['入住日期', '退房日期']}
@@ -190,19 +190,19 @@ export const WithError: Story = {
 
 /* ── showTime:datetime 模式(2026-05-02 新增,合併原 DateTimePicker)── */
 export const ShowTime: Story = {
-  name: 'showTime:會議排程',
+  name: '日期加時間:會議排程',
   render: () => {
     const [single, setSingle] = React.useState<string>('2026-04-15T14:30:00')
     return (
       <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
         <div className="flex flex-col gap-[var(--layout-space-tight)]">
           <p className="text-caption text-fg-muted">
-            showTime 啟用後:popover 右側出現 H/M 滾選欄;footer「此刻 / 確定」(needConfirm=true 預設)。Value 變 ISO datetime。
+            日期加時間:展開後月曆右邊多出「時 / 分」兩欄可以捲動選;底下有「此刻」與「確定」,按「確定」才套用。選好的值同時帶日期與時間。
           </p>
           <DatePicker showTime value={single} onChange={setSingle} clearable />
         </div>
         <div className="flex flex-col gap-[var(--layout-space-tight)]">
-          <p className="text-caption text-fg-muted">會議常用 minuteStep=15:</p>
+          <p className="text-caption text-fg-muted">會議常用每 15 分鐘一格:</p>
           <DatePicker showTime minuteStep={15} value={single} onChange={setSingle} />
         </div>
       </div>
@@ -219,7 +219,7 @@ const openPopoverPlay = (selector: string) => async ({ canvasElement }: { canvas
 /* ── OpenSnapshot:Range popover 內 range track 視覺驗證(M15)── */
 export const RangePopoverOpen: Story = {
   name: '範圍:浮層展開狀態',
-  parameters: { docs: { description: { story: 'Visual-audit OpenSnapshot — popover 內 DateGrid mode=range,verify range track 高度 = button 高度(28×28 @ md),不留 cell 上下 2px 多餘空白(Q8 設計準則 2026-05-02)。' } } },
+  parameters: { docs: { description: { story: '範圍模式打開月曆的樣子:已選區間的灰色底條與日期按鈕同高(標準尺寸 28×28),格子上下不多留 2px 空白(2026-05-02 設計準則 Q8)。' } } },
   render: () => {
     const [range, setRange] = React.useState<[string | null, string | null]>(['2026-05-04', '2026-05-12'])
     return (
@@ -234,8 +234,8 @@ export const RangePopoverOpen: Story = {
 
 /* ── OpenSnapshot:showTime popover 內 TimePicker side panel(M15)── */
 export const ShowTimePopoverOpen: Story = {
-  name: 'showTime:浮層展開狀態',
-  parameters: { docs: { description: { story: 'Visual-audit OpenSnapshot — popover 內 DateGrid + TimePickerSidePanel(header + 滾選欄)+ footer。Verify TimePicker 高度 = calendar 高度,header 對齊 calendar 的「年月」(設計準則 2026-05-02)。' } } },
+  name: '日期加時間:浮層展開狀態',
+  parameters: { docs: { description: { story: '日期加時間打開的樣子:月曆右邊是時間欄(頂端顯示目前選的時:分,下面是「時 / 分」兩欄捲動選),底下是「此刻」與「確定」。時間欄跟月曆一樣高,頂端那列跟月曆的「年月」列對齊(2026-05-02 設計準則)。' } } },
   render: () => {
     const [v, setV] = React.useState<string>('2026-04-15T14:30:00')
     return (
@@ -250,7 +250,7 @@ export const ShowTimePopoverOpen: Story = {
 
 /* ── OpenSnapshot:needConfirm date-only(2026-07-05 D4 修 footer gate 死路)── */
 export const NeedConfirmDateOnlyOpen: Story = {
-  name: 'needConfirm:合約生效日確認',
+  name: '需確認:合約生效日確認',
   parameters: { docs: { description: { story: '需確認模式:選日期只會先暫存(輸入框即時顯示),要按下方「確定」才真正套用。適用選錯成本高的日期,例如合約生效日、帳單結算起算日。' } } },
   render: () => {
     const [effectiveDate, setEffectiveDate] = React.useState('2026-08-01')
@@ -270,8 +270,8 @@ export const NeedConfirmDateOnlyOpen: Story = {
 
 /* ── OpenSnapshot:showTime Range popover(activeEnd='start')── */
 export const ShowTimeRangePopoverOpen: Story = {
-  name: 'showTime 範圍:浮層展開狀態',
-  parameters: { docs: { description: { story: 'Visual-audit — Range showTime popover:numberOfMonths=1(只渲 active end 月份)+ TimePickerSidePanel + footer。Verify Ant idiom「一次 edit 一端」(設計準則 2026-05-02)。' } } },
+  name: '日期加時間範圍:浮層展開狀態',
+  parameters: { docs: { description: { story: '日期加時間的範圍打開的樣子:一次只編一端,所以只顯示正在編的那一端的一個月(這裡是開始日),右邊是時間欄,底下只有「確定」—— 按下才套用這一端。一次編一端是 Ant Design 範圍選擇器的做法(2026-05-02 設計準則)。' } } },
   render: () => {
     const [range, setRange] = React.useState<[string | null, string | null]>([
       '2026-04-15T09:00:00',
@@ -347,7 +347,7 @@ export const RangePreviewStart: Story = {
 
 /* ── showTime + Range:活動時段 ── */
 export const ShowTimeRange: Story = {
-  name: 'showTime 範圍:活動時段',
+  name: '日期加時間範圍:活動時段',
   render: () => {
     const [range, setRange] = React.useState<[string | null, string | null]>([
       '2026-04-15T09:00:00',

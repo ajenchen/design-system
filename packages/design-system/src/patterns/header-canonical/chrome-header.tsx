@@ -7,7 +7,8 @@ import { cn } from '@/lib/utils'
  * 對 `[data-slot=tabs-list]`(tabs.tsx 三種 overflow 模式的 role=tablist 元素皆自標,對齊
  * shadcn v4 data-slot idiom,例 https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/separator.tsx#L15 )注入內 `px-loose` inset triggers(對齊 header content = W2)。
  * 寬度不在此注入 — TabsList 各模式自帶(none `w-full` border-b 延展全寬 = W1 一條線;
- * scroll/menu `min-w-full` 讓 border 隨溢出內容成長,blanket `w-full` 會把 border 截在可視寬)。
+ * scroll/menu `min-w-full` 讓 border 列隨溢出內容成長,blanket `w-full` 會把 border 截在可視寬;
+ * 溢出模式看得到的灰線由 Tabs 畫在捲動遮罩外,見 tabs.tsx TabsOverflowBaseline,2026-11-17)。
  * v4(2026-07-30 regression fix):beta.86 inlineAction overlay(fc2a3a5c)包 `<div class="relative">`
  * 後,原 `[&>[role=tablist]]` direct-child 結構選擇器全滅(px-loose 靜默消失,且 scroll/menu 深度
  * 本就 >1 從未命中)→ 改 data-slot attribute contract + descendant selector,免疫 DOM 深度重構。
@@ -40,23 +41,18 @@ export const HEADER_TABS_SLOT_WRAPPER_CLASS =
  * - spec refs: patterns/header-canonical/header-canonical.spec.md(L23-30 家族區分 / W1 border / W3 tabs size / Layer 3 ChromeHeader API)
  *
  * ── API(per M31 codex 比稿 Step 5 — narrow API,避免 M21 prop variant 風險)──
- * withTabs?: boolean(預設 false)
- *   true → 移除自身 border-b,delegate paint 給 TabsList(per W1「Header semantic owner / TabsList paint owner in withTabs state」)
- * lockDensity?: 'inherit' | 'lg'(預設 'inherit')
- *   'inherit' → 跟 page density(html[data-density] 自動)
- *   'lg' → 強制 lg(viewer-fullscreen-chrome escape hatch,FileViewer 永遠 lg-equivalent design intent)
+ * tabsSlot?: ReactNode
+ *   給了 → column mode,自身不畫 border-b,delegate paint 給 TabsList(per W1「Header semantic owner / TabsList paint owner」);
+ *   沒給 → 自畫 border-b。Tabs 進 header 只有這一條路(原 `withTabs` 布林 2026-11-16 移除,見 header-canonical.spec.md「tabsSlot 連動」)。
  *
  * 不開:density?: 'md' | 'lg' 自由 prop。M21 違反 — 任意 density 等於 cva-on-pattern。
+ * 密度一律跟所在那一塊(html[data-density] 或外層區塊的屬性),本元件不在自己身上寫任何密度屬性。
+ * 原 lockDensity 參數 2026-11-14 移除(AI 建議;user 沒說過要拿掉):它只在標題列上設 data-density="lg",
+ * 下面內容沒跟著鎖 → 一般密度頁面標題字比內容字往右 8px;要鎖就鎖整塊(density.spec.md「Canonical 情境 3 — 局部覆蓋」,
+ * Anti-patterns「把 density/layout-space lock 設在 header primitive」;閘 scripts/overlay-density-lock-invariant.mjs L3)。
  */
 export interface ChromeHeaderProps
   extends React.HTMLAttributes<HTMLElement> {
-  /**
-   * 是否內含 Tabs。
-   * true(無 tabsSlot)→ 移除自身 border-b,consumer 自畫。
-   * 若提供 tabsSlot,自動 column mode + auto suppress border。
-   * 對應 patterns/header-canonical/header-canonical.spec.md W1
-   */
-  withTabs?: boolean
   /**
    * Tabs row slot(2026-05-18 加 per W2/W4 真實能用 + user-mandated fix)。
    * 提供時 ChromeHeader 自動 column 結構:
@@ -64,21 +60,15 @@ export interface ChromeHeaderProps
    *   row 2 = tabsSlot 包在 `HEADER_TABS_SLOT_WRAPPER_CLASS` wrapper
    *           (`[&_[data-slot=tabs-list]]` 注入 TabsList 內 px-loose;寬度 TabsList 各
    *           overflow 模式自帶 w-full / min-w-full;wrapper 本身無 padding 無 border——
-   *           border 由 TabsList 自畫,W1 全寬 paint 一條線)
+   *           分隔線由 Tabs 自畫,W1 全寬 paint 一條線:none = TabsList border,
+   *           scroll / menu = 捲動遮罩外的 TabsOverflowBaseline)
    *
    * Consumer 傳:`tabsSlot={<TabsList>...</TabsList>}`,TabsContent 放 ChromeHeader 之外。
    * Standalone Tabs(無 chrome header)該直接用 `<TabsList>` 不需 wrapper。
    *
-   * 提供 tabsSlot 自動 withTabs=true,不需另傳 prop。
+   * 給了 tabsSlot,header 自身就不畫 border-b(W1:線由 TabsList 畫);Tabs 不得放進 children(hook `_header_with_tabs_border.sh` 擋)。
    */
   tabsSlot?: React.ReactNode
-  /**
-   * 是否鎖死 lg density(viewer-fullscreen chrome 用)。
-   * 'inherit'(預設)→ 跟 page density
-   * 'lg' → 強制 chrome-header-height lg(56)
-   * 對應 patterns/header-canonical/header-canonical.spec.md Layer 3 API
-   */
-  lockDensity?: 'inherit' | 'lg'
   /**
    * Leading rail slot(2026-05-21 ship per AppShell primary-header globalHeader 用例,
    * codex M31 Layer C 建議 codify into ChromeHeader API):
@@ -100,11 +90,9 @@ export interface ChromeHeaderProps
 
 export const ChromeHeader = React.forwardRef<HTMLElement, ChromeHeaderProps>(
   (
-    { className, withTabs, tabsSlot, lockDensity = 'inherit', leadingRail, children, ...props },
+    { className, tabsSlot, leadingRail, children, ...props },
     ref,
   ) => {
-    const hasTabs = tabsSlot != null || withTabs === true
-
     // Column mode(tabsSlot 提供時)— per W2 + W4
     // 2026-05-20:`<div>` → `<header>`(HTML5 sectional content 允許 multiple `<header>`,
     // page-level / sectional 都 a11y safe;統一 element contract 消除「何時用 header / 何時用 div」
@@ -113,7 +101,6 @@ export const ChromeHeader = React.forwardRef<HTMLElement, ChromeHeaderProps>(
       return (
         <header
           ref={ref}
-          data-density={lockDensity === 'lg' ? 'lg' : undefined}
           className={cn('flex flex-col shrink-0', className)}
           {...props}
         >
@@ -130,7 +117,7 @@ export const ChromeHeader = React.forwardRef<HTMLElement, ChromeHeaderProps>(
           {/* Row 2:tabsSlot wrapper — TabsList 全 dialog 寬 + 內 px-loose inset triggers
               2026-05-18 v3 fix(同 SurfaceHeader,per user verbatim「分隔線寬度應該要填滿整個
               dialog」+「就這樣做」approval):TabsList 自己 px-loose 內 padding 而非 wrapper
-              提供,讓 TabsList border-b 延展全 dialog 寬。對齊 `tabs.spec.md:199` 既有 canonical。
+              提供,讓 TabsList border-b 延展全 dialog 寬。對齊 `tabs.spec.md`「Underline 與 TabsList border 的視覺關係」既有 canonical。
               2026-07-30 v4:選取機制改 `data-slot="tabs-list"` attribute contract(beta.86
               overlay 包裹層破 direct-child;詳 HEADER_TABS_SLOT_WRAPPER_CLASS 註解)。*/}
           <div className={HEADER_TABS_SLOT_WRAPPER_CLASS}>
@@ -148,11 +135,10 @@ export const ChromeHeader = React.forwardRef<HTMLElement, ChromeHeaderProps>(
       return (
         <header
           ref={ref}
-          data-density={lockDensity === 'lg' ? 'lg' : undefined}
           className={cn(
             'flex items-center shrink-0',
             'h-[var(--chrome-header-height)]',
-            !hasTabs && 'border-b border-divider',
+            'border-b border-divider',
             className,
           )}
           {...props}
@@ -172,17 +158,15 @@ export const ChromeHeader = React.forwardRef<HTMLElement, ChromeHeaderProps>(
       )
     }
 
-    // Single-row(預設 + withTabs=true 但無 tabsSlot 的 backward compat)
+    // Single-row(預設):沒有 tabsSlot = 沒有 tabs,header 自畫 border-b(W1)
     return (
       <header
         ref={ref}
-        data-density={lockDensity === 'lg' ? 'lg' : undefined}
         className={cn(
           'flex items-center gap-2 shrink-0',
           'h-[var(--chrome-header-height)]',
           'px-[var(--layout-space-loose)]',
-          // W1:無 tabs 自畫 border;withTabs=true(無 tabsSlot)consumer 自畫
-          !hasTabs && 'border-b border-divider',
+          'border-b border-divider',
           className,
         )}
         {...props}

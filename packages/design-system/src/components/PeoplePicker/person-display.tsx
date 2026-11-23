@@ -14,7 +14,6 @@ import {
   measureStackAvailablePx,
   type StackChromeCache,
   AVATAR_STACK_AVATAR_PX,
-  AVATAR_STACK_OVERFLOW_CHIP_PX,
 } from './avatar-stack-overflow'
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -155,7 +154,7 @@ function PersonAvatar({
 
 // 2026-05-14 item-anatomy SSOT fix(per codex+Layer A 共識 path (a) + user 拍板「全部做完」):
 // outer 改 items-start + Avatar 外包 ItemPrefix primitive consumption。單行視覺 = items-center 等效;
-// 多行(autoRowHeight cell)避免 avatar+name center 整 row 不對齊 first-line text top。M1 消費既有
+// 多行(DataTable rowHeight="hug" 的 cell)避免 avatar+name center 整 row 不對齊 first-line text top。M1 消費既有
 // 對齊 TreeView / MenuItem / SelectionItem 共用 ItemPrefix wrap chevron/icon/avatar canonical。
 function PersonDisplay({ value, size = 'md', disabled = false, onRemove, nameYielded = false }: {
   value?: PersonValue | null; size?: 'sm' | 'md' | 'lg'; /** 見 PersonAvatar.disabled jsDoc(抑制 hoverCard + dim) */ disabled?: boolean; onRemove?: () => void
@@ -214,7 +213,7 @@ function MultiPersonDisplay({
    * 2026-05-15 codex Round 5 C+ SSOT fix:`measured=true` 啟動 container-width 量測(取代 hardcode `max ?? 3`)
    * → view + edit stack 同 algorithm(同 cell width → 同 overflow 判斷),不再 view 用固定 3 vs edit
    * 用 useOverflowCount。對齊 field-controls.spec.md「共享 contract」(a) 4-mode 共享 renderer contract + user round 3
-   * verbatim「同空間兩判斷點」SSOT directive。Default false 保 backward compat(non-cell context 仍 max ?? 3)。
+   * verbatim「同空間兩判斷點」SSOT directive。預設 false:不在格子裡(寬度不固定)時照 `max ?? 3` 顯示幾顆。
    */
   measured?: boolean
   /** 傳入時啟用 dismiss(edit mode),callback 接收被移除的 person */
@@ -245,7 +244,7 @@ function MultiPersonDisplay({
     // 空間還回來也**永遠回不去**。線上實測 grpW=46 / cellW=180 即此循環的證據 ——
     // 這就是「明明還有空間卻顯示成溢出、重整才會好」的真因(GitHub main 同樣有,非本次改壞)。
     //
-    // 三個 `measured` 消費點(people-picker.tsx:262 / 281 / 308)的父層分別是
+    // 三個 `measured` 消費點(people-picker.tsx:259 / 281 / 308)的父層分別是
     // `flex w-full min-w-0` 與 `flex-1 min-w-0`,寬度由外層決定、**不受本元件內容影響**,
     // 量它才是 `getAvatarStackVisibleCount` jsdoc 講的 availablePx。
     const box = el.parentElement ?? el
@@ -263,7 +262,7 @@ function MultiPersonDisplay({
     //
     // fill 模式下這條公式與原本的「量父層」逐像素相同(wrapper 寬由容器決定,
     // slot = wrapper − 開銷,相減回來就是容器寬 − 開銷),所以**不需要分兩條路**;
-    // 沒有 field wrapper 的用法(people-picker.tsx:258 那個 `flex w-full min-w-0`)
+    // 沒有 field wrapper 的用法(people-picker.tsx:255 那個 `flex w-full min-w-0`)
     // 找不到 `[data-field-mode]`,自然落回原本的量父層。
     // 2026-10-28:這段量法搬進 `avatar-stack-overflow.ts` `measureStackAvailablePx`,編輯態(people-picker.tsx)同一支
     //(編輯態原本量自己那一格,依內容寬時同一個棘輪,r-F3 缺陷 K)。
@@ -292,7 +291,6 @@ function MultiPersonDisplay({
         availablePx,
         total: value.length,
         avatarPx: AVATAR_STACK_AVATAR_PX[size],
-        overflowChipPx: AVATAR_STACK_OVERFLOW_CHIP_PX[size],
       })
       setMeasuredCount(visible)
     }

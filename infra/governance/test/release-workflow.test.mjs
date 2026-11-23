@@ -86,6 +86,7 @@ test('canonical release workflow validates and exposes exactly five AUTO steps',
 })
 
 test('decision authority has one ASK class and only four resumable human runtime boundaries', () => {
+  // 釘選 release-workflow.json 的 decisionAuthority(SSOT 就是這份 JSON)
   assert.deepEqual(workflow.decisionAuthority, {
     engineering: 'AUTO',
     ask: 'unresolved-product-ui-ux-ssot-choice',
@@ -620,6 +621,47 @@ test('WM 只在要求時升級:設定標 on-request 的 consumer,第五步不讀
   const collect = src.slice(src.indexOf('export function collectLiveObservation('), src.indexOf('return {', src.indexOf('export function collectLiveObservation(')))
   assert.match(collect, /selectReleaseConsumers\(consumers, requestedConsumersFromEnv\(\)\)/, 'collectLiveObservation 必須先挑這一輪的 consumer')
   assert.doesNotMatch(collect, /\bconsumers\.map\(/, '不得直接對設定裡全部 consumer 做讀回')
+})
+
+test('consumer 選法判定表(scripts/lib/release-consumer-selection.mjs 唯一實作):automatic / on-request 沒要求 / on-request 有要求 / 省略欄位', async () => {
+  // user 2026-11-05 原話:「以後WM的升級都不要自動做除非我有特別要求」。
+  // orchestrator 第五步與深度稽核 dim 64/66 證據必須是同一支 —— 兩處各寫一份,
+  // 就會出現「發版沒升 WM、稽核卻要 WM 證據」→ 下一個 AI 為了讓它綠而去升 WM。
+  const selection = await import('../../../scripts/lib/release-consumer-selection.mjs')
+  const orchestrator = await import('../../../scripts/release-orchestrator.mjs')
+  assert.equal(orchestrator.selectReleaseConsumers, selection.selectReleaseConsumers, 'orchestrator 只能 re-export 共用那一支')
+  assert.equal(orchestrator.requestedConsumersFromEnv, selection.requestedConsumersFromEnv, 'orchestrator 只能 re-export 共用那一支')
+  const orchestratorSource = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
+  assert.doesNotMatch(orchestratorSource, /export function (selectReleaseConsumers|requestedConsumersFromEnv)\b/, 'orchestrator 不得另寫一份')
+
+  const automatic = { repository: 'acme/automatic', upgrade: 'automatic' }
+  const onRequest = { repository: 'acme/on-request', upgrade: 'on-request' }
+  const omitted = { repository: 'acme/omitted' }
+  const consumers = [automatic, onRequest, omitted]
+  const pick = (requested) => selection.selectReleaseConsumers(consumers, requested).map(target => target.repository)
+  for (const [label, requested, expected] of [
+    ['沒有任何要求:automatic 與省略欄位(= automatic)照升,on-request 不碰', [], ['acme/automatic', 'acme/omitted']],
+    ['要求 on-request 全名:加進來', ['acme/on-request'], ['acme/automatic', 'acme/on-request', 'acme/omitted']],
+    ['要求 automatic 的名字:不影響', ['acme/automatic'], ['acme/automatic', 'acme/omitted']],
+  ]) assert.deepEqual(pick(requested), expected, label)
+  // 名字對不上(簡稱 / 打錯 / 不存在)→ 丟錯並點名,不得靜默當成「沒要求」
+  for (const [label, requested] of [
+    ['簡稱', ['on-request']],
+    ['不存在的 repository', ['acme/unknown']],
+    ['一對一錯:錯的那個也要擋', ['acme/on-request', 'acme/typo']],
+  ]) assert.throws(() => pick(requested), new RegExp(`unknown consumer repositories: ${requested.filter(name => !consumers.some(t => t.repository === name)).join(', ')}`), label)
+  assert.equal(selection.consumerUpgradeMode(omitted), 'automatic', '省略 upgrade = automatic')
+  assert.equal(selection.consumerUpgradeMode(onRequest), 'on-request')
+  assert.deepEqual(selection.selectReleaseConsumers(undefined, undefined), [])
+
+  assert.equal(selection.RELEASE_REQUESTED_CONSUMERS_ENV, 'RELEASE_REQUESTED_CONSUMERS')
+  for (const [raw, expected] of [
+    [undefined, []],
+    ['', []],
+    [' , ,', []],
+    ['ajenchen/work-management', ['ajenchen/work-management']],
+    [' ajenchen/work-management , acme/other ,', ['ajenchen/work-management', 'acme/other']],
+  ]) assert.deepEqual(selection.requestedConsumersFromEnv(raw === undefined ? {} : { RELEASE_REQUESTED_CONSUMERS: raw }), expected, `RELEASE_REQUESTED_CONSUMERS=${raw}`)
 })
 
 test('發版同意綁「使用者看過的產品內容」,不綁 commit 也不綁分支', () => {

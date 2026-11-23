@@ -20,15 +20,20 @@ npm run release:auto
 3. `publish` — agent 從 protected main 啟動 release workflow，發布 immutable exact npm version。
 4. `readback` — agent 讀回 GitHub Release 與三個 npm package 的 exact version；任一不一致即繼續
    修復或等待，不能宣稱完成。
-5. `consumer` — agent 對 `ds-product-template` 與 `work-management` 送 exact-version upgrade，等待 CI、
-   合併 PR，並從各自 protected main 的 lockfile 讀回 exact version。
+5. `consumer` — agent 對 `ds-product-template` 送 exact-version upgrade，等待 CI、合併 PR，並從
+   protected main 的 lockfile 讀回 exact version。`work-management`(WM)**只在 user 要求時升級**
+   (user 2026-11-05 原話:「以後WM的升級都不要自動做除非我有特別要求」):`release-workflow.json`
+   標 `upgrade: on-request`,預設不讀、不派工、不開 PR、不算完成條件;user 明確要求時以
+   `RELEASE_REQUESTED_CONSUMERS=ajenchen/work-management npm run release:auto` 帶進來,才走同一條
+   exact-version PR / CI / 合併 / lockfile 讀回。選法唯一實作 `scripts/lib/release-consumer-selection.mjs`,
+   orchestrator 與深度稽核 dim 64/66 證據共用。
 
 Template 不接受重複 repository dispatch：GitHub `release:published` 觸發既有 mirror workflow 開
 protected-main PR。WM 使用 `design-system-published` repository dispatch，payload 固定帶同一 immutable
 release 的 `{version, tag, commit}`，receiver 也只能開 PR；兩邊都禁止 direct-main delivery。
 
 五步全部是 `AUTO`。唯一 `ASK` 是既有證據與 SSOT 無法解出的產品／UI／UX 真取捨。
-`login`、`MFA`、`OAuth` 或缺 credential reference 是 runtime `HUMAN_ONLY` 邊界：agent 先完成其餘
+runtime `HUMAN_ONLY` 邊界(集合 = `infra/governance/release-workflow.json` 的 `decisionAuthority.humanOnly`)：agent 先完成其餘
 preparation，只提出一個精確動作；完成後 `npm run release:auto` 從 live state 自動續跑。
 
 ## 發布安全條件
@@ -49,7 +54,7 @@ preparation，只提出一個精確動作；完成後 `npm run release:auto` 從
 - broad external activation、model certification：non-blocking assurance inventory。
 - offline signatures：retired；不得建立平行 approval ceremony。
 - 72h soak：retired as blocking gate；可在發布後非同步觀測。
-- fleet promotion：retired；由 template/WM exact-version PR、merge、readback 取代。
+- fleet promotion：retired；由 template exact-version PR、merge、readback 取代(WM 只在 user 要求時走同一條)。
 
 這些機制缺資料時，不得阻止 standard release，也不得要求 user 再核准。若未來明確啟用另一個
 maximum-assurance profile，必須另有明示 scope；不能偷偷改寫本 runbook 或 standard profile。
@@ -58,6 +63,6 @@ maximum-assurance profile，必須另有明示 scope；不能偷偷改寫本 run
 
 1. 先跑 `npm run release:status`，以第一個未完成步驟定位問題。
 2. CI／merge／workflow 失敗：agent 在同一 branch/PR 或同一 immutable release identity 自動修復。
-3. login/MFA/OAuth/credential reference：只完成該 exact human action，再跑 `npm run release:auto`。
+3. human-only 邊界(`infra/governance/release-workflow.json` 的 `decisionAuthority.humanOnly`)：只完成該 exact human action，再跑 `npm run release:auto`。
 4. 遠端已成功但本機中斷：直接重跑；orchestrator 會略過已有 live readback 的步驟。
 5. 任何 readback 不一致：fail closed，不移動舊 tag、不改寫已發布 version，修正後使用新的 exact version。

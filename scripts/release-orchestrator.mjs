@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process'
 import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createHash, randomUUID } from 'node:crypto'
 import { classifyConsentPrompt } from './lib/release-consent-language.mjs'
+import { requestedConsumersFromEnv, selectReleaseConsumers } from './lib/release-consumer-selection.mjs'
 import { createRequire } from 'node:module'
 import { homedir, tmpdir } from 'node:os'
 import { dirname, resolve, join } from 'node:path'
@@ -389,6 +390,7 @@ export function validateReleaseWorkflow(workflow) {
   invariant(workflow.profile === 'PRODUCTION_GRADE_SINGLE_OWNER_SMALL_TEAM', 'release workflow must use the standard small-team profile')
   invariant(workflow.decisionAuthority?.engineering === 'AUTO', 'release engineering authority must be AUTO')
   invariant(workflow.decisionAuthority?.ask === 'unresolved-product-ui-ux-ssot-choice', 'only unresolved product/UI/UX SSOT choices may ASK')
+  // 釘選 infra/governance/release-workflow.json 的 decisionAuthority.humanOnly(SSOT 在該檔;改那份時這裡一起改)
   invariant(
     JSON.stringify(workflow.decisionAuthority?.humanOnly) === JSON.stringify(['login', 'mfa', 'oauth', 'credential-reference']),
     'human-only boundaries must be exactly login/MFA/OAuth/credential-reference',
@@ -428,20 +430,11 @@ export function validateReleaseWorkflow(workflow) {
 }
 
 /**
- * 這一輪第五步要升級哪些 consumer(2026-11-06)。user 2026-11-05 原話:「以後WM的升級都不要自動做除非我有特別要求」。
- * 開關只有一個:release-workflow.json 的 `upgrade`(省略 = automatic)。`on-request` 的 consumer 只有在 user 明確要求、
- * 由 `RELEASE_REQUESTED_CONSUMERS`(repository 全名,逗號分隔)帶進來時才讀回 / 派工 / 開 PR;沒要求就整個不碰,
- * 也不算第五步的完成條件。程式裡不另寫 WM 名單 —— 設定是唯一的來源。
+ * 這一輪第五步要升級哪些 consumer:唯一實作在 `scripts/lib/release-consumer-selection.mjs`
+ * (user 2026-11-05 原話:「以後WM的升級都不要自動做除非我有特別要求」)。這裡只 re-export,
+ * 深度稽核的 dim 64/66 證據也 import 同一支 —— 兩處各寫一份就會一邊不升 WM、一邊要 WM 證據。
  */
-export function selectReleaseConsumers(consumers = [], requested = []) {
-  const asked = new Set(requested)
-  return consumers.filter(target => (target.upgrade ?? 'automatic') === 'automatic' || asked.has(target.repository))
-}
-
-/** user 明確要求要升級的 on-request consumer(`RELEASE_REQUESTED_CONSUMERS=ajenchen/work-management`)。 */
-export function requestedConsumersFromEnv(env = process.env) {
-  return `${env.RELEASE_REQUESTED_CONSUMERS ?? ''}`.split(',').map(item => item.trim()).filter(Boolean)
-}
+export { selectReleaseConsumers, requestedConsumersFromEnv }
 
 /**
  * 額外一次 release 的 incident 證據來源。刻意只認明確傳入的環境變數,不做任何推測 ——
@@ -504,6 +497,7 @@ function run(command, args, { allowFailure = false, input, env } = {}) {
   if (result.status !== 0 && !allowFailure) {
     const detail = `${result.stderr || result.stdout}`.trim()
     if (/authentication|not logged|login|oauth|token.*required|HTTP 401/i.test(detail)) {
+      // 邊界名取自 release-workflow.json decisionAuthority.humanOnly
       throw new HumanBoundaryError('login/oauth/credential-reference', detail || `${command} authentication is required`)
     }
     if (/two.factor|2fa|mfa/i.test(detail)) {
@@ -605,6 +599,7 @@ export function curlGitHubParallel(paths, { token = null, retry = path => curlGi
 function shimDone(response, { allowFailure, label, mapText = null }) {
   if (!response.ok) {
     if (allowFailure) return { ok: false, stdout: '', stderr: `HTTP ${response.code}` }
+    // 邊界名取自 release-workflow.json decisionAuthority.humanOnly
     if (response.code === 401) throw new HumanBoundaryError('login/oauth/credential-reference', `HTTP 401 for ${label}`)
     throw new Error(`${label} failed: HTTP ${response.code}: ${response.text.slice(0, 300)}`)
   }

@@ -2,7 +2,7 @@
 
 # Color 設計原則
 
-> **Foundational SSOT rationale**(2026-04-24 approved,cap 1000 — 2026-05-22 raised 800→1000 per /knowledge-prune deep audit + `AGENTS.md`「行數預算」的 foundational SSOT 例外 ≤ 800-1200 range):
+> **Foundational SSOT rationale**(2026-04-24 approved;2026-05-22 /knowledge-prune deep audit 把上限由 800 升到 1000 —— 現行數值以 `check_file_size_budget.sh` 的 case 表為準):
 > Token 系統 SSOT,涵蓋 primitive / semantic 兩層色彩架構、disabled 兩策略、Hover/Active 公式推導、新增語意色相 4-step 流程、neutral interaction 雙 family、nested theme。跨 30+ 元件消費,改一 token 影響全 DS。218 行語義色定義是純 token structural canonical 無法 reference out;不可拆不失原則。
 
 ## 架構流派定位
@@ -210,6 +210,18 @@ Semantic token 按**載體類型**分成四個 family,**family 之間的 token �
 
 Icon 色彩 canonical 的 SSOT 住 `patterns/element-anatomy/item-anatomy.spec.md`「Icon 色彩原則」——核心規則:icon 代表內容/類別 → 與 label 同色;icon 純指示方向 → `fg-muted`;disabled 統一 `fg-disabled`。本檔不重述(Rule-of-3 pointer)。
 
+## 用詞
+
+| 說法(顏色的稱呼只在這一段定義,其他規格、註解、範例照這裡寫;「互動色」這個稱呼與下面的不用清單是 AI 依本檔「Action — Primary」第一句訂的【AI 推導 2026-11-15】) | 指的是 | 要點 |
+|---|---|---|
+| **品牌色** | `--brand` | 識別色,固定 #DF3232,亮 / 暗兩主題相同(見下方「Identity — 品牌」)。不是按鈕、連結那顆藍 |
+| **互動色** | `--primary`(含 `-hover` / `-active` / `-subtle` / `-text`) | 互動入口的顏色,代表「使用者可以執行的操作」(見下方「Action — Primary」第一句) |
+| **主題** | 亮 / 暗(`data-theme="light"` / `"dark"`) | 換主題 = 語意色換成那個主題的值;有些值兩主題本來就相同(例:`--on-emphasis`、`--on-emphasis-dark` 只寫在 ② 段),`--brand` 則是刻意固定的識別色 |
+
+**不用的說法**(閘逐字讀這一行反引號裡的字):`主題色` `主操作色` `品牌主色` `品牌藍` `品牌 primary` `品牌語義色` `品牌色移除` `移除品牌色` `品牌色完全移除` `保留品牌色` `釘在品牌色` `品牌 / 狀態色` `次要品牌操作` `brand swap` `brand-swap` `brand 改色` `隨 brand` —— 這些字把品牌色、互動色、主題三件事混成一個。要說「把按鈕那顆藍換掉」寫「互動色換色」;要說「亮暗切換」寫「換主題」;「停用時拿掉顏色」寫明拿掉的是哪一顆(互動色 / 危險色 / 原本的填色)。
+
+**為什麼有這段**:2026-11-15 前 `semantic.css` 把 `--primary` 那段標成「品牌主操作色」、註解寫「brand 改色」「隨 brand 走」「brand swap」,範例與規格也有十幾處把互動色叫成品牌色 —— 同一個字指兩顆不同的值,違反命名三重檢驗第 (3) 題(同一個字串在別處已有不同語義,`AGENTS.md`「命名與語言一致性」)。user 2026-11-15 原話:「而且按照 ds 品牌色和主題色是相同的東西嗎？ 你確定？」、「所以主操作色就是主題色的意思嗎？然後就是primary的意思？」。**機械**:`scripts/token-creation-invariant.mjs` C11 掃設計系統的原始碼與規格(`packages/design-system/src`、`packages/design-system/ds-canonical`),出現上面「不用的說法」就紅;本段是唯一可以寫出這些字的地方。
+
 ## 語義色
 
 ### Action — Primary
@@ -255,7 +267,7 @@ Icon 色彩 canonical 的 SSOT 住 `patterns/element-anatomy/item-anatomy.spec.m
 <Progress className="bg-primary" value={60} />
 ```
 
-**機械強制**:此規則對 status 元件(ProgressBar / CircularProgress / Steps / Calendar today)由 `scripts/status-color-invariant.mjs` 鎖住(執行面 = 配對測試 `scripts/test-status-color-invariant.mjs` 直呼它,登記在 `infra/governance/providers/harness-source-inventory.json` 的 gate-meta 家族、由夜間 `governance-harnesses.yml` 帶跑;舊句寫的 `scripts/release-preflight.mjs` 已於 2026-08-04 退役,PR lane 目前不直呼 —— 2026-09-27 對帳改寫),回潮 `--primary` 即 fail。2026-06-05 把這 4 個元件的 progress/step/in-progress 填色從 `--primary` 全遷 `--info`(同色 blue-6 零視覺差,語義正確 + brand-swap 安全)—— 當時 commit `96f75ac1` 記載 user 在選項題選了『改用 --info(對齊 token 字典)』(選項由 AI 提供);那段對話紀錄已不存在、登記簿查無原話,來源以該 commit 記載為準。
+**機械強制**:此規則對 status 元件(ProgressBar / CircularProgress / Steps / Calendar today)由 `scripts/status-color-invariant.mjs` 鎖住(required CI:`ci.yml` verify-static 直呼,2026-11-20 接上;它在該紅的時候會紅,由同一步接著跑的配對測試 `scripts/test-status-color-invariant.mjs` 證明。2026-09-27 對帳到接上之前,只有夜間 `governance-harnesses.yml` 經配對測試帶跑;更早寫的 `scripts/release-preflight.mjs` 已於 2026-08-04 退役),回潮 `--primary` 即 fail。2026-06-05 把這 4 個元件的 progress/step/in-progress 填色從 `--primary` 全遷 `--info`(同色 blue-6 零視覺差,語義正確 + 互動色換色時不受牽連)—— 當時 commit `96f75ac1` 記載 user 在選項題選了『改用 --info(對齊 token 字典)』(選項由 AI 提供);那段對話紀錄已不存在、登記簿查無原話,來源以該 commit 記載為準。
 
 每個語義色的 bridge 同時產出 `bg-xxx`、`text-xxx`、`border-xxx` 三組 utility，視場景選用。
 
@@ -321,7 +333,7 @@ Icon 色彩 canonical 的 SSOT 住 `patterns/element-anatomy/item-anatomy.spec.m
 - **底色必半透明**:區域覆蓋在別人的內容之上,沿用 Highlight 段同一條鐵律——VS Code theme-color「The color must not be opaque so as not to hide underlying decorations」(https://code.visualstudio.com/api/references/theme-color)。這也是它與 `--primary-subtle` 的分工:`-subtle` 是**元件自己的**淡底(底下沒有別人的內容:Button toggle 持續按下、DataTable range cell);`--drop-target` 是**蓋在別人內容上的暫態區域**。
   > 2026-09-25 更正:原句寫「`-subtle` 不透明」,與下方「Dark mode subtle」段矛盾 —— 淺色的 step-1 是不透明色票,**深色的 step-1 是 alpha 公式**(`primitives.css` 深色區塊 `--color-{hue}-1: oklch(from var(--color-{hue}-6) l c h / calc(0.12 / l))`),本身就半透明。兩者的分工看的是「底是誰的」(元件自己的 vs 蓋在別人內容上),不是透不透明。
   > 已知後果(實測,2026-09-25):深色主題下 `-subtle` 底會透出父層的滑過底色 —— DataTable 區間格在被滑過的列上由 `#1C304A` 變 `#243851`;淺色因為 step-1 不透明,同一情境維持 `#E3F1FF` 不變。兩個主題在這一格表現不一致。修法(列被滑過時把區間格釘住)已備妥、**未套用**:屬「試算表模式」那組,user 2026-09-26 仍在提問(待辦總帳〇節把它列在『被質疑、先不做、研究中』那組、C12⑦)。
-- **為什麼是 15%(先對內、再對外)**:先取 **DS 自家 alpha 階梯上的既有階** —— `primitives.css` 的 `--_na5`(light)/ `--_na4`(dark)就是 15%,也是 `--black-a15` / `--white-a15` 用的那一階,是少數**兩個模式都存在**的階;不自創新階(`opacity.css` 禁新增)。再確認它落在世界級區間內:Material 3 `dragged` state layer 0.16(拖曳是所有狀態中最高階,https://github.com/material-components/material-web/blob/main/tokens/versions/v0_192/_md-sys-state.scss)、VS Code light `editorGroup.dropBackground` 0.18(https://github.com/microsoft/vscode/blob/main/src/vs/workbench/common/theme.ts)、Atlassian `color.background.selected.hovered` #CCE0FF ≈ 0.20 —— 15% 是這個區間的下緣,對「暫態、只出現一兩秒、面積不小」的區域最不吵。
+- **為什麼是 15%(先對內、再對外)**:先取 **DS 自家 alpha 階梯上的既有階** —— `primitives.css` 的 `--_na5`(light)/ `--_na4`(dark)就是 15%,也是 `--black-a15` / `--white-a15` 用的那一階,是少數**兩個模式都存在**的階;不自創新階(`opacity.css` 禁新增)。再確認它落在世界級區間內:Material 3 `dragged` state layer 0.16(拖曳是所有狀態中最高階,https://github.com/material-components/material-web/blob/main/tokens/versions/v0_192/_md-sys-state.scss)、VS Code light `editorGroup.dropBackground` 0.18(https://github.com/microsoft/vscode/blob/main/src/vs/workbench/common/theme.ts)、Atlassian `color.background.selected.hovered` #CFE1FD ≈ 0.20(`--ds-background-selected-hovered: #CFE1FD;`,https://unpkg.com/@atlaskit/tokens@20.14.0/dist/esm/artifacts/themes/atlassian-light.js ;2026-11-21 前寫 #CCE0FF,與這一版不符,比例不變)—— 15% 是這個區間的下緣,對「暫態、只出現一兩秒、面積不小」的區域最不吵。
   > 註:同為色相覆蓋層的 `--text-selection` 用 30%(不在階梯上),因為反白必須在文字上一眼可辨;drop target 是整片區域提示,不需要那麼重。階梯是「優先取用」不是「唯一合法」,偏離要像這樣寫明理由。
 - **一個公式兩個模式**:`--primary` 在 dark 由 primitive 階梯自動變亮,故不需 dark override,也不新開 opacity 階(`opacity.css` 禁新增)。
 - **邊框取 `--primary-hover`**:瞬時態一律歸 hover 階(同 FileUpload 拖入區 2026-07-06 的收斂);值與該元件原本硬指的 `--primary-hover` 相同 → 改消費本 token **零視覺差**,兩處從此同一 SSOT。
@@ -360,6 +372,8 @@ Icon 色彩 canonical 的 SSOT 住 `patterns/element-anatomy/item-anatomy.spec.m
 | Token | 用途 |
 |-------|------|
 | `--brand` | 品牌色，固定色 #DF3232，兩主題相同 |
+
+產品不寫 `--brand`;要換品牌色由設計系統新增一組值(`../token-system.spec.md`「誰可以讀」主題甲)。
 
 ### Primitive 色票與 Tag / Avatar 的消費
 
@@ -465,7 +479,7 @@ Tag、Avatar 等需要多色區分的場景（專案標籤、團隊分類等）�
 
 **不該用 `--{hue}-text` 的場景**：
 - ❌ Button label（用 `text-white` on primary bg）
-- ❌ Link（用 `text-primary` = step-6，鮮豔度優先）—— **唯一例外**:放在有色訊息句子裡的連結(例:錯誤描述裡的「View log」)沿用那句訊息的 `-text` 色 + 平常就有底線,**滑過不換色**(user 2026-09-26 選「乙 紅字 + 底線，滑過不變」;範例與理由見 `../../components/FileItem/file-item.spec.md`「Description ReactNode 可含 clickable 元素」;世界級同款 Polaris Banner 內 Link 的 monochrome)。範圍只限「整句已經是有色訊息」;一般內文連結照上一行用 `text-primary`([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Link/Link.tsx#L48-L54))
+- ❌ Link（用 `text-primary` = step-6，鮮豔度優先）—— **唯一例外**:放在有色訊息句子裡的連結(例:錯誤描述裡的「查看紀錄」)沿用那句訊息的 `-text` 色 + 平常就有底線,**滑過不換色**(user 2026-09-26 選「乙 紅字 + 底線，滑過不變」;範例與理由見 `../../components/FileItem/file-item.spec.md`「Description ReactNode 可含 clickable 元素」;世界級同款 Polaris Banner 內 Link 的 monochrome)。範圍只限「整句已經是有色訊息」;一般內文連結照上一行用 `text-primary`([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Link/Link.tsx#L48-L54))
 - ❌ 任何 hover/active 互動回饋(上一條例外的連結因此滑過不換色,不得拿 `--{hue}-hover` 補 —— 那是 step-6 填色的配對)
 
 #### 為什麼 step-7 在兩個 mode 都對
@@ -500,7 +514,7 @@ Badge 使用語義色的 text token（`--info-text`、`--error-text`），不直
 
 #### Dark mode subtle
 
-**色階原則:號碼 = 離所在底色多遠(與底色的對比)** —— 淺色號碼越大越深,深色號碼越大越亮,兩個主題同一個意思。世界級同派:Adobe Spectrum「As the color token name increases in number (e.g., blue-700, blue-800, blue-900), the color value's contrast with the background also increases. Because of this, colors progressively get darker in light theme and lighter in dark themes.」([color-fundamentals](https://spectrum.adobe.com/page/color-fundamentals/));Radix Colors 深色 1 → 12 由暗到亮(3.0.0 發布檔 `red-dark.css`:`--red-1: #191111` … `--red-12: #ffd1d9`,https://cdn.jsdelivr.net/npm/@radix-ui/colors@3.0.0/red-dark.css);Ant Design 深色色板 1 → 10 由暗到亮(https://ant.design/docs/spec/dark,「Pick your background color #141414」下方色板 color-1 `#111d2c` … color-10 `#b7e3fa`);Primer 中性色階「The light and dark scale directions are inverted, with the light scale starting with white and the dark scale starting with black.」(https://primer.style/foundations/color/base-scales)。另一派:號碼是絕對深淺、深色主題另挑號碼 —— Material 3 參考色調只有一份、0 = 黑 … 100 = 白(https://github.com/material-components/material-web/blob/main/tokens/versions/v0_192/_md-ref-palette.scss#L68-L80)、Carbon「The light themes are based on White and Gray 10 backgrounds, and the dark themes use Gray 100 and Gray 90 backgrounds.」(https://carbondesignsystem.com/elements/color/overview/)、Tailwind「with 50 being the lightest, and 950 being the darkest」(https://tailwindcss.com/docs/colors)—— 本 DS 屬前一派。(2026-09-26 user:「色階本來就是以其與背景的對比程度在升級的吧？換言之在深色模式，越大的色階通常就是越亮越白，這樣對比才是越來越高吧？」研究確認後寫入。Radix / Ant / Primer / Material / Carbon / Tailwind 的一手來源 2026-09-27 逐一抓取核對。)
+**色階原則:號碼 = 離所在底色多遠(與底色的對比)** —— 淺色號碼越大越深,深色號碼越大越亮,兩個主題同一個意思。世界級同派:Adobe Spectrum「As the color token name increases in number (e.g., blue-700, blue-800, blue-900), the color value's contrast with the background also increases. Because of this, colors progressively get darker in light theme and lighter in dark themes.」([color-fundamentals](https://spectrum.adobe.com/page/color-fundamentals/));Radix Colors 深色 1 → 12 由暗到亮(3.0.0 發布檔 `red-dark.css`:`--red-1: #191111` … `--red-12: #ffd1d9`,https://cdn.jsdelivr.net/npm/@radix-ui/colors@3.0.0/red-dark.css);Ant Design 深色色板 1 → 10 由暗到亮(https://ant.design/docs/spec/dark,「Pick your background color #141414」下方色板 color-1 `#111d2c` … color-10 `#b7e3fa`);Primer 中性色階「The light and dark scale directions are inverted, with the light scale starting with white and the dark scale starting with black.」(https://primer.style/foundations/color/base-scales)。另一派:號碼是絕對深淺、深色主題另挑號碼 —— Material 3 參考色調只有一份、0 = 黑 … 100 = 白(https://github.com/material-components/material-web/blob/c6e9a66360b1fdac82970dfa5e168a9817b89a93/tokens/versions/v0_192/_md-ref-palette.scss#L68-L80)、Carbon「The light themes are based on White and Gray 10 backgrounds, and the dark themes use Gray 100 and Gray 90 backgrounds.」(https://carbondesignsystem.com/elements/color/overview/)、Tailwind「with 50 being the lightest, and 950 being the darkest」(https://tailwindcss.com/docs/colors)—— 本 DS 屬前一派。(2026-09-26 user:「色階本來就是以其與背景的對比程度在升級的吧？換言之在深色模式，越大的色階通常就是越亮越白，這樣對比才是越來越高吧？」研究確認後寫入。Radix / Ant / Primer / Material / Carbon / Tailwind 的一手來源 2026-09-27 逐一抓取核對。)
 
 Light mode 的 step-1..4 是不透明色票(淺色的底只有白一種,事先混好等於在真的底上混)。Dark mode 的 **step-1..4 = 淡底區,同一條 alpha 公式**(step-1 自 2026-07-04 Q10,step-2..4 自 2026-09-26):
 
@@ -622,7 +636,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 在 `primitives.css` 定義 base-6 值（只需指定 L、C、H），相對公式自動推導 1-10 階。如已存在則跳過。
 
 ```css
---color-turquoise-6: oklch(0.64 0.09 196);  /* light 真值(primitives.css:183);dark 另於 dark 區塊定義 */
+--color-turquoise-6: oklch(0.64 0.09 196);  /* light 真值(primitives.css:184);dark 另於 dark 區塊定義 */
 /* 1-5 / 7-10 自動由公式推導 */
 ```
 
@@ -795,7 +809,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 | Utility | Token | 用途 |
 |---|---|---|
 | `bg-neutral-selected` | neutral-2 | 持續 selected rest；**選中列被滑鼠 hover 時亦釘住此值不變** |
-| `bg-neutral-selected-hover` | neutral-3 | **可取消切換鈕專屬**（**列元件禁用本 token**;選中列滑過釘住,owner `item-anatomy.spec.md`「選中 × 互動疊加」）。**2026-09-07 由 neutral-1 改為 neutral-3(變淺 → 變深)**:neutral-1 正好等於 `--neutral-hover` —— 實測兩主題皆同(淺 2%、深 4%),加上 `variant='text'` 兩態文字色都是 foreground,結果**切換鈕按下與未按下在懸停時像素完全相同**,「這顆開著沒」的訊號在 hover 當下消失。值是 AI 於 2026-09-07 改的(當時 user 是問句);2026-09-25 user 選『甲：保留，維持 2→3→4 (Recommended)』(選項由 AI 提供)。舊文說原值在表達 Fluent 的「hover 預告釋放」,查無一手依據,撤回;舊文「與 Carbon / Atlassian 一致」只對一半,改為:同方向(選中後滑過更強調)的一手前例有 Atlassian 選中鈕 `color.background.selected` → `.hovered` → `.pressed`([all-tokens](https://atlassian.design/components/tokens/all-tokens))與 Carbon 表格選中列 `layer-selected` → `layer-selected-hover`([@carbon/styles 1.116.0 `css/styles.css`](https://cdn.jsdelivr.net/npm/@carbon/styles@1.116.0/css/styles.css) `.cds--data-table--selected:hover`);Carbon 選中的圖示鈕則是滑過不變(同檔 `.cds--btn--icon-only.cds--btn--selected`) |
+| `bg-neutral-selected-hover` | neutral-3 | **可取消切換鈕專屬**（**列元件禁用本 token**;選中列滑過釘住,owner `item-anatomy.spec.md`「選中 × 互動疊加」）。**2026-09-07 由 neutral-1 改為 neutral-3(變淺 → 變深)**:neutral-1 正好等於 `--neutral-hover` —— 實測兩主題皆同(淺 2%、深 4%),加上 `variant='text'` 兩態文字色都是 foreground,結果**切換鈕按下與未按下在懸停時像素完全相同**,「這顆開著沒」的訊號在 hover 當下消失。值是 AI 於 2026-09-07 改的(當時 user 是問句);2026-09-25 user 選『甲：保留，維持 2→3→4 (Recommended)』(選項由 AI 提供)。舊文說原值在表達另一家 DS 的「hover 預告釋放」,查無一手依據,撤回(2026-11-21 起不再列名,原名見 git 歷史);舊文「與 Carbon / Atlassian 一致」只對一半,改為:同方向(選中後滑過更強調)的一手前例有 Atlassian 選中鈕 `color.background.selected` → `.hovered` → `.pressed`([all-tokens](https://atlassian.design/components/tokens/all-tokens))與 Carbon 表格選中列 `layer-selected` → `layer-selected-hover`([@carbon/styles 1.116.0 `css/styles.css`](https://cdn.jsdelivr.net/npm/@carbon/styles@1.116.0/css/styles.css) `.cds--data-table--selected:hover`);Carbon 選中的圖示鈕則是滑過不變(同檔 `.cds--btn--icon-only.cds--btn--selected`) |
 | ~~`bg-neutral-selected-focus`~~ | — | **2026-09-07 退役**。原用途是「鍵盤焦點停在選中列 → 底色深一階」；user 拍板改為**畫框**（`focus-ring-inset`），底色通道不再承載第二個意義。owner = `patterns/element-anatomy/item-anatomy.spec.md`「選中 × 互動疊加」格 |
 | `bg-neutral-selected-active` | neutral-4 | selected 上 `:active` 深一階 click 回饋（**按壓專屬，禁借給 hover／反白**——2026-07-05 D4 曾借用，2026-08-11 糾正）。2026-09-07 由 neutral-3 上調:`-hover` 佔走 neutral-3 後不上調就會變成 hover 與按壓同值 |
 
@@ -882,7 +896,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 |-------|------|
 | `--overlay` | dialog backdrop 遮罩 |
 | `--tooltip` | tooltip 深色底（不透明）|
-| `--chart-1` ~ `--chart-5` | 5 色類別標記（Chart 元件 data viz 用；固定到 primitive 而非 semantic — 避免 brand swap 污染 data viz 色義；兩主題都 step-6、淺色的 yellow 用 step-7 提對比(2026-09-26 深色由 step-5 改 step-6:深色 step-5 是 `l × 0.82`,比 step-6 **暗**,舊註解「較淡、提升可讀度」是反的 —— 實測卡片底上藍 2.92、紫 2.20、深橘 2.75,低於圖形 3:1(WCAG 1.4.11);step-6 為 4.51 / 3.45 / 4.39,綠 7.56、黃 11.68。黃在淺色用 step-7 是為了白底對比,深色 step-6 已夠亮。這組數字只住這裡,`semantic.css` 與 `chart.spec.md` 只指回來)）。**Numbered naming = industry canonical**(Material Data Viz palette / Polaris ChartPalette / Carbon Charts colors-N / IBM data-viz / D3 schemeCategory10)— categorical color 本質無 inherent priority,只能 by-index;**1→5 順序 ≠ priority**,只是 consumer 取色 idx convention。色相選擇 rationale:blue(冷靜入門)→ purple(分類二)→ green(成長 / 正面)→ yellow(警戒對比)→ deep-orange(暖色平衡)。Brand swap 不影響 data viz(`--chart-*` 直連 primitive,跳過 `--primary` 等 semantic 中間層)。<!-- @benchmark-cited: Material Data Viz https://m3.material.io/styles/color/the-color-system/color-roles + Polaris https://polaris.shopify.com/tokens/color + Carbon https://carbondesignsystem.com/data-visualization/color-palettes/ + D3 https://d3js.org/d3-scale-chromatic/categorical --> |
+| `--chart-1` ~ `--chart-5` | 5 色類別標記（Chart 元件 data viz 用；固定到 primitive 而非 semantic — 避免互動色換色污染 data viz 色義；兩主題都 step-6、淺色的 yellow 用 step-7 提對比(2026-09-26 深色由 step-5 改 step-6:深色 step-5 是 `l × 0.82`,比 step-6 **暗**,舊註解「較淡、提升可讀度」是反的 —— 實測卡片底上藍 2.92、紫 2.20、深橘 2.75,低於圖形 3:1(WCAG 1.4.11);step-6 為 4.51 / 3.45 / 4.39,綠 7.56、黃 11.68。黃在淺色用 step-7 是為了白底對比,深色 step-6 已夠亮。這組數字只住這裡,`semantic.css` 與 `chart.spec.md` 只指回來)）。**Numbered naming = industry canonical**(Material Data Viz palette / Polaris ChartPalette / Carbon Charts colors-N / IBM data-viz / D3 schemeCategory10)— categorical color 本質無 inherent priority,只能 by-index;**1→5 順序 ≠ priority**,只是 consumer 取色 idx convention。色相選擇 rationale:blue(冷靜入門)→ purple(分類二)→ green(成長 / 正面)→ yellow(警戒對比)→ deep-orange(暖色平衡)。互動色換色不影響 data viz(`--chart-*` 直連 primitive,跳過 `--primary` 等 semantic 中間層)。<!-- @benchmark-cited: Material Data Viz https://m3.material.io/styles/color/the-color-system/color-roles + Polaris https://polaris.shopify.com/tokens/color + Carbon https://carbondesignsystem.com/data-visualization/color-palettes/ + D3 https://d3js.org/d3-scale-chromatic/categorical --> |
 | `opacity-disabled` | disabled 元件整體透明度（0.45），用於無法改寫內部色彩的第三方元件 |
 
 `opacity-disabled` 適用場景：包裝第三方元件（如圖表、地圖）的 disabled 狀態，無法逐一替換內部顏色時，直接對容器套用透明度：
@@ -893,7 +907,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 </div>
 ```
 
-自己寫的元件優先用具體的 disabled 色彩（如 `text-fg-disabled`、`bg-[var(--bg-disabled)]`）。`opacity-disabled` 僅作為逃生艙，適用於無法逐一替換內部顏色的場景（第三方元件、複雜多層結構如 Switch）。
+自己寫的元件何時換色、何時整塊套 `opacity-disabled`,唯一住處是 `../opacity/opacity.spec.md`「何時用 opacity vs token swap」(多層結構換色;結構簡單、子元素多的整塊套透明度,例 Avatar、Switch thumb、Rating);這裡只補第三方元件這一種場景。
 
 ## shadcn Compat Aliases(已清除,2026-04-18)([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/app/globals.css#L101-L118))
 
@@ -956,7 +970,7 @@ CSS 變數在定義元素上解析。`:root` 的 `--foreground: var(--color-neut
 ```
 
 ## 結構性保留 token canonical
-SSOT → `ds-canonical/references/structural-token-retention.md`(canonical owner,不指產生檢視;6 類保留 + sub-agent triple-verify 流程)
+SSOT → `../orphan-tokens.spec.md`(保留 / 退場分類的唯一住處,2026-11-15 收編原 `ds-canonical/references/structural-token-retention.md` 的 6 類;`--brand` 屬「產品層預留」類)
 
 ---
 
@@ -974,6 +988,7 @@ SSOT → `ds-canonical/references/structural-token-retention.md`(canonical owner
 - `file-upload.spec.md`
 - `notice.spec.md`
 - `opacity.spec.md`
+- `orphan-tokens.spec.md`
 - `progress-bar.spec.md`
 - `separator.spec.md`
 - `skeleton.spec.md`

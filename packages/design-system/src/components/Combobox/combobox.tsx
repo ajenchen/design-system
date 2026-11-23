@@ -1,28 +1,29 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-// @renderer-symmetry-allow: ComboboxTagStack(view path)接 consumer tagRenderer 是 Stream C 下 cycle 工作 — 2026-05-12 先 ship Issues 2/3/4 surgical fixes(placeholder vocabulary + cell surface metrics + placeholder truncate),tagRenderer view-path unify deferred per field-controls.spec.md 共享 contract a。當前 multi=1 顯示已透過 PeoplePicker tagRenderer(people-picker.tsx#PeoplePicker)PersonDisplay SSOT 對齊;其他 Combobox consumer 走 default `<Tag>` 純文字 backward-compat。
+// @renderer-symmetry-allow: ComboboxTagStack(view path)接 consumer tagRenderer 是 Stream C 下 cycle 工作 — 2026-05-12 先 ship Issues 2/3/4 surgical fixes(placeholder vocabulary + cell surface metrics + placeholder truncate),tagRenderer view-path unify deferred per field-controls.spec.md 共享 contract a。當前 multi=1 顯示已透過 PeoplePicker tagRenderer(people-picker.tsx#PeoplePicker)PersonDisplay SSOT 對齊;其他 Combobox consumer 走預設 `<Tag>` 純文字(一般選項只有文字標籤)。(2026-11-21 複查仍成立:view path 的 ComboboxTagStack 仍不接 tagRenderer;唯一的 tagRenderer consumer PeoplePicker 在 view 走 MultiPersonDisplay、不經此 path,與 field-controls.spec.md 共享 contract (a) 的現況句一致)
 // code-quality-allow: file-size — Combobox 含 CustomCombobox / ReadonlyMultiSelect / ComboboxTagStack + 共用 helpers(單行 Tag 列的量測 2026-10-13 已抽到 ../OverflowIndicator/overflow-tag-list.tsx);CustomCombobox 的觸發欄位、鍵盤與搜尋框共用同一組 state / ref,拆檔要把十幾個 ref 與 handler 跨檔傳遞。
 import * as React from 'react'
 import { flushSync } from 'react-dom'
 import { focusAfterCollectionRemoval } from '@/design-system/lib/collection-removal-focus'
 import { useKnownOptions } from '@/design-system/hooks/use-known-options'
-import { X, ChevronDown } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { cn } from '@/lib/utils'
 import { overlayIndicatorMotion } from '@/design-system/tokens/motion/overlay-motion'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
-import { readonlyTabStopProps, fieldWrapperStyles, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass, fieldTagInsetX, fieldTagInsetY, FIELD_TEXT_ENTRY_CURSOR, keepFieldFocusBeforeUnmount } from '@/design-system/components/Field/field-wrapper'
+import { readonlyTabStopProps, fieldWrapperStyles, fieldWidthVariant, fieldWidthStyle, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass, fieldTagInsetX, fieldTagInsetY, FIELD_TEXT_ENTRY_CURSOR } from '@/design-system/components/Field/field-wrapper'
+import { FieldClearButton } from '@/design-system/components/Field/field-clear-button'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { TAG_HEIGHT_PX, Tag } from '@/design-system/components/Tag/tag'
-import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { OverflowTagList, TAG_ROW_CONTAINER_CLASS, TAG_ROW_GAP_PX } from '@/design-system/components/OverflowIndicator/overflow-tag-list'
 import { SelectMenu, forwardKeyToListbox, useActiveDescendant, moveHighlightToFirst, isRemoveLastValueKey, routeTypingToSearch, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
 import { RemovalStatus, removalValueKey, useRemovalAnnouncement } from '@/design-system/components/SelectMenu/select-menu-removal-status'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { keepFocusOnPointerPress } from '@/design-system/lib/pointer-press'
+import { fieldOpenProps } from '@/design-system/lib/composite-field-focus'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
 
 // ── constants ───────────────────────────────────────────────────────────────
-
 // Tag 列間距:與單行 Tag 列(overflow-tag-list.tsx)同一個值
 const GAP = TAG_ROW_GAP_PX
 
@@ -76,8 +77,8 @@ export function findInlineSearchMirror(root: ParentNode | null | undefined): HTM
  * Wrapper-only field 都沒有 → empty body interface(future 加 wrapper-only field 加在此處)。
  * `menuOptions` mapping(below)forward 全 SelectMenuOption surface。
  *
- * 對齊 Polaris ChoiceList / Material Autocomplete / Carbon Dropdown 的 wrapper-vs-primitive
- * schema-extension idiom。Hook `check_wrapper_primitive_schema_drift.sh`(M30 機械強制)。
+ * Hook `check_wrapper_primitive_schema_drift.sh`(M30;寫入當下跑的 governance-context-or-block hook:同名 `XxxOption`
+ * 沒 extends 另一個 Option 型別 → 擋;`menuOptions` mapping 漏 forward avatar / description / disabled → 只提醒)。
  */
 export interface ComboboxOption extends SelectMenuOption {
   // (no wrapper-only fields yet — kept for future扩 + same-name SSOT cross-wrapper)
@@ -106,7 +107,7 @@ function ComboboxTagStack({
     <OverflowTagList items={items} size={tagSize} wrap={wrap}
       // 2026-05-18 7B' fix(per user 拍板「執行」+ Codex Round 3 共識)— 移除 `unbounded`,Tag 回預設
       // `max-w-40` cap(160px)+ 內建 `[data-tag-text] truncate min-w-0` 自帶 ellipsis。原 unbounded 是
-      // 「cell-as-input narrow cell < 160px」設計(`tag.tsx:85-90`),但 generic Combobox tag display
+      // 「cell-as-input narrow cell < 160px」設計(`tag.tsx:84-89`),但 generic Combobox tag display
       // 應走 Tag canonical cap-with-ellipsis(per `data-table.spec.md`「十一、Cell 單行截斷原則」「Tag 文字內部 truncate;
       // multiSelect 動態 +N」+ `data-table.spec.md`「禁止事項」「Tag 不可被外層 overflow-hidden 裁掉邊框」)。
       // Trade-off:長 tag 觸發 +N 提前(160 + gap + overflowW > available 較 quick)— acceptable per user。
@@ -123,7 +124,7 @@ function ComboboxTagStack({
   // `overflow-visible` → `overflow-hidden` 讓 narrow cell width 強制 clip(Tag 內建 truncate
   // 處理 text ellipsis,stack `-ml-0.5` 負 margin 在 wrapper 內不受影響)。對齊
   // `data-table.spec.md`「十一、Cell 單行截斷原則」(空間不足一律 ellipsis,不硬裁)+ MUI X / Ant Table column.ellipsis 共識。
-  // (2026-05-14 nakedCellRowModeAlign 同保留 — autoRowHeight cell first-line align canonical。)
+  // (2026-05-14 nakedCellRowModeAlign 同保留 — DataTable rowHeight="hug" cell first-line align canonical。)
   // TAG_ROW_CONTAINER_CLASS:`relative` =「+N」量尺的定位容器、`isolate` = Tag 的疊放值只在這一列裡比(OverflowTagList 檔頭)
   return (
     <div className={cn(TAG_ROW_CONTAINER_CLASS, 'flex-1 min-w-0 flex items-center', nakedCellRowModeAlign, wrap ? 'flex-wrap' : cn(tagRowOverflowClass, tagRowFocusRoomClass))} style={{ gap: GAP }}>
@@ -168,7 +169,7 @@ export interface ComboboxProps {
   /** Field chrome variant. Default = context.variant ?? 'default'. Per-prop override. */
   variant?: FieldVariant
   /** 寬度軸 — `fill` 填滿容器(default)/ `hug` 依內容收縮:value 寬 + slot 元素寬 + gap +
-   *  field 內 padding;chrome 與互動不變。場景 = detail pane inline metadata。
+   *  field 內 padding / 數字 = 固定寬(px,窄容器裡不超出容器);chrome 與互動不變。
    *  SSOT → field-controls.spec.md「寬度軸(width: fill / hug)」。 */
   width?: FieldWidth
   error?: boolean
@@ -176,6 +177,7 @@ export interface ComboboxProps {
   options: ComboboxOption[]
   value?: string[]
   onChange?: (value: string[]) => void
+  /** 無值時的提示文字(`searchIn='trigger'` 時由欄位內搜尋框顯示)。Default:「選擇…」(2026-11-15 前另有舊名 `emptyPlaceholder`,已移除) */
   placeholder?: string
   className?: string
   disabled?: boolean
@@ -210,8 +212,6 @@ export interface ComboboxProps {
   /** 搜尋框 accessible name 的退路(Default:「搜尋選項」)。浮層內搜尋框(`searchIn='menu'`)用它;欄位內搜尋框(`searchIn='trigger'`)
    *  有欄位名稱(Field label / `aria-label`)時用欄位名稱(同 Select 欄位內搜尋框),兩者都沒有才用它(2026-10-21) */
   searchAriaLabel?: string
-  /** Empty-selection placeholder text。Default: 「選擇…」 */
-  emptyPlaceholder?: string
   /** 搜尋無結果提示(2026-07-04 Q4 拍板接線)— forward SelectMenu primitive SSOT(default「沒有符合的選項」) */
   emptyText?: string
   /** 多選 footer 全選按鈕文字 —— 還沒全選時(2026-09-17 補轉發:原本 SelectMenu 有這個 prop 但沒有任何 wrapper 傳下去,
@@ -257,8 +257,8 @@ export interface ComboboxProps {
   /**
    * 2026-05-14 I4 fix:Optional renderer for hidden items in `+N` overflow popover
    * (對齊 view path MultiPersonDisplay overflow popover 含 avatar SSOT)。PeoplePicker stack
-   * pass 此 prop 讓 hidden items 顯 avatar + name(同 view path)。Default fallback
-   * `<Tag>{label}</Tag>` 純文字 backward-compat。
+   * pass 此 prop 讓 hidden items 顯 avatar + name(同 view path)。預設
+   * `<Tag>{label}</Tag>` 純文字(一般選項只有文字標籤)。
    * **移除一律用第二個參數 `onRemove`**(2026-09-30):它走與欄位上 Tag 相同的移除路徑(焦點接力 → onChange),
    * 自己呼叫 onChange 會跳過焦點接力 —— 焦點在被移除的 × 上時掉到 body(PeoplePicker 修前實測)。
    */
@@ -328,7 +328,8 @@ export interface ComboboxProps {
   visibleCountOverride?: number
   /**
    * Display 是否渲 ChevronDown + Field naked wrapper(D-path opt-in,2026-05-08)
-   * — DataTable cell view↔edit 像素級對齊用。預設 false(裸 tag stack,backward compat)。
+   * — DataTable cell view↔edit 像素級對齊用。預設 false(檢視態只畫值:裸 tag stack,不畫欄位外框 / 箭頭;
+   *   理由:檢視態只顯示值,跟表格 2026-07-08 A 案同一方向,見 field-controls.spec.md「LinkInput / PeoplePicker 預設 view 路徑不包 wrapper」)。
    * 設 true 時 view 走 fieldWrapperStyles(naked variant)+ ItemSuffix ChevronDown,
    * 與 edit 同 DOM 結構,消除 Layer-B padding mismatch。
    */
@@ -381,11 +382,11 @@ function ReadonlyMultiSelect({
     }
     return (
       <div
-        className={cn(fieldWrapperStyles({ mode: 'view', variant, width, size: sz }), hasTags && tagPadding[sz],
+        className={cn(fieldWrapperStyles({ mode: 'view', variant, width: fieldWidthVariant(width), size: sz }), hasTags && tagPadding[sz],
           // wrap 幾何跟 edit / readonly / disabled 全 mode 一致(2026-09-15 補漏):items-start + 同一個內距公式 + 高度放開,
           // 否則 view 態 wrap 的 tag 會被固定的 h-field-* 裁掉;第一行 y 仍 = 單行 y(field.spec.md:147 中線錨在 field-height/2)。
           hasTags && wrap && cn('items-start', tagPaddingY[sz]), className)}
-        style={hasTags ? { paddingRight: 'var(--field-px)', ...(wrap ? { height: 'auto' } : undefined) } : undefined}
+        style={fieldWidthStyle(width, hasTags ? { paddingRight: 'var(--field-px)', ...(wrap ? { height: 'auto' } : undefined) } : undefined)}
         data-field-mode="view"
       >
         {hasTags ? (
@@ -405,7 +406,7 @@ function ReadonlyMultiSelect({
 
   return (
     <div
-      className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width, size: sz }), hasTags && tagPadding[sz],
+      className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width: fieldWidthVariant(width), size: sz }), hasTags && tagPadding[sz],
         // 欄位外框就是 Tag 列的容器(ComboboxTagStack bare):TAG_ROW_CONTAINER_CLASS(`relative` =「+N」量尺的定位容器、
         // `isolate` = Tag 的疊放值只在這一列裡比;OverflowTagList 檔頭)。換行時不經 OverflowTagList 的單行路徑,沒有疊放值也沒有量尺
         hasTags && !wrap && TAG_ROW_CONTAINER_CLASS,
@@ -420,7 +421,7 @@ function ReadonlyMultiSelect({
         //(2026-09-29 全站掃出);停用的欄位整塊都是禁止符號(field-controls.spec.md「游標指引」disabled → cursor-not-allowed)
         resolvedMode === 'disabled' && '[&_*]:cursor-not-allowed',
         className)}
-      style={{ gap: GAP, paddingRight: 'var(--field-px)', ...(wrap && hasTags ? { height: 'auto' } : undefined) }} data-field-mode={resolvedMode}
+      style={fieldWidthStyle(width, { gap: GAP, paddingRight: 'var(--field-px)', ...(wrap && hasTags ? { height: 'auto' } : undefined) })} data-field-mode={resolvedMode}
       aria-disabled={resolvedMode === 'disabled' ? true : undefined} {...readonlyStop}>
       {hasTags ? (
         <ComboboxTagStack value={value} options={options} tagSize={sz} wrap={wrap}
@@ -470,12 +471,12 @@ const toMenuOption = (opt: ComboboxOption): SelectMenuOption => ({
 // ── Custom Combobox (desktop — consumes SelectMenu) ───────────────────
 
 function CustomCombobox({
-  mode, variant: variantProp, width, error: errorProp = false, size = 'md', options, value = [], onChange, placeholder,
+  mode, variant: variantProp, width, error: errorProp = false, size = 'md', options, value = [], onChange,
+  placeholder = '選擇…', // i18n-allow: DS default
   className, disabled: disabledProp, wrap = false, clearable = false, searchable = false, loading, optionsLoading, searchIn = 'menu', filterOption = true, onSearchChange,
   suggestions, suggestionsLabel, searchHintText,
   searchPlaceholder = '搜尋…', // i18n-allow: DS default
   searchAriaLabel = '搜尋選項', // i18n-allow: DS default
-  emptyPlaceholder = '選擇…', // i18n-allow: DS default
   emptyText,
   selectAllLabel,
   deselectAllLabel,
@@ -662,16 +663,18 @@ function CustomCombobox({
       // 跟 DatePicker(:608)/ TimePicker(:378)一致 —— 否則同一顆控件會有兩個焦點指示。
       // **本行不是新增抑制,是補上一直漏掉的那個**:遷移前這顆沒寫 outline-none,
       // 於是全域外描邊一直畫在它上面,是全家族唯一的例外(user 2026-09-07 抓到)。
-      // @focus-suppress C — 這一行的元素**就是**那圈欄位外框;承擔者:自己(fieldWrapperStyles 的 focus-within:!border-primary,field-wrapper.tsx:67)
-      className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), 'focus-visible:outline-none', hasTags && tagPadding[size], 'relative cursor-pointer',
+      // @focus-suppress C — 這一行的元素**就是**那圈欄位外框;承擔者:自己(fieldWrapperStyles 的 focus-within:!border-primary,field-wrapper.tsx#fieldDefaultChromeCompounds)
+      className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width: fieldWidthVariant(width), size, error }), 'focus-visible:outline-none', hasTags && tagPadding[size], 'relative cursor-pointer',
         // 換行幾何只在有 Tag 時成立(view / 唯讀兩條路徑同一個判斷):空值 /「不限」時照單行欄位置中 ——
         // 修前空值的提示字頂在上內距,比單行偏上 1.5px(md;field.spec.md「Control area:Inline vs Block」:「control 第一行內容的中線」都錨在 field-height/2)
         wrap && hasTags && cn('items-start', tagPaddingY[size]),
         // 2026-05-06 v13.3 SSOT retire:per-control `open && 'border-primary'` 移除。Field default
-        // 統一處理 — open=灰深(data-state)/ focus=藍;2026-07-04 Q1:error 亦收進 error variant。
+        // 統一處理 — 自己的浮層開著(data-field-open)= focus = 藍;2026-07-04 Q1:error 亦收進 error variant。
         className)}
-      style={{ paddingRight: 'var(--field-px)', ...(wrap && hasTags ? { height: 'auto' } : undefined) }}
+      style={fieldWidthStyle(width, { paddingRight: 'var(--field-px)', ...(wrap && hasTags ? { height: 'auto' } : undefined) })}
       data-field-mode="edit" data-error={error ? '' : undefined}
+      // 「自己的浮層開著」的記號(外框維持聚焦的樣子):外框自己掛、寫在 consumer 的 data-* 之後(lib/composite-field-focus.ts 檔頭「誰掛記號」)
+      {...fieldOpenProps(open)}
       // 搜尋框握著焦點時按欄位上的零件,焦點不離開搜尋框(見上方 keepSearchFocus)
       onMouseDown={keepSearchFocus}
       // WAI-ARIA APG combobox 鍵盤開啟語意 — 對齊 sibling Select(select.tsx#CustomSelect 的 onKeyDown)。
@@ -727,14 +730,14 @@ function CustomCombobox({
       {/* 2026-05-18 #6A Round 1 Step 2/4(per user 拍板決策 6 選 a + codex M31 Step 5 verdict 引的是當時 combobox.tsx 第 648 行):
           CustomCombobox edit non-wrap tagArea 對齊當時 view + readonly + native edit 已 ship 的 overflow-hidden fix(M10 當時四條一起對齊)。
           原 overflow-visible 讓 tag 越界蓋 chevron / +N indicator(user 圖三)。現況:native edit 2026-09-18 隨原生觸控路徑移除,剩三條共用檔頭 tagRowOverflowClass。 */}
-      {/* TAG_ROW_CONTAINER_CLASS(`relative isolate`):標籤 wrapper 的疊放順序(`--tag-stack-z`,頭像堆疊用)只在這一列裡比,不跟頁面上其他層比 ——
+      {/* TAG_ROW_CONTAINER_CLASS(`relative isolate`):標籤 wrapper 的疊放順序(`--overflow-tag-stack-z`,頭像堆疊用)只在這一列裡比,不跟頁面上其他層比 ——
           與 avatar.tsx AVATAR_STACK_CLASS(檢視態的堆疊列)同一件事,編輯態這裡就是那一列(2026-09-26 補,M17;2026-10-14 四個 Tag 列容器收成同一個常數) */}
       <div ref={tagAreaRef} className={cn(TAG_ROW_CONTAINER_CLASS, 'flex-1 min-w-0 flex items-center', nakedCellRowModeAlign, wrap ? 'flex-wrap' : cn(tagRowOverflowClass, tagRowFocusRoomClass))}
         // consumer 指定的左內距(PeoplePicker stack)照樣成立:單行時再加上焦點框那 4px,內容起點不變。
         // 換行 × 欄位內搜尋:Tag 寬上限變數設成 100%(這一列的寬)—— Tag 本來就會縮到一列寬,但換列判斷用的是縮之前的寬(上限 160px),
         // 一顆比一列寬的 Tag 會讓後面那個基準寬 0 的閒著搜尋框照樣被擠到下一列(r-F3 缺陷 E:每人一顆標籤撐滿一列的窄欄位)。版面結果不變,只有換列判斷看到真的寬
         style={{ gap: tagAreaGap, paddingLeft: tagAreaPaddingLeftPx != null && !wrap ? `calc(${tagAreaPaddingLeftPx}px + var(--stack-gap) + 2px)` : tagAreaPaddingLeftPx,
-          ...(wrap && inlineSearch ? { '--combobox-tag-area-inline-size': '100%' } as React.CSSProperties : undefined) }}>
+          ...(wrap && inlineSearch ? { '--tag-max-inline-size': '100%' } as React.CSSProperties : undefined) }}>
         {/* 有 Tag / 只選「不限」(純文字,同 placeholder 的盒與字級,只是不套灰)/ 空(placeholder)。
             三選一的第一個條件就是上面那個 `hasTags`,與欄位內距**同一個判斷式**。*/}
         {hasTags ? (
@@ -766,7 +769,7 @@ function CustomCombobox({
              truncate,narrow container 時單行省略(對齊 Combobox text-tag truncate canonical)。
              原 hardcode wraps in narrow trigger → user 抓到 placeholder 文字換成多行。
              欄位內有搜尋框時,同一句提示由搜尋框自己的 placeholder 顯示(見下方),這顆不渲。 */
-          <span className="flex-1 min-w-0 truncate text-fg-muted">{placeholder ?? emptyPlaceholder}</span>
+          <span className="flex-1 min-w-0 truncate text-fg-muted">{placeholder}</span>
         )}
         {/* 欄位內搜尋框(searchIn='trigger')—— **可搜尋就一直在**,而且永遠是 Tag 區的最後一格:
             空值 / 只選「不限」/ 有 Tag 三態切換不重掛,焦點與已打的字都不會掉(規則 combobox.spec.md「邊界案例」Empty)。
@@ -800,7 +803,7 @@ function CustomCombobox({
             {/* 量尺:與輸入框同一格、同字級(兩者都繼承欄位字型),高 0 不佔列高;justify-self-start = 寬就是字寬(findInlineSearchMirror 找它)。
                 空值、還沒打字時量尺放提示字本身:依內容寬的欄位才放得下整句提示字(field-controls.spec.md「寬度軸」;
                 combobox.spec.md:191「字級、顏色、左緣與上一條的 span 逐像素相同」;修前量尺只有一個插入點寬,提示字被切,r-F3 缺陷 P) */}
-            <span aria-hidden {...{ [INLINE_SEARCH_MIRROR_ATTR]: '' }} className="invisible col-start-1 row-start-1 justify-self-start h-0 whitespace-pre pointer-events-none">{search || hasTags || isUnrestrictedOnly ? `${search} ` : (placeholder ?? emptyPlaceholder)}</span>
+            <span aria-hidden {...{ [INLINE_SEARCH_MIRROR_ATTR]: '' }} className="invisible col-start-1 row-start-1 justify-self-start h-0 whitespace-pre pointer-events-none">{search || hasTags || isUnrestrictedOnly ? `${search} ` : placeholder}</span>
             {/* 只選「不限」× 欄位內搜尋框(2026-10-07 待辦總帳 K4):照單選欄位的讓位做法(select.tsx `showSelectedOverlay`)——「不限」是純文字、沒有框,
                 不和打的關鍵字並排(2026-10-01 起畫成「不限 fo」,同一個欄位裡值與關鍵字同字級同色、只隔 4px)。
                 關著 = 一般已填值的黑字(與不可搜尋的「不限」同一顆盒、同字級、同位置,逐像素相同);開著、還沒打字 = 同一個位置的灰色提示、讀屏略過
@@ -830,7 +833,7 @@ function CustomCombobox({
               // 世界級同做法:rc-select「Open if from typing」(https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/BaseSelect/index.tsx#L429-L432);
               // MUI useAutocomplete 輸入非空即 handleOpen(https://github.com/mui/material-ui/blob/809a7717b4c050ba3f69b75300689f07c050a16e/packages/mui-material/src/useAutocomplete/useAutocomplete.js#L1204-L1225)
               onChange={(e) => { setSearch(e.target.value); if (!open) setOpen(true) }}
-              placeholder={hasTags || isUnrestrictedOnly ? '' : (placeholder ?? emptyPlaceholder)}
+              placeholder={hasTags || isUnrestrictedOnly ? '' : placeholder}
               onClick={(e) => { e.stopPropagation(); setOpen(true) }}
               tabIndex={-1}
               // accessible name = 這個欄位的名字(同 select.tsx 欄位內搜尋框、select.spec.md「ARIA / Pattern」):Field label(aria-labelledby)勝過 aria-label,
@@ -850,21 +853,19 @@ function CustomCombobox({
         style={wrap && hasTags ? { height: tagHeight } : undefined}>
         {showClear && (
           <span className="pointer-events-auto">
-            <ItemInlineAction
+            {/* × 與「焦點交接 → 清」是 Field 家族共用的一份(../Field/field-clear-button.tsx,2026-11-21 LINK-CLEAR 收成一份)。
+                按鈕隨清空卸載:焦點在它身上(鍵盤按下 / Chrome 滑鼠按下)先交給 owner(欄位內搜尋框,沒有就是觸發欄位),不掉到 body。 */}
+            <FieldClearButton
               size={size ?? 'md'}
-              action={{
-                icon: X,
-                label: '清除全部', // i18n-allow: DS default inline-action label
-                // 按鈕隨清空卸載:焦點在它身上(鍵盤按下 / Chrome 滑鼠按下)先交給 owner,不掉到 body(field-wrapper.tsx keepFieldFocusBeforeUnmount)。
-                // 一鍵清空連打到一半的關鍵字一起清(兩種搜尋框位置同一條;select-menu.spec.md「搜尋關鍵字何時保留、何時清空」一鍵清空列)
-                onClick: (e) => {
-                  e?.stopPropagation()
-                  keepFieldFocusBeforeUnmount(e?.currentTarget, inputRef.current ?? tagAreaRef.current?.closest<HTMLElement>('[role="combobox"]'))
-                  onChange?.([])
-                  setSearch('')
-                  // 清單開著:反白回第一列(2026-10-07 待辦總帳 K2;開了「不限」時第一列就是「不限」本身)
-                  if (open) moveHighlightToFirst(listboxId)
-                },
+              label="清除全部" // i18n-allow: DS default inline-action label
+              stopPropagation
+              focusOwner={() => inputRef.current ?? tagAreaRef.current?.closest<HTMLElement>('[role="combobox"]')}
+              // 一鍵清空連打到一半的關鍵字一起清(兩種搜尋框位置同一條;select-menu.spec.md「搜尋關鍵字何時保留、何時清空」一鍵清空列)
+              onClear={() => {
+                onChange?.([])
+                setSearch('')
+                // 清單開著:反白回第一列(2026-10-07 待辦總帳 K2;開了「不限」時第一列就是「不限」本身)
+                if (open) moveHighlightToFirst(listboxId)
               }}
             />
           </span>
@@ -961,7 +962,7 @@ const Combobox = React.forwardRef<HTMLDivElement, ComboboxProps>(
     // 那會變成第二套規格,正是這次要消滅的東西。**不拿觸控尺寸建議當依據**:先前這裡寫的
     // 「過 WCAG 2.2 AA(24×24)」已於 2026-09-24 撤回(本 DS 以滑鼠精度為前提,見
     // ds-canonical/references/hit-area-canonical.md「本 DS 不採納觸控尺寸建議」);
-    // 同時把 24 門檻的出處從 overlay-surface.spec.md:431(該段 2026-09-27 起住 overlay-chrome-sizing.spec.md「為什麼用負 margin 而非 fixed wrapper / size="xs"」)改指真正的 owner(上一行)。
+    // 同時把 24 門檻的出處從 overlay-surface.spec.md 的舊段落(只記檔名不記行號:那份規格常改、行號會漂;該段 2026-09-27 起住 overlay-chrome-sizing.spec.md「為什麼用負 margin 而非 fixed wrapper / size="xs"」)改指真正的 owner(上一行)。
     return <CustomCombobox {...props} size={size} __triggerRef={ref} />
   }
 )

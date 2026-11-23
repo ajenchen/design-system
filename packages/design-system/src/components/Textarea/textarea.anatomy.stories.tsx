@@ -23,7 +23,7 @@ export const Overview: Story = {
       <div>
         <H3>Anatomy</H3>
         <Desc>Textarea 是多行 Input——native <code>&lt;textarea&gt;</code> + 橋接 DS token。不同於 Input:沒有 field-height(高度由 rows / min-h 決定)、沒有 startIcon / endAction。</Desc>
-        <div className="border border-border rounded-lg p-4 max-w-md">
+        <div className="border border-border rounded-md p-4 max-w-md">
           <Textarea rows={3} placeholder="請輸入留言..." aria-label="留言" />
         </div>
       </div>

@@ -1,0 +1,527 @@
+{
+  "_meta": {
+    "purpose": "M22「世界級對照要附一手來源」判定用的名稱 / 網域資料(唯一住處)。判定實作 packages/design-system/ds-canonical/hooks/lib/benchmark-citation.mjs 讀這份;寫入當下的 hook(check_benchmark_citation.sh)與全樹檢查(scripts/benchmark-citation-invariant.mjs)都經那支實作,不另抄。",
+    "origin": "2026-11-05 K8 全樹盤點的 products.tsv(名稱 → 該名稱自己的來源比對)與當時 hook 的關鍵字 / 來源網域正則,2026-11-16 A29 搬進 repo。關鍵字集合 = 當時 hook 的 $bench 逐項相同(102 項)。搬進來時修的比對(都有現況樹上的實例):來源網域補 bitbucket.org(Atlassian 官方原始碼鏡像 atlassian-frontend-mirror 住在那裡);Linear / Gestalt 補上 hook 原有的撞名排除,Linear 另加字界(MUI 的 `LinearProgress` 不是那個產品);Linear / Element / Reach UI 的來源收窄到官網與原始碼位置(原本的 linear / element / reach 會被 MDN 等無關網址滿足);Material 的來源補 Compose Material 3(androidx)、Angular Material(angular/components、material.angular)的原始碼位置與 npm 套件路徑 `@material/`(jsdelivr / unpkg 上的 @material/web);Polaris 的來源補 shopify.dev(Polaris web components 的現行文件住在那裡);GitHub(產品)的來源補 github.com 上的 PR / issue 頁(那就是產品畫面本身);Cursor(AI 編輯器)只在列舉分隔符旁或後接 IDE / AI / 編輯器 / editor 時才算 —— 樹上的「Cursor」全是 CSS 游標與 Recharts 的 Cursor 元件,沒有一處是那個產品。2026-11-21 WP-25:Material 的來源補 Google 官方圖示 repo `google/material-design-icons/`(Material Symbols 的 SVG 原始檔住在那裡;agent-panel.tsx 停止鈕的出處就是它,舊表不認而判 partial)—— 只認 `google/` 這個帳號,別人 fork 的同名 repo 不算(selftest 判定表兩格)。",
+    "fields": {
+      "citeUrlPrefixes": "以 https:// 開頭、主機名稱以這些字開頭的網址算一手來源(沿用 2026-05 hook 的原始寫法)",
+      "citeHosts": "主機名稱(含子網域)是這些網域的網址算一手來源;不寫 https:// 的「網域/路徑」寫法也算",
+      "products": "name = 名稱;mention = 在說明文字裡認出它的正則(區分大小寫,JS 語法);sources = 段裡某個一手來源的網址 / 路徑要符合這條(不分大小寫),才算「這一家有自己的來源」"
+    },
+    "notOnPurpose": "DS 自己的執行期依賴(Radix 原件 / cmdk / react-day-picker / TanStack / dnd-kit …,行為宣稱由 M2 實測)、平台(瀏覽器 / 作業系統)、規範本身(WCAG / WAI-ARIA / HTML / MDN)、與一般字撞名的詞不列為名稱 —— 同 2026-11-05 K8 盤點的取捨。"
+  },
+  "citeUrlPrefixes": [
+    "m3.material",
+    "ant-design",
+    "material",
+    "polaris.shopify",
+    "atlassian.design",
+    "carbon",
+    "shadcn",
+    "ui.shadcn",
+    "radix-ui",
+    "github",
+    "developer.apple"
+  ],
+  "citeHosts": [
+    "github.com",
+    "githubusercontent.com",
+    "bitbucket.org",
+    "unpkg.com",
+    "jsdelivr.net",
+    "npmjs.com",
+    "npmjs.org",
+    "w3.org",
+    "w3c.github.io",
+    "whatwg.org",
+    "developer.mozilla.org",
+    "radix-ui.com",
+    "mui.com",
+    "material.io",
+    "ant.design",
+    "atlassian.design",
+    "atlassian.com",
+    "atlassian.net",
+    "carbondesignsystem.com",
+    "polaris.shopify.com",
+    "polaris-react.shopify.com",
+    "shopify.dev",
+    "shopify.com",
+    "primer.style",
+    "styleguide.github.com",
+    "ui.shadcn.com",
+    "apple.com",
+    "google.com",
+    "android.com",
+    "chromium.org",
+    "googlesource.com",
+    "microsoft.com",
+    "microsoft.design",
+    "fluentui.dev",
+    "visualstudio.com",
+    "adobe.com",
+    "base-ui.com",
+    "headlessui.com",
+    "downshift-js.com",
+    "ariakit.org",
+    "chakra-ui.com",
+    "mantine.dev",
+    "getbootstrap.com",
+    "cloudscape.design",
+    "gestalt.pinterest.com",
+    "patternfly.org",
+    "service.gov.uk",
+    "lightningdesignsystem.com",
+    "salesforce.com",
+    "sap.com",
+    "element-plus.org",
+    "arco.design",
+    "primereact.org",
+    "vuetifyjs.com",
+    "elastic.co",
+    "zendesk.com",
+    "vercel.com",
+    "react-select.com",
+    "ag-grid.com",
+    "handsontable.com",
+    "glideapps.com",
+    "swiperjs.com",
+    "photoswipe.com",
+    "floating-ui.com",
+    "notion.so",
+    "notion.com",
+    "airtable.com",
+    "clickup.com",
+    "figma.com",
+    "linear.app",
+    "trello.com",
+    "asana.com",
+    "monday.com",
+    "slack.com",
+    "discord.com",
+    "dropbox.com",
+    "stripe.com",
+    "raycast.com",
+    "openai.com",
+    "anthropic.com",
+    "claude.com",
+    "canva.com",
+    "miro.com",
+    "cursor.com",
+    "docusaurus.io",
+    "nngroup.com",
+    "tanstack.com",
+    "dndkit.com",
+    "daypicker.dev",
+    "react-day-picker.js.org",
+    "cmdk.paco.me",
+    "embla-carousel.com",
+    "recharts.org",
+    "emilkowal.ski",
+    "tailwindcss.com",
+    "react.dev",
+    "reactjs.org",
+    "todoist.com",
+    "teambition.com",
+    "refine.dev",
+    "marmelab.com",
+    "d3js.org",
+    "adrianroselli.com"
+  ],
+  "products": [
+    {
+      "name": "Ant Design",
+      "mention": "Ant Design|\\bAnt\\b|\\bantd\\b",
+      "sources": "ant\\.design|ant-design|react-component|\\brc-[a-z]|\\bantd\\b"
+    },
+    {
+      "name": "Material",
+      "mention": "Material(?:\\s+X|\\s+Design|\\s+UI|\\s+3)?",
+      "sources": "material\\.io|mui\\.com|material-components|material-web|\\bmui/|material-ui|google\\.com|androidx|angular/components|material\\.angular|@material/|(?<![\\w.-])google/material-design-icons/"
+    },
+    {
+      "name": "MUI",
+      "mention": "\\bMUI\\b",
+      "sources": "mui\\.com|\\bmui/|material-ui"
+    },
+    {
+      "name": "Polaris",
+      "mention": "Polaris",
+      "sources": "polaris|Shopify/|shopify\\.dev"
+    },
+    {
+      "name": "Atlassian",
+      "mention": "Atlassian",
+      "sources": "atlassian|atlaskit"
+    },
+    {
+      "name": "Carbon",
+      "mention": "Carbon",
+      "sources": "carbon"
+    },
+    {
+      "name": "shadcn",
+      "mention": "shadcn",
+      "sources": "shadcn"
+    },
+    {
+      "name": "Radix UI",
+      "mention": "Radix UI?",
+      "sources": "radix"
+    },
+    {
+      "name": "Apple",
+      "mention": "Apple HIG|\\bApple\\b|\\bHIG\\b",
+      "sources": "apple\\.com"
+    },
+    {
+      "name": "macOS Spotlight",
+      "mention": "Spotlight",
+      "sources": "apple\\.com"
+    },
+    {
+      "name": "macOS Finder",
+      "mention": "\\bFinder\\b",
+      "sources": "apple\\.com"
+    },
+    {
+      "name": "Notion",
+      "mention": "Notion",
+      "sources": "notion"
+    },
+    {
+      "name": "Airtable",
+      "mention": "Airtable",
+      "sources": "airtable"
+    },
+    {
+      "name": "ClickUp",
+      "mention": "ClickUp",
+      "sources": "clickup"
+    },
+    {
+      "name": "Figma",
+      "mention": "Figma",
+      "sources": "figma"
+    },
+    {
+      "name": "Linear",
+      "mention": "\\bLinear\\b(?! vs Non-linear)",
+      "sources": "linear\\.app|github\\.com/linear/"
+    },
+    {
+      "name": "Base UI",
+      "mention": "Base UI",
+      "sources": "base-ui|mui/base"
+    },
+    {
+      "name": "Headless UI",
+      "mention": "Headless UI",
+      "sources": "headlessui"
+    },
+    {
+      "name": "React Aria",
+      "mention": "React Aria|react-aria",
+      "sources": "react-aria|react-spectrum|adobe"
+    },
+    {
+      "name": "React Spectrum",
+      "mention": "React Spectrum|react-spectrum|\\bSpectrum\\b",
+      "sources": "react-spectrum|spectrum\\.adobe|adobe"
+    },
+    {
+      "name": "Adobe",
+      "mention": "\\bAdobe\\b",
+      "sources": "adobe"
+    },
+    {
+      "name": "Downshift",
+      "mention": "[Dd]ownshift",
+      "sources": "downshift"
+    },
+    {
+      "name": "Ariakit",
+      "mention": "Ariakit",
+      "sources": "ariakit"
+    },
+    {
+      "name": "Reach UI",
+      "mention": "Reach UI",
+      "sources": "reach\\.tech|reach/reach-ui|reach-ui"
+    },
+    {
+      "name": "Chakra",
+      "mention": "Chakra",
+      "sources": "chakra"
+    },
+    {
+      "name": "Mantine",
+      "mention": "Mantine",
+      "sources": "mantine"
+    },
+    {
+      "name": "Bootstrap",
+      "mention": "Bootstrap",
+      "sources": "bootstrap|twbs"
+    },
+    {
+      "name": "Fluent",
+      "mention": "Fluent",
+      "sources": "fluent|microsoft"
+    },
+    {
+      "name": "Primer",
+      "mention": "Primer",
+      "sources": "primer|styleguide\\.github"
+    },
+    {
+      "name": "Cloudscape",
+      "mention": "Cloudscape",
+      "sources": "cloudscape"
+    },
+    {
+      "name": "Gestalt",
+      "mention": "Gestalt(?! proximity)",
+      "sources": "gestalt|pinterest"
+    },
+    {
+      "name": "PatternFly",
+      "mention": "PatternFly",
+      "sources": "patternfly"
+    },
+    {
+      "name": "GOV.UK",
+      "mention": "GOV\\.UK",
+      "sources": "service\\.gov\\.uk|alphagov"
+    },
+    {
+      "name": "Salesforce",
+      "mention": "Salesforce|Lightning Design|\\bSLDS\\b",
+      "sources": "salesforce|lightningdesignsystem"
+    },
+    {
+      "name": "SAP",
+      "mention": "\\bSAP\\b|Fiori",
+      "sources": "sap\\.com|\\bSAP/|fiori"
+    },
+    {
+      "name": "Element",
+      "mention": "Element (?:UI|Plus)",
+      "sources": "element-plus|element\\.eleme|ElemeFE|element-ui"
+    },
+    {
+      "name": "Arco",
+      "mention": "\\bArco\\b",
+      "sources": "arco"
+    },
+    {
+      "name": "PrimeReact",
+      "mention": "PrimeReact|PrimeNG",
+      "sources": "primereact|primeng|primefaces"
+    },
+    {
+      "name": "Vuetify",
+      "mention": "Vuetify",
+      "sources": "vuetify"
+    },
+    {
+      "name": "Elastic",
+      "mention": "\\bEUI\\b|Elastic UI",
+      "sources": "elastic"
+    },
+    {
+      "name": "Zendesk",
+      "mention": "Zendesk",
+      "sources": "zendesk"
+    },
+    {
+      "name": "Vercel",
+      "mention": "Vercel|\\bGeist\\b",
+      "sources": "vercel"
+    },
+    {
+      "name": "react-select",
+      "mention": "react-select",
+      "sources": "react-select|JedWatson"
+    },
+    {
+      "name": "rc-*",
+      "mention": "\\brc-[a-z][a-z-]*|react-component",
+      "sources": "react-component|\\brc-[a-z]|ant-design"
+    },
+    {
+      "name": "AG Grid",
+      "mention": "AG Grid|ag-grid",
+      "sources": "ag-grid"
+    },
+    {
+      "name": "Handsontable",
+      "mention": "Handsontable",
+      "sources": "handsontable"
+    },
+    {
+      "name": "Glide Data Grid",
+      "mention": "\\bGlide\\b",
+      "sources": "glide"
+    },
+    {
+      "name": "Swiper",
+      "mention": "Swiper",
+      "sources": "swiper|nolimits4web"
+    },
+    {
+      "name": "PhotoSwipe",
+      "mention": "PhotoSwipe",
+      "sources": "photoswipe|dimsemenov"
+    },
+    {
+      "name": "Vaul",
+      "mention": "\\bVaul\\b",
+      "sources": "vaul|emilkowal"
+    },
+    {
+      "name": "Floating UI",
+      "mention": "Floating UI|floating-ui|Popper\\.js|popper\\.js",
+      "sources": "floating-ui|popper"
+    },
+    {
+      "name": "GitHub",
+      "mention": "GitHub(?!\\s*(?:issue|Issue|Actions|PR|Release|release|API|token|App\\b))",
+      "sources": "primer|docs\\.github|styleguide\\.github|github\\.blog|github\\.com/github/|github\\.com/[\\w.-]+/[\\w.-]+/(?:pull|issues)/\\d"
+    },
+    {
+      "name": "Jira",
+      "mention": "Jira",
+      "sources": "atlassian|atlaskit"
+    },
+    {
+      "name": "Confluence",
+      "mention": "Confluence",
+      "sources": "atlassian|atlaskit"
+    },
+    {
+      "name": "Trello",
+      "mention": "Trello",
+      "sources": "trello|atlassian|atlaskit"
+    },
+    {
+      "name": "Asana",
+      "mention": "Asana",
+      "sources": "asana"
+    },
+    {
+      "name": "monday.com",
+      "mention": "monday\\.com",
+      "sources": "monday"
+    },
+    {
+      "name": "Slack",
+      "mention": "Slack",
+      "sources": "slack"
+    },
+    {
+      "name": "Discord",
+      "mention": "Discord",
+      "sources": "discord"
+    },
+    {
+      "name": "Microsoft Teams",
+      "mention": "\\bTeams\\b",
+      "sources": "microsoft"
+    },
+    {
+      "name": "Excel",
+      "mention": "Excel",
+      "sources": "microsoft|office\\.com"
+    },
+    {
+      "name": "Outlook",
+      "mention": "Outlook",
+      "sources": "microsoft|office\\.com"
+    },
+    {
+      "name": "Microsoft",
+      "mention": "Microsoft",
+      "sources": "microsoft"
+    },
+    {
+      "name": "VS Code",
+      "mention": "VS ?Code|VSCode|Visual Studio",
+      "sources": "visualstudio|vscode|microsoft"
+    },
+    {
+      "name": "Copilot",
+      "mention": "Copilot",
+      "sources": "copilot|microsoft|docs\\.github"
+    },
+    {
+      "name": "Google",
+      "mention": "Google",
+      "sources": "google|android\\.com|chromium|material\\.io"
+    },
+    {
+      "name": "Gmail",
+      "mention": "Gmail",
+      "sources": "google"
+    },
+    {
+      "name": "Dropbox",
+      "mention": "Dropbox",
+      "sources": "dropbox"
+    },
+    {
+      "name": "Stripe",
+      "mention": "Stripe",
+      "sources": "stripe"
+    },
+    {
+      "name": "Shopify",
+      "mention": "Shopify",
+      "sources": "shopify|polaris"
+    },
+    {
+      "name": "Raycast",
+      "mention": "Raycast",
+      "sources": "raycast"
+    },
+    {
+      "name": "ChatGPT",
+      "mention": "ChatGPT|OpenAI",
+      "sources": "openai|chatgpt"
+    },
+    {
+      "name": "Claude",
+      "mention": "\\bClaude\\b(?!\\s*(?:\\+|＋|Code|code|/\\s*Codex|與\\s*Codex|和\\s*Codex))",
+      "sources": "anthropic|claude\\.com|claude\\.ai"
+    },
+    {
+      "name": "Canva",
+      "mention": "\\bCanva\\b",
+      "sources": "canva"
+    },
+    {
+      "name": "Miro",
+      "mention": "\\bMiro\\b",
+      "sources": "miro"
+    },
+    {
+      "name": "Cursor",
+      "mention": "(?<=[/／、,，]\\s*)Cursor\\b(?!\\.)|\\bCursor\\b(?!\\.)(?=\\s*(?:[/／、,，]|IDE\\b|AI\\b|編輯器|editor\\b))",
+      "sources": "cursor\\.com|cursor\\.sh"
+    },
+    {
+      "name": "Docusaurus",
+      "mention": "Docusaurus",
+      "sources": "docusaurus"
+    },
+    {
+      "name": "WAI-ARIA APG",
+      "mention": "\\bAPG\\b|Authoring Practices",
+      "sources": "w3\\.org/WAI|aria-practices|w3c\\.github\\.io"
+    },
+    {
+      "name": "NN/g",
+      "mention": "NN/g|Nielsen Norman",
+      "sources": "nngroup"
+    }
+  ]
+}

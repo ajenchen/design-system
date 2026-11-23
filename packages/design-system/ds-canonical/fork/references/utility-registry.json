@@ -15,7 +15,7 @@
     "provider_view_policy": ".claude/.agents/.codex projections are generated discovery adapters only; they are never registry owners or edit targets.",
     "spec_sources": [
       "packages/design-system/src/tokens/typography/typography.spec.md L118-156",
-      "packages/design-system/src/tokens/radius/radius.spec.md L57-71",
+      "packages/design-system/src/tokens/radius/radius.spec.md「四檔」「禁止事項」",
       "packages/design-system/src/tokens/opacity/opacity.spec.md L53-57",
       "packages/design-system/src/tokens/color/color.spec.md(hardcoded hex/rgb canonical)",
       "packages/design-system/src/tokens/elevation/elevation.spec.md(shadow-{sm,md,lg,xl,2xl} 禁)",
@@ -88,8 +88,8 @@
       },
       {
         "id": "typography-leading-numeric",
-        "label": "leading numeric",
-        "pattern": "(?<![A-Za-z0-9_-])leading-[0-9]+(?:\\.[0-9]+)?(?![A-Za-z0-9_-])"
+        "label": "leading raw",
+        "pattern": "(?<![A-Za-z0-9_-])leading-(?:[0-9]+(?:\\.[0-9]+)?|tight|snug|relaxed|loose)(?![A-Za-z0-9_-])"
       },
       {
         "id": "typography-tracking",
@@ -161,7 +161,7 @@
       {
         "id": "primitive-color-family",
         "label": "primitive color as utility",
-        "pattern": "(?<![A-Za-z0-9_-])(?:bg|text|border)-(?:neutral|blue|red|green|yellow|orange|purple|pink|cyan|teal|deep-orange|deep-purple|light-blue|light-green|lime|amber|indigo|brown|gray)-[0-9]+(?![A-Za-z0-9_-])"
+        "pattern": "(?<![A-Za-z0-9_-])(?:bg|text|border)-(?:neutral|blue|red|green|yellow|orange|purple|pink|cyan|teal|deep-orange|deep-purple|light-blue|light-green|lime|amber|indigo|brown|gray|magenta|turquoise|emerald|fuchsia|mauve|mist|olive|rose|sky|slate|stone|taupe|violet|zinc)-[0-9]+(?![A-Za-z0-9_-])"
       },
       {
         "id": "phantom-state-suffix",
@@ -225,10 +225,11 @@
         "font-extrabold",
         "font-black"
       ],
-      "leading_numeric": "leading-{N}(use leading-compact / leading-normal token)",
+      "leading_numeric": "leading-{N} 與 Tailwind 預設的 leading-tight / snug / relaxed / loose(use leading-compact / leading-normal token;enforcement typography-leading-numeric)",
       "tracking_raw": [
         "tracking-tighter",
         "tracking-tight",
+        "tracking-normal",
         "tracking-wide",
         "tracking-wider",
         "tracking-widest"
@@ -240,19 +241,20 @@
   },
   "radius": {
     "allow": [
-      "rounded-xs",
       "rounded-sm",
       "rounded-md",
       "rounded-lg",
       "rounded-full",
       "rounded-[inherit]"
     ],
-    "allow_note": "rounded-[inherit] 是 passthrough 非 radius 值(clip 到父容器圓角,token utility 無法表達;anchor scroll-area.tsx Viewport)— 唯一合法 arbitrary bracket",
+    "allow_note": "allow 必須逐字等於 radius.spec.md「四檔」表的 class 欄 + 「唯一的 bracket 寫法」(閘 scripts/token-allowlist-invariant.mjs);rounded-[inherit] 是 passthrough 非 radius 值(clip 到父容器圓角,token utility 無法表達;anchor scroll-area.tsx Viewport)— 唯一合法 arbitrary bracket。block.out_of_range = Tailwind 4.2.2 預設刻度(xs / sm / md / lg / xl / 2xl / 3xl / 4xl)裡不在 allow 的名字(同一支閘拿 node_modules/tailwindcss/theme.css 逐名比對);rounded-xs:2026-11-15 2px 這一檔改名 sm 之後,xs 回到 Tailwind 預設、不歸設計系統管",
     "block": {
       "out_of_range": [
+        "rounded-xs",
         "rounded-xl",
         "rounded-2xl",
-        "rounded-3xl"
+        "rounded-3xl",
+        "rounded-4xl"
       ],
       "ambiguous_default": [
         "rounded"
@@ -262,7 +264,7 @@
         "rounded-[var(--radius-md)]"
       ],
       "inline_style": "style={{ borderRadius: ... }}",
-      "rationale_path": "packages/design-system/src/tokens/radius/radius.spec.md L57-71"
+      "rationale_path": "packages/design-system/src/tokens/radius/radius.spec.md「四檔」「禁止事項」"
     }
   },
   "opacity": {
@@ -301,6 +303,8 @@
     ],
     "block": {
       "tailwind_size": [
+        "shadow-2xs",
+        "shadow-xs",
         "shadow-sm",
         "shadow",
         "shadow-md",
@@ -314,7 +318,7 @@
     }
   },
   "spacing": {
-    "allow_canonical": "對齊 spec(gap-2/3/4/6/8 等;layout-space token via var())",
+    "allow_canonical": "版面間距用 layout-space token(gap-[var(--layout-space-tight)] 等,layoutSpace.spec.md);寫入當下 check_layout_space_magic_numbers.sh 在產品程式擋所有數字 p / m / gap,只有下面 canonical_micro_geometry 證明是微距的 gap-1 / gap-2 放行",
     "canonical_micro_geometry": {
       "gap_utilities": [
         "gap-1",
@@ -420,7 +424,7 @@
         "text-red-7",
         "border-blue-3"
       ],
-      "rationale": "primitive 色名作 utility = 越過 semantic 層。用 semantic utility(bg-surface / text-fg-secondary 等)或 var() bracket(bg-[var(--color-blue-6)])"
+      "rationale": "primitive 色名作 utility = 越過 semantic 層。依用途選語意色(color.spec.md「表面分層」「文字層級」「muted / secondary」等用途表),不要換成 var() bracket 讀原料(bg-[var(--color-blue-6)] 同樣是越過語意層,color.spec.md「禁止事項」;只有 Tag / Avatar / Calendar 的類別色例外,token-registry.json --color- 那一列)。enforcement primitive-color-family 的色相 ⊇ primitives.css 的色相 ∪ Tailwind 預設色相(閘 scripts/token-allowlist-invariant.mjs)"
     }
   }
 }

@@ -9,9 +9,19 @@ function text(value, label) {
   return value
 }
 
-export function formatProviderHookContext({ transport, event, message } = {}) {
+// Stop 的 context(2026-11-21 PROC-H;WP-13 journal「Stop 端 governance-context 只給 user 看,模型看不到」):
+// Claude 的 Stop 支援 hookSpecificOutput.additionalContext —— 模型看得到,而且對話會再續一輪讓模型處理
+// (官方 hooks 文件「Stop decision control」:與 decision:block 共用 stop_hook_active 與連續 8 次上限的防迴圈)。
+// 只在 transport = claude-hook-specific、且 payload 明確寫 stop_hook_active === false(這次不是因 Stop hook 才續跑)時走它;
+// 已在續跑中(true)或不知道(沒傳)→ 照舊 systemMessage 只給 user 看,同一條提醒最多讓對話多續一輪,不會連鎖。
+export function formatProviderHookContext({ transport, event, message, stopHookActive } = {}) {
   text(message, 'context message')
-  if (event === 'Stop') return { systemMessage: message }
+  if (event === 'Stop') {
+    if (transport === 'claude-hook-specific' && stopHookActive === false) {
+      return { hookSpecificOutput: { hookEventName: 'Stop', additionalContext: message } }
+    }
+    return { systemMessage: message }
+  }
   if (!CONTEXT_EVENTS.has(event)) fail(`context event is unsupported:${event || '<missing>'}`)
   if (transport === 'claude-hook-specific') {
     return { hookSpecificOutput: { hookEventName: event, additionalContext: message } }

@@ -4,18 +4,19 @@ import { Avatar } from './avatar'
 import { MenuItem, MenuGroup } from '@/design-system/components/Menu/menu-item'
 import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
-import { SAMPLE_PEOPLE, samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { SAMPLE_PEOPLE, samplePersonCard, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 
 // 人員頭像一律帶名片(avatar.spec.md「Avatar HoverCard 原則」;登記簿 B21「我說所有」),名片讀共用名錄、走全 DS 同一支建構器。
-// 名片裡的頭像用觸發點同一張圖(或同樣沒有圖),滑過前後看到的是同一個人(2026-10-28 前本頁人員頭像都沒接名片,稽核 L001 / M004)。
+// 名片裡的頭像與觸發點是同一張臉(或同樣沒有圖),滑過前後看到的是同一個人(2026-10-28 前本頁人員頭像都沒接名片,稽核 L001 / M004)。
+// 照片一律走照片名冊(stories-helpers/data/people.ts;觸發點網址取顯示尺寸 ×2,名片用名錄自己那一份):2026-11-15 前本頁寫死
+// `?u=` 照片(A14),觸發點與名片是兩張不同的臉(實測 Bob Wang:觸發點女性臉、名片男性臉)。
 // 沒有任何身分資料的頭像(無 alt、無 src)本身就是在示範「沒有資料時長怎樣」,沒有人可以接名片,維持原樣。
 const { alice, bob, bobWang, carol, dave } = SAMPLE_PEOPLE
 
-// Fallback story 必須可離線重現：成功路徑用內嵌 SVG，失敗路徑用同源 404。
-// 外部 avatar host 或 DNS 失敗網址會讓 a11y/visual runner 的 networkidle 不穩定。
-const fallbackDemoImage = `data:image/svg+xml,${encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><rect width="80" height="80" fill="#dbeafe"/><circle cx="40" cy="31" r="15" fill="#2563eb"/><path d="M14 76c3-18 13-27 26-27s23 9 26 27" fill="#2563eb"/></svg>',
-)}`
+// Fallback story 的失敗路徑用同源 404:每個環境都一樣載不到,不靠網路。成功路徑 2026-11-15 起是名冊照片(之前是內嵌 SVG 人形;
+// 換成照片是【AI 推導 2026-11-15】—— user 選的是「Avatar 自己的頁面也改用名冊照片」,這一顆原本是示意圖、不是寫死的照片)——
+// 當初怕外部照片讓 a11y / visual runner 的 networkidle 不穩;現在瀏覽器閘一律經 scripts/lib/launch-browser.mjs 的 openStory 等圖片就緒,
+// i.pravatar.cc 由本機同尺寸替身供圖(demoImages 'local';跟基準圖比的才向真站要),已不等 networkidle。
 const missingAvatarImage = '/__avatar-fallback-missing__.jpg'
 
 const meta: Meta = {
@@ -41,7 +42,7 @@ export const Modes = {
         {/* 刻意示範內容模式優先序:Text fallback / 預設 User icon 兩項**必須**無 src(fallback 行為
             示範 story,2026-07-08 demo 人像真實化 sweep 豁免保留) */}
         {[
-          { label: 'Image', el: <Avatar size={40} src="https://i.pravatar.cc/80?u=a" alt={alice.name} hoverCard={samplePersonCard({ ...alice, avatarSrc: 'https://i.pravatar.cc/80?u=a' })} /> },
+          { label: 'Image', el: <Avatar size={40} src={demoPersonPhoto('Alice Chen', 80)} alt={alice.name} hoverCard={samplePersonCard(alice)} /> },
           { label: 'Icon', el: <Avatar size={40} icon={Building2} color="blue" /> },
           { label: 'Text fallback', el: <Avatar size={40} alt={bob.name} color="purple" hoverCard={samplePersonCard({ ...bob, avatarSrc: undefined })} /> },
           { label: '預設（無任何 prop）', el: <Avatar size={40} /> },
@@ -71,7 +72,7 @@ export const Fallback = {
     <ExampleSection title="Fallback 行為" description="圖片載入失敗時，自動降級：有 alt 顯示首字，無 alt 顯示預設 User icon。">
       <div className="flex items-center gap-[var(--layout-space-loose)]">
         <ExampleGroup align="center">
-          <Avatar size={40} src={fallbackDemoImage} alt={alice.name} hoverCard={samplePersonCard({ ...alice, avatarSrc: fallbackDemoImage })} />
+          <Avatar size={40} src={demoPersonPhoto('Alice Chen', 80)} alt={alice.name} hoverCard={samplePersonCard(alice)} />
           <span className="text-caption text-fg-muted">圖片正常載入</span>
         </ExampleGroup>
         <ExampleGroup align="center">
@@ -98,15 +99,15 @@ export const InContext = {
       <div className="flex gap-[var(--layout-space-loose)]">
         <div className="flex flex-col gap-[var(--layout-space-tight)]">
           <span className="text-caption font-medium text-fg-secondary">無 description（inline）</span>
-          <div className="w-[280px] border border-divider rounded-lg bg-surface">
+          <div className="w-[280px] border border-divider rounded-md bg-surface">
             <MenuGroup aria-label="無說明文字的成員選單">
-              <MenuItem role="presentation" avatar={{ src: "https://i.pravatar.cc/48?u=alice-chen", alt: alice.name, hoverCard: samplePersonCard({ ...alice, avatarSrc: "https://i.pravatar.cc/80?u=alice-chen" }) }}>
+              <MenuItem role="presentation" avatar={{ src: demoPersonPhoto('Alice Chen', 48), alt: alice.name, hoverCard: samplePersonCard(alice) }}>
                 Alice Chen
               </MenuItem>
-              <MenuItem role="presentation" avatar={{ src: "https://i.pravatar.cc/48?u=bob-wang", alt: bobWang.name, color: "blue", hoverCard: samplePersonCard(bobWang) }}>
+              <MenuItem role="presentation" avatar={{ src: demoPersonPhoto('Bob Wang', 48), alt: bobWang.name, color: "blue", hoverCard: samplePersonCard(bobWang) }}>
                 Bob Wang
               </MenuItem>
-              <MenuItem role="presentation" avatar={{ src: "https://i.pravatar.cc/48?u=carol-lee", alt: carol.name, color: "purple", hoverCard: samplePersonCard(carol) }}>
+              <MenuItem role="presentation" avatar={{ src: demoPersonPhoto('Carol Lee', 48), alt: carol.name, color: "purple", hoverCard: samplePersonCard(carol) }}>
                 Carol Lee
               </MenuItem>
             </MenuGroup>
@@ -114,22 +115,22 @@ export const InContext = {
         </div>
         <div className="flex flex-col gap-[var(--layout-space-tight)]">
           <span className="text-caption font-medium text-fg-secondary">有 description（block）</span>
-          <div className="w-[320px] border border-divider rounded-lg bg-surface">
+          <div className="w-[320px] border border-divider rounded-md bg-surface">
             <MenuGroup aria-label="含職稱說明的成員選單">
               <MenuItem role="presentation"
-                avatar={{ src: "https://i.pravatar.cc/64?u=alice-chen", alt: alice.name, hoverCard: samplePersonCard({ ...alice, avatarSrc: "https://i.pravatar.cc/80?u=alice-chen" }) }}
+                avatar={{ src: demoPersonPhoto('Alice Chen', 64), alt: alice.name, hoverCard: samplePersonCard(alice) }}
                 description="前端工程師"
               >
                 Alice Chen
               </MenuItem>
               <MenuItem role="presentation"
-                avatar={{ src: "https://i.pravatar.cc/64?u=carol-lee", alt: carol.name, color: "magenta", hoverCard: samplePersonCard(carol) }}
+                avatar={{ src: demoPersonPhoto('Carol Lee', 64), alt: carol.name, color: "magenta", hoverCard: samplePersonCard(carol) }}
                 description="產品設計師"
               >
                 Carol Lee
               </MenuItem>
               <MenuItem role="presentation"
-                avatar={{ src: "https://i.pravatar.cc/64?u=dave-lin", alt: dave.name, color: "turquoise", hoverCard: samplePersonCard(dave) }}
+                avatar={{ src: demoPersonPhoto('Dave Lin', 64), alt: dave.name, color: "turquoise", hoverCard: samplePersonCard(dave) }}
                 description="產品經理"
               >
                 Dave Lin

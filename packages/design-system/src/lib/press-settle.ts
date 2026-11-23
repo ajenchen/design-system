@@ -5,7 +5,7 @@
  * 宿主:
  *   - `useFormValidation` 規則 2 的延後(`components/Field/use-form-validation.ts` `deferBlurValidation`):指標按著時離開的欄位,
  *     等這一下按完才驗(`components/Field/form-validation.spec.md` 規則 2)
- *   - AgentPanel 決策卡(`components/AgentPanel/agent-panel.tsx` `clearError`):按著指標的那一下改了答案(按下「其他」輸入格 = 聚焦即選中),
+ *   - AgentPanel 決策卡(`components/AgentPanel/agent-panel.tsx` `clearError`):按著指標的那一下改了答案(按下「其他」輸入格 = 按下即選中),
  *     錯誤等這一下按完才清(`components/AgentPanel/agent-decision-card.spec.md`「步進」)
  *
  * 根因:滑鼠按下欄位下方的按鈕時,欄位在 mousedown 的預設動作裡就 blur;若當場驗證,錯誤訊息在按下與放開之間長出來、

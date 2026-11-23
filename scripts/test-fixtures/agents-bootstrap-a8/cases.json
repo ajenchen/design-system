@@ -1,0 +1,119 @@
+{
+  "說明": "check-agents-bootstrap.mjs A8 的對照組(每次執行都跑)與 test-check-agents-bootstrap.mjs 用的真實寫法。want=red:沒引用 AGENTS.md#canonical-decision-authority 的手抄「交 user / human-only」清單,必須抓到;want=green:不得誤報。前 8 筆是 WP-AGENTS 規格點名 4 支 skill 在 68c260ee 的手抄原文與現行引用寫法(2026-11-22 審查必修 1:原本的 A8b 只認英文詞,這 4 段原文全部漏掉)。本檔在 test-fixtures/ 底下,A8 不掃它。",
+  "cases": [
+    {
+      "name": "design-system-audit 基準 68c260ee:12-12(手抄原文)",
+      "rel": "packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md",
+      "want": "red",
+      "text": "**分權(本檔只寫這一次,以下各 Phase / Gate / 表格都照這句)**:照 `AGENTS.md`「# 自主執行 canonical」—— 工程／治理 remediation(含大範圍 scope、補 dim／修 mapping、環境與建置修復)standing-delegated AUTO,不得把工程或 compute 策略選擇交給 user;只有會改產品／UI／UX SSOT、且 evidence 收斂後仍有真取捨(= P2H),或撞到共同治理的 human-only boundary(login／credential／額外付費等),才停;independent review 只在 task／deliverable 明確要求時才加。\n"
+    },
+    {
+      "name": "ensure-canonical 基準 68c260ee:107-107(手抄原文)",
+      "rel": "packages/design-system/ds-canonical/skills/ensure-canonical/SKILL.md",
+      "want": "red",
+      "text": "`ENGINEERING-AUTO` 直接進 Phase 6，不等 milestone 確認。只有 `PRODUCT-UIUX-DECISION` 或 shared governance 定義的平台／credential／額外付費／法律帳號商業 human-only boundary 才停；平台 action 前仍先完成唯一工程方案與可做 preflight。\n"
+    },
+    {
+      "name": "visual-audit 基準 68c260ee:70-73(手抄原文)",
+      "rel": "packages/design-system/ds-canonical/skills/visual-audit/SKILL.md",
+      "want": "red",
+      "text": "只有在本機／既有受治理環境確實無法取得 target 或影像，且原因是不可代理的登入、MFA、\nOAuth 或 private surface access 時，才形成 shared-governance human-only action；此時先完成\n所有其他 preflight，只回報唯一必要操作。若 owning spec 缺 token，記為 P2E governance\nevidence gap 並交 canonical owner；若補值會創造產品／UI／UX SSOT 真取捨才列 P2H。\n"
+    },
+    {
+      "name": "scan-similar-bugs 基準 68c260ee:96-101(手抄原文)",
+      "rel": "packages/design-system/ds-canonical/skills/scan-similar-bugs/SKILL.md",
+      "want": "red",
+      "text": "Execution:\n- deterministic fix → Auto-fix all confirmed N\n- engineering judgment → 依 owning spec + highest certified capability 逐檔收斂；task／deliverable 明確要求時才加 independent review\n- 不屬 frozen scope → Backlog with evidence；不得用 defer 逃避 scope 內修復\n- 會改產品／UI／UX SSOT 且仍有真取捨 → batch-at-end human-only decision\n```\n"
+    },
+    {
+      "name": "design-system-audit 現行寫法(引用決策區塊)",
+      "rel": "packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md",
+      "want": "green",
+      "text": "**分權(本檔只寫這一次,以下各 Phase / Gate / 表格都照這句)**:照 `AGENTS.md`「# 自主執行 canonical」—— 工程／治理 remediation(含大範圍 scope、補 dim／修 mapping、環境與建置修復)standing-delegated AUTO,不得把工程或 compute 策略選擇交給 user;只有會改產品／UI／UX SSOT、且 evidence 收斂後仍有真取捨(= P2H),或撞到共同 bootstrap `canonical-decision-authority` 區塊列的 human-only boundary,才停;independent review 只在 task／deliverable 明確要求時才加。\n"
+    },
+    {
+      "name": "ensure-canonical 現行寫法(引用決策區塊)",
+      "rel": "packages/design-system/ds-canonical/skills/ensure-canonical/SKILL.md",
+      "want": "green",
+      "text": "`ENGINEERING-AUTO` 直接進 Phase 6，不等 milestone 確認。只有 `PRODUCT-UIUX-DECISION` 或共同 bootstrap `canonical-decision-authority` 區塊列的 human-only boundary 才停；平台 action 前仍先完成唯一工程方案與可做 preflight。\n"
+    },
+    {
+      "name": "visual-audit 現行寫法(引用決策區塊)",
+      "rel": "packages/design-system/ds-canonical/skills/visual-audit/SKILL.md",
+      "want": "green",
+      "text": "只有在本機／既有受治理環境確實無法取得 target 或影像，且原因是共同 bootstrap `canonical-decision-authority` 區塊列的 human-only boundary\n(例:不可代理的登入、private surface access)時，才形成 human-only action；此時先完成\n所有其他 preflight，只回報唯一必要操作。若 owning spec 缺 token，記為 P2E governance\nevidence gap 並交 canonical owner；若補值會創造產品／UI／UX SSOT 真取捨才列 P2H。\n"
+    },
+    {
+      "name": "scan-similar-bugs 現行寫法(引用決策區塊)",
+      "rel": "packages/design-system/ds-canonical/skills/scan-similar-bugs/SKILL.md",
+      "want": "green",
+      "text": "Execution:\n- deterministic fix → Auto-fix all confirmed N\n- engineering judgment → 依 owning spec + highest certified capability 逐檔收斂；task／deliverable 明確要求時才加 independent review\n- 不屬 frozen scope → Backlog with evidence；不得用 defer 逃避 scope 內修復\n- 會改產品／UI／UX SSOT 且仍有真取捨 → batch-at-end 交 user(類別照共同 bootstrap `canonical-decision-authority` 區塊)\n```\n"
+    },
+    {
+      "name": "中文混寫:「只有」+ 頓號清單",
+      "rel": "note.md",
+      "want": "red",
+      "text": "human-only boundary 只有登入、MFA、OAuth、帳單、法律帳號。\n"
+    },
+    {
+      "name": "中文條列:三列「標籤 → 交 user」",
+      "rel": "note.md",
+      "want": "red",
+      "text": "- 登入 → 交 user\n- 帳單 → 交 user\n- 法律 → 交 user\n"
+    },
+    {
+      "name": "中英混寫:斜線清單 + human-only",
+      "rel": "note.md",
+      "want": "red",
+      "text": "只有 login／credential／額外付費／法律帳號商業 human-only boundary 才停。\n"
+    },
+    {
+      "name": "中文:頓號清單 + human-only",
+      "rel": "note.md",
+      "want": "red",
+      "text": "真 human-only 只有 帳單、付費、法律、帳號權限、商業承諾。\n"
+    },
+    {
+      "name": "全英文清單",
+      "rel": "note.md",
+      "want": "red",
+      "text": "Human-only boundaries: login / MFA / OAuth / billing.\n"
+    },
+    {
+      "name": "程式:鍵值一行一筆交 user",
+      "rel": "note.mjs",
+      "want": "red",
+      "text": "const ROUTES = {\n  login: \"交 user\",\n  billing: \"交 user\",\n}\n"
+    },
+    {
+      "name": "中文混寫清單附出處",
+      "rel": "note.md",
+      "want": "green",
+      "text": "human-only boundary 只有登入、MFA、OAuth、帳單、法律帳號(見 AGENTS.md#canonical-decision-authority)。\n"
+    },
+    {
+      "name": "三列「標籤 → 交 user」,前一行引出處",
+      "rel": "note.md",
+      "want": "green",
+      "text": "類別照 AGENTS.md#canonical-decision-authority:\n- 登入 → 交 user\n- 帳單 → 交 user\n- 法律 → 交 user\n"
+    },
+    {
+      "name": "提到兩個動作詞、沒有交 user",
+      "rel": "note.md",
+      "want": "green",
+      "text": "登入頁的帳號欄位與法律聲明連結要對齊。\n"
+    },
+    {
+      "name": "分流清單全部 AUTO",
+      "rel": "note.md",
+      "want": "green",
+      "text": "- 修 bug → AUTO\n- 重構 → AUTO\n"
+    },
+    {
+      "name": "出處表的「user 拍板」標註不是分流",
+      "rel": "note.md",
+      "want": "green",
+      "text": "| 條文 | 出處 | 性質 |\n|---|---|---|\n| 甲 | user 2026-09-04 原話 | **user 拍板** |\n| 乙 | AI 推導 | **user 拍板** |\n"
+    }
+  ]
+}

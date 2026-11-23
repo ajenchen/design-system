@@ -9,6 +9,7 @@ bash "$DIR/test_check_addon_subdir_ship.sh" < /dev/null || { echo "SUB-FAIL: tes
 bash "$DIR/test_check_storybook_addon_preset_cjs.sh" < /dev/null || { echo "SUB-FAIL: test_check_storybook_addon_preset_cjs.sh"; fail=1; }
 
 FAULT_DIR=$(mktemp -d)
+[ -n "${FAULT_DIR:-}" ] && [ -d "$FAULT_DIR" ] || { echo "❌ mktemp -d failed(FAULT_DIR;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf -- "$FAULT_DIR"' EXIT
 awk '
   { print }
@@ -87,7 +88,7 @@ else
   fail=1
 fi
 
-# 規則分派 SIGPIPE 同族回歸(69230cef,2026-09-25;寫法照抄 test_check_plugin_fork_health.sh):
+# 規則分派 SIGPIPE 同族回歸(69230cef,2026-09-25;寫法同 test_check_consumer_app_invariants.sh 的同名一格):
 # 上兩格只看 exit 與輸出,證明不了 r2 有跑。把 r2 注入成「不讀 stdin、留標記、exit 0」,用 >256 KiB 的 allow 輸入跑:
 # 不讀 stdin 就退出不得被判成 rc70(舊寫法 `printf | rule` 會 SIGPIPE → 141),而且標記必須存在(r2 真的被派工到)。
 _R2_MARKER="$FAULT_DIR/r2-reached"

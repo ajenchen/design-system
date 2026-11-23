@@ -70,7 +70,6 @@ test('regular directory, retargeted link, dangling link, and symlink destination
 
 test('canonical aliases derive targets from the provider registry without a second target map', () => {
   assert.deepEqual(resolvePluginAliasContracts(ROOT).map(({ id, alias, target, destination }) => ({ id, alias, target, destination })), [
-    { id: 'commands', alias: 'commands', target: '.claude/commands', destination: '.claude/commands' },
     { id: 'hooks-scripts', alias: 'hooks/scripts', target: '../packages/design-system/ds-canonical/hooks', destination: 'packages/design-system/ds-canonical/hooks' },
     { id: 'skills', alias: 'skills', target: '.claude/skills', destination: '.claude/skills' },
   ])
@@ -97,7 +96,7 @@ test('retired marketplace provider keeps alias paths managed but emits no aliase
   }]
   const plan = resolvePluginAliasPlan(ROOT, { providersDocument: providers })
   assert.equal(plan.active, false)
-  assert.deepEqual(plan.aliases, ['commands', 'hooks/scripts', 'skills'])
+  assert.deepEqual(plan.aliases, ['hooks/scripts', 'skills'])
   assert.deepEqual(plan.contracts, [])
 })
 
@@ -128,14 +127,14 @@ test('registry rejects trailing, VCS-reserved, and destination-overlapping alias
   t.after(() => roots.forEach(root => rmSync(root, { recursive: true, force: true })))
 
   const trailing = registryFixture(); roots.push(trailing)
-  mutateJson(join(trailing, 'packages/governance/canonical/plugin-aliases.json'), value => { value.aliases[2].alias = 'skills/' })
+  mutateJson(join(trailing, 'packages/governance/canonical/plugin-aliases.json'), value => { value.aliases.find(record => record.id === 'skills').alias = 'skills/' })
   assert.throws(() => resolvePluginAliasContracts(trailing), /schema failure/)
 
   const reserved = registryFixture(); roots.push(reserved)
-  mutateJson(join(reserved, 'packages/governance/canonical/plugin-aliases.json'), value => { value.aliases[2].alias = '.git/skills' })
+  mutateJson(join(reserved, 'packages/governance/canonical/plugin-aliases.json'), value => { value.aliases.find(record => record.id === 'skills').alias = '.git/skills' })
   assert.throws(() => resolvePluginAliasContracts(reserved), /VCS-reserved path/)
 
   const overlap = registryFixture(); roots.push(overlap)
-  mutateJson(join(overlap, 'packages/governance/canonical/plugin-aliases.json'), value => { value.aliases[2].alias = '.claude' })
+  mutateJson(join(overlap, 'packages/governance/canonical/plugin-aliases.json'), value => { value.aliases.find(record => record.id === 'skills').alias = '.claude' })
   assert.throws(() => resolvePluginAliasContracts(overlap), /alias and canonical destination overlap/)
 })

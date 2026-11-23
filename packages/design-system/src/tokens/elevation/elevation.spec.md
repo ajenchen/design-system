@@ -6,21 +6,25 @@ Elevation 定義陰影層級，區分內容層（Card）和浮層（Modal/Popove
 
 兩個層級對應兩種「浮起高度」，用 CSS 變數實現，light / dark mode 自動切換。
 
-**不要用 Tailwind 的 `shadow-*`**，改用 CSS 變數：
+**不要用 Tailwind 的 `shadow-*`**(`shadow-sm` / `shadow-md` …),改用下表的 token,寫成 `shadow-[var(--elevation-N)]`(`../utility-registry.json` 的 `elevation.allow` 就是這四種寫法):
 
 ```tsx
-<div style={{ boxShadow: 'var(--elevation-100)' }} />
-<div style={{ boxShadow: 'var(--elevation-200)' }} />
+<div className="shadow-[var(--elevation-100)]" />
+<div className="shadow-[var(--elevation-200)]" />
 ```
 
 ## 層級
 
+下表的 token 欄是允許清單的來源:閘 `scripts/token-allowlist-invariant.mjs` 驗 `elevation.allow` 逐字等於「每一個 token 寫成 `shadow-[var(token)]`」,並驗 Tailwind 預設的 `shadow-*` 名字全部被擋。
+
+<!-- elevation-scale:start -->
 | Token | 用途 | 對應元件 |
 |-------|------|----------|
 | `--elevation-100` | 頁面內容層，靜止 | Card 類內容容器(DS 尚無 Card 元件;現行唯一 DS consumer = Slider thumb hover 陰影,per `slider.spec.md` 互動 canonical) |
 | `--elevation-100-hover` | 頁面內容層，hover / 拖拽 lift | —(目前無 DS 內建 consumer;預留給 consumer 的可拖拽 / hover-lift card,如 board card drag) |
 | `--elevation-200` | 浮層，靜止 | Modal、popover、dropdown、overlay drawer |
 | `--elevation-200-hover` | 浮層，hover | —(同上,預留) |
+<!-- elevation-scale:end -->
 
 elevation-100 < elevation-200，數字越大浮起越高。`*-hover` 兩枚為靜止 token 的「抬升一階」變體:元素被 hover / 拖起時切換,幾何(offset / blur)不變、只加深陰影 alpha(`tokens/color/primitives.css` 定義,light / dark 各一組)。
 
@@ -33,11 +37,11 @@ elevation-100 < elevation-200，數字越大浮起越高。`*-hover` 兩枚為�
 
 ```tsx
 // ✅ 正確
-<div className="bg-surface rounded-md" style={{ boxShadow: 'var(--elevation-100)' }} />
-<div className="bg-surface-raised rounded-lg" style={{ boxShadow: 'var(--elevation-200)' }} />
+<div className="bg-surface rounded-md shadow-[var(--elevation-100)]" />
+<div className="bg-surface-raised rounded-lg shadow-[var(--elevation-200)]" />
 
 // ❌ 錯誤——浮層用了半透明 bg-surface
-<div className="bg-surface rounded-lg" style={{ boxShadow: 'var(--elevation-200)' }} />
+<div className="bg-surface rounded-lg shadow-[var(--elevation-200)]" />
 ```
 
 ## 浮層間距（sideOffset）
@@ -65,7 +69,7 @@ elevation-100 < elevation-200，數字越大浮起越高。`*-hover` 兩枚為�
 |------|-------|-----|
 | 背景 | `bg-surface-raised` | 不透明，避免底層透出 |
 | 陰影 | `--elevation-200` | 浮層陰影 |
-| 圓角 | `rounded-lg` | 8px |
+| 圓角 | `rounded-lg` | 8px(**Tooltip 例外 = `rounded-md` 4px**,圓角的唯一住處 `../radius/radius.spec.md`「四檔」;閘 `scripts/radius-usage-invariant.mjs` 照那張表量)|
 | 邊框 | `border border-border` | 1px |
 | sideOffset | 8px | 與觸發元件的間距 |
 
@@ -75,11 +79,11 @@ elevation-100 < elevation-200，數字越大浮起越高。`*-hover` 兩枚為�
 
 由來:Toast 與 Tooltip 原本不在任何層級規則裡(唯一的層級句只排到一般 modal `z-50`),sonner 內建的 `z-index: 999999999` 讓 Toast 蓋過一切,提示也不例外 —— 回報的是代理入口鈕的提示「問我或推走我」被 Toast 蓋住 69%(當時 Toast 疊在入口鈕上方,那個落點已撤回,見 `../../components/Toast/toast.spec.md`「落點」);Toast 回到視窗預設角落之後,三則 Toast 疊起來時同一個提示仍被蓋住 23%,Dialog 右上角「關閉」的提示與 Toast 重疊時整塊被蓋。AI 2026-10-13 建議「所有提示都蓋在 Toast 上面,並把 Toast 和提示補進 DS 的層級表」,user 同日採納,原話:「確保符合世界級的設計且符合我們一致的設計語言與規範就照你建議做並自行驗證到完美無瑕」(待辦總帳 `governance/planning/2026-09-25-interaction-and-hover-remediation.md` Q4 第 2 題)。
 
-**怎麼讀**:由下而上。「全域」列在整頁同一個疊放脈絡裡比大小,值逐列遞增 —— 前提是那個成員真的畫在整頁那一層:Radix 的浮層(Dialog、Sheet、FileViewer、Popover、DropdownMenu、HoverCard、Tooltip)經 portal 掛到 `body`;Toast(sonner 不經 portal,清單就地渲染在 `<Toaster>` 掛的地方)靠 `../../components/Toast/toast.spec.md`「app root 掛一次」的合約。**沒有掛到 `body`** 的成員 —— 就地渲染的 AI agent 浮層(第 5 列;`agent-panel.tsx` 浮層註解:產品裡它的祖先(AppShell 根節點)不形成疊放脈絡)、AppShell「跳到主要內容」(第 6 列)、拖曳影像(第 9 列)、開發量具(第 10 列),以及 portal 到表格父元素的 DataTable 列拖曳把手(第 6 列;`data-table.tsx` `RowDragHandle`,仍在表格的祖先底下)—— 只有祖先都不形成疊放脈絡時才跟整頁比;放進自成疊放脈絡的容器(Dialog、Sheet、FileViewer、Popover、AI agent 浮層、帶 `transform` / `isolation` 的祖先)就被那一層封頂,值再大也只在那一層裡比。「局部」= 元件內的兄弟(第 1 列),或低於最低全域列的常駐框架(第 2 列;它們跟整頁比,刻意壓在所有浮層之下)。局部列的**數字**值一律 ≤ 20 —— 低於最低的全域列(30),就算漏到整頁脈絡也蓋不過任何浮層;第 1 列的**變數**值(頭像與 Tag 堆疊的 `--avatar-stack-z` / `--tag-stack-z`:= 項目數 − 索引,聚焦時 = 項目數 + 1)**沒有上限**,不受這條保護 —— 它們靠所在那一列自成疊放脈絡圈住(頭像堆疊列 `AVATAR_STACK_CLASS`、四個 Tag 列容器 `TAG_ROW_CONTAINER_CLASS`,都是 `isolate`),閘 D 在真建置逐項量。同值時後掛上的在上(DOM 順序)。成員欄寫到 `/` 結尾 = 整個資料夾;寫到檔名 = 只有那個檔(同一個檔用到兩層時各列都登記)。
+**怎麼讀**:由下而上。「全域」列在整頁同一個疊放脈絡裡比大小,值逐列遞增 —— 前提是那個成員真的畫在整頁那一層:Radix 的浮層(Dialog、Sheet、FileViewer、Popover、DropdownMenu、HoverCard、Tooltip)經 portal 掛到 `body`;Toast(sonner 不經 portal,清單就地渲染在 `<Toaster>` 掛的地方)靠 `../../components/Toast/toast.spec.md`「app root 掛一次」的合約。**沒有掛到 `body`** 的成員 —— 就地渲染的 AI agent 浮層(第 5 列;`agent-panel.tsx` 浮層註解:產品裡它的祖先(AppShell 根節點)不形成疊放脈絡)、AppShell「跳到主要內容」(第 6 列)、拖曳影像(第 9 列)、開發量具(第 10 列),以及 portal 到表格父元素的 DataTable 列拖曳把手(第 6 列;`data-table.tsx` `RowDragHandle`,仍在表格的祖先底下)—— 只有祖先都不形成疊放脈絡時才跟整頁比;放進自成疊放脈絡的容器(Dialog、Sheet、FileViewer、Popover、AI agent 浮層、帶 `transform` / `isolation` 的祖先)就被那一層封頂,值再大也只在那一層裡比。「局部」= 元件內的兄弟(第 1 列),或低於最低全域列的常駐框架(第 2 列;它們跟整頁比,刻意壓在所有浮層之下)。局部列的**數字**值一律 ≤ 20 —— 低於最低的全域列(30),就算漏到整頁脈絡也蓋不過任何浮層;第 1 列的**變數**值(頭像與 Tag 堆疊的 `--avatar-stack-z` / `--overflow-tag-stack-z`:= 項目數 − 索引,聚焦時 = 項目數 + 1)**沒有上限**,不受這條保護 —— 它們靠所在那一列自成疊放脈絡圈住(頭像堆疊列 `AVATAR_STACK_CLASS`、四個 Tag 列容器 `TAG_ROW_CONTAINER_CLASS`,都是 `isolate`),閘 D 在真建置逐項量。同值時後掛上的在上(DOM 順序)。成員欄寫到 `/` 結尾 = 整個資料夾;寫到檔名 = 只有那個檔(同一個檔用到兩層時各列都登記)。
 
 | 序 | 範圍 | 層 | 值 | 成員(`packages/design-system/src/` 之下) | 說明 |
 |---|---|---|---|---|---|
-| 1 | 局部 | 元件內局部疊放 | `z-0` `z-[1]` `z-[2]` `z-[3]` `z-[5]` `z-10` `z-20` `z-[var(--avatar-stack-z)]` `z-[var(--avatar-stack-z-focus)]` `z-[var(--tag-stack-z)]` `z-[var(--tag-stack-z-focus)]` `ring.zIndex` | `components/AgentPanel/agent-panel.tsx` `components/Avatar/avatar.tsx` `components/Carousel/` `components/Combobox/` `components/DataTable/data-table.tsx` `components/DataTable/data-table-interaction-layer.tsx` `components/DataTable/data-table.css` `components/DateGrid/` `components/FieldControlGroup/` `components/FileViewer/file-viewer.tsx` `components/OverflowIndicator/overflow-tag-list.tsx` `components/PeoplePicker/person-display.tsx` `components/SegmentedControl/` `components/Select/` `components/Tabs/` `lib/drag-visual.ts` `patterns/horizontal-overflow/` `patterns/resize-handle/` | 相鄰框線接合(FieldControlGroup、SegmentedControl 滑過 / 選中 / 聚焦各升一階);頭像與標籤堆疊(變數值、沒有上限,一律由那一列圈住:頭像堆疊列 `avatar.tsx` `AVATAR_STACK_CLASS`;Tag 堆疊由 `OverflowTagList` 畫,它的四個容器 —— Combobox 檢視態的 Tag 列、唯讀 / 停用欄位外框、編輯態的 Tag 區、AgentPanel 附件列 —— 都掛 `overflow-tag-list.tsx` `TAG_ROW_CONTAINER_CLASS`;兩者都是 `isolate`);欄位裡的箭頭、清除鈕、標籤;輪播與檔案檢視器的翻頁鈕;表格格線、游標環、就地編輯格;拖曳插入線;捲動提示;調整寬度把手;代理面板內的把手與底部抽屜 |
+| 1 | 局部 | 元件內局部疊放 | `z-0` `z-[1]` `z-[2]` `z-[3]` `z-[4]` `z-[5]` `z-10` `z-20` `z-[var(--avatar-stack-z)]` `z-[var(--avatar-stack-z-focus)]` `z-[var(--overflow-tag-stack-z)]` `z-[var(--overflow-tag-stack-z-focus)]` `ring.zIndex` | `components/AgentPanel/agent-panel.tsx` `components/Avatar/avatar.tsx` `components/Carousel/` `components/Combobox/` `components/DataTable/data-table.tsx` `components/DataTable/data-table-interaction-layer.tsx` `components/DataTable/data-table.css` `components/DateGrid/` `components/FieldControlGroup/` `components/FileViewer/file-viewer.tsx` `components/OverflowIndicator/overflow-tag-list.tsx` `components/PeoplePicker/person-display.tsx` `components/SegmentedControl/` `components/Select/` `components/Sidebar/sidebar.tsx` `components/Tabs/` `lib/drag-visual.ts` `patterns/horizontal-overflow/` `patterns/resize-handle/` | 相鄰框線接合(FieldControlGroup、SegmentedControl 滑過 / 選中 / 聚焦各升一階);頭像與標籤堆疊(變數值、沒有上限,一律由那一列圈住:頭像堆疊列 `avatar.tsx` `AVATAR_STACK_CLASS`;Tag 堆疊由 `OverflowTagList` 畫,它的四個容器 —— Combobox 檢視態的 Tag 列、唯讀 / 停用欄位外框、編輯態的 Tag 區、AgentPanel 附件列 —— 都掛 `overflow-tag-list.tsx` `TAG_ROW_CONTAINER_CLASS`;兩者都是 `isolate`);欄位裡的箭頭、清除鈕、標籤;輪播與檔案檢視器的翻頁鈕;表格格線、游標環、就地編輯格;拖曳插入線;捲動提示;調整寬度把手(側欄直捲軸 `z-[2]` 疊在把手 `z-[1]` 之上,重疊那段由捲軸收);代理面板內的把手與底部抽屜 |
 | 2 | 局部 | 舞台常駐框架 | `z-10` `z-20` | `components/AgentPanel/agent-panel-fab.tsx` | 代理入口鈕(`z-20`)與拖曳時的磁吸區(`z-10`)。浮在頁面內容上,在所有浮層之下(2026-10-14 前還有 `fixed` 的側欄 `z-10`;Menu 改回正常排版、殼可以水平捲,不再需要疊放值 —— `../../components/AppShell/app-shell.spec.md`「版面規則」§8) |
 | 3 | 全域 | 並存遮罩 | `z-30` | `lib/overlay-coexistence.ts` | `CoexistenceMask`:並存 Dialog、並存 FileViewer、AI agent 浮層共用 |
 | 4 | 全域 | 並存 modal | `z-40` | `components/Dialog/dialog.tsx` `components/FileViewer/file-viewer.tsx` | Dialog 與 FileViewer 傳 `persistentElements` 時的本體(FileViewer 2026-10-14 前並存時仍是 `z-50`,窄容器時蓋住 AI agent 浮層;已對齊) |
@@ -136,5 +140,4 @@ elevation-100 < elevation-200，數字越大浮起越高。`*-hover` 兩枚為�
 - `motion.spec.md`
 - `slider.spec.md`
 - `toast.spec.md`
-- `token-system.spec.md`
 - `tooltip.spec.md`

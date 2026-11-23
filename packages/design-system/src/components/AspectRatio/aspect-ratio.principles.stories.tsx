@@ -124,10 +124,11 @@ export const UsageGuidance: Story = {
         >
           <div className="w-[320px] border border-dashed border-error rounded-md p-[var(--layout-space-loose)]">
             <AspectRatio ratio={1} className="bg-muted rounded-md p-[var(--layout-space-loose)]">
-              {/* 標題(+ 說明)→ 欄位 = loose(A4:標題區 → 它底下的內容) */}
-              <h4 className="text-h6 font-medium mb-[var(--item-gap-label-desc-reading)]">表單標題</h4>
-              <div className="text-caption text-fg-muted mb-[var(--layout-space-loose)]">這裡有一些說明文字,長度不固定。</div>
-              <Input placeholder="輸入內容" aria-label="表單內容" />
+              {/* 標題(+ 說明)→ 欄位 = tight(layoutSpace.spec.md 規則 3「標題區 → 內容」:底下只有一個 Input = 一塊 → tight);
+                  這是範例裡的產品畫面,不套教學框共用元件,手寫 h4 font-medium(category-templates.md「教學框的間距與標題」:產品範例不套用、範例裡的產品標題 font-medium) */}
+              <h4 className="text-h6 font-medium mb-[var(--item-gap-label-desc-reading)]">訂閱電子報</h4>
+              <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">每週五寄出新品與會員優惠,可隨時取消訂閱。</div>
+              <Input placeholder="name@example.com" aria-label="電子郵件" />
             </AspectRatio>
           </div>
           <ExampleCaption warn>↑ 表單內容不該鎖 1/1 比例</ExampleCaption>

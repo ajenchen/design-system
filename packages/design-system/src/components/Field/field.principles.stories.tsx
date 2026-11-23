@@ -1,4 +1,3 @@
-// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @principles-rationale: UsageGuidance merges WhenToUse + Vs*Rule into single 使用指引 story per refactor task (2026-04-26)
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
@@ -98,8 +97,8 @@ export const UsageGuidance: Story = {
           note={<>「查看使用者資料」「訂單明細」這類純展示場景不該用 Field + readonly mode——DescriptionList 的 <code>dl / dt / dd</code> HTML 語義更適合唯讀屬性列表,a11y 也更清楚</>}
         >
           <div className="max-w-sm">
-            {/* horizontalLabelWidth:同表單 horizontal Field 必統一 label 寬(field.spec.md「FieldGroup horizontalLabelWidth cascade」)*/}
-            <FieldGroup horizontalLabelWidth="120px">
+            {/* labelWidth:同表單 horizontal Field 必統一 label 寬(field.spec.md「FieldGroup labelWidth cascade」)*/}
+            <FieldGroup labelWidth={120}>
               <Field orientation="horizontal">
                 <FieldLabel>Email</FieldLabel>
                 <Input mode="readonly" defaultValue="user@example.com" />
@@ -157,8 +156,8 @@ export const OrientationRule: Story = {
         note="已知屬性的修改介面(account settings、使用者偏好)。label + control 並排節省垂直空間,讓多個設定一目了然。label 固定寬度對齊縱向軸"
       >
         <div className="max-w-xl">
-          {/* horizontalLabelWidth:同表單 label 等寬 → 控件起點對齊(2026-06-10 user 抓本 story 違反自家 canonical)*/}
-          <FieldGroup horizontalLabelWidth="120px">
+          {/* labelWidth:同表單 label 等寬 → 控件起點對齊(2026-06-10 user 抓本 story 違反自家 canonical)*/}
+          <FieldGroup labelWidth={120}>
             <Field orientation="horizontal" required>
               <FieldLabel>電子郵件</FieldLabel>
               <Input type="email" defaultValue="user@example.com" />
@@ -185,9 +184,7 @@ export const OrientationRule: Story = {
       <TutorialRule
         title="判斷法:「欄位數量 + 垂直空間預算」"
         note="表單 / 初次建立(空間充裕、引導性)→ vertical;settings / 修改(已知屬性、密集顯示)→ horizontal"
-      >
-        <ExampleCaption>世界級 DS(Polaris / Material)的 settings 頁都用 horizontal,表單用 vertical</ExampleCaption>
-      </TutorialRule>
+      />
     </TutorialPage>
   ),
 }
@@ -220,9 +217,9 @@ function NotForFormActionsDemo() {
               <Input value={draft.desc} onChange={(e) => setDraft((d) => ({ ...d, desc: e.target.value }))} />
             </Field>
           </FieldGroup>
-          {/* 最後一個欄位 → 跟在後面的動作鈕 = loose(layoutSpace.spec.md 規則 3「跨範疇 + parallel」;user 10-20 22:46 回 Q2、10-21 09:25 回 Q5:可以基於 AI 的建議(同則訊息另問 Step 標題區間距與內容底部間距,不在這一格));鈕與鈕之間由 ButtonGroup 擁有。
+          {/* 最後一個欄位 → 跟在後面的表單按鈕列 = loose × 2(layoutSpace.spec.md 規則 3「組 ↔ 組」;user 2026-11-10 PR #172 留言,取代 10-20 Q2 / 10-21 Q5 定的 loose);鈕與鈕之間由 ButtonGroup 擁有。
               表單底這一列沒有標題 → 靠左、primary 最左(action-bar.spec.md:109 / :121;2026-10-20 XF-01:原本 align="end" 靠右) */}
-          <ButtonGroup className="mt-[var(--layout-space-loose)]">
+          <ButtonGroup className="mt-[calc(var(--layout-space-loose)*2)]">
             <Button variant="primary" onClick={() => { setSaved(draft); toast({ variant: 'success', title: '專案已儲存' }) }}>儲存</Button>
             <Button variant="tertiary" onClick={() => setDraft(saved)}>取消</Button>
           </ButtonGroup>

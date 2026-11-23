@@ -97,13 +97,6 @@
       "dims": [],
       "note": "考慮加 dim 47:檢查 stakeholder-facing OpenSnapshot story 存在"
     },
-    "M16": {
-      "name": "Standalone gap canonical",
-      "dims": [
-        21
-      ],
-      "note": "Group H 連續 item list gap"
-    },
     "M17": {
       "name": "SSOT 可傳播 (token / primitive / utility)",
       "dims": [
@@ -112,9 +105,11 @@
       "note": "Dim 32 filter operator + 通用 SSOT 消費隱含全 audit 中"
     },
     "M18": {
-      "name": "Propose-time 4-Q gate",
-      "dims": [],
-      "note": "propose-options skill;runtime discipline"
+      "name": "Propose-time 自檢 gate(Q0–Q5;含 M21 子規則)",
+      "dims": [
+        33
+      ],
+      "note": "propose-options skill;runtime discipline。Sub-rule M21(2026-11-21 由 @watch 降級併入):Dim 33(b) premature abstraction"
     },
     "M19": {
       "name": "Trigger phrase auto-pipeline",
@@ -125,13 +120,6 @@
       "name": "AI 自問 best-practice + 自動 self-improve",
       "dims": [],
       "note": "stop hook self-audit;runtime discipline"
-    },
-    "M21": {
-      "name": "新元件抽象前 prop variant test",
-      "dims": [
-        33
-      ],
-      "note": "Dim 33(b) premature abstraction"
     },
     "M22": {
       "name": "Benchmark claim 必 inline cite",
@@ -190,7 +178,7 @@
     "M32": {
       "name": "Audit script pixel-quantified",
       "dims": [],
-      "note": "hook check_pixel_quantified_audit;對 audit scripts 自身,不對 component"
+      "note": "write-time 由 post_edit_contract_dispatcher.sh 的 lib/_pixel_quantified_audit.sh 擋(2026-11-21 起;原 check_pixel_quantified_audit.sh 只提醒);對 audit scripts 自身,不對 component"
     },
     "M36": {
       "name": "Provenance 不得升格 + 禁自鎖",
@@ -206,7 +194,9 @@
       "M27": "2026-05-15 → folded into M23(c)(framework prop name conflict child)",
       "M33": "2026-05-22 → folded into M20(AI self-correction sub-rule)",
       "M34": "2026-05-22 → folded into M7(rule-authoring hygiene sub-rule)",
-      "M35": "2026-05-22 → folded into M23(d)(nearest same-purpose canonical sub-rule)"
+      "M35": "2026-05-22 → folded into M23(d)(nearest same-purpose canonical sub-rule)",
+      "M21": "2026-11-21 → folded into M18(@watch 觀察期 0 筆新 bug;new component prop-variant test sub-rule,Dim 33(b) 改掛 M18)",
+      "M16": "2026-11-22 → demoted into item-anatomy.spec.md「連續 item 貼邊合法性」sub-rule(@watch 觀察期 0 筆新 bug;Dim 21 仍由 hooks.item_list_gap 對應)"
     }
   },
   "traits": {
@@ -320,7 +310,8 @@
         26,
         34,
         37
-      ]
+      ],
+      "note": "write-time 由 post_edit_contract_dispatcher.sh 的 lib/_field_controls_contracts.sh 擋(2026-11-21 起;原 check_field_controls_contracts.sh 只提醒)"
     },
     "field_family_invariants": {
       "dims": [
@@ -358,18 +349,18 @@
       "dims": [
         37
       ],
-      "note": "Dim 37 Field state machine SSOT 涵蓋 PeoplePicker trigger render / placeholder / overflow 等 SSOT-bearing API 屬 Field family scope;hook 為 write-time pre-warning,本 dim batch verify 既有 consumer"
+      "note": "Dim 37 Field state machine SSOT 涵蓋 PeoplePicker trigger render / placeholder / overflow 等 SSOT-bearing API 屬 Field family scope;write-time 由 post_edit_contract_dispatcher.sh 的 lib/_peoplepicker_ssot_drift.sh 擋這次新增的行(2026-11-21 起;原 check_peoplepicker_ssot_drift.sh 只提醒),本 dim batch verify 既有 consumer"
     },
     "select_all_canonical": {
       "dims": [
         17,
         32
       ],
-      "note": "Dim 17 SSOT propagation + Dim 32 filter SSOT consumption canonical 涵蓋 — `multi-select-ordering` primitive 屬 SSOT consumer propagation(per Ant Transfer + Table rowSelection grep 證據,Layer A + Codex M31 Round 4 共識,2026-05-16)。Hook write-time pre-warning,Dim 17/32 batch verify 既有 Select All consumer 是否 import primitive 而非自刻 `options.map(v).onValueChange` reset"
+      "note": "Dim 17 SSOT propagation + Dim 32 filter SSOT consumption canonical 涵蓋 — `multi-select-ordering` primitive 屬 SSOT consumer propagation(per Ant Transfer + Table rowSelection grep 證據,Layer A + Codex M31 Round 4 共識,2026-05-16)。write-time 由 post_edit_contract_dispatcher.sh 的 lib/_select_all_canonical.sh 擋這次新增的行(2026-11-21 起;原 check_select_all_canonical.sh 只提醒;既有命中列成 context),Dim 17/32 batch verify 既有 Select All consumer 是否 import primitive 而非自刻 `options.map(v).onValueChange` reset"
     },
     "pixel_quantified_audit": {
       "dims": [],
-      "note": "對 audit scripts 自身,not component"
+      "note": "對 audit scripts 自身,not component;write-time 由 post_edit_contract_dispatcher.sh 的 lib/_pixel_quantified_audit.sh 擋(2026-11-21 起)"
     },
     "propose_plain_chinese": {
       "dims": [],
@@ -421,7 +412,7 @@
       "dims": [
         52
       ],
-      "note": "2026-05-17 ship(Header canonical W1 border ownership):header 含 Tabs 必標 withTabs prop 讓 paint delegate;違反 = 雙線 BLOCKER。對應 patterns/header-canonical/header-canonical.spec.md W1 + GitHub Primer PageHeader auto-suppress 模式"
+      "note": "2026-05-17 ship(Header canonical W1 border ownership):header 帶 Tabs 一律經 tabsSlot 傳入、讓 paint delegate 給 TabsList(2026-11-16 起;原 withTabs 布林已移除);Tabs 寫進 header children = 雙線 BLOCKER。對應 patterns/header-canonical/header-canonical.spec.md W1 + GitHub Primer PageHeader auto-suppress 模式"
     },
     "chrome_header_handcraft": {
       "dims": [
@@ -433,7 +424,7 @@
       "dims": [
         53
       ],
-      "note": "2026-05-17 ship(audit Dim 53 reverse drift):spec.md 寫「固定 h-NN/寫死/硬寫」keyword 但對應 tsx 已消費 token → soft P1 warn。互補既有 forward direction(spec-to-code),起因 Phase 1 抓不到 FileViewer h-14 spec drift"
+      "note": "2026-05-17 ship(audit Dim 53 reverse drift):spec.md 寫「固定 h-NN/寫死/硬寫」keyword 但對應 tsx 已消費 token → 2026-11-21 起 P0 擋(原 soft P1 warn)。互補既有 forward direction(spec-to-code),起因 Phase 1 抓不到 FileViewer h-14 spec drift"
     },
     "audit_sample_escape": {
       "dims": [],
@@ -442,14 +433,6 @@
     "main_branch_workbench": {
       "dims": [],
       "note": "M28 protected-main feedback gate:PreToolUse Edit/Write 對 repo 內任何檔案偵測 current branch=main/master 即 BLOCKER；文件/治理也無 direct-main 豁免。Claude/Codex tool 欄位正規化，task branch 才放行。CLAUDE_BYPASS_MAIN_WORKBENCH=1 僅 recovery，本地 override 不能繞 GitHub ruleset。"
-    },
-    "dim_count_drift": {
-      "dims": [],
-      "note": "2026-05-18 ship(audit SSOT integrity infra,non-component scope):PreToolUse Edit/Write 攔 chain skill / spec / rule / CLAUDE.md hardcode 具體 audit dim 數字(53 dim / 46-dim / N audit dimensions),強制 design-system-audit/SKILL.md `## The N audit dimensions` 為 SSOT,deep-audit-cross-codex 等 chain skill 自動繼承。Allowlist:SSOT file 自己 / invariant doc 引用(SSOT/禁/forbidden/example/hardcode keyword 同行)。起因 user 2026-05-18「deep-audit-cross-codex 應該要確保其中的 design system deep audit 跟 design-system-audit deep 是 ssot」"
-    },
-    "propose_pre_grep_verify": {
-      "dims": [],
-      "note": "2026-05-18 ship(M18 Q0 Pre-ASK self-verify governance infra):PreToolUse Edit/Write planning/reports/handoff *.md 偵測 propose keyword(請拍板 / 等你拍板 / 決策 N / 我推 A/B/C / 選項)但 content 無 file:line cite 證據 → P1 stderr warn。Escape:檔頭 <!-- @propose-pre-verified --> 含 rationale。起因 2026-05-18 Sheet/inline-action/SurfaceBody 三題 propose 給 user 拍板,grep 後 0 個真 gap;user verbatim「不是老早就跟你說過要我決策前請先基於我們所有的檔案包括設計原則包括 ssot 包括所有實作代碼,自主自動驗證這些問題是否真的是問題」"
     },
     "tabs_content_chrome_body_double_gap": {
       "dims": [
@@ -467,10 +450,6 @@
     "tailwind_wildcard_in_docs": {
       "dims": [],
       "note": "2026-07-03 entry add:beta.27 release-fail anchor write-time P0;audit-time 由 release preflight build gate(build:lib + build-storybook)deterministic cover,無獨立 dim"
-    },
-    "chrome_header_avatar_canonical": {
-      "dims": [],
-      "note": "2026-07-03 entry add per audit-preflight gap:write-time P0 攔 chrome header 內 ItemAvatar 誤用(header-canonical 消費紀律);audit-time 由 dim 1 design-language + A.1b per-component cover,無獨立 dim"
     },
     "codex_brief_invariants": {
       "dims": [],
@@ -515,7 +494,7 @@
       "dims": [
         21
       ],
-      "note": "2026-07-03 entry add per audit-preflight gap:M16 standalone gap;dim 21 直接對應"
+      "note": "2026-07-03 entry add per audit-preflight gap:item-anatomy.spec.md「連續 item 貼邊合法性」(原 M16)standalone gap;dim 21 直接對應"
     },
     "layout_space_magic_numbers": {
       "dims": [
@@ -523,21 +502,11 @@
       ],
       "note": "2026-07-03 entry add per audit-preflight gap:app-code write-time P0(skip DS-src by design);DS-src 由 dim 90 judgment sweep cover"
     },
-    "orphan_ds_css": {
-      "dims": [],
-      "note": "2026-07-03 entry add per audit-preflight gap:write-time P0(css 不在 aggregator 也沒被 import = orphan;失敗記憶索引條目);audit-time 由 build + visual 間接,無獨立 dim"
-    },
     "overlay_open_focus_escape_probe": {
       "dims": [
         74
       ],
       "note": "2026-07-03 entry add per audit-preflight gap:dim 74 overlay probe 直接對應"
-    },
-    "plugin_fork_health": {
-      "dims": [
-        58
-      ],
-      "note": "2026-07-03 entry add per audit-preflight gap:dim 58 plugin install enforcement 直接對應"
     },
     "propose_discipline": {
       "dims": [],
@@ -547,11 +516,11 @@
       "dims": [],
       "note": "2026-07-03 entry add per audit-preflight gap:M26 runtime 紀律(propose 前 WebFetch);governance-only"
     },
-    "sidebar_menu_button_implicit_wrap": {
+    "sidebar_avatar_canonical": {
       "dims": [
         71
       ],
-      "note": "2026-07-03 entry add per audit-preflight gap:write-time 攔隱式 wrap;audit-time dim 71 primitive misuse + A.1b composition cover"
+      "note": "2026-11-18 合併原 chrome_header_avatar_canonical(r1)+ sidebar_menu_button_implicit_wrap(r2)兩筆,dims 取聯集。r1:write-time P0 攔 chrome header 內 ItemAvatar 誤用(header-canonical 消費紀律);audit-time 由 dim 1 design-language + A.1b per-component cover,無獨立 dim。r2:write-time 攔隱式 wrap;audit-time dim 71 primitive misuse + A.1b composition cover"
     },
     "dynamic_tailwind_class": {
       "dims": [

@@ -90,9 +90,17 @@ jobs:
           # 那條規則當時只是一句給人看的話,沒有機械防線。這支就是那道防線。
           npm run test:decided-clause-downgrade
           npm run test:button-variants
+          # 按鈕群組分隔線的結構契約(2026-11-11 接上):token「3全收」把 inset 收回成 ButtonDivider 的元件內變數後,
+          # overlay-header-actions-invariant.mjs 量線長改用規格值 8px、並指名「元件那一份由這支鎖住 = 0.5rem」——
+          # 但這支原本只在夜間 harness 跑(非必過)、也沒有對照組。--selftest 在記憶體裡注入五種違規各自必紅。純靜態,約 1 秒。
+          node scripts/test-action-divider-placement.mjs
+          node scripts/test-action-divider-placement.mjs --selftest
           # Token 建立不變式(2026-09-11;user:「為何你他媽又不照規範來建立 token?要講幾次?」)。
-          # T1 前綴不得跨 family(錨:--overlay-viewport-inset 借用了顏色 token --overlay 的前綴)、
-          # T2 這次新增的 token 必須登記進所屬 family 的 spec(錨:同一顆 token 加了 CSS 卻沒加 spec)。
+          # 2026-11-11 擴成拿分類表 packages/design-system/src/tokens/token-registry.json 驗(user 2026-11-10 拍板 token「1甲」):
+          # C1 有登記 / C2 新名字自己一列 + 理由 / C3 宣告檔 = 住處 / C4 新名字在規格裡 / C5 密度覆寫有回復且同檔 /
+          # C6 元件樣式檔有進對外彙總檔 styles/tokens.css 或被程式匯入(原本只有本機收工提醒 check_orphan_ds_css.sh〔2026-11-18 退場,檔案已不存在〕,
+          #    2026-05-26 側欄寬事故的那一種)/ C7 產品與設計系統誰可以讀 / C9 新名字不是只有主人自己讀。拿不到 origin/main 一律紅。
+          # --selftest 每一條各自注入違規、確認紅的是它(每條也有一筆該綠的)。
           # 寫成 deterministic script 而不是 Claude 專屬 hook —— provider 專屬的 hook 換一個 agent 或在 CI 裡就沒人擋。
           # 同名數值常數不得在不同檔案有不同值(2026-09-12)。2026-09-12 實際踩過:出殼門檻
           # SHELL_ENGAGE_VIEWPORT_MS 在元件是 60、在閘是 120(改元件時沒改另一份),
@@ -103,11 +111,34 @@ jobs:
           node scripts/named-constant-drift-invariant.mjs
           node scripts/token-creation-invariant.mjs --selftest
           npm run test:token-creation
+          # 浮層密度寫法(2026-11-11 稽核 R7-07):前身 overlay-density-lock-placement.mjs(retired,已改名為下面這支)沒有任何執行面呼叫(孤兒閘),
+          # 檔名也對不上可達性棘輪。浮層內容不准寫 data-density、版面間距只有 Popover 能鎖且只鎖 md、標題列元件(含轉交屬性給它的)不准寫密度屬性、
+          # 機器可讀浮層表(觸發點 / 整頁)= 原始碼 = density.spec.md 情境 1 表。掃元件 / pattern / story / apps;--selftest 該紅的全紅、該綠的全綠(條數以閘印的為準)。
+          node scripts/overlay-density-lock-invariant.mjs --selftest
+          node scripts/overlay-density-lock-invariant.mjs
+          # 2026-11-18 合回 knowledge-prune 第一波時接進來(原本紅面只經夜間 harness):WP-19 新增「紅面只在排程跑的配對名單只准變短」棘輪,
+          # 名單量在合回前的基準點(71 筆);同一波 WP-03 / WP-02 各新增一支閘,紅面只經夜間 harness —— 三包各自全綠,合起來多 2 筆,棘輪正確地紅。
+          # 兩支都是純靜態、秒級,不該只在夜間跑:
+          # hook 測試暫存資料夾防護(WP-03):每個 mktemp -d 必須緊接防護;--selftest 每種壞法各一個合成檔、必須逐一被指名,約 1 秒。
+          node scripts/hook-test-fixture-guard-invariant.mjs --selftest
+          # knowledge-prune 收尾驗證器(WP-02):報告段落 / 數字 / Prune-Items 交叉比對;這支沒有 --selftest,紅綠對照在 meta-test 裡,約 15 秒。
+          node scripts/test-validate-knowledge-prune-run.mjs
+          # 同一支的主判定(2026-11-20 接上,knowledge-prune WP-21):這支 PR 帶進來的 prune commit 都要有 Prune-Items(只准 ID 清單)與 Phase0-After。
+          # auto = base 照 story-layer-drift 的 resolveBase(PR = origin/main 的 merge-base、push = HEAD^);標記 b0296c96 與它之前的 commit 不檢查
+          # (那之前已合回的 8 則訊息不合格,而歷史不改寫)。要讀完整歷史:本 job 的 checkout 已是 fetch-depth: 0。本機約 1 秒。
+          node scripts/validate-knowledge-prune-run.mjs --commits-only auto
+          # 對外彙總檔 styles/tokens.css 檔頭寫「自動產生、禁止手改」,產生器檔頭也寫「--check 在 CI 跑」—— 2026-11-11 盤點兩者都不是真的:
+          # 沒有任何 workflow / npm script 呼叫它,彙總檔被手加兩行(Tabs / Sidebar)、產生器輸出與提交的檔不同,零訊號。
+          # 上面 C6 只管「元件樣式檔有進彙總檔或被程式匯入」,不管彙總檔是不是產生器的輸出(重跑會不會改樣式載入順序)。
+          # --selftest 在記憶體裡造三種漂移各自必紅、兩種一致必綠。純靜態,約 1 秒。
+          node scripts/gen-figma-make-artifacts.mjs --check
+          node scripts/gen-figma-make-artifacts.mjs --selftest
           # 色相色票(2026-09-26 接進 PR 檢查;原本只在夜間 harness):名實一致 / 完整性 / token 存在 / 實心字對比,
           # 加 I5 色階順序「號碼 = 離所在底色多遠」(淺色越大越深、深色越大越亮,每種底都成立)。
           # meta-test 含兩組對照:把某色相偷換成別的色相 → I1 紅;深色 step-2 退回往純黑退的舊公式 → I5 紅。
           npm run test:categorical-color
-          # CSS / JS 雙生 token(`--stack-gap` ↔ STACK_GAP_PX、`--avatar-stack-overlap` ↔ AVATAR_STACK_OVERLAP_PX):
+          # CSS / JS 雙生 token(`--stack-gap` ↔ STACK_GAP_PX、`--avatar-stack-overlap` ↔ AVATAR_STACK_OVERLAP_PX;
+          # 2026-11-11 加 `--tree-indent-*` ↔ INDENT_STEP、`--tag-height-*` ↔ TAG_HEIGHT_PX):
           # 2026-09-26 抽 token 時同一個值仍要在 JS 算遮罩幾何,兩份會漂 —— 這支讓「只改一邊」當場紅(含 selftest 對照組)。
           npm run test:token-twin
           # Rating 的尺寸解析(Field 內跟 Field、Field 外 xs、prop 最優先):2026-07-29 改 useResolvedFieldSize 優先序後,
@@ -123,6 +154,9 @@ jobs:
           # AGENTS.md / CLAUDE.md bootstrap 完整性(A1 指令鏈 ≤ 32KiB 等五條):閘 2026-07-16 就有,但真 repo 從沒有執行面呼叫它
           #(只有 fixture 測試跑它;待辦總帳 N14(a))—— 2026-09-27 接進來。
           npm run check:agents-bootstrap
+          # 多包 / 多步工作流程只有一個住處(rules/work-process.md):每次載入、啟動面都指向、別處不重述、退場說法不回流、依據數字有證據檔。
+          node scripts/work-process-ssot-invariant.mjs --selftest
+          node scripts/work-process-ssot-invariant.mjs
           # 分頁 inlineAction 的幾何:2026-09-10 抓到它對活的 DOMRect 做物件展開 → 永遠回 null,
           # 那顆鈕從 2026-07-18 起一次都沒渲染過;測試檔早就存在,但 `grep -rl check:tabs-inline-action-geometry .github`
           # 回 0 —— 又一支「宣稱有閘、沒人跑」。render-level 那一半在 test:header-tabs-slot-invariants(W3)。
@@ -146,6 +180,12 @@ jobs:
           # 錨例 2026-09-25:Calendar 非當月格靜止 bg-muted、滑過借透明底的 --neutral-hover,兩個主題都反向(026d5788 修)。
           # 對照組以 026d5788 之前的逐字原文為主角,必須指名 bg-muted 紅;已知待拍板的命中登記在 scripts/hover-own-pair-baseline.json。
           npm run test:hover-own-pair
+          # 滑過才出現的東西(2026-11-14 接進 PR 檢查;原本只在夜間 harness):登記處各有「初始隱藏 + 滑過揭示 + 鍵盤揭示」、鍵盤揭示不用 focus-within,
+          # 加一條全 DS:非 story 原始碼不得出現「不能滑過的裝置」的媒體條件 (hover: none)(含 any-hover、Tailwind 的 [@media(hover:none)]:、否定寫法)——
+          # user 2026-09-26 對「手機上滑過才出現的按鈕」已決「先維持」、不替觸控另外客製(governance/planning/2026-09-25-interaction-and-hover-remediation.md 的 L11 那一列);
+          # AI 加過兩次都收回(2026-08-05 PeoplePicker、2026-11-12 表頭 ⌄ c78b35e1 → 1859b728)。註解與 .spec.md 裡提到不算。
+          # 每次執行先跑對照組(假原始碼字串 + 把 c78b35e1 那一行塞進真檔的記憶體副本),答錯 = 儀器失效 exit 2。純靜態,不到 1 秒。
+          node scripts/test-hover-revealed-affordances.mjs
           # 開合動畫 SSOT(2026-10-07,待辦總帳 T6 / T7 / T8):data-state 開合動畫只住在 tokens/motion(overlayMotion / surfaceMotion /
           # disclosureMotion)、一律包在 motion-safe:(`motion-reduce:animate-none` 的權重輸給 data-[state=…],減少動態從沒生效)、
           # 關閉保持最後一格(不靠 Radix Presence 的執行期補丁)、DS 不重宣告 tw-animate-css 同名動畫(舊 base.css 150ms 被蓋掉)、
@@ -175,14 +215,31 @@ jobs:
           # 設計原則頁與設計規格頁兩個檔。跨檔逐字相同的頂層宣告(6 行以上)鎖在 scripts/story-helper-duplication-baseline.json,
           # 只准減少;要共用就放進 stories-helpers/。對照組 = 那次的真實抄本 + 合成正反例。純靜態,約 1 秒。
           npm run test:story-helper-duplication
+          # 範例人員照片只走照片名冊(2026-11-11,user「此外avatar的部分是否可以盡量都用真實圖片？…希望除了 avatar 本身元件與範例之外的範例可以美觀一點」):
+          # stories-helpers/data/people.ts 一人一張臉;網址 /<px≤1000>?img=<n>(本機替身的形狀)、不合格的臉不得用、同一支檔不同人不共用臉、
+          # 不准再手寫 ?u= 網址;範本(apps/template/src + ds-canonical/templates)不帶照片網址;Avatar/** 自己的照片示範暫時略過
+          # (要不要一起換待 user 決定,尚未定案)。對照組 = selftest 合成正反例(紅的必須是指名的那一條)。純靜態,約 1 秒。
+          npm run test:demo-people-roster
           # owner 文件說的與程式一致(2026-10-21,r1b others 家族):color.spec 的 bg-muted / bg-secondary 消費者登記簿(以 檔案#宣告 登記、
           # 宣告真的用了 token、用了就要登記)、lib/README 每個模組的公開 / @internal 與 root barrel 一致、Button loading 不再被說成「自動 disabled」、
           # 元件原始碼只用三階字重(font-semibold 只給文件外框)、story 裡每個 <Steps> 有名字。修前的樹五條全紅(46 / 14 / 4 / 2 / 19)。純靜態,約 2 秒。
           npm run test:owner-claims
-          # npm root 出口被拿掉一定要寫明(2026-11-04,r1b others 九-3):hook / 元件常數 / 型別(useIsNarrowViewport、StepsExpansion 等)
-          # 被拿掉時 C2 量不到。比「上一次發布的 tag 的 index.ts 出口全集 vs 現在」(TypeScript 展開 export * / export type),
-          # 拿掉的名字必須登記在 scripts/root-exports-removals.json(= 發布說明「破壞性變更」的來源)。修前(沒有登記)紅 27 筆。純靜態,約 5 秒。
-          npm run test:root-exports
+          # 公開介面比對(2026-11-16,取代 root-exports 與 compat-policy NC3 / NC4;user 2026-11-15「主要其實也是讓要更新的消費者，通常會是 AI ，
+          # 可以很清楚明確知道新版增刪改了什麼」):比「上一個發布 tag(git archive)vs 工作樹」的 exports 子路徑與出口、出口走得到的型別成員
+          # (含 ColumnMeta 擴充)、出貨 CSS 自訂屬性、@utility、預設值;每個破壞性差異都要對到變更帳本 packages/design-system/ds-changes.json
+          # 「下一版」那一節(漏寫 / 寫了卻沒發生 / 改名 to 不存在 / spec 非出貨檔都紅),已發布的節逐位元不改。帳本隨 npm 出貨,消費端升版讀它。
+          # 對照組在 --selftest(合成樹十二類各破一處 + 146→147 真實資料)。純靜態 + git 讀 tag,約 25 秒(引入帳本的這一版另逐段驗回填的三節)。
+          npm run test:public-surface
+          # 相容政策(2026-11-15,user:「我認為還是 beta 的狀況下都不要再顧及所有向後相容的部分」;規則 ds-canonical/references/props-naming.md「相容政策」,
+          # 版本判斷 scripts/lib/compat-policy.mjs):0.x / 預發布版 DS 原始碼不得有 @deprecated、不得拿「向後相容 / 保留一版」當理由。
+          # 修前的樹:NC1 14 筆 @deprecated、NC2 77 行。對照組在 --selftest(含 beta.148 真實原始碼)。純靜態,約 3 秒。
+          npm run test:compat-policy
+          # token 允許集合單一來源(2026-11-15,user:「確保ssot 難道不是我們的 token 變成只有sm(2px),md(4px),lg(8px)和full,然後其他不准用？」):
+          # 每一類的允許集合只住該類規格框起來的那一段(scripts/lib/token-allow-sets.mjs 讀)—— utility-registry(hook 讀的)、fork 副本、CSS 宣告必須與它一致;
+          # Tailwind 預設刻度裡不在允許集合的名字,用 hook 同一份比對引擎(從 check_opacity_token_usage.sh 抽出的 Python)跑,必須被擋。
+          # 修前(HEAD 35508c15 的 registry):T1 rounded-xs 放行、T3 rounded-4xl / shadow-2xs / shadow-xs / leading-tight 等 9 個沒擋、T5 magenta / turquoise 等 14 個色相沒擋。
+          # 對照組在 --selftest(十種破法各自指名紅、框不見 = 儀器失效)。純讀檔 + python3,約 5 秒。
+          npm run test:token-allowlist
           # 範本本體 apps/template/src/App.tsx ↔ 隨 npm 出貨的副本 ds-canonical/templates/dashboard-app.tsx 逐字相同(2026-11-04 接線):
           # receiver 每次發版 `cp 副本 → App.tsx`,副本落後就把範本改動靜默蓋回舊版;--check 2026-06-07 就寫好,卻沒有任何執行面呼叫,
           # 副本從 08-02 漂移兩個多月沒人看見。meta-test 在拋棄式小樹裡證明副本弄壞一行會紅。純靜態,約 1 秒。
@@ -194,6 +251,10 @@ jobs:
       - name: Registered test scripts nothing was running
         run: |
           npm run test:release-consent
+          # 發版前機器可讀項目自我稽核(2026-11-21,工作包 E7):向 user 要「發版」前必須有綁產品指紋與 HEAD、零未解、由腳本照機器讀回產生的紀錄,
+          # stop_self_audit.sh Mechanism 12 在回覆有開引號、或本回合有推播 / 提問時呼叫它。真實要同意 / 不是在要的句子判定表、紀錄 (a)(b)(c) 判定表
+          # (含「只改治理檔、產品指紋沒變、HEAD 變了 → 紀錄失效」那一格)、路徑安全都在這支,約 1 秒。
+          npm run test:release-self-audit
           # rsync -a 的預設判斷是「大小 + mtime 秒」,等長同秒會整個跳過且零訊息。
           # 2026-09-18 beta.134 實證:consumer mirror 的 package-lock.json 換版號後與舊版
           # 完全等長(292873 bytes 不變)、clone 又與生成同一秒 → lock 沒被複製過去、沒進 commit,
@@ -260,6 +321,9 @@ jobs:
           # 這支稽核 2026-09-21 之前**沒有任何執行面呼叫它**(CI / npm script / hook 全 0),
           # 所以 87 支閘裡有 41 支從沒被證明過會紅,而且沒有人看得見 —— 跟它自己要守的病同一種。
           node scripts/audit-gate-meta-test-coverage.mjs --check
+          # 它自己的紅面(2026-11-20 接上,knowledge-prune WP-21;原本只在夜間 harness):合成 repo 證明它分得出「紅面在 PR 跑 / 只在排程跑 / 沒人跑」,
+          # 名單多一筆 / 少一筆 / 無人跑各自紅 —— 這支棘輪要守的病(對照組只在夜間跑)不能發生在它自己身上。純 Node,本機約 3 秒。
+          node scripts/test-audit-gate-meta-test-coverage.mjs
           # 這兩支同樣只註冊成 npm script、沒有任何 workflow 呼叫過(2026-09-21 盤點):
           #   check:bundle-size —— 上次設基準是 2026-07-14,之後兩個月的成長全沒被擋,
           #                        重設當天 total 超出舊 budget 19%、DataTable 超出 36%。
@@ -282,6 +346,101 @@ jobs:
           # 非 anatomy 的序號名、literal Markdown / 反引號(棘輪 content-quality-backtick-baseline.json 只准往下)、
           # Autodocs 缺說明、anatomy 顯示名漂移、兩個 CSF 共用 title 等。對照組在 scripts/test-audit-content-quality.mjs。純靜態,約 3 秒。
           npm run test:content-quality
+          # 尺寸參數只有一套名字(2026-11-15,user 2026-11-11「尺寸:甲」;規則 ds-canonical/references/props-naming.md「尺寸參數」):
+          # 撐滿 / 跟內容只叫 width="fill" / "hug"、size 只當檔位、欄位家族不漏原生 width / height、DS 自己不用已停用的舊名。
+          # 2026-11-11 稽核時「撐滿」有 3 個名字、「跟內容」4 種寫法 —— 沒有閘,各元件就各自照外部某一家取名。純靜態,對照組在 --selftest。
+          npm run test:sizing-props
+          # 世界級對照要附一手來源(M22)的全樹檢查(2026-11-16 A29):寫入當下的 check_benchmark_citation.sh 只看這次寫進去的字,
+          # 舊段從沒被機器檢查過;這裡整檔掃 packages/design-system/src 的 *.spec.md 與 *.tsx,判定讀 hook 同一支
+          # (packages/design-system/ds-canonical/hooks/lib/benchmark-citation.mjs),逐家比對(一家有來源、另一家沒有也紅)。元件規格零證據債;
+          # 其他規格與 tsx 走棘輪 scripts/benchmark-citation-baseline.json(只准變少)。純靜態,對照組在 --selftest(判定表同時跑 hook)。
+          npm run test:benchmark-citation
+
+      # 2026-11-20(knowledge-prune WP-21):下面這些閘原本只有夜間 governance-harnesses.yml 經各自的配對 meta-test 在跑 ——
+      # 那條 lane「is not a required check and never blocks the five-step release」(governance-harnesses.yml 檔頭),
+      # PR 上沒有任何東西會因為它們變紅(gate-reachability 的「只在夜間可達」清單)。挑出不開瀏覽器、主判定不寫檔、
+      # 在當下 HEAD 上主判定與紅面都綠的接進來:每支先跑主判定(紅了直接印出違規在哪),再跑它的紅面
+      # (配對 meta-test 或 --selftest,證明它在該紅的時候會紅)。
+      - name: Static gates that used to run only nightly
+        run: |
+          # Field 控件的 size / mode / disabled 一律經 resolver hook 解析(field-controls.spec.md「Field context cascade — SSOT」)。
+          # 規格那一段寫「機械強制」,2026-11-17 對帳時它其實只在夜間跑(8f824bc7 把規格改成照實寫);這裡讓那句話成真。純靜態,約 1 秒。
+          node scripts/check-field-cascade-resolve.mjs
+          node scripts/test-check-field-cascade-resolve.mjs
+          # 以下 17 支同一批接上(2026-11-20 逐支在 HEAD 上跑過,主判定與紅面都 exit 0;本機主判定逐支 0–1 秒、紅面逐支 0–2 秒)。
+          # 會暫時改 repo 檔的紅面都在 finally 寫回;最慢的兩支(audit-orphan-tokens 與它的紅面)在平行的 governance-control-plane job。
+          # DataTable 格子對齊讀「這一列」的高度模式 effectiveAutoRowForCell,不讀整張表的 autoRowHeight(2026-09-21 修過一次:範圍塌成 1 行還報綠)。
+          node scripts/audit-data-table-row-mode-ssot.mjs
+          node scripts/test-audit-data-table-row-mode-ssot.mjs
+          # 每一類病根都有防線 / 具體計畫 / 稽核維度兜底(ds-canonical/references/failure-class-registry.json,deep-audit dim 91)。
+          node scripts/audit-failure-class-coverage.mjs --check
+          node scripts/test-audit-failure-class-coverage.mjs
+          # 含擋下邏輯的 hook 都有 hooks/tests/test_<name>.sh(只驗檔在;測試內容由 hooks-linux job 實跑)。
+          node scripts/audit-hook-test-coverage.mjs --check
+          node scripts/test-audit-hook-test-coverage.mjs
+          # 每個元件 / pattern 的主 spec 都宣告 Layout Family(AGENTS.md「# 4-Family Layout Model」)。
+          node scripts/audit-layout-family-frontmatter.mjs --check
+          node scripts/test-audit-layout-family-frontmatter.mjs
+          # story 裡的 <LinkTo> / <StoryLink> 都指得到存在的 title 與 story 名(story 改名 / 退場後漏改的斷鏈;2026-11-20 前只認 <LinkTo>,恆綠)。
+          node scripts/audit-linkto-integrity.mjs --check
+          node scripts/test-audit-linkto-integrity.mjs
+          # hover 延遲三檔只住 motion.ts、四個消費者的檔位凍結、正式程式不寫數字延遲(motion.spec.md「適用對照表」)。
+          node scripts/audit-motion-delay-invariants.mjs
+          node scripts/test-audit-motion-delay-invariants.mjs
+          # spec 之間 `<name>.spec.md` 的指標都指到存在的檔(改名 / 刪 spec 後漏改的死指標)。
+          node scripts/audit-spec-deadlinks.mjs --check
+          node scripts/test-audit-spec-deadlinks.mjs
+          # 資料夾 / story 標題 / 主 spec 的 isInternal 三個分類訊號一致、Autodocs 照分類、側欄順序照 story-governance/category-matrix.json。
+          node scripts/category-classification-invariant.mjs
+          node scripts/test-category-classification-invariant.mjs
+          # 隨 npm 出貨的兩個套件沒有 preinstall / install / postinstall(consumer 用 --ignore-scripts 或離線安裝 = 普通安裝)。
+          node scripts/check-clean-install-safety.mjs --check
+          node scripts/test-check-clean-install-safety.mjs
+          # 治理文件不寫「CLAUDE.md 第 N 行」、不引用已改名的章節,產品 spec 不提 CLAUDE.md(原本只在每週一的 packaging-canary 跑)。
+          node scripts/check-skill-deadref.mjs --check
+          node scripts/test-check-skill-deadref.mjs
+          # 帶 name 的 story 連結,name 要對得到該 title 底下 story 的 name: 或 export 推出的顯示名(同一件事的另一支,判法較嚴)。
+          node scripts/check-story-linkto-targets.mjs --check
+          node scripts/test-check-story-linkto-targets.mjs
+          # 每個公開元件都有展示 / 設計規格 / 設計原則三層 story(--check 不寫報告檔)。
+          node scripts/check-three-layer-stories.mjs --check
+          node scripts/test-check-three-layer-stories.mjs
+          # 列 / 項目宿主裡不得手刻行內動作鈕(patterns/element-anatomy/inline-action.spec.md)。
+          node scripts/inline-action-hand-craft-invariant.mjs
+          node scripts/inline-action-hand-craft-invariant.mjs --selftest
+          # InlineEdit 多行 view 與 Textarea edit 逐尺寸同一個 py token、uiSize.css 公式含 −1px 邊框修正(read↔edit 零跳)。
+          node scripts/inline-edit-view-geometry-invariant.mjs
+          node scripts/test-inline-edit-view-geometry-invariant.mjs
+          # className 不寫裸 px-loose / py-tight 等(Tailwind 沒註冊、產不出 CSS),一律 [var(--layout-space-*)]。
+          node scripts/layout-space-utility-invariant.mjs
+          node scripts/test-layout-space-utility-invariant.mjs
+          # 工作樹沒有暫存殘留、頂層目錄都有宣告用途、symlink 只有宣告過的、相同內容的檔有宣告(repository-hygiene-policy.json);
+          # future-reserved 的複查日期一到就紅(現行唯一一筆是 2027-02-20),這是那條規則的用意 —— 2026-11-02 那次到期時它只在夜間跑,PR 沒擋(A121-F8)。
+          node scripts/repository-hygiene-invariant.mjs --profile=authority --check
+          node scripts/test-repository-hygiene-invariant.mjs
+          # 四個狀態元件的進度 / 步驟填色用 --info,不混 --primary(color.spec.md「Status」段)。
+          node scripts/status-color-invariant.mjs
+          node scripts/test-status-color-invariant.mjs
+          # 一組選項的 Checkbox 一律包 <CheckboxGroup>(zero-gap canonical,checkbox.spec.md),不手刻 <div flex|grid|space-y-N>;
+          # 各自獨立的「單一同意」勾選框用逐行豁免 @checkbox-group-handcraft-ok,出處要引得出 spec 原文。
+          # 2026-11-21(knowledge-prune WP-21b)接上:11-20 那批時它在 HEAD 上紅(3 筆手刻開關列),WP-17(904d00b4、c2d35677)修好後
+          # 主判定、--selftest 判定表、配對 meta-test 都 exit 0。純靜態,本機三條合計約 2 秒。
+          node scripts/checkbox-group-handcraft-invariant.mjs
+          node scripts/checkbox-group-handcraft-invariant.mjs --selftest
+          node scripts/test-checkbox-group-handcraft-invariant.mjs
+          # 豁免標記到期複查(2026-11-21,knowledge-prune WP-24;2026-11-20 那時它在 HEAD 上紅,所以列在下一段沒接):配對 meta-test 把時鐘釘在
+          # exemption-expiry-baseline.json 的 recordedAt,主判定也在裡面帶同一個 --now 跑 —— 結果只看這棵樹、不看今天幾號:新增沒日期也沒指標的豁免標記、
+          # 改了已知標記的字卻沒補,都在 PR 上紅;合成的無主 / 過期 / @story-history 兩面必須紅。用真實時鐘跑照舊不接 PR
+          # (留給 knowledge-prune 的固定量具,prune-dimensions-d5-d10.md D9 的 `--report`):時間型閘接進 PR,跟改動無關的 PR 會因為某個標記的日期
+          # 剛好跨過 180 天而紅(M37 第九個形狀)。純 Node,本機約 5 秒。
+          node scripts/test-exemption-expiry-invariant.mjs
+          # 同一份「只在夜間可達」清單裡刻意沒接的(2026-11-20 逐支在 HEAD 上跑過;接紅閘等於讓每個 PR 一起紅,所以紅的先留在夜間、原因記在這裡):
+          #   要瀏覽器 —— audit-a11y、audit-consumer-a11y。要網路或本機環境 —— check-branch-protection(GitHub API)、check-src-republish(npm registry)、
+          #     check-codex-freshness(讀寫本機 ~/.codex 設定)。
+          #   工具 / 報告,不是閘 —— audit-hook-quality(寫 runtime 報告)、consolidate-audit-material、dispatch-audit-dims、prepare-deep-audit-run、
+          #     run-gate-meta-tests(夜間執行器本身);governance-check 是裝在 consumer repo 的閘,check-plugin-installed 是 consumer 安裝後的提示。
+          #   audit-coverage-matrix 的主判定本來就在下面「Focused governance…」那一步經 governance-build-graph --check
+          #     → generate-governance-metadata.mjs 跑(gate-reachability 看不到資料驅動的呼叫)。
 
       - name: Cloud portability gates (provider config survivability)
         run: |
@@ -302,6 +461,15 @@ jobs:
           # 於是那把鎖永遠清不掉 —— 2026-09-08 連兩次提交被自己的機制擋住。
           node scripts/test-authority-generation-reaper.mjs
           node scripts/governance-build-graph.mjs --check
+          # audit-coverage-matrix 的紅面(2026-11-20 接上,knowledge-prune WP-21;原本只在夜間 harness):它的主判定(--check)就在上一行
+          # governance-build-graph --check → generate-governance-metadata.mjs 裡跑;配對 meta-test 在隔離夾具裡注入九種漂移各自必紅、
+          # 正式 CLI 帶 --root 必須 exit 2。本機約 11 秒。
+          node scripts/test-audit-coverage-matrix.mjs
+          # sync-governance-counters 的紅面(2026-11-21 knowledge-prune WP-10):它的 --check 同樣在 governance-build-graph --check →
+          # generate-governance-metadata.mjs 裡跑,治理文件寫死的 audit dim / hooks / skills / M-rules 總數必須等於實數(掃 AGENTS.md、
+          # canonical skills / references / rules;取代只在 stderr 警告的 hook check_dim_count_drift.sh,retired、檔案已不存在)。
+          # 配對 meta-test:寫錯會紅、寫對與「7 維度」這類非總數寫法不報、「33 條 M-rules」夾量詞也納管、真腳本有接上。本機約 1 秒。
+          node scripts/test-sync-governance-counters.mjs
           # 治理文件(skills / rules / references / memory / workflows / AGENTS.md)引用的 hook / 腳本必須真的在(2026-10-14 SM5):
           # 這支原本只在每週一的 packaging canary 跑,PR #169 寫進 historical-bugs.md 的裸檔名 PR CI 沒有這道閘、抓不到,合併後隔週才會紅。
           # 本機 < 1 秒;meta-test 逐面驗:裸檔名指到 scripts / hooks / 根目錄以外、完整路徑檔案不在、workflow 呼叫不存在的腳本 → 紅;
@@ -397,7 +565,13 @@ jobs:
           # 只靠下面的瀏覽器斷言等於零證據。2026-09-04 抓到:它被串在 `npm run test:datatable-invariants`
           # 裡,而這裡是直接呼叫 .mjs → 單測從來沒在 CI 跑過。
           node scripts/test-distribute-column-widths.mjs
+          # 「哪幾列正在編輯」的反函式判定表 + 前綴代理對照組(2026-11-16 A25 覆核 SF10):編輯列永遠留在虛擬範圍裡靠它找列;
+          # I39 的 story 列 id 不含 `__`,改回前綴代理 I39 照樣綠 —— 這支是唯一分辨得出兩者的閘(幾毫秒)。
+          node scripts/test-data-table-editing-rows.mjs --selftest
           node scripts/test-fast-scroll-gate-policy.mjs
+          # CDP Tracing 摘要 lib 的判定表 + 三個突變對照組(2026-11-16,A25):快速捲動閘 --trace 與感知閘送幀缺口診斷都靠它歸因,
+          # 算錯 = 紅的當下指錯執行緒;沒人呼叫它就是沒寫(M32 第二問)。
+          node scripts/test-cdp-trace-summary.mjs --selftest
           node scripts/data-table-invariants.mjs
           # 表頭欄間線一致性(2026-09-24,理由寫在 verify-static 的「Registered test scripts」那一段)。
           npm run test:datatable-column-divider
@@ -408,7 +582,8 @@ jobs:
           # 停手後列殼 ≤ 1000ms 補齊。門檻是本機校準的回歸線(修前 main 684–1055ms、修後 18–34ms,留 10 倍以上機器差),不是業界標準。
           # 上面這趟 selftest 內含第三階對照組(強制隱藏列內容)每次都驗(M32):不另跑第二趟 —— 2026-09-15 曾另跑一趟
           # `--selftest-force-ink`,把這個 job 從 20 分推到 25 分逾時被砍;改成同一趟裡多一次 runOnce(約 30 秒)。
-          node scripts/data-table-fast-scroll.mjs --mode=gesture --selftest --gesture-speed=6000
+          # 對照組(gesture --selftest)2026-11-16 搬到 verify-browser-datatable-dpr2(A28:比值步驟多了 A/A 第三份建置與追蹤趟,
+          # 本 job 的時間預算要讓給它們;selftest 不需要參考建置,dpr2 job 有自己的 storybook 與 chromium,照樣每次都跑)。
           # 這台 runner 不節流就是「慢機器」:R17 判準在這裡整片白 1,301 / 1,210ms(7aad1396),自適應判準 v8 降到 64 / 103ms(d7553067)。
           # 不在 CI 疊 CPU 節流:CDP 節流在 2 vCPU 的共享 runner 上不是線性的(d7553067 同一 job:不節流 64 / 103ms,--cpu-throttle=4 卻 1,769 / 1,585ms;
           # 本機 4× 是 167 / 167ms),數字不能跨機器搬。2× / 4× / 6× 節流當本機重現與壓力工具(AD56 / AD62),不當 CI 閘。
@@ -453,7 +628,8 @@ jobs:
           node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=3 --gesture-speed=6000 \
             --ref=main --builds=main=tmp/ref-storybook,branch=storybook-static \
             --assert-max-blank-frames=0 \
-            --assert-max-fill-ms=1000 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600
+            --assert-max-fill-ms=1000 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600 \
+            --json=tmp/datatable-fast-scroll/gesture.json
           # 「**畫得動的機器**不准出骨架」(2026-09-11)。骨架是「真的畫不完」時的過渡手段,不是正常捲動該看到的東西;
           # 沒有這條斷言之前,一個把「要不要出殼」判準訂成**只看位移**的版本可以全綠出貨 —— 而在 user 的真實 Chrome 上,
           # 一次普通滾輪(1000px)就把整個視窗 14 列全變骨架,同一台機器的 main 是 0 骨架。
@@ -476,23 +652,13 @@ jobs:
           # 這裡用相對閘鎖住改善不回頭;**絕對零空白仍只對 gesture 宣稱**(真實路徑在極端甩動下尚未到零,不假裝已達成)。
           node scripts/data-table-fast-scroll.mjs --mode=mouse --runs=3 \
             --ref=main --builds=main=tmp/ref-storybook,branch=storybook-static \
-            --assert-max-blank-ms=600 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600
-          # **釘選區的滾輪路徑**(2026-09-29,待辦總帳 OE7;09-06 覆核指出 `grep -c "mode=pinned" ci.yml` = 0,零覆蓋):
-          # 滑鼠停在左釘選欄(ID / 選取框)上捲時,事件落在 `overflow-hidden` 的釘選面板,由元件自己的非 passive 滾輪監聽
-          # 轉發到中央捲動區(data-table.tsx makeBindPinnedPanel)—— gesture / mouse 都對準中央區,走不到這條路。
-          # 閘住兩件事:(1) 轉發還在 —— 腳本在 pinned 模式刻意不補 scrollTop,沒動就指名「轉發沒到中央區」紅;
-          # (2) 轉發路徑的主執行緒長工合計與幀距不比 main 差(--ref=main 比值,判準與 mouse 同一份 lib)。
-          # 空白類斷言**不掛**在這個模式:它跟 wheel 一樣由 JS 在主執行緒寫 scrollTop,結構上不會有合成器超前,
-          # 掛上去是一道永遠不紅的空閘(腳本對 wheel / pinned 都有守衛,給了就紅)。
-          # 本機(M32 四問):弄壞 → selftest 三個偵測器 + 第三階強制隱藏都紅;誰呼叫 → 本 job;時序 → 判中位數 + 比值,
-          # 與 mouse 同一套;機器慢 → 比值把兩個 build 在同一跑之內量,慢一起慢。成本:1 趟 5 秒、selftest 14 秒,約 +1 分鐘。
-          node scripts/data-table-fast-scroll.mjs --mode=pinned --selftest
-          # --tick-ms=64(2026-09-29 首跑 297b22be 抓到):預設 16ms × 40 刻 = 0.65 秒手勢,CI runner 的 screencast 約 6 fps,
-          # 一趟只收到 8–9 張呈現幀,低於「呈現幀 < 10 = 儀器失效作廢」的地板,三趟全作廢 → 假紅(本機同一份程式 19 幀綠)。
-          # 刻度放慢到 64ms(同一段 18000px、2.5 秒,像人轉滾輪的節奏)讓取樣窗夠長;兩個 build 同參數,比值仍公平。
-          node scripts/data-table-fast-scroll.mjs --mode=pinned --runs=3 --tick-ms=64 \
-            --ref=main --builds=main=tmp/ref-storybook,branch=storybook-static \
-            --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600
+            --assert-max-blank-ms=600 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600 \
+            --json=tmp/datatable-fast-scroll/mouse.json
+          # 釘選區的滾輪路徑(pinned 比值閘)2026-11-16 拆到 verify-browser-datatable-pinned(A25 覆核二 SF-R3,時間重估寫在該 job 檔頭)。
+          # 2026-11-16(A28 / A25):上面兩個比值步驟都帶 --ref=main → 閘自動多量一份 main~aa(同一份參考建置、獨立伺服器,A/A 對照);
+          # --json 存每趟原始資料 + A/A 欄 + runner 指紋(可經 --inject-runs 原樣重算判定),證據由本 job 末的 datatable-fast-scroll artifact 保存。
+          # CDP 追蹤(--trace)只留在 pinned 那一步(那一步起計分:持續空白的 checkerboard 次數,見該步驟);gesture / mouse 的追蹤只是診斷,
+          # 每一步多 2 趟(CI 一趟 6 或 36 秒),時間讓給 A/A(覆核二 SF-R3)。
           # 指標底下那一列的 hover / hover 反應延遲 / 預掛緩衝自適應 三支(CI 逐支計時合計 5.4 分)與
           # 感知 / 把手 / 釘選 resize / dpr1 感知迴圈那一段(10 分)2026-09-15 搬到 verify-browser-datatable-perception:
           # 本 job 拆前 24 分鐘貼著 25 分鐘上限(8b1137c7 就是被砍掉的那次),只搬感知段之後仍 21 分,再搬三支 hover 類的閘
@@ -500,6 +666,128 @@ jobs:
           # 列/表頭元素快取的依賴完整性(靜態,TypeScript 語法樹):快取靠手列的 epochDeps,漏一個就是
           # 「舊列拿到過期資料」(2026-09-08 I2 抓到漏 resolvedWidths → 顯示↔編輯寬差 0.59px)。
           node scripts/data-table-row-cache-deps-invariant.mjs
+
+      - name: Preserve DataTable fast-scroll evidence
+        # 2026-11-16(A25 / A28):比值紅的當下要看得到每趟數字、A/A 欄與各執行緒成本 —— 這個 job 原本一個 artifact 都沒有,
+        # 11-06 擋下 Q2b 的那一跑只剩 log。
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: datatable-fast-scroll
+          path: tmp/datatable-fast-scroll/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  verify-browser-datatable-pinned:
+    # 2026-11-16 拆自 verify-browser-datatable(A25 覆核二 SF-R3)。三個比值步驟都多量 A/A 第三份建置之後,pinned 這一步另有 2 趟不計分追蹤
+    # (--trace 只留這一步)與規則 G-P 的開跑前判定(3 次開頁)。用 2026-11-15 兩份像素 job log 的時間戳重估(30 個比值趟仍是雙峰:
+    # 14 趟 5.4–7.8 秒、16 趟 35.2–37.3 秒;96b63b68 那一跑 17.5 分、其中 selftest 兩支 188 秒):
+    #   不拆 —— 期望 ≈ 19.7 分;加的 14 趟(A/A 9 + 追蹤 2 + 開跑前判定 3)全落慢峰 ≈ 24.2 分;計畫的「p90 18.6 + 新增趟數 × 中位趟時 35.2 秒 × 1.3」≈ 26.3 分
+    #   —— 超過 22 分的拆 job 線(25 分上限留 3 分)。
+    #   拆 pinned —— 像素 job 期望 ≈ 14.3 分、閘的趟全慢 + 60 秒加量 ≈ 19.4 分(計畫式 ≈ 17.8);本 job 期望 ≈ 7.9 分、最壞 ≈ 12.5 分(計畫式 ≈ 13.4)。
+    # 拆 pinned 而不是三步全搬:三步全搬的新 job 最壞 ≈ 23.5 分,同樣越線;pinned 是多出最多工作的那一步(追蹤 + 開跑前判定)。
+    # 沿用原 job 的 25 分上限(不是調高)。加量帳本的 key 含 GITHUB_JOB → 本 job 自己一份 60 秒預算(lib EXTRA_ROUNDS_JOB_BUDGET_MS)。
+    # 2026-11-16 A25 覆核二修補:追蹤改成**計分**(持續空白 = checkerboard 次數,lib checkerboardDecision),2 趟 → 9 趟(三份建置含 A/A × 3 輪)。
+    # 本機實測一趟追蹤比一趟量測多 ≈ 4.6 秒(同一支閘 pinned 191 秒 vs 改前 104 秒,多 7 趟追蹤);CI 按每趟追蹤開銷 10 秒估:
+    # 期望 ≈ 7.9 + 7 × (平均趟時 22.4 + 10) 秒 ≈ 11.8 分;最壞(準備 156 秒 + 量測 9 + 追蹤 9 + 開跑前判定 3 全落慢峰 37.3 秒 + 追蹤開銷 9 × 10 秒)
+    # ≈ 17.2 分,再加 60 秒加量 ≈ 18.2 分 —— 仍在 22 分的拆 job 線以下。都是估算,推送後讀實際時長回頭驗。
+    name: Verify browser(DataTable pinned wheel ratio gate)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # 參考建置要 `git rev-parse origin/main`;閘的「兩邊有沒有執行期差異」也讀 git
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      # 參考建置(main):與 verify-browser-datatable 同名步驟同一段(為什麼要比 main、lock 相同時共用 node_modules 的理由寫在那裡);
+      # 兩個 job 各建一份、平行跑。
+      - name: Build the reference (main) Storybook the blank ratio compares against
+        run: |
+          set -euo pipefail
+          REF_SHA="$(git rev-parse origin/main)"
+          echo "reference = $REF_SHA"
+          git worktree add tmp/ref-src "$REF_SHA"
+          # 2026-09-23:同一份 lock ⇒ 同一棵樹。參考樹的 lock 與候選相同時,直接共用候選已驗證安裝的 node_modules
+          #(symlink),不再第二次安裝與稽核 —— 否則「比 main」這個 job 就綁死在「main 裝得起來」上:供應鏈閘在
+          # main 上紅(上游 npm 發版讓釘死的字串失效)時,連修它的 PR 都因為這一步過不了(#153 第一輪),
+          # 而 main 只能經 PR 修 —— 結構性自鎖。lock 不同(候選改了相依)才照舊走受管的 bootstrap 重裝參考樹,
+          # 不用裸 `npm ci`:scripts/audit-workflow-security.mjs 對裸 npm ci 判 WF-LIFECYCLE / WF-SIGNATURE-AUDIT /
+          # WF-VULNERABILITY-AUDIT,那一行曾讓「Verify authority candidate without credentials」在每支 PR 都紅(#126 / #127)。
+          if cmp -s package-lock.json tmp/ref-src/package-lock.json; then
+            echo "reference lock == candidate lock → 共用已驗證的 node_modules"
+            ln -s "$PWD/node_modules" tmp/ref-src/node_modules
+          else
+            # 2026-09-29(ad442603 首跑):lock 不同時原本跑**參考樹自己的** bootstrap —— 候選一改相依(本 PR 加 eslint / react-remove-scroll),
+            # 就落到 main 上那份不認得 09-28 新通報形狀的舊 bootstrap,整個 job 死在安裝(與上面 2026-09-23 那條同一種自鎖,只是換一個分支)。
+            # 改用**候選(HEAD)的**治理程式對參考樹安裝(`--root=`),弱點稽核走 report-render-only-reference:參考樹是無憑證、
+            # 用完即丟的渲染容器(只為建一份 Storybook 給比值當分母),與 visual-regression.yml 重拍歷史參考樹同一套政策與理由;
+            # 完整性(lock 精確安裝 / 簽章 / attestation)照舊擋。
+            echo "reference lock != candidate lock → 用候選的治理程式對參考樹安裝(弱點只報告)"
+            node "$GITHUB_WORKSPACE/scripts/setup-authority-governance.mjs" --dependencies-only --root=tmp/ref-src --vulnerability-policy=report-render-only-reference
+          fi
+          (cd tmp/ref-src && npm run build:lib && npm run build-storybook)
+          mv tmp/ref-src/storybook-static tmp/ref-storybook
+          # 先解開 symlink 再移除 worktree:不讓任何遞迴刪除有機會跟著連結走到候選的 node_modules
+          [ -L tmp/ref-src/node_modules ] && rm tmp/ref-src/node_modules
+          git worktree remove --force tmp/ref-src
+
+      - name: DataTable pinned wheel ratio gate (browser)
+        run: |
+          npx --no-install playwright install chromium
+          # **釘選區的滾輪路徑**(2026-09-29,待辦總帳 OE7;09-06 覆核指出 `grep -c "mode=pinned" ci.yml` = 0,零覆蓋):
+          # 滑鼠停在左釘選欄(ID / 選取框)上用滾輪捲 —— gesture / mouse 都對準中央區,走不到這條路。閘住兩件事:
+          # (1) 釘選欄上的滾輪必須捲得動表格:兩容器結構靠元件轉發(data-table.tsx makeBindPinnedPanel,非 passive 滾輪監聽寫中央區 scrollTop),
+          #     單一捲動盒結構是瀏覽器原生捲動;腳本在 pinned 模式不補 scrollTop,沒動就紅,訊息印這一趟量到的是哪一種結構(不寫死其中一種)。
+          # (2) 這條路徑的空白、主執行緒長工合計與幀距不比 main 差(--ref=main 比值,判準與 mouse 同一份 lib);參考與受測的捲動機制不同時
+          #     依規則 G-P 只比同一種機制(data-table-scroll-performance.spec.md)。
+          # 輸入:2026-11-16(A25 推 1)起是 CDP 真滾輪(與 mouse 同一條輸入管線;2026-11-05 f2ecd9e1 首次,隨 Q2b 退回,這次先單獨上),
+          # 原生捲動那條路合成器會超前,空白偵測對它有效(腳本的空閘守衛只剩 wheel)。2026-09-29 那一版是頁內合成事件、JS 寫 scrollTop,
+          # 結構上不會有空白,所以當時不掛空白斷言;2026-11-16(覆核 MF3)補 --assert-max-blank-ms=600(與 mouse 同一個值)。
+          # 空白一律走「比值 + 白幀張數地板」(lib blankDecision,覆核二 MF-R1:參考是不是 0 同一條式子);參考為 0 時另判這個絕對門檻。
+          # 本機(M32 四問):弄壞 → selftest(在 verify-browser-datatable-dpr2)三個偵測器 + 第三階強制隱藏都紅;誰呼叫 → 本 job;
+          # 時序 → 判中位數 + 比值;機器慢 → 比值把三份建置在同一跑之內交錯量,慢一起慢。成本見本 job 檔頭。
+          # --tick-ms=64(2026-09-29 首跑 297b22be 抓到):預設 16ms × 40 刻 = 0.65 秒手勢,CI runner 的 screencast 約 6 fps,
+          # 一趟只收到 8–9 張呈現幀,低於「呈現幀 < 10 = 儀器失效作廢」的地板,三趟全作廢 → 假紅(本機同一份程式 19 幀綠)。
+          # 刻度放慢到 64ms(同一段 18000px、2.5 秒,像人轉滾輪的節奏)讓取樣窗夠長;兩個 build 同參數,比值仍公平。
+          # --trace(2026-11-16 A25 覆核二修補起**計分**):三份建置(含 A/A 那份)各 3 趟另跑的 CDP Tracing(與量測趟分開:Tracing 有開銷),
+          # 每趟的 checkerboard 次數(合成器畫到還沒光柵好的圖塊)判「持續空白」—— 白幀張數地板數不到整片白而且不變(截圖串流不重送,
+          # 持續的白只算 1 張),這一項補它(lib checkerboardDecision:比值 + 次數地板,與空白同一條式子)。追蹤資料缺 → 儀器失效紅。
+          # **拿掉 --trace = 這一項整個不判**(scripts/test-fast-scroll-gate-policy.mjs 檢查這一行)。並排表(各執行緒忙碌 / 合成幀 / quad / LayerTree)照舊印進 log。
+          node scripts/data-table-fast-scroll.mjs --mode=pinned --runs=3 --tick-ms=64 \
+            --ref=main --builds=main=tmp/ref-storybook,branch=storybook-static \
+            --assert-max-blank-ms=600 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600 \
+            --json=tmp/datatable-fast-scroll/pinned.json --trace=tmp/datatable-fast-scroll/trace-pinned
+
+      - name: Preserve DataTable pinned fast-scroll evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          # 與 verify-browser-datatable 的 datatable-fast-scroll 不同名(同名第二個上傳會失敗或互蓋)
+          name: datatable-fast-scroll-pinned
+          path: tmp/datatable-fast-scroll/
+          if-no-files-found: ignore
+          retention-days: 14
 
   verify-browser-datatable-perception:
     # 2026-09-15 拆自 verify-browser-datatable:感知 / 把手 / 釘選 resize / dpr1 感知迴圈這一段在 CI 逐支計時佔 10 分鐘,
@@ -594,7 +882,8 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: datatable-scroll-perception
+          # 2026-11-16 改名:與 verify-browser-datatable-handles 的 artifact 同名會撞(第二個上傳失敗或互蓋)
+          name: datatable-scroll-perception-controls
           path: |
             tmp/datatable-content-*/
             tmp/datatable-handle-*/
@@ -701,6 +990,11 @@ jobs:
 
       - name: DataTable handle + dpr1 perception gates (browser)
         run: |
+          # 感知閘「冷卻後再一輪」的截止(2026-11-17,A26;lib/scroll-perception-budget.mjs extensionRoundPlan):一輪全部整窗跳轉
+          # → INSTRUMENT-FAIL 時,放得進這個截止才再量一輪,判準不變。本步約在 job 第 2.1 分開始(41622d91:20:02:02 → 20:04:08),
+          # 截止 = 本步開始 + 19 分 ≈ job 第 21.1 分;之後 bursts + wheel 兩支 ≈ 2 × 41 秒、上傳 artifact,留 ≈ 2.4 分給建置時間的散布,
+          # 延長輪不會把 job 撐過 25 分。現況這個 job 的感知迴圈在步驟第 ~17–19 分才跑到,多半放不進 = 照舊紅(訊息會講)。
+          export DT_PERCEPTION_DEADLINE_EPOCH=$(( $(date +%s) + 19 * 60 ))
           npx --no-install playwright install chromium
           # 合成 pointermove = 指標真的在動)把手必須回來。--hover=follow:指標有動時可見把手貼原列中心 ±1px;對照組注入 20px 偏移必被抓到。
           node scripts/data-table-handle-position.mjs --dpr=2 --selftest --out=tmp/datatable-handle-control
@@ -717,9 +1011,10 @@ jobs:
           # 另量 transform: scale() 祖先下操作欄寬 / 填滿高度 / 多區列高不變。對照組(--selftest)先證明會紅;7777b61c 實測紅 31 項。
           # 本機 63 秒 + 對照組約 40 秒(CI 約本機 1.2–1.4 倍 → 約 2.5 分);本 job 拆出可搜尋選單焦點閘之後約 11 分 / 上限 25。
           npm run test:data-table-header-scroll-sync
-          # 多重排序表頭「箭頭 + 順位數字」+ Shift+點擊(2026-11-03;user 2026-10-30 規格,data-table.spec.md「Multi-sort header」列):
-          # 判定表(純函式 lib/sort-cycle.ts,幾毫秒;--selftest 以 TanStack 修前分支當對照組)+ 真瀏覽器(狀態轉移、9+、長相、⌄ 選單、讀屏、
-          # 與排序面板雙向同步、不受控表格;--selftest 注入 13 種破法)。跟上面兩支同屬表頭,放這個 job:本機判定 40 秒 + 對照組 71 秒(負載 25–30;CI 約本機 1.2–1.4 倍 → 約 2.5 分)。
+          # 多重排序表頭「箭頭 + 順位數字」+ Shift+點擊(2026-11-03;user 2026-10-30 規格 + 2026-11-11 R16 兩態 / 選單定案,data-table.spec.md「Multi-sort header」列):
+          # 判定表(純函式 lib/sort-cycle.ts `nextSorting`,幾毫秒;--selftest 以 R16 前的三態版與 TanStack 修前分支兩份當對照組)+ 真瀏覽器(狀態轉移、9+、長相、
+          # ⌄ 選單、⌄ 在 Tab 順序裡、讀屏、與排序面板雙向同步、不受控表格;--selftest 注入的破法種類列在閘檔頭)。跟上面兩支同屬表頭,放這個 job:本機判定 40 秒 + 對照組 71 秒(負載 25–30;CI 約本機 1.2–1.4 倍 → 約 2.5 分)。
+          # 2026-11-14(A7 ⑥)加 D 兩格:桌機靜止時 ⌄ 欄位選單收起 —— 沒排序的欄、已排序的欄都一樣(data-table.spec.md 同一列「桌機維持現況」);--selftest 多兩種破法(只讓已排序的欄恆顯示 / 每一欄都恆顯示)。多開 3 次 story,本機整支改前 132 秒 / 改後 134 秒。
           npm run test:data-table-sort-cycle
           npm run test:data-table-multi-sort
           # 各欄型的排序比法(2026-11-05,待辦 3f;data-table.spec.md「七、Column Type」排序表):判定表真的用 TanStack 排(≤ 10 / > 10 列同序、
@@ -728,6 +1023,12 @@ jobs:
           # Shift+點擊之後不畫焦點框(2026-11-05,待辦 3f G-16;focus-canonical.md「什麼時候畫(真焦點)」):排序區 / 列勾選框 / 表格根節點的指標情境不畫、
           # 鍵盤對照必畫;--selftest 隨時拿掉 data-pointer-focus(= 修前)必紅。同屬表頭 / Shift+點擊,放這個 job。
           npm run test:modifier-click-focus
+          # 虛擬捲動的列高估計跟著區塊密度(2026-11-14,A7 ③;稽核 R7-03 / 第四批審查第 7 條;data-table.spec.md「二、高度模式」的列高估計句 ——
+          # 規則是【AI 推導】,user 沒有逐字講過;產品 2026-11-12 c78b35e1 已修,這支是補量測):「大量資料」那則(10,000 列)掛載後在 #storybook-root
+          # 只寫 data-ui-size、才加 data-density、以及整頁密度切換(對照),虛擬高度那一層的總高 = 列數 × 畫出來的列高;修前前兩種停在 400,144(應 480,000)。
+          # --selftest:判定表 + 現況四格必綠 + 載入前讓訂了密度屬性的觀察器收不到 data-ui-size(只紅 C)/ 收不到 html 以外的 data-density(只紅 D)
+          # + 假建置走儀器失效出口。同屬 DataTable,放這個 job:主跑起 1 次瀏覽器載入 3 次、--selftest 起 4 次瀏覽器載入 12 次(其中 3 次是假建置的無預覽頁);本機主跑 3 秒 + 對照組 9 秒(機器另有負載)。
+          npm run test:data-table-row-estimate-density
           # dpr2 的內容延遲不在 CI 斷言(零殼 / 擷取 / 空白仍斷言):共享 2 vCPU runner 在 dpr2 是 raster 成本決定延遲,幀距正常 16ms 卻
           # p95 72 / 最長 100(8277f858);本機 2× 節流對照 main p95 83 / 117 vs 本分支 0 / 17、4× 235 / 268 vs 132 / 148 ——
           # 本分支嚴格優於 main,runner 的數字是機器不是表格。延遲在 dpr1 斷言(runner 上穩定 0);dpr2 的回歸對照用本機節流跑 main vs 分支(AD62)。
@@ -746,7 +1047,8 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: datatable-scroll-perception
+          # 2026-11-16 改名(同上;本 job 的是 dpr1 感知迴圈,每次嘗試各存在 <out>/attempt-N/、attempts.json,送幀缺口紅時另有 diagnostic/ 追蹤診斷)
+          name: datatable-scroll-perception-dpr1
           path: |
             tmp/datatable-content-*/
             tmp/datatable-handle-*/
@@ -797,6 +1099,10 @@ jobs:
         env:
           DT_PERCEPTION_GAP_MS: '130'
         run: |
+          # 感知閘「冷卻後再一輪」的截止(2026-11-17,A26;同上一個 job 的說明):本步約在 job 第 2.2 分開始(ca46a310:20:32:57 → 20:35:07),
+          # 截止 = 本步開始 + 15 分 ≈ job 第 17.2 分;之後 bursts + wheel ≈ 82 秒、快速捲動對照組兩支 CI 實測合計 188 秒、上傳 artifact
+          # ≈ job 第 21.8 分,留 ≈ 3 分餘裕。ca46a310 那一輪在 20:39:12 判 INSTRUMENT-FAIL,估 30 + 5 × 41 + 15 = 250 秒,放得進。
+          export DT_PERCEPTION_DEADLINE_EPOCH=$(( $(date +%s) + 15 * 60 ))
           npx --no-install playwright install chromium
           node scripts/data-table-handle-position.mjs --dpr=2 --out=tmp/datatable-handle-2
           for peak in 1500 3000 4500; do
@@ -804,6 +1110,14 @@ jobs:
           done
           node scripts/data-table-scroll-perception.mjs --dpr=2 --peak=4500 --profile=bursts --assert=on --latency-assert=off --out=tmp/datatable-content-bursts-2
           node scripts/data-table-scroll-perception.mjs --dpr=2 --peak=4500 --profile=bursts --input=wheel --assert=on --latency-assert=off --out=tmp/datatable-content-wheel-2
+
+      - name: DataTable fast-scroll detector controls (browser)
+        # 2026-11-16 從 verify-browser-datatable 搬來(A28):那個 job 的三個比值步驟多了 A/A 第三份建置與追蹤趟,時間預算讓給它們。
+        # 對照組本身不需要參考建置;內容與檔頭說明不變(gesture:靜態頁 0 空白 / 關掉兩層機制必紅 / 第三階強制隱藏每次都驗;
+        # pinned:三個偵測器 + 第三階)。2026-10-07 g9 草稿估這兩支合計約 107 秒。
+        run: |
+          node scripts/data-table-fast-scroll.mjs --mode=gesture --selftest --gesture-speed=6000
+          node scripts/data-table-fast-scroll.mjs --mode=pinned --selftest
 
       - name: Preserve DataTable dpr2 perception evidence
         if: always()
@@ -1050,6 +1364,11 @@ jobs:
           # 讓 H5 面對 bug 當時的真實形狀(實測會精準抓到 展示--with-tabs-in-header)。
           node scripts/dialog-height-invariant.mjs --selftest-h5
           node scripts/dialog-height-invariant.mjs
+          # Dialog 寬度檔位(2026-11-15 A18;dialog.spec.md「寬度檔位」):1440 寬四檔 400 / 480 / 640 / 960、數字與舊名 maxWidth、
+          # 700 / 375 寬往內縮、600×700 的 portalContainer 舞台裡寬高以舞台算且四邊至少 48。夾具從原始碼打包(約 1 分鐘)。
+          # 先對照組(檔位表改壞 / 寬改回 100vw / 高改回 100svh 各自必紅)再判定。
+          node scripts/dialog-width-invariant.mjs --selftest
+          node scripts/dialog-width-invariant.mjs
           # 浮層快捷鍵的作用域:焦點在檢視器外時方向鍵不得切換檔案,
           # 「靜止時同色的顏色配對,hover 後必須還是同色」全 DS 掃描(2026-09-11;user 截圖:
           # Switch hover 時白色圓浮出一圈灰邊)。根因是 spec 要求 thumb 邊框「與 OFF track 同色」,
@@ -1148,6 +1467,16 @@ jobs:
           # 本表的游標與區間都要清掉(修前只認「任何一張表的外框」,兩種都留著);點頁面空白與 Shift+點本表是對照列。不需要 storybook;
           # 判定 + --selftest 一個根因突變,本機合計約 30 秒 → 兩格都跑(不寫條件式)。
           npm run test:data-table-click-outside
+          # DataTable 排序 / 篩選面板的「恢復預設 / 清除全部」(2026-11-11;user 同日「重置與清除所有就是完全不同的意思，所以本來就要有兩個入口吧？」),
+          # 欄位顯示面板的「恢復預設」2026-11-15 併入同一條:恢復預設看資料(值 ≠ defaultSorting / defaultValue / defaultVisibility + defaultColumnOrder —— 欄位顯示面板連順序一起比、一起還原)、
+          # 清除全部在加條件那一排靠最右(量 rect)、clearable 開關、按下後焦點給加條件鈕(欄位顯示面板沒有 → 標題列 ×)不掉 body、polite 播報;
+          # 欄位顯示面板的固定零件(搜尋框、拖曳把手不靠參數,2026-11-15);另驗排序面板 labels 每個字畫在對的元素 / 屬性(2026-11-15);
+          # 三個面板的寬度參數(width / minWidth / maxWidth、下限、375px 視窗夾限)與 PopoverContent width(2026-11-15 A19,腳本檔頭 (6))。不需要 storybook;
+          # 對照組照最上面那支的做法分片(--shard,腳本檔頭;清單與個數以腳本的 MUTANTS 為準,這裡不寫數字):每一格 = 基準(一趟完整判定 = 主跑,所以主跑兩格都跑)
+          # + 一半根因突變(含修前寫法),覆蓋率由腳本靜態驗(每條契約列都在某個突變的 expectRed;不分片的完整動態覆蓋由本機 npm run test:data-table-panel-reset-clear 與 meta-test 跑)。
+          # 2026-11-15 前兩格各跑「主跑 + 完整 --selftest」,本 job 兩格 CI 實測 16.1 / 16.9 分(上限 25)。本機 2026-11-15 重量(負載均值約 7):
+          # 不分片 --selftest(基準 + 全部突變)578 秒;兩片同時跑 --shard=0/2 307 秒、--shard=1/2 288 秒 → 每格這支閘的時間約剩一半(改前每格還多一趟主跑)。
+          node scripts/data-table-panel-reset-clear-invariant.mjs --selftest --shard="$SHARD"
         env:
           SHARD: ${{ matrix.shard }}
 
@@ -1163,6 +1492,7 @@ jobs:
     # 2026-10-14(待辦總帳 G10;照主題拆平行 job、不調高上限):最近 15 次 CI p50 21.1 / p90 22.6 / 最大 23.2 分(上限 25,p90 佔 90%)。
     # 逐支計時(job log 時間戳,289bce76 / 21e25346 / 38346602 / a91dfe7c 四次)前半(AgentPanel 到共用承擔者焦點)合計 473–660 秒、
     # 後半(Tag 內距到改到元件的視覺稽核)528–666 秒 —— 後半搬到 verify-browser-field-dialog-steps,兩邊各約 13 分。
+    # 2026-11-12:水平溢出閘(test:overflow-reveal-selected,2026-11-11 加)移到 verify-browser-layout —— 9126e95b 那次它在本 job 第 16 分 55 秒才開始跑;2026-11-14 再搬到 verify-browser-horizontal-overflow。
     timeout-minutes: 25
     # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
     env:
@@ -1202,7 +1532,7 @@ jobs:
           # Esc 依形態、焦點後備,加上舊閘保留的浮層遮罩 / 宿主不可操作 / 把手外側命中 / 層級 40 < 45 < 50;
           # 2026-10-14 審查補 S14–S22(點 Menu 浮層外收回、滑鼠點進再 Esc 焦點回入口鈕、寬 0 Menu 不可聚焦、浮層上面的層可操作、
           # 要求的 Right 捲到看得到、Menu 兩份共用狀態、從 AI agent 導向 Main);2026-10-15 / 10-20 r1b 複驗補 S23–S28(Menu 浮層底色 / 第一個 Tab / 名稱、
-          # 一下 Esc 收回、primary-header 細列不跳、三顆把手名稱與 aria-controls、模擬網址列不 inert、殼 = 模擬瀏覽器畫布、換到 Insights 收起詳情)。
+          # 一下 Esc 收回、primary-header 細列不跳、三顆把手名稱與 aria-controls、模擬網址列不 inert、殼 = 模擬瀏覽器畫布、換到 Active sprint(2026-11-15 前叫 Insights)收起詳情)。
           # --selftest:9 個改壞的模型 + 21 種頁面破壞各自必紅(本機合計約 2 分 20 秒,含非 selftest 那一趟)。
           npm run test:app-shell-layout
           # 選單鍵盤(2026-09-25 待辦總帳 B10 / B11):子選單 Esc 一次只關一層、焦點回上一層那一項;選單開著按 Tab 收起全部、
@@ -1229,6 +1559,15 @@ jobs:
           # DatePicker.Range 停留預覽框(2026-09-23 user 拍板):逐格量 td::after 的 1.5px 邊、兩端半圓、停留日無單格圈、
           # 鍵盤焦點同樣預覽、showTime 同一套;--selftest 把框的邊寬歸零證明會紅。SSOT date-picker.spec.md「區間預覽」。
           npm run test:datepicker-range-preview
+          # LinkInput 可清除(2026-11-21 LINK-CLEAR,user 2026-11-19 拍板提案 A;link-input.spec.md「可清除(clearable)」):× 只在打字狀態有字時出現、
+          # 按 × 清草稿留在輸入框(不退出編輯)、照既有規則結算、Esc 還原、按 × 與開始打字當下使用端給的錯跟著消失(按 × 送出 input 事件);
+          # --selftest 造回舊寫法(焦點移到 × 算離開 / 按 × 焦點被搬走 / 按 × 不送 input 事件)必紅。
+          npm run test:link-input-clear
+          # LinkInput 錯誤說明(2026-11-22 LINK-ERRTEXT,user 11-22 確認頁拍板丙;link-input.spec.md「錯誤說明」):網址不合法時框下自帶一行說明、
+          # aria-describedby 連得到、打字消失、errorText 換字、包在 Field 裡畫在 Field 的錯誤區且使用端的字優先(只出一行)、外面存進來的不合法值照 blur 驗證
+          #(一掛上不驗);--selftest 在送到瀏覽器的夾具程式裡造回錯的寫法 5 組必紅(M1–M4 拿掉新行為,M5 把撤掉的「一掛上就驗」那一版做回來)。
+          npm run test:link-input-error-text
+          # 水平溢出「選到就露出來」(test:overflow-reveal-selected)2026-11-12 移到 verify-browser-layout;2026-11-14 再搬到 verify-browser-horizontal-overflow(見該 job 檔頭)。
           # useFormValidation 契約(2026-10-01 待辦總帳 N65 / N67):hook 原始碼 + 同名欄位的幾張表單、沒有 <form> 的 footer 送出區,
           # 真鍵盤 / 滑鼠 / 觸控逐條走 form-validation.spec.md 規則 1 / 2 / 4 / 5 / 6 / 7 / 8(錯誤會清掉、Escape 回原值、焦點只在被送出的
           # 那張表裡找、錯誤長出來不會把這一下 click 推離送出 / 重設鈕、原生拖曳之後「按著」不會卡住);不需要 storybook。
@@ -1255,6 +1594,8 @@ jobs:
     # 2026-11-04 納入 Alert / Toast 4 則(含 Alert 固定位置那則)後本機約 73–77 秒(主跑 15–17 + selftest 58–60)。
     # 2026-11-05 側欄鍵盤拆到 verify-browser-sidebar-keyboard:本 job 三次 CI 實測 24.6 / 24.1 / 25.3 分(上限 25,PR #169 4f692d17 那次
     # 撞上限被取消 = 沒有裁決),其中 test:sidebar-menu-keyboard 一支就 491 / 517 / 464 秒(約三分之一)。
+    # 2026-11-12 版面間距 / 密度 / 浮層標題區十支拆到 verify-browser-layout:本 job 在 PR #172 9126e95b 跑到 25 分上限被取消(= 沒有裁決;
+    # 視覺稽核才跑到 104 個場景的第 50 個),前一次綠是 21.6 分。逐支計時(job log 時間戳)被搬走的十支合計 515 秒,留下的約 750 秒 + 視覺稽核。
     name: Verify browser(field, dialog and steps gates + changed-component visual audit)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -1291,14 +1632,7 @@ jobs:
           # 像素量 Combobox / Select 每個尺寸與 mode;對照組把量測 wrapper 改回區塊盒、wrap 改回 py-1,必紅。
           npm run test:tag-field-inset
           # 側欄鍵盤(test:sidebar-menu-keyboard)2026-11-05 移到 verify-browser-sidebar-keyboard(見該 job 檔頭)。
-          # 列上的小圖形中線 = 第一行文字中線(2026-10-27,user 抓側欄「所有專案」右邊的 + 偏上):SidebarGroupAction / 收合箭頭量 sm / md / lg,
-          # 加 Switch 帶標籤、示範列的列尾動作與列首轉圈、Slider 原則頁的開關狀態矩陣、DropdownMenu 元件檢閱器的快捷鍵後綴、
-          # SidebarMenuAction / 列尾 inlineActions / DateGrid 上下月箭頭,以及 Alert / Toast(共用底座 Notice)多行時的前置狀態圖示、
-          # 動作鈕、分隔線、×(2026-11-04;Toast 按觸發鈕打開真的 sonner),標準與寬鬆兩種密度。
-          # --selftest 把群組動作打回舊寫法(absolute top:8px)必指名 GroupAction 紅;每個被量的控件下推 3px 必全紅、且每處位移正好 3px
-          # (轉圈先停在四分之一圈 —— 位移若加在旋轉中的子元素上量到 3·cos θ,第一版因此一半機率不紅);
-          # Notice 打回置中(外框 items-center、槽不再一行高)必讓每則多行通知的每一處紅、其他不受牽連。
-          npm run test:row-suffix-first-line
+          # 版面間距 / 密度 / 浮層標題區十支(test:row-suffix-first-line、test:overlay-header-title-area、test:overlay-header-actions、test:density-subtree-parity、test:overlay-density-follows-trigger、test:section-gap、test:header-first-gap、test:header-content-sides、test:form-example-card、test:sidebar-main-follows-selection)2026-11-12 移到 verify-browser-layout(見該 job 檔頭)。
           # 「story 真的渲染完成」的共用實作 openStory(scripts/lib/launch-browser.mjs)的兩面對照(2026-09-25):
           # 同一天四支閘各自長出一份「等 story 畫完」(M17 平行實作),收斂成一支之後,原本散在各閘 selftest 裡驗等待本身的
           # 對照組搬到這裡 —— 不存在的 id / 被擋的 story 檔 / 渲染不完 / play 沒跑完 / 空畫面 / 頁面例外 / 永遠不靜止必判儀器失效,
@@ -1326,7 +1660,8 @@ jobs:
           # 登記測試裡需要 Chromium 的(2026-09-08 拆 job 後靜態 job 沒有瀏覽器,d16baf90 的 verify-static 因此紅):
           npm run test:devmode-geometry
           npm run test:header-tabs-slot-invariants
-          # 對照組:清空 overlay 後 W3(分頁 inlineAction 必須真的渲染)必須整批變紅。
+          # 對照組:清空 overlay 後 W3(分頁 inlineAction 必須真的渲染)必須整批變紅;
+          # 溢出模式灰線畫回遮罩內 → W1-連續 必紅、灰線蓋到選中底線上 → W1-選中底線 必紅(2026-11-17 W1 改量像素)。
           node scripts/header-tabs-slot-invariants.mjs --selftest
           # 選單訊息列(2026-09-08 user 拍板):「沒有選項 / 載入中」都是一列 MenuItem 的列幾何(md 48 = 8 + 32 + 8),
           # 列高 / 群組留白 / 置中 / 搜尋列與觸發點的轉圈尺寸與位置 / 不可互動,每條都量像素;對照組在 focus-deep-gates.yml。
@@ -1346,11 +1681,177 @@ jobs:
         env:
           VISUAL_AUDIT_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
 
+  verify-browser-layout:
+    # 2026-11-12 拆自 verify-browser-field-dialog-steps(照主題拆平行 job、不調高上限,上限沿用原 job 的 25;同 2026-10-14 待辦總帳 G10 / 2026-11-05 的拆法)。
+    # 原 job 在 PR #172 9126e95b 跑到 25 分上限被取消(前一次綠 21.6 分;第四批加了浮層密度閘、密度組合,視覺稽核的場景數也到 104)。
+    # 本 job = 「版面間距 / 密度 / 浮層標題區」主題的十支(原 job 逐支計時合計 515 秒)。準備步驟與原 job 逐字相同(ci-workflow-scope 斷言)。
+    # 2026-11-15 加第十一支 test:sidebar-label-matches-header(A15;與 test:sidebar-main-follows-selection 同一批 story,本機實測時間見那一步的註解)。
+    # 2026-11-12 曾從 verify-browser-interaction 搬來水平溢出閘(那支在原 job 第 16 分 55 秒才開始跑);2026-11-14 再搬到 verify-browser-horizontal-overflow(見該 job 檔頭)。
+    # 2026-11-14 A7 ①④:浮層密度閘 4 → 28 格,本機主跑 + --selftest 合計 11 → 68 秒;⑤ section-gap 主跑 8 → 16 秒、--selftest 不到 1 → 2 秒。
+    # 1859b728 那一輪本 job 19 分 45 秒(上限 25;含後來搬走的水平溢出閘)。
+    name: Verify browser(layout spacing and density gates)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      - name: Layout spacing and density invariants (browser)
+        run: |
+          npx --no-install playwright install chromium
+          # 列上的小圖形中線 = 第一行文字中線(2026-10-27,user 抓側欄「所有專案」右邊的 + 偏上):SidebarGroupAction / 收合箭頭量 sm / md / lg,
+          # 加 Switch 帶標籤、示範列的列尾動作與列首轉圈、Slider 原則頁的開關狀態矩陣、DropdownMenu 元件檢閱器的快捷鍵後綴、
+          # SidebarMenuAction / 列尾 inlineActions / DateGrid 上下月箭頭,以及 Alert / Toast(共用底座 Notice)多行時的前置狀態圖示、
+          # 動作鈕、分隔線、×(2026-11-04;Toast 按觸發鈕打開真的 sonner),標準與寬鬆兩種密度。
+          # --selftest 把群組動作打回舊寫法(absolute top:8px)必指名 GroupAction 紅;每個被量的控件下推 3px 必全紅、且每處位移正好 3px
+          # (轉圈先停在四分之一圈 —— 位移若加在旋轉中的子元素上量到 3·cos θ,第一版因此一半機率不紅);
+          # Notice 打回置中(外框 items-center、槽不再一行高)必讓每則多行通知的每一處紅、其他不受牽連。
+          npm run test:row-suffix-first-line
+          # 浮層標題區(overlay-surface.spec.md「SurfaceHeader」標題區,2026-11-10):× 固定頂部、佔位 = 標題一行高,小標 / 說明出現與否都不移動;
+          # 小標 12 / 500 / fg-secondary、一行、距標題 2px。量決策卡(有 / 無小標)與 overlay-surface test-only 夾具(Modal / 非 modal 各組),標準與寬鬆。
+          # --selftest:判定表吃修前實測(小標距題目 0、OV-ga02 修前 × +11.5)必紅;打回置中 / 小標下距歸零 / × 下移 3px 各自指名紅。
+          npm run test:overlay-header-title-area
+          # 浮層標題列右側按鈕位(overlay-surface.spec.md「SurfaceHeader」右側按鈕位,2026-11-10):consumer 只傳按鈕(actions)與 ×(dismiss),
+          # 分隔線由 SurfaceHeader 自動放、兩側各 12;靜態掃 children 不得自刻分隔線 / hideClose 後自塞 ×。修前紅:欄位顯示面板 8 / 8、4 處自刻。
+          # --selftest:判定表、靜態假原始碼、拿掉分隔線兩側 4px / 藏掉分隔線 / 整列靠上 各自指名紅。
+          npm run test:overlay-header-actions
+          # 局部換密度 = 整頁該密度,逐 token 相等(2026-11-11):`uiSize.css` 寫著「md-lock subtree 必須與 root md 逐 token 相等」,
+          # 但 token-creation-invariant C5 只看名字有沒有出現在回復段 —— 用 var() 組出來、只寫在 :root 的值(側欄收合寬)
+          # 它看不到,實測大密度頁面裡鎖回一般密度的區塊收合寬仍是 68 而不是 48。這支在瀏覽器裡實算 32 種組合(含同元素雙屬性 / 整頁解耦 / 兩層巢狀,稽核 R7-01 / R7-10)× 全部 token;
+          # 純 CSS 計算、不需要 storybook 建置。--selftest 注入的缺陷各自必紅、現況必綠(注入清單見腳本 selftest(),這裡不寫數字 —— 會隨住處搬家增加)。
+          npm run test:density-subtree-parity
+          node scripts/test-density-subtree-token-parity.mjs --selftest
+          # 小浮層密度跟觸發點(user 2026-11-11 決策頁「浮層密度」答「跟按鈕」,density.spec.md「浮層跟觸發點」;2026-11-14 A7 ①④ 由 4 格擴成 28 格):七種浮層
+          # (Popover 版 Select 在 uiSize story;下拉選單 / 子選單 / HoverCard / Tooltip / 日期區間 / 日期單日在閘自己的夾具頁)× 整頁一般 / 大 × 一般 / 大密度區塊,每格每條分開判:
+          # 控制項大小 = 那一區的 token(Select、下拉另比觸發點高,子選單另比主選單列高);版面間距鎖 md 的 16、不鎖的跟那一區(哪一種量哪個元素是 AI 依規格那張表落成的格子)。修前一般頁裡的大密度區塊 32 / 28(稽核 R7-02)。
+          # --selftest:判定表 + 五種破法(拿掉控制項檔位 / 鎖不見 / 屬性不見 / 不該鎖的被鎖 / 子選單搬到 body)各比「紅的集合 = 期望」+ token 讀不到與假建置必判儀器失效(exit 2)。
+          # 本機(2026-11-14)主跑 4 → 22 秒、--selftest 7 → 46 秒;CI 約本機 1.2–1.4 倍 → 這一步多約 70–80 秒。
+          npm run test:overlay-density-follows-trigger
+          node scripts/overlay-density-follows-trigger-invariant.mjs --selftest
+          # 區塊 ↔ 區塊(2026-11-06 user #18):一條分隔線的位置、上下各 loose —— 不畫線 = loose × 2(FileViewer 資訊面板 說明 → 檔案資訊),
+          # 畫 Separator = 線兩側各 loose;表單欄位 → 表單按鈕列 8 處;標題區 → 內容(文件頁「幾塊」= 規格三題的自動近似:一塊 tight / 兩塊以上 loose)四種標題區 × 兩種判定、「幾塊怎麼數」每條路一列。md / lg 量像素。
+          # selftest:判定表(修前實測必紅、每一列標題區餵相反判定的距離必紅)+ 在頁面上把四種標題區的標記翻面必紅、數字正好是另一個 token(這一段要建置)。
+          # 後來才顯示(heading-reveal,2026-11-15):四列真頁藏起來 → 顯示要回到 loose、不得出現 ResizeObserver loop;另加五列夾具(直接打包 DS 原始碼、不經 storybook):
+          # 巢狀 2(分得出產品「下一格才寫」還是「觀察者回呼裡直接寫」)、排版容器裡晚顯示 2(ExampleSection / H3)、兩段式 1(重判後觀察範圍要跟著數法換路)。
+          # 夾具上的產品錯判 = 產品紅(exit 1),夾具沒排好 / 讀不到標記 = 儀器失效(exit 2)。主跑開 2 次瀏覽器;selftest 開 9 次(破法清單以腳本為準)。
+          # 本機:2026-11-14(A7 ⑤)主跑 8 → 16 秒;2026-11-15 npm run test:section-gap 合計 138 秒(主跑 22 秒,其餘多是幾個突變各等一次 10 秒的判定標記上限)。標題區的量法與全站盤點(verify-browser-doc-headings)共用 scripts/lib/doc-heading-zones.mjs。
+          npm run test:section-gap
+          # 標頭 → 第一個東西(layoutSpace 規則 2,2026-11-10 user 問「四周的距離是正確的？」):依第一個東西的角色 bounded = loose / unbounded = 0 / element = tight,
+          # 全 DS 盤點出的每一處 md / lg 量像素、角色從 DOM 判。修前 c2fc683d 建置 Sidebar 混合內容資料夾 / 檔案兩張表格外層是 tight(紅);selftest 判定表 + 角色判法逐列。
+          npm run test:header-first-gap
+          # 標頭下內容的左 / 右 / 底(layoutSpace 規則 1 / 6 / 4,2026-11-11 user「其他有漂移的地方也應該自動修一修吧？」):頂邊由上一支管,這支量另外三邊 ——
+          # 左右 = loose(誰給內距從 DOM 判 pattern AB / C,C 的列必貼齊容器)、底依最後一個東西的角色 + 容器會不會擋頁 / 撐滿(bounded loose / unbounded 0 / element 48 或與頂同值)。
+          # 同一份盤點(上一支的 CASES)md / lg 量像素;selftest 判定表每一邊各有該紅 / 該綠 / 儀器失效。
+          npm run test:header-content-sides
+          # 巢狀篩選群組的間距與篩選 / 排序面板的韻律(data-table.spec.md「巢狀群組的間距」、layoutSpace 規則 2 表「一串同樣的條目」;2026-11-13 補規格句與閘;2026-11-14 A70 改 loose、同日下午 user 問篩選條件第一個距頂是不是應該對齊條件之間的距離(問句,AI 評估同意;A72)改回 tight;歸到哪條規則是 AI 推導):
+          # 巢狀 / 平鋪 / 群組清光的標題列 → 第一個東西 = tight、K 韻律(巢狀 / 平鋪 / 排序面板:頂 = 筆 ↔ 筆 = 最後一筆 → 加一筆那排 = 那排 → 底 = tight)、巢狀面板收尾 = 與頂部同值(規則 4 第 4 列)、群組框四邊內距 / 框內列距 = 8(不跟密度)、框外標籤頂對齊第一條條件、群組 ↔ 群組 = tight;md / lg 量像素。
+          # --selftest:判定表 + 現況必綠 + 頁面上十四種拆法(含 A70 的樣子、最後一個群組 → 加一筆那排下推 4、平鋪第二條下推 4、排序上內距 loose),每一種的紅燈集合必須正好等於登記的那一組。
+          # 本機實測:判定 4 秒 + --selftest 50 秒(2026-11-14 加 K 段與排序面板後)。
+          npm run test:data-table-filter-group-spacing
+          # 表單範例放進卡片(2026-11-10 FORM-EXAMPLE-CARD 甲;user 10-21「Q5可以基於你的建議」、10-28「頁面上的卡片照你建議」):Field 表單驗證 ×2、
+          # Rating 包在 Field 內、Select 隨 form 送出 —— 送出鈕往上找卡片、卡片內上 / 左 / 下 = loose(md / lg 量像素)。修前 main 8eb473c7 建置 4 處都沒有卡片(紅)。
+          npm run test:form-example-card
+          # Sidebar 展示主區跟著選到的項目走(2026-11-06 user #56 甲):資料夾 → 檔案清單 DataTable、檔案 → 版本紀錄、專案 → 議題、主導覽 → 範本 DashboardPage 做法(不放 DescriptionList);
+          # 主區只有一張表格 → 標頭下不放區段標題(2026-11-11 user 留言;app-shell.spec.md「Main 內塞什麼」)。
+          # 「混合內容」實際點樹 frontend → backend → README.md → Due soon(2026-11-15 前叫 Dashboard)。修前 main 8eb473c7 建置五則都是同一份 Sprint 摘要(紅);修前 411fcc49 建置表格上方有區段標題(紅)。
+          npm run test:sidebar-main-follows-selection
+          # 側欄選中項的字 = 頁面標頭的字(sidebar.spec.md「選中項的字 = 那一頁標頭的字」;user 2026-11-11 問句「第二題要確保sidebar menu item 的文案跟標頭是一樣的吧？」):
+          # 有側欄的 story 從建置的 index.json 推(不手列),每則進頁 + 點過側欄每一個看得到的項目之後,同一個 SidebarProvider 裡的選中項與標頭比字;
+          # 詳細頁(標頭的麵包屑前一層 = 選中項、末位 = 標頭)跳過【AI 推導 2026-11-15】。修前 06aaca03 建置:AppShell 元件總覽、Sidebar 狀態行為點了別項標頭仍寫死「Dashboard」(紅)。
+          # --selftest:判定表 + 盤點 + 夾具頁八種畫面 + 真建置把標頭改字 / 塞麵包屑(兩面)。本機(2026-11-15)主跑 + --selftest 合計 16 秒(40 則 story、93 個畫面);CI 未實測。
+          npm run test:sidebar-label-matches-header
+
+  verify-browser-horizontal-overflow:
+    # 2026-11-14 拆自 verify-browser-layout(A7 ②;照主題拆平行 job、不調高上限,上限沿用原 job 的 25;同 2026-11-05 / 2026-11-12 的拆法)。
+    # 水平溢出「選到就露出來」閘在 A7 ② 加了夾具那一段(28 格 + 三種破法 + 「觸發晚到」兩面),而 verify-browser-layout 在 1859b728 那一輪已到 19 分 45 秒 / 上限 25。
+    # 本機實測(同一台機器、同一份建置):`npm run test:overflow-reveal-selected` 146 秒(改前同內容 158 秒:換掉「連續 12 格不動」之後每一步不再固定等,
+    # 抵掉夾具多開的頁),CI 未實測。準備步驟與原 job 逐字相同(ci-workflow-scope 斷言)。
+    # 首跑要看:Linux runner 上滾輪與 scrollend 的行為只在 macOS 量過 —— 量不到會以儀器失效(INSTRUMENT-FAIL、exit 2)結束,不會假綠、也不會指控產品。
+    name: Verify browser(horizontal overflow reveal-selected gate)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      - name: Horizontal overflow reveal-selected invariant (browser)
+        run: |
+          npx --no-install playwright install chromium
+          # 水平溢出「選到就露出來」(2026-11-11 user「都先B」;horizontal-overflow.spec.md):
+          # story 那一段 —— Chip scroll / menu、Tabs scroll / menu、FileViewer 縮圖列 × 點半露的項目 / 方向鍵 / ⌄ 選單 / 縮放,
+          # 剛動到的那一項中心在容器中心 ±2px(兩端夾住另判)且完整可讀;--selftest 每種輸入前一刻吞掉 hook 的 scrollTo,17 個「排 × 輸入」必紅。
+          # 2026-11-12 幾何不靠字型:runner 沒有中日韓字型時閘自己把可視寬切到中間那一項再量(log 標「自備幾何」);--selftest 兩面對照。
+          # 夾具那一段(2026-11-14,A7 ②;守的是規格觸發表裡【AI 推導】的三句,不是 user 的決定):五排 × 掛載選在中間 / 掛載選最後一項 /
+          # 新出現的已選項目 / 滾輪捲過不搶回 / 箭頭翻頁捲過不搶回 / 捲過後再選一項,共 28 格;--selftest 三種破法(swallow / no-childlist /
+          # mute-user-scroll)各自「紅的集合 = 期望」,另加「觸發晚到」兩面(舊的連續 12 格判準量早、新判準等得到)。
+          # 什麼時候量:等觸發送達 → 再一個影格 → 讀 hook 自己傳給 scrollTo 的位置等到位(會動的再等 scrollend)→ 遮罩 / 箭頭跟上;不數影格。
+          npm run test:overflow-reveal-selected
+
+      - name: DatePicker range active-end underline (browser)
+        run: |
+          # 日期區間作用端主色底線畫滿 2px(date-picker.spec.md:193;A50)+ --selftest(該紅列由實量幾何推、跨邊列任何字型都裁得到)。
+          # 2026-11-17 從 verify-browser-interaction 搬來:那支 job 41622d91 撞 25 分上限被取消(d23df592 已 22.9 分),本 job 約 8.5 分 / 上限 25。
+          npm run test:datepicker-range-active-underline
+
   verify-browser-sidebar-keyboard:
     # 2026-11-05 拆自 verify-browser-field-dialog-steps(照主題拆平行 job、不調高上限,上限沿用原 job 的 25;同 2026-10-14 待辦總帳 G10 的拆法)。
     # 原 job 三次 CI 實測 24.6(108a736f)/ 24.1(ac05777d)/ 25.3(4f692d17,撞上限被取消)分;本 job 只跑側欄鍵盤一支,
     # 那支在原 job 裡實測 491 / 517 / 464 秒。準備步驟與原 job 逐字相同(ci-workflow-scope 斷言)。
-    name: Verify browser(sidebar menu keyboard)
+    # 2026-11-13 按預算加欄位開啟外框閘的**對照組**(判定在 verify-browser-field-edges;本機 202 秒,CI 估約 4.5 分):
+    # 本 job 原本約 13 分(建置 + 安裝約 4.5 分 + 側欄鍵盤約 8.5 分)→ 估約 17.5 分 / 上限 25。放這裡是因為它是 25 分 job 裡餘裕最大的一個,
+    # 不是因為主題相同(同 toast-viewport-placement 放 verify-browser-tree-navigation 的先例:不往沒有餘裕的 job 疊)。
+    # 2026-11-13 側欄收合閘加「收合前後圖示中心不動」R8(十二格 + 五種破法 + 判定表;由 test:sidebar-menu-keyboard 帶著跑,沒有新增步驟):
+    # 同一份建置、同一台機器實量,這一串約 440 → 517 秒(+77 秒);2026-11-05 CI 實測的 491 / 517 / 464 秒約是本機舊值的 1.12 倍,
+    # 估 CI 多約 1.4 分 → 本 job 估約 18.9 分 / 上限 25(估計值,合併後回頭看實際時間)。
+    # 2026-11-13 欄位開啟外框閘的對照組多量一組併排欄位組(驗證錯誤的成員)與兩種破法(四種 → 六種):本機 202 → 239 秒,
+    # 估 CI 多約 0.8 分 → 本 job 估約 19.7 分 / 上限 25(估計值)。
+    # 2026-11-18(audit PV4,b5bc8150 / 67b83c7e)對照組加停用成員 S 段、觸控上啟用的原生 Select T 段與三種破法(六種 → 九種):本機 239 → 380 秒
+    #(673 列;數字取自那兩個 commit 的實量),照上一段 +37 秒 ≈ CI +0.8 分的比例估 CI 多約 3.1 分 → 本 job 估約 22.8 分 / 上限 25(估計值,餘裕約 2 分)。
+    name: Verify browser(sidebar menu keyboard + field open border control group)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
@@ -1385,6 +1886,20 @@ jobs:
           # 一串 SidebarMenu = 一個 Tab 停靠點(2026-09-25 待辦總帳 B9 路線乙;「混合內容」範例由 19 站變 6 站):
           # ↑↓ 換項、→ 進列上動作鈕、← 回列、Tab 一下離開,捲動區不是停靠點。真按鍵;--selftest 造回「每項一站、沒有方向鍵」必紅。
           npm run test:sidebar-menu-keyboard
+
+      - name: Field open border control group (browser)
+        run: |
+          # 欄位開啟外框閘的**對照組**(判定 `npm run test:field-open-border` 在 verify-browser-field-edges;按預算放這裡,見本 job 檔頭)。
+          # 在真建置上跑九種破法,每一列照表該紅的紅、該綠的綠,破法拿掉之後同一格當場回綠:
+          # (a) 開著的框改回 hover 色 → 開著的列全紅;(b) 記號 data-field-open 一出現就拿掉(= 元件漏接記號)→ 焦點不在欄位裡的開著列紅、
+          # 靠 focus-within 的照綠;(c) 外框改認通用的 data-state="open" / 裡面任何開著的東西 → 「外面包一層」與「欄位裡的小按鈕」的列紅;
+          # (d) 併排欄位組裡聚焦或開著的那格不再浮到鄰居上面(z-index 壓到 2)→ 鍵盤聚焦與開著兩段的像素列、層級列、停在自己上面的列都紅,
+          # 只有開著的 computed 列綠;(e) 併排欄位組裡聚焦 / 開著的那格壓回跟滑過同一層(2026-11-13 改之前的行為)→ 滑過右鄰居的像素列、
+          # 層級列、停在自己上面的列紅,滑過左鄰居的像素列綠;(f) 只把「聚焦 / 開著又被滑過」的那格壓回 3
+          #(聚焦那一半 = 少了 field-control-group.tsx 第一條補的規則時的樣子)→ 只有停在自己上面的列紅;(g) 停用的成員被滑過時抬回 3(= 2026-11-18 修之前)→ S1(層級)紅、S2(像素)綠;
+          # (h) 停用的成員被滑過時框改成 --primary、層級不動 → S2 紅、S1 綠;(i) 寬的 `:has([disabled])` 放回去 → 觸控上啟用的原生 Select 那三列 T0–T2 紅、
+          # S1 / S2 綠((g)(h) 只跑 S 段,各多一列「還原」;(i) 跑 S、T 兩段,各多一列「還原」)。量不到 = INSTRUMENT-FAIL(exit 2),不當成對照組如預期紅。
+          node scripts/field-open-border-invariant.mjs --selftest
 
   verify-browser-agent:
     # 2026-09-10 拆自 verify-browser-interaction(它加了 docs 競態閘、虛擬游標 F 段、示範閘 S12 / S13 之後 13.1 分鐘被 15 分鐘預算取消)。
@@ -1443,6 +1958,7 @@ jobs:
   verify-browser-cursor:
     # 2026-10-14 拆自 verify-browser-agent(待辦總帳 G10;照主題拆平行 job、不調高上限,上限沿用原 job 的 15)。
     # Storybook 層的兩支(docs 生命週期競態、Devmode addon 視覺驗證)與虛擬游標模態;逐支計時合計 327–391 秒,估約 9 分。
+    # 2026-11-11 加唯讀欄位焦點閘(本機約 105 秒,CI 估 2.5 分)→ 估約 11.5 分,上限 15 不動。
     name: Verify browser(docs race + virtual cursor + devmode)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -1483,6 +1999,11 @@ jobs:
           # 對照組驗鍵盤移回已選項必須有框、純鍵盤開啟立刻有框;F 段(2026-09-10):在文字輸入框裡打字不算鍵盤搬游標。
           # 對照組(--selftest,把游標列釘回舊行為)按預算放在 verify-browser-control-groups。
           npm run test:virtual-cursor-modality
+          # 唯讀欄位滑鼠點不變、鍵盤進來才出 1px 主色邊框(2026-11-11 user「確認 polaris真的就是這樣的話那就照你建議」;focus-canonical.md
+          # 規則二「唯讀的 Field 控件」列):16 個唯讀欄位 × 滑鼠點 / 點過按 Shift / Tab 後再點 / 點標籤(不變)+ Tab / 點過按鍵(恰好一個指示器)
+          # + 同頁可編輯欄位滑鼠點仍亮。--selftest 兩種破法:還原舊 CSS(P 全紅)、拿掉 data-pointer-focus guard(文字框 P1 與全部 P2–P4 紅,
+          # div 型 P1 / K / E 照綠)。同屬「什麼時候畫焦點」,放這個 job:本機現況 35 秒 + 對照組約 70 秒(CI 約本機 1.2–1.4 倍 → 約 2.5 分)。
+          npm run test:readonly-focus-pointer
           # DS Devmode addon 的視覺驗證(定位層 / 小距離紅線 / 緊湊標籤 / 兄弟距離,6 案例,本機 12 秒):
           # 2026-09-27 gate-reachability 把 package.json 從執行面拿掉(N33)後它成了孤兒 —— 只有 `npm run devmode:test` 提到它、
           # 從沒有 workflow 跑過。本機實跑全綠才接上(不是把紅燈接進 CI)。
@@ -1533,6 +2054,117 @@ jobs:
       - name: Demo focus sweep —— 示範 = 滑鼠使用者,沒用鍵盤就不該留著鍵盤焦點框(browser,全 story)
         run: |
           npm run test:story-demo-focus
+
+  verify-browser-doc-headings:
+    # 2026-11-14 新增(A7 ⑤;第四批審查第 13 條「加一支盤點」)。說明頁每一個標題區「底下幾塊」的判定 —— 全部 story 逐則開、不抽樣:
+    # A1 兩種密度判得一樣(layoutSpace.spec.md 規則 3「標題區 → 內容」的固定門檻)、A2 頁面第一次畫出來時的判定 = 版面穩定後產品自己再判一次(【AI 推導】)、
+    # A3 判定 → 距離(Pagination 設計規格三則與 tutorial-page.tsx 的數法同一批修好後計入紅綠,閘檔內 GAP_CHECK_COUNTS = true)。量法:每則開 md 取首次標記 →
+    # 標記打亂、送 Storybook forceReRender、等產品自己寫回 → 再量;有標題區的再開 lg。全 story 掃描等級(同 sweeps:avatar 7.3 分、選項列前緣 ≥ 9 分;
+    # 這一支是一趟半再加重畫),自己一個 job、上限沿用掃描型的 25(1859b728 那一輪 sweeps 整個 job 20 分 21 秒,疊不進去)。本機(並行 4 個瀏覽器)主跑 216–300 秒
+    # (同一台機器另有負載,A3 計入前後量級相同)+ --selftest 8 秒,CI 未實測;首跑若太久:先調 --concurrency(閘的參數,預設 4),再不夠才考慮 lg 那一趟不重開頁
+    # (設計者提過、沒驗)。準備步驟與 verify-browser-sweeps 逐字相同(ci-workflow-scope 斷言)。
+    name: Verify browser(doc heading inventory sweep)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      - name: Doc heading inventory sweep —— 說明頁標題區兩種密度判定相同、首次 = 重判、判定 → 距離(browser,全 story)
+        run: |
+          npx --no-install playwright install chromium
+          # 量具與 section-gap 的標題列共用 scripts/lib/doc-heading-zones.mjs。--selftest:判定表 + Avatar 設計原則「使用指引」上三種破法
+          # (α 一般密度 tight 改 8px → A1 + A2 lg 紅、並印「只比首次標記看不到」;β 首次量完才改 → A2 紅、A1 綠;γ 內容下推 4px → A3 每格正好多 4)
+          # + channel 換空函式 / 不存在的 story / 假建置三種必須判成儀器失效(INSTRUMENT-FAIL、exit 2)。
+          npm run test:doc-heading-inventory
+
+      - name: Radius usage sweep —— 每一則 story 的每個有圓角的元素照 radius.spec.md「四檔」的用途(browser,全 story)
+        run: |
+          # 2026-11-15(user:「本來在該使用什麼圓角的時候不就要動腦想看到底怎樣用才符合ds規範嗎？」):規則只讀 radius.spec.md「四檔」表的
+          # 值 / 機器判定兩欄,量計算後的像素:2px 只給短邊 ≤ 10px、帶 --elevation-200 的浮層外殼 8px(含 role=tooltip 的外殼 4px)、
+          # 8px 只給外殼與四角重合的裁切層、值不在刻度上一律紅;例外 / 還沒修的現況違規登記在 scripts/radius-usage-exceptions.json(過期也紅)。
+          # 同一份建置,Chromium 上一步已裝。本機(並行 4 個瀏覽器)全 1084 則約 2 分;--selftest:判定表 + 真建置三種破法(按鈕 8px / 浮層 4px / 40px 方塊 2px)。
+          # 放在這個 job:同是全 story 掃描等級;CI 未實測,首跑若太久先調 --concurrency。
+          npm run test:radius-usage
+
+  verify-browser-layout-edges:
+    # 2026-11-17 新增(A102;user 2026-11-17:「到底要怎樣才能根本解？確保你每次該遵循layout space設計原則的地方都有遵循？」)。
+    # 容器底距(layoutSpace.spec.md 規則 4)—— 全部 story 逐則開、不靠清單;另點開 aria-haspopup="dialog" 觸發點、一般按鈕、menu 選單項目再量
+    # (量不到的範圍照實寫在閘檔頭與規格:滑過才開的浮層、右鍵 / 子選單、收起來的分頁裡的入口、浮層裡的第二層、連結與非按鈕元素):
+    # 起因是 header-content-sides 只量登記的 28 處,A18 新增的「大檔位:對話框裡放表格」不在清單、底 48(應 16 / 24)在同一份建置上舊閘是綠的。
+    # 全 story 掃描等級(md 全部 + lg 只重量有容器的 + 每個觸發點重開一次 + 一般按鈕 / 選單項目逐一點):本機並行 4 個瀏覽器主跑 12 分(2026-11-17 A102 審查修後實測 721 秒;
+    # 只點 aria-haspopup="dialog" 時是 346 秒)+ --selftest 約 1 分,CI 未實測;
+    # 疊不進 doc-headings(已有標題盤點 + 圓角盤點),自己一個 job、上限沿用掃描型的 25。
+    # 2026-11-17(A102 審查修後):不分片本機 721 秒,加 CI 準備步驟會貼近 25 分上限 → 照 verify-browser-escape-focus-control 的做法
+    # 同一個 job 開兩格 matrix(--shard,閘檔頭:story id 排序後取模),不調高上限;本機每片實測記在下面那一步。兩格都過 needs.<job>.result 才是 success(fan-in 不變)。
+    # 準備步驟與 verify-browser-doc-headings 逐字相同(ci-workflow-scope 斷言)。
+    name: Verify browser(layout body edges sweep)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ['0/2', '1/2']
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      - name: Layout body edges sweep —— 每個容器的「最後一個東西 → 容器底」照規則 4(browser,全 story + 點開浮層)
+        run: |
+          npx --no-install playwright install chromium
+          # 判法全部 import 自 header-first-gap / header-content-sides(pageKit / classifyFirst / classifyBox / bottomWant);邊緣標記 data-layout-region 與 DOM 對不上、
+          # 容器宣告的種類(data-layout-body)與量到的不符也紅。例外只住 scripts/layout-body-edges-exceptions.json(只准變少,對照與 main 的分岔點 —— 所以要 fetch-depth: 0)。
+          # --selftest:判定表 + 真建置(A18 那則現況綠 / 不點觸發點量不到 / 拿掉表格標記紅 / 容器不再自判紅 / 一般按鈕與選單項目開的對話框點了量得到 / 標記造假紅)。
+          # 分兩格(job 檔頭):每格照常判;例外帳「只准變少」與 --selftest 只在 0/2 那格做(1/2 帶 --selftest 會印「略過」);任一格 0 個容器 = 儀器失效。
+          # 本機實測(2026-11-17,並行 4 個瀏覽器、兩片依序跑):0/2 374 秒(含跨片登記補量)、1/2 353 秒;兩片量測 266 + 252 格 = 不分片那一跑的 518 格。
+          node scripts/layout-body-edges-invariant.mjs --shard="$SHARD"
+          node scripts/layout-body-edges-invariant.mjs --selftest --shard="$SHARD"
+        env:
+          SHARD: ${{ matrix.shard }}
 
   verify-browser-overlay-rows:
     # 2026-09-20 拆出來的第十個 job。sweeps 一個 job 序列跑兩支全 1034 支 story 的掃描,
@@ -1704,7 +2336,9 @@ jobs:
     # 2026-10-14(待辦總帳 G10;照主題拆平行 job、不調高上限):最近 15 次 CI p50 14.5 / p90 14.9 / 最大 15.1 分(上限 15),
     # 289bce76 那次撞 15 分被取消(job 115665117169)。兩支全 story 掃描各自變慢(原因記在待辦總帳 G10):欄位左緣 09-29 約 300 秒 → p90 363 秒、
     # footer 內距約 315 秒 → p90 390 秒。footer 內距搬到 verify-browser-footer-gutter,兩邊各約 8.5 分。
-    name: Verify browser(field edges + combobox single path)
+    # 2026-11-13 加欄位開啟外框閘的**判定**(本機 85–90 秒,CI 約本機 1.2–1.4 倍 → 約 2 分)→ 估約 10.5 分,上限 15 不動;
+    # 它的對照組(本機 380 秒,CI 估約 8.4 分 —— 照原句 5.3 分 / 239 秒的同一個比例;380 秒出處 67b83c7e。2026-11-18 audit PV4 加 S、T 兩段與三種破法之前是 239 秒,2026-11-13 加第二組併排欄位組與兩種破法之前是 202 秒)疊進來會超過 15 分,照 virtual-cursor-modality「判定與對照組按預算分開放」的先例放 verify-browser-sidebar-keyboard。
+    name: Verify browser(field edges + combobox single path + field open border)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
@@ -1756,6 +2390,20 @@ jobs:
           # 儲存格的 defaultOpen/onOpenChange 失效,零訊號。靜態字串比對做不到,必須真的用
           # coarse pointer 開瀏覽器。對照組把浮層拔掉、塞回原生 <select>,這支必須紅。
           npm run test:combobox-single-path
+
+      - name: Field open border (browser)
+        run: |
+          # 欄位自己的浮層開著時,外框畫出來的顏色 = 它聚焦時的顏色(一般 --primary、驗證錯誤 --error),而且只認欄位自己的浮層
+          #(field.spec.md「Field state machine」表;2026-11-12 AI 建議、user 採納,原話「我覺得可以照你建議」)。
+          # 量的是四邊 computed 框色(併排欄位組另量四邊中點像素),期望色從頁面上的 token 取:19 種欄位 × 滑鼠點開 / 鍵盤打開
+          #(Select / Combobox / PeoplePicker / DatePicker / 日期區間 / TimePicker 的一般與驗證錯誤)各量開著時滑鼠在空白處 / 欄位上 / 浮層裡、
+          # 關掉後回到原色;表格格內無框款兩格;併排欄位組中間那格;夾具三格「外面包一層浮層把欄位當觸發點」(外面開著不變色、自己開著才變)
+          # 與 FileViewer 縮放欄位裡的小按鈕(開選單外框不變)。併排欄位組量兩組(story「篩選列」期望色 --primary;夾具
+          #「欄位 / 欄位[驗證錯誤] / 欄位」期望色 --error):中間那格鍵盤聚焦 / 滑鼠點開時,滑鼠停在左、右鄰居上 → 兩格共用那條線的像素
+          # = 它的框色,而且中間那格 z-index 4、被滑過的鄰居 3;滑鼠停在中間那格自己上面 → 仍是 4(field-control-group.spec.md「States」;
+          # 2026-11-13 AI 建議、user 採納,原話「你問我的問題，照你建議」)。
+          # 這裡只跑判定;對照組(九種破法)在 verify-browser-sidebar-keyboard(見本 job 檔頭的預算說明)。
+          npm run test:field-open-border
 
   verify-browser-footer-gutter:
     # 2026-10-14 拆自 verify-browser-field-edges(待辦總帳 G10;照主題拆平行 job、不調高上限,上限沿用原 job 的 15)。
@@ -1809,13 +2457,14 @@ jobs:
     name: Verify(tsc + tests + compile + build)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-searchable-fields, verify-browser-tree-navigation, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles, verify-browser-control-groups, verify-browser-searchable-menu-focus, verify-browser-field-dialog-steps, verify-browser-cursor, verify-browser-escape-focus-control, verify-browser-footer-gutter, verify-browser-nested-dismiss, verify-browser-sidebar-keyboard, hooks-linux, governance-control-plane, container-closed-git]
+    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-pinned, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-searchable-fields, verify-browser-tree-navigation, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-doc-headings, verify-browser-layout-edges, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles, verify-browser-control-groups, verify-browser-searchable-menu-focus, verify-browser-field-dialog-steps, verify-browser-cursor, verify-browser-escape-focus-control, verify-browser-footer-gutter, verify-browser-nested-dismiss, verify-browser-sidebar-keyboard, verify-browser-layout, verify-browser-horizontal-overflow, hooks-linux, governance-control-plane, container-closed-git]
     if: always()
     steps:
       - name: Every verify job must have succeeded
         env:
           STATIC: ${{ needs.verify-static.result }}
           BROWSER_DT: ${{ needs.verify-browser-datatable.result }}
+          BROWSER_DT_PINNED: ${{ needs.verify-browser-datatable-pinned.result }}
           BROWSER_DT3: ${{ needs.verify-browser-datatable-perception.result }}
           BROWSER_DT2: ${{ needs.verify-browser-datatable-dpr2.result }}
           BROWSER_SEARCH_FIELDS: ${{ needs.verify-browser-searchable-fields.result }}
@@ -1824,6 +2473,8 @@ jobs:
           BROWSER_OVERLAY: ${{ needs.verify-browser-overlay.result }}
           BROWSER_AGENT: ${{ needs.verify-browser-agent.result }}
           BROWSER_SWEEPS: ${{ needs.verify-browser-sweeps.result }}
+          BROWSER_DOC_HEADINGS: ${{ needs.verify-browser-doc-headings.result }}
+          BROWSER_LAYOUT_EDGES: ${{ needs.verify-browser-layout-edges.result }}
           BROWSER_SELECT_ALL: ${{ needs.verify-browser-select-all.result }}
           BROWSER_FIELD_EDGES: ${{ needs.verify-browser-field-edges.result }}
           BROWSER_OVERLAY_ROWS: ${{ needs.verify-browser-overlay-rows.result }}
@@ -1836,12 +2487,14 @@ jobs:
           BROWSER_FOOTER_GUTTER: ${{ needs.verify-browser-footer-gutter.result }}
           BROWSER_NESTED_DISMISS: ${{ needs.verify-browser-nested-dismiss.result }}
           BROWSER_SIDEBAR_KEYBOARD: ${{ needs.verify-browser-sidebar-keyboard.result }}
+          BROWSER_LAYOUT: ${{ needs.verify-browser-layout.result }}
+          BROWSER_HORIZONTAL_OVERFLOW: ${{ needs.verify-browser-horizontal-overflow.result }}
           HOOKS_LINUX: ${{ needs.hooks-linux.result }}
           GOV_CONTROL_PLANE: ${{ needs.governance-control-plane.result }}
           CONTAINER_CLOSED_GIT: ${{ needs.container-closed-git.result }}
         run: |
-          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-searchable-fields=$BROWSER_SEARCH_FIELDS verify-browser-tree-navigation=$BROWSER_TREE_NAV verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES verify-browser-control-groups=$BROWSER_CONTROL_GROUPS verify-browser-searchable-menu-focus=$BROWSER_SEARCH_MENU_FOCUS verify-browser-field-dialog-steps=$BROWSER_FIELD_DIALOG_STEPS verify-browser-cursor=$BROWSER_CURSOR verify-browser-escape-focus-control=$BROWSER_ESCAPE_FOCUS_CONTROL verify-browser-footer-gutter=$BROWSER_FOOTER_GUTTER verify-browser-nested-dismiss=$BROWSER_NESTED_DISMISS verify-browser-sidebar-keyboard=$BROWSER_SIDEBAR_KEYBOARD hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE container-closed-git=$CONTAINER_CLOSED_GIT"
-          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_SEARCH_FIELDS" = success ] && [ "$BROWSER_TREE_NAV" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$BROWSER_CONTROL_GROUPS" = success ] && [ "$BROWSER_SEARCH_MENU_FOCUS" = success ] && [ "$BROWSER_FIELD_DIALOG_STEPS" = success ] && [ "$BROWSER_CURSOR" = success ] && [ "$BROWSER_ESCAPE_FOCUS_CONTROL" = success ] && [ "$BROWSER_FOOTER_GUTTER" = success ] && [ "$BROWSER_NESTED_DISMISS" = success ] && [ "$BROWSER_SIDEBAR_KEYBOARD" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ] && [ "$CONTAINER_CLOSED_GIT" = success ]
+          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-pinned=$BROWSER_DT_PINNED verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-searchable-fields=$BROWSER_SEARCH_FIELDS verify-browser-tree-navigation=$BROWSER_TREE_NAV verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-doc-headings=$BROWSER_DOC_HEADINGS verify-browser-layout-edges=$BROWSER_LAYOUT_EDGES verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES verify-browser-control-groups=$BROWSER_CONTROL_GROUPS verify-browser-searchable-menu-focus=$BROWSER_SEARCH_MENU_FOCUS verify-browser-field-dialog-steps=$BROWSER_FIELD_DIALOG_STEPS verify-browser-cursor=$BROWSER_CURSOR verify-browser-escape-focus-control=$BROWSER_ESCAPE_FOCUS_CONTROL verify-browser-footer-gutter=$BROWSER_FOOTER_GUTTER verify-browser-nested-dismiss=$BROWSER_NESTED_DISMISS verify-browser-sidebar-keyboard=$BROWSER_SIDEBAR_KEYBOARD verify-browser-layout=$BROWSER_LAYOUT verify-browser-horizontal-overflow=$BROWSER_HORIZONTAL_OVERFLOW hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE container-closed-git=$CONTAINER_CLOSED_GIT"
+          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT_PINNED" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_SEARCH_FIELDS" = success ] && [ "$BROWSER_TREE_NAV" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_DOC_HEADINGS" = success ] && [ "$BROWSER_LAYOUT_EDGES" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$BROWSER_CONTROL_GROUPS" = success ] && [ "$BROWSER_SEARCH_MENU_FOCUS" = success ] && [ "$BROWSER_FIELD_DIALOG_STEPS" = success ] && [ "$BROWSER_CURSOR" = success ] && [ "$BROWSER_ESCAPE_FOCUS_CONTROL" = success ] && [ "$BROWSER_FOOTER_GUTTER" = success ] && [ "$BROWSER_NESTED_DISMISS" = success ] && [ "$BROWSER_SIDEBAR_KEYBOARD" = success ] && [ "$BROWSER_LAYOUT" = success ] && [ "$BROWSER_HORIZONTAL_OVERFLOW" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ] && [ "$CONTAINER_CLOSED_GIT" = success ]
 
   hooks-linux:
     name: Governance hooks(Linux portability)
@@ -1906,6 +2559,15 @@ jobs:
           npm run --silent test:waived-self-review
           npm run --silent test:governance-evidence-control-plane
           npm run --silent test:governance-control-plane
+
+      # 2026-11-20(knowledge-prune WP-21):原本只在夜間 harness 跑、比較慢的靜態閘放這個平行 job,不拉長 verify-static 的關鍵路徑
+      # (同一批其他 18 支在 verify-static「Static gates that used to run only nightly」)。先跑主判定,再跑紅面。
+      - name: Slow static gates that used to run only nightly
+        run: |
+          # 每個 token 要嘛有人用、要嘛落在分類表 token-registry.json 的保留類別且在 baseline 裡(tokens/orphan-tokens.spec.md)。
+          # 本機主判定約 13 秒;紅面約 66 秒(注入真孤兒 / 只被自訂屬性讀的名字 / 拿掉分類表一類,各自必紅)。
+          node scripts/audit-orphan-tokens.mjs --check
+          node scripts/test-audit-orphan-tokens.mjs
 
   container-closed-git:
     name: Closed git inside the pinned Playwright container(Visual Regression 的執行環境)

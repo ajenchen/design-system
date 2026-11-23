@@ -39,6 +39,7 @@ import {
 import { ARROW_BUTTON_WIDTH,
   useScrollEdges,
   useScrollByPage,
+  useRevealSelected,
   buildFadeMask,
   OverflowScrollArrow,
 } from '@/design-system/patterns/horizontal-overflow/horizontal-overflow'
@@ -66,7 +67,7 @@ import { useExitStartFocusReturn, useTriggerlessFocusReturn, radixTriggerOf } fr
  * ── 實作基礎 ──
  * 自建 composite,消費 DS primitives:
  *   - Radix DialogPrimitive(焦點 trap / Esc / modal 隔離靠 hideOthers aria-hidden — react-dialog@1.1.x 不輸出 aria-modal,保有 shadcn 結構優勢)
- *   - `<Empty>` / `<Button>` / `<Input size="sm" autoWidth>`(ZoomInput,default variant)/ `<AspectRatio>` / `<Textarea>` / `<DropdownMenu>`
+ *   - `<Empty>` / `<Button>` / `<Input size="sm" width="hug">`(ZoomInput,default variant)/ `<AspectRatio>` / `<Textarea>` / `<DropdownMenu>`
  *   - `patterns/horizontal-overflow`(filmstrip 溢出捲動)
  * 不用 DS 的 `<Dialog>` wrapper:因為 FileViewer 需要 edge-to-edge fullscreen
  * (無 viewport inset / 無 rounded-lg / 無 maxWidth),Dialog 的這些預設都要覆寫。
@@ -186,13 +187,13 @@ interface ZoomInputProps {
 }
 
 /**
- * ZoomInput — [−] [% input(default variant + autoWidth)with ⌄ menu trigger] [+]
+ * ZoomInput — [−] [% input(default variant + width="hug")with ⌄ menu trigger] [+]
  *
  * 世界級對照:Figma zoom control / Adobe Acrobat / Google Slides zoom。
  *
  * ── 消費 DS primitive ──
  *   - `<Button>` iconOnly size="sm" 作 ±按鈕
- *   - `<Input size="sm" autoWidth>` 作 %輸入(Toolbar inline editing canonical;autoWidth 隨文字寬)
+ *   - `<Input size="sm" width="hug">` 作 %輸入(Toolbar inline editing canonical;跟內容寬 = 隨文字寬;2026-11-15 前寫 autoWidth)
  *   - Input `endSlot` escape hatch 包 `<DropdownMenuTrigger asChild>` + chevron 觸發 DropdownMenu
  *   - `<DropdownMenu>` 作 preset + fit 選單(取代原先 Popover + 手刻 button list)
  *
@@ -240,12 +241,12 @@ const ZoomInput: React.FC<ZoomInputProps> = ({ value, onChange, onFit, labels })
           — 靠 Radix asChild + ItemInlineActionButton:視覺是 Input + endAction,行為是 chevron-as-trigger
           — 完全對齊 user 2026-04-21「應該只有inline aciton 可以觸發選單才對,然後選單要按原則對齊inline action」 */}
       <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
-        {/* maxLength 限縮(2026-07-09 user 要求:找合理最大值避免無限輸入(轉述)):autoWidth 下輸入框寬度隨字數長,
+        {/* maxLength 限縮(2026-07-09 user 要求:找合理最大值避免無限輸入(轉述)):跟內容寬(width="hug")下輸入框寬度隨字數長,
             無上限則可無限打字撐爆 toolbar。max 合法值「400%」= 4 字(對齊 ZOOM_PRESETS / ImageRenderer MAX_SCALE 400;
             commitDraft 另 clamp 10–400),留 1 字編輯緩衝 → maxLength={5}。 */}
         <Input
           size="sm"
-          autoWidth
+          width="hug"
           maxLength={5}
           aria-label={labels.zoomInput}
           value={draft}
@@ -278,7 +279,7 @@ const ZoomInput: React.FC<ZoomInputProps> = ({ value, onChange, onFit, labels })
         <DropdownMenuContent
           align="end"
           sideOffset={OVERLAY_SIDE_OFFSET}  // 2026-07-04:M17 — elevation.spec「primitive default 必 import 該 const」
-          // minWidth 對齊 trigger(Input autoWidth),menu 寬度 fit-content 更貼近觸發點視覺中心
+          // minWidth 對齊 trigger(Input width="hug"),menu 寬度 fit-content 更貼近觸發點視覺中心
           className="min-w-[9rem] w-auto bg-surface-raised text-foreground border-divider"
           data-theme="dark"
         >
@@ -513,16 +514,17 @@ const InfoPanel = React.memo(function InfoPanel({
       </ChromeHeader>
 
       {/* Panel body — header(shrink-0)上常駐 + body 走 ScrollArea(高度小時內容可捲動)。
-          底部 = bottom 48:資訊面板最後是一般元素(layoutSpace.spec.md「檔案資訊」DescriptionList = element),
-          FileViewer 會擋住頁面而且高度撐滿 → 規則 4 第 1 列(user 2026-10-28「這個沒問題」)。最後一個 DescriptionList 列
+          上下內距由容器自己給(data-layout-body="fill",tokens/layoutSpace/layoutSpace.css;2026-11-17 A102 起不在本檔寫值):
+          資訊面板最後是一般元素(layoutSpace.spec.md「檔案資訊」DescriptionList = element),
+          FileViewer 會擋住頁面而且高度撐滿 → 規則 4 第 1 列 = bottom 48(user 2026-10-28「這個沒問題」)。最後一個 DescriptionList 列
           不自帶下內距(description-list.tsx `last:pb-0`),這段距離只由這一層給。
-          gap 對齊 v6 規則 3「跨範疇 parallel = loose」(說明 vs 檔案資訊兩個獨立 functional sections,
-          屬「跨範疇 + 不相關」)— 從 gap-4 寫死改為 token-aware loose。 */}
+          說明 ↔ 檔案資訊 = 區塊 ↔ 區塊:一條隱形分隔線的位置,上下各 loose(合計 loose × 2;layoutSpace.spec.md 規則 3「組 ↔ 組」,
+          user 2026-11-06 #18「照你建議」= 乙)。區塊感夠(兩塊各有標題)→ 不畫線;只有 loose 時「檔案資訊」標題離上一塊(16)
+          比離自己的清單還近,看起來黏在上面那塊。 */}
       <ScrollArea className="flex-1 min-h-0">
-        <div className={cn(
-          'flex flex-col gap-[var(--layout-space-loose)]',
+        <div data-layout-body="fill" className={cn(
+          'flex flex-col gap-[calc(var(--layout-space-loose)*2)]',
           'px-[var(--layout-space-loose)]',
-          'pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]',
         )}>
         {/* 說明 — 用 DS Field + FieldLabel + Textarea(2026-04-20 B12 決策:
             FileViewer 一律消費 DS Field 家族,不手刻 `<span>label` + raw control) */}
@@ -587,13 +589,13 @@ const Filmstrip = React.memo(function Filmstrip({ files, activeIndex, onSelect, 
   const scrollByPage = useScrollByPage(scrollRef)
   const maskImage = buildFadeMask({ canScroll, atStart, atEnd, reserveArrowWidth: ARROW_BUTTON_WIDTH })  // 2026-07-04:消 SSOT 硬寫(spec 禁止重新定義 ARROW_BUTTON_WIDTH)
 
-  // 切換當前檔案時,自動 scroll 讓 active thumb 可見
-  React.useEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
-    const active = el.querySelector<HTMLButtonElement>(`[data-thumb-index="${activeIndex}"]`)
-    active?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
-  }, [activeIndex, scrollRef])
+  // 目前那張(aria-current)置中:切換檔案(點縮圖 / ← → / 程式改 index)、Tab 鍵焦點、縮放視窗 —— 同一個 primitive
+  //(horizontal-overflow.spec.md「選到就露出來」,對齊 B;2026-11-11 前這裡自己寫一份 scrollIntoView,只看 activeIndex)
+  useRevealSelected(scrollRef, {
+    itemSelector: '[data-thumb-index]',
+    selectedAttribute: { name: 'aria-current', value: 'true' },
+    reserveArrowWidth: ARROW_BUTTON_WIDTH,
+  })
 
   return (
     <div

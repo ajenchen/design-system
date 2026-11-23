@@ -47,10 +47,15 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-// 嵌在頁面裡(不在浮層內)的 Command 外框:規格只要求自己包一層「rounded + border」(command.spec.md「禁止事項」Inline 那條;
-// shadcn 範例是 rounded + border + shadow,這裡只取前兩項,https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/examples/command-demo.tsx#L23),跟設計規格頁「元件總覽」同一個樣子 —— 不加浮層的底色與陰影(它不是浮層)。下面四則共用這一份。
+// 嵌在頁面裡(不在浮層內)的 Command 外框。規格原文(command.spec.md「禁止事項」Inline 那條,兩段逐字):
+// 「shadcn 預設範例即 inline 且包 `rounded-lg border shadow-md`」;
+// 「允許但**必須自己包有邊框的容器**(rounded + border,對齊 shadcn 同款),圓角值照 `../../tokens/radius/radius.spec.md`(不浮起來的容器 = `rounded-md`)【AI 推導 2026-11-18】」。
+// 所以這裡只有圓角 + 邊框,圓角值的出處是 radius.spec.md「`rounded-md`(4px)— 一般元件」那一節的
+// 「不浮起來的容器(頁面上的卡片、內嵌通知;DS 目前沒有 Card 元件)」;shadcn 範例的 rounded-lg 與 shadow-md 不照抄
+// (https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/examples/command-demo.tsx#L23)——
+// 它不是浮層,不加浮層的底色與陰影。跟設計規格頁「元件總覽」同一個樣子;下面四則共用這一份。
 function InlineFrame({ children }: { children: ReactNode }) {
-  return <div className="max-w-md rounded-lg border border-border overflow-hidden">{children}</div>
+  return <div className="max-w-md rounded-md border border-border overflow-hidden">{children}</div>
 }
 
 // 範例裡「選了就跳到那一頁」:讀者不會真的離開 Storybook,改在 Actions 面板記一筆要去哪

@@ -3,9 +3,9 @@
  * measure-action-dividers.mjs — action region 分隔線的**像素量測**驗證(M32:量真像素,不驗屬性存在)。
  *
  * 幾何 SSOT = `packages/design-system/src/patterns/action-bar/action-bar.spec.md`「分隔線幾何」:
- *   線長 = 該列最高元件 − --action-divider-inset(8px),不短於 --action-divider-min(16px),垂直置中。
+ *   線長 = 該列最高元件 − 內縮 8px,不短於地板 16px(= --field-height-xs − 內縮),垂直置中。
  *
- * 靜態防線(scripts/test-action-divider-placement.mjs)只能鎖住 class 與 token 寫法;
+ * 靜態防線(scripts/test-action-divider-placement.mjs)只能鎖住 class 與元件內變數的寫法;
  * 「算出來到底幾 px、置不置中、同列是否等長」必須實際渲染才知道。2026-08-07 事故就是
  * class 一模一樣、算出來卻是 13 / 16 / 24 三種長度。
  *

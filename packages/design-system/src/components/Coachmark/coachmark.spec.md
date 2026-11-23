@@ -17,7 +17,7 @@ benchmark:
 
 Coachmark 是**主動推送的功能介紹浮層**——anchor 到特定 UI 元素,帶 media + title + description + footer 按鈕列,用於首次功能介紹 / onboarding 多步導覽 / 新功能提示。
 
-**實作基礎**:Popover 的 composition pattern——完全消費 Popover 的定位、動畫、焦點管理、overlay-surface padding 系統,不自寫浮層邏輯。差別:(1) **Header 可選**(`kind="tips" | "new-features" | ReactNode`;single-step 常無 header、multi-step tour 建議帶 header 提示整體脈絡),(2) 有 **Media 區**(可選,頂部 full-width 圖 / 截圖 / illustration),(3) Footer 是 `justify-between`(左 step 計數 / 右 actions)而非 `justify-end`。
+**實作基礎**:Popover 的 composition pattern——完全消費 Popover 的定位、動畫、焦點管理、overlay-surface padding 系統,不自寫浮層邏輯。差別:(1) **Header 可選**(`kind="tips" | "new-features" | ReactNode`;single-step 常無 header、multi-step tour 建議帶 header 提示整體脈絡),(2) 有 **Media 區**(可選,頂部 full-width 圖 / 截圖 / illustration),(3) Footer 是 `justify-between`(左 step 計數 / 右 actions)而非 `justify-end`,(4) Footer 上方**不畫分隔線**(見「與 Popover 的關係」)。
 
 **Layout Family**:非上述 family — composite / multi-section(Media / Body / Footer 多區塊組合)。
 
@@ -30,8 +30,10 @@ Coachmark 是**主動推送的功能介紹浮層**——anchor 到特定 UI 元�
 Coachmark **就是** Popover 的 composition —— 不是競品。改 Popover 視覺(bg / border / shadow / radius / padding)Coachmark 自動跟進,不需雙邊同步。唯一 Coachmark 自己擁有的視覺決策:
 
 - **預設比 Popover 寬一階**:容納 media + 多行 description(主動推送內容量 > 篩選面板);固定單一寬度、無 size variant,具體寬度值見 `coachmark.tsx`
-- **外殼移除預設 padding 並裁切圓角**:讓 Media 邊緣貼齊外殼圓角;Body / Footer 各自消費 overlay-surface padding token(實作見 `coachmark.tsx`)
 - **Footer `justify-between`**:step 計數(左)+ actions(右)，把目前位置與可執行導覽分成兩個穩定區域
+- **Footer 不畫上分隔線**:`PopoverFooter` 預設帶上分隔線(`../Popover/popover.spec.md`「結構化組合」:「含操作按鈕列：再加 `<PopoverFooter>`（上分隔線由 Footer 提供）」),Coachmark 傳 `!border-t-0` 拿掉(`coachmark.tsx` 的 `PopoverFooter`)。理由照程式註解原文:「footer 無上方分隔線(media + body + footer 視覺一氣呵成,不像 Dialog 需要 header/footer 分隔強化結構)」。所以整張卡畫出來的分隔線只有一條 —— 有 Header(傳了 `kind`)時 Header 底下那條(`PopoverHeader` 自帶,同一段「含標題」:「下分隔線由 Header 提供」);沒有 Header 就一條都沒有(見「Anatomy」)
+
+**外殼不是 Coachmark 的決策**(2026-11-18 更正):現在的 Popover 外殼沒有內距(`../Popover/popover.spec.md`「結構化組合」第一句:「PopoverContent 外殼無內距」),而且同一個外殼帶 `overflow-hidden`、超出圓角的部分直接裁掉(`popover.tsx` 的 `PopoverContent`)—— 所以 Media 邊緣貼齊外殼圓角是沿用 Popover 外殼的結果;Body / Footer 各自消費 overlay-surface 內距 token。`coachmark.tsx` 另寫的 `p-0 overflow-hidden` 與外殼重複,畫面不靠它。2026-11-18 前本段寫「外殼移除預設 padding 並裁切圓角」,列成 Coachmark 自己的決策 —— 那是建立當時的狀況,後來由 Popover 外殼自己補齊而過期(`git log --follow` 查 `popover.tsx`):Popover 外殼原本帶 shadcn 預設的 `p-4`(2026-04-08 `fad4f825`;shadcn 的 `PopoverContent` className 含 `rounded-md border bg-popover p-4 text-popover-foreground`,[popover.tsx](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/popover.tsx)),2026-04-19 `2ad73312` 拿掉;Coachmark 同一天稍晚建立(`ee3e8f83`),寫 `p-0 overflow-hidden` 時 `p-0` 已經多餘,`overflow-hidden` 則是 Coachmark 自己的;2026-05-04 `066a976d` Popover 外殼也加上 `overflow-hidden`,裁切圓角才不再是 Coachmark 的決策。
 
 SSOT 規則:**Coachmark 不重寫 Popover 的任何視覺 token**,只加自己結構層的差異。
 
@@ -80,20 +82,22 @@ SSOT 規則:**Coachmark 不重寫 Popover 的任何視覺 token**,只加自己�
 ┌────────────────────────────────┐
 │ Header(可選)                  │  ← kind="tips"/"new-features";tour-level title
 │   使用技巧 / 新功能介紹        │
-├────────────────────────────────┤
+├────────────────────────────────┤  ← 整張卡唯一畫出來的分隔線(Header 自帶;沒有 Header 就沒有)
 │ Media                          │  ← 可選,頂部 full-width,AspectRatio 鎖比例(預設 16:9)
 │ (image / illustration / video) │     邊緣貼齊外殼圓角
-├────────────────────────────────┤
+│ · · · · · · · · · · · · · · ·  │  ← 點線只標分區的分界:不畫線,分區直接相接
 │ Body                           │  ← Title + Description(token 見「視覺 Token」表)
 │   Title                        │
 │   Description                  │
-├────────────────────────────────┤
+│ · · · · · · · · · · · · · · ·  │  ← 不畫線:Footer 拿掉 PopoverFooter 預設的上分隔線(見「與 Popover 的關係」)
 │ Footer(justify-between)        │  ← 左 step 計數 / 右 actions
 │ 第 1 步,共 3 步 [略過][下一步] │     多步驟第一步:有略過,無上一步
 │ 第 2 步,共 3 步 [上一步][下一步]│     多步驟中段:有上一步,略過自動隱藏
 │                  [知道了]      │     單步驟:無步驟計數 / 上一步 / 略過,只 CTA
 └────────────────────────────────┘
 ```
+
+Media + Body 合稱**內容區**:超過可用高度時只有這一區捲動,Header / Footer 固定(見「高度與捲動」)。
 
 ---
 
@@ -127,11 +131,25 @@ SSOT 規則:**Coachmark 不重寫 Popover 的任何視覺 token**,只加自己�
 
 ---
 
+## 高度與捲動
+
+〔user 2026-11-22 拍板「丙」:「我以為高度應該要隨著內容自動在設計規格下長高，消費者自己去把控內容高度，但 coachmark 跟其他 select menu 一樣，萬一真的遇到很極端的狀況也不會溢出螢幕之外，會變成body 是可以捲動的，這樣才是最 SSOT 的方式吧？」〕
+
+- **高度隨內容**:外殼寬度固定(見「與 Popover 的關係」),高度跟著內容長;說明寫幾行由使用端決定,元件不設行數上限
+- **最高到可用高度**:上限沿用 Popover 外殼(`../Popover/popover.spec.md`「實作 —— 極長內容」:`max-h` = Radix 算出的觸發點那一側可用高度,已扣安全邊距),卡片不會超出視窗
+- **超過時內容區捲動**:Header(標題列)與 Footer(步驟計數 / 按鈕)不縮、永遠看得到;中間的內容區(Media + Body)包 `ScrollArea` 捲動 —— 與長內容 Popover 同款(`../../patterns/overlay-surface/overlay-surface.spec.md`「Popover 例外」「Coachmark」)
+- **鍵盤**:內容區真的捲得動時才進 Tab 順序(`tabIndex=0`,焦點框是 ScrollArea 自帶的 inset DS focus ring,`../ScrollArea/scroll-area.spec.md`),聚焦後方向鍵 / PageDown / End 捲動;放得下時不多這一站(overlay-surface.spec.md「Focus ownership」:短內容不是捲動區)
+- **放得下時畫面不變**:內容區高度 = 內容高度,Media 照樣貼齊外殼(「Media 區規則」位置)、Body 內距照 overlay-surface
+- 機械檢查:`scripts/overlay-story-contract-invariant.mjs` R19(放得下時說明底不低於頁腳頂、內容區不是 Tab 停點)/ R20(展示檔裡標 `tags: ['test-only']` 的「內容超過可用高度:捲動回歸量測夾具」:內容區捲得動、可用鍵盤捲到底、標題列與頁腳在畫面內;夾具故意塞超長說明,只給量具用,不是範例)
+
+---
+
 ## Media 區規則
 
 - **比例**:預設 16:9(`mediaRatio` prop 預設 `16/9`),由 `AspectRatio` 鎖長寬比 — 同一段 tour 各步驟維持一致比例,consumer 不需自己算高度。需要時 consumer 可傳 `mediaRatio`(如 `4/3` 產品截圖 / `1/1` 方圖 / `3/4` 直式)覆寫
 - **背景**:預設 `bg-muted`(當內容是 illustration 或透明 PNG 時有底色)
 - **邊緣**:圓角切齊靠外殼裁切(見「與 Popover 的關係」)——media 不自帶圓角
+- **位置**【AI 推導 2026-11-13;畫面沒有改,只把原本沒寫的寫下來】:Media 是外殼的一個分區,跟 Header / Body / Footer 同層(見「Anatomy」),分區與分區直接相接、中間不留距離 —— 左右貼外殼內緣;上緣:沒有 Header 時貼外殼頂,有 Header 時貼 Header 底下那條分隔線;下緣直接接 Body(圖 → 內文標題的距離 = PopoverBody 自己的上內距)。Media 不是 Body 裡的內容,所以不套「標頭 → 第一個內容」那張表(SSOT:`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 2「適用範圍與量法三點」(1):結構分區 = 元件規格的 Anatomy 明列為跟 Header / Body 同層的一格)。由 `scripts/overlay-story-contract-invariant.mjs` 的 R17(上緣)/ R18(左右)機械檢查(有 / 沒有 Header 的兩則展示 × 一般 / 大密度量像素)
 - **支援內容**:image / video / SVG illustration / animated GIF / Lottie
 - **禁止**:不放互動元件(按鈕 / 輸入框)——media 純視覺說明,互動一律走 footer
 
@@ -165,7 +183,7 @@ const steps = [
 上一步(可選)→ 略過(可選)→ 下一步 / 完成。
 
 **對齊與順序的 owner 都不在本檔**(三份,依序):
-1. **對齊**:依 `../../patterns/overlay-surface/overlay-surface.spec.md:237`「單側時用」(「底部區域:按鈕列 vs 列式」表的「排版」列:`SurfaceFooter` 是 `justify-end`,單側有內容時 `justify-between`,先例就是本元件左側的步驟計數;`PopoverFooter` 是它的純轉發)。實作:單步卡(沒有計數)也靠右 —— `coachmark.tsx` 用 `<span aria-hidden />` 佔住左側、維持 `justify-between`。Dialog 頁腳同一條:`../Dialog/dialog.spec.md`「Footer 按鈕」(`justify-end`)與「禁止事項」。
+1. **對齊**:依 `../../patterns/overlay-surface/overlay-surface.spec.md:243`「單側時用」(「底部區域:按鈕列 vs 列式」表的「排版」列:`SurfaceFooter` 是 `justify-end`,單側有內容時 `justify-between`,先例就是本元件左側的步驟計數;`PopoverFooter` 是它的純轉發)。實作:單步卡(沒有計數)也靠右 —— `coachmark.tsx` 用 `<span aria-hidden />` 佔住左側、維持 `justify-between`。Dialog 頁腳同一條:`../Dialog/dialog.spec.md`「Footer 按鈕」(`justify-end`)與「禁止事項」。
 2. **順序 = 全局排序**:`../../patterns/action-bar/action-bar.spec.md`「全局排序」(`primary > secondary > tertiary > text`;**靠右對齊時 primary 在最右**、靠左對齊時 primary 在最左)。本 footer 靠右 → 推進鍵(primary)在最右,上一步 / 略過(tertiary)在它左邊。
 3. **頁面裡的步驟列不套本段**:頁面裡跟著內容、沒有標題的一排「上一步 / 下一步」走 `action-bar.spec.md`「對齊方向的決定」(沒有標題 → 靠左)+ 同一條全局排序(靠左 → primary「下一步」在最左);放在頁面置底 footer 的(TreeView 步驟導覽右半邊,2026-10-20 user「Q1照建議」)照 `SurfaceFooter` 靠右、primary 在最右 —— 那是第 1 點同一個 owner,不是引本段。本段的結果(primary 在最右)來自「浮層頁腳靠右」,不是步驟流程的通則,別處不得引本段當依據(AI 查證,2026-10-20:TreeView 步驟引導的註解引本段當依據、排成靠左的「上一步 | 下一步」,與全局排序相反 —— 本段原本只寫 Coachmark 自己的語意理由、沒有指回 owner,是被錯引的原因;盤查由 user 2026-10-20 的提問觸發:「我們應該也有定義何時primary放右何時放左吧？為何沒注意？為何會漂移？我們有SSOT吧？」)。
 
@@ -188,8 +206,8 @@ const steps = [
 | Title | `text-body-lg font-medium text-foreground` | body 主 title(16px),比 kind header 的 `PopoverTitle` 小標籤(`text-body` 14px)重一階——主教學訊息是視覺主角 |
 | Description | `text-body text-fg-secondary` | 主說明文字 |
 | Step 計數 | `text-body text-fg-secondary tabular-nums` | 跟 body 內文同字體；固定數字 advance width，切換步驟時維持量測穩定 |
-| Body padding | `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]` | overlay-surface SSOT(PopoverBody) |
-| Footer padding | 同上 | overlay-surface SSOT(PopoverFooter) |
+| Body padding | 左右 `px-[var(--layout-space-loose)]`;上下由容器自己給(SurfaceBody 宣告 `data-layout-body="hug"`,`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 4「容器自己判,不由寫的人挑值」),本規格不寫值 | overlay-surface SSOT(PopoverBody) |
+| Footer padding | `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]` | overlay-surface SSOT(PopoverFooter) |
 | Width | 比 Popover 預設寬一階(固定,具體 class 見 `coachmark.tsx`) | 固定;consumer 可 className 覆寫 |
 
 ---
@@ -199,7 +217,6 @@ const steps = [
 - ❌ **不用 Coachmark 做錯誤提示**——錯誤是系統回饋使用者動作的結果,用 `Notice` / `Alert` / `Toast`。Coachmark 是主動推送教學,語意相反
 - ❌ **不用 Coachmark 做確認框**——確認破壞性動作必須阻斷流程,改用 `Dialog`
 - ❌ **Media 區不放互動元件**——按鈕 / 輸入 / checkbox 一律走 footer。Media 是視覺說明不是互動區
-- ❌ **Description 不寫超過 3 行**——Coachmark 是快速說明,超過 3 行改用 Dialog + 完整 body 或連結到說明文件
 - ❌ **不強迫完成 tour**——永遠提供退出機制(Esc / header Close / 第一步略過鍵)。沒有退出的 onboarding 讓使用者感到被綁架,反而降低完成率。註:header Close 僅在傳 `kind`(有 header)時才 render;無 `kind` 的 multi-step tour 第 2+ 步退出靠 Esc(永遠可用),multi-step 務必傳 `kind` 以提供 header Close 退出入口
 - ❌ **單步驟 CTA 不叫「下一步」**——沒有下一步就不用這個字眼,用 `'知道了'`(或 consumer 經 `doneLabel` 傳「開始使用」這類完成詞)
 - ❌ **有上一步時不同時顯示略過**——使用者投入進度後兩個退出路徑衝突(見 CTA 語義表)
@@ -210,7 +227,7 @@ const steps = [
 
 ## A11y 預設
 
-- **焦點管理**:Coachmark **刻意抑制 CTA 自動 focus**(`onOpenAutoFocus` preventDefault 後 focus content 容器本身,對齊 `dialog.tsx` 的 `?? content` fallback canonical)——避免使用者還在讀 body 時 CTA 被 auto-focus 偷觸發(焦點在容器上按 Enter 無動作);按 Tab 移到 content 內第一個 tabbable(單步無 header 即推進 CTA;有 header 會先到 PopoverHeader 右上 Close X,多步則先經上一步 / 略過)。焦點**不**停在 trigger:non-modal Popover 焦點在 content 樹外時按 Tab 會觸發 focus-outside dismiss 誤關閉浮層,CTA 鍵盤永遠到不了(2026-07-05 D4 修;dismiss 機制詳 `popover.spec.md` A11y 段)。關閉時焦點 return to trigger(Radix 預設 `onCloseAutoFocus`,未 override)
+- **焦點管理**:Coachmark **刻意抑制 CTA 自動 focus**(`onOpenAutoFocus` preventDefault 後 focus content 容器本身,對齊 `dialog.tsx` 的 `?? content` fallback canonical)——避免使用者還在讀 body 時 CTA 被 auto-focus 偷觸發(焦點在容器上按 Enter 無動作);按 Tab 移到 content 內第一個 tabbable(單步無 header 即推進 CTA;有 header 會先到 PopoverHeader 右上 Close X,多步則先經上一步 / 略過;內容區捲得動時,Close X 之後先到內容區,見「高度與捲動」)。焦點**不**停在 trigger:non-modal Popover 焦點在 content 樹外時按 Tab 會觸發 focus-outside dismiss 誤關閉浮層,CTA 鍵盤永遠到不了(2026-07-05 D4 修;dismiss 機制詳 `popover.spec.md` A11y 段)。關閉時焦點 return to trigger(Radix 預設 `onCloseAutoFocus`,未 override)
 - **Esc 關閉**:預設啟用——user 按 Esc 透過 Radix `onOpenChange` 關閉浮層(效果等同退出),**不觸發 `onSkip` callback**(Esc 是「關閉浮層」非「明確 skip」;若需區分 Esc-退出 vs Skip-按鈕 的追蹤事件,consumer 在略過鍵的 `onSkip` 處理)
 - **ARIA**:trigger 自動 `aria-expanded` / `aria-controls`,content `role="dialog"`(Radix 預設)
 - **Step 計數 tabular-nums**:螢幕閱讀器讀「第 2 步,共 3 步」語意清楚(完整句子,與 Steps 讀屏文字同一句)
@@ -219,7 +236,7 @@ const steps = [
 
 ## 邊界狀態
 
-disabled / layout-space 繼承 Popover(鎖 `data-layout-space="md"` 保持 header py-tight 精簡;ui-size / 控件大小繼承 page density),SSOT 見 `tokens/density/density.spec.md` L47;empty(title + description 都不傳)則 Body 不渲染(已於「Props 結構」規定);loading 由 consumer 決定。
+disabled / layout-space 繼承 Popover(鎖 `data-layout-space="md"` 保持 header py-tight 精簡;ui-size / 控件大小跟觸發點那一區),SSOT 見 `tokens/density/density.spec.md` 情境 1「浮層跟觸發點」;empty(title + description 都不傳)則 Body 不渲染(已於「Props 結構」規定);loading 由 consumer 決定。
 
 - **步數 > 5**:元件不機械限制 — `step.total` 照實顯示(如「6 of 8」);≤ 5 是設計建議(見 Multi-step Tour),超過應改靜態 onboarding 頁
 - **無 `image`**:整個 Media 區不渲染(非 skeleton 佔位,見「Props 結構」)
@@ -237,9 +254,14 @@ disabled / layout-space 繼承 Popover(鎖 `data-layout-space="md"` 保持 heade
 - `../Notice/notice.spec.md` — 系統通知 / 錯誤訊息
 - 本 spec 的 Anatomy / 導覽狀態表與 `coachmark.tsx` — canonical authority
 
+## 變更紀錄
+
+- 2026-11-22:高度改成內容驅動(A63-COACHMARK)。拿掉「❌ Description 不寫超過 3 行」—— 那一條是 2026-04-19 `ee3e8f83`(標題是 ScrollArea thumb token 的修正)順手加進來的,沒有 user 決定紀錄(user 11-22:「我不記得我有定義過coachmark上限三行」);改照 user 11-22 拍板的「丙」:高度隨內容、最高到可用高度、超過時 Header / Footer 固定、內容區(Media + Body)捲動(見「高度與捲動」)。設計原則頁兩則「不超過 3 行」同步拿掉 / 改寫。
+
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `aspect-ratio.spec.md`
+- `overlay-surface.spec.md`
 - `popover.spec.md`

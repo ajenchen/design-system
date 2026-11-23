@@ -10,10 +10,11 @@ import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING, OVERLAY_HIDE_WHEN_DETAC
 import {
   RowSizeProvider,
   useRowSize,
-  ICON_SIZE as ROW_ICON_SIZE,
+  ICON_SIZE,
   type RowSize,
 } from "@/design-system/patterns/element-anatomy/item-anatomy"
 import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
+import { OverlayAnchorScope, useRegisterOverlayNode, useTriggerRegionDensity } from "@/design-system/lib/overlay-density"
 import { markPointerGrab, useCursorMover } from '@/design-system/hooks/use-input-modality'
 // 鍵盤接線(開關狀態 / Tab 離開 / 子選單 Esc)住在 dropdown-menu-keyboard.ts —— 本檔只留視覺層(2026-09-26 拆檔,見該檔檔頭)
 import {
@@ -69,8 +70,6 @@ const floatingLayerClass = [
 
 // ── Size:統一用 RowSizeContext(item-layout module),消除本地 SizeContext 漂移 ──
 type SizeKey = RowSize
-// Re-export for backward compat(內部命名)
-const ICON_SIZE = ROW_ICON_SIZE
 
 // ── Shared item classes on Radix primitive ──
 // Highlight(hover + keyboard nav): 用 Radix `data-[highlighted]` canonical(見 docblock)
@@ -133,12 +132,15 @@ const DropdownMenu = ({
   return (
     <DropdownMenuModalOpenContext.Provider value={modal && resolvedOpen}>
       <DropdownMenuKeyboardProvider keyboard={keyboard} level={level}>
-        <DropdownMenuPrimitive.Root
-          open={resolvedOpen}
-          onOpenChange={handleOpenChange}
-          modal={modal}
-          {...props}
-        />
+        {/* 觸發點登記處:Content 從觸發點那一區讀密度(lib/overlay-density.tsx;density.spec.md「浮層跟觸發點」) */}
+        <OverlayAnchorScope family="dropdown-menu">
+          <DropdownMenuPrimitive.Root
+            open={resolvedOpen}
+            onOpenChange={handleOpenChange}
+            modal={modal}
+            {...props}
+          />
+        </OverlayAnchorScope>
       </DropdownMenuKeyboardProvider>
     </DropdownMenuModalOpenContext.Provider>
   )
@@ -151,7 +153,9 @@ const DropdownMenuTrigger = React.forwardRef<
 >(({ className, tabIndex, ...props }, ref) => {
   const modalOpen = React.useContext(DropdownMenuModalOpenContext)
   // 記下觸發點:選單開著按 Tab 時從它算下一站(B11;dropdown-menu-keyboard.ts)
-  const setRef = useMenuTriggerRef(ref)
+  const setMenuTriggerRef = useMenuTriggerRef(ref)
+  // 同一個節點也登記成密度來源(lib/overlay-density.tsx)
+  const setRef = useRegisterOverlayNode("dropdown-menu", "trigger", setMenuTriggerRef)
   return (
     <DropdownMenuPrimitive.Trigger
       ref={setRef}
@@ -200,6 +204,8 @@ const DropdownMenuGroup = React.forwardRef<
 ))
 DropdownMenuGroup.displayName = 'DropdownMenuGroup'
 
+// 不得拿來包 DropdownMenuSubContent:子選單刻意不經 Portal、留在父選單裡,才吃得到父選單那一層的密度屬性
+// (density.spec.md「浮層跟觸發點」表「子選單」列);包了就會逃到 body、拿整頁密度。DS 與 WM 目前沒有使用處(2026-11-12 git grep 0 筆)。
 const DropdownMenuPortal = DropdownMenuPrimitive.Portal
 
 // ── Sub ──
@@ -228,7 +234,11 @@ interface DropdownMenuContentProps
   // children 保留(合法渲染於固定 wrapper 內)。
   extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>, 'asChild'> {
   size?: SizeKey
-  /** 最小寬度（px），預設 `max(180px, 觸發元件寬度)`——窄 trigger 時吃 180px 地板 */
+  /**
+   * 最小寬度（px）。預設下限 `max(180px, 觸發元件寬度)`——窄 trigger 時吃 180px 地板。
+   * 傳入的值**只能把下限往上拉**:有效下限 = `max(180px, 觸發元件寬度, minWidth)`,傳得比預設小照預設畫、不會比觸發元件窄
+   *(2026-11-17 A95;跟表格三個工具面板同一套,props-naming.md「尺寸參數」第 8 條。之前是整個取代預設下限)。
+   */
   minWidth?: number
   /**
    * 最大高度（px）——**可選更低上限**。預設已 viewport-adaptive(夾到 trigger→視窗碰撞邊界的剩餘高度、
@@ -243,19 +253,21 @@ const DropdownMenuContent = React.forwardRef<
 >(({ className, size = 'md', sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, align = 'start', minWidth, maxHeight, children, onKeyDown, onCloseAutoFocus, ...props }, ref) => {
   // 記下根內容(觸發點是透明錨點時靠它的 id 找開啟者)+ 開著按 Tab(B11)+ Tab 離開時不自動還焦點(dropdown-menu-keyboard.ts)
   const menuKeyboard = useMenuContentKeyboard(ref, onKeyDown, onCloseAutoFocus)
+  // 觸發點那一區的兩軸檔位(lib/overlay-density.tsx;內容根元素掛上去才讀、關著不讀)
+  const { attrs: regionDensity, ref: contentRef } = useTriggerRegionDensity("dropdown-menu", menuKeyboard.ref)
   return (
   <DropdownMenuPrimitive.Portal>
     <DropdownMenuPrimitive.Content
-      ref={menuKeyboard.ref}
+      ref={contentRef}
+      {...regionDensity}
       sideOffset={sideOffset}
       collisionPadding={collisionPadding}
       // 錨點失去版面時不畫(同 Tooltip;詳 tokens/elevation/overlay-geometry.ts)
       hideWhenDetached={hideWhenDetached}
       align={align}
-      // Density:繼承 page density(2026-06-15 canonical)。menu item 高度 = field-height-{size},而
-      // field-height 隨 density 變(md 28/32/36 → lg 32/36/40)→ 鎖 data-density="md" 會把選單釘在 md-scale,
-      // lg page 上對不上 lg 觸發點。原 data-density 是 409b91da a11y 批次順手加(對齊 Popover),非設計
-      // 決策 → 移除,item 隨 page density 與觸發點一致(tier 仍由 size prop 決定)。
+      // Density:不鎖,跟觸發點那一區(上方 regionDensity;2026-11-11 user「浮層密度:跟按鈕」,在那之前是跟整頁)。
+      // menu item 高度 = field-height-{size},而 field-height 隨 density 變(md 28/32/36 → lg 32/36/40)→ 鎖 data-density="md"
+      // 會把選單釘在 md-scale,對不上 lg 觸發點(2026-06-15 移除 409b91da a11y 批次順手加的 data-density)。tier 仍由 size prop 決定。
       // Focus return on close:除了 Tab 離開(B11)之外不 override `onCloseAutoFocus` — 用 Radix 內建 default
       // (close 時 focus 還 trigger;outside-interaction 例外由 Radix `hasInteractedOutsideRef` 自管;
       // W3C APG menubar「Escape: …return focus to the element…from which the menu was opened」,https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/menubar/menu-and-menubar-pattern.html#L153)。
@@ -265,7 +277,9 @@ const DropdownMenuContent = React.forwardRef<
       className={cn(floatingLayerClass, 'flex flex-col min-h-0', className)}
       style={{
         boxShadow: 'var(--elevation-200)',
-        minWidth: minWidth ?? 'max(180px, var(--radix-dropdown-menu-trigger-width))',
+        minWidth: minWidth != null
+          ? `max(180px, var(--radix-dropdown-menu-trigger-width), ${minWidth}px)`
+          : 'max(180px, var(--radix-dropdown-menu-trigger-width))',
         // 2026-07-18 viewport-adaptive max-h(對齊 HoverCard/Popover 既有 canonical):夾到「trigger 到
         //   碰撞邊界(已內縮 collisionPadding=8px)的剩餘高度」→ 高選單不溢出視窗、離視窗邊 ≥8px、
         //   短選單仍貼內容;consumer `maxHeight` 為**可選更低上限**(min 取小者)。inline style 非 class,
@@ -353,8 +367,7 @@ interface DropdownMenuItemProps
   badge?: React.ReactNode
   /** 後綴指示型 icon（LucideIcon），fg-muted */
   endIcon?: LucideIcon
-  /** 鍵盤快捷鍵提示(canonical)——渲染進 MenuItem `endContent` 正規後綴 slot。
-   *  替代方案是 `<DropdownMenuShortcut>` child(composition escape-hatch);**同 item 勿混用**。 */
+  /** 鍵盤快捷鍵提示 —— 渲染進 MenuItem `endContent` 正規後綴 slot(唯一的快捷鍵 API;shadcn 式 `<DropdownMenuShortcut>` child 2026-11-15 移除;shadcn 原件 https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/dropdown-menu.tsx )。 */
   shortcut?: string
   /** 單選選中（bg-neutral-selected，持續選中狀態）*/
   selected?: boolean
@@ -609,24 +622,6 @@ const DropdownMenuRadioItem = React.forwardRef<
 })
 DropdownMenuRadioItem.displayName = DropdownMenuPrimitive.RadioItem.displayName
 
-// ── Shortcut（鍵盤快捷鍵提示 child;escape-hatch,不靠右）──
-// **Canonical 是 `<DropdownMenuItem shortcut="⌘C">`** prop —— 走 MenuItem `endContent` 正規後綴 slot
-// (跟 badge / endIcon 同槽、gap/對齊一致,真正靠右對齊列尾)。本 child 是 **composition
-// escape-hatch**(相容 shadcn DropdownMenuShortcut idiom = `ml-auto` span,source:
-// https://ui.shadcn.com/docs/components/dropdown-menu;npm published API 不砍)。⚠️ 在
-// DropdownMenuItem 內 children 會進 MenuItem ItemContent 的 label `<span>`(inline context,
-// 非 flex row),故 `ml-auto` **不生效、不會靠右**——只會 inline 附加在 label 文字尾;`ml-auto`
-// 僅在 consumer 自組 flex row 時生效。要靠右一律用 canonical `shortcut` prop。**同一 item
-// 只用一種,勿混用**(見 spec.md「快捷鍵提示 API」+ 禁止事項)。
-// 字體樣式統一:text-caption + tracking-shortcut + fg-muted(對齊 prop 後綴 + CommandShortcut);位置不等價。
-const DropdownMenuShortcut = ({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => (
-  <span
-    className={cn('ml-auto text-caption text-fg-muted tracking-shortcut', className)}
-    {...props}
-  />
-)
-DropdownMenuShortcut.displayName = 'DropdownMenuShortcut'
-
 // Story auto-compile metadata — Phase 1 mechanical migration(2026-04-24)
 // Phase 2 fill needed: purpose descriptions + when rationale + world-class refs
 export const dropdownMenuMeta = {
@@ -664,7 +659,6 @@ export {
   DropdownMenuSubTrigger,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  DropdownMenuShortcut,
   floatingLayerClass,
 }
 export type { SizeKey, DropdownMenuItemProps }

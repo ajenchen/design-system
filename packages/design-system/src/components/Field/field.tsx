@@ -38,8 +38,8 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/design-system/compone
  * 調整時自動連動，不需 JS 測量。
  *
  * ── Horizontal mode 的 label 寬度 ───────────────────────────────────────
- * 透過 labelWidth prop → --field-label-width CSS variable，可以是任何
- * CSS length（"120px"、"10rem"、"30%" 等）。預設 "auto" 由 label 內容撐開。
+ * 透過 labelWidth prop(單一 Field)或 FieldGroup 的同名 labelWidth(整組)→ 直接寫進 grid 的第一欄
+ * (2026-11-15 前經 CSS variable --field-label-width 轉一手)。數字 = px,也可以是任何 CSS length（"10rem"、"30%" 等）。預設 "auto" 由 label 內容撐開。
  *
  * ── Required 星號 ──────────────────────────────────────────────────────
  * Field 的 required prop 會透過 context 傳給 FieldLabel 自動渲染 *，
@@ -116,6 +116,11 @@ function detectPreferredSize(controlNodes: React.ReactNode[]): FieldSize | null 
   return null
 }
 
+/** FieldError 有沒有字可畫(沒字不渲染、不佔位)—— FieldError 自己與 Field「使用端的錯誤有沒有字」共用這一支 */
+function hasErrorContent(children: React.ReactNode): boolean {
+  return !(children == null || children === false || children === '')
+}
+
 // ── Field ───────────────────────────────────────────────────────────────────
 
 export interface FieldProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'id'> {
@@ -136,10 +141,10 @@ export interface FieldProps extends Omit<React.HTMLAttributes<HTMLDivElement>, '
   disabled?: boolean
   invalid?: boolean
   /**
-   * Horizontal mode 的 label 欄寬度。支援任何 CSS length 值（"120px"、"10rem"、"30%"...）。
-   * 預設 'auto' 由 label 內容撐開。
+   * Horizontal mode 的 label 欄寬度。數字 = px(與全 DS 的長度參數同一套,2026-11-15「尺寸:甲」);
+   * 也收任何 CSS length 字串（"10rem"、"30%"...——比例寬只能用字串）。預設 'auto' 由 label 內容撐開。
    */
-  labelWidth?: string
+  labelWidth?: number | string
   /**
    * Control area 佈局模型(逃生艙)。
    *
@@ -157,7 +162,7 @@ export interface FieldProps extends Omit<React.HTMLAttributes<HTMLDivElement>, '
 // 同一畫面多個 horizontal Field,label 寬度應統一對齊 → FieldGroup 提供 SSOT。
 // 下面 Field 組件自動 consume,consumer 可用 Field 的 labelWidth prop 覆寫單行。
 interface FieldGroupContextValue {
-  horizontalLabelWidth?: string
+  labelWidth?: number | string
 }
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const FieldGroupContext = React.createContext<FieldGroupContextValue>({})
@@ -188,9 +193,10 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
     const descriptionId = `${id}-description`
     const errorId = `${id}-error`
 
-    // FieldGroup cascade:group 的 horizontalLabelWidth 是 fallback,單行 labelWidth 覆寫
+    // FieldGroup cascade:group 的 labelWidth 是 fallback,單行 labelWidth 覆寫;數字 = px
     const groupCtx = React.useContext(FieldGroupContext)
-    const effectiveLabelWidth = labelWidth ?? groupCtx.horizontalLabelWidth
+    const labelWidthValue = labelWidth ?? groupCtx.labelWidth
+    const effectiveLabelWidth = typeof labelWidthValue === 'number' ? `${labelWidthValue}px` : labelWidthValue
 
     // mode=disabled 與 disabled prop 任一為 true 即視為 disabled
     const disabled = disabledProp || mode === 'disabled'
@@ -221,6 +227,14 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
     const registerPreferredSize = React.useCallback((preferred: FieldSize) => {
       setRegisteredSize((current) => (current === preferred ? current : preferred))
     }, [])
+    // Control 自己驗出來的錯誤說明(FieldContext.registerControlError;目前只有 LinkInput):使用端的 <FieldError> 有字時以使用端為準,
+    // 一個欄位只畫一行。沒有 control 宣告(其他所有用法)時 controlError 一直是 null,畫面不變。
+    const [controlError, registerControlError] = React.useState<string | null>(null)
+    const consumerErrorShown = errorNodes.some(
+      (node) => React.isValidElement<{ children?: React.ReactNode }>(node) && hasErrorContent(node.props.children),
+    )
+    const controlErrorNode = controlError != null && !consumerErrorShown ? <FieldError>{controlError}</FieldError> : null
+
     const detectedSize = detectPreferredSize(controlNodes)
     const resolvedPreferredSize = sizeProp ?? detectedSize ?? registeredSize
     const size: FieldSize = resolvedPreferredSize ?? 'md'
@@ -240,11 +254,12 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
         size,
         sizeExplicit,
         registerPreferredSize,
+        registerControlError,
         orientation,
         controlLayout,
         hasFieldWrapper: true,
       }),
-      [id, labelId, descriptionId, errorId, mode, variant, disabled, required, invalid, size, sizeExplicit, registerPreferredSize, orientation, controlLayout]
+      [id, labelId, descriptionId, errorId, mode, variant, disabled, required, invalid, size, sizeExplicit, registerPreferredSize, registerControlError, orientation, controlLayout]
     )
 
     // Control area：兩種佈局模型,「第一行內容中線」都錨在 field-height/2,
@@ -286,10 +301,9 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
             ref={ref}
             className={cn('grid gap-x-3 items-start', className)}
             style={{
-              gridTemplateColumns: 'var(--field-label-width, auto) minmax(0, 1fr)',
-              ...(effectiveLabelWidth !== undefined
-                ? ({ ['--field-label-width' as string]: effectiveLabelWidth } as React.CSSProperties)
-                : undefined),
+              // label 欄寬直接寫進欄定義(2026-11-15 前經元件內變數 --field-label-width 轉一手:那個名字的開頭
+              // 跟共用刻度 --field-* 同一族,看起來像全系統的值;它只在這個元素上設、只在這個元素上讀,稽核 P20)
+              gridTemplateColumns: `${effectiveLabelWidth ?? 'auto'} minmax(0, 1fr)`,
               ...style,
             }}
             data-field-orientation="horizontal"
@@ -304,6 +318,7 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
               {controlArea}
               {descriptionNodes}
               {errorNodes}
+              {controlErrorNode}
             </div>
           </div>
         </FieldContext.Provider>
@@ -328,6 +343,7 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
           {controlArea}
           {descriptionNodes}
           {errorNodes}
+          {controlErrorNode}
         </div>
       </FieldContext.Provider>
     )
@@ -498,7 +514,7 @@ const FieldError = React.forwardRef<
   const ctx = useFieldContext()
 
   // 無內容不渲染，避免空殼佔位
-  if (children == null || children === false || children === '') return null
+  if (!hasErrorContent(children)) return null
 
   return (
     <p
@@ -521,17 +537,15 @@ FieldError.displayName = 'FieldError'
 
 export interface FieldGroupProps extends React.HTMLAttributes<HTMLDivElement> {
   /**
-   * 同一 group 內所有 horizontal Field 共用的 label 欄寬度。
+   * 同一 group 內所有 horizontal Field 共用的 label 欄寬度 —— 跟單一 Field 的 `labelWidth` **同一個名字、同一種值**
+   *(2026-11-15「尺寸:甲」:同一個值不再有兩個名字)。數字 = px;也收任何 CSS length 字串(`"10rem"` / `"30%"` 等)。
+   * 預設不指定——每個 Field 自動以 label 內容撐開(容易歪七扭八)。
    *
-   * 支援任何 CSS length(`"140px"` / `"10rem"` / `"30%"` 等)。預設不指定——
-   * 每個 Field 自動以 label 內容撐開(容易歪七扭八)。
-   *
-   * 用途:讓
-   * setting list 一律 label 固定寬、control 右對齊,列與列整齊對齊。
+   * 用途:讓 setting list 一律 label 固定寬、control 右對齊,列與列整齊對齊。
    *
    * 單一 Field 可以用自己的 `labelWidth` prop 覆寫 cascade 值。
    */
-  horizontalLabelWidth?: string
+  labelWidth?: number | string
 }
 
 // 欄位垂直間距 = `--layout-space-loose`,**不開放 per-instance 選檔**(2026-09-12 user 拍板)。
@@ -546,15 +560,19 @@ export interface FieldGroupProps extends React.HTMLAttributes<HTMLDivElement> {
 // 那三檔是重構時自己長出來的,沒有任何 user 決定背書。實際使用也證實它不帶資訊:
 // 全 repo 33 個 `<FieldGroup>` 只有 2 個傳過 gap(1 個 compact 無理由、1 個傳的就是預設值),
 // `loose` 一次都沒用過。世界級同樣沒有一家開放 per-instance 檔位:
-// shadcn 元件固定 / MUI 泛用數值 × theme spacing / Ant 全域 token `itemMarginBottom` 走 ConfigProvider。
+// shadcn 元件固定 / MUI Stack 任意數值經 `theme.spacing()` 換算(「The spacing value can be any number, including decimals,
+// or a string.」https://mui.com/material-ui/react-stack/ )/ Ant 全域 component token `itemMarginBottom`
+// (https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/form/style/index.ts )
+// 走 ConfigProvider 的 `theme.components`(「Modify Component Token and Alias Token applied to components」,
+// https://github.com/ant-design/ant-design/blob/615d1baef4a4d3197bd611651e6415d15d8bb4ca/docs/react/customize-theme.en-US.md )。
 //
 // md density 下新舊值都是 16px,所以 33 個用法裡 32 個視覺零變化;lg 下從凍結的 16px 變成 24px,
 // 也就是開始履行 density 的承諾。
 const FieldGroup = React.forwardRef<HTMLDivElement, FieldGroupProps>(
-  ({ className, horizontalLabelWidth, ...props }, ref) => {
+  ({ className, labelWidth, ...props }, ref) => {
     const groupCtxValue = React.useMemo(
-      () => ({ horizontalLabelWidth }),
-      [horizontalLabelWidth],
+      () => ({ labelWidth }),
+      [labelWidth],
     )
     return (
       <FieldGroupContext.Provider value={groupCtxValue}>

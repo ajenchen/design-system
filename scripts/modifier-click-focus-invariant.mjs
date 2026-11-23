@@ -5,8 +5,8 @@
  *        DataTable 專案排程(roadmap-all-in-one)的三種「修飾鍵+點擊」控件:排序區(Shift+點擊加進多重排序)、列勾選框與表格根節點
  *        (Shift+點擊選區間;點選取格空白處焦點落在根節點):
  *        P 指標情境(每格量完都必須**沒有**焦點框):點過再 Shift+點同一個 / Shift+點換欄再點同一欄 / 點過之後只按住 Shift /
- *          勾選框點過再 Shift+點 / 選取格空白處點過再 Shift+點兩次;排序區被 Shift+點過、指標移開後 ⌄ 欄位選單收起(寬 0)——
- *          ⌄ 的「格裡有鍵盤焦點」條件不得把 Shift 當鍵盤;
+ *          勾選框點過再 Shift+點 / 選取格空白處點過再 Shift+點兩次;排序區被 Shift+點過、指標移開後 ⌄ 欄位選單收起(寬 0 而且透明;
+ *          量法與判定只有一份 = lib/data-table-column-menu-state.mjs)—— ⌄ 的「格裡有鍵盤焦點」條件不得把 Shift 當鍵盤;
  *        K 鍵盤對照(每格必須**有**框,2px 實線、顏色 = --ring):點過排序區再按 Enter / 點過再 Shift+Enter / Tab 進排序區 /
  *          點過勾選框再按 Space / 點過選取格空白處再按 ↓ —— 證明框沒有被一起拿掉;
  *        N 一般點擊對照(沒有框):點排序區 / 點勾選框。
@@ -21,6 +21,7 @@ import { dirname, isAbsolute, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchBrowserOrSkip, openStory, requireStorybookBuild, requireFreshStorybookBuild, settleAfterInteraction, waitForFocusStable, parkPointer, INSTRUMENT_FAIL_MARKER } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { columnMenuStatesInPage, isColumnMenuCollapsed, describeColumnMenu } from './lib/data-table-column-menu-state.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const SELFTEST = process.argv.includes('--selftest')
@@ -109,16 +110,14 @@ try {
   await open(); h = page.locator(HEAD)
   await h.nth(0).click({ modifiers: ['Shift'] }); await h.nth(1).click({ modifiers: ['Shift'] }); await h.nth(1).click({ modifiers: ['Shift'] })
   await expectRing('P', '排序區 Shift+點換欄、再 Shift+點同一欄(升冪 → 降冪)', false, { whoRe: ROLE_BTN })
-  // ⌄ 欄位選單:指標移開後要收起(「格裡有鍵盤焦點」條件不得把 Shift 當鍵盤)
+  // ⌄ 欄位選單:指標移開後要收起(「格裡有鍵盤焦點」條件不得把 Shift 當鍵盤)。
+  // 「收著沒」的量法只有一份(lib/data-table-column-menu-state.mjs:寬 0 而且透明;data-table-multi-sort-invariant.mjs 的 D 段用同一份)
   await parkPointer(page)
-  await settleAfterInteraction(page, { frames: 6, capMs: 6000 })
-  const menuW = await page.evaluate(() => {
-    const btn = document.activeElement
-    const menu = btn?.closest('[role="columnheader"]')?.querySelector('[data-col-menu]')
-    return menu ? menu.getBoundingClientRect().width : null
-  })
-  if (menuW == null) instrument('P ⌄ 欄位選單', '找不到 [data-col-menu]')
-  else check('P', 'Shift+點過排序區、指標移開後 ⌄ 欄位選單收起', menuW === 0, `寬 ${menuW}px`)
+  const parked = await settleAfterInteraction(page, { frames: 6, capMs: 6000 })
+  const focusedMenu = (await page.evaluate(columnMenuStatesInPage)).filter((m) => m.found && m.hasFocus)
+  if (!parked.ok) instrument('P ⌄ 欄位選單', '指標移開後版面沒有靜止')
+  else if (focusedMenu.length !== 1) instrument('P ⌄ 欄位選單', `焦點所在的表頭要剛好一欄、而且找得到 [data-col-menu],實得 ${focusedMenu.length} 欄`)
+  else check('P', 'Shift+點過排序區、指標移開後 ⌄ 欄位選單收起', isColumnMenuCollapsed(focusedMenu[0]), describeColumnMenu(focusedMenu[0]))
   await open(); h = page.locator(HEAD)
   await h.nth(0).click(); await page.keyboard.down('Shift')
   await expectRing('P', '排序區點過之後只按住 Shift', false, { whoRe: ROLE_BTN })

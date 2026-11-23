@@ -37,14 +37,17 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // 新 job 沿用原 job 的上限:verify-browser-control-groups(自 perception)、verify-browser-searchable-menu-focus(自 searchable-fields)、
   // verify-browser-field-dialog-steps(自 interaction)、verify-browser-cursor(自 agent)、verify-browser-escape-focus-control(自 select-all)、
   // verify-browser-footer-gutter(自 field-edges)。逐 job / 逐步驟的實測與拆法記在 ci.yml 各 job 檔頭。
-  assert.deepEqual(Object.keys(workflow.jobs).sort(), ['container-closed-git', 'governance-control-plane', 'hooks-linux', 'verify', 'verify-browser-agent', 'verify-browser-control-groups', 'verify-browser-cursor', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-handles', 'verify-browser-datatable-perception', 'verify-browser-escape-focus-control', 'verify-browser-field-dialog-steps', 'verify-browser-field-edges', 'verify-browser-footer-gutter', 'verify-browser-interaction', 'verify-browser-nested-dismiss', 'verify-browser-overlay', 'verify-browser-overlay-rows', 'verify-browser-searchable-fields', 'verify-browser-searchable-menu-focus', 'verify-browser-select-all', 'verify-browser-sidebar-keyboard', 'verify-browser-sweeps', 'verify-browser-tree-navigation', 'verify-static'])
+  // 2026-11-14(A7):verify-browser-doc-headings(新 job,說明頁標題全站盤點)、verify-browser-horizontal-overflow(自 verify-browser-layout)。
+  // 2026-11-16(A25 覆核二 SF-R3):verify-browser-datatable-pinned(自 verify-browser-datatable;快速捲動 pinned 比值閘 + A/A + 追蹤,時間重估在 ci.yml 該 job 檔頭)。
+  // 2026-11-17(A102):verify-browser-layout-edges(新 job,容器底距全站盤點 + 點開浮層)。
+  assert.deepEqual(Object.keys(workflow.jobs).sort(), ['container-closed-git', 'governance-control-plane', 'hooks-linux', 'verify', 'verify-browser-agent', 'verify-browser-control-groups', 'verify-browser-cursor', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-handles', 'verify-browser-datatable-perception', 'verify-browser-datatable-pinned', 'verify-browser-doc-headings', 'verify-browser-escape-focus-control', 'verify-browser-field-dialog-steps', 'verify-browser-field-edges', 'verify-browser-footer-gutter', 'verify-browser-horizontal-overflow', 'verify-browser-interaction', 'verify-browser-layout', 'verify-browser-layout-edges', 'verify-browser-nested-dismiss', 'verify-browser-overlay', 'verify-browser-overlay-rows', 'verify-browser-searchable-fields', 'verify-browser-searchable-menu-focus', 'verify-browser-select-all', 'verify-browser-sidebar-keyboard', 'verify-browser-sweeps', 'verify-browser-tree-navigation', 'verify-static'])
   assert.equal(workflow.jobs.verify.name, 'Verify(tsc + tests + compile + build)')
   assert.equal(workflow.jobs.verify.timeoutMinutes, 15)
   assert.equal(workflow.jobs.verify.if, 'always()')
   // 2026-09-21:hooks-linux 進 fan-in。先前它**既不在 needs、也不是 required check** ——
   // 發版同意 hook 的整套端對端測試(17 格)全紅也擋不住合併與發版,等於那道防線沒有機械面。
   // 原註解說「它留在 verify 之外,讓 hook 失敗讀起來就是 hook 失敗」—— 可讀性不該用「不把關」換。
-  assert.deepEqual([...workflow.jobs.verify.needs].sort(), ['container-closed-git', 'governance-control-plane', 'hooks-linux', 'verify-browser-agent', 'verify-browser-control-groups', 'verify-browser-cursor', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-handles', 'verify-browser-datatable-perception', 'verify-browser-escape-focus-control', 'verify-browser-field-dialog-steps', 'verify-browser-field-edges', 'verify-browser-footer-gutter', 'verify-browser-interaction', 'verify-browser-nested-dismiss', 'verify-browser-overlay', 'verify-browser-overlay-rows', 'verify-browser-searchable-fields', 'verify-browser-searchable-menu-focus', 'verify-browser-select-all', 'verify-browser-sidebar-keyboard', 'verify-browser-sweeps', 'verify-browser-tree-navigation', 'verify-static'])
+  assert.deepEqual([...workflow.jobs.verify.needs].sort(), ['container-closed-git', 'governance-control-plane', 'hooks-linux', 'verify-browser-agent', 'verify-browser-control-groups', 'verify-browser-cursor', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-handles', 'verify-browser-datatable-perception', 'verify-browser-datatable-pinned', 'verify-browser-doc-headings', 'verify-browser-escape-focus-control', 'verify-browser-field-dialog-steps', 'verify-browser-field-edges', 'verify-browser-footer-gutter', 'verify-browser-horizontal-overflow', 'verify-browser-interaction', 'verify-browser-layout', 'verify-browser-layout-edges', 'verify-browser-nested-dismiss', 'verify-browser-overlay', 'verify-browser-overlay-rows', 'verify-browser-searchable-fields', 'verify-browser-searchable-menu-focus', 'verify-browser-select-all', 'verify-browser-sidebar-keyboard', 'verify-browser-sweeps', 'verify-browser-tree-navigation', 'verify-static'])
   // 解析器只留 runSha256 與 env(不留 run 原文):上游 result 必須經 env 進來,再由原始文字驗它們全部 = success 才過。
   const fanInEnv = JSON.stringify(workflow.jobs.verify.steps[0].env)
   // 2026-09-11:兩個 DataTable job 的上限 15 → 25。那天 `verify-browser-datatable` 跑到 15.4 分被砍掉
@@ -72,8 +75,27 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // 估 +13 分 ≈ 29 分會撞上限;拆出來兩格 matrix 各跑一半突變(實測與估計記在 ci.yml 該 job 檔頭)。
   // 2026-11-05:verify-browser-sidebar-keyboard(自 verify-browser-field-dialog-steps)沿用原 job 的 25(不是調高):原 job 三次 CI 24.6 / 24.1 /
   // 25.3 分(最後一次撞上限被取消),側欄鍵盤一支 464–517 秒(實測記在 ci.yml 該 job 檔頭)。
-  const SLOW_BROWSER_JOBS = new Set(['verify-browser-searchable-fields', 'verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-overlay-rows', 'verify-browser-datatable-handles', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-control-groups', 'verify-browser-escape-focus-control', 'verify-browser-field-dialog-steps', 'verify-browser-searchable-menu-focus', 'verify-browser-nested-dismiss', 'verify-browser-sidebar-keyboard'])
-  for (const upstream of ['verify-static', 'verify-browser-datatable', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-searchable-fields', 'verify-browser-tree-navigation', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-agent', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-field-edges', 'verify-browser-overlay-rows', 'verify-browser-datatable-handles', 'verify-browser-control-groups', 'verify-browser-cursor', 'verify-browser-escape-focus-control', 'verify-browser-field-dialog-steps', 'verify-browser-footer-gutter', 'verify-browser-searchable-menu-focus', 'verify-browser-nested-dismiss', 'verify-browser-sidebar-keyboard', 'hooks-linux', 'governance-control-plane', 'container-closed-git']) {
+  // 2026-11-12:verify-browser-layout(自 verify-browser-field-dialog-steps)沿用原 job 的 25(不是調高):原 job 在 PR #172 9126e95b 撞上限被取消
+  //(前一次綠 21.6 分),版面間距 / 密度 / 浮層標題區十支合計 515 秒 + 從 interaction 搬來的水平溢出閘(實測記在 ci.yml 該 job 檔頭)。
+  // 2026-11-14:verify-browser-horizontal-overflow(自 verify-browser-layout)沿用原 job 的 25(不是調高):水平溢出閘加了夾具那一段(A7 ②),
+  // 原 job 在 1859b728 那一輪 19 分 45 秒 / 上限 25;本機 146 秒(實測記在 ci.yml 該 job 檔頭)。
+  // 2026-11-14:verify-browser-doc-headings(新 job,A7 ⑤ 說明頁標題全站盤點)25:同 sweeps 的全 story 掃描等級(一趟半再加重畫),
+  // 本機並行 4 主跑 216–300 秒(實測記在 ci.yml 該 job 檔頭)。
+  // 2026-11-17:verify-browser-layout-edges(新 job,A102 容器底距全站盤點)25:同 doc-headings 的全 story 掃描等級(另加每個觸發點重開一次、
+  // 一般按鈕 / 選單項目逐一點),不分片本機 721 秒 → 同一個 job 開兩格 matrix(--shard 0/2、1/2,照 escape-focus-control 的做法,不調高上限;
+  // 每片實測記在 ci.yml 該 job)。兩格都要帶 --shard 跑主閘與 --selftest(只准變少與 selftest 由閘自己限定在第 0 片)。
+  {
+    const raw = loadYaml(source).jobs['verify-browser-layout-edges']
+    assert.deepEqual(raw.strategy, { 'fail-fast': false, matrix: { shard: ['0/2', '1/2'] } })
+    const run = raw.steps.map((s) => s.run ?? '').join('\n')
+    assert.match(run, /node scripts\/layout-body-edges-invariant\.mjs --shard="\$SHARD"/)
+    assert.match(run, /node scripts\/layout-body-edges-invariant\.mjs --selftest --shard="\$SHARD"/)
+    assert.ok(raw.steps.some((s) => s.env?.SHARD === '${{ matrix.shard }}'))
+  }
+  // 2026-11-16:verify-browser-datatable-pinned(自 verify-browser-datatable)沿用原 job 的 25(不是調高):A/A 與追蹤加進來之後不拆時估 19.7 分、
+  // 最壞 24.2 分,超過計畫的 22 分拆 job 線(2026-11-15 兩份 job log 的時間戳重估,寫在 ci.yml 該 job 檔頭)。
+  const SLOW_BROWSER_JOBS = new Set(['verify-browser-searchable-fields', 'verify-browser-datatable', 'verify-browser-datatable-pinned', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-overlay-rows', 'verify-browser-datatable-handles', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-control-groups', 'verify-browser-escape-focus-control', 'verify-browser-field-dialog-steps', 'verify-browser-searchable-menu-focus', 'verify-browser-nested-dismiss', 'verify-browser-sidebar-keyboard', 'verify-browser-layout', 'verify-browser-horizontal-overflow', 'verify-browser-doc-headings', 'verify-browser-layout-edges'])
+  for (const upstream of ['verify-static', 'verify-browser-datatable', 'verify-browser-datatable-pinned', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-searchable-fields', 'verify-browser-tree-navigation', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-agent', 'verify-browser-sweeps', 'verify-browser-doc-headings', 'verify-browser-layout-edges', 'verify-browser-select-all', 'verify-browser-field-edges', 'verify-browser-overlay-rows', 'verify-browser-datatable-handles', 'verify-browser-control-groups', 'verify-browser-cursor', 'verify-browser-escape-focus-control', 'verify-browser-field-dialog-steps', 'verify-browser-footer-gutter', 'verify-browser-searchable-menu-focus', 'verify-browser-nested-dismiss', 'verify-browser-sidebar-keyboard', 'verify-browser-layout', 'verify-browser-horizontal-overflow', 'hooks-linux', 'governance-control-plane', 'container-closed-git']) {
     assert.match(fanInEnv, new RegExp(`needs\\.${upstream}\\.result`))
     assert.equal(workflow.jobs[upstream].timeoutMinutes, SLOW_BROWSER_JOBS.has(upstream) ? 25 : 15)
     assert.equal(workflow.jobs[upstream].if, null)
@@ -148,6 +170,11 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   const referenceBuild = source.slice(source.indexOf('git worktree add tmp/ref-src'), source.indexOf('git worktree remove --force tmp/ref-src'))
   assert.match(referenceBuild, /if cmp -s package-lock\.json tmp\/ref-src\/package-lock\.json; then\n\s+echo[^\n]*\n\s+ln -s "\$PWD\/node_modules" tmp\/ref-src\/node_modules\n\s+else\n(?:\s+#[^\n]*\n)*\s+echo[^\n]*\n\s+node "\$GITHUB_WORKSPACE\/scripts\/setup-authority-governance\.mjs" --dependencies-only --root=tmp\/ref-src --vulnerability-policy=report-render-only-reference\n\s+fi/, '參考建置:lock 相同共用 node_modules,不同才用候選的治理程式對參考樹安裝(弱點只報告、完整性照擋),不得呼叫參考樹自己的 setup:dependencies')
   assert.doesNotMatch(referenceBuild, /cd tmp\/ref-src && npm run --silent setup:dependencies/, '參考樹不得再跑自己那份 bootstrap(main 上的舊形狀會把候選鎖死)')
+  // 2026-11-16:參考建置有兩份(verify-browser-datatable 與拆出來的 verify-browser-datatable-pinned)。上面兩條只看第一份 ——
+  // 第二份必須逐字相同,否則改了一份、另一份照舊(M10 同族全改)。
+  const referenceBuilds = source.split('git worktree add tmp/ref-src').slice(1).map((rest) => rest.slice(0, rest.indexOf('git worktree remove --force tmp/ref-src')))
+  assert.equal(referenceBuilds.length, 2, '參考建置應出現在 verify-browser-datatable 與 verify-browser-datatable-pinned 兩個 job')
+  assert.ok(referenceBuilds.every((b) => b === referenceBuilds[0]), '兩份參考建置必須逐字相同')
   assert.match(referenceBuild, /\[ -L tmp\/ref-src\/node_modules \] && rm tmp\/ref-src\/node_modules\n\s*$/, '移除 worktree 前必須先解開 symlink')
   assert.equal(workflow.jobs.verify.steps.length, 1)
   // 瀏覽器閘的兩個 job 都要自己 build storybook 與裝 chromium(彼此平行,不共用 artifact):
@@ -175,8 +202,14 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // 準備步驟與原 job 逐字相同):control-groups / searchable-menu-focus / field-dialog-steps / cursor / escape-focus-control / footer-gutter。
   // 21 → 22 / 19 → 20(2026-11-03):verify-browser-nested-dismiss 拆自 verify-browser-overlay(準備步驟逐字相同)。
   // 22 → 23 / 20 → 21(2026-11-05):verify-browser-sidebar-keyboard 拆自 verify-browser-field-dialog-steps(準備步驟逐字相同)。
-  assert.equal((source.match(/npm run build-storybook/g) ?? []).length, 23)
-  assert.equal((source.match(/playwright install chromium/g) ?? []).length, 21)
+  // 23 → 24 / 21 → 22(2026-11-12):verify-browser-layout 拆自 verify-browser-field-dialog-steps(準備步驟逐字相同)。
+  // 24 → 25 / 22 → 23(2026-11-14):verify-browser-horizontal-overflow 拆自 verify-browser-layout(準備步驟逐字相同)。
+  // 25 → 26 / 23 → 24(2026-11-14):verify-browser-doc-headings(新 job,準備步驟與 verify-browser-sweeps 逐字相同)。
+  // 26 → 28 / 24 → 25(2026-11-16,A25 覆核二 SF-R3):verify-browser-datatable-pinned 拆自 verify-browser-datatable —— 自己的 storybook
+  // 與**參考建置(main)**各一份(參考建置那一步與原 job 逐字相同,下方另驗),chromium 一次。
+  // 28 → 29 / 25 → 26(2026-11-17,A102):verify-browser-layout-edges(新 job,準備步驟與 verify-browser-doc-headings 逐字相同)。
+  assert.equal((source.match(/npm run build-storybook/g) ?? []).length, 29)
+  assert.equal((source.match(/playwright install chromium/g) ?? []).length, 26)
   // 2026-09-25:**必需瀏覽器的 lane**。裝了 Chromium 跑閘的 job 裡起不了瀏覽器 = 這個 job 壞了;
   // 共用政策(scripts/lib/launch-browser.mjs exitOnBrowserLaunchFailure)只有在 GOVERNANCE_BROWSER_REQUIRED=1 時
   // 才 exit 非 0,未宣告就印 SKIPPED-ENV、exit 0 —— 整批閘靜默通過(M37:沒量到被讀成沒發生)。
@@ -205,10 +238,17 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // 13 → 19(2026-10-14,待辦總帳 G10):六個貼著上限的瀏覽器 job 各拆出一個平行 job。
   // 19 → 20(2026-11-03):verify-browser-nested-dismiss(自 verify-browser-overlay)。
   // 20 → 21(2026-11-05):verify-browser-sidebar-keyboard(自 verify-browser-field-dialog-steps)。
-  assert.equal(browserJobs.length, 21, '宣告必需瀏覽器的 job 數必須等於裝 Chromium 的 job 數')
+  // 21 → 22(2026-11-12):verify-browser-layout(自 verify-browser-field-dialog-steps)。
+  // 22 → 23(2026-11-14):verify-browser-horizontal-overflow(自 verify-browser-layout)。
+  // 23 → 24(2026-11-14):verify-browser-doc-headings(新 job)。
+  // 24 → 25(2026-11-16):verify-browser-datatable-pinned(自 verify-browser-datatable)。
+  // 25 → 26(2026-11-17):verify-browser-layout-edges(新 job)。
+  assert.equal(browserJobs.length, 26, '宣告必需瀏覽器的 job 數必須等於裝 Chromium 的 job 數')
   assert.match(jobBlock('verify-static'), /\n\s+npm run test:launch-browser\n/, '「起不了瀏覽器」政策的兩面對照必須在沒有瀏覽器的 verify-static 跑')
   // 2026-10-14(待辦總帳 G10):拆出來的 job 準備步驟(簽出 / Node / 安裝 / build:lib / build-storybook)必須與原 job 逐字相同 ——
   // 量到的時間才能互相比較,拆完也不會有一半在不同的環境跑。比的是 steps 從開頭到 build-storybook 那一步(含)的原始文字。
+  // 2026-11-14 起也收「新增的同等級 job」:配對對象是同一種工作量的既有 job(verify-browser-doc-headings ↔ verify-browser-sweeps,都是全 story 掃描),
+  // 準備步驟與上限跟它一樣。
   const setupSteps = (id) => {
     const block = jobBlock(id)
     const from = block.indexOf('    steps:\n')
@@ -226,6 +266,10 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
     ['verify-browser-footer-gutter', 'verify-browser-field-edges'],
     ['verify-browser-nested-dismiss', 'verify-browser-overlay'],
     ['verify-browser-sidebar-keyboard', 'verify-browser-field-dialog-steps'],
+    ['verify-browser-layout', 'verify-browser-field-dialog-steps'],
+    ['verify-browser-horizontal-overflow', 'verify-browser-layout'],
+    ['verify-browser-doc-headings', 'verify-browser-sweeps'],
+    ['verify-browser-layout-edges', 'verify-browser-doc-headings'],
   ]) {
     assert.equal(setupSteps(child), setupSteps(parent), `${child} 的準備步驟必須與拆出它的 ${parent} 逐字相同`)
     assert.equal(workflow.jobs[child].timeoutMinutes, workflow.jobs[parent].timeoutMinutes, `${child} 的上限沿用 ${parent}(拆 job 不是調高上限的路)`)
@@ -503,6 +547,139 @@ test('Pages deployment binds and reads back the exact Storybook source', () => {
   const stepNames = build.steps.map(step => step.name).filter(Boolean)
   assert.ok(stepNames.indexOf('Rebuild exact Storybook') < stepNames.indexOf('Refuse a stale artifact before upload'))
   assert.ok(stepNames.indexOf('Refuse a stale artifact before upload') < stepNames.indexOf('Upload Pages artifact'))
+})
+
+// A26b(2026-11-17):PR 的 CI 只因 INSTRUMENT-FAIL 紅時自動重跑一次。這一條測三件事:(1) 觸發、權限與信任邊界的形狀;
+// (2) fan-in 名稱與 ci.yml / required check 同一個字串(改名就紅,不讓它靜默變成「每次都擋」);
+// (3) 判定步驟與重跑步驟**原文**在夾具裡實跑(假 gh 吐 job 清單與日誌、真 jq / awk / bash),兩面都要成立 ——
+//     該重跑的(edges0 那一筆的形狀)判 true;腳本回顯裡的字面、前一步印過、逾時、產品紅、只有 fan-in 紅、日誌讀不到 → false;0 個 job → 步驟本身紅。
+test('CI instrument-fail rerun:只在 PR 的第 1 次嘗試、每個失敗步驟都印 INSTRUMENT-FAIL 時重跑一次,權限封閉、不跑 PR 的程式', () => {
+  const source = readWorkflow('ci-instrument-rerun.yml')
+  const workflow = parseWorkflowSemantics(source)
+  const raw = loadYaml(source)
+  assert.deepEqual(Object.keys(workflow.on), ['workflow_run'])
+  assert.deepEqual(workflow.on.workflow_run.workflows, ['CI'])
+  assert.deepEqual(workflow.on.workflow_run.types, ['completed'])
+  assert.deepEqual(workflow.permissions, {}, '頂層不給任何權限')
+  assert.deepEqual(Object.keys(workflow.jobs).sort(), ['decide', 'rerun'])
+  const { decide, rerun } = workflow.jobs
+  assert.deepEqual(decide.permissions, { actions: 'read' }, '讀日誌的 job 只能讀')
+  assert.deepEqual(rerun.permissions, { actions: 'write' }, '按重跑的 job 只有 actions: write')
+  assert.equal(rerun.needs, 'decide')
+  assert.equal(rerun.if, "needs.decide.outputs.rerun == 'true'")
+  for (const condition of [
+    "github.event.workflow_run.event == 'pull_request'",
+    "github.event.workflow_run.conclusion == 'failure'",
+    'github.event.workflow_run.run_attempt == 1',
+    "github.event.workflow_run.path == '.github/workflows/ci.yml'",
+  ]) assert.ok(decide.if.includes(condition), `decide 的 if 缺條件:${condition}`)
+  for (const [id, job] of Object.entries(workflow.jobs)) {
+    assert.ok(job.steps.every(step => step.uses === null), `${id}:不得用任何 action(包含 checkout)—— 不碰 PR 的程式`)
+  }
+  assert.doesNotMatch(source, /\bsecrets\.|actions\/checkout|head_sha|head_branch|pull_requests/, '不讀 secret、不簽出、不把 PR 控制的欄位帶進來')
+  // fan-in 名稱 = ci.yml `verify` 的 name = required check context(三處同一個字串)
+  const ci = parseWorkflowSemantics(readWorkflow('ci.yml'))
+  const desired = JSON.parse(readFileSync(resolve(ROOT, 'infra/governance/desired/github.json'), 'utf8'))
+  const fanIn = raw.jobs.decide.steps[0].env.FAN_IN_JOB
+  assert.equal(fanIn, ci.jobs.verify.name, 'FAN_IN_JOB 必須等於 ci.yml verify 的 name')
+  assert.ok(desired.profiles['design-system-authority'].requiredChecks.some(check => check.context === fanIn), 'FAN_IN_JOB 必須是 required check 的 context')
+  const decideRun = raw.jobs.decide.steps[0].run
+  const rerunRun = raw.jobs.rerun.steps[0].run
+  assert.ok(rerunRun.indexOf('run_attempt') >= 0 && rerunRun.indexOf('run_attempt') < rerunRun.indexOf('rerun-failed-jobs'), '按重跑之前必須再讀一次嘗試數')
+
+  const base = realpathSync(mkdtempSync(join(tmpdir(), 'ci-instrument-rerun-')))
+  try {
+    const bin = join(base, 'bin')
+    mkdirSync(bin)
+    // 假 gh:job 清單用真 jq 套 workflow 裡的 --jq 運算式;日誌照 id 吐;run 狀態用真 jq;POST 只記帳
+    writeFileSync(join(bin, 'gh'), [
+      '#!/bin/bash',
+      'echo "$*" >> "$FAKE_GH/calls"',
+      '[ "$1" = api ] || exit 9; shift',
+      'expr=""; path=""; method=GET',
+      'while [ $# -gt 0 ]; do case "$1" in --paginate) ;; --jq) shift; expr="$1" ;; --method) shift; method="$1" ;; *) path="$1" ;; esac; shift; done',
+      'case "$method $path" in',
+      '  "GET repos/o/r/actions/runs/123/attempts/1/jobs?per_page=100") jq -r "$expr" < "$FAKE_GH/jobs.json" ;;',
+      '  "GET repos/o/r/actions/jobs/"*/logs) id="${path#repos/o/r/actions/jobs/}"; cat "$FAKE_GH/logs/${id%/logs}.log" 2>/dev/null || true ;;',
+      '  "GET repos/o/r/actions/runs/123") jq -r "$expr" < "$FAKE_GH/run.json" ;;',
+      '  "POST repos/o/r/actions/runs/123/rerun-failed-jobs") echo "{}" ;;',
+      '  *) echo "unexpected gh $method $path" >&2; exit 9 ;;',
+      'esac',
+      '',
+    ].join('\n'))
+    chmodSync(join(bin, 'gh'), 0o755)
+    let n = 0
+    const runStep = (script, { jobs = [], logs = {}, run = null } = {}) => {
+      const dir = join(base, `case-${n++}`)
+      mkdirSync(join(dir, 'logs'), { recursive: true })
+      writeFileSync(join(dir, 'jobs.json'), JSON.stringify({ total_count: jobs.length, jobs }))
+      for (const [id, text] of Object.entries(logs)) writeFileSync(join(dir, 'logs', `${id}.log`), text)
+      if (run) writeFileSync(join(dir, 'run.json'), JSON.stringify(run))
+      writeFileSync(join(dir, 'out'), '')
+      writeFileSync(join(dir, 'step.sh'), script)
+      // 靜態的 '--' 在腳本路徑之前:bash 不再把後面當選項(-c 進不來),argv 可審查(harness-source-inventory 的 POSIX 分隔規則;同檔 :487 / :947 同寫法)
+      const r = spawnSync('bash', ['--', join(dir, 'step.sh')], {
+        encoding: 'utf8',
+        env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, FAKE_GH: dir, REPO: 'o/r', RUN_ID: '123', FAN_IN_JOB: fanIn, RUNNER_TEMP: dir, GITHUB_OUTPUT: join(dir, 'out') },
+      })
+      const calls = (() => { try { return readFileSync(join(dir, 'calls'), 'utf8') } catch { return '' } })()
+      return { ...r, output: readFileSync(join(dir, 'out'), 'utf8'), calls }
+    }
+    const T = '2026-11-16T21:27:06.6445734Z '
+    // 一個 job 的日誌:每一步 = GitHub 回顯的 Run 區塊(腳本原文在裡面)+ 步驟自己的輸出(+ 失敗時的 exit code 行)
+    const step = (script, output, code = null) => [
+      `${T}##[group]Run ${script.split('\n')[0]}`, ...script.split('\n').map(line => `${T}\u001b[36;1m${line}\u001b[0m`), `${T}##[endgroup]`,
+      ...output.map(line => `${T}${line}`), ...(code === null ? [] : [`${T}##[error]Process completed with exit code ${code}.`]),
+    ]
+    const gate = 'node scripts/layout-body-edges-invariant.mjs --shard="$SHARD"\n# 儀器失效(INSTRUMENT-FAIL、exit 2)不是產品裁決'
+    const instrumentOut = ['✗ INSTRUMENT-FAIL story「design-system-components-agentpanel-展示--decision-card-errors @lg」沒有量到 —— Storybook 顯示錯誤頁', '✗ layout-body-edges:儀器失效 —— 這次沒有量完(exit 2)']
+    const productOut = ['✗ dialog @md 底 48,應 16', '✗ layout-body-edges:1084 則 story 裡有容器的底距不照規則 4']
+    const job = (id, conclusion, name) => ({ id, conclusion, name })
+    const ok = (id, name) => job(id, 'success', name)
+    const fanInFail = job(99, 'failure', fanIn)
+    const verdict = (r) => r.output.trim()
+    const decideCase = (opts) => runStep(decideRun, opts)
+
+    // 該重跑:24408a62 第 0 片的形狀(失敗步驟自己印了標記;fan-in 跟著紅;其他綠)
+    const edges0 = decideCase({
+      jobs: [ok(1, 'Verify static(tsc + tests + build)'), job(2, 'failure', 'Verify browser(layout edges) (0/2)'), ok(3, 'Verify browser(layout edges) (1/2)'), fanInFail],
+      logs: { 2: [...step('npm run build-storybook', ['built']), ...step(gate, instrumentOut, 2)].join('\n') },
+    })
+    assert.equal(edges0.status, 0, edges0.stderr)
+    assert.equal(verdict(edges0), 'rerun=true', `edges0 形狀應重跑:${edges0.stdout}`)
+    assert.match(edges0.calls, /actions\/jobs\/2\/logs/, '對照組:失敗 job 的日誌要真的被讀')
+    assert.doesNotMatch(edges0.calls, /actions\/jobs\/(1|3|99)\/logs/, '綠的 job 與 fan-in 不讀日誌')
+    // 不該重跑:標記只出現在 GitHub 回顯的腳本裡(產品紅)
+    const echoed = decideCase({ jobs: [job(2, 'failure', 'Verify browser(layout edges) (0/2)'), fanInFail], logs: { 2: step(gate, productOut, 1).join('\n') } })
+    assert.equal(verdict(echoed), 'rerun=false', '腳本回顯裡的 INSTRUMENT-FAIL 字面不算 —— 否則產品紅燈也會被重跑')
+    // 不該重跑:前一步印過(A26 冷卻後重量成功),真正失敗的是後一步的產品裁決
+    const earlier = decideCase({ jobs: [job(2, 'failure', 'Verify browser(datatable perception)'), fanInFail], logs: { 2: [...step('node scripts/a.mjs', ['✗ INSTRUMENT-FAIL:第 1 輪全部作廢', '✓ 冷卻後重量通過']), ...step('node scripts/b.mjs', productOut, 1)].join('\n') } })
+    assert.equal(verdict(earlier), 'rerun=false', '標記要在失敗的那一步自己的輸出裡')
+    // 不該重跑:一個帶標記、另一個是產品紅 / 逾時(cancelled)
+    const mixed = decideCase({ jobs: [job(2, 'failure', 'A'), job(3, 'failure', 'B'), fanInFail], logs: { 2: step(gate, instrumentOut, 2).join('\n'), 3: step('node scripts/b.mjs', productOut, 1).join('\n') } })
+    assert.equal(verdict(mixed), 'rerun=false', '每一個失敗 job 都要帶標記')
+    const timedOut = decideCase({ jobs: [job(2, 'failure', 'A'), job(3, 'cancelled', 'B'), fanInFail], logs: { 2: step(gate, instrumentOut, 2).join('\n') } })
+    assert.equal(verdict(timedOut), 'rerun=false', '逾時 / 取消不是量具說它沒量到')
+    // 不該重跑:只有 fan-in 紅;日誌讀到 0 位元組
+    assert.equal(verdict(decideCase({ jobs: [ok(1, 'A'), fanInFail] })), 'rerun=false', '只有 fan-in 紅不重跑')
+    assert.equal(verdict(decideCase({ jobs: [job(2, 'failure', 'A'), fanInFail], logs: {} })), 'rerun=false', '日誌讀不到 = 判不了,不重跑')
+    // 查詢回 0 個 job = 量具壞了:步驟本身紅,不當成「不用重跑」
+    const none = decideCase({ jobs: [] })
+    assert.notEqual(none.status, 0)
+    assert.match(none.stderr, /讀到 0 個 job/)
+
+    // 重跑那一步:只在「第 1 次嘗試、已完成」時按;已被重跑 / 還在跑就不按
+    const press = runStep(rerunRun, { run: { run_attempt: 1, status: 'completed' } })
+    assert.equal(press.status, 0, press.stderr)
+    assert.match(press.calls, /--method POST repos\/o\/r\/actions\/runs\/123\/rerun-failed-jobs/)
+    for (const run of [{ run_attempt: 2, status: 'completed' }, { run_attempt: 1, status: 'in_progress' }]) {
+      const skip = runStep(rerunRun, { run })
+      assert.equal(skip.status, 0, skip.stderr)
+      assert.doesNotMatch(skip.calls, /rerun-failed-jobs/, `run 是 ${JSON.stringify(run)} 時不得再按`)
+    }
+  } finally {
+    rmSync(base, { recursive: true, force: true })
+  }
 })
 
 // 2026-10-14(待辦總帳 R3):PR 分支用**自己的**這份 Visual Regression 重拍。repository_dispatch 永遠拿 main 的 workflow 檔跑,

@@ -114,16 +114,17 @@ Legacy consumers that predate this v2 boundary are intentionally different from 
 The exact installed DS package provides both tools in local, devcontainer, Codex Cloud, Claude Code web, and future provider environments; no model-specific plugin is required. `sync-all` delivers their package version plus the BOM-managed visual-review policy, issuer registry, and schemas to existing consumers.
 
 ```text
-npm run ds:migrate -- beta.84-breaking-api plan --root . --source src --output codemod.json
-npm run ds:migrate -- beta.84-breaking-api check --root . --proposal codemod.json
-npm run ds:migrate -- beta.84-breaking-api apply --root . --proposal codemod.json --expected-proposal-digest <sha256>
+npm run ds:migrate -- upgrade --root . --source apps/<app>/src [--from <old-version>] --report upgrade.md
+npm run ds:migrate -- plan --root . --source apps/<app>/src [--from <old-version>] --output codemod.json
+npm run ds:migrate -- check --root . --proposal codemod.json
+npm run ds:migrate -- apply --root . --proposal codemod.json --expected-proposal-digest <sha256>
 
 npm run visual-baseline:review -- plan --root . --author <audit-label> --candidate <dir> --baseline <dir> --statements statements.json --output visual-proposal.json
 npm run visual-baseline:review -- check --root . --proposal visual-proposal.json --review signed-review.json
 npm run visual-baseline:review -- apply-reviewed --root . --proposal visual-proposal.json --review signed-review.json --expected-proposal-digest <sha256>
 ```
 
-Codemod ambiguity and `DataTable meta.disabled` are manual blockers, never guessed edits. A visual proposal binds the governed Git origin, HEAD commit/tree, exact images, and explicit non-placeholder per-image statements; the signed human review cannot replay into another repository identity. The managed-model-broker branch is reserved but forced `not-activated` in this tool version until it directly reuses the canonical signed broker/model-authority receipt validators; digest-only pseudo activation is rejected. The shipped human policy is also currently `not-activated`, so planning works everywhere while apply intentionally fails closed until protected human issuer/policy activation exists. Neither tool commits or pushes. Transactions cover cooperating writers honoring the same lock and observed per-file pathname CAS; they do not claim parent-directory-swap resistance, storage power-loss durability, or protection from a non-cooperative old open descriptor. Git identity is a governed-workspace replay boundary, not an unbypassable identity proof against a malicious repository owner.
+`upgrade` reads the change ledger shipped in the installed package (`node_modules/@qijenchen/design-system/ds-changes.json`, every section after the old version up to the installed one), applies only the entries that carry a mechanical `fix`, and prints what is left with file:line, the action, and the spec section. Codemod ambiguity (dynamic values, old and new names together, name clashes) blocks the whole file, never a guessed edit. A visual proposal binds the governed Git origin, HEAD commit/tree, exact images, and explicit non-placeholder per-image statements; the signed human review cannot replay into another repository identity. The managed-model-broker branch is reserved but forced `not-activated` in this tool version until it directly reuses the canonical signed broker/model-authority receipt validators; digest-only pseudo activation is rejected. The shipped human policy is also currently `not-activated`, so planning works everywhere while apply intentionally fails closed until protected human issuer/policy activation exists. Neither tool commits or pushes. Transactions cover cooperating writers honoring the same lock and observed per-file pathname CAS; they do not claim parent-directory-swap resistance, storage power-loss durability, or protection from a non-cooperative old open descriptor. Git identity is a governed-workspace replay boundary, not an unbypassable identity proof against a malicious repository owner.
 
 ## Governance model
 

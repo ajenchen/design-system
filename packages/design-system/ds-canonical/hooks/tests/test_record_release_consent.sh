@@ -7,6 +7,7 @@
 #   · 問句不記錄**也不撤回**,而且必須出聲(靜默丟棄是 user 連續暴怒的直接原因)
 #   · 否定詞要帶發版受詞:「不要發生問題」不得被當成撤回
 #   · A-不-A 問句「要不要發版」字面內嵌「不要發版」,不得被當成撤回
+#   · 只是提到發版(上次發版後的異動 / 已發布的元件)不落地也不撤回、要出聲;「先不發版」「延後發版」這類是撤回
 #
 # **隔離**:先前版本 `TMP=$(mktemp -d)` 沒有守衛,沙箱裡 mktemp 失敗回空 → `cd ""` 留在真 repo
 # → 測試把 user 真正的同意收據覆寫/刪除(2026-09-20 實際發生三次)。現在兩道:
@@ -77,6 +78,24 @@ run "等我看完預覽再發版" 2>/dev/null | grep -q "條件或延後"; asser
 # 9e. 純問句那條路(先前沒覆蓋,把 SSOT 的問句判準停用它照樣全綠)
 run "現在可以發版嗎?" >/dev/null; check "9e. 「現在可以發版嗎?」→ 不落地" no "$FILE"
 run "發版" >/dev/null; check "9f. 「發版」→ 落地" yes "$FILE"
+
+# 9g–9k. 只是提到發版 / 否定 / 延後(2026-11-21 RC-LANG-FP:先前這幾句都判成同意,hook 會寫出有效收據)。
+#   提到:不撤回既有同意、不落地,而且要出聲;句子取自 user 2026-09-26 / 10-27 原話(全文鎖在 scripts/test-release-consent.mjs 5h)。
+MENTION="確保所有包括自上次發版後的異動都是追根究柢的增刪改"
+run "$MENTION" >/dev/null; check "9g. 只是提到「…自上次發版後的異動…」→ 不撤回既有同意" yes "$FILE"
+run "$MENTION" 2>/dev/null | grep -q "只是提到.*未記錄為同意"; assert "9h. 只是提到必須印出「只是提到…未記錄為同意」" $?
+rm -f "$FILE"
+run "$MENTION" >/dev/null; check "9i. 只是提到 → 不落地" no "$FILE"
+run "還原已發布的 Button tertiary xs" >/dev/null; check "9j. 「還原已發布的 Button tertiary xs」→ 不落地" no "$FILE"
+for NEG in 先不發版 這次不發版 延後發版 還不能發版; do
+  run "發版" >/dev/null; check "9k. 前置:「發版」→ 落地(下一格才不是空跑)" yes "$FILE"
+  run "${NEG}" >/dev/null; check "9k. 「${NEG}」→ 撤回既有同意" no "$FILE"
+done
+run "發版" >/dev/null; check "9l. 「發版」→ 落地(後面的格子要用)" yes "$FILE"
+# 9m. 照 mention 訊息「直接說「發版」即可」連引號一起打出來,必須落地 —— 否則 user 永遠在同一句訊息裡繞圈
+#     (RC-LANG-FP 規格核對必修 2;判準兩面在 scripts/test-release-consent.mjs 5h)。
+rm -f "$FILE"
+run "「發版」" >/dev/null; check "9m. 連引號打「發版」→ 落地(不得又判只是提到)" yes "$FILE"
 
 # 10. 判準來自 SSOT,不是 hook 自己寫的 regex
 grep -q "release-consent-language.mjs" "$HOOK"; assert "10. hook 消費共用判準(不自己寫 regex)" $?

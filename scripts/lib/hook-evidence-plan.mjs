@@ -11,6 +11,10 @@ const HOOK_ROOT = 'packages/design-system/ds-canonical/hooks'
 const FILE_EVENTS = new Set(['PreToolUse', 'PostToolUse'])
 const FILE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit'])
 const ENFORCEMENT_OUTPUT_MODES = new Set(['blocking', 'governance-context', 'governance-decision', 'governance-context-or-block'])
+// 刻意寫死(fail closed):任何維度悄悄換 tier,這裡就紅,逼人同步 hook evidence plan 與測試。
+// 2026-11-21 39 → 37:dims 58 / 75 原本掛的 check_plugin_fork_health.sh 退場(它在每一種部署情境都提早結束),
+// 兩維改成 DETERMINISTIC(scripts/deep-audit-deterministic-plan.json)。
+const EXPECTED_HOOK_ENFORCED_DIMENSIONS = 37
 
 function fail(message) {
   throw new Error(`hook evidence plan blocked:${message}`)
@@ -82,7 +86,9 @@ function coverageHookDimensions(root) {
     fail('audit coverage matrix must enumerate ordered dimensions 1..91 exactly once')
   }
   const hookDimensions = entries.filter(entry => entry.tier === 'HOOK-ENFORCED')
-  if (hookDimensions.length !== 39) fail(`audit coverage matrix HOOK-ENFORCED count differs from 39:${hookDimensions.length}`)
+  if (hookDimensions.length !== EXPECTED_HOOK_ENFORCED_DIMENSIONS) {
+    fail(`audit coverage matrix HOOK-ENFORCED count differs from ${EXPECTED_HOOK_ENFORCED_DIMENSIONS}:${hookDimensions.length}`)
+  }
   return { hookDimensions, bytes }
 }
 
@@ -124,7 +130,7 @@ function canonicalHookTest(hook) {
 function validatePlanSemantics({ root, plan, coverage, registrations }) {
   const expected = coverage.hookDimensions.map(entry => entry.dim)
   const actual = plan.dimensions.map(dimension => dimension.dim)
-  if (actual.length !== 39 || actual.some((dim, index) => dim !== expected[index])) {
+  if (actual.length !== EXPECTED_HOOK_ENFORCED_DIMENSIONS || actual.some((dim, index) => dim !== expected[index])) {
     fail(`dimensions must exactly cover ordered HOOK-ENFORCED matrix:${expected.join(',')}`)
   }
   if (new Set(actual).size !== actual.length) fail('dimensions contain duplicates')

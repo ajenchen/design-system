@@ -38,6 +38,17 @@ const SETUP_MODULE_URL = pathToFileURL(join(REPOSITORY_ROOT, 'scripts/setup-prov
 const PROVIDER_CLI_EXECUTION_PROBE = join(REPOSITORY_ROOT, 'scripts/test-fixtures/provider-cli-execution-probe.mjs')
 const CANONICAL_AUTHORITY_MANIFEST = readFileSync(join(REPOSITORY_ROOT, 'infra/governance/providers/provider-cli-toolchain.json'))
 const CANONICAL_AUTHORITY_LOCK = readFileSync(join(REPOSITORY_ROOT, 'infra/governance/providers/provider-cli-toolchain.package-lock.json'))
+// The fake CLIs report exactly the version the canonical manifest locks. A hard-coded copy of that
+// version made every security upgrade turn ten setup tests red ("did not report exact token") even
+// though setup itself was correct; the mismatch path stays covered by the explicit 9.9.9 probe test.
+const CANONICAL_TOOL_VERSIONS = Object.fromEntries(
+  JSON.parse(CANONICAL_AUTHORITY_MANIFEST.toString('utf8')).tools.map(tool => [tool.providerId, tool.version]),
+)
+const CLAUDE_VERSION = CANONICAL_TOOL_VERSIONS['claude-code']
+const CODEX_VERSION = CANONICAL_TOOL_VERSIONS.codex
+assert.match(CLAUDE_VERSION, /^\d+\.\d+\.\d+$/)
+assert.match(CODEX_VERSION, /^\d+\.\d+\.\d+$/)
+const literalPattern = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const CALLER_LOCK = JSON.parse(readFileSync(join(REPOSITORY_ROOT, 'package-lock.json'), 'utf8'))
 const NPM_ARTIFACT = CALLER_LOCK.packages['node_modules/npm']
 const NPM_RUNTIME_CONTRACT = resolveExactNpmRuntimeContract(REPOSITORY_ROOT)
@@ -78,14 +89,14 @@ function fakePackageFiles(lockPath, lock) {
     }))
   } else if (lockPath.startsWith('node_modules/@anthropic-ai/claude-code-')) {
     files.set('package.json', packageManifestBytes({ name: packageName, version: entry.version }))
-    files.set('claude', Buffer.from('#!/usr/bin/env node\nprocess.stdout.write("2.1.215 (Claude Code)\\n")\n'))
+    files.set('claude', Buffer.from(`#!/usr/bin/env node\nprocess.stdout.write("${CLAUDE_VERSION} (Claude Code)\\n")\n`))
   } else if (lockPath === 'node_modules/@openai/codex') {
     files.set('package.json', packageManifestBytes({
       name: packageName,
       version: entry.version,
       bin: { codex: 'bin/codex.js' },
     }))
-    files.set('bin/codex.js', Buffer.from('#!/usr/bin/env node\nprocess.stdout.write("codex-cli 0.144.6\\n")\n'))
+    files.set('bin/codex.js', Buffer.from(`#!/usr/bin/env node\nprocess.stdout.write("codex-cli ${CODEX_VERSION}\\n")\n`))
   } else if (lockPath.startsWith('node_modules/@openai/codex-')) {
     files.set('package.json', packageManifestBytes({ name: packageName, version: entry.version }))
   } else if (lockPath === 'node_modules/@future-ai/future-cli') {
@@ -377,7 +388,7 @@ function harness(root, {
         && args[1] === '--version'
       )
     ) {
-      return { status: 0, stdout: `${claudeVersion ?? '2.1.215'} (Claude Code)\n`, stderr: '' }
+      return { status: 0, stdout: `${claudeVersion ?? CLAUDE_VERSION} (Claude Code)\n`, stderr: '' }
     }
     if (
       command === process.execPath
@@ -387,7 +398,7 @@ function harness(root, {
       )
       && args[1] === '--version'
     ) {
-      return { status: 0, stdout: `codex-cli ${codexVersion ?? '0.144.6'}\n`, stderr: '' }
+      return { status: 0, stdout: `codex-cli ${codexVersion ?? CODEX_VERSION}\n`, stderr: '' }
     }
     if (
       command === process.execPath
@@ -603,8 +614,8 @@ test('installs locked provider CLIs atomically, probes real shims, and is idempo
   assert.equal(result.platform, TEST_PLATFORM_ID)
   assert.equal(result.authorityDigest, sha256(AUTHORITY_MANIFEST))
   assert.equal(result.target, expectedRuntimeTarget(root, result.authorityDigest))
-  assert.match(result.versions.claude, /2\.1\.215/)
-  assert.match(result.versions.codex, /0\.144\.6/)
+  assert.match(result.versions.claude, new RegExp(literalPattern(CLAUDE_VERSION)))
+  assert.match(result.versions.codex, new RegExp(literalPattern(CODEX_VERSION)))
   assert.deepEqual(captureGitVisibleWorktree(root), before)
   assertNoStageDirectories(root)
   assert.equal(testHarness.cleanupCount, 1)
@@ -940,7 +951,7 @@ test('a failed real version probe leaves no digest target or staging directory',
   const testHarness = harness(root, { claudeVersion: '9.9.9' })
   await assert.rejects(
     setupProviderCliToolchain(setupOptions(root, testHarness)),
-    /did not report exact token 2\.1\.215/,
+    new RegExp(`did not report exact token ${literalPattern(CLAUDE_VERSION)}`),
   )
   const digest = sha256(AUTHORITY_MANIFEST)
   assert.equal(lstatSync(expectedRuntimeTarget(root, digest), { throwIfNoEntry: false }), undefined)
@@ -993,7 +1004,7 @@ test('rejects same-version poison in an installed runtime before it can return r
   chmodSync(runtimeExecutable, 0o755)
   const sameVersionProbe = runFixtureExecutable(runtimeExecutable, ['--version'], root)
   assert.equal(sameVersionProbe.status, 0, sameVersionProbe.stderr)
-  assert.match(sameVersionProbe.stdout, /codex-cli 0\.144\.6/)
+  assert.match(sameVersionProbe.stdout, new RegExp(`codex-cli ${literalPattern(CODEX_VERSION)}`))
   const callsBeforeReuse = testHarness.calls.length
 
   await assert.rejects(

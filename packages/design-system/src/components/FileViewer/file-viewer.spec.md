@@ -19,7 +19,7 @@ benchmark:
 
 FileViewer 是**可延伸的網頁檔案預覽殼層(modal fullscreen)**——負責 overlay / toolbar / 鍵盤 / filmstrip / 詳細資訊面板一切 chrome,檔案本體由 **renderer registry** 按 file type 決定誰渲染。MVP 內建 `ImageRenderer` + `FallbackRenderer`,未來可透過 `registerFileRenderer()` 擴充 PDF / Video / Code 等 renderer 而不動 shell。
 
-**實作基礎**:自建 composite——直接消費 Radix `DialogPrimitive` 而非 DS 的 `<Dialog>` wrapper。原因:FileViewer 需要 edge-to-edge fullscreen(無 viewport inset / 無 rounded-lg / 無 maxWidth),這些全要覆寫 `<Dialog>` 預設。直接消費 Radix primitive 讓 shell 擁有完整 layout 控制權,同時保有 Radix focus trap(FocusScope)/ Esc / modal 隔離(`hideOthers` 對背景兄弟樹加 `aria-hidden`;Radix `react-dialog@1.1.x` 不輸出 `aria-modal` 屬性)的結構優勢。內部消費 DS 元件:`<Button>` / `<Input>` / `<Empty>` / `<Separator>` / `<AspectRatio>` / `<Textarea>` / `<Field>`+`<FieldLabel>` / `<DescriptionList>` / `<ScrollArea>` / `<DropdownMenu>` / `<ChromeHeader>` / `ItemInlineActionButton` + `patterns/horizontal-overflow`。
+**實作基礎**:自建 composite——直接消費 Radix `DialogPrimitive` 而非 DS 的 `<Dialog>` wrapper。原因:FileViewer 需要 edge-to-edge fullscreen(無 viewport inset / 無 rounded-lg / 無寬度檔位上限),這些全要覆寫 `<Dialog>` 預設。直接消費 Radix primitive 讓 shell 擁有完整 layout 控制權,同時保有 Radix focus trap(FocusScope)/ Esc / modal 隔離(`hideOthers` 對背景兄弟樹加 `aria-hidden`;Radix `react-dialog@1.1.x` 不輸出 `aria-modal` 屬性)的結構優勢。內部消費 DS 元件:`<Button>` / `<Input>` / `<Empty>` / `<Separator>` / `<AspectRatio>` / `<Textarea>` / `<Field>`+`<FieldLabel>` / `<DescriptionList>` / `<ScrollArea>` / `<DropdownMenu>` / `<ChromeHeader>` / `ItemInlineActionButton` + `patterns/horizontal-overflow`。
 
 **Layout Family**:**非上述 family — composite / multi-region**(Toolbar + Viewport + 可選 InfoPanel + 可選 Filmstrip)。見下「Layout Family Rationale」段。
 
@@ -47,7 +47,7 @@ Family 的 canonical 規定的是「同用途同 layout」;FileViewer 用途(ful
 
 | 偏離點 | Canonical | 本元件做法 | 理由 |
 |--------|-----------|-----------|------|
-| Overlay 浮層 | 一般 modal 用 `<Dialog>` | 直接消費 `DialogPrimitive.Root/Content` | 需要 edge-to-edge fullscreen,Dialog 的 inset / rounded-lg / maxWidth 全要覆寫;直接用 Radix primitive 避免對抗 wrapper |
+| Overlay 浮層 | 一般 modal 用 `<Dialog>` | 直接消費 `DialogPrimitive.Root/Content` | 需要 edge-to-edge fullscreen,Dialog 的 inset / rounded-lg / 寬度檔位上限全要覆寫;直接用 Radix primitive 避免對抗 wrapper |
 | Theme 鎖定 | 一般元件繼承頁面 theme | Content 內包 `data-theme="dark"` subtree | Viewer chrome 需暗色氛圍讓圖片 / media 顯色正確(對齊 Tooltip pattern——`data-theme="dark"` subtree 是 DS 已有的 canonical 手法) |
 | Anatomy 5-story | 完整 5 件套(Overview / Inspector / ColorMatrix / SizeMatrix / StateBehavior) | 保留全部 5 件套;Inspector 以多 toggle 並列方式展示(showFilmstrip × readOnly × allowDownload × filesCount) | FileViewer 決策維度 `mode × files count × readOnly × allowDownload × showFilmstrip` 雖超過一般單維 Inspector 範圍,仍值得提供 live 可切換預覽;多 toggle 並列讓 reviewer 一次看到「配置 → 結果」關係,StateBehavior 再補場景矩陣 |
 | Layout Family | 聲明 1/2/3/4 家族 | 聲明「非 family — composite」 | 見上「Layout Family Rationale」段 |
@@ -99,7 +99,7 @@ Family 的 canonical 規定的是「同用途同 layout」;FileViewer 用途(ful
 ```
 
 **分區決策**:
-- **Toolbar 高度 = `--chrome-header-height`**(隨 page density:md=48 / lg=56)——與 InfoPanel header 同高,視覺對齊;**code 已消費 `<ChromeHeader>` primitive**(Toolbar + InfoPanel header,皆 `<ChromeHeader>` **繼承 page density**,2026-06-15 移除 lockDensity),高度由 primitive 內部套 `h-[var(--chrome-header-height)]`(`chrome-header.tsx`),tsx 不硬寫 height className。**跨家族 SSOT pointer**:FileViewer Toolbar + InfoPanel header 屬 **Chrome header(Fixed-h)家族**,border / padding / dismiss size / withTabs 跨家族契約 SSOT 詳 `patterns/header-canonical/header-canonical.spec.md`。FileViewer **不鎖 density**(全 surface 繼承 page;原 `lockDensity="lg"` 只鎖兩個 header、沒鎖 body → header(px-loose@lg=24)與 body(px-loose@page=16)左緣不對齊 = 圖二 bug,已移除,見 `density.spec.md` 消費者清單)。
+- **Toolbar 高度 = `--chrome-header-height`**(隨 page density:md=48 / lg=56)——與 InfoPanel header 同高,視覺對齊;**code 已消費 `<ChromeHeader>` primitive**(Toolbar + InfoPanel header,皆 `<ChromeHeader>` **繼承 page density**,2026-06-15 移除 lockDensity),高度由 primitive 內部套 `h-[var(--chrome-header-height)]`(`chrome-header.tsx`),tsx 不硬寫 height className。**跨家族 SSOT pointer**:FileViewer Toolbar + InfoPanel header 屬 **Chrome header(Fixed-h)家族**,border / padding / dismiss size / tabsSlot 跨家族契約 SSOT 詳 `patterns/header-canonical/header-canonical.spec.md`。FileViewer **不鎖 density**(全 surface 繼承 page;原 `lockDensity="lg"` 只鎖兩個 header、沒鎖 body → header(px-loose@lg=24)與 body(px-loose@page=16)左緣不對齊 = 圖二 bug,已移除,見 `density.spec.md` 消費者清單)。
 - **Viewport `flex-1`**——填滿剩餘空間;InfoPanel 透過 `w-80 shrink-0` 從右側切出,不吃 viewport 自然寬
 - **Filmstrip 固定 h-24**——預留 thumb 64 + padding;只在 `showFilmstrip && files.length > 1` 時顯示
 - **Prev/Next arrows 絕對定位**——避免 layout shift,只在 `files.length > 1` 渲染
@@ -240,14 +240,14 @@ Shell 看到 `pageNumber` capability 時自動在 toolbar 顯示 page navigator(
 [−]  [ % input  ⌄ ]  [+]
  │         │         │
  │         │         └─ Button iconOnly Plus(zoom in 到下一個 preset)
- │         └─ Input size="sm" autoWidth(field-sizing:content 隨 value 文字寬)
+ │         └─ Input size="sm" width="hug"(field-sizing:content 隨 value 文字寬)
  │            + text-center + tabular-nums;endSlot = ChevronDown(觸發 DropdownMenu)
  └─ Button iconOnly Minus(zoom out 到上一個 preset)
 ```
 
 **消費 DS primitive**:
 - `<Button>` iconOnly size="sm" 作 ± 按鈕(Minus / Plus icon,disabled 於邊界)
-- `<Input size="sm" autoWidth>` 作 % 輸入(autoWidth 隨輸入文字寬;Toolbar inline editing canonical)
+- `<Input size="sm" width="hug">` 作 % 輸入(跟內容寬 = 隨輸入文字寬;Toolbar inline editing canonical;2026-11-15 前寫 `autoWidth`)
 - Input `endSlot` escape hatch 包 `<DropdownMenuTrigger asChild>` + `<ItemInlineActionButton icon={ChevronDown}>` 作 chevron(非宣告式 `endAction`——chevron 同時是 DropdownMenu trigger,需 asChild 把 trigger 行為掛到 inline action)
 - `<DropdownMenu>` 作 preset + fit 選單(取代先前 `<Popover>` + 手刻 button list)
 
@@ -288,10 +288,10 @@ Shell 看到 `pageNumber` capability 時自動在 toolbar 顯示 page navigator(
 - **Thumb 固定 64×64**——小到能塞 10+ 檔在畫面上,大到能辨識內容
 - **thumb gap `gap-[var(--layout-space-tight)]`**(density-aware token,非寫死 gap-1)——縮圖列是一整條導覽,緊密 gap 讓它讀成一組
 - **當前 thumb**:`ring-2 ring-primary`(明顯 outline);其他 `ring-1 ring-border` + `hover:ring-border-hover`
-- **ScrollIntoView**:切換當前 file 時 active thumb 自動 scroll 到視野中央
+- **選到就露出來**:目前那張(`aria-current`)置中 —— 切換檔案(點縮圖、← →、程式改 index)、Tab 鍵焦點移到縮圖、視窗縮放都觸發,兩端到底時夾住;用 `horizontal-overflow` 的 `useRevealSelected`(契約與 user 選 B 的原話見 `horizontal-overflow.spec.md`「選到就露出來」)。2026-11-11 前這裡自己寫一份 `scrollIntoView`,只看 `activeIndex`:縮放視窗後目前那張不會回到中央(修前建置實測,閘 `overflow-reveal-selected` 的對照組),Tab 鍵焦點移到半露的縮圖也只靠瀏覽器(Chromium 對水平部分可見的項目 focus 不捲)
 - **消費 `horizontal-overflow` pattern**:隱藏 native scrollbar + fade-mask + scroll arrows(canScroll 時)
 - **Thumb 內容**:image 用 `<img object-cover>`;非 image 用 FileText icon + ext label
-- **A11y**:整個 strip `role="group"` + `aria-label`,每個 thumb `<button>` + `aria-current`(當前)。**非 `tablist`**——filmstrip 是「選圖導航」非「切換 N 個 tabpanel」,lightbox 單一 viewport 不符 W3C tabs pattern(tab MUST 對應自己的 tabpanel + roving)。對齊 APG grouped-carousel(https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/carousel/carousel-pattern.html#L182)+ PhotoSwipe / codeaccessible.com lightbox 共識(2026-06-01 M26 source-verified)
+- **A11y**:整個 strip `role="group"` + `aria-label`,每個 thumb `<button>` + `aria-current`(當前)。**非 `tablist`**——filmstrip 是「選圖導航」非「切換 N 個 tabpanel」,lightbox 單一 viewport 不符 W3C tabs pattern(tab MUST 對應自己的 tabpanel + roving)。對齊 APG grouped-carousel(https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/carousel/carousel-pattern.html#L182)(2026-06-01 另查兩家 lightbox 也同此做法,當時沒留一手網址,2026-11-16 不再列名)
 
 ---
 
@@ -384,3 +384,9 @@ Radix DialogPrimitive 自動處理:
 - `../../patterns/horizontal-overflow/horizontal-overflow.spec.md` — Filmstrip 水平捲動 + fade mask
 - `../../patterns/action-bar/action-bar.spec.md` — Toolbar 按鈕順序 canonical
 - `../FileItem/file-item.spec.md` — 上傳清單列元件(與 FileViewer 不同用途,FileItem 是 list item,FileViewer 是 fullscreen preview)
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `layoutSpace.spec.md`

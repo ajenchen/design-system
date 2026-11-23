@@ -49,6 +49,18 @@ export function validatePanelWidthRange(range: PanelWidthRange): string | null {
   return null
 }
 
+/**
+ * 產品沒給 Menu `widthRange` 時的預設範圍(「版面規則」§1;`../Sidebar/sidebar.spec.md`「尺寸規範」):
+ * 最小 = `minDefault`(app-shell.tsx 的 px 常數 240)、初始 = 最大 = 量到的 `--sidebar-width`。
+ * `--sidebar-width` 是 rem(15rem),瀏覽器字級小於 16px 時量到的會小於 px 的最小寬(字級 12px → 180 < 240),
+ * 範圍就不合法(U:6),`registerWidth` 擋下、Menu 整個登記不進來 —— 初始 / 最大取兩者大的(2026-11-17 A94)。
+ * 字級 16px 時兩者都是 240,零差異;字級更大時照量到的值。
+ */
+export function defaultMenuWidthRange(measuredInitial: number, minDefault: number): PanelWidthRange {
+  const initial = Math.max(measuredInitial, minDefault)
+  return { min: minDefault, initial, max: initial }
+}
+
 // ─────────────────────────── 1. 誰並排(U:18-27)───────────────────────────
 
 export interface PlacementInput {

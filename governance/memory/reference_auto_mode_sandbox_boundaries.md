@@ -42,7 +42,7 @@ originSessionId: 1920833e-4609-44e2-b985-811901d75155
 
 1. **鎖的主人**:上表一、三是平台;二是自家設計(但改它等於放寬安全邊界,不改)。
 2. **有沒有等價傳輸**:git 走 Basic token、npm 走代理、瀏覽器走代理、GitHub 讀取走 curl(`gh` 在沙箱 TLS 不通)。
-3. **交給 user 的指令**必須在沙箱外才成立:對話內 `!` 與 Bash 同一個沙箱,不算。
+3. **交給 user 的指令**必須在沙箱外才成立:一般 session 的 `!` 在沙箱外(官方 https://code.claude.com/docs/en/sandboxing.md ,2026-11-16 讀:「a command you enter at the `!` shell-mode prompt runs unsandboxed in most sessions」);背景 session 的 `!` 仍在沙箱內,不算。v2.1.260 之前嚴格沙箱模式下每種 session 都在沙箱內,本條舊版「`!` 與 Bash 同一個沙箱」即出於此。
 4. **分類器擋下 = 停在該處並回報**,把準備好的 diff / 分支 / PR 連結交出去;不拆小、不換分身、不下一 turn 再試。
 
 ## 五、clone 必先裝 hooks,否則快照在提交時就過期(2026-09-29 同一天兩次)
@@ -63,7 +63,7 @@ originSessionId: 1920833e-4609-44e2-b985-811901d75155
 | build graph journal 死鎖 | 復原已 skip-identical(`scripts/lib/canonical-sync-transaction.mjs`);`--recover` 即清,禁手刪前先跑它 |
 | 「canonical source changed during publication」 | fingerprint 已排除自家 output targets(`governance-build-graph.mjs`) |
 | consumer 前置修復 PR 待合併 | 工具:`node scripts/consumer-pr-merge.mjs <owner/repo> <pr#>`(fail-closed:open+checks 全綠+exact-head 才合)。**2026-10-07 更正**:AI 直接執行它 = 第三節「用 API 合併 consumer(WM)PR」那一列,2026-09-27/29 被分類器判為危險動作;09-30 又有一次 API 合併 WM #97 收到 `merged: True`(待讀回,見待辦總帳 G1 (2))。讀回前照第三節:合併走 `release:auto` 的 consumer 步驟;被擋就停、記入完成報告 |
-| hook 設定目錄(repo `hooks/`、`.claude/hooks`)寫入 EPERM | **平台(Claude Code)內建防 hook 注入保護,不是自家鎖**(自家 settings denyWrite=[] 仍 EPERM 即此類),不試圖解;worktree 檔與 index 的本地殘影(hooks/scripts symlink 2026-08-28 錨例)→ `git update-index --skip-worktree <path>`(只寫 `.git` 可寫區)即乾淨,逃生口 `--no-skip-worktree`;**禁**指路 `!`(與 Bash 同沙箱必再擋)或推 user 終端機。**注意**:生成器輸出路徑帶此標記會令 `git add` 吐 sparse-checkout 錯——build graph `stageOutputs` 已自我修復(自動清標後續跑),同錨例第二鎖 |
+| hook 設定目錄(repo `hooks/`、`.claude/hooks`)寫入 EPERM | **平台(Claude Code)內建防 hook 注入保護,不是自家鎖**(自家 settings denyWrite=[] 仍 EPERM 即此類),不試圖解;worktree 檔與 index 的本地殘影(hooks/scripts symlink 2026-08-28 錨例)→ `git update-index --skip-worktree <path>`(只寫 `.git` 可寫區)即乾淨,逃生口 `--no-skip-worktree`;有這條等價做法就不推 user(`!` 在不在沙箱內見第四節第 3 條)。**注意**:生成器輸出路徑帶此標記會令 `git add` 吐 sparse-checkout 錯——build graph `stageOutputs` 已自我修復(自動清標後續跑),同錨例第二鎖 |
 | 授權分類器擋「實作既有規格書」 | 詞彙缺口非 user 邊界:canonical `packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs` 已補 實作/落地 + 問句/轉述防護(2026-09-02) |
 | M22 cite hook 不認 `m3.material.io` | regex 錨定網域開頭;已補 `m3\.material`(2026-09-02) |
 | CI「Verify authority candidate」紅、任何 PR 都紅 | protected-base(main)自身被新資安公告擊穿;ruleset required 只有「Verify(tsc+tests+compile+build)」→ shim `--required` 已改讀 rules API 過濾;合掉含 lock 升級的 PR 即治 main |

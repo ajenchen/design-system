@@ -5,13 +5,14 @@
  *        而且**不靠 TanStack 的自動判斷**:
  *        T 判定表:每一型給一組儲存格值,真的用 TanStack v8 的 getSortedRowModel 排(升冪 / 降冪),順序 = 表上寫的期望值
  *          (期望值手寫,不是抄輸出)—— person 照名字、multiPerson 逐人比名字、string / url / time 不分大小寫且數字段照數值、
- *          date 照時間、select / multiSelect 決定前同修前(照原始值);null / 空字串在每一型都當最小(數字類也是);
+ *          date 照時間、select / multiSelect 照選項順序(欄的 meta.options;不在選項裡的排最後、沒給 options 照原始值);
+ *          null / 空字串在每一型都當最小(數字類也是);
  *        O 順序無關:數字 / 金額 / 布林含空值時,同一組值的所有原始順序排出同一個結果(比較函式對稱);
  *        L 列數無關:同一組人員 / 字串值放成 ≤ 10 列與 > 10 列兩張表,排出來的順序相同(自動判斷 `flatRows.slice(10)` 會讓兩者不同);
  *        C 呼叫端:data-table.tsx 的欄位前處理真的對每個有 meta.type 的欄掛 `sortingFnForColumnType`,且 consumer 自己寫的 sortingFn 不被蓋掉
  *          (瀏覽器端由 `scripts/data-table-column-sorting-invariant.mjs` 驗頁面真的照這個排)。
  *   紅: 任一格不符即 exit 1;`--selftest` 把每一型的比法換回修前(欄不掛 sortingFn = TanStack `'auto'`),判定表必須抓到 ≥ 6 格不符
- *        (人員 / 多人亂排、≤ 10 列的字串分大小寫、≤ 10 列的時間照字元比…),抓不到 = 判定表沒在驗這條規則 → exit 1。
+ *        (人員 / 多人亂排、≤ 10 列的字串分大小寫、≤ 10 列的時間照字元比、單選 / 多選照程式值…),抓不到 = 判定表沒在驗這條規則 → exit 1。
  *   綠: 全部相符時綠;純函式 + TanStack 純邏輯(table-core),無 DOM、無時鐘、無隨機。
  *
  * Run: `node scripts/test-data-table-column-sorting.mjs`(`--selftest` 跑對照組)
@@ -26,9 +27,9 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const SELFTEST = process.argv.includes('--selftest')
 
 /** 用 TanStack 真的排一次;legacy = 修前(欄沒有 sortingFn → 'auto') */
-function sortValues(type, values, { desc = false, legacy = false } = {}) {
+function sortValues(type, values, { desc = false, legacy = false, options } = {}) {
   let state = { sorting: [{ id: 'v', desc }] }
-  const column = { id: 'v', accessorFn: (row) => row.v, ...(legacy ? {} : { sortingFn: sortingFnForColumnType(type) }) }
+  const column = { id: 'v', accessorFn: (row) => row.v, ...(legacy ? {} : { sortingFn: sortingFnForColumnType(type, options) }) }
   const table = createTable({
     data: values.map((v, i) => ({ v, i })),
     columns: [column],
@@ -43,7 +44,10 @@ function sortValues(type, values, { desc = false, legacy = false } = {}) {
 }
 
 const P = (name) => ({ name, avatarUrl: `https://i.pravatar.cc/128?u=${name}`, description: 'Sales' })
-// 每格:[欄型, 說明, 值, 期望升冪順序(值的索引)]
+// 選項 = 專案排程 story 的 STATUS_OPTIONS / TAG_LABELS(data-table.stories.tsx)同一份順序
+const STATUS = ['not-started', 'in-progress', 'blocked', 'done', 'cancelled'].map((value) => ({ value }))
+const TAGS = ['design', 'frontend', 'backend', 'qa', 'ops', 'docs', 'mobile', 'spike'].map((value) => ({ value }))
+// 每格:[欄型, 說明, 值, 期望升冪順序(值的索引), 欄的 meta.options?]
 const CASES = [
   ['person', '照名字、不分大小寫;null 當最小', [P('Carol Liu'), P('alice'), 'Bob', null, P('David Wu')], [3, 1, 2, 0, 4]],
   ['person', '同名照原順序(穩定)', [P('Bob'), P('Alice'), P('Bob')], [1, 0, 2]],
@@ -60,8 +64,12 @@ const CASES = [
   ['number', '空值最小:null 不夾在負數與正數之間', [3, null, -5, 0, 7, null, -2], [1, 5, 2, 6, 3, 0, 4]],
   ['currency', '空值最小:空字串與 null 在負數之前', [-120, null, 80, ''], [1, 3, 0, 2]],
   ['boolean', '空值最小:null 在 false 之前', [true, null, false], [1, 2, 0]],
-  ['select', '決定前同修前:照原始值', ['not-started', 'blocked', 'done', 'in-progress'], [1, 2, 3, 0]],
-  ['multiSelect', '決定前同修前:原始值接成字串比', [['frontend', 'design'], ['backend'], [], ['backend', 'qa']], [2, 1, 3, 0]],
+  // select / multiSelect 照選項順序(data-table.spec.md「七、Column Type」排序表;AI 依規格推導,出處在 lib/column-sorting.ts 檔頭)
+  ['select', '照選項順序:未開始 → 進行中 → 受阻 → 完成 → 取消(修前照程式值:受阻 → 取消 → 完成 → 進行中 → 未開始)',
+    ['not-started', 'blocked', 'done', 'in-progress', 'cancelled'], [0, 3, 1, 2, 4], STATUS],
+  ['select', '空值最小;不在選項裡的排在所有選項之後、彼此照原始值文字比', ['done', 'archived', null, 'not-started', 'zzz-legacy'], [2, 3, 0, 1, 4], STATUS],
+  ['select', '沒給 options = 照原始值(同修前)', ['not-started', 'blocked', 'done', 'in-progress'], [1, 2, 3, 0]],
+  ['multiSelect', '逐項比選項位置,前面相同時項目少的在前;空陣列最小', [['frontend', 'design'], ['backend'], [], ['design', 'qa'], ['design']], [2, 4, 3, 0, 1], TAGS],
 ]
 
 let fails = 0
@@ -72,13 +80,13 @@ const record = (ok, label, detail) => {
 }
 const same = (a, b) => a.length === b.length && a.every((x, i) => x === b[i])
 
-for (const [type, why, values, expectAsc] of CASES) {
-  const asc = sortValues(type, values, { legacy: SELFTEST })
+for (const [type, why, values, expectAsc, options] of CASES) {
+  const asc = sortValues(type, values, { legacy: SELFTEST, options })
   record(same(asc, expectAsc), `T ${type} 升冪:${why}`, `得 ${JSON.stringify(asc)} 應 ${JSON.stringify(expectAsc)}`)
   // 降冪 = 升冪反過來(相等的那幾格維持原順序,TanStack 的平手規則);本表只放沒有平手的值時才驗降冪
   const hasTie = (type === 'person' && why.startsWith('同名')) || why.startsWith('空值最小')
   if (!hasTie) {
-    const desc = sortValues(type, values, { desc: true, legacy: SELFTEST })
+    const desc = sortValues(type, values, { desc: true, legacy: SELFTEST, options })
     record(same(desc, [...expectAsc].reverse()), `T ${type} 降冪:${why}`, `得 ${JSON.stringify(desc)} 應 ${JSON.stringify([...expectAsc].reverse())}`)
   }
 }
@@ -103,8 +111,8 @@ for (const [type, make] of [['person', (n) => P(n)], ['string', (n) => n]]) {
 if (!SELFTEST) {
   const src = readFileSync(join(ROOT, 'packages/design-system/src/components/DataTable/data-table.tsx'), 'utf8')
   const block = src.slice(src.indexOf('const dsProcessedColumns = React.useMemo'), src.indexOf('const columnsWithSelection = React.useMemo'))
-  record(block.length > 0 && /meta\.type !== undefined && cAny\.sortingFn === undefined\) updates\.sortingFn = sortingFnForColumnType/.test(block),
-    'C data-table.tsx 前處理對有 meta.type 且沒自帶 sortingFn 的欄掛 sortingFnForColumnType', '前處理裡找不到那一行')
+  record(block.length > 0 && /meta\.type !== undefined && cAny\.sortingFn === undefined\) updates\.sortingFn = sortingFnForColumnType<TData>\(meta\.type, meta\.options\)/.test(block),
+    'C data-table.tsx 前處理對有 meta.type 且沒自帶 sortingFn 的欄掛 sortingFnForColumnType(帶 meta.options)', '前處理裡找不到那一行')
 }
 
 if (SELFTEST) {

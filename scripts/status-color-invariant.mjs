@@ -10,6 +10,12 @@
 //
 // 對齊 feedback_ssot_mechanical_p0_not_p1_warn(SSOT canonical = P0 機械強制 with per-line escape)。
 // Run: `node scripts/status-color-invariant.mjs`(deterministic audit chain)。fail → exit 1。
+//
+// @gate-contract
+//   保證: ProgressBar / CircularProgress / Steps / Calendar 四個檔的每一行(註解行也算)都沒有 --primary 家族的狀態填色寫法
+//         (bg- / text- / border- / ring-primary、var(--primary…)、--primary-hover / --primary-active);寫了 status-color-allow: 的行除外
+//   紅: 有任一處、或四個檔有一個讀不到 → 印出檔名:行號並 exit 1;配對測試在 progress-bar.tsx 末尾加一行含 bg-primary 的註解,本閘必須紅
+//   綠: 四個檔都乾淨時 exit 0;只讀這四個檔,不讀時間,重複跑結果相同
 
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'

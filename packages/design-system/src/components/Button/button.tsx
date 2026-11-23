@@ -7,6 +7,7 @@ import { CircularProgress } from '@/design-system/components/CircularProgress/ci
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useResolvedFieldSize } from '@/design-system/components/Field/field-context'
+import type { SizingMode } from '@/design-system/components/Field/field-types'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 
 /**
@@ -14,7 +15,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/compone
  *
  * ── Variants ──
  *   primary    主要操作，藍底白字
- *   secondary  次要品牌操作，藍框藍字；正面 vs 負面並存時用於正面那個
+ *   secondary  次要操作(互動色)，藍框藍字；正面 vs 負面並存時用於正面那個
  *   tertiary   一般輔助操作，灰框灰字，hover 轉藍（最常用的非主要按鈕）
  *   text       無底色無邊框，hover 顯示灰底（工具列、密集 UI）
  *   link       外觀像連結的按鈕（本質仍是 button）
@@ -316,12 +317,12 @@ const buttonVariants = cva(
 )
 
 // ── ButtonGroup Context ──────────────────────────────────────────────────────
-// ButtonGroup 提供此 context;Button 讀取它注入 fullWidth。
+// ButtonGroup 提供此 context;Button 讀取它注入寬度模式(直排 = fill)。
 // Context 放本檔(不放 button-group.tsx)以避免循環 import。
 interface ButtonGroupContextValue {
-  fullWidth?: boolean
+  width?: SizingMode
 }
-/** @internal — ButtonGroup↔Button 私有 context(fullWidth 注入);consumer 不直接 import,經 <ButtonGroup> 消費。root barrel 排除(subpath 仍可 wrap 後用)。 */
+/** @internal — ButtonGroup↔Button 私有 context(寬度模式注入);consumer 不直接 import,經 <ButtonGroup> 消費。root barrel 排除(subpath 仍可 wrap 後用)。 */
 const ButtonGroupContext = React.createContext<ButtonGroupContextValue>({})
 
 type InternalVariant = VariantProps<typeof buttonVariants>['variant']
@@ -338,10 +339,7 @@ export interface ButtonProps
    * Button 不會主動補 tooltip — 否則會破壞 Slot 單 child 規則。
    */
   asChild?: boolean
-  /**
-   * 按鈕視覺強調等級。
-   * `destructive` / `ghost` 為 shadcn 內部 compat，請勿在應用程式碼中直接使用。
-   */
+  /** 按鈕視覺強調等級。 */
   variant?: 'primary' | 'secondary' | 'tertiary' | 'text' | 'link'
   /** 套用危險色（紅色）。僅 primary / secondary / text 支援（tertiary / link 不支援，見 spec 禁止事項）。 */
   danger?: boolean
@@ -409,8 +407,11 @@ export interface ButtonProps
    * 2026-10-01 前走原生 `disabled`:按下送出的那一刻按鈕變停用,焦點被瀏覽器丟到 `<body>`(待辦總帳 N69)。
    */
   loading?: boolean
-  /** 撐滿父容器寬度 */
-  fullWidth?: boolean
+  /**
+   * 寬度模式:`'hug'`(預設)跟內容 / `'fill'` 撐滿父容器。直排的 `<ButtonGroup>` 裡沒傳時自動 `'fill'`;明寫的 `width` 勝過群組。
+   * 全 DS 的「撐滿 / 跟內容」只用這一個名字(`ds-canonical/references/props-naming.md`「尺寸參數」;user 2026-11-11「尺寸:甲」)。
+   */
+  width?: SizingMode
 }
 
 // IconOnly 用 padding-free + aspect-square + flex-center 的 Polaris/Atlassian idiom
@@ -444,10 +445,10 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 //       Fluent `disabledFocusable`(https://github.com/microsoft/fluentui/blob/d27922755bebae866d9ffe86b7da44c27ec801ee/packages/react-components/react-button/library/src/components/Button/Button.types.ts#L34-L41)、
 //       Ariakit `accessibleWhenDisabled`(https://github.com/ariakit/ariakit/blob/c87988effdff42edf4934ded906aa32ee3c04b66/packages/ariakit-react-components/src/focusable/focusable.tsx#L607-L627)的先例。
 // 長相:`styles/base.css` 把 `disabled:` 變體擴成「原生 :disabled 或 [data-disabled-focusable]」,cva 那一整組 `disabled:*` 原樣套上 —— 灰底、禁止符號,
-// 與原生停用逐項相同(計算樣式對照,含滑過 / 按住);`aria-disabled:` 那套「保留品牌色 + 不透明度 + 滑過 / 按住釘在品牌色」是 Tooltip 用的
+// 與原生停用逐項相同(計算樣式對照,含滑過 / 按住);`aria-disabled:` 那套「保留原本的填色 + 不透明度 + 滑過 / 按住釘在原本的填色」是 Tooltip 用的
 // 「看得見但不能按」長相(button.spec.md「狀態疊加」表),不是忙碌,所以這個狀態下**整組** `aria-disabled:` class 不出現(見 withoutAriaDisabledLook)。
 // 為什麼在 class 層拿掉、不靠 CSS 先後:兩組同為 (0,3,0)(`.x[aria-disabled=true]:hover` vs `.y:is(:disabled,[data-disabled-focusable]):hover`),
-// 誰勝由產出順序決定 —— 2026-10-07 前只拿掉了不透明度,滑過 / 按住的品牌色釘子仍在,忙碌鈕與存檔後的送出鈕一滑過就變成品牌藍配 25% 黑字
+// 誰勝由產出順序決定 —— 2026-10-07 前只拿掉了不透明度,滑過 / 按住的填色釘子仍在,忙碌鈕與存檔後的送出鈕一滑過就變成互動色藍底配 25% 黑字
 // (獨立驗證抓到;Tailwind 4.2 實測:覆寫 `aria-disabled` 變體會把它註冊成新的靜態變體、整組從 aria-* 那一段搬到 data-* 之後產出,所以也不改 CSS)。
 // 擋觸發:click 先 `preventDefault` + `stopPropagation`、不呼叫 consumer(Enter / 空白合成的 click 也走這條);`type="submit"` 保留 ——
 // 隱含送出(在欄位按 Enter)時瀏覽器會對「沒有被原生停用的預設按鈕」派發 click,同一個 preventDefault 就取消送出
@@ -488,7 +489,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       iconOnly = false,
       dismiss = false,
       loading = false,
-      fullWidth = false,
+      width,
       pressed,
       pressedTone, // 2026-06-05 fix(deep-audit P0):原漏 destructure → 落入 ...props 噴到 DOM + 永遠用 cva default
       children,
@@ -525,8 +526,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       )
     }
 
-    // shadcn compat:AlertDialog、Toast 等元件內部會傳入這些 alias,
-    // 在此靜默轉換,不暴露到型別或自動完成。
     // dismiss=true 強制 variant=text(dismiss canonical);override 其他 variant 傳入。
     // 2026-06-06 預設 emphasis 改低(對齊世界級:MUI 預設 text / Ant 預設 default / Polaris 低 emphasis —
     // 預設 primary CTA 是 outlier)。labeled 無 variant → `tertiary`(中性外框,清楚可點性,再按重要程度升 primary);
@@ -534,11 +533,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     // Material 3「icon-only = no fill」)。**CTA 必 explicit `variant="primary"`**(不靠預設)。dismiss 仍強制 text。
     const resolvedVariant: InternalVariant =
       dismiss ? 'text' :
-      (variantProp as string) === 'destructive' ? 'primary' :
-      (variantProp as string) === 'ghost'        ? 'text'    :
-      (variantProp as InternalVariant) ?? (iconOnly ? 'text' : 'tertiary')
+      variantProp ?? (iconOnly ? 'text' : 'tertiary')
 
-    const resolvedDanger = dangerProp || (variantProp as string) === 'destructive'
+    const resolvedDanger = !!dangerProp
 
     // Dev-mode warning:danger 僅 primary / secondary / text 有 compoundVariant。
     // tertiary / link + danger 無匹配 compound → **靜默渲染成一般 tertiary / link**(灰、無紅色
@@ -550,9 +547,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       )
     }
 
-    // ButtonGroup context：vertical group 自動注入 fullWidth
+    // 寬度模式:明寫的 `width` 優先 → ButtonGroup context(直排注入 fill)→ 預設 hug。
     const groupCtx = React.useContext(ButtonGroupContext)
-    const resolvedFullWidth = fullWidth || !!groupCtx.fullWidth
+    const resolvedWidth: SizingMode = width ?? groupCtx.width ?? 'hug'
 
     // 可聚焦的停用(見檔頭 PRESERVED_WHILE_DISABLED 段):此刻是否握有焦點 —— 只有「握著時被停用」才改用可聚焦停用,
     // 焦點離開那一刻換回原生 disabled(事件在 blur 當下更新,下一次 render 就是原生 disabled)。
@@ -644,7 +641,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       dismiss && 'text-fg-muted hover:text-fg-secondary',
       // aria-disabled 的 dismiss hover 釘在 fg-muted(button.spec.md「狀態疊加」表 aria-disabled 列);可聚焦的停用不是那個長相(見上方 ownVariantClasses)
       dismiss && !focusableDisabled && 'aria-disabled:hover:text-fg-muted',
-      resolvedFullWidth && 'w-full',
+      resolvedWidth === 'fill' && 'w-full',
     )
 
     // 2026-07-05 D4 修:asChild 原 silently drop loading/disabled 語意(無 aria-busy/aria-disabled/
@@ -716,7 +713,7 @@ Button.displayName = 'Button'
 
 /**
  * componentMeta — Story Auto-Compile 系統消費的結構化 canonical
- * (見 .claude/planning/story-auto-compile.md Phase 1)
+ * (見 governance/planning/story-auto-compile.md Phase 1)
  *
  * compile-stories.mjs 讀本 export + spec.md frontmatter 產出
  * anatomy.stories.tsx 的 variant/size/state/token 矩陣 canonical section。

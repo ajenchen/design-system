@@ -4,7 +4,8 @@
 // Validates plugin distribution structure(per Anthropic plugin spec)before publish:
 //   1. .claude-plugin/marketplace.json schema(name, plugins[])
 //   2. .claude-plugin/plugin.json schema(name, version, description)
-//   3. skills/ + commands/ symlinks resolve to actual .claude/{skills,commands}
+//   3. every alias declared in packages/governance/canonical/plugin-aliases.json resolves exactly
+//      (alias 清單只住在該 registry,本檔不列舉,免得兩處漂移)
 //   4. hooks/hooks.json + hooks/scripts/ symlink resolve
 //   5. hooks.json paths use ${CLAUDE_PLUGIN_ROOT}(consumer can install via /plugin marketplace add)
 //
@@ -66,7 +67,7 @@ check('plugin.json exists + valid JSON + schema(field type-checked)', () => {
 
 // 3. Plugin aliases are part of the executable distribution contract. A copied
 // directory, retargeted/dangling link, or indirect symlink chain is drift.
-check('skills/, commands/, and hooks/scripts aliases are exact and no-symlink-at-destination', () => {
+check('registry-declared plugin aliases are exact and no-symlink-at-destination', () => {
   validateClaudePluginAliases(REPO_ROOT)
 })
 

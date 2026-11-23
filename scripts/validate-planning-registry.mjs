@@ -15,6 +15,7 @@ const USER_OR_HUMAN_ACTOR_RE = /(?:\b(?:user|human|account[\s-]?holder)\b|使用
 const APPROVAL_DECISION_RE = /(?:\b(?:approval|approve|confirmation|confirm|decision|decide|trigger|authorization|authorize|sign[\s-]?off|go[\s-]?ahead)\b|拍板|核准|確認|決定|同意|授權|觸發)/iu
 const IMPLICIT_APPROVAL_RE = /(?:\b(?:approval|confirmation|sign[\s-]?off)\b|拍板|核准|人類授權)/iu
 const CHECKPOINT_RE = /(?:\b(?:awaits?|awaiting|wait(?:s|ing)?|pending|requires?|required|needs?|needed|until|blocked|stop|ask)\b|等待|尚待|需要|需|須|必須|(?:等(?:待|候)?|待)\s*(?:user|owner|human|使用者|用戶|人類|真人))/iu
+// human-only 動作的比對字樣;集合 SSOT = AGENTS.md#canonical-decision-authority「Human-only boundaries」
 const HUMAN_ONLY_ACTION_RE = /(?:\b(?:log[\s-]?in|sign[\s-]?in|mfa|2fa|oauth|credential(?:\s+reference)?|secret(?:\s+reference)?|billing|payment|spend|legal|account|organization|org(?:anization)?\s+permission|business\s+commitment)\b|登入|多因素驗證|雙重驗證|憑證|密鑰|機密|付費|帳務|法律|帳號|組織權限|商業承諾)/iu
 const PRODUCT_UIUX_P2H_RE = /(?:\bP2H\b.{0,80}(?:product|UI|UX|SSOT)|(?:product|產品)[\s／/]*(?:UI)[\s／/]*(?:UX).{0,80}(?:SSOT|P2H)|(?:visual|視覺).{0,48}(?:baseline|canonical|基線|標準)|(?:baseline|基線).{0,48}(?:visual|視覺))/iu
 const NEGATED_HUMAN_CHECKPOINT_RES = [

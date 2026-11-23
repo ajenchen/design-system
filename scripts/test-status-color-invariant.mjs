@@ -2,6 +2,13 @@
 // meta-test for status-color-invariant — 注入已知違規(status 元件回潮 --primary 狀態填色)→ gate 必 exit 1 → 還原(PNG P4.3 gate-meta-test 家族)
 // Gate SSOT: scripts/status-color-invariant.mjs 掃 4 個純 status-display 元件,禁 bg-/text-/var(--primary) 狀態填色(逃生 = per-line `status-color-allow:`)。
 // 執行方式:gate 無 --check flag,直接 `node scripts/status-color-invariant.mjs`,fail → exit 1。
+//
+// 2026-11-20 起由 ci.yml verify-static 直呼(knowledge-prune WP-21),原本只在夜間 harness 跑。
+//
+// @gate-contract
+//   保證: status-color-invariant.mjs 在該紅的時候會紅 —— 在 components/ProgressBar/progress-bar.tsx 末尾加一行含 bg-primary 的註解,閘必須 exit 非 0;注入前與還原後同一支閘都必須 exit 0
+//   紅: 現況就紅(repo 已有真違規)、注入後閘仍 exit 0(偵測失效)、或還原後不綠 → 印出是哪一步並 exit 1
+//   綠: 三步都照預期時 exit 0;progress-bar.tsx 在 finally 寫回原文,不讀時間,重複跑結果相同
 import { spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 

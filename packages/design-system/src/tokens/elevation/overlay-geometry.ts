@@ -13,6 +13,15 @@ export const OVERLAY_SIDE_OFFSET = 8
 export const OVERLAY_COLLISION_PADDING = 8
 
 /**
+ * 浮層寬的視窗夾限(CSS 長度;2026-11-15 抽出):產品用 `width` 指定寬的浮層(PopoverContent `width={數字}`、
+ * 表格三個工具面板 `DataTable/lib/panel-width.ts`)一律夾在這個值以內 —— 視窗再窄,浮層也不超出視窗(左右各留 1rem,
+ * 大於上面的 collisionPadding 8px,Radix 推得回視窗內)。值沿用篩選面板 2026-05-04 起寫在自己根元素上的
+ * `min(640px, calc(100vw - 2rem))`(`components/DataTable/data-table-filter-panel.tsx`),畫面不變;收成一份免得三個面板各寫一次。
+ * 字串不是數字:要放進 `min()` / `max()`,Radix 不讀它。
+ */
+export const OVERLAY_VIEWPORT_MAX_WIDTH = 'calc(100vw - 2rem)'
+
+/**
  * 錨點失去版面時不畫浮層(2026-09-16 user:「為何我關閉 ai agent 的panel之後 關閉那顆按鈕的tooltip會跑去視窗左上角閃動一下?」)。
  *
  * 錨點被藏起來(`display:none` 祖先 / keep-mounted 收起 / 隱藏的 docs 分頁 / 虛擬捲動回收)時量出來是 0×0,

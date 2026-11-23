@@ -32,7 +32,7 @@ export const TaskTitle: Story = {
   render: () => {
     const [title, setTitle] = React.useState('修正 Safari 上結帳 e2e 測試偶發失敗')
     return (
-      <div className="w-[560px] rounded-lg border border-border bg-surface p-[var(--layout-space-loose)]">
+      <div className="w-[560px] rounded-md border border-border bg-surface p-[var(--layout-space-loose)]">
         {/* 議題編號 → 標題 = tight:編號替標題提供所在脈絡(layoutSpace 規則 3,layoutSpace.spec.md:76 / :81 context dependency) */}
         <p className="mb-[var(--layout-space-tight)] text-caption text-fg-secondary">PROJ-482</p>
         <InlineEdit
@@ -61,11 +61,11 @@ function MetaRow({ label, value, placeholder }: { label: string; value: string; 
 export const MetadataFields: Story = {
   name: '詳情欄位就地編輯',
   render: () => (
-    <div className="w-[440px] rounded-lg border border-border bg-surface p-[var(--layout-space-loose)]">
-      {/* 標題 → 欄位 = loose(標題是整組欄位的標題,欄位之間 loose,它到欄位也是 loose:layoutSpace.spec.md 規則 3「標題(+ 說明)→ 它底下的並列內容」);
-          同一張表的水平欄位共用 FieldGroup 的 label 寬(field.spec.md「同一表單的多個 horizontal Field 必經 FieldGroup horizontalLabelWidth」) */}
+    <div className="w-[440px] rounded-md border border-border bg-surface p-[var(--layout-space-loose)]">
+      {/* 標題 → 欄位 = loose(標題是整組欄位的標題,欄位之間 loose,它到欄位也是 loose:layoutSpace.spec.md 規則 3「標題區 → 內容」第 3 題:標題到第一個 = 欄位之間、至少 loose);
+          同一張表的水平欄位共用 FieldGroup 的 label 寬(field.spec.md「同一表單的多個 horizontal Field 必經 FieldGroup labelWidth」) */}
       <h2 className="mb-[var(--layout-space-loose)] text-h6 font-medium text-foreground">詳細資訊</h2>
-      <FieldGroup horizontalLabelWidth="128px">
+      <FieldGroup labelWidth={128}>
         <MetaRow label="摘要" value="Q3 上線檢查清單負責人交接" />
         <MetaRow label="故事點數" value="5" />
         <MetaRow label="外部連結" value="figma.com/file/checkout-flow" placeholder="加上連結…" />
@@ -96,20 +96,20 @@ export const States: Story = {
   tags: ['test-only'],
   render: () => (
     <div className="flex w-[440px] flex-col gap-[var(--layout-space-loose)]">
-      <StateRow caption="view(靜止)—— 純值,透明邊框(預留、不可見)、無底色">
-        <StatefulInlineEdit value="Design review notes" label="標題" />
+      <StateRow caption="平常:只顯示文字,沒有底色、看不到邊框(邊框的位置先留著)">
+        <StatefulInlineEdit value="設計審查會議紀錄" label="標題" />
       </StateRow>
       <StateRow
-        caption="view + hover —— 灰底 bg-neutral-hover + rounded-md(非邊框)"
+        caption="滑鼠移入:出現淺灰的圓角底色,不是邊框"
         data-testid="inline-edit-hover-row"
       >
-        <StatefulInlineEdit value="Design review notes" label="標題" />
+        <StatefulInlineEdit value="設計審查會議紀錄" label="標題" />
       </StateRow>
       <StateRow
-        caption="edit —— 真正的 Field 控件(border + focus 藍框 + input)"
+        caption="編輯中:換成真正的輸入框,有邊框,聚焦時是藍框"
         data-testid="inline-edit-edit-row"
       >
-        <StatefulInlineEdit value="Design review notes" label="標題" />
+        <StatefulInlineEdit value="設計審查會議紀錄" label="標題" />
       </StateRow>
     </div>
   ),
@@ -149,7 +149,7 @@ export const SelectTagField: Story = {
       <Field
         orientation="horizontal"
         labelWidth="128px"
-        className="w-[440px] rounded-lg border border-border bg-surface p-[var(--layout-space-loose)]"
+        className="w-[440px] rounded-md border border-border bg-surface p-[var(--layout-space-loose)]"
       >
         <FieldLabel>狀態</FieldLabel>
         <InlineEdit<string>
@@ -191,10 +191,10 @@ export const MultilineDescription: Story = {
   name: '多行描述就地編輯(Jira 描述欄類)',
   render: () => {
     const [desc, setDesc] = React.useState(
-      'Safari 上點擊結帳時,e2e 測試會間歇性失敗。\n\n重現:連跑測試 5 次,約 2 次失敗;疑似 checkout webhook race。',
+      'Safari 上點擊結帳時,e2e 測試會間歇性失敗。\n\n重現:連跑測試 5 次,約 2 次失敗;疑似結帳 webhook 的時序問題。',
     )
     return (
-      <div className="w-[560px] rounded-lg border border-border bg-surface p-[var(--layout-space-loose)]">
+      <div className="w-[560px] rounded-md border border-border bg-surface p-[var(--layout-space-loose)]">
         <Field orientation="vertical">
           <FieldLabel>描述</FieldLabel>
           <InlineEdit
@@ -224,7 +224,7 @@ export const VerticalFieldForm: Story = {
     return (
       <div
         data-testid="vfield-form"
-        className="flex w-[420px] flex-col gap-[var(--layout-space-loose)] rounded-lg border border-border bg-surface p-[var(--layout-space-loose)]"
+        className="flex w-[420px] flex-col gap-[var(--layout-space-loose)] rounded-md border border-border bg-surface p-[var(--layout-space-loose)]"
       >
         <Field orientation="vertical">
           <FieldLabel>負責人</FieldLabel>

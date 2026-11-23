@@ -591,6 +591,19 @@ function hookCorpusAuthorityPaths(canonicalRegistry) {
     roots.skills,
     'packages/governance/canonical/providers.json',
     'packages/design-system/src/tokens/utility-registry.json',
+    // check_consumer_code_quality.sh 的「已移除名字」段(lib/_ds_removed_names.sh)在 DS 作者角色讀帳本並用
+    // 唯一實作當場投影;少了這兩個檔,外掛路徑上每次寫消費端程式都會因儀器失效被擋(2026-11-16 CI 7029f58f)。
+    'packages/design-system/ds-changes.json',
+    'packages/design-system/tools/changes/ledger.mjs',
+    // stop_self_audit.sh Mechanism 13(lib/ask-route.mjs)從 corpus 讀發版同意的 gate;少了這個檔,密封語料模式
+    // (GOVERNANCE_HOOK_SEALED_CORPUS=1 / STRICT / NODE_ENV=test)每次 Stop 都回 70,整支 stop_self_audit 降級(2026-11-21 WP-06)。
+    'infra/governance/release-workflow.json',
+    // check_bash_command_shape.sh 拿 provider deny 清單做「照動作意思」的比對(hooks/lib/_deny_norm.py);密封語料模式
+    // 少了這個檔就每次 Bash 都報「沒比對」(2026-11-21 PROC-H)。
+    'packages/design-system/ds-canonical/adapters/claude-settings-base.json',
+    // check_propose_without_benchmark.sh 的「先回一句」用這支問句判準(它讀上面的 release-workflow.json);
+    // 密封模式少了它,每則 prompt 都會報「問句判斷沒有跑成」(2026-11-21 PROC-H)。
+    'scripts/lib/release-consent-language.mjs',
   ]
   if (paths.some((value) => typeof value !== 'string' || !value)) {
     failIntegrity('provider hook corpus authority path declaration is invalid')
@@ -1679,6 +1692,8 @@ failureNoticeEvent = requestedEvent
 // fail-open by design (hooks accelerate; protected CI is the trust boundary), so the honest outcome
 // is a model-visible notice through the provider's own context channel — stderr alone is invisible
 // to the model on exit 0 (M37: 沒觀察到 ≠ 沒發生).
+// Stop payload 的 stop_hook_active(布林才算數;讀到 payload 之前一律 undefined → Stop 的通知只給 user 看,見 transport 註解)。
+let payloadStopHookActive
 function emitGovernanceNotice(event, message, { stderr = true } = {}) {
   if (stderr) writeStderrRecord(`GOVERNANCE_WARNING: ${String(message).slice(0, 900)}`)
   let output = null
@@ -1687,6 +1702,7 @@ function emitGovernanceNotice(event, message, { stderr = true } = {}) {
       transport: provider.runtime?.contextOutputTransport,
       event,
       message,
+      stopHookActive: payloadStopHookActive,
     })
   } catch {
     output = null
@@ -1733,6 +1749,7 @@ try {
 } catch (error) {
   fail(`provider hook adapter blocked:invalid JSON payload:${error.message}`)
 }
+if (typeof input.stop_hook_active === 'boolean') payloadStopHookActive = input.stop_hook_active
 
 if (authorityDecisionMode) {
   const expectedKeys = [
@@ -2688,7 +2705,7 @@ if (governanceDecision) {
 if (governanceContexts.length) {
   const message = governanceContexts.join('\n\n')
   const transport = provider.runtime?.contextOutputTransport
-  const output = formatProviderHookContext({ transport, event, message })
+  const output = formatProviderHookContext({ transport, event, message, stopHookActive: payloadStopHookActive })
   if (output) {
     providerStdoutCommitted = true
     await writeBoundedProviderOutput(process.stdout, `${JSON.stringify(output)}\n`, 'governance-context')

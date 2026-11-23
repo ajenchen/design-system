@@ -62,7 +62,7 @@ export const Overview: Story = {
             <tbody>
               <tr><Td mono>ratio</Td><Td mono>number</Td><Td mono>1</Td><Td>寬 / 高比值(如 16/9 = 1.777)。DS 標準 ratio 見下方對照</Td></tr>
               <tr><Td mono>asChild</Td><Td mono>boolean</Td><Td mono>false</Td><Td>Radix Slot pattern——把 ratio 行為合併到 children 元素(不常用)</Td></tr>
-              <tr><Td mono>className</Td><Td mono>string</Td><Td mono>—</Td><Td>套在內層容器(絕對定位的視覺可見層,放 bg-muted / rounded-lg / overflow-hidden)</Td></tr>
+              <tr><Td mono>className</Td><Td mono>string</Td><Td mono>—</Td><Td>套在內層容器(絕對定位的視覺可見層,放 bg-muted / rounded-md / overflow-hidden)</Td></tr>
               <tr><Td mono>children</Td><Td mono>ReactNode</Td><Td mono>—</Td><Td>填滿容器的內容(通常是 img + object-cover)</Td></tr>
             </tbody>
           </table>
@@ -116,7 +116,7 @@ const InspectorDemo = () => {
           </div>
         </div>
 
-        <div className="border border-border rounded-lg p-4 flex flex-col gap-3 bg-muted">
+        <div className="border border-border rounded-md p-4 flex flex-col gap-3 bg-muted">
           <div className="text-footnote text-fg-secondary font-bold">Inspect</div>
           <div className="flex flex-col gap-2 text-caption">
             <div><span className="text-fg-muted">ratio</span> <span className="font-mono ml-2">{current.label} ({current.value.toFixed(4)})</span></div>

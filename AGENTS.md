@@ -13,14 +13,15 @@
 2. **不憑直覺發明 / 優先消費既有**——新增任何值／名／pattern／variant／layout primitive 前先 `grep` 既有。**強制 `# SSOT 消費 canonical` 清單**:寫視覺 code 前列出消費的 components/patterns/tokens/spec。提建議也算定 pattern,給 option 必對照 DS canonical + ≥3 家世界級,**禁憑印象列部分家**。
 3. **改一處必看三處**——code / spec / story 三方聯動。改 cva `defaultVariants`／variant／token 前先 grep 該元件所有檔案,一次改完。
 4. **範例必真實業務場景**——Jira / Stripe / Notion / Figma 可辨識情境;禁 `Option A/B/C`、「按鈕一」、極端不現實、ASCII art。
-5. **先證據、再分權**——無前例的產品／UI／UX SSOT 決策:grep 既有 → 讀近親 spec → 仍有真實取捨才停下問。純工程不確定性由最高 certified capability 依 canonical、tests 與 security gates 收斂,**不得用問 user 代替工程判斷**;禁憑直覺造新 pattern。
-6. **大原則吸收瑣碎**——同類 bug 反覆糾正 = meta 層沒抓住。**權威清單與各條內容只有一個住所**:`packages/design-system/ds-canonical/rules/meta-patterns.md`(本行不重述條號,三處列舉必然漂移)。**AI 不需 user 提醒才找 root invariant**:rule 震盪 → 自跑 benchmark + invariant test;user 第 2 次問 → 必截圖 verify;對話結論 → AUTO 落地;visual/behavior decision 前必先查 ≥3 家世界級;**視覺／結構 propose 前必 grep DS spec.md 找 owner SSOT 並出 3-column 表,否則提案不被接受**。使用者 tell me once 不該要 tell me twice。
+5. **先證據、再分權**——證據照 `# 遇不確定時的協議`,分權照 `#canonical-decision-authority`;**不得用問 user 代替工程判斷**,禁憑直覺造新 pattern。
+6. **大原則吸收瑣碎**——同類 bug 反覆糾正 = meta 層沒抓住。**權威清單與各條完整內容只有一個住所**:`packages/design-system/ds-canonical/rules/meta-patterns.md`(本行不重述條號,三處列舉必然漂移)。**AI 不需 user 提醒才找 root invariant**:rule 震盪 → 自跑 benchmark + invariant test;user 第 2 次問 → 必截圖 verify;對話結論 → AUTO 落地;visual/behavior decision 前必先查 ≥3 家世界級;**視覺／結構 propose 前必 grep DS spec.md 找 owner SSOT 並出 3-column 表,否則提案不被接受**。使用者 tell me once 不該要 tell me twice。
 
 # Rule Index(progressive disclosure — 編對應檔案前必先讀)
 
 | 檔案 | 何時必讀 |
 |---|---|
-| `packages/design-system/ds-canonical/rules/meta-patterns.md` | 每個任務(33 條 M-rules,fundamental)|
+| `packages/design-system/ds-canonical/rules/meta-patterns.md` | 每個任務(31 條 M-rules,fundamental)|
+| `packages/design-system/ds-canonical/rules/work-process.md` | 每個多包 / 多步任務開工前 |
 | `packages/design-system/ds-canonical/rules/spec-rules.md` | 編任何 `*.spec.md` 或 DS 內容 |
 | `packages/design-system/ds-canonical/rules/ui-development.md` | 編任何 `.tsx`/`.ts`(Tailwind 5 條 / Token 4 條 / Props 命名 / shadcn / public-vs-internal)|
 | `packages/design-system/ds-canonical/rules/story-rules.md` | 編任何 `*.stories.tsx`(三層定位 / Title / 範例準則)|
@@ -30,15 +31,15 @@
 | `packages/design-system/ds-canonical/references/naming-conventions.md` | 命名新檔/變數/prop |
 | `packages/design-system/ds-canonical/skills/design-system-audit/references/audit-prompts.md` | 稽核判準 SSOT(91 dim rubric,Claude 與 Codex 同判準)|
 
-(Claude Code 對 generated `.claude/rules/` view 有 path-scoped 自動載入,其他 agent 依本表讀 canonical source;兩者由 build graph exact projection,禁把 provider view 當第二份 SSOT。)
+(`.claude/rules/` 是 build graph 生成的 adapter view,Claude 依 paths 自動載入;其他 agent 依本表讀 canonical,不得把它當第二份 SSOT。)
 
 # 治理 canonical(home 分層 + anti-bloat)
 
 **規則放哪裡**:本檔只做每 session 導航,不是 home taxonomy 的第二份 SSOT。Level 1–9 的唯一 owner／scope／flowchart 是 `skills/design-system-audit/references/rule-placement.md`。Provider views 只作 discovery/delivery,不得反向成為 semantic owner。
 
-**行數預算**:Bootstrap(AGENTS.md + CLAUDE.md)/ SKILL / spec / memory / hooks 各有 cap,**具體數值不在本檔重述**(三處列舉必然漂移)—— SSOT 是 `session_start_governance_check.sh` 檔頭「Checks + thresholds」與 Check 7,動態值以 `scripts/sync-governance-counters.mjs` 跑出為準。
+**行數預算**:Bootstrap(AGENTS.md + CLAUDE.md)/ SKILL / spec / memory / hooks 各有 cap,**具體數值不在本檔重述**(三處列舉必然漂移)—— 各檔(spec / SKILL / memory / 本檔)行數上限的 SSOT 是 `check_file_size_budget.sh` 的 case 表;開場檔總行數、hook 數、memory 筆數門檻是 `session_start_governance_check.sh` 檔頭「Checks + thresholds」與 Check 7 / 8,動態值以 `scripts/sync-governance-counters.mjs` 跑出為準。memory 條數和每個檔行數的 CI 正本是 `governance/memory/contract.json`(`maxIndexEntries` / `maxLinesPerMemory`)。
 
-**Anti-bloat** 三層:L1 pre-write 檔案大小閘 / L2 per-edit fire log / L3 季度 `/knowledge-prune`。各層的 owner 檔案、telemetry 路徑與「只移除有證據的噪音、禁為湊比例犧牲真實 invariant」的鐵律,SSOT 在 `skills/knowledge-prune/SKILL.md`,本檔不重述。
+**Anti-bloat** 三層:L1 pre-write 檔案大小閘 / L2 per-edit fire log(要 `GOVERNANCE_TELEMETRY_OPT_IN=1`,預設關)/ L3 季度 `/knowledge-prune`。各層的 owner 檔案、telemetry 路徑與「只移除有證據的噪音、禁為湊比例犧牲真實 invariant」的鐵律,SSOT 在 `skills/knowledge-prune/SKILL.md`,本檔不重述。
 
 **加規則前必過 3 題**:(1) 既有 Meta-Pattern／近親 spec／canonical chapter 命中 → append pointer 不新寫;(2) **Rule-of-3**:同概念 ≥ 3 處 → 選 SSOT 其他 pointer;(3) 7 天後還會 fire 嗎?不確定 → 不寫。
 
@@ -56,7 +57,7 @@
 
 **Consistency 類稽核必 Phase 0 全掃再判**。**Deep audit 全掃優先 + 決策 batch-at-end 鐵律**(2026-07-11;來源不明):先全 DS 掃完(NO-SAMPLE)→ 跨元件去重 → **最後一次**列決策清單給 user 拍板;**禁**途中逐元件問。
 
-**Audit-vs-execute 分權**:判準與 `# 自主執行 canonical` 的分權表**同一份**,本節不重述 —— 只有改變產品／UI／UX SSOT 且存在真實取捨才 STOP、batch-at-end 給 user 拍板;其餘依 Standing Authorization AUTO。對齊／表達統一／清 duplicate／補 pointer 一律 AUTO。
+**Audit-vs-execute 分權**:照 `# 自主執行 canonical`(不重述)。對齊／表達統一／清 duplicate／補 pointer 一律 AUTO。
 
 **Scope classifier — Surgical visual bug**:user 列 N 個 visual defects + 無新 canonical／無新 API contract／無跨元件語意改動 → **Surgical scope**(batch fix + 最後一次 pixel-quantified verify,不開 audit report);其餘回上一段的 audit-vs-execute 分權。
 
@@ -65,9 +66,7 @@
 **只有 task／deliverable 明確要求時才啟動**(optional review 缺席不阻擋一般工程、deep audit 或 standard release)。
 判準 = 同一份 rubric(`audit-prompts.md`);author ≠ reviewer;雙方 provider/model/version 與 waiver 都入 receipt,waived 的 run 不得冒充已做 review。**Binding 不可用 → 只把該 claim 標 `REVIEW-BLOCKED`,不阻擋其他事**;
 禁同一 agent 假扮另一 provider。
-**完整條文不在本檔重述**,owner 是
-`packages/governance/canonical/providers.json`(selection policy)+ `packages/governance/src/provider-review-binding.mjs`
-的 `resolveProviderReviewBinding` +
+**完整條文不在本檔重述**,owner 是 `packages/governance/canonical/providers.json`(selection policy)+ `packages/governance/src/provider-review-binding.mjs` 的 `resolveProviderReviewBinding` +
 `packages/design-system/ds-canonical/skills/independent-review/SKILL.md`(產品第二意見)與 `packages/design-system/ds-canonical/skills/deep-audit-cross-codex/SKILL.md`(重大 governance/release);
 散文版見 meta-patterns M31。禁從 skill 名稱推斷 peer。
 
@@ -81,7 +80,7 @@
 |------|------|
 | **新增元件** | canonical `rules/ui-development.md`「建立 UI 前必讀 / shadcn 元件規範」+ `rules/spec-rules.md` → `/component-quality-gate` |
 | **修 variant / size / state** | 該元件 `spec.md` → `/story-writing` |
-| **新增 token** | `tokens/README.md` → `rules/ui-development.md`「Token 命名 4 條硬規則」→ `tokens/xxx.spec.md` |
+| **新增 token** | `tokens/token-system.spec.md`「判斷流程」→ `rules/ui-development.md`「Token 命名 4 條硬規則」→ `tokens/xxx.spec.md` |
 | **寫 story / 視覺 code** | `/story-writing` + `# SSOT 消費 canonical` |
 | **命名新檔／變數／prop** | `# 命名與語言一致性` + `rules/ui-development.md`「元件 Props 命名」 |
 | **新元件 layout** | `# 4-Family Layout Model` |
@@ -91,10 +90,11 @@
 | **Tailwind 出怪事** | `rules/ui-development.md`「Tailwind 5 條核心」+ `# 失敗記憶索引` |
 | **Stakeholder 產出／稽核** | `# 稽核 canonical` |
 | **User 糾正後** | `# 治理 canonical`(home 判斷) |
-| **跨 provider 討論 / 多輪震盪 / 任何 peer 輸出** | 只有明確要求時才啟動;peer 由 `packages/governance/src/provider-review-binding.mjs` 的 `resolveProviderReviewBinding` 依 `packages/governance/canonical/providers.json` 選。產品第二意見 → `/independent-review`;重大 governance/release → `/deep-audit-cross-codex` |
+| **跨 provider 討論 / 多輪震盪 / 任何 peer 輸出** | `# Independent second opinion`(`packages/governance/src/provider-review-binding.mjs` 的 `resolveProviderReviewBinding` 依 `packages/governance/canonical/providers.json`;`/independent-review`、`/deep-audit-cross-codex`) |
+| **多代理批次工作** | `rules/work-process.md` + bug-fix-rhythm 的 `references/multi-agent-orchestration.md` |
 | **PR merge 後／session start branch 健檢** | `# Git / release canonical` |
 
-**找不到** → `# 遇不確定時的協議`;產品／UI／UX SSOT 真取捨不自決,純工程由最高 certified capability 依證據自決並驗證。
+**找不到** → `# 遇不確定時的協議`。
 
 # Git / release canonical(machine SSOT → `infra/governance/release-workflow.json`)
 
@@ -109,7 +109,7 @@
 | 4 `readback` | 自動讀回 GitHub Release 與 npm 三包 exact version;未一致不得宣稱完成 |
 | 5 `consumer` | 自動建立、修復、合併 template exact-version PR,讀回 consumer protected main;WM 只在要求時升級 |
 
-公開入口只有三支:`npm run release:auto`(安全續跑;合併前必檢查發版同意 receipt)、`npm run release:status`(唯讀)、`npm run release:consent -- --quote "<user 原話>"`(hook 失效時的手動落地,仍需原話)。**ASK 只有兩種**:未解決的產品／UI／UX SSOT 真取捨,以及**發版同意**;login/MFA/OAuth／缺 credential reference 只暫停當下動作,完成後 AUTO resume。已退役的 ceremony(candidate-freeze、soak、fleet promotion 等)不得回到 blocking graph —— 清單見 `infra/governance/release-workflow.json`。完成後才清 remote/local branch 並 `git switch main && git pull --ff-only`。
+公開入口只有三支:`npm run release:auto`(安全續跑;合併前必檢查發版同意 receipt)、`npm run release:status`(唯讀)、`npm run release:consent -- --quote "<user 原話>"`(hook 失效時的手動落地,仍需原話)。**ASK** 只限 `#canonical-decision-authority` 的集合與**發版同意**;human-only 動作做完即 AUTO resume。已退役的 ceremony(candidate-freeze、soak、fleet promotion 等)不得回到 blocking graph —— 清單見 `infra/governance/release-workflow.json`。完成後才清 remote/local branch 並 `git switch main && git pull --ff-only`。
 
 **禁止**:direct push main / 同 chat 多 branch 或多 PR / required CI、conversation 或 live readback bypass / mutable dependency tag / 把 external write 或 legacy ceremony 當人類核准 gate / **未經 user 說「發版」就合併或發布**(2026-09-02 錨:beta.131 與 #122 在 user 還在看草稿時就被自動發出)。
 
@@ -124,7 +124,9 @@
 
 # 自主執行 canonical(Autonomy Default)
 
-**Default = autonomous + complete + verify-to-perfection;省工 = anti-pattern(違 mindset #1)**。
+**Default = autonomous + complete**;多包 / 多步工作照 `packages/design-system/ds-canonical/rules/work-process.md`(不在此重述)。跳過規格項或驗證 = 省工(違 mindset #1)。
+
+**分診與預算**(開工前):只開工 ① user/產品看得到的錯 ② CI 紅或弄壞已做好的 ③ user 明確要求(附原話 檔:行);其餘記一行進追蹤,不開工。派工先寫預算(代理數/花費/牆鐘),用滿就停派、交付已完成的並回報。只驗改到的檔在 CI 對應的檢查;改畫面加預覽讀回,AI 推導的先給 user 看再加固。小修不新寫閘,能擴既有閘就擴;與 M14/M19/M23/M32 的補閘、多層落地衝突時本段優先;user 原話定的規則(例 05-27「那為何不全部 ssot 都要強制吻合?」)除外。
 
 | 動作類別 | 預設 |
 |---------|-----|
@@ -133,7 +135,7 @@
 | Bug fix / clean / refactor / 命名一致 / perf / a11y / test / audit / verify | **AUTO** — 整批做完 + 完整驗證 + 撤回機制 |
 
 **同時優化 7 軸**:言簡意賅／效率+效能／SSOT 鐵律／易懂維護擴充／世界級+一致設計語言／完整 self-verify／自動 self-improve。**反 pattern**(禁):「省工」「下次再做」「下個 session」「OK 嗎?」過度 ASK、shortcut 避 verify。
-**Trigger phrase auto-pipeline**:「依原則自主」「不需問」「馬不停蹄」「全部做完」「自動」→ autonomous mode,僅 SSOT-affecting UI/UX 停下 ASK。
+**Trigger phrase auto-pipeline**:「依原則自主」「不需問」「馬不停蹄」「全部做完」「自動」→ autonomous mode。
 **Triple-verify before propose**:propose／列 option／宣稱發現「問題」前必 inline 跑 (1) grep DS-wide (2) Read spec.md／tsx (3) 對照 canonical exception,三題全過才 propose。
 **SSOT auto-sync invariant**:跨 file 數字禁 hardcode 多處;以 `scripts/sync-governance-counters.mjs` 機械對齊。
 
@@ -147,29 +149,24 @@
 
 # 遇不確定時的協議
 
-**無前例且影響產品／UI／UX SSOT 的真實取捨**才走 3 步(禁跳):**grep 既有**(30 秒)→ **讀近親 spec.md** → **仍有真選擇才停下問** user。**非產品／UI／UX SSOT 決策**(architecture / governance / security / release / migration / refactor / test / perf / a11y / hook / skill / typo / 對齊既有 canonical)依 Engineering Decision Policy autonomous,無需問。禁:跳 grep 憑記憶／隨便挑／留 TODO;可跳:bug 修／機械勞動／user 明確指示。
+**無前例且影響產品／UI／UX SSOT 的真實取捨**才走 3 步(禁跳):**grep 既有**(30 秒)→ **讀近親 spec.md** → **仍有真選擇才停下問** user;其餘依 Engineering Decision Policy 自主,無需問。禁:跳 grep 憑記憶／隨便挑／留 TODO;可跳:bug 修／機械勞動／user 明確指示。
 
 # 失敗記憶索引(技術沉默陷阱 only)
 
 | 技術陷阱 | 一行 anchor |
 |--------|-----------|
-| Tailwind v4 `[--foo]` 必 `var()` | silent 失效 |
-| tailwind-merge 自訂 utility 必註冊 group | 否則 strip |
+| Tailwind v4 `[--foo]` 必 `var()` / tailwind-merge 自訂 utility 必註冊 group | 前者 silent 失效,後者被 strip |
 | 元件自包 Provider | 劫持全站 |
-| 清 unused imports 後 runtime | tsc 不充分,需 storybook |
+| `tsc -b` 在本 repo composite 設定下不檢查 DS 原始碼(根目錄 `tsc --noEmit` 是 0 個檔)/ 清 unused imports 後 runtime | 型別以 `npm run build:lib` 為準,runtime 需 storybook。詳 historical-bugs.md |
 | shadcn compat alias 回流 | dark mode 不聯動 |
 | `asChild ? Slot : Native` 內部 JSX 仍渲染多 children | React.Children.only runtime fail;asChild 分支只傳 consumer child |
-| `tsc -b` **在本 repo 的 composite 設定下根本不檢查 DS 原始碼**;根目錄 `tsc --noEmit` 更是 0 個檔(`files: []`) | 「tsc -b / --noEmit 通過」不構成型別正確的證據;任何 .tsx 改動一律以 `npm run build:lib` 為準。詳 historical-bugs.md |
-| 工具靜默陷阱:`rsync -a` 等長同秒跳過 / `rg` 黏寫 `-rn` 的 `-r`=replace / `mktemp -d` 失敗回空 | 必 `--checksum`、flag 分開寫、mktemp 後驗非空。**判準**:純函式測過之後,必再問「這個參數在正式流程裡是誰算的,那支有沒有被測」,並用真實資料跑**兩面對照**(該 true 一筆、該 false 一筆)。詳 historical-bugs.md |
+| 工具靜默陷阱:`rsync -a` 等長同秒跳過 / `rg -rn` 的 `-r`=replace / `mktemp -d` 失敗回空 / `git commit -- <路徑>`(部分提交)鎖 index 讓 pre-commit 掛掉 / zsh 當 sh 寫(`$V` 不拆字、`echo ====` 吃掉後面每一行、萬用字元沒匹配整行不跑)/ `<(…)` 的 /dev/fd 被沙箱擋 | `--checksum`、flag 分開寫、mktemp 後驗非空、`git add` 後不帶路徑 commit、zsh 先 `emulate sh`、兩份輸出各存成檔再比;「0 筆／不支援」先證明工具真的跑了;參數要問「正式流程裡是誰算的」並跑兩面對照。詳 historical-bugs.md |
 | DS css 不在 tokens.css aggregator 也沒被 tsx import = orphan | consumer 靜默拿不到 |
-| storybook-smoke 驗舊 build = 假綠 | smoke script 已加 stale-build guard |
-| hook 測試直跑留 fixture `.git/` 進 corpus | `git status` 不顯但 snapshot tree fingerprint 全算 → trio 漂移;測試必經 run-all.sh。詳 historical-bugs.md |
-| SMIL `begin="indefinite"` 動畫掛上後沒人 `beginElement()` = 永不起跑(靜默) | begin-once 守衛的觸發 key 必含每個會新掛動畫的狀態段;驗證看 `getStartTime()` 是否丟例外。詳 historical-bugs.md |
-| 量 focus 顏色不等 transition = 量到過渡中間值 | `transition-colors` 的 transition-property 含 `outline-color`;**凡量 focus 顏色先等過渡**。詳 historical-bugs.md |
-| 拖曳 vs 點擊只靠「收到幾個 pointermove」或「吞 click」= 輸入代理下靜默失效 | 判準必是**放開點離按下點的距離**;吞 click 的旗標由下一次 pointerdown 才清。詳 historical-bugs.md |
-| `git commit -- <路徑>`(部分提交)會讓治理 pre-commit 掛掉 | 看起來像沙箱權限問題,其實是**部分提交模式下 git 自己鎖著 index**。正解:`git add` 後跑**不帶路徑**的 commit。詳 historical-bugs.md |
-| **寫了閘卻沒有任何執行面呼叫它** | 那條保護是假的而且**零訊號**。**判準**:寫完任一支閘立刻問「誰呼叫它」,grep 執行面拿不到答案就等於沒寫;動態探索出來的執行路徑(gate-meta pair、harness inventory)也要模進去,只 grep 字串會誤判。棘輪 SSOT `scripts/gate-reachability-baseline.json`,閘 `scripts/gate-reachability-invariant.mjs`(CI required)。**第二種形狀(2026-09-24)**:斷在**產生檢視**那一層(工作樹的 hook 設定檢視沒跟上新群組)→ 閘 `scripts/provider-view-group-reachability-invariant.mjs`(CI required)+ `session_start_governance_check.sh` Check 12。詳 historical-bugs.md |
-| `file://` 開 storybook = story 整個不渲染而且不報錯 | CORS 擋掉模組載入;瀏覽器閘一律起本機靜態站。另:CSSOM 對含 `var()` 的簡寫回空字串,要用 `r.cssText`。詳 historical-bugs.md |
+| 驗證環境陷阱:storybook-smoke 驗舊 build = 假綠 / `file://` 開 storybook 不渲染不報錯 / hook 測試直跑留 fixture `.git/` 進 corpus | smoke 有 stale-build guard;瀏覽器閘起本機靜態站(含 `var()` 的簡寫用 `r.cssText`);hook 測試:run-all.sh 每支 suite 後的汙染偵測 + CI 的 `scripts/hook-test-fixture-guard-invariant.mjs`。詳 historical-bugs.md |
+| SMIL `begin="indefinite"` 掛上後沒人 `beginElement()` = 永不起跑 | 觸發 key 必含每個會新掛動畫的狀態段;驗 `getStartTime()`。詳 historical-bugs.md |
+| 拖曳 vs 點擊只靠 pointermove 數或吞 click = 輸入代理下失效 | 判準是放開點離按下點的距離;吞 click 旗標由下一次 pointerdown 清。詳 historical-bugs.md |
+
+量具類兩條 ——「量 focus 顏色不等 transition」、「寫了閘卻沒有任何執行面呼叫它」—— 住 meta-patterns M32(對照組四問、(c))與 M37④;棘輪 `scripts/gate-reachability-invariant.mjs` + `scripts/provider-view-group-reachability-invariant.mjs`(CI required)。詳 historical-bugs.md。
 
 新 bug → 歸 Meta-Pattern OR 本表 1 行;> 10 條 = 漏寫,評估 meta-merge 既有 M-rule。
 

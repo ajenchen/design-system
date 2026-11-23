@@ -5,7 +5,7 @@ import { NumberInput } from './number-input'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import type { FieldMode } from '@/design-system/components/Field/field-types'
 import { BpZone, PropRow, type FieldSizeSpec as SizeSpec, Swatch, TkVal } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
-import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/NumberInput/設計規格',
@@ -48,10 +48,11 @@ const TOKEN_MAP: Record<ModeKey, Record<StateKey, ColorSpec>> = {
     disabled: { bg: 'transparent',    text: '--fg-disabled',  border: 'transparent' },
   },
   readonly: {
-    // readonly cva = `bg-readonly border border-transparent`(field-wrapper.tsx#fieldDefaultChromeCompounds)—— 鎖定,無 hover / focus / error bg 轉換
+    // readonly cva = `bg-readonly border border-transparent`(field-wrapper.tsx#fieldDefaultChromeCompounds)—— 鎖定,無 hover / error bg 轉換;
+    // focus 欄 = 鍵盤聚焦 → 透明邊框轉主色、滑鼠點不變(2026-11-11;原寫透明自 2026-09-10 起已過時)
     default:  { bg: '--bg-readonly',  text: '--foreground',   border: 'transparent' },
     hover:    { bg: '--bg-readonly',  text: '--foreground',   border: 'transparent' },
-    focus:    { bg: '--bg-readonly',  text: '--foreground',   border: 'transparent' },
+    focus:    { bg: '--bg-readonly',  text: '--foreground',   border: '--primary' },
     error:    { bg: '--bg-readonly',  text: '--foreground',   border: 'transparent' },
     disabled: { bg: '--bg-readonly',  text: '--foreground',   border: 'transparent' },
   },
@@ -283,7 +284,7 @@ const InspectorInner = () => {
       <div className="flex gap-6 items-start">
         {/* Left: preview + blueprint */}
         <div className="flex flex-col gap-5 min-w-[340px]">
-          <div className="px-10 py-8 rounded-lg bg-canvas border border-divider flex items-center justify-center">
+          <div className="px-10 py-8 rounded-md bg-canvas border border-divider flex items-center justify-center">
             <NumberInput
               mode={mode}
               size={size}
@@ -333,7 +334,7 @@ const InspectorInner = () => {
         </div>
 
         {/* Right: inspect panel */}
-        <div className="w-[300px] shrink-0 border border-divider rounded-lg bg-surface overflow-hidden">
+        <div className="w-[300px] shrink-0 border border-divider rounded-md bg-surface overflow-hidden">
           <div className="px-4 py-2.5 border-b border-divider bg-neutral-hover">
             <span className="text-[12px] font-semibold text-foreground">Inspect</span>
           </div>
@@ -400,116 +401,112 @@ export const Inspector = {
 export const ColorMatrix = {
   name: '色彩對照表',
   render: () => (
-    <ExampleSection title="Mode x State 色彩對照" description="edit 模式有完整的 state 變化（hover / focus / error），readonly 和 disabled 為靜態。色塊即時渲染，切 dark mode 自動更新。">
-      <div className="flex flex-col gap-8">
+    <ExampleStack>
+      <ExampleSection title="Mode x State 色彩對照" description="edit 模式有完整的 state 變化（hover / focus / error）;readonly 只有用鍵盤 Tab 進來時邊框轉主色(focus 欄;滑鼠點不變),其餘靜態;disabled 為靜態。色塊即時渲染，切 dark mode 自動更新。" />
 
-        {/* Edit mode — full state progression */}
-        <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">edit 模式</span>
-          <div className="overflow-x-auto">
-            <table className="border-collapse">
-              <thead>
-                <tr>
-                  <Th>State</Th>
-                  <Th>預覽</Th>
-                  <Th>Background</Th>
-                  <Th>Text</Th>
-                  <Th>Border</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {(['default', 'hover', 'focus', 'error'] as const).map((st) => {
-                  const c = TOKEN_MAP.edit[st]
-                  return (
-                    <tr key={st}>
-                      <Td mono>{st}</Td>
-                      <Td>
-                        <div className="w-[180px]">
-                          <NumberInput
-                            mode="edit"
-                            value={2490}
-                            prefix="$"
-                            error={st === 'error'}
-                            aria-label={`價格（${st} 狀態）`}
-                          />
-                        </div>
-                      </Td>
-                      <Td><span className="inline-flex items-center gap-1.5"><Swatch value={c.bg} size="sm" /><span className="font-mono text-[11px]">{c.bg}</span></span></Td>
-                      <Td><span className="inline-flex items-center gap-1.5"><Swatch value={c.text} size="sm" /><span className="font-mono text-[11px]">{c.text}</span></span></Td>
-                      <Td><span className="inline-flex items-center gap-1.5"><Swatch value={c.border} size="sm" /><span className="font-mono text-[11px]">{c.border}</span></span></Td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-          <span className="text-[10px] text-fg-muted">hover / focus 為動態狀態，表中預覽為 default 和 error 靜態截圖。實際 hover / focus 請在檢閱器中操作。</span>
+      {/* Edit mode — full state progression */}
+      <ExampleSection title="edit 模式">
+        <div className="overflow-x-auto">
+          <table className="border-collapse">
+            <thead>
+              <tr>
+                <Th>State</Th>
+                <Th>預覽</Th>
+                <Th>Background</Th>
+                <Th>Text</Th>
+                <Th>Border</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {(['default', 'hover', 'focus', 'error'] as const).map((st) => {
+                const c = TOKEN_MAP.edit[st]
+                return (
+                  <tr key={st}>
+                    <Td mono>{st}</Td>
+                    <Td>
+                      <div className="w-[180px]">
+                        <NumberInput
+                          mode="edit"
+                          value={2490}
+                          prefix="$"
+                          error={st === 'error'}
+                          aria-label={`價格（${st} 狀態）`}
+                        />
+                      </div>
+                    </Td>
+                    <Td><span className="inline-flex items-center gap-1.5"><Swatch value={c.bg} size="sm" /><span className="font-mono text-[11px]">{c.bg}</span></span></Td>
+                    <Td><span className="inline-flex items-center gap-1.5"><Swatch value={c.text} size="sm" /><span className="font-mono text-[11px]">{c.text}</span></span></Td>
+                    <Td><span className="inline-flex items-center gap-1.5"><Swatch value={c.border} size="sm" /><span className="font-mono text-[11px]">{c.border}</span></span></Td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
+        <span className="text-[10px] text-fg-muted">hover / focus 為動態狀態，表中預覽為 default 和 error 靜態截圖。實際 hover / focus 請在檢閱器中操作。</span>
+      </ExampleSection>
 
-        {/* Readonly + Disabled */}
-        <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">readonly / disabled 模式</span>
-          <div className="overflow-x-auto">
-            <table className="border-collapse">
-              <thead>
-                <tr>
-                  <Th>Mode</Th>
-                  <Th>預覽</Th>
-                  <Th>Background</Th>
-                  <Th>Text</Th>
-                  <Th>Border</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {(['readonly', 'disabled'] as ModeKey[]).map((m) => {
-                  const c = TOKEN_MAP[m].default
-                  return (
-                    <tr key={m}>
-                      <Td mono>{m}</Td>
-                      <Td>
-                        <div className="w-[180px]">
-                          <NumberInput mode={m} value={2490} prefix="$" aria-label={`價格（${m} 模式）`} />
-                        </div>
-                      </Td>
-                      <Td><span className="inline-flex items-center gap-1.5"><Swatch value={c.bg} size="sm" /><span className="font-mono text-[11px]">{c.bg}</span></span></Td>
-                      <Td><span className="inline-flex items-center gap-1.5"><Swatch value={c.text} size="sm" /><span className="font-mono text-[11px]">{c.text}</span></span></Td>
-                      <Td><span className="inline-flex items-center gap-1.5"><Swatch value={c.border} size="sm" /><span className="font-mono text-[11px]">{c.border}</span></span></Td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+      {/* Readonly + Disabled */}
+      <ExampleSection title="readonly / disabled 模式">
+        <div className="overflow-x-auto">
+          <table className="border-collapse">
+            <thead>
+              <tr>
+                <Th>Mode</Th>
+                <Th>預覽</Th>
+                <Th>Background</Th>
+                <Th>Text</Th>
+                <Th>Border</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {(['readonly', 'disabled'] as ModeKey[]).map((m) => {
+                const c = TOKEN_MAP[m].default
+                return (
+                  <tr key={m}>
+                    <Td mono>{m}</Td>
+                    <Td>
+                      <div className="w-[180px]">
+                        <NumberInput mode={m} value={2490} prefix="$" aria-label={`價格（${m} 模式）`} />
+                      </div>
+                    </Td>
+                    <Td><span className="inline-flex items-center gap-1.5"><Swatch value={c.bg} size="sm" /><span className="font-mono text-[11px]">{c.bg}</span></span></Td>
+                    <Td><span className="inline-flex items-center gap-1.5"><Swatch value={c.text} size="sm" /><span className="font-mono text-[11px]">{c.text}</span></span></Td>
+                    <Td><span className="inline-flex items-center gap-1.5"><Swatch value={c.border} size="sm" /><span className="font-mono text-[11px]">{c.border}</span></span></Td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
+      </ExampleSection>
 
-        {/* endAction icon colors */}
-        <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">endAction icon 色彩</span>
-          <div className="overflow-x-auto">
-            <table className="border-collapse">
-              <thead><tr><Th>State</Th><Th>Icon 色</Th><Th>Hover bg</Th></tr></thead>
-              <tbody>
-                <tr>
-                  <Td mono>default</Td>
-                  <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--fg-muted" size="sm" /><span className="font-mono text-[11px]">--fg-muted</span></span></Td>
-                  <Td><span className="font-mono text-[11px]">transparent</span></Td>
-                </tr>
-                <tr>
-                  <Td mono>hover</Td>
-                  <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--foreground" size="sm" /><span className="font-mono text-[11px]">--foreground</span></span></Td>
-                  <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--neutral-hover" size="sm" /><span className="font-mono text-[11px]">--neutral-hover</span></span></Td>
-                </tr>
-                <tr>
-                  <Td mono>active</Td>
-                  <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--foreground" size="sm" /><span className="font-mono text-[11px]">--foreground</span></span></Td>
-                  <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--neutral-active" size="sm" /><span className="font-mono text-[11px]">--neutral-active</span></span></Td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+      {/* endAction icon colors */}
+      <ExampleSection title="endAction icon 色彩">
+        <div className="overflow-x-auto">
+          <table className="border-collapse">
+            <thead><tr><Th>State</Th><Th>Icon 色</Th><Th>Hover bg</Th></tr></thead>
+            <tbody>
+              <tr>
+                <Td mono>default</Td>
+                <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--fg-muted" size="sm" /><span className="font-mono text-[11px]">--fg-muted</span></span></Td>
+                <Td><span className="font-mono text-[11px]">transparent</span></Td>
+              </tr>
+              <tr>
+                <Td mono>hover</Td>
+                <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--fg-secondary" size="sm" /><span className="font-mono text-[11px]">--fg-secondary</span></span></Td>
+                <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--neutral-hover" size="sm" /><span className="font-mono text-[11px]">--neutral-hover</span></span></Td>
+              </tr>
+              <tr>
+                <Td mono>active</Td>
+                <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--fg-secondary" size="sm" /><span className="font-mono text-[11px]">--fg-secondary</span></span></Td>
+                <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--neutral-active" size="sm" /><span className="font-mono text-[11px]">--neutral-active</span></span></Td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-      </div>
-    </ExampleSection>
+      </ExampleSection>
+    </ExampleStack>
   ),
 }
 
@@ -520,78 +517,76 @@ export const ColorMatrix = {
 export const SizeMatrix = {
   name: '尺寸對照表',
   render: () => (
-    <ExampleSection title="Size Token 對照" description="每個 size 的 token 一覽。Field 與同 size 的 Button 並排時高度一致。density 切換由系統自動處理。">
-      <div className="flex flex-col gap-8">
+    <ExampleStack>
+      <ExampleSection title="Size Token 對照" description="每個 size 的 token 一覽。Field 與同 size 的 Button 並排時高度一致。density 切換由系統自動處理。" />
 
-        {/* Token comparison table */}
+      {/* Token comparison table */}
+      <div className="overflow-x-auto">
+        <table className="border-collapse text-caption">
+          <thead><tr>
+            <Th>屬性</Th>
+            {SIZES.map((sz) => <Th key={sz}>{sz}{sz === 'md' ? '（預設）' : ''}</Th>)}
+          </tr></thead>
+          <tbody>
+            {([
+              { label: '高度', key: 'heightToken' as const, subKey: 'height' as const },
+              { label: '左右內距', key: 'pxToken' as const, subFn: (sp: SizeSpec) => `${sp.px}px` },
+              { label: '元素間距', key: 'gapToken' as const, subFn: (sp: SizeSpec) => `${sp.gap}px` },
+              { label: '字體', key: 'fontToken' as const, subFn: (sp: SizeSpec) => sp.font },
+              { label: 'Icon (endAction)', subFn: (sp: SizeSpec) => `${sp.icon}px` },
+              { label: 'Action hover bg', subFn: (sp: SizeSpec) => `${sp.actionHover}px` },
+            ] as const).map((row) => (
+              <tr key={row.label}>
+                <Td>{row.label}</Td>
+                {SIZES.map((sz) => {
+                  const spec = SIZE_SPECS[sz]
+                  const token = 'key' in row && row.key ? spec[row.key] as string : undefined
+                  const sub = 'subKey' in row && row.subKey ? spec[row.subKey] as string : 'subFn' in row && row.subFn ? row.subFn(spec) : undefined
+                  return (
+                    <Td key={sz} mono>
+                      {token && <div className="text-fg-secondary">{token}</div>}
+                      {sub && <div className="text-fg-muted text-[10px]">{sub}</div>}
+                    </Td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Visual preview — all modes × sizes */}
+      <ExampleSection title="預覽 — 各 Size x Mode">
         <div className="overflow-x-auto">
-          <table className="border-collapse text-caption">
+          <table className="border-collapse">
             <thead><tr>
-              <Th>屬性</Th>
-              {SIZES.map((sz) => <Th key={sz}>{sz}{sz === 'md' ? '（預設）' : ''}</Th>)}
+              <Th>Mode</Th>
+              {SIZES.map((sz) => <Th key={sz}>{sz}</Th>)}
             </tr></thead>
             <tbody>
-              {([
-                { label: '高度', key: 'heightToken' as const, subKey: 'height' as const },
-                { label: '左右內距', key: 'pxToken' as const, subFn: (sp: SizeSpec) => `${sp.px}px` },
-                { label: '元素間距', key: 'gapToken' as const, subFn: (sp: SizeSpec) => `${sp.gap}px` },
-                { label: '字體', key: 'fontToken' as const, subFn: (sp: SizeSpec) => sp.font },
-                { label: 'Icon (endAction)', subFn: (sp: SizeSpec) => `${sp.icon}px` },
-                { label: 'Action hover bg', subFn: (sp: SizeSpec) => `${sp.actionHover}px` },
-              ] as const).map((row) => (
-                <tr key={row.label}>
-                  <Td>{row.label}</Td>
-                  {SIZES.map((sz) => {
-                    const spec = SIZE_SPECS[sz]
-                    const token = 'key' in row && row.key ? spec[row.key] as string : undefined
-                    const sub = 'subKey' in row && row.subKey ? spec[row.subKey] as string : 'subFn' in row && row.subFn ? row.subFn(spec) : undefined
-                    return (
-                      <Td key={sz} mono>
-                        {token && <div className="text-fg-secondary">{token}</div>}
-                        {sub && <div className="text-fg-muted text-[10px]">{sub}</div>}
-                      </Td>
-                    )
-                  })}
+              {MODES.map((m) => (
+                <tr key={m}>
+                  <Td mono>{m}</Td>
+                  {SIZES.map((sz) => (
+                    <Td key={sz}>
+                      <div className="w-[180px]">
+                        <NumberInput
+                          mode={m}
+                          size={sz}
+                          value={2490}
+                          prefix="$"
+                          aria-label={`價格（${m} 模式、${sz} 尺寸）`}
+                        />
+                      </div>
+                    </Td>
+                  ))}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-
-        {/* Visual preview — all modes × sizes */}
-        <div className="flex flex-col gap-4">
-          <span className="text-caption font-medium text-fg-secondary">預覽 — 各 Size x Mode</span>
-          <div className="overflow-x-auto">
-            <table className="border-collapse">
-              <thead><tr>
-                <Th>Mode</Th>
-                {SIZES.map((sz) => <Th key={sz}>{sz}</Th>)}
-              </tr></thead>
-              <tbody>
-                {MODES.map((m) => (
-                  <tr key={m}>
-                    <Td mono>{m}</Td>
-                    {SIZES.map((sz) => (
-                      <Td key={sz}>
-                        <div className="w-[180px]">
-                          <NumberInput
-                            mode={m}
-                            size={sz}
-                            value={2490}
-                            prefix="$"
-                            aria-label={`價格（${m} 模式、${sz} 尺寸）`}
-                          />
-                        </div>
-                      </Td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </ExampleSection>
+      </ExampleSection>
+    </ExampleStack>
   ),
 }
 
@@ -606,132 +601,125 @@ export const StateBehavior = {
     const [clearValue, setClearValue] = useState<number | null>(1500)
 
     return (
-      <ExampleSection title="狀態行為" description="Focus、error、格式化、endAction 的視覺變化與行為規則。">
-        <div className="flex flex-col gap-8">
+      <ExampleStack>
+        <ExampleSection title="狀態行為" description="Focus、error、格式化、endAction 的視覺變化與行為規則。" />
 
-          {/* Focus behavior */}
+        {/* Focus behavior */}
+        <ExampleSection title="Focus — border-primary，無 ring">
+          <div className="flex items-center gap-4">
+            <div className="w-[200px]">
+              <NumberInput
+                value={focusValue}
+                onChange={setFocusValue}
+                prefix="$"
+                placeholder="點擊 focus"
+                aria-label="價格（焦點狀態）"
+              />
+            </div>
+            <span className="text-[11px] text-fg-muted">input outline-none；focus 時由 wrapper focus-within 觸發 border-primary 1px</span>
+          </div>
+        </ExampleSection>
+
+        {/* Error behavior */}
+        <ExampleSection title="Error — 僅 edit 模式，border-error">
           <div className="flex flex-col gap-3">
-            <span className="text-caption font-medium text-fg-secondary">Focus — border-primary，無 ring</span>
+            <div className="flex items-center gap-4">
+              <div className="w-[200px]">
+                <NumberInput value={-100} error prefix="$" aria-label="價格（錯誤狀態）" />
+              </div>
+              <span className="text-[11px] text-fg-muted">edit + error: border-error + aria-invalid</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="w-[200px]">
+                <NumberInput mode="readonly" value={-100} error prefix="$" aria-label="價格（唯讀錯誤 prop）" />
+              </div>
+              <span className="text-[11px] text-fg-muted">readonly + error: error prop 被忽略，無紅框</span>
+            </div>
+          </div>
+        </ExampleSection>
+
+        {/* endAction — clear example */}
+        <ExampleSection title="endAction — 右側 inline action">
+          <div className="flex flex-col gap-3">
             <div className="flex items-center gap-4">
               <div className="w-[200px]">
                 <NumberInput
-                  value={focusValue}
-                  onChange={setFocusValue}
+                  value={clearValue}
+                  onChange={setClearValue}
                   prefix="$"
-                  placeholder="點擊 focus"
-                  aria-label="價格（焦點狀態）"
+                  aria-label="價格（可清除）"
+                  endAction={{ icon: X, label: '清除', onClick: () => setClearValue(null) }}
                 />
               </div>
-              <span className="text-[11px] text-fg-muted">input outline-none；focus 時由 wrapper focus-within 觸發 border-primary 1px</span>
+              <span className="text-[11px] text-fg-muted">icon: fg-muted → hover: fg-secondary + neutral-hover bg</span>
             </div>
-          </div>
-
-          {/* Error behavior */}
-          <div className="flex flex-col gap-3">
-            <span className="text-caption font-medium text-fg-secondary">Error — 僅 edit 模式，border-error</span>
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-4">
-                <div className="w-[200px]">
-                  <NumberInput value={-100} error prefix="$" aria-label="價格（錯誤狀態）" />
-                </div>
-                <span className="text-[11px] text-fg-muted">edit + error: border-error + aria-invalid</span>
+            <div className="flex items-center gap-4">
+              <div className="w-[200px]">
+                <NumberInput mode="readonly" value={1500} prefix="$" aria-label="價格（唯讀）" />
               </div>
-              <div className="flex items-center gap-4">
-                <div className="w-[200px]">
-                  <NumberInput mode="readonly" value={-100} error prefix="$" aria-label="價格（唯讀錯誤 prop）" />
+              <span className="text-[11px] text-fg-muted">readonly / disabled 不渲染 endAction</span>
+            </div>
+          </div>
+        </ExampleSection>
+
+        {/* Formatting behavior */}
+        <ExampleSection title="格式化行為">
+          <div className="overflow-x-auto">
+            <table className="border-collapse text-caption">
+              <thead><tr><Th>情境</Th><Th>edit 模式</Th><Th>readonly / view</Th></tr></thead>
+              <tbody>
+                {[
+                  ['value = 2490, prefix="$"', '2490（raw 數值）', '$2,490（格式化）'],
+                  ['value = 85.5, suffix="%", precision=1', '85.5（raw 數值）', '85.5%（格式化）'],
+                  ['value = null', '空白', '- (hyphen, foreground)'],
+                  ['value = 12500, prefix="NT$"', '12500（raw 數值）', 'NT$12,500（格式化）'],
+                ].map(([ctx, edit, display]) => (
+                  <tr key={ctx}>
+                    <Td mono>{ctx}</Td>
+                    <Td>{edit}</Td>
+                    <Td>{display}</Td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <span className="text-[10px] text-fg-muted">edit 模式不套用 toLocaleString()、prefix、suffix，確保使用者能直覺修改 raw 數值。</span>
+        </ExampleSection>
+
+        {/* Null value display */}
+        <ExampleSection title="Null 值顯示">
+          <div className="flex items-center gap-6">
+            {(['edit', 'readonly', 'disabled'] as const).map((m) => (
+              <div key={m} className="flex flex-col gap-1 items-start">
+                <span className="text-[11px] text-fg-muted font-mono">{m}</span>
+                <div className="w-[160px]">
+                  <NumberInput mode={m} value={null} prefix="$" aria-label={`空白價格（${m} 模式）`} />
                 </div>
-                <span className="text-[11px] text-fg-muted">readonly + error: error prop 被忽略，無紅框</span>
+                <span className="text-[10px] text-fg-muted">{m === 'edit' ? '空白 input' : m === 'disabled' ? 'hyphen - + fg-disabled（M24 state > emphasis）' : 'hyphen - + foreground'}</span>
               </div>
-            </div>
+            ))}
           </div>
+        </ExampleSection>
 
-          {/* endAction — clear example */}
-          <div className="flex flex-col gap-3">
-            <span className="text-caption font-medium text-fg-secondary">endAction — 右側 inline action</span>
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-4">
-                <div className="w-[200px]">
-                  <NumberInput
-                    value={clearValue}
-                    onChange={setClearValue}
-                    prefix="$"
-                    aria-label="價格（可清除）"
-                    endAction={{ icon: X, label: '清除', onClick: () => setClearValue(null) }}
-                  />
-                </div>
-                <span className="text-[11px] text-fg-muted">icon: fg-muted → hover: foreground + neutral-hover bg</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="w-[200px]">
-                  <NumberInput mode="readonly" value={1500} prefix="$" aria-label="價格（唯讀）" />
-                </div>
-                <span className="text-[11px] text-fg-muted">readonly / disabled 不渲染 endAction</span>
-              </div>
-            </div>
+        {/* Input behavior */}
+        <ExampleSection title="輸入行為">
+          <div className="overflow-x-auto">
+            <table className="border-collapse text-caption">
+              <thead><tr><Th>規則</Th><Th>說明</Th></tr></thead>
+              <tbody>
+                {[
+                  ['type="text" inputMode="decimal"', '用 text 而非 number，避免瀏覽器 spinner 干擾'],
+                  ['空字串 / "-" → onChange(null)', '清空或只剩負號時回傳 null'],
+                  ['NaN 忽略', '非數字輸入不觸發 onChange'],
+                  ['disabled / readOnly 參與 mode 推導', 'mode 未顯式指定時：有效 disabled → "disabled"；readOnly 排在 Field context mode 之後 → "readonly"（顯式 mode prop 永遠最優先，useResolvedFieldMode）'],
+                ].map(([rule, desc]) => (
+                  <tr key={rule}><Td mono>{rule}</Td><Td>{desc}</Td></tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-
-          {/* Formatting behavior */}
-          <div className="flex flex-col gap-3">
-            <span className="text-caption font-medium text-fg-secondary">格式化行為</span>
-            <div className="overflow-x-auto">
-              <table className="border-collapse text-caption">
-                <thead><tr><Th>情境</Th><Th>edit 模式</Th><Th>readonly / view</Th></tr></thead>
-                <tbody>
-                  {[
-                    ['value = 2490, prefix="$"', '2490（raw 數值）', '$2,490（格式化）'],
-                    ['value = 85.5, suffix="%", precision=1', '85.5（raw 數值）', '85.5%（格式化）'],
-                    ['value = null', '空白', '- (hyphen, foreground)'],
-                    ['value = 12500, prefix="NT$"', '12500（raw 數值）', 'NT$12,500（格式化）'],
-                  ].map(([ctx, edit, display]) => (
-                    <tr key={ctx}>
-                      <Td mono>{ctx}</Td>
-                      <Td>{edit}</Td>
-                      <Td>{display}</Td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <span className="text-[10px] text-fg-muted">edit 模式不套用 toLocaleString()、prefix、suffix，確保使用者能直覺修改 raw 數值。</span>
-          </div>
-
-          {/* Null value display */}
-          <div className="flex flex-col gap-3">
-            <span className="text-caption font-medium text-fg-secondary">Null 值顯示</span>
-            <div className="flex items-center gap-6">
-              {(['edit', 'readonly', 'disabled'] as const).map((m) => (
-                <div key={m} className="flex flex-col gap-1 items-start">
-                  <span className="text-[11px] text-fg-muted font-mono">{m}</span>
-                  <div className="w-[160px]">
-                    <NumberInput mode={m} value={null} prefix="$" aria-label={`空白價格（${m} 模式）`} />
-                  </div>
-                  <span className="text-[10px] text-fg-muted">{m === 'edit' ? '空白 input' : m === 'disabled' ? 'hyphen - + fg-disabled（M24 state > emphasis）' : 'hyphen - + foreground'}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Input behavior */}
-          <div className="flex flex-col gap-3">
-            <span className="text-caption font-medium text-fg-secondary">輸入行為</span>
-            <div className="overflow-x-auto">
-              <table className="border-collapse text-caption">
-                <thead><tr><Th>規則</Th><Th>說明</Th></tr></thead>
-                <tbody>
-                  {[
-                    ['type="text" inputMode="decimal"', '用 text 而非 number，避免瀏覽器 spinner 干擾'],
-                    ['空字串 / "-" → onChange(null)', '清空或只剩負號時回傳 null'],
-                    ['NaN 忽略', '非數字輸入不觸發 onChange'],
-                    ['disabled / readOnly 參與 mode 推導', 'mode 未顯式指定時：有效 disabled → "disabled"；readOnly 排在 Field context mode 之後 → "readonly"（顯式 mode prop 永遠最優先，useResolvedFieldMode）'],
-                  ].map(([rule, desc]) => (
-                    <tr key={rule}><Td mono>{rule}</Td><Td>{desc}</Td></tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </ExampleSection>
+        </ExampleSection>
+      </ExampleStack>
     )
   },
 }

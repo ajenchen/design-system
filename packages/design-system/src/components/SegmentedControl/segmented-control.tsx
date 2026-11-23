@@ -5,6 +5,7 @@ import { cva } from 'class-variance-authority'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useResolvedFieldSize, useResolvedFieldDisabled } from '@/design-system/components/Field/field-context'
+import type { SizingMode } from '@/design-system/components/Field/field-types'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 
@@ -25,9 +26,9 @@ import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
  *   md   h-field-md（32/36）★ 預設（跟 Button / Input / 所有 field-height 系列一致）
  *   lg   h-field-lg（36/40）
  *
- * ── fullWidth ──
- *   false  ★ 預設，item 寬度由內容決定（hug content）
- *   true   SegmentedControl 撐滿父容器寬度，所有 item 等分
+ * ── width(寬度模式;2026-11-15 前叫 fullWidth,已移除)──
+ *   'hug'  ★ 預設，item 寬度由內容決定（hug content）
+ *   'fill' SegmentedControl 撐滿父容器寬度，所有 item 等分
  *
  * ── Item 結構 ──
  *   [startIcon?] [<span px-1>label</span>] [<span gap-1>suffix?</span>]
@@ -41,14 +42,14 @@ type SegmentedControlSize = 'xs' | 'sm' | 'md' | 'lg'
 
 interface SegmentedControlContextValue {
   size: SegmentedControlSize
-  fullWidth: boolean
+  width: SizingMode
   iconOnly: boolean
   disabled: boolean
 }
 
 const SegmentedControlContext = React.createContext<SegmentedControlContextValue>({
   size: 'md',
-  fullWidth: false,
+  width: 'hug',
   iconOnly: false,
   disabled: false,
 })
@@ -58,13 +59,13 @@ const segmentedControlVariants = cva(
   'flex items-stretch rounded-md',
   {
     variants: {
-      fullWidth: {
-        true: 'w-full',
-        false: 'w-fit',
+      width: {
+        fill: 'w-full',
+        hug: 'w-fit',
       },
     },
     defaultVariants: {
-      fullWidth: false,
+      width: 'hug',
     },
   }
 )
@@ -75,8 +76,11 @@ export interface SegmentedControlProps
       'type' | 'defaultValue' | 'value' | 'onValueChange'
     > {
   size?: SegmentedControlSize
-  /** 撐滿父容器寬度，所有 item 等分。預設 false（hug content） */
-  fullWidth?: boolean
+  /**
+   * 寬度模式:`'hug'`(預設)各 item 由內容決定 / `'fill'` 撐滿父容器,所有 item 等分。
+   * 全 DS 的「撐滿 / 跟內容」只用 `width`(`ds-canonical/references/props-naming.md`「尺寸參數」;user 2026-11-11「尺寸:甲」)。
+   */
+  width?: SizingMode
   iconOnly?: boolean
   value?: string
   defaultValue?: string
@@ -91,7 +95,7 @@ const SegmentedControl = React.forwardRef<
     {
       className,
       size: sizeProp,
-      fullWidth = false,
+      width = 'hug',
       iconOnly = false,
       disabled,
       children,
@@ -114,8 +118,8 @@ const SegmentedControl = React.forwardRef<
     // Memoize provider value(2026-04-22 D3 perf audit):避免每次父 render 重建 4-field object
     // 讓 children SegmentedControlItem 不必要 re-render
     const ctxValue = React.useMemo(
-      () => ({ size: resolvedSize, fullWidth, iconOnly, disabled: resolvedDisabled }),
-      [resolvedSize, fullWidth, iconOnly, resolvedDisabled],
+      () => ({ size: resolvedSize, width, iconOnly, disabled: resolvedDisabled }),
+      [resolvedSize, width, iconOnly, resolvedDisabled],
     )
 
     return (
@@ -135,7 +139,7 @@ const SegmentedControl = React.forwardRef<
             onValueChange?.(v)
           }}
           disabled={resolvedDisabled}
-          className={cn(segmentedControlVariants({ fullWidth }), className)}
+          className={cn(segmentedControlVariants({ width }), className)}
           {...props}
         >
           {children}
@@ -202,14 +206,15 @@ const itemVariants = cva(
         md: 'h-field-md px-3 text-body leading-compact gap-1',
         lg: 'h-field-lg px-3 text-body-lg leading-compact gap-1',
       },
-      fullWidth: {
-        true: 'flex-1 min-w-0',
-        false: '',
+      // 群組 width="fill" 時每個 item 等分(segmented-control.spec.md「寬度模式」:撐滿必等分)
+      width: {
+        fill: 'flex-1 min-w-0',
+        hug: '',
       },
     },
     defaultVariants: {
       size: 'md',
-      fullWidth: false,
+      width: 'hug',
     },
   }
 )
@@ -238,7 +243,7 @@ const SegmentedControlItem = React.forwardRef<
   React.ElementRef<typeof ToggleGroupPrimitive.Item>,
   SegmentedControlItemProps
 >(({ className, startIcon: StartIcon, badge, children, 'aria-label': ariaLabel, ...restProps }, ref) => {
-  const { size, fullWidth, iconOnly: groupIconOnly } = React.useContext(SegmentedControlContext)
+  const { size, width, iconOnly: groupIconOnly } = React.useContext(SegmentedControlContext)
   // 2026-05-18 改 per user 指出沒機械化導致偏移、並要求做完(對齊 Button xs / uiSize Icon Tier):
   // 原 xs=14 跟 Button xs=16 不一致,xs/sm/md 統一 16 對齊 uiSize.spec.md(xs/sm/md→16, lg→20)。
   // 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反 7+ 重複 ternary)
@@ -266,7 +271,7 @@ const SegmentedControlItem = React.forwardRef<
     <ToggleGroupPrimitive.Item
       ref={ref}
       className={cn(
-        itemVariants({ size, fullWidth }),
+        itemVariants({ size, width }),
         effectiveIconOnly && ICON_ONLY_BASE,
         className,
       )}

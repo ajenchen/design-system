@@ -286,7 +286,10 @@
         "denialMarkers",
         "priorConsentAssertions",
         "aNotAQuestions",
-        "conditionalMarkers"
+        "conditionalMarkers",
+        "mentionPrefixes",
+        "directiveEndings",
+        "courtesyTails"
       ],
       "properties": {
         "required": {
@@ -355,6 +358,33 @@
           "uniqueItems": true
         },
         "conditionalMarkers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "mentionPrefixes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "directiveEndings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "courtesyTails": {
           "type": "array",
           "items": {
             "type": "string",

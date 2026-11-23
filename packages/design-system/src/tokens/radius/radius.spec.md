@@ -1,72 +1,100 @@
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — verified 0 world-class DS claim in body; blanket retract removed. -->
+<!-- @benchmark-cited: 2026-11-15 重寫;2026-11-18 複查 —— 外部對照在「禁止事項」第一段、「設計理由」(1)(2) 與「歷史」第二條,每段都附了原始來源網址(數值的網址都釘了版本),逐條開檔核對過,內容支持原句。2026-11-21 補上最後一段:「禁止事項」裡「特別注意 `rounded-sm`」那段(Tailwind 預設的 `rounded-sm` 是 4px)同段附了 theme.css 網址,開檔核對過。 -->
 
 # Radius 設計原則
 
-圓角系統提供四個語意層級，對應不同元件類型。
+圓角只有四檔:`sm` 2px / `md` 4px / `lg` 8px / `full`。**選哪一檔看元素的用途,不看 Tailwind 的習慣**——先判斷「這個元素是哪一種東西」,再查下表。
 
-## 圓角選項
+## 四檔(唯一住處;機器讀這張表)
 
-| Tailwind class | Token | 值 | 用途 |
-|----------------|-------|----|------|
-| `rounded-xs`   | `--radius-xs` | 2px | 極小視覺 indicator(Chart legend swatch 8×8 色塊等 ≤ 10px 元素) |
-| `rounded-md`   | `--radius-md` | 4px | 一般元件(Button、Input、Card、Tag、hover bg) |
-| `rounded-lg`   | `--radius-lg` | 8px | 浮層(Dialog、Popover、Dropdown) |
-| `rounded-full` | `--radius-full` | 9999px | Pill 形狀(Avatar、Switch、Progress) |
+下表是圓角的唯一來源:
 
-### `rounded-sm` 保留未使用
+- 閘 `scripts/token-allowlist-invariant.mjs` 拿「class / token / 值」三欄比對 `../utility-registry.json` 的 `radius.allow`、`radius.css` 的宣告與 Tailwind 預設刻度(不在表上的 Tailwind 名字一律要被擋)。
+- 閘 `scripts/radius-usage-invariant.mjs` 拿「值 / 機器判定」兩欄,在建置好的 Storybook 上逐則量每一個有圓角的元素。
 
-CSS 定義了 `--radius-sm`(目前 = 4px,與 md 同值),但**不在元件中使用**。保留給未來「介於 md 和 xs 之間」的需求(如更密集的 UI 模式)。所有 4px 圓角一律用 `rounded-md`。
+<!-- radius-scale:start -->
+| class | token | 值 | 用途 | 機器判定 |
+|-------|-------|----|------|----------|
+| `rounded-sm` | `--radius-sm` | 2px | 極小指示:圖表圖例色塊(8×8)這類短邊 ≤ 10px 的色塊 / 標記 | 短邊 ≤ 10px |
+| `rounded-md` | `--radius-md` | 4px | 一般元件:Button、Input、Select、Checkbox、Tag、Tooltip、不浮起來的容器、列的 hover 底 | 其餘;Tooltip 外殼 |
+| `rounded-lg` | `--radius-lg` | 8px | 浮層外殼:Dialog、Sheet、Popover、DropdownMenu、HoverCard、Command、Toast | 浮層外殼(Tooltip 除外) |
+| `rounded-full` | `--radius-full` | 9999px | 膠囊 / 圓形:Avatar、Switch、ProgressBar、Badge 計數 | 不限 |
+<!-- radius-scale:end -->
 
+唯一的 bracket 寫法(也在 `radius.allow`):
+
+<!-- radius-passthrough:start -->
+- `rounded-[inherit]`:不是圓角值,是「跟著父層的圓角裁切」(token class 表達不了;實例 `ScrollArea` 的 Viewport 跟著外框裁)。量測閘不另判它,判它的父層。
+<!-- radius-passthrough:end -->
+
+**「機器判定」欄的意思**(`scripts/radius-usage-invariant.mjs` 照這幾個詞判,詞改了閘會讀不懂而紅):
+
+| 詞 | 怎麼量 |
+|----|--------|
+| 短邊 ≤ Npx | 元素外框 `getBoundingClientRect()` 的寬、高取小的那個 ≤ N。【AI 推導 2026-11-15】用短邊而不是「直徑」:CSS 會把圓角夾在短邊的一半以內,圓角與邊長的比例看的是短邊(下方「`rounded-sm` 為什麼只給 ≤ 10px」的算法) |
+| 浮層外殼 | 帶 `--elevation-200`(或 `-200-hover`)陰影的元素 —— `../elevation/elevation.spec.md`「層級」:200 = 浮層。外殼裡面「四個圓角都跟外殼重合」的裁切層算外殼的一部分,照外殼判 |
+| Tooltip 外殼 | 浮層外殼裡含 `role="tooltip"` 的那一個(Radix Tooltip 的朗讀節點)|
+| 其餘 | 不屬於上面任何一種的元素 |
+| 不限 | 任何元素都可以用(`full` 本身就決定了形狀是膠囊 / 圓形)|
+
+量到的值不在 2 / 4 / 8 / 9999px 裡(例:6px、50%)一律紅。逐筆有理由的例外登記在 `scripts/radius-usage-exceptions.json`(每筆寫理由與規格出處);量到、還沒修的現況違規登記在同檔 `pending`,只准變少(哪些由 AI 照本檔直接修、哪些要先給 user 看,寫在該檔 `$comment`)。
 
 ## 使用規則
 
-### `rounded-xs`(2px)— 極小 indicator
+### `rounded-sm`(2px)— 極小指示
 
-適用於直徑 ≤ 10px 的視覺 indicator,視覺效果需要「微圓而非完全方」:
+只給短邊 ≤ 10px 的視覺指示,要「微圓而不是完全方」:
 
-- Chart legend swatch(8×8 色塊)
-- 未來其他 micro indicator(若尺寸 ≥ 12px 請改 `rounded-md`,不要為了「更圓」使用 xs)
+- 圖表圖例色塊(8×8)
+- 其他短邊 ≤ 10px 的色塊、標記
 
-**判斷**(radius / 邊長比):4px 在 8×8 元素上 = 邊長 50%(radius 達半邊長即成 pill,類別色塊語意流失);2px = 25%,輪廓保持方形。≥ 12px 元素上 4px ≤ 33%,比例適當,不需 xs。
+短邊 ≥ 12px 的元素一律 `rounded-md`,不要為了「圓一點 / 方一點」改用 `sm`。
+
+**`rounded-sm` 為什麼只給 ≤ 10px**(圓角 / 邊長比):4px 在 8×8 元素上 = 邊長 50%(圓角到半邊長就成膠囊,色塊的意思沒了);2px = 25%,輪廓仍是方形。≥ 12px 的元素上 4px ≤ 33%,比例剛好,不需要 2px。
 
 ### `rounded-md`(4px)— 一般元件
 
-適用於大多數互動元件，視覺上「有圓角但不搶眼」：
+大多數互動元件,視覺上「有圓角但不搶眼」:
 
 - Button、Input、Select、Checkbox、Tag
-- Card（非浮層，不需 elevation 層級感）
-- Table cell、list item 的 hover 背景
-- Tooltip
+- 不浮起來的容器(頁面上的卡片、內嵌通知;DS 目前沒有 Card 元件)
+- 表格格子、清單列的 hover 底
+- Tooltip(雖然帶浮層陰影,圓角跟一般元件同一檔;`../elevation/elevation.spec.md`「浮層共用樣式」寫明這個例外)
 
-### `rounded-lg`（8px）— 浮層
+### `rounded-lg`(8px)— 浮層外殼
 
-適用於浮在頁面上層的元件：
+浮在頁面上層的外殼:
 
-- Modal、Dialog
-- Popover、Dropdown menu、Command palette
+- Dialog、Sheet
+- Popover、DropdownMenu、HoverCard、Command
+- Toast
 
-### `rounded-full`（9999px）— Pill
+浮層裡面的東西(列、按鈕、內嵌卡片)照它自己是什麼選檔,不跟著外殼用 8px —— 只有與外殼四角重合的裁切層例外。
 
-適用於需要完全膠囊形狀的元件：
+### `rounded-full`(9999px)— 膠囊 / 圓形
 
-- Avatar（圓形）
-- Toggle switch 外框
-- Progress bar
+需要完全膠囊或圓形的元件:
 
+- Avatar(圓形)
+- Switch 外框
+- ProgressBar
+- Badge 計數
 
 ## 禁止事項
 
-```tsx
-// ❌ 不要用非 token 的圓角(bare rounded、rounded-xl、rounded-2xl 等)
-<div className="rounded" />        // 4px，但意圖不明
-<div className="rounded-xl" />     // 12px，超出 token 範圍
-<div className="rounded-2xl" />    // 16px，超出 token 範圍
+**不在上表的名字一律不准用**,包括 Tailwind 預設有、但這套刻度沒有的名字(Tailwind 4.2.2 預設刻度是 `xs` / `sm` / `md` / `lg` / `xl` / `2xl` / `3xl` / `4xl`,[theme.css L397-404](https://raw.githubusercontent.com/tailwindlabs/tailwindcss/v4.2.2/packages/tailwindcss/theme.css)):
 
-// ❌ 不要硬寫圓角值
+```tsx
+// ❌ 不在刻度上的名字(Tailwind 預設照樣產生,值不歸設計系統管)
+<div className="rounded-xs" />     // 2px 這一檔叫 rounded-sm
+<div className="rounded-xl" />     // 12px,不在刻度上
+<div className="rounded-2xl" />    // 16px,不在刻度上
+<div className="rounded" />        // 沒寫檔位,意圖不明
+
+// ❌ 硬寫圓角值
 <div className="rounded-[6px]" />
 <div style={{ borderRadius: '8px' }} />
 
-// ❌ 不要用 CSS 變數語法（Tailwind class 已夠用）
+// ❌ 用變數語法(token class 已經夠用)
 <div className="rounded-[var(--radius-md)]" />
 ```
 
@@ -74,50 +102,42 @@ CSS 定義了 `--radius-sm`(目前 = 4px,與 md 同值),但**不在元件中使�
 // ✅ 一般元件
 <button className="rounded-md" />
 
-// ✅ 浮層
+// ✅ 浮層外殼
 <div className="rounded-lg" />
 
-// ✅ Pill
+// ✅ 膠囊
 <span className="rounded-full" />
 ```
 
-### 省略 radius 的行為(空值驗證)
+**特別注意 `rounded-sm`**:在 Tailwind 預設裡 `rounded-sm` 是 4px(4.2.2 `--radius-sm: 0.25rem;`,[theme.css L398](https://raw.githubusercontent.com/tailwindlabs/tailwindcss/v4.2.2/packages/tailwindcss/theme.css)),在這套刻度裡是 2px。照 Tailwind 習慣寫 `rounded-sm` 想拿 4px,會靜默拿到 2px —— 所以不要靠名字猜,照上表的用途選;寫錯了會被 `scripts/radius-usage-invariant.mjs` 量出來(短邊 > 10px 的元素用 2px = 紅)。
 
-不寫 `rounded-*` → `border-radius: 0`(CSS 預設直角),不 fallback 任何 token;無圓角需求的元素本就不寫,不強制每元素標 radius。**有意**的圓角必用上表 4 tier class——bare `rounded`(Tailwind 預設 4px,意圖不明)與硬寫值由上方禁止事項擋。
+### 不寫圓角的行為
 
+不寫 `rounded-*` → `border-radius: 0`(CSS 預設直角),不會退回任何 token;不需要圓角的元素本來就不寫,不強制每個元素標圓角。
 
-## 世界級對照
+## 設計理由
 
-對齊 M8(binary strict rule 必 ≥3 家世界級對照),「禁 `rounded-xl` / `rounded-2xl` raw utility」+「禁硬寫 `rounded-[6px]`」是本 spec 的 binary strict rule,以下為支撐 rationale。 <!-- @benchmark-unverified -->
+**(1) 四檔、每一檔是上一檔的兩倍(2 → 4 → 8 → full)**
 
-| 維度 | 本 DS | Material 3([_md-sys-shape.scss#L17-L31](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/tokens/versions/v0_192/_md-sys-shape.scss#L17-L31)) | Polaris([border.ts#L32-L60](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/themes/base/border.ts#L32-L60)) |
-|------|-------|-----------|---------|
-| Tier 數 | **4 tier**(xs/md/lg/full)+ 1 reserved sm | 7 階(none / extra-small 4 / small 8 / medium 12 / large 16 / extra-large 28 / full) | 10 階(0 / 050 2 / 100 4 / 150 6 / 200 8 / 300 12 / 400 16 / 500 20 / 750 30 / full) |
+每跳一檔數值翻倍,目視一眼就分得出不同層級。中間不插檔:要在 2 與 4 之間插一檔,整數只能插 3 —— 3 對 4 差 25%、2 對 3 差 33%,兩段都分不太出來;要兩段差異都 ≥ 50% 沒有解。
 
-## 設計哲學
+對照(數值都讀自原始碼):
 
-四個關鍵決策,各自有世界級先例支撐:
+| | 本 DS | Tailwind 4.2.2 預設 | Material 3 | Polaris |
+|---|---|---|---|---|
+| 刻度 | sm 2 / md 4 / lg 8 / full | xs 2 / sm 4 / md 6 / lg 8 / xl 12 / 2xl 16 / 3xl 24 / 4xl 32([theme.css L397-404](https://raw.githubusercontent.com/tailwindlabs/tailwindcss/v4.2.2/packages/tailwindcss/theme.css)) | extra-small 4 / small 8 / medium 12 / large 16 / extra-large 28 / full([_md-sys-shape.scss L17-L31](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/tokens/versions/v0_192/_md-sys-shape.scss#L17-L31)) | 050 2 / 100 4 / 150 6 / 200 8 / 300 12 …([border.ts L32-L60](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/themes/base/border.ts#L32-L60)、[size.ts L5-L10](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/size.ts#L5-L10)) |
 
-**(1) 4 tier(xs/md/lg/full)— 對齊 Ant Design 4-tier minimal,捨多家 6+ tier** <!-- @benchmark-unverified -->
+**(2) `rounded-full` 是 9999px,不是 50%**
 
-階數多的刻度(Polaris 10 階、Material 7 階)每階差距小,中段尤其難分(例:Polaris 150 = 6px 與 200 = 8px、本 DS 若同時有 rounded-md 6px / rounded-lg 8px,差 25% 但目視幾乎相同);階數太少(只有 0/1/2 三階)又無法表達 elevation 層級(浮層 vs inline 同 radius 失去視覺 hierarchy)([來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/tokens/versions/v0_192/_md-sys-shape.scss#L17-L31)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/size.ts#L5-L10))。
+50% 在短矩形(高 < 寬,例如橫向的 Switch)上會變成橢圓;9999px 在任何長寬比都是膠囊(瀏覽器會把它夾在短邊的一半)。Polaris 的 full 也是 9999px([border.ts L59-L60](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/themes/base/border.ts#L59-L60))。
 
-本 DS 4 tier 是「視覺可區分 + 維護友善」最佳交集 — `xs(2)→ md(4)→ lg(8)→ full` 每跳一級數值翻倍,目視差異 ≥ 50%(Weber-Fechner law 知覺閾值),不會出現「rounded-md vs rounded-mdlg 哪個對」糾結。
+**(3) 不做連續曲率圓角(squircle)**
 
-**(2) Geometric scale(2 / 4 / 8 doubling)— 對齊 Tailwind / Polaris 慣例** <!-- @benchmark-unverified -->
+CSS `border-radius` 只畫得出單一半徑,連續曲率得靠 SVG path,多出執行期成本,不值得。
 
-數值 doubling 確保 reader 一眼感知「不同層級」(2→4→8 比 4→6→8 對比明顯)。對齊 Tailwind v4 xs(2)/ sm(4)/ lg(8)(見上表數值序列)+ Polaris 050(2)/ 100(4)/ 200(8) 的倍增序列([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/size.ts#L5-L8))。
+## 歷史(照實記)
 
-捨棄連續 ratio(Material 4/8/12/16/28 等差 + 跳級)的代價是「中段 size 表現空間」(無 6px tier),DS 場景無此需求(中段需求都歸入 md=4)([來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/tokens/versions/v0_192/_md-sys-shape.scss#L17-L31))。
-
-**(3) `rounded-full` 9999px 而非 50%(對齊 Tailwind / Polaris)** <!-- @benchmark-unverified -->
-
-50% percentage 在「短矩形」(高 < 寬,如 horizontal Switch)變橢圓而非 pill — 9999px 確保任意 aspect ratio 都圓形(實際 capped 在 height/2)。對齊 Tailwind / Polaris 全 pill 慣例,避免短矩形 edge case([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/themes/base/border.ts#L59-L60))。
-
-**(4) 保留 `--radius-sm` token 但不用 — 對齊 Material「reserve for future dense pattern」** <!-- @benchmark-unverified -->
-
-CSS 定義 `--radius-sm = 4px`(目前同 md),component 強制 `rounded-md` 不引用 sm。為什麼留:未來若引入 dense mode(`density="compact"` 介於 md / xs 之間),可開新 sm tier 不破壞既有 xs/md/lg/full 命名階梯(避免 rename 引發全 DS grep refactor)—— 先把名字佔著,比日後插隊改名便宜。
-
-捨棄「立即啟用 sm」的代價是命名空間預占,接受 — 命名穩定 > 短期 utility。
-
-捨棄「連續曲率圓角(squircle)」的代價是「平台一致性」(部分原生平台的圓角是連續曲率,看起來更柔)—— DS 是 cross-platform web,CSS `border-radius` 只能畫單一半徑,連續曲率得靠 SVG path,多出 runtime 成本,不值得。
+- **第一天就是同值別名**:2026-03-25 第一個 commit `da71b526` 的 `globals.css` 寫 `--radius-sm: 4px; --radius-md: 4px;`,同一個 commit 裡 `src/design-system/` 目錄那份給 AI 讀的使用規則檔,圓角表同時列 `rounded-sm` 與 `rounded-md` 都是 4px,沒寫任何理由。同日 3 小時後的 `49075c74`(共同作者是 AI 模型,見該 commit 的 Co-Authored-By)把 `rounded-sm` 改標成禁用,但 `--radius-sm` 的宣告沒有拿掉。
+- **「保留給未來」是 AI 後來加的,而且不成立**:`8a6fdd03`(2026-04-18,共同作者同樣是 AI 模型)把 71 處 `rounded-sm` 換成 `rounded-md`,第一次寫「保留 sm 給未來 2px」;兩天後 `f1f94465` 真的需要 2px(圖表圖例色塊),卻新開了 `--radius-xs`,sm 的理由改寫成「介於 md 和 xs 之間」—— 照 (1) 的算法這一階沒有任何值成立。`d4a8cc9c`(2026-05-01,作者就是 AI 模型)再加上「對齊 Material『reserve for future dense pattern』、先把名字佔著」:Material 的原始碼([_md-sys-shape.scss](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/tokens/versions/v0_192/_md-sys-shape.scss#L17-L31))與主題頁(https://material-web.dev/theming/shape/)都查無此句;密度也只有 md / lg 兩種(`../density/density.spec.md`),沒有「未來的 compact」可以接。
+- **同值別名的代價**:2026-04-18 改掉 71 處之後,`rounded-sm` 又被 9 個 commit 寫回(`d45f39dd`、`ddd79a8f`、`07110dc9`、`f8cec708`、`d0534253`、`b2444ea8`、`e12e0fed`、`e524dc99`、`a7b2be94`),因為 `utility-registry.json` 的允許清單一直放行它。
+- **2026-11-15 收成四檔**:`--radius-sm`(4px,與 md 同值)退場,`--radius-xs`(2px)改名 `--radius-sm`,`rounded-xs` 的用法改成 `rounded-sm`,畫面零差異(2px 的地方仍是 2px)。依據是 user 2026-11-15 同一則訊息(逐字):「難道不是我們的 token 變成只有sm(2px),md(4px),lg(8px)和full,然後其他不准用？所以就是把sm退場然後把xs改名sm？」與「目前整個ds都沒有實際消費者，所以不用顧及改名會造成breaking change」。原題:AI 先提出改名的代價(照 Tailwind 習慣寫 `rounded-sm` 會靜默拿到 2px),user 回「可是現在完全沒有人用sm」後才有這一則;AI 同日兩次回「照你說的做」,user 沒有反對【AI 判讀 2026-11-16:反問句 + 「不用顧及改名」= 要做】。那個代價改由 `scripts/radius-usage-invariant.mjs` 的實量檢查擋(DS 自己的範例裡,2px 用在短邊超過 10px 的元素就紅)。改名登記在 `../token-registry.json` 的 `retired` 與變更帳本 `../../../ds-changes.json`(`0.1.0-beta.149` 節,帶 rename-token fix);0.x 不留舊名(相容政策:`../../../ds-canonical/references/props-naming.md`「相容政策」)。

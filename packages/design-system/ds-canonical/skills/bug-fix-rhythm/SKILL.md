@@ -21,6 +21,8 @@ description: Batch-end-verify rhythm + parallel tool batch + user-listed N-rule 
 
 **手動 invoke**:user 明言「批 fix」「一次做完」「跑完再驗」「列規則」
 
+**多代理批次工作**(多包分給不同代理同時實作):流程照 `packages/design-system/ds-canonical/rules/work-process.md`;多代理同時動工才會撞到的原則與對照組做法見 [references/multi-agent-orchestration.md](references/multi-agent-orchestration.md)。
+
 **不 invoke**(對齊 current provider best practice 小修 skip):
 - 單一 surgical fix(無 numbered rule + 無 cross-component)— per-fix verify 即可
 - pure refactor / typo / import cleanup
@@ -108,7 +110,7 @@ Read / Grep / Glob 多檔需求 → **single message multi-tool-call**:
 ```bash
 npm run build:lib                             # type(tsc -b 在本 repo 不檢查 DS 原始碼)
 npm run hooks:test                            # invariant
-node scripts/visual-audit.mjs --scope=changed # pixel-quantified per M32(a)(或 --scope=component:<X>)
+node scripts/visual-audit.mjs --scope=changed # pixel-quantified per M32 主句(或 --scope=component:<X>)
 ```
 
 **MUST-ALL re-check**(per Phase 0 checklist):
@@ -152,12 +154,12 @@ node scripts/visual-audit.mjs --scope=changed # pixel-quantified per M32(a)(或 
 | `/visual-audit` | 單次視覺對齊 | Phase 3 sub-step,本 skill 包它 |
 | `/component-quality-gate` | stakeholder gate | 不重疊(stakeholder vs daily bug fix) |
 | `stop_self_audit.sh`(hook) | claim-verify gap 攔 | 本 skill Phase 3 是 active side;hook 是 passive trip-wire |
-| `check_pixel_quantified_audit.sh`(hook) | M32(a) audit script(`scripts/visual-audit*.mjs`,canonical = `visual-audit.mjs`)必 pixel | 本 skill Phase 3 跑該 audit |
+| `post_edit_contract_dispatcher.sh`(hook,lib `_pixel_quantified_audit.sh`) | M32 主句:audit script(`scripts/visual-audit*.mjs`,canonical = `visual-audit.mjs`)必 pixel,寫入當下擋 | 本 skill Phase 3 跑該 audit |
 
 **3 層 防線**:
 - **本 skill**(active workflow):MUST-ALL checklist + batch-end-verify rhythm
-- **stop_self_audit.sh**(passive hook,claim-verify gap,BLOCKER)+ **check_codex_collab_5step.sh**(passive hook,codex-collab commit 缺 cite+verify+verdict marker,P1 soft stderr 不 block)
-- **M20 / M32(a)**(meta-rule):上游 invariant
+- **stop_self_audit.sh**(passive hook,claim-verify gap,BLOCKER)+ **check_codex_collab_5step.sh**(passive hook,codex-collab commit 缺 cite+verify+verdict marker;本支被呼叫時會擋(exit 2),但目前 adapter 不會派本支,session 裡實際不生效 —— 見該檔頭「派送現況」)
+- **M20 / M32 主句(pixel-quantified)**(meta-rule):上游 invariant
 
 ---
 
@@ -191,4 +193,4 @@ node scripts/visual-audit.mjs --scope=changed # pixel-quantified per M32(a)(或 
 3. breadcrumb tooltip audit「ALL PASS」但 user 連抓 hover 不 fire(audit 沒驗 Portal DOM bounding rect)
 4. row-alignment audit「Δ=0 ALL PASS」(attr 對齊,Field collapse 沒抓)
 
-具體 M32(a) pixel-quantified rule 仍在 meta-patterns.md,本 skill 是其 workflow side。
+具體 M32 主句(pixel-quantified)rule 仍在 meta-patterns.md,本 skill 是其 workflow side。

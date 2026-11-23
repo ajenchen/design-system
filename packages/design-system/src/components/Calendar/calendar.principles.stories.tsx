@@ -18,6 +18,8 @@ type Story = StoryObj
 // 視覺基線同時釘住顯示月與 today SSOT，避免跨月/換日造成 snapshot 漂移。
 const now = new Date(2026, 6, 15)
 const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')
+// 月份標題 / 星期名照讀者的中文產品排(同展示頁 calendar.stories.tsx 的 LOCALE;元件預設 'en-US');事件名稱也用中文(2026-11-21 前是英文,SIB-PV)。
+const LOCALE = 'zh-TW'
 // 日期格 / 事件方塊各自二擇一:可點就接回調(型別層必填),不可點就寫 readOnlyDates / readOnlyEvents
 //(calendar.spec.md「日期格與事件方塊:可點或唯讀」)。右上角「新事件」是全域新增入口、恆渲染,onCreateEvent 必填(同段末條,M23(f))。
 // 原則頁的可點範例也給**真的結果**(CalendarDemo:點事件開 Popover、點日期 / 新事件開「新增事件」對話框、送出跳 Toast),與展示頁同一個示範殼。
@@ -72,20 +74,21 @@ export const UsageGuidance: Story = {
         >
           <ExampleFrame>
             <div className="grid grid-cols-2 gap-[var(--layout-space-loose)]">
-              <ExampleSection title="DatePicker(form control)">
+              <ExampleSection title="DatePicker(表單欄位)">
                 <Field>
-                  <FieldLabel>Due date</FieldLabel>
+                  <FieldLabel>截止日期</FieldLabel>
                   <DatePicker />
                 </Field>
               </ExampleSection>
-              <ExampleSection title="Calendar(event canvas)">
+              <ExampleSection title="Calendar(事件月曆)">
                 {/* 只給高度:框線、圓角、裁切是 Calendar 自己的外殼(calendar.tsx 根節點),外面不再包一層同樣的框 */}
                 <div className="h-80">
                   <CalendarDemo
                     defaultReferenceDate={now}
+                    locale={LOCALE}
                     today={now}
                     events={[
-                      { id: 'a', title: 'Design review', start: `${thisMonth}-05`, end: `${thisMonth}-05`, color: 'blue' },
+                      { id: 'a', title: '設計審查', start: `${thisMonth}-05`, end: `${thisMonth}-05`, color: 'blue' },
                     ] as CalendarEvent[]}
                   />
                 </div>
@@ -112,13 +115,14 @@ export const ColorSemantic: Story = {
           <div className="h-80">
             <CalendarDemo
               defaultReferenceDate={now}
+              locale={LOCALE}
               today={now}
               events={[
-                { id: '1', title: 'Design review', start: `${thisMonth}-05`, end: `${thisMonth}-05`, color: 'blue' },
-                { id: '2', title: 'Sprint planning', start: `${thisMonth}-08`, end: `${thisMonth}-08`, color: 'blue' },
-                { id: '3', title: 'Release deadline', start: `${thisMonth}-12`, end: `${thisMonth}-12`, color: 'orange' },
-                { id: '4', title: 'Q review', start: `${thisMonth}-18`, end: `${thisMonth}-18`, color: 'green' },
-                { id: '5', title: 'Marketing sync', start: `${thisMonth}-22`, end: `${thisMonth}-22`, color: 'purple' },
+                { id: '1', title: '設計審查', start: `${thisMonth}-05`, end: `${thisMonth}-05`, color: 'blue' },
+                { id: '2', title: '衝刺規劃會議', start: `${thisMonth}-08`, end: `${thisMonth}-08`, color: 'blue' },
+                { id: '3', title: '版本發布截止', start: `${thisMonth}-12`, end: `${thisMonth}-12`, color: 'orange' },
+                { id: '4', title: '季度檢討', start: `${thisMonth}-18`, end: `${thisMonth}-18`, color: 'green' },
+                { id: '5', title: '行銷週會', start: `${thisMonth}-22`, end: `${thisMonth}-22`, color: 'purple' },
               ] as CalendarEvent[]}
             />
           </div>
@@ -144,9 +148,10 @@ export const MonthViewOnlyRule: Story = {
           <div className="h-80">
             <CalendarDemo
               defaultReferenceDate={now}
+              locale={LOCALE}
               today={now}
               events={[
-                { id: '1', title: 'Sprint planning', start: `${thisMonth}-08`, end: `${thisMonth}-08`, color: 'blue' },
+                { id: '1', title: '衝刺規劃會議', start: `${thisMonth}-08`, end: `${thisMonth}-08`, color: 'blue' },
               ] as CalendarEvent[]}
             />
           </div>
@@ -171,6 +176,7 @@ export const ReadOnlyRule: Story = {
           <div className="h-[560px]">
             <CalendarDemo
               defaultReferenceDate={now}
+              locale={LOCALE}
               today={now}
               readOnlyDates
               readOnlyEvents

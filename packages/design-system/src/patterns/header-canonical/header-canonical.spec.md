@@ -13,7 +13,7 @@ benchmark:
 
 # Header Canonical 設計原則
 
-> **Foundational SSOT rationale**(cap 800):本 pattern 統一**所有 header 家族**(chrome page header + overlay header)的視覺契約 — border ownership / padding / 高度策略 / tabs 連動 / dismiss canonical。consumer(`SidebarHeader` / `FileViewer Toolbar+InfoPanel` / `AppShell PageHeader+GlobalHeader` / `DialogHeader` / `SheetHeader` / `PopoverHeader` / `CoachmarkHeader` / 未來 Drawer)pointer 指向本 SSOT,**禁各自 hardcode**。
+> **Foundational SSOT rationale**(行數上限以 `check_file_size_budget.sh` 的 case 表為準,本檔走一般 spec 那一檔;2026-05-17 建檔時寫的「cap 800」case 表從沒列過):本 pattern 統一**所有 header 家族**(chrome page header + overlay header)的視覺契約 — border ownership / padding / 高度策略 / tabs 連動 / dismiss canonical。consumer(`SidebarHeader` / `FileViewer Toolbar+InfoPanel` / `AppShell PageHeader+GlobalHeader` / `DialogHeader` / `SheetHeader` / `PopoverHeader` / `CoachmarkHeader` / 未來 Drawer)pointer 指向本 SSOT,**禁各自 hardcode**。
 
 ## 選哪個 header(decision — 做任何 header 前先回答這題)
 
@@ -45,7 +45,7 @@ benchmark:
 | **A. Padding-based**(overlay)| `py-[var(--layout-space-tight)]` + `data-unbounded` slot trick;高度由內容決定但對齊 `--chrome-header-height` | DialogHeader / SheetHeader / PopoverHeader / 未來 Drawer | `patterns/overlay-surface/overlay-surface.spec.md`(L1 SSOT)+ 本 spec(cross-family canonical) |
 | **B. Fixed-height**(chrome)| `h-[var(--chrome-header-height)]` + `items-center`,剛性高度 | SidebarHeader / FileViewer Toolbar / FileViewer InfoPanel / Page top bar | `tokens/uiSize/uiSize.spec.md` L242(`Fixed-height` 段)+ 本 spec(cross-family canonical) |
 
-**為什麼兩家族?** 因 overlay 內 slot 可能塞 multi-line content(`HoverCard` title + description)— 剛性高度會切掉。Chrome 家族 永遠 single-row(toolbar / nav)— 剛性高度給 layout 預測性。兩 pattern 並存(對齊 `tokens/uiSize/uiSize.spec.md` L240-260「Padding-based vs Fixed-h decision tree」)。
+**為什麼兩家族?** 因 overlay 標題區可能附小標 / 說明(Dialog / Sheet 標題 + 說明、決策卡小標 + 題目)— 剛性高度會切掉。Chrome 家族 永遠 single-row(toolbar / nav)— 剛性高度給 layout 預測性。兩 pattern 並存(對齊 `tokens/uiSize/uiSize.spec.md` L240-260「Padding-based vs Fixed-h decision tree」)。
 
 ---
 
@@ -55,7 +55,7 @@ benchmark:
 
 - **Token**:`border-b border-divider`(1px / `--divider`,`semantic.css`;`--divider-color` 這個名字從不存在,2026-07-10 hunt 判 STALE、2026-09-29 改正)
 - **Default**:有 border(分區效果)
-- **Auto-suppress when withTabs**:見下「withTabs 連動」段
+- **Auto-suppress when tabsSlot**:見下「tabsSlot 連動」段
 
 ### 2. Horizontal padding
 
@@ -71,7 +71,9 @@ benchmark:
 
 - **Token**:`<Button iconOnly size="sm" dismiss />`(28px @ md / 32px @ lg)
 - **永遠 size="sm"**(不論家族 / density):chrome / overlay header 內 button 一律 sm。**廣化(2026-06-12 user 拍板)**:header 內**所有 field-height 控件**(Button / Input / Select / SegmentedControl / Combobox 等)一律 `sm`,禁混雜不同 field height(Tabs 跟齊 chrome 高度,唯一例外 = 「Tabs 取代整個 header」的 standalone `size="lg"`,見上方表)
-- 對齊 既有 `dialog.tsx#DialogHeader` + `sheet.tsx#SheetHeader` + `popover.tsx#PopoverHeader`(Dialog/Sheet/Popover 已內建 close X)
+- **右側操作區**(兩個家族同一套規則):〔操作 …〕〔分隔線〕〔×〕,× 永遠最右;排序與 variant 照 `../action-bar/action-bar.spec.md` 二、三節,兩者都有時必加分隔線(同 spec 五 第 3 條 + 「分隔線幾何」)。寫法分兩個家族:
+  - **B 家族(SurfaceHeader)**:走 SurfaceHeader 的右側按鈕位(`actions`;Dialog / Sheet / Popover 已內建 ×),分隔線由 DS 放,consumer 禁止在 children 自刻 —— 規則住 `../overlay-surface/overlay-surface.spec.md`「SurfaceHeader」右側按鈕位。
+  - **A 家族(ChromeHeader)**:右側放 `<ButtonGroup>`(操作 + `ButtonDivider` + 關閉),照本 pattern 的 canonical 範例 `header-canonical.stories.tsx` SingleRow(ButtonDivider 要住在自動高度的 ButtonGroup 裡,`action-bar.spec.md`「分隔線幾何」前提)。
 
 ### 4.5 Chrome header avatar SSOT(2026-05-21 codify per user directive;2026-06-17 擴涵 account entry)
 
@@ -83,7 +85,7 @@ benchmark:
 
 **程式表達**(local pattern token,對齊 `data-table.css` 既有 local-token 先例):
 - CSS:`--chrome-header-avatar-size: 1.5rem`(`header-canonical.css`)— 供 SidebarHeader 收合對齊公式消費
-- JS 端:consumer hardcode `<Avatar size={24}>` + inline comment cite token name(per Avatar API `size: number | 'fill'` 不接 CSS var)
+- JS 端:設計系統內部讀程式對照常數 `CHROME_HEADER_AVATAR_PX = 24`(`chrome-header-avatar.ts`,`@internal`、不經 pattern index 對外匯出;Avatar API `size: number | 'fill'` 不接 CSS var)。CSS 值與這個常數由 `scripts/token-twin-invariant.mjs` 機器鎖住相等(2026-11-15 起;之前 AccountMenu 與範例各寫字面值 24、只靠註解同步 —— 稽核 P03)。產品端(含 `apps/template`)仍寫字面值 `size={24}`:要給產品一個名字讀,是對外 API 命名,待 user 決定
 
 **Consumer rule**:
 - 在 chrome header 內放 avatar → **必用 raw `<Avatar size={24}>`**,**禁用 `<ItemAvatar>`**(會誤啟動 row anatomy lookup)
@@ -91,7 +93,7 @@ benchmark:
 - WorkspaceBrand demo 即此 pattern 的 reference implementation(`components/AppShell/_demo-helpers.tsx:WorkspaceBrand`)
 - **帳號入口(account entry)同規則**:primary-header globalHeader 右側的個人設定 avatar 也用 raw `<Avatar size={24}>`(reference:`components/AccountMenu/account-menu.tsx`,2026-07-30 F9 升 public 元件;demo wrapper 在 `_demo-helpers.tsx`)。放置 / 開帳號選單 / 邊距對稱 canonical 見 `../../components/AppShell/app-shell.spec.md`「帳號入口(Account entry)放置 SSOT」段。
 
-**Sync invariant**:`--chrome-header-avatar-size` CSS 值 + `<Avatar size={24}>` JS literal(WorkspaceBrand `_demo-helpers.tsx` + AccountMenu `components/AccountMenu/account-menu.tsx` 兩處)+ `AVATAR_SIZE.inline.md = 24`(`item-anatomy.tsx:94`,L93 是 `export const AVATAR_SIZE = {` 宣告開頭)必同 24px 值。改 spec canonical 時 grep `--chrome-header-avatar-size` + `chrome header avatar canonical` keyword 找全 sync 點。
+**Sync invariant**:`--chrome-header-avatar-size` CSS 值 + `CHROME_HEADER_AVATAR_PX`(WorkspaceBrand `_demo-helpers.tsx` + AccountMenu `components/AccountMenu/account-menu.tsx` 兩處讀它;前兩者相等由 `scripts/token-twin-invariant.mjs` 擋)+ 產品範本 `apps/template` 的字面值 `size={24}` + `AVATAR_SIZE.inline.md = 24`(`item-anatomy.tsx:94`,L93 是 `export const AVATAR_SIZE = {` 宣告開頭)必同 24px 值。改 spec canonical 時 grep `--chrome-header-avatar-size` + `chrome header avatar canonical` keyword 找全 sync 點。
 
 ### 5. Title typography
 
@@ -120,17 +122,17 @@ ChromeHeader 內部用 `<header>` element(非 `<div>`)。HTML5 spec 允許 secti
 
 ---
 
-## withTabs 連動(本 SSOT 最核心契約)
+## tabsSlot 連動(本 SSOT 最核心契約)
 
-當 header 內含 Tabs(`<Tabs>` 子元件)時,**6 條 lockstep 規則**:
+當 header 帶 Tabs 時,**6 條 lockstep 規則**。Tabs 進 header 只有一條路:`tabsSlot`(ChromeHeader / SurfaceHeader,以及繼承它們的 SidebarHeader / DialogHeader / SheetHeader);把 `<Tabs>` / `<TabsList>` 寫進 header 的 children 由 hook `_header_with_tabs_border.sh` 擋。原本另有 `withTabs` 布林(只抑制 border-b、Tabs 由 consumer 自己排),它寫下的理由只有相容,DS 與 WM 都沒有單獨用它 —— 2026-11-16 移除(`../../../ds-canonical/references/props-naming.md`「相容政策」;登記在變更帳本 `../../../ds-changes.json`)。
 
 ### Rule W1:Border ownership = semantic vs paint 拆分
 
 **規則**:**Header 是 semantic owner**(「這 surface 需要 bottom border 分區」是 header 的概念決定),**Paint owner 隨 state 變**:
-- `withTabs={false}` → header 自畫(`border-b border-divider`)
-- `withTabs={true}` → header **auto-suppress 自己的 paint**,**TabsList 自身的 `border-b border-divider` 接管實際 paint**(視覺同一條線;`tabs.tsx#TABS_LIST_BASE` 用 `border-divider` neutral-4,同 Dialog/Sheet/Popover/Sidebar header)
+- 沒給 `tabsSlot` → header 自畫(`border-b border-divider`)
+- 給了 `tabsSlot` → header **auto-suppress 自己的 paint**,**TabsList 自身的 `border-b border-divider` 接管實際 paint**(視覺同一條線;`tabs.tsx#TABS_LIST_BASE` 用 `border-divider` neutral-4,同 Dialog/Sheet/Popover/Sidebar header)。scroll / menu 溢出模式由 Tabs 改在捲動遮罩外畫同色的一條(`tabs.tsx#TabsOverflowBaseline`,2026-11-17;遮罩會連 TabsList border 一起淡掉),paint owner 仍在 Tabs,理由見 `tabs.spec.md`「TabsList 容器寬度」
 
-**這不是 reject user 直覺**(「border 該由 header 自己畫」)— 而是把「誰負責這條線存在」和「誰實際 paint」拆開。User 直覺 = semantic ownership 正確;DS 實作 = withTabs 時 delegate paint 給 TabsList,因為 tabs selected underline 是「從 1px gray border 長出 2px primary」設計 idiom(`tabs.spec.md:185-187`),paint owner 不在 tabs 會讓 underline 失去 base line。
+**這不是 reject user 直覺**(「border 該由 header 自己畫」)— 而是把「誰負責這條線存在」和「誰實際 paint」拆開。User 直覺 = semantic ownership 正確;DS 實作 = 有 tabsSlot 時 delegate paint 給 TabsList,因為 tabs selected underline 是「從 1px gray border 長出 2px primary」設計 idiom(`tabs.spec.md:187-189`),paint owner 不在 tabs 會讓 underline 失去 base line。
 
 **世界級對照**:
 - GitHub Primer PageHeader verbatim:「`hasBorder` defaults true,**but border NOT rendered if Navigation child contains UnderlineNav**;UnderlineNav itself provides bottom border」(`primer.style/components/page-header/react`)
@@ -149,9 +151,9 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 - Row 1:children(title + close X / actions)— 跟 single-row 模式同 padding,但 border-b 撤掉
 - Row 2:tabsSlot 包在 `<div className={HEADER_TABS_SLOT_WRAPPER_CLASS}>`(= `[&_[data-slot=tabs-list]]:px-[var(--layout-space-loose)]`,`chrome-header.tsx` 單一 SSOT const;wrapper 本身**不** inset,只用 CSS arbitrary variant 對契約元素注入內 padding)
   - **選取契約 = `data-slot="tabs-list"` attribute(v4,2026-07-30)**:`tabs.tsx` 三種 overflow 模式(none / scroll / menu)的 `role=tablist` 元素(TabsPrimitive.List)皆自標 `data-slot="tabs-list"`(對齊 shadcn v4 tabs.tsx `data-slot` idiom,https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/tabs.tsx + DS 既有 `data-unbounded` 標記式契約);wrapper 用 descendant selector,不依賴 DOM 深度(beta.86 overlay 包裹層教訓,見下 v1-v4 歷史)
-  - **TabsList 全 dialog 寬 = TabsList 自帶,wrapper 不注入寬度**:none 模式 `w-full`(tabs.tsx 自帶)→ 自身 `border-b border-divider` 延展全 dialog 寬 = W1 視覺一條線;scroll / menu 模式 `min-w-full`(border 隨溢出內容成長;blanket `w-full` 會把 border 截在可視寬 → **禁**由 wrapper 注入寬度)
+  - **TabsList 全 dialog 寬 = TabsList 自帶,wrapper 不注入寬度**:none 模式 `w-full`(tabs.tsx 自帶)→ 自身 `border-b border-divider` 延展全 dialog 寬 = W1 視覺一條線;scroll / menu 模式 `min-w-full`(border 列隨溢出內容成長;blanket `w-full` 會把 border 截在可視寬 → **禁**由 wrapper 注入寬度)—— 溢出模式這條 border 只留透明列,看得到的灰線是 Tabs 畫在捲動遮罩外、橫跨整列的那一條(2026-11-17,`tabs.spec.md`「TabsList 容器寬度」)
   - **TabsList 內 padding-x = px-loose** → triggers 從 px-loose 內邊起,對齊 header content row(W2 alignment 達成;三種 overflow 模式同享)
-  - Selected trigger 2px primary 真 overlay TabsList 1px gray border(`tabs.spec.md:187-189` canonical)
+  - Selected trigger 2px primary 真 overlay 1px gray 線(`tabs.spec.md`「Underline 與 TabsList border 的視覺關係」;溢出模式蓋在遮罩外那一條之上)
 
 **v1/v2/v3 反 pattern**(歷史錨):
 - v1(2026-05-18 initial):wrapper 加 `border-b border-divider` + TabsList 自身 `border-b border-border` 共存 → 雙線(色不同 + 1px box gap)
@@ -184,8 +186,8 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 **禁忌**:
 - ❌ 把 `<Tabs>` 放在 `<DialogContent>` 外(Radix TabsList ↔ TabsContent 必同 Tabs root)
 - ❌ 在 TabsList 上加 `className="px-*"`(會與 wrapper padding 疊加)
-- ❌ 在 TabsContent 上加 padding(會跟 DialogBody canonical px-loose pt-tight pb-bottom 重複)
-- ❌ Backward-compat `withTabs={true}` 無 tabsSlot 場景:header 自己抑制 border-b,但 consumer 需自管 Tabs row layout — 不推薦(除非從 layout template 來)
+- ❌ 在 TabsContent 上加 padding(會跟 DialogBody 自己給的內距重複:左右 px-loose、上下由容器依 `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 2 / 4 給)
+- ❌ 把 `<TabsList>` 寫進 header 的 children(不走 `tabsSlot`):header 照樣自畫 border-b,跟 TabsList 自己的 border-b 疊成雙線;hook `_header_with_tabs_border.sh` 擋
 
 **Verify**:write-time 由 `chrome_header_dispatcher.sh` 經 lib helper(`_tab_lg_chrome_header_equal.sh` + `_header_with_tabs_border.sh`,2026-05-31 升 exit 2 BLOCK)把關;pixel-quantified visual probe 走 `/visual-audit --scope=changed`(無專屬 runtime-verify script)。
 
@@ -199,9 +201,9 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 | **B. Chrome header(Fixed-h)** | `sm`(32/40)| chrome 內 buttons 全部 sm(real grep:`Sidebar / FileViewer toolbar / InfoPanel` 所有 buttons size=sm),tabs 跟齊 |
 | **C. Standalone(tabs 取代 chrome header)** | `lg`(48/56)| Tabs 直接取代 header 用,**tab 高 = chrome-header-height 像素相等**(48/56)— Ant verbatim「Large size tabs are usually used in page header」 | <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 
-**Token alignment 強連動**:`--tab-height-lg` md=48 / lg=56 與 `--chrome-header-height` md=48 / lg=56 **像素完全相等**(皆定義於 `uiSize.css`:`--chrome-header-height` L55/L103、`--tab-height-lg` 同檔;`globals.css` 僅 21 行 aggregator,不定義此 token)— 這是「lg tabs 取代 chrome header」的 SSOT linkage 鐵證。**禁止任何一方獨自調整**(動 chrome-header-height 必同步 tab-height-lg,反之同)。
+**Token alignment 強連動**:`--tab-height-lg` md=48 / lg=56 與 `--chrome-header-height` md=48 / lg=56 **像素完全相等**(`--chrome-header-height` 是共用刻度,住 `tokens/uiSize/uiSize.css`;`--tab-height-lg` 是 Tabs 的值,2026-11-11 起住 `components/Tabs/tabs.css`;兩顆住處的唯一登記在 `tokens/token-registry.json`;`globals.css` 只是 aggregator,不定義此 token)— 這是「lg tabs 取代 chrome header」的 SSOT linkage 鐵證。
 
-**Enforcement = assert,不 CSS alias**(per M31 codex 比稿 Step 5):`uiSize.css` 的 `--tab-height-*` 有 `data-ui-size="md"` reset selector(component-size scope),`--chrome-header-height` 是 layout/density token(app-chrome scope)— alias 會把兩個不同 scope 綁死。**機制**:保留 duplicated literals + `chrome_header_dispatcher.sh` → `lib/_tab_lg_chrome_header_equal.sh`(2026-05-31 升 exit 2 BLOCK)parse CSS 提取 md/lg 值 assert equality → 任一方獨自改 = BLOCKER。
+**Enforcement = CSS alias,一個住處**(2026-11-15 改;稽核 P04 / B6;【AI 推導 2026-11-15】依 `tokens/token-system.spec.md` 規則 2「同一個值只有一個住處」做的工程修正,user 沒有逐字決定過這一改,值逐格不變):`components/Tabs/tabs.css`「衍生值」段寫一行 `--tab-height-lg: var(--chrome-header-height)`,宣告在 `:root` 與每個換密度的元素上(`[data-density]` / `[data-ui-size]` / `[data-layout-space]`),每一層用該處的標頭高重算 —— 改標頭高,lg 分頁自動跟著,不再有「只改一邊」這回事。**舊做法與它的理由**:2026-05-17 起是「保留兩份字面值 + hook assert 相等」,理由是「`--tab-height-*` 是 component-size scope、`--chrome-header-height` 是 app-chrome scope,alias 會把兩個不同 scope 綁死」;但兩顆的三段選擇器(`:root` / `[data-ui-size="lg"], [data-density="lg"]:not([data-ui-size])` / 對應的 md 鎖回段)**完全相同**,切換時機本來就一樣,這個理由跟程式對不上(稽核 B6);相等也只靠寫檔當下的 hook 守,CI 不檢查真實檔案。**機制**:`chrome_header_dispatcher.sh` → `lib/_tab_lg_chrome_header_equal.sh` 認得這一行 alias(相等由構造保證,只再驗標頭高三段完整);有人寫回字面值時照舊逐段比對、不等就擋;區塊換密度時的實際值由 `scripts/test-density-subtree-token-parity.mjs` 在瀏覽器實算。
 
 ### Rule W4:Tabs row 與 header content row 為 flush stack(無 negative margin)
 
@@ -220,11 +222,11 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 - 獨立 chrome-replacement tabs → tabs lg(W3 已 cover)
 - 中間階梯(md=40)無清楚場景 — 多家世界級 DS(Material / MUI / Primer / Polaris)只有 1 個 default size(無 sm/md/lg 階梯)= sweet spot 只需 2 tier <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 
-**Conservative path**:token 不刪(避免 breaking change 與 stories 維護成本);spec 明寫 future tier。
+**保留 md(user 2026-11-17 決定)**:Tabs `size="md"` 與 `--tab-height-md` 都保留,spec 明寫 future tier。依據:user 2026-11-17 對決策頁 r10 第 6 題②的留言(逐字,貼在「乙 保留」那一列):「我認為要保留，md有可能會用在主內容區內吧？」—— user 決定保留;用途 user 提到可能用在主內容區(問句,未定),所以本檔不把「主內容區」寫成 md 的定案用途,新 consumer 要用 md 仍先諮詢 DS owner(上方「規則」)。2026-11-16 以前寫的理由「避免 breaking change 與 stories 維護成本」已撤:前半是相容,0.x 下不成立(`../../../ds-canonical/references/props-naming.md`「相容政策」),後半不是設計理由。
 
 ### Rule W6:Default tabs size 為 sm(已 land)
 
-**規則**:Tabs `cva defaultVariants.size = 'sm'` — **已 land**(`tabs.tsx:135` TabsList param `size = 'sm'` + `:394` trigger cva `defaultVariants.size = 'sm'`,inline comment「2026-05-17 從 'md' 改 'sm'」)。
+**規則**:Tabs `cva defaultVariants.size = 'sm'` — **已 land**(`tabs.tsx#TabsList` param `size = 'sm'` + `tabs.tsx#tabsTriggerVariants` trigger cva `defaultVariants.size = 'sm'`,inline comment「2026-05-17 從 'md' 改 'sm'」)。
 
 **邊界 — tabs 超寬溢出**:header 內 TabsList 溢出處理走 `components/Tabs/tabs.spec.md`「Overflow 模式」(`TabsList` `overflow` prop:none / scroll / menu),非本 SSOT scope。
 
@@ -237,10 +239,10 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 ### Layer 1 — Token shared
 
 兩家族連動 token 清單(各 token 標注實際消費者;非全部兩家族交集):
-- `--chrome-header-height`(uiSize.css:55,103)— B 家族 tsx 直接消費(chrome-header.tsx);A 家族不直接消費,靠 padding 算式對齊(24 + 2×tight = 48;等式由 overlay-surface.tsx anatomy 註解 + `lib/_tab_lg_chrome_header_equal.sh` W3 assert 守)
+- `--chrome-header-height`(`uiSize.css`:`:root` 預設、大密度覆寫、鎖回一般密度三段)— B 家族 tsx 直接消費(chrome-header.tsx);A 家族不直接消費,靠 padding 算式對齊(24 + 2×tight = 48;等式由 overlay-surface.tsx anatomy 註解 + `lib/_tab_lg_chrome_header_equal.sh` W3 assert 守)
 - `--layout-space-loose`(兩家族 px)/ `--layout-space-tight`(僅 A 家族 py;B 家族 fixed-height 無 py)
 - `--divider`(semantic.css:333;兩家族經 `border-divider` utility 消費)
-- `--tab-height-sm` / `--tab-height-lg`(uiSize.css:41-43 md default + 99-101 lg-density override)
+- `--tab-height-sm`(`components/Tabs/tabs.css`:預設 + 大密度覆寫 + 鎖回一般密度三段)/ `--tab-height-lg`(同檔「衍生值」段 `var(--chrome-header-height)`,2026-11-15 起)
 - `--field-height-sm`(button sm 透過 button family 連動)
 
 ### Layer 2 — Spec pointer
@@ -255,26 +257,26 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 
 ### Layer 3 — Primitive consumption(已 land;下列為原 Phase 2 提案內容,現況見段末)
 
-- A 家族:`SurfaceHeader` 已是 primitive(`overlay-surface.tsx:62-118`)— add `withTabs?: boolean` prop auto-suppress border
+- A 家族:`SurfaceHeader` 已是 primitive(`overlay-surface.tsx#SurfaceHeader`)— 加 `tabsSlot` prop(column mode + 撤自身 border-b)
 - B 家族:**新建 `ChromeHeader` primitive**(`patterns/header-canonical/chrome-header.tsx`)— Sidebar / FileViewer / InfoPanel 全 migrate
 
 **ChromeHeader API(per M31 codex 比稿 Step 5 — 比 v1 更窄,避免 M21 prop variant 風險)**:
 ```tsx
 <ChromeHeader
-  withTabs?: boolean              // false (default) | true → auto-suppress border + delegate to TabsList
-  tabsSlot?: ReactNode            // Tabs row(column mode + W1-W6 lockstep,2026-05-18 ship)
-  lockDensity?: 'inherit' | 'lg'  // 'inherit' (default)。'lg' = 在 header 上設 data-density=lg;⚠️ 2026-06-15:density lock 應設在 surface 根而非 header(header 鎖、body 沒鎖 → 左緣不對齊,FileViewer 圖二教訓)→ 現無 consumer 使用,保留僅為 API 相容。見 density.spec.md 消費者清單 + anti-pattern
+  tabsSlot?: ReactNode            // Tabs row(column mode + W1-W6 lockstep,2026-05-18 ship);給了就撤自身 border-b、由 TabsList 畫線
+  // withTabs 已移除(2026-11-16):只抑制 border-b 的布林,理由只有相容(props-naming.md「相容政策」)
+  // lockDensity 已移除(2026-11-14,AI 建議;user 沒說過要拿掉)。理由:它只在標題列上設 data-density="lg",只鎖標題列會跟下面內容左緣不對齊(一般密度頁面差 8px,FileViewer 圖二教訓)→ 要鎖密度就鎖整塊(density.spec.md Anti-patterns「把 density/layout-space lock 設在 header primitive」)
   leadingRail?: ReactNode         // 2026-05-21 ship per AppShell primary-header globalHeader:固定 width=sidebar-width-icon 的左 rail,內 justify-center 排列(toggle/logo 跟 sidebar 收合 icon center x 對齊)。
 >
   {children}
 </ChromeHeader>
 ```
 
-**不開**:`density?: 'md'|'lg'` 自由 prop(M21 違反 — 任意 density 等於 cva-on-pattern,該由 density context 決定)。`lockDensity="lg"` 原為 fullscreen viewer escape hatch,但 **2026-06-15 起無 consumer 使用**；FileViewer 已改為全 surface 繼承 page density。density lock 一律設在 **surface 根**而非 header primitive(見 `density.spec.md` anti-pattern)，其餘 consumer 走 `inherit`。`ChromeHeader` 的抽取依據是 Sidebar 與 FileViewer 曾重複擁有同一份 header contract；目前兩者皆直接消費此 primitive，實作位置見 `sidebar.tsx` / `file-viewer.tsx`，歷史 signature 留在 git history 而非 spec。
+**不開**:`density?: 'md'|'lg'` 自由 prop(M21 違反 — 任意 density 等於 cva-on-pattern,該由 density context 決定)。原本的 `lockDensity="lg"`(fullscreen viewer escape hatch)**已移除(2026-11-14,AI 建議;user 沒說過要拿掉)**——理由:只鎖標題列會跟內容左緣不對齊,要鎖密度就鎖整塊(`density.spec.md` Anti-patterns「把 density/layout-space lock 設在 header primitive」;做法見同檔「Canonical 情境 3 — 局部覆蓋」)。2026-06-15 FileViewer 改為全 surface 繼承 page density 後就沒有 consumer。ChromeHeader 一律跟所在那一塊的密度,標題列元件上不准直接寫 `data-density` / `data-ui-size` / `data-layout-space`(閘 `scripts/overlay-density-lock-invariant.mjs` L3)。`ChromeHeader` 的抽取依據是 Sidebar 與 FileViewer 曾重複擁有同一份 header contract；目前兩者皆直接消費此 primitive，實作位置見 `sidebar.tsx` / `file-viewer.tsx`，歷史 signature 留在 git history 而非 spec。
 
 ### 空 children / action state 契約(rendering contract)
 
-**空 children**:`ChromeHeaderProps extends React.HTMLAttributes<HTMLElement>`,故 `children` 型別上 optional;但**實作恆渲染固定高度 row**(single-row `h-[var(--chrome-header-height)]` + `border-b`,`chrome-header.tsx:167-183`;`tabsSlot` 模式 row 1 亦恆渲染,`:113-122`)。因此:
+**空 children**:`ChromeHeaderProps extends React.HTMLAttributes<HTMLElement>`,故 `children` 型別上 optional;但**實作恆渲染固定高度 row**(single-row `h-[var(--chrome-header-height)]` + `border-b`,`chrome-header.tsx#ChromeHeader` 最後一個 return(註解「Single-row」那段);`tabsSlot` 模式 row 1 亦恆渲染(同一個元件裡註解「Row 1」那段))。因此:
 
 - **沒有 title / actions 時不要渲染 ChromeHeader**——空 children 只會留一條固定高度 + border 的空白 chrome row(`tabsSlot` 模式更明顯:tabs 上方多整行空白標題列)。consumer 條件渲染,有內容才掛 header,而非傳空殼。
 - **只有 tabs、無獨立標題列**的場景 → 用 standalone `<Tabs size="lg">`(tab 高 = chrome-header-height,見「選哪個 header」表 C 列),**不要**空 children + `tabsSlot` 硬撐。
@@ -286,8 +288,8 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 `chrome_header_dispatcher.sh` 依序 dispatch **4 個 lib helper**(完整清單 SSOT = dispatcher 本身,避免 spec drift):
 
 - `lib/_app_shell_primary_header_consistency.sh`(2026-05-31 exit 2 BLOCK)— primary-header layout 必傳 `globalHeader` prop,缺則 BLOCKER
-- `lib/_header_with_tabs_border.sh`(2026-05-31 exit 2 BLOCK)— grep tsx 若 header 元件含 `<Tabs>` child 但未走 `withTabs` API → BLOCKER
-- `lib/_tab_lg_chrome_header_equal.sh`(2026-05-31 exit 2 BLOCK,W3 pointer)— parse `uiSize.css` assert `--tab-height-lg` 像素等於 `--chrome-header-height`,任一方獨自改 → BLOCKER
+- `lib/_header_with_tabs_border.sh`(2026-05-31 exit 2 BLOCK;2026-11-16 改成 tabsSlot 語意)— TypeScript 語法樹逐一看 header 元件(`ChromeHeader` / `SurfaceHeader` / `*Header`),把 `<Tabs>` / `<TabsList>` / `<TabsTrigger>` 放在 `tabsSlot` 以外的地方(children 等)→ BLOCKER,修法「改用 tabsSlot」
+- `lib/_tab_lg_chrome_header_equal.sh`(2026-05-31 exit 2 BLOCK,W3 pointer)— 從分類表 `tokens/token-registry.json` 讀兩顆的住處(現況 `tabs.css` / `uiSize.css`),分頁 lg 寫成 `var(--chrome-header-height)` 一行時相等由構造保證(2026-11-15 起的寫法);寫回字面值時 parse 後 assert `--tab-height-lg` 像素等於 `--chrome-header-height`,任一方獨自改 → BLOCKER
 - `lib/_chrome_header_handcraft.sh`(WARN,Phase 3 才升 P0)— grep 是否仍有 hardcoded `h-[var(--chrome-header-height)] border-b` 自刻 chrome header(該消費 ChromeHeader primitive)
 - （以上皆 lib helper,經 `chrome_header_dispatcher.sh` 統一 dispatch;無 standalone `check_*.sh` 檔。前 3 個 SSOT-canonical deterministic helper exit 2 傳播真 block;`_chrome_header_handcraft` 維持 warn）
 
@@ -332,6 +334,7 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 - `dialog.spec.md`
 - `file-viewer.spec.md`
 - `item-anatomy.spec.md`
+- `layoutSpace.spec.md`
 - `overlay-surface.spec.md`
 - `popover.spec.md`
 - `sheet.spec.md`

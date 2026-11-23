@@ -138,7 +138,7 @@ const MEMBERS = [
     close: (p) => p.keyboard.press('Escape'),
     // N:Radix Tooltip 的兩種打開狀態各量一次(@radix-ui/react-tooltip dist/index.mjs:103-104)
     enter: [
-      // 停留等待後打開 → delayed-open(非 Button 那則沒有預設打開,滑鼠移上去等 --motion-delay-plain)。
+      // 停留等待後打開 → delayed-open(非 Button 那則沒有預設打開,滑鼠移上去等 MOTION_DELAY_PLAIN_MS)。
       // 觸發點 = 停權狀態的 Tag(Tag 根節點同時是 Tooltip 觸發點 → 帶 Radix 的 data-state);2026-10-28 前是手刻紅字底線 span
       // (稽核 M029 / M088 / M089 改成 Tag,overlay 4a69b0ab)—— 選擇器認「Tag 根 + 觸發點」這個身分,不認底線樣式
       { label: 'delayed-open', state: 'delayed-open', story: 'design-system-components-tooltip-展示--non-button-trigger',

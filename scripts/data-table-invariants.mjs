@@ -325,8 +325,9 @@ for (const c of lgFonts.cells) {
 // → row 塌成內容高度(non-editable 33 / editable 44,而非 token 40)。I1-I4 只驗 display↔edit **一致性**
 // (兩態同塌 → 0 delta → 假綠,抓不到「絕對高度崩」)。I7 驗「fixed row 絕對高度 == token 值」補此洞。
 // root cause 另有 write-time hook `check_dynamic_tailwind_class.sh` 攔動態 class;I7 = runtime 防線第二層。
-// 用 Inspector(設計規格,fixed-height 非 autoRowHeight)@ sm/md/lg 三尺寸;預設密度 token(uiSize.css)。
-const ROW_TOKEN = { sm: 32, md: 40, lg: 48 }  // 預設密度 --table-row-{size}(uiSize.css:33-35)
+// 用 Inspector(設計規格,fixed-height 非 rowHeight="hug")@ sm/md/lg 三尺寸;預設密度 token。
+// 值的住處:components/DataTable/data-table.css 的 :root 段(2026-11-11 從 uiSize.css 搬來;不寫行號,行號會漂)。
+const ROW_TOKEN = { sm: 32, md: 40, lg: 48 }  // 預設密度 --table-row-{size}(data-table.css :root 段)
 for (const [size, expectPx] of Object.entries(ROW_TOKEN)) {
   await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-設計規格--inspector&viewMode=story&args=size:${size};pinnedLeft:false`, '[role="row"][data-row-index="0"]')
   const rowH = await page.evaluate(() => {
@@ -1507,9 +1508,8 @@ const assertPinnedHeaderStable = async (storyName, side, label) => {
     record('I20', `${label}:排序後 center 每欄 header 的 left 與 width 全部不動`,
       worstDelta(base.heads, sorted.heads) <= 0.5 && Math.abs(base.centerHeadLeft - sorted.centerHeadLeft) <= 0.5,
       `worst head Δ ${worstDelta(base.heads, sorted.heads).toFixed(2)}(列會重排所以不比 cell 的內容,但欄位 rect 仍由 header 決定)`)
-    // 還原排序(asc → desc → none 三態,再點兩次),避免殘留狀態影響同 story 的後續量測
-    await page.mouse.click(s.x, s.y); await page.waitForTimeout(150) // 等排序三態切換的重畫
-    await page.mouse.click(s.x, s.y); await page.waitForTimeout(150) // 同上
+    // 不還原排序:2026-11-11 起表頭排序是兩態(升冪 ↔ 降冪),再點也回不到「沒排序」(修前這裡點兩下走完三態);
+    // 本函式之後沒有同一則 story 的量測 —— 下一次呼叫由 loadStory 重新開 story,排序狀態從頭開始。
   } else {
     record('I20', `${label}:第一個釘選欄可排序(否則排序那半沒測到)`, false, 'sort zone 找不到')
   }
@@ -1768,11 +1768,11 @@ if (!urlDisplay) {
 /* ── I25:巢狀列展開箭頭 = ItemPrefix + ItemInlineActionButton 的幾何(一-04)──
  * 根 invariant:同目的行內圖示按鈕與 prefix 槽必消費 item-anatomy primitive:按鈕盒 = `ICON_SIZE[size]`
  * (item-anatomy.tsx:67-71,md 16)、hover 底色 overlay = `INLINE_ACTION_HOVER_BG_SIZE[size]`(:128-132,md 18)
- * 且置中於按鈕;槽寬 + `mr-2` 必與 `--tree-indent-{size}`(uiSize.css:108-110)同源,子列的箭頭 / 文字
+ * 且置中於按鈕;槽寬 + `mr-2` 必與 `--tree-indent-{size}`(uiSize.css 的 `--tree-indent-sm/md/lg`)同源,子列的箭頭 / 文字
  * 因此每深一層剛好位移一個 indent。修前是手刻 `w-4 h-4 mr-2` 的 button,三個常數與 token 分家。
  * 唯一的像素證據是 2026-08-01 的 curated baseline(早於修正、非 required check)。這裡對 `nested-rows`
  * (md)量按鈕 rect、真 hover 後 overlay 的 rect 與 computed 底色、相鄰兩層的箭頭 / 文字左緣差、以及
- * 葉節點列(空槽)的文字左緣是否仍與同層有箭頭的列對齊。sm / lg 與 autoRowHeight 的巢狀 story 尚不存在
+ * 葉節點列(空槽)的文字左緣是否仍與同層有箭頭的列對齊。sm / lg 與 rowHeight="hug" 的巢狀 story 尚不存在
  * (render 不吃 args),補上後把 size 對應的期望值(16/16/20、18/18/22、24/24/28)套過去即可。
  */
 const CHEVRON_EXPECT_MD = { box: 16, hoverBg: 18 } // ICON_SIZE.md / INLINE_ACTION_HOVER_BG_SIZE.md
@@ -2698,6 +2698,58 @@ for (const [label, r, c, kind] of [
     rec(`表頭墊高 ${HEAD}px:body 上限恰好少 ${HEAD}(±1)`, Math.abs((fillBase.bodyMax - tallHeader.bodyMax) - HEAD) <= 1, `${fillBase.bodyMax} → ${tallHeader.bodyMax}`)
     await inject(() => { document.querySelector('[role="table"], [role="grid"]').firstElementChild.style.paddingBottom = '' })
   }
+}
+
+// ── I39:編輯中的列捲走再捲回,編輯框 / 焦點 / 草稿都還在(2026-11-05 審查 D2 立;2026-11-16 A25 拆出「捲走」這一半先上)──────
+// 列被捲出虛擬範圍就被卸載 → 一般 inlineEdit 打到一半的草稿沒提交也沒提示就丟了、覆蓋層編輯器焦點掉到 body(兩容器結構就有,
+// 2026-11-16 瀏覽器實測:roadmap 一般 inlineEdit 捲到底再捲回值回到原值)。修法:編輯中的列永遠在虛擬範圍裡(data-table.tsx `editingRowIndexes`)。
+// 用程式捲到底再捲回量,跟平台鍵位無關(Linux CI 一樣量得到)。「覆蓋層編輯中按 End / PageDown 表格不捲」那一半跟單一捲動盒一起上(Q2b)。
+{
+  const prevView = page.viewportSize()
+  await page.setViewportSize({ width: 1280, height: 900 })
+  const edState = (rootSel) => page.evaluate((rootSel) => {
+    const root = document.querySelector(rootSel)
+    const sc = root.querySelector('[data-datatable-hscroll]') ?? root.querySelector('[data-datatable-panel="center"]')
+    const a = document.activeElement
+    const ed = a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && root.contains(a) ? a : null
+    return { active: a === document.body ? 'BODY' : a?.tagName ?? 'none', editing: !!ed, value: ed ? ed.value : null, scrollTop: sc.scrollTop, scrollMax: sc.scrollHeight - sc.clientHeight }
+  }, rootSel)
+  const scrollTo = async (rootSel, y) => { await page.evaluate(([rootSel, y]) => { const root = document.querySelector(rootSel); const sc = root.querySelector('[data-datatable-hscroll]') ?? root.querySelector('[data-datatable-panel="center"]'); sc.scrollTop = y }, [rootSel, y]); await settleAfterInteraction(page, { frames: 10 }) }
+  for (const [label, storyId, enter, rootSel] of [
+    ['覆蓋層編輯器(試算表)', 'spreadsheet-cursor-contract', 'double', '[role="grid"][data-data-table-outer]'],
+    ['一般 inlineEdit', 'roadmap-all-in-one', 'single', '[data-data-table-outer]'],
+  ]) {
+    await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--${storyId}&viewMode=story`, '[data-cell-id]')
+    // 第 2 列第一個點下去會出文字輸入框的格
+    const cells = await page.evaluate((rootSel) => [...document.querySelector(rootSel).querySelectorAll('[data-datatable-panel="center"] [role="row"]')].slice(1, 2)
+      .flatMap((r) => [...r.querySelectorAll('[data-cell-id]')].map((c) => { const b = c.getBoundingClientRect(); return { id: c.getAttribute('data-cell-id'), x: b.left + Math.min(b.width / 2, 60), y: b.top + b.height / 2 } }))
+      .filter((c) => c.x > 0 && c.x < 1200), rootSel)
+    let found = null
+    for (const c of cells) {
+      await page.mouse.click(c.x, c.y)
+      if (enter === 'double') { await settleAfterInteraction(page, { frames: 4 }); await page.mouse.click(c.x, c.y) }
+      await settleAfterInteraction(page, { frames: 6 })
+      const ok = await page.evaluate(() => { const a = document.activeElement; return !!a && a.tagName === 'INPUT' && (a.type === 'text' || a.type === '') })
+      if (ok) { found = c; break }
+      await page.keyboard.press('Escape')
+      await settleAfterInteraction(page, { frames: 4 })
+    }
+    if (!found) { record('I39', `${label}:找得到可輸入文字的格(否則以下斷言空轉)`, false, `候選 ${cells.length} 格都沒有文字輸入框`); continue }
+    await page.keyboard.type('ZZ')
+    await settleAfterInteraction(page, { frames: 4 })
+    const s0 = await edState(rootSel)
+    record('I39', `${label}:前置 —— 編輯中、草稿以 ZZ 結尾(格 ${found.id})`, s0.editing && /ZZ$/.test(s0.value ?? ''), JSON.stringify(s0))
+    const before = await edState(rootSel)
+    if (before.scrollMax < 200) { record('I39', `${label}:表格真的捲得動(scrollMax ${before.scrollMax})`, false, '捲不動 = 捲走那一半是空轉'); continue }
+    await scrollTo(rootSel, before.scrollMax)
+    const far = await edState(rootSel)
+    await scrollTo(rootSel, before.scrollTop)
+    const back = await edState(rootSel)
+    record('I39', `${label}:編輯中表格被捲到底(${far.scrollTop})再捲回來 —— 編輯框沒被卸載、焦點與草稿都還在`,
+      far.scrollTop > before.scrollTop + 100 && far.editing && back.editing && /ZZ$/.test(back.value ?? ''), `捲到底 ${JSON.stringify(far)} / 捲回 ${JSON.stringify(back)}`)
+    await page.keyboard.press('Escape')
+  }
+  await page.setViewportSize(prevView)
 }
 
 if (failures.length > 0) {

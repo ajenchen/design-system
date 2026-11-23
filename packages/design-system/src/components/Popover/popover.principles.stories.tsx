@@ -119,7 +119,7 @@ function ColumnVisibilityDialog() {
       <DialogTrigger asChild>
         <Button variant="tertiary">欄位顯示</Button>
       </DialogTrigger>
-      <DialogContent height="hug" maxWidth="360px">
+      <DialogContent height="hug" width="sm">
         <DialogHeader><DialogTitle>欄位顯示</DialogTitle></DialogHeader>
         <DialogBody>
           <ColumnVisibilityFields value={columns} onChange={setColumns} />
@@ -203,7 +203,7 @@ export const UsageGuidance: Story = {
             <DialogTrigger asChild>
               <Button variant="secondary" danger startIcon={Trash2}>永久刪除專案</Button>
             </DialogTrigger>
-            <DialogContent height="hug" maxWidth="440px">
+            <DialogContent height="hug" width="sm">
               <DialogHeader>
                 <DialogTitle>是否永久刪除專案</DialogTitle>
               </DialogHeader>

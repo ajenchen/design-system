@@ -11,6 +11,7 @@ bash "$DIR/test_check_consumer_ds_primitive_misuse.sh" < /dev/null || { echo "SU
 bash "$DIR/test_check_consumer_app_story_title.sh" < /dev/null || { echo "SUB-FAIL: test_check_consumer_app_story_title.sh"; fail=1; }
 
 FAULT_DIR=$(mktemp -d)
+[ -n "${FAULT_DIR:-}" ] && [ -d "$FAULT_DIR" ] || { echo "❌ mktemp -d failed(FAULT_DIR;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf -- "$FAULT_DIR"' EXIT
 awk '
   { print }
@@ -138,7 +139,7 @@ else
   fail=1
 fi
 
-# 規則分派 SIGPIPE 同族回歸(69230cef,2026-09-25;寫法照抄 test_check_plugin_fork_health.sh):
+# 規則分派 SIGPIPE 同族回歸(69230cef,2026-09-25;同族另見 test_check_datatable_invariants.sh 第 12 格、test_check_storybook_addon_packaging.sh):
 # 上面三格只看 exit 與輸出,證明不了「後面的規則有跑」—— 拿掉管線卻沒補子殼層的那一版,r1 的 exit 0 直接結束整支 hook,
 # r2-r4 根本沒跑,而 exit 0 看起來像修好了。這裡把 r2(第二條)與 r4(最後一條)注入成「不讀 stdin、留標記、exit 0」,
 # 用同一份 >256 KiB 輸入跑,斷言兩個標記都存在:不讀 stdin 就退出不得被判成 rc70,而且鏈條要走到最後一條。

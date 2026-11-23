@@ -51,9 +51,13 @@ benchmark:
 
 ```ts
 interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
-  block?: boolean             // 對齊 Ant Space.Compact `block`,默 false=inline-flex([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/space/index.en-US.md#L78))
+  width?: 'hug' | 'fill'      // 預設 'hug' = inline-flex;'fill' = flex w-full(撐滿 parent)
 }
 ```
+
+**改名紀錄**(2026-11-15;user 2026-11-11 回覆「尺寸:甲」,甲 = 決策頁選項原文,AI 擬、user 選:「寬度一律叫 width,可以填 "fill"(撐滿)、"hug"(跟內容)或數字;……舊名字保留一個版本,畫面不變。」):
+撐滿原本叫 `block`(借自 Ant Space.Compact `block`,[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/space/index.en-US.md#L78);外部的名字蓋過了 DS 自己的 `fill` / `hug`,audit-r7 INV-06 / M23),改成全 DS 共用的 `width="fill"`,同一組 class。「舊名字保留一個版本」那一句已被 user 2026-11-15 原話「我認為還是 beta 的狀況下都不要再顧及所有向後相容的部分」取代(0.x 相容政策 = `ds-canonical/references/props-naming.md`「相容政策」):`block` 已移除、不留舊名。
+命名規則住 `ds-canonical/references/props-naming.md`「尺寸參數」。
 
 **子元件支援 list**(對齊 Ant Space.Compact 限定 list 策略,verified)([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/space/index.en-US.md#L64-L74)):
 - ✅ Input / NumberInput / Select / Combobox / DatePicker / DatePickerRange / Button
@@ -65,23 +69,25 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 2. **鄰接子負 margin 重疊 border**:`> * + * { margin-left: -1px }`(border 寬度疊在一起 = 視覺 1 條線)
 3. **Z-index 提升** for active control(避免被鄰接 border 蓋)
    - default `z-index: 2`
-   - hover / focus / focus-within `z-index: 3`(Ant z-3,Bootstrap z-5;我們對齊 Ant)([來源](https://github.com/ant-design/ant-design/blob/5632e40fceabdbcdfef7e536158aaf404898c867/components/style/compact-item.ts#L30-L46)、[來源](https://github.com/twbs/bootstrap/blob/9062790fdb2379593a2973416dc5a3bfb203e4e3/scss/forms/_input-group.scss#L49-L53))
-   - disabled `z-index: 0`
+   - hover `z-index: 3`(default 2 / hover 3 與 Ant 同值)([來源](https://github.com/ant-design/ant-design/blob/5632e40fceabdbcdfef7e536158aaf404898c867/components/style/compact-item.ts#L30-L46))
+   - focus / focus-within `z-index: 4` —— 比滑過高一層(2026-11-13 起;改前與滑過同在 3)。只把聚焦那一格抬到最高是 Bootstrap 的做法(聚焦 `z-index: 5`、滑過不抬)([來源](https://github.com/twbs/bootstrap/blob/9062790fdb2379593a2973416dc5a3bfb203e4e3/scss/forms/_input-group.scss#L49-L53));誰在上、為什麼、來源見「States」的「聚焦 / 開著壓過滑過」
+   - 成員自己的浮層開著(成員外框帶 `data-field-open`)`z-index: 4`(與聚焦同一層)—— 本 DS 自己的一條(2026-11-12 加;AI 推導,依據是本 DS 的欄位規則,不是引自上面兩家):浮層開著時焦點常已搬進浮層、`focus-within` 不成立,但那一格仍維持聚焦的框(規則住 `../Field/field.spec.md`「Field state machine SSOT」),不抬高就會被 `-ml-px` 疊上來的鄰居蓋掉一邊
+   - disabled `z-index: 0`(只限成員本身帶原生 `[disabled]` 的;停用的 Select / NumberInput 不降,見「States」下方「選擇器覆蓋範圍」)
 4. **Border radius 規則**:
    - 第一個子:右側 radii = 0(`rounded-r-none`)
    - 中間子:全 radii = 0(`rounded-none`)
    - 最後一個:左側 radii = 0(`rounded-l-none`)
-5. **Container display**:default `inline-flex` / `block` prop → `flex w-full`
+5. **Container display**:default `inline-flex`(`width="hug"`)/ `width="fill"` → `flex w-full`
 6. **Items align**:`items-stretch`(同高)
 
 ## Width 配置 canonical(W-A,對齊 Ant)([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/space/demo/compact.tsx#L23-L24))
 
 **子 controls 自管 width**:
-- Fixed:`<Select className="!w-[140px]">`
+- Fixed:`<Select width={140}>`(欄位自己的寬度軸收數字 = px,`../Field/field-controls.spec.md`「寬度軸(width: fill / hug)」;2026-11-15 前沒有這條管道,只能寫 `className="!w-[140px]"` 硬蓋)
 - Flex:`<Input className="flex-1">`
 - 混合 OK(filter row 典型:fixed + fixed + flex)
 
-**禁止**:不開 `Cell` wrapper —— 子 control 直接用 className 控寬即可;多包一層會讓 wrapper 變成接合選擇器(`[&>*]`)命中的直接子元素,圓角與框線接合就破了(見「Loading / Empty / 驗證」的「子必 direct child」)([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/space/index.en-US.md#L84-L88))。
+**禁止**:不開 `Cell` wrapper —— 子 control 直接用自己的 `width` / `className="flex-1"` 控寬即可;多包一層會讓 wrapper 變成接合選擇器(`[&>*]`)命中的直接子元素,圓角與框線接合就破了(見「Loading / Empty / 驗證」的「子必 direct child」)([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/space/index.en-US.md#L84-L88))。
 
 ## Size
 
@@ -92,7 +98,7 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 <Field size="lg">
   <FieldLabel>電話</FieldLabel>
   <FieldControlGroup>  {/* 各 child 自動繼承外層 Field context size */}
-    <Select className="!w-[80px]" options={codes} />
+    <Select width={80} options={codes} />
     <Input className="flex-1" />
   </FieldControlGroup>
 </Field>
@@ -101,12 +107,12 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 **Standalone 逐一設尺寸**:**逐一給每個 child 設 `size`**。
 ```tsx
 <FieldControlGroup>
-  <Select size="md" className="!w-[120px]" options={fields} />
+  <Select size="md" width={120} options={fields} />
   <Input size="md" className="flex-1" />
 </FieldControlGroup>
 ```
 
-**Popover 鎖 md**(進 Popover,density 鎖 md):children 自然吃 md(Popover density canonical)。
+**進 Popover**:Popover 只把版面間距鎖 md,控制項大小跟觸發點那一區(`tokens/density/density.spec.md` 情境 1「浮層跟觸發點」)→ children 的高度跟觸發點同一檔,間距吃 md。(2026-11-11 前這句寫「density 鎖 md、children 吃 md」—— 2026-06-15 起就只鎖版面間距,寫下的當天已不成立,稽核 R7-05。)
 
 ## A11y 預設
 
@@ -120,14 +126,16 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 - ❌ 包 Field 進 FieldControlGroup(雙層 wrapper 無意義 + label/error 處理混亂)
 - ❌ 不同 size 的 children 混用(視覺高度不一致)
 - ❌ 一個 child 設 disabled / 一個設 readonly 等不同 mode(語意一體應一致)
-- ❌ 開 Cell wrapper(多一層會讓 wrapper 變成接合選擇器的直接子元素而破圓角;子 className 控 width 即可)
+- ❌ 開 Cell wrapper(多一層會讓 wrapper 變成接合選擇器的直接子元素而破圓角;子 control 自己的 `width` 控寬即可)
 - ❌ Vertical 堆疊用 FieldControlGroup(用 FieldGroup;本元件僅 horizontal)
 - ❌ **包 `<div>` / `<span>` wrapper 在 FieldControlGroup direct children 外**(2026-05-04 #2 真實 bug):
   CSS `[&>*]` 直接子選擇器命中 wrapper(無 border/radius)→ inner Field control 保留 left/right radii → **圓角破圖**。
   修法:Field control 必為 direct child;若需 className 給 inner Field control,透過 component prop forward
   (e.g. FilterValuePicker 的 `className` prop 直接 forward 給 inner Input/Select),不另開 wrapper div。
 - ❌ Field controls trigger 內部 `w-full` 無法被外加 `className="w-[Xpx]"` override(同 cn() 後 specificity 順序)
-  →  必用 `!w-[Xpx]` (Tailwind important) OR 外加 `flex-shrink-0` + 設容器 grid-cols。
+  →  固定寬一律用欄位自己的 `width={X}`(數字 = px;2026-11-15 起)。2026-11-15 前只能用 `!w-[Xpx]`(Tailwind important)硬蓋 ——
+  新程式不再這樣寫;例外:DataTable 篩選列的欄位 / 條件下拉刻意用 rem(`!w-[10rem]` / `!w-[7.5rem]`,跟著使用者字級縮放,`../DataTable/data-table-filter-group.tsx` 註解),
+  `width` 數字只收 px,所以那兩格照舊。
 
 ## States
 
@@ -135,9 +143,18 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 |--|--|--|
 | default | 各 child 自身 border | 2 |
 | hover(子)| 該 child border-hover | 3 |
-| focus / focus-within(子)| 該 child focus ring | 3 |
-| disabled(子)| 該 child disabled style + **FCG-local override `border-[var(--border-opaque)]`**(K12,2026-05-04) | 0 |
-| error(子)| 該 child border-error | 2(預設層;聚焦該 child 時才升 3 蓋過鄰接 border)|
+| focus / focus-within(子)| 該 child focus ring | 4(同一格又被滑過仍是 4)|
+| 自己的浮層開著(子,`data-field-open`)| 該 child 維持聚焦的框(規則住 `../Field/field.spec.md`「Field state machine SSOT」,這裡只管疊放)| 4(同一格又被滑過仍是 4)|
+| disabled(子)| 該 child disabled style + **FCG-local override `border-[var(--border-opaque)]`**(K12,2026-05-04) | 0(被滑過也是 0)—— 只限成員本身帶原生 `[disabled]` 的;停用的 Select / NumberInput 改渲展示殼、不降,見下方「選擇器覆蓋範圍」|
+| error(子)| 該 child border-error | 2(預設層;滑過升 3、聚焦 / 自己的浮層開著升 4,蓋過鄰接 border)|
+
+**聚焦 / 開著壓過滑過(已定,2026-11-13)**:聚焦或自己的浮層開著的那一格 z-index 是 4,比滑過的 3 高一層 —— 那一格的框永遠四邊完整;滑鼠滑到它左邊或右邊的鄰居時,兩格共用的那條線仍是它的框色,不是鄰居滑過的灰。滑鼠點進去與鍵盤聚焦同一條規則。框是什麼顏色不歸本檔(一般欄位聚焦 / 開著 = `--primary`、驗證錯誤 = `--error`,住 `../Field/field.spec.md`「Field state machine SSOT」),本檔只管誰疊在上面。
+- **為什麼**:相鄰兩格共用一條 1px 的線,那條線只畫得出一格的顏色。聚焦 / 開著 = 正在操作的那一格,滑過只是指標路過,所以前者在上 —— 與 `../Field/field.spec.md`「Field state machine SSOT」框色優先序裡「自己的浮層開著 = 聚焦 > 滑過」這一段同方向。那個優先序最前面的「錯誤」在疊放上**不另外抬高**(上表:驗證錯誤的成員在預設層,滑過、聚焦、開著時才跟別的成員一樣升)—— 聚焦那格旁邊是錯誤格時,兩格共用那條線畫的是聚焦那格的框色,錯誤格少一邊紅(2026-11-13 審查實量)。
+- **來源**:AI 建議甲、user 2026-11-13 採納,原話「你問我的問題，照你建議」(當時成品頁唯一一題就是這題)。
+- **世界級對照**(三家不一致;連結沿用 `../Field/field.spec.md` 同一題):Bootstrap input-group 只把聚焦的那一格抬高、滑過不抬([_input-group.scss#L49-L53](https://github.com/twbs/bootstrap/blob/9062790fdb2379593a2973416dc5a3bfb203e4e3/scss/forms/_input-group.scss#L49-L53));Polaris Connected 也只有聚焦那一格最高(`--pc-connected-focused: 30`,[Connected.module.css#L3-L5](https://github.com/Shopify/polaris-react-archive/blob/a8ceec19306b62a0c0a5033efc633232da59ff9e/polaris-react/src/components/Connected/Connected.module.css#L3-L5)、[#L32-L35](https://github.com/Shopify/polaris-react-archive/blob/a8ceec19306b62a0c0a5033efc633232da59ff9e/polaris-react/src/components/Connected/Connected.module.css#L32-L35);那一版成員之間用 `margin-left: var(--p-space-100)` 留間距、不共用一條線,[#L18-L20](https://github.com/Shopify/polaris-react-archive/blob/a8ceec19306b62a0c0a5033efc633232da59ff9e/polaris-react/src/components/Connected/Connected.module.css#L18-L20),所以只取它的層級順序,共用線的直接對照是 Bootstrap)—— 本規則與這兩家同向。Ant Design 併排元件把滑過、聚焦、按下放在同一層(`hoverEffects` 全部 `zIndex: 3`,[compact-item.ts#L30-L47](https://github.com/ant-design/ant-design/blob/5632e40fceabdbcdfef7e536158aaf404898c867/components/style/compact-item.ts#L30-L47))—— 本 DS 2026-11-13 前同它。DS 內近親:SegmentedControl 也是鍵盤聚焦那一格最高(`../SegmentedControl/segmented-control.tsx`:滑過 `z-[5]` < 選中 `z-10` < `focus-visible:z-20`)。
+- **改前的現況(歷史,2026-11-13 前)**:滑過、聚焦、自己的浮層開著的 z-index 同是 3,同值時 DOM 順序較後的那一格在上 —— 某一格聚焦或開著時滑鼠滑到它**右邊**那一格,共用的那條線畫的是右邊那格滑過的灰(聚焦那格三邊藍、一邊灰);滑到左邊那一格不受影響。
+- **按鈕成員也認焦點(AI 2026-11-13 的工程判斷,不在 user 那句話涵蓋的範圍)**:「聚焦」認的是焦點在不在那一格裡(`:focus-within`),不分看不看得到聚焦外觀 —— 所以按鈕成員被滑鼠點過、焦點還留在上面時也算聚焦(層級 4)。後果(2026-11-13 審查實量;按鈕在左、欄位在右,DS 範例與產品都沒有這種排法):這時滑鼠再滑到它右邊的欄位,兩格共用那條線畫的是按鈕的邊,不是欄位滑過的灰 —— 預設款按鈕:欄位上 / 右 / 下 `rgb(191,191,191)`、左 `rgb(217,217,217)`;主要款按鈕:左 `rgb(0,101,234)`;同一頁換回改前的疊放,那條線是 `rgb(191,191,191)`(欄位四邊同色)。按鈕在右的排法(story「搜尋與提交」)改前改後畫出來的相同。對照:Bootstrap input-group 的按鈕同樣認 `:focus`、不分看不看得到(`> .input-group-btn { … &:focus { z-index: 5; } }`,[_input-group.scss#L58-L65](https://github.com/twbs/bootstrap/blob/9062790fdb2379593a2973416dc5a3bfb203e4e3/scss/forms/_input-group.scss#L58-L65))。
+- **實作註記**:「同一格又聚焦(或開著)又被滑過」另有兩條規則把它留在 4 —— 滑過、聚焦、開著三條單一狀態的規則權重相同,樣式表裡滑過那條排在聚焦那條後面,「聚焦又被滑過」不補會被蓋回 3(`field-control-group.tsx` 註解);「開著又被滑過」在現行樣式表順序下不補也是 4,那一條是不靠排序的保險。瀏覽器閘 `scripts/field-open-border-invariant.mjs` 併排欄位組那一段對兩組各量一遍(story「篩選列」期望色 `--primary`;夾具「欄位 / 欄位[驗證錯誤] / 欄位」期望色 `--error`),各列量的事:K1 / G2 量「四邊完整」(滑鼠在空白處,四邊中點的像素);K2–K5 / G3–G6 量「聚焦 / 開著壓過滑過」(中間那格鍵盤聚焦 / 滑鼠點開時滑鼠停在左、右鄰居上 → 共用那條線的像素 = 它的框色、中間那格 4 / 鄰居 3);K6 / G7 量「停在自己上面仍是 4」(K6 = 聚焦,靠第一條補的規則;G7 = 開著,守上表那一格)。停用的成員被滑過也留在 0:2026-11-18 前停用那條寫 `:has([disabled])`,與滑過那條權重相同、樣式表裡滑過排在後面,停用的 Input 被滑過是 3(拿 38649f5a 的建置實量:story「設計規格 › 狀態行為」停用那一組;那一組兩格都停用、框色同是 `--border-opaque`,兩格共用那條線改前改後同為 `rgb(217,217,217)`,畫面不變)。同日先補一條多帶 `:hover` 的,再把選擇器收窄成「成員本身停用」(下方「選擇器覆蓋範圍」)—— 收窄後的 `:has(:not(option)[disabled])` 權重比滑過那條高,靜止那條就留得住 0;多帶 `:hover` 那條改守「停用又聚焦又被滑過」(`field-control-group.tsx` 註解)。同一支閘的 S 段量 S1(滑過時 z-index 0)/ S2(滑過時它四邊中點的像素 = 靜止時);T 段量觸控上啟用的原生 Select 不被當成停用(T0 靜止 2、T1 聚焦 4、T2 聚焦又被滑過 4,T1 / T2 另量四邊中點的像素 = `--primary`)。哪些停用成員真的降到 0 見下方「選擇器覆蓋範圍」。
 
 **Disabled border integrity canonical(K12,2026-05-04)**:全域 disabled = `border-transparent`(讓 standalone field 視覺輕量),但**FCG context 下,disabled child 強制 `border-[var(--border-opaque)]`** — 確保:(a) FCG 整體外圈 border 健在,(b) inner divider 健在(不會因兩相鄰 disabled cells 都 transparent 而消失)。bg-disabled 仍區分狀態,border 維護群組視覺整合性。對齊 [Bootstrap input-group](https://getbootstrap.com/docs/5.3/forms/input-group/) / [Ant Space.Compact](https://ant.design/components/space#spacecompact) disabled idiom。
 
@@ -148,9 +165,10 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 保留 global `bg-disabled`(neutral-2 灰底)— disabled state 視覺主要由 bg 承載。
 
 **⚠️ 選擇器覆蓋範圍(2026-07-13 誠實標註 — code 現況,非 uniform)**:disabled state 的兩道視覺處理走**不同選擇器、覆蓋不同 child 類型**,並非對所有 disabled 子一致生效:
-- **z-index 降 0**:`[&>*[disabled]]:z-0` + `[&>*:has([disabled])]:z-0` — 認**原生 `[disabled]` 屬性**。覆蓋 Button(原生 `<button disabled>`)、Input / NumberInput(wrapper 內含原生 `<input disabled>`,`:has()` 命中)。
+- **z-index 降 0**:`[&>*[disabled]]:z-0` + `[&>*:has(:not(option)[disabled])]:z-0`(各配一條多帶 `:hover` 的)— 認**成員本身停用**:成員自己帶原生 `[disabled]`,或成員裡的控制項帶原生 `[disabled]`。實際降到 0 的停用成員:Button(原生 `<button disabled>`)、Input(wrapper 內含 `<input disabled>`)。
+  - **`<option disabled>` 不算**:觸控(`pointer: coarse`)上 Select 走原生 `<select>`,有 placeholder 就渲 `<option value="" disabled>`,停用的選項也渲 `<option disabled>`(`select.tsx` NativeSelect)—— 那是「這個選項不能選」,成員本身是啟用的。2026-11-18 前選擇器寫 `:has([disabled])`,把這種啟用的成員當成停用:story「datatable 展示 › 進階篩選 — 各種狀態」在觸控模擬(Playwright `hasTouch` + `isMobile`)下 21 個啟用的原生下拉全部命中,靜止與聚焦都是 0(上表該是 2 / 4),聚焦那一格的框被 DOM 順序較後的鄰居蓋掉一邊;同日先補的 `:has([disabled]):hover` 又把「聚焦又被滑過」也壓成 0(實量篩選列第一格「篩選欄位」聚焦又被滑過:38649f5a 的建置 z-index 4、與右鄰居共用那條線 `rgb(0,101,234)`;補了那一條的建置 0、`rgb(217,217,217)`,藍框被鄰居的灰邊蓋掉)。收窄後 21 個全部不命中;瀏覽器閘 `scripts/field-open-border-invariant.mjs` 的 T 段守這件事。本 DS 沒有用到 `<optgroup>`。
 - **border-opaque override**:`[&>*[data-field-mode="disabled"]]` — 認 **Field 家族 wrapper 的 `data-field-mode="disabled"`**。覆蓋所有 Field controls(Select / Input / Combobox / DatePicker…)。
-- **覆蓋落差(已知)**:disabled **Select**(桌機自訂 trigger = `<div>`,無原生 `[disabled]`)→ 得 border-opaque 但**不降 z-0**;disabled **Button**(無 `data-field-mode`)→ 降 z-0 但**不得 border-opaque**。要讓兩道處理對所有 disabled 子一致覆蓋需統一兩選擇器(視覺行為改動 → 走設計拍板,非本文件範圍)。
+- **覆蓋落差(已知)**:disabled **Select** 與 disabled **NumberInput** 停用時不渲原生控制項,改渲展示殼(Select 桌機與觸控都提早回傳 `ReadonlyDisplay`,`select.tsx` 兩處 `resolvedMode !== 'edit'`;NumberInput 改渲 `<span>`,`number-input.tsx`「view / readonly / disabled 都顯示格式化值」),裡面沒有原生 `[disabled]` → 得 border-opaque 但**不降 z-0**(2026-11-18 前本段把 NumberInput 列在「降 0」那一邊,與程式不符,已更正);disabled **Button**(無 `data-field-mode`)→ 降 z-0 但**不得 border-opaque**。要讓兩道處理對所有 disabled 子一致覆蓋需統一兩選擇器(視覺行為改動 → 走設計拍板,非本文件範圍)。
 
 **為什麼用 `--border-opaque` 而非 `--border`**:`--border`(neutral-5 = 15% alpha)會跟 cell bg compositing — 灰底上 composite 略深(物理對比結果)。**`--border-opaque`** semantic token(其 primitive 後盾為 `--color-neutral-5-opaque`,solid #D9D9D9)不分 bg 永遠同色,divider 在 white edit cell 跟 grey disabled cell 上視覺完全一致。
 
@@ -184,7 +202,7 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 | **[Chakra Group](https://www.chakra-ui.com/docs/components/group)** | `attached` prop primitive | `attached`+`grow` props | per-child | Input + Addon/Element(InputGroup 已 deprecated v3)|
 | **[Mantine `Button.Group`](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/apps/mantine.dev/src/pages/core/button.mdx#L129-L152)** | `Button.Group` + `Button.GroupSection` | 子按鈕直接相鄰接合(不可再包一層)| — | 只限 Button(非按鈕內容用 GroupSection)|
 
-4 家都有接合 idiom,但 Mantine 只限按鈕 → 我們的實作對齊同時涵蓋 form control 的 Ant + Bootstrap 主軸([來源](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/apps/mantine.dev/src/pages/core/button.mdx#L129-L152))。
+4 家都有接合 idiom,但 Mantine 只限按鈕 → 我們的實作對齊同時涵蓋 form control 的 Ant(Space.Compact 支援 Button / Input / Select / DatePicker …,[Space.Compact](https://ant.design/components/space#spacecompact))+ Bootstrap(input-group 收 input / custom select / button,[input-group](https://getbootstrap.com/docs/5.3/forms/input-group/))主軸([來源](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/apps/mantine.dev/src/pages/core/button.mdx#L129-L152))。
 
 ## 相關
 
@@ -196,3 +214,4 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 ## 變更紀錄
 
 - 2026-05-04 v1:Initial。基於 Ant compact-item.ts source verify 訂機制。Filter / Sort 對齊 Ant W-A 子自管 width([來源](https://github.com/ant-design/ant-design/blob/5632e40fceabdbcdfef7e536158aaf404898c867/components/style/compact-item.ts#L30-L58))。
+- 2026-11-13:聚焦 / 自己的浮層開著的 z-index 由 3 改 4,滑過留在 3(AI 建議甲、user 同日採納;規則、原話與對照見「States」的「聚焦 / 開著壓過滑過」)。

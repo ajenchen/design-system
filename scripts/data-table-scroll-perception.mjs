@@ -8,11 +8,13 @@
 // (以 run nonce + attempt 認身分,不以「路徑上剛好有一份」認):子程序沒寫出 summary 就是沒量到,不得拿上一次執行
 // 留在同一個 --out 的舊 summary 去判「停頓 → 重跑」或「慢機器判準 → 綠」。
 import { launchBrowser, openStory, StoryRenderInstrumentError } from "./lib/launch-browser.mjs";
-import { MAX_ATTEMPTS as SHARED_MAX_ATTEMPTS, retryBackoffMs } from "./lib/scroll-perception-budget.mjs";
+import { dtVisibleBand } from './lib/data-table-visible-band.mjs'
+import { MAX_ATTEMPTS as SHARED_MAX_ATTEMPTS, retryBackoffMs, EXTENSION_COOLDOWN_MS, deadlineMsFromEnv, extensionRoundPlan, attemptFits } from "./lib/scroll-perception-budget.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { PNG } from "pngjs";
 import { startA11yStaticServer } from "./lib/a11y-static-server.mjs";
+import { startTrace, summarizeTrace, findMark, captureGapDiagnosis, TraceInstrumentError } from "./lib/cdp-trace-summary.mjs";
 import {
   analyzeContent,
   quantileSummary as quant,
@@ -27,6 +29,14 @@ const dir = arg("static", process.env.DT_STATIC ?? "storybook-static"),
   profile = arg("profile", "inertia"),
   markers = arg("markers", "on") === "on";
 fs.mkdirSync(out, { recursive: true });
+// **每次嘗試各存一份**(2026-11-16,A25):原本每次重試覆寫同一個 --out —— summary.json / raw.json 只剩最後一次,
+// frame-NNNN.png 只覆寫同編號,前幾次多出來的編號會殘留,artifact 裡混著不同次嘗試的幀。現在子程序寫進 `<out>/attempt-N/`
+// (診斷趟寫 `<out>/diagnostic/`),父程序另寫 `<out>/attempts.json`(每次的擷取幀數、截圖時間戳、缺口),並把最後一次的
+// summary.json 複製回 `<out>/summary.json`(既有讀者,例:test-data-table-scroll-perception.mjs,不必改)。
+const attemptEnv = process.env.DT_PERCEPTION_ATTEMPT;
+const attemptDirOf = (a) => path.join(out, a === "diag" ? "diagnostic" : `attempt-${a}`);
+const runOut = attemptEnv ? attemptDirOf(attemptEnv) : out;
+fs.mkdirSync(runOut, { recursive: true });
 // 開 story 後要求版面連續靜止幾個影格才開始量(以影格計:慢機器 / 節流下只會等久一點,不會提早開始)
 const SETTLE_FRAMES = 10;
 // ── 停頓重跑(2026-09-10,fa4fea16 讀回):共享 runner 偶發 ≥ 100ms 的主執行緒停頓,合成器一次跳過整個視窗(單一 scroll 事件 ≥ 視窗高,
@@ -35,6 +45,11 @@ const SETTLE_FRAMES = 10;
 // 次數 3 → 5(2026-09-11):dpr2 的每張 PNG 是 dpr1 的四倍畫素,編碼一慢就踩到 100ms 送幀缺口門檻;
 // c34e035c 的 dpr2 job 連三次都是 104 / 104 / 123ms(其餘覆蓋率全部正常:輸入區間 99%、行程 100%、首尾偏移準確),
 // 這是 runner 擷取跟不上,不是表格。**門檻一格都沒放寬**,只是多給幾次機會;真的每次都缺口照樣紅。
+// 冷卻後再一輪(2026-11-17,A26):一輪全部作廢(整窗跳轉、沒有一次擷取有效 → 原本直接 INSTRUMENT-FAIL)時,呼叫端有給截止時刻
+// (DT_PERCEPTION_DEADLINE_EPOCH)而且放得進,就冷卻 30 秒、同一步再跑一輪;沒給 / 放不進照舊紅。判準一格不動。
+// 結束碼契約(與檔頭「儀器失效 … exit 1」一致):表格未過 = 1;儀器失效(story 沒渲染完成 / 沒有本次 summary / 全部作廢)也是 1。
+// 機讀分辨靠印出的 INSTRUMENT-FAIL 標記(story 沒渲染完成與全部作廢兩條會印;lib/launch-browser.mjs INSTRUMENT_FAIL_MARKER 的說明),
+// 不靠結束碼;對照組另以 summary 的 captureCoverageValid 分辨。
 if (!process.env.DT_PERCEPTION_ATTEMPT) {
   const { spawnSync } = await import("node:child_process");
   let code = 1;
@@ -47,16 +62,38 @@ if (!process.env.DT_PERCEPTION_ATTEMPT) {
   // `DT_PERCEPTION_GAP_MS` 讓 CI 在 dpr2(每張 PNG 四倍畫素)放寬到 130ms;預設仍是 100ms。
   // 這條是**擷取有效性**判定,不是表格的品質判定 —— 放寬它不會放過任何表格的回歸,
   // 而其餘覆蓋率守衛(≥10 幀、≥10 個解碼位置、涵蓋 90% 輸入區間與行程、首尾偏移準確)一條都沒動。
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+  // 每次嘗試的證據(attempts.json):擷取幀數、截圖時間戳、缺口分布 —— 「送幀缺口」紅的時候,每一次都看得到
+  const attemptLog = [];
+  const writeAttempts = () => fs.writeFileSync(path.join(out, "attempts.json"), JSON.stringify({ run: RUN_NONCE, attempts: attemptLog }, null, 1));
+  let finalCaptureGap = false;
+  // 冷卻後再一輪(lib/scroll-perception-budget.mjs extensionRoundPlan;A26):一輪全部作廢而走到 INSTRUMENT-FAIL 時,
+  // 截止時刻(DT_PERCEPTION_DEADLINE_EPOCH)放得進才把上限加一輪。判準與第一輪逐字相同,只是多量幾次。
+  let limit = MAX_ATTEMPTS;
+  let extended = false;
+  const deadlineMs = deadlineMsFromEnv();
+  const wallMs = []; // 每次嘗試的牆鐘(spawn → 子程序結束;CI 上收尾常多 ~30 秒,估延長輪要用真的數字)
+  const slowestMs = () => Math.max(...wallMs);
+  for (let attempt = 1; attempt <= limit; attempt++) {
+    const inRound = extended ? attempt - MAX_ATTEMPTS : attempt;
+    fs.rmSync(attemptDirOf(String(attempt)), { recursive: true, force: true });
+    const spawnedAt = Date.now();
     const r = spawnSync(process.execPath, process.argv.slice(1), {
       stdio: "inherit",
       env: { ...process.env, DT_PERCEPTION_ATTEMPT: String(attempt), DT_PERCEPTION_RUN: RUN_NONCE },
     });
+    wallMs.push(Date.now() - spawnedAt);
     code = r.status ?? 1;
     let summary = null;
     try {
-      summary = JSON.parse(fs.readFileSync(path.join(out, "summary.json"), "utf8"));
+      summary = JSON.parse(fs.readFileSync(path.join(attemptDirOf(String(attempt)), "summary.json"), "utf8"));
     } catch {}
+    if (summary && summary.run === RUN_NONCE && summary.attempt === attempt) {
+      fs.copyFileSync(path.join(attemptDirOf(String(attempt)), "summary.json"), path.join(out, "summary.json"));
+      attemptLog.push({ attempt, round: extended ? 2 : 1, wallMs: wallMs.at(-1), exit: r.status, castFrames: summary.castFrames, frameIntervalMs: summary.frameIntervalMs, captureCoverageValid: summary.captureCoverageValid,
+        reasons: summary.captureCoverage?.reasons ?? [], maxActiveGapMs: summary.captureCoverage?.maxActiveGapMs ?? null, longestGap: summary.longestActiveGap ?? null,
+        castGapsMs: summary.castGapsMs ?? null, stalled: summary.stalled, maxScrollEventJumpPx: summary.maxScrollEventJumpPx, castTs: summary.castTs ?? null });
+    } else attemptLog.push({ attempt, round: extended ? 2 : 1, wallMs: wallMs.at(-1), exit: r.status, summary: "沒有本次的 summary.json(儀器失效)" });
+    writeAttempts();
     if (summary && (summary.run !== RUN_NONCE || summary.attempt !== attempt)) summary = null;
     if (!summary) {
       // 沒量到 ≠ 停頓、也 ≠ 通過:子程序沒寫出本次的 summary(story 沒渲染完成 / 中途崩潰),訊息已由子程序印出
@@ -71,18 +108,22 @@ if (!process.env.DT_PERCEPTION_ATTEMPT) {
     const captureGap = summary && summary.captureCoverageValid === false &&
       Array.isArray(summary.captureCoverage?.reasons) && summary.captureCoverage.reasons.length > 0 &&
       summary.captureCoverage.reasons.every((r) => /active PNG gap|fewer than 10 active PNGs|PNGs cover less than 90% of the input interval/.test(r));
-    if ((summary?.stalled || captureGap) && attempt < MAX_ATTEMPTS) {
+    // 重跑前退避(lib/scroll-perception-budget.mjs 的 retryBackoffMs,父行程逾時同一份推導;延長輪從 1.5s 重新起算);只是重跑節奏,不改任何判準。
+    const backoffMs = retryBackoffMs(inRound);
+    const wantRetry = (summary.stalled || captureGap) && attempt < limit;
+    // 延長輪每次重跑前再對一次截止:放不進就停在這裡、用目前為止的嘗試下判定(第一輪照舊不看截止)
+    const fits = !extended || attemptFits({ nowMs: Date.now(), deadlineMs, slowestAttemptMs: slowestMs(), backoffMs });
+    if (wantRetry && fits) {
       console.log(
         summary.stalled
-          ? `runner 停頓造成整窗跳轉(單一 scroll 事件 ${summary.maxScrollEventJumpPx}px ≥ 視窗 ${summary.setup?.rect?.height}px 的 ${summary.stallFraction === 1 ? "整個" : "3/4"}),第 ${attempt} 次作廢,重跑`
-          : `runner 送幀缺口(${summary.captureCoverage.reasons.join("; ")};最長 ${Math.round(summary.captureCoverage.maxActiveGapMs ?? 0)}ms),第 ${attempt}/${MAX_ATTEMPTS} 次作廢,重跑`
+          ? `runner 停頓造成整窗跳轉(單一 scroll 事件 ${summary.maxScrollEventJumpPx}px ≥ 視窗 ${summary.setup?.rect?.height}px 的 ${summary.stallFraction === 1 ? "整個" : "3/4"}),第 ${attempt}/${limit} 次作廢,重跑`
+          : `runner 送幀缺口(${summary.captureCoverage.reasons.join("; ")};最長 ${Math.round(summary.captureCoverage.maxActiveGapMs ?? 0)}ms),第 ${attempt}/${limit} 次作廢,重跑`
       );
-      // 重跑前退避(lib/scroll-perception-budget.mjs 的 retryBackoffMs,父行程逾時同一份推導);只是重跑節奏,不改任何判準。
-      const backoffMs = retryBackoffMs(attempt);
       console.log(`  ↷ 退避 ${backoffMs}ms 再重跑`);
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, backoffMs);
       continue;
     }
+    if (wantRetry) console.log(`  延長輪第 ${inRound} 次之後,下一次(退避 ${backoffMs}ms + 最慢一次 ${Math.round(slowestMs() / 1000)}s)放不進截止 —— 停在第 ${attempt} 次下判定`);
     if (summary?.stalled) {
       // 三次都停頓 = 這台機器現在跟不上這個速度(9f22cc1c:runner 上 4500 dpr1 三次單步 435 / 421 / 460px,殼 11 / 16 / 6 幀)。
       // 那就是 AD62 列殼判準設計要處理的「慢機器極速捲動」:允許先出殼,但**不得留白**、擷取要有效、輸入要完整;
@@ -93,18 +134,51 @@ if (!process.env.DT_PERCEPTION_ATTEMPT) {
       const validAttempts = attempts.filter((x) => x.captureCoverageValid);
       const verdicts = validAttempts.map((x) => slowMachineVerdict(x));
       const slowOk = validAttempts.length > 0 && verdicts.every((v) => v.ok);
+      const stalledN = attempts.filter((x) => x.stalled).length;
+      // 一輪全部作廢、一次有效擷取都沒有 → 先看截止前放不放得進「冷卻後再一輪」(A26);放得進就再量,判準一格不動
+      let extensionNote = "";
+      if (validAttempts.length === 0 && !extended) {
+        const plan = extensionRoundPlan({ nowMs: Date.now(), deadlineMs, slowestAttemptMs: slowestMs() });
+        if (plan.go) {
+          console.log(`↷ ${attempts.length} 次全部作廢(整窗跳轉 ${stalledN} 次${attempts.length > stalledN ? `、送幀缺口 ${attempts.length - stalledN} 次` : ""})且沒有一次擷取有效:冷卻 ${EXTENSION_COOLDOWN_MS / 1000}s 後同一步再跑一輪(最多 ${MAX_ATTEMPTS} 次;估 ${Math.round(plan.estMs / 1000)}s,距截止 ${Math.round((deadlineMs - Date.now()) / 1000)}s)—— 判準不變`);
+          Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, EXTENSION_COOLDOWN_MS);
+          extended = true;
+          limit += MAX_ATTEMPTS;
+          continue;
+        }
+        extensionNote = { "no-deadline": "沒有截止時刻(DT_PERCEPTION_DEADLINE_EPOCH)= 不知道會不會超時,不延長", "no-estimate": "估不出一次要多久,不延長", budget: `冷卻後再一輪估 ${Math.round(plan.estMs / 1000)}s,截止前放不進,不延長` }[plan.why] ?? plan.why;
+      } else if (extended) extensionNote = `已冷卻後再跑一輪(第 ${MAX_ATTEMPTS + 1}–${attempts.length} 次)`;
       // 一次有效擷取都沒有 → 慢機器判準沒有東西可判:這是儀器(runner)這段時間量不到,不是表格「未過」(M37:沒觀察到 ≠ 沒發生)。
       // 仍然紅(required job 不能把量不到讀成綠),但訊息要指名是儀器,不指控產品。
-      if (validAttempts.length === 0) console.log(`✗ INSTRUMENT-FAIL:${MAX_ATTEMPTS} 次全部整窗跳轉(${attempts.map((x) => x.maxScrollEventJumpPx).join(" / ")}px)且沒有一次擷取有效 —— runner 這段時間跟不上 ${summary.peak}px/s,慢機器判準沒有可判的樣本;不是表格的裁決,要重跑(可調 DT_PERCEPTION_MAX_ATTEMPTS)`);
+      if (validAttempts.length === 0) console.log(`✗ INSTRUMENT-FAIL:${attempts.length} 次全部作廢(整窗跳轉 ${stalledN} 次:${attempts.map((x) => x.maxScrollEventJumpPx).join(" / ")}px)且沒有一次擷取有效 —— runner 這段時間跟不上 ${summary.peak}px/s,慢機器判準沒有可判的樣本;不是表格的裁決,要重跑(${extensionNote})`);
       else console.log(
-        `${slowOk ? "✓" : "✗"} ${MAX_ATTEMPTS} 次都碰到整窗跳轉的停頓:這台機器目前跟不上 ${summary.peak}px/s,改以慢機器判準判定 —— ` +
+        `${slowOk ? "✓" : "✗"} ${attempts.length} 次都作廢(整窗跳轉 ${stalledN} 次):這台機器目前跟不上 ${summary.peak}px/s,改以慢機器判準判定 —— ` +
           `擷取有效的 ${validAttempts.length} 次全部零空白、輸入完整、靜止後補齊 ${slowOk ? "✓" : "✗"}` +
           (slowOk ? "" : `;未過:${verdicts.flatMap((v) => v.reasons).join(" / ")}`) +
           `(殼 ${attempts.map((x) => x.pixelShellFrames).join(" / ")} 幀與掃過視窗未補齊的列 ${attempts.map((x) => x.unresolved?.length ?? 0).join(" / ")} 是慢機器的「先出殼不留白」,不在判準內)`
       );
       code = slowOk ? 0 : 1;
-    } else if (captureGap) console.log(`✗ ${MAX_ATTEMPTS} 次都碰到擷取送幀缺口:這台機器目前擷取不完整(不是表格);各次最長缺口 ${attempts.map((x) => Math.round(x.captureCoverage?.maxActiveGapMs ?? 0)).join(" / ")}ms`);
+    } else if (captureGap) { finalCaptureGap = true; console.log(`✗ ${attempts.length} 次都碰到擷取送幀缺口:這台機器目前擷取不完整(不是表格);各次最長缺口 ${attempts.map((x) => Math.round(x.captureCoverage?.maxActiveGapMs ?? 0)).join(" / ")}ms`); }
     break;
+  }
+  // **送幀缺口紅的時候多跑一趟不計分的追蹤診斷**(2026-11-16,A25;data-table-scroll-performance.spec.md「dpr1 擷取缺口判定表」):
+  // 最長缺口那段時間裡合成器有沒有照常出幀(DrawFrame)、主執行緒有沒有長工 —— 分辨「產品沒畫」與「截圖被搶不到 CPU」。
+  // 這一趟開了 Tracing(有開銷),所以**不改 exit code**,只印判定與存證據(`<out>/diagnostic/`)。`DT_PERCEPTION_DIAG=off` 關掉。
+  if (finalCaptureGap && process.env.DT_PERCEPTION_DIAG !== "off") {
+    console.log("↷ 追蹤診斷(不計分):重跑一趟並收 CDP Tracing,看最長送幀缺口那段時間合成器與主執行緒在做什麼");
+    fs.rmSync(attemptDirOf("diag"), { recursive: true, force: true });
+    spawnSync(process.execPath, process.argv.slice(1), {
+      stdio: "inherit",
+      env: { ...process.env, DT_PERCEPTION_ATTEMPT: "diag", DT_PERCEPTION_RUN: RUN_NONCE, DT_PERCEPTION_TRACE: "1" },
+    });
+    try {
+      const d = JSON.parse(fs.readFileSync(path.join(attemptDirOf("diag"), "summary.json"), "utf8"));
+      attemptLog.push({ attempt: "diag", castFrames: d.castFrames, maxActiveGapMs: d.captureCoverage?.maxActiveGapMs ?? null, longestGap: d.longestActiveGap ?? null, traceDiagnosis: d.traceDiagnosis ?? null });
+      writeAttempts();
+      const v = d.traceDiagnosis;
+      const text = { "capture-starved": "合成器照常出幀、主執行緒沒有長工 → 截圖被搶不到 CPU(量具問題,不是表格)", "main-thread-stall": "合成器也斷、主執行緒有長工 → 主執行緒停頓", "compositor-stall": "合成器也斷、主執行緒沒有長工 → 合成 / 光柵停頓(結構成本)", "main-busy-but-drawing": "合成器照常出幀、但主執行緒有長工", "no-data": "缺口前後一張合成幀都沒收到 → 儀器沒看到,不下結論" };
+      console.log(v ? `  診斷:最長缺口 ${Math.round(d.longestActiveGap?.gapMs ?? NaN)}ms 期間 DrawFrame ${v.drawFramesInGap} 張(最大間隔 ${Number.isFinite(v.maxDrawGapMs) ? v.maxDrawGapMs.toFixed(1) : "-"}ms)、主執行緒長工 ${v.mainLongTasks} 個 → ${text[v.verdict] ?? v.verdict};忙碌 ms ${JSON.stringify(d.traceBusy ?? {})}` : `  診斷:這一趟沒有追蹤結果(${d.traceError ?? "沒有缺口可診斷"})`);
+    } catch { console.log("  診斷:追蹤趟沒有寫出 summary.json(儀器失效,不影響判定)"); }
   }
   process.exit(code);
 }
@@ -174,12 +248,18 @@ try {
     }
   );
   const setup = await page.evaluate(
-    ({ markers, sabotage }) => {
+    ({ markers, sabotage, band }) => {
       const S = window.__r17,
         cb = document.querySelector("[data-datatable-hscroll]");
       cb.scrollTop = 0;
-      const rect = cb.getBoundingClientRect(),
-        rw = cb.querySelector("[data-row-index]").getBoundingClientRect();
+      // 2026-11-05(待辦總帳 Q2b):捲動盒同時裝著黏頂表頭與兩側釘選面板 —— 列只取中央面板裡的(修前捲動盒就是中央面板),
+      // 量測框 = 看得見的列帶 ∩ 中央區(band,lib/data-table-visible-band.mjs;兩代結構同一個答案)。
+      const rowsHost = cb.matches('[data-datatable-panel="center"]') ? cb : (cb.querySelector('[data-datatable-panel="center"]') ?? cb);
+      const cbRect = cb.getBoundingClientRect();
+      const rect = band
+        ? { x: band.centerLeft, y: band.top, width: band.centerRight - band.centerLeft, height: band.bottom - band.top }
+        : { x: cbRect.x, y: cbRect.y, width: cb.clientWidth, height: cb.clientHeight },
+        rw = rowsHost.querySelector("[data-row-index]").getBoundingClientRect();
       S.cb = cb;
       S.on = true;
       S.started = performance.now();
@@ -190,10 +270,11 @@ try {
         if (!ids.has(e)) ids.set(e, ++seq);
         return ids.get(e);
       };
-      const markerX = cb.clientWidth - 48;
+      // 標記放在中央區看得見那一塊的右緣內 48px;寫進列的是**相對於列左緣**的位置(中央列的左緣 = 中央面板左緣,scrollLeft = 0)
+      const markerX = rect.x + rect.width - 48 - rw.left;
       const mark = () => {
         if (!markers) return;
-        for (const row of cb.querySelectorAll("[data-row-index]")) {
+        for (const row of rowsHost.querySelectorAll("[data-row-index]")) {
           const code =
             (+row.dataset.rowIndex + 1) * 2 +
             (row.hasAttribute("data-row-shell") ? 1 : 0);
@@ -242,7 +323,7 @@ try {
       mark();
       if (sabotage !== "off") {
         new MutationObserver(() => {
-          for (const row of cb.querySelectorAll("[data-row-index]"))
+          for (const row of rowsHost.querySelectorAll("[data-row-index]"))
             if (!row.hasAttribute("data-r17-sab")) {
               row.dataset.r17Sab = "";
               if (sabotage === "on") row.dataset.rowShell = "";
@@ -271,13 +352,12 @@ try {
       );
       const sample = (t) => {
         if (!S.on) return;
-        const r = cb.getBoundingClientRect();
         S.frames.push({
           t,
           epoch: performance.timeOrigin + t,
           y: cb.scrollTop,
           commits: S.commits,
-          rows: [...cb.querySelectorAll("[data-row-index]")].map((e) => {
+          rows: [...rowsHost.querySelectorAll("[data-row-index]")].map((e) => {
             const b = e.getBoundingClientRect();
             return {
               index: +e.dataset.rowIndex,
@@ -285,7 +365,7 @@ try {
               shell: e.hasAttribute("data-row-shell"),
               top: b.top,
               bottom: b.bottom,
-              visible: b.bottom > r.top && b.top < r.top + cb.clientHeight,
+              visible: b.bottom > rect.y && b.top < rect.y + rect.height,
             };
           }),
         });
@@ -298,18 +378,18 @@ try {
         rect: {
           x: rect.x,
           y: rect.y,
-          width: cb.clientWidth,
-          height: cb.clientHeight,
+          width: rect.width,
+          height: rect.height,
         },
         rowHeight: rw.height,
-        markerX: rect.x + markerX,
+        markerX: rw.left + markerX,
         viewport: innerWidth,
         dpr: devicePixelRatio,
         timeOrigin: performance.timeOrigin,
         scrollHeight: cb.scrollHeight,
       };
     },
-    { markers, sabotage: arg("sabotage", "off") }
+    { markers, sabotage: arg("sabotage", "off"), band: await page.evaluate(dtVisibleBand, 0) }
   );
   await page.mouse.move(setup.x, setup.y);
   // 游標移進表格後等 300ms:讓 hover 高亮與它引發的重畫在開始錄影之前走完(不算進捲動量測)
@@ -322,6 +402,10 @@ try {
       .catch(() => {});
   });
   await cdp.send("Page.startScreencast", { format: "png", everyNthFrame: 1 });
+  // 追蹤診斷趟(父程序在「送幀缺口」紅之後才開,不計分):時間窗錨 = 頁內 console.timeStamp,同時記下當下的 epoch 毫秒,
+  // 好把 screencast 的時間戳(epoch 秒)換算到 trace 的時鐘(µs)上
+  const tracer = process.env.DT_PERCEPTION_TRACE === "1" ? await startTrace(browser) : null;
+  const traceEpochAtStart = tracer ? await page.evaluate(() => { console.timeStamp("pc-trace-start"); return performance.timeOrigin + performance.now(); }) : null;
   const segments =
     profile === "bursts"
       ? Array.from({ length: 4 }, () => [
@@ -396,6 +480,8 @@ try {
   await page.waitForTimeout(900);
   await cdp.send("Page.stopScreencast");
   const captureEnd = Date.now();
+  let traceEvents = null;
+  if (tracer) { await page.evaluate(() => console.timeStamp("pc-trace-end")); traceEvents = await tracer.stop(); }
   const raw = await page.evaluate(() => {
     const S = window.__r17;
     S.on = false;
@@ -501,7 +587,7 @@ try {
       arg("save", "some") === "all"
     )
       fs.writeFileSync(
-        path.join(out, `frame-${String(i).padStart(4, "0")}.png`),
+        path.join(runOut, `frame-${String(i).padStart(4, "0")}.png`),
         Buffer.from(shot.data, "base64")
       );
   }
@@ -544,6 +630,23 @@ try {
   // 「兩幀內出現」在 runner 上就是 60ms 不是 34ms(2026-09-10,5d4e7b06 讀回:dpr2 3000 零殼但 p95 35.0 / 最長 87.9)。
   const castGaps = cast.slice(1).map((f, i) => (f.ts - cast[i].ts) * 1000).filter((g) => g > 0).sort((a, b) => a - b);
   const frameIntervalMs = castGaps.length ? castGaps[Math.floor(castGaps.length / 2)] : 16.7;
+  // 最長的「輸入期間」送幀缺口在哪(與 lib assessContentCoverage 的 maxActiveGapMs 同一個定義:輸入區間內相鄰擷取幀 + 首幀延遲 + 末幀落後)
+  const inputStartMs = inputs[0]?.start;
+  const activeTs = cast.map((f) => f.ts * 1000).filter((t) => t >= inputStartMs && t <= inputEnd);
+  const edges = [inputStartMs, ...activeTs, inputEnd];
+  let longestActiveGap = null;
+  for (let i = 1; i < edges.length; i++) { const g = edges[i] - edges[i - 1]; if (!longestActiveGap || g > longestActiveGap.gapMs) longestActiveGap = { startMs: edges[i - 1], endMs: edges[i], gapMs: g }; }
+  let traceDiagnosis = null, traceBusy = null, traceError = null;
+  if (traceEvents) {
+    try {
+      const t0 = findMark(traceEvents, "pc-trace-start"), t1 = findMark(traceEvents, "pc-trace-end");
+      const sum = summarizeTrace(traceEvents, t0, t1);
+      traceBusy = Object.fromEntries(Object.entries(sum.busy).map(([k, v]) => [k, Math.round(v)]));
+      const toUs = (epochMs) => t0 + (epochMs - traceEpochAtStart) * 1000;
+      if (longestActiveGap) traceDiagnosis = captureGapDiagnosis({ drawFrameTs: sum.drawFrameTs, mainTasks: sum.mainTasks, gapStartUs: toUs(longestActiveGap.startMs), gapEndUs: toUs(longestActiveGap.endMs) });
+      fs.writeFileSync(path.join(runOut, "trace-summary.json"), JSON.stringify({ ...sum, byName: undefined, mainTasks: undefined, drawFrameTs: undefined, traceEpochAtStart, longestActiveGap, traceDiagnosis }, null, 1));
+    } catch (e) { if (!(e instanceof TraceInstrumentError)) throw e; traceError = e.message; }
+  }
   const latencyLimitMs = Math.max(+arg("max-latency", "34"), 2 * frameIntervalMs);
   const summary = {
     peak,
@@ -562,7 +665,13 @@ try {
     wheelCoalesced,
     stalled,
     stallFraction,
-    attempt: +(process.env.DT_PERCEPTION_ATTEMPT ?? 1),
+    attempt: process.env.DT_PERCEPTION_ATTEMPT === "diag" ? "diag" : +(process.env.DT_PERCEPTION_ATTEMPT ?? 1),
+    castTs: cast.map((f) => f.ts),
+    castGapsMs: quant(castGaps),
+    longestActiveGap,
+    traceDiagnosis,
+    traceBusy,
+    traceError,
     run: process.env.DT_PERCEPTION_RUN ?? null,
     ...content,
     rows: undefined,
@@ -574,7 +683,7 @@ try {
     commits: raw.commits,
   };
   fs.writeFileSync(
-    path.join(out, "raw.json"),
+    path.join(runOut, "raw.json"),
     JSON.stringify(
       { inputs, inputEnd, setup, ...raw, pixels, rows: content.rows },
       null,
@@ -582,7 +691,7 @@ try {
     )
   );
   fs.writeFileSync(
-    path.join(out, "summary.json"),
+    path.join(runOut, "summary.json"),
     JSON.stringify(summary, null, 2)
   );
   console.log(JSON.stringify(summary));

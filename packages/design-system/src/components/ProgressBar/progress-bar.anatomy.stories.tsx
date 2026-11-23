@@ -189,7 +189,7 @@ const InspectorInner = () => {
       <div className="flex gap-6 items-start">
         {/* Left: preview */}
         <div className="flex flex-col gap-5 min-w-[360px]">
-          <div className="px-6 py-10 rounded-lg bg-canvas border border-divider">
+          <div className="px-6 py-10 rounded-md bg-canvas border border-divider">
             <ProgressBar value={value} status={status} affix={affixNode} aria-label="即時預覽進度" />
           </div>
 
@@ -211,7 +211,7 @@ const InspectorInner = () => {
         </div>
 
         {/* Right: inspect panel */}
-        <div className="w-[300px] shrink-0 border border-divider rounded-lg bg-surface overflow-hidden">
+        <div className="w-[300px] shrink-0 border border-divider rounded-md bg-surface overflow-hidden">
           <div className="px-4 py-2.5 border-b border-divider bg-neutral-hover">
             <span className="text-[12px] font-semibold text-foreground">Inspect</span>
           </div>

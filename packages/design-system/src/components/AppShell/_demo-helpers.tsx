@@ -10,7 +10,7 @@ import {
   Calendar,
   Settings,
   Users,
-  BarChart3,
+  IterationCw,
   LayoutDashboard,
   User,
   LogOut,
@@ -32,12 +32,19 @@ import {
 } from '@/design-system/components/Sidebar/sidebar'
 import { useAppShell, type PanelWidthRange } from '@/design-system/components/AppShell/app-shell'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
+import { CHROME_HEADER_AVATAR_PX } from '@/design-system/patterns/header-canonical/chrome-header-avatar'
 import {
   ItemAvatar,
+  ItemContent,
 } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
-import { AccountMenu as AccountMenuPrimitive } from '@/design-system/components/AccountMenu/account-menu'
+import { Tag } from '@/design-system/components/Tag/tag'
 import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
+import { AccountMenu as AccountMenuPrimitive } from '@/design-system/components/AccountMenu/account-menu'
+import { DataTable, type DataTableProps } from '@/design-system/components/DataTable/data-table'
+import { formatDate } from '@/design-system/components/DatePicker/date-picker'
+import type { PersonData } from '@/design-system/components/PeoplePicker/person-display'
+import { demoPersonData, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 // 帳號選單內容(AccountMenuItems)在本檔以 DropdownMenu primitives 直接組,
 // 供 header AccountMenu demo wrapper 與 footer UserFooter 共用(M17 單一 SSOT)。
 import {
@@ -50,15 +57,22 @@ import {
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
 
 // ── MAIN_NAV(對齊 sidebar.stories.tsx baseline)────────────────────────
+// 側欄項目的字 = 那一頁標頭的字(同字):PageHeader 的 title 一律讀這裡的 label(`navLabel`),連 AI agent 回覆裡指向那一頁的連結字也讀同一份
+// (`../Sidebar/sidebar.spec.md`「選中項的字 = 那一頁標頭的字」;閘 `scripts/sidebar-label-matches-header-invariant.mjs`)。
+// 2026-11-15 前第四項是「Insights」(id insights、長條圖圖示):那一頁主區只剩「Sprint 42 還沒完成的議題」一張表(2026-11-11 拿掉區段標題與燃盡摘要),
+// 「Insights」說不出那張表 → 改「Active sprint」(id、網址、圖示一起換)【AI 推導 2026-11-15:選字】。
 
 export const MAIN_NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'inbox', label: 'Inbox', icon: Inbox },
   { id: 'team', label: 'Team', icon: Users },
-  { id: 'insights', label: 'Insights', icon: BarChart3 },
+  { id: 'active-sprint', label: 'Active sprint', icon: IterationCw },
   { id: 'calendar', label: 'Calendar', icon: Calendar },
   { id: 'settings', label: 'Settings', icon: Settings },
 ] as const
+
+/** 側欄選中項 → 頁面標頭的字(同一份文字來源;找不到 = 空字串,閘會把「側欄字 ≠ 標頭字」判紅) */
+export const navLabel = (id: string): string => MAIN_NAV.find((n) => n.id === id)?.label ?? ''
 
 // ── 專案(可收合群組;「版面規則」示範頁用)────────────────────────────
 /** Acme 的進行中專案(側欄的「專案」區段;示範資料)。 */
@@ -83,15 +97,15 @@ export const ACME_PROJECTS = [
 //   - Chrome header 沒有 sm/md/lg row size 概念,無 lookup 需求,用 raw Avatar 才語義正確
 //   - 父 `<div flex items-center>` 已 provide 縱向對齊,ItemPrefix wrapper(`h-[1lh]`)冗餘
 //
-// SSOT 鎖定:`<Avatar size={24}>` 對應 `--chrome-header-avatar-size: 1.5rem` token
-// (`header-canonical.css`)+ `header-canonical.spec.md` 4.5 canonical「24px raw Avatar」。
-// 公式端透過 var() 連動;JS 端透過 spec authority + comment cite 連動。改 24 → 同步 token + 此 hardcode。
+// SSOT 鎖定:頭像尺寸讀 CHROME_HEADER_AVATAR_PX(patterns/header-canonical/chrome-header-avatar.ts),
+// 它與 `--chrome-header-avatar-size: 1.5rem` token(`header-canonical.css`)由 scripts/token-twin-invariant.mjs 鎖住相等
+// (2026-11-15 前是字面值 24 + 註解同步,稽核 P03);canonical 見 `header-canonical.spec.md` 4.5「24px raw Avatar」。
 export const WorkspaceBrand = () => (
   <div className="flex items-center gap-2 min-w-0">
-    {/* 24 per header-canonical.spec.md 4.5 chrome header avatar canonical; sync with `--chrome-header-avatar-size` */}
+    {/* 24 per header-canonical.spec.md 4.5 chrome header avatar canonical */}
     {/* Workspace brand = 組織識別(非人)→ 首字 letter mark;2026-07-08 人像真實化 sweep 刻意保留,
         真實人像僅套用於 person avatar(組織用人臉照片會誤導身份) */}
-    <Avatar size={24} shape="square" color="blue" solid alt="Acme Inc" />
+    <Avatar size={CHROME_HEADER_AVATAR_PX} shape="square" color="blue" solid alt="Acme Inc" />
     <span className="text-body-lg font-medium truncate group-data-[collapsible=icon]:hidden">Acme Inc</span>
   </div>
 )
@@ -108,7 +122,7 @@ export const UserFooter = () => (
         <DropdownMenuTrigger asChild>
           <SidebarMenuButton asChild tooltip="Alan Chen">
             <button type="button" aria-label="帳號與設定">
-              <ItemAvatar src="https://i.pravatar.cc/48?u=EMP-1001" alt="Alan Chen" color="blue" />
+              <ItemAvatar src={demoPersonPhoto('Alan Chen', 48)} alt="Alan Chen" color="blue" />
               <span data-sidebar="menu-label" className="min-w-0 flex-1 truncate">Alan Chen</span>
             </button>
           </SidebarMenuButton>
@@ -129,7 +143,7 @@ export const UserFooter = () => (
 
 /**
  * Acme 示範產品給 Menu 的寬度設定(app-shell.spec.md「版面規則」§1:Menu 的最大寬 DS 沒有既有值,產品必給)。
- * 最小 / 初始 = DS 預設 240(`--sidebar-width-min` / `--sidebar-width`,user 2026-05-21 定);最大 320 = 示範產品自己的值
+ * 最小 / 初始 = DS 預設 240(最小 = AppShell 的常數 `PANEL_WIDTH_MIN_DEFAULT`、初始 = `--sidebar-width`,user 2026-05-21 定);最大 320 = 示範產品自己的值
  * (多留 80px 給較長的專案名稱;示範用,不是 DS 規則)。
  */
 export const ACME_MENU_WIDTH: PanelWidthRange = { min: 240, initial: 240, max: 320 }
@@ -267,7 +281,7 @@ export function AccountMenu() {
     <AccountMenuPrimitive
       user={{
         name: 'Alan Chen',
-        avatar: { src: 'https://i.pravatar.cc/48?u=EMP-1001', color: 'blue' },
+        avatar: { src: demoPersonPhoto('Alan Chen', 48), color: 'blue' },
       }}
       onViewProfile={() => {}}
       onOpenSettings={() => {}}
@@ -329,21 +343,131 @@ export function PageHeader({
   )
 }
 
+// 負責人傳人員物件(字串只會顯示縮寫,person-display.tsx toPersonData);照片走照片名冊,同一個人全 DS 同一張臉
+type SprintIssueRow = { id: string; title: string; assignee: PersonData; due: string }
+const SPRINT_OPEN_COLUMNS: DataTableProps<SprintIssueRow>['columns'] = [
+  { accessorKey: 'id', header: '議題', meta: { type: 'string', width: 120 } },
+  { accessorKey: 'title', header: '標題', meta: { type: 'string', width: 280 } },
+  { accessorKey: 'assignee', header: '負責人', meta: { type: 'person', width: 160 } },
+  { accessorKey: 'due', header: '截止日', meta: { type: 'date', width: 140 } },
+]
+// 同 app-shell.stories.tsx `ISSUES` 裡還沒完成的五筆(議題、標題、負責人、截止日照抄;日期寫死,story-determinism-invariant)
+const SPRINT_OPEN_ISSUES: SprintIssueRow[] = [
+  { id: 'ENG-1042', title: '登入後 redirect 失敗', assignee: demoPersonData('Alan Chen', 48), due: '2026-05-22' },
+  { id: 'ENG-1041', title: 'Stripe webhook timeout > 10s', assignee: demoPersonData('Jamie Lin', 48), due: '2026-05-25' },
+  { id: 'ENG-1038', title: 'PeoplePicker multi-select bug', assignee: demoPersonData('Sophia Wang', 48), due: '2026-05-26' },
+  { id: 'ENG-1031', title: '匯出 CSV 漏特殊字元', assignee: demoPersonData('Sophia Wang', 48), due: '2026-05-28' },
+  { id: 'ENG-1028', title: 'Onboarding 第 3 步無 a11y', assignee: demoPersonData('Jamie Lin', 48), due: '2026-06-02' },
+]
+
 /**
- * Insights 頁(本週 Sprint 的燃盡摘要):展示頁「四區版面」從 AI agent 連結導過來的目標頁,設計規格「元件總覽」的 Main 也放這一頁
+ * Active sprint 頁(Sprint 42 還沒完成的議題;2026-11-15 前叫 Insights 頁 / InsightsView,改名理由見上方 MAIN_NAV):
+ * 展示頁「四區版面」從 AI agent 連結導過來的目標頁,設計規格「元件總覽」的 Main 也放這一頁
  * —— 兩處同一份真實頁面內容(稽核 L117:總覽的 Main 原本是一段說明文字,說明搬到 docs)。
- * 底部 = bottom 48:整頁 Main 高度撐滿、最後是一般元素(layoutSpace.spec.md 規則 4 第 1 列;user 2026-10-28「這個沒問題」);
+ * 內容 = 還沒完成的議題 DataTable 一張,直接接在頁面標頭下,同 Sidebar 展示 / 範本 DashboardPage 的做法。
+ * 2026-11-10 前主區只有一份 DescriptionList(Sprint / 已完成 / 燃盡進度 / P0 未處理):user 2026-11-10 PR #172 留言(逐字)
+ * 「而且我不想要提供主內容是 description list的範例，太浪費空間了」—— 全 DS 同族一起改(app-shell.spec.md「Main 內塞什麼」:DS 不規定一定用 DescriptionList)。
+ * 2026-11-11 前表格上方還有區段標題「Sprint 42 還沒完成的議題」+ 一句燃盡摘要:user 2026-11-11 在這張圖留言(逐字)
+ * 「此外我覺得其實大部分的情境根本不用在主內容區又放上標題和描述，因為通常的情境是標頭的標題就可以完整表示這個頁面要幹嘛了吧」——
+ * 主區只有一塊內容,標頭已說明這頁是什麼,不再重複放標題與說明(app-shell.spec.md「Main 內塞什麼」);原標題改當表格的讀屏名稱(aria-label)。
+ * 間距照 layoutSpace.spec.md「Page 情境」:標頭 → 有框的 DataTable = bounded region = loose(規則 2)、左右 loose(規則 1)、
+ * 最後是有框的 DataTable → 底 loose(規則 4 第 2 列)—— 四邊同為 loose。閘 `scripts/header-first-gap-invariant.mjs` appshell-active-sprint。
+ */
+export function ActiveSprintView() {
+  return (
+    <div data-layout-body="fill" className="px-[var(--layout-space-loose)] pt-[var(--layout-space-loose)]">
+      <DataTable columns={SPRINT_OPEN_COLUMNS} data={SPRINT_OPEN_ISSUES} maxHeight="none" aria-label="Sprint 42 還沒完成的議題" />
+    </div>
+  )
+}
+
+// ── 議題追蹤的示範資料與 Right panel 議題詳情(展示頁與設計規格「元件總覽」共用一份)──────────────
+// 2026-11-11 前這段住在 app-shell.stories.tsx;「元件總覽」的 Right panel 另放一份「訂單詳情」,主區卻是 Sprint 42 議題表 ——
+// 兩件事對不上(第三批審查)。改成同一張表其中一筆的議題詳情,兩支 story 讀同一份,不再各寫一份(M17)。
+
+export type Issue = {
+  id: string
+  title: string
+  status: 'In Progress' | 'Backlog' | 'In Review' | 'Done'
+  assignee: string
+  priority: 'P0' | 'P1' | 'P2'
+  due: string
+}
+
+export const ISSUES: Issue[] = [
+  { id: 'ENG-1042', title: '登入後 redirect 失敗',         status: 'In Progress', assignee: 'Alan Chen',   priority: 'P0', due: '2026-05-22' },
+  { id: 'ENG-1041', title: 'Stripe webhook timeout > 10s', status: 'Backlog',     assignee: 'Jamie Lin',   priority: 'P0', due: '2026-05-25' },
+  { id: 'ENG-1038', title: 'PeoplePicker multi-select bug', status: 'In Review',  assignee: 'Sophia Wang', priority: 'P1', due: '2026-05-26' },
+  { id: 'ENG-1035', title: 'DataTable Safari scroll jitter', status: 'Done',      assignee: 'Marco Tsai',  priority: 'P1', due: '2026-05-20' },
+  { id: 'ENG-1031', title: '匯出 CSV 漏特殊字元',           status: 'In Progress', assignee: 'Sophia Wang', priority: 'P2', due: '2026-05-28' },
+  { id: 'ENG-1028', title: 'Onboarding 第 3 步無 a11y',     status: 'Backlog',     assignee: 'Jamie Lin',   priority: 'P2', due: '2026-06-02' },
+]
+
+/** Right panel「議題詳情」這種內容的寬度(示範值:最小 320 放得下欄位標籤 + 值兩欄,最大 560 免得留言行過長)。 */
+export const ISSUE_DETAIL_WIDTH: PanelWidthRange = { min: 320, initial: 360, max: 560 }
+
+// Status / Priority → Tag color mapping(per Tag spec status marker canonical)
+const STATUS_COLOR = {
+  'In Progress': 'blue',
+  'Backlog': 'neutral',
+  'In Review': 'yellow',
+  'Done': 'green',
+} as const
+
+const PRIORITY_COLOR = {
+  P0: 'red',
+  P1: 'yellow',
+  P2: 'neutral',
+} as const
+
+/**
+ * Aside content:Issue detail panel。
+ * @usage-ref: packages/design-system/src/components/DescriptionList/description-list.stories.tsx
+ * @usage-consumes: ItemContent(entity identity)+ Tag(status/priority)+ DescriptionList(metadata)
+ *
+ * Per codex Layer B D1+D2(2026-05-20):
+ * - Entity identity(title + id 副標)→ ItemContent(item-anatomy Family 2 subtitle pattern,非 ProfileCard 因 scope 是 people only)
+ * - Status / Priority marker → Tag color-coded(per tag.spec.md status use case)
+ * - Metadata fields → DescriptionList + DescriptionItem(per description-list.spec.md「Profile / detail panel 的屬性列表」use case)
+ *
+ * 2026-10-28:原本面板底部還有「分派給我」「標記完成」兩顆按鈕 —— 沒有規格依據、按了沒反應,user 訊息裡搜『分派』『標記完成』都是 0 筆;
+ * 詳情面板該放哪些動作是產品內容,範例不替產品決定,拿掉(稽核 M057;ssot PA5)。面板只示範內容。
+ * 底部 = bottom 48:右欄高度撐滿版面欄、最後是一般元素(layoutSpace.spec.md 規則 4 第 1 列;user 2026-10-28「這個沒問題」)。
  * 最後一個 DescriptionList 列不自帶下內距(description-list.tsx `last:pb-0`),底部只由這一層給。
  */
-export function InsightsView() {
+export function IssueDetail({ issue }: { issue: Issue | null }) {
+  if (!issue) {
+    return (
+      <div data-layout-body="fill" className="px-[var(--layout-space-loose)] text-fg-muted">
+        選一個 issue 看詳情
+      </div>
+    )
+  }
   return (
-    <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]">
-      <DescriptionList orientation="horizontal" divided>
-        <DescriptionItem label="Sprint">Sprint 42(5/18 – 5/29)</DescriptionItem>
-        <DescriptionItem label="已完成">12 / 18 筆議題</DescriptionItem>
-        <DescriptionItem label="燃盡進度">67%,比計畫慢 1 天</DescriptionItem>
-        <DescriptionItem label="P0 未處理">ENG-1042、ENG-1041</DescriptionItem>
-      </DescriptionList>
+    <div data-layout-body="fill" className="flex flex-col px-[var(--layout-space-loose)]">
+      <div className="flex flex-col gap-[var(--layout-space-loose)]">
+        <div className="flex flex-col gap-[var(--layout-space-tight)]">
+          <ItemContent
+            size="lg"
+            label={issue.title}
+            description={issue.id}
+            descriptionTone="muted"
+            labelTruncate={false}
+            labelClassName="font-medium text-foreground"
+          />
+          {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:234)(layoutSpace.spec.md:117 同範疇 spec-own) */}
+          <div className="flex flex-wrap gap-1">
+            <Tag size="sm" color={STATUS_COLOR[issue.status]}>{issue.status}</Tag>
+            <Tag size="sm" color={PRIORITY_COLOR[issue.priority]}>{issue.priority}</Tag>
+          </div>
+        </div>
+        {/* 標籤與日期跟旁邊的議題表同一套:欄名「負責人 / 截止日」;日期走 DataTable 日期欄同一條格式化路徑
+            (DatePicker `formatDate`,預設 YYYY/MM/DD —— date-picker.spec.md「格式化」),不直接印 ISO 字串(2026-11-17 重拍前確認) */}
+        <DescriptionList orientation="horizontal" divided>
+          <DescriptionItem label="負責人">{issue.assignee}</DescriptionItem>
+          <DescriptionItem label="截止日">{formatDate(issue.due)}</DescriptionItem>
+        </DescriptionList>
+      </div>
     </div>
   )
 }

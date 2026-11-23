@@ -1,25 +1,33 @@
 #!/bin/bash
 set -uo pipefail
-# SessionStart hook: check if governance hygiene actions are overdue; if so,
-# inject reminder into session context so the active provider proactively addresses them.
+# SessionStart hook:governance hygiene 超標時,把提示注入 session context,讓當下的 provider 先處理。
 #
-# Why: M10 — silent tech debt violates. If /knowledge-prune last ran 3+ months
-# ago, the shared/bootstrap instruction set is over 800 lines, or user-corrections.jsonl has pending
-# entries not yet codified → user / Claude should know at session start, not
-# discover later when things break.
+# Why: M10 — silent tech debt violates。開場檔總行數超過 800、上次 /knowledge-prune 超過 180 天、
+# 待處理的 user-corrections 超過 40 筆…… → 要在 session 開始時就知道,不是等東西壞了才發現。
 #
-# Two-tier thresholds(2026-04-25 G1):
-#   • Soft — inject reminder,non-blocking
-#   • Hard(2x soft)— inject BLOCKER context requiring Claude's first action
-#     to be /knowledge-prune(SessionStart hooks cannot truly block session,
-#     but hard-tier context is prefixed with 🚨 BLOCKER / REQUIRED_FIRST_ACTION
-#     so Claude reads it as must-address-first instruction)
+# 輸出只有三條通道(2026-04-26 降噪;第三條 2026-11-21 PROC-H 加):
+#   • BLOCKERS —— 訊息以 🚨 BLOCKER / REQUIRED_FIRST_ACTION 開頭。SessionStart hook 擋不了 session,
+#     靠這個前綴讓模型把它當成「必須先處理」。
+#   • PRUNE_TRIGGERS —— 不擋,但要求 AI 自動跑 /knowledge-prune。
+#   • FIRST_REPLY —— 不擋、也不是 prune;要 AI 在第一則回覆就轉告 user 的事(目前只有 Check 13 主資料夾落後)。
+#   三條都空 → 不輸出任何東西。
 #
-# Checks + thresholds:
-#   1. Registry-resolved bootstrap line count — soft 400 / hard 800(AGENTS.md budget SSOT)
-#   2. Days since last prune    — soft 90   / hard 180
-#   3. user-corrections pending — soft 20   / hard 40
-#   4. Benchmarks freshness     — read-only reminder at 30 days(no hard tier)
+# Checks + thresholds(只列真的會輸出的;數值以下方各 Check 的判斷式為準,本檔即 SSOT):
+#    1. 開場檔總行數(provider entry + shared entry,去重)> 800 → BLOCKER
+#    2. 距上次 knowledge-prune commit > 180 天 → BLOCKER
+#    3. 待處理 user-corrections > 40 筆 → BLOCKER
+#    7. hook 數 > 60 → BLOCKER;> 26 → PRUNE_TRIGGERS
+#    8. MEMORY.md 索引條數 > contract.json 的 maxIndexEntries → BLOCKER;≥ 上限 − 2 → PRUNE_TRIGGERS
+#       (數法與上限都在 scripts/validate-memory-contract.mjs,和 CI 同一個函式)
+#    9. provider 分支 > 1(本機、遠端各算)、本機 main 與 origin/main 分叉 → PRUNE_TRIGGERS
+#   10. sync-governance-counters 抓到寫死數字漂移 → PRUNE_TRIGGERS
+#   12. provider 檢視有 hook 群組沒有派工入口 → PRUNE_TRIGGERS
+#   11. 環境健檢(plugin 完整性 / node / peer CLI / consumer 安裝 / 長駐 bypass env)→ PRUNE_TRIGGERS
+#   13. 主資料夾 HEAD 沒包含遠端 main(git ls-remote origin refs/heads/main,逾時 5 秒)→ FIRST_REPLY:要 AI 在第一則
+#       回覆告訴 user 在自己終端機打的那一行;量不到(網路不通、逾時、origin 讀不到或沒有 main)→ FIRST_REPLY 印「量不到」,不當成已同步;
+#       沒設 origin 的 repo(測試 fixture、還沒推過的新專案)不適用、不輸出。
+#   單檔行數上限(AGENTS.md、CLAUDE.md、SKILL、spec、memory 各檔)不在本檔:SSOT 是 check_file_size_budget.sh
+#   的 case 表(寫入當下判:寫完超過 transition cap 而且這次變長就擋,其餘只提醒)。
 
 # Per-hook fire logging(enables /knowledge-prune D2 dead-hook detection)
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
@@ -53,7 +61,7 @@ if [ -n "$GIT_DIR" ] && declare -F _governance_safe_runtime_path >/dev/null 2>&1
 fi
 
 # 2026-05-26 folded auto_sync_memory.sh in here(retire that hook for D8a budget):
-# Per AGENTS.md governance hook count budget,SessionStart-only utility helper inline
+# Per hook count budget(SSOT = 本檔 Check 7),SessionStart-only utility helper inline
 # under main governance hook 比 separate hook 更合 anti-bloat。
 # Memory sync = committed repo SSOT → an explicitly declared provider cache. Providers without
 # a registry binding (Codex today) must never inherit or guess another provider's private HOME.
@@ -61,15 +69,14 @@ case "$MEMORY_SYNC_SCRIPT" in
   ""|/*|*..*) MEMORY_SYNC_SCRIPT="" ;;
 esac
 if [ -n "$MEMORY_SYNC_SCRIPT" ] && [ "${GOVERNANCE_READ_ONLY:-0}" != "1" ] && [ -f "$MEMORY_SYNC_SCRIPT" ]; then
-  SYNC_OUT=$(node "$MEMORY_SYNC_SCRIPT" 2>&1 || true)
-  COPIED=$(grep -m 1 -oE 'copied: [0-9]+' <<<"$SYNC_OUT" | grep -oE '[0-9]+' | sed -n '1p' || true)
-  # COPIED > 0 → 加入 REMINDERS(下面 main flow inject)
-  if [ -n "$COPIED" ] && [ "$COPIED" -gt 0 ]; then
-    MEMSYNC_NOTE="\n- 🔄 auto sync-memory(SessionStart): committed repo SSOT → provider cache refreshed ${COPIED} memory file(s)。"
-  fi
+  # 同步本身是目的;同步了幾份不輸出給模型(只有檔頭列的三條通道會輸出)。
+  node "$MEMORY_SYNC_SCRIPT" >/dev/null 2>&1 || true
 fi
 
-REMINDERS="${MEMSYNC_NOTE:-}"
+# 要新增提示就放進 BLOCKERS、PRUNE_TRIGGERS 或 FIRST_REPLY(見檔頭「輸出只有三條通道」);
+# 不要另開「只收集、不輸出」的變數 —— 2026-11-18 刪掉的舊提醒變數就是這種死碼:Check 1 的 500 / 600 段、
+# Check 2 / 3 的 soft 段、Check 4 / 5 / 6 全段與 memory 同步註記都寫進它,卻從沒送到模型(M37④)。
+# 測試 test_session_start_governance_check.sh 有一格靜態檢查,抓「只累加、從不讀」的變數。
 BLOCKERS=""
 
 # Check 1: bootstrap size(provider entry + shared entry,unique and registry-resolved).
@@ -82,122 +89,37 @@ for ENTRY in "$INSTRUCTION_ENTRY" "$SHARED_INSTRUCTION_ENTRY"; do
   [ -f "$ENTRY" ] && LINES=$((LINES + $(wc -l < "$ENTRY" | tr -d ' ')))
 done
 if [ "$LINES" -gt 0 ]; then
-  # 2026-04-26 tightened thresholds(對應 M19 + user 質問「auto self-improve」要更主動):
-  # SSOT alignment per AGENTS.md: target ≤ 250 / transition ≤ 400 / hard cap 800
-  # Stratified soft warnings: 500 approaching / 600 strong / 800 hard-cap blocker
+  # 本 Check 只看兩份 entry 去重後的總行數:> 800 出 BLOCKER(本檔即 SSOT)。
+  # 單檔(AGENTS.md、CLAUDE.md 各自)的 400 警告 / 800 上限在 check_file_size_budget.sh 的 case 表(寫完超過 800 而且這次變長就擋)。
+  # AGENTS.md「# 治理 canonical」的行數預算句不寫數值,只指向這兩處。
   if [ "$LINES" -gt 800 ]; then
     BLOCKERS="${BLOCKERS}\n- Bootstrap instructions(${BOOTSTRAP_LABELS}) total ${LINES} lines(hard cap 800 breached). /knowledge-prune REQUIRED FIRST ACTION this session."
-  elif [ "$LINES" -gt 600 ]; then
-    REMINDERS="${REMINDERS}\n- Bootstrap instructions(${BOOTSTRAP_LABELS}) total ${LINES} lines(50% over 400 transition cap). /knowledge-prune strongly recommended this session."
-  elif [ "$LINES" -gt 500 ]; then
-    REMINDERS="${REMINDERS}\n- Bootstrap instructions(${BOOTSTRAP_LABELS}) total ${LINES} lines(approaching 600 strong-warn). Consider /knowledge-prune."
   fi
 fi
 
-# Check 2: Last /knowledge-prune commit(soft 90d / hard 180d)
+# Check 2: Last /knowledge-prune commit(> 180 天 → BLOCKER)
 LAST_PRUNE=$(git log --format='%ct' --grep='knowledge-prune\|prune:\|governance.*prune' -1 2>/dev/null || echo "")
 if [ -n "$LAST_PRUNE" ]; then
   NOW=$(date +%s)
   DAYS=$(( (NOW - LAST_PRUNE) / 86400 ))
   if [ "$DAYS" -gt 180 ]; then
     BLOCKERS="${BLOCKERS}\n- Last /knowledge-prune was ${DAYS} days ago(HARD THRESHOLD 180 breached). /knowledge-prune REQUIRED FIRST ACTION this session."
-  elif [ "$DAYS" -gt 90 ]; then
-    REMINDERS="${REMINDERS}\n- Last /knowledge-prune commit was ${DAYS} days ago (target: quarterly ≤ 90 days)."
   fi
 fi
 
-# Check 3: user-corrections pending(soft 20 / hard 40)
+# Check 3: user-corrections pending(> 40 → BLOCKER)
 CORRECTIONS_LOG="${RUNTIME_STATE_DIR:+$RUNTIME_STATE_DIR/user-corrections.jsonl}"
 if [ -f "$CORRECTIONS_LOG" ]; then
   CORRECTION_COUNT=$(wc -l < "$CORRECTIONS_LOG" | tr -d ' ')
   if [ "$CORRECTION_COUNT" -gt 40 ]; then
     BLOCKERS="${BLOCKERS}\n- ${CORRECTION_COUNT} user-corrections pending(HARD THRESHOLD 40 breached). /codify-corrections REQUIRED FIRST ACTION this session."
-  elif [ "$CORRECTION_COUNT" -gt 20 ]; then
-    REMINDERS="${REMINDERS}\n- ${CORRECTION_COUNT} user-correction signals pending codification (provider-neutral runtime state). Review + codify pending ones."
   fi
 fi
 
-# Check 4: benchmark freshness is advisory and read-only. Network refresh is an explicit
-# operator/automation action; a SessionStart hook must never mutate the checkout in background.
-BENCH_DIR="${RUNTIME_STATE_DIR:+$RUNTIME_STATE_DIR/benchmarks}"
-BENCH_FETCHER="$PROJECT_DIR/governance/benchmarks/fetch.sh"
-if [ -n "$BENCH_DIR" ] && [ -x "$BENCH_FETCHER" ]; then
-  LAST_FETCH_FILE="$BENCH_DIR/last-fetch.txt"
-  SHOULD_AUTO_FETCH=0
+# Check 4 / 5 / 6 已刪(2026-11-18):benchmark 新鮮度、fire-weighted test gap、fix 後漏跑 /scan-similar-bugs
+# 三者的結果都只寫進不輸出的舊提醒變數。編號不重排 —— Check 2 / 3 / 7 / 8 / 12 有外部文件按編號引用。
 
-  if [ ! -f "$LAST_FETCH_FILE" ]; then
-    SHOULD_AUTO_FETCH=1
-    FETCH_REASON="never fetched"
-  else
-    # GNU coreutils first, BSD/macOS second — same portability order as stop_passive_logging.sh:161.
-    # Without the GNU form this silently returned 0 on Linux, which made every staleness window
-    # look infinitely old on containerized hosts.
-    LAST_TS=$(stat -c '%Y' "$LAST_FETCH_FILE" 2>/dev/null || stat -f '%m' "$LAST_FETCH_FILE" 2>/dev/null || echo "0")
-    NOW=$(date +%s)
-    DAYS=$(( (NOW - LAST_TS) / 86400 ))
-    if [ "$DAYS" -gt 30 ]; then
-      SHOULD_AUTO_FETCH=1
-      FETCH_REASON="${DAYS} days stale"
-    fi
-  fi
-
-  [ "$SHOULD_AUTO_FETCH" = "1" ] && REMINDERS="${REMINDERS}\n- Benchmarks ${FETCH_REASON} → explicitly run \`bash governance/benchmarks/fetch.sh\` or the scheduled refresh workflow."
-fi
-
-# Check 6: Fix commits without /scan-similar-bugs invoke(M10 mechanical 落地)
-# Detect 24h 內 fix( commit 但 skill-invokes log 沒對應 scan-similar-bugs invoke
-RECENT_FIX_COMMITS=$(git log -5 --since='24 hours ago' --grep='^fix(\|^bugfix:\|^fix:' --oneline 2>/dev/null || true)
-if [ -n "$RECENT_FIX_COMMITS" ]; then
-  SKILL_LOG="${RUNTIME_STATE_DIR:+$RUNTIME_STATE_DIR/skill-invokes.jsonl}"
-  RECENT_SCAN_INVOKE=0
-  if [ -f "$SKILL_LOG" ]; then
-    # Check 24h 內有 scan-similar-bugs invoke
-    NOW_EPOCH=$(date -u +%s)
-    DAY_AGO_EPOCH=$(( NOW_EPOCH - 86400 ))
-    while IFS= read -r line; do
-      [ -z "$line" ] && continue
-      if grep -q "scan-similar-bugs" <<<"$line"; then
-        TS=$(echo "$line" | jq -r '.ts // empty' 2>/dev/null)
-        if [ -n "$TS" ]; then
-          TS_EPOCH=$(date -u -d "$TS" +%s 2>/dev/null || date -j -u -f "%Y-%m-%dT%H:%M:%SZ" "$TS" +%s 2>/dev/null || echo 0)
-          if [ "$TS_EPOCH" -gt "$DAY_AGO_EPOCH" ]; then
-            RECENT_SCAN_INVOKE=1
-            break
-          fi
-        fi
-      fi
-    done < "$SKILL_LOG"
-  fi
-  if [ "$RECENT_SCAN_INVOKE" = "0" ]; then
-    FIX_LIST=$(sed 's/^/  - /' <<<"$RECENT_FIX_COMMITS" | awk 'NR <= 3')
-    REMINDERS="${REMINDERS}\n- 24h 內 fix commit(s) 未 follow /scan-similar-bugs(M10 mechanical 落地):\n${FIX_LIST}\n  考慮 invoke /scan-similar-bugs 確認 DS-wide 同類 bug 全清。"
-  fi
-fi
-
-# Check 5: Fire-weighted test gap(G7)— hooks with fires > 100 but no test
-FIRES_LOG="${RUNTIME_STATE_DIR:+$RUNTIME_STATE_DIR/hook-fires-per-hook.jsonl}"
-TESTS_DIR="$PROJECT_DIR/$CANONICAL_HOOK_ROOT/tests"
-if [ -f "$FIRES_LOG" ] && [ -d "$TESTS_DIR" ]; then
-  # Top hot hooks by fire count(讀近 10000 lines 防 log 太長跑太久)
-  HOT_HOOKS=$(tail -10000 "$FIRES_LOG" 2>/dev/null \
-    | jq -r '.hook // empty' 2>/dev/null \
-    | sort | uniq -c | sort -rn \
-    | awk '$1 > 100 { sub(/\.sh$|\.py$/, "", $2); print $1, $2 }')
-  HOT_GAPS=""
-  while IFS= read -r line; do
-    [ -z "$line" ] && continue
-    COUNT=$(echo "$line" | awk '{print $1}')
-    NAME=$(echo "$line" | awk '{print $2}')
-    if [ ! -f "$TESTS_DIR/test_${NAME}.sh" ]; then
-      HOT_GAPS="${HOT_GAPS}\n  - ${NAME}(${COUNT} fires,無 test)"
-    fi
-  done <<< "$HOT_HOOKS"
-  if [ -n "$HOT_GAPS" ]; then
-    REMINDERS="${REMINDERS}\n- Fire-weighted test gap(hook > 100 fires 仍無 test):${HOT_GAPS}\n  推力:在 canonical hook tests 寫 \`test_<name>.sh\`,參考 test_check_story_anatomy.sh。"
-  fi
-fi
-
-# Check 7: Hook count auto-trigger(soft 26 / hard 60 — Anthropic guideline ~15;真值見下方 -gt 判斷 + AGENTS.md `# 治理 canonical`)
+# Check 7: Hook count auto-trigger(soft 26 / hard 60 — Anthropic guideline ~15;真值見下方 -gt 判斷,本檔即 SSOT)
 # 2026-05-09 fix:tree-recursive count(含 lib/ helpers)。前身 -maxdepth 1 只 count root,
 # 漏 16 個 lib/ helpers → metric reports 19,reality 35 = system gaming own metric。
 # 2026-05-13 prune consolidation:`_*.sh` 約定 = internal helper(Unix convention)。
@@ -219,7 +141,7 @@ elif [ -d "$HOOKS_DIR" ]; then
 fi
 # 現值**不在此硬寫**:本檔曾同時留下「59、headroom=1」(2026-08-05 註解)與「已為 60、零 headroom」
 # (2026-07-31 訊息字串)兩個互相矛盾的庫存數,兩個都會過期。真值一律由下方 find predicate 當場算,
-# 或 `npm run sync:counters` 跑出;60 是邊界不是基準,下一支 first-class hook 必先由
+# 或 `npm run sync-counters` 跑出;60 是邊界不是基準,下一支 first-class hook 必先由
 # /knowledge-prune retire / consolidate 既有 hook 騰出空間。
 if [ "$HOOK_COUNT" -gt 60 ]; then
   BLOCKERS="${BLOCKERS}\n- Hook count ${HOOK_COUNT}(hard 60 — Anthropic guideline ~15;含 root + lib/,排 retired/tests/ 與 _* helper)。超 60 = 先跑 /knowledge-prune 評估 retire / consolidate,不直接 re-raise。"
@@ -230,24 +152,32 @@ elif [ "$HOOK_COUNT" -gt 26 ]; then
   PRUNE_TRIGGERS="${PRUNE_TRIGGERS}\n- Hook count ${HOOK_COUNT}(soft 26 trigger,2026-05-15 升 — Anthropic guideline ~15;含 root + lib/). /knowledge-prune 評估 retire / consolidate 候選."
 fi
 
-# Check 8: Memory entries auto-trigger(soft 18 / hard 20)
-# Always count the committed provider-neutral SSOT. Home state is an optional cache and cannot
-# change governance outcomes.
-REPO_MEMORY_DIR="$PROJECT_DIR/governance/memory"
-if [ -d "$REPO_MEMORY_DIR" ]; then
-  MEMORY_DIR="$REPO_MEMORY_DIR"
-else
-  MEMORY_DIR=""
-fi
-MEM_COUNT=0
-if [ -n "$MEMORY_DIR" ] && [ -d "$MEMORY_DIR" ]; then
-  MEM_COUNT=$(find "$MEMORY_DIR" -maxdepth 1 -name "*.md" -not -name "MEMORY.md" -not -name "README.md" 2>/dev/null | wc -l | tr -d ' ')
-  MEM_COUNT=${MEM_COUNT:-0}
-fi
-if [ "$MEM_COUNT" -gt 20 ]; then
-  BLOCKERS="${BLOCKERS}\n- Memory entries ${MEM_COUNT}(hard 20 cap). /knowledge-prune REQUIRED FIRST ACTION."
-elif [ "$MEM_COUNT" -ge 18 ]; then
-  PRUNE_TRIGGERS="${PRUNE_TRIGGERS}\n- Memory entries ${MEM_COUNT}(soft 18 trigger,20 = hard cap). /knowledge-prune 建議排程."
+# Check 8: memory 索引條數(> 上限 → BLOCKER;≥ 上限 − 2 → PRUNE_TRIGGERS)
+# 只數 committed 的 governance/memory(provider-neutral SSOT);home 底下的快取不影響判定。
+# 數法與上限都住在 scripts/validate-memory-contract.mjs。CI 用它的 validateMemoryContract 判紅;這裡叫同一支的
+# --index-budget —— 同一個 memoryIndexLinks 數 MEMORY.md 的索引條目,上限讀 contract.json 的 maxIndexEntries。
+# 還有誰用同一個函式,清單只寫在該檔 memoryIndexLinks 上方(本檔不重列)。
+# 本檔不另寫數法(M17)。改前數的是 governance/memory 的 .md 檔數,和 CI 判的不是同一個東西(2026-11-18 改)。
+# soft = 上限 − 2:改前寫死 18 / 20,現在跟著 contract 的上限走,數值不變。
+# 沒有 contract.json = 這個專案沒有 memory 契約,本 Check 不適用;node 不在 PATH 由 Check 11 報。
+# 量不到(腳本缺、輸出不是預期的 JSON)不得當成「沒超標」:進 PRUNE_TRIGGERS 點名量具失效(M37 第八種形狀)。
+MEMORY_CONTRACT="$PROJECT_DIR/governance/memory/contract.json"
+if [ -f "$MEMORY_CONTRACT" ] && command -v node >/dev/null 2>&1; then
+  MEM_BUDGET_OUT=$(node scripts/validate-memory-contract.mjs --index-budget 2>&1 || true)
+  MEM_BUDGET=$(printf '%s' "$MEM_BUDGET_OUT" \
+    | jq -r 'if (.entries | type) == "number" and (.maxIndexEntries | type) == "number" then "\(.entries) \(.maxIndexEntries)" else empty end' 2>/dev/null || true)
+  if [[ "$MEM_BUDGET" =~ ^([0-9]+)\ ([1-9][0-9]*)$ ]]; then
+    MEM_ENTRIES="${BASH_REMATCH[1]}"
+    MEM_MAX="${BASH_REMATCH[2]}"
+    if [ "$MEM_ENTRIES" -gt "$MEM_MAX" ]; then
+      BLOCKERS="${BLOCKERS}\n- Memory index entries ${MEM_ENTRIES}(hard ${MEM_MAX} = governance/memory/contract.json maxIndexEntries;CI 的 validate-memory-contract 會紅). /knowledge-prune REQUIRED FIRST ACTION."
+    elif [ "$MEM_ENTRIES" -ge $((MEM_MAX - 2)) ]; then
+      PRUNE_TRIGGERS="${PRUNE_TRIGGERS}\n- Memory index entries ${MEM_ENTRIES}(soft $((MEM_MAX - 2)) trigger,${MEM_MAX} = hard cap). /knowledge-prune 建議排程."
+    fi
+  else
+    MEM_BUDGET_FIRST=$(printf '%s\n' "$MEM_BUDGET_OUT" | sed -n '1p' | cut -c1-160)
+    PRUNE_TRIGGERS="${PRUNE_TRIGGERS}\n- Memory index 量不到(node scripts/validate-memory-contract.mjs --index-budget 回:${MEM_BUDGET_FIRST:-空});量不到 ≠ 沒超標,先修好量具再判斷。"
+  fi
 fi
 
 # Check 9: Branch sprawl(M28 — solo work = 1 chat = 1 branch / 0-1 active feature).
@@ -310,6 +240,33 @@ if command -v node >/dev/null 2>&1 && [ -f scripts/provider-view-group-reachabil
   fi
 fi
 
+# Check 13: 主資料夾落後遠端 main(2026-11-21 PROC-H,CG0-BEHIND-CHECK)
+# 11-17 對 user 的承諾:「之後我會讓開場檢查自動提醒落後幾版,不會每次另外麻煩你」(session 96d711a5 01:53:14);
+# 交接 logs/efficiency/synthesis.md F0 第 4 點:比對主資料夾 HEAD 和 `git ls-remote origin refs/heads/main`,落後就要 AI
+# 在第一則回覆告訴 user 要打的那一行。hook 都從主資料夾跑,主資料夾沒同步 = 新的 hook / 規則全都沒生效(根因 1)。
+# 兩面:HEAD 已包含遠端 main(同一個 commit,或在它之上)→ 不提醒;沒包含 → 提醒;量不到 → 印「量不到」,不當同步(M37)。
+# 這是唯一會連網的 Check:perl alarm 限 5 秒,GIT_TERMINAL_PROMPT=0 不讓 git 卡在帳密提示。
+FIRST_REPLY=""
+if git -C "$PROJECT_DIR" remote get-url origin >/dev/null 2>&1; then
+  REMOTE_MAIN_LINE=$(GIT_TERMINAL_PROMPT=0 perl -e 'alarm shift; exec @ARGV' 5 \
+    git -C "$PROJECT_DIR" ls-remote origin refs/heads/main 2>/dev/null </dev/null || true)
+  REMOTE_MAIN="${REMOTE_MAIN_LINE%%[[:space:]]*}"
+  LOCAL_HEAD=$(git -C "$PROJECT_DIR" rev-parse --verify -q 'HEAD^{commit}' 2>/dev/null || true)
+  if ! [[ "$REMOTE_MAIN" =~ ^[0-9a-f]{40}$ ]] || [ -z "$LOCAL_HEAD" ]; then
+    FIRST_REPLY="${FIRST_REPLY}\n- 主資料夾有沒有落後 GitHub main 這次量不到(git ls-remote origin refs/heads/main 失敗、逾時 5 秒,或遠端沒有 main)。量不到 ≠ 已同步;不用為此停下,下次開場會再量。"
+  elif [ "$REMOTE_MAIN" != "$LOCAL_HEAD" ] \
+    && ! { git -C "$PROJECT_DIR" cat-file -e "${REMOTE_MAIN}^{commit}" 2>/dev/null \
+           && git -C "$PROJECT_DIR" merge-base --is-ancestor "$REMOTE_MAIN" "$LOCAL_HEAD" 2>/dev/null; }; then
+    if git -C "$PROJECT_DIR" cat-file -e "${REMOTE_MAIN}^{commit}" 2>/dev/null; then
+      BEHIND_COUNT=$(git -C "$PROJECT_DIR" rev-list --count "${LOCAL_HEAD}..${REMOTE_MAIN}" 2>/dev/null || echo "?")
+      BEHIND_TEXT="落後 ${BEHIND_COUNT} 個 commit"
+    else
+      BEHIND_TEXT="遠端 main 有本機還沒抓下來的 commit"
+    fi
+    FIRST_REPLY="${FIRST_REPLY}\n- 主資料夾沒有包含 GitHub 最新的 main(本機 HEAD ${LOCAL_HEAD:0:8},遠端 main ${REMOTE_MAIN:0:8},${BEHIND_TEXT})。新的 hook 與規則要等主資料夾同步才生效。\n  在你的第一則回覆就告訴 user:請在自己的終端機打這一行(AI 不替 user 跑;有未提交改動時 switch 會拒絕,先跟 user 確認怎麼處理,不要丟棄):\n    cd \"${PROJECT_DIR}\" && git fetch origin && git switch main && git pull --ff-only"
+  fi
+fi
+
 # Check 11: Cross-repo env smoke(2026-05-30 — NON-BLOCKING:只進 PRUNE_TRIGGERS soft channel,
 # 永不進 BLOCKER 路徑、永不非零退出。set -uo pipefail(無 -e)→ 探針非零返回不殺 script;
 # 但 set -u 下 unset var 必 ${VAR:-} guard。每探針獨立、無 network、無 blocking subshell。
@@ -342,23 +299,21 @@ if [ -n "$ENV_SMOKE" ]; then
   PRUNE_TRIGGERS="${PRUNE_TRIGGERS}\n- 🩺 env-smoke(non-blocking,環境健檢):${ENV_SMOKE}"
 fi
 
-# Inject if HARD BLOCKERS(must)or auto-prune-triggers or quarterly-prune-overdue
-# Check 2 already derives prune recency from committed Git history. The former
-# `.last-prune` provider-local receipt had no writer and duplicated that authority.
-QUARTERLY_DUE=""
+# 三條通道都空 → 不輸出。季度到期由 Check 2 從 committed Git history 算(> 180 天進 BLOCKERS);
+# 舊的季度變數恆為空字串、它專用的第三種訊息永遠走不到,2026-11-18 一併刪除。
+[ -z "$BLOCKERS" ] && [ -z "$PRUNE_TRIGGERS" ] && [ -z "$FIRST_REPLY" ] && exit 0
 
-[ -z "$BLOCKERS" ] && [ -z "$QUARTERLY_DUE" ] && [ -z "$PRUNE_TRIGGERS" ] && exit 0
-
+MSG=""
 if [ -n "$BLOCKERS" ]; then
   MSG="🚨 BLOCKER — governance hard thresholds breached (SessionStart):${BLOCKERS}\n\n"
   MSG="${MSG}⚠️ REQUIRED_FIRST_ACTION:先 invoke 上述 skill(/knowledge-prune 或 /codify-corrections)"
   MSG="${MSG}把 governance 帶回健康區間,再處理 user 的實際請求。"
   [ -n "$PRUNE_TRIGGERS" ] && MSG="${MSG}\n\n附 soft prune triggers:${PRUNE_TRIGGERS}"
-  [ -n "$QUARTERLY_DUE" ] && MSG="${MSG}\n${QUARTERLY_DUE}"
 elif [ -n "$PRUNE_TRIGGERS" ]; then
-  MSG="⚙️ Auto-prune triggers fired (SessionStart):${PRUNE_TRIGGERS}\nAI 必 AUTO-RUN /knowledge-prune(禁問 user 要不要跑；P0/P1/P2E 工程治理自主執行，只有產品／UI／UX SSOT 真取捨的 P2H 才列拍板清單 — per deep-audit-cross-codex SKILL C.0a).${QUARTERLY_DUE}"
-else
-  MSG="🧭 Governance hygiene reminder (SessionStart):${QUARTERLY_DUE}\nNot blocking — address inline when convenient."
+  MSG="⚙️ Auto-prune triggers fired (SessionStart):${PRUNE_TRIGGERS}\nAI 必 AUTO-RUN /knowledge-prune(禁問 user 要不要跑；P0/P1/P2E 工程治理自主執行，只有產品／UI／UX SSOT 真取捨的 P2H 才列拍板清單 — per design-system-audit SKILL「Phase 4.5」Deep mode)."
+fi
+if [ -n "$FIRST_REPLY" ]; then
+  MSG="${MSG:+${MSG}\n\n}📌 主資料夾同步檢查(SessionStart):${FIRST_REPLY}"
 fi
 # jq 不在時不再由各 hook 自己靜默 exit 0(G4,2026-10-07):唯一入口 scripts/run-provider-hook.mjs 在 hook 的
 # PATH 放探針(CLOSED_HOOK_TOOL_LABELS),本 hook 一呼叫 jq 就被標成「沒有跑完」並列名給模型,同組其他 hook 照常。

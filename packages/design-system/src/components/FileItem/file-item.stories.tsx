@@ -7,6 +7,10 @@ import { FileItem } from './file-item'
 import { useFileDemo, UploadManagerPanel, type DemoFile } from './_demo-files'
 import { Button } from '@/design-system/components/Button/button'
 import { Toaster } from '@/design-system/components/Toast/toast'
+import { demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
+
+// 「Alan Profile.png」是 Alan Chen 的大頭照檔案 → 縮圖用照片名冊裡 Alan Chen 的那一張(同一個人全 DS 同一張臉)
+const ALAN_PROFILE_PNG = demoPersonPhoto('Alan Chen', 80)
 
 const meta: Meta<typeof FileItem> = {
   title: 'Design System/Components/FileItem/展示',
@@ -19,16 +23,16 @@ const meta: Meta<typeof FileItem> = {
 }
 export default meta
 
-// 每一則的刪除 / 下載 / 重試 / 點列 / View log 都接上真的反應(./_demo-files.tsx;之前全是空函式,點了沒反應)。
+// 每一則的刪除 / 下載 / 重試 / 點列 / 查看紀錄 都接上真的反應(./_demo-files.tsx;之前全是空函式,點了沒反應)。
 // 列內操作一律 Button xs iconOnly variant="text"(24 固定):compact 列靠 FileItem suffix wrapper 的負 margin 把 layout
 // footprint 收到 1lh、不撐高列,命中區仍 24(命中 ≡ 可視,ds-canonical/references/hit-area-canonical.md);
 // 判準住 item-anatomy.spec.md「結構:四個獨立 slot」的 suffix 表(Inline Action 列:點擊靶子 ≤ 24px)。
 
 // 同一張人像照(圖片檔,縮圖就是照片本身)的三種狀態;上傳中 40% = 3.0 / 7.5 MB,完成後 7.5 MB,前後對得上(之前上傳中寫 5.7 MB of 7.5MB、完成後寫 5.7 MB)
 const RICH_FILES: DemoFile[] = [
-  { uid: 'rich-uploading', name: 'Alan Profile.png', mimeType: 'image/png', status: 'uploading', progress: 40, uploadingText: '3.0 MB of 7.5 MB', size: '7.5 MB', thumbnailSrc: 'https://i.pravatar.cc/80?u=alan' },
-  { uid: 'rich-completed', name: 'Alan Profile.png', mimeType: 'image/png', status: 'completed', size: '7.5 MB', thumbnailSrc: 'https://i.pravatar.cc/80?u=alan', url: 'https://i.pravatar.cc/800?u=alan' },
-  { uid: 'rich-error', name: 'Alan Profile.png', mimeType: 'image/png', status: 'error', progress: 65, size: '7.5 MB', thumbnailSrc: 'https://i.pravatar.cc/80?u=alan' },
+  { uid: 'rich-uploading', name: 'Alan Profile.png', mimeType: 'image/png', status: 'uploading', progress: 40, uploadingText: '3.0 MB / 7.5 MB', size: '7.5 MB', thumbnailSrc: ALAN_PROFILE_PNG },
+  { uid: 'rich-completed', name: 'Alan Profile.png', mimeType: 'image/png', status: 'completed', size: '7.5 MB', thumbnailSrc: ALAN_PROFILE_PNG, url: demoPersonPhoto('Alan Chen', 800) },
+  { uid: 'rich-error', name: 'Alan Profile.png', mimeType: 'image/png', status: 'error', progress: 65, size: '7.5 MB', thumbnailSrc: ALAN_PROFILE_PNG },
 ]
 
 export const Rich = {
@@ -76,7 +80,7 @@ export const RichRowKeyboardContract = {
   parameters: { demoFocus: 'keep' },
   render: () => (
     <div className="max-w-md">
-      <FileItem mode="rich" name="Alan Profile.png" status="completed" description="7.5 MB" thumbnailSrc="https://i.pravatar.cc/80?u=alan"
+      <FileItem mode="rich" name="Alan Profile.png" status="completed" description="7.5 MB" thumbnailSrc={ALAN_PROFILE_PNG}
         onClick={keyboardOpen} onDownload={() => {}}
         actions={<Button size="xs" iconOnly variant="text" startIcon={Trash2} aria-label="刪除 Alan Profile.png" onClick={keyboardDelete} />} />
     </div>
@@ -132,7 +136,7 @@ const HOVER_RICH: DemoFile[] = [
 ]
 const HOVER_COMPACT: DemoFile[] = [
   { uid: 'hover-csv', name: 'data-2024-q1.csv', mimeType: 'text/csv', status: 'completed', size: '48 KB' },
-  { uid: 'hover-json', name: 'backup-failed.json', mimeType: 'application/json', status: 'error', size: '320 KB', errorText: 'Network timeout.' },
+  { uid: 'hover-json', name: 'backup-failed.json', mimeType: 'application/json', status: 'error', size: '320 KB', errorText: '網路連線逾時。' },
 ]
 
 export const HoverSwap = {
@@ -166,9 +170,12 @@ export const HoverSwap = {
 }
 
 // 已上傳的附件:點列用 FileViewer 開;「圖片」區段只放圖片檔(之前把 報告.pdf / 合約附件.docx 放在圖片區)
+// 檔名照照片內容取(2026-11-21 SIB-PV 實查:舊的 seed/event-key-visual 是 Picsum 第 134 張鐵橋、seed/venue-floor-plan 是第 175 張時鐘,
+// 檔名卻是「活動主視覺.jpg」「會場平面圖.png」—— 同 Carousel 的圖文不符;Picsum 只有照片,沒有平面圖)。
+// 兩張都是活動場地的勘查照(咖啡廳):seed 找法同 ../Carousel/_carousel-demo.ts(先看照片,再找轉址到那一張的 seed;兩種尺寸各查一次)。
 const ATTACHMENT_IMAGES: DemoFile[] = [
-  { uid: 'attach-1', name: '活動主視覺.jpg', mimeType: 'image/jpeg', size: '2.3 MB', thumbnailSrc: 'https://picsum.photos/seed/event-key-visual/1200/800' },
-  { uid: 'attach-2', name: '會場平面圖.png', mimeType: 'image/png', size: '1.1 MB', thumbnailSrc: 'https://picsum.photos/seed/venue-floor-plan/1200/800' },
+  { uid: 'attach-1', name: '場勘照片-長桌區.jpg', mimeType: 'image/jpeg', size: '2.3 MB', thumbnailSrc: 'https://picsum.photos/seed/demo-1963/1200/800' }, // Picsum 42:咖啡廳長木桌
+  { uid: 'attach-2', name: '場勘照片-靠牆座位.jpg', mimeType: 'image/jpeg', size: '1.1 MB', thumbnailSrc: 'https://picsum.photos/seed/demo-1233/1200/800' }, // 48:白磚牆前的木桌
 ]
 const ATTACHMENT_DOCUMENTS: DemoFile[] = [
   { uid: 'attach-3', name: 'data.csv', mimeType: 'text/csv', size: '47 KB' },
@@ -217,7 +224,7 @@ export const Clickable = {
 const COMPACT_MIXED: DemoFile[] = [
   { uid: 'mixed-uploading', name: '圖片草稿.png', mimeType: 'image/png', status: 'uploading', progress: 40, size: '1.8 MB' },
   { uid: 'mixed-reply', name: '回覆範本.docx', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size: '64 KB' },
-  { uid: 'mixed-error', name: 'backup-failed.json', mimeType: 'application/json', status: 'error', size: '320 KB', errorText: 'Network timeout.' },
+  { uid: 'mixed-error', name: 'backup-failed.json', mimeType: 'application/json', status: 'error', size: '320 KB', errorText: '網路連線逾時。' },
   { uid: 'mixed-cover', name: '附件封面.pdf', mimeType: 'application/pdf', size: '220 KB' },
 ]
 
@@ -245,7 +252,7 @@ export const CompactMixed = {
 //   - 標頭只有收合鈕(傳輸中只能收合);全部成功 5 秒後整個面板收起,滑過 / 聚焦時暫停;有失敗就不收起
 // 試算表與 PDF 沒有圖片縮圖,不放人臉照片。
 const UPLOAD_MANAGER_RICH: DemoFile[] = [
-  { uid: 'um-rich-uploading', name: 'Alan Profile.png', mimeType: 'image/png', status: 'uploading', progress: 40, uploadingText: '3.0 MB of 7.5 MB', size: '7.5 MB', thumbnailSrc: 'https://i.pravatar.cc/80?u=alan' },
+  { uid: 'um-rich-uploading', name: 'Alan Profile.png', mimeType: 'image/png', status: 'uploading', progress: 40, uploadingText: '3.0 MB / 7.5 MB', size: '7.5 MB', thumbnailSrc: ALAN_PROFILE_PNG },
   { uid: 'um-rich-completed', name: 'Q1 營收報表.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', status: 'completed', size: '2.4 MB' },
   { uid: 'um-rich-error', name: '合約草案 v3.pdf', mimeType: 'application/pdf', status: 'error', progress: 0, size: '3.1 MB' },
 ]

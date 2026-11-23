@@ -158,7 +158,7 @@ export const ImplementationRule: Story = {
     <TutorialPage>
       <TutorialRule
         title="❌ 硬寫色值:<Bar fill='#3b82f6' />"
-        note="繞過 ChartConfig + --chart-* token 系統,dark mode 切換時不跟著反轉,brand 色改動時也無法一次更新。"
+        note="繞過 ChartConfig + --chart-* token 系統,dark mode 切換時不跟著反轉,配色要改時也無法一次更新。"
       >
         <ExampleCaption warn>
           ❌ &lt;Bar fill="#3b82f6" /&gt; &nbsp;&nbsp; ✅ &lt;Bar fill="var(--color-{'{key}'})" /&gt; (搭配 ChartConfig)
@@ -280,8 +280,8 @@ export const CategoryTokenRule: Story = {
   render: () => (
     <TutorialPage>
       <TutorialRule
-        title="類別色固定用 --chart-1..5,不用會隨品牌色變動的色彩變數"
-        note="ChartConfig 把每個資料系列對應到一個 --chart-* 色彩變數,ChartContainer 自動轉成 --color-{系列名},Recharts 直接用 fill='var(--color-...)'。用這組固定色(而不是會跟著品牌主色變動的色彩變數)的原因:未來品牌主色改色時,圖表的類別色彩意義不會跟著漂移 — 『Desktop 永遠是 chart-1 藍色』跟品牌色是否改成綠色無關。"
+        title="類別色固定用 --chart-1..5,不用會隨互動色變動的色彩變數"
+        note="ChartConfig 把每個資料系列對應到一個 --chart-* 色彩變數,ChartContainer 自動轉成 --color-{系列名},Recharts 直接用 fill='var(--color-...)'。用這組固定色(而不是會跟著互動色變動的色彩變數)的原因:未來互動色換色時,圖表的類別色彩意義不會跟著漂移 — 『Desktop 永遠是 chart-1 藍色』跟互動色是否改成綠色無關。"
       >
         <ExampleGroup className="w-full max-w-xl">
           <ChartContainer config={countrySalesConfig}>

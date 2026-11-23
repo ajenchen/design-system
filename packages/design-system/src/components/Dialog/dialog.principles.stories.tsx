@@ -65,7 +65,7 @@ export const UsageGuidance: Story = {
             <DialogTrigger asChild>
               <Button variant="tertiary">建立新專案</Button>
             </DialogTrigger>
-            <DialogContent height="hug" maxWidth={480}>
+            <DialogContent height="hug">
               <DialogHeader>
                 <DialogTitle>建立新專案</DialogTitle>
               </DialogHeader>
@@ -102,7 +102,7 @@ export const UsageGuidance: Story = {
             <DialogTrigger asChild>
               <Button variant="secondary" danger startIcon={Trash2}>永久刪除專案</Button>
             </DialogTrigger>
-            <DialogContent height="hug" maxWidth={440}>
+            <DialogContent height="hug" width="sm">
               <DialogHeader>
                 <DialogTitle>是否永久刪除專案</DialogTitle>
               </DialogHeader>
@@ -131,7 +131,7 @@ export const UsageGuidance: Story = {
             <DialogTrigger asChild>
               <Button variant="tertiary">儲存變更</Button>
             </DialogTrigger>
-            <DialogContent height="hug" maxWidth={400}>
+            <DialogContent height="hug" width="sm">
               <DialogHeader>
                 <DialogTitle>儲存成功</DialogTitle>
               </DialogHeader>
@@ -156,7 +156,7 @@ export const UsageGuidance: Story = {
             <DialogTrigger asChild>
               <Button variant="tertiary">前往首頁</Button>
             </DialogTrigger>
-            <DialogContent height="hug" maxWidth={420}>
+            <DialogContent height="hug" width="sm">
               <DialogHeader>
                 <DialogTitle>方案即將到期</DialogTitle>
               </DialogHeader>
@@ -231,7 +231,7 @@ export const FooterActionRule: Story = {
           <DialogTrigger asChild>
             <Button variant="tertiary">儲存變更</Button>
           </DialogTrigger>
-          <DialogContent height="hug" maxWidth={420}>
+          <DialogContent height="hug" width="sm">
             <DialogHeader>
               <DialogTitle>儲存變更</DialogTitle>
             </DialogHeader>
@@ -258,7 +258,7 @@ export const FooterActionRule: Story = {
           <DialogTrigger asChild>
             <Button variant="secondary" danger startIcon={Trash2}>刪除任務</Button>
           </DialogTrigger>
-          <DialogContent height="hug" maxWidth={420}>
+          <DialogContent height="hug" width="sm">
             <DialogHeader>
               <DialogTitle>是否刪除任務</DialogTitle>
             </DialogHeader>

@@ -2,17 +2,17 @@
    Radius Tokens
    ═══════════════════════════════════════════════════════════════════════
 
-   見 radius.spec.md 的使用原則。
+   四檔與用途的唯一住處:radius.spec.md「四檔」那張表(閘 scripts/token-allowlist-invariant.mjs
+   逐檔比對這裡的名字與值;scripts/radius-usage-invariant.mjs 依那張表量每一則 story)。
 
-   xs     :2px(極小視覺 indicator,如 Chart legend swatch 8×8 色塊)
-   sm / md:4px(小元件、Tag、Badge、Button、Field、checkbox 等)
-   lg     :8px(卡片、彈窗、容器層)
-   full   :9999px(pill / circular,Avatar、Switch track 等)
+   sm  :2px(極小指示:短邊 ≤ 10px 的色塊 / 標記,如圖表圖例色塊 8×8)
+   md  :4px(一般元件:Button、Input、Tag、Tooltip、不浮起來的容器)
+   lg  :8px(浮層外殼:Dialog、Popover、DropdownMenu、HoverCard、Toast)
+   full:9999px(膠囊 / 圓形:Avatar、Switch、ProgressBar)
    ═══════════════════════════════════════════════════════════════════════ */
 
 @theme inline {
-  --radius-xs:   2px;
-  --radius-sm:   4px;
+  --radius-sm:   2px;
   --radius-md:   4px;
   --radius-lg:   8px;
   --radius-full: 9999px;

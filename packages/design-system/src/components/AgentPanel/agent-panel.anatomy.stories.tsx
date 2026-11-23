@@ -109,7 +109,7 @@ const InspectorView = () => {
               拉下面的滑桿改寬度,看三段怎麼分配:標題列與輸入盒是固定高,訊息區吃掉剩下的全部。
               寬度是這種內容的最小 / 初始 / 最大(預設 360 / 400 / 640)加上使用者的寬度紀錄;放在 AppShell 裡時,可拉上限再受「所有並排面板拉滿時 Main 剛好剩最小寬」限制,放不下最小寬就變右側浮層 —— 沒有固定斷點(AppShell「版面規則」)。
             </Desc>
-            <div className="border border-divider rounded-lg overflow-hidden" style={{ height: 420 }}>
+            <div className="border border-divider rounded-md overflow-hidden" style={{ height: 420 }}>
               <div className="relative flex h-full justify-end bg-canvas">
                 {/* × 關面板 → 右下角入口鈕接手,點一下開回來(同展示頁);面板上的按鈕都接上真的行為(共用對話模型) */}
                 <AgentPanelDock defaultOpen logoState="still">
@@ -147,7 +147,7 @@ const InspectorView = () => {
               三段垂直分工:標題列與輸入盒各自量身高,中間的訊息區是唯一會伸縮的一段(<code>flex-1</code>)。
               決策卡出現時絕對定位貼底覆蓋輸入區,不改變這個分工。
             </Desc>
-            <div className="border border-divider rounded-lg p-4 bg-muted/40 max-w-[520px]">
+            <div className="border border-divider rounded-md p-4 bg-muted/40 max-w-[520px]">
               <div className="border border-dashed border-primary-hover rounded px-2 py-1 mb-2">
                 <p className="text-body font-medium text-foreground">AgentPanelHeader</p>
                 <p className="text-footnote text-fg-muted mt-1 font-mono">固定高 · 消費 ChromeHeader(header-canonical)</p>
@@ -172,7 +172,7 @@ const InspectorView = () => {
         {/* 右:Inspect 面板 */}
         <div>
           <H3>Inspect 面板</H3>
-          <div className="border border-divider rounded-lg p-4 flex flex-col gap-4 text-caption">
+          <div className="border border-divider rounded-md p-4 flex flex-col gap-4 text-caption">
             <section>
               <p className="font-mono text-fg-muted mb-2">WIDTH</p>
               <ul className="flex flex-col gap-1">
@@ -421,7 +421,7 @@ export const Accessibility: Story = {
         <tr><Td>AgentThinking</Td><Td>button + aria-expanded(內文不另設 aria-live)</Td><Td>Enter/Space 開合</Td></tr>
         <tr><Td>AgentToolbar</Td><Td>各鈕 aria-label</Td><Td>Tab 逐鈕;鍵盤焦點在工具列裡時顯示(滑鼠點過不常駐)</Td></tr>
         <tr><Td>AgentPromptInput</Td><Td>textarea aria-label=訊息;停止態 aria-label=停止生成</Td><Td>Enter 送出、Shift+Enter 換行</Td></tr>
-        <tr><Td>AgentDecisionCard</Td><Td>role=group + aria-labelledby;radiogroup 原生(必答單選題帶 aria-required)</Td><Td>方向鍵選項;無 Esc(阻擋語意)</Td></tr>
+        <tr><Td>AgentDecisionCard</Td><Td>role=group + aria-labelledby;radiogroup 原生(必答單選題帶 aria-required;選填題題目後接「(選填)」,名字跟著念)</Td><Td>方向鍵選項;焦點在卡裡按 Esc = 取消(= 標題列 ×,不送答案;卡片算一層,一次只少一層),之後焦點回對話輸入框</Td></tr>
         <tr><Td>AgentLogo / AgentFab</Td><Td>label 有→role=img;無→aria-hidden;FAB aria-label=開啟智慧代理</Td><Td>減動作:常駐 loop 全停回靜止</Td></tr>
         <tr><Td>AgentFabDock(入口鈕)</Td><Td>button + aria-label(在家/貼邊各一句)+ aria-haspopup=menu + aria-expanded;命中形狀 ≡ 可視形狀(含圓角)</Td><Td>Enter/Space 開面板;在家 → 進貼邊;貼邊 ↑↓ 每步 16;← / Home 回家;Shift+F10 開選單;拖曳中 Esc 取消不落定</Td></tr>
       </tbody>

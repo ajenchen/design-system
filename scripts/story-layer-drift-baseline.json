@@ -16,7 +16,7 @@
     "div-heading": 0,
     "unknown-typography": 0,
     "story-counter-example": 4,
-    "layout-space-magic-ok": 302
+    "layout-space-magic-ok": 301
   },
   "files": {
     "packages/design-system/src/components/AccountMenu/account-menu.stories.tsx": {
@@ -39,14 +39,6 @@
           "c839fbfeaba9",
           "dd598861dfd3",
           "f3ceec75d331"
-        ]
-      }
-    },
-    "packages/design-system/src/components/AppShell/app-shell.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "4281fa88afd3"
         ]
       }
     },
@@ -652,7 +644,6 @@
         "count": 25,
         "hits": [
           "443bd92dcede",
-          "443bd92dcede",
           "494cf51f5c1e",
           "6f6c02a5d6e5",
           "70d4d558d2e5",
@@ -675,6 +666,7 @@
           "d0bf2d4c66e7",
           "dd2e350000fb",
           "e3ac39368f1b",
+          "e7724323469d",
           "feb53b34028a"
         ]
       }

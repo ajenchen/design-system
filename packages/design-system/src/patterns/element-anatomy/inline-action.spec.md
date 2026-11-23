@@ -39,7 +39,7 @@
 | `<CollapsiblePrimitive.Trigger asChild>` | `false`(default) |
 | 純 onClick handler / drag handle / dismiss X | `false`(default) |
 
-落實同源:`fieldWrapperStyles data-[state=open]:border-border-hover` 對 Combobox/DatePicker overlay trigger 仍正確(這些只用於 overlay 包覆)。Button 變體的 `data-[state=open]` 規則目前**未 prop 化**(latent — Button 從未被當 `Collapsible.Trigger` asChild 包覆,故無 active bug);若未來出現 Button 包覆 Collapsible 場景,同 prop 化處理。
+適用範圍:本節的「開著 = host hover」只管**按鈕類觸發**(inline action / Button)。**欄位(Field 家族)不適用** —— 欄位自己的浮層開著時維持聚焦的框,唯一出處 `components/Field/field.spec.md`「Field state machine SSOT」(2026-11-12 前這一句把本節延伸到欄位外框,已退役;退役紀錄在該檔)。Button 變體的 `data-[state=open]` 規則目前**未 prop 化**(latent — Button 從未被當 `Collapsible.Trigger` asChild 包覆,故無 active bug);若未來出現 Button 包覆 Collapsible 場景,同 prop 化處理。
 
 ### Icon 色彩（按 host 分兩類,2026-04-21 D6 矛盾解）
 
@@ -158,7 +158,7 @@ Row dedicated action 固定小尺寸 icon button,不依 row height 放大 ——
 
 | Host | Context | Primitive | Why |
 |------|---------|-----------|-----|
-| Input / NumberInput / Combobox clear X | Field chrome padding | Inline Action | Embedded |
+| Input / NumberInput / Combobox clear X(Input / NumberInput 由使用端經 `endAction` 傳入,`../../components/Input/input.spec.md`「endAction 的常見模式」清除內容;Combobox 與 Select / DatePicker / TimePicker / LinkInput(2026-11-21 起)是內建 `clearable`,× 同一顆 `FieldClearButton`,PeoplePicker 轉發 Select / Combobox)| Field chrome padding | Inline Action | Embedded |
 | Tag dismiss X | Pill body | Inline Action(colored host 繼承色)| Embedded |
 | Menu / TreeView / SidebarMenuButton / SelectionItem suffix | Row inline flow | Inline Action | Inline with content |
 | SidebarGroup header chevron | Aux toggle | Inline Action | Inline header toggle |
@@ -228,7 +228,7 @@ Canonical 實作於 `item-anatomy.tsx`,匯出 `ItemInlineAction` / `ItemSuffix`(
 - 以上三者**禁止套 dismiss 弱化**
 
 **世界級對照**:
-- Dismiss:Polaris `Banner.onDismiss`(X 圖示)/ Ant Design `Alert.closable` → 一律 icon = `X`([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Banner/Banner.tsx#L149-L161)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.tsx#L46))
+- Dismiss:Polaris `Banner.onDismiss`(X 圖示)/ Ant Design `Alert.closable` → 一律 icon = `X`([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Banner/Banner.tsx#L149-L161)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.tsx#L46)、Ant `Alert` 可關閉時預設 `<CloseOutlined />`:[Alert.tsx](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/alert/Alert.tsx))
 - Destructive:Polaris `Button tone="critical"` / 我們的 row Trash → 一般 primitive(無 dismiss 弱化)([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Banner/Banner.tsx#L149-L161)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.tsx#L46))
 
 #### Dismiss X 的實作(按 position 決定)
@@ -278,8 +278,10 @@ hook `check_story_invariants.sh` R1(原 `check_story_anatomy.sh` 規則 B,已 fo
 
 | Host family | Config prop | Escape hatch slot prop |
 |---|---|---|
-| Field family(Input / NumberInput / DatePicker / Combobox / LinkInput / TimePicker) | `endAction?: InlineActionConfig` | `endSlot?: React.ReactNode` |
+| Field family(Input / NumberInput) | `endAction?: InlineActionConfig` | `endSlot?: React.ReactNode` |
 | Row family(TreeView.TreeItem / SidebarMenuButton)| `inlineActions?: InlineActionConfig[]` | `inlineActionsSlot?: React.ReactNode` |
+
+DatePicker / Combobox / Select / TimePicker / LinkInput 沒有 `endAction` / `endSlot` prop(右側由元件自帶 chrome 獨佔),見下方「不適用清單」。
 
 ```tsx
 // ✅ 90% case
@@ -304,7 +306,7 @@ hook `check_story_invariants.sh` R1(原 `check_story_anatomy.sh` 規則 B,已 fo
 - ✅ `TreeView.TreeItem.inlineActionsSlot`
 - ✅ `SidebarMenuButton.inlineActionsSlot`
 
-**不適用清單**:DatePicker / Combobox / Select / TimePicker / LinkInput 右側由元件自帶 chrome 獨佔(Calendar / ChevronDown / Clock / ExternalLink 等 intrinsic affordance),不開放 consumer 放置 endAction/endSlot — 這些元件的 inline-action 需求走**內建 clear X**(consumer 透過 `clearable` prop opt-in)或 `<Button iconOnly />` 放在 Field 外側。Escape hatch canonical 不涵蓋此類 host(本質上非 consumer-facing slot)。
+**不適用清單**:DatePicker / Combobox / Select / TimePicker / LinkInput 右側由元件自帶 chrome 獨佔(Calendar / ChevronDown / Clock 等 intrinsic affordance;LinkInput 連結狀態是編輯入口 Pencil),不開放 consumer 放置 endAction/endSlot — 這些元件的 inline-action 需求走**內建 clear X**(consumer 透過 `clearable` prop opt-in;五個都有,LinkInput 2026-11-21 起、只在打字狀態框裡有字時出現,`../../components/LinkInput/link-input.spec.md`「可清除(clearable)」;× 是同一顆 `../../components/Field/field-clear-button.tsx` `FieldClearButton`)或 `<Button iconOnly />` 放在 Field 外側。Escape hatch canonical 不涵蓋此類 host(本質上非 consumer-facing slot)。
 
 **世界級對照**: <!-- @benchmark-unverified -->
 - Material UI:`InputAdornment` ReactNode slot(無 config,純 escape hatch 派 — 我們的 90/10 比 Material 更有結構)

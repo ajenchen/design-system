@@ -54,7 +54,8 @@ export const Inspector: InspectorStory = {
     total: { control: { type: 'number', min: 0, max: 10000 } },
   },
   render: (args) => (
-    <div className="flex flex-col gap-3">
+    // 說明與內容是兄弟節點(anatomy-utils.tsx Desc 的用法):說明 → 內容的距離只由 Desc 的下方 margin 給(layoutSpace.spec.md 規則 3「標題區 → 內容」)
+    <div>
       <Desc>調 page / total 觀察摺疊行為(總頁數 = ceil(total / 20)):≤ 7 頁不摺疊;超過後依當前頁位置單側或雙側摺疊。</Desc>
       {/* 改 Controls 的 page 就從那一頁重新開始;之後點數字 / 箭頭照常換頁 */}
       <LivePagination key={args.page} initialPage={args.page} total={args.total} />
@@ -65,47 +66,50 @@ export const Inspector: InspectorStory = {
 export const ColorMatrix: Story = {
   name: '色彩對照表',
   render: () => (
-    <div className="flex flex-col gap-6">
+    // 說明與內容是兄弟節點(anatomy-utils.tsx Desc 的用法):說明 → 內容的距離只由 Desc 的下方 margin 給(layoutSpace.spec.md 規則 3「標題區 → 內容」)
+    <div>
       <Desc>
         數字鈕四態的 token 對照。default / hover / disabled 全數繼承 Button text variant;
         selected(當前頁)消費 DS「持續選中」canonical —— 主色 base 同時染邊框與文字、底色維持
         surface 不染(與 Chip / SegmentedControl 選中同一套)。
       </Desc>
-      {/* 選中樣式的出處:semantic.css「選中狀態」段 */}
-      <table className="text-body">
-        <thead>
-          <tr><Th>State</Th><Th>text</Th><Th>border</Th><Th>bg</Th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <Td>default</Td>
-            <Td><TokenCell token="--fg" display="text-foreground" /></Td>
-            <Td mono>transparent(佔位防選中位移)</Td>
-            <Td mono>transparent</Td>
-          </tr>
-          <tr>
-            <Td>hover</Td>
-            <Td><TokenCell token="--fg" display="text-foreground" /></Td>
-            <Td mono>transparent</Td>
-            <Td><TokenCell token="--neutral-hover" display="bg-neutral-hover" /></Td>
-          </tr>
-          <tr>
-            <Td>selected(當前頁 = Button secondary)</Td>
-            <Td><TokenCell token="--primary" display="text-primary" /></Td>
-            <Td><TokenCell token="--primary" display="border-primary" /></Td>
-            <Td><TokenCell token="--surface" display="bg-surface(不染底,同 Chip selected)" /></Td>
-          </tr>
-          <tr>
-            <Td>disabled(上下頁邊界)</Td>
-            <Td><TokenCell token="--fg-disabled" display="text-fg-disabled" /></Td>
-            <Td mono>transparent</Td>
-            <Td mono>transparent</Td>
-          </tr>
-        </tbody>
-      </table>
-      <div className="flex flex-col gap-2">
-        <p className="text-caption text-fg-muted">實例對照(第 1 頁:上一頁 disabled + 當前頁選中):</p>
-        <LivePagination initialPage={1} total={100} />
+      <div className="flex flex-col gap-6">
+        {/* 選中樣式的出處:semantic.css「選中狀態」段 */}
+        <table className="text-body">
+          <thead>
+            <tr><Th>State</Th><Th>text</Th><Th>border</Th><Th>bg</Th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <Td>default</Td>
+              <Td><TokenCell token="--fg" display="text-foreground" /></Td>
+              <Td mono>transparent(佔位防選中位移)</Td>
+              <Td mono>transparent</Td>
+            </tr>
+            <tr>
+              <Td>hover</Td>
+              <Td><TokenCell token="--fg" display="text-foreground" /></Td>
+              <Td mono>transparent</Td>
+              <Td><TokenCell token="--neutral-hover" display="bg-neutral-hover" /></Td>
+            </tr>
+            <tr>
+              <Td>selected(當前頁 = Button secondary)</Td>
+              <Td><TokenCell token="--primary" display="text-primary" /></Td>
+              <Td><TokenCell token="--primary" display="border-primary" /></Td>
+              <Td><TokenCell token="--surface" display="bg-surface(不染底,同 Chip selected)" /></Td>
+            </tr>
+            <tr>
+              <Td>disabled(上下頁邊界)</Td>
+              <Td><TokenCell token="--fg-disabled" display="text-fg-disabled" /></Td>
+              <Td mono>transparent</Td>
+              <Td mono>transparent</Td>
+            </tr>
+          </tbody>
+        </table>
+        <div className="flex flex-col gap-2">
+          <p className="text-caption text-fg-muted">實例對照(第 1 頁:上一頁 disabled + 當前頁選中):</p>
+          <LivePagination initialPage={1} total={100} />
+        </div>
       </div>
     </div>
   ),
@@ -116,7 +120,8 @@ export const StateBehavior: Story = {
   render: () => {
     const [page, setPage] = React.useState(2)
     return (
-      <div className="flex flex-col gap-6">
+      // 說明與內容是兄弟節點(anatomy-utils.tsx Desc 的用法):說明 → 內容的距離只由 Desc 的下方 margin 給(layoutSpace.spec.md 規則 3「標題區 → 內容」)
+      <div>
         <Desc>
           hover / active / focus-visible 全數繼承 Button:未選數字與上下頁 = text variant(hover 淡灰底、
           active 深一階);當前頁 = secondary variant(hover 升 primary-hover 階、按壓 primary-active,
@@ -124,9 +129,11 @@ export const StateBehavior: Story = {
           fire onPageChange(同頁),不會「取消選中」。第一頁 / 最後一頁時對應箭頭 disabled;
           用鍵盤按到底的那一下,焦點留在那顆箭頭上、不掉到頁面(Button 的「握著焦點時被停用」規則)。
         </Desc>
-        {/* 規則出處:keyboard-model-canonical.md「按了之後自己變停用:焦點留在原處」 */}
-        <Pagination total={100} page={page} onPageChange={setPage} />
-        <p className="text-caption text-fg-muted">目前在第 {page} 頁 —— 點數字 / 箭頭觀察 controlled 行為。</p>
+        <div className="flex flex-col gap-6">
+          {/* 規則出處:keyboard-model-canonical.md「按了之後自己變停用:焦點留在原處」 */}
+          <Pagination total={100} page={page} onPageChange={setPage} />
+          <p className="text-caption text-fg-muted">目前在第 {page} 頁 —— 點數字 / 箭頭觀察 controlled 行為。</p>
+        </div>
       </div>
     )
   },

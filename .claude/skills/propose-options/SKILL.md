@@ -70,7 +70,7 @@ This canonical workflow contains a committed inventory of legacy assumptions. Re
 - ✅ "grep 結果 Input/NumberInput/LinkInput 3 file 都未消費 ItemInlineAction(file:line)+ spec.md L60 表格列為 expected consumer → 真 gap"
 - ❌ "5 元件應該 migrate"(沒 grep / 沒 cite spec / 不知道 K 元件已 migrate / 是 colored host 合法例外)
 
-**對應 hook**:`check_propose_pre_grep_verify.sh`(2026-05-18 加,PreToolUse Edit/Write 限 `*/planning|reports|handoff/*.md`,內容含「請拍板 / 決策 N / 選項」等 propose keyword 但 content 無 file:line cite → P1 stderr warn(exit 0);escape:檔頭 `<!-- @propose-pre-verified -->`。chat reply 通道無 hook 覆蓋,靠本 skill Q0 自律)
+**對應 hook**:`check_propose_discipline.sh` 的 r3_planning_doc_cite(Stop;2026-05-18 原是一支 PreToolUse 只警告、模型看不到的獨立 hook,2026-11-18 併入並改成擋)— 本輪寫進「任一層目錄名以 planning / report / handoff 開頭」的 `.md`,內容含「請拍板 / 決策 N / 選項」等 propose keyword,而本輪寫進去的內容裡沒有可查證的出處(文件別處原有的不算;被拒絕 / 失敗的寫入不算寫入;出處寫法:`檔名:行號` / `L42` / `line 42` / 官方文件網址,或反引號包起來的 .tsx / .ts / .css / .md 路徑)→ exit 2 擋下,補出處或拿掉提案才放行;escape:檔案前 3 行 `<!-- @propose-pre-verified: 理由 -->`(理由必填,本輪寫進去才算)。chat reply 裡的 propose 字眼無 hook 覆蓋,靠本 skill Q0 自律(回覆裡「規定 / 必配」類斷言另由同一支的 r2 擋)
 
 ### Q1 — M8 World-class benchmark
 **問**:本 option ≥ 3 家 world-class DS / framework / canonical 有對照嗎?
@@ -182,7 +182,7 @@ User 已就「為什麼會給錯誤建議」糾正 ≥ 3 次:
 |---|---|
 | `pre_write_subsumption_check.sh`(retired 2026-06 → canonical `packages/design-system/ds-canonical/hooks/retired/` — write 前層由 `check_file_size_budget.sh` + `enforce_home_charter.sh` 等現役 pre-write hook 部分補位)| Edit/Write 已發生時 |
 | `post_edit_canonical_interrogate.sh`(retired/未實作 — mindset enforcement)| 寫完 canonical 後 3 題 |
-| `check_governance_compliance.sh`(retired/未實作 — 靠 `check_propose_pre_grep_verify.sh` + 加 hook 前 3 題)| 寫新 hook 7 題 |
+| `check_governance_compliance.sh`(retired/未實作 — 靠 `check_propose_discipline.sh` r3 + 加 hook 前 3 題)| 寫新 hook 7 題 |
 | **本 skill** `/propose-options` | **propose-time(寫進 user 回覆前)7 題** |
 
-4 個正交層(propose 前 / write 前 / write 中 / write 後);現役機械覆蓋僅 propose 前(本 skill + P1 hook)+ write 前部分補位,其餘層 retired/未實作,靠 mindset。
+4 個正交層(propose 前 / write 前 / write 中 / write 後);現役機械覆蓋:propose 前靠本 skill,寫進規劃 / 報告 / 交接文件的提案由 `check_propose_discipline.sh` r3 在 Stop 端擋(沒附出處不能結束這一輪),write 前部分補位;其餘層 retired/未實作,靠 mindset。

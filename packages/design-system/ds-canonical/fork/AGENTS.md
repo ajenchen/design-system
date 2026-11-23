@@ -17,8 +17,8 @@
 - `governance/lock.json`, managed provider adapters, and managed skills are generated upstream.
   Product-specific, provider-neutral policy belongs in `governance/overlay.md` (read it when present);
   it may add stricter product rules but never replaces or weakens upstream controls.
-- Never install a mutable tag or semver range for internal packages. Upgrades are reviewed pull
-  requests pinning an exact version with the regenerated lock/adapters.
+- Never install a mutable tag or semver range for internal packages. Upgrades are reviewed exact-version
+  PRs with the regenerated lock/adapters (steps: DS package README).
 <!-- canonical-decision-authority:start -->
 **Decision／Engineering Authority**:user 只拍板產品／UI／UX SSOT 真取捨及可感知／產品語意變更(behavior/interaction/IA/visual/token/layout/content/a11y/canonical rules);核准 = user 在對話中對 **exact target + choice** 說可(**「我說可以就是可以,就是授權」— user 2026-08-04 verbatim**;最新一則 user 訊息的明確 blanket 授權即核准當下 pending 的 exact 提案)。引用/條件/舊 scope/跨 target 無效。其餘工程/external writes 皆 Standing Authorization AUTO,含已核准 UI／UX 實作/機械 generation/sync,與 `infra/governance/release-workflow.json` 的五步;依 frozen scope、SSOT、required checks、security、least privilege、rollback/readback 收斂,不逐 milestone 重問。**Deep Audit 必須在單一 branch／PR 完成 remediation 與 local/CI candidate validation**,禁把 immutable publish 當 iteration/test loop,**每次 audit 最多一次 final release**;額外 release 需 incident evidence ref。Certification/rollout/preview-canary/independent review 都是**明確要求時**的附加 assurance,不得進入標準五步的 blocking graph。(digest 佐證等細則見 `governance/memory/feedback_ship_then_revert_anti_pattern.md`。)
 

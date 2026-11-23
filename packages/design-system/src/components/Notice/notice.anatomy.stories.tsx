@@ -22,6 +22,7 @@ import { SUBTLE_ICON_COLOR, type NoticeVariant } from './notice'
 import { Alert } from '@/design-system/components/Alert/alert'
 import { Button } from '@/design-system/components/Button/button'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
+import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
 import { Chip, ChipGroup } from '@/design-system/components/Chip/chip'
 import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { H3, Desc, Td, Th, Swatch } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
@@ -285,12 +286,13 @@ function NoticeInspector() {
 
         <div>
           <H3>Props</H3>
-          {/* 檢閱器的開關用 DS Checkbox(原生 <input type="checkbox"> 換掉 —— 範例只用 DS 元件,登記簿 B01 / B13) */}
-          <div className="flex flex-col">
+          {/* 檢閱器的開關用 DS Checkbox(原生 <input type="checkbox"> 換掉 —— 範例只用 DS 元件,登記簿 B01 / B13);
+              三個開關是同一組選項 → <CheckboxGroup>,列距由 SelectionItem py 給(checkbox.spec.md「Canonical 鐵律:零外部 gap」) */}
+          <CheckboxGroup aria-label="Props">
             <Checkbox size="sm" label={<span className="font-mono">description</span>} checked={hasDescription} onCheckedChange={(v) => setHasDescription(v === true)} />
             <Checkbox size="sm" label={<span className="font-mono">endContent</span>} checked={hasEndContent} onCheckedChange={(v) => setHasEndContent(v === true)} />
             <Checkbox size="sm" label={<span className="font-mono">dismissible</span>} checked={dismissible} onCheckedChange={(v) => setDismissible(v === true)} />
-          </div>
+          </CheckboxGroup>
         </div>
 
         <div>

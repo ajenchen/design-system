@@ -49,12 +49,16 @@ export interface FieldContextValue {
   sizeExplicit: boolean
   /** Control 於掛載時宣告偏好尺寸(wrapper/HOC 遮蔽靜態 `fieldPreferredSize` 時的補位通道)。 */
   registerPreferredSize?: (preferred: FieldSize) => void
+  /** Control 把**自己驗出來的**錯誤說明交給 Field 的錯誤區畫(`null` = 收回;2026-11-22,目前只有 LinkInput 用,
+   *  `../LinkInput/link-input.spec.md`「錯誤說明」)。畫法同 `<FieldError>`(位置、字級、顏色、`role="alert"`、id = `errorId`);
+   *  使用端自己的 `<FieldError>` 有字時以使用端為準、不畫這行(一個欄位只有一行錯誤)。沒有 control 宣告時 Field 畫面不變。 */
+  registerControlError?: (text: string | null) => void
   orientation: FieldOrientation
   controlLayout: FieldControlLayout
   hasFieldWrapper: true
   /** 2026-05-12 Stream C Cluster B fix:surface 上下文(form / toolbar / table-cell)
    *  從 host(Field wrapper / DataTable cell registry)propagate 給 child controls。
-   *  Optional — 未設視同 `'form'`(backward compat)。 */
+   *  Optional — 未設視同 `'form'`(沒有 host 宣告 surface = 一般表單【AI 推導 2026-11-16:讀行為推出來的理由,原文只寫了相容】)。 */
   surface?: FieldSurface
 }
 
@@ -173,7 +177,7 @@ export function useResolvedFieldSize<T extends string = FieldSize>(sizeProp?: T 
   const surfaceSize = React.useContext(FieldSurfaceSizeContext)
   // generic T(預設 FieldSize)讓非-input 控件(SegmentedControl 的 'xs'|'sm'|'md'|'lg' 超集、各自 fallback)
   // 也走同一 SSOT resolution。fieldCtx.size/surfaceSize 為 FieldSize(T 的子集)→ widen cast 安全。
-  // fallback 未傳預設 'md'(input-class 控件向後相容);SegmentedControl / Switch / Checkbox 傳 'md'(它們不接表格 surface size),
+  // fallback 未傳預設 'md'(input-class 控件的預設尺寸;它們要接表格 surface size,所以不傳 fallback【AI 推導 2026-11-16:讀行為推出來的理由,原文只寫了相容】);SegmentedControl / Switch / Checkbox 傳 'md'(它們不接表格 surface size),
   // Rating 不傳(要接 surface size;它曾傳 'xs',Field 內沒指定 size 時因下面的 sizeExplicit 規則靜默變 xs 兩個月,2026-09-27 xs 退役)。
   // 注意:傳了 fallback 就排在 Field 預設 md 與 surface size 前面 —— 要接表格尺寸的控件不能傳。
   //

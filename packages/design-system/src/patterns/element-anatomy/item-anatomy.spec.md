@@ -3,7 +3,7 @@
 # Item Anatomy 設計原則(Family 1 + Family 2 row 結構 SSOT)
 
 > **Super-foundational SSOT rationale**(2026-04-24 approved,cap 1200 例外):
-> 涵蓋 Family 1 + Family 2 跨 10+ row primitive 的 SSOT(結構 canonical、slot 規則、24px 閾值對齊公式、選擇狀態視覺、新 primitive 建立指南、Inline Action 分家)。本 spec 是**全 DS 最大 SSOT**,前次 prune 嘗試搬 canonical 搬到 references 後 user 確認違反 2-home,restored。長期收斂路徑:`.claude/planning/row-primitive-consolidation.md`(SidebarMenuButton / TreeItem 消費 menuItemVariants 後可搬「獨立實作風險」節,估縮 ~100 行)。
+> 涵蓋 Family 1 + Family 2 跨 10+ row primitive 的 SSOT(結構 canonical、slot 規則、24px 閾值對齊公式、選擇狀態視覺、新 primitive 建立指南、Inline Action 分家)。本 spec 是**全 DS 最大 SSOT**,前次 prune 嘗試搬 canonical 搬到 references 後 user 確認違反 2-home,restored。長期收斂路徑:`governance/planning/row-primitive-consolidation.md.rejected.20260424.md`(提案 2026-04-24 二次評估 declined、已改名歸檔;SidebarMenuButton / TreeItem 消費 menuItemVariants 後可搬「獨立實作風險」節,估縮 ~100 行)。
 
 ## 定位
 
@@ -171,7 +171,7 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
   | 疊加 | 指示 | 理由 |
   |---|---|---|
   | 選中列 × 滑鼠 hover | `bg-neutral-selected`（**釘住不變**） | hover 回饋 = 誠實回答「再點會發生什麼」；選中列再點無效果，且滑鼠使用者自有游標不需底色指位。對齊 Polaris Navigation / Carbon side-nav（兩家皆明文釘住）([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Navigation/Navigation.module.css#L300-L308)、[來源](https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/styles/scss/components/ui-shell/side-nav/_side-nav.scss#L268-L270)) |
-  | **未選中列 × 鍵盤焦點／反白** | **畫框**（`focus-ring-inset`，2px 內描邊），底色**不變**（透明） | **user 2026-09-09 拍板**〔UD-D11〕「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧？？？」「唯一不畫框的例外就是你所謂“單一狀態控制項(文字輸入框、Textarea、Field 內的輸入)”」（owner = `ds-canonical/references/focus-canonical.md` 規則二）。2026-09-07〜09-08 這格寫「`bg-neutral-hover`，與滑鼠 hover 同色、不畫框」——那是 AI 從 `menu-item.spec.md` 舊句與 Material／Radix／cmdk 慣例推導的，不是 user 決定，已撤回。**常駐清單**（TreeView／Sidebar／Tabs／DataTable／TimePicker 欄，不搶反白）：滑鼠若剛好停在游標列，hover 底色照第一列另外出現（底色 + 框都在）。**會搶反白的浮層選單**（cmdk／Radix 反白）：反白只有一個主人，依**反白來歷**分流（`hooks/use-input-modality.ts` `useCursorMover`）—— 滑鼠移過搬走反白 → 底色、無框；鍵盤搬走反白 → 框、無底色，而且滑鼠停留列的 hover 底色**一起消失**（項目上沒有 `hover:` 樣式，滑鼠停著不算搶；2026-09-09 下午 user 三問，一手來源證實，owner = focus-canonical 規則一「兩類元件」）|
+  | **未選中列 × 鍵盤焦點／反白** | **畫框**（`focus-ring-inset`，2px 內描邊），底色**不變**（透明） | **user 2026-09-09 拍板**〔UD-D11〕「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧？？？」「唯一不畫框的例外就是你所謂“單一狀態控制項(文字輸入框、Textarea、Field 內的輸入)”」（owner = `ds-canonical/references/focus-canonical.md` 規則二）。2026-09-07〜09-08 這格寫「`bg-neutral-hover`，與滑鼠 hover 同色、不畫框」——那是 AI 從 `menu-item.spec.md` 舊句與 Radix／cmdk 等外部慣例推導的（當時另舉的一家沒有一手來源，2026-11-21 不再列名），不是 user 決定，已撤回。**常駐清單**（TreeView／Sidebar／Tabs／DataTable／TimePicker 欄，不搶反白）：滑鼠若剛好停在游標列，hover 底色照第一列另外出現（底色 + 框都在）。**會搶反白的浮層選單**（cmdk／Radix 反白）：反白只有一個主人，依**反白來歷**分流（`hooks/use-input-modality.ts` `useCursorMover`）—— 滑鼠移過搬走反白 → 底色、無框；鍵盤搬走反白 → 框、無底色，而且滑鼠停留列的 hover 底色**一起消失**（項目上沒有 `hover:` 樣式，滑鼠停著不算搶；2026-09-09 下午 user 三問，一手來源證實，owner = focus-canonical 規則一「兩類元件」）|
   | 選中列 × 鍵盤焦點／反白 | **畫框**（`focus-ring-inset`，2px 內描邊） | **2026-09-07 user 拍板**，原話「A5畫框」。底色已經被「選中」佔走，不能再把「游標在這裡」這第二個意義擠進同一個通道——**同一個元素上不得有兩種焦點指示**。原本的 `bg-neutral-selected-focus`（深一階）已隨此格退役。**框疊在選中底色上**。虛擬焦點選單（cmdk／Radix 反白）**另加鍵盤模態條件**（`hooks/use-input-modality.ts`；滑鼠點開時已選項不畫框,2026-09-08）；滑鼠停在游標列上時底色釘住、框照畫（2026-09-09 起不再用 `not-hover:` 分流）；真焦點元件用 `focus-visible:` |
   | 選中列 × 按壓 | 列元件不設按壓底色；`--neutral-selected-active` 為**按壓專屬**（唯一消費者 Button toggle） | active = 瞬時按壓（2026-04-10 誕生教義）。2026-07-05 D4 借 `-active` 裝反白 + 訊號漏到滑鼠，2026-08-11 糾正歸位 |
 
@@ -416,7 +416,7 @@ Consumer 不需手動插 Separator——把同類 items 包進 Group,自動分�
 
 ## 連續 item 貼邊合法性(2026-04-22 canonical)
 
-**核心原則**(user 明示):連續 item 之間是否需要 gap,取決於**該 item 的永久視覺層會不會在視覺上跟相鄰 item 相連**——不是所有 item 都需要 gap,也不是所有 item 都可以貼邊。
+**核心原則**(user 明示):連續 item 之間是否需要 gap,取決於**該 item 的永久視覺層會不會在視覺上跟相鄰 item 相連**——不是所有 item 都需要 gap,也不是所有 item 都可以貼邊。**卡片列要不要有間距**(2026-11-17):user 問「卡片列的部分要看情況吧？卡片設計講求視覺對稱才有韻律，反而可能會很類似篩選條件那邊的條件排版」(問句),同日 r12 決策頁 AI 寫的卡片三種分法 user 回「都照你建議，你的理由合理」(對話紀錄 96d711a5-00d3-43ef-b37c-7309237e0e6c.jsonl:34266):各放一份獨立內容的卡片、元件裡的一串小卡(FileItem 見下方對照表)、同一題的選項卡(`../../components/AgentPanel/agent-decision-card.spec.md`「選項卡」)三種**都有間距、沒有一種貼齊** → 下方公式 1 不變;間距值只住 `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 3「標題區 → 內容」第 3 題與各元件規格,本段不重述。
 
 ### 公式(3 條)
 
@@ -441,9 +441,9 @@ Consumer 不需手動插 Separator——把同類 items 包進 Group,自動分�
 
 **為什麼 state 不獨立列規則**:state 視覺(hover / focus / active / selected)跟隨 permanent layer 分類,不獨立觸發。瞬時 state(hover/focus/active)單一 item 啟用不會創造相鄰衝突;selected 的連續 bg 在 permanent flush / transparent item 上是 **multi-select feature**(連續選取的列連成一塊,一眼看出選了哪一段),在 permanent standalone card 上依然必 gap(card identity 保留)。
 
-### 世界級 benchmark(2026-04-22 掃 6 家) <!-- @benchmark-unverified -->
+### 世界級 benchmark(2026-04-22 掃 6 家)
 
-<!-- @benchmark-unverified -->
+<!-- @benchmark-unverified: 2026-11-18 複查,per M22 (d) —— 下表 6 家 × 4 欄仍沒有逐家一手來源(本次沒有逐格開檔查證),補來源前只當未驗證的觀察 -->
 | DS | menu item | file/card list | table row | settings row |
 |----|-----------|---------------|-----------|-------------|
 | Polaris | flush + border-b,0 gap | ResourceList flush rows border-b;MediaCard standalone 才 card | IndexTable flush border-b 0 gap | Card.Section Divider 0 gap |
@@ -472,7 +472,7 @@ Consumer 不需手動插 Separator——把同類 items 包進 Group,自動分�
 建新 row/item 元件時,開 spec 必自問:
 
 1. 本元件**永久**視覺是:(a) standalone card/pill(bg + radius + inset)/ (b) flush full-width / (c) 完全 transparent?
-2. 若 (a) → spec 必明寫「list wrapper 必 gap ≥ Xpx」+ rationale
+2. 若 (a) → spec 必明寫「list wrapper 必 gap ≥ Xpx」+ rationale —— 這題就是原 meta-patterns M16「訂 standalone card/pill 容器 canonical 必同步訂 multi-instance gap canonical」(2026-11-22 `@watch` 觀察期 0 筆新 bug,降成本題;原列與逐筆判定在 `ds-canonical/skills/knowledge-prune/references/meta-pattern-history.md`)。機械面:FileItem 清單外層由 hook `check_item_list_gap.sh` 寫入當下擋(值照 `../../components/FileItem/file-item.spec.md`「List wrapper canonical」);其他卡片列靠 design-system-audit dim 21
 3. 若 (b)(c) → spec 寫「list wrapper 可 0 gap」+(b)列出 separator affordance 來源
 
 ### 反例(本 session 修正)
@@ -609,19 +609,9 @@ MenuItem 承載 Switch 時,**整列 row 的 click = toggle 這個 control**(不�
 
 兩個 slot 的視覺角色不同,被強迫同步反而違反它們各自的對齊邏輯。
 
-**2. 業界 convention 全部如此**
+(2026-11-21 前這裡另有一條「業界 convention 全部如此」與四家對照表:「全部」沒有逐家查證,其中一家那列與該家自己的原始碼不符(一、二行的列 leading 與 trailing 都垂直置中,出處見下方「大塊 suffix」段),照 M22 拿掉外部比較;規則不變,理由只留上下兩條 DS 內部的。)
 
-Apple Mail / Gmail / iOS Settings / Material 3 / Atlassian DSP / Polaris ResourceItem——**全部**是「prefix 跟 suffix 各自獨立對齊」。沒有任何一個把小 suffix 強迫對齊到大 avatar 中心。 <!-- @benchmark-unverified -->
-
-<!-- @benchmark-unverified -->
-| 系統 | Prefix(大 avatar) | Suffix(小元素) |
-|---|---|---|
-| Apple Mail | Avatar 40px → 文字塊中心 | Date → Subject 第一行 |
-| Gmail | Star icon → 第一行 | Time → Subject 第一行 |
-| iOS Settings | Icon ≤24px → 第一行 | Chevron → Label 第一行 |
-| Material 3 List | Leading icon → 第一行 | Trailing icon → top-aligned |
-
-**3. 視覺重量平衡**
+**2. 視覺重量平衡**
 
 把小 suffix 強迫對齊大 avatar 中心,小 suffix 會「下沉」到 description 行,**視覺上跟 label 失聯**。對齊 label 第一行則讓 suffix 跟它修飾的對象在同一條基準線上,視覺重量自然分配。
 
@@ -711,8 +701,12 @@ Canonical 對齊模式判斷:`MenuItem` 的 `isBlockAlign = avatarPx > 24 && !!d
 `components/DataTable/data-table-column-visibility-panel.tsx#DataTableColumnVisibilityPanel` 的搜尋框(12px)與 `components/DataTable/data-table-column-visibility-panel.tsx#VisibilityRow` 的列(16px)
 就是並存的。直接吃會變成「調列就把欄位一起拉走」。獨立 named token 才表達得出來。
 
-**客製方式**:在**清單容器**設一次(inline style),整棵子樹的 row 一起換 ——
-List-as-region 設 `--item-px: var(--layout-space-loose)`(見 `../overlay-surface/overlay-surface.spec.md`)。
+**客製方式**:在**清單容器**設一次,整棵子樹的 row 一起換 ——
+List-as-region 用 `Command` 的 **`gutter="surface"`**(= 在 Command 根寫 `--item-px: var(--layout-space-loose)`,見 `../overlay-surface/overlay-surface.spec.md`);
+預設 / `gutter="field"` = `--field-px`。2026-11-15 起改走元件參數(決策頁 r9「照既有原則直接做」:清單列的左右內距改成元件參數 =
+「要設定的值走元件參數」4甲;那一項 user 沒有逐字選,屬預選、user 未提出異議),之前 consumer 要自己寫 inline style。
+這顆變數本身仍由 DS 內部寫(`token-registry.json` 的分類維持產品只讀 —— audit-r7 P13 建議的「加參數、分類表維持 read」那一條);
+產品要換列的內距走 `gutter`,不直接寫變數。
 **禁止寫在單列的 `className`**:`CommandItem` 等兩層結構會讓它落在外層 wrapper 與本層相加
 (2026-09-17 實測 16+12=28px,標題 17px / 勾選框 29px)。機械閘 `scripts/overlay-list-as-region-invariant.mjs`。
 
@@ -725,7 +719,7 @@ List-as-region 設 `--item-px: var(--layout-space-loose)`(見 `../overlay-surfac
 
 ### Token: `--item-icon-size` / `--item-avatar-size`(2026-05-22 codify)
 
-**Local token family(per `--item-*` prefix 既有 family,e.g., `--item-prefix-slot` / `--item-gap-label-desc-<mode>[-lg]`)**。
+**Local token family(per `--item-*` prefix 既有 family,e.g., `--item-prefix-slot` / `--item-gap-label-desc-<mode>[-lg]`)**。這兩顆照 `../../tokens/token-system.spec.md`「命名」的定義是**元件內變數**、不是登記在分類表的 token(與 Sidebar 的 `--sidebar-rail-icon-slot` 同一類:只由 SidebarProvider 在自己的外層元素上設值、只有 Sidebar 讀,不在 `:root` 宣告,`../../tokens/token-registry.json` 沒有這兩顆);本段標題沿用 2026-05-22 的叫法(2026-11-13 AI 查證後補的指向)。
 
 由 row primitive(目前 SidebarProvider)透過 inline style 注入,**JS const → CSS var mirror**:
 
@@ -738,7 +732,7 @@ List-as-region 設 `--item-px: var(--layout-space-loose)`(見 `../overlay-surfac
 
 **Sync invariant**:CSS var 必鏡像 JS const。SidebarProvider re-render → CSS var 更新 → consumer formula 自動 cascade。
 
-**uniformPrefix mixing override**:當 `:has([data-prefix-type=icon]):has([data-prefix-type=avatar])` 觸發,`--item-icon-size` 被 cascade override 成 `var(--mixed-prefix-slot)`(24),因 ItemPrefix wrapper 被撐到 slot 寬,effective prefix width = slot 非 icon glyph。用 Tailwind `!` important 修飾子蓋過 inline style specificity。
+**uniformPrefix mixing override**:當 `:has([data-prefix-type=icon]):has([data-prefix-type=avatar])` 觸發,`--item-icon-size` 被 cascade override 成 `var(--item-mixed-prefix-slot)`(24),因 ItemPrefix wrapper 被撐到 slot 寬,effective prefix width = slot 非 icon glyph。用 Tailwind `!` important 修飾子蓋過 inline style specificity。
 
 ### asChild pattern 的責任——用 helper 元件免除全部負擔
 
@@ -817,9 +811,10 @@ Label x 位置受 prefix 尺寸影響(icon 16 vs avatar 24,差 8px)。**對齊�
 
 - `<ItemIcon>` 渲染的 `<ItemPrefix>` 自動帶 `data-prefix-type="icon"`
 - `<ItemAvatar>` 渲染的 `<ItemPrefix>` 自動帶 `data-prefix-type="avatar"`
-- Row-primitive 頂層容器(`SidebarProvider` 的 wrapper div)**只在 `uniformPrefix={true}`(opt-in,預設 `false`)時**於 inline style 注入 `--mixed-prefix-slot` 候選值(= `AVATAR_SIZE.inline[size]`,20/24/24 @ sm/md/lg;`sidebar.tsx` wrapperStyle 三元式,不 opt-in 完全不注入)
-- 同一個 wrapper 用 Tailwind variant `has-[[data-prefix-type=icon]]:has-[[data-prefix-type=avatar]]:[--item-prefix-slot:var(--mixed-prefix-slot)]` 條件化把候選值賦給 `--item-prefix-slot`
+- Row-primitive 頂層容器(`SidebarProvider` 的 wrapper div)**只在 `uniformPrefix={true}`(opt-in,預設 `false`)時**於 inline style 注入 `--item-mixed-prefix-slot` 候選值(= `AVATAR_SIZE.inline[size]`,20/24/24 @ sm/md/lg;`sidebar.tsx` wrapperStyle 三元式,不 opt-in 完全不注入)
+- 同一個 wrapper 用 Tailwind variant `has-[[data-prefix-type=icon]]:has-[[data-prefix-type=avatar]]:[--item-prefix-slot:var(--item-mixed-prefix-slot)]` 條件化把候選值賦給 `--item-prefix-slot`
 - `<ItemPrefix>` 讀取 `--item-prefix-slot`(預設 `auto`,有值則套槽 + center),自動套用
+- **`--item-prefix-slot` 是跨元件的設定點**,登記在分類表 `../../tokens/token-registry.json`(本 pattern 的值,產品不直接寫名字,要設定就呼叫公開 helper `getUniformPrefixSlotStyle`)。寫它的有三處:公開 helper(頭像槽 20 / 24 / 24)、SidebarProvider 混排時的 `:has()`、`../../components/DataTable/data-table-column-visibility-panel.tsx`(固定 16px = 拖曳把手 / 鎖頭的寬)。2026-11-15 前沒登記:每個讀寫的資料夾自己也有宣告,token 閘看不到跨資料夾傳值(稽核 P14,閘 C1 同日補上)。候選值變數 `--item-mixed-prefix-slot` 是本規格的合約變數、只有注入它的那一層讀,不登記;2026-11-15 前叫 `--mixed-prefix-slot`,改成本 pattern 的開頭(`../../tokens/token-system.spec.md`「命名」,稽核 P20)。
 
 **單一類型時**:沒有任何一個後代有 `data-prefix-type=avatar`(或反過來),`:has()` 不命中,`--item-prefix-slot` 維持 `auto`,prefix 縮到自然寬度。**完全沒有 ghost spacing**。
 
@@ -834,8 +829,8 @@ Label x 位置受 prefix 尺寸影響(icon 16 vs avatar 24,差 8px)。**對齊�
 ```tsx
 const slotStyle = getUniformPrefixSlotStyle(size)
 <div
-  style={{ "--mixed-prefix-slot": slotStyle["--item-prefix-slot"], ...style }}
-  className="has-[[data-prefix-type=icon]]:has-[[data-prefix-type=avatar]]:[--item-prefix-slot:var(--mixed-prefix-slot)]"
+  style={{ "--item-mixed-prefix-slot": slotStyle["--item-prefix-slot"], ...style }}
+  className="has-[[data-prefix-type=icon]]:has-[[data-prefix-type=avatar]]:[--item-prefix-slot:var(--item-mixed-prefix-slot)]"
 >
   {children}
 </div>
@@ -1159,6 +1154,7 @@ Selection control(Dropdown / Menu / List / SegmentedControl / Chip)的 item 視�
 - `button.spec.md`
 - `checkbox.spec.md`
 - `color.spec.md`
+- `data-table.spec.md`
 - `dropdown-menu.spec.md`
 - `element-anatomy.spec.md`
 - `empty.spec.md`

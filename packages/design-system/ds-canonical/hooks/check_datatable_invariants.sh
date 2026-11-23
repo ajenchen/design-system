@@ -245,7 +245,7 @@ exit 0
 }
 
 # 用 here-string 餵輸入,不用 `printf | rule`:規則沒讀 stdin 就先退出時,寫端會收到 SIGPIPE,
-# pipefail 讓管線回 141 並被當成規則的結果(同族修正見 check_plugin_fork_health.sh,2026-09-25)。
+# pipefail 讓管線回 141 並被當成規則的結果(同族修正見 check_consumer_app_invariants.sh、check_storybook_addon_packaging.sh,2026-09-25)。
 # 子殼層 `( "$_rule" )` 不可省:規則裡的 `exit` 只能結束它自己。
 for _rule in r1_datatable_invariants r2_size_num_to_meta_width; do
   ( "$_rule" ) <<<"$INPUT"

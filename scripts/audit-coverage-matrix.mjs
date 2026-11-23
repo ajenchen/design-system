@@ -47,7 +47,7 @@ const deterministicMechanism = (dim) => `scripts/deep-audit-deterministic-plan.j
 // Per-dim coverage classification(SSOT — sync 進 design-system-audit/SKILL.md per-dim row)
 const COVERAGE = {
   // Group A — Correctness
-  1: { tier: 'HOOK-ENFORCED', mechanism: 'post_edit_dispatcher.sh → lib/_story_compile_drift.sh(cva 三方漂移 — story-auto-compile-migrate + scripts/compile-stories.mjs --check chain)' },
+  1: { tier: 'HOOK-ENFORCED', mechanism: 'post_edit_dispatcher.sh → lib/_story_compile_drift.sh(scripts/compile-stories.mjs --all --check:tsx componentMeta ↔ spec frontmatter 的 key;cva defaultVariants 預設值三方比對沒有機械量具,audit-time 判;2026-11-18 D4-02 修 scope —— 原 `*/design-system/components/*` 自搬家後從未觸發)' },
   2: { tier: 'DETERMINISTIC', mechanism: deterministicMechanism(2) },
   3: { tier: 'DETERMINISTIC', mechanism: deterministicMechanism(3) },
   4: { tier: 'HOOK-ENFORCED', mechanism: 'check_opacity_token_usage.sh(write-time P0 BLOCKER exit 2,2026-07-07 治理進化方向 2 升級;per-line escape @token-registry-ok)+ utility-registry.json SSOT + audit-time DS-wide grep 確認 residue' },
@@ -74,7 +74,7 @@ const COVERAGE = {
   19: { tier: 'PURE-JUDGMENT', mechanism: 'Home-name-vs-scope AI judgment;dispatch 必 DS-wide enumerate folder vs actual scope' },
   20: { tier: 'PURE-JUDGMENT', mechanism: 'Spec 硬寫機械化值 — dispatch 必 grep DS-wide spec.md 找 px / hex / Tailwind class lists' },
   // Group H — Consumer
-  21: { tier: 'HOOK-ENFORCED', mechanism: 'check_item_list_gap.sh write-time WARN(exit 0 additionalContext,非 block)+ audit-time grep backstop' },
+  21: { tier: 'HOOK-ENFORCED', mechanism: 'check_item_list_gap.sh write-time BLOCKER(PreToolUse proposed-text-v1:TypeScript AST 判每個 FileItem 清單外層的 gap / 外框,這次寫入新增的違規 → exit 2;2026-11-22 WP-USER 由 WARN 升級)+ audit-time grep backstop(FileItem 以外的卡片列、AST 認不出外層的寫法)' },
   22: { tier: 'PURE-JUDGMENT', mechanism: '視覺容器 inner breathing — dispatch agent DS-wide 全掃有邊界容器是否缺 inner padding;原 check_container_breathing.sh 已 retired 無 active 替代(2026-05-31 infra-audit 修假分類,原誤標 HOOK-ENFORCED)' },
   // Group I — Story auto-compile
   23: { tier: 'DETERMINISTIC', mechanism: deterministicMechanism(23) },
@@ -89,12 +89,12 @@ const COVERAGE = {
   29: { tier: 'HOOK-ENFORCED', mechanism: 'check_story_invariants.sh R3 category trait-based DS-wide enforce(原 check_story_category.sh)' },
   30: { tier: 'HOOK-ENFORCED', mechanism: 'check_canonical_propagation.sh E.1 principles canonical DS-wide enforce(原 check_principles_canonical.sh)' },
   // Group M — Overlay body
-  31: { tier: 'HOOK-ENFORCED', mechanism: 'post_edit_dispatcher.sh → lib/_overlay_handcraft.sh WARN(exit 0,2026-05-31 修 dangling ref:原寫 check_overlay_handcraft.sh standalone 不存在,已 fold 成 lib helper)+ grep ban stripped-padding boolean variant audit-time' },
+  31: { tier: 'HOOK-ENFORCED', mechanism: 'post_edit_dispatcher.sh → lib/_overlay_handcraft.sh(2026-11-18 D4-02 起這次新增的行 exit 2;既有的只列 governanceContext)+ grep ban stripped-padding boolean variant audit-time' },
   32: { tier: 'PURE-JUDGMENT', mechanism: 'Filter operator registry SSOT consumption — dispatch 必 grep consumer hardcode op string DS-wide' },
   33: { tier: 'PURE-JUDGMENT', mechanism: 'Component classification + abstraction discipline DS-wide AI judgment;5 sub-dims per-component 全掃' },
   // Group N — State + chain
-  34: { tier: 'HOOK-ENFORCED', mechanism: 'check_field_family_invariants.sh A.4 disabled placeholder color(原 check_disabled_placeholder_color.sh,P1 stderr)' },
-  35: { tier: 'HOOK-ENFORCED', mechanism: 'check_pattern_invariants.sh C.1 overlay panel scroll chain(原 check_overlay_panel_scroll_chain.sh,P1 WARN)' },
+  34: { tier: 'HOOK-ENFORCED', mechanism: 'check_field_family_invariants.sh A.4 disabled placeholder color(原 check_disabled_placeholder_color.sh;2026-11-21 WP-15b 由 P1 提醒升 P0 擋,只看這次寫入的內容)+ audit-time DS-wide grep 確認 residue' },
+  35: { tier: 'HOOK-ENFORCED', mechanism: 'check_pattern_invariants.sh C.1 overlay panel scroll chain(原 check_overlay_panel_scroll_chain.sh;2026-11-21 WP-15b 由 P1 WARN 升 P0 擋,只看這次寫入的內容)+ audit-time DS-wide grep 確認 residue' },
   36: { tier: 'DETERMINISTIC', mechanism: deterministicMechanism(36) },
   37: { tier: 'HOOK-ENFORCED', mechanism: 'check_field_family_invariants.sh(focus-dominates border-primary state machine;2026-05-30 從誤分 PURE-JUDGMENT 修正)' },
   38: { tier: 'PURE-JUDGMENT', mechanism: 'Inline-action gap canonical — dispatch 必 grep ItemInlineAction sibling gap DS-wide' },
@@ -114,22 +114,22 @@ const COVERAGE = {
   50: { tier: 'DETERMINISTIC', mechanism: deterministicMechanism(50) },
   51: { tier: 'DETERMINISTIC', mechanism: deterministicMechanism(51) },
   52: { tier: 'HOOK-ENFORCED', mechanism: 'chrome_header_dispatcher.sh → lib/_tab_lg_chrome_header_equal.sh + lib/_header_with_tabs_border.sh + lib/_chrome_header_handcraft.sh BLOCKER(exit 2 傳播,2026-05-31 folded-hook-audit)' },
-  53: { tier: 'HOOK-ENFORCED', mechanism: 'check_spec_class_drift.sh write-time WARN(exit 0,非 block)+ audit-time grep backstop' },
+  53: { tier: 'HOOK-ENFORCED', mechanism: 'check_spec_class_drift.sh write-time P0 BLOCKER(exit 2;2026-11-21 WP-15b 由 WARN 升級,spec 檔頭 @spec-class-drift-allow 整檔豁免)+ audit-time grep backstop' },
   54: { tier: 'HOOK-ENFORCED', mechanism: 'check_story_invariants.sh R8 story_archetype_registry + packages/design-system/ds-canonical/references/story-baseline-registry.json' },
   55: { tier: 'PURE-JUDGMENT', mechanism: 'Token cross-namespace mapping integrity — dispatch agent DS-wide 全掃 semantic.css 12-hue mapping(L246-273)逐 hue 驗 →primitive step 正確;無 deterministic hook(2026-05-31 infra-audit 修假分類,原誤標 HOOK-ENFORCED 卻無 cite hook)' },
   56: { tier: 'HOOK-ENFORCED', mechanism: 'chrome_header_dispatcher.sh → lib/_app_shell_primary_header_consistency.sh BLOCKER(exit 2 傳播,2026-05-31 修 stdin parsing + dispatcher propagate;escape @app-shell-primary-header-allow)' },
   // Group Q* — Consumer enforcement / fork-context / packaging(57-88,2026-05-30 補滿 per codex Phase B P1:原 56/88 假完整 fix)
   57: { tier: 'HOOK-ENFORCED', mechanism: 'check_ds_anchor_preflight.sh write-time P0 BLOCKER(同 turn 沒先讀 DS canonical baseline 就改 production tsx → exit 2;2026-07-07 由 WARN 升級,escape GOVERNANCE_BYPASS_DS_ANCHOR=1 audit-logged;M29 anchor)+ stop_self_audit Stop hook backstop。2026-10-07 更正:本列原寫「write-time WARN(exit 0)」停在升級前' },
-  58: { tier: 'HOOK-ENFORCED', mechanism: 'check_plugin_fork_health.sh SessionStart：r1 驗證 committed provider-neutral dispatcher + exact installed fork manifest；legacy plugin 僅相容性回饋、不能滿足治理健康契約' },
+  58: { tier: 'DETERMINISTIC', mechanism: deterministicMechanism(58) + ';scripts/test-fork-governance.mjs 驗兩道 consumer 端執行面的兩面:template 出貨的 SessionStart launcher governance/bin/inject_fork_governance_preamble.sh(已安裝套件或 fork manifest 缺 → GOVERNANCE-COMMON-INSTRUCTION-UNAVAILABLE + npm run setup:all;不改工作樹)與 consumer 已安裝的 hard gate fork/consumer/governance-check.mjs(committed launcher 缺 → GOV-ADAPTER-005;manifest 缺 → GOV-CORPUS-001;npm run governance:check 與 setup:all 經 scripts/setup-governance.mjs 呼叫)。這兩面只在夜間 governance-harnesses.yml 與每週 packaging-canary.yml 跑,PR 必過跑不到;template 的 consumer CI(audit.yml)也不跑這道 hard gate。2026-11-21 前掛 SessionStart hook check_plugin_fork_health.sh,已 retired:DS repo 內早退、fork 分類 DROP、plugin 在非 ds-author target 不跑 = 沒有任何部署情境會出聲' },
   59: { tier: 'HOOK-ENFORCED', mechanism: 'check_substantive_edit_approval_preflight.sh scope apps/** + node_modules/@qijenchen' },
   60: { tier: 'HOOK-ENFORCED', mechanism: 'check_propose_without_benchmark.sh UserPromptSubmit(M26)' },
-  61: { tier: 'HOOK-ENFORCED', mechanism: 'check_item_list_gap.sh + check_datatable_invariants.sh r2(原 check_data_table_size_num_to_meta_width.sh;M16 + M23c)WARN(exit 0,非 block)+ audit-time grep backstop' },
+  61: { tier: 'HOOK-ENFORCED', mechanism: 'check_item_list_gap.sh(原 M16,BLOCKER)+ check_datatable_invariants.sh r2(原 check_data_table_size_num_to_meta_width.sh;M23c,WARN exit 0)+ audit-time grep backstop' },
   62: { tier: 'PURE-JUDGMENT', mechanism: 'Fork Netlify onboarding canonical — dispatch 必 DS-wide enumerate netlify.toml / manager-head / setup-netlify / CLAUDE.md Access-control 段' },
   63: { tier: 'HOOK-ENFORCED', mechanism: 'inject_deploy_url_after_push.sh PostToolUse + scripts/deploy-url.mjs' },
   64: { tier: 'CI-ENFORCED', mechanism: 'standard five-step live observation:PR tree=squash-merge tree=tag tree + immutable release/BOM/npm provenance;no candidate freeze,external activation,offline attestor,or import ceremony' },
-  65: { tier: 'HOOK-ENFORCED', mechanism: 'check_chrome_header_avatar_canonical.sh PreToolUse multiline regex BLOCKER(exit 2,2026-05-31 folded-hook-audit 升級;verified clean on canonical + env escape CLAUDE_BYPASS_CHROME_HEADER_AVATAR)' },
+  65: { tier: 'HOOK-ENFORCED', mechanism: 'check_sidebar_avatar_canonical.sh r1_chrome_header_avatar PreToolUse multiline regex BLOCKER(原 check_chrome_header_avatar_canonical.sh,2026-11-18 prune merge;exit 2,2026-05-31 folded-hook-audit 升級;verified clean on canonical + env escape CLAUDE_BYPASS_CHROME_HEADER_AVATAR)' },
   66: { tier: 'CI-ENFORCED', mechanism: 'repository_dispatch mirror + exact template/work-management lockfiles and Verify consumer required checks;dim64/66 share one atomic live-observation digest' },
-  67: { tier: 'HOOK-ENFORCED', mechanism: 'check_sidebar_menu_button_implicit_wrap.sh PreToolUse multiline regex BLOCKER(exit 2,2026-05-31 folded-hook-audit 升級;verified clean on canonical + env escape CLAUDE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP)' },
+  67: { tier: 'HOOK-ENFORCED', mechanism: 'check_sidebar_avatar_canonical.sh r2_menu_button_wrap PreToolUse multiline regex BLOCKER(原 check_sidebar_menu_button_implicit_wrap.sh,2026-11-18 prune merge;exit 2,2026-05-31 folded-hook-audit 升級;verified clean on canonical + env escape CLAUDE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP)' },
   68: { tier: 'PURE-JUDGMENT', mechanism: 'Stories-vs-spec drift systematic — dispatch 必 DS-wide 全 stories/anatomy/principles grep anti-spec pattern(@canonical-pattern / @anti-pattern marker)' },
   69: { tier: 'HOOK-ENFORCED', mechanism: 'check_consumer_app_invariants.sh r1_no_ds_catalog PostToolUse BLOCKER(原 check_consumer_no_ds_catalog.sh,2026-06-11 prune merge)' },
   70: { tier: 'HOOK-ENFORCED', mechanism: 'check_consumer_app_invariants.sh r2_story_baseline PostToolUse BLOCKER + ds-story-manifest.json(原 check_consumer_story_baseline.sh)' },
@@ -137,7 +137,7 @@ const COVERAGE = {
   72: { tier: 'PURE-JUDGMENT', mechanism: 'DS API surface tightening per-component review(tightening-roadmap.md)— dispatch 必 DS-wide enumerate ALL component API surface' },
   73: { tier: 'HOOK-ENFORCED', mechanism: 'check_full_story_visual_interaction_sweep.sh(length === manifest.totalStories,sample = reject)' },
   74: { tier: 'HOOK-ENFORCED', mechanism: 'check_overlay_open_focus_escape_probe.sh BLOCKER' },
-  75: { tier: 'HOOK-ENFORCED', mechanism: 'check_plugin_fork_health.sh r2_plugin_freshness SessionStart fork-user(原 check_plugin_freshness.sh)' },
+  75: { tier: 'DETERMINISTIC', mechanism: deterministicMechanism(75) + ';npm run test:setup-governance(scripts/test-setup-governance.mjs)驗 setup:all 依 committed exact lock 安裝、驗簽、高風險 audit 後才跑已安裝的 hooks-off checker,缺 lock / 多一份 shrinkwrap / 設定注入一律在安裝前擋;版本漂移由 checker 的 GOV-VERSION / GOV-PACKAGE-LOCK / GOV-SUPPLY / GOV-DEPS 擋。這一面只在夜間 governance-harnesses.yml 跑,PR 必過跑不到。2026-11-21 前另有 check_plugin_fork_health.sh 的 r2(legacy Claude plugin marketplace 版本差異提示,自述 non-authoritative),已 retired:只在 Claude + plugin + fork 才會跑,而 plugin 在非 ds-author target 一律不跑' },
   76: { tier: 'HOOK-ENFORCED', mechanism: 'check_escape_marker_abuse.sh(≥3 distinct OR ≥5 total BLOCK [consumer] + per-line justification gate 空理由 BLOCK [consumer+DS] + 廣義 *-allow regex,2026-05-31)' },
   77: { tier: 'DETERMINISTIC', mechanism: deterministicMechanism(77) },
   78: { tier: 'HOOK-ENFORCED', mechanism: 'check_codex_brief_invariants.sh 4th invariant(禁列檔)' },
@@ -163,17 +163,23 @@ const COVERAGE = {
 //   warn           — 該規則只回 governance context / P1 提醒,不擋
 //   block-and-warn — 同一條規則裡 [P0] 類擋、[P1] / warn 類只提醒
 const HOOK_RULE_ENFORCEMENT = {
+  1: { enforcement: 'block-and-warn', rule: 'post_edit_dispatcher.sh → lib/_story_compile_drift.sh:這次編輯的元件 compile-stories --all --check 有 drift → exit 2(別的元件的 drift 只列 context)' },
   4: { enforcement: 'block', rule: 'check_opacity_token_usage.sh 硬違規 → exit 2;micro-gap / fraction soft note 不屬本維度' },
   11: { enforcement: 'block', rule: 'check_story_invariants.sh R1 anatomy(PreToolUse,record_worst 2)' },
   13: { enforcement: 'block', rule: 'check_story_invariants.sh R1 anatomy(PreToolUse,record_worst 2)' },
+  18: { enforcement: 'block-and-warn', rule: 'post_edit_dispatcher.sh → lib/_token_hygiene.sh Check 1:這次新增的行有 shadcn alias → exit 2;既有行只列 governanceContext' },
   29: { enforcement: 'block-and-warn', rule: 'check_story_invariants.sh R3 category:[P0] trait 缺口 record_worst 2;其餘只印 R3 trait warn' },
   30: { enforcement: 'block-and-warn', rule: 'check_canonical_propagation.sh E.1:[P0] 新檔擋;[P1] 既有檔只提醒' },
-  34: { enforcement: 'warn', rule: 'check_field_family_invariants.sh A.4 disabled placeholder color(P1 context,exit 0)' },
-  35: { enforcement: 'warn', rule: 'check_pattern_invariants.sh C.1 overlay scroll chain(P1 WARN context)' },
+  31: { enforcement: 'block-and-warn', rule: 'post_edit_dispatcher.sh → lib/_overlay_handcraft.sh Check 1 / 2.5 / 6:這次新增的行 → exit 2;既有行只列 governanceContext' },
+  34: { enforcement: 'block', rule: 'check_field_family_invariants.sh A.4 disabled placeholder color(P0,record_worst 2;2026-11-21 WP-15b 由 P1 context 升級)' },
+  35: { enforcement: 'block', rule: 'check_pattern_invariants.sh C.1 overlay scroll chain(P0,record_worst 2;2026-11-21 WP-15b 由 P1 WARN 升級)' },
   37: { enforcement: 'block', rule: 'check_field_family_invariants.sh A.3 Field state ring SSOT(P0,record_worst 2)' },
   39: { enforcement: 'block', rule: 'check_pattern_invariants.sh C.4 row slot handcraft(P0,record_worst 2)' },
+  47: { enforcement: 'block-and-warn', rule: 'post_edit_dispatcher.sh → lib/_token_hygiene.sh Check 1 / 3 / 4(registry 管的 shadcn alias、Tailwind 預設陰影、原料色名):這次新增的行 → exit 2;既有行只列 governanceContext' },
   54: { enforcement: 'block-and-warn', rule: 'check_story_invariants.sh R8:registry severity=block → record_worst 2;severity=warn → governance context' },
+  53: { enforcement: 'block', rule: 'check_spec_class_drift.sh:命中且 spec 檔頭沒有 @spec-class-drift-allow → exit 2;沒有只提醒的路徑(2026-11-21 WP-15b 升級,outputMode governance-context-or-block)' },
   57: { enforcement: 'block', rule: 'check_ds_anchor_preflight.sh M29 anchor:同 turn 未讀 DS canonical baseline → exit 2' },
+  61: { enforcement: 'block-and-warn', rule: 'check_item_list_gap.sh(blocking):FileItem 清單外層這次寫入新增的 gap / 外框違規 → exit 2;check_datatable_invariants.sh r2(M23c,governance-context)只提醒' },
 }
 const ENFORCEMENT_VALUES = ['block', 'warn', 'block-and-warn']
 // registrations outputMode → 這支 hook 在 adapter 契約下「能做到的」(interpretProviderHookChildResult:
@@ -360,6 +366,9 @@ for (const [dimText, entry] of Object.entries(COVERAGE)) {
     }
     for (const value of allowed) ceiling.add(value)
   }
+  // 一維引了兩支 hook、一支只會擋(blocking)一支只會提醒(governance-context)→ 這一維做得到的就是「一部分擋、一部分提醒」
+  //(2026-11-22 dim 61:check_item_list_gap.sh 升為擋、check_datatable_invariants.sh 仍只提醒)。
+  if (ceiling.has('block') && ceiling.has('warn')) ceiling.add('block-and-warn')
   const ruleEntry = HOOK_RULE_ENFORCEMENT[dim]
   let enforcement
   let source

@@ -29,13 +29,13 @@ const TutorialRule = createTutorialRule({ examples: true, layout: 'wrap' })
 // ── Sample data ───────────────────────────────────────────────────────────────
 
 const NOTION_PAGES = [
-  'Getting Started', 'Daily journal', 'Reading list', 'Recipes', 'Weekend projects',
-  'Japan 2026 trip', 'Engineering wiki', 'Design system spec', 'Meeting notes',
-  'Roadmap Q2', 'Incident retrospectives', 'Onboarding docs',
+  '新手入門', '每日日誌', '閱讀清單', '食譜', '週末小專案',
+  '2026 日本旅行', '工程知識庫', '設計系統規格', '會議記錄',
+  'Q2 產品路線圖', '事故檢討', '新人到職文件',
 ]
 
 // Stripe 寬欄位商品表 — 消費真 DataTable(per data-table.spec.md「簡單展示也用 DataTable」,
-// 對齊展示頁 HorizontalProductTable 同模式)。height="auto" + min-w-max:DataTable 無高度約束、
+// 對齊展示頁 HorizontalProductTable 同模式)。maxHeight="none" + min-w-max:DataTable 無高度約束、
 // 不啟內部捲軸,捲動完全由外層 ScrollArea / native overflow 容器 own。資料與欄位 = stories-helpers 共用的那一份。
 
 // 取 count 列(> 6 時循環 base 資料、SKU 連號 — 對齊展示頁 PULL_REQUESTS 生成模式)
@@ -128,7 +128,7 @@ export const UsageGuidance: Story = {
         >
           <ExampleGroup className="w-[320px]">
             <ScrollArea className="h-[220px] border border-error/40 rounded-md bg-surface p-[var(--layout-space-loose)]">
-              {/* 標題 → 它底下的內容(內層捲動區、外層後續內容)= loose(A4:標題區 → 它底下的並列內容) */}
+              {/* 標題 → 它底下的內容(內層捲動區、外層後續內容)= loose(layoutSpace.spec.md 規則 3「標題區 → 內容」第 3 題:底下有好幾個 → 標題到第一個 = 東西之間、至少 loose) */}
               <h4 className="text-h6 font-semibold mb-[var(--layout-space-loose)]">外層 ScrollArea</h4>
               <ScrollArea className="h-[120px] border border-error/40 rounded-md bg-canvas">
                 {/* @layout-space-magic-ok: 內層捲動區裡頁名列外圈 8px —— 反例本身的寫法;規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
@@ -206,7 +206,7 @@ export const OrientationChoice: Story = {
         <ExampleGroup className="w-[440px]">
           <ScrollArea className="border border-border rounded-md bg-surface">
             <div className="min-w-max">
-              <DataTable columns={PRODUCT_COLUMNS} data={productRows(3)} getRowId={(p) => p.sku} height="auto" bordered={false} />
+              <DataTable columns={PRODUCT_COLUMNS} data={productRows(3)} getRowId={(p) => p.sku} maxHeight="none" bordered={false} />
             </div>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
@@ -221,7 +221,7 @@ export const OrientationChoice: Story = {
         <ExampleGroup className="w-[440px]">
           <ScrollArea className="h-[200px] border border-border rounded-md bg-surface">
             <div className="min-w-max">
-              <DataTable columns={PRODUCT_COLUMNS} data={productRows(12)} getRowId={(p) => p.sku} height="auto" bordered={false} />
+              <DataTable columns={PRODUCT_COLUMNS} data={productRows(12)} getRowId={(p) => p.sku} maxHeight="none" bordered={false} />
             </div>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
@@ -238,26 +238,26 @@ export const SolvesDataTableBug: Story = {
     <TutorialPage>
       <TutorialRule
         title="問題 — Native horizontal scroll 在 Windows 吃 17px,右側欄被裁切"
-        note="macOS 的 scrollbar 是 overlay 不吃寬度;Windows / Linux always-visible 吃 ~17px。同一份 DataTable 在 macOS 對齊、在 Windows 右側 Status 欄被 scrollbar 壓掉一角 —— 「Left pinned + Row Actions」的典型跑版。"
+        note="macOS 的 scrollbar 是 overlay 不吃寬度;Windows / Linux always-visible 吃 ~17px。同一份 DataTable 在 macOS 對齊、在 Windows 右側「狀態」欄被 scrollbar 壓掉一角 —— 「Left pinned + Row Actions」的典型跑版。"
       >
         <ExampleGroup className="w-[560px]">
           <div className="border border-error/40 rounded-md bg-surface overflow-x-auto">
             <div className="min-w-max">
-              <DataTable columns={PRODUCT_COLUMNS} data={productRows(4)} getRowId={(p) => p.sku} height="auto" bordered={false} />
+              <DataTable columns={PRODUCT_COLUMNS} data={productRows(4)} getRowId={(p) => p.sku} maxHeight="none" bordered={false} />
             </div>
           </div>
-          <ExampleCaption warn>❌ Native overflow-x-auto — Windows 右側 Status 欄被 scrollbar 吃掉</ExampleCaption>
+          <ExampleCaption warn>❌ Native overflow-x-auto — Windows 右側「狀態」欄被 scrollbar 吃掉</ExampleCaption>
         </ExampleGroup>
       </TutorialRule>
 
       <TutorialRule
         title="解法 — ScrollArea overlay 捲軸,跨 OS 一致不吃寬度"
-        note="同一份表格,改用 ScrollArea 包起來、額外渲染 horizontal ScrollBar。macOS 與 Windows 呈現完全一致,右側 Status 欄不被裁切。此組合限外層包 height='auto' 表格的 demo 場景;DataTable 中央捲動區本體走 native overflow-x-auto(釘選欄的結構需求)。"
+        note="同一份表格,改用 ScrollArea 包起來、額外渲染 horizontal ScrollBar。macOS 與 Windows 呈現完全一致,右側「狀態」欄不被裁切。此組合限外層包 maxHeight='none' 表格的 demo 場景;DataTable 中央捲動區本體走 native overflow-x-auto(釘選欄的結構需求)。"
       >
         <ExampleGroup className="w-[560px]">
           <ScrollArea className="border border-success/40 rounded-md bg-surface">
             <div className="min-w-max">
-              <DataTable columns={PRODUCT_COLUMNS} data={productRows(4)} getRowId={(p) => p.sku} height="auto" bordered={false} />
+              <DataTable columns={PRODUCT_COLUMNS} data={productRows(4)} getRowId={(p) => p.sku} maxHeight="none" bordered={false} />
             </div>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>

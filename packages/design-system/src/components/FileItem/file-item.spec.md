@@ -154,7 +154,7 @@ Avatar **固定 48px square**,不隨 content 高度變化。content(label + desc
 - **沒有 `onClick` 的不加**:上傳管理器裡只會在滑過時把 ✓ 換成下載鈕、點列本身沒反應的列也不加(待辦總帳 A3 → B12)—— 換位照舊,只有那顆鈕有自己的滑過色。
 - **列內按鈕**(刪除、下載、重試)滑過時換上自己的 `--neutral-hover`(半透明),疊在列的滑過色上,不寫特例;規則在 `color.spec.md`「巢狀滑過」段。
 - **不加按住那一階**:FileItem「按下深一階」是待辦總帳 N4 / F 模型 D3(2),尚未提問(AI 推導:不先替 user 決定)。
-- **撤回的舊理由**(「三型態皆常駐錨點,加底色 = 雙重強調」):有框、有常駐底色的附件卡可點時照樣換底色 —— [shadcn Attachment](https://github.com/shadcn-ui/ui/blob/98a1fe67b439324ddc857f47fbdce056600a4329/apps/v4/registry/bases/radix/ui/attachment.tsx#L9)(`has-[>a,>button]:hover:bg-muted/50`,放了整卡觸發層才換);不可點的清單列不加滑過層 —— [Material Web list item](https://github.com/material-components/material-web/blob/cbd34a8921915af94d5ef65c2a69eece41d5b4f3/list/internal/listitem/list-item.ts#L161-L169)(`type="text"` 不渲染 ripple)。舊對照表(Slack / Notion / Figma / Gmail)沒有任何來源,一併撤回。不可點也上色的另一派([Ant Design Upload 文字清單](https://github.com/ant-design/ant-design/blob/4f9fe53933922d69f89bcd79de9de87b5124f522/components/upload/style/list.ts#L20-L32))與上面 user 原話不符,不採用。
+- **撤回的舊理由**(「三型態皆常駐錨點,加底色 = 雙重強調」):有框、有常駐底色的附件卡可點時照樣換底色 —— [shadcn Attachment](https://github.com/shadcn-ui/ui/blob/98a1fe67b439324ddc857f47fbdce056600a4329/apps/v4/registry/bases/radix/ui/attachment.tsx#L9)(`has-[>a,>button]:hover:bg-muted/50`,放了整卡觸發層才換);不可點的清單列不加滑過層 —— [Material Web list item](https://github.com/material-components/material-web/blob/cbd34a8921915af94d5ef65c2a69eece41d5b4f3/list/internal/listitem/list-item.ts#L161-L169)(`type="text"` 不渲染 ripple)。舊對照表(四個產品)沒有任何來源,一併撤回。不可點也上色的另一派([Ant Design Upload 文字清單](https://github.com/ant-design/ant-design/blob/4f9fe53933922d69f89bcd79de9de87b5124f522/components/upload/style/list.ts#L20-L32))與上面 user 原話不符,不採用。
 
 **❌ 反例**:
 - Rich `surface=form` 無邊框 → 失去 card 自立輪廓,與一般 list item 無法區分,跟 MenuItem 混淆(`surface=upload-manager` 例外:面板自身是容器 + avatar 作邊界,rich 刻意無邊框,見上表)
@@ -225,7 +225,7 @@ Avatar **固定 48px square**,不隨 content 高度變化。content(label + desc
 ### Description ReactNode 可含 clickable 元素
 
 Description 是 ReactNode,**不限純文字**。常見場景:
-- Error 描述含 "View log" 需可點 → 用 `<a className="underline">View log</a>` 或 inline Button:
+- Error 描述含「查看紀錄」需可點 → 用 `<a className="underline">查看紀錄</a>` 或 inline Button:
 
 ```tsx
 <FileItem
@@ -234,8 +234,8 @@ Description 是 ReactNode,**不限純文字**。常見場景:
   status="error"
   description={
     <>
-      Network timeout.{' '}
-      <a href="#logs" className="underline">View log</a>
+      網路連線逾時。{' '}
+      <a href="#logs" className="underline">查看紀錄</a>
     </>
   }
   onRetry={noop}
@@ -283,7 +283,7 @@ upload-manager 的 completed(100% bar + ✓)屬「剛完成的 upload session」
   - **禁手刻**:header / body 必直接消費 overlay-surface primitives；另建等價 wrapper 會形成第二份 spacing 與 surface authority。Hook `check_story_invariants.sh R9` 機械攔截。
 
 - **左右**:body `!px-0`,列自帶 `--layout-space-loose`(16px)→ item 內容左緣仍對齊 header 標題(x 與 06-03 相同),可點列的滑過底色則鋪到面板左右邊(`overlay-surface.spec.md` M11 state walk 三題:底色邊 = chrome 邊、內容對齊標題、內容離底色邊 ≥ loose)。**推翻 2026-06-03「左右交給面板」**:那時列沒有滑過底色;B12 後可點的列有了,底色若只到內容邊會貼著縮圖與文字(同檔「❌ 禁止:Item `px=0` 讓 content 直接觸 hover bg 邊」)。
-- **上下:目標不變 = 邊緣到 item「ink」(可見內容)、ink 到 ink 都是 `var(--layout-space-tight)`(12px)**,通則仍是「容器該側 padding = 12 − item 在該側自己的留白(ink inset)」。B12 後兩 mode 的列上下各自帶 `tight/2`(compact 的 bar 離列底 `tight/2`,見「Padding」)→ body 上下都給 `tight/2`、列間 gap 0,兩 mode 同一個 body 寫法;06-03 compact 的 `!pt-1` 上下不對稱(因 bar 貼列底)隨之取消。**為何用 `!`(important)**:沿用 List-as-region `!px-0` 與 06-03 `!pt-1` 的寫法 —— 覆寫的勝負不依賴 twMerge 對 arbitrary 值的分組判斷,也不依賴 Tailwind stylesheet 的生成順序。
+- **上下:目標不變 = 上緣到第一列的「ink」(可見內容)、ink 到 ink 都是 `var(--layout-space-tight)`;最後一列的 ink → 面板底照 `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 4 第 4 列(面板不擋頁面、高度貼內容 → 與頂部同值),本檔不另寫值**,通則仍是「容器該側 padding = tight − item 在該側自己的留白(ink inset)」。compact 最後一列的 ink 是進度條(有 status 就有,失敗列是空的軌道;絕對定位、疊在列的下內距裡)—— 錯誤說明字 → 面板底多出的那一段是「說明字 → 進度條」,不是收尾;`scripts/layout-body-edges-invariant.mjs` 把絕對定位的進度條算成最後一個內容來量(2026-11-17 A104 前略過它,量成說明字 → 面板底、誤登記為待修)。B12 後兩 mode 的列上下各自帶 `tight/2`(compact 的 bar 離列底 `tight/2`,見「Padding」)→ body 上下都給 `tight/2`、列間 gap 0,兩 mode 同一個 body 寫法;06-03 compact 的 `!pt-1` 上下不對稱(因 bar 貼列底)隨之取消。**為何用 `!`(important)**:沿用 List-as-region `!px-0` 與 06-03 `!pt-1` 的寫法 —— 覆寫的勝負不依賴 twMerge 對 arbitrary 值的分組判斷,也不依賴 Tailwind stylesheet 的生成順序。
 - **列間 gap**:套在 SurfaceBody className;值見上方「List wrapper canonical」gap 表(SSOT,不在此重述)。
 - Demo:`file-item.stories.tsx` 的 `UploadManagerSurface`(rich)/ `UploadManagerCompactSurface`(compact);收合、5 秒收起、暫停與自動展開寫在 `_demo-files.tsx` `UploadManagerPanel`。
 
@@ -391,7 +391,7 @@ Passive status icon 置中於 action-sized 容器,hover 時 active action 填滿
 
 世界級 DS 的幾何鐵律:**同一 flex 列的互動元素必須有統一 box 尺寸**,gap token 才能如實呈現。
 
-**Backward compat**:consumer 若沒傳 `onDownload` / `onRetry`,status icon 永遠保持 passive(不響應 hover)——既有使用者無感。
+**沒有動作就不給可點的樣子**:consumer 沒傳 `onDownload` / `onRetry` 時,status icon 保持 passive(不響應 hover)—— 按下去沒有事會發生,就不該看起來能按。
 
 **為什麼值得這麼做**:
 - passive 階段清楚告知使用者檔案狀態(✓ / ✗ 顏色強訊號)
@@ -498,3 +498,4 @@ shadcn 2026-06 chat 套件的 Attachment(ui.shadcn.com/docs/components/attachmen
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `file-upload.spec.md`
+- `layoutSpace.spec.md`

@@ -336,6 +336,23 @@ assert.deepEqual(formatProviderHookContext({
   event: 'Stop',
   message: 'stop diagnostic',
 }), { systemMessage: 'stop diagnostic' })
+// 2026-11-21 PROC-H:Stop 的 context 要讓模型看得到 —— Claude 的 Stop additionalContext;但只在明確知道
+// 這次不是「因 Stop hook 續跑」(stop_hook_active === false)時,否則同一條提醒會連鎖續跑。
+assert.deepEqual(formatProviderHookContext({
+  transport: 'claude-hook-specific',
+  event: 'Stop',
+  message: 'stop diagnostic',
+  stopHookActive: false,
+}), { hookSpecificOutput: { hookEventName: 'Stop', additionalContext: 'stop diagnostic' } })
+for (const [transport, stopHookActive] of [
+  ['claude-hook-specific', true],
+  ['claude-hook-specific', 'false'],
+  ['system-message', false],
+  ['stderr', false],
+]) {
+  assert.deepEqual(formatProviderHookContext({ transport, event: 'Stop', message: 'stop diagnostic', stopHookActive }),
+    { systemMessage: 'stop diagnostic' }, `Stop ${transport} stopHookActive=${JSON.stringify(stopHookActive)} stays user-only`)
+}
 assert.deepEqual(formatProviderStopDecision({
   transport: 'claude-decision-json',
   reason: 'must continue correcting',
@@ -348,6 +365,7 @@ assert.deepEqual(formatProviderStopDecision({
 for (const output of [
   formatProviderHookContext({ transport: 'system-message', event: 'PreToolUse', message: 'context' }),
   formatProviderHookContext({ transport: 'claude-hook-specific', event: 'Stop', message: 'context' }),
+  formatProviderHookContext({ transport: 'claude-hook-specific', event: 'Stop', message: 'context', stopHookActive: false }),
   formatProviderStopDecision({ transport: 'claude-decision-json', reason: 'reason' }),
 ]) {
   assert.equal(Object.hasOwn(output, 'suppressOutput'), false)

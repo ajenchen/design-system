@@ -5,7 +5,7 @@
 // (user 2026-09-08「一堆按鈕都無法正常反應」〔UD-A16〕)。行為只用 FileItem 規格寫過的:
 // - 刪除 = 那一列拿掉;重試 = 回到上傳中、跑完變完成;下載 = 跳一則通知(Toast);
 // - 點已上傳 / 已完成的列 = 用 FileViewer 開(file-item.spec.md「`surface="upload-manager"`」表的 Row-click 列);
-// - 錯誤說明裡的「View log」= 開上傳紀錄(連結長相照 file-item.spec.md「Description ReactNode 可含 clickable 元素」)。
+// - 錯誤說明裡的「查看紀錄」= 開上傳紀錄(連結長相照 file-item.spec.md「Description ReactNode 可含 clickable 元素」;規格那段程式範例 2026-11-21 起也寫「查看紀錄」,與範例畫面同一個字樣 —— AGENTS.md「單一檔案不中英夾雜」)。
 // 進度只在按下「重試」之後才開始跑:靜止畫面沒有任何計時器,截圖每次相同。
 // 用到通知的 story 自己掛 <Toaster />(toast.spec.md:每個獨立 story root 一個)。
 import * as React from 'react'
@@ -32,20 +32,20 @@ export interface DemoFile {
   progress?: number
   /** 檔案大小(完成 / 靜態時當說明顯示;上傳中顯示 uploadingText) */
   size: string
-  /** 上傳中的說明,例「5.7 MB of 7.5 MB」;沒給就顯示「上傳中 N%」 */
+  /** 上傳中的說明,例「3.0 MB / 7.5 MB」;沒給就顯示「上傳中 N%」 */
   uploadingText?: string
   /** 完成 / 靜態時的說明;沒給就顯示 size */
   description?: string
-  /** 錯誤說明(後面接「View log」) */
+  /** 錯誤說明(後面接「查看紀錄」) */
   errorText?: string
-  /** false = 錯誤說明後面不接「View log」 */
+  /** false = 錯誤說明後面不接「查看紀錄」 */
   errorLog?: boolean
   thumbnailSrc?: string
   /** FileViewer 預覽來源;沒給就用 thumbnailSrc(FileViewer 對不能預覽的類型有自己的退回畫面) */
   url?: string
 }
 
-/** 錯誤說明裡的「View log」:點了開這個檔案的上傳紀錄(Dialog,按 × / Esc / 點外面關) */
+/** 錯誤說明裡的「查看紀錄」:點了開這個檔案的上傳紀錄(Dialog,按 × / Esc / 點外面關) */
 function ErrorWithLog({ text, file }: { text: string; file: string }) {
   const [open, setOpen] = React.useState(false)
   return (
@@ -53,10 +53,10 @@ function ErrorWithLog({ text, file }: { text: string; file: string }) {
       {text}{' '}
       {/* 長相照 user 2026-09-26 選的乙案:紅字加底線、滑過不變(file-item.spec.md「Description ReactNode 可含 clickable 元素」) */}
       <a href="#" className="underline" onClick={(e) => { e.preventDefault(); setOpen(true) }}>
-        View log
+        查看紀錄
       </a>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent height="hug">
+        <DialogContent height="hug" width="sm">
           <DialogHeader>
             <DialogTitle>上傳紀錄 · {file}</DialogTitle>
           </DialogHeader>
@@ -68,6 +68,9 @@ function ErrorWithLog({ text, file }: { text: string; file: string }) {
     </>
   )
 }
+
+/** 沒給 errorText 時的錯誤說明(2026-11-18 前是一句英文,連結也是英文 —— 稽核 A113,範例畫面一律中文) */
+const DEFAULT_ERROR_TEXT = '上傳失敗。'
 
 /** 重試後每一格進度的間隔與步幅(只在按下重試之後才跑) */
 const RETRY_TICK_MS = 300
@@ -118,7 +121,7 @@ export function useFileDemo(initial: readonly DemoFile[], { clickable = true }: 
     description:
       f.status === 'uploading' ? (f.uploadingText ?? `上傳中 ${f.progress ?? 0}%`)
         : f.status === 'error'
-          ? (f.errorLog === false ? (f.errorText ?? 'There’s something wrong.') : <ErrorWithLog text={f.errorText ?? 'There’s something wrong.'} file={f.name} />)
+          ? (f.errorLog === false ? (f.errorText ?? DEFAULT_ERROR_TEXT) : <ErrorWithLog text={f.errorText ?? DEFAULT_ERROR_TEXT} file={f.name} />)
           : (f.description ?? f.size),
     onDownload: f.status === 'completed' ? () => download(f) : undefined,
     onRetry: f.status === 'error' ? () => retry(f.uid) : undefined,
@@ -195,17 +198,22 @@ export function UploadManagerPanel({
         className="max-w-md flex flex-col rounded-lg border border-border bg-surface-raised shadow-[var(--elevation-200)]"
       >
         {/* header 消費 overlay-surface SurfaceHeader + PopoverTitle(輕量浮層 chrome SSOT,非手刻) */}
-        <SurfaceHeader className={`justify-between ${COMPACT_HEADER_SLOT}`}>
-          <div className="flex-1 min-w-0"><PopoverTitle>{title}</PopoverTitle></div>
-          <Button
-            iconOnly
-            variant="text"
-            size="sm"
-            startIcon={expanded ? ChevronDown : ChevronUp}
-            aria-label={expanded ? '收合' : '展開'}
-            aria-expanded={expanded}
-            onClick={() => setExpanded((v) => !v)}
-          />
+        {/* 右側收合鈕走 SurfaceHeader 的右側按鈕位(overlay-surface.spec.md「SurfaceHeader」右側按鈕位;沒有 × 所以不放分隔線) */}
+        <SurfaceHeader
+          className={`justify-between ${COMPACT_HEADER_SLOT}`}
+          actions={
+            <Button
+              iconOnly
+              variant="text"
+              size="sm"
+              startIcon={expanded ? ChevronDown : ChevronUp}
+              aria-label={expanded ? '收合' : '展開'}
+              aria-expanded={expanded}
+              onClick={() => setExpanded((v) => !v)}
+            />
+          }
+        >
+          <PopoverTitle>{title}</PopoverTitle>
         </SurfaceHeader>
         {/* body 消費 overlay-surface SurfaceBody:左右 0、上下 tight/2、列間 0(列自己帶 gutter 與另一半上下,見 file-item.spec.md) */}
         {expanded && (

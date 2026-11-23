@@ -31,7 +31,7 @@ export const Overview: Story = {
       <div>
         <H3>Anatomy</H3>
         <Desc>Separator 是語意分隔元件——consumer 手動放置的分隔線。基於 Radix Separator(shadcn passthrough;shadcn 預設 <code>decorative=true</code>,Radix 依此切 <code>role</code>,見 separator.spec.md「實作基礎」出處),提供正確的 ARIA 語意:預設 <code>decorative=true</code> 時 render <code>role=&quot;none&quot;</code>(SR 跳過),<code>decorative=&#123;false&#125;</code> 時 render <code>role=&quot;separator&quot;</code> + orientation 語意。元件固定結構(header/footer 邊框)和裝飾性邊框不使用 Separator。</Desc> {/* 來源:https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/separator.tsx#L5-L16 https://github.com/radix-ui/primitives/blob/eb3a2b7091293e27df8f9ba906632d8daa3d81a3/packages/react/separator/src/separator.tsx#L37-L39 */}
-        <div className="border border-border rounded-lg p-4 max-w-md">
+        <div className="border border-border rounded-md p-4 max-w-md">
           <div className="flex flex-col gap-2 py-2">
             <div className="text-body">個人資訊</div>
             <Separator />
@@ -42,7 +42,7 @@ export const Overview: Story = {
 
       <div>
         <H3>Orientation</H3>
-        <div className="flex gap-8 border border-border rounded-lg p-4">
+        <div className="flex gap-8 border border-border rounded-md p-4">
           <div className="flex flex-col gap-2">
             <div className="text-body">Horizontal(預設)</div>
             <Separator />

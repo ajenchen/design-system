@@ -1,9 +1,14 @@
 // @internal — DS-internal 單元(Field 家族 chrome 基底,consumer 用 Field/Input 等 wrapper 不直用);不隨 index.ts re-export 進 npm public surface。
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-import type { HTMLAttributes, MouseEvent as ReactMouseEvent } from 'react'
+import type { CSSProperties, HTMLAttributes, MouseEvent as ReactMouseEvent } from 'react'
 import { cva } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import { isOwnPointerTarget } from '@/design-system/lib/pointer-press'
+import { installReadonlyPointerFocusGuard } from '@/design-system/lib/pointer-focus-guard'
+import type { FieldWidth, SizingMode } from './field-types'
+
+// 唯讀欄位「滑鼠點不畫焦點、鍵盤進來才畫」的判斷(lib/pointer-focus-guard.ts 檔尾)—— 所有 Field 控件都載入本檔,在這裡裝一次,元件端零接線。
+installReadonlyPointerFocusGuard()
 
 // ── Field Wrapper Styles ────────────────────────────────────────────────────
 // 所有 Field 元件共用的 input wrapper 樣式。
@@ -30,20 +35,24 @@ import { isOwnPointerTarget } from '@/design-system/lib/pointer-press'
  * 三個宿主共用同一份 compoundVariants:單行 wrapper(fieldWrapperStyles)、多行 Textarea(textareaVariants)、
  * 複合輸入盒(AgentPromptInput 等經 `fieldChromeStyles(...)` 消費)。任何新的「像欄位的容器」一律消費
  * `fieldChromeStyles`,禁自刻 border/hover/focus 字串(2026-09-02 user 抓 AgentPromptInput 與 Textarea 互動不同)。
- * **readonly 的焦點指示**(2026-09-10 兩次修正後的定案):**跟編輯態同一種 —— 欄位邊框轉主色 1px**。
- * 唯讀的靜止外框是 `border border-transparent`(1px 透明邊框,盒子在、只是看不見),所以聚焦時把它轉成主色
- * 不會有位移,長相與可編輯的欄位完全一致。理由是 Field 家族「一個家族一種焦點長相」(focus-canonical 規則二);
- * 世界級對照同向:MUI OutlinedInput / Ant Input / Fluent Input 的 readOnly **完全不改焦點樣式**(它們的唯讀
- * 靜止態與可編輯態本來就長一樣),Carbon 與 Polaris 雖然唯讀另有靜止樣式,但焦點指示同樣**與可編輯態相同**。
- * 歷程:2026-09-07 的 `ring-*` idiom 隨 R1/R2 退役,0cad81e8 刪掉時沒補替代品 → readonly 一度**零指示**
- *(WCAG 2.4.7);2026-09-10 上午先補成全域外描邊,同日 user 指出(18:46,逐字):
- *「為何不是模擬 field control focus 的樣式？field control focus應該是 1px的 border？」,改為現在這版並撤回那個具名外描邊 utility。
+ * **readonly 的焦點指示**:**長相**跟編輯態同一種 —— 欄位邊框轉主色 1px(2026-09-10 user 原話,逐字:
+ *「為何不是模擬 field control focus 的樣式？field control focus應該是 1px的 border？」);**什麼時候畫**與編輯態不同 ——
+ * **滑鼠點不變,鍵盤進來才畫**(2026-11-11 user,逐字:「確認 polaris真的就是這樣的話那就照你建議」;Shopify Polaris 現行
+ * `s-text-field` 唯讀滑鼠點 0 變化、Tab 才出藍環,它自己有唯讀專屬的 `.input-wrapper.read-only:has(input:focus, textarea:focus)
+ * { box-shadow: none; }` —— https://shopify.dev/docs/api/app-home/latest/web-components/forms/text-field 官方範例「Store URL」實機讀
+ * shadow root 樣式)。唯讀的靜止外框是 `border border-transparent`(1px 透明邊框,盒子在、只是看不見),轉主色不會有位移。
+ * 判斷「這次焦點是不是滑鼠給的」= 瀏覽器 `:focus-visible` + `lib/pointer-focus-guard.ts` 的 `data-pointer-focus`(唯讀文字框滑鼠點
+ * 瀏覽器也判成立,只有那一個差異由 guard 補);規則 owner = `ds-canonical/references/focus-canonical.md` 規則二「唯讀的 Field 控件」列。
+ * 歷程:2026-09-07 的 `ring-*` idiom 隨 R1/R2 退役,0cad81e8 刪掉時沒補替代品 → readonly 一度**零指示**(WCAG 2.4.7);
+ * 2026-09-10 上午先補成全域外描邊,同日下午依上面那句改成邊框轉色,觸發條件順帶寫成 `focus-within`(滑鼠鍵盤都亮 —— AI 推導,
+ * 不是 user 原話);2026-11-11 依上面那句改成只認鍵盤。
  */
 export type FieldChromeHost =
-  /** 宿主是包住可聚焦控件的 wrapper(單行 Field wrapper / 複合輸入盒):readonly ring 用 `:has(:focus-visible)`,
-   *  overlay trigger 開啟時維持 hover 框(`data-[state=open]`)。 */
+  /** 宿主是包住可聚焦控件的 wrapper(單行 Field wrapper / 複合輸入盒):readonly 邊框只認**自己**或**裡面的文字框**的鍵盤焦點
+   * (`focus-visible:` + `has-[:is(input,textarea):focus-visible]`,都排除 `data-pointer-focus`);裡面其他自己會畫框的東西(連結、頭像)
+   * 聚焦時外框不亮 —— 一個 tab stop 一個指示器。欄位自己的浮層開著時維持**聚焦**的框(`data-[field-open]`,見下方 error:false / error:true 兩條)。 */
   | 'wrapper'
-  /** 宿主本身就是可聚焦控件(`<textarea>`):readonly ring 用 `focus-visible:`,無 overlay 開啟態。 */
+  /** 宿主本身就是可聚焦控件(`<textarea>`):readonly 邊框用 `focus-visible:`(排除 `data-pointer-focus`),無 overlay 開啟態。 */
   | 'control'
 
 /**
@@ -58,33 +67,40 @@ export function fieldDefaultChromeCompounds(host: FieldChromeHost) {
       variant: 'default' as const,
       className: ['bg-surface border border-border', 'hover:border-border-hover'],
     },
+    // 開啟中(`data-field-open`,欄位外框自己掛的記號)= 維持**聚焦**的框:欄位 + 它自己打開的浮層 = 同一個欄位(field.spec.md「Field state machine」表)。
+    // 焦點移進浮層時 focus-within 不成立,少了這條框色就取決於焦點落在哪(改前實測:可打字的 Select 藍、不可打字的灰;可打字的 DatePicker 滑鼠點開藍、
+    // 按 ↓ 打開灰,不可打字的都是灰)。2026-11-12 AI 建議、user 採納(世界級對照與出處在 field.spec.md 同一段)。
+    // 認 `data-field-open`、不認 Radix 通用的 `data-state="open"`(2026-11-13;理由與「誰掛記號」住 `lib/composite-field-focus.ts` 檔頭最後一段)。
+    // 帶 `!`:開著又滑過時不被 `hover:border-border-hover` 蓋回灰框。按鈕類觸發不適用,照舊「開著 = 自己的 hover」(inline-action.spec.md)。
+    // 一般與錯誤各有自己的開啟規則,分開放在各自那條(2026-09-25 起就這樣分:當時實測 TimePicker,開啟規則放共用條會把 error 欄位的紅框換掉)。
     // @focus-suppress C — Field 家族 wrapper 自己拿到焦點(Select / PeoplePicker / DatePicker / TimePicker / Combobox 的關閉觸發器);承擔者:同一行的 focus-within:!border-primary(邊框轉色就是這個 tab stop 的框)
     // 2026-09-10:同一個 Field 在可打字時(焦點在裡面的 input)靠邊框轉色、沒有外框;關閉後焦點回 wrapper 若再疊全域外框,Combobox(焦點留在輸入框)與 Select 類
-    // 就長成兩種樣子(user:「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致？」)。Field 家族的焦點指示統一 = 邊框轉色,不分開著關著、不分滑鼠鍵盤;
+    // 就長成兩種樣子(user:「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致？」)。Field 家族的焦點指示統一 = 邊框轉色;編輯態不分開著關著、不分滑鼠鍵盤(唯讀只認鍵盤,見下方 readonly 條);
     // Material outlined Select / Ant Select 聚焦也只有欄位邊框。只有 wrapper 型宿主需要(textarea 自己是插入點控件、已 outline-none)。
-    // 開啟中(data-state=open)= 維持自己的 hover 框(inline-action.spec.md「互動狀態」表 overlay 開啟那一列:同 host hover;field.spec.md「Field state machine」表)。
-    // 放在 error:false 這條、不放上面的共用條:error 欄位的 hover 是 error-hover,共用條的 border-hover 會把紅框換成灰框(2026-09-25 實測 TimePicker)。
-    { mode: 'edit' as const, variant: 'default' as const, error: false as const, className: wrapper ? 'data-[state=open]:border-border-hover focus-within:!border-primary focus-within:hover:!border-primary focus-visible:outline-none' : 'focus-within:!border-primary focus-within:hover:!border-primary' },
+    { mode: 'edit' as const, variant: 'default' as const, error: false as const, className: wrapper ? 'data-[field-open]:!border-primary focus-within:!border-primary focus-within:hover:!border-primary focus-visible:outline-none' : 'focus-within:!border-primary focus-within:hover:!border-primary' },
     // 純顯示只拿掉左邊:左內距與左邊框歸 0 → 值的第一個可見元素齊控件左緣 = 標籤左緣(C1 甲,user 2026-10-21);
     // 高度、上下內距與上下 1px 透明邊、右側(帶箭頭的純顯示的右邊距、截斷省略號、依內容寬)都不動。
     { mode: 'view' as const, variant: 'default' as const, className: 'bg-transparent border-y border-r border-transparent !pl-0' },
     {
       mode: 'readonly' as const,
       variant: 'default' as const,
-      // 唯讀:靜止是 1px 透明邊框(盒子在、只是看不見),聚焦時把它轉成主色 —— 焦點指示與編輯態同一種長相,
-      // 不是全域外描邊(Field 家族「一個家族一種焦點長相」,user 2026-09-10 拍板;見本檔頂端 JSDoc)。
-      // wrapper 宿主自己就是 tab stop(唯讀三兄弟 / 觸發器):focus-within:!border-primary 畫框,同一行的
-      // focus-visible:outline-none 把全域外描邊壓掉;control 宿主(<textarea>)焦點就在自己身上,用 focus-visible:!border-primary。
-      // @focus-suppress C — 唯讀的 wrapper 自己是 tab stop(唯讀三兄弟 Checkbox / Switch / RadioGroup、唯讀的 Select 類觸發器);
-      //   承擔者:同一行的 focus-within:!border-primary(邊框轉色就是這個 tab stop 的框,與編輯態同一種長相)
+      // 唯讀:靜止是 1px 透明邊框(盒子在、只是看不見),**鍵盤**聚焦時把它轉成主色 —— 長相與編輯態同一種(user 2026-09-10),
+      // **滑鼠點不變**(user 2026-11-11 B-Polaris;見本檔頂端 JSDoc)。條件 = 瀏覽器 :focus-visible 而且不帶 data-pointer-focus
+      //(唯讀文字框滑鼠點瀏覽器也判 :focus-visible,lib/pointer-focus-guard.ts installReadonlyPointerFocusGuard 補掛)。
+      // wrapper 宿主:自己是 tab stop(唯讀三兄弟 / 觸發器 / NumberInput)→ focus-visible:;裡面是唯讀 <input>(Input)→ has-[…input…]。
+      //   只認 input / textarea:LinkInput 的連結、PeoplePicker 的頭像自己會畫全域外描邊,外框再亮就是一個 tab stop 兩個指示器
+      //  (focus-canonical「一個項目只有一個指示器」;2026-11-11 前 focus-within 兩個都亮)。
+      // control 宿主(<textarea>)焦點就在自己身上 → focus-visible:。
+      // @focus-suppress C — 唯讀的 wrapper 自己是 tab stop(唯讀三兄弟 Checkbox / Switch / RadioGroup、唯讀的 Select 類觸發器、NumberInput);
+      //   承擔者:同一行的 focus-visible:not-data-pointer-focus:!border-primary(邊框轉色就是這個 tab stop 的框,與編輯態同一種長相)
       className: wrapper
-        ? 'bg-readonly border border-transparent focus-within:!border-primary focus-visible:outline-none'
-        : 'bg-readonly border border-transparent focus-visible:!border-primary',
+        ? 'bg-readonly border border-transparent focus-visible:not-data-pointer-focus:!border-primary has-[:is(input,textarea):focus-visible:not([data-pointer-focus])]:!border-primary focus-visible:outline-none'
+        : 'bg-readonly border border-transparent focus-visible:not-data-pointer-focus:!border-primary',
     },
     { mode: 'disabled' as const, variant: 'default' as const, className: 'bg-disabled border border-transparent cursor-not-allowed' },
     // @focus-suppress C — error 態的 wrapper 自己拿到焦點(同上);承擔者:同一行的 focus-within:!border-error(紅框就是這個 tab stop 的框)
-    // error × 開啟中 = error 自己的 hover 框 `data-[state=open]:border-error-hover`(同 error:false 那條的開啟規則;default 與 naked 共用本條)
-    { mode: 'edit' as const, error: true as const, className: wrapper ? 'border-error hover:border-error-hover data-[state=open]:border-error-hover focus-within:!border-error focus-within:hover:!border-error focus-visible:outline-none' : 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error' },
+    // error × 開啟中 = 維持 error 的聚焦框 `data-[field-open]:!border-error`(同 error:false 那條的開啟規則,錯誤勝過聚焦;default 與 naked 共用本條)
+    { mode: 'edit' as const, error: true as const, className: wrapper ? 'border-error hover:border-error-hover data-[field-open]:!border-error focus-within:!border-error focus-within:hover:!border-error focus-visible:outline-none' : 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error' },
   ]
 }
 
@@ -160,9 +176,12 @@ export const fieldWrapperStyles = cva(
       // Benchmark(M22):shadcn v4 SelectTrigger 預設 `w-fit`
       //   https://raw.githubusercontent.com/shadcn-ui/ui/main/apps/v4/registry/new-york-v4/ui/select.tsx
       //   Radix Select Trigger intrinsic sizing https://www.radix-ui.com/primitives/docs/components/select
+      // fixed(2026-11-15,「尺寸:甲」):`width` 傳數字 = 固定寬,寬度由行內 `width: Npx` 給(本檔 fieldWidthVariant / fieldWidthStyle),
+      //   這裡只留 `max-w-full` —— 窄容器裡不超出容器(與 hug 同一條保證)。
       width: {
         fill: 'w-full',
         hug: 'w-fit max-w-full',
+        fixed: 'max-w-full',
       },
       // error(2026-07-04 Q1 拍板,SSOT 集中):原散在各控件的 error border classes 因
       // focus-within:!border-primary(!important)被蓋 = dead code(聚焦永遠藍)。
@@ -177,9 +196,9 @@ export const fieldWrapperStyles = cva(
     },
     // mode x variant 交叉:visual chrome 由 compoundVariants 決定
     //
-    // Overlay trigger active state(canonical 2026-05-02):當 Field 是 Popover/DropdownMenu/
-    // Combobox trigger 用 asChild,Radix 自動 set `data-state="open"` on trigger root → trigger
-    // 視覺維持 hover 樣式直到浮層關閉(對齊 inline-action.spec.md「狀態極簡派」)。
+    // 欄位自己的浮層開著(2026-11-12;記號 2026-11-13):欄位把 `data-field-open` 寫在外框宿主上
+    // (`lib/composite-field-focus.ts` `fieldOpenProps`)→ 外框維持**聚焦**的樣子直到浮層關閉(欄位 + 它的浮層 = 同一個欄位;
+    // field.spec.md「Field state machine」表)。按鈕類觸發才是「開著 = 自己的 hover」(inline-action.spec.md)。
     compoundVariants: [
       // default 外框 × mode / error 全部來自 FIELD_DEFAULT_CHROME_COMPOUNDS(單行/多行/複合三宿主同一份;
       // 原本逐條寫在此處的 edit/view/readonly/disabled/error 字串與其 rationale 註解已上移到該常數)
@@ -188,7 +207,7 @@ export const fieldWrapperStyles = cva(
       // naked variant — cell-as-input substrate(Notion / Airtable / Excel canonical)
       //
       // ── 2026-05-06 v14:revert v12 → v9 baseline + keep v13.3 ──
-      // v12 `!absolute -inset-px` autoRowHeight 不相容(Field 抽 layout flow → cell 塌 42px;
+      // v12 `!absolute -inset-px` 跟 DataTable 自動行高(rowHeight="hug")不相容(Field 抽 layout flow → cell 塌 42px;
       // user production 回報 Field 沒撐滿 cell、比改之前還糟)→ revert。
       //
       // v14 = v9 baseline border-based state machine + v13.3 focus !important。
@@ -210,17 +229,21 @@ export const fieldWrapperStyles = cva(
         className: [
           'bg-transparent !rounded-none !h-full',
           '!px-[var(--table-cell-px)] !py-[var(--table-cell-py)]',
-          'border border-border',
-          'hover:border-border-hover',
+          // 框寬在這裡;框色(靜止 / 滑過)不在這條 —— 灰框只屬於沒有錯誤的那條(下一條)。2026-11-17 A55:灰框原本寫在這裡,
+          // 而這條排在共用的錯誤條(FIELD_DEFAULT_CHROME_COMPOUNDS 最後一條,不分 variant)之後,tailwind-merge 保留後寫的
+          // `border-border` / `hover:border-border-hover`、拿掉錯誤條的 `border-error` / `hover:border-error-hover` → 無框款 × 驗證錯誤
+          // 靜止與滑過都是灰框,只剩聚焦 / 開著(帶 `!`)是紅。改成跟 default 一樣:錯誤與否各自一條,不靠排序。
+          'border',
           // v13.3 SSOT canonical:focus-within !important(同 default + bare;
           // 2026-07-04 Q1:focus 藍移到 error:false compound,error:true 走共用 error compound)
-          // 2026-09-25:開啟中的 border-hover 同樣移到 error:false compound(error 開啟中走共用 error compound 的 error-hover)
+          // 2026-09-25:開啟中的框同樣在 error:false compound(error 開啟中走共用 error compound);2026-11-12 起開啟中 = 聚焦的框
           'group-data-[row-mode=auto]/cell:!items-start',
         ],
       },
       // @focus-suppress C — naked wrapper 自己聚焦(DataTable 儲存格裡的 Select / DatePicker 觸發器);承擔者:同一行 focus-within:!border-primary
-      // 開啟中 = 自己的 hover 框(同 default 的 error:false 條註解;field.spec.md「Field state machine」表)
-      { mode: 'edit', variant: 'naked', error: false, className: 'data-[state=open]:border-border-hover focus-within:!border-primary focus-within:hover:!border-primary focus-visible:outline-none' },
+      // 開啟中 = 維持聚焦的框(同 default 的 error:false 條註解;field.spec.md「Field state machine」表)
+      // 靜止灰框 + 滑過(A55 從上一條移來):只在沒有錯誤時;有錯誤走共用錯誤條的紅框(閘 field-open-border-invariant.mjs 的 N 驗證錯誤兩列)
+      { mode: 'edit', variant: 'naked', error: false, className: 'border-border hover:border-border-hover data-[field-open]:!border-primary focus-within:!border-primary focus-within:hover:!border-primary focus-visible:outline-none' },
       {
         // 2026-05-12 fix v2(M32 root invariant audit):
         //   Q1 root invariant?:cell-as-input view 視覺位置 = `cell.items-{X}` × `Field.height`
@@ -260,6 +283,24 @@ export const fieldWrapperStyles = cva(
   }
 )
 
+/**
+ * 寬度值(`FieldWidth`)→ 外框 cva 的 `width` 軸值:數字走 `fixed`(cva 只留 `max-w-full`,寬度由 `fieldWidthStyle` 的行內
+ * `width: Npx` 給);模式詞原樣交給 cva。所有收 `FieldWidth` 的控件一律經這兩支,不各自判斷數字(2026-11-15「尺寸:甲」)。
+ */
+export function fieldWidthVariant(width: FieldWidth | null | undefined): SizingMode | 'fixed' | undefined {
+  if (typeof width === 'number') return 'fixed'
+  return width ?? undefined
+}
+
+/**
+ * 數字寬的行內樣式;與元件自己 / consumer 的 `style` 合併 —— 後者放後面,明寫的 style 照舊勝出。不是數字 → 原樣回傳 `style`
+ *(沒有 style 就是 undefined,DOM 不多一個空的 style 屬性)。
+ */
+export function fieldWidthStyle(width: FieldWidth | null | undefined, style?: CSSProperties): CSSProperties | undefined {
+  if (typeof width !== 'number') return style
+  return { width, ...style }
+}
+
 // ── Bare Input Styles ───────────────────────────────────────────────────────
 
 export const bareInputStyles = [
@@ -271,7 +312,7 @@ export const bareInputStyles = [
   // 該顯 ellipsis 的 SSOT。對齊 data-table.spec.md「十一、Cell 單行截斷原則」(空間不足一律 ellipsis)+ field-controls.spec.md「共享 contract」
   // 共享 contract(a)「view/readonly/disabled/edit 4 mode 共享同一 renderer」semantic 對齊。
   'flex-1 min-w-0 truncate bg-transparent',
-  // @focus-suppress B — B Field 家族輸入控件;承擔者:裸 input;指示器是 wrapper 的 focus-within:!border-primary
+  // @focus-suppress B — B Field 家族輸入控件;承擔者:裸 input;指示器是 wrapper 的邊框轉色(編輯態 focus-within:!border-primary;唯讀只認鍵盤,見 readonly compound)
   'outline-none border-none p-0',
   'text-[inherit] font-[inherit] leading-[inherit]',
   // A3 fix(2026-05-05):`<input>` UA stylesheet 強制 `text-align: start`,阻斷 parent 的
@@ -346,6 +387,26 @@ export function keepFieldFocusBeforeUnmount(leaving: Element | null | undefined,
   owner.focus({ preventScroll: true })
 }
 
+/** 清空後按鈕隨之卸載 —— 焦點在它身上(鍵盤按下 / Chrome 滑鼠按下)時交給誰(參數 = 那顆按鈕) */
+export type FieldClearFocusOwner = (button: HTMLElement) => HTMLElement | null | undefined
+
+/**
+ * 一鍵清空的「按下」:視需要擋冒泡 → 焦點在這顆按鈕上就先交給 owner(`keepFieldFocusBeforeUnmount`)→ 清。
+ * 順序有意義:先交焦點、再清 —— 清完按鈕就卸載,焦點若還在它身上會掉到 body。
+ * 2026-11-21(LINK-CLEAR)由 5 處各寫一份收成這一支:Field 家族的 ×(`field-clear-button.tsx` FieldClearButton —— Select / Combobox /
+ * DatePicker / 日期區間 / TimePicker / LinkInput)與 AgentPanel 決策卡「清除選取」(文字鈕,只共用按下這一段)。
+ */
+export function pressFieldClear(
+  event: ReactMouseEvent<HTMLElement> | undefined,
+  focusOwner: FieldClearFocusOwner,
+  onClear: () => void,
+  { stopPropagation = false }: { stopPropagation?: boolean } = {},
+): void {
+  if (stopPropagation) event?.stopPropagation()
+  if (event) keepFieldFocusBeforeUnmount(event.currentTarget, focusOwner(event.currentTarget))
+  onClear()
+}
+
 // ── Naked Variant Cell Row-Mode Alignment Propagation ──────────────────────
 // SSOT canonical(M19 / 2026-05-05):cell-as-input naked variant 元件**所有內部
 // wrapper**(`<span>` 包 Avatar+name 等)必 import + apply 此 SSOT,host cell
@@ -372,7 +433,7 @@ export function keepFieldFocusBeforeUnmount(leaving: Element | null | undefined,
  *   - X:單行與 wrap 都套(取代各元件自帶的 tagPadding)。
  *   - Y:只有 wrap 模式套(單行由 wrapper `items-center` 置中,結果與 Y 相同);第一行 tag 的 y 因此
  *     恆等於單行時的 y,切換 wrap 不位移(舊 `py-1` 寫死 4px 會差 1px)。
- * Tag 高度消費同一個 token `--tag-height-*`(tokens/uiSize/uiSize.css),沒有第二份字面值。
+ * Tag 高度消費同一個 token `--tag-height-*`(components/Tag/tag.css),沒有第二份字面值。
  * 消費者:Combobox(三條路徑)、Select tag 模式。閘:`scripts/tag-field-vertical-inset.mjs`。
  */
 export const fieldTagInsetX: Record<'sm' | 'md' | 'lg', string> = {
@@ -432,11 +493,12 @@ export const nakedCellRowModeAlign = 'group-data-[row-mode=auto]/cell:items-star
 // Color `--border-hover` 對齊 Field default hover state token。
 //
 // **2026-05-10 Slice D Step 2 — Cell host CSS variable suppression**:
-// outline color 改用 `var(--cell-hover-outline-color, var(--border-hover))`,
-// allow DataTable cell host(spreadsheet overlay enabled 時)set `--cell-hover-outline-color: transparent`
+// outline color 改用 `var(--table-cell-hover-outline-color, var(--border-hover))`,
+// allow DataTable cell host(spreadsheet overlay enabled 時)set 成 transparent
 // 抑制 outline,讓 overlay layer 接管 hover ring paint(per RFC Contract 8 「one geometry owner, two paint owners」)。
-// Backward-compat:flag 關時 default `--border-hover`,既有行為不變。
-export const nakedCellEditableDisplayHover = 'hover:outline hover:outline-1 hover:outline-offset-[-1px] hover:outline-[var(--cell-hover-outline-color,var(--border-hover))]'
+// flag 關時沒有 overlay 接手 → 格子自己畫滑過外框(預設 `--border-hover`)。
+// 這顆是 DataTable 的值(2026-11-15 前叫 --cell-hover-outline-color;說明住 data-table.spec.md「儲存格滑過外框色」,稽核 P16)。
+export const nakedCellEditableDisplayHover = 'hover:outline hover:outline-1 hover:outline-offset-[-1px] hover:outline-[var(--table-cell-hover-outline-color,var(--border-hover))]'
 
 // ── Cell-as-input Edge Slot SSOT(2026-05-05 v8 — retire 平行 SSOT,改 L1 消費)───
 //
@@ -464,7 +526,7 @@ export const nakedCellEditableDisplayHover = 'hover:outline hover:outline-1 hove
  * TimePicker / NumberInput 的唯讀外框是沒有 tabIndex 的 div,按 Tab 停不到(PR 與 beta.147 實測相同)。
  * 只在 mode === 'readonly' 回傳屬性:view 是純展示(不是表單欄位)、disabled 不可聚焦,兩者回空物件。
  * 角色沿用該控件編輯態的角色 + aria-readonly(同 checkbox.tsx「mode='readonly' in Field」分支的先例);
- * 焦點長相由 fieldWrapperStyles 的 readonly compound(focus-within:!border-primary)承擔,與編輯態同一種。
+ * 焦點長相由 fieldWrapperStyles 的 readonly compound 承擔(邊框轉主色 1px,與編輯態同一種長相;只在鍵盤聚焦時畫,滑鼠點不變)。
  */
 export function readonlyTabStopProps(
   mode: string | undefined,
@@ -497,7 +559,8 @@ export const EMPTY_DISPLAY = '-'
  * 2026-05-14 I2 fix(per field-controls.spec.md contract (e) view typography canonical):
  * Field family view path bare-span helper — `sm/md → text-body` / `lg → text-body-lg`,
  * 跨 9 元件 view 視覺尺寸統一(user 抓 LinkInput 字體跟其他 Field 不一致 = SSOT 違反)。
- * Consumer:LinkInput / Select / Combobox / DatePicker / TimePicker non-D-path bare-span 套此 class。
+ * Consumer:LinkInput / Select / Combobox / DatePicker / TimePicker / PeoplePicker non-D-path bare-span 套此 class
+ *(PeoplePicker 2026-11-17 補上,A100;六個元件 × showDisplayEndIcon 兩值的像素閘 scripts/field-view-font-size-invariant.mjs)。
  */
 export const fieldDisplayTextClass = (size: 'sm' | 'md' | 'lg'): string =>
   size === 'lg' ? 'text-body-lg' : 'text-body'

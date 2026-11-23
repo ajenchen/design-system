@@ -23,7 +23,7 @@
  *         「關閉」,N2);焦點在浮層選單項上按一下 Esc 就收回、展開的選單項沒有 aria-describedby / 不開提示(N3);primary-header 叫出 Menu 浮層時
  *         被蓋住的細列不長出標頭、圖示不跳、品牌只在浮層那一份(F4);三顆拖寬把手名稱分得出來、各自以 aria-controls 指向自己那一區(F9)。
  *         2026-10-20 r1b 複核補(S26–S28 + 既有格加斷言):AI agent 浮層開著時,模擬瀏覽器的工具列(不是宿主)不在 inert 裡、網址列聚焦得到也點得到(D3);
- *         兩則「放不下時」示範的殼 = 模擬瀏覽器畫布、浮層與遮罩都在畫布裡(F10);從 AI agent 導到 Insights 時右側詳情一起收起(S21 / S22,F11);
+ *         兩則「放不下時」示範的殼 = 模擬瀏覽器畫布、浮層與遮罩都在畫布裡(F10);從 AI agent 導到 Active sprint(2026-11-15 前叫 Insights)時右側詳情一起收起(S21 / S22,F11);
  *         Menu 浮層的無障礙名稱 = 「選單」、不掛描述(S23,N4)。
  *
  * 頁面破壞(@gate-contract「紅」(b) 的細目):
@@ -32,7 +32,7 @@
  *           殼一捲就捲回 0、AI agent 裡的連結點了沒反應;2026-10-15 補:Menu 浮層底色改回 `--surface`、浮層頂端塞一顆 sr-only「關閉」、
  *           選單項聚焦時吞掉第一下 Esc 並掛 describedby、浮層開著時細列那份長出 48px 標頭、把手拿掉 aria-controls 並改回同名;
  *           2026-10-20 補:AI agent 浮層把模擬瀏覽器工具列也設 inert、畫布拿掉 transform(浮層改以視窗定位、蓋出畫布)、殼縮成畫布的 70%、
- *           導到 Insights 後又把詳情打開、Menu 浮層名稱改回「Sidebar」並掛描述)—— 每一個都必須讓指定的斷言紅(檔尾 DOM_SABOTAGE)。
+ *           導到 Active sprint 後又把詳情打開、Menu 浮層名稱改回「Sidebar」並掛描述)—— 每一個都必須讓指定的斷言紅(檔尾 DOM_SABOTAGE)。
  *
  * 為什麼要有這支(取代 2026-10-14 前的 scripts/agent-panel-breakpoint.mjs):舊閘驗「容器 ≥ 960 才並排」「上限 = 容器 × 3/8」「浮層左留 48、不畫把手」,
  * 那套規則被 user 2026-10-14 規格整套取代(app-shell.spec.md「版面規則」;D:30 清單 #38 / #43 / #104)。純函式判定表
@@ -82,6 +82,10 @@ const TOL = 0.75
 const SETTLE_FRAMES = 10
 /** 單一互動(點擊 / 聚焦)等元素的上限:等不到 = 這一步做不下去(頁面狀態不對),記成這一格紅、跳過這個情境剩下的步驟,不是儀器失效。 */
 const ACTION_TIMEOUT = 5000
+// AI agent 回覆裡導向 Main 的那個連結:id = 側欄項目 / data-agent-link,標題 = 那一頁的標頭字(_demo-helpers.tsx MAIN_NAV;
+// 2026-11-15 前 id insights、標題 Insights —— 那一頁主區只剩一張表後「Insights」說不出那張表,側欄與標頭一起改字)
+const AGENT_LINK_ID = 'active-sprint'
+const AGENT_LINK_TITLE = 'Active sprint'
 
 // ── 設定(與 story 的 args 一一對應)──
 // A = user 規格 U:36-39(Main 600、Menu 200–240、Right 250–500、AI agent 350–700);初始寬 220 / 320 / 400 = AI 假設(同判定表 CFG4)
@@ -171,10 +175,10 @@ const SCENARIOS = [
   { id: 'S20', title: 'Menu 兩份共用狀態(審查缺陷 6):1300 叫出 Menu 浮層 → 浮層裡展開「專案」→ Esc → 放到 2200 並排 →「專案」仍展開、專案看得到',
     cfg: A, rail: true, open: { menu: false, right: true, agent: true },
     steps: [{ W: 1300 }, { trigger: true }, { groupToggle: true }, { key: 'Escape' }, { W: 2200, retained: 'groupShared' }] },
-  { id: 'S21', title: 'D:23 從 AI agent 導向 Main(審查缺陷 7):四區版面 1100(AI agent 浮層)→ 點回覆裡的「Insights」→ AI agent 收起、Main 換到 Insights、焦點回 Main',
+  { id: 'S21', title: `D:23 從 AI agent 導向 Main(審查缺陷 7):四區版面 1100(AI agent 浮層)→ 點回覆裡的「${AGENT_LINK_TITLE}」→ AI agent 收起、Main 換到 ${AGENT_LINK_TITLE}、焦點回 Main`,
     story: 'design-system-components-appshell-展示--four-regions', expectAgentAfterLink: false,
     steps: [{ W: 1100 }, { agentLink: true, retained: 'navigated' }] },
-  { id: 'S22', title: 'D:23 並排時不收(審查缺陷 7):四區版面 2200(AI agent 並排)→ 點「Insights」→ Main 換到 Insights、AI agent 維持開著',
+  { id: 'S22', title: `D:23 並排時不收(審查缺陷 7):四區版面 2200(AI agent 並排)→ 點「${AGENT_LINK_TITLE}」→ Main 換到 ${AGENT_LINK_TITLE}、AI agent 維持開著`,
     story: 'design-system-components-appshell-展示--four-regions', expectAgentAfterLink: true,
     steps: [{ W: 2200 }, { agentLink: true, retained: 'navigated' }] },
   // ── 2026-10-15 r1b 複驗補(對照組見檔尾 DOM_SABOTAGE 最後五種)──
@@ -463,7 +467,7 @@ function retainedNavigated() {
   const agentVisible = !!agent && getComputedStyle(agent).display !== 'none' && agent.getBoundingClientRect().width > 0
   const title = document.querySelector('[data-app-shell-main-column] header h1')?.textContent?.trim() ?? null
   const active = document.activeElement
-  // F11(示範產品的導航邏輯):Insights 是自己的一頁,右側的議題詳情跟它無關 → 換過去時一起收起
+  // F11(示範產品的導航邏輯):Active sprint(原 Insights)是自己的一頁,右側的議題詳情跟它無關 → 換過去時一起收起
   const aside = document.querySelector('aside[data-app-shell-panel="right"]')
   const asideVisible = !!aside && aside.getBoundingClientRect().width > 0
   return { agentVisible, asideVisible, title, focus: !active || active === document.body ? 'body' : active.id === 'app-shell-main' ? 'main' : agent?.contains(active) ? 'agent' : active.tagName.toLowerCase() }
@@ -665,7 +669,7 @@ async function perform(step, label) {
   } else if (step.groupToggle) {
     await page.click('[data-menu-overlay] [data-sidebar="group-label"] button[aria-expanded]', { timeout: ACTION_TIMEOUT })
   } else if (step.agentLink) {
-    await page.click('[data-app-shell-panel="agent"] [data-agent-link="insights"]', { timeout: ACTION_TIMEOUT })
+    await page.click(`[data-app-shell-panel="agent"] [data-agent-link="${AGENT_LINK_ID}"]`, { timeout: ACTION_TIMEOUT })
   } else if (step.tabInto) {
     // 浮層剛開:從浮層殼一路按 Tab,記下每一站,直到停在浮層的選單項(最多 6 下)
     lastTabStops = []
@@ -828,8 +832,8 @@ function retainedResults(snaps) {
     if (extra.navigated) {
       const x = extra.navigated
       const wantAgent = sc.expectAgentAfterLink
-      out.push({ code, key: 'navigated', name: wantAgent ? '並排時從 AI agent 導向 Main:Main 換到 Insights、AI agent 維持開著' : '浮層時從 AI agent 導向 Main:AI agent 收起、Main 換到 Insights、焦點回 Main', ok: x.title === 'Insights' && x.agentVisible === wantAgent && (wantAgent || x.focus === 'main'), detail: JSON.stringify(x) })
-      out.push({ code, key: 'insightsAside', name: '換到 Insights 時右側議題詳情一起收起(示範產品的導航;F11)', ok: x.title === 'Insights' && x.asideVisible === false, detail: JSON.stringify(x) })
+      out.push({ code, key: 'navigated', name: wantAgent ? `並排時從 AI agent 導向 Main:Main 換到 ${AGENT_LINK_TITLE}、AI agent 維持開著` : `浮層時從 AI agent 導向 Main:AI agent 收起、Main 換到 ${AGENT_LINK_TITLE}、焦點回 Main`, ok: x.title === AGENT_LINK_TITLE && x.agentVisible === wantAgent && (wantAgent || x.focus === 'main'), detail: JSON.stringify(x) })
+      out.push({ code, key: 'targetPageAside', name: `換到 ${AGENT_LINK_TITLE} 時右側議題詳情一起收起(示範產品的導航;F11)`, ok: x.title === AGENT_LINK_TITLE && x.asideVisible === false, detail: JSON.stringify(x) })
     }
     if (extra.scrolled) {
       const s = extra.scrolled
@@ -929,10 +933,10 @@ const DOM_SABOTAGE = [
   ['畫布拿掉 transform:Menu 浮層與遮罩改以視窗定位(F10 的原因)', { css: '[data-simulated-canvas]{transform:none!important}' }, ['S28'], (res, ret) => ret.some((r) => r.key === 'frame' && !r.ok)],
   // F10 的症狀:殼沒有撐滿畫布(2026-10-14 裸 div 釘寬時右側一大片空白)
   ['殼縮成畫布的 70%(F10 的症狀)', { css: '[data-simulated-canvas] [data-app-shell]{width:70%!important;flex:none!important}' }, ['S27'], (res, ret) => ret.some((r) => r.key === 'frame' && !r.ok)],
-  // F11 的症狀:導到 Insights 之後右側詳情還開著(連結點下去後再按一次 ⌘. 把詳情打開)
-  ['導到 Insights 後詳情又打開(F11 的症狀)', { script: `document.addEventListener('click', (e) => {
-      if (e.target instanceof Element && e.target.closest('[data-agent-link="insights"]')) setTimeout(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: '.', ctrlKey: true, bubbles: true })), 50)
-    }, true)` }, ['S21', 'S22'], (res, ret) => ret.filter((r) => r.key === 'insightsAside' && !r.ok).length === 2],
+  // F11 的症狀:導到 Active sprint 之後右側詳情還開著(連結點下去後再按一次 ⌘. 把詳情打開)
+  [`導到 ${AGENT_LINK_TITLE} 後詳情又打開(F11 的症狀)`, { script: `document.addEventListener('click', (e) => {
+      if (e.target instanceof Element && e.target.closest('[data-agent-link="${AGENT_LINK_ID}"]')) setTimeout(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: '.', ctrlKey: true, bubbles: true })), 50)
+    }, true)` }, ['S21', 'S22'], (res, ret) => ret.filter((r) => r.key === 'targetPageAside' && !r.ok).length === 2],
   // N4 的原因:浮層名稱「Sidebar」、掛英文描述(照抄舊窄版 Sheet)
   ['Menu 浮層名稱改回「Sidebar」並掛描述(N4 的原因)', { script: `new MutationObserver(() => {
       const o = document.querySelector('[data-menu-overlay][data-state="open"]'); if (!o || o.hasAttribute('data-sabotage-name')) return

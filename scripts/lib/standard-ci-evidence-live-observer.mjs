@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { GhApiClient } from '../../infra/governance/bin/reconcile-github.mjs'
 import { loadActiveDeepAuditRun } from './deep-audit-evidence-contract.mjs'
-import { loadStandardCiEvidencePlan, standardCiEvidence } from './standard-ci-evidence.mjs'
+import { loadStandardCiEvidencePlan, standardCiEvidence, standardConsumerSelection } from './standard-ci-evidence.mjs'
+import { requestedConsumersFromEnv } from './release-consumer-selection.mjs'
 import { validateRegistryPackage } from '../release-npm-lib.mjs'
 import {
   resolveImmutableReleaseSnapshot,
@@ -133,12 +134,14 @@ function lockReadback(client, repo, head, packageNames) {
 
 export async function collectStandardFiveStepLiveObservation(options = {}) {
   if (!options || typeof options !== 'object' || Array.isArray(options)
-    || Object.keys(options).some((key) => !['repoRoot', 'client', 'releaseLookup', 'npmValidator', 'now'].includes(key))) {
+    || Object.keys(options).some((key) => !['repoRoot', 'client', 'releaseLookup', 'npmValidator', 'now', 'env'].includes(key))) {
     fail('observer options contain an unsupported override')
   }
   const repoRoot = resolve(options.repoRoot ?? process.cwd())
   const client = options.client ?? new GhApiClient()
   const now = options.now ?? new Date()
+  // user 本次要求升級的 on-request consumer;跟 `release:auto` 同一個環境變數、同一支解析
+  const requestedConsumers = requestedConsumersFromEnv(options.env ?? process.env)
   const releaseLookup = options.releaseLookup ?? resolveImmutableReleaseSnapshot
   const npmValidator = options.npmValidator ?? validateRegistryPackage
   if (!(now instanceof Date) || !Number.isFinite(now.getTime())) fail('observer clock is invalid')
@@ -196,13 +199,11 @@ export async function collectStandardFiveStepLiveObservation(options = {}) {
     const { bytes: _bytes, ...identity } = contentIdentity(client, authorityRepo.github, path, ref)
     return identity
   })
+  // 只讀回這次發版實際被選中的 consumer(與 orchestrator 第五步同一支選法);
+  // 沒被選中的不發任何網路讀取,記成「本次未要求升級」寫進 consumerSelection.notRequested
+  const consumerSelection = standardConsumerSelection({ plan, workflow, inventory, desired, requested: requestedConsumers })
   const consumers = []
-  for (const planned of plan.consumers) {
-    const repo = inventory.repositories.find((item) => item.id === planned.repositoryId)
-    const profile = desired.profiles[repo.desiredProfile]
-    const checkPolicy = profile.requiredChecks.find((item) => item.context === planned.requiredCheck)
-    const releaseTarget = workflow.automation.consumers.find((target) => target.repository === repo.github)
-    if (!releaseTarget || releaseTarget.requiredCheck?.context !== checkPolicy?.context) fail(`${repo.id} release/check SSOT differs`)
+  for (const { planned, repo, checkPolicy, releaseTarget } of consumerSelection.selected) {
     const consumerMain = mainHead(client, repo)
     const sourcePullRequest = mergedPullRequest(client, repo.github, consumerMain.head, repo.defaultBranch)
     const packageNames = releaseTarget.packages
@@ -272,6 +273,10 @@ export async function collectStandardFiveStepLiveObservation(options = {}) {
     },
     npm,
     consumers,
+    consumerSelection: {
+      requested: consumerSelection.requested,
+      notRequested: consumerSelection.notRequested,
+    },
     dimensions: plan.dimensions.map((item, index) => ({
       dim: item.dim,
       capability: item.capability,

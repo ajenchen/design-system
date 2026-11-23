@@ -190,9 +190,8 @@ Breadcrumb 是 page header 內的階層定位提示，不取代承載全域與�
 
 世界級對照:
 - **Material UI**:`maxItems=8` declarative auto-collapse(`maxItems = 8`,https://github.com/mui/material-ui/blob/34d78acfd16dfe3426c0b2c7d9f94b7fb930f5f8/packages/mui-material/src/Breadcrumbs/Breadcrumbs.js#L90;no per-item width rule)
-- **Polaris**:點 ⋯ DropdownMenu 展開
 - **Atlassian**:中段 ⋯ + dropdown(@atlaskit/breadcrumbs 17.8.6 新版在 `platform_dst_breadcrumbs-refresh` 旗標下,⋯ 用 `DropdownMenu`,https://cdn.jsdelivr.net/npm/@atlaskit/breadcrumbs@17.8.6/dist/es2019/components/internal/ellipsis-popup.js)
-- **GitHub / Notion / Linear / Apple Finder**:auto truncate 中段
+- 原列的另外五家(點 ⋯ 展開 / 中段自動截斷)沒有一手來源,2026-11-16 撤回
 - Per-item width(flex-shrink hierarchy)無世界級 source 可考(**unverified**)— 本 DS 自有設計,依據詳上方「為何 flex-shrink hierarchy 不用 fixed max-width」
 
 ## Title-breadcrumb-end 同步 canonical(2026-05-10 新增)
@@ -207,6 +206,8 @@ Breadcrumb 是 page header 內的階層定位提示，不取代承載全域與�
 **為何同字重複**:breadcrumb 末位是 a11y 階層 navigation 階梯末端(`aria-current="page"`);title h2/h3/h4 是同字**視覺大字 emphasis**。兩者各司其職:小字 breadcrumb 提供路徑 context,大字 title 提供 page identity。同 SSOT 兩 view。
 
 **禁止**:breadcrumb 末位用 `BreadcrumbLink`(parent path)+ title 才顯示 current page = breadcrumb 末位 ≠ title 內容 = 違反「禁止事項」段「最後一項不可是 `BreadcrumbLink`,必須用 `BreadcrumbPage`」+ 違反 world-class consensus。
+
+**同族**:側欄選中項 ↔ 頁面標頭也是同字,規則與例外住 `../Sidebar/sidebar.spec.md`「選中項的字 = 那一頁標頭的字」,本段不重述。
 
 ---
 

@@ -10,7 +10,7 @@
 //
 // 用法:node scripts/test-fork-governance.mjs   (CI / preflight 跑;非 0 = fail)
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync, copyFileSync, readdirSync, lstatSync, readlinkSync, symlinkSync, cpSync, mkdtempSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync, copyFileSync, readdirSync, lstatSync, readlinkSync, symlinkSync, cpSync, mkdtempSync, renameSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -26,10 +26,13 @@ import {
 } from './refresh-fork-launchers.mjs'
 import { buildProviderHookLaunchArgv } from './lib/provider-hook-output-transport.mjs'
 import { compareUtf8Bytes } from './lib/provider-lifecycle.mjs'
+import { installShippedTokenFiles as installShippedTokenFilesFrom } from './lib/shipped-token-files.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const FORK_HOOKS = join(ROOT, 'packages/design-system/ds-canonical/fork/hooks')
 const CANONICAL_UTILITY_REGISTRY = join(ROOT, 'packages/design-system/src/tokens/utility-registry.json')
+// 已安裝套件裡 hook 會讀的發布檔:清單與理由只住 scripts/lib/shipped-token-files.mjs(consumer clean-room 夾具取同一份)
+const installShippedTokenFiles = (installedDsRoot) => installShippedTokenFilesFrom({ sourceDsRoot: join(ROOT, 'packages/design-system'), installedDsRoot })
 const CANONICAL_STORY_REGISTRY = join(
   ROOT,
   'packages/design-system/ds-canonical/references/story-baseline-registry.json',
@@ -55,17 +58,19 @@ function buildFixture() {
   if (existsSync(FIX)) rmSync(FIX, { recursive: true, force: true })
   mkdirSync(join(FIX, 'apps/demo/src'), { recursive: true })
   const dsSpecDir = join(FIX, 'node_modules/@qijenchen/design-system/src')
-  mkdirSync(join(dsSpecDir, 'tokens'), { recursive: true })
   mkdirSync(join(dsSpecDir, 'components/CircularProgress'), { recursive: true })
   mkdirSync(join(FIX_CORPUS, 'references'), { recursive: true })
   // Direct hook probes receive an explicit mini corpus matching the authenticated runtime snapshot.
   // The installed package copy is only consumer application material; governance must never treat
   // that mutable dependency view as the authority or rediscover this repository through git.
-  copyFileSync(CANONICAL_UTILITY_REGISTRY, join(dsSpecDir, 'tokens/utility-registry.json'))
+  installShippedTokenFiles(dirname(dsSpecDir))
   copyFileSync(CANONICAL_UTILITY_REGISTRY, join(FIX_CORPUS, 'references/utility-registry.json'))
   copyFileSync(CANONICAL_STORY_REGISTRY, join(FIX_CORPUS, 'references/story-baseline-registry.json'))
   writeFileSync(join(dsSpecDir, 'components/CircularProgress/circular-progress.spec.md'), '# CircularProgress\nsize 預設 24\n')
   writeFileSync(join(FIX, 'apps/demo/src/App.tsx'), 'export const App = () => <div>x</div>\n')
+  // check_item_list_gap.sh 用 consumer 專案自己的 TypeScript 解析 TSX(fork corpus 帶 hooks/lib/tsx-governance-analysis.mjs,
+  // 不帶 parser);合成 fork 借 repo 已安裝的那一份,跟 consumer 專案裝了 typescript 同一個形狀。
+  symlinkSync(join(ROOT, 'node_modules/typescript'), join(FIX, 'node_modules/typescript'), 'dir')
 }
 
 // run a hook with a synthetic tool_input; returns {exit, stderr}
@@ -99,16 +104,25 @@ const CASES = [
   // 2026-07-10 隊列 14:偽表格(R4 分支)專屬 case — 防該分支 regress 靜默(raw <table> case 蓋不到它)
   { hook: 'check_consumer_app_invariants.sh', tool: 'Write', enforce: true,
     violation: 'const MINI_TABLE_ROW_PAD="px-3 py-2"\nexport const X=()=><div className="grid grid-cols-[88px_72px_1fr] bg-muted font-medium">h</div>',
-    clean: 'import {DataTable} from "@qijenchen/design-system"\nexport const X=()=><DataTable size="sm" height="auto" columns={c} data={d}/>' },
+    clean: 'import {DataTable} from "@qijenchen/design-system"\nexport const X=()=><DataTable size="sm" maxHeight="none" columns={c} data={d}/>' },
   { hook: 'check_layout_space_magic_numbers.sh', tool: 'Write', enforce: true,
     violation: 'export const X=()=><div className="gap-13 mt-7">x</div>',
     clean: 'export const X=()=><div className="gap-[var(--layout-space-tight)]">x</div>' },
+  // 幻覺 token 在 consumer 端:白名單讀已安裝套件的 layoutSpace.css。乾淨樣本用只有那份 css 才宣告的 viewport-inset,
+  // 證明放行是因為真的讀到了已安裝的檔(不是寫死的 loose / tight 清單);髒樣本是 2026-07-08 WM 錨例的 distant。
+  { hook: 'check_layout_space_magic_numbers.sh', tool: 'Write', enforce: true,
+    violation: 'export const X=()=><div className="gap-[var(--layout-space-distant)]">x</div>',
+    clean: 'export const X=()=><div className="p-[var(--layout-space-viewport-inset)]">x</div>' },
   { hook: 'check_opacity_token_usage.sh', tool: 'Write', enforce: true,
     violation: 'export const X=()=><div className="bg-[#ff0000] text-[14px] shadow-md">x</div>',
     clean: 'export const X=()=><div className="bg-surface text-body">x</div>' },
   { hook: 'check_fork_product_quality.sh', tool: 'Write', enforce: false, neverBrick: true,
     violation: 'export const X=()=><table><thead><th>a</th></thead></table>',
     clean: 'export const X=()=><div>ok</div>' },
+  // FileItem 清單外層(file-item.spec.md「List wrapper canonical」):rich 卡片清單外層沒有 gap → 擋;gap-2 → 放
+  { hook: 'check_item_list_gap.sh', tool: 'Write', enforce: true,
+    violation: 'export const X=({files})=><div className="flex flex-col">{files.map((f)=><FileItem key={f.id} mode="rich" name={f.name}/>)}</div>',
+    clean: 'export const X=({files})=><div className="flex flex-col gap-2">{files.map((f)=><FileItem key={f.id} mode="rich" name={f.name}/>)}</div>' },
   // PNG P2.4:codex-projected hook(fork/codex/hooks.json 唯一投影)— 違規必擋 / 乾淨必放
   { hook: 'check_tailwind_wildcard_in_docs.sh', tool: 'Write', enforce: true,
     violation: 'docs shorthand: `shadow-[var(--elevation-*)]`',
@@ -139,6 +153,26 @@ for (const c of CASES) {
     else verdict = `✅ enforce (violation→exit ${v.exit}/stderr / clean→pass)`
   }
   results.push(`  ${c.hook}: ${verdict}`)
+}
+
+// 對照組:上面的乾淨樣本放行,必須是因為讀到了已安裝套件的 layoutSpace.css。拿掉那份檔,
+// 同一個乾淨樣本就得 fail-closed(exit 70 + 點名 layoutSpace.css),不准默默放行。
+{
+  const installedCss = join(FIX, 'node_modules/@qijenchen/design-system/src/tokens/layoutSpace/layoutSpace.css')
+  const parked = `${installedCss}.parked`
+  renameSync(installedCss, parked)
+  let control
+  try {
+    control = runHook('check_layout_space_magic_numbers.sh', 'Write', A, 'export const X=()=><div className="gap-[var(--layout-space-tight)]">x</div>')
+  } finally {
+    renameSync(parked, installedCss)
+  }
+  if (control.exit === 70 && control.stderr.includes('layoutSpace.css')) {
+    results.push('  check_layout_space_magic_numbers.sh(對照組:已安裝套件缺 layoutSpace.css): ✅ fail-closed exit 70')
+  } else {
+    results.push(`  check_layout_space_magic_numbers.sh(對照組:已安裝套件缺 layoutSpace.css): ❌ 沒有 fail-closed(exit=${control.exit}, stderr=${JSON.stringify(control.stderr.trim())})`)
+    fail++
+  }
 }
 
 // block_prototype_imports reads the post-edit file from disk. Prove the shipped fork hook covers
@@ -192,11 +226,7 @@ function buildFullFixture() {
   for (const h of readdirSync(TPL_LAUNCHERS).filter((f) => f.endsWith('.sh') || f.endsWith('.mjs'))) copyFileSync(join(TPL_LAUNCHERS, h), join(FULL, 'governance/bin', h))
   // npm fork corpus(hooks + manifest + provider/common instruction artifacts)
   cpSync(join(ROOT, 'packages/design-system/ds-canonical/fork'), npmFork, { recursive: true })
-  mkdirSync(join(FULL, 'node_modules/@qijenchen/design-system/src/tokens'), { recursive: true })
-  copyFileSync(
-    join(ROOT, 'packages/design-system/src/tokens/utility-registry.json'),
-    join(FULL, 'node_modules/@qijenchen/design-system/src/tokens/utility-registry.json'),
-  )
+  installShippedTokenFiles(join(FULL, 'node_modules/@qijenchen/design-system'))
   // Day-0 committed bootstrap + immutable governance lock. SessionStart 只驗證，絕不建立它們。
   copyFileSync(join(ROOT, 'template/ds-product-template/AGENTS.md'), join(FULL, 'AGENTS.md'))
   mkdirSync(join(FULL, 'governance'), { recursive: true })
@@ -249,6 +279,7 @@ buildFullFixture()
     ok = context.includes('committed AGENTS.md') && context.includes('唯讀驗證')
   } catch (e) { ok = false }
   if (!ok) { flowResults.push('  inject_verify_only: ❌ 未輸出 committed AGENTS.md + 唯讀驗證狀態'); fail++ }
+  else if (r.err.includes('GOVERNANCE-COMMON-INSTRUCTION-UNAVAILABLE')) { flowResults.push('  inject_verify_only: ❌ 套件與 manifest 都在,卻報治理本體不可用'); fail++ }
   else if (before !== after) { flowResults.push('  inject_verify_only: ❌ SessionStart 改寫了工作區'); fail++ }
   else flowResults.push('  inject_verify_only: ✅ valid status + zero workspace mutation')
 
@@ -351,6 +382,17 @@ buildFullFixture()
   const v = runTpl('fork-governance-dispatcher.sh', JSON.stringify({ hook_event_name: 'PostToolUse', tool_name: 'Write', tool_input: { file_path: 'apps/demo/src/App.tsx', new_string: 'x' } }))
   if (v.exit !== 0) { flowResults.push(`  dispatcher(manifest 缺): ❌ brick(exit=${v.exit},應 0)`); fail++ }
   else flowResults.push('  dispatcher(manifest 缺): ✅ exit 0 不 brick')
+  // manifest 缺時 SessionStart 必須講出來:fork 的 SessionStart 只登記這一支(template 的 .claude/settings.json 與
+  // .codex/hooks.json 都是)。DS 端原本另有 check_plugin_fork_health.sh 想做同一件事,但它在每一種部署情境都提早結束,
+  // 2026-11-21 退場。另一面 = 上面 inject_verify_only(套件與 manifest 都在 → 不報)。
+  const beforeMissingManifest = fixtureSnapshot(FULL)
+  const m = runTpl('inject_fork_governance_preamble.sh', '{"hook_event_name":"SessionStart"}')
+  const afterMissingManifest = fixtureSnapshot(FULL)
+  if (m.exit !== 0 || !m.err.includes('GOVERNANCE-COMMON-INSTRUCTION-UNAVAILABLE') || !m.err.includes('npm run setup:all') || m.out.trim() !== '') {
+    flowResults.push(`  inject(manifest 缺): ❌ 沒有講出治理本體不可用 + npm run setup:all(exit=${m.exit} stdout=${JSON.stringify(m.out.trim())} stderr=${JSON.stringify(m.err.trim())})`); fail++
+  } else if (beforeMissingManifest !== afterMissingManifest) {
+    flowResults.push('  inject(manifest 缺): ❌ SessionStart 自己動手改了工作區'); fail++
+  } else flowResults.push('  inject(manifest 缺): ✅ exit 0 + GOVERNANCE-COMMON-INSTRUCTION-UNAVAILABLE + npm run setup:all + zero workspace mutation')
   // committed bootstrap 缺失時只報 degraded；不得自動安裝或修補工作區。
   copyFileSync(join(ROOT, 'packages/design-system/ds-canonical/fork/manifest.json'), join(FULL, 'node_modules/@qijenchen/design-system/ds-canonical/fork/manifest.json'))
   rmSync(join(FULL, 'AGENTS.md'), { force: true })
@@ -405,11 +447,7 @@ function buildSkelFixture(withOptOut) {
   // Refresh now authenticates the complete installed corpus before its first write. Copy the exact
   // packed layout so this fixture cannot accidentally test a weaker, hand-picked subset.
   cpSync(join(ROOT, 'packages/design-system/ds-canonical/fork'), npmFork, { recursive: true })
-  mkdirSync(join(installedDsRoot, 'src/tokens'), { recursive: true })
-  copyFileSync(
-    join(ROOT, 'packages/design-system/src/tokens/utility-registry.json'),
-    join(installedDsRoot, 'src/tokens/utility-registry.json'),
-  )
+  installShippedTokenFiles(installedDsRoot)
   // 既有 fork settings:user 自有「非治理」hook + 一個「舊版 launcher 註冊」(模擬 pre-update,測去重)
   writeFileSync(join(SKEL, '.claude/settings.json'), JSON.stringify({
     defaultMode: 'auto',
@@ -831,12 +869,15 @@ const codexResults = []
       codexResults.push(`  codex hooks.json: ❌ commands=${cmds.length} / unresolved=${badPath.length} / structured-relative=${rootPinned} / events=${sameEvents} / manifest=${sameLaunchers}`); fail++
     } else codexResults.push(`  codex hooks.json: ✅ ${actualEvents.length} events → fixed env-clean command / zero shell interpolation → governance/bin 的 ${manifestLaunchers.length} shared thin adapters`)
   }
-  // 5c-bis The template's committed Claude settings are a canonical source, not a generated view, so
-  // `governance:generate` never rewrites them. Its sandbox block nevertheless has to carry the same
-  // contract as the policy every generated view is built from, and nothing compared the two — which is
-  // how the template kept shipping `enableWeakerNestedSandbox: false` after the policy flipped it to
-  // true, handing every new fork a cloud session that dies before its first tool call. Compared against
-  // the policy source rather than a generated artifact so a pending regeneration cannot fake a drift.
+  // 5c-bis The template's Claude settings are a generated view: `governance:generate` materializes
+  // template/ds-product-template/.claude/settings.json from claude-settings-base.json (the claude
+  // hookView in providers.json, listed by productProviderOutputs in scripts/governance-build-graph.mjs;
+  // a hand edit to its sandbox block is rewritten on the next generate), so it is never edited by hand.
+  // This comment used to call it a canonical source that generate never rewrites — true when 5c-bis was
+  // written, no longer true. The parity check still earns its place: the template once kept shipping
+  // `enableWeakerNestedSandbox: false` after the policy flipped it to true, handing every new fork a
+  // cloud session that dies before its first tool call. It reads the policy source rather than another
+  // generated artifact, so a template that was not regenerated shows up as drift.
   const tplSandbox = JSON.parse(
     readFileSync(join(ROOT, 'template/ds-product-template/.claude/settings.json'), 'utf8'),
   ).sandbox
@@ -844,7 +885,7 @@ const codexResults = []
     readFileSync(join(ROOT, 'packages/design-system/ds-canonical/adapters/claude-settings-base.json'), 'utf8'),
   ).sandbox
   if (JSON.stringify(tplSandbox) !== JSON.stringify(policySandbox)) {
-    codexResults.push('  template sandbox parity: ❌ template/.claude/settings.json 的 sandbox 段與 canonical policy(claude-settings-base.json)已分叉;template 是 canonical-source,generate 不會修它,需手動同步'); fail++
+    codexResults.push('  template sandbox parity: ❌ template/.claude/settings.json 的 sandbox 段與 canonical policy(claude-settings-base.json)已分叉;template 那份是 governance:generate 從 claude-settings-base.json 生成的,跑 npm run governance:generate 重生(不准手改生成檔)'); fail++
   } else codexResults.push('  template sandbox parity: ✅ template settings.sandbox == canonical policy sandbox(deep-equal)')
   // 5d Product-role skill inventory must be provider-symmetric. The product-safe reviewer is
   // present for both providers while the DS-author canonical reviewer stays excluded.
@@ -931,6 +972,74 @@ const codexResults = []
   } else codexResults.push('  retire-Claude closure: ✅ 刪除整個 .claude 後，Codex 仍由 governance/bin 執行同一 corpus（clean pass / violation block）')
 }
 
+// 7) fork 治理鏈缺件時,consumer 已安裝的 hard gate 必須指名(2026-11-21)。
+// 這是 dim 58 的擋點:SessionStart launcher 只提醒、不擋;擋的是 fork/consumer/governance-check.mjs
+// (npm run governance:check,setup:all 經 scripts/setup-governance.mjs 也會跑)。夾具用跟發布同一支
+// build-published-template-mirror.mjs 造出來的 template fork。判定只看「拿掉 → 出現、還原 → 消失」那一條
+// 診斷:同一份夾具在不同機器上可能另有與本題無關的診斷(例如沙箱裡沒有封閉工具組),不拿整體 ok 當判準。
+const chainResults = []
+{
+  const MIRROR = join(TEST_ROOT, 'consumer-mirror')
+  const build = spawnSync(process.execPath, ['--', join(ROOT, 'scripts/build-published-template-mirror.mjs'), `--out=${MIRROR}`], {
+    cwd: ROOT, encoding: 'utf8', env: childEnvironment(),
+  })
+  if (build.status !== 0) {
+    chainResults.push(`  mirror build: ❌ exit ${build.status}:${(build.stderr || build.stdout || '').trim().slice(0, 400)}`); fail++
+  } else {
+    const installedDs = join(MIRROR, 'node_modules/@qijenchen/design-system')
+    const installedSb = join(MIRROR, 'node_modules/@qijenchen/storybook-config')
+    mkdirSync(installedDs, { recursive: true })
+    mkdirSync(installedSb, { recursive: true })
+    copyFileSync(join(ROOT, 'packages/design-system/package.json'), join(installedDs, 'package.json'))
+    cpSync(join(ROOT, 'packages/design-system/ds-canonical'), join(installedDs, 'ds-canonical'), { recursive: true })
+    installShippedTokenFiles(installedDs)
+    copyFileSync(join(ROOT, 'packages/storybook-config/package.json'), join(installedSb, 'package.json'))
+    const checker = join(installedDs, 'ds-canonical/fork/consumer/governance-check.mjs')
+    const diagnostics = (label) => {
+      const run = spawnSync(process.execPath, ['--', checker, '--repo', MIRROR, '--json', '--hooks-off'], {
+        cwd: ROOT, encoding: 'utf8', env: childEnvironment(),
+      })
+      try {
+        const report = JSON.parse(run.stdout)
+        return { status: run.status, rows: report.diagnostics.map((item) => `${item.ruleId} ${item.message}`) }
+      } catch {
+        chainResults.push(`  ${label}: ❌ checker 沒有輸出可解析的 JSON(exit=${run.status}):${(run.stderr || run.stdout || '').trim().slice(0, 300)}`); fail++
+        return null
+      }
+    }
+    const pair = ({ label, target, signature }) => {
+      const hits = (result) => result.rows.filter((row) => row.startsWith(`${signature.ruleId} `) && row.includes(signature.text))
+      const baseline = diagnostics(`${label}(現況)`)
+      if (!baseline) return
+      const bytes = readFileSync(target)
+      rmSync(target)
+      let missing
+      try { missing = diagnostics(`${label}(拿掉)`) } finally { writeFileSync(target, bytes) }
+      const restored = diagnostics(`${label}(還原)`)
+      if (!missing || !restored) return
+      if (hits(baseline).length !== 0) {
+        chainResults.push(`  ${label}: ❌ 現況就已經報 ${signature.ruleId}(夾具不乾淨,對照組無效):${hits(baseline).join(' / ')}`); fail++
+      } else if (missing.status === 0 || hits(missing).length === 0) {
+        chainResults.push(`  ${label}: ❌ 拿掉之後 checker 沒有指名(exit=${missing.status};要的是 ${signature.ruleId} 含「${signature.text}」)`); fail++
+      } else if (hits(restored).length !== 0) {
+        chainResults.push(`  ${label}: ❌ 還原之後 ${signature.ruleId} 沒有消失`); fail++
+      } else {
+        chainResults.push(`  ${label}: ✅ 現況不報 / 拿掉 → ${signature.ruleId}「${signature.text}」 / 還原 → 消失`)
+      }
+    }
+    pair({
+      label: 'committed dispatcher 缺',
+      target: join(MIRROR, 'governance/bin/fork-governance-dispatcher.sh'),
+      signature: { ruleId: 'GOV-ADAPTER-005', text: 'shared thin adapter drift: fork-governance-dispatcher.sh' },
+    })
+    pair({
+      label: 'installed fork manifest 缺',
+      target: join(installedDs, 'ds-canonical/fork/manifest.json'),
+      signature: { ruleId: 'GOV-CORPUS-001', text: 'fork/manifest.json missing' },
+    })
+  }
+}
+
 console.log('=== 假 fork 測試 harness 結果 ===')
 console.log(`fixture: ${FIX}(apps/** + node_modules/@qijenchen/design-system/src,NO packages/design-system)`)
 console.log(results.join('\n'))
@@ -940,6 +1049,8 @@ console.log('\n=== 接線骨架刷新(sync-all refresh-fork-launchers:idempotent
 console.log(skelResults.join('\n'))
 console.log('\n=== codex surface(PNG P2.4:AGENTS.md / hooks.json / product-role skill parity)===')
 console.log(codexResults.join('\n'))
+console.log('\n=== consumer hard gate(fork 治理鏈缺件 → installed governance-check 指名)===')
+console.log(chainResults.join('\n'))
 console.log(`\ncrash 檢查(${allHooks.length} hook):${crashed.length ? '\n  ' + crashed.join('\n  ') : '✅ 無 syntax error / 無 exit-127'}`)
 console.log(`\n${fail === 0 ? '✅ FORK-GOVERNANCE HARNESS PASS — 無 false-green / 無 brick / 無 crash' : `❌ ${fail} 項 fail(見上）`}`)
 if (fail !== 0) process.exitCode = 1

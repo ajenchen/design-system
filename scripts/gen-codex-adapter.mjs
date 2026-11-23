@@ -1409,12 +1409,20 @@ export function buildIndependentReviewSkill({ targetProvider, transform = (value
   return transform(buildProviderSkillDriver({ skillName: 'independent-review', targetProvider }))
 }
 
-function treeTargets({ sourceRoot, outputRoot, canonicalDirectory, outputDirectory }) {
+function treeTargets({ sourceRoot, outputRoot, canonicalDirectory, outputDirectory, excludes = [] }) {
   const sourceDirectory = resolveContained(sourceRoot, canonicalDirectory, 'canonical managed tree')
   const destinationDirectory = resolveContained(outputRoot, outputDirectory, 'provider managed output tree')
   assertNoSymlinkComponents(sourceRoot, sourceDirectory, 'canonical managed tree')
   assertNoSymlinkComponents(outputRoot, destinationDirectory, 'provider managed output tree')
-  return walkFiles(sourceDirectory, { root: sourceDirectory, label: 'canonical managed tree' }).map((source) => readTarget(
+  const sources = walkFiles(sourceDirectory, { root: sourceDirectory, label: 'canonical managed tree' })
+  const relativeSources = new Set(sources.map((source) => posix(relative(sourceDirectory, source))))
+  // A stale exclusion is not harmless: it would keep "passing" after the charter it guards is renamed,
+  // and the renamed file would then be projected as a resident. Fail instead of silently matching nothing.
+  for (const name of excludes) {
+    if (!relativeSources.has(name)) throw new Error(`repositoryManagedTreeExcludes names a file absent from ${canonicalDirectory}:${name}`)
+  }
+  const excluded = new Set(excludes)
+  return sources.filter((source) => !excluded.has(posix(relative(sourceDirectory, source)))).map((source) => readTarget(
     resolveContained(destinationDirectory, posix(relative(sourceDirectory, source)), 'provider managed output file'),
     source,
   ))
@@ -1458,7 +1466,13 @@ export function buildProviderAdapterTargets({
       const canonicalDirectory = registry.canonical.roots[canonicalName]
       if (!canonicalDirectory) throw new Error(`${provider.id}:unknown canonical tree:${canonicalName}`)
       managedRoots.push(resolveContained(outputRoot, outputDirectory, `${provider.id}.adapter.repositoryManagedTrees.${canonicalName}`))
-      targets.push(...treeTargets({ sourceRoot, outputRoot, canonicalDirectory, outputDirectory }))
+      targets.push(...treeTargets({
+        sourceRoot,
+        outputRoot,
+        canonicalDirectory,
+        outputDirectory,
+        excludes: provider.adapter.repositoryManagedTreeExcludes?.[canonicalName] || [],
+      }))
     }
     if (provider.adapter.skillView) {
       managedRoots.push(resolveContained(outputRoot, provider.adapter.skillView.directory, `${provider.id}.adapter.skillView.directory`))

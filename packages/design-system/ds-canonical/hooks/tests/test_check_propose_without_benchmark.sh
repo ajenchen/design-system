@@ -7,6 +7,7 @@ HOOK="$SCRIPT_DIR/../check_propose_without_benchmark.sh"
 [ ! -f "$HOOK" ] && { echo "FATAL"; exit 1; }
 PASS=0; FAIL=0
 TMP_DIR=$(mktemp -d)
+[ -n "${TMP_DIR:-}" ] && [ -d "$TMP_DIR" ] || { echo "❌ mktemp -d failed(TMP_DIR;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 run() {
@@ -92,6 +93,51 @@ else
     echo "  FAIL: expected rc0, one context object, and empty stderr (exit=$EXIT)"
     FAIL=$((FAIL+1))
   fi
+fi
+
+# ── 2026-11-21 PROC-H:問句 → 「先回一句,再開始查」(判準 = release-consent-language.mjs isQuestionText)──
+ask_first() { jq -e '.governanceContext.hookEventName == "UserPromptSubmit" and (.governanceContext.message | contains("先回一句,再開始查"))' <<<"$STDOUT" >/dev/null 2>&1; }
+
+# Test 7:紅樣本(process-audit 根因 8:11-18 14:35:05 user 原話)→ 注入先回一句
+echo "Test 7: 問句(紅樣本)→ 先回一句"
+run "確定所有時間都花得有意義?" "/tmp/missing-transcript"
+if ask_first; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL: 問句沒注入:$STDOUT"; FAIL=$((FAIL+1)); fi
+
+# Test 8:A-不-A 問句 → 注入
+echo "Test 8: A-不-A 問句 → 先回一句"
+run "要不要先跑一次測試" "/tmp/missing-transcript"
+if ask_first; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL: A-不-A 沒注入:$STDOUT"; FAIL=$((FAIL+1)); fi
+
+# Test 9:陳述 / 指令 → 安靜(對照組)
+echo "Test 9: 陳述句 → 安靜"
+run "把 sidebar 的間距改成 16" "/tmp/missing-transcript"
+if [ -z "$STDOUT" ]; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL: 陳述句被當問句:$STDOUT"; FAIL=$((FAIL+1)); fi
+
+# Test 10:問句 + propose 觸發 + 沒 fetch → 一個 context 物件,兩段都在
+echo "Test 10: 問句 + M26 → 同一個 context 兩段都在"
+printf '%s\n' '{"message":{"role":"user","content":"prior turn without fetch"}}' >"$TMP_DIR/q-transcript.jsonl"
+run "propose me 3 options for sidebar, 哪個比較好?" "$TMP_DIR/q-transcript.jsonl"
+if jq -e -s 'length == 1 and (.[0].governanceContext.message | contains("先回一句,再開始查") and contains("M26 Propose-without-benchmark"))' <<<"$STDOUT" >/dev/null 2>&1; then
+  echo "  PASS"; PASS=$((PASS+1))
+else
+  echo "  FAIL: 兩段沒合在一個 context:$STDOUT"; FAIL=$((FAIL+1))
+fi
+
+# Test 11:已知缺口 —— 沒有問句記號的問句(11-18 14:27:44「大概還要多久」)目前認不到;鎖住現況,收它要改共用判準
+echo "Test 11: 無問句記號的問句(已知缺口,鎖現況)"
+run "大概還要多久" "/tmp/missing-transcript"
+if [ -z "$STDOUT" ]; then echo "  PASS(現況:不注入)"; PASS=$((PASS+1)); else echo "  FAIL: 判準變了,請同步更新 isQuestionText 註解與本格:$STDOUT"; FAIL=$((FAIL+1)); fi
+
+# Test 12:判準跑不起來 → 不靜默(放一份找不到 CLI 的 hook 副本)
+echo "Test 12: 判準跑不起來 → context 說沒判斷"
+mkdir -p "$TMP_DIR/isolated/hooks"
+cp "$HOOK" "$TMP_DIR/isolated/hooks/check_propose_without_benchmark.sh"
+STDOUT=$(jq -n '{hook_event_name:"UserPromptSubmit",prompt:"這樣可以嗎",transcript_path:"/tmp/missing"}' \
+  | bash "$TMP_DIR/isolated/hooks/check_propose_without_benchmark.sh")
+if jq -e '.governanceContext.message | contains("問句判斷這次沒有跑成")' <<<"$STDOUT" >/dev/null 2>&1; then
+  echo "  PASS"; PASS=$((PASS+1))
+else
+  echo "  FAIL: 判準缺席卻沒說:$STDOUT"; FAIL=$((FAIL+1))
 fi
 
 echo ""

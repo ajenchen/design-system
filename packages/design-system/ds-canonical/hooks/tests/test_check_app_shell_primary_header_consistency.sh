@@ -6,6 +6,7 @@ set -u
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOOK="$SCRIPT_DIR/../lib/_app_shell_primary_header_consistency.sh"
 TMPDIR_TEST=$(mktemp -d)
+[ -n "${TMPDIR_TEST:-}" ] && [ -d "$TMPDIR_TEST" ] || { echo "❌ mktemp -d failed(TMPDIR_TEST;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf "$TMPDIR_TEST"' EXIT
 
 PASS=0

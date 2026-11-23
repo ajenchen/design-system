@@ -13,13 +13,19 @@
 3. **Release**:`npm run release:auto` 依
    `infra/governance/release-workflow.json` 自動續跑
    `pr-checks → merge → publish → readback → consumer`。Orchestrator 才建立 exact-main tag、送
-   protected repository dispatch、驗 GitHub/npm immutable version，並完成 template/WM exact-version readback。
+   protected repository dispatch、驗 GitHub/npm immutable version，並完成 template 的 exact-version readback。
+   **WM 只在 user 要求時升級**(user 2026-11-05 原話:「以後WM的升級都不要自動做除非我有特別要求」):
+   WM 在 `infra/governance/release-workflow.json` 標 `upgrade: on-request`,第五步預設不讀、不派工、不開 PR;
+   user 明確要求時才以 `RELEASE_REQUESTED_CONSUMERS=ajenchen/work-management npm run release:auto` 帶進來。
+   template 照舊每次自動升級。選法唯一實作在 `scripts/lib/release-consumer-selection.mjs`。
 
 不要手動打 tag、直接 push main、直接 publish，或把 legacy preflight/candidate/soak 插回 standard
 path。`.changeset/config.json` 與手動 workflow 只是 future-reserved authoring surface；未來明確採用
 Changesets 時，它最後也必交回同一個 five-step release orchestrator。
 
 ## Codemod for breaking change
+
+破壞性變更怎麼處理(留不留舊名、要不要標 @deprecated、發布說明怎麼寫)的唯一住處是 `packages/design-system/ds-canonical/references/props-naming.md`「相容政策」(0.x / 預發布版不留舊名,改由變更帳本 `packages/design-system/ds-changes.json` 逐條寫明,隨 npm 出貨,GitHub Release 說明由它產生);本段只講 1.0 以後的 codemod 工具,不另訂規則。
 
 Major version bump 必伴隨 codemod(per roadmap Phase 4 deliverable):
 - `packages/design-system/codemods/v1-to-v2/` etc.

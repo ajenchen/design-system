@@ -24,8 +24,7 @@ import { AgentPanelDock } from './agent-panel-fab'
 import { Button } from '@/design-system/components/Button/button'
 import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/design-system/components/Dialog/dialog'
-import { DataTable } from '@/design-system/components/DataTable/data-table'
-import type { ColumnDef } from '@tanstack/react-table'
+import { DataTable, type DataTableColumnDef } from '@/design-system/components/DataTable/data-table'
 import { ExternalLink, Plus, Search, Trash2 } from 'lucide-react'
 import { LinkInput } from '@/design-system/components/LinkInput/link-input'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/components/Tabs/tabs'
@@ -37,8 +36,9 @@ import { Select, type SelectOption } from '@/design-system/components/Select/sel
 import { PeoplePicker, type PersonData, type PersonValue } from '@/design-system/components/PeoplePicker/people-picker'
 import { DatePicker } from '@/design-system/components/DatePicker/date-picker'
 import { SimulatedBrowser } from '@/design-system/stories-helpers/scene/simulated-browser'
+import { demoPersonData } from '@/design-system/stories-helpers/scene/person-card'
 import { DataToolbar } from '@/design-system/stories-helpers/scene/data-toolbar'
-import { useAgentDemo, decisionReceipt, DemoConversation, type DemoMessage, type DemoSession } from '@/design-system/stories-helpers/scene/agent-demo'
+import { useAgentDemo, decisionReceipt, decisionCancelReceipt, DemoConversation, type DemoMessage, type DemoSession } from '@/design-system/stories-helpers/scene/agent-demo'
 import { ORDER_ROWS, orderColumns } from '@/design-system/stories-helpers/data/order-table'
 import { openOverlayDocsStory } from '@/design-system/stories-helpers/overlay/open-overlay-docs'
 
@@ -336,13 +336,18 @@ const THREE_QUESTIONS: AgentDecisionQuestion[] = [
   },
 ]
 
-/** 決策卡:送出或跳過(= 用預設繼續)→ 卡片收起、答案以決策回執記進對話。 */
+/** 決策卡:送出 → 卡片收起、答案以決策回執記進對話;取消(標題列 × / 焦點在卡裡按 Esc)→ 卡片收起、對話記一行取消、沒有任何答案,
+ *  焦點回輸入框(代理停下等下一則訊息;接 AI 的產品端在這裡把 `agentDecisionCancelMessage` 交給 AI,範例沒有接 AI)。 */
 function DecisionCardScene({ questions, intro }: { questions: AgentDecisionQuestion[]; intro: string }) {
   const demo = useAgentDemo({ ...demoScene('c2', { messages: [{ role: 'agent', content: intro }] }) })
   const [asking, setAsking] = React.useState(true)
   const answer = (answers: Record<string, string>) => {
     setAsking(false)
     demo.addMessages([decisionReceipt(questions, answers)])
+  }
+  const cancel = () => {
+    setAsking(false)
+    demo.addMessages([decisionCancelReceipt()])
   }
   return (
     <PanelFrame>
@@ -352,7 +357,7 @@ function DecisionCardScene({ questions, intro }: { questions: AgentDecisionQuest
           <DemoConversation messages={demo.messages} />
           <div className="relative">
             <AgentPromptInput {...demo.prompt} />
-            {asking && <AgentDecisionCard questions={questions} onSubmit={answer} onSkip={answer} />}
+            {asking && <AgentDecisionCard questions={questions} onSubmit={answer} onCancel={cancel} />}
           </div>
         </AgentPanel>
       )}
@@ -360,7 +365,8 @@ function DecisionCardScene({ questions, intro }: { questions: AgentDecisionQuest
   )
 }
 
-/** 決策卡一開始就開著:三題步進 ——「1 / 3」小標、灰底選項卡、「其他」卡常駐輸入格、跳過 / 下一題;送出或跳過後卡片收起,答案記成決策回執。 */
+/** 決策卡一開始就開著:三題步進 ——「1 / 3」小標、灰底選項卡、「其他」卡常駐輸入格;第一題 footer 只有下一題,第二題起多一顆上一題;
+ *  標題列 × = 取消(滑上去提示「取消」;焦點在卡裡按 Esc 同一個動作):卡片收起、對話記一行取消、不送任何答案;送出後卡片收起,答案記成決策回執。 */
 export const DecisionCardOpen: Story = {
   name: '決策卡三題步進',
   render: () => <DecisionCardScene questions={THREE_QUESTIONS} intro="公告已寫好兩個版本,需要你決定語氣、發布時間與同步管道再繼續。" />,
@@ -399,7 +405,7 @@ export const DecisionCardSingle: Story = {
   render: () => <DecisionCardScene questions={[THREE_QUESTIONS[0]]} intro="只剩語氣沒定,選一個就能繼續。" />,
 }
 
-/** 選填題(`optional`):不答也能前進(送出值是空字串)。三題各示範一種:
+/** 選填題(`optional`):不答也能前進(送出值是空字串);題目後由元件接「(選填)」(題目文字本身不寫,agent-decision-card.spec.md Header 條)。三題各示範一種:
  *  1. 單選、預選建議解 —— 一打開就有選取,footer 左側的「清除選取」一打開就在(OpenSnapshot:M15 不留只有點了才看得到的狀態);
  *     按了清掉答案、鈕消失,再選又出現;
  *  2. 單選、不預選(署名 = 稱謂類,產題守則 8 例外)—— 沒選時沒有鈕,選了之後才出現;
@@ -438,7 +444,8 @@ const OPTIONAL_QUESTIONS: AgentDecisionQuestion[] = [
   },
 ]
 
-/** 決策卡選填題(OpenSnapshot):第 1 題預選建議解,footer 左側「清除選取」一打開就在;規則見 agent-decision-card.spec.md「步進」。 */
+/** 決策卡選填題(OpenSnapshot):每題題目後都有「(選填)」(必答題的對照看「決策卡三題步進」);第 1 題預選建議解,footer 左側「清除選取」一打開就在;
+ *  規則見 agent-decision-card.spec.md Header 條與「步進」。 */
 export const DecisionCardOptional: Story = {
   name: '決策卡選填題',
   render: () => (
@@ -453,20 +460,24 @@ export const DecisionCardOptional: Story = {
  *  錯誤訊息放在最後一張選項卡之後、焦點移到第一個出錯的控件。play 依序走兩種錯:
  *  1. 第 1 題選「其他」卻沒填字就按「下一題」→「請輸入其他選項」;填好再按就前進,第 2 題用預選的建議解;
  *  2. 第 3 題(複選)一項都沒勾就按「送出」→「請至少選擇一個選項」,停在這個畫面。
- *  規則見 agent-decision-card.spec.md「步進」(錯誤訊息的距離與文案【待確認】,寫在同一段)。 */
+ *  規則見 agent-decision-card.spec.md「步進」(錯誤訊息距最後一張卡 = 卡間距 8、三句文案照 DS 既有句型,依據寫在同一段)。 */
 export const DecisionCardErrors: Story = {
   name: '決策卡錯誤狀態',
   render: () => <DecisionCardScene questions={THREE_QUESTIONS} intro="公告已寫好兩個版本,需要你決定語氣、發布時間與同步管道再繼續。" />,
   play: async ({ canvasElement }) => {
-    const { expect, userEvent, within } = await import('@storybook/test')
+    const { expect, userEvent, waitFor, within } = await import('@storybook/test')
     const canvas = within(canvasElement)
-    // 只在決策卡裡找(輸入盒也有一顆「送出」):卡片根 = 含「跳過」鈕的 role="group"(第 1 題標題列 × 與 footer 各一顆「跳過」,取第一顆)
-    const card = () => within(canvas.getAllByRole('button', { name: '跳過' })[0].closest('[role="group"]') as HTMLElement)
+    // 只在決策卡裡找(輸入盒也有一顆「送出」):卡片根 = 標題列 ×(名字「取消」,整張卡唯一一顆)所在的 role="group"
+    const card = () => within(canvas.getByRole('button', { name: '取消' }).closest('[role="group"]') as HTMLElement)
     const otherInput = () => card().getByRole('textbox', { name: '其他(自由輸入)' })
+    // 錯誤訊息要「看得見」:等元素本身變成看得見,不在單一時間點斷言(M32 第四題)。面板與卡片進場都是 fade-in-0(第 0 格 opacity 0),
+    // 機器忙、第一個影格還沒畫出來時 play 已經走到這裡 → 祖先 opacity 還是 0,單點斷言假紅(CI 24408a62 layout-body-edges 第 0 片 @lg;
+    // 動畫停在第 0 格可穩定重現同一句「Received element is not visible」)。上限只是「等不到」的界線,動畫一直不動照樣紅
+    const errorShown = (text: string) => waitFor(() => expect(card().getByText(text)).toBeVisible(), { timeout: 5000 })
     // 第 1 題:按下「其他」輸入格 = 選中「其他」;文字留空就按「下一題」
     await userEvent.click(otherInput())
     await userEvent.click(card().getByRole('button', { name: '下一題' }))
-    await expect(await card().findByText('請輸入其他選項')).toBeVisible()
+    await errorShown('請輸入其他選項')
     // 填好就前進;第 2 題用預選的建議解
     await userEvent.type(otherInput(), '比照上次改版公告')
     await userEvent.click(card().getByRole('button', { name: '下一題' }))
@@ -475,7 +486,7 @@ export const DecisionCardErrors: Story = {
     // 第 3 題(複選):一項都沒勾就按「送出」
     await card().findByText('3 / 3')
     await userEvent.click(card().getByRole('button', { name: '送出' }))
-    await expect(await card().findByText('請至少選擇一個選項')).toBeVisible()
+    await errorShown('請至少選擇一個選項')
   },
 }
 
@@ -503,7 +514,9 @@ export const DecisionCardNoDefault: Story = {
   ),
 }
 
-/** 決策回執:拍板後在對話流中的靜態紀錄。 */
+/** 決策回執:決策卡收起後在對話流中的靜態紀錄,兩種都在(M15:不留只有點了才看得到的狀態)——
+ *  送出 = 「已按你的選擇繼續:」+ 每題答案;取消(標題列 × / Esc)= 一行「已取消,沒有送出任何答案。」,沒有答案表,代理停下等你的下一則訊息。
+ *  情境:先答了語氣與發布時間,代理接著問封面圖,這一次按了取消。 */
 export const DecisionSummaryInFlow: Story = {
   name: '決策回執',
   render: function DecisionSummaryInFlowStory() {
@@ -526,6 +539,8 @@ export const DecisionSummaryInFlow: Story = {
               </>
             ),
           },
+          { role: 'agent', content: '公告排在今晚 20:00 用正式版發出。還差封面圖,需要你決定用哪一張。' },
+          decisionCancelReceipt(),
         ],
       }),
     })
@@ -627,7 +642,7 @@ export const Fab: Story = {
             <DataTable
               columns={orderColumns}
               data={ORDER_ROWS}
-              height="100%"
+              maxHeight="100%"
               pagination={{ pageSize: 20, pageSizeOptions: [10, 20, 50], showTotal: true }}
               getRowId={(row) => row.id}
             />
@@ -723,7 +738,9 @@ const STATUS_OPTIONS: SelectOption[] = [
   { value: 'done', label: '完成' },
 ]
 const statusLabel = (status: TaskStatus) => STATUS_OPTIONS.find((o) => o.value === status)?.label ?? status
-const PEOPLE: PersonData[] = [{ name: 'Betty Wu' }, { name: 'Alan Chen' }, { name: 'Ada Chen' }]
+// 照片走照片名冊(同一個人全 DS 同一張臉);已選值也要傳這裡的物件,字串只會顯示縮寫(person-display.tsx toPersonData)
+const PEOPLE: PersonData[] = [demoPersonData('Betty Wu', 48), demoPersonData('Alan Chen', 48), demoPersonData('Ada Chen', 48)]
+const personByName = (name: string) => PEOPLE.find((p) => p.name === name) ?? null
 const personName = (p: PersonValue) => (typeof p === 'string' ? p : p.name)
 /** 目前登入的人 ——「我的任務」= 指派給她的任務。 */
 const CURRENT_USER = 'Betty Wu'
@@ -814,7 +831,7 @@ function TaskListView({ tab, tasks, onOpen, onCreate }: {
     const q = search.trim().toLowerCase()
     return q ? scoped.filter((t) => t.title.toLowerCase().includes(q) || String(t.num).includes(q)) : scoped
   }, [tab, tasks, search])
-  const columns = React.useMemo<ColumnDef<Task>[]>(() => [
+  const columns = React.useMemo<DataTableColumnDef<Task>[]>(() => [
     { accessorKey: 'num', header: 'ID', cell: ({ row }) => `#${row.original.num}` },
     {
       accessorKey: 'title',
@@ -840,7 +857,7 @@ function TaskListView({ tab, tasks, onOpen, onCreate }: {
         <Button id="demo-new-task" variant="primary" size="sm" startIcon={Plus} onClick={onCreate}>新增任務</Button>
       </DataToolbar>
       <div className="mx-[var(--layout-space-loose)] mb-[var(--layout-space-loose)] min-h-0 flex-1" onClickCapture={interceptInternalLink}>
-        <DataTable columns={columns} data={rows} height="100%" getRowId={(t) => t.id} aria-label={tab.label} />
+        <DataTable columns={columns} data={rows} maxHeight="100%" getRowId={(t) => t.id} aria-label={tab.label} />
       </div>
     </div>
   )
@@ -890,7 +907,8 @@ function TaskDialog({ task, portalContainer, persistentElements, onSave, onCance
   React.useEffect(() => () => onDirtyChange(false), [onDirtyChange])
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onCancel() }} persistentElements={persistentElements}>
-      <DialogContent maxWidth={480} height="hug" portalContainer={portalContainer} aria-describedby={undefined} onCloseAutoFocus={onCloseAutoFocus}>
+      {/* 寬 = 預設 md:四個欄位疊成一欄(dialog.spec.md「寬度檔位」) */}
+      <DialogContent height="hug" portalContainer={portalContainer} aria-describedby={undefined} onCloseAutoFocus={onCloseAutoFocus}>
         <DialogHeader
           actions={task && onDelete
             ? <Button id="demo-task-delete" variant="text" danger iconOnly size="sm" startIcon={Trash2} aria-label="刪除任務" onClick={onDelete} />
@@ -907,7 +925,7 @@ function TaskDialog({ task, portalContainer, persistentElements, onSave, onCance
             </Field>
             <Field>
               <FieldLabel>指派人</FieldLabel>
-              <PeoplePicker aria-label="指派人" value={form.values.assignee || null} people={PEOPLE} onChange={(v) => setFieldValue('assignee', v[0] ? personName(v[0]) : '')} />
+              <PeoplePicker aria-label="指派人" value={personByName(form.values.assignee)} people={PEOPLE} onChange={(v) => setFieldValue('assignee', v[0] ? personName(v[0]) : '')} />
             </Field>
             <Field>
               <FieldLabel>狀態</FieldLabel>
@@ -947,7 +965,7 @@ function ConfirmDeleteDialog({ task, onCancel, onConfirm, portalContainer }: {
 }) {
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onCancel() }}>
-      <DialogContent maxWidth={400} height="hug" portalContainer={portalContainer} aria-describedby={undefined}>
+      <DialogContent width="sm" height="hug" portalContainer={portalContainer} aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>確定要刪除這個任務?</DialogTitle>
         </DialogHeader>
@@ -975,7 +993,7 @@ function ConfirmLeaveDialog({ task, onStay, onLeave, portalContainer }: {
 }) {
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onStay() }}>
-      <DialogContent maxWidth={400} height="hug" portalContainer={portalContainer} aria-describedby={undefined}>
+      <DialogContent width="sm" height="hug" portalContainer={portalContainer} aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>要放棄未儲存的修改?</DialogTitle>
         </DialogHeader>

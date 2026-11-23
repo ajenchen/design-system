@@ -39,10 +39,10 @@ export const UsageGuidance: Story = {
         <p>要儲存的完整外部網址,而且儲存後使用者會想直接點開:個人網站、文件連結、專案 repo、社群連結;需要網址格式驗證(離開欄位時檢查)。</p>
         <TutorialList>
           <li>
-            <StoryLink kind="Design System/Components/LinkInput/展示" name="空值">空值</StoryLink>
+            <StoryLink kind="Design System/Components/LinkInput/展示" name="填寫網址">填寫網址</StoryLink>
           </li>
           <li>
-            <StoryLink kind="Design System/Components/LinkInput/展示" name="失焦驗證">Blur 驗證</StoryLink>
+            <StoryLink kind="Design System/Components/LinkInput/展示" name="錯誤說明">錯誤說明(離開欄位時檢查)</StoryLink>
           </li>
           <li>
             <StoryLink kind="Design System/Components/LinkInput/設計規格" name="尺寸對照表">尺寸</StoryLink>
@@ -51,12 +51,12 @@ export const UsageGuidance: Story = {
             <StoryLink kind="Design System/Components/LinkInput/展示" name="四模式">四模式</StoryLink>
           </li>
           <li>
-            <StoryLink kind="Design System/Components/LinkInput/展示" name="檢視樣式">展示樣式</StoryLink>
+            <StoryLink kind="Design System/Components/LinkInput/展示" name="自訂顯示文字">自訂顯示文字</StoryLink>
           </li>
         </TutorialList>
         <TutorialRule
           title="LinkInput — 有合法 URL 時變藍色連結，點擊開啟新分頁"
-          note="個人資料的 website、文件參考連結、專案 repo URL 等場景。儲存後使用者可直接點擊連結開啟,不需要 copy + paste。點網址文字永遠是開連結;要改就按右側 Pencil,或點欄位裡文字以外的空白處"
+          note="個人資料的 website、文件參考連結、專案 repo URL 等場景。儲存後使用者可直接點擊連結開啟,不需要 copy + paste。點欄位裡 Pencil 以外的地方都是開連結;要改就按右側 Pencil"
         >
           <ExampleGroup>
             <ExampleCaption>✅ 個人資料：Website（儲存後可直接點擊開啟）</ExampleCaption>
@@ -77,7 +77,7 @@ export const UsageGuidance: Story = {
           <ExampleGroup>
             <ExampleCaption warn>❌ 錯用：把 slug 塞進 LinkInput</ExampleCaption>
             <LiveLinkInput value="my-design-system" aria-label="專案 slug（LinkInput 誤用）" />
-            <ExampleCaption warn>↑ blur 後會出現 error 邊框,因為「my-design-system」不是合法 URL</ExampleCaption>
+            <ExampleCaption warn>↑ 點進去再離開後出現紅框與框下錯誤說明,因為「my-design-system」不是網址</ExampleCaption>
           </ExampleGroup>
         </TutorialRule>
         <TutorialList>
@@ -108,10 +108,10 @@ export const DisplayStateRule: Story = {
     <TutorialPage>
       <TutorialRule
         title="有合法 URL 且未編輯 → 藍色連結 + Pencil"
-        note="主要顯示狀態。使用者一眼看到可點擊的連結,想改才按 Pencil(或點欄位空白處)。對照 Notion 的 URL 屬性——點網址開啟、不進入編輯,編輯另有按鈕(https://www.notion.com/releases/2021-09-08)"
+        note="主要顯示狀態。使用者一眼看到可點擊的連結,想改才按 Pencil(欄位裡其他地方都是開連結)。對照 Notion 的 URL 屬性——點網址開啟、不進入編輯,編輯另有按鈕(https://www.notion.com/releases/2021-09-08)"
       >
         <LiveLinkInput value="https://react.dev/reference" aria-label="參考連結" />
-        <ExampleCaption>↑ 點網址文字開啟;Pencil 或欄位裡文字以外的空白處進入編輯</ExampleCaption>
+        <ExampleCaption>↑ 點欄位裡 Pencil 以外的地方開啟連結;Pencil 進入編輯</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -128,7 +128,7 @@ export const DisplayStateRule: Story = {
         title="❌ 點 value 進入編輯（而不是開連結）"
         note="LinkInput 跟 Input 的核心互動差異就在這——點 value 永遠是開連結。若使用者預期點 value 進入編輯,那該用 Input 不用 LinkInput"
       >
-        <ExampleCaption warn>（設計規則）點網址文字 = 開啟連結,編輯 = 按 Pencil 或點欄位空白處。兩者動作路徑分離</ExampleCaption>
+        <ExampleCaption warn>（設計規則）點欄位(Pencil 以外)= 開啟連結,編輯 = 按 Pencil。兩者動作路徑分離</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

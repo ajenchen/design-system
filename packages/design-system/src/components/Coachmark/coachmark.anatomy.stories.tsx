@@ -5,6 +5,7 @@ import { Coachmark } from './coachmark'
 import { MediaGradient } from './coachmark-story-helpers'
 import { Button } from '@/design-system/components/Button/button'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
+import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 const meta: Meta = {
@@ -56,15 +57,15 @@ export const Overview: Story = {
       <div>
         <H3>Anatomy</H3>
         <Desc>
-          Coachmark 是 Popover 的 composition pattern——消費 Popover 的浮層外殼 + overlay-surface Body/Footer padding,自己擁有的差異僅三點:(1) Header 可選(kind="tips"/"new-features"/ReactNode;single-step 常無、multi-step tour 建議帶),(2) 有 Media 區,(3) Footer 為 justify-between。改 Popover 視覺 Coachmark 自動跟進。
+          Coachmark 是 Popover 的 composition pattern——消費 Popover 的浮層外殼 + overlay-surface Body/Footer padding,自己擁有的差異僅四點:(1) Header 可選(kind="tips"/"new-features"/ReactNode;single-step 常無、multi-step tour 建議帶),(2) 有 Media 區,(3) Footer 為 justify-between,(4) Footer 上方不畫分隔線 —— 整張卡只有 Header 底下那一條線(沒有 Header 就一條都沒有)。改 Popover 視覺 Coachmark 自動跟進。
         </Desc>
         <div className="flex items-start gap-8">
           <OverviewCoachmark />
           <div className="text-caption text-fg-secondary max-w-[280px]">
             <ul className="list-disc pl-4 space-y-1.5">
-              <li><b>Media</b> — 可選,預設 16:9 比例,邊緣切齊靠外殼 p-0 overflow-hidden 裁切</li>
+              <li><b>Media</b> — 可選,預設 16:9 比例,邊緣貼齊外殼圓角(Popover 外殼本來就沒有內距,超出圓角的部分裁掉)</li>
               <li><b>Body</b> — Title(text-body-lg font-medium) + Description(text-body text-fg-secondary)</li>
-              <li><b>Footer</b> — justify-between;左 step 計數 / 右 actions(有上一步時為「上一步 + 下一步」;第一步沒有上一步時為「略過 + 下一步」)</li>
+              <li><b>Footer</b> — justify-between;左 step 計數 / 右 actions(有上一步時為「上一步 + 下一步」;第一步沒有上一步時為「略過 + 下一步」);上方不畫分隔線</li>
             </ul>
           </div>
         </div>
@@ -77,8 +78,8 @@ export const Overview: Story = {
             <thead><tr><Th>區塊</Th><Th>條件渲染</Th><Th>Padding</Th><Th>說明</Th></tr></thead>
             <tbody>
               <tr><Td>Media</Td><Td mono>image != null</Td><Td mono>無 inner padding</Td><Td>full-width bg-muted,overflow-hidden;比例由 mediaRatio 控制(預設 16:9)</Td></tr>
-              <tr><Td>Body</Td><Td mono>title || description</Td><Td mono>PopoverBody(px-loose py-tight)</Td><Td>title(body-lg)+ desc(body)垂直 stack,desc 套 mt <code>--item-gap-label-desc-reading-lg</code>(2px)</Td></tr>
-              <tr><Td>Footer</Td><Td mono>step || onSkip || onNext || onPrev</Td><Td mono>PopoverFooter(px-loose py-tight)</Td><Td>justify-between(不是 justify-end)</Td></tr>
+              <tr><Td>Body</Td><Td mono>title || description</Td><Td mono>PopoverBody(px-loose;上下由容器自己給,layoutSpace 規則 4)</Td><Td>title(body-lg)+ desc(body)垂直 stack,desc 套 mt <code>--item-gap-label-desc-reading-lg</code>(2px)</Td></tr>
+              <tr><Td>Footer</Td><Td mono>step || onSkip || onNext || onPrev</Td><Td mono>PopoverFooter(px-loose py-tight)</Td><Td>justify-between(不是 justify-end);上方不畫分隔線(PopoverFooter 預設有,這裡用 !border-t-0 拿掉)</Td></tr>
             </tbody>
           </table>
         </div>
@@ -136,13 +137,14 @@ export const Inspector: Story = {
         <div>
           <H3>預覽</H3>
           <div className="flex flex-col gap-4 items-start">
-            <div className="flex flex-wrap gap-3 p-3 bg-muted rounded-md text-caption">
+            {/* 五個開關是同一組選項 → <CheckboxGroup orientation="horizontal">,水平間距由它自帶(checkbox.spec.md「Orientation」),不手刻 flex-wrap gap */}
+            <CheckboxGroup orientation="horizontal" aria-label="檢閱器開關" className="p-3 bg-muted rounded-md text-caption">
               <Toggle label="hasImage" value={hasImage} onChange={setHasImage} />
               <Toggle label="hasStep" value={hasStep} onChange={setHasStep} />
               <Toggle label="hasPrev" value={hasPrev} onChange={setHasPrev} />
               <Toggle label="hasSkip" value={hasSkip} onChange={setHasSkip} />
               <Toggle label="isLastStep" value={isLast} onChange={setIsLast} />
-            </div>
+            </CheckboxGroup>
             <Coachmark
               open={open}
               onOpenChange={setOpen}

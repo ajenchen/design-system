@@ -9,8 +9,9 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
 import { Mail, Folder, Shield } from 'lucide-react'
 import { SelectionItem } from './selection-item'
-import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { samplePersonCard, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
+import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 import { ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
@@ -258,7 +259,7 @@ function SelectionInspector() {
                 />
               }
               icon={prefix === 'icon' ? Shield : undefined}
-              avatar={prefix === 'avatar' ? { alt: 'Ada Chen', color: 'indigo', hoverCard: samplePersonCard({ name: 'Ada Chen' }) } : undefined}
+              avatar={prefix === 'avatar' ? { src: demoPersonPhoto('Ada Chen', 64), alt: 'Ada Chen', color: 'indigo', hoverCard: samplePersonCard({ name: 'Ada Chen', avatarSrc: demoPersonPhoto('Ada Chen', 128) }) } : undefined}
               label="Admin 層級操作"
               description={hasDesc ? '僅限 workspace owner 啟用此權限範圍' : undefined}
               disabled={disabled}
@@ -303,11 +304,12 @@ function SelectionInspector() {
 
         <div>
           <H3>Props</H3>
-          <div className="flex flex-col gap-2">
-            {/* DS Checkbox 取代原生 checkbox(稽核 L054「有元件就用元件」) */}
+          {/* DS Checkbox 取代原生 checkbox(稽核 L054「有元件就用元件」);兩個開關是同一組選項 → <CheckboxGroup>,
+              列距由 SelectionItem py 給、外層不加 gap(checkbox.spec.md「Canonical 鐵律:零外部 gap」) */}
+          <CheckboxGroup aria-label="Props">
             <Checkbox size="sm" checked={hasDesc} onCheckedChange={(v) => setHasDesc(v === true)} label={<span className="font-mono">description</span>} />
             <Checkbox size="sm" checked={disabled} onCheckedChange={(v) => setDisabled(v === true)} label={<span className="font-mono">disabled</span>} />
-          </div>
+          </CheckboxGroup>
         </div>
 
         <div>
@@ -417,7 +419,7 @@ export const PrefixAlignment: Story = {
             <div className="border border-divider rounded-md p-4 bg-muted">
               <SelectionItem
                 control={<Checkbox defaultChecked aria-label="選取 Ada Chen（單行）" />}
-                avatar={{ src: 'https://i.pravatar.cc/48?u=ada-chen', alt: 'Ada Chen', color: 'indigo', hoverCard: samplePersonCard({ name: 'Ada Chen', avatarSrc: 'https://i.pravatar.cc/96?u=ada-chen' }) }}
+                avatar={{ src: demoPersonPhoto('Ada Chen', 48), alt: 'Ada Chen', color: 'indigo', hoverCard: samplePersonCard({ name: 'Ada Chen', avatarSrc: demoPersonPhoto('Ada Chen', 128) }) }}
                 label="Ada Chen"
               />
             </div>
@@ -429,7 +431,7 @@ export const PrefixAlignment: Story = {
             <div className="border border-divider rounded-md p-4 bg-muted">
               <SelectionItem
                 control={<Checkbox defaultChecked aria-label="選取 Ada Chen（含職稱）" />}
-                avatar={{ src: 'https://i.pravatar.cc/64?u=ada-chen', alt: 'Ada Chen', color: 'indigo', hoverCard: samplePersonCard({ name: 'Ada Chen', avatarSrc: 'https://i.pravatar.cc/96?u=ada-chen' }) }}
+                avatar={{ src: demoPersonPhoto('Ada Chen', 64), alt: 'Ada Chen', color: 'indigo', hoverCard: samplePersonCard({ name: 'Ada Chen', avatarSrc: demoPersonPhoto('Ada Chen', 128) }) }}
                 label="Ada Chen"
                 description="Design Engineer · Frontend team"
               />

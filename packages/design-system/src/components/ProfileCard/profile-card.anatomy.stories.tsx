@@ -1,4 +1,3 @@
-// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。
 // @overlay-open-skip: 本檔絕大多數 story 直接 render ProfileCard(內容不藏在浮層,snapshot 可見);
 //   唯一 HoverCard demo 只示範「hover 整合」消費方式,open-state 內容已由同檔直接 render 的
@@ -12,7 +11,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { ProfileCard, ProfileCardDefaultActions } from './profile-card'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
-import { SAMPLE_PEOPLE, demoPersonActions, samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { SAMPLE_PEOPLE, demoPersonActions, samplePersonCard, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 
 // 範例人員一律讀共用名錄(stories-helpers/scene/person-card.tsx):同一個人在全 DS 範例同一組部門 / ID / 員工編號
 // (2026-10-28 前本頁的 Ada Chen 是 EMP-2101,HoverCard 頁是 ADACHEN / 1048217)
@@ -50,7 +49,7 @@ export const Overview: Story = {
           ProfileCard 是人員 HoverCard 的內容元件——提供統一的人員資訊展示格式。本身不含觸發或定位邏輯
           (那是 HoverCard 的職責),只是 HoverCard content 的標準人員模板。固定寬度 320px。
         </Desc>
-        <div className="border border-border rounded-lg p-4">
+        <div className="border border-border rounded-md p-4">
           {samplePersonCard(ada)}
         </div>
       </div>
@@ -220,7 +219,7 @@ export const ColorMatrix: Story = {
       <div>
         <H3>四種狀態對應色彩(Avatar 狀態點 + Status 區)</H3>
         <Desc>
-          狀態點顏色語意對齊 Slack / Teams / Linear 業界共識。Status 區的標籤底色一律 <code>bg-muted</code> 保持中性
+          狀態點顏色走 presence 專屬 token <code>--status-*</code>,跟 Avatar 狀態點同源、不借用 success / warning / error(在線狀態不是驗證結果)。Status 區的標籤底色一律 <code>bg-muted</code> 保持中性
           (狀態是展示資訊,不可點擊,避免暗示互動性)。
         </Desc>
         <div className="overflow-x-auto">
@@ -282,7 +281,7 @@ export const HoverCardIntegration: Story = {
           人員頭像的標準寫法:名片交給 Avatar 的 hoverCard(Avatar 規格「Avatar HoverCard 原則」的消費者寫法)。
           觸發、定位、進退場與鍵盤可達都由 Avatar 內建的 HoverCard 處理,ProfileCard 只管內容。
         </Desc>
-        <div className="border border-border rounded-lg p-6 flex items-center gap-8">
+        <div className="border border-border rounded-md p-6 flex items-center gap-8">
           {/* 2026-10-28 前這裡手組 HoverCard + 可聚焦 span + ProfileCard(稽核 M078):Avatar hoverCard 已內建同一組
               (可聚焦、外殼、延遲),手組一份就多一個會漂的地方;名片內容走全 DS 同一支建構器 */}
           {[SAMPLE_PEOPLE.ada, SAMPLE_PEOPLE.alice, SAMPLE_PEOPLE.bob].map((p) => (
@@ -336,6 +335,7 @@ export const StateBehavior: Story = {
           <ProfileCard
             name="Alexander Benjamin Christopher Davidson-Williams III"
             subtitle="Senior Staff Principal Engineer"
+            avatar={{ src: demoPersonPhoto('Alexander Benjamin Christopher Davidson-Williams III', 128), alt: 'Alexander Benjamin Christopher Davidson-Williams III' }}
           />
         </div>
       </div>
@@ -350,6 +350,7 @@ export const StateBehavior: Story = {
           <ProfileCard
             name="Ada Chen"
             subtitle="Design Engineer"
+            avatar={{ src: ada.avatarSrc, alt: ada.name }}
             status="busy"
             statusMessage="目前正在衝刺 Sprint 23 的 design system audit,預計 4/25 完成,期間除 P0 issue 外不處理新功能需求,緊急事項請聯絡 @alice 或 @bob 代理"
           />

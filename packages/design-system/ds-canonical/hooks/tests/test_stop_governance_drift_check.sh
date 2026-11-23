@@ -27,6 +27,7 @@ FAILED=""
 # Each test in own temp project to avoid cross-contamination
 setup_proj() {
   TMP_PROJ=$(mktemp -d)
+  [ -n "${TMP_PROJ:-}" ] && [ -d "$TMP_PROJ" ] || { echo "❌ mktemp -d failed(TMP_PROJ;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
   cd "$TMP_PROJ" || exit 1
   git init --quiet
   git config user.email "test@test"

@@ -5,6 +5,15 @@
 // 注入手法:把 components/Alert story title 的 category 段從 Components 改成 Patterns
 //   → fromTitle=pattern 但 resolveCategory=component(folder=components + 無 isInternal)
 //   → Invariant 1「title 反映 category 必 === resolveCategory」被打破 → gate exit 1。
+//
+// 2026-11-20 起由 ci.yml verify-static 直呼(knowledge-prune WP-21),原本只在夜間 harness 跑。
+//
+// @gate-contract
+//   保證: category-classification-invariant.mjs 在該紅的時候會紅 —— 五種注入各自必須讓閘 exit 非 0:Alert 標題改成 Patterns、
+//         拿掉 Alert 主 story 的 Autodocs、preview.tsx 的 storySort 對調 Patterns / Internal、拿掉 select-menu.spec.md 的 isInternal、
+//         造一個兩份 spec 都不同名的臨時單元(輸出必須含「有 2 份 spec」);另跑 lib/unit-own-spec.mjs 主 spec 判定表 7 格;注入前與還原後閘都必須 exit 0
+//   紅: 現況就紅、注入錨點漂移、任一注入後閘仍 exit 0、判定表任一格不對、或還原後不綠 → exit 非 0 並印出是哪一步
+//   綠: 都照預期時 exit 0;改過的檔在 finally 寫回、臨時單元資料夾刪掉,不讀時間,重複跑結果相同
 import { spawnSync } from 'node:child_process'
 import assert from 'node:assert/strict'
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'

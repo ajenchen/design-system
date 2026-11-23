@@ -18,3 +18,22 @@
 /* DS runtime SSOT: tokens + component CSS + base/runtime utilities.
    Keep repo-root Storybook and consumers on the same aggregator to prevent drift. */
 @import "../packages/design-system/src/styles/tokens.css";
+
+/* 說明頁的行內程式碼字樣(`<code>`)一律不斷行(2026-11-21,SIB-PV)。
+   為什麼:瀏覽器允許在「-」後面換行,`--field-height-*`、`opacity-disabled`、`--bg-disabled` 這類 token / class 名
+   一被拆開就讀不出是同一個名字(重拍審核 A113 點名 rating-sizes、radiogroup-states 兩張;PV1 只在那兩頁逐個加 whitespace-nowrap,
+   其餘 800 多處 <code> 沒有保護,五種寬度合計量到 181 次一行放得下卻被拆開)。Storybook 自己的說明頁(autodocs)行內 code 也是不斷行
+   (@storybook/blocks 8.6 的 code 樣式 whiteSpace: "nowrap"),畫布裡的說明頁跟它一致。
+   為什麼是 nowrap、不是行內方塊(inline-block + max-width: 100%):兩種都整批量過(全 DS 有 <code> 的 579 則 × 五種寬度,
+   數字在加入本規則的 commit 訊息)。行內方塊在 Chromium 會讓「(」留在上一行末、「、」「,」「:」跑到下一行首(五種寬度合計 21 次),
+   nowrap 是一般文字,括號與標點照常跟著程式碼走,這類 0 處。
+   長的程式碼(比所在容器還寬)整批量到兩處:色彩頁「底的滑過 / 按住」示範條的 token 名比示範條寬 10–18px →
+   在那個 <code> 上寫 whitespace-normal 放行(照那裡原本的設計只在「-」處換行);motion 頁 --motion-duration-disclosure 比 200px 欄寬多 2.3px,
+   多出來的落在 24px 欄距裡、不壓到下一欄 → 不放行(放行就又被拆成兩行)。之後新寫的長程式碼同樣在那個 <code> 上放行。
+   多行範例用 <pre> 或 whitespace-pre* utility,不受本規則影響(:not(pre) 與 @layer base:utility 一律優先)。
+   只放在 repo 根 Storybook 這個入口:說明頁只在這裡渲染;不放 DS 的 styles/base.css(那份會進消費端產品,產品畫面的 <code> 不歸 DS 管)。 */
+@layer base {
+  :not(pre) > code {
+    white-space: nowrap;
+  }
+}

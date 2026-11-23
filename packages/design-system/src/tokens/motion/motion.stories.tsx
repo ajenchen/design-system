@@ -11,7 +11,8 @@ import {
   HOVER_CARD_SURFACE_CLASS,
 } from '@/design-system/components/HoverCard/hover-card'
 import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
-import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { samplePersonCard, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
+import { MOTION_DELAY_PLAIN_MS, MOTION_DELAY_RICH_MS, MOTION_DELAY_CLOSE_MS } from '@/design-system/tokens/motion/motion'
 
 // 規則的內容是一段示範,子節點照順序以 tight 排
 const TutorialRule = createTutorialRule()
@@ -28,9 +29,9 @@ Motion token 系統。\`--motion-*\` 統一前綴下**兩個 sub-family**(2026-0
 
 **(A) delay 3-tier**(「hover 觸發 → 延遲 N ms → overlay 顯示」)——目的不是動畫長度,是「user 真的想看」過濾器。
 
-**(B) 進出場動畫**(overlay fade/zoom/slide 與原地展開收合的 duration / easing / 幾何)——\`--motion-duration-{overlay,surface,disclosure}\` + \`--motion-easing-{enter,exit}\` + \`--motion-enter-{distance,scale}\`,由 tw-animate-css 的 \`--tw-duration\` / \`--tw-ease\` 變數綁定;共用 SSOT = \`overlay-motion.ts\`(overlayMotion / surfaceMotion)與 \`disclosure-motion.ts\`(disclosureMotion)—— 何時播(只在沒有要求減少動態時)、關閉後保持最後一格,也都在這兩份裡。
+**(B) 進出場動畫**(overlay fade/zoom/slide 與原地展開收合的 duration / easing)——\`--motion-duration-{overlay,surface,disclosure}\` + \`--motion-easing-{enter,exit}\`,由 tw-animate-css 的 \`--tw-duration\` / \`--tw-ease\` 變數綁定;共用 SSOT = \`overlay-motion.ts\`(overlayMotion / surfaceMotion)與 \`disclosure-motion.ts\`(disclosureMotion)—— 何時播(只在沒有要求減少動態時)、關閉後保持最後一格,也都在這兩份裡。滑入距離(8px)與縮放(0.95)由各浮層的幾何 class 帶,不開 token。
 
-**JS mirror**:Radix props(\`delayDuration\` / \`openDelay\` / \`closeDelay\`)只吃 number 不認 CSS var,故 consumer 消費 \`motion.ts\` 的 \`MOTION_DELAY_PLAIN_MS\` / \`MOTION_DELAY_RICH_MS\` / \`MOTION_DELAY_CLOSE_MS\`(與 \`motion.css\` 同值鏡像)。
+**延遲三檔只有程式常數**:Radix props(\`delayDuration\` / \`openDelay\` / \`closeDelay\`)只吃 number 不認 CSS var,consumer 消費 \`motion.ts\` 的 \`MOTION_DELAY_PLAIN_MS\` / \`MOTION_DELAY_RICH_MS\` / \`MOTION_DELAY_CLOSE_MS\`(值只住那裡;2026-11-15 前另有一份沒有讀者的 CSS 鏡像,已退場)。
         `,
       },
     },
@@ -73,20 +74,20 @@ export const Overview: Story = {
           </p>
 
           <DelayRow
-            token="--motion-delay-plain"
-            value="500ms"
+            token="MOTION_DELAY_PLAIN_MS"
+            value={`${MOTION_DELAY_PLAIN_MS}ms`}
             usage="純文字提示——被動 hint,user 真停留才觸發,避免滑過列表時 N 次視覺擾動"
             consumers="Tooltip / OverflowIndicator"
           />
           <DelayRow
-            token="--motion-delay-rich"
-            value="700ms"
+            token="MOTION_DELAY_RICH_MS"
+            value={`${MOTION_DELAY_RICH_MS}ms`}
             usage="內容預覽——含 fetch / multi-section,避免列表掃視誤觸發 fetch waterfall"
             consumers="HoverCard / ProfileCard / Avatar"
           />
           <DelayRow
-            token="--motion-delay-close"
-            value="200ms"
+            token="MOTION_DELAY_CLOSE_MS"
+            value={`${MOTION_DELAY_CLOSE_MS}ms`}
             usage="通用關閉緩衝——mouse leave 後 200ms 內移回不會關(誤滑出容錯)"
             consumers="所有 hover overlay"
           />
@@ -136,19 +137,6 @@ export const Overview: Story = {
             usage="出場加速曲線"
             consumers="所有 overlay 出場"
           />
-          <DelayRow
-            token="--motion-enter-distance"
-            value="0.5rem"
-            usage="slide 進場位移(沿用現行 slide-*-2 幾何)"
-            consumers="slide 型進場 overlay"
-          />
-          <DelayRow
-            token="--motion-enter-scale"
-            value="0.95"
-            usage="zoom 進場 scale(沿用現行 zoom-95 幾何)"
-            consumers="zoom 型進場 overlay"
-          />
-
         </div>
       </TutorialSection>
     </TutorialPage>
@@ -217,7 +205,7 @@ export const DelayFeel: Story = {
             <HoverCardContent className={HOVER_CARD_SURFACE_CLASS}>
               {/* 句子叫讀者「請找她確認」→ 名片要是在線的(共用樣本預設是「離開 / 休假中,週一回來」,跟句子自相矛盾;tokens 審查第 11 則);
                   在線訊息沿用名錄 SAMPLE_PEOPLE 既有的同一句,不另寫 */}
-              {samplePersonCard({ name: '陳美惠', subtitle: 'Design｜MEIHUI｜2048731', id: 'MEIHUI', employeeNumber: '2048731', status: 'online', statusMessage: '在座位上,可以直接找我' })}
+              {samplePersonCard({ name: '陳美惠', avatarSrc: demoPersonPhoto('陳美惠', 128), subtitle: 'Design｜MEIHUI｜2048731', id: 'MEIHUI', employeeNumber: '2048731', status: 'online', statusMessage: '在座位上,可以直接找我' })}
             </HoverCardContent>
           </HoverCard>
           確認,她負責這一季的設計系統整合。

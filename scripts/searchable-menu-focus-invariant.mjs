@@ -25,7 +25,7 @@
  *   綠: 從 Storybook index 找到的每一個可搜尋選單(欄位內單選 / 欄位內多選 / 浮層內單選 / 浮層內多選四型都至少量到一個,欄位內多選另量空值那條;
  *       Command 的直接使用者 AgentPanel 歷史浮層、CommandDialog 各至少量到一個)全部符合時綠。找不到候選 story、四型缺任一型、直接使用者缺任一個、
  *       空值那條沒量到、Tag × / +N 浮出清單裡的 ×(開著 / 關著)/ +N 卡片本身 / 全選 / Tag 排滿後打字 / 打比整列長的字 / 一鍵清空(鍵盤 / 滑鼠)一次都沒量到、
- *       比整列長的字其實沒有比整列寬、
+ *       比整列長的字其實沒有比整列寬、Tag 排滿後打的字其實沒有比打字前搜尋框剩下的寬還寬(不必讓位也放得下 = 什麼都沒驗到)、
  *       整輪沒有任何一次多選挑選真的改變勾選(點擊沒生效)、story 開不起來、
  *       版面等不到靜止 = 儀器失效(INSTRUMENT-FAIL),不是綠。
  *   量法: 候選 story 從**正在服務的那一份**建置的 index.json 讀(不是手寫清單):凡是 importPath 位於「可搜尋選單家族」元件目錄的 story 都開。
@@ -41,6 +41,9 @@
  *         (settleAfterInteraction)、焦點主張再等焦點連續穩定(waitForFocusStable);遠端搜尋等 `aria-busy` 解除(等元素本身,上限只是天花板)
  *         —— 沒有固定睡眠當「已就緒」的代理。組字中的 Enter / Esc 用 `new KeyboardEvent('keydown', { isComposing: true })`(與 keyCode 229 那一型)派在搜尋框上;
  *         Esc 另派一次不帶組字旗標的同一顆(對照:同一條派發路徑的一般 Esc 必須關得掉,組字 Esc「沒關」才算數),之後重新點開、打回原本的關鍵字。
+ *         「Tag 排滿後打的字看得全」打的字**寬度從當下量到的空位推**,不用固定字串:寬落在「比打字前搜尋框剩下的寬多 8px」與「看得見的 Tag 全部讓位後放得下」的正中間
+ *         (字取自清單的選項標籤,用搜尋框自己的字型量),所以不讓位一定放不下、讓位一定放得下 —— 結果不看這台機器有什麼字型
+ *         (2026-11-20 CI:runner 沒有中文字型,原本固定打的「無障礙」變成三個窄的缺字方塊,塞得進剩下的空位,對照組 k 紅不起來;見 typedVisibleProblem)。
  *   對照組(--selftest,兩面): (1) 判定表 —— 每一條規則餵合成量測必紅、正確形狀必綠、缺型 / 沒量到必判儀器失效;
  *         (2) 真對照組 —— 先用同一份掃描(家族順序、owner 先,四型代表齊了就停)找出每一型的代表,**不動頁面**量一次必須全綠,
  *         再把修法在頁面上逐一拆掉各量一次:
@@ -54,7 +57,7 @@
  *           h. 鍵盤事件看不出組字(isComposing / keyCode 被洗掉 = 修法前代發給清單的那一顆)→ 四型都必須紅在 [ime];
  *           i. 「+N」浮出清單上的 mousedown preventDefault 失效(= 2026-09-30 第二輪:卡片在另一個 portal)→ 兩種多選必須紅在 [chrome-press];
  *           j. 移除浮出清單裡那一項後的焦點交接被吃掉(= PeoplePicker 修前跳過接力)→ 浮層內多選必須紅在 [overflow-focus];
- *           k. 欄位內搜尋框的量尺不算數(= 修前固定 60px、Tag 可見數不扣它的位)→ 欄位內多選必須紅在 [typed-visible];
+ *           k. 欄位內搜尋框的量尺不算數(= 修前固定 60px、Tag 可見數不扣它的位)→ 欄位內多選必須紅在 [typed-visible](打的字比不讓位時的空位寬,任何字型下都放不下);
  *           l. 組字中的 Esc 被當成一般 Esc(= 2026-10-01 前:浮層 / 對話框的 onEscapeKeyDown 沒有組字判斷,Radix 只看 event.key)→ 四型都必須紅在 [ime];
  *           m. 欄位內搜尋框那一格的寬沒有上限(= 2026-09-30 第三輪:一格 grid 的隱含 auto 欄跟著量尺長,max-w-full 管不到欄寬)→ 欄位內多選必須紅在 [typed-visible]。
  *         一鍵清空連關鍵字一起清、按 +N 卡片本身不關選單,沒有頁面上的對照組(前者是 React state、後者是 SelectMenu 觸發欄位開關裡的 React ref 旗標,
@@ -228,6 +231,25 @@ export function longTypedProblem(v) {
 }
 
 /**
+ * 欄位內多選 Tag 排滿後打字的判定(量測 = measureTypedVisible)。回 null = 通過;{ instrument } = 沒量到;{ failure } = 產品紅。
+ * 要保證的性質(逐字,combobox.spec.md「欄位內搜尋框的寬度」):搜尋框寬 = 打的字,單行時 Tag 讓位收進 +N —— 打的字看得全。
+ * 前提要先成立:打的字比**打字前搜尋框剩下的寬**還寬(textWidth > roomBefore)。放得進剩下的空位,Tag 不必讓位,「有沒有讓位」就沒被驗到 ——
+ * 綠燈與對照組 k 的「沒紅」都是零證據(儀器失效,不是綠)。2026-11-20 CI(run 44693821189):範例 11-18 改成中文標籤,CI runner 沒有中文字型,
+ * 原本固定打的「無障礙」變成三個窄的缺字方塊,塞得進剩下的空位;本機(macOS)同一步只差 6.4px(搜尋框 35.6px、字 42px)剛好紅 ——
+ * 對照組紅不紅取決於字型,不取決於修法在不在。2026-09-30 同一族:打一個字時剩下的 27px 剛好放得下,當時改成固定打 6 個字,仍是賭字寬。
+ */
+export function typedVisibleProblem(v) {
+  if (!v.fits) {
+    return { failure: `Tag 排滿後打「${v.value}」(${v.textWidth ?? '?'}px,打字前搜尋框只剩 ${v.roomBefore ?? '?'}px),搜尋框 ${v.width}px(要 ${v.scrollWidth}px)、右緣超出 Tag 區 ${v.overflowRight}px —— 打的字看不全` }
+  }
+  if (typeof v.roomBefore !== 'number' || typeof v.textWidth !== 'number') return { instrument: 'Tag 排滿後打字的量測缺「打字前搜尋框剩下的寬」或「打的字寬」—— 判不出有沒有驗到讓位' }
+  if (!(v.textWidth > v.roomBefore + 1)) {
+    return { instrument: `Tag 排滿後打的字只有 ${v.textWidth}px,沒有比打字前搜尋框剩下的 ${v.roomBefore}px 寬 —— 不必讓位也放得下,量不到「Tag 讓位」` }
+  }
+  return null
+}
+
+/**
  * @param {{ candidates: number, instances: object[], requireKinds?: string[], requireEmpty?: boolean, requireLivePick?: boolean }} report
  *   requireLivePick:整輪至少要有一次多選挑選真的改變了勾選 —— 個別 story 固定 value(設計規格的對照表傳 `onChange={() => {}}`)
  *   不動是合法的,不對單支開罰;但一次都沒變就代表「點擊根本沒生效」,焦點量得再漂亮也是零證據(同 select-all-footer 的 liveFlips)。
@@ -331,8 +353,9 @@ export function judge(report) {
     }
     // 欄位內搜尋:Tag 排滿、打了字之後,搜尋框整格看得見、打的字放得下(單行時 Tag 要讓位收進 +N)
     if (inst.typedVisible) {
-      const v = inst.typedVisible
-      if (!v.fits) failures.push(`[typed-visible] ${w}:Tag 排滿後打「${v.value}」,搜尋框 ${v.width}px(要 ${v.scrollWidth}px)、右緣超出 Tag 區 ${v.overflowRight}px —— 打的字看不全`)
+      const p = typedVisibleProblem(inst.typedVisible)
+      if (p?.instrument) instrument.push(`${w}:${p.instrument}`)
+      else if (p) failures.push(`[typed-visible] ${w}:${p.failure}`)
     }
     // 欄位內搜尋:打了比整列還長的字 → 搜尋框停在整列寬、在框裡捲動(combobox.spec.md「欄位內搜尋框的寬度」;2026-09-30 第三輪:框跟著字長出欄位)
     if (inline) {
@@ -438,7 +461,8 @@ function goodInstance(kind) {
     inst.mouseClear = { status: 'measured', label: '清除全部', before: { keyword: 'f' }, after: { open: true, focusOnSearch: true, active: 'input', keyword: '' } }
   }
   if (kind === 'popover-multi') inst.overflowClosed = { status: 'measured', label: '移除 Books', press: { active: 'button「移除 Books」' }, after: { active: 'div[role=combobox]', focusInTrigger: true } }
-  if (kind === 'inline-multi') inst.typedVisible = { value: 'fo', fits: true, width: 120, scrollWidth: 20, overflowRight: 0 }
+  // 打的字(124px)比打字前搜尋框剩下的(36px)寬:Tag 讓位後搜尋框 132px 放得下(scrollWidth = clientWidth)
+  if (kind === 'inline-multi') inst.typedVisible = { value: 'foodbooksclothingfurni', fits: true, width: 132, scrollWidth: 132, overflowRight: 0, roomBefore: 36, textWidth: 124 }
   if (kind === 'inline-single') inst.clear = { status: 'measured', label: '清除選取', after: { focusInTrigger: true, active: 'div[combobox]' } }
   if (kind === 'inline-multi') {
     inst.empty = {
@@ -503,7 +527,13 @@ export function judgeTableSelftest() {
   }
   expect('按「+N」浮出清單裡的 × 後接著打字沒進搜尋框必紅在 [chrome-press]', mutate('popover-multi', (i) => { overflowOf(i).typed = { ...overflowOf(i).typed, value: 'f', focusOnSearch: false, active: 'div[role=combobox]' } }), only('chrome-press'))
   expect('選單關著按「+N」浮出清單裡的 × 後焦點掉到 body 必紅在 [overflow-focus]', mutate('popover-multi', (i) => { i.overflowClosed.after = { active: 'BODY', focusInTrigger: false } }), only('overflow-focus'))
-  expect('Tag 排滿後打的字看不全(搜尋框被裁)必紅在 [typed-visible]', mutate('inline-multi', (i) => { i.typedVisible = { value: 'furniture', fits: false, width: 28, scrollWidth: 70, overflowRight: 32 } }), only('typed-visible'))
+  expect('Tag 排滿後打的字看不全(搜尋框被裁)必紅在 [typed-visible]', mutate('inline-multi', (i) => { i.typedVisible = { value: 'furniture', fits: false, width: 28, scrollWidth: 70, overflowRight: 32, roomBefore: 28, textWidth: 66 } }), only('typed-visible'))
+  // 2026-11-20 CI 的形狀:CI runner 沒有中文字型,打的「無障礙」只剩三個窄方塊,塞得進剩下的空位 —— 搜尋框「看得全」卻什麼讓位都沒驗到
+  expect('Tag 排滿後打的字沒有比打字前搜尋框剩下的寬還寬 = 儀器失效(不必讓位也放得下)',
+    mutate('inline-multi', (i) => { i.typedVisible = { ...i.typedVisible, value: '無障礙', textWidth: 27, roomBefore: 44, width: 44, scrollWidth: 44 } }),
+    (v) => v.instrument.length === 1 && /沒有比打字前搜尋框剩下/.test(v.instrument[0]) && v.failures.length === 0)
+  expect('Tag 排滿後打字的量測缺「打字前搜尋框剩下的寬」= 儀器失效', mutate('inline-multi', (i) => { delete i.typedVisible.roomBefore }),
+    (v) => v.instrument.length === 1 && /缺「打字前搜尋框剩下的寬」/.test(v.instrument[0]) && v.failures.length === 0)
   expect('一鍵清空後關鍵字還在必紅在 [clear-keyword](2026-09-30 前的形狀)', mutate('inline-multi', (i) => { i.mouseClear.after = { ...i.mouseClear.after, keyword: 'f' } }), only('clear-keyword'))
   expect('一鍵清空後焦點離開搜尋框必紅在 [clear-keyword]', mutate('popover-multi', (i) => { i.mouseClear.after = { ...i.mouseClear.after, focusOnSearch: false, active: 'button「清除全部」' } }), only('clear-keyword'))
   expect('「+N」浮出清單裡的 × 一次都沒量到 = 儀器失效', all().map((i) => { if (i.chrome) i.chrome = i.chrome.filter((c) => c.what !== 'overflow-remove'); return i }),
@@ -753,6 +783,55 @@ function pageProbe(arg) {
     const x = r.left + Math.min(12, r.width / 2), y = r.top + r.height / 2
     const hit = document.elementFromPoint(x, y)
     return { ok: !!hit && (hit === el || el.contains(hit)), x, y }
+  }
+
+  if (op === 'typedRoom' || op === 'typedWidth') {
+    // 欄位內多選、Tag 排滿(看得見 +N)後打的字,寬度用搜尋框自己的字型量(掛在 body 的看不見的 span,不碰欄位本身 —— Tag 區的子元素會被 useOverflowCount 算進可用寬)。
+    // typedWidth:搜尋框裡現在那串字多寬。typedRoom(還沒打字):
+    //   roomBefore = 搜尋框此刻的寬 = Tag 不讓位時打的字能用的寬;
+    //   freeable  = 看得見的 Tag(連同它們之間與 +N 前那道間距)佔的寬 = Tag 全部讓位能多出來的寬(+N 左緣 − Tag 區內容左緣;頭像堆疊也適用,不看 Tag 內部結構);
+    //   打的字寬的範圍:下限 minText = roomBefore + 8(不讓位一定放不下;判定的前提是 > roomBefore + 1);
+    //     上限 maxText = roomBefore + freeable − 間距 − 插入點空白 − 一位數字 − 2(全部讓位一定放得下:useOverflowCount 留的位 = 間距 + 量尺〔字 + 空白〕,
+    //     +N 收進更多項時最多多一位數);text = 字取自清單裡一般選項的標籤(字母 / 數字),接到寬度 ≥ 兩者正中間、超過上限就退一個字。
+    //   範圍是空的(看得見的 Tag 太少,沒有東西可以讓位)→ text 空(不算量到)。
+    const input = inlineInput()
+    if (!input) return null
+    const round1 = (n) => Math.round(n * 10) / 10
+    const cs = getComputedStyle(input)
+    const ruler = document.createElement('span')
+    ruler.setAttribute('aria-hidden', 'true')
+    for (const prop of ['font', 'letterSpacing', 'wordSpacing', 'fontKerning', 'fontFeatureSettings', 'fontVariationSettings', 'textTransform']) ruler.style[prop] = cs[prop]
+    Object.assign(ruler.style, { position: 'absolute', left: '-100000px', top: '0', visibility: 'hidden', whiteSpace: 'pre', pointerEvents: 'none' })
+    document.body.appendChild(ruler)
+    const widthOf = (text) => { ruler.textContent = text; return ruler.getBoundingClientRect().width }
+    try {
+      if (op === 'typedWidth') return round1(widthOf(input.value))
+      const area = input.closest('[role="combobox"] > div') || trigger
+      const plus = [...trigger.querySelectorAll('[data-overflow-indicator]')].find(visible)
+      if (!plus) return { roomBefore: round1(input.getBoundingClientRect().width), freeable: 0, text: '' }
+      const as = getComputedStyle(area)
+      const contentLeft = area.getBoundingClientRect().left + (parseFloat(as.borderLeftWidth) || 0) + (parseFloat(as.paddingLeft) || 0)
+      const roomBefore = input.getBoundingClientRect().width
+      const freeable = Math.max(0, plus.getBoundingClientRect().left - contentLeft)
+      const minText = roomBefore + 8
+      const maxText = roomBefore + freeable - Math.max(0, parseFloat(as.columnGap) || 0) - widthOf(' ') - widthOf('0') - 2
+      const plan = { roomBefore: round1(roomBefore), freeable: round1(freeable), minText: round1(minText), maxText: round1(maxText) }
+      if (maxText < minText) return { ...plan, text: '' }
+      const target = (minText + maxText) / 2
+      const source = [...options(popup()).filter(isNormal).map(labelOf).join('')].filter((c) => /[\p{L}\p{N}]/u.test(c))
+      if (!source.length) source.push(...'abcdefghij')
+      const chars = []
+      let width = 0
+      for (let n = 0; width < target && n < 2000; n++) {
+        chars.push(source[n % source.length])
+        width = widthOf(chars.join(''))
+      }
+      if (width > maxText) { chars.pop(); width = widthOf(chars.join('')) }
+      if (width < minText || width > maxText) return { ...plan, text: '' }
+      return { ...plan, target: round1(target), text: chars.join(''), textWidth: round1(width) }
+    } finally {
+      ruler.remove()
+    }
   }
 
   if (op === 'inlineVisible') {
@@ -1159,6 +1238,29 @@ async function openOverflowCard(page, k) {
 }
 
 /**
+ * 欄位內多選、Tag 排滿(看得見 +N)、搜尋框握著焦點、關鍵字空:打一串寬度落在「不讓位一定放不下」與「看得見的 Tag 全部讓位一定放得下」正中間的字
+ * (頁面端 op typedRoom),量搜尋框看不看得全(判定見 typedVisibleProblem)。回 null = 看得見的 Tag 太少、沒有東西可以讓位(不算量到)。
+ * 為什麼不打固定的字:「不讓位放不放得下」看的是打的字寬減剩下的空位,兩者都隨這台機器的字型變 ——
+ * 2026-09-30 打一個字時剩下的 27px 剛好放得下;之後固定打選項標籤的前 6 個字,2026-11-20 範例換成中文、CI runner 沒有中文字型,
+ * 三個窄的缺字方塊又塞得進去,對照組 k 在 CI 紅不起來(本機 macOS 只差 6.4px 剛好紅)。從量到的空位推,兩邊各有那段範圍一半的餘裕。
+ */
+async function measureTypedVisible(page, k) {
+  const plan = await probe(page, { op: 'typedRoom', k })
+  if (!plan) throw new ProbeError('Tag 排滿後找不到欄位內搜尋框')
+  if (!plan.text) return null
+  await page.keyboard.type(plan.text)
+  await settle(page, `Tag 排滿後打 ${[...plan.text].length} 個字`)
+  await waitIdle(page, k, `Tag 排滿後打 ${[...plan.text].length} 個字`)
+  const s = await readState(page, k, 'Tag 排滿後打字後')
+  if (!s.open || !s.focusOnSearch || s.keyword !== plan.text) {
+    throw new ProbeError(`Tag 排滿後打「${plan.text}」沒成功(選單${s.open ? '開著' : '關了'}、焦點在 ${s.active}、關鍵字「${s.keyword}」)`)
+  }
+  const v = await probe(page, { op: 'inlineVisible', k })
+  if (!v) throw new ProbeError('Tag 排滿後打字之後找不到欄位內搜尋框')
+  return { ...v, roomBefore: plan.roomBefore, freeable: plan.freeable, textWidth: await probe(page, { op: 'typedWidth', k }) }
+}
+
+/**
  * 多選、選單開著、搜尋框握著焦點:把欄位填到出現 +N(需要時按全選),打一個字(欄位內搜尋另量搜尋框看不看得全),
  * 再用滑鼠按浮出清單裡的 ×,按下的當下與放開之後各讀一次,接著再打一個字。欄位夠寬、填滿也沒有 +N → null(不算量到)。
  */
@@ -1180,14 +1282,17 @@ async function measureOverflowOpen(page, k, inst, char) {
   if (!(await probe(page, { op: 'overflowPoint', k })).ok) return null
   st = await readState(page, k, '量 +N 之前')
   if (!st.open || !st.focusOnSearch) throw new ProbeError(`量 +N 之前選單${st.open ? '開著' : '沒開'}、焦點在 ${st.active}(應在搜尋框)`)
-  // 打一個有長度的字(選項標籤的前 6 個字母 / 數字,清單仍留下它):Tag 排滿後剩下的空間通常只夠一兩個字,
-  // 只打一個字量不出「搜尋框有沒有替打的字讓位」(2026-09-30 對照組 k 用一個字時紅不起來 —— 剩下的 27px 剛好放得下一個字)
+  // 欄位內多選:Tag 排滿後打的字看不看得全(搜尋框替打的字讓位)—— 打的字寬從這一刻量到的空位推(measureTypedVisible),量完清掉
+  if (inst.kind === 'inline-multi') {
+    inst.typedVisible = await measureTypedVisible(page, k)
+    if ((await readState(page, k, 'Tag 排滿後打字量完')).keyword) await clearSearch(page, k)
+  }
+  // 後面的卡片本身 / × 從一個清單仍留得下選項的關鍵字開始(選項標籤的前 6 個字母 / 數字)
   const { label } = await probe(page, { op: 'queryChars', k })
   const word = [...(label || '')].filter((c) => /[\p{L}\p{N}]/u.test(c)).slice(0, 6).join('') || char
   await page.keyboard.type(word)
   await settle(page, `打「${word}」`)
   await waitIdle(page, k, `打「${word}」`)
-  if (inst.kind === 'inline-multi') inst.typedVisible = await probe(page, { op: 'inlineVisible', k })
   // 按卡片本身(不是 ×):浮出清單是隱藏的那幾個 Tag,與欄位上的 Tag 是同一個控件的零件 —— 按下去焦點與關鍵字不動、選單不關,接著打的字進得去
   if (await openOverflowCard(page, k)) {
     const body = await probe(page, { op: 'overflowCardBody', k })

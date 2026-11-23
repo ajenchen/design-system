@@ -1,5 +1,4 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-// code-quality-allow: file-size — foundational composite(Tabs + overflow scroll mode + dropdown switcher + inline action slot)在單一 wrapper SSOT 內,拆分會破壞 a11y / focus management chain。當前 ~578 < cap 800。
 import * as React from 'react'
 import { createPortal } from 'react-dom'
 import * as TabsPrimitive from '@radix-ui/react-tabs'
@@ -15,11 +14,15 @@ import {
 import {
   useScrollEdges,
   useScrollByPage,
+  useRevealSelected,
   buildFadeMask,
   ARROW_BUTTON_WIDTH,
   OverflowScrollArrow,
   OverflowMenuTriggerButton,
 } from '@/design-system/patterns/horizontal-overflow/horizontal-overflow'
+
+// 「選到就露出來」(horizontal-overflow.spec.md):Tabs 的項目與選中屬性。scroll / menu 兩模式共用,只差兩側箭頭預留寬。
+const TABS_REVEAL = { itemSelector: '[role="tab"]', selectedAttribute: { name: 'aria-selected', value: 'true' } } as const
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import {
@@ -37,9 +40,9 @@ import {
  *   切 value 用 SegmentedControl；切路由用 navigation。
  *
  * ── Size ──
- *   sm   h-tab-sm（32/40），★ 預設(2026-05-17 從 md 改),overlay / chrome / dense
- *   md   h-tab-md（40/48），future tier 無 recommended use case
- *   lg   h-tab-lg（48/56），page-level hero / 獨立 tabs 取代 chrome header
+ *   sm   --tab-height-sm（32/40），★ 預設(2026-05-17 從 md 改),overlay / chrome / dense
+ *   md   --tab-height-md（40/48），future tier 無 recommended use case
+ *   lg   --tab-height-lg（48/56 = --chrome-header-height),page-level hero / 獨立 tabs 取代 chrome header
  *
  * ── 寬度行為 ──
  *   Trigger 寬度永遠由內容決定（hug content）。
@@ -52,6 +55,8 @@ import {
  * ── Selected underline ──
  *   使用 ::after 絕對定位在 bottom: -1px，2px primary（2026-07-06 拍板:持續選中站 base），
  *   蓋住 TabsList 的 1px gray border（單一視覺線條，不雙線）。
+ *   溢出模式(scroll / menu)的灰線改由外層 TabsOverflowBaseline 畫(遮罩外),TabsList border 只留 1px 透明列給選中底線疊合,
+ *   見下方 TabsOverflowBaseline 註解。
  */
 
 // ── Size context ──
@@ -114,26 +119,11 @@ const TabsValueContext = React.createContext<{
 }>({})
 
 
-// ── getElementRef(Radix Slot idiom;鏡射 chip.tsx 同名 helper — 2026-07-05 M10 同型修)──
-// 讀 child 既有 ref 而不觸發 React 18/19 dev deprecation warning。
-function getElementRef(element: React.ReactElement): React.Ref<HTMLElement> | undefined {
-  let getter = Object.getOwnPropertyDescriptor(element.props, 'ref')?.get
-  let mayWarn = getter && 'isReactWarning' in getter && getter.isReactWarning
-  if (mayWarn) return (element as unknown as { ref?: React.Ref<HTMLElement> }).ref
-  getter = Object.getOwnPropertyDescriptor(element, 'ref')?.get
-  mayWarn = getter && 'isReactWarning' in getter && getter.isReactWarning
-  if (mayWarn) return (element.props as { ref?: React.Ref<HTMLElement> }).ref
-  return (
-    (element.props as { ref?: React.Ref<HTMLElement> }).ref ??
-    (element as unknown as { ref?: React.Ref<HTMLElement> }).ref ??
-    undefined
-  )
-}
-
 // 遞迴攤平 Fragment：React.Children.toArray 不展開 <>…</>(把 Fragment 當單一 element),
-// 導致 menu 模式 dropdown 漏掉被 Fragment 包起來的 trigger（如條件渲染的溢出 tabs）+ cloneElement
-// 對 Fragment 傳 ref 會噴 React warning。攤平後每個 keyless child 補 path-index key,對齊
-// React.Children.toArray 的自動 key 行為,避免 list key warning。
+// 導致 menu 模式 dropdown 漏掉被 Fragment 包起來的 trigger（如條件渲染的溢出 tabs）。攤平後每個 keyless child 補 path-index key,
+// 對齊 React.Children.toArray 的自動 key 行為,避免 list key warning。
+// (2026-11-11 前這份清單也拿來 cloneElement 合併 ref,供選單選取後找 tab 去 scrollIntoView;揭露搬進 useRevealSelected 後只剩選單用,
+//  tablist 裡的 triggers 原樣渲染,getElementRef 一併拿掉。)
 function flattenTabTriggers(children: React.ReactNode, prefix = ''): React.ReactElement[] {
   const out: React.ReactElement[] = []
   React.Children.forEach(children, (child, i) => {
@@ -176,7 +166,7 @@ const Tabs = React.forwardRef<
         {...props}
         // Root 本來是裸 Radix(`display: block`),在「高度受限的 flex column 容器」裡會**斷鏈**:
         // Dialog / Sheet 的契約是 header/footer `shrink-0` + Body `flex-1 min-h-0` → 空間不夠時 body 內捲
-        // (`dialog.spec.md`「maxWidth」:「內容溢出走 body 捲動」)。但只要中間夾一層 `display: block` 且
+        // (`dialog.spec.md`「父層契約」:「內容溢出走 body 捲動」)。但只要中間夾一層 `display: block` 且
         // `min-height: auto` 的 wrapper,那層就收縮不了,整包內容原樣頂出容器 —— 2026-09-12 user 截圖的
         // 「dialog body 內容超出容器」正是這個:Tabs Root 在 204px 的 dialog 裡撐到 271px。
         // Root 自己成為可收縮的 flex column 之後,這條鏈在任何容器裡都自然接上,consumer 不需要背咒語。
@@ -206,7 +196,7 @@ Tabs.displayName = 'Tabs'
 // 2026-05-18 改 border-border → border-divider(per user verbatim「我認為應該把 tabs 的
 // 下底線統一改成是 divider 色吧?」+「做」approval):
 // - 跟 Dialog / Sheet / Popover / Sidebar header `border-b border-divider`(neutral-4)同色
-// - withTabs scenario 下 tabs underline = chrome separator,跟 dialog 其他 separator 視覺一致
+// - tabs 進 header(tabsSlot)時 tabs underline = chrome separator,跟 dialog 其他 separator 視覺一致
 // - Selected trigger 2px primary 仍 overlay underlying divider(對比 primary >> divider 不弱)
 // - 對齊 `color.spec.md`「T-junction connectivity 原則」段 outer-vs-divider 判準(Dialog 結構,T-junction 思路適用)
 const TABS_LIST_BASE = [
@@ -214,6 +204,35 @@ const TABS_LIST_BASE = [
   'gap-[var(--layout-space-loose)]',
   'border-b border-divider',
 ].join(' ')
+
+// 溢出模式(scroll / menu)的 TabsList:border 寬度保留、顏色透明,灰線改由外層 TabsOverflowBaseline 畫(見其註解)。
+// 寬度保留的理由:選中底線 `after:bottom-[-1px]` 的下半要疊在這 1px 列上;拿掉 border,tablist 矮 1px,
+// 下半落到捲動容器(overflow-y-hidden)外被裁掉 → 選中底線只剩 1px。
+const TABS_OVERFLOW_LIST_CLASS = 'min-w-full border-transparent'
+
+/**
+ * 溢出模式(scroll / menu)的分頁列灰線(2026-11-17)。
+ *
+ * 為什麼不是 TabsList 自己的 border:溢出模式的 TabsList 在帶 mask-image 的捲動容器裡,遮罩淡化的是整個內容 ——
+ * 連 border 一起淡掉。scroll 模式右箭頭底下沒有線;menu 模式捲動區右端淡掉,⌄ 容器自己的 border 才接上,中間斷一格。
+ * 違反 tabs.spec.md「TabsList 容器寬度」:底線連成整條、右端達內容區邊緣。
+ *
+ * 做法:畫在遮罩**外**的外層容器(absolute 貼底、寬 = 外層全寬,含箭頭與 ⌄ 底下),一處 owner。
+ * 繪製順序:它在 DOM 裡排在捲動容器前面。捲動容器有 mask → 自成疊放層;沒有 mask(塞得下)時 tab 本身是 relative —— 兩種情況都在它之後繪製,
+ * 選中 tab 的 2px 主色底線(::after)蓋在它上面,不會被灰線蓋掉下半(閘:header-tabs-slot-invariants W1-選中底線)。
+ *
+ * TabsList 的 border 在溢出模式改透明(TABS_OVERFLOW_LIST_CLASS),不是兩條一起畫:`--divider` 是 9% 黑(color.spec.md `border-divider` 列),
+ * 兩層疊起來,沒淡出的地方約 17%、淡出區回到 9% —— 一條線兩種深淺,也比其他 chrome 分隔線深。
+ */
+function TabsOverflowBaseline() {
+  return (
+    <div
+      aria-hidden
+      data-tabs-baseline
+      className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-divider"
+    />
+  )
+}
 
 interface TabsListProps
   extends React.ComponentPropsWithoutRef<typeof TabsPrimitive.List> {
@@ -281,16 +300,21 @@ TabsList.displayName = 'TabsList'
 // ── Scroll mode ──
 //
 // 共同策略(對齊 Material 3 / Ant Design / Primer UnderlineNav 世界級作法):
-//   - 容器 overflow-x-auto + overflow-y-hidden(真的可滾,鍵盤焦點可 scroll-into-view;
-//     明示 y-hidden 阻 CSS overflow-3 spec「一軸 auto 時另軸 visible compute auto」)
-//   - border-b 在 TabsList 內部(TABS_LIST_BASE),不在 outer wrapper,避免
-//     active underline `after:bottom:-1px` 跟 outer + overflow-x-auto 觸發 y promote bug
+//   - 容器 overflow-x-auto + overflow-y-hidden(真的可滾;明示 y-hidden 阻 CSS overflow-3 spec「一軸 auto 時另軸 visible compute auto」)
+//   - 選中 / 鍵盤焦點 / 容器尺寸改變 → useRevealSelected 把那個 tab 置中(對齊 B,兩端夾住;horizontal-overflow.spec.md「選到就露出來」)。
+//     2026-11-11 前這裡寫「鍵盤焦點可 scroll-into-view」,實測不成立:Chromium 對水平「部分可見」的項目 focus 不捲,
+//     方向鍵選中的 tab 可以整顆落在箭頭 + 淡出底下(可讀 0)。
+//   - 分頁列底邊兩件事分兩個 owner(2026-11-17):
+//     · TabsList 的 border-b(TABS_LIST_BASE)負責「和選中底線疊合」—— 選中 tab 的 `after:bottom:-1px` 下半疊在這 1px 列上;
+//       它留在捲動容器裡、不搬到 outer(outer border-b 在捲動容器外,下半會被 overflow-y-hidden 裁掉,2026-05-19 y promote bug)。
+//       溢出模式這條 border 只留寬度、顏色透明(TABS_OVERFLOW_LIST_CLASS)。
+//     · outer 的 TabsOverflowBaseline 負責「灰線連成整條」—— 畫在遮罩外,淡出區、箭頭與 ⌄ 底下也有線(捲動容器的遮罩會連 border 一起淡掉)。
 //   - mask / arrow / fade 全部從 horizontal-overflow pattern module 取得——
 //     參見 `patterns/horizontal-overflow/horizontal-overflow.spec.md`
-//   - Menu 模式 = scroll 模式 + 額外的 ⌄ quick-jump button,點 menu item 同時
-//     觸發 onValueChange + scrollIntoView,讓使用者在 tab strip 看到選中的 tab
+//   - Menu 模式 = scroll 模式 + 額外的 ⌄ quick-jump button,點 menu item 只觸發 onValueChange,
+//     置中由同一個 useRevealSelected 做(與直接點、方向鍵同一條)
 // 單行水平滾動 + 邊緣 fade mask 延伸到 arrow button 底下 + 左右 always-visible arrows
-//   - 鍵盤: Radix 原生方向鍵 + 瀏覽器 scroll-into-view
+//   - 鍵盤: Radix 原生方向鍵(自動啟用 = 選中改變)→ useRevealSelected 置中
 //   - Trackpad: 兩指橫向滑動
 //   - 滑鼠滾輪: 點 arrow buttons (Shift+wheel 太隱晦)
 
@@ -300,6 +324,7 @@ const ScrollTabsList = React.forwardRef<
 >(({ className, children, ...props }, ref) => {
   const { scrollRef, atStart, atEnd, canScroll } = useScrollEdges<HTMLDivElement>()
   const scrollByPage = useScrollByPage(scrollRef)
+  useRevealSelected(scrollRef, { ...TABS_REVEAL, reserveArrowWidth: ARROW_BUTTON_WIDTH })
   const maskImage = buildFadeMask({
     canScroll,
     atStart,
@@ -309,14 +334,18 @@ const ScrollTabsList = React.forwardRef<
 
   return (
     // 2026-05-19 fix(scroll-overflow underline clip + y auto-promote):
-    //   outer 撤 `border-b` → owner 升到 `TabsList` (TABS_LIST_BASE 含 border-b border-divider)
+    //   outer 撤 `border-b` → 「和選中底線疊合」的那 1px 列交給 `TabsList`(TABS_LIST_BASE 的 border-b)
     //   把 trigger `after:bottom-[-1px]` 2px underline 的下半部 1px 收進 list border-box,
     //   再加 `overflow-y-hidden` 明示阻 browser y auto-promote(CSS overflow-3 spec:
     //   overflow-x:auto + overflow-y:visible 必 compute auto)。
-    //   不加 `pb-px`(outer border 撤後 list border 已接 -1px 部分,加 pb 多 1px 多餘空白)。
-    //   對齊 Primer UnderlineNav `overflow-x:auto; overflow-y:hidden` canonical 同步動
-    //   horizontal-overflow.spec.md(「Hook re-export」+「典型 scroll / menu 模式組裝」段)owner 升 list 內部。
+    //   不加 `pb-px`(list border 已接 -1px 部分,加 pb 多 1px 多餘空白)。
+    //   對齊 Primer UnderlineNav `overflow-x:auto; overflow-y:hidden`。
+    // 2026-11-17 灰線本身改由 outer 的 TabsOverflowBaseline 畫(遮罩外,右箭頭底下也連著);TabsList border 只留透明的 1px 列。
+    //   原本灰線就是 TabsList border,在帶 mask 的捲動容器裡,右側 箭頭 32 + 淡出 16px 連線一起淡掉(箭頭底下沒有線)。
+    //   同步 horizontal-overflow.spec.md「典型 scroll / menu 模式組裝」與 tabs.spec.md「TabsList 容器寬度」。
     <div className="relative">
+      {/* 排在捲動容器前面 = 先畫;捲動容器(mask 自成疊放層)與箭頭蓋在它上面,選中底線不被灰線蓋 */}
+      <TabsOverflowBaseline />
       <div
         ref={scrollRef}
         className="overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
@@ -325,7 +354,7 @@ const ScrollTabsList = React.forwardRef<
         <TabsPrimitive.List
           ref={ref}
           data-slot="tabs-list"
-          className={cn(TABS_LIST_BASE, 'min-w-full', className)}
+          className={cn(TABS_LIST_BASE, TABS_OVERFLOW_LIST_CLASS, className)}
           {...props}
         >
           {children}
@@ -345,12 +374,11 @@ ScrollTabsList.displayName = 'ScrollTabsList'
 // ── Menu mode ──
 // Show-all navigator pattern (Chrome tab dropdown / VS Code editor tabs / Discord channel jumper):
 //   - Menu 永遠顯示全部 tabs,active 的用 checked 標記 (單選語意)
-//   - 點 menu item = onValueChange + scrollIntoView(center),把該 tab 捲到視圖中央
+//   - 點 menu item = onValueChange;選中一改,useRevealSelected 把該 tab 捲到視圖中央(與直接點、方向鍵同一條)
 //   - Menu 內容穩定,跟 scroll 位置無關,使用者對「⌄ = navigator」的直覺一致
 //
 // 為什麼底層仍是 overflow-x-auto 而非 overflow-hidden:
-//   - scrollIntoView 需要真實 scroll 容器
-//   - 鍵盤 focus 也依賴真實 scroll 讓 browser auto scroll-into-view
+//   - 置中靠捲動容器的 scrollLeft(useRevealSelected 的 scrollTo),需要真實 scroll 容器;trackpad 兩指橫滑也要
 //   - scrollbar 用 CSS 隱藏,視覺看不出來
 //
 // Fade mask 純視覺,軟化內容硬邊,跟 menu 機制正交 (兩者可並存)。
@@ -363,67 +391,29 @@ const MenuTabsList = React.forwardRef<
 >(({ className, children, ...props }, ref) => {
   const { scrollRef, atStart, atEnd, canScroll } = useScrollEdges<HTMLDivElement>()
   const { onValueChange, value: activeValue } = React.useContext(TabsValueContext)
+  // 不用 useOverflowIndices:menu 永遠顯示全部,不需要動態 overflow 計算。
+  useRevealSelected(scrollRef, { ...TABS_REVEAL, reserveArrowWidth: 0 })
 
-  // Local ref map — 追蹤每個 trigger 的 DOM 元素,供 scrollIntoView 使用。
-  // 不用 useOverflowIndices 因為 menu 永遠顯示全部,不需要動態 overflow 計算。
-  // code-quality-allow: long-function — helper fn 結構緊密,拆 sub-fn 會跨 fn 傳 state 反而複雜
-  const itemRefs = React.useRef<Map<number, HTMLElement>>(new Map())
-  // 2026-05-16 audit codex Round 6:capture rAF + cancel on unmount(defensive hygiene)
-  const scrollRafIdRef = React.useRef<number>(0)
-  React.useEffect(() => () => { if (scrollRafIdRef.current) cancelAnimationFrame(scrollRafIdRef.current) }, [])
-  const registerItem = React.useCallback(
-    (index: number) => (el: HTMLElement | null) => {
-      if (el) itemRefs.current.set(index, el)
-      else itemRefs.current.delete(index)
-    },
-    []
-  )
-
-  // Fragment-safe:攤平 <>…</> 讓條件渲染的溢出 tabs 也進 dropdown / ref map(見 flattenTabTriggers）
+  // Fragment-safe:攤平 <>…</> 讓條件渲染的溢出 tabs 也進 dropdown(見 flattenTabTriggers)
   const items = React.useMemo(
     () => flattenTabTriggers(children),
     [children]
   )
 
-  // 2026-07-05 M10 同型修(Chip MenuChipGroup 同款):原 cloneElement 直接覆寫 child ref,
-  // consumer 自有 ref 被靜默取代 → compose(registerItem + child 原 ref)。
-  const enhancedChildren = items.map((child, i) => {
-    const childRef = getElementRef(child)
-    return React.cloneElement(
-      child as React.ReactElement<{ ref?: React.Ref<HTMLElement> }>,
-      {
-        ref: (el: HTMLElement | null) => {
-          registerItem(i)(el)
-          if (typeof childRef === 'function') childRef(el)
-          else if (childRef) (childRef as React.MutableRefObject<HTMLElement | null>).current = el
-        },
-      }
-    )
-  })
-
   // Menu 模式沒有 arrows,但仍套 fade mask (reserveArrowWidth: 0) 軟化內容硬邊
-  // code-quality-allow: long-function — helper fn 結構緊密,拆 sub-fn 會跨 fn 傳 state 反而複雜
   const maskImage = buildFadeMask({ canScroll, atStart, atEnd, reserveArrowWidth: 0 })
-
-  const handleMenuSelect = React.useCallback(
-    (triggerValue: string, index: number) => {
-      onValueChange?.(triggerValue)
-      // 下一個 tick 再 scroll, 讓 Radix 先完成 data-state 更新
-      if (scrollRafIdRef.current) cancelAnimationFrame(scrollRafIdRef.current)
-      scrollRafIdRef.current = requestAnimationFrame(() => {
-        scrollRafIdRef.current = 0
-        itemRefs.current.get(index)?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
-      })
-    },
-    [onValueChange]
-  )
 
   return (
     // 2026-05-19 fix(scroll-overflow underline clip + y auto-promote,parallel to ScrollTabsList):
-    //   outer 改 items-stretch(menu button 容器跟 TabsList 含 border 共底線)+ 撤 border。
-    //   list 套 TABS_LIST_BASE,inner scroll 加 overflow-y-hidden。menu button 容器自帶
-    //   border-b border-divider 跟 TabsList border 同 y 對齊(items-stretch 保證)。
-    <div className="flex items-stretch">
+    //   outer 改 items-stretch(⌄ 容器與捲動區同高)+ 撤 border。
+    //   list 套 TABS_LIST_BASE(border-b = 和選中底線疊合的 1px 列),inner scroll 加 overflow-y-hidden。
+    // 2026-11-17 灰線改由 outer 的 TabsOverflowBaseline 一處畫完(遮罩外、橫跨捲動區與 ⌄ 底下),outer 加 relative 給它定位:
+    //   原本是 TabsList border(在帶 mask 的捲動容器裡,右端 16px 跟著淡掉)+ ⌄ 容器自帶 border-b 兩段接起來,
+    //   淡出那段斷一格。⌄ 容器不再畫線,改 pb-px 讓出最底那 1px 列(同 TabsList 的透明 border 列)——
+    //   ⌄ 照舊在「扣掉線那一列」的高度裡置中,與分頁文字同一條中線(拿掉後不補,⌄ 會往下偏 0.5px)。
+    <div className="relative flex items-stretch">
+      {/* 排在捲動容器前面 = 先畫;捲動容器(mask 自成疊放層)蓋在它上面,選中底線不被灰線蓋 */}
+      <TabsOverflowBaseline />
       <div
         ref={scrollRef}
         className="flex-1 min-w-0 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
@@ -432,14 +422,14 @@ const MenuTabsList = React.forwardRef<
         <TabsPrimitive.List
           ref={ref}
           data-slot="tabs-list"
-          className={cn(TABS_LIST_BASE, 'min-w-full', className)}
+          className={cn(TABS_LIST_BASE, TABS_OVERFLOW_LIST_CLASS, className)}
           {...props}
         >
-          {enhancedChildren}
+          {children}
         </TabsPrimitive.List>
       </div>
       {canScroll && (
-        <div className="flex-shrink-0 pl-[var(--layout-space-loose)] flex items-center border-b border-divider">
+        <div className="flex-shrink-0 pl-[var(--layout-space-loose)] pb-px flex items-center">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <OverflowMenuTriggerButton
@@ -447,7 +437,7 @@ const MenuTabsList = React.forwardRef<
               />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {items.map((trigger, index) => {
+              {items.map((trigger) => {
                 const triggerProps = trigger.props as {
                   value?: string
                   children?: React.ReactNode
@@ -463,7 +453,7 @@ const MenuTabsList = React.forwardRef<
                     key={triggerValue}
                     disabled={triggerProps.disabled}
                     selected={activeValue === triggerValue}
-                    onSelect={() => handleMenuSelect(triggerValue, index)}
+                    onSelect={() => onValueChange?.(triggerValue)}
                   >
                     {triggerProps.children}
                   </DropdownMenuItem>
@@ -726,7 +716,7 @@ export const tabsMeta = {
   variants: {
 
   },
-  // 注:`fieldHeight` 為 meta 通用 height key;Tabs **不複用 field-height**,值為 `--tab-height-*`(md density,對齊 spec.md size table + uiSize.css)
+  // 注:`fieldHeight` 為 meta 通用 height key;Tabs **不複用 field-height**,值為 `--tab-height-*`(md density,對齊 spec.md size table + tabs.css)
   sizes: {
     sm: { fieldHeight: 32, iconSize: 16, typography: 'body' },
     md: { fieldHeight: 40, iconSize: 16, typography: 'body' },
@@ -735,7 +725,7 @@ export const tabsMeta = {
   // 'selected' = 選中 tab(Radix DOM attr 為 data-state="active",meta 詞彙統一用 'selected' 避免與「按壓 active」混用;2026-07-07)
   states: ['default', 'hover', 'selected', 'focus-visible', 'disabled'],
   tokens: {
-    bg: ['bg-primary', 'bg-transparent'],
+    bg: ['bg-primary', 'bg-transparent', 'bg-divider'], // bg-divider:溢出模式的灰線 TabsOverflowBaseline(2026-11-17)
     fg: ['text-fg-disabled', 'text-fg-secondary', 'text-foreground'],
     ring: ['focus-ring-inset', '--ring'],
   },

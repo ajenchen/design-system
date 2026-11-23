@@ -57,7 +57,7 @@
 //      (型態切換 —— 例 `data-[state=on]:` 已按下 —— 是另一個型態,各自有自己的靜止底;本閘只比同一型態內的一對,B8 範圍)
 //   4. 只判底色(bg 的 background-color 與「底」疊層)。文字與邊框的滑過不在本閘範圍。
 //
-// 不判(會印出件數,不當成通過):靜止底或滑過值是區域 CSS 變數(例 Tag 的 --dismiss-hover)、帶透明度修飾
+// 不判(會印出件數,不當成通過):靜止底或滑過值是區域 CSS 變數(例 Tag 的 --tag-dismiss-hover)、帶透明度修飾
 //(例 Carousel 圓點 `bg-on-emphasis/60`,底色換不掉的圖片疊層,carousel.spec.md 有明文)、任意色值;
 // 以及組合裡看不到靜止底、滑過值又不是透明底配對的情形(靜止底寫在別的變數裡,靜態分析看不到;疊層同理 ——
 // 疊層本來就是給有底色的元素用,組合裡一個靜止底都看不到時列入「看不到靜止底」;看得到但只在某些情況成立時,
@@ -621,7 +621,7 @@ export function selftest(table, log = console.log) {
     ['色相 hover 配 step-6 實心底', `const a = 'bg-[var(--color-blue-6)] hover:bg-[var(--blue-hover)]'`, 0],
     ['色相淡底 step-1 滑過配同色 step-2(月曆事件方塊,2026-09-26)', `const a = 'bg-[var(--color-blue-1)] hover:bg-[var(--color-blue-2)]'`, 0],
     ['色相淡底滑過換到別的色相', `const a = 'bg-[var(--color-blue-1)] hover:bg-[var(--color-red-2)]'`, 1, /--color-red-1/],
-    ['區域變數不判(Tag dismiss)', `const a = 'bg-transparent group-hover/action:bg-[var(--dismiss-hover)]'`, 0],
+    ['區域變數不判(Tag dismiss)', `const a = 'bg-transparent group-hover/action:bg-[var(--tag-dismiss-hover)]'`, 0],
     ['帶透明度修飾不判(圖片上的圓點)', `const a = 'bg-on-emphasis/60 hover:bg-on-emphasis/80'`, 0],
     ['--surface-strong 配自己的 -hover(person-display)', `const a = ['bg-surface-strong text-on-emphasis hover:bg-surface-strong-hover'].join(' ')`, 0],
     ['--scrollbar-thumb 配自己的 -hover(scroll-area)', `const a = cn('bg-[var(--scrollbar-thumb)] hover:bg-[var(--scrollbar-thumb-hover)]')`, 0],

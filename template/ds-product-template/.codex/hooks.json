@@ -1,5 +1,5 @@
 {
-  "description": "_generated: build-fork-governance.mjs; provider=codex; sourceDigest=a22cf76b2776fa4b8c71cc08f3b470b07997e0b4f31faf80ec7fd735eae7d8a4; exact npm corpus; native hooks are feedback only, provider-neutral check + protected CI are authoritative.",
+  "description": "_generated: build-fork-governance.mjs; provider=codex; sourceDigest=09a301896ba308f64de5840c5439a10c158ae4a5b53d0ab9b00f2d1a0531d821; exact npm corpus; native hooks are feedback only, provider-neutral check + protected CI are authoritative.",
   "hooks": {
     "SessionStart": [
       {

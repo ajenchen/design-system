@@ -8,6 +8,7 @@ import {
   buildStandardDimensionPayloads,
   buildStandardFiveStepReceipt,
   loadStandardCiEvidencePlan,
+  standardConsumerSelection,
   validateStandardFiveStepObservation,
   validateStandardFiveStepReceipt,
 } from './lib/standard-ci-evidence.mjs'
@@ -19,11 +20,17 @@ const hash = (value) => value.repeat(64)
 const integrity = (value) => `sha512-${Buffer.alloc(64, value).toString('base64')}`
 const clone = (value) => JSON.parse(JSON.stringify(value))
 
-function fixture() {
+const WM = 'ajenchen/work-management'
+
+// `requested` = 這次發版 user 要求升級的 on-request consumer(RELEASE_REQUESTED_CONSUMERS)。
+// 預設 [] = 現實的常態:WM 沒被要求,只有 template 交升級證據,WM 記成「本次未要求升級」。
+function fixture({ requested = [] } = {}) {
   const { plan, planSha256 } = loadStandardCiEvidencePlan({ repoRoot: ROOT })
   const inventory = JSON.parse(readFileSync(resolve(ROOT, 'infra/governance/inventory/managed-repos.json'), 'utf8'))
   const desired = JSON.parse(readFileSync(resolve(ROOT, 'infra/governance/desired/github.json'), 'utf8'))
   const workflow = JSON.parse(readFileSync(resolve(ROOT, plan.workflowPlan), 'utf8'))
+  const selection = standardConsumerSelection({ plan, workflow, inventory, desired, requested })
+  const selectedIds = new Set(selection.selected.map(({ repo }) => repo.id))
   const head = oid('1')
   const tree = oid('2')
   const commit = oid('3')
@@ -136,7 +143,7 @@ function fixture() {
         releaseTarget.requiredCheck.producerHead === 'pull-request-base' ? consumerBase : prHead,
       ),
     }
-  })
+  }).filter((item) => selectedIds.has(item.repositoryId))
   const observation = {
     schemaVersion: 1,
     kind: 'standard-five-step-live-ci-observation',
@@ -173,6 +180,7 @@ function fixture() {
     },
     npm,
     consumers,
+    consumerSelection: { requested: selection.requested, notRequested: selection.notRequested },
     dimensions: [
       { dim: 64, capability: plan.dimensions[0].capability, observationRunId: releaseRun.runId },
       { dim: 66, capability: plan.dimensions[1].capability, observationRunId: mirrorRun.runId },
@@ -182,13 +190,105 @@ function fixture() {
 }
 
 test('standard route accepts the exact five-step repository_dispatch + Verify consumer reality', () => {
-  const { observation, activeRun } = fixture()
+  const { observation, activeRun } = fixture({ requested: [WM] })
   assert.equal(validateStandardFiveStepObservation(observation, { repoRoot: ROOT, activeRun }), true)
   assert.equal(observation.authority.mirrorWorkflow.event, 'repository_dispatch')
   assert.deepEqual(observation.consumers.map((item) => item.requiredCheck.name), ['Verify consumer', 'Verify consumer'])
   assert.equal(Object.hasOwn(observation, 'candidateRelease'), false)
   assert.equal(Object.hasOwn(observation, 'externalActivation'), false)
   assert.equal(Object.hasOwn(observation, 'completionAttestor'), false)
+})
+
+// ── WM 只在 user 要求時升級(user 2026-11-05 原話:「以後WM的升級都不要自動做除非我有特別要求」)──
+// dim 64/66 的證據只要求「這次發版實際被選中的 consumer」;選法與 release:auto 第五步同一支實作。
+// 修前:validator 對 plan 裡每個 consumer(含 WM)都要升級證據 → 沒要求升 WM 的發版 dim 64/66 必紅。
+
+test('consumer 選擇判定表:template 恆選;WM 只在 RELEASE_REQUESTED_CONSUMERS 帶了全名時才選', () => {
+  const { plan } = loadStandardCiEvidencePlan({ repoRoot: ROOT })
+  const inventory = JSON.parse(readFileSync(resolve(ROOT, 'infra/governance/inventory/managed-repos.json'), 'utf8'))
+  const desired = JSON.parse(readFileSync(resolve(ROOT, 'infra/governance/desired/github.json'), 'utf8'))
+  const workflow = JSON.parse(readFileSync(resolve(ROOT, plan.workflowPlan), 'utf8'))
+  const pick = (requested) => {
+    const selection = standardConsumerSelection({ plan, workflow, inventory, desired, requested })
+    return { selected: selection.selected.map(({ repo }) => repo.id), notRequested: selection.notRequested.map((item) => `${item.repositoryId}:${item.upgrade}:${item.status}`) }
+  }
+  assert.deepEqual(pick([]), { selected: ['ds-product-template'], notRequested: ['work-management:on-request:not-requested-this-release'] })
+  assert.deepEqual(pick([WM]), { selected: ['ds-product-template', 'work-management'], notRequested: [] })
+  // 要求只認 repository 全名;簡稱 / 打錯 → 丟錯並點名,不得靜默記成「本次未要求」
+  assert.throws(() => pick(['work-management']), /unknown consumer repositories: work-management/)
+  assert.throws(() => standardConsumerSelection({ plan, workflow, inventory, desired, requested: [''] }), /requested consumer list is invalid/)
+  assert.throws(() => standardConsumerSelection({ plan, workflow, inventory, desired, requested: 'ajenchen/work-management' }), /requested consumer list is invalid/)
+})
+
+test('WM on-request 沒被要求:不要求 WM 升級證據,dim 64/66 仍綠,且 WM 記成本次未要求升級', () => {
+  const { observation, activeRun, plan } = fixture()
+  assert.deepEqual(observation.consumers.map((item) => item.repositoryId), ['ds-product-template'], '沒要求就不得有 WM 升級證據')
+  assert.deepEqual(observation.consumerSelection, {
+    requested: [],
+    notRequested: [{ repositoryId: 'work-management', repository: WM, upgrade: 'on-request', status: 'not-requested-this-release' }],
+  })
+  assert.equal(validateStandardFiveStepObservation(observation, { repoRoot: ROOT, activeRun }), true)
+  const payloads = buildStandardDimensionPayloads(observation, plan.dimensions)
+  for (const payload of payloads) assert.equal(validateStandardFiveStepReceipt(payload.receipt, { repoRoot: ROOT, activeRun }), true)
+})
+
+test('WM 被要求升級:缺 WM 升級證據就紅,且指名 work-management', () => {
+  const { observation, activeRun } = fixture({ requested: [WM] })
+  observation.consumers = observation.consumers.filter((item) => item.repositoryId !== 'work-management')
+  assert.throws(
+    () => validateStandardFiveStepObservation(observation, { repoRoot: ROOT, activeRun }),
+    /work-management is selected for this release \(on-request\) but has no consumer upgrade evidence/,
+  )
+})
+
+test('template(automatic)不論有沒有要求,缺證據都紅', () => {
+  for (const [requested, pattern] of [
+    // 沒要求 WM 時 template 是唯一的 consumer:拿掉它 = 零筆 consumer 證據,schema 先擋(不准空集合假綠)
+    [[], /data\/consumers must NOT have fewer than 1 items/],
+    [[WM], /ds-product-template is selected for this release \(automatic\) but has no consumer upgrade evidence/],
+  ]) {
+    const { observation, activeRun } = fixture({ requested })
+    observation.consumers = observation.consumers.filter((item) => item.repositoryId !== 'ds-product-template')
+    assert.throws(() => validateStandardFiveStepObservation(observation, { repoRoot: ROOT, activeRun }), pattern)
+  }
+})
+
+for (const [name, mutate, pattern] of [
+  ['沒被要求的 WM 從紀錄裡默默消失', (value) => { value.consumerSelection.notRequested = [] }, /not-requested consumer record differs/],
+  ['沒被要求的 WM 狀態被改寫', (value) => { value.consumerSelection.notRequested[0].status = 'upgraded' }, /schema validation failed/],
+  ['沒被要求的 WM 冒出升級證據', (value) => {
+    const requested = fixture({ requested: [WM] }).observation
+    value.consumers.push(requested.consumers.find((item) => item.repositoryId === 'work-management'))
+  }, /work-management was not requested for this release but carries consumer upgrade evidence/],
+  ['紀錄聲稱有要求 WM,卻沒有 WM 證據', (value) => { value.consumerSelection.requested = [WM] }, /not-requested consumer record differs/],
+  ['consumer 證據重複', (value) => { value.consumers.push(clone(value.consumers[0])) }, /consumer closure contains a duplicate repository/],
+]) {
+  test(`WM 未要求時 rejects:${name}`, () => {
+    const { observation, activeRun } = fixture()
+    mutate(observation)
+    assert.throws(() => validateStandardFiveStepObservation(observation, { repoRoot: ROOT, activeRun }), pattern)
+  })
+}
+
+test('WM 被要求時 rejects:WM 仍被記成本次未要求', () => {
+  const { observation, activeRun } = fixture({ requested: [WM] })
+  observation.consumerSelection.notRequested = [{ repositoryId: 'work-management', repository: WM, upgrade: 'on-request', status: 'not-requested-this-release' }]
+  assert.throws(() => validateStandardFiveStepObservation(observation, { repoRoot: ROOT, activeRun }), /not-requested consumer record differs/)
+})
+
+test('observer 與 validator 都消費同一支選法(不得各寫一份)', () => {
+  const observer = readFileSync(resolve(ROOT, 'scripts/lib/standard-ci-evidence-live-observer.mjs'), 'utf8')
+  const validator = readFileSync(resolve(ROOT, 'scripts/lib/standard-ci-evidence.mjs'), 'utf8')
+  assert.match(validator, /from '\.\/release-consumer-selection\.mjs'/)
+  assert.match(observer, /from '\.\/release-consumer-selection\.mjs'/)
+  assert.match(observer, /requestedConsumersFromEnv\(options\.env \?\? process\.env\)/, 'observer 必須用 release:auto 同一支解析讀 RELEASE_REQUESTED_CONSUMERS')
+  assert.match(observer, /standardConsumerSelection\(\{ plan, workflow, inventory, desired, requested: requestedConsumers \}\)/)
+  assert.match(observer, /of consumerSelection\.selected\)/, 'observer 只能對被選中的 consumer 做網路讀回')
+  assert.doesNotMatch(observer, /of plan\.consumers\)/, 'observer 不得直接對 plan 裡全部 consumer 做讀回')
+  assert.match(observer, /notRequested: consumerSelection\.notRequested/, '沒被選中的 consumer 必須寫進 observation')
+  for (const source of [observer, validator]) {
+    assert.doesNotMatch(source, /\.upgrade \?\? 'automatic'|RELEASE_REQUESTED_CONSUMERS \?\?|env\.RELEASE_REQUESTED_CONSUMERS/, '選法只能住在 release-consumer-selection.mjs')
+  }
 })
 
 test('dim 64 and dim 66 share one exact observation digest', () => {
@@ -210,7 +310,8 @@ for (const [name, mutate, pattern] of [
   ['consumer lock differs from npm', (value) => { value.consumers[1].packageLock.packages[0].resolved = 'https://registry.npmjs.org/wrong.tgz' }, /exact package lock differs/],
 ]) {
   test(`standard route rejects ${name}`, () => {
-    const { observation, activeRun } = fixture()
+    // WM 被要求的情境:兩個 consumer 的證據路徑都要被這張表碰到
+    const { observation, activeRun } = fixture({ requested: [WM] })
     mutate(observation)
     assert.throws(() => validateStandardFiveStepObservation(observation, { repoRoot: ROOT, activeRun }), pattern)
   })

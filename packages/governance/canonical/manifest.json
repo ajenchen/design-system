@@ -147,6 +147,12 @@
       "required": true
     },
     {
+      "id": "canonical-hook-benchmark-citation-helper",
+      "ownerRepo": "design-system",
+      "path": "packages/design-system/ds-canonical/hooks/lib/benchmark-citation.mjs",
+      "required": true
+    },
+    {
       "id": "canonical-hook-registration-output-contract-helper",
       "ownerRepo": "design-system",
       "path": "packages/design-system/ds-canonical/hooks/tests/registration-output-contracts.mjs",
@@ -1592,6 +1598,12 @@
       "id": "release-github-release-writer",
       "ownerRepo": "design-system",
       "path": "scripts/release-github-release.mjs",
+      "required": true
+    },
+    {
+      "id": "release-github-release-breaking-notes",
+      "ownerRepo": "design-system",
+      "path": "packages/design-system/tools/changes/ledger.mjs",
       "required": true
     },
     {

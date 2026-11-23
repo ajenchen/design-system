@@ -7,16 +7,17 @@
  *       字級集合讀成空的)selftest 必須自己回 false;在重建後的 Rating 原文裡把送出鈕改回「給分前停用」必須在那一行紅;
  *       真檔突變:skeleton.principles 拿掉 `@story-counter-example` → 那一行紅;同一段連標記搬進展示層 → 仍紅;
  *       description-list 展示的 h3 標題改回 div → (c) 在那一行紅(規格層真檔 time-picker.anatomy 照樣 0 筆);
- *       spec 出處行(typography.spec.md:43、sidebar.spec.md:264、story-rules.md「三層定位」:15-17 /「Technical probe visibility」等)被改掉、
+ *       spec 出處行(typography.spec.md:49、sidebar.spec.md:260、story-rules.md「三層定位」:15-17 /「Technical probe visibility」等)被改掉、
  *       ci.yml 出現 --write-baseline、CI 不再呼叫 test:story-layer-drift → 紅;
  *       「基準不得比 base 寬」以 HEAD 那棵樹的真資料走:多記一筆 / 替新檔預留 → 紅,反例標記多 → 只列 review;--base 打錯 → 儀器失效;
  *       基準裡出現「還沒輪到的九個資料夾」以外的漂移數字(反例標記 / 逃生口放行除外)→ 紅;任一個 story 標記引用的 `*.spec.md:N` 指到不存在的檔或
- *       超出檔尾、或 2026-10-01 掃除標記最常引用的那幾行(layoutSpace.spec.md :113 :140 :165–:168 :176、tag.spec.md:230、
+ *       超出檔尾、或 2026-10-01 掃除標記最常引用的那幾行(layoutSpace.spec.md :117 :140 :165–:168 :176、tag.spec.md:234、
  *       file-item.spec.md:264、category-templates.md:168)內容被改掉 → 紅。
  *       CLI 接線端到端(2026-10-06 審查:13 個突變只碰純函式,把「有新增就紅」改成 if (false) 沒有任何檢查發現):在臨時 git repo
  *       (閘 + 分類器 + 字級 token + 出處原文 + 三層各一支夾具 story,基準由閘自己寫、提交成 base)裡跑 runCli 與真的 `node 閘`:
  *       乾淨 → 0;三層各注入一筆 → 1(展示層那筆同時驗 gap-x / inline style margin / cn() 參數都被點名);數字一致的手改基準
  *       (+1、合法指紋、totals 跟著加)對 base → 1;格式不合的基準 → 1;CI 沒有 base → 2;掃到 0 個 story → 2;
+ *       本機沒有 origin/main → 2(只有本地 main 分支也是 2,不退回 HEAD 跟自己比)、補上 origin/main → 0;
  *       @submit-intent 出處原文被拿掉 → 2;CI 裡數字變少卻沒收緊基準 → 1(本機 → 0);新增一個逃生口放行 → 1、--write-baseline 後 → 0。
  *   綠: selftest 全過;全樹對已提交的基準沒有新增、基準格式合法;全樹一次判與逐檔判的結果逐筆相同;
  *        送出鈕用 useFormValidation 自己的 submitDisabled 時 0 筆。判定函式直接 import 呼叫;子行程只有被測閘自己叫的分類器、
@@ -200,8 +201,10 @@ check('突變:真檔 description-list 展示的 h3 標題改回 div → (c) 在�
 })
 
 const ratingNow = readFileSync(join(REPO, RATING_STORY), 'utf8')
-const SUBMIT = '<Button type="submit" variant="primary">送出評分</Button>'
-check('突變:重建後的 Rating 把送出鈕改回「給分前停用」→ 在那一行紅;改成 hook 自己的 submitDisabled → 不紅', () => {
+// 2026-11-17 起(規格第三列「需要填的欄位只有一個」)真檔的送出鈕接 hook 的 submitDisabled(soleRequiredField 算沒給分);
+// 突變仍是「手寫 rating === 0」—— 同樣是給分前停用,但不是 hook 算的 = 第二份規則,照紅
+const SUBMIT = '<Button type="submit" variant="primary" disabled={form.submitDisabled}>送出評分</Button>'
+check('突變:重建後的 Rating 把送出鈕改回手寫的「給分前停用」→ 在那一行紅;hook 自己的 submitDisabled(現行真檔)→ 不紅', () => {
   const at = ratingNow.split('\n').findIndex((l) => l.includes(SUBMIT)) + 1
   assert.ok(at > 0, `重建後的 Rating 找不到送出鈕 ${SUBMIT}(被改寫了?請更新本突變的錨點)`)
   const reverted = ratingNow.replace(SUBMIT, '<Button type="submit" variant="primary" disabled={form.values.rating === 0}>送出評分</Button>')
@@ -218,7 +221,7 @@ check('規則出處仍在(spec 行被改掉,閘的說明就會指錯地方)', ()
     ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 306, '元素間 gap 硬寫'],
     ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 159, '刻意固定'],
     ['packages/design-system/src/components/Field/form-validation.spec.md', 15, '不看填了沒、填對沒,一律 enabled'],
-    ['packages/design-system/src/components/Field/form-validation.spec.md', 146, 'disabled-until-dirty'],
+    ['packages/design-system/src/components/Field/form-validation.spec.md', 140, 'disabled-until-dirty'],
     // (c) 不收 span 的出處:chrome 文字(workspace brand / user name)明文用 span + text-body-lg font-medium
     ['packages/design-system/src/components/Sidebar/sidebar.spec.md', 264, 'text-body-lg font-medium'],
     // test-only 不在範圍的出處
@@ -237,7 +240,7 @@ check('規則出處仍在(spec 行被改掉,閘的說明就會指錯地方)', ()
     ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 167, '為視覺平衡 / 對稱 刻意調的值'],
     ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 168, '元件自身刻意固定'],
     ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 176, '判準一句話'],
-    ['packages/design-system/src/components/Tag/tag.spec.md', 230, 'Tag 與 Tag 之間：`gap-1`'],
+    ['packages/design-system/src/components/Tag/tag.spec.md', 234, 'Tag 與 Tag 之間：`gap-1`'],
     ['packages/design-system/src/components/FileItem/file-item.spec.md', 264, 'compact form `gap-1`'],
   ]
   for (const [rel, n, needle] of cites) assert.ok(line(rel, n).includes(needle), `${rel}:${n} 應含「${needle}」,實得「${line(rel, n).slice(0, 80)}」`)
@@ -458,6 +461,18 @@ try {
     const dirty = run()
     assert.ok(dirty.status === 1 && dirty.stderr.includes('gap-10'), `${dirty.stdout}\n${dirty.stderr}`)
     fxReset(fixture)
+  })
+
+  // 放最後:這一題會在臨時 repo 留下 main 分支與 origin/main(之後只剩 finally 整個刪掉)
+  check('CLI 接線:本機沒有 origin/main → 2(只有本地 main 分支也是 2,不退回 HEAD 跟自己比);補上 origin/main → 0', () => {
+    const none = fxRun(fixture, [])
+    assert.ok(none.code === 2 && none.text.includes('INSTRUMENT-FAIL') && none.text.includes('origin/main'), `本機沒有 origin/main 應儀器失效:\n${none.text}`)
+    fxGit(fixture, 'branch', 'main')
+    const localMain = fxRun(fixture, [])
+    assert.ok(localMain.code === 2 && localMain.text.includes('INSTRUMENT-FAIL'), `只有本地 main 分支也不算 base:\n${localMain.text}`)
+    fxGit(fixture, 'update-ref', 'refs/remotes/origin/main', 'HEAD')
+    const withOrigin = fxRun(fixture, [])
+    assert.ok(withOrigin.code === 0 && withOrigin.text.includes('base origin/main'), `有 origin/main → 照常比、綠:\n${withOrigin.text}`)
   })
 } finally {
   rmSync(fixture, { recursive: true, force: true })

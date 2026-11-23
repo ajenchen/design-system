@@ -18,10 +18,10 @@ grep -nE '\b(bg-popover|text-popover-foreground|text-muted-foreground|bg-accent|
 ### Check 1.2: Tailwind default shadow
 
 ```
-grep -nE '\bshadow-(sm|md|lg|xl|2xl|inner)\b' {target}
+grep -nE '\bshadow-(2xs|xs|sm|md|lg|xl|2xl|inner)\b' {target}
 ```
 
-**Severity**: P0。**Fix**: shadow-sm → shadow-[var(--elevation-100)] / shadow-md → shadow-[var(--elevation-200)] / shadow-lg → shadow-[var(--elevation-200)](elevation-300 不存在,最高 tier 200)。
+**Severity**: P0。**Fix**: 不照 Tailwind 尺寸換名字,依用途選(`tokens/elevation/elevation.spec.md`「層級」):頁面內容層 → `shadow-[var(--elevation-100)]`;浮層 → `shadow-[var(--elevation-200)]`(配 `bg-surface-raised`)。只有這兩層。
 
 ### Check 1.3: Tailwind v4 `[--foo]` shorthand
 

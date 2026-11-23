@@ -211,7 +211,7 @@ const Checkbox = React.forwardRef<
     // 2026-06-12 修:原本只看 resolvedDisabled(prop/fieldCtx),mode='disabled' 無人消費
     // → disabled boolean cell 渲出可 focus 的正常外觀 checkbox(違 field-controls.spec L286)
     const effectiveDisabled = resolvedDisabled || resolvedMode === 'disabled'
-    // readonly 灰框 size:走 SSOT resolver(prop > ctx > 'md',field-context.ts:150-161)
+    // readonly 灰框 size:走 SSOT resolver(prop > ctx > 'md',field-context.ts:154-165)
     const resolvedBoxSize = useResolvedFieldSize(size ?? undefined, 'md') as 'sm' | 'md' | 'lg'
 
     // 2026-07-04 修:view / readonly-in-Field 分支的裸 span/div 原丟棄剩餘 props
@@ -301,6 +301,8 @@ const Checkbox = React.forwardRef<
           aria-labelledby={fieldCtx?.labelId}
           aria-invalid={fieldCtx?.invalid || undefined}
           data-readonly="true"
+          // Field 家族控件宿主標記(同 Input / Select 等 wrapper):唯讀焦點只認鍵盤的判斷靠它認出「這是唯讀欄位」(lib/pointer-focus-guard.ts isInReadonlyField)
+          data-field-mode="readonly"
           tabIndex={0}
           className={cn(
             fieldWrapperStyles({ size: boxSize, mode: 'readonly', variant: 'default' }),

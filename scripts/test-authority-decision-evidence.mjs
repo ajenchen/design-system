@@ -89,6 +89,9 @@ const canonicalDelegatedScopes = [
   'runtime-certification',
   'testing-and-harness',
 ]
+// 釘選(@authority-scope-pin):「哪些事只有人能做」的集合只住在 approval-evidence.mjs 的 humanOnlyAuthorityScopes()
+//(AGENTS.md#canonical-decision-authority 的機器面)。這份逐字抄本只用來釘住它 —— 集合一改,這裡紅,逼改的人看見;
+// 下面其他斷言一律拿 SSOT 讀到的那一份比,不拿抄本(2026-11-22 WP-AGENTS / ASKFIX-REPO-DRIFT)。
 const canonicalHumanOnlyScopes = [
   'account-holder-platform-action',
   'credential-reference-required',
@@ -96,6 +99,8 @@ const canonicalHumanOnlyScopes = [
   'plan-external-spend',
   'product-ui-ux-decision',
 ]
+assert.deepEqual(classifier.humanOnlyAuthorityScopes(), canonicalHumanOnlyScopes, '釘選:approval-evidence.mjs humanOnlyAuthorityScopes() 變了')
+const ssotHumanOnlyScopes = classifier.humanOnlyAuthorityScopes()
 
 function input(overrides = {}) {
   return {
@@ -125,13 +130,13 @@ function errorCode(code) {
 
 const deterministic = receipt()
 assert.deepEqual(receipt(), deterministic, 'identical scope must produce byte-stable receipt data')
-assert.equal(validateAuthorityDecisionReceiptShape(deterministic), true)
+assert.equal(validateAuthorityDecisionReceiptShape(deterministic, classifier), true)
 assert.equal(verifyAuthorityDecisionReceipt({ receipt: deterministic, ...input() }), true)
 assert.equal(deterministic.schemaVersion, 2)
 assert.equal(deterministic.classification.decision, 'approved')
 assert.equal(deterministic.classification.decisionDomain, 'engineering-remediation')
 assert.deepEqual(deterministic.classification.allowedScopes, canonicalDelegatedScopes)
-assert.deepEqual(deterministic.classification.humanOnlyScopes, canonicalHumanOnlyScopes)
+assert.deepEqual(deterministic.classification.humanOnlyScopes, ssotHumanOnlyScopes)
 assert.deepEqual(deterministic.classification.deniedOrAmbiguousScopes, [])
 assert.equal(deterministic.trust.contentAddressed, true)
 assert.equal(deterministic.trust.runtimeCertification, 'not-certified')
@@ -183,7 +188,7 @@ const mixedAuthorityBoundary = receipt({
 assert.equal(mixedAuthorityBoundary.classification.decision, 'approved')
 assert.equal(mixedAuthorityBoundary.classification.decisionDomain, 'engineering-remediation')
 assert.deepEqual(mixedAuthorityBoundary.classification.allowedScopes, canonicalDelegatedScopes)
-assert.deepEqual(mixedAuthorityBoundary.classification.humanOnlyScopes, canonicalHumanOnlyScopes)
+assert.deepEqual(mixedAuthorityBoundary.classification.humanOnlyScopes, ssotHumanOnlyScopes)
 assert.deepEqual(mixedAuthorityBoundary.classification.deniedOrAmbiguousScopes, [])
 
 const mixedAuthorityWithExplicitUiReservation = receipt({
@@ -210,7 +215,7 @@ assert.deepEqual(
 )
 assert.deepEqual(
   mixedAuthorityWithExplicitUiReservation.classification.humanOnlyScopes,
-  canonicalHumanOnlyScopes,
+  ssotHumanOnlyScopes,
 )
 assert.deepEqual(
   mixedAuthorityWithExplicitUiReservation.classification.deniedOrAmbiguousScopes,
@@ -269,7 +274,7 @@ assert.ok(
 )
 assert.deepEqual(
   unresolvedUiAcrossClauses.classification.humanOnlyScopes,
-  canonicalHumanOnlyScopes,
+  ssotHumanOnlyScopes,
 )
 
 const exactStandingDelegationInput = {
@@ -322,7 +327,7 @@ assert.deepEqual(
 )
 assert.deepEqual(
   scopedAuthorityEngineering.classification.humanOnlyScopes,
-  canonicalHumanOnlyScopes,
+  ssotHumanOnlyScopes,
 )
 assert.deepEqual(scopedAuthorityEngineering.classification.deniedOrAmbiguousScopes, [])
 
@@ -333,7 +338,7 @@ const scopedAuthorityUi = receipt({
 assert.equal(scopedAuthorityUi.classification.decision, 'blocked')
 assert.equal(scopedAuthorityUi.classification.decisionDomain, 'product-ui-ux')
 assert.deepEqual(scopedAuthorityUi.classification.allowedScopes, canonicalDelegatedScopes)
-assert.deepEqual(scopedAuthorityUi.classification.humanOnlyScopes, canonicalHumanOnlyScopes)
+assert.deepEqual(scopedAuthorityUi.classification.humanOnlyScopes, ssotHumanOnlyScopes)
 assert.deepEqual(
   scopedAuthorityUi.classification.deniedOrAmbiguousScopes,
   ['product-ui-ux-change'],
@@ -370,7 +375,7 @@ assert.ok(
 )
 assert.deepEqual(
   mechanicalApprovedSsotProjection.classification.humanOnlyScopes,
-  canonicalHumanOnlyScopes,
+  ssotHumanOnlyScopes,
 )
 assert.deepEqual(
   mechanicalApprovedSsotProjection.classification.deniedOrAmbiguousScopes,
@@ -476,7 +481,7 @@ assert.deepEqual(
   partialProtected.classification.allowedScopes,
   ['testing-and-harness'],
 )
-assert.deepEqual(partialProtected.classification.humanOnlyScopes, canonicalHumanOnlyScopes)
+assert.deepEqual(partialProtected.classification.humanOnlyScopes, ssotHumanOnlyScopes)
 assert.ok(
   partialProtected.classification.deniedOrAmbiguousScopes.includes(
     'protected-git-delivery',
@@ -493,7 +498,7 @@ const partialTesting = receipt({
 })
 assert.equal(partialTesting.classification.decision, 'approved')
 assert.deepEqual(partialTesting.classification.allowedScopes, ['testing-and-harness'])
-assert.deepEqual(partialTesting.classification.humanOnlyScopes, canonicalHumanOnlyScopes)
+assert.deepEqual(partialTesting.classification.humanOnlyScopes, ssotHumanOnlyScopes)
 assert.ok(
   partialTesting.classification.deniedOrAmbiguousScopes.includes(
     'protected-git-delivery',
@@ -771,32 +776,59 @@ assert.throws(() => receipt({ providerId: 'unknown' }), errorCode('PROVIDER_UNKN
 
 const digestTamper = structuredClone(deterministic)
 digestTamper.classification.reasonCode = 'TAMPERED'
-assert.throws(() => validateAuthorityDecisionReceiptShape(digestTamper), errorCode('RECEIPT_DIGEST_MISMATCH'))
+assert.throws(() => validateAuthorityDecisionReceiptShape(digestTamper, classifier), errorCode('RECEIPT_DIGEST_MISMATCH'))
 const shapeTamper = { ...deterministic, undeclared: true }
-assert.throws(() => validateAuthorityDecisionReceiptShape(shapeTamper), errorCode('RECEIPT_SHAPE_INVALID'))
+assert.throws(() => validateAuthorityDecisionReceiptShape(shapeTamper, classifier), errorCode('RECEIPT_SHAPE_INVALID'))
 const openClassificationTamper = structuredClone(deterministic)
 openClassificationTamper.classification.undeclared = true
 assert.throws(
-  () => validateAuthorityDecisionReceiptShape(openClassificationTamper),
+  () => validateAuthorityDecisionReceiptShape(openClassificationTamper, classifier),
   errorCode('CLASSIFIER_INVALID'),
 )
 const unsortedScopesTamper = structuredClone(deterministic)
 unsortedScopesTamper.classification.allowedScopes.reverse()
 assert.throws(
-  () => validateAuthorityDecisionReceiptShape(unsortedScopesTamper),
+  () => validateAuthorityDecisionReceiptShape(unsortedScopesTamper, classifier),
   errorCode('CLASSIFIER_INVALID'),
 )
 const overlappingScopesTamper = structuredClone(deterministic)
 overlappingScopesTamper.classification.allowedScopes.push('product-ui-ux-decision')
 overlappingScopesTamper.classification.allowedScopes.sort()
 assert.throws(
-  () => validateAuthorityDecisionReceiptShape(overlappingScopesTamper),
+  () => validateAuthorityDecisionReceiptShape(overlappingScopesTamper, classifier),
+  errorCode('CLASSIFIER_INVALID'),
+)
+// 收據裡的 scope 集合從分類器讀(2026-11-22 WP-AGENTS / ASKFIX-REPO-DRIFT):兩面對照。
+// 綠:同一張收據配同一個分類器 → 過(上面 deterministic 那一行)。
+// 紅:不給分類器(不得因為讀不到集合就放行)、分類器沒有 classificationScopeIds、
+//     分類器的集合少了收據裡用到的 scope(證明集合真的是從分類器讀,不是本檔另有一份)、收據塞進集合外的 scope。
+assert.throws(() => validateAuthorityDecisionReceiptShape(deterministic), errorCode('CLASSIFIER_INVALID'))
+assert.throws(
+  () => validateAuthorityDecisionReceiptShape(deterministic, { ...classifier, classificationScopeIds: undefined }),
+  errorCode('CLASSIFIER_INVALID'),
+)
+const usedAllowedScope = deterministic.classification.allowedScopes[0]
+assert.throws(
+  () => validateAuthorityDecisionReceiptShape(deterministic, {
+    ...classifier,
+    classificationScopeIds: () => classifier.classificationScopeIds().filter((scope) => scope !== usedAllowedScope),
+  }),
+  errorCode('CLASSIFIER_INVALID'),
+)
+assert.throws(
+  () => receipt({ classifier: { ...classifier, classificationScopeIds: () => ssotHumanOnlyScopes } }),
+  errorCode('CLASSIFIER_INVALID'),
+)
+const unknownScopeTamper = structuredClone(deterministic)
+unknownScopeTamper.classification.allowedScopes = [...unknownScopeTamper.classification.allowedScopes, 'zz-not-a-declared-scope'].sort()
+assert.throws(
+  () => validateAuthorityDecisionReceiptShape(unknownScopeTamper, classifier),
   errorCode('CLASSIFIER_INVALID'),
 )
 const staleV1Receipt = structuredClone(deterministic)
 staleV1Receipt.schemaVersion = 1
 assert.throws(
-  () => validateAuthorityDecisionReceiptShape(staleV1Receipt),
+  () => validateAuthorityDecisionReceiptShape(staleV1Receipt, classifier),
   errorCode('RECEIPT_SHAPE_INVALID'),
 )
 

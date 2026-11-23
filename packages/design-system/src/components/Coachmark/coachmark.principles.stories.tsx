@@ -189,14 +189,6 @@ export const UsageGuidance: Story = {
         </TutorialRule>
 
         <TutorialRule
-          title="❌ Description 塞超過 3 行"
-          note="Coachmark 是快速提示不是完整教學。長文案使用者不讀,反而浪費了「主動彈出」的機會。長內容:拆多步 / 改 Dialog / 連結到文件"
-        >
-          <ExampleCaption warn>❌ 5+ 行 description — 使用者掃一眼就點略過</ExampleCaption>
-          <ExampleCaption>✅ 2-3 行精準說明,需要深入 → 「了解更多」連結到 help doc</ExampleCaption>
-        </TutorialRule>
-
-        <TutorialRule
           title="❌ 在 Coachmark 內放 nested Popover / Dialog"
           note="浮層嵌套浮層 = 層級混亂 + 焦點管理崩壞 + Esc 不知道關哪個。複雜互動結束 tour 後再開啟;tour 的角色是「指向功能」不是「讓使用者在 tour 內完成任務」"
         >
@@ -255,7 +247,7 @@ export const UsageGuidance: Story = {
               {/* secondary + danger:點下去還有一層確認(button.spec.md「danger prop — 語意意圖」);確認框裡的「永久刪除」才是 primary + danger */}
               <Button variant="secondary" danger startIcon={Trash2}>永久刪除專案</Button>
             </DialogTrigger>
-            <DialogContent height="hug" maxWidth="440px">
+            <DialogContent height="hug" width="sm">
               <DialogHeader><DialogTitle>是否永久刪除專案</DialogTitle></DialogHeader>
               <DialogBody><p className="text-body">此動作無法復原,所有相關任務、評論、附件都會一併刪除。</p></DialogBody>
               <DialogFooter>
@@ -360,8 +352,8 @@ export const MediaContentRule: Story = {
       </TutorialRule>
 
       <TutorialRule
-        title="Description 不超過 3 行"
-        note="Coachmark 是快速說明不是完整教學。超過 3 行使用者沒耐心讀,體驗反而變差。需要詳細說明:(a) 連結到 help doc,(b) 改用 Dialog + scrollable body,(c) 拆成多步 tour"
+        title="高度隨內容,超過可用高度時內容區捲動"
+        note="說明寫幾行由使用端決定,卡片高度跟著內容長。萬一內容超過畫面可用高度(視窗太矮、觸發點靠近邊緣),標題列與頁腳固定看得到,中間的媒體 + 說明區可以捲動,不會溢出畫面 —— 跟 Popover、下拉選單同一套(coachmark.spec.md「高度與捲動」;user 2026-11-22 拍板)"
       >
         <SingleCoachmarkExample
           image={<MediaGradient from="var(--color-indigo-6)" to="var(--color-purple-6)" icon={Download} label="匯出" />}
@@ -369,7 +361,7 @@ export const MediaContentRule: Story = {
           description="把目前篩選後的結果匯出成 Excel,欄位順序與排序都會保留。"
           anchor={<Button variant="tertiary" size="sm" startIcon={Download}>匯出報表</Button>}
         />
-        <ExampleCaption>↑ 點按鈕看卡片:2 行精準說明,不超過 3 行</ExampleCaption>
+        <ExampleCaption>↑ 點按鈕看卡片:內容放得下,高度貼內容、沒有捲動;超過可用高度時怎麼捲,見上方說明與 coachmark.spec.md「高度與捲動」</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule

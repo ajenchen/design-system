@@ -73,6 +73,12 @@ const PROVIDER_RUNTIME_PROCESS_TREE_PARENT = resolve(
 )
 const PROFILE_PATH = runtimeConformancePaths.defaultProfilePath
 const CERTIFICATIONS_PATH = resolve(GOVERNANCE_ROOT, 'providers/certifications.json')
+// Mock CLIs report the version the canonical toolchain locks; a literal copy of it turned the
+// version-probe tests red on every security upgrade even though the runner was correct.
+const LOCKED_TOOL_VERSIONS = Object.fromEntries(
+  JSON.parse(readFileSync(resolve(GOVERNANCE_ROOT, 'providers/provider-cli-toolchain.json'), 'utf8'))
+    .tools.map(tool => [tool.providerId, tool.version]),
+)
 const IDENTITY = {
   gitHead: '1'.repeat(40),
   gitTree: '2'.repeat(40),
@@ -143,7 +149,7 @@ function successMockRunner(overrides = {}) {
     if (metadata.driver === 'version') {
       assert.equal(command, process.execPath)
       assert.equal(args[0], resolve(REPO_ROOT, `node_modules/.bin/${metadata.provider === 'claude' ? 'claude' : 'codex'}`))
-      const version = metadata.provider === 'claude' ? '2.1.215' : '0.144.6'
+      const version = metadata.provider === 'claude' ? LOCKED_TOOL_VERSIONS['claude-code'] : LOCKED_TOOL_VERSIONS.codex
       return {
         exitCode: 0,
         stdout: `${metadata.provider}-cli ${version}\n`,
@@ -214,6 +220,7 @@ function successMockRunner(overrides = {}) {
             release: 'AUTO',
             approvedVisualBaseline: 'AUTO',
             unresolvedUiUxSsot: 'ASK',
+            // human-only 路由列 = AGENTS.md#canonical-decision-authority「Human-only boundaries」的對照
             login: 'HUMAN_ONLY',
             mfa: 'HUMAN_ONLY',
             oauth: 'HUMAN_ONLY',
@@ -379,8 +386,13 @@ function successMockRunner(overrides = {}) {
         return { exitCode: 0, stdout, stderr: '', timedOut: false, outputExceeded: false, ...overrides[metadata.driver] }
       }
       if (metadata.driver === 'provider-hook-runner-stop') {
-        assert.equal(metadata.hook, 'check_orphan_ds_css.sh')
-        const reason = 'ORPHAN-DS-CSS BLOCKER: runtime-conformance-orphan.css'
+        assert.equal(metadata.hook, 'stop_self_audit.sh')
+        // The probe's block must come from the payload alone (no fixture file, transcript, or state).
+        assert.equal(metadata.provider === 'claude' ? payload.hook_event_name : payload.event_name, 'Stop')
+        assert.equal(typeof payload.last_assistant_message, 'string')
+        assert.match(payload.last_assistant_message, /\d\d-\d\d 的原話：「[^」]+」,所以這次改動要撤回/u)
+        assert.doesNotMatch(payload.last_assistant_message, /原題/u, 'a 原題 line is the escape that would turn the block off')
+        const reason = 'QUOTE-SCOPE BLOCKER: runtime conformance probe'
         const stdout = JSON.stringify(metadata.provider === 'claude' ? { decision: 'block', reason } : { continue: false, stopReason: reason })
         return { exitCode: 0, stdout, stderr: '', timedOut: false, outputExceeded: false, ...overrides[metadata.driver] }
       }
@@ -528,6 +540,7 @@ test('mocked Claude and Codex CLIs produce deterministic semantic evidence witho
       'authority-routing-release-auto': true,
       'authority-routing-approved-visual-baseline-auto': true,
       'authority-routing-unresolved-ui-ux-ssot-ask': true,
+      // human-only 路由列 = AGENTS.md#canonical-decision-authority「Human-only boundaries」的對照
       'authority-routing-login-human-only': true,
       'authority-routing-mfa-human-only': true,
       'authority-routing-oauth-human-only': true,
@@ -1566,6 +1579,7 @@ test('Claude decision-authority routing is required and fails closed on route or
             release: 'AUTO',
             approvedVisualBaseline: 'ASK',
             unresolvedUiUxSsot: 'AUTO',
+            // human-only 路由列 = AGENTS.md#canonical-decision-authority「Human-only boundaries」的對照(故意填錯的那一份)
             login: 'ASK',
             mfa: 'HUMAN_ONLY',
             oauth: 'HUMAN_ONLY',
@@ -1589,6 +1603,7 @@ test('Claude decision-authority routing is required and fails closed on route or
   assert.equal(assertions.get('authority-routing-engineering-auto'), false)
   assert.equal(assertions.get('authority-routing-approved-visual-baseline-auto'), false)
   assert.equal(assertions.get('authority-routing-unresolved-ui-ux-ssot-ask'), false)
+  // human-only 路由列 = AGENTS.md#canonical-decision-authority「Human-only boundaries」的對照
   assert.equal(assertions.get('authority-routing-login-human-only'), false)
   assert.equal(assertions.get('authority-routing-owner-action-human-only'), false)
   assert.equal(assertions.get('authority-routing-billing-human-only'), false)
@@ -2066,7 +2081,7 @@ test('one canonical runtime harness identity covers every generation and certifi
     'packages/design-system/ds-canonical/hooks/check_canonical_propagation.sh',
     'packages/design-system/ds-canonical/hooks/_log-fire.sh',
     'packages/design-system/ds-canonical/hooks/session_start_governance_check.sh',
-    'packages/design-system/ds-canonical/hooks/check_orphan_ds_css.sh',
+    'packages/design-system/ds-canonical/hooks/stop_self_audit.sh',
     'packages/governance/package.json',
     'packages/governance/src/common.mjs',
     'packages/governance/src/contract.mjs',

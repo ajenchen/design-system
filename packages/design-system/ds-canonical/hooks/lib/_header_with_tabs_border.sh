@@ -1,20 +1,23 @@
 #!/bin/bash
-# Header canonical W1 Border ownership enforcement(per header-canonical.spec.md W1):
-#   Header 含 Tabs(`<Tabs>` / `<TabsList>` child)→ 必標 `withTabs` prop 讓 border auto-suppress。
+# Header canonical W1 Border ownership enforcement(per header-canonical.spec.md「tabsSlot 連動」W1):
+#   Header 帶 Tabs 只有一條路 = 該 header 自己的 `tabsSlot` prop(給了就撤自身 border-b,線由 TabsList 畫)。
+#   `<Tabs>` / `<TabsList>` / `<TabsTrigger>` 出現在 header 的 tabsSlot 以外(JSX children、`children=` 或其他屬性)
+#   → header 照樣自畫 border-b + TabsList 自己的 border-b = 雙線 → 擋,修法「改用 tabsSlot」。
+#   (2026-11-16 起;之前是「含 Tabs 必標 withTabs 布林」,withTabs 已移除 —— props-naming.md「相容政策」。)
 #
 # PreToolUse(Edit / Write/MultiEdit)hook 使用 runner 驗證的完整 after-image，
-# 以 TypeScript AST 做 per-instance + nested Header boundary 判斷。含 Tabs descendant
-# 的任何 Header / XxxHeader / UI.Header opening 必須有唯一且明確為 true 的 withTabs。
+# 以 TypeScript AST 做 per-instance + nested Header boundary 判斷:每個 Header / XxxHeader / UI.Header
+# 各自判;只認**那個 header 自己** opening 上的 tabsSlot 屬性,別的元素上叫 tabsSlot 的屬性、變數名、註解都不算。
 #
 # Allow escape:檔頭 leading line comment
-# `// @header-withtabs-allow: <nonempty rationale>` 整檔豁免。
+# `// @header-tabs-slot-allow: <nonempty rationale>` 整檔豁免。
 
 source "$(dirname "$0")/../_log-fire.sh" 2>/dev/null && log_hook_fire
 
 set -uo pipefail
 
 fail_integrity() {
-  printf '🚨 GOVERNANCE_INTEGRITY: HEADER + TABS WITHTABS ENFORCEMENT FAILURE: %s\n' "$1" >&2
+  printf '🚨 GOVERNANCE_INTEGRITY: HEADER + TABS TABSSLOT ENFORCEMENT FAILURE: %s\n' "$1" >&2
   exit 70
 }
 
@@ -70,9 +73,9 @@ fi
 [ "$STATE_KIND" = 'deleted' ] && exit 0
 FULL_CONTENT=$(printf '%s' "$INPUT" | jq -r '.tool_input.governance_write_state.content')
 
-# TypeScript AST per-instance enforcement：只有含 Tabs descendant 的 Header opening
-# 自身具 bare `withTabs` 或 `withTabs={true}` 才合規。comments、變數名稱、
-# `withTabs={false}` 與另一個合規 instance 都不可當 decoy。
+# TypeScript AST per-instance enforcement：每個含 Tabs descendant 的 Header,Tabs 只准出現在
+# 它自己 opening 的 `tabsSlot={…}` 裡。comments、變數名稱、別的元素上的 tabsSlot 屬性、
+# 已移除的 withTabs 布林與另一個合規 instance 都不可當 decoy。
 NODE_PROJECT_ROOT="${GOVERNANCE_PROJECT_DIR:-}"
 if [ -z "$NODE_PROJECT_ROOT" ]; then
   NODE_PROJECT_ROOT=$(git -C "$(dirname "$0")" rev-parse --show-toplevel 2>/dev/null) \
@@ -94,13 +97,13 @@ case "$APPLICABLE_HEADERS|$VIOLATING_HEADERS" in
 esac
 
 if [ "$VIOLATING_HEADERS" -gt 0 ]; then
-  printf '🚨 HEADER + TABS WITHTABS BLOCKER(header-canonical.spec.md W1):\n' >&2
+  printf '🚨 HEADER + TABS TABSSLOT BLOCKER(header-canonical.spec.md「tabsSlot 連動」W1):\n' >&2
   printf '   File: %s\n' "$FILE_PATH" >&2
-  printf '   %s 個含 Tabs 的 header instance 中有 %s 個未宣告 true withTabs prop。\n' "$APPLICABLE_HEADERS" "$VIOLATING_HEADERS" >&2
-  printf '   Header `border-b` + TabsList `border-b border-border` 會雙線。\n' >&2
-  printf '\n  SSOT: patterns/header-canonical/header-canonical.spec.md W1\n' >&2
-  printf '  修方向: <ChromeHeader withTabs> 或 <SurfaceHeader withTabs>\n' >&2
-  printf '  Escape: 檔頭加 // @header-withtabs-allow: <rationale>\n' >&2
+  printf '   %s 個含 Tabs 的 header instance 中有 %s 個把 Tabs 放在 tabsSlot 以外(children 等)。\n' "$APPLICABLE_HEADERS" "$VIOLATING_HEADERS" >&2
+  printf '   Header 自己的 `border-b` + TabsList 的 `border-b border-divider` 會雙線。\n' >&2
+  printf '\n  SSOT: patterns/header-canonical/header-canonical.spec.md「tabsSlot 連動」W1\n' >&2
+  printf '  修方向: 改用 tabsSlot —— <ChromeHeader tabsSlot={<TabsList>…</TabsList>}> 或 <DialogHeader tabsSlot={…}>(TabsContent 放 header 外)\n' >&2
+  printf '  Escape: 檔頭加 // @header-tabs-slot-allow: <rationale>\n' >&2
   exit 2
 fi
 

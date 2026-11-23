@@ -17,8 +17,8 @@
 - `governance/lock.json`, managed provider adapters, and managed skills are generated upstream.
   Product-specific, provider-neutral policy belongs in `governance/overlay.md` (read it when present);
   it may add stricter product rules but never replaces or weakens upstream controls.
-- Never install a mutable tag or semver range for internal packages. Upgrades are reviewed pull
-  requests pinning an exact version with the regenerated lock/adapters.
+- Never install a mutable tag or semver range for internal packages. Upgrades are reviewed exact-version
+  PRs with the regenerated lock/adapters (steps: DS package README).
 <!-- canonical-decision-authority:inject -->
 
 ## Six working principles

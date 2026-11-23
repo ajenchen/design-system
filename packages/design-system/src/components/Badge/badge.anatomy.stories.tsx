@@ -8,7 +8,7 @@ import { useState } from 'react'
 import { Badge } from './badge'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { BpZone, PropRow, Swatch, TkVal } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
-import { ExampleSection, SectionDescription, StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack, StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Badge/設計規格',
@@ -202,7 +202,7 @@ const InspectorInner = () => {
       <div className="flex gap-6 items-start">
         {/* Left: preview + blueprint */}
         <div className="flex flex-col gap-5 min-w-[280px]">
-          <div className="px-10 py-8 rounded-lg bg-canvas border border-divider flex items-center justify-center">
+          <div className="px-10 py-8 rounded-md bg-canvas border border-divider flex items-center justify-center">
             {isDot
               ? <Badge dot variant={variant === 'high' ? 'high' : 'critical'} />
               : <Badge count={count} variant={variant} max={count > 99 ? 99 : undefined} />
@@ -265,7 +265,7 @@ const InspectorInner = () => {
         </div>
 
         {/* Right: inspect panel */}
-        <div className="w-[280px] shrink-0 border border-divider rounded-lg bg-surface overflow-hidden">
+        <div className="w-[280px] shrink-0 border border-divider rounded-md bg-surface overflow-hidden">
           <div className="px-4 py-2.5 border-b border-divider bg-neutral-hover">
             <span className="text-[12px] font-semibold text-foreground">Inspect</span>
           </div>
@@ -331,100 +331,95 @@ export const ColorMatrix = {
   name: '色彩對照表',
   render: () => (
     // 標題區 → 三塊對照 = loose(A4);三塊之間維持原本的 32
-    <ExampleSection title="Variant 色彩對照" description="Badge 沒有互動狀態，每個 variant 只有一組色彩。色塊即時渲染，切 dark mode 自動更新。">
-    <div className="flex flex-col gap-8">
-      {/* Count mode */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">Count 模式</span>
-        <div className="overflow-x-auto">
-          <table className="border-collapse">
-            <thead><tr><Th>Variant</Th><Th>預覽</Th><Th>Fill</Th><Th>Text</Th></tr></thead>
-            <tbody>
-              {VARIANTS.map((v) => {
-                const c = TOKEN_MAP[v]
-                return (
-                  <tr key={v}>
-                    <td className="p-3 border-b border-divider font-mono text-caption font-medium align-middle">{v}</td>
-                    <td className="p-3 border-b border-divider align-middle">
-                      <div className="flex items-center gap-2">
-                        <Badge count={3} variant={v} />
-                        <Badge count={42} variant={v} />
-                        <Badge count={150} variant={v} max={99} />
-                      </div>
-                    </td>
-                    <td className="p-3 border-b border-divider align-middle">
+    <ExampleStack>
+      <ExampleSection title="Variant 色彩對照" description="Badge 沒有互動狀態，每個 variant 只有一組色彩。色塊即時渲染，切 dark mode 自動更新。" />
+    {/* Count mode */}
+    <ExampleSection title="Count 模式">
+      <div className="overflow-x-auto">
+        <table className="border-collapse">
+          <thead><tr><Th>Variant</Th><Th>預覽</Th><Th>Fill</Th><Th>Text</Th></tr></thead>
+          <tbody>
+            {VARIANTS.map((v) => {
+              const c = TOKEN_MAP[v]
+              return (
+                <tr key={v}>
+                  <td className="p-3 border-b border-divider font-mono text-caption font-medium align-middle">{v}</td>
+                  <td className="p-3 border-b border-divider align-middle">
+                    <div className="flex items-center gap-2">
+                      <Badge count={3} variant={v} />
+                      <Badge count={42} variant={v} />
+                      <Badge count={150} variant={v} max={99} />
+                    </div>
+                  </td>
+                  <td className="p-3 border-b border-divider align-middle">
+                    <span className="inline-flex items-center gap-1.5">
+                      <Swatch value={c.bg} size="md" />
+                      <span className="font-mono text-[12px] text-fg-secondary">{c.bg}</span>
+                    </span>
+                  </td>
+                  <td className="p-3 border-b border-divider align-middle">
+                    <span className="inline-flex items-center gap-1.5">
+                      <Swatch value={c.text} size="md" />
+                      <span className="font-mono text-[12px] text-fg-secondary">{c.text}</span>
+                    </span>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </ExampleSection>
+
+    {/* Dot mode */}
+    <ExampleSection title="Dot 模式">
+      <div className="overflow-x-auto">
+        <table className="border-collapse">
+          <thead><tr><Th>Variant</Th><Th>預覽</Th><Th>Fill</Th></tr></thead>
+          <tbody>
+            {VARIANTS.map((v) => {
+              const c = TOKEN_MAP[v]
+              return (
+                <tr key={v}>
+                  <td className="p-3 border-b border-divider font-mono text-caption font-medium align-middle">{v}</td>
+                  <td className="p-3 border-b border-divider align-middle">
+                    {(v === 'critical' || v === 'high') ? <Badge dot variant={v} /> : <span className="text-fg-muted text-caption">—</span>}
+                  </td>
+                  <td className="p-3 border-b border-divider align-middle">
+                    {(v === 'critical' || v === 'high') ? (
                       <span className="inline-flex items-center gap-1.5">
                         <Swatch value={c.bg} size="md" />
                         <span className="font-mono text-[12px] text-fg-secondary">{c.bg}</span>
                       </span>
-                    </td>
-                    <td className="p-3 border-b border-divider align-middle">
-                      <span className="inline-flex items-center gap-1.5">
-                        <Swatch value={c.text} size="md" />
-                        <span className="font-mono text-[12px] text-fg-secondary">{c.text}</span>
-                      </span>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+                    ) : <span className="text-fg-muted text-caption">—</span>}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
-
-      {/* Dot mode */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">Dot 模式</span>
-        <div className="overflow-x-auto">
-          <table className="border-collapse">
-            <thead><tr><Th>Variant</Th><Th>預覽</Th><Th>Fill</Th></tr></thead>
-            <tbody>
-              {VARIANTS.map((v) => {
-                const c = TOKEN_MAP[v]
-                return (
-                  <tr key={v}>
-                    <td className="p-3 border-b border-divider font-mono text-caption font-medium align-middle">{v}</td>
-                    <td className="p-3 border-b border-divider align-middle">
-                      {(v === 'critical' || v === 'high') ? <Badge dot variant={v} /> : <span className="text-fg-muted text-caption">—</span>}
-                    </td>
-                    <td className="p-3 border-b border-divider align-middle">
-                      {(v === 'critical' || v === 'high') ? (
-                        <span className="inline-flex items-center gap-1.5">
-                          <Swatch value={c.bg} size="md" />
-                          <span className="font-mono text-[12px] text-fg-secondary">{c.bg}</span>
-                        </span>
-                      ) : <span className="text-fg-muted text-caption">—</span>}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Button pairing guidance */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">容器 Contrast floor 對照</span>
-        <SectionDescription>容器 bg 決定 badge 的 contrast floor（可見度下限）——badge 至少要到此層級才看得清。Floor 是下限不是上限：semantic 永遠可往上升（floor 以上的所有層級都合法）。critical 的紅白對比在任何底色都清楚，不受 floor 限制。</SectionDescription>
-        <div className="overflow-x-auto">
-          <table className="border-collapse text-caption">
-            <thead><tr><Th>容器</Th><Th>Contrast floor（最低層級）</Th></tr></thead>
-            <tbody>
-              {[
-                ['text / tab item / icon button（透明 / 極淺）', 'low'],
-                ['secondary / tertiary（淺底帶邊框）', 'low'],
-                ['checked（pressed，淺灰 / subtle 底）', 'low / medium'],
-                ['primary / secondary+danger（飽和深底）', 'high'],
-              ].map(([container, floor]) => (
-                <tr key={container}><Td>{container}</Td><Td>{floor}</Td></tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
     </ExampleSection>
+
+    {/* Button pairing guidance */}
+    <ExampleSection title="容器 Contrast floor 對照" description={<>容器 bg 決定 badge 的 contrast floor（可見度下限）——badge 至少要到此層級才看得清。Floor 是下限不是上限：semantic 永遠可往上升（floor 以上的所有層級都合法）。critical 的紅白對比在任何底色都清楚，不受 floor 限制。</>}>
+      <div className="overflow-x-auto">
+        <table className="border-collapse text-caption">
+          <thead><tr><Th>容器</Th><Th>Contrast floor（最低層級）</Th></tr></thead>
+          <tbody>
+            {[
+              ['text / tab item / icon button（透明 / 極淺）', 'low'],
+              ['secondary / tertiary（淺底帶邊框）', 'low'],
+              ['checked（pressed，淺灰 / subtle 底）', 'low / medium'],
+              ['primary / secondary+danger（飽和深底）', 'high'],
+            ].map(([container, floor]) => (
+              <tr key={container}><Td>{container}</Td><Td>{floor}</Td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </ExampleSection>
+    </ExampleStack>
   ),
 }
 
@@ -436,82 +431,80 @@ export const SizeMatrix = {
   name: '尺寸對照表',
   render: () => (
     // 標題區 → 兩塊對照 = loose(A4);兩塊之間維持原本的 32
-    <ExampleSection title="尺寸 Token 對照" description="Badge 只有兩種固定尺寸模式，不隨 density 變化。Count 模式高 16px，Dot 模式 6×6px。">
-    <div className="flex flex-col gap-8">
-      {/* Token comparison */}
+    <ExampleStack>
+      <ExampleSection title="尺寸 Token 對照" description="Badge 只有兩種固定尺寸模式，不隨 density 變化。Count 模式高 16px，Dot 模式 6×6px。" />
+    {/* Token comparison */}
+    <div className="overflow-x-auto">
+      <table className="border-collapse text-caption">
+        <thead><tr>
+          <Th>屬性</Th>
+          <Th>Count 模式</Th>
+          <Th>Dot 模式</Th>
+        </tr></thead>
+        <tbody>
+          {[
+            { label: '高度', count: { token: 'h-4', value: '16px' }, dot: { token: 'h-1.5', value: '6px' } },
+            { label: '寬度', count: { token: 'min-w-4', value: '16px（個位數正圓）' }, dot: { token: 'w-1.5', value: '6px' } },
+            { label: '左右內距', count: { token: 'px-1', value: '4px' }, dot: { token: '—', value: '' } },
+            { label: '字體', count: { token: 'text-[10px]', value: '10px' }, dot: { token: '—', value: '無文字' } },
+            { label: 'Font Weight', count: { token: 'font-medium', value: '500' }, dot: { token: '—', value: '' } },
+            { label: 'Line Height', count: { token: 'leading-none', value: '1' }, dot: { token: '—', value: '' } },
+            { label: 'Radius', count: { token: 'rounded-full', value: '9999px' }, dot: { token: 'rounded-full', value: '9999px（base rounded-full）' } },
+          ].map((row) => (
+            <tr key={row.label}>
+              <Td>{row.label}</Td>
+              <Td mono>
+                {row.count.token !== '—' ? (
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-fg-secondary">{row.count.token}</span>
+                    {row.count.value && <span className="text-fg-muted text-[10px]">{row.count.value}</span>}
+                  </div>
+                ) : (
+                  <span className="text-fg-muted">—</span>
+                )}
+              </Td>
+              <Td mono>
+                {row.dot.token !== '—' ? (
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-fg-secondary">{row.dot.token}</span>
+                    {row.dot.value && <span className="text-fg-muted text-[10px]">{row.dot.value}</span>}
+                  </div>
+                ) : (
+                  <span className="text-fg-muted">{row.dot.value || '—'}</span>
+                )}
+              </Td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    {/* Visual preview */}
+    <ExampleSection title="預覽">
       <div className="overflow-x-auto">
-        <table className="border-collapse text-caption">
+        <table className="border-collapse">
           <thead><tr>
-            <Th>屬性</Th>
-            <Th>Count 模式</Th>
-            <Th>Dot 模式</Th>
+            <Th>Variant</Th>
+            <Th>個位數</Th>
+            <Th>多位數</Th>
+            <Th>溢出（99+）</Th>
+            <Th>Dot</Th>
           </tr></thead>
           <tbody>
-            {[
-              { label: '高度', count: { token: 'h-4', value: '16px' }, dot: { token: 'h-1.5', value: '6px' } },
-              { label: '寬度', count: { token: 'min-w-4', value: '16px（個位數正圓）' }, dot: { token: 'w-1.5', value: '6px' } },
-              { label: '左右內距', count: { token: 'px-1', value: '4px' }, dot: { token: '—', value: '' } },
-              { label: '字體', count: { token: 'text-[10px]', value: '10px' }, dot: { token: '—', value: '無文字' } },
-              { label: 'Font Weight', count: { token: 'font-medium', value: '500' }, dot: { token: '—', value: '' } },
-              { label: 'Line Height', count: { token: 'leading-none', value: '1' }, dot: { token: '—', value: '' } },
-              { label: 'Radius', count: { token: 'rounded-full', value: '9999px' }, dot: { token: 'rounded-full', value: '9999px（base rounded-full）' } },
-            ].map((row) => (
-              <tr key={row.label}>
-                <Td>{row.label}</Td>
-                <Td mono>
-                  {row.count.token !== '—' ? (
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-fg-secondary">{row.count.token}</span>
-                      {row.count.value && <span className="text-fg-muted text-[10px]">{row.count.value}</span>}
-                    </div>
-                  ) : (
-                    <span className="text-fg-muted">—</span>
-                  )}
-                </Td>
-                <Td mono>
-                  {row.dot.token !== '—' ? (
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-fg-secondary">{row.dot.token}</span>
-                      {row.dot.value && <span className="text-fg-muted text-[10px]">{row.dot.value}</span>}
-                    </div>
-                  ) : (
-                    <span className="text-fg-muted">{row.dot.value || '—'}</span>
-                  )}
-                </Td>
+            {VARIANTS.map((v) => (
+              <tr key={v}>
+                <td className="p-3 border-b border-divider font-mono text-caption font-medium align-middle">{v}</td>
+                <td className="p-3 border-b border-divider align-middle"><Badge count={3} variant={v} /></td>
+                <td className="p-3 border-b border-divider align-middle"><Badge count={42} variant={v} /></td>
+                <td className="p-3 border-b border-divider align-middle"><Badge count={150} variant={v} max={99} /></td>
+                <td className="p-3 border-b border-divider align-middle">{(v === 'critical' || v === 'high') ? <Badge dot variant={v} /> : <span className="text-fg-muted text-caption">—</span>}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-
-      {/* Visual preview */}
-      <div className="flex flex-col gap-4">
-        <span className="text-caption font-medium text-fg-secondary">預覽</span>
-        <div className="overflow-x-auto">
-          <table className="border-collapse">
-            <thead><tr>
-              <Th>Variant</Th>
-              <Th>個位數</Th>
-              <Th>多位數</Th>
-              <Th>溢出（99+）</Th>
-              <Th>Dot</Th>
-            </tr></thead>
-            <tbody>
-              {VARIANTS.map((v) => (
-                <tr key={v}>
-                  <td className="p-3 border-b border-divider font-mono text-caption font-medium align-middle">{v}</td>
-                  <td className="p-3 border-b border-divider align-middle"><Badge count={3} variant={v} /></td>
-                  <td className="p-3 border-b border-divider align-middle"><Badge count={42} variant={v} /></td>
-                  <td className="p-3 border-b border-divider align-middle"><Badge count={150} variant={v} max={99} /></td>
-                  <td className="p-3 border-b border-divider align-middle">{(v === 'critical' || v === 'high') ? <Badge dot variant={v} /> : <span className="text-fg-muted text-caption">—</span>}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
     </ExampleSection>
+    </ExampleStack>
   ),
 }
 

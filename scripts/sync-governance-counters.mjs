@@ -15,6 +15,10 @@
  *
  * Output: `generated/governance/governance-counters.json`
  *
+ * Hardcoded-count drift(--check 紅):治理文件寫死的 audit dims / hooks / skills / M-rules 總數必須等於上面的實數。
+ *   掃哪些檔、怎麼比 → scripts/lib/governance-count-drift.mjs;兩面對照 → scripts/test-sync-governance-counters.mjs。
+ *   CI:ci.yml → governance-build-graph.mjs --check → generate-governance-metadata.mjs --check → 本檔 --check。
+ *
  * Usage:
  *   node scripts/sync-governance-counters.mjs            # write log + console
  *   node scripts/sync-governance-counters.mjs --check    # exit 1 if hardcoded drift detected
@@ -25,6 +29,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { globSync } from 'node:fs'
 import { load as loadYaml } from 'js-yaml'
+import { resolveLiveCountFiles, scanCountDrift } from './lib/governance-count-drift.mjs'
 
 const ROOT = process.cwd()
 const CHECK = process.argv.includes('--check')
@@ -32,7 +37,7 @@ const QUIET = process.argv.includes('--quiet')
 
 // ── Counts ───────────────────────────────────────────────────────────
 
-// 1) Hooks(對齊 session_start_governance_check.sh:168-170 邏輯)
+// 1) Hooks(對齊 session_start_governance_check.sh「Check 7」的 hook 數 find 判斷式:排除 retired/、tests/ 與 `_*` helper)
 const CANONICAL = 'packages/design-system/ds-canonical'
 const hookFiles = globSync(`${CANONICAL}/hooks/**/*.{sh,py}`, { cwd: ROOT })
   .filter(f => !f.includes('/retired/'))
@@ -49,7 +54,7 @@ for (const m of metaContent.matchAll(/^##\s+M(\d+)\b/gm)) mRuleSet.add(parseInt(
 const mRules = [...mRuleSet].sort((a, b) => a - b)
 const mRuleCount = mRules.length
 
-// 3) Audit dims(讀 SKILL.md `## The N audit dimensions` table,grep numbered rows)
+// 3) Audit dims(讀 design-system-audit SKILL.md「## The audit dimensions」底下各 Group 表,grep numbered rows)
 const skillPath = path.join(ROOT, CANONICAL, 'skills/design-system-audit/SKILL.md')
 const skillContent = fs.existsSync(skillPath) ? fs.readFileSync(skillPath, 'utf-8') : ''
 const dimRows = [...skillContent.matchAll(/^\|\s*(\d+)\s*\|\s*\*\*([^*]+)\*\*/gm)]
@@ -75,7 +80,7 @@ const traitCount = traitSet.size
 // SSOT canonical reference points(每加新 SSOT-pointer-hardcode 必加 entry):
 const drifts = []
 
-// session_start_governance_check.sh:173 hard cap
+// session_start_governance_check.sh「Check 7」的 hard cap(`HOOK_COUNT" -gt N`)
 const sessStartPath = path.join(ROOT, CANONICAL, 'hooks/session_start_governance_check.sh')
 if (fs.existsSync(sessStartPath)) {
   const c = fs.readFileSync(sessStartPath, 'utf-8')
@@ -218,38 +223,13 @@ if (fs.existsSync(dsPkgPath) && fs.existsSync(sbPkgPath)) {
 const skillDirs = globSync(`${CANONICAL}/skills/*/`, { cwd: ROOT }).filter(d => !path.basename(d.replace(/\/+$/, '')).startsWith('_'))
 const skillCount = skillDirs.length
 
-const liveCountFiles = [
-  'CLAUDE.md',
-  'packages/design-system/CLAUDE.md',
-  `${CANONICAL}/skills/design-system-audit/SKILL.md`,
-  `${CANONICAL}/skills/codex-collab/references/brief-template.md`,
-  '.claude-plugin/plugin.json',
-  '.claude-plugin/marketplace.json',
-  'scripts/check-plugin-installed.mjs',
-  'template/ds-product-template/CLAUDE.md',
-  'template/ds-product-template/README.md',
-  // 2026-07-04 dim 58:plugin-era bootstrap hooks 已 retired(C-prime dispatcher 取代),原 2 條 template 路徑移除
-]
-// \b 前置:要求數字前有 word boundary,避免 embedded 數字誤匹配(「P0 hooks」的 0 / 「v14」/「beta.37」等)
-const countPatterns = [
-  { re: /\b(\d+)\s+audit\s+dims?\b/gi, actual: dimCount, label: 'audit dims' },
-  { re: /\b(\d+)\s+dim\s+全掃/g, actual: dimCount, label: 'dim 全掃' },
-  { re: /\b(\d+)\s+hooks\b/g, actual: hookCount, label: 'hooks' },
-  { re: /\b(\d+)\s+個 DS governance hooks/g, actual: hookCount, label: 'governance hooks' },
-  { re: /\b(\d+)\s+skills\b/g, actual: skillCount, label: 'skills' },
-  { re: /\b(\d+)\s+個 skills/g, actual: skillCount, label: '個 skills' },
-  { re: /\b(\d+)\s+(?:active\s+)?M-rules?\b/g, actual: mRuleCount, label: 'M-rules' },
-]
+// 掃哪些檔、怎麼比都在 scripts/lib/governance-count-drift.mjs(純函式,scripts/test-sync-governance-counters.mjs 直接測)。
+// 2026-11-21 WP-10 起範圍含 AGENTS.md、canonical skills 的 SKILL.md / references、rules 全部(排除歷史檔),
+// 並納管「數字 + dim」—— 取代已刪除的 PreToolUse hook check_dim_count_drift.sh(只在 stderr 警告、不擋任何東西)。
+const liveCountFiles = resolveLiveCountFiles(ROOT)
+const liveCounts = { auditDims: dimCount, hooks: hookCount, skills: skillCount, mRules: mRuleCount }
 for (const rel of liveCountFiles) {
-  const p = path.join(ROOT, rel)
-  if (!fs.existsSync(p)) continue
-  const c = fs.readFileSync(p, 'utf-8')
-  for (const { re, actual, label } of countPatterns) {
-    for (const m of c.matchAll(re)) {
-      const declared = parseInt(m[1])
-      if (declared !== actual) drifts.push(`${rel}: "${m[0].trim()}" != actual ${label} ${actual}`)
-    }
-  }
+  drifts.push(...scanCountDrift(rel, fs.readFileSync(path.join(ROOT, rel), 'utf-8'), liveCounts))
 }
 
 // ── Exact post-publish dispatch mirror trigger contract ──

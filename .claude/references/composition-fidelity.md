@@ -18,7 +18,7 @@
 | 層 | 驗什麼 | 落地 |
 |---|---|---|
 | **1 marker(conformance 意圖)** | consumer wrap 高風險 primitive 必標 `// @story-baseline: <DS-path>#<export>` cite canonical | `check_consumer_app_invariants.sh(r2,2026-06-11 merge)`(P0)+ `check_story_invariants.sh` R7 |
-| **2 靜態 conformance(主防線)** | consumer 用對 token/primitive、沒 simplified mock、沒硬寫色值/字級/間距/shadow、沒 API-misuse | `check_consumer_app_invariants.sh(r3,2026-06-11 merge)`(P0,含 2026-06-02 Pattern 8 硬寫 token)+ `check_layout_space_magic_numbers.sh`(P0 間距)+ `check_story_invariants.sh` R8(P0,registry antiPattern)+ `check_chrome_header_avatar_canonical.sh` / `check_sidebar_menu_button_implicit_wrap.sh` |
+| **2 靜態 conformance(主防線)** | consumer 用對 token/primitive、沒 simplified mock、沒硬寫色值/字級/間距/shadow、沒 API-misuse | `check_consumer_app_invariants.sh(r3,2026-06-11 merge)`(P0,含 2026-06-02 Pattern 8 硬寫 token)+ `check_layout_space_magic_numbers.sh`(P0 間距)+ `check_story_invariants.sh` R8(P0,registry antiPattern)+ `check_sidebar_avatar_canonical.sh`(r1 chrome header avatar / r2 SidebarMenuButton wrap,2026-11-18 merge) |
 | **3 pixel/DOM identity(opt-in,窄用)** | 僅「忠實複製 replica」或「同 story 跨版本回歸」才比 render identity | `scripts/composition-fidelity-visual-diff.mjs`,**只比標了 `@composition-fidelity-mode` 的 mapping**;單獨 `@story-baseline` = conformance 不做 identity diff |
 
 **層 3 為何 opt-in(2026-06-02)**:`@story-baseline` 單獨 = conformance 意圖(交層 2 驗)。pixel/DOM identity 只在該 consumer story **額外標** `@composition-fidelity-mode: pixel|shell-only|structural` 才跑(用於忠實複製 / same-story 回歸)。0 個 opt-in → script exit 0(conformance 由層 2 保證)。**禁** 拿產品範本(內容刻意不同)去 pixel 比 DS showcase。

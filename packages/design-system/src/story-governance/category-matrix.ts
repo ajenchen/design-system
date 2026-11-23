@@ -4,7 +4,7 @@
 // 資料在 category-matrix.json(governance .mjs 腳本直接讀);本檔提供 typed 介面 + 決策樹 resolver
 // 給 runtime 消費者(storybook-config sidebar order / 未來 docs 產生器)。改規矩只改 .json。
 //
-// 對應 RFC .claude/planning/2026-06-05-storybook-category-taxonomy-rfc.md §10-11。
+// 對應 RFC governance/planning/2026-06-05-storybook-category-taxonomy-rfc.md §10-11。
 
 import matrixData from './category-matrix.json'
 

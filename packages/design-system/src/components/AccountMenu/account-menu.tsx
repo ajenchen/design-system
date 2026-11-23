@@ -17,7 +17,7 @@
  * ── 消費的 SSOT ──
  * - components: [Avatar, DropdownMenu(DropdownMenuTrigger/Content/Group/Label/Item)]
  * - patterns: [header-canonical 4.5(chrome header avatar = raw `<Avatar size={24}>`,非 ItemAvatar)]
- * - tokens: [--chrome-header-avatar-size(JS 端 24 literal sync), --ring(focus-visible ring canonical)]
+ * - tokens: [--chrome-header-avatar-size(JS 端讀 CHROME_HEADER_AVATAR_PX,token-twin-invariant 鎖相等), --ring(focus-visible ring canonical)]
  * - spec refs: app-shell.spec.md「帳號入口(Account entry)放置 SSOT」/ header-canonical.spec.md 4.5
  *   / dropdown-menu.spec.md / profile-card.spec.md(近親分界:看別人 vs 自己)
  *
@@ -35,6 +35,7 @@
 import * as React from 'react'
 import { User, Settings, LogOut } from 'lucide-react'
 import { Avatar, type AvatarData } from '@/design-system/components/Avatar/avatar'
+import { CHROME_HEADER_AVATAR_PX } from '@/design-system/patterns/header-canonical/chrome-header-avatar'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -137,10 +138,11 @@ export const AccountMenu = React.forwardRef<HTMLButtonElement, AccountMenuProps>
             ref={ref}
             type="button"
             aria-label={triggerAriaLabel}
-            className="flex size-6 shrink-0 items-center justify-center self-center rounded-full /* 2026-09-07 刪:與 DropdownMenuTrigger 自帶的 dropdown-menu.tsx:122 逐字相同, 經 Radix Slot(asChild,:128)併到同一顆按鈕上 = 同一份宣告掛兩次 */"
+            className="flex size-6 shrink-0 items-center justify-center self-center rounded-full /* 2026-09-07 刪:與 DropdownMenuTrigger 自帶的 dropdown-menu.tsx:121 逐字相同, 經 Radix Slot(asChild,:128)併到同一顆按鈕上 = 同一份宣告掛兩次 */"
           >
-            {/* 24 per header-canonical.spec.md 4.5 chrome header avatar canonical(brand + account 同尺寸); sync with --chrome-header-avatar-size */}
-            <Avatar size={24} {...avatar} alt={avatar.alt ?? user.name} />
+            {/* 24 per header-canonical.spec.md 4.5 chrome header avatar canonical(brand + account 同尺寸);
+                常數與 CSS --chrome-header-avatar-size 由 token-twin-invariant 鎖相等(2026-11-15 前是字面值 24 + 註解) */}
+            <Avatar size={CHROME_HEADER_AVATAR_PX} {...avatar} alt={avatar.alt ?? user.name} />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align={align}>

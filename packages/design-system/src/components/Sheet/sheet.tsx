@@ -5,6 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { X as XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { TruncatedText } from "@/design-system/patterns/element-anatomy/truncated-text"
 import { withOverlayEscape } from "@/design-system/lib/overlay-escape"
 import { useExitStartFocusReturn, useTriggerlessFocusReturn, radixTriggerOf } from "@/design-system/lib/overlay-focus-return"
 import { DescriptionPresenceContext, useDescriptionPresence, useRegisterDescription } from "@/design-system/lib/overlay-description"
@@ -118,6 +119,13 @@ interface SheetContentProps
    * 消費者:AppShell 的 Menu 浮層(`<AppShell portalContainer>` 一路帶到這裡;2026-10-15 r1b 複驗 F10)。
    */
   portalContainer?: HTMLElement | null
+  /**
+   * 側板寬(px;2026-11-15,`ds-canonical/references/props-naming.md`「尺寸參數」= user「尺寸:甲」)。不傳 = 預設
+   * 視窗 75%、640px 以上最寬 28rem(`w-3/4 sm:max-w-md`,畫面不變)。傳了 = 這個寬,但仍不超過畫布的 75%
+   * (與預設同一條「旁邊永遠留得出點得到的遮罩」)。只作用在 `side="right"` / `"left"`(上 / 下側板的寬恆是整條)。
+   * 2026-11-15 前只能用 `className="sm:max-w-lg"` 改(沒有型別;className 仍可用,但改寬走這個參數)。
+   */
+  width?: number
 }
 
 // AutoFocus canonical(對齊 Dialog / Material / Polaris)— 見 dialog.tsx handleOpenAutoFocus 註解
@@ -139,7 +147,10 @@ export const handleSheetOpenAutoFocus = (e: Event) => {
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = "right", className, children, onEscapeKeyDown, onOpenAutoFocus, onCloseAutoFocus, portalContainer, ...props }, ref) => {
+>(({ side = "right", className, style, width, children, onEscapeKeyDown, onOpenAutoFocus, onCloseAutoFocus, portalContainer, ...props }, ref) => {
+  // width={數字}(左 / 右側板):寬 = min(指定, 75%),並拿掉預設 class 的 sm:max-w-md 上限(inline style 勝過 class;consumer 的 style 最後展開,仍可蓋)
+  const widthStyle: React.CSSProperties | undefined =
+    width != null && (side === "right" || side === "left") ? { width: `min(${width}px, 75%)`, maxWidth: "none" } : undefined
   // 關閉後焦點還給開啟者(2026-10-01 預設,待辦總帳 OE29;同 DialogContent):受控 `open`、沒有 SheetTrigger 開的側板,Radix 沒有東西可還。
   // 內容掛上時記下開啟者,關閉時找不到 Radix 觸發點就由全 DS 一支 lib/overlay-focus-return.ts 還;consumer 自己接了的(Sidebar 的 Menu 浮層)照舊先跑、擋了預設就不接。
   const modal = React.useContext(SheetModalContext)
@@ -182,6 +193,7 @@ const SheetContent = React.forwardRef<
         onCloseAutoFocus={exitFocus.onCloseAutoFocus}
         // Sheet 不自設 density,繼承 page 層級的 `html[data-density]`(2026-04-21 canonical 定案)
         className={cn(sheetVariants({ side }), className)}
+        style={widthStyle ? { ...widthStyle, ...style } : style}
         {...descriptionPresence.descriptionPresenceProps}
         {...props}
         // 這一下 Esc 由誰處理(全 DS 一支,判準與出處住 lib/overlay-escape.ts withOverlayEscape):輸入法組字中不關;焦點所在控件宣告了自己還有一層且在這一層裡面 → 留給控件;其餘照舊關閉
@@ -195,9 +207,9 @@ const SheetContent = React.forwardRef<
 SheetContent.displayName = SheetPrimitive.Content.displayName
 
 // ── SheetHeader:SurfaceHeader + Close X(對齊 DialogHeader canonical)──────────
-// 2026-05-18 audit gap fix:type 對齊 SurfaceHeaderProps,withTabs / tabsSlot expose
-// 給 consumer(per header-canonical.spec.md W1 跨 6 consumer 同契約)。Spread 早 forward
-// 過去,只是 TS type 沒 expose 導致 consumer 不能 type-safe 用 `<SheetHeader withTabs>`。
+// 2026-05-18 audit gap fix:type 對齊 SurfaceHeaderProps,tabsSlot expose
+// 給 consumer(per header-canonical.spec.md W1 跨 6 consumer 同契約),可以 type-safe 寫
+// `<SheetHeader tabsSlot={<TabsList>…</TabsList>}>`。
 // 關閉鈕的讀屏名稱:I18nProvider 的 `sheet.close` → DS 預設「關閉」(lib/i18n/README.md「Fallback chain」;user F1 預設中文、WM 要能傳英文)
 function SheetCloseButton() {
   const { t } = useI18n()
@@ -210,24 +222,21 @@ function SheetCloseButton() {
 
 const SheetHeader = React.forwardRef<
   HTMLDivElement,
-  SurfaceHeaderProps
+  Omit<SurfaceHeaderProps, 'dismiss'>
 >(({ className, children, ...props }, ref) => (
   // 2026-05-18:className 不再硬加 justify-between(同 DialogHeader 邏輯,避 column mode 破裂)。
-  <SurfaceHeader
-    ref={ref}
-    className={className}
-    {...props}
-  >
-    <div className="flex-1 min-w-0">{children}</div>
-    {/* Dismiss X = native sm,SurfaceHeader 負 my trick 讓 layout 佔位 24 → chrome-header-height */}
-    <SheetCloseButton />
+  // 右側〔actions〕〔分隔線〕〔×〕由 SurfaceHeader 的右側按鈕位排(overlay-surface.spec.md「SurfaceHeader」右側按鈕位);
+  // Dismiss X = native sm,SurfaceHeader 負 my trick 讓 layout 佔位 24 → chrome-header-height
+  <SurfaceHeader ref={ref} className={className} {...props} dismiss={<SheetCloseButton />}>
+    {children}
   </SurfaceHeader>
 ))
 SheetHeader.displayName = "SheetHeader"
 
 // ── SheetBody:flex-1 ScrollArea + chrome padding(對齊 DialogBody + ScrollArea canonical) ──
 // 捲軸必用 ScrollArea(跨 OS 一致、不吃寬度)— 不自寫 overflow-y-auto。
-// padding 搬進 viewport inner div:px-loose / pt-tight / pb-bottom。
+// padding 搬進 viewport inner div:左右 px-loose;上下由容器自己給(data-layout-body="fill":側板擋住頁面 = 規則 4 第 1 列,
+// 底依最後一個東西的邊緣 element 48 / bounded loose / unbounded 0;實作 tokens/layoutSpace/layoutSpace.css,同 DialogBody)。
 // data-sheet-body:讓 SheetContent onOpenAutoFocus 找得到 body 第一個互動元素
 //
 // ── List-as-region 場景(menu / nav / settings list)──
@@ -242,12 +251,7 @@ const SheetBody = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof ScrollArea>
 >(({ className, children, ...props }, ref) => (
   <ScrollArea ref={ref} data-sheet-body className="flex-1 min-h-0" {...props}>
-    <div
-      className={cn(
-        "px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]",
-        className,
-      )}
-    >
+    <div data-layout-body="fill" className={cn("px-[var(--layout-space-loose)]", className)}>
       {children}
     </div>
   </ScrollArea>
@@ -264,12 +268,16 @@ SheetFooter.displayName = "SheetFooter"
 const SheetTitle = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof SheetPrimitive.Title>
->(({ className, ...props }, ref) => (
+>(({ className, children, ...props }, ref) => (
   <SheetPrimitive.Title
     ref={ref}
     className={cn("text-body-lg font-medium truncate", className)}
     {...props}
-  />
+  >
+    {/* 截斷必附 tooltip(tooltip.spec.md「截斷文字 → 用 tooltip 顯示完整內容」),同 DialogTitle / PopoverTitle(07-29 b644488f 全 DS 收斂時 Sheet 漏了,
+        2026-11-10 補;n7 第六節 1)。display="block":h2 是 block container,inline span 量不到 clientWidth。 */}
+    <TruncatedText display="block">{children}</TruncatedText>
+  </SheetPrimitive.Title>
 ))
 SheetTitle.displayName = SheetPrimitive.Title.displayName
 

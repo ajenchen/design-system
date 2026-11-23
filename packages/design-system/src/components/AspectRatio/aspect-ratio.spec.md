@@ -72,7 +72,7 @@ AspectRatio 是純結構 layout 元件：只建立比例 box，不擁有 media s
 ```tsx
 import { AspectRatio } from '@/design-system/components/AspectRatio/aspect-ratio'
 
-<AspectRatio ratio={16 / 9} className="bg-muted rounded-lg overflow-hidden">
+<AspectRatio ratio={16 / 9} className="bg-muted rounded-md overflow-hidden">
   <img src={url} alt="..." className="w-full h-full object-cover" />
 </AspectRatio>
 ```

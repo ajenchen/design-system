@@ -1,10 +1,9 @@
 // @story-baseline: packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx#AlignmentRule
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import type { ColumnDef } from '@tanstack/react-table'
 import { FileText } from 'lucide-react'
 import { ProgressBar } from './progress-bar'
-import { DataTable } from '@/design-system/components/DataTable/data-table'
+import { DataTable, type DataTableColumnDef } from '@/design-system/components/DataTable/data-table'
 import { Button } from '@/design-system/components/Button/button'
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/design-system/components/Dialog/dialog'
 import { Toaster, toast } from '@/design-system/components/Toast/toast'
@@ -140,7 +139,7 @@ const quotaRows: QuotaRow[] = [
   { name: 'Wonka 客製化', quota: 95, status: 'error' },
 ]
 
-const quotaColumns: ColumnDef<QuotaRow>[] = [
+const quotaColumns: DataTableColumnDef<QuotaRow>[] = [
   {
     id: 'name',
     header: '專案',
@@ -175,7 +174,7 @@ export const InlineTableCell: Story = {
       title="配額使用率(DataTable inline)"
       description="Table cell 內顯示配額使用率(4px 細線不搶走主要欄位的閱讀重量)。value affix 讓使用者快速讀數字。"
     >
-      <DataTable columns={quotaColumns} data={quotaRows} getRowId={(r) => r.name} height="auto" />
+      <DataTable columns={quotaColumns} data={quotaRows} getRowId={(r) => r.name} maxHeight="none" />
     </ExampleSection>
   ),
 }

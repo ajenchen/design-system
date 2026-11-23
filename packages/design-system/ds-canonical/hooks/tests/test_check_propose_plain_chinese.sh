@@ -26,6 +26,7 @@ FAIL=0
 FAILED_TESTS=""
 
 TMP_DIR=$(mktemp -d)
+[ -n "${TMP_DIR:-}" ] && [ -d "$TMP_DIR" ] || { echo "❌ mktemp -d failed(TMP_DIR;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 # Build a transcript JSONL file with one user msg then one assistant msg
@@ -204,6 +205,76 @@ run_hook_native "等你拍板:
 
    現在按鈕之間的間距是 8,改成 12 會跟其他工具列一致,建議改。"
 expect_pass_silent "17. N15 對照組:代號後空一行、接縮排的續段說明(markdown 清單續段)→ 放行"
+
+# ── 18–24. 中途文字(2026-11-15):最後一則回覆以外、這一輪中途寫給 user 看的 text 區塊也要中文 ──
+# transcript 用真實形狀:每行一筆 {type, message:{role, content}};tool_result 也標 role user,不算真正的 user 訊息。
+mid_transcript() {
+  # $1 = 檔名;其餘參數兩兩一組:kind text(kind = user / tool / text)
+  local path="$1"; shift
+  : > "$path"
+  while [ "$#" -ge 2 ]; do
+    case "$1" in
+      user) jq -cn --arg t "$2" '{type:"user",message:{role:"user",content:$t}}' >> "$path" ;;
+      tool) jq -cn --arg t "$2" '{type:"user",message:{role:"user",content:[{type:"tool_result",tool_use_id:"toolu_x",content:$t}]}}' >> "$path" ;;
+      text) jq -cn --arg t "$2" '{type:"assistant",message:{role:"assistant",content:[{type:"text",text:$t},{type:"tool_use",id:"toolu_x",name:"Bash",input:{}}]}}' >> "$path" ;;
+    esac
+    shift 2
+  done
+}
+run_hook_mid() {
+  local transcript_path="$1" final="$2"
+  local payload
+  payload=$(jq -n --arg tp "$transcript_path" --arg t "$final" '{hook_event_name:"Stop",transcript_path:$tp,last_assistant_message:$t}')
+  STDOUT=$(mktemp); STDERR=$(mktemp)
+  set +e
+  printf '%s' "$payload" | bash "$HOOK" >"$STDOUT" 2>"$STDERR"
+  EXIT=$?
+  set -e
+  STDOUT_TEXT=$(cat "$STDOUT")
+  STDERR_TEXT=$(cat "$STDERR")
+  rm -f "$STDOUT" "$STDERR"
+}
+FINAL_ZH="已把品牌色還原,畫面沒有變化;接下來等你看預覽。"
+
+MT1="$TMP_DIR/mid1.jsonl"
+mid_transcript "$MT1" user "幫我把品牌色還原" text "Now let me check the semantic file and restore the brand token." tool "ok" text "$FINAL_ZH"
+run_hook_mid "$MT1" "$FINAL_ZH"
+expect_block "18. 中途一段英文進度句(最後一則是中文)→ 擋" "中途文字"
+
+MT2="$TMP_DIR/mid2.jsonl"
+mid_transcript "$MT2" user "幫我把品牌色還原" text "先看語意色那份檔,確認品牌色原本的宣告。" tool "ok" text "$FINAL_ZH"
+run_hook_mid "$MT2" "$FINAL_ZH"
+expect_pass_silent "19. 對照組:中途全中文 → 放行"
+
+MT3="$TMP_DIR/mid3.jsonl"
+mid_transcript "$MT3" user "跑一下檢查" text "跑檢查:
+\`\`\`
+node scripts/token-creation-invariant.mjs --selftest
+ok all checks pass for the registry and the retired list
+\`\`\`
+看 \`scripts/token-creation-invariant.mjs\` 與 packages/design-system/src/tokens/token-registry.json 的結果。" tool "ok" text "$FINAL_ZH"
+run_hook_mid "$MT3" "$FINAL_ZH"
+expect_pass_silent "20. 對照組:英文只在程式碼區塊、反引號與路徑裡 → 放行"
+
+MT4="$TMP_DIR/mid4.jsonl"
+mid_transcript "$MT4" user "跑一下檢查" text "先跑檢查。" tool "Error: the build failed because the module could not be resolved from the current directory" text "$FINAL_ZH"
+run_hook_mid "$MT4" "$FINAL_ZH"
+expect_pass_silent "21. 對照組:工具結果(tool_result)裡的英文不算 → 放行"
+
+MT5="$TMP_DIR/mid5.jsonl"
+mid_transcript "$MT5" user "第一輪" text "Let me look at the old implementation before the user asked again." user "第二輪:幫我把品牌色還原" text "先看語意色那份檔。" text "$FINAL_ZH"
+run_hook_mid "$MT5" "$FINAL_ZH"
+expect_pass_silent "22. 對照組:上一則 user 訊息之前的英文不算這一輪 → 放行"
+
+MT6="$TMP_DIR/mid6.jsonl"
+mid_transcript "$MT6" user "幫我把品牌色還原" text "先看語意色那份檔,確認品牌色原本的宣告。
+
+Then I will run the token gate and the selftest to make sure nothing is red." text "$FINAL_ZH"
+run_hook_mid "$MT6" "$FINAL_ZH"
+expect_block "23. 同一個區塊裡中文段 + 英文段 → 逐段判斷,英文那段擋" "Then I will run the token gate"
+
+run_hook_mid "$TMP_DIR/no-such-transcript.jsonl" "$FINAL_ZH"
+expect_pass_silent "24. transcript 讀不到 → 照舊只檢查最後一則(中文)→ 放行,不因讀不到就擋"
 
 echo ""
 echo "=== Summary ==="

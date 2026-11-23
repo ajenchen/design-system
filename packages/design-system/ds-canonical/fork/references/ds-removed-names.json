@@ -1,0 +1,881 @@
+{
+  "$comment": "generated from packages/design-system/ds-changes.json (packages/design-system/tools/changes/ledger.mjs removedNamesProjection) — do not edit; read by hooks/lib/_ds_removed_names.sh (check_consumer_code_quality.sh)",
+  "schemaVersion": 1,
+  "source": "packages/design-system/ds-changes.json",
+  "names": [
+    {
+      "kind": "export",
+      "name": "AGENT_PANEL_SIDE_BY_SIDE_MIN_CONTAINER",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/AGENT_PANEL_SIDE_BY_SIDE_MIN_CONTAINER",
+      "to": null,
+      "do": "已刪除、沒有替代:AI 面板並排與否改由 AppShell 量容器實際寬度決定,產品不要自己判斷斷點。",
+      "spec": "src/components/AppShell/app-shell.spec.md「版面規則」"
+    },
+    {
+      "kind": "export",
+      "name": "applyRovingAction",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/applyRovingAction",
+      "to": null,
+      "do": "已收成 DS 內部模組,不再對外出口、沒有替代;DS 元件的鍵盤與焦點行為不變,產品不要自己重做一份。",
+      "spec": "ds-canonical/references/focus-canonical.md「規則一:誰能移動鍵盤游標」"
+    },
+    {
+      "kind": "export",
+      "name": "BETA_84_MIGRATION_ID",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/BETA_84_MIGRATION_ID",
+      "to": null,
+      "do": "beta.84 專用的遷移退場,升版指令改成讀帳本:一律跑 qijenchen-ds-codemod upgrade [--from <舊版>]。",
+      "spec": "tools/README.md「consumer upgrade command」"
+    },
+    {
+      "kind": "export",
+      "name": "dataTableFilterMatch",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/dataTableFilterMatch",
+      "to": null,
+      "do": "舊的逐欄 filterFn 接法刪除。改用 TanStack globalFilter,globalFilterFn 裡呼叫 evaluateTree(tree, row.original)。",
+      "spec": "src/components/DataTable/data-table.spec.md「globalFilter」"
+    },
+    {
+      "kind": "export",
+      "name": "DropdownMenuShortcut",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/DropdownMenuShortcut",
+      "to": null,
+      "do": "改用 <DropdownMenuItem shortcut=\"⌘N\">(快捷鍵提示是 DropdownMenuItem 的參數,不是 child)。",
+      "spec": "src/components/DropdownMenu/dropdown-menu.spec.md「快捷鍵提示 API」"
+    },
+    {
+      "kind": "export",
+      "name": "focusFromTrigger",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/focusFromTrigger",
+      "to": null,
+      "do": "已收成 DS 內部模組,不再對外出口、沒有替代;DS 元件的鍵盤與焦點行為不變,產品不要自己重做一份。",
+      "spec": "ds-canonical/references/focus-canonical.md「規則一:誰能移動鍵盤游標」"
+    },
+    {
+      "kind": "export",
+      "name": "getPeoplePickerTagWrapperClass",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/getPeoplePickerTagWrapperClass",
+      "to": null,
+      "do": "PeoplePicker 的內部 helper,不是公開 API,刪除、沒有替代。",
+      "spec": "src/components/PeoplePicker/people-picker.spec.md「單選 vs 多選」"
+    },
+    {
+      "kind": "export",
+      "name": "isRovingControlReachable",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/isRovingControlReachable",
+      "to": null,
+      "do": "已收成 DS 內部模組,不再對外出口、沒有替代;DS 元件的鍵盤與焦點行為不變,產品不要自己重做一份。",
+      "spec": "ds-canonical/references/focus-canonical.md「規則一:誰能移動鍵盤游標」"
+    },
+    {
+      "kind": "export",
+      "name": "isTabbableElement",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/isTabbableElement",
+      "to": null,
+      "do": "已收成 DS 內部模組,不再對外出口、沒有替代;DS 元件的鍵盤與焦點行為不變,產品不要自己重做一份。",
+      "spec": "ds-canonical/references/focus-canonical.md「規則一:誰能移動鍵盤游標」"
+    },
+    {
+      "kind": "export",
+      "name": "isTextEntryElement",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/isTextEntryElement",
+      "to": null,
+      "do": "已收成 DS 內部模組,不再對外出口、沒有替代;DS 元件的鍵盤與焦點行為不變,產品不要自己重做一份。",
+      "spec": "ds-canonical/references/focus-canonical.md「規則一:誰能移動鍵盤游標」"
+    },
+    {
+      "kind": "export",
+      "name": "listRovingControls",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/listRovingControls",
+      "to": null,
+      "do": "已收成 DS 內部模組,不再對外出口、沒有替代;DS 元件的鍵盤與焦點行為不變,產品不要自己重做一份。",
+      "spec": "ds-canonical/references/focus-canonical.md「規則一:誰能移動鍵盤游標」"
+    },
+    {
+      "kind": "export",
+      "name": "PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS",
+      "to": null,
+      "do": "PeoplePicker 的內部 class 常數,不是公開 API,刪除、沒有替代。",
+      "spec": "src/components/PeoplePicker/people-picker.spec.md「單選 vs 多選」"
+    },
+    {
+      "kind": "export",
+      "name": "pickRovingTabStop",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/pickRovingTabStop",
+      "to": null,
+      "do": "已收成 DS 內部模組,不再對外出口、沒有替代;DS 元件的鍵盤與焦點行為不變,產品不要自己重做一份。",
+      "spec": "ds-canonical/references/focus-canonical.md「規則一:誰能移動鍵盤游標」"
+    },
+    {
+      "kind": "export",
+      "name": "pickRovingTarget",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/pickRovingTarget",
+      "to": null,
+      "do": "已收成 DS 內部模組,不再對外出口、沒有替代;DS 元件的鍵盤與焦點行為不變,產品不要自己重做一份。",
+      "spec": "ds-canonical/references/focus-canonical.md「規則一:誰能移動鍵盤游標」"
+    },
+    {
+      "kind": "export",
+      "name": "removeRovingControlsFromTabOrder",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/removeRovingControlsFromTabOrder",
+      "to": null,
+      "do": "已收成 DS 內部模組,不再對外出口、沒有替代;DS 元件的鍵盤與焦點行為不變,產品不要自己重做一份。",
+      "spec": "ds-canonical/references/focus-canonical.md「規則一:誰能移動鍵盤游標」"
+    },
+    {
+      "kind": "export",
+      "name": "resolveRovingKey",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/resolveRovingKey",
+      "to": null,
+      "do": "已收成 DS 內部模組,不再對外出口、沒有替代;DS 元件的鍵盤與焦點行為不變,產品不要自己重做一份。",
+      "spec": "ds-canonical/references/focus-canonical.md「規則一:誰能移動鍵盤游標」"
+    },
+    {
+      "kind": "export",
+      "name": "ROVING_CONTROL_SELECTOR",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/ROVING_CONTROL_SELECTOR",
+      "to": null,
+      "do": "已收成 DS 內部模組,不再對外出口、沒有替代;DS 元件的鍵盤與焦點行為不變,產品不要自己重做一份。",
+      "spec": "ds-canonical/references/focus-canonical.md「規則一:誰能移動鍵盤游標」"
+    },
+    {
+      "kind": "export",
+      "name": "RovingDomHost",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/RovingDomHost",
+      "to": null,
+      "do": "已收成 DS 內部模組,不再對外出口、沒有替代;DS 元件的鍵盤與焦點行為不變,產品不要自己重做一份。",
+      "spec": "ds-canonical/references/focus-canonical.md「規則一:誰能移動鍵盤游標」"
+    },
+    {
+      "kind": "export",
+      "name": "RovingFocus",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/RovingFocus",
+      "to": null,
+      "do": "已收成 DS 內部模組,不再對外出口、沒有替代;DS 元件的鍵盤與焦點行為不變,產品不要自己重做一份。",
+      "spec": "ds-canonical/references/focus-canonical.md「規則一:誰能移動鍵盤游標」"
+    },
+    {
+      "kind": "export",
+      "name": "RovingKeyAction",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/RovingKeyAction",
+      "to": null,
+      "do": "已收成 DS 內部模組,不再對外出口、沒有替代;DS 元件的鍵盤與焦點行為不變,產品不要自己重做一份。",
+      "spec": "ds-canonical/references/focus-canonical.md「規則一:誰能移動鍵盤游標」"
+    },
+    {
+      "kind": "export",
+      "name": "RovingKeyInput",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/RovingKeyInput",
+      "to": null,
+      "do": "已收成 DS 內部模組,不再對外出口、沒有替代;DS 元件的鍵盤與焦點行為不變,產品不要自己重做一份。",
+      "spec": "ds-canonical/references/focus-canonical.md「規則一:誰能移動鍵盤游標」"
+    },
+    {
+      "kind": "export",
+      "name": "RovingMove",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/RovingMove",
+      "to": null,
+      "do": "已收成 DS 內部模組,不再對外出口、沒有替代;DS 元件的鍵盤與焦點行為不變,產品不要自己重做一份。",
+      "spec": "ds-canonical/references/focus-canonical.md「規則一:誰能移動鍵盤游標」"
+    },
+    {
+      "kind": "export",
+      "name": "RovingReorderKey",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/RovingReorderKey",
+      "to": null,
+      "do": "已收成 DS 內部模組,不再對外出口、沒有替代;DS 元件的鍵盤與焦點行為不變,產品不要自己重做一份。",
+      "spec": "ds-canonical/references/focus-canonical.md「規則一:誰能移動鍵盤游標」"
+    },
+    {
+      "kind": "export",
+      "name": "RovingTabStopOptions",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/RovingTabStopOptions",
+      "to": null,
+      "do": "已收成 DS 內部模組,不再對外出口、沒有替代;DS 元件的鍵盤與焦點行為不變,產品不要自己重做一份。",
+      "spec": "ds-canonical/references/focus-canonical.md「規則一:誰能移動鍵盤游標」"
+    },
+    {
+      "kind": "export",
+      "name": "RovingTreeState",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/RovingTreeState",
+      "to": null,
+      "do": "已收成 DS 內部模組,不再對外出口、沒有替代;DS 元件的鍵盤與焦點行為不變,產品不要自己重做一份。",
+      "spec": "ds-canonical/references/focus-canonical.md「規則一:誰能移動鍵盤游標」"
+    },
+    {
+      "kind": "export",
+      "name": "scopeRovingSelector",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/scopeRovingSelector",
+      "to": null,
+      "do": "已收成 DS 內部模組,不再對外出口、沒有替代;DS 元件的鍵盤與焦點行為不變,產品不要自己重做一份。",
+      "spec": "ds-canonical/references/focus-canonical.md「規則一:誰能移動鍵盤游標」"
+    },
+    {
+      "kind": "export",
+      "name": "setRovingTabIndex",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/setRovingTabIndex",
+      "to": null,
+      "do": "已收成 DS 內部模組,不再對外出口、沒有替代;DS 元件的鍵盤與焦點行為不變,產品不要自己重做一份。",
+      "spec": "ds-canonical/references/focus-canonical.md「規則一:誰能移動鍵盤游標」"
+    },
+    {
+      "kind": "export",
+      "name": "StepsExpansion",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/StepsExpansion",
+      "to": null,
+      "do": "Steps 不再支援同時展開多步,expansion / defaultExpanded / expanded / onExpandedChange 與型別 StepsExpansion 一起刪除。巢狀或可各自開合的清單改用 TreeView。",
+      "spec": "src/components/Steps/steps.spec.md「內容跟著目前那一步」"
+    },
+    {
+      "kind": "export",
+      "name": "tabbableOrder",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/tabbableOrder",
+      "to": null,
+      "do": "已收成 DS 內部模組,不再對外出口、沒有替代;DS 元件的鍵盤與焦點行為不變,產品不要自己重做一份。",
+      "spec": "ds-canonical/references/focus-canonical.md「規則一:誰能移動鍵盤游標」"
+    },
+    {
+      "kind": "export",
+      "name": "TabStopExclude",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/TabStopExclude",
+      "to": null,
+      "do": "已收成 DS 內部模組,不再對外出口、沒有替代;DS 元件的鍵盤與焦點行為不變,產品不要自己重做一份。",
+      "spec": "ds-canonical/references/focus-canonical.md「規則一:誰能移動鍵盤游標」"
+    },
+    {
+      "kind": "export",
+      "name": "tabStopFromTrigger",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/tabStopFromTrigger",
+      "to": null,
+      "do": "已收成 DS 內部模組,不再對外出口、沒有替代;DS 元件的鍵盤與焦點行為不變,產品不要自己重做一份。",
+      "spec": "ds-canonical/references/focus-canonical.md「規則一:誰能移動鍵盤游標」"
+    },
+    {
+      "kind": "export",
+      "name": "useInputModality",
+      "since": "0.1.0-beta.146",
+      "id": "0.1.0-beta.146/useInputModality",
+      "to": null,
+      "do": "useInputModality() 已刪除、沒有替代。要畫鍵盤焦點框就讓那一項拿到真焦點,用 focus-visible: 樣式交給瀏覽器判斷。",
+      "spec": "ds-canonical/references/focus-canonical.md「規則二:游標長什麼樣」"
+    },
+    {
+      "kind": "export",
+      "name": "useIsNarrowViewport",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/useIsNarrowViewport",
+      "to": null,
+      "do": "AppShell 不再有 768 / 960 / 1280 固定斷點,這支 hook 整支刪除、沒有替代。版面改由 AppShell 量自己的寬度決定,產品不要自己判斷視窗寬。",
+      "spec": "src/components/AppShell/app-shell.spec.md「版面規則」"
+    },
+    {
+      "kind": "prop",
+      "name": "onSkip",
+      "component": "AgentDecisionCard",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/AgentDecisionCardProps.onSkip",
+      "to": "onCancel",
+      "do": "onSkip(answers) 改成必填的 onCancel(),不帶參數:標題列 × 與焦點在卡片裡按 Esc 都是取消 = 不回答、不送任何答案(舊的 onSkip 會把預選值當答案交出去)。處理函式改成不收答案;接 AI 的產品端在這裡把 agentDecisionCancelMessage(questions) 當作這次提問的結果交給 AI,不要自己補答案。",
+      "spec": "src/components/AgentPanel/agent-decision-card.spec.md「取消」"
+    },
+    {
+      "kind": "prop",
+      "name": "width",
+      "component": "AppShellAside",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/AppShellAsideProps.width",
+      "to": null,
+      "do": "AppShellAside 的 width 刪除,改傳 widthRange={{ min, initial, max }}(這種內容類型的最小 / 初始 / 最大寬);使用者拖過的寬用 defaultWidth / onWidthCommit 存。",
+      "spec": "src/components/AppShell/app-shell.spec.md「API skeleton」"
+    },
+    {
+      "kind": "prop",
+      "name": "fullWidth",
+      "component": "Button",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/ButtonProps.fullWidth",
+      "to": "width",
+      "do": "fullWidth 改名 width:fullWidth → width=\"fill\";fullWidth={false} 直接拿掉(不寫 = hug,直排 ButtonGroup 裡不寫照舊撐滿,明寫 hug 反而會蓋掉群組的撐滿)。",
+      "spec": "src/components/Button/button.spec.md「寬度參數」"
+    },
+    {
+      "kind": "prop",
+      "name": "lockDensity",
+      "component": "ChromeHeader",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/ChromeHeaderProps.lockDensity",
+      "to": null,
+      "do": "lockDensity 刪除、沒有替代參數。要鎖密度就在整塊容器設 data-density,只鎖標題列會跟下面內容左緣不對齊。",
+      "spec": "src/tokens/density/density.spec.md「Canonical 情境 3」"
+    },
+    {
+      "kind": "prop",
+      "name": "withTabs",
+      "component": "ChromeHeader",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/ChromeHeaderProps.withTabs",
+      "to": null,
+      "do": "Tabs 進 header 只剩 tabsSlot 一條路:withTabs 刪除,改傳 tabsSlot={<TabsList>…</TabsList>},TabsContent 放 header 外。SidebarHeader 同。",
+      "spec": "src/patterns/header-canonical/header-canonical.spec.md「tabsSlot 連動」"
+    },
+    {
+      "kind": "prop",
+      "name": "emptyPlaceholder",
+      "component": "Combobox",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/ComboboxProps.emptyPlaceholder",
+      "to": "placeholder",
+      "do": "trigger 的空值提示只有 placeholder 一個名字,emptyPlaceholder 改名 placeholder(預設「選擇…」)。",
+      "spec": "src/components/Field/field-controls.spec.md「共享 contract」"
+    },
+    {
+      "kind": "prop",
+      "name": "autoRowHeight",
+      "component": "DataTable",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/DataTableProps.autoRowHeight",
+      "to": "rowHeight",
+      "do": "autoRowHeight 改名 rowHeight,寫法跟 width=\"hug\" 同一套:autoRowHeight → rowHeight=\"hug\",autoRowHeight={false} 或不寫 → 不寫(= 固定列高);autoRowHeight={條件} 改寫成 rowHeight={條件 ? \"hug\" : undefined}。",
+      "spec": "src/components/DataTable/data-table.spec.md「四、行高模式」"
+    },
+    {
+      "kind": "prop",
+      "name": "resettable",
+      "component": "DataTableColumnVisibilityPanel",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/DataTableColumnVisibilityPanelProps.resettable",
+      "to": null,
+      "do": "resettable 刪除。改傳 defaultVisibility / defaultColumnOrder(產品存的那一份預設),跟它不同時面板才出現「恢復預設」;兩個都不傳就沒有這顆。按下會把顯示 / 隱藏與順序一起還原成那一份(沒傳 defaultColumnOrder = columns 的順序、鎖定欄在最前),不再是「全部顯示」。",
+      "spec": "src/components/DataTable/data-table.spec.md「Header 恢復預設 / 清除全部」"
+    },
+    {
+      "kind": "prop",
+      "name": "searchable",
+      "component": "DataTableColumnVisibilityPanel",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/DataTableColumnVisibilityPanelProps.searchable",
+      "to": null,
+      "do": "searchable 刪除:搜尋框是欄位顯示面板的固定零件、恆顯示,直接拿掉這個參數。",
+      "spec": "src/components/DataTable/data-table.spec.md「欄位顯示面板的固定零件」"
+    },
+    {
+      "kind": "prop",
+      "name": "height",
+      "component": "DataTable",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/DataTableProps.height",
+      "to": "maxHeight",
+      "do": "height 改名 maxHeight(它一直是上限):height=\"auto\" → maxHeight=\"none\",height=\"400px\" → maxHeight={400},height=\"100%\" → maxHeight=\"100%\"。",
+      "spec": "src/components/DataTable/data-table.spec.md「參數名 = `maxHeight`」"
+    },
+    {
+      "kind": "prop",
+      "name": "onReset",
+      "component": "DataTableSortManager",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/DataTableSortManagerProps.onReset",
+      "to": null,
+      "do": "onReset 刪除:重置與清除是兩顆鈕。恢復預設改傳 defaultSorting,清除全部由 clearable 控制(預設開)。",
+      "spec": "src/components/DataTable/data-table.spec.md「Header 恢復預設 / 清除全部」"
+    },
+    {
+      "kind": "prop",
+      "name": "autoHeight",
+      "component": "DialogContent",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/DialogContentProps.autoHeight",
+      "to": "height",
+      "do": "autoHeight 改名 height:autoHeight → height=\"hug\",autoHeight={false} 或不寫 → height=\"fill\"(預設);autoHeight={條件} 改寫成 height={條件 ? \"hug\" : \"fill\"}。",
+      "spec": "src/components/Dialog/dialog.spec.md「寬度檔位」"
+    },
+    {
+      "kind": "prop",
+      "name": "maxWidth",
+      "component": "DialogContent",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/DialogContentProps.maxWidth",
+      "to": "width",
+      "do": "maxWidth 改名 width:檔位 sm 400 / md 480 / lg 640 / xl 960,或數字 px(都是最大寬)。maxWidth={N} → width={N},CSS 字串改成數字或照用途選檔。",
+      "spec": "src/components/Dialog/dialog.spec.md「寬度檔位」"
+    },
+    {
+      "kind": "prop",
+      "name": "block",
+      "component": "FieldControlGroup",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/FieldControlGroupProps.block",
+      "to": "width",
+      "do": "block 改名 width:撐滿寫 width=\"fill\"(DS 的撐滿只叫 width=\"fill\")。",
+      "spec": "src/components/FieldControlGroup/field-control-group.spec.md「Container display」"
+    },
+    {
+      "kind": "prop",
+      "name": "horizontalLabelWidth",
+      "component": "FieldGroup",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/FieldGroupProps.horizontalLabelWidth",
+      "to": "labelWidth",
+      "do": "horizontalLabelWidth 改名 labelWidth(數字 = px,也收 CSS 長度字串),跟單一 Field 同一個名字。",
+      "spec": "src/components/Field/field.spec.md「labelWidth」"
+    },
+    {
+      "kind": "prop",
+      "name": "autoWidth",
+      "component": "Input",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/InputProps.autoWidth",
+      "to": "width",
+      "do": "autoWidth 改名 width:跟內容寬寫 width=\"hug\",不寫 = width=\"fill\"。",
+      "spec": "src/components/Input/input.spec.md「width=\"hug\"」"
+    },
+    {
+      "kind": "prop",
+      "name": "height",
+      "component": "Input",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/InputProps.height",
+      "to": null,
+      "do": "欄位家族拿掉漏出來的原生 height(它本來就沒有作用);刪掉這個屬性,高度由 size 決定。",
+      "spec": "ds-canonical/references/props-naming.md「拿掉漏出來的 HTML 原生」"
+    },
+    {
+      "kind": "prop",
+      "name": "height",
+      "component": "LinkInput",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/LinkInputProps.height",
+      "to": null,
+      "do": "欄位家族拿掉漏出來的原生 height(它本來就沒有作用);刪掉這個屬性,高度由 size 決定。",
+      "spec": "ds-canonical/references/props-naming.md「拿掉漏出來的 HTML 原生」"
+    },
+    {
+      "kind": "prop",
+      "name": "height",
+      "component": "NumberInput",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/NumberInputProps.height",
+      "to": null,
+      "do": "欄位家族拿掉漏出來的原生 height(它本來就沒有作用);刪掉這個屬性,高度由 size 決定。",
+      "spec": "ds-canonical/references/props-naming.md「拿掉漏出來的 HTML 原生」"
+    },
+    {
+      "kind": "prop",
+      "name": "precision",
+      "component": "Rating",
+      "since": "0.1.0-beta.146",
+      "id": "0.1.0-beta.146/RatingProps.precision",
+      "to": null,
+      "do": "可以點的評分只有整顆,刪掉 precision;帶小數的 value 會四捨五入到整顆。",
+      "spec": "src/components/Rating/rating.spec.md「整顆與精簡版 — 兩條規則」"
+    },
+    {
+      "kind": "prop",
+      "name": "fullWidth",
+      "component": "SegmentedControl",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/SegmentedControlProps.fullWidth",
+      "to": "width",
+      "do": "fullWidth 改名 width:fullWidth → width=\"fill\";fullWidth={false} 直接拿掉(不寫 = hug)。",
+      "spec": "src/components/SegmentedControl/segmented-control.spec.md「width=\"fill\"」"
+    },
+    {
+      "kind": "prop",
+      "name": "isMobile",
+      "component": "SidebarContext",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/SidebarContextProps.isMobile",
+      "to": null,
+      "do": "側欄窄版抽屜隨 768 斷點退場,useSidebar() 不再回傳這個欄位、沒有替代。暫藏與否看 state 或 data-state。",
+      "spec": "src/components/Sidebar/sidebar.spec.md「暫藏 / 關閉」"
+    },
+    {
+      "kind": "prop",
+      "name": "mobileOpenerRef",
+      "component": "SidebarContext",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/SidebarContextProps.mobileOpenerRef",
+      "to": null,
+      "do": "側欄窄版抽屜隨 768 斷點退場,useSidebar() 不再回傳這個欄位、沒有替代。暫藏與否看 state 或 data-state。",
+      "spec": "src/components/Sidebar/sidebar.spec.md「暫藏 / 關閉」"
+    },
+    {
+      "kind": "prop",
+      "name": "openMobile",
+      "component": "SidebarContext",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/SidebarContextProps.openMobile",
+      "to": null,
+      "do": "側欄窄版抽屜隨 768 斷點退場,useSidebar() 不再回傳這個欄位、沒有替代。暫藏與否看 state 或 data-state。",
+      "spec": "src/components/Sidebar/sidebar.spec.md「暫藏 / 關閉」"
+    },
+    {
+      "kind": "prop",
+      "name": "setOpenMobile",
+      "component": "SidebarContext",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/SidebarContextProps.setOpenMobile",
+      "to": null,
+      "do": "側欄窄版抽屜隨 768 斷點退場,useSidebar() 不再回傳這個欄位、沒有替代。暫藏與否看 state 或 data-state。",
+      "spec": "src/components/Sidebar/sidebar.spec.md「暫藏 / 關閉」"
+    },
+    {
+      "kind": "prop",
+      "name": "asChild",
+      "component": "SidebarGroupAction",
+      "since": "0.1.0-beta.146",
+      "id": "0.1.0-beta.146/SidebarGroupAction.asChild",
+      "to": null,
+      "do": "SidebarGroupAction 改用 icon 參數(icon={MoreVertical}),不再收 children 與 asChild。要套 Radix 觸發元件就從外面包 Trigger asChild。",
+      "spec": "src/components/Sidebar/sidebar.spec.md「API 破壞性變更」"
+    },
+    {
+      "kind": "prop",
+      "name": "children",
+      "component": "SidebarGroupAction",
+      "since": "0.1.0-beta.146",
+      "id": "0.1.0-beta.146/SidebarGroupActionProps.children",
+      "to": null,
+      "do": "SidebarGroupAction 不再收 children,圖示改傳 icon 參數(icon={MoreVertical});無障礙名稱照舊用 aria-label。",
+      "spec": "src/components/Sidebar/sidebar.spec.md「API 破壞性變更」"
+    },
+    {
+      "kind": "prop",
+      "name": "withTabs",
+      "component": "SidebarHeader",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/SidebarHeader.withTabs",
+      "to": null,
+      "do": "SidebarHeader 的 withTabs 刪除,Tabs 改傳 tabsSlot={<TabsList>…</TabsList>}(轉給 ChromeHeader)。",
+      "spec": "src/patterns/header-canonical/header-canonical.spec.md「tabsSlot 連動」"
+    },
+    {
+      "kind": "prop",
+      "name": "height",
+      "component": "SidebarInput",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/SidebarInputProps.height",
+      "to": null,
+      "do": "欄位家族拿掉漏出來的原生 height(它本來就沒有作用);刪掉這個屬性,高度由 size 決定。",
+      "spec": "ds-canonical/references/props-naming.md「拿掉漏出來的 HTML 原生」"
+    },
+    {
+      "kind": "prop",
+      "name": "asChild",
+      "component": "SidebarMenuAction",
+      "since": "0.1.0-beta.146",
+      "id": "0.1.0-beta.146/SidebarMenuAction.asChild",
+      "to": null,
+      "do": "SidebarMenuAction 改用 icon 參數(icon={MoreVertical}),不再收 children 與 asChild。要套 Radix 觸發元件就從外面包 Trigger asChild。",
+      "spec": "src/components/Sidebar/sidebar.spec.md「API 破壞性變更」"
+    },
+    {
+      "kind": "prop",
+      "name": "children",
+      "component": "SidebarMenuAction",
+      "since": "0.1.0-beta.146",
+      "id": "0.1.0-beta.146/SidebarMenuActionProps.children",
+      "to": null,
+      "do": "SidebarMenuAction 不再收 children,圖示改傳 icon 參數(icon={MoreVertical});無障礙名稱照舊用 aria-label。",
+      "spec": "src/components/Sidebar/sidebar.spec.md「API 破壞性變更」"
+    },
+    {
+      "kind": "prop",
+      "name": "defaultExpanded",
+      "component": "Steps",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/StepsProps.defaultExpanded",
+      "to": null,
+      "do": "Steps 不再支援同時展開多步,expansion / defaultExpanded / expanded / onExpandedChange 與型別 StepsExpansion 一起刪除。巢狀或可各自開合的清單改用 TreeView。",
+      "spec": "src/components/Steps/steps.spec.md「內容跟著目前那一步」"
+    },
+    {
+      "kind": "prop",
+      "name": "expanded",
+      "component": "Steps",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/StepsProps.expanded",
+      "to": null,
+      "do": "Steps 不再支援同時展開多步,expansion / defaultExpanded / expanded / onExpandedChange 與型別 StepsExpansion 一起刪除。巢狀或可各自開合的清單改用 TreeView。",
+      "spec": "src/components/Steps/steps.spec.md「內容跟著目前那一步」"
+    },
+    {
+      "kind": "prop",
+      "name": "expansion",
+      "component": "Steps",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/StepsProps.expansion",
+      "to": null,
+      "do": "Steps 不再支援同時展開多步,expansion / defaultExpanded / expanded / onExpandedChange 與型別 StepsExpansion 一起刪除。巢狀或可各自開合的清單改用 TreeView。",
+      "spec": "src/components/Steps/steps.spec.md「內容跟著目前那一步」"
+    },
+    {
+      "kind": "prop",
+      "name": "onExpandedChange",
+      "component": "Steps",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/StepsProps.onExpandedChange",
+      "to": null,
+      "do": "Steps 不再支援同時展開多步,expansion / defaultExpanded / expanded / onExpandedChange 與型別 StepsExpansion 一起刪除。巢狀或可各自開合的清單改用 TreeView。",
+      "spec": "src/components/Steps/steps.spec.md「內容跟著目前那一步」"
+    },
+    {
+      "kind": "prop",
+      "name": "withTabs",
+      "component": "SurfaceHeader",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/SurfaceHeaderProps.withTabs",
+      "to": null,
+      "do": "withTabs 刪除,改傳 tabsSlot={<TabsList>…</TabsList>},<Tabs> 包住整個 DialogContent / SheetContent、TabsContent 放 body。DialogHeader / SheetHeader 同。",
+      "spec": "src/patterns/header-canonical/header-canonical.spec.md「tabsSlot 連動」"
+    },
+    {
+      "kind": "prop",
+      "name": "dismissLabel",
+      "component": "Tag",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/TagProps.dismissLabel",
+      "to": "removeAriaLabel",
+      "do": "dismissLabel 改名 removeAriaLabel(Tag 的 × 是從集合移除;dismiss 保留給通知被忽略)。",
+      "spec": "src/components/Tag/tag.spec.md「removeAriaLabel」"
+    },
+    {
+      "kind": "subpath",
+      "name": "@qijenchen/design-system/hooks/use-is-narrow-viewport",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/subpath:hooks-use-is-narrow-viewport",
+      "to": null,
+      "do": "AppShell 不再有 768 / 960 / 1280 固定斷點,這支 hook 整支刪除、沒有替代。版面改由 AppShell 量自己的寬度決定,產品不要自己判斷視窗寬。",
+      "spec": "src/components/AppShell/app-shell.spec.md「版面規則」"
+    },
+    {
+      "kind": "token",
+      "name": "--action-divider-inset",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/--action-divider-inset",
+      "to": null,
+      "do": "收回成 ButtonDivider 自己的值,CSS 變數刪除、沒有替代。分隔線一律用 <ButtonDivider />,不要自己算長度。",
+      "spec": "src/patterns/action-bar/action-bar.spec.md「唯一實作 = `<ButtonDivider />`」"
+    },
+    {
+      "kind": "token",
+      "name": "--action-divider-min",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/--action-divider-min",
+      "to": null,
+      "do": "收回成 ButtonDivider 自己的值,CSS 變數刪除、沒有替代。分隔線一律用 <ButtonDivider />,不要自己算長度。",
+      "spec": "src/patterns/action-bar/action-bar.spec.md「唯一實作 = `<ButtonDivider />`」"
+    },
+    {
+      "kind": "token",
+      "name": "--agent-panel-width",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/--agent-panel-width",
+      "to": null,
+      "do": "這個 CSS 變數退役、沒有替代(執行期從來沒有讀者,AI 面板寬由元件決定)。",
+      "spec": "src/components/AgentPanel/agent-panel.spec.md「`--agent-panel-width`(2026-09-02 立)」"
+    },
+    {
+      "kind": "token",
+      "name": "--data-table-filter-field-width",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/--data-table-filter-field-width",
+      "to": null,
+      "do": "收回成元件自己的值,CSS 變數刪除。要改工具面板寬,改傳元件的 width / minWidth / maxWidth(數字 = px)。",
+      "spec": "src/components/DataTable/data-table.spec.md「工具面板的寬度」"
+    },
+    {
+      "kind": "token",
+      "name": "--data-table-filter-op-width",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/--data-table-filter-op-width",
+      "to": null,
+      "do": "收回成元件自己的值,CSS 變數刪除。要改工具面板寬,改傳元件的 width / minWidth / maxWidth(數字 = px)。",
+      "spec": "src/components/DataTable/data-table.spec.md「工具面板的寬度」"
+    },
+    {
+      "kind": "token",
+      "name": "--data-table-sort-panel-width",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/--data-table-sort-panel-width",
+      "to": null,
+      "do": "收回成元件自己的值,CSS 變數刪除。要改工具面板寬,改傳元件的 width / minWidth / maxWidth(數字 = px)。",
+      "spec": "src/components/DataTable/data-table.spec.md「工具面板的寬度」"
+    },
+    {
+      "kind": "token",
+      "name": "--menu-max-height",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/--menu-max-height",
+      "to": null,
+      "do": "收回成 CommandList 自己的值(18.75rem = 300px),CSS 變數刪除、沒有替代。",
+      "spec": "src/components/Command/command.spec.md「清單捲動上限 300px」"
+    },
+    {
+      "kind": "token",
+      "name": "--motion-delay-close",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/--motion-delay-close",
+      "to": null,
+      "do": "CSS 宣告退場(執行期沒有 CSS 讀者),值只住程式常數 MOTION_DELAY_PLAIN_MS / MOTION_DELAY_RICH_MS / MOTION_DELAY_CLOSE_MS(tokens/motion/motion.ts)。寫程式一律 import 常數,不寫 var(--motion-delay-*)。",
+      "spec": "src/tokens/motion/motion.spec.md「2026-11-15 起這三個值只住程式常數」"
+    },
+    {
+      "kind": "token",
+      "name": "--motion-delay-plain",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/--motion-delay-plain",
+      "to": null,
+      "do": "CSS 宣告退場(執行期沒有 CSS 讀者),值只住程式常數 MOTION_DELAY_PLAIN_MS / MOTION_DELAY_RICH_MS / MOTION_DELAY_CLOSE_MS(tokens/motion/motion.ts)。寫程式一律 import 常數,不寫 var(--motion-delay-*)。",
+      "spec": "src/tokens/motion/motion.spec.md「2026-11-15 起這三個值只住程式常數」"
+    },
+    {
+      "kind": "token",
+      "name": "--motion-delay-rich",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/--motion-delay-rich",
+      "to": null,
+      "do": "CSS 宣告退場(執行期沒有 CSS 讀者),值只住程式常數 MOTION_DELAY_PLAIN_MS / MOTION_DELAY_RICH_MS / MOTION_DELAY_CLOSE_MS(tokens/motion/motion.ts)。寫程式一律 import 常數,不寫 var(--motion-delay-*)。",
+      "spec": "src/tokens/motion/motion.spec.md「2026-11-15 起這三個值只住程式常數」"
+    },
+    {
+      "kind": "token",
+      "name": "--motion-duration-shimmer",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/--motion-duration-shimmer",
+      "to": null,
+      "do": "只有 AgentPanel 家族在用,收回元件自己的值,CSS 變數刪除、沒有替代。",
+      "spec": "src/components/AgentPanel/agent-panel.spec.md「為什麼收回元件」"
+    },
+    {
+      "kind": "token",
+      "name": "--motion-easing-settle",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/--motion-easing-settle",
+      "to": null,
+      "do": "只有 AgentPanel 家族在用,收回元件自己的值,CSS 變數刪除、沒有替代。",
+      "spec": "src/components/AgentPanel/agent-panel.spec.md「為什麼收回元件」"
+    },
+    {
+      "kind": "token",
+      "name": "--motion-easing-swell",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/--motion-easing-swell",
+      "to": null,
+      "do": "只有 AgentPanel 家族在用,收回元件自己的值,CSS 變數刪除、沒有替代。",
+      "spec": "src/components/AgentPanel/agent-panel.spec.md「為什麼收回元件」"
+    },
+    {
+      "kind": "token",
+      "name": "--motion-enter-distance",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/--motion-enter-distance",
+      "to": null,
+      "do": "從來沒有讀者,刪除、沒有替代。浮層的滑入距離與縮放由各自的 tw-animate-css 幾何 class 帶(slide-in-from-*-2 / zoom-in-95)。",
+      "spec": "src/tokens/motion/motion.spec.md「滑入距離與縮放不開 token」"
+    },
+    {
+      "kind": "token",
+      "name": "--motion-enter-scale",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/--motion-enter-scale",
+      "to": null,
+      "do": "從來沒有讀者,刪除、沒有替代。浮層的滑入距離與縮放由各自的 tw-animate-css 幾何 class 帶(slide-in-from-*-2 / zoom-in-95)。",
+      "spec": "src/tokens/motion/motion.spec.md「滑入距離與縮放不開 token」"
+    },
+    {
+      "kind": "token",
+      "name": "--radius-xs",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/--radius-xs",
+      "to": "--radius-sm",
+      "do": "2px 這一檔改叫 sm:--radius-xs → --radius-sm,rounded-xs → rounded-sm(值同為 2px,畫面不變)。",
+      "spec": "src/tokens/radius/radius.spec.md「四檔」"
+    },
+    {
+      "kind": "token",
+      "name": "--sidebar-menu-icon-size",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/--sidebar-menu-icon-size",
+      "to": null,
+      "do": "圖示欄不再是 token,刪除、沒有替代;收合細列寬跟側欄 size 走。",
+      "spec": "src/components/Sidebar/sidebar.spec.md「圖示欄不再是 token」"
+    },
+    {
+      "kind": "token",
+      "name": "--sidebar-width-min",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/--sidebar-width-min",
+      "to": null,
+      "do": "CSS 變數刪除。最小寬改由 AppShell 的 widthRange 決定(產品沒設時 240,住 app-shell.tsx 的常數 PANEL_WIDTH_MIN_DEFAULT)。",
+      "spec": "src/components/Sidebar/sidebar.spec.md「PANEL_WIDTH_MIN_DEFAULT」"
+    },
+    {
+      "kind": "token",
+      "name": "--sidebar-width-mobile",
+      "since": "0.1.0-beta.148",
+      "id": "0.1.0-beta.148/--sidebar-width-mobile",
+      "to": null,
+      "do": "窄版抽屜寬隨 768 斷點退場,這個 CSS 變數刪除、沒有替代。",
+      "spec": "src/components/Sidebar/sidebar.spec.md「暫藏 / 關閉」"
+    },
+    {
+      "kind": "token",
+      "name": "--spacing-tab-lg",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/--spacing-tab-lg",
+      "to": null,
+      "do": "Tailwind 轉接名 h-tab-* 刪除(分頁高產品不讀),沒有替代;分頁高由 Tabs 的 size 決定。",
+      "spec": "src/components/Tabs/tabs.spec.md「h-tab-*」"
+    },
+    {
+      "kind": "token",
+      "name": "--spacing-tab-md",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/--spacing-tab-md",
+      "to": null,
+      "do": "Tailwind 轉接名 h-tab-* 刪除(分頁高產品不讀),沒有替代;分頁高由 Tabs 的 size 決定。",
+      "spec": "src/components/Tabs/tabs.spec.md「h-tab-*」"
+    },
+    {
+      "kind": "token",
+      "name": "--spacing-tab-sm",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/--spacing-tab-sm",
+      "to": null,
+      "do": "Tailwind 轉接名 h-tab-* 刪除(分頁高產品不讀),沒有替代;分頁高由 Tabs 的 size 決定。",
+      "spec": "src/components/Tabs/tabs.spec.md「h-tab-*」"
+    }
+  ]
+}

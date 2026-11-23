@@ -32,7 +32,6 @@
  */
 
 import { AVATAR_STACK_OVERLAP_PX } from '@/design-system/components/Avatar/avatar'
-import { OVERFLOW_INDICATOR_CIRCLE_PX } from '@/design-system/components/OverflowIndicator/overflow-indicator'
 
 /**
  * Pure deterministic visible-count formula for avatar stack with overlap + overflow chip.
@@ -41,7 +40,6 @@ import { OVERFLOW_INDICATOR_CIRCLE_PX } from '@/design-system/components/Overflo
  * @param total — Total avatars in selection
  * @param avatarPx — Per-avatar pixel width(包含 ring border)
  * @param overlapPx — Negative margin overlap between siblings(default = `AVATAR_STACK_OVERLAP_PX`,CSS 雙生 `--avatar-stack-overlap`)
- * @param overflowChipPx — Width reserved for +N indicator when overflow needed(default 24px = circle h-6 min-w-6)
  * @returns visible count(0 ≤ visible ≤ total)。若全部 fit 則 visible = total(無 +N chip);否則 visible 為 max fit。
  */
 export function getAvatarStackVisibleCount({
@@ -50,17 +48,14 @@ export function getAvatarStackVisibleCount({
   avatarPx,
   // 疊的量只有一個住所:avatar.tsx `AVATAR_STACK_OVERLAP_PX`(2026-09-26 頭像堆疊挖空起)
   overlapPx = AVATAR_STACK_OVERLAP_PX,
-  // NOTE: overflowChipPx is kept for backward-compat API but the slot-based
-  // formula below treats chip = avatar physical size(both circles same shape
-  // + same -ml-0.5 overlap when stacked)。Consumer 必 ensure 視覺 chip wrapper
+  // +N 圓不另收寬度:下面的 slot 公式把它當成跟頭像同尺寸的圓(同形狀 + 同 overlap)。Consumer 必 ensure 視覺 chip wrapper
   // 也套同 `-ml-[var(--avatar-stack-overlap)]` overlap class(Combobox `overflowWrapperClassName`)。
-  overflowChipPx: _overflowChipPx = 24,
+  // (2026-11-15 前另收一個公式從來不讀的 `overflowChipPx`,已拿掉。)
 }: {
   availablePx: number
   total: number
   avatarPx: number
   overlapPx?: number
-  overflowChipPx?: number
 }): number {
   if (total <= 0 || availablePx <= 0) return 0
   // 2026-05-16 真 root cause fix(Claude+Codex Round 2 + user 物理模型 directive):
@@ -95,12 +90,6 @@ export const AVATAR_STACK_AVATAR_PX: Record<'sm' | 'md' | 'lg', number> = {
   md: 24,
   lg: 24,
 }
-
-/**
- * +N 圓的直徑 = OverflowIndicator circle 形狀自己的尺寸(唯一住所在 overflow-indicator.tsx),
- * 不再另抄一份(2026-09-27 前是第三份同值)。堆疊契約「同尺寸」讓它與 AVATAR_STACK_AVATAR_PX 逐尺寸相等。
- */
-export const AVATAR_STACK_OVERFLOW_CHIP_PX = OVERFLOW_INDICATOR_CIRCLE_PX
 
 /** 外框開銷的快取:同一次量測生命週期(一個 effect)裡量一次就夠,外框的 padding / 邊框 / 同排的箭頭與清除鈕不隨欄寬變。 */
 export interface StackChromeCache { chromePx: number | null }

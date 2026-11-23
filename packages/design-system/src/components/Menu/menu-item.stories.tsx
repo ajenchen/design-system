@@ -6,16 +6,16 @@ import { MenuItem, MenuGroup } from './menu-item'
 import { SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import { Button } from '@/design-system/components/Button/button'
 import { CAT_SOLID, type CategoricalHue } from '@/design-system/tokens/categorical-color'
-import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { samplePersonCard, demoPersonPhoto, type DemoPersonName } from '@/design-system/stories-helpers/scene/person-card'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 
 // DS-wide canonical:person avatar 必 hover → ProfileCard(含 status / statusMessage / fields
 // / actions / onViewMore,profile-card.spec.md 重要資訊)。demo helper:
-// 真實人像(2026-07-08 sweep):固定 u= key 保 determinism(對齊 avatar.stories.tsx pravatar 慣例)
-const avatarSrc = (name: string, px = 96) => `https://i.pravatar.cc/${px}?u=${name.toLowerCase().replace(/\s+/g, '-')}`
+// 真實人像走照片名冊(stories-helpers/data/people.ts,2026-11-11):頭像與名片同一張臉
+const avatarSrc = (name: DemoPersonName, px = 96) => demoPersonPhoto(name, px)
 // 人員名片樣本 = stories-helpers/scene/person-card.tsx(全 DS story 一份)
-const personHover = (name: string, subtitle?: string) => samplePersonCard({ name, subtitle, avatarSrc: avatarSrc(name) })
+const personHover = (name: DemoPersonName, subtitle?: string) => samplePersonCard({ name, subtitle, avatarSrc: avatarSrc(name) })
 
 const meta: Meta<typeof MenuItem> = {
   title: 'Design System/Internal/Menu/展示',

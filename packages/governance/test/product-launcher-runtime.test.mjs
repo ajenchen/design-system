@@ -141,6 +141,10 @@ if [[ "$content" == *INVALID_UTF8* ]]; then
   exit 0
 fi
 if [ "$event" = "Stop" ]; then
+  if [ "$(printf '%s' "$input" | jq -r '.session_id // ""')" = "stop-context-probe" ]; then
+    jq -nc '{governanceContext:{hookEventName:"Stop",message:"portable stop context"}}'
+    exit 0
+  fi
   jq -nc '{governanceDecision:"block",reason:"portable stop"}'
   exit 0
 fi
@@ -734,6 +738,38 @@ test('product context and SessionStart use each provider declared native transpo
   assert.equal(codexStop.status, 0, codexStop.stderr)
   assert.deepEqual(JSON.parse(claudeStop.stdout), { decision: 'block', reason: 'portable stop' })
   assert.deepEqual(JSON.parse(codexStop.stdout), { continue: false, stopReason: 'portable stop' })
+})
+
+// 2026-11-21 PROC-H:Stop 的 governance-context 要讓模型看得到(Claude 的 Stop additionalContext),
+// 但只在 payload 明確 stop_hook_active === false 時;已在續跑(true)或沒寫 → 照舊 systemMessage,不連鎖續跑。
+test('product Stop context reaches the model only on a first, non-continued Claude stop', async (t) => {
+  const { root, localHooks } = await productFixture(t)
+  await setFixtureEventHooks(root, 'Stop', [
+    {
+      file: 'hooks/gate.sh',
+      matcher: '',
+      runtime: 'bash',
+      outputMode: 'governance-context',
+      inputContract: 'event-v1',
+      transcriptRequirement: 'none',
+    },
+  ])
+  const stop = (extra) => ({ hook_event_name: 'Stop', session_id: 'stop-context-probe', tool_name: 'Stop', tool_input: {}, ...extra })
+  const first = run(root, localHooks, 'fork-governance-dispatcher.sh', 'claude', stop({ stop_hook_active: false }))
+  assert.equal(first.status, 0, first.stderr)
+  assert.deepEqual(JSON.parse(first.stdout), {
+    hookSpecificOutput: { hookEventName: 'Stop', additionalContext: 'portable stop context' },
+  })
+  const continued = run(root, localHooks, 'fork-governance-dispatcher.sh', 'claude', stop({ stop_hook_active: true }))
+  assert.equal(continued.status, 0, continued.stderr)
+  assert.deepEqual(JSON.parse(continued.stdout), { systemMessage: 'portable stop context' })
+  const unknown = run(root, localHooks, 'fork-governance-dispatcher.sh', 'claude', stop({}))
+  assert.equal(unknown.status, 0, unknown.stderr)
+  assert.deepEqual(JSON.parse(unknown.stdout), { systemMessage: 'portable stop context' })
+  const codex = run(root, localHooks, 'fork-governance-dispatcher.sh', 'codex',
+    { event: 'Stop', session_id: 'stop-context-probe', tool_name: 'Stop', tool_input: {}, stop_hook_active: false })
+  assert.equal(codex.status, 0, codex.stderr)
+  assert.deepEqual(JSON.parse(codex.stdout), { systemMessage: 'portable stop context' })
 })
 
 test('product runtime executes Bash and Python from a cleaned authenticated corpus snapshot with sibling semantics', async (t) => {

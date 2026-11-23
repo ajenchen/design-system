@@ -4,6 +4,7 @@
  *   保證: 隨 npm 出貨的 `packages/design-system/llms.txt` / `llms-full.txt`(package `files` + `exports` 的公開資產)
  *         永遠等於「從全部 component / pattern 的 spec.md frontmatter 重新生成」的結果 —— 不會出貨一份過期的設計參考。
  *   紅: `--check` 下任一檔不存在、或內容與重新生成的結果有一個位元組不同 → 印 DRIFT 指名檔案並 exit 1。
+ *       任一份 spec 的 frontmatter 不是合法 YAML → 指名檔案與行列並 exit 1(2026-11-17 A98;之前靜默當成空檔頭)。
  *       歷史紅燈(2026-09-29 OE18 盤點時抓到):檔頭寫「Run:postbuild-storybook + ci.yml --check」但三處都沒接
  *       (「寫了閘卻沒人呼叫」,失敗記憶索引),提交的檔停在 beta.132、線上已到 beta.146。
  *   綠: 內容逐位元組相同;純檔案比對,無時序、無瀏覽器,重複跑恆等。對照組:`--selftest` 把任一輸出檔改一個字元
@@ -60,13 +61,25 @@ const specFiles = [
   ...walkSpecs(join(SRC, 'patterns'), 'pattern'),
 ]
 
-// ── 2. parse frontmatter(robust:無 frontmatter / parse fail → 仍收錄,用 basename)──
-function parseSpec({ kind, file, dirName }) {
-  const raw = readFileSync(file, 'utf8')
-  let fm = {}
+// ── 2. parse frontmatter(無 frontmatter → 仍收錄,用 basename;**有 frontmatter 但不是合法 YAML → 紅**)──
+/**
+ * 純函式:spec 原文 → `{ fm, fmRaw }`。frontmatter 解析失敗一律丟錯並指名檔案與行列,不吞成空物件。
+ * 2026-11-17 A98:之前 `catch { fm = {} }` 把 Button / Tag / SegmentedControl / horizontal-overflow 四份壞掉的檔頭
+ * (`"…"([來源](…))` 引號字串後面接字、未加引號的 `hooks: `)靜默當成「沒有 variants / sizes」,`--check` 照綠 ——
+ * 出貨的 llms-full.txt 少了這幾個元件的 variants / sizes,CI 沒有任何一處紅。selftest 守這一條。
+ */
+export function parseFrontmatter(raw, file) {
   const m = raw.match(/^---\n([\s\S]*?)\n---/)
-  const fmRaw = m ? m[1] : ''
-  if (m) { try { fm = yaml.load(fmRaw) || {} } catch { fm = {} } }
+  if (!m) return { fm: {}, fmRaw: '' }
+  try {
+    return { fm: yaml.load(m[1]) || {}, fmRaw: m[1] }
+  } catch (error) {
+    throw new Error(`❌ ${file}: frontmatter 不是合法 YAML(${String(error.message).split('\n')[0]})—— 修好檔頭再重生 llms.txt`)
+  }
+}
+
+function parseSpec({ kind, file, dirName }) {
+  const { fm, fmRaw } = parseFrontmatter(readFileSync(file, 'utf8'), file)
   const name = fm.component || fm.pattern || dirName
   // internal 判定對齊 gen-design-system-barrel.mjs SSOT:frontmatter `- isInternal`(traits 列)/ `internal: true` / 路徑 Internal/
   const isInternal = /^\s*-\s*isInternal\s*$/m.test(fmRaw) || /^\s*internal:\s*true\s*$/m.test(fmRaw) ||
@@ -116,6 +129,7 @@ const llms = [
   `本檔由 source(spec.md frontmatter)build-time 自動生成,**禁手改**(CI --check drift gate 守)。`,
   `每元件 / pattern 的完整 variants / sizes / 禁止事項 全文見 [llms-full.txt](./llms-full.txt)。`,
   `元件原始範例 source:node_modules/@qijenchen/design-system/src/<dir>/*.stories.tsx;rendered:Storybook 連結。`,
+  `升版:各版的破壞性變更(改名 / 移除 / 必填 / 預設值 / 行為,每條附做法與規格段落)見 [ds-changes.json](./ds-changes.json);讀舊版之後到新版的各節,再跑 \`npx qijenchen-ds-codemod upgrade\`。`,
   ``,
   `## Components`,
   ...components.map((s) => `- [${s.name}](${urlFor()}): ${oneLiner(s)} — src:${srcDir(s)}`),
@@ -194,8 +208,16 @@ function selftest() {
   if (!/llms\.txt 不存在/.test(driftOf('llms.txt', null, llms) ?? '')) failures.push('缺檔應紅並指名 llms.txt')
   if (!/llms-full\.txt 與 source 不同步/.test(driftOf('llms-full.txt', llmsFull + 'x', llmsFull) ?? '')) failures.push('改一個字元應紅並指名 llms-full.txt')
   if (/\bv\d+\.\d+\.\d+/.test(llms) || /\bv\d+\.\d+\.\d+/.test(llmsFull)) failures.push('輸出不得含版號(版號住 package.json,再抄一份就是第二個住所)')
+  // 檔頭解析(A98):壞的 YAML 必丟錯並指名檔案(2026-11-16 HEAD 的 Tag 第 8 行原樣);合法的照讀;沒有檔頭 = 空物件
+  const brokenTag = '---\ncomponent: Tag\nvariants:\n  neutral:\n    when: "通用分類"([來源](https://example.com))\n---\n'
+  let brokenMsg = ''
+  try { parseFrontmatter(brokenTag, 'tag.spec.md') } catch (error) { brokenMsg = String(error.message) }
+  if (!/tag\.spec\.md: frontmatter 不是合法 YAML/.test(brokenMsg)) failures.push('壞掉的檔頭應丟錯並指名檔案(實得:' + (brokenMsg || '沒有丟錯') + ')')
+  const fixedTag = brokenTag.replace('"([來源]', '"  # ([來源]')
+  if (parseFrontmatter(fixedTag, 'tag.spec.md').fm.variants?.neutral?.when !== '通用分類') failures.push('合法檔頭(來源寫成註解)應讀得到 variants')
+  if (Object.keys(parseFrontmatter('# 沒有檔頭\n', 'x.spec.md').fm).length !== 0) failures.push('沒有檔頭應回空物件')
   if (failures.length) { console.error('❌ gen-llms-txt selftest FAIL:\n  ' + failures.join('\n  ')); process.exit(1) }
-  console.log('✅ gen-llms-txt selftest PASS(同內容綠 / 缺檔紅 / 改一字元紅 / 無版號)')
+  console.log('✅ gen-llms-txt selftest PASS(同內容綠 / 缺檔紅 / 改一字元紅 / 無版號 / 壞檔頭紅並指名)')
 }
 
 if (SELFTEST) selftest()

@@ -79,8 +79,8 @@ capture manifest 解析 audit target。缺 screenshot 時，優先用既有 Stor
 流程自行產生；viewport、density、theme 與 size 必取自同一 capture manifest，不靠猜測或
 另問 user。元件 token 由 owning spec 與 token registry 解析。
 
-只有在本機／既有受治理環境確實無法取得 target 或影像，且原因是不可代理的登入、MFA、
-OAuth 或 private surface access 時，才形成 shared-governance human-only action；此時先完成
+只有在本機／既有受治理環境確實無法取得 target 或影像，且原因是共同 bootstrap `canonical-decision-authority` 區塊列的 human-only boundary
+(例:不可代理的登入、private surface access)時，才形成 human-only action；此時先完成
 所有其他 preflight，只回報唯一必要操作。若 owning spec 缺 token，記為 P2E governance
 evidence gap 並交 canonical owner；若補值會創造產品／UI／UX SSOT 真取捨才列 P2H。
 
@@ -217,7 +217,7 @@ FAIL 項摘要:
 後續路由:
 1. FAIL 可由既有 canonical 決定 → P2E，由 primary context 依 Standing Authorization remediation + verify
 2. 純工程／治理原因尚未收斂 → P2E，依 Engineering Decision Policy、tests 與 hard gates 收斂；task／deliverable 明確要求時才加 independent review，optional review 缺席不得阻擋一般工程；無法收斂則 fail closed 回報 technical blocker
-3. 必須改變產品／UI／UX SSOT 且仍有真實選擇或取捨 → P2H，batch-at-end 請 user 拍板
+3. 必須改變產品／UI／UX SSOT 且仍有真實選擇或取捨 → P2H，batch-at-end 請 user 拍板(類別照共同 bootstrap `canonical-decision-authority` 區塊)
 4. 證據不足 → 補足 screenshot／量測，不以猜測結案
 
 (本 skill 保持 read-only；primary implementation 不需另取 user 工程授權。)

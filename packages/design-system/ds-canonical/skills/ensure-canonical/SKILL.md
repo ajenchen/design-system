@@ -104,7 +104,7 @@ Authority: <ENGINEERING-AUTO | PRODUCT-UIUX-DECISION | HUMAN-PLATFORM-ACTION>
 Substantive 動議: <工程 → evidence/review/rollback；產品 UI/UX 真取捨 → batch-at-end decision>
 ```
 
-`ENGINEERING-AUTO` 直接進 Phase 6，不等 milestone 確認。只有 `PRODUCT-UIUX-DECISION` 或 shared governance 定義的平台／credential／額外付費／法律帳號商業 human-only boundary 才停；平台 action 前仍先完成唯一工程方案與可做 preflight。
+`ENGINEERING-AUTO` 直接進 Phase 6，不等 milestone 確認。只有 `PRODUCT-UIUX-DECISION` 或共同 bootstrap `canonical-decision-authority` 區塊列的 human-only boundary 才停；平台 action 前仍先完成唯一工程方案與可做 preflight。
 
 ### Phase 6 — Execute(每層 commit / verify)
 
@@ -165,7 +165,7 @@ Plan 與 scope classifier 必記錄，但純工程不得停等 user 拍板。只
 
 - 不負責 single-file refactor(走 /design-system-audit)
 - 不負責 ad-hoc bug fix(走 /scan-similar-bugs)
-- 不替代 propose-options 4-Q gate(M18 不同階段:propose vs ensure)
+- 不替代 propose-options 的 M18 自檢題(M18 不同階段:propose vs ensure)
 - 不自行發明產品／UI／UX SSOT；純工程／治理 substantive 依 Standing Authorization 自動執行
 
 ## 與其他 skill 分工
@@ -173,7 +173,7 @@ Plan 與 scope classifier 必記錄，但純工程不得停等 user 拍板。只
 | Skill | Trigger | Scope |
 |-------|---------|-------|
 | **/ensure-canonical** | 「確保 X 一定要」trigger phrase | 規劃 N-layer enforcement |
-| `/propose-options` | 列 options 給 user 前 | 4-Q gate per option |
+| `/propose-options` | 列 options 給 user 前 | M18 自檢題(Q0–Q5)per option |
 | `/design-system-audit` | 已 codified rule batch verify | audit 既有元件 |
 | `/knowledge-prune` | governance bloat | Level 1–9 taxonomy retire / consolidate |
 | `/scan-similar-bugs` | 修 bug 後 | M10 exhaustive scan |

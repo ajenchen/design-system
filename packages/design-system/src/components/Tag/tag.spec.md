@@ -6,44 +6,44 @@ family: 3
 # 對齊 Ant Tag「preset 原始色相名」categorical 模型 + Atlassian「categorical 色 vs semantic 色分離」。
 variants:
   neutral:
-    when: "通用分類、草稿、無特定語義"([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
-    world-class: ["Polaris Tag default", "Atlassian Tag standard", "Ant Tag default"]
+    when: "通用分類、草稿、無特定語義"  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    world-class: ["Atlassian Tag standard", "Ant Tag default"]
   blue:
     when: "categorical 色相（--color-blue-*）— 分類 / 標記，常用於資訊類"
-    world-class: ["Ant Tag color=blue"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    world-class: ["Ant Tag color=blue"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   green:
     when: "categorical 色相（--color-green-*）— 分類 / 標記，常用於完成 / 正向類"
-    world-class: ["Ant Tag color=green"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    world-class: ["Ant Tag color=green"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   deep-orange:
     when: "categorical 色相（--color-deep-orange-*，hue 38）— 暖橙紅分類"
-    world-class: ["Ant Tag color=volcano"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    world-class: ["Ant Tag color=volcano"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   yellow:
     when: "categorical 色相（--color-yellow-*，淺底深字）— 分類 / 標記，常用於注意類"
-    world-class: ["Ant Tag color=gold"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    world-class: ["Ant Tag color=gold"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   red:
     when: "categorical 色相（--color-red-*，品牌紅家族 hue 25；≠ 語意 --error，與 deep-orange 無關）"
-    world-class: ["Ant Tag color=red"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    world-class: ["Ant Tag color=red"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   orange:
     when: "categorical 色相（--color-orange-*）— 分類 / 標記"
-    world-class: ["Ant Tag color=orange"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    world-class: ["Ant Tag color=orange"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   amber:
     when: "categorical 色相（--color-amber-*，淺底深字）— 琥珀分類"
-    world-class: ["Ant Tag color=gold"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    world-class: ["Ant Tag color=gold"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   lime:
     when: "categorical 色相（--color-lime-*）— 黃綠分類"
-    world-class: ["Ant Tag color=lime"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    world-class: ["Ant Tag color=lime"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   turquoise:
     when: "categorical 色相（--color-turquoise-*）— 產品線 / 團隊區別標記"
-    world-class: ["Ant Tag color=cyan"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    world-class: ["Ant Tag color=cyan"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   indigo:
     when: "categorical 色相（--color-indigo-*）— 產品線 / 團隊區別標記"
-    world-class: ["Ant Tag color=geekblue"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    world-class: ["Ant Tag color=geekblue"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   purple:
     when: "categorical 色相（--color-purple-*）— 產品線 / 團隊區別標記"
-    world-class: ["Ant Tag color=purple"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    world-class: ["Ant Tag color=purple"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   magenta:
     when: "categorical 色相（--color-magenta-*）— 產品線 / 團隊區別標記"
-    world-class: ["Ant Tag color=magenta"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    world-class: ["Ant Tag color=magenta"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
 sizes:
   sm:
     when: "form field-height 28 / compact chrome / dialog / panel context"
@@ -183,7 +183,7 @@ Dismiss 是 Inline Action，icon 色**依宿主是否有色彩分兩支**(判斷
 
 #### `--{hue}-hover/active` 的定位
 
-Semantic 互動 token，從 brand color (`--primary-hover`) 延伸到所有作為 bg 的色相。**刻意只有 hover/active 兩個 token**——base/subtle/text 用 primitive，沒有 `--blue` base 或 `--blue-subtle`，避免重新引入完整 categorical 層。**Neutral 例外**：neutral solid bg = `--color-neutral-9`，dark mode 反轉（近黑 → 近白）bg 本身跨 mode 變色，不能用針對「bg 不變」飽和色的 `--{hue}-hover/active`，改用 `--inverse-neutral-hover` / `--inverse-neutral-active`（內部處理 mode 鏡射 swap）。
+Semantic 互動 token，從互動色 (`--primary-hover`) 延伸到所有作為 bg 的色相。**刻意只有 hover/active 兩個 token**——base/subtle/text 用 primitive，沒有 `--blue` base 或 `--blue-subtle`，避免重新引入完整 categorical 層。**Neutral 例外**：neutral solid bg = `--color-neutral-9`，dark mode 反轉（近黑 → 近白）bg 本身跨 mode 變色，不能用針對「bg 不變」飽和色的 `--{hue}-hover/active`，改用 `--inverse-neutral-hover` / `--inverse-neutral-active`（內部處理 mode 鏡射 swap）。
 
 Inline Action 的其他規則（尺寸、hover 背景 pattern）不變。
 
@@ -200,6 +200,10 @@ Inline Action 的其他規則（尺寸、hover 背景 pattern）不變。
 | lg | 24px | text-body (14px) | font-normal | 4px | 4px | field lg（與 md 同值，子元件補齊原則） |
 
 **Tag 內 icon 統一 16px**，不分 Tag 尺寸。
+
+**盒高的 token(唯一住所)**：`--tag-height-sm` = 1.25rem(20px)、`--tag-height-md` = 1.5rem(24px)、`--tag-height-lg` = 1.5rem(24px，md alias)，住本資料夾 `tag.css`(2026-11-11 從 `tokens/uiSize/uiSize.css` 搬來，user 2026-11-10 token「2甲」第二批；名字與值不變，產品經對外彙總檔 `styles/tokens.css` 拿到)。Tailwind 寫法 `h-tag-sm` / `h-tag-md` / `h-tag-lg`(轉接名 `--spacing-tag-*` 跟著住 `tag.css`)。讀者：本元件 cva、`Field/field-wrapper.tsx` 的 `fieldTagInsetX` / `fieldTagInsetY`(下方「圓角與間距」的四邊等距公式)。程式對照常數 `tag.tsx` `TAG_HEIGHT_PX`(兩邊相等由 `scripts/token-twin-invariant.mjs` 靜態鎖住；畫出來的高度由 `scripts/tag-field-vertical-inset.mjs` I7 量)。分類與誰可以讀 → `tokens/token-registry.json`「--tag-height-」那一列。收斂前盒高散在 4 處字面值(tag.tsx cva / tag.tsx metrics / combobox.tsx ×3 / field-wrapper.tsx calc)，那正是漂移的根(M17，2026-09-15 收斂)。
+
+**寬度上限 `--tag-max-inline-size`**(Tag 的值,沒有預設宣告):Tag 的 `max-width` 讀它 —— 預設 `min(var(--tag-max-inline-size, 10rem), 10rem)`(上限 160px,裝 Tag 的那一列量到更窄時取更小的);`unbounded` 時 `var(--tag-max-inline-size, 100%)`(`tag.tsx`)。寫它的是**裝 Tag 的那一列**:`../OverflowIndicator/overflow-tag-list.tsx` 量出這一列扣掉「+N」與欄位內搜尋框之後的可用寬,寫成 px(為什麼不用百分比見 `tag.tsx` 那段註解);Combobox 換行加欄位內搜尋時寫 `100%`(`../Combobox/combobox.tsx`)。拿掉 Tag 這個值就沒有意義 → Tag 的值;產品不讀不寫。2026-11-15 前叫 `--combobox-tag-area-inline-size`:名字掛 Combobox,實際讀它、決定它意思的是 Tag,寫它的主要是共用的標籤列;規格也沒有寫它 —— 依 `../../tokens/token-system.spec.md` 規則 1 改名、補進本段,值與行為不變(稽核 P17)。【AI 推導 2026-11-15:主人選 Tag 是照判斷流程第 2 題(拿掉誰它就沒意義)判的;同一份稽核的 B4 建議過主人是標籤列,兩條都在稽核裡,選了只改名、不動寫入端 API 的這一條】
 
 ## 內部結構
 
@@ -220,7 +224,7 @@ Inline Action 的其他規則（尺寸、hover 背景 pattern）不變。
 | `avatar` | `ReactNode` | 左側 avatar。與 icon 互斥 |
 | `onRemove` | `() => void` | 可移除——Tag 自動渲染 remove 按鈕並控制尺寸與互動樣式(從集合移除 item) |
 | `removeAriaLabel` | `string` | remove 按鈕 aria-label 的目標名(對齊 FileUpload `removeAriaLabel` 同場景 + `<動作>AriaLabel` 命名慣例)。**children 為非字串 ReactNode 時必傳**,否則 SR 只讀得出泛稱「移除」、辨識不出移除哪個 Tag;children 為字串時預設取 children |
-| ~~`dismissLabel`~~ | `string` | **@deprecated 2026-07-17 → `removeAriaLabel`**(dismiss 保留給 Alert/Notice/Toast「通知被忽略」;過渡一版仍可用) |
+| ~~`dismissLabel`~~ | — | **已移除**(2026-07-17 改名 `removeAriaLabel`,2026-11-15 拿掉舊名;dismiss 保留給 Alert/Notice/Toast「通知被忽略」)。升版對照:`dismissLabel="…"` → `removeAriaLabel="…"` |
 | `solid` | `boolean` | 深底配對前景模式（step-6 背景；yellow/amber/orange/lime 用深字，其餘白字），預設 false |
 | `unbounded` | `boolean` | 預設 false = 寬度 cap 160px;true = 寬度交給 parent constrain（cell-as-input narrow cell 場景），詳「邊界案例」 |
 
@@ -272,7 +276,7 @@ Tag 是**純顯示 indicator**(Family 3 indicator variant,見「與 Button 的�
 Tag 是**純視覺 indicator**(非互動 control,互動版本是 Chip),預設 ARIA 行為:
 
 - **靜態 Tag**(無 `onRemove`):render 為 `<div data-tag-root>`(無 role、`inline-flex`,SR 等價於無語意 generic container,視覺上為 inline-level 跟隨 inline flow)。若 Tag 表達狀態語意(「進行中」「已逾期」),consumer 應在父 region 用 `aria-label` 或視覺 prefix(icon)讓 SR 理解 context
-- **Removable Tag**(`onRemove` 存在):inline X close 走 `<ItemInlineActionButton icon={X} size="md" aria-label="移除 {name}" />`(item-anatomy SSOT 的原生 `<button>`,非 `Button` 元件)— 對齊 inline-action canonical(`patterns/element-anatomy/inline-action.spec.md`)。**名稱來源**:`removeAriaLabel` prop 優先(舊名 `dismissLabel` deprecated 仍支援),否則取字串 children;**若 children 是非字串 ReactNode(如 avatar + 排版節點)且未傳 `removeAriaLabel`,aria-label 會退化成泛稱「移除」**——多個 Tag 並排時 SR 無法區分移除哪一個,故非字串 children 必傳 `removeAriaLabel`
+- **Removable Tag**(`onRemove` 存在):inline X close 走 `<ItemInlineActionButton icon={X} size="md" aria-label="移除 {name}" />`(item-anatomy SSOT 的原生 `<button>`,非 `Button` 元件)— 對齊 inline-action canonical(`patterns/element-anatomy/inline-action.spec.md`)。**名稱來源**:`removeAriaLabel` prop 優先,否則取字串 children;**若 children 是非字串 ReactNode(如 avatar + 排版節點)且未傳 `removeAriaLabel`,aria-label 會退化成泛稱「移除」**——多個 Tag 並排時 SR 無法區分移除哪一個,故非字串 children 必傳 `removeAriaLabel`
 - **Keyboard**:靜態 Tag 不取得 focus(無互動);**例外:截斷時條件性 `tabIndex=0`**(2026-07-06 拍板)——全文 tooltip 需鍵盤可達,APG Tooltip pattern 原文「popup 在元素收到鍵盤焦點或 hover 時顯示」= trigger 可 focus 是 W3C 官方前提;Radix Tooltip focus-open 自動生效,未截斷不入 tab 序。dismissible 的 X 走原生 button 鍵盤(Tab → focus → Enter/Space → dismiss)([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/tooltip/tooltip-pattern.html#L27))
 - **Color-only 語意警告**:Tag 用色相區分狀態時必有文字 label 或 prefix icon(色盲 user 友好);對齊 WCAG 1.4.1「不僅靠顏色傳達」
 - **驗證**:Storybook a11y addon panel 0 critical violation;WCAG AA contrast ≥ 4.5:1(text)/ 3:1(icon)
@@ -303,3 +307,4 @@ main 223ms / 加快取後 380ms / 再把快取鍵最佳化後 412ms —— 每�
 - `badge.spec.md`
 - `inline-action.spec.md`
 - `overflow-indicator.spec.md`
+- `uiSize.spec.md`

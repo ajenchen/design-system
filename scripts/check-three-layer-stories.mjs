@@ -16,6 +16,13 @@
  * 用法:
  *   node scripts/check-three-layer-stories.mjs          # 報告
  *   node scripts/check-three-layer-stories.mjs --check   # CI 模式(缺層 → exit 1)
+ *
+ * @gate-contract
+ *   保證: packages/design-system/src/components/<元件>/ 只要有展示層 story(*.stories.tsx,不含 .anatomy. / .principles.)而且不是 internal
+ *         (主 spec frontmatter `internal: true` 或 `- isInternal`;主 spec 由 lib/unit-own-spec.mjs 判),就同時有 *.anatomy.stories.tsx
+ *         與 *.principles.stories.tsx
+ *   紅: --check 下有元件缺任一層、或判不了自己的主 spec → 列出元件與缺哪層並 exit 1;配對測試暫時把 accordion.principles.stories.tsx 改名,本閘必須紅
+ *   綠: 全部齊時 exit 0 並印出掃了幾個公開元件;--check 不寫報告檔(不帶 --check 才寫 runtime evidence),只讀檔,不讀時間,重複跑結果相同
  */
 import fs from 'node:fs'
 import path from 'node:path'

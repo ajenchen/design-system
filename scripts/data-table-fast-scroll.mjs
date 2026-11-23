@@ -12,7 +12,11 @@
  *            (那種情況下它量到的只有 runner 的排程雜訊)。絕對門檻與目的地判定不受影響,照跑。
  *        (c) 比值超過 1.25 ≠ 已證明變慢(2026-10-14):長工合計與幀距 1.5 倍以上要雜訊撐得住才紅(秩檢定分得開、或對數 Welch t
  *            p ≤ 0.05、或兩邊都只有 1 趟;R1d,38346602 長工合計 5.96× 是快 runner 上的門檻統計量雜訊,同一份程式碼 21e25346 是 1.01×),
- *            否則走灰區同一條路;中央區最長連續空白照舊超過 1.5 倍直接紅(放寬的證據不適用於它,見 `RATIO_CHECKS`);1.25–1.5 的灰區先算單側精確
+ *            否則走灰區同一條路;中央區最長連續空白照舊超過 1.5 倍直接紅(放寬的證據不適用於它,見 `RATIO_CHECKS`),但另有白幀張數地板:
+ *            分支要比參考(A/A 那份有量到時取兩份較多的)多出 2 張以上的連續白幀才紅,參考是不是 0 同一條式子(lib `blankDecision`,
+ *            2026-11-16 覆核二 MF-R1)。白幀張數數不到「整片白而且不變」(截圖串流不重送,持續的白只算 1 張),所以持續空白另由 pinned 步驟
+ *            (帶 --trace)的 CDP 追蹤 checkerboard 次數判:同一條式子、地板 15 次(lib `checkerboardDecision`,A25 覆核二修補);
+ *            追蹤資料缺 = 儀器失效紅。1.25–1.5 的灰區先算單側精確
  *            Mann–Whitney,分得開才紅,分不開才交錯加量再判(lib `refRatioDecision`;1ef86547 零個執行期檔案改動
  *            卻量到 1.38×)。≤ 1.25 與舊判準逐位元相同。要不要加量只問 lib `nextExtraRound`:每一輪(含第一輪)
  *            先用這種跑法最慢那趟估一輪、對**整個 job 共用**的預算檢查,這種跑法已有一項判紅就不加。
@@ -58,9 +62,11 @@
  * 捲動情境(--mode,逗號分隔):
  *   wheel  :對 center 容器 dispatch `wheel`(deltaY 300/400/500/600 輪替,每 16ms 一次,連續 40 次)。
  *            合成的 WheelEvent 沒有預設動作(untrusted),所以自己補 `scrollTop += deltaY`。
- *   pinned :同上但 dispatch 在左釘選面板,走元件自己的滾輪轉發(data-table.tsx makeBindPinnedPanel,非 passive 監聽)。
- *            這條路 mouse / gesture 都走不到(它們對準中央區),是「滑鼠停在 ID / 選取欄上捲」的唯一覆蓋(2026-09-29,總帳 OE7)。
- *            轉發斷掉 = scrollTop 沒動 → 直接紅(產品缺陷,不是儀器);空白類斷言與 wheel 同理不適用(JS 在主執行緒寫 scrollTop)。
+ *   pinned :「滑鼠停在 ID / 選取欄上捲」的唯一覆蓋(2026-09-29,總帳 OE7;mouse / gesture 都對準中央區)。
+ *            2026-11-05(待辦總帳 Q2b)起釘選面板就在共用捲動盒裡,釘選欄上的滾輪是**瀏覽器原生**捲動(修前靠 makeBindPinnedPanel 轉發,
+ *            合成的 untrusted wheel 事件才驗得到那個轉發器);原生捲動只有真輸入才會發生,所以改成跟 mouse 同一條路徑
+ *            (CDP `Input.dispatchMouseEvent mouseWheel`,trusted),只是指標停在左釘選面板看得見的那一塊上。
+ *            scrollTop 沒動 → 直接紅(產品缺陷:釘選欄吃不到滾輪)。
  *   mouse  :CDP `Input.dispatchMouseEvent mouseWheel`(trusted,走真的輸入管線與合成執行緒;不等回應,照 16ms 節奏丟)。
  *   gesture:**真實呈現幀(2026-09-09,Codex R8 駁回「預估 paint 空白」後改用)**:CDP `Input.synthesizeScrollGesture`(走原生輸入管線與
  *            合成執行緒,--gesture-px / --gesture-speed)+ `Page.startScreencast`(合成器實際送出的每一幀)。每一幀把中央捲動區切成
@@ -92,12 +98,15 @@
  *   任一沒紅 / 該綠沒綠 = 儀器壞了,exit 1。
  */
 import { existsSync, readFileSync, writeFileSync, mkdirSync, mkdtempSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { tmpdir, cpus, loadavg, platform, release } from 'node:os'
 import { join, dirname, basename, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { dtVisibleBand } from './lib/data-table-visible-band.mjs'
 import { spawnSync } from 'node:child_process'
+import { gzipSync } from 'node:zlib'
+import { startTrace, summarizeTrace, findMark, layerTreeSnapshot, traceTable, TraceInstrumentError } from './lib/cdp-trace-summary.mjs'
 
 /**
  * 相對 `ref`,本 HEAD 有沒有任何**會進 runtime**的原始碼差異。
@@ -121,7 +130,8 @@ function runtimeSourceDiffers(ref) {
   return run.stdout.split('\n').some((f) => /^(packages|src)\/.*\.(tsx?|jsx?|css)$/.test(f.trim()))
 }
 import { attributeLongFrames, compareAttribution, cpuInLongFrames, licenseHint, longTaskCoverage } from './lib/long-frame-attribution.mjs'
-import { classifyRun, median, gateVerdict, CEILING_FACTOR, longTaskLimit, refRatioDecision, ratioZoneText, advanceGapStats, nextExtraRound, estimateRoundMs, readExtraLedger, chargeExtraLedger, BLANK_RATIO_LIMIT, RATIO_HARD_CAP, RATIO_ALPHA, MAX_EXTRA_ROUNDS, EXTRA_ROUNDS_JOB_BUDGET_MS } from './lib/fast-scroll-gate-policy.mjs'
+import { pinnedMechanismPlan, pinnedComparable, gpPointerLabels, aaMechanismCheck, blankDecision, longestBlankRun, ZERO_REF_BLANK_FRAMES, checkerboardDecision, CHECKERBOARD_FLOOR } from './lib/fast-scroll-gate-policy.mjs'
+import { classifyRun, median, gateVerdict, CEILING_FACTOR, longTaskLimit, refRatioDecision, ratioZoneText, advanceGapStats, nextExtraRound, extraRoundPlan, readExtraLedger, chargeExtraLedger, aaNoise, combineWithAA, roundOrderOf, AA_SUFFIX, AA_NOISE_SHARE, BLANK_RATIO_LIMIT, RATIO_HARD_CAP, RATIO_ALPHA, MAX_EXTRA_ROUNDS, EXTRA_ROUNDS_JOB_BUDGET_MS } from './lib/fast-scroll-gate-policy.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (name, def) => { const hit = process.argv.find((a) => a.startsWith(`--${name}=`)); return hit ? hit.slice(name.length + 3) : def }
@@ -149,12 +159,31 @@ const SMOOTH = arg('smooth', 'on')
 const SHOTS = flag('shots')
 const PROFILE_DIR = arg('profile', '')
 const JSON_OUT = arg('json', '')
+// `--trace=<dir>`(2026-11-16,A25):另跑 CDP Tracing 的追蹤趟,存每條執行緒忙碌 / 合成幀 / render pass / quad / checkerboard / EventLatency 摘要
+// + gzip 原始 trace + 靜止時的 LayerTree 摘要,並排表印進 log —— 比值紅的當下不用下載就看得到成本在哪條執行緒(lib/cdp-trace-summary.mjs;
+// headless 下每幀時間無效,CPU 工作量有效,M32(g))。Tracing 本身有開銷,所以追蹤趟一律與量空白 / 長工 / 幀距的量測趟分開跑。
+//   · pinned + `--ref`(`traceJudged`):**計分**(2026-11-16 A25 覆核二修補)—— 三份建置(含 A/A 那份)× `--runs` 輪、同一套輪轉,
+//     每趟的 checkerboard 次數進 RATIO_CHECKS.checkerboard(持續空白;lib `checkerboardDecision`)。追蹤資料缺 → 儀器失效紅。
+//   · 其餘模式:參考與受測各 1 趟,不計分(checkerboard 的地板只用 pinned 的同碼資料定過)。
+const TRACE_DIR = arg('trace', '')
 const ASSERT_PAINT = arg('assert-max-paint-blank', '')
 const ASSERT_DOM = arg('assert-max-dom-blank', '')
 const SELFTEST = flag('selftest')
 // `--ref=<label>`:把某個 build label 當成參考點(通常是 main),空白改判「本 build ÷ 參考 ≤ 比值上限」。
 // 為什麼不是絕對門檻、也不是忙等對照:見 lib 的 refRatioVerdict 註解(忙等對照會飽和,量不出真實差距)。
 const REF_LABEL = arg('ref', '')
+// **A/A 對照**(2026-11-16,A28;lib `aaNoise` / `combineWithAA`):有 `--ref` 時自動多量一份 `<ref>~aa` —— 同一個目錄、
+// 獨立的靜態伺服器與凍結快照(`serve()` 每份各自凍結),三份輪轉(lib `roundOrderOf`)。branch 對 ref 的判定不變,A/A 只當修正子,
+// 而且**每一跑都算、都印、都寫進 --json**(不受「零執行期差異就跳過」影響:零差異的 PR 正好是最乾淨的 A/A 樣本)。
+// `--aa=off` 只給本機實驗;`--aa-throttle=<倍率>` 只對 `<ref>~aa` 那一頁開 CDP CPU 節流 —— A/A 偵測器的對照組(必須印「A/A 不乾淨」、
+// 不得把分支判紅、也不得沒印就放行)。
+const AA_MODE = arg('aa', 'on')
+if (!['on', 'off'].includes(AA_MODE)) { console.error(`✗ --aa 只接受 on / off(得 ${AA_MODE})`); process.exit(1) }
+const AA_LABEL = REF_LABEL ? `${REF_LABEL}${AA_SUFFIX}` : ''
+const AA_THROTTLE = Number(arg('aa-throttle', 1))
+const isAA = (label) => !!AA_LABEL && label === AA_LABEL
+// 受測 build = 不是參考、也不是參考的 A/A 那一份
+const isTested = (label) => label !== REF_LABEL && !isAA(label)
 const BUSY_AT = 20, BUSY_MS = 150
 const GESTURE_PX = Number(arg('gesture-px', 6000))
 const GESTURE_SPEED = Number(arg('gesture-speed', 12000))
@@ -220,6 +249,11 @@ const CSS_INJECT = arg('css', '') // 消融實驗用:載入後注入一段 CSS(�
 const BUILDS = arg('builds', '')
   ? arg('builds', '').split(',').map((s) => { const i = s.indexOf('='); return { label: s.slice(0, i), dir: resolve(s.slice(i + 1)) } })
   : [{ label: arg('label', 'build'), dir: resolve(arg('static', process.env.DT_STATIC || join(REPO, 'storybook-static'))) }]
+{
+  // A/A 那一份:參考建置的同一個目錄(selftest 與注入模式不加;參考不在 --builds 裡也不加 —— 那時比值本來就是 no-ref)
+  const refBuild = REF_LABEL && AA_MODE === 'on' && !SELFTEST && !arg('inject-runs', '') ? BUILDS.find((b) => b.label === REF_LABEL) : null
+  if (refBuild && !BUILDS.some((b) => b.label === AA_LABEL)) BUILDS.push({ label: AA_LABEL, dir: refBuild.dir, aa: true })
+}
 for (const m of MODES) if (!['wheel', 'pinned', 'mouse', 'gesture'].includes(m)) { console.error(`✗ 不認識的 --mode ${m}(wheel / pinned / mouse / gesture)`); process.exit(1) }
 if (!SELFTEST && !(RUNS >= 1)) { console.error('✗ --runs 必須 ≥ 1(0 次會沒有任何結果卻 exit 0)'); process.exit(1) }
 // 注入模式(`--inject-runs`,見下方)完全不開瀏覽器、不讀任何 build,所以不檢查 build 在不在。
@@ -240,6 +274,13 @@ const serve = async (dir) => {
   return { server, base: server.origin }
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+let BROWSER_VERSION = ''
+// runner 指紋(2026-11-16):CI artifact 裡每一份原始資料都要說得出是哪一台機器量的(M32(h):先歸因再比)
+const runnerFingerprint = () => {
+  const cs = cpus()
+  return { nproc: cs.length, cpuModel: cs[0]?.model ?? '', loadavg: loadavg().map((v) => +v.toFixed(2)), platform: `${platform()} ${release()}`, chromium: BROWSER_VERSION || null,
+    singleProcess: true /* lib/launch-browser.mjs SANDBOX_ARGS 一律帶 --single-process */, githubRun: ['GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT', 'GITHUB_JOB', 'GITHUB_SHA'].map((k) => process.env[k] ?? '').join('/') }
+}
 
 // ── 頁內:最早期樁(commit 計數 / long task / scroll 與 wheel 事件計數)──
 const INIT = ({ loaf }) => {
@@ -269,11 +310,14 @@ const INIT = ({ loaf }) => {
 }
 
 // ── 頁內:每幀取樣器(回傳 setup 資訊)──
-const START_SAMPLER = ({ sabotage, startPx }) => {
+const START_SAMPLER = ({ sabotage, startPx, band }) => {
   const S = window.__fs
   const cb = document.querySelector('[data-datatable-hscroll]')
   const left = document.querySelector('[data-datatable-panel="left"]')
+  // 2026-11-05(Q2b):捲動盒同時裝著黏頂表頭與兩側釘選面板;「中央量測區」= 看得見的列帶 ∩ 中央區(band,由 lib/data-table-visible-band.mjs 算好傳進來),
+  // 列只取中央面板裡的(修前捲動盒就是中央面板,兩代結構同一個答案)。
   if (!cb) return { crashed: true }
+  const centerRows = cb.matches('[data-datatable-panel="center"]') ? cb : (cb.querySelector('[data-datatable-panel="center"]') ?? cb)
   if (cb.scrollHeight <= cb.clientHeight + 1) return { noOverflow: true }
   cb.scrollTop = startPx
   const cbRect0 = cb.getBoundingClientRect()
@@ -294,16 +338,17 @@ const START_SAMPLER = ({ sabotage, startPx }) => {
   const sample = () => {
     const t = performance.now()
     const cbRect = cb.getBoundingClientRect()
-    const H = cb.clientHeight
+    const bandTop = band ? band.top : cbRect.top, bandBottom = band ? band.bottom : cbRect.bottom
+    const H = bandBottom - bandTop
     const map = new Map()
-    for (const r of cb.querySelectorAll('[data-row-index]')) map.set(r.getAttribute('data-row-index'), r)
-    const real = cb.querySelectorAll('[data-row-index]:not([data-fs-fake])')
+    for (const r of centerRows.querySelectorAll('[data-row-index]')) map.set(r.getAttribute('data-row-index'), r)
+    const real = centerRows.querySelectorAll('[data-row-index]:not([data-fs-fake])')
     let rTop = 0, rBot = 0
-    if (real.length) { const a = real[0].getBoundingClientRect(), b = real[real.length - 1].getBoundingClientRect(); rTop = Math.min(a.top, b.top) - cbRect.top; rBot = Math.max(a.bottom, b.bottom) - cbRect.top }
+    if (real.length) { const a = real[0].getBoundingClientRect(), b = real[real.length - 1].getBoundingClientRect(); rTop = Math.min(a.top, b.top) - bandTop; rBot = Math.max(a.bottom, b.bottom) - bandTop }
     let visible = 0, missing = 0, empty = 0
     for (const r of (left ?? cb).querySelectorAll('[data-row-index]')) {
       const rr = r.getBoundingClientRect()
-      if (rr.bottom <= cbRect.top || rr.top >= cbRect.bottom) continue
+      if (rr.bottom <= bandTop || rr.top >= bandBottom) continue
       visible++
       const c = map.get(r.getAttribute('data-row-index'))
       if (!c) { missing++; continue }
@@ -311,12 +356,16 @@ const START_SAMPLER = ({ sabotage, startPx }) => {
       for (const cell of c.querySelectorAll('[role="cell"],[role="gridcell"]')) { if (cell.firstElementChild || cell.textContent.trim() !== '') { has = true; break } }
       if (!has) empty++
     }
-    S.frames.push({ t, dt: t - lastT, shells: cb.querySelectorAll('[data-row-shell]').length, st: cb.scrollTop, lst: left ? left.scrollTop : null, H, visible, missing, empty, rTop, rBot, rows: real.length, commits: S.commits - lastCommits, scrolls: S.scrollEvents - lastScroll })
+    // 左面板落後量:修前它是自己的捲動盒(JS 同步 scrollTop);修後它在捲動盒裡,結構上不可能落後(記成同一個值)
+    S.frames.push({ t, dt: t - lastT, shells: centerRows.querySelectorAll('[data-row-shell]').length, st: cb.scrollTop, lst: left ? (cb.contains(left) ? cb.scrollTop : left.scrollTop) : null, H, visible, missing, empty, rTop, rBot, rows: real.length, commits: S.commits - lastCommits, scrolls: S.scrollEvents - lastScroll })
     lastT = t; lastCommits = S.commits; lastScroll = S.scrollEvents
   }
   const loop = () => { if (!S.on) return; sample(); requestAnimationFrame(loop) }
   requestAnimationFrame(loop)
-  return { ok: true, hasLeft: !!left, rows: cb.querySelectorAll('[data-row-index]:not([data-fs-fake])').length, H: cb.clientHeight, scrollHeight: cb.scrollHeight, cx: cbRect0.left + cbRect0.width / 2, cy: cbRect0.top + cbRect0.height / 2, hookOk: window.__REACT_DEVTOOLS_GLOBAL_HOOK__.renderers.size > 0, longtaskErr: S.longtaskErr || null }
+  const leftR = left ? left.getBoundingClientRect() : null
+  const leftPt = leftR && band ? { x: Math.max(leftR.left, band.left) + Math.min(40, (Math.min(leftR.right, band.right) - Math.max(leftR.left, band.left)) / 2), y: band.cy } : null
+  // 釘選面板在不在共用捲動盒裡 = 釘選欄上的滾輪是原生捲動(2026-11-05 Q2b 起)還是元件轉發(修前)
+  return { ok: true, hasLeft: !!left, pinnedInScroller: !!left && cb.contains(left), px: leftPt?.x ?? null, py: leftPt?.y ?? null, rows: centerRows.querySelectorAll('[data-row-index]:not([data-fs-fake])').length, H: band ? band.bottom - band.top : cb.clientHeight, scrollHeight: cb.scrollHeight, cx: band ? band.cx : cbRect0.left + cbRect0.width / 2, cy: band ? band.cy : cbRect0.top + cbRect0.height / 2, hookOk: window.__REACT_DEVTOOLS_GLOBAL_HOOK__.renderers.size > 0, longtaskErr: S.longtaskErr || null }
 }
 
 // ── 頁內:合成滾輪事件(wheel / pinned 模式)。逾時的刻度一次補齊,模擬主執行緒卡住時輸入事件排隊再一起送到。──
@@ -351,7 +400,7 @@ const RUN_TICKS = async ({ ticks, tickMs, deltas, target, busyAt, busyMs }) => {
 const STOP_SAMPLER = () => { const S = window.__fs; S.on = false; return { frames: S.frames, longs: S.longs.filter((l) => l.start + l.dur >= S.t0) /* 只算取樣視窗內;buffered 會含頁面載入 */, loafs: S.loafs.filter((l) => l.s + l.d >= S.t0), loafErr: S.loafErr || null, wheelTs: S.wheelTs, commits: S.commits, scrollEvents: S.scrollEvents, finalScroll: document.querySelector('[data-datatable-hscroll]')?.scrollTop ?? null } }
 
 // ── 頁內:截圖近白像素比例(中間區 vs 左面板;PNG base64 → canvas)──
-const ANALYZE_SHOT = async ({ b64 }) => {
+const ANALYZE_SHOT = async ({ b64, band }) => {
   const cb = document.querySelector('[data-datatable-hscroll]'); const left = document.querySelector('[data-datatable-panel="left"]')
   const img = new Image(); img.src = 'data:image/png;base64,' + b64
   await new Promise((r, j) => { img.onload = r; img.onerror = j })
@@ -359,9 +408,11 @@ const ANALYZE_SHOT = async ({ b64 }) => {
   const ctx = cv.getContext('2d'); ctx.drawImage(img, 0, 0)
   // 截圖像素 / CSS 像素的比例由圖片實際尺寸算,不信 devicePixelRatio(dpr 2 時 CDP 截圖仍可能是 CSS 尺寸;2026-09-09 實測誤用 dpr 會量到圖外的透明像素)
   const k = img.width / window.innerWidth
+  // 中央量測區 = 看得見的列帶 ∩ 中央區;左面板 = 它 ∩ 列帶(2026-11-05 Q2b:面板盒子是整份內容,不能直接拿)
+  const clipRect = (r, isCenter) => (band ? { left: isCenter ? band.centerLeft : Math.max(r.left, band.left), top: band.top, width: (isCenter ? band.centerRight - band.centerLeft : Math.min(r.right, band.right) - Math.max(r.left, band.left)), height: band.bottom - band.top } : r)
   const white = (el) => {
     if (!el) return null
-    const r = el.getBoundingClientRect()
+    const r = clipRect(el.getBoundingClientRect(), el === cb)
     const x = Math.round(r.left * k), y = Math.round(r.top * k), w = Math.round(r.width * k), h = Math.round(r.height * k)
     const d = ctx.getImageData(x, y, w, h).data; let n = 0, tot = 0
     for (let i = 0; i < d.length; i += 16) { tot++; if (d[i] > 245 && d[i + 1] > 245 && d[i + 2] > 245) n++ }
@@ -371,9 +422,12 @@ const ANALYZE_SHOT = async ({ b64 }) => {
 }
 
 // ── 頁內:呈現幀分析(screencast jpeg → canvas;中央捲動區每 40px 一帶,避開上下 4px 的分隔線帶)──
-const ANALYZE_FRAMES = async ({ list }) => {
+const ANALYZE_FRAMES = async ({ list, band }) => {
   const cb = document.querySelector('[data-datatable-hscroll]'); const left = document.querySelector('[data-datatable-panel="left"]')
-  const r = cb.getBoundingClientRect(); const lr = left ? left.getBoundingClientRect() : null
+  // 中央量測區 = 看得見的列帶 ∩ 中央區;左面板 = 它 ∩ 列帶(2026-11-05 Q2b:捲動盒裡還有黏頂表頭與釘選面板,面板盒子是整份內容)
+  const cb0 = cb.getBoundingClientRect(), lr0 = left ? left.getBoundingClientRect() : null
+  const r = band ? { left: band.centerLeft, top: band.top, width: band.centerRight - band.centerLeft, height: band.bottom - band.top, bottom: band.bottom } : cb0
+  const lr = lr0 && band ? { left: Math.max(lr0.left, band.left), top: band.top, width: Math.min(lr0.right, band.right) - Math.max(lr0.left, band.left), height: band.bottom - band.top } : lr0
   const out = []
   for (const f of list) {
     const img = new Image(); img.src = 'data:image/png;base64,' + f.data
@@ -535,7 +589,7 @@ const summarizeProfile = (profile, staticDir) => {
 }
 
 // ── 一次 run ──
-const runOnce = async ({ build, mode, base, server = null, sabotage, profile, busyMs = SCROLL_BUSY_MS, hideContent = false }) => {
+const runOnce = async ({ build, mode, base, server = null, sabotage, profile, busyMs = SCROLL_BUSY_MS, hideContent = false, pointer = 'pinned', trace = false, traceLayers = true }) => {
   const browser = await launchBrowser({ args: SMOOTH === 'off' ? ['--disable-smooth-scrolling'] : [] })
   try {
     const page = await browser.newPage({ viewport: { width: VW, height: VH }, deviceScaleFactor: DPR })
@@ -564,11 +618,15 @@ const runOnce = async ({ build, mode, base, server = null, sabotage, profile, bu
       return { instrumentFail: error, errors }
     }
     const cdp = await page.context().newCDPSession(page)
-    if (CPU_THROTTLE > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: CPU_THROTTLE })
+    // A/A 偵測器的對照組(`--aa-throttle`):只讓 `<ref>~aa` 那一頁變慢,同一份建置自己比就該量到偏差
+    const throttle = isAA(build.label) && AA_THROTTLE > 1 ? AA_THROTTLE * Math.max(1, CPU_THROTTLE) : CPU_THROTTLE
+    if (throttle > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: throttle })
+    if (!BROWSER_VERSION) { try { BROWSER_VERSION = browser.version() } catch { /* 只是指紋 */ } }
     await cdp.send('Performance.enable')
     if (profile) { await cdp.send('Profiler.enable'); await cdp.send('Profiler.setSamplingInterval', { interval: 100 }) }
     const metrics = async () => Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map((m) => [m.name, m.value]))
-    const setup = await page.evaluate(START_SAMPLER, { sabotage, startPx: START_PX })
+    const band = await page.evaluate(dtVisibleBand, 0)
+    const setup = await page.evaluate(START_SAMPLER, { sabotage, startPx: START_PX, band })
     if (setup.crashed) return { crashed: true, errors }
     if (setup.noOverflow) return { noOverflow: true }
     await page.waitForTimeout(200) // 起點就位、第一批列掛好
@@ -599,7 +657,10 @@ const runOnce = async ({ build, mode, base, server = null, sabotage, profile, bu
     // 不是「這台機器重現得出真實空白」。兩者要分開報,不可混為一談(見下方 tier 說明)。
     // 只藏**中央量測區**的列:整頁都藏起來畫面就不再變化,合成器不送新幀(實測整趟只出 4 幀,
     // 反而變成另一種餓死)。左右釘選欄照常渲染並跟著捲,幀就持續產生,而中央區是必然的空白。
-    if (hideContent) await page.addStyleTag({ content: '[data-datatable-hscroll] [data-row-index]{visibility:hidden !important}' })
+    if (hideContent) await page.addStyleTag({ content: '[data-datatable-panel="center"] [data-row-index]{visibility:hidden !important}' })
+    // 追蹤趟(--trace,不計分):時間窗 = 出手前到觀測窗結束,錨用頁內 console.timeStamp(trace 的 ts 與 performance.now 不同源)
+    const tracer = trace ? await startTrace(browser) : null
+    if (tracer) await page.evaluate(() => console.timeStamp('fs-trace-start'))
     if (mode === 'gesture') {
       // 真實呈現幀:合成手勢走原生輸入管線捲中央區;正對照 = 每個 scroll 事件忙等
       // 正對照 = 「儀器在該紅的時候會紅」。原本只忙等主執行緒,前提是「主執行緒卡住 ⇒ 一定空白」。
@@ -620,15 +681,21 @@ const runOnce = async ({ build, mode, base, server = null, sabotage, profile, bu
       await page.waitForTimeout(SETTLE_EFFECTIVE) // 停手後的觀測窗(長過補齊期限):量「多久補齊」本身就要一段固定長度的窗
       ticks = { applied: 1, wallMs }
       gesture = { gestureEnd }
-    } else if (mode === 'mouse') {
+    } else if (mode === 'mouse' || mode === 'pinned') {
       // 真輸入:CDP Input.dispatchMouseEvent mouseWheel(page.mouse.wheel 底層同一個呼叫),但**不等回應**——
       // 等回應會被主執行緒的忙碌拖成 60ms+ 一個事件(實測 63.7ms),OS 送滾輪事件不會等 render,所以照 16ms 節奏丟進輸入管線,最後再一起收。
-      await page.mouse.move(setup.cx, setup.cy)
+      // pinned:同一條路,指標停在左釘選面板上(2026-11-05 Q2b 起釘選欄上是原生捲動)。
+      // 規則 G-P(2026-11-16,lib `pinnedMechanismPlan`):參考那邊的釘選欄是元件轉發、受測已是原生捲動時,參考的指標改停在中央欄量原生捲動
+      // (同一段滾輪序列、同一個刻度),讓分子分母走同一種捲動機制;`pointer === 'center'` 只會由那條規則給。
+      const onPinned = mode === 'pinned' && pointer !== 'center'
+      if (onPinned && setup.px == null) return { noTarget: true }
+      const wx = onPinned ? setup.px : setup.cx, wy = onPinned ? setup.py : setup.cy
+      await page.mouse.move(wx, wy)
       const t0 = Date.now(); let applied = 0; const pending = []
       for (let i = 0; i < TICKS; i++) {
         // 對照組 (b):忙等要排成頁面自己的 task(setTimeout),直接在 Runtime.evaluate 裡忙等不會被 longtask 觀測器記到(2026-09-09 實測只記到 99ms)
         if (sabotage && i === BUSY_AT) await page.evaluate((ms) => { setTimeout(() => { const b = performance.now(); while (performance.now() - b < ms) { /* busy */ } }, 0) }, BUSY_MS)
-        pending.push(cdp.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: setup.cx, y: setup.cy, deltaX: 0, deltaY: DELTAS[i % DELTAS.length], modifiers: 0 })); applied++
+        pending.push(cdp.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: wx, y: wy, deltaX: 0, deltaY: DELTAS[i % DELTAS.length], modifiers: 0 })); applied++
         if (SHOTS && (i === 14 || i === 29)) pending.push(cdp.send('Page.captureScreenshot', { format: 'png' }).then(({ data }) => shots.push({ afterTick: i + 1, b64: data })))
         const wait = t0 + (i + 1) * TICK_MS - Date.now(); if (wait > 0) await sleep(wait)
       }
@@ -639,6 +706,15 @@ const runOnce = async ({ build, mode, base, server = null, sabotage, profile, bu
       if (ticks.noTarget) return { noTarget: true }
     }
     if (mode !== 'gesture') await page.waitForTimeout(SETTLE_MS) // 停手後的觀測窗:繼續取樣,看空白要多久才補回
+    let traceOut = null
+    if (tracer) {
+      await page.evaluate(() => console.timeStamp('fs-trace-end'))
+      const events = await tracer.stop()
+      try { traceOut = { summary: summarizeTrace(events, findMark(events, 'fs-trace-start'), findMark(events, 'fs-trace-end')), raw: events } } catch (e) {
+        if (!(e instanceof TraceInstrumentError)) throw e
+        traceOut = { error: e.message, raw: events }
+      }
+    }
     // screencast 在所有模式都要收(2026-09-12):`gestureEnd` 只有 gesture 分支自己量得到,
     // 其餘模式用「最後一次 wheel 事件時間」當等價點 —— `analyzeGesture` 內部本來就會用
     // DOM 取樣裡最後一次 scrollTop 變動覆寫它,這裡給的是 fallback。
@@ -653,11 +729,11 @@ const runOnce = async ({ build, mode, base, server = null, sabotage, profile, bu
     const m1 = await metrics()
     const raw = await page.evaluate(STOP_SAMPLER)
     const shotStats = []
-    for (const s of shots) shotStats.push({ afterTick: s.afterTick, ...(await page.evaluate(ANALYZE_SHOT, { b64: s.b64 })) })
+    for (const s of shots) shotStats.push({ afterTick: s.afterTick, ...(await page.evaluate(ANALYZE_SHOT, { b64: s.b64, band })) })
     const a = analyze(raw.frames)
     let g = null
     if (gesture) {
-      const shotsG = await page.evaluate(ANALYZE_FRAMES, { list: gesture.cast })
+      const shotsG = await page.evaluate(ANALYZE_FRAMES, { list: gesture.cast, band })
       // 非 gesture 模式沒有自量的結束點:用最後一次 wheel 事件當 fallback(`analyzeGesture` 內部仍會以
       // DOM 取樣裡最後一次 scrollTop 變動覆寫;這裡只是避免 null 傳進去讓補齊時間變 NaN)。
       const endFallback = gesture.gestureEnd ?? (raw.wheelTs.length ? raw.wheelTs[raw.wheelTs.length - 1].t : 0)
@@ -691,8 +767,12 @@ const runOnce = async ({ build, mode, base, server = null, sabotage, profile, bu
       const rows = Math.max(1, Math.ceil(el.getBoundingClientRect().height / 40))
       return { cost: rows * cpr + fixed, engageMs }
     }).catch(() => null)
+    // 追蹤趟另拍靜止時的合成層(LayerTree 不跟 Tracing 同時開:它本身有成本;計分的追蹤趟只在第一輪拍,診斷用)
+    if (traceOut && traceLayers) { try { traceOut.layers = await layerTreeSnapshot(page, cdp, { nudge: (p) => p.evaluate(() => { const el = document.querySelector('[data-datatable-hscroll]'); el.scrollTop += 1; return new Promise((r) => requestAnimationFrame(() => { el.scrollTop -= 1; r() })) }) }) } catch (e) { traceOut.layers = { error: e.message } } }
     return {
+      trace: traceOut,
       build: build.label, mode, sabotage, busyUsed: sabotage ? busyMs : 0, forcedInk: hideContent, setup, ticks, errors, shotStats, shellCost, ...a, g, frames: raw.frames,
+      pinnedPointer: mode === 'pinned' ? (pointer === 'center' ? 'center' : 'pinned') : null,
       attribution: raw.loafErr ? null : { ...attributeLongFrames(raw.loafs), coverage: longTaskCoverage(raw.longs, raw.loafs) }, loafErr: raw.loafErr, loafs: raw.loafs,
       // CPU 取樣的視窗 = 長影格 ∪ long task(瀏覽器沒給長影格的 long task 也要歸得到檔)
       cpuAttribution: cpuProf ? cpuInLongFrames(cpuProf, cpuAnchor, [...raw.loafs, ...raw.longs.map((l) => ({ s: l.start, d: l.dur }))]) : null,
@@ -725,6 +805,10 @@ const line = (r, i) => {
 
 // ── 主流程 ──
 const results = []
+// 計分的追蹤趟(pinned + --ref + --trace;`traceJudged`):每趟 { build, mode, i, checkerboard, drawFrame, scrolled, pinnedPointer, setup, error }。
+// 與 results 分開放:量測趟的空白 / 長工 / 幀距不能被 Tracing 的開銷改到,追蹤趟也不進那三項。
+const traceTrips = []
+const traceJudged = (mode) => mode === 'pinned' && !!REF_LABEL && TRACE_DIR !== '' && !SELFTEST
 let failed = 0
 
 // **行為對照用的注入口**(2026-09-21)。
@@ -740,10 +824,16 @@ let failed = 0
 // 只在明確給這個旗標時生效,正常跑一律走真瀏覽器。
 const INJECT_RUNS = arg('inject-runs', '')
 if (INJECT_RUNS) {
-  for (const r of JSON.parse(readFileSync(INJECT_RUNS, 'utf8'))) {
-    results.push({ build: r.build ?? 'inject', mode: r.mode ?? 'gesture', errors: r.errors ?? [], frames: r.frames ?? [], scrolled: r.scrolled ?? 0, g: r.g ?? null, paintMax: r.paintMax ?? 0, domMax: r.domMax ?? 0 })
+  // 接受兩種形狀:舊的 run 陣列,或 `--json` 寫出的物件(`{ results: [...] }`,2026-11-16 起)—— CI artifact 可以原樣重算判定
+  const injected = JSON.parse(readFileSync(INJECT_RUNS, 'utf8'))
+  for (const r of Array.isArray(injected) ? injected : (injected.results ?? [])) {
+    results.push({ build: r.build ?? 'inject', mode: r.mode ?? 'gesture', errors: r.errors ?? [], frames: r.frames ?? [], scrolled: r.scrolled ?? 0, g: r.g ?? null, paintMax: r.paintMax ?? 0, domMax: r.domMax ?? 0, longSum: r.longSum ?? NaN, setup: r.setup ?? null, pinnedPointer: r.pinnedPointer ?? null })
   }
-  console.log(`⚑ 注入模式:${results.length} 趟合成資料,不開瀏覽器(僅供 meta-test 驗判定段的行為)`)
+  // 計分的追蹤趟(`--json` 寫出的 traceTrips 原樣吃回;沒有這個欄位 = 沒有追蹤資料,判定段依 `traceJudged` 以儀器失效紅,不當 0)
+  for (const t of Array.isArray(injected) ? [] : (injected.traceTrips ?? [])) {
+    traceTrips.push({ build: t.build ?? 'inject', mode: t.mode ?? 'pinned', i: t.i ?? null, checkerboard: t.checkerboard ?? NaN, drawFrame: t.drawFrame ?? NaN, scrolled: t.scrolled ?? 0, pinnedPointer: t.pinnedPointer ?? null, setup: t.setup ?? null, error: t.error ?? null })
+  }
+  console.log(`⚑ 注入模式:${results.length} 趟合成資料${traceTrips.length ? `、${traceTrips.length} 趟追蹤` : ''},不開瀏覽器(僅供 meta-test 驗判定段的行為)`)
 }
 
 // ── 對參考建置(--ref)的比值判定:**一份**指標清單與判定式,灰區加量的初判與終判共用(M17;2026-10-14)──
@@ -760,17 +850,29 @@ const runtimeDiffers = () => (runtimeDiffMemo ??= runtimeSourceDiffers(REF_LABEL
 //   · 長工合計 / 幀距 = true:CI 72 個 job 的逐趟數字與置換重抽都在這兩項上做過(38346602 長工合計 5.96×、幀距 1.53×,
 //     同一份程式碼在 21e25346 是 1.01× / 0.99×)。
 //   · 空白 = false:放寬的理由(長工門檻統計量)不適用、置換重抽沒做、CI 上 110 次空白比值全是參考為 0 退回絕對門檻 ——
-//     沒有證據就不放寬,超過上限照舊直接紅。
+//     沒有證據就不放寬,超過上限照舊直接紅。空白另走 lib `blankDecision`(比值 + 白幀張數地板,參考是不是 0 同一條式子;
+//     2026-11-16 覆核二 MF-R1 / SF-R2),每趟的張數由 `blankSeries` 算(`runOf` 下方)。
 const RATIO_CHECKS = {
-  blank: { name: () => '中央區最長連續空白', rawLimit: ASSERT_BLANK_MS, needsRuntimeDiff: false, capNeedsNoiseSupport: false, pick: (r) => r.g.blankLongestMs },
-  longSum: { name: () => '主執行緒長工合計', rawLimit: ASSERT_LONG_TASK_MS, needsRuntimeDiff: true, capNeedsNoiseSupport: true, pick: (r) => r.longSum },
+  blank: { key: 'blank', name: () => '中央區最長連續空白', rawLimit: ASSERT_BLANK_MS, needsRuntimeDiff: false, capNeedsNoiseSupport: false, pick: (r) => r.g.blankLongestMs },
+  longSum: { key: 'longSum', name: () => '主執行緒長工合計', rawLimit: ASSERT_LONG_TASK_MS, needsRuntimeDiff: true, capNeedsNoiseSupport: true, pick: (r) => r.longSum },
   frameGap: {
+    key: 'frameGap',
     name: () => '畫面推進的幀距平均',
     rawLimit: ASSERT_FRAME_GAP_MS, needsRuntimeDiff: true, capNeedsNoiseSupport: true,
     pick: (r) => r.g?.advanceGapMean ?? NaN,
   },
+  // 持續空白(2026-11-16 A25 覆核二修補;lib `checkerboardDecision`):白幀張數(上面 blank 的地板)只數連續幾張,整片白而且不變時截圖串流不重送,
+  // 持續的白只算 1 張。這一項改用 CDP 追蹤的 checkerboard 次數(合成器每畫一幀、每個缺圖塊的層記一次,不靠截圖節奏)。
+  // `source: 'trace'` = 值取自另跑的追蹤趟(traceTrips),不取自量測趟;只在 pinned + --ref + --trace 時判(`traceJudged`),不進灰區加量。
+  // 不放寬(capNeedsNoiseSupport: false):與空白同理 —— 使用者看得到的白,R1d 放寬的證據不適用。needsRuntimeDiff: false 同空白。
+  checkerboard: { key: 'checkerboard', source: 'trace', name: () => '持續空白(追蹤 checkerboard 次數)', rawLimit: '', needsRuntimeDiff: false, capNeedsNoiseSupport: false, pick: (t) => t.checkerboard },
 }
-const activeRatioChecks = () => (REF_LABEL ? Object.values(RATIO_CHECKS).filter((c) => !c.needsRuntimeDiff || runtimeDiffers()) : [])
+// 一趟 pinned 的實際捲動機制:釘選面板在共用捲動盒裡,或 G-P 把指標移到中央欄 → 原生;讀不到 → null(不當成任何一邊)
+const effectiveNative = (r) => (r.pinnedPointer === 'center' ? true : typeof r.setup?.pinnedInScroller === 'boolean' ? r.setup.pinnedInScroller : null)
+// 灰區加量的初判只看量測趟的那幾項(追蹤趟那一項在量測趟之後才量、不加量)
+const activeRatioChecks = () => (REF_LABEL ? Object.values(RATIO_CHECKS).filter((c) => c.source !== 'trace' && (!c.needsRuntimeDiff || runtimeDiffers())) : [])
+// 計分追蹤趟的可用與否:有 checkerboard 次數(追蹤摘要拿到了)而且這一趟真的捲了;其餘照實記為沒量到(不當 0)
+const traceUsable = (t) => Number.isFinite(t.checkerboard) && t.scrolled > 0
 // pick 可能取不到(例:wheel 沒有截圖幾何 `r.g`),取值本身也可能丟例外 —— 一律當 NaN
 const valsOf = (rs, pick) => rs.map((r) => { try { return pick(r) } catch { return NaN } })
 /**
@@ -779,17 +881,82 @@ const valsOf = (rs, pick) => rs.map((r) => { try { return pick(r) } catch { retu
  * **分母要取「同一個模式」的參考值**(2026-09-12 修):原本寫死 `${REF_LABEL}/gesture`,`--mode=wheel` 找不到分母就整項退回絕對門檻。
  */
 const ratioDecision = (check, label, mode, usable, canAddMore) => {
+  // 規則 G-P(2026-11-16,lib `pinnedComparable`;【AI 推導 2026-11-16】):pinned 模式只比**同一種捲動機制**。
+  // 每一趟的實際機制 = 釘選面板在共用捲動盒裡(原生捲動,2026-11-05 Q2b 起)或指標被 G-P 移到中央欄(原生)→ 原生;否則元件轉發。
+  // 參考轉發、受測原生時,G-P 已經把參考的指標移到中央欄 → 兩邊都是原生,三項都比;參考原生、受測轉發(例:退回 Q2b 的 PR)→
+  // 長工照比,空白與幀距印 mechanism-differs(這一側沒有可對的同機制路徑)。機制讀不到 / 同一份建置各趟不一致 → 同樣不比那兩項,照實印。
+  const mech = (b) => [...new Set(usable.filter((r) => r.build === b && r.mode === mode).map(effectiveNative))]
+  if (mode === 'pinned') {
+    const v = pinnedComparable(check.key, mech(REF_LABEL), mech(label))
+    // 'ref-native-mine-forwarding' = 這一側本來就沒有同機制路徑(照印、不判);'gp-missed' / 'unreadable' = 該量的同機制路徑沒量到 →
+    // 呼叫端以「儀器失效」紅(覆核 SF1;lib pinnedComparable 的註解)
+    if (!v.compare) return { verdict: v.why === 'ref-native-mine-forwarding' ? 'mechanism-differs' : 'mechanism-unmeasured', why: v.why, ref: v.ref, mine: v.mine }
+  }
+  if (check.key === 'blank') {
+    // 中央區最長連續空白:比值 + 白幀張數地板,參考是不是 0 都走同一支(lib `blankDecision`;覆核二 MF-R1 / SF-R2)。
+    // A/A 那份的毫秒給比值的修正子、張數給地板(兩份參考取較多的那份);A/A 量不到 / 機制不同 → 只看 ref。
+    const tripsOf = (rs) => rs.map(blankTrip)
+    const p = aaPartOf(mode, usable)
+    return blankDecision({
+      mine: tripsOf(usable.filter((r) => r.build === label && r.mode === mode)),
+      ref: tripsOf(usable.filter((r) => r.build === REF_LABEL && r.mode === mode)),
+      aa: p ? tripsOf(p.runs) : null, aaBlockedWhy: p?.blockedWhy ?? null, canAddMore,
+    })
+  }
+  if (check.key === 'checkerboard') {
+    // 持續空白(lib `checkerboardDecision` = 空白同一條式子,次數當比值值也當地板單位)。`usable` 這時是可用的追蹤趟;
+    // A/A 那份的次數給比值的修正子與地板(兩份參考取較多的);A/A 量不到 / 機制不同 → 只看 ref。
+    const p = aaPartOf(mode, usable)
+    const counts = (rs) => valsOf(rs, check.pick)
+    return checkerboardDecision({
+      mine: counts(usable.filter((r) => r.build === label && r.mode === mode)),
+      ref: counts(usable.filter((r) => r.build === REF_LABEL && r.mode === mode)),
+      aa: p ? counts(p.runs) : null, aaBlockedWhy: p?.blockedWhy ?? null,
+    })
+  }
   const refVals = valsOf(usable.filter((r) => r.build === REF_LABEL && r.mode === mode), check.pick).filter(Number.isFinite)
   const refMedian = refVals.length ? median(refVals) : NaN
-  if (!(refMedian > 0)) return { verdict: 'no-ref', refMedian }
   const mineVals = valsOf(usable.filter((r) => r.build === label && r.mode === mode), check.pick)
+  if (!(refMedian > 0)) return { verdict: 'no-ref', refMedian, refVals, mineVals }
   if (!mineVals.length || !mineVals.every(Number.isFinite)) return { verdict: 'na' }
-  return { ...refRatioDecision(mineVals, refVals, { canAddMore, capNeedsNoiseSupport: check.capNeedsNoiseSupport }), mineVals, refVals }
+  // branch 對 ref:R1d 原封不動;A/A 只當修正子(lib combineWithAA:A/A 不乾淨時分支對 ref~aa 也判一次,兩份都紅才紅;不放寬的那一項照紅)
+  const d = refRatioDecision(mineVals, refVals, { canAddMore, capNeedsNoiseSupport: check.capNeedsNoiseSupport })
+  return { ...combineWithAA(d, aaOf(check, mode, usable), { mineVals, capNeedsNoiseSupport: check.capNeedsNoiseSupport }), mineVals, refVals }
 }
+/**
+ * 這一跑、這種跑法、這一項指標的 A/A(`<ref>~aa` 對 `<ref>`);沒有 A/A 那份建置的趟 → null(呼叫端照原判定)。
+ * pinned:兩份參考的實際捲動機制必須相同(lib `aaMechanismCheck`;覆核 SF2)—— 不同時 A/A 量的是「原生 vs 轉發」,回「量不到」,
+ * 讓 branch 對 ref 照原判定,不讓一個量錯的 A/A 去蓋掉分支的退步。
+ */
+// A/A 那份這一跑、這種跑法的可用趟,與「量不到」的理由(兩份參考機制不同);沒有 A/A 那份建置的趟 → null。比值的修正子(`aaOf`)與
+// 空白的白幀張數地板(`blankDecision`)共用這一份,不各判一次。
+const aaPartOf = (mode, usable) => {
+  if (!AA_LABEL) return null
+  const aaRuns = usable.filter((r) => r.build === AA_LABEL && r.mode === mode)
+  const everAA = results.some((r) => r.build === AA_LABEL && r.mode === mode)
+  if (!aaRuns.length && !everAA) return null
+  if (mode === 'pinned' && aaRuns.length) {
+    const m = aaMechanismCheck([...new Set(usable.filter((r) => r.build === REF_LABEL && r.mode === mode).map(effectiveNative))], [...new Set(aaRuns.map(effectiveNative))])
+    if (!m.same) {
+      const mt = (x) => (x === true ? '原生' : x === false ? '轉發' : '讀不到 / 各趟不一致')
+      return { runs: aaRuns, blockedWhy: `兩份參考的捲動機制不同(${REF_LABEL} ${mt(m.ref)}、${AA_LABEL} ${mt(m.aa)}),A/A 量的不是同一件事` }
+    }
+  }
+  return { runs: aaRuns, blockedWhy: null }
+}
+const aaOf = (check, mode, usable) => {
+  const p = aaPartOf(mode, usable)
+  if (!p) return null
+  const refVals = valsOf(usable.filter((r) => r.build === REF_LABEL && r.mode === mode), check.pick)
+  if (p.blockedWhy) return { available: false, ratio: NaN, a: NaN, clean: null, forward: null, reverse: null, n: { ref: refVals.filter(Number.isFinite).length, aa: p.runs.length }, why: p.blockedWhy }
+  return aaNoise(refVals, valsOf(p.runs, check.pick), { capNeedsNoiseSupport: check.capNeedsNoiseSupport })
+}
+// 一趟的空白量測(lib `blankDecision` 的輸入):毫秒給比值、最長連續白幀張數給地板、平均幀距只供訊息;取不到 → NaN(不當 0)
+const blankTrip = (r) => ({ ms: r.g?.blankLongestMs ?? NaN, run: longestBlankRun(r.g?.blankSeries), gap: r.g?.presentedGapMean ?? NaN })
 // 灰區加量的初判:目前這個模式已量到的可用趟,逐一受測 build × 啟用中的指標
 const ratioDecisions = (mode, canAddMore) => {
   const usable = results.filter((r) => r.mode === mode && isUsable(r))
-  const labels = [...new Set(usable.map((r) => r.build))].filter((l) => l !== REF_LABEL)
+  const labels = [...new Set(usable.map((r) => r.build))].filter(isTested)
   return activeRatioChecks().flatMap((check) => labels.map((label) => ({ check, label, decision: ratioDecision(check, label, mode, usable, canAddMore) })))
 }
 // **交錯執行(ABBA)**(2026-09-25):原本「先跑完第一個 build 的所有趟、再跑下一個」,而這台共享 runner
@@ -808,12 +975,13 @@ const measureTrip = async ({ build, base, server, mode, i }) => {
   // 所以先跑「只關掉兩層防空白機制、不忙等」:本機實測仍有 66-67 幀、7-8 幀空白,足以判定偵測器會紅。
   // 只有輕量這趟沒發紅,才加上忙等再試 —— 退回去就是上一版的行為,不會比原本弱。
   const firstBusy = SELFTEST ? 0 : SCROLL_BUSY_MS
-  let r = await runOnce({ build, mode, base, server, sabotage: SELFTEST, profile: false, busyMs: firstBusy })
+  const pointer = pointerOf(build.label, mode)
+  let r = await runOnce({ build, mode, base, server, sabotage: SELFTEST, profile: false, busyMs: firstBusy, pointer })
   if (r.instrumentFail || r.crashed || r.noOverflow || r.noTarget) {
     // 重試行只印原因、不印 INSTRUMENT-FAIL 標記:重試成功時這一趟是有量到的,標記會讓整次執行被讀成儀器失效
     const why = r.instrumentFail ? `story 沒開起來(${r.instrumentFail.kind}):${r.instrumentFail.detail}` : r.crashed ? '開始取樣時找不到捲動區' : r.noOverflow ? '沒有垂直溢出' : '找不到 dispatch 目標'
     console.log(`   ⟳ ${build.label}/${mode} #${i}:這一趟儀器沒跑起來(${why}),重試一次`)
-    r = await runOnce({ build, mode, base, server, sabotage: SELFTEST, profile: false, busyMs: firstBusy })
+    r = await runOnce({ build, mode, base, server, sabotage: SELFTEST, profile: false, busyMs: firstBusy, pointer })
   }
   const fired = (x) => x.g && x.g.presented >= 20 && x.g.blankFrames >= 3
   if (SELFTEST && SCROLL_BUSY_MS > 0 && r.g && !fired(r)) {
@@ -848,22 +1016,52 @@ const measureTrip = async ({ build, base, server, mode, i }) => {
   if (r.noOverflow) { console.log(`✗ ${build.label}/${mode}:沒有垂直溢出,不適用`); failed++; return }
   if (r.noTarget) { console.log(`✗ ${build.label}/${mode}:找不到 dispatch 目標(pinned 模式需要左釘選面板)`); failed++; return }
   if (i === 1 && mode === MODES[0]) console.log(`   ${build.label}:${build.dir}\n   story 起點:中間區掛 ${r.setup.rows} 列、視窗高 ${r.setup.H}px、可捲 ${r.setup.scrollHeight}px、左釘選面板 ${r.setup.hasLeft ? '有' : '無(改用中間區自己的列當視窗內集合,列缺恆 0)'}、React hook ${r.setup.hookOk ? '接上' : '沒接上(commits 無效)'}${r.setup.longtaskErr ? '、longtask 觀測失敗 ' + r.setup.longtaskErr : ''}`)
-  // pinned 模式的 scrollTop 由**元件的轉發**推動(腳本刻意不補 `cb.scrollTop += dy`,見 RUN_TICKS):沒動就是釘選面板的
-  // 滾輪沒轉發到中央捲動區 —— 那是產品缺陷(data-table.tsx makeBindPinnedPanel),不是儀器對照失敗,訊息要指對地方。
+  // pinned 模式的 scrollTop 由**指標停在釘選欄上的真滾輪**推動,腳本不補:沒動就是釘選欄上的滾輪捲不動表格 —— 那是產品缺陷,
+  // 不是儀器對照失敗。訊息不寫死結構(覆核二 SF-R6):兩容器結構靠元件轉發(makeBindPinnedPanel 寫中央區 scrollTop),
+  // 單一捲動盒結構是瀏覽器原生捲動;這一趟是哪一種,看開 story 時量到的 `setup.pinnedInScroller`。
   if (r.scrolled <= 0) {
+    const how = r.setup?.pinnedInScroller === true ? '這一趟是單一捲動盒(釘選面板在共用捲動盒裡,應由瀏覽器原生捲動)'
+      : r.setup?.pinnedInScroller === false ? '這一趟是兩容器結構(釘選面板自己是盒子,應由元件把滾輪轉發到中央區)'
+        : '這一趟讀不到是哪一種結構'
     console.log(`✗ ${line(r, i)}\n   → ${mode === 'pinned'
-      ? 'scrollTop 沒動:釘選面板收到的滾輪**沒有轉發**到中央捲動區(產品缺陷:data-table.tsx makeBindPinnedPanel)'
+      ? `scrollTop 沒動:指標停在釘選欄上的滾輪沒有捲動表格(產品缺陷;${how},或被別的東西攔下)`
       : 'scrollTop 沒動,這個模式的事件沒有造成捲動(儀器對照失敗)'}`)
     failed++; return
   }
   console.log(`   ${line(r, i)}`)
   results.push(r)
 }
-// 每一趟的牆鐘(含重試)按跑法記下,灰區加量用它估「再一輪要多久」(lib `estimateRoundMs`:最慢那趟 × build 數)
+// ── 規則 G-P 的開跑前判定(2026-11-16,lib `pinnedMechanismPlan`):每份建置開一次 story,看左釘選面板在不在共用捲動盒裡 ──
+// 只在 pinned 模式 + 有參考時做。量不到(story 開不起來)→ 該份記 null,指標不動,判定段由 `pinnedComparable` 逐趟依實際機制判(不猜)。
+const pinnedPointer = new Map() // label → 'center'(只會由 G-P 給參考與 A/A 那份)
+const pointerOf = (label, mode) => (mode === 'pinned' ? pinnedPointer.get(label) ?? 'pinned' : 'pinned')
+const probePinnedMechanism = async ({ build, base, server }) => {
+  const browser = await launchBrowser()
+  try {
+    const page = await browser.newPage({ viewport: { width: VW, height: VH }, deviceScaleFactor: DPR })
+    await openStory(page, `${base}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, { waitFor: '[data-datatable-hscroll] [data-row-index]', settleFrames: 5, notFound: server?.notFound })
+    return await page.evaluate(() => { const cb = document.querySelector('[data-datatable-hscroll]'); const left = document.querySelector('[data-datatable-panel="left"]'); return cb && left ? cb.contains(left) : null })
+  } catch (e) { console.log(`   ⚠ G-P 開跑前判定:${build.label} 的 story 開不起來(${String(e.message).split('\n')[0]})—— 機制記為讀不到,判定段逐趟依實際機制判`); return null } finally { await browser.close() }
+}
+if (MODES.includes('pinned') && REF_LABEL && !SELFTEST && !INJECT_RUNS) {
+  const native = new Map()
+  for (const s of served) native.set(s.build.label, await probePinnedMechanism(s))
+  const tested = [...native.entries()].filter(([l]) => isTested(l)).map(([, v]) => v)
+  const mineNative = tested.length && tested.every((v) => v === true) ? true : tested.length && tested.every((v) => v === false) ? false : null
+  const plan = pinnedMechanismPlan(native.get(REF_LABEL), mineNative)
+  const mt = (x) => (x === true ? '原生捲動(釘選面板在共用捲動盒裡)' : x === false ? '元件轉發(釘選面板自己是盒子)' : '讀不到')
+  console.log(`   G-P 開跑前判定:參考「${REF_LABEL}」釘選欄滾輪 = ${mt(native.get(REF_LABEL))};受測 = ${mt(mineNative)}`)
+  if (plan.refPointer === 'center') {
+    // 參考與 A/A 那份一起移(lib `gpPointerLabels`;只移參考時 A/A 量的是「原生 vs 轉發」,`aaOf` 會判 A/A 量不到)
+    for (const l of gpPointerLabels(plan, { ref: REF_LABEL, aa: AA_LABEL })) pinnedPointer.set(l, 'center')
+    console.log(`   ↪ 參考改量原生路徑(指標在中央欄,同一段滾輪序列、同一個刻度 ${TICK_MS}ms),理由:參考的釘選欄是元件轉發、受測已是原生捲動 —— 規則 G-P 只比同一種捲動機制,空白 / 長工 / 幀距三項都比`)
+  } else if (plan.why === 'ref-native-mine-forwarding') console.log('   ↪ 參考是原生、受測是轉發:長工照比;空白與幀距這一側沒有同機制的路徑可對,印 mechanism-differs(不當通過也不當失敗)')
+}
+// 每一趟的牆鐘(含重試)按跑法、按建置記下,灰區加量用它估「再一輪要多久」(lib `extraRoundPlan`:只看加量要量的那幾份的最慢那趟 × 份數)
 const tripMs = new Map()
 const measureOne = async (args) => {
   const t0 = Date.now()
-  try { await measureTrip(args) } finally { tripMs.set(args.mode, [...(tripMs.get(args.mode) ?? []), Date.now() - t0]) }
+  try { await measureTrip(args) } finally { tripMs.set(args.mode, [...(tripMs.get(args.mode) ?? []), { label: args.build.label, ms: Date.now() - t0 }]) }
 }
 // **灰區加量的整個 job 帳本**(2026-10-14 覆核):CI 上 gesture / mouse / pinned 是同一個 job 裡的三次呼叫,
 // 加量預算(lib `EXTRA_ROUNDS_JOB_BUDGET_MS`)要三次共用,不是每次各算一份 —— 否則三種跑法同時落灰區就是三倍。
@@ -892,7 +1090,8 @@ const chargeLedger = (mode, ms) => {
   }
 }
 // 第 i 輪的順序:奇數輪照順序、偶數輪反過來(ABBA,見上方「交錯執行」);灰區加量延續同一個 i,交錯不中斷
-const roundOrder = (i) => (i % 2 === 1 ? served : [...served].reverse())
+// 三份以上(有 A/A)改拉丁方輪轉:第 i 輪從第 i mod n 份開始(lib `roundOrderOf`;兩份時與舊的 ABBA 逐位元相同)
+const roundOrder = (i) => roundOrderOf(served, i)
 try {
     for (const mode of MODES) {
       const n = SELFTEST ? 1 : RUNS
@@ -915,18 +1114,21 @@ try {
       // 每一輪(含第一輪)開跑前都用這種跑法最慢那趟估一輪、對整個 job 共用的帳本檢查;這種跑法已經有一項判紅(比值判紅,
       // 或量測期已記失敗)就不加 —— 再量也翻不回來,只會把 job 推向逾時。絕對門檻(目的地 / 補齊)在終判才算,不在此列。
       // 注入模式(--inject-runs)沒有瀏覽器可加量:照原樣交給終判。
+      // 加量只由 R1d 自己的 `needs-more` 觸發(`combineWithAA` 不回 needs-more),加量輪只量 branch 與 ref(lib `extraRoundPlan`;
+      // A/A 那份只用首輪)—— 有沒有 A/A,加量輪數與一輪的預估都一樣(覆核 MF4)。
       if (!SELFTEST && !INJECT_RUNS && ASSERTING && REF_LABEL) {
         for (let extra = 1; ; extra++) {
           const decisions = ratioDecisions(mode, true)
           const pending = decisions.filter((x) => x.decision.verdict === 'needs-more')
           const anyFail = failed > failedBeforeMode || decisions.some((x) => x.decision.verdict.startsWith('fail'))
           const spentMs = ledgerWriteFailed ? NaN : readLedger().spentMs
-          const estRoundMs = estimateRoundMs(tripMs.get(mode), served.length)
+          const plan = extraRoundPlan({ labels: served.map((s) => s.build.label), isAA, trips: tripMs.get(mode) })
+          const estRoundMs = plan.estRoundMs
           const next = nextExtraRound({ extra, pendingCount: pending.length, anyFail, spentMs, estRoundMs })
           const sec = (ms) => (Number.isFinite(ms) ? (ms / 1000).toFixed(0) : '?')
           // 每一項標它落在哪一段(lib `ratioZoneText`):超過 1.5× 但兩邊重疊的項目不得被印成「1.25–1.5× 灰區」
           const what = pending.map((x) => `${x.label} ${x.check.name(mode)} ${x.decision.ratio.toFixed(2)}×,${ratioZoneText(x.decision)}(${x.decision.n.mine} 對 ${x.decision.n.ref} 趟,p = ${x.decision.p.toFixed(3)})`).join('、')
-          const money = `一輪預估 ${sec(estRoundMs)} 秒(這種跑法最慢那趟 × ${served.length} 個 build);整個 job 加量已用 ${sec(spentMs)} / ${EXTRA_ROUNDS_JOB_BUDGET_MS / 1000} 秒`
+          const money = `一輪預估 ${sec(estRoundMs)} 秒(這種跑法最慢那趟 × ${plan.run.length} 個 build${AA_LABEL ? `;A/A 那份 ${AA_LABEL} 只用首輪、不進加量` : ''});整個 job 加量已用 ${sec(spentMs)} / ${EXTRA_ROUNDS_JOB_BUDGET_MS / 1000} 秒`
           if (!next.go) {
             const why = {
               'already-failing': '這種跑法已經有一項判紅,再量也翻不回來',
@@ -940,9 +1142,43 @@ try {
           console.log(`   ⟳ ${mode}:比值超過 ${BLANK_RATIO_LIMIT}× 但分不開 —— ${what};交錯加量第 ${extra} 輪(${money})`)
           const i = n + extra
           const r0 = Date.now()
-          for (const s of roundOrder(i)) await measureOne({ ...s, mode, i })
+          for (const s of roundOrderOf(served.filter((x) => plan.run.includes(x.build.label)), i)) await measureOne({ ...s, mode, i })
           chargeLedger(mode, Date.now() - r0)
         }
+      }
+      // 追蹤趟(--trace;理由見檔頭 TRACE_DIR):pinned + --ref 計分(三份建置含 A/A × --runs 輪、同一套輪轉),其餘模式參考與受測各 1 趟不計分。
+      // 原始 trace(gzip,一份約 5 MB)與 LayerTree 只留第一輪(診斷);每趟摘要都存。計分的那幾趟拿不到摘要 → 重試一次,仍沒有就記為沒量到
+      // (判定段以儀器失效紅,不當 0)。
+      if (TRACE_DIR && !SELFTEST && !INJECT_RUNS) {
+        mkdirSync(TRACE_DIR, { recursive: true })
+        const scored = traceJudged(mode)
+        const groups = {}
+        const plan = scored
+          ? Array.from({ length: n }, (_, k) => roundOrder(k + 1).map((s) => ({ ...s, i: k + 1 }))).flat()
+          : served.filter((x) => !isAA(x.build.label)).map((s) => ({ ...s, i: 1 }))
+        for (const { build, base, server, i } of plan) {
+          const once = () => runOnce({ build, mode, base, server, sabotage: false, profile: false, pointer: pointerOf(build.label, mode), trace: true, traceLayers: i === 1 })
+          let r = await once()
+          if (scored && !(r.trace?.summary && r.scrolled > 0)) {
+            console.log(`   ⟳ [追蹤 ${build.label}/${mode} #${i}] 沒拿到可用的追蹤(${r.instrumentFail?.message ?? r.trace?.error ?? (r.trace ? `捲了 ${r.scrolled}px` : '沒有 trace')}),重試一次`)
+            r = await once()
+          }
+          const stem = join(TRACE_DIR, `${build.label.replace(/[^\w.-]+/g, '_')}-${mode}`)
+          const sum = r.trace?.summary ? { ...r.trace.summary, byName: Object.fromEntries(Object.entries(r.trace.summary.byName).sort((x, y) => y[1] - x[1]).slice(0, 40)), mainTasks: undefined } : null
+          const why = r.trace ? r.trace.error ?? null : (r.instrumentFail?.message ?? (r.crashed ? '開始取樣時找不到捲動區' : r.noOverflow ? '沒有垂直溢出' : r.noTarget ? '找不到 dispatch 目標' : '沒有 trace'))
+          if (scored) {
+            traceTrips.push({ build: build.label, mode, i, checkerboard: sum ? sum.counts.checkerboard : NaN, drawFrame: sum ? sum.counts.drawFrame : NaN, scrolled: r.scrolled ?? 0,
+              pinnedPointer: r.pinnedPointer ?? null, setup: { pinnedInScroller: r.setup?.pinnedInScroller ?? null }, error: sum ? null : why })
+          }
+          if (!r.trace) { console.log(`   [追蹤 ${build.label}/${mode}${scored ? ` #${i}` : ''}] 這一趟沒跑起來(${why})${scored ? ' —— 記為沒量到(不當 0)' : ' —— 只是診斷,不影響判定'}`); continue }
+          if (i === 1) writeFileSync(`${stem}.trace.json.gz`, gzipSync(JSON.stringify({ traceEvents: r.trace.raw })))
+          writeFileSync(`${stem}${i === 1 ? '' : `-${i}`}.summary.json`, JSON.stringify({ build: build.label, mode, i, pinnedPointer: r.pinnedPointer, scrolled: r.scrolled, summary: sum, error: r.trace.error ?? null, layers: r.trace.layers ?? null, runner: runnerFingerprint() }, null, 1))
+          if (sum) (groups[build.label] ??= []).push(r.trace.summary)
+          else console.log(`   [追蹤 ${build.label}/${mode}] ${r.trace.error}(0 筆不當成「沒有成本」)`)
+          const L = r.trace.layers
+          console.log(`   [追蹤 ${build.label}/${mode}${scored ? ` #${i}` : ''}] 捲 ${r.scrolled}px;checkerboard ${sum ? sum.counts.checkerboard : '-'} 次、合成幀 ${sum ? sum.counts.drawFrame : '-'}${L ? `;合成層 ${L.layers ?? '-'}(有內容 ${L.drawsContent ?? '-'}、黏住 ${L.sticky ?? '-'})${L.error ? `;LayerTree ${L.error}` : ''}` : ''} → ${stem}${i === 1 ? '' : `-${i}`}.summary.json`)
+        }
+        if (Object.keys(groups).length) console.log(`\n   追蹤並排表(${mode};${scored ? '各趟中位數,checkerboard 計分(判定在下方)' : '不計分,單趟'};每條執行緒忙碌 = 區間聯集)\n${traceTable(groups)}`)
       }
       if (PROFILE_DIR && !SELFTEST) for (const { build, base, server } of served) {
         mkdirSync(PROFILE_DIR, { recursive: true })
@@ -988,7 +1224,8 @@ function printAttribution() {
     const labels = Object.keys(usable)
     if (!labels.length) continue
     const cmp = compareAttribution(usable, { top: 8 })
-    const pair = REF_LABEL && labels.length === 2 && labels.includes(REF_LABEL) ? labels.find((b) => b !== REF_LABEL) : null
+    const tested = labels.filter(isTested)
+    const pair = REF_LABEL && labels.includes(REF_LABEL) && tested.length === 1 ? tested[0] : null
     const cells = (get) => {
       const v = labels.map((b) => get(b))
       const diff = pair ? `(${pair} − ${REF_LABEL} ${get(pair) - get(REF_LABEL) >= 0 ? '+' : ''}${(get(pair) - get(REF_LABEL)).toFixed(0)})` : ''
@@ -1036,7 +1273,34 @@ if (!SELFTEST) {
   }
   printAttribution()
 }
-if (JSON_OUT) { writeFileSync(JSON_OUT, JSON.stringify(results.map((r) => ({ ...r, profile: undefined })), null, 1)); console.log(`   原始資料 → ${JSON_OUT}`) }
+// ── A/A 欄(2026-11-16,A28):每一跑、每一種跑法、每一項比值都算,紅綠都印,也寫進 --json ──────────────────────────────
+// 不受「零執行期差異就跳過」影響(那條只決定 branch 對 ref 比不比);零差異的 PR 正好是最乾淨的 A/A 樣本。
+// CI 上累積這一欄 = 比值閘的雜訊底(data-table-scroll-performance.spec.md「比值閘的 A/A 修正子」)。
+const aaTable = []
+if (AA_LABEL && !SELFTEST && results.some((r) => r.build === AA_LABEL)) {
+  console.log(`\nA/A 欄(同一份參考建置量兩次:${AA_LABEL} ÷ ${REF_LABEL};乾淨 = |ln| < ${AA_NOISE_SHARE} × ln ${BLANK_RATIO_LIMIT} 且兩個方向都不判紅)`)
+  for (const mode of MODES) {
+    const usable = results.filter((r) => r.mode === mode && isUsable(r))
+    for (const check of Object.values(RATIO_CHECKS)) {
+      // 追蹤那一項的 A/A 用計分的追蹤趟(只在 traceJudged 的跑法有)
+      if (check.source === 'trace' && !traceJudged(mode)) continue
+      const aa = aaOf(check, mode, check.source === 'trace' ? traceTrips.filter((t) => t.mode === mode && traceUsable(t)) : usable)
+      if (!aa) continue
+      const name = check.name(mode)
+      aaTable.push({ mode, check: name, ...aa })
+      console.log(aa.available
+        ? `   ${mode} ${name}:${aa.ratio.toFixed(3)}×(|ln| ${aa.a.toFixed(3)};${REF_LABEL} ${aa.refVals.map((v) => v.toFixed(1)).join(' / ')} 對 ${AA_LABEL} ${aa.aaVals.map((v) => v.toFixed(1)).join(' / ')};正向 ${aa.forward}、反向 ${aa.reverse})→ ${aa.clean ? '乾淨' : `**不乾淨**:${aa.why}`}`
+        : `   ${mode} ${name}:A/A 量不到(${aa.why};${REF_LABEL} ${aa.n.ref} 趟、${AA_LABEL} ${aa.n.aa} 趟可用)—— 沒量到不等於乾淨`)
+    }
+  }
+}
+if (JSON_OUT) {
+  // 物件形狀(2026-11-16):runner 指紋 + 參數 + 每趟原始資料 + A/A 欄 —— `--inject-runs` 吃得下同一個檔(取 `.results`),可以原樣重算判定
+  mkdirSync(dirname(resolve(JSON_OUT)), { recursive: true })
+  writeFileSync(JSON_OUT, JSON.stringify({ schema: 'data-table-fast-scroll/2', runner: runnerFingerprint(), argv: process.argv.slice(2), modes: MODES, ref: REF_LABEL || null, aaLabel: AA_LABEL || null,
+    builds: BUILDS.map((b) => ({ label: b.label, dir: b.dir, aa: !!b.aa })), aa: aaTable, results: results.map((r) => ({ ...r, profile: undefined })), traceTrips }, null, 1))
+  console.log(`   原始資料 → ${JSON_OUT}`)
+}
 
 if (SELFTEST) {
   // 對照組判定:三個偵測器都必須紅
@@ -1156,24 +1420,41 @@ if (ASSERTING) {
     const last = r.frames[r.frames.length - 1]
     if (last && (last.missing > 0 || last.empty > 0)) { console.log(`✗ ${r.build}/${r.mode}:靜止後 DOM 仍缺列 ${last.missing} / 格空 ${last.empty}`); failed++ }
   }
+  // 一個受測 group 的絕對門檻判定(中位數 + 單趟天花板)。`gate` 對全部受測 group 跑;比值判不了(參考那項是 0 / 沒資料)時,
+  // `relGate` 對那一個 group 退回這裡 —— 修前那條路只印「退回絕對門檻」就 continue,沒有任何一行真的判過(覆核 MF3)。
+  const gateGroup = (k, rs, limitRaw, name, CEILING, pick, extra = () => '') => {
+    const limit = Number(limitRaw)
+    const vals = rs.map((r) => { try { return pick(r) } catch { return NaN } })
+    // 該模式沒有這個指標(例:wheel 沒有截圖幾何 → 空白/補齊類指標)→ 明說跳過,不靜默當通過
+    if (!vals.length || !vals.every((v) => Number.isFinite(v))) { console.log(`↷ ${k}:${name}——這個模式沒有這項量測,不適用`); return }
+    const mid = median(vals)
+    const worst = Math.max(...vals)
+    const all = vals.map((v) => v.toFixed(0)).join(' / ')
+    const verdict = gateVerdict(vals, limit, CEILING)
+    if (verdict === 'median') { console.log(`✗ ${k}:${name}中位數 ${mid.toFixed(0)}ms > ${limit.toFixed(0)}ms(${rs.length} 趟 ${all})${extra(rs[vals.indexOf(worst)])}`); failed++ }
+    else if (verdict === 'ceiling') { console.log(`✗ ${k}:${name}單趟 ${worst.toFixed(0)}ms > 天花板 ${(limit * CEILING).toFixed(0)}ms(${rs.length} 趟 ${all};中位數 ${mid.toFixed(0)}ms 在門檻內,但這趟已是災難級)`); failed++ }
+    else console.log(`✓ ${k}:${name}中位數 ${mid.toFixed(0)}ms ≤ ${limit.toFixed(0)}ms(${rs.length} 趟 ${all})`)
+  }
   const gate = (limitRaw, name, CEILING, pick, extra = () => '') => {
     if (limitRaw === '') return
-    const limit = Number(limitRaw)
     for (const [k, rs] of groups) {
       // 參考建置(`--ref`)是**基準**不是受測對象:它自己慢不該把閘弄紅(CI 實測 main 長工中位 372ms)。
       // 它唯一的用途是當比值的分母。
-      if (REF_LABEL && k.split('/')[0] === REF_LABEL) continue
-      const vals = rs.map(pick)
-      // 該模式沒有這個指標(例:wheel 沒有截圖幾何 → 空白/補齊類指標)→ 明說跳過,不靜默當通過
-      if (!vals.length || !vals.every((v) => Number.isFinite(v))) { console.log(`↷ ${k}:${name}——這個模式沒有這項量測,不適用`); continue }
-      const mid = median(vals)
-      const worst = Math.max(...vals)
-      const all = vals.map((v) => v.toFixed(0)).join(' / ')
-      const verdict = gateVerdict(vals, limit, CEILING)
-      if (verdict === 'median') { console.log(`✗ ${k}:${name}中位數 ${mid.toFixed(0)}ms > ${limit.toFixed(0)}ms(${rs.length} 趟 ${all})${extra(rs[vals.indexOf(worst)])}`); failed++ }
-      else if (verdict === 'ceiling') { console.log(`✗ ${k}:${name}單趟 ${worst.toFixed(0)}ms > 天花板 ${(limit * CEILING).toFixed(0)}ms(${rs.length} 趟 ${all};中位數 ${mid.toFixed(0)}ms 在門檻內,但這趟已是災難級)`); failed++ }
-      else console.log(`✓ ${k}:${name}中位數 ${mid.toFixed(0)}ms ≤ ${limit.toFixed(0)}ms(${rs.length} 趟 ${all})`)
+      if (REF_LABEL && !isTested(k.split('/')[0])) continue
+      gateGroup(k, rs, limitRaw, name, CEILING, pick, extra)
     }
+  }
+  // 長工的絕對門檻相對於這台機器自己的能力(lib longTaskLimit);沒參考時的後備與「參考那項是 0」的退回共用這一份
+  const longTaskAbsLimit = () => {
+    const costs = results.map((r) => r.shellCost?.cost).filter((v) => Number.isFinite(v))
+    const worstCost = costs.length ? Math.max(...costs) : null
+    return { limit: longTaskLimit(Number(ASSERT_LONG_TASK_MS), worstCost), worstCost }
+  }
+  // 比值判不了時每一項退回的絕對門檻(與沒有 --ref 時同一組:空白 = 最長連續空白、長工 = 單一任務最長、幀距 = 畫面推進的幀距最大)
+  const ABSOLUTE_FALLBACK = {
+    blank: () => (ASSERT_BLANK_MS === '' ? null : { limitRaw: ASSERT_BLANK_MS, name: '中央區最長連續空白(絕對門檻)', ceiling: CEILING_FACTOR.blank, pick: (r) => r.g.blankLongestMs }),
+    longSum: () => (ASSERT_LONG_TASK_MS === '' ? null : { limitRaw: String(longTaskAbsLimit().limit), name: '主執行緒單一任務最長(絕對門檻)', ceiling: CEILING_FACTOR.longTask, pick: (r) => r.longMax }),
+    frameGap: () => (ASSERT_FRAME_GAP_MS === '' ? null : { limitRaw: ASSERT_FRAME_GAP_MS, name: '畫面推進的幀距最大(絕對門檻)', ceiling: CEILING_FACTOR.frameGap, pick: (r) => r.g?.advanceGapMax ?? NaN }),
   }
   // 有參考建置(`--ref`)時,**會被機器速度影響的三個指標**都改判「本 build ÷ 參考 ≤ 比值上限」——
   // 那是唯一不受 runner 漂移影響的形式。沒有參考(或參考那項是 0)就退回絕對門檻,並**印出來說明**(不可靜默降級)。
@@ -1182,13 +1463,57 @@ if (ASSERTING) {
   const fmtVals = (vals) => vals.map((v) => v.toFixed(0)).join(' / ')
   const relGate = (check) => {
     // 每個受測 group 各自跟「同模式的參考」比
-    for (const [k] of groups) {
+    for (const [k, rs] of groups) {
       const [label, mode] = k.split('/')
-      if (label === REF_LABEL) continue
+      if (!isTested(label)) continue
       const name = check.name(mode)
       const d = ratioDecision(check, label, mode, usableResults, false)
-      if (d.verdict === 'no-ref') { console.log(`   (參考「${REF_LABEL}/${mode}」的${name}是 ${Number.isFinite(d.refMedian) ? d.refMedian.toFixed(0) : '無資料'},無法當分母 → 這項退回絕對門檻 ${check.rawLimit || '(未設)'}ms)`); continue }
+      // 參考那項沒有可當分母的值時另判的絕對門檻(與沒有 --ref 時同一組;覆核 MF3:修前這裡只印「退回絕對門檻」就 continue,
+      // 沒有任何一行真的判過)。空白的「參考為 0」不走 no-ref:比值無限大,由 lib blankDecision 的白幀張數地板判,再加判這一條。
+      const absoluteFallback = (refText, alsoFloor) => {
+        const fb = ABSOLUTE_FALLBACK[check.key]?.()
+        if (!fb) return false
+        console.log(`   (參考「${REF_LABEL}/${mode}」的${name}是 ${refText},無法當分母 → 這項改判絕對門檻 ${fb.limitRaw}ms${alsoFloor ? ',並與上一行白幀張數地板一起判' : ''})`)
+        gateGroup(k, rs, fb.limitRaw, fb.name, fb.ceiling, fb.pick)
+        return true
+      }
+      if (d.verdict === 'no-ref') {
+        const refText = Number.isFinite(d.refMedian) ? `${d.refMedian.toFixed(0)}ms` : '無資料'
+        if (!absoluteFallback(refText, false)) console.log(`   (參考「${REF_LABEL}/${mode}」的${name}是 ${refText},無法當分母;這一項沒有給絕對門檻 → **這一跑沒有判這一項**(照實印,不是通過))`)
+        continue
+      }
       if (d.verdict === 'na') { console.log(`↷ ${k}:${name}——這個模式沒有這項量測,不適用`); continue }
+      const mt = (x) => (x === true ? '原生捲動' : x === false ? '元件轉發(主執行緒寫 scrollTop)' : '讀不到 / 各趟不一致')
+      if (d.verdict === 'mechanism-differs') { console.log(`↷ ${k}:${name}——參考「${REF_LABEL}」的釘選欄滾輪是${mt(d.ref)}、受測是${mt(d.mine)},機制不同不比(規則 G-P:參考原生、受測轉發這一側沒有同機制路徑可對;不當通過也不當失敗)`); continue }
+      if (d.verdict === 'mechanism-unmeasured') {
+        // 規則 G-P 該讓兩邊走同一種機制,實際量到的卻不是(lib pinnedComparable 'gp-missed' / 'unreadable';覆核 SF1)
+        console.log(`✗ ${k}:${name}——**儀器失效**:參考「${REF_LABEL}」的釘選欄滾輪實際是${mt(d.ref)}、受測是${mt(d.mine)}${d.why === 'gp-missed' ? '。規則 G-P 應該把參考的指標移到中央欄量原生捲動,卻沒有(開跑前判定讀不到或沒套上)' : '。機制讀不到 / 同一份建置各趟不一致'} —— 同機制那條路沒量到,這一項沒有比;不是這個 build 變慢,也不當通過`)
+        failed++
+        continue
+      }
+      // 中央區最長連續空白(lib blankDecision):白幀張數地板、參考為 0、判不了張數 —— 這三種在這裡印;其餘(比值判紅 / 過 / 灰區)走下面共用那段,附地板那一句
+      const fr = (v) => (Number.isFinite(v) ? (Number.isInteger(v) ? String(v) : v.toFixed(1)) : '-')
+      const fl = d.floor
+      const floorText = fl ? `最長連續白幀中位 分支 ${fr(fl.mineRun)} 張、參考 ${fr(fl.refRun)} 張${Number.isFinite(fl.aaRun) ? `、${AA_LABEL} ${fr(fl.aaRun)} 張(取兩份較多的 ${fr(fl.baseRun)})` : ''},多 ${fr(fl.excess)} 張` : ''
+      const blankRuns = fl ? `;${label} ${fmtVals(d.mineVals)}ms(白幀 ${fl.mineRuns.map(fr).join(' / ')} 張);${REF_LABEL} ${fmtVals(d.refVals)}ms(${fl.refRuns.map(fr).join(' / ')} 張)${fl.aaRuns.length ? `;${AA_LABEL} ${fl.aaRuns.map(fr).join(' / ')} 張` : ''}` : ''
+      if (check.key === 'blank' && d.verdict === 'no-scale') {
+        console.log(`✗ ${k}:${name}中位數 ${d.mineMedian.toFixed(0)}ms,比值規則判 ${d.ratioVerdict},但分支或參考沒有白幀序列(blankSeries),判不了多出幾張 —— **儀器失效**(判不了「是不是超過 ${ZERO_REF_BLANK_FRAMES} 張白幀」),不是這個 build 變慢;沒量到不當通過${blankRuns}`)
+        failed++
+        if (d.refMedian === 0) absoluteFallback('0ms', true)
+        continue
+      }
+      if (check.key === 'blank' && d.refMedian === 0) {
+        if (d.verdict === 'fail-zero-ref') { console.log(`✗ ${k}:${name}中位數 ${d.mineMedian.toFixed(0)}ms,而參考「${REF_LABEL}/${mode}」這一跑是 0 —— ${floorText} > ${ZERO_REF_BLANK_FRAMES} 張:同一跑的參考沒有連續空白,分支多出的連續白幀超過截圖量化的抖動(白幀張數地板,lib blankDecision${blankRuns})`); failed++ }
+        else if (d.verdict === 'within-floor') console.log(`✓ ${k}:${name}中位數 ${d.mineMedian.toFixed(0)}ms,參考「${REF_LABEL}/${mode}」這一跑是 0 —— ${floorText},沒超過 ${ZERO_REF_BLANK_FRAMES} 張(截圖量化的抖動範圍,白幀張數地板${blankRuns})`)
+        else console.log(`✓ ${k}:${name}中位數 ${d.mineMedian.toFixed(0)}ms,參考「${REF_LABEL}/${mode}」這一跑是 0 —— 兩邊都沒有空白`)
+        absoluteFallback('0ms', true)
+        continue
+      }
+      if (check.key === 'blank' && d.verdict === 'within-floor') {
+        console.log(`✓ ${k}:${name}中位數 ${d.mineMedian.toFixed(0)}ms,比值規則對參考「${REF_LABEL}/${mode}」的 ${d.refMedian.toFixed(0)}ms 判 ${d.ratioVerdict}(${d.ratio.toFixed(2)}×),但${floorText},沒超過 ${ZERO_REF_BLANK_FRAMES} 張 —— 在截圖量化的抖動範圍內,不指控(白幀張數地板,lib blankDecision${blankRuns})`)
+        continue
+      }
+      const floorBeyond = check.key === 'blank' && fl ? `;${floorText} > ${ZERO_REF_BLANK_FRAMES} 張(白幀張數地板)` : ''
       const head = `${k}:${name}中位數 ${d.mineMedian.toFixed(0)}ms`
       const ref = `參考「${REF_LABEL}/${mode}」的 ${d.refMedian.toFixed(0)}ms`
       const within = `${ref} × ${BLANK_RATIO_LIMIT}(= ${(d.refMedian * BLANK_RATIO_LIMIT).toFixed(0)}ms)`
@@ -1196,7 +1521,12 @@ if (ASSERTING) {
       const pText = Number.isFinite(d.p) ? `單側 Mann–Whitney p = ${d.p.toFixed(3)}` : ''
       const tText = d.logT ? (d.logT.df >= 1 ? `對數 Welch t = ${d.logT.t.toFixed(2)}(自由度 ${d.logT.df.toFixed(1)})、p = ${d.logT.p.toFixed(3)}` : '兩邊都只有 1 趟,沒有跑間差異可估') : ''
       const capped = `${ref} × ${RATIO_HARD_CAP}(= ${(d.refMedian * RATIO_HARD_CAP).toFixed(0)}ms,比值 ${d.ratio.toFixed(2)}×)`
-      if (d.verdict === 'pass') console.log(`✓ ${head} ≤ ${within}`)
+      // A/A 欄(lib combineWithAA):每一項都附上這一跑同一份參考建置自己比的比值,紅或不紅都印
+      const aaText = d.aa ? (d.aa.available ? `;A/A(${AA_LABEL} ÷ ${REF_LABEL})${d.aa.ratio.toFixed(2)}×、${d.aa.clean ? '乾淨' : `不乾淨(${d.aa.why})`}` : `;A/A 量不到(${d.aa.why})—— 照原判定,不當乾淨也不當放行理由`) : ''
+      const vsAAText = d.vsAA ? `對 ${AA_LABEL} 判 ${d.vsAA.verdict}(${Number.isFinite(d.vsAA.ratio) ? `${d.vsAA.ratio.toFixed(2)}×` : '-'}${Number.isFinite(d.vsAA.p) ? `、p = ${d.vsAA.p.toFixed(3)}` : ''})` : ''
+      const beyond = d.beyondAA ? `;A/A 不乾淨(${d.aa.ratio.toFixed(2)}×),但分支對兩份參考都判紅(對 ${REF_LABEL} 判 ${d.r1dVerdict}、${vsAAText})→ 分支比同一份參考程式碼的兩次量測都確實慢,照紅` : ''
+      if (d.verdict === 'aa-noisy') { console.log(`✓ ${head}:對 ${REF_LABEL} 判 ${d.r1dVerdict}(比值 ${d.ratio.toFixed(2)}×${Number.isFinite(d.p) ? `、${pText}` : ''}),但這一跑 A/A 不乾淨(${AA_LABEL} ÷ ${REF_LABEL} = ${d.aa.ratio.toFixed(2)}×,${d.aa.why}),而且分支${vsAAText} —— 同一份參考程式碼的兩次量測裡有一次分支沒有確實比它慢,分不出是分支還是這一跑量不準,**不指控**(${runs};A/A 各趟 ${REF_LABEL} ${fmtVals(d.aa.refVals)} / ${AA_LABEL} ${fmtVals(d.aa.aaVals)})`); continue }
+      if (d.verdict === 'pass') console.log(`✓ ${head} ≤ ${within}${aaText}`)
       else if (d.verdict === 'fail-cap') {
         // 紅的理由只看 lib 給的 `capBasis`(2026-10-14 R1d):長工合計 / 幀距要秩檢定分得開、或差距大於兩邊各自的跑間差異、或沒有雜訊可估;
         // 空白這項不放寬(RATIO_CHECKS 的 capNeedsNoiseSupport)。秩檢定 p ≤ 0.05 在 5 對 5 時不代表完全分開,所以不寫「完全分開」。
@@ -1206,11 +1536,52 @@ if (ASSERTING) {
           'noise-unknown': '兩邊都只有 1 趟、沒有跑間差異可估,照倍數判',
           'no-noise-allowance': '這一項是使用者看得到的空白,超過上限不看分布(放寬只給長工合計與幀距,證據見 RATIO_CHECKS)',
         }[d.capBasis] ?? `判定依據不明(${d.capBasis})`
-        console.log(`✗ ${head} > ${capped}—— 超過硬上限,而且${why}(${runs};${pText})`); failed++
+        console.log(`✗ ${head} > ${capped}—— 超過硬上限,而且${why}(${runs};${pText}${aaText}${beyond}${floorBeyond})`); failed++
       }
-      else if (d.verdict === 'fail-separated') { console.log(`✗ ${head} > ${within},比值 ${d.ratio.toFixed(2)}× 落在灰區而且分得開 —— 分支確實比較慢(${pText} ≤ ${RATIO_ALPHA};${runs})`); failed++ }
-      else if (d.overCapButNoisy) console.log(`✓ ${head} > ${capped},但兩邊分布重疊,而且這個倍數在這個 job 裡同一份程式碼自己的跑間差異內(${pText};${tText} > ${RATIO_ALPHA};${runs})—— ${d.n.mine} 對 ${d.n.ref} 趟分不出來,不指控;多出來的時間落在哪,看上方「長工歸因」`)
-      else console.log(`✓ ${head} > ${within},比值 ${d.ratio.toFixed(2)}× 落在灰區但分不開(${pText} > ${RATIO_ALPHA};${runs})—— 差距在這台機器的跑間雜訊內,不指控`)
+      else if (d.verdict === 'fail-separated') { console.log(`✗ ${head} > ${within},比值 ${d.ratio.toFixed(2)}× 落在灰區而且分得開 —— 分支確實比較慢(${pText} ≤ ${RATIO_ALPHA};${runs}${aaText}${beyond}${floorBeyond})`); failed++ }
+      else if (d.overCapButNoisy) console.log(`✓ ${head} > ${capped},但兩邊分布重疊,而且這個倍數在這個 job 裡同一份程式碼自己的跑間差異內(${pText};${tText} > ${RATIO_ALPHA};${runs}${aaText})—— ${d.n.mine} 對 ${d.n.ref} 趟分不出來,不指控;多出來的時間落在哪,看上方「長工歸因」`)
+      else console.log(`✓ ${head} > ${within},比值 ${d.ratio.toFixed(2)}× 落在灰區但分不開(${pText} > ${RATIO_ALPHA};${runs}${aaText})—— 差距在這台機器的跑間雜訊內,不指控`)
+    }
+  }
+  // 持續空白(RATIO_CHECKS.checkerboard)的判定與訊息。判定式走 `ratioDecision`(→ lib checkerboardDecision,與空白同一條式子);
+  // 這裡只管「追蹤資料夠不夠」與印法(單位是次,不是 ms)。
+  const traceGate = () => {
+    const check = RATIO_CHECKS.checkerboard
+    const fr = (v) => (Number.isFinite(v) ? (Number.isInteger(v) ? String(v) : v.toFixed(1)) : v === Infinity ? '∞' : '-')
+    for (const mode of MODES.filter(traceJudged)) {
+      const name = check.name(mode)
+      const all = traceTrips.filter((t) => t.mode === mode)
+      const usableT = all.filter(traceUsable)
+      for (const t of all.filter((x) => !traceUsable(x))) console.log(`·  ${t.build}/${mode}:追蹤 #${t.i ?? '-'} 沒量到(${t.error ?? `捲了 ${t.scrolled}px`})—— 不計入判定,也不當 0`)
+      const have = (b) => usableT.filter((t) => t.build === b).length
+      const tried = (b) => all.filter((t) => t.build === b).length
+      const noData = (b) => `「${b}」${tried(b)} 趟追蹤一趟可用的都沒有${tried(b) ? '' : '(這一跑沒有任何追蹤資料:--trace 沒跑起來,或注入資料沒有 traceTrips)'}`
+      if (!have(REF_LABEL)) { console.log(`✗ ${REF_LABEL}/${mode}:${name}——**儀器失效**:參考${noData(REF_LABEL)} —— 判不了持續空白,不是這個 build 變慢,也不當通過`); failed++; continue }
+      const labels = [...new Set([...results.filter((r) => r.mode === mode).map((r) => r.build), ...all.map((t) => t.build)])].filter(isTested)
+      if (!labels.length) { console.log(`✗ */${mode}:${name}——**儀器失效**:沒有受測建置的量測或追蹤,判不了`); failed++; continue }
+      for (const label of labels) {
+        const k = `${label}/${mode}`
+        if (!have(label)) { console.log(`✗ ${k}:${name}——**儀器失效**:受測${noData(label)} —— 判不了持續空白,不是這個 build 變慢,也不當通過`); failed++; continue }
+        const d = ratioDecision(check, label, mode, usableT, false)
+        const mt = (x) => (x === true ? '原生捲動' : x === false ? '元件轉發(主執行緒寫 scrollTop)' : '讀不到 / 各趟不一致')
+        if (d.verdict === 'mechanism-differs') { console.log(`↷ ${k}:${name}——參考「${REF_LABEL}」的釘選欄滾輪是${mt(d.ref)}、受測是${mt(d.mine)},機制不同不比(規則 G-P;不當通過也不當失敗)`); continue }
+        if (d.verdict === 'mechanism-unmeasured' || !d.floor) { console.log(`✗ ${k}:${name}——**儀器失效**:${d.verdict === 'mechanism-unmeasured' ? `追蹤趟的釘選欄滾輪參考是${mt(d.ref)}、受測是${mt(d.mine)},同機制那條路沒量到` : `判不了(${d.verdict})`} —— 不是這個 build 變慢,也不當通過`); failed++; continue }
+        const fl = d.floor
+        const runs = `${label} ${d.mineVals.map(fr).join(' / ')};${REF_LABEL} ${d.refVals.map(fr).join(' / ')}${fl.aaRuns.length ? `;${AA_LABEL} ${fl.aaRuns.map(fr).join(' / ')}` : ''}`
+        const floorText = `中位 分支 ${fr(fl.mineRun)} 次、參考 ${fr(fl.refRun)} 次${Number.isFinite(fl.aaRun) ? `、${AA_LABEL} ${fr(fl.aaRun)} 次(取兩份較多的 ${fr(fl.baseRun)})` : ''},多 ${fr(fl.excess)} 次`
+        const aaText = d.aa ? (d.aa.available ? `;A/A(${AA_LABEL} ÷ ${REF_LABEL})${d.aa.ratio.toFixed(2)}×、${d.aa.clean ? '乾淨' : `不乾淨(${d.aa.why})`}` : `;A/A 量不到(${d.aa.why})—— 地板只看 ${REF_LABEL}`) : ''
+        const ratioText = d.refMedian > 0 ? `${d.ratio.toFixed(2)}×` : '參考 0 次,比值無限大'
+        const head = `${k}:${name}中位數 ${fr(d.mineMedian)} 次,參考「${REF_LABEL}/${mode}」${fr(d.refMedian)} 次`
+        if (d.verdict === 'pass') console.log(`✓ ${head} —— 比值 ${Number.isFinite(d.ratio) ? `${d.ratio.toFixed(2)}×` : '-'} ≤ ${BLANK_RATIO_LIMIT}×(${runs}${aaText})`)
+        else if (d.verdict === 'within-floor') console.log(`✓ ${head} —— 比值規則判 ${d.ratioVerdict}(${ratioText}),但${floorText},沒超過 ${CHECKERBOARD_FLOOR} 次 —— 在同碼的跑間散布內,不指控(checkerboard 次數地板,lib checkerboardDecision;${runs}${aaText})`)
+        else if (d.verdict === 'aa-noisy') console.log(`✓ ${head} —— 對 ${REF_LABEL} 判 ${d.r1dVerdict}(${ratioText}),但這一跑 A/A 不乾淨而且分支對 ${AA_LABEL} 判 ${d.vsAA?.verdict},**不指控**(${runs}${aaText})`)
+        else if (d.verdict === 'within-noise' || d.verdict === 'needs-more') console.log(`✓ ${head} —— 比值 ${ratioText} 落在灰區但分不開(單側 Mann–Whitney p = ${Number.isFinite(d.p) ? d.p.toFixed(3) : '-'}),不指控(${runs}${aaText})`)
+        else if (d.verdict.startsWith('fail')) {
+          const basis = d.verdict === 'fail-zero-ref' ? '參考這一跑沒有 checkerboard' : d.verdict === 'fail-cap' ? `超過硬上限 ${RATIO_HARD_CAP}×(使用者看得到的白,不看分布)` : `落在灰區而且分得開(單側 Mann–Whitney p = ${d.p.toFixed(3)} ≤ ${RATIO_ALPHA})`
+          console.log(`✗ ${head} —— ${ratioText},${basis};${floorText} > ${CHECKERBOARD_FLOOR} 次(checkerboard 次數地板)—— 合成器畫到還沒光柵好的圖塊(白)比同一份參考程式碼的兩次量測都多,超出同碼散布(${runs}${aaText})`)
+          failed++
+        } else { console.log(`✗ ${k}:${name}——**儀器失效**:判定結果不明(${d.verdict}),不當通過`); failed++ }
+      }
     }
   }
   // 目的地閘:絕對、判**每一趟的最大值**不判中位數 —— 空白幀不是雜訊是缺陷,
@@ -1219,14 +1590,15 @@ if (ASSERTING) {
     // 空閘守衛(2026-09-12):`wheel` 用 JS 改 scrollTop,結構上不會有合成器超前的空白 ——
     // 把零空白斷言掛上去會是一道永遠不會紅的閘(對照組實測:兩層機制關掉 + 卡死主執行緒仍 0 幀)。
     // 寧可明確失敗也不要假綠。真輸入路徑用 `--mode=mouse`。
-    // pinned 同族(2026-09-29,M10 同族當場修):它的 scrollTop 是元件轉發時在主執行緒寫的,跟 wheel 一樣沒有合成器超前。
-    for (const structural of ['wheel', 'pinned']) if (MODES.includes(structural)) {
+    // pinned 曾同族(2026-09-29):那時它的 scrollTop 是元件轉發時在主執行緒寫的;2026-11-05(Q2b)起釘選欄上是原生捲動、
+    // 腳本改用真輸入(與 mouse 同一條路),合成器會超前,空白偵測對它有效,不再列為結構上不會紅的模式。
+    for (const structural of ['wheel']) if (MODES.includes(structural)) {
       console.log(`✗ --assert-max-blank-frames 不可用於 --mode=${structural}:該模式由 JS 改 scrollTop(主執行緒),空白偵測結構上不會紅 = 空閘。真輸入路徑請用 --mode=mouse`)
       failed++
     }
     const limit = Number(ASSERT_BLANK_FRAMES)
     for (const [k, rs] of groups) {
-      if (REF_LABEL && k.split('/')[0] === REF_LABEL) continue
+      if (REF_LABEL && !isTested(k.split('/')[0])) continue
       const vals = rs.map((r) => r.g?.blankFrames).filter((v) => Number.isFinite(v))
       if (!vals.length) { console.log(`↷ ${k}:空白幀數——這個模式沒有截圖幾何,不適用`); continue }
       const worst = Math.max(...vals)
@@ -1238,7 +1610,14 @@ if (ASSERTING) {
       } else console.log(`✓ ${k}:**目的地**呈現幀零空白(${rs.length} 趟 ${all},上限 ${limit})`)
     }
   }
+  // 空白:有參考時比值(參考那項是 0 → 參考為 0 的判準 + 絕對門檻);沒有參考時直接判絕對門檻。
+  // 修前沒有參考的那條路一行都沒有(`--assert-max-blank-ms` 只出現在 ASSERTING 與最後那句「全過」裡,覆核 MF3)。
   if (REF_LABEL) relGate(RATIO_CHECKS.blank)
+  else gate(ASSERT_BLANK_MS, '中央區最長連續空白', CEILING_FACTOR.blank, (r) => r.g.blankLongestMs)
+  // 持續空白:追蹤 checkerboard 次數(2026-11-16 A25 覆核二修補;lib checkerboardDecision;【AI 推導 2026-11-16】)。上面那一項的白幀張數
+  // 數不到「整片白而且不變」(截圖串流不重送 → 1 張停很久),這一項補它。只在 pinned + --ref + --trace(`traceJudged`)判;
+  // 某一份建置一趟可用的追蹤都沒有 → **儀器失效**紅(沒量到不當 0、不放行,M37 第八種形狀);機制不同 / 沒量到同機制路徑 → 與空白同一套 G-P。
+  if (REF_LABEL) traceGate()
   gate(ASSERT_FILL_MS, '停捲後列殼補齊', CEILING_FACTOR.fill, (r) => r.g.fillMs)
   if (REF_LABEL && !runtimeDiffers()) {
     // 2026-09-19:兩邊沒有任何會進 runtime 的原始碼差異 → 這個比較測到的只有機器,不是程式碼。
@@ -1287,9 +1666,7 @@ if (ASSERTING) {
     relGate(RATIO_CHECKS.frameGap)
   } else if (ASSERT_LONG_TASK_MS !== '') {
     // 沒有參考建置時的後備:門檻相對於這台機器自己的能力(理由見 lib 的 longTaskLimit)
-    const costs = results.map((r) => r.shellCost?.cost).filter((v) => Number.isFinite(v))
-    const worstCost = costs.length ? Math.max(...costs) : null
-    const limit = longTaskLimit(Number(ASSERT_LONG_TASK_MS), worstCost)
+    const { limit, worstCost } = longTaskAbsLimit()
     if (limit !== Number(ASSERT_LONG_TASK_MS)) console.log(`   (這台機器畫一個視窗要 ${worstCost.toFixed(0)}ms → 長工門檻由 ${ASSERT_LONG_TASK_MS}ms 放大為 ${limit.toFixed(0)}ms)`)
     gate(String(limit), '主執行緒單一任務最長', CEILING_FACTOR.longTask, (r) => r.longMax, (r) => `(${r.longCount} 個長工、合計 ${r.longSum.toFixed(0)}ms;這段期間所有 hover / 點擊都會被卡住)`)
     gate(ASSERT_FRAME_GAP_MS, '畫面推進的幀距最大', CEILING_FACTOR.frameGap, (r) => r.g?.advanceGapMax ?? NaN)
@@ -1312,5 +1689,6 @@ if (ASSERT_PAINT !== '' || ASSERT_DOM !== '') {
     if (ASSERT_DOM !== '' && r.domMax > Number(ASSERT_DOM)) { console.log(`✗ ${r.build}/${r.mode}:DOM 空白 ${pct(r.domMax)} > ${pct(Number(ASSERT_DOM))}`); failed++ }
   }
 }
-console.log(failed ? `✗ ${failed} 項失敗` : (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_PAINT !== '' || ASSERT_DOM !== '') ? '✓ 快速捲動閘全過' : '✓ 快速捲動儀器跑完(未給 --assert-* 時只報數字)')
+// 「全過」只在真的有斷言時才說(修前只認空白 / 補齊 / paint / DOM 四個旗標:CI pinned 步驟給了長工與幀距卻印「未給 --assert-*」)
+console.log(failed ? `✗ ${failed} 項失敗` : (ASSERTING || ASSERT_PAINT !== '' || ASSERT_DOM !== '') ? '✓ 快速捲動閘全過' : '✓ 快速捲動儀器跑完(未給 --assert-* 時只報數字)')
 process.exit(failed ? 1 : 0)

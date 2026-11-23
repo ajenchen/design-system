@@ -415,7 +415,8 @@ export const Interactive: Story = {
                   className={`${base} ${layer} flex flex-col items-start gap-[var(--item-gap-label-desc-scanning)] rounded-md border border-border px-3 py-2 text-body`}
                 >
                   <span>{state}</span>
-                  <code className="text-caption text-fg-muted">{layer || base}</code>
+                  {/* whitespace-normal:說明頁的 <code> 一律不斷行(src/globals.css);這裡的 token 名比示範條還寬,照上面的設計只在「-」處換行(2026-11-21 SIB-PV) */}
+                  <code className="whitespace-normal text-caption text-fg-muted">{layer || base}</code>
                 </div>
               ))}
             </div>
@@ -449,9 +450,9 @@ export const FunctionalHighlight: Story = {
       </TutorialRule>
       <TutorialRule paragraph={false} title="頁內搜尋配對(Ctrl+F)">
         <p className="max-w-xl rounded-md border border-border bg-surface p-[var(--layout-space-loose)] text-body">
-          搜尋「報表」:月度<mark className="rounded-xs bg-search-match text-inherit">報表</mark>
-          已歸檔;季度<mark className="rounded-xs bg-search-match-current text-inherit">報表</mark>
-          為目前所在配對,尚待審核;年度<mark className="rounded-xs bg-search-match text-inherit">報表</mark>
+          搜尋「報表」:月度<mark className="rounded-md bg-search-match text-inherit">報表</mark>
+          已歸檔;季度<mark className="rounded-md bg-search-match-current text-inherit">報表</mark>
+          為目前所在配對,尚待審核;年度<mark className="rounded-md bg-search-match text-inherit">報表</mark>
           排定下週產出。
         </p>
         <span className="block text-caption text-fg-muted">

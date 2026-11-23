@@ -368,6 +368,11 @@
           "references": ".claude/references",
           "rules": ".claude/rules"
         },
+        "repositoryManagedTreeExcludes": {
+          "commands": [
+            "README.md"
+          ]
+        },
         "productManagedTrees": {},
         "skillView": {
           "directory": ".claude/skills",

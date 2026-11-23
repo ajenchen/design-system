@@ -3,8 +3,15 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import Ajv2020 from 'ajv/dist/2020.js'
 import addFormats from 'ajv-formats'
+import {
+  CONSUMER_NOT_REQUESTED_STATUS,
+  RELEASE_REQUESTED_CONSUMERS_ENV,
+  consumerUpgradeMode,
+  selectReleaseConsumers,
+} from './release-consumer-selection.mjs'
 
 const PLAN_PATH = 'scripts/standard-ci-evidence-plan.json'
+const CONSUMER_SELECTION_IMPLEMENTATION = 'scripts/lib/release-consumer-selection.mjs'
 const SCHEMA_PATH = 'scripts/schemas/standard-ci-evidence-observation.schema.json'
 const PACKAGE_MANIFESTS = Object.freeze({
   '@qijenchen/design-system': 'packages/design-system/package.json',
@@ -33,7 +40,42 @@ export function loadStandardCiEvidencePlan({ repoRoot = process.cwd() } = {}) {
       { dim: 66, event: 'repository_dispatch' },
     ])
     || plan.legacyMaximumAssurance?.blocking !== false) fail('canonical plan identity is invalid')
+  // plan 裡對 consumer 選法的說明必須跟實作同一份,否則就是一段沒有執行面的註解
+  if (plan.consumerSelection?.implementation !== CONSUMER_SELECTION_IMPLEMENTATION
+    || plan.consumerSelection?.requestEnv !== RELEASE_REQUESTED_CONSUMERS_ENV
+    || plan.consumerSelection?.notRequestedStatus !== CONSUMER_NOT_REQUESTED_STATUS) fail('canonical plan consumer selection differs from the release orchestrator implementation')
   return { plan, planSha256: digest(bytes), path: PLAN_PATH }
+}
+
+/**
+ * 這次發版的 consumer 證據範圍。選法只 import `release-consumer-selection.mjs`(orchestrator 用的同一支):
+ * 被選中的 consumer 必須有升級證據;沒被選中的(on-request 且 user 本次沒要求)記成「本次未要求升級」,
+ * 不得要求它的證據,也不得讓它從 observation 裡默默消失。
+ * user 2026-11-05 原話:「以後WM的升級都不要自動做除非我有特別要求」。
+ */
+export function standardConsumerSelection({ plan, workflow, inventory, desired, requested }) {
+  if (!Array.isArray(requested) || requested.some((item) => typeof item !== 'string' || item.length === 0)) fail('requested consumer list is invalid')
+  const selectedRepositories = new Set(selectReleaseConsumers(workflow.automation.consumers, requested).map((target) => target.repository))
+  const selected = []
+  const notRequested = []
+  for (const planned of plan.consumers) {
+    const repo = inventory.repositories.find((item) => item.id === planned.repositoryId)
+    const profile = repo ? desired.profiles[repo.desiredProfile] : undefined
+    const checkPolicy = profile?.requiredChecks.find((item) => item.context === planned.requiredCheck)
+    const releaseTarget = repo ? workflow.automation.consumers.find((target) => target.repository === repo.github) : undefined
+    if (!repo || !releaseTarget || releaseTarget.requiredCheck?.context !== checkPolicy?.context) fail(`${planned.repositoryId} release/check SSOT differs`)
+    if (selectedRepositories.has(repo.github)) {
+      selected.push({ planned, repo, checkPolicy, releaseTarget })
+    } else {
+      notRequested.push({
+        repositoryId: repo.id,
+        repository: repo.github,
+        upgrade: consumerUpgradeMode(releaseTarget),
+        status: CONSUMER_NOT_REQUESTED_STATUS,
+      })
+    }
+  }
+  return { requested: [...requested], selected, notRequested }
 }
 
 function expectedContext(repoRoot) {
@@ -147,15 +189,20 @@ export function validateStandardFiveStepObservation(observation, {
       || npmPackage.gitCommit !== observation.release.commit) fail(`release/BOM/npm/provenance identity differs:${local.name}`)
   }
 
+  // 只要求「這次發版實際被選中的 consumer」的證據;選法與 orchestrator 第五步同一支實作
+  const selection = standardConsumerSelection({ plan, workflow, inventory, desired, requested: observation.consumerSelection.requested })
   const consumerById = new Map(observation.consumers.map((item) => [item.repositoryId, item]))
-  for (const expectedConsumer of plan.consumers) {
-    const repo = inventory.repositories.find((item) => item.id === expectedConsumer.repositoryId)
+  if (consumerById.size !== observation.consumers.length) fail('consumer closure contains a duplicate repository')
+  for (const skipped of selection.notRequested) {
+    if (consumerById.has(skipped.repositoryId)) fail(`${skipped.repositoryId} was not requested for this release but carries consumer upgrade evidence`)
+  }
+  if (!same(observation.consumerSelection.notRequested, selection.notRequested)) {
+    fail('not-requested consumer record differs from the release selection; an unselected consumer must be recorded as not-requested-this-release, never dropped')
+  }
+  for (const { planned: expectedConsumer, repo, checkPolicy: check, releaseTarget } of selection.selected) {
     const item = consumerById.get(repo.id)
-    const profile = desired.profiles[repo.desiredProfile]
-    const check = profile.requiredChecks.find((candidate) => candidate.context === expectedConsumer.requiredCheck)
-    const releaseTarget = workflow.automation.consumers.find((target) => target.repository === repo.github)
-    if (!releaseTarget || releaseTarget.requiredCheck?.context !== check?.context) fail(`${repo.id} release/check SSOT differs`)
-    if (!item || item.role !== repo.role || item.repository !== repo.github || item.defaultBranch !== repo.defaultBranch
+    if (!item) fail(`${repo.id} is selected for this release (${consumerUpgradeMode(releaseTarget)}) but has no consumer upgrade evidence`)
+    if (item.role !== repo.role || item.repository !== repo.github || item.defaultBranch !== repo.defaultBranch
       || item.sourcePullRequest.mergeCommit !== item.protectedMain.head || item.sourcePullRequest.mergeTree !== item.protectedMain.tree
       || item.sourcePullRequest.baseRef !== repo.defaultBranch
       || !`${item.sourcePullRequest.title}\n${item.sourcePullRequest.body}`.includes(version)
@@ -178,14 +225,14 @@ export function validateStandardFiveStepObservation(observation, {
         : item.sourcePullRequest.head,
     }, repo.id)
     const locks = new Map(item.packageLock.packages.map((entry) => [entry.name, entry]))
-    for (const name of workflow.automation.consumers.find((target) => target.repository === repo.github).packages) {
+    for (const name of releaseTarget.packages) {
       const locked = locks.get(name)
       const published = npmByName.get(name)
       if (!locked || !published || locked.version !== version || locked.integrity !== published.integrity
         || locked.resolved !== published.tarball) fail(`${repo.id} exact package lock differs:${name}`)
     }
   }
-  if (consumerById.size !== plan.consumers.length) fail('consumer closure contains an unknown or duplicate repository')
+  if (consumerById.size !== selection.selected.length) fail('consumer closure contains an unknown, unselected, or duplicate repository')
   const dimensions = observation.dimensions.map((item) => ({ dim: item.dim, capability: item.capability, observationRunId: item.observationRunId }))
   const expectedDimensions = plan.dimensions.map((item, index) => ({
     dim: item.dim, capability: item.capability,

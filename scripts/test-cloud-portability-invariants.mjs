@@ -36,8 +36,10 @@ test('committed sandbox policy stays cloud-survivable', () => {
 test('tracked provider config carries no machine-absolute home paths', () => {
   // A committed /Users/<name> or /home/<name> path only resolves on one machine; in a cloud
   // container it dereferences to nothing and fails at first use. Archival records
-  // (.claude/{logs,planning,scratch}) hold historical transcripts and are never loaded as config.
-  const archival = ['.claude/logs/', '.claude/planning/', '.claude/scratch/']
+  // (.claude/{logs,scratch}) hold historical transcripts and are never loaded as config.
+  // .claude/planning/ was a stale copy of governance/planning/ and was deleted 2026-11-17
+  // (knowledge-prune); a recreated .claude/planning/ is now scanned like any other config.
+  const archival = ['.claude/logs/', '.claude/scratch/']
   const tracked = git(['ls-files', '-z', '--', '.claude', '.agents', '.codex', '.claude-plugin', 'hooks', '.husky'])
     .split('\0')
     .filter(Boolean)

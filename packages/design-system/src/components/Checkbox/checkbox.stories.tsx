@@ -100,6 +100,6 @@ export const Horizontal: Story = {
 }
 
 // @story-history: Disabled retired 2026-05-17 per audit Dim 24/25 strict re-run —
-//   anatomy.stories.tsx StateBehavior「Disabled — 品牌色移除,統一 neutral」段(L535-558)已 cover。
+//   anatomy.stories.tsx StateBehavior「Disabled — 互動色移除,統一 neutral」段(L535-558)已 cover。
 //   非 trait-required(`isSelectionMulti` 不 mandate Disabled);RadioGroup 同 Family 已 retire 同類。
 //   States showcase (compact all-states overview)保留,跟 anatomy「focused subsection」不同教學。

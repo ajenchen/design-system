@@ -1,12 +1,11 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-// @placeholder-vocabulary-allow: 2026-07-04 Q4 完成 field-controls.spec.md 共享 contract b — emptyPlaceholder forward 已移除,emptyText 直達 Combobox → SelectMenu emptyText(search-empty 真住所);placeholder 為 trigger empty SSOT。
-// @cell-metric-escape-allow: comment describes RETIRED `tagAreaPaddingLeftPx={8}` magic — current code is surface-guarded (`surface === 'form'` only injects `!px-[var(--field-px)]`; table-cell context untouched, lets naked `!px-[var(--table-cell-px)]` SSOT take over). Hook regex grep'd the comment word, not the live code path. Per (a) fix 2026-05-13 user-approved Path a.
+// @cell-metric-escape-allow: comment describes RETIRED `tagAreaPaddingLeftPx={8}` magic — current code is surface-guarded (`surface === 'form'` only injects `!px-[var(--field-px)]`; table-cell context untouched, lets naked `!px-[var(--table-cell-px)]` SSOT take over). Hook regex grep'd the comment word, not the live code path. Per (a) fix 2026-05-13 user-approved Path a.(2026-11-21 複查仍成立:本檔說明退場經過的註解仍寫著那個舊寫法、實際傳 `tagAreaPaddingLeftPx={undefined}`,而 hook 的 regex 整檔 grep、分不出註解;規則見 field-controls.spec.md 共享 contract (c))
 import * as React from 'react'
 import { useKnownOptions } from '@/design-system/hooks/use-known-options'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
-import { fieldWrapperStyles, nakedCellRowModeAlign } from '@/design-system/components/Field/field-wrapper'
+import { fieldWrapperStyles, fieldWidthVariant, fieldWidthStyle, nakedCellRowModeAlign, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
 import { useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { useFieldSurface, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant } from '@/design-system/components/Field/field-context'
@@ -20,7 +19,6 @@ import {
   measureStackAvailablePx,
   type StackChromeCache,
   AVATAR_STACK_AVATAR_PX,
-  AVATAR_STACK_OVERFLOW_CHIP_PX,
 } from './avatar-stack-overflow'
 import type { WithFieldVariantInternal } from '@/design-system/components/Field/field-types'
 
@@ -33,16 +31,14 @@ const Combobox = ComboboxPublic as WithFieldVariantInternal<typeof ComboboxPubli
 // Pure helpers extracted to sibling for file-size budget(2026-05-18,P1 ≤ 500 lines)。
 // 不消費 component closure 的純 constant / 純 mapping function 全部搬走,主檔保留 SSOT-bearing
 // render logic(消費 Combobox / Select / state 等 closure 的部分)。
-// SSOT primitive re-export(backward-compat 對外 import 路徑保持 `./people-picker`)。
+// (2026-11-15 前這裡把兩支 helper 再出口到 `./people-picker`、因此進了 root 出口;那是內部實作,已拿掉,0.x 不留舊出口。)
 import {
-  PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS,
   getPeoplePickerTagWrapperClass,
   personToSelectOption,
   findPerson,
 } from './people-picker-helpers'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { useIsTouchDevice } from '@/design-system/hooks/use-is-touch-device'
-export { PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS, getPeoplePickerTagWrapperClass }
 
 // ── PeoplePicker ────────────────────────────────────────────────────────────
 // **2026-05-07 v15.6 SSOT 重構 v2**:
@@ -72,8 +68,8 @@ export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElem
   mode?: FieldMode
   /** Field chrome variant(對齊 Select / Combobox)*/
   variant?: FieldVariant
-  /** 寬度軸 — `fill` 填滿容器(default)/ `hug` 依內容收縮(value 寬 + slot 寬 + gap + 內 padding);
-   *  chrome 與互動不變。SSOT → field-controls.spec.md「寬度軸(width: fill / hug)」。 */
+  /** 寬度軸 — `fill` 填滿容器(default)/ `hug` 依內容收縮(value 寬 + slot 寬 + gap + 內 padding)/ 數字 = 固定寬(px,
+   *  窄容器裡不超出容器);chrome 與互動不變。SSOT → field-controls.spec.md「寬度軸(width: fill / hug)」。 */
   width?: FieldWidth
   size?: 'sm' | 'md' | 'lg'
   /** 當前已選的人(單選 PersonValue,多選 PersonValue[])*/
@@ -139,7 +135,7 @@ export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElem
   pillWrap?: boolean
   /**
    * 搜尋型態(2026-05-12 規則 3 ship,3-mode SSOT 對齊 A1-A5 spec):
-   * - `'menu'`(default,backward-compat)— 浮層內搜尋(panel-top search)
+   * - `'menu'`(預設,與 Combobox 的預設一致)— 浮層內搜尋(panel-top search)
    * - `'trigger'`(multi 模式 opt-in)— inline 搜尋(浮層開時 name 拿掉,avatar 後接 input cursor,
    *   類 Combobox inline-trigger idiom)
    * Single mode 永遠 inline-trigger(wrap Select searchable 直接走 inline),此 prop multi 才有意義。
@@ -147,14 +143,15 @@ export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElem
   searchIn?: 'menu' | 'trigger'
   /**
    * 一鍵清空(2026-08-05):X 在 ChevronDown 左,family SSOT → field-controls.spec.md「下拉箭頭」段。
-   * 機械轉發 wrapped Select(single)/ Combobox(multi)的 `clearable` — X 渲染與清空行為 SSOT 在基座
-   * (SelectClearButton / Combobox clear),本 wrapper 不另 render。何時開的判準繼承 select.spec.md
+   * 機械轉發 wrapped Select(single)/ Combobox(multi)的 `clearable` — X 渲染與清空行為 SSOT 在基座(Select「清除選取」/ Combobox
+   * 「清除全部」,都是 Field 共用的那一顆 `../Field/field-clear-button.tsx` FieldClearButton),本 wrapper 不另 render。何時開的判準繼承 select.spec.md
    * 「Clearable」:「無選擇是有效狀態」(選填欄位 / 可清 filter)才開;必填欄位不開。
    */
   clearable?: boolean
   /**
    * View 態是否渲 ChevronDown + Field naked wrapper(D-path opt-in,2026-05-08)
-   * — DataTable cell view↔edit 像素級對齊用。預設 false(裸 PersonDisplay,backward compat)。
+   * — DataTable cell view↔edit 像素級對齊用。預設 false(檢視態只畫值:裸 PersonDisplay;理由:檢視態只顯示值,跟表格 2026-07-08 A 案同一方向,
+   *   見 field-controls.spec.md「LinkInput / PeoplePicker 預設 view 路徑不包 wrapper」)。
    * 設 true 時 view 走 fieldWrapperStyles(naked variant)+ ItemSuffix ChevronDown,
    * 與 edit (Select / Combobox wrapped) 同 DOM 結構,消除 Layer-B padding mismatch。
    */
@@ -278,7 +275,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         : (cachedTagArea = trigger?.querySelector<HTMLElement>('div[class*="flex-1"][class*="min-w-0"]') ?? null)
       // 可用寬 = 頭像堆疊被分配到的寬,不隨畫了幾顆變(與檢視態 person-display.tsx 同一支 `measureStackAvailablePx`)——
       // 修前量這一格自己的 clientWidth:依內容寬(`width="hug"`)時這一格跟著內容縮,少畫一顆 → 變窄 → 再少一顆,
-      // 2 人只剩「+2」、6 人只畫 4 顆(r-F3 缺陷 K;field-controls.spec.md:215 依內容寬 = 值的寬 + 各元素寬)。
+      // 2 人只剩「+2」、6 人只畫 4 顆(r-F3 缺陷 K;field-controls.spec.md:212 依內容寬 = 值的寬 + 各元素寬)。
       // 這一格的內容寬扣掉它自己的 padding(單行 Tag 列帶焦點框留位內距,combobox.tsx `tagRowFocusRoomClass`)。
       // 欄位內搜尋框(`searchIn='trigger'`)的位先扣掉:頭像不擠到搜尋框身上,打的字看得見(與 Combobox 的 DOM 量測同一支量尺,
       // combobox.tsx `findInlineSearchMirror`;規則 combobox.spec.md「欄位內搜尋框的寬度」)。沒有欄位內搜尋框 → 0,公式不變
@@ -289,7 +286,6 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         availablePx: available,
         total: selectedNames.length,
         avatarPx: AVATAR_STACK_AVATAR_PX[size],
-        overflowChipPx: AVATAR_STACK_OVERFLOW_CHIP_PX[size],
       })
       setStackVisibleCount(visible)
     }
@@ -309,7 +305,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   }, [ref])
 
   // ── mode='view' ────────────────────────────────────────────────────────
-  // Default(showDisplayEndIcon=false):裸 PersonDisplay / MultiPersonDisplay — backward compat。
+  // Default(showDisplayEndIcon=false):裸 PersonDisplay / MultiPersonDisplay(理由:檢視態只顯示值,見 prop docblock)。
   // Opt-in(showDisplayEndIcon=true,2026-05-08 D-path):Field naked wrapper + ItemSuffix ChevronDown,
   // 與 edit (Select / Combobox wrapped) 同 DOM 結構消除 cell view↔edit 像素偏移。
   if (resolvedMode === 'view') {
@@ -323,8 +319,12 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       // block 會把 MultiPersonDisplay 的 inline-flex root 放進文字基線行盒,字型下伸空間(~6.5px)
       // 把頭像串推向行盒頂 → DataTable cell 內視覺偏上 6.4px。flex 容器無行盒語意;
       // 單人(flex root)/空值(span)子項幾何不變(2026-08-20 線上注入實證 7.5/7.5 置中)。
+      // 字級:root 套 `fieldDisplayTextClass(size)`(sm/md→text-body、lg→text-body-lg),field-controls.spec.md「(e) View typography
+      // canonical」—— 修前這條路沒有任何字級 class,名字與空值符號吃外層字級(Field 裡 = 16px),同一顆控件 showDisplayEndIcon=true
+      // 那條(fieldWrapperStyles 的 size 字級)是 14px(2026-11-17 A100;閘 scripts/field-view-font-size-invariant.mjs)。
+      // 表格格子本來就帶同一個 class(data-table.tsx 格子的 fieldDisplayTextClass),格內字級不變。
       return (
-        <div ref={ref} className={cn('flex w-full min-w-0', className)} aria-label={ariaLabel} {...rest}>
+        <div ref={ref} className={cn('flex w-full min-w-0', fieldDisplayTextClass(size), className)} aria-label={ariaLabel} {...rest}>
           {isEmpty
             ? <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>
             : isMulti
@@ -340,10 +340,11 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         // 2026-07-17 Dim 9 修:D-path view root 補 ref / aria-label / {...rest} 轉發(原只套 className,
         // 遺失 root props;對齊 readonly/disabled 分支與 spec root props 契約)。
         ref={ref}
-        className={cn(fieldWrapperStyles({ mode: 'view', variant: resolvedVariant, width, size }), className)}
+        className={cn(fieldWrapperStyles({ mode: 'view', variant: resolvedVariant, width: fieldWidthVariant(width), size }), className)}
         data-field-mode="view"
         aria-label={ariaLabel}
         {...rest}
+        style={fieldWidthStyle(width, rest.style)}
       >
         <span className={cn('flex-1 min-w-0 inline-flex items-center', nakedCellRowModeAlign)}>
           {isEmpty
@@ -364,11 +365,12 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
     return (
       <div
         ref={ref}
-        className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: resolvedVariant, width, size }), className)}
+        className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: resolvedVariant, width: fieldWidthVariant(width), size }), className)}
         data-field-mode={resolvedMode}
         aria-disabled={resolvedMode === 'disabled' ? true : undefined}
         aria-label={ariaLabel}
         {...rest}
+        style={fieldWidthStyle(width, rest.style)}
       >
         <span className={cn('flex-1 min-w-0 inline-flex items-center', nakedCellRowModeAlign, resolvedMode === 'disabled' && 'text-fg-disabled')}>
           {/* 2026-07-14 deep-audit 修:disabled 傳入 → 抑制 Avatar ProfileCard hoverCard + avatar dim
@@ -414,8 +416,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         // 2026-05-12 Issue 4:placeholder = trigger empty。2026-07-04 Q4:emptyText 走 Select →
         // SelectMenu 接線(search-empty 語意,與 trigger-empty 分離)。
         emptyText={emptyText}
-        selectAllLabel={selectAllLabel}
-        deselectAllLabel={deselectAllLabel}
+        // `selectAllLabel` / `deselectAllLabel` 不傳:那是多選 footer「全選」鈕的字,單選沒有這顆鈕、Select 也不收這兩個 prop ——
+        // 2026-11-13 前照傳,落進 Select 的 rest 被展開到觸發欄位的 div 上,React 各報一則「不認得的 prop」(下方 `rest as any` 讓型別檢查看不到)
         loading={loading}
         optionsLoading={optionsLoading}
         filterOption={filterOption}
@@ -469,8 +471,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         searchPlaceholder={searchPlaceholder}
         searchAriaLabel={searchAriaLabel}
         // 2026-05-12 Stream C Issue 4(codex Q3):placeholder = trigger empty hint('請選擇人員')
-        // — semantic clean separation。2026-07-04 Q4 拍板完成 1-cycle 承諾:emptyPlaceholder forward
-        // 移除,emptyText 改傳 Combobox → SelectMenu emptyText(search-empty 真住所,菜單空狀態)。
+        // — semantic clean separation。2026-07-04 Q4 拍板:emptyPlaceholder forward 移除,
+        // emptyText 改傳 Combobox → SelectMenu emptyText(search-empty 真住所,菜單空狀態)。
         placeholder={placeholder}
         emptyText={emptyText}
         wrap={pillWrap}
@@ -544,7 +546,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       clearable={clearable}
       searchPlaceholder={searchPlaceholder}
       searchAriaLabel={searchAriaLabel}
-      // 2026-05-12 Stream C Issue 4(codex Q3):placeholder = trigger empty('請選擇人員');emptyText = search-empty(僅 backward-compat forward 1 cycle)
+      // 2026-05-12 Stream C Issue 4(codex Q3):placeholder = trigger empty('請選擇人員');emptyText = search-empty(轉給 Combobox → SelectMenu)
       placeholder={placeholder}
       emptyText={emptyText}
       wrap={false}

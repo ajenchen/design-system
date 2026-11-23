@@ -7,6 +7,7 @@ traits:
   - isOverlay
 benchmark:
   - Radix Dialog primitive (shadcn Sheet base): github.com/radix-ui/primitives/tree/main/packages/react/dialog
+  - shadcn Sheet(import `Dialog as SheetPrimitive`): github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/sheet.tsx#L6
   - MUI Drawer: github.com/mui/material-ui/tree/master/packages/mui-material/src/Drawer
   - Ant Design Drawer: github.com/ant-design/ant-design/tree/master/components/drawer
   - Polaris Sheet: github.com/Shopify/polaris/tree/main/polaris-react/src/components/Sheet
@@ -60,7 +61,7 @@ Sheet 是**從畫面邊緣滑入的浮層面板**。**消費者 API = 右側滑�
 
 ## Inspector
 
-`Inspector` 提供互動 Controls 即時切換 SheetContent 兩個關鍵維度:`width`(default / sm / lg 寬度覆寫)、`showFooter`(是否顯示底部 CTA 列);`side` 固定 `right`(消費者 API 只有右側,見「定位」)。內容區由 consumer 決定,Inspector 聚焦容器層級的可試玩 prop。
+`Inspector` 提供互動 Controls 即時切換 SheetContent 兩個關鍵維度:`width`(default / 384 / 512 —— 2026-11-15 起是 SheetContent 真的 `width` prop,見「API 補充」;之前是 story 自己的 className 覆寫)、`showFooter`(是否顯示底部 CTA 列);`side` 固定 `right`(消費者 API 只有右側,見「定位」)。內容區由 consumer 決定,Inspector 聚焦容器層級的可試玩 prop。
 
 對應 anatomy story:`Overview` + `Inspector` + 元件特有 `SideMatrix`(消費者只用 `right`) + `ColorMatrix` + `SizeMatrix` + `StateBehavior`。
 
@@ -68,15 +69,15 @@ Sheet 是**從畫面邊緣滑入的浮層面板**。**消費者 API = 右側滑�
 
 ## Padding SSOT
 
-Sheet 的 `SheetHeader` / `SheetFooter` 消費 `SurfaceHeader` / `SurfaceFooter` primitive;`SheetBody` 用 `<ScrollArea>` wrap + 同一套 overlay-surface padding token(對齊 DialogBody canonical,SSOT 見 `patterns/overlay-surface/overlay-surface.spec.md`「Body overflow canonical」)——padding + 分隔線由 overlay-surface own,Sheet 與 Dialog / Popover 共用,避免 token 漂移。Sheet 特有行為:side variant(`top` / `right` / `bottom` / `left`)決定滑入方向 + height/width 響應式策略,padding 本身對齊 overlay-surface canonical。
+Sheet 的 `SheetHeader` / `SheetFooter` 消費 `SurfaceHeader` / `SurfaceFooter` primitive;`SheetBody` 用 `<ScrollArea>` wrap + 同一套 overlay-surface padding(對齊 DialogBody canonical,SSOT 見 `patterns/overlay-surface/overlay-surface.spec.md`「Body overflow canonical」;上下內距由容器自己給 —— `data-layout-body="fill"`,底依最後一個東西照 `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 4,本規格不寫值)——padding + 分隔線由 overlay-surface own,Sheet 與 Dialog / Popover 共用,避免 token 漂移。Sheet 特有行為:side variant(`top` / `right` / `bottom` / `left`)決定滑入方向 + height/width 響應式策略,padding 本身對齊 overlay-surface canonical。
 
 ---
 
 ## 關閉按鈕
 
-> **跨家族 SSOT pointer**:SheetHeader 屬 **Padding-based overlay header 家族**;border / padding / dismiss size / withTabs 的跨家族視覺契約 SSOT 詳 `patterns/header-canonical/header-canonical.spec.md`。本節僅 codify Sheet 特有 close X canonical。
+> **跨家族 SSOT pointer**:SheetHeader 屬 **Padding-based overlay header 家族**;border / padding / dismiss size / tabsSlot 的跨家族視覺契約 SSOT 詳 `patterns/header-canonical/header-canonical.spec.md`。本節僅 codify Sheet 特有 close X canonical。
 
-永遠存在於 SheetHeader 右側(對齊 DialogHeader canonical)。使用 `<Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />`(讀屏名稱可經 `I18nProvider` 的 `sheet.close` 換字,`../../lib/i18n/README.md`「Fallback chain」),不可移除——使用者永遠需要明確的關閉手段。
+永遠存在於 SheetHeader 右側(對齊 DialogHeader canonical)。使用 `<Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />`(讀屏名稱可經 `I18nProvider` 的 `sheet.close` 換字,`../../lib/i18n/README.md`「Fallback chain」),不可移除——使用者永遠需要明確的關閉手段。 標題列操作放 `<SheetHeader actions={…}>`(與 × 之間的分隔線由 SurfaceHeader 放,`../../patterns/overlay-surface/overlay-surface.spec.md`「SurfaceHeader」右側按鈕位)。
 
 **唯一例外 = DS 內部基建的 AppShell Menu 左側浮層**(`side="left"`,不是消費者 Sheet):它是導覽清單,浮層照並排的樣子、不加 ×(並排時本來就沒有 ×;user 2026-10-21 以問句提出這個推論,AI 實測 DS 4 個元件 7 組對照浮層與並排的 × 有無一致,user 2026-10-27 選甲確認),**不放 `SheetHeader`**,明確的關閉手段是點浮層外(遮罩)、Esc、⌘B / Ctrl+B(`../AppShell/app-shell.spec.md`「版面規則」§9;開關鈕被浮層蓋住)。無障礙名稱只給讀屏器的 `SheetTitle`。**禁止**用 `<SheetHeader className="sr-only">` 湊數:× 被裁成看不見卻仍在 Tab 順序,第一個 Tab 停在看不見的鈕上(2026-10-15 r1b 複驗 N2,`../Sidebar/sidebar.tsx` SidebarOverlay)。
 
@@ -125,10 +126,11 @@ Sheet 為容器,內容由 consumer 決定;focus trap + Escape close + `aria-labe
 ## API 補充
 
 - **`portalContainer`**(`SheetContent`;2026-10-15):Portal 目的地,預設 document.body。與 `DialogContent` 同名同義(`../Dialog/dialog.spec.md`「`portalContainer`」):放在比視窗小、帶 transform 的容器(模擬瀏覽器畫布、嵌入式預覽)時傳那個容器,`fixed` 定位以它為準,側板與遮罩不跑出容器。DS 內的消費者 = AppShell 的 Menu 左側浮層(`<AppShell portalContainer>` 一路帶到這裡)。
+- **`width`**(`SheetContent`;2026-11-15):側板寬(px),只作用在 `side="right"` / `"left"`。不傳 = 預設 `w-3/4 sm:max-w-md`(視窗 75%、640px 以上最寬 28rem,畫面不變);傳了 = `min(width, 75%)` —— 寬照給,但仍不超過畫布的 75%(與預設同一條:旁邊永遠留一段點得到的遮罩;`portalContainer` 時以那個容器為準)。名字與值域照 user「尺寸:甲」(`../../../ds-canonical/references/props-naming.md`「尺寸參數」);依據是決策頁 r9「照既有原則直接做」的「Sheet、Popover 加寬度參數」(**預選、user 未逐字選**,user 只回了 7 題、沒有提出異議)。2026-11-15 前只能寫 `className="sm:max-w-lg"`(沒有型別;className 仍可用)。
 
 ## A11y 預設
 
-**ARIA / Pattern**:繼承 Radix `dialog` primitive a11y 預設(role / aria-* / 鍵盤導覽)。**說明綁定**同 `../Dialog/dialog.spec.md`「A11y 預設」說明綁定:有 `<SheetDescription>` 才寫 `aria-describedby`,沒有就不寫(畫面上的副標還沒定義,先不要用;`SheetDescription` 只留給讀屏器的說明)(`../../lib/overlay-description.ts`;2026-10-20 前沒寫說明的側板指向不存在的 id,獨立驗證 OV-15)。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/dialog#accessibility)。
+**ARIA / Pattern**:繼承 Radix `dialog` primitive a11y 預設(role / aria-* / 鍵盤導覽)。**說明綁定**同 `../Dialog/dialog.spec.md`「A11y 預設」說明綁定:有 `<SheetDescription>` 才寫 `aria-describedby`,沒有就不寫(畫面上的說明何時用、長什麼樣照 `../../patterns/overlay-surface/overlay-surface.spec.md`「SurfaceHeader」標題區)(`../../lib/overlay-description.ts`;2026-10-20 前沒寫說明的側板指向不存在的 id,獨立驗證 OV-15)。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/dialog#accessibility)。
 
 **Keyboard 行為**:
 

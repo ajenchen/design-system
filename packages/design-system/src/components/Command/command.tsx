@@ -299,8 +299,17 @@ const Command = React.forwardRef<
      * SelectMenu/select-menu-keyboard.ts `useActiveDescendant`)。本 Command 自己的搜尋框與清單不必接,已自動寫好。
      */
     onActiveOptionChange?: (active: CommandActiveOption | undefined) => void
+    /**
+     * 列的左右內距對齊誰(2026-11-15;決策頁 r9「照既有原則直接做」:清單列的左右內距改成元件參數 —— 「要設定的值走元件參數」4甲):
+     * - 不傳 / `'field'` = 對齊欄位的字(`--field-px`,12px;裸選單、下拉 —— 選項的字跟觸發欄位的字落在同一條線);
+     * - `'surface'` = 對齊浮層標題與內文(`--layout-space-loose`;清單放在有標題列的 Dialog / Popover 內文裡 = List-as-region)。
+     * 內部寫的是列的內距變數 `--item-px`(owner `patterns/element-anatomy/item-anatomy.spec.md`「Token: `--item-px`」);
+     * 2026-11-15 前要 consumer 自己在 Command 上寫 `style={{ '--item-px': 'var(--layout-space-loose)' }}`(沒有型別)。
+     * `'field'` 會明寫回 `--field-px`(外層若設成 surface,巢在裡面的這一份照樣對齊欄位)。
+     */
+    gutter?: 'field' | 'surface'
   }
->(({ className, size, children, onKeyDown, onMouseDown, onActiveOptionChange, ...props }, ref) => {
+>(({ className, size, gutter, style, children, onKeyDown, onMouseDown, onActiveOptionChange, ...props }, ref) => {
   // 列上可聚焦東西的鍵盤路(B9,見上方 routeCommandRowKeys 段):根節點要拿來掛 observer
   const rootRef = React.useRef<HTMLDivElement | null>(null)
   const setRootRef = React.useCallback(
@@ -341,6 +350,8 @@ const Command = React.forwardRef<
           // 2026-09-10 實測:殼的框今天畫不出來(PopoverContent overflow-hidden 把 +2px 整條裁掉,
           // 逐像素 0),但 computed style 確實有 outline —— 殼一旦被放進不裁切的宿主就會現形,先抑制掉。
           className={cn("flex h-full w-full flex-col overflow-hidden text-foreground outline-none", className)}
+          // gutter → 列的內距變數(整棵子樹的列一起換;item-anatomy.spec.md「Token: --item-px」客製方式)。consumer 的 style 最後展開(一般樣式照常;用 style 寫 --item-px 等於寫 token,產品不做,換列內距用 gutter —— 依據主題甲,範圍的讀法見 token-system.spec.md「誰可以讀」AI 推導 ①)
+          style={gutter ? { '--item-px': gutter === 'surface' ? 'var(--layout-space-loose)' : 'var(--field-px)', ...style } as React.CSSProperties : style}
           {...props}
         >
           {children}
@@ -368,6 +379,7 @@ const CommandDialog = ({ children, title = '指令面板', label = '搜尋指令
   // lib/overlay-focus-return.ts 還,指標挑選不畫鍵盤框),本檔那份 RememberFocusOrigin 收掉,不留第二份。
   return (
     <Dialog {...props}>
+      {/* 寬 = 預設 md(搜尋列 + 清單疊成一欄;dialog.spec.md「寬度檔位」)。2026-11-15 前吃舊預設 512 */}
       <DialogContent className="overflow-hidden p-0 shadow-[var(--elevation-200)]" height="hug">
         <DialogTitle className="sr-only">{title}</DialogTitle>
         {/* data-dialog-body:讓 DialogContent 的 onOpenAutoFocus 把焦點放進搜尋列(它只認 [data-dialog-body] 內的
@@ -451,8 +463,12 @@ const CommandList = React.forwardRef<
       conflicting code(修前): 本 ScrollArea 固定 max-h-300 無 flex-1 → 在夾住的 SelectMenu PopoverContent
         (max-h=available-height)內撐破外殼、底部選項被裁(320px viewport 實測 bottom 425 > 320 溢出)。
       修: 加 flex-1 min-h-0(對齊 M25 canonical + HoverCard/Popover),max-h-300 降為上限。Command root 已
-        `flex h-full flex-col`(command.tsx#Command)= chain 完整;非 flex 容器內 flex-1 為 no-op(spec:34 backward compat)。 */
-  <ScrollArea className="flex-1 min-h-0 max-h-[var(--menu-max-height)]">
+        `flex h-full flex-col`(command.tsx#Command)= chain 完整;非 flex 容器內 flex-1 不起作用(放在任何容器都安全【AI 推導 2026-11-16:讀行為推出來的理由,原文只寫了相容】)。
+      清單捲動上限 18.75rem(300px):值只住這一行(command.spec.md「邊界案例」清單捲動上限;只有 CommandList 在讀、
+        不隨密度切換 → 不開 token,2026-11-11 token「3全收」從 uiSize.css 收回)。 */
+  // 邊緣標記(2026-11-17 A102):選項清單無框、上下留白由群組自帶(MenuGroup py-2)= unbounded region(layoutSpace.spec.md「region 子分類」);
+  // 放在會自己給上下內距的容器(data-layout-body)最後時,容器底自動 = 0(規則 4 第 3 列;tokens/layoutSpace/layoutSpace.css)。
+  <ScrollArea className="flex-1 min-h-0 max-h-[18.75rem]" data-layout-region="unbounded">
     {/* @focus-suppress A — 同 Command 根:cmdk 1.1.1 在第一次方向鍵後把 DOM 焦點搬到 list
         (`document.getElementById(listId).focus()`),殼同樣不該畫框;承擔者:CommandItem 的
         data-[selected=true]:focus-ring-inset(下方 CommandItem 的 cursorByKeyboard 分支;原寫行號 331 已過期)。 */}

@@ -33,8 +33,8 @@ originSessionId: 41fa83c2-f951-431e-911e-ed3ceb185903
 
 **真機制**(supplementary to architecture,not replacement):
 1. **Anti-pattern static hooks**(primary):
-   - `check_sidebar_menu_button_implicit_wrap.sh` — SidebarMenuButton wrap pattern
-   - `check_chrome_header_avatar_canonical.sh` — chrome header raw Avatar 24
+   - `check_sidebar_avatar_canonical.sh(r2,2026-11-18 merge)` — SidebarMenuButton wrap pattern
+   - `check_sidebar_avatar_canonical.sh(r1,2026-11-18 merge)` — chrome header raw Avatar 24
    - `check_consumer_app_invariants.sh(r3,2026-06-11 merge)` — DS primitive misuse anti-pattern 家族(含 Pattern 8 硬寫色值/字級/shadow 繞 token;簽名清單 SSOT = hook 本體,持續擴充,禁在此 hardcode 數字)
    - `check_consumer_app_invariants.sh(r2,2026-06-11 merge)` — @story-baseline marker enforce
    - `check_consumer_app_invariants.sh(r1,2026-06-11 merge)` — 禁 PW 重寫 DS catalog

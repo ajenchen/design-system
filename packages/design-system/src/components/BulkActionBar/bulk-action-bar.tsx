@@ -21,10 +21,8 @@ export interface BulkActionBarLabels {
   count: (n: number) => string
   clear: string
   hiddenSuffix: (hidden: number) => string
-  /** @deprecated 2026-07-06 role 已降級 "group"(user 拍板),改用 `ariaLabel`;此 key 保留 backward-compat(值仍作 fallback)。 */
-  toolbarAriaLabel: string
-  /** root `role="group"` 的 aria-label(2026-07-06 新名;未傳 fallback toolbarAriaLabel)。 */
-  ariaLabel?: string
+  /** root `role="group"` 的 aria-label(預設「批次操作」;舊名 `toolbarAriaLabel` 2026-07-06 停用、2026-11-15 移除)。 */
+  ariaLabel: string
 }
 
 // code-quality-allow: dead-export — public API per spec.md(consumer spread + override)
@@ -32,7 +30,7 @@ export const BULK_ACTION_BAR_DEFAULT_LABELS: BulkActionBarLabels = {
   count: (n) => `已選 ${n} 項`,
   clear: '清除選取',
   hiddenSuffix: (hidden) => `· ${hidden} 個被 filter 隱藏`,
-  toolbarAriaLabel: '批次操作',
+  ariaLabel: '批次操作',
 }
 
 // ── Props ───────────────────────────────────────────────────────────────────
@@ -126,7 +124,7 @@ const BulkActionBar = React.forwardRef<HTMLDivElement, BulkActionBarProps>(
         // 方向鍵 roving 契約(AT 告知「工具列」但方向鍵無反應 = 空承諾);group 語意誠實,
         // Tab 序照 DOM(spec 本有 canonical)。
         role="group"
-        aria-label={labels.ariaLabel ?? labels.toolbarAriaLabel}
+        aria-label={labels.ariaLabel}
         className={cn(
           'flex items-center gap-2',
           'px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]',

@@ -9,7 +9,7 @@ scope: overlay / 常駐面板 / 頁面置底按鈕列的 shell sub-components (S
 
 # Overlay Surface 設計原則
 
-> **Foundational SSOT rationale**(cap 800,2026-04-25 approved):
+> **Foundational SSOT rationale**(2026-04-25 approved;當時寫的「cap 800」只列在舊開場檔的例外清單,那份清單已不存在,`check_file_size_budget.sh` 的 case 表也從沒列過本檔 —— 行數上限以該表為準,本檔走一般 spec 那一檔):
 > Dialog / Sheet / Popover / Coachmark / HoverCard 等 overlay 元件 structure 跨 pattern SSOT。定義 SurfaceHeader / SurfaceBody / SurfaceFooter sub-components + v5 `data-unbounded` slot trick + padding-based header canonical + dismiss size canonical。多 overlay 元件消費,scope 本質 > 單一 pattern。
 
 ## 定位
@@ -40,14 +40,20 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 
 ### SurfaceHeader
 - 根節點帶 `data-slot="surface-header"`(column mode 與單列 mode 兩個分支都帶)
-- `border-b border-divider`(上下分隔;**例外**:`withTabs` / `tabsSlot` 時撤 border-b,由 tabs underline 接管 paint,`tabsSlot` 並自動切 column mode — 契約 SSOT 見 `patterns/header-canonical/header-canonical.spec.md` W1 / W2)
+- `border-b border-divider`(上下分隔;**例外**:給了 `tabsSlot` 時撤 border-b,由 tabs underline 接管 paint,並自動切 column mode — 契約 SSOT 見 `patterns/header-canonical/header-canonical.spec.md` W1 / W2)
 - `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]`
 - `flex items-center gap-2 shrink-0`(不被 flex-grow 壓縮)
+- **標題區(浮層標題區的唯一住所;Dialog / Sheet / Popover / 決策卡各自的規格只指回這裡)**:左欄由上而下 =〔小標〕〔標題〕〔說明〕,右側 =〔操作〕〔分隔線〕〔×〕(× 永遠最右;排法見下方「右側按鈕位」)。**小標、說明預設都不出現,兩者不同時用**;都需要時說明寫進內文。
+  - **標題**:單行截斷 + 截斷才顯的 tooltip(`components/Tooltip/tooltip.spec.md`「截斷文字 → 用 tooltip 顯示完整內容」);字級 modal 16 / 非 modal 14(`./overlay-chrome-sizing.spec.md`「Overlay title typography canonical」)。
+  - **小標**(`SurfaceEyebrow`;程式名 eyebrow 是 `naming-conventions.md` 三重測試唯一三題全過的詞:strapline / caption / label / overline 各有一題不過):選填,放標題上方;一行(截斷規則同標題);`text-caption font-medium text-fg-secondary`(12px / 500);距標題 `--item-gap-eyebrow-title`(2px,與 `--item-gap-label-desc-*` 同組)。例:決策卡步數「1 / 3」。規格值出自 user 2026-10-29T09:03:42Z 提案(逐字節錄;全文在 10-29 對話第十輪的逐字彙整(本機紀錄,不進版控),前面另有 SSOT 住所與「title 上方應該也要可以選擇是否秀出 strap line」、後面另有「跟description是否需要取捨？我覺得這可能也需要研究」:「strap line 距離 title 一樣是規範的2px 然後strap line 不超過一行,然後是12px的500粗的fg-secondary色的字體 你覺得如何？」;句尾是問句,落地 = AI 採用提案)。
+  - **說明**:選填,放標題下方;只放跟標題緊密相關的一句短資訊(例:編號 · 指派、最後編輯時間),較長的寫進內文;`text-body text-fg-secondary`、距標題 `--item-gap-label-desc-reading-lg`(`DialogDescription` / `SheetDescription`);換行照 `patterns/element-anatomy/item-anatomy.spec.md`「兩種閱讀模式」的閱讀模式,自然換行、不截斷。出處:user 2026-11-06 回「照你建議」,選定 AI 提的說明位置乙(說明留在標題區但只放一句短資訊、不跟小標同時用)。
+  - **×**:固定在 header 頂部,佔位 = 標題一行高(`CHROME_UNBOUNDED_SLOT` 把 × 縮成標題行高、`[data-dismiss]` 靠上),小標、說明出現與否都不移動;沒有小標時 × 中線 = 標題中線。方向出自 user 2026-10-29T08:36:00Z 反問(逐字節錄;全文在 10-29 對話第九輪的逐字彙整(本機紀錄,不進版控),開頭另有「第三題」、句尾另有「應該沒有任何的世界級設計是這樣吧？」:「但 strap line本身是 optional 的 如果因為其的出現與否而讓 x 距離 header 頂部的距離變來變去不是非常奇怪嗎？」;問句只取方向);佔位取標題行而非小標行 = AI 推導(沿用既有 slot = 標題行高,所有既有標題區零變化)。閘 `scripts/overlay-header-title-area-invariant.mjs`。
+- **右側按鈕位**(`actions` / `dismiss`,Dialog / Sheet / Popover 的 Header 與 DataTable 狀態面板共用):consumer 只傳按鈕 —— 標題列操作放 `actions`,× 由 DialogHeader / SheetHeader / PopoverHeader 內建(raw SurfaceHeader 放 `dismiss`);SurfaceHeader 排成〔操作 …〕〔分隔線〕〔×〕,兩者都有時**自動**放分隔線、只有一方時不放。排序、variant 與分隔線照 `../action-bar/action-bar.spec.md`「三、Variant 與排序」「五、分隔線規則」第 3 條(誤觸保護)與「分隔線幾何」(兩側各 12;線長 = 按鈕原生高 − 8,sm 20 / 寬鬆 24 —— 縮位由整個操作區承擔、區內按鈕保持原生高,見 `./overlay-chrome-sizing.spec.md`「覆蓋範圍」),尺寸一律 `sm`(`../header-canonical/header-canonical.spec.md` §4);標題列操作預設 `variant="text"`(不撐高標題列),放有外框的按鈕時標題列自然長高、按鈕與標題同一條中線。**禁**在 children 自刻右側操作區或分隔線、或 `hideClose` 後自己塞 ×。閘 `scripts/overlay-header-actions-invariant.mjs`(靜態 + 幾何)。
 
 ### SurfaceBody
 - 根節點帶 `data-slot="surface-body"`
-- `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]`
-- **永遠套 `flex-1 min-h-0 overflow-y-auto`**(viewport-aware scroll:視窗太小時 body 內捲動;非 flex-col parent 內 flex-1/min-h-0 為 no-op,backward compat)。2026-05-31 infra-audit 修:原寫「無額外 flex 屬性」與 code(overlay-surface.tsx:185 恆套)矛盾。consumer 依浮層類型:
+- 左右 `px-[var(--layout-space-loose)]`;上下內距由容器自己給 —— 根節點宣告 `data-layout-body="hug"`(不擋頁面、貼內容),底依最後一個東西照 `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 4「容器自己判,不由寫的人挑值」(實作 `layoutSpace.css`)。本規格不寫上下內距的值(2026-11-17 前這一行寫死 `py-[var(--layout-space-tight)]`)
+- **永遠套 `flex-1 min-h-0 overflow-y-auto`**(viewport-aware scroll:視窗太小時 body 內捲動;非 flex-col parent 內 flex-1/min-h-0 不起作用,放在任何容器都安全)。2026-05-31 infra-audit 修:原寫「無額外 flex 屬性」與 code(overlay-surface.tsx#SurfaceBody 恆套)矛盾。consumer 依浮層類型:
 - **Focus ownership**:SurfaceBody 不預設 `tabIndex`——短內容時它不是 scroll region,一律塞進 sequential focus order 會製造多餘 tab stop。當 bare SurfaceBody 在定高/viewport 壓縮下**實際 overflow**時,consumer 必須傳 `tabIndex={0}` + `role="region"` + 語意明確的 `aria-label`;SurfaceBody runtime 內建 inset DS focus ring。`BodyScrollKeyboard` story(test-only)的 play assertion 機械驗證該具名節點確實 overflow 且可聚焦。Dialog / Sheet 正式 consumer 仍優先走下節 ScrollArea canonical。
   - **Popover**:多數 bare consume,padding 即是總 padding
   - **Dialog / Sheet**:consumer **不直接 wrap SurfaceBody**——走 ScrollArea canonical(下節),padding 搬到 ScrollArea viewport 內層 div
@@ -68,7 +74,7 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 ```tsx
 // DialogBody / SheetBody 內部:
 <ScrollArea className="flex-1 min-h-0">
-  <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]">
+  <div data-layout-body="fill" className="px-[var(--layout-space-loose)]">
     {children}
   </div>
 </ScrollArea>
@@ -76,11 +82,11 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 
 - `flex-1 min-h-0` → 撐滿 Content 剩餘高度(min-h-0 防止 flex child 撐破 container)
 - Padding 搬進 ScrollArea viewport 內的 inner div(因 ScrollArea Root 自己是 `overflow-hidden`,padding 應在捲動內容上)
-- `pb-bottom` 保留 Dialog / Sheet「大容器底部多一拍」的 canonical
+- 上下內距由容器自己給(`data-layout-body`;`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 4「容器自己判」):Dialog / Sheet 擋住頁面 = `fill` → 最後是一般元素時底部 `bottom` 48(「大容器底部多一拍」= 規則 4 第 1 列),最後是有框的表格 / 卡片 `loose`、自帶上下內距的清單 0;SurfaceBody(Popover 等)= `hug` → 最後是一般元素時與頂部同值(第 4 列)。本規格不寫底距的值(2026-11-17 前寫死 `pb-bottom`)
 
 **Popover 例外**:Popover 無 viewport-fill、內容預期短,PopoverBody 直接消費 SurfaceBody bare;若未來有長內容 Popover consumer,同樣應 wrap ScrollArea。
 
-**Coachmark 例外**:Coachmark 內容短(media + 2 行 title/description),不設計 body 捲動;不適用本規則。
+**Coachmark**(2026-11-22 改,與長內容 Popover 同款):高度隨內容、最高到 PopoverContent 的可用高度;超過時 Header / Footer 固定,中間內容區(Media + Body)包 `<ScrollArea className="flex-1 min-h-0">` 捲動,內容區真的捲得動時才給 viewport `tabIndex=0`(短內容不是捲動區,同上「Focus ownership」)。規格見 `../../components/Coachmark/coachmark.spec.md`「高度與捲動」。2026-11-22 前本段寫「Coachmark 內容短(media + 2 行 title/description),不設計 body 捲動」—— 前提來自 Coachmark 規格的「說明不超過 3 行」,那一條沒有 user 決定紀錄,user 11-22 拍板改成內容驅動高度後撤掉。
 
 ---
 
@@ -88,13 +94,13 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 
 當 overlay body(Dialog / Sheet / Popover)**內容是一個 unbounded list**(contact picker / settings menu / command palette / nav)時 — body 不該有 chrome padding,讓 list 自管視覺節奏。
 
-**判定條件(唯一)**:body 撤掉 chrome padding(`!px-0 !pt-0 !pb-0`)+ list outer wrapper 自帶 `py-2` + item 自帶 `px-loose`。三件事全成立即是 List-as-region。**item 用不用 `MenuItem`、有沒有 hover 底色,都不是判定條件** —— hover / focus / selected 屬 state 視覺,跟隨永久視覺層分類,不獨立觸發分類(同向旁證:`../element-anatomy/item-anatomy.spec.md`「連續 item 貼邊合法性」段落的 state-follows-permanent-layer 原則;該段本身管的是相鄰 item 的 gap,不是本判定條件,故只作旁證不作條文)。
+**判定條件(唯一)**:body 撤掉 chrome padding(`!px-0 !pt-0 !pb-0`)+ list outer wrapper 自帶 `py-2` + item 自帶 `px-loose`。(2026-11-17:list outer wrapper 帶 `data-layout-region="unbounded"` 時,body 底部 0 由容器自己給 —— `layoutSpace.spec.md` 規則 4「容器自己判」;頂部仍要撤,頂部自判未做。)三件事全成立即是 List-as-region。**item 用不用 `MenuItem`、有沒有 hover 底色,都不是判定條件** —— hover / focus / selected 屬 state 視覺,跟隨永久視覺層分類,不獨立觸發分類(同向旁證:`../element-anatomy/item-anatomy.spec.md`「連續 item 貼邊合法性」段落的 state-follows-permanent-layer 原則;該段本身管的是相鄰 item 的 gap,不是本判定條件,故只作旁證不作條文)。
 
 ### 為什麼**不**做成 body variant(`flush`)
 
 2026-05-01 移除 `<DialogBody flush>` / `<SheetBody flush>` / `<PopoverBody flush>` variant。原因:
 
-1. **Variant 不解決底層脆弱**:flush 只省一行 chrome padding override;consumer 仍要管 list outer `py-2` + item `px-loose rounded-md` — 加 1 row search/banner 就破功(body 反而沒 chrome padding,更難排版)。
+1. **Variant 不解決底層脆弱**:flush 只省一行 chrome padding override;consumer 仍要管 list outer `py-2` + item `px-loose rounded-md` — 加 1 row search/banner 就破功(body 反而沒 chrome padding,更難排版)。容器自判(2026-11-17,`data-layout-body`)不是 variant:看的是最後一個東西,清單後面多一列就自動回到那一列的值,不會破功。
 2. **世界級主流不做 universal flush**:Material M3 / Atlassian Dialog / Mantine Modal / shadcn Dialog 都讓 consumer 用 className override 處理。Polaris 有 flush API 但 scope 極窄(只 ResourceList in Modal)。Mainstream 把這個 case 歸 consumer 自管。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 3. **Single API surface**:body 一律 chrome padded,list-only 場景用 `className="!px-0 !pt-0 !pb-0"` override + 自管 list outer wrapper — surface 概念清楚,不雙路徑。
 
@@ -191,7 +197,7 @@ search 列放 body 外(不跟清單捲),自帶 `px-loose pt-tight`、下方不�
 不要另外用表單控制項(`CheckboxGroup` + 裸 `Checkbox`)自組。
 
 - **為什麼**:同一個「從清單裡挑」的互動,不該因為容器是下拉選單還是浮層就長得不一樣。
-  `DropdownMenu` 已經是選單列(`dropdown-menu.tsx:370`),DataTable 的欄位顯示面板也已經是
+  `DropdownMenu` 已經是選單列(`dropdown-menu.tsx:383`),DataTable 的欄位顯示面板也已經是
   (`data-table-column-visibility-panel.tsx#DataTableColumnVisibilityPanel`)—— 篩選面板原本是唯一的例外,是漂移不是設計。
 - **點一下就生效、還是要按 CTA 才 commit,不影響本條**:那是上一段「更高層設計判斷」在決定容器,
   跟列用什麼元件是兩個獨立的軸。
@@ -334,7 +340,7 @@ DatePicker **不是**例外 —— 它的日曆格線有左緣,footer 的預設 
 
 **禁止**:`w-[640px]` 單獨用(❌ 斷鏈)/ `flex flex-col h-full` 無 `min-h-0`(❌ flex item 不 shrink,scroll 失效)。
 
-**DS-wide consumer 必檢點**:`grep '<PopoverContent\|<HoverCardContent\|<DialogContent\|<SheetContent'` 內第一層 wrapper 是否含 `flex flex-col h-full`(若該 panel 用 SurfaceBody)。Hook `check_pattern_invariants.sh` C.1(原 `check_overlay_panel_scroll_chain.sh` 已 folded;2026-05-31 infra-audit 修 dangling ref)write-time 機械化警示(P1 WARN stderr,僅掃本次 edit fragment 不 block);DS-wide 全掃(上述 grep 必檢點)走 audit。
+**DS-wide consumer 必檢點**:`grep '<PopoverContent\|<HoverCardContent\|<DialogContent\|<SheetContent'` 內第一層 wrapper 是否含 `flex flex-col h-full`(若該 panel 用 SurfaceBody)。Hook `check_pattern_invariants.sh` C.1(原 `check_overlay_panel_scroll_chain.sh` 已 folded;2026-05-31 infra-audit 修 dangling ref)write-time 擋(2026-11-21 起 P0 exit 2,僅掃本次寫入的內容;例外 `// @scroll-chain-allow: <reason>`);DS-wide 全掃(上述 grep 必檢點)走 audit。
 
 ---
 
@@ -373,11 +379,11 @@ API,欄由 layout primitive 組)。DS 只 codify 組合鐵律(違規簽名由 co
 拍板落地)/ DS 內部同構先例 `file-viewer.tsx` InfoPanel(`<aside class="w-80 shrink-0 flex-col
 border-l border-divider">`)/ Atlassian [`modal-dialog/examples/101-full-height-illustration.tsx`](https://github.com/pioug/atlassian-frontend-mirror/blob/cee82aa5ac9c07849d00ae757b15b07214cae59b/design-system/modal-dialog/examples/101-full-height-illustration.tsx#L34-L42)
 (per-column `flex:1 + minHeight:0 + overflow auto`)。完整研究引文 →
-`.claude/planning/2026-07-10-dialog-split-body-proposal.md`(元件化提案被 user 否決的紀錄)。
+`governance/planning/2026-07-10-dialog-split-body-proposal.md`(元件化提案被 user 否決的紀錄)。
 
 ## 不屬本 primitive 的職責
 
-- **Close 按鈕渲染**:由 consumer(Dialog / Sheet / Popover)自己包 `<Button iconOnly dismiss>` 在 Header 內,綁各自 Radix Close primitive。SurfaceHeader 本身不渲染 close,避免 pattern 與 consumer 的職責耦合。
+- **Close 按鈕綁哪個 Radix Close**:由 consumer(Dialog / Sheet / Popover)自己包 `<Button iconOnly dismiss>`,綁各自 Radix Close primitive,經 `dismiss` 交給 SurfaceHeader;**放在哪**(右側按鈕位、分隔線)由 SurfaceHeader 決定(見上方「右側按鈕位」)。
 - **viewport-fill 高度邏輯**:Dialog 特有(填滿 viewport - inset),由 DialogContent 自行計算 `height: calc(100vh - inset*2)`,與 Body 協作 `flex-1 overflow-y-auto`。
 - **radius / border / shadow / bg**:浮層外殼職責,由 Dialog / Popover 的 Content 自己套(都套同一組 token:`bg-surface-raised` / `border-border` / `rounded-lg` / `shadow-[var(--elevation-200)]`——由本段記錄共同 consumer contract,並遵循 `packages/design-system/ds-canonical/rules/ui-development.md`「Token 命名 4 條硬規則」,不另外抽 primitive)。
 
@@ -409,7 +415,7 @@ overlay-surface 是 **layout pattern**(`SurfaceHeader` / `SurfaceBody` / `Surfac
 |------|------|
 | 「Dialog / Sheet body 直接 wrap SurfaceBody」 | 否——走 ScrollArea canonical(見「Body overflow canonical」) |
 | 「list 場景需要 `flush` variant」 | 已撤回;用 className override + 自管 list wrapper(見「List-as-region」) |
-| 「SurfaceHeader 自帶 close X」 | 否——close 由 consumer 包 `<Button iconOnly dismiss>`(見「不屬本 primitive 的職責」) |
+| 「SurfaceHeader 自帶 close X」 | 否——× 由 consumer 包 `<Button iconOnly dismiss>` 綁自己的 Radix Close,經 `dismiss` 交給 SurfaceHeader 排位(見「不屬本 primitive 的職責」) |
 | 「SurfaceFooter 也套 unbounded slot trick」 | 否——footer 慣例放 bounded action buttons,僅 padding + border-t |
 
 ---
@@ -424,6 +430,8 @@ overlay-surface 是 **layout pattern**(`SurfaceHeader` / `SurfaceBody` / `Surfac
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `action-bar.spec.md`
+- `agent-decision-card.spec.md`
 - `app-shell.spec.md`
 - `coachmark.spec.md`
 - `date-picker.spec.md`
@@ -432,6 +440,7 @@ overlay-surface 是 **layout pattern**(`SurfaceHeader` / `SurfaceBody` / `Surfac
 - `file-item.spec.md`
 - `header-canonical.spec.md`
 - `item-anatomy.spec.md`
+- `layoutSpace.spec.md`
 - `motion.spec.md`
 - `overlay-chrome-sizing.spec.md`
 - `popover.spec.md`

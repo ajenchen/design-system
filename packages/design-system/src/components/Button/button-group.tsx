@@ -6,7 +6,7 @@ import { ButtonGroupContext } from './button'
  * ButtonGroup — 按鈕群組容器
  *
  * 負責群組內的間距（gap 8px）與對齊方式。
- * 垂直排列時透過 ButtonGroupContext 讓所有直接子 Button 自動套用 fullWidth，
+ * 垂直排列時透過 ButtonGroupContext 讓所有直接子 Button 自動套用 width="fill"(撐滿),
  * 無需 cloneElement — 符合 shadcn 的 Context 慣例。(來源:https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/toggle-group.tsx#L10-L59)
  *
  * @example
@@ -22,7 +22,7 @@ import { ButtonGroupContext } from './button'
  *   <Button variant="primary">確認</Button>
  * </ButtonGroup>
  *
- * // 垂直排列（fullWidth 自動套用）
+ * // 垂直排列（width="fill" 自動套用）
  * <ButtonGroup orientation="vertical">
  *   <Button variant="primary">確認</Button>
  *   <Button variant="tertiary">取消</Button>
@@ -35,9 +35,10 @@ interface ButtonGroupProps extends React.HTMLAttributes<HTMLDivElement> {
   align?: 'start' | 'center' | 'end'
 }
 
-// Module-level 常數(2026-04-22 D3 perf audit):provider value 為 2 狀態 boolean,hoist 避免 render 重建
-const BUTTON_GROUP_CTX_VERTICAL = { fullWidth: true } as const
-const BUTTON_GROUP_CTX_HORIZONTAL = { fullWidth: false } as const
+// Module-level 常數(2026-04-22 D3 perf audit):provider value 為 2 狀態,hoist 避免 render 重建
+//(2026-11-15「尺寸:甲」:context 由 fullWidth 布林改成寬度模式詞,直排 = fill、橫排 = hug,行為不變)
+const BUTTON_GROUP_CTX_VERTICAL = { width: 'fill' } as const
+const BUTTON_GROUP_CTX_HORIZONTAL = { width: 'hug' } as const
 
 const ButtonGroup = React.forwardRef<HTMLDivElement, ButtonGroupProps>(
   ({ orientation = 'horizontal', align = 'start', className, children, ...props }, ref) => {
@@ -82,8 +83,12 @@ export interface ButtonDividerProps extends React.HTMLAttributes<HTMLDivElement>
  * ButtonDivider — action region 群組分隔線
  *
  * **幾何 SSOT** → `patterns/action-bar/action-bar.spec.md`「分隔線幾何」：
- * 線長 = 所在那一列**最高元件**的高度 − `--action-divider-inset`（8px），不短於
- * `--action-divider-min`（16px），垂直置中。
+ * 線長 = 所在那一列**最高元件**的高度 − 內縮 8px，不短於地板 16px，垂直置中。
+ * 地板不是另一個常數：它是同一條公式在最小控制項（`--field-height-xs` 24px）的取值。
+ *
+ * **數值只住這裡**：內縮 8px 寫在內層的元件內變數 `--button-divider-inset`（只有這條線自己讀、不隨密度切換，
+ * 所以不開全系統的 token —— `tokens/token-system.spec.md` 判斷流程第 0 題；2026-11-11 token「3全收」
+ * 從 uiSize.css 收回）。同一個值要在長度與地板兩處同步，所以用元件內變數而不是各寫一次字面值。
  *
  * 兩層構造是必要的而非包裝：外層 `self-stretch` 取「該列最高元件」當基準——同一列的每條線
  * 因此必然等長、不會參差；內層畫線並套 inset 與地板，置中由外層 `items-center` 負責，所以
@@ -124,10 +129,10 @@ const ButtonDivider = React.forwardRef<HTMLDivElement, ButtonDividerProps>(
       >
         <div
           className={cn(
-            'bg-divider',
+            'bg-divider [--button-divider-inset:0.5rem]', // 8px,兩端各 4px
             isVertical
-              ? 'w-px h-[calc(100%-var(--action-divider-inset))] min-h-[var(--action-divider-min)]'
-              : 'h-px w-[calc(100%-var(--action-divider-inset))] min-w-[var(--action-divider-min)]',
+              ? 'w-px h-[calc(100%-var(--button-divider-inset))] min-h-[calc(var(--field-height-xs)-var(--button-divider-inset))]'
+              : 'h-px w-[calc(100%-var(--button-divider-inset))] min-w-[calc(var(--field-height-xs)-var(--button-divider-inset))]',
           )}
         />
       </div>

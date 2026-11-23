@@ -363,7 +363,7 @@ export const InDataTable: Story = {
     ]
 
     return (
-      <DataTable columns={columns} data={data} height="auto" />
+      <DataTable columns={columns} data={data} maxHeight="none" />
     )
   },
 }

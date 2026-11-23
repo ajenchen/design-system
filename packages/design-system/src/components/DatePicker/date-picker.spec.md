@@ -130,6 +130,8 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 
 `typeable?: boolean`(default false)→ trigger 內渲 real `<input type="text" role="combobox">` 取代 `<span>`,user 可直接打字 + Calendar icon 仍開 popover(兩種方式並存:記得日期的人直接打,要對照星期的人開日曆點)。外層 Field wrapper 只負責視覺與 Popover click anchor,不重複 `role` / `aria-*`;popup 開啟、dialog 實際掛載後,真 input 才輸出 `aria-controls` 指向該 dialog,關閉後移除,禁止把 Radix 的懸空 IDREF 留在純視覺 wrapper。Parser `parseDateInput(input, { allowTime })` 接 ISO YYYY-MM-DD / YYYY/MM/DD / YYYY.MM.DD + native `Date.parse` fallback(RFC 'Mar 12 2026')。Partial input allow;`Enter`/`Blur` commit;`Esc` reset(**草稿 ≠ 顯示值或格式錯時,那一下 Esc 歸輸入框還原草稿、不關外層浮層**:放在 Dialog 裡第一下只還原草稿、第二下才輪到表單回復 / 關對話框;日曆開著時日曆才是最內層 —— 只關日曆、草稿不動,2026-10-01 前同一下又關日曆又還原;`ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」);接 `useFormValidation` 時 consumer 的 `onKeyDown` / `onBlur` 先跑再走元件的、`name` 掛在這個 `<input>`(規則 8 聚焦),輸入框 + 日曆浮層算同一個欄位(`../../lib/composite-field-focus.ts`:焦點搬進日曆不算離開,2026-10-01 待辦總帳 N83;從觸發欄位離開、從彈出層直接離開(開著點空白處 / 直接點下一格 / 不可搜尋的 Select 開著按 Tab)、握著焦點的節點隨收起卸載,都算離開一次(2026-10-21 r1b fields F1:修前判準只掛在觸發欄位,從彈出層直接離開時 consumer 收不到 blur;`useCompositeFieldBlur` 兩邊都聽、關的那一下補量);不可打字的觸發欄位同一條);IME 組字中不誤觸發(鍵盤 `Enter` / `Esc` / `↓` 走全 DS 一支 `../../lib/ime-composition.ts` `isImeComposing` —— 2026-09-30 前這裡只看 `compositionstart/end` 記的旗標,Safari 注音按 `Enter` 選字時 `compositionend` 先到,那一下被當成提交;失焦不是鍵盤事件,仍靠那個旗標)。Invalid → `aria-invalid`。**v1 limits**:US `MM/DD/YYYY` vs EU `DD/MM/YYYY` ambiguous → Date.parse fallback;locale-aware format prop deferred v2;TimePicker typed input deferred(column picker UX 不同)。
 
+**預設 false 的理由**(user 2026-11-17 決定):user 對決策頁 r10 第 6 題④的留言(逐字,貼在「我的建議：乙」那一段):「我要選甲，維持，這開關本來就是由消費者自行評斷情境決定開與否，改成乙並不是在所有情境都比較方便」—— 要不要能直接打字由消費者依情境開 `typeable`;預設維持只能點開日曆選,行為不變。AI 當時建議乙(預設可打字),user 未採。2026-11-15 前這裡的理由只寫了相容,已撤。
+
 ## 可輸入模式的開啟行為(2026-09-07,user 提問後查證重訂)
 
 | 怎麼開的 | 日曆 | 焦點 | 為什麼 |
@@ -140,7 +142,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 **兩條路不是二選一。** 好用的是滑鼠那條(邊看日曆邊打字),但鍵盤那條不能為了它犧牲可操作性 ——
 所以依「怎麼被打開的」分流。
 
-**訂正一則舊宣稱**:先前程式碼註解寫「Calendar icon 點才開 popover(Material/**Ant** typed-date idiom)」——([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/index.en-US.md#L14))
+**訂正一則舊宣稱**:先前程式碼註解宣稱「Calendar icon 點才開 popover」是 **Ant** 等兩家的 typed-date idiom ——([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/index.en-US.md#L14))
 對 Ant 而言是反的(官方文件:「By clicking the input box, you can select a date from a popup calendar.」https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/index.en-US.md#L14)。而且實測當時**日曆一開焦點就被搬進去,之後完全打不了字**,
 等於 `typeable` 這個 prop 的賣點在日曆開啟後就失效。
 
@@ -190,7 +192,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 - 點 end input → `activeEnd='end'` + 開 popover;同理只更新 end
 - **Auto-advance**:選完 start → 自動切 `activeEnd='end'` 等待 user 選 end(一次連續選完一段區間,不必再去點結束欄)
 - **showTime=true 時 TimeColumns 套 active end 的 time**(只能編一端的時間,符合單一焦點原則)
-- 視覺指示:active input 加 `decoration-primary underline-offset-4 decoration-2`(對齊 Field focus 語意)
+- 視覺指示:active input 加 `decoration-primary underline-offset-4 decoration-2`(對齊 Field focus 語意)【AI 推導 2026-11-16:`decoration-2` = 畫出來就是 2px,不是只有樣式值 2px。sm / md 的 14px 字級下這條線有一半落在行盒下緣之外,所以起訖文字的截斷只能裁水平(`overflow-x-clip`),不能雙軸裁;2026-11-17 前雙軸裁切把下半裁掉、只畫出 1px(A50)。閘 `scripts/datepicker-range-active-underline-invariant.mjs`(三種 size × 起訖兩端 × 鍵盤 / 點開兩種出現方式 × 像素比 1 / 2,外加長日期仍截斷)】
 
 ### Popover 行為
 
@@ -232,7 +234,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 - 比較只看日,端點帶時間也一樣。
 
 **來源總帳**(user 2026-09-23 原話,逐字):「我反而認為這種日期區間選擇器hover 到日期應該要讓使用者可以看出到底選下去之後實際的區間會變成怎樣，所以我反而認為是可以用現在藍色邊框的視覺語言去預框出選中後的區間」;Q1–Q4、Q6、Q7 「照你建議」(做 / 實線藍框 / 兩端都預覽 / track 留著 / 鍵盤同權 / showTime 同一套);Q5:「若有藍框區間的話,所 hover 到的日期不會是完整的一個圓圈,應該要與藍框區間在視覺上一氣呵成,所以所hover的日期的藍框不會是完整的圓形,而會是一個半圓,至於這個半圓的缺口朝向哪一邊則取決於正在選的是起始日還是結束日」。**先前三句被當成「規則」的文字**(本檔舊句「無 hover 預覽」、`date-grid.spec.md` 舊句「中段 hover ring 一併壓制」、story 舊說明「不出現第二層 hover ring」)都是 AI 在 2026-06-05 / 07-05 / 08-02 稽核時把程式行為抄成文件,沒有任何 user 原話;2026-09-23 差點據此反著修,user 提問後撤回。
-同日看過預覽站後(逐字):「為何往前縮短和往後延長的範例看起來是一樣的? 以及為何範例要直接呈現鍵盤焦點?」(示範層兩題,修在 story 的 play:hover 由示範自己建立、開好浮層後放掉程式搬的焦點);「為何我 hover 到日期都會先看到一圈圓形藍色外框,閃了一下,才會變成半圓? 此外,鍵盤操作和滑鼠會hover在日期會造成畫面上的預期區間變得不精確,因為滑鼠和鍵盤沒有搶走彼此的焦點?」(兩題是 bug 回報,解法由 AI 定:靜態壓制 / 最後一個輸入贏);「然後我覺得date 的鍵盤焦點感覺要改成往內畫的那種,否則會跟區間藍框有視覺衝突,你仔細研究看要怎樣」「第五點,應該不只往內畫吧?否則整個選中狀態只會看起來是比較小的藍底?」「我會想要選D,因為 c的白線幾乎要切到文字了,你覺得呢?」+ 結構化選擇「D:1px 白線,退 3px」(焦點線是 user 拍板,兩個候選與數值由 AI 依 [Carbon `_flatpickr.scss#L561-L571`](https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/date-picker/_flatpickr.scss#L561-L571) 的選中日 `.flatpickr-day.selected:focus { outline: 1px solid $layer-02; outline-offset: -3px }` 提出)。
+同日看過預覽站後(逐字):「為何往前縮短和往後延長的範例看起來是一樣的? 以及為何範例要直接呈現鍵盤焦點?」(示範層兩題,修在 story 的 play:hover 由示範自己建立、開好浮層後放掉程式搬的焦點);「為何我 hover 到日期都會先看到一圈圓形藍色外框,閃了一下,才會變成半圓? 此外,鍵盤操作和滑鼠會hover在日期會造成畫面上的預期區間變得不精確,因為滑鼠和鍵盤沒有搶走彼此的焦點?」(兩題是 bug 回報,解法由 AI 定:靜態壓制 / 最後一個輸入贏);「然後我覺得date 的鍵盤焦點感覺要改成往內畫的那種,否則會跟區間藍框有視覺衝突,你仔細研究看要怎樣」「第五點,應該不只往內畫吧?否則整個選中狀態只會看起來是比較小的藍底?」「我會想要選D,因為 c的白線幾乎要切到文字了,你覺得呢?」+ 結構化選擇「D:1px 白線,退 3px」(焦點線是 user 拍板,兩個候選與數值由 AI 依 [Carbon `_flatpickr.scss#L561-L571`](https://github.com/carbon-design-system/carbon/blob/f577d3573ab87b97fb774a3482402ffed375aa1b/packages/styles/scss/components/date-picker/_flatpickr.scss#L561-L571) 的選中日 `.flatpickr-day.selected:focus { outline: 1px solid $layer-02; outline-offset: -3px }` 提出)。
 同日晚間看預覽站(逐字):「圖一為何五月的區塊非五月沒有變成該有非當月的樣式?以前是這樣?我怎麼印象中我們有討論甚至修正過類似的東西?」(查證:從未定義過 outside × range,2026-09-07 只修 outside × disabled)+ 結構化選擇「兩月時不顯示鄰月日子」(user 拍板;兩個候選與各家原始碼出處見 `../DateGrid/date-grid.spec.md`「outside」列)。2026-09-24 user 追問(逐字):「我的意思是兩月不渲染的世界級設計，其一個月預設會怎樣？到底要渲染還是不渲染？是否要一致？世界級的設計是怎樣？」→ 逐家讀原始碼列八家對照後,結構化選擇「維持現況,改寫成一條原則」(user 拍板;原則與對照表見 `../DateGrid/date-grid.spec.md`「鄰月日子:一條原則」);「為何選區間,從某日「水平」移動到其隔日,藍色的區間框線都會閃動一下?」(bug 回報,根因 4px 縫隙,解法由 AI 定);「我不要用滑鼠看範例結果直接就看到鍵盤焦點,我當下明明就沒有用鍵盤操作」(示範層規則,owner `ds-canonical/rules/story-rules.md`「示範 = 滑鼠使用者」)。
 2026-09-26(日期縫與角):R21 研究實測本 DS 在日期圓外的角會閃(偏離中線橫越時整條框消失 6–14 步;世界級對照與一手出處見 `../DateGrid/date-grid.spec.md`「縫與角裡的點擊」),以及待辦總帳 N54 建議 ①「預覽亮著的任何位置、包括縫,點下去就得到正在預覽的值」(`governance/planning/2026-09-25-interaction-and-hover-remediation.md` N54 列,AI 措辭)後,同意批次 `:105` 記:「日期縫與角」屬 user 沒點名、依「其餘都照建議做嗎」的問法理解為照建議做的四項(總帳原文標為 AI 判讀、回報時明講);2026-09-26 的實作指示記為 user 決定:「日期圓圈外的角滑過去不再閃」「在縫或角裡點下去 = 確認正在預覽的那一天」「離開整張格陣時預覽照樣收掉(D1 保留)」。依據的原則是 user 同日原話(`:225`,逐字):「我滑到某個區塊但不是滑到文字上但文字卻變色了，此時表示產生了樣式變化，儘管沒滑到文字上，此時點擊也應該要有反應，我的意思是這樣」。「只算滑鼠、觸控維持原樣」與「鍵盤把框移走後縫與角不接點擊」是 AI 依此原則推導的邊界,user 未另外表示。
 
@@ -269,7 +271,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 
 - showTime=true:popover 右側出現 `<TimePickerSidePanel>`(內部消費 TimeColumns),通過 `<CalendarTimeContainer>` absolute positioning 讓 DateGrid 主導 row 高度(TimeColumns 不撐高)
 - TimePickerSidePanel **header dynamic 顯示當前 active time**(`HH:MM` / `HH:MM:SS`),對齊 Ant `<DatePicker showTime />` panel header(rc-picker TimePanel 標題列顯示目前值,https://github.com/react-component/picker/blob/9ecb0508645e1c0d9f3181263eecafdd1e262f6b/src/PickerPanel/TimePanel/index.tsx#L33-L35;canonical 2026-05-03 v9)
-- TimePickerSidePanel 結構:**pt-3 + h-field-xs flex center + mb-3**(top 對齊 DateGrid month_caption 同 Y baseline;**bottom = 0,讓 time list 連續延伸到 SurfaceFooter border-t**,對齊 Ant / Material time-picker 「continuous scroll」idiom — canonical 2026-05-03 v10)
+- TimePickerSidePanel 結構:**pt-3 + h-field-xs flex center + mb-3**(top 對齊 DateGrid month_caption 同 Y baseline;**bottom = 0,讓 time list 連續延伸到 SurfaceFooter border-t**,對齊 Ant time-picker 「continuous scroll」idiom — canonical 2026-05-03 v10)
 - TimePickerSidePanel header **下方無 divider**(對齊 DateGrid month_caption 也無 border-b),DS internal canonical M23 優先於 Ant time-picker header divider 慣例 — 兩 panel 同層級 caption 視覺對稱(canonical 2026-05-03 v10)
 - 底部 footer **消費 SurfaceFooter SSOT**(`patterns/overlay-surface`)— border-t + py-tight,**不**自寫 Separator + p-2 + ml-auto wrapper(canonical 2026-05-03 v8)。
   **左右內距覆寫成 12px**(`px-[var(--item-px,var(--field-px))]`,與 `DateGrid` 根同一個運算式):判準 owner 是
@@ -354,7 +356,7 @@ DatePicker 套 `React.forwardRef` + `displayName`;`DatePickerProps` extends `Omi
 
 ## A11y 預設
 
-**Focus**:Field 家族的焦點指示 = **欄位邊框轉主色 1px**,不畫全域 2px 外框,**不分開著關著、不分滑鼠鍵盤**(owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列;開啟時焦點在裡面的插入點控件、關閉時觸發器 wrapper 自己是焦點站,兩種都只有邊框轉色 —— 全域 `:focus-visible` 由 `fieldWrapperStyles` 的 `focus-visible:outline-none` 抑制,@focus-suppress C)。唯讀態例外:邊框透明無可染,改由全域外描邊畫在被聚焦的控件上(`field-controls.spec.md`「Focus 行為」readonly 段)。閘:`virtual-cursor-modality-invariant.mjs` G / H 段。 typeable 變體焦點在真 `<input>`(插入點控件)、非 typeable 在 wrapper,兩者同樣只有邊框轉色;Range 的起訖兩顆共用同一圈邊框,靠主色底線區分(見上方 trigger 段)。
+**Focus**:Field 家族的焦點指示 = **欄位邊框轉主色 1px**,不畫全域 2px 外框,**不分滑鼠鍵盤**(owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列;關閉時觸發器 wrapper 自己是焦點站,只有邊框轉色 —— 全域 `:focus-visible` 由 `fieldWrapperStyles` 的 `focus-visible:outline-none` 抑制,@focus-suppress C)。**自己的浮層開著時**維持同一個聚焦的框,不看焦點留在欄位裡還是已搬進浮層(唯一出處 `../Field/field.spec.md`「Field state machine SSOT」;本句 2026-11-12 前寫「不分開著關著」並說開啟時焦點在裡面的插入點控件,對焦點會搬進浮層的情形不成立,已更正)。唯讀態:同樣是邊框轉主色 1px,但**只在鍵盤聚焦時畫、滑鼠點不變**(2026-11-11;`../Field/field-controls.spec.md`「Focus 行為」readonly 段。本句 2026-09-10 前寫「改由全域外描邊畫」,已過時)。閘:`virtual-cursor-modality-invariant.mjs` G / H 段。 typeable 變體焦點在真 `<input>`(插入點控件)、非 typeable 在 wrapper,兩者同樣只有邊框轉色;Range 的起訖兩顆共用同一圈邊框,靠主色底線區分(見上方 trigger 段)。
 
 - Trigger:非 typeable 由 Field wrapper 持 `role="combobox"`;typeable 由真 `<input>` 持 combobox 語意,外層 wrapper 不重複 ARIA。兩者皆有 `aria-haspopup="dialog"` + `aria-expanded={open}` + accessible name(`aria-label` / 或外層 `<label>` / 或 fieldCtx label),並只在 popup 已掛載時輸出 `aria-controls` 指向同一個 dialog ID(關閉時移除,不得留下懸空 IDREF)
 - Popover content:`role="dialog"`;單一日期 popover 的 PopoverContent 帶 `aria-label="日期選擇"`(date-picker.tsx#DatePicker,DS default dialog label),Range popover 加 `aria-label="日期區間選擇"`

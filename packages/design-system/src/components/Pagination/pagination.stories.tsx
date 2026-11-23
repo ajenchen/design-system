@@ -74,7 +74,7 @@ export const NarrowLadder: Story = {
             <div key={w} className="flex flex-col gap-[var(--layout-space-tight)]">
               <span className="text-caption text-fg-muted tabular-nums">容器 {w}px</span>
               {/* @layout-space-magic-ok: 量測框內距 8px(外寬 = 標示的容器寬,內距固定每一格的可用寬才可預期)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
-              <div style={{ width: w }} className="rounded-sm border border-divider p-2">
+              <div style={{ width: w }} className="rounded-md border border-divider p-2">
                 <Pagination total={128} defaultPage={5} showTotal pageSizeOptions={[10, 20, 50]} />
               </div>
             </div>

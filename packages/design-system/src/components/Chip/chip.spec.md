@@ -177,6 +177,7 @@ Chip 的 overflow 處理有三種模式：
   - 雙向可滾 → 兩側 fade
 - **左右 scroll arrow buttons**：`atStart === false` 顯示左 arrow、`atEnd === false` 顯示右 arrow，點擊捲動 80% 容器寬度（smooth）
 - 使用 `useScrollEdges()` hook 追蹤 scroll state
+- **選到就露出來**:點一下 chip(含半露的那一顆)、鍵盤方向鍵移動焦點、容器尺寸改變 → 剛動到的那一顆**置中**,兩端到底時夾住(對齊 B;契約與 user 原話見 `horizontal-overflow.spec.md`「選到就露出來」,這裡不重述)
 
 **為什麼用 mask 不用 gradient overlay**：mask 淡化的是 chips 本身的 alpha，會自動融合任何背景色（dark mode / card / surface 都自動正確）。Gradient overlay 需要寫死 `from-surface` 等具體色，遇到不同背景就漂移。
 
@@ -190,9 +191,10 @@ Chip 的 overflow 處理有三種模式：
 - 不偵測哪些 chip 溢出、不套 `invisible` / `visibility:hidden`——所有 chip 都正常可見可點
 - 容器可捲動時（`canScroll`），右側渲染 canonical `<OverflowMenuTriggerButton />`（= `<Button variant="text" size="sm" iconOnly startIcon={ChevronDown} />`，跟 Tabs menu trigger 共用同一 primitive，見 `horizontal-overflow.spec.md`）
 - 點擊開 DropdownMenu，內容是**全部 chip** 的 `DropdownMenuCheckboxItem` 陣列，checked 狀態跟 ChipGroup 當前 value 同步
-- 點 menu item 時呼叫 ChipGroup 的 `onValueChange` toggle 選取，並把該 chip `scrollIntoView`（捲到容器中央）；更新的值同時反映到可見 chips 和 menu checked state
+- 點 menu item 時呼叫 ChipGroup 的 `onValueChange` toggle 選取；更新的值同時反映到可見 chips 和 menu checked state
+- **選到就露出來**(與 scroll 模式同一條):選單選取、直接點 chip、鍵盤方向鍵、容器尺寸改變 → 剛動到的那一顆**置中**,兩端到底時夾住。2026-11-11 前捲動只寫在選單的處理程式裡,直接點同一顆半露的 chip 不會捲 —— user 回報(逐字)「點擊選單的項目會直接調整chip的捲軸，使其更好被閱讀 然而直接在同樣的情況在非選單的地方點擊相同的項目卻不會有任何捲動」;根修與對齊 B 的出處見 `horizontal-overflow.spec.md`「選到就露出來」
 
-**a11y 保留機制**：所有 chip 都在 DOM 且視覺可見，Radix ToggleGroup 的 roving tabindex 可以 focus 全部 chip。鍵盤使用者可以透過 Tab 進入 ChipGroup，用方向鍵在所有 chips 之間導覽（焦點移動時 chip 隨 scroll 進入視圖），或用 Tab 到 dropdown 觸發按鈕用 menu 介面。兩條互動路徑同時可用。
+**a11y 保留機制**：所有 chip 都在 DOM 且視覺可見，Radix ToggleGroup 的 roving tabindex 可以 focus 全部 chip。鍵盤使用者可以透過 Tab 進入 ChipGroup，用方向鍵在所有 chips 之間導覽（焦點移到的 chip 由 `useRevealSelected` 置中;2026-11-11 前這裡寫「焦點移動時 chip 隨 scroll 進入視圖」,實測不成立:Chromium 對水平部分可見的 chip 不捲，焦點可停在淡出區裡），或用 Tab 到 dropdown 觸發按鈕用 menu 介面。兩條互動路徑同時可用。
 
 **menu 模式需要 controlled ChipGroup**：菜單 items 透過 `onValueChange` 觸發選擇變化，因此 ChipGroup 必須傳 `value` + `onValueChange`（controlled）。uncontrolled mode（`defaultValue`）的 menu 模式無法讓 menu items 與 chips 同步狀態。
 
@@ -223,7 +225,7 @@ ColorMatrix:展示 default / hover / selected / disabled 四狀態的 bg / borde
 - Button (`button.spec.md`) — Chip 內部結構對標的來源
 - SegmentedControl (`segmented-control.spec.md`) — compact 連體單選變體
 - Tag — 純顯示 / dismissible tag
-- `horizontal-overflow` pattern (`patterns/horizontal-overflow/horizontal-overflow.spec.md`) — Chip 的 scroll / menu 模式實際 import 來源(`useScrollEdges` / `useScrollByPage` / `buildFadeMask` / `OverflowScrollArrow` / `OverflowMenuTriggerButton`),Tabs 也共用同一套。底層 scroll-edge 追蹤 hook 是 `useScrollEdges`(`hooks/use-overflow-items.ts`)
+- `horizontal-overflow` pattern (`patterns/horizontal-overflow/horizontal-overflow.spec.md`) — Chip 的 scroll / menu 模式實際 import 來源(`useScrollEdges` / `useScrollByPage` / `useRevealSelected` / `buildFadeMask` / `OverflowScrollArrow` / `OverflowMenuTriggerButton`),Tabs 也共用同一套。底層 scroll-edge 追蹤 hook 是 `useScrollEdges`(`hooks/use-overflow-items.ts`)
 
 ## A11y 預設
 

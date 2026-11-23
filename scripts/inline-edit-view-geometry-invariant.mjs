@@ -14,6 +14,13 @@
  *   兩者必相等 → 不等 exit 1。
  *
  * 用法:node scripts/inline-edit-view-geometry-invariant.mjs [--check]
+ *
+ * @gate-contract
+ *   保證: sm / md / lg 三個尺寸,field-wrapper.tsx 多行 view 的 py class 與 textarea.tsx 同尺寸的 py class 相同,而且都是
+ *         py-[var(--field-control-py-<size>)];uiSize.css 的 --field-control-py-<size> 是 calc((var(--field-height-<size>) - 1lh) / 2 - 1px)
+ *   紅: 任一邊找不到 class、兩邊不同、沒用 token、或 uiSize.css 公式漂移(少了 −1px)→ 逐條印出並 exit 1;
+ *       配對測試把 field-wrapper 的 md 改回字面 py-2、或拿掉 uiSize.css 的 −1px,本閘都必須紅
+ *   綠: 全部成立時 exit 0 並印出三個尺寸兩邊的 class;只讀三個檔,不讀時間、不開瀏覽器,重複跑結果相同
  */
 import fs from 'node:fs'
 import path from 'node:path'

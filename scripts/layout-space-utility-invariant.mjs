@@ -13,6 +13,12 @@
 //   只攔**真 className / cn() 字串**裡的裸名。改 `px-[var(--layout-space-<name>)]` 即修。
 //
 // Run: `node scripts/layout-space-utility-invariant.mjs`(deterministic audit chain)。fail → exit 1。
+//
+// @gate-contract
+//   保證: packages/design-system/src 底下的 .ts / .tsx,在 className / cn( / class: 這類字串上下文裡沒有裸寫 p* / m* / gap / space-x|y
+//         加 -loose / -tight / -cozy / -bottom(Tailwind 沒註冊,產不出 CSS);合法寫法是 [var(--layout-space-*)],註解行不算
+//   紅: 有任一處 → 印出檔名:行號、裸名與建議寫法並 exit 1;配對測試在 button.tsx 末尾加一行 className="px-loose",本閘必須紅
+//   綠: 0 處時 exit 0;只讀檔,不讀時間,重複跑結果相同
 
 import { readFileSync, readdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'

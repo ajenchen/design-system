@@ -15,7 +15,9 @@ import { DescriptionList, DescriptionItem } from '@/design-system/components/Des
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Switch } from '@/design-system/components/Switch/switch'
 import { Command, CommandList, CommandGroup, CommandItem } from '@/design-system/components/Command/command'
-import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { DataTable, type DataTableColumnDef } from '@/design-system/components/DataTable/data-table'
+import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
+import { samplePersonCard, demoPersonPhoto, type DemoPersonName } from '@/design-system/stories-helpers/scene/person-card'
 
 /**
  * 通知設定 —— 對話框裡直接改的設定列(對齊 Gmail 通知設定 / macOS 系統設定 / Notion 偏好設定)
@@ -39,7 +41,8 @@ function NotificationSettings() {
       <DialogTrigger asChild>
         <Button variant="tertiary">通知設定</Button>
       </DialogTrigger>
-      <DialogContent height="hug" maxWidth={480}>
+      {/* 三列設定疊成一欄 → 預設 md(dialog.spec.md「寬度檔位」) */}
+      <DialogContent height="hug">
         <DialogHeader>
           <DialogTitle>通知設定</DialogTitle>
         </DialogHeader>
@@ -70,7 +73,10 @@ function NotificationSettings() {
  * - description = 「職稱｜員編｜工號」(full-width 「｜」separator;世界級成員卡以職稱辨識工作身份)
  */
 const MEMBER_ROLES = ['Design', 'Engineering', 'Product', 'Research'] as const
-const MEMBERS = [
+// 照片走照片名冊(stories-helpers/data/people.ts):26 人同一支檔,26 張臉互不重複(閘 demo-people-roster-invariant)。
+// 2026-11-15 前 30 人;名冊重篩後合格的臉只剩 29 張,拿掉 Peggy Qin;2026-11-17 再剔除 3 張 → 剩 26 張,拿掉 Mark Tseng / Sophia Fei / Tom Liang
+// (理由見 people.ts DEMO_FACE_UNUSABLE 檔頭;清單只需「長到要捲」,不讓人改顯示縮寫)
+const MEMBERS: { name: DemoPersonName; empId: string; empNum: string }[] = [
   { name: 'Alan Chen', empId: 'D-0042', empNum: 'EMP-1001' },
   { name: 'Betty Wu', empId: 'E-0183', empNum: 'EMP-1002' },
   { name: 'Charlie Lee', empId: 'D-0127', empNum: 'EMP-1003' },
@@ -83,13 +89,9 @@ const MEMBERS = [
   { name: 'Julia Shen', empId: 'E-0302', empNum: 'EMP-1010' },
   { name: 'Kevin Hsu', empId: 'D-0076', empNum: 'EMP-1011' },
   { name: 'Lydia Cao', empId: 'M-0088', empNum: 'EMP-1012' },
-  { name: 'Mark Tseng', empId: 'E-0154', empNum: 'EMP-1013' },
   { name: 'Nina Pan', empId: 'D-0031', empNum: 'EMP-1014' },
   { name: 'Oscar Lo', empId: 'E-0249', empNum: 'EMP-1015' },
-  { name: 'Peggy Qin', empId: 'M-0067', empNum: 'EMP-1016' },
   { name: 'Ray Tang', empId: 'D-0192', empNum: 'EMP-1017' },
-  { name: 'Sophia Fei', empId: 'E-0115', empNum: 'EMP-1018' },
-  { name: 'Tom Liang', empId: 'D-0234', empNum: 'EMP-1019' },
   { name: 'Uma Jiang', empId: 'M-0043', empNum: 'EMP-1020' },
   { name: 'Victor Ren', empId: 'E-0168', empNum: 'EMP-1021' },
   { name: 'Wendy Xia', empId: 'D-0059', empNum: 'EMP-1022' },
@@ -114,13 +116,13 @@ const MEMBER_PRESENCE = [
 function MemberRow({ member, index }: { member: (typeof MEMBERS)[number]; index: number }) {
   const role = MEMBER_ROLES[index % MEMBER_ROLES.length]
   const presence = MEMBER_PRESENCE[index % MEMBER_PRESENCE.length]
-  const avatarSrc = `https://i.pravatar.cc/80?u=${member.empNum}`
+  const avatarSrc = demoPersonPhoto(member.name, 80)
   return (
     // 成員列不能被點(listitem、無 onClick)→ 不給 hover 底色:hover 回饋要誠實回答「再點會發生什麼」
     // (item-anatomy.spec.md「選中 × 互動疊加」表;overlay-surface.spec.md「不適用」那條:成員名單這種展示列,走 Family 2 手組)
     <div
       role="listitem"
-      // @layout-space-magic-ok: 頭像 ↔ 姓名 12px = 大頭像列表的 prefix ↔ content(item-anatomy.spec.md:1015);列上下 8px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d))
+      // @layout-space-magic-ok: 頭像 ↔ 姓名 12px = 大頭像列表的 prefix ↔ content(item-anatomy.spec.md:1010);列上下 8px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d))
       className="flex items-center gap-3 py-2 px-[var(--layout-space-loose)]"
     >
       {/* 名片走全 DS 同一支建構器(buildPersonProfileCard,經 stories-helpers/scene/person-card.tsx):副標 = 列上的「職稱｜ID｜員工編號」,
@@ -163,10 +165,12 @@ export default meta
 
 // 邀請成員:說明寫「輸入 Email 即可邀請」就要真的有 Email 欄(2026-10-28 前只有一段字,「寄出邀請」點了沒反應;稽核 M096)。
 // 表單接 useFormValidation、送出成功 → Toast 再關閉、每次打開回到空白(同下方「表單」的寫法與理由)。
+// 需要填的只有 Email → 空白時「寄出邀請」停用;格式不對照樣可按,按下在欄位下方報錯(form-validation.spec.md「Submit Button 狀態」第三列)。
 function InviteMemberDialog() {
   const [open, setOpen] = useState(false)
   const form = useFormValidation({
     initialValues: { email: '' },
+    soleRequiredField: 'email',
     validate: {
       email: (v) => (!String(v).trim() ? 'Email 必填' : /^\S+@\S+\.\S+$/.test(String(v)) ? undefined : 'Email 格式不正確'),
     },
@@ -184,8 +188,8 @@ function InviteMemberDialog() {
       <DialogTrigger asChild>
         <Button>邀請成員加入專案</Button>
       </DialogTrigger>
-      {/* 邀請成員:一個欄位的短表單,開啟期間內容高度不會變 → hug(spec「高度軸」判準) */}
-      <DialogContent height="hug">
+      {/* 邀請成員:一個欄位的短表單,開啟期間內容高度不會變 → hug(spec「高度軸」判準);只有一個控制項 → sm(spec「寬度檔位」) */}
+      <DialogContent height="hug" width="sm">
         <DialogHeader>
           <DialogTitle>邀請成員到「Q3 設計改版」</DialogTitle>
         </DialogHeader>
@@ -201,7 +205,7 @@ function InviteMemberDialog() {
           <DialogClose asChild>
             <Button variant="tertiary">取消</Button>
           </DialogClose>
-          <Button variant="primary" loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>寄出邀請</Button>
+          <Button variant="primary" disabled={form.submitDisabled} loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>寄出邀請</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -244,7 +248,7 @@ function CreateProjectDialogForm() {
       <DialogTrigger asChild>
         <Button>建立專案</Button>
       </DialogTrigger>
-      {/* 建立專案:兩個欄位的短表單,開啟期間內容高度不會變 → hug(spec「高度軸」判準) */}
+      {/* 建立專案:兩個欄位的短表單,開啟期間內容高度不會變 → hug(spec「高度軸」判準);幾個欄位疊成一欄 → 預設 md(spec「寬度檔位」) */}
       <DialogContent height="hug">
         <DialogHeader>
           <DialogTitle>建立專案</DialogTitle>
@@ -285,11 +289,13 @@ export const WithForm = {
   ),
 }
 
-export const LongContent = {
-  name: '長內容',
-  // 按了才開(D2 甲:不要一進頁就開著);開著的畫面由 test-only「開啟狀態」那則給截圖與閘
-  render: () => (
-    <Dialog>
+// 「長內容」的對話框。initiallyOpen 只給 test-only「長內容:開啟狀態」用(視覺基準 dialog-long-content 拍它);
+// 讀者看的「長內容」不傳 = 按了才開(D2 甲)。同一支元件兩處共用,寫法同 popover.stories.tsx 的 StatusFilterPanel。
+// 參數不叫 defaultOpen:dialog-coexistence-invariant 的靜態段會把 `defaultOpen={defaultOpen}` 右邊那個字讀成「預設開著」,
+// 誤判讀者版「長內容」(它不傳,是關著的);讀者版真的開著與否由同一支閘的瀏覽器段量 docs 頁 [role=dialog] 可見數
+function LongMemberListDialog({ initiallyOpen = false }: { initiallyOpen?: boolean }) {
+  return (
+    <Dialog defaultOpen={initiallyOpen}>
       <DialogTrigger asChild>
         <Button>開啟成員列表</Button>
       </DialogTrigger>
@@ -300,9 +306,9 @@ export const LongContent = {
         {/* Body 放 list canonical(2026-05-01):body 撤 chrome padding(`!px-0 !pt-0 !pb-0`)+ list outer
             wrapper 自帶 `py-2`(menu group 8px breathing)+ item 自帶 `px-loose`(前緣對齊 header 標題)。
             成員列不可點,沒有 hover 底色(overlay-surface.spec.md:底色有無不是 List-as-region 的判定條件)。
-            30 筆超出 viewport → 驗證預設高度(填滿)+ body 區捲動。 */}
+            26 筆(MEMBERS 全名冊)超出 viewport → 驗證預設高度(填滿)+ body 區捲動。 */}
         <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
-          {/* @layout-space-magic-ok: List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:91「list outer wrapper 自帶 `py-2`」;Dialog body 的 padding 由 overlay-surface 擁有,dialog.spec.md「結構」) */}
+          {/* @layout-space-magic-ok: List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:97「list outer wrapper 自帶 `py-2`」;Dialog body 的 padding 由 overlay-surface 擁有,dialog.spec.md「結構」) */}
           <div role="list" className="flex flex-col py-2">
             {MEMBERS.map((m, i) => (
               <MemberRow key={m.empNum} member={m} index={i} />
@@ -316,7 +322,13 @@ export const LongContent = {
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  ),
+  )
+}
+
+export const LongContent = {
+  name: '長內容',
+  // 按了才開(D2 甲:不要一進頁就開著);開著的畫面由 test-only「長內容:開啟狀態」那則給截圖與閘
+  render: () => <LongMemberListDialog />,
 }
 
 // 觸發鈕後面還有一層確認 → secondary + danger(button.spec.md「danger prop — 語意意圖」;登記簿 E14);
@@ -330,8 +342,8 @@ export const Destructive = {
         <DialogTrigger asChild>
           <Button variant="secondary" danger>刪除專案</Button>
         </DialogTrigger>
-        {/* 確認刪除:單一決策的確認框,開啟期間內容高度不會變 → hug(spec「高度軸」判準) */}
-        <DialogContent height="hug">
+        {/* 確認刪除:單一決策的確認框,開啟期間內容高度不會變 → hug(spec「高度軸」判準);只有一件事 → sm(spec「寬度檔位」) */}
+        <DialogContent height="hug" width="sm">
           <DialogHeader>
             <DialogTitle>是否刪除專案</DialogTitle>
           </DialogHeader>
@@ -370,7 +382,8 @@ function TagPickerDialog() {
       <DialogTrigger asChild>
         <Button variant="tertiary">{applied.length ? `標籤:${applied.join('、')}` : '選擇標籤'}</Button>
       </DialogTrigger>
-      <DialogContent height="hug" maxWidth={360}>
+      {/* 一份勾選清單 = 一個控制項 → sm(spec「寬度檔位」) */}
+      <DialogContent height="hug" width="sm">
         <DialogHeader>
           <DialogTitle>選擇標籤</DialogTitle>
         </DialogHeader>
@@ -381,11 +394,11 @@ function TagPickerDialog() {
               menu-item.spec.md「何時用 / 何時不用」禁止裸用 MenuItem(會失去鍵盤與焦點管理),而且 MenuItem 帶
               `role="option"`,外層若是 `role="list"` 是壞掉的無障礙父子關係(option 的合法父層是 listbox)。
               Command 自帶方向鍵導覽與 role="listbox",CommandGroup 自帶 py-2 = menu group 的 8px 呼吸。
-              列的水平內距在 **Command 根**設一次 `--item-px: var(--layout-space-loose)`(16px),
+              列的水平內距在 **Command 根**設一次:`gutter="surface"`(= `--item-px: var(--layout-space-loose)`,16px;2026-11-15 前手寫 style),
               整份清單一起換 → 列的最前緣對齊 dialog header / footer。禁止寫在單列 className:
               CommandItem 是兩層,會跟內層相加(2026-09-17 實測 16+12=28px)。
               token owner: item-anatomy.spec.md「Token: --item-px」(預設 var(--field-px) 12px)。 */}
-          <Command label="標籤選項" style={{ '--item-px': 'var(--layout-space-loose)' } as React.CSSProperties}>
+          <Command label="標籤選項" gutter="surface">
             <CommandList>
               <CommandGroup>
                 {TAG_OPTIONS.map((t) => (
@@ -411,28 +424,23 @@ function TagPickerDialog() {
 // ListBody —— body 放清單(overlay-surface.spec.md「List-as-region in overlay body」):body 撤 chrome padding、
 // list wrapper 自帶 py-2、item 自帶 px-loose(可點的列另帶 hover 底色;成員列不可點,不帶)。三則對應三種清單密度(item-anatomy Family 2 / 選單列)。
 // (2026-10-28 前這段寫在 JSDoc,Autodocs 會把它當說明顯示給讀者;稽核 L136)
-export const ListBody = {
-  name: '主體放清單',
-  // 三則範例對應三種清單密度(觸發鈕寫使用者會按的動作,密度註記住這裡 —— 2026-10-20 前寫在觸發鈕上,獨立驗證 OV-14);
-  // 三則都是按了才開(D2 甲:不要一進頁就開著)
-  parameters: {
-    docs: {
-      description: { story: '三種清單密度:「查看成員」= 大列(頭像 40 + 名稱 + 說明);「通知設定」= 中列(標題 + 說明 + 右側開關,在對話框裡直接設定);「選擇標籤」= 小列(純文字,走選單列,勾選後按「套用」)。' },
-    },
-  },
-  render: () => (
+// membersOpen 只給 test-only「主體放清單:開啟狀態」用(視覺基準 dialog-list-body 拍它:「查看成員」那一則開著);
+// 讀者看的「主體放清單」不傳 = 三則都按了才開(D2 甲)。寫法同 popover.stories.tsx 的 StatusFilterPanel
+function ListBodyDialogs({ membersOpen = false }: { membersOpen?: boolean }) {
+  return (
     <div className="flex flex-col gap-[var(--layout-space-loose)] items-start">
       {/* 大 item:avatar 40 + title + description(對齊 user 期望 + Material M3 + FileItem rich) */}
-      <Dialog>
+      <Dialog defaultOpen={membersOpen}>
         <DialogTrigger asChild>
           <Button variant="tertiary">查看成員</Button>
         </DialogTrigger>
-        <DialogContent height="hug" maxWidth={520}>
+        {/* 成員清單 → 預設 md(spec「寬度檔位」) */}
+        <DialogContent height="hug">
           <DialogHeader>
             <DialogTitle>成員列表</DialogTitle>
           </DialogHeader>
           <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
-            {/* @layout-space-magic-ok: List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:91「list outer wrapper 自帶 `py-2`」;Dialog body 的 padding 由 overlay-surface 擁有,dialog.spec.md「結構」) */}
+            {/* @layout-space-magic-ok: List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:97「list outer wrapper 自帶 `py-2`」;Dialog body 的 padding 由 overlay-surface 擁有,dialog.spec.md「結構」) */}
             <div role="list" className="flex flex-col py-2">
               {MEMBERS.slice(0, 6).map((m, i) => (
                 <MemberRow key={m.empNum} member={m} index={i} />
@@ -447,15 +455,32 @@ export const ListBody = {
         </DialogContent>
       </Dialog>
 
-      {/* 中 item:title+desc + 右側直接 Switch 設定(in-modal 操作,不 navigate)
-          user Image 9 指出 modal 內 list item 通常可直接被設定 — 對齊 Gmail 通知設定 /
-          macOS System Preferences / Notion preferences 的 in-modal pattern */}
-      <NotificationSettings />
+      {/* 開啟快照只放開著的那一則:另外兩個觸發鈕會被開著的對話框蓋住,點不到也拍不到(layout-body-edges 把它們判成「點了沒開」= 儀器失效,e017c41c CI) */}
+      {!membersOpen && (
+        <>
+          {/* 中 item:title+desc + 右側直接 Switch 設定(in-modal 操作,不 navigate)
+              user Image 9 指出 modal 內 list item 通常可直接被設定 — 對齊 Gmail 通知設定 /
+              macOS System Preferences / Notion preferences 的 in-modal pattern */}
+          <NotificationSettings />
 
-      {/* 小 item:純文字 label(對齊 Linear Cmd+K 密集);勾選暫存、按「套用」才寫回(overlay-surface.spec.md「暫存選擇 + Save CTA 才 commit → Dialog + MenuItem」) */}
-      <TagPickerDialog />
+          {/* 小 item:純文字 label(對齊 Linear Cmd+K 密集);勾選暫存、按「套用」才寫回(overlay-surface.spec.md「暫存選擇 + Save CTA 才 commit → Dialog + MenuItem」) */}
+          <TagPickerDialog />
+        </>
+      )}
     </div>
-  ),
+  )
+}
+
+export const ListBody = {
+  name: '主體放清單',
+  // 三則範例對應三種清單密度(觸發鈕寫使用者會按的動作,密度註記住這裡 —— 2026-10-20 前寫在觸發鈕上,獨立驗證 OV-14);
+  // 三則都是按了才開(D2 甲:不要一進頁就開著)
+  parameters: {
+    docs: {
+      description: { story: '三種清單密度:「查看成員」= 大列(頭像 40 + 名稱 + 說明);「通知設定」= 中列(標題 + 說明 + 右側開關,在對話框裡直接設定);「選擇標籤」= 小列(純文字,走選單列,勾選後按「套用」)。' },
+    },
+  },
+  render: () => <ListBodyDialogs />,
 }
 
 // 標頭操作(actions slot,2026-07-08 WM 戰役 codify — 關閉鈕分隔線 SSOT 化)
@@ -480,7 +505,8 @@ function TaskDetailDialog() {
       <DialogTrigger asChild>
         <Button variant="tertiary">開啟任務詳情</Button>
       </DialogTrigger>
-      <DialogContent height="hug" maxWidth={520}>
+      {/* 一段說明 + 三列屬性疊成一欄 → 預設 md(spec「寬度檔位」;要並排一欄資訊時才到 xl,見下方「超大:兩欄記錄詳情」) */}
+      <DialogContent height="hug">
         <DialogHeader
           actions={
             <>
@@ -529,6 +555,168 @@ export const HeaderActions = {
       <TaskDetailDialog />
     </>
   ),
+}
+
+// 大檔位 lg —— 有一件東西本身就寬:這裡是一張表格(dialog.spec.md「寬度檔位」選檔規則「有一件很寬 → lg」)。
+// 真實場景:匯入 CSV 之前的預覽(Jira / Linear / Asana 匯入流程「確認要匯入哪些」那一步):表格列出解析出來的任務,按「匯入」才寫進專案。
+// 只有文字的對話框不用 lg;表格在 lg 放不下、又不能橫向捲動時才往上一檔 xl。開啟期間內容不變 → hug(spec「高度軸」)。
+type ImportPreviewRow = { id: string; title: string; assignee: string; status: string; due: string }
+const IMPORT_PREVIEW_ROWS: ImportPreviewRow[] = [
+  { id: 'r1', title: '結帳頁加入 Apple Pay', assignee: 'Alan Chen', status: '待處理', due: '2026-07-18' },
+  { id: 'r2', title: '發票資訊欄位驗證', assignee: 'Betty Wu', status: '待處理', due: '2026-07-22' },
+  { id: 'r3', title: '付款失敗重試流程', assignee: 'Charlie Lee', status: '進行中', due: '2026-07-29' },
+  { id: 'r4', title: '訂單確認信改版', assignee: 'Diana Kim', status: '待處理', due: '2026-08-05' },
+  { id: 'r5', title: '購物車數量上限提示', assignee: 'Ethan Park', status: '待處理', due: '2026-08-08' },
+  { id: 'r6', title: '結帳流程漏斗埋點', assignee: 'Fiona Lin', status: '待處理', due: '2026-08-12' },
+]
+// 欄位型別 string:純文字格走 DataTable 的單行截斷(data-table.spec.md「Cell 單行截斷原則」);每欄給保留寬(meta.width,同 data-table.stories 的 Product 欄),
+// 合計 576 放得進 lg 的內容寬(md 密度 608、lg 密度 592)—— 選檔規則「內容不得橫向捲動」(dialog.spec.md「寬度檔位」);多出來的寬由欄自己長滿
+const IMPORT_PREVIEW_COLUMNS: DataTableColumnDef<ImportPreviewRow>[] = [
+  { accessorKey: 'title', header: '標題', meta: { type: 'string', width: 232 } },
+  { accessorKey: 'assignee', header: '指派人', meta: { type: 'string', width: 128 } },
+  { accessorKey: 'status', header: '狀態', meta: { type: 'string', width: 96 } },
+  { accessorKey: 'due', header: '截止日', meta: { type: 'string', width: 120 } },
+]
+
+function ImportPreviewDialog() {
+  const [open, setOpen] = useState(false)
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="tertiary">預覽匯入的任務</Button>
+      </DialogTrigger>
+      <DialogContent height="hug" width="lg">
+        <DialogHeader>
+          <DialogTitle>匯入預覽 · q3-tasks.csv</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          {/* 說明 ↔ 表格 = tight(說明替下面這張表命名 = labeling,layoutSpace.spec.md「親疏 3 級」functional 交互;同 ProgressBar「匯入客戶名單」) */}
+          <div className="flex flex-col gap-[var(--layout-space-tight)]">
+            <p className="text-body">以下 {IMPORT_PREVIEW_ROWS.length} 筆任務會加入「Q3 設計改版」,欄位依檔案第一列的名稱對應。</p>
+            <DataTable columns={IMPORT_PREVIEW_COLUMNS} data={IMPORT_PREVIEW_ROWS} getRowId={(r) => r.id} maxHeight="none" aria-label="即將匯入的任務" />
+          </div>
+        </DialogBody>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="tertiary">取消</Button>
+          </DialogClose>
+          <Button variant="primary" onClick={() => { setOpen(false); toast({ variant: 'success', title: `已匯入 ${IMPORT_PREVIEW_ROWS.length} 筆任務` }) }}>
+            匯入 {IMPORT_PREVIEW_ROWS.length} 筆任務
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+export const LargeWithTable = {
+  name: '大檔位:對話框裡放表格',
+  parameters: {
+    docs: {
+      description: { story: '寬度 `lg`(640):對話框裡有一件本身就寬的東西 —— 這裡是匯入前的預覽表格。只有文字或一欄欄位時用 `md`;表格在 `lg` 放不下時再往上一檔 `xl`,內容不得橫向捲動。' },
+    },
+  },
+  render: () => (
+    <>
+      <Toaster />
+      <ImportPreviewDialog />
+    </>
+  ),
+}
+
+// 超大檔位 xl —— 兩欄並排:主內容 + 一欄資訊(dialog.spec.md「寬度檔位」選檔規則「兩欄 → xl」)。xl 是建議上限;比它更大的內容先考慮改成頁面或側板。
+// 組合照 overlay-surface.spec.md「兩欄 dialog 組合」四條(2026-07-10 user 拍板:組合,不做元件):① 各欄自帶 ScrollArea 獨立捲動(padding 進內層 div,
+// 左右 px-loose、上下同 DialogBody 由容器自己給 —— 內層 div 宣告 data-layout-body="fill",底依最後一個東西照 layoutSpace.spec.md 規則 4);② 右欄 <aside> 自帶 border-l border-divider,從 body 頂貫到底;③ 欄底 footer(留言框)釘在左欄內,
+// 消費 DialogFooter(= SurfaceFooter chrome);④ header 全寬,分欄從 body 才開始。Archetype:WM WorkItemDetailDialog / file-viewer.tsx InfoPanel(spec 同段)。
+// 右欄寬 288(w-72)= WM 工作項詳情同一欄寬。留言會增加 → 預設高度 fill(spec「高度軸」判準)。
+// 送出鈕在留言空白時停用:同 FileViewer 展示「評論側欄」的送出鈕(file-viewer.stories.tsx)。
+const DETAIL_ACCEPTANCE = [
+  '付款方式與發票資訊在同一步填完',
+  '統一編號與載具條碼送出前先驗格式,錯誤貼在欄位下方',
+  '行動版單手可完成付款(主要按鈕在拇指可及範圍)',
+]
+const DETAIL_PROPERTIES = [
+  { label: '狀態', value: '進行中' },
+  { label: '指派人', value: 'Alan Chen' },
+  { label: '優先度', value: '高' },
+  { label: 'Sprint', value: 'Sprint 42' },
+  { label: '截止日', value: '2026-07-18' },
+  { label: '標籤', value: '結帳、付款' },
+]
+
+function TaskDetailTwoColumnDialog() {
+  const [open, setOpen] = useState(false)
+  const [comments, setComments] = useState<string[]>([
+    'Betty Wu:發票欄位的驗證文案我週三前補上。',
+    'Charlie Lee:Apple Pay 的沙盒帳號已申請好,測試卡號放在團隊雲端。',
+  ])
+  const [draft, setDraft] = useState('')
+  const send = () => {
+    const text = draft.trim()
+    if (!text) return
+    setComments((list) => [...list, `你:${text}`])
+    setDraft('')
+  }
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="tertiary">開啟任務詳情(兩欄)</Button>
+      </DialogTrigger>
+      <DialogContent width="xl">
+        <DialogHeader>
+          <DialogTitle>WM-142 結帳流程改版</DialogTitle>
+        </DialogHeader>
+        {/* data-dialog-body:開啟時焦點落在兩欄區第一個互動元素(dialog.tsx onOpenAutoFocus 只認這個標記);DialogBody 自帶單一 ScrollArea,兩欄要各自捲動,所以兩欄區自己組 */}
+        <div data-dialog-body className="flex min-h-0 flex-1">
+          <div className="flex min-w-0 flex-1 flex-col">
+            <ScrollArea fillX className="min-h-0 flex-1">
+              <div data-layout-body="fill" className="px-[var(--layout-space-loose)]">
+                <DescriptionList>
+                  <DescriptionItem label="描述">重新設計結帳步驟,將付款方式與發票資訊合併為單一步驟,預期提升轉換率。</DescriptionItem>
+                  <DescriptionItem label="驗收條件">
+                    <ul className="list-disc ps-[var(--layout-space-loose)]">
+                      {DETAIL_ACCEPTANCE.map((item) => <li key={item}>{item}</li>)}
+                    </ul>
+                  </DescriptionItem>
+                  <DescriptionItem label={`留言(${comments.length})`}>
+                    <ul className="flex flex-col gap-[var(--layout-space-tight)]">
+                      {comments.map((c, i) => <li key={i}>{c}</li>)}
+                    </ul>
+                  </DescriptionItem>
+                </DescriptionList>
+              </div>
+            </ScrollArea>
+            <DialogFooter>
+              <div className="min-w-0 flex-1">
+                <Input aria-label="留言" placeholder="寫下留言,按送出" value={draft} onChange={(e) => setDraft(e.target.value)} />
+              </div>
+              {/* @submit-intent: composer — 這是留言輸入盒,不是建立表單;沒寫字時送出沒有東西可送,停用與 AgentPanel 對話輸入同一種做法 */}
+              <Button variant="primary" disabled={!draft.trim()} onClick={send}>送出</Button>
+            </DialogFooter>
+          </div>
+          <aside aria-label="任務屬性" className="flex w-72 shrink-0 flex-col border-l border-divider">
+            <ScrollArea fillX className="min-h-0 flex-1">
+              <div data-layout-body="fill" className="px-[var(--layout-space-loose)]">
+                <DescriptionList>
+                  {DETAIL_PROPERTIES.map((p) => <DescriptionItem key={p.label} label={p.label}>{p.value}</DescriptionItem>)}
+                </DescriptionList>
+              </div>
+            </ScrollArea>
+          </aside>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+export const ExtraLargeTwoColumn = {
+  name: '超大檔位:兩欄記錄詳情',
+  parameters: {
+    docs: {
+      description: { story: '寬度 `xl`(960):兩欄並排 —— 左欄是任務內容與留言框,右欄是屬性。`xl` 是建議上限;比它更大的內容先考慮改成頁面或側板。視窗比 1056 窄時照四邊各 48 的留白往內縮。' },
+    },
+  },
+  render: () => <TaskDetailTwoColumnDialog />,
 }
 
 // 標頭內含分頁(2026-05-18 從 patterns/header-canonical/header-canonical.stories.tsx 整合過來;user 當時要求整合進 Dialog、不另開 header canonical 資料夾)
@@ -622,7 +810,7 @@ export const OpenSnapshot = {
       <DialogTrigger asChild>
         <Button>打開 Dialog</Button>
       </DialogTrigger>
-      <DialogContent height="hug" maxWidth={480}>
+      <DialogContent height="hug" width="sm">
         <DialogHeader>
           <DialogTitle>確認刪除專案</DialogTitle>
         </DialogHeader>
@@ -640,6 +828,21 @@ export const OpenSnapshot = {
   ),
 }
 
+// 「長內容」「主體放清單」開著的樣子 —— 只給視覺基準拍(scripts/visual-assertions.json 的 dialog-long-content / dialog-list-body)。
+// 8eb473c7(#169)讓這兩則讀者 story 按了才開(D2 甲)之後,兩個場景仍指著讀者 story,只拍得到觸發鈕(main 每週比對 82% / 70% 超標)。
+// 開著的畫面依 story-rules.md「預設開啟的模態浮層 story」放 test-only;用的是讀者 story 同一支元件,內容不會分岔。
+export const LongContentOpen = {
+  name: '長內容:開啟狀態',
+  tags: ['test-only'],
+  render: () => <LongMemberListDialog initiallyOpen />,
+}
+
+export const ListBodyOpen = {
+  name: '主體放清單:開啟狀態',
+  tags: ['test-only'],
+  render: () => <ListBodyDialogs membersOpen />,
+}
+
 /* ── G1 POC:Modal Dialog 開著時,舞台上另一個浮層掛載會不會廢掉 Dialog 的焦點鎖 ──
    為什麼需要這個 probe:`@radix-ui/react-focus-scope/dist/index.mjs:71-73` 的
    `focusScopesStack.add(focusScope)` 寫在 `if (container)` 裡,**完全不看 `trapped`**;
@@ -652,7 +855,7 @@ export const OpenSnapshot = {
    量測由 `scripts/dialog-focus-trap-poc.mjs` 執行。 */
 export const FocusTrapWithConcurrentOverlay: Story = {
   name: '焦點鎖 × 並存浮層',
-  // @example-basis: dialog.spec.md:282「焦點鎖在 Dialog 內，Tab 循環不逃出」
+  // @example-basis: dialog.spec.md:344「焦點鎖在 Dialog 內，Tab 循環不逃出」
   parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => (
@@ -692,7 +895,7 @@ export const FocusTrapWithConcurrentOverlay: Story = {
 export const FocusTrapControlNoDialog: Story = {
   name: '同一版面沒有對話框時的焦點順序',
   // 上一則的對照組(同一版面拿掉 Dialog,Tab 走得到背景鈕),示範的是同一句焦點規格:
-  // @example-basis: dialog.spec.md:282「焦點鎖在 Dialog 內，Tab 循環不逃出」
+  // @example-basis: dialog.spec.md:344「焦點鎖在 Dialog 內，Tab 循環不逃出」
   parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => (

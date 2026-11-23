@@ -317,7 +317,7 @@ export const SuffixRule: Story = {
     <TutorialPage>
       <TutorialRule
         title="鍵盤快捷鍵 — canonical shortcut prop（靠右對齊列尾）"
-        note={<>使用者熟悉快捷鍵後可跳過選單直接按快捷鍵。shortcut 用 fg-muted 作為輔助資訊色,不搶 label 注意力。標準場景用 <code>shortcut</code> prop（走 MenuItem endContent flex slot,真正靠右對齊列尾);<code>&lt;DropdownMenuShortcut&gt;</code> child 僅為相容 shadcn 的 escape-hatch,會 inline 附加在 label 尾、不會靠右。</>}
+        note={<>使用者熟悉快捷鍵後可跳過選單直接按快捷鍵。shortcut 用 fg-muted 作為輔助資訊色,不搶 label 注意力。一律用 <code>shortcut</code> prop（走 MenuItem endContent flex slot,真正靠右對齊列尾)。</>}
       >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

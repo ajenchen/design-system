@@ -138,7 +138,7 @@ export const UsageGuidance: Story = {
         >
           {/* 範例消費它要讀者去用的那個元件(M23):最小的 DataTable —— 兩列、無虛擬捲動 / 拖曳 / 篩選 */}
           <div className="w-full max-w-xl">
-            <DataTable columns={MEMBER_COLUMNS} data={MEMBERS} getRowId={(m) => m.email} height="auto" />
+            <DataTable columns={MEMBER_COLUMNS} data={MEMBERS} getRowId={(m) => m.email} maxHeight="none" />
           </div>
           <ExampleCaption>↑ 「多個使用者」的同結構屬性 → DataTable(需要排序 / 篩選)</ExampleCaption>
         </TutorialRule>

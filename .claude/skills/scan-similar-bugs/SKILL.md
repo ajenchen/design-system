@@ -24,7 +24,7 @@ description: Auto-invoke after fix commits — extracts root-cause anti-pattern,
 **強制(auto-chain)— batch-end only**(2026-05-12 重構,per independent review):
 - multi-issue session 結束後**一次**(不是每 fix 一次)
 - session 內 ≥ 2 fix commit 觸發批次 root-pattern scan
-- session_start_governance_check.sh Check 6 偵測 24h 內 ≥1 fix commit 且 skill-invokes log 24h 無 scan-similar-bugs invoke → soft 提醒
+- **沒有任何 hook 會提醒**「fix commit 之後漏跑本 skill」—— 靠 batch-end 自律(session_start 原本的 Check 6 結果只寫進從不輸出的提醒變數,2026-11-18 刪除)
 
 **手動 invoke**:
 - user 明言「掃同類 bug / 看其他元件有沒有 / 全 DS scan」
@@ -99,7 +99,7 @@ Execution:
 - deterministic fix → Auto-fix all confirmed N
 - engineering judgment → 依 owning spec + highest certified capability 逐檔收斂；task／deliverable 明確要求時才加 independent review
 - 不屬 frozen scope → Backlog with evidence；不得用 defer 逃避 scope 內修復
-- 會改產品／UI／UX SSOT 且仍有真取捨 → batch-at-end human-only decision
+- 會改產品／UI／UX SSOT 且仍有真取捨 → batch-at-end 交 user(類別照共同 bootstrap `canonical-decision-authority` 區塊)
 ```
 
 不可 silent 跳過 confirmed scope；影響 N 檔是工程 blast radius，不是 user approval gate。必記錄 scope、evidence、tests 與 rollback。

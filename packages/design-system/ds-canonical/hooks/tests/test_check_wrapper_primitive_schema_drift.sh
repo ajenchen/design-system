@@ -25,6 +25,7 @@ FAIL=0
 FAILED_TESTS=""
 
 TMPROOT=$(mktemp -d)
+[ -n "${TMPROOT:-}" ] && [ -d "$TMPROOT" ] || { echo "❌ mktemp -d failed(TMPROOT;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf "$TMPROOT"' EXIT
 
 mkdir -p "$TMPROOT/.claude/hooks"

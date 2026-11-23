@@ -3,9 +3,10 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { expect, userEvent, waitFor, within } from '@storybook/test'
-import { createColumnHelper, type ColumnDef } from '@tanstack/react-table'
+import { createColumnHelper } from '@tanstack/react-table'
 import { Pencil, Trash2, MoreVertical, Search, Filter, Eye, Download, Plus, ArrowUpDown, Copy } from 'lucide-react'
-import { DataTable, type DataTableSelection } from './data-table'
+import { DataTable, type DataTableColumnDef, type DataTableSelection } from './data-table'
+import { demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 import { PerfDebugOverlay } from './perf-debug-overlay'
 import { DataTableSortManager } from './data-table-sort-manager'
 import { DataTableColumnVisibilityPanel } from './data-table-column-visibility-panel'
@@ -46,12 +47,12 @@ import { productCatalog } from '@/design-system/stories-helpers/data/product-cat
 import { orderColumns, ORDER_ROWS } from '@/design-system/stories-helpers/data/order-table'
 
 const SELLERS: PersonData[] = [
-  { name: 'Alice Wonderland Wang', avatarUrl: 'https://i.pravatar.cc/128?u=alice', description: 'Sales｜Tokyo｜EMP-1001', status: 'online', statusMessage: '出差中,週四回。緊急請聯絡 @bob 代理。', id: 'AWW001', employeeNumber: 'EMP-1001', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'JST (GMT+9)' }] },
-  { name: 'Bob Christopher Chen', avatarUrl: 'https://i.pravatar.cc/128?u=bob', description: 'Sales｜Taipei｜EMP-1002', status: 'busy', statusMessage: '會議中,訊息我會儘快回。', id: 'BCC002', employeeNumber: 'EMP-1002', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'TST (GMT+8)' }] },
-  { name: 'Carol Liu', avatarUrl: 'https://i.pravatar.cc/128?u=carol', description: 'Sales｜Singapore｜EMP-1003', status: 'online', statusMessage: '今日彈性工作。', id: 'CL003', employeeNumber: 'EMP-1003', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'SGT (GMT+8)' }] },
-  { name: 'Alexander Hamilton Zhang', avatarUrl: 'https://i.pravatar.cc/128?u=alex', description: 'Sales｜Shanghai｜EMP-1004', status: 'away', statusMessage: '已離開辦公室,週一回。', id: 'AHZ004', employeeNumber: 'EMP-1004', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'CST (GMT+8)' }] },
-  { name: 'David Wu', avatarUrl: 'https://i.pravatar.cc/128?u=david', description: 'Sales｜Hong Kong｜EMP-1005', status: 'online', statusMessage: '可線上協助。', id: 'DW005', employeeNumber: 'EMP-1005', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'HKT (GMT+8)' }] },
-  { name: 'Elizabeth Montgomery Johnson', avatarUrl: 'https://i.pravatar.cc/128?u=elizabeth', description: 'Sales｜Sydney｜EMP-1006', status: 'offline', statusMessage: '已下線,明早 9:00 上線。', id: 'EMJ006', employeeNumber: 'EMP-1006', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'AEST (GMT+10)' }] },
+  { name: 'Alice Wonderland Wang', avatarUrl: demoPersonPhoto('Alice Wonderland Wang', 128), description: 'Sales｜Tokyo｜EMP-1001', status: 'online', statusMessage: '出差中,週四回。緊急請聯絡 @bob 代理。', id: 'AWW001', employeeNumber: 'EMP-1001', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'JST (GMT+9)' }] },
+  { name: 'Bob Christopher Chen', avatarUrl: demoPersonPhoto('Bob Christopher Chen', 128), description: 'Sales｜Taipei｜EMP-1002', status: 'busy', statusMessage: '會議中,訊息我會儘快回。', id: 'BCC002', employeeNumber: 'EMP-1002', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'TST (GMT+8)' }] },
+  { name: 'Carol Liu', avatarUrl: demoPersonPhoto('Carol Liu', 128), description: 'Sales｜Singapore｜EMP-1003', status: 'online', statusMessage: '今日彈性工作。', id: 'CL003', employeeNumber: 'EMP-1003', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'SGT (GMT+8)' }] },
+  { name: 'Alexander Hamilton Zhang', avatarUrl: demoPersonPhoto('Alexander Hamilton Zhang', 128), description: 'Sales｜Shanghai｜EMP-1004', status: 'away', statusMessage: '已離開辦公室,週一回。', id: 'AHZ004', employeeNumber: 'EMP-1004', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'CST (GMT+8)' }] },
+  { name: 'David Wu', avatarUrl: demoPersonPhoto('David Wu', 128), description: 'Sales｜Hong Kong｜EMP-1005', status: 'online', statusMessage: '可線上協助。', id: 'DW005', employeeNumber: 'EMP-1005', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'HKT (GMT+8)' }] },
+  { name: 'Elizabeth Montgomery Johnson', avatarUrl: demoPersonPhoto('Elizabeth Montgomery Johnson', 128), description: 'Sales｜Sydney｜EMP-1006', status: 'offline', statusMessage: '已下線,明早 9:00 上線。', id: 'EMJ006', employeeNumber: 'EMP-1006', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'AEST (GMT+10)' }] },
 ]
 
 interface Product {
@@ -109,7 +110,7 @@ const FILTER_SECTION_WIDTH = 'w-full max-w-[680px]'
 // 做法照 DS 既有範例:表單對話框 = dialog.stories.tsx「表單」(useFormValidation、送出跳 Toast);
 // 刪除先確認:對話框裡最後那一下才是 primary + danger(button.spec.md 強調等級表);「⋯」= 真的打開選單、列出收進去的動作;
 // 匯出 / 下載 = 跳通知。用到通知的 story 自己掛 <Toaster />(toast.spec.md:每個獨立 story root 一個)。
-function NameFormDialog({ open, onOpenChange, title, label, placeholder, submitLabel, initialValue = '', onSubmit }: {
+function NameFormDialog({ open, onOpenChange, title, label, placeholder, submitLabel, initialValue = '', intent = 'create', onSubmit }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
@@ -117,10 +118,16 @@ function NameFormDialog({ open, onOpenChange, title, label, placeholder, submitL
   placeholder?: string
   submitLabel: string
   initialValue?: string
+  /** 新增 = create;編輯既有那一筆 = update(沒改就停用,form-validation.spec.md「Submit Button 狀態」第二列) */
+  intent?: 'create' | 'update'
   onSubmit: (value: string) => void
 }) {
+  // 需要填的只有這一欄 → 空白時送出鈕停用(form-validation.spec.md「Submit Button 狀態」第三列;hook 的 soleRequiredField 算);
+  // 編輯(intent: 'update')另加「沒改停用」,兩者並用
   const form = useFormValidation({
     initialValues: { value: initialValue },
+    intent,
+    soleRequiredField: 'value',
     validate: { value: (v) => (String(v).trim() ? undefined : `${label}必填`) },
     onSubmit: (values) => {
       onSubmit(String(values.value).trim())
@@ -133,7 +140,8 @@ function NameFormDialog({ open, onOpenChange, title, label, placeholder, submitL
   }
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent height="hug">
+      {/* 只有一個欄位 → sm(dialog.spec.md「寬度檔位」) */}
+      <DialogContent height="hug" width="sm">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
@@ -148,7 +156,7 @@ function NameFormDialog({ open, onOpenChange, title, label, placeholder, submitL
           <DialogClose asChild>
             <Button variant="tertiary">取消</Button>
           </DialogClose>
-          <Button variant="primary" loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>{submitLabel}</Button>
+          <Button variant="primary" disabled={form.submitDisabled} loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>{submitLabel}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -164,7 +172,7 @@ function ConfirmDeleteDialog({ open, onOpenChange, title, confirmLabel = '刪除
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent height="hug">
+      <DialogContent height="hug" width="sm">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
@@ -213,6 +221,7 @@ function useProductRowActions(initial: Product[]) {
         label="商品名稱"
         submitLabel="儲存"
         initialValue={editing?.name ?? ''}
+        intent="update"
         onSubmit={(name) => {
           const sku = editing?.sku
           setRows((rs) => rs.map((r) => (r.sku === sku ? { ...r, name } : r)))
@@ -321,7 +330,7 @@ export const ColumnResize: Story = {
           <DataTable
             columns={columnsWithPrice}
             data={sampleData}
-            height="auto"
+            maxHeight="none"
             enableColumnResize
           />
         </ExampleSection>
@@ -329,7 +338,7 @@ export const ColumnResize: Story = {
           <DataTable
             columns={columnsWithPrice}
             data={sampleData}
-            height="auto"
+            maxHeight="none"
             pinnedLeftColumns={['sku', 'name']}
             enableColumnResize
           />
@@ -357,7 +366,7 @@ export const ColumnReorder: Story = {
     const lockedCols = columnsWithPrice.map((c) => {
       const ak = (c as { accessorKey?: string }).accessorKey
       return ak === 'sku' ? { ...c, meta: { ...(c.meta ?? {}), locked: true } } : c
-    }) as ColumnDef<Product>[]
+    }) as DataTableColumnDef<Product>[]
     const handleColumnReorder = (sourceId: string, targetId: string, position: 'before' | 'after') => {
       setColumnOrder((prev) => {
         const next = prev.filter((id) => id !== sourceId)
@@ -382,7 +391,7 @@ export const ColumnReorder: Story = {
         <DataTable
           columns={lockedCols}
           data={sampleData}
-          height="auto"
+          maxHeight="none"
           tableOptions={{ state: { columnOrder } }}
           enableColumnReorder
           onColumnReorder={handleColumnReorder}
@@ -392,7 +401,7 @@ export const ColumnReorder: Story = {
   },
 }
 
-/* ── 行高模式 — autoRowHeight prop(每 row 內容驅動高度) ── */
+/* ── 行高模式 — rowHeight="hug"(每 row 內容驅動高度) ── */
 export const RowAutoHeightInlineEdit: Story = {
   name: '自動行高 × 就地編輯',
   parameters: {
@@ -409,7 +418,7 @@ export const RowAutoHeightInlineEdit: Story = {
           : 'Standard delivery.',
       }))
     )
-    const cols: ColumnDef<Product & { note: string }>[] = [
+    const cols: DataTableColumnDef<Product & { note: string }>[] = [
       { accessorKey: 'sku', header: 'SKU', meta: { type: 'string', width: 100 } },
       { accessorKey: 'name', header: 'Product', meta: { type: 'string', editable: true, width: 240 } },
       { accessorKey: 'category', header: 'Category', meta: { type: 'select', editable: true, width: 160, options: [
@@ -424,7 +433,7 @@ export const RowAutoHeightInlineEdit: Story = {
     return (
       <div className="max-w-5xl">
         <DataTable
-          columns={cols} data={list} height="auto" autoRowHeight inlineEdit
+          columns={cols} data={list} maxHeight="none" rowHeight="hug" inlineEdit
           onCellCommit={(rowId, col, val) => {
             setList((prev) => prev.map((r) => r.sku === rowId ? { ...r, [col]: val as never } : r))
           }}
@@ -442,10 +451,10 @@ export const RowAutoHeightModes: Story = {
   render: () => (
     <ExampleStack>
       <ExampleSection title="固定行高（預設）" description="所有內容垂直置中，文字截斷">
-        <DataTable columns={baseColumns} data={sampleData} height="auto" />
+        <DataTable columns={baseColumns} data={sampleData} maxHeight="none" />
       </ExampleSection>
-      <ExampleSection title="自動行高（autoRowHeight）" description="內容頂部對齊，wrap 欄位可撐高 row">
-        <DataTable columns={columnsWithNote} data={dataWithNotes} height="auto" autoRowHeight />
+      <ExampleSection title={'自動行高（rowHeight="hug"）'} description="內容頂部對齊，wrap 欄位可撐高 row">
+        <DataTable columns={columnsWithNote} data={dataWithNotes} maxHeight="none" rowHeight="hug" />
       </ExampleSection>
     </ExampleStack>
   ),
@@ -470,10 +479,10 @@ export const RowAutoHeight: Story = {
     return (
     <ExampleStack>
       <ExampleSection title="固定行高（預設）" description="所有內容垂直置中，文字截斷">
-        <DataTable columns={baseColumns} data={sampleData} height="auto" />
+        <DataTable columns={baseColumns} data={sampleData} maxHeight="none" />
       </ExampleSection>
-      <ExampleSection title="自動行高（autoRowHeight）" description="內容頂部對齊，wrap 欄位可撐高 row">
-        <DataTable columns={columnsWithNote} data={dataWithNotes} height="auto" autoRowHeight />
+      <ExampleSection title={'自動行高（rowHeight="hug"）'} description="內容頂部對齊，wrap 欄位可撐高 row">
+        <DataTable columns={columnsWithNote} data={dataWithNotes} maxHeight="none" rowHeight="hug" />
       </ExampleSection>
       {/* 缺陷 F 的覆蓋案例(2026-09-04):撐高的 Note 欄在 center，釘選的 SKU 與 Row Actions 各自在
           另外兩個容器 —— 這是「同一列在三區各算各的高度」唯一會現形的組合，先前沒有任何 story 命中
@@ -484,8 +493,8 @@ export const RowAutoHeight: Story = {
         <DataTable
           columns={columnsWithNote}
           data={dataWithNotes}
-          height="auto"
-          autoRowHeight
+          maxHeight="none"
+          rowHeight="hug"
           pinnedLeftColumns={['sku']}
           rowActions={() => (
             <>
@@ -503,8 +512,8 @@ export const RowAutoHeight: Story = {
         <DataTable
           columns={columnsWithNote}
           data={virtualNotes}
-          height="360px"
-          autoRowHeight
+          maxHeight={360}
+          rowHeight="hug"
           pinnedLeftColumns={['sku']}
           rowActions={() => (
             <>
@@ -566,7 +575,7 @@ export const EmptyState: Story = {
   },
 }
 
-/* ── Container 高度模式 — height prop(table 容器約束) ── */
+/* ── Container 高度模式 — maxHeight prop(表格高度上限;2026-11-15 前叫 height) ── */
 // Bordered showcase retired — anatomy.BorderedProp 已 canonical 涵蓋(prop table + 何時用 false 的 rationale + 對照),showcase 純重複
 export const ContainerHeight: Story = {
   name: '容器高度',
@@ -574,19 +583,19 @@ export const ContainerHeight: Story = {
     const manyRows = React.useMemo(() => generateLargeData(50), [])
     return (
       <ExampleStack>
-        <ExampleSection title="無約束" description={<>height="auto"，table 高度完全取決於內容，不出現捲軸</>}>
-          <DataTable columns={baseColumns} data={sampleData} height="auto" />
+        <ExampleSection title="無約束" description={<>maxHeight="none"，table 高度完全取決於內容，不出現捲軸</>}>
+          <DataTable columns={baseColumns} data={sampleData} maxHeight="none" />
         </ExampleSection>
 
-        <ExampleSection title="有約束" description={<>height="300px"，兩張 table 在同樣的高度上限內。資料少時只佔內容高度，資料多時撐到上限後出現捲軸</>}>
+        <ExampleSection title="有約束" description={<>maxHeight 給 300(px)，兩張 table 在同樣的高度上限內。資料少時只佔內容高度，資料多時撐到上限後出現捲軸</>}>
           <div className="grid grid-cols-2 gap-[var(--layout-space-loose)]">
-            <div className="bg-muted rounded-lg p-[var(--layout-space-loose)]">
+            <div className="bg-muted rounded-md p-[var(--layout-space-loose)]">
               <p className="text-footnote text-fg-muted mb-[var(--layout-space-tight)]">3 筆資料</p>
-              <DataTable columns={baseColumns} data={sampleData.slice(0, 3)} height="300px" />
+              <DataTable columns={baseColumns} data={sampleData.slice(0, 3)} maxHeight={300} />
             </div>
-            <div className="bg-muted rounded-lg p-[var(--layout-space-loose)]">
+            <div className="bg-muted rounded-md p-[var(--layout-space-loose)]">
               <p className="text-footnote text-fg-muted mb-[var(--layout-space-tight)]">50 筆資料</p>
-              <DataTable columns={baseColumns} data={manyRows} height="300px" />
+              <DataTable columns={baseColumns} data={manyRows} maxHeight={300} />
             </div>
           </div>
         </ExampleSection>
@@ -610,7 +619,7 @@ export const RowActions: Story = {
             <DataTable
               columns={baseColumns}
               data={inline.rows}
-              height="auto"
+              maxHeight="none"
               getRowId={(row) => row.sku}
               rowActions={(row) => <>{inline.editButton(row)}{inline.deleteButton(row)}</>}
             />
@@ -619,7 +628,7 @@ export const RowActions: Story = {
             <DataTable
               columns={baseColumns}
               data={more.rows}
-              height="auto"
+              maxHeight="none"
               getRowId={(row) => row.sku}
               rowActions={(row) => <>{more.editButton(row)}{more.moreMenu(row)}</>}
             />
@@ -649,7 +658,7 @@ export const PinnedColumns: Story = {
               <DataTable
                 columns={columnsWithPrice}
                 data={few.rows}
-                height="auto"
+                maxHeight="none"
                 pinnedLeftColumns={['sku']}
                 rowActions={(row) => <>{few.editButton(row)}{few.moreMenu(row)}</>}
               />
@@ -660,7 +669,7 @@ export const PinnedColumns: Story = {
               <DataTable
                 columns={columnsWithPrice}
                 data={many.rows}
-                height="300px"
+                maxHeight={300}
                 pinnedLeftColumns={['sku']}
                 rowActions={(row) => <>{many.editButton(row)}{many.moreMenu(row)}</>}
               />
@@ -701,7 +710,7 @@ const TAG_OPTIONS = [
 // Email / Phone / Department / Location 透過 `fields` array opt-in。
 const SAMPLE_PEOPLE: PersonData[] = [
   {
-    name: 'Alice Chen', avatarUrl: 'https://i.pravatar.cc/48?u=alice', description: 'Design',
+    name: 'Alice Chen', avatarUrl: demoPersonPhoto('Alice Chen', 48), description: 'Design',
     id: 'AC001', employeeNumber: 'EMP-1001',
     status: 'online', statusMessage: '本週設計評審,週四前 standup 移到 4pm',
     fields: [
@@ -712,7 +721,7 @@ const SAMPLE_PEOPLE: PersonData[] = [
     ],
   },
   {
-    name: 'Bob Lin', avatarUrl: 'https://i.pravatar.cc/48?u=bob', description: 'Engineering',
+    name: 'Bob Lin', avatarUrl: demoPersonPhoto('Bob Lin', 48), description: 'Engineering',
     id: 'BL002', employeeNumber: 'EMP-1002',
     status: 'busy', statusMessage: 'Code review 中,訊息我會晚點回',
     fields: [
@@ -723,7 +732,7 @@ const SAMPLE_PEOPLE: PersonData[] = [
     ],
   },
   {
-    name: 'Charlie Wu', avatarUrl: 'https://i.pravatar.cc/48?u=charlie', description: 'Product',
+    name: 'Charlie Wu', avatarUrl: demoPersonPhoto('Charlie Wu', 48), description: 'Product',
     id: 'CWU003', employeeNumber: 'EMP-1003',
     status: 'online', statusMessage: '今日 OKR 規劃日,可線上協助',
     fields: [
@@ -734,7 +743,7 @@ const SAMPLE_PEOPLE: PersonData[] = [
     ],
   },
   {
-    name: 'Diana Huang', avatarUrl: 'https://i.pravatar.cc/48?u=diana', description: 'Marketing',
+    name: 'Diana Huang', avatarUrl: demoPersonPhoto('Diana Huang', 48), description: 'Marketing',
     id: 'DH004', employeeNumber: 'EMP-1004',
     status: 'away', statusMessage: '客戶會議中,週四上午回辦公室',
     fields: [
@@ -827,13 +836,13 @@ export const InlineEdit: Story = {
         <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           所有資料型別都能就地編輯:文字、數字、金額、日期、時間、單/多選、人員、人員列表、開關、連結。
           SKU 是唯讀的;PRD-004 的供應商網址由採購部維護、不能在這裡改,整格點了開連結;
-          開關欄位直接點即可切換;連結欄位點網址文字開連結,點格的其他地方跟其他欄位一樣進編輯;
+          開關欄位直接點即可切換;連結欄位滑過跟其他可編輯欄位一樣出淺框,格裡鉛筆以外點了開連結,按鉛筆才編輯;
           其他點一下進編輯,Enter 或失焦存檔,Esc 取消。
         </p>
         <DataTable
           columns={editableColumns}
           data={data}
-          height="auto"
+          maxHeight="none"
           inlineEdit
           tableOptions={{ getRowId: (row) => row.sku }}
           getRowId={(row) => row.sku}
@@ -858,11 +867,11 @@ export const InlineEdit: Story = {
 //
 // 驗證點:
 //   - hover editable cell → 1px overlay 邊框 var(--border-hover)
-//   - sku(readonly)/ inStock(boolean)→ 不出現 hover overlay(Contract 15);url 2026-10-13 起跟其他可編輯格一樣出 hover overlay
-//     (user 拍板乙,待辦總帳 Q3f:點網址文字開連結,點格的其他地方照點格規則)
+//   - sku(readonly)/ inStock(boolean)/ PRD-004 的 url(不能編輯)→ 不出現 hover overlay(Contract 15);能編輯的 url 跟其他可編輯格一樣出
+//     (overlay = 這格可以編輯,2026-11-10 user「…這樣不是跟輸入框一致？」;點了做什麼看 data-table.spec.md navigate-valued 第 1 條)
 //   - click 1 → cell selected(DS 焦點框 `focus-ring-inset` 2px `--ring` 往內,`CELL_RING_STYLES.selected`);
 //     唯讀 / 開關空白處 / 連結空白處同樣會選取(2026-09-26);有格游標時表格外圈不畫框
-//   - click 2 / Enter / F2 → enter edit(portal Field, cell mode 不變;唯讀 / 開關不進;連結格 click 2 進編輯、
+//   - click 2 / Enter / F2 → enter edit(portal Field, cell mode 不變;唯讀 / 開關不進;有連結的連結格 click 2 開連結(鉛筆進編輯)、
 //     Enter / F2 把焦點放進格裡的連結(Tab 到鉛筆,F2 / Esc 回格導覽);開關格 Enter / F2 把焦點放到勾選框)
 //   - Shift+click → range(起點格保留焦點框 + 內 cells `--primary-subtle` bg;列被滑過時區間格維持原色)
 //   - cell border-box 對齊(float coords 直接 pass-through 不 round / 不 snap,hover overlay outline
@@ -893,14 +902,14 @@ export const InlineEditWithSpreadsheetOverlay: Story = {
         <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           試算表式操作:點任何格都會選取(藍框移過去),可編輯的格第二次點才進編輯。Shift+點另一格選範圍,
           方向鍵移動。Hover 可編輯的 cell 會出現淺邊框提示;唯讀 / 開關欄位沒有 hover 提示
-          (這兩種格子點第二次也不進編輯:開關直接點勾選框切換)。連結欄位點網址文字開連結,點格的其他地方跟其他格一樣;
+          (這兩種格子點第二次也不進編輯:開關直接點勾選框切換)。連結欄位滑過一樣出淺框,第一下選格,選中後點格裡鉛筆以外開連結,按鉛筆才編輯;
           PRD-004 的供應商網址由採購部維護、不能在這裡改:第一下選格,選中後點格裡任何地方開連結。
           格游標停在連結或開關格時按 Enter / F2,焦點進到格裡的連結或勾選框;再按 F2 或 Esc 回到格導覽。
         </p>
         <DataTable
           columns={editableColumns}
           data={data}
-          height="auto"
+          maxHeight="none"
           inlineEdit
           experimentalSpreadsheetOverlay
           spreadsheetMode
@@ -944,7 +953,7 @@ export const SpreadsheetCursorContract: Story = {
         <DataTable
           columns={columns}
           data={rows}
-          height="240px"
+          maxHeight={240}
           inlineEdit
           experimentalSpreadsheetOverlay
           spreadsheetMode
@@ -1006,14 +1015,14 @@ export const CellErrors: Story = {
           欄位驗證錯誤直接顯示在內容下方,不蓋住資料。一格多個錯誤分行條列。點進該格編輯時暫時隱藏錯誤,
           交給使用者修正;改完確認後由 app 端決定是否還要顯示。
         </p>
-        {/* 2026-05-10 fix(user 第二次糾正):restore `autoRowHeight` — 原本 story 用全表
+        {/* 2026-05-10 fix(user 第二次糾正):restore 全表自動行高(今 `rowHeight="hug"`)— 原本 story 用全表
             auto-row 是正確 baseline,error row 自然撐高 + 其他 row 仍 auto(內容驅動)。 */}
         <DataTable
           columns={editableColumns}
           data={data}
-          height="auto"
+          maxHeight="none"
           inlineEdit
-          autoRowHeight
+          rowHeight="hug"
           getRowId={(row) => row.sku}
           tableOptions={{ getRowId: (row) => row.sku }}
           onCellCommit={handleCommit}
@@ -1059,14 +1068,14 @@ export const CellErrorsFixedRowOverride: Story = {
     return (
       <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-4xl">
         <p className="text-caption text-fg-muted">
-          表格本身是固定行高(沒開 autoRowHeight),但 PRD-001 跟 PRD-003 有錯誤訊息 → 這兩 row
+          表格本身是固定行高(沒寫 rowHeight="hug"),但 PRD-001 跟 PRD-003 有錯誤訊息 → 這兩 row
           自動撐高顯示訊息;PRD-002、PRD-004 沒錯誤,維持原本的固定行高,內容垂直置中。
           觀察 row 之間高度差,以及同一 row 內所有 cell 對齊一致(撐高 row 全頂對齊,固定 row 全置中)。
         </p>
         <DataTable
           columns={editableColumns}
           data={data}
-          height="auto"
+          maxHeight="none"
           inlineEdit
           getRowId={(row) => row.sku}
           tableOptions={{ getRowId: (row) => row.sku }}
@@ -1147,7 +1156,7 @@ export const NestedRows: Story = {
         <DataTable
           columns={NESTED_COLUMNS}
           data={NESTED_DATA}
-          height="auto"
+          maxHeight="none"
           getRowId={(row) => row.id}
           selectable
           tableOptions={{
@@ -1175,7 +1184,7 @@ export const NestedRowsExpanderHoverState: Story = {
         <DataTable
           columns={NESTED_COLUMNS}
           data={NESTED_DATA}
-          height="auto"
+          maxHeight="none"
           getRowId={(row) => row.id}
           tableOptions={{
             getSubRows: (row: TaskRow) => row.children,
@@ -1231,7 +1240,7 @@ export const NestedRowsWithDrag: Story = {
         <DataTable
           columns={NESTED_COLUMNS}
           data={list}
-          height="auto"
+          maxHeight="none"
           getRowId={(row) => row.id}
           enableRowDrag
           onRowReorder={handleReorder}
@@ -1256,7 +1265,7 @@ export const VirtualScroll: Story = {
       <DataTable
         columns={columnsWithPrice}
         data={largeData}
-        height="500px"
+        maxHeight={500}
         overscan={10}
       />
     )
@@ -1270,10 +1279,14 @@ export const VirtualScroll: Story = {
    排版設計準則(本 showcase):
    - Toolbar:左 search input / 右 ops 群(Gmail / Linear / Notion idiom)
    - 各 chrome 元件 self-pad px-loose;table mx-loose 對齊 chrome 內容左右邊界
-   - bordered=true(height="100%" 為垂直滾動 trigger,per spec)
+   - bordered=true(maxHeight="100%" 為垂直滾動 trigger,per spec)
    - Alert variant="neutral"(資訊性 hint,非 info hue) */
 // Issue 3(2026-05-10):VisibilityRow inline helper retired — 移到
 // `<DataTableColumnVisibilityPanel>` primitive 內部(SSOT)。
+/** 商品後台(選取 + 批次操作)與 Roadmap 兩則展示的產品預設欄位 = 全部顯示(寫法同 visibility:沒寫 = 顯示)。
+ *  隱藏任何一欄、或拖過欄位順序後,欄位顯示面板的標題列出現「恢復預設」,按下回到全部顯示、順序回到欄位定義的順序
+ *  (沒傳 defaultColumnOrder = columns 順序;2026-11-15 前靠 `resettable`、只還原顯示)。 */
+const PRODUCT_DEFAULT_ALL_VISIBLE: Record<string, boolean> = {}
 
 export const WithBulkActions: Story = {
   name: '選取 + 批次操作',
@@ -1335,7 +1348,7 @@ export const WithBulkActions: Story = {
             <PopoverTrigger asChild>
               <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" pressed={isFilterTreeActive(filterTree)} />
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-auto p-0">
+            <PopoverContent align="end" width="hug" className="p-0">
               <DataTableFilterPanel
                 columns={baseColumns}
                 value={filterTree}
@@ -1352,12 +1365,12 @@ export const WithBulkActions: Story = {
             <PopoverTrigger asChild>
               <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" pressed={sorting.length > 0} />
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-auto p-0">
+            <PopoverContent align="end" width="hug" className="p-0">
+              {/* 這個後台沒有存預設排序 → 不傳 defaultSorting(標題列不出現「恢復預設」);「清除全部」在加排序那一排最右(clearable 預設開) */}
               <DataTableSortManager
                 columns={baseColumns}
                 sorting={sorting}
                 onSortingChange={setSorting}
-                onReset={() => setSorting([])}
                 onClose={() => setSortOpen(false)}
               />
             </PopoverContent>
@@ -1369,10 +1382,10 @@ export const WithBulkActions: Story = {
             <PopoverTrigger asChild>
               <Button variant="text" size="sm" iconOnly startIcon={Eye} aria-label="欄位顯示" />
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-72 p-0">
+            <PopoverContent align="end" className="p-0">
               {/* Issue 3(2026-05-10):從 inline 149-line panel 改用 SSOT primitive
-                  `<DataTableColumnVisibilityPanel>`(全 feature flag opt-in:search +
-                  reset + DnD reorder + lock)。SKU 永遠鎖在第一位 = `lockedIds=['sku']`。 */}
+                  `<DataTableColumnVisibilityPanel>`(搜尋 + DnD reorder 是固定零件、恆在;恢復預設給 defaultVisibility 才有;
+                  columnOrder / onColumnOrderChange 必填)。SKU 永遠鎖在第一位 = `lockedIds=['sku']`。 */}
               <DataTableColumnVisibilityPanel
                 columns={baseColumns.map((c) => ({
                   id: ((c as any).accessorKey ?? (c as any).id) as string,
@@ -1383,8 +1396,7 @@ export const WithBulkActions: Story = {
                 columnOrder={columnOrder}
                 onColumnOrderChange={setColumnOrder}
                 lockedIds={['sku']}
-                searchable
-                resettable
+                defaultVisibility={PRODUCT_DEFAULT_ALL_VISIBLE}
               />
             </PopoverContent>
           </Popover>
@@ -1399,7 +1411,7 @@ export const WithBulkActions: Story = {
           <DataTable
             columns={baseColumns}
             data={filteredData}
-            height="100%"
+            maxHeight="100%"
             selectable
             selection={selection}
             onSelectionChange={setSelection}
@@ -1502,7 +1514,7 @@ export const WithBulkActions: Story = {
 export const SelectionKeyboardAndShift: Story = {
   name: '範圍選取與鍵盤',
   render: () => {
-    const [selection, setSelection] = React.useState<string[]>([])
+    const [selection, setSelection] = React.useState<DataTableSelection>({ mode: 'include', ids: [] })
     const data = generateLargeData(15)
     return (
       <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-4xl">
@@ -1514,10 +1526,10 @@ export const SelectionKeyboardAndShift: Story = {
         <DataTable
           columns={baseColumns}
           data={data}
-          height="400px"
+          maxHeight={400}
           selectable
           selection={selection}
-          onSelectionChange={(s) => setSelection(s.mode === 'include' ? s.ids : [])}
+          onSelectionChange={setSelection}
           getRowId={(row) => row.sku}
         />
       </div>
@@ -1529,7 +1541,7 @@ export const SelectionKeyboardAndShift: Story = {
 export const SelectionSingleMode: Story = {
   name: '單選模式',
   render: () => {
-    const [selection, setSelection] = React.useState<string[]>([])
+    const [selection, setSelection] = React.useState<DataTableSelection>({ mode: 'include', ids: [] })
     return (
       <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-4xl">
         <p className="text-caption text-fg-muted">
@@ -1540,10 +1552,10 @@ export const SelectionSingleMode: Story = {
         <DataTable
           columns={baseColumns}
           data={sampleData}
-          height="auto"
+          maxHeight="none"
           selectable="single"
           selection={selection}
-          onSelectionChange={(s) => setSelection(s.mode === 'include' ? s.ids : [])}
+          onSelectionChange={setSelection}
           getRowId={(row) => row.sku}
         />
       </div>
@@ -1555,7 +1567,7 @@ export const SelectionSingleMode: Story = {
 export const SelectionDisabledRows: Story = {
   name: '不可選取的列',
   render: () => {
-    const [selection, setSelection] = React.useState<string[]>([])
+    const [selection, setSelection] = React.useState<DataTableSelection>({ mode: 'include', ids: [] })
     return (
       <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-4xl">
         <p className="text-caption text-fg-muted">
@@ -1564,10 +1576,10 @@ export const SelectionDisabledRows: Story = {
         <DataTable
           columns={baseColumns}
           data={sampleData}
-          height="auto"
+          maxHeight="none"
           selectable
           selection={selection}
-          onSelectionChange={(s) => setSelection(s.mode === 'include' ? s.ids : [])}
+          onSelectionChange={setSelection}
           getRowId={(row) => row.sku}
           isRowSelectable={(row) => row.stock !== 'Out of stock'}
         />
@@ -1640,6 +1652,9 @@ const FILTER_CHILD_PICKER_COLUMNS = [
 const FILTER_PANEL_ENGLISH_LABELS: Partial<DataTableFilterPanelLabels> = {
   title: 'Filters',
   resetToDefault: 'Reset to default',
+  resetToDefaultDone: 'Default filters restored',
+  clearAll: 'Clear all',
+  clearAllDone: 'All filters cleared',
   close: 'Close',
   where: 'Where',
   and: 'And',
@@ -1715,18 +1730,20 @@ const FILTER_PANEL_ENGLISH_LABELS: Partial<DataTableFilterPanelLabels> = {
 }
 
 /* ── 進階篩選 — 空狀態 ── */
+// 本段與下方兩則把面板放在 `<Popover>` 根裡(不開浮層):面板標題列的 × 恆渲染、關閉走 PopoverClose,要有 Popover 才能渲染(data-table-filter-panel.tsx)。
+// 2026-11-10 前這幾格沒傳 onClose 就沒有 ×,跟產品裡的面板長相不同(n7 第七節 3、M23(f))。
 export const FilterPanelEmpty: Story = {
   name: '進階篩選 — 空狀態',
   render: () => {
     const [value, setValue] = React.useState<FilterTree>(() => createEmptyFilterTree('flat'))
     return (
       <div className="w-full max-w-[680px]">
-        <DataTableFilterPanel
+        <Popover><DataTableFilterPanel
           columns={[...FILTER_COLUMNS]}
           value={value}
           onChange={setValue}
 
-        />
+        /></Popover>
       </div>
     )
   },
@@ -1815,28 +1832,150 @@ export const FilterPanelStates: Story = {
     return (
       <ExampleStack>
         <ExampleSection title="已填條件" className={FILTER_SECTION_WIDTH}>
-          <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={flat} onChange={setFlat} />
+          <Popover><DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={flat} onChange={setFlat} /></Popover>
         </ExampleSection>
 
         <ExampleSection title="巢狀群組" className={FILTER_SECTION_WIDTH}>
-          <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={nested} onChange={setNested} />
+          <Popover><DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={nested} onChange={setNested} /></Popover>
         </ExampleSection>
 
         <ExampleSection title="相對時間" className={FILTER_SECTION_WIDTH} description="時間下拉分 過去 / 目前 / 未來 三組（Linear/Notion 共識）。">
-          <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={relative} onChange={setRelative} />
+          <Popover><DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={relative} onChange={setRelative} /></Popover>
         </ExampleSection>
 
-        <ExampleSection title="已改動" className={FILTER_SECTION_WIDTH} description="值偏離 default 時 header 出現 ↻ — 點擊 reset 回 default。">
-          <DataTableFilterPanel
+        <ExampleSection title="已改動" className={FILTER_SECTION_WIDTH} description="商品後台存的預設篩選是「類別 = Electronics」,這次改成 Furniture:標題列出現「恢復預設」,按下回到存的那一份;加篩選那一排最右的「清除全部」則是清掉全部條件。">
+          <Popover><DataTableFilterPanel
             columns={[...FILTER_COLUMNS]}
             value={modified}
             defaultValue={modifiedInitial}
             onChange={setModified}
-          />
+          /></Popover>
         </ExampleSection>
 
         <ExampleSection title="長標籤溢出" className={FILTER_SECTION_WIDTH} description="產品分類名稱很長(製造業 ERP 常見)時,已選的多個標籤超出單行寬度,Combobox 自動收斂為 +N 摘要。">
-          <DataTableFilterPanel columns={[...longLabelColumns]} value={longLabel} onChange={setLongLabel} />
+          <Popover><DataTableFilterPanel columns={[...longLabelColumns]} value={longLabel} onChange={setLongLabel} /></Popover>
+        </ExampleSection>
+      </ExampleStack>
+    )
+  },
+}
+
+/* ── 排序面板 — 各種狀態(2026-11-11)──
+ * 「恢復預設」與「清除全部」是兩件事(user 2026-11-11):前者回到產品存的排序(defaultSorting,與目前不同才出現),後者清掉全部排序(clearable,預設開、有排序才出現)。
+ * 規格:data-table.spec.md L4「Header 恢復預設 / 清除全部」;閘 scripts/data-table-panel-reset-clear-invariant.mjs。
+ */
+type SavedFilterIssue = { key: string; summary: string; priority: string; status: string; dueDate: string; updatedAt: string }
+const issueCol = createColumnHelper<SavedFilterIssue>()
+const ISSUE_SORT_COLUMNS = [
+  issueCol.accessor('key', { header: '鍵值' }),
+  issueCol.accessor('summary', { header: '摘要' }),
+  issueCol.accessor('priority', { header: '優先級' }),
+  issueCol.accessor('status', { header: '狀態' }),
+  issueCol.accessor('dueDate', { header: '到期日' }),
+  issueCol.accessor('updatedAt', { header: '更新時間' }),
+]
+/** Jira 篩選器「我的未解決問題」存檔時的排序:優先級 降冪 → 到期日 升冪 */
+const SAVED_FILTER_SORTING: SortingState = [{ id: 'priority', desc: true }, { id: 'dueDate', desc: false }]
+const SORT_SECTION_WIDTH = 'w-full max-w-[480px]'
+
+export const SortPanelStates: Story = {
+  name: '排序面板 — 各種狀態',
+  render: function Render() {
+    const [saved, setSaved] = React.useState<SortingState>([{ id: 'updatedAt', desc: true }, { id: 'priority', desc: true }])
+    const [plain, setPlain] = React.useState<SortingState>([{ id: 'dueDate', desc: false }])
+    const [noClear, setNoClear] = React.useState<SortingState>([{ id: 'priority', desc: true }])
+    return (
+      <ExampleStack>
+        <ExampleSection
+          title="產品存了預設排序"
+          className={SORT_SECTION_WIDTH}
+          description="Jira 篩選器「我的未解決問題」存檔時排的是 優先級 降冪 → 到期日 升冪,這次改成先看最近更新的。標題列的「恢復預設」回到存檔那一份;「清除全部」是不排序。"
+        >
+          <Popover><DataTableSortManager columns={ISSUE_SORT_COLUMNS} sorting={saved} onSortingChange={setSaved} defaultSorting={SAVED_FILTER_SORTING} /></Popover>
+        </ExampleSection>
+        <ExampleSection title="沒有預設排序" className={SORT_SECTION_WIDTH} description="產品沒有存排序(不傳 defaultSorting):標題列沒有「恢復預設」,只剩加排序那一排最右的「清除全部」。">
+          <Popover><DataTableSortManager columns={ISSUE_SORT_COLUMNS} sorting={plain} onSortingChange={setPlain} /></Popover>
+        </ExampleSection>
+        <ExampleSection title="不提供清除全部" className={SORT_SECTION_WIDTH} description="產品決定不給一鍵清除(clearable={false}):每一列的刪除鈕照舊可以逐條拿掉。">
+          <Popover><DataTableSortManager columns={ISSUE_SORT_COLUMNS} sorting={noClear} onSortingChange={setNoClear} clearable={false} /></Popover>
+        </ExampleSection>
+      </ExampleStack>
+    )
+  },
+}
+
+/* ── 欄位顯示面板 — 各種狀態(2026-11-15)──
+ * 「恢復預設」= 還原這個面板改得動的全部:顯示 / 隱藏回到 defaultVisibility、順序回到 defaultColumnOrder(沒傳 = columns 定義順序,
+ * 鎖定欄排最前);與目前不同才出現、兩個預設都不傳就沒有,跟排序 / 篩選面板同一條。搜尋框與拖曳把手是面板的固定零件
+ * (2026-11-15 起恆在、不靠參數;user 同日留言問句:「為何這個範例沒有搜尋框也沒有 drag?我們本來的元件不是有嗎？」、
+ * 「“是我寫範例時漏接了”為何可以漏接？這幾個面板不都是有很多地方是固定設計的「元件」嗎」);三個狀態都接必填的
+ * columnOrder + onColumnOrderChange,與產品工具列那則同一組 lockedIds。
+ * 規格:data-table.spec.md L4「Header 恢復預設 / 清除全部」;閘 scripts/data-table-panel-reset-clear-invariant.mjs。
+ */
+const ISSUE_VISIBILITY_COLUMNS = ISSUE_SORT_COLUMNS.map((c) => ({ id: c.accessorKey, label: typeof c.header === 'string' ? c.header : c.accessorKey }))
+/** 欄位定義順序 = 這個專案的預設順序(不傳 defaultColumnOrder 時「恢復預設」回到這個順序) */
+const ISSUE_COLUMN_IDS = ISSUE_VISIBILITY_COLUMNS.map((c) => c.id)
+/** 「鍵值」永遠在第一欄、不能收起也不能拖(同產品工具列那則的 SKU) */
+const ISSUE_LOCKED_COLUMNS = ['key']
+/** Jira 專案管理員為議題清單設的預設欄位:「更新時間」預設不顯示(寫法同 visibility:沒寫 = 顯示) */
+const ISSUE_DEFAULT_VISIBILITY: Record<string, boolean> = { updatedAt: false }
+
+export const ColumnVisibilityPanelStates: Story = {
+  name: '欄位顯示面板 — 各種狀態',
+  render: function Render() {
+    const [changed, setChanged] = React.useState<Record<string, boolean>>({ updatedAt: true, priority: false })
+    // 「到期日」被拖到「摘要」前面
+    const [changedOrder, setChangedOrder] = React.useState<string[]>(['key', 'dueDate', 'summary', 'priority', 'status', 'updatedAt'])
+    const [same, setSame] = React.useState<Record<string, boolean>>({ updatedAt: false })
+    const [sameOrder, setSameOrder] = React.useState<string[]>(ISSUE_COLUMN_IDS)
+    const [noDefault, setNoDefault] = React.useState<Record<string, boolean>>({ dueDate: false, updatedAt: false })
+    // 「狀態」被拖到「摘要」前面
+    const [noDefaultOrder, setNoDefaultOrder] = React.useState<string[]>(['key', 'status', 'summary', 'priority', 'dueDate', 'updatedAt'])
+    return (
+      <ExampleStack>
+        <ExampleSection
+          title="產品設了預設欄位"
+          description="Jira 專案管理員設的議題清單預設不顯示「更新時間」、欄位照原本的排法;這次打開了「更新時間」、收起了「優先級」,還把「到期日」拖到「摘要」前面。標題列出現「恢復預設」,按下連順序一起回到管理員設的那一份:「更新時間」收起、「優先級」顯示、「到期日」回到「狀態」後面 —— 不是全部顯示,也不會只回顯示、留下拖過的順序。"
+        >
+          <Popover>
+            <DataTableColumnVisibilityPanel
+              className="w-72"
+              columns={ISSUE_VISIBILITY_COLUMNS}
+              visibility={changed}
+              onVisibilityChange={setChanged}
+              columnOrder={changedOrder}
+              onColumnOrderChange={setChangedOrder}
+              lockedIds={ISSUE_LOCKED_COLUMNS}
+              defaultVisibility={ISSUE_DEFAULT_VISIBILITY}
+            />
+          </Popover>
+        </ExampleSection>
+        <ExampleSection title="跟預設一樣" description="同一份預設、這次顯示和順序都沒有改過:按下去不會改變任何東西,所以標題列沒有「恢復預設」。拖一欄或切一欄,它就會出現。">
+          <Popover>
+            <DataTableColumnVisibilityPanel
+              className="w-72"
+              columns={ISSUE_VISIBILITY_COLUMNS}
+              visibility={same}
+              onVisibilityChange={setSame}
+              columnOrder={sameOrder}
+              onColumnOrderChange={setSameOrder}
+              lockedIds={ISSUE_LOCKED_COLUMNS}
+              defaultVisibility={ISSUE_DEFAULT_VISIBILITY}
+            />
+          </Popover>
+        </ExampleSection>
+        <ExampleSection title="沒有預設欄位" description="產品沒有設預設欄位(不傳 defaultVisibility,也不傳 defaultColumnOrder):收起了「到期日」「更新時間」、把「狀態」拖到「摘要」前面,標題列也沒有「恢復預設」;底部「顯示全部」照舊可以一次打開。">
+          <Popover>
+            <DataTableColumnVisibilityPanel
+              className="w-72"
+              columns={ISSUE_VISIBILITY_COLUMNS}
+              visibility={noDefault}
+              onVisibilityChange={setNoDefault}
+              columnOrder={noDefaultOrder}
+              onColumnOrderChange={setNoDefaultOrder}
+              lockedIds={ISSUE_LOCKED_COLUMNS}
+            />
+          </Popover>
         </ExampleSection>
       </ExampleStack>
     )
@@ -1891,60 +2030,60 @@ const FilterPanelLabelsAndLimitHarness = () => {
   return (
     <ExampleStack>
       <ExampleSection data-testid="filter-label-child-pickers" title="English child-picker labels">
-        <DataTableFilterPanel
+        <Popover><DataTableFilterPanel
           columns={[...FILTER_CHILD_PICKER_COLUMNS]}
           value={childPickerLabels}
           onChange={setChildPickerLabels}
           maxConditions={2}
           labels={FILTER_PANEL_ENGLISH_LABELS}
-        />
+        /></Popover>
       </ExampleSection>
 
       <ExampleSection data-testid="filter-limit-flat" title="English labels + flat cap">
-        <DataTableFilterPanel
+        <Popover><DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={flat}
           onChange={setFlat}
           maxConditions={2}
           labels={FILTER_PANEL_ENGLISH_LABELS}
-        />
+        /></Popover>
       </ExampleSection>
 
       <ExampleSection data-testid="filter-limit-nested-condition" title="Nested condition cap">
-        <DataTableFilterPanel
+        <Popover><DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={nestedCondition}
           onChange={setNestedCondition}
           maxConditions={2}
           labels={FILTER_PANEL_ENGLISH_LABELS}
-        />
+        /></Popover>
       </ExampleSection>
 
       <ExampleSection data-testid="filter-limit-nested-group" title="Nested group cap">
-        <DataTableFilterPanel
+        <Popover><DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={nestedGroup}
           onChange={setNestedGroup}
           maxConditions={2}
           labels={FILTER_PANEL_ENGLISH_LABELS}
-        />
+        /></Popover>
       </ExampleSection>
 
       <ExampleSection data-testid="filter-limit-mount-zero" title="Initial mount at zero capacity">
-        <DataTableFilterPanel
+        <Popover><DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={mountCapZero}
           onChange={setMountCapZero}
           maxConditions={0}
           labels={FILTER_PANEL_ENGLISH_LABELS}
-        />
+        /></Popover>
       </ExampleSection>
 
       <ExampleSection data-testid="filter-limit-prefill" title="Prefill at capacity">
         <p data-testid="prefill-consumed" className="text-caption text-fg-secondary mb-[var(--layout-space-tight)]">
           Prefill consumed: {prefillConsumed ? 'yes' : 'no'}
         </p>
-        <DataTableFilterPanel
+        <Popover><DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={prefillValue}
           onChange={setPrefillValue}
@@ -1955,7 +2094,7 @@ const FilterPanelLabelsAndLimitHarness = () => {
           }}
           maxConditions={1}
           labels={FILTER_PANEL_ENGLISH_LABELS}
-        />
+        /></Popover>
       </ExampleSection>
     </ExampleStack>
   )
@@ -2064,7 +2203,7 @@ export const RowDragInteractive: Story = {
         <DataTable
           columns={columnsWithPrice}
           data={list}
-          height="auto"
+          maxHeight="none"
           getRowId={(row) => row.sku}
           pinnedLeftColumns={['sku']}
           pinnedRightColumns={['updatedAt']}
@@ -2113,7 +2252,7 @@ export const RowDragWithVirtualization: Story = {
         <DataTable
           columns={baseColumns}
           data={list}
-          height="500px"
+          maxHeight={500}
           getRowId={(row) => row.sku}
           enableRowDrag
           onRowReorder={handleReorder}
@@ -2277,6 +2416,9 @@ export const RoadmapAllInOne: Story = {
     const columns = useRoadmapColumns()
     const [search, setSearch] = React.useState('')
     const [selection, setSelection] = React.useState<string[]>([])
+    // DataTable 收 DataTableSelection(跟 onSelectionChange 同型);這張表只用 include(沒有「選取全部 N 筆」),
+    // ids 存在 state 給 BulkActionBar 用,傳給表格的物件用 useMemo 固定身分(每次 render 現做新物件 = 列快取每次失效)
+    const tableSelection = React.useMemo<DataTableSelection>(() => ({ mode: 'include', ids: selection }), [selection])
     const [columnVisibility, setColumnVisibility] = React.useState<Record<string, boolean>>({})
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [filterTree, setFilterTree] = React.useState<FilterTree>(() => createEmptyFilterTree('flat'))
@@ -2365,7 +2507,7 @@ export const RoadmapAllInOne: Story = {
             <PopoverTrigger asChild>
               <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" pressed={isFilterTreeActive(filterTree)} />
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-auto p-0">
+            <PopoverContent align="end" width="hug" className="p-0">
               <DataTableFilterPanel
                 columns={columns}
                 value={filterTree}
@@ -2378,12 +2520,12 @@ export const RoadmapAllInOne: Story = {
             <PopoverTrigger asChild>
               <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" pressed={sorting.length > 0} />
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-auto p-0">
+            <PopoverContent align="end" width="hug" className="p-0">
+              {/* 沒有存預設排序 → 不傳 defaultSorting;「清除全部」在加排序那一排最右 */}
               <DataTableSortManager
                 columns={columns}
                 sorting={sorting}
                 onSortingChange={setSorting}
-                onReset={() => setSorting([])}
                 onClose={() => setSortOpen(false)}
               />
             </PopoverContent>
@@ -2392,7 +2534,7 @@ export const RoadmapAllInOne: Story = {
             <PopoverTrigger asChild>
               <Button variant="text" size="sm" iconOnly startIcon={Eye} aria-label="欄位顯示" />
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-72 p-0">
+            <PopoverContent align="end" className="p-0">
               {/* Issue 3(2026-05-10)+ F1 fix(2026-05-10):primitive
                   `<DataTableColumnVisibilityPanel>` + columnOrder/onColumnOrderChange wired
                   →  panel 內啟 drag handle(per user 抓:為什麼還會有偏移?為什麼沒 drag?(轉述))。
@@ -2408,8 +2550,7 @@ export const RoadmapAllInOne: Story = {
                 onVisibilityChange={setColumnVisibility}
                 columnOrder={columnOrder.length > 0 ? columnOrder : columns.map((c) => ((c as any).accessorKey ?? (c as any).id) as string)}
                 onColumnOrderChange={setColumnOrder}
-                searchable
-                resettable
+                defaultVisibility={PRODUCT_DEFAULT_ALL_VISIBLE}
               />
             </PopoverContent>
           </Popover>
@@ -2422,10 +2563,10 @@ export const RoadmapAllInOne: Story = {
           <DataTable
             columns={columns}
             data={filteredData}
-            height="100%"
+            maxHeight="100%"
             inlineEdit
             selectable
-            selection={selection}
+            selection={tableSelection}
             onSelectionChange={(s) => setSelection(s.mode === 'include' ? s.ids : [])}
             columnVisibility={columnVisibility}
             onColumnVisibilityChange={setColumnVisibility}
@@ -2571,7 +2712,7 @@ export const RoadmapPerfBudget: Story = {
         <DataTable
           columns={columns}
           data={data}
-          height="600px"
+          maxHeight={600}
           inlineEdit
           getRowId={(row) => row.id}
           onCellCommit={handleCommit}
@@ -2604,4 +2745,47 @@ export const WithPagination: Story = {
       </ExampleStack>
     </div>
   ),
+}
+
+// ── 三個狀態面板的標題列右側按鈕位(測試;閘 scripts/overlay-header-actions-invariant.mjs)──
+// 面板放在 Popover 根(不開浮層)裡、照產品用法傳 onClose,並給一份與目前不同的預設(defaultSorting / defaultValue),讓「恢復預設 + 分隔線 + ×」三者都在;
+// 欄位顯示面板的標題列 = PopoverHeader + actions,與 overlay-surface「標題列右側按鈕位(測試)」的 popover-header 那格同一條路徑,不在這裡重複
+//(它的 footer 一展開就讓 overlay-footer-gutter 閘假紅:列是無 role 的 div、閘認不得,改回 body 左緣比 —— 已記 found.md)。
+// 規則 = overlay-surface.spec.md「SurfaceHeader」右側按鈕位(分隔線由 SurfaceHeader 放,兩側各 12)。
+export const HeaderActionsFixture: Story = {
+  name: '面板標題列右側按鈕位',
+  tags: ['test-only'],
+  render: function Render() {
+    const [sorting, setSorting] = React.useState<SortingState>([{ id: 'name', desc: false }])
+    const [tree, setTree] = React.useState<FilterTree>(() => ({
+      mode: 'flat', conjunction: 'and',
+      children: [{ kind: 'cond', id: 'c1', field: 'name', op: 'contains', value: 'phone' }],
+    }))
+    const shell = 'overflow-hidden rounded-md border border-border bg-surface-raised'
+    return (
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <div data-case="sort" data-expect="actions,dismiss" className={`w-[480px] ${shell}`}>
+          <Popover>
+            <DataTableSortManager columns={[...FILTER_COLUMNS]} sorting={sorting} onSortingChange={setSorting} defaultSorting={[{ id: 'updatedAt', desc: true }]} onClose={() => {}} />
+          </Popover>
+        </div>
+        <div data-case="filter" data-expect="actions,dismiss" className={`w-[640px] ${shell}`}>
+          <Popover>
+            <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={tree} onChange={setTree} defaultValue={createEmptyFilterTree('flat')} onClose={() => {}} />
+          </Popover>
+        </div>
+        {/* 沒傳 onClose:× 照樣在(M23(f);2026-11-10 前以 onClose 有無當 × 的渲染閘,這兩格少了分隔線與 ×) */}
+        <div data-case="sort-no-onclose" data-expect="actions,dismiss" className={`w-[480px] ${shell}`}>
+          <Popover>
+            <DataTableSortManager columns={[...FILTER_COLUMNS]} sorting={sorting} onSortingChange={setSorting} defaultSorting={[{ id: 'updatedAt', desc: true }]} />
+          </Popover>
+        </div>
+        <div data-case="filter-no-onclose" data-expect="actions,dismiss" className={`w-[640px] ${shell}`}>
+          <Popover>
+            <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={tree} onChange={setTree} defaultValue={createEmptyFilterTree('flat')} />
+          </Popover>
+        </div>
+      </div>
+    )
+  },
 }

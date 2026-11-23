@@ -101,7 +101,7 @@ export const AVATAR_SIZE = {
  * 回傳 uniform prefix slot 的 inline style(CSS variable form)。
  *
  * 用法:Row-primitive 頂層容器(例如 `<SidebarProvider uniformPrefix>` 的 wrapper)
- * 把這個 style 套在 `style` prop 上(預先放在 `--mixed-prefix-slot` 候選位置,
+ * 把這個 style 套在 `style` prop 上(預先放在 `--item-mixed-prefix-slot` 候選位置,
  * 由外層 CSS `:has()` 條件化套到 `--item-prefix-slot`),子樹內所有 `<ItemPrefix>` /
  * `<ItemIcon>` / `<ItemAvatar>` 會自動用固定寬槽對齊。
  *

@@ -10,11 +10,11 @@ sizes:
   md:
     px: 32
     when: "預設 — Form + 設定面板 + DataTable cell inline edit;對齊 field-height-md(md density)"
-    world-class: ["Material Slider default", "Polaris RangeSlider", "Ant Slider"]
+    world-class: ["Material Slider default", "Ant Slider"]
   lg:
     px: 36
     when: "Marketing hero 互動 / 高 touch 區;對齊 field-height-lg(md density)"
-    world-class: ["Apple HIG slider touch zone"]
+    world-class: []
 traits:
   - hasSizes
   - hasInteractiveStates
@@ -194,7 +194,7 @@ Slider 不是 button——它是「當前位置指示器」,底色不該動(動�
 |---|---|---|---|
 | **Switch** | `bg-primary` vs `bg-border` 是 on/off 的**最強視覺差異**(thumb 位移與 check icon 只是弱輔助線索,灰階低對比下難辨——見 switch.spec.md「Disabled 用 opacity」)| **顏色是 state 主載體** | **`opacity-disabled`** — 必須保留色彩身分,否則灰階後狀態區辨大幅下降 |
 | **Checkbox** | 勾了有 checkmark,沒勾沒 checkmark——**形狀**決定 state,顏色只是美學 | **形狀(checkmark)** | **灰階 swap**(`bg-disabled`)— 灰色框裡的 checkmark 仍清楚可辨 |
-| **Button** | Primary 色是品牌美學,不是 state | — | **灰階 swap** |
+| **Button** | Primary 色是互動色(外觀),不是 state | — | **灰階 swap** |
 | **Slider** | Range 藍色是「已選長度」的美學視覺,**位置 + 長度是 state**,顏色只是裝飾 | **位置(thumb)+ 長度(range 佔比)** | **灰階 swap** — 灰色 range 跟灰色 thumb 的位置/長度仍然完全可辨 |
 
 ### 論證摘要

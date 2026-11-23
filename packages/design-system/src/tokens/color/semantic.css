@@ -226,7 +226,7 @@
   --on-emphasis:          var(--color-white);
   --on-emphasis-dark:     var(--black-a85);
 
-  /* Brand / Action — 品牌主操作色
+  /* Primary — 互動色(用詞住 color.spec.md「用詞」:互動入口用 --primary;品牌色是另一顆 --brand)
      --primary-text 為 SOP 規定的 5 件套之一，目前無消費者
      （Button 直接用 text-on-emphasis, Tag 用 primitive --color-blue-7） */
   --primary:              var(--color-blue-6);
@@ -236,10 +236,10 @@
   --primary-text:         var(--color-blue-7);
 
   /* Status: Info — 資訊狀態色
-     目前指向 blue（與 primary 同源），但語義獨立——如未來 brand 改色，
+     目前指向 blue（與 primary 同源），但語義獨立——如未來互動色換色，
      primary 跟著改，info 仍維持「資訊=藍」的通用慣例。
      ⚠️ 選取控件(Checkbox/Switch/Radio/Calendar selected)的 checked 藍 = --primary 非 --info:
-     選取是「互動操作的 selected state」隨 brand 走(Material 3 CheckboxTokens
+     選取是「互動操作的 selected state」隨互動色 --primary 走(Material 3 CheckboxTokens
      SelectedContainerColor=Primary / shadcn bg-primary / Ant colorPrimary 同款);
      --info 只給資訊呈報(Alert/Badge/Toast info)。2026-06-12 codify per user 提問 */
   --info:                 var(--color-blue-6);
@@ -284,7 +284,7 @@
      （`--color-{hue}-6` / `-1` / `-7`）。沒有 `--blue` base 或 `--blue-subtle`
      等 token，避免重新引入完整 categorical 層。
 
-     不要混淆為「categorical 復辟」：這是 semantic 互動 token 從 brand color
+     不要混淆為「categorical 復辟」：這是 semantic 互動 token 從互動色 --primary
      擴展到所有作為 bg 的色相，跟 --primary-hover 同邏輯、同層級。
      ───────────────────────────────────────────────────────────────── */
   --blue-hover:           var(--color-blue-5);
@@ -371,7 +371,7 @@
      用於 toggle on / 持續選中 element 的互動回饋。
 
      值與 default family 可能重疊，但語意獨立——未來若 selected
-     視覺需獨立演化（例：改用 brand tint），只需改此組不影響 default。
+     視覺需獨立演化（例：改用互動色淡底 --primary-subtle），只需改此組不影響 default。
 
      命名對齊既有 --inverse-neutral-* 的 compound namespace 模式：
        namespace = neutral-selected（複合）
@@ -436,7 +436,7 @@
 
   /* Chart categorical — 5 色類別標記（Chart 元件消費）
      挑 step-6 確保對 surface-raised 的對比足夠,5 色差異明顯便於區分。
-     chart-1..5 固定到 primitive 而非 semantic（避免未來 brand swap 時 chart 跟著改 → 誤導 data viz）。 */
+     chart-1..5 固定到 primitive 而非 semantic（避免未來互動色換色時 chart 跟著改 → 誤導 data viz）。 */
   --chart-1:              var(--color-blue-6);
   --chart-2:              var(--color-purple-6);
   --chart-3:              var(--color-green-6);

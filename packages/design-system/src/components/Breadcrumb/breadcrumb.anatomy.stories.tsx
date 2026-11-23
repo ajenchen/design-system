@@ -162,7 +162,7 @@ export const ColorMatrix: Story = {
         <Desc>
           Breadcrumb 的色彩決定「你從哪來 / 你在這」的視覺階層——ancestor link 降低飽和度(fg-secondary)讓 current page(foreground)成為焦點。
           BreadcrumbLink 的互動高亮走 <code>--primary-hover</code>(設計準則,與 Tabs / Chip 未選 hover 同 token)；
-          BreadcrumbEllipsis 是 icon button(消費 <code>ItemInlineActionButton</code>),hover 走 neutral <code>--foreground</code> + neutral hover bg,不走 <code>--primary-hover</code>(對齊 inline-action primitive canonical)。
+          BreadcrumbEllipsis 是 icon button(消費 <code>ItemInlineActionButton</code>),hover 走 neutral <code>--fg-secondary</code> + neutral hover bg,不走 <code>--primary-hover</code>(對齊 inline-action primitive canonical)。
         </Desc>
         <div className="overflow-x-auto mb-4">
           <table className="text-caption border-collapse min-w-[640px]">
@@ -200,7 +200,7 @@ export const ColorMatrix: Story = {
               <tr>
                 <Td mono>BreadcrumbEllipsis</Td>
                 <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--fg-muted" size="sm" /><span className="font-mono">--fg-muted</span></span></Td>
-                <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--foreground" size="sm" /><span className="font-mono">--foreground</span> + neutral hover bg</span></Td>
+                <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--fg-secondary" size="sm" /><span className="font-mono">--fg-secondary</span> + neutral hover bg</span></Td>
                 <Td mono>:focus-visible(全域規則,無 class)</Td>
                 <Td mono>aria-label="顯示折疊路徑"</Td>
               </tr>
@@ -344,7 +344,7 @@ export const StateBehavior: Story = {
               <tr>
                 <Td mono>BreadcrumbEllipsis</Td>
                 <Td><TokenCell token="--fg-muted" /></Td>
-                <Td><TokenCell token="--foreground" display="foreground + neutral hover bg" /></Td>
+                <Td><TokenCell token="--fg-secondary" display="fg-secondary + neutral hover bg" /></Td>
                 <Td>—</Td>
                 <Td>✓(button)</Td>
               </tr>

@@ -1030,6 +1030,8 @@ async function main() {
       transport: adapter.contextOutputTransport,
       event,
       message,
+      // Stop:只有 payload 明確 stop_hook_active === false 才讓模型看到(會續一輪);見 provider-hook-output-transport.mjs
+      stopHookActive: typeof input.stop_hook_active === 'boolean' ? input.stop_hook_active : undefined,
     })
     if (formatted) writeBoundedOutput(process.stdout, `${JSON.stringify(formatted)}\n`, 'governance-context')
     else if (adapter.contextOutputTransport === 'stderr') {

@@ -2,13 +2,23 @@
 # Tests for session_start_governance_check.sh
 #
 # Scenarios:
-#   1. healthy project — silent (no reminders)
-#   2. shared AGENTS.md > 600 (soft) — remains silent by noise-reduction policy
-#   3. shared AGENTS.md > 800 (hard) — BLOCKERS fire
-#   4. corrections > 40 (hard) — BLOCKERS fire
-#   5. fire-weighted gap (G7) — surfaces hot hook without test
-#  10. read-only replay cannot rewrite counters or start benchmark fetch
+#   1. healthy project — silent
+#   2. shared AGENTS.md 800 行(剛好在上限)— 安靜
+#   3. shared AGENTS.md 801 行 — BLOCKER
+#   4. corrections 41 筆 — BLOCKER;40 筆 — 安靜
+#   6. hook count 27 — soft prune trigger
+#   7. hook count > hard cap — BLOCKER
+#   8. provider branch namespaces counted together
+#   9. memory sync isolation between provider HOMEs
+#  10. read-only replay cannot rewrite counters
 #  11. neutral writer/reader loop ignores poison in provider-owned logs
+#  12. divergence recovery guidance is delegated and non-destructive
+#  13. provider view group reachability(Check 12)
+#  14. 上次 prune 181 天 — BLOCKER;100 天 — 安靜(Check 2)
+#  15. 靜態:hook 裡沒有「只累加、從不讀」的變數(含合成檔對照組)
+#  16. memory 索引條數(Check 8):上限 +1 → BLOCKER;等於上限 → 不出 BLOCKER(soft 照舊);索引與檔數分開數;
+#      上限讀 contract;量具失效 → 點名「量不到」
+#  (原 Test 5 fire-weighted gap 與 Test 10 的 benchmark fetch 那格,隨 Check 5 / Check 4 刪除而刪除,2026-11-18)
 
 set -u
 
@@ -24,6 +34,7 @@ PASS=0; FAIL=0; FAILED=""
 
 setup_proj() {
   TMP_PROJ=$(mktemp -d)
+  [ -n "${TMP_PROJ:-}" ] && [ -d "$TMP_PROJ" ] || { echo "❌ mktemp -d failed(TMP_PROJ;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
   # 2026-05-08 fix:test isolation — empty memory dir 強制 hook 走 PROJECT_DIR scope,
   # committed repo memory is the only SSOT; isolate it inside the fixture.
   mkdir -p "$TMP_PROJ/.governance-hooks/tests" "$TMP_PROJ/governance/memory"
@@ -74,59 +85,46 @@ else
 fi
 teardown_proj
 
-# Test 2: AGENTS.md > 600 (strong-warn) → reminder remains silent by noise-reduction policy
-echo "Test 2: AGENTS.md strong-warn threshold (601)"
+# Test 2 / 3:Check 1 的邊界兩面 —— 800 行(剛好在上限)安靜、801 行 BLOCKER。
+#   舊的 500 / 600 兩段只寫進不輸出的提醒變數,2026-11-18 刪除;這兩格證明刪的時候沒把 > 800 那段一起刪掉。
+echo "Test 2: AGENTS.md 800 lines (at cap) stays silent"
 setup_proj
-yes '.' | head -650 > "$TMP_PROJ/AGENTS.md"
+yes '.' | head -800 > "$TMP_PROJ/AGENTS.md"
 run_hook
 if [ "$EXIT" = "0" ] && [ -z "$STDOUT_TEXT" ]; then
-  echo "  PASS  Test 2 silent on soft (601 lines, noise reduction 2026-04-26)"; PASS=$((PASS+1))
+  echo "  PASS  Test 2 silent at 800 lines"; PASS=$((PASS+1))
 else
   echo "  FAIL  Test 2 (output: $STDOUT_TEXT)"
   FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 2"
 fi
 teardown_proj
 
-# Test 3: AGENTS.md > 800 (transition cap breach) → BLOCKERS
-echo "Test 3: AGENTS.md transition cap breach (801)"
+echo "Test 3: AGENTS.md 801 lines → BLOCKER"
 setup_proj
-yes '.' | head -850 > "$TMP_PROJ/AGENTS.md"
+yes '.' | head -801 > "$TMP_PROJ/AGENTS.md"
 run_hook
-if [ "$EXIT" = "0" ] && echo "$STDOUT_TEXT" | grep -q "BLOCKER" && echo "$STDOUT_TEXT" | grep -qE "(hard|transition) cap 800 (breached|exceeded)"; then
-  echo "  PASS  Test 3 hard-cap 800 BLOCKER"; PASS=$((PASS+1))
+if [ "$EXIT" = "0" ] && echo "$STDOUT_TEXT" | grep -q "BLOCKER" && echo "$STDOUT_TEXT" | grep -qF "total 801 lines(hard cap 800 breached)"; then
+  echo "  PASS  Test 3 hard-cap 800 BLOCKER at 801 lines"; PASS=$((PASS+1))
 else
   echo "  FAIL  Test 3 (output: $STDOUT_TEXT)"
   FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 3"
 fi
 teardown_proj
 
-# Test 4: corrections > 40 (hard) → BLOCKERS
-echo "Test 4: corrections hard threshold"
+# Test 4:Check 3 的邊界兩面 —— 41 筆 BLOCKER、40 筆安靜(舊的 > 20 soft 段已刪)。
+echo "Test 4: corrections 41 → BLOCKER / 40 → silent"
 setup_proj
-yes '{}' | head -45 > "$GOVERNANCE_TEST_STATE/user-corrections.jsonl"
+yes '{}' | head -41 > "$GOVERNANCE_TEST_STATE/user-corrections.jsonl"
 run_hook
-if [ "$EXIT" = "0" ] && echo "$STDOUT_TEXT" | grep -q "BLOCKER" && echo "$STDOUT_TEXT" | grep -q "HARD THRESHOLD 40"; then
-  echo "  PASS  Test 4 corrections hard BLOCKER"; PASS=$((PASS+1))
+OVER_OUT_4="$STDOUT_TEXT"; OVER_EXIT_4="$EXIT"
+yes '{}' | head -40 > "$GOVERNANCE_TEST_STATE/user-corrections.jsonl"
+run_hook
+if [ "$OVER_EXIT_4" = "0" ] && echo "$OVER_OUT_4" | grep -q "BLOCKER" && echo "$OVER_OUT_4" | grep -qF "41 user-corrections pending(HARD THRESHOLD 40 breached)" \
+  && [ "$EXIT" = "0" ] && [ -z "$STDOUT_TEXT" ]; then
+  echo "  PASS  Test 4 corrections 41 BLOCKER / 40 silent"; PASS=$((PASS+1))
 else
-  echo "  FAIL  Test 4 (output: $STDOUT_TEXT)"
+  echo "  FAIL  Test 4 (41: '${OVER_OUT_4:0:200}'; 40: '${STDOUT_TEXT:0:200}')"
   FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 4"
-fi
-teardown_proj
-
-# Test 5: fire-weighted gap (G7)
-echo "Test 5: fire-weighted gap"
-setup_proj
-# Generate 150 fire entries for hook 'foo'
-for i in $(seq 1 150); do
-  echo '{"hook":"foo.sh"}'
-done > "$GOVERNANCE_TEST_STATE/hook-fires-per-hook.jsonl"
-# foo has no test (tests dir is empty)
-run_hook
-if [ "$EXIT" = "0" ] && [ -z "$STDOUT_TEXT" ]; then
-  echo "  PASS  Test 5 silent on soft fire-weighted gap (noise reduction)"; PASS=$((PASS+1))
-else
-  echo "  FAIL  Test 5 (output: $STDOUT_TEXT)"
-  FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 5"
 fi
 teardown_proj
 
@@ -201,28 +199,25 @@ else
 fi
 teardown_proj
 
-# Test 10: read-only SessionStart must not rewrite tracked counters or launch background fetch.
-echo "Test 10: read-only replay has zero workspace/background writes"
+# Test 10: read-only SessionStart must not rewrite tracked counters.
+#   (原本這格還放了一支假 fetch.sh 驗「不會去抓 benchmark」—— 那是 Check 4 的格,Check 4 已刪,2026-11-18。
+#   任何寫入仍由下面的整樹指紋抓。)
+echo "Test 10: read-only replay has zero workspace writes"
 setup_proj
-mkdir -p "$TMP_PROJ/scripts" "$TMP_PROJ/governance/benchmarks" "$GOVERNANCE_TEST_STATE/benchmarks"
+mkdir -p "$TMP_PROJ/scripts"
 cat > "$TMP_PROJ/scripts/sync-governance-counters.mjs" <<'EOF'
 import { writeFileSync } from 'node:fs'
 if (!process.argv.includes('--check')) writeFileSync('counter-was-rewritten', 'bad\n')
 EOF
-cat > "$TMP_PROJ/governance/benchmarks/fetch.sh" <<'EOF'
-#!/bin/sh
-printf 'bad\n' > benchmark-fetch-ran
-EOF
-chmod +x "$TMP_PROJ/governance/benchmarks/fetch.sh"
 BEFORE_TREE=$(find "$TMP_PROJ" -type f -print0 | sort -z | xargs -0 shasum)
 export GOVERNANCE_READ_ONLY=1
 run_hook
 export GOVERNANCE_READ_ONLY=0
 AFTER_TREE=$(find "$TMP_PROJ" -type f -print0 | sort -z | xargs -0 shasum)
-if [ "$EXIT" = "0" ] && [ "$BEFORE_TREE" = "$AFTER_TREE" ] && [ ! -e "$TMP_PROJ/counter-was-rewritten" ] && [ ! -e "$TMP_PROJ/benchmark-fetch-ran" ]; then
+if [ "$EXIT" = "0" ] && [ "$BEFORE_TREE" = "$AFTER_TREE" ] && [ ! -e "$TMP_PROJ/counter-was-rewritten" ]; then
   echo "  PASS  Test 10 read-only tree fingerprint is exact"; PASS=$((PASS+1))
 else
-  echo "  FAIL  Test 10 (exit=$EXIT,counter=$(test -e "$TMP_PROJ/counter-was-rewritten" && echo yes || echo no),fetch=$(test -e "$TMP_PROJ/benchmark-fetch-ran" && echo yes || echo no))"
+  echo "  FAIL  Test 10 (exit=$EXIT,counter=$(test -e "$TMP_PROJ/counter-was-rewritten" && echo yes || echo no))"
   FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 10"
 fi
 teardown_proj
@@ -308,6 +303,214 @@ else
   FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 13 (fixture source missing)"
 fi
 teardown_proj
+
+# Test 14:Check 2 的邊界兩面 —— 上次 prune commit 在 181 天前 → BLOCKER;100 天前 → 安靜(舊的 > 90 soft 段已刪)。
+#   日期寫進 fixture commit 的 committer date(Check 2 讀 %ct),相對於「現在」推導,不寫死日期(M37 第九種形狀)。
+echo "Test 14: last prune 181 days → BLOCKER / 100 days → silent"
+prune_commit_days_ago() {
+  local ts=$(( $(date +%s) - $1 * 86400 - 60 ))
+  ( cd "$TMP_PROJ" && GIT_AUTHOR_DATE="$ts +0000" GIT_COMMITTER_DATE="$ts +0000" \
+      git -c commit.gpgsign=false -c user.name=test -c user.email=t@t.com \
+      commit --allow-empty -q -m "prune(knowledge-prune fixture): days-ago prune" )
+}
+setup_proj
+prune_commit_days_ago 181
+run_hook
+OVER_OUT_14="$STDOUT_TEXT"; OVER_EXIT_14="$EXIT"
+teardown_proj
+setup_proj
+prune_commit_days_ago 100
+run_hook
+if [ "$OVER_EXIT_14" = "0" ] && echo "$OVER_OUT_14" | grep -q "BLOCKER" \
+  && echo "$OVER_OUT_14" | grep -qF "Last /knowledge-prune was 181 days ago(HARD THRESHOLD 180 breached)" \
+  && [ "$EXIT" = "0" ] && [ -z "$STDOUT_TEXT" ]; then
+  echo "  PASS  Test 14 prune 181d BLOCKER / 100d silent"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 14 (181d: '${OVER_OUT_14:0:200}'; 100d: '${STDOUT_TEXT:0:200}')"
+  FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 14"
+fi
+teardown_proj
+
+# Test 15:hook 裡不得有「只累加、從不讀」的變數(M37④:看起來像保護、其實沒有人看得到)。
+#   2026-11-18 刪掉的舊提醒變數就是這種:Check 1 / 2 / 3 / 4 / 5 / 6 都往它累加,檔尾卻只輸出 BLOCKERS 與 PRUNE_TRIGGERS。
+#   判法:形如 VAR="${VAR}…" 的累加變數,把它自己的累加片段拿掉之後,非註解行裡必須還讀得到 $VAR / ${VAR…}。
+#   對照組:合成檔裡放一個只累加不讀的 DEAD(含 `cond && DEAD="${DEAD}…"` 這種不在行首的寫法)與一個有讀的 GOOD,
+#   判法必須只點名 DEAD;之後拿真的 hook 跑,必須沒有任何名字。
+echo "Test 15: no accumulate-only variables in the hook (static)"
+dead_accumulators() {
+  local file=$1 name code
+  code=$(grep -vE '^[[:space:]]*#' "$file")
+  for name in $(printf '%s\n' "$code" \
+      | grep -oE '[A-Z_][A-Z0-9_]*="\$\{[A-Z_][A-Z0-9_]*\}' \
+      | sed -E 's/^([A-Z0-9_]+)="\$\{([A-Z0-9_]+)\}$/\1 \2/' \
+      | awk '$1 == $2 { print $1 }' | sort -u); do
+    if ! printf '%s\n' "$code" | sed -E "s/${name}=\"\\\$\\{${name}\\}//g" \
+        | grep -qE "\\\$\\{?${name}([^A-Za-z0-9_]|\$)"; then
+      printf '%s\n' "$name"
+    fi
+  done
+}
+setup_proj
+cat > "$TMP_PROJ/accumulator-fixture.sh" <<'EOF'
+#!/bin/bash
+GOOD=""
+DEAD=""
+GOOD="${GOOD}\n- read later"
+DEAD="${DEAD}\n- never read"
+[ -n "${X:-}" ] && DEAD="${DEAD}\n- never read either"
+# a comment that mentions $DEAD does not count as a read
+printf '%b' "$GOOD"
+EOF
+CONTROL_15=$(dead_accumulators "$TMP_PROJ/accumulator-fixture.sh")
+REAL_15=$(dead_accumulators "$HOOK")
+if [ "$CONTROL_15" = "DEAD" ] && [ -z "$REAL_15" ]; then
+  echo "  PASS  Test 15 control names DEAD only; hook has no accumulate-only variable"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 15 (control='${CONTROL_15}' expected 'DEAD'; hook='${REAL_15}' expected empty)"
+  FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 15"
+fi
+teardown_proj
+
+# Test 16:Check 8 數的是 MEMORY.md 的索引條目(和 CI 的 validate-memory-contract.mjs 同一個函式),上限讀 contract.json。
+#   fixture 用真實的 validate-memory-contract.mjs 與 contract.json 原樣副本(腳本以自己所在目錄的上一層當 ROOT)。
+#   上限從 contract.json 讀,不寫死(MAX_16)。各格:
+#   (a) 索引 MAX+1 條、0 個內容檔 → BLOCKER(改前數檔數 = 0,會安靜 —— 這格分得出新舊數法)
+#   (b) 索引 MAX 條 → 沒有 BLOCKER;soft(MAX−2)照舊進 PRUNE_TRIGGERS
+#   (c) 索引 MAX−3 條 → 安靜
+#   (d) 索引 MAX−3 條、MAX+2 個內容檔 → 安靜(改前數檔數會出 BLOCKER —— 這格也分得出新舊數法)
+#   (e) contract 的 maxIndexEntries 改成 10、索引 11 條 → BLOCKER「hard 10」(證明上限是讀 contract 的)
+#   (f) 有 contract、沒有 validator → PRUNE_TRIGGERS 點名「量不到」,不出 BLOCKER(量具失效不當成沒超標)
+echo "Test 16: Check 8 counts MEMORY.md index entries against contract maxIndexEntries"
+REPO_ROOT_16="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
+MAX_16=$(jq -r '.maxIndexEntries' "$REPO_ROOT_16/governance/memory/contract.json")
+write_memory_index() {
+  local i
+  : > "$TMP_PROJ/governance/memory/MEMORY.md"
+  for i in $(seq 1 "$1"); do
+    printf -- '- [Entry %s](entry_%s.md) — fixture\n' "$i" "$i" >> "$TMP_PROJ/governance/memory/MEMORY.md"
+  done
+}
+memory_fixture() {  # $1 = 索引條數;$2 = 要不要放 validator(1/0)
+  mkdir -p "$TMP_PROJ/scripts"
+  cp "$REPO_ROOT_16/governance/memory/contract.json" "$TMP_PROJ/governance/memory/contract.json"
+  [ "$2" = "1" ] && cp "$REPO_ROOT_16/scripts/validate-memory-contract.mjs" "$TMP_PROJ/scripts/validate-memory-contract.mjs"
+  write_memory_index "$1"
+}
+if printf '%s' "$MAX_16" | grep -qE '^[0-9]+$' && [ "$MAX_16" -ge 4 ]; then
+  setup_proj; memory_fixture $((MAX_16 + 1)) 1; run_hook; A_16="$EXIT|$STDOUT_TEXT"; teardown_proj
+  setup_proj; memory_fixture "$MAX_16" 1; run_hook; B_16="$EXIT|$STDOUT_TEXT"; teardown_proj
+  setup_proj; memory_fixture $((MAX_16 - 3)) 1; run_hook; C_16="$EXIT|$STDOUT_TEXT"; teardown_proj
+  setup_proj; memory_fixture $((MAX_16 - 3)) 1
+  for i in $(seq 1 $((MAX_16 + 2))); do : > "$TMP_PROJ/governance/memory/note_${i}.md"; done
+  run_hook; D_16="$EXIT|$STDOUT_TEXT"; teardown_proj
+  setup_proj; memory_fixture 11 1
+  jq '.maxIndexEntries = 10' "$TMP_PROJ/governance/memory/contract.json" > "$TMP_PROJ/contract.tmp" \
+    && mv "$TMP_PROJ/contract.tmp" "$TMP_PROJ/governance/memory/contract.json"
+  run_hook; E_16="$EXIT|$STDOUT_TEXT"; teardown_proj
+  setup_proj; memory_fixture $((MAX_16 + 1)) 0; run_hook; F_16="$EXIT|$STDOUT_TEXT"; teardown_proj
+  CHECK_16=""
+  case "$A_16" in "0|"*BLOCKER*"Memory index entries $((MAX_16 + 1))(hard ${MAX_16} = governance/memory/contract.json maxIndexEntries"*) ;; *) CHECK_16="${CHECK_16} a" ;; esac
+  case "$B_16" in *BLOCKER*) CHECK_16="${CHECK_16} b" ;; "0|"*"Memory index entries ${MAX_16}(soft $((MAX_16 - 2)) trigger"*) ;; *) CHECK_16="${CHECK_16} b" ;; esac
+  [ "$C_16" = "0|" ] || CHECK_16="${CHECK_16} c"
+  [ "$D_16" = "0|" ] || CHECK_16="${CHECK_16} d"
+  case "$E_16" in "0|"*BLOCKER*"Memory index entries 11(hard 10 = "*) ;; *) CHECK_16="${CHECK_16} e" ;; esac
+  case "$F_16" in *BLOCKER*) CHECK_16="${CHECK_16} f" ;; "0|"*"Memory index 量不到"*) ;; *) CHECK_16="${CHECK_16} f" ;; esac
+  if [ -z "$CHECK_16" ]; then
+    echo "  PASS  Test 16 index entries vs contract cap (a)–(f)"; PASS=$((PASS+1))
+  else
+    echo "  FAIL  Test 16 failing cells:${CHECK_16}"
+    echo "    a='${A_16:0:220}'"; echo "    b='${B_16:0:220}'"; echo "    c='${C_16:0:220}'"
+    echo "    d='${D_16:0:220}'"; echo "    e='${E_16:0:220}'"; echo "    f='${F_16:0:220}'"
+    FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 16"
+  fi
+else
+  echo "  FAIL  Test 16 contract maxIndexEntries unreadable or < 4: '${MAX_16}'"
+  FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 16 (contract unreadable)"
+fi
+
+# Test 17:Check 13 主資料夾落後遠端 main(2026-11-21 PROC-H,CG0-BEHIND-CHECK)。origin 用本機 bare repo,不連網。
+#   (a) 沒設 origin → 安靜(Test 1 已涵蓋,這裡再鎖一次);(b) 跟遠端 main 同一個 commit → 安靜;
+#   (c) 遠端多一個本機還沒抓的 commit → FIRST_REPLY 要點名、附 user 要打的那一行;
+#   (d) fetch 之後(物件在本機)→ 說「落後 1 個 commit」;(e) 本機在遠端 main 之上(工作分支)→ Check 13 安靜;
+#   (f) origin 指到不存在的 repo → 印「量不到」,不當成已同步。
+# fixture 不靠 git 的預設分支名(2026-11-21 第五個合回點:CI「Governance hooks(Linux portability)」紅、macOS 綠):
+#   Apple 的 git 由 CommandLineTools 的系統 gitconfig 設 init.defaultBranch=main,上游 git(Ubuntu CI)沒設 = master。
+#   改前 bare origin 沿用預設;master 時 origin 的 HEAD 指向不存在的 master → clone 出來的 other 停在沒有 commit 的 master,
+#   「remote ahead」變成無關的根 commit、push main 被拒(non-fast-forward)→ run_hook 留下的 set -e 讓整支測試在這裡
+#   中途結束,沒有任何 FAIL 字樣。
+#   現在:origin 照 GitHub 的樣子把 HEAD 指到 main、clone 指名 main;整段在預設 master / main 各跑一輪
+#   (GIT_CONFIG_COUNT 追加一組 init.defaultBranch,本輪 setup_proj 的 git init 也照它),兩種預設在 macOS 與 Linux 上都量得到。
+#   每一步另驗 fixture 前提(推上去了沒、遠端是不是剛好多一個 commit),不成立就點名「fixture」,不混成 hook 的紅,
+#   也不讓 set -e 靜默中斷。
+echo "Test 17: Check 13 main folder behind origin/main"
+GIT_17=(-c commit.gpgsign=false -c user.name=test -c user.email=t@t.com)
+CHECK_17=""
+REPORT_17=""
+test17_round() {
+  local db="$1" pin="${GIT_CONFIG_COUNT:-0}" had_count="${GIT_CONFIG_COUNT+1}" saved_count="${GIT_CONFIG_COUNT-}"
+  local fx="" base="" ahead="" a b c d e f
+  export "GIT_CONFIG_KEY_${pin}=init.defaultBranch" "GIT_CONFIG_VALUE_${pin}=${db}" "GIT_CONFIG_COUNT=$((pin + 1))"
+  REMOTE_17=$(mktemp -d)
+  [ -n "${REMOTE_17:-}" ] && [ -d "$REMOTE_17" ] || { echo "❌ mktemp -d failed(REMOTE_17;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
+  git init -q --bare "$REMOTE_17/origin.git" || fx="${fx} init-bare"
+  git -C "$REMOTE_17/origin.git" symbolic-ref HEAD refs/heads/main || fx="${fx} origin-HEAD"
+  setup_proj
+  run_hook; a="$EXIT|$STDOUT_TEXT"
+  git -C "$TMP_PROJ" remote add origin "$REMOTE_17/origin.git" || fx="${fx} remote-add"
+  git -C "$TMP_PROJ" push -q origin HEAD:refs/heads/main 2>/dev/null || fx="${fx} push-base"
+  base=$(git -C "$TMP_PROJ" rev-parse --verify -q 'HEAD^{commit}' 2>/dev/null) || base=""
+  [ -n "$base" ] && [ "$(git -C "$REMOTE_17/origin.git" rev-parse --verify -q refs/heads/main 2>/dev/null)" = "$base" ] \
+    || fx="${fx} origin-main≠HEAD"
+  run_hook; b="$EXIT|$STDOUT_TEXT"
+  git clone -q --branch main "$REMOTE_17/origin.git" "$REMOTE_17/other" 2>/dev/null || fx="${fx} clone"
+  git -C "$REMOTE_17/other" "${GIT_17[@]}" commit -q --allow-empty -m "remote ahead" || fx="${fx} commit-ahead"
+  git -C "$REMOTE_17/other" push -q origin HEAD:refs/heads/main 2>/dev/null || fx="${fx} push-ahead"
+  ahead=$(git -C "$REMOTE_17/origin.git" rev-parse --verify -q refs/heads/main 2>/dev/null) || ahead=""
+  [ -n "$ahead" ] && [ "$ahead" != "$base" ] \
+    && [ "$(git -C "$REMOTE_17/origin.git" rev-parse --verify -q "${ahead}^" 2>/dev/null)" = "$base" ] \
+    || fx="${fx} origin-not-1-ahead"
+  run_hook; c="$EXIT|$STDOUT_TEXT"
+  git -C "$TMP_PROJ" fetch -q origin 2>/dev/null || fx="${fx} fetch"
+  run_hook; d="$EXIT|$STDOUT_TEXT"
+  git -C "$TMP_PROJ" "${GIT_17[@]}" merge -q --ff-only origin/main 2>/dev/null || fx="${fx} ff-merge"
+  git -C "$TMP_PROJ" "${GIT_17[@]}" commit -q --allow-empty -m "local work" || fx="${fx} commit-local"
+  run_hook; e="$EXIT|$STDOUT_TEXT"
+  git -C "$TMP_PROJ" remote set-url origin "$REMOTE_17/does-not-exist.git" || fx="${fx} set-url"
+  run_hook; f="$EXIT|$STDOUT_TEXT"
+  teardown_proj
+  rm -rf "$REMOTE_17"
+  unset "GIT_CONFIG_KEY_${pin}" "GIT_CONFIG_VALUE_${pin}"
+  if [ -n "$had_count" ]; then export GIT_CONFIG_COUNT="$saved_count"; else unset GIT_CONFIG_COUNT; fi
+  local cells=""
+  [ -z "$fx" ] || cells="${cells} fixture(${fx# })"
+  [ "$a" = "0|" ] || cells="${cells} a"
+  [ "$b" = "0|" ] || cells="${cells} b"
+  case "$c" in "0|"*"主資料夾沒有包含 GitHub 最新的 main"*"遠端 main 有本機還沒抓下來的 commit"*"git fetch origin && git switch main && git pull --ff-only"*) ;; *) cells="${cells} c" ;; esac
+  case "$d" in "0|"*"落後 1 個 commit"*"第一則回覆"*) ;; *) cells="${cells} d" ;; esac
+  # (e)(f) 的本機分支跟 origin/main 可能分叉,Check 9 照舊會出它自己的提示;這裡只看 Check 13 的兩種字樣。
+  case "$e" in "0|"*"主資料夾沒有包含"*|"0|"*"量不到"*) cells="${cells} e" ;; "0|"*) ;; *) cells="${cells} e" ;; esac
+  case "$f" in "0|"*"主資料夾沒有包含"*) cells="${cells} f" ;; "0|"*"落後 GitHub main 這次量不到"*) ;; *) cells="${cells} f" ;; esac
+  if [ -n "$cells" ]; then
+    CHECK_17="${CHECK_17} [init.defaultBranch=${db}]${cells}"
+    REPORT_17="${REPORT_17}    [init.defaultBranch=${db}]
+    a='${a:0:200}'
+    b='${b:0:200}'
+    c='${c:0:300}'
+    d='${d:0:300}'
+    e='${e:0:200}'
+    f='${f:0:300}'
+"
+  fi
+}
+test17_round master
+test17_round main
+if [ -z "$CHECK_17" ]; then
+  echo "  PASS  Test 17 behind check (a)–(f),init.defaultBranch = master / main 兩輪"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 17 failing cells:${CHECK_17}"
+  printf '%s' "$REPORT_17"
+  FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 17"
+fi
 
 echo ""
 echo "════ Results: $PASS PASS, $FAIL FAIL ════"

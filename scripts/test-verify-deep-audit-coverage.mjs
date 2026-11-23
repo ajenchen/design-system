@@ -81,8 +81,8 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
 const realHookPlan = loadHookEvidencePlan({ repoRoot: repositoryRoot })
 assert.deepEqual(hookDimensionNumbers(realHookPlan), [
-  1, 4, 11, 13, 18, 21, 29, 30, 31, 34, 35, 37, 39, 47, 52, 53, 54, 56, 57, 58,
-  59, 60, 61, 63, 65, 67, 69, 70, 71, 73, 74, 75, 76, 78, 79, 80, 81, 82, 89,
+  1, 4, 11, 13, 18, 21, 29, 30, 31, 34, 35, 37, 39, 47, 52, 53, 54, 56, 57,
+  59, 60, 61, 63, 65, 67, 69, 70, 71, 73, 74, 76, 78, 79, 80, 81, 82, 89,
 ])
 assert.equal(realHookPlan.hookDimensions.every((record) => record && typeof record === 'object' && Number.isInteger(record.dim)), true)
 

@@ -10,6 +10,7 @@ import {
   CarouselNext,
   CarouselDots,
 } from './carousel'
+import { CITY_PHOTOS, LAPTOP_NAME, LAPTOP_PHOTOS, demoPhoto } from './_carousel-demo'
 import { Button } from '@/design-system/components/Button/button'
 import { AspectRatio } from '@/design-system/components/AspectRatio/aspect-ratio'
 import { Toaster, toast } from '@/design-system/components/Toast/toast'
@@ -26,23 +27,12 @@ export default meta
 
 // ── Real-content data ────────────────────────────────────────────────────────
 
-// 2026-05-16 audit codex Round 6:用真實 photo URL 取代 gradient color block — story 要教 carousel
-// 真實裁切 / 內容裁切 / 視覺層次,gradient 抽象 block 教不到(所以範例一律用真實照片)。
-// Picsum.photos 提供 stable seeded photos(免登入 / 免 API key / 跨環境一致)。
-const heroBanners = [
-  { city: '京都', tagline: '秋日楓紅限定行程', image: 'https://picsum.photos/seed/kyoto/960/360' },
-  { city: '雷克雅維克', tagline: '極光季早鳥 8 折', image: 'https://picsum.photos/seed/reykjavik/960/360' },
-  { city: '里斯本', tagline: '歐洲西岸 7 日自由行', image: 'https://picsum.photos/seed/lisbon/960/360' },
-  { city: '峇里島', tagline: '熱帶度假村 · 含機加酒', image: 'https://picsum.photos/seed/bali/960/360' },
-]
+// 照片三層共用一份(./_carousel-demo.ts:為什麼用真實照片、每張照片的內容、seed 的找法與不寫 /id/<n>/ 的理由都寫在那裡)。
+const heroBanners = CITY_PHOTOS.map((c) => ({ city: c.city, tagline: c.tagline, image: demoPhoto(c.seed, 960, 360) }))
 
-// label = 這張是哪個角度;給讀屏的圖片名稱用(畫面上不再疊手刻的角度標籤膠囊,張數由底下的指示點表達)
-const productImages = [
-  { label: '正面', image: 'https://picsum.photos/seed/headphones-front/480/480' },
-  { label: '側面', image: 'https://picsum.photos/seed/headphones-side/480/480' },
-  { label: '背面', image: 'https://picsum.photos/seed/headphones-back/480/480' },
-  { label: '情境', image: 'https://picsum.photos/seed/headphones-lifestyle/480/480' },
-]
+// 同一台筆電的前四張;label = 這張拍的是什麼,給讀屏的圖片名稱用(畫面上不再疊手刻的角度標籤膠囊,張數由底下的指示點表達)。
+const productImages = LAPTOP_PHOTOS.slice(0, 4).map((p) => ({ label: p.label, image: demoPhoto(p.seed, 480, 480) }))
+const PRODUCT_NAME = LAPTOP_NAME
 
 
 // ── Stories ─────────────────────────────────────────────────────────────────
@@ -61,7 +51,7 @@ export const HomepageHeroBanner = {
             <CarouselItem key={b.city}>
               <div
                 // @layout-space-magic-ok: 主視覺圖上文字離圖邊 32px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)
-                className="relative h-[360px] rounded-lg overflow-hidden flex items-end p-8 bg-cover bg-center"
+                className="relative h-[360px] rounded-md overflow-hidden flex items-end p-8 bg-cover bg-center"
                 style={{ backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.05) 50%, rgba(0,0,0,0.6) 100%), url(${b.image})` }}
               >
                 {/* @layout-space-magic-ok: 主視覺圖上小字 ↔ 城市名 ↔ 標語各 4px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 是各一個 mb-1,同值) */}
@@ -85,7 +75,7 @@ export const HomepageHeroBanner = {
 export const ProductImageGallery = {
   name: '商品圖片輪播',
   parameters: {
-    docs: { description: { story: '單一商品的 4 張角度照,底下的指示點表示共有幾張。適合電商或行銷網站的商品頁;按「加入購物車」會跳一則通知。' } },
+    docs: { description: { story: '單一商品的 4 張照片(使用情境、俯視、左右兩側),底下的指示點表示共有幾張。適合電商或行銷網站的商品頁;按「加入購物車」會跳一則通知。' } },
   },
   render: () => (
     <div className="max-w-[480px]">
@@ -97,8 +87,8 @@ export const ProductImageGallery = {
               <AspectRatio
                 ratio={1}
                 role="img"
-                aria-label={`無線降噪耳機 Pro ${img.label}`}
-                className="relative rounded-lg overflow-hidden bg-cover bg-center"
+                aria-label={`${PRODUCT_NAME} ${img.label}`}
+                className="relative rounded-md overflow-hidden bg-cover bg-center"
                 style={{ backgroundImage: `url(${img.image})` }}
               />
             </CarouselItem>
@@ -110,11 +100,11 @@ export const ProductImageGallery = {
       </Carousel>
       <div className="mt-[var(--layout-space-tight)] flex items-baseline justify-between">
         <div>
-          <div className="text-body font-medium">無線降噪耳機 Pro</div>
-          <div className="text-caption text-fg-muted">NT$ 8,990</div>
+          <div className="text-body font-medium">{PRODUCT_NAME}</div>
+          <div className="text-caption text-fg-muted">NT$ 32,900</div>
         </div>
         {/* 頁面上的主要動作用預設 md(之前 sm 且按了沒反應);按下跳通知 */}
-        <Button variant="primary" onClick={() => toast({ variant: 'success', title: '已加入購物車', description: '無線降噪耳機 Pro × 1' })}>加入購物車</Button>
+        <Button variant="primary" onClick={() => toast({ variant: 'success', title: '已加入購物車', description: `${PRODUCT_NAME} × 1` })}>加入購物車</Button>
       </div>
     </div>
   ),

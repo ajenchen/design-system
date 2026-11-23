@@ -121,8 +121,7 @@ Empty 是 **non-interactive layout primitive**——本身無 ARIA role(讓 cons
 
 世界級對照:
 - **Polaris** `<EmptyState>`:heading 固定渲染成 `<Text variant="headingMd" as="p">`(段落,不是可選 level 的標題),元件本身沒有 `aria-labelledby`([EmptyState.tsx#L120-L125](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/EmptyState/EmptyState.tsx#L120-L125))
-- **Material** `<NoOptions>`(Autocomplete 內):容器自帶 `role="listbox"` + `aria-live="polite"` 通知無結果
-- **Carbon** `<EmptyState>`:無自帶 ARIA,文檔指引 consumer 在父容器設 `aria-describedby`
+- 原列的另外兩家(自帶 live region / 交給父容器)沒有一手來源,2026-11-16 撤回
 
 Empty primitive 不自帶 role；consumer 擁有 table、search region 或 initial-empty 的語境，強加單一 role 會與外層 live-region / describedby contract 衝突。
 
@@ -157,6 +156,7 @@ Empty primitive 不自帶 role；consumer 擁有 table、search region 或 initi
 | 元件 | 消費方式 | Padding 落點 |
 |---|---|---|
 | DataTable | 外層 `<div className="flex-1 flex items-center justify-center py-12">` 包 `<Empty description={emptyState} />`(有框置中) | wrapper div(非 Empty className) |
+| AgentPanel 新對話(DS 元件本身沒有空狀態容器,包層住在範例輔助檔 `stories-helpers/scene/agent-demo.tsx` 的 `DemoConversation`) | 外層 `<div className="flex min-h-0 flex-1 items-center justify-center px-[var(--layout-space-loose)]">` 包 `<Empty icon={<AgentLogo state="attract" size={48} />} title description />`(有框置中:在標頭與輸入框之間的可用範圍正中) | wrapper div(非 Empty className):只給左右 `--layout-space-loose`,上下不給 —— 垂直置中的狀態不套規則 2 / 4 的上下距離(user 2026-11-14 在 A5 成品頁的留言 ②,逐字住 `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 2「適用範圍與量法三點」(3);面板算有框、左右為什麼留著【AI 推導】住 `../AgentPanel/agent-panel.spec.md`「附:空狀態」)。【更正 2026-11-14】2026-11-13(A5)包層補過上 `tight` / 下 `bottom`,已拿掉;再之前包層沒有內距 |
 | SelectMenu | **不再消費 Empty**(2026-09-08):選單訊息列走 `MenuItem message`,由 `CommandEmpty` own(`../SelectMenu/select-menu.spec.md`「Empty state」);spinner-only loading 走 `CommandLoading` 訊息列(列圖示尺寸轉圈) | —(無 Empty) |
 | Select / Combobox / PeoplePicker | 透過 SelectMenu → 同上,不消費 Empty | — |
 
@@ -174,7 +174,7 @@ Empty 是 **pure layout primitive**(排列 icon / title / description / action �
 
 - **無 ColorMatrix**:Empty 自身不帶任何色彩,bg transparent,text color 全部走 semantic token(`text-foreground` title / `text-fg-secondary` description-with-title / `text-fg-muted` 孤身 description / `text-fg-disabled` disabled context)。Avatar icon 的色彩由 consumer 透過 `<Avatar color="...">` 決定,非 Empty 層級 variant。
 - **無 SizeMatrix**:Empty 無 `size` prop,垂直 padding 由 consumer 容器決定(Table `py-12` / Page `py-16`),固定間距不隨 density 變(展示性元件,見本 spec「間距」段)。
-- **無 StateBehavior**:Empty 是非互動展示元件,無 hover / focus / active / selected 互動狀態。CTA button 的互動狀態屬 Button 層級,不屬 Empty。**唯一例外是 disabled context state**(`disabled?: boolean` prop):非互動狀態,但元件支援——disabled 時 title / description 轉 `text-fg-disabled`、icon glyph 轉 fg-disabled(供 FileUpload disabled 等情境消費),不影響既有 consumer(預設 false)。
+- **無 StateBehavior**:Empty 是非互動展示元件,無 hover / focus / active / selected 互動狀態。CTA button 的互動狀態屬 Button 層級,不屬 Empty。**唯一例外是 disabled context state**(`disabled?: boolean` prop):非互動狀態,但元件支援——disabled 時 title / description 轉 `text-fg-disabled`、icon glyph 轉 fg-disabled(供 FileUpload disabled 等情境消費),預設 false —— 停用是外層容器傳進來的情境狀態,Empty 自己沒有理由預設停用【AI 推導 2026-11-16:原文只寫了相容,這句是讀用法推出來的】。
 
 **Inspector**:提供互動切換式 Inspector(右側 Controls 面板切換 icon / title / description / action),讓 consumer 即時查看 Empty 在不同 slot 組合下的呈現——slot 組合(description only → full)是 Empty 唯一的關鍵決策。
 
@@ -196,10 +196,12 @@ Empty 是 **pure layout primitive**(排列 icon / title / description / action �
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `agent-panel.spec.md`
 - `carousel.spec.md`
 - `circular-progress.spec.md`
 - `file-upload.spec.md`
 - `file-viewer.spec.md`
+- `layoutSpace.spec.md`
 - `people-picker.spec.md`
 - `select-menu.spec.md`
 - `skeleton.spec.md`

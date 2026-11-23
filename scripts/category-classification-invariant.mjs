@@ -12,6 +12,15 @@
 //
 // 逃生:`// category-classify-allow: <理由>` 寫在該 unit 的 spec.md 檔首。
 // Run: `node scripts/category-classification-invariant.mjs`(deterministic audit chain)。fail → exit 1。
+//
+// @gate-contract
+//   保證: packages/design-system/src 的 components(含 components/Internal/*)/ patterns / tokens 底下每個單元,資料夾、story 標題前綴、
+//         主 spec frontmatter 的 isInternal 三個分類訊號指同一個 category(主 spec 由 lib/unit-own-spec.mjs 判,兩份以上又沒有同名 = 判不了 → 紅,不猜);
+//         同單元的多個 story 不互相打架;主 story 的 Autodocs 照 category-matrix.json;共用 preview.tsx 的 storySort 照 matrix 的 sidebarOrder 排
+//         (主 spec 寫了 category-classify-allow: 的單元跳過)
+//   紅: 任一條不成立 → 印出單元與哪一條並 exit 1;配對測試把 Alert 標題改成 Patterns、拿掉 Autodocs、對調側欄順序、拿掉 SelectMenu 主 spec 的
+//       isInternal、造一個兩份 spec 都不同名的單元,本閘都必須紅
+//   綠: 全部一致時 exit 0 並印出掃了幾個單元;只讀檔,不讀時間,重複跑結果相同
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join, dirname, basename } from 'node:path'

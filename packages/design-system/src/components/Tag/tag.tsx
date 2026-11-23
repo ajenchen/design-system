@@ -27,7 +27,7 @@ function getMeasureCtx() {
 }
 
 /**
- * Tag 盒高(px)。CSS 側住所是 `--tag-height-*`(tokens/uiSize/uiSize.css),兩者必須相等 ——
+ * Tag 盒高(px)。CSS 側住所是 `--tag-height-*`(本資料夾 tag.css),兩者必須相等 —— 靜態鎖 `scripts/token-twin-invariant.mjs`,
  * 閘 `scripts/tag-field-vertical-inset.mjs` I7 量實際 rect 高度對齊這裡。消費者:tagMeta.sizes、Combobox(chevron 鎖第一行的高度)。
  */
 export const TAG_HEIGHT_PX = { sm: 20, md: 24, lg: 24 } as const
@@ -46,8 +46,9 @@ const tagVariants = cva(
         ...CAT_SUBTLE,
       },
       size: {
-        // 高度走 utility bridge h-tag-*(= --tag-height-*,tokens/uiSize/uiSize.css @theme inline;token-system.spec.md 規則 3,
-        // 同 Field 的 h-field-* / Tabs 的 h-tab-* idiom)。Tag 盒高唯一住所 = 該 token;JS 側 = TAG_HEIGHT_PX。
+        // 高度走 utility bridge h-tag-*(= --tag-height-*,本資料夾 tag.css @theme inline;token-system.spec.md 規則 3,
+        // 同 Field 的 h-field-* idiom;分類表登記 product: no,轉接名只給 DS 內部這裡用,規則見 token-system.spec.md「擺放」)。
+        // Tag 盒高唯一住所 = 該 token;JS 側 = TAG_HEIGHT_PX。
         sm: "h-tag-sm px-1 text-caption font-medium",
         md: "h-tag-md px-1 text-body font-normal",
         lg: "h-tag-lg px-1 text-body font-normal",
@@ -80,16 +81,14 @@ export interface TagProps
   onRemove?: () => void
   /** remove 按鈕的 aria-label 目標名(a11y)。children 為非字串 ReactNode 時建議傳,否則 SR 讀不出移除哪個 tag。預設取 string children。對齊 FileUpload `removeAriaLabel`(同「移除集合項目」場景 + DS `<動作>AriaLabel` 命名慣例)。 */
   removeAriaLabel?: string
-  /** @deprecated 2026-07-17 改名為 `removeAriaLabel`(對齊 FileUpload + onRemove callback 語意;dismiss 保留給 Alert/Notice/Toast「通知被忽略」)。舊名過渡一版後移除。 */
-  dismissLabel?: string
   /** 深底模式（step-6 背景 + on-emphasis 配對前景;亮色 hue yellow/amber/orange/lime 用深字 --on-emphasis-dark,green 白字例外） */
   solid?: boolean
   /**
    * 2026-05-15 Q3 真 SSOT fix(per user 指出同空間兩判斷點、要求不要冰山一角):
    * Tag 寬度由 parent constrain,不套預設 max-w-40(160px)。用於 cell-as-input narrow cell
    * (< 160px)時 Tag fit cell 寬度 + truncate ellipsis,而非 160px 後被 cell `overflow-hidden`
-   * 硬切。對齊「同 cell width → 同 overflow 判斷」SSOT。Default false 保 backward compat
-   * (wrap layout / pill rail 等仍受 160px 保護)。
+   * 硬切。對齊「同 cell width → 同 overflow 判斷」SSOT。預設 false:wrap layout / pill rail 這類
+   * 寬度不由格子決定的地方,單顆 Tag 最寬 160px(太長的標籤不撐開整排)。
    */
   unbounded?: boolean
 }
@@ -131,10 +130,11 @@ function TagDismiss({ onRemove, label, solid, color }: { onRemove: () => void; l
       onClick={(e) => { e.stopPropagation(); onRemove() }}
       data-collection-remove
       aria-label={label ? `移除 ${label}` : '移除'}
-      style={solidColors ? ({ '--dismiss-hover': solidColors.hover, '--dismiss-active': solidColors.active } as React.CSSProperties) : undefined}
+      // 元件內變數用主人開頭(2026-11-15 前叫 --dismiss-hover / --dismiss-active,沒有主人開頭;稽核 P20)
+      style={solidColors ? ({ '--tag-dismiss-hover': solidColors.hover, '--tag-dismiss-active': solidColors.active } as React.CSSProperties) : undefined}
       hoverBgClassName={
         solidColors
-          ? 'group-hover/action:bg-[var(--dismiss-hover)] group-active/action:bg-[var(--dismiss-active)]'
+          ? 'group-hover/action:bg-[var(--tag-dismiss-hover)] group-active/action:bg-[var(--tag-dismiss-active)]'
           : undefined
       }
       // 焦點框往內:Tag 是貼邊宿主 —— root `overflow-hidden`(:196)+ 1px 邊框(:30)+ h-6 / h-5(:42-44)
@@ -149,7 +149,7 @@ function TagDismiss({ onRemove, label, solid, color }: { onRemove: () => void; l
 }
 
 function TagInner(
-  { className, color, size, icon: Icon, avatar, onRemove, removeAriaLabel, dismissLabel, solid, unbounded = false, children, style, ...props }: TagProps,
+  { className, color, size, icon: Icon, avatar, onRemove, removeAriaLabel, solid, unbounded = false, children, style, ...props }: TagProps,
   forwardedRef: React.ForwardedRef<HTMLDivElement>,
 ) {
   const solidClass = solid ? SOLID_CLASSES[color ?? 'neutral'] : undefined
@@ -216,15 +216,16 @@ function TagInner(
         className,
       )}
       // 2026-05-18 Round 5 fix(per Codex M31 Round 5 verdict + user 拍板「那就開始做」):
-      // 用 CSS var `--combobox-tag-area-inline-size`(由 `../OverflowIndicator/overflow-tag-list.tsx` `useOverflowCount` 寫在容器上)取代
+      // 用 CSS var `--tag-max-inline-size`(Tag 的值,說明住 tag.spec.md;由 `../OverflowIndicator/overflow-tag-list.tsx`
+      // `useOverflowCount` 與 Combobox 換行搜尋寫在容器上;2026-11-15 前叫 --combobox-tag-area-inline-size,稽核 P17)取代
       // `min(100%, 10rem)` cyclic percentage。CSS Sizing 3 §5.2.1:percentage 在 indefinite containing
       // block 退化為 initial value → Round 4 的 100% 沒 enforce。改 explicit px 值(JS measured)避此 trap。
       // unbounded=true:cap = inject 寬(回 cell-as-input narrow cell 原 behavior)
       // default:cap = min(inject 寬, 160px)— 兩 cap 取小。fallback(無 var,Form context 等)= 100% / 10rem。
       style={{
         maxWidth: unbounded
-          ? 'var(--combobox-tag-area-inline-size, 100%)'
-          : 'min(var(--combobox-tag-area-inline-size, 10rem), 10rem)',
+          ? 'var(--tag-max-inline-size, 100%)'
+          : 'min(var(--tag-max-inline-size, 10rem), 10rem)',
         ...style,
       }}
       {...props}
@@ -235,7 +236,7 @@ function TagInner(
           往內由宿主 Tag 承擔,Avatar 本身維持預設往外(「同一個底層元件被另一個元件放進貼邊的位置」) */}
       {avatar && <span className="shrink-0 w-4 h-4 rounded-full overflow-hidden inline-grid place-content-center [&>*]:w-full [&>*]:h-full [&_*:focus-visible]:focus-ring-inset">{avatar}</span>}
       <span data-tag-text="" className="px-1 truncate min-w-0">{children}</span>
-      {onRemove && <TagDismiss onRemove={onRemove} label={removeAriaLabel ?? dismissLabel ?? label} solid={solid} color={color ?? 'neutral'} />}
+      {onRemove && <TagDismiss onRemove={onRemove} label={removeAriaLabel ?? label} solid={solid} color={color ?? 'neutral'} />}
     </div>
   )
 

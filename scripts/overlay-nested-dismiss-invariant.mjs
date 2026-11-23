@@ -279,13 +279,13 @@ function Coexist() {
       <div><Button data-open-inner variant="secondary" onClick={() => setOpen(true)}>開啟並存對話框</Button></div>
       <div data-stage ref={setStage} />
       <Dialog open={open} onOpenChange={setOpen} persistentElements={keep}>
-        <DialogContent id="coexist-inner" maxWidth={260} height="hug" portalContainer={stage}>
+        <DialogContent id="coexist-inner" width={260} height="hug" portalContainer={stage}>
           <DialogHeader><DialogTitle>封存任務</DialogTitle></DialogHeader>
           <DialogBody><Button data-open-confirm variant="secondary" onClick={() => setConfirm(true)}>刪除</Button></DialogBody>
         </DialogContent>
       </Dialog>
       <Dialog open={confirm} onOpenChange={setConfirm}>
-        <DialogContent id="coexist-confirm" maxWidth={320} height="hug">
+        <DialogContent id="coexist-confirm" width={320} height="hug">
           <DialogHeader><DialogTitle>確認刪除</DialogTitle></DialogHeader>
           <DialogBody><p data-confirm-blank style={{ margin: 0 }}>刪除後無法復原</p></DialogBody>
         </DialogContent>
@@ -315,7 +315,7 @@ function Host({ host, children }) {
     <>
       <Button data-open variant="secondary" onClick={() => setOpen(true)}>開啟對話框</Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent id="scene-host" height="hug" maxWidth={480}>
+        <DialogContent id="scene-host" height="hug" width={480}>
           <DialogHeader><DialogTitle>編輯任務</DialogTitle></DialogHeader>
           <DialogBody>{children}</DialogBody>
         </DialogContent>

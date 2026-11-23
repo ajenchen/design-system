@@ -129,15 +129,15 @@ Tabs trigger = **item-layout 橫向變體 + Button 高度系統**。對標 item-
 
 ## Size
 
-Tabs 有三種尺寸,**高度由 `--tab-height-*` token 控制**,隨 `data-density` 自動縮放。
+Tabs 有三種尺寸,**高度由 `--tab-height-*` token 控制**,隨 `data-density` 自動縮放。這三顆是 Tabs 自己的值,宣告住 `components/Tabs/tabs.css`(sm / md:預設 / 大密度覆寫 / 鎖回一般密度三段同檔;2026-11-11 從 `tokens/uiSize/uiSize.css` 搬來,值不變。lg:同檔「衍生值」段一行 `var(--chrome-header-height)`,2026-11-15 起,值不變 —— 見下方「Token alignment」)。元件程式直接讀 `var(--tab-height-*)`;沒有 Tailwind 轉接名(`h-tab-*` 2026-11-15 刪除:分頁高產品不讀,轉接名卻會隨對外彙總檔發給產品 —— 刪掉是收回不該開的口;規則住 `tokens/token-system.spec.md`「擺放」)。產品不讀不覆寫(分類表 `tokens/token-registry.json`;user 2026-11-10 token 第 4 題甲)。
 
 | Size | md density | lg density | 字體 | 何時用 | 世界級對照 |
 |------|-----------|-----------|------|--------|-----------|
 | `sm` ★ cva default(2026-05-17 從 md 改 sm)| 32 | 40 | `text-body` (14) | **預設 use case**:所有 header 內 tabs(overlay header / chrome header / Dialog / Sidebar / dense toolbar)| Ant Design verbatim:「**small size could be used in Modal**」(`ant.design/components/tabs`)|
-| `md` | 40 | 48 | `text-body` (14) | **Future tier — 目前無 recommended use case**;新 consumer 必先諮詢 DS owner | 保留相容階梯，不作新用例預設 |
+| `md` | 40 | 48 | `text-body` (14) | **Future tier — 目前無 recommended use case**;新 consumer 必先諮詢 DS owner | 保留這一檔、不作新用例預設(user 2026-11-17 決定保留;user 提到可能用在主內容區,是問句、未定成用途 —— 原話見 `../../patterns/header-canonical/header-canonical.spec.md` Rule W5) |
 | `lg` | 48 | 56 | `text-body-lg` (16) | **獨立 tabs 直接取代 chrome header 用**(tab 高度 = `--chrome-header-height` 像素相等,48/56)— page-level workspace 主導覽 | Ant verbatim:「**Large size tabs are usually used in page header**」(`ant.design/components/tabs`)|
 
-**Token alignment + size 階梯 rationale SSOT**:`--tab-height-lg` (48/56) = `--chrome-header-height` (48/56) 像素相等 + md future tier + sm default 遷移 — **完整 cross-family canonical 詳** `patterns/header-canonical/header-canonical.spec.md` W3/W5/W6(per Rule-of-3 SSOT 集中此處,本元件 spec.md 不重複論述,只列上表 size table)。
+**Token alignment + size 階梯 rationale SSOT**:`--tab-height-lg` (48/56) = `--chrome-header-height` (48/56) 像素相等(2026-11-15 起直接寫成 `var(--chrome-header-height)`,一個住處)+ md future tier + sm default 遷移 — **完整 cross-family canonical 詳** `patterns/header-canonical/header-canonical.spec.md` W3/W5/W6(per Rule-of-3 SSOT 集中此處,本元件 spec.md 不重複論述,只列上表 size table)。
 
 ### 為什麼 Tabs 不複用 `--field-height-*`
 
@@ -163,23 +163,25 @@ Tabs 支援三種 overflow 策略，透過 `TabsList` 的 `overflow` prop 選擇
 
 外層 overflow-x scroll(scrollbar 隱藏)+ 邊緣 mask-image gradient 依滾動位置動態 fade(不可滾無 mask / 可右→右 fade / 可左→左 fade / 雙向→兩側)。`useScrollEdges()` hook 追蹤狀態。**Mask 不用 gradient overlay**:mask 淡化內容本身 alpha,自動融合任何背景(dark / card / surface);overlay 需寫死背景色會漂移。
 
-**Scroll arrow buttons**(`atStart/atEnd === false` 時顯示 `<ChevronLeft/Right>`,點擊捲 80% 容器寬,smooth scroll):三輸入方式都要顧——鍵盤(底層 primitive 方向鍵 + scroll-into-view) / trackpad(兩指橫滑) / 滑鼠滾輪(需 `Shift+wheel`,不易發現,因此**必須補 arrow buttons**)。Arrow 容器 `pointer-events-none` + 內層 Button `pointer-events-auto`,不阻擋下方 trigger hit test。
+**Scroll arrow buttons**(`atStart/atEnd === false` 時顯示 `<ChevronLeft/Right>`,點擊捲 80% 容器寬,smooth scroll):三輸入方式都要顧——鍵盤(底層 primitive 方向鍵;選中的 tab 由「選到就露出來」置中) / trackpad(兩指橫滑) / 滑鼠滾輪(需 `Shift+wheel`,不易發現,因此**必須補 arrow buttons**)。Arrow 容器 `pointer-events-none` + 內層 Button `pointer-events-auto`,不阻擋下方 trigger hit test。
+
+**選到就露出來**(scroll / menu 兩模式同一條):點 tab(含半露的那一個)、方向鍵(自動啟用 = 選中改變)、⌄ 選單選取、容器尺寸改變 → 選中的 tab **置中**,兩端到底時夾住(對齊 B;契約、根因與 user 原話見 `horizontal-overflow.spec.md`「選到就露出來」)。2026-11-11 前本段寫「鍵盤(底層 primitive 方向鍵 + scroll-into-view)」,實測不成立:Chromium 對水平部分可見的項目 focus 不捲,scroll 模式方向鍵選中的分頁可整顆落在箭頭 + 淡出底下(可讀 0);直接點半露的 tab 也不捲。
 
 ### menu 模式
 
-menu = **scroll 模式 + 額外的 ⌄ quick-jump navigator**(show-all navigator pattern)。全部 TabsTrigger 一直可見、留在底層 `overflow-x-auto` 捲動容器內(**不套 `invisible`、不隱藏溢出**)。右側 `OverflowMenuTriggerButton`(`ChevronDown` ⌄ icon)在有溢出空間時(`canScroll`)出現,點開 DropdownMenu **列出全部 tab**(非只溢出者);當前選中的 tab 用 DropdownMenuItem 的 `selected` 標記(`bg-neutral-selected`,跟 SelectMenu 單選同一套視覺)。點 menu item 經 Tabs context `onValueChange` 觸發切換(底層 primitive 自然更新 `data-state`),同時 `scrollIntoView`(`inline: center`)把該 tab 捲到視圖中央。底層仍是真實捲動容器(非 `overflow-hidden`)的理由:`scrollIntoView` 與鍵盤 focus 的 auto scroll-into-view 都需要真實 scroll 容器;捲軸用 CSS 隱藏。
+menu = **scroll 模式 + 額外的 ⌄ quick-jump navigator**(show-all navigator pattern)。全部 TabsTrigger 一直可見、留在底層 `overflow-x-auto` 捲動容器內(**不套 `invisible`、不隱藏溢出**)。右側 `OverflowMenuTriggerButton`(`ChevronDown` ⌄ icon)在有溢出空間時(`canScroll`)出現,點開 DropdownMenu **列出全部 tab**(非只溢出者);當前選中的 tab 用 DropdownMenuItem 的 `selected` 標記(`bg-neutral-selected`,跟 SelectMenu 單選同一套視覺)。點 menu item 經 Tabs context `onValueChange` 觸發切換(底層 primitive 自然更新 `data-state`);選中一改,「選到就露出來」把該 tab 捲到視圖中央(與直接點、方向鍵同一條,不是選單專屬)。底層仍是真實捲動容器(非 `overflow-hidden`)的理由:置中靠捲動容器的 `scrollLeft`,trackpad 兩指橫滑也需要真實 scroll 容器;捲軸用 CSS 隱藏。
 
 **a11y**:全部 trigger 一直在 DOM 且可見(保留 roving tabindex);鍵盤使用者可用方向鍵導覽全部 tab,或 Tab 到 ⌄ 用 dropdown 快速跳轉,兩路徑並存。
 
 ### 跨元件共用
 
-`useScrollEdges`(及 `OverflowScrollArrow` / `OverflowMenuTriggerButton`)在 `patterns/horizontal-overflow/horizontal-overflow.tsx`(re-export 自 `hooks/use-overflow-items.ts`),`ChipGroup` 的 `layout="scroll" | "menu"` 消費同一組 primitive,確保 Tabs / Chip overflow 行為一致。注意 Tabs / Chip 的 menu 模式都是 show-all navigator(用 `useScrollEdges` 偵測捲動邊界),**不用** `useOverflowIndices`(那是「動態算溢出 index」用,menu 永遠顯示全部所以不需要)。
+`useScrollEdges`(及 `OverflowScrollArrow` / `OverflowMenuTriggerButton` / `useRevealSelected`)在 `patterns/horizontal-overflow/horizontal-overflow.tsx`(re-export 自 `hooks/use-overflow-items.ts`),`ChipGroup` 的 `layout="scroll" | "menu"` 消費同一組 primitive,確保 Tabs / Chip overflow 行為一致。注意 Tabs / Chip 的 menu 模式都是 show-all navigator(用 `useScrollEdges` 偵測捲動邊界),**不用** `useOverflowIndices`(那是「動態算溢出 index」用,menu 永遠顯示全部所以不需要)。
 
 ---
 
 ## 寬度行為
 
-**Trigger 寬度永遠由內容決定（hug content）**——Tabs 沒有 `fullWidth` / 等分模式。
+**Trigger 寬度永遠由內容決定（hug content）**——Tabs 沒有 `width="fill"` / 等分模式。
 
 Tabs 是 **navigation anchor**，不是 compact control：
 - 它在視覺階層上是 section header 等級，用「文字流」的節奏左對齊排列，trigger 間以 `--layout-space-loose` 分隔，接近閱讀動線
@@ -188,7 +190,9 @@ Tabs 是 **navigation anchor**，不是 compact control：
 
 **Triggers 之間 gap**：使用 `--layout-space-loose`（md density 16px / lg density 24px），與其他「pattern 層級的鬆散留白」共用同一 token。Tabs 的 gap 不是裝飾性空白，而是告訴使用者「每個 tab 是獨立的視圖入口」的視覺分隔。
 
-**TabsList 容器寬度(2026-06-12 user 拍板,解 L58 spec≠code)**:**跨滿父容器**(none 模式 `w-full`;scroll/menu 模式 inner list `min-w-full` 保留溢出成長)——底線連成整條、右端達內容區邊緣,與「跨父容器寬度、與 header border 對齊」的角色定義一致(對齊 Ant nav `left:0;right:0` 底線 / Primer UnderlineNav;shadcn 預設是 pill 式,另有 `line` 變體但 TabsList 仍是 `w-fit` 不跨滿,不適用)。Trigger 本身仍 hug content(上段不變)。**左右邊距 ownership**:TabsList **不自加水平 padding**——邊距由容器的 `--layout-space-loose` gutter 提供(standalone = 父容器 padding;withTabs = 繼承 header padding,W2 lockstep),故 tab 左緣永遠對齊兄弟內容左緣([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tabs/style/index.ts#L417-L431)、[來源](https://github.com/primer/react/blob/62d32c94ac730847a4557441b65a6a48334201a3/packages/react/src/internal/components/UnderlineTabbedInterface.module.css#L14)、[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/tabs.tsx#L28-L33))。
+**TabsList 容器寬度(2026-06-12 user 拍板,解 L58 spec≠code)**:**跨滿父容器**(none 模式 `w-full`;scroll/menu 模式 inner list `min-w-full` 保留溢出成長)——底線連成整條、右端達內容區邊緣,與「跨父容器寬度、與 header border 對齊」的角色定義一致(對齊 Ant nav `left:0;right:0` 底線 / Primer UnderlineNav;shadcn 預設是 pill 式,另有 `line` 變體但 TabsList 仍是 `w-fit` 不跨滿,不適用)。Trigger 本身仍 hug content(上段不變)。**左右邊距 ownership**:TabsList **不自加水平 padding**——邊距由容器的 `--layout-space-loose` gutter 提供(standalone = 父容器 padding;經 header tabsSlot = 繼承 header padding,W2 lockstep),故 tab 左緣永遠對齊兄弟內容左緣([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tabs/style/index.ts#L417-L431)、[來源](https://github.com/primer/react/blob/62d32c94ac730847a4557441b65a6a48334201a3/packages/react/src/internal/components/UnderlineTabbedInterface.module.css#L14)、[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/tabs.tsx#L28-L33))。
+
+**溢出模式(scroll / menu)的灰線畫在遮罩外(2026-11-17)**:溢出時 TabsList 在帶淡出遮罩(mask-image)的捲動容器裡,遮罩淡化的是整個內容 —— 灰線若是 TabsList 的 border,會跟著內容一起淡掉(scroll 模式右箭頭底下沒有線;menu 模式捲動區右端淡掉後才接上 ⌄ 的線,中間斷一格),「連成整條、右端達內容區邊緣」就不成立。所以溢出模式的灰線由捲動容器**外**那一層畫一條(橫跨淡出區、箭頭與 ⌄ 底下,一處 owner,`tabs.tsx` `TabsOverflowBaseline`);TabsList 的 border 只留 1px 透明列給選中底線疊合(見下節),不同時畫灰色 —— `--divider` 是半透明(9% 黑),兩條疊起來沒淡出的地方會變深。none 模式沒有遮罩,灰線仍是 TabsList 的 border。閘:`scripts/header-tabs-slot-invariants.mjs` W1-連續(沿 header 全寬逐點量分隔線那一列的像素,不能是背景色)。
 
 **TabsContent 與 TabsList 間距(2026-06-12 user 拍板)**:`--layout-space-tight`(md 12px,density 連動),**內建於 TabsContent**(`mt-[var(--layout-space-tight)]`,className 可覆寫;full-height 佈局用 `mt-0`)。依 `layoutSpace.spec`「親疏 3 級」第一級(同 bundle,元件 spec own)+ 規則 3「直接功能依賴 = tight」精神;**不**取 Ant 的固定 16px(M23 自家 token 優先)。內容本身的排版歸 item-anatomy / 各內容元件管,本條只管 list↔content gap([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tabs/style/index.ts#L1133))。
 
@@ -202,7 +206,9 @@ TabsList 底部有 1px gray border（`border-divider`，neutral-4），selected 
 
 **原則**：selected 底線必須覆蓋並延伸 TabsList 的 gray border，避免疊線。實作手法（pseudo-element 定位）見 `.tsx`。
 
-**色 token = `--divider`(neutral-4)而非 `--border`(neutral-5)**(2026-05-18 改 per user verbatim「我認為應該把 tabs 的下底線統一改成是 divider 色吧?」+「做」approval):跟 Dialog / Sheet / Popover / Sidebar header `border-b border-divider` 同色——chrome separator 一致,withTabs scenario 下 underline = chrome separator,色不同會視覺斷裂;selected trigger 2px primary indicator overlay 1px divider 對比仍清楚;對齊 `color.spec.md`「T-junction connectivity 原則」(tabs underline 跟 header separator T 字交接)。在 Dialog / Sidebar header 內特別重要——header 的 `border-b` 和 Tabs 的 `border-b` 必須感知為同一條水平線。
+**溢出模式同一條原則、灰線換人畫**(2026-11-17):scroll / menu 模式的灰線由捲動容器外那一條畫(理由見「TabsList 容器寬度」段),TabsList 的 border 只剩 1px 透明列 —— 選中底線照樣疊在這一列上、從灰線的位置長出來,而且繪製順序在灰線之後,2px 主色不會被灰線蓋掉下半。閘:`scripts/header-tabs-slot-invariants.mjs` W1-選中底線(選中 tab 正中,分隔線那一列與上一列必須同色)。
+
+**色 token = `--divider`(neutral-4)而非 `--border`(neutral-5)**(2026-05-18 改 per user verbatim「我認為應該把 tabs 的下底線統一改成是 divider 色吧?」+「做」approval):跟 Dialog / Sheet / Popover / Sidebar header `border-b border-divider` 同色——chrome separator 一致,tabs 進 header(tabsSlot)時 underline = chrome separator,色不同會視覺斷裂;selected trigger 2px primary indicator overlay 1px divider 對比仍清楚;對齊 `color.spec.md`「T-junction connectivity 原則」(tabs underline 跟 header separator T 字交接)。在 Dialog / Sidebar header 內特別重要——header 的 `border-b` 和 Tabs 的 `border-b` 必須感知為同一條水平線。
 
 ---
 
@@ -210,11 +216,11 @@ TabsList 底部有 1px gray border（`border-divider`，neutral-4），selected 
 
 Tabs 常與容器 header 的底邊 border 合併——**視覺上只有一條線**,不是 header border + tabs border 疊兩條。
 
-**做法**:Tabs 的 `TabsList` 底部 border 與 header 的 `border-b` 實際上是**同一條線**(設計上重疊、實作上不重複渲染)。**Header 退讓**(移除自己 `border-b`),**Tabs 接管**(自身 `border-b border-divider` per `TABS_LIST_BASE`,2026-05-18 fd843c25 統一 chrome separator 色)。三種 overflow mode 的 TabsList 一律跨滿父容器(none 模式 `w-full`;scroll / menu 模式 inner list `min-w-full` 保留溢出成長,見「寬度行為」段;`TABS_LIST_BASE` + `overflow-y-hidden` 阻 y auto-promote,2026-05-19 c359c711 border owner 升 list 內部);chrome header 內的 W2 px-loose inset 由 `ChromeHeader` tabsSlot wrapper 以 `[&_[data-slot=tabs-list]]:px-[var(--layout-space-loose)]` 注入(attribute contract:TabsList 三種 overflow 模式皆自標 `data-slot="tabs-list"`,2026-07-30 v4;全寬 paint 由 TabsList 自帶 w-full / min-w-full,wrapper 不注入寬度,見 `header-canonical.spec.md` W2 v4)。
+**做法**:Tabs 的 `TabsList` 底部 border 與 header 的 `border-b` 實際上是**同一條線**(設計上重疊、實作上不重複渲染)。**Header 退讓**(移除自己 `border-b`),**Tabs 接管**(自身 `border-b border-divider` per `TABS_LIST_BASE`,2026-05-18 fd843c25 統一 chrome separator 色)。三種 overflow mode 的 TabsList 一律跨滿父容器(none 模式 `w-full`;scroll / menu 模式 inner list `min-w-full` 保留溢出成長,見「寬度行為」段;`TABS_LIST_BASE` + `overflow-y-hidden` 阻 y auto-promote,2026-05-19 c359c711 border owner 升 list 內部;2026-11-17 起溢出模式的灰色由捲動容器外那一條畫、TabsList border 只留透明列,見「TabsList 容器寬度」段 —— 「Tabs 接管、header 退讓」不變,只是 Tabs 內部換一個元素畫);chrome header 內的 W2 px-loose inset 由 `ChromeHeader` tabsSlot wrapper 以 `[&_[data-slot=tabs-list]]:px-[var(--layout-space-loose)]` 注入(attribute contract:TabsList 三種 overflow 模式皆自標 `data-slot="tabs-list"`,2026-07-30 v4;全寬 paint 由 TabsList 自帶 w-full / min-w-full,wrapper 不注入寬度,見 `header-canonical.spec.md` W2 v4)。
 
 **世界級對照**:GitHub Primer、Ant Tabs 與 Mantine Tabs 都讓 tabs family 擁有自身 separator；Material UI 的替代模式由 parent 擁有 separator。此 DS 採前者，因為 separator 與 active indicator 是同一個 TabsList 狀態邊界；`ChromeHeader` 因此在含 Tabs 時讓出該邊界，避免雙 owner。外部對照只作輔證，內部 authority 見 `header-canonical.spec.md` W1([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tabs/style/index.ts#L417-L431)、[來源](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/packages/@mantine/core/src/components/Tabs/Tabs.module.css#L161-L171)、[來源](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/docs/data/material/components/tabs/demos/basic/BasicTabs.tsx#L46)、[來源](https://github.com/primer/react/blob/62d32c94ac730847a4557441b65a6a48334201a3/packages/react/src/internal/components/UnderlineTabbedInterface.module.css#L14))。
 
-**Auto-suppress 機制(Phase 2 production code 提案)**:header primitive 加 `withTabs?: boolean` prop → true 時自動移除自身 `border-b`,免 consumer 手動忘記(分隔線只能有一個 owner,見上段)。完整 cross-header canonical 詳 `patterns/header-canonical/header-canonical.spec.md` W1。
+**Auto-suppress 機制**:header primitive 的 `tabsSlot` prop —— 給了就自動移除 header 自身 `border-b`,改由 TabsList 畫線,免 consumer 手動忘記(分隔線只能有一個 owner,見上段);Tabs 不得寫進 header 的 children(原 `withTabs` 布林 2026-11-16 移除)。完整 cross-header canonical 詳 `patterns/header-canonical/header-canonical.spec.md` W1。
 
 Size 建議:overlay / chrome header 內用 `sm`(32/40)— 對應 close X 也是 sm,視覺一致;**獨立取代 chrome header** 的 page-level workspace tabs 用 `lg`(48/56,= chrome-header-height)。
 
@@ -261,7 +267,7 @@ DS 詞彙 **selected**（持續選中）；Radix DOM attr 為 `data-state="activ
 - ❌ **同一組 Tabs 內 `startIcon` 全有或全無**(2026-05-18 加;user 抓到截圖裡同一組 tabs 圖示混用)——禁止「總覽無 icon / 成員 + 通知 + 設定 有 icon」這種視覺重心散亂的混用。Scope **限縮 `startIcon`** — `endIcon`(badge / chevron-down 等狀態 indicator)可獨立判斷,因屬狀態 affordance 非語意 label icon
 - ❌ `endIcon` 不得放動詞性 icon（Download、Trash2）——tab 是視圖切換，不是觸發動作
 - ❌ Dialog / Sidebar header 內不得同時有 header `border-b` 和 TabsList `border-b`——會出現雙線
-- ❌ 不得把 trigger 改成等分 / fullWidth——等寬互斥切換是 SegmentedControl 的身份特徵，Tabs 是 navigation anchor，兩者不同層級。需要等寬改用 SegmentedControl
+- ❌ 不得把 trigger 改成等分 / 撐滿——等寬互斥切換是 SegmentedControl 的身份特徵，Tabs 是 navigation anchor，兩者不同層級。需要等寬改用 SegmentedControl
 - ❌ Trigger 不得使用 `border-b-2` 實作 selected underline——會與 TabsList 的 `border-b` 形成上下雙線;selected underline 必須與 TabsList border 同層渲染(見 `tabs.tsx`)
 - ❌ 不得自行改寫 Radix Tabs 的 `role` / `aria-*` 屬性
 
@@ -310,6 +316,7 @@ Tabs anatomy 採 DS 標準結構 + 元件特有矩陣:
 - `accordion.spec.md`
 - `button.spec.md`
 - `carousel.spec.md`
+- `data-table.spec.md`
 - `header-canonical.spec.md`
 - `horizontal-overflow.spec.md`
 - `segmented-control.spec.md`

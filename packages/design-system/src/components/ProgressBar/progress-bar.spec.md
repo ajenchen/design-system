@@ -29,7 +29,7 @@ ProgressBar 是**量化 linear 進度** primitive——consumer 必須能回答�
 - **Material** `LinearProgress`(determinate) — 同樣區分 determinate / indeterminate 兩模式(Material Web `value` + `indeterminate`,[progress.ts#L24-L35](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/progress/internal/progress.ts#L24-L35)),indeterminate 在我們系統由 `CircularProgress`(無 value)承擔
 - 本 DS 以 `affix="value"` 顯示百分比文字，以 `status` 區分一般、完成與失敗語意。
 - ProgressBar 只負責線性進度表達；上傳檔名、重試與移除動作由 FileUpload / FileItem 擁有。
-- **shadcn** `Progress` — 同為 Radix Progress 薄包裝
+- **shadcn** `Progress` — 同為 Radix Progress 薄包裝(`ProgressPrimitive.Root` + `.Indicator`,[progress.tsx#L5-L26](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/progress.tsx#L5-L26))
 
 ---
 

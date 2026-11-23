@@ -32,7 +32,7 @@ export const DeploymentSuccess: Story = {
   name: '部署成功橫幅',
   render: () => (
     <div className="max-w-2xl">
-      <Alert variant="success" title="專案已成功部署到 production 環境" />
+      <Alert variant="success" title="專案已成功部署到正式環境" />
     </div>
   ),
 }
@@ -55,11 +55,11 @@ export const InlineVariants: Story = {
   name: '行內通知變體對照',
   render: () => {
     const items: { variant: 'info' | 'warning' | 'success' | 'error' | 'neutral'; title: string; description?: string }[] = [
-      { variant: 'info', title: 'Audit log 僅限 Business 方案', description: '升級後可回溯 90 天內所有成員的操作紀錄。' },
+      { variant: 'info', title: '稽核紀錄僅限 Business 方案', description: '升級後可回溯 90 天內所有成員的操作紀錄。' },
       { variant: 'warning', title: '此環境剩餘儲存空間不足 10%', description: '建議清理舊版本或升級儲存方案,避免上傳中斷。' },
       { variant: 'success', title: '兩步驟驗證已啟用' },
-      { variant: 'error', title: '無法連線到 GitHub integration', description: '過去 24 小時有 3 次同步失敗,請重新授權 GitHub App。' },
-      { variant: 'neutral', title: '維護視窗 4/25 02:00 – 04:00 (UTC+8)', description: '期間 Dashboard 可能暫時無法存取,CI pipelines 不受影響。' },
+      { variant: 'error', title: '無法連線到 GitHub 整合', description: '過去 24 小時有 3 次同步失敗,請重新授權 GitHub App。' },
+      { variant: 'neutral', title: '維護視窗 4/25 02:00 – 04:00 (UTC+8)', description: '期間儀表板可能暫時無法存取,CI 流程不受影響。' },
     ]
     return (
       <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-2xl">
@@ -77,7 +77,7 @@ function PendingInviteNotice() {
   return (
     <Alert
       variant="neutral"
-      title="5 個成員已收到邀請 email,尚未加入工作區。"
+      title="5 個成員已收到邀請信,尚未加入工作區。"
       endContent={
         <Button variant="tertiary" size="xs" onClick={() => { setShown(false); toast({ variant: 'success', title: '已重新寄出 5 封邀請' }) }}>
           重發邀請

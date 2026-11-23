@@ -1,9 +1,9 @@
 import * as React from 'react'
 import { type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
-import type { FieldMode, FieldVariant, FieldVariantInternal } from '@/design-system/components/Field/field-types'
+import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
 import type { InlineActionConfig } from '@/design-system/patterns/element-anatomy/item-anatomy'
-import { readonlyTabStopProps, fieldWrapperStyles, bareInputStyles, focusFieldInputFromChrome, FIELD_TEXT_ENTRY_CURSOR } from '@/design-system/components/Field/field-wrapper'
+import { readonlyTabStopProps, fieldWrapperStyles, fieldWidthVariant, fieldWidthStyle, bareInputStyles, focusFieldInputFromChrome, FIELD_TEXT_ENTRY_CURSOR } from '@/design-system/components/Field/field-wrapper'
 import { useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid } from '@/design-system/components/Field/field-context'
 import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -55,11 +55,18 @@ export interface NumberInputProps
   // `defaultValue` 一併 Omit(2026-07-14 dim-26):number-input.spec.md「controlled-only,不支援
   // defaultValue」宣稱的型別面機械封鎖 — 原本仍在型別 surface 且經 {...props} spread 到已
   // controlled 的 input(React value/defaultValue dev warning)。與 LinkInput(link-input.tsx)同款。
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'value' | 'defaultValue' | 'onChange' | 'type'>,
+  // 原生 `width` / `height` 一併 Omit(2026-11-15「尺寸:甲」):`<input type="text">` 的 HTML width / height 沒有作用,
+  // 留著 = 寫了不報錯也不生效(Input 同款,input.tsx InputProps 上方註解)。寬度走下方 `width`,高度由 `size` 決定。
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'value' | 'defaultValue' | 'onChange' | 'type' | 'width' | 'height'>,
     Omit<VariantProps<typeof fieldWrapperStyles>, 'mode' | 'variant' | 'width'>,
     NumberFormatOptions {
   /** Field mode */
   mode?: FieldMode
+  /**
+   * 寬度軸(field-controls.spec.md「寬度軸」):`'fill'`(預設)撐滿容器 / 數字 = 固定寬(px;窄容器裡不超出容器)。
+   * 不收 `'hug'`:數字欄位依內容寬會隨輸入跳動,目前沒有使用情境(要的話比照 Input 的 field-sizing 做法再開)。
+   */
+  width?: Exclude<FieldWidth, 'hug'>
   /**
    * Visual chrome(正交於 mode);Phase B1(2026-05-05)新增。
    * - `'default'`(預設)— 完整 Field wrapper chrome。
@@ -102,6 +109,7 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
       locale,
       endAction,
       endSlot,
+      width,
       className,
       disabled: disabledProp,
       readOnly,
@@ -142,7 +150,8 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
     if (resolvedMode !== 'edit') {
       return (
         <div
-          className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: variant, size }), className)}
+          className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: variant, size, width: fieldWidthVariant(width) }), className)}
+          style={fieldWidthStyle(width)}
           data-field-mode={resolvedMode}
           // 2026-09-29 a11y(待辦總帳 OE21):disabled 的純展示殼明告 inactive(對齊 FieldLabel 2026-06-10 同修),
           // 否則 axe 把 fg-disabled 的格式化數字當一般文字誤報 color-contrast(4 則 story)。不是轉發 consumer 的 aria-*,是元件自己的狀態
@@ -182,12 +191,13 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
     return (
       <div
         className={cn(
-          fieldWrapperStyles({ mode: 'edit', variant: variant, size, error }),
+          fieldWrapperStyles({ mode: 'edit', variant: variant, size, error, width: fieldWidthVariant(width) }),
           // 整個外框都是輸入處:文字游標 + 點內距 / 邊框就聚焦 input(同 Input;待辦總帳 N53③,
           // 規則 owner field-controls.spec.md「點擊與游標原則」,共用實作 field-wrapper.tsx focusFieldInputFromChrome)
           FIELD_TEXT_ENTRY_CURSOR,
           className,
         )}
+        style={fieldWidthStyle(width)}
         onMouseDown={focusFieldInputFromChrome}
         data-field-mode="edit"
         data-error={error ? '' : undefined}

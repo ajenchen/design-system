@@ -39,10 +39,11 @@ User 邏輯:
 3. **Heuristic 不準?**
    - 換 deterministic detection(grep exact pattern / AST parse / generator output diff)
    - 不能 deterministic → 改成 reviewer guidance memory,不上 hook
+**例外(工具語意擋不了,2026-11-21)**:UserPromptSubmit 的 exit 2 擋的是 user 的輸入本身,所以這類 hook 不升 exit 2;要擋就放在 Stop 那一端(理由與例子見 `check_propose_without_benchmark.sh` 檔頭)。不算例外的兩種(理由各在該 hook 檔頭):PostToolUse 時檔已經寫入,exit 2 收不回這次寫入,但模型會把理由當錯誤讀到、接著要改 —— 仍照 P0 擋(`post_edit_dispatcher.sh`、`post_edit_contract_dispatcher.sh`);反膨脹預算 `check_file_size_budget.sh` 寫完超過硬上限而且變長就擋(另有檔案層級豁免),硬上限以下只提醒。
 
 ## Anchor(2026-05-27)
 
-`check_layout_space_magic_numbers.sh` 第一版寫 P1 WARN「magic numbers might be legitimate (Avatar size, icon size etc.)」→ user 抓「為何不全部 ssot 都要強制吻合」→ 升 P0 BLOCKER + `// @layout-space-magic-ok: <rationale>` per-line escape comment。Test:
+`check_layout_space_magic_numbers.sh` 第一版寫 P1 WARN「magic numbers might be legitimate (Avatar size, icon size etc.)」→ user 抓「那為何不全部 ssot 都要強制吻合?」→ 升 P0 BLOCKER + `// @layout-space-magic-ok: <rationale>` per-line escape comment。Test:
 - Plain `<div className="p-4">` → BLOCK exit 2 ✓
 - With escape → pass ✓
 - Token usage `var(--layout-space-loose)` → pass ✓

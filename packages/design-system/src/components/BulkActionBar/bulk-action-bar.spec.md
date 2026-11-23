@@ -125,10 +125,10 @@ BulkActionBar 是 plain block(無 positioning 邏輯),consumer 用 flex column �
 
 | Use case | DataTable 設定 | Inline composition 結果 |
 |---|---|---|
-| 1️⃣ Page 中一段 | `height="auto"` | BulkActionBar 自然接在 table 下方 ✓ |
-| 2️⃣ Container fill(dialog body 等)| `height="100%"` | flex column,table flex-1,BulkActionBar 接尾 ✓ |
-| 3️⃣ Viewport-fill app | `height="100%"` 配 flex-1 | table 自動讓位 ✓ |
-| 4️⃣ 長 page scroll(BulkActionBar 不可 scroll 走)| auto | consumer **自行套** `<div className="sticky bottom-0">` 或 `fixed bottom-0` wrapper |
+| 1️⃣ Page 中一段 | `maxHeight="none"` | BulkActionBar 自然接在 table 下方 ✓ |
+| 2️⃣ Container fill(dialog body 等)| `maxHeight="100%"` | flex column,table flex-1,BulkActionBar 接尾 ✓ |
+| 3️⃣ Viewport-fill app | `maxHeight="100%"` 配 flex-1 | table 自動讓位 ✓ |
+| 4️⃣ 長 page scroll(BulkActionBar 不可 scroll 走)| `maxHeight="none"` | consumer **自行套** `<div className="sticky bottom-0">` 或 `fixed bottom-0` wrapper |
 
 case 4 比較少見,consumer 知道自己 layout 時自加 wrapper 即可,DS primitive 不該替消費者決定 positioning。
 
@@ -158,11 +158,11 @@ interface BulkActionBarLabels {
   count: (n: number) => string         // default 「已選 {n} 項」
   clear: string                         // default 「清除選取」(X aria-label)
   hiddenSuffix: (hidden: number) => string  // default 「· {hidden} 個被 filter 隱藏」
-  ariaLabel?: string                    // root role="group" 的 aria-label(2026-07-06 新主 key;未傳 fallback toolbarAriaLabel)
-  /** @deprecated 2026-07-06 role 已降級 "group"(見 a11y 段),改用 ariaLabel;此 key 保留 backward-compat,值仍作 fallback。default 「批次操作」 */
-  toolbarAriaLabel: string
+  ariaLabel: string                     // default 「批次操作」(root role="group" 的 aria-label)
 }
 ```
+
+舊 key `toolbarAriaLabel`(role 2026-07-06 降級 "group" 時改名 `ariaLabel`)2026-11-15 移除,不留舊名(0.x 相容政策 = `ds-canonical/references/props-naming.md`「相容政策」)。升版對照:`labels={{ toolbarAriaLabel: '…' }}` → `labels={{ ariaLabel: '…' }}`。
 
 完整 default labels 由 component 內 export `BULK_ACTION_BAR_DEFAULT_LABELS`,consumer 可 spread 後 override；單一 default object 避免 runtime 文案與文件範例各自漂移。
 
@@ -188,7 +188,7 @@ interface BulkActionBarLabels {
 
 ## a11y 預設
 
-- BulkActionBar 整體用 `role="group"` + `aria-label`(default `"批次操作"`,由 `labels.ariaLabel ?? labels.toolbarAriaLabel` 決定,可 override)。**降級 rationale(2026-07-06 記為 user 拍板,來源不明:登記簿查無原話)**:原宣告 `role="toolbar"` 但未實作 APG toolbar 方向鍵 roving 契約(「Left Arrow: Moves focus to the previous control.」「Right Arrow: Moves focus to the next control.」https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/toolbar/toolbar-pattern.html#L59-L72)(AT 告知「工具列」但方向鍵無反應 = 空承諾);改 `role="group"` 語意誠實,Tab 序照 DOM(見下)。
+- BulkActionBar 整體用 `role="group"` + `aria-label`(default `"批次操作"`,由 `labels.ariaLabel` 決定,可 override)。**降級 rationale(2026-07-06 記為 user 拍板,來源不明:登記簿查無原話)**:原宣告 `role="toolbar"` 但未實作 APG toolbar 方向鍵 roving 契約(「Left Arrow: Moves focus to the previous control.」「Right Arrow: Moves focus to the next control.」https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/toolbar/toolbar-pattern.html#L59-L72)(AT 告知「工具列」但方向鍵無反應 = 空承諾);改 `role="group"` 語意誠實,Tab 序照 DOM(見下)。
 - count 文字用 `aria-live="polite"` + `aria-atomic="true"`(selection 變更時 SR 整句重讀「已選 3 項」)
 - Clear button:`aria-label="清除選取"`
 - Hint banner 用 `role="status"` + `aria-live="polite"`(state 切換時通知)

@@ -21,7 +21,7 @@
 #   - Netlify dashboard-linked (netlify.toml + branch deploys) → 用 git remote 推導 site name
 #   - GitHub Pages (.github/workflows/*.yml 含 pages.yml OR ci.yml deploy-pages) → 推導 GH Pages URL
 #
-# 對齊:canonical codex-collab skill PostToolUse pattern + check_fork_user_plugin_install.sh detection pattern
+# 對齊:canonical codex-collab skill PostToolUse pattern
 
 HOOK_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd -P)" || {
   printf 'GOVERNANCE_INTEGRITY: deploy URL hook directory is unavailable\n' >&2

@@ -3,12 +3,12 @@
     "purpose": "C-prime fork-mode governance corpus 分類 SSOT。build-fork-governance.mjs 消費此檔，從 packages/design-system/ds-canonical/hooks 生成 ds-canonical/fork/。--check 若任何 canonical hook *.{sh,py} 未分類則 FAIL(防漏接新 hook)。",
     "source": "legacy workflow wf_4070529c-5af critic agent 的 inventory 對抗分類 + 2026-06-16 組裝；現役 hook inventory authority = packages/design-system/ds-canonical/hooks",
     "authority": "packages/design-system/ds-canonical/hooks/**；fork corpus 與 provider hook homes 皆為 generated/materialized outputs",
-    "total": 60,
+    "total": 52,
     "tally": {
-      "SHIP_AS_IS": 12,
+      "SHIP_AS_IS": 11,
       "SHIP_REWRITTEN": 6,
       "REPLACE": 1,
-      "DROP": 41
+      "DROP": 34
     },
     "known_coverage_gaps": [],
     "buckets_def": {
@@ -30,7 +30,7 @@
     },
     {
       "hook": "check_item_list_gap.sh",
-      "reason": "standalone card/pill multi-instance gap,內容式偵測,fire on apps/**。"
+      "reason": "FileItem 清單外層的 gap / 外框(file-item.spec.md「List wrapper canonical」),consumer 一樣會寫;2026-11-22 起用 TypeScript AST 判每個外層、會擋(exit 2),AST 量法 hooks/lib/tsx-governance-analysis.mjs 隨 corpus 出貨、TypeScript 從 consumer 專案解析;寫完的檔沒有 FileItem 就不需要 parser。"
     },
     {
       "hook": "check_pattern_invariants.sh",
@@ -41,12 +41,8 @@
       "reason": "scope *components/*.tsx 含 apps/**/components,layout-agnostic 真 fire;訊息 @/design-system alias 可選改(SHIP_REWRITTEN-lite),enforcement 正確。"
     },
     {
-      "hook": "check_sidebar_menu_button_implicit_wrap.sh",
-      "reason": "窄條件 exit 2(SidebarMenuButton+Avatar 無 asChild)+ env escape,非 blanket brick。verify escape 隨 ship。"
-    },
-    {
-      "hook": "check_chrome_header_avatar_canonical.sh",
-      "reason": "窄條件 exit 2(SidebarHeader 含 ItemAvatar)+ CLAUDE_BYPASS escape,非 blanket brick。verify escape 隨 ship。"
+      "hook": "check_sidebar_avatar_canonical.sh",
+      "reason": "2026-11-18 合併原 check_chrome_header_avatar_canonical.sh(r1)+ check_sidebar_menu_button_implicit_wrap.sh(r2),兩條仍出貨給 consumer(不併進 DROP 的 chrome_header_dispatcher.sh)。r1:窄條件 exit 2(SidebarHeader 含 ItemAvatar)+ CLAUDE_BYPASS escape;r2:窄條件 exit 2(SidebarMenuButton+Avatar 無 asChild)+ env escape;各自的 escape 只放行自己那條,非 blanket brick。verify escape 隨 ship。"
     },
     {
       "hook": "check_layout_space_magic_numbers.sh",
@@ -62,7 +58,7 @@
     },
     {
       "hook": "check_story_determinism.sh",
-      "reason": "path-agnostic *.stories.tsx 寫入哨(裸 new Date()/Date.now/Math.random → warn + @nondeterministic-ok escape);fork apps 自有 stories 同受換日 flake 之害,規則自包無 DS-repo 依賴。"
+      "reason": "path-agnostic *.stories.tsx 寫入哨(裸 new Date()/Date.now/Math.random → 擋 exit 2 + 逐行 @nondeterministic-ok escape);fork apps 自有 stories 同受換日 flake 之害,規則自包無 DS-repo 依賴。outputMode 2026-11-21(knowledge-prune WP-16)由 diagnostic 改成 governance-context-or-block:寫入當下擋、理由進模型,consumer CI 重播命中判 GOV-CONTENT-001 BLOCKER(原 -003)。"
     },
     {
       "hook": "check_dynamic_tailwind_class.sh",
@@ -72,8 +68,8 @@
   "SHIP_REWRITTEN": [
     {
       "hook": "check_consumer_code_quality.sh",
-      "transform": "canonical utility registry runtime lookup → runner-authenticated fork corpus references/utility-registry.json；canonical owner identity 保持 packages/design-system/src/tokens/utility-registry.json",
-      "reason": "standalone provider-neutral hard gate:consumer any/file-size/raw-row/overlay/chrome/AppShell primary-header invariants；alias policy只讀 runner-authenticated corpus registry，不從 consumer node_modules shadow；可由 native hooks 與 hooks-off CI 同一份 corpus 執行。"
+      "transform": "canonical utility registry runtime lookup → runner-authenticated fork corpus references/utility-registry.json；canonical owner identity 保持 packages/design-system/src/tokens/utility-registry.json；已移除名字的名單(lib/_ds_removed_names.sh)canonical 讀 corpus 帳本 packages/design-system/ds-changes.json 經 tools/changes/ledger.mjs 投影 → fork 改讀 runner-authenticated corpus references/ds-removed-names.json(build-fork-governance 預先投影,helper 隨 hooks/lib 出貨並套同一個 applyTransform)",
+      "reason": "standalone provider-neutral hard gate:consumer any/file-size/raw-row/overlay/chrome/AppShell primary-header invariants；alias policy只讀 runner-authenticated corpus registry，不從 consumer node_modules shadow；可由 native hooks 與 hooks-off CI 同一份 corpus 執行。另含 DS 已移除 / 改名名字的寫入當下擋(code = (apps/<app>/)src 的 js/ts/jsx/tsx/css、doc = docs/**/*.md 與 governance/overlay.md;與品質檢查合一份 exit 2 報告,2026-11-16 併入以守 hook 數 60 上限);名單只讀 corpus,不讀消費端 node_modules。"
     },
     {
       "hook": "check_opacity_token_usage.sh",
@@ -156,14 +152,6 @@
       "reason": "DS-author DataTable 元件內部 invariant(scope DS src)。"
     },
     {
-      "hook": "check_dim_count_drift.sh",
-      "reason": "DS-author design-system-audit SKILL dim count drift。"
-    },
-    {
-      "hook": "check_field_controls_contracts.sh",
-      "reason": "DS-author Field 元件內部 contract(scope DS src)。"
-    },
-    {
       "hook": "check_file_size_budget.sh",
       "reason": "DS-author governance file 行數預算(CLAUDE.md/spec/SKILL)。"
     },
@@ -180,44 +168,24 @@
       "reason": "DS-author 新元件命名/抽象紀律(scope DS src)。"
     },
     {
-      "hook": "check_orphan_ds_css.sh",
-      "reason": "DS CSS aggregator orphan 偵測;packages/design-system/src 不存在即 early-exit = fork 無意義。"
-    },
-    {
       "hook": "post_edit_dispatcher.sh",
       "reason": "fan-out 到 lib/_*.sh helper,但 helper 沒隨 corpus ship + 有 [ -f ]||return 0 guard → fork 內全 no-op = false-green(harness 深查抓到)。layout-space 價值已由 standalone check_layout_space_magic_numbers 涵蓋故 DROP;唯 _overlay_handcraft/_code_quality 列 known_coverage_gaps 待 promote。"
+    },
+    {
+      "hook": "post_edit_contract_dispatcher.sh",
+      "reason": "2026-11-21(WP-14)合併原 check_peoplepicker_ssot_drift.sh / check_pixel_quantified_audit.sh / check_field_controls_contracts.sh / check_select_all_canonical.sh(四支原本都是 DROP),四條改成會擋。規則全是 DS 作者端的元件內部契約(PeoplePicker / Field family / multi-select-ordering 的 SSOT,scope DS src)與 DS 自己的 visual-audit 腳本;helper 住 lib/、不隨 corpus ship,fork 無意義。"
     },
     {
       "hook": "check_overlay_open_focus_escape_probe.sh",
       "reason": "DS-author overlay focus/escape 稽核 probe。"
     },
     {
-      "hook": "check_peoplepicker_ssot_drift.sh",
-      "reason": "DS-author PeoplePicker 元件 SSOT drift(scope DS src)。"
-    },
-    {
-      "hook": "check_pixel_quantified_audit.sh",
-      "reason": "DS-author audit pixel-quantified 強制。"
-    },
-    {
-      "hook": "check_plugin_fork_health.sh",
-      "reason": "其工作是 nag fork user 裝 DS plugin + curl GitHub 版本 = plugin-health nag(C-prime 退役 plugin 必經路)。"
-    },
-    {
       "hook": "check_propose_discipline.sh",
       "reason": "DS-author 中文人話 propose + cite 紀律。"
     },
     {
-      "hook": "check_propose_pre_grep_verify.sh",
-      "reason": "DS-author propose 前 grep verify(M18 Q0)。"
-    },
-    {
       "hook": "check_propose_without_benchmark.sh",
       "reason": "DS-author propose 前 WebFetch benchmark(M26)。"
-    },
-    {
-      "hook": "check_select_all_canonical.sh",
-      "reason": "DS-author Select-all 元件 canonical(scope DS src)。"
     },
     {
       "hook": "check_solo_workflow.sh",
@@ -253,15 +221,11 @@
     },
     {
       "hook": "log_governance_fires.sh",
-      "reason": "DS-author governance fire log。"
-    },
-    {
-      "hook": "log_skill_invokes.sh",
-      "reason": "DS-author skill invoke log。"
+      "reason": "DS-author governance fire log + skill invoke log(2026-11-17 併入原 log_skill_invokes.sh)。"
     },
     {
       "hook": "session_start_governance_check.sh",
-      "reason": "DS-author session-start governance/prune 檢查(讀 provider-neutral runtime state|benchmarks|committed memory)。"
+      "reason": "DS-author session-start governance/prune 檢查(讀 provider-neutral runtime state|committed memory)。"
     },
     {
       "hook": "stop_passive_logging.sh",
@@ -272,16 +236,16 @@
       "reason": "DS-author claim-verify/cross-provider/solo-dev/completeness gate(讀 neutral evidence root)= 全 DS-author-only。"
     },
     {
-      "hook": "stop_audit_content_quality.sh",
-      "reason": "DS-author Stop context hook；執行 repository-only scripts/audit-content-quality.mjs，consumer corpus 不擁有該執行檔，ship 後只會 false-green 或鎖死。Consumer 品質由 immutable governance-check 與自身 CI gate 覆蓋。"
-    },
-    {
-      "hook": "stop_extract_canonical_rules.sh",
-      "reason": "DS-author canonical 編輯回饋 hook；執行 repository-only scripts/extract-canonical-rules.mjs，產品 repo 不可擁有或重建這個 canonical authoring authority。"
+      "hook": "stop_repository_text_checks.sh",
+      "reason": "DS-author Stop context hook(2026-11-17 合併原 stop_audit_content_quality.sh + stop_extract_canonical_rules.sh);執行 repository-only scripts/audit-content-quality.mjs 與 scripts/extract-canonical-rules.mjs，consumer corpus 不擁有這兩支執行檔，ship 後只會 false-green 或鎖死；產品 repo 也不可擁有或重建 canonical authoring authority。Consumer 品質由 immutable governance-check 與自身 CI gate 覆蓋。"
     },
     {
       "hook": "check_ssot_header_declaration.sh",
       "reason": "DS-authoring 專用:scope = packages/design-system/src/components 新檔(fork 端該路徑在 node_modules 唯讀,永不觸發);fork consumer 造輪防護由 check_consumer_app_invariants r3 primitive-misuse 涵蓋。"
+    },
+    {
+      "hook": "check_bash_command_shape.sh",
+      "reason": "2026-11-21 PROC-H:PreToolUse(Bash) deny 照動作意思比對 + emulate sh 提示。讀 DS repo 的 adapters/claude-settings-base.json 與 hooks/lib/_deny_norm.py(fork 語料不帶這兩個檔,consumer 的 deny 清單由 template/.claude/settings.json 投影);要出貨給 consumer 得先把 lib 與 deny 檔一起投影進 fork,不在本包。"
     }
   ]
 }

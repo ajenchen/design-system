@@ -1,0 +1,5 @@
+{
+  "$comment": "scripts/radius-usage-invariant.mjs 的例外登記(規則只住 packages/design-system/src/tokens/radius/radius.spec.md「四檔」)。exceptions = 有規格依據、刻意如此的元素;pending = 量到的現況違規;說明頁 / 規格頁由 AI 照 radius.spec.md 直接修(user 2026-11-17「其他storybook上輔助說明的文字之類等完全不影響消費者的調整應該不需要我再次檢查吧？那些東西你自己檢查確認就好了吧？」),範例本身、元件或 SSOT 會變的才給 user 看(user 同日「我只需要看元件或是範例本身或是 ssot 有動到的部分,我不是都一直強調ssot嗎？」;兩句原話出處 governance/memory/feedback_propose_discipline.md 2026-11-17 Anchor)。pending 只准變少,修好就刪。每筆:stories(story id 陣列,結尾 * = 開頭相同的都算)/ rule(R0–R3)/ tag(可省)/ classIncludes(元素身上一定有的 class,指名是哪一個)/ reason;pending 另寫 visualChange(照規格修了畫面怎麼變)。stories 裡任何一則對不到元素 = 過期,閘會紅(修好就從 stories 拿掉)。",
+  "exceptions": [],
+  "pending": []
+}

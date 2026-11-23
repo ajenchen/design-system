@@ -91,27 +91,8 @@ const CLASSIFICATION_KEYS = Object.freeze([
   'target',
   'targetBinding',
 ])
-const CLASSIFICATION_SCOPE_IDS = new Set([
-  'account-holder-platform-action',
-  'approved-ui-ux-implementation',
-  'consumer-template-adoption',
-  'credential-reference-required',
-  'current-target-operation',
-  'engineering-execution',
-  'external-activation',
-  'github-configuration',
-  'legal-account-organization-business-decision',
-  'mechanical-approved-ssot-projection',
-  'package-release',
-  'plan-external-spend',
-  'product-ui-ux-change',
-  'product-ui-ux-decision',
-  'protected-git-delivery',
-  'rollback-recovery',
-  'rollout',
-  'runtime-certification',
-  'testing-and-harness',
-])
+// 分類結果能出現的 scope 集合不在本檔抄:由傳進來的分類器(packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs)
+// 的 classificationScopeIds() 給(2026-11-22 WP-AGENTS / ASKFIX-REPO-DRIFT;以前這裡手抄 19 個 id)。
 
 export class AuthorityDecisionEvidenceError extends Error {
   constructor(code, detail) {
@@ -211,15 +192,26 @@ function canonicalAuthorityPolicy(bytes) {
 function classifierFunctions(classifier) {
   if (!classifier || typeof classifier !== 'object'
     || typeof classifier.classifyLatestAuthorization !== 'function'
-    || typeof classifier.classifyOperationAuthorization !== 'function') {
+    || typeof classifier.classifyOperationAuthorization !== 'function'
+    || typeof classifier.classificationScopeIds !== 'function') {
     block('CLASSIFIER_INVALID', 'canonical authority classifier functions are unavailable')
   }
   return classifier
 }
 
-function classificationScopes(value, label) {
+function classifierScopeIds(classifier) {
+  const ids = classifierFunctions(classifier).classificationScopeIds()
+  if (!Array.isArray(ids) || ids.length === 0
+    || ids.some((scope) => typeof scope !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(scope))
+    || new Set(ids).size !== ids.length) {
+    block('CLASSIFIER_INVALID', 'canonical classifier scope set is not one closed list of scope ids')
+  }
+  return new Set(ids)
+}
+
+function classificationScopes(value, label, scopeIds) {
   if (!Array.isArray(value)
-    || value.some((scope) => typeof scope !== 'string' || !CLASSIFICATION_SCOPE_IDS.has(scope))) {
+    || value.some((scope) => typeof scope !== 'string' || !scopeIds.has(scope))) {
     block('CLASSIFIER_INVALID', `${label} is not one closed scope list`)
   }
   const sorted = [...value].sort((left, right) => (
@@ -232,7 +224,7 @@ function classificationScopes(value, label) {
   return value
 }
 
-function classificationResult(value) {
+function classificationResult(value, scopeIds) {
   if (!value || typeof value !== 'object' || Array.isArray(value)
     || !['approved', 'blocked'].includes(value.decision)
     || !['engineering-remediation', 'product-ui-ux', 'unknown'].includes(value.decisionDomain)
@@ -248,11 +240,12 @@ function classificationResult(value) {
     block('CLASSIFIER_INVALID', 'canonical classifier returned an open or incomplete decision')
   }
   const scopeLists = [
-    classificationScopes(value.allowedScopes, 'classification.allowedScopes'),
-    classificationScopes(value.humanOnlyScopes, 'classification.humanOnlyScopes'),
+    classificationScopes(value.allowedScopes, 'classification.allowedScopes', scopeIds),
+    classificationScopes(value.humanOnlyScopes, 'classification.humanOnlyScopes', scopeIds),
     classificationScopes(
       value.deniedOrAmbiguousScopes,
       'classification.deniedOrAmbiguousScopes',
+      scopeIds,
     ),
   ]
   const allScopes = scopeLists.flat()
@@ -293,6 +286,7 @@ function receiptPayload({
   exactString(operationText, 'operationText', MAX_OPERATION_BYTES, { allowEmpty: true })
   const messages = normalizedUserMessages(userMessages)
   const functions = classifierFunctions(classifier)
+  const scopeIds = classifierScopeIds(classifier)
   const classificationMode = messages.length ? 'user-context' : 'operation-only'
   const classification = classificationResult(messages.length
     ? functions.classifyLatestAuthorization(messages.at(-1), {
@@ -300,7 +294,7 @@ function receiptPayload({
       operationText,
       userMessages: messages,
     })
-    : functions.classifyOperationAuthorization({ target, operationText }))
+    : functions.classifyOperationAuthorization({ target, operationText }), scopeIds)
   const authorityPolicy = canonicalAuthorityPolicy(authorityPolicyBytes)
   const classifierBytes = exactBytes(classifierSourceBytes, 'classifier source')
   const receiptContractBytes = exactBytes(receiptContractSourceBytes, 'receipt contract source')
@@ -346,7 +340,8 @@ export function prepareAuthorityDecisionReceipt(input = {}) {
   })
 }
 
-export function validateAuthorityDecisionReceiptShape(receipt) {
+// classifier = 產生這張收據的那個分類器模組;收據裡的 scope 是否都在它的封閉集合裡,用它的 classificationScopeIds() 判。
+export function validateAuthorityDecisionReceiptShape(receipt, classifier) {
   exactObject(receipt, RECEIPT_KEYS, 'receipt')
   if (receipt.schemaVersion !== AUTHORITY_DECISION_RECEIPT_SCHEMA_VERSION
     || receipt.kind !== AUTHORITY_DECISION_RECEIPT_KIND) {
@@ -371,7 +366,7 @@ export function validateAuthorityDecisionReceiptShape(receipt) {
   if (!['user-context', 'operation-only'].includes(receipt.classificationMode)) {
     block('RECEIPT_SHAPE_INVALID', 'classificationMode is invalid')
   }
-  classificationResult(receipt.classification)
+  classificationResult(receipt.classification, classifierScopeIds(classifier))
   exactBoolean(receipt.trust.contentAddressed, true, 'receipt.trust.contentAddressed')
   exactBoolean(receipt.trust.promotionEligible, false, 'receipt.trust.promotionEligible')
   exactBoolean(receipt.trust.rawAuthorityTextStored, false, 'receipt.trust.rawAuthorityTextStored')
@@ -388,7 +383,7 @@ export function validateAuthorityDecisionReceiptShape(receipt) {
 }
 
 export function verifyAuthorityDecisionReceipt({ receipt, ...expectedInput } = {}) {
-  validateAuthorityDecisionReceiptShape(receipt)
+  validateAuthorityDecisionReceiptShape(receipt, expectedInput.classifier)
   const expected = prepareAuthorityDecisionReceipt(expectedInput)
   const checks = [
     ['source.authorityPolicyDigest', receipt.source.authorityPolicyDigest, expected.source.authorityPolicyDigest, 'AUTHORITY_POLICY_STALE'],
