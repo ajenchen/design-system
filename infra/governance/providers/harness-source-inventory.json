@@ -401,6 +401,7 @@
         "scripts/test-verified-exact-npm-runtime.mjs",
         "scripts/test-visual-audit-interaction.mjs",
         "scripts/test-visual-baseline-review.mjs",
+        "scripts/test-week-start.mjs",
         "scripts/test-workflow-security.mjs"
       ]
     }
