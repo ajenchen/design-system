@@ -109,8 +109,18 @@ Badge 在不同 anchor 有兩種截然不同視覺 / 語意,prop 名區分:
 2. **1.0 以後的正式版**:改名留舊名一個版本(`@deprecated` + 內部轉新名,同時傳時新名勝),下一版才刪。【AI 推導 2026-11-15】沿用 2026-11-15 前第 5 條的寫法;user 還沒有對 1.0 之後的政策說過話,升 1.0 時要再確認。
 3. **不在這條政策裡的**:token「要不要退場」仍由 user 逐字決定(改的是對外的 token 組,屬產品 / UI SSOT;那是授權,不是相容)—— 這條政策只拿掉「先保留一版、下一版才刪」的程序。擋舊名寫回的守衛(禁用清單、型別 `Omit`)不是相容,保留。外部套件的名字(Radix / TanStack 型別透傳)不是 DS 的舊名。
 
+**發版說明的登記規則**(新增 / 行為與畫面變更 / 破壞性變更;2026-11-24):目的同上第三段 user 原話(「…可以很清楚明確知道新版增刪改了什麼…」);下面的分界與時點【AI 推導 2026-11-24】—— user 沒有逐條說過哪一類怎麼分,有不同意見時以 user 為準改這裡。
+1. **一個改動登記成下面其中一類**,寫進變更帳本「下一版」那一節(與破壞性變更同一節):
+   - **破壞性變更**(`changes`):消費端照舊寫會編不過、壞掉,或得到不同結果 —— 上面規則 1 的改名 / 移除 / 必填 / 收窄 / 預設值,與機器量不到的 `behavior` / `rule`。
+   - **新增**(`added`):多了可以用的東西,原本的寫法一行都不用改 —— 新元件、新出口或子路徑、新的選填參數、參數多收的值、新 token / utility class、帶預設值的新 labels 鍵、新的 CLI 指令或選項、出貨檔(例 `ds-changes.json`)多的欄位。
+   - **行為與畫面變更**(`updated`):既有的東西不用改程式,但看起來或用起來和上一版不同 —— 尺寸、間距、顏色、字級、圖示、動畫、預設文案、鍵盤 / 焦點 / 點擊 / 讀屏朗讀,以及修錯之後的行為。消費端得改程式才不會壞的不是這一類,寫破壞性變更。
+   - **無使用者可見變化**(`noVisibleChange`,不進說明):改到預覽看得見的檔,但用 DS 做產品的人在元件畫面與行為上看不到差異 —— 重構、註解、內部型別、只改範例頁(`*.stories.tsx`)的示範內容或說明、只服務自動量測的 `test-only` 範例。一定寫 `reason`(一到三句:為什麼看不到差異)。
+2. **每條寫什麼**:`added` / `updated` 寫 `id`(`<版本>/<英數>`)、`target`(消費端寫得出來的名字)、`note`(一到三句:消費端看得到什麼)、`spec`(出貨檔「段名」)、`paths`(涵蓋的 repo 檔,或以 `/` 結尾的資料夾;不用萬用字元,資料夾至少三層、在 `packages/<套件>/src/` 底下要指到 `src/<類別>/<名字>/`);`added` 另可列 `exports`(涵蓋的新出口)。破壞性變更條目也可以帶 `paths`,已寫在那裡的改動不必再寫一條。
+3. **誰、什麼時候**:改動的作者(人或 AI 實作者)**在同一個 commit** 寫入條目,不留到合回或發版前補;多包工作時各包的實作者在自己那包的 commit 寫,審查時核對條目與改動對得上。
+4. **機械閘**:`scripts/release-notes-coverage-invariant.mjs`(`npm run test:release-notes-coverage`,CI 必跑;`--selftest` 對照組):跟上一個發布 tag 比,改到預覽看得見的檔(集合 = `scripts/release-orchestrator.mjs` 的 `PRODUCT_VISIBLE`)或新增公開出口 / 子路徑(`public-surface-invariant` 量的同一套 exports)卻沒有任何一條涵蓋 → 紅;`paths` 對不到改動、豁免沒寫理由、`paths` 太寬也紅。
+
 **機械閘**:`scripts/compat-policy-invariant.mjs`(`npm run test:compat-policy`,CI 必跑;`--selftest` 對照組):NC1 0.x 下 DS 原始碼不得有 `@deprecated`;NC2 DS 原始碼與規格不得拿「向後相容 / backward compat / 保留一個版本」當理由(「」引文與指回本段的句子除外)。`scripts/public-surface-invariant.mjs`(`npm run test:public-surface`,CI 必跑):跟上一個發布 tag 比整個公開介面(exports 子路徑與出口、出口走得到的型別成員、出貨 CSS 自訂屬性、@utility、預設值),每個破壞性差異都要對到帳本一條,寫了卻沒發生、改名的 to 不存在、spec 不是出貨檔都紅,已發布的節逐位元不改。另外 `scripts/sizing-props-invariant.mjs` R1 / R2 與 `scripts/token-creation-invariant.mjs` C10 依同一支政策判。
-**發布說明與消費端**(2026-11-16 接上):GitHub Release 的「破壞性變更」段由 `scripts/release-github-release.mjs` 從帳本那一節產生(renderer 與讀回驗收 = `../../tools/changes/ledger.mjs`),讀回的說明少任何一條 id 就不發布。消費端升版讀已裝套件裡的帳本、跑 `npx qijenchen-ds-codemod upgrade`(自動改帶 `fix` 的條目、列出其餘的 檔:行 / 做法 / 規格);寫入當下另有 fork hook `check_consumer_code_quality.sh` 的已移除名字檢查(`../hooks/lib/_ds_removed_names.sh`)擋「已刪除或改名的名字」(程式與 docs / overlay;名單由帳本投影)。
+**發布說明與消費端**(2026-11-16 接上;2026-11-24 擴成三段):GitHub Release 說明依序「新增 / 行為與畫面變更 / 破壞性變更」三段(沒有條目的段寫「帳本這一節沒有登記」,不省略),由 `scripts/release-github-release.mjs` 從帳本那一節產生(renderer 與讀回驗收 = `../../tools/changes/ledger.mjs`),讀回的說明少任何一個段名、順序不對,或少任何一條 id 就不發布。消費端升版讀已裝套件裡的帳本、跑 `npx qijenchen-ds-codemod upgrade`(自動改帶 `fix` 的條目、列出其餘的 檔:行 / 做法 / 規格);寫入當下另有 fork hook `check_consumer_code_quality.sh` 的已移除名字檢查(`../hooks/lib/_ds_removed_names.sh`)擋「已刪除或改名的名字」(程式與 docs / overlay;名單由帳本投影)。
 
 ## 常用 icon canonical
 

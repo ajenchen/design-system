@@ -131,6 +131,7 @@
     "test:story-determinism": "node scripts/story-determinism-invariant.mjs && node scripts/story-determinism-invariant.mjs --selftest",
     "test:owner-claims": "node scripts/owner-claims-invariant.mjs && node scripts/owner-claims-invariant.mjs --selftest",
     "test:public-surface": "node scripts/public-surface-invariant.mjs && node scripts/public-surface-invariant.mjs --selftest",
+    "test:release-notes-coverage": "node scripts/release-notes-coverage-invariant.mjs && node scripts/release-notes-coverage-invariant.mjs --selftest",
     "test:compat-policy": "node scripts/compat-policy-invariant.mjs && node scripts/compat-policy-invariant.mjs --selftest",
     "test:token-allowlist": "node scripts/token-allowlist-invariant.mjs && node scripts/token-allowlist-invariant.mjs --selftest",
     "test:radius-usage": "node scripts/radius-usage-invariant.mjs && node scripts/radius-usage-invariant.mjs --selftest",

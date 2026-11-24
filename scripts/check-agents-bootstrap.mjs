@@ -170,7 +170,9 @@ try {
 // feedback_propose_discipline.md Sub-rule 7 篩)+ 版本紀錄一列 —— 兩條都是 user 11-22 指出的實際出錯,要所有 session 開場就讀到。
 // 2026-11-22 STORY-PROBE 明改 76,256 → 76,691(+435):work-process.md v3「每一包」加第 8 點(改到範例時實作與規格核對都照
 // story-rules.md「範例最高準則」「Technical probe visibility」核對)+ 版本紀錄一列 —— user 11-22 指出只給量具用的極端內容被做成給讀者看的範例。
-const OPENING_FILES_MAX_BYTES = 76_691
+// 2026-11-24 RELEASE-NOTES-SCOPE 明改 76,691 → 76,803(+112):work-process.md「合回點」加一句指標,指向發版說明的登記規則
+// (props-naming.md「相容政策」;只放指向、不重述)—— 包規格要求合回點指得到它,新的發版說明涵蓋閘在合回點跑的 CI 裡。
+const OPENING_FILES_MAX_BYTES = 76_803
 const RULES_DIR = path.join(ROOT, 'packages/design-system/ds-canonical/rules')
 const alwaysLoadedRules = fs.existsSync(RULES_DIR)
   ? fs.readdirSync(RULES_DIR).filter((name) => name.endsWith('.md')).sort().filter((name) => {

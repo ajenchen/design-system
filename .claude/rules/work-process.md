@@ -28,6 +28,8 @@
 
 本機跑 CI 導出的全部檢查與建置 → 推送 → 讀回 CI。CI 紅:先找根因 → 修 → 再驗 → 再推。
 
+發版說明的登記照 `packages/design-system/ds-canonical/references/props-naming.md`「相容政策」。
+
 每個合回點記一次實測:花費、各包必修數、CI 第一次讀回結果。這是「迭代」要附的證據來源。
 
 收尾給 user 看或決定的頁照 `governance/memory/feedback_propose_discipline.md` Sub-rule 7 篩;每項先寫出它改的 UI/UX 規格 檔:行(或範例本身的畫面變化),寫不出就 AI 自查。

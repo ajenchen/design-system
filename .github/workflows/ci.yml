@@ -230,6 +230,13 @@ jobs:
           # 「下一版」那一節(漏寫 / 寫了卻沒發生 / 改名 to 不存在 / spec 非出貨檔都紅),已發布的節逐位元不改。帳本隨 npm 出貨,消費端升版讀它。
           # 對照組在 --selftest(合成樹十二類各破一處 + 146→147 真實資料)。純靜態 + git 讀 tag,約 25 秒(引入帳本的這一版另逐段驗回填的三節)。
           npm run test:public-surface
+          # 發版說明涵蓋(2026-11-24):GitHub Release 說明依序「新增 / 行為與畫面變更 / 破壞性變更」三段,上面那支只保證破壞性變更 ——
+          # beta.149 的說明因此只有破壞性變更(95 條),LinkInput errorText / clearable、Coachmark 高度隨內容等都沒寫。
+          # 跟上一個發布 tag 比:改到預覽看得見的檔(scripts/release-orchestrator.mjs 的 PRODUCT_VISIBLE,不另立清單)、新增的公開出口 / 子路徑,
+          # 每一個都要被帳本「下一版」那一節的 added / updated / changes(帶 paths)/ noVisibleChange(附理由)某一條涵蓋;
+          # renderer 產生的說明要過發版端同一支讀回驗收。登記規則 ds-canonical/references/props-naming.md「相容政策」。
+          # 對照組在 --selftest(合成資料逐條各紅一面 + beta.148 → beta.149 真實資料照新規則全紅)。純靜態 + git 讀 tag,約 10 秒。
+          npm run test:release-notes-coverage
           # 相容政策(2026-11-15,user:「我認為還是 beta 的狀況下都不要再顧及所有向後相容的部分」;規則 ds-canonical/references/props-naming.md「相容政策」,
           # 版本判斷 scripts/lib/compat-policy.mjs):0.x / 預發布版 DS 原始碼不得有 @deprecated、不得拿「向後相容 / 保留一版」當理由。
           # 修前的樹:NC1 14 筆 @deprecated、NC2 77 行。對照組在 --selftest(含 beta.148 真實原始碼)。純靜態,約 3 秒。

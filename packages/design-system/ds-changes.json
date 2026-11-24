@@ -1,5 +1,5 @@
 {
-  "$comment": "變更帳本 —— DS 公開介面破壞性變更的唯一來源,給升版的消費端(通常是 AI)讀。每節的鍵 = 含這些變更的那個版本號(下一次發布的版本;不是上一個 tag)。升版時讀「已裝版(不含)到新版(含)」之間的每一節;`npx qijenchen-ds-codemod upgrade` 會套用帶 fix 的條目、列出其餘條目影響的檔案:行號。每條固定欄位:id / surface(export、prop、type、subpath、token、class、default、behavior、rule)/ target(與比對閘同一個鍵:出口名、型別名.成員、--css-變數、utility class、./子路徑、預設值鍵)/ change(removed 移除、renamed 改名、required 變必填或既有型別新增必填成員、narrowed 型別改變(收窄、改寫,含回呼參數與函式簽名)、default 預設值或 CSS 變數的值改了、behavior 行為、rule 規則)/ to(改名必填;removed 條目寫 to = 消費端該改用的名字,與 target 相同 = 名字照用、由別處提供)/ fix(能機械改寫才有:rename-prop、rename-export、rename-token)/ do(做法,與規格一致)/ spec(套件內的規格檔「段名」)。已發布的節不改;寫錯在新節加 errata: [{ supersedes: <舊 id>, 更正的欄位… }]。比對閘:scripts/public-surface-invariant.mjs(漏寫、寫了卻沒發生、改名 to 不存在、spec 不是出貨檔都紅)。相容政策(0.x 不留舊名):ds-canonical/references/props-naming.md「相容政策」。",
+  "$comment": "變更帳本 —— DS 每一版「增刪改了什麼」的唯一來源,給升版的消費端(通常是 AI)讀;GitHub Release 說明的「新增 / 行為與畫面變更 / 破壞性變更」三段由它產生。每節的鍵 = 含這些變更的那個版本號(下一次發布的版本;不是上一個 tag)。升版時讀「已裝版(不含)到新版(含)」之間的每一節;`npx qijenchen-ds-codemod upgrade` 會套用 changes 裡帶 fix 的條目、列出其餘條目影響的檔案:行號。一節 = { changes, errata?, added?, updated?, noVisibleChange? }。changes = 破壞性變更,每條固定欄位:id / surface(export、prop、type、subpath、token、class、default、behavior、rule)/ target(與比對閘同一個鍵:出口名、型別名.成員、--css-變數、utility class、./子路徑、預設值鍵)/ change(removed 移除、renamed 改名、required 變必填或既有型別新增必填成員、narrowed 型別改變(收窄、改寫,含回呼參數與函式簽名)、default 預設值或 CSS 變數的值改了、behavior 行為、rule 規則)/ to(改名必填;removed 條目寫 to = 消費端該改用的名字,與 target 相同 = 名字照用、由別處提供)/ fix(能機械改寫才有:rename-prop、rename-export、rename-token)/ do(做法,與規格一致)/ spec(套件內的規格檔「段名」)/ paths(選填:涵蓋的 repo 檔)。added = 新增(原本的寫法不用改)、updated = 行為與畫面變更(不用改程式,但畫面或行為和上一版不同),每條:id / target / note(一到三句)/ spec / paths(涵蓋的 repo 檔或以 / 結尾的資料夾)/ exports(只 added:涵蓋的新出口或子路徑)。noVisibleChange = 改到預覽看得見的檔、消費端看不到差異的豁免:{ paths 或 exports, reason }(理由必填)。已發布的節不改;changes 寫錯在新節加 errata: [{ supersedes: <舊 id>, 更正的欄位… }]。比對閘:scripts/public-surface-invariant.mjs(破壞性差異漏寫、寫了卻沒發生、改名 to 不存在、spec 不是出貨檔都紅)、scripts/release-notes-coverage-invariant.mjs(改到預覽看得見的檔或新增出口卻沒有任何一條涵蓋都紅)。哪些改動算哪一類、誰在什麼時候登記:ds-canonical/references/props-naming.md「相容政策」。",
   "releases": {
     "0.1.0-beta.146": {
       "changes": [
@@ -222,6 +222,15 @@
         {"id":"0.1.0-beta.149/SheetBody-end-by-last-edge","surface":"behavior","target":"SheetBody","change":"behavior","do":"SheetBody 的上下內距改由容器自己給(內層帶 data-layout-body=\"fill\"):最後一個東西是有完整外框的表格時底部 = loose(16 / 24,原本一律 48),是自帶上下內距的清單時 = 0,一般元素照舊 48。不用改程式;className 寫的 pt-* / pb-*(含 important 寫法)照樣蓋得過。","spec":"src/tokens/layoutSpace/layoutSpace.spec.md「容器自己判,不由寫的人挑值」"},
         {"id":"0.1.0-beta.149/PopoverBody-end-by-last-edge","surface":"behavior","target":"PopoverBody","change":"behavior","do":"PopoverBody(SurfaceBody)的上下內距改由容器自己給(帶 data-layout-body=\"hug\"):最後一個東西是有完整外框的表格時底部 = loose,是自帶上下內距的清單時 = 0,一般元素照舊與頂部同值(tight)。不用改程式;className 寫的內距覆寫(含 important 寫法)照樣蓋得過。","spec":"src/tokens/layoutSpace/layoutSpace.spec.md「容器自己判,不由寫的人挑值」"},
         {"id":"0.1.0-beta.149/layout-body-attribute-contract","surface":"rule","target":"data-layout-body","change":"rule","do":"產品自己寫會給上下內距的容器(頁面主區、右欄內容的包層)時改成加 data-layout-body=\"fill\"(擋住頁面或撐滿)或 \"hug\"(不擋頁面、貼著內容),不要再自己挑 pb-*,底距由 DS 依最後一個東西照規則 4 給:最後一個是有邊界的區塊(有完整外框的表格 / 卡片 / 面板,data-layout-region=\"bounded\")時容器底 = loose,是自帶上下內距的清單(unbounded)時 = 0,一般元素照容器種類給(fill = 48、hug = 與頂部同值)。頂部(規則 2,看第一個東西)容器仍固定給 tight:第一個東西是有框的表格 / 卡片時,要 loose 就自己寫 pt-*。自己做的有框卡片 / 面板放在容器最後時,在它的根元素加 data-layout-region=\"bounded\"(DataTable / CommandList / SidebarGroup 已帶)。","spec":"src/tokens/layoutSpace/layoutSpace.spec.md「容器自己判,不由寫的人挑值」"}
+      ]
+    },
+    "0.1.0-beta.150": {
+      "changes": [],
+      "added": [
+        {"id":"0.1.0-beta.150/ledger-added-updated","target":"./ds-changes.json","note":"變更帳本每一節多了 added(新增)與 updated(行為與畫面變更)兩個清單,另有 noVisibleChange(改到預覽看得見的檔、消費端看不到差異的豁免,附理由);破壞性變更條目可多帶 paths。升版時三類都讀:changes 照做法改,added 要用再接上,updated 不用改程式但畫面或行為和上一版不同。","spec":"ds-canonical/references/props-naming.md「相容政策」","paths":["packages/design-system/tools/changes/ledger.mjs","packages/design-system/ds-changes.json"]}
+      ],
+      "updated": [
+        {"id":"0.1.0-beta.150/release-notes-three-sections","target":"GitHub Release 說明","note":"GitHub Release 說明的帳本部分固定依序三段:新增、行為與畫面變更、破壞性變更;沒有條目的段寫「帳本這一節沒有登記」,不再整段省略。發布前讀回三個段名與每個條目 id,少一個就不發布。","spec":"ds-canonical/references/props-naming.md「相容政策」","paths":["scripts/release-github-release.mjs"]}
       ]
     }
   }

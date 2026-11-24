@@ -801,6 +801,7 @@
           "scripts/test-public-surface-invariant.mjs",
           "scripts/test-rating-field-size-invariant.mjs",
           "scripts/test-release-finalizer-mirror-handoff.mjs",
+          "scripts/test-release-notes-coverage-invariant.mjs",
           "scripts/test-release-self-audit.mjs",
           "scripts/test-repository-hygiene-invariant.mjs",
           "scripts/test-rsync-checksum-invariant.mjs",
