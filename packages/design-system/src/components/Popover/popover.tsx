@@ -61,7 +61,7 @@ PopoverTrigger.displayName = PopoverPrimitive.Trigger.displayName
 // ── 蓋在錨點上(PopoverContent `coverAnchor`;2026-11-24,總帳 Q2b(定))──
 // Radix 只會把浮層貼在錨點某一側(side + align;floating-ui 的 offset / shift / flip),沒有「浮層中心 = 錨點中心」這種擺法。
 // 做法(POC 2026-11-24:6 種錨點位置 × 3 種內容高,18 / 18 中心與推回量誤差 0px;改用 Radix 預設的對照組 0 / 18):
-// consumer 給的 virtualRef 不直接交給 Radix,交的是下面這個**穩定的**虛擬錨點 —— floating-ui 每次算位置都呼叫它的
+// consumer 給的 virtualRef 不直接交給 Radix,交的是包過一層的虛擬錨點 —— floating-ui 每次算位置都呼叫它的
 // getBoundingClientRect(開啟、捲動、縮放視窗、浮層自己長高都會重算,`autoUpdate` 有觀察浮層尺寸):
 //   - 這一組的內容沒開 coverAnchor → 原樣回錨點的矩形(畫面與改前相同);
 //   - 開了 → 用「錨點當下的矩形 + 內容當下的尺寸 + 視窗」算出浮層左上角(`coverAnchorPosition`),回一個高 0 的矩形,
@@ -69,30 +69,54 @@ PopoverTrigger.displayName = PopoverPrimitive.Trigger.displayName
 //   - 錨點沒有版面(0×0)或整個在視窗外 → 回原矩形,讓 hideWhenDetached 照常藏起來,不把浮層推回畫面上一個看不到錨點的地方
 //     (同 overlay-geometry.ts OVERLAY_HIDE_WHEN_DETACHED:沒有版面時量到的數字不代表任何事)。
 // contextElement = 錨點真正的元素:floating-ui 用它找捲動祖先、裁切範圍(Floating UI「virtual elements」https://floating-ui.com/docs/virtual-elements )。
+//
+// **換錨點 = 換一個包裝物件**(2026-11-24 審查必修):Radix 只在 virtualRef.current 換了物件時才通知「錨點變了」、floating-ui 才換參考元素
+// 並重算位置(@radix-ui/react-popper 1.2.8 dist/index.mjs:43-48 PopperAnchor 的 useEffect:`anchorRef.current = virtualRef?.current || ref.current`,
+// 與上一次不同才 `context.onAnchorChange`)。所以交給 Radix 的 ref 的 current 是 getter:consumer 的 current 是同一個東西 → 回同一個包裝;
+// 換成另一個 → 回一個綁定新錨點的新包裝;null → null —— 與直接把 consumer 的 virtualRef 交給 Radix 時,Radix 看到的「換了沒」逐次相同。
+// 只交一個永遠不變的包裝時:浮層還掛著(收起動畫中又被打開、或一直開著)consumer 改指另一個元素,Radix 不重算 → 浮層停在舊錨點、內容卻是新的
+// (Calendar 示範殼開著時點另一個事件;閘 scripts/overlay-cover-anchor-invariant.mjs M 列,對照突變 = 那個寫法)。
 type CoverAwareAnchor = { getBoundingClientRect: () => DOMRect; readonly contextElement: Element | undefined }
+type MeasurableSource = { getBoundingClientRect?: () => DOMRect }
+
+function coverAwareAnchorOf(source: MeasurableSource, coverContent: () => HTMLElement | null | undefined): CoverAwareAnchor {
+  return {
+    get contextElement() { return elementOfVirtual(source) ?? undefined },
+    getBoundingClientRect() {
+      const rect = source.getBoundingClientRect?.() ?? new DOMRect()
+      const content = coverContent()
+      if (!content?.isConnected) return rect
+      const root = content.ownerDocument.documentElement
+      const viewport = { width: root.clientWidth, height: root.clientHeight }
+      const detached = (rect.width === 0 && rect.height === 0) || rect.bottom <= 0 || rect.right <= 0 || rect.top >= viewport.height || rect.left >= viewport.width
+      if (detached) return rect
+      const { x, y } = coverAnchorPosition(rect, { width: content.offsetWidth, height: content.offsetHeight }, viewport)
+      return new DOMRect(x, y, rect.width, 0)
+    },
+  }
+}
 
 function useCoverAwareAnchor(virtualRef: React.RefObject<unknown> | undefined, registry: ReturnType<typeof useOverlayAnchorRegistry>) {
   const latest = React.useRef(virtualRef)
   latest.current = virtualRef
-  const stable = React.useRef<{ current: CoverAwareAnchor } | null>(null)
-  if (!stable.current) {
-    const source = () => latest.current?.current as { getBoundingClientRect?: () => DOMRect } | null | undefined
-    stable.current = { current: {
-      get contextElement() { return elementOfVirtual(source()) ?? undefined },
-      getBoundingClientRect() {
-        const rect = source()?.getBoundingClientRect?.() ?? new DOMRect()
-        const content = registry?.coverContent.current
-        if (!content?.isConnected) return rect
-        const root = content.ownerDocument.documentElement
-        const viewport = { width: root.clientWidth, height: root.clientHeight }
-        const detached = (rect.width === 0 && rect.height === 0) || rect.bottom <= 0 || rect.right <= 0 || rect.top >= viewport.height || rect.left >= viewport.width
-        if (detached) return rect
-        const { x, y } = coverAnchorPosition(rect, { width: content.offsetWidth, height: content.offsetHeight }, viewport)
-        return new DOMRect(x, y, rect.width, 0)
+  const latestRegistry = React.useRef(registry)
+  latestRegistry.current = registry
+  const handle = React.useRef<{ readonly current: CoverAwareAnchor | null } | null>(null)
+  if (!handle.current) {
+    let source: MeasurableSource | null = null
+    let wrapped: CoverAwareAnchor | null = null
+    handle.current = {
+      get current() {
+        const next = (latest.current?.current ?? null) as MeasurableSource | null
+        if (next !== source) {
+          source = next
+          wrapped = next ? coverAwareAnchorOf(next, () => latestRegistry.current?.coverContent.current) : null
+        }
+        return wrapped
       },
-    } }
+    }
   }
-  return virtualRef ? stable.current : undefined
+  return virtualRef ? handle.current : undefined
 }
 
 const PopoverAnchor = React.forwardRef<
@@ -102,7 +126,7 @@ const PopoverAnchor = React.forwardRef<
   const composedRef = useRegisterOverlayNode("popover", "anchor", ref)
   // virtualRef 時 Radix 不畫元素(callback ref 拿不到節點)→ 登記 ref 本身,密度改從它指到的元素那一區讀
   useRegisterVirtualAnchor("popover", virtualRef)
-  // 交給 Radix 的是穩定的虛擬錨點(見上方「蓋在錨點上」);沒開 coverAnchor 時它原樣回 virtualRef 指到的那個東西的矩形
+  // 交給 Radix 的是包過一層的虛擬錨點(見上方「蓋在錨點上」;consumer 換錨點 = 換一個包裝,Radix 才會重算);沒開 coverAnchor 時它原樣回 virtualRef 指到的那個東西的矩形
   const radixVirtualRef = useCoverAwareAnchor(virtualRef, useOverlayAnchorRegistry("popover"))
   return <PopoverPrimitive.Anchor ref={composedRef} {...props} virtualRef={radixVirtualRef as React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Anchor>["virtualRef"]} />
 })
