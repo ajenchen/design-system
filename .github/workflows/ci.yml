@@ -256,6 +256,11 @@ jobs:
           # 結構圖色塊(2026-10-21,r1b fields 複驗 D2):同一列裡不同色名必須畫成不同顏色 —— Combobox 結構圖的搜尋框用 primary,
           # 與 chevron 的 info 同是 --color-blue-6,畫出來一模一樣。照 semantic.css / primitives.css 展開到底,淺色深色都比。純靜態,約 1 秒。
           npm run test:anatomy-chip-palette
+          # 週起始日只有一條規則(2026-11-24,user 選「跟語系的 CLDR (Recommended)」;lib/date-locale.ts):有傳 weekStartsOn 就用,沒傳時語系 → CLDR
+          # (先 Intl getWeekInfo、沒有就查內建表,-u-fw- 兩條都認)。判定表 × 三條路、內建表對每個地區代碼與執行環境 CLDR 相同、DataTable
+          # 本週 / 上週 / 下週固定時鐘判定表、消費端(DateGrid / DatePicker / 篩選寫入點 / 格編輯器 / 預設語系 zh-TW)真的呼叫;
+          # 對照組:表少 TW、不解析 fw、不換算 %7、忽略參數、篩選寫死週一、消費端各拿掉一處,各自必紅。純函式 + 讀檔,約 2 秒。
+          npm run test:week-start
 
       - name: Registered test scripts nothing was running
         run: |

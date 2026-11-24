@@ -413,7 +413,7 @@ DatePicker 自己早就有那個指示 —— 作用端下方一條主色粗線
 
 ### C 類為什麼是「從自己往上」而不是「往上」
 
-同一次對照又撞到第二面牆:`combobox.tsx:672`、`time-picker.tsx:391` 這兩行,
+同一次對照又撞到第二面牆:`combobox.tsx:672`、`time-picker.tsx:392` 這兩行,
 **元素本身就是那圈欄位外框**(`fieldWrapperStyles` + `focus-within:!border-primary`)。
 `:focus-within` 在元素自己取得焦點時也會命中,所以它們其實**有畫**,只是用邊框轉色而不是外框。
 寫成「往上找祖先」會把這種情況判成無承擔者 —— 但它是全 Field 家族觸發器的標準寫法。

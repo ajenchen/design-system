@@ -8,6 +8,7 @@ import { Button } from '@/design-system/components/Button/button'
 import type { SelectOption } from '@/design-system/components/Select/select'
 import { SurfaceHeader, SurfaceBody, COMPACT_HEADER_SLOT } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import { PopoverTitle, PopoverClose } from '@/design-system/components/Popover/popover'
+import { resolveWeekStartsOn } from '@/design-system/lib/date-locale'
 import type { ColumnType } from './column-types'
 import { getColumnId, getColumnLabel, getColumnMeta } from './lib/column-meta'
 import {
@@ -15,6 +16,7 @@ import {
   GroupBlock,
   getDefaultOperator,
   datePrecisionOf,
+  weekStartsOnOf,
   type FilterColumn,
 } from './data-table-filter-group'
 import {
@@ -91,6 +93,8 @@ function extractColumns<TData>(columns: ColumnDef<TData, any>[]): FilterColumn[]
       options: meta?.options,
       people: meta?.people,
       includeTime: meta?.includeTime,
+      // 「本週 / 上週 / 下週」的週起始日:這一欄有寫就用,沒寫由這一欄的語系推(語系 → CLDR;都沒寫 = zh-TW = 週日)
+      weekStartsOn: type === 'date' ? resolveWeekStartsOn(meta?.locale, meta?.weekStartsOn) : undefined,
     })
   }
   return out
@@ -103,6 +107,7 @@ const newCondition = (firstCol: FilterColumn | undefined): FilterCondition => ({
   op: firstCol ? getDefaultOperator(firstCol.type) : '',
   value: '',
   datePrecision: datePrecisionOf(firstCol),
+  weekStartsOn: weekStartsOnOf(firstCol),
 })
 
 // **G fix(2026-05-04)**:initial-mount 用 — field 不預選,user 自選後 op/value 才 enable
@@ -274,6 +279,7 @@ function DataTableFilterPanelInner<TData>({
         // 2026-07-14 deep-audit fix:補 datePrecision(原漏 → datetime(includeTime=true)欄
         // prefill 掉到 undefined=day 精度忽略 ms;對齊初始 add / changeField 路徑的 datePrecisionOf)
         datePrecision: datePrecisionOf(colInfo),
+        weekStartsOn: weekStartsOnOf(colInfo),
       }
       if (value.mode === 'flat') {
         onChange({ ...value, children: [...value.children, cond] })
@@ -426,7 +432,7 @@ function DataTableFilterPanelInner<TData>({
             onChangeConjunction={setFlatConjunction}
             onChangeField={(v) => {
               const newCol = filterableColumns.find((c) => c.id === v)
-              updateFlatCondition(cond.id, { field: v, op: getDefaultOperator(newCol?.type), value: '', datePrecision: datePrecisionOf(newCol) })
+              updateFlatCondition(cond.id, { field: v, op: getDefaultOperator(newCol?.type), value: '', datePrecision: datePrecisionOf(newCol), weekStartsOn: weekStartsOnOf(newCol) })
             }}
             onChangeOp={(v) => updateFlatCondition(cond.id, { op: v, value: '' })}
             onChangeValue={(v) => updateFlatCondition(cond.id, { value: v })}

@@ -16,6 +16,7 @@ import { Combobox } from '@/design-system/components/Combobox/combobox'
 import { Input } from '@/design-system/components/Input/input'
 import { NumberInput } from '@/design-system/components/NumberInput/number-input'
 import { DatePicker, DatePickerRange } from '@/design-system/components/DatePicker/date-picker'
+import type { WeekStartsOn } from '@/design-system/lib/date-locale'
 import { PeoplePicker } from '@/design-system/components/PeoplePicker/people-picker'
 import type { PersonValue } from '@/design-system/components/PeoplePicker/person-display'
 import {
@@ -38,6 +39,8 @@ export interface FilterValuePickerColInfo {
   options?: Array<{ value: string; label: string }>
   /** Person pool — person/multiPerson filter picker 用(2026-05-07 升級,SSOT 對齊 cell-registry) */
   people?: Array<{ name: string; avatarUrl?: string; description?: string }>
+  /** date 欄的週起始日(同一欄的「本週」篩選用同一個值;panel 的 extractColumns 已解析) */
+  weekStartsOn?: WeekStartsOn
 }
 
 export interface FilterValuePickerProps {
@@ -101,6 +104,7 @@ export function FilterValuePicker({
       return (
         <DatePicker
           size="sm"
+          weekStartsOn={colInfo?.weekStartsOn}
           value={typeof value === 'string' ? value : null}
           onChange={(v) => onChange(v ?? '')}
           aria-label={ariaLabel}
@@ -112,6 +116,7 @@ export function FilterValuePicker({
       return (
         <DatePickerRange
           size="sm"
+          weekStartsOn={colInfo?.weekStartsOn}
           value={Array.isArray(value) && value.length === 2
             ? (value as [string | null, string | null])
             : null}
@@ -189,6 +194,7 @@ export function FilterValuePicker({
         <DatePicker
           size="sm"
           showTime
+          weekStartsOn={colInfo?.weekStartsOn}
           value={typeof value === 'string' ? value : null}
           onChange={(v) => onChange(v ?? '')}
           aria-label={ariaLabel}
@@ -201,6 +207,7 @@ export function FilterValuePicker({
         <DatePickerRange
           size="sm"
           showTime
+          weekStartsOn={colInfo?.weekStartsOn}
           value={Array.isArray(value) && value.length === 2
             ? (value as [string | null, string | null])
             : null}

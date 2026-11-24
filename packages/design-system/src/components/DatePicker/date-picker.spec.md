@@ -164,7 +164,8 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
   disabled
   clearable                             // 一次清空兩端點
   formatOptions                         // Intl.DateTimeFormatOptions,與 single 共用
-  locale
+  locale                                // 預設 'zh-TW';也決定日曆面週首日(見「週起始日」)
+  weekStartsOn={prefs.weekStartsOn}     // 選填,0 = 週日 … 6 = 週六;沒傳由 locale 推,與 single 共用(app 層同一個值)
   showTime                              // 啟用時間欄位 → value 變 [datetime, datetime]
   showSeconds                           // showTime 時是否顯示秒
   minuteStep={15}
@@ -318,9 +319,15 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 | 選項 | 說明 | 範例 |
 |------|------|------|
 | `formatOptions` | `Intl.DateTimeFormatOptions` | `{ year: 'numeric', month: 'short', day: 'numeric' }` |
-| `locale` | BCP 47 locale | `'zh-TW'`、`'en-US'` |
+| `locale` | BCP 47 locale,預設 `'zh-TW'`(DS 日期元件共用的 `DEFAULT_DATE_LOCALE`,`../../lib/date-locale.ts`) | `'zh-TW'`、`'en-US'` |
 
-預設(未傳 `formatOptions` / `locale`)直接組 `YYYY/MM/DD`(locale-independent,對齊 Ant year-first:Ant 預設 `YYYY-MM-DD`,https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/index.en-US.md#L183;見 date-picker.tsx `formatDate` 註解);傳 `formatOptions` / `locale` 才走 `Intl.DateTimeFormat`。View / readonly / disabled 模式(含 DataTable cell)與 Edit 模式 trigger 文字同一條格式化路徑,兩者一致。
+預設(未傳 `formatOptions` / `locale`)直接組 `YYYY/MM/DD`(locale-independent,對齊 Ant year-first:Ant 預設 `YYYY-MM-DD`,https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/index.en-US.md#L183;見 date-picker.tsx `formatDate` 註解);這個字面跟預設語系 zh-TW 走 `Intl.DateTimeFormat` 兩位數年月日的輸出相同(`2026/07/15`)。傳 `formatOptions` / `locale` 才走 `Intl.DateTimeFormat`,只傳 `formatOptions` 時語系用 zh-TW。View / readonly / disabled 模式(含 DataTable cell)與 Edit 模式 trigger 文字同一條格式化路徑,兩者一致。
+
+**預設語系 zh-TW(2026-11-24)**:user 選「全 DS 日期元件一起改 zh-TW (Recommended)」(選項為 AI 擬;Calendar / DatePicker / TimePicker 同一個預設)。之前是 `'en-US'`:只傳 `formatOptions` 沒傳 `locale` 的欄位,文字從英文變中文(例 `{ year: 'numeric', month: 'long', day: 'numeric' }`:「April 2, 2026」→「2026年4月2日」);什麼格式參數都沒傳的欄位畫面不變。
+
+## 週起始日
+
+日曆面(單日與 `DatePicker.Range` 都是)一週從哪天開始:有傳 `weekStartsOn`(0 = 週日 … 6 = 週六)就用;沒傳時由 `locale` 推 —— 語系 → CLDR,規則的唯一住處是 `../DateGrid/date-grid.spec.md`「週起始日」(實作 `../../lib/date-locale.ts` `resolveWeekStartsOn`)。預設語系 zh-TW = 週日,所以沒傳 `locale` 也沒傳 `weekStartsOn` 的日曆畫面不變;傳 `locale="en-GB"` / `"de-DE"` / `"zh-CN"` 的,2026-11-24 起日曆面是週一起(之前日曆面一律是 react-day-picker 預設的週日起,不看 `locale`)。產品有「一週從週一開始」這類使用者偏好時,在 app 層把同一個值傳給每一個日期元件的 `weekStartsOn`(不要在個別元件寫死數字,理由見 DateGrid 設計原則「週首日不可在元件內硬寫」)。日曆面的月份與星期文字仍是 react-day-picker 預設的英文,`locale` 目前只管欄位文字與週首日。
 
 ---
 

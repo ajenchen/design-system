@@ -98,7 +98,8 @@ export const Overview = {
             <AnatomyBox label="button_next" color="info" />
           </div>
           <div className="grid grid-cols-7 gap-1">
-            {['一', '二', '三', '四', '五', '六', '日'].map((d) => (
+            {/* 星期順序照下方實際渲染的 zhTW(週日起,語系的 CLDR;2026-11-24 前是 date-fns 物件寫的週一起) */}
+            {['日', '一', '二', '三', '四', '五', '六'].map((d) => (
               <AnatomyBox key={d} label="weekday" color="warning">{d}</AnatomyBox>
             ))}
             {Array.from({ length: 14 }).map((_, i) => (
@@ -143,7 +144,8 @@ export const Overview = {
                 ['showOutsideDays', 'boolean', 'true', '單月:顯示前後月的淡字日期補滿格;numberOfMonths ≥ 2 時強制不顯示(同一天不在兩張月曆各出現一次,2026-09-23 user 拍板)'],
                 ['numberOfMonths', 'number', '1', '同時顯示幾個月(range 建議 2)'],
                 ['disabled', 'Matcher | Matcher[]', '—', '禁用日期(支援 before/after/Date[]/函式)'],
-                ['locale', 'Locale', "'en-US'", "date-fns locale,控制週首日與星期標頭語言"],
+                ['locale', 'Locale', "'en-US'", "date-fns locale,控制月份與星期標頭語言;週首日由它的語系代碼經 CLDR 推(不讀物件裡寫的週首日:date-fns 的 zhTW 寫週一,CLDR 的台灣是週日)"],
+                ['weekStartsOn', '0 | 1 | 2 | 3 | 4 | 5 | 6', '由 locale 推', '覆寫週首日(0 = 週日);沒傳 = 語系的 CLDR'],
                 ['autoFocus', 'boolean', 'false', '掛載時聚焦到選中日(或今日)'],
                 ['classNames', 'Partial<Record<Part, string>>', '—', '合併至本元件預設 classNames(覆寫而非取代)'],
               ].map(([p, t, d, desc]) => (

@@ -22,6 +22,7 @@ import { Button } from '@/design-system/components/Button/button'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { useTruncated } from '@/design-system/hooks/use-truncated'
+import { DEFAULT_DATE_LOCALE } from '@/design-system/lib/date-locale'
 
 /**
  * Calendar — 月事件檢視 canvas
@@ -126,7 +127,7 @@ interface CalendarOwnProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'o
 
   className?: string
 
-  /** locale(預設 'en-US') */
+  /** locale(預設 'zh-TW' = DS 日期元件共用的 `DEFAULT_DATE_LOCALE`) */
   locale?: string
 
   /** ARIA labels for chrome controls. Override for i18n. */
@@ -275,7 +276,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   weekStartsOn = 0,
   renderEventTile,
   className,
-  locale = 'en-US',
+  locale = DEFAULT_DATE_LOCALE,
   prevAriaLabel = '上個月', // i18n-allow: DS default; consumer override via prevAriaLabel prop
   nextAriaLabel = '下個月', // i18n-allow: DS default; consumer override via nextAriaLabel prop
   navAriaLabel = '行事曆月份導覽', // i18n-allow: DS default; consumer override via navAriaLabel prop
