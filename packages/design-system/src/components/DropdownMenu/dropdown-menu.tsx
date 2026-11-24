@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 import type { AvatarData } from "@/design-system/components/Avatar/avatar"
 import { MenuItem } from "@/design-system/components/Menu/menu-item"
 import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
-import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING, OVERLAY_HIDE_WHEN_DETACHED } from "@/design-system/tokens/elevation/overlay-geometry"
+import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING, OVERLAY_HIDE_WHEN_DETACHED, OVERLAY_AVAILABLE_HEIGHT, capHeight } from "@/design-system/tokens/elevation/overlay-geometry"
 import {
   RowSizeProvider,
   useRowSize,
@@ -241,10 +241,12 @@ interface DropdownMenuContentProps
    */
   minWidth?: number
   /**
-   * 最大高度（px）——**可選更低上限**。預設已 viewport-adaptive(夾到 trigger→視窗碰撞邊界的剩餘高度、
+   * 最大高度 ——**可選更低上限**。預設已 viewport-adaptive(夾到 trigger→視窗碰撞邊界的剩餘高度、
    * 離窗 ≥8px、超過即捲動);傳 `maxHeight` 只在「想比視窗剩餘更矮」時用(取 `min(視窗剩餘, maxHeight)`)。
+   * 數字 = px;2026-11-24 起另收字串(`60svh` / `calc(100svh - 120px)`),契約同 `DialogContent` / `PopoverContent` 的 `maxHeight`
+   * (公式住 `tokens/elevation/overlay-geometry.ts` 的 `capHeight`)。
    */
-  maxHeight?: number
+  maxHeight?: number | string
 }
 
 const DropdownMenuContent = React.forwardRef<
@@ -283,10 +285,8 @@ const DropdownMenuContent = React.forwardRef<
         // 2026-07-18 viewport-adaptive max-h(對齊 HoverCard/Popover 既有 canonical):夾到「trigger 到
         //   碰撞邊界(已內縮 collisionPadding=8px)的剩餘高度」→ 高選單不溢出視窗、離視窗邊 ≥8px、
         //   短選單仍貼內容;consumer `maxHeight` 為**可選更低上限**(min 取小者)。inline style 非 class,
-        //   故動態 maxHeight 不觸 Tailwind 掃描陷阱。
-        maxHeight: maxHeight
-          ? `min(var(--radix-dropdown-menu-content-available-height, 100vh), ${maxHeight}px)`
-          : 'var(--radix-dropdown-menu-content-available-height, 100vh)',
+        //   故動態 maxHeight 不觸 Tailwind 掃描陷阱。2026-11-24 起公式讀 overlay-geometry 的 capHeight(全 DS 一條)。
+        maxHeight: capHeight(OVERLAY_AVAILABLE_HEIGHT, maxHeight),
       }}
       {...props}
       // 選單開著按 Tab = 收起全部、從開啟者往下 / 往上走(B11;蓋掉 Radix 的擋 Tab)
@@ -318,14 +318,19 @@ const DropdownMenuSubContent = React.forwardRef<
     <DropdownMenuPrimitive.SubContent
       ref={ref}
       sideOffset={OVERLAY_SIDE_OFFSET}
-      className={cn(floatingLayerClass, 'py-2', className)}
-      style={{ boxShadow: 'var(--elevation-200)', minWidth: 180 }}
+      // 高度上限與捲動同主選單(2026-11-24;elevation.spec.md「浮層高度上限」):修前子選單沒有任何上限、也沒有 ScrollArea,
+      // 比可用高還高時超出視窗被切掉而且捲不到。現在夾到可用高、超過就在 ScrollArea 裡捲;
+      // 短子選單 flex-1 貼內容,畫面與修前相同(py-2 搬到捲動區內層,跟 DropdownMenuContent 同一套)。
+      className={cn(floatingLayerClass, 'flex flex-col min-h-0', className)}
+      style={{ boxShadow: 'var(--elevation-200)', minWidth: 180, maxHeight: capHeight(OVERLAY_AVAILABLE_HEIGHT) }}
       {...props}
       onKeyDown={subKeyboard.onKeyDown}
       onEscapeKeyDown={subKeyboard.onEscapeKeyDown}
     >
       <RowSizeProvider value={size}>
-        {children}
+        <ScrollArea className="flex-1 min-h-0" viewportTabIndex={null}>
+          <div className="py-2">{children}</div>
+        </ScrollArea>
       </RowSizeProvider>
     </DropdownMenuPrimitive.SubContent>
   )

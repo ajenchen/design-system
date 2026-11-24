@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import { SurfaceHeader, SurfaceBody, SurfaceFooter, COMPACT_HEADER_SLOT, type SurfaceHeaderProps } from "@/design-system/patterns/overlay-surface/overlay-surface"
 import { TruncatedText } from "@/design-system/patterns/element-anatomy/truncated-text"
 import { Button } from "@/design-system/components/Button/button"
-import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING, OVERLAY_HIDE_WHEN_DETACHED, OVERLAY_VIEWPORT_MAX_WIDTH } from "@/design-system/tokens/elevation/overlay-geometry"
+import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING, OVERLAY_HIDE_WHEN_DETACHED, OVERLAY_VIEWPORT_MAX_WIDTH, OVERLAY_AVAILABLE_HEIGHT, capHeight } from "@/design-system/tokens/elevation/overlay-geometry"
 import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
 import { withOverlayEscape } from "@/design-system/lib/overlay-escape"
 import { useExitStartFocusReturn } from "@/design-system/lib/overlay-focus-return"
@@ -114,12 +114,18 @@ interface PopoverContentProps extends React.ComponentPropsWithoutRef<typeof Popo
    * 2026-11-15 前只能用 `className="w-80"` / `"w-auto"` 改(沒有型別;className 仍可用,但改寬走這個參數)。
    */
   width?: number | 'hug'
+  /**
+   * 最大高度 —— **只能選更矮的上限**(2026-11-24;契約同 `DialogContent` 的 `maxHeight`)。預設上限 = 觸發點那一側的可用高
+   * (Radix 算到碰撞邊界、已扣 collisionPadding;`OVERLAY_AVAILABLE_HEIGHT`);傳值時取 `min(可用高, 此值)`,傳再大也不會超出視窗。
+   * 數字 = px;字串照原樣(`60svh` / `calc(100svh - 120px)`)。公式住 `tokens/elevation/overlay-geometry.ts` 的 `capHeight`。
+   */
+  maxHeight?: number | string
 }
 
 const PopoverContent = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Content>,
   PopoverContentProps
->(({ className, style, width, align = "center", sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, onOpenAutoFocus, onCloseAutoFocus, onInteractOutside, onEscapeKeyDown, "aria-label": ariaLabel, "aria-labelledby": ariaLabelledBy, ...props }, ref) => {
+>(({ className, style, width, maxHeight, align = "center", sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, onOpenAutoFocus, onCloseAutoFocus, onInteractOutside, onEscapeKeyDown, "aria-label": ariaLabel, "aria-labelledby": ariaLabelledBy, ...props }, ref) => {
   const titleId = React.useId()
   const [hasTitle, setHasTitle] = React.useState(false)
   const titleContext = React.useMemo<PopoverTitleContextValue>(
@@ -184,9 +190,10 @@ const PopoverContent = React.forwardRef<
           className={cn(
             // @focus-suppress E — E 浮層程式落點;承擔者:浮層開啟時的程式落點;內部控件各自有指示
             "z-50 w-72 rounded-lg border border-border bg-surface-raised text-foreground shadow-[var(--elevation-200)] outline-none",
-            // 2026-05-04 viewport-aware max-h SSOT(從 ProfileCard 升 DS-wide):header/footer 永遠 in-viewport,body 壓縮 scroll
+            // 2026-05-04 viewport-aware 高度上限(從 ProfileCard 升 DS-wide):header/footer 永遠 in-viewport,body 壓縮 scroll。
+            // 上限本身寫在下方 style.maxHeight(2026-11-24 起讀 overlay-geometry 的 capHeight;class 讀不到 TS 常數)
             // 2026-05-05 audit dim 35 補:加 `min-h-0` 完成 M25 chain invariant(flex item default min-h: auto 阻 shrink)
-            "max-h-[var(--radix-popover-content-available-height,100vh)] flex flex-col overflow-hidden min-h-0",
+            "flex flex-col overflow-hidden min-h-0",
             overlayMotion,
             // 何時播 / 收尾 / 減少動態由 overlayMotion 負責(tokens/motion/overlay-motion.ts);這裡只寫幾何
             "data-[state=closed]:fade-out-0 not-data-[state=closed]:fade-in-0 data-[state=closed]:zoom-out-95 not-data-[state=closed]:zoom-in-95",
@@ -196,8 +203,13 @@ const PopoverContent = React.forwardRef<
             width === "hug" && "w-auto",
             className
           )}
+          // 高度上限 = capHeight(可用高, maxHeight)(tokens/elevation/overlay-geometry.ts;與 HoverCard / DropdownMenu / Dialog 同一條公式)。
           // width={數字}:inline style 勝過 class 的預設 w-72;夾限與表格工具面板同一份(OVERLAY_VIEWPORT_MAX_WIDTH)。consumer 的 style 最後展開,仍可蓋
-          style={typeof width === "number" ? { width: `${width}px`, maxWidth: OVERLAY_VIEWPORT_MAX_WIDTH, ...style } : style}
+          style={{
+            maxHeight: capHeight(OVERLAY_AVAILABLE_HEIGHT, maxHeight),
+            ...(typeof width === "number" ? { width: `${width}px`, maxWidth: OVERLAY_VIEWPORT_MAX_WIDTH } : null),
+            ...style,
+          }}
           {...props}
           // 這一下 Esc 由誰處理(全 DS 一支,判準與出處住 lib/overlay-escape.ts withOverlayEscape):輸入法組字中不關;焦點所在控件宣告了自己還有一層
           // 且在這一層裡面(面板裡改過的欄位 / 鍵盤拖曳中的條件)→ 留給控件、不關;控件在外面(可打字的 DatePicker 欄位 + 它自己的日曆)→ 照舊關這一層

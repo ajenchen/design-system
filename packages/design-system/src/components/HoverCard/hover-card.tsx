@@ -6,7 +6,7 @@ import * as React from "react"
 import * as HoverCardPrimitive from "@radix-ui/react-hover-card"
 
 import { cn } from "@/lib/utils"
-import { OVERLAY_SIDE_OFFSET, OVERLAY_HIDE_WHEN_DETACHED } from "@/design-system/tokens/elevation/overlay-geometry"
+import { OVERLAY_SIDE_OFFSET, OVERLAY_HIDE_WHEN_DETACHED, OVERLAY_AVAILABLE_HEIGHT, capHeight } from "@/design-system/tokens/elevation/overlay-geometry"
 import { MOTION_DELAY_RICH_MS, MOTION_DELAY_CLOSE_MS } from "@/design-system/tokens/motion/motion"
 import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
 import { OverlayAnchorScope, useRegisterOverlayNode, useTriggerRegionDensity } from "@/design-system/lib/overlay-density"
@@ -60,10 +60,18 @@ const HoverCardTrigger = React.forwardRef<
 })
 HoverCardTrigger.displayName = HoverCardPrimitive.Trigger.displayName
 
+interface HoverCardContentProps extends React.ComponentPropsWithoutRef<typeof HoverCardPrimitive.Content> {
+  /**
+   * 最大高度 —— **只能選更矮的上限**(2026-11-24;契約同 `DialogContent` / `PopoverContent` 的 `maxHeight`)。預設上限 = 觸發點那一側的可用高
+   * (`OVERLAY_AVAILABLE_HEIGHT`);傳值時取 `min(可用高, 此值)`。數字 = px;字串照原樣。公式住 `tokens/elevation/overlay-geometry.ts` 的 `capHeight`。
+   */
+  maxHeight?: number | string
+}
+
 const HoverCardContent = React.forwardRef<
   React.ElementRef<typeof HoverCardPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof HoverCardPrimitive.Content>
->(({ className, align = "center", sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = 12, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, ...props }, ref) => {
+  HoverCardContentProps
+>(({ className, style, maxHeight, align = "center", sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = 12, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, ...props }, ref) => {
   // 觸發點那一區的兩軸檔位(不鎖任何一軸;稽核 R7-04 甲:照 density.spec.md 預設「繼承」,只是來源從整頁改成觸發點那一區)
   const { attrs: regionDensity, ref: contentRef } = useTriggerRegionDensity("hover-card", ref)
   return (
@@ -87,9 +95,10 @@ const HoverCardContent = React.forwardRef<
       className={cn(
         // @focus-suppress E — E 浮層程式落點;承擔者:浮層開啟時的程式落點
         "z-50 outline-none",
-        // 2026-05-04 viewport-aware max-h SSOT(對齊 Popover):header/footer 永遠 in-viewport,body 壓縮 scroll
+        // 2026-05-04 viewport-aware 高度上限(對齊 Popover):header/footer 永遠 in-viewport,body 壓縮 scroll。
+        // 上限本身寫在下方 style.maxHeight(2026-11-24 起讀 overlay-geometry 的 capHeight;class 讀不到 TS 常數)
         // 2026-05-05 audit dim 35 fix:加 `min-h-0` 完成 M25 chain invariant
-        "max-h-[var(--radix-hover-card-content-available-height,100vh)] flex flex-col overflow-hidden min-h-0",
+        "flex flex-col overflow-hidden min-h-0",
         // 何時播 / 時長 / 曲線 / 收尾 / 減少動態 = overlayMotion(tokens/motion/overlay-motion.ts;與 Popover / DropdownMenu / Tooltip 同一份);
         // 這裡只寫幾何。(2026-07-05 曾在此補 motion-reduce 豁免,但那條守衛的權重輸給 data-[state=…]:animate-*,
         // 從來沒生效 —— 2026-10-07 改由 overlayMotion 只在 motion-safe 下宣告動畫,待辦總帳 T7)
@@ -101,6 +110,8 @@ const HoverCardContent = React.forwardRef<
         "origin-[var(--radix-hover-card-content-transform-origin)]",
         className,
       )}
+      // 高度上限 = capHeight(可用高, maxHeight)(與 Popover / DropdownMenu / Dialog 同一條公式);consumer 的 style 最後展開,仍可蓋
+      style={{ maxHeight: capHeight(OVERLAY_AVAILABLE_HEIGHT, maxHeight), ...style }}
       {...props}
     />
   </HoverCardPrimitive.Portal>

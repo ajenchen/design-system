@@ -108,7 +108,7 @@ Modal 與 viewport 四邊保持 `--layout-space-viewport-inset`(48px)最小間�
 - **恆小於視窗高**,所以 header 與 footer 在絕大多數情況都露得出來(超長內容由 body 自己捲,外框不動)。
 - **consumer 只能往更矮調**:`maxHeight` 傳比視窗大的值也會被 `min()` 夾住。型別 `string | number`
   (number 視為 px;string 才寫得出 `60svh` / `calc(100svh - 120px)`),照 DS 上下限參數的寫法(`../../../ds-canonical/references/props-naming.md`「尺寸參數」)。
-  形狀對齊 `DropdownMenu` 的 `maxHeight`(同樣是「可選更低上限」)。
+  與 `Popover` / `HoverCard` / `DropdownMenu` 的 `maxHeight` 是同一個契約、同一支公式(「可選更低上限」)。**程式只有一份**:上面兩行的可用高與上限公式住 `../../tokens/elevation/overlay-geometry.ts`(`MODAL_AVAILABLE_HEIGHT` + `capHeight`,2026-11-24 從 `dialog.tsx` 搬過去),全部浮層的高度上限總覽在 `../../tokens/elevation/elevation.spec.md`「浮層高度上限」;本段仍是 Dialog 高度規則的 owner。
 - **用 `svh` 不用 `vh`**:行動裝置網址列收合時 `100vh` 大於實際可視高度,底部主要動作鈕會被切掉。
   DS 其他填滿視窗的外框已是這個選擇(`app-shell.tsx` 的 `h-svh`、`sidebar.tsx` 的 `100svh`)。桌機兩者等值。
 

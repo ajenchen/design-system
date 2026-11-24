@@ -436,6 +436,7 @@
           "scripts/test-global-body-font-invariant.mjs",
           "scripts/test-header-tabs-slot-invariants.mjs",
           "scripts/test-menu-message-row-invariant.mjs",
+          "scripts/test-overlay-height-cap-invariant.mjs",
           "scripts/test-pagination-narrow-ladder-invariant.mjs",
           "scripts/test-sidebar-handle-scrollbar-hit-invariant.mjs",
           "scripts/test-switch-thumb-ring-invariant.mjs"
@@ -793,6 +794,7 @@
           "scripts/test-named-constant-drift-invariant.mjs",
           "scripts/test-naming-structure-invariant.mjs",
           "scripts/test-overlay-density-lock-invariant.mjs",
+          "scripts/test-overlay-height-ssot-invariant.mjs",
           "scripts/test-overlay-nested-dismiss-invariant.mjs",
           "scripts/test-owner-claims-invariant.mjs",
           "scripts/test-produce-hook-enforced-evidence.mjs",

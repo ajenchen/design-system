@@ -46,7 +46,7 @@ import { OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-ge
  *      (2026-07-05 D4;對齊 dialog.tsx handleOpenAutoFocus `?? content` fallback,見 spec「A11y 預設」)。
  *
  * ── 高度隨內容,超過可用高度時內容區捲動(2026-11-22 user 拍板「丙」;spec「高度與捲動」)──
- *   外殼沿用 PopoverContent 的可用高度上限(popover.tsx#PopoverContent max-h available-height);
+ *   外殼沿用 PopoverContent 的可用高度上限(popover.tsx#PopoverContent;公式住 tokens/elevation/overlay-geometry.ts capHeight);
  *   Header / Footer 不縮、永遠看得到,中間「內容區」= Media + Body 一起包 ScrollArea(overlay-surface.spec.md
  *   「Popover 例外」:長內容 Popover 走 ScrollArea)。放得下時內容區高度 = 內容,畫面跟以前一樣;
  *   放不下才捲。內容區真的捲得動時才進 Tab 順序(tabIndex 0,ScrollArea 自帶 inset 焦點框,可用方向鍵 / PageDown 捲);

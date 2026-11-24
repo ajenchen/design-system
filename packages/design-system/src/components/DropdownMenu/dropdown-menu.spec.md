@@ -151,7 +151,7 @@ SubTrigger 的 ChevronRight 由元件自動渲染，不需手動加。子選單�
 | Align | **跟隨 trigger 位置:左 → `start` / 中 → `center` / 右 → `end`**,見 `../Popover/popover.spec.md`「Align 對齊 canonical(跨浮層 SSOT)」|
 | 最小寬度 | `max(180px, 觸發元件寬度)`——窄 trigger 時吃 180px 地板；`minWidth` prop **只能把下限往上拉**:有效下限 = `max(180px, 觸發元件寬度, minWidth)`,傳得比預設小照預設畫(2026-11-17 A95;規則住 `../../../ds-canonical/references/props-naming.md`「尺寸參數」第 8 條,跟表格三個工具面板同一套;之前是整個取代預設) |
 
-SubContent 使用相同規格，包括 sideOffset。
+SubContent 使用相同規格，包括 sideOffset,以及高度上限與捲動(2026-11-24 起:夾到觸發點那一側的可用高、超過就在選單內捲動;之前子選單沒有上限,比可用高還高時超出視窗被切掉、捲不到。公式與常數 → `../../tokens/elevation/elevation.spec.md`「浮層高度上限」)。
 
 ---
 

@@ -476,14 +476,15 @@ const MUTANTS = [
     what: 'PopoverContent 不理 width 數字(修前:只能寫 className)',
     file: POPOVER,
     expectRed: ['popover-w-px'],
-    apply: (src) => replaceOnce(src, /style=\{typeof width === "number" \? \{ width: `\$\{width\}px`, maxWidth: OVERLAY_VIEWPORT_MAX_WIDTH, \.\.\.style \} : style\}/, 'style={style}'),
+    // 2026-11-24 起 PopoverContent 的 style 是一個物件(高度上限 capHeight + width 數字那一段 + consumer style);拿掉 width 數字那一段
+    apply: (src) => replaceOnce(src, /\.\.\.\(typeof width === "number" \? \{ width: `\$\{width\}px`, maxWidth: OVERLAY_VIEWPORT_MAX_WIDTH \} : null\),/, ''),
   },
   {
     id: 'popover-width-no-clamp',
     what: 'PopoverContent width 數字沒有視窗夾限',
     file: POPOVER,
     expectRed: ['popover-w-375'],
-    apply: (src) => replaceOnce(src, /maxWidth: OVERLAY_VIEWPORT_MAX_WIDTH, \.\.\.style/, '...style'),
+    apply: (src) => replaceOnce(src, /, maxWidth: OVERLAY_VIEWPORT_MAX_WIDTH \} : null\)/, ' } : null)'),
   },
   {
     id: 'popover-hug-ignored',

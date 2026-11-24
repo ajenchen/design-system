@@ -147,7 +147,7 @@ canonical 判斷:「使用者 click 單項是否立即改變系統狀態?」是 
 
 ## 邊界案例
 
-- **實作 —— 極長內容**:PopoverContent 設 `max-h-[var(--radix-popover-content-available-height)]`(popover.tsx#PopoverContent),body 包 `<PopoverBody>`(SurfaceBody `flex-1 min-h-0 overflow-y-auto`)→ viewport 太小時 header / footer 留在視窗內、body 內捲。中間 wrapper 的 flex chain 規則見 `../../patterns/overlay-surface/overlay-surface.spec.md`「Viewport-aware scroll chain invariant」。
+- **實作 —— 極長內容**:PopoverContent 的高度上限 = 觸發點那一側的可用高(Radix 算到碰撞邊界、已扣 collisionPadding);**`maxHeight`(數字 px 或字串)只能再往更矮調**,傳再大也不超出視窗 —— 公式與常數的唯一住處 `../../tokens/elevation/elevation.spec.md`「浮層高度上限」(popover.tsx#PopoverContent 讀它,2026-11-24 起;之前是 class 寫死可用高、沒有 `maxHeight`),body 包 `<PopoverBody>`(SurfaceBody `flex-1 min-h-0 overflow-y-auto`)→ viewport 太小時 header / footer 留在視窗內、body 內捲。中間 wrapper 的 flex chain 規則見 `../../patterns/overlay-surface/overlay-surface.spec.md`「Viewport-aware scroll chain invariant」。
 - **Viewport 邊緣**:`collisionPadding = 8` 自動推開(見「Viewport 邊距 canonical」)。
 - **寬度(`width`,2026-11-15)**:不傳 = 18rem(`w-72`,畫面不變);**數字 = px 固定寬,夾在視窗內**(`min(…, 100vw − 2rem)`,`../../tokens/elevation/overlay-geometry.ts` `OVERLAY_VIEWPORT_MAX_WIDTH`,與表格三個工具面板同一份);**`"hug"` = 跟內容**(裡面的面板自己決定寬:`DataTableSortManager` / `DataTableFilterPanel`,以及指定了 `width` 的 `DataTableColumnVisibilityPanel` —— `../DataTable/data-table.spec.md`「工具面板的寬度」)。名字與值域照 user「尺寸:甲」(`../../../ds-canonical/references/props-naming.md`「尺寸參數」);依據是決策頁 r9「照既有原則直接做」的「Sheet、Popover 加寬度參數」(「要設定的值走元件參數」4甲 推得出來;**預選、user 未逐字選**,user 只回了 7 題、沒有提出異議)。2026-11-15 前只能寫 `className="w-80"` / `"w-auto"`(沒有型別;className 仍可用)。閘 `scripts/data-table-panel-reset-clear-invariant.mjs` (6)。
 - **浮層裡再開浮層**:少用、不寫死層數;內容多改用 `Dialog` / `Sheet`(見「禁止事項」)。

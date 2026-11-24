@@ -116,6 +116,8 @@ jobs:
           # 機器可讀浮層表(觸發點 / 整頁)= 原始碼 = density.spec.md 情境 1 表。掃元件 / pattern / story / apps;--selftest 該紅的全紅、該綠的全綠(條數以閘印的為準)。
           node scripts/overlay-density-lock-invariant.mjs --selftest
           node scripts/overlay-density-lock-invariant.mjs
+          node scripts/overlay-height-ssot-invariant.mjs --selftest
+          node scripts/overlay-height-ssot-invariant.mjs
           # 2026-11-18 合回 knowledge-prune 第一波時接進來(原本紅面只經夜間 harness):WP-19 新增「紅面只在排程跑的配對名單只准變短」棘輪,
           # 名單量在合回前的基準點(71 筆);同一波 WP-03 / WP-02 各新增一支閘,紅面只經夜間 harness —— 三包各自全綠,合起來多 2 筆,棘輪正確地紅。
           # 兩支都是純靜態、秒級,不該只在夜間跑:
@@ -1376,6 +1378,8 @@ jobs:
           # 先對照組(檔位表改壞 / 寬改回 100vw / 高改回 100svh 各自必紅)再判定。
           node scripts/dialog-width-invariant.mjs --selftest
           node scripts/dialog-width-invariant.mjs
+          node scripts/overlay-height-cap-invariant.mjs --selftest
+          node scripts/overlay-height-cap-invariant.mjs
           # 浮層快捷鍵的作用域:焦點在檢視器外時方向鍵不得切換檔案,
           # 「靜止時同色的顏色配對,hover 後必須還是同色」全 DS 掃描(2026-09-11;user 截圖:
           # Switch hover 時白色圓浮出一圈灰邊)。根因是 spec 要求 thumb 邊框「與 OFF track 同色」,

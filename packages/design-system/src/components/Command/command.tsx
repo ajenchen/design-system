@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/design-system/components/D
 import { MenuItem, MenuGroup, type MenuItemProps } from "@/design-system/components/Menu/menu-item"
 import { ICON_SIZE } from "@/design-system/tokens/uiSize/icon-size"
 import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
+import { OVERLAY_LIST_MAX_HEIGHT } from "@/design-system/tokens/elevation/overlay-geometry"
 import { CircularProgress } from "@/design-system/components/CircularProgress/circular-progress"
 import { RowSizeProvider, useRowSize } from "@/design-system/patterns/element-anatomy/item-anatomy"
 import { dispatchRelayedKey, markPointerGrab, useCursorMover } from "@/design-system/hooks/use-input-modality"
@@ -464,11 +465,12 @@ const CommandList = React.forwardRef<
         (max-h=available-height)內撐破外殼、底部選項被裁(320px viewport 實測 bottom 425 > 320 溢出)。
       修: 加 flex-1 min-h-0(對齊 M25 canonical + HoverCard/Popover),max-h-300 降為上限。Command root 已
         `flex h-full flex-col`(command.tsx#Command)= chain 完整;非 flex 容器內 flex-1 不起作用(放在任何容器都安全【AI 推導 2026-11-16:讀行為推出來的理由,原文只寫了相容】)。
-      清單捲動上限 18.75rem(300px):值只住這一行(command.spec.md「邊界案例」清單捲動上限;只有 CommandList 在讀、
-        不隨密度切換 → 不開 token,2026-11-11 token「3全收」從 uiSize.css 收回)。 */
+      清單捲動上限(300px):值住 tokens/elevation/overlay-geometry.ts 的 OVERLAY_LIST_MAX_HEIGHT(2026-11-24 從這一行的
+        `max-h-[18.75rem]` 搬過去,浮層高度上限收成一份;command.spec.md「邊界案例」清單捲動上限;只有 CommandList 在讀、
+        不隨密度切換 → 不開 token,2026-11-11 token「3全收」從 uiSize.css 收回)。Tailwind class 讀不到 TS 常數 → inline style。 */
   // 邊緣標記(2026-11-17 A102):選項清單無框、上下留白由群組自帶(MenuGroup py-2)= unbounded region(layoutSpace.spec.md「region 子分類」);
   // 放在會自己給上下內距的容器(data-layout-body)最後時,容器底自動 = 0(規則 4 第 3 列;tokens/layoutSpace/layoutSpace.css)。
-  <ScrollArea className="flex-1 min-h-0 max-h-[18.75rem]" data-layout-region="unbounded">
+  <ScrollArea className="flex-1 min-h-0" style={{ maxHeight: OVERLAY_LIST_MAX_HEIGHT }} data-layout-region="unbounded">
     {/* @focus-suppress A — 同 Command 根:cmdk 1.1.1 在第一次方向鍵後把 DOM 焦點搬到 list
         (`document.getElementById(listId).focus()`),殼同樣不該畫框;承擔者:CommandItem 的
         data-[selected=true]:focus-ring-inset(下方 CommandItem 的 cursorByKeyboard 分支;原寫行號 331 已過期)。 */}

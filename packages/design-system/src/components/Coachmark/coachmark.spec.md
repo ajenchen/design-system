@@ -136,7 +136,7 @@ Media + Body 合稱**內容區**:超過可用高度時只有這一區捲動,Head
 〔user 2026-11-22 拍板「丙」:「我以為高度應該要隨著內容自動在設計規格下長高，消費者自己去把控內容高度，但 coachmark 跟其他 select menu 一樣，萬一真的遇到很極端的狀況也不會溢出螢幕之外，會變成body 是可以捲動的，這樣才是最 SSOT 的方式吧？」〕
 
 - **高度隨內容**:外殼寬度固定(見「與 Popover 的關係」),高度跟著內容長;說明寫幾行由使用端決定,元件不設行數上限
-- **最高到可用高度**:上限沿用 Popover 外殼(`../Popover/popover.spec.md`「實作 —— 極長內容」:`max-h` = Radix 算出的觸發點那一側可用高度,已扣安全邊距),卡片不會超出視窗
+- **最高到可用高度**:上限沿用 Popover 外殼(`../Popover/popover.spec.md`「實作 —— 極長內容」:Radix 算出的觸發點那一側可用高度,已扣安全邊距;公式與常數的唯一住處 `../../tokens/elevation/elevation.spec.md`「浮層高度上限」),卡片不會超出視窗
 - **超過時內容區捲動**:Header(標題列)與 Footer(步驟計數 / 按鈕)不縮、永遠看得到;中間的內容區(Media + Body)包 `ScrollArea` 捲動 —— 與長內容 Popover 同款(`../../patterns/overlay-surface/overlay-surface.spec.md`「Popover 例外」「Coachmark」)
 - **鍵盤**:內容區真的捲得動時才進 Tab 順序(`tabIndex=0`,焦點框是 ScrollArea 自帶的 inset DS focus ring,`../ScrollArea/scroll-area.spec.md`),聚焦後方向鍵 / PageDown / End 捲動;放得下時不多這一站(overlay-surface.spec.md「Focus ownership」:短內容不是捲動區)
 - **放得下時畫面不變**:內容區高度 = 內容高度,Media 照樣貼齊外殼(「Media 區規則」位置)、Body 內距照 overlay-surface

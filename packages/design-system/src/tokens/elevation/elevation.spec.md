@@ -61,6 +61,23 @@ elevation-100 < elevation-200，數字越大浮起越高。`*-hover` 兩枚為�
 | DropdownMenu | 8px | DropdownMenuContent sideOffset |
 | Popover | 8px | 通用浮層 |
 
+## 浮層高度上限
+
+**SSOT** → `tokens/elevation/overlay-geometry.ts`(2026-11-24 收成一份;之前同一件事寫在 7 處、寫法各異,`DropdownMenuSubContent` 完全沒有上限)。
+全 DS 只有一條公式 `capHeight(可用高, maxHeight)`:有 `maxHeight` 取兩者小的、沒有就是可用高 —— 使用端**只能往更矮調**,傳再大也不超出可用高
+(數字 = px,字串照原樣;名字與型別照 `../../../ds-canonical/references/props-naming.md`「尺寸參數」)。可用高只有兩種:
+
+| 可用高 | 常數 | 誰在讀 |
+|---|---|---|
+| 錨定浮層:觸發點那一側到碰撞邊界的剩餘高度(Radix popper 算,已扣 collisionPadding) | `OVERLAY_AVAILABLE_HEIGHT` | `PopoverContent`、`HoverCardContent`、`DropdownMenuContent`(三者都收 `maxHeight`)、`DropdownMenuSubContent`(只用可用高)、`ProfileCard`(放進 HoverCard / Popover 時) |
+| Modal:所在區塊高扣上下 inset | `MODAL_AVAILABLE_HEIGHT` | `DialogContent`(收 `maxHeight`;規則與兩種高度模式的 owner → `../../components/Dialog/dialog.spec.md`「最大高度(上限)」) |
+
+清單型浮層另有一個閱讀上限 `OVERLAY_LIST_MAX_HEIGHT`(`CommandList` 的捲動區;值與理由的 owner → `../../components/Command/command.spec.md`「邊界案例」清單捲動上限),它夾的是清單,外殼照上表。
+超過上限時標題列 / 頁尾留在畫面內、只有內容區捲動 —— 中間 wrapper 的 flex 鏈規則住 `../../patterns/overlay-surface/overlay-surface.spec.md`「Viewport-aware scroll chain invariant」。
+
+- **寫法**:消費端一律寫 inline `style.maxHeight`(Tailwind class 讀不到 TS 常數);浮層元件裡不另寫 `max-h-*`、不直接讀 `--radix-*-available-height`。
+- **機械檢查**:`scripts/overlay-height-ssot-invariant.mjs`(靜態:浮層元件的高度上限只准從 `overlay-geometry.ts` 來)、`scripts/overlay-height-cap-invariant.mjs`(執行期:每個開著的錨定浮層,computed `max-height` = `capHeight` 的結果)。
+
 ## 浮層共用樣式
 
 所有 elevation-200 浮層共用：
@@ -136,8 +153,12 @@ elevation-100 < elevation-200，數字越大浮起越高。`*-hover` 兩枚為�
 
 - `agent-panel.spec.md`
 - `app-shell.spec.md`
+- `coachmark.spec.md`
+- `command.spec.md`
+- `dropdown-menu.spec.md`
 - `hover-card.spec.md`
 - `motion.spec.md`
+- `overlay-surface.spec.md`
 - `slider.spec.md`
 - `toast.spec.md`
 - `tooltip.spec.md`

@@ -198,7 +198,7 @@ search 列放 body 外(不跟清單捲),自帶 `px-loose pt-tight`、下方不�
 不要另外用表單控制項(`CheckboxGroup` + 裸 `Checkbox`)自組。
 
 - **為什麼**:同一個「從清單裡挑」的互動,不該因為容器是下拉選單還是浮層就長得不一樣。
-  `DropdownMenu` 已經是選單列(`dropdown-menu.tsx:383`),DataTable 的欄位顯示面板也已經是
+  `DropdownMenu` 已經是選單列(`dropdown-menu.tsx#DropdownMenuItem`),DataTable 的欄位顯示面板也已經是
   (`data-table-column-visibility-panel.tsx#DataTableColumnVisibilityPanel`)—— 篩選面板原本是唯一的例外,是漂移不是設計。
 - **點一下就生效、還是要按 CTA 才 commit,不影響本條**:那是上一段「更高層設計判斷」在決定容器,
   跟列用什麼元件是兩個獨立的軸。
@@ -325,8 +325,8 @@ DatePicker **不是**例外 —— 它的日曆格線有左緣,footer 的預設 
 
 ## Viewport-aware scroll chain invariant(2026-05-04 K11 升 SSOT)
 
-> **背景**:Popover / HoverCard content 設 `max-h-[var(--radix-{popover|hover-card}-content-available-height)] flex flex-col overflow-hidden`,讓 viewport 太小時 header/footer 永遠 in-viewport,body 壓縮 scroll。但**中間任何 wrapper div 沒 forward `flex flex-col h-full` 就斷鏈**,SurfaceBody flex-1 失效,body 不會 scroll。
-> **Dialog / Sheet 不走這條(2026-09-11 更正,原句把它們一起列進去是錯的)**:`--radix-dialog-content-available-height` 這個 CSS 變數**不存在** —— 它由 `@radix-ui/react-popper` 提供,而 Radix Dialog 不是 popper-based(全庫 grep 0 命中)。Dialog 的上限由 DialogContent 自己算(`min(100svh - inset*2, maxHeight)`),owner 是 `dialog.spec.md`「高度」段。
+> **背景**:Popover / HoverCard content 有高度上限(觸發點那一側的可用高,`maxHeight` 只能再往更矮調;公式與常數的唯一住處 `../../tokens/elevation/elevation.spec.md`「浮層高度上限」)+ `flex flex-col overflow-hidden`,讓 viewport 太小時 header/footer 永遠 in-viewport,body 壓縮 scroll。但**中間任何 wrapper div 沒 forward `flex flex-col h-full` 就斷鏈**,SurfaceBody flex-1 失效,body 不會 scroll。
+> **Dialog / Sheet 不走這條(2026-09-11 更正,原句把它們一起列進去是錯的)**:`--radix-dialog-content-available-height` 這個 CSS 變數**不存在** —— 它由 `@radix-ui/react-popper` 提供,而 Radix Dialog 不是 popper-based(全庫 grep 0 命中)。Dialog 的上限由 DialogContent 算(modal 的可用高 + 同一支 `capHeight`,`../../tokens/elevation/elevation.spec.md`「浮層高度上限」),規則的 owner 是 `dialog.spec.md`「高度」段。
 >
 > **真實 bug(2026-05-04)**:Filter / Sort panel 內 wrapper div 設 `w-[640px]` 無 flex-col → user 縮視窗時 body 不 scroll,內容被 clip。ProfileCard 之所以 work 因為它直接是 PopoverContent 唯一 child(無 wrapper)+ 自設 max-h flex-col。
 
