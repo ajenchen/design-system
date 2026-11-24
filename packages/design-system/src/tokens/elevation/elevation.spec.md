@@ -69,7 +69,7 @@ elevation-100 < elevation-200，數字越大浮起越高。`*-hover` 兩枚為�
 
 | 可用高 | 常數 | 誰在讀 |
 |---|---|---|
-| 錨定浮層:觸發點那一側到碰撞邊界的剩餘高度(Radix popper 算,已扣 collisionPadding) | `OVERLAY_AVAILABLE_HEIGHT` | `PopoverContent`、`HoverCardContent`、`DropdownMenuContent`(三者都收 `maxHeight`)、`DropdownMenuSubContent`(只用可用高)、`ProfileCard`(放進 HoverCard / Popover 時) |
+| 錨定浮層:觸發點那一側到碰撞邊界的剩餘高度(Radix popper 算,已扣間距與 collisionPadding) | `OVERLAY_AVAILABLE_HEIGHT` | `PopoverContent`、`HoverCardContent`、`DropdownMenuContent`(三者都收 `maxHeight`)、`DropdownMenuSubContent`(只用可用高)、`ProfileCard`(放進 HoverCard / Popover 時) |
 | Modal:所在區塊高扣上下 inset | `MODAL_AVAILABLE_HEIGHT` | `DialogContent`(收 `maxHeight`;規則與兩種高度模式的 owner → `../../components/Dialog/dialog.spec.md`「最大高度(上限)」) |
 
 清單型浮層另有一個閱讀上限 `OVERLAY_LIST_MAX_HEIGHT`(`CommandList` 的捲動區;值住 `overlay-geometry.ts` 的這個常數,理由住 `../../components/Command/command.spec.md`「邊界案例」清單捲動上限),它夾的是清單,外殼照上表。

@@ -14,7 +14,7 @@
  *        Dialog 有一個 `capHeight(…)` 呼叫的第一個參數是 MODAL_AVAILABLE_HEIGHT(直接或經本地常數)。
  *     H5 使用端(DS 元件 / pattern / story 與 apps)不准在浮層內容元件(PopoverContent / HoverCardContent / DropdownMenuContent /
  *        DropdownMenuSubContent / DialogContent / CommandList)上用 className 的 `max-h-*` 或 `style.maxHeight` 改上限 ——
- *        要更矮走元件的 `maxHeight` 參數(同一條 capHeight;CommandList 的清單上限不開參數,值與理由住 command.spec.md)。
+ *        要更矮走元件的 `maxHeight` 參數(同一條 capHeight;CommandList 的清單上限不開參數,值住 overlay-geometry.ts `OVERLAY_LIST_MAX_HEIGHT`、理由住 command.spec.md「清單捲動上限 300px」)。
  *   紅: 指名 檔:行 與哪一條,exit 1。
  *   綠: 五條 0 筆。純靜態(TypeScript 語法樹;不做型別推論),同一份 worktree 恆等,沒有取樣、不量時間。
  *   儀器失效(exit 2,印 INSTRUMENT-FAIL): overlay-geometry.ts 讀不到四個匯出(或 OVERLAY_AVAILABLE_HEIGHT 不是讀 Radix popper 的可用高)、

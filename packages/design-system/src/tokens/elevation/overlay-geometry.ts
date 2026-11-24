@@ -30,7 +30,7 @@ export const OVERLAY_VIEWPORT_MAX_WIDTH = 'calc(100vw - 2rem)'
 //     scripts/overlay-height-cap-invariant.mjs(執行期:夾具裡各種錨定浮層的 computed max-height = capHeight 的結果,不是全 DS 每個浮層)。
 
 /**
- * 錨定浮層(Popover / HoverCard / DropdownMenu 與其子選單 / 放在它們裡面的 ProfileCard)的可用高:觸發點那一側到碰撞邊界的剩餘高度。
+ * 錨定浮層(Popover / HoverCard / DropdownMenu 與其子選單 / 放在它們裡面的 ProfileCard)的可用高:觸發點那一側到碰撞邊界的剩餘高度(已扣間距與 collisionPadding)。
  * 讀 `@radix-ui/react-popper` 自己寫在定位外殼上的 `--radix-popper-available-height`(`dist/index.mjs` size middleware 的
  * `setProperty`),內容元素經 CSS 繼承讀到;各元件的 `--radix-{popover|hover-card|dropdown-menu}-content-available-height`
  * 只是 Radix 在內容元素上把它改個名字(`var(--radix-popper-available-height)`),值逐位相同 —— 所以不再各讀各的。

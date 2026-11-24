@@ -7,7 +7,7 @@
  *         P / H / D  PopoverContent、HoverCardContent、DropdownMenuContent:不傳 = 可用高;傳數字(px)/ 字串(rem)= 兩者取小;
  *                    傳得比可用高大 = 可用高(只能往更矮調)。實際高 = 上限(夾具內容一律比可用高還高)。
  *         S          DropdownMenuSubContent(修前沒有上限、也沒有捲動區):上限 = 可用高、底邊不超出視窗、捲到底最後一項看得到。
- *         L          CommandList 的捲動區上限 = 300px(command.spec.md「邊界案例」清單捲動上限 18.75rem,根字級 16px),外殼不超過可用高。
+ *         L          CommandList 的捲動區上限 = 300px(值 = overlay-geometry.ts `OVERLAY_LIST_MAX_HEIGHT`,理由 = command.spec.md「清單捲動上限 300px」;根字級 16px),外殼不超過可用高。
  *         C          放在 Popover 裡的 ProfileCard 根元素上限 = 它讀到的可用高。
  *         量的是夾具裡真的渲染出來的浮層(getComputedStyle + getBoundingClientRect),期望值由本檔照規格算、不 import 元件常數 ——
  *         讀元件常數就成了自己驗自己(同 dialog-width-invariant)。
