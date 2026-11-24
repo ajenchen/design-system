@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "branch": "feat/batch2-2026-11-24",
+  "update_baseline": true,
+  "reference_ref": "",
+  "reason": "第 2 批(PR #174)合併前重拍精選基準圖:整頁預設字級改 14px/21px(44f7acc2)讓 tag-all-variants、button-state-behavior 超出 0.5% 預算;預算內有差的 dategrid-range、dategrid-single、separator-horizontal、appshell-overview 一併給 user 逐張確認",
+  "requestedAt": "2026-11-24T19:43:55Z"
+}
