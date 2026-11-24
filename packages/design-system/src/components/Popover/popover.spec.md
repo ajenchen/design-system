@@ -29,7 +29,7 @@ Popover 是**點擊觸發的浮層容器**——提供定位、動畫、焦點�
 - Row inline action(panel list row 內 Eye / drag / suffix toggle)→ `patterns/element-anatomy/inline-action.spec.md`「尺寸對照」table(md = 16+18 hover bg)
 - Footer action button → `action-bar.spec.md`(輕量 chrome,sm canonical)
 
-**觸發距離 canonical**：`sideOffset = 8`（px）—— trigger 到 Popover 邊緣的垂直/水平間距。小於 4px 會讓浮層貼死 trigger 失去「另一層」感，大於 12px 會拉斷 trigger ↔ content 的視覺關聯。本 DS 固定 8px 作為 overlay primitive 的共用呼吸距離；Dialog 居中或 full-screen，不適用此規則。
+**觸發距離 canonical**：`sideOffset = 8`（px）—— trigger 到 Popover 邊緣的垂直/水平間距。小於 4px 會讓浮層貼死 trigger 失去「另一層」感，大於 12px 會拉斷 trigger ↔ content 的視覺關聯。本 DS 固定 8px 作為 overlay primitive 的共用呼吸距離；Dialog 居中或 full-screen，不適用此規則;**展開型**浮層(把一格裡放不下的內容展開成完整清單,例:`../Calendar/calendar.spec.md`「「+N」清單浮層」)也不適用 —— 定位依據是被展開的那一格,浮層中心 = 那一格的中心(水平 + 垂直)、蓋在那一格上,碰到視窗邊照下一段推回 8;下方「Align 對齊 canonical」同樣不套(2026-11-24 user 選「蓋在那一格上，定位依據是格子 (Recommended)」與「以格子為中心(水平 + 垂直) (Recommended)」,選項與建議是 AI 擬的)。
 
 **Viewport 邊距 canonical**:`collisionPadding = 8`(px)——浮層與 viewport 邊緣的最小間距。當 popover 原本要貼近 viewport 邊(trigger 在頁面最右側、或視窗很窄)，定位 primitive 會自動推開 8px，防止內容與螢幕邊界相黏。`sideOffset` 管 trigger↔popover，`collisionPadding` 管 popover↔viewport，兩者互補。Consumer 不需傳 — 預設值是 canonical。
 
@@ -44,6 +44,8 @@ Popover 是**點擊觸發的浮層容器**——提供定位、動畫、焦點�
 **為什麼**:Popover 通常比 trigger 寬。align 錯方向會 (1)溢出容器邊緣 / 被 viewport 裁切、(2)視覺上 popover「沒黏在 trigger 那一側」產生 disconnect，使用者以為兩者無關。因此 trigger 靠哪邊，浮層就跟著靠哪邊。
 
 **SSOT 適用範圍(2026-04-20 精緻化)**:本規則是**「結構化浮層」的 canonical** —— Popover / DropdownMenu / Coachmark / SelectMenu 嚴格遵守(這些浮層寬度通常比 trigger 寬、且有結構化內容,錯方向必視覺 disconnect)。
+
+**展開型例外**:展開型浮層以被展開的那一格為中心,不依觸發點位置選 `align`(見上方「觸發距離 canonical」)。
 
 **輕量浮層例外**:Tooltip / HoverCard 不適用此 canonical —— 兩者 predominantly hover 觸發、純展示(不互動或極少互動)、寬度隨內容自適應,Radix 預設 `align="center"` 即可涵蓋絕大多數情境。強行套 trigger-position alignment 反而破壞 Tooltip「貼合指標」的輕量感。這兩個 primitive 走自己的 spec canonical(通常 center + 小 sideOffset)。
 
@@ -137,11 +139,11 @@ canonical 判斷:「使用者 click 單項是否立即改變系統狀態?」是 
 
 - ❌ **不把 Popover 當 Tooltip**：Tooltip 是 hover 觸發的純文字輔助，Popover 是 click 觸發的互動面板，語意與觸發模型不同
 - ❌ **不用 Popover 做 confirmation dialog**：確認框必須阻斷背景互動,使用者不能忽略——那是 Dialog 的職責
-- ❌ **不把內容多的操作疊成浮層裡的浮層**(2026-11-24 改寫):浮層裡再開浮層要**少用**,**不寫死層數**;內容多(要填多個欄位、要篩選資料)改用 `Dialog` 或 `Sheet`,不再疊一層 Popover。
+- ❌ **不把內容多的操作疊成浮層裡的浮層**(2026-11-24 改寫):浮層裡再開浮層要**少用**,**不寫死層數**;內容多(要一次填寫多個欄位(表單)或篩選資料)改用 `Dialog` 或 `Sheet`,不再疊一層 Popover。閱讀為主、偶爾就地改一欄的詳情浮層不算內容多(`../InlineEdit/inline-edit.spec.md`「何時用」:「這個值大部分時間是被閱讀的,偶爾才編輯」)。
   - **允許的兩種用法**:(1) 浮層裡的表單控件自己開的選單 —— DS 已有:表格篩選面板(Popover)裡的 `Select` / `Combobox` / `DatePicker` 下拉(`../DataTable/data-table.spec.md`「L4:Advanced Filter(進階篩選 panel)」);(2) 清單浮層點一項,在那一項旁邊開它的詳情浮層 —— 擺法與 DS 已有的 `DropdownMenu` 子選單相同:開在上一層那一項旁邊(`../DropdownMenu/dropdown-menu.spec.md`)。
   - **鍵盤與點外面**:`Esc` 一次關一層、焦點回到開它的那一項,規則住 `../../../ds-canonical/references/keyboard-model-canonical.md`「`Esc` 一次只關最內層」;點外面怎麼關照 `../../patterns/overlay-surface/overlay-surface.spec.md`「A11y 預設」的「Esc / 點外面關閉」條。
   - **世界級對照**:少用 / 避免 —— Carbon「Avoid nesting popovers or placing popovers within other popovers.」(<https://carbondesignsystem.com/components/popover/usage/>)、Fluent 2 設計站「Don’t nest popovers.」(<https://fluent2.microsoft.design/components/web/react/core/popover/usage>)、Atlassian Popup「Avoid nesting popups wherever possible.」(<https://atlassian.design/components/popup/usage>)。清單項在旁邊開子層 —— Atlassian Popup 的 Nested 範例:清單裡「More actions」那一項用 `placement="right-start"` 在旁邊開子 popup,同段寫「Nesting popups inside other popups works out of the box.」(<https://atlassian.design/components/popup/examples#nested>)。限 2 層 —— Fluent UI React v9「Don't use more than 2 levels of nested `Popovers`.」(<https://github.com/microsoft/fluentui/blob/master/packages/react-components/react-popover/stories/src/Popover/PopoverBestPractices.md>)、Atlassian Dropdown menu「limit the menu to two layers wherever possible」(<https://atlassian.design/components/dropdown-menu/usage>);DS 不照抄層數上限(見下方「來源」)。內容多改用更大的容器 —— Primer:menu 裡不能放表單元素,所以不能把 SelectPanel 跟 ActionMenu 組在一起,「Alternatively, you can open a Dialog.」(<https://primer.style/product/components/action-menu/guidelines/>);Carbon「Consider using a modal or a different experience instead.」(<https://carbondesignsystem.com/components/popover/usage/>);Fluent 2 設計站:內容重要或太多時「include it on the main page or in another surface like a panel」(<https://fluent2.microsoft.design/components/web/react/core/popover/usage>)。
-  - **來源**:user 2026-11-24 問「需要限制嗎？世界級的設計都有限制層數？我認為可以建議少用，但不確定是否要限制層數」,選「建議少用，不寫死層數 (Recommended)」(選項與建議是 AI 擬的)。「內容多 = 要填多個欄位、要篩選資料 → `Dialog` / `Sheet`」的分界【AI 推導 2026-11-24】,依上一條「內容多改用更大的容器」那三筆。2026-11-24 前本條寫「不在 Popover 內放 nested Popover:嵌套層級混亂、焦點管理崩壞」—— 2026-04-18 `21e26c4e` AI 補規格時寫的,沒有 user 原話也沒有出處,而且與 DS 現況矛盾:上面兩種用法、`Esc` 一層一層關與點外面規則,以及 CI 的巢狀浮層點外面閘 `scripts/overlay-nested-dismiss-invariant.mjs`。
+  - **來源**:user 2026-11-24 問「需要限制嗎？世界級的設計都有限制層數？我認為可以建議少用，但不確定是否要限制層數」,選「建議少用，不寫死層數 (Recommended)」(選項與建議是 AI 擬的)。「內容多 = 要一次填寫多個欄位(表單)或篩選資料 → `Dialog` / `Sheet`」的分界【AI 推導 2026-11-24;「一次填寫(表單)」與「閱讀為主的詳情不算」兩句是同日依 `../InlineEdit/inline-edit.spec.md`「何時用」與「何時不用」末條(多欄位一次編輯 → 表單)補的】,依上一條「內容多改用更大的容器」那三筆。2026-11-24 前本條寫「不在 Popover 內放 nested Popover:嵌套層級混亂、焦點管理崩壞」—— 2026-04-18 `21e26c4e` AI 補規格時寫的,沒有 user 原話也沒有出處,而且與 DS 現況矛盾:上面兩種用法、`Esc` 一層一層關與點外面規則,以及 CI 的巢狀浮層點外面閘 `scripts/overlay-nested-dismiss-invariant.mjs`。
 
 ---
 
