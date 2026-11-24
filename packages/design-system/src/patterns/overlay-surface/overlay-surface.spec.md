@@ -434,6 +434,7 @@ overlay-surface 是 **layout pattern**(`SurfaceHeader` / `SurfaceBody` / `Surfac
 - `action-bar.spec.md`
 - `agent-decision-card.spec.md`
 - `app-shell.spec.md`
+- `calendar.spec.md`
 - `coachmark.spec.md`
 - `date-picker.spec.md`
 - `dialog.spec.md`
