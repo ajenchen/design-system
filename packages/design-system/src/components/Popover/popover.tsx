@@ -326,20 +326,26 @@ interface PopoverHeaderProps extends React.HTMLAttributes<HTMLDivElement>, Pick<
    * Coachmark / Tour 類 composition 用 Skip / Done 自管 close,不需 X。
    */
   hideClose?: boolean
+  /**
+   * × 的讀屏名稱(aria-label)。取值順序:本參數 > I18nProvider 的 `popover.close` > DS 預設「關閉」
+   * (lib/i18n/README.md「Fallback chain」)。用在元件自己收讀屏字串的地方(例:Calendar 的 `labels` 換掉清單 / 詳情的關閉,
+   * calendar.spec.md「字串可覆寫」)。規則與命名依據 → popover.spec.md「A11y 預設」的 × 讀屏名稱條。
+   */
+  closeAriaLabel?: string
 }
 
-// 關閉鈕的讀屏名稱:I18nProvider 的 `popover.close` → DS 預設「關閉」(lib/i18n/README.md「Fallback chain」;user F1 預設中文、WM 要能傳英文)
-function PopoverCloseButton() {
+// 關閉鈕的讀屏名稱:consumer 的 closeAriaLabel → I18nProvider 的 `popover.close` → DS 預設「關閉」(lib/i18n/README.md「Fallback chain」;user F1 預設中文、WM 要能傳英文)
+function PopoverCloseButton({ ariaLabel }: { ariaLabel?: string }) {
   const { t } = useI18n()
   return (
     <PopoverPrimitive.Close asChild>
-      <Button data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label={t('popover', 'close', '關閉')} />{/* i18n-allow: DS 預設 */}
+      <Button data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label={ariaLabel ?? t('popover', 'close', '關閉')} />{/* i18n-allow: DS 預設 */}
     </PopoverPrimitive.Close>
   )
 }
 
 const PopoverHeader = React.forwardRef<HTMLDivElement, PopoverHeaderProps>(
-  ({ className, children, hideClose = false, actions, ...props }, ref) => (
+  ({ className, children, hideClose = false, closeAriaLabel, actions, ...props }, ref) => (
     // Popover lightweight chrome canonical(2026-05-04 重思 v2;2026-06-16 slot 改衍生 + 收斂 SSOT):
     //   走 `COMPACT_HEADER_SLOT`(= calc(--font-body-size×1.5) = 14×1.5 = 21 = PopoverTitle text-body line-box,
     //   衍生非寫死,取代舊各自寫死的 1.25rem / 20 巧合值)→ slot = title 行高,title 字級改 slot 自動跟。
@@ -352,7 +358,7 @@ const PopoverHeader = React.forwardRef<HTMLDivElement, PopoverHeaderProps>(
       // 右側〔actions〕〔分隔線〕〔×〕由 SurfaceHeader 的右側按鈕位排(overlay-surface.spec.md「SurfaceHeader」右側按鈕位);
       // Dismiss X = native sm,SurfaceHeader 負 my trick 讓 layout 佔位縮到 slot(21 = title line-box)
       actions={actions}
-      dismiss={hideClose ? undefined : <PopoverCloseButton />}
+      dismiss={hideClose ? undefined : <PopoverCloseButton ariaLabel={closeAriaLabel} />}
     >
       {children}
     </SurfaceHeader>
