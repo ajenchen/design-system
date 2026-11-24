@@ -89,6 +89,8 @@ sm / md 跟 Tag 同階（20/24px），lg 對齊 md（尺寸需求一致，不需
 - **大數值**:`+N` 原樣顯示(無 `99+` 縮寫),trigger `min-w` 起步、隨位數自然加寬
 - **極窄容器 / 貼 viewport 邊**:浮層定位與翻邊由 HoverCard(Radix collision)處理,見 `hover-card.spec.md`
 - **已展開時項目變動**:children 變動觸發浮層寬度重新量測(shrink-wrap re-measure)
+- **卡裡的項目帶自己的 Tooltip**(2026-11-24):可以,預設內容就是這樣 —— `./overflow-tag-list.tsx` 沒給 `renderHiddenTag` 時卡裡放 `<Tag>`,Tag 永遠包著自己的 Tooltip、名字被截斷才打開(`../Tag/tag.tsx`);2026-11-24 本機實測:卡裡的 Tag 名字截斷後滑過,Tooltip 疊在卡上、卡不關,沒截斷時不出現。跟卡裡其他互動一樣是滑鼠增強(上方「為什麼用 HoverCard 而非 Tooltip」的「注意」段)。浮層裡再開浮層的通則(少用、不寫死層數、內容多改用 `Dialog` / `Sheet`)住 `../Popover/popover.spec.md`「禁止事項」,本檔不重述。世界級對照:Carbon「Tooltips can be used on interactive elements within a popover, but consider their placement carefully.」(<https://carbondesignsystem.com/components/popover/usage/>);Floating UI 把「dialog 裡的 tooltip」當成預設情境,按 Esc 關 tooltip 時「you likely don’t want the dialog to dismiss as well until a second key press, which is the default behavior」(<https://floating-ui.com/docs/useDismiss>)。
+  - **來源**:2026-11-24 前「禁止事項」有一條「❌ 在 HoverCard 內再嵌 Tooltip——tooltip 是資訊終點，不可巢狀」—— 2026-04-18 `ca37bebb` AI 補規格時寫的,沒有 user 原話也沒有出處;「資訊終點」借自 `../Tooltip/tooltip.spec.md`「禁止事項」,那裡講的是 tooltip 裡的字不截斷,不是 tooltip 不能放在別的浮層裡;而且與本元件的預設內容矛盾,所以撤下。與 user 2026-11-24 選的「建議少用，不寫死層數 (Recommended)」同方向【AI 推導 2026-11-24:把這個決定套到「Tooltip 疊在 HoverCard 上」是 AI 的判定,user 沒有逐字講過這一種】。
 
 ---
 
@@ -97,7 +99,6 @@ sm / md 跟 Tag 同階（20/24px），lg 對齊 md（尺寸需求一致，不需
 - ❌ 用 Tooltip 取代 HoverCard——溢出內容可能需要互動
 - ❌ trigger 用 Tag 元件——Tag 內建 Tooltip 會跟 HoverCard 衝突
 - ❌ 省略 `+N` 指示器（直接截斷隱藏）——使用者無法知道「還有多少被隱藏」
-- ❌ 在 HoverCard 內再嵌 Tooltip——tooltip 是資訊終點，不可巢狀
 
 ---
 
