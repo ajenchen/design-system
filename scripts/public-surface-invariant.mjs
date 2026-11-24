@@ -37,7 +37,7 @@
  *       回傳型別、CSS 改值、預設搬進本體、搬到 base interface 同時收窄,與既有型別新增必填成員、只刪 dark 覆寫)—— 每一處都必紅且只指名那一處、
  *       選擇器清單拆開 + `:not()` 值不變必 0 差異(拆開後真的改值仍只指名那一個)、
  *       登記齊全必綠;帳本的十種紅各一面;發版端說明(新增 / 行為與畫面變更 / 破壞性變更三段)少一行只指名那一條;真實資料:146→147 的 CalendarOwnProps.onCreateEvent、
- *       147→148 的 AppShellProps.mainMinWidth 與 FileUpload.buttonLabel、148→工作樹的 InputProps.height 與
+ *       147→148 的 AppShellProps.mainMinWidth 與 FileUpload.buttonLabel、148→149 的 InputProps.height 與
  *       DataTableFilterPanelLabels.clearAll —— 拿掉帳本那一條就只指名它。
  *   儀器失效(exit 2,印 INSTRUMENT-FAIL): 找不到上一個發布 tag(CI 要 fetch-depth: 0 帶 tag)、git archive 失敗、
  *       任一邊量到 0 個子路徑或 0 個出口、讀不到帳本或不是合法 JSON、版本號不是 semver —— 不讀成通過。
@@ -483,7 +483,10 @@ function selftest() {
     fails.push(`例外:發版端那一段跑不完 —— ${e.message}`)
   }
 
-  // 真實資料(tag 上的 commit 永久不變;工作樹那一格量的是 0.1.0-beta.148 之後一直存在的差異):登記齊全綠、拿掉那幾條只指名它們
+  // 真實資料(tag 上的 commit 永久不變):登記齊全綠、拿掉那幾條只指名它們。
+  // 第三格 2026-11-24 前是「148 → 工作樹」對 149 節 —— 寫的時候 149 還沒發布、是「下一版」,工作樹的差異 = 149 節;149 發布後
+  // 下一版是 150,工作樹只要多一個機器量得到、登記在 150 節的差異(例 Calendar.locale 的預設值),這一格就誤紅成「149 節漏寫」。
+  // 改成兩個 tag 之間:149 已發布,148 → 149 的差異永久不變,正是 149 節該涵蓋的範圍(拿「工作樹」代「149」是只在發布前成立的代理,M37)。
   const measurer = makeMeasurer()
   try {
     const ledger = readJson(join(PS_ROOT, LEDGER_REPO_PATH), LEDGER_REPO_PATH)
@@ -502,7 +505,7 @@ function selftest() {
     }
     cell('v0.1.0-beta.146', 'v0.1.0-beta.147', '0.1.0-beta.147', ['CalendarOwnProps.onCreateEvent'])
     cell('v0.1.0-beta.147', 'v0.1.0-beta.148', '0.1.0-beta.148', ['AppShellProps.mainMinWidth', 'FileUpload.buttonLabel'])
-    cell('v0.1.0-beta.148', null, '0.1.0-beta.149', ['InputProps.height', 'DataTableFilterPanelLabels.clearAll'])
+    cell('v0.1.0-beta.148', 'v0.1.0-beta.149', '0.1.0-beta.149', ['InputProps.height', 'DataTableFilterPanelLabels.clearAll'])
   } catch (e) {
     fails.push(`${e instanceof SurfaceInstrumentError ? '儀器失效' : '例外'}:真實資料那一段跑不完(簽出要 fetch-depth: 0 帶 tag)—— ${String(e.message).split('\n')[0]}`)
   } finally { measurer.cleanup() }
