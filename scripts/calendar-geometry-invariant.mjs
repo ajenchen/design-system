@@ -8,11 +8,12 @@
  *         只在 `<nav>` 那個元素的 className 上算數,搬到別的元素就紅。另核對三件事:
  *         (1) calendar-geometry.ts 的列高 `CALENDAR_ROW_HEIGHT_PX` 與 tag.tsx 的 `TAG_HEIGHT_PX.md` 同值(雙生常數:Calendar 不 import tag.tsx,
  *             免得整個 Tag 模組進 Calendar 的包;值由本閘從 tag.tsx 讀出來比),
- *             空隙 = 4、文字內距 = 2 × 空隙、格最小高 = 3 × 空隙 + 2 × 列高(算出來比對,Tag 盒高從 tag.tsx 讀);
+ *             空隙 = 4、文字內距 = 2 × 空隙、格線 = 1(Tailwind `border` 預設寬;本閘禁數字型邊框寬,格子的 `border-b` 只可能是它)、
+ *             格最小高 = 3 × 空隙 + 2 × 列高 + 格線(格子是 border-box、底線在格高裡;算出來比對,Tag 盒高從 tag.tsx 讀);
  *         (2) class 裡讀到的每一個 `var(--calendar-*)` 都在 `CALENDAR_GEOMETRY_STYLE` 有設值(沒設值的 var 讓整條宣告靜默失效);
  *         (3) calendar.tsx 真的把 `CALENDAR_GEOMETRY_STYLE` 設在某個元素的 style 上。
  *   紅: --selftest(與配對測試 scripts/test-calendar-geometry-invariant.mjs 的實檔突變)逐一注入 `p-1.5`、`gap-0.5`、`min-h-28`、
- *       `border-l-[3px]`、把列高改成 20、把 `gap-2` 搬到非 `<nav>` 的元素、class 讀一個沒設值的 `--calendar-*`、拿掉根節點的 style,
+ *       `border-l-[3px]`、把列高改成 20、格最小高沒算格線、把 `gap-2` 搬到非 `<nav>` 的元素、class 讀一個沒設值的 `--calendar-*`、拿掉根節點的 style,
  *       每一個都必須被指名(檔:行 + 該 class)並 exit 1。
  *   綠: 現況 0 命中時 exit 0;註解裡提到的舊 class(例「2026-11-25 前是 p-1.5」)不算 —— 只看 TypeScript 語法樹裡的字串字面值。
  *       純靜態讀檔、不讀時間,重複跑結果相同。掃描母體 0 個檔(路徑錯)= 儀器失效 exit 2,不讀成通過。
@@ -37,6 +38,8 @@ export const TAG_FILE = 'packages/design-system/src/components/Tag/tag.tsx'
 export const UTILITY_REGISTRY = 'packages/design-system/src/tokens/utility-registry.json'
 /** calendar.spec.md「間距」:格內所有空隙 = 4 */
 export const SPEC_GAP_PX = 4
+/** 格線 = Tailwind `border` 預設寬 1px(calendar.spec.md「每一週等高」格最小高算式的「格線」) */
+export const SPEC_GRID_LINE_PX = 1
 
 // ── class token 判定 ───────────────────────────────────────────────────────────
 /** 取掉變體前綴(`hover:` / `data-[x]:` / `[&>div]:`;方括號裡的冒號不算)與 `!`、負號,回傳 utility 本體 */
@@ -167,11 +170,14 @@ export function checkGeometryModule(text, tagHeights) {
   if (rowPx !== tagHeights.md) problems.push(`${at('CALENDAR_ROW_HEIGHT_PX')}:列高 CALENDAR_ROW_HEIGHT_PX = ${rowPx},與 tag.tsx 的 TAG_HEIGHT_PX.md = ${tagHeights.md} 不同(列高單位 = Tag md 盒高,calendar.spec.md「間距」)`)
   const inset = evaluate(consts.get('CALENDAR_TEXT_INSET_PX') ?? ts.factory.createIdentifier('missing'), env)
   if (inset !== 2 * gap) problems.push(`${at('CALENDAR_TEXT_INSET_PX')}:文字內距應 = 2 × 空隙 = ${2 * gap}(Tag px + Text px),實得 ${inset}`)
+  const line = evaluate(consts.get('CALENDAR_GRID_LINE_PX') ?? ts.factory.createIdentifier('missing'), env)
+  if (line !== SPEC_GRID_LINE_PX) problems.push(`${at('CALENDAR_GRID_LINE_PX')}:格線 CALENDAR_GRID_LINE_PX 應為 ${SPEC_GRID_LINE_PX}(格子 border-b = Tailwind 預設寬),實得 ${line}`)
   const minH = evaluate(consts.get('CALENDAR_CELL_MIN_HEIGHT_PX') ?? ts.factory.createIdentifier('missing'), env)
-  const wantMinH = 3 * gap + 2 * rowPx
-  if (minH !== wantMinH) problems.push(`${at('CALENDAR_CELL_MIN_HEIGHT_PX')}:格最小高應 = 上內距 + 日期框 + 列距 + 一列 + 下內距 = ${wantMinH},實得 ${minH}`)
+  // 期望值用規格的格線 1,不用常數自己的值:常數改錯時上一條紅,這一條仍照規格算(兩條各自獨立)
+  const wantMinH = 3 * gap + 2 * rowPx + SPEC_GRID_LINE_PX
+  if (minH !== wantMinH) problems.push(`${at('CALENDAR_CELL_MIN_HEIGHT_PX')}:格最小高應 = 上內距 + 日期框 + 列距 + 一列 + 下內距 + 格線 = ${wantMinH},實得 ${minH}(格子是 border-box,底線在格高裡;沒算格線時內容少 1px,事件列被壓或吃掉下內距)`)
   if (styleKeys.length === 0) problems.push(`${GEOMETRY_FILE}:找不到 CALENDAR_GEOMETRY_STYLE 的變數名(元件內變數沒有設值的地方)`)
-  return { problems, styleKeys, values: { row: rowPx, gap, inset, minH } }
+  return { problems, styleKeys, values: { row: rowPx, gap, inset, line, minH } }
 }
 
 /** 整體判定(純函式;輸入 = 各檔內容) */
@@ -210,11 +216,12 @@ export function loadInputs(root) {
 // ── 對照組(記憶體內突變;實檔突變在配對測試)────────────────────────────────────
 export const MUTANTS = [
   ['格子內距寫回 p-1.5', 'components', (s) => s.replace("'flex flex-col gap-[var(--calendar-gap)] p-[var(--calendar-gap)]", "'flex flex-col gap-[var(--calendar-gap)] p-1.5")],
-  ['列距寫回 gap-0.5', 'components', (s) => s.replace("<div className=\"flex flex-col gap-[var(--calendar-gap)] min-h-0\">", "<div className=\"flex flex-col gap-0.5 min-h-0\">")],
+  ['列距寫回 gap-0.5', 'components', (s) => s.replace("<div className=\"flex flex-col gap-[var(--calendar-gap)] shrink-0\">", "<div className=\"flex flex-col gap-0.5 shrink-0\">")],
   ['格子加回 min-h-28', 'components', (s) => s.replace("'flex flex-col gap-[var(--calendar-gap)] p-[var(--calendar-gap)]", "'flex flex-col gap-[var(--calendar-gap)] p-[var(--calendar-gap)] min-h-28")],
   ['事件列寫死 border-l-[3px]', 'components', (s) => s.replace("const tileBase = 'flex items-center h-tag-md", "const tileBase = 'border-l-[3px] flex items-center h-tag-md")],
   ['列高常數改成 20', 'geometry', (s) => s.replace('CALENDAR_ROW_HEIGHT_PX = 24', 'CALENDAR_ROW_HEIGHT_PX = 20')],
-  ['gap-2 搬到非 <nav> 的元素', 'components', (s) => s.replace("<div className=\"flex flex-col gap-[var(--calendar-gap)] min-h-0\">", "<div className=\"flex flex-col gap-2 min-h-0\">")],
+  ['格最小高沒算格線', 'geometry', (s) => s.replace(' + CALENDAR_GAP_PX + CALENDAR_GRID_LINE_PX', ' + CALENDAR_GAP_PX')],
+  ['gap-2 搬到非 <nav> 的元素', 'components', (s) => s.replace("<div className=\"flex flex-col gap-[var(--calendar-gap)] shrink-0\">", "<div className=\"flex flex-col gap-2 shrink-0\">")],
   ['class 讀一個沒設值的 --calendar-*', 'components', (s) => s.replace('px-[var(--calendar-text-inset)]', 'px-[var(--calendar-txt-inset)]')],
   ['根節點沒設元件內變數', 'components', (s) => s.replace('style={{ ...CALENDAR_GEOMETRY_STYLE, ...style }}', 'style={style}')],
 ]
@@ -265,5 +272,5 @@ if (isMain) {
     process.exit(1)
   }
   const v = base.values
-  console.log(`✅ calendar-geometry PASS(${Object.keys(inputs.components).length} 個元件檔;列高 ${v.row} = tag.tsx TAG_HEIGHT_PX.md、空隙 ${v.gap}、文字內距 ${v.inset}、格最小高 ${v.minH})`)
+  console.log(`✅ calendar-geometry PASS(${Object.keys(inputs.components).length} 個元件檔;列高 ${v.row} = tag.tsx TAG_HEIGHT_PX.md、空隙 ${v.gap}、文字內距 ${v.inset}、格線 ${v.line}、格最小高 ${v.minH})`)
 }

@@ -11,14 +11,19 @@
  *         E 事件列高 24、列距 4、文字左緣離列左緣 8、日期框到第一列 4;事件列四周最小淨空 ≥ 4(焦點框往外的前提,focus-canonical「問題二」);
  *           F2 進格後事件列的焦點框真的畫在外面(outline-offset ≥ 0)。
  *         A axe aria-required-children / aria-required-parent 0(格陣裡夾著 ScrollArea 的三層 div)。
- *         S 容器太矮(設計原則「事件顏色類別語意」h-80)時:每週 = 格最小高 60、滾輪捲得動週列、工具列與星期列不動;
- *           鍵盤走到看不見的那一週,焦點所在的日期框被捲進可視範圍。
+ *         S 容器太矮(設計原則「事件顏色類別語意」h-84)時:每週 = 格最小高 61(4 + 24 + 4 + 24 + 4 + 格線 1)、滾輪捲得動週列、工具列與星期列不動;
+ *           鍵盤走到看不見的那一週,焦點所在的日期框被捲進可視範圍;
+ *           S4 最小高的週裡(同一則):有事件的格子(最後一週以外)事件列 = 24、日期框到第一列 = 4、第一列到格線 = 下內距 4
+ *           (calendar.spec.md「間距」事件列 / 格子下內距、「每一週等高」格最小高 —— 三條同時成立);
+ *           S5 容器再矮(展示「產品上線週」根節點壓到 240,每週都在最小高、至少一格放不下):每一格的每一列(事件列與「+N」列)都是 24,
+ *           放不下的列被格子裁掉而不是壓扁(先量「每週 = 61、確實有格子放不下」,證明量的是那個情況)。
  *         K 點日期鈕(程式化 click,Chromium 不給焦點 = Safari 的情況)後焦點與停靠點都到那一天;按「今天」後停靠點到今天、焦點留在「今天」鈕
  *           (兩條都先量「動作前停靠點不在那裡」,證明量的是動作的結果)。
  *         L en-GB 不傳 weekStartsOn → 第一欄是週一(Monday)。
  *         R 今天剛好是 1 號時,實心底包住整段「7月1日」、左右內距 8。
  *   紅: --selftest 逐一注入:星期列搬出格陣、週列高改 auto、最後一週留底線、格子內距 6、工具列改回內距撐高、nav 沒名稱、
  *       欄頭名稱改成短字、捲動區變成可聚焦(axe required-children)、捲動區不能捲、事件列高 20、事件列焦點框改回往內、1 號的實心底被壓成 24 寬、
+ *       格最小高沒算格線(回到 60)、事件列外層回到可被壓(flex-shrink 1 + min-height 0)、
  *       en-GB 卻寫死週日起(Inspector 傳 weekStartsOn 0)、標題層級不跟 titleAs、日期鈕的 focus() 失效 —— 每一個都必須讓對應的那一格紅。
  *   綠: 全部量到且照規格時 exit 0。開 story 走 lib/launch-browser.mjs openStory(等 Storybook 回報渲染完成與被量的格陣出現,不睡固定時間);
  *       開不起來 / 等不到格陣 = 儀器失效(INSTRUMENT-FAIL,exit 1 並點名),不讀成通過。
@@ -47,10 +52,14 @@ const STORY = {
   blank: storyId(/calendar-展示--cell-blank-click-moves-keyboard-stop$/u),
   inspector: storyId(/calendar-設計規格--inspector$/u),
   short: storyId(/calendar-設計原則--color-semantic$/u),
+  launch: storyId(/calendar-展示--launch-week$/u),
 }
 
 // 規格值(calendar.spec.md「間距」與 header-canonical.spec.md:68);1 號的字是規格寫的 zh-TW 例子
-const SPEC = { toolbar: { md: 48, lg: 56 }, gap: 4, row: 24, inset: 8, header: 32, cellMin: 60, navName: '行事曆月份導覽' }
+// 格最小高 61 = 上內距 4 + 日期框 24 + 4 + 一列 24 + 下內距 4 + 格線 1(格子 border-box,底線在格高裡;calendar.spec.md「每一週等高」)
+const SPEC = { toolbar: { md: 48, lg: 56 }, gap: 4, row: 24, inset: 8, header: 32, cellMin: 61, navName: '行事曆月份導覽' }
+/** S5 的情境:把根節點壓到這個高度,週列一定落在最小高(工具列 + 星期列 + 5 × 61 遠大於它) */
+const SQUEEZE_PX = 240
 const near = (a, b, tol = 0.5) => Number.isFinite(a) && Math.abs(a - b) <= tol
 
 // ── 頁面端量測(以原始碼序列化傳入,不得引用外部變數)────────────────────────────
@@ -95,6 +104,17 @@ const PROBE = () => {
       textInset: tr ? tr.left - t0.left : NaN, left: t0.left - c.left, right: c.right - parseFloat(cs.borderRightWidth) - t0.right }
     break
   }
+  // 每一格的列(事件列 / 自訂外層 / 「+N」列 = 日期框那一層之後的那一層的子元素):高、第一列離日期框、第一列到格線(下內距)、放不放得下
+  const cellRows = weekRows.flatMap((row, w) => cellsOf(row).map((cell) => {
+    const list = cell.children[1]
+    const rows = list ? [...list.children] : []
+    if (!rows.length) return null
+    const c = r(cell), cs = getComputedStyle(cell), box = r(stopOf(cell)), first = r(rows[0])
+    const innerBottom = c.bottom - parseFloat(cs.borderBottomWidth)
+    const contentBottom = innerBottom - parseFloat(cs.paddingBottom)
+    return { day: stopOf(cell)?.getAttribute('data-calendar-day'), lastWeek: w === weekRows.length - 1, heights: rows.map((x) => r(x).height),
+      dateToFirst: first.top - box.bottom, bottomPad: innerBottom - first.bottom, overflows: rows.some((x) => r(x).bottom > contentBottom + 0.5) }
+  })).filter(Boolean)
   const viewport = grid.querySelector('[data-radix-scroll-area-viewport]')
   const v = viewport ? r(viewport) : null
   return {
@@ -116,6 +136,7 @@ const PROBE = () => {
     firstCellTop: firstCell ? r(firstCell).top : NaN,
     dayBoxes,
     events,
+    cellRows,
     viewport: v ? { scrollH: viewport.scrollHeight, clientH: viewport.clientHeight, scrollTop: viewport.scrollTop, top: v.top, bottom: v.bottom } : null,
   }
 }
@@ -161,7 +182,7 @@ const browser = await launchBrowser()
 // AxeBuilder 只收 newContext() 開出來的分頁(@axe-core/playwright 的限制)
 const context = await browser.newContext({ viewport: { width: 1280, height: 900 } })
 const page = await context.newPage()
-async function open(id, { args = null, label = id, mutate = null, density = 'md' } = {}) {
+async function open(id, { args = null, label = id, mutate = null, density = 'md', squeeze = null } = {}) {
   if (!id) { instrumentFails.push({ cell: label, detail: '找不到 story(改名了?)' }); return null }
   const url = `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story${args ? `&args=${args}` : ''}`
   try {
@@ -169,6 +190,8 @@ async function open(id, { args = null, label = id, mutate = null, density = 'md'
       waitFor: GRID_READY, settleFrames: 10, notFound: server.notFound, label,
       beforeSettle: async (p) => {
         await p.evaluate((d) => document.documentElement.setAttribute('data-density', d), density)
+        // 情境(不是突變):consumer 給 Calendar 一個很矮的容器 —— 正式跑與 selftest 一樣套
+        if (squeeze) await p.evaluate((h) => { const root = document.querySelector('[role="grid"]')?.parentElement; if (root) root.style.height = `${h}px` }, squeeze)
         if (mutate?.css) await p.addStyleTag({ content: mutate.css })
         if (mutate?.dom) await p.evaluate(mutate.dom)
       },
@@ -212,10 +235,17 @@ const BLOCKS = {
     check('A1', bad.length === 0, `axe aria-required-children / aria-required-parent:${bad.join(';') || '0'}`)
   },
   async scroll(mutate) {
-    const p = await open(STORY.short, { label: '設計原則 h-80', mutate })
+    const p = await open(STORY.short, { label: '設計原則 h-84', mutate })
     if (!p) return
     const v = p.viewport
     check('S1', p.weekHeights.length >= 5 && p.weekHeights.every((h) => near(h, SPEC.cellMin)), `容器太矮:每週高 ${[...new Set(p.weekHeights.map((h) => h.toFixed(2)))].join(' / ')}(格最小高 ${SPEC.cellMin})`)
+    // 最小高的週:事件列 24、日期框到第一列 4、第一列到格線 4,三條同時成立(最後一週沒有底線、下方多 1px,只要求 ≥ 4)
+    const minCells = p.cellRows
+    const minBad = minCells.filter((c) => !(c.heights.every((h) => near(h, SPEC.row)) && near(c.dateToFirst, SPEC.gap)
+      && (c.lastWeek ? c.bottomPad >= SPEC.gap - 0.5 : near(c.bottomPad, SPEC.gap))))
+    const fmt = (c) => `${c.day} 列 ${c.heights.map((h) => h.toFixed(2)).join('/')}、日期框到第一列 ${c.dateToFirst.toFixed(2)}、到格線 ${c.bottomPad.toFixed(2)}`
+    check('S4', minCells.filter((c) => !c.lastWeek).length >= 1 && minBad.length === 0,
+      minCells.length ? `最小高的週 ${minCells.length} 格有事件:${(minBad.length ? minBad : minCells.slice(0, 3)).map(fmt).join(';')}(規格 24 / 4 / 4)` : '最小高的週裡找不到有事件的格子(範例資料變了,本閘要換範例)')
     // 使用者捲得動:滾輪落在格陣上,週列往上走、工具列與星期列不動
     const box = await page.evaluate(() => { const b = document.querySelector('[role="grid"] [data-radix-scroll-area-viewport]')?.getBoundingClientRect(); return b ? { x: b.left + b.width / 2, y: b.top + b.height / 2 } : null })
     if (!box || !v) { check('S2', false, '找不到週列的捲動區'); return }
@@ -271,6 +301,22 @@ const BLOCKS = {
     const h3 = await open(STORY.inspector, { label: 'Inspector titleAs=h3', args: mutate?.titleArgs ?? 'titleAs:h3', mutate })
     if (h3) check('Q1', h3.heading === 'H3', `titleAs="h3" → 標題 ${h3.heading}`)
   },
+  // 容器再矮:事件列與「+N」列不被壓扁(calendar.spec.md「每一週等高」:放不下的列由格子裁掉;放幾列是事件版面那一包的 k)
+  async squeeze(mutate) {
+    const p = await open(STORY.launch, { label: `產品上線週 根節點 ${SQUEEZE_PX}`, mutate, squeeze: SQUEEZE_PX })
+    if (!p) return
+    // 先證明情境真的發生了:每週都在最小高、至少一格放不下(否則「列都是 24」可能只是因為格子夠高)
+    const atMin = p.weekHeights.length >= 5 && p.weekHeights.every((h) => near(h, SPEC.cellMin))
+    const crowded = p.cellRows.filter((c) => c.overflows)
+    if (!atMin || crowded.length === 0) {
+      instrumentFails.push({ cell: 'S5', detail: `情境沒成立:每週高 ${[...new Set(p.weekHeights.map((h) => h.toFixed(2)))].join(' / ')}、放不下的格 ${crowded.length} 個(要每週 = ${SPEC.cellMin} 且至少一格放不下)` })
+      return
+    }
+    const rows = p.cellRows.flatMap((c) => c.heights)
+    const squashed = p.cellRows.filter((c) => !c.heights.every((h) => near(h, SPEC.row)))
+    check('S5', rows.length >= 3 && squashed.length === 0,
+      `每週 ${SPEC.cellMin}、${crowded.length} 格放不下:${rows.length} 列${squashed.length ? `,被壓扁的格 ${squashed.map((c) => `${c.day}(${c.heights.map((h) => h.toFixed(2)).join('/')})`).join(' ')}` : ' 全是 24'}(規格:列高 24,放不下的列被裁掉、不壓扁)`)
+  },
   // 今天剛好是 1 號:Inspector 拿掉 today 參數(元件改用 new Date()),時鐘釘在 2026-07-01 上午 10 點(本機時區)。
   // 不用網址傳日期:Storybook 的網址參數對 Date 型別的 arg 一律丟掉(實測 !date(...) 沒生效)。
   // 時鐘是整個 context 共用、釘了就回不去 —— 本區塊一律排在最後跑(其他區塊的 story 都明傳 today,本來也不受影響);
@@ -300,6 +346,10 @@ const MUTANTS = [
   { name: '事件列焦點框改回往內', block: 'layout', expect: ['E3'], css: '[data-calendar-tile]:focus-visible { outline-offset: -2px !important; }' },
   { name: '捲動區可聚焦(viewportTabIndex 沒傳 null)', block: 'axe', expect: ['A1'], dom: () => document.querySelector('[role="grid"] [data-radix-scroll-area-viewport]')?.setAttribute('tabindex', '0') },
   { name: '週列捲動區不能捲', block: 'scroll', expect: ['S2'], css: '[role="grid"] [data-radix-scroll-area-viewport] { overflow: hidden !important; }' },
+  // 回到 2026-11-25 首版的 60(沒算格線):最小高的週裡內容少 1px → 列不被壓就吃掉下內距(S4),週高也不是 61(S1)
+  { name: '格最小高沒算格線(60)', block: 'scroll', expect: ['S1', 'S4'], css: '[role="grid"] { --calendar-cell-min-h: 60px !important; }' },
+  // 回到首版的 min-h-0:事件列那一層可以被壓,格子放不下時裡面的列跟著縮
+  { name: '事件列外層可被壓(min-h-0)', block: 'squeeze', expect: ['S5'], css: '[role="gridcell"] > :nth-child(2) { flex-shrink: 1 !important; min-height: 0 !important; }' },
   { name: '日期鈕的 focus() 失效', block: 'keyboardStop', expect: ['K1'], dom: () => { HTMLButtonElement.prototype.focus = function noop() {} } },
   { name: 'en-GB 卻寫死週日起', block: 'inspector', expect: ['L1'], gbArgs: 'locale:en-GB;weekStartsOn:0' },
   { name: '標題層級不跟 titleAs', block: 'inspector', expect: ['Q1'], titleArgs: 'titleAs:h2' },

@@ -3,8 +3,8 @@
  * @gate-contract
  *   保證: scripts/calendar-geometry-invariant.mjs 在該紅的時候會紅、該綠的時候會綠,而且走的是它真正讀檔的那條路(不是只測純函式):
  *         把 Calendar 資料夾、Tag 的 tag.tsx、utility-registry.json 複製到暫存目錄,以 `--root` 指給閘,
- *         (a) 原樣 → exit 0;(b) 逐一在**實檔**注入 `p-1.5`、`gap-0.5`、`min-h-28`、`border-l-[3px]`、列高常數改成 20、Tag md 盒高改成 28 而 Calendar 沒跟
- *         → 各自 exit 1 且指名該 class / 常數;
+ *         (a) 原樣 → exit 0;(b) 逐一在**實檔**注入 `p-1.5`、`gap-0.5`、`min-h-28`、`border-l-[3px]`、列高常數改成 20、Tag md 盒高改成 28 而 Calendar 沒跟、
+ *         格最小高沒算格線(回到 2026-11-25 首版的 60)、格線常數改成 2 → 各自 exit 1 且指名該 class / 常數;
  *         (c) 只在註解裡寫 `p-1.5` → 仍 exit 0(註解不算);(d) 範例檔(*.stories.tsx)與 `_` 開頭的示範殼寫 `h-80` → 仍 exit 0(不在母體);
  *         (e) 把 Calendar 資料夾清空 → exit 2(掃描母體 0 個檔 = 儀器失效,不讀成通過);(f) 閘自己的 --selftest exit 0。
  *   紅: 任一步的退出碼或指名不符預期 → 印出是哪一步並 exit 1。
@@ -53,11 +53,13 @@ try {
   const geometry = `${CAL}/calendar-geometry.ts`
   const mutants = [
     ['(b1) 格子內距寫回 p-1.5', main, "'flex flex-col gap-[var(--calendar-gap)] p-[var(--calendar-gap)]", "'flex flex-col gap-[var(--calendar-gap)] p-1.5", 'p-1.5'],
-    ['(b2) 列距寫回 gap-0.5', main, 'flex flex-col gap-[var(--calendar-gap)] min-h-0', 'flex flex-col gap-0.5 min-h-0', 'gap-0.5'],
+    ['(b2) 列距寫回 gap-0.5', main, 'flex flex-col gap-[var(--calendar-gap)] shrink-0', 'flex flex-col gap-0.5 shrink-0', 'gap-0.5'],
     ['(b3) 格子加回 min-h-28', main, "'flex flex-col gap-[var(--calendar-gap)] p-[var(--calendar-gap)]", "'flex flex-col gap-[var(--calendar-gap)] p-[var(--calendar-gap)] min-h-28", 'min-h-28'],
     ['(b4) 事件列寫死 border-l-[3px]', main, "const tileBase = 'flex items-center h-tag-md", "const tileBase = 'border-l-[3px] flex items-center h-tag-md", 'border-l-[3px]'],
     ['(b5) 列高常數改成 20', geometry, 'CALENDAR_ROW_HEIGHT_PX = 24', 'CALENDAR_ROW_HEIGHT_PX = 20', 'CALENDAR_ROW_HEIGHT_PX'],
     ['(b6) Tag md 盒高改成 28、Calendar 沒跟', 'packages/design-system/src/components/Tag/tag.tsx', 'export const TAG_HEIGHT_PX = { sm: 20, md: 24, lg: 24 }', 'export const TAG_HEIGHT_PX = { sm: 20, md: 28, lg: 28 }', 'TAG_HEIGHT_PX.md = 28'],
+    ['(b7) 格最小高沒算格線(回到首版 60)', geometry, ' + CALENDAR_GAP_PX + CALENDAR_GRID_LINE_PX', ' + CALENDAR_GAP_PX', '實得 60'],
+    ['(b8) 格線常數改成 2', geometry, 'CALENDAR_GRID_LINE_PX = 1', 'CALENDAR_GRID_LINE_PX = 2', 'CALENDAR_GRID_LINE_PX 應為 1'],
   ]
   for (const [label, rel, from, to, mention] of mutants) {
     reset(); edit(rel, from, to); expect(label, run(), 1, mention)

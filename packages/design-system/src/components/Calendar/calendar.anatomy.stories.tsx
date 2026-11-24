@@ -116,7 +116,7 @@ export const ColorMatrix: Story = {
             (blue / green / deep-orange / yellow / red / orange / amber / lime / turquoise / indigo / purple / magenta)。
             顏色代表「這是哪一類事件」(同一個團隊 / 同一個專案),不是嚴重程度。每個色名對應一個色相,紅與橘各自獨立、可清楚區分。
           </Desc>
-          {/* 給明確高度(同設計原則「唯讀的日期格與事件」的整月示範):不給高度時週列照內容排開,每格只有格最小高 60、很擠;
+          {/* 給明確高度(同設計原則「唯讀的日期格與事件」的整月示範):不給高度時週列照內容排開,每格只有格最小高 61、很擠;
               560 時整月五週都看得到、不用捲 */}
           <div className="h-[560px]">
             <CalendarDemo events={colorEvents} defaultReferenceDate={now} today={now} locale={LOCALE} />
@@ -125,7 +125,7 @@ export const ColorMatrix: Story = {
 
         <div>
           <H3>Cell 視覺 token</H3>
-          <Desc>月 view cell 的狀態色彩與幾何。格內所有空隙 = 4(元件內變數 --calendar-gap)、事件列 = Tag md 24;每一週等高、平分格陣高度,格最小高 60;7 欄等分。</Desc>
+          <Desc>月 view cell 的狀態色彩與幾何。格內所有空隙 = 4(元件內變數 --calendar-gap)、事件列 = Tag md 24;每一週等高、平分格陣高度,格最小高 61;7 欄等分。</Desc>
           <div className="overflow-x-auto">
             <table className="text-caption border-collapse">
               <thead>
@@ -138,8 +138,8 @@ export const ColorMatrix: Story = {
               <tbody>
                 <tr>
                   <Td>Cell 高度</Td>
-                  <Td mono>grid-template-rows: repeat(週數, minmax(var(--calendar-cell-min-h), 1fr))(最小 60px)</Td>
-                  <Td>每一週等高、平分格陣高度,不被內容撐高;格最小高 = 上內距 4 + 日期框 24 + 4 + 一列 24 + 下內距 4。容器比「週數 × 60」還矮時週列在格陣裡捲,工具列與星期列不捲</Td>
+                  <Td mono>grid-template-rows: repeat(週數, minmax(var(--calendar-cell-min-h), 1fr))(最小 61px)</Td>
+                  <Td>每一週等高、平分格陣高度,不被內容撐高;格最小高 = 上內距 4 + 日期框 24 + 4 + 一列 24 + 下內距 4 + 格線 1(底線畫在格高裡面)。格子比內容矮時,放不下的列被格子裁掉、不壓扁(事件列一律 24)。容器比「週數 × 61」還矮時週列在格陣裡捲,工具列與星期列不捲</Td>
                 </tr>
                 <tr>
                   <Td>Cell 內距 / 列距</Td>

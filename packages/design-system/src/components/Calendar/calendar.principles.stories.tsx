@@ -112,7 +112,9 @@ export const ColorSemantic: Story = {
         paragraph={false}
       >
         <ExampleFrame>
-          <div className="h-80">
+          {/* 容器刻意比整月矮(格陣在裡面捲),但四個團隊的事件(第二到第四週)都要整列看得到:h-84 時第四週 7/22 那一列離可視範圍底 14、
+              第五週露出一點(提示可捲)。2026-11-25 前是 h-80 —— 格最小高 60(沒算格線)時剛好放得下,改成 61 後 7/22 那一列被裁掉 2px。 */}
+          <div className="h-84">
             <CalendarDemo
               defaultReferenceDate={now}
               locale={LOCALE}

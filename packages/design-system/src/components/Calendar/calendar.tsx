@@ -747,6 +747,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                         'flex flex-col gap-[var(--calendar-gap)] p-[var(--calendar-gap)] min-w-0 overflow-hidden',
                         // 格線:每格右 / 下各一條;每一週最右那格不畫右線(每個 role=row 只裝自己那 7 格,last: 就是第 7 格);
                         // 最後一週不畫下線 —— 根節點外框已經是那一條,兩條疊成 2px 雙線(稽核 D6)。
+                        // 格子是 border-box,底線畫在格高裡面 → 格最小高把它算進去(calendar-geometry.ts CALENDAR_GRID_LINE_PX)。
                         'border-r border-b border-divider last:border-r-0',
                         rowIdx === weekCount - 1 && 'border-b-0',
                         // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
@@ -792,8 +793,11 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                         )}
                       </div>
 
-                      {/* Event tiles:列距 4(--calendar-gap;item-anatomy.spec.md:467 standalone pill ≥ 4,2026-11-25 前 gap-0.5 = 2) */}
-                      <div className="flex flex-col gap-[var(--calendar-gap)] min-h-0">
+                      {/* Event tiles:列距 4(--calendar-gap;item-anatomy.spec.md:467 standalone pill ≥ 4,2026-11-25 前 gap-0.5 = 2)。
+                          shrink-0:列是固定高的單位(Tag md 24),格子比內容矮時**不壓扁列**,放不下的列由格子的 overflow-hidden 裁掉
+                          (calendar.spec.md「每一週等高」;每格放幾列依格高算在事件版面那一包)。2026-11-25 首版這裡是 min-h-0,
+                          讓這一層可以被壓、裡面的列跟著縮:最小高的週事件列只剩 23、格子再矮多筆的列縮到 21、「+N」縮到 15.6。 */}
+                      <div className="flex flex-col gap-[var(--calendar-gap)] shrink-0">
                         {visibleEvents.map((event) => {
                           const ec = event.color ?? 'blue'
                           // 可點的方塊帶滑過(CAT_EVENT),唯讀的不帶(CAT_SUBTLE);兩者同色相同底同字,見檔頭 EVENT_STATIC_COLOR_CLASSES
