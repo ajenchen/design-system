@@ -305,6 +305,7 @@ main 223ms / 加快取後 380ms / 再把快取鍵最佳化後 412ms —— 每�
 
 - `avatar.spec.md`
 - `badge.spec.md`
+- `calendar.spec.md`
 - `inline-action.spec.md`
 - `overflow-indicator.spec.md`
 - `uiSize.spec.md`

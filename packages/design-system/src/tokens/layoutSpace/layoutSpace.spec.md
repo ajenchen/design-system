@@ -374,6 +374,7 @@ document.documentElement.setAttribute('data-layout-space', 'lg')
 - `agent-decision-card.spec.md`
 - `agent-panel.spec.md`
 - `app-shell.spec.md`
+- `calendar.spec.md`
 - `coachmark.spec.md`
 - `data-table.spec.md`
 - `description-list.spec.md`

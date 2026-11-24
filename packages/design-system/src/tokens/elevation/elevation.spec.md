@@ -153,6 +153,7 @@ elevation-100 < elevation-200，數字越大浮起越高。`*-hover` 兩枚為�
 
 - `agent-panel.spec.md`
 - `app-shell.spec.md`
+- `calendar.spec.md`
 - `coachmark.spec.md`
 - `command.spec.md`
 - `dropdown-menu.spec.md`

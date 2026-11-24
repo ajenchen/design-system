@@ -257,6 +257,7 @@ Switch 在 horizontal layout 有**兩種**對齊慣例,由 **context 決定**:
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `calendar.spec.md`
 - `checkbox.spec.md`
 - `combobox.spec.md`
 - `radio-group.spec.md`

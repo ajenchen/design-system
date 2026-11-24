@@ -981,7 +981,6 @@ SSOT → `../orphan-tokens.spec.md`(保留 / 退場分類的唯一住處,2026-11
 - `agent-panel-fab.spec.md`
 - `agent-panel.spec.md`
 - `button.spec.md`
-- `calendar.spec.md`
 - `chart.spec.md`
 - `date-grid.spec.md`
 - `file-item.spec.md`
