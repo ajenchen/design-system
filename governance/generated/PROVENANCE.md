@@ -29,7 +29,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:3fc93cf7ea695f9f1b8ecd4b3d2da0a1cb9060ac768f0b2c604e19822f2484fc` |
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:469ddebfe1b24a1d1e234e6047dcb6a00111bcfa4110d8e4ff8f8a624041ebc9` |
 | canonical-references | `packages/design-system/ds-canonical/references` | `sha256:16e8f236551734c76463b78d1187f92cc160c65cbdba73e16d4711aec41d391a` |
-| canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:f7020e114aeaea178af073b240e3b9722d4d0da245910b611586b82e88c2a05f` |
+| canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:3c1a53676f90ece21f822c1106810db926e5583262d7025e8b507cc19b3e4804` |
 | canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:ed2e997cd12657910e7795885c50a9f6745d8d6d9d76debefb159e9ceaa96d47` |
 | changeset-release-policy | `.changeset/config.json` | `sha256:a65a7f9ee6dc6c56eab99f77876bb61297cc59909943ba4ab08705b2d110e86c` |
 | claude-instruction-adapter | `packages/design-system/ds-canonical/adapters/claude-root-instructions.md` | `sha256:6c2c5fb2d2ffe93c74d74d88c35596d6e360973fec6e058290742cb52b39d8b9` |
@@ -306,7 +306,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | provider-lifecycle-schema | `packages/governance/canonical/schemas/provider-lifecycle.schema.json` | `sha256:807e126ffac67694193029f19b94e1b8d3e97282e70372b65bdd094a0604c2de` |
 | provider-lifecycle-validator | `scripts/lib/provider-lifecycle.mjs` | `sha256:9aabb2c98efc454b8555308a34830e6590b034b10a63f76f788fbd4cf37ce7e7` |
 | provider-neutral-benchmark-policy | `governance/benchmarks` | `sha256:1fe38dd17649ef0074fdeab8ec0aed8a876ef22293d81d74c29baaa565c460f2` |
-| provider-neutral-memory | `governance/memory` | `sha256:1034fdb345ed612a36f46dbfdd50fc663a61e4499572e69f5bb77010c51059c9` |
+| provider-neutral-memory | `governance/memory` | `sha256:6dd7796b3e675252f45dc9689deccca7cc6167b96584e329a5b5b2e2898e6227` |
 | provider-neutral-planning-ledger | `governance/planning` | `sha256:2eb51374a8a34128b485f5e3592896a5215f059deb17239164e7da26793fe48d` |
 | provider-neutral-residue-guard | `scripts/check-provider-neutral-ssot-residue.mjs` | `sha256:6a880f5e07717898b27bfe723898d6601cea0a224c89fa4a9d13c1ff3c9bd225` |
 | provider-neutral-residue-guard-tests | `scripts/test-check-provider-neutral-ssot-residue.mjs` | `sha256:e3ede8c62b7ce50e974ff383c1d36d33b86ad95f9e183731cef0ca51bd29da1f` |
