@@ -184,15 +184,15 @@ const CHROME_UNBOUNDED_SLOT =
 |---|---|---|
 | × 與右側操作區的佔位(`--surface-chrome-slot-h`) | `--field-height-sm` | 28 / 32 = × 原生高,縮位量 0 |
 | 標題欄尾端讓位(`--surface-title-bleed` = SurfaceHeader 左欄的右外距,沒設時 0) | `--field-px` | 12 / 12 |
-| 標題列內容高 | 2 × `--layout-space-tight` + `--field-height-sm`(Popover 版面間距鎖 md,tight = 12) | 52 / 56(外加 1px 底線;編輯中實量,靜止時見下方「已知未解」) |
+| 標題列內容高 | 2 × `--layout-space-tight` + `--field-height-sm`(Popover 版面間距鎖 md,tight = 12) | 52 / 56(外加 1px 底線;靜止 / 編輯中同高,實量) |
 
 **為什麼佔位 = sm 欄位高**【AI 推導】:本檔的規則是「slot = 標題那一行的高」;標題是 InlineEdit 時,那一行是一列 sm 欄位(InlineEdit 編輯態就是 `<Input size="sm">`),不是一行 14px 字(21)。沿用 21 時 × 中線比標題那一列高 3.5(一般)/ 5.5(大)(2026-11-25 實測)。出處:`calendar.spec.md`「事件詳情浮層」標題列「× 的佔位要跟這一行同高」(該段標【AI 推導,預覽時請 user 看】)。
 
 **為什麼讓位 = 欄位內距**【AI 推導】:InlineEdit 直向排列(獨立使用的預設)把滑過底色、外框與隱形編輯鈕往左右各外擴 `--field-px`,讓字貼齊欄左緣(`../../components/InlineEdit/inline-edit.tsx` 的 alignBleed)。左邊吃進標題列左內距(loose 16 > 12);右邊沒讓位時穿過 8px 的 gap、蓋進 × 4px,而 × 在一般流、隱形編輯鈕是絕對定位,點 × 左緣那 4px 進的是編輯、不是關閉(2026-11-25 實測,一般 / 大密度相同)。讓位後外框右緣到 × 左緣 = 標題列的 gap(8),點 × 的任何一點都是關閉。
 
-**已知未解:InlineEdit 靜止 / 編輯高度差**:InlineEdit 靜止時外框 = 一列欄位高 + 上下各 1px 透明邊框(單行時 `fieldViewGeometry` 的 `min-h` 給在內層,邊框加在外面),實測 30 / 34;編輯中 28 / 32。所以靜止時標題列 54 / 58、× 中線比標題那一列高 1px,編輯中才是 52 / 56、對齊。這是 InlineEdit 本身的高度差(不只標題列:InlineEdit 展示頁「任務標題就地編輯」「詳情面板:垂直欄位就地編輯」同樣靜止 30、編輯 28),與 `../../components/InlineEdit/inline-edit.spec.md`「純文字 view↔edit 零跳」不符;要修在 InlineEdit,本常數不跟著改。
+**靜止 / 編輯同高(2026-11-25 修)**:InlineEdit 靜止外框連同上下各 1px 透明邊框 = 一列 sm 欄位高(一般 28 / 大 32),與編輯中的 `<Input>` 同高,所以靜止與編輯中的標題列都是 52 / 56、× 中線對準標題外框。修在 InlineEdit 那一邊:`../../components/Field/field-wrapper.tsx` 的 `fieldViewGeometry` 高度下限扣掉外框上下兩條 1px 邊框(`../../components/InlineEdit/inline-edit.spec.md`「純文字 view↔edit 零跳」),本常數不跟著改。修前靜止外框 30 / 34 → 靜止時標題列 54 / 58、× 中線比標題外框中線高 1px;InlineEdit 各範例的單行欄位同樣從靜止 30 變成 28(同日實測)。
 
-**閘**:`../../components/Popover/popover.anatomy.stories.tsx` 的 test-only `EditableTitleHeaderProbe`,它的 play 由 story-demo-focus 逐支執行(斷言不成立 → 該 story 渲染失敗 → 紅)。一般 / 大密度各一個浮層:× 中線離標題列內容區上緣 = sm 欄位高 / 2;標題外框右緣到 × 左緣 = gap;× 左緣內 1px 點到的是 ×;編輯中標題列內容高 = 2 × tight + sm 欄位高、× 對齊輸入框那一列(容許都是 0.5px)。對照組(2026-11-25):拿掉佔位 → 量到 10.5、應 14,紅;拿掉讓位 → 量到 −4、應 8,紅;還原 → 綠。
+**閘**:`../../components/Popover/popover.anatomy.stories.tsx` 的 test-only `EditableTitleHeaderProbe`,它的 play 由 story-demo-focus 逐支執行(斷言不成立 → 該 story 渲染失敗 → 紅)。一般 / 大密度各一個浮層:× 中線離標題列內容區上緣 = sm 欄位高 / 2;標題外框右緣到 × 左緣 = gap;× 左緣內 1px 點到的是 ×;靜止時標題外框高 = sm 欄位高、標題列內容高 = 2 × tight + sm 欄位高、× 中線對準標題外框中線;編輯中標題列內容高同上、× 對齊輸入框那一列(容許都是 0.5px)。對照組(2026-11-25):拿掉佔位 → 量到 10.5、應 14,紅;拿掉讓位 → 量到 −4、應 8,紅;InlineEdit 高度下限不扣邊框 → 靜止標題外框量到 30、應 28,紅(同一份建置的標題列 54 應 52、× 與標題外框中線差 −1.0,也都超出容許);還原 → 綠。InlineEdit 高度下限扣邊框的寫法另由 `scripts/inline-edit-view-geometry-invariant.mjs` 逐尺寸鎖住。
 
 **命名**:`EDITABLE_TITLE_HEADER_SLOT` 與 `COMPACT_HEADER_SLOT` 同一族(標題列種類 + `HEADER_SLOT`);editable 對齊 InlineEdit 的 `editable` 參數;全 DS 沒有別的 EDITABLE_TITLE。外部對「可以就地改的標題」也用 editable:Ant Design Typography(Title 繼承)的 `editable`(<https://github.com/ant-design/ant-design/blob/b32d6e07af61f9de393abebe326acd68faddf4bd/components/typography/Base/index.tsx#L128>)、Chakra UI 的 `Editable`(<https://github.com/chakra-ui/chakra-ui/blob/6c9d5ea82043937f8c379fe8d5423d2dd13ff7ab/packages/react/src/components/editable/editable.tsx#L58>)。
 

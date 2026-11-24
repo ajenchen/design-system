@@ -293,7 +293,7 @@ function surfaceHeaderRow(children: React.ReactNode, actions: React.ReactNode, d
  * 可編輯標題的標題列(2026-11-25;規則住 overlay-chrome-sizing.spec.md「可編輯標題的標題列」,本處不重述)。
  * 標題位放 `InlineEdit size="sm"`(不是 PopoverTitle / DialogTitle)時,套在那個 Header 的 className:
  * `<PopoverHeader className={EDITABLE_TITLE_HEADER_SLOT}>`(DialogHeader / SheetHeader / raw SurfaceHeader 同一個常數)。兩件事:
- *   (1) × 與右側操作區的佔位 = 一列 sm 欄位高(`--field-height-sm`,取代標題行高)→ × 中線 = 標題那一列的中線(InlineEdit 靜止時外框多上下 1px,見規格同段末「已知未解」)
+ *   (1) × 與右側操作區的佔位 = 一列 sm 欄位高(`--field-height-sm`,取代標題行高)→ × 中線 = 標題那一列的中線(InlineEdit 靜止 / 編輯中外框同為一列 sm 欄位高,見規格同段「靜止 / 編輯同高」)
  *       (沿用 CHROME_UNBOUNDED_SLOT / ACTIONS_GROUP_SLOT 同一個變數,公式不變;sm 欄位高 = × 原生高,縮位量 0);
  *   (2) 標題欄尾端讓出 `--field-px`(上方 surfaceHeaderRow 左欄的 `--surface-title-bleed`):InlineEdit 直向排列把滑過底色與隱形編輯鈕
  *       往左右各外擴 `--field-px`(inline-edit.tsx 的 alignBleed),不讓位時右緣蓋進 × 4px,點 × 左緣會進編輯而不是關閉(2026-11-25 實測)。

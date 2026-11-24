@@ -58,7 +58,7 @@ InlineEdit **不自帶 geometry cva**(M17 消重)——view 態幾何兩路來�
 | 路徑 | 幾何來源 | 說明 |
 |------|---------|------|
 | **值-格式化**(Select→Tag / 日期 / avatar) | `fieldViewGeometry` 包住委派的 `<Control mode="view">`(委派控件 view 左側皆 0) | 格式化與內部間距(多 tag gap / avatar↔label)由控件 view mode 提供,左內距與高度由外包的 `fieldViewGeometry` 統一 → 天生一致、零偏移 |
-| **純值 / 標題**(`String(value)` / `as="h1"`) | `fieldViewGeometry(size, multiline)` helper(`../Field/field-wrapper.tsx`,InlineEdit view 態幾何 SSOT) | = `px-[var(--field-px)]` + `min-h-[var(--field-height-{size})]`;單行 `items-center`、多行 `items-start py-2` |
+| **純值 / 標題**(`String(value)` / `as="h1"`) | `fieldViewGeometry(size, multiline)` helper(`../Field/field-wrapper.tsx`,InlineEdit view 態幾何 SSOT) | = `px-[var(--field-px)]` + `min-h-[calc(var(--field-height-{size})_-_2px)]`(扣掉 InlineEdit 外框上下各 1px 透明邊框 → 外框 = 欄位高 = edit `<Input>` 高,2026-11-25);單行 `items-center`、多行 `items-start py-2` |
 
 InlineEdit 本體只給:**對齊盒(-mx orientation-aware)+ 委派 view 統一 field-px + exit 保證 + hover bg + focus 藍框 + 隱形 Pressable**。
 

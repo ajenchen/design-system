@@ -354,8 +354,9 @@ export const Accessibility = {
 //   (1) × 的讀屏名稱:一般密度那個傳 closeAriaLabel →「關閉任務預覽」;大密度那個不傳 → 預設「關閉」(預設不變)。
 //   (2) × 佔位 = 一列 sm 欄位高:× 中線離標題列內容區上緣 = --field-height-sm / 2(容許 0.5)。拿掉 slot 時差 −3.5(一般)/ −5.5(大)。
 //   (3) 標題欄尾端讓位:InlineEdit 外框右緣到 × 左緣 = 標題列的 gap;× 左緣內 1px 點到的是 ×。不讓位時 InlineEdit 蓋進 × 4px、那一點是隱形編輯鈕。
-//   (4) 編輯中:標題列內容高 = 上下 tight + --field-height-sm(一般 52 / 大 56),× 中線 = 輸入框那一列的中線(容許 0.5)。
-// 靜止(view)時的整列高度不在這裡斷言:InlineEdit view 外框比欄位高多上下各 1px 透明邊框,與 × 佔位無關 → overlay-chrome-sizing.spec.md「可編輯標題的標題列」末段。
+//   (4) 靜止:InlineEdit 外框(含 1px 透明邊框)= --field-height-sm、標題列內容高 = 上下 tight + --field-height-sm(一般 52 / 大 56)、
+//       × 中線 = 標題外框中線(容許 0.5)。InlineEdit 靜止外框多算上下 1px 邊框時(2026-11-25 前):外框 30 / 34、標題列 54 / 58、差 −1.0。
+//   (5) 編輯中:標題列內容高同 (4)(兩態同高,calendar.spec.md「事件詳情浮層」標題列),× 中線 = 輸入框那一列的中線(容許 0.5)。
 const PROBE_CASES = [
   { probeCase: 'md', closeName: '關閉任務預覽' },
   { probeCase: 'lg', closeName: '關閉' },
@@ -414,6 +415,7 @@ export const EditableTitleHeaderProbe: Story = {
       const header = content.querySelector<HTMLElement>('[data-slot="surface-header"]')
       if (!header) throw new Error(`${probeCase}:找不到標題列`)
       const fieldHeight = measureLength(header, 'var(--field-height-sm)')
+      const headerHeight = 2 * measureLength(header, 'var(--layout-space-tight)') + fieldHeight
       const view = headerGeometry(header)
 
       // (1) × 的讀屏名稱
@@ -424,12 +426,16 @@ export const EditableTitleHeaderProbe: Story = {
       assertNear(view.xRect.left - view.rowRect.right, parseFloat(view.style.columnGap), 0.5, `${probeCase}:標題外框右緣 → × 左緣`)
       const hit = document.elementFromPoint(view.xRect.left + 1, view.xMid)
       if (!hit || !view.dismiss.contains(hit)) throw new Error(`${probeCase}:× 左緣內 1px 點到的是 ${hit ? `<${hit.tagName.toLowerCase()} aria-label="${hit.getAttribute('aria-label') ?? ''}">` : '空'},不是 ×`)
+      // (4) 靜止:標題外框 = 一列 sm 欄位高,標題列 = 上下 tight + 一列 sm 欄位高,× 對準標題外框
+      assertNear(view.rowRect.height, fieldHeight, 0.5, `${probeCase}:靜止標題外框高`)
+      assertNear(header.clientHeight, headerHeight, 0.5, `${probeCase}:靜止標題列內容高`)
+      assertNear(view.xMid, view.rowRect.top + view.rowRect.height / 2, 0.5, `${probeCase}:靜止 × 中線 − 標題外框中線`)
 
-      // (4) 編輯中:標題列 = 上下 tight + 一列 sm 欄位高,× 對準輸入框那一列
+      // (5) 編輯中:標題列 = 上下 tight + 一列 sm 欄位高(與靜止同高),× 對準輸入框那一列
       await userEvent.click(within(header).getByRole('button', { name: '編輯 任務標題' }))
       await waitFor(() => { if (!header.querySelector('[data-editing="true"] input')) throw new Error(`${probeCase}:沒有進入編輯`) })
       const edit = headerGeometry(header)
-      assertNear(header.clientHeight, parseFloat(edit.style.paddingTop) + parseFloat(edit.style.paddingBottom) + fieldHeight, 0.5, `${probeCase}:編輯中標題列內容高`)
+      assertNear(header.clientHeight, headerHeight, 0.5, `${probeCase}:編輯中標題列內容高`)
       assertNear(edit.xMid, edit.rowRect.top + edit.rowRect.height / 2, 0.5, `${probeCase}:編輯中 × 中線 − 輸入框中線`)
       // 點內文收回 view(InlineEdit 點外面 = 提交;標題沒改,不會呼叫 onCommit)
       await userEvent.click(within(content).getByText('指派給陳大明 · 11月28日到期'))
