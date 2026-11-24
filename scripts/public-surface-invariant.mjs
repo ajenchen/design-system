@@ -519,7 +519,7 @@ function main() {
     if (args.includes('--selftest')) {
       const fails = selftest()
       if (fails.length) { console.error(`✗ public-surface selftest:\n  ${fails.join('\n  ')}`); process.exit(1) }
-      console.log(`✓ public-surface selftest:合成樹 ${ST_BREAKS.length} 類各破一處(含審查列的七種縮窄與新增必填)→ 都只指名那一處、登記齊全綠;同一棵樹量兩次 0 差異;帳本十種紅(寫了卻沒發生 / to 不存在 / spec 非出貨 / 段名不存在 / fix op / id 重複 / renamed 沒 to / do 超過三句 / 勘誤指錯 / 同名換義沒有 behavior 條目)與已發布節逐位元、下一版節判定;發版端說明三段由帳本產生、少一行只指名那一條;真實資料三段(146→147、147→148、148→工作樹)登記齊全綠、拿掉指定條目只指名它們`)
+      console.log(`✓ public-surface selftest:合成樹 ${ST_BREAKS.length} 類各破一處(含審查列的七種縮窄與新增必填)→ 都只指名那一處、登記齊全綠;同一棵樹量兩次 0 差異;帳本十種紅(寫了卻沒發生 / to 不存在 / spec 非出貨 / 段名不存在 / fix op / id 重複 / renamed 沒 to / do 超過三句 / 勘誤指錯 / 同名換義沒有 behavior 條目)與已發布節逐位元、下一版節判定;發版端說明三段由帳本產生、少一行只指名那一條;真實資料三段(146→147、147→148、148→149)登記齊全綠、拿掉指定條目只指名它們`)
       return
     }
     const base = arg('base')

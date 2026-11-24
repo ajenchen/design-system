@@ -395,7 +395,7 @@ Range 起訖使用 stadium 端點，讓連續區間有清楚的開始、延伸�
 
 **不讀 date-fns 語系物件裡的 `weekStartsOn`**:date-fns 4.1.0 的 zh-TW 語系物件寫的是週一(`weekStartsOn: 1`,https://unpkg.com/date-fns@4.1.0/locale/zh-TW.js),CLDR 的台灣是週日(Node 24.14.0 / ICU 78.2 / CLDR 48.0 實測 `new Intl.Locale('zh-TW').getWeekInfo().firstDay` = 7)。同一個語系有兩個來源、答案相反,全 DS 以 CLDR 為準。2026-11-24 前 DateGrid 照 react-day-picker 預設讀物件裡的值,傳 `locale={zhTW}` 沒傳週起始日的月曆是週一起,之後是週日起。
 
-**依據**:user 2026-11-24 先問「你確定中文語系的起始通常預設都是週日？世界級的設計是這樣？」,看過 CLDR 實測後選「跟語系的 CLDR (Recommended)」(選項為 AI 擬);決策總帳更正 #2「全 DS 以 Intl(CLDR)為準」。
+**依據**:user 2026-11-24 先問「你確定中文語系的起始通常預設都是週日？世界級的設計是這樣？」,看過 CLDR 實測後選「跟語系的 CLDR (Recommended)」(選項為 AI 擬);決策總帳更正 #2「全 DS 以 Intl(CLDR)為準」(AI 判定,後由 WS(定) user 選「跟語系的 CLDR (Recommended)」確認)。
 
 **世界級同一套(元件參數優先,沒給才由語系經 CLDR 推)**:React Aria 先 `getWeekInfo()`、再看 `-fw-` 擴充、最後查 CLDR 表(https://github.com/adobe/react-spectrum/blob/main/packages/@internationalized/date/src/queries.ts),Calendar 的 `firstDayOfWeek` 覆寫語系推出的預設(https://react-aria.adobe.com/Calendar)。Atlassian 的 `weekStartDay` 沒給才從 locale 推(https://atlassian.design/components/calendar/code),不支援 `getWeekInfo` 時用內建 CLDR 48 例外表(https://unpkg.com/@atlaskit/locale@5.5.0/dist/es2019/internal/localization-provider/get-week-info.js)。MUI X Scheduler 先 `getWeekInfo()`、瀏覽器不支援時改用地區週資料、支援 `-u-fw-mon`(https://mui.com/x/react-scheduler/event-calendar/localization/)。
 

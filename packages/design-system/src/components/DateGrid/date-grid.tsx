@@ -384,8 +384,8 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
     })
   // ── 週起始日(2026-11-24,user 決策「跟語系的 CLDR (Recommended)」;規格 date-grid.spec.md「週起始日」)──
   // 有傳 weekStartsOn 就用;沒傳時拿 date-fns 語系物件的**語系代碼**問 CLDR(lib/date-locale.ts),**不讀物件裡寫的 weekStartsOn**:
-  // date-fns 的 zhTW 寫週一、CLDR 的 TW 是週日,全 DS 以 CLDR 為準(決策總帳更正 #2)。沒傳 locale 時 react-day-picker 用它的預設
-  // 語系(defaultLocale = en-US)排字,週起始日跟著同一個語系。停留預覽每一步都會重畫,所以記住結果、不每次重問 Intl。
+  // date-fns 的 zhTW 寫週一、CLDR 的 TW 是週日,全 DS 以 CLDR 為準(決策總帳更正 #2,AI 判定,後由 WS(定) user 選「跟語系的 CLDR (Recommended)」確認)。
+  // 沒傳 locale 時 react-day-picker 用它的預設語系(defaultLocale = en-US)排字,週起始日跟著同一個語系。停留預覽每一步都會重畫,所以記住結果、不每次重問 Intl。
   const localeCode = locale?.code ?? defaultLocale.code
   const resolvedWeekStartsOn = React.useMemo(() => resolveWeekStartsOn(localeCode, weekStartsOn), [localeCode, weekStartsOn])
 

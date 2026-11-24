@@ -7,7 +7,7 @@
  *        內建表對每一個地區代碼都跟執行環境的 CLDR 相同。消費端真的用它:DateGrid(不再讀 date-fns 語系物件的 weekStartsOn)、
  *        DatePicker 與 DatePicker.Range、DataTable「本週 / 上週 / 下週」篩選(condition 帶這一欄的值,寫入點與 datePrecision 同一組)、
  *        日期格編輯器、篩選值的日期選擇器;Calendar / DatePicker / TimePicker 的預設語系 = DEFAULT_DATE_LOCALE = 'zh-TW'。
- *   紅: 判定表任一格(期望值照總帳 Q9(定)/ WS(定)/ 更正 #2 與 CLDR 逐格寫,不是抄輸出)在任一條路上不符 → exit 1;內建表與原生 CLDR 有任一地區不同
+ *   紅: 判定表任一格(期望值照總帳 Q9(定)/ WS(定)/ 更正 #2(AI 判定,後由 WS(定) user 選「跟語系的 CLDR (Recommended)」確認)與 CLDR 逐格寫,不是抄輸出)在任一條路上不符 → exit 1;內建表與原生 CLDR 有任一地區不同
  *        → exit 1 並印出差異;篩選判定表(固定「今天」= 2026-11-25 週三,週日起 / 週一起 / 週六起 / 沒帶)任一格不符 → exit 1;
  *        消費端少了一處、或舊形狀(寫死週一、讀 date-fns 物件、'en-US' 預設)還在 → exit 1。
  *        `--selftest` 對照組:把內建表的 TW 拿掉、拿掉 -u-fw- 解析、拿掉 `% 7` 換算、忽略 weekStartsOn 參數、篩選改回寫死週一(2026-11-24 前的形狀)、

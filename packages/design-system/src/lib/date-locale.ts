@@ -5,7 +5,8 @@
  *   - 預設語系:「全 DS 日期元件一起改 zh-TW (Recommended)」(Calendar / DatePicker / TimePicker 沒傳 locale 時 = zh-TW)。
  *   - 週起始日:先問「你確定中文語系的起始通常預設都是週日？世界級的設計是這樣？」,實測 CLDR 後選「跟語系的 CLDR (Recommended)」——
  *     DateGrid / DatePicker / DataTable「本週 / 上週 / 下週」篩選各自保留 `weekStartsOn` 參數可覆寫,沒傳時一律用同一條規則:
- *     語系 → CLDR 週資料。決策總帳更正 #2:date-fns 的 zh-TW 語系物件寫的是週一(`weekStartsOn: 1`,
+ *     語系 → CLDR 週資料。決策總帳更正 #2(AI 判定,後由 WS(定) user 選「跟語系的 CLDR (Recommended)」確認):
+ *     date-fns 的 zh-TW 語系物件寫的是週一(`weekStartsOn: 1`,
  *     https://unpkg.com/date-fns@4.1.0/locale/zh-TW.js),CLDR 的 TW 是週日 —— 全 DS 以 CLDR 為準,不讀 date-fns 物件裡的值。
  *
  * 規則(`resolveWeekStartsOn`):

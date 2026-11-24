@@ -14,7 +14,7 @@ benchmark:
 
 # Calendar 設計原則
 
-> 標記:【C1】【Q6(定)】這類代號 = user 的決定,原話與選項逐字收在文末「決定來源總帳」;【總帳更正 #n】= 2026-11-24 草稿核對後 AI 依已定決定字面推出的判定(不是 user 新決定);【AI 推導】= 由既有規範或已驗證的世界級證據推出,user 可推翻。
+> 標記:【C1】【Q6(定)】這類代號 = user 的決定,原話與選項逐字收在文末「決定來源總帳」;【總帳更正 #n】= 2026-11-24 草稿核對後 AI 依已定決定字面推出的判定(不是 user 新決定;#1–#9 原文逐字收在文末「決定來源總帳」的「總帳更正 #1–#9」表);【AI 推導】= 由既有規範或已驗證的世界級證據推出,user 可推翻。
 
 ## 定位
 
@@ -217,7 +217,7 @@ interface CalendarEvent {
 | 日期數字鈕 | `onDateClick`(在這天新增) | 自己不亮,格亮(它是同一個目標的鍵盤入口,不是第二個目標:沒有自己的滑過、底色透明、完全落在格內;24 的框是列高,不是最小點擊尺寸 —— DS 不採觸控尺寸建議,`hit-area-canonical.md`「本 DS 不採納觸控尺寸建議」)【維持 U4】 |
 | 格內其他地方(內距、列與列的縫、日期列空白) | `onDateClick`(在這天新增) | 格 `--neutral-hover` |
 
-**點格內空白處也把鍵盤位置帶過來**:格陣的停靠點(roving tabindex)搬到這一天、焦點落在這一天的日期鈕,之後 `Tab` 回來停在剛點的那天、consumer 開的對話框關掉後焦點也回到它(與 DataTable 試算表模式同一條:滑鼠點到哪一格,鍵盤位置就跟到哪一格,`../DataTable/data-table.spec.md`「試算表模式」);點日期鈕也走同一條路(Safari 點按鈕不給焦點,要主動給)。唯讀列阻止冒泡同時解掉一個錯日問題:長條的 DOM 放在它這一週第一個可見日的格子裡(見「跨日長條」),冒泡會落到第一格 —— 所有長條一律阻止冒泡,點第 3 天那段不會在第 1 天新增。單擊空白即新增的世界級:Google Calendar 點空白跳快速新增(<https://support.google.com/calendar/answer/72143?hl=en&co=GENIE.Platform%3DDesktop>)、MUI X 單擊空格新增(<https://github.com/mui/mui-x/blob/master/docs/data/scheduler/event-calendar/editing/editing.md>)、Syncfusion 單擊開快速新增(<https://help.syncfusion.com/scheduler-sdk/react/schedule/editor-template>)。
+**點格內空白處也把鍵盤位置帶過來**:格陣的停靠點(roving tabindex)搬到這一天、焦點落在這一天的日期鈕,之後 `Tab` 回來停在剛點的那天、consumer 開的對話框關掉後焦點也回到它(與 DataTable 試算表模式同一條:滑鼠點到哪一格,鍵盤位置就跟到哪一格,`../DataTable/data-table.spec.md`「試算表模式」);點日期鈕也走同一條路(Safari 點按鈕不給焦點,要主動給)。唯讀列阻止冒泡同時解掉一個錯日問題:長條的 DOM 放在它這一週第一個可見日的格子裡(見「跨日長條」),冒泡會落到第一格 —— 所有長條一律阻止冒泡,點第 3 天那段不會在第 1 天新增。單擊空白即新增的世界級:Google Calendar 點空白時段跳快速新增(說明頁寫的是時段,沒有專寫月檢視;<https://support.google.com/calendar/answer/72143?hl=en&co=GENIE.Platform%3DDesktop>)、MUI X 單擊空格新增(<https://github.com/mui/mui-x/blob/master/docs/data/scheduler/event-calendar/editing/editing.md>)、Syncfusion 單擊開快速新增(<https://help.syncfusion.com/scheduler-sdk/react/schedule/editor-template>)。
 
 ### 間距【SPACING(定)】
 
@@ -324,7 +324,7 @@ interface CalendarEvent {
 
 **位置**【AI 推導】:錨點 = 被點的那個元素(格內事件列、那一段長條、清單裡那一列);**側邊開、頂端對齊**:`side` 朝格陣中央(星期左半邊的欄往右開、右半邊往左開)、`align="start"`、`sideOffset` 8、`collisionPadding` 8,放不下自動翻面。從清單打開時水平貼著清單浮層的外緣、垂直對齊被點那一列的上緣。改了日期讓事件移到別天:新位置還在畫面上 → 跟過去;不在 → 留在原位。世界級:Google Calendar 詳情在事件旁、頂端對齊(<https://calendar.google.com/calendar/embed?src=j7gov1cmnqr9tvg14k621j7t5c%40group.calendar.google.com&mode=MONTH&dates=20261201%2F20261228&ctz=UTC&hl=en>);Toast UI 開在右側、放不下翻左(<https://github.com/nhn/tui.calendar/blob/main/apps/calendar/src/components/popup/eventDetailPopup.tsx>)。
 
-**最多三層**:清單浮層 → 詳情浮層 → 欄位自己的日曆 / 時間浮層(欄位控件自己開的彈出層,與表格篩選面板裡的下拉同一類)。產品真的需要一次填很多欄位(邀請與會者、重複規則)時,才改對話框 / 側邊面板 —— 由產品在 `actions` 放「開完整編輯」【AI 推導】。
+**本元件的層次**:清單浮層 → 詳情浮層 → 欄位自己的日曆 / 時間浮層(欄位控件自己開的彈出層,與表格篩選面板裡的下拉同一類)。產品真的需要一次填很多欄位(邀請與會者、重複規則)時,才改對話框 / 側邊面板 —— 由產品在 `actions` 放「開完整編輯」【AI 推導】。
 
 **Esc(一次少一層)**(`keyboard-model-canonical.md`「`Esc` 一次只關最內層」、「焦點所在的控件自己那一層也算一層」):欄位的日曆 / 時間浮層開著 → 只關那個浮層、草稿不動;欄位在編輯中 → 取消編輯、焦點回那個欄位;詳情開著 → 關詳情、焦點回打開它的那一列 / 方塊;清單開著 → 關清單、焦點回「+N」。
 
@@ -434,6 +434,22 @@ DS 以桌機為主(`../../tokens/typography/typography.spec.md`「DS 主場景�
 
 被取代的舊決定:2026-06-01「A 補實作」全天(user 只決定要做,視覺是 AI 選的)→ 視覺由 C2 取代;示範殼「點事件開浮層看名稱與日期」(2026-10-21「d13照你建議」)→ 內容由 C7 擴充;「+N more」先暫緩 → 由 C3 / C6 / Q2(定) / Q2b(定) 取代。
 
+### 總帳更正 #1–#9(AI 判定,不是 user 決定)
+
+本規格裡的【總帳更正 #n】指下表。原文逐字取自 2026-11-24 決策總帳「2026-11-24 草稿 v1 核對後的更正與 AI 判定(不需 user 決定;依據附後)」那一段,編號 = 那一段的條目順序(總帳本身不進 repo);原文裡的行號是 2026-11-24 當時的。
+
+| # | 總帳原文(逐字) | 性質 |
+|---|---|---|
+| 1 | Q4(定) 備註「四周 12」是 AI 記總帳時的筆誤:AI 當時給 user 的規格是「標題列上方 / 標題→第一筆 / 最後一筆→底 = 12,左右 16(loose)」,user 問的也是上下等距 → 更正為「上下 12、左右 16」。 | AI 判定 |
+| 2 | Q9 週起始日:date-fns zh-TW = 週一(locale/zh-TW.js:24),Intl zh-TW = 週日(node 實測 firstDay 7)。user 同意的前提是「現況不變(週日)」→ 全 DS 以 Intl(CLDR)為準。 | AI 判定;後由 WS(定) user 選「跟語系的 CLDR (Recommended)」確認 |
+| 3 | X18 / P2 / P2':依 Q6(定)「事件列與 +N 阻止冒泡」字面,唯讀事件列也阻止冒泡(點了不新增),格子在唯讀列上不亮(hit-area-canonical.md:34 懸停 = 命中)。同時解掉多日長條冒泡到第一格的錯日問題。 | AI 判定 |
+| 4 | P3:為了讓 C4「清單留著、旁邊開詳情」對所有 consumer 成立,onEventClick 要帶事件列的錨點元素、清單不先關。 | AI 判定 |
+| 5 | P4:popover.spec.md 的「內容多」措辭改成「要一次填寫多個欄位(表單)或篩選資料」,與 inline-edit.spec.md:119-120「閱讀為主、偶爾編輯」區分,詳情浮層屬後者。 | AI 判定 |
+| 6 | P6:U5 星期標題字樣(text-foreground text-body font-medium)維持,寫進維持清單。 | AI 判定 |
+| 7 | P7:每格放不放得下以「最高佔用的車道」算,不是事件筆數。 | AI 判定 |
+| 8 | X4:窄到拿掉時間的門檻,1 號同時只顯示「1」。 | AI 判定 |
+| 9 | Q17 星期列灰底:沒有證據顯示是問題 → 維持現狀,不提問(feedback_propose_discipline.md Sub-rule 9)。 | AI 判定 |
+
 ### AI 推導清單(user 可推翻;看得見的列進發版確認頁)
 
 第一段不開 `view`;第二段 API 形狀 `view` / `defaultView` / `onViewChange` / `views`;事件方塊第三種選項 `eventDetail` 與單筆 `readOnly`;重複事件不進資料模型(產品先展開);只有日期沒標全天 → 全天;`end` 不含;時區 / 日光節約 / 異常資料;月格只顯示開始時間;車道分配、格內排序、逐格切;「+N」切開處與清單裡跨日列的斷開端也直角(依 Q3(定)「一律」);長條 DOM 放第一個可見日的格子;每格列數算式、「+1」出現條件;「+N」的內距、圓角、字色 secondary、窄時不另換字;焦點框往外;格子下內距 4、格最小高、容器太矮時捲動;日期框寬於 24 時左右內距 8;`renderEventTile` 限一列高、多收 `segment`;格內鍵盤為「+N」與跨日長條補的順序、從每一天進格、`Esc` 回進格那一天;清單裡唯讀事件照列、純文字不可點;清單標題文字格式、寬的取法、以格為中心的可用高、開啟焦點、半列公式;被點那一列在詳情開著時維持滑過色;詳情的標題放標題列、全天開關直接切換、時間用一個 `DatePicker.Range`;詳情有哪些欄位(地點 / 說明 / 顏色 / 額外)與各欄平常 / 編輯的長相;詳情可編輯時空欄位照列(顯示 placeholder)、只能看時空欄位不列;詳情位置、最多三層、點外面先提交再關;載入中一條骨架、仍可操作;窄寬斷點看欄寬、不自動切議程、檢視切換不換下拉;工具列改 ChromeHeader、檢視切換用 SegmentedControl、不內建快捷鍵;A11y:星期列移進格陣(`row` / `columnheader`)、今天 `aria-current` 與名稱前的「今天,」、日期停靠點與事件列的讀屏名稱格式、「+N」讀屏名稱、`labels` 物件收全部讀屏字串;四種檢視各自的用途描述。
@@ -488,4 +504,4 @@ DS 以桌機為主(`../../tokens/typography/typography.spec.md`「DS 主場景�
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
-- `popover.spec.md`
+- `layoutSpace.spec.md`
