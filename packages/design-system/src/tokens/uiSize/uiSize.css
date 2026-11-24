@@ -26,7 +26,7 @@
   --field-height-md: 2rem;      /* 32px */
   --field-height-lg: 2.25rem;   /* 36px */
   /* 清單型浮層的捲動上限(300px)**不設 token**(2026-11-11 token「3全收」收回):只有 CommandList 在讀、不隨密度切換,
-     值住 Command/command.tsx,理由住 command.spec.md「邊界案例」。 */
+     值住 elevation/overlay-geometry.ts 的 OVERLAY_LIST_MAX_HEIGHT,理由住 command.spec.md「邊界案例」。 */
 
   /* Field control vertical padding — 讓「單行的多行控件」與同 size 單行 Input 等高 SSOT。
      公式 = (field-height − 1lh)/2 − 1px:`1lh` 在使用端解析成該元素自己的行高(text-body 21px /

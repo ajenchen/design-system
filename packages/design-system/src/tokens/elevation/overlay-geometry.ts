@@ -27,7 +27,7 @@ export const OVERLAY_VIEWPORT_MAX_WIDTH = 'calc(100vw - 2rem)'
 //   上限 = capHeight(可用高, 使用端的 maxHeight) —— 可用高只有兩種(錨定浮層 / modal),公式只有一條,使用端只能往更矮調。
 // 字串不是數字:要放進 inline style 與 `min()`;Tailwind class 讀不到 TS 常數,所以消費端一律寫 `style.maxHeight`。
 // 閘:scripts/overlay-height-ssot-invariant.mjs(靜態:浮層元件的高度上限只准從本檔來)、
-//     scripts/overlay-height-cap-invariant.mjs(執行期:每個開著的錨定浮層 computed max-height = capHeight 的結果)。
+//     scripts/overlay-height-cap-invariant.mjs(執行期:夾具裡各種錨定浮層的 computed max-height = capHeight 的結果,不是全 DS 每個浮層)。
 
 /**
  * 錨定浮層(Popover / HoverCard / DropdownMenu 與其子選單 / 放在它們裡面的 ProfileCard)的可用高:觸發點那一側到碰撞邊界的剩餘高度。

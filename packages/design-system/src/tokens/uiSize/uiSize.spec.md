@@ -19,8 +19,8 @@ Button、Input、Checkbox/Radio SelectionItem 等互動元件。
 | `--field-height-lg` | 2.25rem (36px) | 2.5rem (40px) |
 
 清單型浮層的捲動上限**不是 token**:2026-11-11 user 拍板 token 第 3 題「3全收」,收回成 Command 自己的值
-(2026-11-24 起是 TS 常數 `../elevation/overlay-geometry.ts` 的 `OVERLAY_LIST_MAX_HEIGHT`,只有 CommandList 在讀,仍不是 CSS 變數),
-值與理由住 `../../components/Command/command.spec.md`「邊界案例」清單捲動上限。
+(只有 CommandList 在讀,仍不是 CSS 變數):值住 `../elevation/overlay-geometry.ts` 的 TS 常數 `OVERLAY_LIST_MAX_HEIGHT`(2026-11-24 起),
+理由住 `../../components/Command/command.spec.md`「邊界案例」清單捲動上限。
 
 ### Field-height family 清單與共享 default（SSOT）
 

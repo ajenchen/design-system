@@ -72,11 +72,11 @@ elevation-100 < elevation-200，數字越大浮起越高。`*-hover` 兩枚為�
 | 錨定浮層:觸發點那一側到碰撞邊界的剩餘高度(Radix popper 算,已扣 collisionPadding) | `OVERLAY_AVAILABLE_HEIGHT` | `PopoverContent`、`HoverCardContent`、`DropdownMenuContent`(三者都收 `maxHeight`)、`DropdownMenuSubContent`(只用可用高)、`ProfileCard`(放進 HoverCard / Popover 時) |
 | Modal:所在區塊高扣上下 inset | `MODAL_AVAILABLE_HEIGHT` | `DialogContent`(收 `maxHeight`;規則與兩種高度模式的 owner → `../../components/Dialog/dialog.spec.md`「最大高度(上限)」) |
 
-清單型浮層另有一個閱讀上限 `OVERLAY_LIST_MAX_HEIGHT`(`CommandList` 的捲動區;值與理由的 owner → `../../components/Command/command.spec.md`「邊界案例」清單捲動上限),它夾的是清單,外殼照上表。
+清單型浮層另有一個閱讀上限 `OVERLAY_LIST_MAX_HEIGHT`(`CommandList` 的捲動區;值住 `overlay-geometry.ts` 的這個常數,理由住 `../../components/Command/command.spec.md`「邊界案例」清單捲動上限),它夾的是清單,外殼照上表。
 超過上限時標題列 / 頁尾留在畫面內、只有內容區捲動 —— 中間 wrapper 的 flex 鏈規則住 `../../patterns/overlay-surface/overlay-surface.spec.md`「Viewport-aware scroll chain invariant」。
 
 - **寫法**:消費端一律寫 inline `style.maxHeight`(Tailwind class 讀不到 TS 常數);浮層元件裡不另寫 `max-h-*`、不直接讀 `--radix-*-available-height`。
-- **機械檢查**:`scripts/overlay-height-ssot-invariant.mjs`(靜態:浮層元件的高度上限只准從 `overlay-geometry.ts` 來)、`scripts/overlay-height-cap-invariant.mjs`(執行期:每個開著的錨定浮層,computed `max-height` = `capHeight` 的結果)。
+- **機械檢查**:`scripts/overlay-height-ssot-invariant.mjs`(靜態:浮層元件的高度上限只准從 `overlay-geometry.ts` 來)、`scripts/overlay-height-cap-invariant.mjs`(執行期:量夾具裡渲染出來的各種錨定浮層 —— Popover / HoverCard / DropdownMenu 與其子選單、放在 Popover 裡的 ProfileCard 的 computed `max-height` = `capHeight` 的結果,CommandList 捲動區 = `OVERLAY_LIST_MAX_HEIGHT`;不是全 DS 每個浮層)。
 
 ## 浮層共用樣式
 
