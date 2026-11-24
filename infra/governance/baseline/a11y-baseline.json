@@ -1,7 +1,7 @@
 {
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
-    "generatedAt": "2026-11-24T13:54:33.290Z",
+    "generatedAt": "2026-11-24T21:30:38.323Z",
     "stories": 1089,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
@@ -1599,7 +1599,7 @@
     "design-system-components-select-設計原則--native-select-rule|color-contrast": 5,
     "design-system-components-select-設計原則--searchable-rule|color-contrast": 5,
     "design-system-components-select-設計原則--usage-guidance|color-contrast": 6,
-    "design-system-components-select-設計規格--color-matrix|color-contrast": 75,
+    "design-system-components-select-設計規格--color-matrix|color-contrast": 98,
     "design-system-components-select-設計規格--inspector|color-contrast": 41,
     "design-system-components-select-設計規格--overview|color-contrast": 17,
     "design-system-components-select-設計規格--overview|scrollable-region-focusable": 1,
