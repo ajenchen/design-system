@@ -435,6 +435,11 @@ jobs:
           # 四個狀態元件的進度 / 步驟填色用 --info,不混 --primary(color.spec.md「Status」段)。
           node scripts/status-color-invariant.mjs
           node scripts/test-status-color-invariant.mjs
+          # Calendar 格內不寫死尺寸(calendar.spec.md「間距」【SPACING(定)】、「禁止事項」第 7 條):元件檔 class 字串不寫數字型內距 / 間距 / 寬高 / 邊框寬
+          # 與 [Npx],列高常數 = TAG_HEIGHT_PX.md,讀到的 --calendar-* 都有設值。配對測試在暫存目錄的實檔注入 p-1.5 / gap-0.5 / min-h-28 /
+          # border-l-[3px] / 列高 20 各自必紅,並跑閘自己的 --selftest(八個突變)。純靜態,本機兩條合計約 2 秒。
+          node scripts/calendar-geometry-invariant.mjs
+          node scripts/test-calendar-geometry-invariant.mjs
           # 一組選項的 Checkbox 一律包 <CheckboxGroup>(zero-gap canonical,checkbox.spec.md),不手刻 <div flex|grid|space-y-N>;
           # 各自獨立的「單一同意」勾選框用逐行豁免 @checkbox-group-handcraft-ok,出處要引得出 spec 原文。
           # 2026-11-21(knowledge-prune WP-21b)接上:11-20 那批時它在 HEAD 上紅(3 筆手刻開關列),WP-17(904d00b4、c2d35677)修好後
@@ -1860,6 +1865,16 @@ jobs:
           # 日期區間作用端主色底線畫滿 2px(date-picker.spec.md:193;A50)+ --selftest(該紅列由實量幾何推、跨邊列任何字型都裁得到)。
           # 2026-11-17 從 verify-browser-interaction 搬來:那支 job 41622d91 撞 25 分上限被取消(d23df592 已 22.9 分),本 job 約 8.5 分 / 上限 25。
           npm run test:datepicker-range-active-underline
+
+      - name: Calendar month skeleton invariant (browser)
+        run: |
+          # Calendar 月檢視骨架與間距(calendar.spec.md「工具列」「Cell 規則」「間距」「A11y 預設」;2026-11-25 月檢視重做第一包):
+          # 工具列 = ChromeHeader 48 / 56、nav 名稱、星期列是格陣第一個 row(7 個 columnheader、完整星期名、列高 32)、各週等高、最後一週沒底線、
+          # 日期框 4 / 4 / 24、1 號「7月1日」、事件列 24 / 列距 4 / 文字內距 8、事件列焦點框往外、axe required-children / parent 0、太矮時週列可捲(工具列與星期列不動)、
+          # 鍵盤走到看不見的週會捲進來、點日期鈕 / 按「今天」搬停靠點、en-GB 週一起、titleAs、今天是 1 號時實心底包住「7月1日」;
+          # --selftest 十五個突變各自讓預期那一格紅。本機(同一份建置)主判定約 7 秒、--selftest 約 15 秒,CI 未實測 ——
+          # 放在本 job 是因為它是 25 分 job 裡餘裕大的一個(約 8.5 分),不是主題相同(同 sidebar-keyboard job 檔頭「不往沒有餘裕的 job 疊」)。
+          npm run test:calendar-month
 
   verify-browser-sidebar-keyboard:
     # 2026-11-05 拆自 verify-browser-field-dialog-steps(照主題拆平行 job、不調高上限,上限沿用原 job 的 25;同 2026-10-14 待辦總帳 G10 的拆法)。

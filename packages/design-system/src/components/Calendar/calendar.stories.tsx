@@ -128,7 +128,7 @@ export const ReadOnlyDatesCustomTileKeyboard: Story = {
   render: () => (
     <div className="h-screen p-4 bg-canvas">
       <Calendar
-        events={[{ id: 'p1', title: '週五 newsletter', start: `${thisMonth}-02`, end: `${thisMonth}-02`, color: 'blue' }]}
+        events={[{ id: 'p1', title: '週五電子報', start: `${thisMonth}-02`, end: `${thisMonth}-02`, color: 'blue' }]}
         defaultReferenceDate={now}
         today={now}
         renderEventTile={(event) => <Tag size="sm">{event.title}</Tag>}
@@ -144,7 +144,7 @@ export const ReadOnlyDatesCustomTileKeyboard: Story = {
     // readOnlyDates:日期數字不是按鈕;格子本身是格陣的鍵盤停靠點(名字 = 日期 + 事件數),Tab 進來停今天(7/15)
     await expect(canvas.queryAllByRole('button', { name: /^2026-07-\d{2},/ })).toHaveLength(0)
     await expect(canvas.getByRole('gridcell', { name: '2026-07-15,0 個事件' })).toHaveAttribute('tabindex', '0')
-    const tile = await canvas.findByRole('button', { name: '事件:週五 newsletter' })
+    const tile = await canvas.findByRole('button', { name: '事件:週五電子報' })
     tile.focus()
     await userEvent.keyboard('{Enter}')
     await expect(customTileActivated).toHaveBeenCalledTimes(1)
@@ -166,8 +166,9 @@ export const EmptyCalendar: Story = {
 
 // 點格內空白也帶鍵盤位置(calendar.spec.md「Cell 規則 › 命中區」):
 // 滑鼠點日期格的空白處(不是日期數字鈕、不是事件方塊)後,鍵盤停靠點與焦點都搬到這一天的日期鈕 ——
-// 之後方向鍵從這一格出發,而不是從上一次鍵盤停的那一格。test-only:沒有既有月曆瀏覽器閘,以 play 當閘
+// 之後方向鍵從這一格出發,而不是從上一次鍵盤停的那一格。test-only:以 play 當閘
 // (story-demo-focus 閘會載入每支 story 並跑 play,斷言不成立就紅);對照組 = 先把停靠點放在別的日子,證明真的搬過來。
+// 點日期鈕本身、按「今天」搬停靠點兩條由 scripts/calendar-month-invariant.mjs 量(那支同時量月格的版面)。
 export const CellBlankClickMovesKeyboardStop: Story = {
   name: '點格內空白帶鍵盤位置',
   tags: ['test-only'],
@@ -179,16 +180,13 @@ export const CellBlankClickMovesKeyboardStop: Story = {
     </div>
   ),
   play: async ({ canvasElement }) => {
-    const cells = Array.from(canvasElement.querySelectorAll<HTMLElement>('[role="gridcell"]'))
-    const dayOf = (c: HTMLElement) => c.querySelector('button')?.textContent?.trim()
-    // 當月 22 號(上月末 / 下月初的非當月格都到不了 22,第一個就是當月)
-    const cell = cells.find((c) => dayOf(c) === '22')
-    if (!cell) throw new Error('找不到 22 號的格')
-    const dateButton = cell.querySelector<HTMLButtonElement>('button')
-    if (!dateButton) throw new Error('22 號的格沒有日期鈕')
-    // 對照組:先把鍵盤停靠點放在別的日子
-    const other = cells.find((c) => dayOf(c) === '1' && c !== cell)
-    const otherButton = other?.querySelector<HTMLButtonElement>('button')
+    // 找格子用日期停靠點的屬性 data-calendar-day(不比對畫面上的字:每月 1 號顯示「7月1日」,calendar.spec.md「Cell 規則」Q15(定))
+    const dayButton = (iso: string) => canvasElement.querySelector<HTMLButtonElement>(`button[data-calendar-day="${iso}"]`)
+    const dateButton = dayButton(`${thisMonth}-22`)
+    const cell = dateButton?.closest<HTMLElement>('[role="gridcell"]')
+    if (!dateButton || !cell) throw new Error('找不到 22 號的格或日期鈕')
+    // 對照組:先把鍵盤停靠點放在別的日子(當月 1 號)
+    const otherButton = dayButton(`${thisMonth}-01`)
     if (!otherButton) throw new Error('找不到 1 號的日期鈕')
     otherButton.focus()
     await expect(document.activeElement).toBe(otherButton)

@@ -18,7 +18,7 @@
     "_meta": {
       "generatedAt": "2026-11-04",
       "unit": "kB = 1000 bytes(size-limit 的單位;上面 totalKB / entriesKB 是 1024 進位)",
-      "rule": "每項設現值 +10%(含相依套件、壓縮後;react / react-dom 列在 ignore 的不算);與上面的原始 byte budget 同一支 --init 重設、同一個 headroom"
+      "rule": "每項設現值 +10%(含相依套件、壓縮後;react / react-dom 列在 ignore 的不算);與上面的原始 byte budget 同一支 --init 重設、同一個 headroom。2026-11-25 只調 Calendar 一項(44.6 → 51.3 = 現值 46.6 kB × 1.10;其餘各項維持,沒有跟著放寬):Calendar 月檢視重做第一包 —— 週列改住格陣裡的 ScrollArea(Radix scroll-area,實測 +4.0 kB)、工具列改 ChromeHeader(+0.3 kB)、週起始日改呼叫 lib/date-locale 的 resolveWeekStartsOn 與骨架 / 間距改寫;改前 42.0 kB。列高常數刻意不 import tag.tsx 的 TAG_HEIGHT_PX(實測會把整個 Tag 模組帶進來、再 +7.8 kB),改成同值常數由 scripts/calendar-geometry-invariant.mjs 鎖住。新增 import 只有同 repo 的 ScrollArea、ChromeHeader、lib/date-locale,沒有 lucide 全庫或重複依賴。"
     },
     "checks": [
       {
@@ -72,7 +72,7 @@
       {
         "name": "Calendar(date grid + a11y)",
         "path": "packages/design-system/dist/components/Calendar/calendar.js",
-        "limit": "44.6 kB",
+        "limit": "51.3 kB",
         "gzip": true,
         "ignore": [
           "react",

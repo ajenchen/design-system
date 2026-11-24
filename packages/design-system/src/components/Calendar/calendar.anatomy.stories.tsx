@@ -41,16 +41,21 @@ const sampleEvents: CalendarEvent[] = [
 
 // Keep dynamic-token documentation readable without presenting Tailwind's
 // source scanner with an invalid literal arbitrary-value candidate.
+// 事件列 = Tag md(calendar.spec.md「間距」):高 h-tag-md 24、text-body 14px font-normal;文字內距 8 = 外層 4 + 文字 4(兩層都讀 --calendar-gap)
 const TIMED_EVENT_CLASS_GUIDE = [
   'bg-[var(--color-', '{color}', '-1)] · text-[var(--color-', '{color}',
-  '-7)] · rounded-md · px-1.5 py-0.5 · text-caption · truncate',
+  '-7)] · rounded-md · h-tag-md · 外層 px-[var(--calendar-gap)] + 文字 px-[var(--calendar-gap)] · text-body · font-normal · truncate',
 ].join('')
 const ALL_DAY_EVENT_CLASS_GUIDE = [
-  '同上 + border-l-[3px] border-[var(--color-', '{color}', '-6)] · font-medium',
+  '同上 + border-l-[3px] border-[var(--color-', '{color}', '-6)]',
 ].join('')
 const HOVER_EVENT_CLASS_GUIDE = [
   'hover:bg-[var(--color-', '{color}', '-2)]',
 ].join('')
+
+// 元件檢閱器的週起始日選項(0 = 週日 … 6 = 週六;不選 = 從語系推)
+const WEEK_START_LABELS: Record<string, string> = { 0: '0 週日', 1: '1 週一', 2: '2 週二', 3: '3 週三', 4: '4 週四', 5: '5 週五', 6: '6 週六' }
+const WEEK_START_OPTIONS = [0, 1, 2, 3, 4, 5, 6]
 
 // ── 1. 元件總覽 ────────────────────────────────────────────────────────────────
 export const Overview: Story = {
@@ -69,21 +74,23 @@ export const Inspector: Story = {
     docs: { description: { story: '右側 Controls 切換 month canvas 的已實作 props；未實作的週/日與 size API 不暴露。' } },
     layout: 'fullscreen',
   },
+  // weekStartsOn 預設不傳 = 從語系推(zh-TW / en-US / ja-JP 週日、en-GB 週一;calendar.spec.md「資料語意」週起始日【WS(定)】)
   args: {
-    weekStartsOn: 0,
     locale: LOCALE,
     events: sampleEvents,
     today: now,
   },
   argTypes: {
-    weekStartsOn: { control: 'radio', options: [0, 1] },
-    locale: { control: 'select', options: ['en-US', 'zh-TW', 'ja-JP'] },
+    // 帶 mapping(數字對數字):沒有 mapping 時 Storybook 依元件型別轉換網址參數(?args=weekStartsOn:1),這個聯集型別轉不過去、整個參數被丟掉(實測)
+    weekStartsOn: { control: { type: 'select', labels: WEEK_START_LABELS }, options: WEEK_START_OPTIONS, mapping: Object.fromEntries(WEEK_START_OPTIONS.map((n) => [n, n])) },
+    locale: { control: 'select', options: ['en-US', 'en-GB', 'zh-TW', 'ja-JP'] },
+    titleAs: { control: 'radio', options: ['h1', 'h2', 'h3'] },
     events: { control: 'object' },
   },
   // 可點模式的三個回調由示範殼接上(點得出真的結果);Controls 只切外觀與資料
   render: (args) => (
     <div className="h-screen p-4 bg-canvas">
-      <CalendarDemo defaultReferenceDate={now} today={args.today} events={args.events} weekStartsOn={args.weekStartsOn} locale={args.locale} />
+      <CalendarDemo defaultReferenceDate={now} today={args.today} events={args.events} weekStartsOn={args.weekStartsOn} locale={args.locale} titleAs={args.titleAs} />
     </div>
   ),
 }
@@ -109,13 +116,16 @@ export const ColorMatrix: Story = {
             (blue / green / deep-orange / yellow / red / orange / amber / lime / turquoise / indigo / purple / magenta)。
             顏色代表「這是哪一類事件」(同一個團隊 / 同一個專案),不是嚴重程度。每個色名對應一個色相,紅與橘各自獨立、可清楚區分。
           </Desc>
-          {/* 不給固定高度:整月六週照格子的最小高度排開,最後一週的日期鈕不被裁(看得到的範圍 = 會觸發的範圍) */}
-          <CalendarDemo events={colorEvents} defaultReferenceDate={now} today={now} locale={LOCALE} />
+          {/* 給明確高度(同設計原則「唯讀的日期格與事件」的整月示範):不給高度時週列照內容排開,每格只有格最小高 60、很擠;
+              560 時整月五週都看得到、不用捲 */}
+          <div className="h-[560px]">
+            <CalendarDemo events={colorEvents} defaultReferenceDate={now} today={now} locale={LOCALE} />
+          </div>
         </div>
 
         <div>
           <H3>Cell 視覺 token</H3>
-          <Desc>月 view cell 的狀態色彩。Cell 最小高度 min-h-28 容納日期 header + 3 event tile,隨容器高度伸縮;7 欄等分。</Desc>
+          <Desc>月 view cell 的狀態色彩與幾何。格內所有空隙 = 4(元件內變數 --calendar-gap)、事件列 = Tag md 24;每一週等高、平分格陣高度,格最小高 60;7 欄等分。</Desc>
           <div className="overflow-x-auto">
             <table className="text-caption border-collapse">
               <thead>
@@ -128,8 +138,18 @@ export const ColorMatrix: Story = {
               <tbody>
                 <tr>
                   <Td>Cell 高度</Td>
-                  <Td mono>min-h-28(112px)</Td>
-                  <Td>容納 header + 3 event tile 的下限,隨容器高度伸縮(root h-full + grid flex-1)</Td>
+                  <Td mono>grid-template-rows: repeat(週數, minmax(var(--calendar-cell-min-h), 1fr))(最小 60px)</Td>
+                  <Td>每一週等高、平分格陣高度,不被內容撐高;格最小高 = 上內距 4 + 日期框 24 + 4 + 一列 24 + 下內距 4。容器比「週數 × 60」還矮時週列在格陣裡捲,工具列與星期列不捲</Td>
+                </tr>
+                <tr>
+                  <Td>Cell 內距 / 列距</Td>
+                  <Td mono>p-[var(--calendar-gap)] · gap-[var(--calendar-gap)](4px)</Td>
+                  <Td>格邊到事件列 = 事件列到事件列 = 日期框到第一列 = 4(四邊等距)</Td>
+                </tr>
+                <tr>
+                  <Td>星期列</Td>
+                  <Td mono>role=row(格陣第一列)· columnheader p-[var(--calendar-gap)] · 內容 h-tag-md · text-body font-medium · bg-muted</Td>
+                  <Td>列高 32 = 4 + 24 + 4(與日期列同一個列高單位);看得見的字「週日」,讀屏名稱「星期日」</Td>
                 </tr>
                 <tr>
                   <Td>Cell 寬度</Td>
@@ -137,14 +157,14 @@ export const ColorMatrix: Story = {
                   <Td>週 7 欄等分</Td>
                 </tr>
                 <tr>
-                  <Td>日期 header</Td>
-                  <Td mono>flex items-start justify-end · text-body · font-medium</Td>
-                  <Td>右上角數字,wrapper 無固定高度(由內容 + cell min-h-28 決定)</Td>
+                  <Td>日期框</Td>
+                  <Td mono>h-tag-md · min-w-tag-md · rounded-full · text-body · font-medium(左上)</Td>
+                  <Td>左上角,高 24(= 一列的高)、離格頂 4、離格左 4;每月 1 號顯示「7月1日」(Intl month short + day),其他日子只寫數字</Td>
                 </tr>
                 <tr>
                   <Td>Today cell(日期數字)</Td>
-                  <Td mono>bg-info · text-on-emphasis · rounded-full · min-w-6 h-6 px-2 · text-body font-medium</Td>
-                  <Td>info-filled pill,固定 h-6 + min-w-6 做 pill badge</Td>
+                  <Td mono>bg-info · text-on-emphasis · rounded-full · h-tag-md min-w-tag-md · px-[var(--calendar-text-inset)] · text-body font-medium</Td>
+                  <Td>info 實心底,高 24;比 24 寬(今天、「7月1日」)時左右內距 8 = 4 + 4;今天剛好是 1 號時實心底包住整段字</Td>
                 </tr>
                 <tr>
                   <Td>Outside day cell</Td>
@@ -192,7 +212,7 @@ export const ColorMatrix: Story = {
                 <tr>
                   <Td>All-day event</Td>
                   <Td mono>{ALL_DAY_EVENT_CLASS_GUIDE}</Td>
-                  <Td>2026-06-01 補實作:淡底 + 左側實心 accent 條 + medium,排序在有時間事件之前(cell 頂端);多日全天事件以日精度 filter 在每個涵蓋日各顯示一條</Td>
+                  <Td>2026-06-01 補實作:淡底 + 左側實心 accent 條,排序在有時間事件之前(cell 頂端);多日全天事件以日精度 filter 在每個涵蓋日各顯示一條。字重同事件列 font-normal(2026-11-25 前另加 font-medium)</Td>
                 </tr>
                 <tr>
                   <Td>Hover tile</Td>
@@ -206,8 +226,8 @@ export const ColorMatrix: Story = {
                 </tr>
                 <tr>
                   <Td>超出 tile 限制</Td>
-                  <Td mono>「+N more」純文字(text-fg-muted)</Td>
-                  <Td>每格最多顯示 3 筆事件,超出顯示「+N more」弱化計數文字,目前不可點擊(展開列表為後續增量)</Td>
+                  <Td mono>「+N more」純文字 · h-tag-md · px-[var(--calendar-text-inset)] · text-caption · text-fg-muted</Td>
+                  <Td>每格最多顯示 3 筆事件,超出顯示「+N more」弱化計數文字,與事件列同高 24,目前不可點擊(展開列表為後續增量)</Td>
                 </tr>
               </tbody>
             </table>
@@ -252,7 +272,7 @@ export const Accessibility = {
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
       <div className="flex flex-col gap-[var(--layout-space-tight)]">
-        <p><b>Grid role</b>:月格容器 <code>role="grid"</code> + <code>aria-label</code>(月份),每列 <code>role="row"</code>(<code>display:contents</code> 保 CSS grid 佈局),每格 <code>role="gridcell"</code>(非互動容器),日期數字按鈕帶 <code>aria-label</code>(日期 + 事件數)。事件 tile <code>role="button"</code> + <code>aria-label</code>(事件標題)。</p>
+        <p><b>Grid role</b>:月格容器 <code>role="grid"</code> + <code>aria-label</code>(月份)。星期列是格陣的第一個 <code>role="row"</code>,每格 <code>role="columnheader"</code>(看得見「週日」,讀屏名稱是完整星期名「星期日」);其後每一週一個 <code>role="row"</code>(<code>display:contents</code> 保 CSS grid 佈局),每格 <code>role="gridcell"</code>(非互動容器),日期數字按鈕帶 <code>aria-label</code>(日期 + 事件數)。事件 tile <code>role="button"</code> + <code>aria-label</code>(事件標題)。週列在捲動區裡捲,捲動區本身不是 Tab 停靠點。工具列的 ‹ / 今天 / › 包在 <code>{'<nav aria-label>'}</code> 裡(預設「行事曆月份導覽」)。</p>
         <p><b>Keyboard 行為</b>(實作現況,2026-09-24 補齊 W3C APG Data Grid):</p> {/* 來源:https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/grid/grid-pattern.html#L205-L221 */}
         <ul className="list-disc pl-5 space-y-1">
           <li>Tab — 整個月格陣只停一次(roving tabindex:只有目前焦點日的日期鈕進 Tab 序列,其餘日期鈕與全部事件方塊都不進);進來時停在今天,今天不在本月則停在該月 1 號</li>
@@ -266,7 +286,7 @@ export const Accessibility = {
           <li>事件方塊唯讀(readOnlyEvents)時:方塊不是按鈕、不進格內導覽</li>
         </ul>
         <p><b>刻意不做</b>:Ctrl+Home / Ctrl+End、Shift+方向鍵切月切年(APG 把 Shift+方向鍵定義為延伸選取,本元件無選取模型)。</p>
-        <p><b>Focus</b>:鍵盤焦點一律畫 outline 框(對齊 DS 焦點 canonical)。日期數字按鈕與預設事件 tile 走全域 <code>:focus-visible</code> 外描邊(<code>outline: 2px solid var(--ring)</code>,往外 2px;元件不寫任何 class);<code>renderEventTile</code> 自訂 tile 的外層 wrapper 因事件方塊之間只有 gap-0.5(2px)、往外會壓到相鄰方塊,改內描邊 <code>focus-visible:focus-ring-inset</code>(往內 2px)。</p>
+        <p><b>Focus</b>:鍵盤焦點一律畫 outline 框(對齊 DS 焦點 canonical)。日期數字按鈕、預設事件 tile 與 <code>renderEventTile</code> 自訂 tile 的外層 wrapper 都走全域 <code>:focus-visible</code> 外描邊(往外 2px;元件不寫任何 class):列距 4、格內距 4,四周淨空 ≥ 4,往外放得下。日期格唯讀(readOnlyDates)時焦點在格子本身,格與格之間零間距 → 內描邊 <code>focus-visible:focus-ring-inset</code>。</p>
         <p><b>驗證</b>:Storybook a11y addon panel 應 0 critical violation。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。</p>
       </div>
     </div>
