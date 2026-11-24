@@ -23,7 +23,7 @@ type Story = StoryObj<typeof Calendar>
 // 視覺基線同時釘住顯示月與 today SSOT，避免跨月/換日造成 snapshot 漂移。
 const now = new Date(2026, 6, 15)
 const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')
-// 月份標題 / 星期名照讀者的中文產品排(同展示頁 calendar.stories.tsx 的 LOCALE;元件預設 'en-US')。2026-11-21 前本頁沒傳 locale、
+// 月份標題 / 星期名照讀者的中文產品排(同展示頁 calendar.stories.tsx 的 LOCALE;元件預設 2026-11-24 起也是 'zh-TW',之前是 'en-US')。2026-11-21 前本頁沒傳 locale、
 // 事件也是英文(Design review…),跟中文的「新事件」「今天」並排 —— PV2 交出的同族尾巴(SIB-PV,AGENTS.md「單一檔案不中英夾雜」)。
 const LOCALE = 'zh-TW'
 

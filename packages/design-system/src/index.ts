@@ -703,6 +703,7 @@ export type {
 // 出口全部是 @internal 的 tokens / hooks / lib 模組整個不進 front-door(2026-10-07;檔頭標模組層 @internal,或每個出口都標):
 //   - lib/collection-removal-focus.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/composite-field-focus.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
+//   - lib/date-locale.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/focus-after-trigger.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/ime-composition.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/overlay-density.tsx(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)

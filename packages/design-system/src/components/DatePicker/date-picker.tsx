@@ -29,13 +29,17 @@ import {
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
+import { DEFAULT_DATE_LOCALE, resolveWeekStartsOn, type WeekStartsOn } from '@/design-system/lib/date-locale'
 
 // ── Format ──────────────────────────────────────────────────────────────────
 
 export interface DateFormatOptions {
   /** Intl.DateTimeFormat options（預設 { year: 'numeric', month: '2-digit', day: '2-digit' }） */
   formatOptions?: Intl.DateTimeFormatOptions
-  /** locale（預設 'en-US'） */
+  /**
+   * 語系(BCP 47,預設 'zh-TW' = `DEFAULT_DATE_LOCALE`)。傳了 `formatOptions` / `locale` 才走 `Intl.DateTimeFormat`;
+   * 日曆面一週從哪天開始也由它推(沒傳 `weekStartsOn` 時,語系 → CLDR,`lib/date-locale.ts`)。
+   */
   locale?: string
 }
 
@@ -75,9 +79,9 @@ function formatDate(
   if (Number.isNaN(date.getTime())) return String(value)
   // 若 consumer 顯式傳 formatOptions / locale → 走 Intl.DateTimeFormat
   if (options.formatOptions || options.locale) {
-    return getDateTimeFormatter(options.locale ?? 'en-US', options.formatOptions ?? { year: 'numeric', month: '2-digit', day: '2-digit' }).format(date)
+    return getDateTimeFormatter(options.locale ?? DEFAULT_DATE_LOCALE, options.formatOptions ?? { year: 'numeric', month: '2-digit', day: '2-digit' }).format(date)
   }
-  // 預設:YYYY/MM/DD(直接組,locale-independent + 視覺穩定)
+  // 預設:YYYY/MM/DD(直接組,locale-independent + 視覺穩定;與預設語系 zh-TW 走 Intl 兩位數年月日的輸出字面相同)
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
   const d = String(date.getDate()).padStart(2, '0')
@@ -337,6 +341,11 @@ export interface DatePickerProps
   /** showTime 秒鐘步進 */
   secondStep?: TimeStep
   /**
+   * 日曆面一週從哪天開始(0 = 週日 … 6 = 週六)。沒傳 = 由 `locale` 推(語系 → CLDR;預設 zh-TW = 週日)。
+   * 產品有「一週從週一開始」這類使用者偏好時,app 層把同一個值傳給每一個日期元件(不在個別元件寫死數字);規則與出處 → date-picker.spec.md「週起始日」。
+   */
+  weekStartsOn?: WeekStartsOn
+  /**
    * 是否需 OK 確認才提交,預設 showTime=true 時為 true(對齊 Ant DatePicker showTime)
    * — datetime picker user 習慣編完才 commit,避免 calendar 點到就關。
    */
@@ -413,6 +422,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
       minuteStep = 1,
       secondStep = 1,
       needConfirm: needConfirmProp,
+      weekStartsOn,
       showDisplayEndIcon = false,
       defaultOpen = false,
       onOpenChange,
@@ -441,6 +451,8 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
     // 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反 7+ 重複 ternary)
   const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
     const needConfirm = needConfirmProp ?? showTime  // datetime 預設需確認
+    // 日曆面週起始日:有傳 weekStartsOn 就用,沒傳由 locale 推(語系 → CLDR;lib/date-locale.ts,date-picker.spec.md「週起始日」)
+    const resolvedWeekStartsOn = React.useMemo(() => resolveWeekStartsOn(locale, weekStartsOn), [locale, weekStartsOn])
     const [open, setOpenState] = React.useState(defaultOpen)
     const setOpen = React.useCallback((next: boolean) => { setOpenState(next); onOpenChange?.(next) }, [onOpenChange])
     // Radix Popover 的預設 contentId 在 content 未掛載時仍會留在 trigger。
@@ -799,6 +811,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
                 calendar={
                   <DateGrid
                     mode="single"
+                    weekStartsOn={resolvedWeekStartsOn}
                     selected={displayDate}
                     onSelect={(date) => {
                       if (!date) return
@@ -910,6 +923,8 @@ export interface DatePickerRangeProps
   minuteStep?: TimeStep
   secondStep?: TimeStep
   needConfirm?: boolean
+  /** 日曆面一週從哪天開始(0 = 週日 … 6 = 週六);沒傳 = 由 `locale` 推。同單日 DatePicker 的 `weekStartsOn`。 */
+  weekStartsOn?: WeekStartsOn
 }
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
@@ -934,6 +949,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
       minuteStep = 1,
       secondStep = 1,
       needConfirm: needConfirmProp,
+      weekStartsOn,
       id: idProp,
       'aria-describedby': ariaDescribedByProp,
       'aria-errormessage': ariaErrorMessageProp,
@@ -953,6 +969,8 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
     // 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反 7+ 重複 ternary)
   const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
     const needConfirm = needConfirmProp ?? showTime
+    // 日曆面週起始日:同單日 DatePicker(date-picker.spec.md「週起始日」)
+    const resolvedWeekStartsOn = React.useMemo(() => resolveWeekStartsOn(locale, weekStartsOn), [locale, weekStartsOn])
     const resolvedPlaceholder: [string, string] = placeholder ?? (
       showTime ? ['Start date time', 'End date time'] : ['Start date', 'End date'] // i18n-allow: DS default; consumer override via placeholder prop
     )
@@ -1306,6 +1324,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
               showSeconds={showSeconds}
               calendar={
                 <DateGrid
+                  weekStartsOn={resolvedWeekStartsOn}
                   // mode='single' + manual modifiers(canonical 2026-05-02 v3):
                   // 不用 RDP 內建 mode='range'(它的 click 配對邏輯跟我們的 activeEnd 衝突,
                   // 造成「點一次沒反應 / 要點兩次」bug)。改自管 modifiers 控視覺。

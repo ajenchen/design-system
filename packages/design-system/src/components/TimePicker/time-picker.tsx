@@ -29,6 +29,7 @@ import {
   type TimeColumnsDisabled,
 } from '@/design-system/components/TimePicker/time-columns'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
+import { DEFAULT_DATE_LOCALE } from '@/design-system/lib/date-locale'
 
 /**
  * TimePicker — 單一時間(時/分/秒)輸入與顯示元件
@@ -64,7 +65,7 @@ import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 export interface TimeFormatOptions {
   /** Intl.DateTimeFormat options(預設 { hour: '2-digit', minute: '2-digit', hour12: false }) */
   formatOptions?: Intl.DateTimeFormatOptions
-  /** locale(預設 'en-US') */
+  /** locale(預設 'zh-TW' = DS 日期元件共用的 `DEFAULT_DATE_LOCALE`;預設 formatOptions 是 24 小時制,zh-TW 與 en-US 輸出相同) */
   locale?: string
 }
 
@@ -91,7 +92,7 @@ function formatTime(
   if (!parts) return iso
   const {
     formatOptions = { hour: '2-digit', minute: '2-digit', hour12: false },
-    locale = 'en-US',
+    locale = DEFAULT_DATE_LOCALE,
   } = options
   // 借用 Date 讓 Intl.DateTimeFormat 處理 locale / 12h-24h
   const d = new Date()

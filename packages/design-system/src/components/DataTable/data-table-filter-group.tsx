@@ -18,6 +18,7 @@ import { Button } from '@/design-system/components/Button/button'
 import { Select, type SelectOption } from '@/design-system/components/Select/select'
 import { FieldControlGroup } from '@/design-system/components/FieldControlGroup/field-control-group'
 import type { ColumnType } from './column-types'
+import type { WeekStartsOn } from '@/design-system/lib/date-locale'
 import {
   OPERATOR_REGISTRY,
   DEFAULT_OPERATOR,
@@ -39,6 +40,8 @@ export interface FilterColumn {
   /** People pool for person/multiPerson filter picker(對齊 cell-registry meta.people SSOT)*/
   people?: Array<{ name: string; avatarUrl?: string; description?: string }>
   includeTime?: boolean
+  /** date 欄的一週從哪天開始(已解析:`meta.weekStartsOn` ?? 由 `meta.locale` 推;panel 的 extractColumns 算一次) */
+  weekStartsOn?: WeekStartsOn
 }
 
 function getOperatorOptions(
@@ -57,6 +60,10 @@ export function getDefaultOperator(type?: ColumnType): string {
 // 'time' 欄暫不寫(值非完整日期,truncate 語意不成立;見 filter-operators.spec v3 time 註)。
 export const datePrecisionOf = (col: FilterColumn | undefined): 'day' | 'ms' | undefined =>
   col?.type === 'date' ? (col.includeTime ? 'ms' : 'day') : undefined
+// 2026-11-24(user 決策「跟語系的 CLDR (Recommended)」):date 欄把「一週從哪天開始」也寫進 condition,
+// 「本週 / 上週 / 下週」照這一欄的語系算(filter-tree.ts relativeKeyToRange)。寫入點與 datePrecision 同一組(四處)。
+export const weekStartsOnOf = (col: FilterColumn | undefined): WeekStartsOn | undefined =>
+  col?.type === 'date' ? col.weekStartsOn : undefined
 
 // ── ConjunctionLabel ───────────────────────────────────────────────────
 
@@ -225,7 +232,7 @@ export function GroupBlock({
             onChangeConjunction={onChangeGroupConjunction}
             onChangeField={(v) => {
               const newCol = filterableColumns.find((c) => c.id === v)
-              onChangeCondition(cond.id, { field: v, op: getDefaultOperator(newCol?.type), value: '', datePrecision: datePrecisionOf(newCol) })
+              onChangeCondition(cond.id, { field: v, op: getDefaultOperator(newCol?.type), value: '', datePrecision: datePrecisionOf(newCol), weekStartsOn: weekStartsOnOf(newCol) })
             }}
             onChangeOp={(v) => onChangeCondition(cond.id, { op: v, value: '' })}
             onChangeValue={(v) => onChangeCondition(cond.id, { value: v })}

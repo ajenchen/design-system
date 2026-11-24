@@ -32,7 +32,7 @@ const customTileActivated = fn()
 // 視覺基線同時釘住顯示月與 today SSOT，避免跨月/換日造成 snapshot 漂移。
 const now = new Date(2026, 6, 15)
 const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')
-// 讀者看的情境都是中文產品:月份標題 / 星期名照中文排(元件的 locale 預設 'en-US',calendar.tsx `locale = 'en-US'`;
+// 讀者看的情境都是中文產品:月份標題 / 星期名照中文排(元件的 locale 預設 2026-11-24 起是 'zh-TW'(calendar.tsx `locale = DEFAULT_DATE_LOCALE`),之前是 'en-US';
 // 2026-11-18 前沒傳,畫面是「July 2026」「Sun–Sat」配中文介面 —— 稽核 A113,AGENTS.md「單一檔案不中英夾雜」)。
 // test-only 的鍵盤夾具不是給人看的,照元件預設。
 const LOCALE = 'zh-TW'

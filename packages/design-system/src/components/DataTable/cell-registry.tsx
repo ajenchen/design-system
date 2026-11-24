@@ -34,6 +34,7 @@ import type { PersonValue } from '@/design-system/components/PeoplePicker/person
 import { FieldSurfaceProvider, FieldSurfaceSizeProvider, FieldSurfaceEditableProvider } from '@/design-system/components/Field/field-context'
 import { editSettleKeyProps } from '@/design-system/components/Field/field-edit-keys'
 import type { WithFieldVariantInternal } from '@/design-system/components/Field/field-types'
+import { resolveWeekStartsOn } from '@/design-system/lib/date-locale'
 
 // ── @internal naked variant 通道(2026-07-14 API 策展 E,user 拍板:全部收窄(轉述))──────────────
 // `naked` 已從公開 FieldVariant 拆出(field-types.ts `FieldVariantInternal`);本檔是唯一合法
@@ -286,6 +287,8 @@ function DateCell({ value, meta, mode, size, onCommit, onCancel, ariaLabel }: Ce
       size={sizeForInput(size)}
       value={typeof value === 'string' ? value : null}
       showTime={meta?.includeTime === true}
+      // 日曆面的週起始日跟這一欄的「本週」篩選同一個值(meta.weekStartsOn ?? 由 meta.locale 推;filter-operators.spec.md「8. 邊界案例」)
+      weekStartsOn={resolveWeekStartsOn(meta?.locale, meta?.weekStartsOn)}
       onChange={(v) => onCommit?.(v)}
       defaultOpen
       onOpenChange={dismissOnClose(onCancel)}

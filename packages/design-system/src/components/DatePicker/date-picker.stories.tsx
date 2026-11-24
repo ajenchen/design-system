@@ -381,7 +381,8 @@ export const View: Story = {
         <DatePicker mode="view" value="2026-04-02" />
       </DescriptionItem>
       <DescriptionItem label="完整日期">
-        <DatePicker mode="view" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
+        {/* 明寫 en-US:元件預設語系 2026-11-24 起是 zh-TW,不寫會跟下一列「中文日期」一模一樣 */}
+        <DatePicker mode="view" value="2026-04-02" locale="en-US" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
       </DescriptionItem>
       <DescriptionItem label="中文日期">
         <DatePicker mode="view" value="2026-04-02" locale="zh-TW" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />

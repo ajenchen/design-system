@@ -18,7 +18,7 @@ type Story = StoryObj
 // 視覺基線同時釘住顯示月與 today SSOT，避免跨月/換日造成 snapshot 漂移。
 const now = new Date(2026, 6, 15)
 const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')
-// 月份標題 / 星期名照讀者的中文產品排(同展示頁 calendar.stories.tsx 的 LOCALE;元件預設 'en-US');事件名稱也用中文(2026-11-21 前是英文,SIB-PV)。
+// 月份標題 / 星期名照讀者的中文產品排(同展示頁 calendar.stories.tsx 的 LOCALE;元件預設 2026-11-24 起也是 'zh-TW',之前是 'en-US');事件名稱也用中文(2026-11-21 前是英文,SIB-PV)。
 const LOCALE = 'zh-TW'
 // 日期格 / 事件方塊各自二擇一:可點就接回調(型別層必填),不可點就寫 readOnlyDates / readOnlyEvents
 //(calendar.spec.md「日期格與事件方塊:可點或唯讀」)。右上角「新事件」是全域新增入口、恆渲染,onCreateEvent 必填(同段末條,M23(f))。

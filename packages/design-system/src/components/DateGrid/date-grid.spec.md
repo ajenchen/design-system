@@ -389,6 +389,22 @@ Range 起訖使用 stadium 端點，讓連續區間有清楚的開始、延伸�
 
 ---
 
+## 週起始日(2026-11-24)
+
+**規則**:有傳 `weekStartsOn`(0 = 週日 … 6 = 週六)就用;沒傳時拿 `locale` 的語系代碼(date-fns 語系物件的 `code`)問 CLDR —— 先 `Intl.Locale` 的 `getWeekInfo()`(舊版瀏覽器是 `weekInfo` 屬性),執行環境沒有週資料就查 DS 內建的同一份 CLDR 表;語系代碼帶 `-u-fw-mon` 這類擴充也認。沒傳 `locale` 時跟著 react-day-picker 的預設語系 en-US(週日)。唯一實作 `../../lib/date-locale.ts` `resolveWeekStartsOn`;DatePicker(`../DatePicker/date-picker.spec.md`「週起始日」)與 DataTable「本週 / 上週 / 下週」篩選(`../DataTable/filter-operators.spec.md`「8. 邊界案例」)讀同一支,本段是這條規則的規格住處。
+
+**不讀 date-fns 語系物件裡的 `weekStartsOn`**:date-fns 4.1.0 的 zh-TW 語系物件寫的是週一(`weekStartsOn: 1`,https://unpkg.com/date-fns@4.1.0/locale/zh-TW.js),CLDR 的台灣是週日(Node 24.14.0 / ICU 78.2 / CLDR 48.0 實測 `new Intl.Locale('zh-TW').getWeekInfo().firstDay` = 7)。同一個語系有兩個來源、答案相反,全 DS 以 CLDR 為準。2026-11-24 前 DateGrid 照 react-day-picker 預設讀物件裡的值,傳 `locale={zhTW}` 沒傳週起始日的月曆是週一起,之後是週日起。
+
+**依據**:user 2026-11-24 先問「你確定中文語系的起始通常預設都是週日？世界級的設計是這樣？」,看過 CLDR 實測後選「跟語系的 CLDR (Recommended)」(選項為 AI 擬);決策總帳更正 #2「全 DS 以 Intl(CLDR)為準」。
+
+**世界級同一套(元件參數優先,沒給才由語系經 CLDR 推)**:React Aria 先 `getWeekInfo()`、再看 `-fw-` 擴充、最後查 CLDR 表(https://github.com/adobe/react-spectrum/blob/main/packages/@internationalized/date/src/queries.ts),Calendar 的 `firstDayOfWeek` 覆寫語系推出的預設(https://react-aria.adobe.com/Calendar)。Atlassian 的 `weekStartDay` 沒給才從 locale 推(https://atlassian.design/components/calendar/code),不支援 `getWeekInfo` 時用內建 CLDR 48 例外表(https://unpkg.com/@atlaskit/locale@5.5.0/dist/es2019/internal/localization-provider/get-week-info.js)。MUI X Scheduler 先 `getWeekInfo()`、瀏覽器不支援時改用地區週資料、支援 `-u-fw-mon`(https://mui.com/x/react-scheduler/event-calendar/localization/)。
+
+**例**(判定表在 `scripts/test-week-start.mjs`,原生 / 舊屬性 / 內建表三條路同結果):zh-TW、zh-Hant-TW、zh-HK、zh-SG、en-US = 週日;zh-CN、zh-Hans-CN、en-GB、de-DE = 週一;zh-TW-u-fw-mon = 週一。
+
+**這條規則不管的**:`-u-rg-`(地區覆寫)只有原生那條路認,內建表照語系本身的地區查(ICU 對 `-u-rg-` 的接受規則實測不規則,後備不猜,細節在 `date-locale.ts` 檔頭)。週末是哪幾天、第一週怎麼算(週數)不在這條規則裡。
+
+---
+
 ## 禁止事項
 
 - ❌ **不改視覺 token 為硬色值**(`bg-primary` 必須來自 semantic,不可 `bg-blue-500`)
@@ -405,7 +421,7 @@ react-day-picker v9 自動處理:
 - **鍵盤**：ArrowLeft/Right 切日,ArrowUp/Down 切週,Shift+ArrowLeft/Right 切月、Shift+ArrowUp/Down 切年,PageUp/Down 切月、Shift+PageUp/Down 切年,Home/End 切週首尾
 - **ARIA**：`role="grid"` + 日格 `role="gridcell" aria-selected`
 - **Focus**：`autoFocus` prop 自動 focus 到選中日(或今天)
-- **Locale**：`locale` prop 控制週首日、星期標頭語言
+- **Locale**：`locale` prop(date-fns 語系物件)控制月份與星期標頭語言;週首日見上方「週起始日」(由語系代碼經 CLDR 推,不讀物件裡寫的值)
 
 **DS 自訂部分**:day button 的焦點框由本元件 classNames 覆寫為 DS 焦點幾何(`focus-visible:focus-ring-inset`,填色格 `focus-ring-inset-emphasis`,見上方 cell state 表「focus-visible」列;非 RDP 預設樣式。2026-09-23 前本句寫的 `focus-visible:ring-2 ring-ring` 是 2026-09-07 焦點幾何收斂前的舊寫法);SR 文案經 RDP `labels` API 提供中文 default(nav「上一個月 / 下一個月」、day / weekday / grid 等全繁中,對齊 2026-07-04 全庫 SR label 中文 canonical),consumer 傳 `labels` 可逐鍵覆寫(i18n),不在 components override 內 hardcode `aria-label`(會蓋死覆寫通道)。其餘 consumer 無需額外處理,保留 react-day-picker API 即可。
 
@@ -446,4 +462,6 @@ DateGrid 本元件是**對 `react-day-picker` 的 `<DayPicker>` 元件薄包裝*
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `calendar.spec.md`
+- `data-table.spec.md`
 - `date-picker.spec.md`
+- `filter-operators.spec.md`

@@ -92,8 +92,8 @@ open 軸同樣只開最小 API — **uncontrolled-only**:`defaultOpen`(初始開
     disabledSeconds: [...],
   })}
   endIcon={Clock}                // 預設 Clock,傳 null 關閉(2026-05-05 v9:點擊觸發浮層 indicator 一律 suffix,對齊 DatePicker / Material endAdornment)([來源](https://github.com/mui/mui-x/blob/7d387072c89002693bd423eef0b3ab6db87837f9/docs/data/date-pickers/custom-opening-button/custom-opening-button.md?plain=1#L42-L44))
-  locale="en-US"
-  formatOptions={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+  locale="zh-TW"                 // 預設 'zh-TW'(DS 日期元件共用的 DEFAULT_DATE_LOCALE;2026-11-24 前是 'en-US')
+  formatOptions={{ hour: '2-digit', minute: '2-digit', hour12: false }}   // 預設值
 />
 ```
 
@@ -104,6 +104,8 @@ open 軸同樣只開最小 API — **uncontrolled-only**:`defaultOpen`(初始開
 ### 顯示格式化
 
 **View 走 `Intl.DateTimeFormat`**(跨 locale 統一、12h/24h 支援)。`formatOptions` 透傳進去。
+
+**預設語系 zh-TW(2026-11-24)**:user 選「全 DS 日期元件一起改 zh-TW (Recommended)」(選項為 AI 擬;Calendar / DatePicker / TimePicker 同一個預設,`../../lib/date-locale.ts` `DEFAULT_DATE_LOCALE`)。預設 `formatOptions` 是 24 小時制,zh-TW 與 en-US 輸出相同(「09:05」「14:30」),什麼都沒傳的畫面不變;自己傳了 12 小時制 `formatOptions` 卻沒傳 `locale` 的,「02:30 PM」→「下午02:30」。TimePicker 只選時分秒,沒有「一週從哪天開始」這件事。
 
 **數字等寬(`tabular-nums`)**:觸發欄位與各 mode 顯示的時間值,跟下拉時間欄(`time-columns.tsx` 的欄內 item)同一個寫法 —— 同一個元件兩處一致;值的寬度不隨字型的數字寬度變(例:系統字型下「22:00」比「10:00」寬,兩個欄位並排時一寬一窄)。【AI 推導 2026-11-17:起因是「店家營業時間」展示在 macOS 字型下把「22:00」截成「22:…」;本檔原本沒有相反規定】
 

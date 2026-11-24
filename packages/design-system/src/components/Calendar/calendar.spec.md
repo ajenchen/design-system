@@ -91,7 +91,7 @@ Calendar 是**月事件檢視 canvas**,讓 user 瀏覽、定位、快速增減�
   onCreateEvent={() => ...}                 // 點右上角「新事件」CTA 回調;必填(CTA 是 toolbar 固定元素、恆渲染,見「Toolbar」段)
   weekStartsOn={0 | 1}                      // 0=Sun, 1=Mon
   renderEventTile={(event) => ReactNode}    // 自訂 event tile 視覺
-  locale="en-US"                            // Intl 語系(月份標題 / 星期名;預設 'en-US')
+  locale="zh-TW"                            // Intl 語系(月份標題 / 星期名;預設 'zh-TW',2026-11-24 前是 'en-US')
   prevAriaLabel="上個月"                    // i18n override:prev 導覽鈕 aria-label
   nextAriaLabel="下個月"                    // i18n override:next 導覽鈕 aria-label
   navAriaLabel="行事曆月份導覽"             // i18n override:月份導覽 <nav> landmark aria-label
