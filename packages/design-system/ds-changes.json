@@ -225,7 +225,9 @@
       ]
     },
     "0.1.0-beta.150": {
-      "changes": [],
+      "changes": [
+        {"id":"0.1.0-beta.150/nested-overlay-sparingly","surface":"rule","target":"浮層裡再開浮層","change":"rule","do":"浮層裡再開浮層不再一律禁止:少用、不寫死層數;要填多個欄位、要篩選資料這類內容多的操作改用 Dialog 或 Sheet,不再疊一層 Popover。浮層裡的表單控件自己開的下拉(對話框或篩選面板裡的 Select、DatePicker)與清單浮層點一項在旁邊開詳情浮層都是允許的用法,Esc 一次關一層、焦點回到開它的那一項。product-ui-audit 不再把巢狀浮層列為 P0,改看「內容多卻疊成浮層裡的浮層」(P1)。","spec":"src/components/Popover/popover.spec.md「禁止事項」","paths":["packages/design-system/src/components/Popover/popover.spec.md","packages/design-system/ds-canonical/skills/product-ui-audit/SKILL.md","packages/design-system/ds-canonical/skills/product-ui-audit/references/common-misuses.md","packages/design-system/ds-canonical/skills/product-ui-audit/references/report-template.md"]}
+      ],
       "added": [
         {"id":"0.1.0-beta.150/ledger-added-updated","target":"./ds-changes.json","note":"變更帳本每一節多了 added(新增)與 updated(行為與畫面變更)兩個清單,另有 noVisibleChange(改到預覽看得見的檔、消費端看不到差異的豁免,附理由);破壞性變更條目可多帶 paths。升版時三類都讀:changes 照做法改,added 要用再接上,updated 不用改程式但畫面或行為和上一版不同。","spec":"ds-canonical/references/props-naming.md「相容政策」","paths":["packages/design-system/tools/changes/ledger.mjs","packages/design-system/ds-changes.json"]}
       ],
@@ -234,7 +236,8 @@
         {"id":"0.1.0-beta.150/global-body-font","target":"./styles/base(body 的整頁預設字級)","note":"整頁預設字級改成 text-body:styles/base 的 body 設 font-size: var(--font-body-size) 與 line-height: 1.5(14px / 21px)。頁面上沒自己設字級的文字 —— 浮層(Popover / Dialog / Sheet / HoverCard)內文、沒帶 text-* 的段落與 h1–h6、原生表單控制項、放在沒設字級的容器裡的 ItemContent 標籤 —— 從瀏覽器預設的 16px / 24px 變成 14px / 21px,自己設了 text-* 的文字不變。要某段文字維持 16px,在那個元素上用元件參數或加 text-body-lg className,不覆寫 --font-body-size。","spec":"src/tokens/typography/typography.spec.md「整頁預設字級」","paths":["packages/design-system/src/styles/base.css"]}
       ],
       "noVisibleChange": [
-        {"paths":["packages/design-system/src/components/Button/button.principles.stories.tsx","packages/design-system/src/components/Chart/chart.tsx","packages/design-system/src/components/Dialog/dialog.stories.tsx","packages/design-system/src/components/Field/field.tsx","packages/design-system/src/components/Steps/steps.tsx","packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx","packages/design-system/src/patterns/overlay-surface/overlay-surface.stories.tsx"],"reason":"只改註解裡的「檔名:行號」引用:base.css 與 overlay-surface.spec.md 加了幾行,被引用的那幾行位置往下移,行號照 owner-claims-invariant --fix-moved-cites 改成新位置。程式、class 與範例內容一個字都沒動。"}
+        {"paths":["packages/design-system/src/components/Button/button.principles.stories.tsx","packages/design-system/src/components/Chart/chart.tsx","packages/design-system/src/components/Dialog/dialog.stories.tsx","packages/design-system/src/components/Field/field.tsx","packages/design-system/src/components/Steps/steps.tsx","packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx","packages/design-system/src/patterns/overlay-surface/overlay-surface.stories.tsx"],"reason":"只改註解裡的「檔名:行號」引用:base.css 與 overlay-surface.spec.md 加了幾行,被引用的那幾行位置往下移,行號照 owner-claims-invariant --fix-moved-cites 改成新位置。程式、class 與範例內容一個字都沒動。"},
+        {"paths":["packages/design-system/src/components/Coachmark/coachmark.principles.stories.tsx","packages/design-system/src/components/FileViewer/file-viewer.principles.stories.tsx"],"reason":"只改 Coachmark 與 FileViewer 設計原則頁裡既有禁令的說明文字(拿掉「巢狀浮層焦點崩壞 / Esc 不知道關哪個」這個與 DS 鍵盤規則不符的理由,FileViewer 那則範例改名為「資訊面板與換檔不另開浮層」),兩條禁令與元件畫面、行為都不變。浮層裡再開浮層的規則變更登記在同一節的 0.1.0-beta.150/nested-overlay-sparingly。"}
       ]
     }
   }

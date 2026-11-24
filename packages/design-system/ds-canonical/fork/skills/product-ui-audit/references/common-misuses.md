@@ -75,17 +75,20 @@
 
 ## Dialog / Popover / Sheet 誤用
 
-### ❌ Dialog 內放 Popover(巢狀浮層)
+### ❌ 內容多的操作疊成浮層裡的浮層
 
 ```tsx
-<Dialog>
-  <DialogContent>
-    <Popover>...</Popover>  {/* ❌ 浮層巢狀不推薦 */}
-  </DialogContent>
-</Dialog>
+<PopoverContent>  {/* 議題列表的篩選面板 */}
+  <Popover>
+    <PopoverTrigger asChild><Button variant="tertiary">進階條件</Button></PopoverTrigger>
+    <PopoverContent>{/* ❌ 負責人、到期日區間、標籤、優先度四個欄位,又疊一層浮層 */}</PopoverContent>
+  </Popover>
+</PopoverContent>
 ```
 
-**正解**:改用 Dialog 內 Tabs / Accordion / SelectMenu 等 inline 結構。
+**正解**:內容多(要填多個欄位、要篩選資料)整個改用 `Dialog` 或 `Sheet`(例:工具列的「進階條件」直接開 `Sheet`),不從浮層裡再疊一層。
+
+**理由**:浮層裡再開浮層本身不是誤用,只是要少用、不寫死層數 —— 浮層裡的表單控件自己開的下拉(對話框裡的 `Select` / `DatePicker`)、清單浮層點一項在旁邊開詳情浮層都合法。規則住 `popover.spec.md`「禁止事項」(2026-11-24 改寫;原條目「Dialog 內放 Popover」與 DS 自己對話框裡的 `Select` 矛盾,已撤)。
 
 ### ❌ Dialog 無 DialogTitle
 

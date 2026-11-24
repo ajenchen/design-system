@@ -14,7 +14,6 @@
 - icon-only 無 aria-label
 - Dialog / Modal 無 DialogTitle
 - 非 button 綁 onClick(a11y 破壞)
-- 巢狀浮層 / 巢狀 Modal(HTML invalid 或 UX 破壞)
 - `packages/design-system/ds-canonical/references/ui-dev-rules.md`「同 flex 列互動 slot 幾何鐵律」違反
 
 **處理**: AI 可直接修(surgical fix)，由 protected PR、hard gates 與 external readback
@@ -29,6 +28,7 @@
 - placeholder 文案(Option A/B/C / Lorem ipsum)
 - Primary Button 堆疊
 - 巢狀 Accordion / Tabs / Carousel
+- 內容多(要填多個欄位、要篩選資料)卻疊成浮層裡的浮層,沒改用 Dialog / Sheet(`popover.spec.md`「禁止事項」);用 nested Dialog 承載多步驟流程(`dialog.spec.md`「禁止事項」)。浮層裡再開浮層本身不是誤用(2026-11-24 起;原本列在 P0 的「巢狀浮層 / 巢狀 Modal」與 DS 自己對話框裡的 `Select`、確認框疊在對話框上矛盾,已撤)
 - native overflow 未用 ScrollArea(跨 OS 跑版潛在風險)
 - 硬寫 aspect-* class 未用 AspectRatio
 

@@ -30,7 +30,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:469ddebfe1b24a1d1e234e6047dcb6a00111bcfa4110d8e4ff8f8a624041ebc9` |
 | canonical-references | `packages/design-system/ds-canonical/references` | `sha256:16e8f236551734c76463b78d1187f92cc160c65cbdba73e16d4711aec41d391a` |
 | canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:f7020e114aeaea178af073b240e3b9722d4d0da245910b611586b82e88c2a05f` |
-| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:8a2439efd26f0612ad0316ead4c2f2db92a49d5f5a934e69914bc24e7deec785` |
+| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:ed2e997cd12657910e7795885c50a9f6745d8d6d9d76debefb159e9ceaa96d47` |
 | changeset-release-policy | `.changeset/config.json` | `sha256:a65a7f9ee6dc6c56eab99f77876bb61297cc59909943ba4ab08705b2d110e86c` |
 | claude-instruction-adapter | `packages/design-system/ds-canonical/adapters/claude-root-instructions.md` | `sha256:6c2c5fb2d2ffe93c74d74d88c35596d6e360973fec6e058290742cb52b39d8b9` |
 | claude-managed-plugin-manifest | `.claude-plugin/plugin.json` | `sha256:1c20e26e8d33f2eaa3ba919a73fe9bda90209cd2218deb533303b55764f0cd7d` |

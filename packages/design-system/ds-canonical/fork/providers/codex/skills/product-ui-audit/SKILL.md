@@ -91,7 +91,7 @@ canonical 手動分類。未掛載的 registered repo 是 unobserved，不可寫
   - Button primary 沒堆疊(一個 row 一個 primary)
   - Input 外有 Field wrapper(非 standalone input)
 - Composition 正確
-  - Popover 不放互動破壞(Dialog trigger in Popover content 避免)
+  - Popover 不放互動破壞(Dialog trigger in Popover content 避免);內容多(多欄位 / 篩選資料)卻疊成浮層裡的浮層 → 改 Dialog / Sheet(`popover.spec.md`「禁止事項」)
   - Accordion / Tabs / Carousel 不巢狀
 - Radix API 用對
   - Dialog 有 DialogTitle / DialogDescription for a11y

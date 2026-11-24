@@ -221,7 +221,7 @@ const steps = [
 - ❌ **單步驟 CTA 不叫「下一步」**——沒有下一步就不用這個字眼,用 `'知道了'`(或 consumer 經 `doneLabel` 傳「開始使用」這類完成詞)
 - ❌ **有上一步時不同時顯示略過**——使用者投入進度後兩個退出路徑衝突(見 CTA 語義表)
 - ❌ **不自包視覺 token**——bg / shadow / radius / padding 一律繼承 Popover,改視覺就改 Popover
-- ❌ **不在 Coachmark 內放 nested Popover / Dialog**——層級混亂焦點崩壞,複雜互動結束 tour 後再開
+- ❌ **不在 Coachmark 內放 nested Popover / Dialog**——tour 的角色是指向功能,不是讓使用者在 tour 內完成任務;複雜互動結束 tour 後再開。2026-11-24 拿掉原本的理由「層級混亂焦點崩壞」:浮層疊浮層時 `Esc` 一層一層關、焦點回開它的那一項(`../../../ds-canonical/references/keyboard-model-canonical.md`「`Esc` 一次只關最內層」),一般浮層裡再開浮層的規則見 `../Popover/popover.spec.md`「禁止事項」
 
 ---
 

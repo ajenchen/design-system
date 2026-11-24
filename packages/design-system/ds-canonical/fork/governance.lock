@@ -111,7 +111,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/product-ui-audit/SKILL.md",
-      "sha256": "9fd8a8943af86a64f9460113ec6d0c3cefdf95067041fb1b07cbeb30dabd523a",
+      "sha256": "44ed3c1980997f669ebc3eb3f112928c6796754e844a0c34ffe80fc91c1d4d04",
       "source": "providers/codex/skills/product-ui-audit",
       "classification": null,
       "destination": null
@@ -127,7 +127,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/product-ui-audit/references/common-misuses.md",
-      "sha256": "5afa85d18b559d1ccb182b50489bd1744968d07203558f8efbccf4444b46b942",
+      "sha256": "1f8b27bfb376568155300649e075525bb384c1b3b715930b9d72c2cd6bbecae2",
       "source": "providers/codex/skills/product-ui-audit",
       "classification": null,
       "destination": null
@@ -135,7 +135,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/product-ui-audit/references/report-template.md",
-      "sha256": "c61f2d9a87d6fa95accb45a3403075a26048b64f4c07f926aaa951085897f1de",
+      "sha256": "95d5e660edf24ac8f511b3e7c6b2880f1d166eb1abb1957842f45120ce370b8d",
       "source": "providers/codex/skills/product-ui-audit",
       "classification": null,
       "destination": null
@@ -1071,7 +1071,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/product-ui-audit/SKILL.md",
-      "sha256": "4f44e4a97e6c1c64af977daa9562b90ae8a26ddde3101041c9d6bb8099589c45",
+      "sha256": "bd1dc3e22ea55f6f6997a5d9d93bc6c824f96487d5ba74bacd8b1d15fa517040",
       "source": "skills/product-ui-audit/SKILL.md",
       "classification": null,
       "destination": null
@@ -1087,7 +1087,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/product-ui-audit/references/common-misuses.md",
-      "sha256": "5afa85d18b559d1ccb182b50489bd1744968d07203558f8efbccf4444b46b942",
+      "sha256": "1f8b27bfb376568155300649e075525bb384c1b3b715930b9d72c2cd6bbecae2",
       "source": "skills/product-ui-audit/references/common-misuses.md",
       "classification": null,
       "destination": null
@@ -1095,7 +1095,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/product-ui-audit/references/report-template.md",
-      "sha256": "c61f2d9a87d6fa95accb45a3403075a26048b64f4c07f926aaa951085897f1de",
+      "sha256": "95d5e660edf24ac8f511b3e7c6b2880f1d166eb1abb1957842f45120ce370b8d",
       "source": "skills/product-ui-audit/references/report-template.md",
       "classification": null,
       "destination": null
@@ -1319,7 +1319,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/product-ui-audit/SKILL.md",
-      "sha256": "9fd8a8943af86a64f9460113ec6d0c3cefdf95067041fb1b07cbeb30dabd523a",
+      "sha256": "44ed3c1980997f669ebc3eb3f112928c6796754e844a0c34ffe80fc91c1d4d04",
       "source": "skills/product-ui-audit/SKILL.md",
       "classification": null,
       "destination": null
@@ -1335,7 +1335,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/product-ui-audit/references/common-misuses.md",
-      "sha256": "5afa85d18b559d1ccb182b50489bd1744968d07203558f8efbccf4444b46b942",
+      "sha256": "1f8b27bfb376568155300649e075525bb384c1b3b715930b9d72c2cd6bbecae2",
       "source": "skills/product-ui-audit/references/common-misuses.md",
       "classification": null,
       "destination": null
@@ -1343,7 +1343,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/product-ui-audit/references/report-template.md",
-      "sha256": "c61f2d9a87d6fa95accb45a3403075a26048b64f4c07f926aaa951085897f1de",
+      "sha256": "95d5e660edf24ac8f511b3e7c6b2880f1d166eb1abb1957842f45120ce370b8d",
       "source": "skills/product-ui-audit/references/report-template.md",
       "classification": null,
       "destination": null
@@ -1615,7 +1615,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/product-ui-audit/SKILL.md",
-      "sha256": "65ab84c3d5eb4cb2f359174576736df07b4489f1b3194e8db65a34e66faa1752",
+      "sha256": "b1a7a2deb87729d165dd384e60fb1b451b17687ff1c77f771e8213175c8f6c98",
       "source": null,
       "classification": null,
       "destination": null
@@ -1631,7 +1631,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/product-ui-audit/references/common-misuses.md",
-      "sha256": "5afa85d18b559d1ccb182b50489bd1744968d07203558f8efbccf4444b46b942",
+      "sha256": "1f8b27bfb376568155300649e075525bb384c1b3b715930b9d72c2cd6bbecae2",
       "source": null,
       "classification": null,
       "destination": null
@@ -1639,7 +1639,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/product-ui-audit/references/report-template.md",
-      "sha256": "c61f2d9a87d6fa95accb45a3403075a26048b64f4c07f926aaa951085897f1de",
+      "sha256": "95d5e660edf24ac8f511b3e7c6b2880f1d166eb1abb1957842f45120ce370b8d",
       "source": null,
       "classification": null,
       "destination": null

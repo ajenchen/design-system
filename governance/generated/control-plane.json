@@ -186,7 +186,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 68,
-      "hash": "sha256:8a2439efd26f0612ad0316ead4c2f2db92a49d5f5a934e69914bc24e7deec785",
+      "hash": "sha256:ed2e997cd12657910e7795885c50a9f6745d8d6d9d76debefb159e9ceaa96d47",
       "id": "canonical-skills",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3522,10 +3522,10 @@
           "targetDigest": "sha256:b7af0a5013f55e75f73a16e16c96496b00728df3a49360f61176bb709acb520a"
         },
         {
-          "expectedTargetDigest": "sha256:448d09fcdfd5378886d708cd67deadd966edd541ac2cdec97e17d9f446cf3e56",
+          "expectedTargetDigest": "sha256:9f0b2248ced59c77b7b3f0b9adf1f59eb4d92fa31f948c3708f2e34903d57b0a",
           "name": "product-ui-audit",
-          "sourceDigest": "sha256:23108355d99a59d93cabfab9defd9985d7256670eeb589c1a8f32eb7d25ac1fa",
-          "targetDigest": "sha256:448d09fcdfd5378886d708cd67deadd966edd541ac2cdec97e17d9f446cf3e56"
+          "sourceDigest": "sha256:2a9b5e7242ae39cdad242f36795f43d1f56fcf1b5e835b8e3eb1c5c02380ecd2",
+          "targetDigest": "sha256:9f0b2248ced59c77b7b3f0b9adf1f59eb4d92fa31f948c3708f2e34903d57b0a"
         },
         {
           "expectedTargetDigest": "sha256:7dbd8742abfd2662cf517740a3d83686a23cb28be7e18c64f01d24489f6da1f0",
@@ -3745,10 +3745,10 @@
           "targetDigest": "sha256:76f8a7d6468566e925e47774ecfc032fcc9f4d892e64a5329017fe48c7d1d586"
         },
         {
-          "expectedTargetDigest": "sha256:7b7820b202eb60f058b936345152c09dc6c0f6520cabb5fe74f9b26b446319df",
+          "expectedTargetDigest": "sha256:2ac052a2b1a90a7e1bfd6ad0ce9639a4f60e2c314a7fd758adb7a5f01ae9d461",
           "name": "product-ui-audit",
-          "sourceDigest": "sha256:23108355d99a59d93cabfab9defd9985d7256670eeb589c1a8f32eb7d25ac1fa",
-          "targetDigest": "sha256:7b7820b202eb60f058b936345152c09dc6c0f6520cabb5fe74f9b26b446319df"
+          "sourceDigest": "sha256:2a9b5e7242ae39cdad242f36795f43d1f56fcf1b5e835b8e3eb1c5c02380ecd2",
+          "targetDigest": "sha256:2ac052a2b1a90a7e1bfd6ad0ce9639a4f60e2c314a7fd758adb7a5f01ae9d461"
         },
         {
           "expectedTargetDigest": "sha256:0265c3d3a93df27f0522b5daff503c58af04fa14d09f50876a3325d21d925a37",
