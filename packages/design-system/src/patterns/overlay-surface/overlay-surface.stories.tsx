@@ -143,7 +143,7 @@ export const BodyScroll: Story = {
 export const BodyScrollKeyboard: Story = {
   name: '內文捲動(鍵盤)',
   tags: ['test-only'],
-  // @example-basis: overlay-surface.spec.md:57「機械驗證該具名節點確實 overflow 且可聚焦」
+  // @example-basis: overlay-surface.spec.md:58「機械驗證該具名節點確實 overflow 且可聚焦」
   parameters: { demoFocus: 'keep' },
   render: () => <BodyScrollDemo />,
   play: async ({ canvasElement }) => {

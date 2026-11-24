@@ -85,6 +85,7 @@
     "test:avatar-anchor-box": "node scripts/avatar-anchor-box-invariant.mjs && node scripts/avatar-anchor-box-invariant.mjs --selftest --limit=1",
     "test:story-demo-focus": "node scripts/story-demo-focus-invariant.mjs && node scripts/story-demo-focus-invariant.mjs --selftest",
     "test:overlay-list-as-region": "node scripts/overlay-list-as-region-invariant.mjs && node scripts/overlay-list-as-region-invariant.mjs --selftest",
+    "test:global-body-font": "node scripts/global-body-font-invariant.mjs && node scripts/global-body-font-invariant.mjs --selftest",
     "test:select-all-footer": "node scripts/select-all-footer-invariant.mjs && node scripts/select-all-footer-invariant.mjs --selftest && node scripts/select-all-footer-invariant.mjs --selftest-unrestricted",
     "test:select-tab-leave": "node scripts/select-tab-leave-invariant.mjs && node scripts/select-tab-leave-invariant.mjs --selftest",
     "test:searchable-menu-focus": "node scripts/searchable-menu-focus-invariant.mjs && node scripts/searchable-menu-focus-invariant.mjs --selftest",

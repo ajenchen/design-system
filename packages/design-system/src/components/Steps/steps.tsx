@@ -65,7 +65,7 @@ const verticalItemMinHeight = (size: StepsSize) => INDICATOR_SIZE[size] + 2 * CO
 // 是白 8% 半透明,底下那層環色透上來 —— 實測深色間隙 #58A5FF(應為頁面底 #0A0A0A),整顆看起來是一個大藍圓,
 // 淺色卻是「圓 + 白色間隙 + 外環」,兩主題長得不一樣。
 // outline-offset 那一圈本來就是透明的,露出的是**真正的背景**(不論放在頁面、卡片還是對話框上),
-// 兩主題同一個長相;而且這正是全 DS 焦點框的畫法(styles/base.css:52-54 `:focus-visible` 的
+// 兩主題同一個長相;而且這正是全 DS 焦點框的畫法(styles/base.css:61-63 `:focus-visible` 的
 // outline 2px + offset 2px),粗細與間隙逐字相同。outline 與 box-shadow 一樣不佔排版,連接線幾何不動。
 const RING_GAP_PX = STACK_GAP_PX // 「疊在一起的兩樣東西」之間的縫,全 DS 同一個值(tokens/uiSize/stack-gap.ts)
 const RING_WIDTH_PX = 2
@@ -516,7 +516,7 @@ function StepItemHeader({ children, className, style }: { children: React.ReactN
         // 可點的 header 有 role="button" + tabIndex={0} + onClick + onKeyDown(上方同一個 div 的四個屬性)= 可操作,
         // 依 focus-canonical「可操作就必須有可見焦點指示」必須畫。
         // 修法是把 outline-none 收進「不可點」那一支,並刪掉本地那三個 class —— 全域
-        // `styles/base.css:44-47` 的 `outline: 2px solid var(--ring); outline-offset: 2px`
+        // `styles/base.css:53-56` 的 `outline: 2px solid var(--ring); outline-offset: 2px`
         // 與它們逐字等價,本地重寫一份只是把全域抄一遍(同 H1c 那類冗餘)。
         item.clickable
           ? 'cursor-pointer rounded-md'

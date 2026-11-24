@@ -186,7 +186,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 68,
-      "hash": "sha256:653ef8cebbd4fe03403e164bc5305578840841af46dcf013904828f70f6fbdfe",
+      "hash": "sha256:8a2439efd26f0612ad0316ead4c2f2db92a49d5f5a934e69914bc24e7deec785",
       "id": "canonical-skills",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1017,7 +1017,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:24ad5f62b4039de9c0693b44fcbed3e84f11dd36097371b8db1247f9004384c7",
+      "hash": "sha256:fdb98da8ebb5d1dafaf59d3bddf768fe471c227be13c7fd2515163f097e7a3a2",
       "id": "exact-github-desired-state",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -1623,7 +1623,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 16,
-      "hash": "sha256:2d793e99aa5b3b4fd2ec40a65b12b1b4405357b18c103bccb2f882c946ea0916",
+      "hash": "sha256:4314398cf1e28f30277bd12b4de11dae7dcd3f8160247da4334d228c2cb2a6e4",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1799,7 +1799,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 1,
-      "hash": "sha256:f2a86b755601fc2a3eb0ed7cbd1e3891b552398742f4d2894d8096f166608492",
+      "hash": "sha256:69167a9f516a686343f0806b4d900333cb3025ce1986b98a75519fcee55cf838",
       "id": "governance-github-desired-state",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1843,7 +1843,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:6e74681fb785ab92b9a6669b08b2b07c69fc2d4a51de0944049f0732ef54c812",
+      "hash": "sha256:3f7f3bbda3413248c8928ef75f12afbc59c0ff04a14addc73fe5778fadecb53d",
       "id": "governance-harness-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -1906,12 +1906,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:844e7b2d943a410d01458fe2469c71065d02dc0102755d8ef0e8d834f3e68e91",
+      "hash": "sha256:bcee77aa80c914ee3051c60d6c5b7f5dda4e7e5d34376fa06ddbb27d84153642",
       "id": "governance-harness-source-inventory",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/providers/harness-source-inventory.json",
-      "size": 41180,
+      "size": 41237,
       "type": "file"
     },
     {
@@ -2065,12 +2065,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:9dea9282ea23c323ca19580cbf2a26f7a3c49f1f1ddafb651e49265332e23a88",
+      "hash": "sha256:163369d4da16425f11cb6733d258c69f2ee64432f3696d654fd7fbf7fb3dad8d",
       "id": "governance-root-script-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "package.json",
-      "size": 34768,
+      "size": 34902,
       "type": "file"
     },
     {
@@ -2586,7 +2586,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:8fada06a393f920f0e56ec3b8d580f7b0cd8ff9e21621ffbaa806956448a3409",
+      "hash": "sha256:b50a2e7b6a8f8d7ecba5f9a4d8bd2f17a724a23cef7f3310f84cb2fc288149f6",
       "id": "provider-compatibility-matrix",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -3093,8 +3093,8 @@
         "scripts/.gate-bundles/",
         "scripts/generated/"
       ],
-      "files": 794,
-      "hash": "sha256:e3b95979d04b0a242d5d19bc8ca2a992a67a8d50dcdc4e7e6991010b4152420b",
+      "files": 796,
+      "hash": "sha256:fe9223028657978a235c9c4b7b319935af09693f2b7c98a9f92aa231423d6e63",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3552,10 +3552,10 @@
           "targetDigest": "sha256:9dca84e613c03426fba58e3a629994bbb235d6d49085278078942ccdd1e342b9"
         },
         {
-          "expectedTargetDigest": "sha256:5f77f8deb61f790e695ce4ae38b67925291980e6669b7d782ef218f102337b40",
+          "expectedTargetDigest": "sha256:bad7de2eff85f5467ed36688bc068d6fe9e6acb6c7f0e095d09f15c5fdefe633",
           "name": "story-writing",
-          "sourceDigest": "sha256:628ed75437a6a7f23b04f07f05603b42aad8b5026b3b29954f154a06edc99d75",
-          "targetDigest": "sha256:5f77f8deb61f790e695ce4ae38b67925291980e6669b7d782ef218f102337b40"
+          "sourceDigest": "sha256:2c561425dc7139498719c18261b549a334d1925bd24a89f90ea41850325a6ac6",
+          "targetDigest": "sha256:bad7de2eff85f5467ed36688bc068d6fe9e6acb6c7f0e095d09f15c5fdefe633"
         },
         {
           "expectedTargetDigest": "sha256:5ab71f688dc8806dfe4dd4711e5e654d1f342d724c5dcfc3a9dea3a36169ebbf",
@@ -3775,10 +3775,10 @@
           "targetDigest": "sha256:28c85166fc5072e28d11cd59d336dacfa0fb9be8d11ed35ad720bc254b551c81"
         },
         {
-          "expectedTargetDigest": "sha256:5318291af4a9f012b413077f8ebac91c798e7aa93829ff896dd9d8ae205621eb",
+          "expectedTargetDigest": "sha256:1c7e0ac70b75858b8c88d0d790b60d39d1d529915551616b1946629ec71ce460",
           "name": "story-writing",
-          "sourceDigest": "sha256:628ed75437a6a7f23b04f07f05603b42aad8b5026b3b29954f154a06edc99d75",
-          "targetDigest": "sha256:5318291af4a9f012b413077f8ebac91c798e7aa93829ff896dd9d8ae205621eb"
+          "sourceDigest": "sha256:2c561425dc7139498719c18261b549a334d1925bd24a89f90ea41850325a6ac6",
+          "targetDigest": "sha256:1c7e0ac70b75858b8c88d0d790b60d39d1d529915551616b1946629ec71ce460"
         },
         {
           "expectedTargetDigest": "sha256:8de446538cf74afd56a975ceed8cb917e2d338af85262183a1a0345fcd0bd61d",

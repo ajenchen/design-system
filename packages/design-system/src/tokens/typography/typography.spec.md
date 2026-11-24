@@ -51,6 +51,24 @@ Typography 由三個獨立維度組成，分開疊加：
 **h5（16px）vs body-lg（16px）/ h6（14px）vs body（14px）**：同尺寸配對的統一判別法——line-height 區分角色（標題 1.3 / 段落 1.5），使用端再疊 font-weight / color 強化標題層級，需有意識地選擇（詳「同尺寸但不同角色的選法」）。
 
 
+## 整頁預設字級(2026-11-24)
+
+**整頁預設字級 = `text-body`**:`../../styles/base.css` 的 `body` 規則寫 `font-size: var(--font-body-size)` 與 `line-height: 1.5` —— 字級 token 與行高都跟上表 `text-body` 那一列相同(`typography.css` 的 `@utility text-body`)。**唯一住處就是那條規則**:DS 的元件外殼與浮層不另設「這一區的預設字級」,repo 裡其他 CSS 也不在 `html` / `body` 上設字級。
+
+- **誰吃到它**:沒自己設字級的文字 —— 浮層內文(浮層經 Portal 掛在 `body` 底下,外殼不另設,`../../patterns/overlay-surface/overlay-surface.spec.md`「SurfaceBody」)、範例或產品頁裡沒帶 `text-*` 的段落與清單、沒帶 `text-*` 的 `h1`–`h6`(Tailwind preflight 把標題設成 `font-size: inherit`)、原生表單控制項(preflight 設 `font: inherit`)。
+- **自己設了 `text-*` 的文字不受影響**:字級 token 是 px(`typography.css` 的 `:root`),不跟著整頁預設、也不跟著瀏覽器的預設字級變。
+- **行高**:Tailwind preflight 在 `html` 也設了 `line-height: 1.5`(無單位,子元素依自己的字級重算),與這裡同值;`body` 照寫一次,讓整頁預設不依賴 preflight。
+- **產品要別的字級**:在那個元素上用元件參數或 `text-*` className(照上方 Token 表的用途選);不覆寫 `--font-body-size`(`../token-system.spec.md`「產品不寫任何 token」、「產品要『設定』元件的值,走元件參數,不覆寫 token」)。
+- **2026-11-24 前**:`body` 沒設字級,上面那些文字吃到瀏覽器預設(預設 16px)。2026-11-24 實測:Calendar 事件 Popover 內文 16px 比 14px 的 PopoverTitle 大;Dialog 內文沒帶 class 的段落 16px,跟 16px 的 DialogTitle 一樣大;把 `html` 字級暫時改成 20px(模擬使用者調大瀏覽器字級),這些文字跟著變 20px。
+- **依據**:user 2026-11-24 追問(逐字)「那是否直接改全域預設字體比較乾淨且符合世界級的設計？此外這個預設會是我們的字體token 嗎？然後，如果消費者要改寫就自己再去針對元件改？」,選 AI 擬的選項「照全域做 (Recommended)」,並說「確定是世界級的設計就照你建議」。行高照寫、浮層外殼不另設這兩點【AI 推導 2026-11-24】。
+- **閘**:`scripts/global-body-font-invariant.mjs`(`npm run test:global-body-font`,CI 必跑;`--selftest` 對照組):靜態比對 `base.css` 的 `body` 字級必須是 `var(--font-body-size)`、行高必須等於 `@utility text-body` 的行高;瀏覽器開 Popover / Dialog / Sheet 的浮層 story,經 Portal 掛出去、繼承整頁預設的內文必須是 14px,外殼與 Body 不另設字級(body 暫改 20px 做 A/B,跟著變的才是繼承來的)。
+
+**世界級對照**(兩派;本 DS 採第一派):
+- 整頁預設寫在 `body`、浮層內文繼承:MUI CssBaseline「Set the `theme.typography.body1` style on the `<body>` element.」([來源](https://raw.githubusercontent.com/mui/material-ui/master/docs/data/material/components/css-baseline/css-baseline.md)),Dialog 內文繼承它,要固定字級的 `DialogContentText` 自己指定 `variant="body1"`([來源](https://raw.githubusercontent.com/mui/material-ui/master/packages/mui-material/src/DialogContentText/DialogContentText.js));Primer CSS 的 body 寫 `font-size: var(--body-font-size, $body-font-size)`、`$body-font-size: 14px !default`([來源](https://raw.githubusercontent.com/primer/css/main/src/base/base.scss)),Primer React Dialog 的 `.Body` 不設字級([來源](https://raw.githubusercontent.com/primer/react/main/packages/react/src/Dialog/Dialog.module.css));Salesforce Lightning(SLDS)在 body 設 `font-size: 0.8125rem`,`.slds-modal__content` 不設、繼承 body([來源](https://cdn.jsdelivr.net/npm/@salesforce-ux/design-system@2.264.3/assets/styles/salesforce-lightning-design-system.css))。
+- 另一派(浮層元件根自己設字級):Ant Design 的 `.ant-modal-body` 寫 `fontSize: token.fontSize`([來源](https://raw.githubusercontent.com/ant-design/ant-design/master/components/modal/style/index.ts));Atlassian `modal-body` 宣告 `font: var(--ds-font-body)`([來源](https://cdn.jsdelivr.net/npm/@atlaskit/modal-dialog@17.3.0/dist/cjs/modal-body.compiled.css));Carbon 的 `.cds--modal-content` 套 `type-style('body-01')`([來源](https://raw.githubusercontent.com/carbon-design-system/carbon/main/packages/styles/scss/components/modal/_modal.scss)),它的 body 只設字重與字體、不設字級([來源](https://raw.githubusercontent.com/carbon-design-system/carbon/main/packages/type/scss/_reset.scss));Fluent 的 `DialogContent` 展開 `typographyStyles.body1`([來源](https://raw.githubusercontent.com/microsoft/fluentui/master/packages/react-components/react-dialog/library/src/components/DialogContent/useDialogContentStyles.styles.ts))。
+- 取捨【AI 推導 2026-11-24】:第一派一處設定,浮層、範例與產品頁裡沒設字級的文字全部一致;代價是要固定字級的元件得自己設 —— 本 DS 元件本來就各自帶 `text-*`(上方「設計原則」表:font-size 由 token 決定),所以改變的只有原本沒設字級的文字。
+
+
 ## line-height 覆蓋（僅 14/16px body 可覆蓋）
 
 **Token canonical**：除 `text-body`（14px）/ `text-body-lg`（16px）外，**所有 size 行高皆固定**：
@@ -172,13 +190,14 @@ Typography 由三個獨立維度組成，分開疊加：
 
 對齊 M8(binary strict rule 必 ≥3 家世界級對照),「禁 Tailwind `text-sm`/`text-base` raw utility」+「禁硬寫 fontSize」是本 spec 的 binary strict rule,以下為支撐 rationale。
 
-本 DS 字級:base 14px、10 個 utility 內;line-height 二元(scanning 1.3 / reading 1.5);字重三階(normal / medium / bold)—— 各自理由見下方三段。
+本 DS 字級:base 14px(= `text-body`,也是整頁預設字級,住 `styles/base.css` 的 `body`,見上方「整頁預設字級」)、10 個 utility 內;line-height 二元(scanning 1.3 / reading 1.5);字重三階(normal / medium / bold)—— 各自理由見下方三段。
 
 ## 設計哲學
 
 四個關鍵決策,各自有世界級先例支撐:
 
-**(1) Body base = 14px(對齊 Material / Carbon / Ant 三家共識)** <!-- @benchmark-unverified -->
+**(1) Body base = 14px(對齊 Material / Carbon / Ant 三家共識)**
+三家的預設內文都是 14px:Material 3 `$body-medium-size: 0.875rem`([來源](https://raw.githubusercontent.com/material-components/material-web/main/tokens/versions/latest/sass/_md-sys-typescale.scss));Carbon `body-01` 的字級是 `rem(scale02)`([來源](https://raw.githubusercontent.com/carbon-design-system/carbon/main/packages/type/src/styles.ts)),`export const scale02 = 14;`([來源](https://raw.githubusercontent.com/carbon-design-system/carbon/main/packages/type/src/scale.ts));Ant Design seed token `fontSize` 預設 14,其他字級由它派生([來源](https://raw.githubusercontent.com/ant-design/ant-design/master/components/theme/interface/seeds.ts))。base 14px 在程式裡就是 `text-body`,也是整頁預設(上方「整頁預設字級」;2026-11-24 前整頁沒設字級,沒帶 class 的文字吃瀏覽器的 16px,與這一條不一致)。
 
 14px 適合 productivity 工具:一屏要放規格、表格、Dashboard 等密集資訊;16px 是 reading-first 的選擇(長文閱讀、行動裝置)。本 DS 場景是 dense workspace,14px 同時讓 information density 高、又仍是舒適的內文大小。捨棄 16 base 的代價是「行動裝置可讀性」,但 DS 主場景是 desktop。
 
@@ -207,3 +226,4 @@ Tailwind / Apple SF 的 9 階 weight scale(Apple:「SF Pro features nine weights
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `empty.spec.md`
+- `popover.spec.md`

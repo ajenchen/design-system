@@ -83,6 +83,8 @@ Popover 是**點擊觸發的浮層容器**——提供定位、動畫、焦點�
 
 **禁止**:consumer 自己在 PopoverContent 裡手刻 `<h2 className="text-body-lg">` 當 title(繞 PopoverTitle 的 canonical)。若需要大 title,視為該用 Dialog 而非 Popover(選對元件)。
 
+**內文字級**(2026-11-24):`PopoverContent` 與 `PopoverBody` 不設字級;Popover 經 Portal 掛在 `body` 底下,內文沒自己設字級的文字吃整頁預設字級(值與住處:`../../tokens/typography/typography.spec.md`「整頁預設字級」;外殼不另設的總則:`../../patterns/overlay-surface/overlay-surface.spec.md`「SurfaceBody」)。所以內文與上面的 PopoverTitle 同字級,標題靠 `font-medium` 區分(`../../tokens/typography/typography.spec.md`「同尺寸但不同角色的選法」)。2026-11-24 前整頁沒設字級,內文吃到瀏覽器預設、比標題大(例:Calendar 點事件開的 Popover)。
+
 ---
 
 ## 何時用

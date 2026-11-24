@@ -2217,6 +2217,14 @@ jobs:
           # selftest 把列多推 12px,簽名與當初真實 bug 完全一致(607 vs 595,差 12px)。
           npm run test:overlay-list-as-region
 
+      - name: Global body font size (static + browser)
+        run: |
+          # 整頁預設字級 = text-body,唯一住處 base.css 的 body(typography.spec.md「整頁預設字級」,2026-11-24)。
+          # 靜態:body 字級必須是 var(--font-body-size)、行高等於 @utility text-body、別的 CSS 不在 html / body 設字級;
+          # 瀏覽器:Popover / Dialog / Sheet 浮層經 Portal 的內文 = 14px、外殼不另設(body 暫改 20px 做 A/B)。修前 72c99de0 量到 16px。
+          # 對照組:改壞 CSS 各紅一條、注入 body{font-size:medium} 重放修前、外殼自己設字級。本機判定 + 對照組約 10 秒。
+          npm run test:global-body-font
+
   verify-browser-select-all:
     # 2026-09-17 拆出來的第八個 job。它跟 sweeps 一樣是「全 1034 支 story 掃一遍」,但**還要開面板**
     # (每支 story 逐一點開 [role=combobox] 觸發點、按一下全選、再量一次),本機實測 6.6 分鐘 ——

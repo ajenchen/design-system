@@ -460,7 +460,7 @@ const FieldLabel = React.forwardRef<HTMLLabelElement, FieldLabelProps>(
                   // 滑過深一階 = 告訴你「這裡有說明可看」(hit-area-canonical.md 三-1)。
                   // 游標明寫 cursor-default:ⓘ 點下去不做事(Radix Tooltip 點擊只會收起說明),
                   // 不能用手形;base.css 讓所有 <button> 預設手形,只刪 cursor-pointer 蓋不掉(2026-09-26)
-                  className="inline-flex items-center text-fg-muted hover:text-fg-secondary bg-transparent border-0 p-0 cursor-default"  /* 2026-09-07 刪本地 outline-* — 與全域 base.css:44-47 逐字等價,本區塊無 outline-none */
+                  className="inline-flex items-center text-fg-muted hover:text-fg-secondary bg-transparent border-0 p-0 cursor-default"  /* 2026-09-07 刪本地 outline-* — 與全域 base.css:53-56 逐字等價,本區塊無 outline-none */
                 >
                   <InfoIcon size={16} aria-hidden />
                 </button>

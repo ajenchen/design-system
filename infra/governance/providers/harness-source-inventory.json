@@ -433,6 +433,7 @@
           "scripts/test-data-table-overscan-adaptive-invariant.mjs",
           "scripts/test-escape-and-focus-contract-invariant.mjs",
           "scripts/test-form-gap-token-invariant.mjs",
+          "scripts/test-global-body-font-invariant.mjs",
           "scripts/test-header-tabs-slot-invariants.mjs",
           "scripts/test-menu-message-row-invariant.mjs",
           "scripts/test-pagination-narrow-ladder-invariant.mjs",

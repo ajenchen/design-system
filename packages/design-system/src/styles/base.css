@@ -33,10 +33,19 @@
     border-color: var(--color-neutral-5);
   }
 
+  /* 整頁預設字級 = text-body(字級 token 與行高跟 typography.css 的 `@utility text-body` 同一份)。
+     唯一住處就是這條規則;規格 `tokens/typography/typography.spec.md`「整頁預設字級」。
+     沒自己設字級的文字(浮層內文、範例裡沒帶 class 的段落)都從這裡繼承 —— 浮層經 Portal 掛在 body 底下,
+     外殼不另設字級(`patterns/overlay-surface/overlay-surface.spec.md`「SurfaceBody」)。
+     2026-11-24 前這裡沒設字級,那些文字吃到瀏覽器預設 16px,比 14px 的浮層標題還大。
+     行高照寫 1.5:Tailwind preflight 也在 html 設了 1.5(無單位,子元素依自己的字級重算),結果相同;
+     寫在這裡是為了讓整頁預設不依賴 preflight。閘 `scripts/global-body-font-invariant.mjs`。 */
   body {
     background-color: var(--canvas);
     color: var(--foreground);
     font-family: var(--font-sans);
+    font-size: var(--font-body-size);
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
