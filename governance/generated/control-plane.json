@@ -2708,7 +2708,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 22,
-      "hash": "sha256:47791be7f77fd924fe473f13f952dc3567604d3809da2e63fe347da855c7f000",
+      "hash": "sha256:6d23772b66c8a788a42572742f05fefc8c2f68cdeb468dd40c7b7de547d9fad4",
       "id": "provider-neutral-memory",
       "mode": "0755",
       "ownerRepo": "design-system",
