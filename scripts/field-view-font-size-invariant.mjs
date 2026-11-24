@@ -4,20 +4,25 @@
  *   保證: Field 家族裡有 `showDisplayEndIcon` 的六個元件(Select / Combobox / DatePicker / TimePicker / LinkInput / PeoplePicker),
  *        在 `<Field mode="view">` 裡,`showDisplayEndIcon` 兩值 × sm / md / lg × 有值 / 空值,值文字的字級**等於規格值**:
  *        sm / md = 14px、lg = 16px(field-controls.spec.md「(e) View typography canonical」:「sm/md → text-body(14px line-height 1.5)
- *        / lg → text-body-lg(16px)」)。每一列放在兩種外層裡量:頁面預設(16px,使用者實際看到的情形)與故意設成 23px 的外層 ——
- *        值的字級是元件自己給的,不是從外面繼承的(lg 的 16px 剛好等於頁面預設,只有 23px 外層分得出「自己給」與「繼承」)。
+ *        / lg → text-body-lg(16px)」)。每一列放在兩種外層裡量:頁面預設(= body 的字級,住在 base.css、吃 `--font-body-size`,
+ *        現為 14px;使用者實際看到的情形)與故意設成 23px 的外層 —— 值的字級是元件自己給的,不是從外面繼承的(規格值剛好等於頁面預設的
+ *        size —— 現在是 sm / md —— 在頁面預設外層裡分不出「自己給」與「繼承」,只有 23px 外層分得出;lg 兩種外層都分得出)。
  *        量兩個數:值文字所在元素的 computed font-size,與值文字字形框(Range.getBoundingClientRect)的高度 ——
  *        後者必須等於同一段字放進 `text-body` / `text-body-lg` 參考 span 量到的高度(像素,±0.5)。
- *   紅: 任一列不符 → 逐列點名(元件 / showDisplayEndIcon / size / 有值空值 / 外層,量到幾 px)exit 1。`--selftest` 在 DS 原始碼上造六個
- *        單一根因突變(MUTANTS),每個突變必須**剛好**紅它負責的那幾列(判定式寫在突變旁,由 fontLayers 推出),契約列每一條都要被某個突變弄紅過;
- *        第一個突變就是 A100 修前的樣子(PeoplePicker 預設檢視態沒套字級)。`--root=<修改前的整棵原始碼>` = 天然對照組
- *       (2108fdc8 基準樹:PeoplePicker 預設檢視態 sm / md 兩種外層、lg 23px 外層共 10 列紅,其餘綠)。
- *   綠: 現行原始碼 144 列全部等於規格值;對照列(23px 外層裡沒有任何字級 class 的純文字量到 23px、頁面預設量到 16px)在現行原始碼與
- *        每個突變上都綠 —— 證明「繼承外層」在這支量具裡看得見,綠燈不是因為外層沒生效。
- *        harness 載不起來 / 參考 span 不是規格字級(樣式沒編進來)/ 找不到值文字 = 儀器失效(INSTRUMENT-FAIL,exit 1),
- *        不得讀成通過(M37:沒量到 ≠ 沒發生)。
+ *   紅: 任一列不符 → 逐列點名(元件 / showDisplayEndIcon / size / 有值空值 / 外層,量到幾 px)exit 1。`--selftest` 在 DS 原始碼上造八個
+ *        單一根因突變(MUTANTS),每個突變必須**剛好**紅它負責的那幾列(判定式寫在突變旁,由 fontLayers 與頁面預設推出),契約列每一條都要被某個突變弄紅過;
+ *        第一個突變就是 A100 修前的樣子(PeoplePicker 預設檢視態沒套字級)。拿掉字級的突變在頁面預設外層裡只紅「規格值 ≠ 頁面預設」的 size,
+ *        其餘 size 的頁面預設列靠「給錯值」的突變(*-lg-as-body / *-body-as-lg 兩兩對稱)弄紅。`--root=<修改前的整棵原始碼>` = 天然對照組
+ *       (main 上 A100 修前 8eb473c7 的樹:PeoplePicker 預設檢視態 sm / md 兩種外層、lg 23px 外層共 10 列紅,另有對照列 C-plain-page 紅 ——
+ *        那棵樹的 body 還沒吃 `--font-body-size`,頁面預設是瀏覽器的 16px;main 上 body 設字級前 2e5c1b0c 的樹:契約列全綠、只有 C-plain-page 紅)。
+ *   綠: 現行原始碼 144 列全部等於規格值;對照列(23px 外層裡沒有任何字級 class 的純文字量到 23px、頁面預設外層裡的量到
+ *        `--font-body-size` 解析出的字級)在現行原始碼與每個突變上都綠 —— 證明「繼承外層」在這支量具裡看得見,綠燈不是因為外層沒生效。
+ *        頁面預設的期望值不寫死:在頁面上用 `font-size: var(--font-body-size)` 的探針量出來(探針放在 23px 外層裡,token 沒定義時
+ *        會繼承成 23px,當儀器失效);「哪幾列拿掉字級在頁面預設外層裡看得見」(inheritsVisibly)也由這個值推出。
+ *        harness 載不起來 / 參考 span 不是規格字級(樣式沒編進來)/ 找不到值文字 / `--font-body-size` 解析不出來
+ *        = 儀器失效(INSTRUMENT-FAIL,exit 1),不得讀成通過(M37:沒量到 ≠ 沒發生)。
  *   註: 2026-11-17 新增(A100)。根因:PeoplePicker `mode="view"` 預設(`showDisplayEndIcon=false`)那條路回傳裸 `PersonDisplay`,
- *        root 沒有任何字級 class,名字吃外層字級(Field 裡 = 16px);同一顆控件 `showDisplayEndIcon=true` 走 `fieldWrapperStyles`
+ *        root 沒有任何字級 class,名字吃外層字級(當時 body 沒設字級,Field 裡 = 瀏覽器預設 16px);同一顆控件 `showDisplayEndIcon=true` 走 `fieldWrapperStyles`
  *        的 size 字級(14px)。另外五個元件的預設路徑早就套了 `fieldDisplayTextClass`(2026-05-14 I2),PeoplePicker 不在當時的清單上。
  *        既有的 `field-view-typography-invariant.mjs` 比的是「四模式 story(`-展示--modes`)的 view = edit」:PeoplePicker 沒有四模式 story,
  *        那支從來沒量到它(2026-11-17 實跑:量到 8 則,沒有 peoplepicker);而且它只看 `showDisplayEndIcon` 預設值、只比 view 與 edit 相等,
@@ -78,8 +83,12 @@ const fontLayers = (row) => {
 const onlyLayer = (row, layer) => fontLayers(row).length === 1 && fontLayers(row)[0] === layer
 /** 最內層 = 給錯值時會直接顯示出來的那一層 */
 const innermost = (row) => fontLayers(row)[0]
-/** 突變把字級拿掉(變成繼承)時會紅的列:23px 外層一定紅;頁面預設只有 sm / md 紅(lg 的規格值剛好等於頁面預設的 16px) */
-const inheritsVisibly = (row) => row.ctx === 'sentinel' || row.size !== 'lg'
+/**
+ * 突變把字級拿掉(變成繼承)時會紅的列:23px 外層一定紅;頁面預設外層只有「規格值 ≠ 頁面預設」的 size 紅。
+ * `pageDefaultPx` = 這一趟在頁面上量到的 `--font-body-size`(runVariant 的探針)—— 現為 14px,所以只有 lg 紅,
+ * sm / md 只能靠 23px 外層那一列抓(拿掉字級的突變)與 *-body-as-lg(給錯值的突變)。
+ */
+const inheritsVisibly = (row, pageDefaultPx) => row.ctx === 'sentinel' || SPEC_PX[row.size] !== pageDefaultPx
 
 const ROWS = []
 for (const comp of COMPONENTS) for (const icon of ICONS) for (const size of SIZES) for (const content of CONTENTS) for (const ctx of CONTEXTS) {
@@ -93,19 +102,20 @@ const WRAPPER_MD = /md: 'text-body h-field-md /
 const WRAPPER_LG = /lg: 'text-body-lg h-field-lg /
 const COMBOBOX_SHELL_UNRESTRICTED = /<span className=\{cn\('flex-1 min-w-0', fieldDisplayTextClass\(sz\)\)\}>\{unrestrictedLabel\}<\/span>/
 
+// redWhen(row, env):env.pageDefaultPx = 這一趟量到的頁面預設字級(見 inheritsVisibly)
 const MUTANTS = [
   {
     id: 'peoplepicker-bare-no-font-class',
     what: 'PeoplePicker 預設檢視態的 root 拿掉 fieldDisplayTextClass(A100 修前的樣子)',
     file: 'components/PeoplePicker/people-picker.tsx',
-    redWhen: (row) => row.comp === 'peoplepicker' && !row.icon && inheritsVisibly(row),
+    redWhen: (row, env) => row.comp === 'peoplepicker' && !row.icon && inheritsVisibly(row, env.pageDefaultPx),
     apply: (src) => replaceOnce(src, PP_BARE_ROOT, "cn('flex w-full min-w-0', className)"),
   },
   {
     id: 'helper-returns-nothing',
     what: 'fieldDisplayTextClass 不回傳任何 class(預設檢視態全部改吃外層)',
     file: 'components/Field/field-wrapper.tsx',
-    redWhen: (row) => onlyLayer(row, 'helper') && inheritsVisibly(row),
+    redWhen: (row, env) => onlyLayer(row, 'helper') && inheritsVisibly(row, env.pageDefaultPx),
     apply: (src) => replaceOnce(src, HELPER_BODY, "''"),
   },
   {
@@ -117,10 +127,19 @@ const MUTANTS = [
     apply: (src) => replaceOnce(src, HELPER_BODY, "'text-body'"),
   },
   {
+    // 與 helper-lg-as-body 對稱:頁面預設 = text-body 之後,sm / md 拿掉字級在頁面預設外層裡看不出來(繼承到的剛好是規格值),
+    // 那幾列要靠「給錯值」才紅得起來 —— 否則它們的綠燈沒有任何突變證明過(覆蓋檢查會點名)
+    id: 'helper-body-as-lg',
+    what: 'fieldDisplayTextClass 的 sm / md 給成 text-body-lg(16px)',
+    file: 'components/Field/field-wrapper.tsx',
+    redWhen: (row) => (innermost(row) === 'helper' || innermost(row) === 'combobox-shell') && row.size !== 'lg',
+    apply: (src) => replaceOnce(src, HELPER_BODY, "'text-body-lg'"),
+  },
+  {
     id: 'wrapper-no-size-font',
     what: 'fieldWrapperStyles 三個 size 都拿掉字級(showDisplayEndIcon=true 的外殼改吃外層)',
     file: 'components/Field/field-wrapper.tsx',
-    redWhen: (row) => onlyLayer(row, 'wrapper') && inheritsVisibly(row),
+    redWhen: (row, env) => onlyLayer(row, 'wrapper') && inheritsVisibly(row, env.pageDefaultPx),
     apply: (src) => replaceOnce(replaceOnce(replaceOnce(src, WRAPPER_SM, "sm: 'h-field-sm "), WRAPPER_MD, "md: 'h-field-md "), WRAPPER_LG, "lg: 'h-field-lg "),
   },
   {
@@ -129,6 +148,14 @@ const MUTANTS = [
     file: 'components/Field/field-wrapper.tsx',
     redWhen: (row) => innermost(row) === 'wrapper' && row.size === 'lg',
     apply: (src) => replaceOnce(src, WRAPPER_LG, "lg: 'text-body h-field-lg "),
+  },
+  {
+    // 與 wrapper-lg-as-body 對稱(理由同 helper-body-as-lg)
+    id: 'wrapper-body-as-lg',
+    what: 'fieldWrapperStyles 的 sm / md 字級給成 text-body-lg(16px)',
+    file: 'components/Field/field-wrapper.tsx',
+    redWhen: (row) => innermost(row) === 'wrapper' && row.size !== 'lg',
+    apply: (src) => replaceOnce(replaceOnce(src, WRAPPER_SM, "sm: 'text-body-lg h-field-sm "), WRAPPER_MD, "md: 'text-body-lg h-field-md "),
   },
   {
     id: 'combobox-shell-caption',
@@ -253,7 +280,13 @@ const MEASURE = ({ rows, valueText }) => {
     }
   }
   const plain = (ctx) => parseFloat(getComputedStyle(document.querySelector(`[data-control-plain="${ctx}"]`)).fontSize)
-  return { rows: out, plain: { page: plain('page'), sentinel: plain('sentinel') } }
+  // 頁面預設的期望值 = `--font-body-size` 解析出的字級(body 吃這個 token,base.css)。探針放在 23px 外層裡:
+  // token 沒定義時 var() 失效、字級改為繼承 → 量到 23,呼叫端判儀器失效,不會被讀成某個看似合理的數字
+  const probe = document.createElement('span'); probe.style.fontSize = 'var(--font-body-size)'; probe.textContent = '探'
+  document.querySelector('[data-ctx="sentinel"]').appendChild(probe)
+  const bodyToken = { raw: getComputedStyle(document.documentElement).getPropertyValue('--font-body-size').trim(), px: parseFloat(getComputedStyle(probe).fontSize) }
+  probe.remove()
+  return { rows: out, plain: { page: plain('page'), sentinel: plain('sentinel') }, bodyToken }
 }
 
 const STYLE = await compileDsCss({ root: SOURCE_ROOT, extraSources: [HARNESS] })
@@ -267,6 +300,10 @@ async function runVariant(page, label, mutate) {
     await page.evaluate(() => document.fonts.ready)
     const m = await page.evaluate(MEASURE, { rows: ROWS, valueText: VALUE_TEXT })
     if (pageErrors.length) throw new InstrumentError(`頁面例外:${pageErrors.join(' | ')}`)
+    const { raw: tokenRaw, px: pageDefaultPx } = m.bodyToken
+    if (!tokenRaw || !Number.isFinite(pageDefaultPx) || pageDefaultPx === SENTINEL_PX) {
+      throw new InstrumentError(`--font-body-size 在 harness 頁面上解析不出來(值「${tokenRaw}」、探針量到 ${pageDefaultPx}px)—— 頁面預設的期望值無從推導`)
+    }
     const checks = []
     for (const row of ROWS) {
       const r = m.rows[row.id]
@@ -279,7 +316,7 @@ async function runVariant(page, label, mutate) {
       const pass = r.samples.every((s) => s.font === spec && Math.abs(s.height - s.refHeight) <= HEIGHT_TOLERANCE_PX)
       checks.push({ id: row.id, kind: 'contract', row, pass, detail: r.samples.map((s) => `「${s.text}」${s.font}px、字形框高 ${s.height.toFixed(2)}(規格 ${spec}px、參考高 ${s.refHeight.toFixed(2)})`).join(';') })
     }
-    checks.push({ id: 'C-plain-page', kind: 'control', pass: m.plain.page === 16, detail: `頁面預設外層裡的純文字 ${m.plain.page}px(應 16)` })
+    checks.push({ id: 'C-plain-page', kind: 'control', pass: m.plain.page === pageDefaultPx, detail: `頁面預設外層裡的純文字 ${m.plain.page}px(應 = --font-body-size ${tokenRaw} = ${pageDefaultPx}px;body 的字級住在 base.css)` })
     checks.push({ id: 'C-plain-sentinel', kind: 'control', pass: m.plain.sentinel === SENTINEL_PX, detail: `${SENTINEL_PX}px 外層裡的純文字 ${m.plain.sentinel}px(應 ${SENTINEL_PX};證明繼承外層在這裡看得見)` })
     if (SHOT_DIR) {
       mkdirSync(SHOT_DIR, { recursive: true })
@@ -287,7 +324,7 @@ async function runVariant(page, label, mutate) {
       await page.locator('[data-shot]').screenshot({ path: file })
       console.log(`  (畫面:${file})`)
     }
-    return { label, checks }
+    return { label, checks, pageDefaultPx }
   } finally {
     dispose()
   }
@@ -342,7 +379,9 @@ try {
       }
       report(result)
       const red = redIds(result.checks)
-      const want = ROWS.filter(m.redWhen).map((r) => r.id).sort()
+      // 突變只改元件原始碼,頁面預設不該跟著變;變了 = 突變碰到的是量具
+      if (result.pageDefaultPx !== baseline.pageDefaultPx) problems.push(`${m.id}:頁面預設從 ${baseline.pageDefaultPx}px 變成 ${result.pageDefaultPx}px —— 突變弄壞的是量具,不是契約`)
+      const want = ROWS.filter((r) => m.redWhen(r, { pageDefaultPx: result.pageDefaultPx })).map((r) => r.id).sort()
       const controlRed = result.checks.filter((c) => c.kind === 'control' && !c.pass).map((c) => c.id)
       if (controlRed.length) problems.push(`${m.id}:對照列 ${controlRed.join(' / ')} 紅了 —— 突變弄壞的是量具,不是契約`)
       if (JSON.stringify(red) !== JSON.stringify(want)) {
