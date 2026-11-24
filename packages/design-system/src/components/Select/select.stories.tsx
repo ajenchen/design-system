@@ -3,14 +3,14 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { createColumnHelper } from '@tanstack/react-table'
-import { Select } from './select'
+import { Select, type SelectOption } from './select'
 import { Field, FieldError, FieldLabel } from '@/design-system/components/Field/field'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types'
 import { CATEGORY_OPTIONS as categoryOptions } from '@/design-system/stories-helpers/data/product-catalog'
 import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
-const statusOptions = [
+const statusOptions: SelectOption[] = [
   { value: 'in_stock', label: 'In stock', tagVariant: 'green' },
   { value: 'low_stock', label: 'Low stock', tagVariant: 'yellow' },
   { value: 'out_of_stock', label: 'Out of stock', tagVariant: 'red' },

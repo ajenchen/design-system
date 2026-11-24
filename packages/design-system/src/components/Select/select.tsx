@@ -26,6 +26,7 @@ import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { keepFocusOnPointerPress } from '@/design-system/lib/pointer-press'
 import { fieldOpenProps } from '@/design-system/lib/composite-field-focus'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
+import { CATEGORICAL_HUES, type CategoricalColor } from '@/design-system/tokens/categorical-color'
 
 // ── Tag padding per size ────────────────────────────────────────────────────
 // Tag 四邊內距的單一來源在 field-wrapper.tsx(`fieldTagInsetX`),Combobox 共用;理由與公式見該處。
@@ -47,8 +48,25 @@ const tagPadding = fieldTagInsetX
  * 此 wrapper-only concern,所以 wrapper 層 extend 加上,不污染 primitive。
  */
 export interface SelectOption extends SelectMenuOption {
-  /** Tag 模式的顏色。只在 display='tag' 時生效,對應 Tag 的 variant。Wrapper-only。 */
-  tagVariant?: string
+  /**
+   * tag 模式這個選項的 Tag 顏色(只在 `display='tag'` 生效;Wrapper-only)= Tag 的 `color`:`'neutral'` 或 12 個類別色相
+   * (`CategoricalColor`,唯一住所 `tokens/categorical-color.ts`)。不傳 → 欄位上是 neutral Tag、選單列是純文字。
+   * 2026-11-25 由 `string` 收窄(原本型別收任何字,內部再轉型成五色;認不得的值讓 Tag 沒有底色)。
+   */
+  tagVariant?: CategoricalColor
+}
+
+/** Tag 顏色認得的值:neutral + 12 類別色相(由 SSOT 衍生,不另列)。 */
+const TAG_COLORS: ReadonlySet<string> = new Set<CategoricalColor>(['neutral', ...CATEGORICAL_HUES])
+
+/**
+ * 選項的 Tag 顏色 —— tag 模式六個渲染點(桌機觸發欄位、唯讀 / 停用、檢視兩條路、手機原生、選單列)唯一的取值處(M17)。
+ * 型別已經只收 `CategoricalColor`;執行期再認一次(JS 或 `as` 繞過型別時):認不得的值當沒給 → 欄位上回到 neutral Tag、
+ * 選單列純文字,不讓 Tag 拿到不存在的 color 鍵而整顆沒有底色。
+ */
+function optionTagColor(option: SelectOption | undefined): CategoricalColor | undefined {
+  const color = option?.tagVariant
+  return color !== undefined && TAG_COLORS.has(color) ? color : undefined
 }
 
 /** 分組設定 — 對齊 SelectMenuGroupConfig SSOT */
@@ -388,14 +406,12 @@ function CustomSelectTriggerContent(props: CustomSelectTriggerContentProps): Rea
       </>
     )
   }
-  // Tag display: 用 option 的 tagVariant
+  // Tag display: 用 option 的 tagVariant(沒給 / 認不得 → Tag 預設 neutral)
   return (
     <>
-      {value && selectedOpt?.tagVariant
-        ? <Tag size={size} color={selectedOpt.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral'} className="shrink-0 pointer-events-none">{selectedLabel}</Tag>
-        : value
-          ? <Tag size={size} className="shrink-0 pointer-events-none">{selectedLabel}</Tag>
-          : <span className="text-fg-muted">{placeholder ?? '選擇…'}</span>
+      {value
+        ? <Tag size={size} color={optionTagColor(selectedOpt)} className="shrink-0 pointer-events-none">{selectedLabel}</Tag>
+        : <span className="text-fg-muted">{placeholder ?? '選擇…'}</span>
       }
       <span className="flex-1" />
     </>
@@ -456,11 +472,9 @@ function ReadonlyDisplay({
       // 截斷必附 tooltip(tooltip.spec.md:32)— 改消費 truncated-text primitive(同 input.tsx:198 同型修;
       // display='tag' 路徑由 Tag 內建 useTruncated 自管,text 路徑原本裸 truncate = gap)
       if (isTextDisplay) return <TruncatedText className={cn(fieldDisplayTextClass(sz), className)}>{label}</TruncatedText>
-      const tVariant = selectedOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
-      return <Tag size={sz} color={tVariant} className={className}>{label}</Tag>
+      return <Tag size={sz} color={optionTagColor(selectedOpt)} className={className}>{label}</Tag>
     }
     // D path opt-in: Field naked-view wrapper + ItemSuffix ChevronDown
-    const tVariant = selectedOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
     return (
       <div
         className={cn(fieldWrapperStyles({ mode: 'view', variant, width: fieldWidthVariant(width), size: sz }), value && !isTextDisplay && tagPadding[sz], className)}
@@ -480,7 +494,7 @@ function ReadonlyDisplay({
             {value ? label : emptyText}
           </TruncatedText>
         ) : value ? (
-          <Tag size={sz} color={tVariant}>{label}</Tag>
+          <Tag size={sz} color={optionTagColor(selectedOpt)}>{label}</Tag>
         ) : (
           <span className={cn('flex-1 min-w-0', emptyColorCls)}>{emptyText}</span>
         )}
@@ -526,12 +540,10 @@ function ReadonlyDisplay({
     )
   }
 
-  const tagVariant = selectedOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
-
   return (
     // 停用:Tag 自帶 cursor-text,指到 tag 上會蓋掉外框的 cursor-not-allowed(2026-09-29 全站掃出)→ 整塊釘成禁止符號(同 Combobox 非 edit 分支)
     <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width: fieldWidthVariant(width), size: sz }), value && tagPadding[sz], resolvedMode === 'disabled' && '[&_*]:cursor-not-allowed', className)} style={fieldWidthStyle(width, { paddingRight: 'var(--field-px)' })} data-field-mode={resolvedMode} aria-disabled={ariaDisabled} {...readonlyStop}>
-      {value ? <Tag size={sz} color={tagVariant}>{label}</Tag> : <span className={emptyColorCls}>{emptyText}</span>}
+      {value ? <Tag size={sz} color={optionTagColor(selectedOpt)}>{label}</Tag> : <span className={emptyColorCls}>{emptyText}</span>}
       {showIndicator && <ItemSuffix className="pointer-events-none"><ChevronDown size={iconSize} className={cn('shrink-0', iconColor)} aria-hidden /></ItemSuffix>}
     </div>
   )
@@ -612,7 +624,6 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
       </ItemSuffix>
     )
     const label = selectedOpt?.label ?? value
-    const nativeTagVariant = selectedOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
     const SelectedOptIcon = selectedOpt?.icon
 
     // Display-layer parity(2026-08-05 user 拍板):selectedItemRenderer 有值 → 渲 renderer 輸出為
@@ -644,7 +655,7 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
         <div className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width: fieldWidthVariant(width), size, error }), value && tagPadding[size], 'relative',
           className)}
           style={fieldWidthStyle(width, { paddingRight: 'var(--field-px)' })} data-field-mode="edit" data-error={error ? '' : undefined}>
-          {value ? <Tag size={size} color={nativeTagVariant} className="shrink-0 relative z-10 pointer-events-none">{label}</Tag> : <span className="text-fg-muted">{placeholder ?? '選擇...'}</span>}
+          {value ? <Tag size={size} color={optionTagColor(selectedOpt)} className="shrink-0 relative z-10 pointer-events-none">{label}</Tag> : <span className="text-fg-muted">{placeholder ?? '選擇...'}</span>}
           {selectEl}
           <span className="flex-1" />
           {clearEl}
@@ -771,11 +782,8 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     const renderLabel = React.useMemo(() => {
       if (isTextDisplay) return undefined
       return (menuOpt: SelectMenuOption) => {
-        const srcOpt = options.find(o => o.value === menuOpt.value)
-        if (srcOpt?.tagVariant) {
-          return <Tag size={size} color={srcOpt.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral'}>{menuOpt.label}</Tag>
-        }
-        return menuOpt.label
+        const color = optionTagColor(options.find(o => o.value === menuOpt.value))
+        return color ? <Tag size={size} color={color}>{menuOpt.label}</Tag> : menuOpt.label
       }
     }, [isTextDisplay, options, size])
 
