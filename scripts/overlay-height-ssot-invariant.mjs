@@ -10,11 +10,12 @@
  *        或「初始值是前兩者」的本地常數(Dialog 的 heightCap)。直接寫字串、把使用端的 maxHeight 原樣塞進去,都紅。
  *     H4 掛點真的接上(OVERLAY_POLICY 每一列):Popover / HoverCard / DropdownMenu 檔裡每一個 Radix `*Primitive.Content` 與
  *        `*Primitive.SubContent` 都有 `style={{ maxHeight: … }}`(修前 DropdownMenuSubContent 完全沒有上限 —— 這條就是擋它回來);
- *        CommandList 的 ScrollArea 讀 OVERLAY_LIST_MAX_HEIGHT;ProfileCard 有元素讀 OVERLAY_AVAILABLE_HEIGHT;
+ *        CommandList 的 ScrollArea 是 `capHeight(…)`、參數裡讀 OVERLAY_LIST_MAX_HEIGHT(半列原則的預設,使用端的 maxHeight 取代它);ProfileCard 有元素讀 OVERLAY_AVAILABLE_HEIGHT;
  *        Dialog 有一個 `capHeight(…)` 呼叫的第一個參數是 MODAL_AVAILABLE_HEIGHT(直接或經本地常數)。
  *     H5 使用端(DS 元件 / pattern / story 與 apps)不准在浮層內容元件(PopoverContent / HoverCardContent / DropdownMenuContent /
  *        DropdownMenuSubContent / DialogContent / CommandList)上用 className 的 `max-h-*` 或 `style.maxHeight` 改上限 ——
- *        要更矮走元件的 `maxHeight` 參數(同一條 capHeight;CommandList 的清單上限不開參數,值住 overlay-geometry.ts `OVERLAY_LIST_MAX_HEIGHT`、理由住 command.spec.md「清單捲動上限 300px」)。
+ *        要改上限走元件的 `maxHeight` 參數(同一條 capHeight;CommandList 2026-11-24 起也收 `maxHeight`,預設值住 overlay-geometry.ts `OVERLAY_LIST_MAX_HEIGHT`、
+ *        理由住 command.spec.md「清單捲動上限(半列原則)」)。
  *   紅: 指名 檔:行 與哪一條,exit 1。
  *   綠: 五條 0 筆。純靜態(TypeScript 語法樹;不做型別推論),同一份 worktree 恆等,沒有取樣、不量時間。
  *   儀器失效(exit 2,印 INSTRUMENT-FAIL): overlay-geometry.ts 讀不到四個匯出(或 OVERLAY_AVAILABLE_HEIGHT 不是讀 Radix popper 的可用高)、
@@ -37,7 +38,7 @@ const GEOMETRY_EXPORTS = ['OVERLAY_AVAILABLE_HEIGHT', 'MODAL_AVAILABLE_HEIGHT', 
 /**
  * 浮層元件表(唯一一份機器可讀的;elevation.spec.md「浮層高度上限」那張表的程式面)。
  * hook:'radix-content' = 檔裡每個 *Primitive.Content / *Primitive.SubContent 都要有 style.maxHeight(min = 至少幾個);
- *       'list' = 有 ScrollArea 的 style.maxHeight 讀 OVERLAY_LIST_MAX_HEIGHT;'standalone' = 有元素的 style.maxHeight 讀 OVERLAY_AVAILABLE_HEIGHT;
+ *       'list' = 有 ScrollArea 的 style.maxHeight 是 capHeight(…) 呼叫、參數裡讀 OVERLAY_LIST_MAX_HEIGHT;'standalone' = 有元素的 style.maxHeight 讀 OVERLAY_AVAILABLE_HEIGHT;
  *       'modal' = 有 capHeight(MODAL_AVAILABLE_HEIGHT …) 呼叫。
  */
 export const OVERLAY_POLICY = [
@@ -184,12 +185,24 @@ export function checkPolicy(read) {
         if (!p) out.push({ rule: 'H4', msg: `${o.file}:${lineOf(sf, el)} <${tagName(el, sf)}> 沒有 style.maxHeight —— ${o.name} 的這一層浮層沒有高度上限(比可用高還高時會超出視窗、捲不到)` })
         else hooks++
       }
-    } else if (o.hook === 'list' || o.hook === 'standalone') {
-      const want = o.hook === 'list' ? 'OVERLAY_LIST_MAX_HEIGHT' : 'OVERLAY_AVAILABLE_HEIGHT'
+    } else if (o.hook === 'list') {
+      // 清單:capHeight(可用高, 使用端的 maxHeight ?? OVERLAY_LIST_MAX_HEIGHT[size]) —— 參數裡要真的讀到半列預設(2026-11-24 C9)
+      const readsListDefault = (node) => {
+        let hit = false
+        const visit = (n) => { if (ts.isIdentifier(n) && imports.get(n.text) === 'OVERLAY_LIST_MAX_HEIGHT') hit = true; ts.forEachChild(n, visit) }
+        visit(node)
+        return hit
+      }
       for (const el of els) {
-        if (o.hook === 'list' && tagName(el, sf) !== 'ScrollArea') continue
+        if (tagName(el, sf) !== 'ScrollArea') continue
         const p = propNamed(styleObject(el), 'maxHeight')
-        if (p && ts.isPropertyAssignment(p) && geometrySource(p.initializer, imports, consts) === want) found++
+        if (p && ts.isPropertyAssignment(p) && geometrySource(p.initializer, imports, consts) === 'capHeight' && readsListDefault(p.initializer)) found++
+      }
+      if (found) hooks += found
+    } else if (o.hook === 'standalone') {
+      for (const el of els) {
+        const p = propNamed(styleObject(el), 'maxHeight')
+        if (p && ts.isPropertyAssignment(p) && geometrySource(p.initializer, imports, consts) === 'OVERLAY_AVAILABLE_HEIGHT') found++
       }
       if (found) hooks += found
     } else if (o.hook === 'modal') {
@@ -201,7 +214,7 @@ export function checkPolicy(read) {
       hooks += found
     }
     if (found < o.min) {
-      const what = { 'radix-content': 'Radix 內容元素(*Primitive.Content / SubContent)', list: 'ScrollArea 的 style.maxHeight 讀 OVERLAY_LIST_MAX_HEIGHT', standalone: '元素的 style.maxHeight 讀 OVERLAY_AVAILABLE_HEIGHT', modal: 'capHeight(MODAL_AVAILABLE_HEIGHT …) 呼叫' }[o.hook]
+      const what = { 'radix-content': 'Radix 內容元素(*Primitive.Content / SubContent)', list: 'ScrollArea 的 style.maxHeight = capHeight(…) 且參數讀 OVERLAY_LIST_MAX_HEIGHT', standalone: '元素的 style.maxHeight 讀 OVERLAY_AVAILABLE_HEIGHT', modal: 'capHeight(MODAL_AVAILABLE_HEIGHT …) 呼叫' }[o.hook]
       out.push({ rule: 'H4', msg: `${o.file}:${o.name} 應有至少 ${o.min} 個${what},找到 ${found} 個` })
     }
   }
@@ -249,7 +262,7 @@ function selftest() {
     }, 'H2'],
     ['H2 CommandList 改回寫死 class', () => {
       const src = readRepo(CMD)
-      return checkSource(mustChange(src, src.replace('<ScrollArea className="flex-1 min-h-0" style={{ maxHeight: OVERLAY_LIST_MAX_HEIGHT }}', '<ScrollArea className="flex-1 min-h-0 max-h-[18.75rem]"'), 'command.tsx CommandList 的 ScrollArea'), CMD)
+      return checkSource(mustChange(src, src.replace('<ScrollArea className="flex-1 min-h-0" style={{ maxHeight: capHeight(OVERLAY_AVAILABLE_HEIGHT, maxHeight ?? OVERLAY_LIST_MAX_HEIGHT.single[rowSize]) }}', '<ScrollArea className="flex-1 min-h-0 max-h-[18.75rem]"'), 'command.tsx CommandList 的 ScrollArea'), CMD)
     }, 'H2'],
     ['H3 DropdownMenu 改回自己拼 min()', () => {
       const src = readRepo(DD)
@@ -264,8 +277,9 @@ function selftest() {
       return checkSource(mustChange(src, src.replace('style={{ maxHeight: OVERLAY_AVAILABLE_HEIGHT, ...style }}', "style={{ maxHeight: '100vh', ...style }}"), 'profile-card.tsx 的 style'), PC)
     }, 'H3'],
     ['H4 DropdownMenuSubContent 拿掉上限(修前的缺口)', () => checkPolicy(real(DD, (s) => mustChange(s, s.replace(", maxHeight: capHeight(OVERLAY_AVAILABLE_HEIGHT) }}", ' }}'), 'dropdown-menu.tsx SubContent 的 style'))).violations, 'H4'],
-    ['H4 PopoverContent 拿掉 style.maxHeight', () => checkPolicy(real(POP, (s) => mustChange(s, s.replace('maxHeight: capHeight(OVERLAY_AVAILABLE_HEIGHT, maxHeight),\n', ''), 'popover.tsx 的 style.maxHeight'))).violations, 'H4'],
-    ['H4 CommandList 改讀別的值', () => checkPolicy(real(CMD, (s) => mustChange(s, s.replace('style={{ maxHeight: OVERLAY_LIST_MAX_HEIGHT }}', "style={{ maxHeight: '300px' }}"), 'command.tsx 的 style'))).violations, 'H4'],
+    ['H4 PopoverContent 拿掉 style.maxHeight', () => checkPolicy(real(POP, (s) => mustChange(s, s.replace('maxHeight: capHeight(coverAnchor ? OVERLAY_COVER_AVAILABLE_HEIGHT : OVERLAY_AVAILABLE_HEIGHT, maxHeight),\n', ''), 'popover.tsx 的 style.maxHeight'))).violations, 'H4'],
+    ['H4 CommandList 改讀別的值', () => checkPolicy(real(CMD, (s) => mustChange(s, s.replace('style={{ maxHeight: capHeight(OVERLAY_AVAILABLE_HEIGHT, maxHeight ?? OVERLAY_LIST_MAX_HEIGHT.single[rowSize]) }}', "style={{ maxHeight: '300px' }}"), 'command.tsx 的 style'))).violations, 'H4'],
+    ['H4 CommandList 的 capHeight 不再讀半列預設(預設上限沒了)', () => checkPolicy(real(CMD, (s) => mustChange(s, s.replace('capHeight(OVERLAY_AVAILABLE_HEIGHT, maxHeight ?? OVERLAY_LIST_MAX_HEIGHT.single[rowSize])', 'capHeight(OVERLAY_AVAILABLE_HEIGHT, maxHeight)'), 'command.tsx 的 capHeight 參數'))).violations, 'H4'],
     ['H4 Dialog 不再用 capHeight(MODAL_AVAILABLE_HEIGHT …)', () => checkPolicy(real(DLG, (s) => mustChange(s, s.replace('const heightCap = capHeight(availableH, maxHeight)', 'const heightCap = maxHeight ? `min(${availableH}, ${maxHeight})` : availableH'), 'dialog.tsx 的 heightCap'))).violations, 'H4'],
     ['H5 story 在 PopoverContent 上用 className 蓋上限', () => checkSource('export const S = () => <PopoverContent className="w-80 max-h-[400px]">…</PopoverContent>', `${DS}/components/Foo/foo.stories.tsx`), 'H5'],
     ['H5 apps 在 DropdownMenuSubContent 上用 cn() 蓋上限', () => checkSource("export const S = () => <DropdownMenuSubContent className={cn('max-h-60', x)} />", 'apps/demo/src/menu.tsx'), 'H5'],

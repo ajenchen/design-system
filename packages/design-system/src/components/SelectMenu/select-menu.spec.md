@@ -83,6 +83,8 @@ Popover（浮動容器，handle 展開 / 定位）
 
 換言之 SelectMenu **永遠照 canonical**；只有 trigger ≥ 240px 且未再提高 `minWidth` 時，等寬會讓 align 差異被視覺遮蔽。一旦 popover 寬於 trigger，canonical 立即顯現。
 
+**清單的高度上限(`maxHeight`,2026-11-24)**:預設 = 半列原則(最後一列切在半列;選項帶 `description` 時用兩行列的列高),傳 `maxHeight`(數字 px 或字串)取代預設,實際上限 = min(可用高, 此值)—— 與 `DropdownMenuContent` 的 `maxHeight` 同一個參數、同一條公式;夾的是清單捲動區(轉給 `CommandList`),搜尋框與全選頁尾不算在內。理由、N 與公式住 `../Command/command.spec.md`「清單捲動上限(半列原則)」。Select / Combobox / PeoplePicker 都把同名參數轉到這裡。
+
 **欄位的 blur(表單接線,2026-10-21 r1b fields F1)**:SelectMenu 同時握著觸發點與浮層,「觸發欄位 + 浮層 = 同一個欄位」的判準由它掛(`../../lib/composite-field-focus.ts` `useCompositeFieldBlur`)—— `onFieldBlur` 在整組真的離開時呼叫一次(含從浮層直接離開、握著焦點的搜尋框 / cmdk 殼隨收起卸載);`fieldParts` 回傳同一個欄位的其他零件(Combobox 的「+N」浮出清單)。Select / Combobox(PeoplePicker 經它們)用這兩個 prop 接 consumer 的 `onBlur`(`../Select/select.spec.md`「表單接線」、`../Combobox/combobox.spec.md`「表單整合」`onBlur` 列)。
 
 ---

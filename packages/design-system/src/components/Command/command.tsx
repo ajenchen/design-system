@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/design-system/components/D
 import { MenuItem, MenuGroup, type MenuItemProps } from "@/design-system/components/Menu/menu-item"
 import { ICON_SIZE } from "@/design-system/tokens/uiSize/icon-size"
 import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
-import { OVERLAY_LIST_MAX_HEIGHT } from "@/design-system/tokens/elevation/overlay-geometry"
+import { OVERLAY_AVAILABLE_HEIGHT, OVERLAY_LIST_MAX_HEIGHT, capHeight } from "@/design-system/tokens/elevation/overlay-geometry"
 import { CircularProgress } from "@/design-system/components/CircularProgress/circular-progress"
 import { RowSizeProvider, useRowSize } from "@/design-system/patterns/element-anatomy/item-anatomy"
 import { dispatchRelayedKey, markPointerGrab, useCursorMover } from "@/design-system/hooks/use-input-modality"
@@ -454,10 +454,24 @@ CommandInput.displayName = CommandPrimitive.Input.displayName
  *
  * 跨 DS 一致:DataTable / Sheet / Sidebar / DropdownMenu / Command 皆走 ScrollArea。
  */
+interface CommandListProps extends React.ComponentPropsWithoutRef<typeof CommandPrimitive.List> {
+  /**
+   * 清單捲動區的高度上限(2026-11-24,總帳 C9;契約同 `DropdownMenuContent` / `PopoverContent` 的 `maxHeight`):實際上限 =
+   * `capHeight(可用高, maxHeight)` —— 傳再大也不超出可用高。不傳 = 預設上限:半列原則(N.5 列、最後一列切在半列;
+   * `tokens/elevation/overlay-geometry.ts` `OVERLAY_LIST_MAX_HEIGHT.single`,依清單列的 `size`;`command.spec.md`「清單捲動上限(半列原則)」)。
+   * 列帶說明(兩行)的清單由使用端傳 `OVERLAY_LIST_MAX_HEIGHT.described[size]`(SelectMenu 的選項有說明時自己傳)。
+   * 傳了就取代預設(可以比預設高或矮)。數字 = px;字串照原樣(`60svh` / `calc(100svh - 120px)`)。
+   * SelectMenu / Select / Combobox / PeoplePicker 的 `maxHeight` 都轉到這裡。
+   */
+  maxHeight?: number | string
+}
+
 const CommandList = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.List>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive.List>
->(({ className, label = '選項', ...props }, ref) => ( // i18n-allow: DS 預設 listbox 名稱(cmdk 預設是英文 Suggestions)
+  CommandListProps
+>(({ className, label = '選項', maxHeight, ...props }, ref) => { // i18n-allow: DS 預設 listbox 名稱(cmdk 預設是英文 Suggestions)
+  const rowSize = useRowSize('md')
+  return (
   /* @story-baseline: overlay-surface.spec.md#Viewport-aware-scroll-chain-invariant(M25 SSOT owner)
       owner spec: overlay-surface.spec.md「SurfaceBody」+ overlay-chrome-sizing.spec.md「為什麼 SurfaceHeader 是 padding-based」(2026-09-27 拆檔前 = overlay-surface.spec.md:34/53/347-362)—— 「浮層 body 永遠 flex-1 min-h-0 overflow-y-auto;
         中間 wrapper 都必 flex flex-col h-full min-h-0;viewport 太小 body 內壓縮捲動」。
@@ -465,18 +479,19 @@ const CommandList = React.forwardRef<
         (max-h=available-height)內撐破外殼、底部選項被裁(320px viewport 實測 bottom 425 > 320 溢出)。
       修: 加 flex-1 min-h-0(對齊 M25 canonical + HoverCard/Popover),max-h-300 降為上限。Command root 已
         `flex h-full flex-col`(command.tsx#Command)= chain 完整;非 flex 容器內 flex-1 不起作用(放在任何容器都安全【AI 推導 2026-11-16:讀行為推出來的理由,原文只寫了相容】)。
-      清單捲動上限(300px):值住 tokens/elevation/overlay-geometry.ts 的 OVERLAY_LIST_MAX_HEIGHT(2026-11-24 從這一行的
-        `max-h-[18.75rem]` 搬過去,浮層高度上限收成一份;command.spec.md「邊界案例」清單捲動上限;只有 CommandList 在讀、
-        不隨密度切換 → 不開 token,2026-11-11 token「3全收」從 uiSize.css 收回)。Tailwind class 讀不到 TS 常數 → inline style。 */
+      清單捲動上限:capHeight(可用高, maxHeight ?? 半列預設)—— 預設住 tokens/elevation/overlay-geometry.ts 的 OVERLAY_LIST_MAX_HEIGHT
+        (2026-11-24 C9:從寫死 300px 改成半列原則,依列的 size;command.spec.md「清單捲動上限(半列原則)」;只有 CommandList 在讀 →
+        不開 token,2026-11-11 token「3全收」從 uiSize.css 收回)。Tailwind class 讀不到 TS 常數 → inline style。 */
   // 邊緣標記(2026-11-17 A102):選項清單無框、上下留白由群組自帶(MenuGroup py-2)= unbounded region(layoutSpace.spec.md「region 子分類」);
   // 放在會自己給上下內距的容器(data-layout-body)最後時,容器底自動 = 0(規則 4 第 3 列;tokens/layoutSpace/layoutSpace.css)。
-  <ScrollArea className="flex-1 min-h-0" style={{ maxHeight: OVERLAY_LIST_MAX_HEIGHT }} data-layout-region="unbounded">
+  <ScrollArea className="flex-1 min-h-0" style={{ maxHeight: capHeight(OVERLAY_AVAILABLE_HEIGHT, maxHeight ?? OVERLAY_LIST_MAX_HEIGHT.single[rowSize]) }} data-layout-region="unbounded">
     {/* @focus-suppress A — 同 Command 根:cmdk 1.1.1 在第一次方向鍵後把 DOM 焦點搬到 list
         (`document.getElementById(listId).focus()`),殼同樣不該畫框;承擔者:CommandItem 的
         data-[selected=true]:focus-ring-inset(下方 CommandItem 的 cursorByKeyboard 分支;原寫行號 331 已過期)。 */}
     <CommandPrimitive.List ref={ref} label={label} className={cn("overflow-x-hidden outline-none", className)} {...props} />
   </ScrollArea>
-))
+  )
+})
 
 CommandList.displayName = CommandPrimitive.List.displayName
 

@@ -183,6 +183,7 @@ Keyboard focus 在移除後依序交給下一個可見 Tag remove button；沒�
 
 ## 邊界案例
 
+- **清單的高度上限(`maxHeight`,2026-11-24)**:預設半列原則(最後一列切在半列),傳 `maxHeight`(數字 px 或字串)取代預設、不超出可用高;轉給 SelectMenu(`../SelectMenu/select-menu.spec.md`「清單的高度上限」),理由與公式住 `../Command/command.spec.md`「清單捲動上限(半列原則)」。
 - **Disabled**:Field SSOT own(`Field/field-controls.spec.md`)。trigger / tag dismiss / 搜尋 input 全部 disabled,token 走 M24 state precedence(`text-fg-disabled`);已選 Tag 的 dismiss X 自動隱藏(見「readonly / disabled 的 Tag」段)。
 - **Loading**:已 codify(見「Loading」段):`loading` = 值處理中(觸發點轉圈)/ `optionsLoading` = 選項在抓(只在選單內)。
 - **Empty(no search results)**:dropdown body 內渲 `emptyText`(Combobox 暴露 `emptyText` prop 並 forward 給 SelectMenu;未傳時走 SelectMenu 預設「沒有選項」;渲成一列 `MenuItem message`,與 1 筆結果等高、無最小高度、不用 `Empty`,SSOT `select-menu.spec.md`「Empty state」)——只在真的沒有任何可選時;遠端搜尋還沒打字是建議群組或「輸入關鍵字搜尋」提示列(`select-menu.spec.md`「Suggestions」)。Combobox **暴露 `creatable` / `onCreate` / `createLabel` prop 並 forward 給 SelectMenu**(2026-07-18 user 拍板;搜尋非空且無完全同名既有選項時,dropdown 顯 create row `Plus + createLabel`)——邏輯/顯示/互動 SSOT 住在 SelectMenu(`select-menu.tsx#showCreate` 顯隱 / render)。(2026-09-18 起不分裝置皆生效;原本只在桌機路徑生效的限制隨原生路徑一起移除。)對齊 Ant tags / react-select Creatable([來源](https://github.com/JedWatson/react-select/blob/4b6948078684bee394e09dd8e7cdc2d7f89e0fad/packages/react-select/src/useCreatable.ts#L82-L95)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/select/index.en-US.md#L94))。

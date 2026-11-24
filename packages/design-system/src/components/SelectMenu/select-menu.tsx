@@ -18,7 +18,7 @@ import { useCompositeFieldBlur, useOwnTreeEvents } from '@/design-system/lib/com
 import { defaultFilter } from 'cmdk'
 import { SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import { Button } from '@/design-system/components/Button/button'
-import { OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-geometry'
+import { OVERLAY_LIST_MAX_HEIGHT, OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-geometry'
 import { RowSizeProvider } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { applySelectAll, clearSelection } from '@/design-system/lib/multi-select-ordering'
 // 觸發欄位 ↔ 清單的鍵盤橋接(方向鍵轉送 / aria-activedescendant / 開著按 Tab / 不可打字單選的空白鍵)住在 select-menu-keyboard.ts
@@ -184,6 +184,13 @@ export interface SelectMenuProps {
    *(2026-11-17 A95;跟表格三個工具面板同一套,props-naming.md「尺寸參數」第 8 條。之前是整個取代預設下限)。
    */
   minWidth?: number
+  /**
+   * 清單的高度上限(2026-11-24,總帳 C9;契約同 `DropdownMenuContent` 的 `maxHeight`,公式 `capHeight`):實際上限 = min(可用高, 此值),
+   * 傳再大也不超出可用高。不傳 = 預設上限:半列原則(N.5 列、最後一列切在半列,依 `size`;選項帶 `description` 時用兩行列的列高;
+   * `../Command/command.spec.md`「清單捲動上限(半列原則)」)。
+   * 夾的是清單捲動區(轉給 `CommandList`);搜尋框、全選頁尾在清單外,不算在這個上限裡。數字 = px,字串照原樣。
+   */
+  maxHeight?: number | string
 
   /** 受控 open 狀態 */
   open?: boolean
@@ -261,6 +268,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   size = 'md',
   align = 'start',
   minWidth,
+  maxHeight,
   open: controlledOpen,
   defaultOpen,
   onOpenChange: controlledOnOpenChange,
@@ -477,6 +485,14 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
     return !options.some((o) => o.label.toLowerCase() === q) && !(isRemote && (suggestions ?? []).some((o) => o.label.toLowerCase() === q))
   }, [creatable, search, options, suggestions, isRemote, optionsLoading])
 
+  // ── 清單高度上限(2026-11-24 C9):使用端的 maxHeight 優先;沒傳時,選項帶說明(兩行列,例:PeoplePicker 的人名 + 信箱)
+  // 用兩行列的半列預設,其餘交給 CommandList 自己的單行列預設(tokens/elevation/overlay-geometry.ts OVERLAY_LIST_MAX_HEIGHT)
+  const describedRows = React.useMemo(
+    () => options.some((o) => !!o.description) || (suggestions ?? []).some((o) => !!o.description),
+    [options, suggestions],
+  )
+  const listMaxHeight = maxHeight ?? (describedRows ? OVERLAY_LIST_MAX_HEIGHT.described[size] : undefined)
+
   // ── Grouping ──
   // 沒填 group 的項目歸預設群組;預設群組在「建議」情境下必有標題(suggestionsLabel),其他情境無標題。
   const groupedOptions = React.useMemo(() => {
@@ -644,6 +660,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
           </CommandEmpty>
           <CommandList
             className="relative"
+            maxHeight={listMaxHeight}
             aria-busy={optionsLoading || undefined}
             // 2026-07-06 A11y:cmdk List 的 aria-label 由其 `label` prop 渲染(內部 spread 後 override,
             // 直接傳 aria-label 會被 cmdk default "Suggestions" 蓋掉 silent 失效)— 必走 label prop。

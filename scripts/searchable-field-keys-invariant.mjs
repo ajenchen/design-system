@@ -32,7 +32,7 @@
  *        不是抽籤 —— 量的是 DOM 狀態與幾何(activeElement、aria-expanded、data-selected、getBoundingClientRect、computed color),每一步之後都等版面靜止與焦點穩定再讀。
  *
  * F3 各列(2026-10-28,r-F3 研究查到的三個缺陷 + 一個老缺陷,FL-f3):
- *       F3P 依內容寬 + 空值 × 欄位內搜尋:欄寬 = 不可搜尋的同一欄(提示字整句放得下;combobox.spec.md:191 / field-controls.spec.md:212;修前量尺只有插入點寬,53.8 vs 89.13 / 120px);
+ *       F3P 依內容寬 + 空值 × 欄位內搜尋:欄寬 = 不可搜尋的同一欄(提示字整句放得下;combobox.spec.md:192 / field-controls.spec.md:212;修前量尺只有插入點寬,53.8 vs 89.13 / 120px);
  *       F3E 換行 × 每人一顆標籤撐滿一列 × 欄位內搜尋:關著的欄高 = 不可搜尋的同一欄(combobox.spec.md:146「空的時候不會自己佔一整列」;修前多一列,116 vs 88);
  *       F3K 頭像堆疊 × 依內容寬 × 編輯欄位:有幾個人就畫幾個頭像、沒有 +N(field-controls.spec.md:212;修前 2 人只剩「+2」、6 人只畫 4 顆);
  *       F3V 換行 × 空值:提示字中線與單行欄位同高(field.spec.md:147;修前偏上 1.5px)。

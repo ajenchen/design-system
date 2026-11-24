@@ -185,6 +185,11 @@ export interface ComboboxProps {
   clearable?: boolean
   /** 啟用搜尋 */
   searchable?: boolean
+  /**
+   * 選單清單的高度上限(轉給 SelectMenu → CommandList,2026-11-24 總帳 C9):實際上限 = min(可用高, 此值),傳再大也不超出可用高;
+   * 不傳 = 半列原則的預設上限(`../Command/command.spec.md`「清單捲動上限(半列原則)」)。數字 = px,字串照原樣。
+   */
+  maxHeight?: number | string
   /** 「這個值」在讀取 / 驗證 / 儲存(Field 家族 `loading` SSOT,`field-controls.spec.md`「Loading state」;2026-09-09 user 拍板
    *  收窄語意,與 Input `loading` 同義):觸發點右側、ChevronDown 左邊放列圖示尺寸的 CircularProgress(react-select / Atlassian
    *  的順序:清除 → 轉圈 → 箭頭)+ 觸發點 `aria-busy`;選單照常可開、可選。**不是**選項載入 —— 選項載入用 `optionsLoading`。 */
@@ -473,7 +478,7 @@ const toMenuOption = (opt: ComboboxOption): SelectMenuOption => ({
 function CustomCombobox({
   mode, variant: variantProp, width, error: errorProp = false, size = 'md', options, value = [], onChange,
   placeholder = '選擇…', // i18n-allow: DS default
-  className, disabled: disabledProp, wrap = false, clearable = false, searchable = false, loading, optionsLoading, searchIn = 'menu', filterOption = true, onSearchChange,
+  className, disabled: disabledProp, wrap = false, clearable = false, searchable = false, maxHeight, loading, optionsLoading, searchIn = 'menu', filterOption = true, onSearchChange,
   suggestions, suggestionsLabel, searchHintText,
   searchPlaceholder = '搜尋…', // i18n-allow: DS default
   searchAriaLabel = '搜尋選項', // i18n-allow: DS default
@@ -802,7 +807,7 @@ function CustomCombobox({
             style={searchCellIdle ? { marginLeft: -tagAreaGap } : undefined}>
             {/* 量尺:與輸入框同一格、同字級(兩者都繼承欄位字型),高 0 不佔列高;justify-self-start = 寬就是字寬(findInlineSearchMirror 找它)。
                 空值、還沒打字時量尺放提示字本身:依內容寬的欄位才放得下整句提示字(field-controls.spec.md「寬度軸」;
-                combobox.spec.md:191「字級、顏色、左緣與上一條的 span 逐像素相同」;修前量尺只有一個插入點寬,提示字被切,r-F3 缺陷 P) */}
+                combobox.spec.md:192「字級、顏色、左緣與上一條的 span 逐像素相同」;修前量尺只有一個插入點寬,提示字被切,r-F3 缺陷 P) */}
             <span aria-hidden {...{ [INLINE_SEARCH_MIRROR_ATTR]: '' }} className="invisible col-start-1 row-start-1 justify-self-start h-0 whitespace-pre pointer-events-none">{search || hasTags || isUnrestrictedOnly ? `${search} ` : placeholder}</span>
             {/* 只選「不限」× 欄位內搜尋框(2026-10-07 待辦總帳 K4):照單選欄位的讓位做法(select.tsx `showSelectedOverlay`)——「不限」是純文字、沒有框,
                 不和打的關鍵字並排(2026-10-01 起畫成「不限 fo」,同一個欄位裡值與關鍵字同字級同色、只隔 4px)。
@@ -911,6 +916,7 @@ function CustomCombobox({
       searchPlaceholder={searchPlaceholder}
       searchAriaLabel={searchAriaLabel}
       size={size}
+      maxHeight={maxHeight}
       open={open}
       onOpenChange={(o) => { setOpen(o); onOpenChange?.(o) }}
       // 2026-05-12 Q3 fix(user 抓到 inline-searchable 開浮層應出現 cursor)— 跟 Select line 550

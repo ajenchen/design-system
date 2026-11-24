@@ -5,7 +5,7 @@
 // 欄位顯示面板 2026-11-15 併入同一條。
 // 跑法與判準的單一實作住 scripts/lib/gate-selftest-meta.mjs。
 // 對照組只跑第 0 片(2026-11-15):完整 --selftest 本機約 10 分鐘,夜間 harness core lane 撐不住;
-// 兩片在每次 PR 的 CI(verify-browser-nested-dismiss 兩格 --shard)都會跑完,這裡只需證明「量具會紅」。
+// 各片在每次 PR 的 CI(verify-browser-nested-dismiss 每一格 --shard;2026-11-24 起五格)都會跑完,這裡只需證明「量具會紅」。
 import { runGateSelftestMeta } from './lib/gate-selftest-meta.mjs'
 
 runGateSelftestMeta('scripts/data-table-panel-reset-clear-invariant.mjs', { selftestArgs: ['--selftest', '--shard=0/2'] })

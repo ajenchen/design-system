@@ -14,7 +14,8 @@ import {
   type RowSize,
 } from "@/design-system/patterns/element-anatomy/item-anatomy"
 import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
-import { OverlayAnchorScope, useRegisterOverlayNode, useTriggerRegionDensity } from "@/design-system/lib/overlay-density"
+import { OverlayAnchorScope, regionSourceNode, useOverlayAnchorRegistry, useRegisterOverlayNode, useTriggerRegionDensity } from "@/design-system/lib/overlay-density"
+import { useOverlayLayer } from "@/design-system/lib/overlay-nesting"
 import { markPointerGrab, useCursorMover } from '@/design-system/hooks/use-input-modality'
 // 鍵盤接線(開關狀態 / Tab 離開 / 子選單 Esc)住在 dropdown-menu-keyboard.ts —— 本檔只留視覺層(2026-09-26 拆檔,見該檔檔頭)
 import {
@@ -255,8 +256,11 @@ const DropdownMenuContent = React.forwardRef<
 >(({ className, size = 'md', sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, align = 'start', minWidth, maxHeight, children, onKeyDown, onCloseAutoFocus, ...props }, ref) => {
   // 記下根內容(觸發點是透明錨點時靠它的 id 找開啟者)+ 開著按 Tab(B11)+ Tab 離開時不自動還焦點(dropdown-menu-keyboard.ts)
   const menuKeyboard = useMenuContentKeyboard(ref, onKeyDown, onCloseAutoFocus)
+  // 登記進浮層疊(lib/overlay-nesting.ts):選單是從觸發鈕開出來的一層 —— 觸發鈕住在另一層浮層裡時(清單旁的詳情標題列的「⋯」),點選單不關那一層
+  const anchorRegistry = useOverlayAnchorRegistry("dropdown-menu")
+  const layerRef = useOverlayLayer<React.ElementRef<typeof DropdownMenuPrimitive.Content>>(() => regionSourceNode(anchorRegistry), menuKeyboard.ref)
   // 觸發點那一區的兩軸檔位(lib/overlay-density.tsx;內容根元素掛上去才讀、關著不讀)
-  const { attrs: regionDensity, ref: contentRef } = useTriggerRegionDensity("dropdown-menu", menuKeyboard.ref)
+  const { attrs: regionDensity, ref: contentRef } = useTriggerRegionDensity("dropdown-menu", layerRef)
   return (
   <DropdownMenuPrimitive.Portal>
     <DropdownMenuPrimitive.Content
@@ -314,9 +318,14 @@ const DropdownMenuSubContent = React.forwardRef<
   const size = useRowSize()
   // 子選單裡 Tab 收起全部層(B11)、Esc 只關這一層(B10)—— dropdown-menu-keyboard.ts
   const subKeyboard = useSubMenuContentKeyboard(onKeyDown, onEscapeKeyDown)
+  // 登記進浮層疊(lib/overlay-nesting.ts):子選單的錨點 = 它的 SubTrigger(Radix 寫在子選單上的 aria-labelledby)
+  const layerRef = useOverlayLayer<React.ElementRef<typeof DropdownMenuPrimitive.SubContent>>((node) => {
+    const id = node.getAttribute('aria-labelledby')
+    return id ? node.ownerDocument.getElementById(id) : null
+  }, ref)
   return (
     <DropdownMenuPrimitive.SubContent
-      ref={ref}
+      ref={layerRef}
       sideOffset={OVERLAY_SIDE_OFFSET}
       // 高度上限與捲動同主選單(2026-11-24;elevation.spec.md「浮層高度上限」):修前子選單沒有任何上限、也沒有 ScrollArea,
       // 比可用高還高時超出視窗被切掉而且捲不到。現在夾到可用高、超過就在 ScrollArea 裡捲;

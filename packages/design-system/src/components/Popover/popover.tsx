@@ -7,12 +7,13 @@ import { cn } from "@/lib/utils"
 import { SurfaceHeader, SurfaceBody, SurfaceFooter, COMPACT_HEADER_SLOT, type SurfaceHeaderProps } from "@/design-system/patterns/overlay-surface/overlay-surface"
 import { TruncatedText } from "@/design-system/patterns/element-anatomy/truncated-text"
 import { Button } from "@/design-system/components/Button/button"
-import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING, OVERLAY_HIDE_WHEN_DETACHED, OVERLAY_VIEWPORT_MAX_WIDTH, OVERLAY_AVAILABLE_HEIGHT, capHeight } from "@/design-system/tokens/elevation/overlay-geometry"
+import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING, OVERLAY_HIDE_WHEN_DETACHED, OVERLAY_VIEWPORT_MAX_WIDTH, OVERLAY_AVAILABLE_HEIGHT, OVERLAY_COVER_AVAILABLE_HEIGHT, capHeight, coverAnchorPosition } from "@/design-system/tokens/elevation/overlay-geometry"
 import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
 import { withOverlayEscape } from "@/design-system/lib/overlay-escape"
 import { useExitStartFocusReturn } from "@/design-system/lib/overlay-focus-return"
 import { useI18n } from "@/design-system/lib/i18n/i18n-context"
-import { OverlayAnchorScope, useOverlayAnchorRegistry, useRegisterOverlayNode, useRegisterVirtualAnchor, useTriggerRegionDensity } from "@/design-system/lib/overlay-density"
+import { OverlayAnchorScope, elementOfVirtual, regionSourceNode, useOverlayAnchorRegistry, useRegisterOverlayNode, useRegisterVirtualAnchor, useTriggerRegionDensity } from "@/design-system/lib/overlay-density"
+import { isInChildLayer, useOverlayLayer } from "@/design-system/lib/overlay-nesting"
 
 /**
  * Popover — Radix Popover + 設計系統 token
@@ -57,14 +58,53 @@ const PopoverTrigger = React.forwardRef<
 })
 PopoverTrigger.displayName = PopoverPrimitive.Trigger.displayName
 
+// ── 蓋在錨點上(PopoverContent `coverAnchor`;2026-11-24,總帳 Q2b(定))──
+// Radix 只會把浮層貼在錨點某一側(side + align;floating-ui 的 offset / shift / flip),沒有「浮層中心 = 錨點中心」這種擺法。
+// 做法(POC 2026-11-24:6 種錨點位置 × 3 種內容高,18 / 18 中心與推回量誤差 0px;改用 Radix 預設的對照組 0 / 18):
+// consumer 給的 virtualRef 不直接交給 Radix,交的是下面這個**穩定的**虛擬錨點 —— floating-ui 每次算位置都呼叫它的
+// getBoundingClientRect(開啟、捲動、縮放視窗、浮層自己長高都會重算,`autoUpdate` 有觀察浮層尺寸):
+//   - 這一組的內容沒開 coverAnchor → 原樣回錨點的矩形(畫面與改前相同);
+//   - 開了 → 用「錨點當下的矩形 + 內容當下的尺寸 + 視窗」算出浮層左上角(`coverAnchorPosition`),回一個高 0 的矩形,
+//     PopoverContent 同時改成 side=bottom / align=start / 間距 0 / 不由 Radix 推回 —— 浮層左上角就落在算好的位置。
+//   - 錨點沒有版面(0×0)或整個在視窗外 → 回原矩形,讓 hideWhenDetached 照常藏起來,不把浮層推回畫面上一個看不到錨點的地方
+//     (同 overlay-geometry.ts OVERLAY_HIDE_WHEN_DETACHED:沒有版面時量到的數字不代表任何事)。
+// contextElement = 錨點真正的元素:floating-ui 用它找捲動祖先、裁切範圍(Floating UI「virtual elements」https://floating-ui.com/docs/virtual-elements )。
+type CoverAwareAnchor = { getBoundingClientRect: () => DOMRect; readonly contextElement: Element | undefined }
+
+function useCoverAwareAnchor(virtualRef: React.RefObject<unknown> | undefined, registry: ReturnType<typeof useOverlayAnchorRegistry>) {
+  const latest = React.useRef(virtualRef)
+  latest.current = virtualRef
+  const stable = React.useRef<{ current: CoverAwareAnchor } | null>(null)
+  if (!stable.current) {
+    const source = () => latest.current?.current as { getBoundingClientRect?: () => DOMRect } | null | undefined
+    stable.current = { current: {
+      get contextElement() { return elementOfVirtual(source()) ?? undefined },
+      getBoundingClientRect() {
+        const rect = source()?.getBoundingClientRect?.() ?? new DOMRect()
+        const content = registry?.coverContent.current
+        if (!content?.isConnected) return rect
+        const root = content.ownerDocument.documentElement
+        const viewport = { width: root.clientWidth, height: root.clientHeight }
+        const detached = (rect.width === 0 && rect.height === 0) || rect.bottom <= 0 || rect.right <= 0 || rect.top >= viewport.height || rect.left >= viewport.width
+        if (detached) return rect
+        const { x, y } = coverAnchorPosition(rect, { width: content.offsetWidth, height: content.offsetHeight }, viewport)
+        return new DOMRect(x, y, rect.width, 0)
+      },
+    } }
+  }
+  return virtualRef ? stable.current : undefined
+}
+
 const PopoverAnchor = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Anchor>,
   React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Anchor>
->((props, ref) => {
+>(({ virtualRef, ...props }, ref) => {
   const composedRef = useRegisterOverlayNode("popover", "anchor", ref)
   // virtualRef 時 Radix 不畫元素(callback ref 拿不到節點)→ 登記 ref 本身,密度改從它指到的元素那一區讀
-  useRegisterVirtualAnchor("popover", props.virtualRef)
-  return <PopoverPrimitive.Anchor ref={composedRef} {...props} />
+  useRegisterVirtualAnchor("popover", virtualRef)
+  // 交給 Radix 的是穩定的虛擬錨點(見上方「蓋在錨點上」);沒開 coverAnchor 時它原樣回 virtualRef 指到的那個東西的矩形
+  const radixVirtualRef = useCoverAwareAnchor(virtualRef, useOverlayAnchorRegistry("popover"))
+  return <PopoverPrimitive.Anchor ref={composedRef} {...props} virtualRef={radixVirtualRef as React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Anchor>["virtualRef"]} />
 })
 PopoverAnchor.displayName = PopoverPrimitive.Anchor.displayName
 const PopoverClose = PopoverPrimitive.Close
@@ -120,12 +160,23 @@ interface PopoverContentProps extends React.ComponentPropsWithoutRef<typeof Popo
    * 數字 = px;字串照原樣(`60svh` / `calc(100svh - 120px)`)。公式住 `tokens/elevation/overlay-geometry.ts` 的 `capHeight`。
    */
   maxHeight?: number | string
+  /**
+   * 蓋在錨點上(2026-11-24;「展開型」,`popover.spec.md`「蓋在錨點上(展開型)」):浮層中心 = 錨點中心(水平 + 垂直),
+   * 碰到視窗邊推回、離邊 `collisionPadding` 8(`tokens/elevation/overlay-geometry.ts` `coverAnchorPosition`);
+   * 高度上限的可用高改成「視窗高 − 上下各 8」(`OVERLAY_COVER_AVAILABLE_HEIGHT`),`maxHeight` 照樣只能往更矮調。
+   * 錨點要用 `<PopoverAnchor virtualRef>` 給(例:月曆的那一格);開著時 `side` / `align` / `sideOffset` / `alignOffset` /
+   * `avoidCollisions` / `collisionPadding` 不作用(位置由錨點與視窗決定)。用途:點格子裡的「+N」展開當天全部事件。
+   */
+  coverAnchor?: boolean
 }
+
+/** coverAnchor 時交給 Radix 的擺法:浮層左上角 = 虛擬錨點的左下角(= 算好的位置),推回由我們算(見 PopoverAnchor 上方「蓋在錨點上」) */
+const COVER_PLACEMENT = { side: "bottom", align: "start", sideOffset: 0, alignOffset: 0, avoidCollisions: false, collisionPadding: 0 } as const
 
 const PopoverContent = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Content>,
   PopoverContentProps
->(({ className, style, width, maxHeight, align = "center", sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, onOpenAutoFocus, onCloseAutoFocus, onInteractOutside, onEscapeKeyDown, "aria-label": ariaLabel, "aria-labelledby": ariaLabelledBy, ...props }, ref) => {
+>(({ className, style, width, maxHeight, coverAnchor = false, align = "center", sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, onOpenAutoFocus, onCloseAutoFocus, onInteractOutside, onEscapeKeyDown, "aria-label": ariaLabel, "aria-labelledby": ariaLabelledBy, ...props }, ref) => {
   const titleId = React.useId()
   const [hasTitle, setHasTitle] = React.useState(false)
   const titleContext = React.useMemo<PopoverTitleContextValue>(
@@ -150,12 +201,25 @@ const PopoverContent = React.forwardRef<
     },
   })
   const attachExitFocus = exitFocus.ref
+  // 這一層登記進浮層疊(lib/overlay-nesting.ts):錨點在這一層裡、比這一層晚開的另一層 = 從這一層開出來的,點它不關這一層(下方 onInteractOutside)
+  const attachLayer = useOverlayLayer<HTMLDivElement>(() => regionSourceNode(anchorRegistry))
+  const coverRef = React.useRef(coverAnchor)
+  coverRef.current = coverAnchor
   const innerRef = React.useCallback((node: HTMLDivElement | null) => {
     contentRef.current = node
     attachExitFocus(node)
+    attachLayer(node)
+    // 蓋在錨點上:PopoverAnchor 的虛擬錨點在定位計算的那一刻讀這個節點的尺寸(見 PopoverAnchor 上方「蓋在錨點上」)
+    if (anchorRegistry) anchorRegistry.coverContent.current = node && coverRef.current ? node : null
     if (typeof ref === 'function') ref(node)
     else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
-  }, [ref, attachExitFocus])
+  }, [ref, attachExitFocus, attachLayer, anchorRegistry])
+  // 開發期提醒:coverAnchor 的位置由 PopoverAnchor 的虛擬錨點算,沒有它就只是一般擺法(Anchor 的登記在 layout effect,這裡讀得到)
+  React.useEffect(() => {
+    if (process.env.NODE_ENV !== 'production' && coverAnchor && anchorRegistry && !anchorRegistry.virtualAnchor.current) {
+      console.warn('[PopoverContent] coverAnchor 要用 <PopoverAnchor virtualRef> 指定錨點;目前沒有,浮層照一般擺法貼在觸發點旁。')
+    }
+  }, [coverAnchor, anchorRegistry])
   // 觸發點那一區的兩軸檔位(lib/overlay-density.tsx;內容根元素掛上去才讀、關著不讀);版面間距那一軸下面再鎖回 md
   const { attrs: regionDensity, ref: composedRef } = useTriggerRegionDensity("popover", innerRef)
   // Provider 必須包在 Portal **外面**(2026-10-13,待辦總帳 T11):Radix PopoverPortal 自己有一層 Presence
@@ -183,7 +247,12 @@ const PopoverContent = React.forwardRef<
           onOpenAutoFocus={(e) => { interactedOutsideRef.current = false; resolvedOpenAutoFocus(e) }}
           onCloseAutoFocus={(e) => { exitFocus.onCloseAutoFocus(e); interactedOutsideRef.current = false }}
           // 與 Radix 同一個判準記「互動過外面」:consumer 沒擋 = 記(Radix 自己的那一份不外露)
-          onInteractOutside={(e) => { onInteractOutside?.(e); if (!e.defaultPrevented) interactedOutsideRef.current = true }}
+          // 從這一層開出來的那一層(錨點在這一層裡、比這一層晚開;lib/overlay-nesting.ts)不算外面 —— 同 Radix 對元件樹裡的子孫,不轉呼叫 consumer
+          onInteractOutside={(e) => {
+            if (isInChildLayer(contentRef.current, e.detail.originalEvent.target)) { e.preventDefault(); return }
+            onInteractOutside?.(e)
+            if (!e.defaultPrevented) interactedOutsideRef.current = true
+          }}
           aria-label={ariaLabel}
           // accessible name 自動接線:consumer 自傳優先;無 aria-label 且有 PopoverTitle 註冊才掛 titleId
           aria-labelledby={ariaLabelledBy ?? (ariaLabel == null && hasTitle ? titleId : undefined)}
@@ -197,8 +266,11 @@ const PopoverContent = React.forwardRef<
             overlayMotion,
             // 何時播 / 收尾 / 減少動態由 overlayMotion 負責(tokens/motion/overlay-motion.ts);這裡只寫幾何
             "data-[state=closed]:fade-out-0 not-data-[state=closed]:fade-in-0 data-[state=closed]:zoom-out-95 not-data-[state=closed]:zoom-in-95",
-            "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-            "origin-[var(--radix-popover-content-transform-origin)]",
+            // 蓋在錨點上:沒有「從哪一側滑進來」,從自己的中心(= 錨點中心)縮放展開
+            coverAnchor
+              ? "origin-center"
+              : ["data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+                "origin-[var(--radix-popover-content-transform-origin)]"],
             // width="hug":排在預設 w-72 之後、consumer className 之前(tailwind-merge 取後者;consumer 自己的 w-* 仍可蓋)
             width === "hug" && "w-auto",
             className
@@ -206,11 +278,12 @@ const PopoverContent = React.forwardRef<
           // 高度上限 = capHeight(可用高, maxHeight)(tokens/elevation/overlay-geometry.ts;與 HoverCard / DropdownMenu / Dialog 同一條公式)。
           // width={數字}:inline style 勝過 class 的預設 w-72;夾限與表格工具面板同一份(OVERLAY_VIEWPORT_MAX_WIDTH)。consumer 的 style 最後展開,仍可蓋
           style={{
-            maxHeight: capHeight(OVERLAY_AVAILABLE_HEIGHT, maxHeight),
+            maxHeight: capHeight(coverAnchor ? OVERLAY_COVER_AVAILABLE_HEIGHT : OVERLAY_AVAILABLE_HEIGHT, maxHeight),
             ...(typeof width === "number" ? { width: `${width}px`, maxWidth: OVERLAY_VIEWPORT_MAX_WIDTH } : null),
             ...style,
           }}
           {...props}
+          {...(coverAnchor ? COVER_PLACEMENT : null)}
           // 這一下 Esc 由誰處理(全 DS 一支,判準與出處住 lib/overlay-escape.ts withOverlayEscape):輸入法組字中不關;焦點所在控件宣告了自己還有一層
           // 且在這一層裡面(面板裡改過的欄位 / 鍵盤拖曳中的條件)→ 留給控件、不關;控件在外面(可打字的 DatePicker 欄位 + 它自己的日曆)→ 照舊關這一層
           onEscapeKeyDown={withOverlayEscape(onEscapeKeyDown, () => contentRef.current)}

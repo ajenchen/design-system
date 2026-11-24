@@ -142,6 +142,11 @@ export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElem
    */
   searchIn?: 'menu' | 'trigger'
   /**
+   * 選單清單的高度上限(單選轉給 Select、多選轉給 Combobox,最後到 CommandList;2026-11-24 總帳 C9):實際上限 = min(可用高, 此值),
+   * 傳再大也不超出可用高;不傳 = 半列原則的預設上限(`../Command/command.spec.md`「清單捲動上限(半列原則)」)。數字 = px,字串照原樣。
+   */
+  maxHeight?: number | string
+  /**
    * 一鍵清空(2026-08-05):X 在 ChevronDown 左,family SSOT → field-controls.spec.md「下拉箭頭」段。
    * 機械轉發 wrapped Select(single)/ Combobox(multi)的 `clearable` — X 渲染與清空行為 SSOT 在基座(Select「清除選取」/ Combobox
    * 「清除全部」,都是 Field 共用的那一顆 `../Field/field-clear-button.tsx` FieldClearButton),本 wrapper 不另 render。何時開的判準繼承 select.spec.md
@@ -189,6 +194,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   pillShowAvatar = true,
   pillWrap = true,
   searchIn = 'menu',
+  maxHeight,
   clearable = false,
   showDisplayEndIcon = false,
   'aria-label': ariaLabel,
@@ -416,6 +422,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         // 2026-05-12 Issue 4:placeholder = trigger empty。2026-07-04 Q4:emptyText 走 Select →
         // SelectMenu 接線(search-empty 語意,與 trigger-empty 分離)。
         emptyText={emptyText}
+        maxHeight={maxHeight}
         // `selectAllLabel` / `deselectAllLabel` 不傳:那是多選 footer「全選」鈕的字,單選沒有這顆鈕、Select 也不收這兩個 prop ——
         // 2026-11-13 前照傳,落進 Select 的 rest 被展開到觸發欄位的 div 上,React 各報一則「不認得的 prop」(下方 `rest as any` 讓型別檢查看不到)
         loading={loading}
@@ -475,6 +482,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         // emptyText 改傳 Combobox → SelectMenu emptyText(search-empty 真住所,菜單空狀態)。
         placeholder={placeholder}
         emptyText={emptyText}
+        maxHeight={maxHeight}
         wrap={pillWrap}
         defaultOpen={defaultOpen}
         onOpenChange={onOpenChange}
@@ -549,6 +557,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       // 2026-05-12 Stream C Issue 4(codex Q3):placeholder = trigger empty('請選擇人員');emptyText = search-empty(轉給 Combobox → SelectMenu)
       placeholder={placeholder}
       emptyText={emptyText}
+      maxHeight={maxHeight}
       wrap={false}
       defaultOpen={defaultOpen}
       onOpenChange={onOpenChange}

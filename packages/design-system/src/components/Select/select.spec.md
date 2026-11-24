@@ -321,7 +321,7 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 
 - **搜尋結果空**:dropdown 顯一列 `MenuItem message` 的 `emptyText`(預設「沒有選項」,可覆寫;與 1 筆結果等高、無最小高度、不用 `Empty`)——只在真的沒有任何可選時;遠端搜尋還沒打字是建議群組或「輸入關鍵字搜尋」提示列,不是「沒有選項」。SSOT `select-menu.spec.md`「Empty state」「Suggestions」
 - **disabled 選項**:`option.disabled` forward 至 menu item——不可點選,鍵盤導覽自動跳過(cmdk `aria-disabled` 行為)
-- **大量選項**:選單固定最大高度內捲動(值住 `../../tokens/elevation/overlay-geometry.ts` 的 `OVERLAY_LIST_MAX_HEIGHT`,理由住 `../Command/command.spec.md`「邊界案例」清單捲動上限),無分頁 / 虛擬捲動——長清單開 `searchable`(見「Searchable 開啟判斷」)
+- **大量選項**:選單在高度上限內捲動 —— 預設半列原則(最後一列切在半列),`maxHeight`(數字 px 或字串)取代預設、不超出可用高(桌機;手機走原生 `<select>` 不適用;理由與公式住 `../Command/command.spec.md`「清單捲動上限(半列原則)」,參數轉給 `../SelectMenu/select-menu.spec.md`「清單的高度上限」),無分頁 / 虛擬捲動——長清單開 `searchable`(見「Searchable 開啟判斷」)
 - **空值**:無選擇時顯 placeholder;「無選擇是有效狀態」場景開 `clearable`(見「Clearable」)
 
 ---

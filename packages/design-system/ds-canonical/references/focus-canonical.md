@@ -393,7 +393,7 @@ Field 家族在此之上**額外**有欄位邊框轉 primary(`field-wrapper.tsx#
 ### 一個承擔者只能服務一個 tab stop
 
 判斷程序問「有沒有人畫」,但沒問「**畫的那一個分不分得出是誰**」。
-`combobox.tsx:667` 那種自己畫的情況沒問題(一個元素一個 tab stop),
+`combobox.tsx:672` 那種自己畫的情況沒問題(一個元素一個 tab stop),
 但 **DatePicker 的範圍模式**是兩顆 button 罩在同一圈欄位邊框裡 ——
 邊框只會說「焦點在這個欄位」,不會說「在起日還是迄日」。
 
@@ -413,7 +413,7 @@ DatePicker 自己早就有那個指示 —— 作用端下方一條主色粗線
 
 ### C 類為什麼是「從自己往上」而不是「往上」
 
-同一次對照又撞到第二面牆:`combobox.tsx:667`、`time-picker.tsx:391` 這兩行,
+同一次對照又撞到第二面牆:`combobox.tsx:672`、`time-picker.tsx:391` 這兩行,
 **元素本身就是那圈欄位外框**(`fieldWrapperStyles` + `focus-within:!border-primary`)。
 `:focus-within` 在元素自己取得焦點時也會命中,所以它們其實**有畫**,只是用邊框轉色而不是外框。
 寫成「往上找祖先」會把這種情況判成無承擔者 —— 但它是全 Field 家族觸發器的標準寫法。

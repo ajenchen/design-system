@@ -7,16 +7,22 @@
  *         P / H / D  PopoverContent、HoverCardContent、DropdownMenuContent:不傳 = 可用高;傳數字(px)/ 字串(rem)= 兩者取小;
  *                    傳得比可用高大 = 可用高(只能往更矮調)。實際高 = 上限(夾具內容一律比可用高還高)。
  *         S          DropdownMenuSubContent(修前沒有上限、也沒有捲動區):上限 = 可用高、底邊不超出視窗、捲到底最後一項看得到。
- *         L          CommandList 的捲動區上限 = 300px(值 = overlay-geometry.ts `OVERLAY_LIST_MAX_HEIGHT`,理由 = command.spec.md「清單捲動上限 300px」;根字級 16px),外殼不超過可用高。
+ *         L          CommandList 的捲動區(2026-11-24 起半列原則,總帳 C9;理由與 N = command.spec.md「清單捲動上限(半列原則)」;根字級 16px、一般密度):
+ *                    預設上限 = 群組上內距 8 + 列高 32 ×(N + 0.5),N = 9 → 312px;沒有群組標題的一組捲在頂端時,捲動區底邊剛好切在第 N + 1 列的一半(容差 1px);
+ *                    選項帶說明(兩行列,列高 49.6)時 N = 5 → 280.8px,同樣切在第 N + 1 列的一半(SelectMenu 自己帶的預設);
+ *                    傳 maxHeight = min(可用高, 此值)(取代預設、可比預設高);外殼不超過可用高。
  *         C          放在 Popover 裡的 ProfileCard 根元素上限 = 它讀到的可用高。
  *         量的是夾具裡真的渲染出來的浮層(getComputedStyle + getBoundingClientRect),期望值由本檔照規格算、不 import 元件常數 ——
  *         讀元件常數就成了自己驗自己(同 dialog-width-invariant)。
  *   紅: 任一格上限或實際高不符(容差 0.5px / 1px)。
- *       `--selftest` 在同一份夾具的打包檔上做四種破法,各自必須讓指定的格紅、而且破法真的套上了(改寫數 = 1):
+ *       `--selftest` 在同一份夾具的打包檔上做下列破法,各自必須讓指定的格紅、而且破法真的套上了(改寫數 = 1):
  *       (a) available  OVERLAY_AVAILABLE_HEIGHT 改成 100vh(不再讀 popper 的可用高)   → P/H/D 的「不傳」格、P-cap-over 與 C 紅
  *                      (S 不在其中:子選單沒有 collisionPadding、開在右側,可用高本來就 = 視窗高,改成 100vh 量不出差別 —— S 由 (d) 守)
  *       (b) cap        capHeight 不理會 cap(使用端的 maxHeight 失效)               → 所有「傳了 maxHeight」且比可用高小的格紅
- *       (c) list       OVERLAY_LIST_MAX_HEIGHT 改成 30rem                           → L 紅
+ *       (c) list       單行列的 N(OVERLAY_LIST_ROWS.single)從 9 改成 12            → L-list、L-list-half 紅
+ *       (c‴) list-described 兩行列的 N(OVERLAY_LIST_ROWS.described)從 5 改成 7    → L-list-described 紅
+ *       (c′) list-whole-row  半列公式少了那半列(最後一列切在列與列之間)          → L-list、L-list-half、L-list-described 紅
+ *       (c″) list-cap  CommandList 不理會 maxHeight 參數                           → L-list-cap、L-list-cap-tall 紅
  *       (d) submenu    DropdownMenuSubContent 拿掉 maxHeight(修前的缺口)           → S 紅
  *       任一種沒改寫到 / 改寫了卻沒紅 = 儀器失效,exit 1。
  *       夾具打包失敗、找不到建置 CSS、浮層沒開起來、可用高讀不到(NaN)= INSTRUMENT-FAIL(exit 1),不是通過也不是產品裁決;
@@ -40,8 +46,15 @@ const buildArg = process.argv.find((a) => a.startsWith('--build='))?.slice('--bu
 const STATIC = buildArg ? (isAbsolute(buildArg) ? buildArg : join(process.cwd(), buildArg)) : join(REPO, 'storybook-static')
 const FIXTURE_SOURCE = 'scripts/test-fixtures/overlay-height-cap/fixture.tsx'
 const VIEWPORT = { width: 1280, height: 600 }
-/** 規格值(command.spec.md「清單捲動上限 300px」)—— 刻意不 import 元件常數 */
-const LIST_CAP_PX = 300
+/** 規格值(command.spec.md「清單捲動上限(半列原則)」:N = 9、群組上內距 8、一般密度 md 列高 32)—— 刻意不 import 元件常數 */
+const LIST_ROWS = 9
+const LIST_TOP_PAD_PX = 8
+const LIST_ROW_PX = 32
+const LIST_CAP_PX = LIST_TOP_PAD_PX + LIST_ROW_PX * (LIST_ROWS + 0.5)
+/** 兩行列(選項帶說明):N = 5、列高 = 32 + 標籤與說明間距 2 + 說明一行 12 × 1.3 = 49.6 */
+const DESCRIBED_ROWS = 5
+const DESCRIBED_ROW_PX = 49.6
+const DESCRIBED_CAP_PX = LIST_TOP_PAD_PX + DESCRIBED_ROW_PX * (DESCRIBED_ROWS + 0.5)
 
 /** cap:undefined = 不傳;數字 = px;'<n>rem' = n × 根字級 */
 const CASES = [
@@ -55,7 +68,11 @@ const CASES = [
   { id: 'D-cap-px', q: { case: 'dropdown', cap: '150' }, cap: 150, what: 'DropdownMenuContent maxHeight={150} → min(可用高, 150)' },
   { id: 'D-cap-string', q: { case: 'dropdown', cap: '10rem' }, cap: '10rem', what: 'DropdownMenuContent maxHeight="10rem"(2026-11-24 起收字串)→ min(可用高, 160)' },
   { id: 'S-available', q: { case: 'submenu' }, sub: true, what: 'DropdownMenuSubContent 60 項 → 上限 = 可用高、底邊不出視窗、捲到底最後一項看得到' },
-  { id: 'L-list', q: { case: 'command-list' }, list: true, what: `CommandList 40 項 → 清單捲動區上限 ${LIST_CAP_PX}px、外殼不超過可用高` },
+  { id: 'L-list', q: { case: 'command-list' }, list: true, what: `CommandList 40 項(有群組標題)→ 清單捲動區上限 = 半列原則 ${LIST_CAP_PX}px、外殼不超過可用高` },
+  { id: 'L-list-half', q: { case: 'command-list-plain' }, list: true, half: true, what: `CommandList 40 項(沒有群組標題)→ 上限 ${LIST_CAP_PX}px、捲動區底邊切在第 ${LIST_ROWS + 1} 列的一半` },
+  { id: 'L-list-described', q: { case: 'select-menu-described' }, list: true, half: true, listCap: DESCRIBED_CAP_PX, rows: DESCRIBED_ROWS, rowPx: DESCRIBED_ROW_PX, what: `SelectMenu 40 個帶說明的選項(兩行列)→ 上限 ${DESCRIBED_CAP_PX}px、捲動區底邊切在第 ${DESCRIBED_ROWS + 1} 列的一半` },
+  { id: 'L-list-cap', q: { case: 'command-list', cap: '200' }, list: true, listCap: 200, what: 'CommandList maxHeight={200} → 清單上限 min(可用高, 200)(比預設矮)' },
+  { id: 'L-list-cap-tall', q: { case: 'command-list', cap: '400' }, list: true, listCap: 400, what: 'CommandList maxHeight={400} → 清單上限 min(可用高, 400)(比預設高:取代預設,不是再取小)' },
   { id: 'C-profile', q: { case: 'profile-card' }, standalone: true, what: 'Popover 裡的 ProfileCard 根元素上限 = 它讀到的可用高' },
 ]
 
@@ -63,7 +80,10 @@ const CASES = [
 const MUTATIONS = [
   { name: 'available', what: 'OVERLAY_AVAILABLE_HEIGHT 改成 100vh', re: /(OVERLAY_AVAILABLE_HEIGHT\d*\s*=\s*)"var\(--radix-popper-available-height, 100vh\)"/g, to: '$1"100vh"', mustFail: ['P-available', 'P-cap-over', 'H-available', 'D-available', 'C-profile'] },
   { name: 'cap', what: 'capHeight 不理會使用端的 cap', re: /(function capHeight\d*\((\w+), (\w+)\) \{\s*)if \(\3 == null \|\| \3 === ""\) return \2;/g, to: '$1return $2;', mustFail: ['P-cap-px', 'P-cap-string', 'H-cap', 'D-cap-px', 'D-cap-string'] },
-  { name: 'list', what: 'OVERLAY_LIST_MAX_HEIGHT 改成 30rem', re: /(OVERLAY_LIST_MAX_HEIGHT\d*\s*=\s*)"18\.75rem"/g, to: '$1"30rem"', mustFail: ['L-list'] },
+  { name: 'list', what: '單行列的 N 從 9 改成 12(OVERLAY_LIST_ROWS.single)', re: /(single: )9(, described: )/g, to: '$112$2', mustFail: ['L-list', 'L-list-half'] },
+  { name: 'list-described', what: '兩行列的 N 從 5 改成 7', re: /(described: )5( \})/g, to: '$17$2', mustFail: ['L-list-described'] },
+  { name: 'list-whole-row', what: '清單預設上限少了半列(最後一列切在列與列之間 —— 半列原則失效)', re: /( \+ \$\{rowHeight\d*\} \/ 2\))/g, to: ')', mustFail: ['L-list', 'L-list-half', 'L-list-described'] },
+  { name: 'list-cap', what: 'CommandList 不理會 maxHeight 參數(一律用預設)', re: /(capHeight\d*\(OVERLAY_AVAILABLE_HEIGHT\d*, )maxHeight\d* \?\? (OVERLAY_LIST_MAX_HEIGHT\d*\.single\[\w+\]\))/g, to: '$1$2', mustFail: ['L-list-cap', 'L-list-cap-tall'] },
   { name: 'submenu', what: 'DropdownMenuSubContent 拿掉 maxHeight(修前的缺口)', re: /(minWidth: 180), maxHeight: capHeight\d*\(OVERLAY_AVAILABLE_HEIGHT\d*\)/g, to: '$1', mustFail: ['S-available'] },
 ]
 
@@ -92,7 +112,9 @@ const MEASURE = () => {
   const list = (() => {
     const sa = c.querySelector('[cmdk-list]')?.closest('[data-layout-region="unbounded"]')
     if (!sa) return null
-    return { maxH: px(getComputedStyle(sa).maxHeight), h: sa.getBoundingClientRect().height }
+    const box = sa.getBoundingClientRect()
+    const rows = [...sa.querySelectorAll('[cmdk-item]')].map((el) => { const r = el.getBoundingClientRect(); return { top: r.top, bottom: r.bottom } })
+    return { maxH: px(getComputedStyle(sa).maxHeight), h: box.height, bottom: box.bottom, rows }
   })()
   const standalone = (() => {
     const p = document.getElementById('oh-standalone')
@@ -143,10 +165,23 @@ async function runAll(mutation = null) {
     const want = cp == null ? m.avail : Math.min(m.avail, cp)
     if (!near(m.maxH, want, 0.5)) problems.push(`上限 ${m.maxHraw} ≠ ${want.toFixed(1)}px(可用高 ${m.avail}${cp == null ? '' : `、maxHeight ${cp}px`})`)
     if (c.list) {
+      // 清單的上限:傳 maxHeight = min(可用高, 此值);不傳 = 半列原則(也經 capHeight,一般視窗裡可用高比它大)
+      const listWant = Math.min(m.avail, c.listCap ?? LIST_CAP_PX)
       if (!m.list) problems.push('找不到 CommandList 的捲動區')
       else {
-        if (!near(m.list.maxH, LIST_CAP_PX, 0.5)) problems.push(`清單捲動區上限 ${m.list.maxH}px ≠ ${LIST_CAP_PX}`)
-        if (!near(m.list.h, LIST_CAP_PX, 1)) problems.push(`清單捲動區實際高 ${m.list.h.toFixed(1)} ≠ ${LIST_CAP_PX}(40 項應被夾住)`)
+        if (!near(m.list.maxH, listWant, 0.5)) problems.push(`清單捲動區上限 ${m.list.maxH}px ≠ ${listWant}`)
+        if (!near(m.list.h, listWant, 1)) problems.push(`清單捲動區實際高 ${m.list.h.toFixed(1)} ≠ ${listWant}(40 項應被夾住)`)
+        if (c.half) {
+          // 捲在頂端時,跨過捲動區底邊的那一列:底邊 − 列頂 = 半列
+          const cut = m.list.rows.find((r) => r.top < m.list.bottom - 0.5 && r.bottom > m.list.bottom + 0.5)
+          if (!cut) problems.push(`捲動區底邊 ${m.list.bottom.toFixed(1)} 沒有切在任何一列中間(落在列與列之間)`)
+          else {
+            const idx = m.list.rows.indexOf(cut) + 1
+            const n = c.rows ?? LIST_ROWS
+            if (idx !== n + 1 || !near(m.list.bottom - cut.top, (cut.bottom - cut.top) / 2, 1)) problems.push(`捲動區底邊切在第 ${idx} 列的 ${(m.list.bottom - cut.top).toFixed(1)} / ${(cut.bottom - cut.top).toFixed(1)}px,應切在第 ${n + 1} 列的一半`)
+            if (!near(cut.bottom - cut.top, c.rowPx ?? LIST_ROW_PX, 0.5)) problems.push(`列高 ${(cut.bottom - cut.top).toFixed(1)} ≠ ${c.rowPx ?? LIST_ROW_PX}(一般密度 md)`)
+          }
+        }
       }
       if (m.h > m.avail + 0.5) problems.push(`外殼高 ${m.h.toFixed(1)} 超過可用高 ${m.avail}`)
     } else if (c.standalone) {
@@ -197,7 +232,7 @@ try {
       console.error(`\n✗ overlay-height-cap-invariant --selftest:${broken.length} 種破法沒有套上或沒讓該紅的格紅 —— 這支閘量的不是它宣稱的東西`)
       exitCode = 1
     } else {
-      printSelftestLine(`\n✓ overlay-height-cap-invariant --selftest:${MUTATIONS.length} 種破法(可用高改 100vh / 不理會 cap / 清單上限改 30rem / 子選單拿掉上限)各自讓指定的格紅`)
+      printSelftestLine(`\n✓ overlay-height-cap-invariant --selftest:${MUTATIONS.length} 種破法(可用高改 100vh / 不理會 cap / 單行列的 N 改 12 / 兩行列的 N 改 7 / 少了半列 / CommandList 不理會 maxHeight / 子選單拿掉上限)各自讓指定的格紅`)
     }
   }
 } catch (error) {
