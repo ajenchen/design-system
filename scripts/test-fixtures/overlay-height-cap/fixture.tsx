@@ -4,6 +4,7 @@
 //
 // 為什麼不是 story:要量的是「傳了 maxHeight 數字 / 字串 / 比可用高還大」與「子選單比可用高還高」這些邊界幾何,
 // DS 裡沒有任何範例傳 maxHeight(2026-11-24 盤點 0 處),寫成 story 等於拿量具的極端內容(60 列子選單)當範例。
+// 清單(CommandList)另量半列原則的預設上限與它的 maxHeight 參數(2026-11-24 C9)。
 // 一次只開一個浮層,參數走網址:?case=<CASES 的 id>。內容一律比可用高還高,才量得到「上限有沒有夾住」。
 // 夾具自己的版面用行內樣式:這個檔不在 Tailwind 的 @source 範圍裡,寫 class 不會產生樣式;DS 元件的樣式來自元件本身。
 import { createRoot } from 'react-dom/client'
@@ -12,6 +13,7 @@ import { HoverCard, HoverCardTrigger, HoverCardContent, HOVER_CARD_SURFACE_CLASS
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { Command, CommandList, CommandGroup, CommandItem } from '@/design-system/components/Command/command'
 import { ProfileCard } from '@/design-system/components/ProfileCard/profile-card'
+import { SelectMenu } from '@/design-system/components/SelectMenu/select-menu'
 import { TooltipProvider } from '@/design-system/components/Tooltip/tooltip'
 
 const params = new URLSearchParams(window.location.search)
@@ -72,17 +74,27 @@ function Case() {
         </DropdownMenu>
       )
     case 'command-list':
+    // command-list-plain:沒有群組標題的一組 —— 量「最後一列切在半列」(半列原則的公式以第一組沒有標題為準;command.spec.md「清單捲動上限(半列原則)」)
+    case 'command-list-plain':
       return (
         <Popover open>
           <PopoverTrigger style={triggerStyle}>指派給</PopoverTrigger>
           <PopoverContent id="oh-content" align="start">
             <Command>
-              <CommandList>
-                <CommandGroup heading="最近指派">{ISSUES.map((t) => <CommandItem key={t} value={t}>{t}</CommandItem>)}</CommandGroup>
+              <CommandList maxHeight={cap}>
+                <CommandGroup heading={kase === 'command-list' ? '最近指派' : undefined}>{ISSUES.map((t) => <CommandItem key={t} value={t}>{t}</CommandItem>)}</CommandGroup>
               </CommandList>
             </Command>
           </PopoverContent>
         </Popover>
+      )
+    // 選項帶說明(兩行列,同 PeoplePicker 的人名 + 信箱):SelectMenu 不傳 maxHeight 時用兩行列的半列預設
+    case 'select-menu-described':
+      return (
+        <SelectMenu defaultOpen contentId="oh-content" value={null} onValueChange={() => {}}
+          options={ISSUES.map((t, i) => ({ value: t, label: t, description: `owner${i + 1}@acme.example` }))}>
+          <button type="button" style={triggerStyle}>指派給</button>
+        </SelectMenu>
       )
     case 'profile-card':
       return (

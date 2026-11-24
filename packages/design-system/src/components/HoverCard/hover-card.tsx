@@ -9,7 +9,8 @@ import { cn } from "@/lib/utils"
 import { OVERLAY_SIDE_OFFSET, OVERLAY_HIDE_WHEN_DETACHED, OVERLAY_AVAILABLE_HEIGHT, capHeight } from "@/design-system/tokens/elevation/overlay-geometry"
 import { MOTION_DELAY_RICH_MS, MOTION_DELAY_CLOSE_MS } from "@/design-system/tokens/motion/motion"
 import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
-import { OverlayAnchorScope, useRegisterOverlayNode, useTriggerRegionDensity } from "@/design-system/lib/overlay-density"
+import { OverlayAnchorScope, regionSourceNode, useOverlayAnchorRegistry, useRegisterOverlayNode, useTriggerRegionDensity } from "@/design-system/lib/overlay-density"
+import { useOverlayLayer } from "@/design-system/lib/overlay-nesting"
 
 /**
  * HoverCard — hover 顯示可互動內容的浮層（行為 primitive）
@@ -72,8 +73,11 @@ const HoverCardContent = React.forwardRef<
   React.ElementRef<typeof HoverCardPrimitive.Content>,
   HoverCardContentProps
 >(({ className, style, maxHeight, align = "center", sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = 12, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, ...props }, ref) => {
+  // 登記進浮層疊(lib/overlay-nesting.ts):卡片是從觸發點開出來的一層 —— 觸發點住在另一層浮層裡時(清單旁的詳情裡的頭像),點卡片不關那一層
+  const anchorRegistry = useOverlayAnchorRegistry("hover-card")
+  const layerRef = useOverlayLayer<React.ElementRef<typeof HoverCardPrimitive.Content>>(() => regionSourceNode(anchorRegistry), ref)
   // 觸發點那一區的兩軸檔位(不鎖任何一軸;稽核 R7-04 甲:照 density.spec.md 預設「繼承」,只是來源從整頁改成觸發點那一區)
-  const { attrs: regionDensity, ref: contentRef } = useTriggerRegionDensity("hover-card", ref)
+  const { attrs: regionDensity, ref: contentRef } = useTriggerRegionDensity("hover-card", layerRef)
   return (
   // HoverCardPrimitive.Portal(2026-04-23):把 Content 搬到 `document.body`。
   // 不 Portal 時 Content 會 DOM-nested 在 trigger subtree,如 trigger 位於 OverflowIndicator
