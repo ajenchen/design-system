@@ -10,7 +10,7 @@ User 2026-05-15 + 2026-05-27 系列 directives codified per Rule-of-3 absorb pri
 
 ## Sub-rule 1 — 中文人話(原 propose_in_plain_chinese;2026-05-31 擴大至所有 reply)
 **Rule**:propose 給 user 拍板的決策必用中文具體人話講,禁術語 jargon。**2026-05-31 擴大**:不只 propose —— **所有給 user 的 reply / 清單 / summary** 都必繁中人話。User 看不懂英文,整段/整句英文 = reply 對 user 無效 = 白做。唯一例外:不可避免的識別碼(檔名 / token 名 / commit hash / 指令)出現時必緊跟中文解釋。工具輸出(CI log / git output)要引用 → 摘成中文重點,禁貼原始英文 dump。**做事中途插的文字 user 都看得到**(2026-11-15):只寫 user 需要知道的(發現的問題、要 user 決定的、做完的結果),一律中文;沒有必要的進度句不寫。user 原話「為何你他媽又一直回覆我英文？到底要我教你幾次？」「若是沒必要讓我知道的垃圾訊息，你評估真的是垃圾，那就不用讓我看到吧？」;機械 = 同一支 hook 的中途文字檢查。
-**Anchor(2026-05-31)**:user verbatim「你他媽問題後面一長串英文是怎樣?我看不懂英文」。
+**Anchor(2026-05-15 + 2026-05-31)**:05-15 user verbatim「要 user 決策必中文具體人話講(發生什麼/影響/選項 outcome)」(本條起點,下方 Format 照它排);05-31 user verbatim「你他媽問題後面一長串英文是怎樣?我看不懂英文」。
 **Anchor(2026-07-18,第 3 次犯 — 這次是工具/開發術語)**:user verbatim「幹你娘可以講中文嗎?不是講過了?」。整個 session 一直裸夾 `tsc / build:lib / typecheck:stories / preflight / smoke / commit / merge / tree clean / branch / grep / playwright` 等**工具與開發術語**(前兩次抓的是 DS 術語,這次是 dev/工具術語,同一 failure mode)。→ 工具/指令名也算 jargon,必翻中文。**必翻對照**:
 - tsc/build/typecheck →「程式碼(型別)檢查」;preflight →「發版前總檢查」;smoke →「頁面實跑測試」
 - commit/tree clean/merge/branch →「存進版本紀錄/沒有未存改動/合併回主線/分支」
@@ -18,25 +18,17 @@ User 2026-05-15 + 2026-05-27 系列 directives codified per Rule-of-3 absorb pri
 
 **Format**:`### 決策 N:<一句話標題>` → **現況**(目前行為,人話)→ **影響**(不改/改了會怎樣)→ **選項** A/B/C 各附後果 → **我推** X 因 Y。
 **禁止**:`L1-L7` / `canonical` / `primitive` / `SSOT` / `consume` / `traits` / `M-rule` / `cva` / `tier` / `tokens` / `wrapper` 等內部術語 propose 內裸用。翻譯:canonical/primitive/SSOT/spec →「主檔或標準寫法/共用零件/單一資料源/規格檔」;consume/traits/tier →「沿用/行為類型/層級」;tokens/wrapper →「設計變數/外殼」。
-**Anchor**:2026-05-15 user verbatim「要 user 決策必中文具體人話講(發生什麼/影響/選項 outcome)」。
 **Mechanical enforcement**:`packages/design-system/ds-canonical/hooks/check_propose_discipline.sh` r1(2026-06-11 merge)由 provider adapters 接入，偵測 propose pattern + jargon keyword → BLOCKER。
 
 ## Sub-rule 2 — file:line cite(原 propose_without_cite_fabrication)
 **Rule**:propose 含 claim「規定 / 必配 / canonical 寫 / spec 說 / 文件規定」必附 inline file:line cite。沒 cite = 視為瞎掰,自動撤回。
 **Format**:`**現況 + cite**:per <file>:<line> 「<逐字引文>」 → <推論>`
-**禁止**:「DS canonical 規定 X」/「spec 寫 Y」/「per 規範 Z」沒 cite。
+**禁止**:「DS canonical 規定 X」/「spec 寫 Y」/「per 規範 Z」沒 cite;「per memory」也不算 cite(memory 不是 SSOT,需指向 spec.md / code)。
 **Anchor**:2026-05-27 user verbatim「誰跟你說的?」— 我曾 cite「caption + muted SSOT 規定」但 grep `semantic.css:49` 是 use-case 描述非 rule。建議 propose 全 retract。
 **Mechanical enforcement**:同一 canonical hook 的 r2 由 provider adapters 接入，偵測 propose pattern + canonical claim 但無 file:line cite → BLOCKER。
 
 ## How to apply
 每次 propose / 列 option 前 inline 跑 4-test(per M18 Q0):(1) 0 jargon?(2)「規定/必配」claim 有 file:line?(3) A/B/C + outcome?(4) 有「我推」+ 理由?任一 NO → 自動撤回,不送 user。
-
-## Anti-pattern(永久 ban)
-- ❌ Propose 用 jargon(canonical / SSOT / primitive 等)裸用
-- ❌「DS 規定 X」「spec 寫 Y」沒 file:line cite
-- ❌ 列 N options 無 outcome 描述
-- ❌ 沒「我推」推薦 + 理由
-- ❌「per memory」「per 規範」當 cite(memory 不是 SSOT,需指向 spec.md / code)
 
 ## 對齊原則
 M18 Q0(本 rule 是「人話」+「cite」的具體化)/ M22 benchmark cite mandate / mindset #1 不取巧(用 jargon、沒 cite 都是取巧)/ Linux kernel patch 每 claim cite source。
