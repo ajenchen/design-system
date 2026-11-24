@@ -10,7 +10,7 @@
   "contractDigest": "sha256:2999aed4c75bc36823db0b4ea5729744c0920f74b1cd2b2e1bfb4110dd825ef1",
   "files": [
     {
-      "hash": "sha256:d67942a00b313d51926dbf037f993940de2423d077a8638d2838038a488ac593",
+      "hash": "sha256:21c2fc8d71d8b10f70524c24557d2406fc9fba85cfdcf4ec8ee0a16cba646e7a",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 59307,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:3661f67cfaaac056f69c8dc467e6192be5b31596bc33b4f97d287cc2b085084a",
+      "hash": "sha256:0afa0489d91cd502a5d7fc1654c7291173c76d83da9cfa1aaefab215b8f6769e",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 140202,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:830f49e30125dcf9a38924f186cda0739e31524d0105e275abdea4a42e4864a6",
+  "inputDigest": "sha256:0e21b28bed2f90c84be0e731a85d6a1dcb808bf0ed7eab5395b704dbd6073129",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:6f1540fb081230dca27d3cb18ea1b9bec9c00c0e40db1ae038660c9401cdb61c",
+  "snapshotDigest": "sha256:182ca583343a6f81bd19f7ac9027269002ee6c4df88a23a7ed764af4a2bbaee0",
   "sources": [
     {
       "hash": "sha256:0ccefbf34761aef84f24e6ab167939f77cf63e1f11bfe79155f2fb4e98a5fc84",
@@ -1529,7 +1529,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:7967c24c9848f67fb8973d4b9f0f185412dd42f6523bc4f76933a8dd17189da1",
+      "hash": "sha256:3e6033bf0c76d60b8b9dbadfef7e9e9d4b2b08dfd26d38cacfc64389ce63ccc8",
       "id": "exact-github-desired-state",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2311,7 +2311,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 1,
-      "hash": "sha256:5727a5673e72bbdf7fb1c6b69affbe3e0a70c432559f396e67030dfc151671aa",
+      "hash": "sha256:bdcb7898051f1e8424cda6510e2ea5601b7c7554439ed372cfa97eb2fbd5764b",
       "id": "governance-github-desired-state",
       "mode": "0755",
       "ownerRepo": "design-system",
