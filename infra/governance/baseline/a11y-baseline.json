@@ -1,8 +1,8 @@
 {
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
-    "generatedAt": "2026-11-24T13:54:33.290Z",
-    "stories": 1089,
+    "generatedAt": "2026-11-24T21:44:34.916Z",
+    "stories": 1090,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
       "apps-template-appshell-dashboard--default",
@@ -540,6 +540,7 @@
       "design-system-components-fileviewer-設計規格--renderer-registry",
       "design-system-components-fileviewer-設計規格--size-matrix",
       "design-system-components-fileviewer-設計規格--state-behavior",
+      "design-system-components-inlineedit-展示--commit-on-host-unmount",
       "design-system-components-inlineedit-展示--metadata-fields",
       "design-system-components-inlineedit-展示--multiline-description",
       "design-system-components-inlineedit-展示--select-tag-field",
@@ -1094,8 +1095,8 @@
       "design-system-tokens-uisize--overview",
       "design-system-tokens-uisize--product-alignment"
     ],
-    "storyIdsSha256": "446444b1bae95eaeae1eb5f0f036a5d04693a6090dde03e7b282a8074d308a33",
-    "fingerprints": 737,
+    "storyIdsSha256": "f80111bea1b01d744c666b202d36d182069185eca7e75250c55c17c41cd10665",
+    "fingerprints": 738,
     "linuxOnly": {
       "design-system-components-combobox-設計規格--inspector|color-contrast": "藍圖區塊的 9px text-fg-muted 小標(anatomy-utils.tsx:174):macOS 等寬字溢出區塊、axe 歸 incomplete 不計,Linux 放得下才計入 —— 只有 Linux(CI)量得到;值 = 2f367ee3(A76)寫入的 CI 實測;main 的 a11y drift 排程 2026-11-19(run 44499310317)在 Linux 量到同值 23 / 41。--color-fg-muted 已定案例外(color.spec.md「已定案(禁再問)」)",
       "design-system-components-select-設計規格--inspector|color-contrast": "藍圖區塊的 9px text-fg-muted 小標(anatomy-utils.tsx:174):macOS 等寬字溢出區塊、axe 歸 incomplete 不計,Linux 放得下才計入 —— 只有 Linux(CI)量得到;值 = 2f367ee3(A76)寫入的 CI 實測;main 的 a11y drift 排程 2026-11-19(run 44499310317)在 Linux 量到同值 23 / 41。--color-fg-muted 已定案例外(color.spec.md「已定案(禁再問)」)"
@@ -1453,6 +1454,7 @@
     "design-system-components-fileviewer-設計規格--renderer-registry|color-contrast": 5,
     "design-system-components-fileviewer-設計規格--size-matrix|color-contrast": 1,
     "design-system-components-fileviewer-設計規格--state-behavior|color-contrast": 2,
+    "design-system-components-inlineedit-展示--commit-on-host-unmount|color-contrast": 3,
     "design-system-components-inlineedit-展示--states|color-contrast": 3,
     "design-system-components-inlineedit-設計原則--content-guidelines|color-contrast": 9,
     "design-system-components-inlineedit-設計原則--vs-control-view|color-contrast": 3,

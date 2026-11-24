@@ -7,7 +7,8 @@
  *        整段過程焦點從不落在 body;控件自己的彈出層開著時那一下只關彈出層、不回復;拖曳中只取消拖曳;
  *        表單接線到得了 Combobox(name / Esc 層 / 焦點);開啟彈出層不算離開欄位(必填錯誤不會先長出來);
  *        沒有觸發點、從選單項開的對話框關閉後焦點回選單的觸發鈕;移除集合裡的一項後焦點接給下一顆 ×;
- *        就地編輯按 Enter 提交後不會把編輯重開;AgentPanel 輸入盒按附件 × 焦點不離開 textarea;按到底而自己停用的按鈕握著焦點;
+ *        就地編輯按 Enter 提交後不會把編輯重開;就地編輯換成自訂編輯控件(renderEdit = Select)也是一層 —— 先關控件自己的選單、再取消編輯、才關浮層,
+ *        而且進編輯時焦點落在控件上(2026-11-25);AgentPanel 輸入盒按附件 × 焦點不離開 textarea;按到底而自己停用的按鈕握著焦點;
  *        可打字日期欄位收起日曆後焦點回輸入框;AgentPanel 改名對話框照表單可執行層(Esc 兩層、取消不落空、「儲存」沒改 / 空白停用、有字可按 —— 2026-11-17 起照「Submit Button 狀態」第二 + 第三列);
  *        宣告了 Esc 層卻沒有處理的那一下不會困住使用者(consumer 蓋掉 getInputProps 的 onKeyDown、DataTable 游標的欄被隱藏);
  *        試算表 DataTable 連結格 / 開關格的格內模式(Enter 進到格裡的連結 / 勾選框)也是一層:先回格導覽、再清游標、才關浮層(2026-10-13);
@@ -27,11 +28,19 @@
  *        2026-11-15 起 AgentDecisionCard 的卡片根也宣告一層(焦點在卡裡按 Esc = 取消):它只出現在 AgentPanel 裡,分層走的是面板的分區判定
  *        (`useEscapeRegion`)而不是 Dialog 守門,所以那一列住 `scripts/agent-decision-card-clear-invariant.mjs`(O29 / O29b / O29p / O29t,
  *        並排 / 浮層 / 提示開著各走一遍「一次少一層」),不在本閘重量。
+ *        2026-11-25 加 E-inline-edit-custom / F-inline-edit-enter-focus(Calendar 詳情浮層的欄位用 InlineEdit 包 Select / DatePicker,calendar.spec.md
+ *        「Esc(一次少一層)」):修前只有預設的 Input / Textarea 經 editSettleKeyProps 宣告一層,自訂 renderEdit 沒有任何人宣告,
+ *        桌機 Select 又不接 autoFocus —— 實測 Dialog 裡按 Esc 第一下(不開選單)/ 第二下(開選單)就連對話框一起關。
  *
  * ── 判定表(契約列;每列「層數 + 1」下關閉、焦點從不落 body)──
  *   E-link-edit        Dialog 裡的 LinkInput 按鉛筆進編輯 → Esc 取消編輯(焦點給鉛筆)→ 再 1–2 下關(鉛筆的 Tooltip 若開著算一層)
  *   E-link-typed       Dialog 裡沒有值的 LinkInput 打了字 → Esc 丟草稿、焦點留在輸入框 → 第 2 下關
  *   E-inline-edit      Dialog 裡的 InlineEdit 進編輯 → Esc 回檢視(焦點回檢視鈕)→ 第 2 下關
+ *   E-inline-edit-custom Dialog 裡的 InlineEdit 用 renderEdit = Select(進編輯即開選單,inline-edit.stories.tsx「狀態」同一個寫法;選了只改草稿、不提交):
+ *                      選「已完成」→ 再開選單 → 第一下 Esc 只關選單、草稿不動、仍在編輯 → 第二下取消編輯(值不變、onCommit 0 次、焦點回檢視鈕)、
+ *                      對話框不關 → 第三下關(2026-11-25,calendar.spec.md「Esc(一次少一層)」;修前第二下就連對話框一起關)
+ *   F-inline-edit-enter-focus Dialog 裡的 InlineEdit 用 renderEdit = Select、不開選單(桌機 Select 的 autoFocus 無作用)→ 進編輯後焦點在編輯控件上
+ *                      → 第一下 Esc 取消編輯、焦點回檢視鈕、對話框不關 → 第二下關(2026-11-25;修前焦點停在對話框本身,第一下就關)
  *   E-datepicker-draft Dialog 裡可打字的 DatePicker:點欄位(日曆開)打字 → Esc 只關日曆、草稿不動 → Esc 還原草稿 → 第 3 下關
  *   E-datatable-cursor Dialog 裡試算表模式的 DataTable:點格(格游標)→ Esc 清游標、焦點留在表格 → 第 2 下關
  *   E-calendar-tile    Dialog 裡的 Calendar:F2 進格內(焦點在事件方塊)→ Esc 出格回日期鈕 → 第 2 下關
@@ -78,6 +87,7 @@
  * ── 突變 → 該紅的列(--selftest;MUTANTS 是單一來源,這裡是人讀版)──
  *   LinkInput 只看 raw defaultPrevented(第一輪的寫法)→ E-link-edit / E-link-typed(困住,永遠關不掉)
  *   editSettleKeyProps 不宣告 Esc 層 → E-inline-edit / E-link-edit / E-link-typed;DatePicker 草稿不宣告 → E-datepicker-draft;DatePicker 草稿的 Esc 不看 Radix 已用掉 → E-datepicker-draft
+ *   InlineEdit 自訂編輯容器不宣告 Esc 層 → E-inline-edit-custom / F-inline-edit-enter-focus;進編輯不把焦點補進編輯容器 → F-inline-edit-enter-focus
  *   DataTable 根不宣告 self 層 → E-datatable-cursor / E-datatable-hidden-col / E-datatable-cell-widget(它的第二下就是這一層);Calendar 方塊不宣告 → E-calendar-tile
  *   DataTable 連結格 / 開關格不宣告格內那一層 → E-datatable-cell-widget
  *   拖曳不宣告 / 不獨占 → E-drag / E-drag-table;DataTable 拖曳中仍用 self 層 → E-drag-table
@@ -158,6 +168,22 @@ const MUTANTS = [
     expectRed: ['E-inline-edit', 'E-link-edit', 'E-link-typed'],
     apply: (src) => replaceOnce(src, /return \{ onKeyDown: makeEditSettleKeyHandler\(settle\), \.\.\.escapeLayerProps\(escapeLayer\) \}/,
       'return { onKeyDown: makeEditSettleKeyHandler(settle) }'),
+  },
+  {
+    id: 'inline-edit-custom-no-escape-layer',
+    what: 'InlineEdit 自訂 renderEdit 的編輯容器不宣告 Esc 層(2026-11-25 前的形狀:只有預設 Input / Textarea 經 editSettleKeyProps 宣告)',
+    file: 'components/InlineEdit/inline-edit.tsx',
+    // 兩列的「取消編輯」那一下都靠這一層:拿掉 → 那一下 Radix 直接關對話框
+    expectRed: ['E-inline-edit-custom', 'F-inline-edit-enter-focus'],
+    apply: (src) => replaceOnce(src, /\{ \.\.\.escapeLayerProps\(true\), onKeyDown: handleCustomEditKeyDown \}/, '{ onKeyDown: handleCustomEditKeyDown }'),
+  },
+  {
+    id: 'inline-edit-no-enter-focus',
+    what: 'InlineEdit 進編輯時不把焦點補進編輯容器(控件不接 autoFocus 時焦點停在對話框本身;2026-11-25 前的形狀)',
+    file: 'components/InlineEdit/inline-edit.tsx',
+    // E-inline-edit-custom 不在內:那一列的 Select 進編輯即開選單,焦點由選單自己搬進彈出層、收起時 Radix 還給觸發欄位
+    expectRed: ['F-inline-edit-enter-focus'],
+    apply: (src) => replaceOnce(src, /\n    tabbableOrder\(box\)\[0\]\?\.focus\(\)\n/, '\n'),
   },
   {
     id: 'datepicker-draft-no-layer',
@@ -453,6 +479,19 @@ function LinkScene({ initial }) {
 function InlineScene() {
   const [v, setV] = React.useState('Q3 roadmap')
   return <Shell title="就地編輯"><InlineEdit label="標題" value={v} onCommit={(n) => { count('inline'); setV(n) }} /><p data-inline>{v}</p></Shell>
+}
+// E-inline-edit-custom / F-inline-edit-enter-focus:自訂編輯控件 = Select(工作項目「狀態」);選了只改草稿、不提交 ——「草稿不動」才量得到
+const STATUS = [{ value: 'todo', label: '待處理' }, { value: 'doing', label: '進行中' }, { value: 'done', label: '已完成' }]
+function InlineSelectScene({ openOnEdit }) {
+  const [v, setV] = React.useState('doing')
+  return (
+    <Shell title="工作項目">
+      <InlineEdit label="狀態" value={v} onCommit={(n) => { count('inlineSel'); setV(n) }}
+        renderRead={(x) => <Select mode="view" display="tag" value={x} options={STATUS} />}
+        renderEdit={(p) => <Select autoFocus display="tag" aria-label={p['aria-label']} value={p.value} options={STATUS} defaultOpen={openOnEdit} onChange={(n) => p.onChange(n)} />} />
+      <p data-inline-sel>{v}</p>
+    </Shell>
+  )
 }
 function DateScene() {
   const [v, setV] = React.useState('2026-03-12')
@@ -771,6 +810,8 @@ const SCENES = {
   link: () => <LinkScene initial="https://acme.com/docs" />,
   linkEmpty: () => <LinkScene initial="" />,
   inline: () => <InlineScene />,
+  inlineSelect: () => <InlineSelectScene openOnEdit />,
+  inlineSelectClosed: () => <InlineSelectScene openOnEdit={false} />,
   date: () => <DateScene />,
   table: () => <TableScene reorder={false} />,
   tableDrag: () => <TableScene reorder />,
@@ -802,6 +843,12 @@ const q = (sel) => document.querySelector(sel)
 window.__extra = {
   link: () => ({ url: q('[data-url]')?.textContent, input: !!q('#scene-dialog input[type=url]'), inputValue: q('#scene-dialog input[type=url]')?.value ?? null, invalid: q('#scene-dialog input[type=url]')?.getAttribute('aria-invalid') === 'true', calls: window.__calls.link ?? 0 }),
   inline: () => ({ value: q('[data-inline]')?.textContent, editing: !!q('#scene-dialog input'), calls: window.__calls.inline ?? 0 }),
+  // 編輯中 = [data-editing="true"](檢視態那一層也帶 data-editing="false");draft = 編輯控件(Select 觸發欄位)此刻顯示的字;list = 選單開著
+  inlineSel: () => {
+    const box = q('#scene-dialog [data-editing="true"]')
+    return { value: q('[data-inline-sel]')?.textContent, editing: !!box, draft: box?.querySelector('[role="combobox"]')?.textContent ?? null,
+      list: !!q('[cmdk-root]'), focusInEdit: !!box && box.contains(document.activeElement), calls: window.__calls.inlineSel ?? 0 }
+  },
   date: () => ({ draft: q('#scene-dialog input[role=combobox]')?.value ?? null, calendar: !!q('[role=dialog][aria-label="日期選擇"]'), value: q('[data-date]')?.textContent }),
   table: () => ({ cursor: !!q('[data-selected-cell-id]'), cursorId: q('[data-selected-cell-id]')?.getAttribute('data-selected-cell-id') ?? null,
     focusCell: document.activeElement?.closest?.('[data-cell-id]')?.getAttribute('data-cell-id') ?? null, live: q('[data-drag-live-region]')?.textContent ?? '' }),
@@ -935,6 +982,34 @@ async function runChecks(page) {
   steps = await escapeUntilClosed('inline')
   check('E-inline-edit', 'contract', 'Dialog 裡的 InlineEdit 進編輯 → 第一下 Esc 回檢視(焦點回檢視鈕)、對話框不關 → 第二下關;焦點從不落 body',
     steps.length === 2 && steps[0].dialog && !steps[0].editing && steps[0].active === 'BUTTON:編輯 標題' && !steps[1].dialog && neverBody(steps), steps)
+
+  // ── E-inline-edit-custom(自訂編輯控件 = Select,進編輯即開選單)──
+  await scene('inlineSelect'); await openDialog()
+  await d.click('#scene-dialog button[aria-label="編輯 狀態"]')
+  await waitSel('[cmdk-item][data-value="done"]', 'InlineEdit 進編輯後 Select 選單沒開')
+  // 選「已完成」:只改草稿(場景的 onChange 不提交)→ 選單收起、仍在編輯;再用 ↓ 打開選單(焦點在觸發欄位上)
+  await d.click('[cmdk-item][data-value="done"]')
+  const picked = await snap('inlineSel')
+  needs(picked.editing && !picked.list && picked.draft?.includes('已完成') && picked.focusInEdit, '選了「已完成」後應仍在編輯、選單收起、焦點在編輯控件上', picked)
+  await d.press('ArrowDown')
+  await waitSel('[cmdk-item]', '觸發欄位按 ↓ 沒重開選單')
+  before = await snap('inlineSel')
+  needs(before.list && before.editing, '重開選單後狀態不對', before)
+  steps = await escapeUntilClosed('inlineSel')
+  check('E-inline-edit-custom', 'contract', 'Dialog 裡的 InlineEdit(renderEdit = Select,草稿改成「已完成」、選單開著)→ 第一下 Esc 只關選單、草稿不動、仍在編輯 → 第二下取消編輯(值不變、onCommit 0 次、焦點回檢視鈕)、對話框不關 → 第三下關;焦點從不落 body',
+    steps.length === 3 && steps[0].dialog && !steps[0].list && steps[0].editing && !!steps[0].draft?.includes('已完成') && steps[0].calls === 0
+    && steps[1].dialog && !steps[1].editing && steps[1].value === 'doing' && steps[1].calls === 0 && steps[1].active === 'BUTTON:編輯 狀態'
+    && !steps[2].dialog && neverBody(steps), { picked, before, steps })
+
+  // ── F-inline-edit-enter-focus(自訂編輯控件 = Select,不開選單;桌機 Select 的 autoFocus 無作用)──
+  await scene('inlineSelectClosed'); await openDialog()
+  await d.click('#scene-dialog button[aria-label="編輯 狀態"]')
+  const entered = await snap('inlineSel')
+  needs(entered.editing && !entered.list, 'InlineEdit 沒進編輯(或選單不該開卻開了)', entered)
+  steps = await escapeUntilClosed('inlineSel')
+  check('F-inline-edit-enter-focus', 'contract', 'Dialog 裡的 InlineEdit(renderEdit = Select、不開選單)進編輯 → 焦點在編輯控件上 → 第一下 Esc 取消編輯、焦點回檢視鈕、對話框不關 → 第二下關;焦點從不落 body',
+    entered.focusInEdit && steps.length === 2 && steps[0].dialog && !steps[0].editing && steps[0].calls === 0 && steps[0].active === 'BUTTON:編輯 狀態'
+    && !steps[1].dialog && neverBody(steps), { entered, steps })
 
   // ── E-link-typed / F-link-enter-stay ──
   await scene('linkEmpty'); await openDialog()

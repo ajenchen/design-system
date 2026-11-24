@@ -7,6 +7,7 @@
 // 2026-10-07:DataTable 游標不看欄 / 守門不驗收 / DatePicker 替 consumer 認領 / Combobox「+N」卡不算欄位 / 可聚焦停用保留 aria-disabled 長相
 // 2026-10-13:DataTable 連結格 / 開關格不宣告格內那一層
 // 2026-10-21(r1b fields F1 / N1):彈出層關掉的那一下不補量欄位的 blur / 收起動畫期間不提早還焦點
+// 2026-11-25:InlineEdit 自訂編輯容器不宣告 Esc 層 / 進編輯不把焦點補進編輯容器
 // —— 各自必須剛好紅它負責的契約列,對照列全程綠)必紅。跑法與判準的單一實作住 scripts/lib/gate-selftest-meta.mjs。
 import { runGateSelftestMeta } from './lib/gate-selftest-meta.mjs'
 
