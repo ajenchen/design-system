@@ -205,8 +205,9 @@ let clockPaused = false
  *  story 渲染與 play 都已完成,同一個性質)。判定仍是 openStory 第 3 步同一份實作 —— 錯誤頁 / 無預覽頁 / 別的 story 當場以儀器失效停;
  *  原本本檔自己寫的 phase 檢查(requireRenderFinished:false + waitFor 函式)沒有錯誤頁捷徑,壞掉的 story 要等滿 30 秒才以 wait-for-timeout 報出,
  *  而且為了補那段空窗把 render-health 上限放寬到 30 秒 —— 第 3 步已等到渲染完成,那個放寬不再需要。 */
+// 2026-11-25 Storybook 10.6.9:afterEach 之前多一個 'completing'(setTimeout 等有限動畫),假時鐘暫停時就停在那裡 —— 一樣是 play 跑完之後的 phase,一併接受
 const openOptions = () => (clockPaused
-  ? { finishedPhases: ['afterEach', 'finished'], notFound: server.notFound }
+  ? { finishedPhases: ['completing', 'completed', 'afterEach', 'finished'], notFound: server.notFound }
   : { notFound: server.notFound })
 
 /** 開 story 並打開選單:回 true / false(false = story 渲染了但選單沒開 → 呼叫端判「前提失敗」);story 本身開不起來丟 StoryRenderInstrumentError(section 接)。 */

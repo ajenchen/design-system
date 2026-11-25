@@ -43,10 +43,10 @@ const REQUIRE_BUILD = ARGV.includes('--require-storybook-build')
 // 照 Storybook 8 的外觀造:`window.__STORYBOOK_PREVIEW__.currentRender = { id, phase }`、body class
 // sb-show-preparing-story → sb-show-main / sb-show-errordisplay、#error-message / #error-stack。
 // **load 事件之後**才以動態 import 載入 story 檔(真的 Storybook 也是),所以「load + 固定睡眠」必然早於 story 檔。
-// 每則 story 是 assets/<id>.js:default(root) 渲染,可選 play(root)、afterEach(root)。phase 照 Storybook 8.6 的順序走
+// 每則 story 是 assets/<id>.js:default(root) 渲染,可選 play(root)、afterEach(root)。phase 照 Storybook 8.6 的順序走(10.x 在 completed 前多一個 completing,一併模擬)
 // loading → rendering → playing → played → completed → afterEach → finished(@storybook/core preview-api StoryRender.render),
 // 而且跟真的一樣,畫出來就是 sb-show-main(renderToCanvas 呼叫 showMain),不等 finished。
-const KNOWN = ['ok', 'late', 'blocked', 'hang', 'slow-play', 'empty', 'boom', 'restless', 'grow', 'chatty', 'stuck-after-each', 'reload-once', 'timer-reveal', 'swallowed-play']
+const KNOWN = ['ok', 'late', 'blocked', 'hang', 'slow-play', 'empty', 'boom', 'restless', 'grow', 'chatty', 'stuck-after-each', 'reload-once', 'timer-reveal', 'swallowed-play', 'stuck-completing']
 const PREVIEW_HTML = `<!doctype html><html><head><meta charset="utf-8"><title>synthetic preview</title></head>
 <body class="sb-show-preparing-story">
 <div id="storybook-root"></div>
@@ -86,6 +86,9 @@ window.addEventListener('load', async () => {
         setPhase(render, 'completing')
       }
     } else if (mod.play) { await mod.play(root); render.phase = 'played' }
+    // Storybook 10:completed 之前的 completing 用計時器等有限動畫(假時鐘暫停下停在這裡);stuckCompleting 模擬那個形狀
+    render.phase = 'completing'
+    if (mod.stuckCompleting) await new Promise(() => {})
     render.phase = 'completed'
     render.phase = 'afterEach'
     if (mod.afterEach) await mod.afterEach(root)
@@ -162,6 +165,9 @@ export const play = async () => { throw new TypeError("Failed to resolve module 
   // afterEach 永遠不結束(假時鐘暫停下 a11y addon 的 afterEach 就是這樣:靠計時器推進)
   'stuck-after-each': `export default (root) => { root.innerHTML = '<p data-stuck>Audit log</p>' }
 export const afterEach = () => new Promise(() => {})`,
+  // completing 永遠不結束(Storybook 10 在 completing 以計時器等動畫;假時鐘暫停下就停在這裡)
+  'stuck-completing': `export default (root) => { root.innerHTML = '<p data-stuck>Billing export</p>' }
+export const stuckCompleting = true`,
   // 第一次載入時 preview 自己重新載入一次(管理介面離開渲染完整的 docs 頁時 Storybook 會這樣做),第二次才畫完
   'reload-once': `export default (root) => {
   if (!sessionStorage.getItem('open-story-reload-once')) {
@@ -355,6 +361,19 @@ try {
       && earlyPhase && noPhase,
     `預設=${stuckDefault.ok ? '成功(錯)' : stuckDefault.error.kind};允許 afterEach=${stuckAllowed.ok ? stuckAllowed.value.phase : short(stuckAllowed.error.message)};`
     + `卡在 rendering=${hangAllowed.ok ? '成功(錯)' : hangAllowed.error.kind};play 未完=${slowAllowed.ok ? `焦點已移 ${slowAllowed.value.probe}` : slowAllowed.error.kind};['playing'] / [] 丟 TypeError=${earlyPhase}/${noPhase}`)
+
+  // 13b. Storybook 10 的 completing(play 跑完之後):卡在 completing → 預設與只允許 afterEach 都儀器失效;允許 completing 才成功
+  const compDefault = await attempt(page, url('stuck-completing'), { timeoutMs: 1500, notFound: server.notFound })
+  const compAfterEachOnly = await attempt(page, url('stuck-completing'), { finishedPhases: ['afterEach', 'finished'], timeoutMs: 1500, notFound: server.notFound })
+  const compAllowed = await attempt(page, url('stuck-completing'), { finishedPhases: ['completing', 'completed', 'afterEach', 'finished'], notFound: server.notFound })
+  const hangCompAllowed = await attempt(page, url('hang'), { finishedPhases: ['completing', 'finished'], timeoutMs: 1500, notFound: server.notFound })
+  check('finishedPhases:卡在 completing(10.x)→ 預設與只允許 afterEach 都儀器失效;允許 completing 才成功;允許了也不提早接受 rendering',
+    isInstrument(compDefault, 'render-timeout') && compDefault.error.reason.includes('stuck-completing / completing')
+      && isInstrument(compAfterEachOnly, 'render-timeout')
+      && compAllowed.ok && compAllowed.value.phase === 'completing'
+      && isInstrument(hangCompAllowed, 'render-timeout') && hangCompAllowed.error.reason.includes('hang / rendering'),
+    `預設=${compDefault.ok ? '成功(錯)' : compDefault.error.kind};只允許 afterEach=${compAfterEachOnly.ok ? '成功(錯)' : compAfterEachOnly.error.kind};`
+    + `允許 completing=${compAllowed.ok ? compAllowed.value.phase : short(compAllowed.error.message)};卡在 rendering=${hangCompAllowed.ok ? '成功(錯)' : hangCompAllowed.error.kind}`)
 
   // 14. previewFrame(管理介面):導覽 manager.html,3–9 步在 #storybook-preview-iframe 的內容框架裡做
   const mgr = (id) => `${server.origin}/manager.html?path=${encodeURIComponent(`/story/${id}`)}`

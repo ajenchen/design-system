@@ -145,7 +145,7 @@ try {
         if (isDocsRendererChunk(url) && delayMs > 0) { routed.delayed++; await sleep(delayMs) }
         if (!disableGuard) return route.continue().catch(() => {})
         // 重載會中止進行中的請求,這時 `route.fetch()` 會丟例外 —— 2026-09-12 我加的重試就是這樣把整支腳本炸掉的
-        // (CI `storybook-docs-race-invariant.mjs:62` 未捕捉例外)。攔截器必須對「請求已被中止」免疫。
+        // (CI `storybook-docs-race-invariant.mjs:63` 未捕捉例外)。攔截器必須對「請求已被中止」免疫。
         let res
         try { res = await route.fetch() } catch { return route.continue().catch(() => {}) }
         let body = await res.text().catch(() => null)
