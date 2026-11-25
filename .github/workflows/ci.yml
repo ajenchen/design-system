@@ -1482,7 +1482,7 @@ jobs:
           # 蓋在錨點上的浮層(2026-11-24;PopoverContent coverAnchor,總帳 Q2b(定)「以格子為中心(水平 + 垂直)」):6 種錨點位置 × 3 種內容高,
           # 中心 = 錨點中心、碰邊推回離邊 8、高 = 視窗高 − 16、標題列固定內文捲;對照組(--selftest,突變以腳本的 MUTANTS 為準)各自剛好紅該紅的列。
           # 不需要 storybook(原始碼打包進空白頁),本機判定 + 對照組合計約 21 秒(2026-11-24 量)→ 只在第 0 格跑:由閘自己依 --shard 的 k 判斷
-          #(其他格印略過、exit 0;不寫 YAML 條件式,格數改了也不會整支被略過;matrix 涵蓋 0..n−1 由 ci-workflow-scope.test.mjs 驗;同下一支)。
+          #(其他格印略過、exit 0;不寫 YAML 條件式,格數改了也不會整支被略過;matrix 涵蓋 0..n−1 由 infra/governance/test/ci-workflow-scope.test.mjs 驗;同下一支)。
           npm run test:overlay-cover-anchor -- --shard="$SHARD"
           # 試算表點外清除認本表(2026-11-03;同一個形狀的第三處):同一頁兩張試算表時點另一張表的格、表格裝在另一張表的格子裡時點外層表格,
           # 本表的游標與區間都要清掉(修前只認「任何一張表的外框」,兩種都留著);點頁面空白與 Shift+點本表是對照列。不需要 storybook;
