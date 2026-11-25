@@ -176,10 +176,10 @@ interface FieldGroupContextValue {
   scope?: FieldScopeValue
 }
 
-// 閱讀情境的兩顆元件內變數 --scope-label-color / --scope-value-inset:只在範圍元素上設值、只有 Field 自己讀;不是 token、不登記
-// (tokens/token-system.spec.md「命名」元件內變數)。設值住 ./field.css(閱讀情境唯一的判斷);這裡只讀。名字不用 `--field-` 開頭
+// 閱讀情境的兩顆元件內變數 --scope-label-color / --scope-value-inset:設在讀它的元素自己身上(標籤 / 沒有框的值)、只有 Field 自己讀;不是 token、不登記
+// (tokens/token-system.spec.md「命名」元件內變數)。設值住 ./field.css(閱讀情境唯一的判斷;不設在範圍元素上的理由在該檔檔頭);這裡只讀。名字不用 `--field-` 開頭
 // (那一族是共用刻度,field.spec.md「horizontal」labelWidth 段記的稽核 P20),改用掛它的記號 `data-field-scope` 的後半。
-// 後備值 = 範圍以外(FieldLabel 單獨使用)時的表單樣子。
+// 後備值 = 表單(範圍裡沒有就地編輯)與範圍以外(FieldLabel 單獨使用)的樣子,一樣在讀者身上代換、跟著讀者所在的主題。
 // 標籤色:閱讀情境 → fg-secondary,否則 foreground;停用另走 text-fg-disabled(停用優先,M24)
 const LABEL_COLOR_CLASS = 'text-[color:var(--scope-label-color,var(--foreground))]'
 // 水平排:沒有框的值(開關 / 單一勾選框,掛 FIELD_FRAMELESS_VALUE_ATTR = data-field-frameless-value)往右內縮到同一欄框內的字線;
@@ -462,7 +462,7 @@ const FieldLabel = React.forwardRef<HTMLLabelElement, FieldLabelProps>(
         className={cn(
           FIELD_TEXT_CLASS,
           'font-normal select-none',
-          // 停用優先(M24);否則讀範圍的標籤色(閱讀情境 fg-secondary / 表單 foreground;判斷住 ./field.css,field.spec.md「閱讀情境」)
+          // 停用優先(M24);否則讀標籤色變數(./field.css 在閱讀情境把它設在標籤自己身上 = fg-secondary;表單不設 → 後備 foreground;field.spec.md「閱讀情境」)
           disabled ? 'text-fg-disabled' : LABEL_COLOR_CLASS,
           horizontalInlineClass,
           className

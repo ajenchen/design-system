@@ -428,8 +428,8 @@ function InlineEditImpl<T = string>(
     // 格式化 view(consumer 傳 <Control mode="view"> 等)。**對齊 SSOT(2026-07-17)**:委派控件的
     // bare view 一律 0px 左內距(audit 證實 Select/Combobox/DatePicker/TimePicker/PeoplePicker/LinkInput
     // 預設 view 皆裸 span/Tag),故 InlineEdit 用**與純值路徑同一個 `fieldViewGeometry(field-px + min-h +
-    // py)`** 包住 renderRead → 委派控件 view 左 px 統一 field-px、高度統一 field-height → 固定
-    // `-mx-field-px` 精準抵消 → tag/avatar/值左緣落 label x=0。不碰任何控件 tagPadding(bare view 本就不用)。
+    // py)`** 包住 renderRead → 委派控件 view 左 px 統一 field-px、高度統一 field-height → 值 / tag / avatar 左緣都在框內字線(--field-bleed);
+    // 垂直排外框外伸 --field-bleed(上方 alignBleed)→ 落標籤左緣,水平排不外伸 → 落一般輸入框字線(舊的外伸 12 漏了框寬)。不碰任何控件 tagPadding。
     // surface='inline-edit' 保留為 per-control 逃生訊號(若某控件 bare view 有內部 inset 破壞對齊,該控件可
     // 讀 surface 自抑;目前全控件 bare view=0px 不需)。
     <FieldSurfaceProvider surface="inline-edit">

@@ -4,7 +4,7 @@
 //      瀏覽器段量不到「兩種偏好並存」(今天只有 InlineEdit 宣告 sm),所以這一條在這裡用純函式鎖;讀 build:lib 產出的 dist
 //      (與 storybook 同一份程式碼),dist 比原始碼舊 / 不存在時印共用標記(缺前置),必需瀏覽器的 lane 裡判紅。
 //      同檔的 fieldFramelessValueProps(在 Field 裡才掛「沒有框的值」記號)一併判。
-//  (2) 閘本身:現況必綠 + --selftest 對照組必紅(靜態 7 種 + 瀏覽器 16 種破法,各破法預期紅的格住閘檔 MUTANTS / STATIC_MUTANTS)。
+//  (2) 閘本身:現況必綠 + --selftest 對照組必紅(靜態段與瀏覽器段的破法、各破法預期紅的格都住閘檔 STATIC_MUTANTS / MUTANTS,這裡不寫個數)。
 // 缺建置 / 起不了瀏覽器的略過判準與其他閘同一份(runGateSelftestMeta),不另抄。
 import { existsSync, statSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'

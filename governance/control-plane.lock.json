@@ -10,7 +10,7 @@
   "contractDigest": "sha256:2999aed4c75bc36823db0b4ea5729744c0920f74b1cd2b2e1bfb4110dd825ef1",
   "files": [
     {
-      "hash": "sha256:f456f683de053ece4649ab82258467b4f8dfe0e0e69379d91a116b543d207635",
+      "hash": "sha256:6ed89755c8c8ca4aa91fd8a8feb2db91519bc78c4e83f2f9cb88c40c6fa72e3a",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 59307,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:935928c205d7dcc257c9420ddbab0332a8710c31e32eac66398fd91406abbd14",
+      "hash": "sha256:7de9339cf27de9b0164360c765fd3c859b05f3606db78e4d4a5db0aea1b6ed4d",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 140202,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:1f2df42f377a6c1c73d3b1efc1123edc8e1694f56b26335c599fd988b1870a8e",
+  "inputDigest": "sha256:06d629df9307bbe3d04e25e7009d7338230531d0aa16c661e2525ac067c1ade3",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:734d42623e345184860e8c92485ea87e087c4387c7fba838a62ade3a3cb66805",
+  "snapshotDigest": "sha256:c31d523b807cadc9721d90b42eba433a3ec69c5b25450fcf44723b3f851cb0a0",
   "sources": [
     {
       "hash": "sha256:0ccefbf34761aef84f24e6ab167939f77cf63e1f11bfe79155f2fb4e98a5fc84",
@@ -1529,7 +1529,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:df93ca8ae8206637c030d394032223e0f738df6088464e23b7354070d3522971",
+      "hash": "sha256:2d2ec883ed72175698d5bc3dccb49c8908c5e1ba02cdb768e772ca8eaa1535cd",
       "id": "exact-github-desired-state",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2135,7 +2135,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 16,
-      "hash": "sha256:166faf0a1f077dc183b28fcca1a6bd936c2dd3d6f3cb8dba8788d83f169ec557",
+      "hash": "sha256:0e7c77d5b80c532a91d04d7aabd221001103347c8cddeb1d93ba77d6dc3c0eab",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2311,7 +2311,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 1,
-      "hash": "sha256:45ded88c974a7944a83708e037b6c8ca847e3f548dd5488049329659e473971a",
+      "hash": "sha256:497e0243c1f2cb037e4d45b0fa2e3882fede48170d43a16a5e67a7c678b109b7",
       "id": "governance-github-desired-state",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3606,7 +3606,7 @@
         "scripts/generated/"
       ],
       "files": 810,
-      "hash": "sha256:6382b861fc7218c8c1922412df9738bfc71c810e8c1bd8966529ae5357eb9e7c",
+      "hash": "sha256:543007d7277f11c800c6a417a4fbea479f7b0496514513022c85d103cf4c6579",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

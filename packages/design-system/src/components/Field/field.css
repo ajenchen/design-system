@@ -9,26 +9,31 @@
      data-field-scope   範圍 = 最外層 FieldGroup 的根;不在組裡的 Field,範圍就是它自己的根(field.tsx)
      data-field-reading 就地編輯:InlineEdit 靜止外框與編輯容器兩個根都掛(inline-edit.tsx;含 editable=false)
 
-   判斷:範圍裡有就地編輯 → 閱讀情境。效果寫成兩顆元件內變數,只有 field.tsx 讀:
-     --scope-label-color  標籤色:閱讀情境 fg-secondary(與 DescriptionList dt、DataTable 表頭同色;三者同色的清單住
+   判斷:範圍裡有就地編輯 → 閱讀情境(下面兩條規則的開頭是同一句判斷,scripts/reading-context-invariant.mjs S3 鎖兩條一字不差)。
+   效果寫成兩顆元件內變數,只有 field.tsx 讀,而且**設在讀它的元素自己身上**,不設在範圍元素上:
+     --scope-label-color  設在標籤上:閱讀情境 fg-secondary(與 DescriptionList dt、DataTable 表頭同色;三者同色的清單住
                           tokens/color/color.spec.md fg-secondary 用途列);停用仍 fg-disabled(停用優先寫在 field.tsx)
-     --scope-value-inset  水平排沒有框的值(開關、單一勾選框)往右內縮的量:閱讀情境 = --field-bleed(框外緣到框內字線),
-                          落在同一欄就地編輯框內的字線上;垂直排不讀(字線就是標籤左緣)
+     --scope-value-inset  設在沒有框的值(開關、單一勾選框)上:閱讀情境 = --field-bleed(框外緣到框內字線),
+                          水平排落在同一欄就地編輯框內的字線上;垂直排的控件欄不讀它(字線就是標籤左緣)
+   為什麼設在讀者身上:var() 在宣告它的那個元素上就代換成值,子孫繼承的是代換後的結果(tokens/color/semantic.css
+   「Nested Theme 架構」、tokens/uiSize/uiSize.css「衍生值」同一個理由)。2026-11-25 前設在範圍元素上 —— 組裡再套一層
+   data-theme 時,標籤拿到的是範圍那一層主題算好的顏色(規格核對實測:深色列裡一般表單的標籤是黑字)。設在讀者身上,
+   var() 用讀者所在那一層主題 / 密度的值代換,每一層邊界都對。
+   表單(範圍裡沒有就地編輯)不設值:field.tsx 的後備值 var(--foreground) / 0px 一樣在讀者身上代換。
    不是 token、不登記(tokens/token-system.spec.md「命名」元件內變數);名字不用 --field- 開頭(那一族是共用刻度,稽核 P20),
    改用記號 data-field-scope 的後半。
 
-   單一屬性主體 + 深層 :has(),所以 consumer 包 wrapper / memo / HOC 照常成立;不碰 styles/base.css 記的 :is() 分桶陷阱。
-   退路:不支援 :has() 的瀏覽器停在範圍預設(表單樣子):標籤 foreground、開關 / 勾選框在框邊。
+   主體是單一屬性(標籤 / 沒有框的值)+ 祖先深層 :has(),所以 consumer 包 wrapper / memo / HOC 照常成立;
+   兩條分開寫、不併成一個 :is(…),不碰 styles/base.css 記的 :is() 分桶陷阱。
+   退路:不支援 :has() 的瀏覽器兩條都不生效,停在表單樣子:標籤 foreground、開關 / 勾選框在框邊。
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* 範圍預設 = 表單 */
-[data-field-scope] {
-  --scope-label-color: var(--foreground);
-  --scope-value-inset: 0px;
+/* 閱讀情境 → 標籤 */
+[data-field-scope]:has([data-field-reading]) [data-field-slot="label"] {
+  --scope-label-color: var(--fg-secondary);
 }
 
-/* 閱讀情境:範圍裡有就地編輯 */
-[data-field-scope]:has([data-field-reading]) {
-  --scope-label-color: var(--fg-secondary);
+/* 閱讀情境 → 沒有框的值 */
+[data-field-scope]:has([data-field-reading]) [data-field-frameless-value] {
   --scope-value-inset: var(--field-bleed);
 }

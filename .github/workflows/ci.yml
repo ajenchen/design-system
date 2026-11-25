@@ -2468,8 +2468,9 @@ jobs:
           # 標籤在上時就地編輯外伸 --field-bleed、字齊標籤(修掉 +1px)。量的是像素與瀏覽器算好的值,期望值從同一份建置讀:
           # 靜態段(欄位家族不寫裸 border、框寬補位讀 --field-border-width、判斷只住 field.css)+ 兩則 test-only 夾具 × 淺 / 深 × 不指定 / sm / md
           # + InlineEdit 各範例(取代原本不在 CI、2026-11-25 退役的手動對齊探針)。本機判定約 25 秒、對照組約 20 秒。
-          # 對照組:靜態 7 種 + 瀏覽器 16 種破法(某列字推 4px 只有那列紅、垂直外伸改回 12、沒有框的值不內縮、範圍改成最近一層、首繪晚一個計時器 ……),
-          # 每種都必須讓預期的格紅;量不到 = INSTRUMENT-FAIL,不當成對照組如預期紅。
+          # 組裡某幾列再套一層另一個主題(data-theme)時,閱讀與表單的標籤色都要跟著那一層(G3 / G4「主題套層」格)。
+          # 對照組:靜態段與瀏覽器段的破法(某列字推 4px 只有那列紅、垂直外伸改回 12、沒有框的值不內縮、標籤色在範圍元素上先算好、範圍改成最近一層、
+          # 首繪晚一個計時器 ……;清單與個數只住閘檔 STATIC_MUTANTS / MUTANTS),每種都必須讓預期的格紅;量不到 = INSTRUMENT-FAIL,不當成對照組如預期紅。
           npm run test:reading-context
           node scripts/reading-context-invariant.mjs --selftest
 

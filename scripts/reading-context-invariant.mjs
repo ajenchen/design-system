@@ -8,7 +8,7 @@
  *         B2  框寬補位的算式讀 --field-border-width,不寫死 1px / 2px(tagPadding、fieldViewGeometry、Textarea 行數上限、InlineEdit 命中區、
  *             LinkInput 延伸區、併排欄位組的重疊、--field-control-py-*、DataTable --table-cell-py)
  *         S2  field.tsx 內縮規則寫的屬性名 = field-context.ts 的 FIELD_FRAMELESS_VALUE_ATTR
- *         S3  閱讀情境的判斷只住 components/Field/field.css 一處,而且由對外彙總檔 styles/tokens.css 匯入
+ *         S3  閱讀情境的判斷只住 components/Field/field.css 一處(該檔每條規則的判斷一字不差),而且由對外彙總檔 styles/tokens.css 匯入
  *         S4  --field-border-width = 1px、--field-bleed = calc(框寬 + --field-px)、InlineEdit 垂直外伸與可編輯標題列讓位都讀 --field-bleed
  *         瀏覽器段(真實情境「閱讀情境:工作項目與行事曆事件詳情」+ 邊界「閱讀情境驗證」,淺 / 深 × 不指定 / sm / md):
  *         G1  值線:閱讀範圍每一列靜止時第一個看得見的東西(字用 DOM 文字範圍、不用字形墨跡;輸入框用內容盒)
@@ -19,16 +19,22 @@
  *         CONT 框(靜止 / 編輯中)不出容器的內緣(容器左右內距 ≥ --field-bleed);InlineEdit 各範例一併掃
  *         G3  三者同色:閱讀標籤 = DescriptionList dt = DataTable 表頭 = --fg-secondary;閱讀範圍裡停用的列 = --fg-disabled
  *         G4  一般表單不變:標籤 = --foreground(停用 --fg-disabled)、欄距 = 表單欄距、開關 / 勾選框在控件欄左緣、輸入框字在框內字線、列高 = 該尺寸
+ *             (G3 / G4 的期望色在每一列標籤自己所在的主題下解。主題套層格:夾具裡閱讀與表單各幾列再套一層另一個主題的 data-theme,
+ *             標籤色要跟著那一層 —— 格名「主題套層:」;那幾列沒真的換到另一個主題 = 儀器失效)
+ *             「對基準圖」那一半不在本閘:像素基準圖只在釘死的容器裡比(本機 / 一般 runner 的字型渲染會浮動,visual-regression.yml 檔頭
+ *             2026-09-22),一般表單的基準場景 = scripts/visual-assertions.json 的 field-mixed-control-alignment(淺 / 深;改動前就有的 story,
+ *             重拍帶 reference_ref 時同一個容器比改動前後),不是 PR 必過檢查。本閘只比同一份建置算出來的值。
  *         G5  編輯中不翻轉:範圍裡唯一的就地編輯進編輯後,同範圍的標籤色、開關 / 勾選框位置、列高都不變;點外面回到靜止(取代探針的 blur-exit)
  *         G6  同組同高:閱讀範圍裡每一列的控件槽高 = 該尺寸欄位高(不指定 = sm,跟 InlineEdit 的偏好)
  *         G8  首繪:story 第一次把列交進 DOM 的那個微任務就已經是對的列高、標籤色、開關內縮
  *         G9  token:--field-bleed = --field-px + --field-border-width;就地編輯外框與輸入框畫出來的框寬 = --field-border-width;
  *             EDITABLE_TITLE_HEADER_SLOT 的 --surface-title-bleed 解出來 = --field-bleed
  *         SC  範圍 = 最外層 FieldGroup:巢狀組(外層就地編輯、內層只有輸入框 N2)內層與外層同色同高,頁面上沒有範圍套在範圍裡;不在組裡的 Field 範圍是自己
- *   紅: --selftest 逐一注入(每個都必須讓預期的格紅):靜態段六種(裸 border、補位寫死、屬性名不同、判斷寫兩處、bleed 公式、標題讓位讀 --field-px),
- *       瀏覽器段十六種(某一列字推 4px 只有那列紅、垂直外伸改回 12、沒有框的值不內縮、拿掉標籤判斷、判斷過寬、編輯中跳字、水平框壓進標籤 1px、
- *       容器內距 12、記號只掛靜止外框、同組列高跑掉、列高晚一個計時器才到、bleed 公式只剩內距、框寬 2px、標題讓位斷開、範圍改成最近一層、
- *       純顯示補回左內距 13)
+ *   紅: --selftest 逐一注入(每個都必須讓預期的格紅;清單與預期紅的格 = 下方 STATIC_MUTANTS / MUTANTS,本段不寫個數):
+ *       靜態段(裸 border、補位寫死、屬性名不同、判斷寫兩處、field.css 兩條判斷不一致、bleed 公式、標題讓位讀 --field-px),
+ *       瀏覽器段(某一列字推 4px 只有那列紅、垂直外伸改回 12、沒有框的值不內縮、拿掉標籤判斷、判斷過寬、標籤色在範圍元素上先算好
+ *       (主題套層跟不上,沒套層的列照綠)、編輯中跳字、水平框壓進標籤 1px、容器內距 12、記號只掛靜止外框、同組列高跑掉、
+ *       列高晚一個計時器才到、bleed 公式只剩內距、框寬 2px、標題讓位斷開、範圍改成最近一層、純顯示補回左內距 13)
  *   綠: 全部照規格時 exit 0。開 story 走 lib/launch-browser.mjs openStory(等 Storybook 回報渲染完成與被量的列本身出現,不睡固定時間);
  *       開不起來 / 回 0 筆 = 儀器失效(INSTRUMENT-FAIL,exit 1 並點名),不讀成通過。
  */
@@ -103,14 +109,17 @@ function staticChecks(files) {
   const fieldTsx = files.get(`${DS}/components/Field/field.tsx`) ?? ''
   put('S2:沒有框的值記號同名', Boolean(attr) && fieldTsx.includes(`[&_[${attr}]]:ml-[var(--scope-value-inset,0px)]`),
     attr ? `field-context.ts 記號 ${attr};field.tsx 內縮規則${fieldTsx.includes(`[&_[${attr}]]`) ? '同名' : '不同名'}` : '找不到 FIELD_FRAMELESS_VALUE_ATTR')
-  // S3 判斷只住一處 + 進彙總檔
+  // S3 判斷只住一處 + 進彙總檔。field.css 的效果分兩條規則寫在讀者身上(標籤 / 沒有框的值,理由在該檔檔頭),
+  // 每條規則提到 data-field-reading 的選擇器都必須以同一句判斷開頭 —— 兩條各寫各的判斷,改一條漏一條就分岔
   const JUDGE = '[data-field-scope]:has([data-field-reading])'
   const owner = `${DS}/components/Field/field.css`
-  const ownerCount = (files.get(owner) ?? '').split(JUDGE).length - 1
+  const judged = [...stripComments(files.get(owner) ?? '').matchAll(/([^{}]+)\{[^{}]*\}/g)]
+    .flatMap((m) => m[1].split(',').map((s) => s.trim())).filter((s) => s.includes('data-field-reading'))
+  const drift = judged.filter((s) => !s.startsWith(`${JUDGE} `))
   const elsewhere = [...files].filter(([f, src]) => f !== owner && /(:has\(\[data-field-reading|has-\[\[data-field-reading|:has\(\[data-field-scope)/.test(stripComments(src))).map(([f]) => f)
   const aggregated = (files.get(`${DS}/styles/tokens.css`) ?? '').includes("@import './../components/Field/field.css';")
-  put('S3:判斷只住 field.css', ownerCount === 1 && elsewhere.length === 0 && aggregated,
-    `field.css 判斷 ${ownerCount} 條;別處 ${elsewhere.length ? elsewhere.join(', ') : '0'};彙總檔${aggregated ? '有' : '沒有'}匯入`)
+  put('S3:判斷只住 field.css', judged.length > 0 && drift.length === 0 && elsewhere.length === 0 && aggregated,
+    `field.css 用到判斷的選擇器 ${judged.length} 條${drift.length ? `,其中跟「${JUDGE}」不同:${drift.join(' / ')}` : '(同一句判斷)'};別處 ${elsewhere.length ? elsewhere.join(', ') : '0'};彙總檔${aggregated ? '有' : '沒有'}匯入`)
   // S4 token 公式與讀者
   const ui = files.get(`${DS}/tokens/uiSize/uiSize.css`) ?? ''
   const ie = files.get(`${DS}/components/InlineEdit/inline-edit.tsx`) ?? ''
@@ -135,6 +144,7 @@ const STATIC_MUTANTS = [
   { name: '--field-control-py-md 寫回 − 1px', expect: 'B2:uiSize.css', file: `${DS}/tokens/uiSize/uiSize.css`, from: '--field-control-py-md: calc((var(--field-height-md) - 1lh) / 2 - var(--field-border-width));', to: '--field-control-py-md: calc((var(--field-height-md) - 1lh) / 2 - 1px);' },
   { name: '內縮規則的屬性名跟記號不同名', expect: 'S2:沒有框的值記號同名', file: `${DS}/components/Field/field.tsx`, from: '[&_[data-field-frameless-value]]', to: '[&_[data-field-frameless]]' },
   { name: '判斷多寫一份在 InlineEdit', expect: 'S3:判斷只住 field.css', file: `${DS}/components/InlineEdit/inline-edit.tsx`, from: "'relative flex min-w-0 rounded-md", to: "'[[data-field-scope]:has([data-field-reading])_&]:text-fg-secondary relative flex min-w-0 rounded-md" },
+  { name: 'field.css 兩條規則的判斷不一致(只改了沒有框的值那一條)', expect: 'S3:判斷只住 field.css', file: `${DS}/components/Field/field.css`, from: '[data-field-scope]:has([data-field-reading]) [data-field-frameless-value]', to: '[data-field-scope]:has([data-field-reading][data-editing="false"]) [data-field-frameless-value]' },
   { name: '--field-bleed 只剩內距', expect: 'S4:token 公式與讀者', file: `${DS}/tokens/uiSize/uiSize.css`, from: '--field-bleed: calc(var(--field-border-width) + var(--field-px));', to: '--field-bleed: var(--field-px);' },
   { name: '標題讓位讀回 --field-px', expect: 'S4:token 公式與讀者', file: `${DS}/patterns/overlay-surface/overlay-surface.tsx`, from: '[--surface-title-bleed:var(--field-bleed)]', to: '[--surface-title-bleed:var(--field-px)]' },
 ]
@@ -266,6 +276,13 @@ const PROBE = (titleSlotClass) => {
     }
     return { left: 0, right: document.documentElement.clientWidth, tag: 'viewport' }
   }
+  // 標籤自己所在主題的三種期望色:在標籤裡放一個暫時的 span 解 var() —— 範圍裡再套一層 data-theme 時,期望色是那一層的
+  const themedColors = (label) => {
+    const s = document.createElement('span'); label.appendChild(s)
+    const at = (expr) => { s.style.color = expr; return getComputedStyle(s).color }
+    const out = { fg: at('var(--foreground)'), fgSecondary: at('var(--fg-secondary)'), fgDisabled: at('var(--fg-disabled)') }
+    s.remove(); return out
+  }
   const rows = [...document.querySelectorAll('[data-reading-set] [data-probe][data-kind]')].map((f) => {
     const label = f.querySelector(':scope > [data-field-slot="label"]')
     const slot = f.querySelector('[data-field-slot="control"]')
@@ -273,10 +290,14 @@ const PROBE = (titleSlotClass) => {
     const frame = f.querySelector('[data-editing="false"]')
     const fv = f.querySelector('[data-field-frameless-value]')
     const cs = getComputedStyle(f)
+    // 範圍與標籤之間(含這一列、含標籤本身,不含範圍)有沒有另一層主題邊界
+    let nestedTheme = false
+    if (scope && label) for (let n = label; n && n !== scope; n = n.parentElement) if (n.hasAttribute('data-theme')) { nestedTheme = true; break }
     return {
       set: f.closest('[data-reading-set]').dataset.readingSet, probe: f.dataset.probe, kind: f.dataset.kind, orientation: f.dataset.fieldOrientation,
       disabled: f.hasAttribute('data-field-disabled'),
       label: label ? { ...rect(label), color: getComputedStyle(label).color } : null,
+      expect: label ? themedColors(label) : null, nestedTheme,
       slot: slot ? rect(slot) : null,
       valueLeft: slot ? firstVisible(slot, f.dataset.kind) : null,
       framelessLeft: fv ? fv.getBoundingClientRect().left : null,
@@ -362,13 +383,18 @@ function judgeStatic(p, run, { only = null } = {}) {
   if (want('G3')) {
     if (p.refs.dtColor != null) check(`G3:dt:${run.theme}`, refs.dtColor === refs.fgSecondary, `${tag} DescriptionList dt ${refs.dtColor} vs --fg-secondary ${refs.fgSecondary}`)
     if (tableHeaderColor[run.theme]) check(`G3:表頭:${run.theme}`, tableHeaderColor[run.theme] === refs.fgSecondary, `${tag} DataTable 表頭 ${tableHeaderColor[run.theme]} vs --fg-secondary ${refs.fgSecondary}`)
+    // 期望色在標籤自己所在的主題下解(r.expect);主題套層的列格名多「主題套層:」
     for (const r of reading) {
-      const want_ = r.disabled ? refs.fgDisabled : refs.fgSecondary
-      check(`G3:${r.probe}`, r.label?.color === want_, `${tag} 閱讀${r.disabled ? '(停用)' : ''}標籤 ${r.label?.color} vs ${r.disabled ? '--fg-disabled' : '--fg-secondary'} ${want_}`)
+      const ex = r.expect ?? refs
+      const want_ = r.disabled ? ex.fgDisabled : ex.fgSecondary
+      check(`G3:${r.nestedTheme ? '主題套層:' : ''}${r.probe}`, r.label?.color === want_,
+        `${tag}${r.nestedTheme ? '(這一列套了另一層主題)' : ''} 閱讀${r.disabled ? '(停用)' : ''}標籤 ${r.label?.color} vs ${r.disabled ? '--fg-disabled' : '--fg-secondary'} ${want_}`)
     }
   }
   if (want('G4')) for (const r of form) {
-    check(`G4:色:${r.probe}`, r.label?.color === (r.disabled ? refs.fgDisabled : refs.fg), `${tag} 表單標籤 ${r.label?.color} vs ${r.disabled ? '--fg-disabled' : '--foreground'}`)
+    const ex = r.expect ?? refs
+    check(`G4:色:${r.nestedTheme ? '主題套層:' : ''}${r.probe}`, r.label?.color === (r.disabled ? ex.fgDisabled : ex.fg),
+      `${tag}${r.nestedTheme ? '(這一列套了另一層主題)' : ''} 表單標籤 ${r.label?.color} vs ${r.disabled ? '--fg-disabled' : '--foreground'} ${r.disabled ? ex.fgDisabled : ex.fg}`)
     if (r.orientation === 'horizontal') check(`G4:欄距:${r.probe}`, near(r.columnGap, refs.formGap), `${tag} 表單欄距 ${f2(r.columnGap)} vs ${f2(refs.formGap)}`)
     const expectLeft = r.kind === 'input' ? r.slot.left + refs.bleed : r.slot.left
     check(`G4:位置:${r.probe}`, near(r.valueLeft, expectLeft), `${tag} 值左緣 − ${r.kind === 'input' ? '框內字線' : '控件欄左緣'} = ${f2(r.valueLeft - expectLeft)}`)
@@ -606,7 +632,24 @@ async function readTableHeader(theme, css = null) {
 
 const DETAIL_TEXT = ['RH:摘要', 'RV:地點']
 const FIXTURE_TEXT = ['ONE:備註', 'WRAP:備註', 'S1:標題']
+// 主題套層:這幾列(Field 根)再套一層另一個主題的 data-theme —— 範圍(FieldGroup)與標籤之間多一個主題邊界。
+// 閱讀(就地編輯那列、開關那列、停用列)與表單(標籤在左 / 在上、停用列)各取幾列;其餘列不套,當同一頁的對照
+const THEME_NEST_ROWS = ['ONE:備註', 'ONE:公開', 'DIS:同步到客服系統', 'FH:專案名稱', 'FH:專案代號', 'FV:專案名稱']
 const BLOCKS = {
+  async themeNest({ css, runs = [{ theme: 'light', size: 'unset' }, { theme: 'dark', size: 'unset' }] } = {}) {
+    for (const run of runs) {
+      const other = run.theme === 'light' ? 'dark' : 'light'
+      const dom = `(() => { for (const probe of ${JSON.stringify(THEME_NEST_ROWS)}) document.querySelector('[data-probe="' + probe + '"]')?.setAttribute('data-theme', ${JSON.stringify(other)}) })()`
+      const p = await open(STORY.fixture, { ...run, label: `邊界夾具(主題套層 ${other})${run.theme}/${run.size}`, css, dom })
+      if (!p) continue
+      // 儀器:那幾列真的換到另一個主題(期望色跟頁面不同),否則「主題套層」格量的其實是同一個主題
+      for (const probe of THEME_NEST_ROWS) {
+        const r = p.rows.find((x) => x.probe === probe)
+        if (!r?.nestedTheme || !r.expect || r.expect.fg === p.refs.fg) instrumentFails.push({ cell: `主題套層:${probe}`, detail: `${run.theme}/${run.size} 這一列沒套到另一層主題(期望色 ${r?.expect?.fg} vs 頁面 ${p.refs.fg})` })
+      }
+      judgeStatic(p, run, { only: ['G3', 'G4'] })
+    }
+  },
   async statics({ css, dom, only, flags = '', runs = RUNS }) {
     for (const run of runs) for (const id of [STORY.detail, STORY.fixture]) {
       const p = await open(id, { ...run, label: `${id === STORY.detail ? '真實情境' : '邊界夾具'} ${run.theme}/${run.size}`, css, dom, flags: id === STORY.detail && run.size === 'unset' ? `&rcFirstFrame=1${flags}` : flags })
@@ -652,12 +695,18 @@ const MUTANTS = [
     css: '[data-probe="RH:摘要"] [data-editing="false"] > :not(button) { padding-left: calc(var(--field-px) + 4px) !important; }' },
   { name: '垂直外伸改回 12(只抵內距、漏了框)', block: 'statics', only: ['G1'], runs: ONE_RUN, expect: ['G1:RV:地點', 'G1:RV:類別', 'G1:S1:標題'],
     css: '[data-field-orientation="vertical"] [data-editing] { margin-left: calc(-1 * var(--field-px)) !important; margin-right: calc(-1 * var(--field-px)) !important; width: calc(100% + 2 * var(--field-px)) !important; }' },
+  // 兩顆變數設在讀者身上(field.css),所以破法也注入在讀者身上;注入在範圍元素上會被讀者自己的宣告蓋掉、等於沒破
   { name: '沒有框的值不內縮', block: 'statics', only: ['G1'], runs: ONE_RUN, expect: ['G1:RH:需要設計審查', 'G1:RH:已通知客服', 'G1:ONE:公開'],
-    css: '[data-field-scope] { --scope-value-inset: 0px !important; }' },
+    css: '[data-field-frameless-value] { --scope-value-inset: 0px !important; }' },
   { name: '拿掉標籤判斷(閱讀標籤留在 foreground)', block: 'statics', only: ['G3'], runs: ONE_RUN, expect: ['G3:RH:摘要', 'G3:RV:地點', 'G3:WRAP:備註'],
-    css: '[data-field-scope] { --scope-label-color: var(--foreground) !important; }' },
+    css: '[data-field-slot="label"] { --scope-label-color: var(--foreground) !important; }' },
   { name: '判斷過寬(一般表單也當閱讀情境)', block: 'statics', only: ['G4'], runs: ONE_RUN, expect: ['G4:色:FH:專案名稱', 'G4:位置:FH:公開', 'G4:色:FV:專案名稱'],
-    css: '[data-field-scope] { --scope-label-color: var(--fg-secondary) !important; --scope-value-inset: var(--field-bleed) !important; }' },
+    css: '[data-field-scope] [data-field-slot="label"] { --scope-label-color: var(--fg-secondary) !important; } [data-field-scope] [data-field-frameless-value] { --scope-value-inset: var(--field-bleed) !important; }' },
+  // 2026-11-25 規格核對抓到的寫法:標籤色在範圍元素上就先代換成顏色,再原樣傳下去 —— 套了另一層主題的列拿到範圍那一層的顏色。
+  // 沒套層的列照綠(證明紅的是主題套層,不是整個判斷壞掉)
+  { name: '標籤色在範圍元素上先算好(主題套層跟不上)', block: 'themeNest', runs: ONE_RUN,
+    expect: ['G4:色:主題套層:FH:專案名稱', 'G4:色:主題套層:FV:專案名稱', 'G3:主題套層:ONE:備註', 'G3:主題套層:ONE:公開'], greenToo: ['G4:色:FV:接收通知', 'G3:ONE:置頂'],
+    css: '[data-field-scope] { --rc-scope-pre: var(--foreground); } [data-field-scope]:has([data-field-reading]) { --rc-scope-pre: var(--fg-secondary); } [data-field-slot="label"] { --scope-label-color: var(--rc-scope-pre) !important; }' },
   { name: '編輯中跳字(輸入框內距多 4px)', block: 'interactive', only: ['G1'], runs: ONE_RUN, expect: ['G1:編輯:RH:摘要', 'G1:編輯:RV:地點'],
     css: '[data-editing="true"] input { padding-left: calc(var(--field-px) + 4px) !important; }' },
   { name: '水平的框往左多伸 1px(壓進標籤欄距)', block: 'interactive', only: ['G2'], runs: ONE_RUN, expect: ['G2:滑過:RH:摘要', 'G2:編輯:RH:摘要'],
@@ -679,7 +728,7 @@ const MUTANTS = [
   { name: '標題列讓位斷開連結(讀 --field-px)', block: 'statics', only: ['G9'], runs: ONE_RUN, expect: ['G9:標題讓位:light/unset'],
     css: '[data-title-slot-probe] { --surface-title-bleed: var(--field-px) !important; }' },
   { name: '範圍改成最近一層 FieldGroup', block: 'statics', only: ['SC'], runs: ONE_RUN, expect: ['SC:N2'],
-    css: '[data-field-group] [data-field-group] { --scope-label-color: var(--foreground); --scope-value-inset: 0px; }' },
+    css: '[data-field-group] [data-field-group] [data-field-slot="label"] { --scope-label-color: var(--foreground) !important; } [data-field-group] [data-field-group] [data-field-frameless-value] { --scope-value-inset: 0px !important; }' },
   { name: '純顯示補回左內距 13(C1 甲之前)', block: 'view', expect: ['G1-V:vertical/input', 'G1-V:horizontal/input'],
     dom: () => { for (const el of document.querySelectorAll('[data-view-case="input"] [data-field-slot="control"] > *')) el.style.setProperty('padding-left', '13px', 'important') } },
 ]
@@ -687,6 +736,7 @@ const MUTANTS = [
 if (!SELFTEST) {
   await readTableHeader('light'); await readTableHeader('dark')
   await BLOCKS.statics({})
+  await BLOCKS.themeNest({})
   await BLOCKS.interactive(REPORT ? { runs: [{ theme: 'light', size: 'sm' }, { theme: 'light', size: 'md' }, { theme: 'dark', size: 'sm' }, { theme: 'dark', size: 'md' }] } : {})
   await BLOCKS.view({})
   await BLOCKS.sweep()
@@ -696,6 +746,7 @@ if (!SELFTEST) {
     const from = results.length, fromFails = instrumentFails.length
     console.log(`── 對照組:${m.name}(預期 ${m.expect.join(' / ')} 紅)`)
     if (m.block === 'view') await BLOCKS.view({ dom: m.dom })
+    else if (m.block === 'themeNest') await BLOCKS.themeNest({ css: m.css, runs: m.runs })
     else if (m.block === 'interactive') await BLOCKS.interactive({ css: m.css, only: m.only, runs: m.runs, after: m.after, fixture: m.only.includes('G5') || m.only.includes('G2') })
     else await BLOCKS.statics({ css: m.css, dom: m.dom, only: m.only, runs: m.runs, flags: m.flags ?? '' })
     const mine = results.slice(from)
