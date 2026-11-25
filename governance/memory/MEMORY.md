@@ -6,7 +6,7 @@
 
 ## Project (active work)
 - [project_agent_ui_draft_model.md](project_agent_ui_draft_model.md) — AI agent 面板規格已落地(2026-09-07 起實作;唯一權威 = planning `2026-09-06-agent-principles-v14.md`,2026-08-11 規格與隔離令只剩歷史);後續改動走 spec / v14 propose 流程,禁把 v14 已答題重列為未決
-- [project_provider_neutral_governance.md](project_provider_neutral_governance.md) — PNG 現行索引 + five-step machine SSOT + **WM 身分(每 session 必知)與 canary 操作檔案**；舊 baton/P0/activation/certification/fleet/soak 只作歷史 provenance；current state 必由 exact-head deep-audit evidence與 `npm run release:status` 讀回
+- [project_provider_neutral_governance.md](project_provider_neutral_governance.md) — PNG 現行索引 + five-step machine SSOT + **產品 canary = ajenchen/workspace 的身分與操作(每 session 必知;發版自動開升級 PR、合併由它決定;work-management 已退場)**；舊 baton/P0/activation/certification/fleet/soak 只作歷史 provenance；current state 必由 exact-head deep-audit evidence與 `npm run release:status` 讀回
 - active plan:`governance/planning/2026-09-25-interaction-and-hover-remediation.md`(registry 唯一 `status: active` 的計畫;user 要求每個未解問題追到結案。結案時拿掉本行,`validate-memory-contract.mjs` 會擋指向非 active 計畫的指標)
 
 ## Feedback (workflow / collaboration discipline)

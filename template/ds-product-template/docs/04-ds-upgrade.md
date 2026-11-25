@@ -76,7 +76,7 @@ Every source-aware bootstrap command re-reads the exact inventory bytes and deri
 
 ```text
 npm run governance:bootstrap:plan -- \
-  --repo-id work-management \
+  --repo-id <legacy-consumer-id> \
   --root <consumer-checkout> \
   --base <last-trusted-consumer-snapshot> \
   --incoming <candidate-full-snapshot> \

@@ -107,7 +107,7 @@
 | 2 `merge` | 有 receipt 後以 exact-head CAS squash merge 進 protected `main`,立即讀回 main |
 | 3 `publish` | 從 protected main 自動發布 immutable exact version;禁 mutable dependency tag |
 | 4 `readback` | 自動讀回 GitHub Release 與 npm 三包 exact version;未一致不得宣稱完成 |
-| 5 `consumer` | 自動建立、修復、合併 template exact-version PR,讀回 consumer protected main;WM 只在要求時升級 |
+| 5 `consumer` | 自動建立、修復、合併 template exact-version PR,讀回 consumer protected main;workspace 只開 PR |
 
 公開入口只有三支:`npm run release:auto`(安全續跑;合併前必檢查發版同意 receipt)、`npm run release:status`(唯讀)、`npm run release:consent -- --quote "<user 原話>"`(hook 失效時的手動落地,仍需原話)。**ASK** 只限 `#canonical-decision-authority` 的集合與**發版同意**;human-only 動作做完即 AUTO resume。已退役的 ceremony(candidate-freeze、soak、fleet promotion 等)不得回到 blocking graph —— 清單見 `infra/governance/release-workflow.json`。完成後才清 remote/local branch 並 `git switch main && git pull --ff-only`。
 
@@ -131,7 +131,7 @@
 | 動作類別 | 預設 |
 |---------|-----|
 | **產品／UI／UX SSOT 真決策**(產品需求、使用者行為、IA、workflow、interaction、UI pattern、元件／文案語意、視覺規範或 user-visible tradeoff) | **ASK** — 只有證據收斂後仍存在真實選擇／取捨才由 user 拍板；既有 SSOT 的機械落地不屬此類 |
-| **純工程／治理決策與動作**(architecture、provider-neutral SSOT、adapter、skill/hook、security、CI/CD、testing/Harness、dependency、migration、release、supply chain、GitHub config、package/template/WM/rollout/rollback) | **AUTO** — Standing Authorization；整批做到 frozen scope closure + 完整 evidence/readback/receipt/rollback |
+| **純工程／治理決策與動作**(architecture、provider-neutral SSOT、adapter、skill/hook、security、CI/CD、testing/Harness、dependency、migration、release、supply chain、GitHub config、package/template/canary/rollout/rollback) | **AUTO** — Standing Authorization；整批做到 frozen scope closure + 完整 evidence/readback/receipt/rollback |
 | Bug fix / clean / refactor / 命名一致 / perf / a11y / test / audit / verify | **AUTO** — 整批做完 + 完整驗證 + 撤回機制 |
 
 **同時優化 7 軸**:言簡意賅／效率+效能／SSOT 鐵律／易懂維護擴充／世界級+一致設計語言／完整 self-verify／自動 self-improve。**反 pattern**(禁):「省工」「下次再做」「下個 session」「OK 嗎?」過度 ASK、shortcut 避 verify。

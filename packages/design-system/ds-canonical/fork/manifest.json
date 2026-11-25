@@ -688,7 +688,7 @@
             "pathClass": "contains-space",
             "status": "not-certified",
             "limitations": [
-              "No clean committed WM snapshot has produced signed evidence for this exact target."
+              "No clean committed workspace snapshot has produced signed evidence for this exact target."
             ]
           },
           {
@@ -785,16 +785,16 @@
         ],
         "checks": [
           {
-            "id": "wm-clean-snapshot-canary",
+            "id": "product-canary-clean-snapshot",
             "status": "not-tested",
             "evidence": {
               "kind": "command-output",
-              "reference": "A committed WM exact-snapshot upgrade and clean-worktree rerun are still required."
+              "reference": "A committed workspace exact-snapshot upgrade and clean-worktree rerun are still required."
             }
           }
         ],
         "limitations": [
-          "Native hook wiring is tested in isolation, but the real WM checkout has not adopted the immutable snapshot."
+          "Native hook wiring is tested in isolation; no run against the workspace canary checkout has been recorded."
         ]
       },
       {
@@ -868,7 +868,7 @@
             "pathClass": "contains-space",
             "status": "not-certified",
             "limitations": [
-              "No clean committed WM snapshot has produced signed evidence for this exact target."
+              "No clean committed workspace snapshot has produced signed evidence for this exact target."
             ]
           },
           {
@@ -965,16 +965,16 @@
         ],
         "checks": [
           {
-            "id": "wm-clean-snapshot-canary",
+            "id": "product-canary-clean-snapshot",
             "status": "not-tested",
             "evidence": {
               "kind": "command-output",
-              "reference": "A committed WM exact-snapshot upgrade and clean-worktree rerun are still required."
+              "reference": "A committed workspace exact-snapshot upgrade and clean-worktree rerun are still required."
             }
           }
         ],
         "limitations": [
-          "The real WM checkout is intentionally unchanged and still contains pre-existing skill edits."
+          "No run against the workspace canary checkout has been recorded; the previous canary (work-management) was retired on 2026-11-25."
         ]
       },
       {
@@ -1067,11 +1067,11 @@
         ],
         "checks": [
           {
-            "id": "desktop-wm-runtime-conformance",
+            "id": "desktop-product-canary-runtime-conformance",
             "status": "not-tested",
             "evidence": {
               "kind": "manual-review",
-              "reference": "No Codex desktop app local run against the exact WM snapshot has been recorded."
+              "reference": "No Codex desktop app local run against the exact workspace snapshot has been recorded."
             }
           }
         ],
@@ -1118,7 +1118,7 @@
         ]
       }
     ],
-    "projectionDigest": "07a0eab9eba69c4aac6efa18fcee91354ba3bb4014146af0c845592d981040d9"
+    "projectionDigest": "03f3cf47335b85ad6f60bf4ff256a6ab100ebda6200c1dbb4616cf891aab35a7"
   },
   "launchers": [
     "approval-evidence.mjs",

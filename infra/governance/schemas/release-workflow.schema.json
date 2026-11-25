@@ -654,10 +654,17 @@
       ]
     },
     "consumerUpgrade": {
-      "description": "第五步要不要自動升級這個 consumer。省略 = automatic。on-request = 只在 user 明確要求時(RELEASE_REQUESTED_CONSUMERS)才讀回 / 派工 / 開 PR,不算標準發版的完成條件(user 2026-11-05:「以後WM的升級都不要自動做除非我有特別要求」)。",
+      "description": "第五步要不要自動升級這個 consumer。省略 = automatic。on-request = 只在 user 明確要求時(RELEASE_REQUESTED_CONSUMERS)才讀回 / 派工 / 開 PR,不算標準發版的完成條件。這個值是為 work-management 加的(user 2026-11-05:「以後WM的升級都不要自動做除非我有特別要求」);該 repo 已於 2026-11-25 退場,目前沒有 consumer 使用 on-request。",
       "enum": [
         "automatic",
         "on-request"
+      ]
+    },
+    "consumerMerge": {
+      "description": "升級 PR 由誰合併。省略 = automatic:orchestrator 自動建立、修復、合併並讀回 protected main,算第五步的完成條件(template)。consumer-owned = orchestrator 只自動開出升級 PR、讀回 PR 連結與檢查狀態;合不合由 consumer 自己決定,不算第五步的完成條件,它的檢查紅或沒合併都不讓發版失敗(產品 canary;依據 AGENTS.md「Decision／Engineering Authority」:preview-canary 是附加 assurance,不得進入標準五步的 blocking graph)。",
+      "enum": [
+        "automatic",
+        "consumer-owned"
       ]
     },
     "releasePublishedConsumer": {
@@ -682,6 +689,9 @@
         },
         "upgrade": {
           "$ref": "#/$defs/consumerUpgrade"
+        },
+        "merge": {
+          "$ref": "#/$defs/consumerMerge"
         },
         "delivery": {
           "const": "release-published-pr"
@@ -720,6 +730,9 @@
         },
         "upgrade": {
           "$ref": "#/$defs/consumerUpgrade"
+        },
+        "merge": {
+          "$ref": "#/$defs/consumerMerge"
         },
         "dispatchEvent": {
           "const": "design-system-published"

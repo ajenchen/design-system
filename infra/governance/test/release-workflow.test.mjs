@@ -40,6 +40,14 @@ import {
   validateConsumerCheckProvenance,
   consentCoversHead,
   consumerStepAction,
+  consumerOwnedStepAction,
+  consumerOwnedUpgradeState,
+  consumerOwnedFollowUp,
+  summarizeConsumerOwnedUpgrades,
+  formatConsumerOwnedUpgradeLines,
+  CONSUMER_OWNED_FOLLOW_UP_MS,
+  consumerBlocksRelease,
+  selectReleaseConsumers,
   nextConsumerVersion,
   productContentDigest,
   productChangeSinceBaseline,
@@ -387,7 +395,7 @@ test('consumer dispatches exact release identity and requires a protected-main P
     tag: 'v1.2.3',
     commit: 'c'.repeat(40),
   })
-  assert.deepEqual(operation.args, ['api', '--method', 'POST', 'repos/ajenchen/work-management/dispatches', '--input', '-'])
+  assert.deepEqual(operation.args, ['api', '--method', 'POST', 'repos/ajenchen/workspace/dispatches', '--input', '-'])
   assert.deepEqual(JSON.parse(operation.input), {
     event_type: 'design-system-published',
     client_payload: { version: '1.2.3', tag: 'v1.2.3', commit: 'c'.repeat(40) },
@@ -577,29 +585,34 @@ test('呼叫端真的用 consumerStepAction,而且兩個旗標沒有被合回一
   assert.doesNotMatch(createBranch, /dispatchedConsumers\.add/, '開 PR 不得標記成「已派工」')
 })
 
-test('WM 只在要求時升級:設定標 on-request 的 consumer,第五步不讀、不派工、不算完成條件;template 照做', async () => {
-  // user 2026-11-05 原話:「以後WM的升級都不要自動做除非我有特別要求」。
-  // 設定是唯一的開關(release-workflow.json `upgrade`),orchestrator 只消費它 —— 不在程式裡另寫一份 WM 名單。
+test('on-request 的 consumer:第五步不讀、不派工、不算完成條件;template 照做(機制保留,現行設定沒有 consumer 使用)', async () => {
+  // 這個機制是為 work-management 加的(user 2026-11-05 原話:「以後WM的升級都不要自動做除非我有特別要求」)。
+  // 該 repo 已於 2026-11-25 退場(user 原話:「work-management 那個 repo不要了可以刪掉了」),現行設定裡沒有任何
+  // on-request 的 consumer —— 所以機制用一筆合成的 on-request consumer 驗;設定是唯一的開關(`upgrade`),
+  // orchestrator 只消費它,不在程式裡另寫 repo 名單。
   const orchestrator = await import('../../../scripts/release-orchestrator.mjs')
-  const wm = workflow.automation.consumers.find(target => target.repository === 'ajenchen/work-management')
   const template = workflow.automation.consumers.find(target => target.repository === 'ajenchen/ds-product-template')
-  assert.equal(wm?.upgrade, 'on-request', 'WM 在設定裡必須是只在要求時升級')
+  assert.deepEqual(workflow.automation.consumers.filter(target => target.upgrade === 'on-request'), [],
+    '現行設定沒有 on-request 的 consumer;之後若有,這支測試要改回直接用真實設定驗')
+  assert.equal(workflow.automation.consumers.some(target => target.repository === 'ajenchen/work-management'), false,
+    'work-management 已退場,不得留在發版設定裡')
   assert.notEqual(template?.upgrade, 'on-request', 'template 照舊自動升級')
+  const onRequest = { ...template, repository: 'acme/on-request-product', upgrade: 'on-request', dispatchEvent: 'design-system-published', delivery: 'repository-dispatch-pr' }
+  const consumers = [template, onRequest]
   const consumerStep = workflow.steps.find(step => step.id === 'consumer')
-  assert.ok(!consumerStep.completion.includes('work-management-main-exact-version'), 'WM 不是第五步的完成條件')
-  assert.ok(consumerStep.completion.includes('template-main-exact-version'))
+  assert.deepEqual(consumerStep.completion, ['template-main-exact-version', 'actions-bound-consumer-check-provenance'], '第五步的完成條件只有 template')
 
   assert.equal(typeof orchestrator.selectReleaseConsumers, 'function', 'orchestrator 必須有一支挑「這一輪要升級哪些 consumer」的純函式')
   // 沒要求 → 只有 template
-  const auto = orchestrator.selectReleaseConsumers(workflow.automation.consumers, [])
+  const auto = orchestrator.selectReleaseConsumers(consumers, [])
   assert.deepEqual(auto.map(target => target.repository), ['ajenchen/ds-product-template'])
-  // user 明確要求 → WM 才加進來(要求只認 repository 全名)
-  const requested = orchestrator.selectReleaseConsumers(workflow.automation.consumers, ['ajenchen/work-management'])
-  assert.deepEqual(requested.map(target => target.repository).sort(), ['ajenchen/ds-product-template', 'ajenchen/work-management'])
+  // user 明確要求 → on-request 的才加進來(要求只認 repository 全名)
+  const requested = orchestrator.selectReleaseConsumers(consumers, ['acme/on-request-product'])
+  assert.deepEqual(requested.map(target => target.repository).sort(), ['acme/on-request-product', 'ajenchen/ds-product-template'])
   assert.deepEqual(orchestrator.requestedConsumersFromEnv({}), [])
-  assert.deepEqual(orchestrator.requestedConsumersFromEnv({ RELEASE_REQUESTED_CONSUMERS: ' ajenchen/work-management , ' }), ['ajenchen/work-management'])
+  assert.deepEqual(orchestrator.requestedConsumersFromEnv({ RELEASE_REQUESTED_CONSUMERS: ' acme/on-request-product , ' }), ['acme/on-request-product'])
 
-  // 第五步的狀態只看這一輪要升級的 consumer:template 完成 → complete,WM 沒被讀也不卡
+  // 第五步的狀態只看這一輪要升級的 consumer:template 完成 → complete,on-request 的沒被讀也不卡
   const observation = {
     onProtectedMain: true,
     pullRequest: null,
@@ -612,21 +625,169 @@ test('WM 只在要求時升級:設定標 on-request 的 consumer,第五步不讀
     consumers: auto.map(target => ({ ...target, exactVersion: true, checkReadback: { trusted: true } })),
   }
   assert.equal(buildFiveStepStatus(workflow, observation).at(-1).status, 'complete')
-  // 對照組:同一份 observation 但把 WM(沒升級)放回去 = 修前的行為 → 第五步卡 pending
-  const before = { ...observation, consumers: [...observation.consumers, { ...wm, exactVersion: false, checkReadback: { trusted: false } }] }
+  // 對照組:同一份 observation 但把沒升級的 on-request consumer 放回去 = 修前的行為 → 第五步卡 pending
+  const before = { ...observation, consumers: [...observation.consumers, { ...onRequest, exactVersion: false, checkReadback: { trusted: false } }] }
   assert.equal(buildFiveStepStatus(workflow, before).at(-1).status, 'pending')
 
-  // 呼叫端真的消費這支純函式(否則判定表全綠、實際仍去讀 / 派工 WM)
+  // 呼叫端真的消費這支純函式(否則判定表全綠、實際仍去讀 / 派工沒被要求的 consumer)
   const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
   const collect = src.slice(src.indexOf('export function collectLiveObservation('), src.indexOf('return {', src.indexOf('export function collectLiveObservation(')))
   assert.match(collect, /selectReleaseConsumers\(consumers, requestedConsumersFromEnv\(\)\)/, 'collectLiveObservation 必須先挑這一輪的 consumer')
   assert.doesNotMatch(collect, /\bconsumers\.map\(/, '不得直接對設定裡全部 consumer 做讀回')
 })
 
+test('產品 canary(merge: consumer-owned):發版自動開升級 PR,但它不是第五步的完成條件 —— 沒合併、檢查紅,發版照樣完成', async () => {
+  // user 2026-11-25 原話:「此外，設計系統 repo 要把 canary 換成 ajenchen/workspace，換過來之後，設計系統出新版時，
+  // 這個 repo 也會自動收到升級 PR。」「只開 PR、不等合併」這個區分是 AI 的工程判斷(依據 AGENTS.md
+  // 「Decision／Engineering Authority」:preview-canary 是附加 assurance,不得進入標準五步的 blocking graph)。
+  const selection = await import('../../../scripts/lib/release-consumer-selection.mjs')
+  const template = workflow.automation.consumers.find(target => target.repository === 'ajenchen/ds-product-template')
+  const canary = workflow.automation.consumers.find(target => target.repository === 'ajenchen/workspace')
+
+  // 設定:canary 每次發版都被選中(automatic)、走 repository dispatch、合併歸它自己;template 照舊
+  assert.equal(canary?.upgrade, 'automatic', '產品 canary 每次發版都要自動收到升級 PR,不是 on-request')
+  assert.equal(canary.merge, 'consumer-owned')
+  assert.equal(canary.delivery, 'repository-dispatch-pr', '產品 repo 不能走 template 那條整包鏡像覆寫的路')
+  assert.equal(canary.dispatchEvent, 'design-system-published')
+  assert.equal('merge' in template, false, 'template 省略 merge = automatic:照舊由 orchestrator 合併並讀回')
+  assert.deepEqual(selectReleaseConsumers(workflow.automation.consumers, []).map(target => target.repository),
+    ['ajenchen/ds-product-template', 'ajenchen/workspace'], '兩個都被選中:template 要合併,canary 要開 PR')
+  assert.deepEqual(workflow.automation.consumers.map(target => [target.repository, selection.consumerBlocksRelease(target)]),
+    [['ajenchen/ds-product-template', true], ['ajenchen/workspace', false]])
+
+  // 判定表:省略 = automatic = 算完成條件;consumer-owned = 不算
+  assert.equal(selection.consumerMergeMode({ repository: 'acme/omitted' }), 'automatic')
+  assert.equal(selection.consumerBlocksRelease({ repository: 'acme/omitted' }), true)
+  assert.equal(selection.consumerBlocksRelease({ repository: 'acme/explicit', merge: 'automatic' }), true)
+  assert.equal(selection.consumerBlocksRelease({ repository: 'acme/canary', merge: 'consumer-owned' }), false)
+  assert.equal(consumerBlocksRelease, selection.consumerBlocksRelease, 'orchestrator 只能 re-export 共用那一支')
+
+  // 第五步:template 已合併並讀回;canary 什麼都還沒發生(沒 PR、沒合併、檢查讀不到)→ 發版仍完成
+  const done = { exactVersion: true, checkReadback: { trusted: true } }
+  const observation = (consumers) => ({
+    onProtectedMain: true,
+    pullRequest: null,
+    releaseCommitSha: 'a'.repeat(40),
+    tagCommitSha: 'a'.repeat(40),
+    protectedMainSha: 'a'.repeat(40),
+    release: { tagName: 'v1.2.3', isDraft: false, isImmutable: true, publishedAt: '2026-08-01T00:00:00Z' },
+    publishRun: null,
+    npmPackages: workflow.automation.packages.map(name => ({ name, exactVersion: true })),
+    consumers,
+  })
+  const canaryStates = {
+    '還沒有 PR': { exactVersion: false, pullRequest: null, checkReadback: { trusted: false } },
+    'PR 開著、必過檢查紅': { exactVersion: false, pullRequest: { state: 'OPEN', url: 'https://github.com/ajenchen/workspace/pull/9', requiredChecks: [{ bucket: 'fail', name: 'Verify consumer' }] }, checkReadback: { trusted: false } },
+    'PR 開著、還沒合併': { exactVersion: false, pullRequest: { state: 'OPEN', url: 'https://github.com/ajenchen/workspace/pull/9', requiredChecks: [{ bucket: 'pass' }] }, checkReadback: { trusted: true } },
+    '讀不到它': { exactVersion: false, pullRequest: null, checkReadback: { trusted: false }, readError: 'HTTP 403' },
+  }
+  for (const [label, state] of Object.entries(canaryStates)) {
+    const consumers = [{ ...template, ...done }, { ...canary, ...state }]
+    assert.equal(buildFiveStepStatus(workflow, observation(consumers)).at(-1).status, 'complete', `canary ${label}:發版仍完成`)
+    // 對照組(弄壞判斷式):同一份讀回,但把 canary 當成一般 consumer(拿掉 merge)= 沒有這個區分時的行為 → 卡 pending
+    const withoutDistinction = [{ ...template, ...done }, { ...canary, ...state, merge: undefined }]
+    assert.equal(buildFiveStepStatus(workflow, observation(withoutDistinction)).at(-1).status, 'pending', `對照組 ${label}:沒有這個區分就會卡住發版`)
+  }
+  // 反方向也要守住:canary 自己升好了,不能讓還沒合併的 template 被當成完成
+  assert.equal(buildFiveStepStatus(workflow, observation([
+    { ...template, exactVersion: false, checkReadback: { trusted: false } }, { ...canary, ...done },
+  ])).at(-1).status, 'pending', 'template 仍是完成條件')
+
+  // 設定層:不得把每個 consumer 都標成 consumer-owned(完成條件會變成空集合、零筆證據報完成)
+  const everyoneOwnsMerge = structuredClone(workflow)
+  for (const target of everyoneOwnsMerge.automation.consumers) target.merge = 'consumer-owned'
+  assert.throws(() => validateReleaseWorkflow(everyoneOwnsMerge), /at least one automatically upgraded consumer must be a completion condition/)
+  const unknownMerge = structuredClone(workflow)
+  unknownMerge.automation.consumers[1].merge = 'whenever'
+  assert.throws(() => validateReleaseWorkflow(unknownMerge), /merge must be automatic or consumer-owned/)
+
+  // schema 與程式同一組值
+  const schema = readJson(resolve(GOVERNANCE_ROOT, 'schemas/release-workflow.schema.json'))
+  assert.deepEqual(schema.$defs.consumerMerge.enum, ['automatic', 'consumer-owned'])
+  const validate = new Ajv2020({ allErrors: true, strict: false }).compile(schema)
+  assert.equal(validate(workflow), true, JSON.stringify(validate.errors))
+  assert.equal(validate(unknownMerge), false, 'schema 也要擋未知的 merge 值')
+})
+
+test('產品 canary 的下一步判定表:派工 → 等分支 → 開 PR → 到此為止;沒有「合併」這個輸出', () => {
+  const canary = { delivery: 'repository-dispatch-pr' }
+  // 序列(跟一般 consumer 同一條:派工之後分支才出現)
+  assert.equal(consumerOwnedStepAction({ ...canary, branchExists: false }), 'dispatch')
+  assert.equal(consumerOwnedStepAction({ ...canary, branchExists: false, dispatched: true }), 'wait', '已派工、分支還沒上來:等,不重派')
+  assert.equal(consumerOwnedStepAction({ ...canary, branchExists: true, dispatched: true }), 'create-pr')
+  assert.equal(consumerOwnedStepAction({ ...canary, branchExists: true, dispatched: true, pullRequestOpened: true }), 'wait')
+  // PR 一旦存在就沒有事要做 —— 不論開著、已被它自己合併;它的 main 已是這一版也一樣
+  assert.equal(consumerOwnedStepAction({ ...canary, hasPullRequest: true, branchExists: true }), 'settled')
+  assert.equal(consumerOwnedStepAction({ ...canary, exactVersion: true }), 'settled')
+  // 窮舉:任何輸入組合都不會回「合併」
+  const outputs = new Set()
+  for (const exactVersion of [false, true]) for (const hasPullRequest of [false, true]) for (const branchExists of [false, true])
+    for (const dispatched of [false, true]) for (const pullRequestOpened of [false, true]) for (const delivery of ['repository-dispatch-pr', 'release-published-pr']) {
+      outputs.add(consumerOwnedStepAction({ exactVersion, hasPullRequest, branchExists, dispatched, pullRequestOpened, delivery }))
+    }
+  assert.deepEqual([...outputs].sort(), ['create-pr', 'dispatch', 'settled', 'wait'])
+
+  // 現況(回報用)
+  assert.equal(consumerOwnedUpgradeState({ exactVersion: true }), 'up-to-date')
+  assert.equal(consumerOwnedUpgradeState({ pullRequest: { state: 'MERGED' } }), 'merged')
+  assert.equal(consumerOwnedUpgradeState({ pullRequest: { state: 'OPEN' } }), 'pull-request-open')
+  assert.equal(consumerOwnedUpgradeState({}), 'awaiting-pull-request')
+  assert.equal(consumerOwnedUpgradeState({ readError: 'HTTP 403', pullRequest: { state: 'OPEN' } }), 'unreadable', '讀不到不得看起來像有結果')
+  const summary = summarizeConsumerOwnedUpgrades({
+    version: '1.2.3',
+    consumers: [
+      { repository: 'ajenchen/ds-product-template', exactVersion: false },
+      { repository: 'ajenchen/workspace', merge: 'consumer-owned', upgradeVersion: '1.2.2', pullRequest: { state: 'OPEN', url: 'https://github.com/ajenchen/workspace/pull/9', requiredChecks: [{ bucket: 'fail', name: 'Verify consumer' }] } },
+    ],
+  })
+  assert.deepEqual(summary, [{ repository: 'ajenchen/workspace', version: '1.2.2', state: 'pull-request-open', pullRequest: 'https://github.com/ajenchen/workspace/pull/9', checks: 'failed' }],
+    '只列 consumer-owned 的;版本是它接得上的那一版;檢查紅照實講')
+  const [line] = formatConsumerOwnedUpgradeLines(summary)
+  assert.match(line, /ajenchen\/workspace/)
+  assert.match(line, /https:\/\/github\.com\/ajenchen\/workspace\/pull\/9/)
+  assert.match(line, /failed/)
+})
+
+test('五步完成之後為產品 canary 多看幾圈:有期限、--no-wait 不等、失敗不重試,而且永遠不讓發版失敗', () => {
+  const t0 = 1_000_000
+  const deadline = t0 + CONSUMER_OWNED_FOLLOW_UP_MS
+  for (const [label, input, expected] of [
+    ['沒有這類 consumer', { outcomes: [], now: t0, deadline }, 'return'],
+    ['都沒事了', { outcomes: ['settled'], now: t0, deadline }, 'return'],
+    ['剛派工 / 剛開 PR:馬上再讀一次,讓回報帶到結果', { outcomes: ['acted'], now: t0, deadline }, 'observe'],
+    ['已派工、分支還沒上來:期限內等', { outcomes: ['waiting'], now: t0, deadline }, 'wait'],
+    ['期限到:收工', { outcomes: ['waiting'], now: deadline, deadline }, 'return'],
+    ['期限到(剛動作完也一樣)', { outcomes: ['acted'], now: deadline + 1, deadline }, 'return'],
+    ['--no-wait:不等', { outcomes: ['waiting'], now: t0, deadline, noWait: true }, 'return'],
+    ['--no-wait:剛動作完也不多看', { outcomes: ['acted'], now: t0, deadline, noWait: true }, 'return'],
+    ['讀不到 / 動作失敗:不重試', { outcomes: ['failed'], now: t0, deadline }, 'return'],
+    ['一個失敗、一個還在等:繼續等那一個', { outcomes: ['failed', 'waiting'], now: t0, deadline }, 'wait'],
+    ['期限沒給:不等(不得變成無限等)', { outcomes: ['waiting'], now: t0 }, 'return'],
+  ]) assert.equal(consumerOwnedFollowUp(input), expected, label)
+  assert.ok(CONSUMER_OWNED_FOLLOW_UP_MS > 0 && CONSUMER_OWNED_FOLLOW_UP_MS < 45 * 60 * 1000, '多看的時間必須遠小於整條流程的期限')
+
+  // 呼叫端真的消費這些純函式,而且這條路沒有合併、沒有因為它丟錯的出口
+  const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
+  const advance = src.slice(src.indexOf('function advanceConsumerOwnedUpgrades('), src.indexOf('export function executeAutomaticRelease('))
+  assert.match(advance, /const step = consumerOwnedStepAction\(/, '下一步由純函式決定')
+  assert.doesNotMatch(advance, /'pr', 'merge'/, '產品 canary 的 PR 永遠不由這裡合併')
+  assert.doesNotMatch(advance, /invariant\(/, '它的任何狀態都不得讓發版丟錯')
+  assert.match(advance, /if \(error instanceof HumanBoundaryError\) throw error/, '只有登入類邊界往上丟')
+  const runner = src.slice(src.indexOf('export function executeAutomaticRelease('))
+  assert.match(runner, /const next = consumerOwnedFollowUp\(\{/, '五步完成之後由純函式決定要不要多看')
+  assert.match(runner, /consumerOwnedFollowUpDeadline \?\?= Math\.min\(Date\.now\(\) \+ CONSUMER_OWNED_FOLLOW_UP_MS, deadline\)/, '多看的期限不得超過整條流程的期限')
+  assert.match(runner, /invariant\(noWait \|\| consumerOwnedFollowUpDeadline !== null \|\| Date\.now\(\) <= deadline,/, '五步完成之後不得再丟「沒收斂」')
+  assert.match(runner, /for \(const target of observation\.consumers\.filter\(consumerBlocksRelease\)\.filter\(/, '合併 / 丟錯那條路只走完成條件內的 consumer')
+  const status = src.slice(src.indexOf('export function buildFiveStepStatus('), src.indexOf('export function collectLiveObservation('))
+  assert.match(status, /observation\.consumers\.filter\(consumerBlocksRelease\)\s*\.every\(/, '第五步的狀態只看完成條件內的 consumer')
+  const collect = src.slice(src.indexOf('export function collectLiveObservation('), src.indexOf('export function productChangeSinceBaseline('))
+  assert.match(collect, /if \(consumerBlocksRelease\(target\) \|\| error instanceof HumanBoundaryError\) throw error/, '讀不到產品 canary 不得讓整份讀回丟錯')
+})
+
 test('consumer 選法判定表(scripts/lib/release-consumer-selection.mjs 唯一實作):automatic / on-request 沒要求 / on-request 有要求 / 省略欄位', async () => {
-  // user 2026-11-05 原話:「以後WM的升級都不要自動做除非我有特別要求」。
+  // on-request 的由來:user 2026-11-05 原話「以後WM的升級都不要自動做除非我有特別要求」(work-management 已於 2026-11-25 退場)。
   // orchestrator 第五步與深度稽核 dim 64/66 證據必須是同一支 —— 兩處各寫一份,
-  // 就會出現「發版沒升 WM、稽核卻要 WM 證據」→ 下一個 AI 為了讓它綠而去升 WM。
+  // 就會出現「發版沒升它、稽核卻要它的證據」→ 下一個 AI 為了讓它綠而去升不該升的 consumer。
   const selection = await import('../../../scripts/lib/release-consumer-selection.mjs')
   const orchestrator = await import('../../../scripts/release-orchestrator.mjs')
   assert.equal(orchestrator.selectReleaseConsumers, selection.selectReleaseConsumers, 'orchestrator 只能 re-export 共用那一支')
@@ -659,8 +820,8 @@ test('consumer 選法判定表(scripts/lib/release-consumer-selection.mjs 唯一
     [undefined, []],
     ['', []],
     [' , ,', []],
-    ['ajenchen/work-management', ['ajenchen/work-management']],
-    [' ajenchen/work-management , acme/other ,', ['ajenchen/work-management', 'acme/other']],
+    ['acme/on-request', ['acme/on-request']],
+    [' acme/on-request , acme/other ,', ['acme/on-request', 'acme/other']],
   ]) assert.deepEqual(selection.requestedConsumersFromEnv(raw === undefined ? {} : { RELEASE_REQUESTED_CONSUMERS: raw }), expected, `RELEASE_REQUESTED_CONSUMERS=${raw}`)
 })
 

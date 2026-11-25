@@ -199,8 +199,9 @@ export async function collectStandardFiveStepLiveObservation(options = {}) {
     const { bytes: _bytes, ...identity } = contentIdentity(client, authorityRepo.github, path, ref)
     return identity
   })
-  // 只讀回這次發版實際被選中的 consumer(與 orchestrator 第五步同一支選法);
-  // 沒被選中的不發任何網路讀取,記成「本次未要求升級」寫進 consumerSelection.notRequested
+  // 只讀回這次發版實際被選中、而且是第五步完成條件的 consumer(與 orchestrator 第五步同一支選法);
+  // 沒被選中的不發任何網路讀取,記成「本次未要求升級」寫進 consumerSelection.notRequested;
+  // 合併由它自己決定的(merge: consumer-owned)同樣不讀回,記進 consumerSelection.consumerOwned
   const consumerSelection = standardConsumerSelection({ plan, workflow, inventory, desired, requested: requestedConsumers })
   const consumers = []
   for (const { planned, repo, checkPolicy, releaseTarget } of consumerSelection.selected) {
@@ -276,6 +277,7 @@ export async function collectStandardFiveStepLiveObservation(options = {}) {
     consumerSelection: {
       requested: consumerSelection.requested,
       notRequested: consumerSelection.notRequested,
+      consumerOwned: consumerSelection.consumerOwned,
     },
     dimensions: plan.dimensions.map((item, index) => ({
       dim: item.dim,

@@ -13,7 +13,7 @@
    `release.yml`;不再持有 long-lived npm token。現況:已啟用(beta.95+ 以 OIDC+provenance 發版)。
 2. **npm 帳號 2FA**:owner 帳號維持 2FA;屬 human-only 邊界(`AGENTS.md#canonical-decision-authority`)。
 3. **Rollback drill**:每季(或重大 schema 變更後)人工演練一次 consumer 降版:
-   前一個 immutable release 的 exact version 裝回 template/WM、`npm run governance:check` 綠。
+   前一個 immutable release 的 exact version 裝回 template/workspace、`npm run governance:check` 綠。
    最近一次:2026-07 對齊戰役期間(beta.84/85 exact-version 回裝驗證)。
 
 ## 不再存在的機制(不要復活)
