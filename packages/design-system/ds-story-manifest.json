@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-11-25T12:30:47.313Z"
+    "generatedAt": "2026-11-25T18:17:43.582Z"
   },
   "components": {
     "accordion": {
@@ -337,6 +337,7 @@
           "design-system-components-calendar-設計規格--inspector",
           "design-system-components-calendar-設計規格--color-matrix",
           "design-system-components-calendar-設計規格--state-behavior",
+          "design-system-components-calendar-設計規格--more-list-open",
           "design-system-components-calendar-設計規格--accessibility"
         ],
         "設計原則": [
@@ -346,7 +347,9 @@
           "design-system-components-calendar-設計原則--read-only-rule"
         ]
       },
-      "openSnapshotIds": [],
+      "openSnapshotIds": [
+        "design-system-components-calendar-設計規格--more-list-open"
+      ],
       "exception": null
     },
     "carousel": {
@@ -1879,5 +1882,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1045
+  "totalStories": 1046
 }
