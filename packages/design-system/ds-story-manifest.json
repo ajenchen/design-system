@@ -1253,7 +1253,9 @@
           "design-system-components-popover-設計規格--color-matrix",
           "design-system-components-popover-設計規格--size-matrix",
           "design-system-components-popover-設計規格--state-behavior",
-          "design-system-components-popover-設計規格--accessibility"
+          "design-system-components-popover-設計規格--editable-title-header",
+          "design-system-components-popover-設計規格--accessibility",
+          "design-system-components-popover-設計規格--editable-title-header-probe"
         ],
         "設計原則": [
           "design-system-components-popover-設計原則--usage-guidance",
@@ -1870,5 +1872,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1036
+  "totalStories": 1038
 }

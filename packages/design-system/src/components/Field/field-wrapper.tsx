@@ -572,10 +572,14 @@ export const fieldDisplayTextClass = (size: 'sm' | 'md' | 'lg'): string =>
  *
  * 回傳「edit 幾何減 chrome」的排版盒:
  *   - 水平:`px-[var(--field-px)]`(= edit 內距,靠 InlineEdit `-mx` 拉回欄左緣後,值落標籤左緣)
- *   - 單行:`min-h-[var(--field-height-N)]` N∈{sm,md,lg} + `items-center`(垂直置中於 field 高度,= edit 單行)
- *   - 多行:`items-start` + `py-2`(頂對齊 + 上下內距,**= Textarea edit `py-2`**,textarea.tsx base;
- *     read↔edit 零跳)。⚠️ py-2 與 Textarea 同值 = SSOT 契約,`scripts/inline-edit-view-geometry-invariant.mjs`
- *     機械鎖(Textarea py 一改即紅)。
+ *   - 高度下限(單行 / 多行共用):`min-h-[calc(var(--field-height-N)_-_2px)]` N∈{sm,md,lg}。扣 2px = InlineEdit 靜止外框
+ *     上下各 1px 透明邊框(inline-edit.tsx view 外框 `border border-transparent`;min-h 給在內層、邊框在外層)→ 外框含邊框
+ *     = --field-height-N = edit `<Input>` 的外框高,view↔edit 零跳(inline-edit.spec.md「純文字 view↔edit 零跳」)。同一個邊框修正:
+ *     uiSize.css --field-control-py-* 的 −1px、本檔 tagPadding 的 −2px。2026-11-25 前沒扣 → 靜止 30 / 編輯 28(sm)。
+ *   - 單行:`items-center`(垂直置中於 field 高度,= edit 單行)
+ *   - 多行:`items-start` + `py-[var(--field-control-py-N)]`(頂對齊 + 上下內距,**= Textarea edit 同一 token**,textarea.tsx;
+ *     read↔edit 零跳)。⚠️ 與 Textarea 同值 = SSOT 契約,`scripts/inline-edit-view-geometry-invariant.mjs`
+ *     機械鎖(Textarea py 一改即紅;min-h 的 −2px 同一支鎖)。
  *
  * 值-格式化路徑(Select→Tag / Date / avatar)同樣用此 helper **包住** `<Control mode="view">`(inline-edit.tsx
  * 委派分支;委派控件 view 左側皆 0 → 包住後統一 field-px),內部間距仍由控件 view mode 提供。
@@ -583,9 +587,9 @@ export const fieldDisplayTextClass = (size: 'sm' | 'md' | 'lg'): string =>
 export const fieldViewGeometry = (size: 'sm' | 'md' | 'lg', multiline?: boolean): string =>
   cn(
     'flex w-full min-w-0 px-[var(--field-px)]',
-    size === 'sm' && 'min-h-[var(--field-height-sm)]',
-    size === 'md' && 'min-h-[var(--field-height-md)]',
-    size === 'lg' && 'min-h-[var(--field-height-lg)]',
+    size === 'sm' && 'min-h-[calc(var(--field-height-sm)_-_2px)]',
+    size === 'md' && 'min-h-[calc(var(--field-height-md)_-_2px)]',
+    size === 'lg' && 'min-h-[calc(var(--field-height-lg)_-_2px)]',
     // 多行 view py 必等於 Textarea edit py(同一 --field-control-py-* token),否則
     // InlineEdit 多行 read↔edit 垂直跳位;scripts/inline-edit-view-geometry-invariant.mjs 機械鎖。
     multiline && 'items-start',

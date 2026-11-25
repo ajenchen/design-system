@@ -7,7 +7,7 @@ internal: true
 
 # Overlay chrome 分級尺寸設計原則(overlay-surface 的分節;獨立 SSOT)
 
-> **本 spec 是 overlay chrome 分級尺寸的獨立 SSOT**(2026-09-27 從 `overlay-surface.spec.md` 整段抽出「Overlay title typography canonical」「為什麼 SurfaceHeader 是 padding-based」「Size canonical」「Chrome dismiss size canonical」四節,避免單一 spec 過長(595 行 > 500 硬上限,待辦總帳 N19);內容零改動,只加本檔頭、檔尾指標,與 N23 的四處來源標註(見「為什麼用負 margin」與「震盪歷史備忘」))。SurfaceHeader / SurfaceBody / SurfaceFooter 結構、List-as-region、footer 對齊、Viewport-aware scroll chain、A11y 仍住 `./overlay-surface.spec.md`;程式碼對應 `overlay-surface.tsx`(`CHROME_UNBOUNDED_SLOT` / `COMPACT_HEADER_SLOT`)與 `../../components/Button/button.tsx`(`data-unbounded`)。
+> **本 spec 是 overlay chrome 分級尺寸的獨立 SSOT**(2026-09-27 從 `overlay-surface.spec.md` 整段抽出「Overlay title typography canonical」「為什麼 SurfaceHeader 是 padding-based」「Size canonical」「Chrome dismiss size canonical」四節,避免單一 spec 過長(595 行 > 500 硬上限,待辦總帳 N19);內容零改動,只加本檔頭、檔尾指標,與 N23 的四處來源標註(見「為什麼用負 margin」與「震盪歷史備忘」))。SurfaceHeader / SurfaceBody / SurfaceFooter 結構、List-as-region、footer 對齊、Viewport-aware scroll chain、A11y 仍住 `./overlay-surface.spec.md`;程式碼對應 `overlay-surface.tsx`(`CHROME_UNBOUNDED_SLOT` / `COMPACT_HEADER_SLOT` / `EDITABLE_TITLE_HEADER_SLOT`)與 `../../components/Button/button.tsx`(`data-unbounded`)。
 >
 > **Layout Family**:同 `overlay-surface.spec.md`(非 Family 1–4 — structural container primitive 的分區尺寸);本檔不另立 family。
 
@@ -120,6 +120,7 @@ const CHROME_UNBOUNDED_SLOT =
 //   (2026-06-16:從寫死 field-height-xs 改衍生 → title 字級改了 slot 自動跟、不靠巧合;M17 SSOT;
 //    1.5 = typography.spec body 行高常數,非 token 故 inline,body 行高改須同步)
 // Popover-tier override → COMPACT_HEADER_SLOT(= calc(--font-body-size × 1.5) = 21,衍生自 text-body title)
+// 標題是 InlineEdit sm → EDITABLE_TITLE_HEADER_SLOT(slot = --field-height-sm,縮位 0;另讓出標題欄尾端,見下方「可編輯標題的標題列」)
 // 公式 = (slot - native) / 2 ──  Dialog md: (24-28)/2 = -2px / Popover md: (21-28)/2 = -3.5px
 ```
 
@@ -173,9 +174,32 @@ const CHROME_UNBOUNDED_SLOT =
 - `patterns/element-anatomy/inline-action.spec.md`「Dismiss canonical — X close only」
 - `components/Button/button.spec.md`「Dismiss 視覺類」+ unbounded / bounded 判斷
 
+## 可編輯標題的標題列(2026-11-25)
+
+**何時用**:浮層標題位放的是可以就地改的 `InlineEdit`(`size="sm"`,字樣照標題 `font-medium`),不是 `PopoverTitle` / `DialogTitle`。例:Calendar 事件詳情的標題列(`../../components/Calendar/calendar.spec.md`「事件詳情浮層」的「標題列」)、Popover 規格頁「可編輯標題的標題列」。
+
+**做法**:Header 的 className 加 `EDITABLE_TITLE_HEADER_SLOT`(`overlay-surface.tsx` 檔尾;`<PopoverHeader className={EDITABLE_TITLE_HEADER_SLOT}>`,DialogHeader / SheetHeader / raw SurfaceHeader 用同一個常數)。它只設兩個變數,縮位公式沿用上方「Chrome dismiss size canonical」:
+
+| 項目 | 值從哪個 token 來 | 結果(一般 / 大密度) |
+|---|---|---|
+| × 與右側操作區的佔位(`--surface-chrome-slot-h`) | `--field-height-sm` | 28 / 32 = × 原生高,縮位量 0 |
+| 標題欄尾端讓位(`--surface-title-bleed` = SurfaceHeader 左欄的右外距,沒設時 0) | `--field-px` | 12 / 12 |
+| 標題列內容高 | 2 × `--layout-space-tight` + `--field-height-sm`(Popover 版面間距鎖 md,tight = 12) | 52 / 56(外加 1px 底線;靜止 / 編輯中同高,實量) |
+
+**為什麼佔位 = sm 欄位高**【AI 推導】:本檔的規則是「slot = 標題那一行的高」;標題是 InlineEdit 時,那一行是一列 sm 欄位(InlineEdit 編輯態就是 `<Input size="sm">`),不是一行 14px 字(21)。沿用 21 時 × 中線比標題那一列高 3.5(一般)/ 5.5(大)(2026-11-25 實測)。出處:`calendar.spec.md`「事件詳情浮層」標題列「× 的佔位要跟這一行同高」(該段標【AI 推導,預覽時請 user 看】)。
+
+**為什麼讓位 = 欄位內距**【AI 推導】:InlineEdit 直向排列(獨立使用的預設)把滑過底色、外框與隱形編輯鈕往左右各外擴 `--field-px`,讓字貼齊欄左緣(`../../components/InlineEdit/inline-edit.tsx` 的 alignBleed)。左邊吃進標題列左內距(loose 16 > 12);右邊沒讓位時穿過 8px 的 gap、蓋進 × 4px,而 × 在一般流、隱形編輯鈕是絕對定位,點 × 左緣那 4px 進的是編輯、不是關閉(2026-11-25 實測,一般 / 大密度相同)。讓位後外框右緣到 × 左緣 = 標題列的 gap(8),點 × 的任何一點都是關閉。
+
+**靜止 / 編輯同高(2026-11-25 修)**:InlineEdit 靜止外框連同上下各 1px 透明邊框 = 一列 sm 欄位高(一般 28 / 大 32),與編輯中的 `<Input>` 同高,所以靜止與編輯中的標題列都是 52 / 56、× 中線對準標題外框。修在 InlineEdit 那一邊:`../../components/Field/field-wrapper.tsx` 的 `fieldViewGeometry` 高度下限扣掉外框上下兩條 1px 邊框(`../../components/InlineEdit/inline-edit.spec.md`「純文字 view↔edit 零跳」),本常數不跟著改。修前靜止外框 30 / 34 → 靜止時標題列 54 / 58、× 中線比標題外框中線高 1px;InlineEdit 各範例的單行欄位同樣從靜止 30 變成 28(同日實測)。
+
+**閘**:`../../components/Popover/popover.anatomy.stories.tsx` 的 test-only `EditableTitleHeaderProbe`,它的 play 由 story-demo-focus 逐支執行(斷言不成立 → 該 story 渲染失敗 → 紅)。一般 / 大密度各一個浮層:× 中線離標題列內容區上緣 = sm 欄位高 / 2;標題外框右緣到 × 左緣 = gap;× 左緣內 1px 點到的是 ×;靜止時標題外框高 = sm 欄位高、標題列內容高 = 2 × tight + sm 欄位高、× 中線對準標題外框中線;編輯中標題列內容高同上、× 對齊輸入框那一列(容許都是 0.5px)。對照組(2026-11-25):拿掉佔位 → 量到 10.5、應 14,紅;拿掉讓位 → 量到 −4、應 8,紅;InlineEdit 高度下限不扣邊框 → 靜止標題外框量到 30、應 28,紅(同一份建置的標題列 54 應 52、× 與標題外框中線差 −1.0,也都超出容許);還原 → 綠。InlineEdit 高度下限扣邊框的寫法另由 `scripts/inline-edit-view-geometry-invariant.mjs` 逐尺寸鎖住。
+
+**命名**:`EDITABLE_TITLE_HEADER_SLOT` 與 `COMPACT_HEADER_SLOT` 同一族(標題列種類 + `HEADER_SLOT`);editable 對齊 InlineEdit 的 `editable` 參數;全 DS 沒有別的 EDITABLE_TITLE。外部對「可以就地改的標題」也用 editable:Ant Design Typography(Title 繼承)的 `editable`(<https://github.com/ant-design/ant-design/blob/b32d6e07af61f9de393abebe326acd68faddf4bd/components/typography/Base/index.tsx#L128>)、Chakra UI 的 `Editable`(<https://github.com/chakra-ui/chakra-ui/blob/6c9d5ea82043937f8c379fe8d5423d2dd13ff7ab/packages/react/src/components/editable/editable.tsx#L58>)。
+
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `density.spec.md`
 - `overlay-surface.spec.md`
+- `popover.spec.md`
