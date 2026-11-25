@@ -369,6 +369,8 @@ function report({ label, checks }) {
   console.log(`  ${controls.every((c) => c.pass) ? '✓' : '✗'} [對照] 沒聚焦時底線範圍主色列 = 0、聚焦時外框下緣主色 = 1px:${controls.filter((c) => c.pass).length}/${controls.length}`)
 }
 const redIds = (checks) => checks.filter((c) => !c.pass).map((c) => c.id).sort()
+/** 判定紅的那一行 —— 判定模式與 selftest 基準共用(npm 別名與 CI 只跑 --selftest,基準紅就是產品裁決,不能只印「量具不可信」) */
+const verdictRedLine = (red) => `\n✗ 日期區間作用端底線:${red.length} 列不符(${red.join(' / ')})—— SSOT date-picker.spec.md「Active-end 機制」視覺指示(decoration-2)`
 
 try {
   const rootLabel = SOURCE_ROOT === REPO_ROOT ? '本 repo' : SOURCE_ROOT
@@ -377,7 +379,7 @@ try {
     report(result)
     const red = redIds(result.checks)
     if (red.length) {
-      console.log(`\n✗ 日期區間作用端底線:${red.length} 列不符(${red.join(' / ')})—— SSOT date-picker.spec.md「Active-end 機制」視覺指示(decoration-2)`)
+      console.log(verdictRedLine(red))
       process.exitCode = 1
     } else {
       const contract = result.checks.filter((c) => c.kind !== 'control')
@@ -387,7 +389,10 @@ try {
     const baseline = await runVariant('現行原始碼(selftest 基準,必須全綠)', null)
     report(baseline)
     const problems = []
-    if (redIds(baseline.checks).length) problems.push(`現行原始碼本身就紅(${redIds(baseline.checks).join(' / ')}),突變的紅燈無法歸因`)
+    if (redIds(baseline.checks).length) {
+      console.log(verdictRedLine(redIds(baseline.checks)))
+      problems.push(`現行原始碼本身就紅(${redIds(baseline.checks).join(' / ')}),突變的紅燈無法歸因`)
+    }
     const contract = baseline.checks.filter((c) => c.kind !== 'control')
     const naturalCross = contract.filter((c) => c.crossesNatural).map((c) => c.id)
     console.log(`\n  這台機器的字型幾何:自然位置的底線列裡,套雙軸裁切會變細的 ${naturalCross.length} 列${naturalCross.length ? `(${naturalCross.join(' / ')})` : '(沒有 —— 底線整條在行盒裡,只靠跨邊列考雙軸裁切)'};跨邊列 ${contract.filter((c) => c.cross).length} 列`)
