@@ -340,7 +340,7 @@ interface CalendarEvent {
 - **載入中 `loading`**【Q11(定)】:工具列、星期列、日期數字照畫;每格事件區換成**一條**與事件列同高的 DS `Skeleton`【一條是 AI 推導】;格陣 `aria-busy="true"`、骨架 `aria-hidden`(`../Skeleton/skeleton.spec.md:86-87`;形狀對齊真實內容,同檔 `:64`)。載入中仍可點空白新增、鍵盤走格【AI 推導】;日期停靠點的讀屏名稱只念日期、不念筆數(還沒載完的筆數不是事實;格陣已有 `aria-busy`)【AI 推導,預覽時請 user 確認】。世界級:MUI X 每格一條骨架、不轉圈、不加遮罩(<https://github.com/mui/mui-x/blob/master/packages/x-scheduler/src/month-view/month-view-row/MonthViewCell.tsx#L261>);Atlassian:骨架尺寸和形狀對齊真實內容(<https://atlassian.design/components/skeleton/usage>)。
 - **載入失敗**【Q11(定)】:元件不內建;產品在月曆外放 DS `Alert`。FullCalendar 只有失敗回呼(<https://fullcalendar.io/docs/eventSourceFailure>)。
 - **沒有事件**【Q11(定)】:月檢視不提示,空白就是常態(不用 `<Empty>`);議程(第二段)寫「沒有事件」。MUI X 月檢視沒有空白提示、agenda 才有「No upcoming events」(<https://github.com/mui/mui-x/blob/master/packages/x-scheduler/src/locales/enUS.ts#L174>);FullCalendar 的「No events to display」只用在 list 檢視(<https://fullcalendar.io/docs/no-events-render-hooks>)。
-- **極長標題**:事件列單行截斷,不換行不撐高;實際截斷時滑過 / 焦點顯示完整標題提示(`../Tooltip/tooltip.spec.md`「截斷文字 → 用 tooltip 顯示完整內容。」,SSOT `../../patterns/element-anatomy/truncated-text.spec.md`;事件列是互動宿主 → 自組 `useTruncated`、量內層文字)。「焦點」只算鍵盤焦點(`:focus-visible`):用滑鼠開「+N」清單時程式把焦點放到第一筆,第一筆截斷也不立刻跳出提示(同 `../Popover/popover.tsx` 開啟時不聚焦 × 防提示外洩那一類)【AI 推導】。
+- **極長標題**:事件列單行截斷,不換行不撐高;實際截斷時滑過 / 焦點顯示完整標題提示(`../Tooltip/tooltip.spec.md`「截斷文字 → 用 tooltip 顯示完整內容。」,SSOT `../../patterns/element-anatomy/truncated-text.spec.md`;事件列是互動宿主 → 自組 `useTruncated`、量內層文字)。
 - **跨月多日事件**:照日期範圍畫進前後月溢出的格子與翻月後的新月份(長條在可見範圍邊界直角)。
 - **舊資料 / 失敗後**:照常渲染當下傳入的 `events`,互動不自動停用。
 - **從右到左排版**:不支援(全域 owner `packages/design-system/README.md#compatibility-matrix`)。
