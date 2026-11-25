@@ -4,6 +4,8 @@ import { expect, fn, userEvent, within } from '@storybook/test'
 import { Calendar, type CalendarEvent, type CalendarLabels } from './calendar'
 import { CalendarDemo } from './_calendar-demo'
 import { Tag } from '@/design-system/components/Tag/tag'
+import { DataTable, type DataTableColumnDef } from '@/design-system/components/DataTable/data-table'
+import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging
 
 const meta: Meta<typeof Calendar> = {
   title: 'Design System/Components/Calendar/展示',
@@ -118,6 +120,140 @@ export const ContentPublishingSchedule: Story = {
   },
 }
 
+/**
+ * 客服排班 — 只看工作日(`hideWeekends`)
+ * 客服中心週一到週五有人值班,週末轉給外包待命;排班主管只看工作日,週六、週日兩欄不畫,一週五欄、每格比較寬。
+ */
+export const CustomerSupportWeekdays: Story = {
+  name: '客服排班(只看工作日)',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`hideWeekends`:週末 = 語系的週末(zh-TW 週六、週日),那兩欄與星期列一起拿掉;落在週末的事件(這裡的「週末外包待命」)不畫。方向鍵、Home / End 跳過被藏的日子,從週五按 → 到下週一。',
+      },
+    },
+  },
+  render: () => {
+    const events: CalendarEvent[] = [
+      { id: 's1', title: '早班:王小明、陳怡君', start: `${thisMonth}-06`, end: `${thisMonth}-06`, color: 'blue' },
+      { id: 's2', title: '晚班:林志豪', start: `${thisMonth}-06`, end: `${thisMonth}-06`, color: 'purple' },
+      { id: 's3', title: '新人帶班:黃雅婷', start: `${thisMonth}-08`, end: `${thisMonth}-08`, color: 'green' },
+      { id: 's4', title: '早班:張家豪', start: `${thisMonth}-13`, end: `${thisMonth}-13`, color: 'blue' },
+      { id: 's5', title: '客訴週報', start: `${thisMonth}-17`, end: `${thisMonth}-17`, color: 'orange' },
+      { id: 's6', title: '週末外包待命', start: `${thisMonth}-18`, end: `${thisMonth}-18`, color: 'turquoise' },
+      { id: 's7', title: '晚班:陳怡君', start: `${thisMonth}-21`, end: `${thisMonth}-21`, color: 'purple' },
+      { id: 's8', title: '值班表檢討', start: `${thisMonth}-31`, end: `${thisMonth}-31`, color: 'orange' },
+    ]
+    return (
+      <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
+        <CalendarDemo defaultReferenceDate={now} today={now} events={events} locale={LOCALE} moreLabel={MORE_LABEL} noun="班表" hideWeekends />
+      </div>
+    )
+  },
+}
+
+/**
+ * 生產排程 — 用週次溝通(`showWeekNumbers`)
+ * 工廠的出貨與保養都說「第 29 週」:左側週數欄讓排程人員對得上 ERP 的週次。
+ */
+export const ManufacturingWeekNumbers: Story = {
+  name: '生產排程(週次)',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`showWeekNumbers`:左側一欄週數,寬 = 2 × 格子內距 + 最寬的兩位數;週數怎麼算跟語系(zh-TW 週日起、含 1 月 1 日那一週是第 1 週;en-GB 照 ISO,年底那一週是第 53 週)。週數格不是按鈕、不進 Tab 順序,欄頭「週」可經 `labels.weekNumberHeader` 換字。',
+      },
+    },
+  },
+  render: () => {
+    const events: CalendarEvent[] = [
+      { id: 'm1', title: '二號產線模具保養', start: `${thisMonth}-06`, end: `${thisMonth}-06`, color: 'yellow' },
+      { id: 'm2', title: '鋁板原料到貨', start: `${thisMonth}-09`, end: `${thisMonth}-09`, color: 'turquoise' },
+      { id: 'm3', title: '出貨:宏達工業 PO-2607', start: `${thisMonth}-14`, end: `${thisMonth}-14`, color: 'blue' },
+      { id: 'm4', title: '品保抽檢', start: `${thisMonth}-16`, end: `${thisMonth}-16`, color: 'green' },
+      { id: 'm5', title: '出貨:禾豐電子 PO-2611', start: `${thisMonth}-23`, end: `${thisMonth}-23`, color: 'blue' },
+      { id: 'm6', title: '月底盤點', start: `${thisMonth}-30`, end: `${thisMonth}-30`, color: 'orange' },
+    ]
+    return (
+      <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
+        <CalendarDemo defaultReferenceDate={now} today={now} events={events} locale={LOCALE} moreLabel={MORE_LABEL} noun="排程" showWeekNumbers />
+      </div>
+    )
+  },
+}
+
+/**
+ * 切換月份時載入 — 事件還在向後端要(`loading`)
+ * 團隊行事曆按 › 換到下一個月,那個月的事件還沒回來:格子與日期照畫,每格一條骨架。
+ */
+export const LoadingWhileSwitchingMonth: Story = {
+  name: '切換月份時載入',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`loading`:工具列、星期列與日期數字照畫,每格的事件區換成一條與事件列同高的骨架(不畫事件與「+N」),格陣標 `aria-busy`。載入中仍可點空白新增、用鍵盤走格;日期的讀屏名稱先不念筆數。載入失敗由產品在月曆外放 Alert,元件不內建。',
+      },
+    },
+  },
+  render: () => (
+    <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
+      <CalendarDemo defaultReferenceDate={now} today={now} events={[]} locale={LOCALE} moreLabel={MORE_LABEL} loading />
+    </div>
+  ),
+}
+
+// 分割畫面:左邊是這次改版的工作項目(DataTable,同 rating.stories.tsx「商品列表平均分」的精簡表格),右側欄是同一份工作的月曆
+interface ReleaseTask { id: string; title: string; owner: string; due: string }
+const releaseTasks: ReleaseTask[] = [
+  { id: 't1', title: '結帳頁改版設計定稿', owner: '黃雅婷', due: '7月10日' },
+  { id: 't2', title: '金流串接測試', owner: '張家豪', due: '7月17日' },
+  { id: 't3', title: '客服常見問答更新', owner: '陳怡君', due: '7月22日' },
+  { id: 't4', title: '結帳頁改版上線', owner: '王小明', due: '7月28日' },
+]
+const releaseTaskColumns: DataTableColumnDef<ReleaseTask>[] = [
+  { accessorKey: 'title', header: '工作項目', meta: { width: 240 } },
+  { accessorKey: 'owner', header: '負責人', meta: { width: 120 } },
+  { accessorKey: 'due', header: '截止日', meta: { width: 120 } },
+]
+
+/**
+ * 分割畫面側欄 — 窄寬度
+ * 專案頁左邊是工作項目、右邊側欄放同一份工作的月曆;側欄窄,欄寬不到 60,月曆只縮內容、不換版面。
+ */
+export const SidePanelNarrow: Story = {
+  name: '分割畫面側欄(窄寬)',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '容器變窄時只縮內容、不換版面(桌機 RWD):欄寬 ≤ 60 時星期縮成一個字(「日」「一」)、每月 1 號只顯示「1」;斷點看的是月曆自己的欄寬,不是視窗寬。讀屏名稱不受影響(仍念完整日期)。',
+      },
+    },
+  },
+  render: () => {
+    const events: CalendarEvent[] = [
+      { id: 'n1', title: '設計定稿', start: `${thisMonth}-10`, end: `${thisMonth}-10`, color: 'purple' },
+      { id: 'n2', title: '金流測試', start: `${thisMonth}-17`, end: `${thisMonth}-17`, color: 'blue' },
+      { id: 'n3', title: '問答更新', start: `${thisMonth}-22`, end: `${thisMonth}-22`, color: 'green' },
+      { id: 'n4', title: '改版上線', start: `${thisMonth}-28`, end: `${thisMonth}-28`, color: 'red' },
+    ]
+    return (
+      <div className="h-screen p-[var(--layout-space-loose)] bg-canvas flex gap-[var(--layout-space-loose)]">
+        <div className="flex-1 min-w-0">
+          <DataTable columns={releaseTaskColumns} data={releaseTasks} getRowId={(r) => r.id} maxHeight="none" />
+        </div>
+        {/* 側欄 400:月曆欄寬 (400 − 外框 2) ÷ 7 ≈ 56.9 ≤ 60 → 窄;工具列的「2026年7月」仍放得下 */}
+        <aside aria-label="本月時程" className="w-[400px] shrink-0">
+          <CalendarDemo defaultReferenceDate={now} today={now} events={events} locale={LOCALE} moreLabel={MORE_LABEL} />
+        </aside>
+      </div>
+    )
+  },
+}
+
 // 日期格唯讀 × 自訂事件方塊的鍵盤契約(test-only 夾具,原本寫在「內容發佈月曆」的 play):日期數字不是按鈕、格子本身是格陣的鍵盤停靠點;
 // `renderEventTile` 的外層由元件擁有按鈕角色與 Enter 觸發(calendar.spec.md「renderEventTile 的鍵盤責任歸屬」)。story-demo-focus 閘載入每支 story 並跑 play,斷言不成立就紅。
 export const ReadOnlyDatesCustomTileKeyboard: Story = {
@@ -161,6 +297,8 @@ const ENGLISH_LABELS: CalendarLabels = {
   grid: (monthTitle) => `Calendar, ${monthTitle}`,
   day: (fullDate, count) => `${fullDate}, ${count} ${count === 1 ? 'event' : 'events'}`,
   todayPrefix: 'Today, ',
+  weekNumberHeader: 'W',
+  weekNumber: (week) => `Week ${week}`,
 }
 export const EnglishLabelsOverride: Story = {
   name: '英文讀屏字串覆寫',

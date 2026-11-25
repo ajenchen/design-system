@@ -64,7 +64,8 @@
  *   這一條又沒有原生可對照,不猜);測試把它列成已知限制。
  *
  * 消費者(README 本模組那一列):DateGrid、DatePicker(含 Range)、DataTable 日期欄(篩選「本週 / 上週 / 下週」、日期格編輯器、
- * 篩選值的日期選擇器)、DS 日期元件的預設語系(Calendar / DatePicker / TimePicker)。Calendar 的週起始日在月檢視重做時才接。
+ * 篩選值的日期選擇器)、DS 日期元件的預設語系(Calendar / DatePicker / TimePicker);Calendar 月檢視(2026-11-25 起)另消費
+ * resolveWeekStartsOn(週起始日)、resolveWeekend(`hideWeekends`)與 resolveFirstWeekMinDays(`showWeekNumbers` 的週數)。
  */
 
 /** 一週的第一天:0 = 週日 … 6 = 週六(date-fns / react-day-picker `weekStartsOn` 同一套)。 */

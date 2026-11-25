@@ -7,6 +7,9 @@
  *        內建表對每一個地區代碼都跟執行環境的 CLDR 相同。消費端真的用它:DateGrid(不再讀 date-fns 語系物件的 weekStartsOn)、
  *        DatePicker 與 DatePicker.Range、DataTable「本週 / 上週 / 下週」篩選(condition 帶這一欄的值,寫入點與 datePrecision 同一組)、
  *        日期格編輯器、篩選值的日期選擇器;Calendar / DatePicker / TimePicker 的預設語系 = DEFAULT_DATE_LOCALE = 'zh-TW'。
+ *        Calendar(2026-11-25 月檢視重做接上):週起始日 `resolveWeekStartsOn(locale, weekStartsOn)`、隱藏週末 `resolveWeekend(locale)`、
+ *        週數 `getWeek` 帶解析後的週起始日與 `resolveFirstWeekMinDays(locale)`、每一個 startOfWeek / endOfWeek 都讀解析後的週起始日,
+ *        不讀 date-fns 語系物件、不寫死數字(畫出來的結果另由 scripts/calendar-month-invariant.mjs 在瀏覽器量:en-GB 週一起、en-IL 藏週五六、年底週數)。
  *        同一支檔的另外兩條(2026-11-25,calendar.spec.md「隱藏週末」「週數欄」):
  *        「週末是哪幾天」`resolveWeekend` —— 三條路同上、回 0–6 的集合,內建週末表對每一個地區代碼都跟執行環境的 CLDR 相同,
  *        原生那條真的被問到(`-u-rg-` 只有原生認,判定表逐路寫出兩種答案);
@@ -18,7 +21,7 @@
  *        消費端少了一處、或舊形狀(寫死週一、讀 date-fns 物件、'en-US' 預設)還在 → exit 1;週末 / 第一週判定表任一格在任一條路上不符、
  *        內建週末表與原生有任一地區不同、minDays 表與 CLDR 48 快照有任一地區不同、週數錨點任一格不符 → exit 1 並印出差異。
  *        `--selftest` 對照組:把內建表的 TW 拿掉、拿掉 -u-fw- 解析、拿掉 `% 7` 換算、忽略 weekStartsOn 參數、篩選改回寫死週一(2026-11-24 前的形狀)、
- *        消費端各拿掉一處、週末表拿掉 IN、週末不問原生、後備不補地區(語言碼沒寫地區時不照 likely subtags 補)、minDays 表拿掉 DE、
+ *        消費端各拿掉一處(含 Calendar 週起始日寫死、週末寫死六日、週數第一週天數寫死 1、Home 寫死週一)、週末表拿掉 IN、週末不問原生、後備不補地區(語言碼沒寫地區時不照 likely subtags 補)、minDays 表拿掉 DE、
  *        iso8601 不回 4 —— 每一種都必須讓指定的格紅;任何一種沒被抓到 = 判定表沒在驗那一條 → exit 1。
  *   綠: 全部相符時綠;純函式 + 固定時鐘 + 靜態讀檔,無網路、無亂數、無瀏覽器,重複跑結果恆等(執行環境的 ICU / CLDR 升版改了週資料時,
  *        逐地區比對會指名哪個地區變了 —— 那是要更新內建表的訊號,不是噪音)。
@@ -403,6 +406,18 @@ function checkConsumers(files) {
   const pickers = count(code.valuePicker, '<DatePicker') // 含 <DatePickerRange
   if (pickers === 0 || pickers !== count(code.valuePicker, 'weekStartsOn={colInfo?.weekStartsOn}')) bad.push(`篩選值的日期選擇器有 ${pickers} 個,帶這一欄週起始日的只有 ${count(code.valuePicker, 'weekStartsOn={colInfo?.weekStartsOn}')} 個`)
   if (!/weekStartsOn\?:\s*WeekStartsOn/.test(code.columnTypes)) bad.push('ColumnMeta 沒有 weekStartsOn')
+  // Calendar(calendar.spec.md「資料語意」週起始日【WS(定)】、「Cell 規則」隱藏週末 / 週數欄):三件事都經 lib/date-locale,不各自判
+  if (!/resolveWeekStartsOn\(\s*locale\s*,\s*weekStartsOn\s*\)/.test(code.calendar)) bad.push('Calendar 沒有用 resolveWeekStartsOn(locale, weekStartsOn)')
+  if (!/resolveWeekend\(\s*locale\s*\)/.test(code.calendar)) bad.push('Calendar 的隱藏週末沒有用 resolveWeekend(locale)')
+  if (!/resolveFirstWeekMinDays\(\s*locale\s*\)/.test(code.calendar)) bad.push('Calendar 的週數沒有用 resolveFirstWeekMinDays(locale)')
+  const weekCalls = [...code.calendar.matchAll(/\bgetWeek\(([^)]*)\)/g)]
+  if (weekCalls.length === 0 || weekCalls.some((m) => !/weekStartsOn:\s*resolvedWeekStartsOn\s*,\s*firstWeekContainsDate:\s*firstWeekMinDays\b/.test(m[1]))) {
+    bad.push(`Calendar 的週數 getWeek 有 ${weekCalls.length} 處,沒有每一處都帶解析後的週起始日與第一週天數(weekStartsOn: resolvedWeekStartsOn, firstWeekContainsDate: firstWeekMinDays)`)
+  }
+  const weekBounds = [...code.calendar.matchAll(/\b(startOfWeek|endOfWeek)\(([^)]*)\)/g)]
+  const unresolved = weekBounds.filter((m) => !/weekStartsOn:\s*resolvedWeekStartsOn\b/.test(m[2]))
+  if (weekBounds.length === 0 || unresolved.length) bad.push(`Calendar 的 startOfWeek / endOfWeek 有 ${unresolved.length} 處沒讀解析後的週起始日:${unresolved.map((m) => m[0]).join(';')}`)
+  if (/options\??\.weekStartsOn|weekStartsOn:\s*\d/.test(code.calendar)) bad.push('Calendar 又在讀 date-fns 語系物件的週起始日或寫死 weekStartsOn: <數字>')
   return bad
 }
 
@@ -507,6 +522,10 @@ const CONSUMER_MUTANTS = [
   ['DatePicker 區間的 <DateGrid 沒帶週起始日', 'datePicker', (s) => replaceOnce(s, '                  weekStartsOn={resolvedWeekStartsOn}\n', '', 'Range 不帶'), /<DateGrid 沒帶/],
   ['TimePicker 預設語系改回 en-US', 'timePicker', (s) => replaceOnce(s, 'locale = DEFAULT_DATE_LOCALE,', "locale = 'en-US',", 'TimePicker en-US'), /time-picker\.tsx 還有寫死的 'en-US'/],
   ['Calendar 預設語系改回 en-US', 'calendar', (s) => replaceOnce(s, 'locale = DEFAULT_DATE_LOCALE,', "locale = 'en-US',", 'Calendar en-US'), /calendar\.tsx 還有寫死的 'en-US'/],
+  ['Calendar 週起始日寫死週日(不經語系)', 'calendar', (s) => replaceOnce(s, 'resolveWeekStartsOn(locale, weekStartsOn)', '(weekStartsOn ?? 0)', 'Calendar 寫死週日'), /Calendar 沒有用 resolveWeekStartsOn/],
+  ['Calendar 隱藏週末寫死週六日', 'calendar', (s) => replaceOnce(s, 'resolveWeekend(locale)', 'new Set([0, 6])', 'Calendar 週末寫死'), /Calendar 的隱藏週末沒有用 resolveWeekend/],
+  ['Calendar 週數的第一週天數寫死 1', 'calendar', (s) => replaceOnce(s, 'firstWeekContainsDate: firstWeekMinDays', 'firstWeekContainsDate: 1', 'Calendar 第一週寫死'), /Calendar 的週數 getWeek/],
+  ['Calendar Home 寫死週一', 'calendar', (s) => replaceOnce(s, 'startOfWeek(current, { weekStartsOn: resolvedWeekStartsOn })', 'startOfWeek(current, { weekStartsOn: 1 })', 'Calendar Home 寫死'), /startOfWeek \/ endOfWeek 有 1 處/],
   ['篩選寫死週一(2026-11-24 前的形狀)', 'filterTree', (s) => replaceOnce(s, 'const week = { weekStartsOn }', 'const week = { weekStartsOn: 1 }', '寫死週一'), /寫死了 weekStartsOn/],
   ['新增條件(newCondition)漏寫週起始日', 'filterPanel', (s) => replaceOnce(s, '  weekStartsOn: weekStartsOnOf(firstCol),\n', '', 'newCondition 漏寫'), /datePrecisionOf\(firstCol\) 卻沒寫/],
   ['日期格編輯器沒帶這一欄的週起始日', 'cellRegistry', (s) => replaceOnce(s, 'weekStartsOn={resolveWeekStartsOn(meta?.locale, meta?.weekStartsOn)}', '', '格編輯器漏帶'), /日期格編輯器/],

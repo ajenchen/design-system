@@ -8,7 +8,8 @@
  * - tokens: [--tag-height-md(CSS 側的同一個列高;它與 TAG_HEIGHT_PX 相等由 scripts/token-twin-invariant.mjs 鎖)]
  * - utilities: [border-b(格線 = Tailwind `border` 預設寬 1px,算進格最小高)]
  * - spec refs: calendar.spec.md「間距」表、tag.spec.md「尺寸」(:196-200 Tag px / Text px 4)、
- *   item-anatomy.spec.md:467(有底色 + 圓角 + 內縮的 standalone pill,清單 gap ≥ 4)
+ *   item-anatomy.spec.md:467(有底色 + 圓角 + 內縮的 standalone pill,清單 gap ≥ 4)、
+ *   calendar.spec.md「Cell 規則」週數欄寬【Q10b(定)】、「窄寬度」門檻【Q8(定);值為 AI 推導】
  *
  * ── 為什麼是元件自己的值、不開 token ──
  * token-system.spec.md 判斷流程第 0 題:只有 Calendar 讀、不隨密度切換 → 元件自己的值,不開全系統的名字【AI 推導】。
@@ -58,9 +59,31 @@ export const CALENDAR_GRID_LINE_PX = 1
 export const CALENDAR_CELL_MIN_HEIGHT_PX =
   CALENDAR_GAP_PX + CALENDAR_ROW_HEIGHT_PX + CALENDAR_GAP_PX + CALENDAR_ROW_HEIGHT_PX + CALENDAR_GAP_PX + CALENDAR_GRID_LINE_PX
 
+/**
+ * 週數欄放得下的最多位數:一年的週數是 1–53(date-fns `getWeek`),最寬兩位。
+ * 欄寬 = 格子左內距 × 2 + 最寬週數(calendar.spec.md「Cell 規則」週數欄【Q10b(定)】;「間距」表週數欄寬那一列)。
+ */
+export const CALENDAR_WEEK_NUMBER_DIGITS = 2
+
+/**
+ * 窄寬度門檻:**欄寬**(一個日期格的外框寬,含它自己的右格線)≤ 這個值就是「窄」—— 星期縮一字(`Intl` `weekday: 'narrow'`)、
+ * 1 號只顯示「1」,有時段列拿掉時間也讀同一個旗標(calendar.spec.md「窄寬度」【Q8(定)、總帳更正 #8】)。
+ * 值 60【AI 推導,實量後回報 user】:起點取 FullCalendar 的 micro 門檻(欄寬 ≤ 60 拿掉時間、星期縮一字、只顯示「+N」;
+ * `dayMicroWidth = 60` 與 `cellIsMicro = measuredColWidth <= dayMicroWidth`,
+ * <https://github.com/fullcalendar/fullcalendar/blob/main/packages/preact/src/daygrid/components/DayGridLayoutNormal.tsx#L78>)。
+ * 2026-11-25 在 1280 × 900 實量現有範例的欄寬:展示 / 設計規格各則 178、設計原則三則 141.14、「與 DatePicker 的分工」那則(半寬)69.28 ——
+ * 都沒有跨過,現有範例的畫面不變。只看欄寬、不看內容寬:欄是 `minmax(0, 1fr)`,縮內容不會讓欄寬變,旗標不會來回跳
+ *(scripts/calendar-month-invariant.mjs 掃 20 個寬度量)。
+ */
+export const CALENDAR_NARROW_COLUMN_MAX_PX = 60
+
 /** 設在 Calendar 根節點 style 上的元件內變數(名字用主人開頭 `--calendar-`;只有 Calendar 自己讀)。 */
 export const CALENDAR_GEOMETRY_STYLE = {
   '--calendar-gap': `${CALENDAR_GAP_PX}px`,
   '--calendar-text-inset': `${CALENDAR_TEXT_INSET_PX}px`,
   '--calendar-cell-min-h': `${CALENDAR_CELL_MIN_HEIGHT_PX}px`,
+  // 週數欄寬 = 2 × 格子內距 + 最寬週數。`ch` = 「0」的字寬,在用到這個變數的元素上解析(星期列與週列兩個格陣容器都是 text-body,
+  // 所以兩邊的週數欄同寬)。POC(M2,2026-11-25,Chromium 1217 / macOS,text-body 14px):tabular-nums 的兩位數實寬 17.34、2ch = 17.63,
+  // 差 0.28(zh-TW 與 en-US 兩個 lang 相同)< 0.5 → 用 calc 不另外量;差超過 0.5 時改成量到後寫進同一個變數。
+  '--calendar-week-number-w': `calc(2 * var(--calendar-gap) + ${CALENDAR_WEEK_NUMBER_DIGITS}ch)`,
 } as React.CSSProperties

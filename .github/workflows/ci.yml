@@ -258,8 +258,8 @@ jobs:
           npm run test:anatomy-chip-palette
           # 週起始日只有一條規則(2026-11-24,user 選「跟語系的 CLDR (Recommended)」;lib/date-locale.ts):有傳 weekStartsOn 就用,沒傳時語系 → CLDR
           # (先 Intl getWeekInfo、沒有就查內建表,-u-fw- 兩條都認)。判定表 × 三條路、內建表對每個地區代碼與執行環境 CLDR 相同、DataTable
-          # 本週 / 上週 / 下週固定時鐘判定表、消費端(DateGrid / DatePicker / 篩選寫入點 / 格編輯器 / 預設語系 zh-TW)真的呼叫;
-          # 對照組:表少 TW、不解析 fw、不換算 %7、忽略參數、篩選寫死週一、消費端各拿掉一處,各自必紅。純函式 + 讀檔,約 2 秒。
+          # 本週 / 上週 / 下週固定時鐘判定表、消費端(DateGrid / DatePicker / 篩選寫入點 / 格編輯器 / 預設語系 zh-TW、Calendar 的週起始日 / 週末 / 週數)真的呼叫;
+          # 對照組:表少 TW、不解析 fw、不換算 %7、忽略參數、篩選寫死週一、消費端各拿掉一處(含 Calendar 寫死週日 / 週末 / 第一週天數 / Home),各自必紅。純函式 + 讀檔,約 2 秒。
           npm run test:week-start
           # Calendar 月檢視事件版面只有一份(components/Calendar/calendar-layout.ts;calendar.spec.md「資料語意」「跨日長條」「格內排序」「每格筆數與「+N」」):
           # 三種字串格式、只有日期 → 全天(兩端都是)、end 不含、Q7(定)滿 24 小時才是長條、日光節約那天(TZ 固定 America/New_York)、start > end 與全天
@@ -1878,7 +1878,9 @@ jobs:
           # 日期框 4 / 4 / 24、1 號「7月1日」、事件列 24 / 列距 4 / 文字內距 8、事件列焦點框往外、axe required-children / parent 0、太矮時週列可捲(工具列與星期列不動)、
           # 鍵盤走到看不見的週會捲進來、點日期鈕 / 按「今天」搬停靠點、en-GB 週一起、titleAs、今天是 1 號時實心底包住「7月1日」;
           # 讀屏名稱(日期停靠點 = 完整日期 + 筆數、只有今天 aria-current=date 與「今天,」、唯讀格名稱由內容來念得到事件標題、labels 覆寫生效);
-          # --selftest 二十四個突變各自讓預期那一格紅。本機(同一份建置)主判定約 7 秒、--selftest 約 18 秒,CI 未實測 ——
+          # 三個選用設定與窄寬度(隱藏週末 5 欄 / 鍵盤跳過被藏的日子 / en-IL 藏週五六、週數欄寬一致與年底週數 en-GB 53 / en-US 1、
+          # 載入中 aria-busy 與每格一條骨架、窄寬掃 20 個欄寬不來回跳);
+          # --selftest 三十七個突變各自讓預期那一格紅。本機(同一份建置)主判定約 13 秒、--selftest 約 39 秒,CI 未實測 ——
           # 放在本 job 是因為它是 25 分 job 裡餘裕大的一個(約 8.5 分),不是主題相同(同 sidebar-keyboard job 檔頭「不往沒有餘裕的 job 疊」)。
           npm run test:calendar-month
 

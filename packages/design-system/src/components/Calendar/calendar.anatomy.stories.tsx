@@ -74,23 +74,40 @@ export const Inspector: Story = {
     docs: { description: { story: '右側 Controls 切換 month canvas 的已實作 props；未實作的週/日與 size API 不暴露。' } },
     layout: 'fullscreen',
   },
-  // weekStartsOn 預設不傳 = 從語系推(zh-TW / en-US / ja-JP 週日、en-GB 週一;calendar.spec.md「資料語意」週起始日【WS(定)】)
+  // weekStartsOn 預設不傳 = 從語系推(zh-TW / en-US / ja-JP / en-IL 週日、en-GB 週一;calendar.spec.md「資料語意」週起始日【WS(定)】)。
+  // 三個選用設定預設關(calendar.spec.md「API(第一段)」);en-IL = 週末是週五、週六的語系(CLDR),開 hideWeekends 時藏的是那兩天。
   args: {
     locale: LOCALE,
     events: sampleEvents,
     today: now,
+    hideWeekends: false,
+    showWeekNumbers: false,
+    loading: false,
   },
   argTypes: {
     // 帶 mapping(數字對數字):沒有 mapping 時 Storybook 依元件型別轉換網址參數(?args=weekStartsOn:1),這個聯集型別轉不過去、整個參數被丟掉(實測)
     weekStartsOn: { control: { type: 'select', labels: WEEK_START_LABELS }, options: WEEK_START_OPTIONS, mapping: Object.fromEntries(WEEK_START_OPTIONS.map((n) => [n, n])) },
-    locale: { control: 'select', options: ['en-US', 'en-GB', 'zh-TW', 'ja-JP'] },
+    locale: { control: 'select', options: ['en-US', 'en-GB', 'en-IL', 'zh-TW', 'ja-JP'] },
+    hideWeekends: { control: 'boolean' },
+    showWeekNumbers: { control: 'boolean' },
+    loading: { control: 'boolean' },
     titleAs: { control: 'radio', options: ['h1', 'h2', 'h3'] },
     events: { control: 'object' },
   },
   // 可點模式的三個回調由示範殼接上(點得出真的結果);Controls 只切外觀與資料
   render: (args) => (
     <div className="h-screen p-4 bg-canvas">
-      <CalendarDemo defaultReferenceDate={now} today={args.today} events={args.events} weekStartsOn={args.weekStartsOn} locale={args.locale} titleAs={args.titleAs} />
+      <CalendarDemo
+        defaultReferenceDate={now}
+        today={args.today}
+        events={args.events}
+        weekStartsOn={args.weekStartsOn}
+        locale={args.locale}
+        titleAs={args.titleAs}
+        hideWeekends={args.hideWeekends}
+        showWeekNumbers={args.showWeekNumbers}
+        loading={args.loading}
+      />
     </div>
   ),
 }
@@ -153,8 +170,8 @@ export const ColorMatrix: Story = {
                 </tr>
                 <tr>
                   <Td>Cell 寬度</Td>
-                  <Td mono>1fr × 7</Td>
-                  <Td>週 7 欄等分</Td>
+                  <Td mono>grid-template-columns: [週數欄] repeat(看得見的日子數, minmax(0, 1fr))</Td>
+                  <Td>看得見的日子等分(平常 7 欄;隱藏週末時少那幾欄)。星期列與週列讀同一個欄設定,欄寬一致</Td>
                 </tr>
                 <tr>
                   <Td>日期框</Td>
@@ -182,9 +199,24 @@ export const ColorMatrix: Story = {
                   <Td>沒有「點日子新增」時宣告:格子不亮、日期數字不是按鈕、游標不變;鍵盤停靠點改為格子本身,方向鍵照常</Td>
                 </tr>
                 <tr>
-                  <Td>Weekend cell(後續增量)</Td>
-                  <Td mono>待定(可點的格不可用 bg-muted)</Td>
-                  <Td>目前不提供 weekend prop / isWeekend 樣式；未實作能力不預佔 API</Td>
+                  <Td>週末(hideWeekends)</Td>
+                  <Td mono>週末不加底;hideWeekends → 那幾欄不畫</Td>
+                  <Td>週末 = 語系的週末(zh-TW 週六、週日;en-IL 週五、週六),開了以後那幾欄與星期列一起拿掉,只落在週末的事件不畫;鍵盤跳過被藏的日子</Td>
+                </tr>
+                <tr>
+                  <Td>週數欄(showWeekNumbers)</Td>
+                  <Td mono>寬 calc(2 × var(--calendar-gap) + 2ch) · text-body font-normal text-fg-secondary tabular-nums · pt-[var(--calendar-gap)] · h-tag-md</Td>
+                  <Td>左側獨立窄欄,寬 = 2 × 格子內距 + 最寬兩位數;週數水平置中、上邊距與高度同日期框;欄頭「週」上下左右置中,灰底條延伸過去;格線同日期格。週數格是 rowheader,不是操作目標</Td>
+                </tr>
+                <tr>
+                  <Td>載入中(loading)</Td>
+                  <Td mono>Skeleton · h-tag-md · w-full · aria-hidden;格陣 aria-busy</Td>
+                  <Td>每格事件區換成一條與事件列同高的骨架,不畫事件與「+N」;日期數字照畫、仍可點空白新增</Td>
+                </tr>
+                <tr>
+                  <Td>窄寬度</Td>
+                  <Td mono>欄寬 ≤ 60(calendar-geometry.ts CALENDAR_NARROW_COLUMN_MAX_PX)</Td>
+                  <Td>星期縮成一個字(Intl weekday narrow,zh-TW「日」)、每月 1 號只顯示「1」;只看欄寬、不看視窗寬</Td>
                 </tr>
               </tbody>
             </table>
@@ -281,6 +313,7 @@ export const Accessibility = {
           <li>Tab — 整個月格陣只停一次(roving tabindex:只有目前焦點日的日期鈕進 Tab 序列,其餘日期鈕與全部事件方塊都不進);進來時停在今天,今天不在本月則停在該月 1 號</li>
           <li>←/→ — 前一天 / 後一天;↑/↓ — 上一週 / 下一週的同一天</li>
           <li>Home / End — 該週的第一天 / 最後一天(依 weekStartsOn)</li>
+          <li>隱藏週末(hideWeekends)時 — ←/→ 跳過被藏的日子(週五按 → 到下週一);Home / End 落在該列第一 / 最後一個看得見的日子;PageUp / PageDown 落在被藏的日子時往同方向找、跑出目標月就往反方向;今天被藏時停靠點在同一週下一個看得見的日子(沒有就前一個),今天不在本月而 1 號被藏時停在 1 號之後第一個看得見的日子</li>
           <li>PageUp / PageDown — 上個月 / 下個月的同一個日號(該日號不存在則落當月最後一天);加 Shift 變成去年 / 明年</li>
           <li>Enter / Space — 日期數字按鈕觸發 <code>onDateClick</code></li>
           <li>F2 — 進到這一格的事件方塊;格內用 ↑↓←→ 換方塊、Enter / Space 觸發 <code>onEventClick</code>、Escape 或 F2 回到日期數字按鈕</li>
@@ -288,6 +321,7 @@ export const Accessibility = {
           <li>日期格唯讀(readOnlyDates)時:格子裡只剩文字,焦點停在格子本身,方向鍵照常;格子的名稱由格內的字組成 —— 先念日期、今天與事件數(同一段字,只給讀屏),再念格內每個事件的標題(看得見的日期數字不重念);格子沒有主要動作,Enter 與 F2 都是進格</li>
           <li>事件方塊唯讀(readOnlyEvents)時:方塊不是按鈕、不進格內導覽</li>
         </ul>
+        <p><b>週數欄與載入中</b>:週數欄(showWeekNumbers)的欄頭是星期列的第一個 <code>columnheader</code>(文字「週」),每一週的週數格是該列的 <code>rowheader</code>(讀屏名稱「第 27 週」,看得見的只有數字);兩者都不是操作目標、不進 Tab 順序。載入中(loading)格陣帶 <code>aria-busy="true"</code>,骨架 <code>aria-hidden</code>;日期的讀屏名稱先不念事件數。這幾段字串(欄頭、週數格名稱)可經 <code>labels</code> 覆寫。</p>
         <p><b>刻意不做</b>:Ctrl+Home / Ctrl+End、Shift+方向鍵切月切年(APG 把 Shift+方向鍵定義為延伸選取,本元件無選取模型)。</p>
         <p><b>Focus</b>:鍵盤焦點一律畫 outline 框(對齊 DS 焦點 canonical)。日期數字按鈕、預設事件 tile 與 <code>renderEventTile</code> 自訂 tile 的外層 wrapper 都走全域 <code>:focus-visible</code> 外描邊(往外 2px;元件不寫任何 class):列距 4、格內距 4,四周淨空 ≥ 4,往外放得下。日期格唯讀(readOnlyDates)時焦點在格子本身,格與格之間零間距 → 內描邊 <code>focus-visible:focus-ring-inset</code>。</p>
         <p><b>驗證</b>:Storybook a11y addon panel 應 0 critical violation。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。</p>
