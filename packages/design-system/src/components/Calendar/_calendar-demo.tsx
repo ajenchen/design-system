@@ -67,9 +67,11 @@ export function CalendarDemo({ events: initialEvents = [], readOnlyDates, readOn
   }
   const dateProps = readOnlyDates ? { readOnlyDates: true as const } : { onDateClick: openCreate }
   const eventProps = readOnlyEvents ? { readOnlyEvents: true as const } : {
-    onEventClick: (event: CalendarEvent) => {
-      // 錨點 = 剛被按的那個事件方塊:滑鼠點與格內導覽(F2 進格)的 Enter / Space 都會讓它成為焦點
-      anchorRef.current = document.activeElement instanceof HTMLElement ? document.activeElement.closest<HTMLElement>('[data-calendar-tile]') : null
+    onEventClick: (event: CalendarEvent, { anchor }: { anchor: HTMLElement }) => {
+      // 錨點 = Calendar 交出來的 anchor(被點的那一列 / 那一段;滑鼠點與格內導覽的 Enter / Space 都一樣,calendar.spec.md「API」)。
+      // 2026-11-25 前從 document.activeElement 反推 —— 焦點所在的元素只是剛好常常是被點的那一段,不是同一件事(M37)。
+      // 先改 virtualRef.current 再 setState:浮層開著時點另一個事件,浮層跟到新的那一段(scripts/overlay-cover-anchor-invariant.mjs M 列)。
+      anchorRef.current = anchor
       setOpenEvent(event)
     },
   }

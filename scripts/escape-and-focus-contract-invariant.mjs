@@ -48,7 +48,7 @@
  *                      (b) 沒打字 → 關日曆(仍在編輯)/ 取消編輯 / 關對話框,三下(2026-11-25;修前兩段都在取消編輯那一下連對話框一起關)
  *   E-datepicker-draft Dialog 裡可打字的 DatePicker:點欄位(日曆開)打字 → Esc 只關日曆、草稿不動 → Esc 還原草稿 → 第 3 下關
  *   E-datatable-cursor Dialog 裡試算表模式的 DataTable:點格(格游標)→ Esc 清游標、焦點留在表格 → 第 2 下關
- *   E-calendar-tile    Dialog 裡的 Calendar:F2 進格內(焦點在事件方塊)→ Esc 出格回日期鈕 → 第 2 下關
+ *   E-calendar-tile    Dialog 裡的 Calendar:從跨日長條的第 2 天 F2 進格內(焦點在長條;DOM 在第 1 天那格)→ Esc 出格回第 2 天的日期鈕 → 第 2 下關
  *   E-drag             Popover 裡的排序面板:焦點在拖曳把手按空白鍵提起 → ↓ → Esc 只取消拖曳(播報「已取消」)、面板不關 → 第 2 下關
  *   E-drag-table       Dialog 裡有格游標的 DataTable:表頭按空白鍵提起欄位 → Esc 只取消拖曳,格游標還在、對話框不關
  *   E-combobox-popup   Dialog 裡經 getInputProps 接線、值改過的 Combobox:清單開著按 Esc → 只關清單、值不動、對話框不關
@@ -95,7 +95,8 @@
  *   DatePicker 草稿的 Esc 不看 Radix 已用掉 → E-datepicker-draft / E-inline-edit-custom-date(同一個輸入框放進 InlineEdit,同一個根因)
  *   InlineEdit 自訂編輯容器不宣告 Esc 層 → E-inline-edit-custom / E-inline-edit-custom-date / F-inline-edit-enter-focus;進編輯不把焦點補進編輯容器 → F-inline-edit-enter-focus;
  *   編輯容器不看就近的那一層 / 不看 Radix 已用掉 → E-inline-edit-custom-date(各紅一段);編輯容器只看不認領 → E-inline-edit-custom / -date / F-inline-edit-enter-focus
- *   DataTable 根不宣告 self 層 → E-datatable-cursor / E-datatable-hidden-col / E-datatable-cell-widget(它的第二下就是這一層);Calendar 方塊不宣告 → E-calendar-tile
+ *   DataTable 根不宣告 self 層 → E-datatable-cursor / E-datatable-hidden-col / E-datatable-cell-widget(它的第二下就是這一層);Calendar 方塊不宣告 → E-calendar-tile;
+ *   Calendar 出格回長條 DOM 所在那一天(2026-11-25 前的 dayStopOf(焦點所在那一格))→ E-calendar-tile
  *   DataTable 連結格 / 開關格不宣告格內那一層 → E-datatable-cell-widget
  *   拖曳不宣告 / 不獨占 → E-drag / E-drag-table;DataTable 拖曳中仍用 self 層 → E-drag-table
  *   Combobox 丟掉 name / data-* → E-combobox / C-combobox-focus;表單 Esc 不看 Radix 已用掉 → E-combobox-popup(+ 接著量的 E-combobox;也不認領 → F-rename)
@@ -260,6 +261,14 @@ const MUTANTS = [
     file: 'components/Calendar/calendar.tsx',
     expectRed: ['E-calendar-tile'],
     apply: (src) => src.split('{...escapeLayerProps(true)}').join(''),
+  },
+  {
+    // 2026-11-25 前的寫法:出格回焦點所在那一格的停靠點 —— 跨日長條的 DOM 在起點那一天,從第 2 天進格、Esc 回到第 1 天
+    id: 'calendar-tile-exit-dom-cell',
+    what: 'Calendar 出格回長條 DOM 所在那一天(不記進格那一天)',
+    file: 'components/Calendar/calendar.tsx',
+    expectRed: ['E-calendar-tile'],
+    apply: (src) => replaceOnce(src, /const exitTo = \(\) => \(day !== null \? dayStopByIso\(day\) : null\) \?\? dayStopOf\(cell\)/, 'const exitTo = () => dayStopOf(cell)'),
   },
   {
     id: 'drag-no-escape-layer',
@@ -576,8 +585,9 @@ function CalendarScene() {
   return (
     <Shell title="月曆">
       <Calendar aria-label="團隊行事曆" referenceDate={new Date(2026, 2, 1)} today={new Date(2026, 2, 1)}
-        // 全天一天:end 不含 → 隔天(calendar.spec.md「資料語意」;寫同一天 = 零長度 + 開發期警告)
-        events={[{ id: 'e1', title: 'Sprint review', start: '2026-03-12', end: '2026-03-13', allDay: true }]}
+        // 全天兩天 3/12–3/13:end 不含 → 3/14(calendar.spec.md「資料語意」;寫同一天 = 零長度 + 開發期警告)。
+        // 跨日長條的 DOM 在 3/12 那格;E-calendar-tile 從第 2 天(3/13)進格,出格要回 3/13(calendar.spec.md「A11y 預設」格內那段)
+        events={[{ id: 'e1', title: 'Sprint review', start: '2026-03-12', end: '2026-03-14', allDay: true }]}
         onCreateEvent={() => count('create')} onEventClick={() => count('event')} />
     </Shell>
   )
@@ -908,7 +918,8 @@ window.__extra = {
   date: () => ({ draft: q('#scene-dialog input[role=combobox]')?.value ?? null, calendar: !!q('[role=dialog][aria-label="日期選擇"]'), value: q('[data-date]')?.textContent }),
   table: () => ({ cursor: !!q('[data-selected-cell-id]'), cursorId: q('[data-selected-cell-id]')?.getAttribute('data-selected-cell-id') ?? null,
     focusCell: document.activeElement?.closest?.('[data-cell-id]')?.getAttribute('data-cell-id') ?? null, live: q('[data-drag-live-region]')?.textContent ?? '' }),
-  cal: () => ({ tile: document.activeElement?.hasAttribute('data-calendar-tile') ?? false, day: document.activeElement?.hasAttribute('data-calendar-day') ?? false }),
+  cal: () => ({ tile: document.activeElement?.hasAttribute('data-calendar-tile') ?? false, day: document.activeElement?.hasAttribute('data-calendar-day') ?? false,
+    dayIso: document.activeElement?.getAttribute('data-calendar-day') ?? null }),
   drag: () => ({ live: q('[data-drag-live-region]')?.textContent ?? '', handles: document.querySelectorAll('button[aria-label="拖曳重排"]').length }),
   combo: () => ({ tags: q('[data-tags]')?.textContent, listbox: !!q('[cmdk-root]') }),
   err: () => ({ errors: Array.from(document.querySelectorAll('[data-error-for]')).map((e) => e.getAttribute('data-error-for')), submits: Number(q('form')?.dataset.submits), activeName: document.activeElement?.getAttribute('name'), activeRole: document.activeElement?.getAttribute('role') }),
@@ -1176,13 +1187,14 @@ async function runChecks(page) {
 
   // ── E-calendar-tile ──
   await scene('calendar'); await openDialog()
-  await d.focus('#scene-dialog [data-calendar-day="2026-03-12"]')
+  // 從長條的第 2 天(3/13)進格:長條的 DOM 在 3/12 那格,出格要回進格那一天 3/13(2026-11-25;之前回 DOM 所在的 3/12)
+  await d.focus('#scene-dialog [data-calendar-day="2026-03-13"]')
   await d.press('F2')
   before = await snap('cal')
   needs(before.tile, 'F2 沒進格內', before)
   steps = await escapeUntilClosed('cal')
-  check('E-calendar-tile', 'contract', 'Dialog 裡的 Calendar:F2 進格內(焦點在事件方塊)→ 第一下 Esc 出格回日期鈕、對話框不關 → 第二下關',
-    steps.length === 2 && steps[0].dialog && steps[0].day && !steps[1].dialog && neverBody(steps), steps)
+  check('E-calendar-tile', 'contract', 'Dialog 裡的 Calendar:從長條的第 2 天 F2 進格內(焦點在事件方塊)→ 第一下 Esc 出格回進格那一天的日期鈕、對話框不關 → 第二下關',
+    steps.length === 2 && steps[0].dialog && steps[0].day && steps[0].dayIso === '2026-03-13' && !steps[1].dialog && neverBody(steps), steps)
 
   // ── E-drag(排序面板 in Popover)──
   await scene('drag'); await d.click('[data-open]')

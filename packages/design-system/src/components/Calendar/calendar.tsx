@@ -60,6 +60,10 @@ import { layoutMonth, normalizeEvents, parseEventDate, type CalendarEventSegment
  *   lib/date-locale.ts(週起始日 resolveWeekStartsOn、週末 resolveWeekend、第一週天數 resolveFirstWeekMinDays);週數 = date-fns getWeek
  * - 讀屏字串: `labels`(CalendarLabels,下方「讀屏字串」段;寫法同 BulkActionBar / AgentDecisionCard 的 `labels`);
  *   日期停靠點名稱 = Intl `dateStyle: 'full'` + 筆數(calendar.spec.md「A11y 預設」),今天加 aria-current="date" 與前綴(同 DateGrid「今天,」)
+ * - 滑過與命中: color.spec.md「Hover 換色配對總則」「巢狀滑過」、hit-area-canonical.md「一、可以操作的東西」第 1 條(滑過有樣式變化的位置,按下去必須觸發它)、
+ *   motion.spec.md「hover 回饋不做過渡」;
+ *   格子滑過 = 屬性 data-hovered(同 DataTable 列滑過 / DateGrid 的「用屬性而不是 React state」),指標底下那一格才亮(「格子的滑過」段)
+ * - 格內鍵盤: keyboard-model-canonical.md「焦點放在格上還是格裡的控件上,以及進格用什麼鍵」Calendar 列、「焦點所在的控件自己那一層也算一層」(lib/overlay-escape.ts)
  *
  * ── Implemented scope ──
  * 月 view(toolbar / grid / event tile / today highlight / outside days)。未實作的
@@ -138,8 +142,15 @@ type CalendarEventTileProps =
   | {
       /** 事件方塊唯讀:不可點、不亮、不是按鈕(只顯示事件,例如公司假日這類沒有詳情可開的標記)。 */
       readOnlyEvents?: false
-      /** 點 event tile 回調。事件方塊可點時**必填**:元件沒有內建的「打開事件」行為。 */
-      onEventClick: (event: CalendarEvent) => void
+      /**
+       * 點 event tile 回調。事件方塊可點時**必填**:元件沒有內建的「打開事件」行為。
+       * 第二個參數 `{ anchor }` = 被點的那一列 / 那一段(事件方塊的外層元素;跨日長條換週切開時是被點的那一段)—— 滑鼠點與格內導覽的
+       * `Enter` / `Space` 都一樣(calendar.spec.md「API」`onEventClick={(event, { anchor }) => …}`、命中區表事件方塊列【總帳更正 #4】)。
+       * 產品自己開詳情浮層時拿它當錨點(例:Popover 的 `PopoverAnchor virtualRef`)。不要改從 `document.activeElement` 反推:
+       * 焦點所在的元素只是「剛好」常常是被點的那一段(程式化 `click()`、按下時不搬焦點的內容都會分開),anchor 直接就是被點的那一個。
+       * 只收一個參數的寫法照樣能用。
+       */
+      onEventClick: (event: CalendarEvent, details: { anchor: HTMLElement }) => void
     }
   | {
       /** 事件方塊唯讀:不可點、不亮、不是按鈕(只顯示事件)。宣告了就不可以傳 `onEventClick`。 */
@@ -358,6 +369,41 @@ function layoutBorderBoxSize(el: HTMLElement): { width: number; height: number }
   }
 }
 
+// ── 指標底下是哪一格(格子的滑過、滑鼠點長條時的「進格那一天」)───────────────────────────────────────────
+// 長條的 DOM 在它這一週第一個看得見的日子(calendar.spec.md「跨日長條」實作備註),所以「指標底下那一格」不能從 DOM 祖先找:
+// 用 document.elementsFromPoint 取指標所在點由上到下的元素,長條蓋在格子上、它底下第一個 gridcell 就是指標所在那一格。
+// POC(2026-11-25,團隊行事曆「Alex 休假」7/20–7/22 三段正中各量一次):elementsFromPoint 與「逐格比外框」都得到 7/20 / 7/21 / 7/22,
+// CSS :hover 三次都亮 7/20;選 elementsFromPoint —— 週數欄、隱藏週末、捲動、祖先縮放都由瀏覽器的命中測試處理,不必自己算,
+// 也較快(1000 次平均 0.010 vs 0.016 ms)。只認同一個格陣裡的格子(巢狀月曆或旁邊別的格陣不算)。
+
+/** 由上到下的命中元素裡,第一個屬於這個格陣的格子 */
+function gridcellIn(stack: Element[], grid: HTMLElement): HTMLElement | null {
+  for (const el of stack) {
+    if (el instanceof HTMLElement && el.getAttribute('role') === 'gridcell' && grid.contains(el)) return el
+  }
+  return null
+}
+
+/** 指標所在點底下的那一格(不論可不可點);沒有 = null */
+function cellAtPoint(grid: HTMLElement, x: number, y: number): HTMLElement | null {
+  return gridcellIn(grid.ownerDocument.elementsFromPoint(x, y), grid)
+}
+
+/**
+ * 指標在這一點時該亮的那一格(calendar.spec.md「Cell 規則」命中區表):最上面的元素不在這個格陣裡(浮層、提示蓋在上面)→ 沒有;
+ * 最上面是唯讀的一段(有 data-calendar-covers、沒有 data-calendar-tile)→ 沒有【總帳更正 #3:唯讀列上格子不亮 —— 點它什麼都不發生,
+ * hit-area-canonical.md「一、可以操作的東西」第 1 條】;其餘(格內空白、日期鈕、可點的列 / 長條、「+N」)→ 指標所在那一格(可點的列上格子照亮,
+ * color.spec.md「巢狀滑過」【U6】)。
+ */
+function hoverTargetCell(grid: HTMLElement, x: number, y: number): HTMLElement | null {
+  const stack = grid.ownerDocument.elementsFromPoint(x, y)
+  const top = stack[0]
+  if (!top || !grid.contains(top)) return null
+  const piece = top.closest('[data-calendar-covers]')
+  if (piece && !piece.hasAttribute('data-calendar-tile')) return null
+  return gridcellIn(stack, grid)
+}
+
 /**
  * 今天剛好被藏時停靠點落在哪:同一週的下一個看得見的日子,這一週後面沒有了就前一個(週五後面只剩週末 → 週五)。
  * 「今天」鈕搬停靠點也走這一支。
@@ -375,7 +421,7 @@ function shownDayNearToday(today: Date, isShown: (day: Date) => boolean, weekSta
 //(calendar.spec.md「renderEventTile 的鍵盤責任歸屬」);裡面才是長相。
 
 /** 一段事件可點(開事件)或唯讀(什麼都不發生)。唯讀 = readOnlyEvents 或這一筆的 readOnly,由 Calendar 本體的 eventModeOf 一支判斷。 */
-type EventPieceMode = { readOnly: true } | { readOnly: false; onEventClick: (event: CalendarEvent) => void }
+type EventPieceMode = { readOnly: true } | { readOnly: false; onEventClick: (event: CalendarEvent, details: { anchor: HTMLElement }) => void }
 
 interface MonthEventPieceShellProps extends React.HTMLAttributes<HTMLDivElement> {
   event: CalendarEvent
@@ -423,6 +469,7 @@ const MonthEventPieceShell = React.forwardRef<HTMLDivElement, MonthEventPieceShe
   if (mode.readOnly) {
     // 唯讀(readOnlyEvents 或單筆 readOnly):不是按鈕、不進格內導覽(沒有 data-calendar-tile,F2 找不到它)、游標不變(cursor-default 蓋掉可點格子的手形)。
     // 點它什麼都不發生 —— 阻止冒泡,不會變成在這天新增【總帳更正 #3】;長條的 DOM 在第一格,不阻止的話點第 3 天會在第 1 天新增。
+    // 指標在它上面時格子也不亮(命中區表唯讀列「格子在它上面也不亮」):由 Calendar 本體的 hoverTargetCell 認「沒有 data-calendar-tile 的一段」。
     // 不寫 aria-label:沒有角色的 div 禁止命名(ARIA 1.2 generic 的 name prohibited),事件標題就是它的文字內容。
     return (
       <div
@@ -454,20 +501,22 @@ const MonthEventPieceShell = React.forwardRef<HTMLDivElement, MonthEventPieceShe
         onClick?.(e)
         // 阻止冒泡:點事件不會變成在這天新增【Q6(定)】;長條的 DOM 在它這一週第一個看得見的日子,冒泡會在錯的日子新增(calendar.spec.md「命中區」下方那段)
         e.stopPropagation()
-        mode.onEventClick(event)
+        // anchor = 這一段的外層(被點的那一列 / 那一段;calendar.spec.md「API」【總帳更正 #4】)
+        mode.onEventClick(event, { anchor: e.currentTarget })
       }}
       onKeyDown={(e) => {
         onKeyDown?.(e)
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
           e.stopPropagation()
-          mode.onEventClick(event)
+          mode.onEventClick(event, { anchor: e.currentTarget })
         }
       }}
       // 讀屏名稱 =「{標題},{開始時間 或 起訖日期}{,全天}」(calendar.spec.md「A11y 預設」事件列那條【AI 推導】;字串在 labels.event)。
       // 2026-11-25 前是「事件:{標題}」—— 聽不到時間與日期,格內兩筆同名事件分不出來。
       aria-label={name}
       // 焦點框往外(= 不寫 class,走全域 :focus-visible):四周最小淨空 = 列距 4、格子內距 4 ≥ 4(calendar.spec.md「焦點框」、focus-canonical.md「問題二」)。
+      // 跨日長條同一條:框畫在整段外層上(calendar.spec.md「A11y 預設」格內那段「焦點框畫在整段上」;量測 calendar-month-invariant E4)。
       className={cn(shape, 'cursor-pointer')}
     >
       {children}
@@ -841,6 +890,16 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
     return Array.from(grid.querySelectorAll<HTMLElement>(`[data-calendar-tile][data-calendar-covers~="${iso}"]`))
       .sort((a, b) => Number(a.dataset.calendarLane) - Number(b.dataset.calendarLane))
   }
+  // 某一天的日期停靠點(日期格可點 = 日期鈕、唯讀 = 格子本身;兩者都帶 data-calendar-day)
+  const dayStopByIso = (iso: string) => gridRef.current?.querySelector<HTMLElement>(`[data-calendar-day="${iso}"]`) ?? null
+
+  // ── 進格那一天(calendar.spec.md「A11y 預設」格內那段:Escape / F2 回到**進格那一天**的日期停靠點【AI 推導】)──────
+  // 跨日長條的 DOM 只在它這一週第一個看得見的日子,從第 X 天 F2 進來的焦點落在那一格的 DOM 裡 —— 出格時不能照 DOM 找回去
+  //(2026-11-25 前是 dayStopOf(焦點所在那一格),從第 3 天進格、按 Esc 回到第 1 天)。所以進格時把那一天記下來:
+  //   鍵盤:F2(唯讀格的 Enter)從哪一天的停靠點進來;滑鼠:按在長條的哪一天那段(cellAtPoint,同滑過的命中)。
+  // 只是記憶、不是狀態(不需要重畫)→ ref。讀的時候先驗:記下的日子不在焦點所在這一段涵蓋的日子裡(過期,例:程式化 focus 到別的方塊)
+  // → 改用這一段的第一天,不會回到一個跟這個方塊無關的日子。
+  const entryDayRef = React.useRef<string | null>(null)
 
   const handleGridKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement | null
@@ -853,19 +912,26 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
     // contains multiple widgets, moves focus to the next widget inside the cell」/「Escape: restores
     // grid navigation.」
     if (tile) {
-      // 方塊所在那一格(長條 = 它這一週第一個看得見的日子)的 widget 順序;進格那一天的記憶與 Esc 回進格那一天在格內互動那一包
-      const tiles = widgetsOfDay(dayStopOf(cell)?.getAttribute('data-calendar-day') ?? null)
+      // 這一次是從哪一天進格的(見 entryDayRef);widget 順序與出格的落點都照那一天,不照方塊的 DOM 在哪一格
+      const covers = tile.getAttribute('data-calendar-covers')?.split(' ') ?? []
+      const entry = entryDayRef.current
+      const day = entry !== null && covers.includes(entry) ? entry : covers[0] ?? null
+      const tiles = widgetsOfDay(day)
       const index = tiles.indexOf(tile)
+      // 出格:回進格那一天的停靠點(那一天沒畫出來 —— 例:進格後換了月 —— 才退回方塊所在那一格)
+      const exitTo = () => (day !== null ? dayStopByIso(day) : null) ?? dayStopOf(cell)
       let nextNode: HTMLElement | null | undefined
       switch (event.key) {
         case 'Escape':
           // 格內模式是焦點所在控件自己的一層(方塊帶 data-escape-layer):放在 Dialog 裡第一下 Esc 只出格、不關對話框;
           // 這一下若已被 Radix 用來關掉別的浮層就不動(lib/overlay-escape.ts)
           if (!isEscapeForControl(event)) return
-          nextNode = dayStopOf(cell)
+          nextNode = exitTo()
+          entryDayRef.current = null
           break
         case 'F2':
-          nextNode = dayStopOf(cell)
+          nextNode = exitTo()
+          entryDayRef.current = null
           break
         case 'ArrowDown':
         case 'ArrowRight':
@@ -899,6 +965,8 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
       if (firstTile === undefined) return
       event.preventDefault()
       event.stopPropagation()
+      // 記下進格那一天:出格回這一天(見 entryDayRef;從長條的第 X 天進來,firstTile 的 DOM 可能在第 1 天那格)
+      entryDayRef.current = dayValue
       firstTile.focus()
       return
     }
@@ -957,6 +1025,52 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   }
   const handlePrev = () => setRefDate(subMonths(refDate, 1))
   const handleNext = () => setRefDate(addMonths(refDate, 1))
+
+  // ── 格子的滑過(calendar.spec.md「Cell 規則」滑過條與命中區表、「跨日長條」滑過 / 點擊 / 焦點條)─────────────────────
+  // 格子的滑過底由屬性 data-hovered 驅動(格子的 class `data-[hovered]:bg-neutral-hover`),**不用 CSS :hover**:
+  //   :hover 沿 DOM 祖先亮,長條的 DOM 在第一格 —— 指標在「Alex 休假」7/22 那段,亮的是 7/20(POC 實測,見 cellAtPoint 上方);
+  //   唯讀的列 / 長條是格子的子孫,:hover 也排除不掉它們(命中區表:唯讀列上格子不亮)。
+  // 誰亮 = hoverTargetCell(指標底下那一格;唯讀的一段、蓋在上面的浮層 → 都不亮)。寫法照 DateGrid / DataTable 的「用屬性而不是 React state」
+  //(date-grid.tsx GAP_CONFIRMS_ATTR 上方、data-table.tsx setHoveredRow):它跟著指標每一步變,不該讓整張格陣重畫;
+  // 唯一寫入者 markHoveredCell —— 標新格的同一個動作清掉舊格,同一時間最多一格亮。
+  // 何時重算(POC 實測 Chromium):指標移動 / 換到別的元素(pointermove / pointerover);捲動區捲了但指標沒動(scroll 捕獲 ——
+  // Chromium 捲完會補送 pointerover,這裡不靠它);每次重畫之後(換月、事件變了、列數變了,格子可能換了節點,用最後的指標位置再對一次);
+  // 指標離開格陣(pointerleave;蓋上 modal 時 Chromium 也送)→ 清掉。觸控沒有滑過,不算。瞬間切換、不做過渡【維持 U2】。
+  // 日期格唯讀(readOnlyDates)時格子不亮(class 本來就不掛),這裡也不標。
+  const hoveredCellRef = React.useRef<HTMLElement | null>(null)
+  const pointerAtRef = React.useRef<{ x: number; y: number } | null>(null)
+  const markHoveredCell = (next: HTMLElement | null) => {
+    const prev = hoveredCellRef.current
+    if (prev === next) return
+    prev?.removeAttribute('data-hovered')
+    next?.setAttribute('data-hovered', '')
+    hoveredCellRef.current = next
+  }
+  const syncHoveredCell = () => {
+    const grid = gridRef.current
+    const at = pointerAtRef.current
+    markHoveredCell(grid && at && datesInteractive ? hoverTargetCell(grid, at.x, at.y) : null)
+  }
+  const handleGridPointer = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === 'touch') return
+    pointerAtRef.current = { x: event.clientX, y: event.clientY }
+    syncHoveredCell()
+  }
+  const handleGridPointerLeave = () => {
+    pointerAtRef.current = null
+    markHoveredCell(null)
+  }
+  // 滑鼠按在可點的一段上 = 從指標底下那一天進格(entryDayRef;按下就會把焦點給那一段)。按在別處不動記憶。
+  const handleGridPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    const grid = gridRef.current
+    if (!grid || !(event.target instanceof Element) || !event.target.closest('[data-calendar-tile]')) return
+    const at = cellAtPoint(grid, event.clientX, event.clientY)
+    entryDayRef.current = at ? dayStopOf(at)?.getAttribute('data-calendar-day') ?? null : null
+  }
+  // 每次重畫之後用最後的指標位置對一次(沒有相依陣列 = 每次 commit 都跑;指標不在格陣上時直接清,不呼叫命中測試)
+  React.useLayoutEffect(() => {
+    syncHoveredCell()
+  })
 
   return (
     <div
@@ -1030,6 +1144,13 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
         // grid navigation 掛在格陣上(事件委派):日期鈕與事件方塊都在這棵子樹裡,
         // 焦點在哪一層由 handler 自己判,不必每顆鈕各掛一份 handler。
         onKeyDown={handleGridKeyDown}
+        // 格子的滑過(data-hovered)與滑鼠進格那一天:同樣委派在格陣上(見上方「格子的滑過」)。
+        // scroll 不冒泡,用捕獲才收得到 ScrollArea 視窗的捲動。
+        onPointerMove={handleGridPointer}
+        onPointerOver={handleGridPointer}
+        onPointerLeave={handleGridPointerLeave}
+        onPointerDown={handleGridPointerDown}
+        onScrollCapture={syncHoveredCell}
       >
         {/* 星期列:字樣 text-foreground text-body font-medium、置中、bg-muted 灰底條與底線都維持(calendar.spec.md「Cell 規則」星期列條;
             字樣【P6、總帳更正 #6】、灰底【總帳更正 #9】)。內距【AI 推導】:左右 = 格子內距、上下讓列高 = 4 + 列高單位 24 + 4 = 32
@@ -1189,7 +1310,9 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                         // 底色一律透明,所以滑過與當月格同一個滑過色。先前的 `bg-muted` 是「不可操作」的 token,放在可點的格上
                         // 讓滑過反而變淺(淺 #F5F5F5 → #FAFAFA)。非當月只靠日期數字的淡字區分,見下方日期鈕與 spec「Outside day cell」。
                         // 唯讀的格不亮:點了沒反應就不給滑過回饋(color.spec.md「Hover 換色配對總則」;待辦總帳 L8)。
-                        datesInteractive && 'hover:bg-neutral-hover',
+                        // 亮的是「指標底下那一格」:由 data-hovered 驅動,不是 :hover(2026-11-25 前是 `hover:bg-neutral-hover` —— 指標在長條第 3 天那段,
+                        // 亮的是長條 DOM 所在的第 1 天;指在唯讀列上格子也亮)。寫入者 = 上方「格子的滑過」markHoveredCell。
+                        datesInteractive && 'data-[hovered]:bg-neutral-hover',
                         // 點得到(點整格 = 在這天新增)→ 手形游標(hit-area-canonical.md 滑過原則一-3;先前只有日期數字鈕是手形,
                         // 格子空白處滑過會亮、點了會新增,游標卻是箭頭)
                         datesInteractive && 'cursor-pointer',
@@ -1199,8 +1322,9 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                       {/* Date number = keyboard 入口,在格子左上【C10(改)】(2026-11-25 前在右上)。24 的框是**列高**(與事件列同一個列高單位),
                           **不是**某條最小點擊尺寸(先前這裡寫的「WCAG 2.5.8 ≥24」已於 2026-09-24 撤回)—— 本 DS 以滑鼠精度為前提,不拿觸控尺寸建議當依據
                           (owner = `ds-canonical/references/hit-area-canonical.md`「本 DS 不採納觸控尺寸建議」)。
-                          命中與懸停的相等關係成立在 **cell** 這一層:懸停回饋是整格的 `hover:bg-neutral-hover`
-                          (上方 gridcell 的 className),而整格 div 的 onClick 就是同一個 onDateClick → 懸停形狀 ≡ 命中區。
+                          命中與懸停的相等關係成立在 **cell** 這一層:懸停回饋是整格的 `data-[hovered]:bg-neutral-hover`
+                          (上方 gridcell 的 className;指標底下那一格才帶 data-hovered,見「格子的滑過」),而整格 div 的 onClick 就是同一個 onDateClick
+                          → 懸停形狀 ≡ 命中區。指在唯讀的列上點了什麼都不發生,那一格也就不亮(hoverTargetCell)。
                           這顆鈕本身沒有任何 hover 樣式、平日底色透明,所以它不是另一個獨立目標,而是同一個目標的鍵盤入口 + 焦點框幾何;
                           它完全落在宿主格內、動作與宿主相同,不會生出隱形帶也搶不走別人的點擊。
                           規格 → `calendar.spec.md`「Cell 規則」的「命中區」條;量測 → scripts/calendar-month-invariant.mjs(日期框離格邊 4 / 4、高 24)。

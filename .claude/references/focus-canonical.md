@@ -555,7 +555,7 @@ DataTable 的 boolean 儲存格,量到勾選框四邊淨空 0px → 先前判「
 **一個元件一種畫法。** 判準量的是「這個元素在它**設計上的位置**四周有多少正當淨空」,不是拿最極端的情況、
 也不是執行期逐個實例去量。所以:
 
-- 每個元件(元素種類)在規格裡只有一個答案:按鈕、SidebarMenuAction、PeoplePicker 的移除 ×(12px 鈕,左右是疊在一起的頭像,不算鄰居)、Calendar 事件列(列距 4、格內距 4)往外;選單項、tab、Calendar 唯讀日期格(`readOnlyDates`,焦點在格子本身,格與格零間距)、DateGrid 日期格(格間 4px 縫裡跑著區間 track 與預覽框,2026-09-23 改判往內;藍底格另走「填色元素上的內描邊」)往內。
+- 每個元件(元素種類)在規格裡只有一個答案:按鈕、SidebarMenuAction、PeoplePicker 的移除 ×(12px 鈕,左右是疊在一起的頭像,不算鄰居)、Calendar 事件列與跨日長條(列距 4、格內距 4)往外;選單項、tab、Calendar 唯讀日期格(`readOnlyDates`,焦點在格子本身,格與格零間距)、DateGrid 日期格(格間 4px 縫裡跑著區間 track 與預覽框,2026-09-23 改判往內;藍底格另走「填色元素上的內描邊」)往內。
   答案寫在該元件的 class 上(往外 = 什麼都不寫;往內 = `focus-ring-inset`),閘 `scripts/focus-suppression-registry.mjs` 對著 class 查。
 - 同一個底層元件被**另一個元件**放進貼邊的位置(例:Tag 把移除 × 放進 24 高、上下淨空 3px 的盒子裡),往內的決定由**那個外層元件**的規格與 class 承擔,
   底層元件本身維持預設往外 —— 不是底層元件自己長兩套。驗算表裡的「Tag 的移除 ×」(上下淨空 3 → 內,寫在 TagDismiss)與「SidebarMenuAction」(四周有餘 → 外)
@@ -606,7 +606,7 @@ user 2026-09-23 拍板 D(逐字:「我會想要選D,因為 c的白線幾乎要�
 | PeoplePicker 移除 × | 左右鄰居 1.64px / −0.02px,**但都是疊在一起的頭像** | 疊層不算鄰居 → 無限制;無裁切祖先 | **外 +2px** |
 | AgentPanel 思考過程 | 下方鄰距 **0.00px**(正常流內容) | A(0 < 4) | **內 −2px** |
 | DateGrid 日期格 | 上右下三面各 **4.00px**,**但那 4px 縫裡跑著區間 track(td `::before`)與預覽框(td `::after`)** | A:縫隙被正當障礙佔用(2026-09-23 重跑;09-16 的這一列只量了淨空、沒看縫裡有什麼) | **內 −2px**;藍底格白線退 3px(「填色元素上的內描邊」)|
-| Calendar 事件列(含 `renderEventTile` 自訂方塊外層)| 列距 4、格子內距 4(2026-11-25 起;之前 `gap-0.5` = 2px → 內)→ 四周最小淨空 **4.00px**(`scripts/calendar-month-invariant.mjs` 量列距與格內距)| 都不命中(4.00 算放得下)| **外 +2px** |
+| Calendar 事件列與跨日長條(含 `renderEventTile` 自訂方塊外層;長條的框畫在整段上)| 列距 4、格子內距 4(2026-11-25 起;之前 `gap-0.5` = 2px → 內)→ 四周最小淨空 **4.00px**(`scripts/calendar-month-invariant.mjs` 量列距與格內距,E3 事件列、E4 長條的焦點框往外)| 都不命中(4.00 算放得下)| **外 +2px** |
 | Calendar 唯讀日期格(`readOnlyDates`,焦點在格子本身)| 格與格之間 **0**(格線相鄰)| A(0 < 4) | **內 −2px** |
 | Field 唯讀三兄弟 | 上方 FieldLabel **4.00px** | 都不命中(但 2026-09-10 起唯讀不畫外框,改邊框轉主色 —— 見規則二「唯讀的 Field 控件」列,這一列只留幾何結論)| **外 +2px**(若哪天要畫框)|
 | SidebarMenuAction | 四周有餘 | 淨空 ≥ 4 | **外 +2px** |

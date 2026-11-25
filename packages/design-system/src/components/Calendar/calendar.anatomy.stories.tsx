@@ -203,8 +203,8 @@ export const ColorMatrix: Story = {
                 </tr>
                 <tr>
                   <Td>Hover cell</Td>
-                  <Td mono>hover:bg-neutral-hover</Td>
-                  <Td>提示可點擊新增入口(日期格可點時)</Td>
+                  <Td mono>data-[hovered]:bg-neutral-hover</Td>
+                  <Td>提示可點擊新增入口(日期格可點時)。亮的是指標底下那一格:指在跨日長條上亮指標所在的那一天(不是長條起點那一天),指在可點的事件上格子照亮、事件自己的滑過疊上去;指在唯讀的事件上格子不亮</Td>
                 </tr>
                 <tr>
                   <Td>唯讀的格(readOnlyDates)</Td>
@@ -272,7 +272,7 @@ export const ColorMatrix: Story = {
                 <tr>
                   <Td>唯讀的事件(readOnlyEvents / 單筆 readOnly)</Td>
                   <Td mono>長條同上色、不帶 hover(CAT_SUBTLE)· 有時段列不亮 · 無 cursor-pointer</Td>
-                  <Td>事件沒有詳情可開時宣告:方塊不亮、不是按鈕、不進格內導覽(F2 找不到它);截斷時仍有提示</Td>
+                  <Td>事件沒有詳情可開時宣告:方塊不亮、不是按鈕、不進格內導覽(F2 找不到它);指在它上面時格子也不亮(點了什麼都不發生);截斷時仍有提示</Td>
                 </tr>
                 <tr>
                   <Td>放不下的格</Td>
@@ -301,6 +301,7 @@ export const StateBehavior: Story = {
         <div>• <b>event hover</b>:長條切同色濃一階(淺色變深、深色變亮)<code>hover:bg-{'{color}'}-2</code>(如 blue → <code>--color-blue-2</code>);有時段的透明列換 <code>--neutral-hover</code>;都帶 <code>cursor-pointer</code></div>
         <div>• <b>兩種長相</b>:全天 / 跨日 = 類別淡底長條;有時段 = 無底一列「色條 + 開始時間 + 標題」(「設計審查」7/5 上午10:00)</div>
         <div>• <b>empty cell</b>:無事件保持純底色,點擊觸發 onDateClick</div>
+        <div>• <b>cell hover</b>:只亮指標底下那一格 —— 指在「Alex 休假」7/22 那段亮 7/22;指在可點的事件上格子照亮;指在唯讀的事件上(例:展示頁「團隊行事曆」7/3 的公司創立紀念日)格子不亮</div>
         <div>• <b>唯讀</b>(<code>readOnlyDates</code> / <code>readOnlyEvents</code>,各自宣告):格子 / 事件方塊不亮、不是按鈕、游標不變;鍵盤仍可在格陣內走動(見<StoryLink kind="Design System/Components/Calendar/設計原則" name="唯讀的日期格與事件">設計原則 — 唯讀的日期格與事件</StoryLink>);右上角「新事件」是全域新增入口,唯讀時照樣在</div>
       </div>
       <CalendarDemo events={sampleEvents} defaultReferenceDate={now} today={now} locale={LOCALE} />
@@ -336,14 +337,14 @@ export const Accessibility = {
           <li>隱藏週末(hideWeekends)時 — ←/→ 跳過被藏的日子(週五按 → 到下週一);Home / End 落在該列第一 / 最後一個看得見的日子;PageUp / PageDown 落在被藏的日子時往同方向找、跑出目標月就往反方向;今天被藏時停靠點在同一週下一個看得見的日子(沒有就前一個),今天不在本月而 1 號被藏時停在 1 號之後第一個看得見的日子</li>
           <li>PageUp / PageDown — 上個月 / 下個月的同一個日號(該日號不存在則落當月最後一天);加 Shift 變成去年 / 明年</li>
           <li>Enter / Space — 日期數字按鈕觸發 <code>onDateClick</code></li>
-          <li>F2 — 進到這一天的事件方塊(含從前幾天橫跨過來的長條,依列由上而下);格內用 ↑↓←→ 換方塊、Enter / Space 觸發 <code>onEventClick</code>、Escape 或 F2 回到日期數字按鈕</li>
+          <li>F2 — 進到這一天的事件方塊(含從前幾天橫跨過來的長條,依列由上而下);格內用 ↑↓←→ 換方塊(到底不繞回)、Enter / Space 觸發 <code>onEventClick</code>(第二個參數 <code>{'{ anchor }'}</code> = 那一列 / 那一段)、Escape 或 F2 回到進格那一天的日期數字按鈕(從長條的第 3 天進格就回第 3 天,不是長條起點那一天)</li>
           <li>Toolbar 的 ◀ / 今天 / ▶ 在格陣外,是各自獨立的 Tab 停靠點</li>
           <li>日期格唯讀(readOnlyDates)時:格子裡只剩文字,焦點停在格子本身,方向鍵照常;格子的名稱由格內的字組成 —— 先念日期、今天與事件數(同一段字,只給讀屏),再念格內每個事件的標題(看得見的日期數字不重念);格子沒有主要動作,Enter 與 F2 都是進格</li>
           <li>事件方塊唯讀(readOnlyEvents,或單筆事件的 readOnly)時:方塊不是按鈕、不進格內導覽,點了什麼都不發生</li>
         </ul>
         <p><b>週數欄與載入中</b>:週數欄(showWeekNumbers)的欄頭是星期列的第一個 <code>columnheader</code>(文字「週」),每一週的週數格是該列的 <code>rowheader</code>(讀屏名稱「第 27 週」,看得見的只有數字);兩者都不是操作目標、不進 Tab 順序。載入中(loading)格陣帶 <code>aria-busy="true"</code>,骨架 <code>aria-hidden</code>;日期的讀屏名稱先不念事件數。這幾段字串(欄頭、週數格名稱)可經 <code>labels</code> 覆寫。</p>
         <p><b>刻意不做</b>:Ctrl+Home / Ctrl+End、Shift+方向鍵切月切年(APG 把 Shift+方向鍵定義為延伸選取,本元件無選取模型)。</p>
-        <p><b>Focus</b>:鍵盤焦點一律畫 outline 框(對齊 DS 焦點 canonical)。日期數字按鈕、預設事件 tile 與 <code>renderEventTile</code> 自訂 tile 的外層 wrapper 都走全域 <code>:focus-visible</code> 外描邊(往外 2px;元件不寫任何 class):列距 4、格內距 4,四周淨空 ≥ 4,往外放得下。日期格唯讀(readOnlyDates)時焦點在格子本身,格與格之間零間距 → 內描邊 <code>focus-visible:focus-ring-inset</code>。</p>
+        <p><b>Focus</b>:鍵盤焦點一律畫 outline 框(對齊 DS 焦點 canonical)。日期數字按鈕、預設事件 tile(跨日長條的框畫在整段上)與 <code>renderEventTile</code> 自訂 tile 的外層 wrapper 都走全域 <code>:focus-visible</code> 外描邊(往外 2px;元件不寫任何 class):列距 4、格內距 4,四周淨空 ≥ 4,往外放得下。日期格唯讀(readOnlyDates)時焦點在格子本身,格與格之間零間距 → 內描邊 <code>focus-visible:focus-ring-inset</code>。</p>
         <p><b>驗證</b>:Storybook a11y addon panel 應 0 critical violation。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。</p>
       </div>
     </div>

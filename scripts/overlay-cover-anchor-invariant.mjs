@@ -10,7 +10,7 @@
  *         M  換錨點(2026-11-24 審查必修):**不開減少動態**(收起時浮層還掛著播收起動畫),浮層開著時 consumer 把 virtualRef 改指另一格
  *            → 浮層跟到新的那一格(沒開 coverAnchor:頂邊 = 新錨點底邊 + 8、水平置中;開了:中心 = 新錨點中心)。兩種順序 × 開不開 coverAnchor 共 4 列:
  *            一直開著就換(open)/ 收起動畫中又打開、同時換(closing —— Calendar 示範殼開著時點另一個事件、「+N」浮層開著時點另一格的 +N 的實際順序,
- *            `_calendar-demo.tsx` onEventClick 先改 virtualRef.current 再 setState)。closing 列的前提「重新打開時還是同一個浮層節點(沒卸載)」
+ *            `_calendar-demo.tsx` onEventClick 先把 virtualRef.current 改成 Calendar 交出的 `{ anchor }` 再 setState)。closing 列的前提「重新打開時還是同一個浮層節點(沒卸載)」
  *            沒成立 = 儀器失效,不是通過(減少動態下浮層一收起就卸載,量不到這件事 —— 其他列都在減少動態下量,這 4 列另外切成不減少)。
  *         期望值由本檔照規格算(`clamp(錨點中心 − 一半, 8, 視窗 − 8 − 尺寸)`),不 import 元件常數 —— 讀元件常數就成了自己驗自己。
  *   紅: 任一格位置 / 高度不符 → 逐列點名 exit 1。`--selftest` 在 DS 原始碼上各造一個根因突變(MUTANTS),每個突變必須**剛好**紅它負責的那幾列,
@@ -134,7 +134,7 @@ function Scene() {
   const [s, setS] = React.useState(null)
   window.__scene = setS
   const cellRef = React.useRef(null)
-  // M 列:換錨點 —— 同 _calendar-demo.tsx onEventClick 的順序:先把 virtualRef.current 換成另一格,再 setState 重畫
+  // M 列:換錨點 —— 同 _calendar-demo.tsx onEventClick 的順序:先把 virtualRef.current 換成另一格(示範殼換成 Calendar 交出的 anchor),再 setState 重畫
   // (cellRef 是同一個 ref 物件,重畫時 React 不會把它改回 #cell)
   window.__reanchor = (id, open) => { cellRef.current = document.getElementById(id); setS((p) => ({ ...p, open })) }
   window.__setOpen = (open) => setS((p) => ({ ...p, open }))

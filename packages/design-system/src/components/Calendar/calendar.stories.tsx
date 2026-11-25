@@ -361,6 +361,68 @@ export const ReadOnlyDatesCustomTileKeyboard: Story = {
   },
 }
 
+// onEventClick 的錨點(test-only 夾具;calendar.spec.md「API」`onEventClick={(event, { anchor }) => …}`【總帳更正 #4】):
+// 第二個參數的 anchor = 被點的那一列 / 那一段 —— 產品拿它開自己的詳情浮層。「年中盤點」7/10(五)–7/13(一)在週日換週處切成兩段,
+// 點哪一段、從哪一段 Enter,anchor 就是哪一段;最後一題是對照:程式化 click() 不搬焦點,焦點留在日期鈕上,anchor 仍是被點的那一段
+//(從 document.activeElement 反推的寫法在這一題會交出日期鈕)。story-demo-focus 閘載入每支 story 並跑 play,斷言不成立就紅。
+const eventClickAnchor = fn()
+const ANCHOR_EVENTS: CalendarEvent[] = [
+  // 全天 7/10–7/13:end 不含 → 14(calendar.spec.md「資料語意」)
+  { id: 'ac1', title: '年中盤點', start: `${thisMonth}-10`, end: `${thisMonth}-14`, color: 'purple', allDay: true },
+  { id: 'ac2', title: '供應商簽約', start: `${thisMonth}-16T14:00`, end: `${thisMonth}-16T15:00`, color: 'blue' },
+]
+export const EventClickAnchor: Story = {
+  name: '點事件交出錨點',
+  tags: ['test-only'],
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:96「onEventClick={(event, { anchor }) => …}」
+  parameters: { demoFocus: 'keep' },
+  render: () => (
+    <div className="h-screen p-4 bg-canvas">
+      <Calendar
+        defaultReferenceDate={now}
+        today={now}
+        locale={LOCALE}
+        events={ANCHOR_EVENTS}
+        onDateClick={fn()}
+        onEventClick={eventClickAnchor}
+        onCreateEvent={fn()}
+      />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    eventClickAnchor.mockClear()
+    // 每一段事件的外層帶 data-calendar-covers(涵蓋的日子);可點的帶 data-calendar-tile
+    const pieceOn = (iso: string) => canvasElement.querySelector<HTMLElement>(`[data-calendar-tile][data-calendar-covers~="${iso}"]`)
+    const first = pieceOn(`${thisMonth}-10`)
+    const second = pieceOn(`${thisMonth}-13`)
+    const signing = pieceOn(`${thisMonth}-16`)
+    const day13 = canvasElement.querySelector<HTMLButtonElement>(`button[data-calendar-day="${thisMonth}-13"]`)
+    if (!first || !second || !signing || !day13 || first === second) throw new Error('「年中盤點」沒有切成兩段(7/10–7/11、7/12–7/13),或找不到 7/16 的事件 / 7/13 的日期鈕')
+    const anchorOf = (call: number) => (eventClickAnchor.mock.calls[call]?.[1] as { anchor?: HTMLElement } | undefined)?.anchor
+    // 滑鼠點長條的第二段 → anchor = 第二段(不是長條的第一段)
+    await userEvent.click(second)
+    await expect(eventClickAnchor).toHaveBeenCalledTimes(1)
+    await expect(eventClickAnchor.mock.calls[0][0]).toMatchObject({ id: 'ac1' })
+    await expect(anchorOf(0)).toBe(second)
+    // 點第一段 → 第一段;點有時段的一列 → 那一列
+    await userEvent.click(first)
+    await expect(anchorOf(1)).toBe(first)
+    await userEvent.click(signing)
+    await expect(anchorOf(2)).toBe(signing)
+    // 鍵盤:7/13 的日期鈕 F2 進格 → 焦點在第二段 → Enter → anchor = 第二段
+    day13.focus()
+    await userEvent.keyboard('{F2}')
+    await expect(document.activeElement).toBe(second)
+    await userEvent.keyboard('{Enter}')
+    await expect(anchorOf(3)).toBe(second)
+    // 對照:焦點在 7/13 的日期鈕上,程式化點第一段(click() 不搬焦點)→ anchor 仍是第一段,焦點仍在日期鈕
+    day13.focus()
+    first.click()
+    await expect(document.activeElement).toBe(day13)
+    await expect(anchorOf(4)).toBe(first)
+  },
+}
+
 // 英文產品覆寫讀屏字串(test-only 夾具):`labels` 逐鍵換掉 DS 預設的繁中(calendar.spec.md「A11y 預設」字串可覆寫),
 // 已有個別參數的字串(‹ › / 月份導覽 / 今天 / 新事件)照用那些參數。play 斷言覆寫真的生效、沒有一句預設中文漏出來;
 // scripts/calendar-month-invariant.mjs 也開這一則量(對照組:把名稱改回預設中文 → 紅)。

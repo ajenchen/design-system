@@ -365,7 +365,8 @@ function Coexist() {
 
 /**
  * 清單旁的詳情(N 列;2026-11-24 OVERLAY-CAPABILITIES ②,popover.spec.md「禁止事項」允許的第 (2) 種用法):清單浮層裡點一項 → **產品**在那一項旁邊
- * 開詳情浮層 —— 詳情畫在清單的元件樹外、錨點(virtualRef)= 被點的那一列,同 Calendar 把那一列交給 onEventClick 的寫法(_calendar-demo.tsx)。
+ * 開詳情浮層 —— 詳情畫在清單的元件樹外、錨點(virtualRef)= 被點的那一列,同 Calendar 經 onEventClick 第二個參數 { anchor } 交出被點的那一列 / 那一段、
+ * 示範殼拿它當錨點的寫法(_calendar-demo.tsx;2026-11-25 前示範殼從 document.activeElement 反推)。
  * 另有兩個「不是清單開出來的」浮層當對照:「通知」= 清單開著時由程式打開、錨在頁面別處;「導覽」= 清單之前就開著、後來被改錨到清單第一列。
  * 兩者都不搶焦點、點外面不關(onInteractOutside 擋掉),只用來量「按在它們裡面,清單關不關」。
  */
