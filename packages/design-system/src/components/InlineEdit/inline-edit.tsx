@@ -1,6 +1,9 @@
 // ── 消費的 SSOT ──
 // - components/Field/field-controls.spec.md(「軸二 就地編輯 host」段:InlineEdit = view↔edit 二態疊在 Field 之上;edit-in-place + editable 閘)
 // - components/Field/field-edit-keys.ts(editSettleKeyProps = Enter/Esc + 中文 IME guard 結算 SSOT + Esc 層宣告,與 DataTable cell 同源)
+// - lib/overlay-escape.ts(escapeLayerProps / isEscapeForControl:自訂 renderEdit 的編輯容器宣告自己那一層 Esc,浮層守門留給它;Radix 已用掉的那一下不取消)
+// - lib/ime-composition.ts(isImeComposing:組字中的 Esc 是取消選字,不是取消編輯)
+// - lib/focus-after-trigger.ts(tabbableOrder:控件沒接 autoFocus 時,進編輯的焦點交給編輯容器裡第一個可 Tab 到的元素)
 // - components/Field/field-wrapper.tsx(fieldViewGeometry = view 幾何 class SSOT〔純值/標題路徑〕;fieldDisplayTextClass = view 字級)
 // - components/Input/input.tsx / Textarea/textarea.tsx(預設 renderEdit;不重刻 input chrome)
 // - components/Field/field-context.ts(useFieldContext / useResolvedFieldSize;接 size/orientation/labelId cascade)
@@ -30,6 +33,9 @@ import type { FieldSize } from '@/design-system/components/Field/field-context'
 import { useFieldContext, useResolvedFieldSize, useRegisterFieldPreferredSize, FieldSurfaceProvider } from '@/design-system/components/Field/field-context'
 import { fieldDisplayTextClass, fieldViewGeometry } from '@/design-system/components/Field/field-wrapper'
 import { editSettleKeyProps } from '@/design-system/components/Field/field-edit-keys'
+import { ESCAPE_LAYER_ATTR, escapeLayerProps, isEscapeForControl } from '@/design-system/lib/overlay-escape'
+import { isImeComposing } from '@/design-system/lib/ime-composition'
+import { tabbableOrder } from '@/design-system/lib/focus-after-trigger'
 import { useTruncated } from '@/design-system/hooks/use-truncated'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 
@@ -107,7 +113,9 @@ export interface InlineEditProps<T = string> {
  * - **hover(view,editable)** = 灰色底色 `bg-neutral-hover` + `rounded-md`(**非邊框**)+ cursor
  * - **鍵盤 focus(view,editable)** = 外框染 `border-primary` 藍框(Field focus 語言,非 Button ring)
  * - **click / Enter/Space** = 切 edit 態 = 真正的 Field 控件(mode="edit":border + focus + input);多行走 Textarea
- * - **退出**:blur(滑鼠)→ commit + 純 view 不搶焦;Enter(鍵盤)→ commit + 焦點回 view 按鈕 + 藍框;Esc → cancel 還原
+ * - **退出**:blur(滑鼠)→ commit + 純 view 不搶焦;Enter(鍵盤)→ commit + 焦點回 view 按鈕 + 藍框;Esc → cancel 還原;
+ *   編輯中被卸載(宿主浮層關掉)→ 同滑鼠離開,以草稿 commit
+ * - **Esc 層**:編輯中是焦點所在控件自己的一層 —— 預設控件經 editSettleKeyProps、自訂 renderEdit 由編輯容器宣告;放在浮層裡第一下 Esc 只取消編輯
  * - **鍵盤結算**:消費 `makeEditSettleKeyHandler`(含中文 IME guard,與 DataTable cell 同源)
  * - **editable=false**:view 無 hover / 無 Pressable / 不可進 edit、**不灰化**(detail-pane 鎖定語意)
  *
@@ -216,15 +224,7 @@ function InlineEditImpl<T = string>(
     })
   }, [commit, ownTree])
 
-  // 鍵盤結算後把 focus 送回 view 按鈕(commit(true)/cancel);滑鼠 blur(commit(false))刻意不送回——
-  //   對齊 inline-edit.spec.md「退出 edit 態(focus 分流)」:鍵盤結算焦點回 view 按鈕 + 藍框、
-  //   滑鼠 blur 回純 view 不搶焦。focus-visible 保證只有鍵盤路徑顯藍框。
-  React.useEffect(() => {
-    if (!editing && returnFocusRef.current) {
-      returnFocusRef.current = false
-      readButtonRef.current?.focus()
-    }
-  }, [editing])
+  // 焦點的兩支 effect(結算後送回檢視鈕 / 進編輯補進編輯容器)、卸載時提交、自訂編輯控件的 Esc 層:見下方「編輯中的保證」段(hook,在 `if (editing)` 之前)
 
   // ── Pointerdown-outside exit(2026-07-17,blur 殘留 root cause 真修)──────────────
   // focusout 不夠:overlay 控件(Select)點外面關 popover 時 Radix 把焦點送回 trigger(在 edit 子樹內)
@@ -282,6 +282,69 @@ function InlineEditImpl<T = string>(
   })
   const delegatedTruncationActive = delegatedView && editable && !isEmpty && delegatedTruncated
   const truncationTooltipActive = plainTruncationActive || delegatedTruncationActive
+
+  // ══ 編輯中的保證(焦點 / 卸載 / 自訂控件的 Esc 層)══════════════════════════════════
+  // 鍵盤結算後把 focus 送回 view 按鈕(commit(true)/cancel);滑鼠 blur(commit(false))刻意不送回——
+  //   對齊 inline-edit.spec.md「退出 edit 態(focus 分流)」:鍵盤結算焦點回 view 按鈕 + 藍框、
+  //   滑鼠 blur 回純 view 不搶焦。focus-visible 保證只有鍵盤路徑顯藍框。
+  React.useEffect(() => {
+    if (!editing && returnFocusRef.current) {
+      returnFocusRef.current = false
+      readButtonRef.current?.focus()
+    }
+  }, [editing])
+
+  // ── 卸載時仍在編輯 = 以草稿提交(2026-11-25;inline-edit.spec.md「退出 edit 態」卸載那一條,calendar.spec.md「點外面」(1))──
+  // 宿主(Popover / Dialog / 詳情面板)沒播收起動畫就被拿掉時,上面兩條結算路(handleEditBlur / 點外面那支 effect)都等不到:
+  //   被拿掉的輸入框不發 blur(focusInside 留在 true,blur 那條不結算),整棵子樹被移走(即時同步把這一筆移走、錨點那一列不在了)
+  //   與減少動態下的程式關閉(產品自己的快捷鍵)也都沒有 pointerdown。有收起動畫的程式關閉不在此列:修前就會提交(實測 1 次)。
+  //   2026-11-25 量(DS 原始碼空白頁 Popover):整棵移走(有 / 無減少動態)、減少動態下程式關閉,修前 onCommit 0 次、字遺失;修後皆 1 次。
+  // 卸載那一刻還沒結算 → 照「滑鼠離開」提交(草稿有變更才呼叫 onCommit、焦點不送回)。已按 Esc 取消、已 Enter / blur 結算的由 finalizedRef 擋;
+  //   點外面那一支稍後才到的 setTimeout 也被它擋,不重複提交。
+  // deps 只放 editing:consumer 每次重繪傳一支新的 onCommit,不能因此提早結算 → cleanup 讀最新的 commit。
+  const latestCommitRef = React.useRef(commit)
+  latestCommitRef.current = commit
+  React.useEffect(() => {
+    if (!editing) return undefined
+    return () => {
+      if (!finalizedRef.current) latestCommitRef.current(false)
+    }
+  }, [editing])
+
+  // ── 進編輯:焦點一定落在編輯控件上(2026-11-25;spec「A11y 預設」Focus 管理「進 edit 態自動 focus 控件」)──
+  // 預設的 Input / Textarea 自己 autoFocus;自訂 renderEdit 的控件不一定照做 —— 桌機 Select 的 autoFocus 是文件寫明的無作用
+  //   (select.tsx SelectProps 註解「mobile-only」)。這時檢視鈕已卸載,焦點掉到 body(放在 Dialog 裡則停在對話框本身),
+  //   編輯容器宣告的 Esc 層與控件的 Enter 都收不到,第一下 Esc 直接把外層浮層關掉(2026-11-25 量:Dialog 裡 renderEdit = Select,焦點停在對話框、Esc 一下就關)。
+  // 判準:焦點停在「裝著編輯容器的東西」上(body / 宿主浮層)= 沒有控件接手 → 交給容器裡第一個可 Tab 到的元素(lib/focus-after-trigger.ts tabbableOrder)。
+  //   控件已經拿到焦點(在容器裡)、或把焦點搬進自己 portal 出去的彈出層(defaultOpen 的選單)時,焦點不在容器的祖先上 → 不動。
+  React.useEffect(() => {
+    if (!editing) return
+    const box = editContainerRef.current
+    if (!box) return
+    const active = box.ownerDocument.activeElement
+    if (active && !active.contains(box)) return
+    tabbableOrder(box)[0]?.focus()
+  }, [editing])
+
+  // ── 自訂編輯控件的 Esc 層(2026-11-25;keyboard-model-canonical.md「焦點所在的控件自己那一層也算一層」)──
+  // 預設的 Input / Textarea 經 editSettleKeyProps 宣告這一層;自訂 renderEdit(Select / DatePicker / Combobox …)的控件不認得 InlineEdit 的
+  //   cancel,修前沒有任何人宣告 —— 放在 Dialog / Popover 裡按 Esc,Radix 直接關掉外層、草稿跟著丟。改由編輯容器宣告(只在自訂 renderEdit 時;
+  //   預設控件已由 helper 宣告,不重複),這一下歸本層才取消編輯、焦點回檢視鈕(cancel 的鍵盤分流)。
+  // 這一下不歸本層的兩種(一下只少一層):
+  //   1. 就近的那一層不是編輯容器 —— 焦點所在處自己宣告了更內層(可打字 DatePicker 有打了還沒存的字),或焦點在控件 portal 出去的彈出層裡
+  //      (DOM 上不在容器內;React 合成事件照元件樹冒泡到這裡)。判準同浮層守門(lib/overlay-escape.ts escapeLayerOf:就近的那一層)。
+  //   2. Radix 已用這一下關掉控件自己的彈出層 / 別的控件獨占(isEscapeForControl 回 false)。
+  const handleCustomEditKeyDown = React.useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key !== 'Escape' || isImeComposing(e)) return
+      const nearest = e.target instanceof Element ? e.target.closest(`[${ESCAPE_LAYER_ATTR}]`) : null
+      if (nearest !== e.currentTarget) return
+      if (!isEscapeForControl(e)) return
+      e.preventDefault()
+      cancel()
+    },
+    [cancel],
+  )
 
   // 對齊盒(orientation-aware,Model A;2026-07-17 移除 fieldCtx gate — root cause 修):
   //   vertical(預設,含 standalone)→ `-mx-field-px` + `w-calc` 把整塊拉到欄左緣(值貼 label 左緣;
@@ -343,7 +406,15 @@ function InlineEditImpl<T = string>(
       // exit SSOT 雙保險:onBlur(focusout,tab-out / 非 overlay 控件)+ document pointerdown-outside(overlay
       //   點外面 Radix 送焦回 trigger 時 focusout 不觸發之補位)。任何 edit 控件離開 → 回 view。
       // edit 態**不套** surface='inline-edit'(完全繼承原 field,含 tagPadding —— 進入編輯就是那個欄位本人;user 2026-07-17 拍板)。
-      <div ref={setEditContainerRef} data-editing className={cn(alignBleed, className)} onBlur={handleEditBlur} {...ownTree.capture}>
+      // 自訂 renderEdit:容器宣告 Esc 層 + 收這一下(見上方 handleCustomEditKeyDown);預設控件由 editSettleKeyProps 自己宣告,容器不重複。
+      <div
+        ref={setEditContainerRef}
+        data-editing
+        className={cn(alignBleed, className)}
+        onBlur={handleEditBlur}
+        {...ownTree.capture}
+        {...(renderEdit ? { ...escapeLayerProps(true), onKeyDown: handleCustomEditKeyDown } : null)}
+      >
         {editNode}
       </div>
     )
@@ -419,7 +490,7 @@ function InlineEditImpl<T = string>(
               type="button"
               aria-label={label ? `編輯 ${label}` : '編輯'}
               onClick={enterEdit}
-              // @focus-suppress C — C 隱形整列觸發器;承擔者:指示器在外層 div(見上方 inline-edit.tsx:404 的 `[&:has(button:focus-visible)]:border-primary`)
+              // @focus-suppress C — C 隱形整列觸發器;承擔者:指示器在外層 div(見上方 inline-edit.tsx:475 的 `[&:has(button:focus-visible)]:border-primary`)
               className="absolute -inset-px cursor-text rounded-md focus-visible:outline-none"
             />
           )}

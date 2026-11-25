@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-11-22T16:38:42.289Z"
+    "generatedAt": "2026-11-24T21:29:49.138Z"
   },
   "components": {
     "accordion": {
@@ -1002,7 +1002,8 @@
           "design-system-components-inlineedit-展示--states",
           "design-system-components-inlineedit-展示--select-tag-field",
           "design-system-components-inlineedit-展示--multiline-description",
-          "design-system-components-inlineedit-展示--vertical-field-form"
+          "design-system-components-inlineedit-展示--vertical-field-form",
+          "design-system-components-inlineedit-展示--commit-on-host-unmount"
         ],
         "設計規格": [
           "design-system-components-inlineedit-設計規格--overview",
@@ -1869,5 +1870,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1035
+  "totalStories": 1036
 }

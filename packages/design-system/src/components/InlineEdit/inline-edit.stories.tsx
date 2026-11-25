@@ -3,6 +3,15 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { InlineEdit } from './inline-edit'
 import { Select } from '@/design-system/components/Select/select'
 import { Field, FieldLabel, FieldGroup } from '@/design-system/components/Field/field'
+import { Button } from '@/design-system/components/Button/button'
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverBody,
+} from '@/design-system/components/Popover/popover'
 import { ExampleGroup, ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta<typeof InlineEdit> = {
@@ -261,5 +270,108 @@ export const VerticalFieldForm: Story = {
         </Field>
       </div>
     )
+  },
+}
+
+/* ── test-only:宿主卸載時提交草稿(inline-edit.spec.md「宿主卸載時仍在編輯 = 以草稿提交」;calendar.spec.md「點外面」(1))──
+   團隊行事曆的事件詳情浮層:改標題改到一半,另一位成員把這個事件移到下週(即時同步)→ 本週那一列連同它的詳情浮層一起不在了。
+   整棵子樹跟著卸載 = 沒有收起動畫、焦點不會先被還走、被拿掉的輸入框也不發 blur;改到一半的標題仍要送出,onCommit 剛好一次。
+   以 play 當閘(story-demo-focus 閘會載入每支 story 並跑 play,斷言不成立就紅)。遠端同步用一個 window 事件模擬 ——
+   指標 / 焦點事件都會先觸發 InlineEdit 另外兩條結算路(點外面 / blur),量不到「卸載」這一條。
+   對照組(2026-11-25 實測):拿掉 inline-edit.tsx 的卸載提交 → onCommit 0 次、play 丟錯。 */
+const REMOTE_MOVE_EVENT = 'inline-edit-demo:remote-move'
+
+function RemoteMoveDetail() {
+  const [title, setTitle] = React.useState('設計審查會議')
+  const [commits, setCommits] = React.useState(0)
+  const [week, setWeek] = React.useState<'this' | 'next'>('this')
+  React.useEffect(() => {
+    const onRemoteMove = () => setWeek('next')
+    window.addEventListener(REMOTE_MOVE_EVENT, onRemoteMove)
+    return () => window.removeEventListener(REMOTE_MOVE_EVENT, onRemoteMove)
+  }, [])
+  const slot = `週三 14:00 ${title}`
+  return (
+    <div
+      data-testid="remote-move-probe"
+      data-commit-count={commits}
+      data-committed-title={title}
+      className="flex w-[440px] flex-col gap-[var(--layout-space-loose)]"
+    >
+      <ExampleGroup>
+        <ExampleCaption>本週</ExampleCaption>
+        {week === 'this' ? (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="tertiary">{slot}</Button>
+            </PopoverTrigger>
+            <PopoverContent align="start">
+              <PopoverHeader>
+                <PopoverTitle>事件詳情</PopoverTitle>
+              </PopoverHeader>
+              <PopoverBody>
+                <Field orientation="vertical">
+                  <FieldLabel>標題</FieldLabel>
+                  <InlineEdit
+                    value={title}
+                    label="標題"
+                    onCommit={(next) => {
+                      setTitle(next)
+                      setCommits((n) => n + 1)
+                    }}
+                  />
+                </Field>
+              </PopoverBody>
+            </PopoverContent>
+          </Popover>
+        ) : (
+          <p className="text-body text-fg-muted">沒有事件</p>
+        )}
+      </ExampleGroup>
+      <ExampleGroup>
+        <ExampleCaption>下週</ExampleCaption>
+        <p className="text-body text-foreground">{week === 'next' ? slot : '沒有事件'}</p>
+      </ExampleGroup>
+    </div>
+  )
+}
+
+export const CommitOnHostUnmount: Story = {
+  name: '浮層卸載時提交草稿',
+  tags: ['test-only'],
+  render: () => <RemoteMoveDetail />,
+  play: async ({ canvasElement }) => {
+    const { userEvent, waitFor, within } = await import('@storybook/test')
+    const canvas = within(canvasElement)
+    const probe = canvasElement.querySelector<HTMLElement>('[data-testid="remote-move-probe"]')
+    if (!probe) throw new Error('找不到 remote-move-probe')
+    // 每次都重讀 DOM 上的計數(React 重繪後才會更新)
+    const read = () => ({ count: probe.dataset.commitCount, title: probe.dataset.committedTitle })
+    await userEvent.click(canvas.getByRole('button', { name: '週三 14:00 設計審查會議' }))
+    // 詳情浮層 portal 到 body,不在 canvas 裡
+    const editButton = await waitFor(() => {
+      const el = document.querySelector<HTMLButtonElement>('button[aria-label="編輯 標題"]')
+      if (!el) throw new Error('詳情浮層沒開 / 找不到「編輯 標題」')
+      return el
+    })
+    await userEvent.click(editButton)
+    await waitFor(() => {
+      if (!(document.activeElement instanceof HTMLInputElement)) throw new Error('進編輯後焦點不在標題輸入框')
+    })
+    await userEvent.keyboard('{End}(改線上)')
+    // 對照前提:此刻還在編輯、還沒提交過(否則量到的不是「卸載」那一條)
+    const before = read()
+    if (before.count !== '0') throw new Error(`遠端同步前就提交了 ${before.count} 次`)
+    window.dispatchEvent(new Event(REMOTE_MOVE_EVENT))
+    await waitFor(() => {
+      if (document.querySelector('button[aria-label="編輯 標題"], [data-editing="true"]')) throw new Error('詳情浮層還在')
+    })
+    // 卸載那一刻的提交在 effect 清理裡呼叫 onCommit,父層的計數晚一次重繪才寫回 DOM → 等它(等不到 = 沒有以草稿提交)
+    await waitFor(() => {
+      const after = read()
+      if (after.count !== '1' || after.title !== '設計審查會議(改線上)') {
+        throw new Error(`宿主卸載時沒有以草稿提交:onCommit ${after.count} 次、標題「${after.title}」(應 1 次、「設計審查會議(改線上)」)`)
+      }
+    })
   },
 }
