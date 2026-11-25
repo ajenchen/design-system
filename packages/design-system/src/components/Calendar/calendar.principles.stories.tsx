@@ -107,7 +107,7 @@ export const ColorSemantic: Story = {
     <TutorialPage>
       <TutorialRule
         title="事件的 color 是「這是哪一類事件」(團隊 / 專案),不是嚴重度"
-        note="Calendar 的 color = 12 categorical 色相,與 Tag / Avatar 共用同一組 SSOT(blue / green / deep-orange / yellow / red / orange / amber / lime / turquoise / indigo / purple / magenta),色名 1:1 對 color token。色相本身無 severity 語義——紅色 ≠「緊急」、橙色 ≠「警告」,只是類別選擇。若要標示緊急,寫在事件標題文字裡。下例以藍 / 綠 / 橙 / 紫四種色相代表四個不同團隊或專案。"
+        note="Calendar 的 color = 12 categorical 色相,與 Tag / Avatar 共用同一組 SSOT(blue / green / deep-orange / yellow / red / orange / amber / lime / turquoise / indigo / purple / magenta),色名 1:1 對 color token;不屬於任何類別的事件(例:全公司的假日)用 neutral 中性灰。色相本身無 severity 語義——紅色 ≠「緊急」、橙色 ≠「警告」,只是類別選擇。若要標示緊急,寫在事件標題文字裡。顏色出現在全天事件的淡底長條、有時段事件的左側色條。下例以藍 / 綠 / 橙 / 紫四種色相代表四個不同團隊或專案。"
         paragraph={false}
       >
         <ExampleFrame>

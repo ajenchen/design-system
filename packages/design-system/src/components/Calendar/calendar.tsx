@@ -19,7 +19,7 @@ import {
   isSameWeek,
 } from 'date-fns'
 import { cn } from '@/lib/utils'
-import { CAT_EVENT, CAT_SUBTLE, CAT_ACCENT, type CategoricalHue } from '@/design-system/tokens/categorical-color'
+import { CAT_EVENT, CAT_SUBTLE, CAT_ACCENT, CAT_EVENT_NEUTRAL, type CategoricalColor } from '@/design-system/tokens/categorical-color'
 import { Button } from '@/design-system/components/Button/button'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
@@ -50,8 +50,10 @@ import { layoutMonth, normalizeEvents, parseEventDate, type CalendarEventSegment
  * - components: [Button, ScrollArea(格陣捲動區), Tooltip, Tag(列高,經 calendar-geometry.ts), Skeleton(載入中每格一條,skeleton.spec.md:64、:86-87)]
  * - patterns: [header-canonical(工具列 = ChromeHeader), element-anatomy/truncated-text]
  * - tokens: [--chrome-header-height, --tag-height-md(h-tag-md / min-w-tag-md), --divider, --muted, --info, --neutral-hover,
- *   categorical-color.ts(CAT_EVENT / CAT_SUBTLE / CAT_ACCENT)]
- * - 幾何常數: ./calendar-geometry.ts(格內所有空隙、文字內距、格最小高、週數欄寬、窄寬度門檻、每格列數 k 的算式、跨日長條的寬;元件內變數 --calendar-*)
+ *   --fg-secondary / --foreground(有時段事件的時間 / 標題【TIMECOLOR(定)】), --font-body-size(色條高 = 字高【BAR(定)】), --radius-sm(色條圓頭,radius.css 短邊 ≤ 10px),
+ *   categorical-color.ts(長條 CAT_EVENT / 唯讀 CAT_SUBTLE / 色條 CAT_ACCENT;neutral CAT_EVENT_NEUTRAL)]
+ * - 幾何常數: ./calendar-geometry.ts(格內所有空隙、文字內距、色條寬、格最小高、週數欄寬、窄寬度門檻、每格列數 k 的算式、跨日長條的寬;元件內變數 --calendar-*)
+ * - 時間字: Intl.DateTimeFormat(locale, eventTimeFormat ?? { hour: 'numeric', minute: '2-digit' })(calendar.spec.md「資料語意」時間顯示;zh-TW「上午10:00」)
  * - 事件版面: ./calendar-layout.ts(資料語意、長條判定、車道、切段、「+N」計數、格內排序、CalendarEventSegment 的唯一實作;本檔不另算)
  * - spec refs: calendar.spec.md「工具列」「Cell 規則」(隱藏週末 / 週數欄)「間距」「焦點框」「狀態與邊界案例」(載入中)「窄寬度」「A11y 預設」;
  *   header-canonical.spec.md:26 / :68 / :73;tag.spec.md「尺寸」;focus-canonical.md「問題二」;
@@ -87,11 +89,13 @@ export interface CalendarEvent {
   /** 全天。沒寫時兩端都是只有日期的字串("YYYY-MM-DD")才當全天;Date 物件不推斷,要全天就明寫 `true`。 */
   allDay?: boolean
   /**
-   * 事件類別色(categorical 色相,1:1 對 `--color-{hue}-*`)。**消費 categorical-color SSOT**,
-   * 與 Tag / Avatar 共用同一組 12 色相。2026-06-04 修:原 `orange` 與 `red` 都誤接 deep-orange;
-   * 改消費 SSOT 後 orange→`--color-orange-*`、red→`--color-red-*`(品牌紅 hue 25),各自獨立。
+   * 事件類別色:12 個類別色相(1:1 對 `--color-{hue}-*`)或 `'neutral'`(不屬於任何類別,例:全公司的假日)。**消費 categorical-color SSOT**,
+   * 與 Tag / Avatar 共用同一組色相;neutral 的長條 / 色條在 `CAT_EVENT_NEUTRAL`(calendar.spec.md「事件的兩種長相」)。沒傳 = blue。
+   * 2026-11-25 前只收 12 色相(`CategoricalHue`);在 `renderEventTile` 裡拿 `event.color` 去查 12 色相的表(例 `CAT_SUBTLE[event.color]`)的,
+   * 要先處理 `'neutral'`。2026-06-04 修:原 `orange` 與 `red` 都誤接 deep-orange;改消費 SSOT 後 orange→`--color-orange-*`、red→`--color-red-*`
+   *(品牌紅 hue 25),各自獨立。
    */
-  color?: CategoricalHue
+  color?: CategoricalColor
   /**
    * 只有這一筆唯讀(例:可點的團隊月曆裡的公司假日):不是按鈕、不亮、不進格內導覽,點了什麼都不發生(也不在這天新增)。
    * 整個月曆的事件都唯讀用 `readOnlyEvents`(calendar.spec.md「日期格與事件方塊:可點或唯讀」單筆事件那一列【AI 推導】)。
@@ -174,6 +178,13 @@ export interface CalendarLabels {
   weekNumberHeader: string
   /** 每一週週數格(`rowheader`)的讀屏名稱,收到週數(1–53);看得見的只有數字(calendar.spec.md「A11y 預設」週數欄的名稱由 `labels` 給【AI 推導】)。 */
   weekNumber: (week: number) => string
+  /**
+   * 可點的事件列 / 長條(含 `renderEventTile` 的外層)的讀屏名稱(calendar.spec.md「A11y 預設」事件列那條「{標題},{開始時間 或 起訖日期}{,全天}」【AI 推導】)。
+   * 收到事件標題、`when` 與是否全天:`when` 在有時段(未滿 24 小時)的事件 = 開始時間(與畫面上的時間同一個格式,依 `locale` / `eventTimeFormat`,
+   * zh-TW「上午10:00」);在長條(全天,或有時段且滿 24 小時)= 起訖日期(Intl `{ month: 'long', day: 'numeric' }`,一天 =「7月3日」、多天 =「7月20日 – 7月22日」,
+   * 結束日是畫出來的最後一天)。唯讀的事件不命名(沒有角色,標題與時間就是它的文字內容)。
+   */
+  event: (title: string, when: string, allDay: boolean) => string
 }
 
 // i18n-allow: DS 預設文案(中文);consumer 經 `labels` 覆寫
@@ -187,6 +198,8 @@ const DEFAULT_LABELS: CalendarLabels = {
   // 2026-11-25 加(週數欄):欄頭「週」照規格字面;週數格念「第 27 週」(只念數字聽不出是週數)
   weekNumberHeader: '週',
   weekNumber: (week) => `第 ${week} 週`,
+  // 2026-11-25 前寫死在事件方塊上「事件:{標題}」(只有標題,聽不到時間與日期)
+  event: (title, when, allDay) => `${title},${when}${allDay ? ',全天' : ''}`,
 }
 
 interface CalendarOwnProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onSelect'> {
@@ -258,6 +271,15 @@ interface CalendarOwnProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'o
   /** locale(預設 'zh-TW' = DS 日期元件共用的 `DEFAULT_DATE_LOCALE`) */
   locale?: string
 
+  /**
+   * 事件開始時間的格式(`Intl.DateTimeFormat` 的選項,與 `locale` 一起用;傳了就整份取代預設,不合併)。
+   * 預設 `{ hour: 'numeric', minute: '2-digit' }`:zh-TW「上午10:00」、en-US「10:00 AM」(calendar.spec.md「資料語意」時間顯示)。
+   * 月格只顯示開始時間:有時段的事件在標題前、滿 24 小時的有時段長條在含真起點的那一段標題前;窄寬時不顯示(calendar.spec.md「窄寬度」(1))。
+   * 事件的讀屏名稱用同一個格式(`labels.event` 收到的 `when`)。時區一律是瀏覽器的時區 —— 顯示用時區參數第二段再定(calendar.spec.md「API(第一段)」)。
+   * 命名同 FullCalendar `eventTimeFormat`(<https://fullcalendar.io/docs/eventTimeFormat>)。
+   */
+  eventTimeFormat?: Intl.DateTimeFormatOptions
+
   /** ARIA labels for chrome controls. Override for i18n. */
   prevAriaLabel?: string
   nextAriaLabel?: string
@@ -280,17 +302,24 @@ interface CalendarOwnProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'o
 
 export type CalendarProps = CalendarOwnProps & CalendarDateCellProps & CalendarEventTileProps
 
-// ── Event tile color tokens ─────────────────────────────────────────────────
-// **消費 categorical-color SSOT**(CAT_EVENT = subtle 底 + hover step-2;CAT_ACCENT = 左側 step-6
-// 實心條),與 Tag / Avatar 共用 12 色相,key X 一律對 `--color-X-*`(1:1)。
-// 2026-06-01 allDay:全天事件 = 淡底 tile + 左側實心 accent 條 + medium,視覺區分「全天長條」vs
-// 有時間事件;用 accent border 而非 solid fill 保文字對比安全。對齊 Google Calendar / Outlook 慣例。
-const EVENT_COLOR_CLASSES = CAT_EVENT
-// 唯讀事件方塊(readOnlyEvents):同一組靜止色、**不帶滑過** —— CAT_SUBTLE 就是 CAT_EVENT 去掉 `hover:bg-…-2` 那一段
-//(categorical-color.ts CAT_SUBTLE vs CAT_EVENT,同色相同 step-1 底 / step-7 字),也就是 Tag 那種靜態類別標籤。
-// 點了沒反應的東西不給滑過回饋(color.spec.md「Hover 換色配對總則」:只有「點了會有反應」的元素才有底色的滑過回饋;待辦總帳 L8)。
-const EVENT_STATIC_COLOR_CLASSES = CAT_SUBTLE
-const EVENT_ALLDAY_ACCENT = CAT_ACCENT
+// ── 事件的顏色(calendar.spec.md「事件的兩種長相」【C2】)──────────────────────────────────
+// **消費 categorical-color SSOT**,與 Tag / Avatar 共用色相,key X 一律對 `--color-X-*`(1:1):
+//   長條(全天 / 跨日)= CAT_EVENT(淡底 step-1 + 字 step-7 + 滑過 step-2);唯讀的長條 = CAT_SUBTLE(同底同字、**不帶滑過** ——
+//   點了沒反應的東西不給滑過回饋,color.spec.md「Hover 換色配對總則」;待辦總帳 L8);
+//   有時段 = 透明列 + 左側色條 CAT_ACCENT(step-6,只給顏色;寬由 calendar-geometry.ts 給);
+//   neutral(不是色相)= CAT_EVENT_NEUTRAL 的同三鍵(--secondary 底 / --foreground 字 / --secondary-hover;色條 --color-neutral-9)。
+// 2026-11-25 前全天事件是淡底 + 左側 3px 實心邊框(CAT_ACCENT 當時是 `border-l-[3px]`),有時段是淡底;現在色條只給有時段事件,
+// 兩種都有色條就分不出來【AI 推導,calendar.spec.md 同表「前綴」列】。
+// 色表在 MonthEventPiece 裡直接按名字取(不先包成物件再當 prop 傳下去):hover class 住在 .ts 的色表裡,scripts/hover-instant-invariant.mjs
+// 靠名字追「帶著 hover class 的識別字」進到同一個 cn() —— 包一層 prop 就追不到,有人在那裡加 transition-colors 也不會紅。
+/** 沒傳顏色 = blue(calendar.spec.md「CalendarEvent」下方);認不得的值(JS 或 `as` 繞過型別)也當沒傳,不畫成沒有底色的長條。 */
+function resolveEventColor(color: CategoricalColor | undefined): CategoricalColor {
+  if (color === 'neutral') return color
+  return color !== undefined && Object.prototype.hasOwnProperty.call(CAT_EVENT, color) ? color : 'blue'
+}
+
+/** 事件開始時間的預設格式(calendar.spec.md「資料語意」時間顯示;zh-TW「上午10:00」)。`eventTimeFormat` 傳了就整份取代。 */
+const DEFAULT_EVENT_TIME_FORMAT: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 // 日期字串解析、事件資料語意、長條、車道、切段、「+N」都在 ./calendar-layout.ts(唯一實作);2026-11-25 前本檔另有一份 coerceDate
@@ -360,10 +389,12 @@ interface MonthEventPieceShellProps extends React.HTMLAttributes<HTMLDivElement>
   /** 底下墊一層不透明的格子底(預設長相的長條,見 MonthEventPiece) */
   underlay: boolean
   mode: EventPieceMode
+  /** 可點時的讀屏名稱(labels.event 的結果,Calendar 本體算好);唯讀時不用(沒有角色的元素禁止命名) */
+  name: string
 }
 
 const MonthEventPieceShell = React.forwardRef<HTMLDivElement, MonthEventPieceShellProps>(function MonthEventPieceShell(
-  { event, segment, lane, covers, width, underlay, mode, className, style, onClick, onKeyDown, children, ...rest },
+  { event, segment, lane, covers, width, underlay, mode, name, className, style, onClick, onKeyDown, children, ...rest },
   ref,
 ) {
   // 外形 = 事件列 = Tag md(calendar.spec.md「間距」【SPACING(定)】):高 h-tag-md(24)、rounded-md。
@@ -433,7 +464,9 @@ const MonthEventPieceShell = React.forwardRef<HTMLDivElement, MonthEventPieceShe
           mode.onEventClick(event)
         }
       }}
-      aria-label={`事件:${event.title}`}
+      // 讀屏名稱 =「{標題},{開始時間 或 起訖日期}{,全天}」(calendar.spec.md「A11y 預設」事件列那條【AI 推導】;字串在 labels.event)。
+      // 2026-11-25 前是「事件:{標題}」—— 聽不到時間與日期,格內兩筆同名事件分不出來。
+      aria-label={name}
       // 焦點框往外(= 不寫 class,走全域 :focus-visible):四周最小淨空 = 列距 4、格子內距 4 ≥ 4(calendar.spec.md「焦點框」、focus-canonical.md「問題二」)。
       className={cn(shape, 'cursor-pointer')}
     >
@@ -443,7 +476,9 @@ const MonthEventPieceShell = React.forwardRef<HTMLDivElement, MonthEventPieceShe
 })
 
 /**
- * 一段事件:預設長相(類別淡底 + 標題,截斷時完整標題提示)或 renderEventTile 自訂內容,外層都是 MonthEventPieceShell。
+ * 一段事件:預設長相或 renderEventTile 自訂內容,外層都是 MonthEventPieceShell。預設長相分兩種(calendar.spec.md「事件的兩種長相」【C2】):
+ *   長條(全天,或有時段且滿 24 小時;版面 kind 'bar')= 類別淡底 + 標題(滿 24 小時的有時段長條在含真起點的那一段標題前加開始時間);
+ *   有時段(未滿 24 小時;kind 'timed')= 透明列 + 左側色條 + 開始時間 + 標題。
  * 截斷 → tooltip 顯完整標題(tooltip.spec.md:32,僅實際截斷時);外層是 interactive host → trigger = 外層本體、量測內層文字 span ——
  * useTruncated 自組 pattern(truncated-text.spec.md「兩層架構(對齊世界級聯集)」;範本 inline-edit.tsx:257 + tag.tsx)。
  */
@@ -451,7 +486,9 @@ function MonthEventPiece({
   piece,
   covers,
   endsAtLastColumn,
-  colorClass,
+  color,
+  time,
+  name,
   mode,
   renderEventTile,
 }: {
@@ -459,13 +496,18 @@ function MonthEventPiece({
   covers: string
   /** 這一段的最後一格是這一列最右那一格(那格不畫右格線,寬度式子少扣一條) */
   endsAtLastColumn: boolean
-  /** 已依可點 / 唯讀選好的色(可點 = CAT_EVENT 帶滑過;唯讀 = CAT_SUBTLE 不帶),見 Calendar 本體 */
-  colorClass: string
+  /** 這筆事件的顏色(resolveEventColor 解析過:沒傳 / 認不得 = blue) */
+  color: CategoricalColor
+  /** 畫在標題前的開始時間(已依 locale / eventTimeFormat 格式化);null = 這一段不畫時間(全天、長條的非起點段、窄寬) */
+  time: string | null
+  /** 可點時的讀屏名稱(labels.event) */
+  name: string
   mode: EventPieceMode
   renderEventTile?: (event: CalendarEvent, segment: CalendarEventSegment) => React.ReactNode
 }) {
   const { event } = piece.entry
-  const { ref: truncationRef, isTruncated } = useTruncated<HTMLSpanElement>({ deps: [event.title] })
+  // 時間出現 / 消失(窄寬切換)也會改變文字寬,一起當重量的依據
+  const { ref: truncationRef, isTruncated } = useTruncated<HTMLSpanElement>({ deps: [event.title, time] })
   const shell = {
     event,
     segment: piece.segment,
@@ -473,6 +515,7 @@ function MonthEventPiece({
     covers,
     width: calendarPieceWidth(piece.span, endsAtLastColumn),
     mode,
+    name,
   }
   if (renderEventTile) {
     // 自訂內容:外層只 own 位置、命中與鍵盤,不畫滑過、不墊底(它不知道自訂內容的靜止底;calendar.spec.md「renderEventTile 的滑過責任歸屬」)。
@@ -485,19 +528,45 @@ function MonthEventPiece({
     //(實測團隊行事曆角落畫素差最多 55 / 255),所以預設長相不加 —— 量測 scripts/calendar-month-invariant.mjs CT1–CT3。
     return <MonthEventPieceShell {...shell} underlay={false} className="overflow-clip">{renderEventTile(event, piece.segment)}</MonthEventPieceShell>
   }
-  // 預設長相:事件列 = Tag md(calendar.spec.md「間距」【SPACING(定)】)—— text-body 14px font-normal;文字左右內距 8 用 Tag 的兩層結構表示
-  //(外層 4 + 文字 4,同 tag.tsx 的 size md 與 data-tag-text 那兩層),兩層都讀元件內變數 --calendar-gap(calendar-geometry.ts),不寫死數字。
-  // 顏色畫在內層(圓角跟外層 rounded-[inherit]):外層是長條墊底那一層(深色主題不透出格線),內層疊類別淡底與滑過。
+  // 預設長相:事件列 = Tag md(calendar.spec.md「間距」【SPACING(定)】)—— text-body 14px font-normal,字左緣離列左緣 8(兩種長相同一條線)。
   // 被「+N」切開或換週切開的片段一樣畫標題【AI 推導:只剩色塊沒有標題的片段讀不出是哪件事;calendar-layout.ts CalendarEventSegment】。
+  // 時間與標題是同一行文字(時間在前,中間隔一個格內空隙 4【AI 推導】):一起截斷、省略號只在行尾 —— 欄寬不夠時先吃標題,時間仍在;
+  // 不拆成兩個各自截斷的盒子(那樣時間會被裁成半個字,或標題寬度歸零)。時間的元素帶 data-calendar-time、色條帶 data-calendar-accent(量測用)。
+  const isBar = piece.entry.kind === 'bar'
+  // 長條的色:可點 = CAT_EVENT(帶滑過 step-2),唯讀 = CAT_SUBTLE(不帶);neutral = CAT_EVENT_NEUTRAL 的同兩鍵。色條 = CAT_ACCENT / CAT_EVENT_NEUTRAL.accent。
+  const barClass = color === 'neutral'
+    ? (mode.readOnly ? CAT_EVENT_NEUTRAL.subtle : CAT_EVENT_NEUTRAL.event)
+    : (mode.readOnly ? CAT_SUBTLE[color] : CAT_EVENT[color])
+  const accentClass = color === 'neutral' ? CAT_EVENT_NEUTRAL.accent : CAT_ACCENT[color]
+  const timeSpan = time === null ? null : (
+    // 時間 text-fg-secondary、標題 text-foreground【TIMECOLOR(定)】(長條裡兩者都是類別字色 step-7,同一張表的左欄)
+    <span data-calendar-time="" className={cn('me-[var(--calendar-gap)]', !isBar && 'text-fg-secondary')}>{time}</span>
+  )
   return (
     // 恆 wrap、未截斷 open={false} 靜默(truncated-text.spec.md always-wrap:條件 wrap 會 remount 丟 RO 訂閱)。
     // 唯讀方塊照樣掛:截斷提示是「資訊揭露」,不是點擊回饋(tooltip.spec.md「截斷文字 → 用 tooltip 顯示完整內容。」不分可不可點)。
     <Tooltip open={isTruncated ? undefined : false}>
       <TooltipTrigger asChild>
-        <MonthEventPieceShell {...shell} underlay={piece.entry.kind === 'bar'}>
-          <div className={cn('flex items-center h-full rounded-[inherit] px-[var(--calendar-gap)] text-body font-normal', colorClass)}>
-            <span ref={truncationRef} className="min-w-0 truncate px-[var(--calendar-gap)]">{event.title}</span>
-          </div>
+        <MonthEventPieceShell {...shell} underlay={isBar}>
+          {isBar ? (
+            // 長條(左欄):類別淡底 + 字 step-7,可點時滑過 step-2(CAT_EVENT)、唯讀不帶滑過(CAT_SUBTLE)【維持 U10】;不帶色條(色條只給有時段事件)。
+            // 文字左右內距 8 用 Tag 的兩層結構表示(外層 4 + 文字 4,同 tag.tsx 的 size md 與 data-tag-text 那兩層),兩層都讀 --calendar-gap。
+            // 顏色畫在內層(圓角跟外層 rounded-[inherit]):外層是長條墊底那一層(深色主題不透出格線),內層疊類別淡底與滑過。
+            <div className={cn('flex items-center h-full rounded-[inherit] px-[var(--calendar-gap)] text-body font-normal', barClass)}>
+              <span ref={truncationRef} className="min-w-0 truncate px-[var(--calendar-gap)]">{timeSpan}{event.title}</span>
+            </div>
+          ) : (
+            // 有時段(右欄):透明列(permanent transparent,只在滑過 / 焦點時看得見 rounded-md 的形狀),可點時滑過 = 透明底的配對 --neutral-hover
+            //(color.spec.md「Hover 換色配對總則」;瞬間切換、不做過渡【維持 U2】);唯讀不亮(游標由外層給)。
+            // 左側色條佔 Tag 的「Tag px」那 4(寬 --calendar-accent-w,calendar-geometry.ts)、後接列內間隔 4(gap,=「Text px」)→ 字左緣 8,
+            // 與長條同一條線(calendar.spec.md「間距」有時段的色條列;修 2026-11-25 前有色條的字右偏 3px)。
+            // 色條 = 字高(--font-body-size,text-body 的字級 token)、上下置中(items-center)、圓頭(rounded-sm:radius.css「短邊 ≤ 10px 用 sm」,
+            // 寬 4 的 2px 圓角 = 兩端半圓)【BAR(定)】;顏色 = 類別 step-6(CAT_ACCENT;neutral 是 --color-neutral-9)。裝飾,讀屏不念(aria-hidden)。
+            <div className={cn('flex items-center h-full rounded-[inherit] gap-[var(--calendar-gap)] pe-[var(--calendar-text-inset)] text-body font-normal', !mode.readOnly && 'hover:bg-neutral-hover')}>
+              <span aria-hidden data-calendar-accent="" className={cn('shrink-0 w-[var(--calendar-accent-w)] h-[var(--font-body-size)] rounded-sm', accentClass)} />
+              <span ref={truncationRef} className="min-w-0 truncate text-foreground">{timeSpan}{event.title}</span>
+            </div>
+          )}
         </MonthEventPieceShell>
       </TooltipTrigger>
       <TooltipContent>{event.title}</TooltipContent>
@@ -527,6 +596,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   renderEventTile,
   className,
   locale = DEFAULT_DATE_LOCALE,
+  eventTimeFormat,
   prevAriaLabel = '上個月', // i18n-allow: DS default; consumer override via prevAriaLabel prop
   nextAriaLabel = '下個月', // i18n-allow: DS default; consumer override via nextAriaLabel prop
   navAriaLabel = '行事曆月份導覽', // i18n-allow: DS default; consumer override via navAriaLabel prop
@@ -610,6 +680,17 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
     [locale],
   )
   const monthTitle = formatters.monthTitle.format(refDate)
+  // 事件的時間與日期(calendar.spec.md「資料語意」時間顯示、「A11y 預設」事件列名稱):同上,依 locale 與 eventTimeFormat 各 memo 一次。
+  // eventTimeFormat 常是 consumer 每次 render 新寫的物件字面值 → 以內容(JSON)當相依,內容沒變就不重建 formatter。
+  const eventTimeFormatKey = JSON.stringify(eventTimeFormat ?? DEFAULT_EVENT_TIME_FORMAT)
+  const eventFormatters = React.useMemo(
+    () => ({
+      time: new Intl.DateTimeFormat(locale, JSON.parse(eventTimeFormatKey) as Intl.DateTimeFormatOptions),
+      // 長條讀屏名稱的起訖日期(zh-TW「7月20日」);不用 formatRange:zh-TW 的區間會換成「7/20至7/22」數字樣式、與單日「7月3日」不一致(Node 24 實測)
+      date: new Intl.DateTimeFormat(locale, { month: 'long', day: 'numeric' }),
+    }),
+    [locale, eventTimeFormatKey],
+  )
 
   // 星期列:取 `days[0..6]`(格陣起點開始 7 天,正好一週),隱藏週末時同步拿掉那幾天
   const weekdays = React.useMemo(
@@ -659,6 +740,20 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   // 日期框裡的字:每月 1 號(含前後月溢出的那幾格)帶月份「7月1日」,其他日子只寫數字【Q15(定)】;窄的時候 1 號也只寫「1」【總帳更正 #8】。
   // 平日不走 Intl:zh-TW 的 { day: 'numeric' } 會出「1日」(實測),數字直接用 getDate()。
   const dayLabel = (date: Date) => (date.getDate() === 1 && !narrow ? formatters.monthDay.format(date) : String(date.getDate()))
+
+  // 一段事件畫在標題前的時間與讀屏名稱(calendar.spec.md「事件的兩種長相」內容列、「資料語意」時間顯示、「A11y 預設」事件列):
+  //   時間 = 開始時間,畫在有時段事件(kind 'timed')的標題前;滿 24 小時的有時段長條只畫在含真起點的那一段(segment.isStart)【AI 推導】;
+  //   全天不畫;窄的時候都不畫(calendar.spec.md「窄寬度」(1);同一個 narrow 旗標)。
+  //   名稱 = labels.event(標題, when, 全天):有時段 when = 開始時間(與畫面同一個格式),長條 when = 起訖日期(畫出來的第一天 – 最後一天,一天就一個日期);
+  //   窄寬不影響名稱(同日期停靠點,讀屏名稱照舊)。
+  const eventText = (entry: CalendarLayoutPiece<CalendarEvent>['entry'], segment: CalendarEventSegment) => {
+    const startTime = eventFormatters.time.format(entry.start)
+    const showsTime = !narrow && (entry.kind === 'timed' || (!entry.allDay && segment.isStart))
+    const first = eventFormatters.date.format(entry.firstDay)
+    const last = eventFormatters.date.format(entry.lastDay)
+    const when = entry.kind === 'timed' ? startTime : first === last ? first : `${first} – ${last}`
+    return { time: showsTime ? startTime : null, name: labels.event(entry.event.title, when, entry.allDay) }
+  }
 
   // ── 事件版面(calendar.spec.md「資料語意」「跨日長條」「格內排序」「每格筆數與「+N」」;唯一實作 calendar-layout.ts)──────────
   // 每筆事件只解析一次(normalizeEvents;異常資料的開發期警告也在那裡);版面吃「看得見的日子」(隱藏週末時已濾掉 —— 只落在週末的事件不畫、
@@ -1163,21 +1258,19 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                         {loading ? <Skeleton aria-hidden className="h-tag-md w-full" /> : <>
                         {ownPieces.map((piece) => {
                           const { event } = piece.entry
-                          const ec = event.color ?? 'blue'
-                          const mode = eventModeOf(event)
-                          // 可點的方塊帶滑過(CAT_EVENT),唯讀的不帶(CAT_SUBTLE);兩者同色相同底同字,見檔頭 EVENT_STATIC_COLOR_CLASSES
-                          const hueClass = mode.readOnly ? EVENT_STATIC_COLOR_CLASSES[ec] : EVENT_COLOR_CLASSES[ec]
-                          // 全天(含「只有日期、沒寫 allDay」推斷成全天的,calendar-layout.ts normalizeEvents):淡底 + 左 accent 條
-                          //(色條改給有時段事件、全天拿掉色條在事件長相那一包)。字重跟事件列 = Tag md 的 font-normal(calendar.spec.md「間距」事件列列)。
-                          const colorClass = piece.entry.allDay ? cn(hueClass, EVENT_ALLDAY_ACCENT[ec]) : hueClass
+                          // 長相由版面的 kind 決定(長條 / 有時段);這裡決定顏色(沒傳 / 認不得 = blue)、時間與名稱、可點 / 唯讀(eventModeOf),
+                          // 色表在 MonthEventPiece 裡按名字取(見檔頭「事件的顏色」)
+                          const { time, name } = eventText(piece.entry, piece.segment)
                           return (
                             <MonthEventPiece
                               key={`${event.id}@${piece.startCol}`}
                               piece={piece}
                               covers={Array.from({ length: piece.span }, (_, i) => isoOf(piece.startCol + i)).join(' ')}
                               endsAtLastColumn={piece.startCol + piece.span === weekLayout.days.length}
-                              colorClass={colorClass}
-                              mode={mode}
+                              color={resolveEventColor(event.color)}
+                              time={time}
+                              name={name}
+                              mode={eventModeOf(event)}
                               renderEventTile={renderEventTile}
                             />
                           )

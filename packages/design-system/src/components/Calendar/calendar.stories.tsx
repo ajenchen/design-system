@@ -51,10 +51,19 @@ const MORE_LABEL = (count: number) => `還有 ${count} 個事件`
  */
 export const TeamCalendar: Story = {
   name: '團隊行事曆',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '會議、截止與休假排在同一個月曆:有時段的事件是一列「色條 + 開始時間 + 標題」(無底),全天與跨日事件是淡底長條(Alex 休假 7/20–7/22)。顏色代表團隊 / 類別。7/3 的公司創立紀念日是單筆唯讀(`readOnly`):全公司的假日不屬於任何團隊,用中性灰(`neutral`);它只是標記、沒有詳情可開,所以不是按鈕、滑過不亮、點了什麼都不發生(也不會在那天新增),其他事件照樣點得開。',
+      },
+    },
+  },
   render: () => {
     const events: CalendarEvent[] = [
-      // 公司假日:團隊月曆裡只是標記、沒有詳情可開 → 單筆唯讀(calendar.spec.md「日期格與事件方塊:可點或唯讀」單筆事件那一列)
-      { id: '0', title: '公司創立紀念日', start: `${thisMonth}-03`, end: `${thisMonth}-04`, color: 'green', readOnly: true },
+      // 公司假日:團隊月曆裡只是標記、沒有詳情可開 → 單筆唯讀(calendar.spec.md「日期格與事件方塊:可點或唯讀」單筆事件那一列);
+      // 全公司的假日不屬於任何團隊 → 中性灰 neutral(calendar.spec.md「事件的兩種長相」neutral 那條)
+      { id: '0', title: '公司創立紀念日', start: `${thisMonth}-03`, end: `${thisMonth}-04`, color: 'neutral', readOnly: true },
       { id: '1', title: '設計審查', start: `${thisMonth}-05T10:00`, end: `${thisMonth}-05T11:00`, color: 'blue' },
       { id: '2', title: '衝刺規劃會議', start: `${thisMonth}-08T14:00`, end: `${thisMonth}-08T15:30`, color: 'blue' },
       // 截止是一個時刻(有時段的零長度:畫在那一天,不警告)
@@ -77,6 +86,7 @@ export const TeamCalendar: Story = {
 /**
  * 產品上線週 — 程式碼凍結三天,上線日一天塞滿 6 件事(發版、客服待命、上線公告、合作夥伴通知、監控輪值、慶功)。
  * 每格放幾列依格高;放不下時最後一列換成計數(這裡傳中文「還有 N 個事件」,元件預設「+N more」),這一則讓它在畫面上看得到。
+ * 開始時間由元件依事件的 start 畫在標題前(「上午10:00 上線公告」),標題裡不另寫時間(2026-11-25 前寫成「上線公告 10:00」)。
  */
 export const LaunchWeek: Story = {
   name: '產品上線週',
@@ -86,10 +96,10 @@ export const LaunchWeek: Story = {
       { id: 'l1', title: '程式碼凍結', start: `${thisMonth}-13`, end: `${thisMonth}-16`, color: 'red', allDay: true },
       { id: 'l2', title: '發布 v2.0', start: `${thisMonth}-15T09:00`, end: `${thisMonth}-15T10:00`, color: 'blue' },
       { id: 'l3', title: '客服待命', start: `${thisMonth}-15`, end: `${thisMonth}-16`, color: 'yellow', allDay: true },
-      { id: 'l4', title: '上線公告 10:00', start: `${thisMonth}-15T10:00`, end: `${thisMonth}-15T10:30`, color: 'green' },
-      { id: 'l8', title: '合作夥伴通知 11:00', start: `${thisMonth}-15T11:00`, end: `${thisMonth}-15T11:30`, color: 'turquoise' },
-      { id: 'l5', title: '監控輪值 14:00', start: `${thisMonth}-15T14:00`, end: `${thisMonth}-15T22:00`, color: 'purple' },
-      { id: 'l6', title: '慶功 18:30', start: `${thisMonth}-15T18:30`, end: `${thisMonth}-15T20:30`, color: 'orange' },
+      { id: 'l4', title: '上線公告', start: `${thisMonth}-15T10:00`, end: `${thisMonth}-15T10:30`, color: 'green' },
+      { id: 'l8', title: '合作夥伴通知', start: `${thisMonth}-15T11:00`, end: `${thisMonth}-15T11:30`, color: 'turquoise' },
+      { id: 'l5', title: '監控輪值', start: `${thisMonth}-15T14:00`, end: `${thisMonth}-15T22:00`, color: 'purple' },
+      { id: 'l6', title: '慶功', start: `${thisMonth}-15T18:30`, end: `${thisMonth}-15T20:30`, color: 'orange' },
       { id: 'l7', title: '上線檢討會', start: `${thisMonth}-17T14:00`, end: `${thisMonth}-17T15:00`, color: 'blue' },
     ]
     return (
@@ -287,16 +297,17 @@ export const SidePanelNarrow: Story = {
     docs: {
       description: {
         story:
-          '容器變窄時只縮內容、不換版面(桌機 RWD):欄寬 ≤ 60 時星期縮成一個字(「日」「一」)、每月 1 號只顯示「1」;斷點看的是月曆自己的欄寬,不是視窗寬。讀屏名稱不受影響(仍念完整日期)。',
+          '容器變窄時只縮內容、不換版面(桌機 RWD):欄寬 ≤ 60 時星期縮成一個字(「日」「一」)、每月 1 號只顯示「1」、有時段的事件拿掉開始時間(只留色條與標題,例:7/27 的上線前審查);斷點看的是月曆自己的欄寬,不是視窗寬。讀屏名稱不受影響(仍念完整日期與事件的開始時間)。',
       },
     },
   },
   render: () => {
-    // 工作項目的截止日(全天,end 不含 → 隔天;與左邊表格的截止日同一天)
+    // 工作項目的截止日(全天,end 不含 → 隔天;與左邊表格的截止日同一天),加上線前一天的審查會議(有時段)
     const events: CalendarEvent[] = [
       { id: 'n1', title: '設計定稿', start: `${thisMonth}-10`, end: `${thisMonth}-11`, color: 'purple', allDay: true },
       { id: 'n2', title: '金流測試', start: `${thisMonth}-17`, end: `${thisMonth}-18`, color: 'blue', allDay: true },
       { id: 'n3', title: '問答更新', start: `${thisMonth}-22`, end: `${thisMonth}-23`, color: 'green', allDay: true },
+      { id: 'n5', title: '上線前審查', start: `${thisMonth}-27T14:00`, end: `${thisMonth}-27T15:00`, color: 'red' },
       { id: 'n4', title: '改版上線', start: `${thisMonth}-28`, end: `${thisMonth}-29`, color: 'red', allDay: true },
     ]
     return (
@@ -318,7 +329,7 @@ export const SidePanelNarrow: Story = {
 export const ReadOnlyDatesCustomTileKeyboard: Story = {
   name: '唯讀日期 × 自訂事件方塊鍵盤',
   tags: ['test-only'],
-  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:495「Enter/Space activation」
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:502「Enter/Space activation」
   parameters: { demoFocus: 'keep' },
   render: () => (
     <div className="h-screen p-4 bg-canvas">
@@ -342,7 +353,8 @@ export const ReadOnlyDatesCustomTileKeyboard: Story = {
     const todayCell = canvas.getByRole('gridcell', { name: '今天,2026年7月15日 星期三,0 個事件' })
     await expect(todayCell).toHaveAttribute('tabindex', '0')
     await expect(todayCell).toHaveAttribute('aria-current', 'date')
-    const tile = await canvas.findByRole('button', { name: '事件:週五電子報' })
+    // 外層的讀屏名稱 =「{標題},{開始時間}」(calendar.spec.md「A11y 預設」事件列;自訂內容也一樣,名稱由元件給)
+    const tile = await canvas.findByRole('button', { name: '週五電子報,上午8:00' })
     tile.focus()
     await userEvent.keyboard('{Enter}')
     await expect(customTileActivated).toHaveBeenCalledTimes(1)
@@ -352,24 +364,32 @@ export const ReadOnlyDatesCustomTileKeyboard: Story = {
 // 英文產品覆寫讀屏字串(test-only 夾具):`labels` 逐鍵換掉 DS 預設的繁中(calendar.spec.md「A11y 預設」字串可覆寫),
 // 已有個別參數的字串(‹ › / 月份導覽 / 今天 / 新事件)照用那些參數。play 斷言覆寫真的生效、沒有一句預設中文漏出來;
 // scripts/calendar-month-invariant.mjs 也開這一則量(對照組:把名稱改回預設中文 → 紅)。
+// 同一則也是 `eventTimeFormat` 的夾具:英文產品要 24 小時制(10:00,不是 en-US 預設的 10:00 AM;calendar.spec.md「資料語意」時間顯示「eventTimeFormat 可覆寫」)。
 const ENGLISH_LABELS: CalendarLabels = {
   grid: (monthTitle) => `Calendar, ${monthTitle}`,
   day: (fullDate, count) => `${fullDate}, ${count} ${count === 1 ? 'event' : 'events'}`,
   todayPrefix: 'Today, ',
   weekNumberHeader: 'W',
   weekNumber: (week) => `Week ${week}`,
+  event: (title, when, allDay) => `${title}, ${when}${allDay ? ', all day' : ''}`,
 }
+const ENGLISH_EVENTS: CalendarEvent[] = [
+  { id: 'en1', title: 'Design review', start: `${thisMonth}-07T10:00`, end: `${thisMonth}-07T11:00`, color: 'blue' },
+  // 長條用字與淡底對比 ≥ 4.5 的色相(green 長條的字 3.71,不在範例新增 color-contrast 違規;同「內容發佈月曆」的選色)
+  { id: 'en2', title: 'Offsite', start: `${thisMonth}-08`, end: `${thisMonth}-10`, color: 'purple', allDay: true },
+]
 export const EnglishLabelsOverride: Story = {
   name: '英文讀屏字串覆寫',
   tags: ['test-only'],
-  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:476「字串可覆寫」
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:483「字串可覆寫」
   render: () => (
     <div className="h-screen p-4 bg-canvas">
       <Calendar
         defaultReferenceDate={now}
         today={now}
-        events={[]}
+        events={ENGLISH_EVENTS}
         locale="en-US"
+        eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }}
         labels={ENGLISH_LABELS}
         prevAriaLabel="Previous month"
         nextAriaLabel="Next month"
@@ -388,9 +408,13 @@ export const EnglishLabelsOverride: Story = {
     const today = canvas.getByRole('button', { name: 'Today, Wednesday, July 15, 2026, 0 events' })
     await expect(today).toHaveAttribute('aria-current', 'date')
     await expect(canvas.getByRole('button', { name: 'Thursday, July 16, 2026, 0 events' })).not.toHaveAttribute('aria-current')
-    // 預設的繁中一句都不出現(格陣名稱、日期名稱、今天前綴)
+    // 事件名稱也用 consumer 的字;開始時間照 eventTimeFormat(24 小時制,不是 en-US 預設的「10:00 AM」),畫面與名稱同一個格式
+    await expect(canvas.getByRole('button', { name: 'Design review, 10:00' })).toBeInTheDocument()
+    await expect(canvas.getByRole('button', { name: 'Offsite, July 8 – July 9, all day' })).toBeInTheDocument()
+    await expect(canvas.getByText('10:00')).toBeInTheDocument()
+    // 預設的繁中一句都不出現(格陣名稱、日期名稱、今天前綴、事件名稱)
     await expect(canvas.queryAllByRole('grid', { name: /月行事曆/ })).toHaveLength(0)
-    await expect(canvas.queryAllByRole('button', { name: /今天,|個事件|星期/ })).toHaveLength(0)
+    await expect(canvas.queryAllByRole('button', { name: /今天,|個事件|星期|全天|上午|下午/ })).toHaveLength(0)
   },
 }
 

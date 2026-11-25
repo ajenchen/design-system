@@ -31,7 +31,7 @@
 |------|------------------|----------|
 | **靜態色值**（subtle bg、text、solid bg） | ❌ Primitives 公式翻轉已自動處理 | **Primitive**——直接 `--color-blue-1`、`--color-blue-7`、`--color-blue-6` |
 | **實心色的互動狀態**(step-6 家族的 hover、active) | ✅ 需要保證「hover 永遠較亮、active 永遠較暗」 | **Semantic**——`--blue-hover`、`--blue-active` 內含 dark mode swap |
-| **淡底的滑過**(step-1 → step-2) | ❌ 色階號碼 = 離所在底色多遠,兩個主題同向(淺色更深、深色更亮;本檔「Dark mode subtle」) | **Primitive**——`--color-{hue}-1` → `--color-{hue}-2`(月曆事件方塊,`tokens/categorical-color.ts` `CAT_EVENT`) |
+| **淡底的滑過**(step-1 → step-2) | ❌ 色階號碼 = 離所在底色多遠,兩個主題同向(淺色更深、深色更亮;本檔「Dark mode subtle」) | **Primitive**——`--color-{hue}-1` → `--color-{hue}-2`(月曆全天 / 跨日長條,`tokens/categorical-color.ts` `CAT_EVENT`) |
 
 > 2026-09-26 範圍更正(user 同意,條件「確保這符合我們一致的設計語言且不違背世界級的設計」):原表把「互動狀態」一律寫成「hover 永遠較亮」,實際只對實心色成立 —— 淡底與中性灰的滑過在淺色本來就是變深(本檔「Hover 換色配對總則」:往上一階)。淡底滑過改成第 1→2 階後,深色第 2–4 階同步改成半透明淡底,兩個主題的第 2 階都是「離底更遠一格」,不需要 mode 知識,依本檔「只有真的需要切換主題的東西才開 semantic token」直接用 primitive,不另開 12 個 `--{hue}-subtle-hover`。
 
@@ -385,10 +385,10 @@ Tag、Avatar 等需要多色區分的場景（專案標籤、團隊分類等）�
 |------|------|------|
 | step-1 | subtle 背景（淡色填充） | `--color-blue-1` |
 | step-5 | dismiss hover（solid 模式） | `--color-blue-5` |
-| step-6 | solid 背景（全色填充） | `--color-blue-6` |
+| step-6 | solid 背景（全色填充）;Calendar 有時段事件的色條(`tokens/categorical-color.ts` `CAT_ACCENT`,只給顏色) | `--color-blue-6` |
 | step-7 | subtle 文字、dismiss active（solid 模式） | `--color-blue-7` |
 
-可用 categorical 色相（12 個，SSOT `tokens/categorical-color.ts` `CATEGORICAL_HUES`）：blue、green、deep-orange、yellow、red、orange、amber、lime、turquoise、indigo、purple、magenta。Tag / Avatar / Calendar event 三者共用此組,每個色相 variant 名 1:1 對 `--color-{hue}-*`（零 offset）。
+可用 categorical 色相（12 個，SSOT `tokens/categorical-color.ts` `CATEGORICAL_HUES`）：blue、green、deep-orange、yellow、red、orange、amber、lime、turquoise、indigo、purple、magenta。Tag / Avatar / Calendar event 三者共用此組,每個色相 variant 名 1:1 對 `--color-{hue}-*`（零 offset）。Calendar 的用法:全天 / 跨日長條 = step-1 底 + step-7 字 + 滑過 step-2(`CAT_EVENT`;唯讀 `CAT_SUBTLE`),有時段事件 = 透明列 + 左側 step-6 色條(`CAT_ACCENT`,2026-11-25 前是全天事件的左側 3px 邊框);neutral 不是色相,Calendar 的 neutral 事件色在同檔 `CAT_EVENT_NEUTRAL`(`--secondary` 底 / `--secondary-hover` 滑過 / `--color-neutral-9` 色條)。規則住 `components/Calendar/calendar.spec.md`「事件的兩種長相」。
 
 **注意**：categorical `red` = `--color-red-*`（品牌紅 hue 25),與 primitive `deep-orange`（hue 38）及 semantic `--error`（= deep-orange）**完全無關**（見本檔頂部「消費規則」段注意事項）。
 
@@ -786,7 +786,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 | inverse 底上的透明子元素 | `--inverse-neutral-hover` | `--inverse-neutral-active`(「`--inverse-*` namespace」段) |
 | `--primary` / `--info` / `--error` / `--success` / `--warning`(step-6) | `--{名}-hover` | `--{名}-active`(「互動狀態推導」段) |
 | 12 色相實心底 `--color-{hue}-6` | `--{hue}-hover` | `--{hue}-active`(「`--{hue}-hover/active`」段) |
-| 12 色相淡底 `--color-{hue}-1` | `--color-{hue}-2`(同色離底更遠一格;淺色變深、深色變亮 —— 「Dark mode subtle」段的色階原則,2026-09-26)—— 月曆事件方塊 | 無 |
+| 12 色相淡底 `--color-{hue}-1` | `--color-{hue}-2`(同色離底更遠一格;淺色變深、深色變亮 —— 「Dark mode subtle」段的色階原則,2026-09-26)—— 月曆全天 / 跨日長條(有時段事件是透明列,走上方「透明」那一列) | 無 |
 
 **`@theme inline` bridge 別名**:`semantic.css` 另定義 `--color-secondary-hover` / `--color-secondary-active`(= 同名 semantic token 的 alias),只為產出 `bg-secondary-hover` / `bg-secondary-active` utility(token-system.spec.md「跨 family `@theme inline` bridge」),**不是第二組語意 token**;改值一律改 `--secondary-hover` / `--secondary-active`。
 
@@ -841,7 +841,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 | Token | 答 | 語意 | 典型場景(real consumer grep verified 2026-05-20) |
 |---|---|---|---|
 | `bg-muted`(neutral-2) | **是** | **靜態非互動 surface** — 退化 / placeholder / locked 視覺 | Skeleton(`components/Skeleton/skeleton.tsx#Skeleton`)/ DataTable 表頭面板(`components/DataTable/data-table.tsx#HEADER_PANEL`)與虛擬捲動骨架列的 bar(`components/DataTable/data-table.tsx#unmountedSkeletonStyle`,`var(--muted)`)/ Alert neutral(`components/Alert/alert.tsx#SUBTLE_CONTAINER`)/ DataTable filter-panel inner group container(`components/DataTable/data-table-filter-group.tsx#GroupBlock`,2026-07-14 拆檔自 filter-panel)/ Calendar 星期列(`components/Calendar/calendar.tsx#Calendar`)/ Coachmark 媒體區佔位(`components/Coachmark/coachmark.tsx#Coachmark`)/ ProfileCard 狀態列(`components/ProfileCard/profile-card.tsx#ProfileCard`)/ FileViewer 縮圖的佔位層(`components/FileViewer/file-viewer.tsx#Filmstrip`;沒有預覽圖時的檔案圖示 + 副檔名那一層 —— 縮圖鈕可點,底色不掛在鈕上,待辦總帳 A9③ 2026-09-29 已改)/ Steps 線性流程裡還沒解鎖那一步的圓(`components/Steps/steps.tsx#MdLgIndicator`,`var(--muted)`)/ Avatar 中性淡色底(`components/Avatar/avatar.tsx#COLOR_MAP`,`var(--muted)`)/ scrollbar track(`tokens/color/semantic.css#--scrollbar-track`)/ anatomy `<th>`(`stories-helpers/anatomy/anatomy-utils.tsx#Th`)/ Notice 示範的淡色容器 neutral 那一格(`stories-helpers/data/notice-containers.ts#SUBTLE_CONTAINER`,2026-10-27 由 Notice 兩個 story 檔的抄本收成一份)。**這一格與下一格是消費者登記簿**:以 `檔案#頂層宣告`(元件 / 函式 / 常數名;CSS 用變數名)登記,不用行號 —— 2026-10-21 前用行號,12 筆有 7 筆過期、還漏了 Steps 與 Avatar 兩處(r1b OTH-02);閘 `scripts/owner-claims-invariant.mjs` C1 讀這兩格:登記的宣告找不到、宣告裡沒用到該列 token、DS 原始碼(story 除外)用了卻沒登記,都紅。2026-09-27 重掃(`rg bg-muted` 非 story tsx + css,補 5 個漏列):舊清單的「tab 容器 / code block」目前沒有真實消費者,已移除 |
-| `bg-secondary`(neutral-3) | **否,只是視覺退後一級** | **存在且微淡可辨** — 元素是正常狀態,但需要退後一級 | Tag neutral(`components/Tag/tag.tsx#tagVariants`)/ OverflowIndicator「+N」圓(`components/OverflowIndicator/overflow-indicator.tsx#OverflowIndicator`;可 Tab 聚焦、滑過開名單 = 可互動元素,2026-09-26 由 muted 改)與標籤形(`components/OverflowIndicator/overflow-indicator.tsx#triggerClassName`,借 `tagVariants` 的中性底,同樣可 Tab 聚焦、滑過開名單)/ Slider rest track(`components/Slider/slider.tsx#Slider`)/ FileItem compact 靜態小膠囊(`components/FileItem/file-item.tsx#FileItem`;有 `onClick` 時滑過換 `--secondary-hover`,B12)/ AgentPanel 訊息氣泡(`components/AgentPanel/agent-panel.tsx#AgentMessage`)與決策卡選項卡(`components/AgentPanel/agent-panel.tsx#AgentDecisionCard`,可點;滑過底色 2026-09-26 user 質疑後拿掉,待辦總帳 R21 研究中)/ Badge low(`components/Badge/badge.tsx#badgeVariants`)/ CircularProgress track(`components/CircularProgress/circular-progress.tsx#CircularProgress`,`stroke="var(--secondary)"`)/ Steps 非線性流程的圓(`components/Steps/steps.tsx#MdLgIndicator`,`var(--secondary)`)/ ProgressBar track(`components/ProgressBar/progress-bar.tsx#ProgressBar`)。**站在這個底上而且可點的(小膠囊、選項卡、+N)滑過時換自己的配對 `--secondary-hover`,不借透明底的 `--neutral-hover`**(「Hover 換色配對總則」;2026-09-27 依待辦總帳 N12 補齊可點的使用者)|
+| `bg-secondary`(neutral-3) | **否,只是視覺退後一級** | **存在且微淡可辨** — 元素是正常狀態,但需要退後一級 | Tag neutral(`components/Tag/tag.tsx#tagVariants`)/ OverflowIndicator「+N」圓(`components/OverflowIndicator/overflow-indicator.tsx#OverflowIndicator`;可 Tab 聚焦、滑過開名單 = 可互動元素,2026-09-26 由 muted 改)與標籤形(`components/OverflowIndicator/overflow-indicator.tsx#triggerClassName`,借 `tagVariants` 的中性底,同樣可 Tab 聚焦、滑過開名單)/ Slider rest track(`components/Slider/slider.tsx#Slider`)/ FileItem compact 靜態小膠囊(`components/FileItem/file-item.tsx#FileItem`;有 `onClick` 時滑過換 `--secondary-hover`,B12)/ AgentPanel 訊息氣泡(`components/AgentPanel/agent-panel.tsx#AgentMessage`)與決策卡選項卡(`components/AgentPanel/agent-panel.tsx#AgentDecisionCard`,可點;滑過底色 2026-09-26 user 質疑後拿掉,待辦總帳 R21 研究中)/ Badge low(`components/Badge/badge.tsx#badgeVariants`)/ CircularProgress track(`components/CircularProgress/circular-progress.tsx#CircularProgress`,`stroke="var(--secondary)"`)/ Steps 非線性流程的圓(`components/Steps/steps.tsx#MdLgIndicator`,`var(--secondary)`)/ ProgressBar track(`components/ProgressBar/progress-bar.tsx#ProgressBar`)/ Calendar neutral 事件的長條(`tokens/categorical-color.ts#CAT_EVENT_NEUTRAL`;可點時滑過換 `--secondary-hover`,唯讀不帶滑過)。**站在這個底上而且可點的(小膠囊、選項卡、+N、Calendar neutral 長條)滑過時換自己的配對 `--secondary-hover`,不借透明底的 `--neutral-hover`**(「Hover 換色配對總則」;2026-09-27 依待辦總帳 N12 補齊可點的使用者)|
 
 **判斷法**:「這個元素是『還沒準備好 / 不可操作』嗎?」
 - 是 → `bg-muted`(退化、placeholder 語意)

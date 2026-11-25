@@ -446,8 +446,9 @@ jobs:
           node scripts/status-color-invariant.mjs
           node scripts/test-status-color-invariant.mjs
           # Calendar 格內不寫死尺寸(calendar.spec.md「間距」【SPACING(定)】、「禁止事項」第 7 條):元件檔 class 字串不寫數字型內距 / 間距 / 寬高 / 邊框寬
-          # 與 [Npx],列高常數 = TAG_HEIGHT_PX.md,讀到的 --calendar-* 都有設值。配對測試在暫存目錄的實檔注入 p-1.5 / gap-0.5 / min-h-28 /
-          # border-l-[3px] / 列高 20 各自必紅,並跑閘自己的 --selftest(九個突變)。純靜態,本機兩條合計約 2 秒。
+          # 與 [Npx],列高常數 = TAG_HEIGHT_PX.md,讀到的 --calendar-* 都有設值;有時段事件的色條寬 = 4 且「色條 + 間隔 = 文字內距」、寬只從常數來,
+          # 類別色表 CAT_ACCENT / CAT_EVENT_NEUTRAL.accent 只給顏色(「事件的兩種長相」)。配對測試在暫存目錄的實檔注入 p-1.5 / gap-0.5 / min-h-28 /
+          # border-l-[3px] / 列高 20 / 色表恢復 border-l-[3px] / 色條寬寫死 w-1 / 色條寬常數 3 各自必紅,並跑閘自己的 --selftest(十二個突變)。純靜態,本機兩條合計約 2 秒。
           node scripts/calendar-geometry-invariant.mjs
           node scripts/test-calendar-geometry-invariant.mjs
           # 一組選項的 Checkbox 一律包 <CheckboxGroup>(zero-gap canonical,checkbox.spec.md),不手刻 <div flex|grid|space-y-N>;
@@ -1888,7 +1889,10 @@ jobs:
           # 事件版面(跨日長條一個元素畫過涵蓋的格、斷開端直角(換週 / 延續到下個月 / 被藏的週末)、每格列數照量到的格高(掃 14 個格高、剛好放滿不出「+N」)、
           # 點長條任一段與唯讀列不會在這天新增、從長條涵蓋的每一天 F2 都走得到、日期格唯讀時長條涵蓋的每一天都念得到它的標題、深色主題長條不透出格線、
           # renderEventTile 回傳過大的內容裁在外層裡(不畫到下一列 / 隔壁格、不接走點擊)而外層的焦點框照樣畫在外面);
-          # --selftest 五十一個突變各自讓預期那一格紅。本機(同一份建置)主判定約 20 秒、--selftest 約 61 秒,CI 未實測 ——
+          # 事件的兩種長相(全天長條 = 類別淡底、沒有左色條;有時段 = 透明列 + 色條寬 4 / 高 = 字高 / 圓頭 + 時間 fg-secondary + 標題 foreground,
+          # 兩種長相字左緣同一條線、zh-TW「上午10:00」、事件讀屏名稱「{標題},{時間或日期}{,全天}」、12 色相與 neutral 的色、唯讀滑過不變、
+          # eventTimeFormat 覆寫、窄寬拿掉時間、時間字對比兩個主題 ≥ 4.5);
+          # --selftest 六十五個突變各自讓預期那一格紅。本機(同一份建置)主判定約 26 秒、--selftest 約 74 秒,CI 未實測 ——
           # 放在本 job 是因為它是 25 分 job 裡餘裕大的一個(約 8.5 分),不是主題相同(同 sidebar-keyboard job 檔頭「不往沒有餘裕的 job 疊」)。
           npm run test:calendar-month
 

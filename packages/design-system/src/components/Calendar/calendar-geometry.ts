@@ -43,6 +43,14 @@ export const CALENDAR_GAP_PX = 4
 export const CALENDAR_TEXT_INSET_PX = 2 * CALENDAR_GAP_PX
 
 /**
+ * 有時段事件的色條寬(4):色條佔 Tag 的「Tag px」那 4、後接間隔 4(=「Text px」)→ 字左緣 = 4 + 4 = 文字內距 8,
+ * 與全天長條(外層 4 + 文字 4)同一條線(calendar.spec.md「間距」有時段的色條列;修 2026-11-25 前有色條的字右偏 3px)。
+ * 色條的顏色在 categorical-color.ts `CAT_ACCENT`(只給顏色、不寫寬),高 = 字高(`--font-body-size`)、圓頭(`rounded-sm`)在 calendar.tsx【BAR(定)】。
+ * 「色條寬 + 間隔 = 文字內距」由 scripts/calendar-geometry-invariant.mjs 核對。
+ */
+export const CALENDAR_ACCENT_WIDTH_PX = CALENDAR_GAP_PX
+
+/**
  * 格線(每格自己的底線)= 1:格子的 `border-b` 是 Tailwind `border` 的預設寬 1px(本元件的 class 不准寫數字型邊框寬,
  * scripts/calendar-geometry-invariant.mjs 守,所以格線只可能是這個預設值)。
  * 格子是 border-box、底線畫在格高**裡面**:格高要把它算進去,內容才拿得到「上內距 + 日期框 + 列距 + 一列 + 下內距」的完整高度。
@@ -112,6 +120,8 @@ export const CALENDAR_GEOMETRY_STYLE = {
   '--calendar-gap': `${CALENDAR_GAP_PX}px`,
   '--calendar-text-inset': `${CALENDAR_TEXT_INSET_PX}px`,
   '--calendar-cell-min-h': `${CALENDAR_CELL_MIN_HEIGHT_PX}px`,
+  // 有時段事件的色條寬(CALENDAR_ACCENT_WIDTH_PX)
+  '--calendar-accent-w': `${CALENDAR_ACCENT_WIDTH_PX}px`,
   // 格線寬(跨日長條的寬度式子要加回中間每一格的右格線,calendarPieceWidth)
   '--calendar-grid-line': `${CALENDAR_GRID_LINE_PX}px`,
   // 週數欄寬 = 2 × 格子內距 + 最寬週數。`ch` = 「0」的字寬,在用到這個變數的元素上解析(星期列與週列兩個格陣容器都是 text-body,

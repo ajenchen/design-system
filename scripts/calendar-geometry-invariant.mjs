@@ -11,14 +11,18 @@
  *             空隙 = 4、文字內距 = 2 × 空隙、格線 = 1(Tailwind `border` 預設寬;本閘禁數字型邊框寬,格子的 `border-b` 只可能是它)、
  *             格最小高 = 3 × 空隙 + 2 × 列高 + 格線(格子是 border-box、底線在格高裡;算出來比對,Tag 盒高從 tag.tsx 讀);
  *         (2) class 裡讀到的每一個 `var(--calendar-*)` 都在 `CALENDAR_GEOMETRY_STYLE` 有設值(沒設值的 var 讓整條宣告靜默失效);
- *         (3) calendar.tsx 真的把 `CALENDAR_GEOMETRY_STYLE` 設在某個元素的 style 上。
+ *         (3) calendar.tsx 真的把 `CALENDAR_GEOMETRY_STYLE` 設在某個元素的 style 上;
+ *         (4) 有時段事件的色條(calendar.spec.md「事件的兩種長相」「間距」有時段的色條列;2026-11-25 事件長相那一包):
+ *             色條寬常數 `CALENDAR_ACCENT_WIDTH_PX` = 4(= Tag 的「Tag px」),而且「色條寬 + 間隔(空隙)= 文字內距」(字左緣與全天長條同一條線);
+ *             calendar.tsx 有元素的寬讀 `w-[var(--calendar-accent-w)]`(色條寬只從常數來);
+ *             類別色表(tokens/categorical-color.ts 的 `CAT_ACCENT` 12 色相 + `CAT_EVENT_NEUTRAL.accent`)只給顏色 —— 每個 class 都是
+ *             `bg-[var(--color-…)]`,不得含寬度、邊框或任何尺寸(2026-11-25 前是 `border-l-[3px] border-[var(--color-X-6)]`)。
  *   紅: --selftest(與配對測試 scripts/test-calendar-geometry-invariant.mjs 的實檔突變)逐一注入 `p-1.5`、`gap-0.5`、`min-h-28`、
- *       `border-l-[3px]`、把列高改成 20、格最小高沒算格線、把 `gap-2` 搬到非 `<nav>` 的元素、class 讀一個沒設值的 `--calendar-*`、拿掉根節點的 style,
- *       每一個都必須被指名(檔:行 + 該 class)並 exit 1。
+ *       `border-l-[3px]`、把列高改成 20、格最小高沒算格線、把 `gap-2` 搬到非 `<nav>` 的元素、class 讀一個沒設值的 `--calendar-*`、拿掉根節點的 style、
+ *       色表 CAT_ACCENT 恢復 `border-l-[3px]`、色條寬寫死 `w-1`、色條寬常數改成 3,每一個都必須被指名(檔:行 + 該 class / 常數)並 exit 1。
  *   綠: 現況 0 命中時 exit 0;註解裡提到的舊 class(例「2026-11-25 前是 p-1.5」)不算 —— 只看 TypeScript 語法樹裡的字串字面值。
- *       純靜態讀檔、不讀時間,重複跑結果相同。掃描母體 0 個檔(路徑錯)= 儀器失效 exit 2,不讀成通過。
- *   不涵蓋: 類別色表(categorical-color.ts 的 CAT_ACCENT `border-l-[3px]`)這一包先不掃,事件長相那一包擴掃;
- *       畫出來的像素由 scripts/calendar-month-invariant.mjs 在瀏覽器量(M32:class 對了 ≠ 畫對了)。
+ *       純靜態讀檔、不讀時間,重複跑結果相同。掃描母體 0 個檔(路徑錯)、讀不到 CAT_ACCENT = 儀器失效 exit 2,不讀成通過。
+ *   不涵蓋: 畫出來的像素由 scripts/calendar-month-invariant.mjs 在瀏覽器量(M32:class 對了 ≠ 畫對了;色條寬 4、高 = 字高、字左緣兩種長相相同都在那裡量)。
  */
 // 用法:node scripts/calendar-geometry-invariant.mjs [--root <dir>] [--selftest]
 //   --root 只給配對測試用(複製出來的一份 repo 子集);CI 一律不帶。
@@ -36,8 +40,15 @@ export const CALENDAR_DIR = 'packages/design-system/src/components/Calendar'
 export const GEOMETRY_FILE = `${CALENDAR_DIR}/calendar-geometry.ts`
 export const TAG_FILE = 'packages/design-system/src/components/Tag/tag.tsx'
 export const UTILITY_REGISTRY = 'packages/design-system/src/tokens/utility-registry.json'
+export const CATEGORICAL_FILE = 'packages/design-system/src/tokens/categorical-color.ts'
 /** calendar.spec.md「間距」:格內所有空隙 = 4 */
 export const SPEC_GAP_PX = 4
+/** calendar.spec.md「間距」有時段的色條:色條寬 4(佔 Tag 的「Tag px」那 4) */
+export const SPEC_ACCENT_PX = 4
+/** 色條的 class 一律讀這個元件內變數(值 = calendar-geometry.ts CALENDAR_ACCENT_WIDTH_PX) */
+export const ACCENT_WIDTH_CLASS = 'w-[var(--calendar-accent-w)]'
+/** 類別色表的色條只給顏色:每個 class 都是背景色 `bg-[var(--color-…)]` */
+const COLOR_ONLY_CLASS = /^bg-\[var\(--color-[a-z0-9-]+\)\]$/
 /** 格線 = Tailwind `border` 預設寬 1px(calendar.spec.md「每一週等高」格最小高算式的「格線」) */
 export const SPEC_GRID_LINE_PX = 1
 
@@ -86,7 +97,7 @@ function classNameHost(node) {
 export function scanComponentSource(file, text, { microGaps }) {
   const sf = parse(file, text)
   const violations = [], calendarVars = []
-  let setsGeometryStyle = false
+  let setsGeometryStyle = false, readsAccentWidth = false
   const visit = (node) => {
     if (ts.isImportDeclaration(node)) return
     if (ts.isIdentifier(node) && node.text === 'CALENDAR_GEOMETRY_STYLE') {
@@ -99,6 +110,7 @@ export function scanComponentSource(file, text, { microGaps }) {
       const host = classNameHost(node)
       const line = lineOf(sf, node)
       for (const m of node.text.matchAll(/var\((--calendar-[a-z0-9-]+)/g)) calendarVars.push({ file, line, name: m[1] })
+      if (node.text.split(/\s+/).includes(ACCENT_WIDTH_CLASS)) readsAccentWidth = true
       for (const token of node.text.split(/\s+/).filter(Boolean)) {
         const reason = hardcodedReason(token)
         if (!reason) continue
@@ -109,7 +121,41 @@ export function scanComponentSource(file, text, { microGaps }) {
     ts.forEachChild(node, visit)
   }
   visit(sf)
-  return { violations, calendarVars, setsGeometryStyle }
+  return { violations, calendarVars, setsGeometryStyle, readsAccentWidth }
+}
+
+/**
+ * 類別色表的色條(categorical-color.ts `CAT_ACCENT` 每個色相 + `CAT_EVENT_NEUTRAL.accent`)只給顏色:每個 class 都要是 `bg-[var(--color-…)]`。
+ * @returns {{ problems: string[], entries: number }}  entries = 讀到的值的個數(0 = 儀器讀不到,呼叫端當儀器失效)
+ */
+export function checkAccentColorMap(text) {
+  const sf = parse(CATEGORICAL_FILE, text)
+  const problems = []
+  let entries = 0
+  const unwrap = (n) => { while (n && (ts.isAsExpression(n) || ts.isParenthesizedExpression(n) || ts.isSatisfiesExpression?.(n))) n = n.expression; return n }
+  const checkValue = (where, node) => {
+    if (!ts.isStringLiteral(node) && !ts.isNoSubstitutionTemplateLiteral(node)) { problems.push(`${CATEGORICAL_FILE}:${lineOf(sf, node)}:${where} 不是字串字面值(讀不出 class)`); return }
+    entries++
+    const bad = node.text.split(/\s+/).filter(Boolean).filter((t) => !COLOR_ONLY_CLASS.test(t))
+    if (bad.length) problems.push(`${CATEGORICAL_FILE}:${lineOf(sf, node)}:${where} 含 \`${bad.join(' ')}\` —— 色條的色表只給顏色(bg-[var(--color-…)]),寬由 calendar-geometry.ts 給、不寫在色表(calendar.spec.md「事件的兩種長相」)`)
+  }
+  const visit = (node) => {
+    if (ts.isVariableDeclaration(node) && node.initializer) {
+      const name = node.name.getText(sf)
+      const init = unwrap(node.initializer)
+      if (init && ts.isObjectLiteralExpression(init) && (name === 'CAT_ACCENT' || name === 'CAT_EVENT_NEUTRAL')) {
+        for (const p of init.properties) {
+          if (!ts.isPropertyAssignment(p)) continue
+          const key = p.name.getText(sf).replace(/^['"]|['"]$/g, '')
+          if (name === 'CAT_EVENT_NEUTRAL' && key !== 'accent') continue
+          checkValue(`${name}.${key}`, p.initializer)
+        }
+      }
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sf)
+  return { problems, entries }
 }
 
 /** 極小的常數求值器:數字、同檔常數、TAG_HEIGHT_PX.<size>、+ 與 * */
@@ -176,26 +222,35 @@ export function checkGeometryModule(text, tagHeights) {
   // 期望值用規格的格線 1,不用常數自己的值:常數改錯時上一條紅,這一條仍照規格算(兩條各自獨立)
   const wantMinH = 3 * gap + 2 * rowPx + SPEC_GRID_LINE_PX
   if (minH !== wantMinH) problems.push(`${at('CALENDAR_CELL_MIN_HEIGHT_PX')}:格最小高應 = 上內距 + 日期框 + 列距 + 一列 + 下內距 + 格線 = ${wantMinH},實得 ${minH}(格子是 border-box,底線在格高裡;沒算格線時內容少 1px,事件列被壓或吃掉下內距)`)
+  // 有時段事件的色條寬:= 4(Tag px),且色條寬 + 間隔(空隙)= 文字內距 —— 字左緣與全天長條(外層 4 + 文字 4)同一條線(calendar.spec.md「間距」有時段的色條列)
+  const accent = evaluate(consts.get('CALENDAR_ACCENT_WIDTH_PX') ?? ts.factory.createIdentifier('missing'), env)
+  if (accent !== SPEC_ACCENT_PX) problems.push(`${at('CALENDAR_ACCENT_WIDTH_PX')}:有時段事件的色條寬 CALENDAR_ACCENT_WIDTH_PX 應為 ${SPEC_ACCENT_PX}(Tag 的「Tag px」,calendar.spec.md「間距」),實得 ${accent}`)
+  else if (accent + gap !== inset) problems.push(`${at('CALENDAR_ACCENT_WIDTH_PX')}:色條寬 ${accent} + 間隔 ${gap} ≠ 文字內距 ${inset} —— 有時段事件的字左緣會和全天長條錯開`)
+  if (!styleKeys.includes('--calendar-accent-w')) problems.push(`${GEOMETRY_FILE}:CALENDAR_GEOMETRY_STYLE 沒有設 --calendar-accent-w(色條寬的元件內變數)`)
   if (styleKeys.length === 0) problems.push(`${GEOMETRY_FILE}:找不到 CALENDAR_GEOMETRY_STYLE 的變數名(元件內變數沒有設值的地方)`)
-  return { problems, styleKeys, values: { row: rowPx, gap, inset, line, minH } }
+  return { problems, styleKeys, values: { row: rowPx, gap, inset, line, minH, accent } }
 }
 
 /** 整體判定(純函式;輸入 = 各檔內容) */
-export function evaluateCalendarGeometry({ components, geometry, tag, microGaps }) {
+export function evaluateCalendarGeometry({ components, geometry, tag, microGaps, categorical }) {
   const problems = []
   const tagHeights = readTagHeights(tag)
   const geo = checkGeometryModule(geometry, tagHeights)
   problems.push(...geo.problems)
   const defined = new Set(geo.styleKeys)
-  let setsStyle = false
+  let setsStyle = false, readsAccent = false
   for (const [file, text] of Object.entries(components)) {
     const r = scanComponentSource(file, text, { microGaps })
     for (const v of r.violations) problems.push(`${v.file}:${v.line}:\`${v.token}\` ${v.reason} —— 改讀 token 或 --calendar-* 元件內變數(calendar.spec.md「間距」)`)
     for (const v of r.calendarVars) if (!defined.has(v.name)) problems.push(`${v.file}:${v.line}:class 讀 var(${v.name}),但 CALENDAR_GEOMETRY_STYLE 沒有設它(整條宣告會靜默失效)`)
     if (r.setsGeometryStyle) setsStyle = true
+    if (r.readsAccentWidth) readsAccent = true
   }
   if (!setsStyle) problems.push(`${CALENDAR_DIR}:沒有任何元素的 style 設了 CALENDAR_GEOMETRY_STYLE(--calendar-* 全部沒值)`)
-  return { problems, values: geo.values }
+  if (!readsAccent) problems.push(`${CALENDAR_DIR}:沒有任何元素的寬讀 \`${ACCENT_WIDTH_CLASS}\` —— 有時段事件的色條寬沒有從 calendar-geometry.ts 的常數來(calendar.spec.md「間距」有時段的色條列)`)
+  const accentMap = checkAccentColorMap(categorical)
+  problems.push(...accentMap.problems)
+  return { problems, values: geo.values, accentEntries: accentMap.entries }
 }
 
 // ── 讀檔 ──────────────────────────────────────────────────────────────────────
@@ -209,6 +264,7 @@ export function loadInputs(root) {
     components,
     geometry: fs.readFileSync(path.join(root, GEOMETRY_FILE), 'utf8'),
     tag: fs.readFileSync(path.join(root, TAG_FILE), 'utf8'),
+    categorical: fs.readFileSync(path.join(root, CATEGORICAL_FILE), 'utf8'),
     microGaps,
   }
 }
@@ -226,12 +282,20 @@ export const MUTANTS = [
   ['gap-2 搬到非 <nav> 的元素', 'components', (s) => s.replace('className="grid gap-y-[var(--calendar-gap)] shrink-0"', 'className="grid gap-2 shrink-0"')],
   ['class 讀一個沒設值的 --calendar-*', 'components', (s) => s.replace('px-[var(--calendar-text-inset)]', 'px-[var(--calendar-txt-inset)]')],
   ['根節點沒設元件內變數', 'components', (s) => s.replace('style={{ ...CALENDAR_GEOMETRY_STYLE, ...style }}', 'style={style}')],
+  // 有時段事件的色條(2026-11-25 事件長相那一包):色表恢復成 2026-11-25 前的左側 3px 邊框、元件寫死色條寬、常數改成 3(字左緣與全天長條錯開 1px)
+  ['色表 CAT_ACCENT 恢復 border-l-[3px]', 'categorical', (s) => s.replace("blue: 'bg-[var(--color-blue-6)]',", "blue: 'border-l-[3px] border-[var(--color-blue-6)]',")],
+  ['色條寬寫死 w-1', 'components', (s) => s.replace('w-[var(--calendar-accent-w)]', 'w-1')],
+  ['色條寬常數改成 3', 'geometry', (s) => s.replace('CALENDAR_ACCENT_WIDTH_PX = CALENDAR_GAP_PX', 'CALENDAR_ACCENT_WIDTH_PX = 3')],
 ]
 /** 一個突變套到輸入上;字串沒變 = 突變的錨點失效(儀器問題,不是對照組綠) */
 export function applyMutant(inputs, [label, target, fn]) {
   if (target === 'geometry') {
     const geometry = fn(inputs.geometry)
     return geometry === inputs.geometry ? null : { ...inputs, geometry }
+  }
+  if (target === 'categorical') {
+    const categorical = fn(inputs.categorical)
+    return categorical === inputs.categorical ? null : { ...inputs, categorical }
   }
   const main = `${CALENDAR_DIR}/calendar.tsx`
   const next = fn(inputs.components[main] ?? '')
@@ -255,6 +319,11 @@ if (isMain) {
     process.exit(2)
   }
   const base = evaluateCalendarGeometry(inputs)
+  // CAT_ACCENT 12 色相 + neutral 的 accent = 13 個值;讀到 0 個 = 解析不到色表(儀器失效,不是「沒有違規」)
+  if (base.accentEntries === 0) {
+    console.error(`✗ INSTRUMENT-FAIL:${CATEGORICAL_FILE} 讀不到 CAT_ACCENT / CAT_EVENT_NEUTRAL.accent 的任何一個值`)
+    process.exit(2)
+  }
   if (SELFTEST) {
     let bad = 0
     if (base.problems.length) { console.log(`✗ selftest:現況就紅(${base.problems.length} 條),對照組無從比較`); bad++ }
@@ -274,5 +343,5 @@ if (isMain) {
     process.exit(1)
   }
   const v = base.values
-  console.log(`✅ calendar-geometry PASS(${Object.keys(inputs.components).length} 個元件檔;列高 ${v.row} = tag.tsx TAG_HEIGHT_PX.md、空隙 ${v.gap}、文字內距 ${v.inset}、格線 ${v.line}、格最小高 ${v.minH})`)
+  console.log(`✅ calendar-geometry PASS(${Object.keys(inputs.components).length} 個元件檔;列高 ${v.row} = tag.tsx TAG_HEIGHT_PX.md、空隙 ${v.gap}、文字內距 ${v.inset}、格線 ${v.line}、格最小高 ${v.minH}、色條寬 ${v.accent};色表 ${base.accentEntries} 個色條值都只給顏色)`)
 }

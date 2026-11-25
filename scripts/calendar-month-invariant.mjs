@@ -30,6 +30,15 @@
  *           B4 真滑鼠點「Alex 休假」7/22 那一段:命中長條、開的是這個事件、沒有「新增事件」(阻止冒泡;長條 DOM 在 7/20 那格);點單筆唯讀的公司假日:什麼都不開。
  *           B6 從長條涵蓋的第 2 天(7/21)按 F2,焦點落在同一條長條上(格內 widget 依日子查,data-calendar-covers)。
  *           B7 深色與淺色主題,長條蓋在格線上的那一 px 與旁邊 3px 同色(差 ≤ 2;深色淡底半透明,長條要墊不透明的格子底)—— 前提:長條下方同一條格線看得到。
+ *         AP 事件的兩種長相(calendar.spec.md「事件的兩種長相」【C2、BAR(定)、TIMECOLOR(定)】;團隊行事曆):AP1 全天長條底 = 類別 step-1、沒有左邊框、
+ *           沒有色條;AP2 有時段列底透明、色條寬 4、高 = 字級、上下置中、圓頭、類別 step-6、aria-hidden;AP3 兩種長相第一個字離列左緣都是 8(D5);
+ *           AP4 時間 fg-secondary、標題 foreground;AP5 zh-TW 時間字「上午10:00」;AP6 事件讀屏名稱「{標題},{開始時間 或 起訖日期}{,全天}」、沒有「事件:」、
+ *           單筆唯讀不是按鈕;AP7 可點時滑過:有時段列 --neutral-hover、長條 step-2、手形。
+ *         MX / NE 色彩對照表:12 色相長條 step-1 底 / step-7 字、有時段 step-6 色條;neutral 長條 --secondary 底 / --foreground 字 / 滑過 --secondary-hover(NE1)、
+ *           色條 --color-neutral-9(NE2)、唯讀的 neutral(團隊行事曆的公司假日)滑過不變、不是按鈕(NE3)。期望色一律由 token 在頁面上現算,不寫死色值。
+ *         RO1 readOnlyEvents(元件檢閱器)兩種長相滑過都不變、不是按鈕。TF1 eventTimeFormat 覆寫(英文讀屏字串覆寫那則,24 小時制):畫面「10:00」、名稱同格式。
+ *         NT 窄寬(分割畫面側欄):NT1 欄寬 ≤ 60 有時段列沒有時間、名稱照舊;NT2 同一則加寬到欄寬 70 時間出現(對照)。
+ *         CR 時間字與標題在透明列 / 滑過底上的對比 ≥ 4.5,淺色與深色各量(畫面合成後的畫素)。
  *         CT renderEventTile 回傳過大的內容裁在這一段的外層裡(格子不裁左右,由外層裁;「唯讀日期 × 自訂事件方塊」的 Tag 撐成 60 高、400 寬、不換行):
  *           CT1 外層下一列的位置點不到這個方塊、沒畫到;CT2 隔壁格點不到、沒畫到;CT3 F2 進方塊後外層自己的焦點框照樣畫在外面(外 3px 兩點聚焦前後變色)。
  *         N 讀屏名稱(calendar.spec.md「A11y 預設」;名稱用瀏覽器算好的無障礙樹 CDP Accessibility 與 Playwright getByRole({ name }),不讀屬性):
@@ -63,7 +72,9 @@
  *       量欄寬改量畫面寬(祖先縮放時讀到縮小後的寬 → 卡在窄版)、
  *       k 不隨格高變(ResizeObserver 換成不做事的版本再重新掛載;最小高與掃格高各一次)、長條改回逐日方塊、事件列 / 長條沒阻止冒泡(點擊冒到它所在的格子)、
  *       格子是定位元素(後面的格子蓋住長條)、F2 只查格子自己的子孫、斷開那一端也圓角、被藏的日子不切段、k 少算一列 / 多算一列(日期框到事件區差一列的空間)、
- *       長條沒墊不透明的格子底(深色透出格線)、一段事件的外層不裁內容(自訂內容畫到下一列與隔壁格)、外層的裁切連焦點框一起裁掉(clip-path)
+ *       長條沒墊不透明的格子底(深色透出格線)、一段事件的外層不裁內容(自訂內容畫到下一列與隔壁格)、外層的裁切連焦點框一起裁掉(clip-path)、
+ *       全天長條帶回左側 3px 色條、有時段列有底、色條撐滿列高且直角、色條後面不留間隔、時間字改主色、時間格式寫死 en-US、事件名稱改回「事件:」、
+ *       有時段列滑過借了別的配對、neutral 回落成 blue、12 色相色條錯位、唯讀的列滑過會亮、eventTimeFormat 沒接上、窄寬沒拿掉時間、時間字太淡
  *       —— 每一個都必須讓對應的那一格紅。
  *   綠: 全部量到且照規格時 exit 0。開 story 走 lib/launch-browser.mjs openStory(等 Storybook 回報渲染完成與被量的格陣出現,不睡固定時間);
  *       開不起來 / 等不到格陣 = 儀器失效(INSTRUMENT-FAIL,exit 1 並點名),不讀成通過。
@@ -103,6 +114,7 @@ const STORY = {
   narrow: storyId(/calendar-展示--side-panel-narrow$/u),
   quarter: storyId(/calendar-展示--quarter-planning$/u),
   customTile: storyId(/calendar-展示--read-only-dates-custom-tile-keyboard$/u),
+  matrix: storyId(/calendar-設計規格--color-matrix$/u),
 }
 
 // 規格值(calendar.spec.md「間距」與 header-canonical.spec.md:68);1 號的字是規格寫的 zh-TW 例子
@@ -162,14 +174,15 @@ const PROBE = () => {
     return [iso, { text: box.textContent, dx: b.left - c.left, dy: b.top - c.top, h: b.height, w: b.width, padL: parseFloat(cs.paddingLeft), padR: parseFloat(cs.paddingRight),
       bg: cs.backgroundColor, textInside: t.left >= b.left - 0.5 && t.right <= b.right + 0.5, textLeftPad: t.left - b.left, textRightPad: b.right - t.right }]
   }))
-  // 事件列:找一格有兩筆以上、而且不是全天(全天帶左側色條,字左緣另算)的事件
+  // 事件列:找一格有兩筆以上的事件(團隊行事曆 7/12 的兩筆有時段事件)。文字內距量「第一個字」離列左緣:
+  // 有時段的列第一個元素是色條(沒有字),所以量放文字的那一層(時間的父層;沒有時間的列 = 第一個有字的 span)
   let events = null
   for (const cell of grid.querySelectorAll('[role="gridcell"]')) {
     const tiles = [...cell.querySelectorAll('[data-calendar-tile]')]
     if (tiles.length < 2) continue
     const c = r(cell), cs = getComputedStyle(cell), box = r(stopOf(cell))
     const t0 = r(tiles[0]), t1 = r(tiles[1])
-    const span = tiles[0].querySelector('span')
+    const span = tiles[0].querySelector('[data-calendar-time]')?.parentElement ?? [...tiles[0].querySelectorAll('span')].find((s) => s.textContent.trim()) ?? null
     const tr = span ? textRect(span) : null
     events = { day: stopOf(cell)?.getAttribute('data-calendar-day'), h0: t0.height, h1: t1.height, gap: t1.top - t0.bottom, dateToFirst: t0.top - box.bottom,
       textInset: tr ? tr.left - t0.left : NaN, left: t0.left - c.left, right: c.right - parseFloat(cs.borderRightWidth) - t0.right }
@@ -303,6 +316,66 @@ async function cellName(iso) {
 /** 格陣裡帶 aria-current 的元素(日期停靠點) */
 const currentDays = () => page.evaluate(() => [...document.querySelectorAll('[role="grid"] [aria-current]')].map((el) => ({
   day: el.getAttribute('data-calendar-day'), value: el.getAttribute('aria-current'), tag: el.tagName, role: el.getAttribute('role') })))
+
+// ── 事件的兩種長相(calendar.spec.md「事件的兩種長相」【C2、BAR(定)、TIMECOLOR(定)】;2026-11-25 事件長相那一包)──
+/**
+ * 頁面端:找標題 = title 的那一段事件(有時段的列文字是「開始時間 + 標題」,比對前拿掉時間;kind 'bar' = 沒有色條、'timed' = 有色條),
+ * 量它的外層 / 顏色層 / 色條 / 時間 / 第一個字的位置。以原始碼序列化傳入,不得引用外部變數。
+ */
+const PIECE = ({ title, kind }) => {
+  const titleOf = (el) => { const t = el.querySelector('[data-calendar-time]'); return (t ? el.textContent.replace(t.textContent, '') : el.textContent).trim() }
+  const el = [...document.querySelectorAll('[role="grid"] [data-calendar-covers]')]
+    .find((x) => titleOf(x) === title && (!kind || (kind === 'timed') === Boolean(x.querySelector('[data-calendar-accent]'))))
+  if (!el) return null
+  const inner = el.firstElementChild
+  const accent = el.querySelector('[data-calendar-accent]')
+  const time = el.querySelector('[data-calendar-time]')
+  const text = time?.parentElement ?? [...el.querySelectorAll('span')].find((s) => !s.hasAttribute('data-calendar-accent') && s.textContent.trim()) ?? null
+  const b = el.getBoundingClientRect()
+  const range = document.createRange(); if (text) range.selectNodeContents(text)
+  const tr = text ? range.getBoundingClientRect() : null
+  const ics = getComputedStyle(inner), scs = getComputedStyle(el)
+  const a = accent?.getBoundingClientRect()
+  return {
+    role: el.getAttribute('role'), name: el.getAttribute('aria-label'), cursor: scs.cursor,
+    x: (b.left + b.right) / 2, y: b.top + b.height / 2, right: b.right, top: b.top,
+    innerBg: ics.backgroundColor, innerColor: ics.color, borderL: [parseFloat(scs.borderLeftWidth), parseFloat(ics.borderLeftWidth)],
+    fontSize: parseFloat(ics.fontSize), textLeft: tr ? tr.left - b.left : NaN,
+    accent: a ? { w: a.width, h: a.height, left: a.left - b.left, dy: (a.top + a.height / 2) - (b.top + b.height / 2),
+      radius: parseFloat(getComputedStyle(accent).borderTopLeftRadius), bg: getComputedStyle(accent).backgroundColor, hidden: accent.getAttribute('aria-hidden') } : null,
+    time: time ? { text: time.textContent, color: getComputedStyle(time).color } : null,
+    titleColor: text ? getComputedStyle(text).color : null,
+  }
+}
+/** 頁面端:期望值由 token 現算(不寫死色值)—— bg:<token> = 背景色用那個 token 的計算值、cls:<class> = 那個 utility 的字色 */
+const REFS = (keys) => Object.fromEntries(keys.map((k) => {
+  const d = document.createElement(k.startsWith('cls:') ? 'span' : 'div')
+  if (k.startsWith('cls:')) d.className = k.slice(4)
+  else d.style.backgroundColor = `var(${k.slice(3)})`
+  document.body.append(d)
+  const cs = getComputedStyle(d)
+  const v = k.startsWith('cls:') ? cs.color : cs.backgroundColor
+  d.remove()
+  return [k, v]
+}))
+const pieceOf = (title, kind = null) => page.evaluate(PIECE, { title, kind })
+const refsOf = (keys) => page.evaluate(REFS, keys)
+const frames = (n = 3) => page.evaluate((k) => new Promise((res) => { let i = 0; const f = () => (++i >= k ? res() : requestAnimationFrame(f)); requestAnimationFrame(f) }), n)
+/** 指標移到這一段正中(滑過),量完移開;回傳滑過時的量測 */
+async function hovered(title, kind = null) {
+  const at = await pieceOf(title, kind)
+  if (!at) return null
+  await page.mouse.move(at.x, at.y)
+  await frames()
+  const p = await pieceOf(title, kind)
+  await page.mouse.move(0, 0)
+  await frames()
+  return p
+}
+const fmtPx = (n) => (Number.isFinite(n) ? n.toFixed(2) : String(n))
+/** 有時段事件的時間在透明列 / 滑過底上的對比:WCAG 相對亮度(畫面上合成後的畫素) */
+const srgbLum = ([r, g, b]) => { const f = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4 }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b) }
+const ratio = (a, b) => { const x = srgbLum(a), y = srgbLum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05) }
 
 // 每一個量測區塊 = 一個函式(selftest 重用同一份,只換突變)
 const BLOCKS = {
@@ -747,8 +820,9 @@ const BLOCKS = {
   // 量 computed border-radius 四個角:斷開那一端 = 0、真起訖那一端 > 0。三則:季度規劃(換週 + 延續到下個月)、元件檢閱器週三起 + 隱藏週末
   //(週末在一列中間 → 週五、週一相鄰兩欄,中間切開)、客服排班(週日起、週五收週一起)。
   async segments(mutate) {
+    // 比對標題:有時段的列文字是「開始時間 + 標題」,拿掉時間那一段再比(事件長相那一包起)
     const radiiOf = (title) => page.evaluate((t) => [...document.querySelectorAll('[role="grid"] [data-calendar-covers]')]
-      .filter((el) => el.textContent.trim() === t)
+      .filter((el) => { const time = el.querySelector('[data-calendar-time]'); return (time ? el.textContent.replace(time.textContent, '') : el.textContent).trim() === t })
       .map((el) => { const cs = getComputedStyle(el), b = el.getBoundingClientRect(); return { covers: el.getAttribute('data-calendar-covers'), left: b.left, right: b.right, top: b.top,
         tl: parseFloat(cs.borderTopLeftRadius), bl: parseFloat(cs.borderBottomLeftRadius), tr: parseFloat(cs.borderTopRightRadius), br: parseFloat(cs.borderBottomRightRadius) } })
       .sort((a, b) => a.covers.localeCompare(b.covers)), title)
@@ -930,6 +1004,142 @@ const BLOCKS = {
     check('CT3', focused && deltas.every((d) => d >= 40),
       `F2 進自訂方塊:${focused ? '焦點在方塊上' : '焦點沒落在方塊上'};外層左緣外 3px ${beforeRing[0].join(',')} → ${afterRing[0].join(',')}、底緣外 3px ${beforeRing[1].join(',')} → ${afterRing[1].join(',')}(差 ${deltas.join(' / ')};規格:焦點框往外畫,不被外層的裁切裁掉)`)
   },
+  // ── 事件的兩種長相(團隊行事曆,淺色)──
+  // AP1 全天長條「Alex 休假」:底 = --color-yellow-1、外層與顏色層左邊框 0、沒有色條、沒有時間;
+  // AP2 有時段「設計審查」:底透明、色條寬 4、高 = 字級(列的 font-size)、上下置中(±0.5)、圓頭(圓角 ≥ 寬 / 2)、色 = --color-blue-6、貼列左緣、aria-hidden;
+  // AP3 字左緣兩種長相同一條線:兩者第一個字離列左緣 = 8(±0.5)、相差 < 0.5(D5);
+  // AP4 時間 = fg-secondary、標題 = foreground【TIMECOLOR(定)】;AP5 時間字 zh-TW「上午10:00」「下午3:00」;
+  // AP6 讀屏名稱:「設計審查,上午10:00」「Alex 休假,7月20日 – 7月22日,全天」各一顆、沒有任何「事件:」開頭的按鈕、單筆唯讀的公司假日不是按鈕;
+  // AP7 可點時滑過:有時段列 → --neutral-hover、長條 → --color-yellow-2,兩者手形游標。
+  async looks(mutate) {
+    const p = await open(STORY.team, { label: '團隊行事曆 事件長相', mutate })
+    if (!p) return
+    await page.mouse.move(0, 0)
+    const ref = await refsOf(['bg:--color-yellow-1', 'bg:--color-yellow-2', 'bg:--color-blue-6', 'bg:--neutral-hover', 'cls:text-fg-secondary', 'cls:text-foreground'])
+    const bar = await pieceOf('Alex 休假', 'bar'), timed = await pieceOf('設計審查', 'timed'), late = await pieceOf('客戶會議', 'timed')
+    if (!bar || !timed || !late) { instrumentFails.push({ cell: 'AP', detail: '團隊行事曆找不到「Alex 休假」長條或「設計審查」「客戶會議」有時段列(範例資料改了?)' }); return }
+    check('AP1', bar.innerBg === ref['bg:--color-yellow-1'] && bar.borderL.every((w) => w === 0) && bar.accent === null && bar.time === null,
+      `「Alex 休假」底 ${bar.innerBg}(規格 --color-yellow-1 = ${ref['bg:--color-yellow-1']})、左邊框 ${bar.borderL.join(' / ')}、色條 ${bar.accent ? '有' : '無'}、時間 ${bar.time?.text ?? '無'}(規格:淡底長條、不帶色條、全天不畫時間)`)
+    const a = timed.accent
+    check('AP2', timed.innerBg === 'rgba(0, 0, 0, 0)' && Boolean(a) && near(a.w, SPEC.gap, 0.01) && near(a.h, timed.fontSize, 0.01) && Math.abs(a.dy) <= 0.5
+      && a.radius >= a.w / 2 - 0.01 && a.bg === ref['bg:--color-blue-6'] && near(a.left, 0) && a.hidden === 'true',
+      a ? `「設計審查」底 ${timed.innerBg}、色條 ${fmtPx(a.w)}×${fmtPx(a.h)}(字級 ${timed.fontSize})、中心差 ${fmtPx(a.dy)}、圓角 ${a.radius}、色 ${a.bg}(--color-blue-6 = ${ref['bg:--color-blue-6']})、離列左緣 ${fmtPx(a.left)}、aria-hidden ${a.hidden}`
+        + '(規格:透明列;色條寬 4、高 = 字高、上下置中、圓頭【BAR(定)】、類別 step-6)' : '「設計審查」沒有色條')
+    check('AP3', near(bar.textLeft, SPEC.inset) && near(timed.textLeft, SPEC.inset) && Math.abs(bar.textLeft - timed.textLeft) < 0.5,
+      `第一個字離列左緣:長條 ${fmtPx(bar.textLeft)}、有時段 ${fmtPx(timed.textLeft)}(規格:兩種長相都是 8、同一條線 —— 色條 4 + 間隔 4)`)
+    check('AP4', timed.time?.color === ref['cls:text-fg-secondary'] && timed.titleColor === ref['cls:text-foreground'],
+      `時間字色 ${timed.time?.color}(fg-secondary ${ref['cls:text-fg-secondary']})、標題 ${timed.titleColor}(foreground ${ref['cls:text-foreground']})【TIMECOLOR(定)】`)
+    check('AP5', timed.time?.text === '上午10:00' && late.time?.text === '下午3:00',
+      `時間字「${timed.time?.text}」「${late.time?.text}」(規格:zh-TW 預設 { hour: 'numeric', minute: '2-digit' } =「上午10:00」「下午3:00」)`)
+    const names = {
+      timed: await page.getByRole('button', { name: '設計審查,上午10:00', exact: true }).count(),
+      bar: await page.getByRole('button', { name: 'Alex 休假,7月20日 – 7月22日,全天', exact: true }).count(),
+      legacy: await page.getByRole('button', { name: /^事件:/ }).count(),
+      holiday: await page.getByRole('button', { name: /公司創立紀念日/ }).count(),
+    }
+    check('AP6', names.timed === 1 && names.bar === 1 && names.legacy === 0 && names.holiday === 0,
+      `讀屏名稱:「設計審查,上午10:00」×${names.timed}、「Alex 休假,7月20日 – 7月22日,全天」×${names.bar}、「事件:」開頭 ${names.legacy} 顆、公司假日是按鈕 ${names.holiday} 顆`
+      + '(規格:{標題},{開始時間 或 起訖日期}{,全天};唯讀不命名)')
+    const hTimed = await hovered('設計審查', 'timed'), hBar = await hovered('Alex 休假', 'bar')
+    check('AP7', hTimed?.innerBg === ref['bg:--neutral-hover'] && hBar?.innerBg === ref['bg:--color-yellow-2'] && hTimed?.cursor === 'pointer' && hBar?.cursor === 'pointer',
+      `滑過:有時段列 ${hTimed?.innerBg}(--neutral-hover ${ref['bg:--neutral-hover']})、長條 ${hBar?.innerBg}(--color-yellow-2 ${ref['bg:--color-yellow-2']})、游標 ${hTimed?.cursor} / ${hBar?.cursor}`)
+  },
+  // ── 色彩對照表:兩種長相 × 12 色相 + neutral(設計規格「色彩對照表」);neutral 的唯讀在團隊行事曆的公司假日 ──
+  // MX 12 色相:長條底 --color-X-1、字 --color-X-7,有時段列透明、色條 --color-X-6;NE1 neutral 長條底 --secondary、字 --foreground、滑過 --secondary-hover;
+  // NE2 neutral 色條 --color-neutral-9;NE3 唯讀的 neutral 長條(團隊行事曆「公司創立紀念日」)底 --secondary、滑過不變、不是按鈕、游標不是手形。
+  async matrix(mutate) {
+    const p = await open(STORY.matrix, { label: '設計規格 色彩對照表', mutate })
+    if (p) {
+      await page.mouse.move(0, 0)
+      const hues = ['blue', 'green', 'deep-orange', 'yellow', 'red', 'orange', 'amber', 'lime', 'turquoise', 'indigo', 'purple', 'magenta']
+      const ref = await refsOf([...hues.flatMap((h) => [`bg:--color-${h}-1`, `bg:--color-${h}-6`]), 'bg:--secondary', 'bg:--secondary-hover', 'bg:--color-neutral-9', 'cls:text-foreground'])
+      const colorOf = await page.evaluate((hs) => Object.fromEntries(hs.map((h) => { const d = document.createElement('span'); d.style.color = `var(--color-${h}-7)`; document.body.append(d); const c = getComputedStyle(d).color; d.remove(); return [h, c] })), hues)
+      const bad = []
+      for (const h of hues) {
+        const b = await pieceOf(h, 'bar'), t = await pieceOf(h, 'timed')
+        if (!b || !t) { bad.push(`${h} 找不到`); continue }
+        if (b.innerBg !== ref[`bg:--color-${h}-1`] || b.innerColor !== colorOf[h]) bad.push(`${h} 長條 ${b.innerBg} / ${b.innerColor}`)
+        if (t.innerBg !== 'rgba(0, 0, 0, 0)' || t.accent?.bg !== ref[`bg:--color-${h}-6`]) bad.push(`${h} 有時段 底 ${t.innerBg}、色條 ${t.accent?.bg}`)
+      }
+      check('MX', bad.length === 0, `12 色相兩種長相:${bad.slice(0, 3).join(';') || '全部 = 長條 step-1 底 / step-7 字、有時段透明列 + step-6 色條'}(規格:CAT_EVENT / CAT_ACCENT 1:1)`)
+      const nb = await pieceOf('neutral', 'bar'), nt = await pieceOf('neutral', 'timed'), nh = await hovered('neutral', 'bar')
+      check('NE1', nb?.innerBg === ref['bg:--secondary'] && nb?.innerColor === ref['cls:text-foreground'] && nh?.innerBg === ref['bg:--secondary-hover'],
+        `neutral 長條 底 ${nb?.innerBg}(--secondary ${ref['bg:--secondary']})、字 ${nb?.innerColor}、滑過 ${nh?.innerBg}(--secondary-hover ${ref['bg:--secondary-hover']})(規格:CAT_EVENT_NEUTRAL.event)`)
+      check('NE2', nt?.accent?.bg === ref['bg:--color-neutral-9'] && nt?.innerBg === 'rgba(0, 0, 0, 0)',
+        `neutral 有時段 色條 ${nt?.accent?.bg}(--color-neutral-9 ${ref['bg:--color-neutral-9']})、底 ${nt?.innerBg}(規格:CAT_EVENT_NEUTRAL.accent、透明列)`)
+    }
+    const team = await open(STORY.team, { label: '團隊行事曆 唯讀 neutral', mutate })
+    if (!team) return
+    await page.mouse.move(0, 0)
+    const ref = await refsOf(['bg:--secondary'])
+    const rest = await pieceOf('公司創立紀念日', 'bar'), hov = await hovered('公司創立紀念日', 'bar')
+    check('NE3', rest?.innerBg === ref['bg:--secondary'] && hov?.innerBg === ref['bg:--secondary'] && rest?.role === null && hov?.cursor !== 'pointer',
+      `唯讀 neutral「公司創立紀念日」底 ${rest?.innerBg}、滑過 ${hov?.innerBg}(--secondary ${ref['bg:--secondary']})、角色 ${rest?.role}、游標 ${hov?.cursor}(規格:CAT_EVENT_NEUTRAL.subtle,不帶滑過、不是按鈕)`)
+  },
+  // ── 唯讀滑過不變(元件檢閱器 readOnlyEvents:兩種長相都唯讀)── RO1:有時段列滑過仍透明、長條滑過仍 --color-yellow-1、都不是按鈕、游標不是手形
+  async readOnlyHover(mutate) {
+    const p = await open(STORY.inspector, { label: 'Inspector readOnlyEvents', args: 'readOnlyEvents:!true', mutate })
+    if (!p) return
+    await page.mouse.move(0, 0)
+    const ref = await refsOf(['bg:--color-yellow-1'])
+    const t = await hovered('設計審查', 'timed'), b = await hovered('Alex 休假', 'bar')
+    check('RO1', t?.innerBg === 'rgba(0, 0, 0, 0)' && b?.innerBg === ref['bg:--color-yellow-1'] && t?.role === null && b?.role === null && t?.cursor !== 'pointer' && b?.cursor !== 'pointer',
+      `readOnlyEvents 滑過:有時段列 ${t?.innerBg}、長條 ${b?.innerBg}(靜止 ${ref['bg:--color-yellow-1']})、角色 ${t?.role} / ${b?.role}、游標 ${t?.cursor} / ${b?.cursor}(規格:唯讀不亮、不是按鈕)`)
+  },
+  // ── eventTimeFormat 覆寫(test-only「英文讀屏字串覆寫」:en-US + 24 小時制 { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })──
+  // TF1 畫面上的時間「10:00」(en-US 預設會是「10:00 AM」)、名稱用同一個格式「Design review, 10:00」;長條的名稱「Offsite, July 8 – July 9, all day」
+  async timeFormat(mutate) {
+    const p = await open(STORY.english, { label: 'eventTimeFormat 覆寫', mutate })
+    if (!p) return
+    const t = await pieceOf('Design review', 'timed'), b = await pieceOf('Offsite', 'bar')
+    check('TF1', t?.time?.text === '10:00' && t?.name === 'Design review, 10:00' && b?.name === 'Offsite, July 8 – July 9, all day',
+      `時間字「${t?.time?.text}」、名稱「${t?.name}」/「${b?.name}」(規格:eventTimeFormat 整份取代預設,畫面與名稱同一個格式;labels.event 覆寫生效)`)
+  },
+  // ── 窄寬時拿掉時間(展示「分割畫面側欄(窄寬)」7/27「上線前審查」下午2:00)──
+  // NT1 欄寬 ≤ 60:有色條、沒有時間,讀屏名稱照舊「上線前審查,下午2:00」;NT2 同一則把根節點加寬到欄寬 70:時間「下午2:00」出現(對照:證明時間是被窄寬拿掉的,不是本來就沒有)
+  async narrowTime(mutate) {
+    const p = await open(STORY.narrow, { label: '窄寬 有時段事件', mutate })
+    if (!p) return
+    const col = () => page.evaluate(() => document.querySelector('[role="grid"] [role="gridcell"]').getBoundingClientRect().width)
+    const c0 = await col(), n = await pieceOf('上線前審查', 'timed')
+    if (!n || !(c0 <= NARROW_MAX)) { instrumentFails.push({ cell: 'NT1', detail: `前提沒成立:欄寬 ${c0}(要 ≤ ${NARROW_MAX})、找到「上線前審查」有時段列 ${Boolean(n)}` }); return }
+    check('NT1', n.time === null && Boolean(n.accent) && n.name === '上線前審查,下午2:00',
+      `欄寬 ${fmtPx(c0)}:「上線前審查」時間 ${n.time?.text ?? '無'}、色條 ${n.accent ? '有' : '無'}、名稱「${n.name}」(規格:窄寬拿掉時間、只留色條 + 標題,讀屏名稱照舊)`)
+    await page.evaluate((w) => { document.querySelector('[role="grid"]').parentElement.style.width = `${w}px` }, 7 * 70 + 2)
+    await frames(6)
+    const c1 = await col(), w = await pieceOf('上線前審查', 'timed')
+    if (!(c1 > NARROW_MAX)) { instrumentFails.push({ cell: 'NT2', detail: `加寬後欄寬 ${c1} 仍 ≤ ${NARROW_MAX}` }); return }
+    check('NT2', w?.time?.text === '下午2:00', `加寬到欄寬 ${fmtPx(c1)}:「上線前審查」時間「${w?.time?.text ?? '無'}」(規格:欄寬 > ${NARROW_MAX} 畫開始時間)`)
+  },
+  // ── 時間字的對比(兩個主題,靜止 / 滑過;團隊行事曆「設計審查」)──
+  // 量畫面上合成後的畫素:列右側空白處的底,與把時間字的計算色塗成實心塊疊在同一處的顏色(= 字在這個底上實際的顏色);標題同法。≥ 4.5(calendar.spec.md「A11y 預設」驗證)
+  async contrast(mutate) {
+    for (const theme of ['light', 'dark']) {
+      const p = await open(STORY.team, { label: `團隊行事曆 對比 ${theme}`, mutate, theme })
+      if (!p) continue
+      const out = []
+      for (const state of ['rest', 'hover']) {
+        const at = await pieceOf('設計審查', 'timed')
+        if (!at?.time) { instrumentFails.push({ cell: `CR-${theme}`, detail: '找不到「設計審查」的時間字' }); break }
+        if (state === 'hover') { await page.mouse.move(at.x, at.y); await frames() } else { await page.mouse.move(0, 0); await frames() }
+        const pt = { x: Math.floor(at.right - 6), y: Math.floor(at.top + 2) }
+        const px = async () => { const png = PNG.sync.read(await page.screenshot({ clip: { x: pt.x, y: pt.y, width: 1, height: 1 } })); return [png.data[0], png.data[1], png.data[2]] }
+        const swatch = async (color) => {
+          await page.evaluate(({ color, x, y }) => { const d = document.createElement('div'); d.id = '__cal_swatch'; d.style.cssText = `position:fixed;left:${x - 2}px;top:${y - 1}px;width:5px;height:3px;pointer-events:none;z-index:2147483647;background:${color}`; document.body.append(d) }, { color, ...pt })
+          const c = await px()
+          await page.evaluate(() => document.getElementById('__cal_swatch')?.remove())
+          return c
+        }
+        const bg = await px()
+        const now = await pieceOf('設計審查', 'timed')
+        const time = await swatch(now.time.color), title = await swatch(now.titleColor)
+        out.push({ state, time: ratio(time, bg), title: ratio(title, bg), bg })
+      }
+      await page.mouse.move(0, 0)
+      if (out.length === 2) check(`CR-${theme}`, out.every((o) => o.time >= 4.5 && o.title >= 4.5),
+        `${theme} 對比:${out.map((o) => `${o.state === 'rest' ? '靜止' : '滑過'}(底 ${o.bg.join(',')})時間 ${o.time.toFixed(2)}、標題 ${o.title.toFixed(2)}`).join(';')}(規格:文字 ≥ 4.5)`)
+    }
+  },
   // 今天剛好是 1 號:Inspector 拿掉 today 參數(元件改用 new Date()),時鐘釘在 2026-07-01 上午 10 點(本機時區)。
   // 不用網址傳日期:Storybook 的網址參數對 Date 型別的 arg 一律丟掉(實測 !date(...) 沒生效)。
   // 時鐘是整個 context 共用、釘了就回不去 —— 本區塊一律排在最後跑(其他區塊的 story 都明傳 today,本來也不受影響);
@@ -1092,6 +1302,34 @@ const MUTANTS = [
   { name: '一段事件的外層不裁內容(自訂內容畫到下一列與隔壁格)', block: 'customTile', expect: ['CT1', 'CT2'], css: '[data-calendar-covers] { overflow: visible !important; }' },
   // 裁切連焦點框一起裁掉(clip-path 會裁到元素自己的 outline;overflow 不會)
   { name: '外層的裁切連焦點框一起裁掉', block: 'customTile', expect: ['CT3'], css: '[data-calendar-covers] { clip-path: inset(0) !important; }' },
+  // 事件的兩種長相(AP / MX / NE / RO / TF / NT / CR;2026-11-25 事件長相那一包)
+  { name: '全天長條帶回左側 3px 色條(2026-11-25 前的長相)', block: 'looks', expect: ['AP1'], css: '[data-calendar-covers] > :first-child:not(:has([data-calendar-accent])) { border-left: 3px solid var(--color-yellow-6) !important; }' },
+  { name: '有時段列有底(改回淡底)', block: 'looks', expect: ['AP2'], css: '[data-calendar-covers] > :first-child:has([data-calendar-accent]) { background-color: var(--color-blue-1) !important; }' },
+  { name: '色條撐滿列高、直角(BAR 的 C 版)', block: 'looks', expect: ['AP2'], css: '[data-calendar-accent] { height: var(--tag-height-md) !important; border-radius: 0 !important; }' },
+  { name: '色條後面不留間隔(字左緣差 4)', block: 'looks', expect: ['AP3'], css: '[data-calendar-covers] > :first-child:has([data-calendar-accent]) { gap: 0 !important; }' },
+  { name: '時間字改主色(TIMECOLOR 反了)', block: 'looks', expect: ['AP4'], css: '[data-calendar-time] { color: var(--foreground) !important; }' },
+  // 時間格式寫死 en-US(不跟 locale):畫面上的時間變成「10:00 AM」這種(模擬元件寫死 'en-US' 時畫出來的字)
+  { name: '時間格式寫死 en-US(不跟 locale)', block: 'looks', expect: ['AP5'], dom: () => document.querySelectorAll('[data-calendar-time]').forEach((t) => { t.textContent = t.textContent.replace(/^上午(.*)$/u, '$1 AM').replace(/^下午(.*)$/u, '$1 PM') }) },
+  { name: '事件名稱改回「事件:{標題}」', block: 'looks', expect: ['AP6'], dom: () => document.querySelectorAll('[data-calendar-tile]').forEach((el) => { const t = el.querySelector('[data-calendar-time]'); el.setAttribute('aria-label', `事件:${(t ? el.textContent.replace(t.textContent, '') : el.textContent).trim()}`) }) },
+  { name: '有時段列滑過借了別的配對(--secondary-hover)', block: 'looks', expect: ['AP7'], css: '[data-calendar-covers] > :first-child:has([data-calendar-accent]):hover { background-color: var(--secondary-hover) !important; }' },
+  // neutral 回落成 blue(元件沒處理 'neutral' 時的畫面:長條 / 色條都畫成 blue)
+  { name: 'neutral 回落成 blue', block: 'matrix', expect: ['NE1', 'NE2', 'NE3'], dom: () => document.querySelectorAll('[data-calendar-covers]').forEach((el) => {
+    const t = el.querySelector('[data-calendar-time]')
+    const title = (t ? el.textContent.replace(t.textContent, '') : el.textContent).trim()
+    if (title !== 'neutral' && title !== '公司創立紀念日') return
+    const accent = el.querySelector('[data-calendar-accent]')
+    if (accent) accent.style.backgroundColor = 'var(--color-blue-6)'
+    else { el.firstElementChild.style.backgroundColor = 'var(--color-blue-1)'; el.firstElementChild.style.color = 'var(--color-blue-7)' }
+  }) },
+  { name: '12 色相的色條色錯位(CAT_ACCENT 接到 step-7)', block: 'matrix', expect: ['MX'], css: '[data-calendar-accent] { background-color: var(--color-red-7) !important; }' },
+  { name: '唯讀的列滑過會亮', block: 'readOnlyHover', expect: ['RO1'], css: '[data-calendar-covers]:not([data-calendar-tile]) > :first-child:hover { background-color: var(--neutral-hover) !important; }' },
+  { name: 'eventTimeFormat 沒接上(照 en-US 預設 10:00 AM)', block: 'timeFormat', expect: ['TF1'], dom: () => document.querySelectorAll('[data-calendar-time]').forEach((t) => { t.textContent = '10:00 AM' }) },
+  // 窄寬沒拿掉時間:有色條的列照樣畫時間(模擬窄寬旗標沒接到事件長相)
+  { name: '窄寬沒拿掉時間', block: 'narrowTime', expect: ['NT1'], dom: () => document.querySelectorAll('[data-calendar-accent]').forEach((a) => {
+    const text = a.nextElementSibling
+    if (text && !text.querySelector('[data-calendar-time]')) { const s = document.createElement('span'); s.setAttribute('data-calendar-time', ''); s.textContent = '下午2:00'; text.prepend(s) }
+  }) },
+  { name: '時間字太淡(淺色主題對比不足)', block: 'contrast', expect: ['CR-light'], css: '[data-calendar-time] { color: rgb(200, 200, 200) !important; }' },
   // 必須最後一個(todayFirst 會釘住時鐘,見該區塊註解)
   { name: '1 號的實心底被壓成 24 寬', block: 'todayFirst', expect: ['R1'], css: '[data-calendar-day="2026-07-01"] { padding: 0 !important; max-width: var(--tag-height-md) !important; }' },
 ]

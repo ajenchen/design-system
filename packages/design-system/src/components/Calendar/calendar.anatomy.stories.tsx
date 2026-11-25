@@ -7,7 +7,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { expect, userEvent, within } from '@storybook/test'
 import { Calendar, type CalendarEvent } from './calendar'
 import { CalendarDemo } from './_calendar-demo'
-import { CATEGORICAL_HUES } from '@/design-system/tokens/categorical-color'
+import { CATEGORICAL_HUES, type CategoricalColor } from '@/design-system/tokens/categorical-color'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 import { StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
 
@@ -44,15 +44,17 @@ const sampleEvents: CalendarEvent[] = [
 
 // Keep dynamic-token documentation readable without presenting Tailwind's
 // source scanner with an invalid literal arbitrary-value candidate.
-// 事件列 = Tag md(calendar.spec.md「間距」):高 h-tag-md 24、text-body 14px font-normal;文字內距 8 = 外層 4 + 文字 4(兩層都讀 --calendar-gap)
-const TIMED_EVENT_CLASS_GUIDE = [
+// 事件列 = Tag md(calendar.spec.md「間距」):高 h-tag-md 24、text-body 14px font-normal;字左緣 8(兩種長相同一條線)
+// 長條(全天 / 跨日):文字內距 8 = 外層 4 + 文字 4(兩層都讀 --calendar-gap)
+const BAR_EVENT_CLASS_GUIDE = [
   'bg-[var(--color-', '{color}', '-1)] · text-[var(--color-', '{color}',
   '-7)] · rounded-md · h-tag-md · 外層 px-[var(--calendar-gap)] + 文字 px-[var(--calendar-gap)] · text-body · font-normal · truncate',
 ].join('')
-const ALL_DAY_EVENT_CLASS_GUIDE = [
-  '同上 + border-l-[3px] border-[var(--color-', '{color}', '-6)]',
+// 有時段:透明列 + 色條(寬 --calendar-accent-w 4、高 --font-body-size 字高、rounded-sm 圓頭)+ 間隔 4 + 時間 + 標題
+const TIMED_EVENT_CLASS_GUIDE = [
+  '無底 · 色條 bg-[var(--color-', '{color}', '-6)] w-[var(--calendar-accent-w)] h-[var(--font-body-size)] rounded-sm · gap-[var(--calendar-gap)] · 時間 text-fg-secondary · 標題 text-foreground',
 ].join('')
-const HOVER_EVENT_CLASS_GUIDE = [
+const BAR_HOVER_CLASS_GUIDE = [
   'hover:bg-[var(--color-', '{color}', '-2)]',
 ].join('')
 
@@ -79,6 +81,7 @@ export const Inspector: Story = {
   },
   // weekStartsOn 預設不傳 = 從語系推(zh-TW / en-US / ja-JP / en-IL 週日、en-GB 週一;calendar.spec.md「資料語意」週起始日【WS(定)】)。
   // 三個選用設定預設關(calendar.spec.md「API(第一段)」);en-IL = 週末是週五、週六的語系(CLDR),開 hideWeekends 時藏的是那兩天。
+  // readOnlyEvents:事件方塊整個唯讀(長條與有時段的列都不亮、不是按鈕;calendar.spec.md「日期格與事件方塊:可點或唯讀」)。
   args: {
     locale: LOCALE,
     events: sampleEvents,
@@ -86,8 +89,10 @@ export const Inspector: Story = {
     hideWeekends: false,
     showWeekNumbers: false,
     loading: false,
+    readOnlyEvents: false,
   },
   argTypes: {
+    readOnlyEvents: { control: 'boolean' },
     // 帶 mapping(數字對數字):沒有 mapping 時 Storybook 依元件型別轉換網址參數(?args=weekStartsOn:1),這個聯集型別轉不過去、整個參數被丟掉(實測)
     weekStartsOn: { control: { type: 'select', labels: WEEK_START_LABELS }, options: WEEK_START_OPTIONS, mapping: Object.fromEntries(WEEK_START_OPTIONS.map((n) => [n, n])) },
     locale: { control: 'select', options: ['en-US', 'en-GB', 'en-IL', 'zh-TW', 'ja-JP'] },
@@ -110,6 +115,7 @@ export const Inspector: Story = {
         hideWeekends={args.hideWeekends}
         showWeekNumbers={args.showWeekNumbers}
         loading={args.loading}
+        readOnlyEvents={args.readOnlyEvents}
       />
     </div>
   ),
@@ -120,22 +126,25 @@ export const Inspector: Story = {
 export const ColorMatrix: Story = {
   name: '色彩對照表',
   render: () => {
-    // 每個色相一天的全天事件(end 不含 → 隔天)
-    const colorEvents: CalendarEvent[] = CATEGORICAL_HUES.map((c, i) => ({
-      id: `c-${c}`,
-      title: `${c} 類別`,
-      start: `${thisMonth}-${String(i + 2).padStart(2, '0')}`,
-      end: `${thisMonth}-${String(i + 3).padStart(2, '0')}`,
-      color: c,
-    }))
+    // 兩種長相 × 12 色相 + neutral(calendar.spec.md「事件的兩種長相」):7/2 起每天一個顏色,上一列全天(淡底長條,end 不含 → 隔天)、
+    // 下一列有時段(10:00–11:00,透明列 + 色條 + 時間 + 標題)。標題 = 色名,讀者對得上是哪個顏色。
+    const colors: CategoricalColor[] = ['neutral', ...CATEGORICAL_HUES]
+    const day = (i: number) => `${thisMonth}-${String(i + 2).padStart(2, '0')}`
+    const colorEvents: CalendarEvent[] = colors.flatMap((c, i) => [
+      { id: `bar-${c}`, title: c, start: day(i), end: day(i + 1), color: c, allDay: true },
+      { id: `timed-${c}`, title: c, start: `${day(i)}T10:00`, end: `${day(i)}T11:00`, color: c },
+    ])
     return (
       <div className="p-4 bg-canvas flex flex-col gap-10">
         <div>
           <H3>事件類別色</H3>
           <Desc>
             事件顏色用 12 種類別色,和 Tag / Avatar 共用同一套色盤
-            (blue / green / deep-orange / yellow / red / orange / amber / lime / turquoise / indigo / purple / magenta)。
+            (blue / green / deep-orange / yellow / red / orange / amber / lime / turquoise / indigo / purple / magenta),
+            另有不屬於任何類別的 neutral(中性灰,例:全公司的假日)。
             顏色代表「這是哪一類事件」(同一個團隊 / 同一個專案),不是嚴重程度。每個色名對應一個色相,紅與橘各自獨立、可清楚區分。
+            每一天上面是全天事件(類別淡底長條、字是同色深一階),下面是有時段事件(無底、左側類別色條 + 灰色的開始時間 + 主色標題);
+            neutral 的長條是 --secondary 底 + 主色字,色條是 --color-neutral-9。
           </Desc>
           {/* 給明確高度(同設計原則「唯讀的日期格與事件」的整月示範):不給高度時週列照內容排開,每格只有格最小高 61、很擠;
               560 時整月五週都看得到、不用捲 */}
@@ -220,7 +229,7 @@ export const ColorMatrix: Story = {
                 <tr>
                   <Td>窄寬度</Td>
                   <Td mono>欄寬 ≤ 60(calendar-geometry.ts CALENDAR_NARROW_COLUMN_MAX_PX)</Td>
-                  <Td>星期縮成一個字(Intl weekday narrow,zh-TW「日」)、每月 1 號只顯示「1」;只看欄寬、不看視窗寬</Td>
+                  <Td>星期縮成一個字(Intl weekday narrow,zh-TW「日」)、每月 1 號只顯示「1」、有時段事件拿掉開始時間(只留色條與標題);只看欄寬、不看視窗寬</Td>
                 </tr>
               </tbody>
             </table>
@@ -229,7 +238,7 @@ export const ColorMatrix: Story = {
 
         <div>
           <H3>Event tile 視覺 token</H3>
-          <Desc>事件 tile 的色彩由 event <code>color</code> 欄位決定,bg / text 走 subtle / text tier。</Desc>
+          <Desc>事件的長相由「全天 / 跨日」或「有時段」決定,顏色由 event <code>color</code> 欄位決定(categorical-color.ts:長條 CAT_EVENT、唯讀長條 CAT_SUBTLE、色條 CAT_ACCENT、neutral CAT_EVENT_NEUTRAL)。兩種長相的字左緣都離列左緣 8,在同一條線上。</Desc>
           <div className="overflow-x-auto">
             <table className="text-caption border-collapse">
               <thead>
@@ -241,23 +250,28 @@ export const ColorMatrix: Story = {
               </thead>
               <tbody>
                 <tr>
-                  <Td>一般 event(timed)</Td>
+                  <Td>全天 / 跨日長條</Td>
+                  <Td mono>{BAR_EVENT_CLASS_GUIDE}</Td>
+                  <Td>類別淡底(step-1)+ 同色深一階的字(step-7),不帶色條;同一天排在有時段事件之前;多日事件畫成一條橫跨多格的長條,換週切段、第二段起重複標題,斷開那一端直角(只有真正的起點與終點圓角)。只有日期、沒寫 allDay 的事件也當全天。有時段但滿 24 小時的事件也畫成長條,含開始那天的那一段標題前加開始時間。色名必須 1:1 對應 <code>--color-{'{hue}'}-*</code>,零 offset(2026-06-04 修:原 red / orange 都誤接 deep-orange,改後 red→<code>--color-red-*</code>、orange→<code>--color-orange-*</code> 各自獨立)。2026-11-25 前全天事件左側另有 3px 實心色條</Td>
+                </tr>
+                <tr>
+                  <Td>有時段事件(未滿 24 小時)</Td>
                   <Td mono>{TIMED_EVENT_CLASS_GUIDE}</Td>
-                  <Td>單行 tile,color 依事件類別(12 categorical 色相,消費 categorical-color SSOT,與 Tag / Avatar 共用)。對齊 Tag 色階(step-1 淺底 / step-7 文字)。色名必須 1:1 對應 <code>--color-{'{hue}'}-*</code>,零 offset(2026-06-04 修:原 red / orange 都誤接 deep-orange,改後 red→<code>--color-red-*</code>、orange→<code>--color-orange-*</code> 各自獨立)</Td>
+                  <Td>無底的一列:左側類別色條(寬 4、高 = 字高 14、上下置中、圓頭)、間隔 4,接開始時間(灰,text-fg-secondary)與標題(主色,text-foreground);時間依 locale(zh-TW「上午10:00」)、可用 eventTimeFormat 換格式。欄寬 ≤ 60 時拿掉時間。圓角只在滑過 / 焦點時看得見。2026-11-25 前是淡底、時間寫在標題裡</Td>
                 </tr>
                 <tr>
-                  <Td>All-day event</Td>
-                  <Td mono>{ALL_DAY_EVENT_CLASS_GUIDE}</Td>
-                  <Td>淡底 + 左側實心 accent 條,同一天排在有時段事件之前;多日事件畫成一條橫跨多格的長條,換週切段、第二段起重複標題,斷開那一端直角(只有真正的起點與終點圓角)。只有日期、沒寫 allDay 的事件也當全天。字重同事件列 font-normal(2026-11-25 前另加 font-medium)</Td>
+                  <Td>neutral(不屬於任何類別)</Td>
+                  <Td mono>長條 bg-secondary · text-foreground · hover:bg-secondary-hover;色條 bg-[var(--color-neutral-9)]</Td>
+                  <Td>例:全公司的假日。長條用 --secondary 底(與 Tag neutral 同),滑過換它自己的下一階 --secondary-hover;唯讀時只有底與字</Td>
                 </tr>
                 <tr>
-                  <Td>Hover tile</Td>
-                  <Td mono>{HOVER_EVENT_CLASS_GUIDE}</Td>
-                  <Td>同色濃一階(淺色變深、深色變亮)表示可點擊(事件方塊可點時)</Td>
+                  <Td>滑過(可點時)</Td>
+                  <Td mono>長條 {BAR_HOVER_CLASS_GUIDE} · 有時段 hover:bg-neutral-hover</Td>
+                  <Td>長條換同色濃一階(淺色變深、深色變亮);有時段的透明列換透明底的配對 --neutral-hover,疊在格子的滑過色上;瞬間切換、不做過渡</Td>
                 </tr>
                 <tr>
-                  <Td>唯讀的事件(readOnlyEvents)</Td>
-                  <Td mono>同上色、不帶 hover(CAT_SUBTLE)· 無 cursor-pointer</Td>
+                  <Td>唯讀的事件(readOnlyEvents / 單筆 readOnly)</Td>
+                  <Td mono>長條同上色、不帶 hover(CAT_SUBTLE)· 有時段列不亮 · 無 cursor-pointer</Td>
                   <Td>事件沒有詳情可開時宣告:方塊不亮、不是按鈕、不進格內導覽(F2 找不到它);截斷時仍有提示</Td>
                 </tr>
                 <tr>
@@ -284,7 +298,8 @@ export const StateBehavior: Story = {
         <div>• <b>outside month</b>:前後月日期數字走淡字 <code>text-fg-muted</code>,cell 不加底色(跟當月格一樣可點、一樣的滑過色)</div>
         <div>• <b>放不下的 cell</b>:每格放幾列依格高;放不下時最後一列換成「+N」計數</div>
         <div>• <b>跨日事件</b>:一條橫跨多格的長條,換週切段,斷開那一端直角(「Alex 休假」7/20–7/22、「機房搬遷」7/24–7/27)</div>
-        <div>• <b>event hover</b>:tile 切同色濃一階(淺色變深、深色變亮)<code>hover:bg-{'{color}'}-2</code>(如 blue → <code>--color-blue-2</code>)+ <code>cursor-pointer</code></div>
+        <div>• <b>event hover</b>:長條切同色濃一階(淺色變深、深色變亮)<code>hover:bg-{'{color}'}-2</code>(如 blue → <code>--color-blue-2</code>);有時段的透明列換 <code>--neutral-hover</code>;都帶 <code>cursor-pointer</code></div>
+        <div>• <b>兩種長相</b>:全天 / 跨日 = 類別淡底長條;有時段 = 無底一列「色條 + 開始時間 + 標題」(「設計審查」7/5 上午10:00)</div>
         <div>• <b>empty cell</b>:無事件保持純底色,點擊觸發 onDateClick</div>
         <div>• <b>唯讀</b>(<code>readOnlyDates</code> / <code>readOnlyEvents</code>,各自宣告):格子 / 事件方塊不亮、不是按鈕、游標不變;鍵盤仍可在格陣內走動(見<StoryLink kind="Design System/Components/Calendar/設計原則" name="唯讀的日期格與事件">設計原則 — 唯讀的日期格與事件</StoryLink>);右上角「新事件」是全域新增入口,唯讀時照樣在</div>
       </div>
@@ -312,7 +327,7 @@ export const Accessibility = {
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
       <div className="flex flex-col gap-[var(--layout-space-tight)]">
-        <p><b>Grid role</b>:月格容器 <code>role="grid"</code> + <code>aria-label</code>(月份)。星期列是格陣的第一個 <code>role="row"</code>,每格 <code>role="columnheader"</code>(看得見「週日」,讀屏名稱是完整星期名「星期日」);其後每一週一個 <code>role="row"</code>(<code>display:contents</code> 保 CSS grid 佈局),每格 <code>role="gridcell"</code>(非互動容器),日期數字按鈕帶 <code>aria-label</code>(完整日期 + 事件數,例「2026年7月12日 星期日,1 個事件」;1 號畫面上寫「7月1日」不影響名稱);今天另加 <code>aria-current="date"</code>、名稱前加「今天,」。這些讀屏字串都可經 <code>labels</code> 逐鍵覆寫。事件 tile <code>role="button"</code> + <code>aria-label</code>(事件標題)。週列在捲動區裡捲,捲動區本身不是 Tab 停靠點。工具列的 ‹ / 今天 / › 包在 <code>{'<nav aria-label>'}</code> 裡(預設「行事曆月份導覽」)。</p>
+        <p><b>Grid role</b>:月格容器 <code>role="grid"</code> + <code>aria-label</code>(月份)。星期列是格陣的第一個 <code>role="row"</code>,每格 <code>role="columnheader"</code>(看得見「週日」,讀屏名稱是完整星期名「星期日」);其後每一週一個 <code>role="row"</code>(<code>display:contents</code> 保 CSS grid 佈局),每格 <code>role="gridcell"</code>(非互動容器),日期數字按鈕帶 <code>aria-label</code>(完整日期 + 事件數,例「2026年7月12日 星期日,1 個事件」;1 號畫面上寫「7月1日」不影響名稱);今天另加 <code>aria-current="date"</code>、名稱前加「今天,」。這些讀屏字串都可經 <code>labels</code> 逐鍵覆寫。事件 tile <code>role="button"</code> + <code>aria-label</code>{'「{標題},{開始時間 或 起訖日期}{,全天}」'}(例「設計審查,上午10:00」「Alex 休假,7月20日 – 7月22日,全天」;<code>labels.event</code> 可覆寫);唯讀的事件不是按鈕、不命名,標題與時間就是格子內容的一部分。週列在捲動區裡捲,捲動區本身不是 Tab 停靠點。工具列的 ‹ / 今天 / › 包在 <code>{'<nav aria-label>'}</code> 裡(預設「行事曆月份導覽」)。</p>
         <p><b>Keyboard 行為</b>(實作現況,2026-09-24 補齊 W3C APG Data Grid):</p> {/* 來源:https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/grid/grid-pattern.html#L205-L221 */}
         <ul className="list-disc pl-5 space-y-1">
           <li>Tab — 整個月格陣只停一次(roving tabindex:只有目前焦點日的日期鈕進 Tab 序列,其餘日期鈕與全部事件方塊都不進);進來時停在今天,今天不在本月則停在該月 1 號</li>
