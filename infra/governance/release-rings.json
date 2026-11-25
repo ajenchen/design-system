@@ -3,7 +3,7 @@
   "assignments": {
     "design-system": {
       "applyAuthorization": null,
-      "candidateReleaseDigest": "eeb64283439676251e2d6f433ab38108c28e236643faecc890076b5ed100f424",
+      "candidateReleaseDigest": null,
       "completionAttestation": null,
       "enteredAt": "2026-09-24T02:10:16Z",
       "manualBlockers": [],
@@ -12,7 +12,7 @@
     },
     "ds-product-template": {
       "applyAuthorization": null,
-      "candidateReleaseDigest": "eeb64283439676251e2d6f433ab38108c28e236643faecc890076b5ed100f424",
+      "candidateReleaseDigest": null,
       "completionAttestation": null,
       "enteredAt": "2026-09-24T02:10:16Z",
       "manualBlockers": [],
@@ -21,7 +21,7 @@
     },
     "work-management": {
       "applyAuthorization": null,
-      "candidateReleaseDigest": "eeb64283439676251e2d6f433ab38108c28e236643faecc890076b5ed100f424",
+      "candidateReleaseDigest": null,
       "completionAttestation": null,
       "enteredAt": "2026-09-24T02:10:16Z",
       "manualBlockers": [],
@@ -42,31 +42,7 @@
     "maxCompletionTtlMinutes": 10080,
     "schemaVersion": 1
   },
-  "candidateRelease": {
-    "bomSha256": "b350c573356fc5d100de50ff09e22d00fd51b0e5c7df15556b4e485b7ebdf0d2",
-    "id": "ajenchen/design-system@v0.1.0-beta.145",
-    "observedAt": "2026-09-24T02:10:16Z",
-    "packages": [
-      {
-        "integrity": "sha512-EhZeWJzovHkpxkXxoRjRnhLdKSfcJTgT0vGB3vXWzbTfiWaEFMPrMXJRxAxVa+6I8RRbYvsjWExtW8CU8hNNww==",
-        "name": "@qijenchen/design-system",
-        "version": "0.1.0-beta.145"
-      },
-      {
-        "integrity": "sha512-CveghNBK+Xh4yjr3wd5EhRy9fL/7FrrBRFQ0yWp69BbqxYA1F3fC23suKgf+vk4+5YzG+gjhy7xLzFest456ew==",
-        "name": "@qijenchen/governance",
-        "version": "0.1.0-beta.145"
-      },
-      {
-        "integrity": "sha512-4eQ0B3zslKhS27q1MP7ylX8LucCjw9v5sEpkKeJVatXZVXO8u9Q0r61AyNArI57pahbAXsVRCrahHPKU7062dA==",
-        "name": "@qijenchen/storybook-config",
-        "version": "0.1.0-beta.145"
-      }
-    ],
-    "sourceCommit": "e6db2bbace16847cfa14af0f764d168e84f1d244",
-    "sourceTree": "ab660a8221f00a0001a9816c62ed1746e352ba76",
-    "version": "0.1.0-beta.145"
-  },
+  "candidateRelease": null,
   "evidence": [],
   "rings": [
     {
