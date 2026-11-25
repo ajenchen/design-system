@@ -35,6 +35,9 @@
  *           HV1 指標在「Alex 休假」7/20 / 7/21 / 7/22 三段正中,每一次整個格陣剛好一格亮(底 = --neutral-hover)、就是指標所在那一天;
  *           HV2 指標在單筆唯讀的「公司創立紀念日」上一格都不亮(前提:同一格空白處會亮);
  *           HV3(設計原則「事件顏色類別語意」h-84)指標不動、滾輪捲週列,捲前捲後亮的都是那一刻指標底下那一格(前提:捲動讓指標底下換了格);
+ *           HV4(同一則)週列的捲軸蓋在最右欄上、不是格子:指標停在捲軸滑塊上一格都不亮,HV4-wheel 停在捲軸上滾輪捲週列也一格都不亮
+ *           (前提:同一高度往左移進底下那一格時它會亮);HV5 按住滑塊拖到格子上(指標被滑塊捕獲)一格都不亮、放開後亮指標底下那一格
+ *           (前提:不按住時那一點會亮);
  *           E4 F2 進到長條後的焦點框往外(outline-offset > 0);KE1 7/21 F2 進長條 → Esc 回 7/21(不是長條 DOM 所在的 7/20);
  *           KE2 7/22 F2 進格 → 再 F2 回 7/22;KE3 真滑鼠點長條 7/22 那段、關掉事件浮層 → Esc 回 7/22。
  *         AP 事件的兩種長相(calendar.spec.md「事件的兩種長相」【C2、BAR(定)、TIMECOLOR(定)】;團隊行事曆):AP1 全天長條底 = 類別 step-1、沒有左邊框、
@@ -80,6 +83,7 @@
  *       k 不隨格高變(ResizeObserver 換成不做事的版本再重新掛載;最小高與掃格高各一次)、長條改回逐日方塊、事件列 / 長條沒阻止冒泡(點擊冒到它所在的格子)、
  *       格子是定位元素(後面的格子蓋住長條)、F2 只查格子自己的子孫、
  *       格子的滑過改回純 CSS :hover、唯讀列上格子照亮、Esc / F2 出格回長條 DOM 所在那一天、滑鼠按在長條上不記哪一天、長條的焦點框改往內、捲動後不重算格子的滑過、
+ *       捲軸上照亮(命中測試看不到捲軸 = 拿掉「最上面不在任何一格裡就不亮」)、拖捲軸滑塊時不認指標捕獲、
  *       斷開那一端也圓角、被藏的日子不切段、k 少算一列 / 多算一列(日期框到事件區差一列的空間)、
  *       長條沒墊不透明的格子底(深色透出格線)、一段事件的外層不裁內容(自訂內容畫到下一列與隔壁格)、外層的裁切連焦點框一起裁掉(clip-path)、
  *       全天長條帶回左側 3px 色條、有時段列有底、色條撐滿列高且直角、色條後面不留間隔、時間字改主色、時間格式寫死 en-US、事件名稱改回「事件:」、
@@ -934,21 +938,28 @@ const BLOCKS = {
   },
   // HV3 捲動時的滑過(設計原則「事件顏色類別語意」h-84,週列在捲動區裡捲):指標不動、滾輪捲週列 —— 捲之前與捲之後,
   //     整個格陣剛好一格亮、就是那一刻指標底下那一格(捲動區捲了但指標沒動,瀏覽器不送 pointermove)。前提:捲動真的讓指標底下換了一格。
+  // HV4 週列的捲軸(Radix ScrollArea,在格陣裡、蓋在最右欄的格子上)不是格子 —— 在它上面按下去是捲動、不會新增(calendar.spec.md「命中區」、
+  //     hit-area-canonical.md「一、可以操作的東西」第 1 條;P11 規格核對必修):指標停在捲軸滑塊上,整個格陣一格都不亮;
+  //     HV4-wheel 指標停在捲軸上滾輪捲週列(捲動後用最後的指標位置重算那條路),也一格都不亮。
+  //     前提:捲軸浮現、底下(外框比對)有一格,同一高度往左移進那一格時它會亮(先證明量得到「亮」)。
+  // HV5 按住捲軸滑塊拖到格子上(還沒放開):指標被滑塊捕獲(Radix setPointerCapture),瀏覽器的 :hover 也跟著滑塊 —— 一格都不亮;
+  //     放開後亮指標底下那一格(不卡在拖曳狀態;Chromium 放開後補送 pointerover,所以「捲動後不重算」那個突變擋掉 pointerover 時這一半也會紅)。
+  //     前提:不按住時指標在那一點,底下那格會亮。
   async hoverScroll(mutate) {
     const p = await open(STORY.short, { label: '設計原則 h-84 捲動時的滑過', mutate })
     if (!p) return
     const ref = await refsOf(['bg:--neutral-hover'])
     const vp = await page.evaluate(() => { const r = document.querySelector('[role="grid"] [data-radix-scroll-area-viewport]')?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + 50 } : null })
     if (!vp) { instrumentFails.push({ cell: 'HV3', detail: '找不到週列的捲動區' }); return }
-    // 指標底下那一格(格子外框比對,與元件的命中測試無關)與亮著的格子
-    const state = () => page.evaluate(({ x, y, hoverBg }) => {
+    // 指標底下那一格(格子外框比對,與元件的命中測試無關)與亮著的格子;at = 指標所在那一點(預設週列正中偏上)
+    const state = (at = vp) => page.evaluate(({ x, y, hoverBg }) => {
       const stopOf = (c) => (c.matches('[data-calendar-day]') ? c : c.querySelector('[data-calendar-day]'))
       const cells = [...document.querySelectorAll('[role="grid"] [role="gridcell"]')]
       const under = cells.find((c) => { const b = c.getBoundingClientRect(); return x >= b.left && x < b.right && y >= b.top && y < b.bottom })
       return { under: under ? stopOf(under)?.getAttribute('data-calendar-day') ?? null : null,
         lit: cells.filter((c) => getComputedStyle(c).backgroundColor === hoverBg).map((c) => stopOf(c)?.getAttribute('data-calendar-day') ?? '?'),
         scrollTop: document.querySelector('[role="grid"] [data-radix-scroll-area-viewport]')?.scrollTop ?? 0 }
-    }, { ...vp, hoverBg: ref['bg:--neutral-hover'] })
+    }, { x: at.x, y: at.y, hoverBg: ref['bg:--neutral-hover'] })
     await page.mouse.move(vp.x, vp.y)
     await frames()
     const before = await state()
@@ -957,14 +968,77 @@ const BLOCKS = {
     await frames(6)
     const after = await state()
     await page.mouse.move(0, 0)
+    const one = (s) => s.lit.length === 1 && s.lit[0] === s.under
     if (!before.under || !after.under || before.under === after.under) {
       instrumentFails.push({ cell: 'HV3', detail: `前提沒成立:捲動前指標底下 ${before.under}、捲動後 ${after.under}(scrollTop ${before.scrollTop} → ${after.scrollTop})—— 指標底下沒換格,量不出「捲動後有沒有跟著換」` })
+    } else {
+      check('HV3', one(before) && one(after),
+        `指標不動、捲週列 ${before.scrollTop} → ${after.scrollTop}:捲之前指標底下 ${before.under}、亮 ${before.lit.join('、') || '(無)'};捲之後指標底下 ${after.under}、亮 ${after.lit.join('、') || '(無)'}`
+        + '(規格:亮的永遠是指標底下那一格)')
+    }
+    // ── HV4 / HV5 週列的捲軸 ──
+    // 捲軸只在指標進到捲動區時畫出來(ScrollArea 的 Radix type="hover"):先把指標放進週列,再找捲軸與滑塊(都在格陣裡)
+    await page.mouse.move(vp.x, vp.y)
+    await frames()
+    const barAt = () => page.evaluate(() => {
+      const sb = document.querySelector('[role="grid"] [data-radix-scroll-area-viewport] ~ [data-orientation="vertical"]')
+      const thumb = sb?.firstElementChild
+      if (!sb || !thumb) return null
+      const s = sb.getBoundingClientRect(), t = thumb.getBoundingClientRect()
+      return s.width > 0 && t.height > 0 ? { left: s.left, x: (t.left + t.right) / 2, y: (t.top + t.bottom) / 2 } : null
+    })
+    const bar = await barAt()
+    if (!bar) { instrumentFails.push({ cell: 'HV4', detail: '指標在週列上時格陣裡沒有浮現捲軸(範例改高了、週列不再捲?)—— 量不到捲軸上亮不亮' }); await page.mouse.move(0, 0); return }
+    const onBar = { x: bar.x, y: bar.y }, besideBar = { x: bar.left - 8, y: bar.y }
+    await page.mouse.move(besideBar.x, besideBar.y)
+    await frames()
+    const beside = await state(besideBar)
+    if (!(beside.under && one(beside))) {
+      instrumentFails.push({ cell: 'HV4', detail: `前提沒成立:捲軸左邊 8px(格子 ${beside.under} 裡)亮 ${beside.lit.join('、') || '(無)'}(要剛好那一格)—— 量不到「亮」就量不出「不亮」` })
+      await page.mouse.move(0, 0)
       return
     }
-    const one = (s) => s.lit.length === 1 && s.lit[0] === s.under
-    check('HV3', one(before) && one(after),
-      `指標不動、捲週列 ${before.scrollTop} → ${after.scrollTop}:捲之前指標底下 ${before.under}、亮 ${before.lit.join('、') || '(無)'};捲之後指標底下 ${after.under}、亮 ${after.lit.join('、') || '(無)'}`
-      + '(規格:亮的永遠是指標底下那一格)')
+    await page.mouse.move(onBar.x, onBar.y)
+    await frames()
+    const still = await state(onBar)
+    // 捲軸底下(外框比對)沒有那一格 = 量的不是「捲軸蓋在格子上」的情況:儀器失效,不讀成「一格都不亮」
+    if (still.under !== beside.under) instrumentFails.push({ cell: 'HV4', detail: `前提沒成立:捲軸滑塊底下是 ${still.under}、同一高度往左 8px 是 ${beside.under} —— 捲軸沒有蓋在那一格上` })
+    else check('HV4', still.lit.length === 0,
+      `指標停在捲軸滑塊上(底下是 ${still.under}):亮 ${still.lit.join('、') || '(無)'};同一高度往左 8px 進到格子裡亮 ${beside.lit.join('、')}(規格:捲軸不是格子,在它上面一格都不亮)`)
+    // 在捲軸上滾輪:往還捲得動的方向捲(HV3 已捲到底就往回捲)
+    const top0 = still.scrollTop
+    await page.mouse.wheel(0, top0 > 0 ? -40 : 40)
+    await page.waitForFunction((t) => (document.querySelector('[role="grid"] [data-radix-scroll-area-viewport]')?.scrollTop ?? 0) !== t, top0, { timeout: 2000 }).catch(() => {})
+    await frames(6)
+    const wheeled = await state(onBar)
+    if (wheeled.scrollTop === top0 || !wheeled.under) instrumentFails.push({ cell: 'HV4-wheel', detail: `指標在捲軸上滾輪:scrollTop ${top0} → ${wheeled.scrollTop}、捲軸底下 ${wheeled.under} —— 週列沒捲或捲軸底下沒有格子,量不到「捲軸上捲動後重算」那條路` })
+    else check('HV4-wheel', wheeled.lit.length === 0, `指標停在捲軸上滾輪、週列 ${top0} → ${wheeled.scrollTop}(底下換成 ${wheeled.under}):亮 ${wheeled.lit.join('、') || '(無)'}(規格:捲軸上一格都不亮)`)
+    // 拖滑塊:按住、往左拖到格子上(滑塊被拖動時週列也跟著捲)
+    const grip = await barAt()
+    if (!grip) { instrumentFails.push({ cell: 'HV5', detail: '滾輪之後找不到捲軸滑塊' }); await page.mouse.move(0, 0); return }
+    const drift = { x: grip.left - 160, y: grip.y + 12 }
+    await page.mouse.move(drift.x, drift.y)
+    await frames()
+    const loose = await state(drift)
+    if (!(loose.under && one(loose))) {
+      instrumentFails.push({ cell: 'HV5', detail: `前提沒成立:不按住時指標在 (${drift.x}, ${drift.y})(格子 ${loose.under} 裡)亮 ${loose.lit.join('、') || '(無)'}(要剛好那一格)` })
+      await page.mouse.move(0, 0)
+      return
+    }
+    await page.mouse.move(grip.x, grip.y)
+    await frames()
+    await page.mouse.down()
+    await page.mouse.move(drift.x, drift.y, { steps: 6 })
+    await frames(6)
+    const dragging = await state(drift)
+    await page.mouse.up()
+    await frames(6)
+    const released = await state(drift)
+    await page.mouse.move(0, 0)
+    if (!dragging.under) { instrumentFails.push({ cell: 'HV5', detail: `拖到的那一點 (${drift.x}, ${drift.y}) 底下沒有格子 —— 量不出「拖的時候亮不亮」` }); return }
+    check('HV5', dragging.lit.length === 0 && one(released),
+      `按住捲軸滑塊拖到 ${dragging.under} 上(還沒放開、週列 ${loose.scrollTop} → ${dragging.scrollTop}):亮 ${dragging.lit.join('、') || '(無)'};放開後指標底下 ${released.under}、亮 ${released.lit.join('、') || '(無)'}`
+      + '(規格:拖的時候指標被滑塊捕獲,一格都不亮;放開後亮指標底下那一格)')
   },
   // ── 斷開端直角(【Q3(定)】;斷開 = 換週、可見範圍外、被藏起來的日子;calendar-layout.ts CalendarEventSegment)──
   // 量 computed border-radius 四個角:斷開那一端 = 0、真起訖那一端 > 0。三則:季度規劃(換週 + 延續到下個月)、元件檢閱器週三起 + 隱藏週末
@@ -1456,6 +1530,14 @@ const MUTANTS = [
   { name: '捲動後不重算格子的滑過', block: 'hoverScroll', expect: ['HV3'], dom: () => {
     for (const type of ['scroll', 'pointerover']) window.addEventListener(type, (e) => { if (e.target instanceof Node && document.querySelector('[role="grid"]')?.contains(e.target)) e.stopPropagation() }, true)
   } },
+  // 捲軸上照亮(P11 規格核對必修那一道排除的對照組):元件從命中測試認「最上面是誰」,命中測試看不到捲軸 = 拿掉「最上面不在任何一格裡 → 不亮」——
+  // 捲軸底下那一格照亮(= 修正前的畫面;同一則 HEAD 原始碼另建一份 storybook 實測過,見 commit 訊息)
+  { name: '捲軸上照亮(命中測試看不到捲軸)', block: 'hoverScroll', expect: ['HV4', 'HV4-wheel'], dom: () => {
+    const real = Document.prototype.elementsFromPoint
+    document.elementsFromPoint = function elementsFromPointWithoutScrollbar(x, y) { return real.call(this, x, y).filter((el) => !el.closest('[data-radix-scroll-area-viewport] ~ *')) }
+  } },
+  // 拖捲軸滑塊時不認指標捕獲:元件不知道指標被滑塊捕獲,照指標底下的格子亮(= 只做「捲軸上不亮」、沒做捕獲時的畫面)
+  { name: '拖捲軸滑塊時不認指標捕獲', block: 'hoverScroll', expect: ['HV5'], dom: () => { Element.prototype.hasPointerCapture = function neverCaptured() { return false } } },
   // 斷開端(B2)
   { name: '斷開那一端也圓角(一律 rounded)', block: 'segments', expect: ['B2-week', 'B2-hidden', 'B2-weekend'], css: '[data-calendar-covers] { border-radius: 4px !important; }' },
   // 被藏的週末不切段:週五、週一兩段連成一條(模擬版面沒在被藏的日子切開時畫出來的樣子)

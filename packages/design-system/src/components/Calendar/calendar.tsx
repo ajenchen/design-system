@@ -390,15 +390,21 @@ function cellAtPoint(grid: HTMLElement, x: number, y: number): HTMLElement | nul
 }
 
 /**
- * 指標在這一點時該亮的那一格(calendar.spec.md「Cell 規則」命中區表):最上面的元素不在這個格陣裡(浮層、提示蓋在上面)→ 沒有;
+ * 指標在這一點時該亮的那一格(calendar.spec.md「Cell 規則」命中區表)。「最上面的元素」= 捕獲指標的那個元素(captured;拖週列捲軸的滑塊時
+ * Radix 把指標捕獲在滑塊上,瀏覽器的 :hover 也跟著它、不跟指標底下的格子),沒有捕獲時 = 命中測試最上面那一個。
+ * 它不在這個格陣裡(浮層、提示蓋在上面)→ 沒有;
+ * 它不在這個格陣的任何一格裡(週列的捲軸蓋在最右欄上;拖滑塊時指標漂到格子上)→ 沒有【P11 規格核對必修:捲軸不是格子,在捲軸上按下去是捲動、
+ * 不會新增,底下那格亮著就違反 hit-area-canonical.md「一、可以操作的東西」第 1 條;改前的純 CSS :hover 不亮 —— 捲軸不是格子的子孫】;
  * 最上面是唯讀的一段(有 data-calendar-covers、沒有 data-calendar-tile)→ 沒有【總帳更正 #3:唯讀列上格子不亮 —— 點它什麼都不發生,
- * hit-area-canonical.md「一、可以操作的東西」第 1 條】;其餘(格內空白、日期鈕、可點的列 / 長條、「+N」)→ 指標所在那一格(可點的列上格子照亮,
- * color.spec.md「巢狀滑過」【U6】)。
+ * 同一條】;其餘(格內空白、日期鈕、可點的列 / 長條、「+N」)→ 指標所在那一格(可點的列上格子照亮,color.spec.md「巢狀滑過」【U6】)。
+ * 「在不在格子裡」看最上面元素的祖先(長條的 DOM 在它第一格,照樣算在格子裡),「是哪一格」看命中測試(長條第 3 天那段 = 第 3 格)。
  */
-function hoverTargetCell(grid: HTMLElement, x: number, y: number): HTMLElement | null {
+function hoverTargetCell(grid: HTMLElement, x: number, y: number, captured: Element | null): HTMLElement | null {
   const stack = grid.ownerDocument.elementsFromPoint(x, y)
-  const top = stack[0]
+  const top = captured ?? stack[0]
   if (!top || !grid.contains(top)) return null
+  const home = top.closest('[role="gridcell"]')
+  if (!home || !grid.contains(home)) return null
   const piece = top.closest('[data-calendar-covers]')
   if (piece && !piece.hasAttribute('data-calendar-tile')) return null
   return gridcellIn(stack, grid)
@@ -1030,7 +1036,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   // 格子的滑過底由屬性 data-hovered 驅動(格子的 class `data-[hovered]:bg-neutral-hover`),**不用 CSS :hover**:
   //   :hover 沿 DOM 祖先亮,長條的 DOM 在第一格 —— 指標在「Alex 休假」7/22 那段,亮的是 7/20(POC 實測,見 cellAtPoint 上方);
   //   唯讀的列 / 長條是格子的子孫,:hover 也排除不掉它們(命中區表:唯讀列上格子不亮)。
-  // 誰亮 = hoverTargetCell(指標底下那一格;唯讀的一段、蓋在上面的浮層 → 都不亮)。寫法照 DateGrid / DataTable 的「用屬性而不是 React state」
+  // 誰亮 = hoverTargetCell(指標底下那一格;唯讀的一段、蓋在上面的浮層、週列的捲軸 → 都不亮)。寫法照 DateGrid / DataTable 的「用屬性而不是 React state」
   //(date-grid.tsx GAP_CONFIRMS_ATTR 上方、data-table.tsx setHoveredRow):它跟著指標每一步變,不該讓整張格陣重畫;
   // 唯一寫入者 markHoveredCell —— 標新格的同一個動作清掉舊格,同一時間最多一格亮。
   // 何時重算(POC 實測 Chromium):指標移動 / 換到別的元素(pointermove / pointerover);捲動區捲了但指標沒動(scroll 捕獲 ——
@@ -1038,7 +1044,8 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   // 指標離開格陣(pointerleave;蓋上 modal 時 Chromium 也送)→ 清掉。觸控沒有滑過,不算。瞬間切換、不做過渡【維持 U2】。
   // 日期格唯讀(readOnlyDates)時格子不亮(class 本來就不掛),這裡也不標。
   const hoveredCellRef = React.useRef<HTMLElement | null>(null)
-  const pointerAtRef = React.useRef<{ x: number; y: number } | null>(null)
+  // 最後的指標位置與捕獲它的元素(沒有捕獲 = null;捲動與重畫之後的重算也照它 —— 拖捲軸滑塊時週列一直在捲)
+  const pointerAtRef = React.useRef<{ x: number; y: number; captured: Element | null } | null>(null)
   const markHoveredCell = (next: HTMLElement | null) => {
     const prev = hoveredCellRef.current
     if (prev === next) return
@@ -1049,11 +1056,14 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   const syncHoveredCell = () => {
     const grid = gridRef.current
     const at = pointerAtRef.current
-    markHoveredCell(grid && at && datesInteractive ? hoverTargetCell(grid, at.x, at.y) : null)
+    markHoveredCell(grid && at && datesInteractive ? hoverTargetCell(grid, at.x, at.y, at.captured) : null)
   }
   const handleGridPointer = (event: React.PointerEvent<HTMLDivElement>) => {
     if (event.pointerType === 'touch') return
-    pointerAtRef.current = { x: event.clientX, y: event.clientY }
+    // 指標被捕獲時(拖捲軸滑塊),事件的 target 就是捕獲它的元素
+    const { target } = event
+    const captured = target instanceof Element && target.hasPointerCapture(event.pointerId) ? target : null
+    pointerAtRef.current = { x: event.clientX, y: event.clientY, captured }
     syncHoveredCell()
   }
   const handleGridPointerLeave = () => {
