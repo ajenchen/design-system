@@ -69,8 +69,8 @@ Output:
 Storybook v8 的 `play()` 在 story 渲染後執行,可觸發互動狀態。`@storybook/test` 提供 `userEvent` / `within` / `expect` 等 API:
 
 ```tsx
-import type { StoryObj } from '@storybook/react'
-import { userEvent, within } from '@storybook/test'
+import type { StoryObj } from '@storybook/react-vite'
+import { userEvent, within } from 'storybook/test'
 
 export const HoverState: StoryObj = {
   render: () => <Button>Hover me</Button>,

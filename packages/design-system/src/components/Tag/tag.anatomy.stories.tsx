@@ -4,7 +4,7 @@
 //     hover / active × subtle / solid 兩模式)。Tag 本身是非互動展示元件
 //     ——沒有 hover / focus / active state(對齊 Material Chip / Ant Tag 慣例),
 //     唯一 interactive 部位是 onRemove button,其狀態色彩集中於 ColorMatrix 比拆 5. 直觀。
-import type { Meta } from '@storybook/react'
+import type { Meta } from '@storybook/react-vite'
 import { useState, type ComponentProps } from 'react'
 import { Hash } from 'lucide-react'
 import { Tag } from './tag'

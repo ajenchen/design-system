@@ -5,7 +5,7 @@
 //   無 variant API,Default story 等於 consumer canonical wrapper(ProfileCard / OverflowIndicator
 //   各有自己的 Default 範例)。
 // @story-trait-allow: missing-default missing-opensnapshot
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { ExternalLink, Github, Calendar } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { HoverCard, HoverCardTrigger, HoverCardContent, HOVER_CARD_SURFACE_CLASS } from './hover-card'

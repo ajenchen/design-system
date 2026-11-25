@@ -198,10 +198,10 @@
           "targetDigest": "sha256:7dbd8742abfd2662cf517740a3d83686a23cb28be7e18c64f01d24489f6da1f0"
         },
         {
-          "expectedTargetDigest": "sha256:46ce8d1eed0c9a07c41c3d143e22d31fb4a1e8743eadb73df3bc829bff479ccf",
+          "expectedTargetDigest": "sha256:a98c0440453813292919e237dc5b0d553745a500df65075a434687e913d2de87",
           "name": "prototype",
-          "sourceDigest": "sha256:dc9ebf0921702eb627114d9c923215715ba801bfe037c2bc63c7d62622979e44",
-          "targetDigest": "sha256:46ce8d1eed0c9a07c41c3d143e22d31fb4a1e8743eadb73df3bc829bff479ccf"
+          "sourceDigest": "sha256:341fbdc167fd32650bc2fc4bf011983c45d2c6f128f03d5441155248a33b0488",
+          "targetDigest": "sha256:a98c0440453813292919e237dc5b0d553745a500df65075a434687e913d2de87"
         },
         {
           "expectedTargetDigest": "sha256:a1859c1ff1181b084b3b1f4c26981f12e0d3290e3cc4e5bf28d82c943c5efcde",
@@ -228,10 +228,10 @@
           "targetDigest": "sha256:5ab71f688dc8806dfe4dd4711e5e654d1f342d724c5dcfc3a9dea3a36169ebbf"
         },
         {
-          "expectedTargetDigest": "sha256:2cadd8d2dcef2ec604bfd74bb6c7d49b60b661d246c550f9fab94b09e4792741",
+          "expectedTargetDigest": "sha256:03c160cbc072679b76d836639f0c119d5fd60703978455301207488dfa140d66",
           "name": "visual-audit",
-          "sourceDigest": "sha256:0a12493889ba05e67e935ecc83bbdee1d596ce5e30fd5998a8db2714157e0547",
-          "targetDigest": "sha256:2cadd8d2dcef2ec604bfd74bb6c7d49b60b661d246c550f9fab94b09e4792741"
+          "sourceDigest": "sha256:11e10dfbab02a76553b3fa2be2f84245e0e14348ed587bd57f21cf3465d0fc7a",
+          "targetDigest": "sha256:03c160cbc072679b76d836639f0c119d5fd60703978455301207488dfa140d66"
         }
       ],
       "sourceDirectory": "packages/design-system/ds-canonical/skills",
@@ -421,10 +421,10 @@
           "targetDigest": "sha256:0265c3d3a93df27f0522b5daff503c58af04fa14d09f50876a3325d21d925a37"
         },
         {
-          "expectedTargetDigest": "sha256:efd83c369efd03f4800317bbd228e936ad7436500411aff4e40655db6589d577",
+          "expectedTargetDigest": "sha256:9c7273e76e87b628a39b1512044d8e611554af55cbc331b353b90e41049ff6d0",
           "name": "prototype",
-          "sourceDigest": "sha256:dc9ebf0921702eb627114d9c923215715ba801bfe037c2bc63c7d62622979e44",
-          "targetDigest": "sha256:efd83c369efd03f4800317bbd228e936ad7436500411aff4e40655db6589d577"
+          "sourceDigest": "sha256:341fbdc167fd32650bc2fc4bf011983c45d2c6f128f03d5441155248a33b0488",
+          "targetDigest": "sha256:9c7273e76e87b628a39b1512044d8e611554af55cbc331b353b90e41049ff6d0"
         },
         {
           "expectedTargetDigest": "sha256:eabe98ad8fa3f8ce2711f8ed0ea263d884abe9b27288aedf6acf65b007c3a433",
@@ -451,10 +451,10 @@
           "targetDigest": "sha256:8de446538cf74afd56a975ceed8cb917e2d338af85262183a1a0345fcd0bd61d"
         },
         {
-          "expectedTargetDigest": "sha256:1188ebeed3a7dcfe67eb3fdd423b2da861fea37ac0c93dc2a3d4b1051d83fda3",
+          "expectedTargetDigest": "sha256:8310e697823e5bc1359bf9ebe34cc28614fdf1725bae16f670390eced3edbcb2",
           "name": "visual-audit",
-          "sourceDigest": "sha256:0a12493889ba05e67e935ecc83bbdee1d596ce5e30fd5998a8db2714157e0547",
-          "targetDigest": "sha256:1188ebeed3a7dcfe67eb3fdd423b2da861fea37ac0c93dc2a3d4b1051d83fda3"
+          "sourceDigest": "sha256:11e10dfbab02a76553b3fa2be2f84245e0e14348ed587bd57f21cf3465d0fc7a",
+          "targetDigest": "sha256:8310e697823e5bc1359bf9ebe34cc28614fdf1725bae16f670390eced3edbcb2"
         }
       ],
       "sourceDirectory": "packages/design-system/ds-canonical/skills",
@@ -2972,12 +2972,12 @@
       "type": "directory"
     },
     {
-      "hash": "sha256:79eff2d98653857c11ab6a0354fa62685a72ec214545e7fdfabc450e91b7ba63",
+      "hash": "sha256:2984e2fb8b6ba8fad758ad0e18c3bc49be706a1e1ed56e1fc2b45ec4dfdc7f07",
       "id": "product-template-npm-policy",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "template/ds-product-template/.npmrc",
-      "size": 177,
+      "size": 277,
       "type": "file"
     },
     {
@@ -2995,7 +2995,7 @@
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "template/ds-product-template/package.json",
-      "size": 2583,
+      "size": 2420,
       "type": "file"
     },
     {
@@ -3728,7 +3728,7 @@
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "packages/storybook-config/package.json",
-      "size": 2606,
+      "size": 2459,
       "type": "file"
     },
     {
@@ -3791,7 +3791,7 @@
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "package-lock.json",
-      "size": 330056,
+      "size": 341336,
       "type": "file"
     }
   ]

@@ -8,7 +8,7 @@
 //   hover-trigger 行為 primitive 的 anatomy doc 內多個 inline hover demo,forced defaultOpen
 //   會讓多張浮層互疊蓋住規格表;open-state 視覺快照由 consumer canonical(ProfileCard /
 //   OverflowIndicator)各自的 OpenSnapshot 涵蓋。
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { HoverCard, HoverCardTrigger, HoverCardContent, HOVER_CARD_SURFACE_CLASS } from './hover-card'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { OverflowIndicator } from '@/design-system/components/OverflowIndicator/overflow-indicator'

@@ -1,6 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { DescriptionList, DescriptionItem } from './description-list'
 import { Input } from '@/design-system/components/Input/input'
 import { Field, FieldLabel, FieldGroup } from '@/design-system/components/Field/field'

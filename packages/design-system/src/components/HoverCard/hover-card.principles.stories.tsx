@@ -4,7 +4,7 @@
 // @story-trait-allow: missing-opensnapshot — 同 hover-card.stories.tsx 檔頭 rationale:
 // 原則頁多個 inline hover demo,forced defaultOpen 會多張浮層互疊;open-state 快照由
 // consumer canonical(ProfileCard / OverflowIndicator)的 OpenSnapshot 涵蓋。
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { HoverCard, HoverCardTrigger, HoverCardContent, HOVER_CARD_SURFACE_CLASS } from './hover-card'

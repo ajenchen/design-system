@@ -8,7 +8,7 @@
 //   StateBehavior covered by ColorMatrix「Row 狀態色彩」段(default / hover /
 //     selected / disabled)+ Features「排序」段。Row 互動是 row-level
 //     而非元件 level,集中於 Row 色彩展示更直觀。
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { createColumnHelper } from '@tanstack/react-table'
 import { DataTable } from './data-table'
 import './column-types'

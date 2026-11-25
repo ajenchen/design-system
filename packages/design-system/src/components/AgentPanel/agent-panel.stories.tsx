@@ -8,7 +8,8 @@
 // (共用對話模型 stories-helpers/scene/agent-demo.tsx;稽核 H23、範例依據 E1)。「拖拉寬度」照 user 2026-09-02 指示
 // 從讀者版拿掉,寬度四個公開 prop 的覆蓋改住同名的 test-only 夾具(稽核 H09)。
 import * as React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import {
   AgentPanel,
   AgentPanelHeader,
@@ -465,7 +466,6 @@ export const DecisionCardErrors: Story = {
   name: '決策卡錯誤狀態',
   render: () => <DecisionCardScene questions={THREE_QUESTIONS} intro="公告已寫好兩個版本,需要你決定語氣、發布時間與同步管道再繼續。" />,
   play: async ({ canvasElement }) => {
-    const { expect, userEvent, waitFor, within } = await import('@storybook/test')
     const canvas = within(canvasElement)
     // 只在決策卡裡找(輸入盒也有一顆「送出」):卡片根 = 標題列 ×(名字「取消」,整張卡唯一一顆)所在的 role="group"
     const card = () => within(canvas.getByRole('button', { name: '取消' }).closest('[role="group"]') as HTMLElement)

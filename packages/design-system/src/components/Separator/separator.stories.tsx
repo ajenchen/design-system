@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { User, Bell, Shield } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Separator } from './separator'

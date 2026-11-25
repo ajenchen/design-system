@@ -1,5 +1,5 @@
 // @principles-rationale: UsageGuidance merges WhenToUse + Vs*Rule into single 使用指引 story per refactor task (2026-04-26)
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Settings, Bell, Home } from 'lucide-react'
 import { Avatar } from './avatar'
 import { MenuItem, MenuGroup } from '@/design-system/components/Menu/menu-item'

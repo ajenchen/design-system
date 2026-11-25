@@ -2,7 +2,7 @@
 // @anatomy-rationale:
 //   StateBehavior 涵蓋 fallback chain(src 失敗 → icon → alt 首字 → User icon)
 //   與 status presence dot 四態(online / away / busy / offline),屬資料載入的視覺降級而非互動狀態。
-import type { Meta } from '@storybook/react'
+import type { Meta } from '@storybook/react-vite'
 import { useState } from 'react'
 import { Building2, Folder, Globe } from 'lucide-react'
 import { Avatar } from './avatar'

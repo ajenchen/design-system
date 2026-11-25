@@ -1,6 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { DatePicker } from './date-picker'
 import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
@@ -71,7 +72,6 @@ export const TypedInput: Story = {
     )
   },
   play: async ({ canvasElement }) => {
-    const { expect, userEvent, waitFor, within } = await import('@storybook/test')
     const canvas = within(canvasElement)
     const input = canvas.getByRole('combobox', { name: 'YYYY/MM/DD' })
     const visualWrapper = input.parentElement
@@ -292,7 +292,6 @@ export const ShowTimeRangePopoverOpen: Story = {
    三則各教一個狀態(延長 / 縮小 / 重選開始日);play 只開對應那一端並標記停留目標,真實 CSS :hover 由
    visual-audit 的 Playwright 在截圖前建立;幾何由 scripts/datepicker-range-preview.mjs 逐格量。 */
 const rangePreviewPlay = (which: 'start' | 'end', hoverDay: string) => async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-  const { userEvent, waitFor } = await import('@storybook/test')
   const triggers = canvasElement.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="dialog"]')
   const trigger = triggers[which === 'start' ? 0 : 1]
   if (!trigger) throw new Error(`日期區間 ${which} trigger 不存在`)

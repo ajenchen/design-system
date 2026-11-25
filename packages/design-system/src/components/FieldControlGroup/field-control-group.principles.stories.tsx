@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { FieldControlGroup } from './field-control-group'
 import { ProductSearchDemo } from './_field-control-group-demo'
 import { Field, FieldLabel } from '@/design-system/components/Field/field'

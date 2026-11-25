@@ -3,7 +3,7 @@
 // (Overview/IconOnlyMatrix/FullWidthMatrix/StateBehavior)完全 trait-grid 重複,無 unique teaching。
 // 真實業務情境靠 principles.stories.tsx 的 UsageGuidance / IconOnlyRule / FullWidthRule;
 // trait matrix 靠 anatomy.stories.tsx;本檔保留 1 典型「任務管理工具的檢視切換(清單 / 看板 / 時間軸)」入口情境。
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
 import { List, LayoutGrid, Calendar } from 'lucide-react'
 import { SegmentedControl, SegmentedControlItem } from './segmented-control'

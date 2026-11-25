@@ -2,7 +2,7 @@
 // `UsageGuidance` story (3 sections — 何時用 / 何時不用 + 替代 / vs 近親 N/A) per
 // 2026-04-26 user mandate. AspectRatio has no Vs*Rule (no near-sibling component).
 // RatioChoice / ChildrenFillRule / PlaceholderAndSkeleton kept as separate principles.
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { AspectRatio } from './aspect-ratio'
 import { Skeleton } from '@/design-system/components/Skeleton/skeleton'
 import { Input } from '@/design-system/components/Input/input'

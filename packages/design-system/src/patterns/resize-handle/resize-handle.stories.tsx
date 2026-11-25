@@ -1,5 +1,5 @@
 // @story-baseline: none — primitive 用 minimal scenario showcase visual + cursor + 鍵盤
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import * as React from 'react'
 import { ResizeHandle } from './resize-handle'
 

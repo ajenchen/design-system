@@ -1,5 +1,5 @@
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Search, Eye, EyeOff, X } from 'lucide-react'
 import { Input } from './input'
 import { Field, FieldLabel, FieldError } from '@/design-system/components/Field/field'
