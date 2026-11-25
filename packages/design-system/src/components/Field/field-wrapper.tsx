@@ -25,7 +25,7 @@ installReadonlyPointerFocusGuard()
 //   default — 完整 chrome(form input 場景);view×default = edit 幾何減 chrome 與左內距(留 py 與右側)
 //   naked   — cell-as-input substrate(DataTable);**edit×naked 自畫 border-based state machine**
 //              (border-border → hover:border-border-hover → focus-within:border-primary → error 紅框);
-//              view×naked = bare(host TD 給 padding)。**view×default ≠ view×naked**(不 collapse)。
+//              view×naked = bare(host TD 給 padding;只留上下透明框)。**view×default ≠ view×naked**(不 collapse)。兩態的字都在格子左右緣往內 --table-cell-px(= 表頭字,2026-11-25)。
 //              (2026-07-16 cell disabled 態廢除 → readonly×naked/disabled×naked 死格已移除)
 //
 // 高度:固定 h = field-height token(rem),與 Button 共用同一組 token。
@@ -156,8 +156,8 @@ export const fieldWrapperStyles = cva(
         default: '',
         // naked — cell-as-input(Notion / Airtable / Excel canonical)。**edit×naked 自畫** border +
         // hover:border-border-hover + focus-within:border-primary + error 紅框(v14 border-based state
-        // machine,見下方 compoundVariants L182-196);view×naked 用 transparent
-        // border 由 host cell 提供視覺邊框,內部 input 純文字承載。
+        // machine,見下方 compoundVariants);view×naked 只留上下 transparent
+        // border(行高契約),左右不畫,由 host cell 提供視覺邊框與左右內距,內部 input 純文字承載。
         // 世界級對照:Airtable / Notion / Excel / Google Sheets cell editing。
         // (2026-07-09 `bare` variant 已退役 — 見 field-types.ts FieldVariant 註解;
         //  被 import 的 `bareInputStyles` 常數是內層 input 重置樣式、與此不同物、保留。)
@@ -229,7 +229,10 @@ export const fieldWrapperStyles = cva(
         variant: 'naked',
         className: [
           'bg-transparent !rounded-none !h-full',
-          '!px-[var(--table-cell-px)] !py-[var(--table-cell-py)]',
+          // 左右內距 = 格子內距 − 框寬(2026-11-25):框畫在格子邊上,字落在格子左右緣往內 --table-cell-px = 表頭字 = 靜止時的字
+          // (靜止時 TD 給 --table-cell-px、下面 view×naked 左右不畫框)。修前寫 --table-cell-px,字在 13、表頭在 12,日期 / 選單欄靜止 12、
+          // 一進編輯跳到 13。規則住 field-controls.spec.md「軸二 variant」;閘 scripts/reading-context-invariant.mjs G7
+          '!px-[calc(var(--table-cell-px)_-_var(--field-border-width))] !py-[var(--table-cell-py)]',
           // 框寬在這裡;框色(靜止 / 滑過)不在這條 —— 灰框只屬於沒有錯誤的那條(下一條)。2026-11-17 A55:灰框原本寫在這裡,
           // 而這條排在共用的錯誤條(FIELD_DEFAULT_CHROME_COMPOUNDS 最後一條,不分 variant)之後,tailwind-merge 保留後寫的
           // `border-border` / `hover:border-border-hover`、拿掉錯誤條的 `border-error` / `hover:border-error-hover` → 無框款 × 驗證錯誤
@@ -263,11 +266,13 @@ export const fieldWrapperStyles = cva(
         // Edit mode 不動(`!h-full` 保留 — border 必滿格對齊 cell border)。
         // 2026-07-16 round16:view×naked 保持 bare(cell substrate,host TD 給 padding)— 與 view×default
         // (edit 幾何減 chrome 與左內距、留 py 與右側)本質不同用途,**不 collapse**(round14 合併是錯的)。
+        // 2026-11-25:透明框只留上下 —— 上下是行高契約(DataTable --table-cell-py 減掉的那一份,data-table.css 第四節註解);
+        // 左右那兩條原本讓字落在 TD 內距 + 1 = 13,比表頭字(12)多 1。字線規則住 field-controls.spec.md「軸二 variant」;閘 G7
         mode: 'view',
         variant: 'naked',
         className: [
           'bg-transparent !rounded-none !px-0 !py-0 !h-auto',
-          'border-[length:var(--field-border-width)] border-transparent',
+          'border-y-[length:var(--field-border-width)] border-transparent',
         ],
       },
       // 2026-07-16 round16:`readonly×naked` / `disabled×naked` 死格移除 —— DataTable cell 廢除

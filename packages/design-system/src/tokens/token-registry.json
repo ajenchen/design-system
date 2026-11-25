@@ -803,7 +803,7 @@
       "product": "no",
       "dsReaders": "any",
       "secondReader": "patterns/overlay-surface/overlay-surface.tsx",
-      "why": "框內字線 = 框寬 + --field-px(13px),由公式組成住衍生值段:InlineEdit 垂直外伸、可編輯標題列的讓位(overlay-surface EDITABLE_TITLE_HEADER_SLOT)、閱讀情境裡沒有框的值的內縮(components/Field/field.css)三處讀,外伸量與讓位必須一起變 → 共用刻度。產品不讀(同 --field-border-width)"
+      "why": "框內字線 = 框寬 + --field-px(13px),由公式組成住衍生值段:InlineEdit 垂直外伸、可編輯標題列的讓位(overlay-surface EDITABLE_TITLE_HEADER_SLOT)、閱讀情境裡沒有框的值的內縮(components/Field/field.css)、DataTable 篩選面板 Where 標籤的左內距(components/DataTable/data-table-filter-group.tsx)四處讀,外伸量、讓位與字線必須一起變 → 共用刻度。產品不讀(同 --field-border-width)"
     },
     {
       "match": "--stack-gap",

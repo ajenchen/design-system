@@ -110,7 +110,7 @@ Form-context field 控件的左右水平內距。**固定 12px,不隨 size / den
 
 **消費者**:`Input` / `NumberInput` / `Select` / `Combobox` / `DatePicker` / `TimePicker` / `LinkInput` / `Textarea`(經 `fieldWrapperStyles` cva `px-[var(--field-px)]`)+ `PeoplePicker`(form-context inject `!px-[var(--field-px)]`)+ tag 模式右緣 re-assert(`paddingRight: var(--field-px)`,Select / Combobox readonly + edit)。
 
-**與 `--table-cell-px` 的關係**:同 `-px` 命名慣例。`--table-cell-px`(DataTable-scoped)預設 `var(--field-px)`(form / cell 同 12px content gutter SSOT),但仍是獨立 named token、可被 DataTable 單獨 override(per `components/Field/field-controls.spec.md` contract (c) scoped 決策)。
+**與 `--table-cell-px` 的關係**:同 `-px` 命名慣例。`--table-cell-px`(DataTable-scoped)預設 `var(--field-px)`(form / cell 同 12px content gutter SSOT),但仍是獨立 named token、可被 DataTable 單獨 override(per `components/Field/field-controls.spec.md` contract (c) scoped 決策)。格子裡看得見的內容(含格內欄位編輯中的字)也落在這條線上 = 表頭字(2026-11-25;`../../components/DataTable/data-table.spec.md`「一、Table Size」)。
 
 **Why 固定不隨 density**:density 本質是縱向密度(一屏幾列);橫向管可讀性(字離格線距離),目的不同不綁 —— 本 DS 刻意縱橫分離(Ant Table 換尺寸時縱橫內距一起縮,本 DS 不跟)+ 全 DS field 控件 12px 常數。M17「SSOT 必可傳播」:**form-context field 控件**散落的 `px-3` / inline `0.75rem` 收斂進此 token([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/table/style/index.ts#L457-L462))。
 
@@ -137,7 +137,7 @@ field-wrapper / Textarea / Select+Combobox,Menu 漏掉。
 | Token | 值 | 說明 |
 |-------|-----|------|
 | `--field-border-width` | 1px | 欄位外框寬,不隨 size / density。欄位家族的框**直接讀它畫**(`../../components/Field/field-wrapper.tsx` `fieldWrapperStyles`、Textarea、InlineEdit 靜止外框),所以它是「框有多寬」的原因,不是旁邊另抄的一份數字 |
-| `--field-bleed` | `calc(var(--field-border-width) + var(--field-px))` = 13px | **框內字線**:欄位框外緣到框裡第一個字的距離。同一個距離兩種用法 —— 標籤在上時,就地編輯的框往左右各外伸這麼多,字落在標籤左緣(`../../components/InlineEdit/inline-edit.spec.md`「對齊盒」;可編輯標題列的讓位同一顆,`../../patterns/overlay-surface/overlay-chrome-sizing.spec.md`「可編輯標題的標題列」);標籤在左的閱讀情境裡,沒有框的值(開關、單一勾選框)往右內縮這麼多,落在同一欄框內的字線上(`../../components/Field/field.spec.md`「閱讀情境」) |
+| `--field-bleed` | `calc(var(--field-border-width) + var(--field-px))` = 13px | **框內字線**:欄位框外緣到框裡第一個字的距離。同一個距離三種用法 —— 標籤在上時,就地編輯的框往左右各外伸這麼多,字落在標籤左緣(`../../components/InlineEdit/inline-edit.spec.md`「對齊盒」;可編輯標題列的讓位同一顆,`../../patterns/overlay-surface/overlay-chrome-sizing.spec.md`「可編輯標題的標題列」);標籤在左的閱讀情境裡,沒有框的值(開關、單一勾選框)往右內縮這麼多,落在同一欄框內的字線上(`../../components/Field/field.spec.md`「閱讀情境」);DataTable 篩選面板的 Where / 唯讀 And / Or 文字標籤左內距也是它,字落在同一欄 And/Or 下拉框內的字線上(`../../components/DataTable/data-table.spec.md`「四、UI canonical」第一點) |
 
 **替框寬補位的算式都讀 `--field-border-width`**,不寫死 1px / 2px:本檔 `--field-control-py-*`、`--field-bleed`;`fieldTagInsetX` / `fieldTagInsetY`、`fieldViewGeometry` 的高度下限(`field-wrapper.tsx`);DataTable `--table-cell-py`(`components/DataTable/data-table.css`);Textarea 行數上限;InlineEdit 命中區與 LinkInput 延伸區多蓋的一圈;併排欄位組的重疊(`FieldControlGroup`)。2026-11-25 前這些都是寫死的 `1px` / `2px` / `-inset-px` / `-ml-px`,值相同、畫面不變。欄位家族的框不准寫裸 `border` 這類寫死寬度的樣式,閘 `scripts/reading-context-invariant.mjs` 靜態段(B1 / B2)與瀏覽器段 G9(畫出來的框寬 = 這顆、`--field-bleed` 公式、標題讓位解出來 = `--field-bleed`)。**分類**:兩顆都是共用刻度(Field 家族各元件、DataTable、浮層標題列都讀;第二個讀者見上表),`--field-bleed` 由公式組成,住 `uiSize.css`「衍生值」段在每個換密度的元素上重算。**產品不讀**(`../token-registry.json` `product: no`):它們是欄位內部的幾何,產品要對齊用 `--field-px` / `--field-height-*` 與元件本身(下方「產品對齊用」的 12 顆不變)。
 

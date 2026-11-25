@@ -96,7 +96,8 @@ const textareaVariants = cva(
         variant: 'naked',
         className: [
           'bg-transparent !rounded-none !resize-none !h-full',
-          '!px-[var(--table-cell-px)] !py-[var(--table-cell-py)]',
+          // 左右內距 = 格子內距 − 框寬(2026-11-25,同 field-wrapper.tsx naked 條):字落在格子左緣往內 --table-cell-px = 表頭字 = 靜止時的字
+          '!px-[calc(var(--table-cell-px)_-_var(--field-border-width))] !py-[var(--table-cell-py)]',
           // 框寬在這裡,靜止灰框 + 滑過只屬於沒有錯誤的那條(下一條)—— 同 field-wrapper.tsx naked 條(2026-11-17 A55):
           // 寫在這裡會排在共用錯誤條之後,tailwind-merge 拿掉 `border-error` / `hover:border-error-hover`,無框款 × 驗證錯誤靜止與滑過變灰框
           // 框寬讀 --field-border-width(欄位家族不寫裸 `border`,閘 scripts/reading-context-invariant.mjs 靜態段)
@@ -114,7 +115,8 @@ const textareaVariants = cva(
       // multi-line text 需要撐滿 cell 而非依 line-height intrinsic。`!h-full` 讓 textarea 填滿 cell
       // 高度,文字 anchored to cell.top + cell padding(同視覺結果 Field wrapper autoRow !h-auto)。
       // 此 divergence intentional + documented;非 SSOT violation。
-      { mode: 'view', variant: 'naked', className: 'bg-transparent !rounded-none !h-full !resize-none !px-0 !py-0 border-[length:var(--field-border-width)] border-transparent !leading-[1.5]' },
+      // 透明框只留上下(2026-11-25,同 field-wrapper.tsx view×naked 條):上下是行高契約,左右那兩條讓字比表頭多 1
+      { mode: 'view', variant: 'naked', className: 'bg-transparent !rounded-none !h-full !resize-none !px-0 !py-0 border-y-[length:var(--field-border-width)] border-transparent !leading-[1.5]' },
       // 2026-07-16 round16:`readonly×naked` / `disabled×naked` 死格移除(鏡射 field-wrapper.tsx;
       //   DataTable cell 廢 disabled 態 + readonly 從不入 naked,全庫 0 消費)。
     ],

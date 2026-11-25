@@ -566,9 +566,10 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       //(SSOT `fieldTagInsetX`:`(field-height − 2px − tag-height) / 2` = sm 3 / md 3 / lg 5px,2026-09-15 起含邊框),
       // 不是固定值 → 4+8=12 這種加法不成立。
       // (a) fix:form context + 有 tag → 改 inject `!px-[var(--field-px)]`(固定 12px)直接 override `tagPadding[size]`,
-      // 達成 GitHub PeoplePicker fixed 12px inset(對齊 cell context 同 13px from cell.left 含 1px border)。
+      // 達成 GitHub PeoplePicker fixed 12px inset。
       // - form + 有 tag → `!px-[var(--field-px)]`(12px 固定 inset)+ tagAreaPaddingLeftPx undefined → field.padL=12 ✓
-      // - table-cell + 有 tag → naked variant `!px-[var(--table-cell-px)]` 已是 12px,不 inject ✓
+      // - table-cell + 有 tag → 不 inject:無框款內距 = --table-cell-px − --field-border-width,頭像在格子左緣往內 --table-cell-px = 表頭字
+      //   (2026-11-25;之前內距 --table-cell-px、頭像在 13。people-picker.spec.md §E「Avatar 左 inset」那列;field-controls.spec.md「軸二 variant」)✓
       // - isEmpty → 不 inject,走 Combobox 預設文字 inset(`tagPadding[size]` 公式自然 vertical center)
       className={cn(className, !isEmpty && surface === 'form' && '!px-[var(--field-px)]')}
       aria-label={ariaLabel}

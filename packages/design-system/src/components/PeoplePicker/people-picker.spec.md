@@ -176,7 +176,7 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 
 | 共享項 | SSOT owner |
 |---|---|
-| Avatar 左 inset 距 trigger.left = 12px 固定(不隨 size/density 漂移)| 本 spec L175「Avatar 左 inset SSOT」段 + `people-picker.tsx#PeoplePicker` `!px-[var(--field-px)]` inject(form context)/ `!px-[var(--table-cell-px)]`(naked variant table cell)|
+| Avatar 左 inset 距 trigger.left = 12px 固定(不隨 size/density 漂移)| 本 spec L175「Avatar 左 inset SSOT」段 + `people-picker.tsx#PeoplePicker` `!px-[var(--field-px)]` inject(form context)/ 表格格內不 inject(無框款自己的左右內距 = `--table-cell-px` − `--field-border-width`,第一個頭像在格子左緣往內 `--table-cell-px`;`../Field/field-controls.spec.md`「軸二 variant」)|
 | Avatar+人名視覺 | `person-display.tsx:138-153` `PersonDisplay`(共享 renderer)|
 | 人名按空間 ellipsis | `person-display.tsx:151` `truncate flex-1 min-w-0` |
 | Placeholder ellipsis(inline-search active 時)| `field-wrapper.tsx#bareInputStyles` 含 `truncate` |
@@ -203,7 +203,7 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 
 **改 PeoplePicker 視覺前必查本表,動 trigger render / placeholder / overflowShape / tagWrapperClassName 前先 cite 對應 row。** Hook `post_edit_contract_dispatcher.sh`(lib `_peoplepicker_ssot_drift.sh`)寫入當下擋:三支檔(people-picker.tsx / person-display.tsx / combobox.tsx)這次新增的行動到這些名稱,而這次寫入沒附本表 §A–§F 的引用、該行或上一行也沒有 → 擋。
 
-**Avatar 左 inset SSOT**:single trigger / multi stack 第一個 avatar 距 trigger.left = **12px 固定**(不隨 size / density 漂移)。實作:PeoplePicker form context + 有 tag → `cn(className, '!px-[var(--field-px)]')` inject 12px override 到 Combobox Field wrapper,**覆蓋** Combobox `tagPadding[size]` density-dependent calc 公式(該公式在 default lg + 全 comfortable 共 4/6 組合漂離 12px,故報廢改固定值;推導史詳 git log 2026-05-13);`tagAreaPaddingLeftPx={undefined}` 不再 +8 magic。Cell context naked variant `!px-[var(--table-cell-px)]` 已是 12px 不 inject。固定 inset 讓 avatar 與其他 Field control 的文字起點共享同一水平節奏，不被 density 改寫。
+**Avatar 左 inset SSOT**:single trigger / multi stack 第一個 avatar 距 trigger.left = **12px 固定**(不隨 size / density 漂移)。實作:PeoplePicker form context + 有 tag → `cn(className, '!px-[var(--field-px)]')` inject 12px override 到 Combobox Field wrapper,**覆蓋** Combobox `tagPadding[size]` density-dependent calc 公式(該公式在 default lg + 全 comfortable 共 4/6 組合漂離 12px,故報廢改固定值;推導史詳 git log 2026-05-13);`tagAreaPaddingLeftPx={undefined}` 不再 +8 magic。Cell context 不 inject:無框款的左右內距 = `--table-cell-px` − `--field-border-width`,第一個頭像在格子左緣往內 `--table-cell-px`(= 表頭字;2026-11-25 前內距寫 `--table-cell-px`、頭像在 13,`../Field/field-controls.spec.md`「軸二 variant」)。固定 inset 讓 avatar 與其他 Field control 的文字起點共享同一水平節奏，不被 density 改寫。
 
 **判準**：
 - **選人 → PeoplePicker**（不用 Select / Combobox 代替，失去 Avatar 視覺）

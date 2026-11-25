@@ -157,10 +157,11 @@
   --field-control-py-sm: calc((var(--field-height-sm) - 1lh) / 2 - var(--field-border-width));
   --field-control-py-md: calc((var(--field-height-md) - 1lh) / 2 - var(--field-border-width));
   --field-control-py-lg: calc((var(--field-height-lg) - 1lh) / 2 - var(--field-border-width));
-  /* 框內字線 = 欄位框外緣到框裡第一個字的距離(框寬 + 左右內距)= 13px。同一個距離兩種用法:
+  /* 框內字線 = 欄位框外緣到框裡第一個字的距離(框寬 + 左右內距)= 13px。同一個距離三種用法:
      垂直排的就地編輯框往左右各外伸這麼多,字因此落在標籤左緣(InlineEdit alignBleed;可編輯標題列的讓位
      patterns/overlay-surface EDITABLE_TITLE_HEADER_SLOT);水平排閱讀情境裡沒有框的值(開關、勾選框)往右內縮這麼多,
-     落在同一欄框內的字線上(components/Field/field.css)。規則住 components/Field/field.spec.md「閱讀情境」;
+     落在同一欄框內的字線上(components/Field/field.css);DataTable 篩選面板的 Where / 唯讀 And / Or 文字標籤同理,左內距讀它,
+     字落在同一欄 And/Or 下拉框內的字線上(components/DataTable/data-table-filter-group.tsx)。規則住 components/Field/field.spec.md「閱讀情境」;
      值與理由住 uiSize.spec.md「Field 外框寬與框內字線」。 */
   --field-bleed: calc(var(--field-border-width) + var(--field-px));
 }

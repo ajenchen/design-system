@@ -26,7 +26,13 @@
  *             重拍帶 reference_ref 時同一個容器比改動前後),不是 PR 必過檢查。本閘只比同一份建置算出來的值。
  *         G5  編輯中不翻轉:範圍裡唯一的就地編輯進編輯後,同範圍的標籤色、開關 / 勾選框位置、列高都不變;點外面回到靜止(取代探針的 blur-exit)
  *         G6  同組同高:閱讀範圍裡每一列的控件槽高 = 該尺寸欄位高(不指定 = sm,跟 InlineEdit 的偏好)
- *         G8  首繪:story 第一次把列交進 DOM 的那個微任務就已經是對的列高、標籤色、開關內縮
+ *         G7  DataTable 內容線 = 表頭字(data-table.spec.md「一、Table Size」;12 的出處 uiSize.spec.md「與 --table-cell-px 的關係」):
+ *             表頭字左緣 = 格子左緣 + 頁面上解出來的 --table-cell-px;每一欄第一列格裡第一個看得見的東西(字用 DOM 文字範圍、輸入框用內容盒 + 字寬、
+ *             圖 / svg / 有底色或看得見的框的盒子;欄位自己的框不算)靠左欄 = 表頭字、靠右欄 = 格子右緣往內 --table-cell-px;
+ *             可編輯的欄逐欄進編輯(網址欄按格裡的鉛筆)再量一次 = 靜止時(不跳)。夾具「就地編輯」(13 種型別)、「自動行高 × 就地編輯」(多行輸入)
+ *             淺 / 深(深色只量靜止),「元件檢閱器」sm / lg(靜止);篩選面板「進階篩選 — 各種狀態」第一欄 Where / 唯讀 And / Or 文字標籤的字
+ *             = 同一欄 And/Or 下拉框內的字(data-table.spec.md「四、UI canonical」第一點)
+ *         G8 首繪:story 第一次把列交進 DOM 的那個微任務就已經是對的列高、標籤色、開關內縮
  *         G9  token:--field-bleed = --field-px + --field-border-width;就地編輯外框與輸入框畫出來的框寬 = --field-border-width;
  *             EDITABLE_TITLE_HEADER_SLOT 的 --surface-title-bleed 解出來 = --field-bleed
  *         SC  範圍 = 最外層 FieldGroup:巢狀組(外層就地編輯、內層只有輸入框 N2)內層與外層同色同高,頁面上沒有範圍套在範圍裡;不在組裡的 Field 範圍是自己
@@ -34,7 +40,8 @@
  *       靜態段(裸 border、補位寫死、屬性名不同、判斷寫兩處、field.css 兩條判斷不一致、bleed 公式、標題讓位讀 --field-px),
  *       瀏覽器段(某一列字推 4px 只有那列紅、垂直外伸改回 12、沒有框的值不內縮、拿掉標籤判斷、判斷過寬、標籤色在範圍元素上先算好
  *       (主題套層跟不上,沒套層的列照綠)、編輯中跳字、水平框壓進標籤 1px、容器內距 12、記號只掛靜止外框、同組列高跑掉、
- *       列高晚一個計時器才到、bleed 公式只剩內距、框寬 2px、標題讓位斷開、範圍改成最近一層、純顯示補回左內距 13)
+ *       列高晚一個計時器才到、bleed 公式只剩內距、框寬 2px、標題讓位斷開、範圍改成最近一層、純顯示補回左內距 13、
+ *       表格只修 view 一半(編輯中的欄位內距回到 --table-cell-px)、只修 edit 一半(靜止的左右透明框還在)、Where 標籤左內距回到 --field-px)
  *   綠: 全部照規格時 exit 0。開 story 走 lib/launch-browser.mjs openStory(等 Storybook 回報渲染完成與被量的列本身出現,不睡固定時間);
  *       開不起來 / 回 0 筆 = 儀器失效(INSTRUMENT-FAIL,exit 1 並點名),不讀成通過。
  */
@@ -182,6 +189,7 @@ if (!buildArg) {
   requireFreshStorybookBuild(STATIC, [
     `${DS}/components/Field`, `${DS}/components/InlineEdit`, `${DS}/components/Switch/switch.tsx`, `${DS}/components/Checkbox/checkbox.tsx`,
     `${DS}/tokens/uiSize/uiSize.css`, `${DS}/styles/tokens.css`, `${DS}/patterns/overlay-surface/overlay-surface.tsx`,
+    `${DS}/components/DataTable`, `${DS}/components/Textarea/textarea.tsx`,
   ])
 }
 const TITLE_SLOT_CLASS = (read(`${DS}/patterns/overlay-surface/overlay-surface.tsx`).match(/EDITABLE_TITLE_HEADER_SLOT = '([^']+)'/) ?? [])[1] ?? ''
@@ -194,6 +202,10 @@ const STORY = {
   fixture: storyId(/field-展示--reading-context-contract$/u),
   view: storyId(/field-展示--view-alignment-contract$/u),
   table: storyId(/datatable-展示--pinned-columns$/u),
+  dtEdit: storyId(/datatable-展示--inline-edit$/u),
+  dtAuto: storyId(/datatable-展示--row-auto-height-inline-edit$/u),
+  dtInspector: storyId(/datatable-設計規格--inspector$/u),
+  dtFilter: storyId(/datatable-展示--filter-panel-states$/u),
 }
 const SWEEP = entries.filter((e) => /\/InlineEdit\//.test(e.importPath ?? '') && !/--commit-on-host-unmount$/.test(e.id)).map((e) => e.id)
 
@@ -328,9 +340,10 @@ const PROBE = (titleSlotClass) => {
   }
 }
 
-async function open(id, { theme = 'light', size = 'unset', label = id, css = null, dom = null, flags = '', waitFor = ROWS_READY, probe = PROBE, probeArg = TITLE_SLOT_CLASS } = {}) {
+async function open(id, { theme = 'light', size = 'unset', args = null, label = id, css = null, dom = null, flags = '', waitFor = ROWS_READY, probe = PROBE, probeArg = TITLE_SLOT_CLASS } = {}) {
   if (!id) { instrumentFails.push({ cell: label, detail: '找不到 story(改名了?)' }); return null }
-  const url = `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story&globals=${encodeURIComponent(`theme:${theme};density:md`)}${size !== 'unset' ? `&args=${encodeURIComponent(`size:${size}`)}` : ''}${flags}`
+  const argsQuery = args ?? (size !== 'unset' ? `size:${size}` : null)
+  const url = `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story&globals=${encodeURIComponent(`theme:${theme};density:md`)}${argsQuery ? `&args=${encodeURIComponent(argsQuery)}` : ''}${flags}`
   try {
     const opened = await openStory(page, url, {
       waitFor, settleFrames: 6, notFound: server.notFound, label, probe, probeArg,
@@ -686,6 +699,165 @@ const BLOCKS = {
     }
     if (!measured) instrumentFails.push({ cell: 'InlineEdit 範例', detail: `${SWEEP.length} 則都沒量到就地編輯外框` })
   },
+  async table({ css = null, dom = null, runs = [{ theme: 'light' }, { theme: 'dark' }], edit = true, filter = true } = {}) {
+    for (const run of runs) {
+      for (const story of TABLE_STORIES) {
+        if (run.theme !== 'light' && story.lightOnly) continue
+        const p = await open(story.id(), { theme: run.theme, args: story.args ?? null, label: `G7 ${story.key} ${run.theme}`, css, dom, waitFor: TABLE_READY, probe: TABLE_PROBE, probeArg: null })
+        if (!p) continue
+        const byCol = judgeTableStatic(p, story, run)
+        if (!edit || run.theme !== 'light' || !story.edit) continue
+        for (const column of story.edit) {
+          const s = byCol.get(column)
+          if (!s) continue
+          const m = await tableEdit(column, `${story.key} ${run.theme}`)
+          if (!m) continue
+          const want = s.alignRight ? p.px : s.header
+          const got = s.alignRight ? m.right : m.left, was = s.alignRight ? s.right : s.left
+          check(`G7:編輯:${story.key}:${column}`, near(got, want) && near(got, was),
+            `${run.theme} 編輯中${s.alignRight ? '右緣留白' : '第一個看得見的東西離格子左緣'} ${f2(got)}(${s.alignRight ? '--table-cell-px' : '表頭字'} ${f2(want)};靜止時 ${f2(was)})`)
+          if (REPORT) report.push({ g7: true, run: run.theme, story: story.key, column, state: '編輯中', got, want })
+        }
+      }
+      if (!filter) continue
+      const rows = await open(STORY.dtFilter, { theme: run.theme, label: `G7 篩選面板 ${run.theme}`, css, dom, waitFor: () => document.querySelectorAll('[data-panel-conjunction]').length >= 3, probe: FILTER_PROBE, probeArg: null })
+      if (rows) judgeFilter(rows, run.theme)
+    }
+  },
+}
+
+// ── G7:DataTable 內容線 ─────────────────────────────────────────────────────
+// 夾具:「就地編輯」13 種型別(SKU 唯讀、Available 開關不進編輯);「自動行高 × 就地編輯」的備註欄 = 多行輸入(Textarea 無框款);
+// 「元件檢閱器」sm / lg(只有靜止)。edit = 要逐欄進編輯的欄(欄標題);少一欄 / 點了不進編輯 = 儀器失效
+const TABLE_STORIES = [
+  { key: 'inline-edit', id: () => STORY.dtEdit, edit: ['Product', 'Qty', 'Category', 'Stock', 'Tags', 'Owner', 'Reviewers', 'Supplier', 'Price', 'Release', 'Reminder'], columns: 13 },
+  { key: 'auto-height', id: () => STORY.dtAuto, edit: ['Product', 'Category', 'Note (wrap text)', 'Price'], columns: 5 },
+  { key: 'inspector-sm', id: () => STORY.dtInspector, args: 'size:sm;inlineEdit:!true', lightOnly: true, columns: 6 },
+  { key: 'inspector-lg', id: () => STORY.dtInspector, args: 'size:lg;inlineEdit:!true', lightOnly: true, columns: 6 },
+]
+const TABLE_READY = () => Boolean(document.querySelector('[role="row"][data-row-index="0"] :is([role="cell"], [role="gridcell"])'))
+/**
+ * 頁面端:第一列每一格(釘選欄在別的面板,用水平中心跟表頭配對)的內容左右緣,相對格子 border box。
+ * arg = null → { px, rows };arg = { column, scroll } → 那一欄一格(scroll 時先捲進畫面,另回格子中心與有沒有鉛筆)
+ */
+const TABLE_PROBE = (arg) => {
+  const clear = (c) => !c || c === 'transparent' || /,\s*0\)$/.test(c) || /\/\s*0\)$/.test(c)
+  // 一路到格子都看得見(visibility / opacity / 讀屏專用的 clip 都算看不見)
+  const shown = (el, stop) => {
+    for (let q = el; q && q.nodeType === 1; q = q.parentElement) {
+      const cs = getComputedStyle(q)
+      if (cs.visibility === 'hidden' || cs.display === 'none' || Number(cs.opacity) === 0 || (cs.clip && cs.clip !== 'auto') || (cs.clipPath && cs.clipPath !== 'none')) return false
+      if (q === stop) break
+    }
+    return true
+  }
+  const canvas = document.createElement('canvas').getContext('2d')
+  // 第一個 / 最後一個看得見的東西:字 = DOM 文字範圍;輸入框 = 內容盒 + 量出來的字寬(靠右的貼內容盒右緣);
+  // 元素 = 圖、svg、有底色、有看得見的框的盒子。欄位自己的框(帶 data-field-mode 的外殼)不算 —— 那是格子的框,不是內容
+  const edges = (cell) => {
+    const cr = cell.getBoundingClientRect(); const rects = []
+    const w = document.createTreeWalker(cell, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT)
+    for (let n = w.currentNode; n; n = w.nextNode()) {
+      if (n.nodeType === 3) {
+        if (!n.textContent.trim() || !shown(n.parentElement, cell)) continue
+        const r = document.createRange(); r.selectNodeContents(n)
+        for (const rr of r.getClientRects()) if (rr.width > 1 && rr.height > 1) rects.push({ left: rr.left, right: rr.right })
+        continue
+      }
+      if (n === cell || !shown(n, cell)) continue
+      const cs = getComputedStyle(n), b = n.getBoundingClientRect()
+      if ((n.tagName === 'INPUT' && n.type !== 'checkbox' && n.type !== 'hidden') || n.tagName === 'TEXTAREA') {
+        if (!n.value || b.width <= 2 || b.height <= 2) continue
+        const cl = b.left + parseFloat(cs.borderLeftWidth) + parseFloat(cs.paddingLeft), crr = b.right - parseFloat(cs.borderRightWidth) - parseFloat(cs.paddingRight)
+        canvas.font = cs.font
+        const tw = Math.min(canvas.measureText(n.value.split('\n')[0]).width, crr - cl)
+        rects.push(/right|end/.test(cs.textAlign) ? { left: crr - tw, right: crr } : { left: cl, right: cl + tw })
+        continue
+      }
+      const frame = n.hasAttribute('data-field-mode')
+      const painted = n.tagName === 'svg' || n.tagName === 'IMG' || !clear(cs.backgroundColor)
+        || (!frame && ['Top', 'Right', 'Bottom', 'Left'].some((k) => parseFloat(cs[`border${k}Width`]) > 0 && !clear(cs[`border${k}Color`])))
+      if (painted && b.width > 1 && b.height > 1) rects.push({ left: b.left, right: b.right })
+    }
+    if (!rects.length) return { left: null, right: null }
+    return { left: Math.min(...rects.map((r) => r.left)) - cr.left, right: cr.right - Math.max(...rects.map((r) => r.right)) }
+  }
+  const name = (h) => { const t = document.createTreeWalker(h, NodeFilter.SHOW_TEXT); for (let n = t.nextNode(); n; n = t.nextNode()) if (n.textContent.trim() && shown(n.parentElement, h)) return n.textContent.trim(); return null }
+  const headers = [...document.querySelectorAll('[role="columnheader"]')]
+  const cells = [...new Set([...document.querySelectorAll('[role="row"][data-row-index="0"]')].flatMap((r) => [...r.querySelectorAll('[role="cell"], [role="gridcell"]')]))]
+  const headerOf = (c) => { const r = c.getBoundingClientRect(), x = (r.left + r.right) / 2; return headers.find((h) => { const hr = h.getBoundingClientRect(); return hr.left <= x && x <= hr.right }) }
+  const row = (c) => {
+    const h = headerOf(c), e = edges(c)
+    return { column: h ? name(h) : null, alignRight: /end|right/.test(getComputedStyle(c).justifyContent), header: h ? edges(h).left : null, left: e.left, right: e.right,
+      editing: Boolean(c.querySelector('[data-field-mode="edit"], textarea')) }
+  }
+  if (arg?.column) {
+    const c = cells.find((x) => { const h = headerOf(x); return h && name(h) === arg.column })
+    if (!c) return null
+    if (arg.scroll) c.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    const r = c.getBoundingClientRect(), pb = c.querySelector('button[aria-label="編輯連結"]')?.getBoundingClientRect()
+    return { ...row(c), box: { left: r.left, right: r.right, top: r.top, bottom: r.bottom }, pencil: pb ? { x: pb.left + pb.width / 2, y: pb.top + pb.height / 2 } : null }
+  }
+  const tmp = document.createElement('div'); tmp.style.cssText = 'position:absolute;visibility:hidden;width:var(--table-cell-px)'
+  ;(document.querySelector('[data-data-table-outer]') ?? document.body).appendChild(tmp)
+  const px = tmp.getBoundingClientRect().width; tmp.remove()
+  return { px, rows: cells.map(row) }
+}
+function judgeTableStatic(p, story, run) {
+  const byCol = new Map()
+  if (p.rows.length !== story.columns) instrumentFails.push({ cell: `G7 ${story.key}`, detail: `${run.theme} 第一列量到 ${p.rows.length} 格(應 ${story.columns})` })
+  for (const r of p.rows) {
+    if (!r.column || r.header == null || r.left == null) { instrumentFails.push({ cell: `G7 ${story.key}:${r.column}`, detail: `${run.theme} 表頭或格裡沒有看得見的東西` }); continue }
+    byCol.set(r.column, r)
+    check(`G7:表頭:${story.key}:${r.column}`, near(r.header, p.px), `${run.theme} 表頭字離格子左緣 ${f2(r.header)}(--table-cell-px ${f2(p.px)})`)
+    const got = r.alignRight ? r.right : r.left, want = r.alignRight ? p.px : r.header
+    check(`G7:靜止:${story.key}:${r.column}`, near(got, want), `${run.theme} 靜止${r.alignRight ? '右緣留白' : '第一個看得見的東西離格子左緣'} ${f2(got)}(${r.alignRight ? '--table-cell-px' : '表頭字'} ${f2(want)})`)
+    if (REPORT) report.push({ g7: true, run: run.theme, story: story.key, column: r.column, state: '一般', got, want })
+  }
+  for (const c of story.edit ?? []) if (!byCol.has(c)) instrumentFails.push({ cell: `G7 ${story.key}:${c}`, detail: `${run.theme} 找不到要進編輯的這一欄` })
+  return byCol
+}
+/** 進編輯(網址欄按格裡的鉛筆,其他欄點格子裡內容以外的地方)→ 量 → Esc 退出;進不去 = 儀器失效 */
+async function tableEdit(column, tag) {
+  const at = await page.evaluate(TABLE_PROBE, { column, scroll: true })
+  if (!at) { instrumentFails.push({ cell: `G7 編輯:${column}`, detail: `${tag} 找不到這一欄` }); return null }
+  const midY = (at.box.top + at.box.bottom) / 2
+  if (at.pencil) {
+    // 網址欄:格裡鉛筆以外是連結(點了會開連結),編輯入口是滑過才出現的鉛筆 —— 先把指標移到鉛筆上讓它出現,再按
+    await page.mouse.move(at.pencil.x, at.pencil.y); await settle()
+    await page.mouse.click(at.pencil.x, at.pencil.y)
+  } else {
+    // 點格子內距那一條(靠右的欄點左邊、其他點右邊):不點在字 / 頭像 / Tag 上
+    await page.mouse.click(at.alignRight ? at.box.left + 4 : at.box.right - 4, midY)
+  }
+  let m = null
+  for (let i = 0; i < 30 && !m?.editing; i++) { if (i) await page.waitForTimeout(100); m = await page.evaluate(TABLE_PROBE, { column }) }
+  if (!m?.editing) { instrumentFails.push({ cell: `G7 編輯:${column}`, detail: `${tag} 點了沒進編輯` }); await parkPointer(page); return null }
+  await settle()
+  m = await page.evaluate(TABLE_PROBE, { column })
+  // Esc 一次少一層(選單 / 日曆開著時第一下只關它)
+  let out = false
+  for (let i = 0; i < 3 && !out; i++) {
+    await page.keyboard.press('Escape')
+    for (let k = 0; k < 10 && !out; k++) { await page.waitForTimeout(50); out = !(await page.evaluate(TABLE_PROBE, { column }))?.editing }
+  }
+  await parkPointer(page)
+  if (!out) { instrumentFails.push({ cell: `G7 編輯:${column}`, detail: `${tag} 按 Esc 三下沒回到靜止` }); return null }
+  return m
+}
+/** 篩選面板第一欄:每一格(Where / And/Or 下拉 / 唯讀 And / Or)字的左緣離那一格左緣多遠 */
+const FILTER_PROBE = () => [...document.querySelectorAll('[data-panel-conjunction]')].map((b) => {
+  const w = document.createTreeWalker(b, NodeFilter.SHOW_TEXT)
+  let left = null
+  for (let n = w.nextNode(); n; n = w.nextNode()) if (n.textContent.trim()) { const r = document.createRange(); r.selectNodeContents(n); left = r.getBoundingClientRect().left; break }
+  return { kind: b.querySelector('[data-field-mode]') ? 'select' : 'label', text: b.textContent.trim(), offset: left == null ? null : left - b.getBoundingClientRect().left }
+})
+function judgeFilter(rows, theme) {
+  const sel = rows.filter((r) => r.kind === 'select' && r.offset != null), lab = rows.filter((r) => r.kind === 'label' && r.offset != null)
+  if (!sel.length || !lab.length) { instrumentFails.push({ cell: 'G7 篩選面板', detail: `${theme} 第一欄量到下拉 ${sel.length} 格、文字標籤 ${lab.length} 格(各要 ≥ 1)` }); return }
+  const ref = sel[0].offset
+  check('G7:篩選面板字線', [...sel, ...lab].every((r) => near(r.offset, ref)),
+    `${theme} 文字標籤(${[...new Set(lab.map((r) => r.text))].join(' / ')})字離欄左緣 ${[...new Set(lab.map((r) => f2(r.offset)))].join(' / ')} vs And/Or 下拉框內的字 ${[...new Set(sel.map((r) => f2(r.offset)))].join(' / ')}`)
 }
 
 // ── 對照組 ──────────────────────────────────────────────────────────────────
@@ -731,6 +903,22 @@ const MUTANTS = [
     css: '[data-field-group] [data-field-group] [data-field-slot="label"] { --scope-label-color: var(--foreground) !important; } [data-field-group] [data-field-group] [data-field-frameless-value] { --scope-value-inset: 0px !important; }' },
   { name: '純顯示補回左內距 13(C1 甲之前)', block: 'view', expect: ['G1-V:vertical/input', 'G1-V:horizontal/input'],
     dom: () => { for (const el of document.querySelectorAll('[data-view-case="input"] [data-field-slot="control"] > *')) el.style.setProperty('padding-left', '13px', 'important') } },
+  // G7:表格兩半各自壞一次 —— 只修了靜止那一半(編輯中的欄位內距回到 --table-cell-px,字在 13)/ 只修了編輯那一半(靜止的左右透明框還在)
+  { name: '表格只修 view 一半(格內欄位編輯中的左右內距回到 --table-cell-px)', block: 'table', runs: [{ theme: 'light' }],
+    expect: ['G7:編輯:inline-edit:Product', 'G7:編輯:inline-edit:Qty', 'G7:編輯:inline-edit:Release', 'G7:編輯:auto-height:Note (wrap text)'],
+    greenToo: ['G7:靜止:inline-edit:Product', 'G7:靜止:inline-edit:Qty', 'G7:篩選面板字線'],
+    // 編輯中的內距是 Tailwind 的 `!px-[…]`:帶 !important 又在 @layer utilities 裡,外掛的樣式表就算 !important 也蓋不過(重要宣告是越早的層越強),
+    // 所以用行內樣式(元素上的重要宣告勝過所有樣式表)在欄位一出現就寫回 --table-cell-px
+    dom: () => {
+      const put = () => { for (const el of document.querySelectorAll(':is([role="cell"], [role="gridcell"]) :is([data-field-mode="edit"], textarea)')) { el.style.setProperty('padding-left', 'var(--table-cell-px)', 'important'); el.style.setProperty('padding-right', 'var(--table-cell-px)', 'important') } }
+      put(); new MutationObserver(put).observe(document.body, { subtree: true, childList: true })
+    } },
+  { name: '表格只修 edit 一半(靜止的無框款左右透明框還在)', block: 'table', runs: [{ theme: 'light' }], edit: false, filter: false,
+    expect: ['G7:靜止:inline-edit:Product', 'G7:靜止:inline-edit:Qty', 'G7:靜止:inline-edit:Supplier', 'G7:靜止:auto-height:Note (wrap text)'], greenToo: ['G7:靜止:inline-edit:Category'],
+    css: ':is([role="cell"], [role="gridcell"]) [data-field-mode="view"] { border-left: var(--field-border-width) solid transparent !important; border-right: var(--field-border-width) solid transparent !important; }' },
+  { name: 'Where 標籤左內距回到 --field-px(漏了下拉的框寬)', block: 'table', runs: [{ theme: 'light' }], edit: false,
+    expect: ['G7:篩選面板字線'], greenToo: ['G7:靜止:inline-edit:Product'],
+    css: '[data-panel-conjunction]:not(:has([data-field-mode])) { padding-left: var(--field-px) !important; }' },
 ]
 
 if (!SELFTEST) {
@@ -740,6 +928,7 @@ if (!SELFTEST) {
   await BLOCKS.interactive(REPORT ? { runs: [{ theme: 'light', size: 'sm' }, { theme: 'light', size: 'md' }, { theme: 'dark', size: 'sm' }, { theme: 'dark', size: 'md' }] } : {})
   await BLOCKS.view({})
   await BLOCKS.sweep()
+  await BLOCKS.table({})
 } else {
   let caught = 0
   for (const m of MUTANTS) {
@@ -747,6 +936,7 @@ if (!SELFTEST) {
     console.log(`── 對照組:${m.name}(預期 ${m.expect.join(' / ')} 紅)`)
     if (m.block === 'view') await BLOCKS.view({ dom: m.dom })
     else if (m.block === 'themeNest') await BLOCKS.themeNest({ css: m.css, runs: m.runs })
+    else if (m.block === 'table') await BLOCKS.table({ css: m.css, dom: m.dom, runs: m.runs, edit: m.edit ?? true, filter: m.filter ?? true })
     else if (m.block === 'interactive') await BLOCKS.interactive({ css: m.css, only: m.only, runs: m.runs, after: m.after, fixture: m.only.includes('G5') || m.only.includes('G2') })
     else await BLOCKS.statics({ css: m.css, dom: m.dom, only: m.only, runs: m.runs, flags: m.flags ?? '' })
     const mine = results.slice(from)
@@ -769,7 +959,8 @@ await browser.close()
 await server.stop()
 if (REPORT) {
   console.log('\n── 量測表(px;值線 = 值左緣 − 值線、標籤↔框 = 標籤欄右緣 / 標籤下緣 → 框)──')
-  for (const r of report) console.log(`  ${r.run.padEnd(12)} ${r.set} ${String(r.row).padEnd(8)} ${String(r.kind).padEnd(8)} ${r.state.padEnd(4)}${r.valueLine != null ? ` 值線 ${f2(r.valueLine)}` : ''}${r.height != null ? ` 列高 ${f2(r.height)}` : ''}${r.color ? ` 標籤 ${r.color}` : ''}${r.labelToFrame != null ? ` 標籤↔框 ${f2(r.labelToFrame)}` : ''}${r.textJump != null ? ` 進編輯字位移 ${f2(r.textJump)}` : ''}`)
+  for (const r of report.filter((x) => x.g7)) console.log(`  G7 ${r.run.padEnd(6)} ${r.story.padEnd(13)} ${String(r.column).padEnd(17)} ${r.state.padEnd(4)} ${f2(r.got)}(應 ${f2(r.want)})`)
+  for (const r of report.filter((x) => !x.g7)) console.log(`  ${r.run.padEnd(12)} ${r.set} ${String(r.row).padEnd(8)} ${String(r.kind).padEnd(8)} ${r.state.padEnd(4)}${r.valueLine != null ? ` 值線 ${f2(r.valueLine)}` : ''}${r.height != null ? ` 列高 ${f2(r.height)}` : ''}${r.color ? ` 標籤 ${r.color}` : ''}${r.labelToFrame != null ? ` 標籤↔框 ${f2(r.labelToFrame)}` : ''}${r.textJump != null ? ` 進編輯字位移 ${f2(r.textJump)}` : ''}`)
   fs.mkdirSync(path.join(REPO, 'tmp'), { recursive: true })
   fs.writeFileSync(path.join(REPO, 'tmp', 'reading-context-report.json'), JSON.stringify(report, null, 2))
 }
@@ -779,6 +970,6 @@ if (instrumentFails.length) {
   for (const f of instrumentFails) console.log(`  · ${f.cell}:${f.detail}`)
 }
 console.log(failed.length || instrumentFails.length
-  ? `✗ reading-context ${failed.length} 格失敗、${instrumentFails.length} 格沒量到(SSOT:field.spec.md「閱讀情境」)`
+  ? `✗ reading-context ${failed.length} 格失敗、${instrumentFails.length} 格沒量到(SSOT:field.spec.md「閱讀情境」;G7 = data-table.spec.md「一、Table Size」)`
   : `✅ reading-context PASS(${results.length} 格)`)
 process.exit(failed.length || instrumentFails.length ? 1 : 0)
