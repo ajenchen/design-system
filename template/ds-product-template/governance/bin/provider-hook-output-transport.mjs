@@ -289,6 +289,14 @@ export function buildProviderHookLaunchArgv(argv) {
 // 都呼叫這一支,不各寫一份。
 export const PROVIDER_HOOK_GROUP_ID_PATTERN = /^g[0-9a-f]{16}$/
 
+// 兩段式上線(2026-11-26,F3-fix-anchor):PR 的 governance-anchor 用 protected main 那份 contract.mjs 驗候選樹,
+// 而 main 那份的派工命令形狀沒有 `--group-id` —— 新協定欄位必須先讓 main 的驗證器認得,產出才能帶。
+// 第一段(現在,false):入口與驗證器認得 `--group-id`(帶了照 id 派工、驗 id 逐字相符),產生器不輸出、
+//   可達性閘不要求帶;provider 檢視與 main 驗證器預期的形狀逐字相同。
+// 第二段(含第一段的版本發版、main 上的 contract.mjs 認得 id 之後):改成 true —— 產生器在每條派工命令輸出
+//   `--group-id`,可達性閘同時要求每條都帶。產生器與閘都讀這一個值,不能只開一邊。
+export const PROVIDER_HOOK_GROUP_ID_IN_VIEWS = false
+
 export function providerHookGroupId(event, group) {
   if (typeof event !== 'string' || !event) fail('hook group id requires a non-empty event')
   if (!group || typeof group !== 'object' || !Array.isArray(group.hooks)) fail('hook group id requires a group with a hooks array')

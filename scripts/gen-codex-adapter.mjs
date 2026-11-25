@@ -48,6 +48,7 @@ import {
   buildProviderHookGroupLaunchArgv,
   providerHookGroupId,
   buildProviderHookLaunchArgv,
+  PROVIDER_HOOK_GROUP_ID_IN_VIEWS,
 } from './lib/provider-hook-output-transport.mjs'
 
 export { buildProviderDiscoveryPolicy, buildProviderLifecycle, projectProviderNativeEvent, resolveProviderMaterializer } from './lib/provider-contract-validation.mjs'
@@ -1095,9 +1096,15 @@ export function projectMatcherForProvider(matcher, providerId, registry = PROVID
   return matcherFor(matcher, provider.adapter.hookView?.matcherAliases || {})
 }
 
+// 派工命令帶不帶 `--group-id` 只看 PROVIDER_HOOK_GROUP_ID_IN_VIEWS(兩段式上線,理由在 transport 該常數旁)。
+function viewGroupId(event, group) {
+  return PROVIDER_HOOK_GROUP_ID_IN_VIEWS ? providerHookGroupId(event, group) : undefined
+}
+
 function hookGroupArgv(provider, event, groupIndex, group) {
   try {
-    return buildProviderHookGroupLaunchArgv({ provider, event, groupIndex, groupId: providerHookGroupId(event, group) })
+    const groupId = viewGroupId(event, group)
+    return buildProviderHookGroupLaunchArgv({ provider, event, groupIndex, ...(groupId === undefined ? {} : { groupId }) })
   } catch (error) {
     throw new Error(`${provider.id}:${error.message} => ADAPTER-BLOCKED`)
   }
@@ -1329,13 +1336,14 @@ export function buildClaudePluginHookView({ registry = PROVIDER_REGISTRY, source
     registry,
     sourceRoot,
     commandForGroup: (provider, { event, groupIndex, group }) => {
+      const groupId = viewGroupId(event, group)
       const argv = buildProviderHookLaunchArgv([
         'node',
         '${CLAUDE_PLUGIN_ROOT}/scripts/run-provider-hook.mjs',
         '--provider', provider.id,
         '--event', event,
         '--group', String(groupIndex),
-        '--group-id', providerHookGroupId(event, group),
+        ...(groupId === undefined ? [] : ['--group-id', groupId]),
         '--target-role', transport.governanceRole,
       ])
       return {

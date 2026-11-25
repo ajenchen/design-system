@@ -7,7 +7,11 @@ import { dirname, resolve } from 'node:path'
 import test from 'node:test'
 import { buildClaudePluginHookView } from '../../../scripts/gen-codex-adapter.mjs'
 import { buildProviderRuntimeValidator } from '../../../scripts/gen-provider-runtime-validator.mjs'
-import { buildProviderHookLaunchArgv, providerHookGroupId } from '../../../scripts/lib/provider-hook-output-transport.mjs'
+import {
+  buildProviderHookLaunchArgv,
+  providerHookGroupId,
+  PROVIDER_HOOK_GROUP_ID_IN_VIEWS,
+} from '../../../scripts/lib/provider-hook-output-transport.mjs'
 import { validateHookRegistrationSemantics } from '../../../scripts/lib/provider-runtime-contract.mjs'
 
 // These adversarial suites assert the fail-closed integrity lane. The production
@@ -169,6 +173,11 @@ function commandFor(view, hookName, eventName = null) {
   return matches[0]
 }
 
+// 產生的派工命令帶不帶 --group-id 跟產生器讀同一個開關(兩段式上線:第一段 false = 不帶,與 protected main 驗證器預期的形狀相同)。
+function viewGroupIdArgv(event, group) {
+  return PROVIDER_HOOK_GROUP_ID_IN_VIEWS ? ['--group-id', providerHookGroupId(event, group)] : []
+}
+
 function run({ plugin, target, descriptor, payload, extraEnv = {} }) {
   const environment = {
     ...process.env,
@@ -190,7 +199,7 @@ function run({ plugin, target, descriptor, payload, extraEnv = {} }) {
       '--provider', 'claude',
       '--event', event,
       '--group', groupIndex,
-      '--group-id', providerHookGroupId(event, registrations.hooks[event][Number(groupIndex)]),
+      ...viewGroupIdArgv(event, registrations.hooks[event][Number(groupIndex)]),
       '--target-role', 'ds-author',
     ]),
     'generated plugin command must preserve the exact structured prelaunch boundary',
@@ -241,7 +250,7 @@ test('clean authority plugin cache projects all canonical Claude registrations a
             '--provider', 'claude',
             '--event', event,
             '--group', String(groupIndex),
-            '--group-id', providerHookGroupId(event, registrations.hooks[event][groupIndex]),
+            ...viewGroupIdArgv(event, registrations.hooks[event][groupIndex]),
             '--target-role', 'ds-author',
           ]).slice(1),
         }],
@@ -986,6 +995,8 @@ test('F3: an event/group the working tree does not register is announced to the 
 
 // B2(2026-11-26):群組照穩定 id 找,不照序號。兩面:序號指向別群、id 指向主分支閘 → 照 id 派工(主分支閘擋);
 // id 對不上任何群(群組內容變了)→ 不派工、告訴模型「沒登記」—— 而同一個序號不帶 id 會照舊派工(舊設定的退路)。
+// 兩段式上線(F3-fix-anchor):第一段產生器不輸出 id(PROVIDER_HOOK_GROUP_ID_IN_VIEWS = false),所以「沒帶 id 照序號」
+// 是第一段的正式路徑;入口認得 id 這一面仍要先上線,第二段才能開輸出 —— 兩面在這裡都驗。
 test('F3 B2: the stable group id, not the position, selects the dispatched group', async (t) => {
   const { data, target } = await siblingFixture(t)
   const groups = registrations.hooks.PreToolUse
@@ -1004,8 +1015,14 @@ test('F3 B2: the stable group id, not the position, selects the dispatched group
   const byId = directGroupRun(data, { event: 'PreToolUse', group: other, groupId: mainGateId, payload: payload('b2-b'), env })
   assert.equal(byId.status, 2, `${byId.stdout}\n${byId.stderr}`)
   assert.match(byId.stderr, /PROTECTED-MAIN WORKBENCH BLOCKER/)
-  // id 對不上任何一群 → 不派工、模型看得到「沒登記」;同一個序號不帶 id 時照舊擋(證明差別只在 id)
-  const unknownId = directGroupRun(data, { event: 'PreToolUse', group: mainGate, groupId: `g${'0'.repeat(16)}`, payload: payload('b2-c'), env })
+  // 過期 id(這一群改內容前算的)→ 對不上任何一群 → 不派工、模型看得到「沒登記」;
+  // 同一個序號不帶 id 時照舊擋(證明差別只在 id)
+  const staleId = providerHookGroupId('PreToolUse', {
+    ...groups[mainGate],
+    hooks: [...groups[mainGate].hooks, { kind: 'hook', hook: 'retired_before_this_version.sh' }],
+  })
+  assert.notEqual(staleId, mainGateId)
+  const unknownId = directGroupRun(data, { event: 'PreToolUse', group: mainGate, groupId: staleId, payload: payload('b2-c'), env })
   assert.equal(unknownId.status, 0, unknownId.stderr)
   assert.match(contextOf(unknownId), /is not registered/)
   assert.doesNotMatch(unknownId.stderr, /PROTECTED-MAIN WORKBENCH BLOCKER/)
