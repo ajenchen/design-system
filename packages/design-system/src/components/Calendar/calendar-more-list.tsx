@@ -20,7 +20,7 @@ import { CALENDAR_GEOMETRY_STYLE } from './calendar-geometry'
 /**
  * 清單預設完整看得到幾列(半列原則的 N;上限 = 標題列 + N 列 + 半列)【AI 推導,實量後回報 user】。
  * 取 9 = DS 清單型浮層單行列的同一個 N(overlay-geometry.ts `OVERLAY_LIST_ROWS.single`,由來:最接近改前寫死的 300px);
- * 列高 24 + 列距 4 時一般密度上限 = 框 2 + 標題列 45 + 9 × 28 + 12 = 311px。對照 Google Calendar 清單容器 max-height 480 ≈ N = 15(479px)。
+ * 列高 24 + 列距 4 時一般密度上限 = 框 2 + 標題列 45 + 9 × 28 + 12 = 311px(瀏覽器實量見 calendar-month ML-half);世界級對照與來源只住 calendar.spec.md「「+N」清單浮層」高度與捲動。
  */
 export const CALENDAR_MORE_LIST_ROWS = 9
 
@@ -51,7 +51,7 @@ export interface CalendarMoreListProps {
    * 「+N」不畫,但清單留著直到使用者關掉(Popover 根不跟著「+N」卸載;關閉時焦點改回這一天的日期停靠點)。
    */
   trigger: { text: string; name: string; gridRow: number } | null
-  /** 清單標題(Intl `{ month: 'long', day: 'numeric', weekday: 'short' }`,zh-TW「7月15日週三」) */
+  /** 清單標題(Intl `{ month: 'long', day: 'numeric', weekday: 'short' }`,zh-TW「7月15日 週三」;月日與星期之間有沒有空白隨 ICU 版本變) */
   title: string
   /** × 的讀屏名稱(Calendar `labels.moreListClose`) */
   closeLabel: string

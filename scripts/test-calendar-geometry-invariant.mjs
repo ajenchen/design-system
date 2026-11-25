@@ -70,6 +70,8 @@ try {
     ['(b10) neutral 色條寫上寬度', 'packages/design-system/src/tokens/categorical-color.ts', "accent: 'bg-[var(--color-neutral-9)]'", "accent: 'w-1 bg-[var(--color-neutral-9)]'", 'CAT_EVENT_NEUTRAL.accent'],
     ['(b11) 色條寬寫死 w-1', main, 'w-[var(--calendar-accent-w)]', 'w-1', '`w-1`'],
     ['(b12) 色條寬常數改成 3(字左緣與全天長條錯開)', geometry, 'CALENDAR_ACCENT_WIDTH_PX = CALENDAR_GAP_PX', 'CALENDAR_ACCENT_WIDTH_PX = 3', 'CALENDAR_ACCENT_WIDTH_PX 應為 4'],
+    // 2026-11-26 起清單浮層(calendar-more-list.tsx)在 Portal 上也設一次 —— 根節點拿掉時,別的檔有設不得讓閘放行
+    ['(b13) 根節點拿掉元件內變數(清單浮層那一處還在)', main, 'style={{ ...CALENDAR_GEOMETRY_STYLE, ...style }}', 'style={style}', '根節點'],
   ]
   for (const [label, rel, from, to, mention] of mutants) {
     reset(); edit(rel, from, to); expect(label, run(), 1, mention)

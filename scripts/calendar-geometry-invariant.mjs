@@ -11,7 +11,8 @@
  *             空隙 = 4、文字內距 = 2 × 空隙、格線 = 1(Tailwind `border` 預設寬;本閘禁數字型邊框寬,格子的 `border-b` 只可能是它)、
  *             格最小高 = 3 × 空隙 + 2 × 列高 + 格線(格子是 border-box、底線在格高裡;算出來比對,Tag 盒高從 tag.tsx 讀);
  *         (2) class 裡讀到的每一個 `var(--calendar-*)` 都在 `CALENDAR_GEOMETRY_STYLE` 有設值(沒設值的 var 讓整條宣告靜默失效);
- *         (3) calendar.tsx 真的把 `CALENDAR_GEOMETRY_STYLE` 設在某個元素的 style 上;
+ *         (3) calendar.tsx 的根節點(展開 `{...props}`、接住 consumer props 的那個元素)真的把 `CALENDAR_GEOMETRY_STYLE` 設在 style 上
+ *             —— 別的檔有設不算(2026-11-26 起「+N」清單浮層 calendar-more-list.tsx 在 Portal 上也設一次,只問「任一檔有設」會漏掉根節點);
  *         (4) 有時段事件的色條(calendar.spec.md「事件的兩種長相」「間距」有時段的色條列;2026-11-25 事件長相那一包):
  *             色條寬常數 `CALENDAR_ACCENT_WIDTH_PX` = 4(= Tag 的「Tag px」),而且「色條寬 + 間隔(空隙)= 文字內距」(字左緣與全天長條同一條線);
  *             calendar.tsx 有元素的寬讀 `w-[var(--calendar-accent-w)]`(色條寬只從常數來);
@@ -92,17 +93,27 @@ function classNameHost(node) {
 
 /**
  * 掃一個 .tsx 的字串字面值(含 template 的靜態片段)。
- * @returns {{ violations: Array<{file,line,token,reason}>, calendarVars: Array<{file,line,name}>, setsGeometryStyle: boolean }}
+ * `setsGeometryStyle` = 有元素的 style 設了 `CALENDAR_GEOMETRY_STYLE`;`setsGeometryStyleOnRoot` = 設在「同時展開 `{...props}`」的元素上
+ * (= 接住 consumer props 的根節點)。2026-11-26 起清單浮層(calendar-more-list.tsx,Portal 到 body)也設一次,
+ * 只問「任一檔有設」就抓不到「根節點拿掉」—— 第 (3) 條改鎖 calendar.tsx 的根節點。
+ * @returns {{ violations: Array<{file,line,token,reason}>, calendarVars: Array<{file,line,name}>, setsGeometryStyle: boolean, setsGeometryStyleOnRoot: boolean }}
  */
 export function scanComponentSource(file, text, { microGaps }) {
   const sf = parse(file, text)
   const violations = [], calendarVars = []
-  let setsGeometryStyle = false, readsAccentWidth = false
+  let setsGeometryStyle = false, setsGeometryStyleOnRoot = false, readsAccentWidth = false
   const visit = (node) => {
     if (ts.isImportDeclaration(node)) return
     if (ts.isIdentifier(node) && node.text === 'CALENDAR_GEOMETRY_STYLE') {
       for (let n = node.parent; n; n = n.parent) {
-        if (ts.isJsxAttribute(n)) { if (n.name.getText() === 'style') setsGeometryStyle = true; break }
+        if (ts.isJsxAttribute(n)) {
+          if (n.name.getText() === 'style') {
+            setsGeometryStyle = true
+            const spreadsProps = n.parent.properties.some((a) => ts.isJsxSpreadAttribute(a) && a.expression.getText() === 'props')
+            if (spreadsProps) setsGeometryStyleOnRoot = true
+          }
+          break
+        }
       }
     }
     const literal = ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) || ts.isTemplateHead(node) || ts.isTemplateMiddle(node) || ts.isTemplateTail(node)
@@ -121,7 +132,7 @@ export function scanComponentSource(file, text, { microGaps }) {
     ts.forEachChild(node, visit)
   }
   visit(sf)
-  return { violations, calendarVars, setsGeometryStyle, readsAccentWidth }
+  return { violations, calendarVars, setsGeometryStyle, setsGeometryStyleOnRoot, readsAccentWidth }
 }
 
 /**
@@ -238,15 +249,17 @@ export function evaluateCalendarGeometry({ components, geometry, tag, microGaps,
   const geo = checkGeometryModule(geometry, tagHeights)
   problems.push(...geo.problems)
   const defined = new Set(geo.styleKeys)
-  let setsStyle = false, readsAccent = false
+  const main = `${CALENDAR_DIR}/calendar.tsx`
+  let rootSetsStyle = false, readsAccent = false
   for (const [file, text] of Object.entries(components)) {
     const r = scanComponentSource(file, text, { microGaps })
     for (const v of r.violations) problems.push(`${v.file}:${v.line}:\`${v.token}\` ${v.reason} —— 改讀 token 或 --calendar-* 元件內變數(calendar.spec.md「間距」)`)
     for (const v of r.calendarVars) if (!defined.has(v.name)) problems.push(`${v.file}:${v.line}:class 讀 var(${v.name}),但 CALENDAR_GEOMETRY_STYLE 沒有設它(整條宣告會靜默失效)`)
-    if (r.setsGeometryStyle) setsStyle = true
+    if (file === main && r.setsGeometryStyleOnRoot) rootSetsStyle = true
     if (r.readsAccentWidth) readsAccent = true
   }
-  if (!setsStyle) problems.push(`${CALENDAR_DIR}:沒有任何元素的 style 設了 CALENDAR_GEOMETRY_STYLE(--calendar-* 全部沒值)`)
+  // (3) 鎖 calendar.tsx 的根節點(展開 {...props} 的那個元素);清單浮層在 Portal 裡另設的那一次不算(它的列距 / 上限由 calendar-month ML-half 在瀏覽器量)
+  if (!rootSetsStyle) problems.push(`${main}:根節點(展開 {...props} 的那個元素)的 style 沒有設 CALENDAR_GEOMETRY_STYLE(格陣裡的 --calendar-* 全部沒值;別的檔有設不算)`)
   if (!readsAccent) problems.push(`${CALENDAR_DIR}:沒有任何元素的寬讀 \`${ACCENT_WIDTH_CLASS}\` —— 有時段事件的色條寬沒有從 calendar-geometry.ts 的常數來(calendar.spec.md「間距」有時段的色條列)`)
   const accentMap = checkAccentColorMap(categorical)
   problems.push(...accentMap.problems)
@@ -282,6 +295,8 @@ export const MUTANTS = [
   ['gap-2 搬到非 <nav> 的元素', 'components', (s) => s.replace('className="grid gap-y-[var(--calendar-gap)] shrink-0"', 'className="grid gap-2 shrink-0"')],
   ['class 讀一個沒設值的 --calendar-*', 'components', (s) => s.replace('px-[var(--calendar-text-inset)]', 'px-[var(--calendar-txt-inset)]')],
   ['根節點沒設元件內變數', 'components', (s) => s.replace('style={{ ...CALENDAR_GEOMETRY_STYLE, ...style }}', 'style={style}')],
+  // 根節點沒設、改設在別的元素上(只問「有元素設了」抓不到這一格)
+  ['元件內變數從根節點搬到工具列', 'components', (s) => s.replace('style={{ ...CALENDAR_GEOMETRY_STYLE, ...style }}', 'style={style}').replace('<ChromeHeader', '<ChromeHeader style={CALENDAR_GEOMETRY_STYLE}')],
   // 有時段事件的色條(2026-11-25 事件長相那一包):色表恢復成 2026-11-25 前的左側 3px 邊框、元件寫死色條寬、常數改成 3(字左緣與全天長條錯開 1px)
   ['色表 CAT_ACCENT 恢復 border-l-[3px]', 'categorical', (s) => s.replace("blue: 'bg-[var(--color-blue-6)]',", "blue: 'border-l-[3px] border-[var(--color-blue-6)]',")],
   ['色條寬寫死 w-1', 'components', (s) => s.replace('w-[var(--calendar-accent-w)]', 'w-1')],

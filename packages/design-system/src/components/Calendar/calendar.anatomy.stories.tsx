@@ -357,8 +357,12 @@ export const MoreListOpen: Story = {
     const more = canvasElement.querySelector<HTMLElement>(`[data-calendar-more="${CONFERENCE_DAY}"]`)
     await expect(more).not.toBeNull()
     await userEvent.click(more as HTMLElement)
-    // 清單 = role=dialog(Popover),名稱 = 標題日期;列數 = 當天全部 13 筆(大會週 + 場地布置 + 11 場)
-    const list = await within(document.body).findByRole('dialog', { name: '7月22日週三' })
+    // 清單 = role=dialog(Popover),名稱 = 標題日期;列數 = 當天全部 13 筆(大會週 + 場地布置 + 11 場)。
+    // 期望名稱在瀏覽器裡用規格的同一組 Intl 選項現算(calendar.spec.md「「+N」清單浮層」外殼):月日與星期之間有沒有空白隨 ICU 版本變
+    //(Node ICU 78.2「7月22日週三」、Chromium 1217「7月22日 週三」),寫死字串會讓這則範例在另一個 ICU 上丟錯。
+    const [y, m, d] = CONFERENCE_DAY.split('-').map(Number)
+    const title = new Intl.DateTimeFormat(LOCALE, { month: 'long', day: 'numeric', weekday: 'short' }).format(new Date(y, m - 1, d))
+    const list = await within(document.body).findByRole('dialog', { name: title })
     await expect(within(list).getAllByRole('listitem')).toHaveLength(13)
     // 唯讀的那一筆不是按鈕;沒有變成「新增事件」
     await expect(within(list).queryByRole('button', { name: /^場地布置/ })).toBeNull()

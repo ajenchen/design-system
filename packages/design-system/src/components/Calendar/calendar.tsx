@@ -601,6 +601,20 @@ const MonthEventPieceShell = React.forwardRef<HTMLElement, MonthEventPieceShellP
  * 截斷 → tooltip 顯完整標題(tooltip.spec.md:32,僅實際截斷時);外層是 interactive host → trigger = 外層本體、量測內層文字 span ——
  * useTruncated 自組 pattern(truncated-text.spec.md「兩層架構(對齊世界級聯集)」;範本 inline-edit.tsx:257 + tag.tsx)。
  */
+
+/**
+ * 截斷提示只在「鍵盤焦點」時因聚焦而開(P12 poc 實測:滑鼠點「+N」開清單,程式把焦點放上第一列 → Radix 聚焦即開,
+ * 第一列標題被截斷時提示立刻跳出,同 popover.tsx handlePopoverOpenAutoFocus 防 × 提示外洩那一類;滑鼠開完詳情回到事件方塊也是同一條路)。
+ * 不是鍵盤焦點(:focus-visible 不成立)時擋下 Radix 的聚焦開啟(它的 onFocus 只在 defaultPrevented 為 false 時開);滑過照常開、鍵盤 Tab / 方向鍵照常開。
+ * 世界級同做法:MUI Tooltip handleFocus 只在 `isFocusVisible(event.target)` 時開
+ *(https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Tooltip/Tooltip.js);
+ * React Aria useTooltipTrigger 的 onFocus 只在 `isFocusVisible()` 時 handleShow
+ *(https://github.com/adobe/react-spectrum/blob/main/packages/react-aria/src/tooltip/useTooltipTrigger.ts)。
+ */
+const keepTooltipClosedOnPointerFocus = (event: React.FocusEvent<HTMLElement>) => {
+  if (!event.currentTarget.matches(':focus-visible')) event.preventDefault()
+}
+
 function MonthEventPiece({
   entry,
   segment,
@@ -666,7 +680,7 @@ function MonthEventPiece({
     // 恆 wrap、未截斷 open={false} 靜默(truncated-text.spec.md always-wrap:條件 wrap 會 remount 丟 RO 訂閱)。
     // 唯讀方塊照樣掛:截斷提示是「資訊揭露」,不是點擊回饋(tooltip.spec.md「截斷文字 → 用 tooltip 顯示完整內容。」不分可不可點)。
     <Tooltip open={isTruncated ? undefined : false}>
-      <TooltipTrigger asChild>
+      <TooltipTrigger asChild onFocus={keepTooltipClosedOnPointerFocus}>
         {/* 墊底只在格陣裡(蓋住格線);清單裡沒有格線,長條直接疊在浮層底上【AI 推導】 */}
         <MonthEventPieceShell {...shell} underlay={isBar && grid !== null}>
           {isBar ? (
@@ -798,7 +812,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
       weekdayNarrow: new Intl.DateTimeFormat(locale, { weekday: 'narrow' }),
       monthDay: new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }),
       fullDate: new Intl.DateTimeFormat(locale, { dateStyle: 'full' }),
-      // 「+N」清單的標題(calendar.spec.md「「+N」清單浮層」外殼【AI 推導】;zh-TW「7月15日週三」)
+      // 「+N」清單的標題(calendar.spec.md「「+N」清單浮層」外殼【AI 推導】;zh-TW「7月15日 週三」,月日與星期之間有沒有空白隨 ICU 版本變)
       listTitle: new Intl.DateTimeFormat(locale, { month: 'long', day: 'numeric', weekday: 'short' }),
     }),
     [locale],

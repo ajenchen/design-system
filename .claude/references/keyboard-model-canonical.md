@@ -352,7 +352,8 @@ Primer TreeView 的原始碼就是照這條寫的:同一個 treeitem 上
 | DatePicker 可打字欄位的草稿 ≠ 顯示值(或格式錯) | 還原草稿 | `DatePicker/date-picker.tsx` 可打字輸入框(日曆開著時日曆才是最內層:只關日曆、草稿不動) |
 | DataTable 有格游標 / 列選取 | 清游標 / 清選取(焦點留在表格上) | `DataTable/data-table.tsx` 表格根,`self`(焦點就在根上才算) |
 | DataTable 試算表模式格內模式(焦點在連結格 / 開關格的連結、鉛筆或勾選框,2026-10-13,待辦總帳 Q3c) | 回格導覽、格游標停在原格,浮層不關 | `DataTable/data-table.tsx` 每個 url / boolean 格(`subtree`;`spreadsheetMode` 且非編輯中) |
-| Calendar 月檢視格內模式(焦點在事件方塊,含跨日長條的每一段) | 出格,回**進格那一天**的日期停靠點(從長條的第 X 天進格就回第 X 天,不是長條 DOM 所在的起點那一天;2026-11-25,【AI 推導】,規則在 `Calendar/calendar.spec.md`「A11y 預設」格內那段) | `Calendar/calendar.tsx` 每個事件方塊 |
+| Calendar 月檢視格內模式(焦點在事件方塊,含跨日長條的每一段;或在「+N」—— 2026-11-26 起「+N」是格內 widget,排在這一天的事件之後) | 出格,回**進格那一天**的日期停靠點(從長條的第 X 天進格就回第 X 天,不是長條 DOM 所在的起點那一天;2026-11-25,【AI 推導】,規則在 `Calendar/calendar.spec.md`「A11y 預設」格內那段) | `Calendar/calendar.tsx` 每個事件方塊;`Calendar/calendar-more-list.tsx`「+N」 |
+| Calendar「+N」清單浮層開著(焦點在清單裡) | 只關清單、焦點回「+N」;格內模式不動(焦點在浮層裡,不是格內那一層 —— 清單的列不宣告 `data-escape-layer`,否則這一下會被當成控件的一層而關不掉清單)。「+N」已不在(清單開著時格子變高、那一格放得下了)→ 焦點回這一天的日期停靠點(2026-11-26,【AI 推導】,`Calendar/calendar.spec.md`「「+N」清單浮層」鍵盤與焦點) | `Calendar/calendar-more-list.tsx`(Radix 這一層;焦點歸還 `onCloseAutoFocus`) |
 | **拖曳中**(dnd-kit 鍵盤 Space 提起、或指標拖曳中) | 只取消拖曳(dnd-kit 自己做),浮層與容器自己的 `Esc` 都不動 | `lib/drag-announcements.ts` useDragAccessibility.escapeLayer(排序面板 / 欄位面板 / DataTable / TreeView 四個 DndContext;`drag-canonical.md` invariant 8) |
 
 - 不算一層(浮層關著時按 `Esc` 直接關外層):NumberInput(`Esc` 只是把顯示收回已提交的數值,沒有可回復的「原值」)、清單與指令面板的搜尋框、Select / Combobox / DatePicker / TimePicker 的觸發欄位本身(它們的彈出層是 Radix 的一層,開著時由 Radix 關;欄位只問 `isEscapeForControl` 不重複動作)。它們當 InlineEdit 的自訂編輯控件時,那一層是 InlineEdit 的編輯中(上表「InlineEdit 自訂編輯控件」列),不是欄位本身。
@@ -424,7 +425,7 @@ APG 同一份文件的 "Editing and Navigating Inside a Cell" 把 `Enter` 與 `F
 |---|---|---|---|---|
 | `DataTable`(inline edit / spreadsheet)| **格** | 進編輯 | 進編輯 | `Escape`(取消)/ `F2`(結算;2026-09-29 補上「再按一次回到格導覽」那一半,文字型編輯器) |
 | `DataTable` 試算表模式,連結格 / 開關格(2026-10-13)| **格**(格裡裝的是一個以上的控件:連結 + 鉛筆、勾選框)| 進格,焦點落到第一個控件(連結 / 勾選框)—— 格沒有主要動作,同上一列「進格」;進去之後 `Enter` 是那個控件自己的動作 | 進格(同左)| `Escape` / `F2`(回格導覽、格游標停在原格) |
-| `Calendar` 月檢視 | **日期鈕**(格裡唯一不需方向鍵的控件)| 在這一天新增(`onDateClick`)| 進格,焦點落到這一天的第一個事件方塊(依車道由上而下,含從前幾天橫跨過來的長條 —— 長條從它涵蓋的每一天都進得到)| `Escape` / `F2`,回進格那一天(2026-11-25:從長條的第 X 天進格就回第 X 天)|
+| `Calendar` 月檢視 | **日期鈕**(格裡唯一不需方向鍵的控件)| 在這一天新增(`onDateClick`)| 進格,焦點落到這一天的第一個事件方塊(依車道由上而下,含從前幾天橫跨過來的長條 —— 長條從它涵蓋的每一天都進得到;「+N」排在最後,2026-11-26)| `Escape` / `F2`,回進格那一天(2026-11-25:從長條的第 X 天進格就回第 X 天)|
 | `Calendar` 月檢視,日期格唯讀(`readOnlyDates`,2026-09-26)| **格**(日期數字不是按鈕,格裡沒有那一個控件)| 進格(格沒有主要動作)| 進格 | `Escape` / `F2`,同上回進格那一天 |
 | `Calendar` 月檢視,隱藏週末(`hideWeekends`,2026-11-25)| 同上兩列(看日期格可點或唯讀)| 同上兩列 | 同上兩列 | `Escape` / `F2` —— 差別只在格導覽的落點:方向鍵 / `Home` / `End` / `PageUp` / `PageDown` 跳過被藏的日子,今天被藏時停靠點落在同一週下一個看得見的日子(這一週後面沒有就前一個)、1 號被藏時落在 1 號之後第一個看得見的日子(規則在 `Calendar/calendar.spec.md`「A11y 預設」鍵盤表,【AI 推導】) |
 
