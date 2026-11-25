@@ -21,10 +21,20 @@
  *           (兩條都先量「動作前停靠點不在那裡」,證明量的是動作的結果)。
  *         L en-GB 不傳 weekStartsOn → 第一欄是週一(Monday)。
  *         R 今天剛好是 1 號時,實心底包住整段「7月1日」、左右內距 8。
+ *         N 讀屏名稱(calendar.spec.md「A11y 預設」;名稱用瀏覽器算好的無障礙樹 CDP Accessibility 與 Playwright getByRole({ name }),不讀屬性):
+ *           N1 日期格可點時,日期鈕名稱 = Intl dateStyle full + 筆數(「2026年7月12日 星期日,2 個事件」),今天前面加「今天,」;1 號(畫面「7月1日」)
+ *              與溢出日照同一格式;沒有任何日期鈕還是舊念法「2026-07-15,N 個事件」。
+ *           N2 只有今天帶 aria-current="date"(日期格可點時在日期鈕上、唯讀時在格子上,兩種模式各量一次)。
+ *           N3 日期格唯讀時,格子沒有 aria-label、名稱由內容來:開頭 = 日期 + 今天 + 筆數,接著每個事件標題;看得見的日期數字不重念
+ *              (今天那格沒有事件 → 名稱剛好等於「今天,2026年7月15日 星期三,0 個事件」)。事件可點(內容發佈月曆)與事件也唯讀(設計原則
+ *              「唯讀的日期格與事件」)各量一次。
+ *           N4 labels 覆寫生效(test-only「英文讀屏字串覆寫」):格陣名稱、今天與其他日子的名稱都是 consumer 給的英文,沒有一句預設中文。
  *   紅: --selftest 逐一注入:星期列搬出格陣、週列高改 auto、最後一週留底線、格子內距 6、工具列改回內距撐高、nav 沒名稱、
  *       欄頭名稱改成短字、捲動區變成可聚焦(axe required-children)、捲動區不能捲、事件列高 20、事件列焦點框改回往內、1 號的實心底被壓成 24 寬、
  *       格最小高沒算格線(回到 60)、事件列外層回到可被壓(flex-shrink 1 + min-height 0)、
- *       en-GB 卻寫死週日起(Inspector 傳 weekStartsOn 0)、標題層級不跟 titleAs、日期鈕的 focus() 失效 —— 每一個都必須讓對應的那一格紅。
+ *       en-GB 卻寫死週日起(Inspector 傳 weekStartsOn 0)、標題層級不跟 titleAs、日期鈕的 focus() 失效、
+ *       日期名稱改回舊念法(yyyy-MM-dd)、拿掉 aria-current、aria-current 掛在每一天、唯讀格的 aria-label 放回去、唯讀格看得見的日期數字沒有 aria-hidden、
+ *       labels 覆寫沒生效(名稱是寫死的預設中文)—— 每一個都必須讓對應的那一格紅。
  *   綠: 全部量到且照規格時 exit 0。開 story 走 lib/launch-browser.mjs openStory(等 Storybook 回報渲染完成與被量的格陣出現,不睡固定時間);
  *       開不起來 / 等不到格陣 = 儀器失效(INSTRUMENT-FAIL,exit 1 並點名),不讀成通過。
  */
@@ -53,6 +63,9 @@ const STORY = {
   inspector: storyId(/calendar-設計規格--inspector$/u),
   short: storyId(/calendar-設計原則--color-semantic$/u),
   launch: storyId(/calendar-展示--launch-week$/u),
+  publish: storyId(/calendar-展示--content-publishing-schedule$/u),
+  holiday: storyId(/calendar-設計原則--read-only-rule$/u),
+  english: storyId(/calendar-展示--english-labels-override$/u),
 }
 
 // 規格值(calendar.spec.md「間距」與 header-canonical.spec.md:68);1 號的字是規格寫的 zh-TW 例子
@@ -206,6 +219,27 @@ async function open(id, { args = null, label = id, mutate = null, density = 'md'
   }
 }
 
+// 瀏覽器算好的讀屏名稱(CDP Accessibility,與讀屏拿到的同一份;M32:不讀 aria-label 屬性當名稱)
+let cdp = null
+async function axNameOf(expression) {
+  cdp ??= await context.newCDPSession(page)
+  await cdp.send('Accessibility.enable')
+  const { result } = await cdp.send('Runtime.evaluate', { expression })
+  if (!result.objectId) return null
+  const { nodes } = await cdp.send('Accessibility.getPartialAXTree', { objectId: result.objectId, fetchRelatives: false })
+  return nodes[0]?.name?.value ?? null
+}
+/** 某一天的格子:計算名稱、aria-label 屬性(沒有 = null)、tabindex */
+async function cellName(iso) {
+  const sel = `[role="grid"] [role="gridcell"][data-calendar-day="${iso}"]`
+  const attrs = await page.evaluate((s) => { const el = document.querySelector(s); return el ? { ariaLabel: el.getAttribute('aria-label'), tab: el.getAttribute('tabindex') } : null }, sel)
+  if (!attrs) return null
+  return { ...attrs, name: await axNameOf(`document.querySelector(${JSON.stringify(sel)})`) }
+}
+/** 格陣裡帶 aria-current 的元素(日期停靠點) */
+const currentDays = () => page.evaluate(() => [...document.querySelectorAll('[role="grid"] [aria-current]')].map((el) => ({
+  day: el.getAttribute('data-calendar-day'), value: el.getAttribute('aria-current'), tag: el.tagName, role: el.getAttribute('role') })))
+
 // 每一個量測區塊 = 一個函式(selftest 重用同一份,只換突變)
 const BLOCKS = {
   async layout(mutate) {
@@ -317,6 +351,67 @@ const BLOCKS = {
     check('S5', rows.length >= 3 && squashed.length === 0,
       `每週 ${SPEC.cellMin}、${crowded.length} 格放不下:${rows.length} 列${squashed.length ? `,被壓扁的格 ${squashed.map((c) => `${c.day}(${c.heights.map((h) => h.toFixed(2)).join('/')})`).join(' ')}` : ' 全是 24'}(規格:列高 24,放不下的列被裁掉、不壓扁)`)
   },
+  // 讀屏名稱(N1–N4):日期停靠點、今天、唯讀格、labels 覆寫
+  async namesClickable(mutate) {
+    const p = await open(STORY.team, { label: '團隊行事曆 讀屏名稱', mutate })
+    if (!p) return
+    // N1:getByRole + 名稱(exact)各找到剛好一顆 —— 量的是 Playwright 依無障礙樹算出來的名稱,不是 aria-label 屬性字串
+    const expected = [
+      ['今天,2026年7月15日 星期三,1 個事件', '今天(7/15,1 筆)'],
+      ['2026年7月12日 星期日,2 個事件', '7/12(2 筆)'],
+      ['2026年7月1日 星期三,0 個事件', '1 號(畫面「7月1日」)'],
+      ['2026年8月1日 星期六,0 個事件', '溢出日 8/1'],
+    ]
+    const found = []
+    for (const [name, what] of expected) found.push({ what, name, n: await page.getByRole('button', { name, exact: true }).count() })
+    const legacy = await page.getByRole('button', { name: /^\d{4}-\d{2}-\d{2},/ }).count()
+    const bad = found.filter((f) => f.n !== 1)
+    check('N1', bad.length === 0 && legacy === 0,
+      `日期鈕名稱:${(bad.length ? bad : found).map((f) => `${f.what}「${f.name}」×${f.n}`).join(';')};舊念法 yyyy-MM-dd 的日期鈕 ${legacy} 顆(規格:完整日期 + 筆數,今天加「今天,」)`)
+    const cur = await currentDays()
+    check('N2-click', cur.length === 1 && cur[0].day === '2026-07-15' && cur[0].value === 'date' && cur[0].tag === 'BUTTON',
+      `可點模式 aria-current:${cur.map((c) => `${c.day} ${c.tag}=${c.value}`).join('、') || '(沒有)'}(規格:只有今天的日期鈕 = date)`)
+  },
+  async namesReadOnly(mutate) {
+    // 內容發佈月曆:日期格唯讀、事件可點(事件方塊是 role=button,名稱由它自己的 aria-label 接進格子的名稱)
+    const pub = await open(STORY.publish, { label: '內容發佈月曆 唯讀格名稱', mutate })
+    if (pub) {
+      const today = await cellName('2026-07-15')
+      const withEvent = await cellName('2026-07-02')
+      const head = '2026年7月2日 星期四,1 個事件'
+      const rest = withEvent?.name?.startsWith(head) ? withEvent.name.slice(head.length) : null
+      check('N3-publish', today?.ariaLabel === null && today.name === '今天,2026年7月15日 星期三,0 個事件' && today.tab === '0'
+        && withEvent?.ariaLabel === null && rest !== null && rest.includes('週五電子報') && !/(^|\s)2(\s|$)/u.test(rest),
+        `唯讀格名稱:7/15「${today?.name}」(aria-label ${today?.ariaLabel}、tabindex ${today?.tab});7/2「${withEvent?.name}」(aria-label ${withEvent?.ariaLabel})`
+        + `(規格:沒有 aria-label;開頭日期 + 今天 + 筆數、接事件標題「週五電子報」、看得見的「2」不重念)`)
+      // getByRole 也找得到同一格(Playwright 自己的名稱計算,與 Chromium 的無障礙樹互相對照)
+      const byRole = await page.getByRole('gridcell', { name: '今天,2026年7月15日 星期三,0 個事件', exact: true }).count()
+      check('N3-byrole', byRole === 1, `getByRole('gridcell', 今天那格的名稱) 找到 ${byRole} 格(規格 1)`)
+      const cur = await currentDays()
+      check('N2-readonly', cur.length === 1 && cur[0].day === '2026-07-15' && cur[0].value === 'date' && cur[0].role === 'gridcell',
+        `唯讀模式 aria-current:${cur.map((c) => `${c.day} ${c.role ?? c.tag}=${c.value}`).join('、') || '(沒有)'}(規格:只有今天的格子 = date)`)
+    }
+    // 設計原則「唯讀的日期格與事件」:日期格與事件都唯讀(事件是純文字,沒有角色)
+    const hol = await open(STORY.holiday, { label: '設計原則 唯讀格名稱', mutate })
+    if (hol) {
+      const c = await cellName('2026-07-03')
+      const head = '2026年7月3日 星期五,1 個事件'
+      const rest = c?.name?.startsWith(head) ? c.name.slice(head.length) : null
+      check('N3-holiday', c?.ariaLabel === null && rest !== null && rest.includes('公司創立紀念日') && !/(^|\s)3(\s|$)/u.test(rest),
+        `事件也唯讀時 7/3 名稱「${c?.name}」(aria-label ${c?.ariaLabel};規格:開頭日期 + 筆數、接純文字的事件標題、看得見的「3」不重念)`)
+    }
+  },
+  async namesEnglish(mutate) {
+    const p = await open(STORY.english, { label: '英文讀屏字串覆寫', mutate })
+    if (!p) return
+    const grid = await page.getByRole('grid', { name: 'Calendar, July 2026', exact: true }).count()
+    const today = await page.getByRole('button', { name: 'Today, Wednesday, July 15, 2026, 0 events', exact: true }).count()
+    const other = await page.getByRole('button', { name: 'Thursday, July 16, 2026, 0 events', exact: true }).count()
+    const leaked = await page.evaluate(() => [document.querySelector('[role="grid"]')?.getAttribute('aria-label') ?? '',
+      ...[...document.querySelectorAll('[role="grid"] [data-calendar-day]')].map((el) => el.getAttribute('aria-label') ?? '')].filter((n) => /[\u4e00-\u9fff]/u.test(n)))
+    check('N4', grid === 1 && today === 1 && other === 1 && leaked.length === 0,
+      `labels 覆寫:格陣「Calendar, July 2026」×${grid}、今天 ×${today}、7/16 ×${other};帶中文的名稱 ${leaked.length} 個${leaked.length ? `(例「${leaked[0]}」)` : ''}(規格:每鍵都用 consumer 給的字)`)
+  },
   // 今天剛好是 1 號:Inspector 拿掉 today 參數(元件改用 new Date()),時鐘釘在 2026-07-01 上午 10 點(本機時區)。
   // 不用網址傳日期:Storybook 的網址參數對 Date 型別的 arg 一律丟掉(實測 !date(...) 沒生效)。
   // 時鐘是整個 context 共用、釘了就回不去 —— 本區塊一律排在最後跑(其他區塊的 story 都明傳 today,本來也不受影響);
@@ -353,6 +448,19 @@ const MUTANTS = [
   { name: '日期鈕的 focus() 失效', block: 'keyboardStop', expect: ['K1'], dom: () => { HTMLButtonElement.prototype.focus = function noop() {} } },
   { name: 'en-GB 卻寫死週日起', block: 'inspector', expect: ['L1'], gbArgs: 'locale:en-GB;weekStartsOn:0' },
   { name: '標題層級不跟 titleAs', block: 'inspector', expect: ['Q1'], titleArgs: 'titleAs:h2' },
+  // 讀屏名稱:每個突變模擬一種退步(改 DOM 屬性 = 元件改錯時讀屏拿到的東西)
+  { name: '日期名稱改回舊念法(yyyy-MM-dd,N 個事件)', block: 'namesClickable', expect: ['N1'], dom: () => document.querySelectorAll('button[data-calendar-day]').forEach((b) => b.setAttribute('aria-label', `${b.getAttribute('data-calendar-day')},0 個事件`)) },
+  { name: '今天沒有 aria-current', block: 'namesClickable', expect: ['N2-click'], dom: () => document.querySelectorAll('[aria-current]').forEach((el) => el.removeAttribute('aria-current')) },
+  { name: 'aria-current 掛在每一天', block: 'namesClickable', expect: ['N2-click'], dom: () => document.querySelectorAll('button[data-calendar-day]').forEach((b) => b.setAttribute('aria-current', 'date')) },
+  { name: '唯讀格的 aria-label 放回去', block: 'namesReadOnly', expect: ['N3-publish', 'N3-holiday'], dom: () => document.querySelectorAll('[role="gridcell"][data-calendar-day]').forEach((c) => c.setAttribute('aria-label', `${c.getAttribute('data-calendar-day')},0 個事件`)) },
+  { name: '唯讀格看得見的日期數字沒有 aria-hidden', block: 'namesReadOnly', expect: ['N3-publish', 'N3-holiday'], dom: () => document.querySelectorAll('[role="gridcell"][data-calendar-day] [aria-hidden]').forEach((el) => el.removeAttribute('aria-hidden')) },
+  { name: '唯讀格沒有 aria-current', block: 'namesReadOnly', expect: ['N2-readonly'], dom: () => document.querySelectorAll('[aria-current]').forEach((el) => el.removeAttribute('aria-current')) },
+  // labels 沒接上 = 元件裡寫死預設中文:名稱回到預設字串
+  { name: 'labels 覆寫沒生效(寫死預設中文)', block: 'namesEnglish', expect: ['N4'], dom: () => {
+    const fmt = new Intl.DateTimeFormat('zh-TW', { dateStyle: 'full' })
+    document.querySelector('[role="grid"]')?.setAttribute('aria-label', '月行事曆,2026年7月')
+    document.querySelectorAll('button[data-calendar-day]').forEach((b) => { const [y, m, d] = b.getAttribute('data-calendar-day').split('-').map(Number); b.setAttribute('aria-label', `${fmt.format(new Date(y, m - 1, d))},0 個事件`) })
+  } },
   // 必須最後一個(todayFirst 會釘住時鐘,見該區塊註解)
   { name: '1 號的實心底被壓成 24 寬', block: 'todayFirst', expect: ['R1'], css: '[data-calendar-day="2026-07-01"] { padding: 0 !important; max-width: var(--tag-height-md) !important; }' },
 ]

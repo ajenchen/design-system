@@ -1,7 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import type { Meta, StoryObj } from '@storybook/react'
 import { expect, fn, userEvent, within } from '@storybook/test'
-import { Calendar, type CalendarEvent } from './calendar'
+import { Calendar, type CalendarEvent, type CalendarLabels } from './calendar'
 import { CalendarDemo } from './_calendar-demo'
 import { Tag } from '@/design-system/components/Tag/tag'
 
@@ -141,13 +141,59 @@ export const ReadOnlyDatesCustomTileKeyboard: Story = {
   play: async ({ canvasElement }) => {
     customTileActivated.mockClear()
     const canvas = within(canvasElement)
-    // readOnlyDates:日期數字不是按鈕;格子本身是格陣的鍵盤停靠點(名字 = 日期 + 事件數),Tab 進來停今天(7/15)
-    await expect(canvas.queryAllByRole('button', { name: /^2026-07-\d{2},/ })).toHaveLength(0)
-    await expect(canvas.getByRole('gridcell', { name: '2026-07-15,0 個事件' })).toHaveAttribute('tabindex', '0')
+    // readOnlyDates:日期數字不是按鈕;格子本身是格陣的鍵盤停靠點,Tab 進來停今天(7/15)。
+    // 格子的名稱由內容來(calendar.spec.md「A11y 預設」):完整日期 + 筆數,今天加「今天,」;這天沒有事件,所以名稱就到筆數為止
+    await expect(canvas.queryAllByRole('button', { name: /^(今天,)?2026年7月\d{1,2}日/ })).toHaveLength(0)
+    const todayCell = canvas.getByRole('gridcell', { name: '今天,2026年7月15日 星期三,0 個事件' })
+    await expect(todayCell).toHaveAttribute('tabindex', '0')
+    await expect(todayCell).toHaveAttribute('aria-current', 'date')
     const tile = await canvas.findByRole('button', { name: '事件:週五電子報' })
     tile.focus()
     await userEvent.keyboard('{Enter}')
     await expect(customTileActivated).toHaveBeenCalledTimes(1)
+  },
+}
+
+// 英文產品覆寫讀屏字串(test-only 夾具):`labels` 逐鍵換掉 DS 預設的繁中(calendar.spec.md「A11y 預設」字串可覆寫),
+// 已有個別參數的字串(‹ › / 月份導覽 / 今天 / 新事件)照用那些參數。play 斷言覆寫真的生效、沒有一句預設中文漏出來;
+// scripts/calendar-month-invariant.mjs 也開這一則量(對照組:把名稱改回預設中文 → 紅)。
+const ENGLISH_LABELS: CalendarLabels = {
+  grid: (monthTitle) => `Calendar, ${monthTitle}`,
+  day: (fullDate, count) => `${fullDate}, ${count} ${count === 1 ? 'event' : 'events'}`,
+  todayPrefix: 'Today, ',
+}
+export const EnglishLabelsOverride: Story = {
+  name: '英文讀屏字串覆寫',
+  tags: ['test-only'],
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:476「字串可覆寫」
+  render: () => (
+    <div className="h-screen p-4 bg-canvas">
+      <Calendar
+        defaultReferenceDate={now}
+        today={now}
+        events={[]}
+        locale="en-US"
+        labels={ENGLISH_LABELS}
+        prevAriaLabel="Previous month"
+        nextAriaLabel="Next month"
+        navAriaLabel="Month navigation"
+        todayLabel="Today"
+        createLabel="New event"
+        onDateClick={fn()}
+        onEventClick={fn()}
+        onCreateEvent={fn()}
+      />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('grid', { name: 'Calendar, July 2026' })).toBeInTheDocument()
+    const today = canvas.getByRole('button', { name: 'Today, Wednesday, July 15, 2026, 0 events' })
+    await expect(today).toHaveAttribute('aria-current', 'date')
+    await expect(canvas.getByRole('button', { name: 'Thursday, July 16, 2026, 0 events' })).not.toHaveAttribute('aria-current')
+    // 預設的繁中一句都不出現(格陣名稱、日期名稱、今天前綴)
+    await expect(canvas.queryAllByRole('grid', { name: /月行事曆/ })).toHaveLength(0)
+    await expect(canvas.queryAllByRole('button', { name: /今天,|個事件|星期/ })).toHaveLength(0)
   },
 }
 

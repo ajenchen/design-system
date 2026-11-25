@@ -1,8 +1,8 @@
 {
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
-    "generatedAt": "2026-11-24T21:44:34.916Z",
-    "stories": 1092,
+    "generatedAt": "2026-11-25T03:10:27.221Z",
+    "stories": 1093,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
       "apps-template-appshell-dashboard--default",
@@ -178,6 +178,7 @@
       "design-system-components-calendar-展示--cell-blank-click-moves-keyboard-stop",
       "design-system-components-calendar-展示--content-publishing-schedule",
       "design-system-components-calendar-展示--empty-calendar",
+      "design-system-components-calendar-展示--english-labels-override",
       "design-system-components-calendar-展示--launch-week",
       "design-system-components-calendar-展示--read-only-dates-custom-tile-keyboard",
       "design-system-components-calendar-展示--team-calendar",
@@ -1097,8 +1098,8 @@
       "design-system-tokens-uisize--overview",
       "design-system-tokens-uisize--product-alignment"
     ],
-    "storyIdsSha256": "5b71fa581d575abe1016ec58f5ce81b775c4b847eb339449d87a0159aaea6bc8",
-    "fingerprints": 740,
+    "storyIdsSha256": "28e4ad29e5f02ff172d0c8871896de149c74000672860de686e06da1fa3a631c",
+    "fingerprints": 741,
     "linuxOnly": {
       "design-system-components-combobox-設計規格--inspector|color-contrast": "藍圖區塊的 9px text-fg-muted 小標(anatomy-utils.tsx:174):macOS 等寬字溢出區塊、axe 歸 incomplete 不計,Linux 放得下才計入 —— 只有 Linux(CI)量得到;值 = 2f367ee3(A76)寫入的 CI 實測;main 的 a11y drift 排程 2026-11-19(run 44499310317)在 Linux 量到同值 23 / 41。--color-fg-muted 已定案例外(color.spec.md「已定案(禁再問)」)",
       "design-system-components-select-設計規格--inspector|color-contrast": "藍圖區塊的 9px text-fg-muted 小標(anatomy-utils.tsx:174):macOS 等寬字溢出區塊、axe 歸 incomplete 不計,Linux 放得下才計入 —— 只有 Linux(CI)量得到;值 = 2f367ee3(A76)寫入的 CI 實測;main 的 a11y drift 排程 2026-11-19(run 44499310317)在 Linux 量到同值 23 / 41。--color-fg-muted 已定案例外(color.spec.md「已定案(禁再問)」)"
@@ -1218,6 +1219,7 @@
     "design-system-components-calendar-展示--cell-blank-click-moves-keyboard-stop|color-contrast": 3,
     "design-system-components-calendar-展示--content-publishing-schedule|color-contrast": 3,
     "design-system-components-calendar-展示--empty-calendar|color-contrast": 3,
+    "design-system-components-calendar-展示--english-labels-override|color-contrast": 4,
     "design-system-components-calendar-展示--launch-week|color-contrast": 6,
     "design-system-components-calendar-展示--read-only-dates-custom-tile-keyboard|color-contrast": 3,
     "design-system-components-calendar-展示--team-calendar|color-contrast": 8,

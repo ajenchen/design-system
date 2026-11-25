@@ -44,6 +44,8 @@ import { CALENDAR_GEOMETRY_STYLE } from './calendar-geometry'
  * - 幾何常數: ./calendar-geometry.ts(格內所有空隙、文字內距、格最小高;元件內變數 --calendar-*)
  * - spec refs: calendar.spec.md「工具列」「Cell 規則」「間距」「焦點框」「A11y 預設」;header-canonical.spec.md:26 / :68 / :73;
  *   tag.spec.md「尺寸」;focus-canonical.md「問題二」;lib/date-locale.ts(週起始日)
+ * - 讀屏字串: `labels`(CalendarLabels,下方「讀屏字串」段;寫法同 BulkActionBar / AgentDecisionCard 的 `labels`);
+ *   日期停靠點名稱 = Intl `dateStyle: 'full'` + 筆數(calendar.spec.md「A11y 預設」),今天加 aria-current="date" 與前綴(同 DateGrid「今天,」)
  *
  * ── Implemented scope ──
  * 月 view(toolbar / grid / event tile / today highlight / outside days)。未實作的
@@ -108,6 +110,41 @@ type CalendarEventTileProps =
       onEventClick?: never
     }
 
+// ── 讀屏字串(labels)────────────────────────────────────────────────────────
+// calendar.spec.md「A11y 預設」「字串可覆寫」:元件裡的讀屏字串都從這一份取,預設繁中、逐鍵可覆寫(Partial 傳入、與預設合併),
+// 元件裡不另寫死 aria-label。已有個別參數的字串(prevAriaLabel / nextAriaLabel / navAriaLabel / todayLabel / createLabel / moreLabel)
+// 不收進來、照用那些參數(決策總帳 2026-11-25「labels 不收已有個別參數的字串」);週數欄、事件、「+N」、清單與詳情的關閉等鍵隨各自的功能加進來。
+// 命名(AGENTS.md「命名 3 重 test」):(1) 本 DS 既有寫法 —— BulkActionBar `labels?: Partial<BulkActionBarLabels>`、AgentDecisionCard / Coachmark /
+// FileViewer / ProfileCard 同一形狀;鍵名的「前 / 後綴」用 `…Prefix` / `…Suffix`(AgentDecisionCard `recommendedSuffix`、BulkActionBar `hiddenSuffix`);
+// (2) 外部同名同義:Mantine Schedule `labels`(<https://github.com/mantinedev/mantine/blob/master/packages/@mantine/schedule/src/labels.ts>)、
+// react-day-picker `labels`(格陣 `labelGrid`、日期鈕 `labelDayButton`,今天在完整日期前加「Today, 」:
+// <https://github.com/gpbl/react-day-picker/blob/v9.14.0/src/labels/labelDayButton.ts#L25-L26>);
+// (3) `todayLabel`(工具列「今天」鈕的字)是另一個字串:這裡的 `todayPrefix` 只接在日期停靠點名稱前面,兩者語意不同、不共用。
+
+/** Calendar 的讀屏字串(全部可覆寫;`labels` 以 Partial 傳入、與 DS 預設合併)。 */
+export interface CalendarLabels {
+  /** 月格陣(`role="grid"`)的名稱。收到工具列標題同一份月份字(Intl `{ year: 'numeric', month: 'long' }`,zh-TW「2026年7月」)。 */
+  grid: (monthTitle: string) => string
+  /**
+   * 日期停靠點的名稱 —— 日期格可點時是日期鈕的名稱,唯讀時是格子開頭只給讀屏的那段字(其後接格內的事件)。
+   * 收到完整日期(Intl `dateStyle: 'full'`,zh-TW「2026年7月15日 星期三」;1 號畫面上寫「7月1日」不影響這裡)與這一天的事件筆數
+   *(含格子放不下、沒畫出來的)。
+   */
+  day: (fullDate: string, eventCount: number) => string
+  /** 今天的日期停靠點名稱前綴,接在 `day` 的結果前面(今天另帶 `aria-current="date"`)。 */
+  todayPrefix: string
+}
+
+// i18n-allow: DS 預設文案(中文);consumer 經 `labels` 覆寫
+const DEFAULT_LABELS: CalendarLabels = {
+  // 2026-11-25 前寫死在格陣上
+  grid: (monthTitle) => `月行事曆,${monthTitle}`,
+  // 2026-11-25 前是「2026-07-15,N 個事件」(yyyy-MM-dd,不念星期、不分今天)
+  day: (fullDate, eventCount) => `${fullDate},${eventCount} 個事件`,
+  // 同 DateGrid 的日期鈕名稱(date-grid.tsx labelDayButton「今天,」前綴)
+  todayPrefix: '今天,',
+}
+
 interface CalendarOwnProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onSelect'> {
   /** 聚焦日期(月 view 的那個月) */
   referenceDate?: Date
@@ -165,6 +202,11 @@ interface CalendarOwnProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'o
    * 預設 `+N more`(spec「Event tile 規則」超出 tile 限制)。2026-11-21 前寫死在元件裡、沒有 prop 可換,中文月曆裡只有這一句是英文。
    */
   moreLabel?: (count: number) => string
+  /**
+   * 讀屏字串(格陣名稱、日期停靠點名稱、今天的前綴),預設繁中、逐鍵可覆寫(calendar.spec.md「A11y 預設」字串可覆寫;鍵見 `CalendarLabels`)。
+   * 上面那幾個已有個別參數的字串(‹ › 的名稱、月份導覽、「今天」、「新事件」、計數文字)照用那些參數,不在這裡。
+   */
+  labels?: Partial<CalendarLabels>
 }
 
 export type CalendarProps = CalendarOwnProps & CalendarDateCellProps & CalendarEventTileProps
@@ -309,9 +351,12 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   todayLabel = '今天', // i18n-allow: DS default; consumer override via todayLabel prop
   createLabel = '新事件', // i18n-allow: DS default; consumer override via createLabel prop
   moreLabel = defaultMoreLabel,
+  labels: labelsOverride,
   style,
   ...props
 }, ref) {
+  // 讀屏字串:DS 預設 + consumer 逐鍵覆寫(同 BulkActionBar 的合併寫法)
+  const labels: CalendarLabels = React.useMemo(() => ({ ...DEFAULT_LABELS, ...labelsOverride }), [labelsOverride])
   // 可點與否只看明示的 readOnlyDates / readOnlyEvents(M23(f);型別層保證沒宣告唯讀時回調一定在,
   // 見 CalendarDateCellProps / CalendarEventTileProps)。
   const datesInteractive = !readOnlyDates
@@ -349,6 +394,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   // 2026-11-25 前星期名在 map 裡每一天 new 一個(稽核 D19-j),這裡的註解卻寫「已 memo」—— 已改成真的 memo。
   // 星期:看得見的字用 short(zh-TW「週日」),讀屏名稱用 long(「星期日」,calendar.spec.md「A11y 預設」columnheader 名稱用完整星期名);
   // narrow(「日」)給窄寬度(calendar.spec.md「窄寬度」)。1 號:{ month: 'short', day: 'numeric' }(zh-TW「7月1日」,Q15(定))。
+  // 日期停靠點的讀屏名稱:{ dateStyle: 'full' }(zh-TW「2026年7月15日 星期三」,calendar.spec.md「A11y 預設」)。
   const formatters = React.useMemo(
     () => ({
       monthTitle: new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long' }),
@@ -356,6 +402,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
       weekdayLong: new Intl.DateTimeFormat(locale, { weekday: 'long' }),
       weekdayNarrow: new Intl.DateTimeFormat(locale, { weekday: 'narrow' }),
       monthDay: new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }),
+      fullDate: new Intl.DateTimeFormat(locale, { dateStyle: 'full' }),
     }),
     [locale],
   )
@@ -643,7 +690,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
         ref={gridRef}
         className="flex flex-col flex-1 min-h-0"
         role="grid"
-        aria-label={`月行事曆,${monthTitle}`}
+        aria-label={labels.grid(monthTitle)}
         // grid navigation 掛在格陣上(事件委派):日期鈕與事件方塊都在這棵子樹裡,
         // 焦點在哪一層由 handler 自己判,不必每顆鈕各掛一份 handler。
         onKeyDown={handleGridKeyDown}
@@ -690,10 +737,15 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                   const dayEvents = eventsByDate.get(dayKey(date)) ?? []
                   const visibleEvents = dayEvents.slice(0, MAX_TILES_PER_CELL)
                   const overflowCount = dayEvents.length - visibleEvents.length
+                  // 這一天的讀屏名稱:完整日期 + 筆數(含沒畫出來的),今天前面加前綴(calendar.spec.md「A11y 預設」;字串在 labels)。
+                  // 1 號畫面上寫「7月1日」(dayLabel)不影響這裡。
+                  const dayName = `${isToday ? labels.todayPrefix : ''}${labels.day(formatters.fullDate.format(date), dayEvents.length)}`
                   // 這一天的鍵盤停靠點屬性(roving tabindex):可點時掛在日期數字鈕上,唯讀時掛在格子本身。
                   // 兩處共用同一組屬性,只換掛的位置 —— handleGridKeyDown / moveFocusToDay 只認 data-calendar-day。
+                  // 名稱**不**在這一組裡:日期鈕用 aria-label;唯讀的格子名稱由內容來(見下方 gridcell 的註解),格子上掛 aria-label 會蓋掉格內的事件標題。
                   const dayStop = {
-                    'aria-label': `${format(date, 'yyyy-MM-dd')},${dayEvents.length} 個事件`,
+                    // 只有今天帶 aria-current="date"(calendar.spec.md「A11y 預設」日期停靠點那條;可點時在日期鈕上、唯讀時在格子上)
+                    'aria-current': isToday ? ('date' as const) : undefined,
                     // roving tabindex:整個格陣只有這一個(= 目前焦點日)進 Tab 序列,其餘 -1。
                     // APG Date Picker Dialog 逐字:「only one button in the calendar grid is in the Tab sequence」。
                     'data-calendar-day': format(date, 'yyyy-MM-dd'),
@@ -726,6 +778,9 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                     // 格子裡於是只剩文字(與可點的事件方塊,若有)→ 依 APG Grid「A cell contains text or a single graphic and
                     // grid navigation keys set focus on the cell」,鍵盤停靠點改成**格子本身**(dayStop 掛在這裡),
                     // 方向鍵 / Home / End / PageUp / PageDown 照舊。格與格之間沒有縫,焦點框往內畫(focus-canonical「問題二」)。
+                    // 唯讀格的名稱由**內容**來(gridcell 的名稱可取自內容,ARIA 1.2「Name From: contents, author」):開頭一段只給讀屏的字
+                    //(日期 / 今天 / 筆數)、看得見的日期數字 aria-hidden(不念兩次),其後是格內的事件 —— 焦點落在格子上時念得到每個事件標題
+                    //(calendar.spec.md「A11y 預設」:格子的 aria-label 不得蓋掉格內文字)。2026-11-25 前格子掛 aria-label「2026-07-15,N 個事件」,事件標題念不到。
                     <div
                       key={date.toISOString()}
                       role="gridcell"
@@ -776,6 +831,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                           <button
                             type="button"
                             {...dayStop}
+                            aria-label={dayName}
                             onClick={(e) => {
                               e.stopPropagation()
                               // 點日期鈕也把焦點與停靠點帶過來,與格子空白處同一條路(calendar.spec.md「命中區」下方那段):
@@ -789,7 +845,11 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                             {label}
                           </button>
                         ) : (
-                          <span className={dayNumberClass}>{label}</span>
+                          // 唯讀:名稱由格子內容組成 —— 這段只給讀屏(sr-only,同 Command / DataTable 的讀屏用字寫法),看得見的數字不念
+                          <>
+                            <span className="sr-only">{dayName}</span>
+                            <span aria-hidden className={dayNumberClass}>{label}</span>
+                          </>
                         )}
                       </div>
 

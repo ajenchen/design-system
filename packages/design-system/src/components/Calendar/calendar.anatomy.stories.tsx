@@ -256,7 +256,10 @@ export const StateBehavior: Story = {
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByRole('button', { name: /^2026-07-15,/ })).toHaveClass('bg-info')
+    // 今天的日期鈕:名稱 = 「今天,」+ 完整日期 + 筆數(calendar.spec.md「A11y 預設」),帶 aria-current="date"、實心底
+    const today = canvas.getByRole('button', { name: /^今天,2026年7月15日 星期三,/ })
+    await expect(today).toHaveClass('bg-info')
+    await expect(today).toHaveAttribute('aria-current', 'date')
     await userEvent.click(canvas.getByRole('button', { name: '下個月' }))
     await expect(canvas.getByRole('heading', { level: 2 })).toHaveTextContent('2026年8月')
     await userEvent.click(canvas.getByRole('button', { name: '今天' }))
@@ -272,7 +275,7 @@ export const Accessibility = {
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
       <div className="flex flex-col gap-[var(--layout-space-tight)]">
-        <p><b>Grid role</b>:月格容器 <code>role="grid"</code> + <code>aria-label</code>(月份)。星期列是格陣的第一個 <code>role="row"</code>,每格 <code>role="columnheader"</code>(看得見「週日」,讀屏名稱是完整星期名「星期日」);其後每一週一個 <code>role="row"</code>(<code>display:contents</code> 保 CSS grid 佈局),每格 <code>role="gridcell"</code>(非互動容器),日期數字按鈕帶 <code>aria-label</code>(日期 + 事件數)。事件 tile <code>role="button"</code> + <code>aria-label</code>(事件標題)。週列在捲動區裡捲,捲動區本身不是 Tab 停靠點。工具列的 ‹ / 今天 / › 包在 <code>{'<nav aria-label>'}</code> 裡(預設「行事曆月份導覽」)。</p>
+        <p><b>Grid role</b>:月格容器 <code>role="grid"</code> + <code>aria-label</code>(月份)。星期列是格陣的第一個 <code>role="row"</code>,每格 <code>role="columnheader"</code>(看得見「週日」,讀屏名稱是完整星期名「星期日」);其後每一週一個 <code>role="row"</code>(<code>display:contents</code> 保 CSS grid 佈局),每格 <code>role="gridcell"</code>(非互動容器),日期數字按鈕帶 <code>aria-label</code>(完整日期 + 事件數,例「2026年7月12日 星期日,1 個事件」;1 號畫面上寫「7月1日」不影響名稱);今天另加 <code>aria-current="date"</code>、名稱前加「今天,」。這些讀屏字串都可經 <code>labels</code> 逐鍵覆寫。事件 tile <code>role="button"</code> + <code>aria-label</code>(事件標題)。週列在捲動區裡捲,捲動區本身不是 Tab 停靠點。工具列的 ‹ / 今天 / › 包在 <code>{'<nav aria-label>'}</code> 裡(預設「行事曆月份導覽」)。</p>
         <p><b>Keyboard 行為</b>(實作現況,2026-09-24 補齊 W3C APG Data Grid):</p> {/* 來源:https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/grid/grid-pattern.html#L205-L221 */}
         <ul className="list-disc pl-5 space-y-1">
           <li>Tab — 整個月格陣只停一次(roving tabindex:只有目前焦點日的日期鈕進 Tab 序列,其餘日期鈕與全部事件方塊都不進);進來時停在今天,今天不在本月則停在該月 1 號</li>
@@ -282,7 +285,7 @@ export const Accessibility = {
           <li>Enter / Space — 日期數字按鈕觸發 <code>onDateClick</code></li>
           <li>F2 — 進到這一格的事件方塊;格內用 ↑↓←→ 換方塊、Enter / Space 觸發 <code>onEventClick</code>、Escape 或 F2 回到日期數字按鈕</li>
           <li>Toolbar 的 ◀ / 今天 / ▶ 在格陣外,是各自獨立的 Tab 停靠點</li>
-          <li>日期格唯讀(readOnlyDates)時:格子裡只剩文字,焦點停在格子本身(帶同樣的「日期 + 事件數」名字),方向鍵照常;格子沒有主要動作,Enter 與 F2 都是進格</li>
+          <li>日期格唯讀(readOnlyDates)時:格子裡只剩文字,焦點停在格子本身,方向鍵照常;格子的名稱由格內的字組成 —— 先念日期、今天與事件數(同一段字,只給讀屏),再念格內每個事件的標題(看得見的日期數字不重念);格子沒有主要動作,Enter 與 F2 都是進格</li>
           <li>事件方塊唯讀(readOnlyEvents)時:方塊不是按鈕、不進格內導覽</li>
         </ul>
         <p><b>刻意不做</b>:Ctrl+Home / Ctrl+End、Shift+方向鍵切月切年(APG 把 Shift+方向鍵定義為延伸選取,本元件無選取模型)。</p>

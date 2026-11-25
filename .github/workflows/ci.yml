@@ -1877,7 +1877,8 @@ jobs:
           # 工具列 = ChromeHeader 48 / 56、nav 名稱、星期列是格陣第一個 row(7 個 columnheader、完整星期名、列高 32)、各週等高、最後一週沒底線、
           # 日期框 4 / 4 / 24、1 號「7月1日」、事件列 24 / 列距 4 / 文字內距 8、事件列焦點框往外、axe required-children / parent 0、太矮時週列可捲(工具列與星期列不動)、
           # 鍵盤走到看不見的週會捲進來、點日期鈕 / 按「今天」搬停靠點、en-GB 週一起、titleAs、今天是 1 號時實心底包住「7月1日」;
-          # --selftest 十五個突變各自讓預期那一格紅。本機(同一份建置)主判定約 7 秒、--selftest 約 15 秒,CI 未實測 ——
+          # 讀屏名稱(日期停靠點 = 完整日期 + 筆數、只有今天 aria-current=date 與「今天,」、唯讀格名稱由內容來念得到事件標題、labels 覆寫生效);
+          # --selftest 二十四個突變各自讓預期那一格紅。本機(同一份建置)主判定約 7 秒、--selftest 約 18 秒,CI 未實測 ——
           # 放在本 job 是因為它是 25 分 job 裡餘裕大的一個(約 8.5 分),不是主題相同(同 sidebar-keyboard job 檔頭「不往沒有餘裕的 job 疊」)。
           npm run test:calendar-month
 

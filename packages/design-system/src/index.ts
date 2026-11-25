@@ -141,6 +141,7 @@ export {
 } from './components/Calendar/index'
 export type {
   CalendarEvent,
+  CalendarLabels,
   CalendarProps,
 } from './components/Calendar/index'
 export {

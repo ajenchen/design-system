@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-11-24T21:29:49.138Z"
+    "generatedAt": "2026-11-25T03:00:24.796Z"
   },
   "components": {
     "accordion": {
@@ -322,6 +322,7 @@
           "design-system-components-calendar-展示--launch-week",
           "design-system-components-calendar-展示--content-publishing-schedule",
           "design-system-components-calendar-展示--read-only-dates-custom-tile-keyboard",
+          "design-system-components-calendar-展示--english-labels-override",
           "design-system-components-calendar-展示--empty-calendar",
           "design-system-components-calendar-展示--cell-blank-click-moves-keyboard-stop"
         ],
@@ -1872,5 +1873,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1038
+  "totalStories": 1039
 }
