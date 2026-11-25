@@ -741,6 +741,8 @@ export async function waitForImages(target, options = {}) {
 //   1b. opts.demoImages = 'local'(預設):示範圖主機的圖片在瀏覽器裡就地換成同尺寸的本機合成圖、真站沒有這種網址的就地回 404
 //      (serveDemoImagesLocally,每個分頁裝一次、整個分頁生命期有效);'network' = 照常向遠端要真圖(跟已提交基準圖比 /
 //      寫基準 / 給人看的截圖)。裝不起來 → kind 'demo-images'
+//   1e. Storybook iframe:preview 文件的 FEATURES.highlight 定成 false(Storybook 10 的整合 highlight 不啟動;
+//      opts.storybookHighlight = true 保留原樣;理由見「量測頁不開 Storybook 10 的整合 highlight」區塊)
 //   2. goto(load);導覽本身失敗 → kind 'navigation'
 //      opts.previewFrame(管理介面)→ 等那個 iframe 元素、之後 3–9 步都在它的內容框架裡做;等不到 → kind 'preview-frame'
 //   3. Storybook iframe(網址是 …/iframe.html,或 opts.storybook = true)且 requireRenderFinished:
@@ -1026,6 +1028,46 @@ export async function installRenderErrorLedger(page) {
   if (renderErrorLedgerPages.has(page)) return
   await page.addInitScript(installRenderErrorLedgerInPage, RENDER_ERROR_LEDGER_KEY)
   renderErrorLedgerPages.add(page)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 量測頁不開 Storybook 10 的整合 highlight(2026-11-26)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// **為什麼**:Storybook 9 起 highlight 併進核心(main 設定 `features.highlight`,storybook 型別註解原文
+// 「Enable the integrated highlight addon」「@default true」)。preview 端的 useHighlights
+// (storybook/dist/preview/runtime.js「src/highlight/useHighlights.ts」)在每次 render 進 'loading' 時 resetState,
+// highlights 換成新的空陣列 → 在 #storybook-root 掛 subtree childList 的 MutationObserver;之後 story 裡**每一批 DOM 增刪**
+// 都 elements.set(新的空 Map) → 重跑 `document.body.querySelectorAll('*')` + 每個元素 getComputedStyle(找可捲動元素掛 scroll 監聽)。
+// 8.6 的 @storybook/addon-highlight 沒有這段。虛擬捲動的 DataTable 每一格都在增刪列 → 每一格多付一次整頁樣式計算,
+// 主執行緒被吃掉,CDP 送幀出現 > 100ms 的缺口(test-data-table-scroll-perception 的 delayed 對照組 5 次全作廢)、
+// 整支閘變慢(verify-browser-datatable-handles 撞 25 分上限)。A/B 數字(同一支量測腳本、兩份建置只差 Storybook 版本)
+// 寫在引入這段的 commit 訊息。
+// 閘量的是元件,不是 Storybook 的開發工具;所以 openStory 開 Storybook iframe 時,在 iframe.html 第一支腳本之前把
+// `window.FEATURES.highlight` 定成 false —— Storybook 自己文件化的開關(等同 main 設定 `features.highlight: false`),
+// 只作用在這個分頁的 preview 文件。給讀者看的預覽站(storybook-static / 部署預覽)與管理介面(index.html)照舊;
+// a11y 閘跑的是 axe 本身,不經過 highlight。opts.storybookHighlight = true 保留 Storybook 原樣(要量 highlight 本身的閘用;目前沒有)。
+// 對照組:scripts/test-open-story.mjs 真實建置段「Storybook highlight 關 / 開兩面」。
+function disableStorybookHighlightInPage() {
+  // 只動 preview 文件(iframe.html);管理介面與非 Storybook 頁原樣
+  if (!/\/iframe\.html$/.test(location.pathname)) return
+  let features
+  try {
+    Object.defineProperty(window, 'FEATURES', {
+      configurable: true, enumerable: true,
+      get() { return features },
+      set(value) { features = value && typeof value === 'object' ? { ...value, highlight: false } : value },
+    })
+  } catch { /* 已被定義成不可改:Storybook 照原樣(test-open-story 的開 / 關兩面會紅) */ }
+}
+const storybookHighlightModes = new WeakMap()
+/** 這個分頁之後載入的 Storybook preview 文件不開整合 highlight;openStory 自己會呼叫(storybookHighlight: false,預設)。 */
+export async function disableStorybookHighlight(page) {
+  if (!page || typeof page.addInitScript !== 'function') throw new TypeError('disableStorybookHighlight:page 必須是 Playwright 的 Page')
+  if (storybookHighlightModes.get(page) === false) return
+  if (storybookHighlightModes.get(page) === true) throw new TypeError('disableStorybookHighlight:這個分頁先前以 storybookHighlight: true 開過(init script 裝上後整個分頁有效)—— 換一個分頁')
+  await page.addInitScript(disableStorybookHighlightInPage)
+  storybookHighlightModes.set(page, false)
 }
 
 const timerLedgerPages = new WeakSet()
@@ -1446,6 +1488,7 @@ export async function waitForStoryRender(target, options = {}) {
  * @param {Function} [options.beforeSettle]         async (page) => {},在字型 / 靜止判定之前執行
  * @param {boolean} [options.storybook]             覆寫「這是不是 Storybook iframe」(預設看網址是否為 …/iframe.html;有 previewFrame 時預設 true)
  * @param {string[]} [options.finishedPhases]       哪些 phase 算渲染完成(預設 ['finished'];只准加 'completing' / 'completed' / 'afterEach',見區塊註解)
+ * @param {boolean} [options.storybookHighlight]  Storybook iframe 時保留 Storybook 10 的整合 highlight(預設 false = preview 文件裡 FEATURES.highlight 定成 false;見「量測頁不開 Storybook 10 的整合 highlight」)
  * @param {string} [options.previewFrame]           導覽的是管理介面時,preview iframe 的選擇器(例 '#storybook-preview-iframe');第 3–9 步改在它的內容框架裡做
  * @param {string} [options.storyId]                第 3 步要等的 story id(預設 = 網址的 id 參數;previewFrame 模式再退到 path=/story/<id>)
  * @param {string[]} [options.notFound]           伺服器端 404 帳本(startA11yStaticServer().notFound);本次新增的列進失敗訊息
@@ -1463,6 +1506,7 @@ export async function openStory(page, url, options = {}) {
     beforeSettle = null, previewFrame = null, storybook = previewFrame ? true : isStorybookIframe(url), notFound = null,
     timeoutMs = 30_000, navigationTimeoutMs = 60_000, settleTimeoutMs = 10_000,
     images = true, imagesTimeoutMs = timeoutMs, demoImages = 'local', pendingTimers = false,
+    storybookHighlight = false,
     // previewFrame 模式預設 30 秒(render-health 的上限):管理介面與 preview 同源、共用同一條主執行緒,story finished 之後
     // 管理介面自己的外掛面板重畫會把它塞住好幾秒 —— 2026-09-25 實測 CPU ×6 下 story 已 finished、根節點有內容,
     // 5 秒上限卻因為檢查本身排不到執行而被判成「empty story root」(誤紅);30 秒下同一趟通過、之後 0 次版面變動。
@@ -1482,6 +1526,10 @@ export async function openStory(page, url, options = {}) {
     throw new TypeError(`openStory:這個分頁先前用 demoImages='${priorDemoImages}' 開過,不能改成 '${demoImages}'(本機代換裝上後整個分頁有效、HTTP 快取也會混進另一種圖)—— 換一個瀏覽器 / 分頁`)
   }
   demoImageModes.set(page, demoImages)
+  if (typeof storybookHighlight !== 'boolean') throw new TypeError(`openStory:storybookHighlight 必須是 true / false,實得 ${JSON.stringify(storybookHighlight)}`)
+  if (storybook && storybookHighlightModes.has(page) && storybookHighlightModes.get(page) !== storybookHighlight) {
+    throw new TypeError(`openStory:這個分頁先前用 storybookHighlight=${storybookHighlightModes.get(page)} 開過,不能改成 ${storybookHighlight}(init script 裝上後整個分頁有效)—— 換一個分頁`)
+  }
   const storyId = options.storyId ?? storyIdOf(url) ?? (previewFrame ? managerStoryIdOf(url) : null)
   if (previewFrame && storybook && requireRenderFinished && !storyId) {
     throw new TypeError('openStory:previewFrame 模式要知道等哪一則(opts.storyId 或網址 path=/story/<id>)——「有某一則渲染完成」不等於「這一則渲染完成」')
@@ -1575,6 +1623,9 @@ export async function openStory(page, url, options = {}) {
     if (pendingTimers) await installPendingTimerLedger(page)
     // 1d. 渲染錯誤帳本(Storybook iframe 才需要;10.x play 拋錯後 phase 照樣走到 finished,見「渲染錯誤帳本」區塊)
     if (storybook) await installRenderErrorLedger(page)
+    // 1e. Storybook 10 的整合 highlight 不開(storybookHighlight: false,預設;見「量測頁不開 Storybook 10 的整合 highlight」區塊)
+    if (storybook && !storybookHighlight) await disableStorybookHighlight(page)
+    else if (storybook) storybookHighlightModes.set(page, true)
 
     // 2. 導覽
     try {

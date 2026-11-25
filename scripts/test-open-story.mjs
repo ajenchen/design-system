@@ -1108,6 +1108,29 @@ try {
         check('真實建置:story 檔被擋 → 儀器失效並列出失敗請求',
           hits > 0 && isInstrument(realBlocked, 'storybook-error') && realBlocked.error.failedRequests.some((f) => new RegExp(`/assets/${base}-`).test(f)),
           `攔到 ${hits} 次;${realBlocked.ok ? '被判成成功(錯)' : short(realBlocked.error.message)}`)
+        // Storybook 10 整合 highlight(lib「量測頁不開 Storybook 10 的整合 highlight」):openStory 預設讓 preview 文件的
+        // FEATURES.highlight = false、highlight 模組不啟動(它會在 #storybook-root 掛 MutationObserver、每批 DOM 變動重跑整頁 getComputedStyle);
+        // storybookHighlight: true 的同一則必須照 Storybook 原樣啟動 —— 兩面:關的那面綠而開的那面也綠,才證明觀察值真的反映 runtime 有沒有啟動它
+        // (Storybook 改了開關或旗標名稱,開的那面會紅,不會默默變成兩面都「沒啟動」)。同一分頁換模式 → TypeError。
+        const highlightState = (p) => p.evaluate(() => ({
+          feature: window.FEATURES?.highlight ?? null,
+          booted: globalThis.__STORYBOOK_HIGHLIGHT_INITIALIZED === true,
+        }))
+        const hlOff = await attempt(page, realUrl(entry.id), { notFound: real.notFound })
+        const offState = hlOff.ok ? await highlightState(page) : null
+        // 另開一個瀏覽器:launchBrowser 是 --single-process,同一個瀏覽器開第二個分頁會整個掛掉(SIGTRAP)
+        const hlBrowser = await launchBrowser()
+        let onState = null
+        let switchRejected = false
+        try {
+          const hlPage = await hlBrowser.newPage()
+          const hlOn = await attempt(hlPage, realUrl(entry.id), { notFound: real.notFound, storybookHighlight: true })
+          onState = hlOn.ok ? await highlightState(hlPage) : { error: short(hlOn.error.message) }
+          switchRejected = await throwsTypeError(() => openStory(hlPage, realUrl(entry.id), { notFound: real.notFound }))
+        } finally { await hlBrowser.close().catch(() => {}) }
+        check('真實建置:openStory 預設不啟動 Storybook 整合 highlight(FEATURES.highlight = false、模組沒初始化);storybookHighlight: true 照原樣啟動;同一分頁換模式 → TypeError',
+          offState?.feature === false && offState.booted === false && onState?.feature === true && onState.booted === true && switchRejected,
+          `預設=${JSON.stringify(offState)};storybookHighlight:true=${JSON.stringify(onState)};換模式 TypeError=${switchRejected}`)
       }
       // ownSurfacePosition + parkPointer 的真實對照(2026-10-01):PeoplePicker「多人 × 欄位內搜尋」第 3 格的正中央是「Eric Tsai」Tag 的頭像 ——
       // 全掃閘(overlay-footer-gutter / select-all-footer)舊的點法在這一則紅過。舊點法必須重現「名片卡打開、蓋住第 4 格」,helper 必須讓第 4 格點得到、開得起來。
