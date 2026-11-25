@@ -2516,7 +2516,8 @@ jobs:
         run: |
           # 只擋回歸:新的 storyId|ruleId,或同一組的違規節點數比基線多;掃描出錯(audit-error)與 story 清單跟基線不同都拒絕放行。
           # 既有違規在基線裡(大宗是 --fg-muted 淺色主題對比,user 已定案的取捨:color.spec.md「已定案(禁再問)」)。
-          # 對照組(2026-11-26 本機):拋棄式 clone 只把基線一個指紋的節點數減 1,同一行指令必紅並點名那個指紋。
+          # 對照組(2026-11-26 本機,governance/planning/2026-11-26-work-process-evidence-v5.md 第 4 節):拿本機全掃的真實結果,基線一個指紋減 1 或刪掉一格,
+          # 判定必紅且只點名那一格;不動基線則照實紅出既有增量。
           npm run a11y:check -- --gate
 
       - name: Preserve a11y report

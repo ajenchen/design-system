@@ -35,7 +35,13 @@
 ## 4. 對照組(閘該紅的時候會紅)
 
 - 現況:本包起點 `3e75811c` 的建置上 `npm run a11y:check -- --gate`(本機 macOS,564 秒):**紅**,exit 1,5 個增量 —— avatar「設計規格 › state-behavior」color-contrast 基線 9 → 10、combobox「color-matrix」51 → 52、combobox「state-behavior」1 → 6、profilecard「color-matrix」6 → 7、rating「size-matrix」4 → 6;沒有 audit-error,story 清單與基線相同(1089 則)。同樣這 5 個、同樣的數字,2026-11-24 另一條分支的本機 `--gate` 也紅過(普查 `local-cost.json` longestCommands 第 18 列那一跑的 log)。這就是第 3 節的風險:接進 PR 之後,CI 第一次讀回很可能紅在這 5 個(Linux 值要等 CI 的 a11y-audit.json)。
-- 對照組:拋棄式 clone(同一份 storybook-static,不改產品原始碼),只把基線一個指紋的節點數減 1(__MUTATION__),同一支 `scripts/audit-a11y.mjs --gate`:__CONTROL_VERDICT__
+- 判定的兩面對照(不改產品原始碼、只改基線副本):拿上面那一跑寫出的真實 `a11y-audit.json`,餵給 CLI 用的同一支 `evaluateA11yRegressionGate`(`scripts/lib/a11y-gate.mjs:153`),掃描清單 = 基線清單(1089 則,`test:a11y-corpus` 已證相同):
+  - A 原基線 → ok=false,回歸剛好是上面那 5 個、數字相同(與 CLI 那一跑的裁決一致);
+  - B 只把那 5 格設成本機量值 → ok=true、0 回歸(這份建置上判定能綠);
+  - C B 再把 button「設計規格 › overview」color-contrast 19 減成 18 → ok=false,只點名這一格(18→19);
+  - D B 再刪掉 tabs「設計原則 › size-selection」那一整格 → ok=false,只點名這一格(0→3,新 key)。
+  腳本與輸出在本包 scratch(`lib-control.mjs`)。
+- 同一個注入走完整 CLI(拋棄式 clone、真的 storybook-static、`node scripts/audit-a11y.mjs --gate`)排在重工作鎖後面:本包第一次排入時 clone 用了 storybook-static 的符號連結,被靜態伺服器拒絕(`a11y-static-server.mjs`:root 必須是一般目錄)、0 秒結束 —— 那一個 exit 1 是儀器失效,不算紅;改成複製目錄後重排,在交付前沒拿到鎖就沒跑完(結果見交接 `notes/progress-foundation.md` 本包最後一行)。
 - 新斷言的對照組(`infra/governance/test/ci-workflow-scope.test.mjs`,拋棄式 clone 逐一弄壞再還原):夜間 yml 再跑 `a11y:check` → 紅「夜間 a11y-and-size.yml 不得再跑 a11y:check」;PR 改成 `--tag=button` → 紅「PR 的 a11y 閘必須是全掃 + 基線回歸判定」;ci.yml 跑兩次 → 紅「ci.yml 只准一處跑 a11y:check」;fan-in 判斷式漏掉 a11y → 紅「BROWSER_A11Y 出現在 env 卻沒有被判斷式檢查」;還原後綠。
 
 ## 5. work-process v5:拿掉本機補跑 axe
