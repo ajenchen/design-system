@@ -170,7 +170,11 @@ try {
 // feedback_propose_discipline.md Sub-rule 7 篩)+ 版本紀錄一列 —— 兩條都是 user 11-22 指出的實際出錯,要所有 session 開場就讀到。
 // 2026-11-22 STORY-PROBE 明改 76,256 → 76,691(+435):work-process.md v3「每一包」加第 8 點(改到範例時實作與規格核對都照
 // story-rules.md「範例最高準則」「Technical probe visibility」核對)+ 版本紀錄一列 —— user 11-22 指出只給量具用的極端內容被做成給讀者看的範例。
-const OPENING_FILES_MAX_BYTES = 76_691
+// 2026-11-25 HANDOFF-QUOTA 明改 76,691 → 76,769(+78):AGENTS.md「分診與預算」段尾加一句指向
+// governance/memory/feedback_orchestration_verify_before_scale.md「交接常備與額度」(只放指向、不重述)。指向那句 +88
+//(初稿帶節名 +127,已縮),同段刪掉重複的「,不開工」-10(「只開工 ①②③」已涵蓋),淨增 78 只能明改上限 —— 再縮就要刪規則。
+// user 11-25:「這個上一次就講過了，難道沒有在工作規範ssot內嗎？」—— 要每個 session 開場就讀得到這個指向。
+const OPENING_FILES_MAX_BYTES = 76_769
 const RULES_DIR = path.join(ROOT, 'packages/design-system/ds-canonical/rules')
 const alwaysLoadedRules = fs.existsSync(RULES_DIR)
   ? fs.readdirSync(RULES_DIR).filter((name) => name.endsWith('.md')).sort().filter((name) => {
