@@ -1017,7 +1017,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:7967c24c9848f67fb8973d4b9f0f185412dd42f6523bc4f76933a8dd17189da1",
+      "hash": "sha256:d8ccbe5792658539dfd1b36f5b83eb819499e84b8da880f9d1bfd079c6888372",
       "id": "exact-github-desired-state",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -1623,7 +1623,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 16,
-      "hash": "sha256:f824e0f3305e45b7338943eb9cd0602968265e484bfc678cede7db651a87f188",
+      "hash": "sha256:d1ba73290290f12a31096601b5d62f1373af364b958ce7947cc07fc912036fb7",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1768,7 +1768,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 53,
-      "hash": "sha256:9a482da37e0f5297a820504edb4c4487ba7cf8e8bfc0a2ae45ad2b701237f248",
+      "hash": "sha256:97ad01f0530f0e3514df4ee7779a30c1241286acd11e9ec3e7aab05e1d1b5b71",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1799,7 +1799,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 1,
-      "hash": "sha256:5727a5673e72bbdf7fb1c6b69affbe3e0a70c432559f396e67030dfc151671aa",
+      "hash": "sha256:33a27e572e0073bd199508f60cb84c051d2593bf178460956fc423ddaa735f40",
       "id": "governance-github-desired-state",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2065,12 +2065,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:97147cd9603b017130c7fbe9e802e05721e893c997fd17827c55722313d79a60",
+      "hash": "sha256:f2f442b54897c1fcc179ea835e8f199cf0c2567d4fb292538a93989eaf5478bd",
       "id": "governance-root-script-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "package.json",
-      "size": 35154,
+      "size": 34710,
       "type": "file"
     },
     {
@@ -3094,7 +3094,7 @@
         "scripts/generated/"
       ],
       "files": 804,
-      "hash": "sha256:92e2abec1096bcd5864dd77f6a731825c3dccdf76295df9289ec030f84b6f450",
+      "hash": "sha256:239bf525fe950942feba3875e96e542d5482ec08a0e3dce0be6fea1db4ce7216",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import test from 'node:test'
@@ -208,7 +208,9 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // 26 → 28 / 24 → 25(2026-11-16,A25 覆核二 SF-R3):verify-browser-datatable-pinned 拆自 verify-browser-datatable —— 自己的 storybook
   // 與**參考建置(main)**各一份(參考建置那一步與原 job 逐字相同,下方另驗),chromium 一次。
   // 28 → 29 / 25 → 26(2026-11-17,A102):verify-browser-layout-edges(新 job,準備步驟與 verify-browser-doc-headings 逐字相同)。
-  assert.equal((source.match(/npm run build-storybook/g) ?? []).length, 29)
+  // 29 → 27 / 26 不變(2026-11-26,閘普查 A#4 / B-C3):verify-browser-nested-dismiss 與 verify-browser-escape-focus-control 的閘全走
+  // scripts/lib/ds-source-harness.mjs(原始碼直接打包進空白頁),兩個 job 拿掉 build:lib / build-storybook(下方 SOURCE_HARNESS_JOBS 另驗)。
+  assert.equal((source.match(/npm run build-storybook/g) ?? []).length, 27)
   assert.equal((source.match(/playwright install chromium/g) ?? []).length, 26)
   // 2026-09-25:**必需瀏覽器的 lane**。裝了 Chromium 跑閘的 job 裡起不了瀏覽器 = 這個 job 壞了;
   // 共用政策(scripts/lib/launch-browser.mjs exitOnBrowserLaunchFailure)只有在 GOVERNANCE_BROWSER_REQUIRED=1 時
@@ -262,9 +264,7 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
     ['verify-browser-searchable-menu-focus', 'verify-browser-searchable-fields'],
     ['verify-browser-field-dialog-steps', 'verify-browser-interaction'],
     ['verify-browser-cursor', 'verify-browser-agent'],
-    ['verify-browser-escape-focus-control', 'verify-browser-select-all'],
     ['verify-browser-footer-gutter', 'verify-browser-field-edges'],
-    ['verify-browser-nested-dismiss', 'verify-browser-overlay'],
     ['verify-browser-sidebar-keyboard', 'verify-browser-field-dialog-steps'],
     ['verify-browser-layout', 'verify-browser-field-dialog-steps'],
     ['verify-browser-horizontal-overflow', 'verify-browser-layout'],
@@ -273,6 +273,62 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   ]) {
     assert.equal(setupSteps(child), setupSteps(parent), `${child} 的準備步驟必須與拆出它的 ${parent} 逐字相同`)
     assert.equal(workflow.jobs[child].timeoutMinutes, workflow.jobs[parent].timeoutMinutes, `${child} 的上限沿用 ${parent}(拆 job 不是調高上限的路)`)
+  }
+  // 2026-11-26(閘普查 A#4 / B-C3):原始碼 harness 的 job 不建任何東西 —— 閘全走 scripts/lib/ds-source-harness.mjs(esbuild 直接打包
+  // packages/design-system/src、tailwind 現場編 CSS),不讀 dist / storybook-static。準備步驟比到安裝為止仍須與拆出它的 job 逐字相同;
+  // 以後有人把要讀建置的閘搬進來,launch-browser.mjs 會以缺建置 exit 2(大聲紅,不是靜默放行)。
+  const SOURCE_HARNESS_JOBS = [
+    ['verify-browser-escape-focus-control', 'verify-browser-select-all'],
+    ['verify-browser-nested-dismiss', 'verify-browser-overlay'],
+  ]
+  const installSteps = (id) => {
+    const block = jobBlock(id)
+    const from = block.indexOf('    steps:\n')
+    const marker = '        run: npm run --silent setup:dependencies\n'
+    const to = block.indexOf(marker, from)
+    assert.ok(from >= 0 && to > from, `${id} 找不到安裝步驟`)
+    return block.slice(from, to + marker.length)
+  }
+  for (const [child, parent] of SOURCE_HARNESS_JOBS) {
+    const commands = jobBlock(child).split('\n').filter((line) => !/^\s*#/.test(line)).join('\n')
+    assert.doesNotMatch(commands, /npm run build:lib|npm run build-storybook/, `${child} 的閘全走原始碼 harness,不得建 build:lib / storybook(建了沒人讀 = 每格白花約 1 分)`)
+    assert.equal(installSteps(child), installSteps(parent), `${child} 的準備步驟(到安裝為止)必須與拆出它的 ${parent} 逐字相同`)
+    assert.equal(workflow.jobs[child].timeoutMinutes, workflow.jobs[parent].timeoutMinutes, `${child} 的上限沿用 ${parent}(拆 job 不是調高上限的路)`)
+  }
+  // 2026-11-26(閘普查 A#1–#3 / B-C5–C7):帶 --shard 的閘把「只做一次的事」(基準 = 一趟完整判定、靜態覆蓋、整支只在第 0 片跑)交給
+  // k = 0 那一格。所以每個 shard matrix 必須剛好是 0/n … (n−1)/n:少了 0/n,那些事整個 CI 都沒人做,而每格照樣綠(M37「沒失敗 ↔ 過了」)。
+  for (const id of jobIds) {
+    const shards = loadYaml(source).jobs[id]?.strategy?.matrix?.shard
+    if (!shards) continue
+    const n = shards.length
+    assert.deepEqual(shards, Array.from({ length: n }, (_, k) => `${k}/${n}`), `${id} 的 shard matrix 必須剛好是 0/${n} … ${n - 1}/${n}(第 0 片負責基準與只做一次的檢查)`)
+  }
+  {
+    const run = loadYaml(source).jobs['verify-browser-nested-dismiss'].steps.map((s) => s.run ?? '').join('\n')
+    for (const alias of ['test:overlay-cover-anchor', 'test:data-table-click-outside']) {
+      assert.match(run, new RegExp(`npm run ${alias} -- --shard="\\$SHARD"`), `${alias} 在五格 matrix 裡必須帶 --shard(閘自己只在第 0 格跑;不帶 = 每格都跑同一趟)`)
+    }
+  }
+  // 2026-11-26(閘普查 A#5–#7 / B-C4、C8、C9):印「現行原始碼(selftest 基準」的閘,--selftest 開頭就是一趟完整判定
+  // (同一個 runVariant、同一組瀏覽器設定;基準紅會印判定那一行並 exit 1)。同一次 CI 再跑判定模式 = 同一趟判定跑兩次。
+  // 從腳本的標記反推名單(不寫死):ci.yml 的指令行與 package.json 的別名都只准出現 --selftest 那一種形狀。
+  {
+    const scriptsDir = resolve(ROOT, 'scripts')
+    const baselineGates = readdirSync(scriptsDir).filter((f) => f.endsWith('.mjs') && readFileSync(join(scriptsDir, f), 'utf8').includes('現行原始碼(selftest 基準'))
+    assert.ok(baselineGates.length >= 8, `「selftest 基準 = 一趟完整判定」的閘應至少 8 支,實得 ${baselineGates.length}(標記字樣改了就跟著改這裡)`)
+    const pkgScripts = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf8')).scripts
+    const ciCommands = source.split('\n').filter((line) => !/^\s*#/.test(line))
+    for (const file of baselineGates) {
+      const invoke = new RegExp(`node scripts/${file.replace('.', '\\.')}(?![\\w.-])`)
+      for (const line of ciCommands) {
+        if (invoke.test(line)) assert.match(line, /--selftest/, `ci.yml 以判定模式跑 ${file}:「${line.trim()}」—— 它的 --selftest 基準就是同一趟判定,同一次 CI 只准跑一次`)
+      }
+      for (const [name, cmd] of Object.entries(pkgScripts)) {
+        for (const part of cmd.split('&&')) {
+          if (invoke.test(part)) assert.match(part, /--selftest/, `package.json ${name} 以判定模式跑 ${file}:「${part.trim()}」—— 別名只留 --selftest(基準就是同一趟判定)`)
+        }
+      }
+    }
   }
   for (const command of [
     'npm run build:lib',

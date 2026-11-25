@@ -26,12 +26,28 @@
  * 用法:
  *   node scripts/overlay-cover-anchor-invariant.mjs              判定(現行原始碼)
  *   node scripts/overlay-cover-anchor-invariant.mjs --selftest   對照組(全部單一根因突變;基準 = 一趟完整判定)
+ *   node scripts/overlay-cover-anchor-invariant.mjs --selftest --shard=<k>/<n>   CI matrix 用:只在第 0 片跑,其他片印略過、exit 0(見 SHARD)
  *   node scripts/overlay-cover-anchor-invariant.mjs --root=<dir> 改量另一棵原始碼(例:修改前的基準樹 —— 那裡沒有 coverAnchor,C / H 列全紅)
  */
 import { INSTRUMENT_FAIL_MARKER, launchBrowserOrSkip } from './lib/launch-browser.mjs'
 import { InstrumentError, REPO_ROOT, WAIT_CAP_MS, bundleDsHarness, compileDsCss, mountHarness, mutantFor, replaceOnce, resolveSourceRoot } from './lib/ds-source-harness.mjs'
 
 const SELFTEST = process.argv.includes('--selftest')
+/**
+ * `--shard=<k>/<n>`(CI matrix 用,2026-11-26):整支只在第 0 片跑,其他片印略過原因、exit 0 —— 這支一趟(判定 + 對照組)只要數十秒,
+ * 不值得分片;同一個 matrix 每格都跑 = 同一份原始碼、同一組列一次 CI 跑 n 次。由閘自己依 k 判斷、與 n 無關(不在 workflow 寫
+ * `if: matrix.shard == …`:格數改了那種條件會讓步驟全被略過);matrix 必須剛好涵蓋 0..n−1,由 ci-workflow-scope.test.mjs 驗。不給 = 照常跑。
+ */
+const SHARD = (() => {
+  const raw = process.argv.find((a) => a.startsWith('--shard='))?.slice('--shard='.length)
+  if (raw == null) return null
+  const m = /^(\d+)\/(\d+)$/.exec(raw)
+  const k = m ? Number(m[1]) : NaN
+  const n = m ? Number(m[2]) : NaN
+  if (!m || !(n >= 1) || !(k >= 0 && k < n)) { console.error(`✗ --shard=${raw} 寫法不對(要 <k>/<n>,0 ≤ k < n)`); process.exit(2) }
+  return { k, n }
+})()
+if (SHARD && SHARD.k !== 0) { console.log(`· overlay-cover-anchor:分片 ${SHARD.k}/${SHARD.n} 不跑(只在第 0 片跑;一趟數十秒,各片都跑 = 重複)`); process.exit(0) }
 const SOURCE_ROOT = resolveSourceRoot()
 const VIEWPORT = { width: 1280, height: 720 }
 /** 規格值(popover.spec.md「蓋在錨點上(展開型)」:碰邊推回、離邊 8;可用高 = 視窗高 − 上下各 8)—— 刻意不 import 元件常數 */
@@ -305,6 +321,8 @@ function report({ label, checks }) {
   }
 }
 const redIds = (checks) => checks.filter((c) => !c.pass).map((c) => c.id).sort()
+/** 判定紅的那一行 —— 判定模式與 selftest 基準共用(npm 別名與 CI 只跑 --selftest,基準紅就是產品裁決,不能只印「量具不可信」) */
+const verdictRedLine = (red) => `\n✗ 蓋在錨點上的浮層:${red.length} 條不符(${red.join(' / ')})—— SSOT popover.spec.md「蓋在錨點上(展開型)」`
 
 const STYLE = await compileDsCss({ root: SOURCE_ROOT, extraSources: [HARNESS] })
 let browser
@@ -317,7 +335,7 @@ try {
     report(result)
     const red = redIds(result.checks)
     if (red.length) {
-      console.log(`\n✗ 蓋在錨點上的浮層:${red.length} 條不符(${red.join(' / ')})—— SSOT popover.spec.md「蓋在錨點上(展開型)」`)
+      console.log(verdictRedLine(red))
       process.exitCode = 1
     } else {
       console.log(`\n✓ 蓋在錨點上的浮層:${result.checks.length} 條全綠(含 ${result.checks.filter((c) => c.kind === 'control').length} 條對照)`)
@@ -326,7 +344,10 @@ try {
     const baseline = await runVariant(page, '現行原始碼(selftest 基準 = 一趟完整判定,必須全綠)', null)
     report(baseline)
     const problems = []
-    if (redIds(baseline.checks).length) problems.push(`現行原始碼本身就紅(${redIds(baseline.checks).join(' / ')}),突變的紅燈無法歸因`)
+    if (redIds(baseline.checks).length) {
+      console.log(verdictRedLine(redIds(baseline.checks)))
+      problems.push(`現行原始碼本身就紅(${redIds(baseline.checks).join(' / ')}),突變的紅燈無法歸因`)
+    }
     const contractIds = baseline.checks.filter((c) => c.kind === 'contract').map((c) => c.id)
     const covered = new Set()
     for (const m of MUTANTS) {

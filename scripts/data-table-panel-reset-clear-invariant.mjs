@@ -47,7 +47,7 @@
  * 用法:
  *   node scripts/data-table-panel-reset-clear-invariant.mjs              判定(現行原始碼)
  *   node scripts/data-table-panel-reset-clear-invariant.mjs --selftest   對照組(全部單一根因突變;基準 = 一趟完整判定)
- *   node scripts/data-table-panel-reset-clear-invariant.mjs --selftest --shard=<k>/<n>   只跑第 k 片突變(CI matrix 平行;基準照跑、覆蓋率靜態驗)
+ *   node scripts/data-table-panel-reset-clear-invariant.mjs --selftest --shard=<k>/<n>   只跑第 k 片突變(CI matrix 平行;基準與覆蓋率靜態驗只在第 0 片)
  *   node scripts/data-table-panel-reset-clear-invariant.mjs --root=<dir> 改量另一棵原始碼(例:git archive 出來的修改前基準樹)
  */
 import { INSTRUMENT_FAIL_MARKER, launchBrowserOrSkip } from './lib/launch-browser.mjs'
@@ -66,9 +66,10 @@ import {
 
 const SELFTEST = process.argv.includes('--selftest')
 /**
- * `--shard=<k>/<n>`(selftest):只跑 MUTANTS 裡索引 % n === k 的那一片(基準照跑 = 每一片都是一趟完整判定)。CI 把對照組拆成 n 片平行跑
+ * `--shard=<k>/<n>`(selftest):只跑 MUTANTS 裡索引 % n === k 的那一片。CI 把對照組拆成 n 片平行跑
  * (ci.yml verify-browser-nested-dismiss 的 matrix;同 overlay-nested-dismiss-invariant.mjs 的寫法):各片各自驗「每個突變剛好紅它的 expectRed」;
- * 覆蓋率改成靜態驗 —— 每一條契約列都必須出現在某個突變的 expectRed。不給 = 一片跑全部(本機 `npm run test:data-table-panel-reset-clear`、meta-test)。
+ * 覆蓋率改成靜態驗 —— 每一條契約列都必須出現在某個突變的 expectRed(只在第 0 片驗)。
+ * 基準 = 一趟完整判定,只在第 0 片跑(2026-11-26:每片都跑 = 同一趟判定一次 CI 跑 n 次);其他片的每個突變那一趟也量全部列、紅的列必須剛好等於 expectRed,所以現行原始碼哪一列退步,那幾片照樣紅,第 0 片的基準另印判定那一行。不給 = 一片跑全部(本機 `npm run test:data-table-panel-reset-clear`、meta-test)。
  */
 const SHARD = (() => {
   const raw = process.argv.find((a) => a.startsWith('--shard='))?.slice('--shard='.length)
@@ -1142,6 +1143,8 @@ function report({ label, checks }) {
   }
 }
 const redIds = (checks) => checks.filter((c) => !c.pass).map((c) => c.id).sort()
+/** 判定紅的那一行 —— 判定模式與 selftest 基準共用(CI 只跑 --selftest,基準紅就是產品裁決,不能只印「量具不可信」) */
+const verdictRedLine = (red) => `\n✗ 面板「恢復預設 / 清除全部」與寬度:${red.length} 條不符(${red.join(' / ')})—— SSOT data-table.spec.md L4「Header 恢復預設 / 清除全部」、「工具面板的寬度」`
 
 let browser
 try {
@@ -1153,29 +1156,37 @@ try {
     report(result)
     const red = redIds(result.checks)
     if (red.length) {
-      console.log(`\n✗ 面板「恢復預設 / 清除全部」與寬度:${red.length} 條不符(${red.join(' / ')})—— SSOT data-table.spec.md L4「Header 恢復預設 / 清除全部」、「工具面板的寬度」`)
+      console.log(verdictRedLine(red))
       process.exitCode = 1
     } else {
       console.log(`\n✓ 面板「恢復預設 / 清除全部」與寬度:${result.checks.length} 條全綠(含 ${result.checks.filter((c) => c.kind === 'control').length} 條對照)`)
     }
   } else {
-    const baseline = await runVariant(page, '現行原始碼(selftest 基準 = 一趟完整判定,必須全綠)', null)
-    report(baseline)
     const problems = []
-    if (redIds(baseline.checks).length) problems.push(`現行原始碼本身就紅(${redIds(baseline.checks).join(' / ')}),突變的紅燈無法歸因`)
-    // 對照:突變錨點對不到 → 共用 bundleDsHarness 必須丟回 InstrumentError(本閘接住 → INSTRUMENT-FAIL、exit 2),
-    // 不是被 esbuild 包成一般的 Build failed(2026-11-15 前:未捕捉、exit 1、沒有標記)
-    const missAnchor = await bundleDsHarness({
-      root: SOURCE_ROOT, harness: HARNESS, harnessName: 'data-table-panel-reset-clear-harness.tsx',
-      mutate: mutantFor(SOURCE_ROOT, SORT, (src) => replaceOnce(src, /這個錨點在原始碼裡不存在_anchor_miss_control/, '')),
-    }).then(() => null, (error) => error)
-    if (missAnchor instanceof InstrumentError && missAnchor.message.includes('突變錨點命中 0 次')) {
-      // 這一行不印儀器失效的標記字樣:gate-selftest-meta 看到標記一律判紅(對照組成立時印的是「抓到了」,不是「量不到」)
-      console.log('\n  ✓ 對照:突變錨點對不到 → InstrumentError(本閘印儀器失效標記、exit 2)')
-    } else {
-      problems.push(`突變錨點對不到時應丟 InstrumentError(「突變錨點命中 0 次」),實得 ${missAnchor ? `${missAnchor.constructor?.name}:${String(missAnchor.message).split('\n')[0]}` : '打包成功(錨點對照組不成立)'}`)
-    }
-    const contractIds = baseline.checks.filter((c) => c.kind === 'contract').map((c) => c.id)
+    // 基準、錨點對照與靜態覆蓋只在不分片或第 0 片跑(見 SHARD 的說明;各片都跑 = 同一件事一次 CI 跑 n 次);其他片 contractIds = null
+    let contractIds = null
+    if (!SHARD || SHARD.k === 0) {
+      const baseline = await runVariant(page, '現行原始碼(selftest 基準 = 一趟完整判定,必須全綠)', null)
+      report(baseline)
+      const baseRed = redIds(baseline.checks)
+      if (baseRed.length) {
+        console.log(verdictRedLine(baseRed))
+        problems.push(`現行原始碼本身就紅(${baseRed.join(' / ')}),突變的紅燈無法歸因`)
+      }
+      // 對照:突變錨點對不到 → 共用 bundleDsHarness 必須丟回 InstrumentError(本閘接住 → INSTRUMENT-FAIL、exit 2),
+      // 不是被 esbuild 包成一般的 Build failed(2026-11-15 前:未捕捉、exit 1、沒有標記)
+      const missAnchor = await bundleDsHarness({
+        root: SOURCE_ROOT, harness: HARNESS, harnessName: 'data-table-panel-reset-clear-harness.tsx',
+        mutate: mutantFor(SOURCE_ROOT, SORT, (src) => replaceOnce(src, /這個錨點在原始碼裡不存在_anchor_miss_control/, '')),
+      }).then(() => null, (error) => error)
+      if (missAnchor instanceof InstrumentError && missAnchor.message.includes('突變錨點命中 0 次')) {
+        // 這一行不印儀器失效的標記字樣:gate-selftest-meta 看到標記一律判紅(對照組成立時印的是「抓到了」,不是「量不到」)
+        console.log('\n  ✓ 對照:突變錨點對不到 → InstrumentError(本閘印儀器失效標記、exit 2)')
+      } else {
+        problems.push(`突變錨點對不到時應丟 InstrumentError(「突變錨點命中 0 次」),實得 ${missAnchor ? `${missAnchor.constructor?.name}:${String(missAnchor.message).split('\n')[0]}` : '打包成功(錨點對照組不成立)'}`)
+      }
+      contractIds = baseline.checks.filter((c) => c.kind === 'contract').map((c) => c.id)
+    } else console.log(`\n· 分片 ${SHARD.k}/${SHARD.n}:基準(一趟完整判定)、錨點對照與靜態覆蓋只在第 0 片跑;這一片每個突變那一趟仍量全部列,紅的列必須剛好等於 expectRed`)
     const covered = new Set()
     const RUN = MUTANTS.filter((m, i) => !SHARD || i % SHARD.n === SHARD.k)
     if (!RUN.length) throw new InstrumentError(`這一片沒有任何突變可跑(--shard=${SHARD.k}/${SHARD.n})—— 不得讀成通過`)
@@ -1190,20 +1201,24 @@ try {
       for (const id of red) covered.add(id)
     }
     // 靜態覆蓋:每一條契約列都要有突變宣告會讓它紅(分片時各片只看得到自己那幾個突變,動態覆蓋要所有片合起來才完整)
-    const claimed = new Set(MUTANTS.flatMap((m) => m.expectRed))
-    const unclaimed = contractIds.filter((id) => !claimed.has(id))
-    if (unclaimed.length) problems.push(`契約列 ${unclaimed.join(' / ')} 不在任何突變的 expectRed —— 它的綠燈是零證據`)
-    const phantom = [...claimed].filter((id) => !contractIds.includes(id))
-    if (phantom.length) problems.push(`突變的 expectRed 寫了不是契約列的 ${phantom.join(' / ')}`)
-    const uncovered = contractIds.filter((id) => !covered.has(id))
-    if (!SHARD && uncovered.length) problems.push(`契約列 ${uncovered.join(' / ')} 沒有任何突變能讓它紅 —— 它的綠燈是零證據`)
+    if (contractIds) {
+      const claimed = new Set(MUTANTS.flatMap((m) => m.expectRed))
+      const unclaimed = contractIds.filter((id) => !claimed.has(id))
+      if (unclaimed.length) problems.push(`契約列 ${unclaimed.join(' / ')} 不在任何突變的 expectRed —— 它的綠燈是零證據`)
+      const phantom = [...claimed].filter((id) => !contractIds.includes(id))
+      if (phantom.length) problems.push(`突變的 expectRed 寫了不是契約列的 ${phantom.join(' / ')}`)
+    }
+    if (!SHARD) {
+      const uncovered = contractIds.filter((id) => !covered.has(id))
+      if (uncovered.length) problems.push(`契約列 ${uncovered.join(' / ')} 沒有任何突變能讓它紅 —— 它的綠燈是零證據`)
+    }
     if (problems.length) {
       console.log('\n✗ selftest:量具不可信 ——')
       for (const p of problems) console.log(`  - ${p}`)
       process.exitCode = 1
     } else {
       console.log(SHARD
-        ? `\n✓ selftest 第 ${SHARD.k + 1} / ${SHARD.n} 片:${RUN.length} 個根因突變各自剛好紅了該紅的列,對照列全程綠(全部 ${MUTANTS.length} 個突變的 expectRed 涵蓋契約 ${contractIds.length} 條;其餘片在 CI 同一個 matrix 的另一格跑)`
+        ? `\n✓ selftest 第 ${SHARD.k + 1} / ${SHARD.n} 片:${RUN.length} 個根因突變各自剛好紅了該紅的列,對照列全程綠(${contractIds ? `全部 ${MUTANTS.length} 個突變的 expectRed 涵蓋契約 ${contractIds.length} 條` : '基準與契約覆蓋在第 0 片驗'};其餘片在 CI 同一個 matrix 的另一格跑)`
         : `\n✓ selftest:${MUTANTS.length} 個根因突變各自剛好紅了該紅的列(契約 ${contractIds.length} 條全被覆蓋),對照列全程綠 —— 量具會紅`)
     }
   }

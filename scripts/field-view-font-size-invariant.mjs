@@ -345,6 +345,8 @@ function report({ label, checks }) {
   for (const c of checks.filter((x) => x.kind === 'control')) console.log(`  ${c.pass ? '✓' : '✗'} [對照] ${c.id}:${c.detail}`)
 }
 const redIds = (checks) => checks.filter((c) => !c.pass).map((c) => c.id).sort()
+/** 判定紅的那一行 —— 判定模式與 selftest 基準共用(npm 別名與 CI 只跑 --selftest,基準紅就是產品裁決,不能只印「量具不可信」) */
+const verdictRedLine = (red) => `\n✗ Field 檢視態字級:${red.length} 列不等於規格值(${red.join(' / ')})—— SSOT field-controls.spec.md「(e) View typography canonical」`
 
 let browser
 try {
@@ -357,7 +359,7 @@ try {
     report(result)
     const red = redIds(result.checks)
     if (red.length) {
-      console.log(`\n✗ Field 檢視態字級:${red.length} 列不等於規格值(${red.join(' / ')})—— SSOT field-controls.spec.md「(e) View typography canonical」`)
+      console.log(verdictRedLine(red))
       process.exitCode = 1
     } else {
       console.log(`\n✓ Field 檢視態字級:${result.checks.filter((c) => c.kind === 'contract').length} 列全部等於規格值(6 元件 × showDisplayEndIcon 兩值 × 3 size × 有值 / 空值 × 2 種外層),對照 ${result.checks.filter((c) => c.kind === 'control').length} 列綠`)
@@ -366,7 +368,10 @@ try {
     const baseline = await runVariant(page, '現行原始碼(selftest 基準,必須全綠)', null)
     report(baseline)
     const problems = []
-    if (redIds(baseline.checks).length) problems.push(`現行原始碼本身就紅(${redIds(baseline.checks).join(' / ')}),突變的紅燈無法歸因`)
+    if (redIds(baseline.checks).length) {
+      console.log(verdictRedLine(redIds(baseline.checks)))
+      problems.push(`現行原始碼本身就紅(${redIds(baseline.checks).join(' / ')}),突變的紅燈無法歸因`)
+    }
     const contractIds = baseline.checks.filter((c) => c.kind === 'contract').map((c) => c.id)
     const covered = new Set()
     for (const m of MUTANTS) {

@@ -321,12 +321,10 @@ jobs:
           # 下面各瀏覽器 job 宣告的 GOVERNANCE_BROWSER_REQUIRED=1 → exit 非 0,永不略過;另掃全 repo 不准有閘自己抄一份略過。
           # 不需要瀏覽器(故意指向不存在的執行檔),所以放在這個沒有 Chromium 的 job。
           npm run test:launch-browser
-          npm run test:audit-coverage-tier-sync
-          npm run test:ci-evidence
+          # test:audit-coverage-tier-sync / test:ci-evidence / test:hook-evidence / test:deterministic-deep-audit 由 governance-control-plane 的
+          # test:governance-evidence-control-plane 組合指令跑(2026-11-26:同一次 CI 跑兩次 → 只留組合指令那一處;infra/governance/README.md 記的也是它)。
           npm run test:privileged-change-authorization
-          npm run test:hook-evidence
           npm run test:setup-netlify
-          npm run test:deterministic-deep-audit
           # 這條 meta 閘守「宣稱有閘、其實沒人跑」本身:
           # 凡註冊成 test:* 的,CI 就必須觸達得到,否則紅。
           node scripts/ci-gate-coverage.mjs
@@ -907,7 +905,8 @@ jobs:
   verify-browser-control-groups:
     # 2026-10-14 拆自 verify-browser-datatable-perception(待辦總帳 G10;照主題拆平行 job、不調高上限,上限沿用原 job 的 25)。
     # 前兩支都是「判定在別的 job、對照組按預算放」的 --selftest:虛擬游標模態(判定在 verify-browser-cursor)、
-    # useFormValidation 契約(判定在 verify-browser-interaction)。逐支計時合計 513–583 秒,加建置與安裝約 2.2 分 → 估約 12 分。
+    # useFormValidation 契約(判定原在 verify-browser-interaction;2026-11-26 起判定 = 這裡 --selftest 開頭的基準,interaction 不另跑)。
+    # 逐支計時合計 513–583 秒,加建置與安裝約 2.2 分 → 估約 12 分。
     # 第三支浮層家族範例契約(2026-10-21 由 verify-browser-overlay 移來,判定與對照組同一趟):本機 125–281 秒 → 估約 14–17 分。
     name: Verify browser(virtual cursor + form validation control groups)
     runs-on: ubuntu-24.04
@@ -948,7 +947,7 @@ jobs:
           # 現況那趟在 verify-browser-cursor(上限 15);對照組 CI 逐支計時 102–139 秒,
           # 照 2026-09-15 按預算拆 job 的先例放在這裡(原本在 verify-browser-datatable-perception,2026-10-14 拆出)。
           node scripts/virtual-cursor-modality-invariant.mjs --selftest
-          # useFormValidation 契約的**對照組**(2026-10-01):判定在 verify-browser-interaction,
+          # useFormValidation 契約的**對照組**(2026-10-01):判定 = 這一趟開頭的基準(2026-11-26 起 CI 只在這裡跑,interaction 不另跑),
           # 二十六個單一根因突變(hook 十一個 + 對話框 Esc 分層 / 受控對話框還焦點 / Button 忙碌、握著焦點與離開後的停用 / 存檔後重設基準 / Toast / 浮層表單送出就關十五個)
           # 各自必須剛好紅它負責的列、對照列全程綠;不需要 storybook,四條 lane 並行(每條一個瀏覽器)本機 6 分(2026-10-07 實測 356 秒,循序約 25 分),CI 逐支計時 411–444 秒;同上一支按預算放。
           node scripts/form-validation-contract-invariant.mjs --selftest
@@ -1419,8 +1418,8 @@ jobs:
           # DataTable 游標的欄被隱藏、Combobox「+N」卡、可聚焦停用與原生停用同色(後兩列用同一棵樹編出的 DS 樣式);
           # 2026-10-13 加試算表 DataTable 連結格 / 開關格的格內模式(Enter 進格裡的控件,Esc 先回格導覽、再清游標、才關)。
           # 不需要 storybook(原始碼打包進空白頁),本機約 90 秒。
-          # 對照組(--selftest,突變清單與個數以腳本的 MUTANTS 為準,這裡不抄數字)在 verify-browser-escape-focus-control(2026-10-14 從 verify-browser-select-all 拆出)。
-          node scripts/escape-and-focus-contract-invariant.mjs
+          # 2026-11-26 起這裡不另跑判定:verify-browser-escape-focus-control 第 0 格的 --selftest 基準就是同一趟判定(同一個 runVariant、同一個分頁設定),
+          # 基準紅會印判定那一行並 exit 1;這裡再跑 = 同一趟判定一次 CI 跑兩次(那個 job 也在 verify 的必過清單)。
           # 開合動畫(2026-10-07 / 10-13,待辦總帳 T6 / T7 / T10 / T11 / T12;本機合計約 60 秒):11 個成員(TreeView / Accordion /
           # AgentPanel 思考塊 / Dialog / Sheet / FileViewer / Popover / Tooltip / HoverCard / DropdownMenu 含子選單 / Select)——
           # E0 關閉時收起動畫真的有播;E1 / E2 JS 收尾晚到 200ms 每一格都不得長回來;N1 每種打開方式都播看得見的進場
@@ -1434,7 +1433,8 @@ jobs:
     # 原 job 最近 15 次 CI p50 16.4 / p90 18.7 / 最大 19.2 分(上限 25,p90 佔 75%)。浮層點外關閉閘的判定本機 137–148 秒、對照組(基準 + 全部突變)
     # 單線 607 秒 —— 兩支疊進原 job 估 +13 分 ≈ 29 分,撞上限被取消(取消 = 那一輪沒有裁決,發布閘 fail closed);只放判定也 +2.5 分、p90 ≈ 87%,
     # 已在 2026-10-21 escape-focus-control 判為要拆的區間(86–92%)。所以兩支都搬到這裡,原 job 的閘清單與 108a736f 相同。
-    # matrix 各格跑一片突變(--shard,腳本檔頭);每一格的基準 = 一趟完整判定,所以判定每個 PR 都跑好幾次;覆蓋率由腳本靜態驗(每條契約列都在某個突變的 expectRed)。
+    # matrix 各格跑一片突變(--shard,腳本檔頭);基準(= 一趟完整判定)與覆蓋率靜態驗只在第 0 格跑(2026-11-26 前每格都跑 = 判定一次 CI 跑五次)。
+    # 2026-11-26 拿掉 build:lib / build-storybook:這個 job 的閘全走 scripts/lib/ds-source-harness.mjs(原始碼直接打包進空白頁),不讀任何建置。
     # 每格 2 條 lane 並行(--lanes=2,每條一個瀏覽器)。本機量測與估計寫在下方 run 註解。每一格都過 needs.<job>.result 才是 success(fan-in 不變)。
     # 2026-11-24 兩格 → 五格(OVERLAY-CAPABILITIES):浮層點外閘加「清單旁的詳情」N 列與 6 個突變(7 → 13 個)後,判定一趟本機 137–148 → 182 秒;
     # 兩格時每格 = 基準 + 7 個突變,估本機 ≈ 4 輪 × 約 270 秒(下方 0/5 片一輪約 273 秒)≈ 18 分,加上同 job 其餘步驟會撞上限 25 分。五格每格 = 基準 + 2–3 個突變(2 輪),量測見下方 run 註解。
@@ -1464,12 +1464,6 @@ jobs:
       - name: Install locked dependencies once
         run: npm run --silent setup:dependencies
 
-      - name: Build publishable libraries and declarations
-        run: npm run build:lib
-
-      - name: Build the Storybook the browser gates load
-        run: npm run build-storybook
-
       - name: Nested overlay dismiss + spreadsheet click-outside (browser)
         run: |
           npx --no-install playwright install chromium
@@ -1485,18 +1479,19 @@ jobs:
           node scripts/overlay-nested-dismiss-invariant.mjs --selftest --shard="$SHARD" --lanes=2
           # 蓋在錨點上的浮層(2026-11-24;PopoverContent coverAnchor,總帳 Q2b(定)「以格子為中心(水平 + 垂直)」):6 種錨點位置 × 3 種內容高,
           # 中心 = 錨點中心、碰邊推回離邊 8、高 = 視窗高 − 16、標題列固定內文捲;對照組(--selftest,突變以腳本的 MUTANTS 為準)各自剛好紅該紅的列。
-          # 不需要 storybook(原始碼打包進空白頁),本機判定 + 對照組合計約 21 秒(2026-11-24 量)→ 每一格都跑(不寫條件式,同下一支)。
-          npm run test:overlay-cover-anchor
+          # 不需要 storybook(原始碼打包進空白頁),本機判定 + 對照組合計約 21 秒(2026-11-24 量)→ 只在第 0 格跑:由閘自己依 --shard 的 k 判斷
+          #(其他格印略過、exit 0;不寫 YAML 條件式,格數改了也不會整支被略過;matrix 涵蓋 0..n−1 由 ci-workflow-scope.test.mjs 驗;同下一支)。
+          npm run test:overlay-cover-anchor -- --shard="$SHARD"
           # 試算表點外清除認本表(2026-11-03;同一個形狀的第三處):同一頁兩張試算表時點另一張表的格、表格裝在另一張表的格子裡時點外層表格,
           # 本表的游標與區間都要清掉(修前只認「任何一張表的外框」,兩種都留著);點頁面空白與 Shift+點本表是對照列。不需要 storybook;
-          # 判定 + --selftest 一個根因突變,本機合計約 30 秒 → 每一格都跑(不寫條件式)。
-          npm run test:data-table-click-outside
+          # 判定 + --selftest 一個根因突變,本機合計約 30 秒 → 只在第 0 格跑(同上一支,閘自己依 --shard 判斷)。
+          npm run test:data-table-click-outside -- --shard="$SHARD"
           # DataTable 排序 / 篩選面板的「恢復預設 / 清除全部」(2026-11-11;user 同日「重置與清除所有就是完全不同的意思，所以本來就要有兩個入口吧？」),
           # 欄位顯示面板的「恢復預設」2026-11-15 併入同一條:恢復預設看資料(值 ≠ defaultSorting / defaultValue / defaultVisibility + defaultColumnOrder —— 欄位顯示面板連順序一起比、一起還原)、
           # 清除全部在加條件那一排靠最右(量 rect)、clearable 開關、按下後焦點給加條件鈕(欄位顯示面板沒有 → 標題列 ×)不掉 body、polite 播報;
           # 欄位顯示面板的固定零件(搜尋框、拖曳把手不靠參數,2026-11-15);另驗排序面板 labels 每個字畫在對的元素 / 屬性(2026-11-15);
           # 三個面板的寬度參數(width / minWidth / maxWidth、下限、375px 視窗夾限)與 PopoverContent width(2026-11-15 A19,腳本檔頭 (6))。不需要 storybook;
-          # 對照組照最上面那支的做法分片(--shard,腳本檔頭;清單與個數以腳本的 MUTANTS 為準,這裡不寫數字):每一格 = 基準(一趟完整判定 = 主跑,所以主跑每一格都跑)
+          # 對照組照最上面那支的做法分片(--shard,腳本檔頭;清單與個數以腳本的 MUTANTS 為準,這裡不寫數字):第 0 格 = 基準(一趟完整判定 = 主跑;2026-11-26 起只在第 0 格)
           # + 一半根因突變(含修前寫法),覆蓋率由腳本靜態驗(每條契約列都在某個突變的 expectRed;不分片的完整動態覆蓋由本機 npm run test:data-table-panel-reset-clear 與 meta-test 跑)。
           # 2026-11-15 前兩格各跑「主跑 + 完整 --selftest」,本 job 兩格 CI 實測 16.1 / 16.9 分(上限 25)。本機 2026-11-15 重量(負載均值約 7):
           # 不分片 --selftest(基準 + 全部突變)578 秒;兩片同時跑 --shard=0/2 307 秒、--shard=1/2 288 秒 → 每格這支閘的時間約剩一半(改前每格還多一趟主跑)。2026-11-24 job 改五格後 --shard=0/5 213 秒。
@@ -1598,9 +1593,8 @@ jobs:
           # 2026-10-01 下午(待辦總帳 N64 / N68 / N69 / OE29)加十列:對話框裡的表單 Esc 一次一層、受控對話框關閉後焦點回開啟者、
           # 送出中 / 存檔後焦點留在送出鈕(可聚焦的停用)、更新表單存檔後重設比對基準、送出成功跳 Toast(三則 story 原始碼)。
           # 2026-10-07 加 T-dialog / T-sheet(放在浮層裡、送出成功就關的三則 story:Toast、關閉、再打開時 reset)。
-          # 這裡只跑判定(本機約 45 秒);--selftest(二十六個單一根因突變,四條 lane 並行本機 6 分)按預算放在 verify-browser-control-groups
-          #(2026-10-14 從 verify-browser-datatable-perception 拆出),照 virtual-cursor-modality 對照組的先例。
-          node scripts/form-validation-contract-invariant.mjs
+          # 2026-11-26 起這裡不另跑判定(原本本機約 45 秒,在全 CI 最長的 job 上):verify-browser-control-groups 的 --selftest 基準就是同一趟判定
+          #(同一個 runVariant、同一個 CONTEXT),基準紅會印判定那一行並 exit 1。
           npm run test:shared-carrier-focus
       # Cloud sessions load the committed provider config as-is; the only two ways that config has
       # ever broken (fatal sandbox flag in containers, hooks/scripts pointing at a retired mirror)
@@ -2306,7 +2300,8 @@ jobs:
 
   verify-browser-escape-focus-control:
     # 2026-10-14 拆自 verify-browser-select-all(待辦總帳 G10;照主題拆平行 job、不調高上限,上限沿用原 job 的 25)。
-    # escape-and-focus 契約的對照組(判定在 verify-browser-overlay);原 job 最近 15 次 CI p90 24.9 分 / 上限 25,本 job 估約 15 分。
+    # escape-and-focus 契約的對照組;判定 = 第 0 格的基準(2026-11-26 起 verify-browser-overlay 不另跑)。原 job 最近 15 次 CI p90 24.9 分 / 上限 25,本 job 估約 15 分。
+    # 2026-11-26 拿掉 build:lib / build-storybook:這支閘走 scripts/lib/ds-source-harness.mjs(原始碼直接打包進空白頁),不讀任何建置。
     name: Verify browser(escape and focus contract control group)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -2338,16 +2333,10 @@ jobs:
       - name: Install locked dependencies once
         run: npm run --silent setup:dependencies
 
-      - name: Build publishable libraries and declarations
-        run: npm run build:lib
-
-      - name: Build the Storybook the browser gates load
-        run: npm run build-storybook
-
       - name: Escape and focus contract — control group (browser)
         run: |
           npx --no-install playwright install chromium
-          # escape-and-focus 契約的**對照組**(2026-10-01;判定在 verify-browser-overlay):單一根因突變(清單與個數以腳本的 MUTANTS 為準,這裡不抄數字)
+          # escape-and-focus 契約的**對照組**(2026-10-01;判定 = 第 0 格的基準,2026-11-26 起只在這裡):單一根因突變(清單與個數以腳本的 MUTANTS 為準,這裡不抄數字)
           # (LinkInput 困住 Esc / 各控件不宣告 Esc 層 / 拖曳不獨占 / Combobox 丟掉表單 props / 複合欄位 blur / 選單項開的對話框不還焦點 /
           # 集合移除基準 / Enter 不 preventDefault / DatePicker 收日曆不還焦點 / Button 握著焦點轉原生 disabled / 改名空白停用 / 輸入盒焦點與接力 /
           # 2026-10-07:守門不驗收 / DatePicker 替 consumer 認領 / DataTable 游標不看欄 / Combobox「+N」卡不算欄位 / 可聚焦停用保留 aria-disabled 長相 /
@@ -2587,8 +2576,7 @@ jobs:
 
       - name: Governance control-plane suites
         run: |
-          npm run --silent test:provider-neutral-residue
-          npm run --silent test:waived-self-review
+          # test:provider-neutral-residue / test:waived-self-review 已在下一行的組合指令裡(package.json),2026-11-26 拿掉前面各自單跑的那一趟。
           npm run --silent test:governance-evidence-control-plane
           npm run --silent test:governance-control-plane
 
