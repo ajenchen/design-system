@@ -32,7 +32,7 @@
 - **hook 測試**:只跑改到的那幾支(`npm run hooks:test -- test_x.sh`;改到共用 lib 或 registrations.json 就跑引用它的),全套只在 CI。
 - **governance:generate**:改到治理輸入才跑;其餘與核對、合回只跑 governance:check,有漂移才 generate。
 - **story 清單與 a11y 基線**:最後一次新增 / 改名 story 後重生一次。CI 沒跑 axe 時,改到 story 由核對者在核對的 commit 自己跑 `npm run a11y:check -- --tag=<story id>`(不引用別人或較早 commit 的紀錄),之後再改到就在那個 commit 再跑。
-- **Storybook**:閘需要才建(檔頭寫「不需要 storybook」的不建);建好後沒改過任何檔(含丟掉的改動)就重用。
+- **Storybook**:閘需要才建(腳本寫「這支閘不需要 storybook」的不建);建好後沒改過任何檔(含丟掉的改動)就重用。
 
 ## 合回點
 
@@ -52,7 +52,7 @@ v1(輕做法 = 實作者照規格實作並自驗、沒有審查,本檔再加第 
 - WP-17:輕做法 39 分鐘做完,重流程 6 小時以上 0 commit。
 - 回溯:代理花費 72.6% 用在流程工具。出處:`governance/planning/2026-11-20-work-process-evidence.md`
 
-v4:本機照 CI 逐條跑一輪(c4460faa)機器 294 分、牆鐘約 130 分,CI 同一套 20 分 58 秒;那輪 9 條紅,2 條真紅 CI 同一個 job 也跑,其餘是 mac 假紅與執行器問題。escape 閘一天單跑 226 分、非實作者約 41%。PR 的 CI 沒有 axe,a11y 那一趟不省。出處:`governance/planning/2026-11-26-work-process-evidence-v4.md`
+v4:本機照 CI 逐條跑一輪(c4460faa)機器 294 分、牆鐘約 130 分,CI 同一套 20 分 58 秒;那輪 9 條紅,2 條真紅 CI 同一個 job 也跑,其餘是 mac 假紅與執行器問題。escape 閘一天單跑 226 分、非實作者約 41%。出處:`governance/planning/2026-11-26-work-process-evidence-v4.md`
 
 ## 迭代
 

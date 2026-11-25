@@ -181,7 +181,9 @@ try {
 // 同 commit 紀錄、再驗只跑修正的檢查、「依據」v4 一段實測與版本紀錄一列;同時拿掉「迭代」段與檔頭重複的一句、壓短 v1 名詞定義。
 // 初稿 +2,146,縮句後 +1,744(-402);再縮就要刪規則或刪「為什麼品質不降」的實測數字。換到的是每個合回點本機約 294 分機器時間不重跑
 //(governance/planning/2026-11-26-work-process-evidence-v4.md 第 1 節),每個代理開場都要讀到才會照做。
-const OPENING_FILES_MAX_BYTES = 78_625
+// 2026-11-26 F1 規格核對必修明改 78,625 → 78,590(−35):Storybook 那句改成以 8 支原始碼 harness 閘提示字串裡的那串字辨認(+9;
+// 只有 2 支檔頭寫,本註解刻意不抄那串字,免得多命中),刪掉「依據」v4 與「本機檢查」a11y 那項重複的一句(−44)。開場變小,上限照釘回實量、不留空位。
+const OPENING_FILES_MAX_BYTES = 78_590
 const RULES_DIR = path.join(ROOT, 'packages/design-system/ds-canonical/rules')
 const alwaysLoadedRules = fs.existsSync(RULES_DIR)
   ? fs.readdirSync(RULES_DIR).filter((name) => name.endsWith('.md')).sort().filter((name) => {

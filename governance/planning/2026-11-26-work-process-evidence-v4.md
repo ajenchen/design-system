@@ -36,7 +36,8 @@
 
 ## 4. Storybook 建置(判定 L3,驗證:成立、風險改寫)
 
-- 當天建 Storybook 113 次、合計 165 分 6 秒;單獨跑的 77 次 72 分 4 秒,平均約 56 秒。同一個副本上一次建置後沒改任何檔又重建 ≥ 18 次(下限);跑原始碼 harness 閘(檔頭寫「不需要 storybook」,例 `scripts/lib/ds-source-harness.mjs:6`)前也先建的,和建置串在同一條指令裡,拆不出次數。出處:`gate-census/summary.md` 第 4 段、判定 L3。
+- 當天建 Storybook 113 次、合計 165 分 6 秒;單獨跑的 77 次 72 分 4 秒,平均約 56 秒。同一個副本上一次建置後沒改任何檔又重建 ≥ 18 次(下限);跑原始碼 harness 閘前也先建的,和建置串在同一條指令裡,拆不出次數。出處:`gate-census/summary.md` 第 4 段、判定 L3。
+- 怎麼認出不需要 Storybook 的閘:就是第 3 節那 8 支,每支都在 `launchBrowserOrSkip` 的提示字串寫「這支閘不需要 storybook 建置」(例 `scripts/escape-and-focus-contract-invariant.mjs:1450`、`scripts/overlay-nested-dismiss-invariant.mjs:982`);檔頭也寫的只有 2 支(`scripts/overlay-cover-anchor-invariant.mjs:21`、`scripts/form-validation-contract-invariant.mjs:87`),所以 work-process.md 不寫「檔頭」,改用「這支閘不需要 storybook」這串字 —— 在 `scripts/` 底下 `grep -rl` 剛好命中這 8 支。寬鬆的「不需要 storybook」不能用:它也命中 `scripts/section-gap-invariant.mjs:398`、`:403`,那支會呼叫 `openStory`(例 `:655`),要先建 Storybook。
 - 驗證指出的漏洞:`scripts/gen-build-info.mjs:38` 只記 commit,沒記建置當時工作樹乾不乾淨;拿「build-info 的 commit 等於 HEAD」判斷可不可以重用,會在「帶著未提交改動建置、之後丟掉改動」時量到不對的建置。所以規則改用「建置之後沒改過任何檔(含丟掉的改動)才重用」,不靠 commit 相等。影響只在本機:CI 每次都重新建置。
 
 ## 5. hook 測試(判定 L4,驗證:成立)
@@ -59,6 +60,7 @@
 - work-process.md 每次對話都載入,`scripts/check-agents-bootstrap.mjs` A6 對開場固定載入的檔(AGENTS.md + CLAUDE.md + 沒有 paths 前置設定的規則檔)有 bytes 上限,原上限 76,881 = v3 現況。
 - v4 初稿讓開場變成 79,027 bytes(+2,146);拿掉「迭代」段與檔頭重複的一句、壓短 v1 名詞定義、整段縮句後是 78,625 bytes(+1,744)。再縮就要刪規則,或刪「依據」段說明為什麼品質不降的實測數字(`scripts/work-process-ssot-invariant.mjs` W6 只守「依據」段,數字放在別段就沒有閘對照證據檔)。
 - 所以照 A6 自己寫的做法在 `scripts/check-agents-bootstrap.mjs` 明改上限 76,881 → 78,625,註解寫明換到什麼。這是開場大小的預算,不是哪條品質閘的判準。
+- 規格核對後的修正:Storybook 那句改成「這支閘不需要 storybook」(+9 bytes,理由見第 4 節),同時刪掉「依據」v4 裡和「本機檢查」a11y 那項重複的一句(−44 bytes),開場變成 78,590 bytes;上限跟著釘回實量 78,625 → 78,590,不留空位(A6 是「釘在瘦身後的數字」)。
 
 ## 9. 之後怎麼量(下一個合回點的讀回)
 
