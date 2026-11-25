@@ -267,8 +267,9 @@ jobs:
           # 延續旗標五個;--selftest 31 個行為突變 + 5 個靜態突變各自讓指定的格紅。純函式 + 讀檔,本機兩條合計不到 1 秒。
           npm run test:calendar-layout
           # DatePicker.Range 檢視模式 formatRange 只有一份判定(components/DatePicker/range-format.ts;date-picker.spec.md「區間檢視合併(formatRange)」):
-          # zh-TW / en-US × 同一天有時段 / 跨日全天 / 跨日有時段 / 同一刻 / 一端空的判定表 + 其他退回條件 + 「同一頁日期樣式一致」性質
-          # (對照組:兩位數月日與 dateStyle full 必須被同一支檢查抓到)+ date-picker.tsx 真的呼叫它;--selftest 14 個行為 + 5 個靜態 + 6 個接線突變各自必紅。純函式 + 讀檔,約 1 秒。
+          # zh-TW / en-US × 同一天有時段 / 跨日全天 / 跨日有時段 / 同一刻 / 一端空的判定表 + 其他退回條件 + 退回兩段時每一端的寫法 +
+          # 「同一頁日期樣式一致」性質(合併與退回的列都算;對照組:兩位數月日、dateStyle full、退回的列用補零寫法,都必須被同一支檢查抓到)
+          # + date-picker.tsx 真的呼叫它;--selftest 的行為 / 靜態 / 接線突變各自必紅(數量以腳本輸出為準)。純函式 + 讀檔,約 1 秒。
           npm run test:date-range-format
 
       - name: Registered test scripts nothing was running

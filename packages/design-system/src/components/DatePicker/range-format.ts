@@ -4,14 +4,16 @@
  *
  * ── 消費的 SSOT ──
  * - spec: date-picker.spec.md「區間檢視合併(formatRange)」(規則、判定表、世界級出處)
- * - 標準: ECMA-402 `Intl.DateTimeFormat.prototype.formatRange`(§11.5.8 PartitionDateTimeRangePattern:起訖在輸出精度下相同 → 只輸出一個值;
- *   否則以「最大的不同欄位」選區間樣式,共用的欄位只寫一次)—— 合併規則全交給它,本檔不自己判斷「同一天」
+ * - 標準: ECMA-402 `Intl.DateTimeFormat.prototype.formatRange`(§11.5.8 PartitionDateTimeRangePattern:從 Era 往下逐欄比起訖,格式沒顯示的
+ *   較粗欄位也比,比到沒有區間樣式的欄位才停;比過的欄位全部相同才只輸出一個值,否則以第一個(最大的)不同欄位選區間樣式,共用的欄位只寫一次。
+ *   例:只寫時分的格式比 7/15 10:00 與 7/16 10:00,顯示的欄位一樣,但「日」不同 → 不合併)—— 合併規則全交給它,本檔不自己判斷「同一天」。
+ *   「起訖在輸出精度下相同 → 只輸出一個值」是 MDN 的白話說法,不是規格原文
  * - 時間寫法: 與兩段顯示同一套 —— 2 位數、24 小時(`TimePicker/time-columns.tsx` `timePartsToString` 的 HH:MM(:SS))
  * - 語系預設與 formatter 快取: 由呼叫端傳入(`lib/date-locale.ts` `DEFAULT_DATE_LOCALE`、`date-picker.tsx` `getDateTimeFormatter`);
  *   本檔不 import 任何模組,Node 可直接讀、判定表不必經過 React
  *
- * 要保證的性質(逐字):**兩端都有值時輸出一段文字 —— 同一天自動合併、跨日寫兩端;同一頁的日期樣式一致;
- * 合併不了的情況一律回 `null`,呼叫端照原本的兩段顯示。**
+ * 要保證的性質(逐字):**兩端都有值時輸出一段文字 —— 同一天自動合併、跨日寫兩端;同一頁的日期樣式一致(合併的列與退回兩段的列都算);
+ * 合併不了的情況一律回 `null`,呼叫端照兩段版面顯示,每一端用 `formatDateRangeEndpoint`(與合併同一套寫法)。**
  */
 
 /** 呼叫端注入的 formatter 工廠(date-picker.tsx 傳它的快取;測試傳 `new Intl.DateTimeFormat`) */
@@ -78,9 +80,9 @@ const defaultFactory: DateRangeFormatterFactory = (locale, options) => new Intl.
 type RangeCapableFormatter = Intl.DateTimeFormat & { formatRange?: (startDate: Date, endDate: Date) => string }
 
 /**
- * 合併後的一段文字;回 `null` = 不合併(呼叫端退回兩段顯示)。不合併的情況(每一條都明寫,不靠 try/catch 兜 —— 判定表才量得到每一條):
+ * 合併後的一段文字;回 `null` = 不合併(呼叫端退回兩段版面,每一端用下方 `formatDateRangeEndpoint`)。不合併的情況(每一條都明寫,不靠 try/catch 兜 —— 判定表才量得到每一條):
  * - 只有一端有值,或任一端解析不了(Invalid Date;formatRange 對它丟 RangeError)
- * - 起點晚於終點:值本身有問題,照兩段原樣讓人看到兩端(舊版引擎的 formatRange 對它丟 RangeError,新版照順序寫,兩種都不採)
+ * - 起點晚於終點:值本身有問題,照兩段讓人看到兩端(舊版引擎的 formatRange 對它丟 RangeError,新版照順序寫,兩種都不採)
  * - `showTime` 但一端有時間、一端沒有(合併會吃掉其中一端的時間)
  * - 執行環境沒有 `formatRange`(舊瀏覽器)
  * 起訖完全相同只輸出一個值、同一天合併、跨日寫兩端 —— 都是 `formatRange` 本身的行為(MDN:「If the start and end dates are
@@ -98,4 +100,24 @@ export function formatDateRange(input: DateRangeTextInput): string | null {
   const formatter: RangeCapableFormatter = (input.getFormatter ?? defaultFactory)(locale, options)
   if (typeof formatter.formatRange !== 'function') return null
   return formatter.formatRange(start, end)
+}
+
+/** 退回兩段時一端的輸入:沒值或解析不了的那一端傳 undefined */
+export interface DateRangeEndpointInput extends Pick<DateRangeTextInput, 'showTime' | 'showSeconds' | 'formatOptions' | 'locale' | 'getFormatter'> {
+  date: Date | undefined
+  /** 這一端的 ISO 字串有沒有時間部分 */
+  hasTime: boolean
+}
+
+/**
+ * 開了 `formatRange`、但合併不了而退回兩段時,一端的文字【AI 推導 2026-11-25】:用合併顯示的同一套選項(`resolveDateRangeFormatOptions`)
+ * 單獨 `format` —— 同一頁開了 `formatRange` 的列才不會一列是 `2026/7/15`、另一列是兩段顯示預設的 `2026/07/15`(spec 排除兩位數月日的同一個理由)。
+ * 時間照這一端自己:`showTime` 且這一端帶時間才寫(與兩段顯示相同,只有一端帶時間時另一端只寫日期)。
+ * 回 `null` = 這一端沒值或解析不了,呼叫端照原樣(與不開相同)。
+ */
+export function formatDateRangeEndpoint(input: DateRangeEndpointInput): string | null {
+  const { date, hasTime, showTime, showSeconds, formatOptions, locale } = input
+  if (!date || Number.isNaN(date.getTime())) return null
+  const endpointOptions = resolveDateRangeFormatOptions(showTime && hasTime, showSeconds, formatOptions)
+  return (input.getFormatter ?? defaultFactory)(locale, endpointOptions).format(date)
 }

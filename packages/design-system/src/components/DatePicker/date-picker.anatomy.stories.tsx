@@ -195,7 +195,7 @@ export const Overview = {
                 ['formatOptions', 'Intl.DateTimeFormatOptions', '—', '未傳 → 預設 YYYY/MM/DD 直接組（locale-independent）；傳此 prop / locale 才走 Intl.DateTimeFormat（內部 fallback options 為 year:numeric / month,day:2-digit）'],
                 ['locale', 'string', "'zh-TW'", '文字格式只在傳 formatOptions / locale 啟用 Intl 時生效（沒傳 = zh-TW）；未傳任何格式 prop 時直接組 YYYY/MM/DD。日曆面的週首日也由它推（語系的 CLDR）'],
                 ['weekStartsOn', '0 | 1 | 2 | 3 | 4 | 5 | 6', '由 locale 推', '日曆面一週從哪天開始（0 = 週日）；沒傳 = 語系的 CLDR（zh-TW = 週日）'],
-                ['formatRange', 'boolean', 'false', '僅 DatePicker.Range：mode="view" 兩端都有值時寫成一段（Intl formatRange：同一天合併、跨日寫兩端、起訖相同只寫一個值）；只有一端有值照兩段；edit / readonly / disabled 不變。範例見「狀態行為」'],
+                ['formatRange', 'boolean', 'false', '僅 DatePicker.Range：mode="view" 兩端都有值時寫成一段（Intl formatRange：同一天合併、跨日寫兩端、起訖相同只寫一個值）；只有一端有值等合併不了時照兩段版面，日期寫法與合併相同（不補零）；edit / readonly / disabled 不變。範例見「狀態行為」'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}
@@ -671,7 +671,7 @@ export const StateBehavior = {
         {/* DatePicker.Range view:formatRange(date-picker.spec.md「區間檢視合併(formatRange)」) */}
         <ExampleSection
           title="區間檢視 — formatRange 把起訖寫成一段（同一天合併）"
-          description="DatePicker.Range 的 view 預設是起 → 終兩段各自格式化；開 formatRange 後兩端都有值時交給 Intl formatRange：同一天只寫一次日期、跨日寫兩端、起訖相同只寫一個值。只有一端有值時照兩段；edit / readonly / disabled 不受影響。"
+          description="DatePicker.Range 的 view 預設是起 → 終兩段各自格式化；開 formatRange 後兩端都有值時交給 Intl formatRange：同一天只寫一次日期、跨日寫兩端、起訖相同只寫一個值。只有一端有值時照兩段版面，日期仍用同一套寫法；edit / readonly / disabled 不受影響。"
         >
           <div className="overflow-x-auto">
             <table className="border-collapse text-caption">
@@ -687,7 +687,7 @@ export const StateBehavior = {
               </tbody>
             </table>
           </div>
-          <span className="text-[11px] text-fg-muted">合併時日期寫成數字年月日（不補零）、時間 24 小時 —— zh-TW 與 en-US 在四種情況下都是同一種日期樣式；判定表見 date-picker.spec.md「區間檢視合併（formatRange）」。結束日照舊是「含」。</span>
+          <span className="text-[11px] text-fg-muted">合併與退回兩段時日期都寫成數字年月日（不補零）、時間 24 小時 —— zh-TW 與 en-US 在四種情況與退回的列都是同一種日期樣式；判定表見 date-picker.spec.md「區間檢視合併（formatRange）」。結束日照舊是「含」。</span>
         </ExampleSection>
 
         {/* Empty value display */}
