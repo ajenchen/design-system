@@ -107,7 +107,7 @@
 | 2 `merge` | 有 receipt 後以 exact-head CAS squash merge 進 protected `main`,立即讀回 main |
 | 3 `publish` | 從 protected main 自動發布 immutable exact version;禁 mutable dependency tag |
 | 4 `readback` | 自動讀回 GitHub Release 與 npm 三包 exact version;未一致不得宣稱完成 |
-| 5 `consumer` | 自動建立、修復、合併 template exact-version PR,讀回 consumer protected main;workspace 只開 PR |
+| 5 `consumer` | 自動建立、修復、合併 template exact-version PR,讀回 template protected main;workspace 只開 PR |
 
 公開入口只有三支:`npm run release:auto`(安全續跑;合併前必檢查發版同意 receipt)、`npm run release:status`(唯讀)、`npm run release:consent -- --quote "<user 原話>"`(hook 失效時的手動落地,仍需原話)。**ASK** 只限 `#canonical-decision-authority` 的集合與**發版同意**;human-only 動作做完即 AUTO resume。已退役的 ceremony(candidate-freeze、soak、fleet promotion 等)不得回到 blocking graph —— 清單見 `infra/governance/release-workflow.json`。完成後才清 remote/local branch 並 `git switch main && git pull --ff-only`。
 

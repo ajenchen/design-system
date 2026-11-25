@@ -31,7 +31,7 @@ npm run governance:provider-cli-content:propose -- \
   --verify-proposal /tmp/provider-cli-package-content-proposal.json
 ```
 
-第一個命令只讀 canonical manifest 與其 SHA-256 綁定的 exact package-lock，透過正式 setup module 的共用 authority resolver／active-plan SSOT 推導 closure，逐一以 bounded request 下載 exact canonical HTTPS tarball；redirect、SRI 與 strict ustar package tree 任一不符即 fail closed。輸出不含時間戳，且只寫 stdout；沒有 `--apply`、不安裝 CLI、不修改 authority／Git／WM，也不執行 generator。
+第一個命令只讀 canonical manifest 與其 SHA-256 綁定的 exact package-lock，透過正式 setup module 的共用 authority resolver／active-plan SSOT 推導 closure，逐一以 bounded request 下載 exact canonical HTTPS tarball；redirect、SRI 與 strict ustar package tree 任一不符即 fail closed。輸出不含時間戳，且只寫 stdout；沒有 `--apply`、不安裝 CLI、不修改 authority／Git／產品 consumer，也不執行 generator。
 
 第二個命令仍然完全不寫檔：它依 closed proposal schema 重新核對目前的 exact manifest/lock bytes、固定十筆 active plan、package-content digest，以及 proposer、parser/setup、proposal schema 三個直接來源的 path+SHA-256；接著逐筆重新讀取十個 exact HTTPS lock artifacts，交給相同 shared strict parser 獨立重衍生並比對所有 rows。它同時支援 PR 套用前的 `inputManifestSha256` 狀態，與套用後 canonical 2-space+newline bytes 的 `proposedManifestSha256` 狀態，讓另一個 process／reviewer 可重驗同一 transition。這不是 offline preflight：完整 verify 必須成功重取並重衍生十筆內容，但仍是 zero authority writes、沒有 apply 能力。獨立驗證與 hard gates 通過後，agent 依 Standing Authorization 只能在 protected DS PR 以 proposal 的 exact `proposedPackageContent` 取代 canonical manifest 的 `packageContent`，再由 canonical governance graph 生成與檢查所有 projection；不得把 proposal JSON 直接當成可執行 patch，或繞過 review/apply handoff。
 
@@ -107,7 +107,7 @@ node infra/governance/bin/consumerctl.mjs plan-upgrade \
 # Legacy consumer bootstrap is a reviewed six-stage source path. The source-aware
 # stages all require repo/root/base/incoming/release-bom/required-checks-digest.
 # Materialization may write only a brand-new output tree; no command applies to a
-# live consumer, inventory, GitHub, npm, or WM.
+# live consumer, inventory, GitHub, npm, or product consumer.
 npm run governance:bootstrap:plan -- --repo-id <repo> --root <current> \
   --base <trusted-base> --incoming <candidate-snapshot> \
   --release-bom <candidate-bom> --required-checks-digest <sha256> --json
@@ -188,7 +188,7 @@ npm run governance:fleet:apply-reviewed -- \
 node --test infra/governance/test/*.test.mjs
 
 # Provider-neutral evidence plans/checks: all commands below are read-only.
-# They do not call a model, open network access, write evidence, or mutate Git/GitHub/npm/WM.
+# They do not call a model, open network access, write evidence, or mutate Git/GitHub/npm/product consumer.
 # (audit:model-evidence-plan retired 2026-08-04 with the model-broker execution layer.)
 npm run audit:deterministic-plan
 npm run audit:hook-evidence-plan

@@ -28,7 +28,7 @@
     "schemaPath": "infra/governance/schemas/harness-authority-contracts.schema.json",
     "schemaVersion": 2,
     "kind": "provider-neutral-governance-harness-authority-contracts",
-    "sha256": "3b4c698666229f54807e3a189a8b32b94d2a6e2daa2df266d3cbce5f28278dc6",
+    "sha256": "4cd4d54e612a68a49fb6d49fe1e280eaee7ad6e8d718f9bd5a0e567d241704a5",
     "schemaSha256": "bba73861c87bc3047b70376e891a9464d525e9648fadd6e7d8fb406b57d10dce",
     "projectionPolicy": "registry-authority-and-claim-fields-are-exact-derived-projections"
   },
@@ -544,7 +544,7 @@
       ],
       "doesNotProve": [
         "A consumer may publish or mutate Design System canonical source.",
-        "The template mirror or WM canary has adopted an unreleased candidate."
+        "The template mirror or product canary has adopted an unreleased candidate."
       ]
     },
     {
