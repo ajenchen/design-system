@@ -58,6 +58,20 @@
       "localPathFromGovernanceRoot": "../../../work-management",
       "providerSurfacesRequired": ["codex/codex-cli/local", "codex/codex-desktop/local", "codex/codex-desktop/remote-control", "codex/codex-cloud/cloud", "claude-code/claude-code-cli/local", "claude-code/claude-code-cli/remote-control", "claude-code/claude-code-cloud/cloud", "ci/github-actions/github-actions"],
       "consumes": ["@qijenchen/design-system", "@qijenchen/storybook-config"]
+    },
+    {
+      "id": "workspace",
+      "github": "ajenchen/workspace",
+      "role": "product-consumer",
+      "visibility": "private",
+      "defaultBranch": "main",
+      "desiredProfile": "product-consumer",
+      "releaseRing": "ring-2-product-canary",
+      "ownershipPolicy": "product-consumer",
+      "upgradeProtocolProfile": "new-snapshot-v2",
+      "localPathFromGovernanceRoot": "../../../workspace",
+      "providerSurfacesRequired": ["codex/codex-cli/local", "codex/codex-desktop/local", "codex/codex-desktop/remote-control", "codex/codex-cloud/cloud", "claude-code/claude-code-cli/local", "claude-code/claude-code-cli/remote-control", "claude-code/claude-code-cloud/cloud", "ci/github-actions/github-actions"],
+      "consumes": ["@qijenchen/design-system", "@qijenchen/storybook-config"]
     }
   ],
   "ownershipPolicies": {

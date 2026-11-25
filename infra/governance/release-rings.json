@@ -27,6 +27,17 @@
       "manualBlockers": [],
       "ring": "ring-2-product-canary",
       "wave": "canary"
+    },
+    "workspace": {
+      "applyAuthorization": null,
+      "candidateReleaseDigest": null,
+      "completionAttestation": null,
+      "enteredAt": "2026-11-25T15:48:00.000Z",
+      "manualBlockers": [
+        "Independent template-snapshot, protected-workflow, required-check, and provider-surface readback must be accepted before fleet fanout."
+      ],
+      "ring": "ring-2-product-canary",
+      "wave": "canary"
     }
   },
   "attestationPolicy": {
