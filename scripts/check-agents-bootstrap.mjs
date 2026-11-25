@@ -176,7 +176,12 @@ try {
 // governance/memory/feedback_orchestration_verify_before_scale.md「交接常備與額度」(只放指向、不重述)。指向那句 +88
 //(初稿帶節名 +127,已縮),同段刪掉重複的「,不開工」-10(「只開工 ①②③」已涵蓋),淨增 78 只能明改上限 —— 再縮就要刪規則。
 // user 11-25:「這個上一次就講過了，難道沒有在工作規範ssot內嗎？」—— 要每個 session 開場就讀得到這個指向。
-const OPENING_FILES_MAX_BYTES = 76_881
+// 2026-11-26 F1-process-rules 明改 76,881 → 78,625(+1,744):work-process.md v4 加「本機檢查」段(--selftest / hook 測試 /
+// governance:generate / story 清單與 a11y 基線 / Storybook 建置各何時才跑)、合回點改成本機只跑合回新變動 + 全套交給 CI、核對者引用
+// 同 commit 紀錄、再驗只跑修正的檢查、「依據」v4 一段實測與版本紀錄一列;同時拿掉「迭代」段與檔頭重複的一句、壓短 v1 名詞定義。
+// 初稿 +2,146,縮句後 +1,744(-402);再縮就要刪規則或刪「為什麼品質不降」的實測數字。換到的是每個合回點本機約 294 分機器時間不重跑
+//(governance/planning/2026-11-26-work-process-evidence-v4.md 第 1 節),每個代理開場都要讀到才會照做。
+const OPENING_FILES_MAX_BYTES = 78_625
 const RULES_DIR = path.join(ROOT, 'packages/design-system/ds-canonical/rules')
 const alwaysLoadedRules = fs.existsSync(RULES_DIR)
   ? fs.readdirSync(RULES_DIR).filter((name) => name.endsWith('.md')).sort().filter((name) => {

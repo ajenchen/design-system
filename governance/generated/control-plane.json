@@ -142,7 +142,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 220,
-      "hash": "sha256:0083747037dd5c7f09daeff9ab04f3ee6f69edede53947f459fcdde67f2005da",
+      "hash": "sha256:c73eadbeb6113b0b74c9921f60dd90e49364aafa659de120b6c6317aba9cb326",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -175,7 +175,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 7,
-      "hash": "sha256:3c1a53676f90ece21f822c1106810db926e5583262d7025e8b507cc19b3e4804",
+      "hash": "sha256:a1bb53a563b686d9531b1fc373789abf72facdc9609e0e3160d7130b3504f3ff",
       "id": "canonical-rules",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -186,7 +186,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 68,
-      "hash": "sha256:db6be07da0eca275d3cbbadb8422ec15c86b161c3d1929fb09f13949028e5fbd",
+      "hash": "sha256:83bc8b8cb54a9f499b5ca2ad4231e8e21f0320bb23f93f8a289f7d08adb6e55f",
       "id": "canonical-skills",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2718,8 +2718,8 @@
     {
       "carrierProjections": [],
       "excludes": [],
-      "files": 51,
-      "hash": "sha256:2eb51374a8a34128b485f5e3592896a5215f059deb17239164e7da26793fe48d",
+      "files": 52,
+      "hash": "sha256:31377a858df29e2d5b2ae43960807c5c64ca02d24394a512f5f7dcdb82b1b8a5",
       "id": "provider-neutral-planning-ledger",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3094,7 +3094,7 @@
         "scripts/generated/"
       ],
       "files": 804,
-      "hash": "sha256:714e2c359bed67519512851d95fed6c3bcd4e822223a96c0d8f3cbdd017f0c71",
+      "hash": "sha256:bdeb6008f23cabaf926569a0fba599bb674a7a7509e56e0ad4f9b14d3897f048",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3420,10 +3420,10 @@
       "requiredTargetExtras": [],
       "sharedDigests": [
         {
-          "expectedTargetDigest": "sha256:3d61336da90b10d26ef206f11fd99e4f0e9dd6351dc9c6b059b8a468f6bb9381",
+          "expectedTargetDigest": "sha256:916e24a65938461849d825b0542fa7219766b49ffed2971fab9cda66f559d641",
           "name": "bug-fix-rhythm",
-          "sourceDigest": "sha256:45f7f73120139ce3bfea757047d196a4cdec7fd32574f80a8165f5c20fc29daf",
-          "targetDigest": "sha256:3d61336da90b10d26ef206f11fd99e4f0e9dd6351dc9c6b059b8a468f6bb9381"
+          "sourceDigest": "sha256:bbe0b53ed404c1eeae6fee00660b36f060350ad8fa73c46023654d40fbeb5e6f",
+          "targetDigest": "sha256:916e24a65938461849d825b0542fa7219766b49ffed2971fab9cda66f559d641"
         },
         {
           "expectedTargetDigest": "sha256:b01d8e5ef440b74d318efd4ba2f3adb1ed11ceb7a2e90fc224887a7801586642",
@@ -3643,10 +3643,10 @@
       "requiredTargetExtras": [],
       "sharedDigests": [
         {
-          "expectedTargetDigest": "sha256:4589458d2ebd7a949af58c445e4d557cf1ca77d9eaa73630115869394986725c",
+          "expectedTargetDigest": "sha256:c9d583358528ca2e1b36f634f91eb922ae659621ff8b1b320270c05f93117247",
           "name": "bug-fix-rhythm",
-          "sourceDigest": "sha256:45f7f73120139ce3bfea757047d196a4cdec7fd32574f80a8165f5c20fc29daf",
-          "targetDigest": "sha256:4589458d2ebd7a949af58c445e4d557cf1ca77d9eaa73630115869394986725c"
+          "sourceDigest": "sha256:bbe0b53ed404c1eeae6fee00660b36f060350ad8fa73c46023654d40fbeb5e6f",
+          "targetDigest": "sha256:c9d583358528ca2e1b36f634f91eb922ae659621ff8b1b320270c05f93117247"
         },
         {
           "expectedTargetDigest": "sha256:4f516c00b3df06bf9cbcddf1d88f7b7fa4b93e3fe8168b15ba7031bfeb5b20bd",
