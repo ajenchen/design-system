@@ -748,7 +748,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     // 截斷 tooltip(tooltip.spec.md:32 截斷 → 顯完整內容,僅實際截斷時):closed trigger text
     // display 的值 span 是截斷元素;trigger = 整個 combobox host(interactive host,hover 直達)、
     // 量測內層值 span — useTruncated 自組 pattern(truncated-text.spec.md「兩層架構(對齊世界級聯集)」:trigger ≠ 量測元素時只用 hook 自組;
-    // 範本 inline-edit.tsx:257。tag display 由 Tag 內建 useTruncated 自管,不經此路)。
+    // 範本 inline-edit.tsx:258。tag display 由 Tag 內建 useTruncated 自管,不經此路)。
     // deps 含 open:searchable && open 切搜尋 input branch 時值 span 會 unmount,關閉重掛後
     // effect 需重跑重新 observe(Tag always-wrap 教訓:RO 卡在 detached node → isTruncated 凍結)。
     // hook 必在下方 resolvedMode early return 之前(React #310 hook-count 鐵律,見上方註解)。

@@ -110,8 +110,8 @@ const FieldControlGroup = React.forwardRef<HTMLDivElement, FieldControlGroupProp
           // 現在第二行守的是「停用又聚焦又被滑過」:上面「聚焦又被滑過」那條權重比第一行高,沒有第二行會抬回 4。
           '[&>*[disabled]]:z-0 [&>*:has(:not(option)[disabled])]:z-0',
           '[&>*[disabled]:hover]:z-0 [&>*:has(:not(option)[disabled]):hover]:z-0',
-          // border overlap
-          '[&>*+*]:-ml-px',
+          // border overlap(重疊一個欄位框寬,讀 --field-border-width;2026-11-25 前寫死 -ml-px,值不變)
+          '[&>*+*]:-ml-[var(--field-border-width)]',
           // border radius — 中間 0,首/尾保留外側 radii
           '[&>*:not(:first-child):not(:last-child)]:rounded-none',
           '[&>*:first-child:not(:last-child)]:rounded-r-none',

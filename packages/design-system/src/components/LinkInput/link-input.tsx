@@ -105,7 +105,8 @@ function renderLinkAnchor(value: string, label?: string, stretch = false, coverB
       className={cn(
         'inline-block max-w-full align-top truncate min-w-0 text-primary hover:text-primary-hover hover:underline',
         stretch && "before:absolute before:content-[''] [&>*]:relative",
-        stretch && (coverBorder ? 'before:-inset-px' : 'before:inset-0'),
+        // 多蓋的那一圈 = 欄位框寬(--field-border-width;2026-11-25 前寫死 -inset-px,值不變)
+        stretch && (coverBorder ? 'before:-inset-[var(--field-border-width)]' : 'before:inset-0'),
       )}
     >
       {/* 截斷必附 tooltip(tooltip.spec.md:32)— anchor 自身即 hover 目標、無疊層,TruncatedText

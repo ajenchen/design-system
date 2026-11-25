@@ -1,0 +1,34 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   Field — 閱讀情境的唯一判斷(主人 = Field)
+   ═══════════════════════════════════════════════════════════════════════
+
+   規則與理由住 field.spec.md「閱讀情境」(唯一住所;本檔不重述幾何與出處)。由對外彙總檔 styles/tokens.css 匯入
+   (scripts/gen-figma-make-artifacts.mjs 掃描產生;token-creation-invariant C6 擋漏匯入),產品不必多寫任何一行。
+
+   誰掛記號(React 只負責掛記號,判斷只住這裡):
+     data-field-scope   範圍 = 最外層 FieldGroup 的根;不在組裡的 Field,範圍就是它自己的根(field.tsx)
+     data-field-reading 就地編輯:InlineEdit 靜止外框與編輯容器兩個根都掛(inline-edit.tsx;含 editable=false)
+
+   判斷:範圍裡有就地編輯 → 閱讀情境。效果寫成兩顆元件內變數,只有 field.tsx 讀:
+     --scope-label-color  標籤色:閱讀情境 fg-secondary(與 DescriptionList dt、DataTable 表頭同色;三者同色的清單住
+                          tokens/color/color.spec.md fg-secondary 用途列);停用仍 fg-disabled(停用優先寫在 field.tsx)
+     --scope-value-inset  水平排沒有框的值(開關、單一勾選框)往右內縮的量:閱讀情境 = --field-bleed(框外緣到框內字線),
+                          落在同一欄就地編輯框內的字線上;垂直排不讀(字線就是標籤左緣)
+   不是 token、不登記(tokens/token-system.spec.md「命名」元件內變數);名字不用 --field- 開頭(那一族是共用刻度,稽核 P20),
+   改用記號 data-field-scope 的後半。
+
+   單一屬性主體 + 深層 :has(),所以 consumer 包 wrapper / memo / HOC 照常成立;不碰 styles/base.css 記的 :is() 分桶陷阱。
+   退路:不支援 :has() 的瀏覽器停在範圍預設(表單樣子):標籤 foreground、開關 / 勾選框在框邊。
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* 範圍預設 = 表單 */
+[data-field-scope] {
+  --scope-label-color: var(--foreground);
+  --scope-value-inset: 0px;
+}
+
+/* 閱讀情境:範圍裡有就地編輯 */
+[data-field-scope]:has([data-field-reading]) {
+  --scope-label-color: var(--fg-secondary);
+  --scope-value-inset: var(--field-bleed);
+}

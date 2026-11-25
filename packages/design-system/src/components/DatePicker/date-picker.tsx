@@ -536,7 +536,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
     // 截斷 tooltip(tooltip.spec.md:32 截斷 → 顯完整內容,僅實際截斷時):非 typeable edit
     // trigger 的值 span(bareInputStyles + truncate)是截斷元素;trigger = 整個 field wrapper
     // (interactive host,hover 直達)、量測內層值 span — useTruncated 自組 pattern
-    // (truncated-text.spec.md「兩層架構(對齊世界級聯集)」:trigger ≠ 量測元素時只用 hook 自組;範本 inline-edit.tsx:257)。
+    // (truncated-text.spec.md「兩層架構(對齊世界級聯集)」:trigger ≠ 量測元素時只用 hook 自組;範本 inline-edit.tsx:258)。
     // typeable 走 <input>(可捲動編輯,無截斷補救需求);popover 開啟時靜默(open 是 hover 之外的 reveal 路徑)。
     // ⚠️ hook 必在下方 view / readonly early return 之前(React #310 hook-count 鐵律,同 select.tsx 教訓)。
     const { ref: triggerTruncationRef, isTruncated: triggerTruncated } = useTruncated<HTMLSpanElement>({
@@ -1016,7 +1016,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
     // 截斷 tooltip(tooltip.spec.md:32 截斷 → 顯完整內容,僅實際截斷時):Range 兩端 edit
     // trigger button 各自截斷、各自量測顯示 — trigger = button 本體(interactive host,hover
     // 直達)、量測內層文字 span,useTruncated 自組 pattern(truncated-text.spec.md「trigger 需
-    // 自控」指定解;範本 inline-edit.tsx:257)。popover 開啟時靜默;hook 必在 view / readonly
+    // 自控」指定解;範本 inline-edit.tsx:258)。popover 開啟時靜默;hook 必在 view / readonly
     // early return 之前(React #310 hook-count 鐵律,同 select.tsx 教訓)。
     const { ref: startTruncationRef, isTruncated: startTruncated } = useTruncated<HTMLSpanElement>({
       deps: [startIso ? startText : ''],

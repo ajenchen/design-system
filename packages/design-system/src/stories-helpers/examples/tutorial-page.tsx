@@ -223,8 +223,10 @@ function minGapBetween(nodes: Element[]): number {
  * 「FieldGroup + 說明它的文字」(第 2 步只剩一塊 → `one`)與「只剩一個欄位的 FieldGroup」(往裡數到一個 Field → `one`)維持一塊【AI 推導 2026-11-17】:
  * 文件頁這種示範,標題描述的就是底下那一則 → 親近(user 2026-11-11 原話全句見 layoutSpace.spec.md 規則 3「出處」)。
  * 同日曾改成「FieldGroup 一律 many」又撤回(依據是 AI 補的一句)。理由與清單:layoutSpace.spec.md 規則 3 邊角表最後一列。
+ * `data-field-scope`(2026-11-25):最外層 FieldGroup 也掛閱讀情境的範圍記號(field.spec.md「閱讀情境」)—— 同一個排版群組,照樣往裡數;
+ * 漏列的話帶 FieldGroup 的區段全被數成一塊、標題到內容從 loose 縮成 tight(實測 PeoplePicker「欄位內搜尋」16 → 12)。
  */
-const LAYOUT_WRAPPER_ATTRS = new Set(['class', 'style', 'data-theme', 'data-density', 'data-layout-space', 'data-field-group'])
+const LAYOUT_WRAPPER_ATTRS = new Set(['class', 'style', 'data-theme', 'data-density', 'data-layout-space', 'data-field-group', 'data-field-scope'])
 const LAYOUT_WRAPPER_TAGS = new Set(['DIV', 'SECTION', 'SPAN', 'ARTICLE', 'MAIN'])
 
 /**

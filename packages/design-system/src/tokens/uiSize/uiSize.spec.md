@@ -132,6 +132,15 @@ field-wrapper / Textarea / Select+Combobox,Menu 漏掉。
 (`components/Button/button.spec.md`「padding 跟著 role」),建本 token 的 commit 已明文排除 Chip
 (「pill 內距 ≠ field 內距,不同概念」);它們只共用 `--field-height-*`,不共用水平內距。
 
+## Field 外框寬與框內字線(2026-11-25)
+
+| Token | 值 | 說明 |
+|-------|-----|------|
+| `--field-border-width` | 1px | 欄位外框寬,不隨 size / density。欄位家族的框**直接讀它畫**(`../../components/Field/field-wrapper.tsx` `fieldWrapperStyles`、Textarea、InlineEdit 靜止外框),所以它是「框有多寬」的原因,不是旁邊另抄的一份數字 |
+| `--field-bleed` | `calc(var(--field-border-width) + var(--field-px))` = 13px | **框內字線**:欄位框外緣到框裡第一個字的距離。同一個距離兩種用法 —— 標籤在上時,就地編輯的框往左右各外伸這麼多,字落在標籤左緣(`../../components/InlineEdit/inline-edit.spec.md`「對齊盒」;可編輯標題列的讓位同一顆,`../../patterns/overlay-surface/overlay-chrome-sizing.spec.md`「可編輯標題的標題列」);標籤在左的閱讀情境裡,沒有框的值(開關、單一勾選框)往右內縮這麼多,落在同一欄框內的字線上(`../../components/Field/field.spec.md`「閱讀情境」) |
+
+**替框寬補位的算式都讀 `--field-border-width`**,不寫死 1px / 2px:本檔 `--field-control-py-*`、`--field-bleed`;`fieldTagInsetX` / `fieldTagInsetY`、`fieldViewGeometry` 的高度下限(`field-wrapper.tsx`);DataTable `--table-cell-py`(`components/DataTable/data-table.css`);Textarea 行數上限;InlineEdit 命中區與 LinkInput 延伸區多蓋的一圈;併排欄位組的重疊(`FieldControlGroup`)。2026-11-25 前這些都是寫死的 `1px` / `2px` / `-inset-px` / `-ml-px`,值相同、畫面不變。欄位家族的框不准寫裸 `border` 這類寫死寬度的樣式,閘 `scripts/reading-context-invariant.mjs` 靜態段(B1 / B2)與瀏覽器段 G9(畫出來的框寬 = 這顆、`--field-bleed` 公式、標題讓位解出來 = `--field-bleed`)。**分類**:兩顆都是共用刻度(Field 家族各元件、DataTable、浮層標題列都讀;第二個讀者見上表),`--field-bleed` 由公式組成,住 `uiSize.css`「衍生值」段在每個換密度的元素上重算。**產品不讀**(`../token-registry.json` `product: no`):它們是欄位內部的幾何,產品要對齊用 `--field-px` / `--field-height-*` 與元件本身(下方「產品對齊用」的 12 顆不變)。
+
 ## Stack Gap(2026-09-27 抽 token,M17;同日抽的頭像重疊量 2026-11-15 起說明住 Avatar 規格)
 
 | Token | 值 | 用法 |
@@ -146,7 +155,7 @@ field-wrapper / Textarea / Select+Combobox,Menu 漏掉。
 
 | Token | 值 | 用法 |
 |-------|-----|------|
-| `--field-control-py-sm` / `--field-control-py-md` / `--field-control-py-lg` | `calc((var(--field-height-*) - 1lh) / 2 - 1px)` | 讓「只有一行的多行盒」跟同 size 單行 Input 等高的上下內距。`1lh` 在使用端解析成那個元素自己的行高,`- 1px` 補 border-box 裡上下各 1px 的框。跟著 `--field-height-*` 隨密度變;公式住 `uiSize.css`「衍生值」段,在每個換密度的元素上重算(閘 `scripts/test-density-subtree-token-parity.mjs`)。讀者:Textarea 編輯態、多行 view(`Field/field-wrapper.tsx`;兩者相等 = InlineEdit 多行零跳,閘 `scripts/inline-edit-view-geometry-invariant.mjs`)、AgentPanel 輸入盒 |
+| `--field-control-py-sm` / `--field-control-py-md` / `--field-control-py-lg` | `calc((var(--field-height-*) - 1lh) / 2 - var(--field-border-width))` | 讓「只有一行的多行盒」跟同 size 單行 Input 等高的上下內距。`1lh` 在使用端解析成那個元素自己的行高,減一個 `--field-border-width` 補 border-box 裡上下各一條框。跟著 `--field-height-*` 隨密度變;公式住 `uiSize.css`「衍生值」段,在每個換密度的元素上重算(閘 `scripts/test-density-subtree-token-parity.mjs`)。讀者:Textarea 編輯態、多行 view(`Field/field-wrapper.tsx`;兩者相等 = InlineEdit 多行零跳,閘 `scripts/inline-edit-view-geometry-invariant.mjs`)、AgentPanel 輸入盒 |
 | `--tree-indent-sm` / `--tree-indent-md` / `--tree-indent-lg` | 1.5rem(24px)/ 1.5rem(24px)/ 1.75rem(28px) | 每一層巢狀往右縮的量 = 展開箭頭 + 箭頭與文字的間距(16 + 8 / 20 + 8)。級距跟元件 `size` 走、不隨密度變。讀者:DataTable 巢狀列縮排(`data-table.tsx`);TreeView 用同值的程式常數 `tree-view.tsx` `INDENT_STEP`,由 `scripts/token-twin-invariant.mjs` 鎖住兩邊相等 |
 
 ## 產品對齊用(讀來對齊、不可覆寫)
@@ -497,6 +506,7 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 - `breadcrumb.spec.md`
 - `button.spec.md`
 - `dialog.spec.md`
+- `field-controls.spec.md`
 - `header-canonical.spec.md`
 - `overlay-chrome-sizing.spec.md`
 - `popover.spec.md`
