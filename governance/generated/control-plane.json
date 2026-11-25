@@ -1017,7 +1017,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:597a3a23a1294513b13a474b606416b0e42d59bfd76e1fe700d817959832e594",
+      "hash": "sha256:d8f4196b9b52951eaaa6059083088d274b49a17948084068502831512992291b",
       "id": "exact-github-desired-state",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -1623,7 +1623,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 16,
-      "hash": "sha256:5519535be87ade684ab89f2c6bfa330fe3616de3e351ad03c4e35cfe8d08a352",
+      "hash": "sha256:c8fdee7f504fa93f255912a2079fb2da38ef3c7224f962c9250bbb7aff125ed4",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1799,7 +1799,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 1,
-      "hash": "sha256:7bb9ddbf3fa9cc56556e16e81805a8ca314acaa973ac7702a189bb94b417c5f1",
+      "hash": "sha256:706e6072b2eb0f4a2d15d1d4a2328d3317cba8c39d754d5ea3ac8d7de96e618f",
       "id": "governance-github-desired-state",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3094,7 +3094,7 @@
         "scripts/generated/"
       ],
       "files": 811,
-      "hash": "sha256:417c79be62857f29eecef32f6d62fc96b790d969700be21234c36cac9508b8d2",
+      "hash": "sha256:b42491535bc482f0875ddd928e208c4b200ff3a60de6ea491b523c6facb26bdb",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

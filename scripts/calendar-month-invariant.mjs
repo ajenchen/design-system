@@ -30,6 +30,8 @@
  *           B4 真滑鼠點「Alex 休假」7/22 那一段:命中長條、開的是這個事件、沒有「新增事件」(阻止冒泡;長條 DOM 在 7/20 那格);點單筆唯讀的公司假日:什麼都不開。
  *           B6 從長條涵蓋的第 2 天(7/21)按 F2,焦點落在同一條長條上(格內 widget 依日子查,data-calendar-covers)。
  *           B7 深色與淺色主題,長條蓋在格線上的那一 px 與旁邊 3px 同色(差 ≤ 2;深色淡底半透明,長條要墊不透明的格子底)—— 前提:長條下方同一條格線看得到。
+ *         CT renderEventTile 回傳過大的內容裁在這一段的外層裡(格子不裁左右,由外層裁;「唯讀日期 × 自訂事件方塊」的 Tag 撐成 60 高、400 寬、不換行):
+ *           CT1 外層下一列的位置點不到這個方塊、沒畫到;CT2 隔壁格點不到、沒畫到;CT3 F2 進方塊後外層自己的焦點框照樣畫在外面(外 3px 兩點聚焦前後變色)。
  *         N 讀屏名稱(calendar.spec.md「A11y 預設」;名稱用瀏覽器算好的無障礙樹 CDP Accessibility 與 Playwright getByRole({ name }),不讀屬性):
  *           N1 日期格可點時,日期鈕名稱 = Intl dateStyle full + 筆數(「2026年7月12日 星期日,2 個事件」),今天前面加「今天,」;1 號(畫面「7月1日」)
  *              與溢出日照同一格式;沒有任何日期鈕還是舊念法「2026-07-15,N 個事件」。
@@ -61,7 +63,8 @@
  *       量欄寬改量畫面寬(祖先縮放時讀到縮小後的寬 → 卡在窄版)、
  *       k 不隨格高變(ResizeObserver 換成不做事的版本再重新掛載;最小高與掃格高各一次)、長條改回逐日方塊、事件列 / 長條沒阻止冒泡(點擊冒到它所在的格子)、
  *       格子是定位元素(後面的格子蓋住長條)、F2 只查格子自己的子孫、斷開那一端也圓角、被藏的日子不切段、k 少算一列 / 多算一列(日期框到事件區差一列的空間)、
- *       長條沒墊不透明的格子底(深色透出格線)—— 每一個都必須讓對應的那一格紅。
+ *       長條沒墊不透明的格子底(深色透出格線)、一段事件的外層不裁內容(自訂內容畫到下一列與隔壁格)、外層的裁切連焦點框一起裁掉(clip-path)
+ *       —— 每一個都必須讓對應的那一格紅。
  *   綠: 全部量到且照規格時 exit 0。開 story 走 lib/launch-browser.mjs openStory(等 Storybook 回報渲染完成與被量的格陣出現,不睡固定時間);
  *       開不起來 / 等不到格陣 = 儀器失效(INSTRUMENT-FAIL,exit 1 並點名),不讀成通過。
  */
@@ -99,6 +102,7 @@ const STORY = {
   loading: storyId(/calendar-展示--loading-while-switching-month$/u),
   narrow: storyId(/calendar-展示--side-panel-narrow$/u),
   quarter: storyId(/calendar-展示--quarter-planning$/u),
+  customTile: storyId(/calendar-展示--read-only-dates-custom-tile-keyboard$/u),
 }
 
 // 規格值(calendar.spec.md「間距」與 header-canonical.spec.md:68);1 號的字是規格寫的 zh-TW 例子
@@ -125,6 +129,8 @@ const ROW_SWEEP = [61, 88, 89, 116, 117, 144, 145, 172, 173, 200, 201, 228, 229,
 /** 產品上線週 7/15 那一格的事件筆數(範例資料:7/13 起的「程式碼凍結」+ 當天 6 件事;車道 0…6) */
 const LAUNCH_DAY = '2026-07-15'
 const LAUNCH_DAY_TOTAL = 7
+/** CT 的情境:renderEventTile 回傳的內容(外層 [data-calendar-covers] 的子元素)撐成 60 高、400 寬、不換行、洋紅底(量畫素時認得出是它) */
+const OVERSIZE_TILE_CSS = '[data-calendar-covers] > * { height: 60px !important; width: 400px !important; max-width: none !important; white-space: nowrap !important; background: rgb(255, 0, 255) !important; }'
 const near = (a, b, tol = 0.5) => Number.isFinite(a) && Math.abs(a - b) <= tol
 
 // ── 頁面端量測(以原始碼序列化傳入,不得引用外部變數)────────────────────────────
@@ -248,7 +254,7 @@ const browser = await launchBrowser()
 // AxeBuilder 只收 newContext() 開出來的分頁(@axe-core/playwright 的限制)
 const context = await browser.newContext({ viewport: { width: 1280, height: 900 } })
 const page = await context.newPage()
-async function open(id, { args = null, label = id, mutate = null, density = 'md', squeeze = null, theme = null } = {}) {
+async function open(id, { args = null, label = id, mutate = null, density = 'md', squeeze = null, theme = null, scenarioCss = null } = {}) {
   if (!id) { instrumentFails.push({ cell: label, detail: '找不到 story(改名了?)' }); return null }
   const url = `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story${args ? `&args=${args}` : ''}`
   try {
@@ -261,6 +267,8 @@ async function open(id, { args = null, label = id, mutate = null, density = 'md'
         if (mutate?.early) await p.evaluate(mutate.early)
         // 情境(不是突變):consumer 給 Calendar 一個很矮的容器 —— 正式跑與 selftest 一樣套
         if (squeeze) await p.evaluate((h) => { const root = document.querySelector('[role="grid"]')?.parentElement; if (root) root.style.height = `${h}px` }, squeeze)
+        // 情境(不是突變):consumer 的 renderEventTile 回傳過大的內容(CT 區塊)—— 正式跑與 selftest 一樣套,突變的 css 排在它後面
+        if (scenarioCss) await p.addStyleTag({ content: scenarioCss })
         if (mutate?.css) await p.addStyleTag({ content: mutate.css })
         if (mutate?.dom) await p.evaluate(mutate.dom)
       },
@@ -863,6 +871,65 @@ const BLOCKS = {
       check(`B7-${theme}`, d <= 2, `${theme} 長條裡格線那一 px ${inBar.line}、左右 3px ${inBar.left} / ${inBar.right}(差 ${d});長條下方格線 ${below.line} vs 格子底 ${below.left}(規格:長條蓋住格線,差 ≤ 2)`)
     }
   },
+  // ── renderEventTile 回傳過大的內容(calendar.tsx MonthEventPieceShell 的 overflow-clip;2026-11-25 規格核對必修)──
+  // 格子只裁上下、不裁左右(讓長條畫過去),所以「一段事件不畫出自己的外形」由外層負責。情境(不是突變,正式跑與 selftest 一樣套):
+  // 「唯讀日期 × 自訂事件方塊」的自訂內容(Tag sm,7/2)被撐成 60 高、400 寬、不換行、洋紅底 = consumer 回傳比一列高 / 比這一段寬又不自己截斷的內容。
+  // CT1 外層底下一列的位置(外層底 + 列距 4 + 半列 12):點到的不是這個方塊、畫面上沒有洋紅(多出的高度不疊到下一列、不接走下一列的點擊)。
+  // CT2 隔壁格(7/3)正中、外層那一列的高度:點到的不是這個方塊、沒有洋紅(多出的寬度不畫進隔壁格)。
+  // CT3 F2 進這個方塊後,外層自己的焦點框照樣畫在外面:外層左緣外 3px、底緣外 3px 兩點聚焦前後顏色變了(差 ≥ 40)—— 裁切不得連焦點框一起裁掉。
+  // 前提(量不到 = 儀器失效):內容的版面尺寸真的比外層高 / 寬到蓋得到兩個量點、隔壁格存在。
+  async customTile(mutate) {
+    const p = await open(STORY.customTile, { label: '唯讀日期 × 自訂事件方塊 內容過大', mutate, scenarioCss: OVERSIZE_TILE_CSS })
+    if (!p) return
+    // story 的 play 會聚焦這個方塊並按 Enter:先讓焦點離開、指標移走,聚焦前的顏色才是沒有焦點框的樣子
+    await page.evaluate(() => document.activeElement instanceof HTMLElement && document.activeElement.blur())
+    await page.mouse.move(0, 0)
+    const settle = () => page.evaluate(() => new Promise((res) => { let n = 0; const f = () => (++n >= 10 ? res() : requestAnimationFrame(f)); requestAnimationFrame(f) }))
+    await settle()
+    const geo = await page.evaluate(() => {
+      const tile = document.querySelector('[role="grid"] [data-calendar-covers]')
+      const content = tile?.firstElementChild
+      const cell = tile?.closest('[role="gridcell"]')
+      const next = cell?.nextElementSibling
+      if (!(content instanceof HTMLElement) || !next?.matches('[role="gridcell"]')) return null
+      const t = tile.getBoundingClientRect(), n = next.getBoundingClientRect()
+      const below = { x: t.left + 8, y: t.bottom + 4 + 12 }
+      const side = { x: (n.left + n.right) / 2, y: t.top + t.height / 2 }
+      const hit = (pt) => { const el = document.elementFromPoint(pt.x, pt.y); return { inTile: Boolean(el && tile.contains(el)), what: el ? `${el.tagName.toLowerCase()}[${el.getAttribute('role') ?? ''}]` : null } }
+      // 內容的版面尺寸(offsetWidth / offsetHeight 不受祖先裁切影響):前提是它真的伸到兩個量點
+      return { day: cell.getAttribute('data-calendar-day'), nextDay: next.getAttribute('data-calendar-day'),
+        tile: { left: t.left, right: t.right, top: t.top, bottom: t.bottom, height: t.height },
+        reach: { bottom: t.top + content.offsetHeight, right: t.left + content.offsetWidth },
+        below, side, hitBelow: hit(below), hitSide: hit(side) }
+    })
+    if (!geo) { instrumentFails.push({ cell: 'CT', detail: '「唯讀日期 × 自訂事件方塊」找不到自訂方塊或它隔壁的格子(範例資料改了?)' }); return }
+    if (!(geo.reach.bottom > geo.below.y + 4 && geo.reach.right > geo.side.x + 4)) {
+      instrumentFails.push({ cell: 'CT', detail: `情境沒成立:撐大的內容只到底 ${geo.reach.bottom.toFixed(1)} / 右 ${geo.reach.right.toFixed(1)},量點在 ${geo.below.y.toFixed(1)} / ${geo.side.x.toFixed(1)}(內容沒撐大,量不到裁切)` })
+      return
+    }
+    const pixelAt = async (pt) => { const png = PNG.sync.read(await page.screenshot({ clip: { x: Math.floor(pt.x), y: Math.floor(pt.y), width: 1, height: 1 } })); return [png.data[0], png.data[1], png.data[2]] }
+    const isMarker = (c) => c[0] >= 240 && c[1] <= 20 && c[2] >= 240
+    const pxBelow = await pixelAt(geo.below), pxSide = await pixelAt(geo.side)
+    check('CT1', !geo.hitBelow.inTile && !isMarker(pxBelow),
+      `自訂內容撐到 ${geo.reach.bottom.toFixed(1)}(外層底 ${geo.tile.bottom.toFixed(1)});下一列位置 (${geo.below.x.toFixed(0)}, ${geo.below.y.toFixed(0)}) 點到 ${geo.hitBelow.inTile ? '這個方塊' : geo.hitBelow.what}、顏色 ${pxBelow.join(',')}`
+      + '(規格:內容放得進一列;放不進的裁在外層裡,不疊到下一列、不接走點擊)')
+    check('CT2', !geo.hitSide.inTile && !isMarker(pxSide),
+      `自訂內容右緣 ${geo.reach.right.toFixed(1)}(外層右緣 ${geo.tile.right.toFixed(1)});隔壁格 ${geo.nextDay} 正中 (${geo.side.x.toFixed(0)}, ${geo.side.y.toFixed(0)}) 點到 ${geo.hitSide.inTile ? '這個方塊' : geo.hitSide.what}、顏色 ${pxSide.join(',')}`
+      + '(規格:裁在這一段的外形裡,不畫進隔壁格)')
+    // 焦點框(outline 2px、往外 2px → 外層外 2–4px):量外 3px 兩點,聚焦前 / 後
+    const ringPts = [{ x: geo.tile.left - 3, y: geo.tile.top + geo.tile.height / 2 }, { x: geo.tile.left + 8, y: geo.tile.bottom + 3 }]
+    const beforeRing = []
+    for (const pt of ringPts) beforeRing.push(await pixelAt(pt))
+    await page.locator(`[role="gridcell"][data-calendar-day="${geo.day}"]`).focus()
+    await page.keyboard.press('F2')
+    await settle()
+    const focused = await page.evaluate(() => Boolean(document.activeElement?.matches('[data-calendar-tile]')))
+    const afterRing = []
+    for (const pt of ringPts) afterRing.push(await pixelAt(pt))
+    const deltas = ringPts.map((_, i) => Math.max(...beforeRing[i].map((v, j) => Math.abs(v - afterRing[i][j]))))
+    check('CT3', focused && deltas.every((d) => d >= 40),
+      `F2 進自訂方塊:${focused ? '焦點在方塊上' : '焦點沒落在方塊上'};外層左緣外 3px ${beforeRing[0].join(',')} → ${afterRing[0].join(',')}、底緣外 3px ${beforeRing[1].join(',')} → ${afterRing[1].join(',')}(差 ${deltas.join(' / ')};規格:焦點框往外畫,不被外層的裁切裁掉)`)
+  },
   // 今天剛好是 1 號:Inspector 拿掉 today 參數(元件改用 new Date()),時鐘釘在 2026-07-01 上午 10 點(本機時區)。
   // 不用網址傳日期:Storybook 的網址參數對 Date 型別的 arg 一律丟掉(實測 !date(...) 沒生效)。
   // 時鐘是整個 context 共用、釘了就回不去 —— 本區塊一律排在最後跑(其他區塊的 story 都明傳 today,本來也不受影響);
@@ -1021,6 +1088,10 @@ const MUTANTS = [
   { name: 'k 多算一列(列超出格子被裁)', block: 'rowsFit', expect: ['B3-fit'], css: '[role="gridcell"] > :first-child { margin-bottom: 28px !important; }' },
   // 深色主題長條底(B7):拿掉不透明的格子底 → 深色的半透明淡底透出格線(淺色的淡底不透明,照綠)
   { name: '長條沒墊不透明的格子底', block: 'underlay', expect: ['B7-dark'], css: '[data-calendar-covers] { background: none !important; }' },
+  // 自訂方塊內容過大(CT):外層不裁(= 2026-11-25 規格核對前的樣子)→ 內容畫到下一列與隔壁格、接走那裡的點擊
+  { name: '一段事件的外層不裁內容(自訂內容畫到下一列與隔壁格)', block: 'customTile', expect: ['CT1', 'CT2'], css: '[data-calendar-covers] { overflow: visible !important; }' },
+  // 裁切連焦點框一起裁掉(clip-path 會裁到元素自己的 outline;overflow 不會)
+  { name: '外層的裁切連焦點框一起裁掉', block: 'customTile', expect: ['CT3'], css: '[data-calendar-covers] { clip-path: inset(0) !important; }' },
   // 必須最後一個(todayFirst 會釘住時鐘,見該區塊註解)
   { name: '1 號的實心底被壓成 24 寬', block: 'todayFirst', expect: ['R1'], css: '[data-calendar-day="2026-07-01"] { padding: 0 !important; max-width: var(--tag-height-md) !important; }' },
 ]

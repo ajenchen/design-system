@@ -345,7 +345,7 @@ function shownDayNearToday(today: Date, isShown: (day: Date) => boolean, weekSta
 // 外層 = 位置(車道 = 事件區第幾列)、寬(跨格長條畫過後面幾格)、命中、角色、鍵盤 —— 預設方塊與 renderEventTile 自訂方塊共用這一個外層
 //(calendar.spec.md「renderEventTile 的鍵盤責任歸屬」);裡面才是長相。
 
-/** 一段事件可點(開事件)或唯讀(什麼都不發生)。唯讀 = readOnlyEvents 或這一筆的 readOnly,由 Calendar 本體的 isEventReadOnly 一支判斷。 */
+/** 一段事件可點(開事件)或唯讀(什麼都不發生)。唯讀 = readOnlyEvents 或這一筆的 readOnly,由 Calendar 本體的 eventModeOf 一支判斷。 */
 type EventPieceMode = { readOnly: true } | { readOnly: false; onEventClick: (event: CalendarEvent) => void }
 
 interface MonthEventPieceShellProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -477,7 +477,13 @@ function MonthEventPiece({
   if (renderEventTile) {
     // 自訂內容:外層只 own 位置、命中與鍵盤,不畫滑過、不墊底(它不知道自訂內容的靜止底;calendar.spec.md「renderEventTile 的滑過責任歸屬」)。
     // 第二段起照樣呼叫,segment 帶這一段的延續資訊(isSegmentRepeat = 不是畫面上第一段)。
-    return <MonthEventPieceShell {...shell} underlay={false}>{renderEventTile(event, piece.segment)}</MonthEventPieceShell>
+    // overflow-clip:自訂內容裁在這一段的外形裡(含圓角與斷開端直角)。格子只裁上下、不裁左右(讓長條畫過去),所以「別畫出這一段」由外層負責 ——
+    // 回傳比一列高、或比這一段寬又不自己截斷的內容(例:不換行的長字),不裁的話會畫到下一列 / 隔壁格,而且外層是定位元素,
+    // 下一列與隔壁格的點擊也被它接走(2026-11-25 規格核對實測:60 高的內容底 190、外層底 154;不換行內容右緣 1133、格右緣 907)。
+    // 用 clip 不用 hidden:只裁不捲,外層不會變成捲動容器。外層自己的焦點框(全域 :focus-visible 的 outline)畫在外框外面,不受自己的 overflow 影響。
+    // 只加在自訂內容這一支:預設長相的內層與外層同大小、同圓角,本來就不會畫出去;加了反而在圓角上再裁一次、四角各 2–3 個畫素變淡
+    //(實測團隊行事曆角落畫素差最多 55 / 255),所以預設長相不加 —— 量測 scripts/calendar-month-invariant.mjs CT1–CT3。
+    return <MonthEventPieceShell {...shell} underlay={false} className="overflow-clip">{renderEventTile(event, piece.segment)}</MonthEventPieceShell>
   }
   // 預設長相:事件列 = Tag md(calendar.spec.md「間距」【SPACING(定)】)—— text-body 14px font-normal;文字左右內距 8 用 Tag 的兩層結構表示
   //(外層 4 + 文字 4,同 tag.tsx 的 size md 與 data-tag-text 那兩層),兩層都讀元件內變數 --calendar-gap(calendar-geometry.ts),不寫死數字。
@@ -1075,7 +1081,8 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                         // 不寫 min-h;每格放幾列依量到的格高算(k),放不下的由「+N」取代,不撐高也不疊到下一週。
                         // 裁切只裁上下(overflow-y: clip),左右不裁(overflow-x: visible):跨日長條的 DOM 在第一格、往右畫過後面幾格
                         //(calendar.spec.md「跨日長條」實作備註),裁左右會把長條切成只剩第一格(POC 實測)。
-                        // 左右的保險另放在日期列上(見下方日期列的 overflow-x-clip)。2026-11-25 前是 overflow-hidden。
+                        // 左右的保險另放在日期列上(見下方日期列的 overflow-x-clip)與自訂事件方塊的外層上(MonthEventPiece 的 renderEventTile 那一支 overflow-clip:
+                        // 回傳的內容比這一段寬 / 比一列高時裁在外層裡,不畫進隔壁格、不接走隔壁格的點擊)。2026-11-25 前是 overflow-hidden。
                         'flex flex-col gap-[var(--calendar-gap)] p-[var(--calendar-gap)] min-w-0 overflow-x-visible overflow-y-clip',
                         // 格線:每格右 / 下各一條;每一週最右那格不畫右線(每個 role=row 只裝自己那 7 格,last: 就是第 7 格);
                         // 最後一週不畫下線 —— 根節點外框已經是那一條,兩條疊成 2px 雙線(稽核 D6)。

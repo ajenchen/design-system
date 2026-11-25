@@ -100,7 +100,7 @@ export function calendarRowsThatFit(cellHeightPx: number): number {
  * 只橫跨一格 → undefined(格子裡的一列,寬 = 格子內容寬,不另給)。橫跨 span 格 → 從第一格內容左緣到最後一格內容右緣:
  * 一欄寬 = 第一格內容寬(100%)+ 左右內距 + 它自己的右格線;寬 = span 欄 − 左右內距 − 最後一格的右格線(這一列最右那格不畫右線,
  * calendar.tsx 格子的 `last:border-r-0`)。欄是等分的(`minmax(0, 1fr)`),週數欄不在裡面 —— 隱藏週末與週數欄都不改這個式子。
- * POC(M2,2026-11-25,Chromium 1217):7 欄 / 5 欄 / 加週數欄、終點在最後一欄各量一次,長條右緣離最後一格內容右緣 4 ± 0.02。
+ * POC(M2,2026-11-25,Chromium 1217):7 欄 / 5 欄 / 加週數欄、終點在最後一欄各量一次,長條右緣 = 最後一格內容右緣(離格線內緣 4 = 右內距)± 0.02。
  */
 export function calendarPieceWidth(span: number, endsAtLastColumn: boolean): string | undefined {
   if (span <= 1) return undefined
