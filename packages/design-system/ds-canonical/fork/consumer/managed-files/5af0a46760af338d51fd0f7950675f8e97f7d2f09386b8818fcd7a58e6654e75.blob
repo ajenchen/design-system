@@ -788,8 +788,10 @@ export async function waitForImages(target, options = {}) {
 // **哪些 phase 算「渲染完成」**(opts.finishedPhases,預設 ['finished']):Storybook 10.6 的 phase 依序是
 //   preparing → loading → rendering → playing → played → completing → completed → afterEach → finished
 //  (storybook/dist/preview/runtime.js StoryRender.render;8.6 沒有 completing —— 10.x 在 completing 等畫面上的有限動畫跑完,最多 5 秒)。
-//   只准額外接受 play 跑完之後才會走到的 'completed' / 'afterEach' —— 給「afterEach 靠計時器推進、在假時鐘暫停下永遠走不到 finished」的閘用
-//  (menu-message-row:a11y addon 在 afterEach 跑 axe)。更早的 phase 代表 story 或 play 還沒跑完,傳進來一律 TypeError。
+//   只准額外接受 play 跑完之後才會走到的 'completing' / 'completed' / 'afterEach' —— 給「afterEach 靠計時器推進、在假時鐘暫停下永遠走不到 finished」的閘用
+//  (menu-message-row:a11y addon 在 afterEach 跑 axe)。10.x 多了 'completing':它用 setTimeout(100ms 起、5 秒上限)等畫面上的有限動畫,
+//   假時鐘暫停時計時器不走,render 就停在 completing(2026-11-25 升級後 menu-message-row 實測停在這裡)—— 它也是 play 跑完之後的 phase,
+//   性質同 afterEach。更早的 phase 代表 story 或 play 還沒跑完,傳進來一律 TypeError。
 
 /** openStory 等不到或判不健康時丟的例外:**儀器失效(沒量到),不是產品裁決**。 */
 export class StoryRenderInstrumentError extends Error {
@@ -836,7 +838,7 @@ function managerStoryIdOf(url) {
 }
 
 // play 跑完之後才會走到的 phase(見 openStory 區塊註解);'finished' 恆算完成
-const FINISHED_PHASE_CHOICES = ['completed', 'afterEach', 'finished']
+const FINISHED_PHASE_CHOICES = ['completing', 'completed', 'afterEach', 'finished']
 function normalizeFinishedPhases(finishedPhases) {
   if (!Array.isArray(finishedPhases) || finishedPhases.length === 0 || finishedPhases.some((phase) => !FINISHED_PHASE_CHOICES.includes(phase))) {
     throw new TypeError(`finishedPhases 只接受 ${FINISHED_PHASE_CHOICES.join(' / ')} 組成的非空陣列(play 跑完之後才會走到的 phase),實得 ${JSON.stringify(finishedPhases)} —— 更早的 phase 代表 story 或 play 還沒跑完,不能當「渲染完成」`)
@@ -1443,7 +1445,7 @@ export async function waitForStoryRender(target, options = {}) {
  * @param {'local'|'network'} [options.demoImages]  示範圖主機的取法(預設 'local' = 本機同尺寸合成圖;'network' = 遠端真圖,給跟基準圖比 / 給人看的截圖)
  * @param {Function} [options.beforeSettle]         async (page) => {},在字型 / 靜止判定之前執行
  * @param {boolean} [options.storybook]             覆寫「這是不是 Storybook iframe」(預設看網址是否為 …/iframe.html;有 previewFrame 時預設 true)
- * @param {string[]} [options.finishedPhases]       哪些 phase 算渲染完成(預設 ['finished'];只准加 'completed' / 'afterEach',見區塊註解)
+ * @param {string[]} [options.finishedPhases]       哪些 phase 算渲染完成(預設 ['finished'];只准加 'completing' / 'completed' / 'afterEach',見區塊註解)
  * @param {string} [options.previewFrame]           導覽的是管理介面時,preview iframe 的選擇器(例 '#storybook-preview-iframe');第 3–9 步改在它的內容框架裡做
  * @param {string} [options.storyId]                第 3 步要等的 story id(預設 = 網址的 id 參數;previewFrame 模式再退到 path=/story/<id>)
  * @param {string[]} [options.notFound]           伺服器端 404 帳本(startA11yStaticServer().notFound);本次新增的列進失敗訊息
