@@ -1,5 +1,5 @@
 # 多包 / 多步工作流程
-> **v4(2026-11-26)**。本檔是多包 / 多步工作流程的唯一住處:怎麼實作、怎麼審查、審查幾輪、什麼時候再修、合回怎麼走,只寫在這裡。其他檔只放指向本檔,不重述步驟、門檻或數字。改本檔照文末「迭代」。
+> **v5(2026-11-26)**。本檔是多包 / 多步工作流程的唯一住處:怎麼實作、怎麼審查、審查幾輪、什麼時候再修、合回怎麼走,只寫在這裡。其他檔只放指向本檔,不重述步驟、門檻或數字。改本檔照文末「迭代」。
 
 ## 適用
 
@@ -31,7 +31,7 @@
 - **--selftest**:改到閘的腳本、MUTANTS 或突變所改的原始碼才跑;跑它時,印「現行原始碼(selftest 基準」的閘不另跑判定。
 - **hook 測試**:只跑改到的那幾支(`npm run hooks:test -- test_x.sh`;改到共用 lib 或 registrations.json 就跑引用它的),全套只在 CI。
 - **governance:generate**:改到治理輸入才跑;其餘與核對、合回只跑 governance:check,有漂移才 generate。
-- **story 清單與 a11y 基線**:最後一次新增 / 改名 story 後重生一次。CI 沒跑 axe 時,改到 story 由核對者在核對的 commit 自己跑 `npm run a11y:check -- --tag=<story id>`(不引用別人或較早 commit 的紀錄),之後再改到就在那個 commit 再跑。
+- **story 清單與 a11y 基線**:最後一次新增 / 改名 story 後重生一次。axe 違規只由 CI 判(`verify-browser-a11y` 全掃、對照基線),本機不另跑 axe 檢查。
 - **Storybook**:閘需要才建(腳本寫「這支閘不需要 storybook」的不建);建好後沒改過任何檔(含丟掉的改動)就重用。
 
 ## 合回點
@@ -54,6 +54,8 @@ v1(輕做法 = 實作者照規格實作並自驗、沒有審查,本檔再加第 
 
 v4:本機照 CI 逐條跑一輪(c4460faa)機器 294 分、牆鐘約 130 分,CI 同一套 20 分 58 秒;那輪 9 條紅,2 條真紅 CI 同一個 job 也跑,其餘是 mac 假紅與執行器問題。escape 閘一天單跑 226 分、非實作者約 41%。出處:`governance/planning/2026-11-26-work-process-evidence-v4.md`
 
+v5:axe 全掃接進 PR 的 CI(與原夜間同一行指令、同一份基線),本機補跑 axe 的前提「CI 沒跑 axe」不再成立;本機 `--tag` 又不能配 `--gate`,判的是「任何 serious 就紅」,1,089 則裡 734 則帶既有違規。出處:`governance/planning/2026-11-26-work-process-evidence-v5.md`
+
 ## 迭代
 
 - 流程只在本檔改。改動必附量測證據(同任務對照,或實測花費 / 品質),證據原文放 `governance/planning/` 新檔並登記在 `governance/planning/registry.json`。
@@ -68,3 +70,4 @@ v4:本機照 CI 逐條跑一輪(c4460faa)機器 294 分、牆鐘約 130 分,CI �
 | v2 | 2026-11-22 | 加兩句:選做法前先查監督邊界;收尾頁照 Sub-rule 7 篩 | `governance/planning/2026-11-22-work-process-evidence.md` |
 | v3 | 2026-11-22 | 「每一包」加第 8 點:改到範例時實作與規格核對都照 story-rules.md 兩段核對 | `governance/planning/2026-11-22-work-process-evidence-v3.md` |
 | v4 | 2026-11-26 | 加「本機檢查」;合回點不重跑全套;核對者不重跑同 commit | `governance/planning/2026-11-26-work-process-evidence-v4.md` |
+| v5 | 2026-11-26 | 「本機檢查」拿掉核對者補跑 axe(`--tag`):axe 改由 PR 的 CI 全掃判 | `governance/planning/2026-11-26-work-process-evidence-v5.md` |

@@ -1,4 +1,4 @@
-name: A11y + Bundle Size
+name: Bundle Size
 
 on:
   workflow_dispatch:
@@ -14,37 +14,9 @@ defaults:
     shell: bash -eo pipefail {0}
 
 jobs:
-  a11y-axe:
-    name: Monitor a11y drift(axe-core WCAG 2A+AA)
-    runs-on: ubuntu-24.04
-    env:
-      # setup:playwright 以 PLAYWRIGHT_BROWSERS_PATH=0 安裝到 repo-local
-      # node_modules/playwright-core/.local-browsers;消費步驟必須帶同一 pin,
-      # 否則 playwright 落回 ~/.cache/ms-playwright 找不到瀏覽器(2026-07-28 CI 錨例)。
-      PLAYWRIGHT_BROWSERS_PATH: '0'
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with: { node-version: '24.14.0', cache: 'npm' }
-      - run: npm run --silent setup:dependencies
-      - run: npm run --silent setup:playwright -- --with-deps
-      - name: Build DS lib + types(storybook-config tsc + Storybook 前置)
-        run: npm run build:lib 2>&1 | tail -10
-      - run: npm run build-storybook 2>&1 | tail -20
-      - name: Report axe-core baseline drift
-        run: npm run a11y:check -- --gate 2>&1 | tail -60
-      - name: Upload a11y report
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: a11y-audit-report
-          path: .git/governance-runtime/evidence/audit/a11y-audit.json
-          include-hidden-files: true
-          if-no-files-found: warn
-
+  # a11y-axe(axe-core WCAG 2A+AA 基線回歸閘)2026-11-26 搬進 ci.yml 的 verify-browser-a11y(地基修正 F4):
+  # 指令逐字相同(npm run a11y:check -- --gate),PR 與 push main 都跑(暫不在 verify 必過總關卡、紅了不擋合併,理由與何時接上寫在 ci.yml 該 job 檔頭)。同一棵樹在這裡每晚再掃一次是同一支閘跑兩次 ——
+  # 依賴(含 Chromium)由 lockfile 釘死,夜間這趟量不到 PR 量不到的東西 —— 所以退役,不是放寬。
   size-limit:
     name: Monitor bundle size drift
     runs-on: ubuntu-24.04

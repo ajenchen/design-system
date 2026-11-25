@@ -125,7 +125,7 @@ agent 不得因為 a11y 閘、稽核報告或新一輪掃描又把它列成待�
 代價已講明並被接受:螢幕閱讀器使用者不受影響,但**低視力使用者讀 placeholder / caption 會吃力**。
 (第一次提案的理由與數據保留在上表,供 user 未來主動翻案時直接取用,不需重新研究。)
 
-落地方式:a11y 閘(`scripts/audit-a11y.mjs`,夜間 `a11y-and-size.yml`)改為**只擋新增的回歸**,
+落地方式:a11y 閘(`scripts/audit-a11y.mjs`,PR 的 `ci.yml` verify-browser-a11y(暫不在必過總關卡,見該 job 檔頭);2026-11-26 前在夜間 `a11y-and-size.yml`)改為**只擋新增的回歸**,
 這 5046 筆寫進 `infra/governance/baseline/a11y-baseline.json` 當已知帳。
 要翻案只要把 `primitives.css` 的淺色 `--_na7` 從 45% 調到 55%,再跑一次 `--baseline-write`。
 

@@ -871,7 +871,7 @@ async function main() {
   console.log(`\n[visual-audit] 完成`)
   console.log(`  Contrast violations: ${totalContrastViolations}`)
   console.log(`  Geometry violations: ${totalGeometryViolations}`)
-  if (!NO_A11Y) console.log(`  A11y violations (WCAG 2.1 AA): ${totalA11yViolations}  [advisory — 權威 a11y gate = a11y-and-size.yml(baseline-diff)]`)
+  if (!NO_A11Y) console.log(`  A11y violations (WCAG 2.1 AA): ${totalA11yViolations}  [advisory — 權威 a11y gate = ci.yml verify-browser-a11y(baseline-diff)]`)
   if (!NO_DIFF) {
     console.log(`  Baseline diff budget breached: ${totalDiffBudgetBreached} (threshold ${PIXEL_DIFF_PCT_BUDGET}%)`)
     // 基線是 **Ubuntu 渲染**後 commit 進 curated authority 的(:545 與 visual-regression.yml 跑
@@ -892,7 +892,7 @@ async function main() {
   console.log(`\n[Layer B:invoke /visual-audit 讀 ${OUT_DIR}/ 做 AI 設計合理性判斷]`)
 
   // 2026-07-14 dim-66:render / diff error 進 exit gate(fail-closed;原本 404 story 假綠)
-  // 2026-07-19:a11y 移出 exit gate 改 advisory —— 權威 a11y gate = a11y-and-size.yml(axe --gate,有
+  // 2026-07-19:a11y 移出 exit gate 改 advisory —— 權威 a11y gate = a11y-and-size.yml(2026-11-26 起搬到 ci.yml verify-browser-a11y;axe --gate,有
   //   2026-06 起的 baseline-diff:只擋新增/增量 regression,吸收 story-demo contrast + Radix-structural
   //   aria-required-children 等既有債)。visual-audit 無 a11y baseline → 對「開著的 overlay demo / Radix
   //   role=grid 巢狀」等 accepted 違規硬 gate = 與 a11y-and-size 不一致的重複 fail。本 workflow 聚焦 pixel
