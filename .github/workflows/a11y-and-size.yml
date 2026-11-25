@@ -15,7 +15,7 @@ defaults:
 
 jobs:
   # a11y-axe(axe-core WCAG 2A+AA 基線回歸閘)2026-11-26 搬進 ci.yml 的 verify-browser-a11y(地基修正 F4):
-  # 指令逐字相同(npm run a11y:check -- --gate),PR 與 push main 都跑、紅了擋合併。同一棵樹在這裡每晚再掃一次是同一支閘跑兩次 ——
+  # 指令逐字相同(npm run a11y:check -- --gate),PR 與 push main 都跑(暫不在 verify 必過總關卡、紅了不擋合併,理由與何時接上寫在 ci.yml 該 job 檔頭)。同一棵樹在這裡每晚再掃一次是同一支閘跑兩次 ——
   # 依賴(含 Chromium)由 lockfile 釘死,夜間這趟量不到 PR 量不到的東西 —— 所以退役,不是放寬。
   size-limit:
     name: Monitor bundle size drift
