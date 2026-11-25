@@ -5,6 +5,7 @@ import { lstatSync, realpathSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { resolveProvisionedPlaywrightRuntime } from '../infra/governance/lib/playwright-runtime.mjs'
+import { verifiedNodeTrustArgs } from './lib/verified-exact-npm-runtime.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const BLOCKED_PLAYWRIGHT_ENVIRONMENT = /^(?:PLAYWRIGHT_BROWSERS_PATH|PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT|PLAYWRIGHT_DOWNLOAD_HOST|PLAYWRIGHT_CHROMIUM_DOWNLOAD_HOST|PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD|PLAYWRIGHT_HOST_PLATFORM_OVERRIDE|NODE_OPTIONS|NODE_PATH|LD_PRELOAD|DYLD_.*)$/
@@ -88,7 +89,10 @@ export function ensurePlaywrightBrowsers({
     if (!cliInfo.isFile() || cliInfo.isSymbolicLink() || cliInfo.nlink !== 1 || realpathSync(cli) !== cli) {
       throw new Error('Playwright setup blocked:installed lock-resolved CLI is not one regular no-link file')
     }
-    const installArgs = [cli, 'install', ...(args.includes('--with-deps') ? ['--with-deps'] : []), 'chromium']
+    // 瀏覽器下載與鎖定 npm 同一條 TLS 信任規則(內建 bundle + 主機系統憑證庫,不取自環境變數;2026-11-26 P0)。
+    // Playwright CLI 以不帶 options 的 child_process.fork() 開下載子行程,execArgv 預設 = process.execArgv,旗標會傳下去
+    //(依據與出處:scripts/lib/verified-exact-npm-runtime.mjs「TLS 信任錨」段;fork 呼叫形狀由 test-verified-exact-npm-runtime.mjs 守)。
+    const installArgs = [...verifiedNodeTrustArgs(), cli, 'install', ...(args.includes('--with-deps') ? ['--with-deps'] : []), 'chromium']
     const result = runner(process.execPath, installArgs, {
       cwd: root,
       env: setupEnvironment,

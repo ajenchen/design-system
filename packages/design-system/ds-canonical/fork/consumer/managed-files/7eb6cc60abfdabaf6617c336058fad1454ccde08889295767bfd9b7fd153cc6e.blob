@@ -73,26 +73,41 @@ const invariant = (condition, message) => {
 // 於是只要 TLS 被重新簽(Claude Code 雲端的出站代理、多數企業代理),即使代理 CA 已裝進主機的系統憑證庫,
 // 鎖定 npm 也不可能連上 registry。要保證的性質:整條鎖定鏈信任「內建 bundle + 主機系統憑證庫」這一組錨,
 // 而且這組錨**不取自任何環境變數**(威脅模型不變:環境變數不可信,主機的 Node / TLS 視為可信)。
-//   · 子行程(鎖定 npm):以 `--use-system-ca` 啟動。Node 官方文件(doc/api/cli.md,v22.x):
-//     added v23.8.0 / v22.15.0;v23.9.0 起支援 Windows / macOS 以外平台(nodejs/node#57009,22.15.0 一併帶入,
-//     CHANGELOG_V22.md 22.15.0 段);「uses the trusted CA certificates present in the system store along with
-//     the `--use-bundled-ca` option」—— 是**加上**系統庫,不取代內建 bundle。Linux 讀 OpenSSL 的預設檔與目錄
-//    (官方 Linux 執行檔 OPENSSLDIR = /etc/ssl;OpenSSL 允許 SSL_CERT_FILE / SSL_CERT_DIR 覆寫,子行程環境已把兩者剝除);
-//     macOS 讀鑰匙圈的信任設定。出處:https://nodejs.org/docs/latest-v22.x/api/cli.html#--use-system-ca
-//     與 https://github.com/nodejs/node/blob/main/doc/changelogs/CHANGELOG_V22.md#22.15.0
-//   · 本行程(下載 npm tarball 與修補層):明確傳 `ca` = 內建 bundle + `tls.getCACertificates('system')`
-//    (added v23.10.0 / v22.15.0;文件:「This can be used to get the certificates from the system when --use-system-ca
-//     is not enabled」,https://nodejs.org/docs/latest-v22.x/api/tls.html#tlsgetcacertificatestype)。不用 'default',
-//     因為它含 NODE_EXTRA_CA_CERTS(環境變數);父子兩端因此是同一組錨。下載內容的完整性邊界照舊是 committed lock
-//     的 SHA-512,TLS 錨只決定連不連得上。
+//   · 系統憑證庫各平台讀什麼(Node 官方文件 --use-system-ca 段,https://nodejs.org/docs/latest-v22.x/api/cli.html#--use-system-ca):
+//     - Linux 與其他 Unix:Node 連結的 OpenSSL 所認的預設憑證檔(通常 /etc/ssl/cert.pem)與目錄(通常 /etc/ssl/certs;
+//       官方 Linux 執行檔 OPENSSLDIR = /etc/ssl),首次載入後快取。文件原文:「If the overriding OpenSSL environment variables
+//      (typically `SSL_CERT_FILE` and `SSL_CERT_DIR` ...) are set, the specified paths will be used to load certificates
+//       instead.」—— 所以讀系統庫的那支行程,環境裡不得有它們(見下兩點)。
+//     - macOS:Default 與 System 鑰匙圈裡標為 Always Trust(「When using this certificate」或「SSL」)的憑證。
+//     - Windows:Local Machine(certlm.msc)的 Trusted Root Certification Authorities / Trusted People / Enterprise Trust
+//       各子庫,與 Current User(certmgr.msc)的 Trusted Root Certification Authorities 等。本 repo 不支援 native Windows
+//      (README「Native Windows is unsupported」,請用 WSL2 或 dev container),這一行只為交代完整的平台行為。
+//   · 子行程(鎖定 npm):以 `--use-system-ca` 啟動,環境已剝除(SSL_CERT_FILE / SSL_CERT_DIR / NODE_EXTRA_CA_CERTS 都不在)。
+//     Node 官方文件(doc/api/cli.md,v22.x):added v23.8.0 / v22.15.0;v23.9.0 起支援 Windows / macOS 以外平台
+//    (nodejs/node#57009,22.15.0 一併帶入,CHANGELOG_V22.md 22.15.0 段);「Node.js uses the trusted CA certificates present
+//     in the system store along with the `--use-bundled-ca` option and the `NODE_EXTRA_CA_CERTS` environment variable.」
+//     —— 是**加上**系統庫,不取代內建 bundle;句中的 NODE_EXTRA_CA_CERTS 在子行程環境裡已剝除,所以實際是 bundle + 系統庫。
+//     出處另見 https://github.com/nodejs/node/blob/main/doc/changelogs/CHANGELOG_V22.md#22.15.0
+//   · 本行程(下載 npm tarball 與修補層):明確傳 `ca` = 內建 bundle + 系統庫。本行程的環境**沒有剝除**(它就是剝除者),
+//     而 Linux 上 'system' 會跟著 SSL_CERT_FILE / SSL_CERT_DIR 走、Node 讀過一次就快取 —— 所以系統庫**不在本行程讀**,
+//     改由一支環境清空(env = {})的同版 Node 子行程讀 `tls.getCACertificates('system')` 後回傳
+//    (readSystemTrustAnchorsWithoutEnvironment;API added v23.10.0 / v22.15.0,文件:「This can be used to get the
+//     certificates from the system when --use-system-ca is not enabled」,
+//     https://nodejs.org/docs/latest-v22.x/api/tls.html#tlsgetcacertificatestype)。'bundled' 是編進 Node 的,不受環境影響,
+//     在本行程讀。不用 'default',因為它含 NODE_EXTRA_CA_CERTS(環境變數)。父子兩端因此是同一組錨,兩端都不受 CA 環境變數影響。
+//     下載內容的完整性邊界照舊是 committed lock 的 SHA-512,TLS 錨只決定連不連得上。
+//   · 同一個入口也給 Playwright 的瀏覽器下載(scripts/ensure-playwright-browsers.mjs):它的 CLI 以 child_process.fork()
+//     開下載子行程、不帶 options,依 Node 文件 fork 的 execArgv 預設 = process.execArgv,`--use-system-ca` 會傳下去
+//    (https://nodejs.org/docs/latest-v22.x/api/child_process.html#child_processforkmodulepath-args-options)。
 //   · 兩個能力同時具備的 Node:22.15.0+ 的 22.x、23.10.0+ 的 23.x、24 以上。契約最低版(22.13.0)到 22.14.x 沒有它們,
 //     那一段照舊只信內建 bundle(與修前相同,遇到重新簽的 TLS 仍連不上)。**不抬高契約最低版**:consumer 的
 //     package.json 與 lock 的 engines 必須逐字等於 `>=minimumNodeVersion`(fork/consumer/governance-check.mjs GOV-RUNTIME-001、
 //     refresh-fork-launchers.mjs、setup-governance.mjs),而沒有任何升級程式會改寫 consumer 的 engines;抬高 = 每個既有
 //     consumer 升級後 sync-all / setup:all / governance:check 一起紅。要在重新簽 TLS 的主機用,文件寫明 Node 22.15.0+。
-// 呼叫端一律經 verifiedNpmNodeArgv() 組 argv,不得自己拼 `[cli, ...args]`(同一條規則只住一處)。
+// 呼叫端一律經 verifiedNpmNodeArgv() / verifiedNodeTrustArgs() 組 argv,不得自己拼 `[cli, ...args]`(同一條規則只住一處)。
 export const VERIFIED_NODE_TLS_TRUST_ARGS = Object.freeze(['--use-system-ca'])
 const SYSTEM_TRUST_STORE_FLOORS = Object.freeze({ 22: Object.freeze([15, 0]), 23: Object.freeze([10, 0]) })
+const SYSTEM_TRUST_ANCHOR_READER = "import { getCACertificates } from 'node:tls'\nprocess.stdout.write(JSON.stringify(getCACertificates('system')))\n"
 
 /** 純函式:這個 Node 版本能不能讀主機系統憑證庫(`--use-system-ca` 三平台 + `tls.getCACertificates`)。 */
 export function nodeReadsSystemTrustStore(nodeVersion = process.versions.node) {
@@ -116,12 +131,46 @@ export function verifiedNpmNodeArgv(cli, args = [], { nodeVersion = process.vers
   return [...verifiedNodeTrustArgs(nodeVersion), cli, ...args]
 }
 
+/**
+ * 主機系統憑證庫,由一支環境清空的同版 Node 子行程讀出(Linux 的 SSL_CERT_FILE / SSL_CERT_DIR 因此不可能混進來;
+ * 子行程也不繼承本行程的 execArgv)。回傳 PEM 陣列;讀不到一律 fail closed。
+ */
+export function readSystemTrustAnchorsWithoutEnvironment({ runner = spawnSync, execPath = process.execPath } = {}) {
+  const result = runner(execPath, ['--input-type=module', '--eval', SYSTEM_TRUST_ANCHOR_READER], {
+    env: {},
+    shell: false,
+    encoding: 'utf8',
+    maxBuffer: 16 * 1024 * 1024,
+    timeout: 30_000,
+    windowsHide: true,
+  })
+  invariant(!result?.error && result?.status === 0, `system trust store read failed:${result?.error?.message || result?.signal || result?.status}`)
+  let anchors
+  try {
+    anchors = JSON.parse(String(result.stdout || ''))
+  } catch {
+    invariant(false, 'system trust store read returned invalid JSON')
+  }
+  invariant(Array.isArray(anchors) && anchors.every((pem) => typeof pem === 'string' && pem.includes('-----BEGIN CERTIFICATE-----')), 'system trust store read returned non-PEM data')
+  return anchors
+}
+
+let cachedSystemTrustAnchors
+function cachedSystemTrustAnchorsWithoutEnvironment() {
+  cachedSystemTrustAnchors ??= Object.freeze(readSystemTrustAnchorsWithoutEnvironment())
+  return cachedSystemTrustAnchors
+}
+
 /** 本行程下載用的 `ca`;Node 讀不到系統庫時回 undefined(沿用 Node 預設,與修前相同)。 */
-export function verifiedRegistryTrustAnchors({ tlsModule = tls, nodeVersion = process.versions.node } = {}) {
+export function verifiedRegistryTrustAnchors({
+  tlsModule = tls,
+  nodeVersion = process.versions.node,
+  readSystemAnchors = cachedSystemTrustAnchorsWithoutEnvironment,
+} = {}) {
   if (!nodeReadsSystemTrustStore(nodeVersion)) return undefined
   invariant(typeof tlsModule?.getCACertificates === 'function', 'tls.getCACertificates is unavailable on a Node.js release that should provide it')
   const bundled = tlsModule.getCACertificates('bundled')
-  const system = tlsModule.getCACertificates('system')
+  const system = readSystemAnchors()
   invariant(Array.isArray(bundled) && bundled.length > 0 && Array.isArray(system), 'Node.js TLS trust anchors are unavailable')
   return Object.freeze([...new Set([...bundled, ...system])])
 }

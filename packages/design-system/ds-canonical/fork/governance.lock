@@ -15,7 +15,7 @@
     {
       "schemaVersion": 1,
       "file": "CLAUDE.md",
-      "sha256": "f56a44c730506258cc7e2581dbdd31bfd1e6d13d60dc8a8ee8bcc398228453fb",
+      "sha256": "d5e2985308308c1a964e5b90c60bb2ffa7543fb85c4a6ab7c6c3ec0c11badb6c",
       "source": "provider instruction compatibility alias",
       "classification": null,
       "destination": null
@@ -487,7 +487,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/7eb6cc60abfdabaf6617c336058fad1454ccde08889295767bfd9b7fd153cc6e.blob",
-      "sha256": "20882259edb43d92f593d3d8ec5ab5a6bc0e6905230dd5d80416bd27bcbdc9f3",
+      "sha256": "911507982730b7a5d6ea0f1046dcf685d3dc6a9f265682146536ae7416aea01c",
       "source": "scripts/lib/verified-exact-npm-runtime.mjs",
       "classification": null,
       "destination": "scripts/lib/verified-exact-npm-runtime.mjs"
@@ -975,7 +975,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/instruction.md",
-      "sha256": "f56a44c730506258cc7e2581dbdd31bfd1e6d13d60dc8a8ee8bcc398228453fb",
+      "sha256": "d5e2985308308c1a964e5b90c60bb2ffa7543fb85c4a6ab7c6c3ec0c11badb6c",
       "source": "scripts/fork-role-sources/CLAUDE.product.md",
       "classification": null,
       "destination": null

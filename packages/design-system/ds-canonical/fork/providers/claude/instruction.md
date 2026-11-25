@@ -23,10 +23,15 @@ This file contains Claude Code mechanics only. Shared product rules, SSOT pointe
 
 ## Fresh environments
 
-Use `npm run setup:all` as the Claude Code on the web environment **Setup script**. It runs
-the shared locked install, signature audit, and exact installed hooks-off checker before work. The
-web environment may reuse a cached setup result, so rebuild that cache or run the same command
-explicitly whenever the committed lock changes. Opening or resuming a Claude session does not
+On Claude Code on the web, create a cloud environment dedicated to this repository and set its
+**Setup script** to the script in README.md ("Local, cloud, and container setup"): it finds the
+checkout itself and then runs `npm run setup:all`. Do not put a bare `npm run setup:all` in the
+shared Default environment: the official guide does not document the script's working directory,
+and a setup script that exits non-zero makes the session fail to start or start without what it
+failed to install (https://code.claude.com/docs/en/cloud-environments#setup-scripts). `setup:all`
+runs the shared locked install, signature audit, and exact installed hooks-off checker before work.
+The web environment may reuse a cached setup result, so rebuild that cache or run
+`npm run setup:all` explicitly whenever the committed lock changes. Opening or resuming a Claude session does not
 mutate the checkout through repository SessionStart. If setup cannot authenticate the locked
 snapshot, treat the environment as degraded and do not claim compliance.
 

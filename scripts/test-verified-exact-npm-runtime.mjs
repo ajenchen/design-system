@@ -32,6 +32,7 @@ import {
   resolveExactNpmArtifact,
   resolveExactNpmRuntimeContract,
   nodeReadsSystemTrustStore,
+  readSystemTrustAnchorsWithoutEnvironment,
   VERIFIED_NODE_TLS_TRUST_ARGS,
   verifiedNpmNodeArgv,
   verifiedRegistryTrustAnchors,
@@ -456,9 +457,10 @@ test('overlay downloader accepts only certified overlay tarballs before any I/O'
 
 
 // ── 2026-11-26 P0:下游 Claude Code 雲端 `setup:all` 必定 SELF_SIGNED_CERT_IN_CHAIN ──────────────────────────────────
-// 要保證的性質:TLS 被重新簽、代理 CA 只在主機系統憑證庫時,鎖定鏈(父行程下載 + 子行程鎖定 npm)仍連得上,
-// 而且信任錨不取自任何環境變數。下面四題:(1) argv 契約 (2) 父行程信任錨的組成 (3) 同族呼叫點全數經過
-// verifiedNpmNodeArgv(4) 真 TLS 對照組:剝光環境變數、只有系統憑證庫信任自訂 CA,拿掉修法必連不上、有修法必連得上。
+// 要保證的性質:TLS 被重新簽、代理 CA 只在主機系統憑證庫時,鎖定鏈(父行程下載 + 子行程鎖定 npm + Playwright 瀏覽器下載)
+// 仍連得上,而且信任錨不取自任何環境變數。下面幾題:(1) argv 契約 (2) 父行程信任錨的組成,系統庫在環境清空的子行程讀
+// (3) 同族呼叫點全數經過共用入口,含 Playwright 下載子行程繼承 execArgv 的呼叫形狀 (4) 真 TLS 對照組:剝光環境變數、
+// 只有系統憑證庫信任自訂 CA,拿掉修法必連不上、有修法必連得上;父行程環境帶著指向探針 CA 的 SSL_CERT_FILE / SSL_CERT_DIR 也不算數。
 test('verified npm argv carries the system trust-store flag on every Node that can read the system store', () => {
   assert.deepEqual(VERIFIED_NODE_TLS_TRUST_ARGS, ['--use-system-ca'])
   // 判定表(Node 官方文件:--use-system-ca 三平台 22.15.0 / 23.9.0,tls.getCACertificates 22.15.0 / 23.10.0)。
@@ -480,17 +482,52 @@ test('in-process registry trust anchors are the bundled store plus the system st
   const fakeTls = {
     getCACertificates(type) {
       requested.push(type)
-      return { bundled: ['BUNDLED-A', 'SHARED'], system: ['SYSTEM-PROXY-CA', 'SHARED'], extra: ['ENV-EXTRA'], default: ['BUNDLED-A', 'ENV-EXTRA'] }[type]
+      return { bundled: ['BUNDLED-A', 'SHARED'], system: ['IN-PROCESS-SYSTEM-FOLLOWS-SSL_CERT_FILE'], extra: ['ENV-EXTRA'], default: ['BUNDLED-A', 'ENV-EXTRA'] }[type]
     },
   }
-  assert.deepEqual(verifiedRegistryTrustAnchors({ tlsModule: fakeTls, nodeVersion: '22.15.0' }), ['BUNDLED-A', 'SHARED', 'SYSTEM-PROXY-CA'])
-  assert.deepEqual(requested, ['bundled', 'system'], 'extra / default (NODE_EXTRA_CA_CERTS) must never be consulted')
-  assert.equal(verifiedRegistryTrustAnchors({ tlsModule: fakeTls, nodeVersion: '22.14.0' }), undefined, 'older contract Node keeps the Node default trust (pre-fix behavior)')
-  assert.equal(requested.length, 2, 'no system-store read is attempted on a Node that cannot provide it')
-  assert.throws(() => verifiedRegistryTrustAnchors({ tlsModule: {}, nodeVersion: '22.15.0' }), /tls\.getCACertificates is unavailable/)
-  assert.throws(() => verifiedRegistryTrustAnchors({ tlsModule: { getCACertificates: () => [] }, nodeVersion: '22.15.0' }), /TLS trust anchors are unavailable/)
+  let systemReads = 0
+  const readSystemAnchors = () => {
+    systemReads += 1
+    return ['SYSTEM-PROXY-CA', 'SHARED']
+  }
+  assert.deepEqual(verifiedRegistryTrustAnchors({ tlsModule: fakeTls, nodeVersion: '22.15.0', readSystemAnchors }), ['BUNDLED-A', 'SHARED', 'SYSTEM-PROXY-CA'])
+  // 'system' 不在本行程讀:本行程環境沒剝,Linux 上它會跟著 SSL_CERT_FILE / SSL_CERT_DIR 走(Node cli.md --use-system-ca 段)。
+  assert.deepEqual(requested, ['bundled'], 'system / extra / default must never be read in the unsanitized parent process')
+  assert.equal(systemReads, 1)
+  assert.equal(verifiedRegistryTrustAnchors({ tlsModule: fakeTls, nodeVersion: '22.14.0', readSystemAnchors }), undefined, 'older contract Node keeps the Node default trust (pre-fix behavior)')
+  assert.equal(requested.length + systemReads, 2, 'no trust-store read is attempted on a Node that cannot provide it')
+  assert.throws(() => verifiedRegistryTrustAnchors({ tlsModule: {}, nodeVersion: '22.15.0', readSystemAnchors }), /tls\.getCACertificates is unavailable/)
+  assert.throws(() => verifiedRegistryTrustAnchors({ tlsModule: { getCACertificates: () => [] }, nodeVersion: '22.15.0', readSystemAnchors }), /TLS trust anchors are unavailable/)
   const real = verifiedRegistryTrustAnchors()
   assert.ok(real.length > 0 && real.every((pem) => pem.includes('BEGIN CERTIFICATE')))
+})
+
+test('the system trust store is read by a same-Node child whose environment is empty', () => {
+  const calls = []
+  const pem = '-----BEGIN CERTIFICATE-----\nAAAA\n-----END CERTIFICATE-----\n'
+  const anchors = readSystemTrustAnchorsWithoutEnvironment({
+    execPath: '/host/node',
+    runner(command, args, options) {
+      calls.push({ command, args, options })
+      return { status: 0, stdout: JSON.stringify([pem]), stderr: '' }
+    },
+  })
+  assert.deepEqual(anchors, [pem])
+  assert.equal(calls.length, 1)
+  assert.equal(calls[0].command, '/host/node')
+  assert.deepEqual(calls[0].args.slice(0, 2), ['--input-type=module', '--eval'])
+  assert.match(calls[0].args[2], /getCACertificates\('system'\)/)
+  assert.equal(calls[0].args.length, 3, 'no inherited execArgv / flags reach the reader')
+  assert.deepEqual(calls[0].options.env, {}, 'SSL_CERT_FILE / SSL_CERT_DIR / NODE_EXTRA_CA_CERTS / NODE_OPTIONS cannot reach the reader')
+  assert.equal(calls[0].options.shell, false)
+  for (const [result, pattern] of [
+    [{ status: 1, stdout: '' }, /system trust store read failed:1/],
+    [{ error: new Error('spawn EACCES') }, /system trust store read failed:spawn EACCES/],
+    [{ status: 0, stdout: 'not json' }, /invalid JSON/],
+    [{ status: 0, stdout: JSON.stringify(['not a pem']) }, /non-PEM data/],
+    [{ status: 0, stdout: JSON.stringify({}) }, /non-PEM data/],
+  ]) assert.throws(() => readSystemTrustAnchorsWithoutEnvironment({ runner: () => result }), pattern)
+  assert.ok(Array.isArray(readSystemTrustAnchorsWithoutEnvironment()), 'the real reader returns the host system store (possibly empty)')
 })
 
 test('canonical downloads hand the bundled+system anchors to Node HTTPS', async () => {
@@ -517,7 +554,7 @@ test('canonical downloads hand the bundled+system anchors to Node HTTPS', async 
   assert.deepEqual(seen[0].ca, verifiedRegistryTrustAnchors())
 })
 
-test('every verified-npm spawn in the setup, sync and candidate chain goes through verifiedNpmNodeArgv', () => {
+test('every verified-npm spawn and the Playwright browser download in the setup, sync and candidate chain carry the shared trust flag', () => {
   // 同族全修(M10):鎖定 npm 的每個呼叫點。只剩 probeCli 的 `--version`(不連網)直接帶 cli。
   // 不在此列(交 release.yml 在 GitHub-hosted runner 跑、直接以 shebang 執行 npm):release-npm-publish /
   // release-npm-readback / release-npm-finalize-verify。
@@ -537,6 +574,18 @@ test('every verified-npm spawn in the setup, sync and candidate chain goes throu
   const runtimeSource = readFileSync('scripts/lib/verified-exact-npm-runtime.mjs', 'utf8')
   assert.deepEqual([...runtimeSource.matchAll(new RegExp(rawSpawn.source, 'g'))].length, 1, 'only the offline --version probe may spawn the CLI directly')
   assert.match(runtimeSource, /process\.execPath, \[cli, '--version'\]/)
+  // 同族:DS repo 的 setup:all(setup-authority-governance.mjs)在剝除後的環境跑 Playwright 安裝,Chromium 由 Node HTTPS 下載
+  //(playwright-core lib/server/utils/network.js 的 httpRequest,不傳 ca)。它的 node argv 一樣要經共用入口。
+  const playwrightSource = readFileSync('scripts/ensure-playwright-browsers.mjs', 'utf8')
+  assert.match(playwrightSource, /const installArgs = \[\.\.\.verifiedNodeTrustArgs\(\), cli, 'install'/, 'Playwright browser install lost the shared system trust-store flag')
+  assert.doesNotMatch(playwrightSource, /installArgs = \[cli\b/)
+  // 旗標要傳到真正下載的那支行程:Playwright CLI 以 child_process.fork(modulePath) 開下載子行程、不帶 options,
+  // Node 文件:fork 的 execArgv「Default: process.execArgv」(https://nodejs.org/docs/latest-v22.x/api/child_process.html#child_processforkmodulepath-args-options)。
+  // 升級 Playwright 若改成帶 options(可能覆寫 execArgv),這裡會紅,要重新查證。
+  const fetcherSource = readFileSync('node_modules/playwright-core/lib/server/registry/browserFetcher.js', 'utf8')
+  const forks = [...fetcherSource.matchAll(/childProcess\.fork\(([^;]*)\);/g)].map((match) => match[1])
+  assert.deepEqual(forks, ['import_path.default.join(__dirname, "oopDownloadBrowserMain.js")'], 'Playwright download child must be forked without options so it inherits process.execArgv')
+  assert.doesNotMatch(fetcherSource, /execArgv/, 'Playwright download fork must not override execArgv')
 })
 
 // 真 TLS 對照組。改系統憑證庫需要非互動 root,harness 測試本身不得執行 sudo / openssl(harness-source-inventory
@@ -586,6 +635,12 @@ test('stripped environment + probe CA only in the system trust store: bundled-on
     const bundledOnly = await new Promise((resolvePromise) => execFile(process.execPath, ['--', SYSTEM_TRUST_PROBE_CLIENT, port, 'default'], { env, timeout: 20_000 }, settleProbe(resolvePromise)))
     const lockedNpmChild = await new Promise((resolvePromise) => execFile(process.execPath, ['--use-system-ca', '--', SYSTEM_TRUST_PROBE_CLIENT, port, 'default'], { env, timeout: 20_000 }, settleProbe(resolvePromise)))
     const downloadAnchors = await new Promise((resolvePromise) => execFile(process.execPath, ['--', SYSTEM_TRUST_PROBE_CLIENT, port, 'anchors'], { env, timeout: 20_000 }, settleProbe(resolvePromise)))
+    // 父行程(剝除者)本身的環境沒剝:帶著指向探針 CA 的 SSL_CERT_FILE / SSL_CERT_DIR 跑下載臂。Linux 上若在本行程讀 'system',
+    // 這兩個變數會把探針 CA 帶進信任錨(Node cli.md --use-system-ca 段)—— 所以 untrusted 態它必須仍連不上。
+    const hostileParentAnchors = await new Promise((resolvePromise) => execFile(process.execPath, ['--', SYSTEM_TRUST_PROBE_CLIENT, port, 'anchors'], {
+      env: { ...env, SSL_CERT_FILE: join(SYSTEM_TRUST_PROBE_DIRECTORY, 'ca.pem'), SSL_CERT_DIR: SYSTEM_TRUST_PROBE_DIRECTORY },
+      timeout: 20_000,
+    }, settleProbe(resolvePromise)))
     // 鎖定 npm 子行程真正拿到的旗標就是這一個(argv 契約由上面的判定表與呼叫點掃描守)。
     assert.deepEqual(verifiedNpmNodeArgv('/npm-cli.js').slice(0, 1), ['--use-system-ca'])
     // 對照臂(拿掉修法、環境變數已剝):不論 CA 在不在系統庫都必須連不上。
@@ -594,9 +649,11 @@ test('stripped environment + probe CA only in the system trust store: bundled-on
       // 儀器對照:CA 還沒進系統庫時,有修法的兩臂也必須連不上 —— 否則後面的綠燈不代表系統庫真的起作用。
       assert.match(lockedNpmChild, CERTIFICATE_ERROR, `--use-system-ca must still reject an untrusted CA, got ${lockedNpmChild}`)
       assert.match(downloadAnchors, CERTIFICATE_ERROR, `download anchors must still reject an untrusted CA, got ${downloadAnchors}`)
+      assert.match(hostileParentAnchors, CERTIFICATE_ERROR, `parent SSL_CERT_FILE / SSL_CERT_DIR must not reach the download anchors, got ${hostileParentAnchors}`)
     } else {
       assert.equal(lockedNpmChild, 'STATUS 200', 'locked npm child (--use-system-ca) must trust the system store')
       assert.equal(downloadAnchors, 'STATUS 200', 'in-process download anchors must trust the system store')
+      assert.equal(hostileParentAnchors, 'STATUS 200', 'download anchors still trust the system store when the parent carries CA variables')
     }
   } finally {
     server.close()
