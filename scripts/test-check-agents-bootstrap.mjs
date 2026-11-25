@@ -120,7 +120,8 @@ try {
   const triageLine = agentsText.split('\n').find((line) => line.startsWith('**分診與預算**'))
   write('AGENTS.md', `# Fixture governance\n\n${triageLine}\n\n${block}\n`)
   write('CLAUDE.md', '@AGENTS.md\n')
-  for (const rel of [...block.matchAll(/`((?:scripts|packages|governance|infra)\/[^`*]+?\.(?:md|mjs|sh|json))`/g)].map((m) => m[1])) write(rel, 'fixture\n')
+  // 分診段也照抄進 fixture,它引用的檔(2026-11-25 起指向 feedback_orchestration_verify_before_scale.md)一樣要有樁,否則死鏈檢查讓綠格假紅
+  for (const rel of [...`${triageLine}\n${block}`.matchAll(/`((?:scripts|packages|governance|infra)\/[^`*]+?\.(?:md|mjs|sh|json))`/g)].map((m) => m[1])) write(rel, 'fixture\n')
   write('scripts/package-role-sources/AGENTS.package.md', '# Package scope\n\nScoped augmentation; not repository or consumer SSOT.\n')
   write('scripts/package-role-sources/CLAUDE.package.md', '@AGENTS.md\n\n# Claude package adapter\n')
   write('packages/design-system/AGENTS.md', '# Package scope\n\nScoped augmentation; not repository or consumer SSOT.\n')

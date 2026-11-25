@@ -172,7 +172,11 @@ try {
 // story-rules.md「範例最高準則」「Technical probe visibility」核對)+ 版本紀錄一列 —— user 11-22 指出只給量具用的極端內容被做成給讀者看的範例。
 // 2026-11-24 RELEASE-NOTES-SCOPE 明改 76,691 → 76,803(+112):work-process.md「合回點」加一句指標,指向發版說明的登記規則
 // (props-naming.md「相容政策」;只放指向、不重述)—— 包規格要求合回點指得到它,新的發版說明涵蓋閘在合回點跑的 CI 裡。
-const OPENING_FILES_MAX_BYTES = 76_803
+// 2026-11-25 HANDOFF-QUOTA 明改 76,803 → 76,881(+78):AGENTS.md「分診與預算」段尾加一句指向
+// governance/memory/feedback_orchestration_verify_before_scale.md「交接常備與額度」(只放指向、不重述)。指向那句 +88
+//(初稿帶節名 +127,已縮),同段刪掉重複的「,不開工」-10(「只開工 ①②③」已涵蓋),淨增 78 只能明改上限 —— 再縮就要刪規則。
+// user 11-25:「這個上一次就講過了，難道沒有在工作規範ssot內嗎？」—— 要每個 session 開場就讀得到這個指向。
+const OPENING_FILES_MAX_BYTES = 76_881
 const RULES_DIR = path.join(ROOT, 'packages/design-system/ds-canonical/rules')
 const alwaysLoadedRules = fs.existsSync(RULES_DIR)
   ? fs.readdirSync(RULES_DIR).filter((name) => name.endsWith('.md')).sort().filter((name) => {

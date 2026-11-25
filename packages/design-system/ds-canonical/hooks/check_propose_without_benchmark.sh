@@ -25,6 +25,13 @@
 # 判準跑不起來(檔不在、node 失敗、輸出不是 question / statement)→ 照樣經 context 告訴模型「這次沒判斷」,不靜默。
 # 已知看不到:沒有問句記號的問句(「大概還要多久」)。
 # 事後那一半在 Stop 端:平台 silent_turn_reminder 之後下一筆若先跑工具,stop_self_audit.sh Mechanism 14 記一筆、下一回合注入。
+#
+# ── 第三件事:提到額度 → 交接常備與額度用法(2026-11-25;user「這個上一次就講過了…為何還要我一直講?」)──
+# 正本 = governance/memory/feedback_orchestration_verify_before_scale.md「交接常備與額度」;這裡只注入一行指向它,不另寫規則。
+# 判準(quota_prompt_hit):以 。，,！？；!?; 與換行切子句,同一子句同時有 QUOTA_TOPIC_RE 與 QUOTA_SIGNAL_RE、
+# 且沒有 QUOTA_EXCLUDE_RE(第三方免費額度,例「netlify 免費額度 1,000,000 次」不是 agent 的額度)才算。
+# LC_ALL=C 逐位元組比字面(BSD / GNU awk 結果相同);多位元組字只放在 | 交替裡,不放進 [] 字元集。
+# 用 here-string 餵 awk,不用 printf | awk:pipefail 下大 prompt 若被提早讀完會吃 SIGPIPE 變成假陰性。
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 
@@ -54,6 +61,26 @@ if [ -n "$PROMPT" ]; then
     statement) ;;
     *) add_context "⚠️ 問句判斷這次沒有跑成(scripts/lib/release-consent-language.mjs --question 回「${QUESTION_VERDICT:-空}」);這則若是問句,一樣先回一句再開始查。" ;;
   esac
+fi
+
+# ── 額度 → 交接常備與額度用法(判準見檔頭「第三件事」)────────────────────────
+QUOTA_TOPIC_RE='額度|quota'
+QUOTA_SIGNAL_RE='[0-9] ?(%|％)|百分之|重置|reset|用完|用光|快沒|剩'
+QUOTA_EXCLUDE_RE='netlify|vercel|github actions|免費'
+quota_prompt_hit() {
+  LC_ALL=C awk -v topic="$QUOTA_TOPIC_RE" -v signal="$QUOTA_SIGNAL_RE" -v exclude="$QUOTA_EXCLUDE_RE" '
+    {
+      gsub(/。|，|,|！|？|；|!|\?|;/, "\n")
+      n = split($0, parts, "\n")
+      for (i = 1; i <= n; i++) {
+        c = tolower(parts[i])
+        if (c ~ topic && c !~ exclude && c ~ signal) hit = 1
+      }
+    }
+    END { exit (hit ? 0 : 1) }' <<<"$1"
+}
+if [ -n "$PROMPT" ] && quota_prompt_hit "$PROMPT"; then
+  add_context "提到額度:照 governance/memory/feedback_orchestration_verify_before_scale.md「交接常備與額度」—— ① 交接常備:每包 / 合回點 / 長等待前更新任務總表與 NEXT-SESSION 交接(放 repo 的 tmp/ 與已推分支,不放 /tmp);② 照優先序把額度用到約剩 1–3%,不提早停、不囤,快重置還有剩就用完;③ 派工先寫預算,照 AGENTS.md「分診與預算」與 rules/work-process.md。"
 fi
 
 # ── M26:propose 前要先 fetch ────────────────────────────────────────────────

@@ -140,6 +140,44 @@ else
   echo "  FAIL: 判準缺席卻沒說:$STDOUT"; FAIL=$((FAIL+1))
 fi
 
+# ── 2026-11-25:提到額度 → 注入一行指向 feedback_orchestration_verify_before_scale.md「交接常備與額度」──
+quota_hit() { jq -e '.governanceContext.hookEventName == "UserPromptSubmit" and (.governanceContext.message | contains("交接常備與額度"))' <<<"$STDOUT" >/dev/null 2>&1; }
+quota_case() { # $1 = 期望 hit / silent,$2 = prompt,$3 = hook(預設本檔的 HOOK)
+  STDOUT=$(jq -n --arg p "$2" '{hook_event_name:"UserPromptSubmit",prompt:$p,transcript_path:"/tmp/missing-transcript"}' | bash "${3:-$HOOK}")
+  if quota_hit; then got=hit; else got=silent; fi
+  if [ "$got" = "$1" ]; then echo "  PASS($got)"; PASS=$((PASS+1)); else echo "  FAIL: 期望 $1、實際 $got:$2"; FAIL=$((FAIL+1)); fi
+}
+echo "Test 13: 百分比 + 額度(2026-11-25 紅樣本)→ 注入"
+quota_case hit "我還有 21% 的額度，做得完嗎？"
+echo "Test 14: 重置 + 額度 → 注入"
+quota_case hit "再一個小時就要重置額度"
+echo "Test 15: 2026-11-17 原話(剩 / 重置)→ 注入"
+quota_case hit "剩下一小時的額度不瘋狂使用就浪費了，因為一小時後就要重置了"
+echo "Test 16: Netlify 免費額度問句 → 不注入"
+quota_case silent "netlify edge function 免費額度是多少"
+echo "Test 17: Netlify 免費額度帶數字 → 不注入"
+quota_case silent "netlify 免費額度 1,000,000 次"
+echo "Test 18: Netlify 免費額度 + 用完 → 不注入(排除詞擋得住訊號詞)"
+quota_case silent "netlify 免費額度快用完了"
+echo "Test 19: 同一則裡 agent 額度與 Netlify 額度分在兩個子句 → 注入(逐子句判)"
+quota_case hit "額度剩 5%，netlify 免費額度還很多"
+echo "Test 20: 只有「剩」沒有額度 → 不注入"
+quota_case silent "剩下的頁面改一下"
+
+# Test 21–22(對照組,M32):弄壞判斷式,上面的格子要能紅 —— 拿 hook 副本只改一個判準變數
+mkdir -p "$TMP_DIR/quota-broken"
+sed "s/^QUOTA_SIGNAL_RE=.*/QUOTA_SIGNAL_RE='__never_matches__'/" "$HOOK" >"$TMP_DIR/quota-broken/no-signal.sh"
+sed "s/^QUOTA_EXCLUDE_RE=.*/QUOTA_EXCLUDE_RE='__never_matches__'/" "$HOOK" >"$TMP_DIR/quota-broken/no-exclude.sh"
+if grep -q "^QUOTA_SIGNAL_RE='__never_matches__'" "$TMP_DIR/quota-broken/no-signal.sh" \
+  && grep -q "^QUOTA_EXCLUDE_RE='__never_matches__'" "$TMP_DIR/quota-broken/no-exclude.sh"; then
+  echo "Test 21: 訊號詞判準壞掉 → Test 13 的紅樣本認不到(證明 Test 13 會紅)"
+  quota_case silent "我還有 21% 的額度，做得完嗎？" "$TMP_DIR/quota-broken/no-signal.sh"
+  echo "Test 22: 排除詞判準壞掉 → Test 18 的 Netlify 句被誤注入(證明 Test 18 會紅)"
+  quota_case hit "netlify 免費額度快用完了" "$TMP_DIR/quota-broken/no-exclude.sh"
+else
+  echo "  FAIL: 對照組沒改到判準變數(hook 裡的 QUOTA_*_RE 那幾行改名了?)"; FAIL=$((FAIL+1))
+fi
+
 echo ""
 echo "════ Results: $PASS PASS, $FAIL FAIL ════"
 [ "$FAIL" -gt 0 ] && exit 1
