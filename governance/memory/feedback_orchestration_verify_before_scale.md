@@ -28,7 +28,7 @@ metadata:
 2. **額度**:agent 看不到額度。user 一說剩多少,就照優先序(先 user 看得到的、會被擋住的,再其他)把額度用到約剩 1–3%,不提早停、不囤;快重置時還有剩就用完。因為第 1 條是常備的,停在哪裡都不會遺失。
 3. **效率**:派工預算、分診、只驗改到的檔 → `AGENTS.md`「# 自主執行 canonical」的「分診與預算」與 `packages/design-system/ds-canonical/rules/work-process.md`(本檔不重述)。
 
-機械提醒:user 訊息同一句裡提到額度 / quota,又帶百分比或「重置 / 用完 / 用光 / 快沒 / 剩」→ `packages/design-system/ds-canonical/hooks/check_propose_without_benchmark.sh` 注入一行指向本節;Netlify 等第三方免費額度的句子不觸發。
+機械提醒:user 訊息的同一句(以句號、問號、驚嘆號、分號或換行分句;逗號不分句,例「我的額度，還剩 21%」算一句)裡提到額度 / quota,又帶百分比或「重置 / 用完 / 用光 / 快沒 / 剩」→ `packages/design-system/ds-canonical/hooks/check_propose_without_benchmark.sh` 注入一行指向本節;Netlify 等第三方免費額度的子句不算(例「netlify 免費額度 1,000,000 次」)。
 
 **Why:** user 原話(逐字;日期 + session 前 8 碼,出處 = 該 session 的 Claude 對話紀錄):
 - 2026-09-29 1920833e「確保所有任務都沒有因為額度用光而被中斷、弄壞或是被遺漏，確保所有任務都有被持續追蹤直到完美收尾」
