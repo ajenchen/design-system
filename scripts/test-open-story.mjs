@@ -46,7 +46,7 @@ const REQUIRE_BUILD = ARGV.includes('--require-storybook-build')
 // 每則 story 是 assets/<id>.js:default(root) 渲染,可選 play(root)、afterEach(root)。phase 照 Storybook 8.6 的順序走
 // loading → rendering → playing → played → completed → afterEach → finished(@storybook/core preview-api StoryRender.render),
 // 而且跟真的一樣,畫出來就是 sb-show-main(renderToCanvas 呼叫 showMain),不等 finished。
-const KNOWN = ['ok', 'late', 'blocked', 'hang', 'slow-play', 'empty', 'boom', 'restless', 'grow', 'chatty', 'stuck-after-each', 'reload-once', 'timer-reveal']
+const KNOWN = ['ok', 'late', 'blocked', 'hang', 'slow-play', 'empty', 'boom', 'restless', 'grow', 'chatty', 'stuck-after-each', 'reload-once', 'timer-reveal', 'swallowed-play']
 const PREVIEW_HTML = `<!doctype html><html><head><meta charset="utf-8"><title>synthetic preview</title></head>
 <body class="sb-show-preparing-story">
 <div id="storybook-root"></div>
@@ -55,6 +55,10 @@ const PREVIEW_HTML = `<!doctype html><html><head><meta charset="utf-8"><title>sy
 const KNOWN = ${JSON.stringify(KNOWN)}
 const id = new URLSearchParams(location.search).get('id')
 const preview = window.__STORYBOOK_PREVIEW__ = { currentRender: null }
+// Storybook 10 的 channel(on / emit);StoryRender 每換一個 phase 就 emit storyRenderPhaseChanged { newPhase, renderId, storyId }
+const listeners = {}
+window.__STORYBOOK_ADDONS_CHANNEL__ = { on: (ev, fn) => { (listeners[ev] ||= []).push(fn) }, emit: (ev, payload) => (listeners[ev] || []).forEach((fn) => fn(payload)) }
+const setPhase = (render, phase) => { render.phase = phase; window.__STORYBOOK_ADDONS_CHANNEL__.emit('storyRenderPhaseChanged', { newPhase: phase, renderId: render.renderId, storyId: render.id }) }
 const fail = (render, error) => {
   if (render) render.phase = 'errored'
   document.getElementById('error-message').textContent = error.message
@@ -63,7 +67,7 @@ const fail = (render, error) => {
 }
 window.addEventListener('load', async () => {
   if (!KNOWN.includes(id)) return fail(null, new Error("Couldn't find story matching '" + id + "'."))
-  const render = preview.currentRender = { id, phase: 'loading' }
+  const render = preview.currentRender = { id, phase: 'loading', renderId: Date.now() }
   let mod
   try { mod = await import('./assets/' + id + '.js') } catch (error) { return fail(render, error) }
   const root = document.getElementById('storybook-root')
@@ -72,7 +76,16 @@ window.addEventListener('load', async () => {
     await mod.default(root)
     document.body.className = 'sb-show-main'
     render.phase = 'playing'
-    if (mod.play) { await mod.play(root); render.phase = 'played' }
+    // swallowPlayError:Storybook 10 核心預設 throwPlayFunctionExceptions: false 的形狀 —— play 拋錯只 emit errored /
+    // playFunctionThrewException、console.error,phase 照樣走完 completing → completed → afterEach → finished,不顯示錯誤頁
+    if (mod.play && mod.swallowPlayError) {
+      try { await mod.play(root); render.phase = 'played' } catch (error) {
+        setPhase(render, 'errored')
+        window.__STORYBOOK_ADDONS_CHANNEL__.emit('playFunctionThrewException', { name: error.name, message: error.message })
+        console.error(error)
+        setPhase(render, 'completing')
+      }
+    } else if (mod.play) { await mod.play(root); render.phase = 'played' }
     render.phase = 'completed'
     render.phase = 'afterEach'
     if (mod.afterEach) await mod.afterEach(root)
@@ -114,6 +127,10 @@ const STORIES = {
   'slow-play': `export default (root) => { root.innerHTML = '<button type="button">Keep</button><button type="button" data-delete>Delete file</button>' }
 export const play = (root) => new Promise((resolve) => setTimeout(() => { root.querySelector('[data-delete]').focus(); resolve() }, 1500))`,
   empty: `export default () => {}`,
+  // Storybook 10 形狀:play 拋錯被吞(phase 照樣走到 finished、沒有錯誤頁)—— 2026-11-25 升級當天 9 個檔的 play 就是這樣靜默失敗
+  'swallowed-play': `export default (root) => { root.innerHTML = '<p>Release checklist</p>' }
+export const swallowPlayError = true
+export const play = async () => { throw new TypeError("Failed to resolve module specifier '[object Object]'") }`,
   boom: `export default (root) => new Promise((resolve) => {
   root.innerHTML = '<p>Sprint board</p>'
   setTimeout(() => { throw new Error('synthetic render exception') }, 0)
@@ -263,6 +280,14 @@ try {
   check('渲染完成但根節點是空的 → 儀器失效(render-health)',
     isInstrument(empty, 'render-health') && empty.error.reason.includes('empty story root'),
     empty.ok ? '被判成成功(錯)' : short(empty.error.message))
+
+  // 7b. play 拋錯但 phase 照樣走到 finished、沒有錯誤頁(Storybook 10 核心預設 throwPlayFunctionExceptions: false)
+  //     → 儀器失效 render-errored,訊息帶 play 的錯誤原文;同一頁上「phase === finished 且沒有錯誤頁」這個 8.6 時代的代理會說「完成」(兩面)
+  const swallowed = await attempt(page, url('swallowed-play'), { notFound: server.notFound })
+  const proxySaysDone = await page.evaluate(() => window.__STORYBOOK_PREVIEW__?.currentRender?.phase === 'finished' && !document.body.classList.contains('sb-show-errordisplay'))
+  check('play 拋錯被吞、phase 仍走到 finished → 儀器失效(render-errored)並附 play 原文;只看 phase 的代理會判成完成',
+    isInstrument(swallowed, 'render-errored') && swallowed.error.storybookError.includes('play 拋錯') && proxySaysDone,
+    `openStory=${swallowed.ok ? '成功(錯)' : short(swallowed.error.message)};phase 代理判完成=${proxySaysDone}`)
 
   // 8. 渲染期間拋出頁面例外 → 儀器失效
   const boom = await attempt(page, url('boom'), { notFound: server.notFound })

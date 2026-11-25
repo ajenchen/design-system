@@ -1,5 +1,6 @@
 // @story-history: Breadcrumb 是純結構導覽元件,disabled/states 由 BreadcrumbLink 內部 :focus-visible / :hover / :active 處理(spec.md 互動狀態段已 cover),無 element-level disabled mode(spec.md 互動狀態 > Disabled 段「通常 breadcrumb link 不會 disabled」)。互動行為示範由 InteractiveEllipsis story + anatomy StateBehavior 完整覆蓋。AllSizes retired per F migration 2026-05-15(anatomy auto-compile SizeMatrix owns size showcase)。
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { House } from 'lucide-react'
 import {
   Breadcrumb,
@@ -352,7 +353,6 @@ export const IntegrateRouterLinkAutoCollapse: Story = {
     </Breadcrumb>
   ),
   play: async ({ canvasElement }) => {
-    const { userEvent, within, expect, waitFor } = await import('@storybook/test')
     const canvas = within(canvasElement)
     // 開摺疊選單(BreadcrumbEllipsis 預設 aria-label = 顯示折疊路徑)
     const ellipsis = await canvas.findByLabelText('顯示折疊路徑')

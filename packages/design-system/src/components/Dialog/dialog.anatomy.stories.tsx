@@ -1,7 +1,7 @@
 // @anatomy-exempt: spec-reference tables(Props 速查 / Layout token / 視覺 token / 開關方式對照 / Focus management)為靜態文件對照表,非互動資料網格 — DataTable 為 row-data 互動元件,過度包裝靜態 spec 對照。對齊 Sheet / Popover anatomy 同 pattern。
 // @anatomy-rationale:
 //   Inspector N/A — 設計規格頁不放開得起來的對話框(登記簿 A32「dialog 的設計規格的範例給我拿掉」);可調的 props 列在元件總覽的 Props 速查,開起來的樣子在展示頁。
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 import { StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
 

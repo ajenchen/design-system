@@ -1,8 +1,8 @@
 // @story-baseline: packages/design-system/src/components/DataTable/data-table.stories.tsx#WithBulkActions
 // Combobox 為主元件;當 stories 內 wrap DataTable 演示 cell-context,baseline = DataTable WithBulkActions(per .claude/references/story-baseline-registry.json#DataTable)
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
-import { expect, userEvent, waitFor, within } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Combobox } from './combobox'
 import { DataTable } from '@/design-system/components/DataTable/data-table'

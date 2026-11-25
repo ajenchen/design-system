@@ -1,6 +1,6 @@
 // @anatomy-exempt: 設計規格 anatomy 文件用 token-matrix / props doc 表格(教學對照,非 list-item raw-table 反 pattern)
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { LiveFileUpload } from './_file-upload-demo'
 import { StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'

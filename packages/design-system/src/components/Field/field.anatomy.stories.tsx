@@ -1,5 +1,5 @@
 // @anatomy-exempt: anatomy 參考用靜態 props / 責任 / 色彩對照表（純文件,非互動資料表格,不需 DataTable runtime）
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Field, FieldLabel, FieldDescription, FieldError, FieldGroup } from './field'
 import { Input } from '@/design-system/components/Input/input'
 import { NumberInput } from '@/design-system/components/NumberInput/number-input'

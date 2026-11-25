@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { TutorialPage, TutorialSection } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {

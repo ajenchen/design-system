@@ -15,7 +15,7 @@
  * Anchor codex M31 v1:「PW 可有 DS catalog 但只能是 DS canonical Storybook 的 proxy/manifest portal,不能在 PW 重新寫 JSX」
  */
 
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import * as DS from '@qijenchen/design-system'
 
 // Dynamic export count(不寫死數字,隨 DS public API 增減)— import smoke only, no render

@@ -3,8 +3,8 @@
 //   SizeMatrix N/A — Calendar 是單一 month canvas，沒有 size variant。
 //   StateBehavior 已存在(today / outside month / hover / event tile 等狀態
 //     已由 StateBehavior 5. 涵蓋)。
-import type { Meta, StoryObj } from '@storybook/react'
-import { expect, userEvent, waitFor, within } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { Calendar, type CalendarEvent } from './calendar'
 import { CalendarDemo } from './_calendar-demo'
 import { CATEGORICAL_HUES, type CategoricalColor } from '@/design-system/tokens/categorical-color'

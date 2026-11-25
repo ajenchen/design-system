@@ -199,7 +199,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/prototype/references/proposal-template.md",
-      "sha256": "dd6291ccc090436665e0f13b2cc2d4ff4ab41116df51e121ef9e3f9c8dfc3f38",
+      "sha256": "2d3122e31312cf2f6601be24c21e2d40990682122167c8276eaa08d85f501835",
       "source": "providers/codex/skills/prototype",
       "classification": null,
       "destination": null
@@ -239,7 +239,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/visual-audit/references/audit-architecture.md",
-      "sha256": "04783e2a9b68013324b5b1f4445e06884f8d4c323601b0d18198b696256e00f3",
+      "sha256": "dea0197e9557b6b56a08c7110fa82df80f933632e8db599cfee38238c81f70d0",
       "source": "providers/codex/skills/visual-audit",
       "classification": null,
       "destination": null
@@ -399,7 +399,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/5af0a46760af338d51fd0f7950675f8e97f7d2f09386b8818fcd7a58e6654e75.blob",
-      "sha256": "7eec0b85e3305a0fe3f9854addc481dd761b20754f99f76d9e139b4e281fd38f",
+      "sha256": "91beff2f1718062f53cb1a10d6629af1bfec362f789ef5ed2ef08ee3c4fc612c",
       "source": "scripts/lib/launch-browser.mjs",
       "classification": null,
       "destination": "scripts/lib/launch-browser.mjs"
@@ -639,7 +639,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/e813096d69c49812e40e00be9ac8fa14d77f0ec1f97ab4c45cb096b3bedd35de.blob",
-      "sha256": "79eff2d98653857c11ab6a0354fa62685a72ec214545e7fdfabc450e91b7ba63",
+      "sha256": "2984e2fb8b6ba8fad758ad0e18c3bc49be706a1e1ed56e1fc2b45ec4dfdc7f07",
       "source": "template/ds-product-template/.npmrc",
       "classification": null,
       "destination": ".npmrc"
@@ -1167,7 +1167,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/prototype/references/proposal-template.md",
-      "sha256": "dd6291ccc090436665e0f13b2cc2d4ff4ab41116df51e121ef9e3f9c8dfc3f38",
+      "sha256": "2d3122e31312cf2f6601be24c21e2d40990682122167c8276eaa08d85f501835",
       "source": "skills/prototype/references/proposal-template.md",
       "classification": null,
       "destination": null
@@ -1207,7 +1207,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/visual-audit/references/audit-architecture.md",
-      "sha256": "04783e2a9b68013324b5b1f4445e06884f8d4c323601b0d18198b696256e00f3",
+      "sha256": "dea0197e9557b6b56a08c7110fa82df80f933632e8db599cfee38238c81f70d0",
       "source": "skills/visual-audit/references/audit-architecture.md",
       "classification": null,
       "destination": null
@@ -1415,7 +1415,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/prototype/references/proposal-template.md",
-      "sha256": "dd6291ccc090436665e0f13b2cc2d4ff4ab41116df51e121ef9e3f9c8dfc3f38",
+      "sha256": "2d3122e31312cf2f6601be24c21e2d40990682122167c8276eaa08d85f501835",
       "source": "skills/prototype/references/proposal-template.md",
       "classification": null,
       "destination": null
@@ -1455,7 +1455,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/visual-audit/references/audit-architecture.md",
-      "sha256": "04783e2a9b68013324b5b1f4445e06884f8d4c323601b0d18198b696256e00f3",
+      "sha256": "dea0197e9557b6b56a08c7110fa82df80f933632e8db599cfee38238c81f70d0",
       "source": "skills/visual-audit/references/audit-architecture.md",
       "classification": null,
       "destination": null
@@ -1711,7 +1711,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/prototype/references/proposal-template.md",
-      "sha256": "dd6291ccc090436665e0f13b2cc2d4ff4ab41116df51e121ef9e3f9c8dfc3f38",
+      "sha256": "2d3122e31312cf2f6601be24c21e2d40990682122167c8276eaa08d85f501835",
       "source": null,
       "classification": null,
       "destination": null
@@ -1751,7 +1751,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/visual-audit/references/audit-architecture.md",
-      "sha256": "04783e2a9b68013324b5b1f4445e06884f8d4c323601b0d18198b696256e00f3",
+      "sha256": "dea0197e9557b6b56a08c7110fa82df80f933632e8db599cfee38238c81f70d0",
       "source": null,
       "classification": null,
       "destination": null

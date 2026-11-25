@@ -1,5 +1,5 @@
 // @story-history: hasInteractiveStates 的 collapsed↔expanded / disabled item / keyboard 矩陣由 anatomy.stories.tsx StateBehavior owns(含 data-state 標註 + 鍵盤對照表 + token rationale);showcase 層只保留真實業務情境(FAQ / 設定分組 / 進階選項),不再平行重教同一組 state(earn-existence 2-test:showcase States 移除後 spec 理解不 degrade,2026-05-30 audit Dim 24)。
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import {
   Accordion,
   AccordionItem,

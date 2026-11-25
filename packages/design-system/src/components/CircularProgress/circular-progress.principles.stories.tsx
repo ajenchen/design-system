@@ -2,7 +2,7 @@
 // `UsageGuidance` story (3 sections — 何時用 / 何時不用 / vs 近親) per 2026-04-26 user
 // mandate. IndeterminateVsDeterminateRule / ConsumptionScenarioRule / SizeMatchContextRule
 // kept as separate principles.
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Mail, Check } from 'lucide-react'
 import { CircularProgress } from './circular-progress'
 import { Button } from '@/design-system/components/Button/button'

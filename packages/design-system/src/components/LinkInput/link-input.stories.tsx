@@ -3,7 +3,7 @@
 // 每則只教一件事(2026-11-23 範例稽核,story-rules.md「範例最高準則」):基本用法 = 有網址時的樣子;填寫網址 = 空白直接打、離開變連結;
 // 錯誤說明 = 不是網址時框下那一行(預設 / 換字);可清除 = ×;儲存時查出的錯 = 使用端的錯怎麼給、怎麼收;四模式 = mode 對照;自訂顯示文字 = label。
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { LinkInput } from './link-input'
 import { Field, FieldLabel, FieldError } from '@/design-system/components/Field/field'
 import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'

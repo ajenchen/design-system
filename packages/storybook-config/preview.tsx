@@ -2,40 +2,46 @@
 // Consumer product workspace use:`.storybook/preview.tsx` import { sharedPreview } from '@qijenchen/storybook-config'
 // DS repo dogfood:`.storybook/preview.tsx` 直接 import 此 default export
 
-import type { Preview } from '@storybook/react'
+import type { Preview } from '@storybook/react-vite'
 import React, { useEffect } from 'react'
 // 2026-05-26 fix:改 import 已 published npm package(consumer node_modules layout works),
 // 不再 relative path `../design-system/src/...`(monorepo-only path,published 後 consumer 看不到)
 import { TooltipProvider } from '@qijenchen/design-system'
 
+// 初始值住 initialGlobals:Storybook 9.0 起不再讀 globalTypes 的 defaultValue
+//(MIGRATION.md「Global State Management」:"loading the defaultValue from globalTypes isn't supported anymore. Use initialGlobals")。
+export const sharedInitialGlobals = {
+  theme: 'light',
+  density: 'md',
+}
+
+// 10.x 的 toolbar.icon 型別收斂成 @storybook/icons 名稱聯集,用 satisfies 讓字面值不被放寬成 string。
+// 原本兩個 toolbar 都寫 `showName: true`:8.6 的 toolbars addon(sb-addons/essentials-toolbars manager-bundle)從沒讀這個鍵,
+// 10.6 的 ToolbarConfig 也沒有它 —— 一直是空設定,拿掉後工具列照舊只顯示圖示。
 export const sharedGlobalTypes = {
   theme: {
     name: '主題',
     description: '全域顯示主題',
-    defaultValue: 'light',
     toolbar: {
       icon: 'circlehollow',
       items: [
         { value: 'light', icon: 'sun', title: '淺色' },
         { value: 'dark', icon: 'moon', title: '深色' },
       ],
-      showName: true,
     },
   },
   density: {
     name: '介面密度',
     description: '全域元件尺寸與版面留白密度',
-    defaultValue: 'md',
     toolbar: {
       icon: 'component',
       items: [
         { value: 'md', title: '標準（md）' },
         { value: 'lg', title: '寬鬆（lg）' },
       ],
-      showName: true,
     },
   },
-}
+} satisfies Preview['globalTypes']
 
 export const sharedParameters = {
   docs: {
@@ -52,6 +58,8 @@ export const sharedParameters = {
     // 0×0,被定位到視窗左上角 (0, 8) 還搶走焦點,直到 reload 才消失(AgentPanel「歷史浮層開啟」快照就是 user 看到的那個)。
     // 守衛:render 前後都看 View 是否已把 docs 容器藏起來(`showStory()` 給 `#storybook-docs` 加 `hidden`,index.js:5533-5534;
     // `prepareForDocs()` 會在任何 docs render 之前同步拿掉它,所以守衛不會誤殺正常 docs)。閘:`scripts/storybook-docs-race-invariant.mjs`。
+    // 2026-11-25 升 10.6.9 後重讀:同一段在 `storybook/dist/preview/runtime.js` 36454-36472(`await docsParameter.renderer()` 之後
+    // 照樣不檢查 teardown)、`showStory()` 在 38085-38087,競態形狀沒變,守衛照留;DocsRenderer 仍由 `@storybook/addon-docs` 根匯出。
     renderer: async () => {
       const { DocsRenderer } = await import('@storybook/addon-docs')
       const renderer = new DocsRenderer()
@@ -156,10 +164,11 @@ export function settleDemoFocus(mode: DemoFocus) {
 // 掛載時的 autoFocus 走 effect(Radix FocusScope / DayButton),等一幀再多一個 tick 才量,否則量到還沒聚焦的狀態
 const afterNextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)))
 // afterEach 跑完才蓋章 `<html data-demo-focus-settled="<story id>">`:Storybook 的 afterEach 排在 play 之後、每支 story 都跑
-//(preview-api StoryRender:playing → played → completed → afterEach;play 丟錯的 errored 不跑)。儀器要量「示範收尾之後」的畫面,
+//(10.6 preview runtime StoryRender:playing → played → completing → completed → afterEach;play 丟錯的 errored 不跑)。
+// 9.0 起 `experimental_afterEach` 轉正改名 `afterEach`(MIGRATION.md「`experimental_afterEach` has been stabilized」)。儀器要量「示範收尾之後」的畫面,
 // 就等這個章,不能用固定睡眠當「play 跑完」的代理 —— 2026-09-24 main 09d2eaa2 那一輪 runner 慢,Toast 朗讀區域 story 的
 // play 還在點按鈕(合成點擊 → 瀏覽器判成鍵盤焦點)時閘就量了,假紅;本機與快的 runner 900ms 內 play 早跑完,綠(M32 第四題)。
-export const sharedAfterEach: Preview['experimental_afterEach'] = [
+export const sharedAfterEach: Preview['afterEach'] = [
   async ({ parameters, id }) => {
     await afterNextFrame()
     settleDemoFocus(demoFocusOf(parameters as Record<string, unknown>))
@@ -207,10 +216,11 @@ export const sharedDecorators: Preview['decorators'] = [
 ]
 
 const preview: Preview = {
+  initialGlobals: sharedInitialGlobals,
   globalTypes: sharedGlobalTypes,
   parameters: sharedParameters,
   decorators: sharedDecorators,
-  experimental_afterEach: sharedAfterEach,
+  afterEach: sharedAfterEach,
 }
 
 export default preview

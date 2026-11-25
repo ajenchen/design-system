@@ -4,13 +4,18 @@
 // 專案另一份 React → 元素 $$typeof 不符 → Minified React error #31 整個故事檢視空白。
 // classic JSX 用已 externalize 的 React.createElement → 單一 React。(2026-05-29 fix:fork template 故事檢視空白 root cause)
 import React from 'react'
-import { addons, types, useChannel } from '@storybook/manager-api'
-import { IconButton } from '@storybook/components'
+import { addons, types, useChannel } from 'storybook/manager-api'
+// 9.0 起 `@storybook/components` 併進 `storybook/internal/components`(MIGRATION.md「Dropped support for legacy packages」第二張表)。
+// 10.1 起 IconButton 棄用、Button 的 `active` 棄用,開關型按鈕改用 ToggleButton(`pressed` → role=switch + aria-checked;
+// MIGRATION.md「IconButton is deprecated」「Deprecated: active」)。
+import { ToggleButton } from 'storybook/internal/components'
 import { ADDON_ID, PANEL_ID, TOOL_ID, EVENTS, type DevmodeMode } from './constants'
 import { DsDevmodePanel } from './Panel'
 
 // `test-only` is a visibility role, not a Storybook removal tag: keep probes in
 // index.json/direct URLs for automation while omitting them from reader navigation.
+// 8.6 另有同名內建 tag(excludeFromSidebar + excludeFromDocsStories)兜著;10.0 移除了 x-only 內建 tag
+//(MIGRATION.md「Removed x-only builtin tags」),側欄只靠這個 filter、docs 頁只靠 preview.tsx 的 docs.stories.filter。
 addons.setConfig({
   sidebar: {
     filters: {
@@ -27,10 +32,13 @@ const ToolbarButton: React.FC = () => {
   const next: DevmodeMode = mode === 'off' ? 'live' : 'off'
   const active = mode !== 'off'
   return (
-    <IconButton
+    <ToggleButton
       key={TOOL_ID}
-      title={active ? 'Disable DS Devmode (Alt+I)' : 'Enable DS Devmode (Alt+I)'}
-      active={active}
+      variant="ghost"
+      padding="small"
+      pressed={active}
+      ariaLabel="DS Devmode"
+      tooltip={active ? 'Disable DS Devmode (Alt+I)' : 'Enable DS Devmode (Alt+I)'}
       onClick={() => emit(EVENTS.TOGGLE, next)}
     >
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
@@ -38,7 +46,7 @@ const ToolbarButton: React.FC = () => {
         <path d="M10 10L14 14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
         <circle cx="7" cy="7" r="1.2" fill="currentColor" />
       </svg>
-    </IconButton>
+    </ToggleButton>
   )
 }
 

@@ -1,6 +1,6 @@
 // @story-history: hasInteractiveStates 的 Disabled / States 由 anatomy.stories.tsx StateBehavior auto-compile owns(2026-05-15 F-migration);showcase 層展示真實上傳 / 自訂內容情境。
-import type { Meta } from '@storybook/react'
-import { expect, userEvent, within } from '@storybook/test'
+import type { Meta } from '@storybook/react-vite'
+import { expect, userEvent, within } from 'storybook/test'
 import { useState } from 'react'
 import { Image as ImageIcon } from 'lucide-react'
 import { FileUpload } from './file-upload'

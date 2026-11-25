@@ -4,6 +4,8 @@
 # 2026-06-11 prune merge(user 拍板「照你建議做」;59→51 headroom):
 # #   r1_addon_subdir_ship = 原 check_addon_subdir_ship.sh(規則逐字搬入,BLOCKER 級別與 escape 標記不變)
 #   r2_preset_cjs = 原 check_storybook_addon_preset_cjs.sh(規則逐字搬入,BLOCKER 級別與 escape 標記不變)
+#   2026-11-25 Storybook 10.6.9 升級:r2 判準翻轉 —— 8.x 擋 ESM 動態解析、要求 .cjs;10.x 官方只支援 ESM preset,
+#   改擋 .cjs preset 與 ESM 裡未定義的 CJS 全域(函式名 / 訊息標題 / escape 標記沿用,證據見 feedback_storybook_addon_preset_esm.md)
 # 原檔 → packages/design-system/ds-canonical/hooks/retired/2026-06-11-prune-merge/
 # 各規則跑在 pipeline 子 shell:規則內 exit 不中斷其他規則;任一 exit 2 → 整體 exit 2。
 
@@ -91,8 +93,10 @@ case "${TOOL:-}" in
 esac
 
 FILE=$(jq -r '.tool_input.file_path // ""' <<<"$INPUT" 2>/dev/null)
-# Scope:addons/<name>/preset.ts(stored anywhere — storybook-config or .storybook)
-if ! grep -qE '/addons/[^/]+/preset\.ts$' <<<"$FILE"; then exit 0; fi
+# Scope:addons/<name>/preset.{ts,js,mjs,cjs}(stored anywhere — storybook-config or .storybook)
+# 2026-11-25 Storybook 10 改寫:preset 一律以 ESM 載入(MIGRATION.md「The `.storybook/main.*` file and other presets must be
+# valid ESM」),8.x 的「必用 .cjs」翻轉成「不准 .cjs、ESM 裡不准用沒定義的 CJS 全域」。SSOT 見訊息內的 memory 路徑。
+if ! grep -qE '/addons/[^/]+/preset\.(ts|js|mjs|cjs)$' <<<"$FILE"; then exit 0; fi
 
 CONTENT=$(jq -r '.tool_input.new_string // .tool_input.content // ""' <<<"$INPUT" 2>/dev/null)
 [ -z "$CONTENT" ] && exit 0
@@ -100,50 +104,55 @@ CONTENT=$(jq -r '.tool_input.new_string // .tool_input.content // ""' <<<"$INPUT
 # Escape clause
 if grep -qE '@preset-cjs-skip:' <<<"$CONTENT"; then exit 0; fi
 
-# Detect ESM/CJS interop antipatterns
 # 2026-05-30(dim 81 M7/M34 broad-vs-narrow fix + codex Phase B P3 inline-block edge):strip line-level 註解
-# BEFORE keyword grep — 正確的 preset.ts 會在 comment 內「文件化」這些 anti-pattern(教學),raw-content
+# BEFORE keyword grep — 正確的 preset 會在 comment 內「文件化」這些 anti-pattern(教學),raw-content
 # grep 會假 BLOCK 合法 edit(ship 給 fork)。Strip 範圍:(1) 整行 //|/*|*/|* 開頭 (2) 同行 inline /* … */ block
 # (3) 行尾 // 註解。多行 block 的中間行以 * 開頭已被 (1) 覆蓋。極罕見「同行開 /* + keyword 未閉合」→ @preset-cjs-skip: escape。
-CONTENT_CODE=$(echo "$CONTENT" | grep -vE '^[[:space:]]*(//|\*|/\*|\*/)' | sed -E 's@/\*.*\*/@@g; s@//.*@@')
+# 注意 (3) 只剝「空白後的 //」,不碰字串裡的 `://`(例:'node:url')。
+CONTENT_CODE=$(echo "$CONTENT" | grep -vE '^[[:space:]]*(//|\*|/\*|\*/)' | sed -E 's@/\*.*\*/@@g; s@(^|[[:space:]])//.*@\1@')
 ANTIPATTERN=""
-if grep -qE 'createRequire|require\.resolve' <<<"$CONTENT_CODE"; then
-  ANTIPATTERN="${ANTIPATTERN}  - createRequire / require.resolve(被 Node ESM scope 攔)\n"
+case "$FILE" in
+  *.cjs) ANTIPATTERN="${ANTIPATTERN}  - preset.cjs(CommonJS preset;Storybook 10 只以 ESM 載入 preset,官方不再支援 CJS preset)\n" ;;
+esac
+# ESM 裡沒有 require / __dirname / __filename / module.exports;自行定義(官方寫法)的不擋
+if grep -qE '(^|[^[:alnum:]_$.])require[[:space:]]*(\.[[:space:]]*resolve[[:space:]]*)?\(' <<<"$CONTENT_CODE" \
+  && ! grep -qE 'createRequire[[:space:]]*\(' <<<"$CONTENT_CODE"; then
+  ANTIPATTERN="${ANTIPATTERN}  - require(...) / require.resolve(...) 沒有先 createRequire(import.meta.url)(ESM 裡 require 不存在)\n"
 fi
-if grep -qE 'fileURLToPath\s*\(\s*import\.meta\.url' <<<"$CONTENT_CODE"; then
-  ANTIPATTERN="${ANTIPATTERN}  - fileURLToPath(import.meta.url)(同被 esbuild-register/ESM 衝突攔)\n"
+for _cjs_global in __dirname __filename; do
+  if grep -qE "(^|[^[:alnum:]_\$.])${_cjs_global}([^[:alnum:]_\$]|\$)" <<<"$CONTENT_CODE" \
+    && ! grep -qE "(const|let|var)[[:space:]]+${_cjs_global}([^[:alnum:]_\$]|\$)" <<<"$CONTENT_CODE"; then
+    ANTIPATTERN="${ANTIPATTERN}  - ${_cjs_global} 沒有自行宣告(ESM 裡不存在;用 fileURLToPath(import.meta.url) 或 import.meta.resolve)\n"
+  fi
+done
+if grep -qE '(^|[^[:alnum:]_$.])(module\.exports|exports\.[[:alnum:]_$]+[[:space:]]*=)' <<<"$CONTENT_CODE"; then
+  ANTIPATTERN="${ANTIPATTERN}  - module.exports / exports.x =(CommonJS 匯出;preset 要用 ESM export)\n"
 fi
 
 if [ -n "$ANTIPATTERN" ]; then
-  cat >&2 << EOF
-🚨 STORYBOOK ADDON PRESET CJS BLOCKER(P0,2026-05-28 beta.27-.31 5 連敗 anchor)
+  cat >&2 << EOF2
+🚨 STORYBOOK ADDON PRESET CJS BLOCKER(P0;Storybook 10 preset 必為合法 ESM)
 
   File: $FILE
-  偵測到 ESM/CJS interop 反 pattern:
+  偵測到 CommonJS preset / ESM 裡未定義的 CJS 全域:
 $(printf '%b' "$ANTIPATTERN")
   Why blocked:
-    Storybook preset loader 走 esbuild-register CJS path,但 package.json
-    \`"type":"module"\` 強制 Node 把 .js 當 ESM。dynamic resolution(require.resolve /
-    fileURLToPath)被 ESM scope 攔 → ReferenceError: require not defined。
+    Storybook 10 以 ESM 載入所有 preset(storybookjs/storybook MIGRATION.md「From version 9.x to 10.0.0」:
+    "The .storybook/main.* file and other presets must be valid ESM";"A main.ts file that's CJS is no longer
+    supported. The same applies to any custom preset files.")。require / __dirname / __filename 在 ESM 裡不存在。
 
-  Fix:用 hand-written \`preset.cjs\`(\`.cjs\` override package type → 強制 CJS):
+  Fix(官方寫法;本 repo 實作 = packages/storybook-config/addons/ds-devmode/preset.ts → tsc → dist/…/preset.js):
 
-    // preset.cjs
-    const path = require('path')
-    module.exports = {
-      managerEntries: (entry = []) => [...entry, path.join(__dirname, 'manager.tsx')],
-      previewAnnotations: (entry = []) => [...entry, path.join(__dirname, 'preview.ts')],
-    }
+    import { fileURLToPath } from 'node:url'
+    export const managerEntries = (entry = []) => [...entry, fileURLToPath(import.meta.resolve('./manager.js'))]
+    export const previewAnnotations = (entry = []) => [...entry, fileURLToPath(import.meta.resolve('./preview.js'))]
 
-  + package.json:
-    "exports": { "./preset": "./preset.cjs" }
-    "files": [..., "addons/<name>/preset.cjs"]
+  + package.json exports["./addons/<name>/preset"] 指向編譯後的 dist/addons/<name>/preset.js
 
-  SSOT:memory/feedback_storybook_addon_preset_must_be_cjs.md
-  Anchor:2026-05-28 beta.27/.28/.29/.30/.31 5 連敗(本 hook codify 防再犯)
+  SSOT:governance/memory/feedback_storybook_addon_preset_esm.md(含 2026-11-25 .cjs / ESM 兩面實測;8.x 的 .cjs 五連敗是歷史)
 
   Escape(極罕見):add \`// @preset-cjs-skip: <rationale>\` to content
-EOF
+EOF2
   exit 2
 fi
 

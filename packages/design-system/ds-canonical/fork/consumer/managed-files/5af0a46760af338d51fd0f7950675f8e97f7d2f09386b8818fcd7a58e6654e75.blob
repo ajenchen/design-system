@@ -785,8 +785,9 @@ export async function waitForImages(target, options = {}) {
 //   回傳的 frame = 量測所在的 Frame(呼叫端之後的量測用它)。beforeSettle 仍收到最外層 page。
 //   **不是導覽觸發的切換**(管理介面裡點側欄換 story:Storybook channel 驅動,沒有網址可以交給 openStory)→ 用下方的 waitForStoryRender。
 //
-// **哪些 phase 算「渲染完成」**(opts.finishedPhases,預設 ['finished']):Storybook 8.6 的 phase 依序是
-//   preparing → loading → rendering → playing → played → completed → afterEach → finished(@storybook/core preview-api StoryRender.render)。
+// **哪些 phase 算「渲染完成」**(opts.finishedPhases,預設 ['finished']):Storybook 10.6 的 phase 依序是
+//   preparing → loading → rendering → playing → played → completing → completed → afterEach → finished
+//  (storybook/dist/preview/runtime.js StoryRender.render;8.6 沒有 completing —— 10.x 在 completing 等畫面上的有限動畫跑完,最多 5 秒)。
 //   只准額外接受 play 跑完之後才會走到的 'completed' / 'afterEach' —— 給「afterEach 靠計時器推進、在假時鐘暫停下永遠走不到 finished」的閘用
 //  (menu-message-row:a11y addon 在 afterEach 跑 axe)。更早的 phase 代表 story 或 play 還沒跑完,傳進來一律 TypeError。
 
@@ -844,14 +845,17 @@ function normalizeFinishedPhases(finishedPhases) {
 }
 
 // 頁面端:這一則 story 的渲染走到終點了沒(waitForFunction 用;回 false = 還沒)
-function storybookRenderState({ storyId, finished }) {
+function storybookRenderState({ storyId, finished, ledgerKey }) {
   const cls = document.body?.classList
   if (cls?.contains('sb-show-errordisplay')) return { state: 'error-display' }
   if (cls?.contains('sb-show-nopreview')) return { state: 'no-preview' }
   const render = window.__STORYBOOK_PREVIEW__?.currentRender
   if (!render || (storyId && render.id !== storyId)) return false
   if (finished.includes(render.phase) || render.phase === 'errored' || render.phase === 'aborted') {
-    return { state: render.phase, main: Boolean(cls?.contains('sb-show-main')), bodyClass: document.body.className }
+    // 10.x:play 拋錯後 phase 照樣走到 finished(見「渲染錯誤帳本」)—— 這一次 render 進過 errored 就是 errored
+    const ledger = ledgerKey ? window[ledgerKey] : null
+    const erroredBefore = render.renderId != null && ledger?.erroredRenders?.some((e) => e.renderId === String(render.renderId))
+    return { state: erroredBefore ? 'errored' : render.phase, main: Boolean(cls?.contains('sb-show-main')), bodyClass: document.body.className }
   }
   return false
 }
@@ -868,7 +872,9 @@ function storybookLastSeen() {
 function storybookErrorText() {
   const message = (document.getElementById('error-message')?.textContent || '').trim()
   const stack = (document.getElementById('error-stack')?.textContent || '').trim().split('\n')[0]
-  return [message, stack && !message.includes(stack) ? stack : ''].filter(Boolean).join(' | ').slice(0, 300)
+  // 10.x 的 play 拋錯不顯示錯誤頁:原文從渲染錯誤帳本拿(鍵名同 RENDER_ERROR_LEDGER_KEY;本函式序列化進頁面,不能引用外部常數)
+  const play = (window.__dsStorybookRenderErrors?.playErrors ?? []).slice(-1)[0] || ''
+  return [message, stack && !message.includes(stack) ? stack : '', !message && play ? `play 拋錯:${play}` : ''].filter(Boolean).join(' | ').slice(0, 300)
 }
 
 // 頁面端:連續 frames 個影格沒有 DOM 變動、也沒有進行中的有限長度動畫。**以 page.evaluate 序列化傳入,不得引用外部變數。**
@@ -965,6 +971,59 @@ function installTimerLedgerInPage({ key, horizonMs }) {
   globalThis.clearTimeout = function clearTimeout(id) { pending.delete(id); return nativeClearTimeout.call(globalThis, id) }
   globalThis.clearInterval = function clearInterval(id) { pending.delete(id); return nativeClearInterval.call(globalThis, id) }
   Object.defineProperty(globalThis, key, { value: Object.freeze({ horizonMs, pending: () => [...pending.values()] }), enumerable: false })
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 渲染錯誤帳本(2026-11-25,Storybook 10.6.9 升級)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// **為什麼要有**:8.6 的 play 一拋錯,StoryRender 就停在 phase 'errored' 並顯示錯誤頁 —— 「走到 finished」等於「play 沒拋錯」。
+// 10.x 的核心預設參數 `throwPlayFunctionExceptions: false`(storybook/dist/preview/runtime.js 的 core annotations),
+// play 拋錯只 console.error,phase 照樣 errored → completing → completed → afterEach → finished,而且**不顯示錯誤頁**。
+// 於是「finished」不再保證 play 跑完 —— 升級當天全量截圖抓到 9 個檔的 play 全部靜默失敗(`await import('storybook/test')`
+// 在 10.x 建置被改寫成 `import(__STORYBOOK_MODULE_TEST__)`),openStory 照樣回「渲染完成」(M37:沒觀察到 ≠ 沒發生)。
+// 要量的性質是「這一次渲染有沒有進過 errored」:在每份文件第一支腳本之前攔 `__STORYBOOK_ADDONS_CHANNEL__` 的指派,
+// 訂 STORY_RENDER_PHASE_CHANGED('storyRenderPhaseChanged',帶 renderId / storyId / newPhase)與
+// PLAY_FUNCTION_THREW_EXCEPTION('playFunctionThrewException',帶序列化的錯誤);storybookRenderState 看到這一次 render 的
+// renderId 進過 errored,就回 errored(awaitStorybookRender 照舊丟 render-errored)。
+// 對照組:scripts/test-open-story.mjs「play 拋錯但 phase 照樣走到 finished(10.x 形狀)」。
+export const RENDER_ERROR_LEDGER_KEY = '__dsStorybookRenderErrors'
+function installRenderErrorLedgerInPage(key) {
+  if (window[key]) return
+  const ledger = { erroredRenders: [], playErrors: [], hooked: false }
+  Object.defineProperty(window, key, { value: ledger, configurable: true })
+  const hook = (channel) => {
+    if (!channel || typeof channel.on !== 'function' || channel[key]) return
+    try {
+      Object.defineProperty(channel, key, { value: true })
+      channel.on('storyRenderPhaseChanged', (event) => {
+        if (event?.newPhase === 'errored') ledger.erroredRenders.push({ renderId: String(event.renderId), storyId: event.storyId })
+      })
+      channel.on('playFunctionThrewException', (error) => {
+        ledger.playErrors.push(String(error?.message ?? error).split('\n')[0].slice(0, 300))
+      })
+      ledger.hooked = true
+    } catch { /* 拿不到就是沒裝上:hooked 留 false */ }
+  }
+  let current
+  try {
+    Object.defineProperty(window, '__STORYBOOK_ADDONS_CHANNEL__', {
+      configurable: true, enumerable: true,
+      get() { return current },
+      set(value) { current = value; hook(value) },
+    })
+  } catch { /* 已被定義成不可改:退回下方的一次性補掛 */ }
+  // 不用計時器輪詢:這支 init script 也跑在非 Storybook 的文件裡,輪詢會永遠排著一個 0ms 計時器,
+  // 讓計時器帳本判「還有反應在排隊」而永遠不靜止(test-open-story 的 export-tooltip 一格實際踩到)。只在 DOMContentLoaded 補掛一次。
+  document.addEventListener('DOMContentLoaded', () => hook(window.__STORYBOOK_ADDONS_CHANNEL__ ?? window.__STORYBOOK_PREVIEW__?.channel), { once: true })
+}
+const renderErrorLedgerPages = new WeakSet()
+/** 這個分頁之後載入的每一份文件(含 iframe)裝渲染錯誤帳本;openStory 自己會呼叫,同一分頁只裝一次。 */
+export async function installRenderErrorLedger(page) {
+  if (!page || typeof page.addInitScript !== 'function') throw new TypeError('installRenderErrorLedger:page 必須是 Playwright 的 Page')
+  if (renderErrorLedgerPages.has(page)) return
+  await page.addInitScript(installRenderErrorLedgerInPage, RENDER_ERROR_LEDGER_KEY)
+  renderErrorLedgerPages.add(page)
 }
 
 const timerLedgerPages = new WeakSet()
@@ -1298,7 +1357,7 @@ async function awaitStorybookRender(target, storyId, { timeoutMs, finished, inst
   let done = null
   for (;;) {
     try {
-      const handle = await target.waitForFunction(storybookRenderState, { storyId, finished }, { timeout: Math.max(1, deadline - Date.now()), polling: 'raf' })
+      const handle = await target.waitForFunction(storybookRenderState, { storyId, finished, ledgerKey: RENDER_ERROR_LEDGER_KEY }, { timeout: Math.max(1, deadline - Date.now()), polling: 'raf' })
       done = await handle.jsonValue()
       break
     } catch (error) {
@@ -1512,6 +1571,8 @@ export async function openStory(page, url, options = {}) {
 
     // 1c. 計時器帳本(pendingTimers):導覽前以 init script 裝,新文件的第一支腳本之前就在記(「計時器帳本」區塊)
     if (pendingTimers) await installPendingTimerLedger(page)
+    // 1d. 渲染錯誤帳本(Storybook iframe 才需要;10.x play 拋錯後 phase 照樣走到 finished,見「渲染錯誤帳本」區塊)
+    if (storybook) await installRenderErrorLedger(page)
 
     // 2. 導覽
     try {

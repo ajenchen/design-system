@@ -5,7 +5,7 @@
 //     規則(24px 閾值,inline vs block),由 PrefixAlignment(3.)涵蓋。
 //   StateBehavior N/A — disabled 是唯一視覺狀態(已於 Inspector 切換),hover /
 //     focus 由 control(Checkbox / Radio)承擔,不在 SelectionItem layout 範疇。
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
 import { Mail, Folder, Shield } from 'lucide-react'
 import { SelectionItem } from './selection-item'

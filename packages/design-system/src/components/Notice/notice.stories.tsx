@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Notice } from './notice'
 import { Alert } from '@/design-system/components/Alert/alert'
 import { Button } from '@/design-system/components/Button/button'

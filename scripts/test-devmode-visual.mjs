@@ -61,6 +61,10 @@ console.log(`Storybook:${BASE}${staticServer ? '(本次自起的靜態站,來源
 const OUT_DIR = 'tmp'
 // 每一步「等某個東西出現」的上限 —— 只是等不到的上限,不是「已經好了」的代理;成功一律由那個東西真的出現決定
 const STEP_TIMEOUT_MS = 20_000
+// 工具列開關(manager.tsx 的 ToggleButton:role=switch、aria-label 固定、狀態在 aria-checked)。
+// 2026-11-25 升 Storybook 10 前是 IconButton 的 title 文字(Enable / Disable …)—— 文字是狀態的代理,
+// 現在直接量開關本身的狀態(M37)。
+const DEVMODE_TOGGLE = 'button[role="switch"][aria-label="DS Devmode"]'
 const VIEWPORT = { width: 1600, height: 1000 }
 
 const tests = [
@@ -161,7 +165,7 @@ async function runCase(t) {
       await openStory(page, `${BASE}/?path=/story/${encodeURIComponent(t.storyId)}`, {
         storybook: false,
         label: `manager(${t.storyId})`,
-        waitFor: 'button[title*="DS Devmode"]',
+        waitFor: DEVMODE_TOGGLE,
         timeoutMs: STEP_TIMEOUT_MS,
         // manager bundle 比單則 story 重得多:共用預設 5s 在機器忙的時候不夠(2026-09-25 實測:與全 story 掃描並跑時
         // manager #root 5s 內仍空 → 誤判儀器失效)。上限拉到與其他步驟相同,成功仍由 #root 真的有內容決定。
@@ -177,10 +181,10 @@ async function runCase(t) {
     const target = iframe.locator(t.targetSelector).first()
     await instrumentStep(`manager 的預覽 iframe 裡等不到目標 ${t.targetSelector}`, target.waitFor({ state: 'attached', timeout: STEP_TIMEOUT_MS }))
 
-    // 3. 啟用 addon:等 addon 自己回報「已啟用」(preview 收到 TOGGLE 後回播,按鈕標題變 Disable)
-    await page.locator('button[title*="DS Devmode"]').first().click()
-    await addonStep('按下工具列後 DS Devmode 沒有啟用(按鈕沒有變成 Disable)',
-      page.locator('button[title^="Disable DS Devmode"]').first().waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS }))
+    // 3. 啟用 addon:等 addon 自己回報「已啟用」(preview 收到 TOGGLE 後回播,開關的 aria-checked 變 true)
+    await page.locator(DEVMODE_TOGGLE).first().click()
+    await addonStep('按下工具列後 DS Devmode 沒有啟用(開關沒有變成 aria-checked=true)',
+      page.locator(`${DEVMODE_TOGGLE}[aria-checked="true"]`).first().waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS }))
 
     const measure = await target.evaluate((el) => {
       const r = el.getBoundingClientRect()

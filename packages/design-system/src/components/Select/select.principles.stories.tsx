@@ -3,7 +3,7 @@
 // per 2026-04-26 user mandate. DisplayModeRule / ImmediateVsSubmitRule / SearchableRule
 // / NativeSelectRule kept as separate principles.
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Flag } from 'lucide-react'
 import { Select, type SelectOption } from './select'
 import { Field, FieldLabel } from '@/design-system/components/Field/field'

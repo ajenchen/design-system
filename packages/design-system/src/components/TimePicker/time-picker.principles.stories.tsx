@@ -1,7 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // M22 retrofit DONE 2026-05-03 v11(spec.md SSOT bears full citations; this file's claims are spec-derived rationale stories)
 import * as React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { TimePicker } from './time-picker'
 import { Field, FieldLabel } from '@/design-system/components/Field/field'
 import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
