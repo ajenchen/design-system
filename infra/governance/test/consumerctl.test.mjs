@@ -1442,8 +1442,11 @@ test('fleet fanout without a reviewed runtime identity snapshot is not ready and
 test('fleet fanout enumerates every registered opt-in product consumer without claiming global template-lineage discovery', () => {
   const propagationContract = readFileSync(new URL('../../../packages/design-system/ds-canonical/skills/knowledge-prune/references/phase-z-cross-repo-ssot-propagation.md', import.meta.url), 'utf8')
   assert.match(propagationContract, /owned only by `infra\/governance\/release-workflow\.json`/)
-  assert.match(propagationContract, /reviewed exact-version PRs land in the template on every release, and in WM only when the user explicitly requests it/)
-  assert.doesNotMatch(propagationContract, /land in the template and WM/, 'WM 只在 user 要求時升級(user 2026-11-05),不得寫回「每次都升 WM」')
+  assert.match(propagationContract, /reviewed exact-version PRs land in the template on every release and are read back from its protected `main` lockfile/)
+  // 產品 canary(2026-11-25 起是 ajenchen/workspace):每次發版自動開升級 PR,合併由它自己決定,不是完成條件
+  assert.match(propagationContract, /The product canary `ajenchen\/workspace` \(`upgrade: automatic`, `merge: consumer-owned`\) gets its upgrade PR opened on every release, but merging is its own decision/)
+  assert.match(propagationContract, /is not a completion condition, and its PR is never merged to make an audit green/)
+  assert.doesNotMatch(propagationContract, /land in the template and (?:in )?(?:WM|work-management|workspace|the product canary)/, '不得寫回「產品 consumer 的升級 PR 每次都由發版合併」')
   assert.doesNotMatch(propagationContract, /every consumer receives an exact-version PR/i)
 
   const fixture = fleetFixture()
