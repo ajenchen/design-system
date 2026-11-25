@@ -1427,7 +1427,9 @@ for case_line in \
   "18p8. 目的地後面接 2>/dev/null 不改變目的地|$P_ROOT|cp -R ../p-int/apps ./ 2>/dev/null" \
   "18p9. 已有 node_modules/@qijenchen/design-system 時再整批複製進去|$P_LINKED|cp -R ../p-int/node_modules ./" \
   "18p10. 萬用字元來源倒進根目錄|$P_ROOT|cp -R ../p-int/* ./" \
-  "18p11. -t 目的地旗標(讀不懂 → 保守判法)|$P_ROOT|cp -t ./ -R ../p-int/node_modules"; do
+  "18p11. -t 目的地旗標(讀不懂 → 保守判法)|$P_ROOT|cp -t ./ -R ../p-int/node_modules" \
+  "18p12. 目的地後面接帶值選項(值不是目的地)、來源帶斜線倒進根目錄|$P_ROOT|rsync -a ../p-int/ ./ --exclude node_modules" \
+  "18p13. 目的地後面接帶值選項、寫出 ./apps|$P_ROOT|rsync -a ../p-int/apps ./ --exclude node_modules"; do
   IFS='|' read -r case_name case_cwd case_cmd <<< "$case_line"
   run_hook_bash_cwd "$case_cmd" "$TX_NEUTRAL" "$case_cwd"
   expect_block "$case_name → BLOCK" "BLOCKER"

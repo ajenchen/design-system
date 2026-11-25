@@ -2013,7 +2013,12 @@ function copyWrittenDirectories(segment, workingDirectories, isDirectory) {
   const operands = []
   for (const word of words.slice(1)) {
     if (/^(?:-[A-Za-z]*[tT][A-Za-z]*|--target-directory(?:=.*)?|--no-target-directory)$/u.test(word)) return null
-    if (word.startsWith('-')) continue
+    // 第一個路徑之後又出現選項(`rsync -a ../int/ ./ --exclude node_modules`):帶值選項的值會被當成最後一個
+    // 路徑、目的地就認錯了(F3 核對必修:那兩格改後放行、改前擋)。讀不懂哪個字是目的地 → 回 null 交回保守判法。
+    if (word.startsWith('-')) {
+      if (operands.length) return null
+      continue
+    }
     operands.push(word)
   }
   if (operands.length < 2) return null

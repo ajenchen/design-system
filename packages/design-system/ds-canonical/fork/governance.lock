@@ -863,7 +863,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/approval-evidence.mjs",
-      "sha256": "575f50e1ee27758aaad0eeaf6af166321f0d9315b17581fb42f0003eccc9f7d3",
+      "sha256": "c52486d4398df2b95381fc34dae9ba55b0756e1048a0abcdd96b3a9c8ae6c426",
       "source": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
       "classification": null,
       "destination": null
@@ -943,7 +943,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/provider-hook-output-transport.mjs",
-      "sha256": "0e7c737b3c2106ed859cfc18449fc100cdaade17395b68b005d1c11751f8be3f",
+      "sha256": "4b91fdff06cc3145b07a966f801ad5b4715e3d9dbcc155c7d163617120b907e8",
       "source": "scripts/lib/provider-hook-output-transport.mjs",
       "classification": null,
       "destination": null

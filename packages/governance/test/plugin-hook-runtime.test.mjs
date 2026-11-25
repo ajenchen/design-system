@@ -7,7 +7,7 @@ import { dirname, resolve } from 'node:path'
 import test from 'node:test'
 import { buildClaudePluginHookView } from '../../../scripts/gen-codex-adapter.mjs'
 import { buildProviderRuntimeValidator } from '../../../scripts/gen-provider-runtime-validator.mjs'
-import { buildProviderHookLaunchArgv } from '../../../scripts/lib/provider-hook-output-transport.mjs'
+import { buildProviderHookLaunchArgv, providerHookGroupId } from '../../../scripts/lib/provider-hook-output-transport.mjs'
 import { validateHookRegistrationSemantics } from '../../../scripts/lib/provider-runtime-contract.mjs'
 
 // These adversarial suites assert the fail-closed integrity lane. The production
@@ -190,6 +190,7 @@ function run({ plugin, target, descriptor, payload, extraEnv = {} }) {
       '--provider', 'claude',
       '--event', event,
       '--group', groupIndex,
+      '--group-id', providerHookGroupId(event, registrations.hooks[event][Number(groupIndex)]),
       '--target-role', 'ds-author',
     ]),
     'generated plugin command must preserve the exact structured prelaunch boundary',
@@ -240,6 +241,7 @@ test('clean authority plugin cache projects all canonical Claude registrations a
             '--provider', 'claude',
             '--event', event,
             '--group', String(groupIndex),
+            '--group-id', providerHookGroupId(event, registrations.hooks[event][groupIndex]),
             '--target-role', 'ds-author',
           ]).slice(1),
         }],
@@ -497,7 +499,7 @@ test('plugin telemetry rejects default-root and nested state symlinks without to
 // ── N34 / G4(2026-10-07):一支壞掉的 hook 只降級它自己;缺 jq 不得讀成「檢查通過」──
 // 兩者都走 ordinary(fail-open)那條路:GOVERNANCE_HOOK_STRICT=0、不密封語料,直接呼叫 runner,
 // PATH 由本測試決定(open profile 依 hook 實際拿到的 PATH 判斷工具在不在)。
-function directGroupRun(data, { event, group, payload, env = {}, hookPath = null }) {
+function directGroupRun(data, { event, group, groupId = null, payload, env = {}, hookPath = null }) {
   // 同一條結構化啟動路徑(/usr/bin/env + 固定 PATH),只把 PATH 換成本測試指定的目錄。
   const argv = buildProviderHookLaunchArgv([
     'node',
@@ -505,6 +507,7 @@ function directGroupRun(data, { event, group, payload, env = {}, hookPath = null
     '--provider', 'claude',
     '--event', event,
     '--group', String(group),
+    ...(groupId === null ? [] : ['--group-id', groupId]),
     '--target-role', 'ds-author',
   ])
     .map((value) => value.replaceAll('${CLAUDE_PLUGIN_ROOT}', data.plugin))
@@ -979,6 +982,36 @@ test('F3: an event/group the working tree does not register is announced to the 
   // 唯讀(CI replay / hooks:test)記不下來 → 每次都講,寧可重複不可漏
   const readOnly = directGroupRun(data, { event: 'PreToolUse', group: missingGroup, payload: payload('f3-a'), env: { GOVERNANCE_READ_ONLY: '1' } })
   assert.match(contextOf(readOnly), /is not registered/)
+})
+
+// B2(2026-11-26):群組照穩定 id 找,不照序號。兩面:序號指向別群、id 指向主分支閘 → 照 id 派工(主分支閘擋);
+// id 對不上任何群(群組內容變了)→ 不派工、告訴模型「沒登記」—— 而同一個序號不帶 id 會照舊派工(舊設定的退路)。
+test('F3 B2: the stable group id, not the position, selects the dispatched group', async (t) => {
+  const { data, target } = await siblingFixture(t)
+  const groups = registrations.hooks.PreToolUse
+  const mainGate = groups.findIndex((item) => item.hooks.some((descriptor) => descriptor.hook === 'check_main_branch_workbench.sh'))
+  const other = groups.findIndex((item, index) => index !== mainGate
+    && item.hooks.every((descriptor) => descriptor.hook !== 'check_main_branch_workbench.sh')
+    && new RegExp(`^(?:${item.matcher})$`).test('Edit'))
+  assert.ok(mainGate >= 0 && other >= 0)
+  const env = { GOVERNANCE_READ_ONLY: '0' }
+  const payload = (session) => noteEdit(resolve(target, 'docs/note.md'), session)
+  const mainGateId = providerHookGroupId('PreToolUse', groups[mainGate])
+  // 對照組:序號指向別群、不帶 id → 跑那一群,主分支閘沒跑(這就是舊設定錯位時的靜默派錯)
+  const byPosition = directGroupRun(data, { event: 'PreToolUse', group: other, payload: payload('b2-a'), env })
+  assert.doesNotMatch(byPosition.stderr, /PROTECTED-MAIN WORKBENCH BLOCKER/)
+  // 同一個錯的序號、帶主分支閘那一群的 id → 照 id 派工,主分支閘擋
+  const byId = directGroupRun(data, { event: 'PreToolUse', group: other, groupId: mainGateId, payload: payload('b2-b'), env })
+  assert.equal(byId.status, 2, `${byId.stdout}\n${byId.stderr}`)
+  assert.match(byId.stderr, /PROTECTED-MAIN WORKBENCH BLOCKER/)
+  // id 對不上任何一群 → 不派工、模型看得到「沒登記」;同一個序號不帶 id 時照舊擋(證明差別只在 id)
+  const unknownId = directGroupRun(data, { event: 'PreToolUse', group: mainGate, groupId: `g${'0'.repeat(16)}`, payload: payload('b2-c'), env })
+  assert.equal(unknownId.status, 0, unknownId.stderr)
+  assert.match(contextOf(unknownId), /is not registered/)
+  assert.doesNotMatch(unknownId.stderr, /PROTECTED-MAIN WORKBENCH BLOCKER/)
+  const legacy = directGroupRun(data, { event: 'PreToolUse', group: mainGate, payload: payload('b2-d'), env })
+  assert.equal(legacy.status, 2, legacy.stderr)
+  assert.match(legacy.stderr, /PROTECTED-MAIN WORKBENCH BLOCKER/)
 })
 
 test('F3: a telemetry-only group is not dispatched while telemetry is off, and is dispatched when it is on', async (t) => {

@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto'
+
 const CONTEXT_EVENTS = new Set(['PreToolUse', 'PostToolUse', 'SessionStart', 'UserPromptSubmit'])
 
 function fail(message) {
@@ -279,6 +281,24 @@ export function buildProviderHookLaunchArgv(argv) {
   ])
 }
 
+// 群組的穩定 id(2026-11-26,gate-census C 組判定 B2):派工命令另帶 `--group-id`,入口照 id 找群組。只帶序號時,
+// session 開始時載入的設定與工作樹的 registrations.json 版本一錯開,`--group N` 就可能靜默派到另一組 hook、
+// 不報錯(C 組 verify 第 2 點:舊版 Post 第 5 群是 Skill、新版已併掉)。id = event + matcher + 該群 hook 清單(依序)
+// 的雜湊:同一群排第幾都同一個 id;群組內容一變 id 就變,入口找不到 → 送「沒登記」通知,不猜。
+// 產生器(gen-codex-adapter)、入口(run-provider-hook)與可達性閘(provider-view-group-reachability-invariant)
+// 都呼叫這一支,不各寫一份。
+export const PROVIDER_HOOK_GROUP_ID_PATTERN = /^g[0-9a-f]{16}$/
+
+export function providerHookGroupId(event, group) {
+  if (typeof event !== 'string' || !event) fail('hook group id requires a non-empty event')
+  if (!group || typeof group !== 'object' || !Array.isArray(group.hooks)) fail('hook group id requires a group with a hooks array')
+  const hooks = group.hooks.map((descriptor) => String(descriptor?.hook || descriptor?.command || descriptor?.kind || ''))
+  const digest = createHash('sha256')
+    .update(JSON.stringify({ event, matcher: group.matcher || '', hooks }))
+    .digest('hex')
+  return `g${digest.slice(0, 16)}`
+}
+
 /**
  * Materialize the one canonical repository hook-runner invocation for an
  * event/matcher group. Generators pass the canonical event while validators
@@ -290,6 +310,7 @@ export function buildProviderHookGroupLaunchArgv({
   event,
   nativeEvent,
   groupIndex,
+  groupId,
 } = {}) {
   if (!provider || typeof provider !== 'object' || Array.isArray(provider)) {
     fail('event-group provider must be an object')
@@ -338,6 +359,12 @@ export function buildProviderHookGroupLaunchArgv({
     '--group',
     String(groupIndex),
   ]
+  if (groupId !== undefined) {
+    if (typeof groupId !== 'string' || !PROVIDER_HOOK_GROUP_ID_PATTERN.test(groupId)) {
+      fail('hook group id must match the stable group id format')
+    }
+    runnerArgv.push('--group-id', groupId)
+  }
   if (!runnerArgv.every((token) => typeof token === 'string' && SAFE_PROVIDER_HOOK_ARGV_TOKEN.test(token))) {
     fail(`${provider?.id || '<missing>'}:hook invocation contains an unsafe argv token`)
   }

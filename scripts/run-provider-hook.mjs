@@ -395,7 +395,7 @@ function insideAnyGitCheckout(directory) {
   }
 }
 
-function telemetryOnlyGroupWhileTelemetryOff() {
+async function telemetryOnlyGroupWhileTelemetryOff() {
   if (process.env.GOVERNANCE_TELEMETRY_OPT_IN === '1' && process.env.GOVERNANCE_READ_ONLY !== '1') return false
   try {
     const rawRegistry = JSON.parse(readFileSync(
@@ -406,7 +406,16 @@ function telemetryOnlyGroupWhileTelemetryOff() {
       containedCanonicalPath(rawRegistry.canonical.hookRegistrations, 'provider hook registrations'),
       'utf8',
     ))
-    const group = rawRegistrations.hooks?.[argumentValues('--event')[0]]?.[Number(argumentValues('--group')[0])]
+    const event = argumentValues('--event')[0]
+    let group = rawRegistrations.hooks?.[event]?.[Number(argumentValues('--group')[0])]
+    // 設定帶穩定 id 時照 id 找群組(B2,同 resolveRequestedGroupIndex);找不到就不早退,交給後段送「沒登記」通知。
+    const groupIds = argumentValues('--group-id')
+    if (groupIds.length) {
+      const { providerHookGroupId } = await import('./lib/provider-hook-output-transport.mjs')
+      const matches = (rawRegistrations.hooks?.[event] || []).filter((candidate) =>
+        providerHookGroupId(event, candidate) === groupIds[0])
+      group = matches.length === 1 ? matches[0] : null
+    }
     return Array.isArray(group?.hooks) && group.hooks.length > 0
       && group.hooks.every((descriptor) => descriptor?.activation === 'telemetry-opt-in'
         && descriptor?.outputMode === 'diagnostic')
@@ -417,7 +426,7 @@ function telemetryOnlyGroupWhileTelemetryOff() {
 
 if (earlyBatchSelection) {
   preReadProviderInput = await readProviderHookInput()
-  if (telemetryOnlyGroupWhileTelemetryOff()) process.exit(0)
+  if (await telemetryOnlyGroupWhileTelemetryOff()) process.exit(0)
   const earlyTargets = absoluteWriteTargets(parsedPreReadPayload())
   if (earlyTargets.length && earlyTargets.every((target) => {
     const directory = nearestExistingDirectory(target)
@@ -1468,6 +1477,7 @@ const providerArguments = argumentValues('--provider')
 const hookArguments = argumentValues('--hook')
 const eventArguments = argumentValues('--event')
 const groupArguments = argumentValues('--group')
+const groupIdArguments = argumentValues('--group-id')
 const targetRoleArguments = argumentValues('--target-role')
 const authorityDecisionArguments = argumentValues('--authority-decision')
 if (providerArguments.length !== 1 || !providerArguments[0]) {
@@ -1497,7 +1507,9 @@ if (selectedModeCount !== 1
     || eventArguments.length !== 0
     || groupArguments.length !== 0
     || targetRole
-  ))) {
+  ))
+  || (!batchMode && groupIdArguments.length !== 0)
+  || groupIdArguments.length > 1) {
   fail('provider hook adapter blocked:select exactly one hook, event/group batch, or authority decision mode')
 }
 const hookName = singleHookMode ? hookArguments[0] : null
@@ -1506,11 +1518,12 @@ const requestedGroupText = batchMode ? groupArguments[0] : null
 if (singleHookMode && !/^[A-Za-z0-9_.-]+$/.test(hookName || '')) {
   fail('provider hook adapter blocked:invalid hook name')
 }
+const requestedGroupId = batchMode ? (groupIdArguments[0] ?? null) : null
 if (batchMode && (!/^[A-Za-z][A-Za-z0-9]*$/.test(requestedEvent || '')
-  || !/^(?:0|[1-9][0-9]*)$/.test(requestedGroupText || ''))) {
+  || !/^(?:0|[1-9][0-9]*)$/.test(requestedGroupText || '')
+  || (requestedGroupId !== null && !/^g[0-9a-f]{16}$/.test(requestedGroupId)))) {
   fail('provider hook adapter blocked:invalid event/group batch selector')
 }
-const requestedGroupIndex = batchMode ? Number(requestedGroupText) : null
 const hookCorpusSnapshot = createAuthenticatedHookCorpusSnapshot(registry)
 await awaitHookCorpusTestRelease(hookCorpusSnapshot.root)
 try {
@@ -1688,8 +1701,15 @@ function firstAdapterNotice(key) {
 // 代理常在 repo 根目錄外的副本(scratchpad/<名字>/,本身是這個 repo 的 git clone)裡改檔。改前入口只認得 session
 // 的那一個專案根目錄,副本路徑一律記成「改到 repo 外」整批放行 —— 一天 600 多次 DS 原始碼寫入在寫檔當下零檢查。
 // 現在:改檔路徑落在 PROJECT_ROOT 外、而它所在的 git 工作樹與 PROJECT_ROOT 有同一組根 commit(同一個專案的歷史)
-// → 這一批改用副本的根目錄當 PROJECT_ROOT,跑同一套 hook。執行的入口與 hook 程式碼仍是 session 專案這一份
-//(hook 語料快照照舊取自 CORPUS_ROOT),副本的檔案只當資料讀 —— 不執行副本裡代理寫得到的 hook 程式碼。
+// → 這一批改用副本的根目錄當 PROJECT_ROOT,跑同一套 hook。執行的入口與 hook 本身(.sh 與 hooks/lib)仍是 session
+// 專案這一份(hook 語料快照照舊取自 CORPUS_ROOT)。但有三支 hook 會用 node 執行 PROJECT_ROOT 底下的 scripts/*.mjs,
+// 副本模式下執行的就是副本裡、代理寫得到的那一份(F3 核對更正改前「副本只當資料讀」的錯誤說法):
+//   post_edit_dispatcher.sh → scripts/audit-preflight.mjs(lib/_governance_coverage_check.sh)、
+//                             scripts/compile-stories.mjs(lib/_story_compile_drift.sh);
+//   auto_regen_ds_barrel.sh → scripts/gen-component-indexes.mjs、scripts/gen-design-system-barrel.mjs;
+//   check_audit_post_report_validator.sh → scripts/verify-deep-audit-coverage.mjs。
+// 信任範圍跟在 session 專案裡相同(代理一樣寫得到 session 專案的 scripts/,也能自己 npm run 這些腳本),只是延伸到
+// 臨時副本;hook 本來就不是信任邊界(CLAUDE.md「Hooks」段),最終判定在 CI。
 // 只在一般模式;strict / CI lane 照舊拒絕改到 repo 外。別的 repo(根 commit 不同)照舊送「整批沒有執行」通知。
 function siblingCheckoutRoot(payload) {
   const targets = absoluteWriteTargets(payload)
@@ -1889,7 +1909,24 @@ if (singleHookMode
     item.descriptor.kind === 'hook' && item.descriptor.hook === hookName)) {
   fail(`provider hook adapter blocked:hook is not registered:${hookName}`)
 }
-const requestedGroup = batchMode
+// 2026-11-26(gate-census C 組判定 B2):設定帶 `--group-id` 時,群組照穩定 id 找,序號只是舊入口的相容欄位 ——
+// 只認序號時,session 載入的設定與工作樹版本一錯開就可能靜默派到另一組 hook。id 由 provider-hook-output-transport
+// 的 providerHookGroupId 算(產生器、本入口、可達性閘同一支)。找不到(群組內容變了或已刪)→ 走下面「沒登記」通知。
+// 沒帶 id 的設定(這次改動之前產生、session 已載入的那份)照舊依序號,這是唯一的退路。
+const { providerHookGroupId } = batchMode && requestedGroupId !== null
+  ? await import('./lib/provider-hook-output-transport.mjs')
+  : {}
+const requestedGroupIndex = !batchMode
+  ? null
+  : requestedGroupId === null
+    ? Number(requestedGroupText)
+    : (() => {
+        const matches = (registrations.hooks?.[requestedEvent] || [])
+          .map((group, index) => [index, group])
+          .filter(([, group]) => providerHookGroupId(requestedEvent, group) === requestedGroupId)
+        return matches.length === 1 ? matches[0][0] : null
+      })()
+const requestedGroup = batchMode && requestedGroupIndex !== null
   ? registrations.hooks?.[requestedEvent]?.[requestedGroupIndex] ?? null
   : null
 if (batchMode && !requestedGroup) {
@@ -1899,7 +1936,7 @@ if (batchMode && !requestedGroup) {
   if (!hookStrictIntegrity && firstAdapterNotice(`not-registered\0${requestedEvent}\0${requestedGroupText}`)) {
     failureNoticeEvent = requestedEvent
   }
-  fail(`provider hook adapter blocked:event/group is not registered:${requestedEvent}:${requestedGroupText}`
+  fail(`provider hook adapter blocked:event/group is not registered:${requestedEvent}:${requestedGroupText}${requestedGroupId ? `#${requestedGroupId}` : ''}`
     + '(session 載入的 hook 設定與工作樹的 registrations.json 版本不一致:把工作樹更新到與設定同一版,或重開 session;'
     + '這一群在本 session 都不會執行,同一 session 只通知一次)')
 }
