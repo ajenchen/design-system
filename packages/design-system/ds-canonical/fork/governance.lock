@@ -239,7 +239,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/visual-audit/references/audit-architecture.md",
-      "sha256": "dea0197e9557b6b56a08c7110fa82df80f933632e8db599cfee38238c81f70d0",
+      "sha256": "90b5b7e3cc5dca3ec48140bd15df304285e19d81e600c0e2962946ecf3ace43c",
       "source": "providers/codex/skills/visual-audit",
       "classification": null,
       "destination": null
@@ -1199,7 +1199,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/visual-audit/references/audit-architecture.md",
-      "sha256": "dea0197e9557b6b56a08c7110fa82df80f933632e8db599cfee38238c81f70d0",
+      "sha256": "90b5b7e3cc5dca3ec48140bd15df304285e19d81e600c0e2962946ecf3ace43c",
       "source": "skills/visual-audit/references/audit-architecture.md",
       "classification": null,
       "destination": null
@@ -1447,7 +1447,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/visual-audit/references/audit-architecture.md",
-      "sha256": "dea0197e9557b6b56a08c7110fa82df80f933632e8db599cfee38238c81f70d0",
+      "sha256": "90b5b7e3cc5dca3ec48140bd15df304285e19d81e600c0e2962946ecf3ace43c",
       "source": "skills/visual-audit/references/audit-architecture.md",
       "classification": null,
       "destination": null
@@ -1743,7 +1743,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/visual-audit/references/audit-architecture.md",
-      "sha256": "dea0197e9557b6b56a08c7110fa82df80f933632e8db599cfee38238c81f70d0",
+      "sha256": "90b5b7e3cc5dca3ec48140bd15df304285e19d81e600c0e2962946ecf3ace43c",
       "source": null,
       "classification": null,
       "destination": null

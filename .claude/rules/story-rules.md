@@ -128,4 +128,6 @@ story 的型別從 `@storybook/react-vite` 匯入、測試工具從 `storybook/t
 `@storybook/addon-essentials`、`@storybook/blocks` 已退場(官方 MIGRATION.md「From version 8.x to 9.0.0」)。
 全域初始值寫 `initialGlobals`、收尾寫 `afterEach`;`.storybook/main.*` 與 addon preset 必為合法 ESM
 (`governance/memory/feedback_storybook_addon_preset_esm.md`)。10.0 起 `test-only` 不再是內建 tag,隱藏只靠
-storybook-config 的側欄 filter 與 `docs.stories.filter`。
+storybook-config 的側欄 filter 與 `docs.stories.filter`。play 用的 `storybook/test` 一律檔頭靜態匯入:10.x 建置把
+`await import('storybook/test')` 改寫成執行期解析不到的模組,而 `throwPlayFunctionExceptions` 預設 false,畫面照常、play 沒跑;
+閘 = `scripts/lib/launch-browser.mjs` openStory 的渲染錯誤帳本(render-errored)。

@@ -228,10 +228,10 @@
           "targetDigest": "sha256:5ab71f688dc8806dfe4dd4711e5e654d1f342d724c5dcfc3a9dea3a36169ebbf"
         },
         {
-          "expectedTargetDigest": "sha256:03c160cbc072679b76d836639f0c119d5fd60703978455301207488dfa140d66",
+          "expectedTargetDigest": "sha256:67db2c1f7fd1bda33ebcdfea26c837126468fb8e31e22f00056da4603f4fb071",
           "name": "visual-audit",
-          "sourceDigest": "sha256:11e10dfbab02a76553b3fa2be2f84245e0e14348ed587bd57f21cf3465d0fc7a",
-          "targetDigest": "sha256:03c160cbc072679b76d836639f0c119d5fd60703978455301207488dfa140d66"
+          "sourceDigest": "sha256:5e5009edf8c182f14ff09be71ad08b06bbcd92b14922b5bd225cd776bdb2ea11",
+          "targetDigest": "sha256:67db2c1f7fd1bda33ebcdfea26c837126468fb8e31e22f00056da4603f4fb071"
         }
       ],
       "sourceDirectory": "packages/design-system/ds-canonical/skills",
@@ -451,10 +451,10 @@
           "targetDigest": "sha256:8de446538cf74afd56a975ceed8cb917e2d338af85262183a1a0345fcd0bd61d"
         },
         {
-          "expectedTargetDigest": "sha256:8310e697823e5bc1359bf9ebe34cc28614fdf1725bae16f670390eced3edbcb2",
+          "expectedTargetDigest": "sha256:ed74c7403002af181827345da6fc74f54a6a04a5e79373d89e218e6634966e37",
           "name": "visual-audit",
-          "sourceDigest": "sha256:11e10dfbab02a76553b3fa2be2f84245e0e14348ed587bd57f21cf3465d0fc7a",
-          "targetDigest": "sha256:8310e697823e5bc1359bf9ebe34cc28614fdf1725bae16f670390eced3edbcb2"
+          "sourceDigest": "sha256:5e5009edf8c182f14ff09be71ad08b06bbcd92b14922b5bd225cd776bdb2ea11",
+          "targetDigest": "sha256:ed74c7403002af181827345da6fc74f54a6a04a5e79373d89e218e6634966e37"
         }
       ],
       "sourceDirectory": "packages/design-system/ds-canonical/skills",
