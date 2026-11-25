@@ -312,6 +312,7 @@ SelectMenu 是 **composite**(Popover trigger + Command search + 滾動 MenuItem 
 ## Option schema 增項紀錄
 
 - `iconClassName?`(2026-07-08):option icon 染色通道(status 類彩色選項;WM 戰役——原窄 schema 逼 consumer 手刻 bare trigger)。disabled 色仍勝出(menu-item.tsx 順序保證)。
+- **類別色不進 primitive schema**(2026-11-25,AI 推導):選項要帶 Tag 類別色時用 Select 的 wrapper 專屬欄位 `tagVariant`(`CategoricalColor`;`../Select/select.spec.md`「tag 模式」),選單列經 `renderLabel` 畫成 Tag。只有 Select 的 tag 顯示畫類別色(Combobox / PeoplePicker 的 Tag 不畫),所以顏色不上擴到 `SelectMenuOption`。
 
 ## 相關
 

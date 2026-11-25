@@ -5,7 +5,7 @@
 // 慣例同 `AppShell/_demo-helpers.tsx`(`_` 前綴 = demo / private helper,naming-structure-invariant R2)。
 import * as React from 'react'
 import { CircleDot, Globe } from 'lucide-react'
-import { Select } from '@/design-system/components/Select/select'
+import { Select, type SelectOption } from '@/design-system/components/Select/select'
 import { Combobox } from '@/design-system/components/Combobox/combobox'
 import { PeoplePicker } from '@/design-system/components/PeoplePicker/people-picker'
 import type { PersonValue } from '@/design-system/components/PeoplePicker/person-display'
@@ -156,7 +156,7 @@ const viewPriority = [
   { value: 'high', label: '高' },
   { value: 'medium', label: '中' },
 ]
-const viewStatus = [
+const viewStatus: SelectOption[] = [
   { value: 'doing', label: '進行中', tagVariant: 'blue' },
   { value: 'done', label: '已完成', tagVariant: 'green' },
 ]

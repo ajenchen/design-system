@@ -1,7 +1,7 @@
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { InlineEdit } from './inline-edit'
-import { Select } from '@/design-system/components/Select/select'
+import { Select, type SelectOption } from '@/design-system/components/Select/select'
 import { Field, FieldLabel, FieldGroup } from '@/design-system/components/Field/field'
 import { Button } from '@/design-system/components/Button/button'
 import {
@@ -141,7 +141,7 @@ export const States: Story = {
    SSOT 示範:view 態的 Tag **不是** InlineEdit 自刻,而是渲染 `<Select mode="view" display="tag">`
    —— 「select 值 → Tag」的格式化 SSOT 住在 Select 的 view mode(= DataTable 格子消費的同一份)。
    view 與 edit 用同一個 Select、只切 mode,格式零分歧。 */
-const STATUS_OPTIONS = [
+const STATUS_OPTIONS: SelectOption[] = [
   { value: 'todo', label: '待處理', tagVariant: 'neutral' },
   { value: 'in-progress', label: '進行中', tagVariant: 'blue' },
   { value: 'in-review', label: '審查中', tagVariant: 'yellow' },

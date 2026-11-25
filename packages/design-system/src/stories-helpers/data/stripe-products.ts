@@ -1,5 +1,6 @@
 import { createColumnHelper } from '@tanstack/react-table'
 import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging(meta.type / align / width)
+import type { SelectOption } from '@/design-system/components/Select/select'
 
 /**
  * Story 範例用的寬欄位商品表(2026-10-27 收成一份):ScrollArea 設計規格頁與設計原則頁的水平捲動示範原本各抄一份逐字相同的
@@ -25,7 +26,7 @@ export const STRIPE_PRODUCTS: StripeProduct[] = [
 ]
 
 /** 上架狀態:DataTable 的 select 欄 + Tag 顯示(column-types.ts `display: 'tag'`;稽核 M090:原本展示頁手刻圓點 + inline 色) */
-export const PRODUCT_STATUS_OPTIONS = [
+export const PRODUCT_STATUS_OPTIONS: SelectOption[] = [
   { value: 'Active', label: '上架中', tagVariant: 'green' },
   { value: 'Pre-order', label: '預購', tagVariant: 'blue' },
 ]
