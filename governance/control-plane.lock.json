@@ -10,7 +10,7 @@
   "contractDigest": "sha256:2999aed4c75bc36823db0b4ea5729744c0920f74b1cd2b2e1bfb4110dd825ef1",
   "files": [
     {
-      "hash": "sha256:a37bfda7dab1e17c14cd0ae5e105a9d8537340b4f4f346ad459fa794a40cce58",
+      "hash": "sha256:1fc100afb4bd1a79715e298967ac797c0ef0d4fef79f6435312d873dd3b5a777",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 59307,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:dc98318984a329c1aca0bac2a9a3a7a893925e9a25cd72284a0dbfcfa9d531d7",
+      "hash": "sha256:40a18bd3fe448c8dc95df4b0da639848c26031209591927ca5d479a6591efedd",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 140202,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:20f60ea02605d57b338700d678252c4d997326d90c674e8bed8961f6cab274ec",
+  "inputDigest": "sha256:204330badbedeaad4bc6009d7ffb1b1b74bff2bfe77871e1c82bb20db1f8de88",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:519e8b65982a2ac75d9e9e284547571f3cd7ff6431e51d31856270bd53cfa9e7",
+  "snapshotDigest": "sha256:84af48e4335222b60e418f6eaa26b0452cb02acbabf65635d6072081688363fb",
   "sources": [
     {
       "hash": "sha256:73b951d4f56b8e7a230e0563f875ec62fc79bca6b9f1422fa736346f8ef4c79f",
@@ -2533,7 +2533,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 17,
-      "hash": "sha256:7d3e08257afef83c8bd5dd77e88cbdd871652ee448e91bd89ac1d36bcbd1028e",
+      "hash": "sha256:94394133784bf9e64dc51427a60f3c8b3682016432cd98071831c874ffbd5816",
       "id": "governance-package-test-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3170,12 +3170,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:399f831b9d363db833f364a09239ab149a9865c4926f5df6b75a7f42d2e3037d",
+      "hash": "sha256:6b0b05b4f9a98ce547fe23e8de3af3debd70c87cff53f01c34675f3ba4f559d4",
       "id": "provider-hook-runner",
       "mode": "0755",
       "ownerRepo": "design-system",
       "path": "scripts/run-provider-hook.mjs",
-      "size": 134275,
+      "size": 136501,
       "type": "file"
     },
     {
@@ -3606,7 +3606,7 @@
         "scripts/generated/"
       ],
       "files": 804,
-      "hash": "sha256:348f61de1ed612f9ad340f86d3101a18cfee6e56a1e877f18dfa74935261c0bc",
+      "hash": "sha256:3568a0082b75585cf136b1248c839f0a4af3af49e14b2caea161d0df8c13e963",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

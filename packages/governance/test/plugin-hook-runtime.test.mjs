@@ -8,6 +8,7 @@ import test from 'node:test'
 import { buildClaudePluginHookView } from '../../../scripts/gen-codex-adapter.mjs'
 import { buildProviderRuntimeValidator } from '../../../scripts/gen-provider-runtime-validator.mjs'
 import { buildProviderHookLaunchArgv } from '../../../scripts/lib/provider-hook-output-transport.mjs'
+import { validateHookRegistrationSemantics } from '../../../scripts/lib/provider-runtime-contract.mjs'
 
 // These adversarial suites assert the fail-closed integrity lane. The production
 // default is fail-open (hooks are accelerators, not the trust boundary); strict
@@ -928,6 +929,36 @@ test('F3: a write in another git checkout of the same project runs the batch wit
   assert.equal(scratchRun.stderr, '')
 })
 
+test('F3: conversation-evidence gates keep their old coverage in a sibling checkout, announced once; the session project still blocks', async (t) => {
+  const { data, target, sibling } = await siblingFixture(t)
+  git(sibling, 'switch', '-q', '-c', 'pkg/f3-approval')
+  const group = registrations.hooks.PreToolUse.findIndex((item) =>
+    item.hooks.some((descriptor) => descriptor.hook === 'check_substantive_edit_approval_preflight.sh'))
+  assert.ok(group >= 0)
+  const transcript = resolve(target, 'neutral-transcript.jsonl')
+  await writeFile(transcript, `${JSON.stringify({ type: 'user', message: { role: 'user', content: '繼續' } })}\n`, { mode: 0o600 })
+  const governedEdit = (root, session) => ({
+    hook_event_name: 'PreToolUse',
+    tool_name: 'Edit',
+    tool_input: { file_path: resolve(root, 'apps/demo/src/Bad.tsx'), old_string: 'const unsafe: any = 1', new_string: 'const unsafe = <div className="bg-red-500 p-4" />' },
+    transcript_path: transcript,
+    session_id: session,
+  })
+  const env = { GOVERNANCE_READ_ONLY: '0' }
+  // 對照組:同一個改動在 session 專案裡 → 核准閘照常擋(判準沒放寬)
+  const inProject = directGroupRun(data, { event: 'PreToolUse', group, payload: governedEdit(target, 'f3-approval'), env })
+  assert.equal(inProject.status, 2, inProject.stderr)
+  assert.match(inProject.stderr, /BLOCKER: Pre-action gate/)
+  // 副本:不派工(與改前相同),但第一次一定告訴模型,之後同一 session 靜默
+  const first = directGroupRun(data, { event: 'PreToolUse', group, payload: governedEdit(sibling, 'f3-approval'), env })
+  assert.equal(first.status, 0, first.stderr)
+  assert.match(contextOf(first), /check_substantive_edit_approval_preflight\.sh/)
+  assert.match(contextOf(first), /同一 session 只通知一次/)
+  const second = directGroupRun(data, { event: 'PreToolUse', group, payload: governedEdit(sibling, 'f3-approval'), env })
+  assert.equal(second.status, 0, second.stderr)
+  assert.equal(second.stdout, '')
+})
+
 test('F3: an event/group the working tree does not register is announced to the model once per session', async (t) => {
   const { data } = await siblingFixture(t)
   const missingGroup = registrations.hooks.PreToolUse.length
@@ -956,6 +987,12 @@ test('F3: a telemetry-only group is not dispatched while telemetry is off, and i
     item.hooks.some((descriptor) => descriptor.hook === 'log_governance_fires.sh'))
   assert.ok(group >= 0)
   assert.ok(registrations.hooks.PostToolUse[group].hooks.every((descriptor) => descriptor.activation === 'telemetry-opt-in'))
+  // 語意閘:activation 只准標在 outputMode diagnostic 上 —— 標在會擋的閘上,遙測一關那道閘就沒了
+  const misused = structuredClone(registrations)
+  const gate = misused.hooks.PreToolUse.flatMap((item) => item.hooks).find((descriptor) => descriptor.outputMode === 'blocking')
+  gate.activation = 'telemetry-opt-in'
+  assert.throws(() => validateHookRegistrationSemantics(misused), /allowed only with outputMode diagnostic/)
+  assert.doesNotThrow(() => validateHookRegistrationSemantics(structuredClone(registrations)))
   const sentinel = resolve(data.outside, 'telemetry-hook-ran')
   await writeFile(
     resolve(data.plugin, 'packages/design-system/ds-canonical/hooks/log_governance_fires.sh'),

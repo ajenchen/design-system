@@ -2049,9 +2049,13 @@ if (authorityDecisionMode) {
   }
 }
 
+let siblingCheckoutActive = false
+// 副本裡不派工的「讀對話紀錄」hook,併進後段給模型看的降級名單(degradedHooks 在後面才宣告)。
+const siblingDeferredRecords = []
 if (!hookStrictIntegrity && batchMode) {
   const sibling = siblingCheckoutRoot(input)
   if (sibling) {
+    siblingCheckoutActive = true
     PROJECT_ROOT = sibling.root
     input.tool_input = {
       ...input.tool_input,
@@ -2102,6 +2106,29 @@ if (singleHookMode) {
       }),
     }))
     .filter((item) => item.eligibility.eligible)
+  // 副本裡要讀對話紀錄判定的 hook(registrations.json 有宣告 transcript 的:核准閘、ds-anchor)照舊不派工。
+  // 依據:F3 落地前的小樣本離線重放(gate-census C 組風險 ①)—— 今天工作流程子代理在副本改 DS 原始碼的真實 Edit / Write
+  // 抽 20 筆,不論拿子代理自己的對話紀錄、還是官方文件寫的主 session 對話紀錄餵核准閘,20 筆全擋
+  //(EXACT_UI_UX_TARGET_BINDING_MISSING 等):子代理的授權證據還沒有傳進來的方式。直接打開 = 所有工作流程的
+  // DS 改動卡死;所以這兩道閘在副本的覆蓋維持改前(沒有),判準一個字都沒動,session 專案裡照常擋。
+  // 不是靜默:同一 session、同一群告訴模型一次(firstAdapterNotice)。授權證據帶得進來之後拿掉這段即可。
+  let siblingDeferredHooks = []
+  if (siblingCheckoutActive) {
+    const readsConversation = (item) => typeof item.descriptor.transcript === 'string' && item.descriptor.transcript !== 'none'
+    siblingDeferredHooks = selectedRegistrations.filter(readsConversation).map((item) => item.descriptor.hook)
+    selectedRegistrations = selectedRegistrations.filter((item) => !readsConversation(item))
+  }
+  if (siblingDeferredHooks.length
+    && firstAdapterNotice(`sibling-deferred\0${requestedEvent}\0${requestedGroupText}`)) {
+    const notice = `副本寫檔:${siblingDeferredHooks.join('、')} 要讀對話紀錄判定授權,子代理的授權證據還帶不進副本,`
+      + '這幾支在副本裡不執行(與改前相同,判準未動;session 專案裡照常擋)。同組其他 hook 照常執行。同一 session 只通知一次。'
+    if (selectedRegistrations.length) {
+      for (const hookName of siblingDeferredHooks) siblingDeferredRecords.push({ hookName, detail: `${hookName}:SIBLING_CHECKOUT_CONVERSATION_EVIDENCE_NOT_CARRIED` })
+      warnDegraded(notice)
+    } else {
+      emitGovernanceNotice(requestedEvent, notice)
+    }
+  }
   if (!selectedRegistrations.length) {
     // Zero eligible hooks for this event payload is an ordinary no-op (for example a
     // transcript-bound or peer-bound hook in an environment without that capability),
@@ -2625,7 +2652,7 @@ async function runProviderHookChild({ prepared, environment: childEnvironment, i
 let governanceDecision = null
 // Every hook that did not complete its check this batch (N34). None of them is a clean pass, so the
 // list is surfaced to the model with the batch result instead of living only on stderr.
-const degradedHooks = []
+const degradedHooks = [...siblingDeferredRecords]
 function recordDegradedHook(hookName, detail) {
   warnDegraded(`hook degraded (this hook only): ${detail}`)
   degradedHooks.push({ hookName, detail: String(detail).slice(0, 300) })
