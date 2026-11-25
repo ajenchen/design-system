@@ -46,7 +46,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | consumer-control-plane-baseline-receipt-schema | `infra/governance/schemas/consumer-control-plane-baseline-receipt.schema.json` | `sha256:5466f1de7457698d336ef174d55624c521d997deb3cd67733798742708274af9` |
 | consumer-control-plane-cli | `infra/governance/bin/consumerctl.mjs` | `sha256:8edb1b7ecd7346de6eaecf9675ece5a4086a72d56f10e7f42dddae2ec6e6fe48` |
 | consumer-control-plane-policy-library | `scripts/lib/consumer-control-plane-policy.mjs` | `sha256:51aba211bb2f755eff7fa48bb060f9835356a62d2643ab5049147a9896c7bb72` |
-| consumer-control-plane-tests | `infra/governance/test/consumerctl.test.mjs` | `sha256:20ef7f898456b524cde9f9c83a6b204db493eaf753496f597747d0d89cfa5841` |
+| consumer-control-plane-tests | `infra/governance/test/consumerctl.test.mjs` | `sha256:ae61ef1dda847d8af37afd95fb6ffbdd575e27fcb1f35f1963870a172e8fcb6d` |
 | consumer-control-plane-update-acceptance-proposal-schema | `infra/governance/schemas/consumer-control-plane-update-acceptance-proposal.schema.json` | `sha256:54c62a3e2405814cfd03725e9e9697ad519cc1ee73ef34ea3fe9e5716beeb609` |
 | consumer-control-plane-update-plan-schema | `infra/governance/schemas/consumer-control-plane-update-plan.schema.json` | `sha256:2edfd440b4bf67175de3236d33f1308f7ce0adb9b103a3c277053be4c5abb137` |
 | consumer-control-plane-update-readback-schema | `infra/governance/schemas/consumer-control-plane-update-readback.schema.json` | `sha256:ae56963e7cbb70a2aa4c762929e2e1401ddba6e0a80e7902b70bbf87b3308810` |
@@ -204,7 +204,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-control-plane-clis | `infra/governance/bin/` | `sha256:359a7796f09ba1851a7497730151890948c2c1be6137f9f374b76558fd5742dc` |
 | governance-control-plane-libraries | `infra/governance/lib/` | `sha256:3a3557632f81403571db6b58ce2393670d7c367de06f8f04ceb629cc2e9701eb` |
 | governance-control-plane-schemas | `infra/governance/schemas/` | `sha256:7cdf4cee7341c6499cd2b2a07d412fd350b876e145a9be4b4a703eb51f201c6d` |
-| governance-control-plane-tests | `infra/governance/test/` | `sha256:a7f3c28e5774b100d61a4289800cba6231f89068d5b9cce7d73e99d48c230304` |
+| governance-control-plane-tests | `infra/governance/test/` | `sha256:3d52eec2e46008bc46fd1d2e3755288d4645325b3a183cb4cb39c9f9d7b099e4` |
 | governance-counter-metadata | `generated/governance/governance-counters.json` | `sha256:e353dc81c2d5f849876ec3f1579a1e3304aaa1749f52a3b48ae36610406fa26a` |
 | governance-fleet-inventory | `infra/governance/inventory/` | `sha256:30069a9e64dee67d876fb84a41a396551b6847246755bf530ccfa416bbe1154d` |
 | governance-github-desired-state | `infra/governance/desired/` | `sha256:55d2e22e615f51ac4c56381412206378ee81a1888721c6f06c778f76fad14732` |

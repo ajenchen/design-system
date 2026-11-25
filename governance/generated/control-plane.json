@@ -329,12 +329,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:20ef7f898456b524cde9f9c83a6b204db493eaf753496f597747d0d89cfa5841",
+      "hash": "sha256:ae61ef1dda847d8af37afd95fb6ffbdd575e27fcb1f35f1963870a172e8fcb6d",
       "id": "consumer-control-plane-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/test/consumerctl.test.mjs",
-      "size": 119590,
+      "size": 120096,
       "type": "file"
     },
     {
@@ -1768,7 +1768,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 53,
-      "hash": "sha256:a7f3c28e5774b100d61a4289800cba6231f89068d5b9cce7d73e99d48c230304",
+      "hash": "sha256:3d52eec2e46008bc46fd1d2e3755288d4645325b3a183cb4cb39c9f9d7b099e4",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",
