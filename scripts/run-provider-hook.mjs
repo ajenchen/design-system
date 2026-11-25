@@ -1702,12 +1702,18 @@ function firstAdapterNotice(key) {
 // 的那一個專案根目錄,副本路徑一律記成「改到 repo 外」整批放行 —— 一天 600 多次 DS 原始碼寫入在寫檔當下零檢查。
 // 現在:改檔路徑落在 PROJECT_ROOT 外、而它所在的 git 工作樹與 PROJECT_ROOT 有同一組根 commit(同一個專案的歷史)
 // → 這一批改用副本的根目錄當 PROJECT_ROOT,跑同一套 hook。執行的入口與 hook 本身(.sh 與 hooks/lib)仍是 session
-// 專案這一份(hook 語料快照照舊取自 CORPUS_ROOT)。但有三支 hook 會用 node 執行 PROJECT_ROOT 底下的 scripts/*.mjs,
-// 副本模式下執行的就是副本裡、代理寫得到的那一份(F3 核對更正改前「副本只當資料讀」的錯誤說法):
+// 專案這一份(hook 語料快照照舊取自 CORPUS_ROOT)。但下列 hook 會執行或載入 PROJECT_ROOT 底下的程式,副本模式下
+// 執行 / 載入的就是副本裡、代理寫得到的那一份(F3 核對更正改前「副本只當資料讀」與再驗前「只有三支」的錯誤說法):
+//   governance_control_plane.sh(PreToolUse 第 0 群,副本裡每次 Edit / Write 寫檔前都跑)
+//                           → node 執行 governance/generated/adapters/<provider>-hook.mjs,再經副本的 node_modules
+//                             載入 @qijenchen/governance/hook(副本的 node_modules 若是連結,載入的是連結指向的那一份);
 //   post_edit_dispatcher.sh → scripts/audit-preflight.mjs(lib/_governance_coverage_check.sh)、
 //                             scripts/compile-stories.mjs(lib/_story_compile_drift.sh);
 //   auto_regen_ds_barrel.sh → scripts/gen-component-indexes.mjs、scripts/gen-design-system-barrel.mjs;
-//   check_audit_post_report_validator.sh → scripts/verify-deep-audit-coverage.mjs。
+//   check_audit_post_report_validator.sh → scripts/verify-deep-audit-coverage.mjs;
+//   check_item_list_gap.sh 與 lib/_app_shell_primary_header_consistency.sh、_header_with_tabs_border.sh、
+//   _chrome_header_handcraft.sh → hooks/lib/tsx-governance-analysis.mjs(本身取自 session 專案)從副本的
+//                             node_modules 載入 typescript(createRequire 以 cwd 的 package.json 為準)。
 // 信任範圍跟在 session 專案裡相同(代理一樣寫得到 session 專案的 scripts/,也能自己 npm run 這些腳本),只是延伸到
 // 臨時副本;hook 本來就不是信任邊界(CLAUDE.md「Hooks」段),最終判定在 CI。
 // 只在一般模式;strict / CI lane 照舊拒絕改到 repo 外。別的 repo(根 commit 不同)照舊送「整批沒有執行」通知。

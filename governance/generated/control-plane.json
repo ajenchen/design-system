@@ -2658,12 +2658,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:b5133a5d044264657a4a2bd963a76d5206b3d6be4f874a2051c6cdf169d1009b",
+      "hash": "sha256:e169b4d14653df83dde1bd86e62684dcd6fe089787761d645aea9607d69f8ad0",
       "id": "provider-hook-runner",
       "mode": "0755",
       "ownerRepo": "design-system",
       "path": "scripts/run-provider-hook.mjs",
-      "size": 139226,
+      "size": 139954,
       "type": "file"
     },
     {
@@ -3094,7 +3094,7 @@
         "scripts/generated/"
       ],
       "files": 804,
-      "hash": "sha256:ddb4381d17a10bf79cd34c695bf34f865ba70a9a7b4e813a9f6cae8948811bff",
+      "hash": "sha256:661edc46a305e480449c5490582e4b74dddded5863166a1559fe08230997b77b",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

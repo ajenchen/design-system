@@ -10,7 +10,7 @@
   "contractDigest": "sha256:2999aed4c75bc36823db0b4ea5729744c0920f74b1cd2b2e1bfb4110dd825ef1",
   "files": [
     {
-      "hash": "sha256:fa93ed58b367e8c0c00817728281927845826868416aa48895da6365dbad6252",
+      "hash": "sha256:051ceae3340af189a6bf80fbd35c1561b6f784f0e53555e83f24acbb457818bb",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 59307,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:dc322e5844d08ee5acaf1b4626e6cd5db26d61aea811932cebaaa62d75a3bed8",
+      "hash": "sha256:1c623cc30931a03ea1cd9cc616e4aafe0352005cf23f081cc86b79b37ef90ee4",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 140202,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:c843d138096b295ab6b7f92011fa108cdee0a9ba9145d9c89c3da1045bfc397c",
+  "inputDigest": "sha256:323f4ea6cbf1fe3b0d03ea9a57f9165deb21fcfbf7d814d652f56b0bbf5762de",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:005e74b531ae92296a32d2a52327e41d95829e50878fb942ce5f7da96d28a265",
+  "snapshotDigest": "sha256:9d5c81ce05b830b6e66dc30d8592f85110b498381295e962cfa79b0dd7d4dac2",
   "sources": [
     {
       "hash": "sha256:73b951d4f56b8e7a230e0563f875ec62fc79bca6b9f1422fa736346f8ef4c79f",
@@ -3170,12 +3170,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:b5133a5d044264657a4a2bd963a76d5206b3d6be4f874a2051c6cdf169d1009b",
+      "hash": "sha256:e169b4d14653df83dde1bd86e62684dcd6fe089787761d645aea9607d69f8ad0",
       "id": "provider-hook-runner",
       "mode": "0755",
       "ownerRepo": "design-system",
       "path": "scripts/run-provider-hook.mjs",
-      "size": 139226,
+      "size": 139954,
       "type": "file"
     },
     {
@@ -3606,7 +3606,7 @@
         "scripts/generated/"
       ],
       "files": 804,
-      "hash": "sha256:ddb4381d17a10bf79cd34c695bf34f865ba70a9a7b4e813a9f6cae8948811bff",
+      "hash": "sha256:661edc46a305e480449c5490582e4b74dddded5863166a1559fe08230997b77b",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
