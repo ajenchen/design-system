@@ -12,7 +12,7 @@
  * 夾具檔不在 Tailwind 的 @source 範圍裡:夾具自己的版面用行內樣式,DS 元件的樣式來自元件本身。
  * 打包失敗 / 找不到 CSS → 丟 FixtureInstrumentError,由閘照「儀器失效」印出(不是產品裁決、也不是通過)。
  */
-import { copyFileSync, existsSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
@@ -28,12 +28,26 @@ export const FIXTURE_ROOT_ID = 'fixture-root'
 
 export class FixtureInstrumentError extends Error {}
 
-/** 找出建置裡 Storybook 預覽的全域 CSS(Tailwind + DS token;沒有 url() 相依)—— 正好一份,否則儀器失效 */
+/**
+ * 找出建置裡 Storybook 預覽的全域 CSS(Tailwind + DS token;沒有 url() 相依)—— 正好一份,否則儀器失效。
+ * 量的是「預覽頁真的載入的那一份」:Storybook 10.x 的 iframe.html 直接 `<link rel="stylesheet" href="./assets/iframe-<hash>.css">`;
+ * 8.x 沒有 link、由 JS 載入 `assets/preview-<hash>.css`(2026-11-25 升 10.6.9 時檔名從 preview- 變成 iframe-,內容逐位元相同 ——
+ * 原本用檔名前綴當「預覽的全域 CSS」是代理,換版就 0 份,M37)。iframe.html 有 link 時只認 link;沒有才退回 8.x 的檔名規則。
+ */
 export function previewCssOf(staticRoot, label = '夾具') {
   const assets = path.join(staticRoot, 'assets')
   if (!existsSync(assets)) throw new FixtureInstrumentError(`${label}:建置裡沒有 assets/(${staticRoot})`)
+  const iframeHtml = path.join(staticRoot, 'iframe.html')
+  const linked = existsSync(iframeHtml)
+    ? [...readFileSync(iframeHtml, 'utf8').matchAll(/<link\b[^>]*\brel="stylesheet"[^>]*\bhref="\.\/assets\/([\w.-]+\.css)"[^>]*>/g)].map((m) => m[1])
+    : []
+  if (linked.length > 0) {
+    if (linked.length !== 1) throw new FixtureInstrumentError(`${label}:iframe.html 連了 ${linked.length} 份 CSS(要正好 1 份):${linked.join(', ')}`)
+    if (!existsSync(path.join(assets, linked[0]))) throw new FixtureInstrumentError(`${label}:iframe.html 連的 assets/${linked[0]} 不存在`)
+    return path.join(assets, linked[0])
+  }
   const css = readdirSync(assets).filter((f) => /^preview-[\w-]+\.css$/.test(f))
-  if (css.length !== 1) throw new FixtureInstrumentError(`${label}:建置裡的 preview-*.css 有 ${css.length} 份(要正好 1 份):${css.join(', ') || '無'}`)
+  if (css.length !== 1) throw new FixtureInstrumentError(`${label}:iframe.html 沒有連 CSS,建置裡的 preview-*.css(8.x 形狀)有 ${css.length} 份(要正好 1 份):${css.join(', ') || '無'}`)
   return path.join(assets, css[0])
 }
 

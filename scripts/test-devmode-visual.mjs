@@ -209,7 +209,8 @@ async function runCase(t) {
       iframe.locator('#__ds_devmode_overlay__ > *').first().waitFor({ state: 'attached', timeout: STEP_TIMEOUT_MS }))
 
     // 面板:點 DS Devmode 分頁,等面板收到釘選資料
-    const tab = page.locator('button[role="tab"]:has-text("DS Devmode")').first()
+    // 分頁量 role=tab 本身:8.6 是 <button role="tab">,10.x 的 react-aria Tabs 是 <div role="tab">(2026-11-25 升級;標籤名是代理,M37)
+    const tab = page.locator('[role="tab"]:has-text("DS Devmode")').first()
     await addonStep('面板列沒有 DS Devmode 分頁', tab.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS }))
     await tab.click()
     await addonStep('DS Devmode 面板沒有收到釘選資料(沒有 Layer properties)',
