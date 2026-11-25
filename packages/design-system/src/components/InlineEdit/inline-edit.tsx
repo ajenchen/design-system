@@ -295,10 +295,10 @@ function InlineEditImpl<T = string>(
   }, [editing])
 
   // ── 卸載時仍在編輯 = 以草稿提交(2026-11-25;inline-edit.spec.md「退出 edit 態」卸載那一條,calendar.spec.md「點外面」(1))──
-  // 宿主(Popover / Dialog / 詳情面板)在編輯中被拿掉時,上面兩條結算路(handleEditBlur / 點外面那支 effect)都可能等不到:
-  //   被拿掉的輸入框不發 blur(focusInside 留在 true,blur 那條不結算),程式關閉(產品自己的快捷鍵、即時同步把這一筆移走、
-  //   錨點那一列不在了)又沒有 pointerdown;沒有收起動畫(減少動態、整棵子樹跟著卸載)時內容在提交當下就不在了。
-  //   2026-11-25 量(DS 原始碼、減少動態、Popover 由程式關閉):修前 onCommit 0 次、改到一半的字遺失。
+  // 宿主(Popover / Dialog / 詳情面板)沒播收起動畫就被拿掉時,上面兩條結算路(handleEditBlur / 點外面那支 effect)都等不到:
+  //   被拿掉的輸入框不發 blur(focusInside 留在 true,blur 那條不結算),整棵子樹被移走(即時同步把這一筆移走、錨點那一列不在了)
+  //   與減少動態下的程式關閉(產品自己的快捷鍵)也都沒有 pointerdown。有收起動畫的程式關閉不在此列:修前就會提交(實測 1 次)。
+  //   2026-11-25 量(DS 原始碼空白頁 Popover):整棵移走(有 / 無減少動態)、減少動態下程式關閉,修前 onCommit 0 次、字遺失;修後皆 1 次。
   // 卸載那一刻還沒結算 → 照「滑鼠離開」提交(草稿有變更才呼叫 onCommit、焦點不送回)。已按 Esc 取消、已 Enter / blur 結算的由 finalizedRef 擋;
   //   點外面那一支稍後才到的 setTimeout 也被它擋,不重複提交。
   // deps 只放 editing:consumer 每次重繪傳一支新的 onCommit,不能因此提早結算 → cleanup 讀最新的 commit。
