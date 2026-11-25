@@ -905,7 +905,8 @@ jobs:
   verify-browser-control-groups:
     # 2026-10-14 拆自 verify-browser-datatable-perception(待辦總帳 G10;照主題拆平行 job、不調高上限,上限沿用原 job 的 25)。
     # 前兩支都是「判定在別的 job、對照組按預算放」的 --selftest:虛擬游標模態(判定在 verify-browser-cursor)、
-    # useFormValidation 契約(判定在 verify-browser-interaction)。逐支計時合計 513–583 秒,加建置與安裝約 2.2 分 → 估約 12 分。
+    # useFormValidation 契約(判定原在 verify-browser-interaction;2026-11-26 起判定 = 這裡 --selftest 開頭的基準,interaction 不另跑)。
+    # 逐支計時合計 513–583 秒,加建置與安裝約 2.2 分 → 估約 12 分。
     # 第三支浮層家族範例契約(2026-10-21 由 verify-browser-overlay 移來,判定與對照組同一趟):本機 125–281 秒 → 估約 14–17 分。
     name: Verify browser(virtual cursor + form validation control groups)
     runs-on: ubuntu-24.04
