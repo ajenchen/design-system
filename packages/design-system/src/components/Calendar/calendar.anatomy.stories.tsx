@@ -4,7 +4,7 @@
 //   StateBehavior 已存在(today / outside month / hover / event tile 等狀態
 //     已由 StateBehavior 5. 涵蓋)。
 import type { Meta, StoryObj } from '@storybook/react'
-import { expect, userEvent, within } from '@storybook/test'
+import { expect, userEvent, waitFor, within } from '@storybook/test'
 import { Calendar, type CalendarEvent } from './calendar'
 import { CalendarDemo } from './_calendar-demo'
 import { CATEGORICAL_HUES, type CategoricalColor } from '@/design-system/tokens/categorical-color'
@@ -354,9 +354,18 @@ export const MoreListOpen: Story = {
     </div>
   ),
   play: async ({ canvasElement }) => {
-    const more = canvasElement.querySelector<HTMLElement>(`[data-calendar-more="${CONFERENCE_DAY}"]`)
-    await expect(more).not.toBeNull()
-    await userEvent.click(more as HTMLElement)
+    // 「+N」剛掛上時 Radix 會把它換成新的節點一次:PopoverAnchor 的 effect 把 hasCustomAnchor 翻成 true 之後,Trigger 不再包 PopperAnchor,
+    // 元素型別變了、React 重掛(@radix-ui/react-popover 1.1.15 dist/index.mjs:39 / :99;同一次提交裡換,畫面不閃)。先抓到的若是被換掉的舊節點,
+    // 點擊送不到 → 每一輪重抓「當下在畫面上的那一顆」點,點到清單開出來為止;清單已開就不再點(不會點第二次把它關掉)。
+    const more = `[data-calendar-more="${CONFERENCE_DAY}"]`
+    const opened = `[data-calendar-more-list="${CONFERENCE_DAY}"]`
+    await waitFor(async () => {
+      if (document.querySelector(opened)) return
+      const button = canvasElement.querySelector<HTMLElement>(more)
+      await expect(button?.isConnected).toBe(true)
+      await userEvent.click(button as HTMLElement)
+      await expect(document.querySelector(opened)).not.toBeNull()
+    })
     // 清單 = role=dialog(Popover),名稱 = 標題日期;列數 = 當天全部 13 筆(大會週 + 場地布置 + 11 場)。
     // 期望名稱在瀏覽器裡用規格的同一組 Intl 選項現算(calendar.spec.md「「+N」清單浮層」外殼):月日與星期之間有沒有空白隨 ICU 版本變
     //(Node ICU 78.2「7月22日週三」、Chromium 1217「7月22日 週三」),寫死字串會讓這則範例在另一個 ICU 上丟錯。
