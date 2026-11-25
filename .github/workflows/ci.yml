@@ -56,6 +56,8 @@ jobs:
           /usr/bin/git diff --exit-code -- packages/design-system/ds-story-manifest.json
           # a11y 基線的 story 清單 = 這次建置的 story 清單(2026-11-04,總帳 SM4):加 / 刪 / 改名 story 沒跑
           # `npm run a11y:check -- --baseline-write`,以前要等隔天夜間 a11y 全掃才紅;這裡只比清單(不開瀏覽器,約 1 秒)。
+          # 2026-11-26 起 axe 全掃也在 PR(verify-browser-a11y),它遇到清單不同只會拒絕判定(閘的前提,不是另一條規則);
+          # 「清單要跟著 story 重生」這條規則仍只由這一支守,而且一秒就紅,不用等全掃十多分鐘。
           npm run test:a11y-corpus
           # 2026-09-29(OE18 盤點):隨 npm 出貨的 llms.txt / llms-full.txt 檔頭自稱「CI --check 守」,但從沒接進任何 workflow,
           # 提交的檔停在 beta.132 過期 14 版沒人知道。build-storybook 鏈尾已重生,這裡驗 git 樹沒有漂移 + 對照組會紅。
@@ -447,7 +449,7 @@ jobs:
           # 剛好跨過 180 天而紅(M37 第九個形狀)。純 Node,本機約 5 秒。
           node scripts/test-exemption-expiry-invariant.mjs
           # 同一份「只在夜間可達」清單裡刻意沒接的(2026-11-20 逐支在 HEAD 上跑過;接紅閘等於讓每個 PR 一起紅,所以紅的先留在夜間、原因記在這裡):
-          #   要瀏覽器 —— audit-a11y、audit-consumer-a11y。要網路或本機環境 —— check-branch-protection(GitHub API)、check-src-republish(npm registry)、
+          #   要瀏覽器 —— audit-consumer-a11y(audit-a11y 2026-11-26 已接進 verify-browser-a11y)。要網路或本機環境 —— check-branch-protection(GitHub API)、check-src-republish(npm registry)、
           #     check-codex-freshness(讀寫本機 ~/.codex 設定)。
           #   工具 / 報告,不是閘 —— audit-hook-quality(寫 runtime 報告)、consolidate-audit-material、dispatch-audit-dims、prepare-deep-audit-run、
           #     run-gate-meta-tests(夜間執行器本身);governance-check 是裝在 consumer repo 的閘,check-plugin-installed 是 consumer 安裝後的提示。
@@ -1692,7 +1694,7 @@ jobs:
           npm run test:steps-content-follows-current
           # 視覺稽核只掃這次改到的元件(2026-09-29 待辦總帳 OE8:126 個場景只有 7 個掛斷言、從沒在 PR 上跑過)。只跑 render error 與
           # 幾何 / 顏色斷言:--no-diff(基準圖是視覺回歸 workflow 釘死容器裡的 Ubuntu 渲染,別的 runner 會整排假破預算)、
-          # --no-a11y(a11y 另有 a11y-and-size.yml 的基線閘)。base 明確傳入 —— PR 用 base 分支的 sha、push 用前一個 head ——
+          # --no-a11y(a11y 另有 verify-browser-a11y 的基線閘)。base 明確傳入 —— PR 用 base 分支的 sha、push 用前一個 head ——
           # 不讓腳本在沒有本地 main 的乾淨 checkout 裡靜默算出 0 個元件(M37);base 不存在是 INSTRUMENT-FAIL 紅,不是綠。
           # 本機實測:沒改元件 0.5 秒結束、單一元件 2–11 秒、19 個元件 53 個場景 81 秒。
           node scripts/visual-audit.mjs --static --scope=changed --no-diff --no-a11y --base="${VISUAL_AUDIT_BASE}"
@@ -2469,6 +2471,65 @@ jobs:
           # 2026-10-14 從 verify-browser-field-edges 拆成自己的 job(待辦總帳 G10):本步 CI 實測 p50 377 / p90 390 秒。
           npm run test:overlay-footer-gutter
 
+  verify-browser-a11y:
+    # 2026-11-26(地基修正 F4):axe 無障礙閘接進 PR。修前 PR 的 CI 沒有任何 axe 檢查 —— verify-static 的 test:a11y-corpus 只比 story 清單、
+    # 不開瀏覽器;真正的 axe 閘只在夜間 a11y-and-size.yml(排程 + 手動、自稱 non-blocking),新違規要合併後隔天才看得到而且不擋。
+    # 指令與夜間那支逐字相同(npm run a11y:check -- --gate):同一支 scripts/audit-a11y.mjs、同一套 scripts/lib/a11y-gate.mjs 回歸判定
+    #(storyId|ruleId 的節點數比基線多 = 紅)、同一份 infra/governance/baseline/a11y-baseline.json,不另寫判準;夜間那趟因此退役(同一支閘一次只跑一次)。
+    # 全掃不只掃改到的 story:違規 5,391 筆裡 5,384 筆是 color-contrast,色票 / 共用樣式一改就散到不相干的 story,而現有唯一的
+    #「改到哪些 story」對照(visual-audit.mjs getChangedComponents)只認元件資料夾,拿它縮範圍會漏掉色票改動。
+    # 時間:本機(macOS)全掃 1,089 則 564–758 秒;夜間 job(含裝依賴 / 建置)11-21 → 11-25 牆鐘 14.6–17.3 分;本 job 的安裝與兩次建置在 PR 約 1.5 分。
+    # 上限 25 = 全 story 掃描型 job 的既有檔位,準備步驟與 verify-browser-sweeps 逐字相同(ci-workflow-scope 斷言)。量測與對照組:governance/planning/2026-11-26-work-process-evidence-v5.md。
+    name: Verify browser(a11y axe baseline gate)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      - name: Install Chromium
+        run: npx --no-install playwright install chromium
+
+      - name: Axe WCAG 2A + AA regression gate vs governed baseline (browser,全 story)
+        run: |
+          # 只擋回歸:新的 storyId|ruleId,或同一組的違規節點數比基線多;掃描出錯(audit-error)與 story 清單跟基線不同都拒絕放行。
+          # 既有違規在基線裡(大宗是 --fg-muted 淺色主題對比,user 已定案的取捨:color.spec.md「已定案(禁再問)」)。
+          # 對照組(2026-11-26 本機):拋棄式 clone 只把基線一個指紋的節點數減 1,同一行指令必紅並點名那個指紋。
+          npm run a11y:check -- --gate
+
+      - name: Preserve a11y report
+        # 紅的時候要拿得到 Linux 的逐則數字:基線裡有些指紋只有 Linux 量得到(基線 _meta.linuxOnly),本機重寫基線補不出來。
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: a11y-audit-report
+          path: .git/governance-runtime/evidence/audit/a11y-audit.json
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14
+
   verify:
     # Required check 的名字不變(ruleset / desired/github.json 的 context 都指它)。它只做 fan-in:
     # 五個真正跑東西的 job 平行跑(2026-09-08 單一 job 連兩次 15 分鐘逾時被取消:瀏覽器閘 586 秒 +
@@ -2478,7 +2539,7 @@ jobs:
     name: Verify(tsc + tests + compile + build)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-pinned, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-searchable-fields, verify-browser-tree-navigation, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-doc-headings, verify-browser-layout-edges, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles, verify-browser-control-groups, verify-browser-searchable-menu-focus, verify-browser-field-dialog-steps, verify-browser-cursor, verify-browser-escape-focus-control, verify-browser-footer-gutter, verify-browser-nested-dismiss, verify-browser-sidebar-keyboard, verify-browser-layout, verify-browser-horizontal-overflow, hooks-linux, governance-control-plane, container-closed-git]
+    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-pinned, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-searchable-fields, verify-browser-tree-navigation, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-doc-headings, verify-browser-layout-edges, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles, verify-browser-control-groups, verify-browser-searchable-menu-focus, verify-browser-field-dialog-steps, verify-browser-cursor, verify-browser-escape-focus-control, verify-browser-footer-gutter, verify-browser-a11y, verify-browser-nested-dismiss, verify-browser-sidebar-keyboard, verify-browser-layout, verify-browser-horizontal-overflow, hooks-linux, governance-control-plane, container-closed-git]
     if: always()
     steps:
       - name: Every verify job must have succeeded
@@ -2506,6 +2567,7 @@ jobs:
           BROWSER_CURSOR: ${{ needs.verify-browser-cursor.result }}
           BROWSER_ESCAPE_FOCUS_CONTROL: ${{ needs.verify-browser-escape-focus-control.result }}
           BROWSER_FOOTER_GUTTER: ${{ needs.verify-browser-footer-gutter.result }}
+          BROWSER_A11Y: ${{ needs.verify-browser-a11y.result }}
           BROWSER_NESTED_DISMISS: ${{ needs.verify-browser-nested-dismiss.result }}
           BROWSER_SIDEBAR_KEYBOARD: ${{ needs.verify-browser-sidebar-keyboard.result }}
           BROWSER_LAYOUT: ${{ needs.verify-browser-layout.result }}
@@ -2514,8 +2576,8 @@ jobs:
           GOV_CONTROL_PLANE: ${{ needs.governance-control-plane.result }}
           CONTAINER_CLOSED_GIT: ${{ needs.container-closed-git.result }}
         run: |
-          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-pinned=$BROWSER_DT_PINNED verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-searchable-fields=$BROWSER_SEARCH_FIELDS verify-browser-tree-navigation=$BROWSER_TREE_NAV verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-doc-headings=$BROWSER_DOC_HEADINGS verify-browser-layout-edges=$BROWSER_LAYOUT_EDGES verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES verify-browser-control-groups=$BROWSER_CONTROL_GROUPS verify-browser-searchable-menu-focus=$BROWSER_SEARCH_MENU_FOCUS verify-browser-field-dialog-steps=$BROWSER_FIELD_DIALOG_STEPS verify-browser-cursor=$BROWSER_CURSOR verify-browser-escape-focus-control=$BROWSER_ESCAPE_FOCUS_CONTROL verify-browser-footer-gutter=$BROWSER_FOOTER_GUTTER verify-browser-nested-dismiss=$BROWSER_NESTED_DISMISS verify-browser-sidebar-keyboard=$BROWSER_SIDEBAR_KEYBOARD verify-browser-layout=$BROWSER_LAYOUT verify-browser-horizontal-overflow=$BROWSER_HORIZONTAL_OVERFLOW hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE container-closed-git=$CONTAINER_CLOSED_GIT"
-          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT_PINNED" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_SEARCH_FIELDS" = success ] && [ "$BROWSER_TREE_NAV" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_DOC_HEADINGS" = success ] && [ "$BROWSER_LAYOUT_EDGES" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$BROWSER_CONTROL_GROUPS" = success ] && [ "$BROWSER_SEARCH_MENU_FOCUS" = success ] && [ "$BROWSER_FIELD_DIALOG_STEPS" = success ] && [ "$BROWSER_CURSOR" = success ] && [ "$BROWSER_ESCAPE_FOCUS_CONTROL" = success ] && [ "$BROWSER_FOOTER_GUTTER" = success ] && [ "$BROWSER_NESTED_DISMISS" = success ] && [ "$BROWSER_SIDEBAR_KEYBOARD" = success ] && [ "$BROWSER_LAYOUT" = success ] && [ "$BROWSER_HORIZONTAL_OVERFLOW" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ] && [ "$CONTAINER_CLOSED_GIT" = success ]
+          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-pinned=$BROWSER_DT_PINNED verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-searchable-fields=$BROWSER_SEARCH_FIELDS verify-browser-tree-navigation=$BROWSER_TREE_NAV verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-doc-headings=$BROWSER_DOC_HEADINGS verify-browser-layout-edges=$BROWSER_LAYOUT_EDGES verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES verify-browser-control-groups=$BROWSER_CONTROL_GROUPS verify-browser-searchable-menu-focus=$BROWSER_SEARCH_MENU_FOCUS verify-browser-field-dialog-steps=$BROWSER_FIELD_DIALOG_STEPS verify-browser-cursor=$BROWSER_CURSOR verify-browser-escape-focus-control=$BROWSER_ESCAPE_FOCUS_CONTROL verify-browser-footer-gutter=$BROWSER_FOOTER_GUTTER verify-browser-a11y=$BROWSER_A11Y verify-browser-nested-dismiss=$BROWSER_NESTED_DISMISS verify-browser-sidebar-keyboard=$BROWSER_SIDEBAR_KEYBOARD verify-browser-layout=$BROWSER_LAYOUT verify-browser-horizontal-overflow=$BROWSER_HORIZONTAL_OVERFLOW hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE container-closed-git=$CONTAINER_CLOSED_GIT"
+          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT_PINNED" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_SEARCH_FIELDS" = success ] && [ "$BROWSER_TREE_NAV" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_DOC_HEADINGS" = success ] && [ "$BROWSER_LAYOUT_EDGES" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$BROWSER_CONTROL_GROUPS" = success ] && [ "$BROWSER_SEARCH_MENU_FOCUS" = success ] && [ "$BROWSER_FIELD_DIALOG_STEPS" = success ] && [ "$BROWSER_CURSOR" = success ] && [ "$BROWSER_ESCAPE_FOCUS_CONTROL" = success ] && [ "$BROWSER_FOOTER_GUTTER" = success ] && [ "$BROWSER_A11Y" = success ] && [ "$BROWSER_NESTED_DISMISS" = success ] && [ "$BROWSER_SIDEBAR_KEYBOARD" = success ] && [ "$BROWSER_LAYOUT" = success ] && [ "$BROWSER_HORIZONTAL_OVERFLOW" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ] && [ "$CONTAINER_CLOSED_GIT" = success ]
 
   hooks-linux:
     name: Governance hooks(Linux portability)

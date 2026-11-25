@@ -4,6 +4,8 @@
  *   保證: a11y 基線(infra/governance/baseline/a11y-baseline.json)的 story 清單 = 這次建置的 story 清單 ——
  *         加 / 刪 / 改名 story 卻沒跑 `npm run a11y:check -- --baseline-write`,在 PR 就紅(總帳 SM4),不用等隔天夜間的
  *         a11y 全掃(a11y-and-size.yml)才在「Storybook corpus differs from the governed a11y baseline」紅。
+ *         2026-11-26 起全掃也在 PR(ci.yml verify-browser-a11y):全掃遇到清單不同只拒絕判定(它的前提);這條規則仍只由本閘守,
+ *         在 verify-static 一秒就紅,不用等全掃十多分鐘。
  *   紅: 兩份清單不同 → 列出少了 / 多出的 story id 與修法,exit 1;`--selftest` 用合成 index.json 證明加一則、刪一則、改名各紅,相同綠。
  *   綠: 兩份逐筆相同(排序後 sha256 相同)。純靜態:只讀 storybook-static/index.json 與基線檔,不開瀏覽器(約 1 秒)。
  *   缺前置: 沒有 storybook-static → MISSING-BUILD exit 2(CI 在 verify-static 的 build-storybook 之後跑,一定有)。
