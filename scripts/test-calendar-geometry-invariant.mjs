@@ -17,7 +17,9 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const GATE = path.join(REPO, 'scripts/calendar-geometry-invariant.mjs')
+// 閘的路徑寫成字面值、spawn 時 cwd 指 REPO:harness 來源審查(infra/governance/lib/harness-source-inventory.mjs 的
+// nodePreScriptArgvState)只放行靜態字串的 node 腳本參數,path.join(...) 算出來的路徑一律判「無法審查」,test:waived-self-review 會紅。
+const GATE = 'scripts/calendar-geometry-invariant.mjs'
 const CAL = 'packages/design-system/src/components/Calendar'
 const COPY = [CAL, 'packages/design-system/src/components/Tag/tag.tsx', 'packages/design-system/src/tokens/utility-registry.json']
 
@@ -28,7 +30,7 @@ const reset = () => {
   for (const rel of COPY) fs.cpSync(path.join(REPO, rel), path.join(tmp, rel), { recursive: true })
 }
 const run = (...extra) => {
-  const r = spawnSync(process.execPath, [GATE, '--root', tmp, ...extra], { encoding: 'utf8' })
+  const r = spawnSync(process.execPath, [GATE, '--root', tmp, ...extra], { cwd: REPO, encoding: 'utf8' })
   return { status: r.status, text: `${r.stdout ?? ''}${r.stderr ?? ''}` }
 }
 const edit = (rel, from, to) => {
@@ -77,7 +79,7 @@ try {
   for (const f of fs.readdirSync(path.join(tmp, CAL))) if (f.endsWith('.tsx')) fs.rmSync(path.join(tmp, CAL, f))
   expect('(e) 掃描母體 0 個檔 → 儀器失效', run(), 2, 'INSTRUMENT-FAIL')
 
-  const self = spawnSync(process.execPath, [GATE, '--selftest'], { encoding: 'utf8' })
+  const self = spawnSync(process.execPath, [GATE, '--selftest'], { cwd: REPO, encoding: 'utf8' })
   expect('(f) 閘自己的 --selftest(repo 現況)', { status: self.status, text: `${self.stdout}${self.stderr}` }, 0)
 } finally {
   fs.rmSync(tmp, { recursive: true, force: true })
