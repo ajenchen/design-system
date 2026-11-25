@@ -30,6 +30,7 @@
 
 - `ci.yml` 在 `pull_request` 與 `push: main` 都跑(`:3-8`),合併是 exact-head;同一棵樹在夜間再掃一次是同一支閘跑兩次。依賴(含 Playwright 的 Chromium)由 lockfile 釘死,夜間量不到 PR 量不到的東西。
 - `a11y-and-size.yml` 只剩 bundle size 那個 job,workflow 名改成「Bundle Size」;檔名不改(`infra/governance/test/ci-workflow-scope.test.mjs` 的排程清單、`scripts/test-workflow-security.mjs` 用檔名)。
+- 那 5 格是不是這條分支後來才壞的(2026-11-26 本機診斷):在寫基線的 commit `46eff99d` 上重建、逐則 `--tag` 量,5 格本機就已是 10 / 52 / 6 / 7 / 6 —— 跟今天一樣,而基線記的是 9 / 51 / 1 / 6 / 4。所以這 5 格不是 `46eff99d` 之後的 commit 帶進來的;基線那 5 個值不是本機在那個 commit 量到的(可能是 Linux 值,或沿用更早的值 —— 本包判不了)。跟基線 `_meta.linuxOnly` 已登記的 combobox / select inspector 同一型的可能性高,但只有 CI 的 Linux 實測能定。
 - 風險(登記待決,不是本包能解):夜間 `Monitor a11y drift` 在 main 上 11-07 → 11-25 每天紅,原因沒人讀過 log(`governance/planning/2026-09-25-interaction-and-hover-remediation.md` SM4「11-16 讀回」、OPEN-ITEMS A76);普查抓到的 11-21 → 11-25 五次也全是 failure。若原因是只有 Linux 量得到的增量,這個 job 第一次在 PR 跑就會紅 —— 那是閘第一次在合併前讓人看到既有的紅,不是新壞。job 一律上傳 `a11y-audit.json`(`if: always()`),紅了就有 Linux 的逐則數字可對(基線 `_meta.linuxOnly` 的值本機補不出來)。
 
 ## 4. 對照組(閘該紅的時候會紅)
@@ -41,7 +42,10 @@
   - C B 再把 button「設計規格 › overview」color-contrast 19 減成 18 → ok=false,只點名這一格(18→19);
   - D B 再刪掉 tabs「設計原則 › size-selection」那一整格 → ok=false,只點名這一格(0→3,新 key)。
   腳本與輸出在本包 scratch(`lib-control.mjs`)。
-- 同一個注入走完整 CLI(拋棄式 clone、真的 storybook-static、`node scripts/audit-a11y.mjs --gate`)排在重工作鎖後面:本包第一次排入時 clone 用了 storybook-static 的符號連結,被靜態伺服器拒絕(`a11y-static-server.mjs`:root 必須是一般目錄)、0 秒結束 —— 那一個 exit 1 是儀器失效,不算紅;改成複製目錄後重排,在交付前沒拿到鎖就沒跑完(結果見交接 `notes/progress-foundation.md` 本包最後一行)。
+- 同一個注入走完整 CLI(拋棄式 clone、複製過去的同一份 storybook-static、`node scripts/audit-a11y.mjs --gate`,不改產品原始碼):
+  - 基線 = B + C 的注入 → exit 1,570 秒,`a11y GATE FAIL — 1 個新增/增量 violation`,只點名 `design-system-components-button-設計規格--overview|color-contrast (baseline 18 → now 19)`;
+  - 同一份基線只把那一格還原成 19(= B)→ exit 0,572 秒,`a11y GATE PASS — 0 regression vs baseline`。
+  - 第一次排入時 clone 用了 storybook-static 的符號連結,被靜態伺服器拒絕(`scripts/lib/a11y-static-server.mjs`:root 必須是一般目錄)、0 秒結束 —— 那一個 exit 1 是儀器失效,不算紅,已改成複製目錄重跑(上面兩跑)。
 - 新斷言的對照組(`infra/governance/test/ci-workflow-scope.test.mjs`,拋棄式 clone 逐一弄壞再還原):夜間 yml 再跑 `a11y:check` → 紅「夜間 a11y-and-size.yml 不得再跑 a11y:check」;PR 改成 `--tag=button` → 紅「PR 的 a11y 閘必須是全掃 + 基線回歸判定」;ci.yml 跑兩次 → 紅「ci.yml 只准一處跑 a11y:check」;fan-in 判斷式漏掉 a11y → 紅「BROWSER_A11Y 出現在 env 卻沒有被判斷式檢查」;還原後綠。
 
 ## 5. work-process v5:拿掉本機補跑 axe
