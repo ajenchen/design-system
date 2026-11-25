@@ -18,6 +18,8 @@
  *       之後,沒開 coverAnchor 的浮層畫面不得變)在現行原始碼與每個突變上都綠。M 列的對照突變 = 266ec7ae 的寫法原文(交給 Radix 一個永遠不變的
  *       包裝,Radix 看不到錨點換了;`reanchor-stable-wrapper`)。
  *   綠: 現行原始碼每列都量到且符合。harness 載不起來 / 元素找不到 / 位置等不到靜止 = 儀器失效(INSTRUMENT-FAIL,exit 1),不得讀成通過。
+ *   消費端: 本閘量的是 PopoverContent 的擺法本身(夾具裡的假格子)。Calendar「+N」清單真的開了 coverAnchor、蓋在那一格正中,
+ *       由 scripts/calendar-month-invariant.mjs ML-center 在真的月曆上量(2026-11-26;同一條規則的機制在這裡、Calendar 的接法在那裡,不重複量)。
  *   註: 2026-11-24 新增(OVERLAY-CAPABILITIES ①;總帳 Q2b(定)「以格子為中心(水平 + 垂直)」、C9 高度走 capHeight)。不需要 storybook
  *       (DS 原始碼打包進空白頁,`scripts/lib/ds-source-harness.mjs`;樣式用同一棵樹編出來的 DS CSS)。POC 在實作前證明 Radix Popper 做得到:
  *       虛擬錨點的 getBoundingClientRect 在 floating-ui 每次定位時回「算好的左上角」、Content side=bottom / align=start / 間距 0 / 不由 Radix 推回
