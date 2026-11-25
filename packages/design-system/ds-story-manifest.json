@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-11-25T18:17:43.582Z"
+    "generatedAt": "2026-11-25T21:57:48.330Z"
   },
   "components": {
     "accordion": {
@@ -1884,5 +1884,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1046
+  "totalStories": 1048
 }
