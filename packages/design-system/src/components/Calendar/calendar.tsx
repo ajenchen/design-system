@@ -599,7 +599,7 @@ const MonthEventPieceShell = React.forwardRef<HTMLElement, MonthEventPieceShellP
  *   長條(全天,或有時段且滿 24 小時;版面 kind 'bar')= 類別淡底 + 標題(滿 24 小時的有時段長條在含真起點的那一段標題前加開始時間);
  *   有時段(未滿 24 小時;kind 'timed')= 透明列 + 左側色條 + 開始時間 + 標題。
  * 截斷 → tooltip 顯完整標題(tooltip.spec.md:32,僅實際截斷時);外層是 interactive host → trigger = 外層本體、量測內層文字 span ——
- * useTruncated 自組 pattern(truncated-text.spec.md「兩層架構(對齊世界級聯集)」;範本 inline-edit.tsx:257 + tag.tsx)。
+ * useTruncated 自組 pattern(truncated-text.spec.md「兩層架構(對齊世界級聯集)」;範本 inline-edit.tsx:258 + tag.tsx)。
  */
 function MonthEventPiece({
   entry,

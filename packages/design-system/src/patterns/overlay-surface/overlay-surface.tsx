@@ -295,8 +295,9 @@ function surfaceHeaderRow(children: React.ReactNode, actions: React.ReactNode, d
  * `<PopoverHeader className={EDITABLE_TITLE_HEADER_SLOT}>`(DialogHeader / SheetHeader / raw SurfaceHeader 同一個常數)。兩件事:
  *   (1) × 與右側操作區的佔位 = 一列 sm 欄位高(`--field-height-sm`,取代標題行高)→ × 中線 = 標題那一列的中線(InlineEdit 靜止 / 編輯中外框同為一列 sm 欄位高,見規格同段「靜止 / 編輯同高」)
  *       (沿用 CHROME_UNBOUNDED_SLOT / ACTIONS_GROUP_SLOT 同一個變數,公式不變;sm 欄位高 = × 原生高,縮位量 0);
- *   (2) 標題欄尾端讓出 `--field-px`(上方 surfaceHeaderRow 左欄的 `--surface-title-bleed`):InlineEdit 直向排列把滑過底色與隱形編輯鈕
- *       往左右各外擴 `--field-px`(inline-edit.tsx 的 alignBleed),不讓位時右緣蓋進 × 4px,點 × 左緣會進編輯而不是關閉(2026-11-25 實測)。
- * 消費的 SSOT:`--field-height-sm`(tokens/uiSize/uiSize.css)、`--field-px`(同檔)、`--layout-space-tight`(SurfaceHeader 上下內距)、SurfaceHeader。
+ *   (2) 標題欄尾端讓出 `--field-bleed`(上方 surfaceHeaderRow 左欄的 `--surface-title-bleed`):InlineEdit 直向排列把滑過底色、外框與隱形編輯鈕
+ *       往左右各外伸 `--field-bleed`(inline-edit.tsx 的 alignBleed),不讓位時右緣蓋進 ×,點 × 左緣會進編輯而不是關閉(2026-11-25 實測)。
+ *       讓位直接讀外伸的同一顆 token:外伸量改了,讓位跟著改,框到 × 的距離永遠 = 標題列的 gap(2026-11-25 前讀 --field-px、外伸 12)。
+ * 消費的 SSOT:`--field-height-sm`(tokens/uiSize/uiSize.css)、`--field-bleed`(同檔衍生值段)、`--layout-space-tight`(SurfaceHeader 上下內距)、SurfaceHeader。
  */
-export const EDITABLE_TITLE_HEADER_SLOT = '[--surface-chrome-slot-h:var(--field-height-sm)] [--surface-title-bleed:var(--field-px)]'
+export const EDITABLE_TITLE_HEADER_SLOT = '[--surface-chrome-slot-h:var(--field-height-sm)] [--surface-title-bleed:var(--field-bleed)]'

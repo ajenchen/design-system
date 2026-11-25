@@ -271,6 +271,11 @@ jobs:
           # 三層範例每一則載入時沒有 [Calendar] 警告(資料照 calendar.spec.md「資料語意」:end 不含)、renderEventTile 收到版面那一段的 segment、
           # 單筆 readOnly 不是按鈕;--selftest 三個原始碼突變(範例留一筆「含」的資料 / segment 寫死 / 單筆唯讀沒接上)各自只讓指定的格紅。本機兩條合計約 2 秒(主判定 0.5 秒、--selftest 1.7 秒)。
           npm run test:calendar-render-contract
+          # DatePicker.Range 檢視模式 formatRange 只有一份判定(components/DatePicker/range-format.ts;date-picker.spec.md「區間檢視合併(formatRange)」):
+          # zh-TW / en-US × 同一天有時段 / 跨日全天 / 跨日有時段 / 同一刻 / 一端空的判定表 + 其他退回條件 + 退回兩段時每一端的寫法 +
+          # 「同一頁日期樣式一致」性質(合併與退回的列都算;對照組:兩位數月日、dateStyle full、退回的列用補零寫法,都必須被同一支檢查抓到)
+          # + date-picker.tsx 真的呼叫它;--selftest 的行為 / 靜態 / 接線突變各自必紅(數量以腳本輸出為準)。純函式 + 讀檔,約 1 秒。
+          npm run test:date-range-format
 
       - name: Registered test scripts nothing was running
         run: |
@@ -2408,6 +2413,8 @@ jobs:
     # footer 內距約 315 秒 → p90 390 秒。footer 內距搬到 verify-browser-footer-gutter,兩邊各約 8.5 分。
     # 2026-11-13 加欄位開啟外框閘的**判定**(本機 85–90 秒,CI 約本機 1.2–1.4 倍 → 約 2 分)→ 估約 10.5 分,上限 15 不動;
     # 它的對照組(本機 380 秒,CI 估約 8.4 分 —— 照原句 5.3 分 / 239 秒的同一個比例;380 秒出處 67b83c7e。2026-11-18 audit PV4 加 S、T 兩段與三種破法之前是 239 秒,2026-11-13 加第二組併排欄位組與兩種破法之前是 202 秒)疊進來會超過 15 分,照 virtual-cursor-modality「判定與對照組按預算分開放」的先例放 verify-browser-sidebar-keyboard。
+    # 2026-11-25 加閱讀情境閘的判定與對照組(本機約 25 + 20 秒,CI 照 1.2–1.4 倍約 1 分)→ 估約 11.5 分,上限 15 不動。
+    # 同日 G7(DataTable 內容線)併進同一支閘:本機判定 31 + 對照組 54 秒(比上一句多約 40 秒,CI 約 +1 分)→ 估約 12.5 分,上限 15 不動。
     name: Verify browser(field edges + combobox single path + field open border)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -2474,6 +2481,21 @@ jobs:
           # 2026-11-13 AI 建議、user 採納,原話「你問我的問題，照你建議」)。
           # 這裡只跑判定;對照組(九種破法)在 verify-browser-sidebar-keyboard(見本 job 檔頭的預算說明)。
           npm run test:field-open-border
+
+      - name: Reading context (browser)
+        run: |
+          # 閱讀情境(field.spec.md「閱讀情境」;user 2026-11-25 留言改版):範圍(最外層 FieldGroup / 不在組裡的 Field)裡有就地編輯時,
+          # 標籤 = fg-secondary(與 DescriptionList dt、DataTable 表頭同色)、標籤在左時開關 / 勾選框內縮到框內字線(--field-bleed)、同組同高(繪製前登記);
+          # 標籤在上時就地編輯外伸 --field-bleed、字齊標籤(修掉 +1px)。量的是像素與瀏覽器算好的值,期望值從同一份建置讀:
+          # 靜態段(欄位家族不寫裸 border、框寬補位讀 --field-border-width、判斷只住 field.css)+ 兩則 test-only 夾具 × 淺 / 深 × 不指定 / sm / md
+          # + InlineEdit 各範例(取代原本不在 CI、2026-11-25 退役的手動對齊探針)
+          # + G7 DataTable 內容線 = 表頭字(data-table.spec.md「一、Table Size」):就地編輯 / 自動行高 / 檢閱器 sm、lg 每一欄靜止與編輯中不跳、
+          # 篩選面板 Where 對齊 And/Or 下拉框內的字。本機判定約 31 秒、對照組約 54 秒。
+          # 組裡某幾列再套一層另一個主題(data-theme)時,閱讀與表單的標籤色都要跟著那一層(G3 / G4「主題套層」格)。
+          # 對照組:靜態段與瀏覽器段的破法(某列字推 4px 只有那列紅、垂直外伸改回 12、沒有框的值不內縮、標籤色在範圍元素上先算好、範圍改成最近一層、
+          # 首繪晚一個計時器、表格只修 view / edit 一半 ……;清單與個數只住閘檔 STATIC_MUTANTS / MUTANTS),每種都必須讓預期的格紅;量不到 = INSTRUMENT-FAIL,不當成對照組如預期紅。
+          npm run test:reading-context
+          node scripts/reading-context-invariant.mjs --selftest
 
   verify-browser-footer-gutter:
     # 2026-10-14 拆自 verify-browser-field-edges(待辦總帳 G10;照主題拆平行 job、不調高上限,上限沿用原 job 的 15)。

@@ -170,6 +170,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
   showSeconds                           // showTime 時是否顯示秒
   minuteStep={15}
   needConfirm                           // 預設 showTime=true 時為 true
+  formatRange                           // 選填,預設 false;只管 mode="view":兩端寫成一段(同一天合併),見「區間檢視合併(formatRange)」
 />
 ```
 
@@ -240,6 +241,43 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 2026-09-26(日期縫與角):R21 研究實測本 DS 在日期圓外的角會閃(偏離中線橫越時整條框消失 6–14 步;世界級對照與一手出處見 `../DateGrid/date-grid.spec.md`「縫與角裡的點擊」),以及待辦總帳 N54 建議 ①「預覽亮著的任何位置、包括縫,點下去就得到正在預覽的值」(`governance/planning/2026-09-25-interaction-and-hover-remediation.md` N54 列,AI 措辭)後,同意批次 `:105` 記:「日期縫與角」屬 user 沒點名、依「其餘都照建議做嗎」的問法理解為照建議做的四項(總帳原文標為 AI 判讀、回報時明講);2026-09-26 的實作指示記為 user 決定:「日期圓圈外的角滑過去不再閃」「在縫或角裡點下去 = 確認正在預覽的那一天」「離開整張格陣時預覽照樣收掉(D1 保留)」。依據的原則是 user 同日原話(`:225`,逐字):「我滑到某個區塊但不是滑到文字上但文字卻變色了，此時表示產生了樣式變化，儘管沒滑到文字上，此時點擊也應該要有反應，我的意思是這樣」。「只算滑鼠、觸控維持原樣」與「鍵盤把框移走後縫與角不接點擊」是 AI 依此原則推導的邊界,user 未另外表示。
 
 完整 class 對照見 anatomy `CalendarTokens`(State canonical 表的 `selected` / `range track`)。
+
+### 區間檢視合併(formatRange)
+
+**來源**:user 2026-11-25 在 TIMEFIELD 題選「日期元件檢視加「自動合併」選項，行事曆開啟 (Recommended)」(選項文字由 AI 擬,逐字)。user 定的範圍:`DatePicker.Range` 的 view 加一個選填設定,用 Intl formatRange 同一天自動合併、跨日寫兩端,預設關;Calendar 詳情開啟(由 Calendar 那一包接)。下面的參數名、預設寫法與退回條件是 AI 依此推導的工程細節,逐條標【AI 推導】。
+
+**規則**:
+- `formatRange`(預設 `false`)只管 `mode="view"`:兩端都有值時輸出**一段文字**,用標準 `Intl.DateTimeFormat.prototype.formatRange` —— 同一天自動合併、跨日寫兩端、起訖完全相同只寫一個值。合併規則全交給 Intl(ECMA-402 §11.5.8 [PartitionDateTimeRangePattern](https://tc39.es/ecma402/#sec-partitiondatetimerangepattern);MDN:「If the start and end dates are equivalent at the precision of the output, the output will only contain a single date.」[formatRange](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/formatRange)),元件不自己判斷「同一天」。
+- **不合併、退回兩段**【AI 推導】:只有一端有值;任一端解析不了;起點晚於終點(值本身有問題,照兩段讓人看到兩端;舊版引擎的 formatRange 對它丟例外、新版照順序寫,兩種都不採);`showTime` 但一端帶時間、一端沒有(合併會吃掉其中一端的時間);執行環境沒有 `formatRange`。
+- **退回兩段的長相**【AI 推導 2026-11-25】:版面與 `formatRange={false}` 相同(起 → 終兩段、中間箭頭、各自截斷、空的那端顯示 placeholder),但**每一端的日期用合併顯示的同一套寫法**(下方「日期寫法」:數字年月日不補零、時間 2 位數 24 小時;傳了 `formatOptions` 也是同一套補法)—— 開了 `formatRange` 的一頁上,合併的列與退回的列並排出現,若退回的列仍是兩段顯示預設的 `2026/07/15`,就會一列 `07`、一列 `7`,正是下方排除兩位數月日的理由。時間照每一端自己:只有一端帶時間時,另一端只寫日期(與兩段顯示相同)。只有解析不了的那一端照原樣(與不開相同)。實作 `range-format.ts` `formatDateRangeEndpoint`;判定表 F 列與「同一頁日期樣式一致」性質把退回的列算進去(對照組:退回的列換回補零寫法,同一支檢查必紅)。
+- **只管 view**【AI 推導】:edit / readonly / disabled 仍是起 → 終兩段 —— 那三種模式的兩端各是一個欄位值(edit 時各是一顆可點、會切換作用端的鈕),合併之後「改哪一端」沒有對象。所以開了 `formatRange` 的 view 與 edit 觸發文字**刻意不同**(下方「格式化」那句「兩者一致」的例外)。
+- **結束日照舊是「含」**:本元件的值本來就是含,不做全天換算;拿「不含結束日」資料(例 iCal 的 DTEND)來顯示的呼叫端先自己換成含(Calendar 由 `../Calendar/calendar.spec.md` 那一端換算)。
+- **截斷照舊**:一段文字一個 `TruncatedText`,實際截斷才顯示完整值的 tooltip(`../Tooltip/tooltip.spec.md:32`)。
+
+**日期寫法(判定表)**【AI 推導 2026-11-25】:沒傳 `formatOptions` 時,合併顯示用「數字年月日、不補零」+ 時間 2 位數 24 小時(時間與兩段顯示的 `HH:MM` 同一套)。這是唯一在 zh-TW / en-US 下表四種情況都和單獨 `format` 出來的日期**同一種樣式**的組合(Node 24.14.0 / ICU 78.2 / CLDR 48.0 實測;判定表與對照組 `scripts/test-date-range-format.mjs`,純函式 `range-format.ts`):
+
+| 情況 | 值 | zh-TW | en-US |
+|---|---|---|---|
+| 同一天有時段 | 7/15 10:00 → 7/15 11:00 | `2026/7/15 10:00 – 11:00` | `7/15/2026, 10:00 – 11:00` |
+| 跨日全天(只有日期) | 7/15 → 7/17 | `2026/7/15至2026/7/17` | `7/15/2026 – 7/17/2026` |
+| 跨日有時段 | 7/15 22:00 → 7/16 01:00 | `2026/7/15 22:00 – 2026/7/16 01:00` | `7/15/2026, 22:00 – 7/16/2026, 01:00` |
+| 同一刻 | 7/15 10:00 → 7/15 10:00 | `2026/7/15 10:00` | `7/15/2026, 10:00` |
+| 一端空 | 7/15 10:00 → 空 | 兩段:`2026/7/15 10:00` → 結束端 placeholder | 兩段:`7/15/2026, 10:00` → 結束端 placeholder |
+
+另外兩種寫法為什麼不行(判定表的對照組,換成它們同一支檢查必紅):
+- **兩位數月日**(兩段顯示的預設 `2026/07/15`):只有日期的跨日區間,ICU 會丟掉補零 → `2026/7/15至2026/7/17`;同一頁會同時出現 `07` 與 `7`。
+- **文字月份 / `dateStyle`**(例 `dateStyle: 'full'` 同一天有時段是 `2026年7月15日 星期三 上午10:00–11:00`):zh-TW 只有日期的跨日區間一律換成數字月日 → `2026/7/15星期三至2026/7/17星期五`;同一頁會同時出現「年月日」與斜線兩種。
+
+傳了 `formatOptions` 時:日期段照它;`showTime` 而它沒寫任何時間欄位,就補上時間(用 `dateStyle` 的補 `timeStyle`,因為 Intl 不准兩者與 `hour` 混用;其餘補 2 位數 24 小時的時、分,有秒再補秒);退回兩段的每一端也用這同一組選項。自訂寫法的樣式一致由呼叫端負責 —— 上面兩條陷阱照樣會出現(判定表保留 `dateStyle: 'full'` 那兩列當證據)。其他語系照 CLDR 的區間資料,本表只保證 zh-TW 與 en-US(例:ja-JP 的數字月日在區間裡反而補零)。
+
+**為什麼是選填、預設關**:設計系統的日期區間元件不在檢視時自動合併,出口是自訂格式函式,或在欄位外的文字用 Intl formatRange ——
+- Mantine:預設兩端各自格式化再用 `labelSeparator` 接起來([get-formatted-date.ts L31-L33](https://github.com/mantinedev/mantine/blob/8f2ae606f8a37d5971f8315685e7daab44d9fbe2/packages/@mantine/dates/src/utils/get-formatted-date/get-formatted-date.ts#L31-L33));要別的寫法用 `valueFormatter`:「`valueFormatter` is a more powerful alternative to the `valueFormat` prop. It allows formatting the value label with a custom function.」([date-picker-input.mdx L59-L60](https://github.com/mantinedev/mantine/blob/8f2ae606f8a37d5971f8315685e7daab44d9fbe2/apps/mantine.dev/src/pages/dates/date-picker-input.mdx#L59-L60))。
+- MUI X:每一端的寫法用欄位的 `format`、中間的分隔號用 `dateSeparator`,沒有把兩端合併的選項 —— 「You can use the `dateSeparator` prop to change the separator rendered between the start and end dates」([custom-field.md L27](https://github.com/mui/mui-x/blob/30c4193c80aaaa0362aad752ae92fbfeb61b4461/docs/data/date-pickers/custom-field/custom-field.md#L27));官方 Button 欄位範例也是兩端各自 `date.format(pickerContext.fieldFormat)` 再用 ` – ` 接起來([MaterialDateRangePicker.tsx L38-L42](https://github.com/mui/mui-x/blob/30c4193c80aaaa0362aad752ae92fbfeb61b4461/docs/data/date-pickers/custom-field/behavior-button/MaterialDateRangePicker.tsx#L38-L42));要別的長相就整個換掉 field(custom-field.md「Using a Button」,[L125](https://github.com/mui/mui-x/blob/30c4193c80aaaa0362aad752ae92fbfeb61b4461/docs/data/date-pickers/custom-field/custom-field.md#L125))。
+- React Aria / Spectrum:欄位外的檢視文字示範 `formatter.formatRange(...)`([DateRangePicker.mdx L300](https://github.com/adobe/react-spectrum/blob/b1e8cf579fcc4cda0031f09d7d4e3bdff299fc3a/packages/@adobe/react-spectrum/docs/datepicker/DateRangePicker.mdx#L300));`DateFormatter.formatRange`「Formats a date range as a string.」([DateFormatter.ts L43-L44](https://github.com/adobe/react-spectrum/blob/b1e8cf579fcc4cda0031f09d7d4e3bdff299fc3a/packages/@internationalized/date/src/DateFormatter.ts#L43-L44))。
+
+本 DS 把「欄位外用 formatRange」收成元件自己的 view 選項,讓 InlineEdit 這類「檢視文字要渲染控件自己的 `mode="view"`、禁止自刻」的消費端(`../InlineEdit/inline-edit.spec.md` `renderRead` 那一列)不必另組字串;預設關,其他用到 `DatePicker.Range` 的地方畫面不變。
+
+**參數名**【AI 推導,命名 3 重 test】:(1)與同一個元件既有的 `formatOptions` 同一族(都是「交給 Intl 怎麼寫」);(2)同一個詞、同一個意思至少兩家:ECMA-402 `Intl.DateTimeFormat.prototype.formatRange`([MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/formatRange))、React Aria `DateFormatter.formatRange`([DateFormatter.ts L43-L44](https://github.com/adobe/react-spectrum/blob/b1e8cf579fcc4cda0031f09d7d4e3bdff299fc3a/packages/@internationalized/date/src/DateFormatter.ts#L43-L44));(3)全 DS 沒有同名參數,唯一同字是 `../DateGrid/date-grid.stories.tsx` 範例裡的本地函式,意思相同(把起訖寫成一段字),不是公開 API。Mantine `valueFormatter`([date-picker-input.mdx L59-L60](https://github.com/mantinedev/mantine/blob/8f2ae606f8a37d5971f8315685e7daab44d9fbe2/apps/mantine.dev/src/pages/dates/date-picker-input.mdx#L59-L60))、MUI 自訂 field([custom-field.md L125](https://github.com/mui/mui-x/blob/30c4193c80aaaa0362aad752ae92fbfeb61b4461/docs/data/date-pickers/custom-field/custom-field.md#L125))是「整個換掉格式函式 / 欄位」,不是同一件事,不採這兩個名字。
 
 ### 禁止
 
@@ -321,7 +359,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 | `formatOptions` | `Intl.DateTimeFormatOptions` | `{ year: 'numeric', month: 'short', day: 'numeric' }` |
 | `locale` | BCP 47 locale,預設 `'zh-TW'`(DS 日期元件共用的 `DEFAULT_DATE_LOCALE`,`../../lib/date-locale.ts`) | `'zh-TW'`、`'en-US'` |
 
-預設(未傳 `formatOptions` / `locale`)直接組 `YYYY/MM/DD`(locale-independent,對齊 Ant year-first:Ant 預設 `YYYY-MM-DD`,https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/index.en-US.md#L183;見 date-picker.tsx `formatDate` 註解);這個字面跟預設語系 zh-TW 走 `Intl.DateTimeFormat` 兩位數年月日的輸出相同(`2026/07/15`)。傳 `formatOptions` / `locale` 才走 `Intl.DateTimeFormat`,只傳 `formatOptions` 時語系用 zh-TW。View / readonly / disabled 模式(含 DataTable cell)與 Edit 模式 trigger 文字同一條格式化路徑,兩者一致。
+預設(未傳 `formatOptions` / `locale`)直接組 `YYYY/MM/DD`(locale-independent,對齊 Ant year-first:Ant 預設 `YYYY-MM-DD`,https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/index.en-US.md#L183;見 date-picker.tsx `formatDate` 註解);這個字面跟預設語系 zh-TW 走 `Intl.DateTimeFormat` 兩位數年月日的輸出相同(`2026/07/15`)。傳 `formatOptions` / `locale` 才走 `Intl.DateTimeFormat`,只傳 `formatOptions` 時語系用 zh-TW。View / readonly / disabled 模式(含 DataTable cell)與 Edit 模式 trigger 文字同一條格式化路徑,兩者一致;唯一例外是 `DatePicker.Range` 開了 `formatRange` 的 view(兩端寫成一段;合併不了而退回兩段時每一端也用同一套寫法,即數字年月日不補零;判定表見「區間檢視合併(formatRange)」)。
 
 **預設語系 zh-TW(2026-11-24)**:user 選「全 DS 日期元件一起改 zh-TW (Recommended)」(選項為 AI 擬;Calendar / DatePicker / TimePicker 同一個預設)。之前是 `'en-US'`:只傳 `formatOptions` 沒傳 `locale` 的欄位,文字從英文變中文(例 `{ year: 'numeric', month: 'long', day: 'numeric' }`:「April 2, 2026」→「2026年4月2日」);什麼格式參數都沒傳的欄位畫面不變。
 

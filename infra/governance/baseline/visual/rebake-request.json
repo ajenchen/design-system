@@ -3,6 +3,6 @@
   "branch": "feat/batch2-2026-11-24",
   "update_baseline": true,
   "reference_ref": "",
-  "reason": "第 2 批(PR #174)合併前重拍精選基準圖:整頁預設字級改 14px/21px(44f7acc2)讓 tag-all-variants、button-state-behavior 超出 0.5% 預算;預算內有差的 dategrid-range、dategrid-single、separator-horizontal、appshell-overview 一併給 user 逐張確認",
+  "reason": "第 2 批 PR #174 合併前重拍基準圖。超 0.5% 預算:tag-all-variants、button-state-behavior(字級 14/21)、datatable-pinned(亮暗)、scrollarea-vertical-issue-list(表格字線 13→12);預算內有差、user 逐張確認:dategrid-range、dategrid-single、separator-horizontal、appshell-overview、sidebar-icon-collapse(亮暗)、datatable-nested-rows-expander-hover-state",
   "requestedAt": "2026-11-24T19:43:55Z"
 }

@@ -2,8 +2,9 @@
 /**
  * @gate-contract
  *   保證: 提交的對外彙總檔 styles/tokens.css 逐字等於產生器從現在的樹算出來的內容 —— 檔頭寫「自動產生、禁止手改」這句話是真的
- *   紅: 手加 / 手刪一行 @import、或新增一個宣告 :root / @theme 的元件樣式檔卻沒重跑產生器 → --check 印 DRIFT 並 exit 1;
- *       --selftest 在記憶體裡造這幾種漂移(拿掉 tabs.css 那行、假裝 agent-panel.css 沒被元件程式匯入、多一個沒被匯入的新元件樣式檔)各自必紅
+ *   紅: 手加 / 手刪一行 @import、或新增一個沒被元件程式匯入的元件樣式檔卻沒重跑產生器 → --check 印 DRIFT 並 exit 1;
+ *       --selftest 在記憶體裡造這幾種漂移(拿掉 tabs.css 那行、拿掉只有屬性選擇器的 field.css 那行、假裝 agent-panel.css 沒被元件程式匯入、
+ *       多一個沒被匯入的新元件樣式檔)各自必紅
  *   綠: 樹與提交的檔一致時必綠;純讀檔比字串,不開瀏覽器、不量時間,重跑結果不變
  *
  * gen-figma-make-artifacts.mjs — Phase 4.5 Consumer DX
@@ -102,10 +103,14 @@ function sortCanonical(files) {
   })
 }
 
-/** Scan patterns/ + components/ for CSS files containing token/runtime CSS declarations.
+/** Scan patterns/ + components/ for every stylesheet(元件程式自己匯入的由呼叫端排除,見 generate)。
  *  These declare consumer-needed tokens / styles outside tokens/ home. Per 2026-05-27 root-cause:
  *  src/globals.css 已 import them for DS internal,但 tokens.css consumer aggregator
- *  漏掉導致 consumer 拿不到。Auto-scan 防再犯。 */
+ *  漏掉導致 consumer 拿不到。Auto-scan 防再犯。
+ *  2026-11-25:原本只收內容含 `:root` / `@theme` / `@utility` / `@keyframes` 的檔 —— 比 token-creation-invariant C6
+ *  (元件樣式檔要嘛進彙總檔、要嘛被設計系統程式匯入)窄:只有屬性選擇器的元件樣式檔(components/Field/field.css,
+ *  閱讀情境的唯一判斷)C6 會紅、產生器卻不收,沒有任何寫法能同時滿足兩者。改成與 C6 同一個判準:全收,扣掉程式自己匯入的。
+ *  改的當下其他元件樣式檔都已在彙總檔或被程式匯入,彙總檔只多 field.css 一行。 */
 function findExtraCssFiles(dir) {
   if (!existsSync(dir)) return []
   const out = []
@@ -115,15 +120,7 @@ function findExtraCssFiles(dir) {
     if (s.isDirectory()) {
       out.push(...findExtraCssFiles(full))
     } else if (s.isFile() && entry.endsWith('.css')) {
-      const content = readFileSync(full, 'utf8')
-      if (
-        content.includes(':root') ||
-        content.includes('@theme') ||
-        content.includes('@utility') ||
-        content.includes('@keyframes')
-      ) {
-        out.push(full)
-      }
+      out.push(full)
     }
   }
   return out
@@ -240,14 +237,19 @@ function selftest() {
   const AGENT = join(COMPONENTS_DIR, 'AgentPanel/agent-panel.css')
   const FIXTURE = join(COMPONENTS_DIR, 'FixtureNew/fixture-new.css')
   const TABS_LINE = "@import './../components/Tabs/tabs.css';\n"
+  // 2026-11-25 掃描改全收(檔頭 findExtraCssFiles 註解):只有屬性選擇器、沒有 :root / @theme 的元件樣式檔也要被收 —— 拿 field.css 當正例
+  const FIELD_CSS = join(COMPONENTS_DIR, 'Field/field.css')
+  const FIELD_LINE = "@import './../components/Field/field.css';\n"
   const pre = [
     [committed.includes(TABS_LINE), `提交的檔裡找不到「${TABS_LINE.trim()}」`],
     [candidates.includes(AGENT) && codeImported.has(AGENT), 'agent-panel.css 不再是「宣告 :root / @keyframes 且被元件程式匯入」的檔'],
+    [committed.includes(FIELD_LINE) && existsSync(FIELD_CSS) && !/:root|@theme|@utility|@keyframes/.test(readFileSync(FIELD_CSS, 'utf8')), 'field.css 不再是「沒有 :root / @theme / @utility / @keyframes、只有屬性選擇器」的元件樣式檔(或彙總檔沒有它那行)'],
   ]
   for (const [ok, why] of pre) if (!ok) { console.error(`✗ INSTRUMENT-FAIL 對照組的注入點過期:${why}(先修對照組)`); return false }
   const cases = [
     ['現況:產生器輸出 = 提交的檔', generate({ extraCandidates: candidates, codeImported }), committed, true],
     ['提交的檔被手刪一行(tabs.css)', generate({ extraCandidates: candidates, codeImported }), committed.replace(TABS_LINE, ''), false],
+    ['只有屬性選擇器的元件樣式檔(field.css)沒進提交的檔 → 掃描照樣收它', generate({ extraCandidates: candidates, codeImported }), committed.replace(FIELD_LINE, ''), false],
     ['agent-panel.css 假裝沒被元件程式匯入 → 產生器會收它、提交的檔沒有', generate({ extraCandidates: candidates, codeImported: new Set([...codeImported].filter((f) => f !== AGENT)) }), committed, false],
     ['新的元件樣式檔宣告 :root、沒被元件程式匯入、也沒重跑產生器', generate({ extraCandidates: [...candidates, FIXTURE], codeImported }), committed, false],
     ['同一個新檔被元件程式匯入 → 不進彙總檔', generate({ extraCandidates: [...candidates, FIXTURE], codeImported: new Set([...codeImported, FIXTURE]) }), committed, true],

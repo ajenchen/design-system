@@ -18,6 +18,7 @@ import { Rating } from '@/design-system/components/Rating/rating'
 import { FileUpload } from '@/design-system/components/FileUpload/file-upload'
 import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 import { InlineSearchYieldWidthProbe, ViewAlignmentProbe } from './_field-contract-probes'
+import { ReadingContextDemo, ReadingContextFixture } from './_demo-reading-context'
 import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
@@ -780,4 +781,16 @@ export const ViewAlignmentContract: Story = {
   name: '純顯示齊標籤驗證',
   tags: ['test-only'],
   render: () => <ViewAlignmentProbe />,
+}
+
+// ── 閱讀情境(field.spec.md「閱讀情境」;畫面與夾具住 `_demo-reading-context.tsx`,閘 scripts/reading-context-invariant.mjs)── 只服務量測與
+// 前後對照圖 → test-only(story-rules.md「Technical probe visibility」);size 由閘以網址 args 切(不給 = 看同組同高怎麼解)。
+const readingArgTypes = { size: { control: 'inline-radio', options: ['sm', 'md'] } } as const
+export const ReadingContextDetail: StoryObj<{ size?: 'sm' | 'md' }> = {
+  name: '閱讀情境:工作項目與行事曆事件詳情', tags: ['test-only'], argTypes: readingArgTypes,
+  render: (args) => <ReadingContextDemo size={args.size} />,
+}
+export const ReadingContextContract: StoryObj<{ size?: 'sm' | 'md' }> = {
+  name: '閱讀情境驗證', tags: ['test-only'], argTypes: readingArgTypes,
+  render: (args) => <ReadingContextFixture size={args.size} />,
 }

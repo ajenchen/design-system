@@ -18,8 +18,8 @@ export type FieldControlLayout = 'inline' | 'block'
  * - `'table-cell'`— DataTable cell-as-input substrate(取代 variant='naked' cell-detection
  *   heuristic;canonical metrics 由 surface 推導,不再 hardcode in Field consumer)
  * - `'inline-edit'`(2026-07-17)— InlineEdit view 委派 surface。**唯一語義 = 委派控件 view 態
- *   左 px 統一 `--field-px`(不繼承 tagPadding / avatar inset / bare-span 0px)**,讓 InlineEdit
- *   固定 `-mx-[--field-px]` 對齊盒精準抵銷 → 值/tag/avatar 左緣落 label 左緣(x=0)。edit 態**不套**
+ *   左 px 統一 `--field-px`(不繼承 tagPadding / avatar inset / bare-span 0px)**,值/tag/avatar 左緣都在框內字線(框寬 + `--field-px` = `--field-bleed`);
+ *   InlineEdit 垂直排外伸 `--field-bleed` → 落 label 左緣,水平排不外伸 → 落一般輸入框字線(field.spec.md「閱讀情境」;舊的外伸 12 漏了框寬)。edit 態**不套**
  *   本 surface(edit 完全繼承原 field,含 tagPadding — Jira 式)。對齊 Atlassian inline-edit
  *   read-view「fixed negative margin + read=edit geometry by construction」。只 InlineEdit display
  *   box 注入;DataTable cell(table-cell)/ 純表單(form)的 tagPadding + bare-span 完全不受影響。
@@ -193,13 +193,41 @@ export function useResolvedFieldSize<T extends string = FieldSize>(sizeProp?: T 
  * Field 的**直接子元件**時才偵測得到;包 wrapper / `React.memo` / HOC 會遮蔽它。本 hook 讓 control
  * 在掛載時主動註冊,Field 的**控件槽高度**因此也能跟上(控件本身的尺寸則由 `useResolvedFieldSize`
  * 同步解析,不等這次註冊)。
+ *
+ * **繪製前登記**(2026-11-25,field.spec.md「Control 偏好尺寸」解析時序與「閱讀情境」同組同高):用 layout effect —— 登記觸發的
+ * Field(與它所在範圍裡其他列)重繪在瀏覽器第一次畫之前完成,第一格就是對的高度。2026-11-25 前是 useEffect:先畫一格 md(32)再跳成 sm(28)。
  */
 export function useRegisterFieldPreferredSize(preferred?: FieldSize | null): void {
   const fieldCtx = React.useContext(FieldContext)
   const register = fieldCtx?.registerPreferredSize
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     if (preferred && register) register(preferred)
   }, [preferred, register])
+}
+
+/**
+ * 同組同高:一個範圍(最外層 FieldGroup)裡各列登記的控件偏好尺寸 → 整組沒寫 size 的列共用的那一個(field.spec.md「閱讀情境」)。
+ * 沒有人登記 → null(各列照舊:自己的控件偏好 → md)。**偏好不同時取最小的**(sm < md < lg)【AI 推導 2026-11-25】:
+ * 同組只能有一個高度(uiSize.spec.md「默認對齊」),結果不能取決於各列掛載的先後;目前唯一的宣告者是 InlineEdit 的 sm,
+ * 所以今天不會出現兩種偏好。純函式;判定表在 scripts/test-reading-context-invariant.mjs。
+ */
+const FIELD_SIZE_ORDER: Record<FieldSize, number> = { sm: 0, md: 1, lg: 2 }
+export function resolveGroupPreferredSize(registered: Iterable<FieldSize>): FieldSize | null {
+  let smallest: FieldSize | null = null
+  for (const size of registered) {
+    if (smallest == null || FIELD_SIZE_ORDER[size] < FIELD_SIZE_ORDER[smallest]) smallest = size
+  }
+  return smallest
+}
+
+/**
+ * 沒有框的值控件(開關、單一勾選框)放在 `<Field>` 裡時掛的記號 —— 水平排的閱讀情境裡,Field 把它往右內縮到同一欄框內的字線
+ * (`--field-bleed`;field.spec.md「閱讀情境」)。只是記號、不帶樣式:內縮的量與要不要內縮由 Field 決定(field.tsx 讀 field.css 的判斷)。
+ * 在 Field 外(表格格子、設定列、獨立使用)回 undefined,DOM 不多任何屬性。
+ */
+export const FIELD_FRAMELESS_VALUE_ATTR = 'data-field-frameless-value'
+export function fieldFramelessValueProps(insideField: boolean): Record<typeof FIELD_FRAMELESS_VALUE_ATTR, ''> | undefined {
+  return insideField ? { [FIELD_FRAMELESS_VALUE_ATTR]: '' } : undefined
 }
 
 /**
