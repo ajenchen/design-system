@@ -33,6 +33,7 @@
                       "runtime": { "enum": ["bash", "node", "python3"] },
                       "outputMode": { "enum": ["diagnostic", "blocking", "governance-context", "governance-decision", "governance-context-or-block"] },
                       "inputContract": { "enum": ["event-v1", "proposed-text-v1"] },
+                      "activation": { "enum": ["telemetry-opt-in"] },
                       "transcript": { "enum": ["none", "optional", "stable-required"] },
                       "requires": {
                         "type": "array",

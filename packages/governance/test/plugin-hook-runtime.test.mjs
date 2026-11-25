@@ -855,3 +855,122 @@ test('G4 複核二: telemetry is a side channel — with telemetry on and python
   assert.match(blocked.stderr, /BLOCKER: Pre-action gate/, 'blocked by the gate itself')
   assert.doesNotMatch(blocked.stderr, /治理閘缺工具/)
 })
+
+// ── F3(2026-11-26,gate-census C 組判定):副本改根、scratch 早退、not-registered 通知、遙測群早退 ──
+// 每一題都是兩面:該跑的真的跑到(會擋的閘真的擋),該早退的真的沒派工(哨兵檔不存在)。
+async function siblingFixture(t) {
+  const data = await fixture(t)
+  const target = await realpath(data.target)
+  await mkdir(resolve(target, 'docs'), { recursive: true })
+  await writeFile(resolve(target, 'docs/note.md'), 'release note draft\n')
+  git(target, 'add', '-A')
+  git(target, 'commit', '-q', '-m', 'fixture root')
+  const parent = await mkdtemp(resolve(tmpdir(), 'governance-plugin-sibling-'))
+  t.after(() => rm(parent, { recursive: true, force: true }))
+  const sibling = resolve(await realpath(parent), 'copy')
+  const cloned = spawnSync('git', ['clone', '-q', target, sibling], { encoding: 'utf8' })
+  assert.equal(cloned.status, 0, cloned.stderr)
+  const foreign = resolve(await realpath(parent), 'foreign')
+  await mkdir(resolve(foreign, 'docs'), { recursive: true })
+  await writeFile(resolve(foreign, 'docs/note.md'), 'release note draft\n')
+  git(foreign, 'init', '-q')
+  git(foreign, 'config', 'user.email', 'governance-test@example.invalid')
+  git(foreign, 'config', 'user.name', 'governance-test')
+  git(foreign, 'add', '-A')
+  git(foreign, 'commit', '-q', '-m', 'unrelated history')
+  const scratch = await realpath(data.outside)
+  return { data, target, sibling, foreign, scratch }
+}
+
+const noteEdit = (filePath, session = 'f3-sibling') => ({
+  hook_event_name: 'PreToolUse',
+  tool_name: 'Edit',
+  tool_input: { file_path: filePath, old_string: 'release note draft', new_string: 'release note final' },
+  session_id: session,
+})
+
+test('F3: a write in another git checkout of the same project runs the batch with that checkout as the project root', async (t) => {
+  const { data, target, sibling, foreign, scratch } = await siblingFixture(t)
+  const group = registrations.hooks.PreToolUse.findIndex((item) =>
+    item.hooks.some((descriptor) => descriptor.hook === 'check_main_branch_workbench.sh'))
+  assert.ok(group >= 0)
+  const run = (filePath, env = {}) => directGroupRun(data, { event: 'PreToolUse', group, payload: noteEdit(filePath), env })
+  const targetBranch = spawnSync('git', ['-C', target, 'branch', '--show-current'], { encoding: 'utf8' }).stdout.trim()
+  assert.ok(['main', 'master'].includes(targetBranch), `fixture target must sit on main/master, got ${targetBranch}`)
+
+  // 副本也在主分支:主分支閘必須在副本裡擋 —— 證明整批真的派工了(改前:整批放行、只送「沒有執行」通知)
+  const onMain = run(resolve(sibling, 'docs/note.md'))
+  assert.equal(onMain.status, 2, `${onMain.stdout}\n${onMain.stderr}`)
+  assert.match(onMain.stderr, /PROTECTED-MAIN WORKBENCH BLOCKER/)
+  assert.doesNotMatch(onMain.stdout, /整批沒有執行/)
+
+  // 副本切到工作分支、session 專案仍在主分支:放行 —— 證明判定用的是副本的根目錄,不是 session 那一份
+  git(sibling, 'switch', '-q', '-c', 'pkg/f3-fixture')
+  const onBranch = run(resolve(sibling, 'docs/note.md'))
+  assert.equal(onBranch.status, 0, `${onBranch.stdout}\n${onBranch.stderr}`)
+  assert.doesNotMatch(`${onBranch.stdout}${onBranch.stderr}`, /整批沒有執行|escapes repository root/)
+
+  // 同一份副本、strict lane:照舊拒絕改到 repo 外(改根只在一般模式)
+  const strict = run(resolve(sibling, 'docs/note.md'), { GOVERNANCE_HOOK_STRICT: '1' })
+  assert.equal(strict.status, 70, strict.stderr)
+  assert.match(strict.stderr, /changed path escapes repository root/)
+
+  // 根 commit 不同的別的 repo:不改根,照舊送模型看得到的「整批沒有執行」通知
+  const foreignRun = run(resolve(foreign, 'docs/note.md'))
+  assert.equal(foreignRun.status, 0, foreignRun.stderr)
+  assert.match(contextOf(foreignRun), /整批沒有執行/)
+  assert.match(foreignRun.stderr, /escapes repository root/)
+
+  // 不在任何 git 工作樹的 scratch 筆記:沒有東西要檢查,靜默結束(沒有通知、沒有警告)
+  const scratchRun = run(resolve(scratch, 'notes/today.md'))
+  assert.equal(scratchRun.status, 0, scratchRun.stderr)
+  assert.equal(scratchRun.stdout, '')
+  assert.equal(scratchRun.stderr, '')
+})
+
+test('F3: an event/group the working tree does not register is announced to the model once per session', async (t) => {
+  const { data } = await siblingFixture(t)
+  const missingGroup = registrations.hooks.PreToolUse.length
+  const payload = (session) => ({ ...noteEdit(resolve(data.target, 'docs/note.md'), session) })
+  const env = { GOVERNANCE_READ_ONLY: '0' }
+  const first = directGroupRun(data, { event: 'PreToolUse', group: missingGroup, payload: payload('f3-a'), env })
+  assert.equal(first.status, 0, first.stderr)
+  assert.match(contextOf(first), /is not registered/)
+  assert.match(contextOf(first), /重開 session/)
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const repeat = directGroupRun(data, { event: 'PreToolUse', group: missingGroup, payload: payload('f3-a'), env })
+    assert.equal(repeat.status, 0, repeat.stderr)
+    assert.equal(repeat.stdout, '', 'same session + same group: announced once, then stderr only')
+    assert.match(repeat.stderr, /is not registered/)
+  }
+  const otherSession = directGroupRun(data, { event: 'PreToolUse', group: missingGroup, payload: payload('f3-b'), env })
+  assert.match(contextOf(otherSession), /is not registered/, 'another session is told again')
+  // 唯讀(CI replay / hooks:test)記不下來 → 每次都講,寧可重複不可漏
+  const readOnly = directGroupRun(data, { event: 'PreToolUse', group: missingGroup, payload: payload('f3-a'), env: { GOVERNANCE_READ_ONLY: '1' } })
+  assert.match(contextOf(readOnly), /is not registered/)
+})
+
+test('F3: a telemetry-only group is not dispatched while telemetry is off, and is dispatched when it is on', async (t) => {
+  const data = await fixture(t)
+  const group = registrations.hooks.PostToolUse.findIndex((item) =>
+    item.hooks.some((descriptor) => descriptor.hook === 'log_governance_fires.sh'))
+  assert.ok(group >= 0)
+  assert.ok(registrations.hooks.PostToolUse[group].hooks.every((descriptor) => descriptor.activation === 'telemetry-opt-in'))
+  const sentinel = resolve(data.outside, 'telemetry-hook-ran')
+  await writeFile(
+    resolve(data.plugin, 'packages/design-system/ds-canonical/hooks/log_governance_fires.sh'),
+    `#!/bin/bash\ncat >/dev/null\nprintf ran > '${sentinel}'\n`,
+  )
+  const payload = {
+    hook_event_name: 'PostToolUse',
+    tool_name: 'Write',
+    tool_input: { file_path: resolve(await realpath(data.target), 'CLAUDE.md'), content: '# changed\n' },
+  }
+  const off = directGroupRun(data, { event: 'PostToolUse', group, payload, env: { GOVERNANCE_READ_ONLY: '0' } })
+  assert.equal(off.status, 0, off.stderr)
+  assert.equal(off.stdout, '')
+  await assert.rejects(stat(sentinel), 'telemetry off: the group must not be dispatched at all')
+  const on = directGroupRun(data, { event: 'PostToolUse', group, payload, env: { GOVERNANCE_READ_ONLY: '0', GOVERNANCE_TELEMETRY_OPT_IN: '1' } })
+  assert.equal(on.status, 0, on.stderr)
+  assert.equal(await readFile(sentinel, 'utf8'), 'ran', 'telemetry on: the same group is dispatched (control)')
+})

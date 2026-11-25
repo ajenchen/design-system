@@ -1993,6 +1993,45 @@ function governedTargetsUnderDirectory(directory, isDirectory) {
   return targets
 }
 
+// cp / rsync / install 只寫「目的地」,來源只被讀(mv 會刪來源 = 也寫,不在此列)。2026-11-26(F3)以前這三個字
+// 跟 find / prettier 一樣「每個目錄參數都算寫入、還連它底下的受管根目錄一起算」:在副本根目錄下
+// `cp -c -R ../int/node_modules ./`(只會寫出 ./node_modules)被判成寫 ./apps/__bulk_target__.tsx 而擋下。
+// 要保證的性質是「寫出來的檔落在受管範圍」(M37),所以改算實際寫到哪:
+// - 目的地是既有目錄(或以 / 結尾)、來源不以 / 結尾 → 寫到 <目的地>/<來源名稱>;
+// - 來源以 / 結尾(rsync / BSD cp 的「複製內容」)、來源有萬用字元 / 變數、或目的地不是既有目錄 → 寫到目的地本身。
+// 讀不懂的形狀(-t / -T 目的地旗標、目的地是變數或萬用字元、少於兩個路徑)回 null,交回原本的保守判法。
+const SHELL_COPY_WORDS = new Set(['cp', 'rsync', 'install'])
+const SHELL_UNRESOLVED_WORD = /[$*?{}`]/u
+
+function copyWrittenDirectories(segment, workingDirectories, isDirectory) {
+  const words = segment
+    // 重導不是路徑參數:`cp -R a ./ 2>/dev/null` 的目的地是 ./,不是 /dev/null
+    .replace(/(?:^|\s)(?:\d*|&)(?:>>?|<)&?\s*\S+/gu, ' ')
+    .split(/\s+/u)
+    .filter(Boolean)
+    .map((word) => word.replace(/^["']+|["']+$/gu, ''))
+  const operands = []
+  for (const word of words.slice(1)) {
+    if (/^(?:-[A-Za-z]*[tT][A-Za-z]*|--target-directory(?:=.*)?|--no-target-directory)$/u.test(word)) return null
+    if (word.startsWith('-')) continue
+    operands.push(word)
+  }
+  if (operands.length < 2) return null
+  const destination = operands[operands.length - 1]
+  if (SHELL_UNRESOLVED_WORD.test(destination)) return null
+  const written = []
+  for (const current of workingDirectories) {
+    const target = resolvePath(current, destination)
+    const intoDirectory = destination.endsWith('/') || isDirectory(target)
+    for (const source of operands.slice(0, -1)) {
+      const name = source.replace(/\/+$/u, '').split('/').pop() || ''
+      const contentsOnly = source.endsWith('/') || SHELL_UNRESOLVED_WORD.test(source) || !name || name === '.' || name === '..'
+      written.push(intoDirectory && !contentsOnly ? resolvePath(target, name) : target)
+    }
+  }
+  return written
+}
+
 export function bashCommandWriteTargets(command, cwd, { isDirectory = isExistingDirectory } = {}) {
   const text = withoutInertHeredocBodies(String(command || ''))
   const home = process.env.HOME || '/'
@@ -2025,6 +2064,15 @@ export function bashCommandWriteTargets(command, cwd, { isDirectory = isExisting
       || SHELL_BULK_WRITER_WORDS.has(word)
       || /^git(?:\s+-C\s+\S+)?\s+(?:checkout|restore|ls-files)(?:\s|$)/u.test(segment)
     if (word === 'find' && findNamesExcludeGoverned(segment)) directoryArguments = false
+    if (SHELL_COPY_WORDS.has(word) && !resultsFeedAnotherCommand) {
+      const writtenDirectories = copyWrittenDirectories(segment, segmentDirectories, isDirectory)
+      if (writtenDirectories) {
+        for (const directory of writtenDirectories) {
+          for (const target of governedTargetsUnderDirectory(directory, isDirectory)) targets.add(target)
+        }
+        directoryArguments = false
+      }
+    }
     for (const token of segment.split(/[\s'"`(),<>=\\]+/u)) {
       if (!token) continue
       if (SHELL_GOVERNED_EXTENSION.test(token)) {

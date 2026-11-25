@@ -1402,6 +1402,37 @@ for case_line in \
   expect_pass_silent "$case_name → 放行"
 done
 
+# 18p. F3(2026-11-26):cp / rsync / install 只寫目的地。改前「每個目錄參數都算寫入、連它底下的受管根目錄一起算」,
+#   在副本根目錄 `cp -c -R ../int/node_modules ./` 只會寫出 ./node_modules,卻被判成寫 ./apps/__bulk_target__.tsx 擋下
+#  (F1 核對留下的已知誤判)。兩面:真的寫進受管範圍的複製仍擋;只寫出非受管目錄的複製放行。
+P_ROOT="$TMP_DIR/p-project"
+P_SRC="$TMP_DIR/p-int"
+P_LINKED="$TMP_DIR/p-linked"
+mkdir -p "$P_ROOT/apps/demo" "$P_ROOT/packages/design-system/src/components/Button" "$P_ROOT/docs" \
+  "$P_SRC/node_modules/@qijenchen/design-system" "$P_SRC/apps/demo" "$P_SRC/docs" "$P_SRC/fresh" \
+  "$P_LINKED/apps" "$P_LINKED/node_modules/@qijenchen/design-system"
+for case_line in \
+  "18p1. 副本根目錄整批複製 node_modules(只寫出 ./node_modules)|$P_ROOT|cp -c -R ../p-int/node_modules ./" \
+  "18p2. 同上、目的地寫成 .(不帶斜線)|$P_ROOT|cp -R ../p-int/node_modules ." \
+  "18p3. rsync 整個 docs 目錄到根目錄|$P_ROOT|rsync -a ../p-int/docs ./" \
+  "18p4. 只讀的來源在受管範圍、目的地在外面|$P_ROOT|cp -R apps/demo /tmp/p-backup"; do
+  IFS='|' read -r case_name case_cwd case_cmd <<< "$case_line"
+  run_hook_bash_cwd "$case_cmd" "$TX_NEUTRAL" "$case_cwd"
+  expect_pass_silent "$case_name → 放行"
+done
+for case_line in \
+  "18p5. 複製 apps 目錄進根目錄(寫出 ./apps)|$P_ROOT|cp -R ../p-int/apps ./" \
+  "18p6. rsync 來源帶斜線 = 把內容倒進根目錄(含 apps)|$P_ROOT|rsync -a ../p-int/ ./" \
+  "18p7. 目的地就在受管目錄裡|$P_ROOT|cp -R ../p-int/fresh packages/design-system/src/components/" \
+  "18p8. 目的地後面接 2>/dev/null 不改變目的地|$P_ROOT|cp -R ../p-int/apps ./ 2>/dev/null" \
+  "18p9. 已有 node_modules/@qijenchen/design-system 時再整批複製進去|$P_LINKED|cp -R ../p-int/node_modules ./" \
+  "18p10. 萬用字元來源倒進根目錄|$P_ROOT|cp -R ../p-int/* ./" \
+  "18p11. -t 目的地旗標(讀不懂 → 保守判法)|$P_ROOT|cp -t ./ -R ../p-int/node_modules"; do
+  IFS='|' read -r case_name case_cwd case_cmd <<< "$case_line"
+  run_hook_bash_cwd "$case_cmd" "$TX_NEUTRAL" "$case_cwd"
+  expect_block "$case_name → BLOCK" "BLOCKER"
+done
+
 # 18n. G4 複核二(2026-10-07):runner 在本閘缺工具、自己跑不起來時,用 approval-evidence.mjs#isGovernedApprovalTarget
 #   判「這次寫入在不在本閘範圍」。那是本閘 GOVERNED_PATHS case 的第二份寫法(為了不讓每次 Edit 多一個 node 行程),
 #   兩者必須逐條一致:同一批路徑,hook 實際擋不擋 == 函式回不回 true。任何一邊改了而另一邊沒跟上就紅。

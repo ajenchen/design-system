@@ -451,6 +451,10 @@
       "dims": [],
       "note": "2026-07-03 entry add:beta.27 release-fail anchor write-time P0;audit-time 由 release preflight build gate(build:lib + build-storybook)deterministic cover,無獨立 dim"
     },
+    "bash_command_shape": {
+      "dims": [],
+      "note": "2026-11-26 entry add per audit-preflight gap(F3 讓副本寫檔照常跑 hook 後才浮出:PostToolUse post_edit_dispatcher 改任何 spec.md 都被擋):PreToolUse Bash 的 deny 語意比對 + emulate sh 提示;runtime 指令紀律,governance-only,不是元件 audit 面"
+    },
     "codex_brief_invariants": {
       "dims": [],
       "note": "2026-07-03 entry add per audit-preflight gap:codex-collab runtime 紀律(brief 三 invariant);governance-only,solo mode 不涉"

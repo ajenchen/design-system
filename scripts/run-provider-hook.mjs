@@ -315,6 +315,116 @@ function containedCanonicalPath(repositoryPath, label) {
   return absolute
 }
 
+// ── 入口前段的兩個早退(2026-11-26,gate-census C 組判定 B1 與 log_governance_fires)──────────────────
+// 只在一般模式(非 strict)的批次派工生效,而且都在載入任何治理模組、複製 hook 語料快照之前判斷 —— 省下的是
+// 入口自己的成本,不碰任何一支 hook 的判準。strict / CI lane 照舊走完整流程(改到 repo 外照舊拒絕)。
+// (1) 改的檔不在任何 git 工作樹或 git 目錄裡(scratch 筆記、研究檔)→ 沒有東西要檢查,靜默結束。判準是
+//     「往上找得到 .git 嗎」,不是路徑字串:別的 repo(例:work-management)找得到 .git,照舊走完整流程、
+//     「改到 repo 外」的通知照送;本專案的另一份副本也找得到,交給後段的副本改根(siblingCheckoutRoot)。
+// (2) 這一群只登記 activation telemetry-opt-in 的 hook(registrations.json 是哪些 hook 屬於這類的唯一住處,
+//     provider-runtime-contract 限定只能標在 outputMode diagnostic 上),而遙測沒開 → 結束。
+const earlyBatchSelection = !hookStrictIntegrity
+  && argumentValues('--hook').length === 0
+  && argumentValues('--authority-decision').length === 0
+  && argumentValues('--event').length === 1
+  && argumentValues('--group').length === 1
+const FILE_WRITE_TOOLS = new Set(['Write', 'Edit', 'MultiEdit', 'NotebookEdit'])
+let preReadProviderInput = null
+
+async function readProviderHookInput() {
+  const chunks = []
+  let bytes = 0
+  for await (const chunk of process.stdin) {
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+    bytes += buffer.length
+    if (bytes > MAX_PROVIDER_HOOK_INPUT_BYTES) return { chunks: [], bytes, overflow: true }
+    chunks.push(buffer)
+  }
+  return { chunks, bytes, overflow: false }
+}
+
+function parsedPreReadPayload() {
+  if (!preReadProviderInput || preReadProviderInput.overflow) return null
+  try {
+    const value = JSON.parse(Buffer.concat(preReadProviderInput.chunks, preReadProviderInput.bytes).toString('utf8') || '{}')
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : null
+  } catch {
+    return null
+  }
+}
+
+// 檔案寫入工具(Claude 形狀)帶的絕對路徑;其他工具、相對路徑、形狀不對一律回空 = 不做早退與改根。
+function absoluteWriteTargets(payload) {
+  if (!payload || !FILE_WRITE_TOOLS.has(payload.tool_name)) return []
+  const toolInput = payload.tool_input
+  if (!toolInput || typeof toolInput !== 'object' || Array.isArray(toolInput)) return []
+  const value = toolInput.file_path ?? toolInput.notebook_path
+  if (typeof value !== 'string' || !isAbsolute(value) || value.includes('\0')) return []
+  return [value]
+}
+
+function nearestExistingDirectory(path) {
+  let cursor = resolve(path)
+  for (;;) {
+    try {
+      if (statSync(cursor).isDirectory()) return realpathSync(cursor)
+    } catch (error) {
+      if (error?.code !== 'ENOENT' && error?.code !== 'ENOTDIR') return null
+    }
+    const parent = dirname(cursor)
+    if (parent === cursor) return null
+    cursor = parent
+  }
+}
+
+// 往上任何一層是 .git 本身、或底下有 .git(目錄 = 一般 checkout;檔案 = worktree / submodule)→ 在 git 裡。
+// 讀不到(權限等)一律當成「可能在」,交給完整流程。
+function insideAnyGitCheckout(directory) {
+  let cursor = directory
+  for (;;) {
+    if (cursor.split(/[\\/]/).pop() === '.git') return true
+    try {
+      lstatSync(join(cursor, '.git'))
+      return true
+    } catch (error) {
+      if (error?.code !== 'ENOENT' && error?.code !== 'ENOTDIR') return true
+    }
+    const parent = dirname(cursor)
+    if (parent === cursor) return false
+    cursor = parent
+  }
+}
+
+function telemetryOnlyGroupWhileTelemetryOff() {
+  if (process.env.GOVERNANCE_TELEMETRY_OPT_IN === '1' && process.env.GOVERNANCE_READ_ONLY !== '1') return false
+  try {
+    const rawRegistry = JSON.parse(readFileSync(
+      containedCanonicalPath('packages/governance/canonical/providers.json', 'provider registry'),
+      'utf8',
+    ))
+    const rawRegistrations = JSON.parse(readFileSync(
+      containedCanonicalPath(rawRegistry.canonical.hookRegistrations, 'provider hook registrations'),
+      'utf8',
+    ))
+    const group = rawRegistrations.hooks?.[argumentValues('--event')[0]]?.[Number(argumentValues('--group')[0])]
+    return Array.isArray(group?.hooks) && group.hooks.length > 0
+      && group.hooks.every((descriptor) => descriptor?.activation === 'telemetry-opt-in'
+        && descriptor?.outputMode === 'diagnostic')
+  } catch {
+    return false
+  }
+}
+
+if (earlyBatchSelection) {
+  preReadProviderInput = await readProviderHookInput()
+  if (telemetryOnlyGroupWhileTelemetryOff()) process.exit(0)
+  const earlyTargets = absoluteWriteTargets(parsedPreReadPayload())
+  if (earlyTargets.length && earlyTargets.every((target) => {
+    const directory = nearestExistingDirectory(target)
+    return directory !== null && !insideAnyGitCheckout(directory)
+  })) process.exit(0)
+}
+
 let registry
 let registrations
 let hasUsableVersionedTranscript
@@ -434,6 +544,9 @@ function warnDegraded(message) {
 // and whether batch output has begun on stdout (a second JSON record would corrupt it).
 let failureNoticeEvent = null
 let providerStdoutCommitted = false
+// Stop payload 的 stop_hook_active(布林才算數;讀到 payload 之前一律 undefined → Stop 的通知只給 user 看,見 transport 註解)。
+// 宣告放在 fail() 旁:not-registered 的通知在讀 payload 之前就可能送出,宣告在後面會撞 TDZ、通知被 try 吞掉(F3 實測)。
+let payloadStopHookActive
 
 function fail(message) {
   const rawDetail = String(message).startsWith('GOVERNANCE_INTEGRITY:')
@@ -1515,8 +1628,107 @@ for (const hint of explicitProjectHints) {
   else warnDegraded(`ignoring unverifiable project root hint:${hint}`)
 }
 if (new Set(projectRoots).size > 1) fail('provider hook adapter blocked:PROJECT_ROOT_MISMATCH')
-const PROJECT_ROOT = projectRoots[0] || verifiedProjectRoot(process.cwd())
+// let:一般模式下改到「同一個專案的另一份 git 副本」時,後段 siblingCheckoutRoot 會把它換成副本的根目錄。
+let PROJECT_ROOT = projectRoots[0] || verifiedProjectRoot(process.cwd())
 if (!PROJECT_ROOT) fail('provider hook adapter blocked:PROJECT_ROOT_UNVERIFIED')
+
+// 與 verifiedProjectRoot 同一套 git 呼叫方式(絕對路徑的 git、最小環境);失敗一律回空字串。
+function gitOutput(cwd, args) {
+  const gitExecutable = ['/usr/bin/git', '/opt/homebrew/bin/git', '/usr/local/bin/git']
+    .find((candidatePath) => existsSync(candidatePath)) || 'git'
+  const result = spawnSync(gitExecutable, args, {
+    cwd,
+    env: {
+      PATH: process.env.PATH || '/usr/bin:/bin',
+      HOME: process.env.HOME || '',
+      GIT_OPTIONAL_LOCKS: '0',
+      GIT_TERMINAL_PROMPT: '0',
+    },
+    encoding: 'utf8',
+    timeout: 5000,
+    maxBuffer: 1024 * 1024,
+  })
+  if (result.error || result.signal || result.status !== 0) return ''
+  return result.stdout
+}
+
+function gitRootCommits(root) {
+  return gitOutput(root, ['rev-list', '--max-parents=0', 'HEAD'])
+    .split('\n').map((line) => line.trim()).filter(Boolean).sort().join(',')
+}
+
+// 入口自己的通知去重(功能狀態,不看遙測開關):同一 session + 同一個 key 只回一次 true。
+// 記在 PROJECT_ROOT 的 .git/governance-runtime/adapter-notices/(與 hook 功能狀態同一個 Git 擁有的 root);
+// 沒有 session、唯讀(CI replay / hooks:test)、記不下來 → 一律回 true:寧可重複通知,不可漏通知。
+function firstAdapterNotice(key) {
+  const payload = parsedPreReadPayload()
+  const session = typeof payload?.session_id === 'string' ? payload.session_id : ''
+  if (!session || process.env.GOVERNANCE_READ_ONLY === '1') return true
+  try {
+    const gitDirectory = gitOutput(PROJECT_ROOT, ['rev-parse', '--absolute-git-dir']).trim()
+    if (!gitDirectory) return true
+    const parent = realpathSync(gitDirectory)
+    const runtime = resolve(parent, 'governance-runtime')
+    const directory = resolve(runtime, 'adapter-notices')
+    for (const segment of [runtime, directory]) {
+      try {
+        if (lstatSync(segment).isSymbolicLink()) return true
+      } catch {}
+    }
+    mkdirSync(directory, { recursive: true, mode: 0o700 })
+    const marker = resolve(directory, createHash('sha256').update(`${session}\0${key}`).digest('hex').slice(0, 32))
+    closeSync(openSync(marker, 'wx', 0o600))
+    return true
+  } catch (error) {
+    return error?.code !== 'EEXIST'
+  }
+}
+
+// ── 同一個專案的另一份 git 副本(2026-11-26,gate-census C 組判定甲)─────────────────────────────────────
+// 代理常在 repo 根目錄外的副本(scratchpad/<名字>/,本身是這個 repo 的 git clone)裡改檔。改前入口只認得 session
+// 的那一個專案根目錄,副本路徑一律記成「改到 repo 外」整批放行 —— 一天 600 多次 DS 原始碼寫入在寫檔當下零檢查。
+// 現在:改檔路徑落在 PROJECT_ROOT 外、而它所在的 git 工作樹與 PROJECT_ROOT 有同一組根 commit(同一個專案的歷史)
+// → 這一批改用副本的根目錄當 PROJECT_ROOT,跑同一套 hook。執行的入口與 hook 程式碼仍是 session 專案這一份
+//(hook 語料快照照舊取自 CORPUS_ROOT),副本的檔案只當資料讀 —— 不執行副本裡代理寫得到的 hook 程式碼。
+// 只在一般模式;strict / CI lane 照舊拒絕改到 repo 外。別的 repo(根 commit 不同)照舊送「整批沒有執行」通知。
+function siblingCheckoutRoot(payload) {
+  const targets = absoluteWriteTargets(payload)
+  if (!targets.length) return null
+  let sibling = null
+  let realTarget = null
+  for (const target of targets) {
+    const directory = nearestExistingDirectory(target)
+    if (!directory) return null
+    const root = verifiedProjectRoot(directory)
+    if (!root || root === PROJECT_ROOT || (sibling && root !== sibling)) return null
+    sibling = root
+    // 路徑用實際路徑表示(/tmp → /private/tmp 這類符號連結),之後的正規化與 hook 才會把它算在副本裡。
+    realTarget = resolve(directory, relative(nearestExistingAncestorLiteral(target), target))
+  }
+  if (isContainedPath(PROJECT_ROOT, realTarget)) return null
+  const ownRoots = gitRootCommits(PROJECT_ROOT)
+  if (!ownRoots || gitRootCommits(sibling) !== ownRoots) return null
+  if (targetRole) {
+    try {
+      if (targetGovernanceRole(sibling, marketplaceTransport.targetRoleManifest) !== targetRole) return null
+    } catch {
+      return null
+    }
+  }
+  return { root: sibling, realTarget }
+}
+
+function nearestExistingAncestorLiteral(path) {
+  let cursor = resolve(path)
+  for (;;) {
+    try {
+      if (statSync(cursor).isDirectory()) return cursor
+    } catch {}
+    const parent = dirname(cursor)
+    if (parent === cursor) return cursor
+    cursor = parent
+  }
+}
 
 function targetGovernanceRole(root, repositoryPath) {
   const parts = String(repositoryPath || '').split('/')
@@ -1681,7 +1893,15 @@ const requestedGroup = batchMode
   ? registrations.hooks?.[requestedEvent]?.[requestedGroupIndex] ?? null
   : null
 if (batchMode && !requestedGroup) {
-  fail(`provider hook adapter blocked:event/group is not registered:${requestedEvent}:${requestedGroupText}`)
+  // 2026-11-26(gate-census C 組判定 B2):改前這裡發生在 failureNoticeEvent 設定之前,一般模式只寫 stderr,
+  // exit 0 時模型看不到 —— 11-23 到 11-25 用 shell 寫產品檔的那條批准閘路徑整整兩天沒跑,代理不知道。
+  // 現在送模型看得到的通知並附修法;同一 session、同一 event/群組只送一次(連續上千次呼叫不灌爆 context)。
+  if (!hookStrictIntegrity && firstAdapterNotice(`not-registered\0${requestedEvent}\0${requestedGroupText}`)) {
+    failureNoticeEvent = requestedEvent
+  }
+  fail(`provider hook adapter blocked:event/group is not registered:${requestedEvent}:${requestedGroupText}`
+    + '(session 載入的 hook 設定與工作樹的 registrations.json 版本不一致:把工作樹更新到與設定同一版,或重開 session;'
+    + '這一群在本 session 都不會執行,同一 session 只通知一次)')
 }
 // From here on an ordinary-lane failure is announced on this event's context channel (fail()).
 failureNoticeEvent = requestedEvent
@@ -1692,8 +1912,6 @@ failureNoticeEvent = requestedEvent
 // fail-open by design (hooks accelerate; protected CI is the trust boundary), so the honest outcome
 // is a model-visible notice through the provider's own context channel — stderr alone is invisible
 // to the model on exit 0 (M37: 沒觀察到 ≠ 沒發生).
-// Stop payload 的 stop_hook_active(布林才算數;讀到 payload 之前一律 undefined → Stop 的通知只給 user 看,見 transport 註解)。
-let payloadStopHookActive
 function emitGovernanceNotice(event, message, { stderr = true } = {}) {
   if (stderr) writeStderrRecord(`GOVERNANCE_WARNING: ${String(message).slice(0, 900)}`)
   let output = null
@@ -1719,16 +1937,13 @@ function emitGovernanceNotice(event, message, { stderr = true } = {}) {
   }
 }
 
-const inputChunks = []
-let inputBytes = 0
-for await (const chunk of process.stdin) {
-  const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
-  inputBytes += bytes.length
-  if (inputBytes > MAX_PROVIDER_HOOK_INPUT_BYTES) {
-    fail(`provider hook adapter blocked:input exceeds ${MAX_PROVIDER_HOOK_INPUT_BYTES} bytes`)
-  }
-  inputChunks.push(bytes)
+// 一般模式的批次派工已在入口前段讀過 stdin(早退要看 payload);其餘模式在這裡才讀,順序與改前相同。
+const providerInput = preReadProviderInput ?? await readProviderHookInput()
+if (providerInput.overflow) {
+  fail(`provider hook adapter blocked:input exceeds ${MAX_PROVIDER_HOOK_INPUT_BYTES} bytes`)
 }
+const inputChunks = providerInput.chunks
+const inputBytes = providerInput.bytes
 if (!targetRoleActive) {
   clearTimeout(providerHookBatchDeadline)
   cleanupPrivateSnapshots()
@@ -1834,6 +2049,17 @@ if (authorityDecisionMode) {
   }
 }
 
+if (!hookStrictIntegrity && batchMode) {
+  const sibling = siblingCheckoutRoot(input)
+  if (sibling) {
+    PROJECT_ROOT = sibling.root
+    input.tool_input = {
+      ...input.tool_input,
+      ...(typeof input.tool_input.file_path === 'string' ? { file_path: sibling.realTarget } : { notebook_path: sibling.realTarget }),
+    }
+    observeBatch(`sibling-checkout:${PROJECT_ROOT}`)
+  }
+}
 const hookInput = normalizeProviderHookInput({
   provider,
   input,
