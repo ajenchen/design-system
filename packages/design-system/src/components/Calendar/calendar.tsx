@@ -34,7 +34,8 @@ import {
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
 import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
 import { Skeleton } from '@/design-system/components/Skeleton/skeleton'
-import { CALENDAR_GEOMETRY_STYLE, CALENDAR_NARROW_COLUMN_MAX_PX } from './calendar-geometry'
+import { CALENDAR_GEOMETRY_STYLE, CALENDAR_NARROW_COLUMN_MAX_PX, calendarPieceWidth, calendarRowsThatFit } from './calendar-geometry'
+import { layoutMonth, normalizeEvents, parseEventDate, type CalendarEventSegment, type CalendarLayoutPiece } from './calendar-layout'
 
 /**
  * Calendar — 月事件檢視 canvas
@@ -50,7 +51,8 @@ import { CALENDAR_GEOMETRY_STYLE, CALENDAR_NARROW_COLUMN_MAX_PX } from './calend
  * - patterns: [header-canonical(工具列 = ChromeHeader), element-anatomy/truncated-text]
  * - tokens: [--chrome-header-height, --tag-height-md(h-tag-md / min-w-tag-md), --divider, --muted, --info, --neutral-hover,
  *   categorical-color.ts(CAT_EVENT / CAT_SUBTLE / CAT_ACCENT)]
- * - 幾何常數: ./calendar-geometry.ts(格內所有空隙、文字內距、格最小高、週數欄寬、窄寬度門檻;元件內變數 --calendar-*)
+ * - 幾何常數: ./calendar-geometry.ts(格內所有空隙、文字內距、格最小高、週數欄寬、窄寬度門檻、每格列數 k 的算式、跨日長條的寬;元件內變數 --calendar-*)
+ * - 事件版面: ./calendar-layout.ts(資料語意、長條判定、車道、切段、「+N」計數、格內排序、CalendarEventSegment 的唯一實作;本檔不另算)
  * - spec refs: calendar.spec.md「工具列」「Cell 規則」(隱藏週末 / 週數欄)「間距」「焦點框」「狀態與邊界案例」(載入中)「窄寬度」「A11y 預設」;
  *   header-canonical.spec.md:26 / :68 / :73;tag.spec.md「尺寸」;focus-canonical.md「問題二」;
  *   lib/date-locale.ts(週起始日 resolveWeekStartsOn、週末 resolveWeekend、第一週天數 resolveFirstWeekMinDays);週數 = date-fns getWeek
@@ -71,9 +73,18 @@ import { CALENDAR_GEOMETRY_STYLE, CALENDAR_NARROW_COLUMN_MAX_PX } from './calend
 export interface CalendarEvent {
   id: string
   title: string
-  /** ISO 字串 "YYYY-MM-DD"(all-day)或 "YYYY-MM-DDTHH:mm"(timed) */
+  /**
+   * 開始:"YYYY-MM-DD"(只有日期 = 那一天)、"YYYY-MM-DDTHH:mm"(不帶 offset = 本地時間)、帶 offset / `Z` 的絕對時間,或 Date
+   *(calendar.spec.md「資料語意」;解析的唯一實作 calendar-layout.ts `parseEventDate`)。
+   */
   start: string | Date
+  /**
+   * 結束,**一律不含**(同 iCalendar DTEND,calendar.spec.md「資料語意」):7/20–7/22 三天的全天事件寫 start '2026-07-20'、end '2026-07-23';
+   * 10:00–11:00 寫 end '…T11:00'。2026-11-25 前全天事件的 end 是「含」(寫 '2026-07-22'),舊資料要加一天;
+   * 全天事件 end 與 start 相同時開發期警告、當成零長度畫在開始那天。
+   */
   end: string | Date
+  /** 全天。沒寫時兩端都是只有日期的字串("YYYY-MM-DD")才當全天;Date 物件不推斷,要全天就明寫 `true`。 */
   allDay?: boolean
   /**
    * 事件類別色(categorical 色相,1:1 對 `--color-{hue}-*`)。**消費 categorical-color SSOT**,
@@ -81,8 +92,20 @@ export interface CalendarEvent {
    * 改消費 SSOT 後 orange→`--color-orange-*`、red→`--color-red-*`(品牌紅 hue 25),各自獨立。
    */
   color?: CategoricalHue
+  /**
+   * 只有這一筆唯讀(例:可點的團隊月曆裡的公司假日):不是按鈕、不亮、不進格內導覽,點了什麼都不發生(也不在這天新增)。
+   * 整個月曆的事件都唯讀用 `readOnlyEvents`(calendar.spec.md「日期格與事件方塊:可點或唯讀」單筆事件那一列【AI 推導】)。
+   */
+  readOnly?: boolean
   metadata?: Record<string, unknown>
 }
+
+/**
+ * `renderEventTile` 的第二個參數:這一段事件的延續資訊(五個欄位的定義見 calendar-layout.ts `CalendarEventSegment`)。
+ * isStart / isEnd = 這一段含事件真正的第一 / 最後一天(為假 = 斷開端,直角);continuesBefore / continuesAfter = 事件延續到可見範圍之前 / 之後;
+ * isSegmentRepeat = 不是畫面上第一段(第二段起標題重複)。
+ */
+export type { CalendarEventSegment }
 
 // ── 日期格 / 事件方塊:可點或唯讀(2026-09-26,待辦總帳 L8 / C15;calendar.spec.md「日期格與事件方塊:可點或唯讀」)──
 // 兩者各自二擇一,由型別層逼出來 —— 不拿「回調有沒有傳」當渲染閘(meta-patterns M23(f)):
@@ -106,7 +129,7 @@ type CalendarDateCellProps =
       onDateClick?: never
     }
 
-/** 事件方塊可點與否。同上,不單獨匯出;MonthEventTile 也吃這一份。 */
+/** 事件方塊可點與否。同上,不單獨匯出;每一段事件的可點 / 唯讀由 Calendar 本體的 eventModeOf 依這一份(加上單筆 readOnly)決定。 */
 type CalendarEventTileProps =
   | {
       /** 事件方塊唯讀:不可點、不亮、不是按鈕(只顯示事件,例如公司假日這類沒有詳情可開的標記)。 */
@@ -222,8 +245,13 @@ interface CalendarOwnProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'o
    */
   titleAs?: 'h1' | 'h2' | 'h3'
 
-  /** 自訂 event tile 渲染 */
-  renderEventTile?: (event: CalendarEvent) => React.ReactNode
+  /**
+   * 自訂事件方塊的內容。每一段呼叫一次:跨日長條換週切開、被「+N」切開時,同一筆事件會收到好幾次,第二個參數 `segment` 說明這一段的
+   * 延續(isStart / isEnd / continuesBefore / continuesAfter / isSegmentRepeat;畫延續或重複標題用)。
+   * 外層(位置、寬、命中、按鈕角色、Enter / Space、阻止冒泡、焦點框)由本元件擁有;回傳的內容要放得進一列的高度(`--tag-height-md`,
+   * 車道等距)、鋪滿外層、不可再巢狀按鈕或連結(calendar.spec.md「renderEventTile 的鍵盤責任歸屬」「滑過責任歸屬」)。
+   */
+  renderEventTile?: (event: CalendarEvent, segment: CalendarEventSegment) => React.ReactNode
 
   className?: string
 
@@ -239,8 +267,8 @@ interface CalendarOwnProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'o
   /** 「新事件」CTA 文字。Override for i18n。CTA 是 toolbar 的固定元素、恆渲染(spec Toolbar 段;`onCreateEvent` 必填)。 */
   createLabel?: string
   /**
-   * 一格超過 3 筆事件時,沒畫出來的那幾筆的計數文字(收到的是沒畫出來的筆數)。Override for i18n(同 `todayLabel` / `createLabel`);
-   * 預設 `+N more`(spec「Event tile 規則」超出 tile 限制)。2026-11-21 前寫死在元件裡、沒有 prop 可換,中文月曆裡只有這一句是英文。
+   * 一格放不下時,最後一列「+N」的計數文字(收到的是這一格沒畫出來的筆數;每格放幾列依格高,calendar.spec.md「每格筆數與「+N」」)。
+   * 預設 `+N more`;Override for i18n(同 `todayLabel` / `createLabel`)。2026-11-21 前寫死在元件裡、沒有 prop 可換,中文月曆裡只有這一句是英文。
    */
   moreLabel?: (count: number) => string
   /**
@@ -265,24 +293,8 @@ const EVENT_STATIC_COLOR_CLASSES = CAT_SUBTLE
 const EVENT_ALLDAY_ACCENT = CAT_ACCENT
 
 // ── Helpers ────────────────────────────────────────────────────────────────
-
-function coerceDate(value: string | Date): Date {
-  if (value instanceof Date) return value
-  // date-only ISO("YYYY-MM-DD")用本地午夜建構,不走 new Date(str)。
-  // 原因:`new Date('2026-06-15')` 按 UTC 午夜解析,而 eventsByDate 分桶以本地
-  // getFullYear/Month/Date 讀取 → 負 UTC 時區(西半球)的 all-day 事件被移到前一天
-  // (真實 timezone bug)。手動 split 建本地 Date,與分桶的本地讀取一致。
-  // 含時間的字串(YYYY-MM-DDTHH:mm,無 offset)ES 規範本就以本地解析,走原生 new Date()。
-  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.exec(value)
-  if (dateOnly) {
-    const [y, m, d] = value.split('-').map(Number)
-    return new Date(y, m - 1, d)
-  }
-  return new Date(value)
-}
-
-// eventsOnDate(per-cell 全 events 掃描)已由 eventsByDate bucketing memo 取代並移除
-// (2026-07-06 D3 perf;留著會觸發 noUnusedLocals TS6133)。
+// 日期字串解析、事件資料語意、長條、車道、切段、「+N」都在 ./calendar-layout.ts(唯一實作);2026-11-25 前本檔另有一份 coerceDate
+// 與逐日分桶 eventsByDate(每格最多 3 筆、每涵蓋一天各畫一塊),月檢視事件版面那一包接上 calendar-layout.ts 時刪掉(M37:不留兩份)。
 
 // ── 隱藏週末時的鍵盤落點(calendar.spec.md「A11y 預設」鍵盤表的 hideWeekends 那幾條【AI 推導】)──────────────
 /** 不隱藏週末時的「週末」:空集合(每一天都看得見)。 */
@@ -299,18 +311,22 @@ function nearestShownDay(date: Date, step: 1 | -1, isShown: (day: Date) => boole
 }
 
 /**
- * 元素在版面上的外框寬(border-box,含小數),不受祖先 transform 影響(calendar.spec.md「窄寬度」:斷點看欄寬)。
- * 不用 getBoundingClientRect():它量的是畫面上的視覺寬 —— 掛載當下祖先正在縮放(Dialog 開場 zoom-in-95,dialog.tsx:349;
- * Popover 同,popover.tsx:292)就量到縮小後的寬(欄寬 62 在 scale(0.95) 下量到 58.9 → 誤判成窄),縮放結束版面尺寸沒變、
- * ResizeObserver 不會再叫,旗標就一直錯。offsetWidth 也是版面寬,但取整數,門檻 60 附近會差半個 px。
- * getComputedStyle 的 width 是版面上的使用值(DS styles/base.css 全域 border-box → 就是外框寬);
- * 萬一 consumer 把 box-sizing 蓋成 content-box,把內距與框線加回去,量到的仍是外框寬。
+ * 元素在版面上的外框寬與高(border-box,含小數),不受祖先 transform 影響(calendar.spec.md「窄寬度」:斷點看欄寬;「每格筆數」:k 看格高)。
+ * 不用 getBoundingClientRect():它量的是畫面上的視覺尺寸 —— 掛載當下祖先正在縮放(Dialog 開場 zoom-in-95,dialog.tsx:349;
+ * Popover 同,popover.tsx:292)就量到縮小後的寬(欄寬 62 在 scale(0.95) 下量到 58.9 → 誤判成窄;格高同理會少算列數),縮放結束版面尺寸沒變、
+ * ResizeObserver 不會再叫,旗標就一直錯。offsetWidth / offsetHeight 也是版面尺寸,但取整數,門檻附近會差半個 px。
+ * getComputedStyle 的 width / height 是版面上的使用值(DS styles/base.css 全域 border-box → 就是外框);
+ * 萬一 consumer 把 box-sizing 蓋成 content-box,把內距與框線加回去,量到的仍是外框。
  */
-function layoutBorderBoxWidth(el: HTMLElement): number {
+function layoutBorderBoxSize(el: HTMLElement): { width: number; height: number } {
   const style = getComputedStyle(el)
   const width = parseFloat(style.width)
-  if (style.boxSizing === 'border-box') return width
-  return width + parseFloat(style.paddingLeft) + parseFloat(style.paddingRight) + parseFloat(style.borderLeftWidth) + parseFloat(style.borderRightWidth)
+  const height = parseFloat(style.height)
+  if (style.boxSizing === 'border-box') return { width, height }
+  return {
+    width: width + parseFloat(style.paddingLeft) + parseFloat(style.paddingRight) + parseFloat(style.borderLeftWidth) + parseFloat(style.borderRightWidth),
+    height: height + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth),
+  }
 }
 
 /**
@@ -325,81 +341,158 @@ function shownDayNearToday(today: Date, isShown: (day: Date) => boolean, weekSta
 
 // ── Component ──────────────────────────────────────────────────────────────
 
-const MAX_TILES_PER_CELL = 3
+// ── 一段事件(格內一列,或跨格長條)────────────────────────────────────────────────────
+// 外層 = 位置(車道 = 事件區第幾列)、寬(跨格長條畫過後面幾格)、命中、角色、鍵盤 —— 預設方塊與 renderEventTile 自訂方塊共用這一個外層
+//(calendar.spec.md「renderEventTile 的鍵盤責任歸屬」);裡面才是長相。
 
-// 「同一天」的唯一鍵。eventsByDate 分桶與 grid 焦點都用它,兩邊不得各寫一式。
-function dayKey(date: Date): string {
-  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
+/** 一段事件可點(開事件)或唯讀(什麼都不發生)。唯讀 = readOnlyEvents 或這一筆的 readOnly,由 Calendar 本體的 isEventReadOnly 一支判斷。 */
+type EventPieceMode = { readOnly: true } | { readOnly: false; onEventClick: (event: CalendarEvent) => void }
+
+interface MonthEventPieceShellProps extends React.HTMLAttributes<HTMLDivElement> {
+  event: CalendarEvent
+  segment: CalendarEventSegment
+  /** 車道(0 起)= 事件區第幾列 */
+  lane: number
+  /** 這一段涵蓋的看得見的日子(yyyy-MM-dd,空白分隔):格內導覽依日子查這一段(長條的 DOM 只在第一格) */
+  covers: string
+  /** 跨格長條的寬(calendar-geometry.ts calendarPieceWidth);只在一格裡 = undefined */
+  width: string | undefined
+  /** 底下墊一層不透明的格子底(預設長相的長條,見 MonthEventPiece) */
+  underlay: boolean
+  mode: EventPieceMode
 }
 
-// 預設事件 tile 抽出 component:截斷 tooltip 需 useTruncated(hook 不能在 map callback 內)。
-// 截斷 → tooltip 顯完整標題(tooltip.spec.md:32,僅實際截斷時);tile 是 interactive host
-// (role=button,hover 直達)→ trigger = tile 本體、量測內層文字 span — useTruncated 自組
-// pattern(truncated-text.spec.md「兩層架構(對齊世界級聯集)」:trigger ≠ 量測元素時只用 hook 自組;範本 inline-edit.tsx:257 + tag.tsx)。
-function MonthEventTile({
-  event,
+const MonthEventPieceShell = React.forwardRef<HTMLDivElement, MonthEventPieceShellProps>(function MonthEventPieceShell(
+  { event, segment, lane, covers, width, underlay, mode, className, style, onClick, onKeyDown, children, ...rest },
+  ref,
+) {
+  // 外形 = 事件列 = Tag md(calendar.spec.md「間距」【SPACING(定)】):高 h-tag-md(24)、rounded-md。
+  // 斷開那一端直角【Q3(定)】:斷開 = 這一段不含事件真正的起點 / 終點(segment.isStart / isEnd 為假 —— 換週、可見範圍外、被「+N」切開、
+  // 被藏起來的日子切開都是;calendar-layout.ts CalendarEventSegment 的定義)。只拿掉該端圓角,不新增箭頭等形狀。
+  // relative:長條畫過後面幾格,後面的格子是它的兄弟、DOM 順序在後 —— 不定位時後畫的格子(含滑過底)會蓋在長條上、點擊也落到格子
+  //(POC 實測:不定位時長條第 3 天那段的命中是第 3 格)。定位元素在同一層疊順序裡晚於所有不定位的格子,所以格子本身**不得**是定位元素。
+  const shape = cn(
+    'relative h-tag-md rounded-md',
+    !segment.isStart && 'rounded-s-none',
+    !segment.isEnd && 'rounded-e-none',
+    // 不透明的格子底 = Calendar 根節點的 --surface 疊在頁面底 --canvas 上(兩層背景:surface 是圖層、canvas 是底色)。
+    // 深色主題的類別淡底 step-1 與 --surface 都是半透明(primitives.css 深色 step-1..4 的 alpha 公式、semantic.css 深色 --surface),
+    // 長條直接蓋在格線上會透出格線(研究 research3 BAR mock BARM-X1);墊這一層後,長條底下是跟格子一樣的底,格線被蓋掉。
+    // 淺色主題兩者都不透明,畫面不變。消費既有 token,不另調顏色【AI 推導】。
+    underlay && 'bg-canvas bg-[image:linear-gradient(var(--surface),var(--surface))]',
+    className,
+  )
+  const placement = {
+    ...rest,
+    // 車道 = 事件區第幾列(事件區是 grid、列高 h-tag-md、列距 --calendar-gap),寬 = 這一段畫過的格數
+    style: { ...style, gridRow: lane + 1, width },
+    'data-calendar-covers': covers,
+    'data-calendar-lane': lane,
+  }
+  if (mode.readOnly) {
+    // 唯讀(readOnlyEvents 或單筆 readOnly):不是按鈕、不進格內導覽(沒有 data-calendar-tile,F2 找不到它)、游標不變(cursor-default 蓋掉可點格子的手形)。
+    // 點它什麼都不發生 —— 阻止冒泡,不會變成在這天新增【總帳更正 #3】;長條的 DOM 在第一格,不阻止的話點第 3 天會在第 1 天新增。
+    // 不寫 aria-label:沒有角色的 div 禁止命名(ARIA 1.2 generic 的 name prohibited),事件標題就是它的文字內容。
+    return (
+      <div
+        ref={ref}
+        {...placement}
+        onClick={(e) => {
+          onClick?.(e)
+          e.stopPropagation()
+        }}
+        onKeyDown={onKeyDown}
+        className={cn(shape, 'cursor-default')}
+      >
+        {children}
+      </div>
+    )
+  }
+  return (
+    <div
+      ref={ref}
+      {...placement}
+      role="button"
+      // 2026-09-24:tile 從 tabIndex=0 改 -1。role="grid" 要求整個格陣只有一個 Tab 停靠點
+      //(W3C APG Grid Pattern「only one element in the entire grid is included in the tab sequence」);
+      // tile 改由格內導覽抵達(F2 進格、Escape 出格),詳 calendar.spec.md「A11y 預設」。
+      tabIndex={-1}
+      data-calendar-tile=""
+      {...escapeLayerProps(true)}
+      onClick={(e) => {
+        onClick?.(e)
+        // 阻止冒泡:點事件不會變成在這天新增【Q6(定)】;長條的 DOM 在它這一週第一個看得見的日子,冒泡會在錯的日子新增(calendar.spec.md「命中區」下方那段)
+        e.stopPropagation()
+        mode.onEventClick(event)
+      }}
+      onKeyDown={(e) => {
+        onKeyDown?.(e)
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          e.stopPropagation()
+          mode.onEventClick(event)
+        }
+      }}
+      aria-label={`事件:${event.title}`}
+      // 焦點框往外(= 不寫 class,走全域 :focus-visible):四周最小淨空 = 列距 4、格子內距 4 ≥ 4(calendar.spec.md「焦點框」、focus-canonical.md「問題二」)。
+      className={cn(shape, 'cursor-pointer')}
+    >
+      {children}
+    </div>
+  )
+})
+
+/**
+ * 一段事件:預設長相(類別淡底 + 標題,截斷時完整標題提示)或 renderEventTile 自訂內容,外層都是 MonthEventPieceShell。
+ * 截斷 → tooltip 顯完整標題(tooltip.spec.md:32,僅實際截斷時);外層是 interactive host → trigger = 外層本體、量測內層文字 span ——
+ * useTruncated 自組 pattern(truncated-text.spec.md「兩層架構(對齊世界級聯集)」;範本 inline-edit.tsx:257 + tag.tsx)。
+ */
+function MonthEventPiece({
+  piece,
+  covers,
+  endsAtLastColumn,
   colorClass,
-  readOnlyEvents,
-  onEventClick,
+  mode,
+  renderEventTile,
 }: {
-  event: CalendarEvent
+  piece: CalendarLayoutPiece<CalendarEvent>
+  covers: string
+  /** 這一段的最後一格是這一列最右那一格(那格不畫右格線,寬度式子少扣一條) */
+  endsAtLastColumn: boolean
   /** 已依可點 / 唯讀選好的色(可點 = CAT_EVENT 帶滑過;唯讀 = CAT_SUBTLE 不帶),見 Calendar 本體 */
   colorClass: string
-} & CalendarEventTileProps) {
-  // 與 Calendar 公開 props 同一份二擇一契約(CalendarEventTileProps):分支看明示的 readOnlyEvents,不看回調在不在(M23(f))
+  mode: EventPieceMode
+  renderEventTile?: (event: CalendarEvent, segment: CalendarEventSegment) => React.ReactNode
+}) {
+  const { event } = piece.entry
   const { ref: truncationRef, isTruncated } = useTruncated<HTMLSpanElement>({ deps: [event.title] })
-  // 事件列 = Tag md(calendar.spec.md「間距」【SPACING(定)】):高 `h-tag-md`(24)、`text-body` 14px `font-normal`、`rounded-md`;
-  // 文字左右內距 8 用 Tag 的兩層結構表示(外層 4 + 文字 4,同 tag.tsx 的 size md 與 data-tag-text 那兩層),
-  // 兩層都讀元件內變數 --calendar-gap(calendar-geometry.ts),不寫死數字。
-  const tileBase = 'flex items-center h-tag-md rounded-md px-[var(--calendar-gap)] text-body font-normal'
-  const tileText = 'min-w-0 truncate px-[var(--calendar-gap)]'
+  const shell = {
+    event,
+    segment: piece.segment,
+    lane: piece.lane,
+    covers,
+    width: calendarPieceWidth(piece.span, endsAtLastColumn),
+    mode,
+  }
+  if (renderEventTile) {
+    // 自訂內容:外層只 own 位置、命中與鍵盤,不畫滑過、不墊底(它不知道自訂內容的靜止底;calendar.spec.md「renderEventTile 的滑過責任歸屬」)。
+    // 第二段起照樣呼叫,segment 帶這一段的延續資訊(isSegmentRepeat = 不是畫面上第一段)。
+    return <MonthEventPieceShell {...shell} underlay={false}>{renderEventTile(event, piece.segment)}</MonthEventPieceShell>
+  }
+  // 預設長相:事件列 = Tag md(calendar.spec.md「間距」【SPACING(定)】)—— text-body 14px font-normal;文字左右內距 8 用 Tag 的兩層結構表示
+  //(外層 4 + 文字 4,同 tag.tsx 的 size md 與 data-tag-text 那兩層),兩層都讀元件內變數 --calendar-gap(calendar-geometry.ts),不寫死數字。
+  // 顏色畫在內層(圓角跟外層 rounded-[inherit]):外層是長條墊底那一層(深色主題不透出格線),內層疊類別淡底與滑過。
+  // 被「+N」切開或換週切開的片段一樣畫標題【AI 推導:只剩色塊沒有標題的片段讀不出是哪件事;calendar-layout.ts CalendarEventSegment】。
   return (
     // 恆 wrap、未截斷 open={false} 靜默(truncated-text.spec.md always-wrap:條件 wrap 會 remount 丟 RO 訂閱)。
     // 唯讀方塊照樣掛:截斷提示是「資訊揭露」,不是點擊回饋(tooltip.spec.md「截斷文字 → 用 tooltip 顯示完整內容。」不分可不可點)。
     <Tooltip open={isTruncated ? undefined : false}>
       <TooltipTrigger asChild>
-        {!readOnlyEvents ? (
-          <div
-            role="button"
-            // 2026-09-24:tile 從 tabIndex=0 改 -1。role="grid" 要求整個格陣只有一個 Tab 停靠點
-            //(W3C APG Grid Pattern「only one element in the entire grid is included in the tab sequence」),
-            // 原本一個月 35 格 × (1 日期鈕 + 3 tile) 是幾十個停靠點 = 與 grid 語意相反。
-            // tile 改由格內導覽抵達(F2 進格、Escape 出格),詳 calendar.spec.md「A11y 預設」。
-            tabIndex={-1}
-            data-calendar-tile=""
-            {...escapeLayerProps(true)}
-            onClick={(e) => {
-              e.stopPropagation()
-              onEventClick(event)
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                onEventClick(event)
-              }
-            }}
-            aria-label={`事件:${event.title}`}
-            className={cn(
-              // hover 底色瞬間切換,不寫 transition-colors(tokens/motion/motion.spec.md「hover 回饋不做過渡」,user 2026-09-10 拍板)。
-              // hover 底色在 colorClass 裡(tokens/categorical-color.ts CAT_EVENT 的 hover:bg-…),2026-09-10 全庫落地時
-              // hover-instant 閘看不到 .ts 裡的 class 字串,這格因此漏掉;2026-09-25 補拿掉。
-              tileBase,
-              'cursor-pointer',
-              // 焦點:tile 由格內導覽(F2 進格)取得焦點。框**往外**畫(= 不寫 class,走全域 :focus-visible):
-              // 四周最小淨空 = 列距 4、格子內距 4 ≥ 4 → 往外(calendar.spec.md「焦點框」、focus-canonical.md「問題二」;4.00 算放得下)。
-              // 2026-11-25 前列距是 gap-0.5 = 2px、框往內(focus-ring-inset);列距改 4 後那條理由失效,與下方自訂方塊外層同一條一起改。
-              colorClass,
-            )}
-          >
-            <span ref={truncationRef} className={tileText}>{event.title}</span>
+        <MonthEventPieceShell {...shell} underlay={piece.entry.kind === 'bar'}>
+          <div className={cn('flex items-center h-full rounded-[inherit] px-[var(--calendar-gap)] text-body font-normal', colorClass)}>
+            <span ref={truncationRef} className="min-w-0 truncate px-[var(--calendar-gap)]">{event.title}</span>
           </div>
-        ) : (
-          // 唯讀方塊(readOnlyEvents):不是按鈕、不進格內導覽(沒有 data-calendar-tile,F2 找不到它)、游標不變。
-          // 不寫 aria-label:沒有角色的 div 禁止命名(ARIA 1.2 generic 的 name prohibited),事件標題就是它的文字內容。
-          <div className={cn(tileBase, colorClass)}>
-            <span ref={truncationRef} className={tileText}>{event.title}</span>
-          </div>
-        )}
+        </MonthEventPieceShell>
       </TooltipTrigger>
       <TooltipContent>{event.title}</TooltipContent>
     </Tooltip>
@@ -443,8 +536,11 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   // 可點與否只看明示的 readOnlyDates / readOnlyEvents(M23(f);型別層保證沒宣告唯讀時回調一定在,
   // 見 CalendarDateCellProps / CalendarEventTileProps)。
   const datesInteractive = !readOnlyDates
-  // 事件方塊的二擇一契約原樣交給 MonthEventTile(同一份型別,不在這裡另寫一套判斷)
-  const eventTileMode: CalendarEventTileProps = readOnlyEvents ? { readOnlyEvents: true } : { onEventClick }
+  // 「這一筆唯讀」只用這一支判斷(M37:直接量性質 = 整個月曆的事件唯讀 readOnlyEvents,或這一筆唯讀 event.readOnly):
+  // 唯讀 = 不是按鈕、不亮、不進格內導覽、點了什麼都不發生(calendar.spec.md「日期格與事件方塊:可點或唯讀」)。
+  // 可點時回調一定在:CalendarEventTileProps 二擇一,readOnlyEvents 為假時型別層把 onEventClick 收窄成必有(M23(f) 不看回調在不在)。
+  const eventModeOf = (event: CalendarEvent): EventPieceMode =>
+    readOnlyEvents || event.readOnly ? { readOnly: true } : { readOnly: false, onEventClick }
   const resolvedToday = todayProp ?? new Date()
   // Controlled / uncontrolled refDate
   const [internalRef, setInternalRef] = React.useState<Date>(
@@ -478,8 +574,8 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
     return eachDayOfInterval({ start: gridStart, end: gridEnd })
   }, [refDate, resolvedWeekStartsOn])
   const weekCount = Math.ceil(days.length / 7)
-  // 每一週:看得見的日子(隱藏週末時少那幾天)+ 週數(用這一週的第一天算,被藏的那天也算 —— 週數是整週的)。逐格畫事件:被藏那天的事件自然不畫;
-  // 長條與車道之後也只用看得見的日子分配(calendar.spec.md「隱藏週末」)。
+  // 每一週:看得見的日子(隱藏週末時少那幾天)+ 週數(用這一週的第一天算,被藏的那天也算 —— 週數是整週的)。
+  // 事件版面(車道、長條、切段)只吃看得見的日子:只落在被藏日子的事件不畫、不佔車道,跨過被藏日子的長條在那裡切段(calendar.spec.md「隱藏週末」)。
   const weeks = React.useMemo(
     () => Array.from({ length: weekCount }, (_, i) => {
       const all = days.slice(i * 7, i * 7 + 7)
@@ -523,26 +619,34 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   // 星期列與週列是兩個格陣容器(星期列在捲動區外),兩邊讀同一個字串 → 欄寬一致;週數欄寬 = --calendar-week-number-w(calendar-geometry.ts)。
   const gridTemplateColumns = `${showWeekNumbers ? 'var(--calendar-week-number-w) ' : ''}repeat(${weekdays.length}, minmax(0, 1fr))`
 
-  // ── 量欄寬(calendar.spec.md「窄寬度」:斷點看欄寬、不看視窗寬)──────────────────────────────
-  // ResizeObserver 掛在週列格陣上;量的是一個日期格的外框寬(= 欄寬,含它自己的右格線)。欄是 minmax(0, 1fr),
-  // 縮內容不會讓欄寬變 → 旗標只跟著容器寬走、不會來回跳。欄的組成變了(隱藏週末、週數欄)格陣本身不一定變寬窄,所以隨 gridTemplateColumns 重掛。
-  // useLayoutEffect:第一次量在畫面出來之前,窄容器不會先閃一下寬版的字。(每格放幾列依格高算時,同一個觀察者擴充成也量格高 ——
-  // 格高同樣要量版面尺寸,理由見 layoutBorderBoxWidth。)
+  // ── 量欄寬與格高(calendar.spec.md「窄寬度」:斷點看欄寬、不看視窗寬;「每格筆數與「+N」」:k 依格高)───────────────────
+  // ResizeObserver 掛在週列格陣上;量一個日期格的外框(各週等高、各欄等寬,量一格就夠):寬 = 欄寬(含它自己的右格線),高 = 格高(含自己的底線)。
+  // 欄是 minmax(0, 1fr)、列是 minmax(格最小高, 1fr):容器有高時兩者都只跟著容器走,不被內容撐 → 旗標與 k 不會來回跳。
+  // 欄的組成(隱藏週末、週數欄)或週數(4–6 週)變了,格陣本身不一定變大小、觀察者不會叫,所以隨 gridTemplateColumns / weekCount 重掛並當場量一次。
+  // useLayoutEffect:第一次量在畫面出來之前,窄容器不會先閃一下寬版的字、矮格子不會先畫出放不下的列。
+  // 量版面尺寸、不量畫面尺寸,理由見 layoutBorderBoxSize(祖先縮放時 getBoundingClientRect 會少算)。
+  // k 與上一次相同時 setState 不重畫(React 對同值 bail out)—— 容器高度在兩個整數 k 之間變動時元件不重畫。
   const weeksGridRef = React.useRef<HTMLDivElement | null>(null)
   const [columnWidth, setColumnWidth] = React.useState<number | null>(null)
+  // 還沒量到(SSR / 第一次 render 之前)= 不限,全部畫出來
+  const [maxRows, setMaxRows] = React.useState<number>(Infinity)
   React.useLayoutEffect(() => {
     const grid = weeksGridRef.current
     if (!grid) return
     const measure = () => {
       const cell = grid.querySelector<HTMLElement>('[role="gridcell"]')
-      if (cell) setColumnWidth(layoutBorderBoxWidth(cell))
+      if (!cell) return
+      const size = layoutBorderBoxSize(cell)
+      setColumnWidth(size.width)
+      // k 的算式住在 calendar-geometry.ts(與 CSS 讀同一批常數,M17);傳給 layoutMonth 的 maxRows 只有這一個來源
+      setMaxRows(calendarRowsThatFit(size.height))
     }
     measure()
     if (typeof ResizeObserver === 'undefined') return
     const observer = new ResizeObserver(measure)
     observer.observe(grid)
     return () => observer.disconnect()
-  }, [gridTemplateColumns])
+  }, [gridTemplateColumns, weekCount])
   // 窄:星期縮一字、1 號只顯示「1」(有時段列拿掉時間在事件長相那一包接同一個旗標)。還沒量到(SSR / 第一次 render)= 寬版。
   const narrow = columnWidth !== null && columnWidth <= CALENDAR_NARROW_COLUMN_MAX_PX
 
@@ -550,40 +654,14 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   // 平日不走 Intl:zh-TW 的 { day: 'numeric' } 會出「1日」(實測),數字直接用 getDate()。
   const dayLabel = (date: Date) => (date.getDate() === 1 && !narrow ? formatters.monthDay.format(date) : String(date.getDate()))
 
-  // 2026-07-06 D3 perf:原每 render 對 42 cells 各跑 eventsOnDate 全 events filter = O(42×N) +
-  // 每比較配 ~5 個 Date;數百-上千 events(行事曆真實規模)單次 render 數十 ms,且父層任何 re-render
-  // 全額重付。改 useMemo 單趟 bucket:每 event 只 parse 一次,展開 [start..end](clamp 到可見 grid,
-  // 避免長跨度 event 展開爆量)寫入 date→events Map,順便完成 allDay 排序。cell 內改 O(1) map.get。行為 Δ=0。
-  const eventsByDate = React.useMemo(() => {
-    const map = new Map<string, CalendarEvent[]>()
-    if (days.length === 0) return map
-    const first = days[0]
-    const last = days[days.length - 1]
-    const gridStart = new Date(first.getFullYear(), first.getMonth(), first.getDate()).getTime()
-    const gridEnd = new Date(last.getFullYear(), last.getMonth(), last.getDate()).getTime()
-    for (const e of events) {
-      const start = coerceDate(e.start)
-      const end = coerceDate(e.end)
-      const eEnd = new Date(end.getFullYear(), end.getMonth(), end.getDate()).getTime()
-      let sMs = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime()
-      if (eEnd < gridStart || sMs > gridEnd) continue // 可見窗外對 42 cells 無貢獻
-      if (sMs < gridStart) sMs = gridStart
-      const lastMs = Math.min(eEnd, gridEnd)
-      const cursor = new Date(sMs)
-      while (cursor.getTime() <= lastMs) {
-        const key = `${cursor.getFullYear()}-${cursor.getMonth() + 1}-${cursor.getDate()}`
-        const bucket = map.get(key)
-        if (bucket) bucket.push(e)
-        else map.set(key, [e])
-        cursor.setDate(cursor.getDate() + 1)
-      }
-    }
-    // allDay 排前(對齊 Google Calendar 全天列在上;V8 stable sort 保 events 原序 → 與舊 per-cell 一致)
-    for (const bucket of map.values()) {
-      bucket.sort((a, b) => Number(b.allDay ?? false) - Number(a.allDay ?? false))
-    }
-    return map
-  }, [events, days])
+  // ── 事件版面(calendar.spec.md「資料語意」「跨日長條」「格內排序」「每格筆數與「+N」」;唯一實作 calendar-layout.ts)──────────
+  // 每筆事件只解析一次(normalizeEvents;異常資料的開發期警告也在那裡);版面吃「看得見的日子」(隱藏週末時已濾掉 —— 只落在週末的事件不畫、
+  // 不佔車道,跨過週末的長條在被藏的日子切段)與量到的 k。events / 週 / k 沒變就不重算(數百到上千筆的真實規模,父層重畫不重付)。
+  const normalizedEvents = React.useMemo(() => normalizeEvents(events), [events])
+  const monthLayout = React.useMemo(
+    () => layoutMonth({ weeks: weeks.map((week) => week.visibleDays), events: normalizedEvents, maxRows, locale }),
+    [weeks, normalizedEvents, maxRows, locale],
+  )
 
   // ── Grid 鍵盤(APG Data Grid;2026-09-24 補實作)───────────────────────────
   // 本元件宣告 role="grid" 就必須真的實作那套鍵盤 —— 只寫角色不接方向鍵 = 對輔助科技的空頭承諾
@@ -653,6 +731,15 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   // 兩種都掛 `data-calendar-day`;querySelector 不含自己,所以先看格子本身。
   const dayStopOf = (cell: HTMLElement) =>
     cell.matches('[data-calendar-day]') ? cell : cell.querySelector<HTMLElement>('[data-calendar-day]')
+  // 某一天的格內 widget(可點的事件列 / 長條),依車道由上而下。**依日子查,不只查格子自己的子孫**:跨日長條的 DOM 只放在它這一週
+  // 第一個看得見的日子(calendar.spec.md「跨日長條」實作備註),從它涵蓋的其他日子進格也要走得到它(「A11y 預設」格內那段);
+  // 每一段帶 data-calendar-covers(涵蓋的日子)與 data-calendar-lane(車道)。唯讀的列沒有 data-calendar-tile,不在裡面。
+  const widgetsOfDay = (iso: string | null) => {
+    const grid = gridRef.current
+    if (!grid || iso === null) return []
+    return Array.from(grid.querySelectorAll<HTMLElement>(`[data-calendar-tile][data-calendar-covers~="${iso}"]`))
+      .sort((a, b) => Number(a.dataset.calendarLane) - Number(b.dataset.calendarLane))
+  }
 
   const handleGridKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement | null
@@ -665,7 +752,8 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
     // contains multiple widgets, moves focus to the next widget inside the cell」/「Escape: restores
     // grid navigation.」
     if (tile) {
-      const tiles = Array.from(cell.querySelectorAll<HTMLElement>('[data-calendar-tile]'))
+      // 方塊所在那一格(長條 = 它這一週第一個看得見的日子)的 widget 順序;進格那一天的記憶與 Esc 回進格那一天在格內互動那一包
+      const tiles = widgetsOfDay(dayStopOf(cell)?.getAttribute('data-calendar-day') ?? null)
       const index = tiles.indexOf(tile)
       let nextNode: HTMLElement | null | undefined
       switch (event.key) {
@@ -706,15 +794,16 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
     // `ds-canonical/references/keyboard-model-canonical.md`「`Enter` 恆為「啟動焦點上的東西」—— 焦點在格上時那就等於進格」,
     // 與 DataTable 檢視態儲存格同一條;不是另立的例外)。
     if (event.key === 'F2' || (event.key === 'Enter' && !datesInteractive)) {
-      const firstTile = cell.querySelector<HTMLElement>('[data-calendar-tile]')
-      if (firstTile === null) return
+      const firstTile = widgetsOfDay(dayValue)[0]
+      if (firstTile === undefined) return
       event.preventDefault()
       event.stopPropagation()
       firstTile.focus()
       return
     }
 
-    const current = coerceDate(dayValue)
+    // data-calendar-day 是 'yyyy-MM-dd'(只有日期 = 本地那一天):與事件的日期字串同一支解析(calendar-layout.ts parseEventDate,不走 new Date(str) 的 UTC 午夜)
+    const current = parseEventDate(dayValue)
     // 隱藏週末時,落點是被藏的日子就往移動方向找最近一個看得見的(nearestShownDay;沒藏時每一天都看得見,原樣回傳)【AI 推導】
     let next: Date
     switch (event.key) {
@@ -879,7 +968,12 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
             style={{ gridTemplateColumns, gridTemplateRows: `repeat(${weekCount}, minmax(var(--calendar-cell-min-h), 1fr))` }}
           >
             {/* WAI-ARIA grid 要求 row > gridcell 階層:每一週包成 role="row"(display:contents 保 CSS grid 佈局) */}
-            {weeks.map((week, rowIdx) => (
+            {weeks.map((week, rowIdx) => {
+              // 這一週的版面(calendar-layout.ts layoutMonth;週的索引與 weeks 一一對應):每一段的 DOM 放在它起始那一格(startCol)
+              const weekLayout = monthLayout.weeks[rowIdx]
+              // 每一段涵蓋的日子(格內導覽依日子查用;yyyy-MM-dd 同 data-calendar-day)
+              const isoOf = (col: number) => format(weekLayout.days[col], 'yyyy-MM-dd')
+              return (
               <div key={rowIdx} role="row" style={{ display: 'contents' }}>
                 {week.number !== null && (
                   // 週數格(calendar.spec.md「Cell 規則」週數欄【Q10b(定)】):一般字重、fg-secondary、水平置中、上邊距與高度同日期框(4 / 24);
@@ -897,21 +991,29 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                     <span className="flex items-center h-tag-md">{week.number}</span>
                   </div>
                 )}
-                {week.visibleDays.map((date) => {
+                {week.visibleDays.map((date, colIdx) => {
                   const inMonth = isSameMonth(date, refDate)
                   const isToday = isSameDay(date, resolvedToday)
                   const label = dayLabel(date)
                   // 比 24 寬的日期框:今天的實心底、1 號的「7月1日」→ 左右內距 8(calendar.spec.md「間距」日期框列【AI 推導】);窄的時候 1 號只寫「1」、不算
                   const wideDayBox = isToday || (date.getDate() === 1 && !narrow)
-                  // 2026-06-01 allDay:全天事件排 cell 頂端(對齊 Google Calendar 全天列在上)——
-                  // 排序已在 eventsByDate bucketing memo 內完成(D3 perf),cell 內 O(1) 查表
-                  const dayEvents = eventsByDate.get(dayKey(date)) ?? []
-                  const visibleEvents = dayEvents.slice(0, MAX_TILES_PER_CELL)
-                  const overflowCount = dayEvents.length - visibleEvents.length
+                  // 這一格的版面:畫在這一格上的段(含從左邊橫跨過來的長條)、要幾列 m、「+N」的 N(看最高佔用車道,calendar.spec.md「每格筆數與「+N」」)
+                  const cellLayout = weekLayout.cells[colIdx]
+                  // DOM 放在這一格的段(起始欄 = 這一欄;長條畫過後面幾格)
+                  const ownPieces = weekLayout.pieces.filter((piece) => piece.startCol === colIdx)
+                  // 從左邊格子橫跨過來的長條(DOM 在它這一週第一個看得見的日子,不在這一格;依車道由上而下)。日期格唯讀時格子的名稱由內容來,
+                  // 這幾條的標題不在這一格的 DOM 裡 → 另補只給讀屏的標題(calendar.spec.md「A11y 預設」:readOnlyDates 時讀屏要念到每個事件標題)。
+                  // 2026-11-25 前多日事件每涵蓋一天各畫一塊,每一格本來就念得到;改成一條長條後要補,否則第 2 天起的格子只念到筆數。
+                  const carriedPieces = loading ? [] : cellLayout.pieces.filter((piece) => piece.startCol < colIdx)
+                  // 事件區的列數:放得下就照最高佔用車道(m),放不下就是 k(第 k 列換「+N」)。經過這一格的長條佔的車道也算 ——
+                  // 列先排好,長條(DOM 在別格)才對得上這一格的列,容器沒給高時格子也照這個列數撐開
+                  const rowsShown = cellLayout.moreCount > 0 ? monthLayout.maxRows : cellLayout.rowsNeeded
+                  // 這一天的事件筆數 = 畫在這一格的段 + 「+N」藏起來的(兩者不重疊:有「+N」時畫出來的段都在車道 k−2 以內)
+                  const eventCount = cellLayout.pieces.length + cellLayout.moreCount
                   // 這一天的讀屏名稱:完整日期 + 筆數(含沒畫出來的),今天前面加前綴(calendar.spec.md「A11y 預設」;字串在 labels)。
                   // 1 號畫面上寫「7月1日」(dayLabel)不影響這裡。載入中不念筆數(還沒載完的筆數不是事實;格陣另有 aria-busy)【AI 推導】。
                   const fullDate = formatters.fullDate.format(date)
-                  const dayName = `${isToday ? labels.todayPrefix : ''}${loading ? fullDate : labels.day(fullDate, dayEvents.length)}`
+                  const dayName = `${isToday ? labels.todayPrefix : ''}${loading ? fullDate : labels.day(fullDate, eventCount)}`
                   // 這一天的鍵盤停靠點屬性(roving tabindex):可點時掛在日期數字鈕上,唯讀時掛在格子本身。
                   // 兩處共用同一組屬性,只換掛的位置 —— handleGridKeyDown / moveFocusToDay 只認 data-calendar-day。
                   // 名稱**不**在這一組裡:日期鈕用 aria-label;唯讀的格子名稱由內容來(見下方 gridcell 的註解),格子上掛 aria-label 會蓋掉格內的事件標題。
@@ -959,8 +1061,8 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                       {...(datesInteractive
                         ? {
                           onClick: (e: React.MouseEvent<HTMLDivElement>) => {
-                            // 日期鈕與事件方塊自己的 onClick 都 stopPropagation;目前「+N」列與唯讀事件列不攔,點它們也會走到這裡
-                            //(calendar.spec.md「命中區」要它們阻止冒泡,在「+N」可點與唯讀列那兩包改)
+                            // 日期鈕、事件列 / 長條(可點與唯讀)、「+N」自己的 onClick 都 stopPropagation(calendar.spec.md「命中區」);
+                            // 走到這裡的只有格內空白處(內距、列與列的縫、日期列空白)
                             dayStopOf(e.currentTarget)?.focus({ preventScroll: true })
                             setFocusedDateState(date)
                             onDateClick(date)
@@ -970,8 +1072,11 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                       className={cn(
                         // 格子四邊內距 4、日期框到第一列 4(都讀 --calendar-gap;calendar.spec.md「間距」【SPACING(定)】,
                         // 2026-11-25 前是 p-1.5 = 6,首版 86c5436c 寫的、沒有依據)。格高由週列的 grid 列決定(minmax(格最小高, 1fr)),
-                        // 不寫 min-h;內容比格高多時裁掉、不撐高也不疊到下一週(每格放幾列依格高算,在事件版面那一包)。
-                        'flex flex-col gap-[var(--calendar-gap)] p-[var(--calendar-gap)] min-w-0 overflow-hidden',
+                        // 不寫 min-h;每格放幾列依量到的格高算(k),放不下的由「+N」取代,不撐高也不疊到下一週。
+                        // 裁切只裁上下(overflow-y: clip),左右不裁(overflow-x: visible):跨日長條的 DOM 在第一格、往右畫過後面幾格
+                        //(calendar.spec.md「跨日長條」實作備註),裁左右會把長條切成只剩第一格(POC 實測)。
+                        // 左右的保險另放在日期列上(見下方日期列的 overflow-x-clip)。2026-11-25 前是 overflow-hidden。
+                        'flex flex-col gap-[var(--calendar-gap)] p-[var(--calendar-gap)] min-w-0 overflow-x-visible overflow-y-clip',
                         // 格線:每格右 / 下各一條;每一週最右那格不畫右線(每個 role=row 只裝自己那 7 格,last: 就是第 7 格);
                         // 最後一週不畫下線 —— 根節點外框已經是那一條,兩條疊成 2px 雙線(稽核 D6)。
                         // 格子是 border-box,底線畫在格高裡面 → 格最小高把它算進去(calendar-geometry.ts CALENDAR_GRID_LINE_PX)。
@@ -998,7 +1103,10 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                           它完全落在宿主格內、動作與宿主相同,不會生出隱形帶也搶不走別人的點擊。
                           規格 → `calendar.spec.md`「Cell 規則」的「命中區」條;量測 → scripts/calendar-month-invariant.mjs(日期框離格邊 4 / 4、高 24)。
                           唯讀的格:日期數字是同一個盒、同一組字級與今天 pill,只是 <span>(不是按鈕、沒有手形游標) */}
-                      <div className="flex items-start justify-start">
+                      {/* 日期列左右裁切:格子不裁左右(讓長條畫過去),比格子寬的日期框(窄欄的「7月1日」、長的語系月份字)改由這一層裁 ——
+                          往兩側延伸一個格子內距(-mx + px),裁切邊 = 格子的內距框,與 2026-11-25 前整格 overflow-hidden 的裁切邊相同;
+                          上下不裁(overflow-y 照 visible),焦點框往外畫的四周淨空不受影響。 */}
+                      <div className="flex items-start justify-start -mx-[var(--calendar-gap)] px-[var(--calendar-gap)] overflow-x-clip">
                         {datesInteractive ? (
                           <button
                             type="button"
@@ -1021,73 +1129,63 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                           <>
                             <span className="sr-only">{dayName}</span>
                             <span aria-hidden className={dayNumberClass}>{label}</span>
+                            {/* 橫跨過來的長條標題(見 carriedPieces):接在日期那一段之後、格內自己的事件之前,同樣只給讀屏 */}
+                            {carriedPieces.map((piece) => (
+                              <span key={`${piece.entry.event.id}@${piece.startCol}`} data-calendar-carried="" className="sr-only">{piece.entry.event.title}</span>
+                            ))}
                           </>
                         )}
                       </div>
 
-                      {/* Event tiles:列距 4(--calendar-gap;item-anatomy.spec.md:467 standalone pill ≥ 4,2026-11-25 前 gap-0.5 = 2)。
-                          shrink-0:列是固定高的單位(Tag md 24),格子比內容矮時**不壓扁列**,放不下的列由格子的 overflow-hidden 裁掉
-                          (calendar.spec.md「每一週等高」;每格放幾列依格高算在事件版面那一包)。2026-11-25 首版這裡是 min-h-0,
-                          讓這一層可以被壓、裡面的列跟著縮:最小高的週事件列只剩 23、格子再矮多筆的列縮到 21、「+N」縮到 15.6。 */}
-                      <div className="flex flex-col gap-[var(--calendar-gap)] shrink-0">
+                      {/* 事件區 = CSS grid,一列一條車道(calendar.spec.md「跨日長條」車道分配:每一列在一週裡的 y 位置固定,長條才能在相鄰格對齊):
+                          列高 = 事件列 Tag md(--tag-height-md 24)、列距 4(--calendar-gap;item-anatomy.spec.md:467 standalone pill ≥ 4)。
+                          列數 = 這一格要顯示的列(rowsShown);每一段放在自己的車道那一列(gridRow = 車道 + 1),從左邊格子橫跨過來的長條佔的列
+                          這裡空著、由那條長條蓋過來。欄 = minmax(0, 1fr):格子不裁左右(讓長條畫過去),單格的列不得被長標題撐寬。
+                          shrink-0:列是固定高的單位,格子比內容矮時不壓扁列;k 由量到的格高算,放得下才畫(2026-11-25 首版這裡是 min-h-0,
+                          最小高的週事件列只剩 23、格子再矮多筆的列縮到 21、「+N」縮到 15.6)。 */}
+                      <div
+                        className="grid gap-y-[var(--calendar-gap)] shrink-0"
+                        style={{
+                          gridTemplateColumns: 'minmax(0, 1fr)',
+                          gridTemplateRows: !loading && rowsShown > 0 ? `repeat(${rowsShown}, var(--tag-height-md))` : undefined,
+                        }}
+                      >
                         {/* 載入中:事件區換成一條與事件列同高的骨架(calendar.spec.md「狀態與邊界案例」載入中【Q11(定);一條是 AI 推導】),
                             不畫事件與「+N」。形狀對齊事件列(高 h-tag-md、rounded-md,skeleton.spec.md:64);aria-hidden(同檔 :86-87),
                             格陣另帶 aria-busy。點空白新增、鍵盤走格不受影響(格子與日期鈕照畫)。 */}
                         {loading ? <Skeleton aria-hidden className="h-tag-md w-full" /> : <>
-                        {visibleEvents.map((event) => {
+                        {ownPieces.map((piece) => {
+                          const { event } = piece.entry
                           const ec = event.color ?? 'blue'
+                          const mode = eventModeOf(event)
                           // 可點的方塊帶滑過(CAT_EVENT),唯讀的不帶(CAT_SUBTLE);兩者同色相同底同字,見檔頭 EVENT_STATIC_COLOR_CLASSES
-                          const hueClass = readOnlyEvents ? EVENT_STATIC_COLOR_CLASSES[ec] : EVENT_COLOR_CLASSES[ec]
-                          // 全天:淡底 + 左 accent 條(色條改給有時段事件、全天拿掉色條在事件長相那一包)。
-                          // 字重跟事件列 = Tag md 的 font-normal,2026-11-25 前全天另加 font-medium(calendar.spec.md「間距」事件列列)。
-                          const colorClass = event.allDay ? cn(hueClass, EVENT_ALLDAY_ACCENT[ec]) : hueClass
-                          if (renderEventTile) {
-                            // 自訂視覺也照同一份可點 / 唯讀契約:外層 wrapper 由本元件 own(spec「A11y 預設」renderEventTile 段);
-                            // 外層固定一列高 h-tag-md(calendar.spec.md「renderEventTile 的鍵盤責任歸屬」:回傳內容必須放得進一列的高度)。
-                            return readOnlyEvents ? (
-                              // 唯讀:只包一層排版用的 div —— 不是按鈕、不進格內導覽(沒有 data-calendar-tile)、沒有焦點框
-                              <div key={event.id} className="h-tag-md">{renderEventTile(event)}</div>
-                            ) : (
-                              <div
-                                key={event.id}
-                                role="button"
-                                // 與內建 tile 同一條:grid 單一 Tab 停靠點,自訂 tile 也不得自己是停靠點
-                                tabIndex={-1}
-                                data-calendar-tile=""
-                                {...escapeLayerProps(true)}
-                                aria-label={`事件:${event.title}`}
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  onEventClick(event)
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault()
-                                    e.stopPropagation()
-                                    onEventClick(event)
-                                  }
-                                }}
-                                // 焦點框往外(= 不寫 class):列距 4、格子內距 4,四周淨空 ≥ 4(calendar.spec.md「焦點框」;與內建 tile 同一條)
-                                className="h-tag-md rounded-md"
-                              >
-                                {renderEventTile(event)}
-                              </div>
-                            )
-                          }
+                          const hueClass = mode.readOnly ? EVENT_STATIC_COLOR_CLASSES[ec] : EVENT_COLOR_CLASSES[ec]
+                          // 全天(含「只有日期、沒寫 allDay」推斷成全天的,calendar-layout.ts normalizeEvents):淡底 + 左 accent 條
+                          //(色條改給有時段事件、全天拿掉色條在事件長相那一包)。字重跟事件列 = Tag md 的 font-normal(calendar.spec.md「間距」事件列列)。
+                          const colorClass = piece.entry.allDay ? cn(hueClass, EVENT_ALLDAY_ACCENT[ec]) : hueClass
                           return (
-                            <MonthEventTile
-                              key={event.id}
-                              event={event}
+                            <MonthEventPiece
+                              key={`${event.id}@${piece.startCol}`}
+                              piece={piece}
+                              covers={Array.from({ length: piece.span }, (_, i) => isoOf(piece.startCol + i)).join(' ')}
+                              endsAtLastColumn={piece.startCol + piece.span === weekLayout.days.length}
                               colorClass={colorClass}
-                              {...eventTileMode}
+                              mode={mode}
+                              renderEventTile={renderEventTile}
                             />
                           )
                         })}
-                        {/* 「+N」列:與事件列同高 24、左右內距 8(calendar.spec.md「間距」「+N」列)。本包只換尺寸,
-                            可點(原生 button、開清單、阻止冒泡)與字色在「+N」清單那一包。 */}
-                        {overflowCount > 0 && (
-                          <div className="flex items-center h-tag-md px-[var(--calendar-text-inset)] text-caption text-fg-muted">
-                            {moreLabel(overflowCount)}
+                        {/* 「+N」列:佔第 k 列、與事件列同高 24、左右內距 8(calendar.spec.md「間距」「+N」列、「每格筆數與「+N」」)。
+                            N = 這一格車道 ≥ k−1 的筆數(看車道不看筆數,總帳更正 #7)。點它不會變成在這天新增 —— 阻止冒泡(「命中區」;修稽核 D1);
+                            可點(原生 button、開當天清單)與字色在「+N」清單那一包。一行不換行、放不下的字裁掉(格子不裁左右)。 */}
+                        {cellLayout.moreCount > 0 && (
+                          <div
+                            data-calendar-more=""
+                            style={{ gridRow: monthLayout.maxRows }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex items-center h-tag-md px-[var(--calendar-text-inset)] text-caption text-fg-muted overflow-hidden whitespace-nowrap"
+                          >
+                            {moreLabel(cellLayout.moreCount)}
                           </div>
                         )}
                         </>}
@@ -1096,7 +1194,8 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                   )
                 })}
               </div>
-            ))}
+              )
+            })}
           </div>
         </ScrollArea>
       </div>

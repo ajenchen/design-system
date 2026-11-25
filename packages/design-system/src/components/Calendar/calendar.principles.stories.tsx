@@ -61,7 +61,6 @@ export const UsageGuidance: Story = {
             <li><b>「選一個日期範圍」表單欄位</b> → 用 <code>{'<DatePicker.Range>'}</code>:同上</li>
             <li><b>時間 granularity 是時分秒的儀表板</b> → Timeline / Gantt chart:event calendar 的最小 granularity 是時段(15-60 分鐘),不是秒級</li>
             <li><b>單純事件列表</b>(沒時間軸視覺需求)→ 用 <code>{'<DataTable>'}</code> / <code>{'<Empty>'}</code>:列表是「linear」瀏覽,calendar 是「spatial」瀏覽</li>
-            <li><b>跨日 span 排程視覺</b>(bar 橫跨多欄)→ Gantt / Timeline:月 view 多日事件為每涵蓋日各一條 tile,非橫跨欄 span bar</li>
           </TutorialList>
         </div>
       </UsageSection>
@@ -88,7 +87,7 @@ export const UsageGuidance: Story = {
                     locale={LOCALE}
                     today={now}
                     events={[
-                      { id: 'a', title: '設計審查', start: `${thisMonth}-05`, end: `${thisMonth}-05`, color: 'blue' },
+                      { id: 'a', title: '設計審查', start: `${thisMonth}-05T10:00`, end: `${thisMonth}-05T11:00`, color: 'blue' },
                     ] as CalendarEvent[]}
                   />
                 </div>
@@ -120,11 +119,11 @@ export const ColorSemantic: Story = {
               locale={LOCALE}
               today={now}
               events={[
-                { id: '1', title: '設計審查', start: `${thisMonth}-05`, end: `${thisMonth}-05`, color: 'blue' },
-                { id: '2', title: '衝刺規劃會議', start: `${thisMonth}-08`, end: `${thisMonth}-08`, color: 'blue' },
-                { id: '3', title: '版本發布截止', start: `${thisMonth}-12`, end: `${thisMonth}-12`, color: 'orange' },
-                { id: '4', title: '季度檢討', start: `${thisMonth}-18`, end: `${thisMonth}-18`, color: 'green' },
-                { id: '5', title: '行銷週會', start: `${thisMonth}-22`, end: `${thisMonth}-22`, color: 'purple' },
+                { id: '1', title: '設計審查', start: `${thisMonth}-05T10:00`, end: `${thisMonth}-05T11:00`, color: 'blue' },
+                { id: '2', title: '衝刺規劃會議', start: `${thisMonth}-08T14:00`, end: `${thisMonth}-08T15:30`, color: 'blue' },
+                { id: '3', title: '版本發布截止', start: `${thisMonth}-12T18:00`, end: `${thisMonth}-12T18:00`, color: 'orange' },
+                { id: '4', title: '季度檢討', start: `${thisMonth}-18T14:00`, end: `${thisMonth}-18T16:00`, color: 'green' },
+                { id: '5', title: '行銷週會', start: `${thisMonth}-22T10:00`, end: `${thisMonth}-22T11:00`, color: 'purple' },
               ] as CalendarEvent[]}
             />
           </div>
@@ -153,7 +152,7 @@ export const MonthViewOnlyRule: Story = {
               locale={LOCALE}
               today={now}
               events={[
-                { id: '1', title: '衝刺規劃會議', start: `${thisMonth}-08`, end: `${thisMonth}-08`, color: 'blue' },
+                { id: '1', title: '衝刺規劃會議', start: `${thisMonth}-08T14:00`, end: `${thisMonth}-08T15:30`, color: 'blue' },
               ] as CalendarEvent[]}
             />
           </div>
@@ -174,7 +173,7 @@ export const ReadOnlyRule: Story = {
         paragraph={false}
       >
         <ExampleFrame>
-          {/* 整月都要看得到(24 號第二個假日在第四週):高度同 calendar.anatomy.stories.tsx 整月示範 */}
+          {/* 整月都要看得到(23–24 號的年中盤點在第四週):高度同 calendar.anatomy.stories.tsx 整月示範 */}
           <div className="h-[560px]">
             <CalendarDemo
               defaultReferenceDate={now}
@@ -184,8 +183,9 @@ export const ReadOnlyRule: Story = {
               readOnlyEvents
               noun="假日"
               events={[
-                { id: 'h1', title: '公司創立紀念日', start: `${thisMonth}-03`, end: `${thisMonth}-03`, color: 'green', allDay: true },
-                { id: 'h2', title: '年中盤點(辦公室關閉)', start: `${thisMonth}-24`, end: `${thisMonth}-24`, color: 'green', allDay: true },
+                // 全天,end 不含(calendar.spec.md「資料語意」):創立紀念日一天 → end 隔天;年中盤點週四、週五關兩天 → end 週六,畫成一條橫跨兩格的長條
+                { id: 'h1', title: '公司創立紀念日', start: `${thisMonth}-03`, end: `${thisMonth}-04`, color: 'green', allDay: true },
+                { id: 'h2', title: '年中盤點(辦公室關閉)', start: `${thisMonth}-23`, end: `${thisMonth}-25`, color: 'green', allDay: true },
               ] as CalendarEvent[]}
             />
           </div>

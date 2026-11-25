@@ -34,11 +34,15 @@ const customTileActivated = fn()
 // 視覺基線同時釘住顯示月與 today SSOT，避免跨月/換日造成 snapshot 漂移。
 const now = new Date(2026, 6, 15)
 const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')
+const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+const nextMonth = nextMonthStart.getFullYear() + '-' + String(nextMonthStart.getMonth() + 1).padStart(2, '0')
+// 事件資料照 calendar.spec.md「資料語意」:end 一律不含 —— 全天事件寫到隔天(7/20–7/22 三天 = start 20、end 23),有時段的寫真的時間;
+// 只有日期、start = end 的「含」寫法會被當成零長度並在開發期警告(scripts/calendar-render-contract-invariant.mjs 載入每則範例,有一句 [Calendar] 警告就紅)。
 // 讀者看的情境都是中文產品:月份標題 / 星期名照中文排(元件的 locale 預設 2026-11-24 起是 'zh-TW'(calendar.tsx `locale = DEFAULT_DATE_LOCALE`),之前是 'en-US';
 // 2026-11-18 前沒傳,畫面是「July 2026」「Sun–Sat」配中文介面 —— 稽核 A113,AGENTS.md「單一檔案不中英夾雜」)。
 // test-only 的鍵盤夾具不是給人看的,照元件預設。
 const LOCALE = 'zh-TW'
-// 一格超過 3 筆時的計數文字跟著中文情境(元件預設 `+N more`,calendar.tsx `moreLabel`;2026-11-21 前元件寫死英文、換不掉)
+// 一格放不下時最後一列的計數文字跟著中文情境(元件預設 `+N more`,calendar.tsx `moreLabel`;2026-11-21 前元件寫死英文、換不掉)
 const MORE_LABEL = (count: number) => `還有 ${count} 個事件`
 
 /**
@@ -49,14 +53,18 @@ export const TeamCalendar: Story = {
   name: '團隊行事曆',
   render: () => {
     const events: CalendarEvent[] = [
-      { id: '1', title: '設計審查', start: `${thisMonth}-05`, end: `${thisMonth}-05`, color: 'blue' },
-      { id: '2', title: '衝刺規劃會議', start: `${thisMonth}-08`, end: `${thisMonth}-08`, color: 'blue' },
-      { id: '3', title: 'Orion 專案截止', start: `${thisMonth}-12`, end: `${thisMonth}-12`, color: 'red' },
-      { id: '4', title: '與 Sarah 一對一', start: `${thisMonth}-12`, end: `${thisMonth}-12`, color: 'purple' },
-      { id: '5', title: '每日站會', start: `${thisMonth}-15`, end: `${thisMonth}-15`, color: 'blue' },
-      { id: '6', title: 'Q2 OKR 檢討', start: `${thisMonth}-18`, end: `${thisMonth}-18`, color: 'green' },
-      { id: '7', title: 'Alex 休假', start: `${thisMonth}-20`, end: `${thisMonth}-22`, color: 'yellow', allDay: true },
-      { id: '8', title: '客戶會議', start: `${thisMonth}-25`, end: `${thisMonth}-25`, color: 'orange' },
+      // 公司假日:團隊月曆裡只是標記、沒有詳情可開 → 單筆唯讀(calendar.spec.md「日期格與事件方塊:可點或唯讀」單筆事件那一列)
+      { id: '0', title: '公司創立紀念日', start: `${thisMonth}-03`, end: `${thisMonth}-04`, color: 'green', readOnly: true },
+      { id: '1', title: '設計審查', start: `${thisMonth}-05T10:00`, end: `${thisMonth}-05T11:00`, color: 'blue' },
+      { id: '2', title: '衝刺規劃會議', start: `${thisMonth}-08T14:00`, end: `${thisMonth}-08T15:30`, color: 'blue' },
+      // 截止是一個時刻(有時段的零長度:畫在那一天,不警告)
+      { id: '3', title: 'Orion 專案截止', start: `${thisMonth}-12T18:00`, end: `${thisMonth}-12T18:00`, color: 'red' },
+      { id: '4', title: '與 Sarah 一對一', start: `${thisMonth}-12T10:00`, end: `${thisMonth}-12T10:30`, color: 'purple' },
+      { id: '5', title: '每日站會', start: `${thisMonth}-15T09:30`, end: `${thisMonth}-15T09:45`, color: 'blue' },
+      { id: '6', title: 'Q2 OKR 檢討', start: `${thisMonth}-18T14:00`, end: `${thisMonth}-18T16:00`, color: 'green' },
+      // 休假 7/20–7/22 三天:end 不含 → 23(一條橫跨三格的長條)
+      { id: '7', title: 'Alex 休假', start: `${thisMonth}-20`, end: `${thisMonth}-23`, color: 'yellow', allDay: true },
+      { id: '8', title: '客戶會議', start: `${thisMonth}-25T15:00`, end: `${thisMonth}-25T16:00`, color: 'orange' },
     ]
     return (
       <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
@@ -67,20 +75,22 @@ export const TeamCalendar: Story = {
 }
 
 /**
- * 產品上線週 — 上線日一天塞滿 5 件事(發版、客服待命、上線公告、監控輪值、慶功)。
- * 每格最多畫 3 筆,超出的以計數文字提示(這裡傳中文「還有 N 個事件」,元件預設「+N more」);這一則讓它在畫面上看得到。
+ * 產品上線週 — 程式碼凍結三天,上線日一天塞滿 6 件事(發版、客服待命、上線公告、合作夥伴通知、監控輪值、慶功)。
+ * 每格放幾列依格高;放不下時最後一列換成計數(這裡傳中文「還有 N 個事件」,元件預設「+N more」),這一則讓它在畫面上看得到。
  */
 export const LaunchWeek: Story = {
   name: '產品上線週',
   render: () => {
     const events: CalendarEvent[] = [
-      { id: 'l1', title: '程式碼凍結', start: `${thisMonth}-13`, end: `${thisMonth}-13`, color: 'red' },
-      { id: 'l2', title: '發布 v2.0', start: `${thisMonth}-15`, end: `${thisMonth}-15`, color: 'blue' },
-      { id: 'l3', title: '客服待命(全天)', start: `${thisMonth}-15`, end: `${thisMonth}-15`, color: 'yellow', allDay: true },
-      { id: 'l4', title: '上線公告 10:00', start: `${thisMonth}-15`, end: `${thisMonth}-15`, color: 'green' },
-      { id: 'l5', title: '監控輪值 14:00', start: `${thisMonth}-15`, end: `${thisMonth}-15`, color: 'purple' },
-      { id: 'l6', title: '慶功 18:30', start: `${thisMonth}-15`, end: `${thisMonth}-15`, color: 'orange' },
-      { id: 'l7', title: '上線檢討會', start: `${thisMonth}-17`, end: `${thisMonth}-17`, color: 'blue' },
+      // 凍結 7/13–7/15(上線當天解凍):end 不含 → 16
+      { id: 'l1', title: '程式碼凍結', start: `${thisMonth}-13`, end: `${thisMonth}-16`, color: 'red', allDay: true },
+      { id: 'l2', title: '發布 v2.0', start: `${thisMonth}-15T09:00`, end: `${thisMonth}-15T10:00`, color: 'blue' },
+      { id: 'l3', title: '客服待命', start: `${thisMonth}-15`, end: `${thisMonth}-16`, color: 'yellow', allDay: true },
+      { id: 'l4', title: '上線公告 10:00', start: `${thisMonth}-15T10:00`, end: `${thisMonth}-15T10:30`, color: 'green' },
+      { id: 'l8', title: '合作夥伴通知 11:00', start: `${thisMonth}-15T11:00`, end: `${thisMonth}-15T11:30`, color: 'turquoise' },
+      { id: 'l5', title: '監控輪值 14:00', start: `${thisMonth}-15T14:00`, end: `${thisMonth}-15T22:00`, color: 'purple' },
+      { id: 'l6', title: '慶功 18:30', start: `${thisMonth}-15T18:30`, end: `${thisMonth}-15T20:30`, color: 'orange' },
+      { id: 'l7', title: '上線檢討會', start: `${thisMonth}-17T14:00`, end: `${thisMonth}-17T15:00`, color: 'blue' },
     ]
     return (
       <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
@@ -89,10 +99,53 @@ export const LaunchWeek: Story = {
     )
   },
   play: async ({ canvasElement }) => {
-    // 7/15 有 5 件事:只畫前 3 筆(全天事件排最前),其餘 2 筆以「還有 2 個事件」(moreLabel)提示、不進 DOM
-    const canvas = within(canvasElement)
-    await expect(canvas.getByText('還有 2 個事件')).toBeVisible()
-    await expect(canvas.queryByRole('button', { name: '事件:慶功 18:30' })).toBeNull()
+    // 7/15 上線日共 7 筆:7/13 起的「程式碼凍結」長條 + 當天 6 件事。每格放幾列依格高(calendar.spec.md「每格筆數與「+N」」),
+    // 所以不寫死畫幾筆;不論放幾列都要成立:畫出來的 + 「+N」藏起來的 = 7,而且放不下時一定有「+N」、排序最後的「慶功」不進 DOM
+    //(格內排序:開始日期早的在上 → 全天先 → 依開始時間,慶功 18:30 最後)。找格子與計數用元件的屬性,不比對讀屏名稱與計數文字
+    //(兩者都會隨事件長相 / 「+N」清單那幾包改字)。1280 × 900(story-demo-focus 閘的視窗)這一格放 4 列 → 畫 3 筆 +「+4」。
+    const launchDay = `${thisMonth}-15`
+    const grid = within(canvasElement).getByRole('grid')
+    const drawn = grid.querySelectorAll(`[data-calendar-covers~="${launchDay}"]`).length
+    const cell = grid.querySelector(`[data-calendar-day="${launchDay}"]`)?.closest('[role="gridcell"]')
+    const more = cell?.querySelector<HTMLElement>('[data-calendar-more]') ?? null
+    const hidden = more ? Number(/\d+/.exec(more.textContent ?? '')?.[0]) : 0
+    await expect(drawn + hidden).toBe(7)
+    if (more) {
+      await expect(more).toBeVisible()
+      await expect(hidden).toBeGreaterThan(0)
+      await expect(within(canvasElement).queryByText(/^慶功/)).toBeNull()
+    }
+  },
+}
+
+/**
+ * 季度規劃 — 跨週、跨月的長條
+ * 多天的工作畫成一條橫跨多格的長條:跨過週六 / 週日換週時切成兩段,第二段起重複標題;延續到下個月的那一段在月底那一端直角(還沒結束)。
+ */
+export const QuarterPlanning: Story = {
+  name: '季度規劃(跨週長條)',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '跨日事件畫成一條橫跨多格的長條(全天,或有時段且滿 24 小時):換週切段、第二段起重複標題;斷開的那一端一律直角,只有事件真正的起點與終點是圓角 —— 「設計衝刺」7/16–7/22 在週六收、週日起,「Q3 規劃週」7/29–8/4 在 8/1 那一端直角(畫面外還有)。點長條的任何一段都是開這個事件,不會在那一天新增。',
+      },
+    },
+  },
+  render: () => {
+    const events: CalendarEvent[] = [
+      { id: 'q1', title: '年度預算編列', start: `${thisMonth}-06`, end: `${thisMonth}-11`, color: 'blue', allDay: true },
+      { id: 'q2', title: '預算定稿會議', start: `${thisMonth}-10T16:00`, end: `${thisMonth}-10T17:00`, color: 'blue' },
+      { id: 'q3', title: '設計衝刺', start: `${thisMonth}-16`, end: `${thisMonth}-23`, color: 'purple', allDay: true },
+      { id: 'q4', title: 'OKR 草案審查', start: `${thisMonth}-21T10:00`, end: `${thisMonth}-21T11:30`, color: 'green' },
+      { id: 'q5', title: 'Q3 規劃週', start: `${thisMonth}-29`, end: `${nextMonth}-05`, color: 'orange', allDay: true },
+      { id: 'q6', title: '跨部門對齊會', start: `${thisMonth}-30T14:00`, end: `${thisMonth}-30T15:00`, color: 'turquoise' },
+    ]
+    return (
+      <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
+        <CalendarDemo defaultReferenceDate={now} today={now} events={events} locale={LOCALE} moreLabel={MORE_LABEL} noun="工作項目" />
+      </div>
+    )
   },
 }
 
@@ -105,12 +158,13 @@ export const ContentPublishingSchedule: Story = {
   name: '內容發佈月曆',
   render: () => {
     // 五種內容各一色;只用字與底色對比 ≥ 4.5 的色相(green / orange 事件色的字對比 3.71 / 3.82,不到 WCAG AA 4.5;色票本身怎麼改是 tokens 的題目,不在範例裡處理)
+    // 每一則是排定的發布時刻(有時段的零長度);產品發表是一整天的活動(全天,end 不含 → 隔天)
     const events: CalendarEvent[] = [
-      { id: 'p1', title: '週五電子報', start: `${thisMonth}-02`, end: `${thisMonth}-02`, color: 'blue' },
-      { id: 'p2', title: '部落格:設計系統 v2', start: `${thisMonth}-07`, end: `${thisMonth}-07`, color: 'purple' },
-      { id: 'p3', title: 'YouTube:教學影片第 3 集', start: `${thisMonth}-10`, end: `${thisMonth}-10`, color: 'red' },
-      { id: 'p4', title: 'Podcast:來賓訪談', start: `${thisMonth}-17`, end: `${thisMonth}-17`, color: 'turquoise' },
-      { id: 'p5', title: '產品發表', start: `${thisMonth}-28`, end: `${thisMonth}-28`, color: 'magenta' },
+      { id: 'p1', title: '週五電子報', start: `${thisMonth}-02T08:00`, end: `${thisMonth}-02T08:00`, color: 'blue' },
+      { id: 'p2', title: '部落格:設計系統 v2', start: `${thisMonth}-07T10:00`, end: `${thisMonth}-07T10:00`, color: 'purple' },
+      { id: 'p3', title: 'YouTube:教學影片第 3 集', start: `${thisMonth}-10T18:00`, end: `${thisMonth}-10T18:00`, color: 'red' },
+      { id: 'p4', title: 'Podcast:來賓訪談', start: `${thisMonth}-17T07:00`, end: `${thisMonth}-17T07:00`, color: 'turquoise' },
+      { id: 'p5', title: '產品發表', start: `${thisMonth}-28`, end: `${thisMonth}-29`, color: 'magenta', allDay: true },
     ]
     return (
       <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
@@ -130,20 +184,23 @@ export const CustomerSupportWeekdays: Story = {
     docs: {
       description: {
         story:
-          '`hideWeekends`:週末 = 語系的週末(zh-TW 週六、週日),那兩欄與星期列一起拿掉;落在週末的事件(這裡的「週末外包待命」)不畫。方向鍵、Home / End 跳過被藏的日子,從週五按 → 到下週一。',
+          '`hideWeekends`:週末 = 語系的週末(zh-TW 週六、週日),那兩欄與星期列一起拿掉;只落在週末的事件(這裡的「週末外包待命」)不畫、不佔列;跨過週末的長條(「電話系統移轉」週五到週一)在週五收、週一起,兩端直角。方向鍵、Home / End 跳過被藏的日子,從週五按 → 到下週一。',
       },
     },
   },
   render: () => {
+    // 班表是有時段的(晚班 16:00 到午夜:end 不含,只畫在開始那天);外包待命是整個週末(全天,週六到週日 → end 週一);
+    // 電話系統移轉從週五做到週一(全天,end 不含 → 週二)
     const events: CalendarEvent[] = [
-      { id: 's1', title: '早班:王小明、陳怡君', start: `${thisMonth}-06`, end: `${thisMonth}-06`, color: 'blue' },
-      { id: 's2', title: '晚班:林志豪', start: `${thisMonth}-06`, end: `${thisMonth}-06`, color: 'purple' },
-      { id: 's3', title: '新人帶班:黃雅婷', start: `${thisMonth}-08`, end: `${thisMonth}-08`, color: 'green' },
-      { id: 's4', title: '早班:張家豪', start: `${thisMonth}-13`, end: `${thisMonth}-13`, color: 'blue' },
-      { id: 's5', title: '客訴週報', start: `${thisMonth}-17`, end: `${thisMonth}-17`, color: 'orange' },
-      { id: 's6', title: '週末外包待命', start: `${thisMonth}-18`, end: `${thisMonth}-18`, color: 'turquoise' },
-      { id: 's7', title: '晚班:陳怡君', start: `${thisMonth}-21`, end: `${thisMonth}-21`, color: 'purple' },
-      { id: 's8', title: '值班表檢討', start: `${thisMonth}-31`, end: `${thisMonth}-31`, color: 'orange' },
+      { id: 's1', title: '早班:王小明、陳怡君', start: `${thisMonth}-06T08:00`, end: `${thisMonth}-06T16:00`, color: 'blue' },
+      { id: 's2', title: '晚班:林志豪', start: `${thisMonth}-06T16:00`, end: `${thisMonth}-07T00:00`, color: 'purple' },
+      { id: 's3', title: '新人帶班:黃雅婷', start: `${thisMonth}-08T09:00`, end: `${thisMonth}-08T18:00`, color: 'green' },
+      { id: 's4', title: '早班:張家豪', start: `${thisMonth}-13T08:00`, end: `${thisMonth}-13T16:00`, color: 'blue' },
+      { id: 's5', title: '客訴週報', start: `${thisMonth}-17T16:00`, end: `${thisMonth}-17T17:00`, color: 'orange' },
+      { id: 's9', title: '電話系統移轉', start: `${thisMonth}-17`, end: `${thisMonth}-21`, color: 'red', allDay: true },
+      { id: 's6', title: '週末外包待命', start: `${thisMonth}-18`, end: `${thisMonth}-20`, color: 'turquoise', allDay: true },
+      { id: 's7', title: '晚班:陳怡君', start: `${thisMonth}-21T16:00`, end: `${thisMonth}-22T00:00`, color: 'purple' },
+      { id: 's8', title: '值班表檢討', start: `${thisMonth}-31T10:00`, end: `${thisMonth}-31T11:00`, color: 'orange' },
     ]
     return (
       <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
@@ -168,13 +225,14 @@ export const ManufacturingWeekNumbers: Story = {
     },
   },
   render: () => {
+    // 保養與盤點停線一整天以上(全天,end 不含 → 隔天);到貨、出貨、抽檢有時段
     const events: CalendarEvent[] = [
-      { id: 'm1', title: '二號產線模具保養', start: `${thisMonth}-06`, end: `${thisMonth}-06`, color: 'yellow' },
-      { id: 'm2', title: '鋁板原料到貨', start: `${thisMonth}-09`, end: `${thisMonth}-09`, color: 'turquoise' },
-      { id: 'm3', title: '出貨:宏達工業 PO-2607', start: `${thisMonth}-14`, end: `${thisMonth}-14`, color: 'blue' },
-      { id: 'm4', title: '品保抽檢', start: `${thisMonth}-16`, end: `${thisMonth}-16`, color: 'green' },
-      { id: 'm5', title: '出貨:禾豐電子 PO-2611', start: `${thisMonth}-23`, end: `${thisMonth}-23`, color: 'blue' },
-      { id: 'm6', title: '月底盤點', start: `${thisMonth}-30`, end: `${thisMonth}-30`, color: 'orange' },
+      { id: 'm1', title: '二號產線模具保養', start: `${thisMonth}-06`, end: `${thisMonth}-07`, color: 'yellow', allDay: true },
+      { id: 'm2', title: '鋁板原料到貨', start: `${thisMonth}-09T10:00`, end: `${thisMonth}-09T11:00`, color: 'turquoise' },
+      { id: 'm3', title: '出貨:宏達工業 PO-2607', start: `${thisMonth}-14T14:00`, end: `${thisMonth}-14T15:00`, color: 'blue' },
+      { id: 'm4', title: '品保抽檢', start: `${thisMonth}-16T09:00`, end: `${thisMonth}-16T12:00`, color: 'green' },
+      { id: 'm5', title: '出貨:禾豐電子 PO-2611', start: `${thisMonth}-23T14:00`, end: `${thisMonth}-23T15:00`, color: 'blue' },
+      { id: 'm6', title: '月底盤點', start: `${thisMonth}-30`, end: `${nextMonth}-01`, color: 'orange', allDay: true },
     ]
     return (
       <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
@@ -234,11 +292,12 @@ export const SidePanelNarrow: Story = {
     },
   },
   render: () => {
+    // 工作項目的截止日(全天,end 不含 → 隔天;與左邊表格的截止日同一天)
     const events: CalendarEvent[] = [
-      { id: 'n1', title: '設計定稿', start: `${thisMonth}-10`, end: `${thisMonth}-10`, color: 'purple' },
-      { id: 'n2', title: '金流測試', start: `${thisMonth}-17`, end: `${thisMonth}-17`, color: 'blue' },
-      { id: 'n3', title: '問答更新', start: `${thisMonth}-22`, end: `${thisMonth}-22`, color: 'green' },
-      { id: 'n4', title: '改版上線', start: `${thisMonth}-28`, end: `${thisMonth}-28`, color: 'red' },
+      { id: 'n1', title: '設計定稿', start: `${thisMonth}-10`, end: `${thisMonth}-11`, color: 'purple', allDay: true },
+      { id: 'n2', title: '金流測試', start: `${thisMonth}-17`, end: `${thisMonth}-18`, color: 'blue', allDay: true },
+      { id: 'n3', title: '問答更新', start: `${thisMonth}-22`, end: `${thisMonth}-23`, color: 'green', allDay: true },
+      { id: 'n4', title: '改版上線', start: `${thisMonth}-28`, end: `${thisMonth}-29`, color: 'red', allDay: true },
     ]
     return (
       <div className="h-screen p-[var(--layout-space-loose)] bg-canvas flex gap-[var(--layout-space-loose)]">
@@ -264,7 +323,7 @@ export const ReadOnlyDatesCustomTileKeyboard: Story = {
   render: () => (
     <div className="h-screen p-4 bg-canvas">
       <Calendar
-        events={[{ id: 'p1', title: '週五電子報', start: `${thisMonth}-02`, end: `${thisMonth}-02`, color: 'blue' }]}
+        events={[{ id: 'p1', title: '週五電子報', start: `${thisMonth}-02T08:00`, end: `${thisMonth}-02T08:00`, color: 'blue' }]}
         defaultReferenceDate={now}
         today={now}
         renderEventTile={(event) => <Tag size="sm">{event.title}</Tag>}

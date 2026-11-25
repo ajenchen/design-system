@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-11-25T04:11:58.340Z"
+    "generatedAt": "2026-11-25T06:02:27.208Z"
   },
   "components": {
     "accordion": {
@@ -320,6 +320,7 @@
         "展示": [
           "design-system-components-calendar-展示--team-calendar",
           "design-system-components-calendar-展示--launch-week",
+          "design-system-components-calendar-展示--quarter-planning",
           "design-system-components-calendar-展示--content-publishing-schedule",
           "design-system-components-calendar-展示--customer-support-weekdays",
           "design-system-components-calendar-展示--manufacturing-week-numbers",
@@ -1877,5 +1878,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1043
+  "totalStories": 1044
 }

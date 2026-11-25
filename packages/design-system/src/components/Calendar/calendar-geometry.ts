@@ -18,8 +18,8 @@
  * 格內不寫死數字(calendar.spec.md「禁止事項」;閘 scripts/calendar-geometry-invariant.mjs)。
  * 代價:Tag 的「Tag px」哪天改了,這裡的 4 不會自動跟 —— 4 在這裡是「格內所有空隙」,不是 Tag 的內距本身;依據寫在下方註解。
  *
- * JS 與 CSS 同源(M17):列數算式(calendar.spec.md「每格筆數」k,含格線 `CALENDAR_GRID_LINE_PX`)讀這裡的數字,
- * 畫面讀 `CALENDAR_GEOMETRY_STYLE` 設出去的變數。
+ * JS 與 CSS 同源(M17):列數算式(calendar.spec.md「每格筆數」k,`calendarRowsThatFit`,含格線 `CALENDAR_GRID_LINE_PX`)讀這裡的數字,
+ * 畫面讀 `CALENDAR_GEOMETRY_STYLE` 設出去的變數;跨日長條的寬(`calendarPieceWidth`)讀同一批變數。
  */
 import type * as React from 'react'
 
@@ -77,11 +77,43 @@ export const CALENDAR_WEEK_NUMBER_DIGITS = 2
  */
 export const CALENDAR_NARROW_COLUMN_MAX_PX = 60
 
+/**
+ * 量到的版面尺寸是 Chromium 的 LayoutUnit(1/64 px)取整後的值:高 117 的格子可能量成 116.984。
+ * 每格列數取整數前加回這一點點,「剛好放滿」那一格才不會因為取整少一列(差距小於一個 LayoutUnit 不是真的放不下)。
+ */
+const LAYOUT_UNIT_PX = 1 / 64
+
+/**
+ * 每格放得下幾列 k(calendar.spec.md「每格筆數與「+N」」算式【AI 推導】):
+ * k = max(1, ⌊(格高 − 格線 − 上內距 − 日期框高 − 日期到第一列 − 下內距 + 列距) ÷ (列高 + 列距)⌋)。
+ * 格高 = 量到的格子外框(border-box,含自己的底線 1;最後一週沒有底線,照同一式算只是下方多 1px 空白)。
+ * 每一項都讀本檔的常數 —— 畫面讀的是同一批常數設出去的 --calendar-* 與 --tag-height-md(M17:JS 與 CSS 同源)。
+ * Calendar 量到格高後把結果當 `maxRows` 交給 calendar-layout.ts 的 `layoutMonth`;判定表與「是誰算的」靜態檢查在 scripts/test-calendar-layout.mjs。
+ */
+export function calendarRowsThatFit(cellHeightPx: number): number {
+  const content = cellHeightPx - CALENDAR_GRID_LINE_PX - CALENDAR_GAP_PX - CALENDAR_ROW_HEIGHT_PX - CALENDAR_GAP_PX - CALENDAR_GAP_PX
+  return Math.max(1, Math.floor((content + CALENDAR_GAP_PX + LAYOUT_UNIT_PX) / (CALENDAR_ROW_HEIGHT_PX + CALENDAR_GAP_PX)))
+}
+
+/**
+ * 一段事件的寬(calendar.spec.md「跨日長條」實作備註【AI 推導】:長條的 DOM 放在它這一週第一個看得見的日子的格子裡,寬度畫過後面幾格)。
+ * 只橫跨一格 → undefined(格子裡的一列,寬 = 格子內容寬,不另給)。橫跨 span 格 → 從第一格內容左緣到最後一格內容右緣:
+ * 一欄寬 = 第一格內容寬(100%)+ 左右內距 + 它自己的右格線;寬 = span 欄 − 左右內距 − 最後一格的右格線(這一列最右那格不畫右線,
+ * calendar.tsx 格子的 `last:border-r-0`)。欄是等分的(`minmax(0, 1fr)`),週數欄不在裡面 —— 隱藏週末與週數欄都不改這個式子。
+ * POC(M2,2026-11-25,Chromium 1217):7 欄 / 5 欄 / 加週數欄、終點在最後一欄各量一次,長條右緣離最後一格內容右緣 4 ± 0.02。
+ */
+export function calendarPieceWidth(span: number, endsAtLastColumn: boolean): string | undefined {
+  if (span <= 1) return undefined
+  return `calc(${span} * (100% + 2 * var(--calendar-gap) + var(--calendar-grid-line)) - 2 * var(--calendar-gap) - ${endsAtLastColumn ? '0px' : 'var(--calendar-grid-line)'})`
+}
+
 /** 設在 Calendar 根節點 style 上的元件內變數(名字用主人開頭 `--calendar-`;只有 Calendar 自己讀)。 */
 export const CALENDAR_GEOMETRY_STYLE = {
   '--calendar-gap': `${CALENDAR_GAP_PX}px`,
   '--calendar-text-inset': `${CALENDAR_TEXT_INSET_PX}px`,
   '--calendar-cell-min-h': `${CALENDAR_CELL_MIN_HEIGHT_PX}px`,
+  // 格線寬(跨日長條的寬度式子要加回中間每一格的右格線,calendarPieceWidth)
+  '--calendar-grid-line': `${CALENDAR_GRID_LINE_PX}px`,
   // 週數欄寬 = 2 × 格子內距 + 最寬週數。`ch` = 「0」的字寬,在用到這個變數的元素上解析(星期列與週列兩個格陣容器都是 text-body,
   // 所以兩邊的週數欄同寬)。POC(M2,2026-11-25,Chromium 1217 / macOS,text-body 14px):tabular-nums 的兩位數實寬 17.34、2ch = 17.63,
   // 差 0.28(zh-TW 與 en-US 兩個 lang 相同)< 0.5 → 用 calc 不另外量;差超過 0.5 時改成量到後寫進同一個變數。

@@ -55,9 +55,11 @@ try {
   const geometry = `${CAL}/calendar-geometry.ts`
   const mutants = [
     ['(b1) 格子內距寫回 p-1.5', main, "'flex flex-col gap-[var(--calendar-gap)] p-[var(--calendar-gap)]", "'flex flex-col gap-[var(--calendar-gap)] p-1.5", 'p-1.5'],
-    ['(b2) 列距寫回 gap-0.5', main, 'flex flex-col gap-[var(--calendar-gap)] shrink-0', 'flex flex-col gap-0.5 shrink-0', 'gap-0.5'],
+    // 事件區 2026-11-25 事件版面那一包起是 grid(一列一條車道),列距 = gap-y
+    ['(b2) 列距寫回 gap-y-0.5', main, 'grid gap-y-[var(--calendar-gap)] shrink-0', 'grid gap-y-0.5 shrink-0', 'gap-y-0.5'],
     ['(b3) 格子加回 min-h-28', main, "'flex flex-col gap-[var(--calendar-gap)] p-[var(--calendar-gap)]", "'flex flex-col gap-[var(--calendar-gap)] p-[var(--calendar-gap)] min-h-28", 'min-h-28'],
-    ['(b4) 事件列寫死 border-l-[3px]', main, "const tileBase = 'flex items-center h-tag-md", "const tileBase = 'border-l-[3px] flex items-center h-tag-md", 'border-l-[3px]'],
+    // 事件列的顏色層(MonthEventPiece 內層;外層是長條墊底的那一層)
+    ['(b4) 事件列寫死 border-l-[3px]', main, "'flex items-center h-full rounded-[inherit]", "'border-l-[3px] flex items-center h-full rounded-[inherit]", 'border-l-[3px]'],
     ['(b5) 列高常數改成 20', geometry, 'CALENDAR_ROW_HEIGHT_PX = 24', 'CALENDAR_ROW_HEIGHT_PX = 20', 'CALENDAR_ROW_HEIGHT_PX'],
     ['(b6) Tag md 盒高改成 28、Calendar 沒跟', 'packages/design-system/src/components/Tag/tag.tsx', 'export const TAG_HEIGHT_PX = { sm: 20, md: 24, lg: 24 }', 'export const TAG_HEIGHT_PX = { sm: 20, md: 28, lg: 28 }', 'TAG_HEIGHT_PX.md = 28'],
     ['(b7) 格最小高沒算格線(回到首版 60)', geometry, ' + CALENDAR_GAP_PX + CALENDAR_GRID_LINE_PX', ' + CALENDAR_GAP_PX', '實得 60'],

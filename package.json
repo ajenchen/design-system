@@ -126,6 +126,7 @@
     "test:calendar-geometry": "node scripts/calendar-geometry-invariant.mjs && node scripts/test-calendar-geometry-invariant.mjs",
     "test:calendar-month": "node scripts/calendar-month-invariant.mjs && node scripts/calendar-month-invariant.mjs --selftest",
     "test:calendar-layout": "node scripts/test-calendar-layout.mjs && node scripts/test-calendar-layout.mjs --selftest",
+    "test:calendar-render-contract": "node scripts/calendar-render-contract-invariant.mjs && node scripts/calendar-render-contract-invariant.mjs --selftest",
     "test:hover-own-pair": "node scripts/hover-own-pair-invariant.mjs && node scripts/hover-own-pair-invariant.mjs --selftest",
     "test:motion-ssot": "node scripts/test-motion-ssot-invariant.mjs",
     "test:open-close-motion": "node scripts/test-open-close-motion-invariant.mjs",

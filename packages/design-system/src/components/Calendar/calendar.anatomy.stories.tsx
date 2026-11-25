@@ -27,12 +27,15 @@ const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(
 // 事件也是英文(Design review…),跟中文的「新事件」「今天」並排 —— PV2 交出的同族尾巴(SIB-PV,AGENTS.md「單一檔案不中英夾雜」)。
 const LOCALE = 'zh-TW'
 
+// 事件資料照 calendar.spec.md「資料語意」:end 一律不含(全天寫到隔天,有時段寫真的時間)。
+// 「機房搬遷」週五到週一跨過週末:元件檢閱器開隱藏週末時,長條在被藏的週末切成兩段、內側兩端直角(Cell 規則「隱藏週末」)。
 const sampleEvents: CalendarEvent[] = [
-  { id: 'e1', title: '設計審查', start: `${thisMonth}-05`, end: `${thisMonth}-05`, color: 'blue' },
-  { id: 'e2', title: '衝刺規劃會議', start: `${thisMonth}-08`, end: `${thisMonth}-08`, color: 'blue' },
-  { id: 'e3', title: '版本發布截止', start: `${thisMonth}-12`, end: `${thisMonth}-12`, color: 'red' },
-  { id: 'e4', title: '季度檢討', start: `${thisMonth}-18`, end: `${thisMonth}-18`, color: 'green' },
-  { id: 'e5', title: 'Alex 休假', start: `${thisMonth}-20`, end: `${thisMonth}-22`, color: 'yellow', allDay: true },
+  { id: 'e1', title: '設計審查', start: `${thisMonth}-05T10:00`, end: `${thisMonth}-05T11:00`, color: 'blue' },
+  { id: 'e2', title: '衝刺規劃會議', start: `${thisMonth}-08T14:00`, end: `${thisMonth}-08T15:30`, color: 'blue' },
+  { id: 'e3', title: '版本發布截止', start: `${thisMonth}-12T18:00`, end: `${thisMonth}-12T18:00`, color: 'red' },
+  { id: 'e4', title: '季度檢討', start: `${thisMonth}-18T14:00`, end: `${thisMonth}-18T16:00`, color: 'green' },
+  { id: 'e5', title: 'Alex 休假', start: `${thisMonth}-20`, end: `${thisMonth}-23`, color: 'yellow', allDay: true },
+  { id: 'e6', title: '機房搬遷', start: `${thisMonth}-24`, end: `${thisMonth}-28`, color: 'red', allDay: true },
 ]
 
 // 日期格 / 事件方塊各自二擇一:可點就接回調(型別層必填),不可點就寫 readOnlyDates / readOnlyEvents
@@ -117,11 +120,12 @@ export const Inspector: Story = {
 export const ColorMatrix: Story = {
   name: '色彩對照表',
   render: () => {
+    // 每個色相一天的全天事件(end 不含 → 隔天)
     const colorEvents: CalendarEvent[] = CATEGORICAL_HUES.map((c, i) => ({
       id: `c-${c}`,
       title: `${c} 類別`,
       start: `${thisMonth}-${String(i + 2).padStart(2, '0')}`,
-      end: `${thisMonth}-${String(i + 2).padStart(2, '0')}`,
+      end: `${thisMonth}-${String(i + 3).padStart(2, '0')}`,
       color: c,
     }))
     return (
@@ -156,7 +160,7 @@ export const ColorMatrix: Story = {
                 <tr>
                   <Td>Cell 高度</Td>
                   <Td mono>grid-template-rows: repeat(週數, minmax(var(--calendar-cell-min-h), 1fr))(最小 61px)</Td>
-                  <Td>每一週等高、平分格陣高度,不被內容撐高;格最小高 = 上內距 4 + 日期框 24 + 4 + 一列 24 + 下內距 4 + 格線 1(底線畫在格高裡面)。格子比內容矮時,放不下的列被格子裁掉、不壓扁(事件列一律 24)。容器比「週數 × 61」還矮時週列在格陣裡捲,工具列與星期列不捲</Td>
+                  <Td>每一週等高、平分格陣高度,不被內容撐高;格最小高 = 上內距 4 + 日期框 24 + 4 + 一列 24 + 下內距 4 + 格線 1(底線畫在格高裡面)。每格放幾列依量到的格高算,放不下的由最後一列的「+N」取代,列不壓扁(事件列一律 24)。容器比「週數 × 61」還矮時週列在格陣裡捲,工具列與星期列不捲</Td>
                 </tr>
                 <tr>
                   <Td>Cell 內距 / 列距</Td>
@@ -244,7 +248,7 @@ export const ColorMatrix: Story = {
                 <tr>
                   <Td>All-day event</Td>
                   <Td mono>{ALL_DAY_EVENT_CLASS_GUIDE}</Td>
-                  <Td>2026-06-01 補實作:淡底 + 左側實心 accent 條,排序在有時間事件之前(cell 頂端);多日全天事件以日精度 filter 在每個涵蓋日各顯示一條。字重同事件列 font-normal(2026-11-25 前另加 font-medium)</Td>
+                  <Td>淡底 + 左側實心 accent 條,同一天排在有時段事件之前;多日事件畫成一條橫跨多格的長條,換週切段、第二段起重複標題,斷開那一端直角(只有真正的起點與終點圓角)。只有日期、沒寫 allDay 的事件也當全天。字重同事件列 font-normal(2026-11-25 前另加 font-medium)</Td>
                 </tr>
                 <tr>
                   <Td>Hover tile</Td>
@@ -257,9 +261,9 @@ export const ColorMatrix: Story = {
                   <Td>事件沒有詳情可開時宣告:方塊不亮、不是按鈕、不進格內導覽(F2 找不到它);截斷時仍有提示</Td>
                 </tr>
                 <tr>
-                  <Td>超出 tile 限制</Td>
-                  <Td mono>「+N more」純文字 · h-tag-md · px-[var(--calendar-text-inset)] · text-caption · text-fg-muted</Td>
-                  <Td>每格最多顯示 3 筆事件,超出顯示「+N more」弱化計數文字,與事件列同高 24,目前不可點擊(展開列表為後續增量)</Td>
+                  <Td>放不下的格</Td>
+                  <Td mono>「+N」計數 · 第 k 列 · h-tag-md · px-[var(--calendar-text-inset)] · text-caption · text-fg-muted</Td>
+                  <Td>每格放幾列(k)依格高;放不下時最後一列換成計數(N = 這一格沒畫出來的筆數,看車道不看筆數),與事件列同高 24;目前不可點擊、點它也不會在這天新增(展開當天清單為後續增量)</Td>
                 </tr>
               </tbody>
             </table>
@@ -278,7 +282,8 @@ export const StateBehavior: Story = {
       <div className="mb-2 text-body text-fg-muted space-y-1">
         <div>• <b>today</b> cell:date 數字加 <code>bg-info text-on-emphasis rounded-full</code> 圓</div>
         <div>• <b>outside month</b>:前後月日期數字走淡字 <code>text-fg-muted</code>,cell 不加底色(跟當月格一樣可點、一樣的滑過色)</div>
-        <div>• <b>多事件 cell</b>:超出 3 則的 event 顯示「+N more」</div>
+        <div>• <b>放不下的 cell</b>:每格放幾列依格高;放不下時最後一列換成「+N」計數</div>
+        <div>• <b>跨日事件</b>:一條橫跨多格的長條,換週切段,斷開那一端直角(「Alex 休假」7/20–7/22、「機房搬遷」7/24–7/27)</div>
         <div>• <b>event hover</b>:tile 切同色濃一階(淺色變深、深色變亮)<code>hover:bg-{'{color}'}-2</code>(如 blue → <code>--color-blue-2</code>)+ <code>cursor-pointer</code></div>
         <div>• <b>empty cell</b>:無事件保持純底色,點擊觸發 onDateClick</div>
         <div>• <b>唯讀</b>(<code>readOnlyDates</code> / <code>readOnlyEvents</code>,各自宣告):格子 / 事件方塊不亮、不是按鈕、游標不變;鍵盤仍可在格陣內走動(見<StoryLink kind="Design System/Components/Calendar/設計原則" name="唯讀的日期格與事件">設計原則 — 唯讀的日期格與事件</StoryLink>);右上角「新事件」是全域新增入口,唯讀時照樣在</div>
@@ -316,10 +321,10 @@ export const Accessibility = {
           <li>隱藏週末(hideWeekends)時 — ←/→ 跳過被藏的日子(週五按 → 到下週一);Home / End 落在該列第一 / 最後一個看得見的日子;PageUp / PageDown 落在被藏的日子時往同方向找、跑出目標月就往反方向;今天被藏時停靠點在同一週下一個看得見的日子(沒有就前一個),今天不在本月而 1 號被藏時停在 1 號之後第一個看得見的日子</li>
           <li>PageUp / PageDown — 上個月 / 下個月的同一個日號(該日號不存在則落當月最後一天);加 Shift 變成去年 / 明年</li>
           <li>Enter / Space — 日期數字按鈕觸發 <code>onDateClick</code></li>
-          <li>F2 — 進到這一格的事件方塊;格內用 ↑↓←→ 換方塊、Enter / Space 觸發 <code>onEventClick</code>、Escape 或 F2 回到日期數字按鈕</li>
+          <li>F2 — 進到這一天的事件方塊(含從前幾天橫跨過來的長條,依列由上而下);格內用 ↑↓←→ 換方塊、Enter / Space 觸發 <code>onEventClick</code>、Escape 或 F2 回到日期數字按鈕</li>
           <li>Toolbar 的 ◀ / 今天 / ▶ 在格陣外,是各自獨立的 Tab 停靠點</li>
           <li>日期格唯讀(readOnlyDates)時:格子裡只剩文字,焦點停在格子本身,方向鍵照常;格子的名稱由格內的字組成 —— 先念日期、今天與事件數(同一段字,只給讀屏),再念格內每個事件的標題(看得見的日期數字不重念);格子沒有主要動作,Enter 與 F2 都是進格</li>
-          <li>事件方塊唯讀(readOnlyEvents)時:方塊不是按鈕、不進格內導覽</li>
+          <li>事件方塊唯讀(readOnlyEvents,或單筆事件的 readOnly)時:方塊不是按鈕、不進格內導覽,點了什麼都不發生</li>
         </ul>
         <p><b>週數欄與載入中</b>:週數欄(showWeekNumbers)的欄頭是星期列的第一個 <code>columnheader</code>(文字「週」),每一週的週數格是該列的 <code>rowheader</code>(讀屏名稱「第 27 週」,看得見的只有數字);兩者都不是操作目標、不進 Tab 順序。載入中(loading)格陣帶 <code>aria-busy="true"</code>,骨架 <code>aria-hidden</code>;日期的讀屏名稱先不念事件數。這幾段字串(欄頭、週數格名稱)可經 <code>labels</code> 覆寫。</p>
         <p><b>刻意不做</b>:Ctrl+Home / Ctrl+End、Shift+方向鍵切月切年(APG 把 Shift+方向鍵定義為延伸選取,本元件無選取模型)。</p>

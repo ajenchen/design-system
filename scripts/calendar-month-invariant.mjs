@@ -15,19 +15,28 @@
  *           鍵盤走到看不見的那一週,焦點所在的日期框被捲進可視範圍;
  *           S4 最小高的週裡(同一則):有事件的格子(最後一週以外)事件列 = 24、日期框到第一列 = 4、第一列到格線 = 下內距 4
  *           (calendar.spec.md「間距」事件列 / 格子下內距、「每一週等高」格最小高 —— 三條同時成立);
- *           S5 容器再矮(展示「產品上線週」根節點壓到 240,每週都在最小高、至少一格放不下):每一格的每一列(事件列與「+N」列)都是 24,
- *           放不下的列被格子裁掉而不是壓扁(先量「每週 = 61、確實有格子放不下」,證明量的是那個情況)。
+ *           S5 容器再矮(展示「產品上線週」根節點壓到 240,每週都在最小高、k = 1、至少一格出現「+N」):每一格的每一列(事件列與「+N」列)都是 24、
+ *           都在格子內容框裡 —— 放不下的由「+N」取代,不壓扁也不被裁(先量「每週 = 61、確實有格子出現「+N」」,證明量的是那個情況)。
  *         K 點日期鈕(程式化 click,Chromium 不給焦點 = Safari 的情況)後焦點與停靠點都到那一天;按「今天」後停靠點到今天、焦點留在「今天」鈕
  *           (兩條都先量「動作前停靠點不在那裡」,證明量的是動作的結果)。
  *         L en-GB 不傳 weekStartsOn → 第一欄是週一(Monday)。
  *         R 今天剛好是 1 號時,實心底包住整段「7月1日」、左右內距 8。
+ *         B 事件版面(calendar.spec.md「跨日長條」【C1、Q3(定)】、「每格筆數與「+N」」【C3】、Cell 規則「命中區」【Q6(定)、總帳更正 #3】;2026-11-25 事件版面那一包):
+ *           B1 團隊行事曆「Alex 休假」7/20–7/22 是一個元素,從 7/20 內容左緣畫到 7/22 內容右緣(±0.5)。
+ *           B2 斷開那一端 computed border-radius = 0、真起訖那一端 > 0:B2-week 季度規劃(「設計衝刺」換週切兩段、「Q3 規劃週」延續到下個月那一端);
+ *              B2-hidden 元件檢閱器週三起 + 隱藏週末(「機房搬遷」週五、週一在同一列相鄰兩欄,中間被藏的週末切開);B2-weekend 客服排班(週五收、週一起)。
+ *           B3 產品上線週 7/15(7 筆)把格高掃過 k = 1…7 的每個邊界:B3-k 畫出來的筆數與 N 照規格算式由量到的格高推(元件傳進版面的 k = 量到的格高算出的值,
+ *              M32 參數邊界)、每個格高連看 4 幀不變;B3-fit 每一列 24、都在格子內容框裡,出現「+N」的格下面放不下另一列;B3-exact 格高 229(剛好放滿 7 列)沒有「+N」。
+ *           B4 真滑鼠點「Alex 休假」7/22 那一段:命中長條、開的是這個事件、沒有「新增事件」(阻止冒泡;長條 DOM 在 7/20 那格);點單筆唯讀的公司假日:什麼都不開。
+ *           B6 從長條涵蓋的第 2 天(7/21)按 F2,焦點落在同一條長條上(格內 widget 依日子查,data-calendar-covers)。
+ *           B7 深色與淺色主題,長條蓋在格線上的那一 px 與旁邊 3px 同色(差 ≤ 2;深色淡底半透明,長條要墊不透明的格子底)—— 前提:長條下方同一條格線看得到。
  *         N 讀屏名稱(calendar.spec.md「A11y 預設」;名稱用瀏覽器算好的無障礙樹 CDP Accessibility 與 Playwright getByRole({ name }),不讀屬性):
  *           N1 日期格可點時,日期鈕名稱 = Intl dateStyle full + 筆數(「2026年7月12日 星期日,2 個事件」),今天前面加「今天,」;1 號(畫面「7月1日」)
  *              與溢出日照同一格式;沒有任何日期鈕還是舊念法「2026-07-15,N 個事件」。
  *           N2 只有今天帶 aria-current="date"(日期格可點時在日期鈕上、唯讀時在格子上,兩種模式各量一次)。
  *           N3 日期格唯讀時,格子沒有 aria-label、名稱由內容來:開頭 = 日期 + 今天 + 筆數,接著每個事件標題;看得見的日期數字不重念
  *              (今天那格沒有事件 → 名稱剛好等於「今天,2026年7月15日 星期三,0 個事件」)。事件可點(內容發佈月曆)與事件也唯讀(設計原則
- *              「唯讀的日期格與事件」)各量一次。
+ *              「唯讀的日期格與事件」)各量一次;後者另量長條涵蓋的第 2 天(年中盤點 7/23–7/24 的 7/24,長條 DOM 在 7/23)也念得到標題(N3-bar)。
  *           N4 labels 覆寫生效(test-only「英文讀屏字串覆寫」):格陣名稱、今天與其他日子的名稱都是 consumer 給的英文,沒有一句預設中文。
  *         HW 隱藏週末(展示「客服排班(只看工作日)」+ Inspector en-IL;calendar.spec.md「Cell 規則」隱藏週末、「A11y 預設」鍵盤表):
  *           HW1 zh-TW 只剩 5 欄、5 個 columnheader(星期一–五)、沒有任何週六日的格;HW2 週五 → 下週一、週一 ← 上週五、Home / End = 該列第一 / 最後一個看得見的日子;
@@ -43,13 +52,16 @@
  *           日期格畫面寬 ≤ 60),前提不成立 = 儀器失效。斷點看的是版面上的欄寬,不是畫面上被縮放後的寬。
  *   紅: --selftest 逐一注入:星期列搬出格陣、週列高改 auto、最後一週留底線、格子內距 6、工具列改回內距撐高、nav 沒名稱、
  *       欄頭名稱改成短字、捲動區變成可聚焦(axe required-children)、捲動區不能捲、事件列高 20、事件列焦點框改回往內、1 號的實心底被壓成 24 寬、
- *       格最小高沒算格線(回到 60)、事件列外層回到可被壓(flex-shrink 1 + min-height 0)、
+ *       格最小高沒算格線(回到 60)、
  *       en-GB 卻寫死週日起(Inspector 傳 weekStartsOn 0)、標題層級不跟 titleAs、日期鈕的 focus() 失效、
- *       日期名稱改回舊念法(yyyy-MM-dd)、拿掉 aria-current、aria-current 掛在每一天、唯讀格的 aria-label 放回去、唯讀格看得見的日期數字沒有 aria-hidden、
+ *       日期名稱改回舊念法(yyyy-MM-dd)、拿掉 aria-current、aria-current 掛在每一天、唯讀格的 aria-label 放回去、唯讀格看得見的日期數字沒有 aria-hidden、唯讀格念不到橫跨過來的長條、
  *       labels 覆寫沒生效(名稱是寫死的預設中文)、跳過被藏日子的邏輯不見(焦點落空)、1 號被藏時沒有停靠點、週末寫死週六日(en-IL 照 en-US 藏)、
  *       星期列的週數欄沒讀同一個欄寬、週數格可聚焦、週數字加粗主色、週數第一週天數寫死 1(en-GB 年底變第 1 週)、格陣沒帶 aria-busy、骨架拿掉 aria-hidden、
  *       載入中照念筆數、載入中格子點不到、窄寬沒接上、門檻改看內容寬(內容回授到量測 → 門檻附近每幀來回跳)、
- *       量欄寬改量畫面寬(祖先縮放時讀到縮小後的寬 → 卡在窄版)—— 每一個都必須讓對應的那一格紅。
+ *       量欄寬改量畫面寬(祖先縮放時讀到縮小後的寬 → 卡在窄版)、
+ *       k 不隨格高變(ResizeObserver 換成不做事的版本再重新掛載;最小高與掃格高各一次)、長條改回逐日方塊、事件列 / 長條沒阻止冒泡(點擊冒到它所在的格子)、
+ *       格子是定位元素(後面的格子蓋住長條)、F2 只查格子自己的子孫、斷開那一端也圓角、被藏的日子不切段、k 少算一列 / 多算一列(日期框到事件區差一列的空間)、
+ *       長條沒墊不透明的格子底(深色透出格線)—— 每一個都必須讓對應的那一格紅。
  *   綠: 全部量到且照規格時 exit 0。開 story 走 lib/launch-browser.mjs openStory(等 Storybook 回報渲染完成與被量的格陣出現,不睡固定時間);
  *       開不起來 / 等不到格陣 = 儀器失效(INSTRUMENT-FAIL,exit 1 並點名),不讀成通過。
  */
@@ -58,6 +70,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { AxeBuilder } from '@axe-core/playwright'
+import { PNG } from 'pngjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, requireFreshStorybookBuild, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 
@@ -66,7 +79,7 @@ const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n
 const SELFTEST = process.argv.includes('--selftest')
 const root = path.resolve(REPO, arg('static', 'storybook-static'))
 const CAL = 'packages/design-system/src/components/Calendar'
-requireFreshStorybookBuild(root, [`${CAL}/calendar.tsx`, `${CAL}/calendar-geometry.ts`, `${CAL}/calendar.stories.tsx`, `${CAL}/calendar.anatomy.stories.tsx`, `${CAL}/calendar.principles.stories.tsx`],
+requireFreshStorybookBuild(root, [`${CAL}/calendar.tsx`, `${CAL}/calendar-geometry.ts`, `${CAL}/calendar-layout.ts`, `${CAL}/_calendar-demo.tsx`, `${CAL}/calendar.stories.tsx`, `${CAL}/calendar.anatomy.stories.tsx`, `${CAL}/calendar.principles.stories.tsx`],
   { hint: '先 build storybook(或用 --static=<dir> 指定)' })
 const server = await startA11yStaticServer({ rootDirectory: root, defaultFile: 'iframe.html' })
 process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
@@ -85,6 +98,7 @@ const STORY = {
   weekNumbers: storyId(/calendar-展示--manufacturing-week-numbers$/u),
   loading: storyId(/calendar-展示--loading-while-switching-month$/u),
   narrow: storyId(/calendar-展示--side-panel-narrow$/u),
+  quarter: storyId(/calendar-展示--quarter-planning$/u),
 }
 
 // 規格值(calendar.spec.md「間距」與 header-canonical.spec.md:68);1 號的字是規格寫的 zh-TW 例子
@@ -100,6 +114,17 @@ const MOUNT_SCALE = 0.95
 const MOUNT_SCALE_COL = NARROW_MAX + 2
 /** S5 的情境:把根節點壓到這個高度,週列一定落在最小高(工具列 + 星期列 + 5 × 61 遠大於它) */
 const SQUEEZE_PX = 240
+/**
+ * 每格放得下幾列 k(calendar.spec.md「每格筆數與「+N」」算式,照規格逐字寫、不 import 元件的 calendarRowsThatFit):
+ * k = max(1, ⌊(格高 − 格線 1 − 上內距 4 − 日期框 24 − 日期到第一列 4 − 下內距 4 + 列距 4) ÷ (列高 24 + 列距 4)⌋)。
+ * 量到的格高是 LayoutUnit(1/64 px)取整後的值,加回一個 LayoutUnit 再取整(剛好放滿那一格不因取整少一列)。
+ */
+const specRows = (cellH) => Math.max(1, Math.floor((cellH - 1 - SPEC.gap - SPEC.row - SPEC.gap - SPEC.gap + SPEC.gap + 1 / 64) / (SPEC.row + SPEC.gap)))
+/** B3 掃的格高:跨過 k = 1…7 的每個邊界(⌊…⌋ 的兩側各一格),229 = 剛好放滿 7 列 */
+const ROW_SWEEP = [61, 88, 89, 116, 117, 144, 145, 172, 173, 200, 201, 228, 229, 230]
+/** 產品上線週 7/15 那一格的事件筆數(範例資料:7/13 起的「程式碼凍結」+ 當天 6 件事;車道 0…6) */
+const LAUNCH_DAY = '2026-07-15'
+const LAUNCH_DAY_TOTAL = 7
 const near = (a, b, tol = 0.5) => Number.isFinite(a) && Math.abs(a - b) <= tol
 
 // ── 頁面端量測(以原始碼序列化傳入,不得引用外部變數)────────────────────────────
@@ -153,7 +178,8 @@ const PROBE = () => {
     const innerBottom = c.bottom - parseFloat(cs.borderBottomWidth)
     const contentBottom = innerBottom - parseFloat(cs.paddingBottom)
     return { day: stopOf(cell)?.getAttribute('data-calendar-day'), lastWeek: w === weekRows.length - 1, heights: rows.map((x) => r(x).height),
-      dateToFirst: first.top - box.bottom, bottomPad: innerBottom - first.bottom, overflows: rows.some((x) => r(x).bottom > contentBottom + 0.5) }
+      dateToFirst: first.top - box.bottom, bottomPad: innerBottom - first.bottom, overflows: rows.some((x) => r(x).bottom > contentBottom + 0.5),
+      hasMore: Boolean(list.querySelector('[data-calendar-more]')) }
   })).filter(Boolean)
   const viewport = grid.querySelector('[data-radix-scroll-area-viewport]')
   const v = viewport ? r(viewport) : null
@@ -222,7 +248,7 @@ const browser = await launchBrowser()
 // AxeBuilder 只收 newContext() 開出來的分頁(@axe-core/playwright 的限制)
 const context = await browser.newContext({ viewport: { width: 1280, height: 900 } })
 const page = await context.newPage()
-async function open(id, { args = null, label = id, mutate = null, density = 'md', squeeze = null } = {}) {
+async function open(id, { args = null, label = id, mutate = null, density = 'md', squeeze = null, theme = null } = {}) {
   if (!id) { instrumentFails.push({ cell: label, detail: '找不到 story(改名了?)' }); return null }
   const url = `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story${args ? `&args=${args}` : ''}`
   try {
@@ -230,6 +256,9 @@ async function open(id, { args = null, label = id, mutate = null, density = 'md'
       waitFor: GRID_READY, settleFrames: 10, notFound: server.notFound, label,
       beforeSettle: async (p) => {
         await p.evaluate((d) => document.documentElement.setAttribute('data-density', d), density)
+        if (theme) await p.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme)
+        // 突變要在情境套上之前做的(例:換掉 ResizeObserver 後重新掛載,再壓矮容器)
+        if (mutate?.early) await p.evaluate(mutate.early)
         // 情境(不是突變):consumer 給 Calendar 一個很矮的容器 —— 正式跑與 selftest 一樣套
         if (squeeze) await p.evaluate((h) => { const root = document.querySelector('[role="grid"]')?.parentElement; if (root) root.style.height = `${h}px` }, squeeze)
         if (mutate?.css) await p.addStyleTag({ content: mutate.css })
@@ -362,21 +391,22 @@ const BLOCKS = {
     const h3 = await open(STORY.inspector, { label: 'Inspector titleAs=h3', args: mutate?.titleArgs ?? 'titleAs:h3', mutate })
     if (h3) check('Q1', h3.heading === 'H3', `titleAs="h3" → 標題 ${h3.heading}`)
   },
-  // 容器再矮:事件列與「+N」列不被壓扁(calendar.spec.md「每一週等高」:放不下的列由格子裁掉;放幾列是事件版面那一包的 k)
+  // 容器再矮:事件列與「+N」列不被壓扁(calendar.spec.md「每一週等高」:事件列不被壓扁;「每格筆數與「+N」」:放不下的由「+N」取代)。
+  // 最小高的週 k = 1:每一格只放一列(一筆事件或「+N」),那一列 24、在格子內容框裡、沒有任何一列被裁。
   async squeeze(mutate) {
     const p = await open(STORY.launch, { label: `產品上線週 根節點 ${SQUEEZE_PX}`, mutate, squeeze: SQUEEZE_PX })
     if (!p) return
-    // 先證明情境真的發生了:每週都在最小高、至少一格放不下(否則「列都是 24」可能只是因為格子夠高)
+    // 先證明情境真的發生了:每週都在最小高、至少一格放不下(出現「+N」)—— 否則「列都是 24」可能只是因為格子夠高
     const atMin = p.weekHeights.length >= 5 && p.weekHeights.every((h) => near(h, SPEC.cellMin))
-    const crowded = p.cellRows.filter((c) => c.overflows)
+    const crowded = p.cellRows.filter((c) => c.hasMore)
     if (!atMin || crowded.length === 0) {
-      instrumentFails.push({ cell: 'S5', detail: `情境沒成立:每週高 ${[...new Set(p.weekHeights.map((h) => h.toFixed(2)))].join(' / ')}、放不下的格 ${crowded.length} 個(要每週 = ${SPEC.cellMin} 且至少一格放不下)` })
+      instrumentFails.push({ cell: 'S5', detail: `情境沒成立:每週高 ${[...new Set(p.weekHeights.map((h) => h.toFixed(2)))].join(' / ')}、出現「+N」的格 ${crowded.length} 個(要每週 = ${SPEC.cellMin} 且至少一格放不下)` })
       return
     }
     const rows = p.cellRows.flatMap((c) => c.heights)
-    const squashed = p.cellRows.filter((c) => !c.heights.every((h) => near(h, SPEC.row)))
+    const squashed = p.cellRows.filter((c) => !c.heights.every((h) => near(h, SPEC.row)) || c.overflows)
     check('S5', rows.length >= 3 && squashed.length === 0,
-      `每週 ${SPEC.cellMin}、${crowded.length} 格放不下:${rows.length} 列${squashed.length ? `,被壓扁的格 ${squashed.map((c) => `${c.day}(${c.heights.map((h) => h.toFixed(2)).join('/')})`).join(' ')}` : ' 全是 24'}(規格:列高 24,放不下的列被裁掉、不壓扁)`)
+      `每週 ${SPEC.cellMin}、${crowded.length} 格出現「+N」:${rows.length} 列${squashed.length ? `,被壓扁或被裁的格 ${squashed.map((c) => `${c.day}(${c.heights.map((h) => h.toFixed(2)).join('/')}${c.overflows ? '、超出格子' : ''})`).join(' ')}` : ' 全是 24、都在格子裡'}(規格:列高 24,放不下的由「+N」取代、不壓扁也不被裁)`)
   },
   // 讀屏名稱(N1–N4):日期停靠點、今天、唯讀格、labels 覆寫
   async namesClickable(mutate) {
@@ -426,6 +456,12 @@ const BLOCKS = {
       const rest = c?.name?.startsWith(head) ? c.name.slice(head.length) : null
       check('N3-holiday', c?.ariaLabel === null && rest !== null && rest.includes('公司創立紀念日') && !/(^|\s)3(\s|$)/u.test(rest),
         `事件也唯讀時 7/3 名稱「${c?.name}」(aria-label ${c?.ariaLabel};規格:開頭日期 + 筆數、接純文字的事件標題、看得見的「3」不重念)`)
+      // 長條涵蓋的第 2 天:年中盤點 7/23–7/24 是一條長條、DOM 在 7/23 那格 —— 7/24 的格子名稱照樣要念到它的標題(事件版面那一包起)
+      const carried = await cellName('2026-07-24')
+      const head2 = '2026年7月24日 星期五,1 個事件'
+      const rest2 = carried?.name?.startsWith(head2) ? carried.name.slice(head2.length) : null
+      check('N3-bar', carried?.ariaLabel === null && rest2 !== null && rest2.includes('年中盤點(辦公室關閉)') && !/(^|\s)24(\s|$)/u.test(rest2),
+        `長條涵蓋的第 2 天 7/24 名稱「${carried?.name}」(規格:開頭日期 + 筆數,接著念得到從 7/23 橫跨過來的「年中盤點(辦公室關閉)」、看得見的「24」不重念)`)
     }
   },
   async namesEnglish(mutate) {
@@ -647,6 +683,186 @@ const BLOCKS = {
       + `星期「${mounted.heads.join(' ')}」、1 號「${mounted.firsts.join(' / ')}」→ ${mounted.narrow === false ? '寬版' : mounted.narrow ? '窄版' : '混雜'}`
       + `(規格:斷點看版面上的欄寬,${MOUNT_SCALE_COL} > ${NARROW_MAX} = 寬版,掛載時祖先縮放不得讓它變窄)`)
   },
+  // ── 跨日長條(calendar.spec.md「跨日長條」【C1、Q3(定)】、Cell 規則「命中區」【Q6(定)、總帳更正 #3】、「A11y 預設」格內那段)──
+  // B1 團隊行事曆「Alex 休假」7/20–7/22 是一個元素,左緣 = 7/20 內容左緣、右緣 = 7/22 內容右緣(≈ 3 欄);
+  // B4 點長條第 3 天(7/22)那一段:命中長條、開的是這個事件(示範殼的事件浮層,日期寫「7 月 20 日 – 7 月 22 日 · 全天」)、不會開「新增事件」;
+  //    點單筆唯讀的公司假日(7/3):什麼都不開;B6 從長條涵蓋的第 2 天(7/21)按 F2,焦點落在同一條長條上(DOM 在第 1 天那格)。
+  async bars(mutate) {
+    const p = await open(STORY.team, { label: '團隊行事曆 跨日長條', mutate })
+    if (!p) return
+    const geo = await page.evaluate(() => {
+      const g = document.querySelector('[role="grid"]')
+      const r = (el) => el.getBoundingClientRect()
+      const cell = (iso) => g.querySelector(`[data-calendar-day="${iso}"]`)?.closest('[role="gridcell"]')
+      const els = [...g.querySelectorAll('[data-calendar-covers]')].filter((el) => el.textContent.trim() === 'Alex 休假')
+      const c0 = cell('2026-07-20'), c2 = cell('2026-07-22'), hol = [...g.querySelectorAll('[data-calendar-covers]')].find((el) => el.textContent.trim() === '公司創立紀念日')
+      if (!els[0] || !c0 || !c2 || !hol) return null
+      const b = r(els[0]), cs0 = getComputedStyle(c0), cs2 = getComputedStyle(c2), r2 = r(c2), h = r(hol)
+      const at = { x: (r2.left + r2.right) / 2, y: b.top + b.height / 2 }
+      const hit = document.elementFromPoint(at.x, at.y)
+      return { count: els.length, left: b.left, right: b.right, colW: r(c0).width,
+        expLeft: r(c0).left + parseFloat(cs0.borderLeftWidth) + parseFloat(cs0.paddingLeft), expRight: r2.right - parseFloat(cs2.borderRightWidth) - parseFloat(cs2.paddingRight),
+        at, hitIsBar: Boolean(hit && els[0].contains(hit)), hitWhat: hit ? `${hit.tagName}[${hit.getAttribute('role') ?? ''}]` : null,
+        holiday: { x: (h.left + h.right) / 2, y: h.top + h.height / 2 } }
+    })
+    if (!geo) { instrumentFails.push({ cell: 'B1', detail: '團隊行事曆找不到「Alex 休假」長條、7/20 / 7/22 的格子或公司假日(範例資料改了?)' }); return }
+    check('B1', geo.count === 1 && near(geo.left, geo.expLeft) && near(geo.right, geo.expRight),
+      `「Alex 休假」${geo.count} 個元素、左緣 ${geo.left.toFixed(2)} / 右緣 ${geo.right.toFixed(2)}(規格:一個元素,從 7/20 內容左緣 ${geo.expLeft.toFixed(2)} 畫到 7/22 內容右緣 ${geo.expRight.toFixed(2)};一欄 ${geo.colW.toFixed(2)})`)
+    // 點擊:真的滑鼠點在 7/22 那一段的正中(不是程式化 click —— 量的是命中與冒泡)
+    const newEvent = () => page.getByRole('dialog', { name: '新增事件' }).count()
+    const eventPopover = () => page.getByRole('dialog').filter({ hasText: 'Alex 休假' }).filter({ hasText: '7 月 20 日 – 7 月 22 日 · 全天' }).count()
+    const settle = () => page.evaluate(() => new Promise((res) => { let n = 0; const f = () => (++n >= 10 ? res() : requestAnimationFrame(f)); requestAnimationFrame(f) }))
+    await page.mouse.click(geo.at.x, geo.at.y)
+    await page.getByRole('dialog').first().waitFor({ state: 'visible', timeout: 3000 }).catch(() => {})
+    await settle()
+    const barResult = { popover: await eventPopover(), create: await newEvent() }
+    check('B4-bar', geo.hitIsBar && barResult.popover === 1 && barResult.create === 0,
+      `點「Alex 休假」7/22 那一段:命中 ${geo.hitIsBar ? '長條' : geo.hitWhat}、事件浮層 ${barResult.popover} 個、「新增事件」${barResult.create} 個(規格:開這個事件、阻止冒泡,不會在 7/20 或 7/22 新增)`)
+    // 關掉剛開的(對照組可能兩個都開了),等收起動畫走完、對話框 / 浮層都不在了再點下一個
+    for (let i = 0; i < 2; i++) await page.keyboard.press('Escape')
+    const cleared = await page.waitForFunction(() => !document.querySelector('[role="dialog"]'), null, { timeout: 3000 }).then(() => true, () => false)
+    if (!cleared) { instrumentFails.push({ cell: 'B4-readonly', detail: '按 Esc 後對話框 / 浮層 3 秒內沒收起,量不到「點唯讀事件什麼都不開」' }); return }
+    await page.mouse.click(geo.holiday.x, geo.holiday.y)
+    await settle()
+    const ro = { dialogs: await page.getByRole('dialog').count() }
+    check('B4-readonly', ro.dialogs === 0, `點單筆唯讀的「公司創立紀念日」:開了 ${ro.dialogs} 個對話框 / 浮層(規格:什麼都不發生 —— 不開事件、也不在 7/3 新增)`)
+    // F2 從長條涵蓋的第 2 天進格
+    await page.locator('button[data-calendar-day="2026-07-21"]').focus()
+    await page.keyboard.press('F2')
+    const f2 = await page.evaluate(() => {
+      const a = document.activeElement
+      return { tile: Boolean(a?.hasAttribute('data-calendar-tile')), title: a?.textContent?.trim() ?? null, at: a?.getAttribute('data-calendar-day') ?? null }
+    })
+    check('B6', f2.tile && f2.title === 'Alex 休假', `7/21 按 F2:焦點在 ${f2.tile ? `事件「${f2.title}」` : `日期 ${f2.at}`}(規格:從長條涵蓋的每一天進格都走得到它)`)
+  },
+  // ── 斷開端直角(【Q3(定)】;斷開 = 換週、可見範圍外、被藏起來的日子;calendar-layout.ts CalendarEventSegment)──
+  // 量 computed border-radius 四個角:斷開那一端 = 0、真起訖那一端 > 0。三則:季度規劃(換週 + 延續到下個月)、元件檢閱器週三起 + 隱藏週末
+  //(週末在一列中間 → 週五、週一相鄰兩欄,中間切開)、客服排班(週日起、週五收週一起)。
+  async segments(mutate) {
+    const radiiOf = (title) => page.evaluate((t) => [...document.querySelectorAll('[role="grid"] [data-calendar-covers]')]
+      .filter((el) => el.textContent.trim() === t)
+      .map((el) => { const cs = getComputedStyle(el), b = el.getBoundingClientRect(); return { covers: el.getAttribute('data-calendar-covers'), left: b.left, right: b.right, top: b.top,
+        tl: parseFloat(cs.borderTopLeftRadius), bl: parseFloat(cs.borderBottomLeftRadius), tr: parseFloat(cs.borderTopRightRadius), br: parseFloat(cs.borderBottomRightRadius) } })
+      .sort((a, b) => a.covers.localeCompare(b.covers)), title)
+    const ends = (x) => `${x.covers.split(' ')[0]}…${x.covers.split(' ').at(-1)} 左 ${x.tl}/${x.bl} 右 ${x.tr}/${x.br}`
+    const shape = (x, left, right) => x && (left ? x.tl > 0 && x.bl > 0 : x.tl === 0 && x.bl === 0) && (right ? x.tr > 0 && x.br > 0 : x.tr === 0 && x.br === 0)
+    const q = await open(STORY.quarter, { label: '季度規劃 斷開端', mutate })
+    if (q) {
+      const sprint = await radiiOf('設計衝刺'), plan = await radiiOf('Q3 規劃週'), budget = await radiiOf('年度預算編列'), single = await radiiOf('預算定稿會議')
+      check('B2-week', sprint.length === 2 && shape(sprint[0], true, false) && shape(sprint[1], false, true) && plan.length === 1 && shape(plan[0], true, false)
+        && budget.length === 1 && shape(budget[0], true, true) && single.length === 1 && shape(single[0], true, true),
+        `「設計衝刺」${sprint.map(ends).join(';')};「Q3 規劃週」${plan.map(ends).join(';')};「年度預算編列」${budget.map(ends).join(';')};單日「預算定稿會議」${single.map(ends).join(';')}`
+        + '(規格:換週切成兩段、內側兩端直角;延續到下個月那一端直角;真起訖圓角)')
+    }
+    const insp = await open(STORY.inspector, { label: 'Inspector 週三起 + 隱藏週末', args: 'weekStartsOn:3;hideWeekends:!true', mutate })
+    if (insp) {
+      const move = await radiiOf('機房搬遷')
+      const sameRow = move.length === 2 && near(move[0].top, move[1].top) && near(move[1].left - move[0].right, 2 * SPEC.gap + 1, 1)
+      check('B2-hidden', move.length === 2 && sameRow && shape(move[0], true, false) && shape(move[1], false, true),
+        `「機房搬遷」週五–週一、週末在一列中間:${move.map(ends).join(';')}、同一列相鄰兩欄 ${sameRow}(規格:被藏的週末把長條切成兩段,週五收、週一起,內側兩端直角)`)
+    }
+    const wk = await open(STORY.weekdays, { label: '客服排班 跨週末長條', mutate })
+    if (wk) {
+      const phone = await radiiOf('電話系統移轉')
+      check('B2-weekend', phone.length === 2 && shape(phone[0], true, false) && shape(phone[1], false, true),
+        `「電話系統移轉」週五–週一(隱藏週末、週日起):${phone.map(ends).join(';')}(規格:週五收、週一起,兩端直角)`)
+    }
+  },
+  // ── 每格放幾列依格高(calendar.spec.md「每格筆數與「+N」」【C3、總帳更正 #7】;k 的算式【AI 推導】)──
+  // 產品上線週 7/15(7 筆、車道 0…6):把週列的格高逐一設成 ROW_SWEEP,每個格高等 3 幀、連看 4 幀,量 ——
+  // B3-k:畫出來的筆數與「+N」照規格算式(本閘自己照規格寫的 specRows)由量到的格高推:k ≥ 7 全畫、沒有「+N」;否則畫 k − 1 筆、N = 8 − k(元件傳進版面的 k
+  //       是不是「量到的格高算出來的那個值」—— M32 參數邊界);4 幀狀態不變(不來回跳)。
+  // B3-fit:每一格畫出來的列都是 24、都在格子內容框裡(沒有被裁);出現「+N」的格,「+N」下面放不下另一列(k 沒有少算)。
+  // B3-exact:剛好放滿(格高 229 = 7 列)時不出現「+N」。
+  // 前提(量不到 = 儀器失效):每個格高真的設進去了(±0.5)、掃描裡同時有出現「+N」與沒有「+N」的格高。
+  async rowsFit(mutate) {
+    const p = await open(STORY.launch, { label: '產品上線週 格高掃描', mutate })
+    if (!p) return
+    const sweep = await page.evaluate(async ({ targets, day, weeks }) => {
+      const frame = () => new Promise((r) => requestAnimationFrame(() => r()))
+      const g = document.querySelector('[role="grid"]'), root = g.parentElement
+      const cells = () => [...g.querySelectorAll('[role="gridcell"]')]
+      const cellOf = (iso) => g.querySelector(`[data-calendar-day="${iso}"]`)?.closest('[role="gridcell"]')
+      const area = g.querySelector('[data-radix-scroll-area-viewport]')
+      const base = { root: root.getBoundingClientRect().height, area: area.getBoundingClientRect().height }
+      const state = () => {
+        const c = cellOf(day)
+        const more = c?.querySelector('[data-calendar-more]')
+        const bad = []
+        for (const cell of cells()) {
+          const list = cell.children[1]
+          if (!list) continue
+          const cs = getComputedStyle(cell), cr = cell.getBoundingClientRect()
+          const contentBottom = cr.bottom - parseFloat(cs.borderBottomWidth) - parseFloat(cs.paddingBottom)
+          for (const row of list.children) {
+            const rr = row.getBoundingClientRect()
+            if (Math.abs(rr.height - 24) > 0.5 || rr.bottom > contentBottom + 0.5) bad.push(`${cell.querySelector('[data-calendar-day]')?.getAttribute('data-calendar-day')} 列高 ${rr.height.toFixed(1)}、底 ${rr.bottom.toFixed(1)} > 內容底 ${contentBottom.toFixed(1)}`)
+          }
+          const m = list.querySelector('[data-calendar-more]')
+          if (m) {
+            const room = contentBottom - m.getBoundingClientRect().bottom
+            if (room >= 28 - 0.5) bad.push(`${cell.querySelector('[data-calendar-day]')?.getAttribute('data-calendar-day')}「+N」下面還有 ${room.toFixed(1)}`)
+          }
+        }
+        return { h: parseFloat(getComputedStyle(c).height), drawn: g.querySelectorAll(`[data-calendar-covers~="${day}"]`).length,
+          n: more ? Number(/\d+/.exec(more.textContent)?.[0] ?? NaN) : 0, bad }
+      }
+      const out = []
+      for (const t of targets) {
+        root.style.height = `${base.root - base.area + weeks * t}px`
+        for (let i = 0; i < 3; i++) await frame()
+        const seen = []
+        for (let i = 0; i < 4; i++) { await frame(); seen.push(state()) }
+        out.push({ target: t, seen })
+      }
+      return out
+    }, { targets: ROW_SWEEP, day: LAUNCH_DAY, weeks: p.weekHeights.length })
+    // 依規格算式,這一 7 筆的格在每個格高該畫幾筆、N 是多少
+    const expect = (h) => { const k = specRows(h); return k >= LAUNCH_DAY_TOTAL ? { k, drawn: LAUNCH_DAY_TOTAL, n: 0 } : { k, drawn: k - 1, n: LAUNCH_DAY_TOTAL - (k - 1) } }
+    // 前提(儀器):每個格高真的設進去了;掃描的格高照規格同時涵蓋「該出現「+N」」與「剛好放滿、不該出現」兩種(看期望值,不看量到的 —— 量到的是被驗的東西)
+    const set = sweep.filter((s) => s.seen.every((x) => near(x.h, s.target)))
+    const withMore = ROW_SWEEP.some((t) => expect(t).n > 0), without = ROW_SWEEP.some((t) => expect(t).n === 0)
+    if (set.length !== sweep.length || !withMore || !without) {
+      instrumentFails.push({ cell: 'B3', detail: `前提沒成立:格高設進去的 ${set.length}/${sweep.length}(${sweep.filter((s) => !set.includes(s)).map((s) => `${s.target}→${s.seen[0].h}`).join('、')})、掃描涵蓋該有「+N」${withMore}、該沒有「+N」${without}` })
+      return
+    }
+    const kBad = sweep.filter((s) => s.seen.some((x) => { const e = expect(x.h); return x.drawn !== e.drawn || x.n !== e.n }) || new Set(s.seen.map((x) => `${x.drawn}/${x.n}`)).size > 1)
+    const fmt = (s) => { const x = s.seen[0], e = expect(x.h); return `格高 ${x.h}:k ${e.k}、畫 ${s.seen.map((y) => y.drawn).join('/')}(應 ${e.drawn})、N ${s.seen.map((y) => y.n).join('/')}(應 ${e.n})` }
+    check('B3-k', kBad.length === 0, `${sweep.length} 個格高:${(kBad.length ? kBad : sweep.filter((_, i) => i % 4 === 0)).map(fmt).join(';')}(規格:k 由量到的格高算,m > k 時畫 k − 1 筆、第 k 列換「+N」)`)
+    const fitBad = sweep.flatMap((s) => s.seen[0].bad.map((b) => `@${s.target} ${b}`))
+    check('B3-fit', fitBad.length === 0, `每格的列都在格子裡、「+N」下面放不下另一列:${fitBad.slice(0, 3).join(';') || '全部成立'}(規格:列高 24、不裁不壓;剛好放不下才換「+N」)`)
+    const exact = sweep.find((s) => s.target === 229)
+    check('B3-exact', Boolean(exact) && exact.seen.every((x) => x.n === 0 && x.drawn === LAUNCH_DAY_TOTAL),
+      `格高 229(剛好放滿 7 列):畫 ${exact?.seen[0].drawn}、N ${exact?.seen[0].n}(規格:剛好放滿不出現「+N」)`)
+  },
+  // ── 深色主題長條不透出格線(決策總帳 2026-11-25 已定 (9);研究 BARM-X1:深色類別淡底 step-1 半透明)──
+  // 「Alex 休假」長條在 7/20 與 7/21 交界那條格線上:格線那一個 px 的顏色 = 旁邊 3px 長條內的顏色(每個色版差 ≤ 2);兩個主題都量。
+  // 前提:長條下方(列與列的縫)同一條格線看得到(跟旁邊的格子底差 ≥ 4)—— 證明量的那個 x 真的是格線。
+  async underlay(mutate) {
+    for (const theme of ['light', 'dark']) {
+      const p = await open(STORY.team, { label: `團隊行事曆 長條底 ${theme}`, mutate, theme })
+      if (!p) continue
+      const geo = await page.evaluate(() => {
+        const g = document.querySelector('[role="grid"]')
+        const bar = [...g.querySelectorAll('[data-calendar-covers]')].find((el) => el.textContent.trim() === 'Alex 休假')
+        const c0 = g.querySelector('[data-calendar-day="2026-07-20"]')?.closest('[role="gridcell"]')
+        if (!bar || !c0) return null
+        const b = bar.getBoundingClientRect(), c = c0.getBoundingClientRect()
+        return { lineX: Math.floor(c.right - 0.5), inY: Math.floor(b.top + 3), outY: Math.floor(b.bottom + 2) }
+      })
+      if (!geo) { instrumentFails.push({ cell: `B7-${theme}`, detail: '找不到「Alex 休假」長條或 7/20 的格子' }); continue }
+      const px = async (y) => {
+        const png = PNG.sync.read(await page.screenshot({ clip: { x: geo.lineX - 3, y, width: 7, height: 1 } }))
+        const at = (i) => [png.data[i * 4], png.data[i * 4 + 1], png.data[i * 4 + 2]]
+        return { left: at(0), line: at(3), right: at(6) }
+      }
+      const diff = (a, b) => Math.max(...a.map((v, i) => Math.abs(v - b[i])))
+      const inBar = await px(geo.inY), below = await px(geo.outY)
+      if (diff(below.line, below.left) < 4) { instrumentFails.push({ cell: `B7-${theme}`, detail: `長條下方的格線看不到(格線 ${below.line} / 旁邊 ${below.left})—— 量的 x 不是格線` }); continue }
+      const d = Math.max(diff(inBar.line, inBar.left), diff(inBar.line, inBar.right))
+      check(`B7-${theme}`, d <= 2, `${theme} 長條裡格線那一 px ${inBar.line}、左右 3px ${inBar.left} / ${inBar.right}(差 ${d});長條下方格線 ${below.line} vs 格子底 ${below.left}(規格:長條蓋住格線,差 ≤ 2)`)
+    }
+  },
   // 今天剛好是 1 號:Inspector 拿掉 today 參數(元件改用 new Date()),時鐘釘在 2026-07-01 上午 10 點(本機時區)。
   // 不用網址傳日期:Storybook 的網址參數對 Date 型別的 arg 一律丟掉(實測 !date(...) 沒生效)。
   // 時鐘是整個 context 共用、釘了就回不去 —— 本區塊一律排在最後跑(其他區塊的 story 都明傳 today,本來也不受影響);
@@ -663,6 +879,16 @@ const BLOCKS = {
 }
 
 // ── 對照組 ──────────────────────────────────────────────────────────────────
+// 「k 不隨格高變」:把 ResizeObserver 換成不做事的版本再重新掛載(Storybook forceRemount)—— 元件只在掛載當下量一次格高,
+// 之後容器變矮 / 變高 k 都不跟(= 量格高沒接上觀察者,或 k 寫死)。以原始碼序列化傳進頁面,不得引用外部變數。
+const REMOUNT_WITHOUT_RESIZE_OBSERVER = async () => {
+  const frame = () => new Promise((r) => requestAnimationFrame(() => r()))
+  window.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} }
+  const before = document.querySelector('[role="grid"]')
+  window.__STORYBOOK_ADDONS_CHANNEL__?.emit('forceRemount', { storyId: new URLSearchParams(location.search).get('id') })
+  for (let i = 0; i < 300 && document.querySelector('[role="grid"]') === before; i++) await frame()
+  for (let i = 0; i < 5; i++) await frame()
+}
 // 每個突變:套在哪個區塊、預期哪幾格紅(其他格紅不算數,也不要求綠)
 const MUTANTS = [
   { name: '星期列搬出格陣', block: 'layout', expect: ['H1'], dom: () => { const g = document.querySelector('[role="grid"]'); const row = g?.querySelector('[role="row"]'); if (g && row) g.parentElement.insertBefore(row, g) } },
@@ -678,8 +904,9 @@ const MUTANTS = [
   { name: '週列捲動區不能捲', block: 'scroll', expect: ['S2'], css: '[role="grid"] [data-radix-scroll-area-viewport] { overflow: hidden !important; }' },
   // 回到 2026-11-25 首版的 60(沒算格線):最小高的週裡內容少 1px → 列不被壓就吃掉下內距(S4),週高也不是 61(S1)
   { name: '格最小高沒算格線(60)', block: 'scroll', expect: ['S1', 'S4'], css: '[role="grid"] { --calendar-cell-min-h: 60px !important; }' },
-  // 回到首版的 min-h-0:事件列那一層可以被壓,格子放不下時裡面的列跟著縮
-  { name: '事件列外層可被壓(min-h-0)', block: 'squeeze', expect: ['S5'], css: '[role="gridcell"] > :nth-child(2) { flex-shrink: 1 !important; min-height: 0 !important; }' },
+  // 每格放幾列沒有跟著格高(2026-11-25 前寫死每格 3 筆、事件版面那一包前列被壓扁的情況):掛載時格子高,壓到最小高後 k 不變 → 列超出格子被裁
+  //(首版那個「事件列外層可被壓(min-h-0)」對照組在 k 依格高之後量不到東西 —— 最小高的週 k = 1、一列剛好放得下,沒有東西可壓;改成這一個)
+  { name: 'k 不隨格高變(ResizeObserver 沒接上)— 最小高', block: 'squeeze', expect: ['S5'], early: REMOUNT_WITHOUT_RESIZE_OBSERVER },
   { name: '日期鈕的 focus() 失效', block: 'keyboardStop', expect: ['K1'], dom: () => { HTMLButtonElement.prototype.focus = function noop() {} } },
   { name: 'en-GB 卻寫死週日起', block: 'inspector', expect: ['L1'], gbArgs: 'locale:en-GB;weekStartsOn:0' },
   { name: '標題層級不跟 titleAs', block: 'inspector', expect: ['Q1'], titleArgs: 'titleAs:h2' },
@@ -690,6 +917,8 @@ const MUTANTS = [
   { name: '唯讀格的 aria-label 放回去', block: 'namesReadOnly', expect: ['N3-publish', 'N3-holiday'], dom: () => document.querySelectorAll('[role="gridcell"][data-calendar-day]').forEach((c) => c.setAttribute('aria-label', `${c.getAttribute('data-calendar-day')},0 個事件`)) },
   { name: '唯讀格看得見的日期數字沒有 aria-hidden', block: 'namesReadOnly', expect: ['N3-publish', 'N3-holiday'], dom: () => document.querySelectorAll('[role="gridcell"][data-calendar-day] [aria-hidden]').forEach((el) => el.removeAttribute('aria-hidden')) },
   { name: '唯讀格沒有 aria-current', block: 'namesReadOnly', expect: ['N2-readonly'], dom: () => document.querySelectorAll('[aria-current]').forEach((el) => el.removeAttribute('aria-current')) },
+  // 長條只在 DOM 所在那一格念得到:拿掉橫跨過來的長條補給讀屏的標題(= 只靠 DOM 位置,第 2 天起的唯讀格念不到)
+  { name: '唯讀格念不到橫跨過來的長條', block: 'namesReadOnly', expect: ['N3-bar'], dom: () => document.querySelectorAll('[data-calendar-carried]').forEach((el) => el.remove()) },
   // labels 沒接上 = 元件裡寫死預設中文:名稱回到預設字串
   { name: 'labels 覆寫沒生效(寫死預設中文)', block: 'namesEnglish', expect: ['N4'], dom: () => {
     const fmt = new Intl.DateTimeFormat('zh-TW', { dateStyle: 'full' })
@@ -752,6 +981,46 @@ const MUTANTS = [
       } })
     }
   } },
+  // 跨日長條(B1 / B4 / B6)
+  { name: '長條改回逐日方塊(每涵蓋一天各一塊)', block: 'bars', expect: ['B1'], dom: () => {
+    const g = document.querySelector('[role="grid"]')
+    const bar = [...g.querySelectorAll('[data-calendar-covers]')].find((el) => el.textContent.trim() === 'Alex 休假')
+    if (!bar) return
+    for (const iso of bar.getAttribute('data-calendar-covers').split(' ')) {
+      const area = g.querySelector(`[data-calendar-day="${iso}"]`)?.closest('[role="gridcell"]')?.children[1]
+      const copy = bar.cloneNode(true)
+      copy.style.width = ''
+      copy.setAttribute('data-calendar-covers', iso)
+      area?.append(copy)
+    }
+    bar.remove()
+  } },
+  // 沒阻止冒泡 = 點擊冒到長條 DOM 所在的那一格(長條在第一格 → 在 7/20 新增;唯讀列 → 在 7/3 新增)
+  { name: '事件列 / 長條沒阻止冒泡(點擊冒到它所在的格子)', block: 'bars', expect: ['B4-bar', 'B4-readonly'], dom: () => document.addEventListener('click', (e) => {
+    const piece = e.target instanceof Element ? e.target.closest('[data-calendar-covers]') : null
+    if (piece) piece.closest('[role="gridcell"]')?.click()
+  }, true) },
+  // 格子是定位元素:後面的格子(DOM 在長條之後)蓋在長條上,點第 3 天那段落到第 3 格
+  { name: '格子是定位元素(後面的格子蓋住長條)', block: 'bars', expect: ['B4-bar'], css: '[role="gridcell"] { position: relative !important; }' },
+  // 格內 widget 只查格子自己(長條只認它所在的第一天)
+  { name: 'F2 只查格子自己的子孫(從長條的第 2 天進不了格)', block: 'bars', expect: ['B6'], dom: () => document.querySelectorAll('[data-calendar-covers]').forEach((el) => el.setAttribute('data-calendar-covers', el.getAttribute('data-calendar-covers').split(' ')[0])) },
+  // 斷開端(B2)
+  { name: '斷開那一端也圓角(一律 rounded)', block: 'segments', expect: ['B2-week', 'B2-hidden', 'B2-weekend'], css: '[data-calendar-covers] { border-radius: 4px !important; }' },
+  // 被藏的週末不切段:週五、週一兩段連成一條(模擬版面沒在被藏的日子切開時畫出來的樣子)
+  { name: '被藏的日子不切段(週五、週一連成一條)', block: 'segments', expect: ['B2-hidden'], dom: () => {
+    const two = [...document.querySelectorAll('[role="grid"] [data-calendar-covers]')].filter((el) => el.textContent.trim() === '機房搬遷')
+    if (two.length !== 2) return
+    const [a, b] = two.sort((x, y) => x.getBoundingClientRect().left - y.getBoundingClientRect().left)
+    a.style.width = `${b.getBoundingClientRect().right - a.getBoundingClientRect().left}px`
+    b.remove()
+  } },
+  // 每格放幾列(B3)
+  { name: 'k 不隨格高變(ResizeObserver 沒接上)— 掃格高', block: 'rowsFit', expect: ['B3-k', 'B3-fit'], early: REMOUNT_WITHOUT_RESIZE_OBSERVER },
+  // k 與格子的幾何對不上:日期框到事件區多 / 少一列的空間(= 算式多扣 / 少扣一段)
+  { name: 'k 少算一列(「+N」下面還放得下一列)', block: 'rowsFit', expect: ['B3-fit'], css: '[role="gridcell"] > :first-child { margin-bottom: -28px !important; }' },
+  { name: 'k 多算一列(列超出格子被裁)', block: 'rowsFit', expect: ['B3-fit'], css: '[role="gridcell"] > :first-child { margin-bottom: 28px !important; }' },
+  // 深色主題長條底(B7):拿掉不透明的格子底 → 深色的半透明淡底透出格線(淺色的淡底不透明,照綠)
+  { name: '長條沒墊不透明的格子底', block: 'underlay', expect: ['B7-dark'], css: '[data-calendar-covers] { background: none !important; }' },
   // 必須最後一個(todayFirst 會釘住時鐘,見該區塊註解)
   { name: '1 號的實心底被壓成 24 寬', block: 'todayFirst', expect: ['R1'], css: '[data-calendar-day="2026-07-01"] { padding: 0 !important; max-width: var(--tag-height-md) !important; }' },
 ]
@@ -763,7 +1032,7 @@ if (!SELFTEST) {
   for (const m of MUTANTS) {
     const from = results.length, fromFails = instrumentFails.length
     console.log(`── 突變:${m.name}(預期 ${m.expect.join(' / ')} 紅)`)
-    await BLOCKS[m.block]({ css: m.css, dom: m.dom, gbArgs: m.gbArgs, titleArgs: m.titleArgs, ilArgs: m.ilArgs, after: m.after })
+    await BLOCKS[m.block](m)
     const red = new Set(results.slice(from).filter((x) => !x.ok).map((x) => x.id))
     const ok = m.expect.every((id) => red.has(id)) && instrumentFails.length === fromFails
     if (ok) caught++

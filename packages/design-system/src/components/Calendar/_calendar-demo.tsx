@@ -6,7 +6,9 @@
 // 依據:user 2026-10-21 確認頁 D13「d13照你建議」(建議 = 上面這三個結果)。
 // 唯讀的日期格 / 事件方塊(`readOnlyDates` / `readOnlyEvents`)照樣唯讀 —— 殼只替可點的那一半接上結果。
 import * as React from 'react'
+import { addDays } from 'date-fns'
 import { Calendar, type CalendarEvent, type CalendarProps } from './calendar'
+import { normalizeEvents, parseEventDate } from './calendar-layout'
 import { Popover, PopoverAnchor, PopoverContent, PopoverHeader, PopoverTitle, PopoverBody } from '@/design-system/components/Popover/popover'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter, DialogClose } from '@/design-system/components/Dialog/dialog'
 import { Button } from '@/design-system/components/Button/button'
@@ -25,15 +27,18 @@ type CalendarDemoProps = Omit<CalendarProps, 'onDateClick' | 'onEventClick' | 'o
 
 const pad = (n: number) => String(n).padStart(2, '0')
 const isoOf = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-const dayText = (v: string | Date) => {
-  const d = typeof v === 'string' ? new Date(`${v.slice(0, 10)}T00:00:00`) : v
-  return `${d.getMonth() + 1} 月 ${d.getDate()} 日`
-}
-/** 事件日期一行字:單日「7 月 12 日」;跨日「7 月 20 日 – 7 月 22 日」;全天事件加「· 全天」 */
+const dayText = (d: Date) => `${d.getMonth() + 1} 月 ${d.getDate()} 日`
+/**
+ * 事件日期一行字:單日「7 月 12 日」;跨日「7 月 20 日 – 7 月 22 日」;全天事件加「· 全天」。
+ * 畫在哪幾天照元件同一份資料語意(calendar-layout.ts normalizeEvents:end 不含、只有日期 → 全天、未滿 24 小時只算開始那天),
+ * 不在示範殼另算一份 —— 2026-11-25 前這裡直接讀 end,改成「end 不含」後全天事件會多寫一天。
+ */
 const eventWhen = (event: CalendarEvent) => {
-  const s = dayText(event.start)
-  const e = dayText(event.end)
-  return `${s === e ? s : `${s} – ${e}`}${event.allDay ? ' · 全天' : ''}`
+  const [entry] = normalizeEvents([event])
+  if (!entry) return ''
+  const s = dayText(entry.firstDay)
+  const e = dayText(entry.lastDay)
+  return `${s === e ? s : `${s} – ${e}`}${entry.allDay ? ' · 全天' : ''}`
 }
 
 /** 月曆 + 三個點擊目標的結果 + 這一則 story 自己的 Toaster(toast.spec.md「app-level-one」允許 Storybook 每個 story root 一個) */
@@ -47,7 +52,9 @@ export function CalendarDemo({ events: initialEvents = [], readOnlyDates, readOn
     validate: { title: (v) => (String(v).trim() ? undefined : `${noun}名稱必填`) },
     onSubmit: (values) => {
       const date = String(values.date)
-      setEvents((prev) => [...prev, { id: `new-${prev.length + 1}`, title: String(values.title).trim(), start: date, end: date, color: 'blue' }])
+      // 新增的是那一天的全天事件:end 不含 → 寫隔天(calendar.spec.md「資料語意」;寫同一天會被當成零長度、開發期警告)
+      const end = isoOf(addDays(parseEventDate(date), 1))
+      setEvents((prev) => [...prev, { id: `new-${prev.length + 1}`, title: String(values.title).trim(), start: date, end, color: 'blue' }])
       toast({ variant: 'success', title: `${noun}已新增` })
       setCreateOpen(false)
     },

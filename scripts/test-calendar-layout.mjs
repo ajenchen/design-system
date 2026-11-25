@@ -11,6 +11,8 @@
  *        被藏的日子把長條切段;每格 m = 最高佔用車道 + 1,m > k → 車道 0…k−2 照畫、第 k 列換「+N」、N = 車道 ≥ k−1 的筆數(看車道不看筆數),
  *        長條在溢出那一格被切開;格內排序五條(開始日期 → 長的在上 → 全天先 → 開始時間 → 標題依 locale),車道與「+N」清單共用;
  *        CalendarEventSegment 五個旗標(isStart / isEnd = 真起訖、continuesBefore / continuesAfter = 可見範圍外、isSegmentRepeat = 不是第一段)。
+ *        k 是誰算的(M32 參數邊界):每格放得下幾列的算式住在 calendar-geometry.ts `calendarRowsThatFit`(格高 → k 的判定表,含剛好放滿與
+ *        LayoutUnit 取整的邊界);calendar.tsx 交給 layoutMonth 的 maxRows 只有一個來源 = 量到的格高(layoutBorderBoxSize 的 height)經這支算式。
  *        靜態:檔頭 10 行內 @internal、帶「── 消費的 SSOT ──」、不 import calendar.tsx / react、不寫固定毫秒、不開 timeZone、
  *        Calendar/index.ts 不轉出它。
  *   紅: 判定表任一格不符(期望值照規格逐格手寫,不是抄輸出)→ exit 1,逐格印出實得 / 應得;任何月格版面違反全域不變式
@@ -20,7 +22,8 @@
  *        只有日期不推斷 / Date 也推斷 / 一端就推斷、只有日期走原生解析、本地時刻當 UTC、車道一律往下疊、只看最後一天空不空、
  *        每一天各自從 0 往下排、被藏日子的事件夾到旁邊、被藏的日子不切段、isStart 寫成 !continuesBefore、旗標用整週範圍算、
  *        改用筆數算 +N、整條長條一起藏、continuesBefore 寫成 !isStart、isSegmentRepeat 恆假,共 31 個;另有 5 個靜態突變:
- *        寫固定毫秒、import calendar.tsx、拿掉 @internal、開 timeZone、index.ts 轉出)——
+ *        寫固定毫秒、import calendar.tsx、拿掉 @internal、開 timeZone、index.ts 轉出;k 的算式 2 個突變(沒扣格線、不加回 LayoutUnit)與
+ *        「k 是誰算的」3 個靜態突變(maxRows 寫死 3、layoutMonth 收常數、量格寬當格高))——
  *        每一種都必須讓它指定的那幾格紅;任何一種沒被抓到 = 判定表沒在驗那一條 → exit 1。
  *   綠: 全部相符時綠。純函式 + 固定時區(本檔把 TZ 設成 America/New_York,有日光節約)+ 靜態讀檔;無網路、無亂數、無瀏覽器,重複跑結果恆等。
  *   儀器失效(exit 2,印 INSTRUMENT-FAIL): TZ 設不進去(2026-03-08 與 03-09 的 UTC 偏移相同)、esbuild 打包失敗、取不到出口、
@@ -399,6 +402,46 @@ function runRows(lib) {
 const source = read(LAYOUT_PATH)
 const indexSource = read(`${CALENDAR_DIR}/index.ts`)
 
+// ── M. k 是誰算的(M32 參數邊界;calendar.spec.md「每格筆數與「+N」」算式【AI 推導】)─────────────────────────────
+// layoutMonth 收的 maxRows 是參數:它算得對不對,取決於傳進來的值是誰算的。算式住在 calendar-geometry.ts calendarRowsThatFit
+//(與 CSS 讀同一批常數,M17);calendar.tsx 量到格高(layoutBorderBoxSize 的 height,版面尺寸)後只經這一支設 maxRows,再原樣交給 layoutMonth。
+const GEOMETRY_PATH = `${CALENDAR_DIR}/calendar-geometry.ts`
+const CALENDAR_PATH = `${CALENDAR_DIR}/calendar.tsx`
+const geometrySource = read(GEOMETRY_PATH)
+const calendarSource = read(CALENDAR_PATH)
+// 格高 → k。期望值照規格算式逐格手寫:k = max(1, ⌊(格高 − 格線 1 − 上內距 4 − 日期框 24 − 日期到第一列 4 − 下內距 4 + 列距 4) ÷ 28⌋),
+// 量到的格高是 LayoutUnit(1/64 px)取整的值:差一個 LayoutUnit 還算放得下(116.984375 → 3),差兩個就不算(116.96875 → 2)
+const K_TABLE = [[40, 1], [61, 1], [88, 1], [89, 2], [116.96875, 2], [116.984375, 3], [117, 3], [157, 4], [228, 6], [229, 7]]
+const K_ROWS = [
+  ['M1', '格高 → 每格放得下幾列(含格最小高 61 = 1 列、剛好放滿、LayoutUnit 取整的邊界)', (geo) => {
+    const b = []
+    expectEq(b, 'calendarRowsThatFit', K_TABLE.map(([h]) => geo.calendarRowsThatFit(h)), K_TABLE.map(([, k]) => k))
+    return b
+  }],
+]
+function runKRows(geo) {
+  const result = new Map()
+  for (const [id, , fn] of K_ROWS) {
+    let bad
+    try { bad = fn(geo) } catch (e) { bad = [`丟出例外:${e.message}`] }
+    result.set(id, bad)
+  }
+  return result
+}
+/** calendar.tsx 的接線:maxRows 只有一個寫入點 = calendarRowsThatFit(量到的格高),原樣交給 layoutMonth */
+function checkKWiring(src) {
+  const bad = []
+  const code = stripComments(src)
+  const writes = code.match(/setMaxRows\(/g) ?? []
+  const fromHeight = /setMaxRows\(calendarRowsThatFit\((\w+)\.height\)\)/.exec(code)
+  if (writes.length !== 1 || !fromHeight) bad.push(`[M2] maxRows 的寫入點不是剛好一個「setMaxRows(calendarRowsThatFit(<量到的尺寸>.height))」(找到 ${writes.length} 個寫入點)`)
+  else if (!new RegExp(`const ${fromHeight[1]} = layoutBorderBoxSize\\(`).test(code)) bad.push(`[M2] 交給 calendarRowsThatFit 的 ${fromHeight[1]}.height 不是 layoutBorderBoxSize 量到的版面尺寸`)
+  if (!/const \[maxRows, setMaxRows\] = React\.useState/.test(code)) bad.push('[M3] 找不到 maxRows 狀態(const [maxRows, setMaxRows] = React.useState)')
+  const call = /layoutMonth\(\{([^}]*)\}\)/.exec(code)
+  if (!call || !/(^|[\s,{])maxRows(\s*[,}]|\s*$)/.test(call[1])) bad.push(`[M3] layoutMonth 收的 maxRows 不是那個狀態原樣:${call ? call[1].trim() : '找不到 layoutMonth({ … }) 呼叫'}`)
+  return bad
+}
+
 if (!SELFTEST) {
   await bundle('calendar-layout.mjs', [source])
   const { m0: lib } = await import('./.gate-bundles/calendar-layout.mjs')
@@ -415,8 +458,22 @@ if (!SELFTEST) {
   const staticBad = checkStatic(source, indexSource)
   if (staticBad.length === 0) console.log('✓ L 靜態:@internal + 消費的 SSOT、不 import calendar.tsx / react、不寫固定毫秒、不開 timeZone、index 不轉出')
   else { console.log('✗ L 靜態'); for (const x of staticBad) console.log(`   - ${x}`); fail += staticBad.length }
+  // M:k 是誰算的
+  await bundle('calendar-geometry-k.mjs', [geometrySource])
+  const { m0: geo } = await import('./.gate-bundles/calendar-geometry-k.mjs')
+  if (typeof geo?.calendarRowsThatFit !== 'function') instrumentFail('calendar-geometry.ts 取不到出口 calendarRowsThatFit(出口名稱改了?)')
+  for (const [id, desc] of K_ROWS) {
+    const bad = runKRows(geo).get(id)
+    if (bad.length === 0) { console.log(`✓ ${id} ${desc}`); continue }
+    fail += bad.length
+    console.log(`✗ ${id} ${desc}`)
+    for (const x of bad) console.log(`   - ${x}`)
+  }
+  const wiringBad = checkKWiring(calendarSource)
+  if (wiringBad.length === 0) console.log('✓ M2 / M3 靜態:calendar.tsx 的 maxRows 只有一個寫入點 = calendarRowsThatFit(layoutBorderBoxSize 量到的格高),原樣交給 layoutMonth')
+  else { console.log('✗ M2 / M3 靜態'); for (const x of wiringBad) console.log(`   - ${x}`); fail += wiringBad.length }
   if (fail) { console.log(`\n✗ ${fail} 處不符`); process.exit(1) }
-  console.log(`\n✓ Calendar 事件版面:${ROWS.length} 格判定表與靜態檢查全部相符`)
+  console.log(`\n✓ Calendar 事件版面:${ROWS.length} 格判定表、k 的算式與接線、靜態檢查全部相符`)
   process.exit(0)
 }
 
@@ -522,5 +579,32 @@ const indexBad = checkStatic(source, `${indexSource}export * from './calendar-la
 const indexCaught = indexBad.some((b) => /\[L5\]/.test(b))
 console.log(`${indexCaught ? '✓' : '✗'} 靜態對照組「index.ts 轉出 calendar-layout」${indexCaught ? '被抓到' : '沒被抓到'}`)
 if (!indexCaught) missed++
+// M:k 的算式突變(打進同一個檔,m0 = 原樣)與接線的靜態突變
+const K_MUTANTS = [
+  ['k 的算式沒扣格線(格最小高回到 60 的算法)', (s) => replaceOnce(s, 'cellHeightPx - CALENDAR_GRID_LINE_PX - CALENDAR_GAP_PX', 'cellHeightPx - CALENDAR_GAP_PX', '沒扣格線'), ['M1']],
+  ['k 的算式不加回 LayoutUnit(剛好放滿那一格因取整少一列)', (s) => replaceOnce(s, ' + LAYOUT_UNIT_PX)', ')', 'LayoutUnit'), ['M1']],
+]
+await bundle('calendar-geometry-k-mutants.mjs', [geometrySource, ...K_MUTANTS.map(([name, mutate]) => mutate(geometrySource, name))])
+const geoLoaded = await import('./.gate-bundles/calendar-geometry-k-mutants.mjs')
+const geoBaselineRed = [...runKRows(geoLoaded.m0)].filter(([, bad]) => bad.length).map(([id]) => id)
+if (geoBaselineRed.length) instrumentFail(`k 的算式未突變的那一份本身就紅(${geoBaselineRed.join('、')})`)
+for (const [i, [name, , expectRed]] of K_MUTANTS.entries()) {
+  const red = [...runKRows(geoLoaded[`m${i + 1}`])].filter(([, bad]) => bad.length).map(([id]) => id)
+  const caught = expectRed.every((id) => red.includes(id))
+  console.log(`${caught ? '✓' : '✗'} 對照組「${name}」${caught ? '被抓到' : '沒被抓到'}(應紅 ${expectRed.join('、')};實紅 ${red.join('、') || '無'})`)
+  if (!caught) missed++
+}
+if (checkKWiring(calendarSource).length) instrumentFail(`calendar.tsx 的 k 接線未突變時本身就紅:${checkKWiring(calendarSource).join(' / ')}`)
+const K_WIRING_MUTANTS = [
+  ['maxRows 寫死 3(不看格高)', (s) => replaceOnce(s, 'setMaxRows(calendarRowsThatFit(size.height))', 'setMaxRows(3)', '寫死 3'), /\[M2\]/],
+  ['layoutMonth 收常數(不收量到的那個 k)', (s) => replaceOnce(s, 'events: normalizedEvents, maxRows, locale', 'events: normalizedEvents, maxRows: 3, locale', '收常數'), /\[M3\]/],
+  ['量格寬當格高', (s) => replaceOnce(s, 'calendarRowsThatFit(size.height)', 'calendarRowsThatFit(size.width)', '寬當高'), /\[M2\]/],
+]
+for (const [name, mutate, pattern] of K_WIRING_MUTANTS) {
+  const bad = checkKWiring(mutate(calendarSource))
+  const caught = bad.some((b) => pattern.test(b))
+  console.log(`${caught ? '✓' : '✗'} 靜態對照組「${name}」${caught ? '被抓到' : `沒被抓到(實得:${bad.join(' / ') || '0 筆'})`}`)
+  if (!caught) missed++
+}
 if (missed) { console.log(`\n✗ selftest:${missed} 個對照組沒被抓到 —— 判定表沒在驗那一條`); process.exit(1) }
-console.log(`\n✓ selftest:${MUTANTS.length + STATIC_MUTANTS.length + 1} 個對照組都被指定的格抓到`)
+console.log(`\n✓ selftest:${MUTANTS.length + STATIC_MUTANTS.length + 1 + K_MUTANTS.length + K_WIRING_MUTANTS.length} 個對照組都被指定的格抓到`)

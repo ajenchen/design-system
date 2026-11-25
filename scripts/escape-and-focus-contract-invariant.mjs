@@ -576,7 +576,8 @@ function CalendarScene() {
   return (
     <Shell title="月曆">
       <Calendar aria-label="團隊行事曆" referenceDate={new Date(2026, 2, 1)} today={new Date(2026, 2, 1)}
-        events={[{ id: 'e1', title: 'Sprint review', start: '2026-03-12', end: '2026-03-12', allDay: true }]}
+        // 全天一天:end 不含 → 隔天(calendar.spec.md「資料語意」;寫同一天 = 零長度 + 開發期警告)
+        events={[{ id: 'e1', title: 'Sprint review', start: '2026-03-12', end: '2026-03-13', allDay: true }]}
         onCreateEvent={() => count('create')} onEventClick={() => count('event')} />
     </Shell>
   )

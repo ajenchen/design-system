@@ -264,8 +264,13 @@ jobs:
           # Calendar 月檢視事件版面只有一份(components/Calendar/calendar-layout.ts;calendar.spec.md「資料語意」「跨日長條」「格內排序」「每格筆數與「+N」」):
           # 三種字串格式、只有日期 → 全天(兩端都是)、end 不含、Q7(定)滿 24 小時才是長條、日光節約那天(TZ 固定 America/New_York)、start > end 與全天
           # end === start 的處理與警告、最低空車道 / 同一事件同一車道 / 只在週末的事件不佔車道、被藏的日子切段、m 看最高車道、「+1」、逐格切、排序五條、
-          # 延續旗標五個;--selftest 31 個行為突變 + 5 個靜態突變各自讓指定的格紅。純函式 + 讀檔,本機兩條合計不到 1 秒。
+          # 延續旗標五個;k 是誰算的(calendar-geometry.ts 格高 → k 判定表,calendar.tsx 的 maxRows 只有「量到的格高經這支算式」一個來源);
+          # --selftest 31 個行為突變 + 5 個靜態突變 + k 的 2 個算式突變與 3 個接線突變各自讓指定的格紅。純函式 + 讀檔,本機兩條合計約 1 秒。
           npm run test:calendar-layout
+          # Calendar 原始碼在 Node 端渲染(esbuild + react-dom/server,NODE_ENV=development 讓開發期警告打開;Storybook 建置是 production、量不到):
+          # 三層範例每一則載入時沒有 [Calendar] 警告(資料照 calendar.spec.md「資料語意」:end 不含)、renderEventTile 收到版面那一段的 segment、
+          # 單筆 readOnly 不是按鈕;--selftest 三個原始碼突變(範例留一筆「含」的資料 / segment 寫死 / 單筆唯讀沒接上)各自只讓指定的格紅。本機兩條合計約 2 秒(主判定 0.5 秒、--selftest 1.7 秒)。
+          npm run test:calendar-render-contract
 
       - name: Registered test scripts nothing was running
         run: |
@@ -442,7 +447,7 @@ jobs:
           node scripts/test-status-color-invariant.mjs
           # Calendar 格內不寫死尺寸(calendar.spec.md「間距」【SPACING(定)】、「禁止事項」第 7 條):元件檔 class 字串不寫數字型內距 / 間距 / 寬高 / 邊框寬
           # 與 [Npx],列高常數 = TAG_HEIGHT_PX.md,讀到的 --calendar-* 都有設值。配對測試在暫存目錄的實檔注入 p-1.5 / gap-0.5 / min-h-28 /
-          # border-l-[3px] / 列高 20 各自必紅,並跑閘自己的 --selftest(八個突變)。純靜態,本機兩條合計約 2 秒。
+          # border-l-[3px] / 列高 20 各自必紅,並跑閘自己的 --selftest(九個突變)。純靜態,本機兩條合計約 2 秒。
           node scripts/calendar-geometry-invariant.mjs
           node scripts/test-calendar-geometry-invariant.mjs
           # 一組選項的 Checkbox 一律包 <CheckboxGroup>(zero-gap canonical,checkbox.spec.md),不手刻 <div flex|grid|space-y-N>;
@@ -1880,7 +1885,9 @@ jobs:
           # 讀屏名稱(日期停靠點 = 完整日期 + 筆數、只有今天 aria-current=date 與「今天,」、唯讀格名稱由內容來念得到事件標題、labels 覆寫生效);
           # 三個選用設定與窄寬度(隱藏週末 5 欄 / 鍵盤跳過被藏的日子 / en-IL 藏週五六、週數欄寬一致與年底週數 en-GB 53 / en-US 1、
           # 載入中 aria-busy 與每格一條骨架、窄寬掃 20 個欄寬不來回跳);
-          # --selftest 三十七個突變各自讓預期那一格紅。本機(同一份建置)主判定約 13 秒、--selftest 約 39 秒,CI 未實測 ——
+          # 事件版面(跨日長條一個元素畫過涵蓋的格、斷開端直角(換週 / 延續到下個月 / 被藏的週末)、每格列數照量到的格高(掃 14 個格高、剛好放滿不出「+N」)、
+          # 點長條任一段與唯讀列不會在這天新增、從長條涵蓋的每一天 F2 都走得到、日期格唯讀時長條涵蓋的每一天都念得到它的標題、深色主題長條不透出格線);
+          # --selftest 四十九個突變各自讓預期那一格紅。本機(同一份建置)主判定約 19 秒、--selftest 約 58 秒,CI 未實測 ——
           # 放在本 job 是因為它是 25 分 job 裡餘裕大的一個(約 8.5 分),不是主題相同(同 sidebar-keyboard job 檔頭「不往沒有餘裕的 job 疊」)。
           npm run test:calendar-month
 

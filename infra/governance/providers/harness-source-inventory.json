@@ -741,6 +741,7 @@
           "scripts/test-button-variant-invariant.mjs",
           "scripts/test-calc-self-audit-baseline.mjs",
           "scripts/test-calendar-geometry-invariant.mjs",
+          "scripts/test-calendar-render-contract-invariant.mjs",
           "scripts/test-categorical-color-invariants.mjs",
           "scripts/test-category-classification-invariant.mjs",
           "scripts/test-check-agents-bootstrap.mjs",

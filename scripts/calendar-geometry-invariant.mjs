@@ -216,12 +216,14 @@ export function loadInputs(root) {
 // ── 對照組(記憶體內突變;實檔突變在配對測試)────────────────────────────────────
 export const MUTANTS = [
   ['格子內距寫回 p-1.5', 'components', (s) => s.replace("'flex flex-col gap-[var(--calendar-gap)] p-[var(--calendar-gap)]", "'flex flex-col gap-[var(--calendar-gap)] p-1.5")],
-  ['列距寫回 gap-0.5', 'components', (s) => s.replace("<div className=\"flex flex-col gap-[var(--calendar-gap)] shrink-0\">", "<div className=\"flex flex-col gap-0.5 shrink-0\">")],
+  // 事件區 2026-11-25 事件版面那一包起是 grid(一列一條車道),列距 = gap-y
+  ['列距寫回 gap-y-0.5', 'components', (s) => s.replace('className="grid gap-y-[var(--calendar-gap)] shrink-0"', 'className="grid gap-y-0.5 shrink-0"')],
   ['格子加回 min-h-28', 'components', (s) => s.replace("'flex flex-col gap-[var(--calendar-gap)] p-[var(--calendar-gap)]", "'flex flex-col gap-[var(--calendar-gap)] p-[var(--calendar-gap)] min-h-28")],
-  ['事件列寫死 border-l-[3px]', 'components', (s) => s.replace("const tileBase = 'flex items-center h-tag-md", "const tileBase = 'border-l-[3px] flex items-center h-tag-md")],
+  // 事件列的顏色層(MonthEventPiece 內層;外層是長條墊底的那一層)
+  ['事件列寫死 border-l-[3px]', 'components', (s) => s.replace("'flex items-center h-full rounded-[inherit]", "'border-l-[3px] flex items-center h-full rounded-[inherit]")],
   ['列高常數改成 20', 'geometry', (s) => s.replace('CALENDAR_ROW_HEIGHT_PX = 24', 'CALENDAR_ROW_HEIGHT_PX = 20')],
   ['格最小高沒算格線', 'geometry', (s) => s.replace(' + CALENDAR_GAP_PX + CALENDAR_GRID_LINE_PX', ' + CALENDAR_GAP_PX')],
-  ['gap-2 搬到非 <nav> 的元素', 'components', (s) => s.replace("<div className=\"flex flex-col gap-[var(--calendar-gap)] shrink-0\">", "<div className=\"flex flex-col gap-2 shrink-0\">")],
+  ['gap-2 搬到非 <nav> 的元素', 'components', (s) => s.replace('className="grid gap-y-[var(--calendar-gap)] shrink-0"', 'className="grid gap-2 shrink-0"')],
   ['class 讀一個沒設值的 --calendar-*', 'components', (s) => s.replace('px-[var(--calendar-text-inset)]', 'px-[var(--calendar-txt-inset)]')],
   ['根節點沒設元件內變數', 'components', (s) => s.replace('style={{ ...CALENDAR_GEOMETRY_STYLE, ...style }}', 'style={style}')],
 ]
