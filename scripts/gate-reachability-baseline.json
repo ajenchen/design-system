@@ -1,10 +1,9 @@
 {
   "note": "寫了閘就要有人跑它。orphans 記的是「目前沒有任何執行面會呼叫」的閘/測試腳本;nightlyOnly 記的是名字像閘(不含 test- 開頭)、只在夜間 harness / 只有 schedule 的 workflow 跑得到、PR 上沒有任何東西會因為它變紅的腳本(PR 會跑的腳本只在 assert / 資料 / 訊息裡提到它不算 PR 跑它,只認 spawn / exec / import 等執行形狀);elsewhereOnly 記的是只在技能文件 / 註解 / 腳本裡提到但不跑 / 發布或手動 workflow 被提到的。三份清單的數字都只准往下 —— 新增任一類都會讓 gate-reachability-invariant.mjs 變紅。清掉之後(接進 PR 執行面或退役)跑 --update-baseline 重記。manualOnly:刻意只手動跑的那幾支孤兒,每支都要寫得出原因(同一件事的 CI 閘是哪一支、為什麼只能人看);沒寫的算待接線或退役。",
   "generatedBy": "scripts/gate-reachability-invariant.mjs --update-baseline",
-  "count": 4,
+  "count": 3,
   "orphans": [
     "probe-cell-picker-geometry.mjs",
-    "probe-inline-edit-align.mjs",
     "probe-skeleton-band-raster.mjs",
     "probe-windows-scrollbar.mjs"
   ],

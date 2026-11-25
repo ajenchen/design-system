@@ -20,7 +20,8 @@
 //   - 值-格式化(Select→Tag / Date / avatar)→ renderRead 委派 `<Control mode="view">` 取格式化與內部間距,
 //     外包 `fieldViewGeometry`(委派控件 view 左側皆 0 → 統一 field-px;見下方委派分支)→ 多 tag/avatar 間距零偏移。
 //   - 純值 / 標題 `<Tag as="h1">` → 套 `fieldViewGeometry(size, multiline)` helper(= view×default 幾何 SSOT)。
-//   InlineEdit 本體只給:`-mx`(orientation-aware,拉到欄左緣,= 上方 read-view 負邊距對照)+ hover bg + focus 藍框 + 隱形 Pressable。
+//   InlineEdit 本體只給:`-mx`(orientation-aware:垂直排外伸 `--field-bleed` 拉到欄左緣,= 上方 read-view 負邊距對照;水平排不外伸)
+//   + hover bg + focus 藍框 + 隱形 Pressable + 閱讀情境記號 data-field-reading(判斷住 components/Field/field.css)。
 //   read↔edit 零跳 = view 與 edit 同一顆控件、只差 chrome。
 // **格式化 read 鐵律**:renderRead 要顯示 Tag/日期/label,**渲染對應控件的 `mode="view"`**
 //   (如 `<Select mode="view" display="tag">`),不可自刻 —— 格式化 SSOT 住在該控件的 view mode。
@@ -145,7 +146,7 @@ function InlineEditImpl<T = string>(
   const size = useResolvedFieldSize(sizeProp, 'sm')
   // 同時向外層 Field 註冊偏好,讓 Field 的控件槽高度跟上(靜態 fieldPreferredSize 被 wrapper 遮蔽時的補位)。
   useRegisterFieldPreferredSize('sm')
-  // orientation:vertical(值貼 label 左緣 → 用 -mx)/ horizontal(值落內容欄左緣+field-px = 對齊 sibling 控件 → 不用 -mx)。
+  // orientation:vertical(值貼 label 左緣 → 外伸 --field-bleed)/ horizontal(框 = 一般輸入框的位置,字落框內字線 → 不外伸)。
   const fieldCtx = useFieldContext()
   const orientation = fieldCtx?.orientation ?? 'vertical'
 
@@ -346,18 +347,17 @@ function InlineEditImpl<T = string>(
     [cancel],
   )
 
-  // 對齊盒(orientation-aware,Model A;2026-07-17 移除 fieldCtx gate — root cause 修):
-  //   vertical(預設,含 standalone)→ `-mx-field-px` + `w-calc` 把整塊拉到欄左緣(值貼 label 左緣;
-  //     view 委派控件被 fieldViewGeometry 包住、左內距統一 field-px → 被 -mx 精準抵消 → 落 x=0 對齊 label)。
-  //   horizontal → 不用 -mx(純 `w-full`,值內縮 px = 對齊 sibling 控件)。
-  //   ⚠️ **移除舊 `fieldCtx &&` gate(root cause)**:standalone 預設 orientation='vertical'(:131),舊 gate 讓
-  //     standalone 掉到 `w-full` 無 -mx → 內容內縮 field-px 不對齊 label(圖一/圖二 bug)。spec Model A
-  //     (field-controls.spec.md「Field 框架地圖」InlineEdit 段:「orientation-aware `-mx`(vertical 含 standalone 貼 label / horizontal 對齊 sibling;不依 fieldCtx)」)只依 orientation、不依 fieldCtx。
-  //     -mx bleed field-px 到容器 padding = 刻意(hover/edit 才顯真實邊界)→ consumer 放 ≥field-px padding 容器
-  //     (detail panel / card;stories 容器 layout-space-loose 16px > field-px 12px 天然吸收)。
+  // 對齊盒(orientation-aware,Model A;規則住 inline-edit.spec.md「對齊盒」,閱讀情境的其餘幾何住 field.spec.md「閱讀情境」):
+  //   vertical(預設,含 standalone)→ 框(靜止外框 / 編輯中的輸入框)左右各外伸 `--field-bleed`(= 框寬 1 + field-px 12 = 13,
+  //     框外緣到框內字線的距離)→ 字 / Tag / 頭像左緣落在欄左緣 = 標籤左緣。2026-11-25 前外伸 --field-px(12)漏了 1px 框 → 字比標籤右 1px。
+  //   horizontal → 不外伸(`w-full`):框 = 一般輸入框的位置與寬(標籤欄 + 12 + 控件框),字在框內 13;同欄沒有框的值(開關 / 勾選框)
+  //     由 Field 內縮到同一條框內字線(field.spec.md「閱讀情境」)。
+  //   只依 orientation、不依 fieldCtx(2026-07-17 移除 `fieldCtx &&` gate:standalone 預設 vertical,舊 gate 讓它不外伸 → 不對齊)。
+  //   外伸進容器內距 = 刻意(滑過 / 編輯才顯真實邊界)→ consumer 的容器左右內距要 ≥ --field-bleed(detail panel / card 的 16 > 13;
+  //   閘 scripts/reading-context-invariant.mjs 量框不出容器內緣)。
   const alignBleed =
     orientation === 'vertical'
-      ? '-mx-[var(--field-px)] w-[calc(100%_+_2_*_var(--field-px))]'
+      ? '-mx-[var(--field-bleed)] w-[calc(100%_+_2_*_var(--field-bleed))]'
       : 'w-full min-w-0'
 
   if (editing) {
@@ -407,9 +407,12 @@ function InlineEditImpl<T = string>(
       //   點外面 Radix 送焦回 trigger 時 focusout 不觸發之補位)。任何 edit 控件離開 → 回 view。
       // edit 態**不套** surface='inline-edit'(完全繼承原 field,含 tagPadding —— 進入編輯就是那個欄位本人;user 2026-07-17 拍板)。
       // 自訂 renderEdit:容器宣告 Esc 層 + 收這一下(見上方 handleCustomEditKeyDown);預設控件由 editSettleKeyProps 自己宣告,容器不重複。
+      // 閱讀情境記號兩個根都掛(靜止外框 + 這個編輯容器):只掛靜止外框的話,範圍裡唯一的就地編輯一進編輯,整組就翻回表單
+      //(標籤變回 foreground、開關 / 勾選框跳回框邊)—— 判斷住 components/Field/field.css(field.spec.md「閱讀情境」)。
       <div
         ref={setEditContainerRef}
         data-editing
+        data-field-reading=""
         className={cn(alignBleed, className)}
         onBlur={handleEditBlur}
         {...ownTree.capture}
@@ -425,8 +428,8 @@ function InlineEditImpl<T = string>(
     // 格式化 view(consumer 傳 <Control mode="view"> 等)。**對齊 SSOT(2026-07-17)**:委派控件的
     // bare view 一律 0px 左內距(audit 證實 Select/Combobox/DatePicker/TimePicker/PeoplePicker/LinkInput
     // 預設 view 皆裸 span/Tag),故 InlineEdit 用**與純值路徑同一個 `fieldViewGeometry(field-px + min-h +
-    // py)`** 包住 renderRead → 委派控件 view 左 px 統一 field-px、高度統一 field-height → 固定
-    // `-mx-field-px` 精準抵消 → tag/avatar/值左緣落 label x=0。不碰任何控件 tagPadding(bare view 本就不用)。
+    // py)`** 包住 renderRead → 委派控件 view 左 px 統一 field-px、高度統一 field-height → 值 / tag / avatar 左緣都在框內字線(--field-bleed);
+    // 垂直排外框外伸 --field-bleed(上方 alignBleed)→ 落標籤左緣,水平排不外伸 → 落一般輸入框字線(舊的外伸 12 漏了框寬)。不碰任何控件 tagPadding。
     // surface='inline-edit' 保留為 per-control 逃生訊號(若某控件 bare view 有內部 inset 破壞對齊,該控件可
     // 讀 surface 自抑;目前全控件 bare view=0px 不需)。
     <FieldSurfaceProvider surface="inline-edit">
@@ -466,9 +469,13 @@ function InlineEditImpl<T = string>(
           ref={ref}
           data-editing={false}
           data-editable={editable || undefined}
+          // 閱讀情境記號(見上方編輯容器同一段註解);editable=false 也掛 —— 鎖定的值同樣是「被閱讀的值」(inline-edit.spec.md「editable 閘」:
+          // 同場或權限切換 → editable),整組照樣是閱讀情境,權限切換時版面不跳
+          data-field-reading=""
           className={cn(
             // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
-            'relative flex min-w-0 rounded-md border border-transparent',
+            // 框寬讀 --field-border-width(與編輯中的輸入框同一顆;欄位家族不寫裸 `border`,閘 scripts/reading-context-invariant.mjs 靜態段)
+            'relative flex min-w-0 rounded-md border-[length:var(--field-border-width)] border-transparent',
             alignBleed,
             // editable 才有 hover 底色 + 鍵盤 focus 藍框(Field focus 語言,非 Button ring);
             //   editable=false = 純 view 鎖定,無入口、無藍框、不灰化。
@@ -479,9 +486,9 @@ function InlineEditImpl<T = string>(
           {viewNode}
           {/* 隱形 Pressable(僅 editable):提供 click + 鍵盤 Tab focus + Enter/Space 進 edit;透明疊於內容上。
               hover 底色 + focus 藍框由外層 div 承載(Field focus 語言),故本 button 只需 outline-none 消瀏覽器預設外框。
-              `-inset-px`(不是 inset-0):外層 div 有 1px 透明邊框,滑過底色塗滿整個 border box(含那 1px),
+              往外蓋一個框寬(不是 inset-0):外層 div 有 1px 透明邊框,滑過底色塗滿整個 border box(含那 1px),
               而 absolute 的 inset-0 只蓋到 padding box —— 外圈那 1px 亮著、點了卻不進 edit(待辦總帳 N53⑤;
-              一般螢幕左 / 右 / 下三邊、Retina 8 點中 5 點點不到)。往外多蓋 1px = 恰好等於外框的 border box,
+              一般螢幕左 / 右 / 下三邊、Retina 8 點中 5 點點不到)。往外多蓋一個 --field-border-width = 恰好等於外框的 border box,
               「亮的範圍 = 點得到的範圍」(inline-edit.spec.md「點得到的範圍 = 底色範圍」;hit-area-canonical.md「看到亮起來卻點不到」)。
               不縮滑過底色:底色與 edit 輸入框逐 pixel 對齊是既有不變量,動的只能是命中區。 */}
           {editable && (
@@ -490,8 +497,8 @@ function InlineEditImpl<T = string>(
               type="button"
               aria-label={label ? `編輯 ${label}` : '編輯'}
               onClick={enterEdit}
-              // @focus-suppress C — C 隱形整列觸發器;承擔者:指示器在外層 div(見上方 inline-edit.tsx:475 的 `[&:has(button:focus-visible)]:border-primary`)
-              className="absolute -inset-px cursor-text rounded-md focus-visible:outline-none"
+              // @focus-suppress C — C 隱形整列觸發器;承擔者:指示器在外層 div(見上方 inline-edit.tsx:482 的 `[&:has(button:focus-visible)]:border-primary`)
+              className="absolute -inset-[var(--field-border-width)] cursor-text rounded-md focus-visible:outline-none"
             />
           )}
         </div>

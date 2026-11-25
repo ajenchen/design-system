@@ -71,11 +71,11 @@ Field 若需要次要 action（如「重設」「全選」「從範本帶入」�
 
 ---
 
-## 樣式規範（全部 codify 在 field.tsx，不依賴 consumer）
+## 樣式規範（全部 codify 在 field.tsx 與同資料夾的 field.css〔只放閱讀情境的判斷〕，不依賴 consumer）
 
 | 元素 | Token / 值 |
 |---|---|
-| FieldLabel（一般） | `text-body`（14px）/ `text-foreground`（neutral-9） |
+| FieldLabel（一般） | `text-body`（14px）/ `text-foreground`（neutral-9）;閱讀情境 `text-fg-secondary`(見「閱讀情境」) |
 | FieldLabel（disabled） | `text-body` / `text-fg-disabled`（neutral-6） |
 | FieldLabel 的 required `*` | `text-fg-muted`（neutral-7），**貼齊 label 文字無 gap**，disabled 時 `text-fg-disabled` |
 | FieldDescription（一般） | `text-body`（14px）/ `text-fg-secondary`（neutral-8） |
@@ -228,7 +228,7 @@ Field 透過 Context 暴露以下狀態給子元件（Primitive 可以透過 `us
 
 Field 未收到顯式 `size` 時，依序取 **顯式 prop → control 宣告的 `fieldPreferredSize` → `md`**（`field.tsx` `detectPreferredSize`）。Control 以自身檔案的 static 宣告偏好（唯一現行宣告者 = InlineEdit `'sm'`，owner 句 `InlineEdit/inline-edit.spec.md`）。
 
-**解析時序**：control 是 Field 的直接子元件時，Field 可同步讀取 static 偏好。wrapper 元件、`React.memo` 或 HOC 會遮蔽 static，但 control 會在掛載時透過 `useRegisterFieldPreferredSize` 補註冊：control 自身以 fallback 同步解析為偏好尺寸，Field 的控件槽高度則在註冊後跟上。Consumer 在 Field 或 control 顯式傳入的 `size` 永遠優先，不會被註冊覆寫。
+**解析時序**：control 是 Field 的直接子元件時，Field 可同步讀取 static 偏好。wrapper 元件、`React.memo` 或 HOC 會遮蔽 static，但 control 會在掛載時透過 `useRegisterFieldPreferredSize` 補註冊：control 自身以 fallback 同步解析為偏好尺寸，Field 的控件槽高度則在註冊後跟上。Consumer 在 Field 或 control 顯式傳入的 `size` 永遠優先，不會被註冊覆寫。**繪製前登記與同組同高(2026-11-25)**:註冊用 layout effect,Field 的重繪在瀏覽器第一次畫之前完成(2026-11-25 前是 useEffect,先畫一格 md 32 再跳 sm 28)。在 FieldGroup 裡、自己沒寫 `size` 的 Field 再把控件偏好登記給範圍(最外層 FieldGroup),整組沒寫 `size` 的列共用範圍的偏好 —— 解析順序是 **Field 自己寫的 → 範圍的同組偏好 → 自己控件的偏好 → md**。規則與理由住下方「閱讀情境」效果第 3 條。
 
 ### Primitive 的 Field-aware 行為
 
@@ -269,9 +269,9 @@ Field 未收到顯式 `size` 時，依序取 **顯式 prop → control 宣告的
 
 label 文字後可帶 info icon(ℹ)hover 出 tooltip 補充說明:`<FieldLabel info="說明文字">`。
 
-- **與 label 間距 `gap-1`(4px)**、InfoIcon **16px 固定**、色 `fg-muted` hover `fg-secondary`(`field.tsx:454-470`)
-- **游標一般箭頭**(`cursor-default`,`field.tsx:463`):ⓘ 點下去不做事(Radix Tooltip 點擊只會收起說明),手形會讓人以為點了有作用。全域 `base.css` 讓所有 `<button>` 預設手形,所以要明寫 `cursor-default`,只刪 `cursor-pointer` 蓋不掉。〔2026-09-26 由手形改箭頭;user 條件式同意「I 可以從手形改掉，若改掉更合理的話」,AI 研究後提出、user 選「同意,照清單寫入」〕
-- **disabled 時整顆不渲染**(`field.tsx:454`)— info 是滑過／聚焦才浮出的補充說明,非類型身份 indicator,non-editable 隱藏
+- **與 label 間距 `gap-1`(4px)**、InfoIcon **16px 固定**、色 `fg-muted` hover `fg-secondary`(`field.tsx:490-506`)
+- **游標一般箭頭**(`cursor-default`,`field.tsx:499`):ⓘ 點下去不做事(Radix Tooltip 點擊只會收起說明),手形會讓人以為點了有作用。全域 `base.css` 讓所有 `<button>` 預設手形,所以要明寫 `cursor-default`,只刪 `cursor-pointer` 蓋不掉。〔2026-09-26 由手形改箭頭;user 條件式同意「I 可以從手形改掉，若改掉更合理的話」,AI 研究後提出、user 選「同意,照清單寫入」〕
+- **disabled 時整顆不渲染**(`field.tsx:490`)— info 是滑過／聚焦才浮出的補充說明,非類型身份 indicator,non-editable 隱藏
 - 設計定位:**給資訊的觸發處**(`ds-canonical/references/hit-area-canonical.md` 三-1),**不是**行內動作 —— 只借行內動作「顏色退後、滑過深一階」的長相,不套 `inline-action.spec.md` 的「必須手形」(那條給清除、顯示密碼這類按下去會做事的鈕)。label 的主要互動是 input,info 是輔助
 - 範例:`field.stories.tsx`「標籤旁的說明圖示」
 
@@ -333,6 +333,24 @@ label 文字後可帶 info icon(ℹ)hover 出 tooltip 補充說明:`<FieldLabel 
 原本群組層叫 `horizontalLabelWidth`、單一 Field 叫 `labelWidth` = 一個值兩個名字。群組層改名 `labelWidth`,型別一併收數字(px);
 舊名 `horizontalLabelWidth` 已移除、不留舊名(user 2026-11-15 原話「我認為還是 beta 的狀況下都不要再顧及所有向後相容的部分」;0.x 相容政策 = `ds-canonical/references/props-naming.md`「相容政策」)。【AI 推導 2026-11-15:把這一對收成同名是「尺寸:甲」的落地,
 user 原話沒有點名這個參數;依據是盤點 audit-r7 INV-14 列在甲案遷移清單裡】
+
+---
+
+## 閱讀情境(2026-11-25;本段是唯一住所,其他規格只指過來)
+
+**什麼時候算**:一個**範圍**(最外層 `FieldGroup`;不在組裡的 `Field` 就是它自己;巢狀時 labelWidth 照舊最近一層覆寫,範圍不是)裡有就地編輯(`InlineEdit`,含 `editable={false}` 鎖定的值)= 閱讀情境 —— 這組值大部分時間是被讀的(`../InlineEdit/inline-edit.spec.md`「何時用」)。沒有就地編輯 = 一般表單,畫面與 2026-11-25 前逐像素相同。**版面模型不變**:水平排 = 標籤欄(同組等寬,上方「硬規則」)+ 12(「樣式規範」表 `gap-x-3`)+ 控件框 —— DS 既有的兩條規則(user 2026-11-25 留言問「我上面講的是否是我們ds定義的？」,查證屬實)。看得見的值都落在同一條線:水平排 = 框內字線(`--field-bleed` = 框寬 + `--field-px` = 13,`../../tokens/uiSize/uiSize.spec.md`「Field 外框寬與框內字線」),垂直排 = 標籤左緣。
+
+| 東西 | 水平排(標籤在左) | 垂直排(標籤在上) |
+|---|---|---|
+| 就地編輯的框(靜止透明框 / 滑過底色 / 編輯中的輸入框) | 跟一般輸入框同位置、同寬,不外伸;離標籤欄 12 | 左右各外伸 `--field-bleed`;標籤下緣 ↔ 框上緣 4(`gap-1`) |
+| 框裡的字 / Tag / 頭像 | 框內 13 = 框內字線 | 標籤左緣 |
+| 沒有框的值(開關、單一勾選框;CheckboxGroup 選項不算) | 往右內縮 `--field-bleed` 到框內字線 | 不動(本來就在標籤左緣) |
+
+- **效果**:① 標籤色 = `fg-secondary`,停用仍 `fg-disabled`(M24)—— 與 DescriptionList dt、DataTable 表頭同色,同色清單住 `../../tokens/color/color.spec.md` `text-fg-secondary` 用途列;理由同那兩處:標籤是結構不是資訊本體(`../DataTable/data-table.spec.md`「Header 文字弱化」),一般表單的標籤仍是 `foreground`。② 沒有框的值對齊框內字線(上表;RadioGroup / CheckboxGroup / Rating 等放進閱讀情境 = **未定義**,全 DS 0 用法,要用先在本段定義)。③ **同組同高**:範圍裡有控件宣告偏好尺寸(目前只有 InlineEdit 的 `sm`)→ 整組沒寫 `size` 的列都用它(開關那列 32 → 28),自己寫了 `size` 永遠優先;依據 `../../tokens/uiSize/uiSize.spec.md` 不傳 size 自動對齊 + InlineEdit「Field 的預設 `md` 是『沒人決定過』的預設值,不得壓過本元件宣告的 `sm`」;偏好不同取最小【AI 推導 2026-11-25:同組只能一個高度、結果不能看掛載先後;今天只有一種偏好】;繪製前登記(上方「Control 偏好尺寸」),伺服器端渲染第一格仍可能是 md;FieldGroup **不新增**公開 `size`。
+- **不變與邊界**:進編輯後同範圍的標籤色、開關位置、列高都不變(記號同時掛在就地編輯的靜止外框與編輯容器)。垂直排的框外伸進容器內距 → **容器左右內距 ≥ `--field-bleed`**(詳情面板 / 卡片的 16 夠;12 的表格格子會凸 1px,規格本來就不在格子裡放 InlineEdit)。已知行為(0 用法、未定義):閱讀情境的 FieldDescription 與標籤同色同字級;同範圍混放一般輸入框與就地編輯 → 整個範圍算閱讀情境(`../InlineEdit/inline-edit.spec.md`「何時不用」只說表單不用 InlineEdit)。**Field 層純顯示 `<Field mode="view">`:用途未定義,待 user 決定**(2026-11-25 說明頁留言 ③ 的追問;2026-11-06 刻意不寫用途,commit 8eb473c7「缺口 2 的用途不寫進規格」),唯讀清單用 DescriptionList(下方「何時不用」);它不觸發閱讀情境,行為不變。
+- **機制**:React 只掛記號 —— `data-field-scope`(最外層 FieldGroup 的根 / 不在組裡的 Field 的根)、`data-field-reading`(InlineEdit 兩個根,含 `editable={false}`)、`data-field-frameless-value`(開關、單一勾選框在 Field 裡,`field-context.ts` `fieldFramelessValueProps`);唯一的判斷 `[data-field-scope]:has([data-field-reading])` 住 `./field.css`(由 `styles/tokens.css` 匯入),兩顆元件內變數(標籤色、沒有框的值的內縮)**設在讀它的元素自己身上**(標籤 / 沒有框的值),不設在範圍元素上,`field.tsx` 只讀 —— `var()` 在宣告它的元素上就代換,設在範圍元素上的話,組裡再套一層 `data-theme` 時標籤拿到的是範圍那一層主題的顏色(2026-11-25 規格核對實測:深色列裡一般表單的標籤是黑字;同一個理由見 `../../tokens/color/semantic.css`「Nested Theme 架構」)。表單不設值,後備 `foreground` / 0 一樣在讀者身上代換,所以「一般表單逐像素相同」在主題套層時也成立。深層 `:has()`,包 wrapper / memo / HOC 照樣成立;不支援 `:has()` 的瀏覽器停在表單樣子。
+- **閘**:`scripts/reading-context-invariant.mjs`(CI)—— 值線、標籤 ↔ 框、三者同色、一般表單不變(含組裡某一列再套一層主題時,閱讀與表單的標籤色都跟著那一層)、編輯中不翻轉、同組同高(含晚一個計時器才到的對照組)、第一次繪製、token 公式與框寬、範圍 = 最外層(巢狀 N2)、容器內距不足、欄位家族不寫裸 `border`;夾具 = `field.stories.tsx` 兩則 test-only「閱讀情境:工作項目與行事曆事件詳情」(真實情境,也是前後對照圖的來源)與「閱讀情境驗證」(邊界)。一般表單另有像素基準圖:精選場景 `field-mixed-control-alignment`(淺 / 深,`scripts/visual-assertions.json`),只在釘死的容器裡比(視覺回歸 workflow;不是 PR 必過檢查)。
+- **出處**(M36):水平排可見的值齊左、標籤與框不交錯 = user 需求(2026-11-25:「你先不要關我說了什麼，但我要的結果就是水平排的時候，可見的視覺元素的值應該要按規格齊左，合理吧？然後要確保標籤跟輸入框至少有一定的間距不會交錯在一起，然後上述合理的話，再基於此去想最SSOT乾淨且好維護好擴充的解法吧？」);開關對齊不論方向都要成立、要寫進 SSOT = user 需求(2026-11-25:「我覺得可以改成垂直，但是開關對齊的問題無論什麼排列方式都要解決根本問題吧？都要確保是能夠對齊的吧？要確保 ssot 吧？」);閱讀情境標籤 = fg-secondary = AI 建議、user 附條件採納(2026-11-25:「確保可以確保SSOT且不違背世界級的設計就照你建議」);標籤欄 + 12 + 控件框、垂直排字齊標籤(`../InlineEdit/inline-edit.spec.md`「對齊盒」)= DS 既有規則;就地編輯尺寸 sm = user 決定(同檔尺寸兩段);範圍 = 最外層組、只看就地編輯、沒有框的值對齊框內字線、同組同高的解析順序與衝突規則、記號與 `field.css` 機制 = AI 推導 / 工程判斷(本段)。
 
 ---
 
@@ -503,3 +521,4 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 - `steps-state-visuals.spec.md`
 - `switch.spec.md`
 - `time-picker.spec.md`
+- `uiSize.spec.md`

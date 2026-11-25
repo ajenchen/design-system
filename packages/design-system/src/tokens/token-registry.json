@@ -782,6 +782,30 @@
       "why": "控制項共用左右內距 12px(13 個元件資料夾讀)→ 共用刻度。user 2026-11-10 拍板 token 第 5 題甲:產品可讀來對齊、不開放覆寫"
     },
     {
+      "match": "--field-border-width",
+      "class": "shared",
+      "owner": "uiSize",
+      "home": "tokens/uiSize/uiSize.css",
+      "target": "tokens/uiSize/uiSize.css",
+      "spec": "tokens/uiSize/uiSize.spec.md",
+      "product": "no",
+      "dsReaders": "any",
+      "secondReader": "components/Textarea/textarea.tsx",
+      "why": "欄位外框寬 1px:欄位家族的框直接讀它畫(field-wrapper、Textarea、InlineEdit),替框寬補位的算式(--field-control-py-*、--field-bleed、tagPadding、fieldViewGeometry、DataTable --table-cell-py、Textarea 行數上限、命中區、併排欄位組的重疊)也讀它 → 共用刻度。產品不讀:欄位內部幾何,產品對齊用 --field-px / --field-height-*(uiSize.spec.md「Field 外框寬與框內字線」;2026-11-25 新增時收緊成不讀,5甲 的 12 顆不變)"
+    },
+    {
+      "match": "--field-bleed",
+      "class": "shared",
+      "owner": "uiSize",
+      "home": "tokens/uiSize/uiSize.css",
+      "target": "tokens/uiSize/uiSize.css",
+      "spec": "tokens/uiSize/uiSize.spec.md",
+      "product": "no",
+      "dsReaders": "any",
+      "secondReader": "patterns/overlay-surface/overlay-surface.tsx",
+      "why": "框內字線 = 框寬 + --field-px(13px),由公式組成住衍生值段:InlineEdit 垂直外伸、可編輯標題列的讓位(overlay-surface EDITABLE_TITLE_HEADER_SLOT)、閱讀情境裡沒有框的值的內縮(components/Field/field.css)、DataTable 篩選面板 Where 標籤的左內距(components/DataTable/data-table-filter-group.tsx)四處讀,外伸量、讓位與字線必須一起變 → 共用刻度。產品不讀(同 --field-border-width)"
+    },
+    {
       "match": "--stack-gap",
       "class": "shared",
       "owner": "uiSize",

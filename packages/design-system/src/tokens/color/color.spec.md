@@ -92,7 +92,7 @@ Tailwind utility 透過 `@theme inline` 橋接 semantic token，元件寫 `bg-pr
 | Utility            | 用途 |
 |--------------------|------|
 | `text-foreground`  | 主要文字（一般資訊）|
-| `text-fg-secondary`| 次要資訊、helper text |
+| `text-fg-secondary`| 次要資訊、helper text;閱讀時的結構標籤 —— DescriptionList 的 dt、DataTable 表頭、閱讀情境的 FieldLabel(`../../components/Field/field.spec.md`「閱讀情境」)。**三者同色的唯一清單在這一格**,各元件直接用 `text-fg-secondary`,不開別名;`scripts/reading-context-invariant.mjs` G3 量三者解出來同色 |
 | `text-fg-muted`    | placeholder、caption、弱化 icon(**non-disabled only**)|
 | `text-fg-disabled` | disabled 文字 + **disabled 元件內所有文字 / placeholder / icon**(state 勝 emphasis,M24)|
 
@@ -983,6 +983,7 @@ SSOT → `../orphan-tokens.spec.md`(保留 / 退場分類的唯一住處,2026-11
 - `button.spec.md`
 - `chart.spec.md`
 - `date-grid.spec.md`
+- `description-list.spec.md`
 - `file-item.spec.md`
 - `file-upload.spec.md`
 - `notice.spec.md`

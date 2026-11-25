@@ -183,6 +183,8 @@ Switch 可透過 `label` / `description` props 內部直接渲染一整列設定
 
 **混合表單**(同表單有 Input / SegmentedControl 等其他控件)= Form-edit 情境 → Switch 與其他控件**左對齊**(預設即是,不用再傳 `className="ml-0"`)。錨例:`field.stories.tsx`「SegmentedControl 作為 Field 控制元件」混合表單段(2026-06-10 記為 user 拍板修正,來源不明:登記簿查無原話)。
 
+**閱讀情境**(同一組裡有就地編輯,例:詳情面板):標籤在左時開關往右內縮到同一欄就地編輯框內的字線(`--field-bleed`),跟看得見的值在同一條線;標籤在上時不動。規則、範圍與理由住 `../Field/field.spec.md`「閱讀情境」(唯一住所,本段不重述);Switch 只負責在 Field 裡掛「沒有框的值」記號(`switch.tsx`,`fieldFramelessValueProps`)。
+
 自帶標題的設定列視覺上等同於 horizontal `<DescriptionItem>`(label 左 / value 右 `justify-between`)——同一個心智模型:**label 描述、trailing slot 呈現狀態**(value 或 toggle)。
 
 **同一畫面多個 horizontal Switch Field → 必搭配 `FieldGroup labelWidth={...}`**:否則每個 label 會被內容撐到不同寬度,Switch 左邊緣不對齊,整排參差不齊(世界級 UI 通病,Settings 類型畫面特別明顯)。見 `../Field/field.spec.md`「FieldGroup labelWidth cascade」。
