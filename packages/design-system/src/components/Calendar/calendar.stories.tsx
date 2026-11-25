@@ -42,8 +42,7 @@ const nextMonth = nextMonthStart.getFullYear() + '-' + String(nextMonthStart.get
 // 2026-11-18 前沒傳,畫面是「July 2026」「Sun–Sat」配中文介面 —— 稽核 A113,AGENTS.md「單一檔案不中英夾雜」)。
 // test-only 的鍵盤夾具不是給人看的,照元件預設。
 const LOCALE = 'zh-TW'
-// 一格放不下時最後一列的計數文字跟著中文情境(元件預設 `+N more`,calendar.tsx `moreLabel`;2026-11-21 前元件寫死英文、換不掉)
-const MORE_LABEL = (count: number) => `還有 ${count} 個事件`
+// 一格放不下時最後一列照元件預設「+N」(2026-11-26 起;之前元件預設是英文「+N more」,這裡另傳中文「還有 N 個事件」)
 
 /**
  * 團隊行事曆 — Notion / Google Calendar 替代品情境
@@ -77,7 +76,7 @@ export const TeamCalendar: Story = {
     ]
     return (
       <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
-        <CalendarDemo defaultReferenceDate={now} today={now} events={events} locale={LOCALE} moreLabel={MORE_LABEL} />
+        <CalendarDemo defaultReferenceDate={now} today={now} events={events} locale={LOCALE} />
       </div>
     )
   },
@@ -85,7 +84,7 @@ export const TeamCalendar: Story = {
 
 /**
  * 產品上線週 — 程式碼凍結三天,上線日一天塞滿 6 件事(發版、客服待命、上線公告、合作夥伴通知、監控輪值、慶功)。
- * 每格放幾列依格高;放不下時最後一列換成計數(這裡傳中文「還有 N 個事件」,元件預設「+N more」),這一則讓它在畫面上看得到。
+ * 每格放幾列依格高;放不下時最後一列換成「+N」,點它在那一格上展開當天全部事件(清單裡點事件一樣開事件),這一則讓它在畫面上看得到。
  * 開始時間由元件依事件的 start 畫在標題前(「上午10:00 上線公告」),標題裡不另寫時間(2026-11-25 前寫成「上線公告 10:00」)。
  */
 export const LaunchWeek: Story = {
@@ -104,7 +103,7 @@ export const LaunchWeek: Story = {
     ]
     return (
       <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
-        <CalendarDemo defaultReferenceDate={now} today={now} events={events} locale={LOCALE} moreLabel={MORE_LABEL} />
+        <CalendarDemo defaultReferenceDate={now} today={now} events={events} locale={LOCALE} />
       </div>
     )
   },
@@ -113,6 +112,7 @@ export const LaunchWeek: Story = {
     // 所以不寫死畫幾筆;不論放幾列都要成立:畫出來的 + 「+N」藏起來的 = 7,而且放不下時一定有「+N」、排序最後的「慶功」不進 DOM
     //(格內排序:開始日期早的在上 → 全天先 → 依開始時間,慶功 18:30 最後)。找格子與計數用元件的屬性,不比對讀屏名稱與計數文字
     //(兩者都會隨事件長相 / 「+N」清單那幾包改字)。1280 × 900(story-demo-focus 閘的視窗)這一格放 4 列 → 畫 3 筆 +「+4」。
+    // 點開清單的狀態在設計規格「狀態行為:「+N」清單開著」(這一則的 play 不打開浮層:月格閘量格高時不能有浮層蓋在格子上)。
     const launchDay = `${thisMonth}-15`
     const grid = within(canvasElement).getByRole('grid')
     const drawn = grid.querySelectorAll(`[data-calendar-covers~="${launchDay}"]`).length
@@ -153,7 +153,7 @@ export const QuarterPlanning: Story = {
     ]
     return (
       <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
-        <CalendarDemo defaultReferenceDate={now} today={now} events={events} locale={LOCALE} moreLabel={MORE_LABEL} noun="工作項目" />
+        <CalendarDemo defaultReferenceDate={now} today={now} events={events} locale={LOCALE} noun="工作項目" />
       </div>
     )
   },
@@ -178,7 +178,7 @@ export const ContentPublishingSchedule: Story = {
     ]
     return (
       <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
-        <CalendarDemo events={events} defaultReferenceDate={now} today={now} locale={LOCALE} moreLabel={MORE_LABEL} readOnlyDates />
+        <CalendarDemo events={events} defaultReferenceDate={now} today={now} locale={LOCALE} readOnlyDates />
       </div>
     )
   },
@@ -214,7 +214,7 @@ export const CustomerSupportWeekdays: Story = {
     ]
     return (
       <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
-        <CalendarDemo defaultReferenceDate={now} today={now} events={events} locale={LOCALE} moreLabel={MORE_LABEL} noun="班表" hideWeekends />
+        <CalendarDemo defaultReferenceDate={now} today={now} events={events} locale={LOCALE} noun="班表" hideWeekends />
       </div>
     )
   },
@@ -246,7 +246,7 @@ export const ManufacturingWeekNumbers: Story = {
     ]
     return (
       <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
-        <CalendarDemo defaultReferenceDate={now} today={now} events={events} locale={LOCALE} moreLabel={MORE_LABEL} noun="排程" showWeekNumbers />
+        <CalendarDemo defaultReferenceDate={now} today={now} events={events} locale={LOCALE} noun="排程" showWeekNumbers />
       </div>
     )
   },
@@ -268,7 +268,7 @@ export const LoadingWhileSwitchingMonth: Story = {
   },
   render: () => (
     <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
-      <CalendarDemo defaultReferenceDate={now} today={now} events={[]} locale={LOCALE} moreLabel={MORE_LABEL} loading />
+      <CalendarDemo defaultReferenceDate={now} today={now} events={[]} locale={LOCALE} loading />
     </div>
   ),
 }
@@ -317,7 +317,7 @@ export const SidePanelNarrow: Story = {
         </div>
         {/* 側欄 400:月曆欄寬 (400 − 外框 2) ÷ 7 ≈ 56.9 ≤ 60 → 窄;工具列的「2026年7月」仍放得下 */}
         <aside aria-label="本月時程" className="w-[400px] shrink-0">
-          <CalendarDemo defaultReferenceDate={now} today={now} events={events} locale={LOCALE} moreLabel={MORE_LABEL} />
+          <CalendarDemo defaultReferenceDate={now} today={now} events={events} locale={LOCALE} />
         </aside>
       </div>
     )
@@ -434,6 +434,8 @@ const ENGLISH_LABELS: CalendarLabels = {
   weekNumberHeader: 'W',
   weekNumber: (week) => `Week ${week}`,
   event: (title, when, allDay) => `${title}, ${when}${allDay ? ', all day' : ''}`,
+  more: (fullDate, count) => `${fullDate}, ${count} more ${count === 1 ? 'event' : 'events'}`,
+  moreListClose: 'Close',
 }
 const ENGLISH_EVENTS: CalendarEvent[] = [
   { id: 'en1', title: 'Design review', start: `${thisMonth}-07T10:00`, end: `${thisMonth}-07T11:00`, color: 'blue' },
@@ -488,7 +490,7 @@ export const EmptyCalendar: Story = {
   name: '空行事曆',
   render: () => (
     <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
-      <CalendarDemo events={[]} defaultReferenceDate={now} today={now} locale={LOCALE} moreLabel={MORE_LABEL} readOnlyDates />
+      <CalendarDemo events={[]} defaultReferenceDate={now} today={now} locale={LOCALE} readOnlyDates />
     </div>
   ),
 }

@@ -276,8 +276,8 @@ export const ColorMatrix: Story = {
                 </tr>
                 <tr>
                   <Td>放不下的格</Td>
-                  <Td mono>「+N」計數 · 第 k 列 · h-tag-md · px-[var(--calendar-text-inset)] · text-caption · text-fg-muted</Td>
-                  <Td>每格放幾列(k)依格高;放不下時最後一列換成計數(N = 這一格沒畫出來的筆數,看車道不看筆數),與事件列同高 24;目前不可點擊、點它也不會在這天新增(展開當天清單為後續增量)</Td>
+                  <Td mono>「+N」原生按鈕 · 第 k 列 · h-tag-md · px-[var(--calendar-text-inset)] · rounded-md · text-body · text-fg-secondary · hover:bg-neutral-hover · cursor-pointer</Td>
+                  <Td>每格放幾列(k)依格高;放不下時最後一列換成「+N」(N = 這一格沒畫出來的筆數,看車道不看筆數),與事件列同高 24。點它以那一格為中心展開當天全部事件,不會在這天新增;鍵盤從日期按 F2 進格,方向鍵走到「+N」(排在這一天的事件之後)再按 Enter</Td>
                 </tr>
               </tbody>
             </table>
@@ -296,7 +296,7 @@ export const StateBehavior: Story = {
       <div className="mb-2 text-body text-fg-muted space-y-1">
         <div>• <b>today</b> cell:date 數字加 <code>bg-info text-on-emphasis rounded-full</code> 圓</div>
         <div>• <b>outside month</b>:前後月日期數字走淡字 <code>text-fg-muted</code>,cell 不加底色(跟當月格一樣可點、一樣的滑過色)</div>
-        <div>• <b>放不下的 cell</b>:每格放幾列依格高;放不下時最後一列換成「+N」計數</div>
+        <div>• <b>放不下的 cell</b>:每格放幾列依格高;放不下時最後一列換成「+N」,點它展開當天清單(見下一則「「+N」清單開著」)</div>
         <div>• <b>跨日事件</b>:一條橫跨多格的長條,換週切段,斷開那一端直角(「Alex 休假」7/20–7/22、「機房搬遷」7/24–7/27)</div>
         <div>• <b>event hover</b>:長條切同色濃一階(淺色變深、深色變亮)<code>hover:bg-{'{color}'}-2</code>(如 blue → <code>--color-blue-2</code>);有時段的透明列換 <code>--neutral-hover</code>;都帶 <code>cursor-pointer</code></div>
         <div>• <b>兩種長相</b>:全天 / 跨日 = 類別淡底長條;有時段 = 無底一列「色條 + 開始時間 + 標題」(「設計審查」7/5 上午10:00)</div>
@@ -317,6 +317,52 @@ export const StateBehavior: Story = {
     await expect(canvas.getByRole('heading', { level: 2 })).toHaveTextContent('2026年8月')
     await userEvent.click(canvas.getByRole('button', { name: '今天' }))
     await expect(canvas.getByRole('heading', { level: 2 })).toHaveTextContent('2026年7月')
+  },
+}
+
+// ── 5b. 狀態行為:「+N」清單開著(M15:需要點一下才看得到的狀態,用 play 打開)────────────────────
+// 年度使用者大會那天一天 12 場:格子放不下 → 「+N」;點開 = 以那一格為中心的當天完整清單(calendar.spec.md「「+N」清單浮層」)。
+// 清單超過上限(標題列 + 9 列 + 半列)→ 最後一列切在一半、只有清單捲、標題列不動。「場地布置」是場館排的、唯讀:照樣列出、是純文字。
+const CONFERENCE_DAY = `${thisMonth}-22`
+const conferenceEvents: CalendarEvent[] = [
+  { id: 'c0', title: '大會週', start: `${thisMonth}-20`, end: `${thisMonth}-25`, color: 'purple', allDay: true },
+  { id: 'c1', title: '場地布置(場館排定)', start: CONFERENCE_DAY, end: `${thisMonth}-23`, color: 'neutral', allDay: true, readOnly: true },
+  { id: 'c2', title: '來賓報到', start: `${CONFERENCE_DAY}T08:30`, end: `${CONFERENCE_DAY}T09:00`, color: 'lime' },
+  { id: 'c3', title: '開幕致詞', start: `${CONFERENCE_DAY}T09:00`, end: `${CONFERENCE_DAY}T09:20`, color: 'blue' },
+  { id: 'c4', title: '主題演講:下一代工作流程', start: `${CONFERENCE_DAY}T09:30`, end: `${CONFERENCE_DAY}T10:30`, color: 'blue' },
+  { id: 'c5', title: '產品新功能展示', start: `${CONFERENCE_DAY}T10:45`, end: `${CONFERENCE_DAY}T11:30`, color: 'green' },
+  { id: 'c6', title: '午餐交流', start: `${CONFERENCE_DAY}T12:00`, end: `${CONFERENCE_DAY}T13:00`, color: 'orange' },
+  { id: 'c7', title: '分組 A:自動化實戰', start: `${CONFERENCE_DAY}T13:30`, end: `${CONFERENCE_DAY}T14:30`, color: 'turquoise' },
+  { id: 'c8', title: '分組 B:資料治理', start: `${CONFERENCE_DAY}T13:30`, end: `${CONFERENCE_DAY}T14:30`, color: 'turquoise' },
+  { id: 'c9', title: '客戶座談', start: `${CONFERENCE_DAY}T15:00`, end: `${CONFERENCE_DAY}T16:00`, color: 'yellow' },
+  { id: 'c10', title: '合作夥伴論壇', start: `${CONFERENCE_DAY}T16:15`, end: `${CONFERENCE_DAY}T17:00`, color: 'yellow' },
+  { id: 'c11', title: '閉幕', start: `${CONFERENCE_DAY}T17:15`, end: `${CONFERENCE_DAY}T17:30`, color: 'blue' },
+  { id: 'c12', title: '晚宴', start: `${CONFERENCE_DAY}T18:30`, end: `${CONFERENCE_DAY}T21:00`, color: 'red' },
+  { id: 'c13', title: '媒體專訪', start: `${thisMonth}-23T10:00`, end: `${thisMonth}-23T11:00`, color: 'purple' },
+]
+
+export const MoreListOpen: Story = {
+  name: '狀態行為:「+N」清單開著',
+  render: () => (
+    <div className="h-screen p-4 bg-canvas">
+      <div className="mb-2 text-body text-fg-muted space-y-1">
+        <div>• <b>位置</b>:以「+N」那一格為中心(水平 + 垂直)蓋在格子上,碰到視窗邊推回、留 8;寬 = 格寬與浮層預設寬取大</div>
+        <div>• <b>內容</b>:當天全部事件(含格內已畫出來的),順序與格內相同;跨日的「大會週」兩端都斷開、直角;唯讀的「場地布置」照樣列出、是純文字</div>
+        <div>• <b>高度</b>:標題列 + 9 列 + 半列;超過時最後一列切在一半,只有清單捲,標題列不動。Esc 關清單、焦點回「+N」</div>
+      </div>
+      <CalendarDemo events={conferenceEvents} defaultReferenceDate={now} today={now} locale={LOCALE} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const more = canvasElement.querySelector<HTMLElement>(`[data-calendar-more="${CONFERENCE_DAY}"]`)
+    await expect(more).not.toBeNull()
+    await userEvent.click(more as HTMLElement)
+    // 清單 = role=dialog(Popover),名稱 = 標題日期;列數 = 當天全部 13 筆(大會週 + 場地布置 + 11 場)
+    const list = await within(document.body).findByRole('dialog', { name: '7月22日週三' })
+    await expect(within(list).getAllByRole('listitem')).toHaveLength(13)
+    // 唯讀的那一筆不是按鈕;沒有變成「新增事件」
+    await expect(within(list).queryByRole('button', { name: /^場地布置/ })).toBeNull()
+    await expect(within(document.body).queryByRole('dialog', { name: /^新增/ })).toBeNull()
   },
 }
 

@@ -71,6 +71,13 @@
  *           每個寬度連看 6 幀狀態不變、「窄」⇔ 欄寬 ≤ 60、只在 61 切一次;NW3 掛載當下祖先在縮放(Dialog / Popover 開場 zoom-in-95):
  *           欄寬 62 在 scale(0.95) 下重新掛載(Storybook forceRemount),拿掉縮放後必須是寬版 —— 先量前提(真的重新掛載、掛載時比例 0.95、
  *           日期格畫面寬 ≤ 60),前提不成立 = 儀器失效。斷點看的是版面上的欄寬,不是畫面上被縮放後的寬。
+ *         ML「+N」與當天清單(設計規格「狀態行為:「+N」清單開著」,年度使用者大會 7/22;calendar.spec.md「每格筆數與「+N」」「「+N」清單浮層」「焦點框」;
+ *           一般 / 大密度各一趟):ML-esc play 開的清單按 Esc 關、焦點回「+N」;ML-trigger「+N」是原生 button、高 24、字級同事件列、色 = --fg-secondary、
+ *           aria-haspopup=dialog、手形、名稱「{完整日期},還有 N 個事件」;ML-ring 鍵盤焦點的框往外(offset > 0);ML-click 真滑鼠點「+N」開清單、沒有開「新增事件」;
+ *           ML-center 清單中心 = 格子中心(±0.5);ML-width 清單寬 ≥ 格寬;ML-open 開啟後焦點在第一筆事件;ML-head 標題列沒有分隔線、標題底 → 第一列 = tight
+ *          (header-first-gap NOT_COVERED 登記的那一格由這裡量);ML-order 清單順序 = 格內排序、格內畫出來的同一個相對順序;ML-ro 唯讀的那一筆是純文字;
+ *           ML-half 捲在頂端時可見底邊切在第 N + 1 列(N = 9)的一半(±1);ML-sticky 捲到底標題列不動、內文頂 = 標題列底;ML-bottom 捲到底最後一列 → 底 = tight;
+ *           ML-outside 點清單外面關清單、焦點不被搶回「+N」。期望值由規格與 token 現算(tight 讀浮層上的 --layout-space-tight),不 import 元件常數。
  *   紅: --selftest 逐一注入:星期列搬出格陣、週列高改 auto、最後一週留底線、格子內距 6、工具列改回內距撐高、nav 沒名稱、
  *       欄頭名稱改成短字、捲動區變成可聚焦(axe required-children)、捲動區不能捲、事件列高 20、事件列焦點框改回往內、1 號的實心底被壓成 24 寬、
  *       格最小高沒算格線(回到 60)、
@@ -87,7 +94,9 @@
  *       斷開那一端也圓角、被藏的日子不切段、k 少算一列 / 多算一列(日期框到事件區差一列的空間)、
  *       長條沒墊不透明的格子底(深色透出格線)、一段事件的外層不裁內容(自訂內容畫到下一列與隔壁格)、外層的裁切連焦點框一起裁掉(clip-path)、
  *       全天長條帶回左側 3px 色條、有時段列有底、色條撐滿列高且直角、色條後面不留間隔、時間字改主色、時間格式寫死 en-US、事件名稱改回「事件:」、
- *       有時段列滑過借了別的配對、neutral 回落成 blue、12 色相色條錯位、唯讀的列滑過會亮、eventTimeFormat 沒接上、窄寬沒拿掉時間、時間字太淡
+ *       有時段列滑過借了別的配對、neutral 回落成 blue、12 色相色條錯位、唯讀的列滑過會亮、eventTimeFormat 沒接上、窄寬沒拿掉時間、時間字太淡、
+ *       「+N」焦點歸還失效 / 改回淡灰小字 / 焦點框往內 / 點擊冒泡到格子、清單沒蓋在格子上 / 比格子窄 / 標題列畫回分隔線 / body 恢復上內距 / 順序倒過來 /
+ *       唯讀的列變按鈕 / 沒有高度上限 / 標題列跟著捲 / 底部沒有內距 / 點外面後焦點被搶回「+N」
  *       —— 每一個都必須讓對應的那一格紅。
  *   綠: 全部量到且照規格時 exit 0。開 story 走 lib/launch-browser.mjs openStory(等 Storybook 回報渲染完成與被量的格陣出現,不睡固定時間);
  *       開不起來 / 等不到格陣 = 儀器失效(INSTRUMENT-FAIL,exit 1 並點名),不讀成通過。
@@ -106,7 +115,7 @@ const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n
 const SELFTEST = process.argv.includes('--selftest')
 const root = path.resolve(REPO, arg('static', 'storybook-static'))
 const CAL = 'packages/design-system/src/components/Calendar'
-requireFreshStorybookBuild(root, [`${CAL}/calendar.tsx`, `${CAL}/calendar-geometry.ts`, `${CAL}/calendar-layout.ts`, `${CAL}/_calendar-demo.tsx`, `${CAL}/calendar.stories.tsx`, `${CAL}/calendar.anatomy.stories.tsx`, `${CAL}/calendar.principles.stories.tsx`],
+requireFreshStorybookBuild(root, [`${CAL}/calendar.tsx`, `${CAL}/calendar-more-list.tsx`, `${CAL}/calendar-geometry.ts`, `${CAL}/calendar-layout.ts`, `${CAL}/_calendar-demo.tsx`, `${CAL}/calendar.stories.tsx`, `${CAL}/calendar.anatomy.stories.tsx`, `${CAL}/calendar.principles.stories.tsx`],
   { hint: '先 build storybook(或用 --static=<dir> 指定)' })
 const server = await startA11yStaticServer({ rootDirectory: root, defaultFile: 'iframe.html' })
 process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
@@ -128,11 +137,16 @@ const STORY = {
   quarter: storyId(/calendar-展示--quarter-planning$/u),
   customTile: storyId(/calendar-展示--read-only-dates-custom-tile-keyboard$/u),
   matrix: storyId(/calendar-設計規格--color-matrix$/u),
+  moreList: storyId(/calendar-設計規格--more-list-open$/u),
 }
+// 「+N」清單那一則(設計規格「狀態行為:「+N」清單開著」):年度使用者大會那天,與格內排序(calendar.spec.md「格內排序」)推出的清單順序
+const MORE_DAY = '2026-07-22'
+const MORE_DAY_ORDER = ['大會週', '場地布置(場館排定)', '來賓報到', '開幕致詞', '主題演講:下一代工作流程', '產品新功能展示', '午餐交流', '分組 A:自動化實戰', '分組 B:資料治理', '客戶座談', '合作夥伴論壇', '閉幕', '晚宴']
 
 // 規格值(calendar.spec.md「間距」與 header-canonical.spec.md:68);1 號的字是規格寫的 zh-TW 例子
 // 格最小高 61 = 上內距 4 + 日期框 24 + 4 + 一列 24 + 下內距 4 + 格線 1(格子 border-box,底線在格高裡;calendar.spec.md「每一週等高」)
-const SPEC = { toolbar: { md: 48, lg: 56 }, gap: 4, row: 24, inset: 8, header: 32, cellMin: 61, navName: '行事曆月份導覽' }
+// moreListRows = 「+N」清單完整看得到幾列(半列原則的 N,calendar.spec.md「「+N」清單浮層」高度與捲動;刻意不 import 元件常數)
+const SPEC = { toolbar: { md: 48, lg: 56 }, gap: 4, row: 24, inset: 8, header: 32, cellMin: 61, navName: '行事曆月份導覽', moreListRows: 9 }
 // 窄寬度門檻(calendar-geometry.ts CALENDAR_NARROW_COLUMN_MAX_PX;calendar.spec.md「窄寬度」):欄寬 ≤ 60 = 窄。值照規格回寫的數字逐字寫,不 import 元件常數
 const NARROW_MAX = 60
 /** 窄寬掃描:欄寬 51…70(20 個寬度,跨過門檻),每個寬度連看幾幀 */
@@ -1364,6 +1378,127 @@ const BLOCKS = {
         `${theme} 對比:${out.map((o) => `${o.state === 'rest' ? '靜止' : '滑過'}(底 ${o.bg.join(',')})時間 ${o.time.toFixed(2)}、標題 ${o.title.toFixed(2)}`).join(';')}(規格:文字 ≥ 4.5)`)
     }
   },
+  // ── ML「+N」與當天清單(calendar.spec.md「每格筆數與「+N」」「「+N」清單浮層」「焦點框」;2026-11-26「+N」清單那一包)──
+  // 設計規格「狀態行為:「+N」清單開著」:play 已點開 7/22 的清單。先按 Esc(量焦點歸還),再自己用真滑鼠點「+N」重開來量其餘各格
+  //(對照組在 open() 裡裝好、在這裡的動作之前生效;listDom = 清單開著之後才套的突變)。一般 / 大密度各一趟。
+  async moreList(mutate) {
+    for (const density of ['md', 'lg']) {
+      const tag = `@${density}`
+      const p = await open(STORY.moreList, { label: `「+N」清單開著 ${tag}`, mutate, density })
+      if (!p) continue
+      const listSel = `[data-calendar-more-list="${MORE_DAY}"]`, moreSel = `[data-calendar-more="${MORE_DAY}"]`
+      const waitList = (state) => page.waitForFunction(({ s, st }) => {
+        const el = document.querySelector(s)
+        const shown = Boolean(el && el.getAttribute('data-state') === 'open' && !el.getAnimations().some((a) => a.playState === 'running'))
+        return st === 'open' ? shown : !el
+      }, { s: listSel, st: state }, { timeout: 10000 }).then(() => true, () => false)
+      if (!(await waitList('open'))) { instrumentFails.push({ cell: `ML ${tag}`, detail: 'play 打開的「+N」清單等不到(story 改了?)' }); continue }
+      if (mutate?.listDom) await page.evaluate(mutate.listDom, { day: MORE_DAY })
+      // ML-esc:Esc 關清單、焦點回「+N」
+      await page.keyboard.press('Escape')
+      const closed = await waitList('closed')
+      await frames(4)
+      const escFocus = await page.evaluate((s) => document.activeElement === document.querySelector(s), moreSel)
+      check(`ML-esc${tag}`, closed && escFocus, `Esc 後清單${closed ? '關了' : '沒關'}、焦點${escFocus ? '回到「+N」' : '不在「+N」'}(calendar.spec.md「「+N」清單浮層」鍵盤與焦點)`)
+      // ML-trigger:「+N」= 原生按鈕、與事件列同高、次要灰、字級同事件列、aria-haspopup=dialog、名稱「{日期},還有 N 個事件」
+      const t = await page.evaluate(({ s, day }) => {
+        const b = document.querySelector(s)
+        if (!b) return null
+        const cell = b.closest('[role="gridcell"]')
+        const row = cell?.querySelector('[data-calendar-covers] > :first-child')
+        const ref = document.createElement('span'); ref.style.color = 'var(--fg-secondary)'; document.body.append(ref)
+        const want = getComputedStyle(ref).color; ref.remove()
+        const cs = getComputedStyle(b), r = b.getBoundingClientRect()
+        return { tag: b.tagName, type: b.getAttribute('type'), h: r.height, font: parseFloat(cs.fontSize), rowFont: row ? parseFloat(getComputedStyle(row).fontSize) : NaN,
+          color: cs.color, want, popup: b.getAttribute('aria-haspopup'), text: b.textContent, day, cursor: cs.cursor,
+          ringOffset: parseFloat(cs.outlineOffset), ringStyle: cs.outlineStyle, ringW: parseFloat(cs.outlineWidth), focusVisible: b.matches(':focus-visible') }
+      }, { s: moreSel, day: MORE_DAY })
+      const tName = await axNameOf(`document.querySelector(${JSON.stringify(moreSel)})`)
+      check(`ML-trigger${tag}`, Boolean(t) && t.tag === 'BUTTON' && t.type === 'button' && near(t.h, SPEC.row) && near(t.font, t.rowFont) && t.color === t.want && t.popup === 'dialog'
+        && /^\+\d+$/u.test(t.text) && t.cursor === 'pointer' && /^2026年7月22日 星期三,還有 \d+ 個事件$/u.test(tName ?? ''),
+        t ? `「+N」<${t.tag.toLowerCase()} type=${t.type}> 高 ${fmtPx(t.h)}、字 ${t.font}(事件列 ${t.rowFont})、色 ${t.color}(fg-secondary ${t.want})、aria-haspopup=${t.popup}、字「${t.text}」、名稱「${tName}」` : '找不到「+N」')
+      // ML-ring:鍵盤焦點(Esc 回來的那一下)的焦點框往外(calendar.spec.md「焦點框」;focus-canonical.md 套回實測值表「+N」那一列)
+      check(`ML-ring${tag}`, Boolean(t) && t.focusVisible && t.ringStyle !== 'none' && t.ringW > 0 && t.ringOffset > 0,
+        t ? `「+N」焦點框:${t.ringStyle} ${t.ringW}px、offset ${t.ringOffset}px、:focus-visible ${t.focusVisible}(往外 = offset > 0)` : '找不到「+N」')
+      // 真滑鼠點「+N」:開清單、不會變成在這天新增(「新增事件」對話框不出現)
+      const at = await page.evaluate((s) => { const r = document.querySelector(s)?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null }, moreSel)
+      if (!at) { instrumentFails.push({ cell: `ML ${tag}`, detail: 'Esc 之後找不到「+N」' }); continue }
+      await page.mouse.click(at.x, at.y)
+      const reopened = await waitList('open')
+      await frames(4)
+      const created = await page.evaluate(() => [...document.querySelectorAll('[role="dialog"]')].some((d) => /^新增/u.test(d.querySelector('h2')?.textContent ?? '')))
+      check(`ML-click${tag}`, reopened && !created, `點「+N」:清單${reopened ? '打開' : '沒打開'}、「新增事件」${created ? '出現了(點擊冒泡到格子)' : '沒出現'}`)
+      if (!reopened) continue
+      if (mutate?.listDom) await page.evaluate(mutate.listDom, { day: MORE_DAY })
+      const m = await page.evaluate(({ ls, ms }) => {
+        const c = document.querySelector(ls), more = document.querySelector(ms)
+        const cell = more?.closest('[role="gridcell"]')
+        if (!c || !cell) return null
+        const header = c.querySelector('[data-slot="surface-header"]'), body = c.querySelector('[data-slot="surface-body"]'), title = header?.querySelector('h2')
+        const rows = [...c.querySelectorAll('[role="listitem"]')]
+        const titleOf = (el) => { const tm = el.querySelector('[data-calendar-time]'); return (tm ? el.textContent.replace(tm.textContent, '') : el.textContent).trim() }
+        const box = (el) => { const r = el.getBoundingClientRect(); return { l: r.left, t: r.top, w: r.width, h: r.height, b: r.bottom, r: r.right } }
+        const drawn = [...document.querySelectorAll(`[role="grid"] [data-calendar-covers~="${ms.match(/"(.+)"/)[1]}"]`)]
+          .sort((a, b) => Number(a.dataset.calendarLane) - Number(b.dataset.calendarLane)).map(titleOf)
+        const ro = rows.find((r) => titleOf(r).startsWith('場地布置'))
+        const active = document.activeElement
+        return {
+          c: box(c), cell: box(cell), header: header ? box(header) : null, titleBox: title ? box(title) : null, body: body ? box(body) : null,
+          headerLine: header ? parseFloat(getComputedStyle(header).borderBottomWidth) : NaN,
+          tight: parseFloat(getComputedStyle(c).getPropertyValue('--layout-space-tight')),
+          rows: rows.map((r) => ({ ...box(r), title: titleOf(r) })), drawn,
+          roButton: ro ? Boolean(ro.querySelector('button, [role="button"], [tabindex]')) : null,
+          firstFocus: Boolean(active && rows[0]?.contains(active) && active.tagName === 'BUTTON'),
+          scroll: body ? { sh: body.scrollHeight, ch: body.clientHeight } : null,
+        }
+      }, { ls: listSel, ms: moreSel })
+      if (!m || !m.header || !m.body || !m.titleBox || m.rows.length === 0) { instrumentFails.push({ cell: `ML ${tag}`, detail: '清單的標題列 / 內文 / 列量不到' }); continue }
+      // ML-center:浮層中心 = 格子中心(水平 + 垂直,±0.5;這一格在畫面中間,不碰視窗邊)
+      const dx = (m.c.l + m.c.w / 2) - (m.cell.l + m.cell.w / 2), dy = (m.c.t + m.c.h / 2) - (m.cell.t + m.cell.h / 2)
+      check(`ML-center${tag}`, Math.abs(dx) <= 0.5 && Math.abs(dy) <= 0.5, `清單中心 − 格子中心 = (${fmtPx(dx)}, ${fmtPx(dy)})(規格:蓋在格子上、中心對中心)`)
+      check(`ML-width${tag}`, m.c.w >= m.cell.w - 0.5, `清單寬 ${fmtPx(m.c.w)} ≥ 格寬 ${fmtPx(m.cell.w)}`)
+      // ML-open:滑鼠開啟時焦點落在第一筆可點事件(popover.spec.md「A11y 預設」body 第一個控件)
+      check(`ML-open${tag}`, m.firstFocus, `開啟後焦點${m.firstFocus ? '在第一筆事件' : '不在第一筆事件'}`)
+      // ML-head:標題列底下不畫分隔線、標頭內容的底 → 第一列 = tight(header-first-gap NOT_COVERED 那一格的量法)
+      const headGap = m.rows[0].t - m.titleBox.b
+      check(`ML-head${tag}`, m.headerLine === 0 && near(headGap, m.tight), `標題列分隔線 ${m.headerLine}px、標題底 → 第一列 ${fmtPx(headGap)}(規格 tight ${m.tight})`)
+      // ML-order:順序 = 格內排序(開始日早的在上 → 同一天長的在上 → 全天先 → 依開始時間 → 依標題),格內畫出來的照同一個相對順序
+      const titles = m.rows.map((r) => r.title)
+      const sub = m.drawn.every((d, i, a) => titles.indexOf(d) >= 0 && (i === 0 || titles.indexOf(d) > titles.indexOf(a[i - 1])))
+      check(`ML-order${tag}`, JSON.stringify(titles) === JSON.stringify(MORE_DAY_ORDER) && sub,
+        `清單順序 ${titles.join(' / ')};格內畫出來的 ${m.drawn.join(' / ')}${sub ? '(同一個相對順序)' : '(相對順序不同)'}`)
+      check(`ML-ro${tag}`, m.roButton === false, m.roButton === null ? '清單裡找不到唯讀的「場地布置」' : `唯讀的「場地布置」${m.roButton ? '是按鈕 / 可聚焦' : '是純文字'}`)
+      // ML-half:捲在頂端時,內文區可見底邊切在第 N + 1 列的一半(N = 9;±1)
+      const visBottom = m.body.t + m.scroll.ch
+      const cut = m.rows.findIndex((r) => r.t < visBottom - 0.5 && r.b > visBottom + 0.5)
+      const cutAt = cut >= 0 ? visBottom - m.rows[cut].t : NaN
+      check(`ML-half${tag}`, cut === SPEC.moreListRows && Math.abs(cutAt - SPEC.row / 2) <= 1,
+        `捲在頂端:可見底邊切在第 ${cut + 1} 列、切在列內 ${fmtPx(cutAt)}(規格:第 ${SPEC.moreListRows + 1} 列的一半 ${SPEC.row / 2});清單高 ${fmtPx(m.c.h)}`)
+      // ML-sticky / ML-bottom:捲到底 —— 標題列不動、內文頂邊 = 標題列底邊;最後一列底 → 內文區底 = tight(hug 容器底 = 頂的值)
+      const end = await page.evaluate((ls) => {
+        const c = document.querySelector(ls)
+        const header = c.querySelector('[data-slot="surface-header"]'), body = c.querySelector('[data-slot="surface-body"]')
+        const scroller = [body, c].find((el) => el.scrollHeight > el.clientHeight + 1 && /(auto|scroll)/.test(getComputedStyle(el).overflowY))
+        if (!scroller) return { scrolled: false }
+        scroller.scrollTop = scroller.scrollHeight
+        const rows = [...c.querySelectorAll('[role="listitem"]')]
+        const hb = header.getBoundingClientRect(), bb = body.getBoundingClientRect(), last = rows[rows.length - 1].getBoundingClientRect()
+        const visible = Math.min(bb.bottom, c.getBoundingClientRect().bottom - parseFloat(getComputedStyle(c).borderBottomWidth))
+        return { scrolled: scroller.scrollTop > 0, headerTop: hb.top, headerBottom: hb.bottom, bodyTop: bb.top, lastToBottom: visible - last.bottom }
+      }, listSel)
+      check(`ML-sticky${tag}`, end.scrolled && near(end.headerTop, m.header.t) && near(end.bodyTop, end.headerBottom),
+        end.scrolled ? `捲到底:標題列頂 ${fmtPx(m.header.t)} → ${fmtPx(end.headerTop)}、內文頂 ${fmtPx(end.bodyTop)} vs 標題列底 ${fmtPx(end.headerBottom)}` : '清單捲不動(內容沒有超過上限?)')
+      check(`ML-bottom${tag}`, end.scrolled && near(end.lastToBottom, m.tight), end.scrolled ? `捲到底:最後一列底 → 清單底 ${fmtPx(end.lastToBottom)}(規格 tight ${m.tight})` : '清單捲不動')
+      // ML-outside:點清單外面(說明文字)關清單,焦點留在點的地方、不被搶回「+N」
+      const outside = await page.evaluate(() => { const r = document.querySelector('.mb-2')?.getBoundingClientRect(); return r ? { x: r.left + 4, y: r.top + 4 } : null })
+      if (!outside) { instrumentFails.push({ cell: `ML ${tag}`, detail: '找不到清單外可點的說明文字' }); continue }
+      await page.mouse.click(outside.x, outside.y)
+      const closedOut = await waitList('closed')
+      await frames(10)
+      const stolen = await page.evaluate((s) => document.activeElement === document.querySelector(s), moreSel)
+      check(`ML-outside${tag}`, closedOut && !stolen, `點外面:清單${closedOut ? '關了' : '沒關'}、焦點${stolen ? '被搶回「+N」' : '沒有被搶回「+N」'}`)
+    }
+  },
   // 今天剛好是 1 號:Inspector 拿掉 today 參數(元件改用 new Date()),時鐘釘在 2026-07-01 上午 10 點(本機時區)。
   // 不用網址傳日期:Storybook 的網址參數對 Date 型別的 arg 一律丟掉(實測 !date(...) 沒生效)。
   // 時鐘是整個 context 共用、釘了就回不去 —— 本區塊一律排在最後跑(其他區塊的 story 都明傳 today,本來也不受影響);
@@ -1587,6 +1722,22 @@ const MUTANTS = [
     if (text && !text.querySelector('[data-calendar-time]')) { const s = document.createElement('span'); s.setAttribute('data-calendar-time', ''); s.textContent = '下午2:00'; text.prepend(s) }
   }) },
   { name: '時間字太淡(淺色主題對比不足)', block: 'contrast', expect: ['CR-light'], css: '[data-calendar-time] { color: rgb(200, 200, 200) !important; }' },
+  // 「+N」與當天清單(ML;2026-11-26「+N」清單那一包)。listDom = 清單開著之後才套(收到 { day })
+  { name: '「+N」的焦點歸還失效(Esc 後焦點不回「+N」)', block: 'moreList', expect: ['ML-esc@md', 'ML-esc@lg'], listDom: ({ day }) => { const b = document.querySelector(`[data-calendar-more="${day}"]`); if (b) b.focus = () => {} } },
+  { name: '「+N」改回淡灰小字(text-caption text-fg-muted,改前的長相)', block: 'moreList', expect: ['ML-trigger@md', 'ML-trigger@lg'], css: '[data-calendar-more] { font-size: var(--font-caption-size) !important; color: var(--fg-muted) !important; }' },
+  { name: '「+N」焦點框改往內', block: 'moreList', expect: ['ML-ring@md', 'ML-ring@lg'], css: '[data-calendar-more]:focus-visible { outline-offset: -2px !important; }' },
+  // 點擊冒泡到格子(= 「+N」沒阻止冒泡):在「+N」上點一下,同時在格子上派一次點擊 —— 格子的 onDateClick 開「新增事件」
+  { name: '點「+N」冒泡到格子(沒阻止冒泡)', block: 'moreList', expect: ['ML-click@md', 'ML-click@lg'], dom: () => document.querySelectorAll('[data-calendar-more]').forEach((b) => b.addEventListener('click', () => b.closest('[role="gridcell"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true })))) },
+  { name: '清單沒蓋在格子上(往下偏 40)', block: 'moreList', expect: ['ML-center@md', 'ML-center@lg'], css: '[data-calendar-more-list] { margin-top: 40px !important; }' },
+  { name: '清單寬不管格寬(寫死比格子窄)', block: 'moreList', expect: ['ML-width@md', 'ML-width@lg'], css: '[data-calendar-more-list] { min-width: 0 !important; width: 120px !important; }' },
+  { name: '標題列底下畫回分隔線', block: 'moreList', expect: ['ML-head@md', 'ML-head@lg'], css: '[data-calendar-more-list] [data-slot="surface-header"] { border-bottom-width: 1px !important; }' },
+  { name: '清單 body 恢復上內距(pt 12)', block: 'moreList', expect: ['ML-head@md', 'ML-head@lg'], css: '[data-calendar-more-list] [data-slot="surface-body"] { padding-top: 12px !important; }' },
+  { name: '清單順序與格內不同(倒過來)', block: 'moreList', expect: ['ML-order@md', 'ML-order@lg'], listDom: ({ day }) => { const l = document.querySelector(`[data-calendar-more-list="${day}"] [role="list"]`); if (l) [...l.children].reverse().forEach((c) => l.append(c)) } },
+  { name: '唯讀的列變成按鈕', block: 'moreList', expect: ['ML-ro@md', 'ML-ro@lg'], listDom: ({ day }) => document.querySelectorAll(`[data-calendar-more-list="${day}"] [role="listitem"] > div`).forEach((d) => d.setAttribute('role', 'button')) },
+  { name: '清單沒有高度上限(maxHeight 不設)', block: 'moreList', expect: ['ML-half@md', 'ML-half@lg'], css: '[data-calendar-more-list] { max-height: none !important; }' },
+  { name: '標題列跟著捲(外殼自己捲、內文區不捲)', block: 'moreList', expect: ['ML-sticky@md', 'ML-sticky@lg'], css: '[data-calendar-more-list] { overflow-y: auto !important; } [data-calendar-more-list] [data-slot="surface-body"] { flex: none !important; overflow: visible !important; }' },
+  { name: '清單底部沒有內距(最後一列貼底)', block: 'moreList', expect: ['ML-bottom@md', 'ML-bottom@lg'], css: '[data-calendar-more-list] [data-slot="surface-body"] { padding-bottom: 0 !important; }' },
+  { name: '點外面關清單後焦點被搶回「+N」', block: 'moreList', expect: ['ML-outside@md', 'ML-outside@lg'], dom: () => document.addEventListener('pointerup', (e) => { if (e.target instanceof Element && e.target.closest('[data-calendar-more], [data-calendar-more-list]')) return; setTimeout(() => document.querySelector('[data-calendar-more="2026-07-22"]')?.focus(), 30) }, true) },
   // 必須最後一個(todayFirst 會釘住時鐘,見該區塊註解)
   { name: '1 號的實心底被壓成 24 寬', block: 'todayFirst', expect: ['R1'], css: '[data-calendar-day="2026-07-01"] { padding: 0 !important; max-width: var(--tag-height-md) !important; }' },
 ]
