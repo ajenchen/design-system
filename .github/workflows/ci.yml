@@ -261,6 +261,11 @@ jobs:
           # 本週 / 上週 / 下週固定時鐘判定表、消費端(DateGrid / DatePicker / 篩選寫入點 / 格編輯器 / 預設語系 zh-TW)真的呼叫;
           # 對照組:表少 TW、不解析 fw、不換算 %7、忽略參數、篩選寫死週一、消費端各拿掉一處,各自必紅。純函式 + 讀檔,約 2 秒。
           npm run test:week-start
+          # Calendar 月檢視事件版面只有一份(components/Calendar/calendar-layout.ts;calendar.spec.md「資料語意」「跨日長條」「格內排序」「每格筆數與「+N」」):
+          # 三種字串格式、只有日期 → 全天(兩端都是)、end 不含、Q7(定)滿 24 小時才是長條、日光節約那天(TZ 固定 America/New_York)、start > end 與全天
+          # end === start 的處理與警告、最低空車道 / 同一事件同一車道 / 只在週末的事件不佔車道、被藏的日子切段、m 看最高車道、「+1」、逐格切、排序五條、
+          # 延續旗標五個;--selftest 31 個行為突變 + 5 個靜態突變各自讓指定的格紅。純函式 + 讀檔,本機兩條合計不到 1 秒。
+          npm run test:calendar-layout
 
       - name: Registered test scripts nothing was running
         run: |
