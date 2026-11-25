@@ -13,6 +13,19 @@ on the web, Codespaces, or another Linux devcontainer host. Configure that same 
 hosted environment's setup command; Codex Cloud also uses it as the maintenance command after a
 cached container is restored. Session-start hooks never install or repair dependencies.
 
+On Claude Code on the web, put the setup script in a cloud environment dedicated to this
+repository, never in the shared Default environment: a setup script that exits non-zero makes the
+session fail to start or start without what it failed to install, and the official guide does not
+document the script's working directory. Use the script in the template README ("Local, cloud, and
+container setup"), which finds the checkout itself and then runs `npm run setup:all`
+(https://code.claude.com/docs/en/cloud-environments#setup-scripts).
+
+Hosts whose outbound HTTPS is re-signed by a proxy work when the proxy CA is in the host system
+trust store and Node.js is 22.15.0 or newer: every registry request in the locked setup chain then
+trusts Node's bundled CA store plus the system store (the exact npm runs with `--use-system-ca`)
+and still ignores CA, proxy, and `NODE_OPTIONS` environment variables. On Node.js 22.13.x–22.14.x
+the locked npm trusts only the bundled store.
+
 Successful setup deliberately reports `scope=local-bootstrap`,
 `providerCertification=not-checked`, and `externalActivationRequired=false`. Ordinary bootstrap is
 complete on its own; the external-activation/readback lane is an explicit opt-in hardening path.

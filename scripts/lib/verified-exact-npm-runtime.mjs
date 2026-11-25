@@ -27,6 +27,7 @@ import {
 import { request } from 'node:https'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve, sep } from 'node:path'
+import tls from 'node:tls'
 import { gunzipSync } from 'node:zlib'
 
 const NPM_REGISTRY_ORIGIN = 'https://registry.npmjs.org'
@@ -64,6 +65,65 @@ const overlaySpecFor = (version) => `npm:${NPM_RUNTIME_OVERLAY_PACKAGE}@${versio
 
 const invariant = (condition, message) => {
   if (!condition) throw new Error(`GOV-NPM-RUNTIME-001:${message}`)
+}
+
+// ── TLS 信任錨(2026-11-26,P0:下游 Claude Code 雲端 `setup:all` 必定 SELF_SIGNED_CERT_IN_CHAIN)──────────────
+// 鎖定安裝把 NODE_EXTRA_CA_CERTS / SSL_CERT_FILE / SSL_CERT_DIR / NODE_OPTIONS 當成不可信而剝除
+//(governance-dependency-bootstrap.mjs 的 HOSTILE_NAME),Node 預設又只信內建的 Mozilla CA bundle;
+// 於是只要 TLS 被重新簽(Claude Code 雲端的出站代理、多數企業代理),即使代理 CA 已裝進主機的系統憑證庫,
+// 鎖定 npm 也不可能連上 registry。要保證的性質:整條鎖定鏈信任「內建 bundle + 主機系統憑證庫」這一組錨,
+// 而且這組錨**不取自任何環境變數**(威脅模型不變:環境變數不可信,主機的 Node / TLS 視為可信)。
+//   · 子行程(鎖定 npm):以 `--use-system-ca` 啟動。Node 官方文件(doc/api/cli.md,v22.x):
+//     added v23.8.0 / v22.15.0;v23.9.0 起支援 Windows / macOS 以外平台(nodejs/node#57009,22.15.0 一併帶入,
+//     CHANGELOG_V22.md 22.15.0 段);「uses the trusted CA certificates present in the system store along with
+//     the `--use-bundled-ca` option」—— 是**加上**系統庫,不取代內建 bundle。Linux 讀 OpenSSL 的預設檔與目錄
+//    (官方 Linux 執行檔 OPENSSLDIR = /etc/ssl;OpenSSL 允許 SSL_CERT_FILE / SSL_CERT_DIR 覆寫,子行程環境已把兩者剝除);
+//     macOS 讀鑰匙圈的信任設定。出處:https://nodejs.org/docs/latest-v22.x/api/cli.html#--use-system-ca
+//     與 https://github.com/nodejs/node/blob/main/doc/changelogs/CHANGELOG_V22.md#22.15.0
+//   · 本行程(下載 npm tarball 與修補層):明確傳 `ca` = 內建 bundle + `tls.getCACertificates('system')`
+//    (added v23.10.0 / v22.15.0;文件:「This can be used to get the certificates from the system when --use-system-ca
+//     is not enabled」,https://nodejs.org/docs/latest-v22.x/api/tls.html#tlsgetcacertificatestype)。不用 'default',
+//     因為它含 NODE_EXTRA_CA_CERTS(環境變數);父子兩端因此是同一組錨。下載內容的完整性邊界照舊是 committed lock
+//     的 SHA-512,TLS 錨只決定連不連得上。
+//   · 兩個能力同時具備的 Node:22.15.0+ 的 22.x、23.10.0+ 的 23.x、24 以上。契約最低版(22.13.0)到 22.14.x 沒有它們,
+//     那一段照舊只信內建 bundle(與修前相同,遇到重新簽的 TLS 仍連不上)。**不抬高契約最低版**:consumer 的
+//     package.json 與 lock 的 engines 必須逐字等於 `>=minimumNodeVersion`(fork/consumer/governance-check.mjs GOV-RUNTIME-001、
+//     refresh-fork-launchers.mjs、setup-governance.mjs),而沒有任何升級程式會改寫 consumer 的 engines;抬高 = 每個既有
+//     consumer 升級後 sync-all / setup:all / governance:check 一起紅。要在重新簽 TLS 的主機用,文件寫明 Node 22.15.0+。
+// 呼叫端一律經 verifiedNpmNodeArgv() 組 argv,不得自己拼 `[cli, ...args]`(同一條規則只住一處)。
+export const VERIFIED_NODE_TLS_TRUST_ARGS = Object.freeze(['--use-system-ca'])
+const SYSTEM_TRUST_STORE_FLOORS = Object.freeze({ 22: Object.freeze([15, 0]), 23: Object.freeze([10, 0]) })
+
+/** 純函式:這個 Node 版本能不能讀主機系統憑證庫(`--use-system-ca` 三平台 + `tls.getCACertificates`)。 */
+export function nodeReadsSystemTrustStore(nodeVersion = process.versions.node) {
+  const match = /^v?(\d+)\.(\d+)\.(\d+)$/.exec(String(nodeVersion))
+  if (!match) return false
+  const [major, minor, patch] = match.slice(1).map(Number)
+  if (major >= 24) return true
+  const floor = SYSTEM_TRUST_STORE_FLOORS[major]
+  if (!floor) return false
+  return minor > floor[0] || (minor === floor[0] && patch >= floor[1])
+}
+
+export function verifiedNodeTrustArgs(nodeVersion = process.versions.node) {
+  return nodeReadsSystemTrustStore(nodeVersion) ? [...VERIFIED_NODE_TLS_TRUST_ARGS] : []
+}
+
+/** 鎖定 npm 子行程的 node argv;子行程一律是 process.execPath(與本行程同一支 Node),所以以本行程版本判定。 */
+export function verifiedNpmNodeArgv(cli, args = [], { nodeVersion = process.versions.node } = {}) {
+  invariant(typeof cli === 'string' && cli.length > 0, 'verified npm CLI path is missing')
+  invariant(Array.isArray(args) && args.every((value) => typeof value === 'string'), 'verified npm argv must be an array of strings')
+  return [...verifiedNodeTrustArgs(nodeVersion), cli, ...args]
+}
+
+/** 本行程下載用的 `ca`;Node 讀不到系統庫時回 undefined(沿用 Node 預設,與修前相同)。 */
+export function verifiedRegistryTrustAnchors({ tlsModule = tls, nodeVersion = process.versions.node } = {}) {
+  if (!nodeReadsSystemTrustStore(nodeVersion)) return undefined
+  invariant(typeof tlsModule?.getCACertificates === 'function', 'tls.getCACertificates is unavailable on a Node.js release that should provide it')
+  const bundled = tlsModule.getCACertificates('bundled')
+  const system = tlsModule.getCACertificates('system')
+  invariant(Array.isArray(bundled) && bundled.length > 0 && Array.isArray(system), 'Node.js TLS trust anchors are unavailable')
+  return Object.freeze([...new Set([...bundled, ...system])])
 }
 
 function regularUnaliasedFile(path, label) {
@@ -226,6 +286,7 @@ async function downloadCanonicalRegistryTarball(url, {
   label,
   pathPattern,
   timeoutMs = 30_000,
+  trustAnchors = verifiedRegistryTrustAnchors,
 } = {}) {
   const target = new URL(url)
   invariant(
@@ -239,6 +300,7 @@ async function downloadCanonicalRegistryTarball(url, {
       && pathPattern.test(target.pathname),
     `${label} tarball URL is outside the canonical registry contract`,
   )
+  const ca = trustAnchors()
   return await new Promise((resolvePromise, rejectPromise) => {
     let settled = false
     const fail = (error) => {
@@ -248,6 +310,7 @@ async function downloadCanonicalRegistryTarball(url, {
     }
     const requestHandle = request(target, {
       method: 'GET',
+      ...(ca ? { ca } : {}),
       headers: {
         Accept: 'application/octet-stream',
         'Accept-Encoding': 'identity',

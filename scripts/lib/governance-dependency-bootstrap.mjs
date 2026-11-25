@@ -7,6 +7,8 @@ import {
   assertVerifiedExactNpmRuntimeCapability,
   prepareVerifiedExactNpmRuntime,
   resolveExactNpmRuntimeContract,
+  verifiedNodeTrustArgs,
+  verifiedNpmNodeArgv,
 } from './verified-exact-npm-runtime.mjs'
 import {
   materializeClosedHookToolProfile,
@@ -845,10 +847,13 @@ export function runVerifiedHighVulnerabilityAudit(command, args, {
   sleep = sleepSync,
   report = (line) => console.error(line),
 } = {}) {
+  const trustArgs = verifiedNodeTrustArgs()
+  const trustArgCount = trustArgs.length
   invariant(
     Array.isArray(args)
-      && typeof args[0] === 'string'
-      && exactArray(args.slice(1), ['audit', '--audit-level=high', '--json', `--registry=${GOVERNANCE_DEPENDENCY_REGISTRY}`]),
+      && exactArray(args.slice(0, trustArgCount), trustArgs)
+      && typeof args[trustArgCount] === 'string'
+      && exactArray(args.slice(trustArgCount + 1), ['audit', '--audit-level=high', '--json', `--registry=${GOVERNANCE_DEPENDENCY_REGISTRY}`]),
     'npm high-vulnerability audit argv differs from the closed overlay-aware contract',
     errorPrefix,
   )
@@ -937,7 +942,7 @@ export async function runVerifiedGovernanceDependencyBootstrap({
     for (let index = 0; index < GOVERNANCE_DEPENDENCY_NPM_STEPS.length; index += 1) {
       const args = GOVERNANCE_DEPENDENCY_NPM_STEPS[index]
       if (index === 2) {
-        auditReceipt = runVulnerabilityAuditUnderPolicy(vulnerabilityPolicy, () => runVerifiedHighVulnerabilityAudit(process.execPath, [npmRuntime.cli, ...args], {
+        auditReceipt = runVulnerabilityAuditUnderPolicy(vulnerabilityPolicy, () => runVerifiedHighVulnerabilityAudit(process.execPath, verifiedNpmNodeArgv(npmRuntime.cli, args), {
           root,
           environment: isolated.env,
           runner,
@@ -946,7 +951,7 @@ export async function runVerifiedGovernanceDependencyBootstrap({
           errorPrefix,
         }), { errorPrefix })
       } else {
-        runClosedBootstrapStep(process.execPath, [npmRuntime.cli, ...args], { root, environment: isolated.env, runner, errorPrefix })
+        runClosedBootstrapStep(process.execPath, verifiedNpmNodeArgv(npmRuntime.cli, args), { root, environment: isolated.env, runner, errorPrefix })
         if (index === 0) installedOverlayReceipt = npmRuntime.applyInstalledSecurityOverlay(root)
       }
       assertBootstrapAuthorityUnchanged(root, snapshot, { errorPrefix })
@@ -1050,7 +1055,7 @@ export function runAuditFindingsJson(cli, root, {
   report = (line) => console.error(line),
 } = {}) {
   for (let attempt = 1; ; attempt += 1) {
-    const result = runner(process.execPath, [cli, ...DIFFERENTIAL_AUDIT_ARGS], {
+    const result = runner(process.execPath, verifiedNpmNodeArgv(cli, DIFFERENTIAL_AUDIT_ARGS), {
       cwd: root,
       env: { ...environment, NPM_CONFIG_REGISTRY: GOVERNANCE_DEPENDENCY_REGISTRY, NPM_CONFIG_IGNORE_SCRIPTS: 'true', NPM_CONFIG_STRICT_SSL: 'true' },
       encoding: 'utf8',

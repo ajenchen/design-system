@@ -53,6 +53,10 @@ import {
 } from './lib/governance-dependency-bootstrap.mjs'
 import { parseAuthoritySetupArguments } from './setup-authority-governance.mjs'
 import {
+  VERIFIED_NODE_TLS_TRUST_ARGS,
+  verifiedNpmNodeArgv,
+} from './lib/verified-exact-npm-runtime.mjs'
+import {
   discoverPackageManifestPaths,
   discoverReceiverDependencyPaths,
   pinExactWorkspaceDependencies,
@@ -688,7 +692,8 @@ test('platform and command contract is closed and native Windows is unsupported'
   assert.match(source, /runVerifiedGovernanceDependencyBootstrap/)
   assert.match(bootstrapSource, /prepareVerifiedExactNpmRuntime/)
   assert.match(bootstrapSource, /for \(let index = 0; index < GOVERNANCE_DEPENDENCY_NPM_STEPS\.length; index \+= 1\)/)
-  assert.match(bootstrapSource, /runVerifiedHighVulnerabilityAudit\(process\.execPath, \[npmRuntime\.cli, \.\.\.args\]/)
+  assert.match(bootstrapSource, /runVerifiedHighVulnerabilityAudit\(process\.execPath, verifiedNpmNodeArgv\(npmRuntime\.cli, args\)/)
+  assert.match(bootstrapSource, /runClosedBootstrapStep\(process\.execPath, verifiedNpmNodeArgv\(npmRuntime\.cli, args\)/)
   assert.doesNotMatch(source, /node_modules\/npm\/bin\/npm-cli\.js/)
   assert.match(bootstrapSource, /stdio: \['inherit', 2, 'inherit'\]/)
   assert.doesNotMatch(bootstrapSource, /stdio: 'inherit'/)
@@ -1454,6 +1459,8 @@ test('canonical execution runtime is the single machine SSOT for setup, package 
   assert.equal(lockedNode22Minima.length, lockedToolchain.length)
   const lockedToolchainMinimum = lockedNode22Minima.sort(compare).at(-1)
   assert.equal(runtime.minimumNodeVersion, lockedToolchainMinimum)
+  assert.equal(authorityPackage.engines.node, `>=${runtime.minimumNodeVersion}`)
+  assert.equal(authorityLock.packages[''].engines.node, `>=${runtime.minimumNodeVersion}`)
 
   const upgradeEvidenceSchema = JSON.parse(readFileSync('scripts/schemas/upgrade-evidence-receipt.schema.json', 'utf8'))
   assert.equal(upgradeEvidenceSchema.$defs.toolchain.properties.npm.const, runtime.exactNpmVersion)
@@ -2011,7 +2018,12 @@ test('npm audit 對 advisory 端點的暫時性網路錯誤重試 3 次後仍 fa
   const treeDigest = 'b'.repeat(64)
   const npmRuntime = { securityOverlay: { status: 'applied', identityDigest, treeDigest } }
   const installedOverlayReceipt = { status: 'verified', identityDigest, treeDigest, auditClosureDigest: 'c'.repeat(64), auditClosure: [] }
-  const args = ['/npm/cli.js', 'audit', '--audit-level=high', '--json', '--registry=https://registry.npmjs.org/']
+  const args = verifiedNpmNodeArgv('/npm/cli.js', ['audit', '--audit-level=high', '--json', '--registry=https://registry.npmjs.org/'])
+  // 2026-11-26:少了系統憑證庫旗標的 argv 必須在任何 spawn 之前被拒(下游 Claude Code 雲端 SELF_SIGNED_CERT_IN_CHAIN)。
+  assert.throws(
+    () => runVerifiedHighVulnerabilityAudit(process.execPath, args.slice(VERIFIED_NODE_TLS_TRUST_ARGS.length), { root: '/tmp', environment: {}, runner: () => assert.fail('must not spawn'), npmRuntime, installedOverlayReceipt }),
+    /argv differs from the closed overlay-aware contract/,
+  )
   const clean = JSON.stringify({
     auditReportVersion: 2,
     vulnerabilities: {},

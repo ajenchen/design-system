@@ -343,7 +343,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/3625e02235cf166a50649a4d704cfb68fead69d0e168c481df013ebae9f6be25.blob",
-      "sha256": "b34e11d02a7aa71d001ef8f1a42af4cf97d1b8b82360f5779cb927370f5ee15a",
+      "sha256": "9d10b5c959a1629b029d229baae98ba4ebf1bb3a8e919798eb111111c5698886",
       "source": "scripts/setup-provider-cli-toolchain.mjs",
       "classification": null,
       "destination": "scripts/setup-provider-cli-toolchain.mjs"
@@ -367,7 +367,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/46f10bc55cdfdf834d0749eebff42ea0bb8576f361b36d2b6ba1851354c50150.blob",
-      "sha256": "0beeb71f8f71d23c03641311a8287392f72a8658e9b1a18a593207f7c3027684",
+      "sha256": "13e5998ca6dccfaa9aded3e0714caccb569316c6e2090f51f5a2e549c634f262",
       "source": "scripts/lib/governance-dependency-bootstrap.mjs",
       "classification": null,
       "destination": "scripts/lib/governance-dependency-bootstrap.mjs"
@@ -487,7 +487,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/7eb6cc60abfdabaf6617c336058fad1454ccde08889295767bfd9b7fd153cc6e.blob",
-      "sha256": "8675d4e89db9059624c77a56eb2357c4a489c9f73862365f27cac4393f37dc30",
+      "sha256": "20882259edb43d92f593d3d8ec5ab5a6bc0e6905230dd5d80416bd27bcbdc9f3",
       "source": "scripts/lib/verified-exact-npm-runtime.mjs",
       "classification": null,
       "destination": "scripts/lib/verified-exact-npm-runtime.mjs"
@@ -503,7 +503,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/884721550b56308812b20917adac7a12f36fdb4ecda6b02460a7f5a219c0c966.blob",
-      "sha256": "4545d0dac5d869c58ec26f37ff6ed70a255f61f9cf406efd41e99a9aeaa885b2",
+      "sha256": "c72bea318c93ae6dc3936ec2d43658c06c7f8032381aec02aae7f78d7a169b8b",
       "source": "packages/design-system/ds-canonical/templates/consumer-governance.md",
       "classification": null,
       "destination": "governance/consumer-governance.md"
@@ -543,7 +543,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/9791c85388d2e2e2bd564e2550fadc3351c4c960a47ce838098afcba7544eb90.blob",
-      "sha256": "43b53a78c96088cb7e39617d14608887c9108b2ea25b2959ec9d3c9006b1f965",
+      "sha256": "a6b2e17e0227782382266d07bc01ddf34bc315e28bddd4609c893de4aecbd965",
       "source": "scripts/verify-upgrade-evidence.mjs",
       "classification": null,
       "destination": "scripts/verify-upgrade-evidence.mjs"
@@ -599,7 +599,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/da2ad2737315d25a5300905ddefd62f1695056a8a1af155c5b34170ad9923bce.blob",
-      "sha256": "fd87b372e48ff079afb0b257c5e5c28fcf58637b2589a508987460a66c2b8b75",
+      "sha256": "762c1fda165b0f8c9d2f6e13ac313f37da65d427334328638f4445d29da50a63",
       "source": "template/ds-product-template/.devcontainer/onboard-banner.sh",
       "classification": null,
       "destination": ".devcontainer/onboard-banner.sh"

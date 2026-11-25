@@ -446,6 +446,27 @@ jobs:
         run: |
           node --test scripts/test-cloud-portability-invariants.mjs
           node scripts/test-claude-permission-policy.mjs
+          # 鎖定安裝鏈在「TLS 被重新簽、代理 CA 只在系統憑證庫」的主機要連得上(2026-11-26 下游 Claude Code 雲端
+          # setup:all 必定 SELF_SIGNED_CERT_IN_CHAIN)。harness 測試不得執行 openssl / sudo,所以探針憑證與系統憑證庫在這裡準備:
+          # 先在 CA 未被信任時跑(三臂都必須連不上 = 儀器看得到失敗),再 sudo 放進系統憑證庫跑(拿掉 --use-system-ca 的對照臂
+          # 必紅、鎖定 npm 子行程與下載信任錨兩臂必綠),跑完移除。純 Node + openssl,約 5 秒。
+          probe="$RUNNER_TEMP/system-trust-probe"
+          mkdir -p "$probe"
+          openssl req -x509 -newkey rsa:2048 -nodes -keyout "$probe/ca.key" -out "$probe/ca.pem" -days 2 \
+            -subj "/CN=qijenchen setup trust-store probe CA" \
+            -addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,keyCertSign,cRLSign"
+          openssl req -newkey rsa:2048 -nodes -keyout "$probe/leaf.key" -out "$probe/leaf.csr" -subj "/CN=127.0.0.1"
+          printf 'basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature,keyEncipherment\nextendedKeyUsage=serverAuth\nsubjectAltName=IP:127.0.0.1\n' > "$probe/leaf.ext"
+          openssl x509 -req -in "$probe/leaf.csr" -CA "$probe/ca.pem" -CAkey "$probe/ca.key" -CAcreateserial \
+            -out "$probe/leaf.pem" -days 2 -extfile "$probe/leaf.ext"
+          GOVERNANCE_SYSTEM_TRUST_STORE_PROBE="$probe" GOVERNANCE_SYSTEM_TRUST_STORE_PROBE_STATE=untrusted \
+            node --test scripts/test-verified-exact-npm-runtime.mjs
+          sudo cp "$probe/ca.pem" /usr/local/share/ca-certificates/qijenchen-setup-trust-probe.crt
+          sudo update-ca-certificates
+          GOVERNANCE_SYSTEM_TRUST_STORE_PROBE="$probe" GOVERNANCE_SYSTEM_TRUST_STORE_PROBE_STATE=trusted \
+            node --test scripts/test-verified-exact-npm-runtime.mjs
+          sudo rm -f /usr/local/share/ca-certificates/qijenchen-setup-trust-probe.crt
+          sudo update-ca-certificates --fresh
 
       - name: Focused governance and release SSOT checks
         run: |

@@ -53,10 +53,33 @@ Use the same canonical fresh-checkout bootstrap everywhere; run it locally and c
 - Codex Cloud: set both the environment **Setup script** and **Maintenance script** to
   `npm run setup:all`. Codex runs setup after checkout and maintenance after restoring a
   cached container, as described in the [official Codex Cloud environment guide](https://developers.openai.com/codex/cloud/environments).
-- Claude Code on the web: set the environment **Setup script** to `npm run setup:all`.
-  Anthropic caches successful environment setup; when the committed lock changes, rebuild the
-  environment cache or run the same command explicitly before work. See the
-  [official Claude Code web setup guide](https://code.claude.com/docs/en/claude-code-on-the-web#setup-scripts).
+- Claude Code on the web: create a cloud environment dedicated to this repository and set its
+  **Setup script** to the script below. Do not put it in the shared **Default** environment: other
+  repositories have no such folder, and a setup script that exits non-zero makes a session fail to
+  start or start without what it failed to install. The official guide documents that the script
+  runs as root on Ubuntu 24.04 after the repository is cloned and before Claude Code launches, and
+  that the environment's own variables are not set yet; it does not document the working
+  directory, so the script finds the checkout itself instead of assuming the repository root.
+  A successful run is cached as a filesystem snapshot and is re-run only when the script or allowed
+  hosts change or the cache expires, so after a committed-lock change run `npm run setup:all` in the
+  session. See [Setup scripts](https://code.claude.com/docs/en/cloud-environments#setup-scripts)
+  and [Setup script failed](https://code.claude.com/docs/en/web-quickstart#setup-script-failed).
+
+  ```bash
+  #!/bin/bash
+  # Setup script for the environment dedicated to <repository-folder>
+  set -euo pipefail
+  REPO_DIR=<repository-folder>
+  if [ -f package.json ] && grep -q '"setup:all"' package.json; then
+    :
+  elif [ -f "$REPO_DIR/package.json" ]; then
+    cd "$REPO_DIR"
+  else
+    echo "setup:all: cannot find $REPO_DIR from $(pwd)" >&2
+    exit 1
+  fi
+  npm run setup:all
+  ```
 - GitHub Codespaces/devcontainer: the committed `postCreateCommand` invokes the same
   `setup:all` implementation after checking the pinned system tools.
 
@@ -71,6 +94,14 @@ cannot certify a hostile host. Any step failing stops setup. Repository SessionS
 or repairs dependencies. The same `setup:all` works on local macOS/Linux, Codex Cloud, Claude Code
 on the web, Codespaces, and other Linux devcontainer hosts. Native Windows is unsupported; use
 WSL2 or the committed Linux dev container.
+
+Outbound HTTPS that a proxy re-signs (Claude Code on the web, most corporate proxies) works when
+the proxy CA is in the host system trust store and Node.js is 22.15.0 or newer: every registry
+request in the locked setup chain then trusts Node's bundled CA store plus the system store (the
+exact npm runs with `--use-system-ca`) and still ignores CA, proxy, and `NODE_OPTIONS` environment
+variables. On Node.js 22.13.x–22.14.x the locked npm trusts only Node's bundled store, so such a
+host needs Node.js 22.15.0+. Install a proxy CA into the system trust store; `NODE_EXTRA_CA_CERTS` or
+`SSL_CERT_FILE` alone is not used.
 
 Successful `setup:all` output is intentionally scoped as `scope=local-bootstrap`,
 `providerCertification=not-checked`, and `externalActivationRequired=false`. Ordinary bootstrap is

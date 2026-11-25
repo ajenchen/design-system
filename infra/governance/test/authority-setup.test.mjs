@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { basename, delimiter, dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { resolveClosedPrivateRuntimeBase } from '../../../scripts/lib/closed-tool-execution.mjs'
-import { resolveExactNpmRuntimeContract } from '../../../scripts/lib/verified-exact-npm-runtime.mjs'
+import { resolveExactNpmRuntimeContract, verifiedNodeTrustArgs } from '../../../scripts/lib/verified-exact-npm-runtime.mjs'
 import {
   AUTHORITY_DEPENDENCY_SETUP_COMMAND,
   AUTHORITY_MINIMUM_NODE_VERSION,
@@ -131,7 +131,10 @@ function successfulRunnerResult(args) {
   assert.equal(calls.length, 9)
   assertClosedPrerequisiteCalls(calls.slice(0, 4), 'darwin')
   assert.ok(calls.slice(4).every((call) => call.command === process.execPath && call.shell === false && call.cwd === ROOT))
-  assert.deepEqual(calls.slice(4, 7).map((call) => call.args[1]), ['ci', 'audit', 'audit'])
+  // 2026-11-26:鎖定 npm 一律以 --use-system-ca(本 Node 支援時)開頭,接著才是 exact CLI 與 npm 參數。
+  const trustArgs = verifiedNodeTrustArgs()
+  assert.ok(calls.slice(4, 7).every((call) => JSON.stringify(call.args.slice(0, trustArgs.length)) === JSON.stringify(trustArgs)))
+  assert.deepEqual(calls.slice(4, 7).map((call) => call.args[trustArgs.length + 1]), ['ci', 'audit', 'audit'])
   assert.deepEqual(calls.slice(7).map((call) => call.args), [
     ['scripts/ensure-playwright-browsers.mjs'],
     ['scripts/governance-build-graph.mjs', '--check'],

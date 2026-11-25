@@ -48,6 +48,7 @@ import {
   assertVerifiedExactNpmRuntimeCapability,
   prepareVerifiedExactNpmRuntime,
   resolveExactNpmRuntimeContract,
+  verifiedNpmNodeArgv,
 } from './lib/verified-exact-npm-runtime.mjs'
 import {
   REVIEWED_CONTROL_PLANE_UPDATE_ROUTE,
@@ -590,10 +591,10 @@ export async function reconstructExpectedUpgrade({
     const { cli, toolchain } = npmRuntime
     // Reconstruct the previous corpus from the protected commit and its committed lock. The host
     // checkout's ignored node_modules (including npm itself) is intentionally never an authority.
-    run(process.execPath, [
-      cli, 'ci', '--legacy-peer-deps', '--ignore-scripts', '--no-audit', '--no-fund',
+    run(process.execPath, verifiedNpmNodeArgv(cli, [
+      'ci', '--legacy-peer-deps', '--ignore-scripts', '--no-audit', '--no-fund',
       `--registry=${NPM_REGISTRY}`,
-    ], { cwd: sandbox, env: npmEnv, label: 'verified exact npm protected-base reconstruction' })
+    ]), { cwd: sandbox, env: npmEnv, label: 'verified exact npm protected-base reconstruction' })
     // 差集式弱點稽核(2026-09-30):升級前的 protected base 與升級後各跑一次同樣的 \`npm audit --json\`(同一時刻、
     // 同一份 advisory 資料庫、同一個 verified npm),只擋「這次升級新帶進來的」。原本這裡對升級後的樹跑 exact-shape
     // 認列(enforce),而執行的是 consumer protected main 上**凍結**的腳本 —— 它不可能認得發版之後才登記的通報,
@@ -606,17 +607,17 @@ export async function reconstructExpectedUpgrade({
       prefix: 'GOV-UPGRADE-DEPENDENCY-001',
     })
     const previousCorpus = validateInstalledForkCorpus(sandbox)
-    run(process.execPath, [
-      cli, 'install',
+    run(process.execPath, verifiedNpmNodeArgv(cli, [
+      'install',
       `@qijenchen/design-system@${expectedVersion}`,
       `@qijenchen/storybook-config@${expectedVersion}`,
       '--save-exact', '--legacy-peer-deps', '--ignore-scripts', '--no-audit', '--no-fund',
       `--registry=${NPM_REGISTRY}`,
-    ], { cwd: sandbox, env: npmEnv, label: 'protected-base exact npm install in disposable reconstruction' })
+    ]), { cwd: sandbox, env: npmEnv, label: 'protected-base exact npm install in disposable reconstruction' })
     const installedOverlayReceipt = npmRuntime.applyInstalledSecurityOverlay(sandbox)
-    const signatureJson = run(process.execPath, [
-      cli, 'audit', 'signatures', '--json', `--registry=${NPM_REGISTRY}`,
-    ], { cwd: sandbox, env: npmEnv, label: 'protected-base npm signature audit' })
+    const signatureJson = run(process.execPath, verifiedNpmNodeArgv(cli, [
+      'audit', 'signatures', '--json', `--registry=${NPM_REGISTRY}`,
+    ]), { cwd: sandbox, env: npmEnv, label: 'protected-base npm signature audit' })
     let auditReport
     try { auditReport = JSON.parse(signatureJson) } catch { throw new Error('protected-base npm signature audit did not produce closed JSON') }
     invariant(installedOverlayReceipt?.status === 'verified', 'GOV-UPGRADE-DEPENDENCY-001:npm security overlay was not verified on the reconstructed tree')

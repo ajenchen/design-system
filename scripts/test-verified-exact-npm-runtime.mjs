@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import assert from 'node:assert/strict'
+import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import {
   chmodSync,
@@ -13,9 +14,12 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs'
+import https, { createServer as createHttpsServer } from 'node:https'
+import { syncBuiltinESMExports } from 'node:module'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import test from 'node:test'
+import { fileURLToPath } from 'node:url'
 import { gzipSync } from 'node:zlib'
 import {
   downloadCanonicalNpmTarball,
@@ -27,7 +31,12 @@ import {
   prepareVerifiedExactNpmRuntime,
   resolveExactNpmArtifact,
   resolveExactNpmRuntimeContract,
+  nodeReadsSystemTrustStore,
+  VERIFIED_NODE_TLS_TRUST_ARGS,
+  verifiedNpmNodeArgv,
+  verifiedRegistryTrustAnchors,
 } from './lib/verified-exact-npm-runtime.mjs'
+import { sanitizeGovernanceBootstrapEnvironment } from './lib/governance-dependency-bootstrap.mjs'
 import {
   buildDeterministicNpmRuntimeArchive,
   installCanonicalNpmHttpsFixture,
@@ -445,3 +454,151 @@ test('overlay downloader accepts only certified overlay tarballs before any I/O'
   await assert.rejects(() => downloadCanonicalNpmSecurityOverlayTarball('https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.7.tgz', { retryLimit: 1 }), /outside the canonical registry contract/)
 })
 
+
+// ── 2026-11-26 P0:下游 Claude Code 雲端 `setup:all` 必定 SELF_SIGNED_CERT_IN_CHAIN ──────────────────────────────────
+// 要保證的性質:TLS 被重新簽、代理 CA 只在主機系統憑證庫時,鎖定鏈(父行程下載 + 子行程鎖定 npm)仍連得上,
+// 而且信任錨不取自任何環境變數。下面四題:(1) argv 契約 (2) 父行程信任錨的組成 (3) 同族呼叫點全數經過
+// verifiedNpmNodeArgv(4) 真 TLS 對照組:剝光環境變數、只有系統憑證庫信任自訂 CA,拿掉修法必連不上、有修法必連得上。
+test('verified npm argv carries the system trust-store flag on every Node that can read the system store', () => {
+  assert.deepEqual(VERIFIED_NODE_TLS_TRUST_ARGS, ['--use-system-ca'])
+  // 判定表(Node 官方文件:--use-system-ca 三平台 22.15.0 / 23.9.0,tls.getCACertificates 22.15.0 / 23.10.0)。
+  for (const [nodeVersion, expected] of [
+    ['22.13.0', false], ['22.14.9', false], ['22.15.0', true], ['22.23.5', true],
+    ['23.9.0', false], ['23.10.0', true], ['24.0.0', true], ['24.14.0', true], ['25.1.0', true],
+    ['20.19.0', false], ['v22.15.0', true], ['22.15', false], ['not-a-version', false],
+  ]) assert.equal(nodeReadsSystemTrustStore(nodeVersion), expected, nodeVersion)
+  assert.deepEqual(verifiedNpmNodeArgv('/tmp/npm/bin/npm-cli.js', ['ci', '--ignore-scripts'], { nodeVersion: '22.15.0' }), ['--use-system-ca', '/tmp/npm/bin/npm-cli.js', 'ci', '--ignore-scripts'])
+  assert.deepEqual(verifiedNpmNodeArgv('/tmp/npm/bin/npm-cli.js', ['ci'], { nodeVersion: '22.13.0' }), ['/tmp/npm/bin/npm-cli.js', 'ci'], 'older contract Node keeps the pre-fix argv (the flag would be a bad option there)')
+  assert.equal(nodeReadsSystemTrustStore(process.versions.node), true, 'this test runner must be able to prove the fixed path')
+  assert.deepEqual(verifiedNpmNodeArgv('/tmp/npm-cli.js', ['ci']).slice(0, 1), ['--use-system-ca'])
+  assert.throws(() => verifiedNpmNodeArgv('', ['ci']), /verified npm CLI path is missing/)
+  assert.throws(() => verifiedNpmNodeArgv('/tmp/npm-cli.js', ['ci', 1]), /argv must be an array of strings/)
+})
+
+test('in-process registry trust anchors are the bundled store plus the system store, never the environment-derived extra store', () => {
+  const requested = []
+  const fakeTls = {
+    getCACertificates(type) {
+      requested.push(type)
+      return { bundled: ['BUNDLED-A', 'SHARED'], system: ['SYSTEM-PROXY-CA', 'SHARED'], extra: ['ENV-EXTRA'], default: ['BUNDLED-A', 'ENV-EXTRA'] }[type]
+    },
+  }
+  assert.deepEqual(verifiedRegistryTrustAnchors({ tlsModule: fakeTls, nodeVersion: '22.15.0' }), ['BUNDLED-A', 'SHARED', 'SYSTEM-PROXY-CA'])
+  assert.deepEqual(requested, ['bundled', 'system'], 'extra / default (NODE_EXTRA_CA_CERTS) must never be consulted')
+  assert.equal(verifiedRegistryTrustAnchors({ tlsModule: fakeTls, nodeVersion: '22.14.0' }), undefined, 'older contract Node keeps the Node default trust (pre-fix behavior)')
+  assert.equal(requested.length, 2, 'no system-store read is attempted on a Node that cannot provide it')
+  assert.throws(() => verifiedRegistryTrustAnchors({ tlsModule: {}, nodeVersion: '22.15.0' }), /tls\.getCACertificates is unavailable/)
+  assert.throws(() => verifiedRegistryTrustAnchors({ tlsModule: { getCACertificates: () => [] }, nodeVersion: '22.15.0' }), /TLS trust anchors are unavailable/)
+  const real = verifiedRegistryTrustAnchors()
+  assert.ok(real.length > 0 && real.every((pem) => pem.includes('BEGIN CERTIFICATE')))
+})
+
+test('canonical downloads hand the bundled+system anchors to Node HTTPS', async () => {
+  const fixture = buildDeterministicNpmRuntimeArchive({
+    version,
+    cliSource: `if (process.argv[2] === '--version') console.log('${version}')\n`,
+  })
+  const restore = installCanonicalNpmHttpsFixture(fixture)
+  const fixtureRequest = https.request
+  const seen = []
+  https.request = function recordingRequest(input, options, callback) {
+    seen.push(options)
+    return fixtureRequest.call(this, input, options, callback)
+  }
+  syncBuiltinESMExports()
+  try {
+    await downloadCanonicalNpmTarball(fixture.artifact.resolved)
+  } finally {
+    https.request = fixtureRequest
+    syncBuiltinESMExports()
+    restore()
+  }
+  assert.equal(seen.length, 1)
+  assert.deepEqual(seen[0].ca, verifiedRegistryTrustAnchors())
+})
+
+test('every verified-npm spawn in the setup, sync and candidate chain goes through verifiedNpmNodeArgv', () => {
+  // 同族全修(M10):鎖定 npm 的每個呼叫點。只剩 probeCli 的 `--version`(不連網)直接帶 cli。
+  // 不在此列(交 release.yml 在 GitHub-hosted runner 跑、直接以 shebang 執行 npm):release-npm-publish /
+  // release-npm-readback / release-npm-finalize-verify。
+  const callers = [
+    'scripts/lib/governance-dependency-bootstrap.mjs',
+    'scripts/setup-provider-cli-toolchain.mjs',
+    'scripts/install-candidate-dependencies.mjs',
+    'scripts/run-verified-npm.mjs',
+    'scripts/verify-upgrade-evidence.mjs',
+  ]
+  const rawSpawn = /process\.execPath,\s*\[\s*(?:cli|npmCli|runtime\.cli|npmRuntime\.cli)\b/
+  for (const path of callers) {
+    const source = readFileSync(path, 'utf8')
+    assert.doesNotMatch(source, rawSpawn, `${path} spawns the verified npm CLI without the system trust-store flag`)
+    assert.match(source, /verifiedNpmNodeArgv\(/, `${path} lost the shared verified npm argv`)
+  }
+  const runtimeSource = readFileSync('scripts/lib/verified-exact-npm-runtime.mjs', 'utf8')
+  assert.deepEqual([...runtimeSource.matchAll(new RegExp(rawSpawn.source, 'g'))].length, 1, 'only the offline --version probe may spawn the CLI directly')
+  assert.match(runtimeSource, /process\.execPath, \[cli, '--version'\]/)
+})
+
+// 真 TLS 對照組。改系統憑證庫需要非互動 root,harness 測試本身不得執行 sudo / openssl(harness-source-inventory
+// 的執行檔白名單),所以由 CI 的 workflow 步驟準備:發一張探針 CA 與 127.0.0.1 的伺服器憑證,先在「CA 未被信任」狀態跑一次,
+// 再用 sudo 放進系統憑證庫後跑一次,跑完移除(.github/workflows/ci.yml「Cloud portability gates」)。
+//   GOVERNANCE_SYSTEM_TRUST_STORE_PROBE = 憑證目錄(ca.pem / leaf.key / leaf.pem)
+//   GOVERNANCE_SYSTEM_TRUST_STORE_PROBE_STATE = untrusted | trusted
+// 沒給目錄(本機 macOS 沙箱不能改鑰匙圈)時以「儀器無法執行」標 skip,不算通過;給了目錄卻缺檔或狀態不認得 = 儀器失效,紅。
+const SYSTEM_TRUST_PROBE_DIRECTORY = process.env.GOVERNANCE_SYSTEM_TRUST_STORE_PROBE
+const SYSTEM_TRUST_PROBE_STATE = process.env.GOVERNANCE_SYSTEM_TRUST_STORE_PROBE_STATE
+const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const SYSTEM_TRUST_PROBE_CLIENT = join(REPOSITORY_ROOT, 'scripts/test-fixtures/system-trust-probe-client.mjs')
+const CERTIFICATE_ERROR = /^ERROR (?:SELF_SIGNED_CERT_IN_CHAIN|UNABLE_TO_VERIFY_LEAF_SIGNATURE|UNABLE_TO_GET_ISSUER_CERT_LOCALLY|DEPTH_ZERO_SELF_SIGNED_CERT|CERT_UNTRUSTED)$/
+
+// 子行程環境照鎖定鏈的規則剝除;帶上指向探針 CA 的 NODE_EXTRA_CA_CERTS / SSL_CERT_FILE / NODE_OPTIONS,證明它們不算數。
+function probeEnvironment(directory) {
+  const environment = sanitizeGovernanceBootstrapEnvironment({
+    PATH: process.env.PATH,
+    HOME: directory,
+    NODE_EXTRA_CA_CERTS: join(directory, 'ca.pem'),
+    SSL_CERT_FILE: join(directory, 'ca.pem'),
+    SSL_CERT_DIR: directory,
+    NODE_OPTIONS: '--use-openssl-ca',
+  })
+  assert.deepEqual(Object.keys(environment).sort(), ['HOME', 'PATH'])
+  return environment
+}
+
+function settleProbe(resolvePromise) {
+  return (error, stdout) => resolvePromise(String(stdout || '').trim() || `ERROR ${error?.code || error?.message || 'no-output'}`)
+}
+
+test('stripped environment + probe CA only in the system trust store: bundled-only fails, the locked chain connects', async (t) => {
+  if (!SYSTEM_TRUST_PROBE_DIRECTORY) {
+    t.skip('儀器無法執行:要由 CI 的 Linux runner 準備探針憑證並以 sudo 改系統憑證庫(GOVERNANCE_SYSTEM_TRUST_STORE_PROBE);本機不算通過')
+    return
+  }
+  assert.ok(['untrusted', 'trusted'].includes(SYSTEM_TRUST_PROBE_STATE), `probe state must be untrusted or trusted, got ${SYSTEM_TRUST_PROBE_STATE}`)
+  const server = createHttpsServer({
+    key: readFileSync(join(SYSTEM_TRUST_PROBE_DIRECTORY, 'leaf.key')),
+    cert: readFileSync(join(SYSTEM_TRUST_PROBE_DIRECTORY, 'leaf.pem')),
+  }, (_request, response) => response.end('ok'))
+  await new Promise((resolvePromise) => server.listen(0, '127.0.0.1', resolvePromise))
+  const port = String(server.address().port)
+  const env = probeEnvironment(SYSTEM_TRUST_PROBE_DIRECTORY)
+  try {
+    const bundledOnly = await new Promise((resolvePromise) => execFile(process.execPath, ['--', SYSTEM_TRUST_PROBE_CLIENT, port, 'default'], { env, timeout: 20_000 }, settleProbe(resolvePromise)))
+    const lockedNpmChild = await new Promise((resolvePromise) => execFile(process.execPath, ['--use-system-ca', '--', SYSTEM_TRUST_PROBE_CLIENT, port, 'default'], { env, timeout: 20_000 }, settleProbe(resolvePromise)))
+    const downloadAnchors = await new Promise((resolvePromise) => execFile(process.execPath, ['--', SYSTEM_TRUST_PROBE_CLIENT, port, 'anchors'], { env, timeout: 20_000 }, settleProbe(resolvePromise)))
+    // 鎖定 npm 子行程真正拿到的旗標就是這一個(argv 契約由上面的判定表與呼叫點掃描守)。
+    assert.deepEqual(verifiedNpmNodeArgv('/npm-cli.js').slice(0, 1), ['--use-system-ca'])
+    // 對照臂(拿掉修法、環境變數已剝):不論 CA 在不在系統庫都必須連不上。
+    assert.match(bundledOnly, CERTIFICATE_ERROR, `control arm (bundled-only) must reject the probe CA, got ${bundledOnly}`)
+    if (SYSTEM_TRUST_PROBE_STATE === 'untrusted') {
+      // 儀器對照:CA 還沒進系統庫時,有修法的兩臂也必須連不上 —— 否則後面的綠燈不代表系統庫真的起作用。
+      assert.match(lockedNpmChild, CERTIFICATE_ERROR, `--use-system-ca must still reject an untrusted CA, got ${lockedNpmChild}`)
+      assert.match(downloadAnchors, CERTIFICATE_ERROR, `download anchors must still reject an untrusted CA, got ${downloadAnchors}`)
+    } else {
+      assert.equal(lockedNpmChild, 'STATUS 200', 'locked npm child (--use-system-ca) must trust the system store')
+      assert.equal(downloadAnchors, 'STATUS 200', 'in-process download anchors must trust the system store')
+    }
+  } finally {
+    server.close()
+  }
+})
