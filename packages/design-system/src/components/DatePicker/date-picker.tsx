@@ -16,6 +16,7 @@ import { useTruncated } from '@/design-system/hooks/use-truncated'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { DateGrid, EMPHASIS_FOCUS_RING_CLASSNAME, RANGE_PREVIEW_ARMED_CLASSNAME, RANGE_PREVIEW_CLASSNAMES, RANGE_TRACK_CLASSNAMES } from '@/design-system/components/DateGrid/date-grid'
 import { computeRangePreview, rangePreviewModifiers } from './range-preview'
+import { formatDateRange, formatDateRangeEndpoint } from './range-format'
 import { Button } from '@/design-system/components/Button/button'
 import { SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
@@ -925,6 +926,13 @@ export interface DatePickerRangeProps
   needConfirm?: boolean
   /** 日曆面一週從哪天開始(0 = 週日 … 6 = 週六);沒傳 = 由 `locale` 推。同單日 DatePicker 的 `weekStartsOn`。 */
   weekStartsOn?: WeekStartsOn
+  /**
+   * 檢視模式(`mode="view"`)把區間寫成一段文字,用標準 `Intl.DateTimeFormat.prototype.formatRange`:同一天自動合併
+   * (`2026/7/15 10:00 – 11:00`)、跨日寫兩端(`2026/7/15至2026/7/17`)、起訖相同只寫一個值。預設 `false` = 起 → 終兩段各自格式化。
+   * 只管 view;edit / readonly / disabled 仍是兩段(兩端各是一個欄位值)。只有一端有值等合併不了時照兩段版面,每一端的日期寫法與合併時相同。
+   * 結束日照舊是「含」,不做全天換算。日期寫法與判定表 → date-picker.spec.md「區間檢視合併(formatRange)」。
+   */
+  formatRange?: boolean
 }
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
@@ -950,6 +958,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
       secondStep = 1,
       needConfirm: needConfirmProp,
       weekStartsOn,
+      formatRange = false,
       id: idProp,
       'aria-describedby': ariaDescribedByProp,
       'aria-errormessage': ariaErrorMessageProp,
@@ -1144,15 +1153,47 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
     if (resolvedMode === 'view') {
       const hasAny = !!(startIso || endIso)
       if (!hasAny) return <span className={cn(fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
+      // formatRange(選填,預設關):兩端都有值 → 一段文字(Intl formatRange:同一天合併、跨日寫兩端、起訖相同只寫一個值)。
+      // 合併不了(一端空 / 解析不了 / 起點晚於終點 / showTime 但只有一端帶時間 / 環境沒有 formatRange)回 null → 照下方兩段版面,
+      // 每一端仍用合併的同一套寫法(同一頁不會一列 2026/7/15、一列 2026/07/15)。
+      // 判定住 range-format.ts(判定表 scripts/test-date-range-format.mjs),規則 date-picker.spec.md「區間檢視合併(formatRange)」
+      const rangeTextOptions = {
+        showTime,
+        showSeconds,
+        formatOptions,
+        locale: locale ?? DEFAULT_DATE_LOCALE,
+        getFormatter: getDateTimeFormatter,
+      }
+      const mergedText = formatRange
+        ? formatDateRange({
+            start: startDate,
+            end: endDate,
+            startHasTime: !!isoToTimeParts(startIso),
+            endHasTime: !!isoToTimeParts(endIso),
+            ...rangeTextOptions,
+          })
+        : null
+      if (mergedText !== null) {
+        return (
+          <span className={cn('inline-flex items-center min-w-0', nakedCellRowModeAlign, className)}>
+            {/* 截斷必附 tooltip(tooltip.spec.md:32)— 合併後只有一段,一個 TruncatedText */}
+            <TruncatedText>{mergedText}</TruncatedText>
+          </span>
+        )
+      }
+      // 一端的文字:開了 formatRange → 合併的同一套寫法;沒開,或這一端解析不了(回 null)→ 照原本的兩段寫法
+      const viewEndpointText = (iso: string, date: Date | undefined) =>
+        (formatRange ? formatDateRangeEndpoint({ date, hasTime: !!isoToTimeParts(iso), ...rangeTextOptions }) : null)
+        ?? formatDateOrDateTime(iso, showTime, showSeconds, { formatOptions, locale })
       return (
         <span className={cn('inline-flex items-center min-w-0', nakedCellRowModeAlign, className)}>
           {/* 截斷必附 tooltip(tooltip.spec.md:32)— start / end 各自獨立截斷、各自量測 */}
           <TruncatedText className={cn(!startIso && 'text-fg-muted')}>
-            {startIso ? formatDateOrDateTime(startIso, showTime, showSeconds, { formatOptions, locale }) : resolvedPlaceholder[0]}
+            {startIso ? viewEndpointText(startIso, startDate) : resolvedPlaceholder[0]}
           </TruncatedText>
           <ArrowRight size={iconSize} className="shrink-0 text-fg-muted mx-2" aria-hidden />
           <TruncatedText className={cn(!endIso && 'text-fg-muted')}>
-            {endIso ? formatDateOrDateTime(endIso, showTime, showSeconds, { formatOptions, locale }) : resolvedPlaceholder[1]}
+            {endIso ? viewEndpointText(endIso, endDate) : resolvedPlaceholder[1]}
           </TruncatedText>
         </span>
       )
