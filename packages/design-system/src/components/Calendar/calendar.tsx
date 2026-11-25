@@ -299,6 +299,21 @@ function nearestShownDay(date: Date, step: 1 | -1, isShown: (day: Date) => boole
 }
 
 /**
+ * 元素在版面上的外框寬(border-box,含小數),不受祖先 transform 影響(calendar.spec.md「窄寬度」:斷點看欄寬)。
+ * 不用 getBoundingClientRect():它量的是畫面上的視覺寬 —— 掛載當下祖先正在縮放(Dialog 開場 zoom-in-95,dialog.tsx:349;
+ * Popover 同,popover.tsx:292)就量到縮小後的寬(欄寬 62 在 scale(0.95) 下量到 58.9 → 誤判成窄),縮放結束版面尺寸沒變、
+ * ResizeObserver 不會再叫,旗標就一直錯。offsetWidth 也是版面寬,但取整數,門檻 60 附近會差半個 px。
+ * getComputedStyle 的 width 是版面上的使用值(DS styles/base.css 全域 border-box → 就是外框寬);
+ * 萬一 consumer 把 box-sizing 蓋成 content-box,把內距與框線加回去,量到的仍是外框寬。
+ */
+function layoutBorderBoxWidth(el: HTMLElement): number {
+  const style = getComputedStyle(el)
+  const width = parseFloat(style.width)
+  if (style.boxSizing === 'border-box') return width
+  return width + parseFloat(style.paddingLeft) + parseFloat(style.paddingRight) + parseFloat(style.borderLeftWidth) + parseFloat(style.borderRightWidth)
+}
+
+/**
  * 今天剛好被藏時停靠點落在哪:同一週的下一個看得見的日子,這一週後面沒有了就前一個(週五後面只剩週末 → 週五)。
  * 「今天」鈕搬停靠點也走這一支。
  */
@@ -511,7 +526,8 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   // ── 量欄寬(calendar.spec.md「窄寬度」:斷點看欄寬、不看視窗寬)──────────────────────────────
   // ResizeObserver 掛在週列格陣上;量的是一個日期格的外框寬(= 欄寬,含它自己的右格線)。欄是 minmax(0, 1fr),
   // 縮內容不會讓欄寬變 → 旗標只跟著容器寬走、不會來回跳。欄的組成變了(隱藏週末、週數欄)格陣本身不一定變寬窄,所以隨 gridTemplateColumns 重掛。
-  // useLayoutEffect:第一次量在畫面出來之前,窄容器不會先閃一下寬版的字。(每格放幾列依格高算時,同一個觀察者擴充成也量格高。)
+  // useLayoutEffect:第一次量在畫面出來之前,窄容器不會先閃一下寬版的字。(每格放幾列依格高算時,同一個觀察者擴充成也量格高 ——
+  // 格高同樣要量版面尺寸,理由見 layoutBorderBoxWidth。)
   const weeksGridRef = React.useRef<HTMLDivElement | null>(null)
   const [columnWidth, setColumnWidth] = React.useState<number | null>(null)
   React.useLayoutEffect(() => {
@@ -519,7 +535,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
     if (!grid) return
     const measure = () => {
       const cell = grid.querySelector<HTMLElement>('[role="gridcell"]')
-      if (cell) setColumnWidth(cell.getBoundingClientRect().width)
+      if (cell) setColumnWidth(layoutBorderBoxWidth(cell))
     }
     measure()
     if (typeof ResizeObserver === 'undefined') return
@@ -746,7 +762,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   // 2026-11-25 前只換月:停靠點只有「舊值掉出格陣」才回落今天,舊值若仍畫在今天那個月的格陣裡(含溢出日),按了「今天」停靠點還在舊日子。
   const handleToday = () => {
     setRefDate(new Date(resolvedToday.getTime()))
-    // 今天被藏(隱藏週末)時停在同一週最近的看得見的日子,同 Tab 進來的規則(shownDayNearToday)
+    // 今天被藏(隱藏週末)時停在同一週下一個看得見的日子、沒有就前一個,同 Tab 進來的規則(shownDayNearToday)
     setFocusedDateState(shownDayNearToday(startOfDay(resolvedToday), isShown, resolvedWeekStartsOn))
   }
   const handlePrev = () => setRefDate(subMonths(refDate, 1))
@@ -833,7 +849,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
         <div role="row" className="grid shrink-0 border-b border-divider bg-muted text-body" style={{ gridTemplateColumns }}>
           {showWeekNumbers && (
             // 週數欄欄頭「週」(labels.weekNumberHeader):一般字重、fg-secondary、上下左右置中(calendar.spec.md「Cell 規則」週數欄【Q10b(定)】);
-            // 灰底條本來就是整列的底,延伸到這一格。名稱由文字來(不另掛 aria-label)。
+            // 灰底條本來就是整列的底,延伸到這一格【AI 推導】。名稱由文字來(不另掛 aria-label)。
             <div role="columnheader" className="flex items-center justify-center p-[var(--calendar-gap)] text-body font-normal text-fg-secondary">
               <span className="flex items-center h-tag-md">{labels.weekNumberHeader}</span>
             </div>
@@ -867,7 +883,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
               <div key={rowIdx} role="row" style={{ display: 'contents' }}>
                 {week.number !== null && (
                   // 週數格(calendar.spec.md「Cell 規則」週數欄【Q10b(定)】):一般字重、fg-secondary、水平置中、上邊距與高度同日期框(4 / 24);
-                  // 等寬數字(欄寬照最寬兩位數算)。格線跟日期格同一套(右 / 下各一條,最後一週不畫下線)。
+                  // 等寬數字(欄寬照最寬兩位數算)。格線跟日期格同一套(右 / 下各一條,最後一週不畫下線)【AI 推導】。
                   // rowheader【AI 推導】:不是操作目標 —— 沒有 tabIndex、不進 roving 停靠點,第一段不可點;名稱 labels.weekNumber(「第 27 週」)。
                   <div
                     role="rowheader"

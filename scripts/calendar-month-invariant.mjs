@@ -38,7 +38,9 @@
  *         LD 載入中(展示「切換月份時載入」):LD1 格陣 aria-busy=true;LD2 每格事件區剛好一條高 24、aria-hidden 的骨架、沒有事件列;
  *           LD3 日期名稱不念筆數;LD4 點格內空白仍會開「新增事件」(onDateClick)。
  *         NW 窄寬度(展示「分割畫面側欄(窄寬)」):NW1 欄寬 ≤ 60 時星期一字、1 號「1」、讀屏名稱照舊;NW2 掃 20 個欄寬(51–70),
- *           每個寬度連看 6 幀狀態不變、「窄」⇔ 欄寬 ≤ 60、只在 61 切一次。
+ *           每個寬度連看 6 幀狀態不變、「窄」⇔ 欄寬 ≤ 60、只在 61 切一次;NW3 掛載當下祖先在縮放(Dialog / Popover 開場 zoom-in-95):
+ *           欄寬 62 在 scale(0.95) 下重新掛載(Storybook forceRemount),拿掉縮放後必須是寬版 —— 先量前提(真的重新掛載、掛載時比例 0.95、
+ *           日期格畫面寬 ≤ 60),前提不成立 = 儀器失效。斷點看的是版面上的欄寬,不是畫面上被縮放後的寬。
  *   紅: --selftest 逐一注入:星期列搬出格陣、週列高改 auto、最後一週留底線、格子內距 6、工具列改回內距撐高、nav 沒名稱、
  *       欄頭名稱改成短字、捲動區變成可聚焦(axe required-children)、捲動區不能捲、事件列高 20、事件列焦點框改回往內、1 號的實心底被壓成 24 寬、
  *       格最小高沒算格線(回到 60)、事件列外層回到可被壓(flex-shrink 1 + min-height 0)、
@@ -46,7 +48,8 @@
  *       日期名稱改回舊念法(yyyy-MM-dd)、拿掉 aria-current、aria-current 掛在每一天、唯讀格的 aria-label 放回去、唯讀格看得見的日期數字沒有 aria-hidden、
  *       labels 覆寫沒生效(名稱是寫死的預設中文)、跳過被藏日子的邏輯不見(焦點落空)、1 號被藏時沒有停靠點、週末寫死週六日(en-IL 照 en-US 藏)、
  *       星期列的週數欄沒讀同一個欄寬、週數格可聚焦、週數字加粗主色、週數第一週天數寫死 1(en-GB 年底變第 1 週)、格陣沒帶 aria-busy、骨架拿掉 aria-hidden、
- *       載入中照念筆數、載入中格子點不到、窄寬沒接上、門檻改看內容寬(內容回授到量測 → 門檻附近每幀來回跳)—— 每一個都必須讓對應的那一格紅。
+ *       載入中照念筆數、載入中格子點不到、窄寬沒接上、門檻改看內容寬(內容回授到量測 → 門檻附近每幀來回跳)、
+ *       量欄寬改量畫面寬(祖先縮放時讀到縮小後的寬 → 卡在窄版)—— 每一個都必須讓對應的那一格紅。
  *   綠: 全部量到且照規格時 exit 0。開 story 走 lib/launch-browser.mjs openStory(等 Storybook 回報渲染完成與被量的格陣出現,不睡固定時間);
  *       開不起來 / 等不到格陣 = 儀器失效(INSTRUMENT-FAIL,exit 1 並點名),不讀成通過。
  */
@@ -92,6 +95,9 @@ const NARROW_MAX = 60
 /** 窄寬掃描:欄寬 51…70(20 個寬度,跨過門檻),每個寬度連看幾幀 */
 const SWEEP_COLS = Array.from({ length: 20 }, (_, i) => 51 + i)
 const SWEEP_SAMPLES = 6
+/** NW3:Dialog / Popover 開場的縮放(zoom-in-95 = 0.95 倍)與一個「版面上寬、畫面上窄」的欄寬(62 × 0.95 = 58.9 ≤ 60 < 62) */
+const MOUNT_SCALE = 0.95
+const MOUNT_SCALE_COL = NARROW_MAX + 2
 /** S5 的情境:把根節點壓到這個高度,週列一定落在最小高(工具列 + 星期列 + 5 × 61 遠大於它) */
 const SQUEEZE_PX = 240
 const near = (a, b, tol = 0.5) => Number.isFinite(a) && Math.abs(a - b) <= tol
@@ -587,6 +593,59 @@ const BLOCKS = {
       `掃 ${sweep.length} 個欄寬(${SWEEP_COLS[0]}–${SWEEP_COLS.at(-1)}):連看 ${SWEEP_SAMPLES} 幀有變動的寬度 ${unstable.map((w) => w.target).join('、') || '0 個'}、`
       + `狀態與欄寬不符 ${wrong.map((w) => `${w.target}(${w.seen.map((x) => `${x.col}:${x.narrow}`).join(',')})`).slice(0, 3).join(';') || '0 個'}、切換點 ${flips.join('、') || '(沒有)'}`
       + `(規格:只看欄寬,≤ ${NARROW_MAX} 窄、${NARROW_MAX + 1} 起寬,只切一次、不來回跳)`)
+    // NW3 掛載當下祖先在縮放(Dialog / Popover 開場 zoom-in-95):欄寬 MOUNT_SCALE_COL(> 門檻 = 寬)在 scale(MOUNT_SCALE) 下重新掛載,
+    // 縮放留幾幀(ResizeObserver 第一次回報落在縮放期間,同開場動畫)再拿掉 → 狀態必須是寬版。縮放拿掉後版面尺寸沒變、觀察者不會再叫,
+    // 所以量畫面寬的實作會一直卡在窄版。前提先量(量不到 = 儀器失效,不是產品裁決):真的重新掛載(新的格陣節點)、
+    // 掛載那一刻格陣的畫面寬 / 版面寬 ≈ MOUNT_SCALE、日期格畫面寬 ≤ 門檻(量畫面寬的實作在這裡一定讀成窄)。
+    const mounted = await page.evaluate(async ({ storyId, col, scale }) => {
+      const frame = () => new Promise((r) => requestAnimationFrame(() => r()))
+      const channel = window.__STORYBOOK_ADDONS_CHANNEL__
+      if (!channel) return { missing: 'window.__STORYBOOK_ADDONS_CHANNEL__(Storybook 預覽的頻道)' }
+      const host = document.querySelector('#storybook-root')
+      const before = document.querySelector('[role="grid"]')
+      if (!host || !before) return { missing: '#storybook-root 或格陣' }
+      // 欄寬寫在樣式表(重新掛載後的新根節點也吃得到),不寫在舊根節點的 style
+      const sheet = document.createElement('style')
+      sheet.textContent = `:has(> [role="grid"] [data-calendar-day]) { width: ${7 * col + 2}px !important; }`
+      document.head.append(sheet)
+      host.style.transformOrigin = '0 0'
+      host.style.transform = `scale(${scale})`
+      for (let i = 0; i < 3; i++) await frame()
+      const atMount = new Promise((resolve) => {
+        const mo = new MutationObserver(() => {
+          const g = document.querySelector('[role="grid"]'), cell = g?.querySelector('[role="gridcell"]')
+          if (!g || g === before || !cell) return
+          mo.disconnect()
+          resolve({ ratio: g.getBoundingClientRect().width / g.offsetWidth, cellVisual: cell.getBoundingClientRect().width })
+        })
+        mo.observe(document.body, { subtree: true, childList: true })
+        setTimeout(() => { mo.disconnect(); resolve(null) }, 5000)
+      })
+      channel.emit('forceRemount', { storyId })
+      const at = await atMount
+      for (let i = 0; i < 6; i++) await frame()
+      host.style.transform = ''
+      host.style.transformOrigin = ''
+      for (let i = 0; i < 10; i++) await frame()
+      const g = document.querySelector('[role="grid"]')
+      const heads = [...g.querySelectorAll('[role="columnheader"]')].map((h) => h.textContent)
+      const firsts = [...g.querySelectorAll('[data-calendar-day$="-01"]')].map((d) => d.textContent)
+      const narrow = heads.every((h) => [...h].length === 1) && firsts.every((t) => t === '1') ? true
+        : heads.every((h) => [...h].length > 1) && firsts.every((t) => t !== '1') ? false : null
+      const result = { remounted: g !== before, at, col: g.querySelector('[role="gridcell"]').getBoundingClientRect().width, heads, firsts, narrow }
+      sheet.remove()
+      return result
+    }, { storyId: STORY.narrow, col: MOUNT_SCALE_COL, scale: MOUNT_SCALE })
+    if (mounted.missing) { instrumentFails.push({ cell: 'NW3', detail: `頁面上沒有 ${mounted.missing}` }); return }
+    if (!mounted.remounted || !mounted.at || !near(mounted.at.ratio, MOUNT_SCALE, 0.01) || !(mounted.at.cellVisual <= NARROW_MAX)) {
+      instrumentFails.push({ cell: 'NW3', detail: `前提沒成立:重新掛載 ${mounted.remounted}、掛載時畫面寬 / 版面寬 ${mounted.at?.ratio?.toFixed(3) ?? '(沒等到新格陣)'}`
+        + `(要 ${MOUNT_SCALE})、日期格畫面寬 ${mounted.at?.cellVisual?.toFixed(2) ?? '-'}(要 ≤ ${NARROW_MAX})` })
+      return
+    }
+    check('NW3', near(mounted.col, MOUNT_SCALE_COL) && mounted.narrow === false,
+      `欄寬 ${mounted.col.toFixed(2)} 在 scale(${MOUNT_SCALE}) 下掛載(當下畫面寬 ${mounted.at.cellVisual.toFixed(2)}、比例 ${mounted.at.ratio.toFixed(3)}),拿掉縮放後:`
+      + `星期「${mounted.heads.join(' ')}」、1 號「${mounted.firsts.join(' / ')}」→ ${mounted.narrow === false ? '寬版' : mounted.narrow ? '窄版' : '混雜'}`
+      + `(規格:斷點看版面上的欄寬,${MOUNT_SCALE_COL} > ${NARROW_MAX} = 寬版,掛載時祖先縮放不得讓它變窄)`)
   },
   // 今天剛好是 1 號:Inspector 拿掉 today 參數(元件改用 new Date()),時鐘釘在 2026-07-01 上午 10 點(本機時區)。
   // 不用網址傳日期:Storybook 的網址參數對 Date 型別的 arg 一律丟掉(實測 !date(...) 沒生效)。
@@ -676,6 +735,22 @@ const MUTANTS = [
     const g = document.querySelector('[role="grid"]')
     const apply = () => { const head = g.querySelector('[role="columnheader"] span')?.textContent ?? ''; g.style.marginRight = [...head].length === 1 ? '0px' : '28px' }
     new MutationObserver(apply).observe(g, { subtree: true, childList: true, characterData: true }); apply()
+  } },
+  // 量欄寬改回量畫面寬(getBoundingClientRect,2026-11-25 首版):日期格的 width 讀到的是祖先縮放後的寬。沒有縮放時兩者相同(NW1 / NW2 照綠),
+  // 掛載當下有縮放就讀成窄、拿掉縮放後觀察者不再回報 → 卡在窄版
+  { name: '量欄寬改量畫面寬(祖先縮放時讀到縮小後的寬)', block: 'narrow', expect: ['NW3'], dom: () => {
+    const real = window.getComputedStyle
+    const visualWidth = (el) => `${el.getBoundingClientRect().width}px`
+    window.getComputedStyle = function visualWidthComputedStyle(el, pseudo) {
+      const style = real.call(window, el, pseudo)
+      if (!(el instanceof Element) || el.getAttribute('role') !== 'gridcell') return style
+      return new Proxy(style, { get(target, key) {
+        if (key === 'width') return visualWidth(el)
+        if (key === 'getPropertyValue') return (name) => (name === 'width' ? visualWidth(el) : target.getPropertyValue(name))
+        const value = Reflect.get(target, key)
+        return typeof value === 'function' ? value.bind(target) : value
+      } })
+    }
   } },
   // 必須最後一個(todayFirst 會釘住時鐘,見該區塊註解)
   { name: '1 號的實心底被壓成 24 寬', block: 'todayFirst', expect: ['R1'], css: '[data-calendar-day="2026-07-01"] { padding: 0 !important; max-width: var(--tag-height-md) !important; }' },
