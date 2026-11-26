@@ -625,6 +625,26 @@ export const GroupsAndMinWidth: Story = {
       </Field>
     </div>
   ),
+  // 斷言 groups / minWidth 真的轉到 SelectMenu(C1 / C24):三組標題、組與組之間各一條線、浮層下限 320;搜到只剩一組時沒有線
+  //(線由 CommandGroup 自動畫 = item-anatomy.spec.md「Group auto-separation」)。最後關掉清單,畫面回到初始狀態
+  play: async ({ canvasElement }) => {
+    const doc = canvasElement.ownerDocument
+    const trigger = within(canvasElement).getByRole('combobox')
+    await userEvent.click(trigger)
+    const listbox = await within(doc.body).findByRole('listbox')
+    const groups = () => [...listbox.querySelectorAll<HTMLElement>('[cmdk-group]:not([hidden])')]
+    const lines = () => groups().filter((g) => parseFloat(getComputedStyle(g).borderTopWidth) > 0).length
+    await waitFor(() => expect(groups().map((g) => g.querySelector('[cmdk-group-heading]')?.textContent)).toEqual(['議題', '專案', '管理']))
+    await expect(lines()).toBe(2)
+    const surface = listbox.closest<HTMLElement>('[data-radix-popper-content-wrapper]') ?? listbox
+    await expect(surface.getBoundingClientRect().width).toBeGreaterThanOrEqual(320)
+    await userEvent.type(doc.querySelector<HTMLInputElement>('[cmdk-input]')!, '版本')
+    await waitFor(() => expect(groups().length).toBe(1))
+    await expect(lines()).toBe(0)
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(trigger).toHaveAttribute('aria-expanded', 'false'))
+    trigger.blur()
+  },
 }
 
 

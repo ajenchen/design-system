@@ -457,10 +457,13 @@ const FieldLabel = React.forwardRef<HTMLLabelElement, FieldLabelProps>(
     // 除了它標的那個控件;2026-11-26 產品 canary 回報 C8 (b))—— 住在裡面時,控件經 aria-labelledby / <label for> 算出的讀屏名稱
     // 會把 ⓘ 的說明文字一起念進去。有 ⓘ 時改成:外層 span 帶版面(同一組 class / style / data-field-slot,版面與顏色不變),
     // <label> 只包星號 + 標籤文字,ⓘ 是它的兄弟。沒有 ⓘ(或檢視態本來就是 span)維持原本單一 <label> / <span>。
+    // 點擊範圍不變:修前整個標籤列(含文字右邊、文字與 ⓘ 之間 4px、橫排時整個標籤欄)都是 <label>,點空白處會交給控件;
+    // 拆開後外層把「點在自己或那層 inline-flex 上」(= ⓘ 與文字以外的空白)轉成點 <label>,交給瀏覽器原生的 label 行為(聚焦 / 勾選照舊)。
+    // 點在 <label> 本身已由原生處理、點 ⓘ 是看說明,兩者都不轉(轉了會重複觸發:勾選框一下切兩次)。
     const showInfo = Boolean(info) && !disabled
-    const splitInfo = showInfo && !isViewMode
-    const LabelTag = (isViewMode ? 'span' : 'label') as 'label'
-    const RootTag = (splitInfo ? 'span' : LabelTag) as 'label'
+    const split = showInfo && !isViewMode
+    const RootTag = (isViewMode || split ? 'span' : 'label') as 'label'
+    const TextTag = (split ? 'label' : 'span') as 'label'
     const labelAttrs = {
       ref,
       id: ctx?.labelId,
@@ -470,22 +473,14 @@ const FieldLabel = React.forwardRef<HTMLLabelElement, FieldLabelProps>(
       'aria-disabled': disabled || undefined,
       ...props,
     }
-    const labelText = (
-      <>
-        {required && (
-          <span
-            aria-hidden="true"
-            className={disabled ? 'text-fg-disabled' : 'text-fg-muted'}
-          >
-            *
-          </span>
-        )}
-        {children}
-      </>
-    )
+    // 外層只轉「點在自己或那層 inline-flex 上」的那一下(= 空白處);label.click() 走瀏覽器原生的 label 行為
+    const forwardBlankClick = (e: React.MouseEvent<HTMLElement>) => {
+      if (e.target !== e.currentTarget && e.target !== e.currentTarget.firstChild) return
+      e.currentTarget.querySelector<HTMLLabelElement>(':scope > span > label')?.click()
+    }
     return (
       <RootTag
-        {...(splitInfo ? {} : labelAttrs)}
+        {...(split ? { onClick: forwardBlankClick } : labelAttrs)}
         className={cn(
           FIELD_TEXT_CLASS,
           'font-normal select-none',
@@ -499,7 +494,17 @@ const FieldLabel = React.forwardRef<HTMLLabelElement, FieldLabelProps>(
         data-field-disabled={disabled ? '' : undefined}
       >
         <span className="inline-flex items-center gap-1">
-          {splitInfo ? <label {...labelAttrs}>{labelText}</label> : <span>{labelText}</span>}
+          <TextTag {...(split ? labelAttrs : {})}>
+            {required && (
+              <span
+                aria-hidden="true"
+                className={disabled ? 'text-fg-disabled' : 'text-fg-muted'}
+              >
+                *
+              </span>
+            )}
+            {children}
+          </TextTag>
           {showInfo && (
             <Tooltip>
               <TooltipTrigger asChild>

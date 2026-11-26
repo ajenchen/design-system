@@ -80,9 +80,9 @@ async function renderedLabelProblems(mutate) {
   return labelMarkupProblems(html)
 }
 
-/** 2026-11-26 前的結構:ⓘ 住在 <label> 裡(splitInfo 恆 false = 單一 <label> 包住文字與 ⓘ) */
+/** 2026-11-26 前的結構:ⓘ 住在 <label> 裡(split 恆 false = 單一 <label> 包住文字與 ⓘ) */
 const mutantInfoInsideLabel = () => mutantFor(ROOT, 'components/Field/field.tsx',
-  (src) => replaceOnce(src, /const splitInfo = showInfo && !isViewMode/u, 'const splitInfo = false'))
+  (src) => replaceOnce(src, /const split = showInfo && !isViewMode/u, 'const split = false'))
 const SCAN_ROOTS = ['packages/design-system/src', 'apps']
 // Field 家族的可編輯控件(field-controls.spec.md「4 Field control」)
 const CONTROLS = 'Input|Textarea|Select|Combobox|DatePicker|TimePicker|DateTimePicker|NumberInput|PeoplePicker|SearchInput'

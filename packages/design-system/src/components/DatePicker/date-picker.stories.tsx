@@ -287,7 +287,31 @@ export const DisabledDates: Story = {
       <LiveDatePicker typeable value="2026-12-08" disabledDate={isStoreClosed} aria-label="預約日期" />
     </div>
   ),
-  play: openPopoverPlay('[role="combobox"]'),
+  // 斷言 disabledDate 真的生效(C33):週六 12/5、週日 12/6、12/25 不可選,週一 12/7 可選;打進 2026-12-25 → 標錯、保留打的字。
+  // 最後改回 2026-12-08、月曆開著 = 快照與 a11y 基線量的畫面(與只打開浮層時相同)
+  play: async ({ canvasElement }) => {
+    const input = within(canvasElement).getByRole('combobox')
+    const page = within(canvasElement.ownerDocument.body)
+    await userEvent.click(input)
+    const dialog = await page.findByRole('dialog', { name: '日期選擇' })
+    const unavailable = (iso: string) => {
+      const day = dialog.querySelector<HTMLButtonElement>(`[data-day="${iso}"] button`)
+      if (!day) throw new Error(`月曆上找不到 ${iso}`)
+      return day.disabled || day.getAttribute('aria-disabled') === 'true'
+    }
+    for (const iso of ['2026-12-05', '2026-12-06', '2026-12-25']) await expect(unavailable(iso)).toBe(true)
+    await expect(unavailable('2026-12-07')).toBe(false)
+    // 打字一律 skipClick:焦點已在輸入框(clear 會聚焦),再點一下會切換日曆開關,打開時焦點可能被日曆接走、字打不進輸入框
+    await userEvent.clear(input)
+    await userEvent.type(input, '2026-12-25{Enter}', { skipClick: true })
+    await waitFor(() => expect(input).toHaveAttribute('aria-invalid', 'true'))
+    await expect(input).toHaveValue('2026-12-25')
+    await userEvent.clear(input)
+    await userEvent.type(input, '2026-12-08{Enter}', { skipClick: true })
+    await waitFor(() => expect(input).not.toHaveAttribute('aria-invalid', 'true'))
+    if (!page.queryByRole('dialog', { name: '日期選擇' })) await userEvent.click(input)
+    await page.findByRole('dialog', { name: '日期選擇' })
+  },
 }
 
 /* ── OpenSnapshot:showTime Range popover(activeEnd='start')── */
