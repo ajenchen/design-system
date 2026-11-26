@@ -29,6 +29,9 @@ printf '<div className="flex gap-2 px-[var(--layout-space-loose)] hover:bg-secon
 printf '<div className="flex gap-2 px-[var(--layout-space-loose)] hover:!bg-[var(--surface-hover)] rounded-md" />\n' > "$FILE"; expect 2 raw-row-var-hover
 printf '<div className="flex gap-2 px-[var(--layout-space-loose)] hover:opacity-80 rounded-md" />\n' > "$FILE"; expect 0 raw-row-no-hover-pair-token
 printf '<div className="px-[var(--layout-space-loose)] border-b border-divider" />\n' > "$FILE"; expect 2 overlay
+# 頁面內有框區塊的標頭(header-canonical.spec.md「何時不用」;user 2026-11-26 E6)→ 不擋;同一塊放進浮層 → 照擋。
+printf 'export const S = () => (\n  <div className="rounded-md border border-border bg-surface">\n    <div className="flex items-center px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] border-b border-divider"><h2 className="text-h6">帳單資訊</h2></div>\n    <p>下次扣款日 12/01</p>\n  </div>\n)\n' > "$FILE"; expect 0 overlay-page-block-header
+printf 'export const S = () => (\n  <PopoverContent>\n    <div className="rounded-md border border-border bg-surface">\n      <div className="flex items-center px-[var(--layout-space-loose)] py-2 border-b border-divider"><span>帳單資訊</span></div>\n    </div>\n  </PopoverContent>\n)\n' > "$FILE"; expect 2 overlay-page-block-in-popover
 printf '<AppShell layout="primary-header"><SidebarFooter /></AppShell>\n' > "$FILE"; expect 2 primary-header
 # Menu 浮層補品牌的豁免(2026-10-15):只認「這一份畫在浮層裡」useSidebarSurface();整個 Menu 的 display.menu 兩份同時成立、細列也長出標頭 → 不豁免
 printf 'const { display } = useAppShell()\n<AppShell layout="primary-header" globalHeader={<GH />}>{display.menu === "overlay" && <SidebarHeader>brand</SidebarHeader>}</AppShell>\n' > "$FILE"; expect 2 primary-header-display-menu-not-exempt

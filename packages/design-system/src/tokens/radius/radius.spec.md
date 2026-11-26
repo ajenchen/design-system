@@ -56,7 +56,7 @@
 大多數互動元件,視覺上「有圓角但不搶眼」:
 
 - Button、Input、Select、Checkbox、Tag
-- 不浮起來的容器(頁面上的卡片、內嵌通知;DS 目前沒有 Card 元件)
+- 不浮起來的容器(頁面上的卡片、內嵌通知;DS 不提供 Card 元件,有框區塊由消費者自組,見 `../../patterns/header-canonical/header-canonical.spec.md`「何時不用」)
 - 表格格子、清單列的 hover 底
 - Tooltip(雖然帶浮層陰影,圓角跟一般元件同一檔;`../elevation/elevation.spec.md`「浮層共用樣式」寫明這個例外)
 

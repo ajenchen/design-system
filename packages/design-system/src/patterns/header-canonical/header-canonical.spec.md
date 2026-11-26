@@ -32,9 +32,9 @@ benchmark:
 - ❌ 純內容區小標題(section heading)→ 用 typography(`text-h6` 等),不是 header primitive
 - ❌ **Dialog / 浮層內「不可關閉的 side pane」標題**(如 detail dialog 右欄 metadata 欄的「General info」)→ 走 typography,不消費 header primitive。**判準一句話:「這個 pane 能不能自己被關掉」**(2026-07-08 user 拍板 codify)—— **可獨立 dismiss**(自帶 close、自帶 ScrollArea、旁有等高 chrome 需對齊,如 FileViewer InfoPanel:I 鍵 + close X)→ `<ChromeHeader>`;**不可關閉** = pane 標題只是 content 的一部分 → 純 typography,間距跟著 layoutSpace 原則走(不 flush、無 border-b、隨內容捲動)。反例先例:DatePicker TimePickerSidePanel 同層級 caption 不消費 header primitive(date-picker.spec.md「TimePickerSidePanel header 下方無 divider」段)。外部對照:Carbon SidePanel(https://github.com/carbon-design-system/ibm-products/blob/main/packages/ibm-products-styles/src/components/SidePanel/_side-panel.scss)/ Material side sheet(https://github.com/material-components/material-components-android/blob/master/docs/components/SideSheet.md)皆「有 close affordance 才有正式 header + divider」。
 - ❌ 列表 row / menu item → 走 `item-anatomy`,不是 header
-- ❌ 卡片內標題列 → Card 自己的 header 區,不套本 pattern
+- ❌ **頁面內不可關閉的有框區塊**(設定卡、資訊區塊)的標題 → 不是 header primitive:標題由消費者用 typography(同上「內容區小標題」)+ token + item anatomy 自組,DS 不提供 Card 或區塊標頭元件(user 2026-11-26 原話:「這個由消費者自己定義了吧？反正我們都提供 token跟 item anatomy的設計原則了，應該就是依照那些去延伸就夠了吧？？？」;同一方向的先例見 `components/AppShell/app-shell.spec.md`「Main 內塞什麼」段 user 2026-11-06 原話)。手刻浮層標頭的閘(下方「機械防呆」)不擋這種標頭:直接寫在 `rounded-md` + `border` 區塊最上方、而且不在 Dialog / Sheet / Popover / HoverCard 等浮層裡;放進浮層裡就照擋(判法認得出的浮層限同一檔:直接寫在浮層底下,或寫成同檔的元件 / 變數再放進浮層;區塊元件在別的檔被放進浮層不在判法內)
 
-**機械防呆**(讓 AI 即使誤判也被擋):手刻 chrome header(`h-[var(--chrome-header-height)] border-b`)→ `_chrome_header_handcraft` 攔;手刻 overlay header(`px-loose + border-b border-divider` 簽名)→ `check_story_invariants.sh R9` BLOCKER。命名前綴(`chrome-` / `overlay`-surface)本身自帶 surface 語意,讀到名字即知用途。
+**機械防呆**(讓 AI 即使誤判也被擋):手刻 chrome header(`h-[var(--chrome-header-height)] border-b`)→ `_chrome_header_handcraft` 攔;手刻 overlay header(`px-loose + border-b border-divider` 簽名)→ `check_story_invariants.sh` 規則 R9 BLOCKER(產品端同一組簽名:`check_consumer_code_quality.sh` 浮層段;四支閘共用 `hooks/lib/tsx-governance-analysis.mjs` 的 `page-block-header-mask` 放行上一段的頁面區塊標頭)。命名前綴(`chrome-` / `overlay`-surface)本身自帶 surface 語意,讀到名字即知用途。
 
 ## 定位
 
