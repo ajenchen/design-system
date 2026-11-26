@@ -86,8 +86,8 @@ const assertExports = (lib, label) => {
 
 // ── 判定表 ────────────────────────────────────────────────────────────────────────────────────────
 const d = (y, m, day, h = 0, mi = 0, s = 0) => new Date(y, m - 1, day, h, mi, s)
-const THIN = ' ' // ICU 在區間分隔號兩側(zh-TW 也在日期與時間之間)放的窄空白 U+2009;寫成跳脫,原始碼裡肉眼看不到它
-const NNBSP = ' ' // ICU 在 en-US 區間的時間與 AM / PM 之間放的窄不換行空白 U+202F(V8 的單獨 format 換成一般空白,區間沒換)
+const THIN = '\u2009' // ICU 在區間分隔號兩側(zh-TW 也在日期與時間之間)放的窄空白 U+2009;寫成跳脫,原始碼裡肉眼看不到它
+const NNBSP = '\u202f' // ICU 在 en-US 區間的時間與 AM / PM 之間放的窄不換行空白 U+202F(V8 的單獨 format 換成一般空白,區間沒換)
 const NDASH = '–'
 const R = `${THIN}${NDASH}${THIN}`
 const nativeFactory = (locale, options) => new Intl.DateTimeFormat(locale, options)
@@ -292,7 +292,7 @@ function styleMismatches(resolveOptions, rangeParts, endpoint) {
       const parts = log.at(-1)
       // V8 的單獨 format() 把 ICU 的 U+202F(時間與 AM / PM 之間)換成一般空白,formatToParts 沒換(Node 24.14.0 實測):比對前兩邊統一,
       // 只放過這一個已知差異 —— 其他任何字不同照舊算「不是注入的 formatter 寫出來的」
-      const sameText = (x) => x.replace(/ /g, ' ')
+      const sameText = (x) => x.replace(/\u202f/g, ' ')
       if (!parts || sameText(parts.map((p) => p.value).join('')) !== sameText(text)) { bad.push(`${locale} ${name} 退回兩段的一端「${text}」不是注入的 formatter 寫出來的(量不到它用了哪一套寫法)`); continue }
       const tokens = styleTokens(parts)
       const outside = [...tokens].filter((t) => !base[withTime].has(t))
