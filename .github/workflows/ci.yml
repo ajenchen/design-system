@@ -1593,6 +1593,12 @@ jobs:
     # 逐支計時(job log 時間戳,289bce76 / 21e25346 / 38346602 / a91dfe7c 四次)前半(AgentPanel 到共用承擔者焦點)合計 473–660 秒、
     # 後半(Tag 內距到改到元件的視覺稽核)528–666 秒 —— 後半搬到 verify-browser-field-dialog-steps,兩邊各約 13 分。
     # 2026-11-12:水平溢出閘(test:overflow-reveal-selected,2026-11-11 加)移到 verify-browser-layout —— 9126e95b 那次它在本 job 第 16 分 55 秒才開始跑;2026-11-14 再搬到 verify-browser-horizontal-overflow。
+    # 2026-11-27(照 G10 拆平行 job、不調高上限):PR #174 8a508469 本 job 25.2 分撞上限被取消(job 140081222778;被砍時最後一支
+    # shared-carrier-focus 剛印完「全部通過」,前面每支主判定與 --selftest 全綠 —— 不是斷言失敗,是沒有裁決)。同一步「瀏覽器閘」秒數
+    # (GitHub API 步驟時間):main 848c45ea 1055 → 本 PR 1123 / 1174 / 1280 / 1231 / 1333(5a96153c,job 23.9 分)→ 1394(8a508469)。
+    # 8a508469 逐支計時(job log 時間戳):AgentPanel 家族 500 / AppShell 258 / 選單鍵盤 66 / Pagination 3 / 焦點指示 111 / 拖曳執行期 45 /
+    # DatePicker 打字開啟 39 / 區間預覽 115 / LinkInput 清除 94 / 錯誤說明與字數計數 117 / 共用承擔者焦點 37 秒。
+    # 後半七支(焦點指示起,合計 558 秒)搬到 verify-browser-focus-inputs;本 job 留前半約 830 秒 + 準備約 2.5 分。
     timeout-minutes: 25
     # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
     env:
@@ -1647,6 +1653,52 @@ jobs:
           # 但 CI 從來沒有呼叫它(2026-09-05 稽核抓到)—— 跟上面 distribute-column-widths 同一種
           # 「宣稱有閘、其實沒人跑」;和 DataTable 一樣,pixel 閘只能在有瀏覽器的這一步跑。
           npm run test:pagination-invariants
+          # 焦點指示 / 拖曳執行期 / DatePicker / LinkInput / 共用承擔者焦點七支 2026-11-27 搬到 verify-browser-focus-inputs(見本 job 檔頭)。
+      # Cloud sessions load the committed provider config as-is; the only two ways that config has
+      # ever broken (fatal sandbox flag in containers, hooks/scripts pointing at a retired mirror)
+      # both merged without any gate exercising them. These two commands bind cloud survivability
+      # to every PR (2026-08-28 user directive: 永遠確保各種環境和模型都能如期順利運行).
+      # 這 9 支都註冊成 `npm run test:*`(等於宣告「要被跑」),但沒有任何 workflow 呼叫它們。
+      # 本機逐一實跑確認全綠、合計約 21 秒才接上 —— 不是把紅燈接進 CI。
+      # 另有 4 支目前是紅的,理由寫在 scripts/ci-gate-coverage.mjs 的 NOT_A_PR_GATE(總帳 AD13)。
+
+  verify-browser-focus-inputs:
+    # 2026-11-27 拆自 verify-browser-interaction(照 2026-10-14 待辦總帳 G10「照主題拆平行 job、不調高上限」,上限沿用原 job 的 25;
+    # 準備步驟與原 job 逐字相同,ci-workflow-scope 斷言)。原 job 在 PR #174 8a508469 跑 25.2 分撞上限被取消(實測與逐支計時記在原 job 檔頭);
+    # 本 job = 原步驟後半七支,8a508469 那次 CI 逐支合計 558 秒(焦點指示 111 / 拖曳執行期 45 / DatePicker 打字開啟 39 / 區間預覽 115 /
+    # LinkInput 清除 94 / 錯誤說明與字數計數 117 / 共用承擔者焦點 37),加準備約 2.5 分,估約 12 分。
+    name: Verify browser(focus, drag, date picker and link input gates)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      - name: Focus, drag, date picker and link input invariants (browser)
+        run: |
+          npx --no-install playwright install chromium
           # 焦點幾何/指示/拖曳執行期/DatePicker 開啟行為/共用承擔者 —— 這幾支都要真瀏覽器,
           # 併在這一步是因為 storybook 與 chromium 已經備好,不必再裝一次。
           # 焦點幾何全掃(58 元件 × 2 主題)與「+N」溢出全寬度掃描**不在這裡** ——
@@ -1679,13 +1731,6 @@ jobs:
           # 2026-11-26 起這裡不另跑判定(原本本機約 45 秒,在全 CI 最長的 job 上):verify-browser-control-groups 的 --selftest 基準就是同一趟判定
           #(同一個 runVariant、同一個 CONTEXT),基準紅會印判定那一行並 exit 1。
           npm run test:shared-carrier-focus
-      # Cloud sessions load the committed provider config as-is; the only two ways that config has
-      # ever broken (fatal sandbox flag in containers, hooks/scripts pointing at a retired mirror)
-      # both merged without any gate exercising them. These two commands bind cloud survivability
-      # to every PR (2026-08-28 user directive: 永遠確保各種環境和模型都能如期順利運行).
-      # 這 9 支都註冊成 `npm run test:*`(等於宣告「要被跑」),但沒有任何 workflow 呼叫它們。
-      # 本機逐一實跑確認全綠、合計約 21 秒才接上 —— 不是把紅燈接進 CI。
-      # 另有 4 支目前是紅的,理由寫在 scripts/ci-gate-coverage.mjs 的 NOT_A_PR_GATE(總帳 AD13)。
 
   verify-browser-field-dialog-steps:
     # 2026-10-14 拆自 verify-browser-interaction(待辦總帳 G10;照主題拆平行 job、不調高上限,上限沿用原 job 的 25)。
@@ -2759,7 +2804,7 @@ jobs:
     name: Verify(tsc + tests + compile + build)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-pinned, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-searchable-fields, verify-browser-tree-navigation, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-doc-headings, verify-browser-layout-edges, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-overlay-rows-control, verify-browser-datatable-handles, verify-browser-control-groups, verify-browser-searchable-menu-focus, verify-browser-field-dialog-steps, verify-browser-cursor, verify-browser-escape-focus-control, verify-browser-footer-gutter, verify-browser-a11y, verify-browser-nested-dismiss, verify-browser-sidebar-keyboard, verify-browser-layout, verify-browser-horizontal-overflow, verify-browser-calendar-month, hooks-linux, governance-control-plane, container-closed-git]
+    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-pinned, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-searchable-fields, verify-browser-tree-navigation, verify-browser-interaction, verify-browser-focus-inputs, verify-browser-overlay,verify-browser-agent, verify-browser-sweeps, verify-browser-doc-headings, verify-browser-layout-edges, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-overlay-rows-control, verify-browser-datatable-handles, verify-browser-control-groups, verify-browser-searchable-menu-focus, verify-browser-field-dialog-steps, verify-browser-cursor, verify-browser-escape-focus-control, verify-browser-footer-gutter, verify-browser-a11y, verify-browser-nested-dismiss, verify-browser-sidebar-keyboard, verify-browser-layout, verify-browser-horizontal-overflow, verify-browser-calendar-month, hooks-linux, governance-control-plane, container-closed-git]
     if: always()
     steps:
       - name: Every verify job must have succeeded
@@ -2772,6 +2817,7 @@ jobs:
           BROWSER_SEARCH_FIELDS: ${{ needs.verify-browser-searchable-fields.result }}
           BROWSER_TREE_NAV: ${{ needs.verify-browser-tree-navigation.result }}
           BROWSER_UI: ${{ needs.verify-browser-interaction.result }}
+          BROWSER_FOCUS_INPUTS: ${{ needs.verify-browser-focus-inputs.result }}
           BROWSER_OVERLAY: ${{ needs.verify-browser-overlay.result }}
           BROWSER_AGENT: ${{ needs.verify-browser-agent.result }}
           BROWSER_SWEEPS: ${{ needs.verify-browser-sweeps.result }}
@@ -2798,8 +2844,8 @@ jobs:
           GOV_CONTROL_PLANE: ${{ needs.governance-control-plane.result }}
           CONTAINER_CLOSED_GIT: ${{ needs.container-closed-git.result }}
         run: |
-          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-pinned=$BROWSER_DT_PINNED verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-searchable-fields=$BROWSER_SEARCH_FIELDS verify-browser-tree-navigation=$BROWSER_TREE_NAV verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-doc-headings=$BROWSER_DOC_HEADINGS verify-browser-layout-edges=$BROWSER_LAYOUT_EDGES verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-overlay-rows-control=$BROWSER_OVERLAY_ROWS_CONTROL verify-browser-datatable-handles=$BROWSER_DT_HANDLES verify-browser-control-groups=$BROWSER_CONTROL_GROUPS verify-browser-searchable-menu-focus=$BROWSER_SEARCH_MENU_FOCUS verify-browser-field-dialog-steps=$BROWSER_FIELD_DIALOG_STEPS verify-browser-cursor=$BROWSER_CURSOR verify-browser-escape-focus-control=$BROWSER_ESCAPE_FOCUS_CONTROL verify-browser-footer-gutter=$BROWSER_FOOTER_GUTTER verify-browser-a11y=$BROWSER_A11Y verify-browser-nested-dismiss=$BROWSER_NESTED_DISMISS verify-browser-sidebar-keyboard=$BROWSER_SIDEBAR_KEYBOARD verify-browser-layout=$BROWSER_LAYOUT verify-browser-horizontal-overflow=$BROWSER_HORIZONTAL_OVERFLOW verify-browser-calendar-month=$BROWSER_CALENDAR_MONTH hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE container-closed-git=$CONTAINER_CLOSED_GIT"
-          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT_PINNED" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_SEARCH_FIELDS" = success ] && [ "$BROWSER_TREE_NAV" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_DOC_HEADINGS" = success ] && [ "$BROWSER_LAYOUT_EDGES" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_OVERLAY_ROWS_CONTROL" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$BROWSER_CONTROL_GROUPS" = success ] && [ "$BROWSER_SEARCH_MENU_FOCUS" = success ] && [ "$BROWSER_FIELD_DIALOG_STEPS" = success ] && [ "$BROWSER_CURSOR" = success ] && [ "$BROWSER_ESCAPE_FOCUS_CONTROL" = success ] && [ "$BROWSER_FOOTER_GUTTER" = success ] && [ "$BROWSER_A11Y" = success ] && [ "$BROWSER_NESTED_DISMISS" = success ] && [ "$BROWSER_SIDEBAR_KEYBOARD" = success ] && [ "$BROWSER_LAYOUT" = success ] && [ "$BROWSER_HORIZONTAL_OVERFLOW" = success ] && [ "$BROWSER_CALENDAR_MONTH" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ] && [ "$CONTAINER_CLOSED_GIT" = success ]
+          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-pinned=$BROWSER_DT_PINNED verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-searchable-fields=$BROWSER_SEARCH_FIELDS verify-browser-tree-navigation=$BROWSER_TREE_NAV verify-browser-interaction=$BROWSER_UI verify-browser-focus-inputs=$BROWSER_FOCUS_INPUTSverify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-doc-headings=$BROWSER_DOC_HEADINGS verify-browser-layout-edges=$BROWSER_LAYOUT_EDGES verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-overlay-rows-control=$BROWSER_OVERLAY_ROWS_CONTROL verify-browser-datatable-handles=$BROWSER_DT_HANDLES verify-browser-control-groups=$BROWSER_CONTROL_GROUPS verify-browser-searchable-menu-focus=$BROWSER_SEARCH_MENU_FOCUS verify-browser-field-dialog-steps=$BROWSER_FIELD_DIALOG_STEPS verify-browser-cursor=$BROWSER_CURSOR verify-browser-escape-focus-control=$BROWSER_ESCAPE_FOCUS_CONTROL verify-browser-footer-gutter=$BROWSER_FOOTER_GUTTER verify-browser-a11y=$BROWSER_A11Y verify-browser-nested-dismiss=$BROWSER_NESTED_DISMISS verify-browser-sidebar-keyboard=$BROWSER_SIDEBAR_KEYBOARD verify-browser-layout=$BROWSER_LAYOUT verify-browser-horizontal-overflow=$BROWSER_HORIZONTAL_OVERFLOW verify-browser-calendar-month=$BROWSER_CALENDAR_MONTH hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE container-closed-git=$CONTAINER_CLOSED_GIT"
+          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT_PINNED" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_SEARCH_FIELDS" = success ] && [ "$BROWSER_TREE_NAV" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_FOCUS_INPUTS" = success ] &&[ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_DOC_HEADINGS" = success ] && [ "$BROWSER_LAYOUT_EDGES" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_OVERLAY_ROWS_CONTROL" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$BROWSER_CONTROL_GROUPS" = success ] && [ "$BROWSER_SEARCH_MENU_FOCUS" = success ] && [ "$BROWSER_FIELD_DIALOG_STEPS" = success ] && [ "$BROWSER_CURSOR" = success ] && [ "$BROWSER_ESCAPE_FOCUS_CONTROL" = success ] && [ "$BROWSER_FOOTER_GUTTER" = success ] && [ "$BROWSER_A11Y" = success ] && [ "$BROWSER_NESTED_DISMISS" = success ] && [ "$BROWSER_SIDEBAR_KEYBOARD" = success ] && [ "$BROWSER_LAYOUT" = success ] && [ "$BROWSER_HORIZONTAL_OVERFLOW" = success ] && [ "$BROWSER_CALENDAR_MONTH" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ] && [ "$CONTAINER_CLOSED_GIT" = success ]
 
   hooks-linux:
     name: Governance hooks(Linux portability)

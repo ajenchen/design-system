@@ -77,6 +77,8 @@ export const STORIES = Object.freeze([
   'design-system-components-combobox-展示--unrestricted-contract',
   'design-system-components-combobox-展示--unrestricted-off-inert',
   'design-system-components-combobox-展示--in-data-table',
+  // 分組與浮層寬度(2026-11-26 ufc 新增範例;多選那一欄有一條單行 Tag 列)
+  'design-system-components-combobox-展示--groups-and-min-width',
   'design-system-components-combobox-設計規格--inspector',
   'design-system-components-combobox-設計規格--color-matrix',
   'design-system-components-combobox-設計規格--size-matrix',
