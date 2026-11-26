@@ -157,3 +157,4 @@ Tooltip 是**單一職責 hover 提示 primitive**(一句話補充),刻意無變
 - `overlay-surface.spec.md`
 - `popover.spec.md`
 - `profile-card.spec.md`
+- `steps.spec.md`

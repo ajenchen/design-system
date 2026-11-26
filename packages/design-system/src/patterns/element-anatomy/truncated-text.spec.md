@@ -68,3 +68,4 @@ benchmark:
 - `inline-edit.spec.md`
 - `item-anatomy.spec.md`
 - `link-input.spec.md`
+- `steps.spec.md`

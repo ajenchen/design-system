@@ -5,8 +5,16 @@ import { Check, X } from 'lucide-react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import { ItemPrefix } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { STACK_GAP_PX } from '@/design-system/tokens/uiSize/stack-gap'
 import { STEP_STATUS_TEXT } from './step-status-text'
+
+// ── 消費的 SSOT ──
+// - patterns/element-anatomy/item-anatomy(ItemPrefix):indicator 欄 h-[1lh] 對齊 label 第一行
+// - patterns/element-anatomy/truncated-text(TruncatedText):水平版步驟名單行截斷 + 截斷才顯 tooltip
+//   (steps.spec.md「水平版步驟名放不下」;與 Breadcrumb / DataTable / TreeView 步驟導覽樹同一套,不另寫)
+// - tokens/uiSize/stack-gap(STACK_GAP_PX):焦點外環與圓之間的縫
+// - spec: steps.spec.md(本元件)/ steps-state-visuals.spec.md(狀態視覺)
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -53,6 +61,8 @@ const INDICATOR_BOX_WIDTH: Record<StepsSize, number> = {
 // 線長原本是「列高的餘數」(li 高 − 2r − 16):沒有說明文字時 md 只剩 2.2px、lg 是 0 —— 而規格說指示欄節奏是元件本體、
 // 不得隨說明有無變動。所以非末項的垂直 li 給最小高度 = 圓 + 兩端縫 + 線地板(sm 48 / md 64 / lg 72;有說明時自然更高、不受影響);
 // 水平線的最短寬吃同一個常數(先前是 `min-w-4` 16px、規格沒寫,同元件同概念不該有兩個地板)。
+// 水平版放不下時先縮步驟名(單行截斷),線停在這個最短寬、不再被擠出去壓到下一步的圓(steps.spec.md「水平版步驟名放不下」)。
+// 要調最短寬只改這一行(垂直列高 verticalItemMinHeight 與水平線 minWidth 都讀它)。
 // 閘:`scripts/steps-connector-geometry-invariant.mjs`。
 const CONNECTOR_GAP_PX = 8
 const CONNECTOR_MIN_PX = 24
@@ -355,9 +365,12 @@ const stepItemVariants = cva('group/step-item outline-none', {
     orientation: {
       // pb-6 on li provides spacing for next item; connector is absolute within li
       vertical: 'relative flex flex-col',
-      // Ant Design pattern:flex-1 等寬(最後一步用 last: 覆蓋成自然寬度)。
-      // Connector 在 item 內部(不是 items 之間的獨立元素)。
-      horizontal: 'flex-1 min-w-0 last:flex-none last:shrink-0',
+      // Ant Design pattern:flex-1 等寬;Connector 在 item 內部(不是 items 之間的獨立元素)。
+      // 最後一步 = 跟前面每一步一起分寬、但最多長到自己的自然寬(`last:max-w-max`):
+      // - 寬度夠時:分到的寬 > 自然寬 → 夾在自然寬,多出來的由前面每一步(連接線)吃掉 = 修前 `last:flex-none` 的畫面,一模一樣;
+      // - 放不下時:最後一步也縮、和前面每一步一樣寬,步驟名一起截斷。修前是 `last:flex-none last:shrink-0`(不准縮),
+      //   最後一步名字長時前面每一步都被擠成「…」(steps.spec.md「水平版步驟名放不下」;user 2026-11-26 E12「照你建議」)。
+      horizontal: 'flex-1 min-w-0 last:max-w-max',
     },
     size: {
       sm: 'text-body',
@@ -657,7 +670,9 @@ function HorizontalLayout({
         <ItemPrefix>
           <StepIndicator />
         </ItemPrefix>
-        <div className="shrink-0 min-w-0">{label}</div>
+        {/* 步驟名:不長(多的寬給連接線)、可縮 —— 放不下時先縮它(StepLabel 在水平版單行截斷),連接線停在 CONNECTOR_MIN_PX、圓不縮。
+            修前這裡是 `shrink-0`(不准縮):字照原寬撐出去,連接線被推到下一步的圓上(2026-11-26 E12 480 寬實測)。 */}
+        <div className="min-w-0">{label}</div>
         {/* Connector 在 item 內部,flex-1 填滿剩餘寬度 */}
         {!item.isLast && (
           <div className="h-[1lh] flex-1 flex items-center" style={{ minWidth: CONNECTOR_MIN_PX }} aria-hidden>
@@ -842,16 +857,22 @@ export interface StepLabelProps extends React.HTMLAttributes<HTMLSpanElement> {}
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const StepLabel = React.forwardRef<HTMLSpanElement, StepLabelProps>(
   ({ className, children, ...props }, ref) => {
-    const { size } = useStepsContext()
+    const { size, orientation } = useStepsContext()
     const { state, focused, disabled } = useStepItemContext()
+    // 水平版單行截斷、直式折行(steps.spec.md「水平版步驟名放不下」)
+    const horizontal = orientation === 'horizontal'
 
     return (
       <span
         ref={ref}
+        data-steps-label=""
         className={cn(
           // leading-compact:scanning-family label 行高 = 1.3(item-anatomy.spec.md:770);text-body utility
           // 自帶 lh:1.5,須顯式 leading-compact 蓋回 1.3,跟 MenuItem label(實測 14px/18px=1.3)一致。
-          'font-medium break-words leading-compact',
+          'font-medium leading-compact',
+          // 水平:block 才量得到 clientWidth(同 dialog.tsx / tree-view.tsx 消費 TruncatedText 的寫法:外層留給 ref 與 props,
+          // 截斷與量測在內層);直式:照舊折行
+          horizontal ? 'block' : 'break-words',
           size === 'lg' ? 'text-body-lg' : 'text-body',
           disabled
             ? 'text-fg-disabled'
@@ -864,7 +885,8 @@ const StepLabel = React.forwardRef<HTMLSpanElement, StepLabelProps>(
         )}
         {...props}
       >
-        {children}
+        {/* 截斷只是畫面:完整名稱仍在 DOM 裡,header 的可及名稱念全名;提示只在真的被截斷時滑過才出現(TruncatedText 的 open 控制) */}
+        {horizontal ? <TruncatedText display="block">{children}</TruncatedText> : children}
       </span>
     )
   },
