@@ -59,8 +59,8 @@ are activated.
   the environment's own variables are not set yet, and that a script that exits non-zero makes the
   session fail to start or start without what it failed to install. The guide does not document the
   script's working directory, so the script handles both starting at the repository root and
-  starting one level up with the checkout in a subfolder (a Setup script run on Claude Code on the web started in
-  `/home/user`, with the checkout at `/home/user/<repository-folder>`). Replace
+  starting one level up with the checkout in a subfolder (a Setup script run on Claude Code on the web started in the directory that
+  contains the checkout, with the repository in its own subfolder). Replace
   `<repository-folder>` with this repository's folder name; left unreplaced, the script only skips. A successful run is cached as a filesystem snapshot and is re-run only when the
   script or allowed hosts change or the cache expires, so after a committed-lock change run
   `npm run setup:all` in the session. See [Setup scripts](https://code.claude.com/docs/en/cloud-environments#setup-scripts)

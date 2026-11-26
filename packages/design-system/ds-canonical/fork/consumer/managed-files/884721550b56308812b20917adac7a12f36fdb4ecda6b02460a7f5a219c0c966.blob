@@ -20,8 +20,8 @@ repository it prints one skip line and exits 0, because a setup script that exit
 session fail to start or start without what it failed to install
 (https://code.claude.com/docs/en/cloud-environments#setup-scripts). The guide does not document the
 script's working directory, so the script handles both starting at the repository root and starting
-one level up with the repository in a subfolder (a Setup script run there started in `/home/user`,
-with the checkout at `/home/user/<repository-folder>`).
+one level up with the repository in a subfolder (a Setup script run there started in the directory that
+contains the checkout, with the repository in its own subfolder).
 
 Hosts whose outbound HTTPS is re-signed by a proxy work when the proxy CA is in the host system
 trust store and Node.js is 22.15.0 or newer: every registry request in the locked setup chain then

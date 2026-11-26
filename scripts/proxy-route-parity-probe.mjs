@@ -1,5 +1,15 @@
 #!/usr/bin/env node
 
+// @gate-contract
+//   保證: 雲端 session 內重跑 setup:all 的那一關 —— 在「sigstore 只能經代理、registry 可直連」的條件下,鎖定安裝鏈只以環境變數
+//         轉送不帶帳密的 HTTPS_PROXY 時,audit signatures 經代理通過;帶帳密的代理(照規則不轉送)或只給 npm 旗標時一定連不到
+//         tuf-repo-cdn.sigstore.dev(2026-11-26 雲端實測 E1–E4 的同形重現)。
+//   紅: forward 臂沒過、或代理紀錄沒有 CONNECT tuf-repo-cdn.sigstore.dev:443 → 指名 forward 臂 exit 1;control 臂意外通過或代理紀錄
+//       多出 sigstore → 指名 control 臂 exit 1;flags-only 臂意外通過 → 指名 flags-only 臂 exit 1;前提不成立(namespace 裡 sigstore
+//       直連解析得到、或 registry 解析不到)→ INSTRUMENT-FAIL exit 2。--selftest 以判定表證明每個該紅的格子都紅。
+//   綠: 三臂都符合預期才綠;每臂用新的 HOME(TUF 快取為空,一定真的上網),forward 臂照 npm 預設重試,兩個預期失敗的臂關閉重試,
+//       結果不靠抽籤。
+
 // 雲端等價環境的代理對照組(2026-11-26)。
 //
 // 下游 Claude Code 雲端跑 `npm run setup:all`:鎖定安裝 `npm ci` 成功後,`audit signatures` 要從 tuf-repo-cdn.sigstore.dev
