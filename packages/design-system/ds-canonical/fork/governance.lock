@@ -15,7 +15,7 @@
     {
       "schemaVersion": 1,
       "file": "CLAUDE.md",
-      "sha256": "933f39b917632c854dcd154345811abfa03908501daf60584c6913332dc780eb",
+      "sha256": "6822ab1172c45e132f49d8001c0cdc6752e7024960df5787bb1b64e0ec1e816a",
       "source": "provider instruction compatibility alias",
       "classification": null,
       "destination": null
@@ -367,7 +367,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/46f10bc55cdfdf834d0749eebff42ea0bb8576f361b36d2b6ba1851354c50150.blob",
-      "sha256": "13e5998ca6dccfaa9aded3e0714caccb569316c6e2090f51f5a2e549c634f262",
+      "sha256": "5414f385799cb5d52243be48bf62378cd572a7aa98d5e6064ae08e4c64379003",
       "source": "scripts/lib/governance-dependency-bootstrap.mjs",
       "classification": null,
       "destination": "scripts/lib/governance-dependency-bootstrap.mjs"
@@ -487,7 +487,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/7eb6cc60abfdabaf6617c336058fad1454ccde08889295767bfd9b7fd153cc6e.blob",
-      "sha256": "911507982730b7a5d6ea0f1046dcf685d3dc6a9f265682146536ae7416aea01c",
+      "sha256": "80126981f5fec45bdf4f827c8bd7b6aab58384910004d67ee979cd23df6477c8",
       "source": "scripts/lib/verified-exact-npm-runtime.mjs",
       "classification": null,
       "destination": "scripts/lib/verified-exact-npm-runtime.mjs"
@@ -503,7 +503,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/884721550b56308812b20917adac7a12f36fdb4ecda6b02460a7f5a219c0c966.blob",
-      "sha256": "9def8c308a50338d35f695a7a70ddfbee6be3d1602b5a35fd4c587bd9d9621b7",
+      "sha256": "71ba3746f729edf947065c9ec28a72dbc4cdaefcbccc4073e143e7ddb526b517",
       "source": "packages/design-system/ds-canonical/templates/consumer-governance.md",
       "classification": null,
       "destination": "governance/consumer-governance.md"
@@ -543,7 +543,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/9791c85388d2e2e2bd564e2550fadc3351c4c960a47ce838098afcba7544eb90.blob",
-      "sha256": "a6b2e17e0227782382266d07bc01ddf34bc315e28bddd4609c893de4aecbd965",
+      "sha256": "04f0748843e926981465429ec9054bb8a743180729a05699e14d609b7107f9c6",
       "source": "scripts/verify-upgrade-evidence.mjs",
       "classification": null,
       "destination": "scripts/verify-upgrade-evidence.mjs"
@@ -975,7 +975,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/instruction.md",
-      "sha256": "933f39b917632c854dcd154345811abfa03908501daf60584c6913332dc780eb",
+      "sha256": "6822ab1172c45e132f49d8001c0cdc6752e7024960df5787bb1b64e0ec1e816a",
       "source": "scripts/fork-role-sources/CLAUDE.product.md",
       "classification": null,
       "destination": null

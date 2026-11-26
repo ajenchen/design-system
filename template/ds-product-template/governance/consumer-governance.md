@@ -13,25 +13,29 @@ another Linux devcontainer host. Configure that same command as each
 hosted environment's setup command; Codex Cloud also uses it as the maintenance command after a
 cached container is restored. Session-start hooks never install or repair dependencies.
 
-On Claude Code on the web `setup:all` does not complete yet (known limitation below), so do not
-set its setup script until a release fixes it. The intended setup: put the setup script in a cloud
-environment dedicated to this repository, never in the shared Default environment: a setup script that exits non-zero makes the
-session fail to start or start without what it failed to install, and the official guide does not
-document the script's working directory. Use the script in the template README ("Local, cloud, and
-container setup"), which finds the checkout itself and then runs `npm run setup:all`
-(https://code.claude.com/docs/en/cloud-environments#setup-scripts).
+On Claude Code on the web, use the Setup script in the template README ("Local, cloud, and
+container setup"). It can go in the shared Default environment: it runs `npm run setup:all` only
+when the session's repository is this one and returns that command's exit status, and for any other
+repository it prints one skip line and exits 0, because a setup script that exits non-zero makes the
+session fail to start or start without what it failed to install
+(https://code.claude.com/docs/en/cloud-environments#setup-scripts). The script starts in
+`/home/user` with this repository in a subfolder, and also works when started at the repository root.
 
 Hosts whose outbound HTTPS is re-signed by a proxy work when the proxy CA is in the host system
 trust store and Node.js is 22.15.0 or newer: every registry request in the locked setup chain then
 trusts Node's bundled CA store plus the system store (the exact npm runs with `--use-system-ca`)
-and still ignores CA, proxy, and `NODE_OPTIONS` environment variables. On Node.js 22.13.x–22.14.x
-the locked npm trusts only the bundled store.
+and still ignores CA and `NODE_OPTIONS` environment variables. A credential-free `HTTPS_PROXY` /
+`NO_PROXY` is used only for routing and adds no trust; a proxy URL that carries credentials is still
+ignored. On Node.js 22.13.x–22.14.x the locked npm trusts only the bundled store.
 
-Known limitation: on Claude Code on the web `setup:all` still stops at the registry signature
-audit (`audit signatures`, `ENOTFOUND tuf-repo-cdn.sigstore.dev`): that environment reaches the
-Sigstore TUF CDN only through its proxy, and the locked setup ignores proxy variables. Until a
-release fixes this, do not set that setup script there; such a session has not completed
-`setup:all`, is degraded, and must not claim compliance.
+On Claude Code on the web, `setup:all` completes both in the Setup script stage and when rerun
+inside a session. In the Setup script stage no proxy variable is set and the npm registry and the
+Sigstore TUF CDN used by the registry signature audit (`audit signatures`,
+`tuf-repo-cdn.sigstore.dev`) are reached directly; inside a session that CDN is reachable only
+through the environment's credential-free `HTTPS_PROXY`, which the locked setup forwards together
+with `NO_PROXY`. Earlier releases dropped every proxy variable, so that audit failed in a session
+with `ENOTFOUND tuf-repo-cdn.sigstore.dev`. A session where `setup:all` did not complete is
+degraded and must not claim compliance.
 
 Successful setup deliberately reports `scope=local-bootstrap`,
 `providerCertification=not-checked`, and `externalActivationRequired=false`. Ordinary bootstrap is

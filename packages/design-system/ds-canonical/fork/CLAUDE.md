@@ -23,15 +23,18 @@ This file contains Claude Code mechanics only. Shared product rules, SSOT pointe
 
 ## Fresh environments
 
-On Claude Code on the web `setup:all` does not complete yet: it stops at the registry signature
-audit (`audit signatures`, `ENOTFOUND tuf-repo-cdn.sigstore.dev`; that host is reachable there only
-through the proxy, which the locked setup ignores). Until a release fixes this, do not set the Setup
-script below and treat such a session as degraded. The intended setup: create a cloud environment
-dedicated to this repository and set its **Setup script** to the script in README.md ("Local, cloud, and container setup"): it finds the
-checkout itself and then runs `npm run setup:all`. Do not put a bare `npm run setup:all` in the
-shared Default environment: the official guide does not document the script's working directory,
-and a setup script that exits non-zero makes the session fail to start or start without what it
-failed to install (https://code.claude.com/docs/en/cloud-environments#setup-scripts). `setup:all`
+On Claude Code on the web, set the **Setup script** to the script in README.md ("Local, cloud, and
+container setup"). It can go in the shared Default environment: it runs `npm run setup:all` only
+when the session's repository is this one and returns that command's exit status, and for any other
+repository it prints one skip line and exits 0. Do not put a bare `npm run setup:all` there: a
+Setup script starts in `/home/user` with this repository in a subfolder, and one that exits
+non-zero makes the session fail to start or start without what it failed to install
+(https://code.claude.com/docs/en/cloud-environments#setup-scripts). `setup:all` completes both in
+the Setup script stage (no proxy; the npm registry and `tuf-repo-cdn.sigstore.dev` are reached
+directly) and when rerun inside a session: the locked setup forwards a credential-free
+`HTTPS_PROXY` / `NO_PROXY` for routing only (a proxy URL with credentials is still ignored), so the
+registry signature audit (`audit signatures`) reaches the Sigstore TUF CDN through the session's
+proxy. A session where it did not complete is degraded. `setup:all`
 runs the shared locked install, signature audit, and exact installed hooks-off checker before work.
 The web environment may reuse a cached setup result, so rebuild that cache or run
 `npm run setup:all` explicitly whenever the committed lock changes. Opening or resuming a Claude session does not

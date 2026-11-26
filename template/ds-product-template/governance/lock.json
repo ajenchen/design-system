@@ -42,7 +42,7 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "1e2d7794fddfb8b786bc1fad1537f4288cccda6c4fa9ac8ffd02128fa7d3f7ec",
+    "forkCorpusLockSha256": "d1bc993c470189f652dfa45d3f9e22928c92af9539c509dace20044590b8dac9",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
     "providerLifecycleSha256": "45ca791ec151f7f8067e0d2068c71b916cd6f6308ceedfabdbbc52de90d01583",
@@ -51,7 +51,7 @@
     "commonInstructionSha256": "d60911d6b1983d69588a927b37decd15d8b0bf6457e0bbd7e54752978651ccb6",
     "providerArtifactDigests": {
       "claude": {
-        "instructionSha256": "933f39b917632c854dcd154345811abfa03908501daf60584c6913332dc780eb",
+        "instructionSha256": "6822ab1172c45e132f49d8001c0cdc6752e7024960df5787bb1b64e0ec1e816a",
         "hookSha256": "b17888945b06f3433e8cbeb0b659d63e41dbd391906461b6453500d8ec8ecec1",
         "skillsSha256": "455df0dea1750c5b6148533b7f3a423fb2bec4cb2c82ca12e1460e23e95dd528",
         "treeDigests": {}
@@ -93,7 +93,7 @@
       ".devcontainer/post-create.mjs": "6bc05d2597a54e8f6a5a087901e92ccc89acc3d5873d96ad20814f8f539a146b",
       ".github/workflows/audit.yml": "3cb259c8d83d8d378a6d282b0cde0a8884d96c51cf49e655405c3e416e646726",
       ".npmrc": "79eff2d98653857c11ab6a0354fa62685a72ec214545e7fdfabc450e91b7ba63",
-      "governance/consumer-governance.md": "9def8c308a50338d35f695a7a70ddfbee6be3d1602b5a35fd4c587bd9d9621b7",
+      "governance/consumer-governance.md": "71ba3746f729edf947065c9ec28a72dbc4cdaefcbccc4073e143e7ddb526b517",
       "governance/provider-cli-toolchain.json": "5280bc83de46486d6fd13e29349eee849d347970ed5fdf32412d463629124170",
       "governance/provider-cli-toolchain.package-lock.json": "d0a5fceebe21101b67848e7ace1856e9bc35f6532e4ba4deaf64462fe4fc81bb",
       "governance/schemas/issuer-registry.schema.json": "52616f59420942b96b33001e00d2c9a23ca3aa14dc236d8cb2aa9756787bfb90",
@@ -109,12 +109,12 @@
       "scripts/lib/closed-tool-execution.mjs": "642b3e788646545918fd47900841bb2f13b19252995a4235e1f9b6c039688cda",
       "scripts/lib/consumer-control-plane-policy.mjs": "51aba211bb2f755eff7fa48bb060f9835356a62d2643ab5049147a9896c7bb72",
       "scripts/lib/exact-workspace-dependencies.mjs": "b4921ad903a3ed3d901187d406a87270190945c5ca1874b089e80df898d47a97",
-      "scripts/lib/governance-dependency-bootstrap.mjs": "13e5998ca6dccfaa9aded3e0714caccb569316c6e2090f51f5a2e549c634f262",
+      "scripts/lib/governance-dependency-bootstrap.mjs": "5414f385799cb5d52243be48bf62378cd572a7aa98d5e6064ae08e4c64379003",
       "scripts/lib/launch-browser.mjs": "7eec0b85e3305a0fe3f9854addc481dd761b20754f99f76d9e139b4e281fd38f",
       "scripts/lib/provider-lifecycle.mjs": "9aabb2c98efc454b8555308a34830e6590b034b10a63f76f788fbd4cf37ce7e7",
       "scripts/lib/storybook-render-health.mjs": "583beac441f2f2bc88630da73a00d38bfb4da0b1c1e11152b1e9a87030837418",
       "scripts/lib/storybook-static-snapshot.mjs": "a6ed23c4285d57ded8b4943d276cb2b71bc1a545ab867b80c06eda7d59ea48b9",
-      "scripts/lib/verified-exact-npm-runtime.mjs": "911507982730b7a5d6ea0f1046dcf685d3dc6a9f265682146536ae7416aea01c",
+      "scripts/lib/verified-exact-npm-runtime.mjs": "80126981f5fec45bdf4f827c8bd7b6aab58384910004d67ee979cd23df6477c8",
       "scripts/lib/workspace-post-create.mjs": "f3ddc6db740d5c4d48b1c6e16c55222325e4d1c16fe6644a455e7b7e5bea0a0d",
       "scripts/lib/worktree-fingerprint.mjs": "a2fe922b3be6ff1b782ffc7e76b0ebb61b3691ba9b46768c0d0349913228ce4a",
       "scripts/lint-ds-internal-imports.mjs": "86edd952fb5c3871896515440693abeb08c1d1da9f887fa073b9ddda1363f572",
@@ -130,7 +130,7 @@
       "scripts/sync-all.mjs": "89e21d46327c33fda400c0d2f3344cf4e862327e198ae823d86e1c2a00d69e7e",
       "scripts/sync-exact-workspace-dependencies.mjs": "29ce6aaab16fd7a939eff6e556e8548291fad28df88d578627153c9508bf6e31",
       "scripts/verify-consumer-css-entry.mjs": "a16545ea8d4f5224d8133f0bb0b68d5489d8e106fe7594488a78e0e5718b99cc",
-      "scripts/verify-upgrade-evidence.mjs": "a6b2e17e0227782382266d07bc01ddf34bc315e28bddd4609c893de4aecbd965",
+      "scripts/verify-upgrade-evidence.mjs": "04f0748843e926981465429ec9054bb8a743180729a05699e14d609b7107f9c6",
       "scripts/verify-upgrade-provenance.mjs": "8a643a60eaf64bf131a2a4da197d5670a52e4705d11402b53fb32ae93302f6ef",
       "scripts/workflow-static-validation.mjs": "8e12bf2d73fc5e1200ddc6cc8437b27433fcd71f7d85d79b56756dcaac667305"
     }

@@ -24,7 +24,9 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs'
+import { request as httpRequest } from 'node:http'
 import { request } from 'node:https'
+import { isIP } from 'node:net'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve, sep } from 'node:path'
 import tls from 'node:tls'
@@ -173,6 +175,237 @@ export function verifiedRegistryTrustAnchors({
   const system = readSystemAnchors()
   invariant(Array.isArray(bundled) && bundled.length > 0 && Array.isArray(system), 'Node.js TLS trust anchors are unavailable')
   return Object.freeze([...new Set([...bundled, ...system])])
+}
+
+// ── 代理轉送(2026-11-26,下游 Claude Code 雲端 setup:all:npm ci 成功後 audit signatures → ENOTFOUND tuf-repo-cdn.sigstore.dev)──
+// 雲端 VM 的對外流量只能經安全代理(HTTPS_PROXY 有設、網址不帶帳密;NO_PROXY 含 registry.npmjs.org,registry 可直接解析,
+// sigstore 不行)。鎖定安裝鏈原本把所有代理變數當成不可信剝除(governance-dependency-bootstrap.mjs 的 HOSTILE_NAME),
+// 於是 registry 以外的主機在那種主機上一律解析不到。要保證的性質(M37,判斷的是性質本身,不是變數名):
+//   「代理網址不帶帳密」→ 只用來路由,不新增任何信任錨(TLS 仍只信內建 bundle + 系統憑證庫,見上一段);
+//   帶帳密 / 無法解析 / scheme 不是 http(s) → 照舊剝除,並印一行原因(只印原因與變數名,不印值)。
+// 判定只住這一支純函式;鎖定 npm 子行程的環境(sanitizeGovernanceBootstrapEnvironment)與本行程的下載(downloadCanonicalRegistryTarball)
+// 都呼叫它,兩端對同一個主機做同一個路由決定。
+//   · npm 怎麼讀代理(npm 11.19.0 內建原始碼,node_modules/npm/node_modules/…):
+//     - @npmcli/agent 4.0.2 lib/proxy.js:13-21 把 process.env 的鍵**轉小寫**後收 https_proxy / http_proxy / proxy / no_proxy
+//      (大小寫並存時誰贏取決於 process.env 列舉順序,不可預期);:64-75 沒有傳入 proxy / noProxy 選項時,https 目標只讀 https_proxy、
+//       noProxy 讀 no_proxy;:37-62 NO_PROXY 是「逗號分隔、以 . 切段、由右往左逐段相等」的後綴比對(不認 `*`、不看埠)。
+//     - npm-registry-fetch lib/index.js:123-124 傳 `proxy: opts.httpsProxy || opts.proxy`、`noProxy: opts.noProxy`;
+//       https-proxy 預設 null、noproxy 預設 ''(@npmcli/config lib/definitions/definitions.js:972-982、:1574-1591),所以回落到環境變數。
+//     - audit signatures 的 TUF 下載:npm lib/utils/verify-signatures.js:37-41 呼叫 initTUF 只傳 cachePath / retry / timeout,
+//       tuf-js 4.1.0 dist/fetcher.js:67-75 以 make-fetch-happen 抓、不傳代理;make-fetch-happen 15.0.6 lib/remote.js:40
+//       getAgent(url, options) → 同一支 proxy.js 回落到環境變數。**npmrc 的 https-proxy 到不了 TUF 這條路**,所以只用環境變數,不寫 npmrc
+//      (兩個來源只會漂移)。
+//   · 大小寫衝突:照 curl 慣例(先讀小寫 https_proxy / no_proxy,沒有才讀大寫;curl 為安全不讀大寫 HTTP_PROXY,這裡本來就不轉送 http_proxy)。
+//     npm 本身沒有定義的先後,所以轉送時只留一個名字(HTTPS_PROXY / NO_PROXY),子行程不會再看到兩個互相衝突的值。
+//   · 其他代理名(ALL_PROXY / HTTP_PROXY / proxy / NOPROXY,與上述任何大小寫混寫的變體)一律剝除:@npmcli/agent 不分大小寫讀,
+//     剝除也必須不分大小寫,否則 `Https_Proxy` 會繞過這支判定直接進 npm。
+export const GOVERNANCE_FORWARDED_PROXY_NAME = 'HTTPS_PROXY'
+export const GOVERNANCE_FORWARDED_NO_PROXY_NAME = 'NO_PROXY'
+const GOVERNANCE_PROXY_FAMILY = new Set(['https_proxy', 'http_proxy', 'proxy', 'all_proxy', 'no_proxy', 'noproxy'])
+export const GOVERNANCE_PROXY_DROP_REASONS = Object.freeze({
+  credentials: '帶帳密',
+  unparseable: '無法解析',
+  'unsupported-scheme': 'scheme 不支援',
+})
+
+/** 純函式:這個環境變數名是不是代理設定(不分大小寫;@npmcli/agent proxy.js:15-21 就是不分大小寫讀的)。 */
+export function isGovernanceProxyFamilyName(name) {
+  return typeof name === 'string' && GOVERNANCE_PROXY_FAMILY.has(name.toLowerCase())
+}
+
+function firstNonEmpty(environment, names) {
+  for (const name of names) {
+    const value = environment?.[name]
+    if (typeof value === 'string' && value.trim() !== '') return Object.freeze({ name, value: value.trim() })
+  }
+  return null
+}
+
+function caseConflict(environment, lower, upper) {
+  const a = environment?.[lower]
+  const b = environment?.[upper]
+  return typeof a === 'string' && a.trim() !== '' && typeof b === 'string' && b.trim() !== '' && a.trim() !== b.trim()
+}
+
+/**
+ * 純函式(判定表在 scripts/test-verified-exact-npm-runtime.mjs):從環境決定鎖定安裝鏈要轉送的代理設定。
+ * 回傳 `forwarded`(要放進子行程環境的鍵值,只會有 HTTPS_PROXY / NO_PROXY)、`proxy`(路由用,不含值以外的祕密)、
+ * `noProxy`、`notices`(要印的原因;不含值)。
+ */
+export function resolveGovernanceProxyForwarding(environment = process.env) {
+  const notices = []
+  if (caseConflict(environment, 'https_proxy', 'HTTPS_PROXY')) notices.push(Object.freeze({ kind: 'case-conflict', chosen: 'https_proxy', ignored: 'HTTPS_PROXY' }))
+  if (caseConflict(environment, 'no_proxy', 'NO_PROXY')) notices.push(Object.freeze({ kind: 'case-conflict', chosen: 'no_proxy', ignored: 'NO_PROXY' }))
+  const candidate = firstNonEmpty(environment, ['https_proxy', 'HTTPS_PROXY'])
+  const result = (proxy, reason) => {
+    if (reason) notices.push(Object.freeze({ kind: 'dropped', name: candidate.name, reason, label: GOVERNANCE_PROXY_DROP_REASONS[reason] }))
+    let noProxy = null
+    if (proxy) {
+      const noProxyCandidate = firstNonEmpty(environment, ['no_proxy', 'NO_PROXY'])
+      if (noProxyCandidate) {
+        // eslint-disable-next-line no-control-regex
+        if (/[\u0000-\u001f\u007f]/.test(noProxyCandidate.value)) {
+          notices.push(Object.freeze({ kind: 'dropped', name: noProxyCandidate.name, reason: 'unparseable', label: GOVERNANCE_PROXY_DROP_REASONS.unparseable }))
+        } else {
+          noProxy = Object.freeze({ source: noProxyCandidate.name, value: noProxyCandidate.value })
+        }
+      }
+      notices.push(Object.freeze({ kind: 'forwarded', name: candidate.name, scheme: proxy.protocol, noProxySource: noProxy?.source || null }))
+    }
+    const forwarded = {}
+    if (proxy) forwarded[GOVERNANCE_FORWARDED_PROXY_NAME] = proxy.origin
+    if (noProxy) forwarded[GOVERNANCE_FORWARDED_NO_PROXY_NAME] = noProxy.value
+    return Object.freeze({
+      forwarded: Object.freeze(forwarded),
+      proxy,
+      noProxy: noProxy?.value ?? null,
+      notices: Object.freeze(notices),
+    })
+  }
+  if (!candidate) return result(null, null)
+  let parsed
+  try {
+    parsed = new URL(candidate.value)
+  } catch {
+    return result(null, 'unparseable')
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return result(null, 'unsupported-scheme')
+  if (parsed.username !== '' || parsed.password !== '') return result(null, 'credentials')
+  if (!parsed.hostname) return result(null, 'unparseable')
+  return result(Object.freeze({
+    source: candidate.name,
+    protocol: parsed.protocol,
+    hostname: parsed.hostname,
+    port: Number(parsed.port || (parsed.protocol === 'https:' ? 443 : 80)),
+    origin: parsed.origin,
+  }), null)
+}
+
+/** 純函式:把 notices 變成要印的行(只印變數名、原因、scheme、有無;不印任何值)。 */
+export function formatGovernanceProxyNotices(forwarding) {
+  return (forwarding?.notices || []).map((notice) => {
+    if (notice.kind === 'case-conflict') {
+      return `ℹ️  GOV-PROXY-FORWARD:${notice.chosen} 與 ${notice.ignored} 同時存在且不同,照 curl 慣例取小寫 ${notice.chosen}(${notice.ignored} 不轉送)`
+    }
+    if (notice.kind === 'dropped') {
+      return `ℹ️  GOV-PROXY-FORWARD:${notice.name} ${notice.label},鎖定安裝鏈不轉送(照舊剝除)`
+    }
+    return `ℹ️  GOV-PROXY-FORWARD:鎖定安裝鏈轉送 ${GOVERNANCE_FORWARDED_PROXY_NAME}(來源 ${notice.name},scheme=${notice.scheme},帳密=無)`
+      + `、${GOVERNANCE_FORWARDED_NO_PROXY_NAME}=${notice.noProxySource ? `有(來源 ${notice.noProxySource})` : '無'};只用來路由,TLS 仍只信內建 + 系統憑證庫`
+  })
+}
+
+const reportedProxyNotices = new Set()
+/** 每個行程同一行只印一次(剝除在一次 setup 裡會被呼叫好幾次);印到 stderr,stdout 保持機器通道。 */
+export function reportGovernanceProxyNoticesOnce(forwarding, report = (line) => console.error(line)) {
+  for (const line of formatGovernanceProxyNotices(forwarding)) {
+    if (reportedProxyNotices.has(line)) continue
+    reportedProxyNotices.add(line)
+    report(line)
+  }
+}
+
+/**
+ * 純函式:NO_PROXY 命中。**逐字照 @npmcli/agent 4.0.2 lib/proxy.js:37-62**(鎖定 npm 子行程就是用它判定),
+ * 讓本行程的下載與子行程的 npm 對同一個主機做同一個決定:逗號分隔、去空白、以 . 切段後由右往左逐段相等;
+ * 不認 `*`、不看埠;IPv6 主機名照 WHATWG URL 帶中括號比對。
+ */
+export function matchesGovernanceNoProxy(hostname, noProxy) {
+  const entries = typeof noProxy === 'string'
+    ? noProxy.split(',').map((entry) => entry.trim()).filter(Boolean)
+    : []
+  if (!entries.length) return false
+  const hostSegments = String(hostname).split('.').reverse()
+  return entries.some((entry) => {
+    const segments = entry.split('.').filter(Boolean).reverse()
+    if (!segments.length) return false
+    for (let index = 0; index < segments.length; index += 1) {
+      if (hostSegments[index] !== segments[index]) return false
+    }
+    return true
+  })
+}
+
+/** 純函式:這個目標網址在這個環境下走直連或經代理 CONNECT。 */
+export function resolveGovernanceProxyRoute(targetUrl, environment = process.env) {
+  const target = new URL(targetUrl)
+  const forwarding = resolveGovernanceProxyForwarding(environment)
+  if (!forwarding.proxy) return Object.freeze({ mode: 'direct', reason: 'no-forwarded-proxy', forwarding })
+  if (matchesGovernanceNoProxy(target.hostname, forwarding.noProxy)) return Object.freeze({ mode: 'direct', reason: 'no-proxy-match', forwarding })
+  return Object.freeze({ mode: 'connect', proxy: forwarding.proxy, forwarding })
+}
+
+function unbracketHost(hostname) {
+  return String(hostname).replace(/^\[(.*)\]$/, '$1')
+}
+
+/**
+ * 經不帶帳密的代理開 HTTP CONNECT 隧道,再在隧道上以**同一組 ca** 做 TLS(憑證主機名照目標驗)。
+ * 代理只拿到加密後的位元組,不新增任何信任錨;代理本身是 https: 時,連代理的 TLS 也用同一組 ca。
+ */
+export function openGovernanceProxyTunnel({
+  proxy,
+  host,
+  port = 443,
+  ca,
+  timeoutMs = 30_000,
+  label = 'canonical registry',
+} = {}) {
+  invariant(proxy && (proxy.protocol === 'http:' || proxy.protocol === 'https:') && proxy.hostname, `${label} proxy route is invalid`)
+  invariant(typeof host === 'string' && host.length > 0 && Number.isInteger(port) && port > 0 && port < 65_536, `${label} tunnel target is invalid`)
+  const targetHost = unbracketHost(host)
+  const authority = isIP(targetHost) === 6 ? `[${targetHost}]:${port}` : `${targetHost}:${port}`
+  const proxyHost = unbracketHost(proxy.hostname)
+  const connectRequest = proxy.protocol === 'https:' ? request : httpRequest
+  return new Promise((resolvePromise, rejectPromise) => {
+    let settled = false
+    let tunnelSocket = null
+    let secureSocket = null
+    let handle = null
+    // 任何失敗都把隧道、TLS 與 CONNECT 請求一起收掉,不留開著的 socket 或計時器(失敗必須立刻變成 reject,不得掛著)。
+    const fail = (error) => {
+      if (settled) return
+      settled = true
+      secureSocket?.destroy()
+      tunnelSocket?.destroy()
+      handle?.destroy()
+      rejectPromise(error instanceof Error ? error : new Error(String(error)))
+    }
+    handle = connectRequest({
+      host: proxyHost,
+      port: proxy.port,
+      method: 'CONNECT',
+      path: authority,
+      headers: { Host: authority },
+      agent: false,
+      ...(proxy.protocol === 'https:' ? { ...(ca ? { ca } : {}), ...(isIP(proxyHost) ? {} : { servername: proxyHost }) } : {}),
+    })
+    handle.setTimeout(timeoutMs, () => handle.destroy(new Error(`GOV-NPM-RUNTIME-001:${label} download timed out(proxy CONNECT)`)))
+    handle.on('error', fail)
+    handle.on('connect', (response, socket, head) => {
+      tunnelSocket = socket
+      if (response.statusCode !== 200) {
+        fail(new Error(`GOV-NPM-RUNTIME-001:${label} proxy CONNECT returned HTTP ${response.statusCode}`))
+        return
+      }
+      if (head?.length) socket.unshift(head)
+      const secure = secureSocket = tls.connect({
+        socket,
+        host: targetHost,
+        ...(isIP(targetHost) ? {} : { servername: targetHost }),
+        ...(ca ? { ca } : {}),
+        ALPNProtocols: ['http/1.1'],
+      })
+      secure.once('secureConnect', () => {
+        if (settled) { secure.destroy(); return }
+        settled = true
+        handle.setTimeout(0)
+        resolvePromise(secure)
+      })
+      secure.once('error', fail)
+    })
+    handle.end()
+  })
 }
 
 function regularUnaliasedFile(path, label) {
@@ -336,6 +569,8 @@ async function downloadCanonicalRegistryTarball(url, {
   pathPattern,
   timeoutMs = 30_000,
   trustAnchors = verifiedRegistryTrustAnchors,
+  environment = process.env,
+  openTunnel = openGovernanceProxyTunnel,
 } = {}) {
   const target = new URL(url)
   invariant(
@@ -350,16 +585,24 @@ async function downloadCanonicalRegistryTarball(url, {
     `${label} tarball URL is outside the canonical registry contract`,
   )
   const ca = trustAnchors()
+  // 路由與鎖定 npm 子行程同一支判定(resolveGovernanceProxyRoute):主機在 NO_PROXY → 直連;否則經不帶帳密的代理 CONNECT,
+  // 隧道上的 TLS 仍以同一組 ca 驗 registry 的憑證。完整性邊界照舊是 lock 的 SHA-512。
+  const route = resolveGovernanceProxyRoute(target.href, environment)
+  const tunnel = route.mode === 'connect'
+    ? await openTunnel({ proxy: route.proxy, host: target.hostname, port: 443, ca, timeoutMs, label })
+    : null
   return await new Promise((resolvePromise, rejectPromise) => {
     let settled = false
     const fail = (error) => {
       if (settled) return
       settled = true
+      tunnel?.destroy()
       rejectPromise(error instanceof Error ? error : new Error(String(error)))
     }
     const requestHandle = request(target, {
       method: 'GET',
       ...(ca ? { ca } : {}),
+      ...(tunnel ? { createConnection: () => tunnel } : {}),
       headers: {
         Accept: 'application/octet-stream',
         'Accept-Encoding': 'identity',
@@ -454,19 +697,23 @@ export async function downloadWithTransientRetry(attempt, {
   }
 }
 
-export async function downloadCanonicalNpmTarball(url, { timeoutMs = 30_000, retryLimit, backoffMs, sleep, report } = {}) {
+export async function downloadCanonicalNpmTarball(url, { timeoutMs = 30_000, retryLimit, backoffMs, sleep, report, environment, openTunnel } = {}) {
   return downloadWithTransientRetry(() => downloadCanonicalRegistryTarball(url, {
     label: 'canonical npm',
     pathPattern: /^\/npm\/-\/npm-\d+\.\d+\.\d+\.tgz$/,
     timeoutMs,
+    ...(environment === undefined ? {} : { environment }),
+    ...(openTunnel === undefined ? {} : { openTunnel }),
   }), { label: 'canonical npm', retryLimit, backoffMs, sleep, report })
 }
 
-export async function downloadCanonicalNpmSecurityOverlayTarball(url, { timeoutMs = 30_000, retryLimit, backoffMs, sleep, report } = {}) {
+export async function downloadCanonicalNpmSecurityOverlayTarball(url, { timeoutMs = 30_000, retryLimit, backoffMs, sleep, report, environment, openTunnel } = {}) {
   return downloadWithTransientRetry(() => downloadCanonicalRegistryTarball(url, {
     label: 'canonical npm security overlay',
     pathPattern: /^\/(?:brace-expansion\/-\/brace-expansion-5\.0\.(?:12|9)|tar\/-\/tar-7\.5\.22)\.tgz$/,
     timeoutMs,
+    ...(environment === undefined ? {} : { environment }),
+    ...(openTunnel === undefined ? {} : { openTunnel }),
   }), { label: 'canonical npm security overlay', retryLimit, backoffMs, sleep, report })
 }
 
@@ -1023,9 +1270,11 @@ export async function prepareVerifiedExactNpmRuntime({
   historicalOverlay = false,
 } = {}) {
   const artifact = resolveExactNpmRuntimeContract(repositoryRoot, { historicalOverlay })
-  const tarballBytes = await download(artifact.resolved)
-  const securityOverlayTarballBytes = await downloadSecurityOverlay(artifact.securityOverlay.resolved)
-  const secondarySecurityOverlayTarballBytes = await downloadSecurityOverlay(artifact.securityOverlay.secondaryResolved)
+  // 下載與之後的鎖定 npm 子行程用同一份環境決定代理路由(resolveGovernanceProxyRoute);原因只印一次。
+  reportGovernanceProxyNoticesOnce(resolveGovernanceProxyForwarding(env))
+  const tarballBytes = await download(artifact.resolved, { environment: env })
+  const securityOverlayTarballBytes = await downloadSecurityOverlay(artifact.securityOverlay.resolved, { environment: env })
+  const secondarySecurityOverlayTarballBytes = await downloadSecurityOverlay(artifact.securityOverlay.secondaryResolved, { environment: env })
   return materializeVerifiedExactNpmRuntime({
     artifact,
     tarballBytes,
