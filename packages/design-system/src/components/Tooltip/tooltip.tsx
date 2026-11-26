@@ -62,8 +62,6 @@ function installScrollTracker() {
 
 type FocusScrollGuard = { el: HTMLElement; focusAt: number; lastAt: number } | null
 const FocusScrollGuardContext = React.createContext<React.MutableRefObject<FocusScrollGuard> | null>(null)
-/** 這一次開啟請求是不是來自程式搬來的焦點(Tooltip 根持有、TooltipTrigger 設) */
-const ProgrammaticFocusContext = React.createContext<React.MutableRefObject<boolean> | null>(null)
 
 /** 這次關閉是不是「聚焦後緊接著的捲動」造成的(是 → 放過,並把放過的時間延長到現在)。 */
 function shouldKeepOpenThroughFocusScroll(guardRef: React.MutableRefObject<FocusScrollGuard>): boolean {
@@ -90,12 +88,9 @@ const Tooltip = ({
   const [internalOpen, setInternalOpen] = React.useState(defaultOpen ?? false)
   const open = openProp ?? internalOpen
   const guardRef = React.useRef<FocusScrollGuard>(null)
-  // 這一次開啟請求來自「程式搬來的焦點」(TooltipTrigger onFocus 設、同一次派送後清)→ 不開
-  const programmaticFocusRef = React.useRef(false)
   React.useEffect(installScrollTracker, [])
   const handleOpenChange = React.useCallback(
     (nextOpen: boolean) => {
-      if (nextOpen && programmaticFocusRef.current) return
       if (!nextOpen && shouldKeepOpenThroughFocusScroll(guardRef)) return
       if (openProp === undefined) setInternalOpen(nextOpen)
       onOpenChange?.(nextOpen)
@@ -105,7 +100,6 @@ const Tooltip = ({
 
   return (
     <FocusScrollGuardContext.Provider value={guardRef}>
-      <ProgrammaticFocusContext.Provider value={programmaticFocusRef}>
       {/* 觸發點登記處:Content 從觸發點那一區讀密度(lib/overlay-density.tsx;density.spec.md「浮層跟觸發點」) */}
       <OverlayAnchorScope family="tooltip">
         <TooltipPrimitive.Root
@@ -115,7 +109,6 @@ const Tooltip = ({
           {...props}
         />
       </OverlayAnchorScope>
-      </ProgrammaticFocusContext.Provider>
     </FocusScrollGuardContext.Provider>
   )
 }
@@ -129,13 +122,42 @@ function matchesFocusVisible(el: Element): boolean {
   }
 }
 
+/**
+ * 讓 Radix Trigger 的 onFocus 這一次不開提示,而且對 Radix 來說整件事像沒發生(程式搬來的焦點不開提示,見下方 TooltipTrigger onFocus)。
+ * Radix 的 onFocus = composeEventHandlers(本元件的 onFocus, 開提示):本元件的 handler 一返回,它就讀**一次** event.defaultPrevented,
+ * 是 true 就不呼叫 context.onOpen()(@radix-ui/primitive composeEventHandlers;本 repo 鎖的 react-tooltip 1.2.8 dist/index.mjs:202-204)。
+ * 為什麼不在 Tooltip 根的 onOpenChange 擋(2026-11-26 上午的做法):Radix 在呼叫 onOpenChange **之前**已先呼叫 Provider 的 onOpen
+ *(dist/index.mjs:92-99)—— 全站的開啟延遲被關掉,提示又從沒真的打開、不會有 onClose 把它還原,於是下一次滑過任何提示都立刻開
+ *(實測:月曆詳情用滑鼠點 × 關掉、焦點回到截斷的事件方塊之後,滑過「下個月」8ms 就開,正常 525ms;tooltip.spec.md「時間參數」初始延遲)。
+ * 為什麼不直接 preventDefault:同一個元素上排在 Radix Tooltip 後面的其他 onFocus(工具列 / 分頁的 roving focus、Tabs 自動啟用)也看
+ * defaultPrevented,擋了會連它們一起擋。所以只讓「緊接著的那一次讀取」看到 true,讀完當場恢復原值;萬一沒人讀(日後 Radix 改寫),
+ * 這一次派送結束時恢復。
+ */
+function hideFocusFromRadixOpen(event: React.FocusEvent<HTMLElement>) {
+  const original = event.defaultPrevented
+  let restored = false
+  const restore = () => {
+    if (restored) return
+    restored = true
+    Object.defineProperty(event, 'defaultPrevented', { configurable: true, enumerable: true, writable: true, value: original })
+  }
+  Object.defineProperty(event, 'defaultPrevented', {
+    configurable: true,
+    enumerable: true,
+    get() {
+      restore()
+      return true
+    },
+  })
+  queueMicrotask(restore)
+}
+
 /** Radix Trigger + 記下「誰、何時被聚焦」(給上方的聚焦捲動判準用)+ 程式搬來的焦點不開提示;其餘行為與 props 原樣交給 Radix。 */
 const TooltipTrigger = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Trigger>
 >(({ onFocus, onBlur, ...props }, ref) => {
   const guardRef = React.useContext(FocusScrollGuardContext)
-  const focusOpenRef = React.useContext(ProgrammaticFocusContext)
   const composedRef = useRegisterOverlayNode("tooltip", "trigger", ref)
   return (
     <TooltipPrimitive.Trigger
@@ -146,15 +168,11 @@ const TooltipTrigger = React.forwardRef<
         // 程式搬來的焦點不開提示(2026-11-26,truncated-text.spec.md「A11y 預設」;tooltip.spec.md「A11y 預設」):
         // 焦點不是 :focus-visible(例:用滑鼠關掉浮層後,焦點由程式還給打開它的元素 lib/overlay-focus-return.ts)= 不是使用者聚焦到它,
         // 不帶出只給使用者看的提示。Radix 只在「指標按下造成的聚焦」才不開,程式 .focus() 一律開(dist/index.mjs onFocus:`if (!isPointerDownRef.current) context.onOpen()`)。
-        // 做法:這一下聚焦的開啟請求由 Tooltip 根的 handleOpenChange 擋掉 —— Radix 在本 handler 之後同步呼叫 onOpen → setOpen(true) → onOpenChange
-        //(受控模式同步回呼),所以旗標只活在這一次 focus 派送裡,下一個 microtask 清掉。不用 preventDefault:同一個元素上其他 Radix 的 onFocus
-        //(例:工具列 / 分頁的 roving focus)也看 defaultPrevented,擋了會連它們一起擋。
+        // 做法:讓 Radix 這一次的 onFocus 不呼叫開啟(hideFocusFromRadixOpen)—— 不經 Provider,全站的開啟延遲不受影響。
+        // 只在 DS Tooltip 根底下(guardRef 有值)擋,範圍同 2026-11-26 上午的做法。
         // 鍵盤 Tab / Esc 關浮層還焦點 = :focus-visible → 照開;滑過由 Radix 的指標事件照開,不受這裡影響。
         // 世界級:React Aria useTooltipTrigger 聚焦時只在 isFocusVisible() 才顯示(https://github.com/adobe/react-spectrum/blob/6dec77beccf0545a04318e6a01b8eb9cbe2dccc6/packages/react-aria/src/tooltip/useTooltipTrigger.ts#L118-L124)。
-        if (focusOpenRef && !matchesFocusVisible(event.currentTarget)) {
-          focusOpenRef.current = true
-          queueMicrotask(() => { focusOpenRef.current = false })
-        }
+        if (guardRef && !matchesFocusVisible(event.currentTarget)) hideFocusFromRadixOpen(event)
         installScrollTracker()
         if (guardRef) {
           const now = performance.now()
