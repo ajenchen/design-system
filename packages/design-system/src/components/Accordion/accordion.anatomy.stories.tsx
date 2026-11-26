@@ -170,7 +170,7 @@ const InspectorView = () => {
 
           <div>
             <H3>藍圖(Blueprint)</H3>
-            <Desc>Trigger 為 <code>py-4</code>(vertical padding),水平寬度由父容器決定。Chevron 16px,旋轉跟內容同一份時長與曲線(<code>disclosureIndicatorMotion</code>:200ms、ease-out)。Content 有 <code>pb-4</code>,高度動畫消費共用的 <code>disclosureMotion</code>(200ms、關閉後保持高度 0、減少動態不播;與 TreeView / AgentPanel 思考塊同一份)。動畫跑的時候裁切內容,打開而且停下來之後就不裁,內容裡的焦點框才不會被切掉。</Desc>
+            <Desc>Trigger 為 <code>py-4</code>(vertical padding),水平寬度由父容器決定;左右另有 4px 焦點框的位置(焦點框 2px + <code>--stack-gap</code> 2px),以同寬負外距借回 —— 字與箭頭仍貼齊底線兩端,只有鍵盤聚焦時往內畫的框離字 2px。Chevron 16px,旋轉跟內容同一份時長與曲線(<code>disclosureIndicatorMotion</code>:200ms、ease-out)。Content 有 <code>pb-4</code>,高度動畫消費共用的 <code>disclosureMotion</code>(200ms、關閉後保持高度 0、減少動態不播;與 TreeView / AgentPanel 思考塊同一份)。動畫跑的時候裁切內容,打開而且停下來之後就不裁,內容裡的焦點框才不會被切掉。</Desc>
             <div className="border border-border rounded-md p-4 max-w-[520px] bg-muted/40">
               <div className="border border-dashed border-primary-hover py-1 px-2 rounded mb-2">
                 <div className="flex items-center justify-between gap-2">
@@ -202,6 +202,7 @@ const InspectorView = () => {
               <p className="font-mono text-fg-muted mb-2">LAYOUT</p>
               <ul className="flex flex-col gap-1">
                 <li><span className="font-mono">trigger padding-y</span> · <span className="font-mono">py-4</span> (16px)</li>
+                <li><span className="font-mono">trigger padding-x</span> · 4px(焦點框位置,負外距借回)</li>
                 <li><span className="font-mono">content padding-bottom</span> · <span className="font-mono">pb-4</span> (16px)</li>
                 <li><span className="font-mono">trigger gap</span> · <span className="font-mono">gap-2</span> (8px)</li>
                 <li><span className="font-mono">chevron size</span> · <span className="font-mono">16px</span></li>
@@ -378,6 +379,11 @@ export const SizeMatrix: Story = {
                 <Td>垂直 padding</Td>
                 <Td>16px · 16px</Td>
                 <Td mono>py-4 / pb-4</Td>
+              </tr>
+              <tr>
+                <Td>標題水平 padding(焦點框位置)</Td>
+                <Td>4px · 負外距借回</Td>
+                <Td mono>calc(var(--stack-gap) + 2px)</Td>
               </tr>
               <tr>
                 <Td>Chevron 尺寸</Td>

@@ -24,6 +24,15 @@ import { disclosureMotion, disclosureIndicatorMotion } from '@/design-system/tok
 
 const Accordion = AccordionPrimitive.Root
 
+/**
+ * 標題列左右的焦點框位置(2026-11-27,E13 A「零位移補內距」;SSOT = accordion.spec.md「視覺規則」焦點框那一條)。
+ * 標題焦點框往內畫(`focus-ring-inset`:2px 線、往內退 2px,styles/base.css),標題原本左右零內距 → 框壓在字與箭頭上。
+ * 左右各補「框寬 2px + `--stack-gap` 2px 縫」= 4px,框內緣離字 / 箭頭 2px;同時負外距往外借同一個寬度 ——
+ * 字與箭頭的位置跟補之前一樣(平常畫面 0 像素差;只有鍵盤聚焦時框退到字外 2px)。做法同 Combobox `tagRowFocusRoomClass`
+ * 與 Tabs `TABS_FOCUS_ROOM_PX`。閘:scripts/focus-indicator-invariants.mjs F7。
+ */
+const ACCORDION_TRIGGER_FOCUS_ROOM_CLASS = '-mx-[calc(var(--stack-gap)_+_2px)] px-[calc(var(--stack-gap)_+_2px)]'
+
 const AccordionItem = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Item>
@@ -54,6 +63,8 @@ const AccordionTrigger = React.forwardRef<
         'hover:text-fg-secondary',
         // 內描邊:trigger 撐滿標題列高,往外 +2px 實測會壓到下方的內容區(2026-09-07 量測)
         'focus-visible:focus-ring-inset',
+        // 左右各一個焦點框的位置、負外距借回:框內緣離字 2px,字與箭頭位置不變(見 ACCORDION_TRIGGER_FOCUS_ROOM_CLASS)
+        ACCORDION_TRIGGER_FOCUS_ROOM_CLASS,
         // AccordionTrigger 單一 text-style 列 → semantic `text-fg-disabled`(非 opacity);Button canonical 對齊
         // 停用:不再 pointer-events-none(原生 disabled 的 button 本來就不會發 click),留著接指標只為了掛禁止符號 ——
         // pointer-events-none 讓 cursor 由外層決定、永遠是箭頭(hit-area-canonical.md 滑過原則一-3「停用的用禁止符號」;

@@ -20,27 +20,35 @@ export interface TabsInlineActionPosition {
 
 export const TABS_INLINE_ACTION_GAP = 8
 
+/**
+ * `endInset`(2026-11-27,E13 A):trigger 右緣到 action 右緣之間留的寬 = tab 的焦點框位置(tabs.tsx `TABS_FOCUS_ROOM_PX`)。
+ * action 往內退這一段,焦點框(往內畫在 trigger 最外 2px)才不會壓到 action;padding 一併加上,字與 action 的位置跟補之前相同。
+ */
 export function getTabsInlineActionPaddingRight(
   actionWidth: number,
   hasAction: boolean,
+  endInset = 0,
 ): number | undefined {
-  return hasAction ? actionWidth + TABS_INLINE_ACTION_GAP : undefined
+  return hasAction ? actionWidth + TABS_INLINE_ACTION_GAP + endInset : undefined
 }
 
 /**
  * Keep the action in its canonical trailing slot. We intentionally do not clamp it:
  * moving an action inward would consume the trigger's canonical 8px content-to-action gap.
+ * The slot ends `endInset` px inside the trigger's right edge (the tab's focus-ring room).
  */
 export function resolveTabsInlineActionPosition({
   trigger,
   overlay,
   clips,
   actionWidth,
+  endInset = 0,
 }: {
   trigger: TabsInlineActionRect
   overlay: TabsInlineActionRect
   clips: readonly TabsInlineActionClipRect[]
   actionWidth: number
+  endInset?: number
 }): TabsInlineActionPosition | null {
   // **不可以寫 `{ ...overlay }`**:傳進來的是活的 `DOMRect`,它的 left/top/right/bottom 是**原型上的 getter**,
   // 物件展開只複製自有可列舉屬性 → 展出來是 `{}`,於是下面每一項比較都是 `undefined > undefined` = false,
@@ -73,17 +81,18 @@ export function resolveTabsInlineActionPosition({
   // The portal span's horizontal hitbox is the canonical one-icon trailing slot.
   // A left-clipped trigger may keep its action when that trailing slot is visible;
   // a right-clipped slot is omitted instead of being moved over trigger content.
-  const actionLeft = trigger.right - actionWidth
+  const actionRight = trigger.right - endInset
+  const actionLeft = actionRight - actionWidth
   const canonicalActionSlotIsVisible =
     actionLeft >= viewport.left &&
-    trigger.right <= viewport.right &&
+    actionRight <= viewport.right &&
     trigger.top >= viewport.top &&
     trigger.bottom <= viewport.bottom
 
   if (!canonicalActionSlotIsVisible) return null
 
   return {
-    left: trigger.right - overlay.left,
+    left: actionRight - overlay.left,
     top: trigger.top - overlay.top,
     height: trigger.bottom - trigger.top,
   }

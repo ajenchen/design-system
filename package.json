@@ -44,7 +44,7 @@
     "test:datatable-invariants": "node scripts/test-distribute-column-widths.mjs && node scripts/data-table-invariants.mjs && node scripts/data-table-scrollbar-visibility.mjs --quick && node scripts/data-table-scroll-cost.mjs && node scripts/data-table-row-cache-deps-invariant.mjs",
     "test:drag-announcements": "node scripts/drag-announcement-invariant.mjs && node scripts/drag-announcement-invariant.mjs --selftest",
     "test:drag-runtime": "node scripts/drag-runtime-contract.mjs",
-    "test:focus-indicator-invariants": "node scripts/focus-indicator-invariants.mjs && node scripts/focus-indicator-invariants.mjs --selftest",
+    "test:focus-indicator-invariants": "node scripts/focus-indicator-invariants.mjs && node scripts/focus-indicator-invariants.mjs --selftest && node scripts/focus-indicator-invariants.mjs --selftest-focus-room",
     "test:interaction-ladder": "node scripts/interaction-ladder-invariant.mjs && node scripts/interaction-ladder-invariant.mjs --selftest",
     "test:datepicker-typeable-open": "node scripts/datepicker-typeable-open.mjs",
     "test:datepicker-range-preview": "node scripts/datepicker-range-preview.mjs && node scripts/datepicker-range-preview.mjs --selftest",

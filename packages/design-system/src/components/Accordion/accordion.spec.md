@@ -73,6 +73,7 @@ Accordion 是**垂直堆疊、可收合的多區塊容器**——每個 item 由
 - **Chevron**:朝下 → data-state=open 旋轉 180° → 朝上;旋轉跟內容展開同一份時長與曲線(`disclosureIndicatorMotion`:`--motion-duration-disclosure` 200ms、`ease-out`),兩者一起開始、一起停;減少動態下直接換角度不轉(2026-10-13 起,原本 200ms 但曲線是 Tailwind 預設;owner = `tokens/motion/motion.spec.md「展開箭頭跟它打開的東西同步」`)
 - **Content 文字**:次要閱讀色—— 主資訊在 trigger,展開內容是補充
 - **焦點框**:鍵盤 focus 畫內描邊(`focus-visible:focus-ring-inset`,往內 2px)—— trigger 撐滿標題列高,往外 +2px 會壓到下方內容區;幾何見 `ds-canonical/references/focus-canonical.md`「框怎麼畫」(2026-09-24 訂正,原「用 ring token(非自訂 outline)」方向相反且指已退役的機制)
+- **焦點框不壓字(2026-11-27)**:trigger 左右各補一個焦點框的位置 = 框寬 2px + `--stack-gap` 2px = 4px,再以同寬的負外距借回(`accordion.tsx` `ACCORDION_TRIGGER_FOCUS_ROOM_CLASS`)。結果:框內緣離字與箭頭 **2px**;平常畫面字的左緣仍對齊項目底線左端、箭頭右緣仍對齊底線右端,**零位移**,只有鍵盤聚焦時框落在字外 2px、左右比底線各寬出 4px。原本標題只有 `py-4`、左右零內距,框壓在字與箭頭上 —— 與分頁同一類問題、同一批處理(`../Tabs/tabs.spec.md`「焦點框不壓字」)。框內緣至少離字 2px 的依據:WCAG 沒有這一條,依據是 user 2026-09-23 在日期格焦點框選 D 的理由「我會想要選D,因為 c的白線幾乎要切到文字了，你覺得呢？」(`focus-canonical.md:677` 逐字),D 案每邊淨空 2px;2px 縫與全域往外框同一個 token `--stack-gap`。user 2026-11-26 在畫面確認卡 E13 選了「A:零位移補內距(推薦)」(手風琴標題同一批照做寫在該選項說明裡);4px 的拆法與負外距借回是 AI 推導,做法同 `../Combobox/combobox.tsx` `tagRowFocusRoomClass`。閘:`scripts/focus-indicator-invariants.mjs` F7(框內緣到字 ≥ `--stack-gap`、字左緣 / 箭頭右緣 = 項目兩端;對照組 `--selftest-focus-room`)
 
 **為什麼 hover 不用底線**:
 - shadcn 預設 trigger 帶 `hover:underline`(<https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/accordion.tsx#L37>),沿用 web 早期的文字連結慣例;trigger 是就地展開本頁區塊、不是跳轉,不借用連結的底線訊號
@@ -113,7 +114,7 @@ Consumer 無需額外處理,保留 Radix `data-state` 屬性即可。
 
 ## 邊界狀態
 
-Empty state 由 consumer 處理(無 items 則不渲染);loading 狀態由 consumer 用 `<Skeleton />` 包;本元件無 density 概念,padding 固定為 `py-4 / pb-4`(不隨 density token 變動)。
+Empty state 由 consumer 處理(無 items 則不渲染);loading 狀態由 consumer 用 `<Skeleton />` 包;本元件無 density 概念,padding 固定為 `py-4 / pb-4`(不隨 density token 變動);trigger 左右另有焦點框的位置 4px(以負外距借回,不占版面;見「視覺規則」焦點框不壓字)—— 這 4px 畫在項目盒子外,放進**右側沒有內距的捲動容器**時,右邊這 4px 會讓那個容器多 4px 可捲寬度,容器請留內距(往左的溢出不產生捲動)【AI 推導,2026-11-27】。
 
 **Disabled**(Accordion 是 composite 家族,**非 Field 家族**——disabled 行為由 Radix Accordion 提供,不走 field-controls SSOT):
 
