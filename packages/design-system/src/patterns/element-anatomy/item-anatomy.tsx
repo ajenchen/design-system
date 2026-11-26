@@ -684,7 +684,7 @@ export interface ItemInlineActionButtonProps
   overlayTrigger?: boolean
 }
 
-/** @internal — L3 inline-action primitive;app code 禁直接 import,經 MenuItem/Row endActions 消費(inline-action.spec.md)。 */
+/** @internal — L3 inline-action primitive;不進 root 出口,一般經 MenuItem/Row endActions 消費(inline-action.spec.md);產品經子路徑包裝並自行確認後可用(ui-development.md「Internal primitive」)。 */
 export const ItemInlineActionButton = React.forwardRef<
   HTMLButtonElement,
   ItemInlineActionButtonProps
@@ -780,7 +780,7 @@ export interface ItemInlineActionProps {
   size?: RowSize
 }
 
-/** @internal — L3 inline-action primitive;app code 禁直接 import,經 row 元件消費(inline-action.spec.md)。 */
+/** @internal — L3 inline-action primitive;不進 root 出口,一般經 row 元件消費(inline-action.spec.md);產品經子路徑包裝並自行確認後可用(ui-development.md「Internal primitive」)。 */
 export const ItemInlineAction = React.forwardRef<
   HTMLButtonElement,
   ItemInlineActionProps

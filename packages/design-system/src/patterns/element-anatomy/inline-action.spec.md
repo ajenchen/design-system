@@ -173,8 +173,8 @@ Row dedicated action 固定小尺寸 icon button,不依 row height 放大 ——
 | **DataTable row dedicated action column**(編輯 / 刪除 / 更多 ⋯)| Row dedicated column | Button xs iconOnly(24 固定)| ≤ 24 cap;有獨立 column divider 視覺分離 |
 | **Breadcrumb 中段折疊 ⋯**(`BreadcrumbEllipsis`)| BreadcrumbList row inline flow(host 內)| **Inline Action**(`ItemInlineActionButton` `size="md"` + `overlayTrigger` + asChild for DropdownMenuTrigger)| Embedded inline,跟 BreadcrumbLink 同 row;14-16px text row(compact tier);click 展開 DropdownMenu(2026-05-10 重寫,自刻 button retired)|
 | **Dialog / Sheet / Popover / Alert corner close** | Chrome corner | Button iconOnly `dismiss`(size sm)| Action group region |
-| **Toolbar commands**(FileViewer zoom / editor bold)| Toolbar | Button iconOnly(md 常見)| Action group region |
-| FileViewer / rich text editor formatting group | Toolbar action group | Button iconOnly 同 size + Separator | Action group 完整範例 |
+| **Toolbar commands**(FileViewer zoom / editor bold)| Toolbar | Button iconOnly xs / sm(`../../components/Button/button.spec.md`「xs 的專屬用途」;FileViewer 縮放群用 sm)| Action group region |
+| FileViewer / rich text editor formatting group | Toolbar action group | Button iconOnly 同 size + `ButtonDivider`(`../action-bar/action-bar.spec.md`「分隔線幾何」;2026-11-26 前這兩列寫「md 常見」「+ Separator」,與 Button / action-bar 規格不符,已改)| Action group 完整範例 |
 
 #### Content-role vs action-role 分層(附補充原理)
 

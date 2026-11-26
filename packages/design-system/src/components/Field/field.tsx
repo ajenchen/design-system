@@ -49,7 +49,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/design-system/compone
 
 // ── Types & Context ──
 // Context 定義在 field-context.ts(打斷 circular import)。
-// field.tsx 只 import 不 re-export——consumer 直接從 field-context.ts import useFieldContext。
+// field.tsx 只 import 不 re-export——consumer 直接從 field-context.ts import useFieldContext。(這裡的 consumer 指 DS 內部控件;產品的自訂控件請用公開 hook `useFieldState`,本檔檔尾轉出。)
 
 import type { FieldMode, FieldVariant, FieldOrientation, FieldSize, FieldControlLayout, FieldContextValue } from './field-context'
 import { FieldContext, useFieldContext, resolveGroupPreferredSize, FIELD_TEXT_CLASS } from './field-context'
@@ -678,5 +678,6 @@ export const fieldMeta = {
 export { Field, FieldLabel, FieldDescription, FieldError, FieldGroup }
 
 // form-validation.spec.md 可執行層(per-component index gen 只 re-export 主檔,故經此公開)
+export { useFieldState, type FieldState } from './field-context'
 export { useFormValidation } from './use-form-validation'
 export type { UseFormValidationOptions, UseFormValidationReturn, FormFieldInputProps } from './use-form-validation'

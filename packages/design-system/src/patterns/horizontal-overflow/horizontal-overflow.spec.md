@@ -1,7 +1,7 @@
 ---
 pattern: horizontal-overflow
 internal: true
-scope: "utility primitives module (use-overflow-items hooks: useScrollEdges + useOverflowIndices + fade-mask + scroll-arrow helper components) — DS-internal consumer only(Tabs / ChipGroup / FileViewer filmstrip wrap)"
+scope: "utility primitives module (use-overflow-items hooks: useScrollEdges + useOverflowIndices + fade-mask + scroll-arrow helper components) — 不進 root 出口;DS 內部(Tabs / ChipGroup / FileViewer filmstrip wrap)直接用,產品經子路徑包裝並自行確認後可用"
 ---
 
 # Horizontal Overflow 設計原則

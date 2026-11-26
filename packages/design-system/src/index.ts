@@ -314,6 +314,7 @@ export {
   FieldError,
   FieldGroup,
   FieldLabel,
+  useFieldState,
   useFormValidation,
 } from './components/Field/index'
 export type {
@@ -321,6 +322,7 @@ export type {
   FieldLabelProps,
   FieldMode,
   FieldProps,
+  FieldState,
   FieldVariant,
   FieldWidth,
   FormFieldInputProps,

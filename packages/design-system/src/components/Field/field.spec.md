@@ -208,7 +208,7 @@ Field render 時迭代**全部** control child 的 `type.fieldLayout`,**任一**
 
 ## FieldContext — 子元件如何讀 Field 狀態
 
-Field 透過 Context 暴露以下狀態給子元件（Primitive 可以透過 `useFieldContext()` 讀取）：
+Field 透過 Context 暴露以下狀態給子元件（Primitive 可以透過 `useFieldContext()` 讀取）。**公開給產品的值**(2026-11-26,ws-upstream C29 / WS5-2):產品自己做的控件(DS 沒有的,例:接第三方富文字編輯器)放進 `<Field>` 時,改用根出口的 **`useFieldState()`**(不在 Field 裡回 `null`),只公開九個值 —— 下表的 `id`、`descriptionId`、`errorId`、`mode`、`disabled`、`required`、`invalid`、`size`,加上 `labelId`(`<FieldLabel>` 的 id);下表其他欄位與 `variant`、`surface` 是 DS 內部控件用的,不公開。自訂控件自己接 `aria-*`:`id` → `id`;不是原生表單元素(例 `role="textbox"` 的 div,`<label for>` 給不了它名字)時 `labelId` → `aria-labelledby`;`descriptionId` → `aria-describedby`;`required` → `aria-required`;`invalid` → `aria-invalid`,為 true 時再接 `errorId` → `aria-errormessage`(與 DS 自己的 Input 同一套接法)。不用 hook 也接得上:給 `<Field id="…">`,標籤 / 說明 / 錯誤的 id 固定是 `${id}-label` / `${id}-description` / `${id}-error`(`./field.tsx` `Field`)。完整寫法見範例 `./field.anatomy.stories.tsx`「自訂控件接上 Field」。
 
 | 欄位 | 用途 |
 |---|---|
@@ -373,7 +373,7 @@ Button 的 height 與 `field-height` 共用同一組 token,放進 inline control
 | 是 | 否 |
 |---|---|
 | ✅ Upload(產生 file value) | ❌ 表單 submit / cancel(form action:跟在欄位後面,或放進浮層 / 面板的 footer) |
-| ✅ Picker opener(開對話框選 value) | ❌ 「重設此欄位」(可放到 endAction 或 description 旁,不是 control) |
+| ✅ Picker opener(開對話框選 value) | ❌ 「重設此欄位」(欄位的次要 action:放到標籤行右端,見上方「Field 次要 action 的預留位置」;不是 control。2026-11-26 前這格寫「可放到 endAction 或 description 旁」,與該段「唯一預留位置 = label 行最右端」「禁止把次要 action 放在 control 下方」矛盾,已改;`<FieldLabelAction>` 還沒實作,狀態見該段) |
 | ✅ Connect OAuth(產生 token value) | ❌ 頁面導覽、刪除整筆資料(page action) |
 
 **規則**:Button 是 control 時通常 inline(高度 = field-height);若是 block 類的「上傳區塊」(FileDropzone),則該元件本身宣告為 block primitive。
@@ -426,7 +426,7 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 
 ## Anatomy stories
 
-對應 anatomy story:`Overview` + `Inspector`(元件檢閱器——切 orientation / size / mode / required / invalid 即時 render)+ `OrientationMatrix` + `SizeMatrix` + `StateBehavior` + `ColorMatrix` + 元件特有 `FieldGroupBehavior` + `Accessibility`。
+對應 anatomy story:`Overview` + `Inspector`(元件檢閱器——切 orientation / size / mode / required / invalid 即時 render)+ `OrientationMatrix` + `SizeMatrix` + `StateBehavior` + `ColorMatrix` + 元件特有 `FieldGroupBehavior`、`CustomControlWiring`(自訂控件接上 Field,見「FieldContext」段「公開給產品的值」)+ `Accessibility`。
 
 ## Field state machine SSOT(v13.3)
 

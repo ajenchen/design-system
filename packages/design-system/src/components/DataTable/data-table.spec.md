@@ -321,11 +321,11 @@ DataTable 不內建 toolbar。Toolbar 是外部用 action-bar pattern 組合的�
 
 ### 十一之一、Cell 垂直對齊 + icon canonical
 
-Cell 已 `flex items-center`,consumer render 直接 inline-flex + gap-2。Icon size:sm/md→16 / lg→20(對齊 Field family,禁 14/18/24 自由挑)。`renderCellContent` 對 `React.isValidElement(content)` true / `isKnownCompound`(select/multiSelect/person/multiPerson/url/date/time)bypass TruncateCell;primitive 才走 truncate + hover tooltip。❌ consumer wrapper 加 `leading-none` / `h-full` / `align-middle` 治標 — 根因常在 TruncateCell 包覆。
+Cell 已 `flex items-center`,consumer render 直接 inline-flex + gap-2。Icon size:sm/md→16 / lg→20(對齊 Field family,禁 14/18/24 自由挑)。`renderCellContent` 對 `React.isValidElement(content)` true / `isKnownCompound`(select/multiSelect/person/multiPerson/url/date/time/boolean)bypass `TruncatedText`(`../../patterns/element-anatomy/truncated-text.tsx`;2026-07-19 前是檔內的 TruncateCell,已移除);primitive 才走 truncate + hover tooltip。❌ consumer wrapper 加 `leading-none` / `h-full` / `align-middle` 治標 — 根因常在 TruncatedText 包覆。
 
 ### 十一、Cell 單行截斷原則
 
-固定行高下 cell 單行,空間不足:純文字 `text-overflow: ellipsis`;Tag 文字內部 truncate(Tag bg 跟縮);multiSelect 動態 `+N`;Person avatar 不縮 name truncate;Link truncate。每個 view 態元件自管 truncation,Cell `overflow-hidden` 僅 safety net。截斷必顯 `...`(禁硬裁無 ellipsis)。截斷 hover 顯 tooltip。自動行高(`rowHeight="hug"`)的 wrap 欄不適用(可換行撐 row 高)。
+固定行高下 cell 單行,空間不足:純文字 `text-overflow: ellipsis`;Tag 文字內部 truncate(Tag bg 跟縮);multiSelect 動態 `+N`;Person avatar 不縮 name truncate;Link truncate。每個 view 態元件自管 truncation,Cell `overflow-hidden` 僅 safety net。截斷必顯 `...`(禁硬裁無 ellipsis)。截斷 hover 顯 tooltip。自動行高(`rowHeight="hug"`)的 wrap 欄不適用(可換行撐 row 高)。**使用端自訂 cell**:回傳 JSX 又沒設 `meta.type` 的欄,DataTable 不替它截斷(上一節「bypass」;回傳 JSX = 使用端自己排版),要截斷就三選一 —— 設 `meta.type`(交給該型別的 view 態元件)、用 root 匯出的 `useTruncated` hook 自組截斷 + 提示,或經子路徑 `@qijenchen/design-system/patterns/element-anatomy` 匯入 `TruncatedText`(internal,包裝並自行確認後使用,`../../../ds-canonical/rules/ui-development.md`「Internal primitive」)。
 
 ### 十二、可推導值用 `calc()` 表達(不硬寫結果)— 上游動,下游自動跟著算
 
