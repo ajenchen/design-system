@@ -62,9 +62,12 @@
  *         HW 隱藏週末(展示「客服排班(只看工作日)」+ Inspector en-IL;calendar.spec.md「Cell 規則」隱藏週末、「A11y 預設」鍵盤表):
  *           HW1 zh-TW 只剩 5 欄、5 個 columnheader(星期一–五)、沒有任何週六日的格;HW2 週五 → 下週一、週一 ← 上週五、Home / End = 該列第一 / 最後一個看得見的日子;
  *           HW3 換到八月(1 號是週六)Tab 停靠點剛好一個、在 8/3;HW4 週末是五六的語系(en-IL)藏的是週五、週六。
- *         WN 週數欄(展示「生產排程(週次)」+ Inspector en-GB / en-US 翻到 12 月):WN1 欄頭「週」在星期列第一格、欄頭寬 = 週數格寬(±0.5)= 2 × 4 + 兩位數實寬;
+ *         WN 週數欄(展示「生產排程(週次)」+ Inspector en-GB / en-US 翻到 12 月):WN1 欄頭「週」在星期列第一格、欄頭寬 = 週數格寬(±0.5);
  *           WN2 每週第一格是 rowheader、0 個可聚焦、zh-TW 7 月 = 第 27–31 週、名稱「第 N 週」;WN3 字樣 fg-secondary、字重 400、上 4 高 24、水平置中;
- *           WN4 2026 年 12 月最後一列(含 2027-01-01)en-GB = 53、en-US = 1。
+ *           WN4 2026 年 12 月最後一列(含 2027-01-01)en-GB = 53、en-US = 1;
+ *           WN5 週數格與日期格同一套【WEEKNUM-BOX(定)】(一般 / 大密度 × zh-TW 展示 / en-US Inspector 各一格,WN5-{md|lg}-{zh-TW|en-US}):
+ *           同一週的兩位數週數框與兩位數日期框比 —— 框寬、框高、框離格左、框離格頂都相同(±0.5)、週數字在框內左右差 ≤ 0.5、
+ *           欄寬 = 2 × 4 + 日期框寬 + 格線 1(±0.5)、格線實量 1;兩位數週數 / 日期離格線的值只印不判(日期是比例字寬、週數是等寬數字,差多少看字型)。
  *         LD 載入中(展示「切換月份時載入」):LD1 格陣 aria-busy=true;LD2 每格事件區剛好一條高 24、aria-hidden 的骨架、沒有事件列;
  *           LD3 日期名稱不念筆數;LD4 點格內空白仍會開「新增事件」(onDateClick)。
  *         NW 窄寬度(展示「分割畫面側欄(窄寬)」):NW1 欄寬 ≤ 60 時星期一字、1 號「1」、讀屏名稱照舊;NW2 掃 20 個欄寬(51–70),
@@ -104,7 +107,8 @@
  *       en-GB 卻寫死週日起(Inspector 傳 weekStartsOn 0)、標題層級不跟 titleAs、日期鈕的 focus() 失效、
  *       日期名稱改回舊念法(yyyy-MM-dd)、拿掉 aria-current、aria-current 掛在每一天、唯讀格的 aria-label 放回去、唯讀格看得見的日期數字沒有 aria-hidden、唯讀格念不到橫跨過來的長條、
  *       labels 覆寫沒生效(名稱是寫死的預設中文)、跳過被藏日子的邏輯不見(焦點落空)、1 號被藏時沒有停靠點、週末寫死週六日(en-IL 照 en-US 藏)、
- *       星期列的週數欄沒讀同一個欄寬、週數格可聚焦、週數字加粗主色、週數第一週天數寫死 1(en-GB 年底變第 1 週)、格陣沒帶 aria-busy、骨架拿掉 aria-hidden、
+ *       星期列的週數欄沒讀同一個欄寬、週數格可聚焦、週數字加粗主色、週數第一週天數寫死 1(en-GB 年底變第 1 週)、
+ *       週數欄寬改回 2ch 公式(2026-11-26 前)、週數不放框(直接內距,框縮成字寬)、格陣沒帶 aria-busy、骨架拿掉 aria-hidden、
  *       載入中照念筆數、載入中格子點不到、窄寬沒接上、門檻改看內容寬(內容回授到量測 → 門檻附近每幀來回跳)、
  *       量欄寬改量畫面寬(祖先縮放時讀到縮小後的寬 → 卡在窄版)、
  *       k 不隨格高變(ResizeObserver 換成不做事的版本再重新掛載;最小高與掃格高各一次)、長條改回逐日方塊、事件列 / 長條沒阻止冒泡(點擊冒到它所在的格子)、
@@ -254,7 +258,8 @@ const DETAIL_SIDE = { gap: 8, edge: 8, roomWidth: 720, eventId: 'd3' }
 // 規格值(calendar.spec.md「間距」與 header-canonical.spec.md:68);1 號的字是規格寫的 zh-TW 例子
 // 格最小高 61 = 上內距 4 + 日期框 24 + 4 + 一列 24 + 下內距 4 + 格線 1(格子 border-box,底線在格高裡;calendar.spec.md「每一週等高」)
 // moreListRows = 「+N」清單完整看得到幾列(半列原則的 N,calendar.spec.md「「+N」清單浮層」高度與捲動;刻意不 import 元件常數)
-const SPEC = { toolbar: { md: 48, lg: 56 }, gap: 4, row: 24, inset: 8, header: 32, cellMin: 61, navName: '行事曆月份導覽', moreListRows: 9 }
+// line = 格線 1(Tailwind `border` 預設寬;週數欄寬「4 + 框 + 4 + 格線」的格線,calendar.spec.md「間距」週數欄寬列)
+const SPEC = { toolbar: { md: 48, lg: 56 }, gap: 4, row: 24, inset: 8, header: 32, cellMin: 61, line: 1, navName: '行事曆月份導覽', moreListRows: 9 }
 // 窄寬度門檻(calendar-geometry.ts CALENDAR_NARROW_COLUMN_MAX_PX;calendar.spec.md「窄寬度」):欄寬 ≤ 60 = 窄。值照規格回寫的數字逐字寫,不 import 元件常數
 const NARROW_MAX = 60
 /** 窄寬掃描:欄寬 51…70(20 個寬度,跨過門檻),每個寬度連看幾幀 */
@@ -361,6 +366,39 @@ const PROBE = () => {
   }
 }
 
+/**
+ * WN5 週數格與日期格同一套(calendar.spec.md「Cell 規則」週數欄、「間距」週數欄寬列【WEEKNUM-BOX(定)】):
+ * 取第一個「週數是兩位數」的週,與同一週第一個兩位數的平日日期框(不是今天、不是 1 號)比。
+ * 日期框 = 日期列裡看得見的那一個(可點時是日期鈕,唯讀時跳過只給讀屏的 sr-only)。量畫出來的框與字(M32),不看 class。
+ */
+const WEEK_BOX_PROBE = () => {
+  const r = (el) => el.getBoundingClientRect()
+  const textOf = (el) => { const range = document.createRange(); range.selectNodeContents(el); return range.getBoundingClientRect() }
+  const grid = document.querySelector('[role="grid"]')
+  const weekRows = grid ? [...grid.querySelectorAll('[role="row"]')].filter((row) => row.querySelector('[role="gridcell"]')) : []
+  for (const row of weekRows) {
+    const rh = row.querySelector(':scope > [role="rowheader"]')
+    const weekBox = rh?.firstElementChild
+    if (!rh || !weekBox || !/^\d\d$/u.test(weekBox.textContent.trim())) continue
+    for (const cell of row.querySelectorAll(':scope > [role="gridcell"]')) {
+      const box = [...(cell.firstElementChild?.children ?? [])].find((el) => !el.classList.contains('sr-only'))
+      if (!box || !/^\d\d$/u.test(box.textContent.trim()) || box.hasAttribute('aria-current') || cell.hasAttribute('aria-current')) continue
+      const c = r(cell), b = r(box), bt = textOf(box), h = r(rh), wb = r(weekBox), wt = textOf(weekBox)
+      const line = parseFloat(getComputedStyle(rh).borderRightWidth)
+      return {
+        week: weekBox.textContent.trim(), day: box.textContent.trim(), colW: h.width, line,
+        weekBox: { w: wb.width, h: wb.height, left: wb.left - h.left, top: wb.top - h.top },
+        dayBox: { w: b.width, h: b.height, left: b.left - c.left, top: b.top - c.top },
+        // 週數字在框內:左右空白差
+        centerDiff: (wt.left - wb.left) - (wb.right - wt.right),
+        // 離格線:週數字左緣離欄左緣、右緣離自己的右格線;日期字左緣離這一格左緣(= 前一格右格線的外緣)
+        weekInsetL: wt.left - h.left, weekInsetR: (h.right - line) - wt.right, dayInset: bt.left - c.left,
+      }
+    }
+  }
+  return null
+}
+
 // ── 判定 ────────────────────────────────────────────────────────────────────
 const results = [] // { id, ok, msg }
 const instrumentFails = []
@@ -395,6 +433,21 @@ function judgeLayout(p, density) {
     `${e.day} 事件列高 ${e.h0} / ${e.h1}、列距 ${e.gap}、文字內距 ${e.textInset.toFixed(2)}、日期框到第一列 ${e.dateToFirst}(規格 24 / 4 / 8 / 4)`)
   const clearance = Math.min(e.gap, e.dateToFirst, e.left, e.right)
   check('E2', clearance >= SPEC.gap - 0.01, `事件列四周最小淨空 ${clearance.toFixed(2)}(左 ${e.left} / 右 ${e.right.toFixed(2)} / 上 ${e.dateToFirst} / 列距 ${e.gap};≥ 4 → 焦點框往外)`)
+}
+
+/** WN5:週數框寬 / 高 / 離格左 / 離格頂 = 日期框、週數字在框內置中(≤ 0.5)、欄寬 = 2 × 4 + 日期框寬 + 格線 */
+function judgeWeekBox(id, b) {
+  if (!b) { check(id, false, '找不到兩位數的週數格與同一週兩位數的平日日期框(範例資料變了,本閘要換格子)'); return }
+  const f = (n) => (Number.isFinite(n) ? n.toFixed(2) : String(n))
+  const wantCol = 2 * SPEC.gap + b.dayBox.w + SPEC.line
+  const sameBox = near(b.weekBox.w, b.dayBox.w) && near(b.weekBox.h, b.dayBox.h) && near(b.weekBox.left, b.dayBox.left) && near(b.weekBox.top, b.dayBox.top)
+  // 「離格線」兩邊的值只印不判:日期數字是比例字寬、font-medium,週數是等寬數字、一般字重 —— 差多少看字型(Linux CI 與 mac 不同),
+  // 結構相同由上面的框與置中保證,不拿字寬差當紅燈
+  const ok = sameBox && Math.abs(b.centerDiff) <= 0.5 && near(b.colW, wantCol) && near(b.line, SPEC.line)
+  check(id, ok, `週數「${b.week}」框 ${f(b.weekBox.w)}×${f(b.weekBox.h)}、離格左 ${f(b.weekBox.left)} / 頂 ${f(b.weekBox.top)};`
+    + `日期「${b.day}」框 ${f(b.dayBox.w)}×${f(b.dayBox.h)}、離格左 ${f(b.dayBox.left)} / 頂 ${f(b.dayBox.top)};週數字在框內左右差 ${f(b.centerDiff)}(≤ 0.5);`
+    + `欄寬 ${f(b.colW)}(規格 2 × ${SPEC.gap} + 日期框寬 + 格線 ${SPEC.line} = ${f(wantCol)},格線實量 ${f(b.line)});`
+    + `參考(不判):兩位數週數離格線 左 ${f(b.weekInsetL)} / 右 ${f(b.weekInsetR)}、兩位數日期離格線 ${f(b.dayInset)}`)
 }
 
 // ── 開 story ────────────────────────────────────────────────────────────────
@@ -969,8 +1022,12 @@ const BLOCKS = {
   },
   // ── 週數欄(calendar.spec.md「Cell 規則」週數欄【Q10(定)、Q10b(定)】、「間距」週數欄寬、「A11y 預設」週數欄名稱【AI 推導】)──
   async weekNumbers(mutate) {
+    // WN5 一般 / 大密度各量一次(週數框與日期框同一套);WN1–WN3 只在一般密度判(字樣與欄頭不隨密度變)
+    const pLg = await open(STORY.weekNumbers, { label: '生產排程(週次)大密度', mutate, density: 'lg' })
+    if (pLg) judgeWeekBox('WN5-lg-zh-TW', await page.evaluate(WEEK_BOX_PROBE))
     const p = await open(STORY.weekNumbers, { label: '生產排程(週次)', mutate })
     if (p) {
+      judgeWeekBox('WN5-md-zh-TW', await page.evaluate(WEEK_BOX_PROBE))
       const wn = await page.evaluate(() => {
         const g = document.querySelector('[role="grid"]')
         const rows = [...g.querySelectorAll('[role="row"]')]
@@ -991,10 +1048,11 @@ const BLOCKS = {
           digitW: t?.width ?? NaN, centerDiff: t && c ? (t.left - c.left) - (contentRight - t.right) : NaN, top: b && c ? b.top - c.top : NaN, h: b?.height ?? NaN,
           color: cs?.color ?? null, secondary, weight: cs?.fontWeight ?? null }
       })
+      // 欄寬本身(= 2 × 4 + 日期框寬 + 格線)在 WN5 判;這裡只判星期列與週列讀同一個欄寬
       const sameW = wn.widths.length >= 4 && wn.widths.every((w) => near(w, wn.headW))
-      check('WN1', wn.headFirst && wn.headText === '週' && sameW && near(wn.headW, 2 * SPEC.gap + wn.digitW),
+      check('WN1', wn.headFirst && wn.headText === '週' && sameW,
         `週數欄:欄頭「${wn.headText}」在星期列第一格 ${wn.headFirst}、欄頭寬 ${wn.headW?.toFixed(2)} / 週列 ${[...new Set(wn.widths.map((w) => w.toFixed(2)))].join('/')}`
-        + `(規格:兩邊同寬 ±0.5,= 2 × 4 + 兩位數寬 ${wn.digitW?.toFixed(2)})`)
+        + `(規格:兩邊同寬 ±0.5;兩位數週數寬 ${wn.digitW?.toFixed(2)})`)
       check('WN2', wn.firstInRow && wn.tabbable === 0 && JSON.stringify(wn.texts) === JSON.stringify(['27', '28', '29', '30', '31']) && wn.names.every((n, i) => n === `第 ${27 + i} 週`),
         `週數格:每週第一格是 rowheader ${wn.firstInRow}、可聚焦 ${wn.tabbable} 個、數字 ${wn.texts.join(' ')}、名稱 ${wn.names[0]}…(規格:zh-TW 2026 年 7 月 = 第 27–31 週、不進 Tab 序列、名稱「第 N 週」)`)
       check('WN3', wn.color === wn.secondary && wn.weight === '400' && near(wn.top, SPEC.gap) && near(wn.h, SPEC.row) && Math.abs(wn.centerDiff) <= 1,
@@ -1004,6 +1062,8 @@ const BLOCKS = {
     for (const [tag, want] of [['en-GB', '53'], ['en-US', '1']]) {
       const q = await open(STORY.inspector, { label: `Inspector ${tag} 週數欄`, args: `locale:${tag};showWeekNumbers:!true`, mutate })
       if (!q) continue
+      // en-US 的 WN5 在翻月之前量(Inspector 開在 2026 年 7 月:週數 27–31,兩位數)
+      if (tag === 'en-US') judgeWeekBox('WN5-md-en-US', await page.evaluate(WEEK_BOX_PROBE))
       for (let i = 0; i < 5; i++) await page.getByRole('button', { name: '下個月', exact: true }).click()
       if (mutate?.after) await page.evaluate(mutate.after)
       const year = await page.evaluate(() => {
@@ -1013,6 +1073,8 @@ const BLOCKS = {
       })
       check(`WN4-${tag}`, year === want, `${tag} 2026 年 12 月最後一列(含 2027-01-01)週數 ${year}(規格 ${want})`)
     }
+    const usLg = await open(STORY.inspector, { label: 'Inspector en-US 週數欄 大密度', args: 'locale:en-US;showWeekNumbers:!true', mutate, density: 'lg' })
+    if (usLg) judgeWeekBox('WN5-lg-en-US', await page.evaluate(WEEK_BOX_PROBE))
   },
   // ── 載入中(calendar.spec.md「狀態與邊界案例」載入中【Q11(定);一條 / 仍可操作 / 名稱不念筆數 = AI 推導】)──
   async loading(mutate) {
@@ -2170,6 +2232,12 @@ const MUTANTS = [
     const head = document.querySelector('[role="grid"] [role="row"]')
     if (head) head.style.gridTemplateColumns = head.style.gridTemplateColumns.replace('var(--calendar-week-number-w)', '2rem')
   } },
+  // 週數欄寬改回 2026-11-26 前的 calc(2 × 空隙 + 2ch)(ch 在兩個格陣容器的 text-body 上解析,與當時相同):欄比「4 + 日期框 + 4 + 格線」窄
+  { name: '週數欄寬改回 2ch 公式', block: 'weekNumbers', expect: ['WN5-lg-zh-TW', 'WN5-md-zh-TW', 'WN5-md-en-US', 'WN5-lg-en-US'],
+    css: '[role="grid"] { --calendar-week-number-w: calc(2 * var(--calendar-gap) + 2ch) !important; }' },
+  // 週數不放框、直接靠格子內距(框縮成字寬 = 2026-11-26 前的結構):週數框比日期框窄、字離格線比日期近
+  { name: '週數不放框(直接內距)', block: 'weekNumbers', expect: ['WN5-lg-zh-TW', 'WN5-md-zh-TW', 'WN5-md-en-US', 'WN5-lg-en-US'],
+    css: '[role="rowheader"] > * { min-width: 0 !important; }' },
   { name: '週數格可聚焦(進了 Tab 序列)', block: 'weekNumbers', expect: ['WN2'], dom: () => document.querySelectorAll('[role="rowheader"]').forEach((r) => r.setAttribute('tabindex', '0')) },
   { name: '週數字加粗、主色', block: 'weekNumbers', expect: ['WN3'], css: '[role="rowheader"] { font-weight: 500 !important; color: var(--color-foreground, #000) !important; }' },
   // firstWeekContainsDate 寫死 1:en-GB 年底那一列(含 1/1)變成第 1 週(模擬元件算錯時畫出來的數字)

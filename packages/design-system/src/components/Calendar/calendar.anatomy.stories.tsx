@@ -218,8 +218,8 @@ export const ColorMatrix: Story = {
                 </tr>
                 <tr>
                   <Td>週數欄(showWeekNumbers)</Td>
-                  <Td mono>寬 calc(2 × var(--calendar-gap) + 2ch) · text-body font-normal text-fg-secondary tabular-nums · pt-[var(--calendar-gap)] · h-tag-md</Td>
-                  <Td>左側獨立窄欄,寬 = 2 × 格子內距 + 最寬兩位數;週數水平置中、上邊距與高度同日期框;欄頭「週」上下左右置中,灰底條延伸過去;格線同日期格。週數格是 rowheader,不是操作目標</Td>
+                  <Td mono>寬 calc(2 × var(--calendar-gap) + var(--tag-height-md) + var(--calendar-grid-line)) · p-[var(--calendar-gap)] · 週數框 h-tag-md min-w-tag-md(同日期框)· text-body font-normal text-fg-secondary tabular-nums</Td>
+                  <Td>左側獨立窄欄,與日期格同一套:格子內距 4、週數放在與日期框同一個 24 寬的框裡置中,欄寬 = 4 + 24 + 4 + 格線 1 = 33,週數與日期數字離格線同一套算法;欄頭「週」上下左右置中,灰底條延伸過去;格線同日期格。週數格是 rowheader,不是操作目標</Td>
                 </tr>
                 <tr>
                   <Td>載入中(loading)</Td>

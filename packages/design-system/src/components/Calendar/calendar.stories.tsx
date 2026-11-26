@@ -261,7 +261,7 @@ export const ManufacturingWeekNumbers: Story = {
     docs: {
       description: {
         story:
-          '`showWeekNumbers`:左側一欄週數,寬 = 2 × 格子內距 + 最寬的兩位數;週數怎麼算跟語系(zh-TW 週日起、含 1 月 1 日那一週是第 1 週;en-GB 照 ISO,年底那一週是第 53 週)。週數格不是按鈕、不進 Tab 順序,欄頭「週」可經 `labels.weekNumberHeader` 換字。',
+          '`showWeekNumbers`:左側一欄週數,與日期格同一套 —— 週數放在與日期框同一個 24 寬的框裡置中,欄寬 = 格子內距 4 + 24 + 4 + 格線 1;週數怎麼算跟語系(zh-TW 週日起、含 1 月 1 日那一週是第 1 週;en-GB 照 ISO,年底那一週是第 53 週)。週數格不是按鈕、不進 Tab 順序,欄頭「週」可經 `labels.weekNumberHeader` 換字。',
       },
     },
   },

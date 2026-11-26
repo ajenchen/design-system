@@ -241,7 +241,7 @@ export interface CalendarLabels {
   todayPrefix: string
   /**
    * 週數欄(`showWeekNumbers`)的欄頭:看得見的字,也是欄頭(`columnheader`)的讀屏名稱(calendar.spec.md「Cell 規則」週數欄「欄頭「週」(`labels` 可換)」)。
-   * 週數欄很窄(2 × 4 + 兩位數):覆寫時用一兩個字(例 'W'),長字會溢出到旁邊的星期欄。
+   * 週數欄很窄(4 + 24 + 4 + 格線 1 = 33):覆寫時用一兩個字(例 'W'),長字會溢出到旁邊的星期欄。
    */
   weekNumberHeader: string
   /** 每一週週數格(`rowheader`)的讀屏名稱,收到週數(1–53);看得見的只有數字(calendar.spec.md「A11y 預設」週數欄的名稱由 `labels` 給【AI 推導】)。 */
@@ -800,6 +800,12 @@ function MonthEventPiece({
 
 /** `moreLabel` 的預設:一律「+N」【C6】(2026-11-26 前是 `+N more` —— 中文月曆裡唯一一句英文;FullCalendar 極窄時也只顯示「+2」) */
 const defaultMoreLabel = (count: number) => `+${count}`
+
+/**
+ * 日期框與週數框共用的盒:高 = 列高單位、寬至少列高單位(24 × 24 起,--tag-height-md),內容上下左右置中
+ *(calendar.spec.md「間距」日期框列;週數框同此【WEEKNUM-BOX(定)】)。兩邊讀同一個字串 → 週數框與日期框不會各長各的。
+ */
+const DATE_BOX_LAYOUT = 'inline-flex items-center justify-center h-tag-md min-w-tag-md'
 
 const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calendar({
   referenceDate: referenceDateProp,
@@ -1455,7 +1461,9 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
             字樣【P6、總帳更正 #6】、灰底【總帳更正 #9】)。內距【AI 推導】:左右 = 格子內距、上下讓列高 = 4 + 列高單位 24 + 4 = 32
             (與日期列同一個列高單位;內容盒 h-tag-md 置中,所以列高不跟字型行高走)。2026-11-25 前寫死 px-2 py-1.5(列高 33)。
             看得見的字 = Intl weekday short(「週日」),窄的時候 narrow(「日」,calendar.spec.md「窄寬度」);讀屏名稱 = long(「星期日」)。
-            欄由 gridTemplateColumns 給(週數欄 + 看得見的日子;與下方週列同一個字串)。容器 text-body:週數欄寬的 ch 在這裡解析,兩個格陣同一個字級。 */}
+            欄由 gridTemplateColumns 給(週數欄 + 看得見的日子;與下方週列同一個字串)。容器 text-body 是 1dbaa68af 為了讓週數欄寬的 `ch` 在兩個格陣
+            解析成同一個字級加的;2026-11-26 起欄寬改讀 --tag-height-md、不再用 ch【WEEKNUM-BOX(定)】,這兩個 text-body 沒有拿掉 —— 格內沒自帶字級的元素
+            已經繼承它,拿掉要另外驗,不在週數欄那一包的範圍。 */}
         <div role="row" className="grid shrink-0 border-b border-divider bg-muted text-body" style={{ gridTemplateColumns }}>
           {showWeekNumbers && (
             // 週數欄欄頭「週」(labels.weekNumberHeader):一般字重、fg-secondary、上下左右置中(calendar.spec.md「Cell 規則」週數欄【Q10b(定)】);
@@ -1497,19 +1505,21 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
               return (
               <div key={rowIdx} role="row" style={{ display: 'contents' }}>
                 {week.number !== null && (
-                  // 週數格(calendar.spec.md「Cell 規則」週數欄【Q10b(定)】):一般字重、fg-secondary、水平置中、上邊距與高度同日期框(4 / 24);
-                  // 等寬數字(欄寬照最寬兩位數算)。格線跟日期格同一套(右 / 下各一條,最後一週不畫下線)【AI 推導】。
+                  // 週數格與日期格同一套結構【WEEKNUM-BOX(定)】(calendar.spec.md「Cell 規則」週數欄):格子四邊內距 4(--calendar-gap,同日期格),
+                  // 週數放在與日期框同一個盒裡(DATE_BOX_LAYOUT:24 × 24 起、置中)、盒在格子左上 → 盒離格左 4、離格頂 4,與日期框相同;
+                  // 欄寬 = 4 + 24 + 4 + 格線(--calendar-week-number-w)→ 盒剛好填滿內容框,週數在欄裡置中,離格線與日期數字同一套算法(內距 4 + 在 24 的框裡置中)。
+                  // 字樣照【Q10b(定)】:一般字重、fg-secondary;等寬數字(1–53 每一個兩位數同寬)。格線跟日期格同一套(右 / 下各一條,最後一週不畫下線)【AI 推導】。
                   // rowheader【AI 推導】:不是操作目標 —— 沒有 tabIndex、不進 roving 停靠點,第一段不可點;名稱 labels.weekNumber(「第 27 週」)。
                   <div
                     role="rowheader"
                     aria-label={labels.weekNumber(week.number)}
                     className={cn(
-                      'flex justify-center pt-[var(--calendar-gap)] text-body font-normal text-fg-secondary tabular-nums',
+                      'flex items-start justify-start p-[var(--calendar-gap)] text-body font-normal text-fg-secondary tabular-nums',
                       'border-r border-b border-divider',
                       rowIdx === weekCount - 1 && 'border-b-0',
                     )}
                   >
-                    <span className="flex items-center h-tag-md">{week.number}</span>
+                    <span className={DATE_BOX_LAYOUT}>{week.number}</span>
                   </div>
                 )}
                 {week.visibleDays.map((date, colIdx) => {
@@ -1554,7 +1564,8 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                   const dayNumberClass = cn(
                     // 日期框 = 一列的高(h-tag-md 24,與事件列同一個列高單位;calendar.spec.md「間距」日期框列),左上【C10(改)】。
                     // 焦點框往外(= 不寫):日期框離格頂 4、格左 4,下方是 4 的列距 → 四周最小淨空 4.00 = canonical「算放得下」。
-                    'inline-flex items-center justify-center h-tag-md min-w-tag-md rounded-full text-body font-medium',
+                    DATE_BOX_LAYOUT,
+                    'rounded-full text-body font-medium',
                     wideDayBox && 'px-[var(--calendar-text-inset)]',
                     isToday && 'bg-info text-on-emphasis',
                     // 非當月 = 淡字 `fg-muted`,**不是** `fg-disabled`:這天跟當月格同一種可點性(可點就一樣可點,唯讀就一樣唯讀),

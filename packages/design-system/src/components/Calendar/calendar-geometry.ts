@@ -9,7 +9,7 @@
  * - utilities: [border-b(格線 = Tailwind `border` 預設寬 1px,算進格最小高)]
  * - spec refs: calendar.spec.md「間距」表、tag.spec.md「尺寸」(:196-200 Tag px / Text px 4)、
  *   item-anatomy.spec.md:467(有底色 + 圓角 + 內縮的 standalone pill,清單 gap ≥ 4)、
- *   calendar.spec.md「Cell 規則」週數欄寬【Q10b(定)】、「窄寬度」門檻【Q8(定);值為 AI 推導】
+ *   calendar.spec.md「Cell 規則」週數欄寬【WEEKNUM-BOX(定)】、「窄寬度」門檻【Q8(定);值為 AI 推導】
  *
  * ── 為什麼是元件自己的值、不開 token ──
  * token-system.spec.md 判斷流程第 0 題:只有 Calendar 讀、不隨密度切換 → 元件自己的值,不開全系統的名字【AI 推導】。
@@ -66,12 +66,6 @@ export const CALENDAR_GRID_LINE_PX = 1
  */
 export const CALENDAR_CELL_MIN_HEIGHT_PX =
   CALENDAR_GAP_PX + CALENDAR_ROW_HEIGHT_PX + CALENDAR_GAP_PX + CALENDAR_ROW_HEIGHT_PX + CALENDAR_GAP_PX + CALENDAR_GRID_LINE_PX
-
-/**
- * 週數欄放得下的最多位數:一年的週數是 1–53(date-fns `getWeek`),最寬兩位。
- * 欄寬 = 格子左內距 × 2 + 最寬週數(calendar.spec.md「Cell 規則」週數欄【Q10b(定)】;「間距」表週數欄寬那一列)。
- */
-export const CALENDAR_WEEK_NUMBER_DIGITS = 2
 
 /**
  * 窄寬度門檻:**欄寬**(一個日期格的外框寬,含它自己的右格線)≤ 這個值就是「窄」—— 星期縮一字(`Intl` `weekday: 'narrow'`)、
@@ -137,8 +131,10 @@ export const CALENDAR_GEOMETRY_STYLE = {
   '--calendar-accent-w': `${CALENDAR_ACCENT_WIDTH_PX}px`,
   // 格線寬(跨日長條的寬度式子要加回中間每一格的右格線,calendarPieceWidth)
   '--calendar-grid-line': `${CALENDAR_GRID_LINE_PX}px`,
-  // 週數欄寬 = 2 × 格子內距 + 最寬週數。`ch` = 「0」的字寬,在用到這個變數的元素上解析(星期列與週列兩個格陣容器都是 text-body,
-  // 所以兩邊的週數欄同寬)。POC(M2,2026-11-25,Chromium 1217 / macOS,text-body 14px):tabular-nums 的兩位數實寬 17.34、2ch = 17.63,
-  // 差 0.28(zh-TW 與 en-US 兩個 lang 相同)< 0.5 → 用 calc 不另外量;差超過 0.5 時改成量到後寫進同一個變數。
-  '--calendar-week-number-w': `calc(2 * var(--calendar-gap) + ${CALENDAR_WEEK_NUMBER_DIGITS}ch)`,
+  // 週數欄寬 = 格子左內距 + 週數框(與日期框同一個盒:寬 = 列高單位 --tag-height-md)+ 格子右內距 + 自己的右格線
+  // = 4 + 24 + 4 + 1 = 33(calendar.spec.md「Cell 規則」週數欄、「間距」週數欄寬列【WEEKNUM-BOX(定)】)。
+  // 週數在 24 的框裡置中 → 週數與日期數字離格線同一套算法(格子內距 4 + 24 框置中)。
+  // 三項都讀既有的值:空隙與格線是上面兩個變數(CALENDAR_GAP_PX / CALENDAR_GRID_LINE_PX),框寬是 Tag 的 --tag-height-md(日期框的 min-w-tag-md 同一個)。
+  // 2026-11-26 前是 calc(2 × 空隙 + 2ch)≈ 25.6:週數貼著欄寬算、左右實際各約 3.6,與日期數字離格線約 7.2 對不上(WEEKNUM-BOX 起因)。
+  '--calendar-week-number-w': 'calc(2 * var(--calendar-gap) + var(--tag-height-md) + var(--calendar-grid-line))',
 } as React.CSSProperties
