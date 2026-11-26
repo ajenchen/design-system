@@ -198,9 +198,10 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
   - 位置:線的下緣 = 欄位框外緣、粗 2px,蓋住那一段 1px 框線,與框線合成一條(不是框線上方再一條)。各尺寸 × 各密度都一樣 —— 位置由文字行盒下緣往下 `--field-control-py-*` + `--field-border-width` 推(`tokens/uiSize/uiSize.css`),不寫死 px。
   - 線長 = 該端文字寬(長日期被截斷時 = 看得到的那一段),不是按鈕寬。
   - 顏色 = 框當下的顏色:一般主色(`--color-primary`,同聚焦時的框);欄位錯誤時紅(`--color-error`,同錯誤的框 —— Field 的錯誤色勝過聚焦色,`../Field/field-wrapper.tsx` error 條)。Field 家族目前沒有警告態;日後加了,線色跟框色走同一個變數(`--range-end-bar-color`)。
+  - 高對比模式(forced-colors):線色換成系統色 `Highlight`【AI 推導 2026-11-26,核對發現】。該模式下 `background-color` 會被瀏覽器強制換成底色(只有系統色不換;W3C https://www.w3.org/TR/css-color-adjust-1/ 「Properties Affected by Forced Colors Mode」),畫在背景上的線會消失、起訖兩顆又分不出焦點在哪一顆(違反 `ds-canonical/references/focus-canonical.md`「同一個承擔者被兩個以上 tab stop 共用時,每一顆必須另有自己的區分指示」);框線在該模式由瀏覽器換成 `CanvasText`,線用 `Highlight` 才與框分得出來。
   - 理由(決策卡上甲案的說明,AI 提出、user 選甲):線與框線合成一條,框裡不會多出第二條線(同 Tabs 選中線蓋住下方分隔線 —— `../Tabs/tabs.spec.md`「這兩條線視覺上必須是同一條」);位置貼框,不隨字級與行高變(此前的文字底線 `decoration-primary underline-offset-4 decoration-2` 離框的距離隨尺寸而變)。Ant RangePicker 同位置:active bar `bottom: -lineWidth`、`height: lineWidthBold`、`background: colorPrimary`(https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/style/index.ts#L276-L283),錯誤 / 警告時 active bar 換成 `colorError` / `colorWarning`(同檔 `genPickerStatusStyle`)。
   - 文字段只裁水平(`overflow-x-clip`),不能雙軸裁 —— 線從文字段往下伸到框外緣,雙軸裁切會把它整條裁掉(2026-11-17 A50 是同一類:當時文字底線的下半被裁、2px 只畫出 1px)。
-  - 閘 `scripts/datepicker-range-active-underline-invariant.mjs`(量像素:線下緣 = 框外緣、線長 = 文字寬、線色 = 框色;一般 / 大密度 × sm / md / lg × 帶 / 不帶時間、錯誤態、長日期截斷、Calendar 詳情時間欄,起訖兩端 × 鍵盤 / 點開兩種出現方式 × 像素比 1 / 2)
+  - 閘 `scripts/datepicker-range-active-underline-invariant.mjs`(量像素:線下緣 = 框外緣、線長 = 文字寬、線色 = 框色;一般 / 大密度 × sm / md / lg × 帶 / 不帶時間、錯誤態、高對比模式(線色 = Highlight)、長日期截斷、Calendar 詳情時間欄,起訖兩端 × 鍵盤 / 點開兩種出現方式 × 像素比 1 / 2)
 
 ### Popover 行為
 

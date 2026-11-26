@@ -8,6 +8,8 @@
  *        點開面板 = `data-active-end`),外加 Calendar 詳情時間欄(進編輯後點開起訖兩端);裝置像素比 1 與 2 都量。
  *        高對比模式(`page.emulateMedia({ forcedColors: 'active' })`,md 密度 md 尺寸那一欄):背景色在該模式被強制換成底色、只有系統色不換
  *        (W3C css-color-adjust-1),所以線色 = 系統色 `Highlight`(線下緣 = 框外緣、線長 = 文字寬照舊量;列名 F-…)。
+ *        系統色可能半透明(macOS Chromium 的 Highlight = rgba(5,0,73,0.8)):比對的線色 = 它疊在底色上 / 疊在框線上**合成出來**的兩個顏色(見 composite),
+ *        不透明時兩個都 = 讀到的顏色本身;任一個與底下那一層分不出來 = 儀器失效。
  *        長日期另驗截斷:span 的 scrollWidth > clientWidth、`text-overflow: ellipsis`、水平有裁切,按鈕右緣到下一個元素之間那條縫**零墨點**。
  *        量的是像素:每列截欄位框(上框線之下 → 外緣下 4px;上框線不截,否則聚焦時那一列也是框色)的圖,(a)在文字寬的範圍裡逐列數「框色像素佔一半以上」的列 = 必須剛好是框外緣往上 2px 那幾列;
  *        (b)在框外緣往上 1.5px 那一列(只有線、沒有框線)找框色像素的左右端 = 文字左右緣(±1px)。
@@ -200,14 +202,17 @@ const GEOMETRY = ({ scope, end, probe }) => {
   const r = (el) => { const x = el.getBoundingClientRect(); return { left: x.left, top: x.top, right: x.right, bottom: x.bottom } }
   const range = document.createRange(); range.selectNodeContents(span)
   const text = range.getBoundingClientRect()
-  const toRgb = (css) => {
+  const toRgba = (css) => {
     const cv = document.createElement('canvas'); cv.width = 1; cv.height = 1
     const cx = cv.getContext('2d'); cx.fillStyle = css; cx.fillRect(0, 0, 1, 1)
-    return [...cx.getImageData(0, 0, 1, 1).data.slice(0, 3)]
+    return [...cx.getImageData(0, 0, 1, 1).data]
   }
-  // 對照用的「線色」:直接讀 token(不經元件),沒聚焦時數「只有線」那一列用
+  const toRgb = (css) => toRgba(css).slice(0, 3)
+  // 對照用的「線色」:直接讀 token(不經元件),沒聚焦時數「只有線」那一列用。連 alpha 一起讀:高對比模式的系統色可能半透明
+  // (2026-11-26 macOS Chromium 實量 Highlight = rgba(5, 0, 73, 0.8)),畫出來的顏色要跟底下那一層合成才是截圖上看到的(見 composite)
   const p = document.createElement('div'); p.style.background = probe; wrap.appendChild(p)
-  const probeRgb = toRgb(getComputedStyle(p).backgroundColor); p.remove()
+  const [pr, pg, pb, probeAlpha] = toRgba(getComputedStyle(p).backgroundColor); p.remove()
+  const probeRgb = [pr, pg, pb]
   // 系統色 Canvas(高對比模式下的底色):Highlight 與它分不出來時,高對比那幾列量不到線 = 儀器失效
   const cvs = document.createElement('div'); cvs.style.background = 'Canvas'; wrap.appendChild(cvs)
   const canvasRgb = toRgb(getComputedStyle(cvs).backgroundColor); cvs.remove()
@@ -217,15 +222,22 @@ const GEOMETRY = ({ scope, end, probe }) => {
     button: r(btn), wrap: r(wrap), span: r(span), arrow: r(arrow), next: next ? r(next) : null,
     text: { left: text.left, right: text.right },
     borderWidth: parseFloat(wcs.borderBottomWidth), radius: parseFloat(wcs.borderBottomLeftRadius) || 0,
-    borderRgb: toRgb(wcs.borderBottomColor), probeRgb, canvasRgb,
+    borderRgb: toRgb(wcs.borderBottomColor), probeRgb, probeAlpha, canvasRgb,
     activeEnd: btn.getAttribute('data-active-end'), focused: document.activeElement === btn,
     scrollWidth: span.scrollWidth, clientWidth: span.clientWidth, textOverflow: scs.textOverflow, overflowX: scs.overflowX,
   }
 }
 
 const near = (a, b) => Math.abs(a - b) <= COLOR_TOLERANCE
-const isColor = (png, i, rgb) => near(png.data[i], rgb[0]) && near(png.data[i + 1], rgb[1]) && near(png.data[i + 2], rgb[2])
+const sameColor = (x, y) => [0, 1, 2].every((k) => near(x[k], y[k]))
+/** rgb 可以是一個顏色或一組顏色(任一個相符就算) */
+const isColor = (png, i, rgb) => (Array.isArray(rgb[0]) ? rgb : [rgb]).some((c) => near(png.data[i], c[0]) && near(png.data[i + 1], c[1]) && near(png.data[i + 2], c[2]))
 const fmt = (n) => Number(n.toFixed(2))
+const fmtRgb = (rgb) => (Array.isArray(rgb[0]) ? rgb : [rgb]).map((c) => `rgb(${c.join(',')})`).join(' / ')
+/** 線色疊在某一層(bg)上「畫出來」的顏色:probe 的 RGBA 照 source-over 合成。不透明(一般主色 / 錯誤紅)時 = probeRgb 本身;
+ *  高對比模式的系統色可能半透明(macOS Chromium 的 Highlight alpha 0.8),線疊在底色上與疊在框線上會是兩個不同的顏色 ——
+ *  只拿去掉 alpha 的 probeRgb 去比,截圖上一個像素都對不到(2026-11-26 第一次實跑 F- 列全紅、「線 (沒有)」的根因)。 */
+const composite = (g, bg) => { const a = g.probeAlpha / 255; return [0, 1, 2].map((k) => Math.round(g.probeRgb[k] * a + bg[k] * (1 - a))) }
 
 /** 截外框(上框線之下 → 外緣下 BELOW_PX),回傳 PNG 與截圖原點(CSS px,整數;外框邊緣必須落在裝置像素格上,浮層裡可能是 .5)。
  *  上框線不截:聚焦時它也是框色,會被 colorRows 數成一列(要的只有下緣那幾列)。起點取 ceil:浮層裡(Calendar 詳情)外框在像素比 2 時
@@ -317,7 +329,8 @@ async function runOnce(dpr, mutate) {
       const idle = async (id, scope, end, probe) => {
         const g = await geo(scope, end, probe)
         const { png, clip } = await shotField(page, g, dpr)
-        const run = colorRun(png, clip, dpr, g.wrap.bottom - 1.5, g.wrap.left + g.radius + g.borderWidth, g.wrap.right - g.radius - g.borderWidth, g.probeRgb)
+        // 「只有線」那一列底下是欄位底色:線色疊在底色上畫出來的顏色(不透明時 = probeRgb)
+        const run = colorRun(png, clip, dpr, g.wrap.bottom - 1.5, g.wrap.left + g.radius + g.borderWidth, g.wrap.right - g.radius - g.borderWidth, composite(g, g.canvasRgb))
         checks.push({ id: tag(`C-${id}-${end}-idle`), kind: 'control', pass: run.n === 0, detail: `沒聚焦時「只有線」那一列線色像素 ${run.n}(應 0)` })
       }
       /** 契約列:線下緣 = 框外緣、粗 2px、線長 = 文字寬、線色 = 框色(高對比模式 = 系統色 Highlight);對照列:箭頭底下只有框寬那一列(高對比:沒有線色) */
@@ -326,10 +339,14 @@ async function runOnce(dpr, mutate) {
         if (how === 'keyboard' && !g.focused) throw new InstrumentError(`${id}:焦點不在 ${end} 端`)
         if (how === 'open' && g.activeEnd !== 'true') throw new InstrumentError(`${id}:點 ${end} 端之後面板沒開在這一端(data-active-end=${g.activeEnd})`)
         // 高對比模式:框色由瀏覽器換掉,線色 = 系統色(probe 讀的就是它的實際 sRGB);它跟底色分不出來就量不到線 —— 儀器失效,不是產品裁決
-        if (forced && [0, 1, 2].every((k) => near(g.probeRgb[k], g.canvasRgb[k]))) {
-          throw new InstrumentError(`${id}:高對比模式下 ${FORCED_LINE} rgb(${g.probeRgb.join(',')}) 與 Canvas rgb(${g.canvasRgb.join(',')}) 分不出來`)
+        // 系統色可能半透明(見 composite):線疊在底色上(只有線那幾列)與疊在框線上(蓋住框線那幾列)畫出來是兩個顏色,兩個都算線色;
+        // 任一個跟它底下那一層分不出來 = 量不到線 = 儀器失效
+        const onCanvas = composite(g, g.canvasRgb), onBorder = composite(g, g.borderRgb)
+        if (forced && (sameColor(onCanvas, g.canvasRgb) || sameColor(onBorder, g.borderRgb))) {
+          throw new InstrumentError(`${id}:高對比模式下 ${FORCED_LINE} rgba(${g.probeRgb.join(',')},${fmt(g.probeAlpha / 255)}) 畫在 Canvas ${fmtRgb(g.canvasRgb)} 上 = ${fmtRgb(onCanvas)}、`
+            + `畫在框線 ${fmtRgb(g.borderRgb)} 上 = ${fmtRgb(onBorder)},與底下那一層分不出來`)
         }
-        const lineRgb = forced ? g.probeRgb : g.borderRgb
+        const lineRgb = forced ? [onCanvas, onBorder] : g.borderRgb
         const { png, clip } = await shotField(page, g, dpr)
         const tx0 = g.text.left, tx1 = Math.min(g.text.right, g.span.right)
         const rows = colorRows(png, clip, dpr, tx0 + 1, tx1 - 1, lineRgb)
@@ -342,7 +359,7 @@ async function runOnce(dpr, mutate) {
         checks.push({ id: tag(`${forced ? 'F' : 'U'}-${id}-${end}-${how}`), kind: 'bar', error, forced, slack: (g.button.right - g.button.left) - (tx1 - tx0),
           pass: rowsOk && lengthOk,
           detail: `${colorName}列 ${JSON.stringify(rows)}(應 ${JSON.stringify(want)} = 框外緣往上 ${SPEC_THICKNESS_PX}px);`
-            + `線 ${run.n ? `${fmt(run.left)}–${fmt(run.right)}` : '(沒有)'} vs 文字 ${fmt(tx0)}–${fmt(tx1)}(按鈕 ${fmt(g.button.left)}–${fmt(g.button.right)});${colorName} rgb(${lineRgb.join(',')})` })
+            + `線 ${run.n ? `${fmt(run.left)}–${fmt(run.right)}` : '(沒有)'} vs 文字 ${fmt(tx0)}–${fmt(tx1)}(按鈕 ${fmt(g.button.left)}–${fmt(g.button.right)});${colorName} ${fmtRgb(lineRgb)}` })
         const ar = colorRows(png, clip, dpr, g.arrow.left + 1, g.arrow.right - 1, lineRgb)
         if (forced) {
           // 對照:箭頭底下沒有線色(線沒伸到箭頭底下;顏色辨認是活的由同一張圖上的契約列證明)

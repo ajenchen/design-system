@@ -8,7 +8,8 @@
  * - Range 作用端那條線(RANGE-FOCUS-BAR(定)2026-11-26;date-picker.spec.md「Active-end 機制」視覺指示,見 RANGE_END_BAR_CLASS 註解):
  *   畫法 = `../Tabs/tabs.tsx` 選中線(`::after` 絕對定位、`after:h-0.5`、壓住下面那條 1px 框線 —— tabs.spec.md「這兩條線視覺上必須是同一條」);
  *   位置 = `tokens/uiSize/uiSize.css` 的 `--field-control-py-{sm,md,lg}` + `--field-border-width`(文字行盒下緣 → 框外緣);
- *   顏色 = 框的同一組顏色 token `--color-primary` / `--color-error`(`../Field/field-wrapper.tsx` 聚焦 `!border-primary`、錯誤 `border-error`)
+ *   顏色 = 框的同一組顏色 token `--color-primary` / `--color-error`(`../Field/field-wrapper.tsx` 聚焦 `!border-primary`、錯誤 `border-error`);
+ *   高對比模式(forced-colors)改用 CSS 系統色 `Highlight`(DS 沒有高對比 token;見 RANGE_END_BAR_CLASS 註解)
  */
 import * as React from 'react'
 import { escapeLayerProps, isEscapeForControl, isEscapeTakenElsewhere } from '@/design-system/lib/overlay-escape'
@@ -926,6 +927,8 @@ const RANGE_END_TEXT_CLASS = 'relative min-w-0 overflow-x-clip text-ellipsis whi
 //     全部讀 token,換尺寸 / 換密度都跟著走,不寫死 px。
 //   · 顏色 = 框當下的顏色:外框掛 `--range-end-bar-color`(一般主色、欄位錯誤時紅,同 field-wrapper.tsx 聚焦 `!border-primary` / 錯誤 `border-error`
 //     那兩個 token);作用端(面板開著那一端 / 鍵盤聚焦那一顆)才把它交給 `--range-end-bar`,其餘時候沒設 = 背景透明、看不到線。
+//     高對比模式(forced-colors)下 background-color 會被強制換成底色(W3C css-color-adjust-1,只有系統色不換),
+//     所以外框在該模式把 `--range-end-bar-color` 換成系統色 `Highlight`(框線在該模式由瀏覽器換成 CanvasText,線用 Highlight 才分得出作用端)。
 //   閘:scripts/datepicker-range-active-underline-invariant.mjs(像素量:線下緣 = 框外緣、線長 = 文字寬、線色 = 框色)。
 const RANGE_END_BAR_CLASS = 'after:absolute after:inset-x-0 after:h-0.5 after:bg-[color:var(--range-end-bar,transparent)]'
 const RANGE_END_BAR_BOTTOM = {
@@ -1287,6 +1290,8 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
               'cursor-pointer',
               // 作用端那條線的顏色 = 這圈框的顏色(見 RANGE_END_BAR_CLASS 註解)
               error ? '[--range-end-bar-color:var(--color-error)]' : '[--range-end-bar-color:var(--color-primary)]',
+              // 高對比模式(forced-colors):背景色會被強制換成底色、線就消失(起訖兩顆又分不出焦點在哪一顆);換成系統色 Highlight 才畫得出來
+              'forced-colors:[--range-end-bar-color:Highlight]',
               className,
             )}
             // 外框的內距與 1px 邊框底下沒有按鈕:指到那裡外框會亮(hover:border-border-hover),2026-09-27 前點下去
