@@ -1,4 +1,5 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
+// code-quality-allow: file-size — Calendar 本體一個函式約 940 行(格陣 roving tabindex、格內導覽、「+N」清單與詳情兩層浮層的焦點交接、ResizeObserver 列數互相讀同一組 state / ref),純搬移降不到 800;拆成 hooks 是重構、不在發版前做(2026-11-27 R8 稽核 E12,記追蹤)。已拆出的:版面 calendar-layout.ts、幾何 calendar-geometry.ts、清單 calendar-more-list.tsx、詳情 calendar-event-detail.tsx。
 import * as React from 'react'
 import { escapeLayerProps, isEscapeForControl } from '@/design-system/lib/overlay-escape'
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
@@ -53,6 +54,7 @@ import {
   type CalendarDetailAnchor,
   type CalendarEventDetail,
   type CalendarEventDetailEntry,
+  type CalendarEventDetailLabels,
   type CalendarEventPatch,
 } from './calendar-event-detail'
 // 詳情時間欄的日期段 = DatePicker 的預設日期寫法(兩位數月日);月格時間的預設 = DS 日期元件共用的時間寫法(12 / 24 跟語系)——
@@ -96,9 +98,9 @@ import { returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
  *   motion.spec.md「hover 回饋不做過渡」;日期格滑過不變色、只有手形游標(calendar.spec.md「Cell 規則」滑過條【CELL-HOVER(定)】)
  * - 格內鍵盤: keyboard-model-canonical.md「焦點放在格上還是格裡的控件上,以及進格用什麼鍵」Calendar 列、「焦點所在的控件自己那一層也算一層」(lib/overlay-escape.ts)
  *
- * ── Implemented scope ──
- * 月 view(toolbar / grid / event tile / today highlight / outside days)。未實作的
- * week/day/size/drag 能力不預佔公開 prop 或 disabled control。
+ * ── 已實作範圍 ──
+ * 月檢視(工具列 / 格陣 / 事件列與跨日長條 / 今天 / 非當月格 / 「+N」與當天清單浮層 / 事件詳情浮層 / 週數欄 / 隱藏週末 / 載入中骨架)。
+ * 未實作的週 / 日 / 議程檢視、size、拖拉不預佔公開參數或停用的控件(calendar.spec.md「四種檢視」)。
  *
  * ── 與 DatePicker 的區分 ──
  * DatePicker 是「選日期」form control;Calendar 是「看事件」page canvas。
@@ -228,7 +230,7 @@ type CalendarEventTileProps =
 // (3) `todayLabel`(工具列「今天」鈕的字)是另一個字串:這裡的 `todayPrefix` 只接在日期停靠點名稱前面,兩者語意不同、不共用。
 
 /** Calendar 的讀屏字串(全部可覆寫;`labels` 以 Partial 傳入、與 DS 預設合併)。 */
-export interface CalendarLabels {
+export interface CalendarLabels extends CalendarEventDetailLabels {
   /** 月格陣(`role="grid"`)的名稱。收到工具列標題同一份月份字(Intl `{ year: 'numeric', month: 'long' }`,zh-TW「2026年7月」)。 */
   grid: (monthTitle: string) => string
   /**
@@ -260,23 +262,7 @@ export interface CalendarLabels {
   more: (fullDate: string, count: number) => string
   /** 「+N」清單浮層右上角 × 的讀屏名稱(calendar.spec.md「A11y 預設」字串可覆寫「清單 / 詳情的關閉」;經 PopoverHeader `closeAriaLabel`) */
   moreListClose: string
-  /** 事件詳情浮層右上角 × 的讀屏名稱(同上「清單 / 詳情的關閉」) */
-  detailClose: string
-  /** 詳情標題(就地編輯)的欄位名稱:讀屏念「編輯 {此字}」、編輯中輸入框的名稱(看得見的是標題本身) */
-  detailTitle: string
-  /** 詳情各欄的標籤(看得見的字,也是該欄的名稱;calendar.spec.md「事件詳情浮層」內文欄位) */
-  detailTime: string
-  detailAllDay: string
-  detailLocation: string
-  /** 地點空著時的佔位字(可編輯時) */
-  detailLocationPlaceholder: string
-  detailDescription: string
-  /** 說明空著時的佔位字(可編輯時) */
-  detailDescriptionPlaceholder: string
-  /** 類別欄的標籤(`eventDetail.categories` 有傳才出現) */
-  detailCategory: string
-  /** 類別空著時的佔位字(可編輯時) */
-  detailCategoryPlaceholder: string
+  // 詳情浮層的 10 個鍵(detailClose … detailCategoryPlaceholder)住 calendar-event-detail.tsx CalendarEventDetailLabels,這裡只繼承、不重抄
 }
 
 // i18n-allow: DS 預設文案(中文);consumer 經 `labels` 覆寫
@@ -409,7 +395,7 @@ interface CalendarOwnProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'o
    */
   moreListMaxHeight?: number | string
   /**
-   * 讀屏字串(格陣名稱、日期停靠點名稱、今天的前綴),預設繁中、逐鍵可覆寫(calendar.spec.md「A11y 預設」字串可覆寫;鍵見 `CalendarLabels`)。
+   * 讀屏字串與浮層字串(格陣、日期停靠點、今天的前綴、事件、「+N」、清單與詳情、週數欄…),預設繁中、逐鍵可覆寫(calendar.spec.md「A11y 預設」字串可覆寫;全部的鍵見 `CalendarLabels`)。
    * 上面那幾個已有個別參數的字串(‹ › 的名稱、月份導覽、「今天」、「新事件」、計數文字)照用那些參數,不在這裡。
    */
   labels?: Partial<CalendarLabels>
@@ -585,12 +571,13 @@ const MonthEventPieceShell = React.forwardRef<HTMLElement, MonthEventPieceShellP
           mode.onEventClick(event, { anchor: e.currentTarget })
         }}
         aria-label={name}
-        // 焦點框往外(全域 :focus-visible):上下是列距 4 / 標題列 / 底部內距,左右是 body 內距 16 → 都 ≥ 4
+        // 焦點框往內(focus-canonical.md「問題二」:淨空 < 4 → 往內):清單只有內文區會捲,標題列在捲動區外、底部內距捲到底才看得到,
+        // 第一列(鍵盤打開清單時焦點落在它)貼著捲動區頂邊 → 淨空 0;往外畫的話上緣被捲動區裁掉(2026-11-27 R8 實量:上緣 0 px 可見)
         // block:列的外框高 = h-tag-md,與字型無關(calendar.spec.md「「+N」清單浮層」高度與捲動的半列原則以列高 24 算)。<button> 預設 inline-block,
         // 放在 listitem 裡會坐在一行文字的基線上,listitem 高 = max(24, 按鈕基線以上 + 那一行字型的下緣),下緣大的字型把每列撐高 ——
         // 2026-11-26 Linux CI 每個有時段列 25(色條是空 span,按鈕基線落在色條底),9 列累積 7px,最後一列切在 5 不是 12(calendar-month ML-rowh / ML-half)。
         // 唯讀列是 div,本來就是 block。
-        className={cn(shape, 'block w-full text-start cursor-pointer')}
+        className={cn(shape, 'block w-full text-start cursor-pointer focus-visible:not-data-pointer-focus:focus-ring-inset')}
       >
         {children}
       </button>
@@ -665,7 +652,7 @@ const MonthEventPieceShell = React.forwardRef<HTMLElement, MonthEventPieceShellP
  * 一段事件:預設長相或 renderEventTile 自訂內容,外層都是 MonthEventPieceShell。預設長相分兩種(calendar.spec.md「事件的兩種長相」【C2】):
  *   長條(全天,或有時段且滿 24 小時;版面 kind 'bar')= 類別淡底 + 標題(滿 24 小時的有時段長條在含真起點的那一段標題前加開始時間);
  *   有時段(未滿 24 小時;kind 'timed')= 透明列 + 左側色條 + 開始時間 + 標題。
- * 截斷 → tooltip 顯完整標題(tooltip.spec.md:32,僅實際截斷時);外層是 interactive host → trigger = 外層本體、量測內層文字 span ——
+ * 截斷 → tooltip 顯完整標題(tooltip.spec.md:30,僅實際截斷時);外層是 interactive host → trigger = 外層本體、量測內層文字 span ——
  * useTruncated 自組 pattern(truncated-text.spec.md「兩層架構(對齊世界級聯集)」;範本 inline-edit.tsx:258 + tag.tsx)。
  */
 function MonthEventPiece({
@@ -1325,8 +1312,8 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
       // tokens/layoutSpace/layoutSpace.css),不是一般元素的 48。放在 {...props} 之前:consumer 改掉外框時可一併改標記。
       data-layout-region="bounded"
       {...props}
-      // 幾何常數設成元件內變數(--calendar-gap / --calendar-text-inset / --calendar-cell-min-h;calendar-geometry.ts)。
-      // consumer 傳的 style 照併進來;這三個名字只有 Calendar 自己讀(元件內變數,不是 token)。
+      // 幾何常數設成元件內變數(--calendar-*,全部住 calendar-geometry.ts CALENDAR_GEOMETRY_STYLE)。
+      // consumer 傳的 style 照併進來;這些名字只有 Calendar 自己讀(元件內變數,不是 token)。
       style={{ ...CALENDAR_GEOMETRY_STYLE, ...style }}
     >
       {/* 工具列 = ChromeHeader(calendar.spec.md「工具列」【AI 推導】):常駐 chrome → B 家族固定高 48 / 56
@@ -1490,7 +1477,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                     'aria-current': isToday ? ('date' as const) : undefined,
                     // roving tabindex:整個格陣只有這一個(= 目前焦點日)進 Tab 序列,其餘 -1。
                     // APG Date Picker Dialog 逐字:「only one button in the calendar grid is in the Tab sequence」。
-                    'data-calendar-day': format(date, 'yyyy-MM-dd'),
+                    'data-calendar-day': iso,
                     tabIndex: isSameDay(date, focusedDate) ? 0 : -1,
                     // 焦點用任何方式落到某一天(Tab 進來 / 滑鼠點 / 程式化)都把停靠點同步過去,
                     // 免得下次 Tab 回來停在別天。
@@ -1733,10 +1720,11 @@ export const calendarMeta = {
 
   },
   // 'active' 移除 — 日期格按壓視覺屬 DateGrid(其 meta 已 −active);nav 按壓屬內嵌 Button(2026-07-07 詞彙統一 DS-wide 按壓訊號盤點:檔內 0 active: utility / 0 *-active token)。
-  states: ['default', 'hover', 'focus-visible', 'disabled'],
+  // 沒有 disabled:Calendar 沒有停用參數(calendar.spec.md「Anatomy N/A rationale」StateBehavior 那條)
+  states: ['default', 'hover', 'focus-visible'],
   tokens: {
     bg: ['bg-muted', 'bg-neutral-hover', 'bg-info', 'bg-surface'],
-    fg: ['text-fg-muted', 'text-foreground', 'text-fg-secondary'],
+    fg: ['text-fg-muted', 'text-foreground', 'text-fg-secondary', 'text-on-emphasis'],
     ring: ['focus-ring-inset', '--ring'],
   },
 } as const

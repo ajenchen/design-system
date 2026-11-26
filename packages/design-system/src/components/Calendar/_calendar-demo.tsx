@@ -7,7 +7,8 @@
 // `productDetail` = 產品自己開詳情(`onEventClick` + 自己的 Popover;展示頁「產品自己的詳情」那一則用)。
 // 唯讀的日期格 / 事件方塊(`readOnlyDates` / `readOnlyEvents`)照樣唯讀 —— 殼只替可點的那一半接上結果。
 import * as React from 'react'
-import { addDays } from 'date-fns'
+import { addDays, format } from 'date-fns'
+import { DEFAULT_DATE_LOCALE } from '@/design-system/lib/date-locale'
 import { MoreVertical, Trash2 } from 'lucide-react'
 import { Calendar, type CalendarCategory, type CalendarEvent, type CalendarProps } from './calendar'
 import { normalizeEvents, parseEventDate } from './calendar-layout'
@@ -40,18 +41,19 @@ type CalendarDemoProps = Omit<CalendarProps, 'onDateClick' | 'onEventClick' | 'e
   productDetail?: boolean
 }
 
-const pad = (n: number) => String(n).padStart(2, '0')
-const isoOf = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-const dayText = (d: Date) => `${d.getMonth() + 1} 月 ${d.getDate()} 日`
+const isoOf = (d: Date) => format(d, 'yyyy-MM-dd')
 /**
- * 產品自己的詳情裡那一行日期:單日「7 月 12 日」;跨日「7 月 20 日 – 7 月 22 日」;全天事件加「· 全天」。
+ * 產品自己的詳情裡那一行日期:單日「7月12日」;跨日「7月20日 – 7月22日」;全天事件加「· 全天」。
+ * 日期寫法與元件事件列的讀屏名稱同一組 Intl 選項({ month: 'long', day: 'numeric' },跟 locale 走;calendar.spec.md「A11y 預設」事件列),
+ * 不自己拼「7 月 12 日」—— 同一頁不出現第三種日期寫法。
  * 畫在哪幾天照元件同一份資料語意(calendar-layout.ts normalizeEvents:end 不含、只有日期 → 全天、未滿 24 小時只算開始那天)。
  */
-const eventWhen = (event: CalendarEvent) => {
+const eventWhen = (event: CalendarEvent, locale: string) => {
   const [entry] = normalizeEvents([event])
   if (!entry) return ''
-  const s = dayText(entry.firstDay)
-  const e = dayText(entry.lastDay)
+  const dayText = new Intl.DateTimeFormat(locale, { month: 'long', day: 'numeric' })
+  const s = dayText.format(entry.firstDay)
+  const e = dayText.format(entry.lastDay)
   return `${s === e ? s : `${s} – ${e}`}${entry.allDay ? ' · 全天' : ''}`
 }
 
@@ -140,7 +142,7 @@ export function CalendarDemo({
               右側、上緣對齊,右邊放不下由 Popover 碰撞翻左;隔多少用 Popover 預設(產品自己的浮層也可以另選,這裡照 DS 的擺法) */}
           <PopoverContent side="right" align="start" onCloseAutoFocus={(e) => returnFocusToOpener(e, anchorRef.current, { noTrigger: true })}>
             <PopoverHeader><PopoverTitle>{openEvent?.title}</PopoverTitle></PopoverHeader>
-            <PopoverBody>{openEvent ? eventWhen(openEvent) : null}</PopoverBody>
+            <PopoverBody>{openEvent ? eventWhen(openEvent, rest.locale ?? DEFAULT_DATE_LOCALE) : null}</PopoverBody>
           </PopoverContent>
         </Popover>
       )}

@@ -44,7 +44,6 @@ const nextMonth = nextMonthStart.getFullYear() + '-' + String(nextMonthStart.get
 // 2026-11-18 前沒傳,畫面是「July 2026」「Sun–Sat」配中文介面 —— 稽核 A113,AGENTS.md「單一檔案不中英夾雜」)。
 // test-only 的鍵盤夾具不是給人看的,照元件預設。
 const LOCALE = 'zh-TW'
-// 一格放不下時最後一列照元件預設「+N」(2026-11-26 起;之前元件預設是英文「+N more」,這裡另傳中文「還有 N 個事件」)
 
 /**
  * 團隊行事曆 — Notion / Google Calendar 替代品情境
@@ -139,7 +138,7 @@ export const ProductOwnDetail: Story = {
     docs: {
       description: {
         story:
-          '產品要顯示自己的事件內容(例:工單系統的工單摘要)時改用 `onEventClick`:點事件時拿到 `{ anchor }` = 被點的那一段 / 那一列,用 DS 的 `Popover` 錨在它上面開。從 7/15 的「+N」清單點事件,清單不關、產品的浮層開在旁邊;產品若用不是 DS 的浮層套件,清單會被關(沒登記的浮層一律不算清單開出來的那一層)。',
+          '產品要顯示自己的事件內容(例:上線項目的負責人與檢查清單)時改用 `onEventClick`;這一則的產品浮層只放標題與日期,示範錨點怎麼接:點事件時拿到 `{ anchor }` = 被點的那一段 / 那一列,用 DS 的 `Popover` 錨在它上面開。從 7/15 的「+N」清單點事件,清單不關、產品的浮層開在旁邊;產品若用不是 DS 的浮層套件,清單會被關(沒登記的浮層一律不算清單開出來的那一層)。',
       },
     },
   },
@@ -150,11 +149,7 @@ export const ProductOwnDetail: Story = {
   ),
 }
 
-/**
- * 產品上線週 — 程式碼凍結三天,上線日一天塞滿 6 件事(發版、客服待命、上線公告、合作夥伴通知、監控輪值、慶功)。
- * 每格放幾列依格高;放不下時最後一列換成「+N」,點它在那一格上展開當天全部事件(清單裡點事件一樣開事件),這一則讓它在畫面上看得到。
- * 開始時間由元件依事件的 start 畫在標題前(「上午10:00 上線公告」),標題裡不另寫時間(2026-11-25 前寫成「上線公告 10:00」)。
- */
+// 產品上線週的資料:程式碼凍結三天,上線日一天塞滿 6 件事;開始時間由元件依 start 畫在標題前,標題裡不另寫時間
 const launchEvents: CalendarEvent[] = [
   // 凍結 7/13–7/15(上線當天解凍):end 不含 → 16
   { id: 'l1', title: '程式碼凍結', start: `${thisMonth}-13`, end: `${thisMonth}-16`, color: 'red', allDay: true },
@@ -169,6 +164,14 @@ const launchEvents: CalendarEvent[] = [
 
 export const LaunchWeek: Story = {
   name: '產品上線週',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '程式碼凍結三天(7/13–7/15),上線日一天塞滿 6 件事:發版、客服待命、上線公告、合作夥伴通知、監控輪值、慶功。每格放幾列依格子高度決定;放不下時最後一列換成「+N」(與事件同高),點它在那一格上展開當天全部事件,清單裡點事件一樣開詳情,不會變成在這天新增。',
+      },
+    },
+  },
   render: () => (
     <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
       <CalendarDemo defaultReferenceDate={now} today={now} events={launchEvents} locale={LOCALE} />
@@ -227,17 +230,17 @@ export const QuarterPlanning: Story = {
 }
 
 /**
- * 內容發佈排程 — Blog / 影片發布月曆
- * 排內容走右上角「新事件」,日子本身不能點來新增 → `readOnlyDates`(格子不亮、日期數字不是按鈕);
- * 已排好的內容點得開 → `onEventClick`。
+ * 內容發佈月曆 — 部落格 / 影片 / Podcast 的發布排程
+ * 排內容走右上角「新事件」,日子本身不能點來新增 → `readOnlyDates`(格子不是點擊目標、游標是箭頭、日期數字不是按鈕);
+ * 已排好的內容點了開內建詳情(`eventDetail`)。
  */
 export const ContentPublishingSchedule: Story = {
   name: '內容發佈月曆',
   render: () => {
-    // 五種內容各一色;只用字與底色對比 ≥ 4.5 的色相(green / orange 事件色的字對比 3.71 / 3.82,不到 WCAG AA 4.5;色票本身怎麼改是 tokens 的題目,不在範例裡處理)
+    // 五種內容各一色;唯一的全天長條(產品發表)用淡底上字對比 ≥ 4.5 的色相(淡底 step-7 的字有 5 個色相不到 4.5,calendar.spec.md 維持清單 U10)
     // 每一則是排定的發布時刻(有時段的零長度);產品發表是一整天的活動(全天,end 不含 → 隔天)
     const events: CalendarEvent[] = [
-      { id: 'p1', title: '週五電子報', start: `${thisMonth}-02T08:00`, end: `${thisMonth}-02T08:00`, color: 'blue' },
+      { id: 'p1', title: '每週電子報', start: `${thisMonth}-02T08:00`, end: `${thisMonth}-02T08:00`, color: 'blue' },
       { id: 'p2', title: '部落格:設計系統 v2', start: `${thisMonth}-07T10:00`, end: `${thisMonth}-07T10:00`, color: 'purple' },
       { id: 'p3', title: 'YouTube:教學影片第 3 集', start: `${thisMonth}-10T18:00`, end: `${thisMonth}-10T18:00`, color: 'red' },
       { id: 'p4', title: 'Podcast:來賓訪談', start: `${thisMonth}-17T07:00`, end: `${thisMonth}-17T07:00`, color: 'turquoise' },
@@ -401,7 +404,7 @@ export const ReadOnlyDatesCustomTileKeyboard: Story = {
   render: () => (
     <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
       <Calendar
-        events={[{ id: 'p1', title: '週五電子報', start: `${thisMonth}-02T08:00`, end: `${thisMonth}-02T08:00`, color: 'blue' }]}
+        events={[{ id: 'p1', title: '每週電子報', start: `${thisMonth}-02T08:00`, end: `${thisMonth}-02T08:00`, color: 'blue' }]}
         defaultReferenceDate={now}
         today={now}
         renderEventTile={(event) => <Tag size="sm">{event.title}</Tag>}
@@ -421,7 +424,7 @@ export const ReadOnlyDatesCustomTileKeyboard: Story = {
     await expect(todayCell).toHaveAttribute('tabindex', '0')
     await expect(todayCell).toHaveAttribute('aria-current', 'date')
     // 外層的讀屏名稱 =「{標題},{開始時間}」(calendar.spec.md「A11y 預設」事件列;自訂內容也一樣,名稱由元件給)
-    const tile = await canvas.findByRole('button', { name: '週五電子報,上午8:00' })
+    const tile = await canvas.findByRole('button', { name: '每週電子報,上午8:00' })
     tile.focus()
     await userEvent.keyboard('{Enter}')
     await expect(customTileActivated).toHaveBeenCalledTimes(1)
@@ -629,8 +632,8 @@ export const EnglishLabelsOverride: Story = {
 }
 
 /**
- * 空行事曆 — 無事件時 calendar 本身是空 canvas,不強制顯示 empty state
- * 第一個事件從右上角「新事件」建立,日子本身不能點來新增 → `readOnlyDates`;之後排進來的事件點得開 → `onEventClick`。
+ * 空行事曆 — 整月沒有事件時月曆就是空白的畫布,不另外放空狀態提示(calendar.spec.md「狀態與邊界案例」沒有事件那條)
+ * 第一個事件從右上角「新事件」建立,日子本身不能點來新增 → `readOnlyDates`;之後排進來的事件點了開內建詳情(`eventDetail`)。
  */
 export const EmptyCalendar: Story = {
   name: '空行事曆',
