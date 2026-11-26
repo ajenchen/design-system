@@ -54,7 +54,7 @@ export const UsageGuidance: Story = {
       <UsageSection kind="whenNot">
         <TriggerRule
           title="❌ 關鍵錯誤 / 警告：用 Alert + Dialog"
-          note="Toast 會自動消失——如果使用者當下沒看到,錯過後無法再看到。關鍵訊息必須 persistent(Alert)或 modal 確認(Dialog)"
+          note="Toast 不能是使用者看到關鍵訊息的唯一途徑:當下沒看到就錯過,後面再來 3 則也會把它藏起來。關鍵訊息要一直看得到(Alert),或擋下來確認(Dialog)"
         >
           <Button
             variant="tertiary"
@@ -72,7 +72,7 @@ export const UsageGuidance: Story = {
 
         <TriggerRule
           title="❌ 需要使用者確認的動作：用 Dialog"
-          note="「是否繼續？」這類必須 modal 才能承載的流程 Toast 無法做——toast 不阻斷且自動消失"
+          note="「是否繼續？」要擋下流程、等使用者回答,Toast 不阻斷;確認也不能只放在一則 Toast 上——錯過就沒有別條路"
         >
           <Button
             variant="tertiary"
@@ -89,6 +89,7 @@ export const UsageGuidance: Story = {
         <TutorialList>
           <li>欄位的驗證錯誤 → 欄位下方的錯誤訊息:Toast 是頁面層級的</li>
           <li>持續存在的系統狀態(方案過期、帳號未驗證)→ Alert:狀態要一直看得到</li>
+          <li>等人處理的事(核准、回覆)本身 → 產品的常駐位置(通知清單 + 鈴鐺數字):Toast 只當入口,唯一的按鈕「查看」帶到處理的地方</li>
         </TutorialList>
       </UsageSection>
 
@@ -204,7 +205,7 @@ export const DurationRule: Story = {
 
       <TutorialRule
         title="❌ 極長 duration（> 15000ms）或 duration=Infinity"
-        note="Toast 長時間停留會堆積,而且使用者注意力已轉移。持久訊息用 Alert,不是 Toast"
+        note="Toast 只顯示最近 3 則:不消失的那則,後面再來 3 則就被藏起來;一直停著也會一直蓋住底下的東西(Toast 不避讓,靠自己消失讓開)。要一直看得到的訊息用 Alert,等人處理的事放產品的常駐位置"
       >
         <ExampleCaption warn>Toast 不該永遠停留——真的需要 persistent 用 Alert</ExampleCaption>
       </TutorialRule>
