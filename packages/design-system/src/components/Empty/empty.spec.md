@@ -85,7 +85,7 @@ Empty 只管**水平居中**。垂直定位由 consumer 的容器決定:
 
 | 容器類型 | 垂直定位 | 做法 |
 |---|---|---|
-| **有框**(Table / Dialog / Card,有明確 border 或 shadow 包圍) | **垂直置中** | 容器 `flex items-center justify-center min-h-[...]` |
+| **有框**(Table / Dialog / Card,有明確 border 或 shadow 包圍) | **垂直置中** | `DialogBody` / `SheetBody` 裡只放一個 Empty 就好,不用寫 class:主體內層撐滿可視高(ScrollArea `fillY` + 內層 `min-h-full`),只放一個 Empty 時由 `layoutSpace.css` 在可視區正中、上下同值(2026-11-27,產品 canary 回報 H10;範例 Dialog 展示「主體只有空狀態」)【AI 推導:既有規則的落地】;其他有框容器 `flex items-center justify-center min-h-[...]` |
 | **無框**(Page section,沒有外框線) | **頂部對齊 + generous padding** | 容器 `py-[calc(var(--layout-space-bottom)*2)]` |
 
 **例外:整頁狀態**(404 / 403,Empty 是 AppShell 主內容區裡唯一的東西)—— 主內容區沒有外框,但照 user 2026-11-26 的選擇垂直置中,不照上表「無框 → 頂部對齊」;見下方「整頁狀態」。

@@ -10,7 +10,7 @@
   "contractDigest": "sha256:2999aed4c75bc36823db0b4ea5729744c0920f74b1cd2b2e1bfb4110dd825ef1",
   "files": [
     {
-      "hash": "sha256:855311382ccd2d01b6858d8ed49b466d41b560a4a0c64a5a9e0318b3a322e91f",
+      "hash": "sha256:2862417aab78f9764cc81f017397f23f918d30fe3d8745454b2eef5d216d34b8",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 59307,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:eb137cf44db0153028d8a6f57a8c4fe365b4d8393b5359c4d5eb1cad9c07e08d",
+      "hash": "sha256:492b17c563951103ff062cbcb58663f566723ac3a11fd7131fec1139a87fb621",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 140204,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:c56f53e39ddcfc289cd73b9bfb946ef976342ca78e47d8b28ebdd27abde3002c",
+  "inputDigest": "sha256:f9e5af366168f2aec4e23368aa5935c2e810f07aa3bc13b13dee35eb6a4dc94a",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:4a7a4e993008fb7b985795e6020c47a78960e663704dcea2276c395d255a3648",
+  "snapshotDigest": "sha256:8b377e21265d496969c2584415ff50bd773fbc632bd1e0c195695ba5d95385f0",
   "sources": [
     {
       "hash": "sha256:f2452198c08c44c99dc7afcfb7f78f834d7cc2a8c97d041571db15779f388c6c",
@@ -654,7 +654,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 220,
-      "hash": "sha256:51eeb7b0b0a4ecfd7640b6974487b5b726bc058ba9e11fde743c21a9eb0343ec",
+      "hash": "sha256:926543c4fcb06e1765856d6eb3b9efabf01e656e1bb810109318bd9c4096a1f1",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2200,7 +2200,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 232,
-      "hash": "sha256:3e5d5bc6f8b35bfc59053b8c30c57d9944e3a0a15b23bba060acd374b58b9638",
+      "hash": "sha256:8a8eb1726f004d6acdaa2ba8b3d7a8b0f115af7eb49e486663b9ca99127a83ed",
       "id": "governance-baseline-authority",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3606,7 +3606,7 @@
         "scripts/generated/"
       ],
       "files": 818,
-      "hash": "sha256:1a612abeebfac4d0ac708d2675c2f827cf3d97f81c126f362c921a5b23de17f7",
+      "hash": "sha256:f41804b8b15c55e95b3bb8abb7f918acddfc4d8edd913e643946e89841562643",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

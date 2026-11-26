@@ -266,11 +266,11 @@ const DialogContent = React.forwardRef<
     ? { maxHeight: heightCap }
     : { height: heightCap, maxHeight: heightCap }
 
-  // AutoFocus canonical(對齊 Material / Polaris / Atlassian)—
-  // 開啟時 focus 落在 body 第一個有意義互動元素(input / button),不是 chrome close X。
-  // 預設 Radix 會 focus first tabbable = close X → Button iconOnly 的 focus-triggered
-  // tooltip 會立即顯示「關閉」,user-hostile。此 callback 攔截:先找 body 第一個
-  // input/textarea/select/button(排除 data-dismiss)focus;找不到就 focus container(不 focus X)。
+  // 開啟落點(順序與理由住 dialog.spec.md「A11y 預設」開啟落點;2026-11-27 H18 寫進規格)—
+  // 預設 Radix 會 focus first tabbable = 標題列的 × → Button iconOnly 的 focus-triggered tooltip 會立即顯示「關閉」,
+  // 所以這裡攔下:(1) body 第一個可用的 input / textarea / select / button(排除 data-dismiss 與停用)→
+  // (2) body 沒有 → 頁尾第一顆可用的按鈕 → (3) 都沒有 → 外框本身(不 focus ×)。兩邊都不可逆的決策框(核准 / 拒絕)
+  // 由 consumer 的 onOpenAutoFocus 先 preventDefault 再自己 focus;2026-11-27 前本段漏寫第 (2) 步(程式一直有)。
   // 2026-10-01:consumer 的 onOpenAutoFocus 不再被 `{...props}` 整支蓋掉 —— 先記開啟者、再跑 consumer 的、consumer 沒擋預設才走 DS 預設落點。
   // 選擇器排除 `aria-disabled="true"`:忙碌 / 握著焦點時被停用的 Button 不轉原生 disabled(button.tsx 可聚焦的停用),不該成為開啟時的落點。
   const handleOpenAutoFocus = (e: Event) => {
@@ -451,10 +451,11 @@ DialogHeader.displayName = "DialogHeader"
 //
 // ── List-as-region 場景(menu group / Cmd+K)──
 // 不再提供 `flush` variant(2026-05-01 移除,先前曾叫 `variant="list"`)。
-// **canonical pattern** = consumer 自管 list outer wrapper + 用 `className` override 撤掉 chrome padding:
+// **canonical pattern** = consumer 自管 list outer wrapper(標 data-layout-region="unbounded")+ 用 `className` 撤掉左右 chrome padding;
+// 上下由容器自己判:清單在最前面 → 頂 0、在最後面 → 底 0(layoutSpace.css;2026-11-27 起頂部也自判,不再寫 !pt-0 / !pb-0):
 // ```tsx
-// <DialogBody className="!px-0 !pt-0 !pb-0">  ← @tabs-content-gap-ok: JSDoc 文件範例(list-as-region canonical,非 tabs !pt-0 hack)
-//   <div className="py-2">  {/* list outer wrapper 自帶 py-2(menu group canonical)*/}
+// <DialogBody className="!px-0">
+//   <div data-layout-region="unbounded" className="py-2">  {/* list outer wrapper 自帶 py-2(menu group canonical)*/}
 //     {items.map(item => <MenuItem className="px-[var(--layout-space-loose)] rounded-md" />)}
 //   </div>
 // </DialogBody>
@@ -471,8 +472,9 @@ const DialogBody = React.forwardRef<
   HTMLDivElement,
   React.ComponentPropsWithoutRef<typeof ScrollArea>
 >(({ className, children, ...props }, ref) => (
-  <ScrollArea fillX ref={ref} data-dialog-body className="flex-1 min-h-0" {...props}>
-    <div data-layout-body="fill" className={cn("px-[var(--layout-space-loose)]", className)}>
+  // fillY + 內層 min-h-full(2026-11-27 H10):內層至少撐滿主體可視高(仍是 block,內容從頂端排、捲動量不變);只放一個 Empty 時 layoutSpace.css 讓它在可視區正中
+  <ScrollArea fillX fillY ref={ref} data-dialog-body className="flex-1 min-h-0" {...props}>
+    <div data-layout-body="fill" className={cn("min-h-full px-[var(--layout-space-loose)]", className)}>
       {children}
     </div>
   </ScrollArea>

@@ -101,7 +101,7 @@ ScrollArea 用 Radix 自訂 overlay 捲軸 → **跨 OS 一致、不吃寬度、
 Radix primitive + 本 DS a11y 橋接:
 
 - **鍵盤捲動**:本 DS 在 Viewport 加 `tabIndex={0}`(預設)使其可被鍵盤聚焦(Radix 不自動把 scroll container 標 focusable,Safari 尤其需要;此即 axe `scrollable-region-focusable` fix)。聚焦後 `ArrowUp/Down/Left/Right` / `PageUp/Down` / `Home/End` 捲動為瀏覽器原生行為,非 Radix 提供。**`viewportTabIndex={-1}` opt-out(2026-07-14)**:內容已有自帶 focusable + 鍵盤處理的元素(如 TimePicker `role="listbox"` `tabIndex={0}`)時傳 `-1`,消除「Viewport+內容雙 tab stop、焦點落 Viewport 時方向鍵觸發原生捲動非元件行為」;axe 由內部 focusable 內容滿足。**`viewportTabIndex={null}` composite opt-out(2026-07-31)**:ScrollArea 被 `role="menu"` 等 ARIA composite 當純結構 wrapper、鍵盤與 focus 由其 item family own 時,完全省略 viewport `tabindex`;`-1` 仍會留下 `div[tabindex]`,不能滿足 composite 的 required-children 結構
-- **Focus 可見**:聚焦的 Viewport 顯示 DS 焦點框(`focus-visible:focus-ring-inset`,往內 2px),非瀏覽器原生 focus ring(2026-09-24 訂正,原 `focus-visible:outline-ring` 是已退役的手寫 outline 寫法,`scroll-area.tsx:69` 實為 `focus-ring-inset`)
+- **Focus 可見**:聚焦的 Viewport 顯示 DS 焦點框(`focus-visible:focus-ring-inset`,往內 2px),非瀏覽器原生 focus ring(2026-09-24 訂正,原 `focus-visible:outline-ring` 是已退役的手寫 outline 寫法,`scroll-area.tsx:73` 實為 `focus-ring-inset`)
 - **Scrollbar 非 tab stop**:scrollbar thumb 不搶焦點,使用鍵盤的使用者透過 viewport 捲動(Radix 內建)
 - **Pointer 支援**:thumb 可拖曳,track 可 click-to-jump(Radix 內建)(例外:Sidebar 收成細列時軌道不接指標、只有 thumb 接,`../Sidebar/sidebar.spec.md`「收起後的寬」)
 
@@ -137,6 +137,8 @@ ScrollArea 是**捲動容器 primitive**,本身**無互動狀態**(見「邊界�
 ## Radix Viewport `display:table` 陷阱 + `fillX`(2026-07-08 WM 戰役 codify)
 
 Radix Viewport 內建 wrapper `min-width:100%; display:table`——這是**水平捲動的 min-content 溢出機制**,但對「垂直捲動容器內的多欄 flex 佈局」是陷阱:內容以 max-content 佈局突破 100% 寬(WM 兩欄 dialog 右欄被裁 33px 實證)。垂直捲動場景 opt-in `fillX` prop 中和為 block/w-full;**水平捲動勿開**。DialogBody 已預設開啟。
+
+**`fillY`(2026-11-27,產品 canary 回報 H10)**:同一個包層的高只跟內容一樣高,捲動區裡的內容少時,下面那一截不屬於任何元素 —— 對話框主體裡單獨放一個 `Empty` 就沒辦法在可視區正中(`../Empty/empty.spec.md`「垂直定位」有框 → 垂直置中)。`fillY` 把包層改成單格 grid、至少撐滿可視高(`min-height: 100%`;只有 min-height 時 grid 仍把 auto 列撐到那個高,CSS Grid「Stretch auto Tracks」<https://www.w3.org/TR/css-grid-1/#algo-stretch>),裡面那一層被拉到同高;內容比可視區高時照常長高、照常捲,內容仍從頂端排起,其他畫面不變。`DialogBody` / `SheetBody` 預設開啟(內層另加 `min-h-full`);**水平捲動勿開**(同 `fillX`)。兩個都開時包層取 grid、寬度照 `fillX`(`minmax(0, 1fr)` 一欄)。
 
 ## 相關
 

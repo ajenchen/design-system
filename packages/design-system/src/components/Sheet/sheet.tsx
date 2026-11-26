@@ -242,8 +242,8 @@ SheetHeader.displayName = "SheetHeader"
 // data-sheet-body:讓 SheetContent onOpenAutoFocus 找得到 body 第一個互動元素
 //
 // ── List-as-region 場景(menu / nav / settings list)──
-// 不再提供 `flush` variant(2026-05-01 移除)。canonical = consumer 用 className override:
-// `<SheetBody className="!px-0 !pt-0 !pb-0"><div className="py-2">{items}</div></SheetBody>`  ← @tabs-content-gap-ok: JSDoc 文件範例(list-as-region canonical,非 tabs !pt-0 hack;對齊 dialog.tsx 同款 marker)
+// 不再提供 `flush` variant(2026-05-01 移除)。canonical = consumer 撤左右、清單外框標 unbounded,上下由容器自己判成 0(2026-11-27 起頂部也自判):
+// `<SheetBody className="!px-0"><div data-layout-region="unbounded" className="py-2">{items}</div></SheetBody>`(同 DialogBody 註解)
 // 詳 DialogBody comment + `tokens/layoutSpace/layoutSpace.spec.md`「List-as-region in overlay body」
 // `className` forward 到 **inner content div**(非外層 ScrollArea wrapper)——
 // consumer `<SheetBody className="flex flex-col gap-X">` 期望作用於 children 排列;
@@ -252,8 +252,9 @@ const SheetBody = React.forwardRef<
   HTMLDivElement,
   React.ComponentPropsWithoutRef<typeof ScrollArea>
 >(({ className, children, ...props }, ref) => (
-  <ScrollArea ref={ref} data-sheet-body className="flex-1 min-h-0" {...props}>
-    <div data-layout-body="fill" className={cn("px-[var(--layout-space-loose)]", className)}>
+  // fillY + 內層 min-h-full(2026-11-27 H10,同 DialogBody):內層至少撐滿主體可視高;只放一個 Empty 時 layoutSpace.css 讓它在可視區正中
+  <ScrollArea fillY ref={ref} data-sheet-body className="flex-1 min-h-0" {...props}>
+    <div data-layout-body="fill" className={cn("min-h-full px-[var(--layout-space-loose)]", className)}>
       {children}
     </div>
   </ScrollArea>

@@ -1,7 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { ChevronUp, ChevronDown, MoreVertical, User, Bell, Palette, Globe } from 'lucide-react'
+import { ChevronUp, ChevronDown, MoreVertical, User, Bell, Palette, Globe, SearchX } from 'lucide-react'
 import {
   Dialog, DialogTrigger, DialogContent, DialogHeader, DialogBody, DialogFooter, DialogTitle, DialogClose,
 } from './dialog'
@@ -13,6 +13,7 @@ import { Input } from '@/design-system/components/Input/input'
 import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
+import { Empty } from '@/design-system/components/Empty/empty'
 import { Switch } from '@/design-system/components/Switch/switch'
 import { Command, CommandList, CommandGroup, CommandItem } from '@/design-system/components/Command/command'
 import { DataTable, type DataTableColumnDef } from '@/design-system/components/DataTable/data-table'
@@ -305,13 +306,14 @@ function LongMemberListDialog({ initiallyOpen = false }: { initiallyOpen?: boole
         <DialogHeader>
           <DialogTitle>成員列表</DialogTitle>
         </DialogHeader>
-        {/* Body 放 list canonical(2026-05-01):body 撤 chrome padding(`!px-0 !pt-0 !pb-0`)+ list outer
+        {/* Body 放 list canonical(2026-05-01):body 撤左右 chrome padding(`!px-0`)+ list outer
             wrapper 自帶 `py-2`(menu group 8px breathing)+ item 自帶 `px-loose`(前緣對齊 header 標題)。
+            上下:清單外框標 data-layout-region="unbounded",body 頂與底由容器自己判成 0(layoutSpace.css;2026-11-27 起頂部也自判,不再寫 !pt-0 / !pb-0)。
             成員列不可點,沒有 hover 底色(overlay-surface.spec.md:底色有無不是 List-as-region 的判定條件)。
             26 筆(MEMBERS 全名冊)超出 viewport → 驗證預設高度(填滿)+ body 區捲動。 */}
-        <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
+        <DialogBody className="!px-0">
           {/* @layout-space-magic-ok: List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:98「list outer wrapper 自帶 `py-2`」;Dialog body 的 padding 由 overlay-surface 擁有,dialog.spec.md「結構」) */}
-          <div role="list" className="flex flex-col py-2">
+          <div role="list" data-layout-region="unbounded" className="flex flex-col py-2">
             {MEMBERS.map((m, i) => (
               <MemberRow key={m.empNum} member={m} index={i} />
             ))}
@@ -344,13 +346,14 @@ export const Destructive = {
         <DialogTrigger asChild>
           <Button variant="secondary" danger>刪除專案</Button>
         </DialogTrigger>
-        {/* 確認刪除:單一決策的確認框,開啟期間內容高度不會變 → hug(spec「高度軸」判準);只有一件事 → sm(spec「寬度檔位」) */}
-        <DialogContent height="hug" width="sm">
+        {/* 確認刪除:單一決策的確認框,開啟期間內容高度不會變 → hug(spec「高度軸」判準);只有一件事 → sm(spec「寬度檔位」);
+            後果句綁成說明(aria-describedby,讀屏開啟時連同標題念出;dialog.spec.md「A11y 預設」確認框的後果句) */}
+        <DialogContent height="hug" width="sm" aria-describedby="destructive-delete-project-consequence">
           <DialogHeader>
             <DialogTitle>是否刪除專案</DialogTitle>
           </DialogHeader>
           <DialogBody>
-            <p className="text-body">確定要刪除「Q3 設計改版」?刪除後無法復原。</p>
+            <p id="destructive-delete-project-consequence" className="text-body">確定要刪除「Q3 設計改版」?刪除後無法復原。</p>
           </DialogBody>
           <DialogFooter>
             <DialogClose asChild>
@@ -389,8 +392,9 @@ function TagPickerDialog() {
         <DialogHeader>
           <DialogTitle>選擇標籤</DialogTitle>
         </DialogHeader>
-        <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
-          {/* 小 item 純文字 label → 選單列(世界級 Linear Cmd+K / Polaris OptionList /
+        <DialogBody className="!px-0">
+          {/* 上下:CommandList 自帶邊緣標記 unbounded,body 頂與底由容器自己判成 0(layoutSpace.css;頂部判法略過 cmdk 的讀屏標籤),只撤左右。
+              小 item 純文字 label → 選單列(世界級 Linear Cmd+K / Polaris OptionList /
               Atlassian Modal+Menu 共通 pattern:menu-like 內容在 dialog 內用 menu primitive)。
               容器用 Command(cmdk)而不是裸 MenuItem + `role="list"`:
               menu-item.spec.md「何時用 / 何時不用」禁止裸用 MenuItem(會失去鍵盤與焦點管理),而且 MenuItem 帶
@@ -441,9 +445,10 @@ function ListBodyDialogs({ membersOpen = false }: { membersOpen?: boolean }) {
           <DialogHeader>
             <DialogTitle>成員列表</DialogTitle>
           </DialogHeader>
-          <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
+          {/* 清單外框標 data-layout-region="unbounded":body 頂與底由容器自己判成 0(layoutSpace.css),只撤左右(列自帶 px-loose) */}
+          <DialogBody className="!px-0">
             {/* @layout-space-magic-ok: List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:98「list outer wrapper 自帶 `py-2`」;Dialog body 的 padding 由 overlay-surface 擁有,dialog.spec.md「結構」) */}
-            <div role="list" className="flex flex-col py-2">
+            <div role="list" data-layout-region="unbounded" className="flex flex-col py-2">
               {MEMBERS.slice(0, 6).map((m, i) => (
                 <MemberRow key={m.empNum} member={m} index={i} />
               ))}
@@ -483,6 +488,43 @@ export const ListBody = {
     },
   },
   render: () => <ListBodyDialogs />,
+}
+
+// 主體只有空狀態(2026-11-27,產品 canary 回報 H10):從分享連結打開一筆已經不存在的任務(Jira / Linear 打開已刪除的議題連結時的「找不到」)。
+// 主體只放一個 Empty、不寫任何 class:DialogBody 內層撐滿主體可視高(ScrollArea fillY + 內層 min-h-full),由 layoutSpace.css 讓它在可視區正中、上下同值
+// (empty.spec.md「垂直定位」有框 → 垂直置中;垂直置中的狀態不套規則 4 的結論留白)。高度用預設 fill:同一個對話框找得到時換成任務內容(dialog.spec.md「高度軸」)。
+// 沒有可做的事 → 頁尾只有「關閉」;開啟時焦點落在它(dialog.spec.md「A11y 預設」開啟落點)。閘:header-first-gap 的 dialog-empty-centered。
+function TaskNotFoundDialog() {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="tertiary">開啟分享連結 WM-208</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>WM-208</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <Empty icon={SearchX} title="找不到這個任務" description="它可能已被刪除,或你沒有這個專案的存取權限" />
+        </DialogBody>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="tertiary">關閉</Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+export const EmptyBody = {
+  name: '主體只有空狀態',
+  parameters: {
+    docs: {
+      description: { story: '從分享連結打開一筆已經不存在的任務。主體只放一個 `Empty` 就好:對話框主體撐滿可用高度,空狀態自動在正中,不用另外寫置中的 class。' },
+    },
+  },
+  render: () => <TaskNotFoundDialog />,
 }
 
 // 標頭操作(actions slot,2026-07-08 WM 戰役 codify — 關閉鈕分隔線 SSOT 化)
@@ -962,12 +1004,12 @@ export const OpenSnapshot = {
       <DialogTrigger asChild>
         <Button>打開 Dialog</Button>
       </DialogTrigger>
-      <DialogContent height="hug" width="sm">
+      <DialogContent height="hug" width="sm" aria-describedby="open-snapshot-delete-consequence">
         <DialogHeader>
           <DialogTitle>確認刪除專案</DialogTitle>
         </DialogHeader>
         <DialogBody>
-          <p className="text-body">這個操作無法復原。專案內的所有 task、討論與附件都會被永久刪除。</p>
+          <p id="open-snapshot-delete-consequence" className="text-body">這個操作無法復原。專案內的所有 task、討論與附件都會被永久刪除。</p>
         </DialogBody>
         <DialogFooter>
           <DialogClose asChild>

@@ -42,13 +42,17 @@ const ScrollArea = React.forwardRef<
      *  右欄被裁 33px 實證)。垂直捲動場景 opt-in 此 prop 中和為 block/w-full(水平捲動
      *  場景勿開 — table wrapper 是其 min-content 溢出機制)。 */
     fillX?: boolean
+    /** 2026-11-27(H10):內建包層至少撐滿可視高(包層 `min-height: 100%`、單格 grid,裡面那一層被拉到同高;內容比可視區高時照常長高、照常捲)。
+     *  給「內容少時也要用到整個可視高」的捲動區:DialogBody / SheetBody 開著 —— 主體只放一個 Empty 時才能在可視區正中(empty.spec.md「垂直定位」有框 → 垂直置中)。
+     *  只改包層的高,內容仍從頂端排起、捲動量不變,其他畫面不變。水平捲動場景勿開(同 fillX 的理由)。 */
+    fillY?: boolean
     /** Viewport tabIndex(預設 0 = axe scrollable-region-focusable fix)。內容已有自帶
      *  focusable 元素(如 TimePicker role=listbox tabIndex=0)時傳 -1 消除雙 tab stop。
      *  當 ScrollArea 是 ARIA composite(role=menu 等)的純結構 wrapper 時傳 null,完全省略
      *  tabindex,避免在 composite 直屬樹插入不合法的可聚焦 generic div。 */
     viewportTabIndex?: 0 | -1 | null
   }
->(({ className, children, fillX, viewportTabIndex = 0, ...props }, ref) => (
+>(({ className, children, fillX, fillY, viewportTabIndex = 0, ...props }, ref) => (
   <ScrollAreaPrimitive.Root
     ref={ref}
     className={cn('relative flex flex-col overflow-hidden', className)}
@@ -68,6 +72,11 @@ const ScrollArea = React.forwardRef<
       className={cn(
         'flex-1 min-h-0 w-full rounded-[inherit] focus-visible:focus-ring-inset',
         fillX && '[&>div]:!block [&>div]:!w-full [&>div]:!min-w-0',
+        // fillY:包層改單格 grid + 至少撐滿可視高 —— grid 在只有 min-height 時仍把 auto 列撐到那個高(CSS Grid「Stretch auto Tracks」:
+        // 「If the free space is indefinite, but the grid container has a definite min-width/height, use that size」,
+        // https://www.w3.org/TR/css-grid-1/#algo-stretch),裡面那一層照預設 stretch 拉滿;欄寫 minmax(0,1fr) = 與 fillX 同寬(不以 max-content 撐寬)。
+        // 排在 fillX 之後:兩個都開時 display 取 grid(tailwind-merge 取後者)
+        fillY && '[&>div]:!grid [&>div]:!w-full [&>div]:!min-w-0 [&>div]:!min-h-full [&>div]:grid-cols-[minmax(0,1fr)]',
       )}
     >
       {children}

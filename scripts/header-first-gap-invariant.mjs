@@ -130,6 +130,9 @@ export const CASES = [
   // ── 元件自己給的頂部內距(DialogBody / SheetBody / SurfaceBody / FileViewer 資訊面板 / Popover 清單即區域)
   { id: 'fileviewer-info-panel', story: `${C}fileviewer-展示--open-snapshot`, header: 'aside header', waitFor: 'button[aria-label="展開詳細資訊面板"]', steps: [{ clickSelector: 'button[aria-label="展開詳細資訊面板"]', waitFor: 'aside textarea' }], role: 'element', src: `${DS}components/FileViewer/file-viewer.tsx#InfoPanel`, label: 'FileViewer 資訊面板 → 說明欄位(規格範例 3)' },
   { id: 'dialog-body', story: `${C}dialog-展示--open-snapshot`, header: SURFACE_HEADER, waitFor: '[role="dialog"] p', role: 'element', src: `${DS}components/Dialog/dialog.tsx#DialogBody`, label: 'Dialog → 內文第一段' },
+  // 主體只有空狀態(2026-11-27,產品 canary 回報 H10;empty.spec.md「垂直定位」有框 → 垂直置中):DialogBody 內層撐滿可視高(ScrollArea fillY + min-h-full),
+  // 只放一個 Empty 時由 layoutSpace.css 置中、上下同值 → 標頭底 → 空狀態頂 = 空狀態底 → 頁尾頂(= Empty 中心在主體可視區正中)。讀者 story 按了才開(D2 甲),steps 點觸發鈕
+  { id: 'dialog-empty-centered', story: `${C}dialog-展示--empty-body`, header: SURFACE_HEADER, waitFor: '#storybook-root button', steps: [{ click: '開啟分享連結 WM-208', waitFor: '[role="dialog"] [data-empty]' }], role: 'element', centered: true, nextBlock: '頁尾', src: `${DS}components/Dialog/dialog.stories.tsx#TaskNotFoundDialog`, label: 'Dialog 主體只有空狀態 → Empty(在主體可視區正中:標頭底 → 空狀態頂 = 空狀態底 → 頁尾頂)' },
   { id: 'sheet-body', story: `${C}sheet-展示--open-snapshot`, header: SURFACE_HEADER, waitFor: '[role="dialog"] label', role: 'element', src: `${DS}components/Sheet/sheet.tsx#SheetBody`, label: 'Sheet → 第一個欄位' },
   { id: 'surface-body', story: 'design-system-internal-patterns-overlay-surface--three-part-structure', header: SURFACE_HEADER, waitFor: '[data-slot="surface-body"] p', role: 'element', src: `${DS}patterns/overlay-surface/overlay-surface.tsx#SurfaceBody`, label: 'SurfaceHeader / Body / Footer 三段 → 內文第一段' },
   { id: 'header-anatomy-surface', story: 'design-system-patterns-header-anatomy--overview', header: SURFACE_HEADER, waitFor: '[data-slot="surface-body"] dl', role: 'element', src: `${DS}patterns/overlay-surface/overlay-surface.tsx#SurfaceBody`, label: 'Header 元件總覽 SurfaceHeader → DescriptionList' },
@@ -287,8 +290,13 @@ function selftest() {
   // 下一段量不到 / 缺 → 儀器失效;登記必須是 centered
   const EMPTY = 'agentpanel-new-conversation'
   const FULL = ['appshell-full-page-404', 'appshell-full-page-403']
+  const DIALOG_EMPTY = 'dialog-empty-centered'
   const centeredIds = CASES.filter((c) => c.centered).map((c) => c.id).sort()
-  expect(JSON.stringify(centeredIds) === JSON.stringify([EMPTY, ...FULL].sort()), `置中的格目前只有 ${EMPTY} 與整頁 404 / 403 兩格(新增置中的格要在這裡補對照),實得 ${centeredIds.join(', ')}`)
+  expect(JSON.stringify(centeredIds) === JSON.stringify([EMPTY, ...FULL, DIALOG_EMPTY].sort()), `置中的格目前只有 ${EMPTY}、整頁 404 / 403 兩格與 ${DIALOG_EMPTY}(新增置中的格要在這裡補對照),實得 ${centeredIds.join(', ')}`)
+  // 對話框主體只有空狀態(2026-11-27 H10):修前內層只有內容高 → 空狀態貼頂(標頭底 → 空狀態頂 = tight 12;空狀態底 → 頁尾頂 = 剩下的)必紅;上下同值綠。真建置的對照在 (d)
+  const dlgStuck = judge([{ ...centeredRow(DIALOG_EMPTY, 'md', 12, 560), afterWhat: '頁尾' }])
+  expect(dlgStuck.length === 1 && dlgStuck[0].includes('在可用範圍正中') && !dlgStuck[0].includes(INSTRUMENT_FAIL_MARKER), `對話框空狀態貼頂應紅(不是儀器失效),實得 ${JSON.stringify(dlgStuck)}`)
+  expect(judge([{ ...centeredRow(DIALOG_EMPTY, 'md', 286, 286), afterWhat: '頁尾' }]).length === 0, '對話框空狀態在主體可視區正中(上下相等)應綠')
   const a5Empty = judge([centeredRow(EMPTY, 'md', 308.5, 344.5), centeredRow(EMPTY, 'lg', 300.5, 332.5)])
   expect(a5Empty.length === 2 && a5Empty.every((s) => s.includes('在可用範圍正中') && !s.includes(INSTRUMENT_FAIL_MARKER)) && a5Empty.some((s) => s.includes('差 -36')) && a5Empty.some((s) => s.includes('差 -32')),`空白頁不在可用範圍正中(A5 建置實測)應兩密度都紅,實得 ${JSON.stringify(a5Empty)}`)
   expect(judge([centeredRow(EMPTY, 'md', 326.5), centeredRow(EMPTY, 'lg', 316.5)]).length === 0, '空白頁在可用範圍正中(上下相等)應綠')
@@ -689,6 +697,24 @@ async function selftestFullPage() {
       const restored = await measureNow()
       expect(restored.length === 0, `${where} 還原後應綠,實得 ${plain(restored)}`)
       console.log(`  (d) ${where}:現況綠 / 貼頂紅 ${stuckTop.length} 筆 / h1 換成 div 紅 / 藏起動作紅 / 還原綠`)
+    }
+    // 對話框主體只有空狀態(2026-11-27 H10):同一頁先量現況(綠),再拿掉「內層撐滿可視高」(ScrollArea fillY 的包層 min-height 與內層 min-h-full)
+    // = 修前形狀:內層只有內容高、空狀態貼著主體頂 → 必須紅「在可用範圍正中」、不判儀器失效;還原後綠
+    for (const c of CASES.filter((x) => x.id === 'dialog-empty-centered')) {
+      const density = 'md'
+      const where = `${c.id} @${density}`
+      const opened = await openCase(page, server.origin, c, density)
+      if (opened) { expect(false, `${where} 開不起來:${opened.err}`); continue }
+      const measureNow = async () => judge([{ id: c.id, density, declared: c.role, ...(await probeCase(page, c)) }]).filter((s) => !s.includes('密度沒套上'))
+      const now = await measureNow()
+      expect(now.length === 0, `${where} 現況應綠,實得 ${plain(now)}`)
+      await page.addStyleTag({ content: '[data-dialog-body] [data-radix-scroll-area-viewport] > div, [data-dialog-body] [data-layout-body] { min-height: 0 !important }' }).then((h) => h.evaluate((el) => el.setAttribute('data-selftest-d', '')))
+      const noFill = await measureNow()
+      expect(noFill.length > 0 && noFill.every((s) => !s.includes(INSTRUMENT_FAIL_MARKER)) && noFill.some((s) => s.includes('在可用範圍正中')), `${where} 拿掉內層撐滿應紅「在可用範圍正中」、不判儀器失效,實得 ${plain(noFill)}`)
+      await page.evaluate(() => document.querySelectorAll('[data-selftest-d]').forEach((el) => el.remove()))
+      const restored = await measureNow()
+      expect(restored.length === 0, `${where} 還原後應綠,實得 ${plain(restored)}`)
+      console.log(`  (d) ${where}:現況綠 / 拿掉內層撐滿紅 ${noFill.length} 筆 / 還原綠`)
     }
   } catch (error) {
     if (!(error instanceof StoryRenderInstrumentError)) throw error

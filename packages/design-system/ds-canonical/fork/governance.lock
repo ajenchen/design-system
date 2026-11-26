@@ -815,7 +815,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_tabs_content_chrome_body_double_gap.sh",
-      "sha256": "931ef010f92e773fcac9ef26440f3d7fbd42d6933d6ab4f305f1743a7462b939",
+      "sha256": "242ee109d7a97a7efc9cd33c0d09ca81d540588e131e6a4d61d49a1ec593ed56",
       "source": "check_tabs_content_chrome_body_double_gap.sh",
       "classification": "SHIP_AS_IS",
       "destination": null

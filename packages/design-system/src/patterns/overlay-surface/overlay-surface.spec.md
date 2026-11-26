@@ -95,7 +95,7 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 
 當 overlay body(Dialog / Sheet / Popover)**內容是一個 unbounded list**(contact picker / settings menu / command palette / nav)時 — body 不該有 chrome padding,讓 list 自管視覺節奏。
 
-**判定條件(唯一)**:body 撤掉 chrome padding(`!px-0 !pt-0 !pb-0`)+ list outer wrapper 自帶 `py-2` + item 自帶 `px-loose`。(2026-11-17:list outer wrapper 帶 `data-layout-region="unbounded"` 時,body 底部 0 由容器自己給 —— `layoutSpace.spec.md` 規則 4「容器自己判」;頂部仍要撤,頂部自判未做。)三件事全成立即是 List-as-region。**item 用不用 `MenuItem`、有沒有 hover 底色,都不是判定條件** —— hover / focus / selected 屬 state 視覺,跟隨永久視覺層分類,不獨立觸發分類(同向旁證:`../element-anatomy/item-anatomy.spec.md`「連續 item 貼邊合法性」段落的 state-follows-permanent-layer 原則;該段本身管的是相鄰 item 的 gap,不是本判定條件,故只作旁證不作條文)。
+**判定條件(唯一)**:body 撤掉左右 chrome padding(`!px-0`)+ list outer wrapper 自帶 `py-2`(並標 `data-layout-region="unbounded"`)+ item 自帶 `px-loose`。上下由容器自己給:清單在 body 最前面 → 頂 0、在最後面 → 底 0(`layoutSpace.spec.md` 規則 2 / 規則 4「容器自己判」;判法最多穿過兩層沒有標記的包層)。2026-11-17 起底部自判、**2026-11-27 起頂部也自動判斷**(產品 canary 回報 H4:修前頂部要 consumer 寫 `!pt-0`,而 tabs 檢查 Check 3(a) 見 `!pt-0` 就擋 —— 照規格寫必被擋),不再寫 `!pt-0` / `!pb-0`。三件事全成立即是 List-as-region。**item 用不用 `MenuItem`、有沒有 hover 底色,都不是判定條件** —— hover / focus / selected 屬 state 視覺,跟隨永久視覺層分類,不獨立觸發分類(同向旁證:`../element-anatomy/item-anatomy.spec.md`「連續 item 貼邊合法性」段落的 state-follows-permanent-layer 原則;該段本身管的是相鄰 item 的 gap,不是本判定條件,故只作旁證不作條文)。
 
 ### 為什麼**不**做成 body variant(`flush`)
 
@@ -103,13 +103,13 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 
 1. **Variant 不解決底層脆弱**:flush 只省一行 chrome padding override;consumer 仍要管 list outer `py-2` + item `px-loose rounded-md` — 加 1 row search/banner 就破功(body 反而沒 chrome padding,更難排版)。容器自判(2026-11-17,`data-layout-body`)不是 variant:看的是最後一個東西,清單後面多一列就自動回到那一列的值,不會破功。
 2. **世界級主流不做 universal flush**:Material M3 / Atlassian Dialog / Mantine Modal / shadcn Dialog 都讓 consumer 用 className override 處理。Polaris 有 flush API 但 scope 極窄(只 ResourceList in Modal)。Mainstream 把這個 case 歸 consumer 自管。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
-3. **Single API surface**:body 一律 chrome padded,list-only 場景用 `className="!px-0 !pt-0 !pb-0"` override + 自管 list outer wrapper — surface 概念清楚,不雙路徑。
+3. **Single API surface**:body 一律 chrome padded,list-only 場景用 `className="!px-0"` 撤左右 + 自管 list outer wrapper(標 `data-layout-region="unbounded"`,上下由容器自判成 0)— surface 概念清楚,不雙路徑。
 
 ### Canonical pattern
 
 ```tsx
-<DialogBody className="!px-0 !pt-0 !pb-0">    {/* body 撤 chrome padding */}
-  <div className="py-2">                       {/* list outer wrapper:menu group 8px breathing */}
+<DialogBody className="!px-0">                          {/* body 撤左右 chrome padding;上下由容器自判(清單在頭 / 尾 → 0)*/}
+  <div data-layout-region="unbounded" className="py-2">  {/* list outer wrapper:menu group 8px breathing */}
     {items.map(item => (
       <MenuItem key={item.id} className="px-[var(--layout-space-loose)]">{item.label}</MenuItem>
       // Family 2 row 請直接消費 item-anatomy primitives；utility 組合由其 source 擁有。
@@ -157,8 +157,8 @@ search 列放 body 外(不跟清單捲),自帶 `px-loose pt-tight`、下方不�
 <div className="shrink-0 px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)]">  {/* search 列:body 外、不捲 */}
   <Input search />
 </div>
-<DialogBody className="!px-0 !pt-0 !pb-0">  {/* body 撤 chrome padding */}
-  <div className="py-2">{items.map(...)}</div>  {/* list outer:自帶 8 */}
+<DialogBody className="!px-0">  {/* body 撤左右;上下由容器自判(清單在頭尾 → 0)*/}
+  <div data-layout-region="unbounded" className="py-2">{items.map(...)}</div>  {/* list outer:自帶 8 */}
 </DialogBody>
 ```
 
@@ -169,8 +169,8 @@ search 列放 body 外(不跟清單捲),自帶 `px-loose pt-tight`、下方不�
 用 `MenuItem` primitive,不自刻 `<button>` hand-craft:
 
 ```tsx
-<DialogBody className="!px-0 !pt-0 !pb-0">
-  <div className="py-2">
+<DialogBody className="!px-0">
+  <div data-layout-region="unbounded" className="py-2">
     {options.map(o => (
       // MenuItem 預設 px-3 → className override 為 px-loose 對齊 dialog header
       <MenuItem key={o.value} className="px-[var(--layout-space-loose)]" onSelect={...}>
@@ -377,6 +377,10 @@ API,欄由 layout primitive 組)。DS 只 codify 組合鐵律(違規簽名由 co
    div、非只切半高。
 3. **欄底 footer(如 comment composer)釘在所屬欄內**(欄內 `SurfaceFooter` chrome),
    非 dialog 全寬 footer——對齊 Atlassian 官方兩欄範例把 ModalFooter 巢狀進左欄([101-full-height-illustration.tsx#L88-L106](https://github.com/pioug/atlassian-frontend-mirror/blob/cee82aa5ac9c07849d00ae757b15b07214cae59b/design-system/modal-dialog/examples/101-full-height-illustration.tsx#L88-L106))。留言框本身**常駐在原地**:DS 沒有「收起的留言框、點了才展開成編輯器」這種設計,留言 / 回覆輸入框就是一直顯示在原地的輸入框 + 送出鈕,不論放在對話框欄底、側欄或頁面(範例 `../../components/Dialog/dialog.stories.tsx` ExtraLargeTwoColumn 的留言框)。出處:user 2026-11-26 第五輪決策卡 D1 留言(逐字,問句):「我們沒有收起的設計，那不是應該就是一個常駐在原地的輸入框嗎？」;協調者判讀為不做收合(問句的判讀 = AI)。
+   **多行留言框的高度上限**(2026-11-27,產品 canary 回報 H24):會隨打字長高的多行留言框,**預設最大高度 160px**(與 AI 面板輸入盒同值:`../../components/AgentPanel/agent-panel.tsx` 的 AgentPromptInput 文字框 `max-h-40`),
+   超過在框內捲動,框外的版面不再被往下推;**產品可以調整**:用 Textarea 的 `autoSize={{ maxRows }}` 以行數設上限(`../../components/Textarea/textarea.tsx`),或自己給別的上限值。
+   單行的留言框(`Input`,例:DS 範例 ExtraLargeTwoColumn)不長高,不適用。依據:user 2026-11-27 回 H 批決策卡 H24b,逐字「最大高度可以設一個預設，但應該還是可以被消費者調整才對吧？然後高度可以照你建議」
+   (建議 = 選項 A「統一 160px,跟 AI 面板輸入盒同值,超過就在框裡捲動」,選項文字由 AI 擬;前半句是問句,判讀為「要可調」= AI 判讀)。
 4. **header 維持全寬**,分欄從 body 才開始;× 留在這條標題列右端(`../../components/Dialog/dialog.spec.md`「關閉按鈕」)。
    依據照實寫(2026-11-26 更正):工作項詳情類的來源是 WM 實作(`WorkItemDetailDialog.tsx` header 全寬放 breadcrumb + prev / next,
    `governance/planning/2026-07-10-dialog-split-body-proposal.md:52`);同提案 :121 的「header/footer 全寬跨欄」是從兩家對話框元件
@@ -414,6 +418,11 @@ border-l border-divider">`)/ Atlassian [`modal-dialog/examples/101-full-height-i
 - **右欄**自帶 `<ScrollArea>`(第 1 條);頂端可放標題 = 選中分類的字,用文字樣式、隨內容捲動,**不做第二條標題列**
   (`../header-canonical/header-canonical.spec.md`「何時不用」純內容區小標題、不可關閉的 side pane 標題);也可以省略
   (Salt 窄版圖右欄直接從說明文字開始)。標題 → 第一個設定照 `../../tokens/layoutSpace/layoutSpace.spec.md`「標題區 → 內容」。
+- **兩欄頂端不要求對齊**(2026-11-27,產品 canary 回報 H24:左欄第一列離標題列 8、右欄標題離 12,差 4):左欄照 Sidebar 的規則(清單自帶上下內距,`../../components/Sidebar/sidebar.spec.md`),
+  右欄照 `../../tokens/layoutSpace/layoutSpace.spec.md`(內容區上方 = 規則 2,第一個是標題 / 欄位等一般元素 → `tight`);右欄若真的放了一條標題列(上面已說不建議),
+  那一條照 `../header-canonical/header-canonical.spec.md` 的高度 / 內距 / 字級。兩欄的頂不為了彼此對齊而另開例外。
+  依據:user 2026-11-27 回 H 批決策卡 H24a,逐字「確保左邊是 sidebar 右邊有按照 layout space 設計原則即可，若右邊有用到 header也是確保有維持header設計原則即可」。
+  閘:`scripts/overlay-story-contract-invariant.mjs` R25(右欄內容上方 = `tight`,md / lg;本 DS 兩則兩欄範例)。
 - **寬 `xl`、高 `fill`**:兩欄 → `xl`(`../../components/Dialog/dialog.spec.md`「寬度檔位」選檔規則);切換分類時內容高度會變 → `fill`(同檔「高度軸」)。
 - **底部**:改了就生效的設定不放頁腳,關閉走標題列的 ×;要另外按「儲存」的設定放 `DialogFooter`(取消 / 儲存)。
   Salt 兩種都允許(「Display either a button bar at the bottom of the dialog, or a close button in the top-right.」,同上網址);× 照 Dialog 規格一律保留。
