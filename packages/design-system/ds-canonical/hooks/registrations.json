@@ -229,7 +229,7 @@
             "kind": "hook",
             "hook": "check_audit_sample_escape.sh",
             "runtime": "bash",
-            "outputMode": "blocking"
+            "outputMode": "governance-context-or-block"
           }
         ]
       },

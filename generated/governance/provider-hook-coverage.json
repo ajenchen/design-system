@@ -6,7 +6,7 @@
     "canonicalHookRegistry": "packages/design-system/ds-canonical/hooks/registrations.json",
     "providerRegistry": "packages/governance/canonical/providers.json",
     "inputSha256": {
-      "hookRegistrations": "sha256:b21808889ceaa861f75552ad0850466dbd15ef2cdf9fcd37c00e2481436df72f",
+      "hookRegistrations": "sha256:d4f4ff7e146bd7c66f41a7dd03e801e1a3d55316b3badadebfade290fdd517af",
       "providerRegistry": "sha256:20f2995b8d3ff2e2814210c4ad7ca8a8f9578f3191bf5a3d2f598224cca4f22b",
       "coverageSchema": "sha256:7320ac4cf37a731f1e79428bad46561e285a491460c3daf16b9bb42bdd1765a4"
     }
@@ -443,7 +443,7 @@
           "hook": "check_audit_sample_escape.sh",
           "kind": "hook",
           "runtime": "bash",
-          "outputMode": "blocking",
+          "outputMode": "governance-context-or-block",
           "inputContract": "event-v1",
           "transcriptRequirement": "none",
           "requirements": [],
@@ -1227,7 +1227,7 @@
           "hook": "check_audit_sample_escape.sh",
           "kind": "hook",
           "runtime": "bash",
-          "outputMode": "blocking",
+          "outputMode": "governance-context-or-block",
           "inputContract": "event-v1",
           "transcriptRequirement": "none",
           "requirements": [],
@@ -2187,7 +2187,7 @@
           "hook": "check_audit_sample_escape.sh",
           "kind": "hook",
           "runtime": "bash",
-          "outputMode": "blocking",
+          "outputMode": "governance-context-or-block",
           "inputContract": "event-v1",
           "transcriptRequirement": "none",
           "requirements": [],

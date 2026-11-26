@@ -26,7 +26,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-hook-provider-marker-regex-helper | `packages/design-system/ds-canonical/hooks/lib/provider-marker-regex.mjs` | `sha256:7395275574a3d3c1b65b6e6fc58aedbbd95caf157e0cd5cf07d0107a4531bd65` |
 | canonical-hook-registration-output-contract-helper | `packages/design-system/ds-canonical/hooks/tests/registration-output-contracts.mjs` | `sha256:96c5a30cf956ecd9471b106396e0b80823c9e8e1c29c5b21f052b3bcd68d7fa0` |
 | canonical-hook-tsx-governance-analysis-helper | `packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs` | `sha256:d690a3a67697c7be99ffd54a9eac0c465a5202232c480a3a622ac8ea8159f3a2` |
-| canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:d14608445fe05de3483beb1f1666544b1d21bc90fa51118383dbb3fd83ff2a80` |
+| canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:02c9ae028793d154b785158c75f85b5ef151da706ef268f6594d2d47b0453965` |
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:79415aaec40715aa1a90d7d9185faa52b9845893682f5d45087ea87d68149a03` |
 | canonical-references | `packages/design-system/ds-canonical/references` | `sha256:bee3718a897f507c1b9c72772dc7f22830cf1a289f948a74e1798e5a01038e1f` |
 | canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:3aef9c97187af7b905064bbe18f735402b6764580f515e8135eef67c51be0fa7` |
@@ -295,11 +295,11 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | provider-compatibility-library | `infra/governance/lib/provider-compatibility.mjs` | `sha256:4d1440596b95ed2c4ed147d36c1154d137a957d67d8a96387a4a27718655bdbd` |
 | provider-compatibility-matrix | `infra/governance/providers/compatibility-matrix.json` | `sha256:b481853ae0d2d32b37752ca19ae10fcd968f715a66d33ae3d9d679337bd6e815` |
 | provider-compatibility-matrix-schema | `infra/governance/schemas/compatibility-matrix.schema.json` | `sha256:12baa615f248ec728ade8965e11faa984fb0f82e2d8f08bb243768cceb98c213` |
-| provider-hook-coverage-artifact | `generated/governance/provider-hook-coverage.json` | `sha256:c8166c626a4510b0f590f8780743f37aacac3652bd0553d39e56e1173c336edf` |
+| provider-hook-coverage-artifact | `generated/governance/provider-hook-coverage.json` | `sha256:738c52f838bb060376d57edf69fdf1909319d580130256e341592436f830db24` |
 | provider-hook-coverage-schema | `packages/governance/canonical/schemas/provider-hook-coverage.schema.json` | `sha256:d3a18204c4184527f3b4351c159a30d84abf768b0fb502e3ce7db01b16f90726` |
 | provider-hook-output-transport | `scripts/lib/provider-hook-output-transport.mjs` | `sha256:c25a95883ef98dedbc32eb9a80ff9632b726f5e4e21607ff85243ee2cca67413` |
 | provider-hook-output-transport-tests | `scripts/test-provider-hook-output-transport.mjs` | `sha256:3a2b4a6774b658a7f105d9fbdfa318ad2b035be7f18b9cee9c035fdcb46f322a` |
-| provider-hook-registrations | `packages/design-system/ds-canonical/hooks/registrations.json` | `sha256:ad593e09ee63295cd89dfcf0391542f97c0e23cd448e3fa7fb333417f6577996` |
+| provider-hook-registrations | `packages/design-system/ds-canonical/hooks/registrations.json` | `sha256:7d14566be989cf9544f366cb41e1cb78433fc837a3ca939dccf1efedb828efd4` |
 | provider-hook-registrations-schema | `packages/design-system/ds-canonical/hooks/registrations.schema.json` | `sha256:7f27f4ebd5248d85658dc8973a0ae60722a05851dd7a043d25a117b5581029df` |
 | provider-hook-runner | `scripts/run-provider-hook.mjs` | `sha256:f80c698f8bd19a20d11bb5173bcd88b5fd9993d8f7435af1ad58580b47afbc13` |
 | provider-lifecycle-ledger | `packages/governance/canonical/provider-lifecycle.json` | `sha256:ce4f53a147b8b2ab8713fbd8810994f41ad4eb6a3fea10a196b87a015ec88e80` |
