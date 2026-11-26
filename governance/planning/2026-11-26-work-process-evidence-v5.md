@@ -36,7 +36,7 @@
   - 跟 `_meta.linuxOnly` 已登記的那一型**方向相反**:那一型是 Linux 量得比 macOS 多(macOS 歸 incomplete 不計);這 5 格是 macOS 量得比基線多。所以不能拿那一型推論 CI 會綠。
   - 判不了的:#172 合併前在 macOS 寫基線時量到 9 / 51 / 1 / 6 / 4,同一個 commit 今天本機量到 10 / 52 / 6 / 7 / 6 —— 是 squash 裡寫基線之後的 commit 改到,還是本機環境變了,本包分不出來(squash 前的 commit 不在 repo 裡)。Linux 的值本機量不到。
 - 因此 `verify-browser-a11y` 曾**暫不接進 verify 總關卡**(登記待決,不是放寬判準或容差),結案條件是拿 CI 的 Linux 值逐格判斷。**已結案(2026-11-26)**:
-  - PR #174 第一次 CI 讀回(run 45725978357,commit `cf72653d`,job 139595836913)紅在同樣 5 格,Linux 值與本機相同:10 / 52 / 6 / 7 / 6。該 job 上傳的 `a11y-audit.json` 對 `cf72653d` 的基線重跑同一支 `evaluateA11yRegressionGate`:回歸只有這 5 格,另有 1 格變少(select「設計規格 › overview」scrollable-region-focusable 1 → 0),沒有別的增量。
+  - PR #174 第一次 CI 讀回(run 45725978357,commit `cf72653d`,job 139595836913)紅在同樣 5 格,Linux 值與本機相同:10 / 52 / 6 / 7 / 6。該 job 上傳的 `a11y-audit.json` 對 `cf72653d` 的基線重跑同一支 `evaluateA11yRegressionGate`:回歸只有這 5 格,另有 3 格變少(coachmark「設計原則 › usage-guidance」color-contrast 16 → 14、field「設計原則 › orientation-rule」color-contrast 6 → 5、select「設計規格 › overview」scrollable-region-focusable 1 → 0),沒有別的增量。變少不會讓閘紅,這 3 格這次都沒有收緊基線;前兩格產生器本機也量到 14 / 5,照 `22af1f06` 還原成舊值,理由同該 commit(本包只收那 5 格,收緊另開一包)。
   - 逐節點實量(HEAD `efce5630` 的建置,與 `audit-a11y.mjs` 同一套開法):5 格共 81 個節點全部是 `#8c8c8c` 疊 `#ffffff`、3.36:1 = 淺色 `--fg-muted`(74 個節點自己帶 `text-fg-muted`,7 個是 `text-fg-muted` 說明文字裡的 `<code>`、繼承同色)。屬 `packages/design-system/src/tokens/color/color.spec.md`「已定案:`--fg-muted` 在淺色主題未達 WCAG AA —— 維持現狀」那一類,照 `46eff99d` 前例用產生器(`--baseline-write`)寫進基線,只有這 5 格變動。
   - `verify-browser-a11y` 接回 `ci.yml` verify 的 needs、env 與判斷式,`infra/governance/test/ci-workflow-scope.test.mjs` 的 needs 清單與上游迴圈同步;判準與容差沒動。
 - 夜間那趟在 main 上的紅分兩段(普查只抓到 11-21 起的 run 層結論,沒有 job 層,所以分不出是 a11y 還是 bundle size 那個 job 紅):
