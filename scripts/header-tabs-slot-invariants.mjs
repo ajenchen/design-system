@@ -166,11 +166,18 @@ async function measureLayout(story) {
     const hr = header.getBoundingClientRect()
     const tr = tl.getBoundingClientRect()
     const firstTab = tl.querySelector('[role="tab"]')
+    // W2-c 量第一個分頁的**內容**(第一個子元素 / 字)左緣,不量分頁盒子:2026-11-27 起分頁左右各有一個焦點框的位置、
+    // 第一個分頁往外借回同一個寬度(tabs.tsx TABS_FOCUS_ROOM_PX),盒子左緣本來就在內容左邊 4px;要保證的是「字對齊 header 內容列」
+    const firstTabContent = firstTab?.firstElementChild ?? null
     // scroll container = tablist 直接 parent 且 overflow-x auto/scroll(scroll/menu 模式才有)
     const parent = tl.parentElement
     const pOverflowX = parent ? getComputedStyle(parent).overflowX : null
     const sc = pOverflowX === 'auto' || pOverflowX === 'scroll' ? parent : null
     const scr = sc ? sc.getBoundingClientRect() : null
+    // 捲動容器的**內容框**(扣掉左右內距):2026-11-27 起捲動容器左右各外推一個焦點框的位置、再用等量內距推回
+    //(tabs.tsx TABS_SCROLLER_FOCUS_ROOM_CLASS),內容框才是 tablist 鋪的範圍 = 原本的捲動容器
+    const scPad = sc ? getComputedStyle(sc) : null
+    const scPadL = scPad ? parseFloat(scPad.paddingLeft) : 0, scPadR = scPad ? parseFloat(scPad.paddingRight) : 0
     const rowr = sc?.parentElement ? sc.parentElement.getBoundingClientRect() : null
     return {
       paddingLeft: cs.paddingLeft,
@@ -178,9 +185,9 @@ async function measureLayout(story) {
       resolvedLoose: cs.getPropertyValue('--layout-space-loose').trim(),
       headerLeft: hr.left, headerWidth: hr.width,
       tablistWidth: tr.width,
-      firstTabLeft: firstTab ? firstTab.getBoundingClientRect().left : null,
+      firstTabLeft: firstTabContent ? firstTabContent.getBoundingClientRect().left : null,
       hasScrollContainer: !!sc,
-      scLeft: scr ? scr.left : null, scWidth: scr ? scr.width : null,
+      scLeft: scr ? scr.left + scPadL : null, scWidth: scr ? scr.width - scPadL - scPadR : null,
       rowWidth: rowr ? rowr.width : null,
     }
   })
@@ -201,10 +208,10 @@ async function measureLayout(story) {
   record('W2-b', `${story.label} resolved --layout-space-loose === '16px'(md 預設)`,
     d.resolvedLoose === '16px', `got '${fmt(d.resolvedLoose)}'(density 漂移或 token 改值)`)
 
-  // (W2-c) M32 pixel-quantified:第一個 tab 左緣 − header 左緣 = 16 ± 0.5
-  record('W2-c', `${story.label} 第一個 tab 左緣 − header 左緣 = 16±0.5px`,
+  // (W2-c) M32 pixel-quantified:第一個 tab 的內容(字)左緣 − header 左緣 = 16 ± 0.5
+  record('W2-c', `${story.label} 第一個 tab 的字左緣 − header 左緣 = 16±0.5px`,
     d.firstTabLeft !== null && Math.abs(d.firstTabLeft - d.headerLeft - 16) <= 0.5,
-    `delta ${d.firstTabLeft === null ? 'no [role=tab]' : fmt(d.firstTabLeft - d.headerLeft)}(應 16;0 = px-loose 靜默消失)`)
+    `delta ${d.firstTabLeft === null ? 'no [role=tab] 內容' : fmt(d.firstTabLeft - d.headerLeft)}(應 16;0 = px-loose 靜默消失)`)
 
   // (W1-寬,輔助)全寬 — 量測對象依 overflow 模式(tablist scroll/menu 是 min-w-full 可比容器寬)。
   // 這是代理量(容器寬對,不代表線畫得出來;2026-11-17 前溢出模式的線被遮罩吃掉時它照綠),判定以下方 W1-連續 的像素為準。
@@ -218,7 +225,7 @@ async function measureLayout(story) {
     record('W1-寬', `${story.label} 結構:${story.mode} 模式有 scroll container`, d.hasScrollContainer,
       'tablist parent 非 overflow-x 容器 — story 疑似 render 錯 overflow 模式,禁 silent skip')
     if (story.mode === 'scroll') {
-      record('W1-寬', `${story.label} scroll container 全寬 = header 寬 ±0.5`,
+      record('W1-寬', `${story.label} scroll container 內容框全寬 = header 寬 ±0.5`,
         d.scWidth !== null && Math.abs(d.scWidth - d.headerWidth) <= 0.5,
         `container ${fmt(d.scWidth)} vs header ${fmt(d.headerWidth)}(arrows 是 absolute overlay 不佔寬)`)
     } else {
@@ -227,7 +234,7 @@ async function measureLayout(story) {
       record('W1-寬', `${story.label} scroll row(捲動區 + ⌄ 容器)全寬 = header 寬 ±0.5`,
         d.rowWidth !== null && Math.abs(d.rowWidth - d.headerWidth) <= 0.5,
         `row ${fmt(d.rowWidth)} vs header ${fmt(d.headerWidth)}`)
-      record('W1-寬', `${story.label} scroll container 左緣貼齊 header 左緣 ±0.5`,
+      record('W1-寬', `${story.label} scroll container 內容框左緣貼齊 header 左緣 ±0.5`,
         d.scLeft !== null && Math.abs(d.scLeft - d.headerLeft) <= 0.5,
         `container.left ${fmt(d.scLeft)} vs header.left ${fmt(d.headerLeft)}`)
     }
@@ -298,11 +305,14 @@ async function measureBaselinePixels(story, tag = '') {
     const parent = tl.parentElement
     const ox = parent ? getComputedStyle(parent).overflowX : null
     const scr = ox === 'auto' || ox === 'scroll' ? parent.getBoundingClientRect() : null
+    // 遮罩量程 MASK_REACH 從捲動容器的**內容框**邊算(2026-11-27 起容器外推一個焦點框的位置、遮罩預留寬跟著加同一個數,
+    // 從內容框邊算起仍是箭頭 32 + 淡出 16;tabs.tsx TABS_SCROLLER_FOCUS_ROOM_CLASS)
+    const pcs = scr ? getComputedStyle(parent) : null
     return {
       dpr: devicePixelRatio, left: hr.left, right: hr.right, bottom: tr.bottom,
       sel: sr ? { left: sr.left, right: sr.right } : null,
       sc: scr ? {
-        left: scr.left, right: scr.right,
+        left: scr.left + parseFloat(pcs.paddingLeft), right: scr.right - parseFloat(pcs.paddingRight),
         atStart: parent.scrollLeft <= 0,
         atEnd: parent.scrollLeft + parent.clientWidth >= parent.scrollWidth - 1,
       } : null,
@@ -440,17 +450,19 @@ if (!SELFTEST) {
       const overlay = scope?.querySelector('.pointer-events-none.absolute')
       const action = overlay?.querySelector('button')
       const tabs = [...document.querySelectorAll('[role="tab"]')]
-      // 帶 inlineAction 的那個 tab:paddingRight 有預留(icon 16 + gap 8 = 24px)
-      const host = tabs.find((t) => Math.round(parseFloat(getComputedStyle(t).paddingRight)) === 24)
+      // 帶 inlineAction 的那個 tab:paddingRight 比 paddingLeft 多預留 icon 16 + gap 8 = 24px
+      //(2026-11-27 起兩側各有一個焦點框的位置 = paddingLeft;action 右緣對齊 tab 的內距邊 = tab 右緣 − paddingLeft)
+      const padL = (t) => parseFloat(getComputedStyle(t).paddingLeft)
+      const host = tabs.find((t) => Math.round(parseFloat(getComputedStyle(t).paddingRight) - padL(t)) === 24)
       const ar = action?.getBoundingClientRect(), hr = host?.getBoundingClientRect()
       return { hasOverlay: !!overlay, overlayChildren: overlay?.childElementCount ?? null, hasAction: !!action,
         label: action?.getAttribute('aria-label') ?? null,
-        rightAligned: ar && hr ? Math.abs(ar.right - hr.right) : null,
+        rightAligned: ar && hr ? Math.abs(ar.right - (hr.right - padL(host))) : null,
         insideTab: ar && hr ? (ar.top >= hr.top - 0.5 && ar.bottom <= hr.bottom + 0.5) : null }
     })
     record('W3-a', `${story.label} overlay 裡有 inlineAction 鈕`, a.hasOverlay && a.hasAction,
       `overlay=${a.hasOverlay} 子節點=${fmt(a.overlayChildren)} 鈕=${a.hasAction}(null = resolver 回 null,portal 從未渲染)`)
-    record('W3-b', `${story.label} 鈕的右緣對齊 tab 右緣(±1px)且垂直在 tab 內`,
+    record('W3-b', `${story.label} 鈕的右緣對齊 tab 的內距邊(tab 右緣 − 焦點框位置,±1px)且垂直在 tab 內`,
       a.rightAligned != null && Math.abs(a.rightAligned) <= 1 && a.insideTab === true,
       `右緣差 ${fmt(a.rightAligned)}px / 垂直在內=${fmt(a.insideTab)}`)
   }

@@ -24,6 +24,7 @@ import {
 // 「選到就露出來」(horizontal-overflow.spec.md):Tabs 的項目與選中屬性。scroll / menu 兩模式共用,只差兩側箭頭預留寬。
 const TABS_REVEAL = { itemSelector: '[role="tab"]', selectedAttribute: { name: 'aria-selected', value: 'true' } } as const
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
+import { STACK_GAP_PX } from '@/design-system/tokens/uiSize/stack-gap'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import {
   getTabsInlineActionPaddingRight,
@@ -45,8 +46,8 @@ import {
  *   lg   --tab-height-lg（48/56 = --chrome-header-height),page-level hero / 獨立 tabs 取代 chrome header
  *
  * ── 寬度行為 ──
- *   Trigger 寬度永遠由內容決定（hug content）。
- *   Triggers 之間 gap 為 --layout-space-loose（16px / 24px lg density）。
+ *   Trigger 寬度永遠由內容決定（hug content）+ 左右各一個「焦點框的位置」(見下方 TABS_FOCUS_ROOM_PX)。
+ *   字與字的距離為 --layout-space-loose（16px / 24px lg density）;triggers 之間的 gap 扣掉兩側的焦點框位置。
  *
  * ── Trigger 結構 ──
  *   [startIcon?] [label] [suffix: badge? + endIcon?]
@@ -58,6 +59,22 @@ import {
  *   溢出模式(scroll / menu)的灰線改由外層 TabsOverflowBaseline 畫(遮罩外),TabsList border 只留 1px 透明列給選中底線疊合,
  *   見下方 TabsOverflowBaseline 註解。
  */
+
+// ── 焦點框的位置(2026-11-27,E13 A「零位移補內距」;SSOT = tabs.spec.md「焦點框不壓字」)──
+// tab 的焦點框往內畫(`focus-ring-inset`:2px 線、往內退 2px,styles/base.css),而 tab 原本左右零內距 → 鍵盤聚焦時框壓在字上。
+// 做法:每個 tab 左右各補「框寬 2px + `--stack-gap` 2px 縫」= 4px(框內緣離字 2px);分頁之間的 gap 少 2 × 4px、
+// 第一個 / 最後一個 tab 各往外借 4px、選中底線兩端各縮 4px —— 字、底線的位置與長度都跟補之前一樣,平常畫面 0 像素差。
+// 溢出模式(scroll / menu)的捲動容器會裁掉第一個 tab 借出去的 4px,所以捲動容器同樣「負外距撐大、等量內距推回」
+//(Combobox `tagRowFocusRoomClass` 同一個做法),遮罩與「選到就露出來」的預留寬跟著加同一個數字,畫面位置不變。
+// 值只寫這一處:這個數字經 TabsList 外層的 `--tab-focus-room` 給 CSS 讀,遮罩 / 揭露 / inlineAction 幾何直接用數字。
+// CSS 讀它一律帶後備值 0px(`var(--tab-focus-room,0px)`):`tabsTriggerVariants` 是公開出口,在 TabsList 外單獨用時沒有這個變數,
+// 沒後備值的話選中底線的 left / right 失效、寬度變 0(2026-11-27 規格核對抓到);後備 0 = 補內距之前的樣子。閘:F7「單獨使用」那一格。
+// 閘:scripts/focus-indicator-invariants.mjs F7(框內緣到字 ≥ 2、平常畫面字與底線位置不變)。
+const TABS_FOCUS_RING_WIDTH_PX = 2 // = styles/base.css `@utility focus-ring-inset` 的線寬(outline: 2px)
+const TABS_FOCUS_ROOM_PX = TABS_FOCUS_RING_WIDTH_PX + STACK_GAP_PX
+const TABS_FOCUS_ROOM_STYLE = { '--tab-focus-room': `${TABS_FOCUS_ROOM_PX}px` } as React.CSSProperties
+// 溢出模式的捲動容器:裁切邊往外推一個焦點框的位置,內容(tablist)用等量內距推回原位
+const TABS_SCROLLER_FOCUS_ROOM_CLASS = '-mx-[var(--tab-focus-room,0px)] px-[var(--tab-focus-room,0px)]'
 
 // ── Size context ──
 type TabsSize = 'sm' | 'md' | 'lg'
@@ -201,7 +218,8 @@ Tabs.displayName = 'Tabs'
 // - 對齊 `color.spec.md`「T-junction connectivity 原則」段 outer-vs-divider 判準(Dialog 結構,T-junction 思路適用)
 const TABS_LIST_BASE = [
   'inline-flex items-stretch',
-  'gap-[var(--layout-space-loose)]',
+  // 字與字的距離 = --layout-space-loose;每個 tab 左右各多一個焦點框的位置(TABS_FOCUS_ROOM_PX),gap 扣掉兩份
+  'gap-[calc(var(--layout-space-loose)_-_2_*_var(--tab-focus-room,0px))]',
   'border-b border-divider',
 ].join(' ')
 
@@ -286,7 +304,8 @@ const TabsList = React.forwardRef<
   return (
     <TabsContext.Provider value={tabsSizeContext}>
       <TabsActionOverlayContext.Provider value={overlayEl}>
-        <div className="relative">
+        {/* --tab-focus-room 的唯一宣告處(值 = TABS_FOCUS_ROOM_PX);tablist、捲動容器、每個 trigger 都在它底下 */}
+        <div className="relative" style={TABS_FOCUS_ROOM_STYLE}>
           {listNode}
           {/* inline-action overlay:sibling of tablist(非其 DOM 子代)→ 修 axe aria-required-children */}
           <div ref={setOverlayEl} className="pointer-events-none absolute inset-0 z-10" />
@@ -324,12 +343,13 @@ const ScrollTabsList = React.forwardRef<
 >(({ className, children, ...props }, ref) => {
   const { scrollRef, atStart, atEnd, canScroll } = useScrollEdges<HTMLDivElement>()
   const scrollByPage = useScrollByPage(scrollRef)
-  useRevealSelected(scrollRef, { ...TABS_REVEAL, reserveArrowWidth: ARROW_BUTTON_WIDTH })
+  // 捲動容器兩側各外推一個焦點框的位置(TABS_SCROLLER_FOCUS_ROOM_CLASS)→ 預留寬加同一個數字,箭頭與淡出落在原本的位置
+  useRevealSelected(scrollRef, { ...TABS_REVEAL, reserveArrowWidth: ARROW_BUTTON_WIDTH + TABS_FOCUS_ROOM_PX })
   const maskImage = buildFadeMask({
     canScroll,
     atStart,
     atEnd,
-    reserveArrowWidth: ARROW_BUTTON_WIDTH,
+    reserveArrowWidth: ARROW_BUTTON_WIDTH + TABS_FOCUS_ROOM_PX,
   })
 
   return (
@@ -348,7 +368,7 @@ const ScrollTabsList = React.forwardRef<
       <TabsOverflowBaseline />
       <div
         ref={scrollRef}
-        className="overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className={cn('overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden', TABS_SCROLLER_FOCUS_ROOM_CLASS)}
         style={{ maskImage, WebkitMaskImage: maskImage }}
       >
         <TabsPrimitive.List
@@ -392,7 +412,8 @@ const MenuTabsList = React.forwardRef<
   const { scrollRef, atStart, atEnd, canScroll } = useScrollEdges<HTMLDivElement>()
   const { onValueChange, value: activeValue } = React.useContext(TabsValueContext)
   // 不用 useOverflowIndices:menu 永遠顯示全部,不需要動態 overflow 計算。
-  useRevealSelected(scrollRef, { ...TABS_REVEAL, reserveArrowWidth: 0 })
+  // 預留寬 = 捲動容器外推的那一個焦點框位置(TABS_SCROLLER_FOCUS_ROOM_CLASS);menu 模式沒有箭頭
+  useRevealSelected(scrollRef, { ...TABS_REVEAL, reserveArrowWidth: TABS_FOCUS_ROOM_PX })
 
   // Fragment-safe:攤平 <>…</> 讓條件渲染的溢出 tabs 也進 dropdown(見 flattenTabTriggers)
   const items = React.useMemo(
@@ -400,8 +421,8 @@ const MenuTabsList = React.forwardRef<
     [children]
   )
 
-  // Menu 模式沒有 arrows,但仍套 fade mask (reserveArrowWidth: 0) 軟化內容硬邊
-  const maskImage = buildFadeMask({ canScroll, atStart, atEnd, reserveArrowWidth: 0 })
+  // Menu 模式沒有 arrows,但仍套 fade mask 軟化內容硬邊;預留寬 = 外推的焦點框位置(外推那一條透明,淡出從原本的邊開始)
+  const maskImage = buildFadeMask({ canScroll, atStart, atEnd, reserveArrowWidth: TABS_FOCUS_ROOM_PX })
 
   return (
     // 2026-05-19 fix(scroll-overflow underline clip + y auto-promote,parallel to ScrollTabsList):
@@ -416,7 +437,7 @@ const MenuTabsList = React.forwardRef<
       <TabsOverflowBaseline />
       <div
         ref={scrollRef}
-        className="flex-1 min-w-0 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className={cn('flex-1 min-w-0 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden', TABS_SCROLLER_FOCUS_ROOM_CLASS)}
         style={{ maskImage, WebkitMaskImage: maskImage }}
       >
         <TabsPrimitive.List
@@ -481,11 +502,13 @@ const tabsTriggerVariants = cva(
     // 焦點框往內:tab 高 = 分頁列高,上下淨空 0(focus-canonical「問題二」驗算表;2026-09-09 Codex R13 抓到規格寫內框、
     // 實作卻是全域外框,在 overflow-scroll 的 TabsList 裡上下各被裁 3–4px)
     'focus-visible:focus-ring-inset',
-    // Trigger 無水平 padding — 寬度 = 內容寬度。triggers 間的分隔靠 TabsList 的 gap-[var(--layout-space-loose)]
+    // 左右各一個焦點框的位置(TABS_FOCUS_ROOM_PX = 框 2px + --stack-gap 2px):框內緣離字 2px,不壓字(2026-11-27 E13 A)。
+    // 第一個 / 最後一個 tab 往外借同一個寬度、TabsList 的 gap 扣掉兩份 → 字的位置與補之前相同(第一個字仍對齊下方內容左緣)。
+    'px-[var(--tab-focus-room,0px)] first:-ml-[var(--tab-focus-room,0px)] last:-mr-[var(--tab-focus-room,0px)]',
     // selected underline：::after 絕對定位在 bottom:-1px，2px primary（持續選中 base）
-    // left-0/right-0 因為 trigger 已無 padding，底線等於內容寬度
+    // 兩端各縮一個焦點框的位置 → 底線仍貼字寬(tabs.spec.md「label 不包 padding wrapper」的用意:底線 fit content)
     // 底線蓋住 TabsList 的 1px gray border，視覺單一線條
-    'after:absolute after:left-0 after:right-0 after:bottom-[-1px] after:h-0.5',
+    'after:absolute after:left-[var(--tab-focus-room,0px)] after:right-[var(--tab-focus-room,0px)] after:bottom-[-1px] after:h-0.5',
     'after:bg-transparent after:transition-colors after:duration-150',
     // hover（未選）：文字轉深
     'hover:text-foreground',
@@ -567,12 +590,13 @@ const TabsTrigger = React.forwardRef<
   const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
   const hasSuffix = badge != null || EndIcon !== undefined
   // inlineAction 幾何:trigger 以 paddingRight 預留 action 空間 — icon 寬 + sibling
-  // canonical gap-2(8px)。badge/endIcon 是 trigger 內 suffix，不得壓縮與獨立 action 的間距。2026-07-05 修 button-巢-button
+  // canonical gap-2(8px)+ 焦點框的位置(2026-11-27)。badge/endIcon 是 trigger 內 suffix，不得壓縮與獨立 action 的間距。2026-07-05 修 button-巢-button
   // (sibling 佈局);2026-07-18 決策1 再進化:action 不再是 tablist DOM 內的 sibling(axe
   // aria-required-children critical),改 portal 到 TabsList 的 overlay 層(tablist 外),以量測座標
   // 定位在 trigger 右緣。trigger 仍在 tablist 內(Radix roving focus 要求)。
   const hasAction = inlineAction != null
-  const actionPaddingRight = getTabsInlineActionPaddingRight(iconSize, hasAction)
+  // action 右緣離 trigger 右緣一個焦點框的位置(TABS_FOCUS_ROOM_PX),框不壓 action;字與 action 的位置跟補之前相同
+  const actionPaddingRight = getTabsInlineActionPaddingRight(iconSize, hasAction, TABS_FOCUS_ROOM_PX)
 
   // 量測 trigger 位置(viewport-relative,涵蓋 none/scroll/menu 三模式),同步 overlay 內 action 座標。
   const triggerElRef = React.useRef<HTMLButtonElement | null>(null)
@@ -623,6 +647,7 @@ const TabsTrigger = React.forwardRef<
         overlay: o,
         clips: clippingAncestors.map(toTabsActionClipRect),
         actionWidth: iconSize,
+        endInset: TABS_FOCUS_ROOM_PX,
       }))
     }
     compute()
@@ -665,8 +690,8 @@ const TabsTrigger = React.forwardRef<
       {overlayEl &&
         actionPos &&
         createPortal(
-          // action portal 到 overlay(tablist 外);left=trigger.right + `-translate-x-full` → action
-          // 右緣對齊 trigger 右緣;top/height + items-center → 垂直置中(同原 right-0 + top-1/2 幾何)。
+          // action portal 到 overlay(tablist 外);left = trigger 右緣 − 焦點框位置 + `-translate-x-full` → action
+          // 右緣對齊 trigger 的內距邊(2026-11-27 前對齊 trigger 右緣;trigger 加內距後位置不變);top/height + items-center → 垂直置中(同原 right-0 + top-1/2 幾何)。
           // 外層 span 與 trigger 同高,但 action 本身只有 icon 高 —— span 上下各多出一塊(預設 sm:32px 高的 tab、16px 的 action,實測上下各 8px)。
           // 那兩塊若接指標:指到時分頁字變深(巢狀滑過的 data-action-hover),點下去卻不切分頁 =「亮著卻點不到」
           //(待辦總帳 N53②;hit-area-canonical.md「它要防的失敗是單向的:看到亮起來卻點不到」)。
