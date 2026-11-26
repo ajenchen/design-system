@@ -10,7 +10,9 @@
  *        車道每週各自分配、最低空車道、涵蓋的每一天都要空、同一事件同一週同一車道、只落在被藏日子的事件不佔車道;
  *        被藏的日子把長條切段;每格 m = 最高佔用車道 + 1,m > k → 車道 0…k−2 照畫、第 k 列換「+N」、N = 車道 ≥ k−1 的筆數(看車道不看筆數),
  *        長條在溢出那一格被切開;格內排序五條(開始日期 → 長的在上 → 全天先 → 開始時間 → 標題依 locale),車道與「+N」清單共用;
- *        CalendarEventSegment 五個旗標(isStart / isEnd = 真起訖、continuesBefore / continuesAfter = 可見範圍外、isSegmentRepeat = 不是第一段)。
+ *        CalendarEventSegment 五個旗標(isStart / isEnd = 真起訖、continuesBefore / continuesAfter = 可見範圍外、isSegmentRepeat = 不是第一段);
+ *        詳情時間欄與全天切換(T1–T5,calendar.spec.md「事件詳情浮層」【Q16(定)】):有時段 → 全天只留日期、記住原時間;切回有記錄就還原(過夜的結束日 = 開始日 + 1)、
+ *        沒有就開始日 09:00 起一小時(牆上時間,日光節約那天也是 09:00 – 10:00);全天的 Range 結束日「含」↔ end「不含」換算一個日曆日(25 小時那天也對)。
  *        k 是誰算的(M32 參數邊界):每格放得下幾列的算式住在 calendar-geometry.ts `calendarRowsThatFit`(格高 → k 的判定表,含剛好放滿與
  *        LayoutUnit 取整的邊界);calendar.tsx 交給 layoutMonth 的 maxRows 只有一個來源 = 量到的格高(layoutBorderBoxSize 的 height)經這支算式。
  *        靜態:檔頭 10 行內 @internal、帶「── 消費的 SSOT ──」、不 import calendar.tsx / react、不寫固定毫秒、不開 timeZone、
@@ -21,7 +23,8 @@
  *        欄的相鄰 / 天數改用固定毫秒、end 當成含、拿掉 start > end 正規化、全天 end === start 不警告、零長度不畫在開始那天、
  *        只有日期不推斷 / Date 也推斷 / 一端就推斷、只有日期走原生解析、本地時刻當 UTC、車道一律往下疊、只看最後一天空不空、
  *        每一天各自從 0 往下排、被藏日子的事件夾到旁邊、被藏的日子不切段、isStart 寫成 !continuesBefore、旗標用整週範圍算、
- *        改用筆數算 +N、整條長條一起藏、continuesBefore 寫成 !isStart、isSegmentRepeat 恆假,共 31 個;另有 5 個靜態突變:
+ *        改用筆數算 +N、整條長條一起藏、continuesBefore 寫成 !isStart、isSegmentRepeat 恆假,
+ *        切成全天不記住、沒記錄不給 09:00、全天換算改用固定毫秒、一小時改加 3600000 毫秒(2026-11-26 加四個),共 35 個;另有 5 個靜態突變:
  *        寫固定毫秒、import calendar.tsx、拿掉 @internal、開 timeZone、index.ts 轉出;k 的算式 2 個突變(沒扣格線、不加回 LayoutUnit)與
  *        「k 是誰算的」3 個靜態突變(maxRows 寫死 3、layoutMonth 收常數、量格寬當格高))——
  *        每一種都必須讓它指定的那幾格紅;任何一種沒被抓到 = 判定表沒在驗那一條 → exit 1。
