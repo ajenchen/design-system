@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Button } from '@/design-system/components/Button/button'
 import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { TutorialPage, TutorialSection } from '@/design-system/stories-helpers/examples/tutorial-page'

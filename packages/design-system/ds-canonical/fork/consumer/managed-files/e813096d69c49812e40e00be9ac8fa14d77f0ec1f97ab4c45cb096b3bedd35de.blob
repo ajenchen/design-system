@@ -1,3 +1,4 @@
-# legacy-peer-deps=true to bypass storybook-config @storybook/react peer >=8.0.0 -> npm picks 10.x conflict with root storybook@^8.6.0
+# Closed npm config checked by the governance dependency setup: exactly these two settings, nothing else.
+# Storybook peers are aligned by exact versions in package.json (storybook / @storybook/* 10.6.9), not by npm peer auto-install.
 legacy-peer-deps=true
 ignore-scripts=true

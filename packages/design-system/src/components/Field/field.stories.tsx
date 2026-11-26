@@ -1,5 +1,5 @@
 // @story-history: Field 是 compound component(FieldLabel / FieldError / FieldDescription / FieldGroup),hasSizes / Default 由 anatomy.stories.tsx SizeMatrix + Inspector auto-compile owns(2026-05-15 F-migration);showcase 展示 Vertical / Horizontal 兩種 orientation 真實 form 情境。
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import * as React from 'react'
 import { Field, FieldLabel, FieldDescription, FieldError, FieldGroup, useFormValidation } from './field'
 import { Input } from '@/design-system/components/Input/input'

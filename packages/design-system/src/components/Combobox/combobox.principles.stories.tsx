@@ -1,6 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Combobox } from './combobox'
 import { DataTable } from '@/design-system/components/DataTable/data-table'

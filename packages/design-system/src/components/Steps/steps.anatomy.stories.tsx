@@ -1,6 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import { useEffect, useState, type ComponentProps } from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Steps, StepItem, StepLabel, StepDescription, StepContent } from './steps'
 import { H3, Desc, Td, Th, TokenCell, Swatch } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'

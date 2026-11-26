@@ -120,3 +120,14 @@ reader-facing 的 scenario 不得標 `test-only`。機械 gate=`scripts/audit-co
 - **展示層 story 禁原生 `<button>` / `<input>` / `<textarea>` / `<select>`**(hook `check_story_invariants.sh` R1 A.5,2026-09-08):raw 控件會吃到全域 `:focus-visible` 框、樣式跟 DS 元件不一致(user 抓到 agent 並存範例用滑鼠開 modal 就出鍵盤框)。例外只有 Radix `asChild` 觸發殼、`sr-only` 測試輔助、`@anatomy-exempt-next`。
 
 ❌ 佔位符 / 抽象代號 / 極端不現實 / 視覺符號 / spec 內部代號。詳 → `/story-writing` skill。
+
+## Storybook 版本與匯入路徑(10.x)
+
+storybook / @storybook/* 全 repo 同一個精確版號(版號以根 `package.json` 的 `storybook` 為準,本檔不寫數字,免得與它漂移)。
+story 的型別從 `@storybook/react-vite` 匯入、測試工具從 `storybook/test`;`@storybook/react`、`@storybook/test`、
+`@storybook/addon-essentials`、`@storybook/blocks` 已退場(官方 MIGRATION.md「From version 8.x to 9.0.0」)。
+全域初始值寫 `initialGlobals`、收尾寫 `afterEach`;`.storybook/main.*` 與 addon preset 必為合法 ESM
+(`governance/memory/feedback_storybook_addon_preset_esm.md`)。10.0 起 `test-only` 不再是內建 tag,隱藏只靠
+storybook-config 的側欄 filter 與 `docs.stories.filter`。play 用的 `storybook/test` 一律檔頭靜態匯入:10.x 建置把
+`await import('storybook/test')` 改寫成執行期解析不到的模組,而 `throwPlayFunctionExceptions` 預設 false,畫面照常、play 沒跑;
+閘 = `scripts/lib/launch-browser.mjs` openStory 的渲染錯誤帳本(render-errored)。

@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
-import { expect, userEvent, waitFor, within } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { Popover, PopoverTrigger, PopoverContent, PopoverHeader, PopoverBody, PopoverFooter, PopoverTitle } from './popover'
 import { EDITABLE_TITLE_HEADER_SLOT } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import { Button } from '@/design-system/components/Button/button'

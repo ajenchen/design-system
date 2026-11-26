@@ -43,10 +43,10 @@ const REQUIRE_BUILD = ARGV.includes('--require-storybook-build')
 // 照 Storybook 8 的外觀造:`window.__STORYBOOK_PREVIEW__.currentRender = { id, phase }`、body class
 // sb-show-preparing-story → sb-show-main / sb-show-errordisplay、#error-message / #error-stack。
 // **load 事件之後**才以動態 import 載入 story 檔(真的 Storybook 也是),所以「load + 固定睡眠」必然早於 story 檔。
-// 每則 story 是 assets/<id>.js:default(root) 渲染,可選 play(root)、afterEach(root)。phase 照 Storybook 8.6 的順序走
+// 每則 story 是 assets/<id>.js:default(root) 渲染,可選 play(root)、afterEach(root)。phase 照 Storybook 8.6 的順序走(10.x 在 completed 前多一個 completing,一併模擬)
 // loading → rendering → playing → played → completed → afterEach → finished(@storybook/core preview-api StoryRender.render),
 // 而且跟真的一樣,畫出來就是 sb-show-main(renderToCanvas 呼叫 showMain),不等 finished。
-const KNOWN = ['ok', 'late', 'blocked', 'hang', 'slow-play', 'empty', 'boom', 'restless', 'grow', 'chatty', 'stuck-after-each', 'reload-once', 'timer-reveal']
+const KNOWN = ['ok', 'late', 'blocked', 'hang', 'slow-play', 'empty', 'boom', 'restless', 'grow', 'chatty', 'stuck-after-each', 'reload-once', 'timer-reveal', 'swallowed-play', 'stuck-completing']
 const PREVIEW_HTML = `<!doctype html><html><head><meta charset="utf-8"><title>synthetic preview</title></head>
 <body class="sb-show-preparing-story">
 <div id="storybook-root"></div>
@@ -55,6 +55,10 @@ const PREVIEW_HTML = `<!doctype html><html><head><meta charset="utf-8"><title>sy
 const KNOWN = ${JSON.stringify(KNOWN)}
 const id = new URLSearchParams(location.search).get('id')
 const preview = window.__STORYBOOK_PREVIEW__ = { currentRender: null }
+// Storybook 10 的 channel(on / emit);StoryRender 每換一個 phase 就 emit storyRenderPhaseChanged { newPhase, renderId, storyId }
+const listeners = {}
+window.__STORYBOOK_ADDONS_CHANNEL__ = { on: (ev, fn) => { (listeners[ev] ||= []).push(fn) }, emit: (ev, payload) => (listeners[ev] || []).forEach((fn) => fn(payload)) }
+const setPhase = (render, phase) => { render.phase = phase; window.__STORYBOOK_ADDONS_CHANNEL__.emit('storyRenderPhaseChanged', { newPhase: phase, renderId: render.renderId, storyId: render.id }) }
 const fail = (render, error) => {
   if (render) render.phase = 'errored'
   document.getElementById('error-message').textContent = error.message
@@ -63,7 +67,7 @@ const fail = (render, error) => {
 }
 window.addEventListener('load', async () => {
   if (!KNOWN.includes(id)) return fail(null, new Error("Couldn't find story matching '" + id + "'."))
-  const render = preview.currentRender = { id, phase: 'loading' }
+  const render = preview.currentRender = { id, phase: 'loading', renderId: Date.now() }
   let mod
   try { mod = await import('./assets/' + id + '.js') } catch (error) { return fail(render, error) }
   const root = document.getElementById('storybook-root')
@@ -72,7 +76,19 @@ window.addEventListener('load', async () => {
     await mod.default(root)
     document.body.className = 'sb-show-main'
     render.phase = 'playing'
-    if (mod.play) { await mod.play(root); render.phase = 'played' }
+    // swallowPlayError:Storybook 10 核心預設 throwPlayFunctionExceptions: false 的形狀 —— play 拋錯只 emit errored /
+    // playFunctionThrewException、console.error,phase 照樣走完 completing → completed → afterEach → finished,不顯示錯誤頁
+    if (mod.play && mod.swallowPlayError) {
+      try { await mod.play(root); render.phase = 'played' } catch (error) {
+        setPhase(render, 'errored')
+        window.__STORYBOOK_ADDONS_CHANNEL__.emit('playFunctionThrewException', { name: error.name, message: error.message })
+        console.error(error)
+        setPhase(render, 'completing')
+      }
+    } else if (mod.play) { await mod.play(root); render.phase = 'played' }
+    // Storybook 10:completed 之前的 completing 用計時器等有限動畫(假時鐘暫停下停在這裡);stuckCompleting 模擬那個形狀
+    render.phase = 'completing'
+    if (mod.stuckCompleting) await new Promise(() => {})
     render.phase = 'completed'
     render.phase = 'afterEach'
     if (mod.afterEach) await mod.afterEach(root)
@@ -114,6 +130,10 @@ const STORIES = {
   'slow-play': `export default (root) => { root.innerHTML = '<button type="button">Keep</button><button type="button" data-delete>Delete file</button>' }
 export const play = (root) => new Promise((resolve) => setTimeout(() => { root.querySelector('[data-delete]').focus(); resolve() }, 1500))`,
   empty: `export default () => {}`,
+  // Storybook 10 形狀:play 拋錯被吞(phase 照樣走到 finished、沒有錯誤頁)—— 2026-11-25 升級當天 9 個檔的 play 就是這樣靜默失敗
+  'swallowed-play': `export default (root) => { root.innerHTML = '<p>Release checklist</p>' }
+export const swallowPlayError = true
+export const play = async () => { throw new TypeError("Failed to resolve module specifier '[object Object]'") }`,
   boom: `export default (root) => new Promise((resolve) => {
   root.innerHTML = '<p>Sprint board</p>'
   setTimeout(() => { throw new Error('synthetic render exception') }, 0)
@@ -145,6 +165,9 @@ export const play = (root) => new Promise((resolve) => setTimeout(() => { root.q
   // afterEach 永遠不結束(假時鐘暫停下 a11y addon 的 afterEach 就是這樣:靠計時器推進)
   'stuck-after-each': `export default (root) => { root.innerHTML = '<p data-stuck>Audit log</p>' }
 export const afterEach = () => new Promise(() => {})`,
+  // completing 永遠不結束(Storybook 10 在 completing 以計時器等動畫;假時鐘暫停下就停在這裡)
+  'stuck-completing': `export default (root) => { root.innerHTML = '<p data-stuck>Billing export</p>' }
+export const stuckCompleting = true`,
   // 第一次載入時 preview 自己重新載入一次(管理介面離開渲染完整的 docs 頁時 Storybook 會這樣做),第二次才畫完
   'reload-once': `export default (root) => {
   if (!sessionStorage.getItem('open-story-reload-once')) {
@@ -264,6 +287,14 @@ try {
     isInstrument(empty, 'render-health') && empty.error.reason.includes('empty story root'),
     empty.ok ? '被判成成功(錯)' : short(empty.error.message))
 
+  // 7b. play 拋錯但 phase 照樣走到 finished、沒有錯誤頁(Storybook 10 核心預設 throwPlayFunctionExceptions: false)
+  //     → 儀器失效 render-errored,訊息帶 play 的錯誤原文;同一頁上「phase === finished 且沒有錯誤頁」這個 8.6 時代的代理會說「完成」(兩面)
+  const swallowed = await attempt(page, url('swallowed-play'), { notFound: server.notFound })
+  const proxySaysDone = await page.evaluate(() => window.__STORYBOOK_PREVIEW__?.currentRender?.phase === 'finished' && !document.body.classList.contains('sb-show-errordisplay'))
+  check('play 拋錯被吞、phase 仍走到 finished → 儀器失效(render-errored)並附 play 原文;只看 phase 的代理會判成完成',
+    isInstrument(swallowed, 'render-errored') && swallowed.error.storybookError.includes('play 拋錯') && proxySaysDone,
+    `openStory=${swallowed.ok ? '成功(錯)' : short(swallowed.error.message)};phase 代理判完成=${proxySaysDone}`)
+
   // 8. 渲染期間拋出頁面例外 → 儀器失效
   const boom = await attempt(page, url('boom'), { notFound: server.notFound })
   check('渲染期間有頁面例外 → 儀器失效(render-health)',
@@ -330,6 +361,19 @@ try {
       && earlyPhase && noPhase,
     `預設=${stuckDefault.ok ? '成功(錯)' : stuckDefault.error.kind};允許 afterEach=${stuckAllowed.ok ? stuckAllowed.value.phase : short(stuckAllowed.error.message)};`
     + `卡在 rendering=${hangAllowed.ok ? '成功(錯)' : hangAllowed.error.kind};play 未完=${slowAllowed.ok ? `焦點已移 ${slowAllowed.value.probe}` : slowAllowed.error.kind};['playing'] / [] 丟 TypeError=${earlyPhase}/${noPhase}`)
+
+  // 13b. Storybook 10 的 completing(play 跑完之後):卡在 completing → 預設與只允許 afterEach 都儀器失效;允許 completing 才成功
+  const compDefault = await attempt(page, url('stuck-completing'), { timeoutMs: 1500, notFound: server.notFound })
+  const compAfterEachOnly = await attempt(page, url('stuck-completing'), { finishedPhases: ['afterEach', 'finished'], timeoutMs: 1500, notFound: server.notFound })
+  const compAllowed = await attempt(page, url('stuck-completing'), { finishedPhases: ['completing', 'completed', 'afterEach', 'finished'], notFound: server.notFound })
+  const hangCompAllowed = await attempt(page, url('hang'), { finishedPhases: ['completing', 'finished'], timeoutMs: 1500, notFound: server.notFound })
+  check('finishedPhases:卡在 completing(10.x)→ 預設與只允許 afterEach 都儀器失效;允許 completing 才成功;允許了也不提早接受 rendering',
+    isInstrument(compDefault, 'render-timeout') && compDefault.error.reason.includes('stuck-completing / completing')
+      && isInstrument(compAfterEachOnly, 'render-timeout')
+      && compAllowed.ok && compAllowed.value.phase === 'completing'
+      && isInstrument(hangCompAllowed, 'render-timeout') && hangCompAllowed.error.reason.includes('hang / rendering'),
+    `預設=${compDefault.ok ? '成功(錯)' : compDefault.error.kind};只允許 afterEach=${compAfterEachOnly.ok ? '成功(錯)' : compAfterEachOnly.error.kind};`
+    + `允許 completing=${compAllowed.ok ? compAllowed.value.phase : short(compAllowed.error.message)};卡在 rendering=${hangCompAllowed.ok ? '成功(錯)' : hangCompAllowed.error.kind}`)
 
   // 14. previewFrame(管理介面):導覽 manager.html,3–9 步在 #storybook-preview-iframe 的內容框架裡做
   const mgr = (id) => `${server.origin}/manager.html?path=${encodeURIComponent(`/story/${id}`)}`
@@ -1064,6 +1108,29 @@ try {
         check('真實建置:story 檔被擋 → 儀器失效並列出失敗請求',
           hits > 0 && isInstrument(realBlocked, 'storybook-error') && realBlocked.error.failedRequests.some((f) => new RegExp(`/assets/${base}-`).test(f)),
           `攔到 ${hits} 次;${realBlocked.ok ? '被判成成功(錯)' : short(realBlocked.error.message)}`)
+        // Storybook 10 整合 highlight(lib「量測頁不開 Storybook 10 的整合 highlight」):openStory 預設讓 preview 文件的
+        // FEATURES.highlight = false、highlight 模組不啟動(它會在 #storybook-root 掛 MutationObserver、每批 DOM 變動重跑整頁 getComputedStyle);
+        // storybookHighlight: true 的同一則必須照 Storybook 原樣啟動 —— 兩面:關的那面綠而開的那面也綠,才證明觀察值真的反映 runtime 有沒有啟動它
+        // (Storybook 改了開關或旗標名稱,開的那面會紅,不會默默變成兩面都「沒啟動」)。同一分頁換模式 → TypeError。
+        const highlightState = (p) => p.evaluate(() => ({
+          feature: window.FEATURES?.highlight ?? null,
+          booted: globalThis.__STORYBOOK_HIGHLIGHT_INITIALIZED === true,
+        }))
+        const hlOff = await attempt(page, realUrl(entry.id), { notFound: real.notFound })
+        const offState = hlOff.ok ? await highlightState(page) : null
+        // 另開一個瀏覽器:launchBrowser 是 --single-process,同一個瀏覽器開第二個分頁會整個掛掉(SIGTRAP)
+        const hlBrowser = await launchBrowser()
+        let onState = null
+        let switchRejected = false
+        try {
+          const hlPage = await hlBrowser.newPage()
+          const hlOn = await attempt(hlPage, realUrl(entry.id), { notFound: real.notFound, storybookHighlight: true })
+          onState = hlOn.ok ? await highlightState(hlPage) : { error: short(hlOn.error.message) }
+          switchRejected = await throwsTypeError(() => openStory(hlPage, realUrl(entry.id), { notFound: real.notFound }))
+        } finally { await hlBrowser.close().catch(() => {}) }
+        check('真實建置:openStory 預設不啟動 Storybook 整合 highlight(FEATURES.highlight = false、模組沒初始化);storybookHighlight: true 照原樣啟動;同一分頁換模式 → TypeError',
+          offState?.feature === false && offState.booted === false && onState?.feature === true && onState.booted === true && switchRejected,
+          `預設=${JSON.stringify(offState)};storybookHighlight:true=${JSON.stringify(onState)};換模式 TypeError=${switchRejected}`)
       }
       // ownSurfacePosition + parkPointer 的真實對照(2026-10-01):PeoplePicker「多人 × 欄位內搜尋」第 3 格的正中央是「Eric Tsai」Tag 的頭像 ——
       // 全掃閘(overlay-footer-gutter / select-all-footer)舊的點法在這一則紅過。舊點法必須重現「名片卡打開、蓋住第 4 格」,helper 必須讓第 4 格點得到、開得起來。

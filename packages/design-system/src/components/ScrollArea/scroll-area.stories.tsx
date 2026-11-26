@@ -1,5 +1,5 @@
 // @story-baseline: packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx#AlignmentRule
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { createColumnHelper } from '@tanstack/react-table'
 import React from 'react'
 import { ScrollArea, ScrollBar } from './scroll-area'

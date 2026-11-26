@@ -1,7 +1,7 @@
-import type { Meta } from '@storybook/react'
+import type { Meta } from '@storybook/react-vite'
 import { useState, useEffect } from 'react'
 import { Copy, Pencil, Trash2, Download, Monitor, ChevronDown, ChevronRight, Check, type LucideIcon } from 'lucide-react'
-import { fn } from '@storybook/test'
+import { fn } from 'storybook/test'
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuCheckboxItem,

@@ -2,7 +2,7 @@
 //   AllStates retired 2026-05-17 per audit Dim 46(anatomy StateBehavior own state matrix,
 //   manual trait grid 違 story-rules.md 三層定位「展示層 = 典型使用情境,不是 trait grid」)。
 import * as React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import {
   Steps,
   StepItem,

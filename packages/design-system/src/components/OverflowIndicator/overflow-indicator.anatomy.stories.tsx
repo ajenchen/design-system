@@ -8,7 +8,7 @@
 //     focusable 修正(2026-06-01 #13,見 Accessibility story)非獨立視覺軸。openDelay /
 //     closeDelay 等行為已於 Inspector 展示。HoverCard 內容互動由消費的內容
 //     元件(Avatar / Tag)各自負責。
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
 import { OverflowIndicator } from './overflow-indicator'
 import { Tag } from '@/design-system/components/Tag/tag'

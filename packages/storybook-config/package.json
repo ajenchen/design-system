@@ -11,7 +11,6 @@
   "license": "UNLICENSED",
   "files": [
     "dist",
-    "addons/ds-devmode/preset.cjs",
     "README.md"
   ],
   "exports": {
@@ -35,9 +34,8 @@
     },
     "./addons/ds-devmode/preset": {
       "types": "./dist/addons/ds-devmode/preset.d.ts",
-      "import": "./addons/ds-devmode/preset.cjs",
-      "require": "./addons/ds-devmode/preset.cjs",
-      "default": "./addons/ds-devmode/preset.cjs"
+      "import": "./dist/addons/ds-devmode/preset.js",
+      "default": "./dist/addons/ds-devmode/preset.js"
     },
     "./addons/ds-devmode/manager": {
       "types": "./dist/addons/ds-devmode/manager.d.ts",
@@ -61,17 +59,16 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@storybook/addon-a11y": "8.6.19",
-    "@storybook/addon-docs": "8.6.19",
-    "@storybook/addon-essentials": "8.6.19",
-    "@storybook/addon-links": "8.6.19"
+    "@storybook/addon-a11y": "10.6.9",
+    "@storybook/addon-docs": "10.6.9",
+    "@storybook/addon-links": "10.6.9"
   },
   "peerDependencies": {
     "@qijenchen/design-system": ">=0.1.0-beta.15",
-    "@storybook/react": ">=8.0.0 <11.0.0",
-    "@storybook/react-vite": ">=8.0.0 <11.0.0",
+    "@storybook/react-vite": "^10.6.9",
     "react": ">=18.0.0",
-    "react-dom": ">=18.0.0"
+    "react-dom": ">=18.0.0",
+    "storybook": "^10.6.9"
   },
   "devDependencies": {
     "typescript": "^5.7.0"

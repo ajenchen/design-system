@@ -3,7 +3,7 @@
 //   SizeMatrix N/A — 高度 padding-based(`px-loose py-tight`)+ md Buttons 自然撐高,本元件無 size prop。
 //   StateBehavior 集中在 Overview 「selection state-driven 渲染」段;獨立 StateBehavior 會跟 Overview 重複。
 import { useState } from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Trash2, Archive, Download } from 'lucide-react'
 import { BulkActionBar } from './bulk-action-bar'
 import { Alert } from '@/design-system/components/Alert/alert'

@@ -1,6 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @story-baseline: packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx#AlignmentRule
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Skeleton } from './skeleton'
 import { DataTable, type DataTableColumnDef } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging

@@ -5,7 +5,7 @@
 //     5 個 DS 標準 ratio 由 StandardRatios 涵蓋。
 //   StateBehavior N/A — 容器 primitive 無 hover / focus / active 狀態。
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { AspectRatio } from './aspect-ratio'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'

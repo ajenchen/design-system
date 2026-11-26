@@ -10,10 +10,10 @@
 //     hover / focus / active(自身就是 hover affordance);實際行為差異在
 //     placement(top / right / bottom / left + 動畫方向)由 PlacementReference(3.)
 //     涵蓋,warm-up timing 由 Overview 段落涵蓋。
-import type { Meta } from '@storybook/react'
+import type { Meta } from '@storybook/react-vite'
 import { useState } from 'react'
 import { Download, Settings } from 'lucide-react'
-import { fn } from '@storybook/test'
+import { fn } from 'storybook/test'
 import { Tooltip, TooltipContent, TooltipTrigger } from './tooltip'
 import { Button } from '../Button/button'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'

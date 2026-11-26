@@ -3,8 +3,8 @@
 // decision-related stories. ColorSemantic + MonthViewOnlyRule + ReadOnlyRule kept as separate principles.
 // 2026-11-26 加三則事件詳情的原則(DetailReadingFirstRule / DetailBesideListRule / FullEditInDialogRule;calendar.spec.md「事件詳情浮層」)。
 import * as React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
-import { expect, userEvent, waitFor, within } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { type CalendarEvent } from './calendar'
 import { CalendarDemo } from './_calendar-demo'
 import { DatePicker } from '@/design-system/components/DatePicker/date-picker'
