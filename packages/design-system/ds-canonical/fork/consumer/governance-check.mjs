@@ -509,6 +509,7 @@ if (!repositoryPathIsSafe(appsRoot) || !pathEntryExists(appsRoot) || !lstatSync(
     canonicalScanRoots.push(workspace)
   }
 }
+// 清單正本 scripts/lib/consumer-output-roots.mjs(本檔以單一檔出貨、不 import;逐字相同由 scripts/test-setup-governance.mjs 守)
 const generatedOutputNames = ['node_modules', 'dist', 'build', 'coverage', 'storybook-static', '.next', '.turbo', '.cache', '.vite']
 canonicalOutputRoots.add(resolve(repo, '.git'))
 discoveryTraversalExcludedRoots.add(resolve(repo, '.git'))

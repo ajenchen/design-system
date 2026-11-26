@@ -267,6 +267,49 @@ done
 run_hook "Write" "/repo/apps/work/src/new.tsx" "content" '<div /> // @ds-misuse-allow: one bounded true exception'
 expect_pass "R4. repo canonical micro markers do not consume escape ratchet"
 
+# ── P-series:每個 app 各自計數(2026-11-27,上游判定 B1)+ 規範位置的建置輸出不計(B4)──────────
+# 計數根 = 本次編輯檔所在的 apps/<name>;template 是一個 repo 放多個 app(workspaces = apps/*)。
+seed_app() { # seed_app <app> <n>:在 apps/<app>/src 放 n 個真 escape marker
+  mkdir -p "$TMP_DIR/apps/$1/src"
+  i=1
+  while [ "$i" -le "$2" ]; do
+    printf '// @ds-misuse-allow: seeded reason %s %s\n' "$1" "$i" > "$TMP_DIR/apps/$1/src/seed$i.tsx"
+    i=$((i + 1))
+  done
+}
+rm -rf "$TMP_DIR/apps"; mkdir -p "$TMP_DIR/apps"
+seed_app alpha 9; seed_app beta 9
+# P1. 兩個 app 各 9 個(合計 18 > 10)→ 各自加 1 個都放行(舊實作:全 apps/** 合算 18 ≥ 10 → 擋)
+run_hook "Write" "/repo/apps/alpha/src/new.tsx" "content" '<div /> // @ds-misuse-allow: alpha bounded exception'
+expect_not_block "P1a. alpha 9 < cap(beta 的 9 不算進來)+ 加 1 → not blocked"
+run_hook "Write" "/repo/apps/beta/src/new.tsx" "content" '<div /> // @ds-misuse-allow: beta bounded exception'
+expect_not_block "P1b. beta 9 < cap + 加 1 → not blocked"
+# P2. alpha 到 11 個 → 只擋 alpha;beta 仍可新增
+seed_app alpha 11
+run_hook "Write" "/repo/apps/alpha/src/new.tsx" "content" '<div /> // @ds-misuse-allow: alpha one more'
+expect_block "P2a. alpha 存量 11 ≥ cap + 加 marker → blocked(只擋 alpha)" "ESCAPE-MARKER-REPO-RATCHET"
+run_hook "Write" "/repo/apps/beta/src/new.tsx" "content" '<div /> // @ds-misuse-allow: beta still fine'
+expect_not_block "P2b. alpha 超標不拖累 beta(beta 9 < cap)→ not blocked"
+# P3. 新 app 還沒有任何檔 → 存量 0
+run_hook "Write" "/repo/apps/gamma/src/new.tsx" "content" '<div /> // @ds-misuse-allow: first exception in a new app'
+expect_not_block "P3. 新 app(apps/gamma 還不存在)存量 0 + 加 marker → not blocked"
+# P4(B4). 規範位置的建置輸出(apps/<name>/storybook-static、node_modules、dist …)不計;src 底下叫 dist 的資料夾照計
+rm -rf "$TMP_DIR/apps"; mkdir -p "$TMP_DIR/apps/delta/storybook-static" "$TMP_DIR/apps/delta/src/dist"
+i=1
+while [ "$i" -le 12 ]; do
+  printf '// @ds-misuse-allow: built output copy %s\n' "$i" > "$TMP_DIR/apps/delta/storybook-static/out$i.ts"
+  i=$((i + 1))
+done
+run_hook "Write" "/repo/apps/delta/src/new.tsx" "content" '<div /> // @ds-misuse-allow: real source exception'
+expect_not_block "P4a. apps/delta/storybook-static 的 12 個 marker 是建置輸出、不計 → not blocked"
+i=1
+while [ "$i" -le 12 ]; do
+  printf '// @ds-misuse-allow: source under a dist-named folder %s\n' "$i" > "$TMP_DIR/apps/delta/src/dist/src$i.ts"
+  i=$((i + 1))
+done
+run_hook "Write" "/repo/apps/delta/src/new.tsx" "content" '<div /> // @ds-misuse-allow: one more'
+expect_block "P4b. apps/delta/src/dist 是原始碼(不在規範位置)、12 個照計 → blocked" "ESCAPE-MARKER-REPO-RATCHET"
+
 rm -rf "$TMP_DIR/apps"
 
 echo ""

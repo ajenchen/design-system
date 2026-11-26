@@ -287,7 +287,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/governance-check.mjs",
-      "sha256": "bb3cc3bf1a401c0e1b6de688147a09fa568b57890715a03e5a98f1919b7ffd8d",
+      "sha256": "2bcb29b557838e0e61b14541e3f6500120abab5d5cd55d2395ad6ab124693396",
       "source": "scripts/governance-check.mjs",
       "classification": null,
       "destination": null
@@ -375,7 +375,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/423729840acdd43c812f17c245b871716c6b60f76e4d3e94864d0e34a815bf8d.blob",
-      "sha256": "aad4e8ba31f3efbead67700bcff05855dc89cab6f562943d61aae3842cc2276f",
+      "sha256": "c5ffee111d8a31c874ac3bd6de79b94f0b21e21600fb184c4d5a71594e7115a1",
       "source": "scripts/consumer-source-harness.mjs",
       "classification": null,
       "destination": "scripts/consumer-source-harness.mjs"
@@ -395,6 +395,14 @@
       "source": "scripts/setup-workspace.mjs",
       "classification": null,
       "destination": "scripts/setup-workspace.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/566d16c80543409d12c49b0979eb0c882106a4840b948820268b221dd85801ac.blob",
+      "sha256": "440837081c3b8f714b099d91f0235b71ea5493ee8836697d559ef342f5cf7392",
+      "source": "scripts/lib/consumer-output-roots.mjs",
+      "classification": null,
+      "destination": "scripts/lib/consumer-output-roots.mjs"
     },
     {
       "schemaVersion": 1,
@@ -471,7 +479,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/7937321877e5c34c27dae36c0d507d21cd42fa3f46a8f11a284b8b4a52b6faa4.blob",
-      "sha256": "86edd952fb5c3871896515440693abeb08c1d1da9f887fa073b9ddda1363f572",
+      "sha256": "9b046590c4664e58db920d5b54339ba57eeec563ce858602920cfcaffcdbc231",
       "source": "scripts/lint-ds-internal-imports.mjs",
       "classification": null,
       "destination": "scripts/lint-ds-internal-imports.mjs"
@@ -735,7 +743,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_escape_marker_abuse.sh",
-      "sha256": "1307a70e7ff776a6f100e173d93f6b2b8b58cc535c15688c08afa61ad1bc5651",
+      "sha256": "7964b7fd10d4a6bef46bf5cfa8bc6691aa6907a115c116a0e0cdac197ea7875b",
       "source": "check_escape_marker_abuse.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -855,7 +863,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/lib/_micro_geometry.sh",
-      "sha256": "de7c428792f28136c446e247622e44595ab06139430cedf391b671282abb3cf3",
+      "sha256": "3bd4b97d24f26896240af1cbc08097a8a90e05e2762a96c1ae38ef4780c37851",
       "source": "lib/_micro_geometry.sh",
       "classification": "HELPER",
       "destination": null
@@ -975,7 +983,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "97eaf248d20456e8a3f2b7930141af9895f6ae9fc421f8f91e1649693671a061",
+      "sha256": "a35a4eb9a60971a2612562019c7fd384293862a7c6b989bc20d331e0cbe46a0e",
       "source": null,
       "classification": null,
       "destination": null

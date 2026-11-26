@@ -2133,3 +2133,35 @@ test('only the render-only reference policy may install a historically certified
   assert.equal(acceptsHistoricalNpmOverlay(undefined), false)
 })
 
+// 2026-11-27(上游判定 B4):規範位置的建置輸出清單只住 scripts/lib/consumer-output-roots.mjs。
+// lint-ds-internal-imports / consumer-source-harness import 它;governance-check.mjs(單一檔出貨)與 hook 端 _micro_geometry.sh
+// 不能 import,寫成字面值 —— 這裡守兩處字面值與正本逐字相同(漂移就紅),並兩面驗 lint 只在規範位置略過。
+test('consumer output roots: one canonical list, and lint skips build output only at canonical roots', async () => {
+  const { CONSUMER_OUTPUT_DIRECTORY_NAMES } = await import('./lib/consumer-output-roots.mjs')
+  const literal = (source, pattern, label) => {
+    const match = source.match(pattern)
+    assert.ok(match, `${label}: output-root list literal not found`)
+    return [...match[1].matchAll(/'([^']+)'/g)].map((m) => m[1])
+  }
+  assert.deepEqual(literal(readFileSync('scripts/governance-check.mjs', 'utf8'), /const generatedOutputNames = \[([^\]]*)\]/, 'governance-check.mjs'), [...CONSUMER_OUTPUT_DIRECTORY_NAMES])
+  assert.deepEqual(literal(readFileSync('packages/design-system/ds-canonical/hooks/lib/_micro_geometry.sh', 'utf8'), /output_names = \(([^)]*)\)/, '_micro_geometry.sh'), [...CONSUMER_OUTPUT_DIRECTORY_NAMES])
+  for (const path of ['scripts/lint-ds-internal-imports.mjs', 'scripts/consumer-source-harness.mjs']) {
+    assert.match(readFileSync(path, 'utf8'), /from '\.\/lib\/consumer-output-roots\.mjs'/, `${path} must import the canonical output-root list`)
+  }
+  const forkManifest = JSON.parse(readFileSync('packages/design-system/ds-canonical/fork/manifest.json', 'utf8'))
+  assert.ok(forkManifest.consumer.managedFiles['scripts/lib/consumer-output-roots.mjs'], 'the shared list ships with the scripts that import it')
+
+  const { findDsInternalImportViolations } = await import('./lint-ds-internal-imports.mjs')
+  const repo = mkdtempSync(join(tmpdir(), 'output-roots-'))
+  temporary.push(repo)
+  const bad = "import x from '@qijenchen/design-system/src/components/Button/button'\n"
+  mkdirSync(join(repo, 'apps/x/storybook-static'), { recursive: true })
+  mkdirSync(join(repo, 'apps/x/dist'), { recursive: true })
+  writeFileSync(join(repo, 'apps/x/storybook-static/built.js'), bad)
+  writeFileSync(join(repo, 'apps/x/dist/built.js'), bad)
+  assert.deepEqual(findDsInternalImportViolations(repo), [], 'apps/x/storybook-static and apps/x/dist are canonical build output: not reported')
+  mkdirSync(join(repo, 'apps/x/src/dist'), { recursive: true })
+  writeFileSync(join(repo, 'apps/x/src/dist/source.ts'), bad)
+  assert.deepEqual(findDsInternalImportViolations(repo).map((v) => v.file), ['apps/x/src/dist/source.ts'], 'source under a dist-named folder outside the canonical root is still scanned')
+})
+

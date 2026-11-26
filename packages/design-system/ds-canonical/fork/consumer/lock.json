@@ -42,7 +42,7 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "010b00a1e706d8c8d25b6ed84252b4b730f47a3606757b674e5378f034269fc7",
+    "forkCorpusLockSha256": "6d965a93ebe93b12152883f88d213d04bd400e42557cbf13ea66f77216610f46",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
     "providerLifecycleSha256": "69fa942cf9c3cddd5026b1844b5f2d943e8ceeb21f679b4089fd2701f6e0eae3",
@@ -72,7 +72,7 @@
     "mergeSurfaceDigests": {
       "claude": "b17888945b06f3433e8cbeb0b659d63e41dbd391906461b6453500d8ec8ecec1"
     },
-    "governanceCheckSha256": "bb3cc3bf1a401c0e1b6de688147a09fa568b57890715a03e5a98f1919b7ffd8d",
+    "governanceCheckSha256": "2bcb29b557838e0e61b14541e3f6500120abab5d5cd55d2395ad6ab124693396",
     "utilityRegistrySha256": "0e78034d31ba8d1b0f7c08ab4a931990c4a461a5b53019574828849342f903b1",
     "sharedSkillsSha256": "9a7912ed1e261b1bbc259f141c5badb5d8f564f59fb2bb778e0b11c409bdf070",
     "sharedSkillCount": 11,
@@ -105,11 +105,12 @@
       "schemas/provider-cli-toolchain.schema.json": "7e5c6c14c8a9295373f56df968afdb8cb8888764ce1b060993a655ccec8ac61d",
       "scripts/audit-consumer-a11y.mjs": "8ff8e74774dbe04ed69cbb18ecf5abd3d8b60d24527e7af751d74f9341a1d076",
       "scripts/check-plugin-installed.mjs": "f2a673cc011743fe51f87746b9aebbd3332378cd2732088eda621e16a3c74386",
-      "scripts/consumer-source-harness.mjs": "aad4e8ba31f3efbead67700bcff05855dc89cab6f562943d61aae3842cc2276f",
+      "scripts/consumer-source-harness.mjs": "c5ffee111d8a31c874ac3bd6de79b94f0b21e21600fb184c4d5a71594e7115a1",
       "scripts/lib/a11y-static-server.mjs": "c22322959d2898bc8ebb6c95077bd4c97499f49a690e1fe00f2220e8f809f4ef",
       "scripts/lib/canonical-path-containment.mjs": "0244e31dc3be5015bed3efd65a5a77086a2e4676e9ac79cd0801c8cde6a74fcd",
       "scripts/lib/closed-tool-execution.mjs": "642b3e788646545918fd47900841bb2f13b19252995a4235e1f9b6c039688cda",
       "scripts/lib/consumer-control-plane-policy.mjs": "51aba211bb2f755eff7fa48bb060f9835356a62d2643ab5049147a9896c7bb72",
+      "scripts/lib/consumer-output-roots.mjs": "440837081c3b8f714b099d91f0235b71ea5493ee8836697d559ef342f5cf7392",
       "scripts/lib/exact-workspace-dependencies.mjs": "40161bac07da3ce65b59f6d1e5439c1c43f398b4305c1ad5a0e1309d287c812f",
       "scripts/lib/governance-dependency-bootstrap.mjs": "5414f385799cb5d52243be48bf62378cd572a7aa98d5e6064ae08e4c64379003",
       "scripts/lib/launch-browser.mjs": "3656ff22ef06b3354e306047b00d1aa63c1e7cfb9bad9d38ab9e0dbc87dc1981",
@@ -119,7 +120,7 @@
       "scripts/lib/verified-exact-npm-runtime.mjs": "09f884b5314d53c17c8cbb94edafdc9cb5679ba9f0a81af89a72af7e68cae57f",
       "scripts/lib/workspace-post-create.mjs": "f3ddc6db740d5c4d48b1c6e16c55222325e4d1c16fe6644a455e7b7e5bea0a0d",
       "scripts/lib/worktree-fingerprint.mjs": "a2fe922b3be6ff1b782ffc7e76b0ebb61b3691ba9b46768c0d0349913228ce4a",
-      "scripts/lint-ds-internal-imports.mjs": "86edd952fb5c3871896515440693abeb08c1d1da9f887fa073b9ddda1363f572",
+      "scripts/lint-ds-internal-imports.mjs": "9b046590c4664e58db920d5b54339ba57eeec563ce858602920cfcaffcdbc231",
       "scripts/product-template-scaffold-lock.mjs": "7fc069b6ba5f62907eed574d9ae53c5202463fd79b55aa41101b3e2587e99072",
       "scripts/refresh-fork-launchers.mjs": "8d2058e9b32307a80e3a564f18abac6ea093d09e79164f468af5e1893217283f",
       "scripts/release-bom-contract.mjs": "75d736f86c7f695dc88a1982d547998d510e8050c4847abe387227b6662b87c2",

@@ -378,6 +378,8 @@ const MANAGED_FILE_SOURCES = {
   'scripts/lint-ds-internal-imports.mjs': join(ROOT, 'scripts/lint-ds-internal-imports.mjs'),
   'scripts/lib/a11y-static-server.mjs': join(ROOT, 'scripts/lib/a11y-static-server.mjs'),
   'scripts/lib/canonical-path-containment.mjs': join(ROOT, 'scripts/lib/canonical-path-containment.mjs'),
+  // 2026-11-27(上游判定 B4):lint-ds-internal-imports.mjs 與 consumer-source-harness.mjs 都 import 它(規範位置的建置輸出清單)。
+  'scripts/lib/consumer-output-roots.mjs': join(ROOT, 'scripts/lib/consumer-output-roots.mjs'),
   // a11y-static-server.mjs 2026-09-24 起 import 它(Storybook 建置先凍結成快照再供檔)。
   'scripts/lib/storybook-static-snapshot.mjs': join(ROOT, 'scripts/lib/storybook-static-snapshot.mjs'),
   // audit-consumer-a11y.mjs 2026-09-25 起用共用的 openStory(document 模式)證明 app 真的渲染出來才跑 axe

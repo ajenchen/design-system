@@ -177,8 +177,33 @@ EOF
     if [ -L "$APPS_ROOT" ] || [ ! -d "$APPS_ROOT" ] || [ ! -r "$APPS_ROOT" ]; then
       governance_hook_integrity_fail 'escape-marker repository scan root is unavailable or unsafe'
     fi
-    REPO_MARKERS=$(governance_countable_repository_escape_markers "$APPS_ROOT") \
-      || governance_hook_integrity_fail 'escape-marker repository scan failed'
+    # 計數根 = 本次編輯檔所在的 apps/<name>(2026-11-27,上游判定 B1):template 本來就是一個 repo 放多個 app
+    #(package.json workspaces = apps/*),全 apps/** 合算會讓合規的 app 被別的 app 拖累而擋。取捨:全 repo 的總上限
+    # 因此是「每個 app 各 10」(N 個 app = N×10),同一 app 內「每檔 1-2 個、散多檔」的繞法照舊擋。
+    # 編輯檔不在 apps/<name>/ 底下(例:consumer/…)時照舊以整個 apps/ 為根。
+    SCAN_ROOT="$APPS_ROOT"
+    SCAN_LABEL='apps/**'
+    EDIT_APP=$(printf '%s' "$FILE" | sed -nE 's#^(.*/)?apps/([^/]+)/.*#\2#p')
+    case "$EDIT_APP" in
+      ''|.*|*[!A-Za-z0-9._-]*) EDIT_APP='' ;;
+    esac
+    if [ -n "$EDIT_APP" ]; then
+      SCAN_ROOT="$APPS_ROOT/$EDIT_APP"
+      SCAN_LABEL="apps/$EDIT_APP"
+      if [ -L "$SCAN_ROOT" ]; then
+        governance_hook_integrity_fail 'escape-marker app scan root is a symlink'
+      fi
+    fi
+    if [ "$SCAN_ROOT" != "$APPS_ROOT" ] && [ ! -e "$SCAN_ROOT" ]; then
+      # 新 app 還沒有任何檔:存量 0
+      REPO_MARKERS=''
+    else
+      if [ ! -d "$SCAN_ROOT" ] || [ ! -r "$SCAN_ROOT" ]; then
+        governance_hook_integrity_fail 'escape-marker app scan root is unavailable or unsafe'
+      fi
+      REPO_MARKERS=$(governance_countable_repository_escape_markers "$SCAN_ROOT") \
+        || governance_hook_integrity_fail 'escape-marker repository scan failed'
+    fi
     if [ -n "$REPO_MARKERS" ]; then
       governance_hook_grep_capture REPO_TOTAL 'escape-marker repository counter failed' "$REPO_MARKERS" -c .
     else
@@ -197,7 +222,7 @@ EOF
         cat >&2 << EOF
 🚨 ESCAPE-MARKER-REPO-RATCHET BLOCKER(P0,2026-07-08 WM 戰役 R4)
 
-  apps/** 全 repo escape marker 存量已 $REPO_TOTAL 個(ceiling $REPO_CAP),本次 edit 又要新增 $EDIT_ADDS_MARKER 個。
+  $SCAN_LABEL escape marker 存量已 $REPO_TOTAL 個(ceiling 每個 app $REPO_CAP),本次 edit 又要新增 $EDIT_ADDS_MARKER 個。
   每檔 1-2 個散多檔 = 繞 per-file gate 的同型濫用 — repo 級 ratchet 攔。
 
   修法 2 選 1:
