@@ -131,8 +131,9 @@ export const CASES = [
   { id: 'fileviewer-info-panel', story: `${C}fileviewer-展示--open-snapshot`, header: 'aside header', waitFor: 'button[aria-label="展開詳細資訊面板"]', steps: [{ clickSelector: 'button[aria-label="展開詳細資訊面板"]', waitFor: 'aside textarea' }], role: 'element', src: `${DS}components/FileViewer/file-viewer.tsx#InfoPanel`, label: 'FileViewer 資訊面板 → 說明欄位(規格範例 3)' },
   { id: 'dialog-body', story: `${C}dialog-展示--open-snapshot`, header: SURFACE_HEADER, waitFor: '[role="dialog"] p', role: 'element', src: `${DS}components/Dialog/dialog.tsx#DialogBody`, label: 'Dialog → 內文第一段' },
   // 主體只有空狀態(2026-11-27,產品 canary 回報 H10;empty.spec.md「垂直定位」有框 → 垂直置中):DialogBody 內層撐滿可視高(ScrollArea fillY + min-h-full),
-  // 只放一個 Empty 時由 layoutSpace.css 置中、上下同值 → 標頭底 → 空狀態頂 = 空狀態底 → 頁尾頂(= Empty 中心在主體可視區正中)。讀者 story 按了才開(D2 甲),steps 點觸發鈕
-  { id: 'dialog-empty-centered', story: `${C}dialog-展示--empty-body`, header: SURFACE_HEADER, waitFor: '#storybook-root button', steps: [{ click: '開啟分享連結 WM-208', waitFor: '[role="dialog"] [data-empty]' }], role: 'element', centered: true, nextBlock: '頁尾', src: `${DS}components/Dialog/dialog.stories.tsx#TaskNotFoundDialog`, label: 'Dialog 主體只有空狀態 → Empty(在主體可視區正中:標頭底 → 空狀態頂 = 空狀態底 → 頁尾頂)' },
+  // 只放一個 Empty 時由 layoutSpace.css 置中、上下同值 → 標頭底 → 空狀態頂 = 空狀態底 → 頁尾頂(= Empty 中心在主體可視區正中)。讀者 story 按了才開(D2 甲),steps 點觸發鈕。
+  // 角色登記 bounded:第一個看得見的東西是 Empty 的圖示圈(Avatar 48 中性底色 = 跟外層不同的底色 → classifyFirst 判 bounded;2026-11-27 首跑實量);置中的格不比規則 2 的值,只比上下相等
+  { id: 'dialog-empty-centered', story: `${C}dialog-展示--empty-body`, header: SURFACE_HEADER, waitFor: '#storybook-root button', steps: [{ click: '開啟分享連結 WM-208', waitFor: '[role="dialog"] [data-empty]' }], role: 'bounded', centered: true, nextBlock: '頁尾', src: `${DS}components/Dialog/dialog.stories.tsx#TaskNotFoundDialog`, label: 'Dialog 主體只有空狀態 → Empty(在主體可視區正中:標頭底 → 空狀態頂 = 空狀態底 → 頁尾頂)' },
   { id: 'sheet-body', story: `${C}sheet-展示--open-snapshot`, header: SURFACE_HEADER, waitFor: '[role="dialog"] label', role: 'element', src: `${DS}components/Sheet/sheet.tsx#SheetBody`, label: 'Sheet → 第一個欄位' },
   { id: 'surface-body', story: 'design-system-internal-patterns-overlay-surface--three-part-structure', header: SURFACE_HEADER, waitFor: '[data-slot="surface-body"] p', role: 'element', src: `${DS}patterns/overlay-surface/overlay-surface.tsx#SurfaceBody`, label: 'SurfaceHeader / Body / Footer 三段 → 內文第一段' },
   { id: 'header-anatomy-surface', story: 'design-system-patterns-header-anatomy--overview', header: SURFACE_HEADER, waitFor: '[data-slot="surface-body"] dl', role: 'element', src: `${DS}patterns/overlay-surface/overlay-surface.tsx#SurfaceBody`, label: 'Header 元件總覽 SurfaceHeader → DescriptionList' },
@@ -708,10 +709,20 @@ async function selftestFullPage() {
       const measureNow = async () => judge([{ id: c.id, density, declared: c.role, ...(await probeCase(page, c)) }]).filter((s) => !s.includes('密度沒套上'))
       const now = await measureNow()
       expect(now.length === 0, `${where} 現況應綠,實得 ${plain(now)}`)
-      await page.addStyleTag({ content: '[data-dialog-body] [data-radix-scroll-area-viewport] > div, [data-dialog-body] [data-layout-body] { min-height: 0 !important }' }).then((h) => h.evaluate((el) => el.setAttribute('data-selftest-d', '')))
+      // 用行內 important 拆:fillY 的 class 是 Tailwind 的 !important、住在 @layer utilities,注入的 <style> 沒有 layer → 分層的 important 勝過它
+      //(CSS Cascade 5;2026-11-27 第一版用 <style> 拆不掉、對照組沒紅);行內 style 的 important 排在 layer 之前,拆得掉。包層同時改回 block(= fillX 的形狀)
+      const noFillPatch = (on) => page.evaluate((on) => {
+        const vp = document.querySelector('[role="dialog"] [data-dialog-body] [data-radix-scroll-area-viewport]')
+        for (const el of [vp?.firstElementChild, vp?.querySelector('[data-layout-body]')]) {
+          if (!el) continue
+          if (on) { el.style.setProperty('min-height', '0px', 'important'); if (el === vp.firstElementChild) el.style.setProperty('display', 'block', 'important') }
+          else { el.style.removeProperty('min-height'); el.style.removeProperty('display') }
+        }
+      }, on)
+      await noFillPatch(true)
       const noFill = await measureNow()
       expect(noFill.length > 0 && noFill.every((s) => !s.includes(INSTRUMENT_FAIL_MARKER)) && noFill.some((s) => s.includes('在可用範圍正中')), `${where} 拿掉內層撐滿應紅「在可用範圍正中」、不判儀器失效,實得 ${plain(noFill)}`)
-      await page.evaluate(() => document.querySelectorAll('[data-selftest-d]').forEach((el) => el.remove()))
+      await noFillPatch(false)
       const restored = await measureNow()
       expect(restored.length === 0, `${where} 還原後應綠,實得 ${plain(restored)}`)
       console.log(`  (d) ${where}:現況綠 / 拿掉內層撐滿紅 ${noFill.length} 筆 / 還原綠`)

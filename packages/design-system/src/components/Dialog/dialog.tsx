@@ -365,6 +365,11 @@ const DialogContent = React.forwardRef<
       //(改過的欄位 / 就地編輯中 / 格游標 / 拖曳中)且在這一層裡面 → 留給控件、不關;其餘照舊關閉
       onEscapeKeyDown={withOverlayEscape(onEscapeKeyDown, () => contentEl)}
     >
+      {/* consumer 自己指定 aria-describedby(確認框把 body 裡的後果句綁成說明;dialog.spec.md「A11y 預設」)時,Radix 仍去找它自己的說明 id:
+          @radix-ui/react-dialog 1.1.15 dist/index.mjs DescriptionWarning —— 內容上有 aria-describedby、而 context.descriptionId 的元素不在 → console.warn
+          「Missing `Description`」(誤報;2026-11-27 overlay-story-contract R7 實量到)。放一個 hidden 的空 Description 佔住那個 id:不被任何 aria-describedby
+          指到(consumer 的值蓋過 Radix 的預設)、hidden 不佔版面也不進無障礙樹;consumer 沒指定時不放(那時照 lib/overlay-description.ts 的判斷) */}
+      {props['aria-describedby'] != null && <DialogPrimitive.Description hidden />}
       <DescriptionPresenceContext.Provider value={descriptionPresence.register}>{children}</DescriptionPresenceContext.Provider>
     </DialogPrimitive.Content>
   )

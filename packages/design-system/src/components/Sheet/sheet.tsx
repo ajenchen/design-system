@@ -201,6 +201,8 @@ const SheetContent = React.forwardRef<
         // 這一下 Esc 由誰處理(全 DS 一支,判準與出處住 lib/overlay-escape.ts withOverlayEscape):輸入法組字中不關;焦點所在控件宣告了自己還有一層且在這一層裡面 → 留給控件;其餘照舊關閉
         onEscapeKeyDown={withOverlayEscape(onEscapeKeyDown, () => contentRef.current)}
       >
+        {/* consumer 自己指定 aria-describedby 時 Radix 誤報「Missing `Description`」的處理,同 DialogContent(理由與出處住 dialog.tsx 同一段註解) */}
+        {props['aria-describedby'] != null && <SheetPrimitive.Description hidden />}
         <DescriptionPresenceContext.Provider value={descriptionPresence.register}>{children}</DescriptionPresenceContext.Provider>
       </SheetPrimitive.Content>
     </SheetPortal>
