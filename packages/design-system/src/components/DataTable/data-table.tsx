@@ -1483,11 +1483,13 @@ interface MemoCellSlotProps {
   onEnterEdit: (rowId: string, colId: string) => void
   /** 欄標題(`columnAccessibleName`)→ 格內編輯器的 accessible name(字串,不破壞 memo) */
   ariaLabel: string
+  /** 這一列的原始資料(`row.original`,身分隨資料穩定、不破壞 memo)→ select 欄編輯器的 `meta.getRowOptions(row)` */
+  row: unknown
 }
 
 const MemoCellSlot = React.memo(function MemoCellSlot({
   Cell, rowId, colId, value, meta, mode, size, autoRowHeight,
-  isEditable, onCommitCell, onCancelCell, onCellCommitLive, onEnterEdit, ariaLabel,
+  isEditable, onCommitCell, onCancelCell, onCellCommitLive, onEnterEdit, ariaLabel, row,
 }: MemoCellSlotProps) {
   const onCommit = React.useCallback((next: unknown) => onCommitCell(rowId, colId, next), [onCommitCell, rowId, colId])
   const onCommitLive = React.useCallback((next: unknown) => onCellCommitLive?.(rowId, colId, next), [onCellCommitLive, rowId, colId])
@@ -1506,6 +1508,7 @@ const MemoCellSlot = React.memo(function MemoCellSlot({
       onCancel={onCancel}
       onRequestEdit={onRequestEdit}
       ariaLabel={ariaLabel}
+      row={row}
     />
   )
 })
@@ -3321,6 +3324,7 @@ function DataTableInner<TData>(
           onCellCommitLive={onCellCommit}
           onEnterEdit={enterCellEdit}
           ariaLabel={columnAccessibleName(cell.column)}
+          row={cell.row.original}
         />
       )
     } else {
@@ -5435,6 +5439,7 @@ function DataTableInner<TData>(
                 onCancel={() => cancelCellEdit(rowId, colId)}  // 2026-07-05 D4:cancel 還原 selection(Contract 11)
                 onDraft={setEditingDraft}  // Phase 7:每 keystroke 寫 draft → preserve across virtualizer unmount
                 ariaLabel={colDef ? columnAccessibleName(colDef) : colId}  // 浮層編輯器同樣以欄標題為名(2026-10-13 Q3d J,兩條路同源)
+                row={row.original}  // select 欄依列可選項(meta.getRowOptions),與 MemoCellSlot 那條路同源
               />
             </div>
           )

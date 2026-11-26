@@ -25,6 +25,8 @@ import { StorybookBuildNotStableError } from './lib/storybook-static-snapshot.mj
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { openStory, StoryRenderInstrumentError, isBrowserRequired, launchBrowserOrSkip, requireStorybookBuild, requireFreshStorybookBuild, settleAfterInteraction } from './lib/launch-browser.mjs'
 import { measureRangeHoverPin, rangeHoverPinVerdict, rangeHoverVerdictCases, formatPixel } from './lib/data-table-range-hover.mjs'
+// I40:select 欄依列可選項的純函式(DataTable 內部 lib;判定表直接拿真的那支跑,不抄一份)
+import { rowSelectOptions } from '../packages/design-system/src/components/DataTable/lib/row-select-options.ts'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
@@ -2750,6 +2752,173 @@ for (const [label, r, c, kind] of [
     await page.keyboard.press('Escape')
   }
   await page.setViewportSize(prevView)
+}
+
+// ── I40:select 欄依列可選項(`meta.getRowOptions`;2026-11-26,user 第五輪決策卡 C4 點選「B:只列可選的」)──────────────
+// 規則住 data-table.spec.md「七、Column Type」依列可選項段。三件事 + 各自的對照組:
+//   (a) 判定表:lib/row-select-options.ts 的 rowSelectOptions(真的那支)—— 期望值是手寫的規則,不是抄輸出;
+//       四個突變(忽略 getRowOptions / 不補回目前值 / 補回放最後 / 把停用項濾掉)每個都必須被至少一格抓到,抓不到 = 判定表沒在分辨。
+//   (b) 呼叫端(M32「值是誰算的」):SelectCell 編輯態吃 rowSelectOptions(整欄, getRowOptions(row), 值)、檢視態仍吃整欄;
+//       data-table.tsx 兩條畫格子的路都把 row 傳進格子;篩選面板的值清單讀整欄 meta.options。每條規則式都在記憶體裡的壞版本上跑一次,必須不成立。
+//   (c) 瀏覽器(專案排程全功能整合,狀態欄):完成的列選單沒有「未開始」、目前值「完成」補回且打勾、觸發欄位顯示「完成」;
+//       未開始的列選單不同(同一欄每列不同);儀器對照 = 同一支讀選單的程式讀優先級欄(沒有 getRowOptions)要讀到全部 4 項;
+//       篩選面板的狀態值清單仍是整欄 5 項(照整欄順序)。test-data-table-invariants.mjs 另在建置複本裡往這兩個選單塞 / 拔一項,證明 (c) 會紅。
+{
+  // (a) 判定表
+  const S = (value, label, extra = {}) => Object.freeze({ value, label, ...extra })
+  const NS = S('not-started', '未開始'), IP = S('in-progress', '進行中'), BL = S('blocked', '受阻'), DN = S('done', '完成'), CX = S('cancelled', '取消')
+  const COL = Object.freeze([NS, IP, BL, DN, CX])
+  const F = (...xs) => Object.freeze(xs)
+  // [名稱, 整欄, 這一列(undefined = 沒給 getRowOptions), 目前值, 期望(value 依序), 期望停用旗標(選填)]
+  const CASES = [
+    ['沒給 getRowOptions → 整欄全部(現況)', COL, undefined, 'done', ['not-started', 'in-progress', 'blocked', 'done', 'cancelled']],
+    ['目前值在這一列清單裡 → 原樣、照回傳順序', COL, F(IP, BL, DN), 'in-progress', ['in-progress', 'blocked', 'done']],
+    ['目前值「完成」不在清單(只能回進行中)→ 補回在整欄順序的位置', COL, F(IP), 'done', ['in-progress', 'done']],
+    ['補回插在中間:受阻 → 清單 [進行中, 取消]', COL, F(IP, CX), 'blocked', ['in-progress', 'blocked', 'cancelled']],
+    ['補回插在最前:未開始 → 清單 [進行中, 取消]', COL, F(IP, CX), 'not-started', ['not-started', 'in-progress', 'cancelled']],
+    ['整欄也沒有目前值 → 不補(交給 Select 原值顯示)', COL, F(IP), 'archived', ['in-progress']],
+    ['目前值是 null → 不補', COL, F(IP, CX), null, ['in-progress', 'cancelled']],
+    ['目前值是空字串 → 不補', COL, F(IP, CX), '', ['in-progress', 'cancelled']],
+    ['這一列沒有任何可選 → 只剩目前值', COL, F(), 'done', ['done']],
+    ['列出但停用:回傳項目的 disabled 原樣保留(不被濾掉)', COL, F(S('not-started', '未開始', { disabled: true }), IP, S('done', '完成', { disabled: true })), 'in-progress', ['not-started', 'in-progress', 'done'], [true, false, true]],
+  ]
+  const judge = (impl, [, col, row, value, wantValues, wantDisabled]) => {
+    let got
+    try { got = impl(col, row, value) } catch (error) { return { ok: false, got: `丟例外 ${error.message}` } }
+    const values = got.map((o) => o.value)
+    const okValues = JSON.stringify(values) === JSON.stringify(wantValues)
+    const okDisabled = !wantDisabled || JSON.stringify(got.map((o) => o.disabled === true)) === JSON.stringify(wantDisabled)
+    // 補回的那一項 = 整欄那一項(文字一致,觸發欄位才顯示「完成」不是 done)
+    const okLabels = got.every((o) => { const c = col.find((x) => x.value === o.value); return !c || o.label === c.label })
+    return { ok: okValues && okDisabled && okLabels, got: `[${values}]${wantDisabled ? ` 停用 [${got.map((o) => o.disabled === true)}]` : ''}` }
+  }
+  for (const c of CASES) {
+    const v = judge(rowSelectOptions, c)
+    record('I40', `判定表|${c[0]}`, v.ok, `得 ${v.got},期望 [${c[4]}]`)
+  }
+  const MUTANTS = [
+    ['忽略 getRowOptions(編輯器永遠列整欄)', (col) => [...col]],
+    ['不補回目前值(值被清成原始字)', (col, row) => [...(row ?? col)]],
+    ['補回放在最後(不照整欄順序)', (col, row, value) => { if (row === undefined) return [...col]; const cur = col.find((o) => o.value === value); return value == null || value === '' || !cur || row.some((o) => o.value === value) ? [...row] : [...row, cur] }],
+    ['把停用項濾掉(「列出但停用」做不到)', (col, row, value) => rowSelectOptions(col, row?.filter((o) => !o.disabled), value)],
+  ]
+  for (const [name, impl] of MUTANTS) {
+    const caught = CASES.filter((c) => !judge(impl, c).ok).length
+    record('I40', `判定表對照組|突變「${name}」被抓到 ${caught} 格(必須 ≥ 1)`, caught >= 1)
+  }
+
+  // (b) 呼叫端:每條規則式在真原始碼上成立、在記憶體裡的壞版本上不成立
+  const DT = 'packages/design-system/src/components/DataTable'
+  const cellSrc = readFileSync(join(ROOT, DT, 'cell-registry.tsx'), 'utf8')
+  const tableSrc = readFileSync(join(ROOT, DT, 'data-table.tsx'), 'utf8')
+  const filterSrc = readFileSync(join(ROOT, DT, 'data-table-filter-panel.tsx'), 'utf8')
+  const selectCellBody = (src) => { const s = src.indexOf('function SelectCell('); const e = src.indexOf('function MultiSelectCell(', s); return s >= 0 && e > s ? src.slice(s, e) : '' }
+  const CALLERS = [
+    ['SelectCell 編輯態的選項 = rowSelectOptions(整欄 meta.options, meta.getRowOptions(row), 值)', cellSrc,
+      (src) => { const b = selectCellBody(src); return /rowSelectOptions\(meta\?\.options \?\? \[\], [^\n]*meta\.getRowOptions\(row\)[^\n]*, value\)/.test(b) && /key="edit"[\s\S]*?options=\{editOptions \?\? \[\]\}/.test(b) },
+      (src) => src.replace('options={editOptions ?? []}', 'options={meta?.options ?? []}')],
+    ['SelectCell 檢視態仍用整欄 meta.options 查顯示文字', cellSrc,
+      (src) => /key="view"[\s\S]*?options=\{meta\?\.options \?\? \[\]\}[\s\S]*?key="edit"/.test(selectCellBody(src)),
+      (src) => { const b = selectCellBody(src); return src.replace(b, b.replace(/(key="view"[\s\S]*?)options=\{meta\?\.options \?\? \[\]\}/, '$1options={editOptions ?? []}')) }],
+    ['data-table.tsx 一般格(MemoCellSlot)把 row.original 傳進格子', tableSrc,
+      (src) => /row=\{cell\.row\.original\}/.test(src) && /onRequestEdit=\{onRequestEdit\}\s*ariaLabel=\{ariaLabel\}\s*row=\{row\}/.test(src),
+      (src) => src.replace('row={cell.row.original}', '')],
+    ['data-table.tsx 試算表浮層編輯器(activeEditorRender)也把 row.original 傳進格子', tableSrc,
+      (src) => /mode="edit"[\s\S]{0,1200}?row=\{row\.original\}/.test(src),
+      (src) => src.replace(/row=\{row\.original\}/, '')],
+    ['篩選面板的值清單讀整欄 meta.options,全檔不讀 getRowOptions', filterSrc,
+      (src) => /options: meta\?\.options,/.test(src) && !/getRowOptions/.test(src),
+      (src) => src.replace('options: meta?.options,', 'options: meta?.getRowOptions?.({}) ?? meta?.options,')],
+  ]
+  for (const [name, src, holds, breakIt] of CALLERS) {
+    record('I40', `呼叫端|${name}`, holds(src))
+    const broken = breakIt(src)
+    record('I40', `呼叫端對照組|${name}:改壞後規則式必須不成立`, broken !== src && !holds(broken), broken === src ? '改壞的替換沒有命中(對照組空轉)' : '')
+  }
+
+  // (c) 瀏覽器
+  const prevView = page.viewportSize()
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--roadmap-all-in-one&viewMode=story`, '[data-cell-id]')
+  // 讀目前開著的選單(cmdk):每一項的文字、是否打勾(內層 MenuItem 的 data-selected)、是否停用
+  const readMenu = () => page.evaluate(() => {
+    const roots = [...document.querySelectorAll('[data-radix-popper-content-wrapper] [cmdk-root]')]
+    const opts = roots.flatMap((r) => [...r.querySelectorAll('[role="option"]')])
+    return opts.map((o) => ({ label: o.textContent.trim(), checked: !!o.querySelector('[role="presentation"][data-selected]'), disabled: o.getAttribute('aria-disabled') === 'true' }))
+  })
+  const waitMenu = async () => {
+    try { await page.waitForSelector('[data-radix-popper-content-wrapper] [cmdk-root] [role="option"]', { timeout: 5000 }) } catch { return false }
+    await settleAfterInteraction(page, { frames: 6 })
+    return true
+  }
+  const closeAll = async () => { for (let i = 0; i < 3; i++) { await page.keyboard.press('Escape'); await settleAfterInteraction(page, { frames: 4 }) } }
+  const openCellEditor = async (cellId) => {
+    const box = await page.evaluate((cellId) => {
+      const c = [...document.querySelectorAll(`[data-cell-id="${cellId}"]`)].find((el) => el.getBoundingClientRect().width > 0)
+      if (!c) return null
+      const b = c.getBoundingClientRect()
+      return { x: b.left + Math.min(b.width / 2, 50), y: b.top + b.height / 2 }
+    }, cellId)
+    if (!box) return { ok: false, why: `找不到格 ${cellId}` }
+    await page.mouse.click(box.x, box.y)
+    if (!(await waitMenu())) return { ok: false, why: `點 ${cellId} 後 5 秒內沒有選單` }
+    const trigger = await page.evaluate((cellId) => {
+      const c = [...document.querySelectorAll(`[data-cell-id="${cellId}"]`)].find((el) => el.getBoundingClientRect().width > 0)
+      const t = c?.querySelector('[role="combobox"]')
+      return t ? t.textContent.trim() : null
+    }, cellId)
+    return { ok: true, menu: await readMenu(), trigger }
+  }
+  const labels = (m) => m.map((o) => o.label)
+  const FULL = ['未開始', '進行中', '受阻', '完成', '取消']
+
+  // 儀器對照:同一支讀選單的程式讀優先級欄(沒有 getRowOptions)→ 全部 4 項。讀不到全部 = 下面「沒有某一項」不算數。
+  const pri = await openCellEditor('RDM-103:priority')
+  const instrumentOk = pri.ok && JSON.stringify(labels(pri.menu)) === JSON.stringify(['P0', 'P1', 'P2', 'P3'])
+  record('I40', '瀏覽器儀器對照|讀選單的程式在優先級欄(沒有 getRowOptions)讀到全部 4 項 P0–P3', instrumentOk, pri.ok ? `讀到 [${labels(pri.menu)}]` : `INSTRUMENT-FAIL ${pri.why}`)
+  await closeAll()
+  if (instrumentOk) {
+    // 完成的列(RDM-103):只能重新開啟回進行中 → 選單 [進行中, 完成(補回、打勾)];未開始不出現
+    const done = await openCellEditor('RDM-103:status')
+    record('I40', '瀏覽器|完成的列(RDM-103):選單 = [進行中, 完成],不允許的「未開始」「受阻」「取消」不出現',
+      done.ok && JSON.stringify(labels(done.menu)) === JSON.stringify(['進行中', '完成']), done.ok ? `選單 [${labels(done.menu)}]` : done.why)
+    record('I40', '瀏覽器|完成的列:目前值不在該列清單也正確顯示 —— 選單裡「完成」打勾、觸發欄位顯示「完成」(不是 done、不是空白)',
+      done.ok && done.menu.some((o) => o.label === '完成' && o.checked) && done.menu.filter((o) => o.checked).length === 1 && done.trigger === '完成',
+      done.ok ? `打勾 [${done.menu.filter((o) => o.checked).map((o) => o.label)}],觸發欄位「${done.trigger}」` : done.why)
+    await closeAll()
+    // 未開始的列(RDM-101):[未開始(補回、打勾), 進行中, 取消] —— 同一欄每列不同
+    const ns = await openCellEditor('RDM-101:status')
+    record('I40', '瀏覽器|未開始的列(RDM-101):選單 = [未開始, 進行中, 取消](與完成的列不同 = 依列),「完成」不出現',
+      ns.ok && JSON.stringify(labels(ns.menu)) === JSON.stringify(['未開始', '進行中', '取消']) && ns.menu.find((o) => o.label === '未開始')?.checked === true, ns.ok ? `選單 [${labels(ns.menu)}]` : ns.why)
+    await closeAll()
+    // Esc 取消後值沒變(補回的那一項只是顯示,不會自己提交)
+    const after = await page.evaluate(() => [...document.querySelectorAll('[data-cell-id="RDM-103:status"]')].find((el) => el.getBoundingClientRect().width > 0)?.textContent.trim())
+    record('I40', '瀏覽器|開過編輯器再 Esc,完成的列仍顯示「完成」(補回不會改值)', after === '完成', `格子文字「${after}」`)
+  }
+
+  // 篩選面板:狀態欄的值清單仍是整欄 5 項(照整欄順序)
+  const filterMenu = await (async () => {
+    const btn = page.locator('button[aria-label="篩選"]').first()
+    if (!(await btn.count())) return { ok: false, why: '找不到「篩選」按鈕' }
+    await btn.click()
+    try { await page.waitForSelector('[aria-label="篩選欄位"]', { timeout: 5000 }) } catch { return { ok: false, why: '篩選面板沒有出現欄位下拉' } }
+    await settleAfterInteraction(page, { frames: 6 })
+    await page.locator('[aria-label="篩選欄位"]').first().click()
+    if (!(await waitMenu())) return { ok: false, why: '欄位下拉沒有選單' }
+    await page.locator('[data-radix-popper-content-wrapper] [cmdk-root] [role="option"]', { hasText: /^狀態$/ }).first().click()
+    await settleAfterInteraction(page, { frames: 6 })
+    try { await page.waitForSelector('[aria-label="狀態 篩選值"]', { timeout: 5000 }) } catch { return { ok: false, why: '選了狀態後沒有「狀態 篩選值」' } }
+    await page.locator('[aria-label="狀態 篩選值"]').first().click()
+    if (!(await waitMenu())) return { ok: false, why: '狀態篩選值沒有選單' }
+    return { ok: true, menu: await readMenu() }
+  })()
+  record('I40', '瀏覽器|篩選面板的狀態值清單 = 整欄 5 項 [未開始, 進行中, 受阻, 完成, 取消](不受 getRowOptions 影響)',
+    filterMenu.ok && JSON.stringify(labels(filterMenu.menu)) === JSON.stringify(FULL), filterMenu.ok ? `讀到 [${labels(filterMenu.menu)}]` : `INSTRUMENT-FAIL ${filterMenu.why}`)
+  await closeAll()
+  await page.setViewportSize(prevView)
+  // 本段逐條印出(上面的 PASS 清單只印到 I1–I8 那一段;I40 的判定表、對照組與瀏覽器結果要看得到,不只算進總數)
+  console.log('\n--- I40 select 欄依列可選項 ---')
+  console.log([...passes, ...failures].filter((l) => l.includes(' I40 | ')).join('\n'))
 }
 
 if (failures.length > 0) {

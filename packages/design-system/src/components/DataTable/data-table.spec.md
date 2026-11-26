@@ -263,6 +263,15 @@ Table 層級的模式切換，不是 column 層級:同一張表的列高只有�
 
 select/multiSelect 的 `meta.options` 消費 Select 的完整 `SelectOption` schema(M30 wrapper-extends-primitive;含 icon / iconClassName / description),`meta.selectedItemRenderer` 轉發 Select 同名 API 供 status 類彩色 cell(2026-07-08 補——原 `{value,label}` 窄型別 = 假 SSOT,WM 被迫手刻 bare trigger 實證)。
 
+**依列可選項(`meta.getRowOptions`,select 欄;2026-11-26)**:同一欄每一列能選的值可以不同(例:工單狀態流轉,完成的單不能回到未開始)。`getRowOptions(row)` 回傳這一列的 `SelectOption[]`,只換**編輯器的選單**;格子顯示文字、篩選的值清單、排序的選項順序仍讀整欄 `meta.options`,所以 `options` 必須放完整清單(篩選與排序沒有「哪一列」可問)。實作 `./lib/row-select-options.ts`,cell-registry.tsx `SelectCell` 編輯態消費。
+
+1. **預設只列可選的**:回傳這一列能切過去的值,不能選的不列 —— user 2026-11-26 第五輪決策卡 C4 點選「B:只列可選的」。Jira 也是這樣:沒有流轉線的狀態不出現在流轉選單裡(Atlassian 知識庫,問題「Next Status is unavailable to transition under the Transition drop-down」、原因「There is no outward transition to a particular status」,[KB](https://support.atlassian.com/jira/kb/next-status-is-unavailable-to-transition-under-the-transition-drop-down/))。
+2. **要列出但停用**:回傳項目帶 `disabled`,照 Select 既有的停用呈現(`../Select/select.spec.md`「disabled 選項」:不可點、鍵盤導覽跳過),不另開參數。DS 預設建議仍是第 1 條。
+3. **目前的值不在回傳清單裡**:編輯器從整欄 `options` 補回那一項,插在整欄順序裡它的位置,顯示為已選(觸發欄位是它的文字、選單裡它打勾);選它 = 值不變,不會被清掉。依據是 Select 既有規則「value 不在 options 也要顯示原值、不沉默丟失」(`../Select/select.tsx` `selectedLabel` 註解)—— 編輯器是新掛的 Select,沒看過整欄清單,不補回就只剩原始值(例 `done`)。整欄也沒有這個值 → 交給 Select 的原值顯示。【AI 推導 2026-11-26:補回而不是只在觸發欄位顯示,是為了讓選單裡的已選打勾照 Select 單選既有樣子】
+4. 只有 `type: 'select'` 讀這個欄位;不傳 = 每一列都用整欄 `options`(現況)。鍵盤 / 讀屏照既有 select 欄(編輯器就是同一顆 Select,只換選項)。
+
+API 形狀對照:MUI X `singleSelect` 的 `valueOptions` 可以是函式,參數的 `row` 是選填(「The row model of the row that the current cell belongs to.」,[gridValueOptionsParams.ts#L15-L18](https://github.com/mui/mui-x/blob/v7.29.0/packages/x-data-grid/src/models/params/gridValueOptionsParams.ts#L15-L18)),也就是整欄清單與每列清單共用同一個入口;AG Grid 用 `colDef.cellEditorParams` 函式依列給編輯器選項(「The `colDef.cellEditorParams` function allows dynamic props independently of the Editor selection.」,範例是 City 欄依 Country 欄給不同城市,[Cell Editors](https://www.ag-grid.com/react-data-grid/cell-editors/))。本 DS 把整欄清單(`options`,顯示 / 篩選 / 排序的依據)與這一列的清單(`getRowOptions`)分成兩個欄位,依列行為用「列 → 值」的函式表達,與 `editable: boolean | (row) => boolean` 同一個做法;命名照 DataTable 既有 `getRowId` / `getRowAriaLabel`(列 → 值的函式叫 `getRow…`)。範例:「專案排程全功能整合」的狀態欄。閘:`scripts/data-table-invariants.mjs` I40(判定表 + 突變對照組、呼叫端、瀏覽器量狀態欄的編輯選單與篩選值清單)。
+
 **各欄型照什麼排序**(2026-11-05,待辦 3f;實作 `./lib/column-sorting.ts`,data-table.tsx 欄位前處理對每個有 `meta.type`、沒自帶 `sortingFn` 的欄掛上)。修前這一型的比法從沒實作,全部落到 TanStack v8.21.3 的自動判斷 `getAutoSortingFn`([RowSorting.ts#L308-L334](https://github.com/TanStack/table/blob/v8.21.3/packages/table-core/src/features/RowSorting.ts#L308-L334)):它取 `flatRows.slice(10)`(**跳過**前 10 列),值是物件就落到 `basic`(兩個不同物件恆回 -1)—— 人員 / 多人欄排出來是亂的,字串欄 ≤ 10 列分大小寫、> 10 列不分。
 
 | 欄型 | 照什麼排 | 依據 |
@@ -552,7 +561,7 @@ ValueShape ↔ DS picker 對照(canonical 2026-05-02):
 | string | click cell | `<Input>` autoFocus |
 | number / currency | click cell | `<NumberInput>` |
 | date | click cell | `<DatePicker>` |
-| select / multiSelect | click cell | `<Select>` / `<Combobox>` |
+| select / multiSelect | click cell | `<Select>` / `<Combobox>`(select 欄有 `meta.getRowOptions` 時選單只列這一列可選的值,見「七、Column Type」依列可選項) |
 | person / multiPerson | click cell | `<PeoplePicker variant="naked">`(選人 picker) |
 | **boolean** | direct toggle | `<Checkbox>` 無 mode 切換 |
 | **url** | **滑過格 / 鍵盤聚焦時出現的 Pencil**(格裡其他地方開連結;空值 / 不是網址時 click cell)(Button text xs iconOnly,由 LinkInput 自己畫;見下方 navigate-valued 第 3 條)| `<Input>` —— 不是 LinkInput:LinkInput 進編輯時預設先顯示成連結,格子需要直接打字(第 4 條的 documented 例外)。格裡 Pencil 以外開連結 — 屬下方「navigate-valued cell 通用類別」第 1 條 |
