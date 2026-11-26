@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-11-22T16:38:42.289Z"
+    "generatedAt": "2026-11-25T21:57:48.330Z"
   },
   "components": {
     "accordion": {
@@ -320,8 +320,15 @@
         "展示": [
           "design-system-components-calendar-展示--team-calendar",
           "design-system-components-calendar-展示--launch-week",
+          "design-system-components-calendar-展示--quarter-planning",
           "design-system-components-calendar-展示--content-publishing-schedule",
+          "design-system-components-calendar-展示--customer-support-weekdays",
+          "design-system-components-calendar-展示--manufacturing-week-numbers",
+          "design-system-components-calendar-展示--loading-while-switching-month",
+          "design-system-components-calendar-展示--side-panel-narrow",
           "design-system-components-calendar-展示--read-only-dates-custom-tile-keyboard",
+          "design-system-components-calendar-展示--event-click-anchor",
+          "design-system-components-calendar-展示--english-labels-override",
           "design-system-components-calendar-展示--empty-calendar",
           "design-system-components-calendar-展示--cell-blank-click-moves-keyboard-stop"
         ],
@@ -330,6 +337,7 @@
           "design-system-components-calendar-設計規格--inspector",
           "design-system-components-calendar-設計規格--color-matrix",
           "design-system-components-calendar-設計規格--state-behavior",
+          "design-system-components-calendar-設計規格--more-list-open",
           "design-system-components-calendar-設計規格--accessibility"
         ],
         "設計原則": [
@@ -339,7 +347,9 @@
           "design-system-components-calendar-設計原則--read-only-rule"
         ]
       },
-      "openSnapshotIds": [],
+      "openSnapshotIds": [
+        "design-system-components-calendar-設計規格--more-list-open"
+      ],
       "exception": null
     },
     "carousel": {
@@ -829,7 +839,9 @@
           "design-system-components-field-展示--slider-with-live-number-input",
           "design-system-components-field-展示--form-validation",
           "design-system-components-field-展示--inline-search-yield-width-contract",
-          "design-system-components-field-展示--view-alignment-contract"
+          "design-system-components-field-展示--view-alignment-contract",
+          "design-system-components-field-展示--reading-context-detail",
+          "design-system-components-field-展示--reading-context-contract"
         ],
         "設計規格": [
           "design-system-components-field-設計規格--overview",
@@ -1002,7 +1014,8 @@
           "design-system-components-inlineedit-展示--states",
           "design-system-components-inlineedit-展示--select-tag-field",
           "design-system-components-inlineedit-展示--multiline-description",
-          "design-system-components-inlineedit-展示--vertical-field-form"
+          "design-system-components-inlineedit-展示--vertical-field-form",
+          "design-system-components-inlineedit-展示--commit-on-host-unmount"
         ],
         "設計規格": [
           "design-system-components-inlineedit-設計規格--overview",
@@ -1252,7 +1265,9 @@
           "design-system-components-popover-設計規格--color-matrix",
           "design-system-components-popover-設計規格--size-matrix",
           "design-system-components-popover-設計規格--state-behavior",
-          "design-system-components-popover-設計規格--accessibility"
+          "design-system-components-popover-設計規格--editable-title-header",
+          "design-system-components-popover-設計規格--accessibility",
+          "design-system-components-popover-設計規格--editable-title-header-probe"
         ],
         "設計原則": [
           "design-system-components-popover-設計原則--usage-guidance",
@@ -1869,5 +1884,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1035
+  "totalStories": 1048
 }

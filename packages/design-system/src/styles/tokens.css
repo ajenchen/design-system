@@ -43,6 +43,7 @@
    tokens.css aggregator 必須也包含, 不然 consumer 拿不到 → 跑版。 */
 @import './../components/Avatar/avatar.css';
 @import './../components/DataTable/data-table.css';
+@import './../components/Field/field.css';
 @import './../components/Sidebar/sidebar.css';
 @import './../components/Tabs/tabs.css';
 @import './../components/Tag/tag.css';

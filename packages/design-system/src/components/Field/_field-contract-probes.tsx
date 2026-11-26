@@ -5,7 +5,7 @@
 // 慣例同 `AppShell/_demo-helpers.tsx`(`_` 前綴 = demo / private helper,naming-structure-invariant R2)。
 import * as React from 'react'
 import { CircleDot, Globe } from 'lucide-react'
-import { Select } from '@/design-system/components/Select/select'
+import { Select, type SelectOption } from '@/design-system/components/Select/select'
 import { Combobox } from '@/design-system/components/Combobox/combobox'
 import { PeoplePicker } from '@/design-system/components/PeoplePicker/people-picker'
 import type { PersonValue } from '@/design-system/components/PeoplePicker/person-display'
@@ -148,15 +148,15 @@ function F3Cells() {
 // ── 純顯示齊標籤 × 兩種標籤位置(test-only 契約 probe,2026-10-27 C1 甲)──────────────────────────────────────────
 // 18 種 `<Field mode="view">` 純顯示 × 標籤在上 / 標籤在左:值的第一個可見元素左緣 = 控件欄左緣(標籤在上時 = 標籤左緣),
 // 值的第一行中線 = 控件欄頂 + field-height / 2(RadioGroup 修前高 5.5 / lg 7.5px)。規則住 field-controls.spec.md
-// 「軸一 view mode」(user 2026-10-21 C1 甲);探針 `scripts/probe-inline-edit-align.mjs` 逐格量(`data-view-case` 是它找格子的錨)——
-// 手動跑、不在 CI。CI 的 `scripts/field-text-left-edge-invariant.mjs` 只量到其中一部分格子的「值左緣 = 控件左緣」(跳過 Tag、頭像、
-// 前面還有東西的字;格數記在 field-text-left-edge-inventory.json),標籤左緣、第一行中線、標籤是 span 只有這支探針量。
+// 「軸一 view mode」(user 2026-10-21 C1 甲);`scripts/reading-context-invariant.mjs` G1-V 在 CI 逐格量(`data-view-case` 是它找格子的錨;
+// 2026-11-25 取代不在 CI 的手動探針 probe-inline-edit-align.mjs)。`scripts/field-text-left-edge-invariant.mjs` 另量其中一部分格子的
+// 「值左緣 = 控件左緣」(跳過 Tag、頭像、前面還有東西的字;格數記在 field-text-left-edge-inventory.json)。
 // 長相與既有範例(Field 展示「欄位狀態連動」、各控件「四模式」)相同,沒有新畫面,所以 test-only(story-rules「Technical probe visibility」)。
 const viewPriority = [
   { value: 'high', label: '高' },
   { value: 'medium', label: '中' },
 ]
-const viewStatus = [
+const viewStatus: SelectOption[] = [
   { value: 'doing', label: '進行中', tagVariant: 'blue' },
   { value: 'done', label: '已完成', tagVariant: 'green' },
 ]

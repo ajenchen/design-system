@@ -10,7 +10,7 @@
  *         M  換錨點(2026-11-24 審查必修):**不開減少動態**(收起時浮層還掛著播收起動畫),浮層開著時 consumer 把 virtualRef 改指另一格
  *            → 浮層跟到新的那一格(沒開 coverAnchor:頂邊 = 新錨點底邊 + 8、水平置中;開了:中心 = 新錨點中心)。兩種順序 × 開不開 coverAnchor 共 4 列:
  *            一直開著就換(open)/ 收起動畫中又打開、同時換(closing —— Calendar 示範殼開著時點另一個事件、「+N」浮層開著時點另一格的 +N 的實際順序,
- *            `_calendar-demo.tsx` onEventClick 先改 virtualRef.current 再 setState)。closing 列的前提「重新打開時還是同一個浮層節點(沒卸載)」
+ *            `_calendar-demo.tsx` onEventClick 先把 virtualRef.current 改成 Calendar 交出的 `{ anchor }` 再 setState)。closing 列的前提「重新打開時還是同一個浮層節點(沒卸載)」
  *            沒成立 = 儀器失效,不是通過(減少動態下浮層一收起就卸載,量不到這件事 —— 其他列都在減少動態下量,這 4 列另外切成不減少)。
  *         期望值由本檔照規格算(`clamp(錨點中心 − 一半, 8, 視窗 − 8 − 尺寸)`),不 import 元件常數 —— 讀元件常數就成了自己驗自己。
  *   紅: 任一格位置 / 高度不符 → 逐列點名 exit 1。`--selftest` 在 DS 原始碼上各造一個根因突變(MUTANTS),每個突變必須**剛好**紅它負責的那幾列,
@@ -18,6 +18,8 @@
  *       之後,沒開 coverAnchor 的浮層畫面不得變)在現行原始碼與每個突變上都綠。M 列的對照突變 = 266ec7ae 的寫法原文(交給 Radix 一個永遠不變的
  *       包裝,Radix 看不到錨點換了;`reanchor-stable-wrapper`)。
  *   綠: 現行原始碼每列都量到且符合。harness 載不起來 / 元素找不到 / 位置等不到靜止 = 儀器失效(INSTRUMENT-FAIL,exit 1),不得讀成通過。
+ *   消費端: 本閘量的是 PopoverContent 的擺法本身(夾具裡的假格子)。Calendar「+N」清單真的開了 coverAnchor、蓋在那一格正中,
+ *       由 scripts/calendar-month-invariant.mjs ML-center 在真的月曆上量(2026-11-26;同一條規則的機制在這裡、Calendar 的接法在那裡,不重複量)。
  *   註: 2026-11-24 新增(OVERLAY-CAPABILITIES ①;總帳 Q2b(定)「以格子為中心(水平 + 垂直)」、C9 高度走 capHeight)。不需要 storybook
  *       (DS 原始碼打包進空白頁,`scripts/lib/ds-source-harness.mjs`;樣式用同一棵樹編出來的 DS CSS)。POC 在實作前證明 Radix Popper 做得到:
  *       虛擬錨點的 getBoundingClientRect 在 floating-ui 每次定位時回「算好的左上角」、Content side=bottom / align=start / 間距 0 / 不由 Radix 推回
@@ -150,7 +152,7 @@ function Scene() {
   const [s, setS] = React.useState(null)
   window.__scene = setS
   const cellRef = React.useRef(null)
-  // M 列:換錨點 —— 同 _calendar-demo.tsx onEventClick 的順序:先把 virtualRef.current 換成另一格,再 setState 重畫
+  // M 列:換錨點 —— 同 _calendar-demo.tsx onEventClick 的順序:先把 virtualRef.current 換成另一格(示範殼換成 Calendar 交出的 anchor),再 setState 重畫
   // (cellRef 是同一個 ref 物件,重畫時 React 不會把它改回 #cell)
   window.__reanchor = (id, open) => { cellRef.current = document.getElementById(id); setS((p) => ({ ...p, open })) }
   window.__setOpen = (open) => setS((p) => ({ ...p, open }))

@@ -12,6 +12,8 @@
  *                    選項帶說明(兩行列,列高 49.6)時 N = 5 → 280.8px,同樣切在第 N + 1 列的一半(SelectMenu 自己帶的預設);
  *                    傳 maxHeight = min(可用高, 此值)(取代預設、可比預設高);外殼不超過可用高。
  *         C          放在 Popover 裡的 ProfileCard 根元素上限 = 它讀到的可用高。
+ *         (Calendar「+N」清單的半列上限 —— 標題列 + N 列 + 半列、上限寫在 PopoverContent 外殼上 —— 由 scripts/calendar-month-invariant.mjs
+ *          ML-half 在真的月曆上量「捲在頂端時可見底邊切在第 N + 1 列的一半」,對照組 = maxHeight 不設;公式 halfRowCap 與本閘 L 列同一支。2026-11-26)
  *         量的是夾具裡真的渲染出來的浮層(getComputedStyle + getBoundingClientRect),期望值由本檔照規格算、不 import 元件常數 ——
  *         讀元件常數就成了自己驗自己(同 dialog-width-invariant)。
  *   紅: 任一格上限或實際高不符(容差 0.5px / 1px)。

@@ -103,8 +103,7 @@ Calendar 是**看事件的頁面 canvas**:在一段日期範圍裡瀏覽、定�
   moreListMaxHeight={number | string}     // 「+N」清單浮層的高度上限,只能往更矮調【C9】
   locale="zh-TW"                          // 預設 zh-TW【Q9(定)】
   weekStartsOn={0 | 1 | 2 | 3 | 4 | 5 | 6} // 沒傳 = 從語系推【WS(定)】
-  eventTimeFormat={Intl.DateTimeFormatOptions}
-  timeZone={string}                       // 顯示用時區,預設瀏覽器時區
+  eventTimeFormat={Intl.DateTimeFormatOptions}  // 事件開始時間的格式,預設 { hour: 'numeric', minute: '2-digit' }(見「資料語意」時間顯示)
   titleAs="h2"                            // 工具列標題層級 h1–h3
   labels={Partial<CalendarLabels>}        // 讀屏字串與檢視名稱,預設繁中、逐鍵可覆寫
   prevAriaLabel / nextAriaLabel / navAriaLabel / todayLabel / createLabel  // 既有 i18n 參數,保留
@@ -114,6 +113,7 @@ Calendar 是**看事件的頁面 canvas**:在一段日期範圍裡瀏覽、定�
 ```
 
 - `eventDetail.onEventChange(event, patch)` 必填(M23(f):沒有內建 fallback 的回呼必填);`isEditable(event)` 預設全部可編,`false` = 詳情只能看;`actions(event)` 放標題列操作位;`renderExtra(event)` 放標準欄位下方的額外欄位。
+- **顯示用時區 `timeZone` 第二段再定,第一段不開**【AI 推導;決策總帳 2026-11-25 AI 判定(工程,照「四種檢視」的「未實作的能力不預佔 API」)】:只讓時間字跟著另一個時區、格子與「今天」照瀏覽器時區分,兩者會互相矛盾 —— 23:30+08:00 的事件在 `Asia/Tokyo` 顯示「上午12:30」,卻畫在 7/15 那格;要做就得讓格子、「今天」與時間字一起換時區(`@date-fns/tz` 要加成直接依賴,目前只是 react-day-picker 帶進來的),屬於第二段的範圍。第一段的格子、「今天」與時間字一律用瀏覽器時區(見「資料語意」時區那條)。
 - 新增的名字【AI 推導】:`moreListMaxHeight` 照 `../../../ds-canonical/references/props-naming.md`「尺寸參數」的「子部位」與「上下限 `max*`」兩列推得;其餘名字實作時過 AGENTS.md「命名 3 重 test」。
 
 ### 日期格與事件方塊:可點或唯讀
@@ -144,7 +144,7 @@ interface CalendarEvent {
   start: string | Date        // "YYYY-MM-DD"(只有日期)或 "YYYY-MM-DDTHH:mm"(本地時間)或帶 offset / Z 的絕對時間
   end: string | Date          // 一律「不含」(見「資料語意」)
   allDay?: boolean
-  color?: CategoricalColor    // 12 類別色相 + 'neutral'(與 Tag / Avatar 共用,型別在 categorical-color.ts);neutral 由 Calendar 自己補淡底 / 字 / 滑過 / 色條
+  color?: CategoricalColor    // 12 類別色相 + 'neutral'(與 Tag / Avatar 共用,型別在 categorical-color.ts);neutral 的長條 / 滑過 / 色條在同檔 CAT_EVENT_NEUTRAL
   location?: string           // 詳情的「地點」
   description?: string        // 詳情的「說明」
   readOnly?: boolean          // 只有這一筆唯讀
@@ -160,9 +160,9 @@ interface CalendarEvent {
 - **什麼算跨日長條**【Q7(定)】:標全天(一天或多天)或有時段且**滿 24 小時** → 長條;有時段、未滿 24 小時(含過夜,例 22:00 – 01:00)→ 只畫在開始那天,詳情顯示完整區間。Google Calendar 同:過夜不滿 24 小時只畫在開始那天、詳情顯示完整區間(<https://calendar.google.com/calendar/embed?src=3haig2m9msslkpf2tn1h56nn9g%40group.calendar.google.com&mode=MONTH&dates=20261201%2F20261228&ctz=UTC&hl=en>)。
 - **只有日期、沒寫 `allDay`** → 當全天(有時段的長相要顯示時間,只有日期的事件沒有時間可顯示);明寫 `allDay: false` 照舊。
 - **午夜結束**(22:00 – 隔天 00:00):`end` 不含,所以只畫在開始那天;不可把「午夜結束」當成全天。
-- **時區**:帶 offset 或 `Z` = 絕對時間;不帶 offset 的時刻 = 本地時間;只有日期 = 不帶時區的「那一天」。`timeZone` 只影響顯示(`Intl` 的 `timeZone`)。逐日計算一律用日曆日(`date-fns` `addDays`),不用「+ 86400000 毫秒」(日光節約那天會錯一天);「滿 24 小時」用實際時間差判。
+- **時區**:帶 offset 或 `Z` = 絕對時間;不帶 offset 的時刻 = 本地時間;只有日期 = 不帶時區的「那一天」。第一段的格子、「今天」與時間字一律用瀏覽器時區;顯示用時區參數 `timeZone` 第二段再定(見「API(第一段)」下方那條)。逐日計算一律用日曆日(`date-fns` `addDays`),不用「+ 86400000 毫秒」(日光節約那天會錯一天);「滿 24 小時」用實際時間差判。
 - **異常資料**:`start` 晚於 `end` → 當成開始那一刻的零長度事件畫在開始那天,開發期警告。
-- **時間顯示**:月格只顯示**開始時間**,詳情顯示完整起訖;預設 `Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit' })`(zh-TW「上午10:00」),`eventTimeFormat` 可覆寫。
+- **時間顯示**:月格只顯示**開始時間**,詳情顯示完整起訖;預設 `Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit' })`(zh-TW「上午10:00」、en-US「10:00 AM」),`eventTimeFormat` 可覆寫(傳了就整份取代預設、不合併;同名參數 FullCalendar `eventTimeFormat`,<https://fullcalendar.io/docs/eventTimeFormat>)。畫在哪【AI 推導】:有時段事件的標題前;滿 24 小時的有時段長條只在含真起點的那一段(`segment.isStart`)標題前;全天不畫;窄寬時都不畫(「窄寬度」(1))。事件的讀屏名稱用同一個格式(「A11y 預設」事件列)。
 - **語系**【Q9(定)】:`locale` 預設 `'zh-TW'`(Calendar / DatePicker / TimePicker 同一批改);標題、星期名、時間格式都跟 `locale` 走。
 - **週起始日**【WS(定)】:`weekStartsOn` 是本元件自己的參數,有傳就用;沒傳時從語系推,來源一律 `Intl` 的 CLDR 週資料(zh-TW 週日、zh-CN 週一)—— 不讀 `date-fns` 語系物件(`date-fns` 的 zh-TW 是週一,與 CLDR 不同【總帳更正 #2】)。同一條規則管日期選擇器與表格「本週」篩選(總帳 WS(定))。世界級同派(元件參數優先、沒給才從語系的 CLDR 推):React Aria(<https://react-aria.adobe.com/Calendar>、<https://github.com/adobe/react-spectrum/blob/main/packages/@internationalized/date/src/queries.ts>)、Atlassian(<https://atlassian.design/components/calendar/code>、<https://unpkg.com/@atlaskit/locale@5.5.0/dist/es2019/internal/localization-provider/get-week-info.js>)、MUI X Scheduler(<https://mui.com/x/react-scheduler/event-calendar/localization/>)。`Intl` 的 weekInfo 不支援時要有後備表(實作時查)。
 
@@ -187,7 +187,7 @@ interface CalendarEvent {
 ├──┼─────┴─────┴─────┴─────┴─────┴─────┴─────┤
 │27│ (5)  ← 日期框 24,左上                          │ ← 每一週等高
 │  │ ████ 跨日長條(車道 0,可橫跨多格)████            │
-│  │ ▍10:00 設計審查   ← 有時段:無底 + 色條 + 時間 + 標題 │
+│  │ ▍上午10:00 設計審查 ← 有時段:無底 + 色條 + 時間 + 標題│
 │  │ +3               ← 放不下時最後一列換成「+N」       │
 └──┴───────────────────────────────────────────┘
 ```
@@ -201,11 +201,11 @@ interface CalendarEvent {
 - **今天 = 實心底**【C8(定)】:日期框 `bg-info text-on-emphasis`(`--info`,不得改用 `--primary` 家族,`scripts/status-color-invariant.mjs` 守)【維持 U12】;讀屏見「A11y 預設」。事件月曆今天用實心的:MUI X 實心圓角方塊(<https://github.com/mui/mui-x/blob/master/packages/x-scheduler/src/month-view/month-view-row/MonthViewCell.tsx#L53-L109>)、Mantine 實心圓(<https://github.com/mantinedev/mantine/blob/master/packages/@mantine/schedule/src/components/MonthView/MonthView.module.css#L76-L131>)、Google Calendar 藍色實心圓(<https://workspaceupdates.googleblog.com/2024/10/new-look-and-feel-and-dark-mode-google-calendar.html>)、Apple 行事曆紅色實心圓(官方截圖是週檢視,<https://support.apple.com/guide/calendar/icl1010/mac>)、Notion 資料庫月曆紅色實心圓(<https://www.notion.com/help/calendars>)。**同一家的日期選擇器與事件月曆今天長得不同是常態**:MUI(<https://github.com/mui/mui-x/blob/master/packages/x-date-pickers/src/PickerDay/PickerDay.tsx#L93-L141>)、Ant Design(<https://github.com/ant-design/ant-design/blob/5d2ba41768697a3bc8912e9ab84590db44dc9b4c/components/calendar/style/index.ts#L133-L218>)、Mantine(<https://github.com/mantinedev/mantine/blob/master/packages/@mantine/dates/src/components/Day/Day.module.css#L58-L109>)—— 所以 `../DateGrid/date-grid.spec.md` 的今天短線不動。日後行事曆加「選取日期」時,選取的樣子**不得**與今天的實心底相同(待定 Q14b)。
 - **每月 1 號帶月份**【Q15(定)】:每月 1 號(含前後月溢出的那幾格)顯示 `Intl` `{ month: 'short', day: 'numeric' }`(zh-TW「7月1日」);今天剛好是 1 號時實心底包住整段字。窄到拿掉時間時只顯示「1」【總帳更正 #8】。讀屏名稱不受影響。世界級:Google Calendar「Nov 1」(<https://calendar.google.com/calendar/embed?src=j7gov1cmnqr9tvg14k621j7t5c%40group.calendar.google.com&src=3haig2m9msslkpf2tn1h56nn9g%40group.calendar.google.com&mode=MONTH&dates=20261101%2F20261128&ctz=UTC&hl=en>)、MUI X 1 號顯示「月 日」(<https://github.com/mui/mui-x/blob/master/packages/x-scheduler/src/month-view/month-view-row/MonthViewCell.tsx>)、Notion 資料庫「Feb 1」(<https://www.notion.com/help/calendars>)、Trello「Jun 1」(<https://support.atlassian.com/trello/docs/calendar-view/>)。
 - **非當月格**:只用淡字(日期數字 `fg-muted`),**不加底色**,滑過與當月格同一個滑過色 —— 非當月格與當月格可點性相同,disabled 字色留給真的不能操作的東西【維持 U3】。
-- **星期列**:是格陣的第一列(每格 `role="columnheader"`,見「A11y 預設」);文字**置中**【C10(改)】;字樣 `text-foreground text-body font-medium` 維持【P6,總帳更正 #6】;灰底條 `bg-muted` 維持現狀(沒有證據顯示是問題,【總帳更正 #9】)。上下內距實作時從 token 推、在預覽回報(「間距」表沒有列到這一格,不在本規格自訂值)。
+- **星期列**:是格陣的第一列(每格 `role="columnheader"`,見「A11y 預設」);文字**置中**【C10(改)】;字樣 `text-foreground text-body font-medium` 維持【P6,總帳更正 #6】;灰底條 `bg-muted` 維持現狀(沒有證據顯示是問題,【總帳更正 #9】)。內距【AI 推導,預覽時回報 user】:每格四邊 = 格子內距 4,內容盒高 = 列高單位 24(`h-tag-md`,字在盒內垂直置中)→ 列高 = 4 + 24 + 4 = 32,與日期列同一個列高單位,不跟字型行高走(「間距」表沒有列到這一格;改前寫死 `px-2 py-1.5`,列高 33)。星期列不跟週列捲、不做 sticky:`--muted` 是半透明,捲過去的內容會從灰底透出來。
 - **週末不加底**【Q10(定)】(Google Calendar 週末無底色,<https://calendar.google.com/calendar/embed?src=j7gov1cmnqr9tvg14k621j7t5c%40group.calendar.google.com&src=3haig2m9msslkpf2tn1h56nn9g%40group.calendar.google.com&mode=MONTH&dates=20261101%2F20261128&ctz=UTC&hl=en>)。假日由產品傳入**單筆唯讀的全天事件**,不做特殊日期樣式。
-- **隱藏週末 `hideWeekends`**【Q10(定)】:預設關;開了以後那兩欄不畫。【AI 推導】「週末」= 語系的週末(`Intl` weekInfo);只落在週末的事件不畫;跨過週末的長條在週五收、週一起,兩端直角(「跨日長條」);車道只用看得見的日子分配,只在週末的事件不佔車道(否則平白多出「+1」)。世界級:Notion Calendar 可選顯示週末(<https://www.notion.com/help/notion-calendar-settings>)、MUI X 可藏週末(<https://github.com/mui/mui-x/blob/master/packages/x-scheduler/src/month-view/month-view-row/MonthViewCell.tsx>)、FullCalendar `weekends`(<https://github.com/fullcalendar/fullcalendar/blob/main/packages/preact/src/themes/classic/index.tsx>)、Mantine(<https://github.com/mantinedev/mantine/blob/master/packages/@mantine/schedule/src/components/MonthView/MonthView.module.css>)。
-- **週數欄 `showWeekNumbers`**【Q10(定)、Q10b(定)】:預設關;左側獨立窄欄,寬 = 格子左內距 × 2 + 最寬週數(等寬數字;格子左內距 = 4,見「間距」)。週數 `text-body` 一般字重 `text-fg-secondary`、水平置中、上邊距與高度同日期框;欄頭「週」(`labels` 可換)`text-body` 一般字重 `text-fg-secondary`、上下左右置中。第一段不可點,第二段點了切到該週的週檢視。第一週怎麼算跟語系走,資料來源由工程定(`Intl` weekInfo 沒有「第一週最少幾天」,不得自編規則)。世界級:MUI X 左側獨立 28px 欄、欄頭「W」、不可點(<https://github.com/mui/mui-x/tree/master/packages/x-scheduler>),第一週依 CLDR(<https://github.com/mui/mui-x/tree/master/packages/x-scheduler-internals>);Syncfusion 左側 36px 欄、欄頭空白、不可點(<https://help.syncfusion.com/scheduler-sdk/react/schedule/views>);Mantine 左側 42px 欄、點了切週檢視(<https://mantine.dev/schedule/month-view/>);Outlook 官方說週數在月檢視的左邊界、預設關(<https://support.microsoft.com/en-US/outlook/calendar/turn-on-or-off-week-numbers-in-month-view-and-the-date-navigator-for-outlook>);FullCalendar 開 `navLinks` 時點週數切週檢視(<https://fullcalendar.io/docs/weekNumberCalculation>)。
-- **每一週等高**【C3】:週列平分格陣高度,格高不被內容撐高(MUI X 週列 `minmax(0,1fr)`,<https://github.com/mui/mui-x/blob/master/packages/x-scheduler/src/month-view/MonthView.tsx>)。月有幾週就畫幾週(4–6 列)。【AI 推導】格最小高 = 上內距 + 日期框 + 日期到第一列 + 一列 + 下內距(= 60,至少看得到一列或「+N」);容器比「週數 × 格最小高」還矮時,格陣區在 Calendar 殼裡用 `ScrollArea` 捲動,工具列與星期列不捲;最後一週的格子不畫底線(避免與外框疊成雙線)。
+- **隱藏週末 `hideWeekends`**【Q10(定)】:預設關;開了以後那兩欄不畫。【AI 推導】「週末」= 語系的週末(`Intl` weekInfo);只落在週末的事件不畫;跨過週末的長條在週五收、週一起,兩端直角(「跨日長條」);車道只用看得見的日子分配,只在週末的事件不佔車道(否則平白多出「+1」);週末由 `lib/date-locale.ts` `resolveWeekend(locale)` 給(zh-TW 週六日、en-IL 週五六),星期列同步拿掉那幾欄;鍵盤跳過被藏的日子,落點規則見「A11y 預設」鍵盤表。世界級:Notion Calendar 可選顯示週末(<https://www.notion.com/help/notion-calendar-settings>)、MUI X 可藏週末(<https://github.com/mui/mui-x/blob/master/packages/x-scheduler/src/month-view/month-view-row/MonthViewCell.tsx>)、FullCalendar `weekends`(<https://github.com/fullcalendar/fullcalendar/blob/main/packages/preact/src/themes/classic/index.tsx>)、Mantine(<https://github.com/mantinedev/mantine/blob/master/packages/@mantine/schedule/src/components/MonthView/MonthView.module.css>)。
+- **週數欄 `showWeekNumbers`**【Q10(定)、Q10b(定)】:預設關;左側獨立窄欄,寬 = 格子左內距 × 2 + 最寬週數(等寬數字;格子左內距 = 4,見「間距」)。週數 `text-body` 一般字重 `text-fg-secondary`、水平置中、上邊距與高度同日期框;欄頭「週」(`labels` 可換)`text-body` 一般字重 `text-fg-secondary`、上下左右置中。週數格的格線與日期格同一套(右 / 下各一條、最後一週不畫下線),星期列的灰底條延伸到欄頭「週」【AI 推導】。第一段不可點,第二段點了切到該週的週檢視。第一週怎麼算跟語系走,資料來源由工程定(`Intl` weekInfo 沒有「第一週最少幾天」,不得自編規則)—— 定為 CLDR `minDays`(`lib/date-locale.ts` `resolveFirstWeekMinDays`),週數 = 該週第一天的 `date-fns` `getWeek`、週起始日用本元件解析後的那一個【AI 推導】:2026 年底那一週(含 2027-01-01)en-GB 是第 53 週、en-US 與 zh-TW 是第 1 週。欄寬實作 = `calc(2 × 格子內距 + 2ch)`,星期列與週列讀同一個欄設定(POC:tabular-nums 兩位數實寬與 `2ch` 差 0.28px,zh-TW / en-US 相同)【AI 推導】。世界級:MUI X 左側獨立 28px 欄、欄頭「W」、不可點(<https://github.com/mui/mui-x/tree/master/packages/x-scheduler>),第一週依 CLDR(<https://github.com/mui/mui-x/tree/master/packages/x-scheduler-internals>);Syncfusion 左側 36px 欄、欄頭空白、不可點(<https://help.syncfusion.com/scheduler-sdk/react/schedule/views>);Mantine 左側 42px 欄、點了切週檢視(<https://mantine.dev/schedule/month-view/>);Outlook 官方說週數在月檢視的左邊界、預設關(<https://support.microsoft.com/en-US/outlook/calendar/turn-on-or-off-week-numbers-in-month-view-and-the-date-navigator-for-outlook>);FullCalendar 開 `navLinks` 時點週數切週檢視(<https://fullcalendar.io/docs/weekNumberCalculation>)。
+- **每一週等高**【C3】:週列平分格陣高度,格高不被內容撐高(MUI X 週列 `minmax(0,1fr)`,<https://github.com/mui/mui-x/blob/master/packages/x-scheduler/src/month-view/MonthView.tsx>)。月有幾週就畫幾週(4–6 列)。【AI 推導】格最小高 = 上內距 + 日期框 + 日期到第一列 + 一列 + 下內距 + 格線(4 + 24 + 4 + 24 + 4 + 1 = 61,至少看得到完整的一列或「+N」、下內距完整 4;格子的底線畫在格高裡面,不算進去時內容只剩 59);**事件列不被壓扁**:格子比內容矮時,放不下的列由格子裁掉,看得到的列一律高 24(放幾列見「每格筆數」);容器比「週數 × 格最小高」還矮時,格陣區在 Calendar 殼裡用 `ScrollArea` 捲動,工具列與星期列不捲;最後一週的格子不畫底線(避免與外框疊成雙線)。
 - **滑過**:日期格可點時整格 `--neutral-hover`,瞬間切換、不做過渡【維持 U2】;指標在可點的事件列 / 「+N」上時,格的滑過底不熄、事件列自己的滑過疊上去(`../../tokens/color/color.spec.md`「巢狀滑過」)【維持 U6;套到月曆是 AI 推導】;`readOnlyDates` 時不亮。
 - **命中區**【Q6(定)、總帳更正 #3】:懸停回饋的形狀 = 命中區(`../../../ds-canonical/references/hit-area-canonical.md`「一、可以操作的東西」第 1 條:滑過有樣式變化的位置,按下去就必須觸發它)。
 
@@ -227,7 +227,8 @@ interface CalendarEvent {
 |---|---|---|
 | 事件列 | 高 24(`--tag-height-md`)、`text-body` 14px `font-normal`、`rounded-md` | Tag md(`tag.spec.md:196-200`) |
 | 事件文字左內距 | 8 = 4 + 4 | Tag 的「Tag px」4 + 「Text px」4(`tag.spec.md:196-200`;結構見同檔「內部結構」) |
-| 有時段的色條 | 色條寬 4 + 間隔 4,文字同在 8 | 色條佔「Tag px」那 4、間隔 = 「Text px」4 → 全天與有時段的字左緣在同一條線(修原本有色條的字右偏 3px) |
+| 有時段的色條 | 色條寬 4 + 間隔 4,文字同在 8;色條高 = 字高(`text-body` 的字級 `--font-body-size`,14)、上下置中、圓頭(`rounded-sm`)【BAR(定)】 | 色條佔「Tag px」那 4、間隔 = 「Text px」4 → 全天與有時段的字左緣在同一條線(修原本有色條的字右偏 3px);寬 = `calendar-geometry.ts` `CALENDAR_ACCENT_WIDTH_PX`;圓頭 = `../../tokens/radius/radius.css`「短邊 ≤ 10px 用 sm」(寬 4 的 2px 圓角 = 兩端半圓) |
+| 有時段的時間 → 標題 | 4 | = 格內空隙;時間與標題是同一行文字,一起截斷、省略號在行尾(欄寬不夠時先吃標題,時間仍在)【AI 推導】 |
 | 列距(格內與「+N」清單) | 4 | `item-anatomy.spec.md:467`;混合清單取最保守的 gap(同檔「混合視覺語言 list」那一條);也等於 Tag 與 Tag 之間 4(`tag.spec.md`「圓角與間距」) |
 | 格子左右內距 | 4 | 與列距同值 → 格邊到事件列 = 事件列到事件列,四邊等距(同 Tag 放進欄位時「四邊等距」的做法,`tag.spec.md`「圓角與間距」) |
 | 格子上 / 下內距 | 上 4(日期框離格頂);下 4【AI 推導:四邊等距】 | 同上 |
@@ -236,7 +237,7 @@ interface CalendarEvent {
 | 「+N」列 | 高 24、左右內距 8、`rounded-md` | 與事件列同高【C3】;內距與圓角同事件列【AI 推導】 |
 | 週數欄寬 | 4 × 2 + 最寬週數 | 【Q10b(定)】公式,格子左內距 = 4 |
 
-- 全部寫死的尺寸(`p-1.5`、`gap-0.5`、`min-h-28`、`h-6` / `min-w-6`、`px-1.5 py-0.5`、色條 3px 等)改從 token / 既有元件規格推,實作時加閘禁止寫死。
+- 全部寫死的尺寸(`p-1.5`、`gap-0.5`、`min-h-28`、`h-6` / `min-w-6`、`px-1.5 py-0.5`、色條 3px 等)改從 token / 既有元件規格推。數值的唯一住處是 `calendar-geometry.ts`(列高 24 = Tag md 盒高,與 `../Tag/tag.tsx` 的 `TAG_HEIGHT_PX.md` 同值、由閘鎖住;空隙 4、文字內距 8、格線 1、格最小高 61),設成 Calendar 根節點上的元件內變數 `--calendar-gap` / `--calendar-text-inset` / `--calendar-cell-min-h`,class 一律寫 `p-[var(--calendar-gap)]` 這種形式;只有 Calendar 讀、不隨密度切換 → 元件自己的值,不開 token(`../../tokens/token-system.spec.md` 判斷流程第 0 題)【AI 推導】。閘 `scripts/calendar-geometry-invariant.mjs`:Calendar 元件檔(不含範例)的 class 字串出現數字型的內距 / 外距 / 間距 / 寬高 / 最小最大值 / 邊框寬或 `[Npx]` 就紅(工具列 `<nav>` 的按鈕群 `gap-2` 照 `utility-registry.json` canonical_micro_geometry 放行),並核對列高常數與 `TAG_HEIGHT_PX.md` 同值、空隙 = 4、格線 = 1、文字內距與格最小高照算式(格最小高含格線)、class 讀到的 `--calendar-*` 都有設值;畫出來的像素由 `scripts/calendar-month-invariant.mjs` 在瀏覽器量(含「最小高的週:事件列 24、下內距 4」與「容器再矮,事件列與「+N」列仍是 24」)。
 - 世界級的列距:MUI X 4(<https://mui.com/x/react-scheduler/event-calendar/views/>)、Mantine 4(<https://mantine.dev/schedule/month-view/>);Google Calendar 是 2(<https://calendar.google.com/calendar/embed>)—— DS 的 standalone pill 規則要 ≥ 4,DS 規則優先(M23)。
 
 ### 事件的兩種長相【C2】
@@ -244,14 +245,18 @@ interface CalendarEvent {
 | | 全天 / 跨日長條(判定見「資料語意」) | 有時段(未滿 24 小時) |
 |---|---|---|
 | 底 | 類別淡底 step-1(`../../tokens/categorical-color.ts` `CAT_EVENT`) | 無底(透明) |
-| 前綴 | 無(舊的左側 3px 色條拿掉)【AI 推導:色條改成有時段專用,兩種都有就分不出來】 | 左側類別色色條(類別 step-6,沿用 `CAT_ACCENT` 的色,寬 4) |
-| 內容 | 標題;滿 24 小時的有時段事件,第一段前面加開始時間【AI 推導】 | 開始時間 + 標題 |
-| 字色 | 類別字色 step-7【維持 U10】 | 時間 `text-fg-secondary`、標題 `text-foreground`【AI 推導:色條已帶類別色;實作前對照 user 的設計稿確認】 |
+| 前綴 | 無(舊的左側 3px 色條拿掉)【AI 推導:色條改成有時段專用,兩種都有就分不出來】 | 左側類別色色條:類別 step-6(`CAT_ACCENT`,只給顏色)、寬 4(`calendar-geometry.ts`)、**高 = 字高、上下置中、圓頭**【BAR(定)】 |
+| 內容 | 標題;滿 24 小時的有時段事件,含真起點的那一段(`segment.isStart`)前面加開始時間【AI 推導】 | 開始時間 + 標題(同一行,一起截斷、省略號在行尾)【一起截斷是 AI 推導】 |
+| 字色 | 類別字色 step-7【維持 U10】 | 時間 `text-fg-secondary`、標題 `text-foreground`【TIMECOLOR(定)】 |
+| 滑過(可點時) | 同色深一格 step-2(`CAT_EVENT`) | `--neutral-hover`(透明底的配對,`../../tokens/color/color.spec.md`「Hover 換色配對總則」),疊在格子的滑過上 |
 | 形狀 | `rounded-md`;斷開那一端直角(「跨日長條」) | `rounded-md`,只在滑過 / 焦點時看得見(permanent transparent,`item-anatomy.spec.md`「關鍵定義」) |
 
+- **色條 = 字高、圓頭**【BAR(定)】:user 原話「選 a 字高+圓頭好了，把色條視為字的一部分也一樣是有韻律的，且撐滿的話跟文字的落差有點太大且事件之間的間隔也不明顯」(三個對照版本 A 字高圓頭 / B 撐滿圓頭 / C 撐滿直角是 AI 做的對照圖)。實作:高 = `text-body` 的字級 token `--font-body-size`(14,不寫死)、在 24 的列裡上下置中(上下各 5,相鄰兩條色條之間 4 + 5 + 5 = 14);圓頭 = `rounded-sm`(`../../tokens/radius/radius.css`「短邊 ≤ 10px 用 sm」,寬 4 的 2px 圓角 = 兩端半圓)。世界級:Apple 行事曆 macOS 26 / 27 月檢視有時段事件 = 約一行字高的圓頭短豎條、上下置中(<https://support.apple.com/guide/calendar/symbols-used-in-calendar-symbls/27.0/mac/27>);另一種做法 Cron(2022 官方月檢視圖)撐滿列高(<https://www.cron.com/changelog/2022-01-17-month-view>)。
+- **時間灰、標題主色**【TIMECOLOR(定)】:user 選「時間灰、標題主色 (Recommended)」(選項由 AI 提供)。色條已帶類別色,文字不再上色;時間是次要資訊。兩個主題實量對比(2026-11-25,團隊行事曆「設計審查」那一列):時間字靜止 7.00 / 滑過 6.73(淺色)、12.41 / 10.14(深色);標題 15.13 / 14.06、16.86 / 13.39,都 ≥ 4.5。
 - 選色條不選圓點:DS 的圓點已被 Badge 的 dot 模式佔用(`../Badge/badge.spec.md:43`、`:75`)。
 - 唯讀(`readOnlyEvents` 或單筆 `readOnly`):同色、不帶滑過(`CAT_SUBTLE`),透明列不亮、不是手形。
-- 中性灰事件(`color: 'neutral'`):`categorical-color.ts` 的 neutral 由各 consumer 自處理 → Calendar 補 neutral 的淡底 / 字 / 滑過 / 色條。
+- 中性灰事件(`color: 'neutral'`,不屬於任何類別,例:全公司的假日)【AI 推導】:`categorical-color.ts` 的 `CAT_EVENT_NEUTRAL`(不進 12 色相的表;放在 categorical-color.ts 是決策總帳 2026-11-25 的 AI 判定)—— 長條 `--secondary` 底 + `--foreground` 字、可點時滑過換它自己的配對 `--secondary-hover`、唯讀只有底與字;色條 `--color-neutral-9`。依據:`../../tokens/color/color.spec.md`「Static Subtle Background」bg-secondary 列(站在這個底上而且可點的,滑過換 `--secondary-hover`)、Tag neutral 同底同字(`../Tag/tag.tsx#tagVariants`)、可點時的滑過先例 FileItem 靜態小膠囊(`../FileItem/file-item.tsx#FileItem`)、色條同 Tag / Avatar neutral solid 的 neutral-9。
+- 沒傳 `color`(或傳了認不得的值)= blue。
 - 世界級:全天 = 有底的條、有時段 = 無底 —— Google Calendar(<https://calendar.google.com/calendar/embed?src=j7gov1cmnqr9tvg14k621j7t5c%40group.calendar.google.com&src=3haig2m9msslkpf2tn1h56nn9g%40group.calendar.google.com&mode=MONTH&dates=20261101%2F20261128&ctz=UTC&hl=en>)、FullCalendar(<https://fullcalendar.io/docs/eventDisplay>)、MUI X(<https://github.com/mui/mui-x/blob/master/packages/x-scheduler/src/internals/components/event/day-grid-event/DayGridEvent.tsx>)、Toast UI(<https://github.com/nhn/tui.calendar/blob/main/apps/calendar/src/components/events/horizontalEvent.tsx>);有時段改用左側色條 —— Apple 行事曆的 macOS 指南:全天 = 淡色底長條、有時段 = 左側色條(<https://support.apple.com/guide/calendar/symbls/27.0/mac/27>)。
 
 ### 跨日長條【C1、Q3(定)】
@@ -269,9 +274,9 @@ interface CalendarEvent {
 
 ### 每格筆數與「+N」【C3、C6】
 
-- **依格高自動決定**【C3】:可放列數(算式【AI 推導】)k = max(1, ⌊(格高 − 上內距 − 日期框高 − 日期到第一列 − 下內距 + 列距) ÷ (列高 + 列距)⌋);格高變了(視窗、容器、密度)就重算(ResizeObserver)。剛好放滿不出現「+N」。
+- **依格高自動決定**【C3】:可放列數(算式【AI 推導】)k = max(1, ⌊(格高 − 格線 − 上內距 − 日期框高 − 日期到第一列 − 下內距 + 列距) ÷ (列高 + 列距)⌋)(格高 = 量到的格子外框,含自己的底線 1;最後一週沒有底線,照同一式算只是下方多 1px 空白);格高變了(視窗、容器、密度)就重算(ResizeObserver)。剛好放滿不出現「+N」。
 - **看最高佔用的車道,不看筆數**【總帳更正 #7】:這一格要的列數 m = 這一格最高佔用的車道序號 + 1。m ≤ k → 全畫;m > k → 車道 0 … k−2 照畫,第 k 列換成「+N」,N = 這一格車道 ≥ k−1 的事件筆數。被換掉的那一列在這一格本來就空著時會出現「+1」【AI 推導】(藏起來的是固定在更高車道的長條,不能挪進空著的那一列);那一列有事件時 N ≥ 2。
-- **「+N」那一列**:一律「+N」【C6】(`moreLabel` 可覆寫);與事件同高、無底【C3】;原生 `<button>`(`aria-haspopup="dialog"`、`aria-expanded`);滑過 `--neutral-hover`、手形游標;字色 `text-fg-secondary`【AI 推導:改成可點的控件後,文字角色是次要資訊,不動 `--fg-muted` 這個 token(維持 U11)】;點了開「+N」清單浮層、阻止冒泡。窄時「+N」的字不另換、自訂的長字由產品負責【AI 推導】。
+- **「+N」那一列**:一律「+N」【C6】(`moreLabel` 可覆寫);與事件同高、無底【C3】;原生 `<button>`(`aria-haspopup="dialog"`、`aria-expanded`);`rounded-md`、靜止透明,滑過 `--neutral-hover`、手形游標;字色 `text-fg-secondary`【AI 推導:改成可點的控件後,文字角色是次要資訊,不動 `--fg-muted` 這個 token(維持 U11)】;字級同事件列 `text-body`【AI 推導】;格內導覽排在這一天的事件之後(「A11y 預設」格內那段);點了開「+N」清單浮層、阻止冒泡。窄時「+N」的字不另換、自訂的長字由產品負責【AI 推導】。
 - 舊的「每格最多 3 筆」撤掉;被藏起來的事件從此有路:進格 → 「+N」→ 清單。
 - 世界級:Google Calendar 格高決定列數、溢出時最後一列換成「N more」、剛好放滿不出現(<https://calendar.google.com/calendar/embed?src=j7gov1cmnqr9tvg14k621j7t5c%40group.calendar.google.com&src=3haig2m9msslkpf2tn1h56nn9g%40group.calendar.google.com&src=en.usa%23holiday%40group.v.calendar.google.com&src=en.christian%23holiday%40group.v.calendar.google.com&mode=MONTH&dates=20261201%2F20261228&ctz=UTC&hl=en>),「N more」純文字、無底、與事件約同高(<https://calendar.google.com/calendar/embed?src=j7gov1cmnqr9tvg14k621j7t5c%40group.calendar.google.com&src=3haig2m9msslkpf2tn1h56nn9g%40group.calendar.google.com&src=en.usa%23holiday%40group.v.calendar.google.com&mode=MONTH&dates=20261201%2F20261228&ctz=UTC&hl=en>);FullCalendar `dayMaxEventRows: true` 依格高、列數含 +more(<https://fullcalendar.io/docs/dayMaxEventRows>),極窄時只顯示「+2」(<https://github.com/fullcalendar/fullcalendar/blob/main/packages/preact/src/common/MoreLinkContainer.tsx>);MUI X 用 ResizeObserver 量格高、最少 1(<https://github.com/mui/mui-x/blob/master/packages/x-scheduler/src/month-view/MonthView.tsx>)、「n more..」佔一個事件列(<https://github.com/mui/mui-x/blob/master/packages/x-scheduler/src/month-view/month-view-row/MonthViewCell.tsx>);React Big Calendar 依高度、最少 1(<https://github.com/jquense/react-big-calendar/blob/master/src/Month.js>)。
 
@@ -285,7 +290,7 @@ interface CalendarEvent {
 
 **內容**:**當天全部事件**(含格內已畫出來的),與格內同樣式、同互動,順序同「格內排序」;清單 `role="list"`。跨日事件在清單裡是一列,這一天之前 / 之後還有的那一端直角【AI 推導:依 Q3(定)「一律」】。唯讀事件照樣列出(清單的目的是讓藏起來的事件看得到),列是純文字、不可點【AI 推導】。世界級:Google Calendar 疊在格上列出當天全部(<https://calendar.google.com/calendar/embed?src=j7gov1cmnqr9tvg14k621j7t5c%40group.calendar.google.com&src=3haig2m9msslkpf2tn1h56nn9g%40group.calendar.google.com&src=en.usa%23holiday%40group.v.calendar.google.com&mode=MONTH&dates=20261201%2F20261228&ctz=UTC&hl=en>)、FullCalendar 預設 popover 列出當天全部(<https://fullcalendar.io/docs/moreLinkClick>)。
 
-**外殼**:消費 `PopoverContent` / `PopoverHeader` / `PopoverTitle` / `PopoverBody`,不手刻浮層標題列(M23;閘 R9)。標題文字 = 日期 + 星期,`Intl` 跟 `locale` 走(zh-TW `{ month: 'long', day: 'numeric', weekday: 'short' }` =「7月15日週三」)【AI 推導】;`PopoverTitle` 自動接 `aria-labelledby`。
+**外殼**:消費 `PopoverContent` / `PopoverHeader` / `PopoverTitle` / `PopoverBody`,不手刻浮層標題列(M23;閘 R9)。標題文字 = 日期 + 星期,`Intl` 跟 `locale` 走(zh-TW `{ month: 'long', day: 'numeric', weekday: 'short' }` =「7月15日 週三」;月日與星期之間有沒有空白隨瀏覽器的 ICU 版本變,範例與閘不寫死這串字)【AI 推導】;`PopoverTitle` 自動接 `aria-labelledby`。
 
 **位置 = 展開型**【Q2(定)、Q2b(定)】:定位依據是那一格的外框(不是「+N」那顆鈕);**浮層中心 = 格子中心(水平 + 垂直)**,蓋在那一格上;碰到視窗邊推回、留 8(`collisionPadding`);寬 ≥ 格寬(= max(格寬, Popover 預設寬))【寬的取法 AI 推導】;關閉後焦點回「+N」。這是 Popover 規格的「展開型」例外(`../Popover/popover.spec.md`「蓋在錨點上(展開型)」,用 `PopoverContent` 的 `coverAnchor`),不套「與觸發點隔 8」與「align 跟著觸發點位置」兩條;位置與可用高(視窗高 − 上下各 8)由浮層幾何 SSOT 算(`../../tokens/elevation/elevation.spec.md`「浮層高度上限」)。世界級:Google Calendar 疊在該格上、水平置中、寬大於格(<https://calendar.google.com/calendar/embed?src=j7gov1cmnqr9tvg14k621j7t5c%40group.calendar.google.com&src=3haig2m9msslkpf2tn1h56nn9g%40group.calendar.google.com&src=en.usa%23holiday%40group.v.calendar.google.com&mode=MONTH&dates=20261201%2F20261228&ctz=UTC&hl=en>);Toast UI 水平置中、頂端對齊格子、寬 max(格寬 + 10, 280)(<https://github.com/nhn/tui.calendar/blob/main/apps/calendar/src/components/dayGridMonth/gridCell.tsx>);MUI X 蓋在格上、對齊按鈕左上(<https://github.com/mui/mui-x/blob/master/packages/x-scheduler/src/internals/components/more-events-popover/MoreEventsPopover.tsx>)。
 
@@ -293,9 +298,9 @@ interface CalendarEvent {
 
 **列距 4 = 韻律規則的例外**【Q4b(定)】:清單是上 12 / 列與列 4 / 下 12;照 `layoutSpace.spec.md:111`「一串同樣的條目」的韻律本該「上 = 列與列 = 下」,這裡刻意不照。理由是 user 原話:「這邊比較是例外吧？為了要跟格子裡的視覺語言一致，所以筆距保持跟格子裡一樣比較合理吧」。本例外只住本檔。
 
-**高度與捲動**【C9】:實際高 = min(可用高, 上限)。上限預設取「最後一列只露一半」(半列原則:上限 = 標題列 + N × (列高 + 列距) + 0.5 × 列高;body 頂部 0、底部內距在捲動區裡只有捲到底才看得到【AI 推導】),**N 實作時實測後定、回報 user**;`moreListMaxHeight`(數字 px 或字串)只能往更矮調,與 `PopoverContent` 的 `maxHeight` 同一個契約(公式 `../../tokens/elevation/overlay-geometry.ts` `capHeight`)。**標題列固定、只有清單捲**:標題列不縮、不被捲走,內容在內文區頂邊被裁、不會滑到標題列底下(`../../patterns/overlay-surface/overlay-surface.spec.md`「Viewport-aware scroll chain invariant」)。世界級:Google Calendar 清單容器 max-height 480 自捲(結構,<https://calendar.google.com/calendar/embed?src=j7gov1cmnqr9tvg14k621j7t5c%40group.calendar.google.com&src=3haig2m9msslkpf2tn1h56nn9g%40group.calendar.google.com&src=en.usa%23holiday%40group.v.calendar.google.com&src=en.uk%23holiday%40group.v.calendar.google.com&mode=MONTH&dates=20261201%2F20261228&ctz=UTC&hl=en>);Syncfusion 內容 max-height 150 自捲、標題列在捲動區外(<https://cdn.jsdelivr.net/npm/@syncfusion/ej2-schedule/styles/material.css>);反例 MUI X 標題跟著捲(讀原始碼推得,<https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Popover/Popover.js>)。
+**高度與捲動**【C9】:實際高 = min(可用高, 上限)。上限預設取「最後一列只露一半」(半列原則:上限 = 標題列 + N × (列高 + 列距) + 0.5 × 列高;body 頂部 0、底部內距在捲動區裡只有捲到底才看得到【AI 推導】),**N = 9**【AI 推導,回報 user:取 DS 清單型浮層單行列的同一個 N(`../../tokens/elevation/overlay-geometry.ts` `OVERLAY_LIST_ROWS.single`,由來是最接近改前寫死的 300px);一般密度上限 = 框 2 + 標題列 45 + 9 ×(24 + 4)+ 12 = 311px;對照 Google Calendar 的 480 ≈ N = 15(479px);常數 `calendar-more-list.tsx` `CALENDAR_MORE_LIST_ROWS`】;`moreListMaxHeight`(數字 px 或字串)只能往更矮調,與 `PopoverContent` 的 `maxHeight` 同一個契約(公式 `../../tokens/elevation/overlay-geometry.ts` `capHeight`)。**標題列固定、只有清單捲**:標題列不縮、不被捲走,內容在內文區頂邊被裁、不會滑到標題列底下(`../../patterns/overlay-surface/overlay-surface.spec.md`「Viewport-aware scroll chain invariant」)。世界級:Google Calendar 清單容器 max-height 480 自捲(結構,<https://calendar.google.com/calendar/embed?src=j7gov1cmnqr9tvg14k621j7t5c%40group.calendar.google.com&src=3haig2m9msslkpf2tn1h56nn9g%40group.calendar.google.com&src=en.usa%23holiday%40group.v.calendar.google.com&src=en.uk%23holiday%40group.v.calendar.google.com&mode=MONTH&dates=20261201%2F20261228&ctz=UTC&hl=en>);Syncfusion 內容 max-height 150 自捲、標題列在捲動區外(<https://cdn.jsdelivr.net/npm/@syncfusion/ej2-schedule/styles/material.css>);反例 MUI X 標題跟著捲(讀原始碼推得,<https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Popover/Popover.js>)。
 
-**鍵盤與焦點**:清單裡可點的事件列是原生 `<button>`(不在格陣裡,沒有 gridcell 的限制)【AI 推導】,所以開啟時焦點落在第一筆事件(DS 規則:body 第一個表單控件,`../Popover/popover.spec.md`「A11y 預設」);整張都是唯讀事件時落在浮層容器本身,讀屏念出標題日期。`Tab` 在浮層裡繞圈;`Esc` 關清單、焦點回「+N」;點外面關清單、焦點留在點的地方(`../../../ds-canonical/references/keyboard-model-canonical.md`「關了之後焦點去哪」)。MUI X 的 More Events 浮層也是 Esc 關(<https://github.com/mui/mui-x/blob/master/docs/data/scheduler/accessibility/accessibility.md>)。
+**鍵盤與焦點**:清單裡可點的事件列是原生 `<button>`(不在格陣裡,沒有 gridcell 的限制)【AI 推導】,所以開啟時焦點落在第一筆事件(DS 規則:body 第一個表單控件,`../Popover/popover.spec.md`「A11y 預設」);整張都是唯讀事件時落在浮層容器本身,讀屏念出標題日期。`Tab` 在浮層裡繞圈;`Esc` 關清單、焦點回「+N」;點外面關清單、焦點留在點的地方(`../../../ds-canonical/references/keyboard-model-canonical.md`「關了之後焦點去哪」)。清單開著時格子變高(視窗、容器、密度)、那一格不再溢出、「+N」不畫:清單留著,關掉時焦點回這一天的日期停靠點(「+N」已不在)【AI 推導】。MUI X 的 More Events 浮層也是 Esc 關(<https://github.com/mui/mui-x/blob/master/docs/data/scheduler/accessibility/accessibility.md>)。
 
 **點清單裡的事件**【C4、總帳更正 #4】:**在旁邊再開詳情浮層,清單留著**;被點那一列在詳情開著時維持它自己的滑過色【AI 推導】。`eventDetail` 與 `onEventClick` 兩條路都一樣:清單不先關,`onEventClick` 帶 `{ anchor }` = 被點的那一列;產品的浮層畫在 Calendar 元件樹外,也算清單那一層的內部(`../../patterns/overlay-surface/overlay-surface.spec.md`「A11y 預設」的「Esc / 點外面關閉」條),點它不關清單;做法實作前寫 POC。Esc 一次關一層。浮層疊浮層的總則:`../Popover/popover.spec.md`「禁止事項」(少用、不寫死層數【C4b】)。世界級:Google Calendar 從 overview 點事件,詳情緊貼 overview 旁、overview 保留、Esc 一次只關最上層(<https://calendar.google.com/calendar/embed?src=j7gov1cmnqr9tvg14k621j7t5c%40group.calendar.google.com&src=3haig2m9msslkpf2tn1h56nn9g%40group.calendar.google.com&src=en.usa%23holiday%40group.v.calendar.google.com&mode=MONTH&dates=20261201%2F20261228&ctz=UTC&hl=en>);Toast UI 兩層並存(<https://github.com/nhn/tui.calendar/blob/main/apps/calendar/src/slices/popup.ts>);Syncfusion 從 more 浮層點不關 more(<https://github.com/syncfusion/ej2-javascript-ui-controls/blob/master/controls/schedule/src/schedule/popups/quick-popups.ts>);MUI X dialog 在旁邊、浮層留在後面(<https://github.com/mui/mui-x/blob/master/docs/data/scheduler/accessibility/accessibility.md>)。反面教材:FullCalendar 與 React Big Calendar 的 more 浮層一遇到外部 mousedown 就關,開發者自己的詳情一被點,清單就關(<https://github.com/fullcalendar/fullcalendar/blob/main/packages/preact/src/common/MorePopover.tsx>、<https://github.com/jquense/react-big-calendar/blob/master/src/Month.js>)。
 
@@ -332,7 +337,7 @@ interface CalendarEvent {
 
 ## 狀態與邊界案例
 
-- **載入中 `loading`**【Q11(定)】:工具列、星期列、日期數字照畫;每格事件區換成**一條**與事件列同高的 DS `Skeleton`【一條是 AI 推導】;格陣 `aria-busy="true"`、骨架 `aria-hidden`(`../Skeleton/skeleton.spec.md:86-87`;形狀對齊真實內容,同檔 `:64`)。載入中仍可點空白新增、鍵盤走格【AI 推導】。世界級:MUI X 每格一條骨架、不轉圈、不加遮罩(<https://github.com/mui/mui-x/blob/master/packages/x-scheduler/src/month-view/month-view-row/MonthViewCell.tsx#L261>);Atlassian:骨架尺寸和形狀對齊真實內容(<https://atlassian.design/components/skeleton/usage>)。
+- **載入中 `loading`**【Q11(定)】:工具列、星期列、日期數字照畫;每格事件區換成**一條**與事件列同高的 DS `Skeleton`【一條是 AI 推導】;格陣 `aria-busy="true"`、骨架 `aria-hidden`(`../Skeleton/skeleton.spec.md:86-87`;形狀對齊真實內容,同檔 `:64`)。載入中仍可點空白新增、鍵盤走格【AI 推導】;日期停靠點的讀屏名稱只念日期、不念筆數(還沒載完的筆數不是事實;格陣已有 `aria-busy`)【AI 推導,預覽時請 user 確認】。世界級:MUI X 每格一條骨架、不轉圈、不加遮罩(<https://github.com/mui/mui-x/blob/master/packages/x-scheduler/src/month-view/month-view-row/MonthViewCell.tsx#L261>);Atlassian:骨架尺寸和形狀對齊真實內容(<https://atlassian.design/components/skeleton/usage>)。
 - **載入失敗**【Q11(定)】:元件不內建;產品在月曆外放 DS `Alert`。FullCalendar 只有失敗回呼(<https://fullcalendar.io/docs/eventSourceFailure>)。
 - **沒有事件**【Q11(定)】:月檢視不提示,空白就是常態(不用 `<Empty>`);議程(第二段)寫「沒有事件」。MUI X 月檢視沒有空白提示、agenda 才有「No upcoming events」(<https://github.com/mui/mui-x/blob/master/packages/x-scheduler/src/locales/enUS.ts#L174>);FullCalendar 的「No events to display」只用在 list 檢視(<https://fullcalendar.io/docs/no-events-render-hooks>)。
 - **極長標題**:事件列單行截斷,不換行不撐高;實際截斷時滑過 / 焦點顯示完整標題提示(`../Tooltip/tooltip.spec.md`「截斷文字 → 用 tooltip 顯示完整內容。」,SSOT `../../patterns/element-anatomy/truncated-text.spec.md`;事件列是互動宿主 → 自組 `useTruncated`、量內層文字)。
@@ -342,7 +347,7 @@ interface CalendarEvent {
 
 ## 窄寬度(桌機 RWD)【Q8(定)、總帳更正 #8】
 
-DS 以桌機為主(`../../tokens/typography/typography.spec.md`「DS 主場景是 desktop」;`../../../ds-canonical/references/hit-area-canonical.md`「本 DS 不採納觸控尺寸建議」)。只做桌機 RWD:容器變窄時**縮減內容**,不換版面 ——(1) 有時段列拿掉時間,只留色條 + 標題;(2) 星期縮一字(`Intl` `weekday: 'narrow'`,zh-TW「日」);(3) 計數本來就是「+N」;(4) 筆數照「每格筆數」依格高;(5) 1 號只顯示「1」(與拿掉時間同一個門檻)。斷點看**欄寬**、不看視窗寬,門檻值實作時量、量完回報 user【AI 推導】。不做:手機版面、第二段的「月格 + 當天清單」;窄時也不自動切議程、檢視切換不換成下拉【AI 推導】。世界級同類(只縮內容):FullCalendar 欄寬 ≤ 60px 為 micro,拿掉時間、只顯示「+N」、星期縮成一個字(<https://github.com/fullcalendar/fullcalendar/blob/main/packages/preact/src/daygrid/components/DayGridLayoutNormal.tsx#L78>、<https://github.com/fullcalendar/fullcalendar/blob/main/packages/preact/src/daygrid/components/DayGridRow.tsx#L541>);MUI X 窄寬主要縮字級、月格仍放事件(<https://github.com/mui/mui-x/blob/master/docs/data/scheduler/event-calendar/responsiveness/responsiveness.md>)。
+DS 以桌機為主(`../../tokens/typography/typography.spec.md`「DS 主場景是 desktop」;`../../../ds-canonical/references/hit-area-canonical.md`「本 DS 不採納觸控尺寸建議」)。只做桌機 RWD:容器變窄時**縮減內容**,不換版面 ——(1) 有時段列拿掉時間,只留色條 + 標題(滿 24 小時的有時段長條第一段的開始時間也拿掉【AI 推導】);(2) 星期縮一字(`Intl` `weekday: 'narrow'`,zh-TW「日」);(3) 計數本來就是「+N」;(4) 筆數照「每格筆數」依格高;(5) 1 號只顯示「1」(與拿掉時間同一個門檻)。斷點看**欄寬**、不看視窗寬:**欄寬 ≤ 60 = 窄**(`calendar-geometry.ts` `CALENDAR_NARROW_COLUMN_MAX_PX`;欄寬 = 一個日期格的外框寬,ResizeObserver 量;量版面上的寬,不量畫面上被祖先縮放後的寬(Dialog / Popover 開場有 `zoom-in-95`,欄寬 62 在 0.95 倍下會量成 58.9);欄是 `minmax(0, 1fr)`,縮內容不改欄寬,旗標不會來回跳)【AI 推導,預覽時回報 user】—— 起點取 FullCalendar 的 micro 門檻 60(見下方世界級);2026-11-25 在 1280 × 900 實量現有範例的欄寬:展示 / 設計規格 178、設計原則 141.14、「與 DatePicker 的分工」(半寬)69.28,都沒有跨過;展示「分割畫面側欄(窄寬)」側欄 400 寬時 56.9,跨過。**有時間字之後的實量**(2026-11-25,團隊行事曆,zh-TW 預設格式;回報 user、門檻是否調整待 user 看):時間字連同後面的間隔約 62–68(「上午9:30」62、「上午10:00」68.4),一列可放字的寬 = 欄寬 − 25(格線 1 + 格子左右內距 8 + 色條與間隔 8 + 右內距 8)→ 欄寬 61 起時間字出現,但標題要到欄寬約 101–107 才放得下一個中文字(「下午2:00」101、「上午10:00」107;在那之前畫面只有被截斷的時間,例欄寬 69.28「上午…」、100「上午10:0…」),放得下 2 個中文字要欄寬約 115–121;現有範例:展示 / 設計規格 178(標題約 6 字)、設計原則 141.14(約 3 字)、「與 DatePicker 的分工」69.28(標題 0 字、時間被截斷)。不做:手機版面、第二段的「月格 + 當天清單」;窄時也不自動切議程、檢視切換不換成下拉【AI 推導】。世界級同類(只縮內容):FullCalendar 欄寬 ≤ 60px 為 micro,拿掉時間、只顯示「+N」、星期縮成一個字(<https://github.com/fullcalendar/fullcalendar/blob/main/packages/preact/src/daygrid/components/DayGridLayoutNormal.tsx#L78>、<https://github.com/fullcalendar/fullcalendar/blob/main/packages/preact/src/daygrid/components/DayGridRow.tsx#L541>);MUI X 窄寬主要縮字級、月格仍放事件(<https://github.com/mui/mui-x/blob/master/docs/data/scheduler/event-calendar/responsiveness/responsiveness.md>)。
 
 ## 選取與拖拉【Q14(定)】
 
@@ -368,11 +373,11 @@ DS 以桌機為主(`../../tokens/typography/typography.spec.md`「DS 主場景�
 
 ## 第一段實作範圍(相對 2026-11-24 程式)
 
-**畫面看得見的變化**:有時段事件改無底 + 色條 + 開始時間 + 標題,全天改淡底長條、拿掉左 3px 條【C2】;多日事件改橫跨長條、換週切段、斷開端直角【C1、Q3(定)】;每格筆數依格高、各週等高,「+N more」改「+N」、與事件同高、可點【C3、C6】;日期數字右上 → 左上,今天實心底跟著移【C10(改)】;每月 1 號顯示「7月1日」【Q15(定)】;整套間距改「間距」表(事件列 24 / 14px、列距 2 → 4、格內距 6 → 4)【SPACING(定)】;焦點框往外;工具列改 ChromeHeader;沒傳語系時新加的時間也是中文格式【Q9(定)】(標題與星期已在 0.1.0-beta.150 的 `Calendar.locale` 改成中文,不在本段);「+N」字色 muted → secondary;容器太矮時格陣可捲、底緣雙線拿掉;週數欄 / 隱藏週末 / 載入中骨架(選用)【Q10(定)、Q10b(定)、Q11(定)】。
+**畫面看得見的變化**:有時段事件改無底 + 色條 + 開始時間 + 標題,全天改淡底長條、拿掉左 3px 條【C2】(色條字高、圓頭【BAR(定)】;時間灰、標題主色【TIMECOLOR(定)】;新增 neutral 事件色;窄寬時拿掉時間);多日事件改橫跨長條、換週切段、斷開端直角【C1、Q3(定)】;每格筆數依格高、各週等高,「+N more」改「+N」、與事件同高、可點【C3、C6】;日期數字右上 → 左上,今天實心底跟著移【C10(改)】;每月 1 號顯示「7月1日」【Q15(定)】;整套間距改「間距」表(事件列 24 / 14px、列距 2 → 4、格內距 6 → 4)【SPACING(定)】;焦點框往外;工具列改 ChromeHeader;沒傳語系時新加的時間也是中文格式【Q9(定)】(標題與星期已在 0.1.0-beta.150 的 `Calendar.locale` 改成中文,不在本段);「+N」字色 muted → secondary;容器太矮時格陣可捲、底緣雙線拿掉;週數欄 / 隱藏週末 / 載入中骨架(選用)【Q10(定)、Q10b(定)、Q11(定)】。
 
 **行為變化**:點「+N」開以格子為中心的當天清單、不再變成新增【Q2b(定)】;點事件開詳情浮層、各欄位就地改【C7、Q5(定)、Q16(定)】;從清單點事件,詳情開在旁邊、清單不關,`onEventClick` 也一樣【C4、總帳更正 #4】;點唯讀事件不再新增、格子在唯讀列上不亮【總帳更正 #3】;午夜結束與過夜不滿 24 小時只畫開始那天【Q7(定)】;只有日期沒標全天的改畫全天長條。
 
-**對產品工程師的破壞性變更**:全天事件 `end` 改「不含」(現有資料 +1 天);`renderEventTile` 內容只能一列高、多收 `segment` 參數(`{ isStart, isEnd, continuesBefore, continuesAfter, isSegmentRepeat }`,畫延續與重複標題用);星期列移進格陣(DOM 結構換了);讀屏字串改寫。
+**對產品工程師的破壞性變更**:全天事件 `end` 改「不含」(現有資料 +1 天);`renderEventTile` 內容只能一列高、多收 `segment` 參數(`{ isStart, isEnd, continuesBefore, continuesAfter, isSegmentRepeat }`,畫延續與重複標題用);星期列移進格陣(DOM 結構換了);讀屏字串改寫(事件名稱從「事件:{標題}」改成「{標題},{時間或日期}{,全天}」);`CalendarEvent.color` 多收 `'neutral'`(在 `renderEventTile` 裡拿 `event.color` 去查 12 色相表的要先處理它);`CAT_ACCENT` 的內容從左側 3px 邊框改成色條底色。
 
 **依賴的跨元件工作**(各自登記):Popover 展開型定位與可用高;清單類浮層高度上限可調 + 半列原則【C9】;浮層標題列 × 佔位跟著標題行高;InlineEdit「卸載時仍在編輯 = 提交」;SelectMenu 選項帶類別色;`categorical-color.ts` 的 `CAT_ACCENT` 改給有時段色條、補 neutral 事件色;全 DS 日期元件預設 zh-TW 與週起始日從 `Intl` 推【Q9(定)、WS(定)】;focus-canonical / keyboard-model-canonical 的 Calendar 列隨實作更新。
 
@@ -413,6 +418,8 @@ DS 以桌機為主(`../../tokens/typography/typography.spec.md`「DS 主場景�
 | SPACING(定) | 整套間距(見「間距」) | 起因「…為何日期框左邊距是6px?這感覺不是我們ds會出現的數字，依據是什麼？我好奇」「此外我想問calendar是否還有其他類似'亂用6px'的地方？」;事件列選「Tag md:24px、14px 字」,其餘照 AI 提案 |
 | WS(定) | 週起始日:各元件參數 + 沒傳時跟語系的 CLDR | 「應該是不同的設定？但都可以有預設？世界級的設計如何設計？」→「你確定中文語系的起始通常預設都是週日？世界級的設計是這樣？」→ 選「跟語系的 CLDR (Recommended)」 |
 | F1(定) | 整頁預設字級 14px,浮層經 Portal 繼承 | 「照全域做 (Recommended)」,原話「確定是世界級的設計就照你建議」 |
+| BAR(定) | 有時段事件的色條 = 字高、上下置中、圓頭(寬 4、間隔 4 不變);2026-11-25 決策總帳 | 「選 a 字高+圓頭好了，把色條視為字的一部分也一樣是有韻律的，且撐滿的話跟文字的落差有點太大且事件之間的間隔也不明顯」(A 字高圓頭 / B 撐滿圓頭 / C 撐滿直角三個對照版本是 AI 做的圖) |
+| TIMECOLOR(定) | 有時段事件的時間 `text-fg-secondary`、標題 `text-foreground`;2026-11-25 決策總帳 | 選「時間灰、標題主色 (Recommended)」 |
 
 **維持(先前的 user 決定,預設不重議)**:user 2026-11-23 原話「我決定過的部分基本上就不用重議了吧？除非跟研究或是擴充性有關或是有衝突或是違背ds一致的設計語言 才需要重新評估吧？」
 
@@ -452,7 +459,7 @@ DS 以桌機為主(`../../tokens/typography/typography.spec.md`「DS 主場景�
 
 ### AI 推導清單(user 可推翻;看得見的列進發版確認頁)
 
-第一段不開 `view`;第二段 API 形狀 `view` / `defaultView` / `onViewChange` / `views`;事件方塊第三種選項 `eventDetail` 與單筆 `readOnly`;重複事件不進資料模型(產品先展開);只有日期沒標全天 → 全天;`end` 不含;時區 / 日光節約 / 異常資料;月格只顯示開始時間;車道分配、格內排序、逐格切;「+N」切開處與清單裡跨日列的斷開端也直角(依 Q3(定)「一律」);長條 DOM 放第一個可見日的格子;每格列數算式、「+1」出現條件;「+N」的內距、圓角、字色 secondary、窄時不另換字;焦點框往外;格子下內距 4、格最小高、容器太矮時捲動;日期框寬於 24 時左右內距 8;`renderEventTile` 限一列高、多收 `segment`;格內鍵盤為「+N」與跨日長條補的順序、從每一天進格、`Esc` 回進格那一天;清單裡唯讀事件照列、純文字不可點;清單標題文字格式、寬的取法、以格為中心的可用高、開啟焦點、半列公式;被點那一列在詳情開著時維持滑過色;詳情的標題放標題列、全天開關直接切換、時間用一個 `DatePicker.Range`;詳情有哪些欄位(地點 / 說明 / 顏色 / 額外)與各欄平常 / 編輯的長相;詳情可編輯時空欄位照列(顯示 placeholder)、只能看時空欄位不列;詳情位置、本元件的層次、點外面先提交再關;載入中一條骨架、仍可操作;窄寬斷點看欄寬、不自動切議程、檢視切換不換下拉;工具列改 ChromeHeader、檢視切換用 SegmentedControl、不內建快捷鍵;A11y:星期列移進格陣(`row` / `columnheader`)、今天 `aria-current` 與名稱前的「今天,」、日期停靠點與事件列的讀屏名稱格式、「+N」讀屏名稱、`labels` 物件收全部讀屏字串;四種檢視各自的用途描述。
+第一段不開 `view`;第一段不開顯示用時區 `timeZone`(格子、「今天」與時間字一律瀏覽器時區);第二段 API 形狀 `view` / `defaultView` / `onViewChange` / `views`;事件方塊第三種選項 `eventDetail` 與單筆 `readOnly`;重複事件不進資料模型(產品先展開);只有日期沒標全天 → 全天;`end` 不含;時區 / 日光節約 / 異常資料;月格只顯示開始時間(滿 24 小時的有時段長條只在含真起點那一段、窄寬時不顯示)、`eventTimeFormat` 整份取代預設;有時段事件時間與標題同一行一起截斷、中間隔 4;全天長條拿掉左側色條(色條只給有時段);neutral 事件色(`--secondary` 長條 / `--secondary-hover` 滑過 / `--color-neutral-9` 色條)、沒傳或認不得的顏色 = blue;車道分配、格內排序、逐格切;「+N」切開處與清單裡跨日列的斷開端也直角(依 Q3(定)「一律」);長條 DOM 放第一個可見日的格子;每格列數算式、「+1」出現條件;「+N」的內距、圓角、字色 secondary、窄時不另換字;焦點框往外;格子下內距 4、格最小高(含格線 1)、事件列不被壓扁(放不下由格子裁掉)、容器太矮時捲動;日期框寬於 24 時左右內距 8;`renderEventTile` 限一列高、多收 `segment`;格內鍵盤為「+N」與跨日長條補的順序、從每一天進格、`Esc` 回進格那一天;清單裡唯讀事件照列、純文字不可點;清單標題文字格式、寬的取法、以格為中心的可用高、開啟焦點、半列公式;被點那一列在詳情開著時維持滑過色;詳情的標題放標題列、全天開關直接切換、時間用一個 `DatePicker.Range`;詳情有哪些欄位(地點 / 說明 / 顏色 / 額外)與各欄平常 / 編輯的長相;詳情可編輯時空欄位照列(顯示 placeholder)、只能看時空欄位不列;詳情位置、本元件的層次、點外面先提交再關;載入中一條骨架、仍可操作;窄寬斷點看欄寬、不自動切議程、檢視切換不換下拉;工具列改 ChromeHeader、導覽群到標題 8(ChromeHeader 子項間距,改前 16)、「今天」只搬鍵盤停靠點不搶焦點、檢視切換用 SegmentedControl、不內建快捷鍵;星期列內距(四邊 4、列高 32);隱藏週末的鍵盤落點(方向鍵 / Home / End / PageUp / PageDown 跳過被藏的日子、今天或 1 號被藏時的停靠點);週數第一週的資料來源 = CLDR `minDays`、週數欄寬用 `calc(2 × 4 + 2ch)`、週數欄格線同日期格、灰底條延伸到欄頭;載入中日期名稱不念筆數;窄寬門檻欄寬 ≤ 60;A11y:週數欄欄頭 `columnheader`、週數格 `rowheader`(名稱「第 N 週」、不是操作目標);星期列移進格陣(`row` / `columnheader`)、今天 `aria-current` 與名稱前的「今天,」、日期停靠點與事件列的讀屏名稱格式、「+N」讀屏名稱、`labels` 物件收全部讀屏字串;四種檢視各自的用途描述。
 
 ## Anatomy N/A rationale(偏離 canonical 5 的說明)
 
@@ -468,21 +475,21 @@ DS 以桌機為主(`../../tokens/typography/typography.spec.md`「DS 主場景�
 **ARIA / Pattern**【本段各條 AI 推導,除非另標】:對齊 [W3C ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/patterns/) 的 Grid Pattern。
 
 - 工具列的月份導覽用 `<nav aria-label>`(預設「行事曆月份導覽」,`navAriaLabel` 可換)。
-- 月格陣 `role="grid"`;**星期列是格陣的第一個 `role="row"`**,每格 `role="columnheader"`、名稱用完整星期名;週數欄打開時,欄頭與每週的週數格不是操作目標,名稱由 `labels` 給【AI 推導】。
+- 月格陣 `role="grid"`;**星期列是格陣的第一個 `role="row"`**,每格 `role="columnheader"`、名稱用完整星期名;週數欄打開時,欄頭(星期列第一格 `columnheader`,字 = `labels.weekNumberHeader`,預設「週」)與每週的週數格(該列第一格 `rowheader`,看得見的是數字,名稱 = `labels.weekNumber`,預設「第 27 週」)不是操作目標:沒有 `tabindex`、不進格陣的停靠點,第一段不可點【AI 推導】。
 - 每格 `role="gridcell"`(非互動容器)【維持 U4】。日期停靠點的名稱 = 完整日期(`Intl` `dateStyle: 'full'`,zh-TW「2026年7月15日 星期三」)+ 筆數;**今天**加 `aria-current="date"`、名稱前加「今天,」(DS 的 DateGrid 已這樣做;MUI X 今天也是 `aria-current=date`,<https://github.com/mui/mui-x/blob/master/docs/data/scheduler/accessibility/accessibility.md>)。1 號顯示「7月1日」不影響名稱。
-- 事件列 / 長條 `role="button"`,名稱「{標題},{開始時間 或 起訖日期}{,全天}」;唯讀時沒有角色、不命名,標題就是文字內容。`readOnlyDates` 時焦點在格子上,讀屏要念到日期、今天、筆數**與每個事件標題**(格子的 `aria-label` 不得蓋掉格內文字)。Outlook 的讀屏也是標題後接時間、日期(<https://support.microsoft.com/en-US/accessibility/outlook/basic-tasks-using-a-screen-reader-with-the-calendar-in-outlook>)。
+- 事件列 / 長條 `role="button"`,名稱「{標題},{開始時間 或 起訖日期}{,全天}」:有時段(未滿 24 小時)= 開始時間(與畫面上同一個格式,依 `locale` / `eventTimeFormat`),例「設計審查,上午10:00」;長條(全天,或有時段且滿 24 小時)= 起訖日期(`Intl` `{ month: 'long', day: 'numeric' }`,結束日 = 畫出來的最後一天,一天只寫一個日期),例「Alex 休假,7月20日 – 7月22日,全天」「公司創立紀念日,7月3日,全天」;窄寬拿掉畫面上的時間時名稱照舊;字串由 `labels.event(title, when, allDay)` 組(可覆寫);`renderEventTile` 的外層用同一個名稱。唯讀時沒有角色、不命名,標題(與時間)就是文字內容。`readOnlyDates` 時焦點在格子上,讀屏要念到日期、今天、筆數**與每個事件標題**(格子的 `aria-label` 不得蓋掉格內文字)。Outlook 的讀屏也是標題後接時間、日期(<https://support.microsoft.com/en-US/accessibility/outlook/basic-tasks-using-a-screen-reader-with-the-calendar-in-outlook>)。
 - 「+N」原生 `<button>`,名稱「{日期},還有 {N} 個事件」(`labels` 可換);`aria-haspopup="dialog"`、`aria-expanded`。Google Calendar 的「N more」是 `role=button`、名稱「N more events」(<https://calendar.google.com/calendar/embed?src=j7gov1cmnqr9tvg14k621j7t5c%40group.calendar.google.com&src=3haig2m9msslkpf2tn1h56nn9g%40group.calendar.google.com&src=en.usa%23holiday%40group.v.calendar.google.com&mode=MONTH&dates=20261201%2F20261228&ctz=UTC&hl=en>),讀屏使用者到 More 按鈕按 Enter / Space 看被藏的事件(<https://support.google.com/calendar/answer/6101541?hl=en>)。
-- 載入中格陣 `aria-busy="true"`。
+- 載入中格陣 `aria-busy="true"`,骨架 `aria-hidden`;日期停靠點名稱不念筆數(見「狀態與邊界案例」)。
 - **字串可覆寫**:`labels` 收所有讀屏字串與檢視名稱(格陣、日期、事件、+N、‹ › 各檢視、檢視切換、清單 / 詳情的關閉、週數欄欄頭),預設繁中、逐鍵可覆寫,元件裡不寫死 `aria-label`;既有 `prevAriaLabel` / `nextAriaLabel` / `navAriaLabel` / `todayLabel` / `createLabel` / `moreLabel` 保留。
 
 **Keyboard(月檢視)**【維持 U7】([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/grid/grid-pattern.html#L205-L221)):整個月格陣是**一個 Tab 停靠點**(roving tabindex)—— APG 原文:"Since only one element in the entire grid is included in the tab sequence, grouping with a grid can dramatically reduce the number of tab stops on a page."。真焦點是**日期數字 `<button>`**(格裡唯一不需方向鍵的控件):"A cell contains one widget whose operation does not require arrow keys and grid navigation keys set focus on that widget."。`readOnlyDates` 時焦點改放格子本身:"A cell contains text or a single graphic and grid navigation keys set focus on the cell."(跨元件規則 `../../../ds-canonical/references/keyboard-model-canonical.md`「本 DS 的兩個消費者」)。
 
 | 按鍵 | 行為 | 一手出處 |
 |---|---|---|
-| `Tab` / `Shift+Tab` | 進 / 出整個格陣,只停一次;停在今天(今天不在本月則停在 1 號) | APG Date Picker Dialog:"only one button in the calendar grid is in the Tab sequence"([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/dialog-modal/examples/datepicker-dialog.html#L249)) |
-| `←` / `→`、`↑` / `↓` | 前 / 後一天;上 / 下一週同一天 | 同上 Keyboard Support 表 |
-| `Home` / `End` | 該週第一天 / 最後一天(依週起始日) | 同上 |
-| `PageUp` / `PageDown`、`Shift+PageUp` / `Shift+PageDown` | 上 / 下一個月(去年 / 明年同月)同一日號,不存在則落當月最後一天 | 同上 |
+| `Tab` / `Shift+Tab` | 進 / 出整個格陣,只停一次;停在今天(今天不在本月則停在 1 號)。`hideWeekends` 時【AI 推導】:今天被藏 → 同一週下一個看得見的日子,這一週後面沒有就前一個;1 號被藏 → 1 號之後第一個看得見的日子;「今天」鈕搬停靠點同一條 | APG Date Picker Dialog:"only one button in the calendar grid is in the Tab sequence"([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/dialog-modal/examples/datepicker-dialog.html#L249)) |
+| `←` / `→`、`↑` / `↓` | 前 / 後一天;上 / 下一週同一天。`hideWeekends` 時落點被藏就往移動方向找最近一個看得見的日子(週五按 `→` 到下週一)【AI 推導】 | 同上 Keyboard Support 表 |
+| `Home` / `End` | 該週第一天 / 最後一天(依週起始日);`hideWeekends` 時 = 該列第一個 / 最後一個看得見的日子【AI 推導】 | 同上 |
+| `PageUp` / `PageDown`、`Shift+PageUp` / `Shift+PageDown` | 上 / 下一個月(去年 / 明年同月)同一日號,不存在則落當月最後一天;`hideWeekends` 時落點被藏就往同方向找,找到的那天跑出目標月就改往反方向(停在目標月裡)【AI 推導】 | 同上 |
 | `Enter` / `Space` | 日期格可點:在這一天新增(`onDateClick`);`readOnlyDates`:`Enter` = 進格、`Space` 無動作 | 鍵位同 APG 日期選擇器,動作是新增;唯讀依 `keyboard-model-canonical.md`「進格用什麼鍵」 |
 | `F2` | **進格**:焦點移到本格第一個 widget | APG Grid:"F2: ... If the cell contains one or more widgets, places focus on the first widget." |
 
@@ -504,4 +511,5 @@ DS 以桌機為主(`../../tokens/typography/typography.spec.md`「DS 主場景�
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `color.spec.md`
 - `layoutSpace.spec.md`

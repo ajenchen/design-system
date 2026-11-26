@@ -40,19 +40,22 @@ check('026d5788 之前的 Calendar 非當月格原文 → 紅,且指名 bg-muted
 })
 
 const current = readFileSync(join(REPO, CAL_REL), 'utf8')
+// 日期格的滑過 2026-11-25 起由屬性 data-hovered 驅動(`data-[hovered]:bg-neutral-hover`,calendar.tsx「格子的滑過」;之前是 `hover:bg-neutral-hover`):
+// 閘把 data-[hovered] 當滑過類前綴(JS 代理標記),同一組配對照判 —— 下面兩題就是證明換了前綴之後還判得到、還會紅
+const CELL_HOVER = 'data-[hovered]:bg-neutral-hover'
 check('現行 calendar.tsx 整份 → 0 筆', () => {
   const { violations, evaluated } = scanSource(current, CAL_REL, table)
   assert.deepEqual(violations, [])
-  assert.ok(evaluated.some((e) => e.hover === 'hover:bg-neutral-hover'), '現行 calendar.tsx 裡應該判到非當月格那一組 —— 沒判到代表解析器沒看到它')
+  assert.ok(evaluated.some((e) => e.hover === CELL_HOVER), `現行 calendar.tsx 裡應該判到日期格那一組(${CELL_HOVER})—— 沒判到代表解析器沒看到它`)
 })
 
 check('突變:把 `!inMonth && \'bg-muted\'` 塞回現行 calendar.tsx 的同一段 → 紅', () => {
-  const anchor = "'hover:bg-neutral-hover',"
+  const anchor = `'${CELL_HOVER}',`
   const idx = current.indexOf(anchor)
   assert.ok(idx > 0, `現行 calendar.tsx 找不到 ${anchor}(被改寫了?請更新本突變的錨點)`)
   const mutated = `${current.slice(0, idx + anchor.length)}\n                !inMonth && 'bg-muted',${current.slice(idx + anchor.length)}`
   const { violations } = scanSource(mutated, CAL_REL, table)
-  assert.ok(violations.some((v) => v.rest === 'bg-muted' && v.hover === 'hover:bg-neutral-hover'), JSON.stringify(violations))
+  assert.ok(violations.some((v) => v.rest === 'bg-muted' && v.hover === CELL_HOVER), JSON.stringify(violations))
 })
 
 // 整份 026d5788^ 的 calendar.tsx 已於 2026-09-25 手動驗過(`git show 026d5788^:… | node scripts/hover-own-pair-invariant.mjs --file=… --stdin --no-baseline`

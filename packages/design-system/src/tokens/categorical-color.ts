@@ -42,7 +42,10 @@ export const CATEGORICAL_HUES = [
 
 export type CategoricalHue = (typeof CATEGORICAL_HUES)[number]
 
-/** neutral 不是色相(無 hue),用 secondary/foreground + neutral-9 solid,各 consumer 自處理(不在下列 map)。 */
+/**
+ * neutral 不是色相(無 hue),用 secondary/foreground + neutral-9 solid,不在下列 12 色相的 map(I1 / I2 只管色相)。
+ * Tag / Avatar 在各自元件裡處理;Calendar 事件的 neutral 收在本檔下方的 `CAT_EVENT_NEUTRAL`(決策總帳 2026-11-25「neutral 事件色放 categorical-color.ts」)。
+ */
 export type CategoricalColor = CategoricalHue | 'neutral'
 
 /** subtle 模式 class:step-1 底 + step-7 字。key X 一律對 `--color-X-*`(1:1)。 */
@@ -132,7 +135,8 @@ export const CAT_SOLID_TOKENS: Record<CategoricalHue, { bg: string; text: string
 }
 
 /**
- * Calendar event tile:subtle 底 + hover step-2(1:1)。
+ * Calendar 全天 / 跨日長條(可點):淡底 step-1 + 字 step-7 + 滑過 step-2(1:1;calendar.spec.md「事件的兩種長相」左欄)。
+ * 唯讀的長條用 `CAT_SUBTLE`(同底同字、不帶滑過);有時段事件是透明列 + 左側色條(`CAT_ACCENT`),不用這張表。
  * 淡底的滑過 = 同色離底更遠一格:淺色變深、深色變亮(色階號碼 = 離所在底色多遠;primitives.css 檔頭、
  * color.spec.md「Dark mode subtle」)。與上方實心色互動 state 不同 —— 那是 semantic `--{hue}-hover`(深色要反轉),
  * 這裡是淡底區 step-1 → step-2,兩主題同向,直接用 primitive(2026-09-26 深色 step-2..4 改半透明淡底後成立)。
@@ -152,18 +156,37 @@ export const CAT_EVENT: Record<CategoricalHue, string> = {
   magenta: 'bg-[var(--color-magenta-1)] text-[var(--color-magenta-7)] hover:bg-[var(--color-magenta-2)]',
 }
 
-/** Calendar all-day accent:左側 step-6 實心條。 */
+/**
+ * Calendar 有時段事件的色條:類別 step-6 實心(1:1;calendar.spec.md「事件的兩種長相」右欄)。**只給顏色** —— 色條是一個元素,
+ * 寬、高、圓角由 Calendar 自己給(寬 = calendar-geometry.ts 的常數、高 = 字高、圓頭),不寫在色表裡。
+ * 2026-11-25 前是全天事件的左側 3px 邊框(`border-l-[3px]` + 邊框色);全天改成淡底長條、不帶色條,色條改給有時段事件。
+ */
 export const CAT_ACCENT: Record<CategoricalHue, string> = {
-  blue: 'border-l-[3px] border-[var(--color-blue-6)]',
-  green: 'border-l-[3px] border-[var(--color-green-6)]',
-  'deep-orange': 'border-l-[3px] border-[var(--color-deep-orange-6)]',
-  yellow: 'border-l-[3px] border-[var(--color-yellow-6)]',
-  red: 'border-l-[3px] border-[var(--color-red-6)]',
-  orange: 'border-l-[3px] border-[var(--color-orange-6)]',
-  amber: 'border-l-[3px] border-[var(--color-amber-6)]',
-  lime: 'border-l-[3px] border-[var(--color-lime-6)]',
-  turquoise: 'border-l-[3px] border-[var(--color-turquoise-6)]',
-  indigo: 'border-l-[3px] border-[var(--color-indigo-6)]',
-  purple: 'border-l-[3px] border-[var(--color-purple-6)]',
-  magenta: 'border-l-[3px] border-[var(--color-magenta-6)]',
+  blue: 'bg-[var(--color-blue-6)]',
+  green: 'bg-[var(--color-green-6)]',
+  'deep-orange': 'bg-[var(--color-deep-orange-6)]',
+  yellow: 'bg-[var(--color-yellow-6)]',
+  red: 'bg-[var(--color-red-6)]',
+  orange: 'bg-[var(--color-orange-6)]',
+  amber: 'bg-[var(--color-amber-6)]',
+  lime: 'bg-[var(--color-lime-6)]',
+  turquoise: 'bg-[var(--color-turquoise-6)]',
+  indigo: 'bg-[var(--color-indigo-6)]',
+  purple: 'bg-[var(--color-purple-6)]',
+  magenta: 'bg-[var(--color-magenta-6)]',
 }
+
+/**
+ * Calendar 事件的 neutral(`CalendarEvent.color = 'neutral'`;不是色相,所以不進上面 12 色相的 map)。三個鍵對上面三張表:
+ * - `event` ↔ `CAT_EVENT`:可點的全天 / 跨日長條 = `--secondary` 底 + `--foreground` 字,滑過換它自己的配對 `--secondary-hover`
+ *  (color.spec.md「Static Subtle Background」bg-secondary 列「站在這個底上而且可點的…滑過時換自己的配對」、「Hover 換色配對總則」;
+ *   同 Tag neutral 的底與字 `components/Tag/tag.tsx#tagVariants`,可點時的滑過同 FileItem 靜態小膠囊 `components/FileItem/file-item.tsx#FileItem`);
+ * - `subtle` ↔ `CAT_SUBTLE`:唯讀的長條,同底同字、不帶滑過;
+ * - `accent` ↔ `CAT_ACCENT`:有時段事件的色條 = `--color-neutral-9`(同 Tag / Avatar neutral solid 的 neutral-9)。
+ * 【AI 推導,calendar.spec.md「事件的兩種長相」neutral 那條;放在本檔 = 決策總帳 2026-11-25 AI 判定】
+ */
+export const CAT_EVENT_NEUTRAL = {
+  event: 'bg-secondary text-foreground hover:bg-secondary-hover',
+  subtle: 'bg-secondary text-foreground',
+  accent: 'bg-[var(--color-neutral-9)]',
+} as const

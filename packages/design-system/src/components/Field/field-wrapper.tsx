@@ -25,7 +25,7 @@ installReadonlyPointerFocusGuard()
 //   default — 完整 chrome(form input 場景);view×default = edit 幾何減 chrome 與左內距(留 py 與右側)
 //   naked   — cell-as-input substrate(DataTable);**edit×naked 自畫 border-based state machine**
 //              (border-border → hover:border-border-hover → focus-within:border-primary → error 紅框);
-//              view×naked = bare(host TD 給 padding)。**view×default ≠ view×naked**(不 collapse)。
+//              view×naked = bare(host TD 給 padding;只留上下透明框)。**view×default ≠ view×naked**(不 collapse)。兩態的字都在格子左右緣往內 --table-cell-px(= 表頭字,2026-11-25)。
 //              (2026-07-16 cell disabled 態廢除 → readonly×naked/disabled×naked 死格已移除)
 //
 // 高度:固定 h = field-height token(rem),與 Button 共用同一組 token。
@@ -40,7 +40,7 @@ installReadonlyPointerFocusGuard()
  * **滑鼠點不變,鍵盤進來才畫**(2026-11-11 user,逐字:「確認 polaris真的就是這樣的話那就照你建議」;Shopify Polaris 現行
  * `s-text-field` 唯讀滑鼠點 0 變化、Tab 才出藍環,它自己有唯讀專屬的 `.input-wrapper.read-only:has(input:focus, textarea:focus)
  * { box-shadow: none; }` —— https://shopify.dev/docs/api/app-home/latest/web-components/forms/text-field 官方範例「Store URL」實機讀
- * shadow root 樣式)。唯讀的靜止外框是 `border border-transparent`(1px 透明邊框,盒子在、只是看不見),轉主色不會有位移。
+ * shadow root 樣式)。唯讀的靜止外框是一條 `--field-border-width`(1px)透明邊框(盒子在、只是看不見),轉主色不會有位移。
  * 判斷「這次焦點是不是滑鼠給的」= 瀏覽器 `:focus-visible` + `lib/pointer-focus-guard.ts` 的 `data-pointer-focus`(唯讀文字框滑鼠點
  * 瀏覽器也判成立,只有那一個差異由 guard 補);規則 owner = `ds-canonical/references/focus-canonical.md` 規則二「唯讀的 Field 控件」列。
  * 歷程:2026-09-07 的 `ring-*` idiom 隨 R1/R2 退役,0cad81e8 刪掉時沒補替代品 → readonly 一度**零指示**(WCAG 2.4.7);
@@ -65,7 +65,8 @@ export function fieldDefaultChromeCompounds(host: FieldChromeHost) {
     {
       mode: 'edit' as const,
       variant: 'default' as const,
-      className: ['bg-surface border border-border', 'hover:border-border-hover'],
+      // 框寬一律讀 --field-border-width(tokens/uiSize/uiSize.css;欄位家族不寫裸 `border`,閘 scripts/reading-context-invariant.mjs 靜態段)
+      className: ['bg-surface border-[length:var(--field-border-width)] border-border', 'hover:border-border-hover'],
     },
     // 開啟中(`data-field-open`,欄位外框自己掛的記號)= 維持**聚焦**的框:欄位 + 它自己打開的浮層 = 同一個欄位(field.spec.md「Field state machine」表)。
     // 焦點移進浮層時 focus-within 不成立,少了這條框色就取決於焦點落在哪(改前實測:可打字的 Select 藍、不可打字的灰;可打字的 DatePicker 滑鼠點開藍、
@@ -80,7 +81,7 @@ export function fieldDefaultChromeCompounds(host: FieldChromeHost) {
     { mode: 'edit' as const, variant: 'default' as const, error: false as const, className: wrapper ? 'data-[field-open]:!border-primary focus-within:!border-primary focus-within:hover:!border-primary focus-visible:outline-none' : 'focus-within:!border-primary focus-within:hover:!border-primary' },
     // 純顯示只拿掉左邊:左內距與左邊框歸 0 → 值的第一個可見元素齊控件左緣 = 標籤左緣(C1 甲,user 2026-10-21);
     // 高度、上下內距與上下 1px 透明邊、右側(帶箭頭的純顯示的右邊距、截斷省略號、依內容寬)都不動。
-    { mode: 'view' as const, variant: 'default' as const, className: 'bg-transparent border-y border-r border-transparent !pl-0' },
+    { mode: 'view' as const, variant: 'default' as const, className: 'bg-transparent border-y-[length:var(--field-border-width)] border-r-[length:var(--field-border-width)] border-transparent !pl-0' },
     {
       mode: 'readonly' as const,
       variant: 'default' as const,
@@ -94,10 +95,10 @@ export function fieldDefaultChromeCompounds(host: FieldChromeHost) {
       // @focus-suppress C — 唯讀的 wrapper 自己是 tab stop(唯讀三兄弟 Checkbox / Switch / RadioGroup、唯讀的 Select 類觸發器、NumberInput);
       //   承擔者:同一行的 focus-visible:not-data-pointer-focus:!border-primary(邊框轉色就是這個 tab stop 的框,與編輯態同一種長相)
       className: wrapper
-        ? 'bg-readonly border border-transparent focus-visible:not-data-pointer-focus:!border-primary has-[:is(input,textarea):focus-visible:not([data-pointer-focus])]:!border-primary focus-visible:outline-none'
-        : 'bg-readonly border border-transparent focus-visible:not-data-pointer-focus:!border-primary',
+        ? 'bg-readonly border-[length:var(--field-border-width)] border-transparent focus-visible:not-data-pointer-focus:!border-primary has-[:is(input,textarea):focus-visible:not([data-pointer-focus])]:!border-primary focus-visible:outline-none'
+        : 'bg-readonly border-[length:var(--field-border-width)] border-transparent focus-visible:not-data-pointer-focus:!border-primary',
     },
-    { mode: 'disabled' as const, variant: 'default' as const, className: 'bg-disabled border border-transparent cursor-not-allowed' },
+    { mode: 'disabled' as const, variant: 'default' as const, className: 'bg-disabled border-[length:var(--field-border-width)] border-transparent cursor-not-allowed' },
     // @focus-suppress C — error 態的 wrapper 自己拿到焦點(同上);承擔者:同一行的 focus-within:!border-error(紅框就是這個 tab stop 的框)
     // error × 開啟中 = 維持 error 的聚焦框 `data-[field-open]:!border-error`(同 error:false 那條的開啟規則,錯誤勝過聚焦;default 與 naked 共用本條)
     { mode: 'edit' as const, error: true as const, className: wrapper ? 'border-error hover:border-error-hover data-[field-open]:!border-error focus-within:!border-error focus-within:hover:!border-error focus-visible:outline-none' : 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error' },
@@ -155,8 +156,8 @@ export const fieldWrapperStyles = cva(
         default: '',
         // naked — cell-as-input(Notion / Airtable / Excel canonical)。**edit×naked 自畫** border +
         // hover:border-border-hover + focus-within:border-primary + error 紅框(v14 border-based state
-        // machine,見下方 compoundVariants L182-196);view×naked 用 transparent
-        // border 由 host cell 提供視覺邊框,內部 input 純文字承載。
+        // machine,見下方 compoundVariants);view×naked 只留上下 transparent
+        // border(行高契約),左右不畫,由 host cell 提供視覺邊框與左右內距,內部 input 純文字承載。
         // 世界級對照:Airtable / Notion / Excel / Google Sheets cell editing。
         // (2026-07-09 `bare` variant 已退役 — 見 field-types.ts FieldVariant 註解;
         //  被 import 的 `bareInputStyles` 常數是內層 input 重置樣式、與此不同物、保留。)
@@ -228,12 +229,15 @@ export const fieldWrapperStyles = cva(
         variant: 'naked',
         className: [
           'bg-transparent !rounded-none !h-full',
-          '!px-[var(--table-cell-px)] !py-[var(--table-cell-py)]',
+          // 左右內距 = 格子內距 − 框寬(2026-11-25):框畫在格子邊上,字落在格子左右緣往內 --table-cell-px = 表頭字 = 靜止時的字
+          // (靜止時 TD 給 --table-cell-px、下面 view×naked 左右不畫框)。修前寫 --table-cell-px,字在 13、表頭在 12,日期 / 選單欄靜止 12、
+          // 一進編輯跳到 13。規則住 field-controls.spec.md「軸二 variant」;閘 scripts/reading-context-invariant.mjs G7
+          '!px-[calc(var(--table-cell-px)_-_var(--field-border-width))] !py-[var(--table-cell-py)]',
           // 框寬在這裡;框色(靜止 / 滑過)不在這條 —— 灰框只屬於沒有錯誤的那條(下一條)。2026-11-17 A55:灰框原本寫在這裡,
           // 而這條排在共用的錯誤條(FIELD_DEFAULT_CHROME_COMPOUNDS 最後一條,不分 variant)之後,tailwind-merge 保留後寫的
           // `border-border` / `hover:border-border-hover`、拿掉錯誤條的 `border-error` / `hover:border-error-hover` → 無框款 × 驗證錯誤
           // 靜止與滑過都是灰框,只剩聚焦 / 開著(帶 `!`)是紅。改成跟 default 一樣:錯誤與否各自一條,不靠排序。
-          'border',
+          'border-[length:var(--field-border-width)]',
           // v13.3 SSOT canonical:focus-within !important(同 default + bare;
           // 2026-07-04 Q1:focus 藍移到 error:false compound,error:true 走共用 error compound)
           // 2026-09-25:開啟中的框同樣在 error:false compound(error 開啟中走共用 error compound);2026-11-12 起開啟中 = 聚焦的框
@@ -262,11 +266,13 @@ export const fieldWrapperStyles = cva(
         // Edit mode 不動(`!h-full` 保留 — border 必滿格對齊 cell border)。
         // 2026-07-16 round16:view×naked 保持 bare(cell substrate,host TD 給 padding)— 與 view×default
         // (edit 幾何減 chrome 與左內距、留 py 與右側)本質不同用途,**不 collapse**(round14 合併是錯的)。
+        // 2026-11-25:透明框只留上下 —— 上下是行高契約(DataTable --table-cell-py 減掉的那一份,data-table.css 第四節註解);
+        // 左右那兩條原本讓字落在 TD 內距 + 1 = 13,比表頭字(12)多 1。字線規則住 field-controls.spec.md「軸二 variant」;閘 G7
         mode: 'view',
         variant: 'naked',
         className: [
           'bg-transparent !rounded-none !px-0 !py-0 !h-auto',
-          'border border-transparent',
+          'border-y-[length:var(--field-border-width)] border-transparent',
         ],
       },
       // 2026-07-16 round16:`readonly×naked` / `disabled×naked` 死格移除 —— DataTable cell 廢除
@@ -436,15 +442,16 @@ export function pressFieldClear(
  * Tag 高度消費同一個 token `--tag-height-*`(components/Tag/tag.css),沒有第二份字面值。
  * 消費者:Combobox(三條路徑)、Select tag 模式。閘:`scripts/tag-field-vertical-inset.mjs`。
  */
+// 2026-11-25:式子裡的「2px 邊框」改讀 2 × --field-border-width(值不變;框寬只有一個住處 tokens/uiSize/uiSize.css)
 export const fieldTagInsetX: Record<'sm' | 'md' | 'lg', string> = {
-  sm: 'px-[calc((var(--field-height-sm)_-_2px_-_var(--tag-height-sm))_/_2)]',
-  md: 'px-[calc((var(--field-height-md)_-_2px_-_var(--tag-height-md))_/_2)]',
-  lg: 'px-[calc((var(--field-height-lg)_-_2px_-_var(--tag-height-lg))_/_2)]',
+  sm: 'px-[calc((var(--field-height-sm)_-_2_*_var(--field-border-width)_-_var(--tag-height-sm))_/_2)]',
+  md: 'px-[calc((var(--field-height-md)_-_2_*_var(--field-border-width)_-_var(--tag-height-md))_/_2)]',
+  lg: 'px-[calc((var(--field-height-lg)_-_2_*_var(--field-border-width)_-_var(--tag-height-lg))_/_2)]',
 }
 export const fieldTagInsetY: Record<'sm' | 'md' | 'lg', string> = {
-  sm: 'py-[calc((var(--field-height-sm)_-_2px_-_var(--tag-height-sm))_/_2)]',
-  md: 'py-[calc((var(--field-height-md)_-_2px_-_var(--tag-height-md))_/_2)]',
-  lg: 'py-[calc((var(--field-height-lg)_-_2px_-_var(--tag-height-lg))_/_2)]',
+  sm: 'py-[calc((var(--field-height-sm)_-_2_*_var(--field-border-width)_-_var(--tag-height-sm))_/_2)]',
+  md: 'py-[calc((var(--field-height-md)_-_2_*_var(--field-border-width)_-_var(--tag-height-md))_/_2)]',
+  lg: 'py-[calc((var(--field-height-lg)_-_2_*_var(--field-border-width)_-_var(--tag-height-lg))_/_2)]',
 }
 /**
  * 表單控件列(控件 + 標題 + 說明)的上下內距:py = (field-height − 1lh) / 2 → 單行列高 = 同 size 的欄位高
@@ -571,11 +578,15 @@ export const fieldDisplayTextClass = (size: 'sm' | 'md' | 'lg'): string =>
  * `<Control mode="view">` 自己的 view×default 左側是 0(值齊標籤),本 helper 只給 InlineEdit 用。
  *
  * 回傳「edit 幾何減 chrome」的排版盒:
- *   - 水平:`px-[var(--field-px)]`(= edit 內距,靠 InlineEdit `-mx` 拉回欄左緣後,值落標籤左緣)
- *   - 單行:`min-h-[var(--field-height-N)]` N∈{sm,md,lg} + `items-center`(垂直置中於 field 高度,= edit 單行)
- *   - 多行:`items-start` + `py-2`(頂對齊 + 上下內距,**= Textarea edit `py-2`**,textarea.tsx base;
- *     read↔edit 零跳)。⚠️ py-2 與 Textarea 同值 = SSOT 契約,`scripts/inline-edit-view-geometry-invariant.mjs`
- *     機械鎖(Textarea py 一改即紅)。
+ *   - 左右:`px-[var(--field-px)]`(= edit 內距;垂直排靠 InlineEdit 外伸 `--field-bleed`(框寬 + 內距)拉回欄左緣後,值落標籤左緣)
+ *   - 高度下限(單行 / 多行共用):`min-h-[calc(var(--field-height-N)_-_2_*_var(--field-border-width))]` N∈{sm,md,lg}。扣兩個框寬 = InlineEdit 靜止外框
+ *     上下各一條透明邊框(inline-edit.tsx view 外框 `border-[length:var(--field-border-width)] border-transparent`;min-h 給在內層、邊框在外層)→ 外框含邊框
+ *     = --field-height-N = edit `<Input>` 的外框高,view↔edit 零跳(inline-edit.spec.md「純文字 view↔edit 零跳」)。同一個邊框修正:
+ *     uiSize.css --field-control-py-* 的 −1px、本檔 tagPadding 的 −2px。2026-11-25 前沒扣 → 靜止 30 / 編輯 28(sm)。
+ *   - 單行:`items-center`(垂直置中於 field 高度,= edit 單行)
+ *   - 多行:`items-start` + `py-[var(--field-control-py-N)]`(頂對齊 + 上下內距,**= Textarea edit 同一 token**,textarea.tsx;
+ *     read↔edit 零跳)。⚠️ 與 Textarea 同值 = SSOT 契約,`scripts/inline-edit-view-geometry-invariant.mjs`
+ *     機械鎖(Textarea py 一改即紅;min-h 的 −2px 同一支鎖)。
  *
  * 值-格式化路徑(Select→Tag / Date / avatar)同樣用此 helper **包住** `<Control mode="view">`(inline-edit.tsx
  * 委派分支;委派控件 view 左側皆 0 → 包住後統一 field-px),內部間距仍由控件 view mode 提供。
@@ -583,9 +594,9 @@ export const fieldDisplayTextClass = (size: 'sm' | 'md' | 'lg'): string =>
 export const fieldViewGeometry = (size: 'sm' | 'md' | 'lg', multiline?: boolean): string =>
   cn(
     'flex w-full min-w-0 px-[var(--field-px)]',
-    size === 'sm' && 'min-h-[var(--field-height-sm)]',
-    size === 'md' && 'min-h-[var(--field-height-md)]',
-    size === 'lg' && 'min-h-[var(--field-height-lg)]',
+    size === 'sm' && 'min-h-[calc(var(--field-height-sm)_-_2_*_var(--field-border-width))]',
+    size === 'md' && 'min-h-[calc(var(--field-height-md)_-_2_*_var(--field-border-width))]',
+    size === 'lg' && 'min-h-[calc(var(--field-height-lg)_-_2_*_var(--field-border-width))]',
     // 多行 view py 必等於 Textarea edit py(同一 --field-control-py-* token),否則
     // InlineEdit 多行 read↔edit 垂直跳位;scripts/inline-edit-view-geometry-invariant.mjs 機械鎖。
     multiline && 'items-start',

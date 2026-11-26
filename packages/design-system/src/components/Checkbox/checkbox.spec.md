@@ -292,6 +292,7 @@ SelectionItem py 公式保證:
 Group 內的 Checkbox 透過 `CheckboxGroupContext` 知道自己在 group 裡:
 - `insideGroup && insideField` → 保留 label(每個 Checkbox 是 group 內選項)
 - `insideField && !insideGroup` → 抑制 label(let FieldLabel 接管,solo-in-Field 場景)
+- `insideField && !insideGroup` 也掛「沒有框的值」記號(`fieldFramelessValueProps`):閱讀情境(同一組裡有就地編輯)標籤在左時,單一勾選框往右內縮到框內字線,跟看得見的值在同一條線;CheckboxGroup 的選項不掛。規則住 `../Field/field.spec.md`「閱讀情境」(唯一住所)
 
 每個 Checkbox 自己的 `id` 透過 `useId` 生成(不共用 fieldCtx.id)→ 修了 2026-04-21「點擊只 toggle 第一個」bug。
 
@@ -350,7 +351,7 @@ Horizontal 需 `gap-4` 因 row 的 py 不擴散到左右。
 
 **ARIA / Pattern**:繼承 Radix `checkbox` primitive a11y 預設(role / aria-* / 鍵盤導覽)。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/checkbox#accessibility)。
 
-**Focus**:單一 toggle 控件,無 focus trap / restoration(那是 Dialog / Sheet 等浮層容器的行為);聚焦中被切 disabled 時由瀏覽器原生 drop focus(native disabled button 行為),不另行管理。焦點指示分兩路,對應兩個真 tab stop:**edit 控件**(Radix `<button role="checkbox">`;`checkbox.tsx` 不寫任何焦點 class)吃 `styles/base.css` 的全域 `:focus-visible` 外描邊(`outline: 2px solid var(--ring)`,往外 2px);**Field 內的 readonly 灰框**(`checkbox.tsx:295-313` 的 `<div role="checkbox" tabIndex={0}>`,消費 `fieldWrapperStyles({ mode: 'readonly' })`)走 Field 家族統一的「欄位邊框轉主色 1px」——靜止的 1px 透明邊框**鍵盤**聚焦時轉成主色、**滑鼠點不變**(2026-11-11,`../Field/field-controls.spec.md`「Focus 行為」readonly 段),同一行的 `focus-visible:outline-none` 把全域外描邊壓掉,長相與可編輯欄位一致(長相 user 2026-09-10 拍板,見 `../Field/field-wrapper.tsx` 檔頭 JSDoc)。standalone 的 readOnly 走 `tabIndex={-1}`(`checkbox.tsx:333`),不是 tab stop。SSOT `ds-canonical/references/focus-canonical.md`「框怎麼畫」。
+**Focus**:單一 toggle 控件,無 focus trap / restoration(那是 Dialog / Sheet 等浮層容器的行為);聚焦中被切 disabled 時由瀏覽器原生 drop focus(native disabled button 行為),不另行管理。焦點指示分兩路,對應兩個真 tab stop:**edit 控件**(Radix `<button role="checkbox">`;`checkbox.tsx` 不寫任何焦點 class)吃 `styles/base.css` 的全域 `:focus-visible` 外描邊(`outline: 2px solid var(--ring)`,往外 2px);**Field 內的 readonly 灰框**(`checkbox.tsx:298-316` 的 `<div role="checkbox" tabIndex={0}>`,消費 `fieldWrapperStyles({ mode: 'readonly' })`)走 Field 家族統一的「欄位邊框轉主色 1px」——靜止的 1px 透明邊框**鍵盤**聚焦時轉成主色、**滑鼠點不變**(2026-11-11,`../Field/field-controls.spec.md`「Focus 行為」readonly 段),同一行的 `focus-visible:outline-none` 把全域外描邊壓掉,長相與可編輯欄位一致(長相 user 2026-09-10 拍板,見 `../Field/field-wrapper.tsx` 檔頭 JSDoc)。standalone 的 readOnly 走 `tabIndex={-1}`(`checkbox.tsx:336`),不是 tab stop。SSOT `ds-canonical/references/focus-canonical.md`「框怎麼畫」。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

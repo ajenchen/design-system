@@ -260,9 +260,24 @@ jobs:
           npm run test:anatomy-chip-palette
           # 週起始日只有一條規則(2026-11-24,user 選「跟語系的 CLDR (Recommended)」;lib/date-locale.ts):有傳 weekStartsOn 就用,沒傳時語系 → CLDR
           # (先 Intl getWeekInfo、沒有就查內建表,-u-fw- 兩條都認)。判定表 × 三條路、內建表對每個地區代碼與執行環境 CLDR 相同、DataTable
-          # 本週 / 上週 / 下週固定時鐘判定表、消費端(DateGrid / DatePicker / 篩選寫入點 / 格編輯器 / 預設語系 zh-TW)真的呼叫;
-          # 對照組:表少 TW、不解析 fw、不換算 %7、忽略參數、篩選寫死週一、消費端各拿掉一處,各自必紅。純函式 + 讀檔,約 2 秒。
+          # 本週 / 上週 / 下週固定時鐘判定表、消費端(DateGrid / DatePicker / 篩選寫入點 / 格編輯器 / 預設語系 zh-TW、Calendar 的週起始日 / 週末 / 週數)真的呼叫;
+          # 對照組:表少 TW、不解析 fw、不換算 %7、忽略參數、篩選寫死週一、消費端各拿掉一處(含 Calendar 寫死週日 / 週末 / 第一週天數 / Home),各自必紅。純函式 + 讀檔,約 2 秒。
           npm run test:week-start
+          # Calendar 月檢視事件版面只有一份(components/Calendar/calendar-layout.ts;calendar.spec.md「資料語意」「跨日長條」「格內排序」「每格筆數與「+N」」):
+          # 三種字串格式、只有日期 → 全天(兩端都是)、end 不含、Q7(定)滿 24 小時才是長條、日光節約那天(TZ 固定 America/New_York)、start > end 與全天
+          # end === start 的處理與警告、最低空車道 / 同一事件同一車道 / 只在週末的事件不佔車道、被藏的日子切段、m 看最高車道、「+1」、逐格切、排序五條、
+          # 延續旗標五個;k 是誰算的(calendar-geometry.ts 格高 → k 判定表,calendar.tsx 的 maxRows 只有「量到的格高經這支算式」一個來源);
+          # --selftest 31 個行為突變 + 5 個靜態突變 + k 的 2 個算式突變與 3 個接線突變各自讓指定的格紅。純函式 + 讀檔,本機兩條合計約 1 秒。
+          npm run test:calendar-layout
+          # Calendar 原始碼在 Node 端渲染(esbuild + react-dom/server,NODE_ENV=development 讓開發期警告打開;Storybook 建置是 production、量不到):
+          # 三層範例每一則載入時沒有 [Calendar] 警告(資料照 calendar.spec.md「資料語意」:end 不含)、renderEventTile 收到版面那一段的 segment、
+          # 單筆 readOnly 不是按鈕;--selftest 三個原始碼突變(範例留一筆「含」的資料 / segment 寫死 / 單筆唯讀沒接上)各自只讓指定的格紅。本機兩條合計約 2 秒(主判定 0.5 秒、--selftest 1.7 秒)。
+          npm run test:calendar-render-contract
+          # DatePicker.Range 檢視模式 formatRange 只有一份判定(components/DatePicker/range-format.ts;date-picker.spec.md「區間檢視合併(formatRange)」):
+          # zh-TW / en-US × 同一天有時段 / 跨日全天 / 跨日有時段 / 同一刻 / 一端空的判定表 + 其他退回條件 + 退回兩段時每一端的寫法 +
+          # 「同一頁日期樣式一致」性質(合併與退回的列都算;對照組:兩位數月日、dateStyle full、退回的列用補零寫法,都必須被同一支檢查抓到)
+          # + date-picker.tsx 真的呼叫它;--selftest 的行為 / 靜態 / 接線突變各自必紅(數量以腳本輸出為準)。純函式 + 讀檔,約 1 秒。
+          npm run test:date-range-format
 
       - name: Registered test scripts nothing was running
         run: |
@@ -435,6 +450,12 @@ jobs:
           # 四個狀態元件的進度 / 步驟填色用 --info,不混 --primary(color.spec.md「Status」段)。
           node scripts/status-color-invariant.mjs
           node scripts/test-status-color-invariant.mjs
+          # Calendar 格內不寫死尺寸(calendar.spec.md「間距」【SPACING(定)】、「禁止事項」第 7 條):元件檔 class 字串不寫數字型內距 / 間距 / 寬高 / 邊框寬
+          # 與 [Npx],列高常數 = TAG_HEIGHT_PX.md,讀到的 --calendar-* 都有設值;有時段事件的色條寬 = 4 且「色條 + 間隔 = 文字內距」、寬只從常數來,
+          # 類別色表 CAT_ACCENT / CAT_EVENT_NEUTRAL.accent 只給顏色(「事件的兩種長相」)。配對測試在暫存目錄的實檔注入 p-1.5 / gap-0.5 / min-h-28 /
+          # border-l-[3px] / 列高 20 / 色表恢復 border-l-[3px] / 色條寬寫死 w-1 / 色條寬常數 3 各自必紅,並跑閘自己的 --selftest(十二個突變)。純靜態,本機兩條合計約 2 秒。
+          node scripts/calendar-geometry-invariant.mjs
+          node scripts/test-calendar-geometry-invariant.mjs
           # 一組選項的 Checkbox 一律包 <CheckboxGroup>(zero-gap canonical,checkbox.spec.md),不手刻 <div flex|grid|space-y-N>;
           # 各自獨立的「單一同意」勾選框用逐行豁免 @checkbox-group-handcraft-ok,出處要引得出 spec 原文。
           # 2026-11-21(knowledge-prune WP-21b)接上:11-20 那批時它在 HEAD 上紅(3 筆手刻開關列),WP-17(904d00b4、c2d35677)修好後
@@ -1857,6 +1878,28 @@ jobs:
           # 2026-11-17 從 verify-browser-interaction 搬來:那支 job 41622d91 撞 25 分上限被取消(d23df592 已 22.9 分),本 job 約 8.5 分 / 上限 25。
           npm run test:datepicker-range-active-underline
 
+      - name: Calendar month skeleton invariant (browser)
+        run: |
+          # Calendar 月檢視骨架與間距(calendar.spec.md「工具列」「Cell 規則」「間距」「A11y 預設」;2026-11-25 月檢視重做第一包):
+          # 工具列 = ChromeHeader 48 / 56、nav 名稱、星期列是格陣第一個 row(7 個 columnheader、完整星期名、列高 32)、各週等高、最後一週沒底線、
+          # 日期框 4 / 4 / 24、1 號「7月1日」、事件列 24 / 列距 4 / 文字內距 8、事件列焦點框往外、axe required-children / parent 0、太矮時週列可捲(工具列與星期列不動)、
+          # 鍵盤走到看不見的週會捲進來、點日期鈕 / 按「今天」搬停靠點、en-GB 週一起、titleAs、今天是 1 號時實心底包住「7月1日」;
+          # 讀屏名稱(日期停靠點 = 完整日期 + 筆數、只有今天 aria-current=date 與「今天,」、唯讀格名稱由內容來念得到事件標題、labels 覆寫生效);
+          # 三個選用設定與窄寬度(隱藏週末 5 欄 / 鍵盤跳過被藏的日子 / en-IL 藏週五六、週數欄寬一致與年底週數 en-GB 53 / en-US 1、
+          # 載入中 aria-busy 與每格一條骨架、窄寬掃 20 個欄寬不來回跳);
+          # 事件版面(跨日長條一個元素畫過涵蓋的格、斷開端直角(換週 / 延續到下個月 / 被藏的週末)、每格列數照量到的格高(掃 14 個格高、剛好放滿不出「+N」)、
+          # 點長條任一段與唯讀列不會在這天新增、從長條涵蓋的每一天 F2 都走得到、日期格唯讀時長條涵蓋的每一天都念得到它的標題、深色主題長條不透出格線、
+          # renderEventTile 回傳過大的內容裁在外層裡(不畫到下一列 / 隔壁格、不接走點擊)而外層的焦點框照樣畫在外面);
+          # 事件的兩種長相(全天長條 = 類別淡底、沒有左色條;有時段 = 透明列 + 色條寬 4 / 高 = 字高 / 圓頭 + 時間 fg-secondary + 標題 foreground,
+          # 兩種長相字左緣同一條線、zh-TW「上午10:00」、事件讀屏名稱「{標題},{時間或日期}{,全天}」、12 色相與 neutral 的色、唯讀滑過不變、
+          # eventTimeFormat 覆寫、窄寬拿掉時間、時間字對比兩個主題 ≥ 4.5);
+          # 格子的滑過與格內鍵盤(只亮指標底下那一格 —— 指在長條第 3 天那段亮第 3 天、唯讀列上不亮、指標不動捲週列也跟著換、
+          # 停在週列的捲軸上 / 在捲軸上滾輪 / 拖捲軸滑塊時一格都不亮;
+          # 從長條的第 X 天進格、Esc / F2 回第 X 天,滑鼠點那一段再出格也回那一天;長條的焦點框往外);
+          # --selftest 七十三個突變各自讓預期那一格紅。本機(同一份建置)主判定約 40 秒、--selftest 約 113 秒,CI 未實測 ——
+          # 放在本 job 是因為它是 25 分 job 裡餘裕大的一個(約 8.5 分),不是主題相同(同 sidebar-keyboard job 檔頭「不往沒有餘裕的 job 疊」)。
+          npm run test:calendar-month
+
   verify-browser-sidebar-keyboard:
     # 2026-11-05 拆自 verify-browser-field-dialog-steps(照主題拆平行 job、不調高上限,上限沿用原 job 的 25;同 2026-10-14 待辦總帳 G10 的拆法)。
     # 原 job 三次 CI 實測 24.6(108a736f)/ 24.1(ac05777d)/ 25.3(4f692d17,撞上限被取消)分;本 job 只跑側欄鍵盤一支,
@@ -2361,6 +2404,8 @@ jobs:
     # footer 內距約 315 秒 → p90 390 秒。footer 內距搬到 verify-browser-footer-gutter,兩邊各約 8.5 分。
     # 2026-11-13 加欄位開啟外框閘的**判定**(本機 85–90 秒,CI 約本機 1.2–1.4 倍 → 約 2 分)→ 估約 10.5 分,上限 15 不動;
     # 它的對照組(本機 380 秒,CI 估約 8.4 分 —— 照原句 5.3 分 / 239 秒的同一個比例;380 秒出處 67b83c7e。2026-11-18 audit PV4 加 S、T 兩段與三種破法之前是 239 秒,2026-11-13 加第二組併排欄位組與兩種破法之前是 202 秒)疊進來會超過 15 分,照 virtual-cursor-modality「判定與對照組按預算分開放」的先例放 verify-browser-sidebar-keyboard。
+    # 2026-11-25 加閱讀情境閘的判定與對照組(本機約 25 + 20 秒,CI 照 1.2–1.4 倍約 1 分)→ 估約 11.5 分,上限 15 不動。
+    # 同日 G7(DataTable 內容線)併進同一支閘:本機判定 31 + 對照組 54 秒(比上一句多約 40 秒,CI 約 +1 分)→ 估約 12.5 分,上限 15 不動。
     name: Verify browser(field edges + combobox single path + field open border)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -2427,6 +2472,21 @@ jobs:
           # 2026-11-13 AI 建議、user 採納,原話「你問我的問題，照你建議」)。
           # 這裡只跑判定;對照組(九種破法)在 verify-browser-sidebar-keyboard(見本 job 檔頭的預算說明)。
           npm run test:field-open-border
+
+      - name: Reading context (browser)
+        run: |
+          # 閱讀情境(field.spec.md「閱讀情境」;user 2026-11-25 留言改版):範圍(最外層 FieldGroup / 不在組裡的 Field)裡有就地編輯時,
+          # 標籤 = fg-secondary(與 DescriptionList dt、DataTable 表頭同色)、標籤在左時開關 / 勾選框內縮到框內字線(--field-bleed)、同組同高(繪製前登記);
+          # 標籤在上時就地編輯外伸 --field-bleed、字齊標籤(修掉 +1px)。量的是像素與瀏覽器算好的值,期望值從同一份建置讀:
+          # 靜態段(欄位家族不寫裸 border、框寬補位讀 --field-border-width、判斷只住 field.css)+ 兩則 test-only 夾具 × 淺 / 深 × 不指定 / sm / md
+          # + InlineEdit 各範例(取代原本不在 CI、2026-11-25 退役的手動對齊探針)
+          # + G7 DataTable 內容線 = 表頭字(data-table.spec.md「一、Table Size」):就地編輯 / 自動行高 / 檢閱器 sm、lg 每一欄靜止與編輯中不跳、
+          # 篩選面板 Where 對齊 And/Or 下拉框內的字。本機判定約 31 秒、對照組約 54 秒。
+          # 組裡某幾列再套一層另一個主題(data-theme)時,閱讀與表單的標籤色都要跟著那一層(G3 / G4「主題套層」格)。
+          # 對照組:靜態段與瀏覽器段的破法(某列字推 4px 只有那列紅、垂直外伸改回 12、沒有框的值不內縮、標籤色在範圍元素上先算好、範圍改成最近一層、
+          # 首繪晚一個計時器、表格只修 view / edit 一半 ……;清單與個數只住閘檔 STATIC_MUTANTS / MUTANTS),每種都必須讓預期的格紅;量不到 = INSTRUMENT-FAIL,不當成對照組如預期紅。
+          npm run test:reading-context
+          node scripts/reading-context-invariant.mjs --selftest
 
   verify-browser-footer-gutter:
     # 2026-10-14 拆自 verify-browser-field-edges(待辦總帳 G10;照主題拆平行 job、不調高上限,上限沿用原 job 的 15)。
