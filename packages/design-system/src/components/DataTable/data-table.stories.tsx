@@ -1296,7 +1296,7 @@ export const VirtualScroll: Story = {
    Apple Mail / iOS Files / ref 圖 additive 派
 
    排版設計準則(本 showcase):
-   - Toolbar:左 search input / 右 ops 群(Gmail / Linear / Notion idiom)
+   - Toolbar:左 search input / 右 ops 群(action-bar.spec.md 七「搜尋框」;世界級出處在該檔,這裡不重抄)
    - 各 chrome 元件 self-pad px-loose;table mx-loose 對齊 chrome 內容左右邊界
    - bordered=true(maxHeight="100%" 為垂直滾動 trigger,per spec)
    - Alert variant="neutral"(資訊性 hint,非 info hue) */
@@ -1349,7 +1349,7 @@ export const WithBulkActions: Story = {
       // 撐滿 parent(layout=fullscreen);
       // toolbar 自帶 py = toolbar→table 間距(無父 gap);table→底部 chrome group = loose(footer 呼吸 canonical)
       <div className="flex flex-col w-full h-screen bg-canvas">
-        {/* Toolbar — 左 search / 右 ops(Gmail / Linear / Notion idiom);幾何住在 stories-helpers/scene/data-toolbar.tsx(搜尋框唯一可壓縮、下限 160px;2026-09-16)*/}
+        {/* Toolbar — 左 search / 右 ops(action-bar.spec.md 七「搜尋框」);幾何住在 stories-helpers/scene/data-toolbar.tsx(搜尋框唯一可壓縮、下限 160px、上限 320px;2026-09-16 / 2026-11-26)*/}
         <DataToolbar
           search={
             <Input
@@ -2522,7 +2522,7 @@ export const RoadmapAllInOne: Story = {
       <div className="flex flex-col w-full h-screen bg-canvas">
         {/* 效能診斷面板:只有網址帶 `?perfdebug` 才出現(見 perf-debug-overlay.tsx 檔頭的來由)。 */}
         <PerfDebugOverlay />
-        {/* Toolbar — 左 search / 右 ops(對齊 WithBulkActions canonical L922+ Gmail/Linear/Notion idiom);幾何住在 stories-helpers/scene/data-toolbar.tsx(2026-09-16)*/}
+        {/* Toolbar — 左 search / 右 ops(對齊 WithBulkActions 同一個 DataToolbar;規則 = action-bar.spec.md 七「搜尋框」);幾何住在 stories-helpers/scene/data-toolbar.tsx(2026-09-16)*/}
         <DataToolbar
           search={
             <Input
