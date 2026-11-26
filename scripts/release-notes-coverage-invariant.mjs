@@ -14,11 +14,16 @@
  *   紅: 漏登記(預覽看得見的檔 / 新增出口 / 新子路徑沒有任何一條涵蓋,印出可貼上的骨架)/ 寫了卻沒改(某條的 paths 對不到任何跟 tag 不同的檔、
  *       added / noVisibleChange 的 exports 列了不是新增的名字)/ added、updated 的 spec 不是工作樹的出貨檔或檔裡沒有那個段名 /
  *       帳本形狀錯(ledger.mjs ledgerShapeProblems:paths 太寬或用萬用字元、noVisibleChange 沒有 reason、note 不是一到三句、id 重複 …)/
+ *       帳本任何一個物件裡同一個鍵出現兩次以上(duplicateKeyProblems,讀原始文字:JSON.parse 只留最後一個,前面那段的條目靜默消失,
+ *       上面那支讀解析後物件的形狀檢查看不到;指名物件位置、鍵與每次出現的行號)/
  *       這一節依 renderer 產生的說明過不了發版端的讀回驗收(三個段名依序都在、每個條目 id 都在)→ 指名並 exit 1。
  *   綠: 上面全部 0 筆。純靜態:git diff / ls-files 讀檔名 + git archive 上一個 tag + TypeScript checker 讀出口名,沒有時序、取樣或網路。
  *   儀器失效(exit 2,印 INSTRUMENT-FAIL): 找不到上一個發布 tag(CI 要 fetch-depth: 0 帶 tag)、git diff / ls-files 失敗、
  *       PRODUCT_VISIBLE 讀不到或是空的、任一邊量到 0 個出口、帳本讀不到或不是合法 JSON —— 不讀成通過。
  *   對照組(--selftest): 合成資料逐條各紅一面、登記齊全必綠;renderer 三段依序、少一段 / 換順序 / 少一個 id 只指名那一處;
+ *       重複鍵:合成文字(巢狀物件 / 陣列裡的物件各重複一次 → 只指名那兩處與行號;兄弟物件同名鍵、字串值裡的「"鍵":」不算)、
+ *       真實帳本照原樣 0 筆、在最後一節的 changes 前注入一個 "changes": [] → 只指名那一節的 changes 與兩個行號
+ *       (而且注入後 JSON.parse 的結果與原樣逐位元相同 = 讀解析後物件的檢查看不到);
  *       真實資料:v0.1.0-beta.148 → v0.1.0-beta.149 改到的預覽看得見的檔照新規則全部紅(beta.149 只有破壞性變更段的根因),
  *       每個檔各給一條精確豁免後全綠、拿掉其中一條只指名那一個檔;同一段新增的出口(isLinkInputValueLinkable、SurfaceEyebrow、
  *       ./ds-changes.json 等)沒登記必紅、登記後綠。
@@ -100,6 +105,72 @@ export function coverageProblems({ section = {}, version, changedFiles, addition
   return problems
 }
 
+/**
+ * 純函式:JSON 文字裡,同一個物件出現兩次以上的鍵 → [{ path, key, lines }](依第一次出現的行排序)。
+ * path = 那個物件的位置(例 releases["0.1.0-beta.151"]),lines = 每次出現的行號(1 起算)。
+ * 起因(2026-11-25,TRACKER R51):合回時兩側條目拼接,0.1.0-beta.151 出現兩個 noVisibleChange 鍵,JSON.parse 只留後一個,
+ * 前一個的 5 筆豁免靜默消失 —— 解析後的物件已經沒有痕跡,所以只能讀原始文字。
+ * 只看結構:字串裡的引號、跳脫與冒號不算鍵;不驗 JSON 合法性(那由之後的 JSON.parse 判)。
+ */
+export function duplicateJsonKeys(text) {
+  const found = []
+  const stack = []
+  let line = 1
+  const childPath = () => {
+    const top = stack[stack.length - 1]
+    if (!top) return ''
+    if (top.kind === 'array') return `${top.path}[${top.index}]`
+    return /^[A-Za-z_$][\w$]*$/.test(top.lastKey) ? `${top.path}${top.path ? '.' : ''}${top.lastKey}` : `${top.path}[${JSON.stringify(top.lastKey)}]`
+  }
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (c === '\n') { line++; continue }
+    if (c === '"') {
+      const startLine = line
+      let j = i + 1
+      let raw = ''
+      for (; j < text.length && text[j] !== '"'; j++) {
+        if (text[j] === '\\') { raw += text[j] + (text[j + 1] ?? ''); j++; continue }
+        if (text[j] === '\n') line++
+        raw += text[j]
+      }
+      const top = stack[stack.length - 1]
+      if (top?.kind === 'object' && top.expectKey) {
+        let key = raw
+        try { key = JSON.parse(`"${raw}"`) } catch { /* 不合法的跳脫:照原字比對,合法性交給 JSON.parse */ }
+        if (top.keys.has(key)) top.keys.get(key).push(startLine)
+        else top.keys.set(key, [startLine])
+        top.lastKey = key
+        top.expectKey = false
+      }
+      i = j
+      continue
+    }
+    if (c === '{' || c === '[') {
+      const path = childPath()
+      stack.push(c === '{' ? { kind: 'object', path, keys: new Map(), expectKey: true, lastKey: '' } : { kind: 'array', path, index: 0 })
+      continue
+    }
+    if (c === '}' || c === ']') {
+      const frame = stack.pop()
+      if (frame?.kind === 'object') for (const [key, lines] of frame.keys) if (lines.length > 1) found.push({ path: frame.path, key, lines })
+      continue
+    }
+    if (c === ',') {
+      const top = stack[stack.length - 1]
+      if (top?.kind === 'object') top.expectKey = true
+      else if (top?.kind === 'array') top.index++
+    }
+  }
+  return found.sort((a, b) => a.lines[0] - b.lines[0])
+}
+
+/** 帳本原始文字的重複鍵 → 問題字串(指名物件位置、鍵、每次出現的行號) */
+export function duplicateKeyProblems(text, label = LEDGER_REPO_PATH) {
+  return duplicateJsonKeys(text).map(({ path, key, lines }) =>
+    `重複鍵:${label} ${path || '(最外層)'} 的「${key}」出現 ${lines.length} 次(第 ${lines.join('、')} 行)—— JSON.parse 只留最後一個,前面那段的內容會靜默消失;把它們併成一個鍵`)
+}
+
 /** 這一節照 renderer 產生的說明,過得了發版端同一支讀回驗收(三段依序、每個 id 都在)嗎 */
 export function renderedNotesProblems(ledger, version) {
   const missing = releaseNotesMissingFromText(ledger, version, renderReleaseNotes(ledger, version))
@@ -139,10 +210,14 @@ function changedBetween(base, head) {
   if (diff.status !== 0) throw new SurfaceInstrumentError(`git diff ${base} ${head} 失敗:${String(diff.stderr).trim().slice(0, 160)}`)
   return nulList(diff.stdout).sort()
 }
-function readJson(abs, label) {
+function readText(abs, label) {
   if (!existsSync(abs)) throw new SurfaceInstrumentError(`${label} 不存在`)
-  try { return JSON.parse(readFileSync(abs, 'utf8')) } catch (e) { throw new SurfaceInstrumentError(`${label} 不是合法 JSON:${e.message}`) }
+  return readFileSync(abs, 'utf8')
 }
+function parseJson(text, label) {
+  try { return JSON.parse(text) } catch (e) { throw new SurfaceInstrumentError(`${label} 不是合法 JSON:${e.message}`) }
+}
+const readJson = (abs, label) => parseJson(readText(abs, label), label)
 function exportsAt(tag) {
   const dir = archiveTree(tag)
   try { return measureExports(dir, ROOT) } finally { rmSync(dir, { recursive: true, force: true }) }
@@ -156,9 +231,10 @@ export function check() {
   if (!Array.isArray(PRODUCT_VISIBLE) || !PRODUCT_VISIBLE.length) throw new SurfaceInstrumentError('scripts/release-orchestrator.mjs 的 PRODUCT_VISIBLE 讀不到或是空的 —— 沒有清單不是沒有改動')
   const tag = lastReleaseTag()
   if (!tag) throw new SurfaceInstrumentError('找不到上一個發布的 tag(v*)—— CI 要 fetch-depth: 0 帶 tag;沒比到不是通過')
-  const ledger = readJson(join(ROOT, LEDGER_REPO_PATH), LEDGER_REPO_PATH)
+  const ledgerText = readText(join(ROOT, LEDGER_REPO_PATH), LEDGER_REPO_PATH)
+  const ledger = parseJson(ledgerText, LEDGER_REPO_PATH)
   const pkg = readJson(join(ROOT, PKG, 'package.json'), `${PKG}/package.json`)
-  const shape = ledgerShapeProblems(ledger)
+  const shape = [...duplicateKeyProblems(ledgerText), ...ledgerShapeProblems(ledger)]
   if (shape.length) return { tag, version: null, problems: shape.map((p) => `帳本形狀:${p}`), changed: [], product: [], additions: [] }
   const { version } = resolveCurrentVersion({ ledger, baseVersion: tag.replace(/^v/, ''), pkgVersion: pkg.version })
   const changed = changedSince(tag)
@@ -275,6 +351,44 @@ function selftest() {
   expect(/^## 新增\(0 條\)$/m.test(empty) && /^## 行為與畫面變更\(0 條\)$/m.test(empty) && /^## 破壞性變更\(0 條\)$/m.test(empty) && releaseNotesMissingFromText({ releases: {} }, V, empty).length === 0,
     'renderer:帳本沒有這一節 → 三段照樣出、各寫「沒有登記」')
   expect(renderedNotesProblems(ledger, V).length === 0, 'renderedNotesProblems 綠')
+
+  // 重複鍵(讀原始文字;JSON.parse 會靜默只留最後一個)
+  {
+    const text = [
+      '{',
+      '  "releases": {',
+      '    "9.9.10": { "changes": [], "noVisibleChange": [{ "paths": ["a"], "reason": "x" }],',
+      '      "noVisibleChange": [{ "paths": ["b"], "reason": "y" }] },',
+      '    "9.9.11": { "changes": [{ "id": "1", "do": "\\"changes\\": [] 寫在字串裡不算鍵", "id": "2" }], "noVisibleChange": [] }',
+      '  },',
+      '  "note": "{\\"releases\\": 1, \\"releases\\": 2}"',
+      '}',
+    ].join('\n')
+    const d = duplicateJsonKeys(text)
+    expect(d.length === 2, `重複鍵紅:合成文字應只有兩處(節裡的 noVisibleChange、陣列裡物件的 id),實得 ${JSON.stringify(d)}`)
+    expect(d[0]?.path === 'releases["9.9.10"]' && d[0]?.key === 'noVisibleChange' && d[0]?.lines.join() === '3,4', `重複鍵紅:指名 releases["9.9.10"] 的 noVisibleChange 與第 3、4 行,實得 ${JSON.stringify(d[0])}`)
+    expect(d[1]?.path === 'releases["9.9.11"].changes[0]' && d[1]?.key === 'id' && d[1]?.lines.join() === '5,5', `重複鍵紅:陣列裡物件的重複 id 指名 changes[0] 與第 5 行,實得 ${JSON.stringify(d[1])}`)
+    const p = duplicateKeyProblems(text, 'x.json')
+    expect(p.length === 2 && p[0].includes('「noVisibleChange」出現 2 次(第 3、4 行)'), `重複鍵問題字串指名鍵與行號,實得 ${JSON.stringify(p)}`)
+    const fixed = text.replace('}],\n      "noVisibleChange": [{ "paths": ["b"], "reason": "y" }] }', '}, { "paths": ["b"], "reason": "y" }] }').replace(', "id": "2" }', ' }')
+    expect(duplicateJsonKeys(fixed).length === 0, `重複鍵綠:兩段併成一個鍵、拿掉重複 id 後 0 筆(兄弟物件同名鍵、字串值裡的「"鍵":」不算),實得 ${JSON.stringify(duplicateJsonKeys(fixed))}`)
+  }
+  try {
+    const realText = readFileSync(join(ROOT, LEDGER_REPO_PATH), 'utf8')
+    expect(duplicateKeyProblems(realText).length === 0, `重複鍵綠(真實帳本照原樣):實得 ${JSON.stringify(duplicateKeyProblems(realText))}`)
+    const at = realText.lastIndexOf('"changes": [')
+    const lineNo = realText.slice(0, at).split('\n').length
+    const indent = realText.slice(realText.lastIndexOf('\n', at) + 1, at)
+    const injected = `${realText.slice(0, at)}"changes": [],\n${indent}${realText.slice(at)}`
+    const lastVersion = Object.keys(JSON.parse(realText).releases).at(-1)
+    const d = duplicateJsonKeys(injected)
+    expect(d.length === 1 && d[0].path === `releases[${JSON.stringify(lastVersion)}]` && d[0].key === 'changes' && d[0].lines.join() === `${lineNo},${lineNo + 1}`,
+      `對照組(真實帳本):最後一節注入一個 "changes": [] → 只指名 releases["${lastVersion}"] 的 changes 與第 ${lineNo}、${lineNo + 1} 行,實得 ${JSON.stringify(d)}`)
+    expect(JSON.stringify(JSON.parse(injected)) === JSON.stringify(JSON.parse(realText)),
+      '對照組(真實帳本):注入後 JSON.parse 的結果與原樣相同 —— 讀解析後物件的形狀檢查看不到重複鍵,只能讀原始文字')
+  } catch (e) {
+    fails.push(`例外:真實帳本重複鍵對照組跑不完 —— ${String(e.message).split('\n')[0]}`)
+  }
 
   // 真實資料(tag 上的 commit 永久不變):v0.1.0-beta.148 → v0.1.0-beta.149
   try {

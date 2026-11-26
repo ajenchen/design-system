@@ -157,7 +157,7 @@ test('live governance model encodes exact trust anchors, solo review settings, t
   assert.match(templateAuditWorkflow, /npm ci --ignore-scripts/)
   for (const command of ['npm run typecheck', 'npm run lint:imports', 'npm run build']) assert.match(templateAuditWorkflow, new RegExp(command))
   assert.doesNotMatch(templateAuditWorkflow, /setup:governance|audit:a11y|playwright|GOVERNANCE_(?:CHECK|WRITER)_APP/)
-  // template 的接收升級 workflow(sync-design-system.yml)形狀只由 scripts/test-setup-governance.mjs 一處守(2026-11-26 起出貨)。
+  // template 的接收升級 workflow(sync-design-system.yml)只由 scripts/test-setup-governance.mjs 一處守:0.1.0-beta.151 不出貨(R22),下一版連形狀測試一起回來。
   assert.match(authorityVersionWorkflow, /uses: changesets\/action@[a-f0-9]{40}/)
   assert.match(authorityVersionWorkflow, /^on:\s*\n(?:  #.*\n)*  workflow_dispatch:\s*$/m)
   assert.doesNotMatch(authorityVersionWorkflow, /^\s+push:\s*$/m)

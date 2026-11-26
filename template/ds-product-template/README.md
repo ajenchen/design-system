@@ -237,7 +237,6 @@ governance/lock.json            immutable release BOM
 governance/consumer-governance.md upstream-managed cross-provider/cloud guide
 .storybook/                     product-story configuration
 .github/workflows/audit.yml     locked install + typecheck + import lint + build gate
-.github/workflows/sync-design-system.yml  design-system release dispatch -> exact sync-all -> upgrade branch
 netlify/edge-functions/         free HTTP Basic Auth
 ```
 
@@ -245,7 +244,7 @@ netlify/edge-functions/         free HTTP Basic Auth
 
 - `audit.yml` publishes the single `Verify consumer` required context after one `npm ci --ignore-scripts`, typecheck, import lint, and all app builds.
 - Exact template updates arrive as normal protected-main PRs from the upstream release mirror.
-- Product repositories created from this template receive exact upgrades through `sync-design-system.yml`, the upgrade receiver: it validates the release dispatch, runs `sync-all` on a GitHub runner, and pushes an `automation/design-system-<version>` branch; the upstream release orchestrator opens the PR (`docs/04-ds-upgrade.md`).
+- Product repositories created from this template run each upgrade on a local terminal with `sync-all` for now; the upgrade receiver workflow (`sync-design-system.yml`) arrives in a later release (`docs/04-ds-upgrade.md`).
 - Netlify builds Storybook from protected `main` and branch previews from working branches.
 
 See `docs/01-first-time-setup.md` through `docs/05-troubleshooting.md` for task-specific details.

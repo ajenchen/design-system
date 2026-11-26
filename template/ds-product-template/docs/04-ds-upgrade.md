@@ -5,51 +5,18 @@ governance material, provider adapters, and skills—not an install-time lookup 
 
 ## Automated proposal
 
-The design-system authority owns the five-step release SSOT. Its last step (`consumer`) reaches two
-kinds of repository, and neither needs a Governance App environment:
+The design-system authority owns the five-step release SSOT. Its last step (`consumer`) reaches this
+template repository: the upstream release mirror delivers the exact published snapshot as a normal
+protected-main PR, and no Governance App environment is needed.
 
-- **This template repository** receives the exact published snapshot from the upstream release mirror
-  as a normal protected-main PR.
-- **Product repositories created from the template** receive upgrades through
-  `.github/workflows/sync-design-system.yml`, an upstream-managed file that `sync-all` keeps current.
+Product repositories created from the template do not receive upgrades automatically yet. The
+upgrade receiver workflow (`.github/workflows/sync-design-system.yml`, started by the release's
+`repository_dispatch`) is not part of this release and arrives in a later one. Until then, run each
+upgrade on a local terminal with `sync-all` (Manual proposal below); the transaction moves the root
+**and every `apps/*/package.json`** to the exact version and recomputes one lock (see Workspace
+package versions below).
 
-### Upgrade receiver (`sync-design-system.yml`)
-
-When a release is published, the release orchestrator sends `repository_dispatch` with event type
-`design-system-published` and `client_payload = { version, tag, commit }` to each product repository
-registered for automatic delivery. GitHub runs this event only from the workflow on the default
-branch, so the receiver must be on `main`. On a GitHub-hosted runner it:
-
-1. validates the payload: `version` is one exact SemVer (no `latest`, range, or `v` prefix), `tag`
-   equals `v<version>`, and `commit` is a lowercase 40-character SHA that the design-system tag
-   actually points at;
-2. installs the current lock with `npm ci --ignore-scripts`, then `npm audit signatures`;
-3. runs `npm run sync-all -- --apply --to <version>` on a new branch `automation/design-system-<version>`
-   (the transaction moves the root **and every `apps/*/package.json`** to the exact version and
-   recomputes one lock; see Workspace package versions below);
-4. commits the result and pushes only that branch.
-
-It holds only `contents: write`, reads no secrets, and does not open the PR. GitHub does not run
-workflows for a PR opened by the run's own `GITHUB_TOKEN`, so such a PR would never receive
-`Verify consumer`. Instead the orchestrator opens `chore(ds): sync v<version>` from the pushed branch
-with its own credential; if the branch arrives after the orchestrator has stopped waiting, its next
-run (`npm run release:auto` in the design-system repository) opens it. Merging stays with the product repository.
-
-A repository that the orchestrator does not dispatch to can send the same event itself and then open
-the PR from `automation/design-system-X.Y.Z`:
-
-```text
-printf '%s\n' '{"event_type":"design-system-published","client_payload":{"version":"X.Y.Z","tag":"vX.Y.Z","commit":"<40-character commit of tag vX.Y.Z>"}}' \
-  | gh api --method POST repos/<owner>/<repo>/dispatches --input -
-```
-
-Two limits. GitHub refuses workflow-file changes pushed with `GITHUB_TOKEN`, so when a release
-changes `.github/workflows/**` the receiver stops before pushing; run that upgrade on a local terminal
-(Manual proposal below). And the automated branch carries only the upgrade transaction: when
-`ds-changes.json` lists entries for the versions crossed, check out the branch and run
-`npm run ds:migrate` there before merging (see Manual proposal).
-
-Every upgrade PR, automated or manual, must pass exactly one required context, `Verify consumer`, from `audit.yml`. That job performs
+Every upgrade PR, template mirror or manual, must pass exactly one required context, `Verify consumer`, from `audit.yml`. That job performs
 one `npm ci --ignore-scripts` followed by the hooks-off `npm run governance:check` (with the product's
 recorded content-debt baseline, the same checker and file `setup:all` uses), typecheck,
 import-boundary lint, and build. Review
@@ -152,7 +119,7 @@ A release may also change protected control-plane paths (`.github/**`, `.npmrc`,
 This section answers the question「一般使用 ds template 的消費者也是用一樣的方式可以建置等價的雲端環境？」(asked by the design-system owner, 2026-11-26).
 
 - **New consumers.** The release workflow upgrades the template repository automatically at every release, so a repository created from the template starts at the template's current version (0.1.0-beta.150 or later). Follow the README Setup script (with your own folder name) and set network access to Full; there is no version gate to cross.
-- **Existing consumers at 0.1.0-beta.149 or older.** The first upgrade to 0.1.0-beta.150 runs the transaction scripts frozen on your own `main` (the older copies), not the ones fixed in 0.1.0-beta.150, and in a Claude Code cloud session those older scripts hit the certificate and proxy problems that 0.1.0-beta.150 fixed. Run that first upgrade on a GitHub runner (the receiver above) or on a local terminal; do not run `sync-all` inside a Claude Code cloud session. The receiver ships in a release after 0.1.0-beta.150, so an older repository adds it once by hand: copy `.github/workflows/sync-design-system.yml` byte-for-byte from the published template repository (before that release, from `template/ds-product-template/.github/workflows/sync-design-system.yml` on design-system `main`) into a PR on its `main`, merge it, then send the dispatch above.
+- **Existing consumers at 0.1.0-beta.149 or older.** The first upgrade to 0.1.0-beta.150 runs the transaction scripts frozen on your own `main` (the older copies), not the ones fixed in 0.1.0-beta.150, and in a Claude Code cloud session those older scripts hit the certificate and proxy problems that 0.1.0-beta.150 fixed. Run that first upgrade on a local terminal; do not run `sync-all` inside a Claude Code cloud session. (The upgrade receiver that runs it on a GitHub runner is not part of this release; see Automated proposal above.)
 - **After 0.1.0-beta.150**, later upgrades and `setup:all` can also run in a Claude Code cloud session 【AI 推導,待實測】: nobody has yet upgraded from 0.1.0-beta.150 to a newer release inside a cloud session.
 - **Common conditions for a cloud session:** Node.js 22.15.0 or newer (the cloud image measured 22.23.5); network access set to Full; a proxy URL that carries credentials is not forwarded, by design. The README proxy and network notes have the details.
 
