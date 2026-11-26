@@ -2410,7 +2410,8 @@ if (!SELFTEST) {
     console.log(`⏱ 區塊 ${name}:${secondsSince(t)} 秒`)
   }
 } else {
-  // 分片表的對照組(只在第 0 片或不分片時跑;純記憶體,不開頁):拿掉任一塊 / 把一塊放進第二片 / 塞一個不存在的名字 —— 各自必被點名,真表 0 個問題
+  // 分片表的對照組(只在第 0 片或不分片時跑;純記憶體,不開頁):拿掉任一塊 / 拿掉任一個拆突變的單位 / 把一塊放進第二片 / 塞一個不存在的名字與寫法不對的單位
+  // —— 各自必被點名,真表 0 個問題
   if (!ONLY_BLOCK && (!SHARD || SHARD.k === 0)) {
     const misses = []
     const problemsOf = (plan) => shardPlanProblems(plan, BLOCK_NAMES, MUTANTS)
