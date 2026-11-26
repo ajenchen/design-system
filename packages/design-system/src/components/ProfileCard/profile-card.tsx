@@ -177,7 +177,8 @@ export interface ProfileCardProps extends React.HTMLAttributes<HTMLDivElement> {
   fields?: { label: string; value: React.ReactNode }[]
   /**
    * Default field 的真實值。Object key = NAMECARD_DEFAULT_FIELD_KEYS 之一。
-   * 缺 key → render placeholder。Dev mode 會 console.warn 提醒消費者補資料。
+   * 缺 key(或值是 null / undefined)→ render placeholder `-`。Dev mode **逐 key 檢查值**:值缺(沒給 / null / undefined / 空字串)
+   * 而且沒被 `fields` 的同名欄位取代時 console.warn,列出缺的欄名,提醒消費者補資料。
    */
   defaultFieldValues?: Partial<Record<ProfileCardDefaultFieldKey, React.ReactNode>>
   onViewMore?: () => void
@@ -234,16 +235,20 @@ const ProfileCard = React.forwardRef<HTMLDivElement, ProfileCardProps>(
     const viewMoreLabel = viewMoreLabelProp ?? t('profile-card', 'viewMore', '查看更多') // i18n-allow: DS 預設(中文);prop / I18nProvider 可換
     const idLabel = labels.id
     const employeeNumberLabel = labels.employeeNumber
-    const allFields = React.useMemo(() => {
+    const { allFields, missingDefaultKeys } = React.useMemo(() => {
       const fieldLabel: Record<ProfileCardDefaultFieldKey, string> = { id: idLabel, employeeNumber: employeeNumberLabel }
       const consumerLabels = new Set((fields ?? []).map((f) => f.label))
-      const defaults = NAMECARD_DEFAULT_FIELD_KEYS
-        .map((key) => ({
-          label: fieldLabel[key],
-          value: defaultFieldValues?.[key] ?? FIELD_PLACEHOLDER,
-        }))
-        .filter((d) => !consumerLabels.has(d.label))
-      return fields && fields.length > 0 ? [...defaults, ...fields] : defaults
+      // 被 consumer `fields` 同名欄位取代的預設欄不畫、也不算缺值(同一份去重集合,下方 dev 警告用)
+      const shownKeys = NAMECARD_DEFAULT_FIELD_KEYS.filter((key) => !consumerLabels.has(fieldLabel[key]))
+      const defaults = shownKeys.map((key) => ({
+        label: fieldLabel[key],
+        value: defaultFieldValues?.[key] ?? FIELD_PLACEHOLDER,
+      }))
+      const missing = shownKeys.filter((key) => {
+        const value = defaultFieldValues?.[key]
+        return value == null || value === ''
+      })
+      return { allFields: fields && fields.length > 0 ? [...defaults, ...fields] : defaults, missingDefaultKeys: missing }
     }, [defaultFieldValues, fields, idLabel, employeeNumberLabel])
 
     // Dev warn:consumer 透過 `fields` 傳了跟預設欄位同名的 label → 指出來(預設欄位的值走 `defaultFieldValues`)
@@ -258,11 +263,14 @@ const ProfileCard = React.forwardRef<HTMLDivElement, ProfileCardProps>(
       }
     }
 
-    // Dev mode warn:consumer 沒傳 default field 任何 key → 提示補完(避免漂移成 placeholder-only)
-    if (process.env.NODE_ENV !== 'production' && !defaultFieldValues) {
+    // Dev mode warn:**逐欄檢查值**,有預設欄位缺值就列出缺的欄名(避免漂移成 placeholder-only)。
+    // 缺值 = 沒給 key、或值是 null / undefined / 空字串,而且這一欄沒被 consumer `fields` 的同名欄位取代(上方 allFields 同一份去重集合)。
+    // 2026-11-26(workspace F 組 F2)前只在「整個 defaultFieldValues 物件沒傳」時警告 —— PersonDisplay / PeoplePicker / DataTable
+    // 人員格經 `buildPersonProfileCard` 一律傳 `{ id, employeeNumber }` 物件,兩個值都是 undefined 也不警告。
+    if (process.env.NODE_ENV !== 'production' && missingDefaultKeys.length > 0) {
       console.warn(
-        `[ProfileCard] "${name}":no defaultFieldValues passed — sections will render placeholders. ` +
-        `Pass at least { id, employeeNumber } via defaultFieldValues prop. ` +
+        `[ProfileCard] "${name}":default field value missing for ${missingDefaultKeys.join(', ')} — ` +
+        `pass it via defaultFieldValues={{ ${missingDefaultKeys.join(', ')} }} (NAMECARD_DEFAULT_FIELD_KEYS). ` +
         `For other description items (email/phone/department/location etc),use \`fields\` prop array.`,
       )
     }
