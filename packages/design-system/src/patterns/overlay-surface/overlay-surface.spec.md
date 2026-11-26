@@ -363,10 +363,13 @@ DatePicker **不是**例外 —— 它的日曆格線有左緣,footer 的預設 
 
 ## 兩欄 dialog 組合 canonical(2026-07-10 user 拍板:組合,不做元件)
 
-「左內容 + 右 metadata」兩欄 dialog(工作項詳情類)**是產品層組合,不收進 DS 元件**——對齊
-Atlassian(modal-dialog 無宣告式兩欄 API,官方以 composition 範例示範:[101-full-height-illustration.tsx#L85-L107](https://github.com/pioug/atlassian-frontend-mirror/blob/cee82aa5ac9c07849d00ae757b15b07214cae59b/design-system/modal-dialog/examples/101-full-height-illustration.tsx#L85-L107))與 MUI(Dialog 無 split,[Dialog.js propTypes](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/Dialog/Dialog.js#L378)
+兩欄 dialog 涵蓋兩種:「左內容 + 右 metadata」(工作項詳情類)與「左導覽 + 右內容」(設定類,見下方「左導覽 + 右內容」;
+2026-11-26 起納入本段)。兩種都**是產品層組合,不收進 DS 元件**——對齊
+Atlassian(modal-dialog 無宣告式兩欄 API,官方以 composition 範例示範兩欄:[101-full-height-illustration.tsx#L85-L107](https://github.com/pioug/atlassian-frontend-mirror/blob/cee82aa5ac9c07849d00ae757b15b07214cae59b/design-system/modal-dialog/examples/101-full-height-illustration.tsx#L85-L107);
+這個範例只證明「兩欄做成組合」,它的標題列與底部都放在左半欄裡、× 另外浮在右上角(同檔 [#L88-L110](https://github.com/pioug/atlassian-frontend-mirror/blob/cee82aa5ac9c07849d00ae757b15b07214cae59b/design-system/modal-dialog/examples/101-full-height-illustration.tsx#L88-L110)),
+不是下方第 4 條「header 維持全寬」的依據;2026-11-26 前本句沒寫這一點)與 MUI(Dialog 無 split,[Dialog.js propTypes](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/Dialog/Dialog.js#L378)
 API,欄由 layout primitive 組)。DS 只 codify 組合鐵律(違規簽名由 consumer 防線
-`check_consumer_app_invariants.sh` r3 機械攔):
+`check_consumer_app_invariants.sh` r3 機械攔;本 DS 範例的幾何由 `scripts/overlay-story-contract-invariant.mjs` R21–R24 量):
 
 1. **各欄自帶 `<ScrollArea>` 獨立捲動**——禁兩欄共用單一 ScrollArea / 共用一條捲軸(每欄
    套上方「Body overflow canonical」模板,padding 進 viewport 內層 div)。
@@ -374,13 +377,55 @@ API,欄由 layout primitive 組)。DS 只 codify 組合鐵律(違規簽名由 co
    div、非只切半高。
 3. **欄底 footer(如 comment composer)釘在所屬欄內**(欄內 `SurfaceFooter` chrome),
    非 dialog 全寬 footer——對齊 Atlassian 官方兩欄範例把 ModalFooter 巢狀進左欄([101-full-height-illustration.tsx#L88-L106](https://github.com/pioug/atlassian-frontend-mirror/blob/cee82aa5ac9c07849d00ae757b15b07214cae59b/design-system/modal-dialog/examples/101-full-height-illustration.tsx#L88-L106))。
-4. **header 維持全寬**,分欄從 body 才開始。
+4. **header 維持全寬**,分欄從 body 才開始;× 留在這條標題列右端(`../../components/Dialog/dialog.spec.md`「關閉按鈕」)。
+   依據照實寫(2026-11-26 更正):工作項詳情類的來源是 WM 實作(`WorkItemDetailDialog.tsx` header 全寬放 breadcrumb + prev / next,
+   `governance/planning/2026-07-10-dialog-split-body-proposal.md:52`);同提案 :121 的「header/footer 全寬跨欄」是從兩家對話框元件
+   「header/body/footer 三 slot」的形狀推出來的,不是讀到兩欄範例;2026-07-10 user 逐字只有「應該不需要變為 DS 元件吧?」(同提案 :4),
+   沒有對這一條的原話。設定類由下方 C14 的 user 選擇定案,同類先例是 Salt 偏好設定對話框(頂端「Preferences」標題列與 × 跨全寬,
+   下面左欄選單、右欄內容;<https://www.saltdesignsystem.com/salt/patterns/preferences-dialog>)。
 
 **Archetype**(照抄結構,禁憑記憶手刻):WM `WorkItemDetailDialog.tsx`(產品實證,2026-07-08
 拍板落地)/ DS 內部同構先例 `file-viewer.tsx` InfoPanel(`<aside class="w-80 shrink-0 flex-col
 border-l border-divider">`)/ Atlassian [`modal-dialog/examples/101-full-height-illustration.tsx`](https://github.com/pioug/atlassian-frontend-mirror/blob/cee82aa5ac9c07849d00ae757b15b07214cae59b/design-system/modal-dialog/examples/101-full-height-illustration.tsx#L34-L42)
-(per-column `flex:1 + minHeight:0 + overflow auto`)。完整研究引文 →
+(per-column `flex:1 + minHeight:0 + overflow auto`)/ DS 範例 `../../components/Dialog/dialog.stories.tsx#ExtraLargeTwoColumn`(「超大檔位:兩欄記錄詳情」)。完整研究引文 →
 `governance/planning/2026-07-10-dialog-split-body-proposal.md`(元件化提案被 user 否決的紀錄)。
+
+### 左導覽 + 右內容(設定類,2026-11-26)
+
+**決定(逐字)**:2026-11-26 第六輪決策卡 C14,user 選「A:頂部全寬標題列 + 左分類 + 右內容(右欄頂端可選標題 = 選中分類)」
+(選項文字由 AI 擬、user 選定,意見欄空白)。上一輪推薦的
+「左選單從頂端畫到底、右欄自帶標題列」撤回(只讀到一家,且要讓 × 離開全寬標題列,與 `../../components/Dialog/dialog.spec.md`「關閉按鈕」衝突)。
+
+**什麼時候用**:只影響自己、低頻的個人偏好(主題、語言、通知),照 `../../components/Sidebar/sidebar.spec.md`「A 和 C 並用」的分流 ——
+需要協作、會分享連結給別人看的設定走整頁(路徑 A),只影響自己的低頻偏好才用對話框(路徑 C)。分類少、一排放得下時,也可以把分頁放進標題列
+(`../../components/Dialog/dialog.stories.tsx#WithTabsInHeader`「標頭內含分頁」);何時從分頁換成左欄沒有一手門檻,不另訂數字。
+
+上面四條照套,左導覽多出的部分:
+
+- **標題列** = 既有 `DialogHeader`(標題 + ×),跨全寬 = 第 4 條。
+- **左欄 = 分類導覽**:照本檔「List-as-region in overlay body」(從 body 頂起,上下留白由清單自己的 py 給,列自帶 `px-loose`);
+  外觀同 Sidebar —— 列直接消費 Sidebar 的列元件(`SidebarGroup` / `SidebarMenu` / `SidebarMenuItem` / `SidebarMenuButton`),
+  不手抄列幾何。依據:user 第五輪決策卡 C15 逐字「我不確定你程式上想要怎麼做比較 ssot,但視覺上肯定是要 ssot 的吧？類似概念或是操作應該都會跟 sidebar 長得很像？」
+  (問句;AI 讀成「視覺跟 Sidebar 同一套」)。列元件要的 context 由 `SidebarProvider` 給(寫法同
+  `../../components/ScrollArea/scroll-area.stories.tsx#SidebarNav`);**不放 `<Sidebar>` 外框** —— 它是版面上的 Menu,對話框在 AppShell 裡打開時仍在
+  AppShell 的元件樹裡,外框會去登記成 Menu(`../../components/Sidebar/sidebar.tsx` 的 `Sidebar`)【AI 推導】。
+- **分隔線由左欄畫**(`border-r border-divider`,貫穿 body 頂到底)—— 第 2 條原文寫右欄畫,換成左導覽時改由左欄畫,
+  與 Sidebar 自己畫右邊線一致(`sidebar.tsx` 的 `Sidebar`,左側 `border-r border-divider`)【AI 推導】。
+- **右欄**自帶 `<ScrollArea>`(第 1 條);頂端可放標題 = 選中分類的字,用文字樣式、隨內容捲動,**不做第二條標題列**
+  (`../header-canonical/header-canonical.spec.md`「何時不用」純內容區小標題、不可關閉的 side pane 標題);也可以省略
+  (Salt 窄版圖右欄直接從說明文字開始)。標題 → 第一個設定照 `../../tokens/layoutSpace/layoutSpace.spec.md`「標題區 → 內容」。
+- **寬 `xl`、高 `fill`**:兩欄 → `xl`(`../../components/Dialog/dialog.spec.md`「寬度檔位」選檔規則);切換分類時內容高度會變 → `fill`(同檔「高度軸」)。
+- **底部**:改了就生效的設定不放頁腳,關閉走標題列的 ×;要另外按「儲存」的設定放 `DialogFooter`(取消 / 儲存)。
+  Salt 兩種都允許(「Display either a button bar at the bottom of the dialog, or a close button in the top-right.」,同上網址);× 照 Dialog 規格一律保留。
+- **子頁的返回鈕放哪裡:未定**。DS 沒有規則;Salt 唯一的返回鈕在對話框底部左側,而且是窄版收合導覽時回到選單用的,不是子頁。等產品真的有子頁再查。
+
+**世界級**:IBM Carbon for IBM Products Tearsheet 也是先畫標題列、側欄放在標題列下面的內文區
+(`TearsheetShell.js` 先建 `ModalHeader`、之後才在 `__body` 裡放 `__influencer`;
+<https://cdn.jsdelivr.net/npm/@carbon/ibm-products@2.104.0/es/components/Tearsheet/TearsheetShell.js>)。
+
+**範例**:`../../components/Dialog/dialog.stories.tsx#ExtraLargeSettings`(「超大檔位:兩欄個人設定」)。
+**閘**:`scripts/overlay-story-contract-invariant.mjs` R21–R24 量兩則兩欄範例(本節的設定類與上方的工作項詳情類)—— 標題列跨全寬、× 在標題列右端、
+兩欄各自捲動、右欄沒有第二條標題列,每列各有拆掉修法的對照組。
 
 ## 不屬本 primitive 的職責
 
