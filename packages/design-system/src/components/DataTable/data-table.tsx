@@ -3173,6 +3173,36 @@ function DataTableInner<TData>(
    * body 面板一定要拿到明確寬度:虛擬捲動時列是 `position:absolute`,面板沒有固有寬會塌成 0
    * (2026-09-04 實測:改成純算出來時,右區 body 面板寬 = 0,整區消失)。
    */
+  /**
+   * 表頭操作格的隱形佔位(2026-11-27,workspace H 組 H8):**目前畫出來的每一列**的 rowActions 疊在同一格
+   * (grid,每份 `[grid-area:1/1]`),格寬 = 最寬那一列 —— 右區寬是量這一格量出來的(上方說明),
+   * 修前只畫 `rows[0]` 一份:第一列沒有操作(回 null)或比較少,右區就只有第一列那麼寬,其他列的按鈕被裁掉。
+   * 「畫出來的列」= 沒有虛擬捲動時這一頁的全部列,有虛擬捲動時虛擬範圍裡的列(含 overscan,與表身同一份 `rowVirtualItems`);
+   * 空表 0 份。每列一份元素快取(列身分與 rowActions 都沒變就回同一個元素):捲動時範圍裡留著的列直接 bail out,只畫新進範圍的列。
+   */
+  const actionsPlaceholderIdxKey = !hasRowActions ? '' : useVirtual ? rowVirtualItems.map((v) => v.index).join(',') : `0-${rows.length}`
+  const actionsPlaceholderCacheRef = React.useRef<{ fn: unknown; map: Map<string, { original: unknown; el: React.ReactElement }> }>({ fn: null, map: new Map() })
+  const headerActionsPlaceholder = React.useMemo(() => {
+    if (!hasRowActions) return null
+    const cache = actionsPlaceholderCacheRef.current
+    if (cache.fn !== rowActions) { cache.fn = rowActions; cache.map = new Map() }
+    const idxs = useVirtual ? rowVirtualItems.map((v) => v.index) : rows.map((_, i) => i)
+    const next = new Map<string, { original: unknown; el: React.ReactElement }>()
+    const out: React.ReactElement[] = []
+    for (const i of idxs) {
+      const row = rows[i]
+      if (!row) continue
+      const hit = cache.map.get(row.id)
+      const entry = hit && hit.original === row.original
+        ? hit
+        : { original: row.original, el: <div key={row.id} className="flex items-center justify-end gap-2 [grid-area:1/1]">{rowActions!(row.original)}</div> }
+      next.set(row.id, entry)
+      out.push(entry.el)
+    }
+    cache.map = next
+    return out
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- rowVirtualItems 的範圍已由 actionsPlaceholderIdxKey 表達(同範圍不重算)
+  }, [hasRowActions, rowActions, rows, useVirtual, actionsPlaceholderIdxKey])
   const rightHeaderRef = React.useRef<HTMLDivElement>(null)
   const [measuredRightWidth, setMeasuredRightWidth] = React.useState(0)
   React.useLayoutEffect(() => {
@@ -3189,7 +3219,7 @@ function DataTableInner<TData>(
     const obs = new ResizeObserver(measure)
     obs.observe(el)
     return () => obs.disconnect()
-  }, [hasRowActions, rightCols, rows.length])
+  }, [hasRowActions, rightCols, rows.length, actionsPlaceholderIdxKey])
   const rightWidth = hasRowActions ? measuredRightWidth : rightColsWidth
   // 空表會不會橫向捲動(欄寬總和 L + C + R 比可見寬寬):決定空表的捲動區要不要給 tab stop(見中間區 tabIndex)
   const emptyScrollsX = isEmpty && emptyVisibleWidth > 0 && leftWidth + centerColsWidth + rightWidth > emptyVisibleWidth
@@ -4598,13 +4628,14 @@ function DataTableInner<TData>(
           )
         })}
         {isRight && hasRowActions && (
-          <div className="flex items-center justify-end shrink-0 gap-2 flex-1 invisible" aria-hidden="true" style={cellPadding}>
-            {/* 渲染一個假 row 的 actions 來佔位,確保 header 和 body 同寬(aria-hidden 避免 screen reader 讀出 invisible 內容)。
+          <div data-dt-actions-placeholder="" className="grid items-center shrink-0 flex-1 invisible" aria-hidden="true" style={cellPadding}>
+            {/* 畫出來的每一列的 actions 疊在同一格佔位(headerActionsPlaceholder,H8),格寬 = 最寬那一列,確保 header 和每一列的 body 都同寬
+                (aria-hidden 避免 screen reader 讀出 invisible 內容)。
                 **`flex-1` 必須跟 body 那格一致**(2026-09-03 稽核抓到):body 的操作格是 `flex-1`
                 (basis 0 且會 grow),header 這格若只有固有寬,右側 pinned 區的剩餘空間在兩邊會分給
                 不同的項目集合 → 同一欄的 header 比 body 窄 `(P−F)/(n+1)`(n=1、P≈80 時就是 40px)。
                 目前 stories 沒有「pinned right + rowActions」的組合,所以是 API 允許但沒被看見的地雷。*/}
-            {rows[0] && rowActions!(rows[0].original)}
+            {headerActionsPlaceholder}
           </div>
         )}
       </RowTag>
@@ -4633,6 +4664,8 @@ function DataTableInner<TData>(
     // Codex R7(2026-09-08)補:tableStateForEpoch.sorting(consumer 可經 tableOptions.state 覆蓋本地 sorting)、tableOptions(enableSorting /
     // enableHiding / meta 等 table options 都從它來;TanStack 改 options 時 rows / cols / column 身分全不變,快取不會順便失效)、setSelection(只依 isControlled)。
     rows, cellErrors, selection, onCellCommit, rowActions, editingCellId, editingDraft, selectedCellId, rangeAnchor, rangeFocus, columnSizingState, isResizingColumn, spreadsheetMode, size, bordered, autoRowHeight, dragDisabled, paginationEnabled, currentPage, pageSizeState, hasRowActions, enableRowDrag, sorting, columnVisibility, tableStateForEpoch.rowSelection, tableStateForEpoch.expanded, tableStateForEpoch.columnOrder, tableStateForEpoch.columnFilters, tableStateForEpoch.globalFilter, tableStateForEpoch.grouping, resolvedWidths, selectable, inlineEdit, enableColumnResize, experimentalActiveEditorController, experimentalSpreadsheetOverlay, dropIndicator, rangeCellIdSet, leftCols, rightCols, cancelCellEdit, commitCell, enterCellEdit, isCellEditable, isSelectedId, toggleRow, getRowAriaLabel, isRowSelectable, activeDragId, virtualizer, centerIds, leftIds, rightIds, enabled, mode, iconSize, rowHeight, tableStateForEpoch.sorting, tableOptions, setSelection, enableMultiSort,
+    // 2026-11-27(HB2 包尾):F3 起列拖曳把手讀 tableLabels(labels prop → I18nProvider → 預設中文),換字時舊列要重畫
+    tableLabels,
   ]
   // 診斷(閘設 window.__dtRowRenderStats 才計):記 epoch 是被哪一個依賴換掉的
   const prevEpochDepsRef = React.useRef<unknown[] | null>(null)
@@ -4653,7 +4686,8 @@ function DataTableInner<TData>(
   const headerElCacheRef = React.useRef<Map<string, { deps: unknown[]; el: React.ReactElement }>>(new Map())
   const renderHeaderRow = (cols: Column<TData, unknown>[], isRight: boolean) => {
     const key = cols === leftCols ? 'left' : cols === rightCols ? 'right' : 'center'
-    const deps: unknown[] = [cols, isRight, headerRenderEpoch]
+    // 右區另依「表頭操作格佔位」(H8):虛擬捲動換範圍時它會變,只讓右區這一列重畫,三區表頭不整批失效
+    const deps: unknown[] = [cols, isRight, headerRenderEpoch, isRight ? headerActionsPlaceholder : null]
     const hit = headerElCacheRef.current.get(key)
     if (hit && hit.deps.every((d, i) => Object.is(d, deps[i]))) return hit.el
     const el = renderHeaderRowFresh(cols, isRight)

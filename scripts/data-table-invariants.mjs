@@ -3123,6 +3123,73 @@ for (const [label, r, c, kind] of [
   console.log([...passes, ...failures].filter((l) => l.includes(' I42 | ')).join('\n'))
 }
 
+// ── I43:每列操作數量不一時,每一列的操作格都沒被裁(2026-11-27,workspace H 組 H8)──────────────────────────
+// 要保證的性質(逐字):**每一列**的操作鈕都完整落在表身右區裡(沒被裁、沒伸出去),而且表頭佔位、每一列的操作格、兩邊右區面板同寬。
+// SSOT:data-table.spec.md 操作欄那一句(表頭隱形佔位 = 畫出來的每一列疊在同一格,寬 = 最寬那列);data-table.tsx headerActionsPlaceholder。
+// story = 展示「每列操作數量不一」(test-only):第一列沒有操作(rowActions 回 null)、第三列兩顆、其他一顆;下面那張 200 列走虛擬捲動,捲到中段再量一次。
+// 量法(M37):只量「操作格 scrollWidth ≤ clientWidth」是代理 —— 操作格是 flex-1 + shrink-0,最小寬 = 自己的內容,修前它不會內部溢出,
+//   而是整格伸出右區面板被裁掉。所以另量每顆鈕的外框是否落在表身右區面板裡(±0.5px),兩條都要過。
+// 前置(儀器):第一列 0 顆、第三列 2 顆(證明量的是那個夾具);任一張表找不到右區 = INSTRUMENT-FAIL 紅。
+// 對照組(2026-11-27 實跑):修後建置複本注入 CSS 只留佔位格第一份(`[data-dt-actions-placeholder] > :not(:first-child){display:none}` = 修前「只畫 rows[0]」)→
+//   本段「鈕在面板裡」「每列與表頭同寬」紅;還原綠。
+{
+  const URL_VARY = `${BASE}/iframe.html?id=design-system-components-datatable-展示--row-actions-varying-width&viewMode=story`
+  await loadStory(URL_VARY, '[data-case="virtual"] [data-datatable-panel="right"] [role="row"][data-row-index]')
+  const measureCase = (c) => page.evaluate((c) => {
+    const root = document.querySelector(`[data-case="${c}"] [data-data-table-outer]`)
+    const hp = root?.querySelector('[data-datatable-header-panel="right"]')
+    const bp = root?.querySelector('[data-datatable-panel="right"]')
+    if (!hp || !bp) return { err: `data-case=${c}:找不到右區表頭 / 表身面板` }
+    const ph = hp.querySelector('[data-dt-actions-placeholder]') ?? [...hp.querySelectorAll('div[aria-hidden="true"]')].find((d) => d.children.length > 0)
+    if (!ph) return { err: `data-case=${c}:找不到表頭操作格佔位` }
+    const pr = bp.getBoundingClientRect()
+    const r2 = (n) => Math.round(n * 100) / 100
+    const rows = [...bp.querySelectorAll('[role="row"][data-row-index]')].map((row) => {
+      const cells = row.querySelectorAll(':is([role="cell"], [role="gridcell"])')
+      const cell = cells[cells.length - 1]
+      if (!cell) return null
+      const cr = cell.getBoundingClientRect()
+      const buttons = [...cell.querySelectorAll('button')].map((b) => b.getBoundingClientRect())
+      const outside = buttons.filter((b) => b.left < pr.left - 0.5 || b.right > pr.right + 0.5).length
+      return { idx: Number(row.dataset.rowIndex), buttons: buttons.length, outside, cellW: r2(cr.width), scrollW: cell.scrollWidth, clientW: cell.clientWidth }
+    }).filter(Boolean)
+    return { phW: r2(ph.getBoundingClientRect().width), headerW: r2(hp.getBoundingClientRect().width), bodyW: r2(pr.width), rows }
+  }, c)
+  const judge = (label, m) => {
+    if (m.err) { record('I43', `${label}:儀器`, false, `INSTRUMENT-FAIL ${m.err}`); return }
+    if (!m.rows.length) { record('I43', `${label}:儀器`, false, 'INSTRUMENT-FAIL 右區一列操作格都沒量到'); return }
+    const bad = (pred) => m.rows.filter(pred).map((r) => `#${r.idx}`)
+    const clipped = bad((r) => r.outside > 0)
+    record('I43', `${label}:每一列的操作鈕都在表身右區面板裡(${m.rows.length} 列)`, clipped.length === 0, `伸出 / 被裁:${clipped.join(' ')}(面板寬 ${m.bodyW};${JSON.stringify(m.rows.filter((r) => r.outside > 0).slice(0, 3))})`)
+    const overflow = bad((r) => r.scrollW > r.clientW)
+    record('I43', `${label}:每一列的操作格 scrollWidth ≤ clientWidth`, overflow.length === 0, `溢出:${overflow.join(' ')}`)
+    const off = bad((r) => Math.abs(r.cellW - m.phW) > 0.5)
+    record('I43', `${label}:每一列的操作格與表頭佔位同寬(佔位 ${m.phW})`, off.length === 0, `不同寬:${off.join(' ')}(${JSON.stringify(m.rows.filter((r) => Math.abs(r.cellW - m.phW) > 0.5).slice(0, 3).map((r) => [r.idx, r.cellW]))})`)
+    record('I43', `${label}:表頭右區與表身右區同寬`, Math.abs(m.headerW - m.bodyW) <= 0.5, `表頭 ${m.headerW} vs 表身 ${m.bodyW}`)
+  }
+  const page0 = await measureCase('page')
+  if (!page0.err) {
+    const r0 = page0.rows.find((r) => r.idx === 0), r2 = page0.rows.find((r) => r.idx === 2)
+    record('I43', '前置:一頁 6 筆的夾具 —— 第一列 0 顆鈕、第三列 2 顆(量的是那個夾具)', r0?.buttons === 0 && r2?.buttons === 2, `第一列 ${r0?.buttons} / 第三列 ${r2?.buttons}`)
+  }
+  judge('一頁 6 筆', page0)
+  judge('200 筆虛擬捲動(頂端)', await measureCase('virtual'))
+  await page.evaluate(() => {
+    const root = document.querySelector('[data-case="virtual"] [data-data-table-outer]')
+    const sc = root.querySelector('[data-datatable-hscroll]') ?? root.querySelector('[data-datatable-panel="center"]')
+    sc.scrollTop = Math.round((sc.scrollHeight - sc.clientHeight) / 2)
+  })
+  const mid = await settleAfterInteraction(page, { frames: 10, capMs: 4000 })
+  const midM = await measureCase('virtual')
+  if (!mid.ok) record('I43', '200 筆虛擬捲動(中段):儀器', false, 'INSTRUMENT-FAIL 捲到中段後版面等不到靜止')
+  else {
+    record('I43', '前置:捲到中段後畫出來的是中段的列(不是頂端那幾列)', !midM.err && midM.rows.some((r) => r.idx > 50), JSON.stringify(midM.rows?.map((r) => r.idx).slice(0, 5)))
+    judge('200 筆虛擬捲動(中段)', midM)
+  }
+  console.log('\n--- I43 每列操作數量不一 ---')
+  console.log([...passes, ...failures].filter((l) => l.includes(' I43 | ')).join('\n'))
+}
+
 if (failures.length > 0) {
   console.log('\n--- FAILURES ---')
   console.log(failures.join('\n'))
