@@ -35,6 +35,7 @@ import { FieldSurfaceProvider, FieldSurfaceSizeProvider, FieldSurfaceEditablePro
 import { editSettleKeyProps } from '@/design-system/components/Field/field-edit-keys'
 import type { WithFieldVariantInternal } from '@/design-system/components/Field/field-types'
 import { resolveWeekStartsOn } from '@/design-system/lib/date-locale'
+import { rowSelectOptions } from './lib/row-select-options'
 
 // ── @internal naked variant 通道(2026-07-14 API 策展 E,user 拍板:全部收窄(轉述))──────────────
 // `naked` 已從公開 FieldVariant 拆出(field-types.ts `FieldVariantInternal`);本檔是唯一合法
@@ -77,6 +78,9 @@ export interface CellComponentProps {
    *  此前只有 String / Number 收這個參數、而且兩條路都沒傳 —— 宣告了卻沒有任何地方接上)。
    *  對齊 AG Grid / MUI X「editor aria-label = column headerName」。 */
   ariaLabel?: string
+  /** 這一格所在列的原始資料(TanStack `row.original`)。select 欄編輯器用它呼叫 `meta.getRowOptions(row)` 取這一列的選項
+   *  (data-table.spec.md「七、Column Type」的「依列可選項」段);兩條畫格子的路(MemoCellSlot 與試算表浮層編輯器 activeEditorRender)都傳。 */
+  row?: unknown
   autoRowHeight: boolean
   /** 該 cell 是否可編。replaces 舊 `meta._editable` 私有 flag(Phase C M1 hack 移除)。 */
   isEditable?: boolean
@@ -328,11 +332,20 @@ function TimeCell({ value, meta, mode, size, onCommit, onCancel, ariaLabel }: Ce
   )
 }
 
-function SelectCell({ value, meta, mode, size, onCommit, onCancel, ariaLabel }: CellComponentProps) {
+function SelectCell({ value, meta, mode, size, row, onCommit, onCancel, ariaLabel }: CellComponentProps) {
   // View canonical(2026-05-05):cell IS variant,default plain text(no Tag pill 疊在 cell border 內)。
   // Consumer 可在 column meta.display='tag' opt-in 內容導向的 Tag 視覺(category 含色彩標籤等)。
   // 對齊 JTable / AG Grid「renderer/editor 視覺一致」canonical。
   const displayMode = (meta?.display as 'plain' | 'tag' | undefined) ?? 'plain'
+  // 依列可選項(2026-11-26,user 第五輪 C4「B:只列可選的」;data-table.spec.md「七、Column Type」):只有編輯器的選單換成這一列的清單,
+  // 檢視態仍用整欄 meta.options 查顯示文字。目前的值不在這一列清單時由 rowSelectOptions 從整欄補回(顯示為已選、不被清掉)。
+  // hook 必在下方 view 分支 early return 之前(React #310 hook 順序)。
+  const editOptions = React.useMemo(
+    () => (mode === 'edit'
+      ? rowSelectOptions(meta?.options ?? [], row !== undefined && typeof meta?.getRowOptions === 'function' ? meta.getRowOptions(row) : undefined, value)
+      : undefined),
+    [mode, meta, row, value],
+  )
   if (mode === 'view') {
     return (
       <Select
@@ -356,7 +369,7 @@ function SelectCell({ value, meta, mode, size, onCommit, onCancel, ariaLabel }: 
       aria-label={ariaLabel}
       size={sizeForInput(size)}
       selectedItemRenderer={meta?.selectedItemRenderer}
-      options={meta?.options ?? []}
+      options={editOptions ?? []}
       value={value as string | null | undefined}
       onChange={(v) => onCommit?.(v)}
       // B7(2026-05-05):cell 編輯時支援 inline search,沿用 Select.searchable 機制(對齊 cell-as-input

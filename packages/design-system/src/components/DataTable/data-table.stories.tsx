@@ -2305,6 +2305,18 @@ const STATUS_OPTIONS = [
   { value: 'cancelled', label: '取消' },
 ]
 
+// 狀態流轉:每一張單現在能切到哪些狀態(像 Jira 工作流:沒有流轉線的狀態不列在選單裡)。
+// 完成的單只能重新開啟回到進行中、不能回到未開始;取消的單重新開啟回到未開始。
+// 狀態欄的 meta.getRowOptions 用它只列這一列能選的值;格子顯示、篩選、排序仍用整欄 STATUS_OPTIONS(data-table.spec.md「七、Column Type」依列可選項)。
+const STATUS_TRANSITIONS: Record<RoadmapItem['status'], RoadmapItem['status'][]> = {
+  'not-started': ['in-progress', 'cancelled'],
+  'in-progress': ['blocked', 'done', 'cancelled'],
+  blocked: ['in-progress', 'cancelled'],
+  done: ['in-progress'],
+  cancelled: ['not-started'],
+}
+const statusOptionsForRow = (row: RoadmapItem) => STATUS_OPTIONS.filter((o) => STATUS_TRANSITIONS[row.status].includes(o.value as RoadmapItem['status']))
+
 const PRIORITY_OPTIONS = [
   { value: 'P0', label: 'P0', tagVariant: 'red' as const },
   { value: 'P1', label: 'P1', tagVariant: 'orange' as const },
@@ -2344,7 +2356,7 @@ function useRoadmapColumns() {
     () => [
       col.accessor('id', { header: 'ID', meta: { type: 'string', width: 100 } }),
       col.accessor('title', { header: '標題', meta: { type: 'string', editable: true, width: 240 } }),
-      col.accessor('status', { header: '狀態', meta: { type: 'select', options: STATUS_OPTIONS, editable: true, width: 130 } }),
+      col.accessor('status', { header: '狀態', meta: { type: 'select', options: STATUS_OPTIONS, getRowOptions: statusOptionsForRow, editable: true, width: 130 } }),
       col.accessor('priority', { header: '優先級', meta: { type: 'select', options: PRIORITY_OPTIONS, editable: true, width: 100 } }),
       col.accessor('owner', { header: '負責人', meta: { type: 'person', people: SELLERS, editable: true, width: 160 } }),
       col.accessor('reviewers', { header: '審核', meta: { type: 'multiPerson', people: SELLERS, editable: true, width: 140 } }),

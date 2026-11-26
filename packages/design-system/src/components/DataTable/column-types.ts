@@ -130,6 +130,19 @@ declare module '@tanstack/react-table' {
     /** select/multiSelect 選項:消費 Select 的 SelectOption 完整 schema(M30 wrapper-extends-primitive;
      *  2026-07-08 原 {value,label} 窄型別讓 icon/description/iconClassName 傳不進 = 假 SSOT)*/
     options?: Array<import('../Select/select').SelectOption>
+    /**
+     * select 欄:這一列編輯時能選的選項(例:工單狀態流轉,已完成的單不能回到未開始)。只影響**編輯器的選單**;
+     * 格子顯示、篩選、排序仍用上面的整欄 `options`,所以 `options` 要放完整清單。
+     *
+     * - 不傳 = 每一列都用整欄 `options`(現況)。
+     * - 預設建議**只回傳這一列能選的值**(user 2026-11-26 第五輪決策卡 C4 選「B:只列可選的」);要「列出但停用」就讓回傳項目帶 `disabled`,
+     *   照 Select 既有的停用呈現(不可點、鍵盤跳過)。
+     * - 目前的值不在回傳清單裡時,編輯器會從整欄 `options` 補回那一項並顯示為已選(選它 = 不變),不會被清掉。
+     * - 只有 `type: 'select'` 讀這個欄位。
+     *
+     * 規則 → data-table.spec.md「七、Column Type」的「依列可選項」段。
+     */
+    getRowOptions?: (row: TData) => Array<import('../Select/select').SelectOption>
     /** select cell 的 trigger/display 自訂渲染(轉發 Select.selectedItemRenderer;status 彩色 icon 場景)*/
     selectedItemRenderer?: (opt: import('../Select/select').SelectOption) => React.ReactNode
     /** select cell 顯示模式(轉發 Select.display;cell-registry SelectCell 消費 `meta?.display`)。
