@@ -197,7 +197,7 @@ export const ShowTime: Story = {
       <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
         <div className="flex flex-col gap-[var(--layout-space-tight)]">
           <p className="text-caption text-fg-muted">
-            日期加時間:展開後月曆右邊多出「時 / 分」兩欄可以捲動選;底下有「此刻」與「確定」,按「確定」才套用。選好的值同時帶日期與時間。
+            日期加時間:展開後月曆右邊多出時間欄可以捲動選 —— 12 小時的語系(預設 zh-TW)是「時(12、01…11)/ 分 / 上午下午」三欄、頂端寫「下午2:30」,24 小時的語系(例 en-GB)是「時(00–23)/ 分」兩欄;底下有「此刻」與「確定」,按「確定」才套用。選好的值同時帶日期與時間。
           </p>
           <DatePicker showTime value={single} onChange={setSingle} clearable />
         </div>
@@ -235,7 +235,7 @@ export const RangePopoverOpen: Story = {
 /* ── OpenSnapshot:showTime popover 內 TimePicker side panel(M15)── */
 export const ShowTimePopoverOpen: Story = {
   name: '日期加時間:浮層展開狀態',
-  parameters: { docs: { description: { story: '日期加時間打開的樣子:月曆右邊是時間欄(頂端顯示目前選的時:分,下面是「時 / 分」兩欄捲動選),底下是「此刻」與「確定」。時間欄跟月曆一樣高,頂端那列跟月曆的「年月」列對齊(2026-05-02 設計準則)。' } } },
+  parameters: { docs: { description: { story: '日期加時間打開的樣子:月曆右邊是時間欄(頂端用欄位同一種寫法顯示目前選的時間,預設 zh-TW 是「下午2:30」;下面是「時(12、01…11)/ 分 / 上午下午」三欄捲動選,24 小時的語系是「時 / 分」兩欄),底下是「此刻」與「確定」。時間欄跟月曆一樣高,頂端那列跟月曆的「年月」列對齊(2026-05-02 設計準則)。' } } },
   render: () => {
     const [v, setV] = React.useState<string>('2026-04-15T14:30:00')
     return (

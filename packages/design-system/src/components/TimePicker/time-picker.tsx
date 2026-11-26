@@ -30,8 +30,9 @@ import {
 } from '@/design-system/components/TimePicker/time-columns'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { DEFAULT_DATE_LOCALE } from '@/design-system/lib/date-locale'
-// 顯示的預設時間寫法(12 / 24 跟語系)與 DatePicker / Calendar 同一份(DATE-TIME(定)2026-11-26;time-picker.spec.md「顯示格式化」)
-import { resolveTimeFormatOptions } from '@/design-system/components/DatePicker/range-format'
+// 顯示的預設時間寫法(12 / 24 跟語系)與 DatePicker / Calendar 同一份(DATE-TIME(定)2026-11-26;time-picker.spec.md「顯示格式化」);
+// 面板的 12 / 24 小時與空白提示字也從同一份推(TIME-12H-PANEL(定)2026-11-26)
+import { resolveTimeFormatOptions, resolveTimePanelFormat, timePlaceholder } from '@/design-system/components/DatePicker/range-format'
 
 /**
  * TimePicker — 單一時間(時/分/秒)輸入與顯示元件
@@ -59,6 +60,8 @@ import { resolveTimeFormatOptions } from '@/design-system/components/DatePicker/
  * ── 消費的 SSOT ──
  * - 時間顯示的預設寫法: `../DatePicker/range-format.ts` `resolveTimeFormatOptions`(12 / 24 跟語系,DATE-TIME(定)2026-11-26;
  *   time-picker.spec.md「顯示格式化」)
+ * - 面板的 12 / 24 小時(上下午欄、時欄 12 / 01…11)與空白提示字: `../DatePicker/range-format.ts` `resolveTimePanelFormat` / `timePlaceholder`
+ *   (TIME-12H-PANEL(定)2026-11-26;判斷與欄位裡的字同一份,本檔不寫 12 / 24 的字面)
  * - 預設語系: `../../lib/date-locale.ts` `DEFAULT_DATE_LOCALE`
  * - 欄位外框 / 尺寸 / 圖示: `../Field/field-wrapper.tsx`、`../../tokens/uiSize/icon-size.ts`;面板: `./time-columns.tsx` + `../../patterns/overlay-surface`
  */
@@ -235,7 +238,13 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
   const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
     const EndIconCmp: LucideIcon | null =
       endIcon === null ? null : (endIcon ?? Clock)
-    const defaultPlaceholder = showSeconds ? 'HH:MM:SS' : 'HH:MM'
+    // 面板的時間寫法:欄位寫法(沒傳 = 預設時間寫法)交給 Intl 讀回 12 / 24 —— 與欄位裡的字同一份判斷(TIME-12H-PANEL(定)2026-11-26)。
+    // 12 小時制:面板多一欄上下午、時欄寫 12 / 01…11;空白提示字也照語系寫(zh-TW「上午/下午HH:MM」【AI 推導】);24 小時制照舊 HH:MM
+    const panelFormat = React.useMemo(
+      () => resolveTimePanelFormat(locale ?? DEFAULT_DATE_LOCALE, formatOptions ?? resolveTimeFormatOptions(showSeconds), showSeconds, getDateTimeFormatter),
+      [locale, formatOptions, showSeconds],
+    )
+    const defaultPlaceholder = timePlaceholder(panelFormat, showSeconds, getDateTimeFormatter)
     const resolvedPlaceholder = placeholder ?? defaultPlaceholder
     const showClear = clearable && !!value && isEditable
     const [open, setOpenState] = React.useState(defaultOpen)
@@ -483,8 +492,9 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
             listbox.focus({ preventScroll: true })
           }}
         >
-          {/* Panel 對齊 ref/timepicker.png:2-3 個 SelectMenu 式欄位並排,分隔線分開。
-              Width 依欄數由 TimeColumns 決定:2 欄 w-40 / 3 欄 w-60。
+          {/* Panel 對齊 ref/timepicker.png:2-4 個 SelectMenu 式欄位並排,分隔線分開。
+              Width 依欄數由 TimeColumns 決定(time-columns.tsx timeColumnsWidthClass:每欄約 80px,
+              時 / 分 / 秒 / 上下午 2–4 欄 → w-40 / w-60 / w-80;12 小時制多上下午一欄)。
               Height 由 wrapper 控:216px 預設(扣 footer 後 list 約可見 5-6 items)。
               TimeColumns 本身 h-full,parent 控 height — 讓 DatePicker showTime / Range 可
               用 flex-row items-stretch 自動同 calendar 高。 */}
@@ -496,6 +506,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
               minuteStep={minuteStep}
               secondStep={secondStep}
               disabled={disabledForColumns}
+              clock={panelFormat.clock}
               // 2026-05-06 v9.1 M25 chain fix:TimeColumns 自然高 = 24 buttons × ~28.7px = 688px
               // 會撐破 parent h-[216px]。flex-1 + min-h-0 讓 TimeColumns 取 parent 剩餘空間
               // (216 − footer ≈53px ≈ 163px)→ ScrollArea h-full 才能正確收斂 →

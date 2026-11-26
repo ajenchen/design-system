@@ -4,6 +4,9 @@
  * ── 消費的 SSOT ──(本段只列日期時間的文字寫法;其餘見各 import 旁的註解)
  * - 日期 / 時間的預設寫法、合併顯示、打字解析的上下午: `./range-format.ts`(DATE-TIME(定)2026-11-26:日期一律補零、時間 12 / 24 跟語系;
  *   date-picker.spec.md「格式化」「區間檢視合併(formatRange)」「Typed input」)
+ * - showTime 面板的 12 / 24 小時(上下午欄、時欄 12 / 01…11、面板標題)與空白提示字: `./range-format.ts` `resolveTimePanelFormat` /
+ *   `formatPanelTime` / `timePlaceholder`(TIME-12H-PANEL(定)2026-11-26,與欄位裡的字同一份判斷);面板寬
+ *   `../TimePicker/time-columns.tsx` `timeColumnsWidthClass`(date-picker.spec.md「showTime」)
  * - 預設語系與週起始日: `../../lib/date-locale.ts`
  */
 import * as React from 'react'
@@ -23,7 +26,7 @@ import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncate
 import { DateGrid, EMPHASIS_FOCUS_RING_CLASSNAME, RANGE_PREVIEW_ARMED_CLASSNAME, RANGE_PREVIEW_CLASSNAMES, RANGE_TRACK_CLASSNAMES } from '@/design-system/components/DateGrid/date-grid'
 import { computeRangePreview, rangePreviewModifiers } from './range-preview'
 // 合併顯示 + 日期 / 時間的預設寫法 + 打字解析的上下午(DATE-TIME(定)2026-11-26:日期一律補零、時間 12 / 24 跟語系;date-picker.spec.md「格式化」)
-import { formatDateRange, formatDateRangeEndpoint, DATE_RANGE_DEFAULT_DATE_OPTIONS, resolveDateRangeFormatOptions, parseTimeText } from './range-format'
+import { formatDateRange, formatDateRangeEndpoint, DATE_RANGE_DEFAULT_DATE_OPTIONS, resolveDateRangeFormatOptions, parseTimeText, resolveTimePanelFormat, formatPanelTime, timePlaceholder, type TimePanelFormat } from './range-format'
 import { Button } from '@/design-system/components/Button/button'
 import { SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
@@ -31,6 +34,7 @@ import {
   TimeColumns,
   isoToTimeParts,
   timePartsToString,
+  timeColumnsWidthClass,
   type TimeParts,
   type TimeStep,
 } from '@/design-system/components/TimePicker/time-columns'
@@ -254,6 +258,11 @@ interface TimePickerSidePanelProps {
   showSeconds?: boolean
   minuteStep?: TimeStep
   secondStep?: TimeStep
+  /**
+   * 面板的時間寫法(`range-format.ts` `resolveTimePanelFormat`,與欄位裡的字同一份判斷)。必填:單日與 Range 兩處呼叫端都得算好傳進來,
+   * 不傳 = 面板與欄位各說各的 12 / 24(M23(f):沒有內建 fallback 的就必填)
+   */
+  panelFormat: TimePanelFormat
 }
 
 function TimePickerSidePanel({
@@ -262,13 +271,14 @@ function TimePickerSidePanel({
   showSeconds = false,
   minuteStep = 1,
   secondStep = 1,
+  panelFormat,
   className,
 }: TimePickerSidePanelProps & { className?: string }) {
-  // Dynamic header text — 顯示當前選擇的 HH:MM(對齊 user Q4 + Ant idiom)
-  // 面板的時欄只有 0–23 一欄,標題照欄的寫法維持 24 小時;12 小時語系的面板(加上午 / 下午欄)是新 UI、待 user 決定
-  // (DATE-TIME(定)2026-11-26 的範圍是顯示與輸入框;欄位裡的字已跟語系,見 formatDateOrDateTime)
+  // Dynamic header text — 顯示當前選擇的時間(對齊 user Q4 + Ant idiom)。
+  // 12 小時語系:標題與欄位同一份時間寫法(zh-TW「下午2:30」)、面板多一欄上下午 —— TIME-12H-PANEL(定)2026-11-26;
+  // 24 小時語系照舊 HH:MM(`formatPanelTime` 回 null)。空值的「--:--」不變【AI 推導】
   const headerText = value
-    ? timePartsToString(value, showSeconds)
+    ? (formatPanelTime(value, panelFormat, getDateTimeFormatter) ?? timePartsToString(value, showSeconds))
     : (showSeconds ? '--:--:--' : '--:--')
 
   return (
@@ -285,6 +295,7 @@ function TimePickerSidePanel({
           showSeconds={showSeconds}
           minuteStep={minuteStep}
           secondStep={secondStep}
+          clock={panelFormat.clock}
         />
       </div>
     </div>
@@ -294,28 +305,30 @@ function TimePickerSidePanel({
 /**
  * showTime panel container — 包 DateGrid + TimePicker side panel,DateGrid 主導 row 高度,
  * TimePicker absolute 撐滿同高,不影響 layout。Spacer div 留 layout 寬度給 absolute panel。
+ * 寬度讀 TimeColumns 同一支 `timeColumnsWidthClass`(欄數 × 約 80px;12 小時制多上下午一欄),佔位與面板不會一寬一窄。
  */
-const TIME_PANEL_WIDTH = (showSeconds: boolean) => showSeconds ? 'w-60' : 'w-40'
-
 interface CalendarTimeContainerProps {
   showTime: boolean
   showSeconds: boolean
+  /** 面板的時間寫法(與 `TimePickerSidePanel` 同一份);決定有沒有上下午欄 = 面板多寬 */
+  panelFormat: TimePanelFormat
   calendar: React.ReactNode
   timePanel?: React.ReactNode
 }
 
-function CalendarTimeContainer({ showTime, showSeconds, calendar, timePanel }: CalendarTimeContainerProps) {
+function CalendarTimeContainer({ showTime, showSeconds, panelFormat, calendar, timePanel }: CalendarTimeContainerProps) {
   if (!showTime) return <>{calendar}</>
+  const panelWidth = timeColumnsWidthClass(showSeconds, panelFormat.clock)
   return (
     <div className="relative">
       <div className="flex flex-row">
         {calendar}
         {/* Spacer 佔 layout 寬度給 absolute TimePicker;border-l 在這層,不在 absolute 層
             (避免 stacking + border 雙繪) */}
-        <div className={cn('shrink-0 border-l border-divider', TIME_PANEL_WIDTH(showSeconds))} />
+        <div className={cn('shrink-0 border-l border-divider', panelWidth)} />
       </div>
       {/* TimePicker absolute 撐滿 DateGrid 高度(top-0 bottom-0),right-0 對齊 spacer */}
-      <div className={cn('absolute top-0 right-0 bottom-0', TIME_PANEL_WIDTH(showSeconds))}>
+      <div className={cn('absolute top-0 right-0 bottom-0', panelWidth)}>
         {timePanel}
       </div>
     </div>
@@ -476,7 +489,14 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
     // 避免 closed state 的懸空 IDREF；typeable 模式則把關聯放到真正的 combobox input。
     const popupId = React.useId()
     const [draft, setDraft] = React.useState<string | null>(value ?? null)
-    const resolvedPlaceholder = placeholder ?? (showTime ? 'YYYY/MM/DD HH:MM' : 'YYYY/MM/DD')
+    // showTime 面板的時間寫法:欄位寫法(resolveDateRangeFormatOptions,與欄位裡的字同一支)交給 Intl 讀回 12 / 24(TIME-12H-PANEL(定)2026-11-26)
+    const timePanelFormat = React.useMemo(
+      () => resolveTimePanelFormat(locale ?? DEFAULT_DATE_LOCALE, resolveDateRangeFormatOptions(true, showSeconds, formatOptions), showSeconds, getDateTimeFormatter),
+      [locale, formatOptions, showSeconds],
+    )
+    // 空白提示字的時間段跟面板同一份 12 / 24:24 小時照舊「YYYY/MM/DD HH:MM」,12 小時 zh-TW「YYYY/MM/DD 上午/下午HH:MM」【AI 推導】
+    // (時間段沿用改前不寫秒的寫法)
+    const resolvedPlaceholder = placeholder ?? (showTime ? `YYYY/MM/DD ${timePlaceholder(timePanelFormat, false, getDateTimeFormatter)}` : 'YYYY/MM/DD')
     // a11y:role="combobox" 必須有 accessible name(aria-label / labelledby / fieldCtx label)
     const accessibleName = ariaLabelProp ?? (ariaLabelledByProp ? undefined : (fieldCtx?.id ? undefined : resolvedPlaceholder))
 
@@ -824,6 +844,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
               <CalendarTimeContainer
                 showTime={showTime}
                 showSeconds={showSeconds}
+                panelFormat={timePanelFormat}
                 calendar={
                   <DateGrid
                     mode="single"
@@ -852,6 +873,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
                     showSeconds={showSeconds}
                     minuteStep={minuteStep}
                     secondStep={secondStep}
+                    panelFormat={timePanelFormat}
                   />
                 }
               />
@@ -998,6 +1020,11 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
     const resolvedWeekStartsOn = React.useMemo(() => resolveWeekStartsOn(locale, weekStartsOn), [locale, weekStartsOn])
     const resolvedPlaceholder: [string, string] = placeholder ?? (
       showTime ? ['Start date time', 'End date time'] : ['Start date', 'End date'] // i18n-allow: DS default; consumer override via placeholder prop
+    )
+    // showTime 面板的時間寫法:同單日 DatePicker(TIME-12H-PANEL(定)2026-11-26;與欄位裡的字同一份判斷)
+    const timePanelFormat = React.useMemo(
+      () => resolveTimePanelFormat(locale ?? DEFAULT_DATE_LOCALE, resolveDateRangeFormatOptions(true, showSeconds, formatOptions), showSeconds, getDateTimeFormatter),
+      [locale, formatOptions, showSeconds],
     )
 
     const [open, setOpen] = React.useState(false)
@@ -1379,6 +1406,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
             <CalendarTimeContainer
               showTime={showTime}
               showSeconds={showSeconds}
+              panelFormat={timePanelFormat}
               calendar={
                 <DateGrid
                   weekStartsOn={resolvedWeekStartsOn}
@@ -1490,6 +1518,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   showSeconds={showSeconds}
                   minuteStep={minuteStep}
                   secondStep={secondStep}
+                  panelFormat={timePanelFormat}
                 />
               }
             />

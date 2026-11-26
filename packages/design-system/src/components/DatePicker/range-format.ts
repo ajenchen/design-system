@@ -18,12 +18,18 @@
  *   覆寫用既有參數:DatePicker / TimePicker 的 `formatOptions`、Calendar 的 `eventTimeFormat`(寫了時間欄位就照它)。
  *   ICU 在區間裡會把要求兩位數的月日寫成一位數(zh-TW「2026/7/15至2026/7/17」),本檔照請求的 `'2-digit'` 把那幾段補回零再接起來
  *   (`padRangeDateParts`),不改其他字
+ * - 下拉時間面板的 12 / 24 小時: user 2026-11-26 第三輪決策卡 TIME-12H-PANEL(定)—— 點選「A:12 小時語系時,面板加一欄「上午 / 下午」,
+ *   時欄改成 1–12;面板標題和空白提示字也用 12 小時」,對話內確認「可以,照 A 做」;24 小時語系不變。12 / 24 與欄位裡的字同一份判斷
+ *   (`resolveTimePanelFormat`:欄位寫法交給 Intl、讀回 hourCycle);MUI TimePicker `ampm` 預設 = `adapter.is12HourCycleInCurrentLocale()`
+ *   (https://mui.com/x/api/date-pickers/time-picker/);rc-picker TimePanelBody 12 小時制才畫上下午欄、排在最後
+ *   (https://github.com/react-component/picker/blob/master/src/PickerPanel/TimePanel/TimePanelBody/index.tsx)
  * - 語系預設與 formatter 快取: 由呼叫端傳入(`lib/date-locale.ts` `DEFAULT_DATE_LOCALE`、`date-picker.tsx` `getDateTimeFormatter`);
  *   本檔不 import 任何模組,Node 可直接讀、判定表不必經過 React
  *
  * 要保證的性質(逐字):**兩端都有值時輸出一段文字 —— 同一天自動合併、跨日寫兩端;同一頁的日期樣式一致(合併的列與退回兩段的列都算);
  * 合併不了的情況一律回 `null`,呼叫端照兩段版面顯示,每一端用 `formatDateRangeEndpoint`(與合併同一套寫法)。
- * 沒傳寫法時日期一律兩位數月日、時間的 12 / 24 跟語系;打字解析認得該語系寫出來的上下午。**
+ * 沒傳寫法時日期一律兩位數月日、時間的 12 / 24 跟語系;打字解析認得該語系寫出來的上下午;下拉面板的 12 / 24 與欄位裡的字同一份判斷,
+ * 面板選出的時刻寫成欄位的字、再打回去,是同一個時刻。**
  */
 
 /** 呼叫端注入的 formatter 工廠(date-picker.tsx 傳它的快取;測試傳 `new Intl.DateTimeFormat`) */
@@ -209,4 +215,111 @@ export function parseTimeText(text: string, locale: string, getFormatter: DateRa
   if (markers.length === 0) return shownHour <= 23 ? { hours: shownHour, minutes, seconds } : null
   const hours = dayPeriodHours(locale, getFormatter).get(`${markers[0].toLocaleLowerCase(locale)}|${shownHour}`)
   return hours === undefined ? null : { hours, minutes, seconds }
+}
+
+// ── 下拉時間面板的 12 / 24 小時(TIME-12H-PANEL(定)2026-11-26)────────────────────────────────────
+// user 第三輪決策卡點選「A:12 小時語系時,面板加一欄「上午 / 下午」,時欄改成 1–12;面板標題和空白提示字也用 12 小時」,
+// 對話內兩次點「可以,照 A 做」;24 小時語系不變。判斷 12 / 24 與欄位裡的字同一份(欄位的寫法交給 Intl 後讀 resolvedOptions().hourCycle),
+// 上下午的字取自 Intl formatToParts 的 dayPeriod,不寫死任何語言。
+// 出處:MUI TimePicker `ampm` 預設 = `adapter.is12HourCycleInCurrentLocale()`(https://mui.com/x/api/date-pickers/time-picker/);
+// rc-picker TimePanelBody `use12Hours` → `showMeridiem` 才畫上下午欄、時欄只列這半天的時,上下午欄排在最後、字取 9 點 / 15 點的寫法
+// (https://github.com/react-component/picker/blob/master/src/PickerPanel/TimePanel/TimePanelBody/index.tsx)。
+
+/** 12 小時制面板要的資訊;24 小時制 = null(面板照舊 0–23 一欄) */
+export interface TwelveHourClock {
+  /** h12 = 時欄寫 12、1–11(zh-TW / en-US);h11 = 0–11(Intl 允許的另一種 12 小時制,例 ja-JP 傳 hour12: true) */
+  hourCycle: 'h11' | 'h12'
+  /** [上午, 下午] 的字 = 這個語系 Intl formatToParts 的 dayPeriod(zh-TW 上午 / 下午、en-US AM / PM、en-GB 傳 h12 時 am / pm) */
+  periodLabels: readonly [string, string]
+}
+
+/** 面板要用的時間寫法:標題的字、12 / 24 小時、提示字都從這一份推 */
+export interface TimePanelFormat {
+  locale: string
+  /** 欄位寫法裡的時間欄位(日期欄位拿掉);欄位寫法沒有時間欄位時 = 預設時間寫法(`resolveTimeFormatOptions`)加上它寫的 12 / 24 */
+  timeOptions: Intl.DateTimeFormatOptions
+  clock: TwelveHourClock | null
+}
+
+/** 欄位寫法裡跟時間有關的欄位(時區不在第一段的範圍,見檔頭「不開時區」) */
+const TIME_OPTION_KEYS: ReadonlySet<string> = new Set(['hour', 'minute', 'second', 'fractionalSecondDigits', 'dayPeriod', 'timeStyle', 'hourCycle', 'hour12'])
+
+/** Intl 回報的 12 小時制(h11 / h12);h23 / h24 = 24 小時制 */
+const TWELVE_HOUR_CYCLES: ReadonlyArray<TwelveHourClock['hourCycle']> = ['h11', 'h12']
+
+/** 上下午的字取哪一個時刻的寫法:與 rc-picker 同取上午 9 點、下午 3 點(半天中段,不碰午夜 / 中午) */
+const PERIOD_SAMPLE_HOURS = [9, 15] as const
+
+/**
+ * 面板的時間寫法 —— 欄位寫法(TimePicker:`formatOptions ?? resolveTimeFormatOptions(showSeconds)`;DatePicker:
+ * `resolveDateRangeFormatOptions(true, showSeconds, formatOptions)`)交給 Intl,讀回它真的用的 hourCycle:h11 / h12 = 12 小時制。
+ * consumer 在 `formatOptions` 寫了 `hourCycle` / `hour12` 就照它(Intl 本身的規則),沒寫就跟語系。
+ */
+export function resolveTimePanelFormat(
+  locale: string,
+  fieldOptions: Intl.DateTimeFormatOptions,
+  showSeconds: boolean,
+  getFormatter: DateRangeFormatterFactory = defaultFactory,
+): TimePanelFormat {
+  // 用欄位名比對字串、不拿它索引選項型別(本套件 lib 是 ES2020,型別上沒有 fractionalSecondDigits;同 :92 `field in options` 的寫法)
+  const picked: Intl.DateTimeFormatOptions = Object.fromEntries(
+    Object.entries(fieldOptions).filter(([key, value]) => TIME_OPTION_KEYS.has(key) && value !== undefined),
+  )
+  const timeOptions = 'hour' in picked || 'timeStyle' in picked ? picked : { ...resolveTimeFormatOptions(showSeconds), ...picked }
+  // resolvedOptions().hourCycle 在 ES2020 的型別上沒有(ES2021 才補),執行環境一直都有 → 以 `in` 讀出、再對 12 小時制清單收窄
+  const resolved = getFormatter(locale, timeOptions).resolvedOptions()
+  const reported: unknown = 'hourCycle' in resolved ? resolved.hourCycle : undefined
+  const hourCycle = TWELVE_HOUR_CYCLES.find((cycle) => cycle === reported)
+  if (!hourCycle) return { locale, timeOptions, clock: null }
+  const sample = getFormatter(locale, { hour: 'numeric', hourCycle })
+  const [am, pm] = PERIOD_SAMPLE_HOURS.map((hour) => sample.formatToParts(new Date(2000, 0, 1, hour)).find((part) => part.type === 'dayPeriod')?.value)
+  if (!am || !pm) return { locale, timeOptions, clock: null }
+  return { locale, timeOptions, clock: { hourCycle, periodLabels: [am, pm] } }
+}
+
+/** 這個時(0–23)在上午(0)還是下午(1) */
+export function periodOfHour(hours: number): 0 | 1 {
+  return hours >= 12 ? 1 : 0
+}
+
+/** 12 小時制時欄:這個時所在的半天的 12 個時(值仍是 0–23,由小到大:上午 0–11 / 下午 12–23) */
+export function clockHourValues(hours: number): number[] {
+  const base = periodOfHour(hours) * 12
+  return Array.from({ length: 12 }, (_, i) => base + i)
+}
+
+/** 時欄上寫的數字:h12 → 12、1–11(0 點與 12 點都寫 12);h11 → 0–11 */
+export function clockHourLabel(hours: number, hourCycle: TwelveHourClock['hourCycle']): number {
+  const onDial = hours % 12
+  return hourCycle === 'h12' && onDial === 0 ? 12 : onDial
+}
+
+/** 切上下午:時留在鐘面同一格(下午 2 點 ↔ 上午 2 點) */
+export function hourWithPeriod(hours: number, period: 0 | 1): number {
+  return (hours % 12) + period * 12
+}
+
+const timeOfDayDate = (time: TimeOfDay) => new Date(2000, 0, 1, time.hours, time.minutes, time.seconds)
+
+/** 12 小時制面板標題的字(與欄位同一份時間寫法,zh-TW「下午2:30」);24 小時制回 null,呼叫端照舊寫 HH:MM */
+export function formatPanelTime(time: TimeOfDay, panel: TimePanelFormat, getFormatter: DateRangeFormatterFactory = defaultFactory): string | null {
+  if (!panel.clock) return null
+  return getFormatter(panel.locale, panel.timeOptions).format(timeOfDayDate(time))
+}
+
+/** 提示字的時間記號(與 24 小時的 `HH:MM` 同一套大寫記號) */
+const PLACEHOLDER_TOKENS: Partial<Record<string, string>> = { hour: 'HH', minute: 'MM', second: 'SS' }
+
+/**
+ * 空白提示字的時間段【AI 推導 2026-11-26】:24 小時制照舊 `HH:MM` / `HH:MM:SS`;12 小時制照這個語系預設時間寫法的段落順序,
+ * 時分秒換成 HH / MM / SS、上下午段換成兩個字並列 —— zh-TW「上午/下午HH:MM」、en-US「HH:MM AM/PM」。
+ * V8 的 format() 把 ICU 在上下午前的 U+202F 換成一般空白(欄位裡看到的是一般空白),formatToParts 沒換 → 這裡同樣換成一般空白。
+ */
+export function timePlaceholder(panel: TimePanelFormat, showSeconds: boolean, getFormatter: DateRangeFormatterFactory = defaultFactory): string {
+  if (!panel.clock) return showSeconds ? 'HH:MM:SS' : 'HH:MM'
+  const { clock } = panel
+  const parts = getFormatter(panel.locale, { ...resolveTimeFormatOptions(showSeconds), hourCycle: clock.hourCycle }).formatToParts(timeOfDayDate({ hours: PERIOD_SAMPLE_HOURS[0], minutes: 0, seconds: 0 }))
+  return parts
+    .map((part) => (part.type === 'dayPeriod' ? clock.periodLabels.join('/') : (PLACEHOLDER_TOKENS[part.type] ?? part.value.replace(/ /g, ' '))))
+    .join('')
 }
