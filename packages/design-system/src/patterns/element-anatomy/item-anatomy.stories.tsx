@@ -1645,7 +1645,7 @@ export const IconActionPrimitiveDecision = {
             actions={
               <>
                 <Button variant="text" size="xs" iconOnly startIcon={Download} aria-label="下載" onClick={done('已下載「2026 Q3 營收報告.pdf」')} />
-                <Button variant="text" size="xs" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製「2026 Q3 營收報告.pdf」的分享連結')} />
+                <Button variant="text" size="xs" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製「2026 Q3 營收報告.pdf」的分享連結', 'neutral')} />
                 <DemoMenu items={['重新命名', '移動到資料夾']}><Button variant="text" size="xs" iconOnly startIcon={MoreVertical} aria-label="更多" /></DemoMenu>
               </>
             }

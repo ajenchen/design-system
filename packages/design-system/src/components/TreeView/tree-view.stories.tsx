@@ -784,7 +784,7 @@ function DocRowActions({ node, onDuplicate, onAddPage }: { node: DocNode; onDupl
     const url = `https://wiki.example.com/docs/${node.id}`
     try {
       await navigator.clipboard.writeText(url)
-      toast({ variant: 'success', title: '連結已複製' })
+      toast({ variant: 'neutral', title: '連結已複製' })
     } catch {
       toast({ variant: 'error', title: '無法存取剪貼簿,請改用瀏覽器網址列複製' })
     }

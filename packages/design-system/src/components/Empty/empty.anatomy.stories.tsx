@@ -23,7 +23,7 @@ const done = (title: string) => () => toast({ variant: 'success', title })
 const copyInviteLink = async () => {
   try {
     await navigator.clipboard.writeText('https://app.example.com/invite/acme-design')
-    toast({ variant: 'success', title: '邀請連結已複製' })
+    toast({ variant: 'neutral', title: '邀請連結已複製' })
   } catch {
     toast({ variant: 'error', title: '無法存取剪貼簿,請改從瀏覽器網址列複製' })
   }

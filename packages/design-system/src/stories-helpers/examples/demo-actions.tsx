@@ -6,7 +6,7 @@ import {
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
-import { toast } from '@/design-system/components/Toast/toast'
+import { toast, type ToastVariant } from '@/design-system/components/Toast/toast'
 
 /**
  * 範例裡的按鈕接上「按鈕本來的行為」(2026-10-28 BA-specimen):畫面上看得到的按鈕都要能動(ssot F-S2;
@@ -24,8 +24,12 @@ import { toast } from '@/design-system/components/Toast/toast'
  * 原本 Action Bar 教學頁自己寫一份(2026-10-28 前),Button / Badge 頁要用同一套 → 收成這一份(M17)。
  */
 
-/** 一次性動作做完的回饋:Toast 寫「做了什麼」 */
-export const done = (title: string) => () => { toast({ variant: 'success', title }) }
+/**
+ * 一次性動作做完的回饋:Toast 寫「做了什麼」。`variant` 預設 success;複製到剪貼簿(複製連結 / 分享連結)傳 `'neutral'` ——
+ * toast.spec.md 變體表 neutral 那一列的例子就是「已複製到剪貼簿」,toast.stories.tsx 檔頭「複製類一律 neutral」。
+ * 閘:scripts/audit-content-quality.mjs「複製類 Toast 用了 success」(test:content-quality)。
+ */
+export const done = (title: string, variant: ToastVariant = 'success') => () => { toast({ variant, title }) }
 
 /** 有開關狀態的按鈕:子節點拿到目前狀態與切換函式,按鈕本身照舊寫在原位(操作列的順序閘看得到) */
 export function DemoToggle({ defaultOn = false, children }: { defaultOn?: boolean; children: (on: boolean, flip: () => void) => React.ReactNode }) {
@@ -34,10 +38,11 @@ export function DemoToggle({ defaultOn = false, children }: { defaultOn?: boolea
 }
 
 /**
- * 選單的一項。`done` = 選了之後跳的 Toast,只給結果本來就不在畫面上的動作(例:`{ label: '複製連結', done: '已複製連結' }`);
+ * 選單的一項。`done` = 選了之後跳的 Toast,只給結果本來就不在畫面上的動作(例:`{ label: '複製連結', done: '已複製連結', doneVariant: 'neutral' }`);
+ * `doneVariant` 同 `done()` 的第二個參數(預設 success;複製到剪貼簿給 neutral)。
  * 沒給的(開啟某一則通知、前往設定、要先選檔或另開對話框的)選了只收起選單 —— 不替它編一句「已…」(見檔頭)。
  */
-export type DemoMenuEntry = string | { label: string; description?: string; done?: string }
+export type DemoMenuEntry = string | { label: string; description?: string; done?: string; doneVariant?: ToastVariant }
 
 /**
  * 按下打開它收的那一串:溢出(···)收的低頻動作,或帶計數的入口(訊息 / 通知)。`title` = 選單標題(寫「是什麼、共幾則」)。
@@ -51,9 +56,9 @@ export function DemoMenu({
       <DropdownMenuContent align={align}>
         {title && <DropdownMenuLabel>{title}</DropdownMenuLabel>}
         {items.map((item) => {
-          const { label, description, done: doneTitle } = typeof item === 'string' ? { label: item, description: undefined, done: undefined } : item
+          const { label, description, done: doneTitle, doneVariant } = typeof item === 'string' ? { label: item, description: undefined, done: undefined, doneVariant: undefined } : item
           return (
-            <DropdownMenuItem key={label} description={description} onSelect={doneTitle ? done(doneTitle) : undefined}>
+            <DropdownMenuItem key={label} description={description} onSelect={doneTitle ? done(doneTitle, doneVariant) : undefined}>
               {label}
             </DropdownMenuItem>
           )

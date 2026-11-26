@@ -401,7 +401,7 @@ export const VariantIconMap: Story = {
                         {
                           neutral: '中性公告(維護、一般提醒)',
                           info: '未來事件、功能說明、進階方案提示',
-                          success: '操作成功回饋(儲存、部署、複製)',
+                          success: '操作成功回饋(儲存、部署)',
                           warning: '尚可繼續但需要注意(配額、期限)',
                           error: '阻斷性失敗(付款、上傳、權限)',
                         }[v]
