@@ -1938,6 +1938,10 @@ jobs:
     # 抵掉夾具多開的頁),CI 未實測。準備步驟與原 job 逐字相同(ci-workflow-scope 斷言)。
     # 首跑要看:Linux runner 上滾輪與 scrollend 的行為只在 macOS 量過 —— 量不到會以儀器失效(INSTRUMENT-FAIL、exit 2)結束,不會假綠、也不會指控產品。
     # 2026-11-26:Calendar 月檢視閘(calendar-month)搬到 verify-browser-calendar-month(見該 job 檔頭)—— PR #174 頭 1e468c7d 它在本 job 跑 14.1 分未完,整個 job 撞上限 25 被取消。
+    # 2026-11-27(照 G10 拆平行 job、不調高上限):PR #174 0d2de1b5 本 job 25.3 分撞上限被取消(job 140204030851;被砍時 DatePicker 區間線閘的
+    # --selftest 剛印完「7 個根因突變各自剛好紅了該紅的列」,前面全綠 —— 不是斷言失敗,是沒有裁決)。最近六次 job 21.9 / 23.5 / 23.6 / 22.9 / 21.5 / 25.3 分;
+    # 兩步(GitHub API 步驟時間,5a96153c → 0d2de1b5):水平溢出閘 368 / 338 / 502 / 339 / 344 / 443 秒,DatePicker 區間線閘 850 / 972 / 800 / 940 / 854 / 952 秒。
+    # DatePicker 區間線閘整步搬到 verify-browser-datepicker-range-underline;本 job 留水平溢出閘(338–502 秒)+ 準備約 2 分,估 8–10.5 分。
     name: Verify browser(horizontal overflow reveal-selected gate)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -1979,12 +1983,48 @@ jobs:
           # mute-user-scroll)各自「紅的集合 = 期望」,另加「觸發晚到」兩面(舊的連續 12 格判準量早、新判準等得到)。
           # 什麼時候量:等觸發送達 → 再一個影格 → 讀 hook 自己傳給 scrollTo 的位置等到位(會動的再等 scrollend)→ 遮罩 / 箭頭跟上;不數影格。
           npm run test:overflow-reveal-selected
+          # DatePicker 區間作用端那條線的閘 2026-11-27 搬到 verify-browser-datepicker-range-underline(見本 job 檔頭)。
+
+  verify-browser-datepicker-range-underline:
+    # 2026-11-27 拆自 verify-browser-horizontal-overflow(照 2026-10-14 待辦總帳 G10「照主題拆平行 job、不調高上限」,上限沿用原 job 的 25;
+    # 準備步驟與原 job 逐字相同,ci-workflow-scope 斷言)。原 job 在 PR #174 0d2de1b5 跑 25.3 分撞上限被取消(實測與出處記在原 job 檔頭)。
+    # 本 job = 原 job 第二步整步:DatePicker 區間線閘(只跑 --selftest,基準 + 七個突變同一趟),CI 最近六次 800–972 秒,加準備約 2 分,估 15.5–18.5 分。
+    name: Verify browser(DatePicker range active-end underline gate)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
 
       - name: DatePicker range active-end underline (browser)
         run: |
+          npx --no-install playwright install chromium
           # 日期區間作用端那條線壓在欄位框下邊上:下緣 = 框外緣、線長 = 文字寬、線色 = 框色(date-picker.spec.md「Active-end 機制」;RANGE-FOCUS-BAR)
           # 高對比模式線色 = Highlight;+ --selftest(七個單一根因突變各自剛好紅該紅的列)。
-          # 2026-11-17 從 verify-browser-interaction 搬來:那支 job 41622d91 撞 25 分上限被取消(d23df592 已 22.9 分),本 job 約 8.5 分 / 上限 25。
+          # 2026-11-17 從 verify-browser-interaction 搬到 verify-browser-horizontal-overflow:那支 job 41622d91 撞 25 分上限被取消(d23df592 已 22.9 分);
+          # 2026-11-27 再自 verify-browser-horizontal-overflow 拆成本 job(見本 job 檔頭)。
           npm run test:datepicker-range-active-underline
 
   verify-browser-calendar-month:
@@ -2804,7 +2844,7 @@ jobs:
     name: Verify(tsc + tests + compile + build)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-pinned, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-searchable-fields, verify-browser-tree-navigation, verify-browser-interaction, verify-browser-focus-inputs, verify-browser-overlay,verify-browser-agent, verify-browser-sweeps, verify-browser-doc-headings, verify-browser-layout-edges, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-overlay-rows-control, verify-browser-datatable-handles, verify-browser-control-groups, verify-browser-searchable-menu-focus, verify-browser-field-dialog-steps, verify-browser-cursor, verify-browser-escape-focus-control, verify-browser-footer-gutter, verify-browser-a11y, verify-browser-nested-dismiss, verify-browser-sidebar-keyboard, verify-browser-layout, verify-browser-horizontal-overflow, verify-browser-calendar-month, hooks-linux, governance-control-plane, container-closed-git]
+    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-pinned, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-searchable-fields, verify-browser-tree-navigation, verify-browser-interaction, verify-browser-focus-inputs, verify-browser-overlay,verify-browser-agent, verify-browser-sweeps, verify-browser-doc-headings, verify-browser-layout-edges, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-overlay-rows-control, verify-browser-datatable-handles, verify-browser-control-groups, verify-browser-searchable-menu-focus, verify-browser-field-dialog-steps, verify-browser-cursor, verify-browser-escape-focus-control, verify-browser-footer-gutter, verify-browser-a11y, verify-browser-nested-dismiss, verify-browser-sidebar-keyboard, verify-browser-layout, verify-browser-horizontal-overflow, verify-browser-datepicker-range-underline, verify-browser-calendar-month, hooks-linux, governance-control-plane, container-closed-git]
     if: always()
     steps:
       - name: Every verify job must have succeeded
@@ -2839,13 +2879,14 @@ jobs:
           BROWSER_SIDEBAR_KEYBOARD: ${{ needs.verify-browser-sidebar-keyboard.result }}
           BROWSER_LAYOUT: ${{ needs.verify-browser-layout.result }}
           BROWSER_HORIZONTAL_OVERFLOW: ${{ needs.verify-browser-horizontal-overflow.result }}
+          BROWSER_DATEPICKER_RANGE_UNDERLINE: ${{ needs.verify-browser-datepicker-range-underline.result }}
           BROWSER_CALENDAR_MONTH: ${{ needs.verify-browser-calendar-month.result }}
           HOOKS_LINUX: ${{ needs.hooks-linux.result }}
           GOV_CONTROL_PLANE: ${{ needs.governance-control-plane.result }}
           CONTAINER_CLOSED_GIT: ${{ needs.container-closed-git.result }}
         run: |
-          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-pinned=$BROWSER_DT_PINNED verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-searchable-fields=$BROWSER_SEARCH_FIELDS verify-browser-tree-navigation=$BROWSER_TREE_NAV verify-browser-interaction=$BROWSER_UI verify-browser-focus-inputs=$BROWSER_FOCUS_INPUTSverify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-doc-headings=$BROWSER_DOC_HEADINGS verify-browser-layout-edges=$BROWSER_LAYOUT_EDGES verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-overlay-rows-control=$BROWSER_OVERLAY_ROWS_CONTROL verify-browser-datatable-handles=$BROWSER_DT_HANDLES verify-browser-control-groups=$BROWSER_CONTROL_GROUPS verify-browser-searchable-menu-focus=$BROWSER_SEARCH_MENU_FOCUS verify-browser-field-dialog-steps=$BROWSER_FIELD_DIALOG_STEPS verify-browser-cursor=$BROWSER_CURSOR verify-browser-escape-focus-control=$BROWSER_ESCAPE_FOCUS_CONTROL verify-browser-footer-gutter=$BROWSER_FOOTER_GUTTER verify-browser-a11y=$BROWSER_A11Y verify-browser-nested-dismiss=$BROWSER_NESTED_DISMISS verify-browser-sidebar-keyboard=$BROWSER_SIDEBAR_KEYBOARD verify-browser-layout=$BROWSER_LAYOUT verify-browser-horizontal-overflow=$BROWSER_HORIZONTAL_OVERFLOW verify-browser-calendar-month=$BROWSER_CALENDAR_MONTH hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE container-closed-git=$CONTAINER_CLOSED_GIT"
-          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT_PINNED" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_SEARCH_FIELDS" = success ] && [ "$BROWSER_TREE_NAV" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_FOCUS_INPUTS" = success ] &&[ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_DOC_HEADINGS" = success ] && [ "$BROWSER_LAYOUT_EDGES" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_OVERLAY_ROWS_CONTROL" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$BROWSER_CONTROL_GROUPS" = success ] && [ "$BROWSER_SEARCH_MENU_FOCUS" = success ] && [ "$BROWSER_FIELD_DIALOG_STEPS" = success ] && [ "$BROWSER_CURSOR" = success ] && [ "$BROWSER_ESCAPE_FOCUS_CONTROL" = success ] && [ "$BROWSER_FOOTER_GUTTER" = success ] && [ "$BROWSER_A11Y" = success ] && [ "$BROWSER_NESTED_DISMISS" = success ] && [ "$BROWSER_SIDEBAR_KEYBOARD" = success ] && [ "$BROWSER_LAYOUT" = success ] && [ "$BROWSER_HORIZONTAL_OVERFLOW" = success ] && [ "$BROWSER_CALENDAR_MONTH" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ] && [ "$CONTAINER_CLOSED_GIT" = success ]
+          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-pinned=$BROWSER_DT_PINNED verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-searchable-fields=$BROWSER_SEARCH_FIELDS verify-browser-tree-navigation=$BROWSER_TREE_NAV verify-browser-interaction=$BROWSER_UI verify-browser-focus-inputs=$BROWSER_FOCUS_INPUTSverify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-doc-headings=$BROWSER_DOC_HEADINGS verify-browser-layout-edges=$BROWSER_LAYOUT_EDGES verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-overlay-rows-control=$BROWSER_OVERLAY_ROWS_CONTROL verify-browser-datatable-handles=$BROWSER_DT_HANDLES verify-browser-control-groups=$BROWSER_CONTROL_GROUPS verify-browser-searchable-menu-focus=$BROWSER_SEARCH_MENU_FOCUS verify-browser-field-dialog-steps=$BROWSER_FIELD_DIALOG_STEPS verify-browser-cursor=$BROWSER_CURSOR verify-browser-escape-focus-control=$BROWSER_ESCAPE_FOCUS_CONTROL verify-browser-footer-gutter=$BROWSER_FOOTER_GUTTER verify-browser-a11y=$BROWSER_A11Y verify-browser-nested-dismiss=$BROWSER_NESTED_DISMISS verify-browser-sidebar-keyboard=$BROWSER_SIDEBAR_KEYBOARD verify-browser-layout=$BROWSER_LAYOUT verify-browser-horizontal-overflow=$BROWSER_HORIZONTAL_OVERFLOW verify-browser-datepicker-range-underline=$BROWSER_DATEPICKER_RANGE_UNDERLINEverify-browser-calendar-month=$BROWSER_CALENDAR_MONTH hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE container-closed-git=$CONTAINER_CLOSED_GIT"
+          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT_PINNED" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_SEARCH_FIELDS" = success ] && [ "$BROWSER_TREE_NAV" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_FOCUS_INPUTS" = success ] &&[ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_DOC_HEADINGS" = success ] && [ "$BROWSER_LAYOUT_EDGES" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_OVERLAY_ROWS_CONTROL" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$BROWSER_CONTROL_GROUPS" = success ] && [ "$BROWSER_SEARCH_MENU_FOCUS" = success ] && [ "$BROWSER_FIELD_DIALOG_STEPS" = success ] && [ "$BROWSER_CURSOR" = success ] && [ "$BROWSER_ESCAPE_FOCUS_CONTROL" = success ] && [ "$BROWSER_FOOTER_GUTTER" = success ] && [ "$BROWSER_A11Y" = success ] && [ "$BROWSER_NESTED_DISMISS" = success ] && [ "$BROWSER_SIDEBAR_KEYBOARD" = success ] && [ "$BROWSER_LAYOUT" = success ] && [ "$BROWSER_HORIZONTAL_OVERFLOW" = success ] && [ "$BROWSER_DATEPICKER_RANGE_UNDERLINE" = success ] &&[ "$BROWSER_CALENDAR_MONTH" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ] && [ "$CONTAINER_CLOSED_GIT" = success ]
 
   hooks-linux:
     name: Governance hooks(Linux portability)
