@@ -6,7 +6,7 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useResolvedFieldSize } from '@/design-system/components/Field/field-context'
+import { fieldFramelessActionProps, useFieldContext, useResolvedFieldSize } from '@/design-system/components/Field/field-context'
 import type { SizingMode } from '@/design-system/components/Field/field-types'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 
@@ -500,6 +500,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     // ── FieldContext：在 Field 內自動讀 size，讓 Button 跟 Input 同高(SSOT:useResolvedFieldSize)──
     const resolvedSize = useResolvedFieldSize(size, 'md')
+    const fieldCtx = useFieldContext()
 
     // ── Dismiss 視覺類 override(2026-04-22 cross-implementation dimming canonical) ──
     // dismiss=true 強制:variant="text" + iconOnly=true + icon 色弱化(fg-muted → hover fg-secondary)
@@ -586,6 +587,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const unboundedAttr =
       resolvedVariant === 'text' || dismiss ? { 'data-unbounded': 'true' } : {}
 
+    // 在 Field 裡、沒有框(text / link)、不是只有圖示 → 掛 data-field-frameless-action(field-context.ts)。只是記號:
+    // Field 層純顯示時由 field.css 收掉左右內距、左右框寬、最小寬與標籤字兩端的 px-1,圖示 / 字齊控件欄左緣
+    // (field.spec.md「閱讀情境」的「檢視態的按鈕」;user 2026-11-26 C9「反正就是可見元素的邊界要看起來對齊」)。有框的按鈕不掛。
+    const framelessActionAttr = fieldFramelessActionProps(
+      fieldCtx?.hasFieldWrapper === true && (resolvedVariant === 'text' || resolvedVariant === 'link') && !resolvedIconOnly,
+    )
+
     // Native path 內部結構:[loading spinner | startIcon(+overlayBadge)] [label] [badge + endIcon]。
     // asChild 時**不渲染**(2026-07-04 fix):Radix Slot 規範 children 必為單一 element
     // (React.Children.only)— 內部多 expression children 變 array 必 runtime throw;
@@ -617,7 +625,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             <StartIcon size={iconSize} aria-hidden />
           )
         ) : null}
-        {children != null && <span className="px-1">{children}</span>}
+        {children != null && <span className="px-1" data-button-label="">{children}</span>}
         {hasSuffix && (
           <span className="inline-flex items-center gap-1">
             {badge}
@@ -662,6 +670,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           : slotConsumerOnClick}
         {...toggleAttrs}
         {...unboundedAttr}
+        {...framelessActionAttr}
         {...slotRest}
       >
         {children}
@@ -679,6 +688,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         aria-label={ariaLabel}
         {...toggleAttrs}
         {...unboundedAttr}
+        {...framelessActionAttr}
         {...(focusableDisabled ? stripActivationHandlers(restProps) : restProps)}
         // 握有焦點與否的追蹤只在這兩個事件(consumer 的同名 handler 已在上方 spread,這裡接著呼叫)
         onFocus={(e) => { setHoldsFocus(true); restProps.onFocus?.(e) }}

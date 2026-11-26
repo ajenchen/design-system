@@ -7,17 +7,21 @@
  *         B1  欄位家族的框(field-wrapper / Textarea / InlineEdit)不寫裸 `border` 這類寫死寬度的樣式,框寬讀 --field-border-width
  *         B2  框寬補位的算式讀 --field-border-width,不寫死 1px / 2px(tagPadding、fieldViewGeometry、Textarea 行數上限、InlineEdit 命中區、
  *             LinkInput 延伸區、併排欄位組的重疊、--field-control-py-*、DataTable --table-cell-py)
- *         S2  field.tsx 內縮規則寫的屬性名 = field-context.ts 的 FIELD_FRAMELESS_VALUE_ATTR
+ *         S2  field.tsx 內縮規則寫的屬性名 = field-context.ts 的 FIELD_FRAMELESS_VALUE_ATTR;field.css 檢視態按鈕那條認的屬性名
+ *             = field-context.ts 的 FIELD_FRAMELESS_ACTION_ATTR(格名「S2:沒有框的按鈕記號同名」)
  *         S3  閱讀情境的判斷只住 components/Field/field.css 一處(該檔每條規則的判斷一字不差),而且由對外彙總檔 styles/tokens.css 匯入;
- *             標籤那條三句判斷都在(就地編輯 / 組裡有 Field 層純顯示 / 不在組裡的 Field 層純顯示),沒有框的值那條只有就地編輯那一句
+ *             標籤那條三句判斷都在(就地編輯 / 組裡有 Field 層純顯示 / 不在組裡的 Field 層純顯示),沒有框的值那條只有就地編輯那一句;
+ *             檢視態按鈕那條(2026-11-26 C9)只准以「這一個 Field 自己是純顯示 → 它控件槽的直接子元素」開頭,不准改認範圍
  *         S4  --field-border-width = 1px、--field-bleed = calc(框寬 + --field-px)、InlineEdit 垂直外伸與可編輯標題列讓位都讀 --field-bleed
  *         瀏覽器段(真實情境「閱讀情境:工作項目與行事曆事件詳情」+ 邊界「閱讀情境驗證」,淺 / 深 × 不指定 / sm / md):
  *         G1  值線:閱讀範圍每一列靜止時第一個看得見的東西(字用 DOM 文字範圍、不用字形墨跡;輸入框用內容盒)
  *             標籤在左 = 控件欄左緣 + --field-bleed(框內字線),標籤在上 = 標籤左緣,±0.5;文字列進編輯後字的位置不變 ±0.5(零跳)。
  *             InlineEdit 各範例裡的 Field 也量(取代手動探針 probe-inline-edit-align.mjs 第一組);
- *         G1-V Field 層純顯示「純顯示齊標籤驗證」18 種 × 兩種標籤位置(取代探針第二組):值齊控件欄左緣 —— 純顯示只進閱讀情境的標籤色,
- *             值不內縮(開關 / 勾選框的 ✓ 也在控件欄左緣)
- *         G3-V 純顯示的標籤(2026-11-26,field.spec.md「閱讀情境」純顯示一段):「純顯示齊標籤驗證」36 個不在組裡的純顯示欄位(範圍 = 自己)
+ *         G1-V Field 層純顯示「純顯示齊標籤驗證」21 種 × 兩種標籤位置(取代探針第二組):值齊控件欄左緣 —— 純顯示只進閱讀情境的標籤色,
+ *             值不內縮(開關 / 勾選框的 ✓ 也在控件欄左緣)。其中三種是當控件的按鈕(2026-11-26 user C9;field.spec.md「閱讀情境」的
+ *             「檢視態的按鈕」):沒有框的(button-link / button-text)第一個看得見的東西 = 字 / 圖示齊控件欄左緣,而且按鈕左右緣 = 內容左右緣
+ *             (內距收乾淨、命中區 = 內容);有框的(button-framed)看得見的是框 → 框左緣齊控件欄左緣,而且框與左內距都還在(沒被一起收掉)
+ *         G3-V 純顯示的標籤(2026-11-26,field.spec.md「閱讀情境」純顯示一段):「純顯示齊標籤驗證」42 個不在組裡的純顯示欄位(範圍 = 自己)
  *             淺 / 深各一次,標籤 = 該主題的 --fg-secondary(格名「G3-V:單獨:」);邊界夾具 VG 組(三列純顯示 + 混放一列一般輸入框)
  *             每一列標籤 = --fg-secondary,含輸入框那一列(同一個範圍只用一個標籤色;格名「G3-V:組:」)
  *         G2  標籤↔框:滑過的底色(截圖差分)與編輯中的輸入框,標籤在左時左緣 ≥ 控件欄左緣(離標籤欄 = 表單欄距 12),標籤在上時離標籤下緣 ≥ 欄內間距
@@ -43,12 +47,13 @@
  *         SC  範圍 = 最外層 FieldGroup:巢狀組(外層就地編輯、內層只有輸入框 N2)內層與外層同色同高,頁面上沒有範圍套在範圍裡;不在組裡的 Field 範圍是自己
  *   紅: --selftest 逐一注入(每個都必須讓預期的格紅;清單與預期紅的格 = 下方 STATIC_MUTANTS / MUTANTS,本段不寫個數):
  *       靜態段(裸 border、補位寫死、屬性名不同、判斷寫兩處、field.css 兩條判斷不一致、bleed 公式、標題讓位讀 --field-px、
- *       內縮那條也認純顯示、標籤那條漏了不在組裡的純顯示、純顯示的判斷多寫一份在 field.tsx),
+ *       內縮那條也認純顯示、標籤那條漏了不在組裡的純顯示、純顯示的判斷多寫一份在 field.tsx、檢視態按鈕那條改認範圍、按鈕記號改名),
  *       瀏覽器段(某一列字推 4px 只有那列紅、垂直外伸改回 12、沒有框的值不內縮、拿掉標籤判斷、判斷過寬、標籤色在範圍元素上先算好
  *       (主題套層跟不上,沒套層的列照綠)、編輯中跳字、水平框壓進標籤 1px、容器內距 12、記號只掛靜止外框、同組列高跑掉、
  *       列高晚一個計時器才到、bleed 公式只剩內距、框寬 2px、標題讓位斷開、範圍改成最近一層、純顯示補回左內距 13、
  *       表格只修 view 一半(編輯中的欄位內距回到 --table-cell-px)、只修 edit 一半(靜止的左右透明框還在)、Where 標籤左內距回到 --field-px、
- *       拿掉不在組裡的純顯示判斷、拿掉組裡的純顯示判斷、組裡逐列換色(只有純顯示那幾列變淡)、純顯示也內縮開關 / 勾選框)
+ *       拿掉不在組裡的純顯示判斷、拿掉組裡的純顯示判斷、組裡逐列換色(只有純顯示那幾列變淡)、純顯示也內縮開關 / 勾選框、
+ *       檢視態沒有框的按鈕沒收內距、只收左側、有框的按鈕也被收掉框與內距)
  *   綠: 全部照規格時 exit 0。開 story 走 lib/launch-browser.mjs openStory(等 Storybook 回報渲染完成與被量的列本身出現,不睡固定時間);
  *       開不起來 / 回 0 筆 = 儀器失效(INSTRUMENT-FAIL,exit 1 並點名),不讀成通過。
  */
@@ -123,6 +128,11 @@ function staticChecks(files) {
   const fieldTsx = files.get(`${DS}/components/Field/field.tsx`) ?? ''
   put('S2:沒有框的值記號同名', Boolean(attr) && fieldTsx.includes(`[&_[${attr}]]:ml-[var(--scope-value-inset,0px)]`),
     attr ? `field-context.ts 記號 ${attr};field.tsx 內縮規則${fieldTsx.includes(`[&_[${attr}]]`) ? '同名' : '不同名'}` : '找不到 FIELD_FRAMELESS_VALUE_ATTR')
+  // 檢視態按鈕(2026-11-26 C9):Button 掛的記號(field-context.ts)= field.css 那條認的記號
+  const actionAttr = (files.get(`${DS}/components/Field/field-context.ts`) ?? '').match(/FIELD_FRAMELESS_ACTION_ATTR = '([^']+)'/)?.[1]
+  const fieldCssSrc = stripComments(files.get(`${DS}/components/Field/field.css`) ?? '')
+  put('S2:沒有框的按鈕記號同名', Boolean(actionAttr) && fieldCssSrc.includes(`[data-field-slot="control"] > [${actionAttr}]`),
+    actionAttr ? `field-context.ts 記號 ${actionAttr};field.css 檢視態按鈕那條${fieldCssSrc.includes(`> [${actionAttr}]`) ? '同名' : '不同名'}` : '找不到 FIELD_FRAMELESS_ACTION_ATTR')
   // S3 判斷只住一處 + 進彙總檔。field.css 的效果分兩條規則寫在讀者身上(標籤 / 沒有框的值,理由在該檔檔頭),
   // 每條規則提到判斷記號(data-field-reading / data-field-mode)的選擇器都必須以允許的判斷開頭 —— 各寫各的判斷,改一條漏一條就分岔。
   // 標籤那條 = 就地編輯 + Field 層純顯示(組裡 / 不在組裡)三句都要在;沒有框的值那條只准就地編輯那一句
@@ -136,20 +146,26 @@ function staticChecks(files) {
   const opens = (s, judges) => judges.some((j) => s.startsWith(`${j} `))
   const labelSel = judged.filter((s) => s.endsWith('[data-field-slot="label"]'))
   const insetSel = judged.filter((s) => s.endsWith('[data-field-frameless-value]'))
+  // 檢視態按鈕那條(2026-11-26 C9):判斷看這一個 Field 自己(Field 根同時有 data-field-orientation 與 data-field-mode="view"),
+  // 只認它控件槽的直接子元素;改認範圍(組裡別列是純顯示就收)= 一般表單裡的按鈕也被收內距
+  const ACTION_JUDGE = '[data-field-orientation][data-field-mode="view"] [data-field-slot="control"] > [data-field-frameless-action]'
+  const actionSel = judged.filter((s) => s.includes('[data-field-frameless-action]'))
   const drift = [
-    ...judged.filter((s) => !labelSel.includes(s) && !insetSel.includes(s)),
+    ...judged.filter((s) => !labelSel.includes(s) && !insetSel.includes(s) && !actionSel.includes(s)),
     ...labelSel.filter((s) => !opens(s, LABEL_JUDGES)),
     ...insetSel.filter((s) => !opens(s, [JUDGE])),
+    ...actionSel.filter((s) => !(s === ACTION_JUDGE || s.startsWith(`${ACTION_JUDGE} `))),
   ]
   const missing = [
     ...LABEL_JUDGES.filter((j) => !labelSel.some((s) => s.startsWith(`${j} `))).map((j) => `標籤那條缺「${j}」`),
     ...(insetSel.some((s) => s.startsWith(`${JUDGE} `)) ? [] : [`沒有框的值那條缺「${JUDGE}」`]),
+    ...(actionSel.includes(ACTION_JUDGE) ? [] : [`檢視態按鈕那條缺「${ACTION_JUDGE}」`]),
   ]
   const elsewhere = [...files].filter(([f, src]) => f !== owner
     && /(:has\(\[data-field-reading|has-\[\[data-field-reading|:has\(\[data-field-scope|:has\(\[data-field-orientation\]\[data-field-mode|has-\[\[data-field-orientation\]\[data-field-mode|\[data-field-scope\]\[data-field-mode)/.test(stripComments(src))).map(([f]) => f)
   const aggregated = (files.get(`${DS}/styles/tokens.css`) ?? '').includes("@import './../components/Field/field.css';")
   put('S3:判斷只住 field.css', judged.length > 0 && drift.length === 0 && missing.length === 0 && elsewhere.length === 0 && aggregated,
-    `field.css 用到判斷的選擇器 ${judged.length} 條${drift.length ? `,其中開頭不是允許的判斷:${drift.join(' / ')}` : '(標籤那條 = 就地編輯 + 純顯示、內縮那條 = 只有就地編輯)'}${missing.length ? `;${missing.join(';')}` : ''};別處 ${elsewhere.length ? elsewhere.join(', ') : '0'};彙總檔${aggregated ? '有' : '沒有'}匯入`)
+    `field.css 用到判斷的選擇器 ${judged.length} 條${drift.length ? `,其中開頭不是允許的判斷:${drift.join(' / ')}` : '(標籤那條 = 就地編輯 + 純顯示、內縮那條 = 只有就地編輯、檢視態按鈕那條 = 這一個 Field 自己是純顯示)'}${missing.length ? `;${missing.join(';')}` : ''};別處 ${elsewhere.length ? elsewhere.join(', ') : '0'};彙總檔${aggregated ? '有' : '沒有'}匯入`)
   // S4 token 公式與讀者
   const ui = files.get(`${DS}/tokens/uiSize/uiSize.css`) ?? ''
   const ie = files.get(`${DS}/components/InlineEdit/inline-edit.tsx`) ?? ''
@@ -184,6 +200,11 @@ const STATIC_MUTANTS = [
     from: "const LABEL_COLOR_CLASS = 'text-[color:var(--scope-label-color,var(--foreground))]'", to: "const LABEL_COLOR_CLASS = 'text-[color:var(--scope-label-color,var(--foreground))] [[data-field-scope][data-field-mode=view]_&]:text-fg-secondary'" },
   { name: '--field-bleed 只剩內距', expect: 'S4:token 公式與讀者', file: `${DS}/tokens/uiSize/uiSize.css`, from: '--field-bleed: calc(var(--field-border-width) + var(--field-px));', to: '--field-bleed: var(--field-px);' },
   { name: '標題讓位讀回 --field-px', expect: 'S4:token 公式與讀者', file: `${DS}/patterns/overlay-surface/overlay-surface.tsx`, from: '[--surface-title-bleed:var(--field-bleed)]', to: '[--surface-title-bleed:var(--field-px)]' },
+  // 2026-11-26 C9 檢視態按鈕:判斷改認範圍(組裡有一列純顯示,一般表單那幾列的按鈕也被收內距)/ 記號改名(field.css 認不到)
+  { name: '檢視態按鈕那條改認範圍', expect: 'S3:判斷只住 field.css', file: `${DS}/components/Field/field.css`,
+    from: '[data-field-orientation][data-field-mode="view"] [data-field-slot="control"] > [data-field-frameless-action] {', to: '[data-field-scope]:has([data-field-orientation][data-field-mode="view"]) [data-field-slot="control"] > [data-field-frameless-action] {' },
+  { name: '按鈕記號改名(field.css 那條認不到)', expect: 'S2:沒有框的按鈕記號同名', file: `${DS}/components/Field/field-context.ts`,
+    from: "FIELD_FRAMELESS_ACTION_ATTR = 'data-field-frameless-action'", to: "FIELD_FRAMELESS_ACTION_ATTR = 'data-field-frameless-button'" },
 ]
 
 const staticBase = runStatic()
@@ -219,7 +240,7 @@ if (!buildArg) {
   requireFreshStorybookBuild(STATIC, [
     `${DS}/components/Field`, `${DS}/components/InlineEdit`, `${DS}/components/Switch/switch.tsx`, `${DS}/components/Checkbox/checkbox.tsx`,
     `${DS}/tokens/uiSize/uiSize.css`, `${DS}/styles/tokens.css`, `${DS}/patterns/overlay-surface/overlay-surface.tsx`,
-    `${DS}/components/DataTable`, `${DS}/components/Textarea/textarea.tsx`,
+    `${DS}/components/DataTable`, `${DS}/components/Textarea/textarea.tsx`, `${DS}/components/Button/button.tsx`,
   ])
 }
 const TITLE_SLOT_CLASS = (read(`${DS}/patterns/overlay-surface/overlay-surface.tsx`).match(/EDITABLE_TITLE_HEADER_SLOT = '([^']+)'/) ?? [])[1] ?? ''
@@ -604,7 +625,7 @@ async function judgeNoFlip(run, set, probe, { only = null, after = null } = {}) 
   await parkPointer(page)
 }
 
-/** G1-V / G3-V 單獨:Field 層純顯示「純顯示齊標籤驗證」(18 種 × 兩種標籤位置,都不在組裡 = 範圍是自己):值齊控件欄左緣、標籤 = 次要色 */
+/** G1-V / G3-V 單獨:Field 層純顯示「純顯示齊標籤驗證」(21 種 × 兩種標籤位置,都不在組裡 = 範圍是自己):值齊控件欄左緣、標籤 = 次要色 */
 const VIEW_READY = () => Boolean(document.querySelector('[data-view-case="radio"] [data-field-slot="control"]'))
 const VIEW_PROBE = () => {
   const visible = (el) => {
@@ -632,13 +653,22 @@ const VIEW_PROBE = () => {
     const c = ctrl.getBoundingClientRect(), l = label.getBoundingClientRect()
     // 期望色在標籤自己所在的主題下解(同 PROBE themedColors)
     const s = document.createElement('span'); label.appendChild(s); s.style.color = 'var(--fg-secondary)'; const fgSecondary = getComputedStyle(s).color; s.remove()
+    // 當控件的按鈕(2026-11-26 C9):按鈕盒左右緣、左框寬、左內距;內容(字 / 圖示,不含按鈕自己的框)左右緣
+    const btn = ctrl.querySelector(':scope > button')
+    let button = null
+    if (btn) {
+      const b = btn.getBoundingClientRect(), bcs = getComputedStyle(btn)
+      const inner = rects.filter((r) => !(r.left === b.left && r.right === b.right && r.top === b.top))
+      button = { left: b.left, right: b.right, borderLeft: parseFloat(bcs.borderLeftWidth), paddingLeft: parseFloat(bcs.paddingLeft),
+        contentLeft: inner.length ? Math.min(...inner.map((r) => r.left)) : NaN, contentRight: inner.length ? Math.max(...inner.map((r) => r.right)) : NaN }
+    }
     rows.push({ orient: wrap.dataset.viewOrientation, key: f.dataset.viewCase, labelTag: label.tagName, dx: left - c.left, labelDx: l.left - c.left, dy: center - (c.top + fieldHeight / 2),
-      color: getComputedStyle(label).color, fgSecondary, scopeIsSelf: f.closest('[data-field-scope]') === f })
+      color: getComputedStyle(label).color, fgSecondary, scopeIsSelf: f.closest('[data-field-scope]') === f, button })
   }
   return rows
 }
 function judgeView(rows, { theme = 'light', geometry = true } = {}) {
-  if (!rows || rows.length !== 36) { instrumentFails.push({ cell: `G1-V ${theme}`, detail: `純顯示齊標籤驗證量到 ${rows?.length ?? 0} 格(應 18 × 2 = 36)` }); return }
+  if (!rows || rows.length !== 42) { instrumentFails.push({ cell: `G1-V ${theme}`, detail: `純顯示齊標籤驗證量到 ${rows?.length ?? 0} 格(應 21 × 2 = 42)` }); return }
   for (const r of rows) {
     const id = `G1-V:${r.orient}/${r.key}`
     if (r.missing || r.empty) { check(id, false, r.missing ? '找不到標籤或控件欄' : '控件欄裡沒有可見內容'); continue }
@@ -651,6 +681,18 @@ function judgeView(rows, { theme = 'light', geometry = true } = {}) {
     if (r.orient === 'vertical' && Math.abs(r.labelDx) > 0.5) errs.push(`標籤左緣離控件欄左緣 ${f2(r.labelDx)}`)
     if (r.key !== 'textarea' && Math.abs(r.dy) > 1) errs.push(`第一行中線離 欄位高 / 2 ${f2(r.dy)}`)
     if (r.labelTag !== 'SPAN') errs.push(`純顯示的標籤是 <${r.labelTag.toLowerCase()}>(應為 span)`)
+    // 當控件的按鈕(field.spec.md「閱讀情境」的「檢視態的按鈕」):沒有框的 → 按鈕左右緣 = 內容左右緣(內距收乾淨,命中區 = 內容);
+    // 有框的 → 框與左內距都還在(框是它看得見的邊界,不跟著收)。按鈕格找不到按鈕 = 夾具壞了
+    if (r.key.startsWith('button-')) {
+      const b = r.button
+      if (!b) errs.push('控件欄裡找不到當控件的按鈕')
+      else if (r.key === 'button-framed') {
+        if (!(b.borderLeft > 0) || !(b.paddingLeft > 0)) errs.push(`有框的按鈕框 / 左內距被收掉(左框 ${f2(b.borderLeft)}、左內距 ${f2(b.paddingLeft)})`)
+      } else {
+        if (!near(b.left, b.contentLeft)) errs.push(`沒有框的按鈕左緣離內容 ${f2(b.contentLeft - b.left)}`)
+        if (!near(b.right, b.contentRight)) errs.push(`沒有框的按鈕右緣離內容 ${f2(b.right - b.contentRight)}`)
+      }
+    }
     check(id, errs.length === 0, errs.join(';') || `dx ${f2(r.dx)} / dy ${f2(r.dy)}`)
   }
 }
@@ -971,6 +1013,17 @@ const MUTANTS = [
     css: '[data-field-scope]:not(:has([data-field-reading])) [data-field-orientation]:not([data-field-mode="view"]) > [data-field-slot="label"] { --scope-label-color: var(--foreground) !important; }' },
   { name: '純顯示也內縮開關 / 勾選框(值離開控件欄左緣)', block: 'view', expect: ['G1-V:horizontal/switch', 'G1-V:horizontal/checkbox'], greenToo: ['G1-V:vertical/switch'],
     css: '[data-field-scope][data-field-mode="view"] [data-field-frameless-value] { --scope-value-inset: var(--field-bleed) !important; }' },
+  // 2026-11-26 C9 檢視態的按鈕:三種破法各自只讓該紅的格紅
+  { name: '檢視態沒有框的按鈕沒收內距(記號沒掛上)', block: 'view',
+    expect: ['G1-V:vertical/button-link', 'G1-V:horizontal/button-link', 'G1-V:vertical/button-text', 'G1-V:horizontal/button-text'],
+    greenToo: ['G1-V:vertical/button-framed', 'G1-V:horizontal/button-framed', 'G1-V:vertical/input'],
+    dom: () => { for (const el of document.querySelectorAll('[data-field-frameless-action]')) el.removeAttribute('data-field-frameless-action') } },
+  { name: '檢視態沒有框的按鈕只收左側(右內距留著,命中區比內容寬)', block: 'view',
+    expect: ['G1-V:vertical/button-link', 'G1-V:horizontal/button-text'], greenToo: ['G1-V:vertical/button-framed'],
+    css: '[data-field-frameless-action] { padding-inline-end: calc(var(--spacing) * 3) !important; }' },
+  { name: '判斷過寬:有框的按鈕也被收掉框與內距', block: 'view',
+    expect: ['G1-V:vertical/button-framed', 'G1-V:horizontal/button-framed'], greenToo: ['G1-V:vertical/button-link'],
+    dom: () => { for (const el of document.querySelectorAll('[data-view-case="button-framed"] [data-field-slot="control"] > button')) el.setAttribute('data-field-frameless-action', '') } },
   // G7:表格兩半各自壞一次 —— 只修了靜止那一半(編輯中的欄位內距回到 --table-cell-px,字在 13)/ 只修了編輯那一半(靜止的左右透明框還在)
   { name: '表格只修 view 一半(格內欄位編輯中的左右內距回到 --table-cell-px)', block: 'table', runs: [{ theme: 'light' }],
     expect: ['G7:編輯:inline-edit:Product', 'G7:編輯:inline-edit:Qty', 'G7:編輯:inline-edit:Release', 'G7:編輯:auto-height:Note (wrap text)'],
