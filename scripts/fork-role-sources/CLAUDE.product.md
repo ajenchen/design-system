@@ -24,15 +24,17 @@ This file contains Claude Code mechanics only. Shared product rules, SSOT pointe
 On Claude Code on the web, set the **Setup script** to the script in README.md ("Local, cloud, and
 container setup"). It can go in the shared Default environment: it runs `npm run setup:all` only
 when the session's repository is this one and returns that command's exit status, and for any other
-repository it prints one skip line and exits 0. Do not put a bare `npm run setup:all` there: a
-Setup script starts in `/home/user` with this repository in a subfolder, and one that exits
-non-zero makes the session fail to start or start without what it failed to install
-(https://code.claude.com/docs/en/cloud-environments#setup-scripts). `setup:all` completes both in
-the Setup script stage (no proxy; the npm registry and `tuf-repo-cdn.sigstore.dev` are reached
-directly) and when rerun inside a session: the locked setup forwards a credential-free
-`HTTPS_PROXY` / `NO_PROXY` for routing only (a proxy URL with credentials is still ignored), so the
-registry signature audit (`audit signatures`) reaches the Sigstore TUF CDN through the session's
-proxy. A session where it did not complete is degraded. `setup:all`
+repository it prints one skip line and exits 0. Do not put a bare `npm run setup:all` there: the
+official guide does not document a Setup script's working directory (a cloud session has shown the
+checkout at `/home/user/<repository-folder>`), and one that exits non-zero makes the session fail to
+start or start without what it failed to install
+(https://code.claude.com/docs/en/cloud-environments#setup-scripts). `setup:all` is not verified to
+complete there yet: inside a session, the locked setup before this fix stopped at the registry signature audit
+(`audit signatures`, `ENOTFOUND tuf-repo-cdn.sigstore.dev`; that host is reachable there only through
+the proxy, and the locked setup dropped every proxy variable). The locked setup now forwards a
+credential-free `HTTPS_PROXY` / `NO_PROXY` for routing only (a proxy URL with credentials is still
+ignored); with this fix neither a session nor the Setup script stage has been tested there yet.
+A session where it did not complete is degraded. `setup:all`
 runs the shared locked install, signature audit, and exact installed hooks-off checker before work.
 The web environment may reuse a cached setup result, so rebuild that cache or run
 `npm run setup:all` explicitly whenever the committed lock changes. Opening or resuming a Claude session does not

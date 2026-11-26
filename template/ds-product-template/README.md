@@ -59,9 +59,11 @@ Use the same canonical fresh-checkout bootstrap everywhere; run it locally and c
   0, so it never blocks another repository's session. The official guide documents that the script
   runs as root on Ubuntu 24.04 after the repository is cloned and before Claude Code launches, that
   the environment's own variables are not set yet, and that a script that exits non-zero makes the
-  session fail to start or start without what it failed to install. The script starts in
-  `/home/user` with the checkout at `/home/user/<repository-folder>`; it also works when started at
-  the repository root. A successful run is cached as a filesystem snapshot and is re-run only when the
+  session fail to start or start without what it failed to install. The guide does not document the
+  script's working directory, so the script handles both starting at the repository root and
+  starting one level up with the checkout in a subfolder (a cloud session has shown the checkout at
+  `/home/user/<repository-folder>`). Whether `setup:all` completes there is not verified yet; see
+  the known limitation below. A successful run is cached as a filesystem snapshot and is re-run only when the
   script or allowed hosts change or the cache expires, so after a committed-lock change run
   `npm run setup:all` in the session. See [Setup scripts](https://code.claude.com/docs/en/cloud-environments#setup-scripts)
   and [Setup script failed](https://code.claude.com/docs/en/web-quickstart#setup-script-failed).
@@ -97,8 +99,9 @@ calls the exact installed provider-neutral checker with hooks off. This reposito
 committed Git snapshot, Node runtime/TLS, and canonical registry endpoint are not malicious; it
 cannot certify a hostile host. Any step failing stops setup. Repository SessionStart remains verification-only; it never installs
 or repairs dependencies. The same `setup:all` works on local macOS/Linux, Codex Cloud, Codespaces,
-and other Linux devcontainer hosts, and on Claude Code on the web through the Setup script above.
-Native Windows is unsupported; use WSL2 or the committed Linux dev container.
+and other Linux devcontainer hosts; on Claude Code on the web it is not verified to complete yet
+(see the known limitation below). Native Windows is unsupported; use WSL2 or the committed Linux
+dev container.
 
 Outbound HTTPS that a proxy re-signs (Claude Code on the web, most corporate proxies) works when
 the proxy CA is in the host system trust store and Node.js is 22.15.0 or newer: every registry
@@ -110,14 +113,18 @@ Node.js 22.13.x–22.14.x the locked npm trusts only Node's bundled store, so su
 Node.js 22.15.0+. Install a proxy CA into the system trust store; `NODE_EXTRA_CA_CERTS` or
 `SSL_CERT_FILE` alone is not used.
 
-On Claude Code on the web, `setup:all` completes both in the Setup script stage and when rerun
-inside a session. Besides the npm registry, the registry signature audit (`audit signatures`)
-downloads Sigstore TUF metadata from `tuf-repo-cdn.sigstore.dev`. In the Setup script stage no proxy
-variable is set and both hosts are reached directly. Inside a session that host is reachable only
-through the environment's credential-free `HTTPS_PROXY`; the locked setup forwards it together with
-`NO_PROXY` (which lists the registry, so registry traffic stays direct). Earlier releases dropped
-every proxy variable, so that audit failed in a session with `ENOTFOUND tuf-repo-cdn.sigstore.dev`.
-A session where `setup:all` did not complete is degraded; do not claim compliance there.
+Known limitation: on Claude Code on the web, `setup:all` is not verified to complete yet. Inside a
+session there, the locked setup before this fix got through the install and then stopped at the registry
+signature audit (`audit signatures`) with `ENOTFOUND tuf-repo-cdn.sigstore.dev`: besides the npm
+registry, that audit downloads Sigstore TUF metadata from `tuf-repo-cdn.sigstore.dev`, the session
+resolves the registry directly but reaches that host only through its credential-free
+`HTTPS_PROXY`, and the locked setup dropped every proxy variable. The locked setup now forwards a
+credential-free `HTTPS_PROXY` together with `NO_PROXY`, for routing only (see above). With this fix,
+neither a session nor the Setup script stage has been tested there yet; whether the Setup script
+stage has a proxy variable or reaches `tuf-repo-cdn.sigstore.dev` directly is also unknown. If the
+Setup script exits non-zero, this repository's session fails to start or starts without what it
+failed to install. A session where `setup:all` did not complete is degraded; do not claim compliance
+there.
 
 Successful `setup:all` output is intentionally scoped as `scope=local-bootstrap`,
 `providerCertification=not-checked`, and `externalActivationRequired=false`. Ordinary bootstrap is
