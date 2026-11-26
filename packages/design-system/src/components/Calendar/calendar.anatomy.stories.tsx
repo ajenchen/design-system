@@ -379,6 +379,77 @@ export const MoreListOpen: Story = {
   },
 }
 
+// ── 5c. 狀態行為:事件詳情開著(M15:點一下才看得到的狀態,用 play 打開)──────────────────────────────
+// 點「設計審查」= 內建詳情浮層(calendar.spec.md「事件詳情浮層」):開在事件側邊、頂端對齊(7/5 在左半邊 → 往右開);標題就地改、
+// 欄位垂直排(閱讀情境:標籤次要色);被點的那一段在詳情開著時維持滑過色。
+const detailEvents: CalendarEvent[] = [
+  { id: 'd1', title: '設計審查', start: `${thisMonth}-05T10:00`, end: `${thisMonth}-05T11:00`, color: 'blue', categoryId: 'meeting', location: '台北辦公室 3F 大會議室', description: '結帳頁改版第二輪:確認信用卡分期的金額顯示與錯誤訊息。' },
+  { id: 'd2', title: 'Alex 休假', start: `${thisMonth}-20`, end: `${thisMonth}-23`, color: 'yellow', allDay: true, categoryId: 'leave' },
+  { id: 'd3', title: '客戶會議', start: `${thisMonth}-25T15:00`, end: `${thisMonth}-25T16:00`, color: 'orange', categoryId: 'customer', location: '宏達工業 新竹廠' },
+]
+const DETAIL_CATEGORIES = [
+  { id: 'meeting', name: '內部會議', color: 'blue' },
+  { id: 'leave', name: '休假', color: 'yellow' },
+  { id: 'customer', name: '客戶會議', color: 'orange' },
+] as const satisfies readonly { id: string; name: string; color: CalendarEvent['color'] }[]
+
+export const DetailOpen: Story = {
+  name: '狀態行為:事件詳情開著',
+  render: () => (
+    <div className="h-screen p-4 bg-canvas">
+      <div className="mb-2 text-body text-fg-muted space-y-1">
+        <div>• <b>位置</b>:開在事件側邊、頂端對齊;那一天在星期的左半邊 → 往右開、右半邊 → 往左開(放不下自動翻面);與事件隔 8</div>
+        <div>• <b>標題列</b>:標題就地改(點標題進編輯),右側〔⋯〕〔×〕;沒有儲存鈕,每一欄自己提交</div>
+        <div>• <b>欄位</b>:時間(同一天合併成一段)、全天(開關直接切)、地點、說明、類別,標籤在上;Esc 一次關一層,焦點回打開它的那一段</div>
+      </div>
+      <CalendarDemo events={detailEvents} defaultReferenceDate={now} today={now} locale={LOCALE} categories={DETAIL_CATEGORIES} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const tile = within(canvasElement).getByRole('button', { name: /^設計審查,/ })
+    await userEvent.click(tile)
+    // 浮層的名字 = 事件標題本身(不是「編輯 事件標題」)
+    const detail = await within(document.body).findByRole('dialog', { name: '設計審查' })
+    await expect(within(detail).getByText('時間')).toBeTruthy()
+    await expect(within(detail).getByText('台北辦公室 3F 大會議室')).toBeTruthy()
+    await expect(tile).toHaveAttribute('data-detail-open')
+  },
+}
+
+// ── 5d. 狀態行為:從「+N」清單開詳情(清單留著、詳情開在旁邊)──────────────────────────────────────
+export const DetailFromMoreList: Story = {
+  name: '狀態行為:從清單開詳情',
+  render: () => (
+    <div className="h-screen p-4 bg-canvas">
+      <div className="mb-2 text-body text-fg-muted space-y-1">
+        <div>• <b>兩層並存</b>:點清單裡的事件,詳情開在清單旁、水平貼著清單外緣、上緣對齊那一列;清單不關,那一列維持滑過色</div>
+        <div>• <b>Esc 一次一層</b>:第一下關詳情(焦點回那一列),第二下關清單(焦點回「+N」);點清單上 = 只關詳情,點頁面 = 兩層都關</div>
+      </div>
+      <CalendarDemo events={conferenceEvents} defaultReferenceDate={now} today={now} locale={LOCALE} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const more = `[data-calendar-more="${CONFERENCE_DAY}"]`
+    const opened = `[data-calendar-more-list="${CONFERENCE_DAY}"]`
+    // 「+N」剛掛上時會被 Radix 換成新節點一次(見上一則 MoreListOpen 的註解):每一輪重抓當下那一顆點,點到清單開出來為止
+    await waitFor(async () => {
+      if (document.querySelector(opened)) return
+      const button = canvasElement.querySelector<HTMLElement>(more)
+      await expect(button?.isConnected).toBe(true)
+      await userEvent.click(button as HTMLElement)
+      await expect(document.querySelector(opened)).not.toBeNull()
+    })
+    const list = document.querySelector<HTMLElement>(opened) as HTMLElement
+    // 點捲在頂端就看得到的那一列(清單上限 9 列 + 半列)
+    const row = within(list).getByRole('button', { name: /^開幕致詞,/ })
+    await userEvent.click(row)
+    await within(document.body).findByRole('dialog', { name: '開幕致詞' })
+    // 清單還在
+    await expect(document.querySelector(opened)).not.toBeNull()
+    await expect(row).toHaveAttribute('data-detail-open')
+  },
+}
+
 // ── Accessibility ─────────────────────────────────────────────────────────
 // 2026-05-17 ship per audit Dim 13(story-rules.md 6-canonical 含 Accessibility)
 export const Accessibility = {

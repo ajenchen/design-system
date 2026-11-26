@@ -140,7 +140,10 @@ export {
   Calendar,
 } from './components/Calendar/index'
 export type {
+  CalendarCategory,
   CalendarEvent,
+  CalendarEventDetail,
+  CalendarEventPatch,
   CalendarEventSegment,
   CalendarLabels,
   CalendarProps,

@@ -78,6 +78,11 @@
  *          (header-first-gap NOT_COVERED 登記的那一格由這裡量);ML-order 清單順序 = 格內排序、格內畫出來的同一個相對順序;ML-ro 唯讀的那一筆是純文字;
  *           ML-half 捲在頂端時可見底邊切在第 N + 1 列(N = 9)的一半(±1);ML-sticky 捲到底標題列不動、內文頂 = 標題列底;ML-bottom 捲到底最後一列 → 底 = tight;
  *           ML-outside 點清單外面關清單、焦點不被搶回「+N」。期望值由規格與 token 現算(tight 讀浮層上的 --layout-space-tight),不 import 元件常數。
+ *         DT 事件詳情浮層(設計規格「狀態行為:事件詳情開著」「狀態行為:從清單開詳情」;calendar.spec.md「事件詳情浮層」;一般 / 大密度各一趟):
+ *           DT-name 浮層名稱 = 事件標題本身;DT-head 標題列 = 2 × tight + sm 欄位高、× 與標題同中線;DT-side 左半邊的事件往右開、隔 8、頂端對齊;
+ *           DT-vertical 欄位垂直排(標籤在上);DT-label 標籤 = fg-secondary(閱讀情境);DT-gap 標頭 → 第一欄 = tight、最後一欄 → 底 = tight(hug);
+ *           DT-mark 打開詳情的那一段帶 data-detail-open;DT-esc Esc 關詳情、焦點回那一段;DT-commit 改標題 → 月格跟著換;DT-blank 清空提交 = 還原原值;
+ *           DT-list 從清單開:清單不關、詳情左緣 − 清單右緣 = 8、上緣對齊那一列;DT-esc-layers 第一下 Esc 只關詳情(焦點回那一列)、第二下關清單(焦點回「+N」)。
  *   紅: --selftest 逐一注入:星期列搬出格陣、週列高改 auto、最後一週留底線、格子內距 6、工具列改回內距撐高、nav 沒名稱、
  *       欄頭名稱改成短字、捲動區變成可聚焦(axe required-children)、捲動區不能捲、事件列高 20、事件列焦點框改回往內、1 號的實心底被壓成 24 寬、
  *       格最小高沒算格線(回到 60)、
@@ -115,7 +120,7 @@ const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n
 const SELFTEST = process.argv.includes('--selftest')
 const root = path.resolve(REPO, arg('static', 'storybook-static'))
 const CAL = 'packages/design-system/src/components/Calendar'
-requireFreshStorybookBuild(root, [`${CAL}/calendar.tsx`, `${CAL}/calendar-more-list.tsx`, `${CAL}/calendar-geometry.ts`, `${CAL}/calendar-layout.ts`, `${CAL}/_calendar-demo.tsx`, `${CAL}/calendar.stories.tsx`, `${CAL}/calendar.anatomy.stories.tsx`, `${CAL}/calendar.principles.stories.tsx`],
+requireFreshStorybookBuild(root, [`${CAL}/calendar.tsx`, `${CAL}/calendar-more-list.tsx`, `${CAL}/calendar-event-detail.tsx`, `${CAL}/calendar-geometry.ts`, `${CAL}/calendar-layout.ts`, `${CAL}/_calendar-demo.tsx`, `${CAL}/calendar.stories.tsx`, `${CAL}/calendar.anatomy.stories.tsx`, `${CAL}/calendar.principles.stories.tsx`],
   { hint: '先 build storybook(或用 --static=<dir> 指定)' })
 const server = await startA11yStaticServer({ rootDirectory: root, defaultFile: 'iframe.html' })
 process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
@@ -138,6 +143,8 @@ const STORY = {
   customTile: storyId(/calendar-展示--read-only-dates-custom-tile-keyboard$/u),
   matrix: storyId(/calendar-設計規格--color-matrix$/u),
   moreList: storyId(/calendar-設計規格--more-list-open$/u),
+  detailOpen: storyId(/calendar-設計規格--detail-open$/u),
+  detailFromList: storyId(/calendar-設計規格--detail-from-more-list$/u),
 }
 // 「+N」清單那一則(設計規格「狀態行為:「+N」清單開著」):年度使用者大會那天,與格內排序(calendar.spec.md「格內排序」)推出的清單順序
 const MORE_DAY = '2026-07-22'
@@ -1503,6 +1510,129 @@ const BLOCKS = {
   // 不用網址傳日期:Storybook 的網址參數對 Date 型別的 arg 一律丟掉(實測 !date(...) 沒生效)。
   // 時鐘是整個 context 共用、釘了就回不去 —— 本區塊一律排在最後跑(其他區塊的 story 都明傳 today,本來也不受影響);
   // 不另開 context:沙箱裡的 Chromium 是 --single-process,開第二個 context 會整個崩掉(實測 SIGTRAP)。
+  // ── DT 事件詳情浮層(設計規格「狀態行為:事件詳情開著」「狀態行為:從清單開詳情」;calendar.spec.md「事件詳情浮層」「點清單裡的事件」)──
+  // 期望值由規格與 token 現算(tight / sm 欄位高 / fg-secondary 讀浮層上的變數),不 import 元件常數;sideOffset 8 = popover.spec.md 與 calendar.spec.md 寫的值。
+  async detail(mutate) {
+    const detailSel = '[data-calendar-event-detail]'
+    const waitSel = (sel, state) => page.waitForFunction(({ s, st }) => {
+      const el = document.querySelector(s)
+      const shown = Boolean(el && el.getAttribute('data-state') === 'open' && !el.getAnimations().some((a) => a.playState === 'running'))
+      return st === 'open' ? shown : !el
+    }, { s: sel, st: state }, { timeout: 10000 }).then(() => true, () => false)
+    for (const density of ['md', 'lg']) {
+      const tag = `@${density}`
+      const p = await open(STORY.detailOpen, { label: `事件詳情開著 ${tag}`, mutate, density })
+      if (!p) continue
+      if (!(await waitSel(detailSel, 'open'))) { instrumentFails.push({ cell: `DT ${tag}`, detail: 'play 打開的詳情等不到(story 改了?)' }); continue }
+      if (mutate?.detailDom) await page.evaluate(mutate.detailDom)
+      await frames(3)
+      // DT-name:浮層的名字 = 事件標題本身(不念隱形編輯鈕的「編輯 …」)
+      const name = await axNameOf(`document.querySelector(${JSON.stringify(detailSel)})`)
+      check(`DT-name${tag}`, name === '設計審查', `詳情浮層名稱「${name}」(規格 = 事件標題「設計審查」)`)
+      const g = await page.evaluate((s) => {
+        const d = document.querySelector(s)
+        const tile = document.querySelector('[data-calendar-tile][data-calendar-event-id="d1"]')
+        if (!d || !tile) return null
+        const probe = (css) => { const el = document.createElement('div'); el.style.cssText = `position:absolute;visibility:hidden;${css}`; d.append(el); const v = el.getBoundingClientRect().height; el.remove(); return v }
+        const tight = probe('height: var(--layout-space-tight)')
+        const fieldSm = probe('height: var(--field-height-sm)')
+        const ref = document.createElement('span'); ref.style.color = 'var(--fg-secondary)'; d.append(ref); const secondary = getComputedStyle(ref).color; ref.remove()
+        const header = d.querySelector('[data-slot="surface-header"]')
+        const body = d.querySelector('[data-popover-body]')
+        const dismiss = header?.querySelector('[data-dismiss]')
+        const title = header?.querySelector('h2')
+        const titleBox = title?.closest('[data-editing]') ?? title
+        const fields = [...d.querySelectorAll('[data-calendar-detail-field]')]
+        const r = (el) => el?.getBoundingClientRect()
+        const dr = r(d), tr = r(tile), hr = r(header), br = r(body), xr = r(dismiss), ttr = r(titleBox)
+        const rows = fields.map((f) => {
+          const label = f.querySelector('label'); const value = label?.nextElementSibling
+          return { field: f.getAttribute('data-calendar-detail-field'), labelBottom: r(label)?.bottom, labelLeft: r(label)?.left, valueTop: r(value)?.top, fieldLeft: r(f)?.left, color: label ? getComputedStyle(label).color : null }
+        })
+        const first = fields[0] ? r(fields[0]) : null, last = fields.length ? r(fields[fields.length - 1]) : null
+        return {
+          tight, fieldSm, secondary, rows,
+          detail: { left: dr.left, right: dr.right, top: dr.top }, tile: { left: tr.left, right: tr.right, top: tr.top },
+          headerH: hr?.height, dismissMid: xr ? xr.top + xr.height / 2 : NaN, titleMid: ttr ? ttr.top + ttr.height / 2 : NaN,
+          firstGap: first && hr ? first.top - hr.bottom : NaN, bottomGap: last && br ? br.bottom - last.bottom : NaN,
+          tileOpen: tile.hasAttribute('data-detail-open'),
+        }
+      }, detailSel)
+      if (!g) { instrumentFails.push({ cell: `DT ${tag}`, detail: '找不到詳情浮層或「設計審查」那一段' }); continue }
+      // DT-head:標題是 InlineEdit sm → 標題列 = 2 × tight + sm 欄位高(一般 52 / 大 56),× 與標題那一列中線對齊
+      check(`DT-head${tag}`, near(g.headerH, 2 * g.tight + g.fieldSm) && near(g.dismissMid, g.titleMid),
+        `標題列高 ${fmtPx(g.headerH)}(規格 2 × ${g.tight} + ${g.fieldSm})、× 中線 ${fmtPx(g.dismissMid)} / 標題中線 ${fmtPx(g.titleMid)}`)
+      // DT-side:7/5 在星期的左半邊 → 往右開、與事件隔 8、頂端對齊(calendar.spec.md「事件詳情浮層」位置)
+      check(`DT-side${tag}`, near(g.detail.left - g.tile.right, 8) && near(g.detail.top, g.tile.top),
+        `詳情左緣 − 事件右緣 ${fmtPx(g.detail.left - g.tile.right)}(規格 8)、詳情上緣 ${fmtPx(g.detail.top)} / 事件上緣 ${fmtPx(g.tile.top)}`)
+      // DT-vertical:每一欄標籤在上(標籤底 ≤ 值頂)、標籤左緣 = 欄位左緣【FIELD-ORIENT(定)】
+      const notVertical = g.rows.filter((row) => !(row.labelBottom <= row.valueTop + 0.5 && near(row.labelLeft, row.fieldLeft)))
+      check(`DT-vertical${tag}`, g.rows.length >= 4 && notVertical.length === 0, `欄位 ${g.rows.map((row) => row.field).join(' / ')};標籤不在上的:${notVertical.map((row) => row.field).join('、') || '無'}`)
+      // DT-label:閱讀情境的標籤 = fg-secondary(../Field/field.spec.md「閱讀情境」)
+      const wrongColor = g.rows.filter((row) => row.color !== g.secondary)
+      check(`DT-label${tag}`, wrongColor.length === 0, `標籤色 ${[...new Set(g.rows.map((row) => row.color))].join(' / ')}(fg-secondary ${g.secondary})`)
+      // DT-gap:標頭 → 第一欄 = tight(規則 2)、最後一欄 → 底 = 與頂部同值(規則 4 第 4 列 hug)
+      check(`DT-gap${tag}`, near(g.firstGap, g.tight) && near(g.bottomGap, g.tight), `標頭 → 第一欄 ${fmtPx(g.firstGap)}、最後一欄 → 底 ${fmtPx(g.bottomGap)}(規格 tight ${g.tight})`)
+      // DT-mark:打開詳情的那一段帶 data-detail-open(維持滑過色)
+      check(`DT-mark${tag}`, g.tileOpen, `「設計審查」那一段${g.tileOpen ? '' : '沒有'}帶 data-detail-open`)
+      // DT-esc:Esc 關詳情、焦點回打開它的那一段
+      await page.keyboard.press('Escape')
+      const closed = await waitSel(detailSel, 'closed')
+      await frames(4)
+      const escFocus = await page.evaluate(() => document.activeElement?.getAttribute('data-calendar-event-id') === 'd1')
+      check(`DT-esc${tag}`, closed && escFocus, `Esc 後詳情${closed ? '關了' : '沒關'}、焦點${escFocus ? '回到「設計審查」' : '不在「設計審查」'}`)
+      if (density !== 'md' || mutate) continue
+      // DT-commit / DT-blank(只在一般密度、正式跑):改標題 → 月格跟著換;清空提交 → 還原原值
+      const tileSel = '[data-calendar-tile][data-calendar-event-id="d1"]'
+      const editTitle = async (text) => {
+        await page.click(tileSel)
+        if (!(await waitSel(detailSel, 'open'))) return false
+        await page.click(`${detailSel} [data-slot="surface-header"] button`)
+        const input = await page.waitForSelector(`${detailSel} [data-slot="surface-header"] input`, { timeout: 5000 }).catch(() => null)
+        if (!input) return false
+        await input.fill(text)
+        await page.keyboard.press('Enter')
+        await frames(4)
+        return true
+      }
+      const okCommit = await editTitle('設計審查(第二輪)')
+      const tileName1 = await axNameOf(`document.querySelector(${JSON.stringify(tileSel)})`)
+      const detailName1 = await axNameOf(`document.querySelector(${JSON.stringify(detailSel)})`)
+      check('DT-commit', okCommit && /^設計審查(第二輪),/u.test(tileName1 ?? '') && detailName1 === '設計審查(第二輪)', `改標題後月格「${tileName1}」、詳情名稱「${detailName1}」`)
+      await page.keyboard.press('Escape'); await waitSel(detailSel, 'closed'); await frames(2)
+      const okBlank = await editTitle('')
+      const tileName2 = await axNameOf(`document.querySelector(${JSON.stringify(tileSel)})`)
+      check('DT-blank', okBlank && /^設計審查(第二輪),/u.test(tileName2 ?? ''), `清空提交後月格「${tileName2}」(規格:清空 = 還原原值)`)
+      await page.keyboard.press('Escape'); await waitSel(detailSel, 'closed')
+    }
+    // DT-list:從「+N」清單開(設計規格「狀態行為:從清單開詳情」,7/22 星期三 = 正中那一欄 → 往右):清單不關、詳情貼著清單外緣 8、上緣對齊那一列;
+    // Esc 一次一層:第一下關詳情、焦點回那一列,第二下關清單、焦點回「+N」
+    const p = await open(STORY.detailFromList, { label: '從清單開詳情', mutate })
+    if (!p) return
+    const listSel = `[data-calendar-more-list="${MORE_DAY}"]`
+    if (!(await waitSel(detailSel, 'open'))) { instrumentFails.push({ cell: 'DT-list', detail: 'play 打開的詳情等不到(story 改了?)' }); return }
+    if (mutate?.detailDom) await page.evaluate(mutate.detailDom)
+    await frames(3)
+    const l = await page.evaluate(({ d, s }) => {
+      const detail = document.querySelector(d), list = document.querySelector(s)
+      const row = list?.querySelector('[data-calendar-event-id="c3"]')
+      if (!detail || !list || !row) return null
+      const dr = detail.getBoundingClientRect(), lr = list.getBoundingClientRect(), rr = row.getBoundingClientRect()
+      return { gap: dr.left - lr.right, top: dr.top, rowTop: rr.top, rowOpen: row.hasAttribute('data-detail-open') }
+    }, { d: detailSel, s: listSel })
+    check('DT-list', Boolean(l) && near(l.gap, 8) && near(l.top, l.rowTop) && l.rowOpen,
+      l ? `詳情左緣 − 清單右緣 ${fmtPx(l.gap)}(規格 8)、詳情上緣 ${fmtPx(l.top)} / 那一列上緣 ${fmtPx(l.rowTop)}、那一列${l.rowOpen ? '' : '沒有'}帶 data-detail-open` : '找不到清單 / 詳情 / 那一列')
+    await page.keyboard.press('Escape')
+    const detailClosed = await waitSel(detailSel, 'closed')
+    await frames(4)
+    const first = await page.evaluate(({ s }) => ({ listOpen: Boolean(document.querySelector(s)), onRow: document.activeElement?.getAttribute('data-calendar-event-id') === 'c3' }), { s: listSel })
+    await page.keyboard.press('Escape')
+    const listClosed = await waitSel(listSel, 'closed')
+    await frames(4)
+    const onMore = await page.evaluate((day) => document.activeElement === document.querySelector(`[data-calendar-more="${day}"]`), MORE_DAY)
+    check('DT-esc-layers', detailClosed && first.listOpen && first.onRow && listClosed && onMore,
+      `第一下 Esc:詳情${detailClosed ? '關了' : '沒關'}、清單${first.listOpen ? '還在' : '被關了'}、焦點${first.onRow ? '回那一列' : '不在那一列'};第二下:清單${listClosed ? '關了' : '沒關'}、焦點${onMore ? '回「+N」' : '不在「+N」'}`)
+  },
   async todayFirst(mutate) {
     await context.clock.setFixedTime(new Date(2026, 6, 1, 10, 0, 0))
     const first = await open(STORY.inspector, { label: 'Inspector 今天 = 7/1', args: 'today:!undefined', mutate })
@@ -1738,6 +1868,16 @@ const MUTANTS = [
   { name: '標題列跟著捲(外殼自己捲、內文區不捲)', block: 'moreList', expect: ['ML-sticky@md', 'ML-sticky@lg'], css: '[data-calendar-more-list] { overflow-y: auto !important; } [data-calendar-more-list] [data-slot="surface-body"] { flex: none !important; overflow: visible !important; }' },
   { name: '清單底部沒有內距(最後一列貼底)', block: 'moreList', expect: ['ML-bottom@md', 'ML-bottom@lg'], css: '[data-calendar-more-list] [data-slot="surface-body"] { padding-bottom: 0 !important; }' },
   { name: '點外面關清單後焦點被搶回「+N」', block: 'moreList', expect: ['ML-outside@md', 'ML-outside@lg'], dom: () => document.addEventListener('pointerup', (e) => { if (e.target instanceof Element && e.target.closest('[data-calendar-more], [data-calendar-more-list]')) return; setTimeout(() => document.querySelector('[data-calendar-more="2026-07-22"]')?.focus(), 30) }, true) },
+  // DT 事件詳情浮層:每一格一個退步
+  { name: '詳情拿掉 aria-label(浮層沒有名字 / 念成隱形編輯鈕)', block: 'detail', expect: ['DT-name@md', 'DT-name@lg'], detailDom: () => document.querySelector('[data-calendar-event-detail]')?.removeAttribute('aria-label') },
+  { name: '標題列沒用可編輯標題的 slot(× 佔位回到一行字高)', block: 'detail', expect: ['DT-head@md', 'DT-head@lg'], css: '[data-calendar-event-detail] [data-slot="surface-header"] { --surface-chrome-slot-h: calc(var(--font-body-size) * 1.5) !important; }' },
+  { name: '詳情開在事件下方(沒有側邊開、頂端對齊)', block: 'detail', expect: ['DT-side@md', 'DT-side@lg'], css: '[data-calendar-event-detail] { margin-top: 40px !important; }' },
+  { name: '欄位改回水平排(標籤在左)', block: 'detail', expect: ['DT-vertical@md', 'DT-vertical@lg'], css: '[data-calendar-detail-field] { display: grid !important; grid-template-columns: 96px minmax(0, 1fr) !important; }' },
+  { name: '標籤沒套閱讀情境(主色)', block: 'detail', expect: ['DT-label@md', 'DT-label@lg'], css: '[data-calendar-detail-field] label { color: var(--foreground) !important; }' },
+  { name: 'body 底部改成 48(大容器的 bottom)', block: 'detail', expect: ['DT-gap@md', 'DT-gap@lg'], css: '[data-calendar-event-detail] [data-popover-body] { padding-bottom: 48px !important; }' },
+  { name: '打開詳情的那一段沒有標記', block: 'detail', expect: ['DT-mark@md', 'DT-mark@lg'], detailDom: () => document.querySelectorAll('[data-detail-open]').forEach((el) => el.removeAttribute('data-detail-open')) },
+  { name: 'Esc 關詳情後焦點不回事件', block: 'detail', expect: ['DT-esc@md', 'DT-esc@lg'], detailDom: () => document.querySelectorAll('[data-calendar-event-id]').forEach((el) => { el.focus = () => {} }) },
+  { name: '從清單開時詳情沒貼著清單(往右偏 40)', block: 'detail', expect: ['DT-list'], css: '[data-calendar-event-detail] { margin-left: 40px !important; }' },
   // 必須最後一個(todayFirst 會釘住時鐘,見該區塊註解)
   { name: '1 號的實心底被壓成 24 寬', block: 'todayFirst', expect: ['R1'], css: '[data-calendar-day="2026-07-01"] { padding: 0 !important; max-width: var(--tag-height-md) !important; }' },
 ]

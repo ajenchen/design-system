@@ -92,7 +92,7 @@ Calendar 是**看事件的頁面 canvas**:在一段日期範圍裡瀏覽、定�
   events={CalendarEvent[]}
   onDateClick={(date) => …}               // 日期格:二擇一 —— 可點(在這天新增)
   readOnlyDates                           //   或唯讀
-  eventDetail={{ onEventChange, isEditable?, actions?, renderExtra? }}  // 事件方塊:三擇一 —— 內建詳情浮層
+  eventDetail={{ onEventChange, isEditable?, actions?, renderExtra?, categories? }}  // 事件方塊:三擇一 —— 內建詳情浮層
   onEventClick={(event, { anchor }) => …} //   或產品自己開(anchor = 被點的那一列 / 那一段)
   readOnlyEvents                          //   或整個月曆的事件唯讀
   onCreateEvent={() => …}                 // 右上角「新事件」;必填、恆渲染
@@ -112,7 +112,7 @@ Calendar 是**看事件的頁面 canvas**:在一段日期範圍裡瀏覽、定�
 />
 ```
 
-- `eventDetail.onEventChange(event, patch)` 必填(M23(f):沒有內建 fallback 的回呼必填);`isEditable(event)` 預設全部可編,`false` = 詳情只能看;`actions(event)` 放標題列操作位;`renderExtra(event)` 放標準欄位下方的額外欄位。
+- `eventDetail.onEventChange(event, patch)` 必填(M23(f):沒有內建 fallback 的回呼必填);`patch` 只帶這一次改到的欄位(`title` / `start` / `end` / `allDay` / `location` / `description` / `categoryId` + `color`),時間一律是本地牆上時間字串(全天的 `end` 照舊不含);`event` = 當下 `events` 裡最新的那一筆。`isEditable(event)` 預設全部可編,`false` = 詳情只能看;`actions(event)` 放標題列操作位;`renderExtra(event)` 放標準欄位下方的額外欄位(同一個 FieldGroup 裡);`categories` = 類別清單 `{ id, name, color }[]`,沒傳就沒有「類別」欄【COLORFIELD(定)】。型別 `CalendarEventDetail` / `CalendarEventPatch` / `CalendarCategory` 從根出口匯出。
 - **顯示用時區 `timeZone` 第二段再定,第一段不開**【AI 推導;決策總帳 2026-11-25 AI 判定(工程,照「四種檢視」的「未實作的能力不預佔 API」)】:只讓時間字跟著另一個時區、格子與「今天」照瀏覽器時區分,兩者會互相矛盾 —— 23:30+08:00 的事件在 `Asia/Tokyo` 顯示「上午12:30」,卻畫在 7/15 那格;要做就得讓格子、「今天」與時間字一起換時區(`@date-fns/tz` 要加成直接依賴,目前只是 react-day-picker 帶進來的),屬於第二段的範圍。第一段的格子、「今天」與時間字一律用瀏覽器時區(見「資料語意」時區那條)。
 - 新增的名字【AI 推導】:`moreListMaxHeight` 照 `../../../ds-canonical/references/props-naming.md`「尺寸參數」的「子部位」與「上下限 `max*`」兩列推得;其餘名字實作時過 AGENTS.md「命名 3 重 test」。
 
@@ -147,6 +147,7 @@ interface CalendarEvent {
   color?: CategoricalColor    // 12 類別色相 + 'neutral'(與 Tag / Avatar 共用,型別在 categorical-color.ts);neutral 的長條 / 滑過 / 色條在同檔 CAT_EVENT_NEUTRAL
   location?: string           // 詳情的「地點」
   description?: string        // 詳情的「說明」
+  categoryId?: string         // 詳情的「類別」= eventDetail.categories 裡某一個的 id【COLORFIELD(定)】
   readOnly?: boolean          // 只有這一筆唯讀
   metadata?: Record<string, unknown>  // 自由資料,renderEventTile 讀
 }
@@ -162,7 +163,7 @@ interface CalendarEvent {
 - **午夜結束**(22:00 – 隔天 00:00):`end` 不含,所以只畫在開始那天;不可把「午夜結束」當成全天。
 - **時區**:帶 offset 或 `Z` = 絕對時間;不帶 offset 的時刻 = 本地時間;只有日期 = 不帶時區的「那一天」。第一段的格子、「今天」與時間字一律用瀏覽器時區;顯示用時區參數 `timeZone` 第二段再定(見「API(第一段)」下方那條)。逐日計算一律用日曆日(`date-fns` `addDays`),不用「+ 86400000 毫秒」(日光節約那天會錯一天);「滿 24 小時」用實際時間差判。
 - **異常資料**:`start` 晚於 `end` → 當成開始那一刻的零長度事件畫在開始那天,開發期警告。
-- **時間顯示**:月格只顯示**開始時間**,詳情顯示完整起訖;預設 `Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit' })`(zh-TW「上午10:00」、en-US「10:00 AM」),`eventTimeFormat` 可覆寫(傳了就整份取代預設、不合併;同名參數 FullCalendar `eventTimeFormat`,<https://fullcalendar.io/docs/eventTimeFormat>)。畫在哪【AI 推導】:有時段事件的標題前;滿 24 小時的有時段長條只在含真起點的那一段(`segment.isStart`)標題前;全天不畫;窄寬時都不畫(「窄寬度」(1))。事件的讀屏名稱用同一個格式(「A11y 預設」事件列)。
+- **時間顯示**:月格只顯示**開始時間**,詳情顯示完整起訖;預設 `Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit' })`(zh-TW「上午10:00」、en-US「10:00 AM」),`eventTimeFormat` 可覆寫(傳了就整份取代預設、不合併;同名參數 FullCalendar `eventTimeFormat`,<https://fullcalendar.io/docs/eventTimeFormat>)。畫在哪【AI 推導】:有時段事件的標題前;滿 24 小時的有時段長條只在含真起點的那一段(`segment.isStart`)標題前;全天不畫;窄寬時都不畫(「窄寬度」(1))。事件的讀屏名稱用同一個格式(「A11y 預設」事件列)。詳情時間欄的時間也用同一份(`eventTimeFormat` 或預設),同一個畫面只有一種時間寫法(見「事件詳情浮層」時間欄)【AI 推導】。
 - **語系**【Q9(定)】:`locale` 預設 `'zh-TW'`(Calendar / DatePicker / TimePicker 同一批改);標題、星期名、時間格式都跟 `locale` 走。
 - **週起始日**【WS(定)】:`weekStartsOn` 是本元件自己的參數,有傳就用;沒傳時從語系推,來源一律 `Intl` 的 CLDR 週資料(zh-TW 週日、zh-CN 週一)—— 不讀 `date-fns` 語系物件(`date-fns` 的 zh-TW 是週一,與 CLDR 不同【總帳更正 #2】)。同一條規則管日期選擇器與表格「本週」篩選(總帳 WS(定))。世界級同派(元件參數優先、沒給才從語系的 CLDR 推):React Aria(<https://react-aria.adobe.com/Calendar>、<https://github.com/adobe/react-spectrum/blob/main/packages/@internationalized/date/src/queries.ts>)、Atlassian(<https://atlassian.design/components/calendar/code>、<https://unpkg.com/@atlaskit/locale@5.5.0/dist/es2019/internal/localization-provider/get-week-info.js>)、MUI X Scheduler(<https://mui.com/x/react-scheduler/event-calendar/localization/>)。`Intl` 的 weekInfo 不支援時要有後備表(實作時查)。
 
@@ -302,32 +303,36 @@ interface CalendarEvent {
 
 **鍵盤與焦點**:清單裡可點的事件列是原生 `<button>`(不在格陣裡,沒有 gridcell 的限制)【AI 推導】,所以開啟時焦點落在第一筆事件(DS 規則:body 第一個表單控件,`../Popover/popover.spec.md`「A11y 預設」);整張都是唯讀事件時落在浮層容器本身,讀屏念出標題日期。`Tab` 在浮層裡繞圈;`Esc` 關清單、焦點回「+N」;點外面關清單、焦點留在點的地方(`../../../ds-canonical/references/keyboard-model-canonical.md`「關了之後焦點去哪」)。清單開著時格子變高(視窗、容器、密度)、那一格不再溢出、「+N」不畫:清單留著,關掉時焦點回這一天的日期停靠點(「+N」已不在)【AI 推導】。MUI X 的 More Events 浮層也是 Esc 關(<https://github.com/mui/mui-x/blob/master/docs/data/scheduler/accessibility/accessibility.md>)。
 
-**點清單裡的事件**【C4、總帳更正 #4】:**在旁邊再開詳情浮層,清單留著**;被點那一列在詳情開著時維持它自己的滑過色【AI 推導】。`eventDetail` 與 `onEventClick` 兩條路都一樣:清單不先關,`onEventClick` 帶 `{ anchor }` = 被點的那一列;產品的浮層畫在 Calendar 元件樹外,也算清單那一層的內部(`../../patterns/overlay-surface/overlay-surface.spec.md`「A11y 預設」的「Esc / 點外面關閉」條),點它不關清單;做法實作前寫 POC。Esc 一次關一層。浮層疊浮層的總則:`../Popover/popover.spec.md`「禁止事項」(少用、不寫死層數【C4b】)。世界級:Google Calendar 從 overview 點事件,詳情緊貼 overview 旁、overview 保留、Esc 一次只關最上層(<https://calendar.google.com/calendar/embed?src=j7gov1cmnqr9tvg14k621j7t5c%40group.calendar.google.com&src=3haig2m9msslkpf2tn1h56nn9g%40group.calendar.google.com&src=en.usa%23holiday%40group.v.calendar.google.com&mode=MONTH&dates=20261201%2F20261228&ctz=UTC&hl=en>);Toast UI 兩層並存(<https://github.com/nhn/tui.calendar/blob/main/apps/calendar/src/slices/popup.ts>);Syncfusion 從 more 浮層點不關 more(<https://github.com/syncfusion/ej2-javascript-ui-controls/blob/master/controls/schedule/src/schedule/popups/quick-popups.ts>);MUI X dialog 在旁邊、浮層留在後面(<https://github.com/mui/mui-x/blob/master/docs/data/scheduler/accessibility/accessibility.md>)。反面教材:FullCalendar 與 React Big Calendar 的 more 浮層一遇到外部 mousedown 就關,開發者自己的詳情一被點,清單就關(<https://github.com/fullcalendar/fullcalendar/blob/main/packages/preact/src/common/MorePopover.tsx>、<https://github.com/jquense/react-big-calendar/blob/master/src/Month.js>)。
+**點清單裡的事件**【C4、總帳更正 #4】:**在旁邊再開詳情浮層,清單留著**;被點那一列在詳情開著時維持它自己的滑過色【AI 推導】。`eventDetail` 與 `onEventClick` 兩條路都一樣:清單不先關,`onEventClick` 帶 `{ anchor }` = 被點的那一列;**產品用 DS 浮層(`Popover` 等)、錨在那一列上**時,那個浮層算清單那一層的內部,點它、點它裡面欄位自己的浮層都不關清單(判準與做法:`../../lib/overlay-nesting.ts`「從這一層開出來的另一層」—— 錨點在清單裡、而且比清單晚開;規則住 `../../patterns/overlay-surface/overlay-surface.spec.md`「A11y 預設」的「Esc / 點外面關閉」條);產品用非 DS 的浮層(直接用 Radix 或別的套件)時清單會被關 —— 沒登記的浮層一律不算子層(`overlay-nesting.ts:27`「寧可多關,不可不關」),寫在 `onEventClick` 的說明裡。內建詳情的錨點元素就是那一列(上下取那一列、左右取清單外框,見「事件詳情浮層」位置)。Esc 一次關一層。浮層疊浮層的總則:`../Popover/popover.spec.md`「禁止事項」(少用、不寫死層數【C4b】)。世界級:Google Calendar 從 overview 點事件,詳情緊貼 overview 旁、overview 保留、Esc 一次只關最上層(<https://calendar.google.com/calendar/embed?src=j7gov1cmnqr9tvg14k621j7t5c%40group.calendar.google.com&src=3haig2m9msslkpf2tn1h56nn9g%40group.calendar.google.com&src=en.usa%23holiday%40group.v.calendar.google.com&mode=MONTH&dates=20261201%2F20261228&ctz=UTC&hl=en>);Toast UI 兩層並存(<https://github.com/nhn/tui.calendar/blob/main/apps/calendar/src/slices/popup.ts>);Syncfusion 從 more 浮層點不關 more(<https://github.com/syncfusion/ej2-javascript-ui-controls/blob/master/controls/schedule/src/schedule/popups/quick-popups.ts>);MUI X dialog 在旁邊、浮層留在後面(<https://github.com/mui/mui-x/blob/master/docs/data/scheduler/accessibility/accessibility.md>)。反面教材:FullCalendar 與 React Big Calendar 的 more 浮層一遇到外部 mousedown 就關,開發者自己的詳情一被點,清單就關(<https://github.com/fullcalendar/fullcalendar/blob/main/packages/preact/src/common/MorePopover.tsx>、<https://github.com/jquense/react-big-calendar/blob/master/src/Month.js>)。
 
 ## 事件詳情浮層
 
 **定位**【C7、Q5(定)】:閱讀為主、偶爾就地改一欄 —— 正是 `../InlineEdit/inline-edit.spec.md:119-120`「detail pane metadata 就地編輯」「這個值大部分時間是被閱讀的,偶爾才編輯」;同檔 `:127`「多欄位一次編輯 → 用表單(進入一次編輯全部欄位)」講的是一次進入編輯全部欄位的表單,不適用這裡。所以詳情浮層由 `Field` 組成,可編輯的欄位走 `InlineEdit`;「全天」是自己一個 Field(開關)。這不是「內容多」:內容多 = 要一次填寫多個欄位(表單)或篩選資料(`../Popover/popover.spec.md`「禁止事項」)。世界級:Notion Calendar 在面板就地改欄位(<https://www.notion.com/help/manage-your-calendars-and-events>)、MUI X 在浮動對話框裡直接改、有全天開關(<https://github.com/mui/mui-x/blob/master/packages/x-scheduler/src/internals/utils/dialog-utils.ts>)、Apple 打開事件後直接改時間地點(<https://support.apple.com/guide/calendar/add-modify-or-delete-events-icalwr13-events/27.0/mac/27>)。反例:Google Calendar 要按 Edit event 進編輯再存(<https://support.google.com/calendar/answer/72143?hl=en&co=GENIE.Platform%3DDesktop>)、Outlook 選事件後按 Edit(<https://support.microsoft.com/en-US/outlook/create-modify-or-delete-a-meeting-request-or-appointment-in-outlook-on-the-web>)。
 
-**外殼**:`PopoverContent`(非 modal)+ `PopoverHeader` + `PopoverBody`;寬先用 Popover 預設,不夠才傳 `width` 數字,不新增寬度檔位。字級吃整頁預設字級 14px【F1(定)】,欄位的字由 Field / InlineEdit 自帶。
+**外殼**:`PopoverContent`(非 modal)+ `PopoverHeader` + `PopoverBody`;寬先用 Popover 預設,不夠才傳 `width` 數字,不新增寬度檔位(實量結果見下方「寬」)。字級吃整頁預設字級 14px【F1(定)】,欄位的字由 Field / InlineEdit 自帶。**內距**:標題列是標準 `PopoverHeader`(標題列下有分隔線),body 用 `PopoverBody` 預設,不加任何內距 class —— 標頭 → 第一個欄位 = `tight`(`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 2)、最後一個欄位 → 底 = 與頂部同值(同檔規則 4 第 4 列:浮層不擋頁面、高度貼著內容 = hug)、左右 `loose`;垂直排的就地編輯框外伸 `--field-bleed`(13)進這 16 裡(`../Field/field.spec.md`「閱讀情境」容器內距 ≥ `--field-bleed`)。
 
 **標題列**【AI 推導,預覽時請 user 看】:事件標題是 `InlineEdit`(預設 `<Input>`),放在 `PopoverTitle` 的位置、不包成 Field —— DS 浮層標題只住標題區、不得在內容裡手刻標題(`../Popover/popover.spec.md`「Title typography canonical」),InlineEdit「何時用」第一條就是標題就地編輯(`inline-edit.spec.md:118`)。字級 14 + `font-medium`;InlineEdit `sm` view 態 28 高,所以標題列 = 28 + 上下 12 = 52、view / edit 兩態同高,× 的佔位要跟這一行同高(浮層標題列 × 佔位跟著標題行高是跨元件工作)。浮層的名字 = 事件標題本身(不得把隱形編輯鈕的「編輯 …」字樣算進去,編輯中也不能變空)。標題清空後提交 = 還原原值。標題列操作位(〔操作〕〔分隔線〕〔×〕)放 `eventDetail.actions(event)` 的內容;刪除這類破壞性動作預設收進「⋯」選單(`../../patterns/action-bar/action-bar.spec.md:123`);沒有「儲存」鈕、沒有 footer(每個欄位自己提交)。
 
-**內文欄位**(horizontal `Field` + `FieldLabel`,包在 `FieldGroup labelWidth` 裡)【由 Field 組成、可編輯欄位走 InlineEdit、全天自己一個 Field = Q5(定);有哪些欄位、各欄平常 / 編輯的長相 = AI 推導,除非另標】:
+**內文欄位**(**垂直排**:`Field` + `FieldLabel`、標籤在上(Field 預設方向),包在一個 `FieldGroup` 裡)【由 Field 組成、可編輯欄位走 InlineEdit、全天自己一個 Field = Q5(定);垂直排 = FIELD-ORIENT(定);有哪些欄位、各欄平常 / 編輯的長相 = AI 推導,除非另標】。組裡有就地編輯 = **閱讀情境**(標籤次要色、垂直排框外伸、同組同高),規則與理由的唯一住所是 `../Field/field.spec.md`「閱讀情境」,本元件不另寫。同一組不混放純顯示與就地編輯:不能改的值一律 `InlineEdit editable={false}`(`../InlineEdit/inline-edit.spec.md:52`、`:126`)。
 
 | 欄位 | 平常 | 編輯 | 依據 |
 |---|---|---|---|
-| 時間 | 有時段「7月15日 週三 上午10:00 – 11:00」;全天「7月15日 – 17日」 | InlineEdit → **一個** `DatePicker.Range`,有時段時加 `showTime`(`../DatePicker/date-picker.spec.md:69`) | 【AI 推導,預覽時請 user 看】DS 已把日期 + 時間合在 `showTime`,事件又有起訖;全天的 `end` 不含、`DatePicker.Range` 的結束日含 → 進出換算一天 |
+| 時間 | 一段文字:`DatePicker.Range` 檢視 + `formatRange`(同一天自動合併、跨日寫兩端)【TIMEFIELD(定)】;日期段 = DatePicker 合併顯示的預設(數字年月日)、時間段 = 月格同一份 `eventTimeFormat`(預設 zh-TW「上午10:00」)—— 有時段例「2026/7/15 上午10:00至11:00」,全天例「2026/7/15至2026/7/17」(分隔字隨瀏覽器 ICU) | InlineEdit → **一個** `DatePicker.Range`,有時段時加 `showTime`(`../DatePicker/date-picker.spec.md:69`);兩端選好才提交 | 時間寫法與月格同一份【AI 推導,預覽時請 user 看:DatePicker 合併顯示自己的預設是 24 小時,行事曆改傳月格的寫法,同一個畫面只有一種時間寫法;編輯中的輸入框是 DatePicker 的輸入格式 `YYYY/MM/DD HH:MM`,與打字解析同一套】;全天的 `end` 不含、`DatePicker.Range` 的結束日含 → 進出換算一天(`calendar-layout.ts` `detailRangeOf` / `rangeToTimePatch`) |
 | 全天 | `Switch`,**直接切換**(不走 InlineEdit 的檢視 / 編輯兩態) | 同左 | 【Q5(定)】自己一個 Field;直接切換【AI 推導,預覽時請 user 看】:DS 就地編輯對 boolean 的既有規則是 direct toggle(`../DataTable/data-table.spec.md:557`) |
 | 地點 | 文字;空值顯示「加上地點…」 | InlineEdit 預設 `<Input>` | `inline-edit.spec.md`「空值」 |
-| 說明 | 多行文字 | InlineEdit `multiline` | `inline-edit.spec.md`「型別化 view + 多行 + 鍵盤 SSOT」 |
-| 顏色 | 類別色 Tag | InlineEdit → `Select`(view 走 tag 顯示);選項要能帶類別色(SelectMenu 選項 schema 上擴,M30) | 不用圓點(Badge dot 已佔用) |
-| 額外 | `eventDetail.renderExtra(event)` | 產品自己放 | 例:與會者、會議連結 |
+| 說明 | 多行文字;空值顯示「加上說明…」 | InlineEdit `multiline` | `inline-edit.spec.md`「型別化 view + 多行 + 鍵盤 SSOT」 |
+| 類別 | 類別 Tag(字 = 類別名、色 = 類別色;`Select` 檢視 `display="tag"`);空值顯示「選擇類別…」 | InlineEdit → `Select`(`display="tag"`,選項帶類別色 = `SelectOption.tagVariant`);選了 → `categoryId` 與 `color` 一起交回 | 【COLORFIELD(定)】欄名「類別」、產品傳 `{ id, name, color }` 清單、沒傳就不顯示;`color` 一起換【AI 推導:月格畫的是 `event.color`,同一下換才不會一筆事件兩種顏色】;不用圓點(Badge dot 已佔用) |
+| 額外 | `eventDetail.renderExtra(event)` | 產品自己放 | 例:與會者、會議連結;放在同一個 FieldGroup 裡(同一個閱讀情境範圍) |
 
-- **切換「全天」時的時間**【Q16(定)】:有時段切成全天 → 只留日期,記住原本的時間;切回有時段 → 記得就還原;原本就是全天的事件切成有時段 → 開始日 09:00 起、長度一小時(一小時為【AI 推導】)。切換時「時間」欄的編輯控件跟著換(有 / 沒有時間)。世界級:MUI X 切全天只隱藏時間欄、值留著,關掉後原時間回來(<https://mui.com/x/react-scheduler/event-calendar/preferences/>);Syncfusion 編輯既有事件時切全天值不動、會還原(<https://github.com/syncfusion/ej2-javascript-ui-controls/blob/master/controls/schedule/src/schedule/popups/event-window.ts>)。
+欄位順序 = 上表由上而下(時間 → 全天 → 地點 → 說明 → 類別 → 額外)【AI 推導】。
+
+**寬**:Popover 預設寬(18rem = 288)。【實量結果寫在本段末,見下方「寬的實量」】
+
+- **切換「全天」時的時間**【Q16(定)】:有時段切成全天 → 只留日期,記住原本的時間;切回有時段 → 記得就還原;原本就是全天的事件切成有時段 → 開始日 09:00 起、長度一小時(一小時為【AI 推導】)。切換時「時間」欄的編輯控件跟著換(有 / 沒有時間)。記住的時間是 **UI 記憶、不是事件資料**:只存在 Calendar 存活期間(重新整理就沒了)【AI 推導】,不違反「禁止事項」第 2 條 —— 詳情顯示的一律是 `events` 裡那一筆的值,consumer 沒把 patch 寫回時詳情照舊。切換一律從當下最新的那一筆算(`calendar-layout.ts` `toggleAllDayPatch`;寫回的時刻是牆上時間字串,不是加毫秒,日光節約那天也是 09:00 – 10:00)。世界級:MUI X 切全天只隱藏時間欄、值留著,關掉後原時間回來(<https://mui.com/x/react-scheduler/event-calendar/preferences/>);Syncfusion 編輯既有事件時切全天值不動、會還原(<https://github.com/syncfusion/ej2-javascript-ui-controls/blob/master/controls/schedule/src/schedule/popups/event-window.ts>)。
 - 【AI 推導】可編輯時空欄位照樣列出(顯示 placeholder);`isEditable` 為 false 時空欄位不列、各欄位 InlineEdit `editable={false}`(不亮、不灰,`inline-edit.spec.md`「editable 閘」)、開關 `Switch mode="view"`(`../Switch/switch.spec.md:156`)。
 - Body 上下內距由容器給(`PopoverBody` = hug),欄位之間照 FieldGroup 既有間距,不另訂。
 
-**位置**【AI 推導】:錨點 = 被點的那個元素(格內事件列、那一段長條、清單裡那一列);**側邊開、頂端對齊**:`side` 朝格陣中央(星期左半邊的欄往右開、右半邊往左開)、`align="start"`、`sideOffset` 8、`collisionPadding` 8,放不下自動翻面。從清單打開時水平貼著清單浮層的外緣、垂直對齊被點那一列的上緣。改了日期讓事件移到別天:新位置還在畫面上 → 跟過去;不在 → 留在原位。世界級:Google Calendar 詳情在事件旁、頂端對齊(<https://calendar.google.com/calendar/embed?src=j7gov1cmnqr9tvg14k621j7t5c%40group.calendar.google.com&mode=MONTH&dates=20261201%2F20261228&ctz=UTC&hl=en>);Toast UI 開在右側、放不下翻左(<https://github.com/nhn/tui.calendar/blob/main/apps/calendar/src/components/popup/eventDetailPopup.tsx>)。
+**位置**【AI 推導】:錨點 = 被點的那個元素(格內事件列、那一段長條、清單裡那一列);**側邊開、頂端對齊**:`side` 朝格陣中央(星期左半邊的欄往右開、右半邊往左開;正中那一欄往右;跨多欄的長條以點擊點所在的欄判斷,鍵盤打開時以進格那一天判斷)、`align="start"`、`sideOffset` 8、`collisionPadding` 8(Popover 預設),放不下自動翻面。從清單打開時水平貼著清單浮層的外緣、垂直對齊被點那一列的上緣(虛擬錨點:左右取清單外框、上下取那一列,錨點元素 = 那一列)。改了日期讓事件移到別天:新位置還在畫面上 → 跟過去(換一個新的錨點物件,Radix 只在錨點物件換了才重算;`../Popover/popover.tsx` PopoverAnchor 上方「換錨點 = 換一個包裝物件」);不在 → 留在原位(回上一次量到的矩形,不回 0×0)。被點的那一段 / 那一列在詳情開著時維持自己的滑過色(`data-detail-open`;色表 `../../tokens/categorical-color.ts` `CAT_EVENT_OPEN` / `CAT_EVENT_NEUTRAL.open`、透明列 `--neutral-hover`),格陣裡與清單裡都套【AI 推導】。世界級:Google Calendar 詳情在事件旁、頂端對齊(<https://calendar.google.com/calendar/embed?src=j7gov1cmnqr9tvg14k621j7t5c%40group.calendar.google.com&mode=MONTH&dates=20261201%2F20261228&ctz=UTC&hl=en>);Toast UI 開在右側、放不下翻左(<https://github.com/nhn/tui.calendar/blob/main/apps/calendar/src/components/popup/eventDetailPopup.tsx>)。
 
 **本元件的層次**:清單浮層 → 詳情浮層 → 欄位自己的日曆 / 時間浮層(欄位控件自己開的彈出層,與表格篩選面板裡的下拉同一類)。產品真的需要一次填很多欄位(邀請與會者、重複規則)時,才改對話框 / 側邊面板 —— 由產品在 `actions` 放「開完整編輯」【AI 推導】。
 
