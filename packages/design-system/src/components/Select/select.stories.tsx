@@ -9,6 +9,8 @@ import { DataTable } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types'
 import { CATEGORY_OPTIONS as categoryOptions } from '@/design-system/stories-helpers/data/product-catalog'
 import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { WORK_ITEM_STATUSES, WORK_ITEM_TYPES, workItemTypeBadge } from '@/design-system/stories-helpers/scene/work-item-type'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 
 const statusOptions: SelectOption[] = [
   { value: 'in_stock', label: 'In stock', tagVariant: 'green' },
@@ -335,6 +337,64 @@ export const RemoteSearch: Story = {
 }
 
 /* ── DataTable 整合 ── */
+/* ── 選項前綴:工作項類型方塊 + 狀態色(2026-11-26,workspace F 組 F4-2)── */
+// 建立工作項時選類型與狀態:類型選項前面是類型方塊(`startContent`,LucideIcon 表達不了的彩底 + glyph),
+// 狀態選項是圖示 + 語意色(`icon` + `iconClassName`)。欄位上的已選值前綴跟著選中項畫(select.spec.md 圖示對照表)。
+// play 斷言:類型清單每一列都有自訂前綴節點、已完成那一列與欄位上的圖示都是 success 色 —— 轉發一斷就紅,並點名是哪一列。
+const workItemTypeOptions: SelectOption[] = WORK_ITEM_TYPES.map((t) => ({ value: t.value, label: t.label, description: t.description, startContent: workItemTypeBadge(t.value) }))
+const workItemStatusOptions: SelectOption[] = WORK_ITEM_STATUSES.map((s) => ({ value: s.value, label: s.label, icon: s.icon, iconClassName: s.iconClassName }))
+
+export const OptionPrefix: Story = {
+  name: '選項前綴:工作項類型',
+  parameters: { docs: { description: { story: '建立工作項時選類型與狀態。類型選項前面是類型方塊(選項的 `startContent`),狀態選項是圖示加語意色(`icon` + `iconClassName`);欄位上已選的值前面也畫同一個方塊或同色圖示。' } } },
+  render: () => {
+    const [type, setType] = React.useState('bug')
+    const [status, setStatus] = React.useState('done')
+    return (
+      <div className="flex flex-wrap gap-[var(--layout-space-loose)]">
+        <Field className="w-56">
+          <FieldLabel>類型</FieldLabel>
+          <Select options={workItemTypeOptions} value={type} onChange={setType} />
+        </Field>
+        <Field className="w-56">
+          <FieldLabel>狀態</FieldLabel>
+          <Select options={workItemStatusOptions} value={status} onChange={setStatus} />
+        </Field>
+      </div>
+    )
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const body = within(canvasElement.ownerDocument.body)
+    const successColor = (() => {
+      const probe = canvasElement.ownerDocument.createElement('span')
+      probe.className = 'text-success'
+      canvasElement.appendChild(probe)
+      const c = getComputedStyle(probe).color
+      probe.remove()
+      return c
+    })()
+    // 欄位上的已選值:類型 = 方塊(startContent)、狀態 = 已完成的圖示是 success 色
+    const [typeTrigger, statusTrigger] = canvas.getAllByRole('combobox')
+    await expect(typeTrigger.querySelector('[aria-hidden].size-4')).not.toBeNull()
+    await expect(getComputedStyle(statusTrigger.querySelector('svg')!).color).toBe(successColor)
+    // 類型清單:每一列都有自訂前綴節點
+    await userEvent.click(typeTrigger)
+    const typeRows = await body.findAllByRole('option')
+    for (const row of typeRows) {
+      await expect(row.querySelector('[data-prefix-type="content"]'), `類型選項「${row.textContent}」沒有前綴節點`).not.toBeNull()
+    }
+    await userEvent.click(typeTrigger)
+    await waitFor(() => expect(body.queryAllByRole('option')).toHaveLength(0))
+    // 狀態清單:已完成那一列的圖示是 success 色
+    await userEvent.click(statusTrigger)
+    const doneRow = await body.findByRole('option', { name: /已完成/ })
+    await expect(getComputedStyle(doneRow.querySelector('[data-prefix-type="icon"] svg')!).color, '「已完成」那一列的圖示沒有套 iconClassName').toBe(successColor)
+    await userEvent.click(statusTrigger)
+    await waitFor(() => expect(body.queryAllByRole('option')).toHaveLength(0))
+  },
+}
+
 export const InDataTable: Story = {
   name: 'DataTable 整合',
   parameters: { docs: { description: { story: '表格裡的選項欄預設顯示選項的文字;需要彩色標籤時,在欄位設定裡改用標籤樣式。' } } },

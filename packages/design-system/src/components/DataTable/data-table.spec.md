@@ -261,7 +261,7 @@ Table 層級的模式切換，不是 column 層級:同一張表的列高只有�
 
 > **來源總帳(2026-09-04)**:2026-09-03 我曾把表頭一起推到右邊,並在此處寫成「Header 對齊永遠跟該欄 body cell 一致」——那句是**我自己推導的,不是 user 拍板**,且該次改動未經同意。已於 2026-09-04 撤回,本段為現行 SSOT。歷史事實一併記錄:`f8cec708`(2026-04-29,commit 主旨是 sort 重做)在標題與外層之間插入 `flex-1` 的排序點擊區,使外層的 `justify-end` 失去可分配空間,標題被推回最左 —— 在那之前標題文字實際上是靠右的(`text-right` 套在外層、內層 `TruncateCell` 為 `flex-1`)。也就是說「靠左」是那次副作用之後的狀態,而 user 要的正是這個狀態;現在由本段明文定為規格,不再依賴副作用。
 
-select/multiSelect 的 `meta.options` 消費 Select 的完整 `SelectOption` schema(M30 wrapper-extends-primitive;含 icon / iconClassName / description),`meta.selectedItemRenderer` 轉發 Select 同名 API 供 status 類彩色 cell(2026-07-08 補——原 `{value,label}` 窄型別 = 假 SSOT,WM 被迫手刻 bare trigger 實證)。
+select/multiSelect 的 `meta.options` 消費 Select 的完整 `SelectOption` schema(M30 wrapper-extends-primitive;含 icon / iconClassName / startContent / description —— iconClassName 在 2026-11-26 前被 Select 的轉換丟掉,這一句當時不成立;現經 `toSelectMenuOption` 逐鍵轉發),`meta.selectedItemRenderer` 轉發 Select 同名 API 供 status 類彩色 cell(2026-07-08 補——原 `{value,label}` 窄型別 = 假 SSOT,WM 被迫手刻 bare trigger 實證)。
 
 **依列可選項(`meta.getRowOptions`,select 欄;2026-11-26)**:同一欄每一列能選的值可以不同(例:工單狀態流轉,完成的單不能回到未開始)。`getRowOptions(row)` 回傳這一列的 `SelectOption[]`,只換**編輯器的選單**;格子顯示文字、篩選的值清單、排序的選項順序仍讀整欄 `meta.options`,所以 `options` 必須放完整清單(篩選與排序沒有「哪一列」可問)。實作 `./lib/row-select-options.ts`,cell-registry.tsx `SelectCell` 編輯態消費。
 

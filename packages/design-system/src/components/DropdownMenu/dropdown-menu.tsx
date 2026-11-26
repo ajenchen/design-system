@@ -4,7 +4,7 @@ import { ChevronRight, type LucideIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import type { AvatarData } from "@/design-system/components/Avatar/avatar"
-import { MenuItem } from "@/design-system/components/Menu/menu-item"
+import { MenuItem, type MenuItemProps } from "@/design-system/components/Menu/menu-item"
 import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
 import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING, OVERLAY_HIDE_WHEN_DETACHED, OVERLAY_AVAILABLE_HEIGHT, capHeight } from "@/design-system/tokens/elevation/overlay-geometry"
 import {
@@ -365,13 +365,20 @@ function buildEndContent(
   )
 }
 
+// ── 前綴槽(四種 item 共用)──
+// 仿 command.tsx `CommandItemMenuProps` 的 Pick 寫法:前綴槽的型別與說明直接取自 MenuItem(內層就是它),
+// MenuItem 以後新增前綴槽,型別自動跟上(2026-11-26,workspace F 組 F4-2;修前四種 item 只收 startIcon,
+// 2026-07-10 為類型徽章開的 MenuItem `startContent` 公開入口一個都用不到)。
+// startIcon / avatar / startContent 三選一(menu-item.spec.md「❌ startIcon / avatar / startContent 三者不可同時使用」);
+// startContent 節點尺寸 = ICON_SIZE[size],類型方塊每種 size 的規格待 C5 定案。
+type DropdownMenuPrefixProps = Pick<MenuItemProps, 'startIcon' | 'startIconClassName' | 'startContent'>
+
 // ── Item ──
 interface DropdownMenuItemProps
-  extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item>, 'children'> {
+  extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item>, 'children'>,
+    DropdownMenuPrefixProps {
   children: React.ReactNode
-  /** 左側 icon */
-  startIcon?: LucideIcon
-  /** 左側頭像資料（AvatarData），與 startIcon 互斥 */
+  /** 左側頭像資料（AvatarData），與 startIcon / startContent 互斥 */
   avatar?: AvatarData
   /** 次要說明文字 */
   description?: React.ReactNode
@@ -390,7 +397,7 @@ interface DropdownMenuItemProps
 const DropdownMenuItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Item>,
   DropdownMenuItemProps
->(({ className, children, startIcon, avatar, description, tag, badge, endIcon, shortcut, selected, disabled, ...props }, ref) => {
+>(({ className, children, startIcon, startIconClassName, startContent, avatar, description, tag, badge, endIcon, shortcut, selected, disabled, ...props }, ref) => {
   // 虛擬游標的框只在鍵盤模態下畫(對齊 :focus-visible 啟發式;SSOT = hooks/use-input-modality.ts)
   const cursorByKeyboard = useCursorMover() === 'keyboard'
   const size = useRowSize()
@@ -422,6 +429,8 @@ const DropdownMenuItem = React.forwardRef<
       <MenuItem
         size={size}
         startIcon={startIcon}
+        startIconClassName={startIconClassName}
+        startContent={startContent}
         avatar={avatar}
         description={description}
         tag={tag}
@@ -440,10 +449,9 @@ DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName
 
 // ── SubTrigger（子選單觸發器，自動附加 ChevronRight）──
 interface DropdownMenuSubTriggerProps
-  extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger>, 'children'> {
+  extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger>, 'children'>,
+    DropdownMenuPrefixProps {
   children: React.ReactNode
-  /** 左側 icon */
-  startIcon?: LucideIcon
   /** 子選單目前狀態值文字（如 "深色"） */
   value?: string
   /** 子選單狀態 badge */
@@ -453,7 +461,7 @@ interface DropdownMenuSubTriggerProps
 const DropdownMenuSubTrigger = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.SubTrigger>,
   DropdownMenuSubTriggerProps
->(({ className, children, startIcon, value, badge, ...props }, ref) => {
+>(({ className, children, startIcon, startIconClassName, startContent, value, badge, ...props }, ref) => {
   const size = useRowSize()
   const iconPx = ICON_SIZE[size]
   const cursorByKeyboard = useCursorMover() === 'keyboard'
@@ -487,6 +495,8 @@ const DropdownMenuSubTrigger = React.forwardRef<
       <MenuItem
         size={size}
         startIcon={startIcon}
+        startIconClassName={startIconClassName}
+        startContent={startContent}
         endContent={endContent}
         role="presentation"
         className="!bg-transparent hover:!bg-transparent pointer-events-none"
@@ -500,10 +510,9 @@ DropdownMenuSubTrigger.displayName = DropdownMenuPrimitive.SubTrigger.displayNam
 
 // ── CheckboxItem ──
 interface DropdownMenuCheckboxItemProps
-  extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>, 'children'> {
+  extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>, 'children'>,
+    DropdownMenuPrefixProps {
   children: React.ReactNode
-  /** 左側 icon */
-  startIcon?: LucideIcon
   /** 次要說明文字 */
   description?: React.ReactNode
 }
@@ -511,7 +520,7 @@ interface DropdownMenuCheckboxItemProps
 const DropdownMenuCheckboxItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>,
   DropdownMenuCheckboxItemProps
->(({ className, children, startIcon, description, checked, disabled, ...props }, ref) => {
+>(({ className, children, startIcon, startIconClassName, startContent, description, checked, disabled, ...props }, ref) => {
   const size = useRowSize()
   const cursorByKeyboard = useCursorMover() === 'keyboard'
 
@@ -532,6 +541,8 @@ const DropdownMenuCheckboxItem = React.forwardRef<
         checkbox
         checked={!!checked}
         startIcon={startIcon}
+        startIconClassName={startIconClassName}
+        startContent={startContent}
         description={description}
         disabled={disabled}
         role="presentation"
@@ -590,10 +601,9 @@ interface DropdownMenuRadioItemProps
   // children Omit + redeclare required(2026-07-18 決策2 一致性):對齊 sibling Item/SubTrigger/
   // CheckboxItem — menu item 必有 label,children 為 required 非 Radix optional。RadioItem 恆渲染
   // 固定 <MenuItem>{children}</MenuItem>,children 是合法 label(非 lie),此為 required 化一致性修。
-  extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem>, 'children'> {
+  extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem>, 'children'>,
+    DropdownMenuPrefixProps {
   children: React.ReactNode
-  /** Prefix icon(LucideIcon) */
-  startIcon?: LucideIcon
   /** 次要說明文字 */
   description?: React.ReactNode
 }
@@ -601,7 +611,7 @@ interface DropdownMenuRadioItemProps
 const DropdownMenuRadioItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.RadioItem>,
   DropdownMenuRadioItemProps
->(({ className, children, startIcon, description, disabled, ...props }, ref) => {
+>(({ className, children, startIcon, startIconClassName, startContent, description, disabled, ...props }, ref) => {
   // 虛擬游標的框只在鍵盤模態下畫(對齊 :focus-visible 啟發式;SSOT = hooks/use-input-modality.ts)
   const cursorByKeyboard = useCursorMover() === 'keyboard'
   const size = useRowSize()
@@ -624,6 +634,8 @@ const DropdownMenuRadioItem = React.forwardRef<
       <MenuItem
         size={size}
         startIcon={startIcon}
+        startIconClassName={startIconClassName}
+        startContent={startContent}
         description={description}
         disabled={disabled}
         role="presentation"

@@ -5,7 +5,7 @@ import { Mail, Star, Bell, Settings, Plus, Folder, FileText, BarChart3, Bug, Roc
 import { MenuItem, MenuGroup } from './menu-item'
 import { SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import { Button } from '@/design-system/components/Button/button'
-import { CAT_SOLID, type CategoricalHue } from '@/design-system/tokens/categorical-color'
+import { TypeBadge } from '@/design-system/stories-helpers/scene/work-item-type'
 import { samplePersonCard, demoPersonPhoto, type DemoPersonName } from '@/design-system/stories-helpers/scene/person-card'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
@@ -100,12 +100,8 @@ export const AvatarBlock: Story = {
 
 // ── startContent(自訂 leading 徽章;佔位排列 = startIcon 同容器,見 menu-item.spec.md「結構」)──
 
-/** 類型徽章 demo helper — 消費 CAT_SOLID token pair(彩底 + 深/白字由 token 決定);size-4 = ICON_SIZE sm/md */
-const TypeBadge = ({ hue, glyph: Glyph }: { hue: CategoricalHue; glyph: typeof FileText }) => (
-  <span aria-hidden className={`inline-flex size-4 shrink-0 items-center justify-center rounded-md ${CAT_SOLID[hue]}`}>
-    <Glyph className="size-3" strokeWidth={2.5} />
-  </span>
-)
+// 類型徽章 demo helper(CAT_SOLID token pair;size-4 = ICON_SIZE sm/md)—— 2026-11-26 搬到 stories-helpers/scene/work-item-type.tsx,
+// Select / Combobox / DropdownMenu 的「選項前綴:工作項類型」範例共用同一個(Rule-of-3)。
 
 export const WithStartContent: Story = {
   name: '自訂前綴內容',

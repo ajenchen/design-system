@@ -128,7 +128,8 @@ declare module '@tanstack/react-table' {
     locale?: string
     /** Select/multiSelect options — maps value to display label */
     /** select/multiSelect 選項:消費 Select 的 SelectOption 完整 schema(M30 wrapper-extends-primitive;
-     *  2026-07-08 原 {value,label} 窄型別讓 icon/description/iconClassName 傳不進 = 假 SSOT)*/
+     *  2026-07-08 原 {value,label} 窄型別讓 icon/description/iconClassName 傳不進 = 假 SSOT;
+     *  startContent(選項前綴節點)2026-11-26 起同樣轉發,iconClassName 也是那天起才真的轉進選單 —— select-menu.tsx `toSelectMenuOption`)*/
     options?: Array<import('../Select/select').SelectOption>
     /**
      * select 欄:這一列編輯時能選的選項(例:工單狀態流轉,已完成的單不能回到未開始)。只影響**編輯器的選單**;
