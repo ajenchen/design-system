@@ -120,8 +120,14 @@
  *       —— 每一個都必須讓對應的那一格紅。
  *   綠: 全部量到且照規格時 exit 0。開 story 走 lib/launch-browser.mjs openStory(等 Storybook 回報渲染完成與被量的格陣出現,不睡固定時間);
  *       開不起來 / 等不到格陣 = 儀器失效(INSTRUMENT-FAIL,exit 1 並點名),不讀成通過。
+ *   分片: --shard=<k>/<n>(CI matrix 平行,2026-11-26):這一格只跑分片表 CALENDAR_MONTH_SHARDS 第 k 片的單位 —— 主判定跑分到這一片的區塊、
+ *       --selftest 跑分到這一片的突變(一個區塊整塊一片,或只把它的突變拆到幾片:'區塊名@i/m');判準不變(每一格的格與突變跟不分片時逐一相同)。
+ *       分片表只住本檔,ci.yml 只寫格數。每一種跑法啟動先驗分片表:每個區塊的主判定、每一個突變都剛好在一片、單位都是區塊名、沒有空片、
+ *       n = 表的片數 —— 不成立 exit 1(少一塊 = CI 沒有任何一格跑它而照樣綠,M37「沒失敗 ↔ 過了」);
+ *       --selftest 第 0 片另跑分片表的對照組(拿掉任一塊 / 任一個拆突變的單位 / 重複 / 不存在的名字 / 寫法不對各自必被點名)。
+ *       每個區塊 / 突變印實量秒數(⏱),平衡分片表用。
  */
-// 用法:node scripts/calendar-month-invariant.mjs [--static=<dir>] [--selftest] [--block=<區塊名,除錯用>]
+// 用法:node scripts/calendar-month-invariant.mjs [--static=<dir>] [--selftest] [--shard=<k>/<n>] [--block=<區塊名,除錯用>]
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -135,6 +141,75 @@ const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n
 const SELFTEST = process.argv.includes('--selftest')
 // --block=<名字>:只跑那一個區塊(與它的突變);本機除錯用,CI 不帶
 const ONLY_BLOCK = arg('block', null)
+// --shard=<k>/<n>:只跑分片表第 k 片的區塊(見檔頭「分片」與下方 CALENDAR_MONTH_SHARDS);與 --block 不能同時用
+const SHARD = (() => {
+  const raw = arg('shard', null)
+  if (raw === null) return null
+  const m = /^(\d+)\/(\d+)$/u.exec(raw)
+  if (!m || !(Number(m[2]) >= 1) || !(Number(m[1]) < Number(m[2]))) { console.log(`✗ --shard=${raw} 寫法不對(要 <k>/<n>,0 ≤ k < n)`); process.exit(2) }
+  if (ONLY_BLOCK) { console.log('✗ --shard 與 --block 不能同時用'); process.exit(2) }
+  return { k: Number(m[1]), n: Number(m[2]) }
+})()
+/**
+ * 分片表(--shard 的唯一住處;ci.yml 的 matrix 只寫 0/n … (n−1)/n,不寫區塊名)。每一片 = 一組單位:
+ *   '區塊名'       = 那個區塊的主判定 + 它全部的突變;
+ *   '區塊名@i/m'   = 那個區塊的突變裡,依它在 MUTANTS 的出現順序編號 j(從 0 起)、j % m === i 的那些;區塊的主判定跟著 @0/m 那一片。
+ * 單位只決定歸屬,執行順序照 BLOCKS / MUTANTS 的順序(todayFirst 會釘住時鐘,它在兩者都是最後一個,哪一片都排最後)。
+ * 平衡依據 = 本機實量的區塊 / 突變秒數(每個區塊 / 突變印的 ⏱;數字記在 ci.yml verify-browser-calendar-month 檔頭)。
+ * 加 / 改名區塊、加突變都要看這張表 —— 主判定或任何一個突變不在某一片(或在兩片),每一格啟動就紅(shardPlanProblems)。
+ */
+// 2026-11-26 本機實量(不分片:主判定 82 秒 + --selftest 852 秒;detail 一塊 = 主判定 47 秒 + 26 個突變 723 秒,佔八成 → 只有它拆突變):
+// 三片各約 311–312 秒(區塊 / 突變的 ⏱ 加總;LPT 排法)。
+const CALENDAR_MONTH_SHARDS = [
+  ['squeeze', 'namesReadOnly', 'hideWeekends', 'bars', 'rowsFit', 'underlay', 'customTile', 'readOnlyHover', 'timeFormat', 'detail@0/3'],
+  ['scroll', 'keyboardStop', 'inspector', 'namesEnglish', 'loading', 'interaction', 'matrix', 'detail@1/3', 'todayFirst'],
+  ['layout', 'axe', 'namesClickable', 'weekNumbers', 'narrow', 'hoverScroll', 'segments', 'looks', 'narrowTime', 'contrast', 'moreList', 'detail@2/3'],
+]
+/** 分片單位 → { block, i, m }('區塊名' = @0/1);寫法不對回 null */
+function parseShardUnit(unit) {
+  const m = /^([A-Za-z]\w*)(?:@(\d+)\/(\d+))?$/u.exec(unit)
+  if (!m) return null
+  const i = m[2] === undefined ? 0 : Number(m[2]), n = m[3] === undefined ? 1 : Number(m[3])
+  return n >= 1 && i < n ? { block: m[1], i, m: n } : null
+}
+/** 分片表展開成「誰跑什麼」:每個區塊的主判定在哪幾片、每個突變(MUTANTS 索引)在哪幾片 */
+function shardPlanOwners(plan, mutantBlocks) {
+  const mainOf = new Map(), mutantOf = mutantBlocks.map(() => [])
+  plan.forEach((units, k) => {
+    for (const unit of units) {
+      const u = parseShardUnit(unit)
+      if (!u) continue
+      if (u.i === 0) mainOf.set(u.block, [...(mainOf.get(u.block) ?? []), k])
+      let j = 0
+      mutantBlocks.forEach((block, idx) => { if (block === u.block) { if (j % u.m === u.i) mutantOf[idx].push(k); j++ } })
+    }
+  })
+  return { mainOf, mutantOf }
+}
+/**
+ * 分片表的問題清單(空 = 成立):單位寫法不對 / 不是區塊名、空片、區塊的主判定不在任何一片或在兩片、
+ * 任何一個突變不在任何一片或在兩片(CI 沒有任何一格跑它 = 照樣綠,M37「沒失敗 ↔ 過了」;在兩片 = 跑兩次)。
+ */
+function shardPlanProblems(plan, blockNames, mutants) {
+  const problems = []
+  plan.forEach((units, k) => {
+    if (!units.length) problems.push(`第 ${k} 片是空的`)
+    for (const unit of units) {
+      const u = parseShardUnit(unit)
+      if (!u) problems.push(`第 ${k} 片的「${unit}」寫法不對(要 '區塊名' 或 '區塊名@i/m',0 ≤ i < m)`)
+      else if (!blockNames.includes(u.block)) problems.push(`第 ${k} 片的「${unit}」不是區塊名(BLOCKS 沒有 ${u.block})`)
+    }
+  })
+  const { mainOf, mutantOf } = shardPlanOwners(plan, mutants.map((x) => x.block))
+  for (const name of blockNames) {
+    const at = mainOf.get(name) ?? []
+    if (at.length !== 1) problems.push(at.length ? `區塊「${name}」的主判定在第 ${at.join(' / ')} 片(會跑兩次)` : `區塊「${name}」的主判定不在任何一片(CI 沒有任何一格會跑它)`)
+  }
+  mutantOf.forEach((at, idx) => {
+    if (at.length !== 1) problems.push(at.length ? `突變「${mutants[idx].name}」(${mutants[idx].block})在第 ${at.join(' / ')} 片(會跑兩次)` : `突變「${mutants[idx].name}」(${mutants[idx].block})不在任何一片(CI 沒有任何一格會跑它)`)
+  })
+  return problems
+}
 const root = path.resolve(REPO, arg('static', 'storybook-static'))
 const CAL = 'packages/design-system/src/components/Calendar'
 // 提示的初始延遲(DT-tip-delay 的下限):值的唯一住處 tokens/motion/motion.ts(tooltip.spec.md「時間參數」),讀原始碼不寫死
@@ -2307,29 +2382,88 @@ const MUTANTS = [
   { name: '1 號的實心底被壓成 24 寬', block: 'todayFirst', expect: ['R1'], css: '[data-calendar-day="2026-07-01"] { padding: 0 !important; max-width: var(--tag-height-md) !important; }' },
 ]
 
+// ── 分片表驗證(每一種跑法都驗;不成立 = 這一格紅,見檔頭「分片」)──────────────────
+const BLOCK_NAMES = Object.keys(BLOCKS)
+const secondsSince = (t) => ((Date.now() - t) / 1000).toFixed(1)
+{
+  const problems = shardPlanProblems(CALENDAR_MONTH_SHARDS, BLOCK_NAMES, MUTANTS)
+  if (SHARD && SHARD.n !== CALENDAR_MONTH_SHARDS.length) problems.push(`--shard 的 n = ${SHARD.n},分片表有 ${CALENDAR_MONTH_SHARDS.length} 片(ci.yml 的 matrix 格數要跟著表改)`)
+  if (ONLY_BLOCK && !BLOCK_NAMES.includes(ONLY_BLOCK)) problems.push(`--block=${ONLY_BLOCK} 不是區塊名(區塊:${BLOCK_NAMES.join(' / ')})`)
+  if (problems.length) {
+    console.log(`✗ calendar-month 分片表 / 參數不成立(一格都沒量,不得讀成通過):\n${problems.map((p) => `  · ${p}`).join('\n')}`)
+    await browser.close(); await server.stop()
+    process.exit(1)
+  }
+}
+const OWNERS = shardPlanOwners(CALENDAR_MONTH_SHARDS, MUTANTS.map((m) => m.block))
+const mainInScope = (name) => (ONLY_BLOCK ? name === ONLY_BLOCK : SHARD ? OWNERS.mainOf.get(name)[0] === SHARD.k : true)
+const mutantInScope = (m) => (ONLY_BLOCK ? m.block === ONLY_BLOCK : SHARD ? OWNERS.mutantOf[MUTANTS.indexOf(m)][0] === SHARD.k : true)
+const scopeLabel = SHARD ? `第 ${SHARD.k}/${SHARD.n} 片(${CALENDAR_MONTH_SHARDS[SHARD.k].join(' / ')})` : ONLY_BLOCK ? `只跑區塊 ${ONLY_BLOCK}` : '不分片'
+const runStarted = Date.now()
+
 if (!SELFTEST) {
-  for (const [name, block] of Object.entries(BLOCKS)) if (!ONLY_BLOCK || ONLY_BLOCK === name) await block(null)
+  console.log(`· calendar-month 主判定:${scopeLabel}`)
+  for (const [name, block] of Object.entries(BLOCKS)) {
+    if (!mainInScope(name)) continue
+    const t = Date.now()
+    await block(null)
+    console.log(`⏱ 區塊 ${name}:${secondsSince(t)} 秒`)
+  }
 } else {
+  // 分片表的對照組(只在第 0 片或不分片時跑;純記憶體,不開頁):拿掉任一塊 / 把一塊放進第二片 / 塞一個不存在的名字 —— 各自必被點名,真表 0 個問題
+  if (!ONLY_BLOCK && (!SHARD || SHARD.k === 0)) {
+    const misses = []
+    const problemsOf = (plan) => shardPlanProblems(plan, BLOCK_NAMES, MUTANTS)
+    if (problemsOf(CALENDAR_MONTH_SHARDS).length) misses.push('真表應 0 個問題')
+    // 拿掉任一個區塊的全部單位 → 主判定與它每一個突變都要被點名
+    for (const name of BLOCK_NAMES) {
+      const dropped = CALENDAR_MONTH_SHARDS.map((s) => s.filter((u) => parseShardUnit(u)?.block !== name))
+      const got = problemsOf(dropped)
+      const mine = MUTANTS.filter((m) => m.block === name)
+      if (!got.some((p) => p.includes(`區塊「${name}」的主判定不在任何一片`)) || !mine.every((m) => got.some((p) => p.includes(`突變「${m.name}」(${name})不在任何一片`)))) misses.push(`拿掉「${name}」沒被點名(主判定或突變)`)
+    }
+    // 拿掉任一個「區塊名@i/m」單位(只拆突變的那一塊)→ 那幾個突變被點名
+    for (const [k, units] of CALENDAR_MONTH_SHARDS.entries()) for (const unit of units.filter((u) => u.includes('@'))) {
+      const dropped = CALENDAR_MONTH_SHARDS.map((s, kk) => (kk === k ? s.filter((u) => u !== unit) : s))
+      if (!problemsOf(dropped).some((p) => p.includes('不在任何一片'))) misses.push(`拿掉「${unit}」沒被點名`)
+    }
+    const last = CALENDAR_MONTH_SHARDS.length - 1
+    const dupUnit = CALENDAR_MONTH_SHARDS[0][0], dupBlock = parseShardUnit(dupUnit).block
+    const dup = CALENDAR_MONTH_SHARDS.map((s, k) => (k === last ? [...s, dupUnit] : s))
+    if (!problemsOf(dup).some((p) => p.includes(`區塊「${dupBlock}」的主判定在第`))) misses.push(`「${dupUnit}」放兩片沒被點名`)
+    const ghost = CALENDAR_MONTH_SHARDS.map((s, k) => (k === 0 ? [...s, 'ghostBlock', 'detail@x'] : s))
+    const ghostProblems = problemsOf(ghost)
+    if (!ghostProblems.some((p) => p.includes('「ghostBlock」不是區塊名')) || !ghostProblems.some((p) => p.includes('「detail@x」寫法不對'))) misses.push('不存在的名字 / 寫法不對的單位沒被點名')
+    if (misses.length) { console.log(`✗ calendar-month 分片表對照組失效:${misses.join(';')}`); await browser.close(); await server.stop(); process.exit(1) }
+    console.log(`✓ 分片表對照組:拿掉任一塊(${BLOCK_NAMES.length} 種,主判定與它每一個突變)/ 任一個拆突變的單位各自被點名、一塊放兩片 / 不存在的名字 / 寫法不對被點名、真表 0 個問題`)
+  }
+  const RUN = MUTANTS.filter(mutantInScope)
+  console.log(`· calendar-month selftest:${scopeLabel},${RUN.length} / ${MUTANTS.length} 個突變`)
   let caught = 0
-  for (const m of MUTANTS) {
-    if (ONLY_BLOCK && m.block !== ONLY_BLOCK) { caught++; continue }
+  for (const m of RUN) {
     const from = results.length, fromFails = instrumentFails.length
+    const t = Date.now()
     console.log(`── 突變:${m.name}(預期 ${m.expect.join(' / ')} 紅)`)
     await BLOCKS[m.block](m)
     const red = new Set(results.slice(from).filter((x) => !x.ok).map((x) => x.id))
     const ok = m.expect.every((id) => red.has(id)) && instrumentFails.length === fromFails
     if (ok) caught++
-    console.log(`${ok ? '✓' : '✗'} selftest「${m.name}」:紅的格 ${[...red].join(' / ') || '(無)'}`)
+    console.log(`${ok ? '✓' : '✗'} selftest「${m.name}」:紅的格 ${[...red].join(' / ') || '(無)'}(⏱ ${m.block} ${secondsSince(t)} 秒)`)
   }
   await browser.close(); await server.stop()
-  const ok = caught === MUTANTS.length && instrumentFails.length === 0
+  const ok = RUN.length > 0 && caught === RUN.length && instrumentFails.length === 0
   if (instrumentFails.length) { console.log(`✗ ${INSTRUMENT_FAIL_MARKER}:${instrumentFails.length} 格沒量到 —— 紅的不全是對照組造成的`); for (const f of instrumentFails) console.log(`  · ${f.cell}:${f.detail}`) }
-  console.log(ok ? `✅ calendar-month selftest:${MUTANTS.length} 個突變全被抓到` : `✗ calendar-month selftest:${MUTANTS.length - caught} 個突變沒讓預期的格紅 —— 量具無效`)
+  if (!RUN.length) console.log(`✗ ${INSTRUMENT_FAIL_MARKER}:這一次沒有任何突變可跑(${scopeLabel})—— 不得讀成通過`)
+  console.log(ok
+    ? `✅ calendar-month selftest:${RUN.length} 個突變全被抓到(${scopeLabel}${RUN.length < MUTANTS.length ? `;全部 ${MUTANTS.length} 個由各片合起來跑` : ''};⏱ ${secondsSince(runStarted)} 秒)`
+    : `✗ calendar-month selftest:${RUN.length - caught} 個突變沒讓預期的格紅 —— 量具無效`)
   process.exit(ok ? 0 : 1)
 }
 
 await browser.close()
 await server.stop()
+if (!results.length) instrumentFails.push({ cell: scopeLabel, detail: '0 格有判定(區塊都沒量到東西)' })
+console.log(`⏱ calendar-month 主判定合計 ${secondsSince(runStarted)} 秒(${scopeLabel})`)
 const failed = results.filter((x) => !x.ok)
 if (instrumentFails.length) {
   console.log(`✗ ${INSTRUMENT_FAIL_MARKER}:${instrumentFails.length} 格沒量到 —— 不是產品裁決,但這次不能宣稱月格合規:`)
