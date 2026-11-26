@@ -99,7 +99,8 @@ export function run() {
 `
 
 // ── 打包(固定檔名 + 字面 import,scripts/.gate-bundles/README.md)────────────────────────────────────
-const STUB_STORYBOOK_TEST = 'export const fn = () => () => {}\nexport const expect = () => ({})\nexport const userEvent = {}\nexport const within = () => ({})\n'
+// 替身只需讓範例檔能打包(play 不在這支閘裡執行);範例從 @storybook/test 匯入什麼,這裡就要有同名匯出(2026-11-26 P12-fix2 的 MoreListOpen 加了 waitFor)
+const STUB_STORYBOOK_TEST = 'export const fn = () => () => {}\nexport const expect = () => ({})\nexport const userEvent = {}\nexport const waitFor = async () => {}\nexport const within = () => ({})\n'
 const replaceOnce = (src, from, to, label) => {
   if (src.split(from).length !== 2) instrumentFail(`對照組「${label}」要改的片段不是剛好出現一次(原始碼改了,對照組要跟著改):${from}`)
   return src.split(from).join(to)
@@ -207,7 +208,7 @@ const MUTANTS = [
     name: 'calendar.tsx 交給 renderEventTile 的 segment 寫死(不是版面那一段的旗標)',
     file: 'calendar-render-contract-m2.mjs',
     expect: 'T',
-    mutations: { [`${CAL}/calendar.tsx`]: (src) => replaceOnce(src, 'renderEventTile(event, piece.segment)', 'renderEventTile(event, { isStart: true, isEnd: true, continuesBefore: false, continuesAfter: false, isSegmentRepeat: false })', 'segment 寫死') },
+    mutations: { [`${CAL}/calendar.tsx`]: (src) => replaceOnce(src, 'renderEventTile(event, segment)', 'renderEventTile(event, { isStart: true, isEnd: true, continuesBefore: false, continuesAfter: false, isSegmentRepeat: false })', 'segment 寫死') },
   },
   {
     name: 'calendar.tsx 的唯讀判斷只看 readOnlyEvents(單筆 readOnly 沒接上)',
