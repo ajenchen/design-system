@@ -1688,7 +1688,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 232,
-      "hash": "sha256:b629e2a5e301f7a17fd9644af6b8ca0702b7cc38cd8af93f1759920b6051cb44",
+      "hash": "sha256:0b2276c82059845c845846334fdf274220ffc7aadc86943bd39236c2e187da2d",
       "id": "governance-baseline-authority",
       "mode": "0755",
       "ownerRepo": "design-system",
