@@ -42,7 +42,7 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "186c555836d3538c3771d256347a461aecd67898122dd73847ab0c5c0f9c890c",
+    "forkCorpusLockSha256": "fceb1b5f0c17c32477298564a9a22f640e29c34e35720305b156064e55cb0d0f",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
     "providerLifecycleSha256": "69fa942cf9c3cddd5026b1844b5f2d943e8ceeb21f679b4089fd2701f6e0eae3",
@@ -58,7 +58,7 @@
       },
       "codex": {
         "instructionSha256": "d60911d6b1983d69588a927b37decd15d8b0bf6457e0bbd7e54752978651ccb6",
-        "hookSha256": "810c6fe1f33554d2ccc33eeb91cda4ab95209442649a204e996963ca10ed4fe0",
+        "hookSha256": "78748b0379593f8575a7937c84a70671367ed1d58448b0de70f94cd584ac2996",
         "skillsSha256": "fb3bf655c329cbd2cb5d84d66a5ee6160dfccb3b29a0d1e803eb23dc3fa86184",
         "treeDigests": {}
       },
@@ -72,13 +72,14 @@
     "mergeSurfaceDigests": {
       "claude": "b17888945b06f3433e8cbeb0b659d63e41dbd391906461b6453500d8ec8ecec1"
     },
-    "governanceCheckSha256": "1c4c4455910f1e88aebb84add9f756717395519d84913beafaa654a9f1c3126e",
+    "governanceCheckSha256": "bb3cc3bf1a401c0e1b6de688147a09fa568b57890715a03e5a98f1919b7ffd8d",
     "utilityRegistrySha256": "0e78034d31ba8d1b0f7c08ab4a931990c4a461a5b53019574828849342f903b1",
     "sharedSkillsSha256": "4db39eaac2b2c70a9347a2dc55a23167de4d37a3a456fd9c775c6c55b583c9b3",
     "sharedSkillCount": 11,
     "requiredScripts": {
       "audit:a11y": "node scripts/audit-consumer-a11y.mjs",
       "governance:check": "node node_modules/@qijenchen/design-system/ds-canonical/fork/consumer/governance-check.mjs --repo . --hooks-off",
+      "governance:debt": "node node_modules/@qijenchen/design-system/ds-canonical/fork/consumer/governance-content-debt.mjs --repo .",
       "lint:imports": "node scripts/lint-ds-internal-imports.mjs",
       "setup:all": "node scripts/setup-workspace.mjs",
       "setup:governance": "node scripts/setup-governance.mjs",
@@ -91,12 +92,13 @@
       ".devcontainer/devcontainer.json": "79ebd4ccf0f1207a7ce1f31e51c40b052feeb1b8d51467d7e4e171410c70db24",
       ".devcontainer/onboard-banner.sh": "762c1fda165b0f8c9d2f6e13ac313f37da65d427334328638f4445d29da50a63",
       ".devcontainer/post-create.mjs": "6bc05d2597a54e8f6a5a087901e92ccc89acc3d5873d96ad20814f8f539a146b",
-      ".github/workflows/audit.yml": "3cb259c8d83d8d378a6d282b0cde0a8884d96c51cf49e655405c3e416e646726",
+      ".github/workflows/audit.yml": "ff1bb33e94c6de2f96e242c8853089565e292d9dbf183cb25151ec02e95eeff2",
       ".github/workflows/sync-design-system.yml": "bdb40c97372782ccd2fe29890937a91fe8d99efebe2b321c7ebb6258bb49b2c8",
       ".npmrc": "79eff2d98653857c11ab6a0354fa62685a72ec214545e7fdfabc450e91b7ba63",
-      "governance/consumer-governance.md": "9e8392da03fa8f3700d3f8d2ac6f0ffb11465f74748aca739ca933dd632ef4f6",
+      "governance/consumer-governance.md": "3436f42b34c34563476af421d6ec1ed32bd49b995cd1357f48bdd8589f754d32",
       "governance/provider-cli-toolchain.json": "5280bc83de46486d6fd13e29349eee849d347970ed5fdf32412d463629124170",
       "governance/provider-cli-toolchain.package-lock.json": "d0a5fceebe21101b67848e7ace1856e9bc35f6532e4ba4deaf64462fe4fc81bb",
+      "governance/schemas/content-debt-baseline.schema.json": "e57421ff52ee68510bf070009f25941aa5ff45126c08e32d571c57fd76b59d3a",
       "governance/schemas/issuer-registry.schema.json": "52616f59420942b96b33001e00d2c9a23ca3aa14dc236d8cb2aa9756787bfb90",
       "governance/schemas/visual-baseline-review-policy.schema.json": "29eb02c844515e6e94a063503c4682e8a1a87a3976b26067e725e5491cc6bc45",
       "governance/trust/issuers.json": "b4da935a9d39239f99fdb15f9ee0a05b538ac0c427b32b77fce8010560fdef2b",
@@ -109,7 +111,7 @@
       "scripts/lib/canonical-path-containment.mjs": "0244e31dc3be5015bed3efd65a5a77086a2e4676e9ac79cd0801c8cde6a74fcd",
       "scripts/lib/closed-tool-execution.mjs": "642b3e788646545918fd47900841bb2f13b19252995a4235e1f9b6c039688cda",
       "scripts/lib/consumer-control-plane-policy.mjs": "51aba211bb2f755eff7fa48bb060f9835356a62d2643ab5049147a9896c7bb72",
-      "scripts/lib/exact-workspace-dependencies.mjs": "b4921ad903a3ed3d901187d406a87270190945c5ca1874b089e80df898d47a97",
+      "scripts/lib/exact-workspace-dependencies.mjs": "40161bac07da3ce65b59f6d1e5439c1c43f398b4305c1ad5a0e1309d287c812f",
       "scripts/lib/governance-dependency-bootstrap.mjs": "5414f385799cb5d52243be48bf62378cd572a7aa98d5e6064ae08e4c64379003",
       "scripts/lib/launch-browser.mjs": "7eec0b85e3305a0fe3f9854addc481dd761b20754f99f76d9e139b4e281fd38f",
       "scripts/lib/provider-lifecycle.mjs": "9aabb2c98efc454b8555308a34830e6590b034b10a63f76f788fbd4cf37ce7e7",
@@ -127,11 +129,11 @@
       "scripts/schemas/upgrade-evidence-receipt.schema.json": "a464b3dcc8f3f94ca997f5771e14626cc400c101e4e7625ff416a89f2af37bbc",
       "scripts/setup-governance.mjs": "2d5bf5ef149595854681c5744a431c2c231ead7d8699571a453783b39e556518",
       "scripts/setup-provider-cli-toolchain.mjs": "9d10b5c959a1629b029d229baae98ba4ebf1bb3a8e919798eb111111c5698886",
-      "scripts/setup-workspace.mjs": "95dc0fef1f7570efe277a66f7edf4640055ad6abbae0245615eceb9b041560e9",
-      "scripts/sync-all.mjs": "89e21d46327c33fda400c0d2f3344cf4e862327e198ae823d86e1c2a00d69e7e",
+      "scripts/setup-workspace.mjs": "c566101c4d0e461c0cbd056a909cdf113817b441bbc4faa9ca44a647248f6a47",
+      "scripts/sync-all.mjs": "0c948666421047abd708c9f677b0f6679481ba8005cc6cc6b455840582d9ba62",
       "scripts/sync-exact-workspace-dependencies.mjs": "29ce6aaab16fd7a939eff6e556e8548291fad28df88d578627153c9508bf6e31",
       "scripts/verify-consumer-css-entry.mjs": "a16545ea8d4f5224d8133f0bb0b68d5489d8e106fe7594488a78e0e5718b99cc",
-      "scripts/verify-upgrade-evidence.mjs": "04f0748843e926981465429ec9054bb8a743180729a05699e14d609b7107f9c6",
+      "scripts/verify-upgrade-evidence.mjs": "db5345e305535705340963cac328e915413be208e6ada3c15498c897b394991b",
       "scripts/verify-upgrade-provenance.mjs": "8a643a60eaf64bf131a2a4da197d5670a52e4705d11402b53fb32ae93302f6ef",
       "scripts/workflow-static-validation.mjs": "8e12bf2d73fc5e1200ddc6cc8437b27433fcd71f7d85d79b56756dcaac667305"
     }
