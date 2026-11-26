@@ -5,13 +5,13 @@ traits:
   - hasVariants
 variants:
   neutral:
-    when: "非狀態通知;一般 announcement / tip(『已複製到剪貼簿』『偏好已儲存』)"
-    world-class: ["Polaris Toast default", "Sonner default"]
+    when: "預設(不傳 variant 就是它)· 無圖示;一般操作回饋與通知(『已複製到剪貼簿』『偏好已儲存』『檔案已開始下載』)。儲存、送出、建立這類『做完了』的回饋,用它或用 success 由消費者決定"
+    world-class: ["Spectrum Toast 預設(灰底、無圖示)", "Polaris Toast 預設(無圖示,消費者可自帶 icon)", "Sonner default"]  # ([來源](https://github.com/adobe/spectrum-web-components/blob/5c83d1c53c1c40be5176dc99e84bf62105fd5254/1st-gen/packages/toast/README.md#L84)、[來源](https://github.com/Shopify/polaris-react-archive/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/utilities/frame/types.ts#L68-L69)、[來源](https://github.com/Shopify/polaris-react-archive/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Frame/components/Toast/Toast.tsx#L99-L113))
   info:
     when: "資訊性提示(『新版本可用』『同步完成』);非錯誤、非成功"
     world-class: ["Carbon toast notification Informational", "Spectrum Toast variant=info", "Ant notification.info"]  # ([來源](https://github.com/carbon-design-system/carbon-website/blob/5e9cd1da43c32d3d3b991dc947b427f674da61a8/src/pages/components/notification/usage.mdx#L166-L171)、[來源](https://opensource.adobe.com/spectrum-web-components/components/toast/)、[來源](https://github.com/ant-design/ant-design/blob/5a102fe28abc8624eb27c5e1365cdbb0a4dead73/components/notification/index.en-US.md#L43-L46))
   success:
-    when: "成功確認(『訂單已寄送』『付款完成』『5 筆資料已匯入』)"
+    when: "選用 —— 消費者想用綠勾強調『做完了』時傳 variant: 'success'(『訂單已寄送』『付款完成』『5 筆資料已匯入』『專案已儲存』);不傳就是 neutral"
     world-class: ["Carbon toast notification Success", "Spectrum Toast variant=positive", "Atlassian Flag success"]  # ([來源](https://github.com/carbon-design-system/carbon-website/blob/5e9cd1da43c32d3d3b991dc947b427f674da61a8/src/pages/components/notification/usage.mdx#L166-L171)、[來源](https://opensource.adobe.com/spectrum-web-components/components/toast/)、[來源](https://atlassian.design/components/flag/usage))
   warning:
     when: "可恢復警告(『有未儲存變更』『連線不穩』『token 將過期』)"
@@ -20,7 +20,7 @@ variants:
     when: "錯誤(『匯入失敗』『權限不足』『網路斷線』);action prop 可加重試"
     world-class: ["Polaris Toast error", "Carbon toast notification Error", "Spectrum Toast variant=negative"]  # ([來源](https://github.com/Shopify/polaris-react-archive/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/utilities/frame/types.ts#L64-L67)、[來源](https://github.com/carbon-design-system/carbon-website/blob/5e9cd1da43c32d3d3b991dc947b427f674da61a8/src/pages/components/notification/usage.mdx#L166-L171)、[來源](https://opensource.adobe.com/spectrum-web-components/components/toast/))
   # 2026-11-26 出處更正:舊表寫的「Polaris Toast success」「Material Snackbar info / error」都查無此物 ——
-  # Polaris Toast 的外觀參數只有 error?: boolean 與 tone?: 'magic'(https://github.com/Shopify/polaris-react-archive/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/utilities/frame/types.ts#L64-L67),沒有 success;
+  # Polaris Toast 的外觀參數是 error?: boolean、tone?: 'magic' 與前置圖示 icon?: IconSource(https://github.com/Shopify/polaris-react-archive/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/utilities/frame/types.ts#L64-L69;前一版漏列 icon),沒有 success;
   # Material Snackbar 只有一個容器色(預設 colorSurfaceInverse,https://github.com/material-components/material-components-android/blob/60ff09436d5d477a4b9d02940f31eb01e1250620/docs/components/Snackbar.md#L59),沒有狀態變體。
 sizes: {}
 benchmark:
@@ -150,6 +150,7 @@ toast({
 })
 ```
 
+- `variant`（選填）：預設 `neutral`（無圖示）；`success` 加綠勾，`info` / `warning` / `error` 換底色和圖示，各自什麼時候用見檔頭 `variants`。「做完了」的回饋（儲存、送出、建立）要不要加綠勾由消費者決定 —— user 2026-11-26 提案原話「我覺得目前可以由消費者決定？預設無圖示，若要加可由消費者自行加？如何？」，同日畫面確認第一批選『A:規格寫明「預設無圖示，要綠勾由消費者自己加」，範例不動』。DS 範例裡儲存類用 `success` 的，就是「自己選擇加綠勾」的示範。
 - `title`（必填）：主要訊息
 - `description`（選填）：補充說明，自然換行
 - `action`（選填）：tertiary xs 按鈕
@@ -233,7 +234,7 @@ Toast 的 public API 是 `toast()` 函式(imperative 觸發)+ `<Toaster />` Prov
 - **Disabled(action button)**:Toast 本身為 ephemeral notification 無 disabled state(自動消失,不需禁用);若 `toast()` 傳入 `action` button(sonner ToastOptions),該 button 在 async 動作中 consumer 可 disable,視覺繼承 Button SSOT(`text-fg-disabled` + `cursor-not-allowed`)。
 - **Loading**:Sonner 提供 `toast.promise(promise, { loading, success, error })` API — loading 階段渲 spinner + `loadingText`,promise 成功 / 失敗自動切 success / error variant;本元件不需 wrap。
 - **Empty**:`toast()` 必傳 title(API contract);無 title-empty 場景。
-- **Icon-only**:`neutral` variant 不渲 status icon,layout 收斂為 `[title + description?]  [action?]  [dismiss X?]`。
+- **Icon-only**:`neutral`(預設)variant 不渲 status icon,layout 收斂為 `[title + description?]  [action?]  [dismiss X?]`。
 - **Dark mode / density**:走 Notice / Sonner 內部策略(見「Theme 策略」段),固定寬度 360px 跨 density 不變。
 
 ---
