@@ -171,7 +171,8 @@ const VALUE_TEXT = {
   select: { exact: '進行中' },
   combobox: { exact: '不限' },
   datepicker: { pattern: '2026' },
-  timepicker: { pattern: '14:30' },
+  // 時間 12 / 24 跟語系(DATE-TIME(定)2026-11-26):value '14:30' 在預設 zh-TW 寫成「下午2:30」、en-GB「14:30」—— 只認分鐘那段
+  timepicker: { pattern: ':30' },
   linkinput: { exact: 'Q4 產品路線圖' },
   peoplepicker: { exact: '王小明' },
 }

@@ -15,7 +15,8 @@ import { CALENDAR_EVENT_DETAIL_WIDTH_PX } from './calendar-geometry'
 
 /**
  * ── 消費的 SSOT ──
- * - components: [Popover(PopoverAnchor virtualRef / PopoverContent side + align="start" + aria-label / PopoverHeader closeAriaLabel + actions / PopoverBody),
+ * - components: [Popover(PopoverAnchor virtualRef / PopoverContent side="right" + align="start"(子選單擺法,popover.spec.md「禁止事項」用法 (2);
+ *   sideOffset / collisionPadding / 碰撞翻面 = Popover 預設,tokens/elevation/overlay-geometry.ts)+ aria-label / PopoverHeader closeAriaLabel + actions / PopoverBody),
  *   InlineEdit(標題 as="h2" size="sm" + 各欄 renderRead / renderEdit / multiline / editable 閘), Field + FieldLabel + FieldGroup(垂直排、閱讀情境),
  *   Switch(全天:可改時直接切換;只能看時 InlineEdit editable={false} 委派 Switch mode="view"), DatePicker.Range(檢視 formatRange、編輯 showTime), Select(類別:display="tag")]
  * - patterns: [overlay-surface `EDITABLE_TITLE_HEADER_SLOT`(標題是 InlineEdit sm 時的標題列 slot 與 × 讓位;overlay-chrome-sizing.spec.md「可編輯標題的標題列」)]
@@ -82,7 +83,7 @@ export interface CalendarEventDetailLabels {
   detailCategoryPlaceholder: string
 }
 
-// ── 錨點(calendar.spec.md「事件詳情浮層」位置【AI 推導】)───────────────────────────────────────
+// ── 錨點(calendar.spec.md「事件詳情浮層」位置)──────────────────────────────────────────────────
 
 /** 交給 PopoverAnchor virtualRef 的錨點:Radix 只在物件換了才重算位置(popover.tsx PopoverAnchor 上方「換錨點 = 換一個包裝物件」),所以換錨點一律建新的 */
 export interface CalendarDetailAnchor {
@@ -124,14 +125,12 @@ export interface CalendarEventDetailPopoverProps<E> {
   /** 開著時的那一筆;null = 關著 */
   entry: CalendarEventDetailEntry<E> | null
   anchor: CalendarDetailAnchor | null
-  /** 朝格陣中央那一側(左半邊的欄往右開、右半邊往左開) */
-  side: 'left' | 'right'
   detail: CalendarEventDetail<E>
   labels: CalendarEventDetailLabels
   locale: string
   /**
-   * 時間欄平常的顯示寫法(DatePicker.Range `formatOptions`,經 `formatRange` 同一天自動合併)—— Calendar 交進來的那一份:
-   * 日期段 = DatePicker 合併顯示的預設、時間段 = 月格的 `eventTimeFormat`(同一個畫面同一種時間寫法);全天時只有日期段
+   * 時間欄的寫法(DatePicker.Range `formatOptions`;平常經 `formatRange` 同一天自動合併,編輯中兩端也用它)—— Calendar 交進來的那一份:
+   * 日期段 = DatePicker 的預設日期寫法(兩位數月日)、時間段 = 月格的 `eventTimeFormat`(同一個畫面同一種寫法);全天時只有日期段
    */
   readFormat: { timed: Intl.DateTimeFormatOptions; allDay: Intl.DateTimeFormatOptions }
   onClose: () => void
@@ -143,7 +142,7 @@ export interface CalendarEventDetailPopoverProps<E> {
 }
 
 export function CalendarEventDetailPopover<E>({
-  entry, anchor, side, detail, labels, locale, readFormat, onClose, onCloseAutoFocus, onChange, onToggleAllDay,
+  entry, anchor, detail, labels, locale, readFormat, onClose, onCloseAutoFocus, onChange, onToggleAllDay,
 }: CalendarEventDetailPopoverProps<E>) {
   // 錨點每次換成新物件(Radix 才重算位置);ref 的 current 讀當下那一個
   const anchorRef = React.useRef<CalendarDetailAnchor | null>(anchor)
@@ -159,9 +158,11 @@ export function CalendarEventDetailPopover<E>({
       {shown && (
         <PopoverContent
           data-calendar-event-detail={String((shown.event as { id?: unknown }).id ?? '')}
-          // 側邊開、頂端對齊(calendar.spec.md「事件詳情浮層」位置【AI 推導】):side 朝格陣中央、align start;
-          // sideOffset / collisionPadding 用 Popover 預設 8,放不下由 Radix 自動翻面(avoidCollisions 預設開)
-          side={side}
+          // DS 子選單擺法(calendar.spec.md「事件詳情浮層」位置【DT-DIRECTION(定)】→ popover.spec.md「禁止事項」用法 (2)):
+          // 開在被點那一項的右側、上緣對齊;格陣與清單同一條,不依它在星期的哪一半換邊。sideOffset / collisionPadding 用 Popover 預設
+          //(tokens/elevation/overlay-geometry.ts OVERLAY_SIDE_OFFSET / OVERLAY_COLLISION_PADDING,= DropdownMenuSubContent 的 sideOffset);
+          // 右邊放不下由 Popover 的碰撞翻面(avoidCollisions 預設開,與 SelectMenu / DropdownMenu 同一套)翻到左側 —— 本檔不寫自己的方向邏輯
+          side="right"
           align="start"
           // 寬:Popover 預設 288 放不下時間欄編輯中的 DatePicker.Range showTime(實量見 calendar-geometry.ts CALENDAR_EVENT_DETAIL_WIDTH_PX)
           width={CALENDAR_EVENT_DETAIL_WIDTH_PX}
@@ -233,12 +234,14 @@ function DetailFields<E>({ entry, detail, labels, locale, readFormat, onChange, 
             <DatePicker.Range mode="view" value={value} showTime={showTime} formatRange locale={locale} formatOptions={showTime ? readFormat.timed : readFormat.allDay} />
           )}
           // 編輯:一個 DatePicker.Range,有時段時加 showTime(date-picker.spec.md:69)。兩端都選好才提交(Range 自己的 onChange 在完成時才呼叫)
+          // 兩端的字與平常同一份寫法(readFormat;日期兩位數月日、時間同月格)—— 看和改不會是兩種寫法(DATE-TIME(定)2026-11-26)
           renderEdit={(p) => (
             <DatePicker.Range
               size={p.size}
               value={p.value}
               showTime={showTime}
               locale={locale}
+              formatOptions={showTime ? readFormat.timed : readFormat.allDay}
               aria-label={labels.detailTime}
               onChange={(next) => {
                 if (!next[0] || !next[1]) return
