@@ -6,7 +6,8 @@
  *
  * ── 消費的 SSOT ──
  * - spec refs: calendar.spec.md「資料語意」「跨日長條」「格內排序」「每格筆數與「+N」」、Cell 規則「隱藏週末」、「禁止事項」(不重造 date math)
- * - date math: date-fns(addHours / isBefore / startOfDay / subMilliseconds / differenceInCalendarDays)—— 逐日一律日曆日,不寫固定毫秒
+ * - date math: date-fns(addDays / addHours / isBefore / startOfDay / subMilliseconds / differenceInCalendarDays / format)—— 逐日一律日曆日,不寫固定毫秒;
+ *   詳情時間欄與全天切換寫回事件的時刻一律是牆上時間字串("YYYY-MM-DDTHH:mm"),不拿毫秒加減
  * - i18n: Intl.Collator(標題排序,依 locale memo)
  * - 慣例: 開發期警告寫法同 select-menu.tsx(`process.env.NODE_ENV !== 'production'` + `console.warn('[元件名] …')`)
  *
@@ -21,7 +22,7 @@
  * ── 判定表 ──
  * scripts/test-calendar-layout.mjs(每條規則一格以上的判定表 + `--selftest` 每條規則一個突變,各自必紅)。
  */
-import { addHours, differenceInCalendarDays, isBefore, startOfDay, subMilliseconds } from 'date-fns'
+import { addDays, addHours, differenceInCalendarDays, format, isBefore, startOfDay, subMilliseconds } from 'date-fns'
 
 // ── 型別 ─────────────────────────────────────────────────────────────────────────────
 
@@ -407,4 +408,83 @@ export function layoutDay<E extends CalendarLayoutEvent>(options: {
         isSegmentRepeat: false,
       },
     }))
+}
+
+// ── 詳情浮層的時間欄與「全天」切換(calendar.spec.md「事件詳情浮層」內文欄位「時間」「全天」、切換全天【Q16(定)】)──────────────
+// 詳情的時間欄是一個 DatePicker.Range(兩端 = 本地、不帶 offset 的字串;全天時只有日期、結束日「含」);事件的 end 一律「不含」,
+// 進出在這裡換算一天(calendar.tsx 不另算)。寫回事件的值一律是本地牆上時間字串:"YYYY-MM-DD"(全天)/ "YYYY-MM-DDTHH:mm"(有時段),
+// 與 CalendarEvent.start / end 收的格式同一套(parseEventDate);原值帶 offset 的,改過之後變成本地時間字串【AI 推導】。
+
+/** 詳情時間欄的值:DatePicker.Range 的兩端(全天 = 只有日期、結束日含;有時段 = 本地時刻) */
+export type CalendarDetailRange = [string, string]
+
+/** 時間欄 / 全天切換寫回事件的欄位(詳情交給 `onEventChange` 的 patch 裡時間那一部分) */
+export interface CalendarTimePatch {
+  start: string
+  end: string
+  allDay: boolean
+}
+
+/**
+ * 切成全天之前記下的時間 —— **UI 記憶,不是事件資料**(calendar.spec.md「禁止事項」第 2 條:事件資料不存在元件裡;這份只用來切回時還原,
+ * 期限 = Calendar 存活期間【AI 推導】)。`endDayOffset` = 結束那一天離開始那一天幾個日曆日(過夜 = 1)。
+ */
+export interface CalendarRememberedTimes {
+  startTime: string
+  endTime: string
+  endDayOffset: number
+}
+
+/** 原本就是全天的事件切成有時段:開始日 09:00 起、長度一小時【Q16(定);一小時為 AI 推導】—— 牆上時間,不是加毫秒 */
+export const CALENDAR_DEFAULT_START_HOUR = 9
+export const CALENDAR_DEFAULT_DURATION_HOURS = 1
+
+const dayString = (date: Date) => format(date, 'yyyy-MM-dd')
+const minuteString = (date: Date) => format(date, "yyyy-MM-dd'T'HH:mm")
+const hourString = (hour: number) => `${String(hour).padStart(2, '0')}:00`
+
+type DetailTimeSource = Pick<NormalizedCalendarEvent, 'allDay' | 'start' | 'end' | 'firstDay' | 'lastDay'>
+
+/** 一筆正規化後的事件 → 詳情時間欄的值(全天:畫出來的第一天 – 最後一天〔含〕;有時段:開始 – 結束那一刻) */
+export function detailRangeOf(entry: DetailTimeSource): CalendarDetailRange {
+  return entry.allDay ? [dayString(entry.firstDay), dayString(entry.lastDay)] : [minuteString(entry.start), minuteString(entry.end)]
+}
+
+/** 詳情時間欄改完的值 → 寫回事件的時間欄位(全天:結束日含 → end 不含,加一個日曆日) */
+export function rangeToTimePatch(range: CalendarDetailRange, allDay: boolean): CalendarTimePatch {
+  if (!allDay) return { start: range[0], end: range[1], allDay: false }
+  const lastDay = parseEventDate(range[1].slice(0, 10))
+  return { start: range[0].slice(0, 10), end: dayString(addDays(lastDay, 1)), allDay: true }
+}
+
+/**
+ * 切換「全天」【Q16(定)】:
+ * - 有時段 → 全天:只留日期(畫出來的第一天 – 最後一天),記住原本的時間(回傳 `remember`,呼叫端存在 Calendar 存活期間的記憶裡);
+ * - 全天 → 有時段:有記得 → 開始日 + 記得的時間(結束日 = 開始日 + 記得的日數差);沒有 → 開始日 09:00 起一小時。
+ * 呼叫端一律傳**當下最新**的那一筆(就地編輯延一拍的提交不會把剛改的值蓋掉)。
+ */
+export function toggleAllDayPatch(
+  entry: DetailTimeSource,
+  nextAllDay: boolean,
+  remembered?: CalendarRememberedTimes | null,
+): { patch: CalendarTimePatch; remember: CalendarRememberedTimes | null } {
+  if (nextAllDay) {
+    const remember = entry.allDay
+      ? null
+      : { startTime: format(entry.start, 'HH:mm'), endTime: format(entry.end, 'HH:mm'), endDayOffset: differenceInCalendarDays(entry.end, entry.start) }
+    return { patch: rangeToTimePatch([dayString(entry.firstDay), dayString(entry.lastDay)], true), remember }
+  }
+  const day = dayString(entry.firstDay)
+  if (remembered) {
+    const endDay = dayString(addDays(entry.firstDay, remembered.endDayOffset))
+    return { patch: { start: `${day}T${remembered.startTime}`, end: `${endDay}T${remembered.endTime}`, allDay: false }, remember: null }
+  }
+  return {
+    patch: {
+      start: `${day}T${hourString(CALENDAR_DEFAULT_START_HOUR)}`,
+      end: `${day}T${hourString(CALENDAR_DEFAULT_START_HOUR + CALENDAR_DEFAULT_DURATION_HOURS)}`,
+      allDay: false,
+    },
+    remember: null,
+  }
 }

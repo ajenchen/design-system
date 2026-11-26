@@ -19,7 +19,7 @@ import {
   isSameWeek,
 } from 'date-fns'
 import { cn } from '@/lib/utils'
-import { CAT_EVENT, CAT_SUBTLE, CAT_ACCENT, CAT_EVENT_NEUTRAL, type CategoricalColor } from '@/design-system/tokens/categorical-color'
+import { CAT_EVENT, CAT_EVENT_OPEN, CAT_SUBTLE, CAT_ACCENT, CAT_EVENT_NEUTRAL, type CategoricalColor } from '@/design-system/tokens/categorical-color'
 import { Button } from '@/design-system/components/Button/button'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
@@ -35,8 +35,29 @@ import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-h
 import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
 import { Skeleton } from '@/design-system/components/Skeleton/skeleton'
 import { CALENDAR_GEOMETRY_STYLE, CALENDAR_NARROW_COLUMN_MAX_PX, calendarPieceWidth, calendarRowsThatFit } from './calendar-geometry'
-import { layoutDay, layoutMonth, normalizeEvents, parseEventDate, type CalendarEventSegment, type CalendarLayoutPiece } from './calendar-layout'
+import {
+  detailRangeOf,
+  layoutDay,
+  layoutMonth,
+  normalizeEvents,
+  parseEventDate,
+  toggleAllDayPatch,
+  type CalendarEventSegment,
+  type CalendarLayoutPiece,
+  type CalendarRememberedTimes,
+} from './calendar-layout'
 import { CalendarMoreList } from './calendar-more-list'
+import {
+  CalendarEventDetailPopover,
+  createDetailAnchor,
+  type CalendarDetailAnchor,
+  type CalendarEventDetail,
+  type CalendarEventDetailEntry,
+  type CalendarEventPatch,
+} from './calendar-event-detail'
+// 詳情時間欄平常顯示的日期段 = DatePicker.Range 合併顯示的預設(同一個常數,不在 Calendar 另寫一份;calendar.spec.md「事件詳情浮層」時間欄)
+import { DATE_RANGE_DEFAULT_DATE_OPTIONS } from '@/design-system/components/DatePicker/range-format'
+import { returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
 
 /**
  * Calendar — 月事件檢視 canvas
@@ -58,6 +79,10 @@ import { CalendarMoreList } from './calendar-more-list'
  * - 時間字: Intl.DateTimeFormat(locale, eventTimeFormat ?? { hour: 'numeric', minute: '2-digit' })(calendar.spec.md「資料語意」時間顯示;zh-TW「上午10:00」)
  * - 事件版面: ./calendar-layout.ts(資料語意、長條判定、車道、切段、「+N」計數、格內排序、「+N」清單的一天 layoutDay、CalendarEventSegment 的唯一實作;本檔不另算)
  * - 「+N」與當天清單: ./calendar-more-list.tsx(@internal;按鈕、浮層外殼、半列上限);清單的列與格內同一個元件(MonthEventPiece,只換宿主)
+ * - 事件詳情浮層: ./calendar-event-detail.tsx(@internal;Popover + 可編輯標題列 + 垂直排 Field / InlineEdit / Switch / DatePicker.Range / Select);
+ *   本檔只管開在哪(側邊朝格陣中央、從清單開時貼著清單)、從當下 events 依 id 取最新那一筆、全天切換的記憶、焦點歸還(lib/overlay-focus-return.ts returnFocusToOpener);
+ *   時間欄平常的寫法 = DatePicker 合併顯示的日期段(DatePicker/range-format.ts DATE_RANGE_DEFAULT_DATE_OPTIONS)+ 月格同一份 eventTimeFormat;
+ *   詳情開著時那一段維持滑過色 = categorical-color.ts CAT_EVENT_OPEN / CAT_EVENT_NEUTRAL.open / --neutral-hover
  * - spec refs: calendar.spec.md「工具列」「Cell 規則」(隱藏週末 / 週數欄)「間距」「焦點框」「狀態與邊界案例」(載入中)「窄寬度」「A11y 預設」;
  *   header-canonical.spec.md:26 / :68 / :73;tag.spec.md「尺寸」;focus-canonical.md「問題二」;
  *   lib/date-locale.ts(週起始日 resolveWeekStartsOn、週末 resolveWeekend、第一週天數 resolveFirstWeekMinDays);週數 = date-fns getWeek
@@ -108,8 +133,16 @@ export interface CalendarEvent {
    * 整個月曆的事件都唯讀用 `readOnlyEvents`(calendar.spec.md「日期格與事件方塊:可點或唯讀」單筆事件那一列【AI 推導】)。
    */
   readOnly?: boolean
+  /** 地點(詳情「地點」欄;calendar.spec.md「CalendarEvent」) */
+  location?: string
+  /** 說明(詳情「說明」欄,多行) */
+  description?: string
+  /** 類別(`eventDetail.categories` 裡某一個的 id;詳情「類別」欄,沒傳清單時不顯示)【COLORFIELD(定)】 */
+  categoryId?: string
   metadata?: Record<string, unknown>
 }
+
+export type { CalendarEventDetail, CalendarEventPatch, CalendarCategory } from './calendar-event-detail'
 
 /**
  * `renderEventTile` 的第二個參數:這一段事件的延續資訊(五個欄位的定義見 calendar-layout.ts `CalendarEventSegment`)。
@@ -119,8 +152,8 @@ export interface CalendarEvent {
 export type { CalendarEventSegment }
 
 // ── 日期格 / 事件方塊:可點或唯讀(2026-09-26,待辦總帳 L8 / C15;calendar.spec.md「日期格與事件方塊:可點或唯讀」)──
-// 兩者各自二擇一,由型別層逼出來 —— 不拿「回調有沒有傳」當渲染閘(meta-patterns M23(f)):
-//   可點(預設)= 必傳回調;長成可點的樣子(按鈕、滑過換色、手形游標、Enter / Space)。
+// 日期格二擇一、事件方塊三擇一,由型別層逼出來 —— 不拿「回調有沒有傳」當渲染閘(meta-patterns M23(f)):
+//   可點(預設)= 必傳回調(日期格 `onDateClick`;事件方塊 `eventDetail` 內建詳情或 `onEventClick` 產品自己處理);長成可點的樣子(按鈕、滑過換色、手形游標、Enter / Space)。
 //   唯讀      = 寫 `readOnlyDates` / `readOnlyEvents`、**不可以**傳回調;不是按鈕、滑過不變、游標不變。
 // 先前(2026-09-25 批次)把兩個回調改成無條件必填,等於規定月曆一定可點,與「沒有新增功能的月曆格子不亮」相反(C15),已撤回。
 // 命名:沿用 DS 既有的 `readOnly`(Rating `readOnly`「唯讀:…不響應 hover / click / 鍵盤」、Field 家族 readonly 模式),
@@ -140,9 +173,23 @@ type CalendarDateCellProps =
       onDateClick?: never
     }
 
-/** 事件方塊可點與否。同上,不單獨匯出;每一段事件的可點 / 唯讀由 Calendar 本體的 eventModeOf 依這一份(加上單筆 readOnly)決定。 */
+/**
+ * 事件方塊三擇一(calendar.spec.md「日期格與事件方塊:可點或唯讀」;2026-11-26 由二擇一擴成三擇一):內建詳情 `eventDetail` / 產品自己開 `onEventClick` /
+ * 唯讀 `readOnlyEvents`。同上,不單獨匯出;每一段事件的可點 / 唯讀由 Calendar 本體的 eventModeOf 依這一份(加上單筆 readOnly)決定,
+ * 分支只看明示的欄位(M23(f))。
+ */
 type CalendarEventTileProps =
   | {
+      /**
+       * 點事件開內建詳情浮層(calendar.spec.md「事件詳情浮層」):閱讀為主、每一欄就地改,改了經 `onEventChange(event, patch)` 交回(必填)。
+       * 詳情一律依 id 從當下的 `events` 取最新那一筆(元件不存事件)。
+       */
+      eventDetail: CalendarEventDetail<CalendarEvent>
+      onEventClick?: never
+      readOnlyEvents?: false
+    }
+  | {
+      eventDetail?: never
       /** 事件方塊唯讀:不可點、不亮、不是按鈕(只顯示事件,例如公司假日這類沒有詳情可開的標記)。 */
       readOnlyEvents?: false
       /**
@@ -152,11 +199,15 @@ type CalendarEventTileProps =
        * 產品自己開詳情浮層時拿它當錨點(例:Popover 的 `PopoverAnchor virtualRef`)。不要改從 `document.activeElement` 反推:
        * 焦點所在的元素只是「剛好」常常是被點的那一段(程式化 `click()`、按下時不搬焦點的內容都會分開),anchor 直接就是被點的那一個。
        * 只收一個參數的寫法照樣能用。
+       * 從「+N」清單點的:清單不先關,`anchor` = 清單裡那一列;產品用 DS 的浮層(Popover 等)錨在這一列上,點它、點它裡面的欄位都不關清單
+       *(lib/overlay-nesting.ts「從這一層開出來的另一層」);用非 DS 的浮層(直接用 Radix 或別的套件)時清單會被關 —— 沒登記的浮層一律不算子層
+       *(同檔:27「寧可多關,不可不關」;calendar.spec.md「點清單裡的事件」)。
        */
       onEventClick: (event: CalendarEvent, details: { anchor: HTMLElement }) => void
     }
   | {
-      /** 事件方塊唯讀:不可點、不亮、不是按鈕(只顯示事件)。宣告了就不可以傳 `onEventClick`。 */
+      eventDetail?: never
+      /** 事件方塊唯讀:不可點、不亮、不是按鈕(只顯示事件)。宣告了就不可以傳 `onEventClick` / `eventDetail`。 */
       readOnlyEvents: true
       onEventClick?: never
     }
@@ -206,6 +257,23 @@ export interface CalendarLabels {
   more: (fullDate: string, count: number) => string
   /** 「+N」清單浮層右上角 × 的讀屏名稱(calendar.spec.md「A11y 預設」字串可覆寫「清單 / 詳情的關閉」;經 PopoverHeader `closeAriaLabel`) */
   moreListClose: string
+  /** 事件詳情浮層右上角 × 的讀屏名稱(同上「清單 / 詳情的關閉」) */
+  detailClose: string
+  /** 詳情標題(就地編輯)的欄位名稱:讀屏念「編輯 {此字}」、編輯中輸入框的名稱(看得見的是標題本身) */
+  detailTitle: string
+  /** 詳情各欄的標籤(看得見的字,也是該欄的名稱;calendar.spec.md「事件詳情浮層」內文欄位) */
+  detailTime: string
+  detailAllDay: string
+  detailLocation: string
+  /** 地點空著時的佔位字(可編輯時) */
+  detailLocationPlaceholder: string
+  detailDescription: string
+  /** 說明空著時的佔位字(可編輯時) */
+  detailDescriptionPlaceholder: string
+  /** 類別欄的標籤(`eventDetail.categories` 有傳才出現) */
+  detailCategory: string
+  /** 類別空著時的佔位字(可編輯時) */
+  detailCategoryPlaceholder: string
 }
 
 // i18n-allow: DS 預設文案(中文);consumer 經 `labels` 覆寫
@@ -225,6 +293,17 @@ const DEFAULT_LABELS: CalendarLabels = {
   more: (fullDate, count) => `${fullDate},還有 ${count} 個事件`,
   // 同 Popover × 的 DS 預設(popover.tsx PopoverCloseButton「關閉」);浮層本身的名稱 = 標題日期,讀屏先念到是哪一天的清單【AI 推導】
   moreListClose: '關閉',
+  // 2026-11-26 加(事件詳情浮層):× 同 Popover 預設「關閉」;欄位名與佔位字【AI 推導】(佔位照 InlineEdit 空值的「加上…」寫法,inline-edit.spec.md「空值」)
+  detailClose: '關閉',
+  detailTitle: '事件標題',
+  detailTime: '時間',
+  detailAllDay: '全天',
+  detailLocation: '地點',
+  detailLocationPlaceholder: '加上地點…',
+  detailDescription: '說明',
+  detailDescriptionPlaceholder: '加上說明…',
+  detailCategory: '類別',
+  detailCategoryPlaceholder: '選擇類別…',
 }
 
 interface CalendarOwnProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onSelect'> {
@@ -475,12 +554,16 @@ interface MonthEventPieceShellProps extends React.HTMLAttributes<HTMLElement> {
   mode: EventPieceMode
   /** 可點時的讀屏名稱(labels.event 的結果,Calendar 本體算好);唯讀時不用(沒有角色的元素禁止命名) */
   name: string
+  /** 詳情是從這一段 / 這一列開的、而且還開著(掛 data-detail-open;維持滑過色,calendar.spec.md「點清單裡的事件」【AI 推導】) */
+  detailOpen: boolean
 }
 
 const MonthEventPieceShell = React.forwardRef<HTMLElement, MonthEventPieceShellProps>(function MonthEventPieceShell(
-  { event, segment, placement, underlay, mode, name, className, style, onClick, onKeyDown, children, ...rest },
+  { event, segment, placement, underlay, mode, name, detailOpen, className, style, onClick, onKeyDown, children, ...restProps },
   ref,
 ) {
+  // 每一段 / 每一列都帶事件 id:詳情關掉時打開它的那一段不在了(事件被移走)→ 焦點改給事件新位置的方塊(calendar.spec.md「點外面」最後一句)
+  const rest = { ...restProps, 'data-calendar-event-id': event.id, 'data-detail-open': detailOpen ? '' : undefined }
   // 外形 = 事件列 = Tag md(calendar.spec.md「間距」【SPACING(定)】):高 h-tag-md(24)、rounded-md。
   // 斷開那一端直角【Q3(定)】:斷開 = 這一段不含事件真正的起點 / 終點(segment.isStart / isEnd 為假 —— 換週、可見範圍外、被「+N」切開、
   // 被藏起來的日子切開都是;calendar-layout.ts CalendarEventSegment 的定義)。只拿掉該端圓角,不新增箭頭等形狀。
@@ -614,6 +697,7 @@ function MonthEventPiece({
   name,
   mode,
   renderEventTile,
+  detailOpen = false,
 }: {
   entry: CalendarLayoutPiece<CalendarEvent>['entry']
   segment: CalendarEventSegment
@@ -630,6 +714,8 @@ function MonthEventPiece({
   name: string
   mode: EventPieceMode
   renderEventTile?: (event: CalendarEvent, segment: CalendarEventSegment) => React.ReactNode
+  /** 詳情從這一段 / 這一列開、還開著:維持自己的滑過色(CAT_EVENT_OPEN / CAT_EVENT_NEUTRAL.open / 透明列 --neutral-hover) */
+  detailOpen?: boolean
 }) {
   const { event } = entry
   // 時間出現 / 消失(窄寬切換)也會改變文字寬,一起當重量的依據
@@ -640,7 +726,10 @@ function MonthEventPiece({
     placement: grid ? { lane: grid.lane, covers: grid.covers, width: calendarPieceWidth(grid.span, grid.endsAtLastColumn) } : null,
     mode,
     name,
+    detailOpen,
   }
+  // 「詳情開著」的記號也掛在畫顏色的內層(Tailwind data-[detail-open]: 看元素自己);自訂內容只有外層帶,由 consumer 自己畫
+  const openMark = detailOpen ? { 'data-detail-open': '' } : null
   if (renderEventTile) {
     // 自訂內容:外層只 own 位置、命中與鍵盤,不畫滑過、不墊底(它不知道自訂內容的靜止底;calendar.spec.md「renderEventTile 的滑過責任歸屬」)。
     // 第二段起照樣呼叫,segment 帶這一段的延續資訊(isSegmentRepeat = 不是畫面上第一段)。
@@ -658,9 +747,10 @@ function MonthEventPiece({
   // 不拆成兩個各自截斷的盒子(那樣時間會被裁成半個字,或標題寬度歸零)。時間的元素帶 data-calendar-time、色條帶 data-calendar-accent(量測用)。
   const isBar = entry.kind === 'bar'
   // 長條的色:可點 = CAT_EVENT(帶滑過 step-2),唯讀 = CAT_SUBTLE(不帶);neutral = CAT_EVENT_NEUTRAL 的同兩鍵。色條 = CAT_ACCENT / CAT_EVENT_NEUTRAL.accent。
+  // 詳情開著時維持滑過色:CAT_EVENT_OPEN / CAT_EVENT_NEUTRAL.open(只在可點時;唯讀沒有詳情)
   const barClass = color === 'neutral'
-    ? (mode.readOnly ? CAT_EVENT_NEUTRAL.subtle : CAT_EVENT_NEUTRAL.event)
-    : (mode.readOnly ? CAT_SUBTLE[color] : CAT_EVENT[color])
+    ? (mode.readOnly ? CAT_EVENT_NEUTRAL.subtle : cn(CAT_EVENT_NEUTRAL.event, CAT_EVENT_NEUTRAL.open))
+    : (mode.readOnly ? CAT_SUBTLE[color] : cn(CAT_EVENT[color], CAT_EVENT_OPEN[color]))
   const accentClass = color === 'neutral' ? CAT_EVENT_NEUTRAL.accent : CAT_ACCENT[color]
   const timeSpan = time === null ? null : (
     // 時間 text-fg-secondary、標題 text-foreground【TIMECOLOR(定)】(長條裡兩者都是類別字色 step-7,同一張表的左欄)
@@ -669,6 +759,8 @@ function MonthEventPiece({
   return (
     // 恆 wrap、未截斷 open={false} 靜默(truncated-text.spec.md always-wrap:條件 wrap 會 remount 丟 RO 訂閱)。
     // 唯讀方塊照樣掛:截斷提示是「資訊揭露」,不是點擊回饋(tooltip.spec.md「截斷文字 → 用 tooltip 顯示完整內容。」不分可不可點)。
+    // 用滑鼠關掉詳情後焦點由程式還給這一段:不跳提示由 DS Tooltip 統一處理(程式搬來、不是 :focus-visible 的焦點不開;
+    // ../../patterns/element-anatomy/truncated-text.spec.md「A11y 預設」),本檔不另寫。
     <Tooltip open={isTruncated ? undefined : false}>
       <TooltipTrigger asChild>
         {/* 墊底只在格陣裡(蓋住格線);清單裡沒有格線,長條直接疊在浮層底上【AI 推導】 */}
@@ -677,7 +769,7 @@ function MonthEventPiece({
             // 長條(左欄):類別淡底 + 字 step-7,可點時滑過 step-2(CAT_EVENT)、唯讀不帶滑過(CAT_SUBTLE)【維持 U10】;不帶色條(色條只給有時段事件)。
             // 文字左右內距 8 用 Tag 的兩層結構表示(外層 4 + 文字 4,同 tag.tsx 的 size md 與 data-tag-text 那兩層),兩層都讀 --calendar-gap。
             // 顏色畫在內層(圓角跟外層 rounded-[inherit]):外層是長條墊底那一層(深色主題不透出格線),內層疊類別淡底與滑過。
-            <div className={cn('flex items-center h-full rounded-[inherit] px-[var(--calendar-gap)] text-body font-normal', barClass)}>
+            <div {...openMark} className={cn('flex items-center h-full rounded-[inherit] px-[var(--calendar-gap)] text-body font-normal', barClass)}>
               <span ref={truncationRef} className="min-w-0 truncate px-[var(--calendar-gap)]">{timeSpan}{event.title}</span>
             </div>
           ) : (
@@ -687,7 +779,7 @@ function MonthEventPiece({
             // 與長條同一條線(calendar.spec.md「間距」有時段的色條列;修 2026-11-25 前有色條的字右偏 3px)。
             // 色條 = 字高(--font-body-size,text-body 的字級 token)、上下置中(items-center)、圓頭(rounded-sm:radius.css「短邊 ≤ 10px 用 sm」,
             // 寬 4 的 2px 圓角 = 兩端半圓)【BAR(定)】;顏色 = 類別 step-6(CAT_ACCENT;neutral 是 --color-neutral-9)。裝飾,讀屏不念(aria-hidden)。
-            <div className={cn('flex items-center h-full rounded-[inherit] gap-[var(--calendar-gap)] pe-[var(--calendar-text-inset)] text-body font-normal', !mode.readOnly && 'hover:bg-neutral-hover')}>
+            <div {...openMark} className={cn('flex items-center h-full rounded-[inherit] gap-[var(--calendar-gap)] pe-[var(--calendar-text-inset)] text-body font-normal', !mode.readOnly && 'hover:bg-neutral-hover data-[detail-open]:bg-neutral-hover')}>
               <span aria-hidden data-calendar-accent="" className={cn('shrink-0 w-[var(--calendar-accent-w)] h-[var(--font-body-size)] rounded-sm', accentClass)} />
               <span ref={truncationRef} className="min-w-0 truncate text-foreground">{timeSpan}{event.title}</span>
             </div>
@@ -710,6 +802,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   events = [],
   readOnlyEvents,
   onEventClick,
+  eventDetail,
   readOnlyDates,
   onDateClick,
   onCreateEvent,
@@ -740,9 +833,12 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   const datesInteractive = !readOnlyDates
   // 「這一筆唯讀」只用這一支判斷(M37:直接量性質 = 整個月曆的事件唯讀 readOnlyEvents,或這一筆唯讀 event.readOnly):
   // 唯讀 = 不是按鈕、不亮、不進格內導覽、點了什麼都不發生(calendar.spec.md「日期格與事件方塊:可點或唯讀」)。
-  // 可點時回調一定在:CalendarEventTileProps 二擇一,readOnlyEvents 為假時型別層把 onEventClick 收窄成必有(M23(f) 不看回調在不在)。
+  // 可點時:三擇一(CalendarEventTileProps),分支只看明示的欄位 —— 有 eventDetail = 開內建詳情(openDetail,下方「事件詳情浮層」),
+  // 否則型別層保證 onEventClick 一定在(M23(f) 不看回調在不在)。
   const eventModeOf = (event: CalendarEvent): EventPieceMode =>
-    readOnlyEvents || event.readOnly ? { readOnly: true } : { readOnly: false, onEventClick }
+    readOnlyEvents || event.readOnly
+      ? { readOnly: true }
+      : { readOnly: false, onEventClick: eventDetail ? openDetail : (onEventClick as NonNullable<typeof onEventClick>) }
   const resolvedToday = todayProp ?? new Date()
   // Controlled / uncontrolled refDate
   const [internalRef, setInternalRef] = React.useState<Date>(
@@ -819,6 +915,19 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
     }),
     [locale, eventTimeFormatKey],
   )
+  // 詳情時間欄平常的寫法(DatePicker.Range `formatOptions`,經 `formatRange` 同一天自動合併【TIMEFIELD(定)】):
+  //   日期段 = DatePicker 合併顯示的預設(DATE_RANGE_DEFAULT_DATE_OPTIONS,同一個常數);時間段 = 月格同一份 eventTimeFormat(預設 zh-TW「上午10:00」)——
+  //   同一個畫面只有一種時間寫法(月格與詳情;DatePicker 合併顯示自己的預設是 24 小時,range-format.ts resolveDateRangeFormatOptions:
+  //   consumer 寫了時間欄位就照它、不補 h23)【AI 推導,列給 user 看:兩種寫法統一成月格那一種】。
+  //   eventTimeFormat 用 timeStyle 時不能和年月日欄位混寫(Intl 規定)→ 日期段改 dateStyle short,同一套「consumer 寫了就照它」。
+  const detailReadFormat = React.useMemo(() => {
+    const timeFormat = JSON.parse(eventTimeFormatKey) as Intl.DateTimeFormatOptions
+    const usesStyle = 'timeStyle' in timeFormat || 'dateStyle' in timeFormat
+    return {
+      timed: usesStyle ? { dateStyle: 'short' as const, ...timeFormat } : { ...DATE_RANGE_DEFAULT_DATE_OPTIONS, ...timeFormat },
+      allDay: { ...DATE_RANGE_DEFAULT_DATE_OPTIONS },
+    }
+  }, [eventTimeFormatKey])
 
   // 星期列:取 `days[0..6]`(格陣起點開始 7 天,正好一週),隱藏週末時同步拿掉那幾天
   const weekdays = React.useMemo(
@@ -991,6 +1100,96 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   // 清單留到使用者關掉為止(關掉時「+N」已不在 → 焦點回這一天的日期停靠點,calendar-more-list.tsx onCloseAutoFocus)【AI 推導】。
   // 同一時間最多開一天(開另一天 = 換)。換月後那一天不在格陣裡 → 沒有格子、Popover 一起卸載。
   const [moreListDay, setMoreListDay] = React.useState<string | null>(null)
+
+  // ── 事件詳情浮層(calendar.spec.md「事件詳情浮層」;外殼與欄位 ./calendar-event-detail.tsx)──────────────────────────────
+  // 只記「開的是哪一筆、錨在哪、從哪裡開」;事件本身一律依 id 從當下的 events 取最新那一筆(元件不存事件,calendar.spec.md「禁止事項」第 2 條)。
+  //   anchor = 交給 PopoverAnchor 的虛擬錨點(換錨點 = 換物件,Radix 才重算);opener = 打開它的那一段 / 那一列(焦點歸還、維持滑過色);
+  //   originIso = 打開時是哪一天(打開它的元素與事件新位置都不在時,焦點回這一天的停靠點);host = 從格陣或「+N」清單開的。
+  type DetailTarget = { eventId: string; anchor: CalendarDetailAnchor; side: 'left' | 'right'; opener: HTMLElement; originIso: string | null; host: 'grid' | 'list' }
+  const [detailTarget, setDetailTarget] = React.useState<DetailTarget | null>(null)
+  // 關閉的那一刻 detailTarget 已是 null,焦點歸還與卸載時的提交(InlineEdit 卸載仍在編輯 = 提交)讀這一份最後的目標
+  const lastDetailTargetRef = React.useRef<DetailTarget | null>(null)
+  if (detailTarget) lastDetailTargetRef.current = detailTarget
+  // 切成全天前記下的時間(UI 記憶,不是事件資料;期限 = Calendar 存活期間【AI 推導】;calendar-layout.ts CalendarRememberedTimes)
+  const rememberedTimesRef = React.useRef(new Map<string, CalendarRememberedTimes>())
+  // 「從最新那一筆算」:就地編輯的提交可能晚一拍(blur 的 rAF、點外面的 setTimeout、卸載),讀 ref 不讀 render 當下的閉包
+  const latestNormalizedRef = React.useRef(normalizedEvents)
+  latestNormalizedRef.current = normalizedEvents
+  const latestOfDetail = () => {
+    const target = lastDetailTargetRef.current
+    return target ? latestNormalizedRef.current.find((entry) => entry.event.id === target.eventId) ?? null : null
+  }
+
+  // 側邊朝格陣中央(calendar.spec.md「事件詳情浮層」位置【AI 推導】):那一天在左半邊的欄 → 往右開、右半邊 → 往左開,正中那一欄往右。
+  // 欄 = 那一天的格子在它那一週(role=row)裡是第幾個看得見的日子(週數欄不算)。
+  const sideTowardCenter = (iso: string | null): 'left' | 'right' => {
+    const cell = iso ? dayStopByIso(iso)?.closest<HTMLElement>('[role="gridcell"]') ?? null : null
+    const cells = cell?.parentElement ? Array.from(cell.parentElement.children).filter((el) => el.getAttribute('role') === 'gridcell') : []
+    const index = cell ? cells.indexOf(cell) : -1
+    return index < 0 || index <= (cells.length - 1) / 2 ? 'right' : 'left'
+  }
+  // 點事件(滑鼠點與格內導覽的 Enter / Space 同一條,MonthEventPieceShell 交出被點的元素):
+  //   格陣裡 = 錨在被點的那一段;「那一天」= 進格那一天(滑鼠按下的那一天 / F2 進來的那一天;跨日長條以點擊點所在的欄判斷),不在這一段裡取第一天;
+  //   清單裡 = 左右取清單外框、上下取那一列(水平貼著清單外緣、垂直對齊那一列),錨點元素 = 那一列(lib/overlay-nesting.ts 才認得「從清單開出來的」,清單不關)。
+  const openDetail = (event: CalendarEvent, { anchor }: { anchor: HTMLElement }) => {
+    const list = anchor.closest<HTMLElement>('[data-calendar-more-list]')
+    const covers = anchor.getAttribute('data-calendar-covers')?.split(' ') ?? []
+    const entry = entryDayRef.current
+    const iso = list ? list.getAttribute('data-calendar-more-list') : (entry !== null && covers.includes(entry) ? entry : covers[0] ?? null)
+    setDetailTarget({ eventId: event.id, anchor: createDetailAnchor(anchor, list), side: sideTowardCenter(iso), opener: anchor, originIso: iso, host: list ? 'list' : 'grid' })
+  }
+  const detailNormalized = detailTarget ? normalizedEvents.find((entry) => entry.event.id === detailTarget.eventId) ?? null : null
+  // 時間欄的值依 start / end 字面 memo:同一筆沒改就是同一個陣列(InlineEdit 以參照比對草稿有沒有變,每次新陣列會被當成改過)
+  const detailRangeKey = detailNormalized ? detailRangeOf(detailNormalized).join('|') : null
+  // 陣列只隨字面變(events 換了別筆、父層重畫都不換陣列;編輯中換陣列會讓沒改的草稿被當成改過)
+  const detailRange = React.useMemo(() => (detailRangeKey === null ? null : (detailRangeKey.split('|') as [string, string])), [detailRangeKey])
+  const detailEntry = React.useMemo<CalendarEventDetailEntry<CalendarEvent> | null>(
+    () => (detailNormalized && detailRange ? { event: detailNormalized.event, allDay: detailNormalized.allDay, range: detailRange } : null),
+    [detailNormalized, detailRange],
+  )
+  // 事件不在了(產品刪掉 / 換了 id)→ 關掉;打開它的那一段被換掉(改了日期、換週、清單那一列卸載)→ 新位置在畫面上就跟過去(換一個新錨點),
+  // 不在就留在原位(錨點回上一次量到的矩形,calendar-event-detail.tsx createDetailAnchor)
+  React.useLayoutEffect(() => {
+    if (!detailTarget) return
+    if (!detailNormalized) { setDetailTarget(null); return }
+    if (detailTarget.opener.isConnected) return
+    const id = CSS.escape(detailTarget.eventId)
+    const inList = detailTarget.host === 'list' && moreListDay !== null
+      ? document.querySelector<HTMLElement>(`[data-calendar-more-list="${moreListDay}"] [data-calendar-event-id="${id}"]`)
+      : null
+    const next = inList ?? gridRef.current?.querySelector<HTMLElement>(`[data-calendar-tile][data-calendar-event-id="${id}"]`) ?? null
+    if (next) {
+      const list = next.closest<HTMLElement>('[data-calendar-more-list]')
+      setDetailTarget({ ...detailTarget, opener: next, anchor: createDetailAnchor(next, list), host: list ? 'list' : 'grid' })
+    }
+  })
+  const closeDetail = () => setDetailTarget(null)
+  // 焦點歸還(calendar.spec.md「事件詳情浮層」Esc / 點外面):回打開它的那一列 / 那一段;它不在了 → 事件新位置的方塊,再不在 → 原日期的停靠點。
+  // 指標在外面關的不搶焦點(returnFocusToOpener 的非 modal 規則)。
+  const handleDetailCloseAutoFocus = (e: Event) => {
+    const target = lastDetailTargetRef.current
+    if (!target) return
+    returnFocusToOpener(e, target.opener, {
+      noTrigger: true,
+      fallback: () =>
+        gridRef.current?.querySelector<HTMLElement>(`[data-calendar-tile][data-calendar-event-id="${CSS.escape(target.eventId)}"]`)
+        ?? (target.originIso ? dayStopByIso(target.originIso) : null),
+    })
+  }
+  const handleDetailChange = (patch: CalendarEventPatch) => {
+    const latest = latestOfDetail()
+    if (latest && eventDetail) eventDetail.onEventChange(latest.event, patch)
+  }
+  const handleToggleAllDay = (nextAllDay: boolean) => {
+    const latest = latestOfDetail()
+    if (!latest || !eventDetail || latest.allDay === nextAllDay) return
+    const id = latest.event.id
+    const { patch, remember } = toggleAllDayPatch(latest, nextAllDay, rememberedTimesRef.current.get(id))
+    if (remember) rememberedTimesRef.current.set(id, remember)
+    else if (!nextAllDay) rememberedTimesRef.current.delete(id)
+    eventDetail.onEventChange(latest.event, patch)
+  }
+  const detailOpenIn = (host: 'grid' | 'list', id: string) => detailTarget !== null && detailTarget.host === host && detailTarget.eventId === id
 
   const handleGridKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement | null
@@ -1502,6 +1701,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                               name={name}
                               mode={eventModeOf(event)}
                               renderEventTile={renderEventTile}
+                              detailOpen={detailOpenIn('grid', event.id)}
                             />
                           )
                         })}
@@ -1536,6 +1736,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                                     name={name}
                                     mode={eventModeOf(entry.event)}
                                     renderEventTile={renderEventTile}
+                                    detailOpen={detailOpenIn('list', entry.event.id)}
                                   />
                                 </div>
                               )
@@ -1553,6 +1754,23 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
           </div>
         </ScrollArea>
       </div>
+
+      {/* 事件詳情浮層(只在 eventDetail 時;放在格陣外 —— 浮層裡的按鍵與點擊經 React 元件樹冒泡時不經過格陣的鍵盤 / 指標處理) */}
+      {eventDetail && (
+        <CalendarEventDetailPopover
+          entry={detailEntry}
+          anchor={detailTarget?.anchor ?? null}
+          side={detailTarget?.side ?? 'right'}
+          detail={eventDetail}
+          labels={labels}
+          locale={locale}
+          readFormat={detailReadFormat}
+          onClose={closeDetail}
+          onCloseAutoFocus={handleDetailCloseAutoFocus}
+          onChange={handleDetailChange}
+          onToggleAllDay={handleToggleAllDay}
+        />
+      )}
     </div>
   )
 })

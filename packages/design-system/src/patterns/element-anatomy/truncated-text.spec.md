@@ -47,6 +47,7 @@ benchmark:
 
 - 截斷才顯示 tooltip(補全被裁文字);未截斷不顯示(避免噪音)。
 - Tooltip 經 Radix `TooltipTrigger`/`TooltipContent`:hover + keyboard focus 皆可觸發(對齊 W3C APG Tooltip pattern)([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/tooltip/tooltip-pattern.html#L27))。
+- **程式搬來的焦點不開截斷提示**(2026-11-26):焦點不是 `:focus-visible` 時(例:用滑鼠關掉浮層後焦點由程式還給被截斷的觸發點)不顯示;規則與實作的唯一住處是 `../../components/Tooltip/tooltip.spec.md`「A11y 預設」(DS `Tooltip` 統一擋),所有截斷提示(本元件、item-anatomy、Tag、InlineEdit、Select / DatePicker 觸發框、Calendar 事件方塊)照 `open={isTruncated ? undefined : false}` 的同一條寫法自動套用,**不得**在元件裡另寫一份「只在 :hover / :focus-visible 開」的受控判斷。
 - Tag 變異:截斷時 root `tabIndex=0` + focus-visible ring(讓 Tab 到即見全文,APG 前提 trigger 可 focus);未截斷不入 tab 序。此 a11y 由 Tag 讀 `isTruncated` 自渲染,不進 hook(consumer 自控)。
 
 ## 禁止事項

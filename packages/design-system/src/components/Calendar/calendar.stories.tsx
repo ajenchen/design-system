@@ -1,9 +1,11 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
+import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { expect, fn, userEvent, within } from '@storybook/test'
 import { Calendar, type CalendarEvent, type CalendarLabels } from './calendar'
 import { CalendarDemo } from './_calendar-demo'
 import { Tag } from '@/design-system/components/Tag/tag'
+import { Button } from '@/design-system/components/Button/button'
 import { DataTable, type DataTableColumnDef } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging
 
@@ -25,9 +27,9 @@ export default meta
 
 type Story = StoryObj<typeof Calendar>
 const customTileActivated = fn()
-// 日期格 / 事件方塊各自二擇一:可點就接回調(型別層必填),不可點就寫 readOnlyDates / readOnlyEvents
+// 日期格二擇一、事件方塊三擇一:可點就接回調(型別層必填;事件方塊是 eventDetail 內建詳情或 onEventClick),不可點就寫 readOnlyDates / readOnlyEvents
 //(calendar.spec.md「日期格與事件方塊:可點或唯讀」;M23(f):不拿「有沒有傳」當渲染閘)。
-// 可點的示範一律給**真的結果**(CalendarDemo:點事件開 Popover、點日期 / 新事件開「新增事件」對話框、送出跳 Toast),不給空函式。
+// 可點的示範一律給**真的結果**(CalendarDemo:點事件開內建詳情、點日期 / 新事件開「新增事件」對話框、送出跳 Toast),不給空函式。
 
 // ── 真實業務情境 ─────────────────────────────────────────────────────
 
@@ -54,32 +56,62 @@ export const TeamCalendar: Story = {
     docs: {
       description: {
         story:
-          '會議、截止與休假排在同一個月曆:有時段的事件是一列「色條 + 開始時間 + 標題」(無底),全天與跨日事件是淡底長條(Alex 休假 7/20–7/22)。顏色代表團隊 / 類別。7/3 的公司創立紀念日是單筆唯讀(`readOnly`):全公司的假日不屬於任何團隊,用中性灰(`neutral`);它只是標記、沒有詳情可開,所以不是按鈕、滑過不亮、點了什麼都不發生(也不會在那天新增),其他事件照樣點得開。',
+          '會議、截止與休假排在同一個月曆:有時段的事件是一列「色條 + 開始時間 + 標題」(無底),全天與跨日事件是淡底長條(Alex 休假 7/20–7/22)。顏色代表類別。7/3 的公司創立紀念日是單筆唯讀(`readOnly`):全公司的假日不屬於任何類別,用中性灰(`neutral`);它只是標記、沒有詳情可開,所以不是按鈕、滑過不亮、點了什麼都不發生(也不會在那天新增)。其他事件點開是內建詳情(`eventDetail`):標題、時間、全天、地點、說明、類別都能就地改,改了寫回月曆;右上「⋯」收「刪除」。',
       },
     },
   },
-  render: () => {
-    const events: CalendarEvent[] = [
-      // 公司假日:團隊月曆裡只是標記、沒有詳情可開 → 單筆唯讀(calendar.spec.md「日期格與事件方塊:可點或唯讀」單筆事件那一列);
-      // 全公司的假日不屬於任何團隊 → 中性灰 neutral(calendar.spec.md「事件的兩種長相」neutral 那條)
-      { id: '0', title: '公司創立紀念日', start: `${thisMonth}-03`, end: `${thisMonth}-04`, color: 'neutral', readOnly: true },
-      { id: '1', title: '設計審查', start: `${thisMonth}-05T10:00`, end: `${thisMonth}-05T11:00`, color: 'blue' },
-      { id: '2', title: '衝刺規劃會議', start: `${thisMonth}-08T14:00`, end: `${thisMonth}-08T15:30`, color: 'blue' },
-      // 截止是一個時刻(有時段的零長度:畫在那一天,不警告)
-      { id: '3', title: 'Orion 專案截止', start: `${thisMonth}-12T18:00`, end: `${thisMonth}-12T18:00`, color: 'red' },
-      { id: '4', title: '與 Sarah 一對一', start: `${thisMonth}-12T10:00`, end: `${thisMonth}-12T10:30`, color: 'purple' },
-      { id: '5', title: '每日站會', start: `${thisMonth}-15T09:30`, end: `${thisMonth}-15T09:45`, color: 'blue' },
-      { id: '6', title: 'Q2 OKR 檢討', start: `${thisMonth}-18T14:00`, end: `${thisMonth}-18T16:00`, color: 'green' },
-      // 休假 7/20–7/22 三天:end 不含 → 23(一條橫跨三格的長條)
-      { id: '7', title: 'Alex 休假', start: `${thisMonth}-20`, end: `${thisMonth}-23`, color: 'yellow', allDay: true },
-      { id: '8', title: '客戶會議', start: `${thisMonth}-25T15:00`, end: `${thisMonth}-25T16:00`, color: 'orange' },
-    ]
-    return (
-      <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
-        <CalendarDemo defaultReferenceDate={now} today={now} events={events} locale={LOCALE} />
-      </div>
-    )
+  render: () => (
+    <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
+      <CalendarDemo defaultReferenceDate={now} today={now} events={teamEvents} locale={LOCALE} categories={TEAM_CATEGORIES} />
+    </div>
+  ),
+}
+
+// 團隊行事曆的類別(eventDetail.categories:{ id, name, color };詳情「類別」欄 = 類別名 Tag,選了類別事件顏色跟著換)【COLORFIELD(定)】
+const TEAM_CATEGORIES = [
+  { id: 'meeting', name: '內部會議', color: 'blue' },
+  { id: 'deadline', name: '專案截止', color: 'red' },
+  { id: 'one-on-one', name: '一對一', color: 'purple' },
+  { id: 'review', name: '目標檢討', color: 'green' },
+  { id: 'leave', name: '休假', color: 'yellow' },
+  { id: 'customer', name: '客戶會議', color: 'orange' },
+] as const satisfies readonly { id: string; name: string; color: CalendarEvent['color'] }[]
+
+const teamEvents: CalendarEvent[] = [
+  // 公司假日:團隊月曆裡只是標記、沒有詳情可開 → 單筆唯讀(calendar.spec.md「日期格與事件方塊:可點或唯讀」單筆事件那一列);
+  // 全公司的假日不屬於任何類別 → 中性灰 neutral(calendar.spec.md「事件的兩種長相」neutral 那條)
+  { id: '0', title: '公司創立紀念日', start: `${thisMonth}-03`, end: `${thisMonth}-04`, color: 'neutral', readOnly: true },
+  { id: '1', title: '設計審查', start: `${thisMonth}-05T10:00`, end: `${thisMonth}-05T11:00`, color: 'blue', categoryId: 'meeting', location: '台北辦公室 3F 大會議室', description: '結帳頁改版第二輪:確認信用卡分期的金額顯示與錯誤訊息。' },
+  { id: '2', title: '衝刺規劃會議', start: `${thisMonth}-08T14:00`, end: `${thisMonth}-08T15:30`, color: 'blue', categoryId: 'meeting', location: 'Google Meet' },
+  // 截止是一個時刻(有時段的零長度:畫在那一天,不警告)
+  { id: '3', title: 'Orion 專案截止', start: `${thisMonth}-12T18:00`, end: `${thisMonth}-12T18:00`, color: 'red', categoryId: 'deadline' },
+  { id: '4', title: '與 Sarah 一對一', start: `${thisMonth}-12T10:00`, end: `${thisMonth}-12T10:30`, color: 'purple', categoryId: 'one-on-one', location: '小會議室 B' },
+  { id: '5', title: '每日站會', start: `${thisMonth}-15T09:30`, end: `${thisMonth}-15T09:45`, color: 'blue', categoryId: 'meeting', location: 'Slack 語音頻道' },
+  { id: '6', title: 'Q2 OKR 檢討', start: `${thisMonth}-18T14:00`, end: `${thisMonth}-18T16:00`, color: 'green', categoryId: 'review', location: '台北辦公室 3F 大會議室', description: '各組回顧 Q2 關鍵結果的達成率,並提出 Q3 的調整。' },
+  // 休假 7/20–7/22 三天:end 不含 → 23(一條橫跨三格的長條)
+  { id: '7', title: 'Alex 休假', start: `${thisMonth}-20`, end: `${thisMonth}-23`, color: 'yellow', allDay: true, categoryId: 'leave' },
+  { id: '8', title: '客戶會議', start: `${thisMonth}-25T15:00`, end: `${thisMonth}-25T16:00`, color: 'orange', categoryId: 'customer', location: '宏達工業 新竹廠' },
+]
+
+/**
+ * 產品自己的詳情 — `onEventClick` 帶 `{ anchor }`(被點的那一段 / 清單裡那一列),產品用 DS 的 Popover 錨在它上面開自己的內容。
+ * 從「+N」清單點的,清單留著、詳情開在旁邊(錨點在清單那一列 → lib/overlay-nesting.ts 認得是清單開出來的那一層,點它不關清單)。
+ */
+export const ProductOwnDetail: Story = {
+  name: '產品自己的詳情',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '產品要顯示自己的事件內容(例:工單系統的工單摘要)時改用 `onEventClick`:點事件時拿到 `{ anchor }` = 被點的那一段 / 那一列,用 DS 的 `Popover` 錨在它上面開。從 7/15 的「+N」清單點事件,清單不關、產品的浮層開在旁邊;產品若用不是 DS 的浮層套件,清單會被關(沒登記的浮層一律不算清單開出來的那一層)。',
+      },
+    },
   },
+  render: () => (
+    <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
+      <CalendarDemo defaultReferenceDate={now} today={now} events={launchEvents} locale={LOCALE} productDetail />
+    </div>
+  ),
 }
 
 /**
@@ -87,26 +119,25 @@ export const TeamCalendar: Story = {
  * 每格放幾列依格高;放不下時最後一列換成「+N」,點它在那一格上展開當天全部事件(清單裡點事件一樣開事件),這一則讓它在畫面上看得到。
  * 開始時間由元件依事件的 start 畫在標題前(「上午10:00 上線公告」),標題裡不另寫時間(2026-11-25 前寫成「上線公告 10:00」)。
  */
+const launchEvents: CalendarEvent[] = [
+  // 凍結 7/13–7/15(上線當天解凍):end 不含 → 16
+  { id: 'l1', title: '程式碼凍結', start: `${thisMonth}-13`, end: `${thisMonth}-16`, color: 'red', allDay: true },
+  { id: 'l2', title: '發布 v2.0', start: `${thisMonth}-15T09:00`, end: `${thisMonth}-15T10:00`, color: 'blue' },
+  { id: 'l3', title: '客服待命', start: `${thisMonth}-15`, end: `${thisMonth}-16`, color: 'yellow', allDay: true },
+  { id: 'l4', title: '上線公告', start: `${thisMonth}-15T10:00`, end: `${thisMonth}-15T10:30`, color: 'green' },
+  { id: 'l8', title: '合作夥伴通知', start: `${thisMonth}-15T11:00`, end: `${thisMonth}-15T11:30`, color: 'turquoise' },
+  { id: 'l5', title: '監控輪值', start: `${thisMonth}-15T14:00`, end: `${thisMonth}-15T22:00`, color: 'purple' },
+  { id: 'l6', title: '慶功', start: `${thisMonth}-15T18:30`, end: `${thisMonth}-15T20:30`, color: 'orange' },
+  { id: 'l7', title: '上線檢討會', start: `${thisMonth}-17T14:00`, end: `${thisMonth}-17T15:00`, color: 'blue' },
+]
+
 export const LaunchWeek: Story = {
   name: '產品上線週',
-  render: () => {
-    const events: CalendarEvent[] = [
-      // 凍結 7/13–7/15(上線當天解凍):end 不含 → 16
-      { id: 'l1', title: '程式碼凍結', start: `${thisMonth}-13`, end: `${thisMonth}-16`, color: 'red', allDay: true },
-      { id: 'l2', title: '發布 v2.0', start: `${thisMonth}-15T09:00`, end: `${thisMonth}-15T10:00`, color: 'blue' },
-      { id: 'l3', title: '客服待命', start: `${thisMonth}-15`, end: `${thisMonth}-16`, color: 'yellow', allDay: true },
-      { id: 'l4', title: '上線公告', start: `${thisMonth}-15T10:00`, end: `${thisMonth}-15T10:30`, color: 'green' },
-      { id: 'l8', title: '合作夥伴通知', start: `${thisMonth}-15T11:00`, end: `${thisMonth}-15T11:30`, color: 'turquoise' },
-      { id: 'l5', title: '監控輪值', start: `${thisMonth}-15T14:00`, end: `${thisMonth}-15T22:00`, color: 'purple' },
-      { id: 'l6', title: '慶功', start: `${thisMonth}-15T18:30`, end: `${thisMonth}-15T20:30`, color: 'orange' },
-      { id: 'l7', title: '上線檢討會', start: `${thisMonth}-17T14:00`, end: `${thisMonth}-17T15:00`, color: 'blue' },
-    ]
-    return (
-      <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
-        <CalendarDemo defaultReferenceDate={now} today={now} events={events} locale={LOCALE} />
-      </div>
-    )
-  },
+  render: () => (
+    <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
+      <CalendarDemo defaultReferenceDate={now} today={now} events={launchEvents} locale={LOCALE} />
+    </div>
+  ),
   play: async ({ canvasElement }) => {
     // 7/15 上線日共 7 筆:7/13 起的「程式碼凍結」長條 + 當天 6 件事。每格放幾列依格高(calendar.spec.md「每格筆數與「+N」」),
     // 所以不寫死畫幾筆;不論放幾列都要成立:畫出來的 + 「+N」藏起來的 = 7,而且放不下時一定有「+N」、排序最後的「慶功」不進 DOM
@@ -329,7 +360,7 @@ export const SidePanelNarrow: Story = {
 export const ReadOnlyDatesCustomTileKeyboard: Story = {
   name: '唯讀日期 × 自訂事件方塊鍵盤',
   tags: ['test-only'],
-  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:502「Enter/Space activation」
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:517「Enter/Space activation」
   parameters: { demoFocus: 'keep' },
   render: () => (
     <div className="h-screen p-4 bg-canvas">
@@ -423,6 +454,74 @@ export const EventClickAnchor: Story = {
   },
 }
 
+// 詳情只能看(test-only 夾具;calendar.spec.md「事件詳情浮層」內文欄位【AI 推導】「isEditable 為 false 時空欄位不列、各欄位 InlineEdit editable={false}」):
+// 客戶端行事曆同步進來的會議,本產品不能改 → isEditable 一律 false。這一筆沒有地點、說明、類別 → 詳情只列時間與全天;
+// 每一欄都不可點(沒有隱形的編輯鈕)。scripts/calendar-month-invariant.mjs DT-readonly 量這一則。
+export const DetailViewOnly: Story = {
+  name: '詳情只能看',
+  tags: ['test-only'],
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md「事件詳情浮層」內文欄位最後一條(isEditable 為 false)
+  render: () => (
+    <div className="h-screen p-4 bg-canvas">
+      <CalendarDemo
+        defaultReferenceDate={now}
+        today={now}
+        locale={LOCALE}
+        categories={TEAM_CATEGORIES}
+        isEditable={() => false}
+        events={[{ id: 'sync1', title: '宏達工業季度回顧(客戶行事曆同步)', start: `${thisMonth}-16T14:00`, end: `${thisMonth}-16T15:30`, color: 'orange' }]}
+      />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: /^宏達工業季度回顧/ }))
+    await within(document.body).findByRole('dialog', { name: '宏達工業季度回顧(客戶行事曆同步)' })
+  },
+}
+
+// 詳情交回的修改(test-only 夾具):onEventChange 每呼叫一次記一筆(畫在範例下方的紀錄列,閘從 DOM 讀),
+// 標題故意長到在格子裡被截斷(關詳情後焦點回到截斷方塊時不跳提示的量測用,DT-tip)。標題列放產品自己的兩個操作「延後一週」「延到下個月」(eventDetail.actions;事件被移走時詳情跟到新位置 / 留在原位、焦點歸還的量測用)。
+// scripts/calendar-month-invariant.mjs DT-commit / DT-move / DT-fallback 量這一則。
+const shiftDays = (value: string | Date, days: number): string | Date => {
+  if (value instanceof Date) return new Date(value.getFullYear(), value.getMonth(), value.getDate() + days, value.getHours(), value.getMinutes())
+  const [date, time] = value.split('T')
+  const [y, m, d] = date.split('-').map(Number)
+  const next = new Date(y, m - 1, d + days)
+  const iso = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`
+  return time ? `${iso}T${time}` : iso
+}
+function DetailChangeLogDemo() {
+  const [log, setLog] = React.useState<{ id: string; patch: Partial<CalendarEvent> }[]>([])
+  return (
+    <div className="h-screen p-4 bg-canvas flex flex-col gap-2">
+      <output data-calendar-change-log={JSON.stringify(log)} className="text-body text-fg-secondary">
+        onEventChange 呼叫 {log.length} 次{log.length ? `,最後一次:${JSON.stringify(log[log.length - 1].patch)}` : ''}
+      </output>
+      <div className="flex-1 min-h-0">
+        <CalendarDemo
+          defaultReferenceDate={now}
+          today={now}
+          locale={LOCALE}
+          events={[{ id: 'mv1', title: '設計審查:結帳頁改版第二輪(信用卡分期顯示)', start: `${thisMonth}-05T10:00`, end: `${thisMonth}-05T11:00`, color: 'blue' }]}
+          onEventChange={(event, patch) => setLog((prev) => [...prev, { id: event.id, patch }])}
+          extraActions={(event, update) => (
+            <>
+              <Button variant="text" size="sm" onClick={() => update({ start: shiftDays(event.start, 7), end: shiftDays(event.end ?? event.start, 7) })}>延後一週</Button>
+              <Button variant="text" size="sm" onClick={() => update({ start: shiftDays(event.start, 31), end: shiftDays(event.end ?? event.start, 31) })}>延到下個月</Button>
+            </>
+          )}
+        />
+      </div>
+    </div>
+  )
+}
+export const DetailChangeLog: Story = {
+  name: '詳情交回的修改',
+  tags: ['test-only'],
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:115「eventDetail.onEventChange(event, patch) 必填;patch 只帶這一次改到的欄位」
+  render: () => <DetailChangeLogDemo />,
+}
+
 // 英文產品覆寫讀屏字串(test-only 夾具):`labels` 逐鍵換掉 DS 預設的繁中(calendar.spec.md「A11y 預設」字串可覆寫),
 // 已有個別參數的字串(‹ › / 月份導覽 / 今天 / 新事件)照用那些參數。play 斷言覆寫真的生效、沒有一句預設中文漏出來;
 // scripts/calendar-month-invariant.mjs 也開這一則量(對照組:把名稱改回預設中文 → 紅)。
@@ -436,6 +535,17 @@ const ENGLISH_LABELS: CalendarLabels = {
   event: (title, when, allDay) => `${title}, ${when}${allDay ? ', all day' : ''}`,
   more: (fullDate, count) => `${fullDate}, ${count} more ${count === 1 ? 'event' : 'events'}`,
   moreListClose: 'Close',
+  // 事件詳情的字(這一則用 onEventClick、不開內建詳情;CalendarLabels 是整份型別,英文產品照樣要給)
+  detailClose: 'Close',
+  detailTitle: 'Event title',
+  detailTime: 'Time',
+  detailAllDay: 'All day',
+  detailLocation: 'Location',
+  detailLocationPlaceholder: 'Add location…',
+  detailDescription: 'Description',
+  detailDescriptionPlaceholder: 'Add description…',
+  detailCategory: 'Category',
+  detailCategoryPlaceholder: 'Choose a category…',
 }
 const ENGLISH_EVENTS: CalendarEvent[] = [
   { id: 'en1', title: 'Design review', start: `${thisMonth}-07T10:00`, end: `${thisMonth}-07T11:00`, color: 'blue' },
@@ -445,7 +555,7 @@ const ENGLISH_EVENTS: CalendarEvent[] = [
 export const EnglishLabelsOverride: Story = {
   name: '英文讀屏字串覆寫',
   tags: ['test-only'],
-  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:483「字串可覆寫」
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:498「字串可覆寫」
   render: () => (
     <div className="h-screen p-4 bg-canvas">
       <Calendar
@@ -503,7 +613,7 @@ export const EmptyCalendar: Story = {
 export const CellBlankClickMovesKeyboardStop: Story = {
   name: '點格內空白帶鍵盤位置',
   tags: ['test-only'],
-  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:220「點格內空白處也把鍵盤位置帶過來」
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:229「點格內空白處也把鍵盤位置帶過來」
   parameters: { demoFocus: 'keep' },
   render: () => (
     <div className="h-screen p-4 bg-canvas">

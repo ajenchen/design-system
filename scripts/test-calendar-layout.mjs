@@ -10,7 +10,9 @@
  *        車道每週各自分配、最低空車道、涵蓋的每一天都要空、同一事件同一週同一車道、只落在被藏日子的事件不佔車道;
  *        被藏的日子把長條切段;每格 m = 最高佔用車道 + 1,m > k → 車道 0…k−2 照畫、第 k 列換「+N」、N = 車道 ≥ k−1 的筆數(看車道不看筆數),
  *        長條在溢出那一格被切開;格內排序五條(開始日期 → 長的在上 → 全天先 → 開始時間 → 標題依 locale),車道與「+N」清單共用;
- *        CalendarEventSegment 五個旗標(isStart / isEnd = 真起訖、continuesBefore / continuesAfter = 可見範圍外、isSegmentRepeat = 不是第一段)。
+ *        CalendarEventSegment 五個旗標(isStart / isEnd = 真起訖、continuesBefore / continuesAfter = 可見範圍外、isSegmentRepeat = 不是第一段);
+ *        詳情時間欄與全天切換(T1–T5,calendar.spec.md「事件詳情浮層」【Q16(定)】):有時段 → 全天只留日期、記住原時間;切回有記錄就還原(過夜的結束日 = 開始日 + 1)、
+ *        沒有就開始日 09:00 起一小時(牆上時間,日光節約那天也是 09:00 – 10:00);全天的 Range 結束日「含」↔ end「不含」換算一個日曆日(25 小時那天也對)。
  *        k 是誰算的(M32 參數邊界):每格放得下幾列的算式住在 calendar-geometry.ts `calendarRowsThatFit`(格高 → k 的判定表,含剛好放滿與
  *        LayoutUnit 取整的邊界);calendar.tsx 交給 layoutMonth 的 maxRows 只有一個來源 = 量到的格高(layoutBorderBoxSize 的 height)經這支算式。
  *        靜態:檔頭 10 行內 @internal、帶「── 消費的 SSOT ──」、不 import calendar.tsx / react、不寫固定毫秒、不開 timeZone、
@@ -21,7 +23,8 @@
  *        欄的相鄰 / 天數改用固定毫秒、end 當成含、拿掉 start > end 正規化、全天 end === start 不警告、零長度不畫在開始那天、
  *        只有日期不推斷 / Date 也推斷 / 一端就推斷、只有日期走原生解析、本地時刻當 UTC、車道一律往下疊、只看最後一天空不空、
  *        每一天各自從 0 往下排、被藏日子的事件夾到旁邊、被藏的日子不切段、isStart 寫成 !continuesBefore、旗標用整週範圍算、
- *        改用筆數算 +N、整條長條一起藏、continuesBefore 寫成 !isStart、isSegmentRepeat 恆假,共 31 個;另有 5 個靜態突變:
+ *        改用筆數算 +N、整條長條一起藏、continuesBefore 寫成 !isStart、isSegmentRepeat 恆假,
+ *        切成全天不記住、沒記錄不給 09:00、全天換算改用固定毫秒、一小時改加 3600000 毫秒(2026-11-26 加四個),共 35 個;另有 5 個靜態突變:
  *        寫固定毫秒、import calendar.tsx、拿掉 @internal、開 timeZone、index.ts 轉出;k 的算式 2 個突變(沒扣格線、不加回 LayoutUnit)與
  *        「k 是誰算的」3 個靜態突變(maxRows 寫死 3、layoutMonth 收常數、量格寬當格高))——
  *        每一種都必須讓它指定的那幾格紅;任何一種沒被抓到 = 判定表沒在驗那一條 → exit 1。
@@ -371,6 +374,44 @@ const ROWS = [
     expectEq(b, '兩天的清單', ['2026-07-15', '2026-07-16'].map((on) => dayList(lib, { on, events })), [['夜間部署 起迄', '午夜收單 起迄'], []])
     return b
   }],
+
+  // T. 詳情時間欄與「全天」切換(calendar.spec.md「事件詳情浮層」時間欄、切換全天【Q16(定)】;calendar-layout.ts detailRangeOf / rangeToTimePatch / toggleAllDayPatch)
+  ['T1', '有時段 → 全天:只留日期、記住原時間', (lib) => {
+    const b = []
+    const { patch, remember } = lib.toggleAllDayPatch(normalizeOne(lib, ev('設計審查', '2026-07-15T10:00', '2026-07-15T11:00')), true, null)
+    expectEq(b, 'patch / 記住', [patch, remember], [{ start: '2026-07-15', end: '2026-07-16', allDay: true }, { startTime: '10:00', endTime: '11:00', endDayOffset: 0 }])
+    return b
+  }],
+  ['T2', '全天 → 有時段:記得 → 開始日 + 記得的時間(過夜的結束日 = 開始日 + 1)', (lib) => {
+    const b = []
+    const entry = normalizeOne(lib, ev('夜間部署', '2026-07-15T22:00', '2026-07-16T01:00'))
+    const off = lib.toggleAllDayPatch(entry, true, null)
+    expectEq(b, '記住過夜', off.remember, { startTime: '22:00', endTime: '01:00', endDayOffset: 1 })
+    const allDay = normalizeOne(lib, { title: '夜間部署', ...off.patch })
+    expectEq(b, '切回', lib.toggleAllDayPatch(allDay, false, off.remember).patch, { start: '2026-07-15T22:00', end: '2026-07-16T01:00', allDay: false })
+    return b
+  }],
+  ['T3', '原本就是全天、沒有記錄 → 開始日 09:00 起一小時(牆上時間)', (lib) => {
+    const b = []
+    expectEq(b, '多天全天切成有時段', lib.toggleAllDayPatch(normalizeOne(lib, ev('程式碼凍結', '2026-07-13', '2026-07-16')), false, null).patch, { start: '2026-07-13T09:00', end: '2026-07-13T10:00', allDay: false })
+    return b
+  }],
+  ['T4', '日光節約那天(2026-03-08 只有 23 小時)也是 09:00 – 10:00;跨過 02:00 的時段原樣還原', (lib) => {
+    const b = []
+    expectEq(b, '沒記錄', lib.toggleAllDayPatch(normalizeOne(lib, ev('季度盤點', '2026-03-08', '2026-03-09')), false, null).patch, { start: '2026-03-08T09:00', end: '2026-03-08T10:00', allDay: false })
+    const off = lib.toggleAllDayPatch(normalizeOne(lib, ev('機房維護', '2026-03-08T01:30', '2026-03-08T03:30')), true, null)
+    expectEq(b, '記住', off.remember, { startTime: '01:30', endTime: '03:30', endDayOffset: 0 })
+    expectEq(b, '還原', lib.toggleAllDayPatch(normalizeOne(lib, { title: '機房維護', ...off.patch }), false, off.remember).patch, { start: '2026-03-08T01:30', end: '2026-03-08T03:30', allDay: false })
+    return b
+  }],
+  ['T5', '時間欄的值:全天的結束日「含」↔ end「不含」換算一天(日光節約 25 小時那天也是加一個日曆日)', (lib) => {
+    const b = []
+    expectEq(b, '全天 → 時間欄', lib.detailRangeOf(normalizeOne(lib, ev('Alex 休假', '2026-07-20', '2026-07-23'))), ['2026-07-20', '2026-07-22'])
+    expectEq(b, '有時段 → 時間欄', lib.detailRangeOf(normalizeOne(lib, ev('設計審查', '2026-07-15T10:00', '2026-07-15T11:00'))), ['2026-07-15T10:00', '2026-07-15T11:00'])
+    expectEq(b, '時間欄 → 全天(11-01 = 25 小時)', lib.rangeToTimePatch(['2026-11-01', '2026-11-01'], true), { start: '2026-11-01', end: '2026-11-02', allDay: true })
+    expectEq(b, '時間欄 → 有時段', lib.rangeToTimePatch(['2026-07-15T10:00', '2026-07-15T11:30'], false), { start: '2026-07-15T10:00', end: '2026-07-15T11:30', allDay: false })
+    return b
+  }],
 ]
 
 // ── 靜態(原始碼文字):住處、出口、禁寫固定毫秒、第一段不開 timeZone ─────────────────────────────────
@@ -535,10 +576,15 @@ const MUTANTS = [
   ['整條長條一起藏(不逐格切)', (s) => replaceOnce(s, 'const isDrawn = (col: number, lane: number) => rowsNeeded[col] <= k || lane <= k - 2', 'const isDrawn = (_col: number, lane: number) => lane <= k - 2 || Math.max(...rowsNeeded) <= k', '整條藏'), ['H1']],
   ['continuesBefore 寫成 !isStart', (s) => replaceOnce(s, 'continuesBefore: p.entry.firstDayMs < rangeFirstMs,', 'continuesBefore: dayMs[a] !== p.entry.firstDayMs,', 'continuesBefore'), ['J1', 'G1']],
   ['isSegmentRepeat 恆為假', (s) => replaceOnce(s, 'const isSegmentRepeat = drawnBefore.has(p.entry)', 'const isSegmentRepeat = false', 'repeat'), ['J1', 'J4', 'H1']],
+  // T. 詳情時間欄與全天切換
+  ['切成全天時不記住原時間', (s) => replaceOnce(s, "    const remember = entry.allDay\n      ? null\n", "    const remember = true\n      ? null\n", '不記住'), ['T1', 'T2', 'T4']],
+  ['沒有記錄時不給 09:00(給開始那一刻的時間)', (s) => replaceOnce(s, '      start: `${day}T${hourString(CALENDAR_DEFAULT_START_HOUR)}`,', '      start: minuteString(entry.start),', '不給 09'), ['T3', 'T4']],
+  ['全天的結束日換算改用固定毫秒(+ 一天的毫秒)', (s) => replaceOnce(s, 'end: dayString(addDays(lastDay, 1)), allDay: true', 'end: dayString(new Date(lastDay.getTime() + 24 * 3600 * 1000)), allDay: true', '換算毫秒'), ['T5']],
+  ['一小時改成加 3600000 毫秒(從開始那一刻算)', (s) => replaceOnce(s, '      end: `${day}T${hourString(CALENDAR_DEFAULT_START_HOUR + CALENDAR_DEFAULT_DURATION_HOURS)}`,', '      end: minuteString(new Date(parseEventDate(day).getTime() + (CALENDAR_DEFAULT_START_HOUR + CALENDAR_DEFAULT_DURATION_HOURS) * 3600000)),', '加毫秒'), ['T4']],
 ]
 const STATIC_MUTANTS = [
   ['原始碼寫固定一天的毫秒', (s) => `${s}\nexport const DAY_MS = 86400000\n`, /\[L3\]/],
-  ['import calendar.tsx 的型別', (s) => s.replace("import { addHours", "import type { CalendarEvent } from './calendar'\nimport { addHours"), /\[L2\]/],
+  ['import calendar.tsx 的型別', (s) => s.replace("import { addDays, addHours", "import type { CalendarEvent } from './calendar'\nimport { addDays, addHours"), /\[L2\]/],
   ['檔頭拿掉 @internal', (s) => s.replace('@internal — ', ''), /\[L1\]/],
   ['開 timeZone 參數', (s) => s.replace('  locale: string\n}): CalendarMonthLayout<E> {', '  locale: string\n  timeZone?: string\n}): CalendarMonthLayout<E> {'), /\[L4\]/],
 ]

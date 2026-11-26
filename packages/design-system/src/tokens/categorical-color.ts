@@ -157,6 +157,27 @@ export const CAT_EVENT: Record<CategoricalHue, string> = {
 }
 
 /**
+ * Calendar 長條「詳情開著」:打開詳情的那一段 / 那一列在詳情開著時維持自己的滑過色(1:1,值 = `CAT_EVENT` 的滑過 step-2;
+ * calendar.spec.md「「+N」清單浮層」點清單裡的事件、「事件詳情浮層」位置【AI 推導】)。由元素上的 `data-detail-open` 驅動,
+ * 與滑過同值、不是另一種顏色:看得出「詳情是從這一筆開的」(Google Calendar 從 overview 點事件時,那一列維持反白)。
+ * 有時段事件的透明列用 `--neutral-hover`(透明底的配對),neutral 長條用 `CAT_EVENT_NEUTRAL.open`。
+ */
+export const CAT_EVENT_OPEN: Record<CategoricalHue, string> = {
+  blue: 'data-[detail-open]:bg-[var(--color-blue-2)]',
+  green: 'data-[detail-open]:bg-[var(--color-green-2)]',
+  'deep-orange': 'data-[detail-open]:bg-[var(--color-deep-orange-2)]',
+  yellow: 'data-[detail-open]:bg-[var(--color-yellow-2)]',
+  red: 'data-[detail-open]:bg-[var(--color-red-2)]',
+  orange: 'data-[detail-open]:bg-[var(--color-orange-2)]',
+  amber: 'data-[detail-open]:bg-[var(--color-amber-2)]',
+  lime: 'data-[detail-open]:bg-[var(--color-lime-2)]',
+  turquoise: 'data-[detail-open]:bg-[var(--color-turquoise-2)]',
+  indigo: 'data-[detail-open]:bg-[var(--color-indigo-2)]',
+  purple: 'data-[detail-open]:bg-[var(--color-purple-2)]',
+  magenta: 'data-[detail-open]:bg-[var(--color-magenta-2)]',
+}
+
+/**
  * Calendar 有時段事件的色條:類別 step-6 實心(1:1;calendar.spec.md「事件的兩種長相」右欄)。**只給顏色** —— 色條是一個元素,
  * 寬、高、圓角由 Calendar 自己給(寬 = calendar-geometry.ts 的常數、高 = 字高、圓頭),不寫在色表裡。
  * 2026-11-25 前是全天事件的左側 3px 邊框(`border-l-[3px]` + 邊框色);全天改成淡底長條、不帶色條,色條改給有時段事件。
@@ -182,11 +203,13 @@ export const CAT_ACCENT: Record<CategoricalHue, string> = {
  *  (color.spec.md「Static Subtle Background」bg-secondary 列「站在這個底上而且可點的…滑過時換自己的配對」、「Hover 換色配對總則」;
  *   同 Tag neutral 的底與字 `components/Tag/tag.tsx#tagVariants`,可點時的滑過同 FileItem 靜態小膠囊 `components/FileItem/file-item.tsx#FileItem`);
  * - `subtle` ↔ `CAT_SUBTLE`:唯讀的長條,同底同字、不帶滑過;
- * - `accent` ↔ `CAT_ACCENT`:有時段事件的色條 = `--color-neutral-9`(同 Tag / Avatar neutral solid 的 neutral-9)。
+ * - `accent` ↔ `CAT_ACCENT`:有時段事件的色條 = `--color-neutral-9`(同 Tag / Avatar neutral solid 的 neutral-9);
+ * - `open` ↔ `CAT_EVENT_OPEN`:詳情開著時維持滑過色 `--secondary-hover`。
  * 【AI 推導,calendar.spec.md「事件的兩種長相」neutral 那條;放在本檔 = 決策總帳 2026-11-25 AI 判定】
  */
 export const CAT_EVENT_NEUTRAL = {
   event: 'bg-secondary text-foreground hover:bg-secondary-hover',
   subtle: 'bg-secondary text-foreground',
   accent: 'bg-[var(--color-neutral-9)]',
+  open: 'data-[detail-open]:bg-secondary-hover',
 } as const

@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-11-25T21:57:48.330Z"
+    "generatedAt": "2026-11-26T01:32:47.442Z"
   },
   "components": {
     "accordion": {
@@ -319,6 +319,7 @@
       "tiers": {
         "展示": [
           "design-system-components-calendar-展示--team-calendar",
+          "design-system-components-calendar-展示--product-own-detail",
           "design-system-components-calendar-展示--launch-week",
           "design-system-components-calendar-展示--quarter-planning",
           "design-system-components-calendar-展示--content-publishing-schedule",
@@ -328,6 +329,8 @@
           "design-system-components-calendar-展示--side-panel-narrow",
           "design-system-components-calendar-展示--read-only-dates-custom-tile-keyboard",
           "design-system-components-calendar-展示--event-click-anchor",
+          "design-system-components-calendar-展示--detail-view-only",
+          "design-system-components-calendar-展示--detail-change-log",
           "design-system-components-calendar-展示--english-labels-override",
           "design-system-components-calendar-展示--empty-calendar",
           "design-system-components-calendar-展示--cell-blank-click-moves-keyboard-stop"
@@ -338,17 +341,23 @@
           "design-system-components-calendar-設計規格--color-matrix",
           "design-system-components-calendar-設計規格--state-behavior",
           "design-system-components-calendar-設計規格--more-list-open",
+          "design-system-components-calendar-設計規格--detail-open",
+          "design-system-components-calendar-設計規格--detail-from-more-list",
           "design-system-components-calendar-設計規格--accessibility"
         ],
         "設計原則": [
           "design-system-components-calendar-設計原則--usage-guidance",
           "design-system-components-calendar-設計原則--color-semantic",
           "design-system-components-calendar-設計原則--month-view-only-rule",
+          "design-system-components-calendar-設計原則--detail-reading-first-rule",
+          "design-system-components-calendar-設計原則--detail-beside-list-rule",
+          "design-system-components-calendar-設計原則--full-edit-in-dialog-rule",
           "design-system-components-calendar-設計原則--read-only-rule"
         ]
       },
       "openSnapshotIds": [
-        "design-system-components-calendar-設計規格--more-list-open"
+        "design-system-components-calendar-設計規格--more-list-open",
+        "design-system-components-calendar-設計規格--detail-open"
       ],
       "exception": null
     },
@@ -1884,5 +1893,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1048
+  "totalStories": 1056
 }

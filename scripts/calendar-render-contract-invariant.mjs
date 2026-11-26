@@ -99,8 +99,9 @@ export function run() {
 `
 
 // ── 打包(固定檔名 + 字面 import,scripts/.gate-bundles/README.md)────────────────────────────────────
-// 替身只需讓範例檔能打包(play 不在這支閘裡執行);範例從 @storybook/test 匯入什麼,這裡就要有同名匯出(2026-11-26 P12-fix2 的 MoreListOpen 加了 waitFor)
-const STUB_STORYBOOK_TEST = 'export const fn = () => () => {}\nexport const expect = () => ({})\nexport const userEvent = {}\nexport const waitFor = async () => {}\nexport const within = () => ({})\n'
+// play 只在 Storybook 裡跑,這裡只要 import 解得開:範例用到的每一個名字都要有(2026-11-26 補 waitFor —— 設計規格「+N」清單 / 詳情與設計原則的 play 用它,
+// 少了它打包直接失敗、整支閘儀器失效)
+const STUB_STORYBOOK_TEST = 'export const fn = () => () => {}\nexport const expect = () => ({})\nexport const userEvent = {}\nexport const within = () => ({})\nexport const waitFor = async () => {}\n'
 const replaceOnce = (src, from, to, label) => {
   if (src.split(from).length !== 2) instrumentFail(`對照組「${label}」要改的片段不是剛好出現一次(原始碼改了,對照組要跟著改):${from}`)
   return src.split(from).join(to)
@@ -208,13 +209,15 @@ const MUTANTS = [
     name: 'calendar.tsx 交給 renderEventTile 的 segment 寫死(不是版面那一段的旗標)',
     file: 'calendar-render-contract-m2.mjs',
     expect: 'T',
+    // 2026-11-26 更正片段:MonthEventPiece 收到的參數名是 segment(不是 piece.segment;事件版面那一包起就是這樣,舊片段找不到 → 整支 selftest 儀器失效)
     mutations: { [`${CAL}/calendar.tsx`]: (src) => replaceOnce(src, 'renderEventTile(event, segment)', 'renderEventTile(event, { isStart: true, isEnd: true, continuesBefore: false, continuesAfter: false, isSegmentRepeat: false })', 'segment 寫死') },
   },
   {
     name: 'calendar.tsx 的唯讀判斷只看 readOnlyEvents(單筆 readOnly 沒接上)',
     file: 'calendar-render-contract-m3.mjs',
     expect: 'R',
-    mutations: { [`${CAL}/calendar.tsx`]: (src) => replaceOnce(src, 'readOnlyEvents || event.readOnly ? { readOnly: true }', 'readOnlyEvents ? { readOnly: true }', '單筆唯讀') },
+    // 2026-11-26 事件方塊改三擇一後 eventModeOf 換成兩行(唯讀那一支在第一行)
+    mutations: { [`${CAL}/calendar.tsx`]: (src) => replaceOnce(src, 'readOnlyEvents || event.readOnly\n      ? { readOnly: true }', 'readOnlyEvents\n      ? { readOnly: true }', '單筆唯讀') },
   },
 ]
 await bundle('calendar-render-contract.mjs')
