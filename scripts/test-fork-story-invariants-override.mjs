@@ -307,6 +307,13 @@ try {
     'R9 page block header inside HoverCardContent → block',
     'R9 hand-craft overlay',
   )
+  assertBlock(
+    await runHook(eventPayload({
+      content: `${pageBlock}\nexport const Card = () => (<DialogContent><Billing /></DialogContent>)`,
+    })),
+    'R9 page block component rendered inside DialogContent in the same file → block',
+    'R9 hand-craft overlay',
+  )
 
   const largeFiller = 'safe-padding-0123456789abcdef'.repeat(12_000)
   assert.ok(Buffer.byteLength(largeFiller) > 256 * 1024)

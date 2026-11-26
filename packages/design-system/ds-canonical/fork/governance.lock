@@ -879,7 +879,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/lib/tsx-governance-analysis.mjs",
-      "sha256": "64f1545dca8b366bf7f2172d7422bf31c34c415a286970157ef1749b0667530b",
+      "sha256": "e1b26967fad39d9b7dbd4aac8eb2a568eca910cd6857e6fd1ffd4b1b99f0157b",
       "source": "lib/tsx-governance-analysis.mjs",
       "classification": "HELPER",
       "destination": null

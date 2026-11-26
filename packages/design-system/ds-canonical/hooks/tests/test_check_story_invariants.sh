@@ -496,6 +496,24 @@ export const Rows = () => (
 '
 expect_block "23c. R9 簽名元素不是區塊第一個子元素(不是區塊標頭)→ 照擋" "R9 hand-craft overlay"
 
+# 23d. 區塊寫成同檔另一個元件、再放進浮層(間接引用)→ 照擋(同檔看得到;跨檔是已知限制)
+run_hook "PreToolUse" "Write" "$TMP_DIR/r9-block-indirect.stories.tsx" '
+const BillingBlock = () => (
+  <div className="rounded-md border border-border bg-surface">
+    <div className="flex items-center px-[var(--layout-space-loose)] py-2 border-b border-divider">
+      <span className="text-body font-medium">帳單資訊</span>
+    </div>
+    <p className="text-body">下次扣款日 12/01</p>
+  </div>
+);
+export const InPopover = () => (
+  <Popover open>
+    <PopoverContent><BillingBlock /></PopoverContent>
+  </Popover>
+);
+'
+expect_block "23d. R9 有框區塊寫成同檔元件再放進 PopoverContent → 照擋" "R9 hand-craft overlay"
+
 # 24. R10 link_canonical: text-primary hover:underline → P1 warn(非 block)
 run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/Foo/foo.principles.stories.tsx" '
 <span className="text-primary hover:underline font-medium cursor-pointer">查看詳情</span>

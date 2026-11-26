@@ -459,8 +459,11 @@ function analyzeChromeHeaderHandcraft() {
 //   (d) 父元素與往上所有祖先都不是浮層:元件名不含下方 OVERLAY_NAME 任一字;原生元素的 className(含條件式裡的字串)
 //       不含浮層記號(rounded-lg / bg-surface-raised / elevation-200 系 / fixed / absolute;radius.spec.md
 //       「rounded-lg 浮層外殼」、elevation.spec.md「--elevation-200 浮層」)。
-// 認不出(className 不是純字串、父元素是元件、區塊寫在別的函式裡被浮層引用)一律不遮 = 照擋;解析失敗 exit 3,
-// 呼叫端改用原文 = 照擋。
+//   (e) 區塊寫在具名的元件 / 變數 / 函式裡(例 `const BillingBlock = () => <div …>`)時,同一檔裡任何一處引用這個名字
+//       (`<BillingBlock />`、`{block}`、`renderBlock()`)落在浮層底下(祖先照 (d) 判;或引用處本身又在另一個被浮層引用的
+//       名字裡,一路往上推到不再增加)→ 不遮 = 照擋。外層每一層具名宣告都要查,任一層被浮層引用就算。
+// 認不出(className 不是純字串、父元素是元件)一律不遮 = 照擋;解析失敗 exit 3,呼叫端改用原文 = 照擋。
+// 已知限制:只看得到同一檔。區塊元件 export 出去、在別的檔放進浮層,這支判法看不到,會被放行。
 function maskPageBlockHeaders() {
   const OVERLAY_NAME = /(Dialog|Sheet|Drawer|Popover|HoverCard|Menu|Tooltip|Coachmark|Toast|Surface|Overlay|Portal)/
   const FLOATING = (token) => (
@@ -520,6 +523,54 @@ function maskPageBlockHeaders() {
   const firstElementChild = (element) => element.children.find((child) => (
     !(ts.isJsxText(child) && child.containsOnlyTriviaWhiteSpaces)
   ))
+  // 往上第一個浮層祖先(skip = 引用處自己那個 JSX 元素,不拿自己的名字判)
+  const hasOverlayAncestor = (start, skip = null) => {
+    for (let up = start; up; up = up.parent) {
+      if (up === skip) continue
+      if (ts.isJsxElement(up) && isOverlayAncestor(up.openingElement)) return true
+      if (ts.isJsxSelfClosingElement(up) && isOverlayAncestor(up)) return true
+    }
+    return false
+  }
+  // 往上每一層具名宣告的名字(函式宣告、const / let 變數 —— 含 memo(…) / forwardRef(…) 包起來的)
+  const enclosingNames = (node) => {
+    const names = []
+    for (let up = node.parent; up; up = up.parent) {
+      if ((ts.isFunctionDeclaration(up) || ts.isClassDeclaration(up)) && up.name) names.push(up.name.text)
+      else if (ts.isVariableDeclaration(up) && ts.isIdentifier(up.name)) names.push(up.name.text)
+    }
+    return names
+  }
+  // (e):同檔內被浮層引用的名字,推到固定點
+  const usages = []
+  const collectUsages = (node) => {
+    if (ts.isIdentifier(node)) {
+      const holder = node.parent
+      const isDeclarationName = holder && holder.name === node && (
+        ts.isVariableDeclaration(holder) || ts.isFunctionDeclaration(holder) || ts.isClassDeclaration(holder)
+        || ts.isParameter(holder) || ts.isBindingElement(holder)
+      )
+      if (!isDeclarationName) {
+        const ownElement = (ts.isJsxOpeningElement(holder) || ts.isJsxClosingElement(holder))
+          ? holder.parent
+          : ts.isJsxSelfClosingElement(holder) ? holder : null
+        usages.push({ name: node.text, direct: hasOverlayAncestor(holder, ownElement), within: enclosingNames(node) })
+      }
+    }
+    ts.forEachChild(node, collectUsages)
+  }
+  collectUsages(sourceFile)
+  const usedInOverlay = new Set()
+  for (let grew = true; grew;) {
+    grew = false
+    for (const usage of usages) {
+      if (usedInOverlay.has(usage.name)) continue
+      if (usage.direct || usage.within.some((name) => usedInOverlay.has(name))) {
+        usedInOverlay.add(usage.name)
+        grew = true
+      }
+    }
+  }
 
   const masks = []
   const visit = (node) => {
@@ -537,11 +588,8 @@ function maskPageBlockHeaders() {
           && block
           && block.tokens.has('rounded-md')
           && (block.tokens.has('border') || block.tokens.has('shadow-[var(--elevation-100)]'))
-        let floating = false
-        for (let up = parent; up && !floating; up = up.parent) {
-          if (ts.isJsxElement(up) && isOverlayAncestor(up.openingElement)) floating = true
-          else if (ts.isJsxSelfClosingElement(up) && isOverlayAncestor(up)) floating = true
-        }
+        const floating = hasOverlayAncestor(parent)
+          || enclosingNames(parent).some((name) => usedInOverlay.has(name))
         if (pageBlock && !floating) masks.push(own.literal)
       }
     }

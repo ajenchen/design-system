@@ -130,19 +130,19 @@
       "type": "file"
     },
     {
-      "hash": "sha256:64f1545dca8b366bf7f2172d7422bf31c34c415a286970157ef1749b0667530b",
+      "hash": "sha256:e1b26967fad39d9b7dbd4aac8eb2a568eca910cd6857e6fd1ffd4b1b99f0157b",
       "id": "canonical-hook-tsx-governance-analysis-helper",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs",
-      "size": 36649,
+      "size": 39085,
       "type": "file"
     },
     {
       "carrierProjections": [],
       "excludes": [],
       "files": 220,
-      "hash": "sha256:6f2d85578d8fed60c5e33114b712e9995beddb3cf50a8efd7b542579e1f951ce",
+      "hash": "sha256:4acc7ffa1b480c05a866803507ce2d4abbc856d3fc4fe4be6248f3275fcc784f",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1843,7 +1843,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:0d5f7e2a74626e33d246ceb476a24dad42fe267de4aa87e3363ace96cec01e7c",
+      "hash": "sha256:21536c6c297477c66e8e86394e6208585881f415fc91e9b0cba6ab3cdc9479d2",
       "id": "governance-harness-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -1906,7 +1906,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:78f51dc0151fd19c03c126e62e3f2c26070d1267c7bb6efda5b31b19b6fd15fd",
+      "hash": "sha256:a2d5899cdbcd96a62e715101c1c345b5da47d48065050c32b9071fe7905a03b3",
       "id": "governance-harness-source-inventory",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2586,7 +2586,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:516435ab751abf0ffe17aa44592b4650a633771f07f89c2a40e9863f6bd9e1b3",
+      "hash": "sha256:84bc80b051b16839154ccb8128cf24dc8692a0140f88e41434a9d0bcdc702f27",
       "id": "provider-compatibility-matrix",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -3094,7 +3094,7 @@
         "scripts/generated/"
       ],
       "files": 816,
-      "hash": "sha256:3774c48c6e4523afebf15f813ad4cbdc5f260aad4cf5b9e0f2265b5a458aa8be",
+      "hash": "sha256:367ac190b0dc06a71f8e0c0d07593ca5ab8ead61cd96680c65148fc5b4fcdfb1",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
