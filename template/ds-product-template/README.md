@@ -98,8 +98,9 @@ verification. Neither PATH npm nor an ignored `node_modules/npm` is executed as 
 calls the exact installed provider-neutral checker with hooks off. This repository proof assumes the
 committed Git snapshot, Node runtime/TLS, and canonical registry endpoint are not malicious; it
 cannot certify a hostile host. Any step failing stops setup. Repository SessionStart remains verification-only; it never installs
-or repairs dependencies. The same `setup:all` works on local macOS/Linux, Codex Cloud, Claude Code
-on the web (see the network note below), Codespaces, and other Linux devcontainer hosts. Native Windows is unsupported; use WSL2 or the committed Linux
+or repairs dependencies. The same `setup:all` works on local macOS/Linux, Codex Cloud, Codespaces, and other Linux
+devcontainer hosts; Claude Code on the web runs it through the Setup script above (see the network
+note below). Native Windows is unsupported; use WSL2 or the committed Linux
 dev container.
 
 Outbound HTTPS that a proxy re-signs (Claude Code on the web, most corporate proxies) works when
@@ -117,8 +118,8 @@ Network on Claude Code on the web: the locked setup connects directly unless a c
 only, see above). Besides the npm registry, the registry signature audit (`audit signatures`)
 downloads Sigstore TUF metadata from `tuf-repo-cdn.sigstore.dev`. In a Setup script run there no
 proxy variable was set and both hosts were reached directly; inside a session that CDN is reachable
-only through the session's credential-free `HTTPS_PROXY`, which the locked setup forwards, so
-rerunning `setup:all` in the session (for example after a committed-lock change) also completes. A
+only through the session's credential-free `HTTPS_PROXY`, which the locked setup forwards, so when `setup:all` is rerun in the session (for example after a committed-lock change) the
+signature audit reaches that CDN through the proxy. A
 session where `setup:all` did not complete is degraded; do not claim compliance there.
 
 Successful `setup:all` output is intentionally scoped as `scope=local-bootstrap`,

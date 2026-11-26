@@ -503,7 +503,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/884721550b56308812b20917adac7a12f36fdb4ecda6b02460a7f5a219c0c966.blob",
-      "sha256": "a37fec635b2632ffba709d589ab7562a5588c3aa376b8349b5c43616b6ffcf60",
+      "sha256": "556552173084f563c125103d2fcf2c8edf05f014a74e2277849a8db1b5469dd6",
       "source": "packages/design-system/ds-canonical/templates/consumer-governance.md",
       "classification": null,
       "destination": "governance/consumer-governance.md"

@@ -103,8 +103,8 @@ Network on Claude Code on the web: the locked setup connects directly unless a c
 only, see above). Besides the npm registry, the registry signature audit (`audit signatures`)
 downloads Sigstore TUF metadata from `tuf-repo-cdn.sigstore.dev`. In a Setup script run there no
 proxy variable was set and both hosts were reached directly; inside a session that CDN is reachable
-only through the session's credential-free `HTTPS_PROXY`, which the locked setup forwards, so
-rerunning `setup:all` in the session (for example after a committed-lock change) also completes. A
+only through the session's credential-free `HTTPS_PROXY`, which the locked setup forwards, so when `setup:all` is rerun in the session (for example after a committed-lock change) the
+signature audit reaches that CDN through the proxy. A
 session where `setup:all` did not complete is degraded; do not claim compliance there.
 
 Do not move installation into SessionStart. The repository SessionStart adapter is deliberately

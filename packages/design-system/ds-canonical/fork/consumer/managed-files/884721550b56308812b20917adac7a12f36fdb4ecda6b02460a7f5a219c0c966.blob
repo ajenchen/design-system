@@ -33,8 +33,7 @@ ignored. On Node.js 22.13.x–22.14.x the locked npm trusts only the bundled sto
 On Claude Code on the web the registry signature audit (`audit signatures`) also reaches the
 Sigstore TUF CDN (`tuf-repo-cdn.sigstore.dev`). In a Setup script run it was reached directly (no
 proxy variable set); inside a session it is reachable only through the session's credential-free
-`HTTPS_PROXY`, which the locked setup forwards for routing only, so rerunning `setup:all` there also
-completes. A session where `setup:all` did not complete is degraded and must not claim compliance.
+`HTTPS_PROXY`, which the locked setup forwards for routing only, so a session rerun of `setup:all` reaches it through that proxy. A session where `setup:all` did not complete is degraded and must not claim compliance.
 
 Successful setup deliberately reports `scope=local-bootstrap`,
 `providerCertification=not-checked`, and `externalActivationRequired=false`. Ordinary bootstrap is
