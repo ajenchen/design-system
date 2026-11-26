@@ -576,7 +576,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
         // 2026-05-14 I2 fix(spec contract (e) view typography canonical):bare span 套
         // `fieldDisplayTextClass(size)`(sm/md→text-body,lg→text-body-lg)— 對齊 Field family 統一。
         if (!value) return <span className={cn(fieldDisplayTextClass(size), fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
-        // 截斷必附 tooltip(tooltip.spec.md:32)— 改消費 truncated-text primitive(同 input.tsx:198 同型修)
+        // 截斷必附 tooltip(tooltip.spec.md:32)— 改消費 truncated-text primitive(同 input.tsx:219 同型修)
         return <TruncatedText className={cn(fieldDisplayTextClass(size), className)}>{displayCommitted}</TruncatedText>
       }
       return (

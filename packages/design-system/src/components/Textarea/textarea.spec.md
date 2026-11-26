@@ -120,6 +120,10 @@ native `<textarea>` 自帶 `value` / `defaultValue` / `onChange` triplet — Tex
 - **極長文字**:edit 態高度固定於 rows / resize 結果,內容超出時 native 內部捲動;view 態 `<div>` 隨內容增高(`whitespace-pre-wrap break-words`),無截斷
 - **resize 上限**:`resize-y` 預設無上限;需限制時 consumer 傳 `max-h-*` className(native resize 受 max-height 約束)
 
+### 字數上限與計數(`maxLength` / `showCount`;2026-11-26)
+
+與 Input 同一套(`../Input/input.spec.md`「字數上限與計數」):`maxLength`(原生屬性,照原樣傳給 `<textarea>`)= 上限、打到上限擋住;`showCount?: boolean`(預設 `false`)顯示「12 / 100」。在 Field 裡畫在說明那一行的右端、沒有說明時那一行只有計數;不在 Field 裡時畫在框下一行的右端;純顯示與表格格(naked)不畫。規則只住 `../Field/field-controls.spec.md`「字數計數」。出處:user 2026-11-26 第五輪決策卡 C7 點選「A:放在說明那一行的右端(「12 / 100」);沒有說明時那一行只有計數」(選項是 AI 擬的)。範例:`textarea.stories.tsx`「在 Field 內」。
+
 ---
 
 ## 禁止事項

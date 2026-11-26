@@ -1660,6 +1660,8 @@ jobs:
           # LinkInput 錯誤說明(2026-11-22 LINK-ERRTEXT,user 11-22 確認頁拍板丙;link-input.spec.md「錯誤說明」):網址不合法時框下自帶一行說明、
           # aria-describedby 連得到、打字消失、errorText 換字、包在 Field 裡畫在 Field 的錯誤區且使用端的字優先(只出一行)、外面存進來的不合法值照 blur 驗證
           #(一掛上不驗);--selftest 在送到瀏覽器的夾具程式裡造回錯的寫法 5 組必紅(M1–M4 拿掉新行為,M5 把撤掉的「一掛上就驗」那一版做回來)。
+          # 2026-11-26 同一支加 Input / Textarea 字數計數(field-controls.spec.md「字數計數」,C7;同一個機制:控件交給 Field 畫在欄裡的一行):
+          # 說明那一行右端 / 沒有說明時只有計數 / 打字更新與上限擋字 / 讀屏 describedby 與禮貌播報 / 單獨用,對照組 M6–M12 必紅。
           npm run test:link-input-error-text
           # 水平溢出「選到就露出來」(test:overflow-reveal-selected)2026-11-12 移到 verify-browser-layout;2026-11-14 再搬到 verify-browser-horizontal-overflow(見該 job 檔頭)。
           # useFormValidation 契約(2026-10-01 待辦總帳 N65 / N67):hook 原始碼 + 同名欄位的幾張表單、沒有 <form> 的 footer 送出區,

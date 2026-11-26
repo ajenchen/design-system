@@ -8,12 +8,18 @@
 //   custom   單獨用、errorText 換字、外部值本身不是網址 —— 照 blur 驗證:一掛上、點進去都不驗,閘按 Tab 離開後才出現
 //   field    包在 Field 裡(有 FieldDescription、使用端的 FieldError 沒字)、外部值本身不是網址 → 離開後說明畫在 Field 的錯誤區
 //   consumer 包在 Field 裡、使用端自己的 FieldError 有字、外部值本身不是網址 → 離開後 LinkInput 也驗出不合法,仍只有使用端那一行
+// 2026-11-26 加「控件交給 Field 畫的另一行」:字數計數(field-controls.spec.md「字數計數」,C7)—— 同一個機制(控件 → Field 欄裡的一行),同一支閘守:
+//   count-desc  Input 在 Field 裡、有 FieldDescription、上限 100(工單標題)→ 計數在說明那一行的右端
+//   count-only  Textarea 在 Field 裡、沒有說明、上限 10 → 那一行只有計數(右端);閘打超過上限的字,量擋住
+//   count-alone Input 單獨用、上限 30 → 框下一行、右端
 // 夾具自己的版面用行內樣式:這個檔不在 Tailwind 的 @source 範圍裡,寫 class 不會產生樣式;DS 元件的樣式來自元件本身。
 import * as React from 'react'
 import { createRoot } from 'react-dom/client'
 import { Button } from '@/design-system/components/Button/button'
 import { Field, FieldLabel, FieldDescription, FieldError } from '@/design-system/components/Field/field'
 import { LinkInput } from '@/design-system/components/LinkInput/link-input'
+import { Input } from '@/design-system/components/Input/input'
+import { Textarea } from '@/design-system/components/Textarea/textarea'
 import { TooltipProvider } from '@/design-system/components/Tooltip/tooltip'
 
 // 這兩句的原文也寫在閘裡(閘以字面比對畫出來的字)
@@ -28,6 +34,9 @@ function Fixture() {
   const [inField, setInField] = React.useState('官網還在架設中')
   const [consumer, setConsumer] = React.useState('結帳流程需求文件 v3')
   const [log, setLog] = React.useState<string[]>([])
+  const [ticketTitle, setTicketTitle] = React.useState('結帳頁按鈕沒反應')
+  const [note, setNote] = React.useState('請款單')
+  const [keyword, setKeyword] = React.useState('')
   return (
     <div data-eti-log={log.join('|')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 24, width: 360, padding: 24 }}>
       {/* 單獨用的兩個欄位各放在有 gap 的 flex 直欄裡(展示頁的範例區就是這樣):容器的 gap 不得疊進框與說明之間 */}
@@ -51,6 +60,22 @@ function Fixture() {
           <LinkInput value={consumer} onChange={setConsumer} />
           <FieldError>{CONSUMER_TEXT}</FieldError>
         </Field>
+      </div>
+      <div data-eti="count-desc">
+        <Field>
+          <FieldLabel>工單標題</FieldLabel>
+          <Input value={ticketTitle} onChange={(e) => setTicketTitle(e.target.value)} maxLength={100} showCount />
+          <FieldDescription>會出現在工單列表與通知信的主旨。</FieldDescription>
+        </Field>
+      </div>
+      <div data-eti="count-only">
+        <Field>
+          <FieldLabel>付款備註</FieldLabel>
+          <Textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={10} rows={2} showCount />
+        </Field>
+      </div>
+      <div data-eti="count-alone" style={STACK}>
+        <Input value={keyword} onChange={(e) => setKeyword(e.target.value)} aria-label="搜尋工單關鍵字" maxLength={30} showCount />
       </div>
       <div><Button size="sm">下一個欄位</Button></div>
     </div>

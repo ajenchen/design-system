@@ -1424,7 +1424,7 @@ const AgentPromptInput = React.forwardRef<HTMLDivElement, AgentPromptInputProps>
             // textarea(本檔 :1403)不帶 disabled;props(:1279 AgentPromptInputProps 只繼承 div 的 HTMLAttributes)沒有 disabled 可傳;
             // 外框寫死 fieldChromeStyles({ mode: 'edit' })(:1391);代理進行中(busy,:1285)只把送出鈕換成停止,輸入框照常可打字。
             // 規格 agent-panel.spec.md:241 外框 =「Textarea edit×default 同一組字串」,沒有停用態。日後若加 disabled,
-            // 照同族 textarea.tsx:45 的寫法補 disabled 時 placeholder 換 fg-disabled 的覆寫,並拿掉這段豁免。
+            // 照同族 textarea.tsx:46 的寫法補 disabled 時 placeholder 換 fg-disabled 的覆寫,並拿掉這段豁免。
             'placeholder:text-fg-muted',
             'field-sizing-content max-h-40',
           )}

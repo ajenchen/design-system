@@ -52,7 +52,8 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/design-system/compone
 // field.tsx 只 import 不 re-export——consumer 直接從 field-context.ts import useFieldContext。
 
 import type { FieldMode, FieldVariant, FieldOrientation, FieldSize, FieldControlLayout, FieldContextValue } from './field-context'
-import { FieldContext, useFieldContext, resolveGroupPreferredSize } from './field-context'
+import { FieldContext, useFieldContext, resolveGroupPreferredSize, FIELD_TEXT_CLASS } from './field-context'
+import { FieldDescriptionRow, useFieldCountRegistry } from './field-count'
 
 // ── Internal helpers ────────────────────────────────────────────────────────
 
@@ -68,9 +69,7 @@ const FIELD_HEIGHT_VAR: Record<FieldSize, string> = {
   lg: 'var(--field-height-lg)',
 }
 
-// Label / Description / Error 的字體固定 text-body (14px)，不隨 field size 變。
-// 世界級共識：field size 只影響 input 高度，不影響表單佈局元素的 typography。
-const FIELD_TEXT_CLASS = 'text-body'
+// Label / Description / Error 的字體 = field-context.ts FIELD_TEXT_CLASS(text-body 14px,不隨 field size 變;字數計數同一個值)
 
 type SlotKind = 'label' | 'description' | 'error' | 'control'
 
@@ -256,6 +255,13 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
       (node) => React.isValidElement<{ children?: React.ReactNode }>(node) && hasErrorContent(node.props.children),
     )
     const controlErrorNode = controlError != null && !consumerErrorShown ? <FieldError>{controlError}</FieldError> : null
+    // 字數計數(field-controls.spec.md「字數計數」;2026-11-26 C7):Input / Textarea 開 showCount 時把字數交給 Field(registerControlCount),
+    // 說明那一行換成「說明在左、計數在右端」;沒有說明時那一行只有計數。沒有 control 交字數時 controlCount 一直是 null,說明照舊、畫面不變。
+    const countId = `${id}-count`
+    const [controlCount, registerControlCount] = useFieldCountRegistry()
+    const descriptionArea = controlCount
+      ? <FieldDescriptionRow description={descriptionNodes} count={{ ...controlCount, disabled: disabled || controlCount.disabled }} countId={countId} />
+      : descriptionNodes
 
     const detectedSize = detectPreferredSize(controlNodes)
     const controlPreferredSize = detectedSize ?? registeredSize
@@ -288,11 +294,13 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
         sizeExplicit,
         registerPreferredSize,
         registerControlError,
+        countId,
+        registerControlCount,
         orientation,
         controlLayout,
         hasFieldWrapper: true,
       }),
-      [id, labelId, descriptionId, errorId, mode, variant, disabled, required, invalid, size, sizeExplicit, registerPreferredSize, registerControlError, orientation, controlLayout]
+      [id, labelId, descriptionId, errorId, mode, variant, disabled, required, invalid, size, sizeExplicit, registerPreferredSize, registerControlError, countId, registerControlCount, orientation, controlLayout]
     )
 
     // Control area：兩種佈局模型,「第一行內容中線」都錨在 field-height/2,
@@ -350,7 +358,7 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
             {labelNodes}
             <div className="flex flex-col gap-1 min-w-0">
               {controlArea}
-              {descriptionNodes}
+              {descriptionArea}
               {errorNodes}
               {controlErrorNode}
             </div>
@@ -376,7 +384,7 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
         >
           {labelNodes}
           {controlArea}
-          {descriptionNodes}
+          {descriptionArea}
           {errorNodes}
           {controlErrorNode}
         </div>

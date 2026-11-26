@@ -143,7 +143,7 @@ export const Overview = {
             {MODES.map((m) => (
               <div key={m} className="flex items-center gap-4">
                 <div className="w-64 shrink-0">
-                  {/* view + readonly 讀 controlled value:兩者「空值」皆走 <span> 顯 '-'(input.tsx:121),
+                  {/* view + readonly 讀 controlled value:兩者「空值」皆走 <span> 顯 '-'(input.tsx:130),
                       demo 要展示有值狀態故傳 value;edit / disabled 用 defaultValue 保持 uncontrolled */}
                   {(m === 'view' || m === 'readonly') ? (
                     <Input mode={m} value="Wireless Bluetooth Headphones" size="md" aria-label={`商品名稱（${m} 模式）`} />
