@@ -9,8 +9,8 @@
  *             沒被截斷的不出現(tooltip.spec.md:30「只有當文字實際被截斷時才顯示」);
  *           寬(視窗 960):畫面與修前一致 —— 用修前的排版模型逐項比:沒有步驟名被截斷、前面每一步等寬、最後一步 = 自己的自然寬
  *             (圓欄 + 縫 + 字寬)、連接線伸到該步右緣、滑過不出 tooltip;
- *           最後一步長名字(視窗 592,把最後一步名字換成 LONG_LAST_NAME):前面每一步的步驟名可見寬 ≥ 1 個字寬(不被全擠成「…」)、
- *             最後一步不比前面每一步寬(放不下時一起分寬)。
+ *           最後一步長名字(把最後一步名字換成 LONG_LAST_NAME;寬度由實測內容推導,見 deriveLongLastWidth):前面每一步的步驟名
+ *             可見寬 ≥ 1 個字寬(不被全擠成「…」)、最後一步不比前面每一步寬(放不下時一起分寬)。
  *   紅: 垂直:任一尺寸的線高 < 24、或任一端的縫 ≠ 8(±0.6px,subpixel)→ 指名尺寸與數字並 exit 1。
  *       歷史紅燈(2026-09-29 修法前實測,`storybook-static` 尺寸對照表):sm 18.2 / md **2.2** / lg **0** —— 線長 = li 高 − 2r − 16,
  *       無說明時 md 幾乎看不見、lg 根本沒有線(user 09-26:「所以這是沒按照設計規格?」→ 裁「兩者都是」)。
@@ -20,9 +20,15 @@
  *   量法: 靜態站開 story,讀 `[data-steps-indicator]` / `[data-steps-connector]` / `[data-steps-label]` 的 getBoundingClientRect 與
  *         scrollWidth / clientWidth(M32:量像素幾何,不看 class);tooltip 由 Playwright 真的滑過步驟名、等 `[role="tooltip"]` 畫出來。
  *   對照組(`--selftest`):(a) 判定表 —— 修前實測數字(垂直 18.2 / 2.2 / 0、水平 480 的 216–240 對 208)與每一項的壞形狀必紅、好形狀必綠;
- *         (b) 有建置時,在真的建置上注入五種破壞,各自讓指定那一項紅:拿掉截斷(步驟名照修前不准縮)→ 窄的連接線進圓;
- *         步驟名改回折行 → 窄的單行紅;tooltip 藏掉 → 窄的 tooltip 紅;最後一步照修前不准縮 → 長名字的「前面被擠成…」紅;
- *         最後一步撐滿 → 寬的「最後一步自然寬」紅。
+ *         (b) 有建置時,在真的建置上注入六種破壞,各自讓指定那一項紅:拿掉截斷(步驟名照修前不准縮)→ 窄的連接線進圓;
+ *         步驟名改回折行 → 窄的單行紅;tooltip 藏掉 → 窄的 tooltip 紅;最後一步照修前不准縮 → 長名字的「前面被擠成…」紅
+ *         (本機字寬一次、字寬縮成約 8px 一次);最後一步撐滿 → 寬的「最後一步自然寬」紅;
+ *         (c) 綠面:字寬縮成約 8px 時,修後的長名字場景必須全綠(只有破壞會紅,不是窄字型本身就紅)。
+ *   長名字場景的寬度(2026-11-27,PR #174 CI 紅的根因):原本寫死視窗 592。CI 的 Linux 沒有 CJK 字型,中文每字約 8px(本機 14px),
+ *         「最後一步照修前不准縮」時最後一步的自然寬只有 36 + 88 = 124,前面每步還剩 37px 給字 —— 沒被擠,對照組只拿到 premise、量具無效
+ *         (M32 第四問「換一台機器 / 環境還會成立嗎」)。改成先在參考寬開一次、量出圓欄 + 縫、字級、最後一步的自然寬,
+ *         再由 deriveLongLastWidth 算出「修後前面每步至少一個字」與「修前前面每步不到一個字」同時成立的容器寬區間,取區間正中;
+ *         區間不存在 = 儀器失效(不讀成通過)。判準本身不變(仍是 ≥ 1 個字寬,字寬 = 字級)。
  */
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -42,9 +48,31 @@ const TOL = 0.6
 export const H_STORY = 'design-system-components-steps-展示--horizontal'
 export const NARROW_VW = 480 // E12 重現的寬度
 export const WIDE_VW = 960
-export const LONG_LAST_VW = 592 // 展示 story 是 padded 版面:容器 = 592 − 左右各 16 = 560(實際值從 DOM 讀,不靠這個算)
-// 結帳流程最後一步寫成長名字(展示 story 原本是「完成」);修前最後一步不准縮,前面每一步只剩約 8px 給字
+// 長名字場景先在這個寬度開一次量內容(展示 story 是 padded 版面、外框 max-w-3xl 768;640 寬時容器 608 不會頂到上限),
+// 再依 deriveLongLastWidth 換到推導出的寬度重開一次
+export const LONG_LAST_REF_VW = 640
+// 結帳流程最後一步寫成長名字(展示 story 原本是「完成」);修前最後一步不准縮,前面每一步被擠到不到一個字
 export const LONG_LAST_NAME = '確認訂單並開立電子發票'
+
+/**
+ * 純函式:長名字場景的容器寬,由實測內容推導(與字型無關)。
+ * n 步、步與步之間 gap;chromeFront = 前面一步除了字以外的寬(圓欄 + 縫 + 字到線的縫 + 線的地板);
+ * fontSize = 「一個字」的門檻(judgeHorizontal 的 long-last-squeezed 用同一個值);lastNatural = 最後一步自然寬(圓欄 + 縫 + 長名字字寬)。
+ *   修後(大家一起分寬):每步 = (C − (n−1)gap) / n;前面每步字框 ≥ fontSize ⟺ C ≥ lower = n(chromeFront + fontSize) + (n−1)gap
+ *   修前(最後一步不准縮):前面每步 = (C − (n−1)gap − lastNatural) / (n−1);字框 < fontSize ⟺ C < upper = (n−1)(chromeFront + fontSize + gap) + lastNatural
+ *   修後最後一步要被截斷(場景前提):每步 < lastNatural ⟺ C < truncBound = n·lastNatural + (n−1)gap
+ * 取 [lower, min(upper, truncBound)) 的正中;區間寬不到 4px → infeasible(呼叫端報儀器失效)。
+ */
+export function deriveLongLastWidth({ n, gap, chromeFront, fontSize, lastNatural }) {
+  const vals = { n, gap, chromeFront, fontSize, lastNatural }
+  for (const [k, v] of Object.entries(vals)) if (!Number.isFinite(v)) return { infeasible: `${k} 不是數字(${v})` }
+  const lower = n * (chromeFront + fontSize) + (n - 1) * gap
+  const upper = (n - 1) * (chromeFront + fontSize + gap) + lastNatural
+  const truncBound = n * lastNatural + (n - 1) * gap
+  const hi = Math.min(upper, truncBound)
+  if (hi - lower < 4) return { infeasible: `容器寬區間 [${lower}, ${hi}) 不足 4px(最後一步自然寬 ${lastNatural} 不夠長,修前擠不到前面)`, lower, upper, truncBound }
+  return { container: Math.floor((lower + hi) / 2), lower, upper, truncBound }
+}
 const SOURCES = [
   'packages/design-system/src/components/Steps/steps.tsx',
   'packages/design-system/src/components/Steps/steps.stories.tsx',
@@ -165,8 +193,49 @@ export const HORIZONTAL_TABLE = [
   ['長名字:最後一步被截斷卻比前面寬', sceneOf('long-last', row([{ w: 102.4 }, { w: 102.4, label: 56 }, { w: 102.4, label: 56 }, { w: 102.4, label: 28 }, { w: 140, label: 154 }])), ['long-last-wider']],
 ]
 
-function selftestTable() {
+// 長名字場景寬度推導的兩面:兩組實測字寬 —— 本機(中文每字 14px)與 CI Linux(每字約 8px;PR #174 CI log 實測
+// 購物車 24 / 寄送地址 32 / 運送方式 32 / 付款 16 / 長名字 88)。在推導出的容器寬上用判定表夾具模擬:修後必綠、修前必紅 long-last-squeezed。
+export const DERIVE_TABLE = [
+  ['本機字寬(14px)', { fronts: [42, 56, 56, 28], last: 154 }],
+  ['CI Linux 字寬(約 8px)', { fronts: [24, 32, 32, 16], last: 88 }],
+]
+/** 以判定表夾具的幾何(圓欄 36、字到線 12、線地板 MIN_LINE_PX、步間 12、字級 14)模擬容器寬 C 的修後 / 修前形狀 */
+function simulateLongLast({ fronts, last }, container = null) {
+  const n = fronts.length + 1
+  const lastNatural = 36 + last
+  const d = deriveLongLastWidth({ n, gap: 12, chromeFront: 36 + 12 + MIN_LINE_PX, fontSize: 14, lastNatural })
+  const C = container ?? d.container
+  if (!Number.isFinite(C)) return { d }
+  const each = (C - (n - 1) * 12) / n
+  const wf = (C - (n - 1) * 12 - lastNatural) / (n - 1)
+  return {
+    d, C,
+    after: sceneOf('long-last', row([...fronts.map((label) => ({ w: each, label })), { w: each, label: last }])),
+    before: sceneOf('long-last', row([...fronts.map((label) => ({ w: wf, label })), { w: lastNatural, label: last }])),
+  }
+}
+const kindsOf = (scene) => [...new Set(judgeHorizontal(scene).map((x) => x.kind))].sort()
+
+function selftestDerive() {
   let ok = true
+  for (const [name, content] of DERIVE_TABLE) {
+    const s = simulateLongLast(content)
+    if (s.d.infeasible) { console.error(`✗ selftest 推導「${name}」:應可推導,實得 ${s.d.infeasible}`); ok = false; continue }
+    const a = kindsOf(s.after), b = kindsOf(s.before)
+    if (a.length) { console.error(`✗ selftest 推導「${name}」容器 ${s.C}:修後應全綠,實得 [${a}]`); ok = false }
+    if (JSON.stringify(b) !== JSON.stringify(['long-last-squeezed', 'premise'])) { console.error(`✗ selftest 推導「${name}」容器 ${s.C}:修前應紅 long-last-squeezed(+ premise),實得 [${b}]`); ok = false }
+  }
+  // 舊做法的紅燈重現:CI 字寬在舊的固定容器 560(視窗 592)上,修前形狀前面每步還有 37px 給字 → 只有 premise、沒有 squeezed(PR #174 CI 紅)
+  const old = simulateLongLast(DERIVE_TABLE[1][1], 560)
+  if (JSON.stringify(kindsOf(old.before)) !== JSON.stringify(['premise'])) { console.error(`✗ selftest:CI 字寬 + 固定容器 560 應重現「只有 premise」,實得 [${kindsOf(old.before)}]`); ok = false }
+  // 最後一步不夠長(展示 story 原本的「完成」)→ 推不出寬度 = 儀器失效,不是通過
+  if (!deriveLongLastWidth({ n: 5, gap: 12, chromeFront: 36 + 12 + MIN_LINE_PX, fontSize: 14, lastNatural: 36 + 28 }).infeasible) { console.error('✗ selftest:最後一步「完成」推不出區間,應 infeasible'); ok = false }
+  if (!deriveLongLastWidth({ n: 5, gap: 12, chromeFront: NaN, fontSize: 14, lastNatural: 190 }).infeasible) { console.error('✗ selftest:量不到值應 infeasible'); ok = false }
+  return ok
+}
+
+function selftestTable() {
+  let ok = selftestDerive()
   const good = ['sm', 'md', 'lg'].map((size) => ({ size, lines: [{ height: 24, gapTop: 8, gapBottom: 8 }, { height: 24, gapTop: 8, gapBottom: 8 }] }))
   if (judge(good).length !== 0) { console.error('✗ selftest:正確形狀應綠', judge(good)); ok = false }
   // 修法前的真實紅燈(2026-09-29 storybook-static 實測):線高是列高的餘數
@@ -185,7 +254,7 @@ function selftestTable() {
     const want = [...expectKinds].sort()
     if (JSON.stringify(got) !== JSON.stringify(want)) { console.error(`✗ selftest 水平「${name}」:應 [${want}],實得 [${got}]`, judgeHorizontal(scene).map((x) => x.msg)); ok = false }
   }
-  console.log(ok ? `✅ steps-connector-geometry selftest 判定表 PASS(垂直 4 格 + 水平 ${HORIZONTAL_TABLE.length} 格)` : '❌ steps-connector-geometry selftest 判定表 FAIL')
+  console.log(ok ? `✅ steps-connector-geometry selftest 判定表 PASS(垂直 4 格 + 水平 ${HORIZONTAL_TABLE.length} 格 + 長名字寬度推導 ${DERIVE_TABLE.length} 組字寬 × 修前 / 修後 + 固定 560 重現 + 推不出 2 格)` : '❌ steps-connector-geometry selftest 判定表 FAIL')
   return ok
 }
 
@@ -236,21 +305,15 @@ function readHorizontalInPage() {
   })
 }
 
-/** 開展示「水平」story 量一個場景;sabotageCss = 對照組注入的破壞。回 { scene } 或 { instrument }。 */
-async function measureHorizontalScene(page, origin, name, sabotageCss = null) {
-  const vw = name === 'narrow' ? NARROW_VW : name === 'wide' ? WIDE_VW : LONG_LAST_VW
+/** 以視窗寬 vw 開展示「水平」story(可注入破壞、可把最後一步換成長名字),回 { items, olWidth } 或 { instrument }。 */
+async function openHorizontal(page, origin, vw, sabotageCss, longLast) {
   await page.setViewportSize({ width: vw, height: 600 })
-  try {
-    await openStory(page, `${origin}/iframe.html?id=${encodeURIComponent(H_STORY)}&viewMode=story`, {
-      waitFor: 'ol[data-orientation="horizontal"] [data-steps-connector="horizontal"]',
-      settleFrames: 3,
-      beforeSettle: sabotageCss ? async (p) => { await p.addStyleTag({ content: sabotageCss }) } : null,
-    })
-  } catch (error) {
-    if (error instanceof StoryRenderInstrumentError) return { instrument: `${name}:${error.message}` }
-    throw error
-  }
-  if (name === 'long-last') {
+  await openStory(page, `${origin}/iframe.html?id=${encodeURIComponent(H_STORY)}&viewMode=story`, {
+    waitFor: 'ol[data-orientation="horizontal"] [data-steps-connector="horizontal"]',
+    settleFrames: 3,
+    beforeSettle: sabotageCss ? async (p) => { await p.addStyleTag({ content: sabotageCss }) } : null,
+  })
+  if (longLast) {
     // 不新增 story(E12 指示:既有水平範例優先):把展示 story 最後一步的名字換成長名字,其餘不動
     const replaced = await page.evaluate((longName) => {
       const labels = document.querySelectorAll('ol[data-orientation="horizontal"] > li[data-state] [data-steps-label]')
@@ -260,11 +323,49 @@ async function measureHorizontalScene(page, origin, name, sabotageCss = null) {
       textHost.firstChild.nodeValue = longName
       return true
     }, LONG_LAST_NAME)
-    if (!replaced) return { instrument: `${name}:找不到最後一步步驟名的文字節點,換不了長名字` }
+    if (!replaced) return { instrument: '找不到最後一步步驟名的文字節點,換不了長名字' }
     await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))))
   }
   const items = await page.evaluate(readHorizontalInPage)
-  if (!items || items.some((it) => !it.label)) return { instrument: `${name}:找不到水平步驟條或 [data-steps-label]` }
+  if (!items || items.length < 2 || items.some((it) => !it.label)) return { instrument: '找不到水平步驟條或 [data-steps-label]' }
+  const olWidth = await page.evaluate(() => document.querySelector('ol[data-orientation="horizontal"]')?.getBoundingClientRect().width ?? NaN)
+  return { items, olWidth }
+}
+
+/** 開展示「水平」story 量一個場景;sabotageCss = 對照組注入的破壞。回 { scene } 或 { instrument }。 */
+async function measureHorizontalScene(page, origin, name, sabotageCss = null) {
+  let opened
+  let derived = null
+  try {
+    if (name === 'long-last') {
+      // 先在參考寬量內容,再換到推導出的寬度重開(檔頭「長名字場景的寬度」;字型不同的機器各自推出自己的寬度)
+      const ref = await openHorizontal(page, origin, LONG_LAST_REF_VW, sabotageCss, true)
+      if (ref.instrument) return { instrument: `${name}:${ref.instrument}` }
+      const it = ref.items
+      const f = it[0]
+      const L = it[it.length - 1]
+      const d = deriveLongLastWidth({
+        n: it.length,
+        gap: it[1].liLeft - f.liRight,
+        // 圓欄 + 縫(字的左緣 − 步的左緣)+ 字到線的縫(線的左緣 − 字的右緣)+ 線的地板
+        chromeFront: (f.label.left - f.liLeft) + (f.conn ? f.conn.left - (f.label.left + f.label.clientW) : NaN) + MIN_LINE_PX,
+        fontSize: f.label.fontSize,
+        lastNatural: (L.label.left - L.liLeft) + L.label.scrollW,
+      })
+      if (d.infeasible) return { instrument: `${name}:推不出長名字場景的寬度 —— ${d.infeasible}` }
+      const vw = Math.round(LONG_LAST_REF_VW - ref.olWidth + d.container)
+      opened = await openHorizontal(page, origin, vw, sabotageCss, true)
+      if (!opened.instrument && Math.abs(opened.olWidth - d.container) > 1) return { instrument: `${name}:視窗 ${vw} 的步驟條寬 ${opened.olWidth} ≠ 推導的容器寬 ${d.container}` }
+      derived = { container: d.container, lower: d.lower, upper: Math.min(d.upper, d.truncBound), vw }
+    } else {
+      opened = await openHorizontal(page, origin, name === 'narrow' ? NARROW_VW : WIDE_VW, sabotageCss, false)
+    }
+  } catch (error) {
+    if (error instanceof StoryRenderInstrumentError) return { instrument: `${name}:${error.message}` }
+    throw error
+  }
+  if (opened.instrument) return { instrument: `${name}:${opened.instrument}` }
+  const { items } = opened
   const tooltips = []
   // 窄:每一步都滑過(被截斷的要出、沒被截斷的不出);寬:滑過第一步(不該出);長名字只量幾何
   const toHover = name === 'narrow' ? items.map((_, i) => i) : name === 'wide' ? [0] : []
@@ -281,19 +382,28 @@ async function measureHorizontalScene(page, origin, name, sabotageCss = null) {
     await page.mouse.move(3, 588)
     await page.waitForFunction(() => !document.querySelector('[data-radix-popper-content-wrapper]'), null, { timeout: 4000 }).catch(() => {})
   }
-  return { scene: { name, items, tooltips } }
+  return { scene: { name, items, tooltips, ...(derived ? { derived } : {}) } }
 }
 
 const HORIZONTAL_SCENES = ['narrow', 'wide', 'long-last']
 
-// 真建置上的五種破壞(selftest (b)):各自必須讓指定那一項紅
+// 字寬縮成約 8px(中文 14px 字 − 6px 字距),模擬 CI Linux 沒有 CJK 字型時的字寬(PR #174 log:購物車 24 / 長名字 88)
+const NARROW_GLYPH_CSS = 'ol[data-orientation="horizontal"] [data-steps-label] > *{letter-spacing:-6px!important}'
+const NO_SHRINK_LAST_CSS = 'ol[data-orientation="horizontal"] > li:last-child{flex:none!important;max-width:none!important}'
+
+// 真建置上的六種破壞(selftest (b)):各自必須讓指定那一項紅
 const LIVE_SABOTAGE = [
   ['拿掉截斷(步驟名照修前不准縮、不截斷)', 'narrow',
     'div:has(> [data-steps-label]){flex-shrink:0!important}[data-steps-label] > *{overflow:visible!important;text-overflow:clip!important}', 'connector-into-next'],
   ['步驟名改回折行', 'narrow', '[data-steps-label] > *{white-space:normal!important}', 'single-line'],
   ['tooltip 藏掉', 'narrow', '[data-radix-popper-content-wrapper]{display:none!important}', 'tooltip'],
-  ['最後一步照修前不准縮', 'long-last', 'ol[data-orientation="horizontal"] > li:last-child{flex:none!important;max-width:none!important}', 'long-last-squeezed'],
+  ['最後一步照修前不准縮', 'long-last', NO_SHRINK_LAST_CSS, 'long-last-squeezed'],
+  ['最後一步照修前不准縮(字寬約 8px,模擬 CI Linux)', 'long-last', NARROW_GLYPH_CSS + NO_SHRINK_LAST_CSS, 'long-last-squeezed'],
   ['最後一步撐滿(拿掉自然寬上限)', 'wide', 'ol[data-orientation="horizontal"] > li:last-child{max-width:none!important}', 'wide-last-natural'],
+]
+// 綠面(selftest (c)):只換字寬、不破壞,修後形狀必須全綠 —— 證明上一組的紅來自破壞,不是窄字型本身
+const LIVE_GREEN = [
+  ['字寬約 8px(模擬 CI Linux)的修後長名字場景', 'long-last', NARROW_GLYPH_CSS],
 ]
 
 async function withBrowser(fn) {
@@ -323,11 +433,19 @@ if (isMain) {
           if (hit.length) console.log(`✓ 對照組「${name}」→ ${kind} 紅 ${hit.length} 處(例:${hit[0].msg})`)
           else problems.push(`對照組「${name}」沒有讓 ${kind} 紅 —— 量具無效;實得 ${fails.map((x) => x.kind).join(', ') || '全綠'}`)
         }
+        for (const [name, sceneName, css] of LIVE_GREEN) {
+          const r = await measureHorizontalScene(page, origin, sceneName, css)
+          if (r.instrument) { problems.push(`${INSTRUMENT_FAIL_MARKER}(綠面「${name}」):${r.instrument}`); continue }
+          const fails = judgeHorizontal(r.scene)
+          const at = r.scene.derived ? `容器 ${r.scene.derived.container}(區間 [${r.scene.derived.lower}, ${r.scene.derived.upper}))` : ''
+          if (fails.length) problems.push(`綠面「${name}」應全綠 ${at},實得 ${fails.map((x) => x.msg).join(' | ')}`)
+          else console.log(`✓ 綠面「${name}」全綠 ${at}`)
+        }
         return problems
       })
       if (live === null) process.exit(tableOk ? 0 : 1) // 起不了瀏覽器:launchBrowserOrSkip 已印判定
       if (live.length) console.error('❌ steps-connector-geometry selftest(真建置破壞)FAIL:\n  ' + live.join('\n  '))
-      else console.log(`✅ steps-connector-geometry selftest 真建置破壞 ${LIVE_SABOTAGE.length} 種全部讓指定那一項紅`)
+      else console.log(`✅ steps-connector-geometry selftest 真建置破壞 ${LIVE_SABOTAGE.length} 種全部讓指定那一項紅、綠面 ${LIVE_GREEN.length} 種全綠`)
       process.exit(tableOk && !live.length ? 0 : 1)
     }
     const result = await withBrowser(async (page, origin) => {
@@ -346,7 +464,8 @@ if (isMain) {
     for (const s of sizes) console.log(`  ${s.size.padEnd(3)} ${s.lines.map((l) => `高 ${l.height} 縫 ${l.gapTop}/${l.gapBottom}`).join(' | ')}`)
     for (const sc of scenes) {
       console.log(`  水平 ${sc.name.padEnd(9)} ${sc.items.map((it) => `[li ${it.liW}${it.conn ? ` 線 ${it.conn.width}` : ''} 字 ${it.label.clientW}/${it.label.scrollW}]`).join(' ')}`
-        + (sc.tooltips.length ? `  tooltip ${sc.tooltips.map((t) => `${t.i + 1}:${t.truncated ? '截' : '未'}→${t.shown ? '有' : '無'}`).join(' ')}` : ''))
+        + (sc.tooltips.length ? `  tooltip ${sc.tooltips.map((t) => `${t.i + 1}:${t.truncated ? '截' : '未'}→${t.shown ? '有' : '無'}`).join(' ')}` : '')
+        + (sc.derived ? `  容器 ${sc.derived.container}(視窗 ${sc.derived.vw};由實測推導,區間 [${sc.derived.lower}, ${sc.derived.upper}))` : ''))
     }
     const failures = judge(sizes)
     if (sizes.length < 3) failures.push(`${INSTRUMENT_FAIL_MARKER}:只量到 ${sizes.length} 組尺寸(應 3)`)
