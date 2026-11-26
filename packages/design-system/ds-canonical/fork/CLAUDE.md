@@ -27,16 +27,13 @@ On Claude Code on the web, set the **Setup script** to the script in README.md (
 container setup"). It can go in the shared Default environment: it runs `npm run setup:all` only
 when the session's repository is this one and returns that command's exit status, and for any other
 repository it prints one skip line and exits 0. Do not put a bare `npm run setup:all` there: the
-official guide does not document a Setup script's working directory (a cloud session has shown the
-checkout at `/home/user/<repository-folder>`), and one that exits non-zero makes the session fail to
+official guide does not document a Setup script's working directory (a Setup script run started in `/home/user`, with
+the checkout at `/home/user/<repository-folder>`), and one that exits non-zero makes the session fail to
 start or start without what it failed to install
-(https://code.claude.com/docs/en/cloud-environments#setup-scripts). `setup:all` is not verified to
-complete there yet: inside a session, the locked setup before this fix stopped at the registry signature audit
-(`audit signatures`, `ENOTFOUND tuf-repo-cdn.sigstore.dev`; that host is reachable there only through
-the proxy, and the locked setup dropped every proxy variable). The locked setup now forwards a
-credential-free `HTTPS_PROXY` / `NO_PROXY` for routing only (a proxy URL with credentials is still
-ignored); with this fix neither a session nor the Setup script stage has been tested there yet.
-A session where it did not complete is degraded. `setup:all`
+(https://code.claude.com/docs/en/cloud-environments#setup-scripts). Inside a session the registry signature
+audit (`audit signatures`) reaches `tuf-repo-cdn.sigstore.dev` only through the session's
+credential-free `HTTPS_PROXY`, which the locked setup forwards for routing only (a proxy URL with
+credentials is still ignored). A session where `setup:all` did not complete is degraded. `setup:all`
 runs the shared locked install, signature audit, and exact installed hooks-off checker before work.
 The web environment may reuse a cached setup result, so rebuild that cache or run
 `npm run setup:all` explicitly whenever the committed lock changes. Opening or resuming a Claude session does not
