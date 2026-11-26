@@ -557,6 +557,25 @@ export const EmptyState: Story = {
               }
             />
           </ExampleSection>
+          {/* 2026-11-26(產品 canary 回報 C2):釘選左右欄 + 列操作 + 欄寬總和(1000)比容器(640)寬的空表 ——
+              左釘選 100、右釘選 Updated 120 + 操作欄,兩邊不等寬。data-table-invariants.mjs I41 量這一格:Empty 對可見寬置中(捲到最右也是)、表身沒有凍結線與釘選面板。 */}
+          <ExampleSection title="釘選欄的空表" description="商品清單篩選後沒有符合的結果:SKU 釘在左側、更新日期與操作欄釘在右側,欄位總寬比容器寬。空狀態跨全部欄位、在看得到的範圍內置中,左右凍結線只畫在表頭。">
+            <div style={{ maxWidth: 640 }}>
+              <DataTable
+                columns={columnsWithPrice}
+                data={[]}
+                pinnedLeftColumns={['sku']}
+                pinnedRightColumns={['updatedAt']}
+                emptyState="找不到符合「藍牙耳機」的商品"
+                rowActions={() => (
+                  <>
+                    <Button variant="text" size="xs" iconOnly startIcon={Pencil} aria-label="編輯" />
+                    <Button variant="text" size="xs" iconOnly startIcon={Trash2} aria-label="刪除" />
+                  </>
+                )}
+              />
+            </div>
+          </ExampleSection>
         </ExampleStack>
         <NameFormDialog
           open={creating}

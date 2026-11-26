@@ -391,7 +391,6 @@ function VisibilityRow({
         aria-label={visible ? '隱藏此欄' : '顯示此欄'}
         disabled={locked}
         onClick={onToggle}
-        className={locked ? 'cursor-not-allowed text-fg-disabled' : ''}
       />
     </div>
   )

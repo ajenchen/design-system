@@ -89,7 +89,9 @@ const sheetVariants = cva(
   // Animation canonical:panel = surfaceMotion 250ms(--motion-duration-surface)雙向一致
   // (D4 audit:500ms 太久 sluggish);何時播 / 收尾 / 減少動態也在 surfaceMotion,這裡只寫 slide 幾何
   // overflow-hidden min-h-0:同 Dialog,補上 overlay-surface primitive 要求的父層契約(2026-09-12)。
-  `fixed z-50 flex flex-col overflow-hidden min-h-0 bg-surface-raised shadow-[var(--elevation-200)] transition ease-in-out ${surfaceMotion}`,
+  // outline-none:側板裡沒有可聚焦控件時開啟落點退回殼本身,修前殼畫出 2px 焦點框(2026-11-26 產品 canary 回報 C11;同族 Popover / Dialog)。
+  // @focus-suppress E — E 浮層程式落點;承擔者:側板殼,body 與 footer 都沒有可聚焦控件時開啟落點退回殼本身(本檔 handleSheetOpenAutoFocus);殼本身不可操作,內部控件各自有指示
+  `fixed z-50 flex flex-col overflow-hidden min-h-0 bg-surface-raised shadow-[var(--elevation-200)] outline-none transition ease-in-out ${surfaceMotion}`,
   {
     variants: {
       side: {

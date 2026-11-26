@@ -337,6 +337,9 @@ const DialogContent = React.forwardRef<
         // Dialog 與 Sheet 漏了 → 視窗變矮時內容直接畫到圓角容器外面(2026-09-12 user 截圖)。
         // 少了 min-h-0,dialog 自己在 flex 容器裡也收縮不到 max-height 以下。
         "flex flex-col overflow-hidden min-h-0 bg-surface-raised rounded-lg border border-border",
+        // 2026-11-26(產品 canary 回報 C11):對話框裡沒有可聚焦控件時開啟落點退回殼本身,修前殼畫出 2px 焦點框(同族 Popover 早已抑制)。
+        // @focus-suppress E — E 浮層程式落點;承擔者:對話框殼,body 與 footer 都沒有可聚焦控件時開啟落點退回殼本身(本檔 handleOpenAutoFocus);殼本身不可操作,內部控件各自有指示
+        "outline-none",
         // 進出場 = 從中心淡入 + 輕微縮放,**不位移**(dialog.spec.md「動畫」段;何時播 / 時長 / 曲線 / 收尾 / reduced-motion 由
         // surfaceMotion 消費 --motion-duration-surface / --motion-easing-enter / --motion-easing-exit,這裡只寫幾何)。
         // 2026-09-09 user 抓到 dialog 從左上角飛到中間:shadcn v3 時代的 `slide-in-from-left-1/2 slide-in-from-top-[48%]`

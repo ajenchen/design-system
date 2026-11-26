@@ -2921,6 +2921,70 @@ for (const [label, r, c, kind] of [
   console.log([...passes, ...failures].filter((l) => l.includes(' I40 | ')).join('\n'))
 }
 
+// ── I41:釘選欄的空表 —— 空狀態「跨全欄」畫面上也跨、Empty 對可見寬置中、表身沒有凍結線(2026-11-26,產品 canary 回報 C2)──────
+// data-table.spec.md「空表」;story = 展示 / 空狀態「釘選欄的空表」(左釘選 SKU 100、右釘選 Updated 120 + 操作欄、欄寬總和 1000 > 容器 640)。
+// 量像素:Empty 裡看得到的東西(文字 + 插圖)的外接框中心 vs 中間捲動區可見寬的中心,差 ≤ 1px;捲到最右再量一次(sticky 才留得住)。
+// 表身那一段:沒有左右釘選面板、沒有凍結線元素;表頭照常有左右釘選區(前置:證明量到的是有釘選的那張)。可橫捲 → 中間區是 tab stop 且有名稱。
+// 對照組(2026-11-26 實跑兩組):
+// (1) 修前建置:data-table.tsx 的空表程式碼還原成 bd8fe7ae(story 與本閘用新版),另建一份 Storybook 用 --build= 量 →
+//     前置綠(表頭左右釘選 2 區、可捲 386px);I41 其餘四條全紅:表身面板 2 個 / 凍結線 1 個、捲動 0 中心差 193px、
+//     中間區沒有 tab stop(tabindex 與名稱都沒有)、捲到最右中心差 −193px;本閘其他斷言全綠(只紅這四條)。
+// (2) 修後建置注入 CSS 只拿掉 Empty 內層的 sticky(C2 實作者實跑)→ 捲到最右那一條紅(中心差 −386px)。
+{
+  const STORY_EMPTY = `${BASE}/iframe.html?id=design-system-components-datatable-展示--empty-state&viewMode=story`
+  await loadStory(STORY_EMPTY, '[data-datatable-header-panel="left"]')
+  const pickRoot = () => {
+    const roots = [...document.querySelectorAll('[data-data-table-outer]')]
+      .filter((r) => r.querySelector('[data-datatable-header-panel="left"]') && r.querySelector('[role="row"][aria-rowindex="2"] [aria-colspan]'))
+    return roots.length === 1 ? roots[0] : null
+  }
+  const measureEmpty = () => page.evaluate((pickSrc) => {
+    const pick = new Function(`return (${pickSrc})()`)
+    const root = pick()
+    if (!root) return { err: '找不到唯一一張「有左釘選表頭的空表」' }
+    const sc = root.querySelector('[data-datatable-panel="center"]')
+    const cell = root.querySelector('[role="row"][aria-rowindex="2"] [aria-colspan]')
+    // 看得到的東西 = 文字節點 + svg 插圖(不量區塊盒:區塊盒可能是整格寬,中心恆等於格中心,量不出偏移)
+    const rects = []
+    const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT)
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      if (!n.textContent.trim()) continue
+      const rg = document.createRange(); rg.selectNodeContents(n)
+      for (const r of rg.getClientRects()) if (r.width > 0) rects.push(r)
+    }
+    for (const svg of cell.querySelectorAll('svg')) { const r = svg.getBoundingClientRect(); if (r.width > 0) rects.push(r) }
+    if (!rects.length) return { err: 'Empty 裡量不到任何文字或插圖' }
+    const left = Math.min(...rects.map((r) => r.left)), right = Math.max(...rects.map((r) => r.right))
+    const s = sc.getBoundingClientRect()
+    const visibleCenter = s.left + sc.clientLeft + sc.clientWidth / 2
+    return {
+      delta: Math.round(((left + right) / 2 - visibleCenter) * 100) / 100,
+      scrollLeft: Math.round(sc.scrollLeft), maxScroll: sc.scrollWidth - sc.clientWidth,
+      boundaries: root.querySelectorAll('.dtLeftBoundary, .dtRightBoundary').length,
+      bodyPanels: root.querySelectorAll('[data-datatable-panel="left"], [data-datatable-panel="right"]').length,
+      headerPanels: root.querySelectorAll('[data-datatable-header-panel="left"], [data-datatable-header-panel="right"]').length,
+      tabIndex: sc.getAttribute('tabindex'), label: sc.getAttribute('aria-label'), colspan: cell.getAttribute('aria-colspan'),
+    }
+  }, pickRoot.toString())
+  const at0 = await measureEmpty()
+  if (at0.err) record('I41', '釘選欄的空表:量得到(否則以下斷言空轉)', false, at0.err)
+  else {
+    record('I41', `前置:這張空表真的有左右釘選表頭(${at0.headerPanels} 區)、欄寬總和比可見寬寬(可捲 ${at0.maxScroll}px)`, at0.headerPanels === 2 && at0.maxScroll > 40, JSON.stringify(at0))
+    record('I41', '空表的表身沒有左右釘選面板、沒有凍結線元素(凍結線只畫在表頭那一段)', at0.bodyPanels === 0 && at0.boundaries === 0, JSON.stringify(at0))
+    record('I41', `Empty 對可見寬置中(捲動 0:中心差 ${at0.delta}px,≤ 1)`, Math.abs(at0.delta) <= 1, JSON.stringify(at0))
+    record('I41', '可橫捲的空表:中間捲動區是 tab stop 且有名稱(scrollable-region-focusable)', at0.tabIndex === '0' && !!at0.label, JSON.stringify(at0))
+    await page.evaluate((pickSrc) => {
+      const root = new Function(`return (${pickSrc})()`)()
+      const sc = root.querySelector('[data-datatable-panel="center"]')
+      sc.scrollLeft = sc.scrollWidth
+    }, pickRoot.toString())
+    await settleAfterInteraction(page, { frames: SETTLE_FRAMES })
+    const atMax = await measureEmpty()
+    record('I41', `捲到最右(${atMax.scrollLeft} / ${atMax.maxScroll}px)Empty 仍在可見寬中央(中心差 ${atMax.delta}px,≤ 1)`,
+      !atMax.err && atMax.scrollLeft >= atMax.maxScroll - 1 && atMax.scrollLeft > 40 && Math.abs(atMax.delta) <= 1, JSON.stringify(atMax))
+  }
+}
+
 if (failures.length > 0) {
   console.log('\n--- FAILURES ---')
   console.log(failures.join('\n'))

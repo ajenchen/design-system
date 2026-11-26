@@ -87,6 +87,14 @@
  *                      焦點移到欄位外的按鈕 → 跑一次
  *   F-look             可聚焦的停用(忙碌鈕 8 種 variant / danger;存檔後握著焦點的送出鈕)與原生停用逐項同色:靜止 / 滑過 / 按住 × 淺深兩色,
  *                      背景 / 字 / 四邊框 / 不透明度 / 游標;忙碌鈕確實是可聚焦的停用(data-disabled-focusable、原生 disabled=false)
+ *   F-shell-ring       Dialog / Sheet / Popover 裡沒有可聚焦控件(只有標題列的 ×):鍵盤開啟 → 開啟落點是殼、殼是 :focus-visible → 殼不畫焦點框
+ *                      (focus-canonical.md「E. 浮層程式落點」;2026-11-26 產品 canary 回報 C11:修前 Dialog / Sheet 畫 2px 框,Popover 同族、早已抑制)
+ *   F-inline-disabled  行內動作鈕自身停用(SidebarGroupAction disabled):游標 not-allowed、字色 = text-fg-disabled、滑過 / 按住字色與底色釘在靜止
+ *                      (與 F-look 同一類「停用不給互動回饋」;inline-action.spec.md「自身停用」列;2026-11-26 產品 canary 回報 C20)。CTRL-inline-hover 對照:可用那顆滑過會變
+ *   K-cmdb-modal       「這一下 ⌘B 由誰處理」(與 Esc 分層同一類:按鍵歸焦點所在那一層):頁面有可收合側欄、modal「工作區設定」對話框裡是不可收合的設定導覽,
+ *                      焦點在導覽上按 ⌘B → 背景頁側欄不切換、不寫 sidebar_state、沒人攔(sidebar.spec.md「持久化與快捷鍵」;2026-11-26 產品 canary 回報 C13)
+ *   K-cmdb-none-cookie 不可收合的側欄經 useSidebar().setOpen 開關 → 不寫 sidebar_state(同上)
+ *   CTRL-cmdb(對照)   對話框關著、焦點在頁面上按 ⌘B → 頁面側欄收起、寫 cookie、攔下(量具看得到切換 / cookie / 攔截)
  *   CTRL-clean / CTRL-button(對照)乾淨的欄位 / 按鈕上第一下 Esc 就關(只量「看得到關閉」,不含焦點去哪)
  *
  * ── 突變 → 該紅的列(--selftest;MUTANTS 是單一來源,這裡是人讀版)──
@@ -464,6 +472,48 @@ const MUTANTS = [
     // 2026-10-13:附件列改用 OverflowTagList(與 Combobox 同一份可見數量測),容器 ref 改名 rowRef —— 突變錨點跟著改,拆掉的仍是同一件事
     apply: (src) => replaceOnce(src, /    focusAfterCollectionRemoval\(rowRef\.current, \{ owner: owner\.current \}\)\n    onRemove\(attachment\)/, '    onRemove(attachment)'),
   },
+  {
+    id: 'dialog-shell-ring',
+    what: 'DialogContent 殼不抑制焦點框(2026-11-26 前:沒有可聚焦控件時開啟落點退回殼,畫出 2px 框;產品 canary 回報 C11)',
+    file: 'components/Dialog/dialog.tsx',
+    expectRed: ['F-shell-ring'],
+    apply: (src) => replaceOnce(src, /\n        "outline-none",\n/, '\n'),
+  },
+  {
+    id: 'sheet-shell-ring',
+    what: 'SheetContent 殼不抑制焦點框(同上,sheetVariants 基底沒有 outline-none)',
+    file: 'components/Sheet/sheet.tsx',
+    expectRed: ['F-shell-ring'],
+    apply: (src) => replaceOnce(src, /shadow-\[var\(--elevation-200\)\] outline-none transition/, 'shadow-[var(--elevation-200)] transition'),
+  },
+  {
+    id: 'inline-action-disabled-feedback',
+    what: 'ItemInlineActionButton 不看自身停用(2026-11-26 前:游標手指、滑過 / 按住照樣變色出底色;產品 canary 回報 C20)',
+    file: 'patterns/element-anatomy/item-anatomy.tsx',
+    expectRed: ['F-inline-disabled'],
+    apply: (src) => replaceOnce(src, /const disabled = rest\.disabled === true \|\| rest\["aria-disabled"\] === true \|\| rest\["aria-disabled"\] === "true"/, 'const disabled = false'),
+  },
+  {
+    id: 'sidebar-cmdb-modal-background',
+    what: '背景頁的 SidebarProvider 不看自己是否被 modal 藏起來(2026-11-26 前:在對話框裡按 ⌘B 切到背景頁的側欄、寫 cookie;產品 canary 回報 C13)',
+    file: 'components/Sidebar/sidebar.tsx',
+    expectRed: ['K-cmdb-modal'],
+    apply: (src) => replaceOnce(src, /wrapperRef\.current\?\.closest\('\[aria-hidden="true"\], \[inert\]'\) &&/, 'false &&'),
+  },
+  {
+    id: 'sidebar-cmdb-none-intercepts',
+    what: '不可收合(collapsible="none")的側欄照樣攔 ⌘B(2026-11-26 前的寫法)',
+    file: 'components/Sidebar/sidebar.tsx',
+    expectRed: ['K-cmdb-modal'],
+    apply: (src) => replaceOnce(src, /\n {10}if \(collapsibleRef\.current === "none"\) return\n/, '\n'),
+  },
+  {
+    id: 'sidebar-none-writes-cookie',
+    what: '不可收合的側欄開關照寫全站共用的 sidebar_state cookie(2026-11-26 前的寫法)',
+    file: 'components/Sidebar/sidebar.tsx',
+    expectRed: ['K-cmdb-none-cookie'],
+    apply: (src) => replaceOnce(src, /\n {8}if \(collapsibleRef\.current === "none"\) return\n/, '\n'),
+  },
 ]
 
 // ─── harness(打包進空白頁)──────────────────────────────────────────────────
@@ -490,10 +540,15 @@ import { Calendar } from '@/design-system/components/Calendar/calendar'
 import { FileUpload } from '@/design-system/components/FileUpload/file-upload'
 import { AgentPromptInput, AgentPanelHeader } from '@/design-system/components/AgentPanel/agent-panel'
 import { Pagination } from '@/design-system/components/Pagination/pagination'
+import { SidebarProvider, Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarGroupAction, SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from '@/design-system/components/Sidebar/sidebar'
+import { Plus } from 'lucide-react'
 import { useFormValidation } from '@/design-system/components/Field/use-form-validation'
 
 window.__calls = {}
 const count = (k) => { window.__calls[k] = (window.__calls[k] ?? 0) + 1 }
+// K-cmdb:記下每一次寫 document.cookie。harness 頁是 about:blank,沒有 cookie 罐、寫了也讀不回來 → 改量「寫了沒」(CTRL-cmdb 證明量得到)
+window.__cookieWrites = []
+Object.defineProperty(document, 'cookie', { configurable: true, get: () => '', set: (v) => { window.__cookieWrites.push(String(v)) } })
 
 function Shell({ title, children, footer }) {
   const [open, setOpen] = React.useState(false)
@@ -767,6 +822,103 @@ function LookScene() {
   )
 }
 
+// F-shell-ring(2026-11-26,產品 canary 回報 C11;focus-canonical.md「E. 浮層程式落點」):浮層裡沒有任何可聚焦控件(只有標題列的 ×,它被排除在開啟落點之外),
+// 開啟落點退回殼本身。Dialog / Sheet 修前殼畫出 2px 焦點框;Popover 早已抑制,同場量當同族對照。開啟鈕都用鍵盤 Enter 按(殼才會是 :focus-visible,量得到框)。
+function ShellRingScene({ kind }) {
+  const [open, setOpen] = React.useState(false)
+  window.__closeScene = () => setOpen(false)
+  if (kind === 'popover') {
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild><Button data-open>出貨紀錄</Button></PopoverTrigger>
+        <PopoverContent id="scene-popover"><p>訂單 #1042 還沒有出貨紀錄。</p></PopoverContent>
+      </Popover>
+    )
+  }
+  return (
+    <div>
+      <button type="button" data-open onClick={() => setOpen(true)}>出貨紀錄</button>
+      {kind === 'sheet' ? (
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetContent id="scene-dialog">
+            <SheetHeader><SheetTitle>訂單 #1042 的出貨紀錄</SheetTitle></SheetHeader>
+            <SheetBody><p>這筆訂單還沒有出貨紀錄。</p></SheetBody>
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent id="scene-dialog" height="hug" width={480}>
+            <DialogHeader><DialogTitle>訂單 #1042 的出貨紀錄</DialogTitle></DialogHeader>
+            <DialogBody><p>這筆訂單還沒有出貨紀錄。</p></DialogBody>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  )
+}
+
+// F-inline-disabled(2026-11-26,產品 canary 回報 C20;inline-action.spec.md「互動狀態」的「自身停用」列):群組標題列的行內動作鈕
+// (SidebarGroupAction → ItemInlineActionButton)停用 vs 同頁可用的一顆(對照:滑過真的會變,證明量具看得到回饋)。
+// 「所有專案」已達方案上限 → 建立專案停用;「我的收藏」的新增可用。text-fg-disabled 的探針給「停用字色」的期望值(不寫死顏色)。
+function InlineDisabledScene() {
+  return (
+    <SidebarProvider style={{ minHeight: 'auto' }}>
+      <div style={{ width: 280, padding: 16 }}>
+        <SidebarGroup>
+          <SidebarGroupLabel>所有專案</SidebarGroupLabel>
+          <SidebarGroupAction icon={Plus} aria-label="建立專案" disabled data-inline="disabled" />
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>我的收藏</SidebarGroupLabel>
+          <SidebarGroupAction icon={Plus} aria-label="新增收藏" data-inline="enabled" />
+        </SidebarGroup>
+        <span className="text-fg-disabled" data-probe-disabled>停用字色</span>
+      </div>
+    </SidebarProvider>
+  )
+}
+
+// K-cmdb(2026-11-26,產品 canary 回報 C13;sidebar.spec.md「持久化與快捷鍵」):頁面有一個可收合的側欄,「工作區設定」對話框裡是
+// 不可收合(collapsible="none")的設定導覽(Notion / Linear 設定視窗的左側分頁)。對話框在頁面 Provider 之後才掛上 → 頁面的 ⌘B 監聽先註冊、先跑。
+const CMDB_NAV = [['general', '一般'], ['members', '成員與權限'], ['billing', '帳單'], ['notify', '通知']]
+function DialogSidebarHandle() { window.__dialogSidebar = useSidebar(); return null }
+function CmdBScene() {
+  const [open, setOpen] = React.useState(false)
+  window.__closeScene = () => setOpen(false)
+  return (
+    <SidebarProvider defaultActiveId="issues" style={{ minHeight: 'auto' }} data-cmdb="page">
+      <Sidebar collapsible="offcanvas">
+        <SidebarContent>
+          <SidebarMenu>
+            <SidebarMenuItem><SidebarMenuButton id="issues">議題</SidebarMenuButton></SidebarMenuItem>
+            <SidebarMenuItem><SidebarMenuButton id="projects">專案</SidebarMenuButton></SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarContent>
+      </Sidebar>
+      <div>
+        <button type="button" data-open onClick={() => setOpen(true)}>工作區設定</button>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent id="scene-dialog" height="hug" width={720}>
+            <DialogHeader><DialogTitle>工作區設定</DialogTitle></DialogHeader>
+            <DialogBody>
+              <SidebarProvider defaultActiveId="general" style={{ minHeight: 'auto' }} data-cmdb="dialog">
+                <DialogSidebarHandle />
+                <Sidebar collapsible="none">
+                  <SidebarContent>
+                    <SidebarMenu>
+                      {CMDB_NAV.map(([id, label]) => <SidebarMenuItem key={id}><SidebarMenuButton id={id}>{label}</SidebarMenuButton></SidebarMenuItem>)}
+                    </SidebarMenu>
+                  </SidebarContent>
+                </Sidebar>
+              </SidebarProvider>
+            </DialogBody>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </SidebarProvider>
+  )
+}
+
 // B-leave / N-esc-tab(2026-10-21 r1b fields F1 / N1):必填的五種彈出型欄位 + 一個一般 Popover;consumer 的 onBlur 逐欄計次
 const LEAVE_BANKS = [{ value: '004', label: '004 臺灣銀行' }, { value: '812', label: '812 台新銀行' }, { value: '822', label: '822 中國信託' }]
 function LeaveScene() {
@@ -893,6 +1045,11 @@ const SCENES = {
   unchained: () => <UnchainedScene />,
   overflow: () => <OverflowScene />,
   look: () => <LookScene />,
+  shellDialog: () => <ShellRingScene kind="dialog" />,
+  shellSheet: () => <ShellRingScene kind="sheet" />,
+  shellPopover: () => <ShellRingScene kind="popover" />,
+  cmdb: () => <CmdBScene />,
+  inlineDisabled: () => <InlineDisabledScene />,
 }
 
 // 量具讀的快照(頁面端;Node 端用 key 取,不把函式字串送進頁面)
@@ -1547,10 +1704,101 @@ async function runChecks(page) {
   for (const key of Object.keys(nativeHover)) if (nativeHover[key] !== heldHover[key]) lookDiffs.push(`light held hover ${key}:原生 ${nativeHover[key]} / 可聚焦 ${heldHover[key]}`)
   await away()
   await page.evaluate(() => { delete document.documentElement.dataset.theme })
+
+  // ── F-shell-ring(浮層裡沒有可聚焦控件 → 開啟落點是殼 → 殼不畫焦點框;focus-canonical.md「E. 浮層程式落點」)──
+  // 量具前提(needs):焦點真的在殼上、殼是 :focus-visible —— 不成立就量不到框,是儀器失效不是通過。
+  // 對照組:突變 dialog-shell-ring / sheet-shell-ring 各把殼的 outline-none 拿掉,這一列必紅(Popover 那一格是同族、修前就綠)。
+  const shellRows = []
+  for (const [kind, sel] of [['dialog', DIALOG], ['sheet', DIALOG], ['popover', '#scene-popover']]) {
+    await scene(`shell${kind[0].toUpperCase()}${kind.slice(1)}`)
+    await d.focus('[data-open]')
+    await d.press('Enter')
+    await waitSel(`${sel}[data-state="open"]`, `${kind} 沒開`)
+    const got = await page.evaluate((s) => {
+      const shell = document.querySelector(s)
+      const a = document.activeElement
+      const c = a ? getComputedStyle(a) : null
+      return { kind: s, onShell: !!shell && a === shell, focusVisible: !!a?.matches(':focus-visible'), outlineStyle: c?.outlineStyle ?? null, outlineWidth: c?.outlineWidth ?? null }
+    }, sel)
+    needs(got.onShell && got.focusVisible, `${kind}:開啟落點不是殼、或殼不是 :focus-visible(量不到框)`, got)
+    shellRows.push({ ...got, kind })
+    await closeOverlay()
+  }
+
+  // ── F-inline-disabled(行內動作鈕自身停用:游標 not-allowed、字色 = fg-disabled、滑過 / 按住字色與底色釘在靜止;真滑鼠)──
+  await scene('inlineDisabled')
+  const inlineLook = (selector) => page.$eval(selector, (el) => {
+    const c = getComputedStyle(el)
+    const bgEl = el.querySelector(':scope > span[aria-hidden]')
+    return { color: c.color, cursor: c.cursor, bg: bgEl ? getComputedStyle(bgEl).backgroundColor : null }
+  })
+  const inlineStates = async (selector) => {
+    await away(); const rest = await inlineLook(selector)
+    const c = await centerOf(selector)
+    await page.mouse.move(c.x, c.y); await d.settle(); const hover = await inlineLook(selector)
+    await page.mouse.down(); await d.settle(); const press = await inlineLook(selector); await page.mouse.up(); await d.settle()
+    await away()
+    return { rest, hover, press }
+  }
+  const disabledColor = await page.$eval('[data-probe-disabled]', (el) => getComputedStyle(el).color)
+  const inlineOff = await inlineStates('[data-inline="disabled"]')
+  const inlineOn = await inlineStates('[data-inline="enabled"]')
+  needs(inlineOn.rest.bg !== null && inlineOff.rest.bg !== null, '行內動作鈕沒有懸停底色那一層(量不到底色)', { inlineOn, inlineOff })
+  check('CTRL-inline-hover', 'control', '對照:可用的行內動作鈕滑過 → 底色與字色都變(量具看得到滑過回饋)',
+    inlineOn.hover.bg !== inlineOn.rest.bg && inlineOn.hover.color !== inlineOn.rest.color && inlineOn.rest.cursor === 'pointer', inlineOn)
+  const pinned = (k) => inlineOff.hover[k] === inlineOff.rest[k] && inlineOff.press[k] === inlineOff.rest[k]
+  check('F-inline-disabled', 'contract', '行內動作鈕自身停用(SidebarGroupAction disabled):游標 not-allowed、字色 = text-fg-disabled、滑過 / 按住的字色與底色釘在靜止(修前游標是手指、滑過字色變深、出 neutral-hover 底色)',
+    inlineOff.rest.cursor === 'not-allowed' && inlineOff.rest.color === disabledColor && pinned('color') && pinned('bg'), { disabledColor, inlineOff })
   await styleTag.evaluate((el) => el.remove())
   await d.settle()
   check('F-look', 'contract', '可聚焦的停用(忙碌鈕 primary / secondary / tertiary / text / link / 三種 danger;存檔後握著焦點的送出鈕)與原生停用逐項同色 —— 靜止 / 滑過 / 按住 × 淺深兩色,背景 / 字 / 四邊框 / 不透明度 / 游標;忙碌鈕確實是可聚焦的停用(修前滑過變回原本的填色)',
     lookDiffs.length === 0 && lookFacts.every(Boolean) && heldFacts.focusable && heldFacts.focused, { diffs: lookDiffs.slice(0, 12), diffCount: lookDiffs.length, notFocusable: lookFacts.filter((f) => !f).length, heldFacts })
+
+  check('F-shell-ring', 'contract', '浮層裡沒有可聚焦控件(Dialog / Sheet / Popover,只有標題列的 ×),用鍵盤開啟 → 開啟落點是殼、殼是 :focus-visible,殼不畫焦點框(outline-style none;focus-canonical E 類;修前 Dialog / Sheet 畫 2px 框)',
+    shellRows.length === 3 && shellRows.every((r) => r.outlineStyle === 'none'), shellRows)
+
+  // ── K-cmdb(⌘B 只歸可收合、而且不在 modal 背景的側欄;sidebar.spec.md「持久化與快捷鍵」;產品 canary 回報 C13)──
+  // 每一下前在 window 掛一個**最後註冊**的監聽(晚於兩個 SidebarProvider)→ 讀得到它們處理完的 defaultPrevented;cookie 量「寫了沒」(harness 的 document.cookie 換成記錄器)
+  await scene('cmdb')
+  const cmdbPress = async () => {
+    await page.evaluate(() => {
+      window.__cookieWrites = []
+      window.__cmdbPrevented = null
+      window.__cmdbProbe = (e) => { if (e.key === 'b') window.__cmdbPrevented = e.defaultPrevented }
+      window.addEventListener('keydown', window.__cmdbProbe)
+    })
+    await d.press('Control+b')
+    return page.evaluate(() => {
+      window.removeEventListener('keydown', window.__cmdbProbe)
+      return {
+        prevented: window.__cmdbPrevented,
+        cookie: window.__cookieWrites.filter((w) => w.startsWith('sidebar_state=')),
+        page: document.querySelector('[data-cmdb="page"] [data-side]')?.getAttribute('data-state') ?? null,
+        active: window.__describe(document.activeElement),
+      }
+    })
+  }
+  // 對照:對話框關著、焦點在頁面上 → ⌘B 切頁面側欄、寫 cookie、攔下(證明三個量具都看得到);再按一下展開回來
+  await d.focus('[data-open]')
+  const ctrlCmdb = await cmdbPress()
+  const ctrlBack = await cmdbPress()
+  check('CTRL-cmdb', 'control', '對照:對話框關著、焦點在頁面上按 ⌘B → 頁面側欄收起、寫 sidebar_state、攔下(defaultPrevented);再按一下展開(量具看得到切換 / cookie / 攔截)',
+    ctrlCmdb.page === 'collapsed' && ctrlCmdb.prevented === true && ctrlCmdb.cookie.length === 1 && ctrlBack.page === 'expanded', { ctrlCmdb, ctrlBack })
+  await d.focus('[data-open]')
+  await d.press('Enter')
+  await waitSel(`${DIALOG}[data-state="open"]`, '工作區設定對話框沒開')
+  await d.focus('[data-cmdb="dialog"] [data-sidebar="menu-button"]')
+  const inDialog = await cmdbPress()
+  check('K-cmdb-modal', 'contract', '「工作區設定」對話框開著、焦點在裡面不可收合的設定導覽上按 ⌘B → 背景頁的側欄不切換、不寫 sidebar_state、沒有人攔下(不可收合的不攔;背景頁的被 modal 藏起來、不接)',
+    inDialog.page === 'expanded' && inDialog.prevented === false && inDialog.cookie.length === 0 && inDialog.active !== 'BODY', inDialog)
+  const noneCookie = await page.evaluate(() => {
+    window.__cookieWrites = []
+    window.__dialogSidebar.setOpen(false)
+    return window.__cookieWrites.filter((w) => w.startsWith('sidebar_state='))
+  })
+  check('K-cmdb-none-cookie', 'contract', '不可收合的側欄(collapsible="none")經 useSidebar().setOpen 開關 → 不寫全站共用的 sidebar_state cookie(修前照寫,蓋掉同頁可收合那一份的紀錄)',
+    noneCookie.length === 0, { noneCookie })
+  await closeOverlay()
 
   // ── F-rename(AgentPanel 改名對話框走 useFormValidation)──
   const RENAME_BTN = '[data-history-row-actions] button[aria-label="改名"]'

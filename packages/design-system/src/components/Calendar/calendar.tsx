@@ -459,7 +459,7 @@ function nearestShownDay(date: Date, step: 1 | -1, isShown: (day: Date) => boole
 
 /**
  * 元素在版面上的外框寬與高(border-box,含小數),不受祖先 transform 影響(calendar.spec.md「窄寬度」:斷點看欄寬;「每格筆數」:k 看格高)。
- * 不用 getBoundingClientRect():它量的是畫面上的視覺尺寸 —— 掛載當下祖先正在縮放(Dialog 開場 zoom-in-95,dialog.tsx:349;
+ * 不用 getBoundingClientRect():它量的是畫面上的視覺尺寸 —— 掛載當下祖先正在縮放(Dialog 開場 zoom-in-95,dialog.tsx:352;
  * Popover 同,popover.tsx:292)就量到縮小後的寬(欄寬 62 在 scale(0.95) 下量到 58.9 → 誤判成窄;格高同理會少算列數),縮放結束版面尺寸沒變、
  * ResizeObserver 不會再叫,旗標就一直錯。offsetWidth / offsetHeight 也是版面尺寸,但取整數,門檻附近會差半個 px。
  * getComputedStyle 的 width / height 是版面上的使用值(DS styles/base.css 全域 border-box → 就是外框);

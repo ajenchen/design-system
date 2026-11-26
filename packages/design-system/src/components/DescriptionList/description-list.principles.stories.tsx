@@ -41,7 +41,7 @@ function EditInDdCounterExample() {
     )
   }
   return (
-    // @layout-space-magic-ok: 值 ↔ 行內編輯鈕 8px(inline-action.spec.md:92「**間距**:`gap-2`(8px)」)
+    // @layout-space-magic-ok: 值 ↔ 行內編輯鈕 8px(inline-action.spec.md:93「**間距**:`gap-2`(8px)」)
     <div className="flex items-center gap-2">
       <span>{email}</span>
       <Button variant="text" size="xs" onClick={() => setEditing(true)}>編輯</Button>

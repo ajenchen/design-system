@@ -693,6 +693,11 @@ export const ItemInlineActionButton = React.forwardRef<
   const size = sizeProp ?? contextSize
   const iconPx = ICON_SIZE[size]
   const hoverBgPx = INLINE_ACTION_HOVER_BG_SIZE[size]
+  // 自身停用(原生 disabled 或 aria-disabled;Radix asChild 合進來的 disabled 也走這裡):停用不給互動回饋
+  //(button.spec.md「停用不給互動回饋」、menu-item.spec.md「disabled item 不可有 hover 效果」;M24 停用字色 > 弱化字色)。
+  // 停用時**根本不掛**滑過 / 按住的字色與底色 class —— 連 consumer 的 hoverBgClassName 也不掛,不靠 CSS 順序或權重去壓
+  //(2026-11-26 修前:游標仍是手指、滑過字色 0.45→0.65、出 neutral-hover 底色,與啟用時相同;欄位顯示面板鎖住的欄手補 class 也壓不掉)。
+  const disabled = rest.disabled === true || rest["aria-disabled"] === true || rest["aria-disabled"] === "true"
   return (
     <button
       ref={ref}
@@ -705,13 +710,14 @@ export const ItemInlineActionButton = React.forwardRef<
         // 只在 **Tag 宿主**成立(h-6 + 1px 邊框 + overflow-hidden → 淨空 3px,sm 1px),
         // 依 focus-canonical「同一個底層元件被另一個元件放進貼邊位置,往內由那個外層元件承擔」,
         // 往內的 class 搬到 `tag.tsx` TagDismiss,不由 primitive 整個翻內。
-        "group/action relative grid place-content-center shrink-0 cursor-pointer",
+        "group/action relative grid place-content-center shrink-0",
+        disabled ? "cursor-not-allowed" : "cursor-pointer",
         // 弱化 icon hover 階梯 SSOT(2026-07-30 user 拍板):fg-muted(neutral-7)→ 一階 fg-secondary
         // (neutral-8),不跳到 foreground(neutral-9)。inline-action.spec.md「Icon 色彩」+
         // tokens/color/semantic.css:53 為 rule owner;世界級對照 Fluent 2
         // (neutralForeground3Hover === neutralForeground2 值)/ MUI Chip deleteIcon(.26 → .4)。
         // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
-        "text-fg-muted hover:text-fg-secondary active:text-fg-secondary",
+        disabled ? "text-fg-disabled" : "text-fg-muted hover:text-fg-secondary active:text-fg-secondary",
         // Overlay trigger active state — 只在 consumer 顯式宣告 overlayTrigger=true 時生效
         // (canonical 2026-05-05:Collapsible / drag / dismiss 等 in-place 互動 ≠ overlay,
         // 不應 leak 視覺 lock。詳 inline-action.spec.md「Overlay trigger canonical」)
@@ -740,7 +746,7 @@ export const ItemInlineActionButton = React.forwardRef<
           "absolute",
           "rounded-md",
           "bg-transparent",
-          hoverBgClassName ?? "group-hover/action:bg-neutral-hover group-active/action:bg-neutral-active",
+          !disabled && (hoverBgClassName ?? "group-hover/action:bg-neutral-hover group-active/action:bg-neutral-active"),
           // Overlay 開啟 = 維持 host hover bg(只在 overlayTrigger=true 時生效)
           overlayTrigger && "group-data-[state=open]/action:bg-neutral-hover"
         )}
