@@ -58,18 +58,18 @@ test('full fleet topology fixes authority root, basename identity and non-overla
   assert.equal(validateRepositoryPathTopology(INVENTORY), true)
   const cases = [
     {
-      name: 'authority redirected to WM',
+      name: 'authority redirected to the product checkout',
       mutate(value) {
-        value.repositories.find(repo => repo.role === 'authority').localPathFromGovernanceRoot = '../../../work-management'
+        value.repositories.find(repo => repo.role === 'authority').localPathFromGovernanceRoot = '../../../workspace'
       },
       pattern: /exact \.\.\/\.\. checkout/,
     },
     {
       name: 'product redirected into authority',
       mutate(value) {
-        value.repositories.find(repo => repo.role === 'product-consumer').localPathFromGovernanceRoot = '../../work-management'
+        value.repositories.find(repo => repo.role === 'product-consumer').localPathFromGovernanceRoot = '../../workspace'
       },
-      pattern: /exact \.\.\/\.\.\/\.\.\/work-management sibling/,
+      pattern: /exact \.\.\/\.\.\/\.\.\/workspace sibling/,
     },
     {
       name: 'duplicate authority root',
@@ -102,9 +102,9 @@ test('full fleet topology fixes authority root, basename identity and non-overla
     {
       name: 'product escape preserving basename',
       mutate(value) {
-        value.repositories.find(repo => repo.role === 'product-consumer').localPathFromGovernanceRoot = '../../../../tmp/work-management'
+        value.repositories.find(repo => repo.role === 'product-consumer').localPathFromGovernanceRoot = '../../../../tmp/workspace'
       },
-      pattern: /exact \.\.\/\.\.\/\.\.\/work-management sibling/,
+      pattern: /exact \.\.\/\.\.\/\.\.\/workspace sibling/,
     },
     {
       name: 'template redirect preserving basename',
@@ -154,14 +154,14 @@ function gitFixture(t) {
   const authority = resolve(container, 'design-system')
   const governance = resolve(authority, 'infra/governance')
   const template = resolve(authority, 'template/ds-product-template')
-  const product = resolve(container, 'work-management')
+  const product = resolve(container, 'workspace')
   mkdirSync(governance, { recursive: true })
   mkdirSync(template, { recursive: true })
   mkdirSync(product, { recursive: true })
   execFileSync(SYSTEM_GIT, ['init', '-q'], { cwd: authority })
   execFileSync(SYSTEM_GIT, ['remote', 'add', 'origin', 'git@github.com:ajenchen/design-system.git'], { cwd: authority })
   execFileSync(SYSTEM_GIT, ['init', '-q'], { cwd: product })
-  execFileSync(SYSTEM_GIT, ['remote', 'add', 'origin', 'https://github.com/ajenchen/work-management.git'], { cwd: product })
+  execFileSync(SYSTEM_GIT, ['remote', 'add', 'origin', 'https://github.com/ajenchen/workspace.git'], { cwd: product })
   t.after(() => rmSync(container, { recursive: true, force: true }))
   return { container, authority, governance, template, product }
 }
@@ -193,10 +193,10 @@ test('identity verification binds authority, nested template source and product 
   assert.equal(
     verifyInventoryRepositoryIdentity({
       inventory: INVENTORY,
-      repositoryId: 'work-management',
+      repositoryId: 'workspace',
       governanceRoot: fixture.governance,
     }).github,
-    'ajenchen/work-management',
+    'ajenchen/workspace',
   )
 })
 

@@ -6,7 +6,7 @@
 
 ## Project (active work)
 - [project_agent_ui_draft_model.md](project_agent_ui_draft_model.md) — AI agent 面板規格已落地(2026-09-07 起實作;唯一權威 = planning `2026-09-06-agent-principles-v14.md`,2026-08-11 規格與隔離令只剩歷史);後續改動走 spec / v14 propose 流程,禁把 v14 已答題重列為未決
-- [project_provider_neutral_governance.md](project_provider_neutral_governance.md) — PNG 現行索引 + five-step machine SSOT + **WM 身分(每 session 必知)與 canary 操作檔案**；舊 baton/P0/activation/certification/fleet/soak 只作歷史 provenance；current state 必由 exact-head deep-audit evidence與 `npm run release:status` 讀回
+- [project_provider_neutral_governance.md](project_provider_neutral_governance.md) — PNG 現行索引 + five-step machine SSOT + **產品 canary = ajenchen/workspace 的身分與操作(每 session 必知;發版自動開升級 PR、合併由它決定;work-management 已退場)**；舊 baton/P0/activation/certification/fleet/soak 只作歷史 provenance；current state 必由 exact-head deep-audit evidence與 `npm run release:status` 讀回
 - active plan:`governance/planning/2026-09-25-interaction-and-hover-remediation.md`(registry 唯一 `status: active` 的計畫;user 要求每個未解問題追到結案。結案時拿掉本行,`validate-memory-contract.mjs` 會擋指向非 active 計畫的指標)
 
 ## Feedback (workflow / collaboration discipline)
@@ -20,7 +20,7 @@
 - [feedback_ssot_mechanical_p0_not_p1_warn_2026_05_27.md](feedback_ssot_mechanical_p0_not_p1_warn_2026_05_27.md) — SSOT canonical = 必 P0 BLOCKER 機械強制 with per-line escape comment;禁 P1 WARN soft signal(2026-05-27)
 - [feedback_ai_ground_truth_unreliable_mechanical_primary.md](feedback_ai_ground_truth_unreliable_mechanical_primary.md) — AI self-audit unreliable;mechanical(pixel/DOM/tsc/playwright)= primary defense / AI judgement = supplementary only / new audit layer ALWAYS expand never replace(2026-05-27 + composition fidelity application,合 2 file)
 - [feedback_consume_existing_classification_ssot.md](feedback_consume_existing_classification_ssot.md) — 消費既有不憑直覺:(a)分類用既有 category-matrix.json 5-category SSOT 禁發明新框架(朝三暮四根因;對抗 workflow 抓出重造)+ anatomy pattern(item/header)對稱公開;(b)用元件前先讀其 spec variant/size/emphasis 按原則選不吃 cva 預設(Button CTA 必 explicit primary;chrome header icon=text);(c)**先找既有機制再發明、先實測再把動作丟回 user**(2026-07-31 錨例:解 push 死結的腳本上個 session 已寫好卻從零重推;sandbox 讀取是 deny-only 卻誤判成 allow-only)
-- [feedback_orchestration_verify_before_scale.md](feedback_orchestration_verify_before_scale.md) — 多代理 / 長流程編排紀律(2026-11-18 對抗稽核):先小樣本兩面實跑再放大、量不到 = 儀器失效、交接資料不截斷、併行上限、修補不收斂就停下找根因、zsh 陷阱、被擋三選一、對 user 的數字從 log 擷取(流程步驟照 `rules/work-process.md`,數值不寫在記憶)
+- [feedback_orchestration_verify_before_scale.md](feedback_orchestration_verify_before_scale.md) — 多代理 / 長流程編排紀律(2026-11-18 對抗稽核):先小樣本兩面實跑再放大、量不到 = 儀器失效、交接資料不截斷、併行上限、修補不收斂就停下找根因、zsh 陷阱、被擋三選一、對 user 的數字從 log 擷取、交接常備與額度用到約剩 1–3%(2026-11-25)(流程步驟照 `rules/work-process.md`,數值不寫在記憶)
 
 ## Reference
 - [reference_deploy_targets.md](reference_deploy_targets.md) — Deploy targets + URL 3-strategy 自動推導 + per-user override + transport self-awareness + Netlify 免費密碼 = Edge Function Basic Auth(STORYBOOK_BASIC_AUTH)+ Claude Code 直連 sandbox 雲端主路徑 + clone-on-demand(2026-06-11 合併 deploy_url_auto_detect;2026-07-07 合併 netlify_basic_password)+ **/tmp scratch 3 天沒存取即被清:驗證過的批次當天就要 push**(2026-10-06 五天停工全失)

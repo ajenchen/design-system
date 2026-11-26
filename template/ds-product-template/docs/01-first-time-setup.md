@@ -51,12 +51,61 @@ are activated.
 - In Codex Cloud, configure both the environment **Setup script** and cached-container
   **Maintenance script** as `npm run setup:all`. The ordering and cache behavior are defined
   by the [official Codex Cloud environment guide](https://developers.openai.com/codex/cloud/environments).
-- In Claude Code on the web, configure the environment **Setup script** as
-  `npm run setup:all`. Anthropic may reuse a cached successful setup, so rebuild the cache or
-  run the same command explicitly after a committed-lock change. See the
-  [official Claude Code web setup guide](https://code.claude.com/docs/en/claude-code-on-the-web#setup-scripts).
+- In Claude Code on the web, the Setup script below can go in the shared **Default** environment.
+  It runs `npm run setup:all` only when this session's repository is `<repository-folder>` and
+  returns that command's own exit status; for any other repository it prints one skip line and exits
+  0, so it never blocks another repository's session. The official guide documents that the script
+  runs as root on Ubuntu 24.04 after the repository is cloned and before Claude Code launches, that
+  the environment's own variables are not set yet, and that a script that exits non-zero makes the
+  session fail to start or start without what it failed to install. The guide does not document the
+  script's working directory, so the script handles both starting at the repository root and
+  starting one level up with the checkout in a subfolder (a Setup script run on Claude Code on the web started in the directory that
+  contains the checkout, with the repository in its own subfolder). Replace
+  `<repository-folder>` with this repository's folder name; left unreplaced, the script only skips. A successful run is cached as a filesystem snapshot and is re-run only when the
+  script or allowed hosts change or the cache expires, so after a committed-lock change run
+  `npm run setup:all` in the session. See [Setup scripts](https://code.claude.com/docs/en/cloud-environments#setup-scripts)
+  and [Setup script failed](https://code.claude.com/docs/en/web-quickstart#setup-script-failed).
+
+  ```bash
+  #!/bin/bash
+  # Claude Code Setup script (shared Default environment): runs setup:all only for <repository-folder>
+  set -uo pipefail
+  REPO_DIR="<repository-folder>"  # this repository's folder name
+  if [ "$(basename "$PWD")" = "$REPO_DIR" ] && [ -f package.json ]; then
+    :
+  elif [ -f "$REPO_DIR/package.json" ]; then
+    cd "$REPO_DIR" || exit 1
+  else
+    echo "setup:all: $REPO_DIR is not this session's repository (cwd $(pwd)); skipping" >&2
+    exit 0
+  fi
+  if ! grep -q '"setup:all"' package.json; then
+    echo "setup:all: $(pwd)/package.json has no setup:all script" >&2
+    exit 1
+  fi
+  exec npm run setup:all
+  ```
 - Codespaces and other devcontainer clients invoke the same setup implementation from the committed
   `.devcontainer/devcontainer.json`.
+
+Outbound HTTPS that a proxy re-signs (Claude Code on the web, most corporate proxies) works when
+the proxy CA is in the host system trust store and Node.js is 22.15.0 or newer: every registry
+request in the locked setup chain then trusts Node's bundled CA store plus the system store (the
+exact npm runs with `--use-system-ca`) and still ignores CA and `NODE_OPTIONS` environment
+variables. A credential-free `HTTPS_PROXY` / `NO_PROXY` is used only for routing and adds no trust
+(TLS still trusts only those two stores); a proxy URL that carries credentials is still ignored. On
+Node.js 22.13.x–22.14.x the locked npm trusts only Node's bundled store, so such a host needs
+Node.js 22.15.0+. Install a proxy CA into the system trust store; `NODE_EXTRA_CA_CERTS` or
+`SSL_CERT_FILE` alone is not used.
+
+Network on Claude Code on the web: the locked setup connects directly unless a credential-free
+`HTTPS_PROXY` is set, in which case every host outside `NO_PROXY` goes through that proxy (routing
+only, see above). Besides the npm registry, the registry signature audit (`audit signatures`)
+downloads Sigstore TUF metadata from `tuf-repo-cdn.sigstore.dev`. In a Setup script run there no
+proxy variable was set and both hosts were reached directly; inside a session that CDN is reachable
+only through the session's credential-free `HTTPS_PROXY`, which the locked setup forwards, so when `setup:all` is rerun in the session (for example after a committed-lock change) the
+signature audit reaches that CDN through the proxy. A
+session where `setup:all` did not complete is degraded; do not claim compliance there.
 
 Do not move installation into SessionStart. The repository SessionStart adapter is deliberately
 read-only so opening or resuming any local/cloud agent cannot mutate the checkout.

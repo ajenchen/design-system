@@ -14,10 +14,10 @@
    `infra/governance/release-workflow.json` 自動續跑
    `pr-checks → merge → publish → readback → consumer`。Orchestrator 才建立 exact-main tag、送
    protected repository dispatch、驗 GitHub/npm immutable version，並完成 template 的 exact-version readback。
-   **WM 只在 user 要求時升級**(user 2026-11-05 原話:「以後WM的升級都不要自動做除非我有特別要求」):
-   WM 在 `infra/governance/release-workflow.json` 標 `upgrade: on-request`,第五步預設不讀、不派工、不開 PR;
-   user 明確要求時才以 `RELEASE_REQUESTED_CONSUMERS=ajenchen/work-management npm run release:auto` 帶進來。
-   template 照舊每次自動升級。選法唯一實作在 `scripts/lib/release-consumer-selection.mjs`。
+   **產品 canary `ajenchen/workspace` 每次發版自動收到升級 PR,合併由它自己決定**(user 2026-11-25 原話:「此外，設計系統 repo 要把 canary 換成 ajenchen/workspace，換過來之後，設計系統出新版時，這個 repo 也會自動收到升級 PR。」):
+   它在 `infra/governance/release-workflow.json` 標 `merge: consumer-owned`,第五步只替它派工、開 PR、讀回連結與檢查狀態;
+   不合併、不等合併,它的檢查紅也不讓發版失敗,不是第五步的完成條件(「只開 PR、不等合併」是 AI 的工程判斷)。
+   template 照舊每次自動升級並合併。判定唯一實作在 `scripts/lib/release-consumer-selection.mjs`。
 
 不要手動打 tag、直接 push main、直接 publish，或把 legacy preflight/candidate/soak 插回 standard
 path。`.changeset/config.json` 與手動 workflow 只是 future-reserved authoring surface；未來明確採用

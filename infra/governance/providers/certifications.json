@@ -187,7 +187,7 @@
       "status": "not-certified",
       "platformMatrix": [
         {"id": "macos-darwin-arm64-native-no-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "0.144.6", "pathClass": "no-space", "status": "not-certified", "limitations": ["No clean committed product-consumer snapshot has produced signed evidence for this exact macOS/arm64/native/no-space target."]},
-        {"id": "macos-darwin-arm64-native-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "0.144.6", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No clean committed WM snapshot has produced signed evidence for this exact target."]},
+        {"id": "macos-darwin-arm64-native-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "0.144.6", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No clean committed workspace snapshot has produced signed evidence for this exact target."]},
         {"id": "linux-linux-x64-native-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "0.144.6", "pathClass": "no-space", "status": "not-certified", "limitations": ["No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/native/no-space target."]},
         {"id": "linux-linux-x64-native-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "0.144.6", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/native/space-path target."]},
         {"id": "linux-linux-x64-wsl2-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "wsl2", "distributionVersion": "0.144.6", "pathClass": "no-space", "status": "not-certified", "limitations": ["No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/WSL2/no-space target."]},
@@ -197,9 +197,9 @@
         {"id": "windows-win32-x64-native", "operatingSystem": "windows", "platform": "win32", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "not-applicable", "pathClass": "contains-space", "status": "unsupported", "limitations": ["Native Windows is unsupported; Windows consumers must run the Linux target through WSL2 or devcontainer."]}
       ],
       "checks": [
-        {"id": "wm-clean-snapshot-canary", "status": "not-tested", "evidence": {"kind": "command-output", "reference": "A committed WM exact-snapshot upgrade and clean-worktree rerun are still required."}}
+        {"id": "product-canary-clean-snapshot", "status": "not-tested", "evidence": {"kind": "command-output", "reference": "A committed workspace exact-snapshot upgrade and clean-worktree rerun are still required."}}
       ],
-      "limitations": ["The real WM checkout is intentionally unchanged and still contains pre-existing skill edits."]
+      "limitations": ["No run against the workspace canary checkout has been recorded; the previous canary (work-management) was retired on 2026-11-25."]
     },
     {
       "id": "codex-desktop-local-product-v1",
@@ -216,7 +216,7 @@
         {"id": "windows-win32-x64-native", "operatingSystem": "windows", "platform": "win32", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "not-applicable", "pathClass": "contains-space", "status": "unsupported", "limitations": ["Native Windows desktop execution has no declared runtime target or evidence."]}
       ],
       "checks": [
-        {"id": "desktop-wm-runtime-conformance", "status": "not-tested", "evidence": {"kind": "manual-review", "reference": "No Codex desktop app local run against the exact WM snapshot has been recorded."}}
+        {"id": "desktop-product-canary-runtime-conformance", "status": "not-tested", "evidence": {"kind": "manual-review", "reference": "No Codex desktop app local run against the exact workspace snapshot has been recorded."}}
       ],
       "limitations": ["Codex CLI local evidence cannot certify the desktop app distribution."]
     },
@@ -248,7 +248,7 @@
       "status": "not-certified",
       "platformMatrix": [
         {"id": "macos-darwin-arm64-native-no-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "2.1.316", "pathClass": "no-space", "status": "not-certified", "limitations": ["No clean committed product-consumer snapshot has produced signed evidence for this exact macOS/arm64/native/no-space target."]},
-        {"id": "macos-darwin-arm64-native-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "2.1.316", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No clean committed WM snapshot has produced signed evidence for this exact target."]},
+        {"id": "macos-darwin-arm64-native-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "2.1.316", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No clean committed workspace snapshot has produced signed evidence for this exact target."]},
         {"id": "linux-linux-x64-native-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "2.1.316", "pathClass": "no-space", "status": "not-certified", "limitations": ["No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/native/no-space target."]},
         {"id": "linux-linux-x64-native-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "2.1.316", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/native/space-path target."]},
         {"id": "linux-linux-x64-wsl2-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "wsl2", "distributionVersion": "2.1.316", "pathClass": "no-space", "status": "not-certified", "limitations": ["No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/WSL2/no-space target."]},
@@ -258,9 +258,9 @@
         {"id": "windows-win32-x64-native", "operatingSystem": "windows", "platform": "win32", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "not-applicable", "pathClass": "contains-space", "status": "unsupported", "limitations": ["Native Windows is unsupported; Windows consumers must run the Linux target through WSL2 or devcontainer."]}
       ],
       "checks": [
-        {"id": "wm-clean-snapshot-canary", "status": "not-tested", "evidence": {"kind": "command-output", "reference": "A committed WM exact-snapshot upgrade and clean-worktree rerun are still required."}}
+        {"id": "product-canary-clean-snapshot", "status": "not-tested", "evidence": {"kind": "command-output", "reference": "A committed workspace exact-snapshot upgrade and clean-worktree rerun are still required."}}
       ],
-      "limitations": ["Native hook wiring is tested in isolation, but the real WM checkout has not adopted the immutable snapshot."]
+      "limitations": ["Native hook wiring is tested in isolation; no run against the workspace canary checkout has been recorded."]
     },
     {
       "id": "claude-remote-control-product-v1",
@@ -323,13 +323,13 @@
       "repositoryRole": "product-consumer",
       "status": "not-certified",
       "platformMatrix": [
-        {"id": "linux-linux-x64-github-hosted-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "github-hosted-runner", "distributionVersion": "github-actions", "pathClass": "contains-space", "status": "not-certified", "limitations": ["The protected-base repository_dispatch Verify consumer check is live; a fresh signed target-bound runtime certification is still required."]}
+        {"id": "linux-linux-x64-github-hosted-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "github-hosted-runner", "distributionVersion": "github-actions", "pathClass": "contains-space", "status": "not-certified", "limitations": ["Verify consumer is required on the workspace canary, but it has no release receiver workflow yet (read back 2026-11-25); a fresh signed target-bound runtime certification is still required."]}
       ],
       "checks": [
-        {"id": "wm-native-verify-consumer-observed", "status": "pass", "evidence": {"kind": "github-check-runs", "reference": "https://github.com/ajenchen/work-management/actions/runs/30722603061"}},
+        {"id": "product-canary-native-verify-consumer-observed", "status": "not-tested", "evidence": {"kind": "github-api", "reference": "No Verify consumer run on the workspace canary has been recorded in this ledger. Its ruleset requires Verify consumer from GitHub Actions (read back 2026-11-25); the earlier observation belonged to the retired work-management repository."}},
         {"id": "native-verify-consumer-certification", "status": "not-tested", "evidence": {"kind": "github-api", "reference": "Fresh signed repository_dispatch Verify consumer ruleset/runtime evidence has not yet been imported into this certification ledger."}}
       ],
-      "limitations": ["Native Verify consumer is green and required; this ledger intentionally remains not-certified until its fresh signed runtime evidence is imported."]
+      "limitations": ["Native Verify consumer is required on the workspace canary (read back 2026-11-25) but no run has been recorded here; this ledger intentionally remains not-certified until its fresh signed runtime evidence is imported."]
     },
     {
       "id": "codex-remote-control-governance-v1",

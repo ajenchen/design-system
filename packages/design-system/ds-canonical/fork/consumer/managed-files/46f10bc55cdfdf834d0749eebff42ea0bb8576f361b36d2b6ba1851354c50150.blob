@@ -5,8 +5,13 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import {
   assertVerifiedExactNpmRuntimeCapability,
+  isGovernanceProxyFamilyName,
   prepareVerifiedExactNpmRuntime,
+  reportGovernanceProxyNoticesOnce,
   resolveExactNpmRuntimeContract,
+  resolveGovernanceProxyForwarding,
+  verifiedNodeTrustArgs,
+  verifiedNpmNodeArgv,
 } from './verified-exact-npm-runtime.mjs'
 import {
   materializeClosedHookToolProfile,
@@ -132,10 +137,20 @@ export function assertNoRootNpmShrinkwrap(rootPath, { errorPrefix = 'GOV-DEPENDE
   return root
 }
 
-export function sanitizeGovernanceBootstrapEnvironment(baseEnvironment = process.env) {
-  return Object.fromEntries(Object.entries(baseEnvironment).filter(([name, value]) => (
-    value !== undefined && !CREDENTIAL_NAME.test(name) && !HOSTILE_NAME.test(name)
-  )))
+// 代理變數(2026-11-26):整族不分大小寫剝除,再只放回 resolveGovernanceProxyForwarding 判定「不帶帳密」的 HTTPS_PROXY / NO_PROXY
+//(判定表與 npm 讀代理的原始碼出處都在 verified-exact-npm-runtime.mjs「代理轉送」段)。只用來路由、不新增信任:CA 類
+//(NODE_EXTRA_CA_CERTS / SSL_CERT_FILE / SSL_CERT_DIR)、NODE_OPTIONS、NPM_CONFIG_*、ALL_PROXY、HTTP_PROXY 照舊剝除。
+export function sanitizeGovernanceBootstrapEnvironment(baseEnvironment = process.env, {
+  report = reportGovernanceProxyNoticesOnce,
+} = {}) {
+  const forwarding = resolveGovernanceProxyForwarding(baseEnvironment)
+  report(forwarding)
+  return {
+    ...Object.fromEntries(Object.entries(baseEnvironment).filter(([name, value]) => (
+      value !== undefined && !CREDENTIAL_NAME.test(name) && !HOSTILE_NAME.test(name) && !isGovernanceProxyFamilyName(name)
+    ))),
+    ...forwarding.forwarded,
+  }
 }
 
 export function assertGovernanceBootstrapRuntime({
@@ -516,7 +531,8 @@ function assertRemediatedFinding(name, finding, findings = {}) {
     // <=10.7.3,修在 10.7.4),range 從 <=10.7.0 變 <=10.7.3、via 從 7 則變 8 則 —— PR #169 的 CI(10-22 之後每一輪)會死在
     // 「Install locked dependencies once」。bundled 仍是 10.2.0;npm 最新的 11.21.1 / 12.2.1 內建 10.7.2,仍在範圍。
     // npm 內唯一用到 ip-address 的是 socks(@npmcli/agent 的 proxy.js 只在設定 socks 代理時才走到);本檔的 npm 執行
-    // 不帶任何代理設定(createIsolatedGovernanceNpmEnvironment 剝除所有 proxy 變數、user/global npmrc 只寫 registry 等四行)。照舊只認列新形狀。
+    // 只會帶到 http: / https: 的代理(2026-11-26 起轉送不帶帳密的 HTTPS_PROXY,scheme 不是 http(s) 一律剝除,
+    // 見 verified-exact-npm-runtime.mjs「代理轉送」;user/global npmrc 只寫 registry 等四行),socks 走不到。照舊只認列新形狀。
     invariant(
       finding.severity === 'high'
         && finding.isDirect === false
@@ -845,10 +861,13 @@ export function runVerifiedHighVulnerabilityAudit(command, args, {
   sleep = sleepSync,
   report = (line) => console.error(line),
 } = {}) {
+  const trustArgs = verifiedNodeTrustArgs()
+  const trustArgCount = trustArgs.length
   invariant(
     Array.isArray(args)
-      && typeof args[0] === 'string'
-      && exactArray(args.slice(1), ['audit', '--audit-level=high', '--json', `--registry=${GOVERNANCE_DEPENDENCY_REGISTRY}`]),
+      && exactArray(args.slice(0, trustArgCount), trustArgs)
+      && typeof args[trustArgCount] === 'string'
+      && exactArray(args.slice(trustArgCount + 1), ['audit', '--audit-level=high', '--json', `--registry=${GOVERNANCE_DEPENDENCY_REGISTRY}`]),
     'npm high-vulnerability audit argv differs from the closed overlay-aware contract',
     errorPrefix,
   )
@@ -937,7 +956,7 @@ export async function runVerifiedGovernanceDependencyBootstrap({
     for (let index = 0; index < GOVERNANCE_DEPENDENCY_NPM_STEPS.length; index += 1) {
       const args = GOVERNANCE_DEPENDENCY_NPM_STEPS[index]
       if (index === 2) {
-        auditReceipt = runVulnerabilityAuditUnderPolicy(vulnerabilityPolicy, () => runVerifiedHighVulnerabilityAudit(process.execPath, [npmRuntime.cli, ...args], {
+        auditReceipt = runVulnerabilityAuditUnderPolicy(vulnerabilityPolicy, () => runVerifiedHighVulnerabilityAudit(process.execPath, verifiedNpmNodeArgv(npmRuntime.cli, args), {
           root,
           environment: isolated.env,
           runner,
@@ -946,7 +965,7 @@ export async function runVerifiedGovernanceDependencyBootstrap({
           errorPrefix,
         }), { errorPrefix })
       } else {
-        runClosedBootstrapStep(process.execPath, [npmRuntime.cli, ...args], { root, environment: isolated.env, runner, errorPrefix })
+        runClosedBootstrapStep(process.execPath, verifiedNpmNodeArgv(npmRuntime.cli, args), { root, environment: isolated.env, runner, errorPrefix })
         if (index === 0) installedOverlayReceipt = npmRuntime.applyInstalledSecurityOverlay(root)
       }
       assertBootstrapAuthorityUnchanged(root, snapshot, { errorPrefix })
@@ -1050,7 +1069,7 @@ export function runAuditFindingsJson(cli, root, {
   report = (line) => console.error(line),
 } = {}) {
   for (let attempt = 1; ; attempt += 1) {
-    const result = runner(process.execPath, [cli, ...DIFFERENTIAL_AUDIT_ARGS], {
+    const result = runner(process.execPath, verifiedNpmNodeArgv(cli, DIFFERENTIAL_AUDIT_ARGS), {
       cwd: root,
       env: { ...environment, NPM_CONFIG_REGISTRY: GOVERNANCE_DEPENDENCY_REGISTRY, NPM_CONFIG_IGNORE_SCRIPTS: 'true', NPM_CONFIG_STRICT_SSL: 'true' },
       encoding: 'utf8',

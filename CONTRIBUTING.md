@@ -17,11 +17,11 @@ Release 的 machine SSOT 是 `infra/governance/release-workflow.json`:`pr-checks
 
 1. 內容 PR 走上方 workflow 合入 protected `main`
 2. **Version bump PR**:`packages/design-system` 抬 `0.1.0-beta.<N>` 後跑 `npm run governance:generate`(release-version stage 同步全部 manifest/lock),PR + required CI + merge
-3. `npm run release:auto` 接手其餘步驟:tag + protected release dispatch → `.github/workflows/release.yml` 跑 audit gates → build → publish npm(immutable exact version;`-beta` suffix → `@beta` dist-tag + auto-repoint `latest`)→ GitHub Release(auto-notes)→ **readback**(GitHub Release + npm 三包 exact version 讀回)→ **consumer**(template exact-version PR 自動建立、CI、合併、讀回;**WM 只在 user 要求時升級**,見下方 Consumer install)
+3. `npm run release:auto` 接手其餘步驟:tag + protected release dispatch → `.github/workflows/release.yml` 跑 audit gates → build → publish npm(immutable exact version;`-beta` suffix → `@beta` dist-tag + auto-repoint `latest`)→ GitHub Release(auto-notes)→ **readback**(GitHub Release + npm 三包 exact version 讀回)→ **consumer**(template exact-version PR 自動建立、CI、合併、讀回;**產品 canary workspace 只自動開升級 PR、合併由它決定**,見下方 Consumer install)
 
 ### Consumer install
 
-受治理 consumer(template/WM)一律釘 **exact version**(`0.1.0-beta.<N>`);禁 `@beta`/`latest`/range(per `governance/memory/feedback_solo_dev_workflow.md`)。template 由 consumer step 每次自動升版。**WM 只在 user 要求時升級**(user 2026-11-05 原話:「以後WM的升級都不要自動做除非我有特別要求」):WM 在 `infra/governance/release-workflow.json` 標 `upgrade: on-request`,預設不讀回、不派工、不開 PR,也不是第五步的完成條件;user 明確要求時以 `RELEASE_REQUESTED_CONSUMERS=ajenchen/work-management npm run release:auto` 帶進來(深度稽核 dim 64/66 的 `npm run audit:ci-evidence-observe` 同樣只在帶了這個變數時才要求 WM 證據)。選法唯一實作:`scripts/lib/release-consumer-selection.mjs`。未治理的 ad-hoc 試用才可 `npm install @qijenchen/design-system@beta`。
+受治理 consumer(template/workspace)一律釘 **exact version**(`0.1.0-beta.<N>`);禁 `@beta`/`latest`/range(per `governance/memory/feedback_solo_dev_workflow.md`)。template 由 consumer step 每次自動升版並合併。**產品 canary `ajenchen/workspace` 每次發版自動收到升級 PR,合併由它自己決定**(user 2026-11-25 原話:「此外，設計系統 repo 要把 canary 換成 ajenchen/workspace，換過來之後，設計系統出新版時，這個 repo 也會自動收到升級 PR。」):它在 `infra/governance/release-workflow.json` 標 `upgrade: automatic`、`merge: consumer-owned`,第五步只替它派工、開 PR、讀回連結與檢查狀態,不合併、不等合併,它的檢查紅也不讓發版失敗,不是第五步的完成條件(「只開 PR、不等合併」是 AI 的工程判斷;深度稽核 dim 64/66 的 `npm run audit:ci-evidence-observe` 把它記成 `consumerSelection.consumerOwned`,不要求它「已合併」的證據)。判定唯一實作:`scripts/lib/release-consumer-selection.mjs`。未治理的 ad-hoc 試用才可 `npm install @qijenchen/design-system@beta`。
 
 對齊 GitHub Releases auto-generated notes + Vercel `pkg.pr.new` pre-release model(instant publish,easy rollback)。
 

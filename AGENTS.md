@@ -107,7 +107,7 @@
 | 2 `merge` | 有 receipt 後以 exact-head CAS squash merge 進 protected `main`,立即讀回 main |
 | 3 `publish` | 從 protected main 自動發布 immutable exact version;禁 mutable dependency tag |
 | 4 `readback` | 自動讀回 GitHub Release 與 npm 三包 exact version;未一致不得宣稱完成 |
-| 5 `consumer` | 自動建立、修復、合併 template exact-version PR,讀回 consumer protected main;WM 只在要求時升級 |
+| 5 `consumer` | 自動建立、修復、合併 template exact-version PR,讀回 template protected main;workspace 只開 PR |
 
 公開入口只有三支:`npm run release:auto`(安全續跑;合併前必檢查發版同意 receipt)、`npm run release:status`(唯讀)、`npm run release:consent -- --quote "<user 原話>"`(hook 失效時的手動落地,仍需原話)。**ASK** 只限 `#canonical-decision-authority` 的集合與**發版同意**;human-only 動作做完即 AUTO resume。已退役的 ceremony(candidate-freeze、soak、fleet promotion 等)不得回到 blocking graph —— 清單見 `infra/governance/release-workflow.json`。完成後才清 remote/local branch 並 `git switch main && git pull --ff-only`。
 
@@ -126,12 +126,12 @@
 
 **Default = autonomous + complete**;多包 / 多步工作照 `packages/design-system/ds-canonical/rules/work-process.md`(不在此重述)。跳過規格項或驗證 = 省工(違 mindset #1)。
 
-**分診與預算**(開工前):只開工 ① user/產品看得到的錯 ② CI 紅或弄壞已做好的 ③ user 明確要求(附原話 檔:行);其餘記一行進追蹤,不開工。派工先寫預算(代理數/花費/牆鐘),用滿就停派、交付已完成的並回報。只驗改到的檔在 CI 對應的檢查;改畫面加預覽讀回,AI 推導的先給 user 看再加固。小修不新寫閘,能擴既有閘就擴;與 M14/M19/M23/M32 的補閘、多層落地衝突時本段優先;user 原話定的規則(例 05-27「那為何不全部 ssot 都要強制吻合?」)除外。
+**分診與預算**(開工前):只開工 ① user/產品看得到的錯 ② CI 紅或弄壞已做好的 ③ user 明確要求(附原話 檔:行);其餘記一行進追蹤。派工先寫預算(代理數/花費/牆鐘),用滿就停派、交付已完成的並回報。只驗改到的檔在 CI 對應的檢查;改畫面加預覽讀回,AI 推導的先給 user 看再加固。小修不新寫閘,能擴既有閘就擴;與 M14/M19/M23/M32 的補閘、多層落地衝突時本段優先;user 原話定的規則(例 05-27「那為何不全部 ssot 都要強制吻合?」)除外。交接與額度 → `governance/memory/feedback_orchestration_verify_before_scale.md`。
 
 | 動作類別 | 預設 |
 |---------|-----|
 | **產品／UI／UX SSOT 真決策**(產品需求、使用者行為、IA、workflow、interaction、UI pattern、元件／文案語意、視覺規範或 user-visible tradeoff) | **ASK** — 只有證據收斂後仍存在真實選擇／取捨才由 user 拍板；既有 SSOT 的機械落地不屬此類 |
-| **純工程／治理決策與動作**(architecture、provider-neutral SSOT、adapter、skill/hook、security、CI/CD、testing/Harness、dependency、migration、release、supply chain、GitHub config、package/template/WM/rollout/rollback) | **AUTO** — Standing Authorization；整批做到 frozen scope closure + 完整 evidence/readback/receipt/rollback |
+| **純工程／治理決策與動作**(architecture、provider-neutral SSOT、adapter、skill/hook、security、CI/CD、testing/Harness、dependency、migration、release、supply chain、GitHub config、package/template/canary/rollout/rollback) | **AUTO** — Standing Authorization；整批做到 frozen scope closure + 完整 evidence/readback/receipt/rollback |
 | Bug fix / clean / refactor / 命名一致 / perf / a11y / test / audit / verify | **AUTO** — 整批做完 + 完整驗證 + 撤回機制 |
 
 **同時優化 7 軸**:言簡意賅／效率+效能／SSOT 鐵律／易懂維護擴充／世界級+一致設計語言／完整 self-verify／自動 self-improve。**反 pattern**(禁):「省工」「下次再做」「下個 session」「OK 嗎?」過度 ASK、shortcut 避 verify。

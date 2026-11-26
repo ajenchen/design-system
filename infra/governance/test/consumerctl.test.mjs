@@ -155,6 +155,26 @@ function signControlPlaneReceipt(receipt, trust) {
   return receipt
 }
 
+// 舊制(legacy-bootstrap-v2)產品 consumer 的測試清冊。真實清冊裡唯一的舊制產品 work-management 已於 2026-11-25 移除
+//(產品 canary 換成 new-snapshot 血統的 workspace),但 one-time reviewed bootstrap 這條路、以及「舊制產品不得走
+// recurring control-plane 路線 / 不得自稱 new-snapshot」這些防線都還在,而且 common.mjs 的
+// LEGACY_PRODUCT_REPOSITORY_IDS 只認這個 id。所以把現行清冊的產品那一筆換回舊制那一筆的形狀來驗 ——
+// 其餘欄位(角色、ownership、surfaces、consumes)一律沿用現行清冊,不另寫一份。
+const LEGACY_PRODUCT_ID = 'work-management'
+function legacyFleetInventory() {
+  const value = readJson(resolve(GOVERNANCE_ROOT, 'inventory/managed-repos.json'))
+  const product = value.repositories.find(item => item.role === 'product-consumer')
+  product.id = LEGACY_PRODUCT_ID
+  product.github = `ajenchen/${LEGACY_PRODUCT_ID}`
+  product.localPathFromGovernanceRoot = `../../../${LEGACY_PRODUCT_ID}`
+  product.upgradeProtocolProfile = 'legacy-bootstrap-v2'
+  delete product.acceptedBootstrapReadbackSha256
+  delete product.acceptedControlPlaneUpdate
+  value.certificationCanaries['product-consumer'] = { repositoryId: LEGACY_PRODUCT_ID }
+  return value
+}
+const legacyFleetInventoryBytes = () => Buffer.from(`${stableStringify(legacyFleetInventory(), 2)}\n`)
+
 test('every required product materialization path joins a non-default ownership rule', () => {
   const managed = readJson(resolve(GOVERNANCE_ROOT, 'inventory/managed-repos.json'))
   const manifest = JSON.parse(readFileSync(new URL('../../../packages/design-system/ds-canonical/fork/manifest.json', import.meta.url), 'utf8'))
@@ -317,11 +337,11 @@ function bootstrapFixture(t) {
     '.claude/settings.json': { content: '{"consumer":"base"}\n', mode: 0o644 },
     'package.json': { content: '{"name":"consumer"}\n', mode: 0o644 },
   })
-  const inventoryBytes = readFileSync(resolve(GOVERNANCE_ROOT, 'inventory/managed-repos.json'))
+  const inventoryBytes = legacyFleetInventoryBytes()
   const release = bootstrapRelease()
   const context = {
     inventoryBytes,
-    repoId: 'work-management',
+    repoId: LEGACY_PRODUCT_ID,
     roots,
     candidateRelease: release.candidateRelease,
     releaseBomBytes: release.releaseBomBytes,
@@ -345,7 +365,7 @@ function bootstrapReadback(fixture, materializedTreeSha256) {
     schemaVersion: 1,
     kind: 'consumer-governance-bootstrap-readback',
     repositoryId: fixture.repoId,
-    repository: 'ajenchen/work-management',
+    repository: `ajenchen/${LEGACY_PRODUCT_ID}`,
     protocolId: loaded.protocol.protocolId,
     protocolSpecificationSha256: sourceDigests.specificationSha256,
     protocolSchemaSha256: sourceDigests.schemaSha256,
@@ -441,8 +461,8 @@ function controlPlaneFixture(t, {
   const scaffoldLock = buildProductTemplateScaffoldLock({ root: roots.incoming, releaseVersion: version })
   const scaffoldLockBytes = Buffer.from(`${JSON.stringify(scaffoldLock, null, 2)}\n`)
   const managed = inventoryValue ?? (() => {
-    const value = readJson(resolve(GOVERNANCE_ROOT, 'inventory/managed-repos.json'))
-    const repository = structuredClone(value.repositories.find(item => item.id === 'work-management'))
+    const value = legacyFleetInventory()
+    const repository = structuredClone(value.repositories.find(item => item.id === LEGACY_PRODUCT_ID))
     repository.id = 'new-product'
     repository.github = 'ajenchen/new-product'
     repository.localPathFromGovernanceRoot = '../../../new-product'
@@ -1306,8 +1326,8 @@ test('acknowledged consumer-owned divergence is named, digest-bound, and never s
   })
   const release = bootstrapRelease()
   const context = {
-    inventoryBytes: readFileSync(resolve(GOVERNANCE_ROOT, 'inventory/managed-repos.json')),
-    repoId: 'work-management',
+    inventoryBytes: legacyFleetInventoryBytes(),
+    repoId: LEGACY_PRODUCT_ID,
     roots,
     candidateRelease: release.candidateRelease,
     releaseBomBytes: release.releaseBomBytes,
@@ -1422,8 +1442,11 @@ test('fleet fanout without a reviewed runtime identity snapshot is not ready and
 test('fleet fanout enumerates every registered opt-in product consumer without claiming global template-lineage discovery', () => {
   const propagationContract = readFileSync(new URL('../../../packages/design-system/ds-canonical/skills/knowledge-prune/references/phase-z-cross-repo-ssot-propagation.md', import.meta.url), 'utf8')
   assert.match(propagationContract, /owned only by `infra\/governance\/release-workflow\.json`/)
-  assert.match(propagationContract, /reviewed exact-version PRs land in the template on every release, and in WM only when the user explicitly requests it/)
-  assert.doesNotMatch(propagationContract, /land in the template and WM/, 'WM 只在 user 要求時升級(user 2026-11-05),不得寫回「每次都升 WM」')
+  assert.match(propagationContract, /reviewed exact-version PRs land in the template on every release and are read back from its protected `main` lockfile/)
+  // 產品 canary(2026-11-25 起是 ajenchen/workspace):每次發版自動開升級 PR,合併由它自己決定,不是完成條件
+  assert.match(propagationContract, /The product canary `ajenchen\/workspace` \(`upgrade: automatic`, `merge: consumer-owned`\) gets its upgrade PR opened on every release, but merging is its own decision/)
+  assert.match(propagationContract, /is not a completion condition, and its PR is never merged to make an audit green/)
+  assert.doesNotMatch(propagationContract, /land in the template and (?:in )?(?:WM|work-management|workspace|the product canary)/, '不得寫回「產品 consumer 的升級 PR 每次都由發版合併」')
   assert.doesNotMatch(propagationContract, /every consumer receives an exact-version PR/i)
 
   const fixture = fleetFixture()
@@ -2432,11 +2455,11 @@ test('control-plane update repeats only by exact sequence/predecessor CAS and re
   )
 
   const ordinaryOnly = controlPlaneFixture(t)
-  const legacy = readJson(resolve(GOVERNANCE_ROOT, 'inventory/managed-repos.json'))
+  const legacy = legacyFleetInventory()
   assert.throws(
     () => createConsumerControlPlaneUpdatePlan({
       ...ordinaryOnly,
-      repoId: 'work-management',
+      repoId: LEGACY_PRODUCT_ID,
       inventoryBytes: Buffer.from(`${stableStringify(legacy, 2)}\n`),
     }),
     /not assigned to the recurring reviewed control-plane update protocol/,
@@ -2444,8 +2467,8 @@ test('control-plane update repeats only by exact sequence/predecessor CAS and re
 })
 
 test('reviewed-bootstrap lineage is preserved when it first enters the recurring control-plane chain', t => {
-  const managed = readJson(resolve(GOVERNANCE_ROOT, 'inventory/managed-repos.json'))
-  const repository = managed.repositories.find(item => item.id === 'work-management')
+  const managed = legacyFleetInventory()
+  const repository = managed.repositories.find(item => item.id === LEGACY_PRODUCT_ID)
   repository.upgradeProtocolProfile = 'reviewed-bootstrap-established-v2'
   repository.acceptedBootstrapReadbackSha256 = '9'.repeat(64)
   delete repository.acceptedControlPlaneUpdate

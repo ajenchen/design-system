@@ -8,10 +8,32 @@ product rules belong only in `governance/overlay.md`.
 
 ## One setup path in every environment
 
-Run `npm run setup:all` from a fresh checkout on local macOS/Linux, Codex Cloud, Claude Code
-on the web, Codespaces, or another Linux devcontainer host. Configure that same command as each
+Run `npm run setup:all` from a fresh checkout on local macOS/Linux, Codex Cloud, Codespaces, or
+another Linux devcontainer host. Configure that same command as each
 hosted environment's setup command; Codex Cloud also uses it as the maintenance command after a
 cached container is restored. Session-start hooks never install or repair dependencies.
+
+On Claude Code on the web, use the Setup script in the template README ("Local, cloud, and
+container setup"). It can go in the shared Default environment: it runs `npm run setup:all` only
+when the session's repository is this one and returns that command's exit status, and for any other
+repository it prints one skip line and exits 0, because a setup script that exits non-zero makes the
+session fail to start or start without what it failed to install
+(https://code.claude.com/docs/en/cloud-environments#setup-scripts). The guide does not document the
+script's working directory, so the script handles both starting at the repository root and starting
+one level up with the repository in a subfolder (a Setup script run there started in the directory that
+contains the checkout, with the repository in its own subfolder).
+
+Hosts whose outbound HTTPS is re-signed by a proxy work when the proxy CA is in the host system
+trust store and Node.js is 22.15.0 or newer: every registry request in the locked setup chain then
+trusts Node's bundled CA store plus the system store (the exact npm runs with `--use-system-ca`)
+and still ignores CA and `NODE_OPTIONS` environment variables. A credential-free `HTTPS_PROXY` /
+`NO_PROXY` is used only for routing and adds no trust; a proxy URL that carries credentials is still
+ignored. On Node.js 22.13.x–22.14.x the locked npm trusts only the bundled store.
+
+On Claude Code on the web the registry signature audit (`audit signatures`) also reaches the
+Sigstore TUF CDN (`tuf-repo-cdn.sigstore.dev`). In a Setup script run it was reached directly (no
+proxy variable set); inside a session it is reachable only through the session's credential-free
+`HTTPS_PROXY`, which the locked setup forwards for routing only, so a session rerun of `setup:all` reaches it through that proxy. A session where `setup:all` did not complete is degraded and must not claim compliance.
 
 Successful setup deliberately reports `scope=local-bootstrap`,
 `providerCertification=not-checked`, and `externalActivationRequired=false`. Ordinary bootstrap is

@@ -5,7 +5,10 @@ import Ajv2020 from 'ajv/dist/2020.js'
 import addFormats from 'ajv-formats'
 import {
   CONSUMER_NOT_REQUESTED_STATUS,
+  CONSUMER_OWNED_MERGE_STATUS,
   RELEASE_REQUESTED_CONSUMERS_ENV,
+  consumerBlocksRelease,
+  consumerMergeMode,
   consumerUpgradeMode,
   selectReleaseConsumers,
 } from './release-consumer-selection.mjs'
@@ -43,39 +46,49 @@ export function loadStandardCiEvidencePlan({ repoRoot = process.cwd() } = {}) {
   // plan 裡對 consumer 選法的說明必須跟實作同一份,否則就是一段沒有執行面的註解
   if (plan.consumerSelection?.implementation !== CONSUMER_SELECTION_IMPLEMENTATION
     || plan.consumerSelection?.requestEnv !== RELEASE_REQUESTED_CONSUMERS_ENV
-    || plan.consumerSelection?.notRequestedStatus !== CONSUMER_NOT_REQUESTED_STATUS) fail('canonical plan consumer selection differs from the release orchestrator implementation')
+    || plan.consumerSelection?.notRequestedStatus !== CONSUMER_NOT_REQUESTED_STATUS
+    || plan.consumerSelection?.consumerOwnedStatus !== CONSUMER_OWNED_MERGE_STATUS) fail('canonical plan consumer selection differs from the release orchestrator implementation')
   return { plan, planSha256: digest(bytes), path: PLAN_PATH }
 }
 
 /**
- * 這次發版的 consumer 證據範圍。選法只 import `release-consumer-selection.mjs`(orchestrator 用的同一支):
- * 被選中的 consumer 必須有升級證據;沒被選中的(on-request 且 user 本次沒要求)記成「本次未要求升級」,
- * 不得要求它的證據,也不得讓它從 observation 裡默默消失。
- * user 2026-11-05 原話:「以後WM的升級都不要自動做除非我有特別要求」。
+ * 這次發版的 consumer 證據範圍。選法只 import `release-consumer-selection.mjs`(orchestrator 用的同一支),三種去處:
+ * - selected:被選中、而且是第五步完成條件的 consumer(合併由 orchestrator 負責)→ 必須有「已合併、已讀回」的升級證據。
+ * - consumerOwned:被選中、但 `merge: consumer-owned`(產品 canary)→ 發版只替它開升級 PR,合不合由它自己決定;
+ *   不得要求它的升級證據(否則稽核會逼人去合併別人的 PR),也不得讓它從 observation 裡默默消失。
+ * - notRequested:沒被選中的(on-request 且 user 本次沒要求)→ 記成「本次未要求升級」,同樣不要求證據、不准消失。
  */
 export function standardConsumerSelection({ plan, workflow, inventory, desired, requested }) {
   if (!Array.isArray(requested) || requested.some((item) => typeof item !== 'string' || item.length === 0)) fail('requested consumer list is invalid')
   const selectedRepositories = new Set(selectReleaseConsumers(workflow.automation.consumers, requested).map((target) => target.repository))
   const selected = []
   const notRequested = []
+  const consumerOwned = []
   for (const planned of plan.consumers) {
     const repo = inventory.repositories.find((item) => item.id === planned.repositoryId)
     const profile = repo ? desired.profiles[repo.desiredProfile] : undefined
     const checkPolicy = profile?.requiredChecks.find((item) => item.context === planned.requiredCheck)
     const releaseTarget = repo ? workflow.automation.consumers.find((target) => target.repository === repo.github) : undefined
     if (!repo || !releaseTarget || releaseTarget.requiredCheck?.context !== checkPolicy?.context) fail(`${planned.repositoryId} release/check SSOT differs`)
-    if (selectedRepositories.has(repo.github)) {
-      selected.push({ planned, repo, checkPolicy, releaseTarget })
-    } else {
+    if (!selectedRepositories.has(repo.github)) {
       notRequested.push({
         repositoryId: repo.id,
         repository: repo.github,
         upgrade: consumerUpgradeMode(releaseTarget),
         status: CONSUMER_NOT_REQUESTED_STATUS,
       })
+    } else if (consumerBlocksRelease(releaseTarget)) {
+      selected.push({ planned, repo, checkPolicy, releaseTarget })
+    } else {
+      consumerOwned.push({
+        repositoryId: repo.id,
+        repository: repo.github,
+        merge: consumerMergeMode(releaseTarget),
+        status: CONSUMER_OWNED_MERGE_STATUS,
+      })
     }
   }
-  return { requested: [...requested], selected, notRequested }
+  return { requested: [...requested], selected, notRequested, consumerOwned }
 }
 
 function expectedContext(repoRoot) {
@@ -189,7 +202,7 @@ export function validateStandardFiveStepObservation(observation, {
       || npmPackage.gitCommit !== observation.release.commit) fail(`release/BOM/npm/provenance identity differs:${local.name}`)
   }
 
-  // 只要求「這次發版實際被選中的 consumer」的證據;選法與 orchestrator 第五步同一支實作
+  // 只要求「這次發版實際被選中、而且是第五步完成條件的 consumer」的證據;選法與 orchestrator 第五步同一支實作
   const selection = standardConsumerSelection({ plan, workflow, inventory, desired, requested: observation.consumerSelection.requested })
   const consumerById = new Map(observation.consumers.map((item) => [item.repositoryId, item]))
   if (consumerById.size !== observation.consumers.length) fail('consumer closure contains a duplicate repository')
@@ -198,6 +211,12 @@ export function validateStandardFiveStepObservation(observation, {
   }
   if (!same(observation.consumerSelection.notRequested, selection.notRequested)) {
     fail('not-requested consumer record differs from the release selection; an unselected consumer must be recorded as not-requested-this-release, never dropped')
+  }
+  for (const owned of selection.consumerOwned) {
+    if (consumerById.has(owned.repositoryId)) fail(`${owned.repositoryId} merges its own upgrade PR (consumer-owned) but carries consumer upgrade evidence; its merge is not a completion condition of this release`)
+  }
+  if (!same(observation.consumerSelection.consumerOwned, selection.consumerOwned)) {
+    fail('consumer-owned consumer record differs from the release selection; a consumer whose merge is consumer-owned must be recorded as pull-request-only, never dropped and never required to be merged')
   }
   for (const { planned: expectedConsumer, repo, checkPolicy: check, releaseTarget } of selection.selected) {
     const item = consumerById.get(repo.id)

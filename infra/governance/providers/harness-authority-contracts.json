@@ -1197,7 +1197,7 @@
           "entryId": "product-template-role-boundary",
           "domain": "template-consumer",
           "kind": "does-not-prove",
-          "text": "The template mirror or WM canary has adopted an unreleased candidate.",
+          "text": "The template mirror or product canary has adopted an unreleased candidate.",
           "sourceIds": [
             "exact-product-template-scaffold-lock",
             "product-template-package-contract"

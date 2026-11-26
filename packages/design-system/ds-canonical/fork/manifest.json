@@ -104,20 +104,20 @@
   },
   "providerLifecycle": {
     "schemaVersion": 4,
-    "releaseVersion": "0.1.0-beta.149",
+    "releaseVersion": "0.1.0-beta.150",
     "immutableHead": {
       "providerInventorySha256": "86e9d0668cb54ad1bf05c36e78b4aa80417d5f468c929dd3ddcf69c1afbf32e4",
-      "releaseVersion": "0.1.0-beta.148",
-      "snapshotSha256": "fc1e9d964426e8f4e594f0a4beadc13ec9e26c78dcae3c7a0e3820ba431e261c"
+      "releaseVersion": "0.1.0-beta.149",
+      "snapshotSha256": "cdb5fad9949185d3e6c8f78cbb30caa540402706c3bad876a6718d5795d6a000"
     },
-    "ledgerSha256": "ccd5bff7b72db4ed2064b39a4cefd6e693d669c8cc0e549774162a56aaff6b8d",
-    "previousSnapshotSha256": "fc1e9d964426e8f4e594f0a4beadc13ec9e26c78dcae3c7a0e3820ba431e261c",
-    "currentSnapshotSha256": "cdb5fad9949185d3e6c8f78cbb30caa540402706c3bad876a6718d5795d6a000",
+    "ledgerSha256": "8f7fb26d50c41159bac125eaa8a7ea317de8e92d5fa117285dd7f99476e078e6",
+    "previousSnapshotSha256": "cdb5fad9949185d3e6c8f78cbb30caa540402706c3bad876a6718d5795d6a000",
+    "currentSnapshotSha256": "cb70f50d2049688c9eb472f8e6e4d89372a24f29db24a1fa41983b1c45b80c94",
     "currentProviderInventorySha256": "86e9d0668cb54ad1bf05c36e78b4aa80417d5f468c929dd3ddcf69c1afbf32e4",
     "retiredProviders": [],
     "currentSnapshot": {
-      "releaseVersion": "0.1.0-beta.149",
-      "previousSnapshotSha256": "fc1e9d964426e8f4e594f0a4beadc13ec9e26c78dcae3c7a0e3820ba431e261c",
+      "releaseVersion": "0.1.0-beta.150",
+      "previousSnapshotSha256": "cdb5fad9949185d3e6c8f78cbb30caa540402706c3bad876a6718d5795d6a000",
       "providers": [
         {
           "id": "claude",
@@ -193,8 +193,8 @@
       "retiredProviders": []
     },
     "immutableHeadSnapshot": {
-      "releaseVersion": "0.1.0-beta.148",
-      "previousSnapshotSha256": "2c440b4d5427f7094ba19b68bafb8fd72b2f2c1e22aa5f6325b126e4ad1562e7",
+      "releaseVersion": "0.1.0-beta.149",
+      "previousSnapshotSha256": "fc1e9d964426e8f4e594f0a4beadc13ec9e26c78dcae3c7a0e3820ba431e261c",
       "providers": [
         {
           "id": "claude",
@@ -688,7 +688,7 @@
             "pathClass": "contains-space",
             "status": "not-certified",
             "limitations": [
-              "No clean committed WM snapshot has produced signed evidence for this exact target."
+              "No clean committed workspace snapshot has produced signed evidence for this exact target."
             ]
           },
           {
@@ -785,16 +785,16 @@
         ],
         "checks": [
           {
-            "id": "wm-clean-snapshot-canary",
+            "id": "product-canary-clean-snapshot",
             "status": "not-tested",
             "evidence": {
               "kind": "command-output",
-              "reference": "A committed WM exact-snapshot upgrade and clean-worktree rerun are still required."
+              "reference": "A committed workspace exact-snapshot upgrade and clean-worktree rerun are still required."
             }
           }
         ],
         "limitations": [
-          "Native hook wiring is tested in isolation, but the real WM checkout has not adopted the immutable snapshot."
+          "Native hook wiring is tested in isolation; no run against the workspace canary checkout has been recorded."
         ]
       },
       {
@@ -868,7 +868,7 @@
             "pathClass": "contains-space",
             "status": "not-certified",
             "limitations": [
-              "No clean committed WM snapshot has produced signed evidence for this exact target."
+              "No clean committed workspace snapshot has produced signed evidence for this exact target."
             ]
           },
           {
@@ -965,16 +965,16 @@
         ],
         "checks": [
           {
-            "id": "wm-clean-snapshot-canary",
+            "id": "product-canary-clean-snapshot",
             "status": "not-tested",
             "evidence": {
               "kind": "command-output",
-              "reference": "A committed WM exact-snapshot upgrade and clean-worktree rerun are still required."
+              "reference": "A committed workspace exact-snapshot upgrade and clean-worktree rerun are still required."
             }
           }
         ],
         "limitations": [
-          "The real WM checkout is intentionally unchanged and still contains pre-existing skill edits."
+          "No run against the workspace canary checkout has been recorded; the previous canary (work-management) was retired on 2026-11-25."
         ]
       },
       {
@@ -1067,11 +1067,11 @@
         ],
         "checks": [
           {
-            "id": "desktop-wm-runtime-conformance",
+            "id": "desktop-product-canary-runtime-conformance",
             "status": "not-tested",
             "evidence": {
               "kind": "manual-review",
-              "reference": "No Codex desktop app local run against the exact WM snapshot has been recorded."
+              "reference": "No Codex desktop app local run against the exact workspace snapshot has been recorded."
             }
           }
         ],
@@ -1118,7 +1118,7 @@
         ]
       }
     ],
-    "projectionDigest": "07a0eab9eba69c4aac6efa18fcee91354ba3bb4014146af0c845592d981040d9"
+    "projectionDigest": "03f3cf47335b85ad6f60bf4ff256a6ab100ebda6200c1dbb4616cf891aab35a7"
   },
   "launchers": [
     "approval-evidence.mjs",

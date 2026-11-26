@@ -33,6 +33,7 @@ import {
   assertVerifiedExactNpmRuntimeCapability,
   prepareVerifiedExactNpmRuntime,
   resolveExactNpmRuntimeContract,
+  verifiedNpmNodeArgv,
 } from './lib/verified-exact-npm-runtime.mjs'
 import {
   assertGitVisibleWorktreeUnchanged,
@@ -1347,7 +1348,7 @@ export async function setupProviderCliToolchain({
       { args: ['audit', '--audit-level=high', `--registry=${GOVERNANCE_DEPENDENCY_REGISTRY}`], timeoutMs: AUDIT_TIMEOUT_MS },
     ]
     for (const [index, step] of npmSteps.entries()) {
-      runClosedBootstrapStep(process.execPath, [npmRuntime.cli, ...step.args], {
+      runClosedBootstrapStep(process.execPath, verifiedNpmNodeArgv(npmRuntime.cli, step.args), {
         root: staging,
         environment,
         runner,

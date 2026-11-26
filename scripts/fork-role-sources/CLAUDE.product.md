@@ -21,10 +21,20 @@ This file contains Claude Code mechanics only. Shared product rules, SSOT pointe
 
 ## Fresh environments
 
-Use `npm run setup:all` as the Claude Code on the web environment **Setup script**. It runs
-the shared locked install, signature audit, and exact installed hooks-off checker before work. The
-web environment may reuse a cached setup result, so rebuild that cache or run the same command
-explicitly whenever the committed lock changes. Opening or resuming a Claude session does not
+On Claude Code on the web, set the **Setup script** to the script in README.md ("Local, cloud, and
+container setup"). It can go in the shared Default environment: it runs `npm run setup:all` only
+when the session's repository is this one and returns that command's exit status, and for any other
+repository it prints one skip line and exits 0. Do not put a bare `npm run setup:all` there: the
+official guide does not document a Setup script's working directory (a Setup script run started in the directory that
+contains the checkout, with the repository in its own subfolder), and one that exits non-zero makes the session fail to
+start or start without what it failed to install
+(https://code.claude.com/docs/en/cloud-environments#setup-scripts). Inside a session the registry signature
+audit (`audit signatures`) reaches `tuf-repo-cdn.sigstore.dev` only through the session's
+credential-free `HTTPS_PROXY`, which the locked setup forwards for routing only (a proxy URL with
+credentials is still ignored). A session where `setup:all` did not complete is degraded. `setup:all`
+runs the shared locked install, signature audit, and exact installed hooks-off checker before work.
+The web environment may reuse a cached setup result, so rebuild that cache or run
+`npm run setup:all` explicitly whenever the committed lock changes. Opening or resuming a Claude session does not
 mutate the checkout through repository SessionStart. If setup cannot authenticate the locked
 snapshot, treat the environment as degraded and do not claim compliance.
 

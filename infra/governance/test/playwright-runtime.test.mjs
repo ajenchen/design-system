@@ -8,6 +8,7 @@ import {
   resolveProvisionedPlaywrightRuntime,
 } from '../lib/playwright-runtime.mjs'
 import { ensurePlaywrightBrowsers, verifyPlaywrightBrowserReadback } from '../../../scripts/ensure-playwright-browsers.mjs'
+import { verifiedNodeTrustArgs } from '../../../scripts/lib/verified-exact-npm-runtime.mjs'
 
 const BROWSER_VERSION = '147.0.7727.15'
 
@@ -264,7 +265,8 @@ test('setup is hermetic, strips hostile Playwright overrides, and never skips Li
   assert.equal(runtime.environmentValue, '0')
   assert.equal(calls.length, 3, '--with-deps plus two browser readbacks must execute even when exact markers already exist')
   assert.equal(calls[0].command, process.execPath)
-  assert.deepEqual(calls[0].args, [join(realpathSync(root), 'node_modules/playwright/cli.js'), 'install', '--with-deps', 'chromium'])
+  assert.deepEqual(verifiedNodeTrustArgs(), ['--use-system-ca'], 'this test runner must exercise the system trust-store path')
+  assert.deepEqual(calls[0].args, [...verifiedNodeTrustArgs(), join(realpathSync(root), 'node_modules/playwright/cli.js'), 'install', '--with-deps', 'chromium'])
   assert.equal(calls[0].options.shell, false)
   assert.equal(calls[0].options.env.PLAYWRIGHT_BROWSERS_PATH, '0')
   assert.equal(Object.hasOwn(calls[0].options.env, 'PLAYWRIGHT_DOWNLOAD_HOST'), false)

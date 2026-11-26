@@ -84,13 +84,20 @@
       "properties": {"repositoryId": {"$ref": "#/$defs/nonEmpty"}, "role": {"enum": ["template-mirror", "product-consumer"]}, "repository": {"$ref": "#/$defs/nonEmpty"}, "defaultBranch": {"$ref": "#/$defs/nonEmpty"}, "protectedMain": {"type": "object", "additionalProperties": false, "required": ["head", "tree"], "properties": {"head": {"$ref": "#/$defs/gitOid"}, "tree": {"$ref": "#/$defs/gitOid"}}}, "sourcePullRequest": {"$ref": "#/$defs/pullRequest"}, "sourceWorkflow": {"$ref": "#/$defs/workflowRun"}, "packageLock": {"type": "object", "additionalProperties": false, "required": ["path", "sha256", "packages"], "properties": {"path": {"const": "package-lock.json"}, "sha256": {"$ref": "#/$defs/sha256"}, "packages": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/lockPackage"}}}}, "auditWorkflow": {"$ref": "#/$defs/workflowIdentity"}, "requiredCheck": {"$ref": "#/$defs/check"}}
     },
     "consumerSelection": {
-      "description": "這次發版實際被選中升級的 consumer 由 scripts/lib/release-consumer-selection.mjs 決定(與 release:auto 第五步同一支)。requested = RELEASE_REQUESTED_CONSUMERS;沒被選中的記在 notRequested(本次未要求升級),不得默默消失。user 2026-11-05 原話:「以後WM的升級都不要自動做除非我有特別要求」。",
+      "description": "這次發版實際被選中升級的 consumer 由 scripts/lib/release-consumer-selection.mjs 決定(與 release:auto 第五步同一支)。requested = RELEASE_REQUESTED_CONSUMERS;沒被選中的記在 notRequested(本次未要求升級);被選中但合併由它自己決定的記在 consumerOwned(只開升級 PR,不是完成條件);兩種都不得默默消失。on-request 的由來是 user 2026-11-05 原話:「以後WM的升級都不要自動做除非我有特別要求」(work-management 已於 2026-11-25 退場)。",
       "type": "object", "additionalProperties": false,
-      "required": ["requested", "notRequested"],
+      "required": ["requested", "notRequested", "consumerOwned"],
       "properties": {
         "requested": {"type": "array", "items": {"$ref": "#/$defs/nonEmpty"}},
-        "notRequested": {"type": "array", "items": {"$ref": "#/$defs/notRequestedConsumer"}}
+        "notRequested": {"type": "array", "items": {"$ref": "#/$defs/notRequestedConsumer"}},
+        "consumerOwned": {"type": "array", "items": {"$ref": "#/$defs/consumerOwnedConsumer"}}
       }
+    },
+    "consumerOwnedConsumer": {
+      "description": "合併由它自己決定的 consumer(release-workflow.json 的 merge: consumer-owned,產品 canary):發版只替它開升級 PR,不讀回、不要求「已合併」的升級證據,但必須留下這一筆紀錄。",
+      "type": "object", "additionalProperties": false,
+      "required": ["repositoryId", "repository", "merge", "status"],
+      "properties": {"repositoryId": {"$ref": "#/$defs/nonEmpty"}, "repository": {"$ref": "#/$defs/nonEmpty"}, "merge": {"const": "consumer-owned"}, "status": {"const": "pull-request-only-not-a-completion-condition"}}
     },
     "notRequestedConsumer": {
       "description": "本次未要求升級的 on-request consumer:不讀回、不要求升級證據,但必須留下這一筆紀錄。",
