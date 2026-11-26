@@ -70,8 +70,10 @@
     padding-top: var(--layout-body-start);
     padding-bottom: var(--layout-body-end);
   }
+  /* hug 的底 = 一般元素的頂(tight),不讀 --layout-body-start:頂部自判(下方「頂部」段)在第一個是 unbounded 清單時把 start 設 0,
+     讀它的話最後一個一般元素會跟著貼底(2026-11-27 規格核對 D;修前 start 恆 = tight,這裡值不變) */
   [data-layout-body="hug"] {
-    --layout-body-end: var(--layout-body-start);
+    --layout-body-end: var(--layout-space-tight);
   }
   [data-layout-body]:has(
     > [data-layout-region="bounded"]:nth-last-child(1 of :not(.sr-only, [hidden], script, style, template)),
