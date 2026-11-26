@@ -82,7 +82,8 @@ const OVERVIEW_PROPS: [string, string, string][] = [
   ['moreListMaxHeight', '9 列 + 半列', '「+N」清單的高度上限,只能往更矮調'],
   ['locale / weekStartsOn', "'zh-TW' / 從語系推", '標題、星期名、時間格式與週起始日'],
   ['eventTimeFormat', '跟語系(zh-TW 12 小時)', '事件開始時間的寫法'],
-  ['labels / moreLabel', '繁中 / +N', '讀屏字串與計數文字'],
+  ['labels', '繁中', '讀屏字串(CalendarLabels)'],
+  ['moreLabel', '+N', '「+N」的計數文字'],
 ]
 
 export const Overview: Story = {

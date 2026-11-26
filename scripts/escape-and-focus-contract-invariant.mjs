@@ -358,7 +358,8 @@ const MUTANTS = [
     file: 'lib/overlay-focus-return.ts',
     // FileViewer 2026-10-20 起消費同一支 hook(useTriggerlessFocusReturn)→ 兩列一起紅,證明它們吃的是同一份
     expectRed: ['F-menu', 'F-menu-fileviewer'],
-    apply: (src) => replaceOnce(src, /openerRef\.current = persistentOpenerOf\(captureFocusOrigin\(\)\)/, 'openerRef.current = captureFocusOrigin()'),
+    // 2026-11-27 H20 起開啟者先記原樣(rawOpenerRef,preferLiveOpener 用)再換成持久觸發鈕 → 錨點跟著改成那一行
+    apply: (src) => replaceOnce(src, /openerRef\.current = persistentOpenerOf\(rawOpenerRef\.current\)/, 'openerRef.current = rawOpenerRef.current'),
   },
   {
     id: 'fileviewer-private-opener',

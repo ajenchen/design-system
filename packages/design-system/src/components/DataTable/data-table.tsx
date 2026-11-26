@@ -2209,12 +2209,13 @@ function DataTableInner<TData>(
   // 寫死時起始會說「已提起**項目**」而結束說「已移動**欄位**」,同一趟用兩個名字。
   // 2026-10-01 從 handleDragEnd 上方搬到這裡:表格根節點(下方 JSX)要讀 `drag.escapeLayer`(拖曳中 Esc 只取消拖曳),
   // 它在 JSX 之後宣告會踩到 TDZ;hook 順序照舊無條件。
+  // 浮層宿主(DataTableOverlayHostCtx):掛上後才有元素,所以用 state(ref 不觸發重畫,dnd-kit 的 container 與把手 portal 都要拿到它)
+  const [overlayHost, setOverlayHost] = React.useState<HTMLDivElement | null>(null)
   const drag = useDragAccessibility({
     getOutcome: () => reorderOutcomeRef.current,
     kind: (active) => (active.data?.current?.type === 'column' ? '欄位' : '列'),
+    container: overlayHost,
   })
-  // 浮層宿主(DataTableOverlayHostCtx):掛上後才有元素,所以用 state(ref 不觸發重畫,dnd-kit 的 container 與把手 portal 都要拿到它)
-  const [overlayHost, setOverlayHost] = React.useState<HTMLDivElement | null>(null)
 
   // 快速捲動的列殼 —— **自適應機器畫列能力**(2026-09-09,AD56:R17 的固定判準在慢機器失效)。
   // 不用兩次 render 的瞬時速度(快機器的正常短捲會被誤判,R17 H1),也不用固定跳距(慢機器 commit 頻繁、每次位移不到一個
@@ -6032,7 +6033,7 @@ function DataTableInner<TData>(
         // 先前四個 DndContext 全都沒傳 accessibility(全 DS grep = 0 命中),於是吃 dnd-kit
         // 的英文預設,而且是從它自己的生命週期發的 —— 會在我們根本沒重排時播「已放到 X」。
         // dnd-kit 的讀屏節點(HiddenText + LiveRegion)portal 進表格外框之前的浮層宿主,不接在外框後面(DataTableOverlayHostCtx 註解)
-        accessibility={{ ...drag.accessibility, container: overlayHost ?? undefined }}
+        accessibility={drag.accessibility}
       >
         {/* 浮層宿主:零尺寸、絕對定位(不佔版面),**排在表格外框之前**;把手 / 探針 / dnd-kit 讀屏節點都 portal 進來。不加 aria-hidden:
             dnd-kit 的 LiveRegion 在裡面,藏起來就整趟拖曳無聲 */}
