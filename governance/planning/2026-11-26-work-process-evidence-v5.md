@@ -35,14 +35,17 @@
   - 逐則 `--tag` 量(各自重建 build:lib + build-storybook):`46eff99d` 是 10 / 52 / 6 / 7 / 6;**main `2e5c1b0c` 也已是 10 / 52 / 6 / 7 / 6**。所以不是本分支 `2e5c1b0c..46eff99d` 的產品 commit 帶進來的 —— 原先懷疑的 `44f7acc2`(整頁預設字級)排除。
   - 跟 `_meta.linuxOnly` 已登記的那一型**方向相反**:那一型是 Linux 量得比 macOS 多(macOS 歸 incomplete 不計);這 5 格是 macOS 量得比基線多。所以不能拿那一型推論 CI 會綠。
   - 判不了的:#172 合併前在 macOS 寫基線時量到 9 / 51 / 1 / 6 / 4,同一個 commit 今天本機量到 10 / 52 / 6 / 7 / 6 —— 是 squash 裡寫基線之後的 commit 改到,還是本機環境變了,本包分不出來(squash 前的 commit 不在 repo 裡)。Linux 的值本機量不到。
-- 因此 `verify-browser-a11y` **暫不接進 verify 總關卡**(登記待決,不是放寬判準或容差):job 照樣在每個 PR 與 push main 全掃、上傳 `a11y-audit-report`,紅了看得到但不擋合併。結案條件:第一次 PR CI 讀回時,從該 job 的 `a11y-audit-report` 拿這 5 格(與任何其他增量)的 Linux 值 → 逐格判斷是修掉對比,還是寫明理由更新基線 → 該 job 綠了,才把它加進 `ci.yml` verify 的 needs、env 與判斷式(`infra/governance/test/ci-workflow-scope.test.mjs` 的 needs 清單同步)。
+- 因此 `verify-browser-a11y` 曾**暫不接進 verify 總關卡**(登記待決,不是放寬判準或容差),結案條件是拿 CI 的 Linux 值逐格判斷。**已結案(2026-11-26)**:
+  - PR #174 第一次 CI 讀回(run 45725978357,commit `cf72653d`,job 139595836913)紅在同樣 5 格,Linux 值與本機相同:10 / 52 / 6 / 7 / 6。該 job 上傳的 `a11y-audit.json` 對 `cf72653d` 的基線重跑同一支 `evaluateA11yRegressionGate`:回歸只有這 5 格,另有 1 格變少(select「設計規格 › overview」scrollable-region-focusable 1 → 0),沒有別的增量。
+  - 逐節點實量(HEAD `efce5630` 的建置,與 `audit-a11y.mjs` 同一套開法):5 格共 81 個節點全部是 `#8c8c8c` 疊 `#ffffff`、3.36:1 = 淺色 `--fg-muted`(74 個節點自己帶 `text-fg-muted`,7 個是 `text-fg-muted` 說明文字裡的 `<code>`、繼承同色)。屬 `packages/design-system/src/tokens/color/color.spec.md`「已定案:`--fg-muted` 在淺色主題未達 WCAG AA —— 維持現狀」那一類,照 `46eff99d` 前例用產生器(`--baseline-write`)寫進基線,只有這 5 格變動。
+  - `verify-browser-a11y` 接回 `ci.yml` verify 的 needs、env 與判斷式,`infra/governance/test/ci-workflow-scope.test.mjs` 的 needs 清單與上游迴圈同步;判準與容差沒動。
 - 夜間那趟在 main 上的紅分兩段(普查只抓到 11-21 起的 run 層結論,沒有 job 層,所以分不出是 a11y 還是 bundle size 那個 job 紅):
   - 11-19 那次有人讀過 log:main `2e5c1b0c`(#172)的 commit 說明引了 run 44499310317 的 log:515-517「baseline 22 → now 23」「baseline 40 → now 41」,#172 把這兩格寫回 23 / 41,並登記在基線 `_meta.linuxOnly`(理由引同一個 run)。head 還是 `8eb473c7` 的 11-21、11-22 兩次 failure 是在這個修正合併之前。
   - 修正合併之後,head 為 `2e5c1b0c` 的 11-23、11-24、11-25 三次(run 45153705339 / 45388615541 / 45598331453)仍是 failure。**這三次的原因沒人讀過 log**,本包也沒讀(不查 GitHub API)。
 
 ## 4. 對照組(閘該紅的時候會紅)
 
-- 現況:本包起點 `3e75811c` 的建置上 `npm run a11y:check -- --gate`(本機 macOS,564 秒):**紅**,exit 1,5 個增量 —— avatar「設計規格 › state-behavior」color-contrast 基線 9 → 10、combobox「color-matrix」51 → 52、combobox「state-behavior」1 → 6、profilecard「color-matrix」6 → 7、rating「size-matrix」4 → 6;沒有 audit-error,story 清單與基線相同(1089 則)。同樣這 5 個、同樣的數字,2026-11-24 另一條分支的本機 `--gate` 也紅過(普查 `local-cost.json` longestCommands 第 18 列那一跑的 log)。這 5 格 CI(Linux)會不會紅本機判不了(第 3 節),所以這個 job 暫不接進 verify 總關卡,Linux 值等 CI 上傳的 a11y-audit-report。
+- 現況:本包起點 `3e75811c` 的建置上 `npm run a11y:check -- --gate`(本機 macOS,564 秒):**紅**,exit 1,5 個增量 —— avatar「設計規格 › state-behavior」color-contrast 基線 9 → 10、combobox「color-matrix」51 → 52、combobox「state-behavior」1 → 6、profilecard「color-matrix」6 → 7、rating「size-matrix」4 → 6;沒有 audit-error,story 清單與基線相同(1089 則)。同樣這 5 個、同樣的數字,2026-11-24 另一條分支的本機 `--gate` 也紅過(普查 `local-cost.json` longestCommands 第 18 列那一跑的 log)。CI(Linux)第一次讀回也紅在這 5 格、同值,結案經過見第 3 節。
 - 判定的兩面對照(不改產品原始碼、只改基線副本):拿上面那一跑寫出的真實 `a11y-audit.json`,餵給 CLI 用的同一支 `evaluateA11yRegressionGate`(`scripts/lib/a11y-gate.mjs:153`),掃描清單 = 基線清單(1089 則,`test:a11y-corpus` 已證相同):
   - A 原基線 → ok=false,回歸剛好是上面那 5 個、數字相同(與 CLI 那一跑的裁決一致);
   - B 只把那 5 格設成本機量值 → ok=true、0 回歸(這份建置上判定能綠);
