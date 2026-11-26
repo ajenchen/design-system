@@ -170,9 +170,11 @@ $(printf '%b' "$UNJUSTIFIED" | sed 's/^/    /' | awk 'NR <= 10')
     (b) Escape:在該 line 加 \`// @layout-space-magic-ok: <rationale>\` 顯式 documented
         (eg.「\`gap-1\` 是 4px stack icon — non-spacing context,not consumer layout」)
 
-  注意:canonical inline item/control、semantic homogeneous list、toolbar 與 rule-5 grouped
-  horizontal fields 的 gap-1/2 會由 utility-registry 結構規則自動辨識,不需 escape。
-  一般 flex/grid/section 的 gap-1/2 沒有這些語意證據時仍是 blocker。
+  注意:canonical inline item/control、semantic homogeneous list、toolbar、rule-5 grouped
+  horizontal fields 與一排 assist chip(<ul role="list" className="flex flex-wrap gap-1">,每顆
+  <li><Chip variant="assist">;chip.spec.md「一排 assist chip(訊息附件以外)」)的 gap-1/2
+  會由 utility-registry 結構規則自動辨識,不需 escape。
+  一般 flex/grid/section 的 gap-1/2 沒有這些語意證據時仍是 blocker(手刻 div 排一排 chip 也是)。
 
   完整 6 條規則 → packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md
 EOF

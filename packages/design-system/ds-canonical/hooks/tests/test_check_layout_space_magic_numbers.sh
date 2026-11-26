@@ -256,6 +256,93 @@ run_hook "Write" "$APP_TSX" "content" \
 expect_silent "N15. grouped horizontal field pair gap-2 (rule 5) → silent"
 
 # ─────────────────────────────────────────────────────────────
+# 一排 assist chip(chip.spec.md「一排 assist chip(訊息附件以外)」;user 2026-11-26 決策卡 E2
+# 選「A:照附件列同一套寫進 chip 規格,閘放行」)。只放行這一個結構,每一格各有對照組:
+#   合法樣本 N18 / N19 綠;手刻 div(P17)、沒寫 role="list"(P18)、間距不是 4(P19)、
+#   清單裡不是 assist chip(P20 / P21)仍紅;拿掉放行(P22,同一份 N18 樣本)→ 紅。
+# ─────────────────────────────────────────────────────────────
+
+CHIP_ROW_MAPPED='const QuickPrompts = () => (
+  <ul role="list" className="flex flex-wrap gap-1">
+    {prompts.map((prompt) => (
+      <li key={prompt.id}>
+        <Chip variant="assist" onClick={() => ask(prompt.text)}>{prompt.text}</Chip>
+      </li>
+    ))}
+  </ul>
+);'
+
+# N18. 合法:ul role=list + flex-wrap + gap-1,每顆 li 包 assist chip(map 產生)→ silent
+run_hook "Write" "$APP_TSX" "content" "$CHIP_ROW_MAPPED"
+expect_silent "N18. 一排 assist chip(ul role=list / li / gap-1,map)→ silent"
+
+# N19. 合法:逐顆寫出、props 跨行、onClick(含 =>)寫在 variant 前面 → silent
+run_hook "Write" "$APP_TSX" "content" \
+'const QuickPrompts = () => (
+  <ul role="list" className="flex flex-wrap gap-1">
+    <li>
+      <Chip onClick={() => ask("摘要這份報告")} variant="assist">摘要這份報告</Chip>
+    </li>
+    <li>
+      <Chip
+        onClick={() => ask("列出待辦事項")}
+        variant="assist"
+      >
+        列出待辦事項
+      </Chip>
+    </li>
+  </ul>
+);'
+expect_silent "N19. 一排 assist chip(逐顆寫、props 跨行、onClick 在 variant 前)→ silent"
+
+# P17. 手刻 div 排一排 assist chip(沒有語意清單)→ BLOCK
+run_hook "Write" "$APP_TSX" "content" \
+'const QuickPrompts = () => (
+  <div className="flex flex-wrap gap-1">
+    {prompts.map((prompt) => (
+      <Chip key={prompt.id} variant="assist" onClick={() => ask(prompt.text)}>{prompt.text}</Chip>
+    ))}
+  </div>
+);'
+expect_block "P17. 手刻 div 排一排 assist chip → BLOCK"
+
+# P18. ul 沒寫 role="list"(Tailwind 拿掉清單符號後讀屏不當清單念)→ BLOCK
+run_hook "Write" "$APP_TSX" "content" "${CHIP_ROW_MAPPED/ role=\"list\"/}"
+expect_block "P18. 一排 assist chip 的 ul 沒寫 role=list → BLOCK"
+
+# P19. 間距不是 4(gap-2 = ChipGroup filter 的值,不是附件列的值)→ BLOCK
+run_hook "Write" "$APP_TSX" "content" "${CHIP_ROW_MAPPED/gap-1/gap-2}"
+expect_block "P19. 一排 assist chip 用 gap-2 → BLOCK"
+
+# P20. 清單裡是 filter Chip(沒寫 variant="assist")→ BLOCK
+run_hook "Write" "$APP_TSX" "content" "${CHIP_ROW_MAPPED/ variant=\"assist\"/ value=\"x\"}"
+expect_block "P20. 換行清單裡是 filter Chip → BLOCK"
+
+# P21. 換行清單裡不是 Chip(Badge 一排)→ BLOCK
+run_hook "Write" "$APP_TSX" "content" \
+'const Labels = () => (
+  <ul role="list" className="flex flex-wrap gap-1">
+    {labels.map((label) => (
+      <li key={label.id}><Badge>{label.name}</Badge></li>
+    ))}
+  </ul>
+);'
+expect_block "P21. 換行清單裡不是 assist chip(Badge)→ BLOCK"
+
+# P22. 拿掉放行:同一份 N18 合法樣本,consumer corpus 的 registry 把 assist_chip_row 的 item_variant
+#      換成不存在的值(等同這條放行不在)→ BLOCK。證明 N18 的綠來自這條放行,不是別條規則順手放過。
+CHIP_ROW_OFF_CORPUS="$TMP_DIR/chip-row-off-corpus"
+mkdir -p "$CHIP_ROW_OFF_CORPUS/references"
+python3 - "$SCRIPT_DIR/../../../src/tokens/utility-registry.json" "$CHIP_ROW_OFF_CORPUS/references/utility-registry.json" <<'PY'
+import json, sys
+registry = json.load(open(sys.argv[1], encoding="utf-8"))
+registry["spacing"]["canonical_micro_geometry"]["assist_chip_row"]["item_variant"] = "lane-removed"
+json.dump(registry, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+PY
+GOVERNANCE_CORPUS_ROOT="$CHIP_ROW_OFF_CORPUS" run_hook "Write" "$APP_TSX" "content" "$CHIP_ROW_MAPPED"
+expect_block "P22. 拿掉 assist_chip_row 放行 → 同一份合法樣本 BLOCK"
+
+# ─────────────────────────────────────────────────────────────
 # 幻覺 token:白名單從 layoutSpace.css 現讀(寫死 loose|tight|bottom 會漏掉之後新增的 tier)
 # ─────────────────────────────────────────────────────────────
 

@@ -55,6 +55,7 @@ expected_keys = {
     "field_group_elements",
     "field_group_roles",
     "field_control_elements",
+    "assist_chip_row",
     "nearby_line_limit",
     "rationale",
     "rationale_path",
@@ -62,7 +63,7 @@ expected_keys = {
 if not isinstance(policy, dict) or set(policy) != expected_keys:
     raise ValueError("canonical micro-geometry policy is invalid")
 
-array_keys = expected_keys - {"nearby_line_limit", "rationale", "rationale_path"}
+array_keys = expected_keys - {"assist_chip_row", "nearby_line_limit", "rationale", "rationale_path"}
 for key in array_keys:
     value = policy[key]
     if (
@@ -77,6 +78,31 @@ if not isinstance(policy["nearby_line_limit"], int) or not 1 <= policy["nearby_l
 if any(not isinstance(policy[key], str) or not policy[key] for key in ("rationale", "rationale_path")):
     raise ValueError("canonical micro-geometry rationale is invalid")
 
+# chip.spec.md「一排 assist chip(訊息附件以外)」:the only wrapping row lane. Its gap must be a
+# subset of the registry gap utilities, so this lane can never widen what counts as micro geometry.
+chip_row = policy["assist_chip_row"]
+chip_row_keys = {"gap_utilities", "wrap_utilities", "item_component", "item_variant", "rationale", "rationale_path"}
+if not isinstance(chip_row, dict) or set(chip_row) != chip_row_keys:
+    raise ValueError("canonical micro-geometry assist_chip_row is invalid")
+for key in ("gap_utilities", "wrap_utilities"):
+    value = chip_row[key]
+    if (
+        not isinstance(value, list)
+        or not value
+        or len(value) != len(set(value))
+        or any(not isinstance(item, str) or not item for item in value)
+    ):
+        raise ValueError(f"canonical micro-geometry assist_chip_row list is invalid:{key}")
+if not set(chip_row["gap_utilities"]) <= set(policy["gap_utilities"]):
+    raise ValueError("canonical micro-geometry assist_chip_row gap is outside gap_utilities")
+for key in ("item_component", "item_variant", "rationale", "rationale_path"):
+    if not isinstance(chip_row[key], str) or not chip_row[key]:
+        raise ValueError(f"canonical micro-geometry assist_chip_row field is invalid:{key}")
+if not re.fullmatch(r"[A-Z][A-Za-z0-9]*", chip_row["item_component"]) or not re.fullmatch(
+    r"[a-z][a-z0-9-]*", chip_row["item_variant"]
+):
+    raise ValueError("canonical micro-geometry assist_chip_row item identity is invalid")
+
 allowed_gaps = set(policy["gap_utilities"])
 alignments = set(policy["alignment_utilities"])
 inline_displays = set(policy["inline_display_utilities"])
@@ -88,6 +114,15 @@ control_roles = set(policy["control_roles"])
 field_groups = set(policy["field_group_elements"])
 field_group_roles = set(policy["field_group_roles"])
 field_controls = set(policy["field_control_elements"])
+chip_row_gaps = set(chip_row["gap_utilities"])
+chip_row_wraps = set(chip_row["wrap_utilities"])
+chip_open_re = re.compile(rf"<{re.escape(chip_row['item_component'])}\b")
+# The variant attribute must belong to the same opening tag:`[^<]` stops at the next element, so a
+# sibling component's variant cannot be borrowed (arrow functions `=>` inside props are allowed).
+chip_variant_re = re.compile(
+    rf"<{re.escape(chip_row['item_component'])}\b[^<]*?\bvariant\s*=\s*\{{?\s*['\"]"
+    rf"{re.escape(chip_row['item_variant'])}['\"]"
+)
 nearby_limit = policy["nearby_line_limit"]
 
 # This is the exact family recognized by check_layout_space_magic_numbers.sh. Classification is
@@ -196,6 +231,39 @@ def is_canonical_micro_line(lines, index):
         )
         if item_elements + item_roles >= 2 or (
             ".map(" in window and item_elements + item_roles >= 1
+        ):
+            return True
+
+    # chip.spec.md「一排 assist chip(訊息附件以外)」:a wrapping row of assist chips is a semantic
+    # list (ul/ol that also declares role="list", one li per chip) at the AgentMessage attachment
+    # gap. Every condition is required: the lane's own gap only, flex + wrap and not a column, the
+    # list element and the explicit list role on the same line, nearby li items, and every Chip
+    # inside the list being the assist variant. A hand-made div row never reaches this lane.
+    if (
+        set(tokens) <= chip_row_gaps
+        and flex
+        and not flex_col
+        and has_any_utility(line, chip_row_wraps)
+        and has_open_element(line, list_containers)
+        and has_role(line, {role for role in list_roles if role == "list"})
+    ):
+        # Bound the evidence to this list:stop at its first closing list tag inside the window.
+        closing = re.search(
+            "|".join(rf"</{re.escape(element)}\s*>" for element in sorted(list_containers)),
+            window,
+        )
+        segment = window[:closing.start()] if closing else window
+        item_elements = sum(
+            len(re.findall(rf"<{re.escape(element)}\b", segment)) for element in list_items
+        )
+        chips = len(chip_open_re.findall(segment))
+        assist_chips = len(chip_variant_re.findall(segment))
+        mapped = ".map(" in segment
+        if (
+            chips >= 1
+            and chips == assist_chips
+            and item_elements >= 1
+            and (mapped or (item_elements >= 2 and assist_chips >= 2))
         ):
             return True
 
