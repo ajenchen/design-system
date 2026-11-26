@@ -289,7 +289,7 @@ label 文字後可帶 info icon(ℹ)hover 出 tooltip 補充說明:`<FieldLabel 
 
 ### 產品自己寫的控件怎麼接 aria-*(2026-11-26)
 
-上面的「自動」只發生在 DS 控件身上:它們從 `field-context.ts` 讀 `useFieldContext()`,那支是 DS 內部用的,套件沒有匯出(`field.tsx:51-52`;`index.ts` 只匯出 `field` 與 `field-types`)。產品放進 Field 的自訂控件(自己畫的滑桿、評分條、色票格)照下面接,不必讀 context:
+上面的「自動」只發生在 DS 控件身上:它們從 `field-context.ts` 讀 `useFieldContext()`,那支是 DS 內部用的,套件沒有匯出(`field.tsx:51-52`;`index.ts` 只匯出 `field` 與 `field-types`)。產品放進 Field 的自訂控件(自己畫的滑桿、評分條、色票格)要讀 Field 的狀態(四個 id、invalid / required / disabled / mode / size)時,用根出口公開的 `useFieldState()`,API 只住在上方「FieldContext」段(本檔 :211);不用 hook 時照下面手動接,不必讀 context:
 
 1. **給 Field 一個 `id`**。Field 由它推出其餘三個 id,規則固定(`field.tsx:212-215`):標籤 `${id}-label`、說明 `${id}-description`、錯誤 `${id}-error`;`<FieldDescription>` / `<FieldError>` 沒傳 `id` 時就用這兩個(`field.tsx:552`、`:584`),傳了 `id` 則以傳入的為準。
 2. **控件自己掛 aria-***:`id={id}`、`aria-labelledby="${id}-label"`(`<label for>` 只標得到原生可被標籤的元素,`role="slider"` 這類自訂元素要靠 `aria-labelledby`)、有說明時 `aria-describedby="${id}-description"`、有錯誤時 `aria-errormessage="${id}-error"` + `aria-invalid="true"`;`required` 時掛 `aria-required="true"`。沒有說明 / 錯誤時不要掛指向不存在元素的 id。
