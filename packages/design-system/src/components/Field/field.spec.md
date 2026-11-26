@@ -83,7 +83,7 @@ Field 若需要次要 action（如「重設」「全選」「從範本帶入」�
 | FieldError | `text-body`（14px）/ `text-error-text` / `role="alert"` |
 | Field 內部 gap（vertical） | `gap-1`（4px） |
 | Field 內部 gap（horizontal，content 欄） | `gap-1`（4px） |
-| Horizontal 模式 label 與 control 的 gap | `gap-x-3`（12px） |
+| Horizontal 模式 label 與 control 的 gap | `gap-x-3`（12px）;**固定 12、是 Field 自己的值,不隨密度與 size 變**(2026-11-25 定)。不借別的刻度:不用 `--field-px`(那顆是控件框裡的左右內距,`../../tokens/uiSize/uiSize.spec.md`「Field Horizontal Padding」;只是剛好也是 12,改它不該連帶改欄距);不用 `--layout-space-tight`(版面間距管元件與元件之間,標籤 ↔ 控件是 Field 一個元件裡面怎麼排 —— `../../tokens/layoutSpace/layoutSpace.spec.md`「親疏 3 級」表「同範疇 / bundled component family」列:元件 spec own、layout rule 跳過;同檔「規則 3」的「幾塊怎麼數」第 1 步:一個 Field 算一塊,元件裡面怎麼排是元件自己的事)。**出處**(M36):12 最早在 9917993e(2026-04-10)建立 Field 時寫入,當時沒有寫理由、也沒有 user 原話;2026-11-25 user 問(問句,逐字)「另外我好奇水平排的 label和control的間距到底要是 field-px, tight 還是固定的12px或是8px?怎樣比較符合我們ds一致的設計語言且不違背世界級的設計？當初定義12px的理由是？」,查證後 user 在決策卡選「固定 12 (Recommended)」(選項與建議是 AI 擬的);畫面不變(值本來就是 12)。**世界級**:Fluent 2(Fluent UI React v9 `Field`)水平排的標籤也是一個固定值、不跟密度走 —— 標籤的 `horizontal` 樣式寫 `marginRight: tokens.spacingHorizontalM,`(<https://raw.githubusercontent.com/microsoft/fluentui/master/packages/react-components/react-field/library/src/components/Field/useFieldStyles.styles.ts>),`spacingHorizontalM: spacings.m,`、`m: '12px',`(<https://raw.githubusercontent.com/microsoft/fluentui/master/packages/tokens/src/global/spacings.ts>);兩檔 2026-11-26 讀取 |
 | Control area（任何 size） | `min-h-field-{size}` + `flex items-center` |
 
 **Label / Description / Error 字體固定 `text-body`（14px），不隨 field size 變**——Field size 只影響 input 高度，不影響表單佈局元素的 typography。
@@ -208,7 +208,7 @@ Field render 時迭代**全部** control child 的 `type.fieldLayout`,**任一**
 
 ## FieldContext — 子元件如何讀 Field 狀態
 
-Field 透過 Context 暴露以下狀態給子元件（Primitive 可以透過 `useFieldContext()` 讀取）：
+Field 透過 Context 暴露以下狀態給子元件（Primitive 可以透過 `useFieldContext()` 讀取）。**公開給產品的值**(2026-11-26,ws-upstream C29 / WS5-2):產品自己做的控件(DS 沒有的,例:接第三方富文字編輯器)放進 `<Field>` 時,改用根出口的 **`useFieldState()`**(不在 Field 裡回 `null`),只公開九個值 —— 下表的 `id`、`descriptionId`、`errorId`、`mode`、`disabled`、`required`、`invalid`、`size`,加上 `labelId`(`<FieldLabel>` 的 id);下表其他欄位與 `variant`、`surface` 是 DS 內部控件用的,不公開。自訂控件自己接 `aria-*`:`id` → `id`;不是原生表單元素(例 `role="textbox"` 的 div,`<label for>` 給不了它名字)時 `labelId` → `aria-labelledby`;`descriptionId` → `aria-describedby`;`required` → `aria-required`;`invalid` → `aria-invalid`,為 true 時再接 `errorId` → `aria-errormessage`(與 DS 自己的 Input 同一套接法)。不用 hook 也接得上:給 `<Field id="…">`,標籤 / 說明 / 錯誤的 id 固定是 `${id}-label` / `${id}-description` / `${id}-error`(`./field.tsx` `Field`)。完整寫法見範例 `./field.anatomy.stories.tsx`「自訂控件接上 Field」。**命名**(AGENTS.md「命名與語言一致性」3 重 test,三題都過才採用):① 既有 DS 詞彙 —— 本段標題就是「讀 Field 狀態」,同檔的 hook 都是 `useField` + 名詞(`useFieldContext` / `useFieldSurface` / `useFieldEmptyDisplay`);② 世界級 —— Base UI 的 Field 狀態型別 `type FieldRootState = {`(欄位含 `disabled` / `valid` / `focused`,<https://base-ui.com/react/components/field>);Adobe React Stately 的 `export interface NumberFieldState` 與 `export function useNumberFieldState(props: NumberFieldStateOptions): NumberFieldState {`(<https://raw.githubusercontent.com/adobe/react-spectrum/36f3adde26ccd12f3cc18c9d0293ece0f10e94c7/packages/react-stately/src/numberfield/useNumberFieldState.ts>),兩處 2026-11-27 讀取;③ 同字別義 —— DS 裡沒有別的 `FieldState` / `useFieldState`;`./use-form-validation.ts` 呼叫的 `getFieldState` 是表單引擎 react-hook-form 的方法(單一欄位的驗證狀態),不是 DS 的名字、也不出口。
 
 | 欄位 | 用途 |
 |---|---|
@@ -382,7 +382,7 @@ Button 的 height 與 `field-height` 共用同一組 token,放進 inline control
 | 是 | 否 |
 |---|---|
 | ✅ Upload(產生 file value) | ❌ 表單 submit / cancel(form action:跟在欄位後面,或放進浮層 / 面板的 footer) |
-| ✅ Picker opener(開對話框選 value) | ❌ 「重設此欄位」(可放到 endAction 或 description 旁,不是 control) |
+| ✅ Picker opener(開對話框選 value) | ❌ 「重設此欄位」(欄位的次要 action:放到標籤行右端,見上方「Field 次要 action 的預留位置」;不是 control。2026-11-26 前這格寫「可放到 endAction 或 description 旁」,與該段「唯一預留位置 = label 行最右端」「禁止把次要 action 放在 control 下方」矛盾,已改;`<FieldLabelAction>` 還沒實作,狀態見該段) |
 | ✅ Connect OAuth(產生 token value) | ❌ 頁面導覽、刪除整筆資料(page action) |
 
 **規則**:Button 是 control 時通常 inline(高度 = field-height);若是 block 類的「上傳區塊」(FileDropzone),則該元件本身宣告為 block primitive。
@@ -435,7 +435,7 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 
 ## Anatomy stories
 
-對應 anatomy story:`Overview` + `Inspector`(元件檢閱器——切 orientation / size / mode / required / invalid 即時 render)+ `OrientationMatrix` + `SizeMatrix` + `StateBehavior` + `ColorMatrix` + 元件特有 `FieldGroupBehavior` + `Accessibility`。
+對應 anatomy story:`Overview` + `Inspector`(元件檢閱器——切 orientation / size / mode / required / invalid 即時 render)+ `OrientationMatrix` + `SizeMatrix` + `StateBehavior` + `ColorMatrix` + 元件特有 `FieldGroupBehavior`、`CustomControlWiring`(自訂控件接上 Field,見「FieldContext」段「公開給產品的值」)+ `Accessibility`。
 
 ## Field state machine SSOT(v13.3)
 

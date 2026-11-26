@@ -165,7 +165,7 @@ User-generated data **一律 TreeView**，不論數量——即使現在只有 3
 
 Sidebar 只放一顆 `Settings`，點進去後在 **Settings 頁面內部**用左側 rail 或 Tabs 呈現子頁。子頁屬於 Settings 頁面的內部狀態，不佔 sidebar 位置。
 
-適用:設定子頁很多,但都屬於「設定」這一個目的地(進去後用左 rail 或 Tabs 切子頁)。
+適用:設定子頁很多,但都屬於「設定」這一個目的地(進去後用左 rail 或 Tabs 切子頁)。**左 rail(頁內子頁選單)的長相 = 沿用 Sidebar 列樣式**(2026-11-26 定):選單裡每一列跟 Sidebar 的選單列(`SidebarMenuButton`)同一套長相 —— 同樣的列高、圖示與文字排法、滑過與目前所在頁的樣子,不另做一套。依據:user 2026-11-26 第五輪決策卡 C15 留言(逐字,含問句)「我不確定你程式上想要怎麼做比較 ssot,但視覺上肯定是要 ssot 的吧？類似概念或是操作應該都會跟 sidebar 長得很像？」。**只定了長相、還沒實作**:程式上怎麼給(DS 要不要提供公開的頁內導覽元件)仍待決,在那之前照現行規則經子路徑包裝 `MenuItem` 自建(`../Menu/menu-item.spec.md`「何時用 / 何時不用」);列的尺寸檔位等細節實作時再對照 Sidebar 規格定【AI 推導:原話只說「視覺上」要跟 Sidebar 同一套,程式做法 user 明說不確定】。
 
 #### 路徑 B：SidebarGroup 扁平化
 

@@ -127,7 +127,7 @@ export const UsageGuidance: Story = {
         </TutorialRule>
         <TutorialList>
           <li>要編輯的「標籤 + 值」→ Field 系統(Input / Select / DatePicker):DescriptionList 只做唯讀展示</li>
-          <li>只有一組「標籤 + 值」→ 直接排版即可,不需要整個清單</li>
+          <li>整組按「編輯」才原地變成表單的區塊 → 平常用 Field 層純顯示(Field mode="view"),不用 DescriptionList</li>
         </TutorialList>
       </UsageSection>
 

@@ -160,7 +160,7 @@ CircularProgress **沒有**「success / error」variant。完成與失敗的語�
 - DataTable **cell 內 inline 指示器**由 consumer 手寫 render,size 對齊 cell icon 刻度 **`16`(sm/md table) / `20`(lg table)** — 對齊 `data-table.spec.md` 十一之一(cell icon size canonical,非 CircularProgress 專屬規則)。**整表 refresh loading** 則走 `data-table.spec.md` 十三:容器疊 `<CircularProgress/>` 24px center + table `opacity-disabled`(DataTable 禁內建 loading prop)
 - 獨立使用 CircularProgress 的元件 **預設走 24** — 已是 `<CircularProgress />` default
 
-本 DS 收斂成「inline 跟 field context 走 16 或 20，獨立使用走 24」兩類；32 / 48 只供有明確大型 host 的 composition，不再暴露其他 size 階。
+本 DS 的**建議值**收斂成 inline / field 走 16 或 20、獨立使用走 24、有明確大型 host 的 composition 才用 32 / 48;元件 API 仍是自由 number(見上方「尺寸策略」),建議值不強制(見下方「邊界案例」的「Size 極端值」)。(2026-11-26 前此句寫「不再暴露其他 size 階」,讀起來像型別只收這幾個值,與「尺寸策略」的自由 number 矛盾,已改。)
 
 ### 顏色策略:固定 `text-info` + consumer 覆寫
 

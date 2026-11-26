@@ -385,3 +385,37 @@ export function useFieldEmptyDisplay(): string {
 export function fieldEmptyColorClass(resolvedMode: FieldMode): string {
   return resolvedMode === 'disabled' ? 'text-fg-disabled' : 'text-foreground'
 }
+
+/**
+ * 公開、唯讀的 Field 狀態(2026-11-26,ws-upstream C29 / WS5-2):產品自己做的控件(DS 沒有的,例:接第三方編輯器)
+ * 放進 `<Field>` 時,用它拿到 id 與狀態,自己接 `aria-*`。只給下面九個值;登記用的函式、`variant`、`surface`、
+ * `hasFieldWrapper` 等 DS 內部欄位不外露(DS 自己的控件照舊讀 `useFieldContext`)。接法與範例:field.spec.md「FieldContext」段。
+ * 放在檔尾:別處以行號引用本檔(例 checkbox.tsx / switch.tsx 引 fieldFramelessValueProps 那幾行),插在中間會讓那些引用全部位移。
+ */
+export interface FieldState {
+  /** 控件本身的 id —— `<FieldLabel>` 的 `htmlFor` 指向它(原生 input / textarea / select 會因此有名字) */
+  id: string
+  /** `<FieldLabel>` 的 id —— 控件不是原生表單元素(例 `role="textbox"` 的 div)時,`aria-labelledby` 接它 */
+  labelId: string
+  /** `<FieldDescription>` 的 id —— `aria-describedby` 接它 */
+  descriptionId: string
+  /** `<FieldError>` 的 id —— `invalid` 為 true 時 `aria-errormessage` 接它 */
+  errorId: string
+  invalid: boolean
+  required: boolean
+  disabled: boolean
+  mode: FieldMode
+  size: 'sm' | 'md' | 'lg'
+}
+
+/** 讀所在 `<Field>` 的公開狀態;不在 Field 裡回 `null`。只挑出九個值,不把整個 context 交出去。 */
+export function useFieldState(): FieldState | null {
+  const ctx = React.useContext(FieldContext)
+  return React.useMemo(
+    () =>
+      ctx
+        ? { id: ctx.id, labelId: ctx.labelId, descriptionId: ctx.descriptionId, errorId: ctx.errorId, invalid: ctx.invalid, required: ctx.required, disabled: ctx.disabled, mode: ctx.mode, size: ctx.size }
+        : null,
+    [ctx],
+  )
+}
