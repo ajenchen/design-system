@@ -100,5 +100,5 @@ minimal reproduction and evidence; classify the owner as product, DS, template, 
 deployment infrastructure; fix the canonical owner first; release an immutable upstream version;
 upgrade by exact-version PR and rerun `Verify consumer`; then remove any temporary workaround.
 
-WM is a pilot consumer, not an alternative governance authority. Its local checks may add product
-coverage but may not replace or weaken the shipped lock/checker/provider surfaces.
+A product consumer, including a canary, is not an alternative governance authority. Its local
+checks may add product coverage but may not replace or weaken the shipped lock/checker/provider surfaces.

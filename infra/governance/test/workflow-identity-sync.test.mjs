@@ -248,18 +248,18 @@ test('same physical workflow bindings must carry one identity and desired schema
   assert.throws(() => synchronizeWorkflowIdentities(open, { sources: fx.sources(), authorityRoot: fx.root }), /schema validation failed/)
 })
 
-test('inventory-driven source registry is closed and cannot redirect to WM or an unknown repository', t => {
+test('inventory-driven source registry is closed and cannot redirect to the product repository or an unknown repository', t => {
   const fx = fixture(t, { mutate: false })
   const unknown = structuredClone(fx.inventory)
-  unknown.workflowIdentitySources['product-consumer'].repositoryId = 'work-management-unknown'
+  unknown.workflowIdentitySources['product-consumer'].repositoryId = 'workspace-unknown'
   assert.throws(() => deriveWorkflowIdentitySources(unknown, { governanceRoot: fx.governanceRoot, authorityRoot: fx.root, desired: fx.desired() }), /must use repository ds-product-template/)
 
   const redirected = structuredClone(fx.inventory)
-  redirected.workflowIdentitySources['product-consumer'].repositoryId = 'work-management'
+  redirected.workflowIdentitySources['product-consumer'].repositoryId = 'workspace'
   assert.throws(() => deriveWorkflowIdentitySources(redirected, { governanceRoot: fx.governanceRoot, authorityRoot: fx.root, desired: fx.desired() }), /must use repository ds-product-template/)
 
   const open = structuredClone(fx.inventory)
-  open.workflowIdentitySources['product-consumer'].path = '../../../work-management'
+  open.workflowIdentitySources['product-consumer'].path = '../../../workspace'
   assert.throws(() => deriveWorkflowIdentitySources(open, { governanceRoot: fx.governanceRoot, authorityRoot: fx.root, desired: fx.desired() }), /closed repositoryId binding/)
 })
 

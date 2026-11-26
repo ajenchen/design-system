@@ -139,9 +139,10 @@
         }
       },
       {
-        "repository": "ajenchen/work-management",
+        "repository": "ajenchen/workspace",
         "defaultBranch": "main",
-        "upgrade": "on-request",
+        "upgrade": "automatic",
+        "merge": "consumer-owned",
         "dispatchEvent": "design-system-published",
         "delivery": "repository-dispatch-pr",
         "readbackPath": "package-lock.json",

@@ -14,6 +14,7 @@ import {
   assertVerifiedExactNpmRuntimeCapability,
   prepareVerifiedExactNpmRuntime,
   resolveExactNpmRuntimeContract,
+  verifiedNpmNodeArgv,
 } from './lib/verified-exact-npm-runtime.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -205,13 +206,12 @@ export async function runVerifiedNpm({
     if (command === 'audit' && verifiedArgs.includes('--audit-level=high')) {
       const vulnerabilityAudit = runVerifiedHighVulnerabilityAudit(
         process.execPath,
-        [
-          runtime.cli,
+        verifiedNpmNodeArgv(runtime.cli, [
           'audit',
           '--audit-level=high',
           '--json',
           `--registry=${REGISTRY}`,
-        ],
+        ]),
         {
           root: target,
           environment: npmEnvironment,
@@ -230,7 +230,7 @@ export async function runVerifiedNpm({
         vulnerabilityAudit,
       }
     }
-    const result = runner(process.execPath, [runtime.cli, ...verifiedArgs], {
+    const result = runner(process.execPath, verifiedNpmNodeArgv(runtime.cli, verifiedArgs), {
       cwd: root,
       env: npmEnvironment,
       shell: false,

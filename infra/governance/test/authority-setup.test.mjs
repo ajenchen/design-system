@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { basename, delimiter, dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { resolveClosedPrivateRuntimeBase } from '../../../scripts/lib/closed-tool-execution.mjs'
-import { resolveExactNpmRuntimeContract } from '../../../scripts/lib/verified-exact-npm-runtime.mjs'
+import { resolveExactNpmRuntimeContract, verifiedNodeTrustArgs } from '../../../scripts/lib/verified-exact-npm-runtime.mjs'
 import {
   AUTHORITY_DEPENDENCY_SETUP_COMMAND,
   AUTHORITY_MINIMUM_NODE_VERSION,
@@ -102,7 +102,10 @@ function successfulRunnerResult(args) {
     baseEnvironment: {
       PATH: process.env.PATH,
       PLAYWRIGHT_BROWSERS_PATH: '/unreviewed/cache',
-      HTTPS_PROXY: 'https://attacker.invalid',
+      // 帶帳密的代理照舊剝除(2026-11-26 起不帶帳密的 HTTPS_PROXY / NO_PROXY 會轉送,見下一個區塊)。
+      HTTPS_PROXY: 'https://attacker:secret@attacker.invalid',
+      HTTP_PROXY: 'http://attacker.invalid',
+      ALL_PROXY: 'http://attacker.invalid',
       SSL_CERT_FILE: '/tmp/attacker.pem',
       NODE_TLS_REJECT_UNAUTHORIZED: '0',
       LD_PRELOAD: '/tmp/attacker.so',
@@ -131,17 +134,53 @@ function successfulRunnerResult(args) {
   assert.equal(calls.length, 9)
   assertClosedPrerequisiteCalls(calls.slice(0, 4), 'darwin')
   assert.ok(calls.slice(4).every((call) => call.command === process.execPath && call.shell === false && call.cwd === ROOT))
-  assert.deepEqual(calls.slice(4, 7).map((call) => call.args[1]), ['ci', 'audit', 'audit'])
+  // 2026-11-26:鎖定 npm 一律以 --use-system-ca(本 Node 支援時)開頭,接著才是 exact CLI 與 npm 參數。
+  const trustArgs = verifiedNodeTrustArgs()
+  assert.ok(calls.slice(4, 7).every((call) => JSON.stringify(call.args.slice(0, trustArgs.length)) === JSON.stringify(trustArgs)))
+  assert.deepEqual(calls.slice(4, 7).map((call) => call.args[trustArgs.length + 1]), ['ci', 'audit', 'audit'])
   assert.deepEqual(calls.slice(7).map((call) => call.args), [
     ['scripts/ensure-playwright-browsers.mjs'],
     ['scripts/governance-build-graph.mjs', '--check'],
   ])
   for (const call of calls) {
     for (const hostile of [
-      'PLAYWRIGHT_BROWSERS_PATH', 'HTTPS_PROXY', 'SSL_CERT_FILE', 'NODE_TLS_REJECT_UNAUTHORIZED',
+      'PLAYWRIGHT_BROWSERS_PATH', 'HTTPS_PROXY', 'HTTP_PROXY', 'ALL_PROXY', 'SSL_CERT_FILE', 'NODE_TLS_REJECT_UNAUTHORIZED',
       'LD_PRELOAD', 'BASH_ENV', 'GIT_CONFIG_GLOBAL', 'ANTHROPIC_API_KEY',
     ]) assert.equal(Object.hasOwn(call.environment, hostile), false, `${hostile} leaked to ${call.command}`)
   }
+}
+
+{
+  // 2026-11-26(雲端 setup:all 的 audit signatures ENOTFOUND tuf-repo-cdn.sigstore.dev):不帶帳密的 HTTPS_PROXY / NO_PROXY
+  // 轉送到鎖定 npm 三步與 Playwright 安裝(setup:all 路徑上會連網的子行程),只用來路由;HTTP_PROXY / ALL_PROXY / CA 變數照舊剝除。
+  // 封閉前置工具探針(前 4 個呼叫)不連網、環境另建,不帶代理。判定只住 resolveGovernanceProxyForwarding。
+  const calls = []
+  await runAuthorityGovernanceSetup({
+    root: ROOT,
+    platform: 'darwin',
+    nodeVersion: AUTHORITY_MINIMUM_NODE_VERSION,
+    baseEnvironment: {
+      PATH: process.env.PATH,
+      HTTPS_PROXY: 'http://proxy.internal:3128',
+      NO_PROXY: 'localhost,registry.npmjs.org',
+      HTTP_PROXY: 'http://proxy.internal:3128',
+      ALL_PROXY: 'http://proxy.internal:3128',
+      SSL_CERT_FILE: '/tmp/attacker.pem',
+    },
+    runtimeFactory: runtimeFactory(ROOT),
+    runner(command, args, options) {
+      calls.push({ command, args, environment: options.env })
+      return successfulRunnerResult(args)
+    },
+  })
+  assert.equal(calls.length, 9)
+  for (const call of calls.slice(0, 4)) assert.equal(Object.hasOwn(call.environment, 'HTTPS_PROXY'), false, 'closed prerequisite probes never route anywhere')
+  for (const call of calls.slice(4, 8)) {
+    assert.equal(call.environment.HTTPS_PROXY, 'http://proxy.internal:3128', `credential-free HTTPS_PROXY must reach ${call.args.join(' ')}`)
+    assert.equal(call.environment.NO_PROXY, 'localhost,registry.npmjs.org')
+    for (const hostile of ['HTTP_PROXY', 'ALL_PROXY', 'SSL_CERT_FILE']) assert.equal(Object.hasOwn(call.environment, hostile), false, `${hostile} leaked`)
+  }
+  assert.deepEqual(calls[7].args, ['scripts/ensure-playwright-browsers.mjs'])
 }
 
 {

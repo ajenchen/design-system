@@ -15,7 +15,7 @@
   "certificationCanaries": {
     "authority": {"repositoryId": "design-system"},
     "template-mirror": {"repositoryId": "ds-product-template"},
-    "product-consumer": {"repositoryId": "work-management"}
+    "product-consumer": {"repositoryId": "workspace"}
   },
   "repositories": [
     {
@@ -46,16 +46,16 @@
       "consumes": ["@qijenchen/design-system", "@qijenchen/storybook-config"]
     },
     {
-      "id": "work-management",
-      "github": "ajenchen/work-management",
+      "id": "workspace",
+      "github": "ajenchen/workspace",
       "role": "product-consumer",
       "visibility": "private",
       "defaultBranch": "main",
       "desiredProfile": "product-consumer",
       "releaseRing": "ring-2-product-canary",
       "ownershipPolicy": "product-consumer",
-      "upgradeProtocolProfile": "legacy-bootstrap-v2",
-      "localPathFromGovernanceRoot": "../../../work-management",
+      "upgradeProtocolProfile": "new-snapshot-v2",
+      "localPathFromGovernanceRoot": "../../../workspace",
       "providerSurfacesRequired": ["codex/codex-cli/local", "codex/codex-desktop/local", "codex/codex-desktop/remote-control", "codex/codex-cloud/cloud", "claude-code/claude-code-cli/local", "claude-code/claude-code-cli/remote-control", "claude-code/claude-code-cloud/cloud", "ci/github-actions/github-actions"],
       "consumes": ["@qijenchen/design-system", "@qijenchen/storybook-config"]
     }

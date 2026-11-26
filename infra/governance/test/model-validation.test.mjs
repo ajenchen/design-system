@@ -616,7 +616,7 @@ test('release-ring policy rejects omitted gates, retired soak reintroduction, we
     /strictly increasing order/,
   )
   const mixedRoles = readJson(resolve(governanceRoot, 'release-rings.json'))
-  mixedRoles.assignments['work-management'].ring = 'ring-1-template-canary'
+  mixedRoles.assignments.workspace.ring = 'ring-1-template-canary'
   assert.throws(
     () => validateReleaseRings(liveInventory, mixedRoles, {
       now: liveNow,
@@ -760,7 +760,7 @@ test('canonical GitHub profile minima reject required-check, environment, releas
   for (const [repoId, replacement] of [
     ['design-system', 'product-consumer'],
     ['ds-product-template', 'design-system-authority'],
-    ['work-management', 'published-template'],
+    ['workspace', 'published-template'],
   ]) {
     const substitutedInventory = structuredClone(liveInventory)
     substitutedInventory.repositories.find(repository => repository.id === repoId).desiredProfile = replacement
@@ -773,7 +773,7 @@ test('canonical GitHub profile minima reject required-check, environment, releas
   for (const [repoId, replacement] of [
     ['design-system', 'product-consumer'],
     ['ds-product-template', 'authority-repository'],
-    ['work-management', 'published-template-mirror'],
+    ['workspace', 'published-template-mirror'],
   ]) {
     const substitutedInventory = structuredClone(liveInventory)
     substitutedInventory.repositories.find(repository => repository.id === repoId).ownershipPolicy = replacement
@@ -785,7 +785,7 @@ test('canonical GitHub profile minima reject required-check, environment, releas
 
   for (const authority of [
     'attacker/design-system@infra/governance',
-    'ajenchen/work-management@infra/governance',
+    'ajenchen/workspace@infra/governance',
     'ajenchen/design-system@attacker',
   ]) {
     expectInventoryPoison(
@@ -803,15 +803,15 @@ test('canonical GitHub profile minima reject required-check, environment, releas
     repository.github = 'attacker/ds-product-template'
   }, /must use registered GitHub repository ajenchen\/ds-product-template/)
   expectInventoryPoison(value => {
-    value.repositories.find(candidate => candidate.id === 'work-management').github = 'attacker/work-management'
+    value.repositories.find(candidate => candidate.id === 'workspace').github = 'attacker/workspace'
   }, /must remain under authority owner ajenchen/)
   expectInventoryPoison(value => {
-    value.repositories.find(candidate => candidate.id === 'work-management').github = 'ajenchen/renamed-product'
+    value.repositories.find(candidate => candidate.id === 'workspace').github = 'ajenchen/renamed-product'
   }, /GitHub repository name must equal its registered id/)
 
   for (const profile of ['design-system-authority', 'product-consumer', 'published-template']) {
     expectInventoryPoison(
-      value => { value.workflowIdentitySources[profile].repositoryId = 'work-management' },
+      value => { value.workflowIdentitySources[profile].repositoryId = 'workspace' },
       new RegExp(`Workflow identity source ${profile} must use repository`),
     )
   }
@@ -824,11 +824,11 @@ test('canonical GitHub profile minima reject required-check, environment, releas
     /must exactly cover the canonical desired profiles/,
   )
   expectInventoryPoison(
-    value => { value.workflowIdentitySources.attacker = { repositoryId: 'work-management' } },
+    value => { value.workflowIdentitySources.attacker = { repositoryId: 'workspace' } },
     /must exactly cover the canonical desired profiles/,
   )
 
-  for (const repoId of ['design-system', 'ds-product-template', 'work-management']) {
+  for (const repoId of ['design-system', 'ds-product-template', 'workspace']) {
     expectInventoryPoison(
       value => { value.repositories.find(repository => repository.id === repoId).defaultBranch = 'attacker' },
       /must use default branch main/,
@@ -838,7 +838,7 @@ test('canonical GitHub profile minima reject required-check, environment, releas
   for (const [repoId, expectedPath, replacementPath] of [
     ['design-system', 'localPathFromGovernanceRoot', 'mirrorSourcePathFromGovernanceRoot'],
     ['ds-product-template', 'mirrorSourcePathFromGovernanceRoot', 'localPathFromGovernanceRoot'],
-    ['work-management', 'localPathFromGovernanceRoot', 'mirrorSourcePathFromGovernanceRoot'],
+    ['workspace', 'localPathFromGovernanceRoot', 'mirrorSourcePathFromGovernanceRoot'],
   ]) {
     expectInventoryPoison(value => {
       const repository = value.repositories.find(candidate => candidate.id === repoId)
@@ -850,7 +850,7 @@ test('canonical GitHub profile minima reject required-check, environment, releas
   for (const [repoId, requiredCapability, forbiddenCapability] of [
     ['design-system', 'publishes', 'consumes'],
     ['ds-product-template', 'consumes', 'publishes'],
-    ['work-management', 'consumes', 'publishes'],
+    ['workspace', 'consumes', 'publishes'],
   ]) {
     expectInventoryPoison(value => {
       delete value.repositories.find(repository => repository.id === repoId)[requiredCapability]
@@ -869,9 +869,27 @@ test('canonical GitHub profile minima reject required-check, environment, releas
     }
   }
 
-  expectInventoryPoison(value => {
-    value.repositories.find(repository => repository.id === 'work-management').upgradeProtocolProfile = 'new-snapshot-v2'
-  }, /Existing legacy product work-management may not self-declare the new-snapshot upgrade lineage/)
+  // 舊制(legacy-bootstrap 血統)產品的 id 仍被保護:work-management 已於 2026-11-25 從清冊移除,
+  // 但這個 id 若被重新登記,仍不得自稱 new-snapshot(common.mjs 的 LEGACY_PRODUCT_REPOSITORY_IDS)。
+  // 清冊裡已經沒有這一筆,所以用現行產品那一筆複製出一筆同 id 的來驗。
+  const legacyProduct = (profile) => value => {
+    const legacy = structuredClone(value.repositories.find(repository => repository.role === 'product-consumer'))
+    legacy.id = 'work-management'
+    legacy.github = 'ajenchen/work-management'
+    legacy.localPathFromGovernanceRoot = '../../../work-management'
+    legacy.upgradeProtocolProfile = profile
+    value.repositories.push(legacy)
+  }
+  expectInventoryPoison(
+    legacyProduct('new-snapshot-v2'),
+    /Existing legacy product work-management may not self-declare the new-snapshot upgrade lineage/,
+  )
+  // 對照組:同一筆只把血統換回舊制就不觸發這道防線(證明上面紅的是血統,不是「多了一筆」或那個 id 本身)
+  {
+    const withLegacy = structuredClone(liveInventory)
+    legacyProduct('legacy-bootstrap-v2')(withLegacy)
+    assert.equal(validateInventory(withLegacy), true)
+  }
 
   for (const [policyId, defaultMode] of [
     ['authority-repository', 'generated'],

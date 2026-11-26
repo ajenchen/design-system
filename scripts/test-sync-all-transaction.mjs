@@ -2347,12 +2347,12 @@ process.stdout.write(JSON.stringify({ok:true}) + '\\n')
     console.log(`✅ recovery safety: ${label} rejected by the closed recovery-staging topology`)
   }
 
-  const sibling = join(temp, 'work-management-canary')
+  const sibling = join(temp, 'sibling-product-canary')
   mkdirSync(sibling)
   const siblingCanary = join(sibling, 'DO-NOT-DELETE.txt')
   writeFileSync(siblingCanary, 'sibling survives')
   for (const [label, mutate] of [
-    ['parent traversal', (journal) => { journal.entries[0].path = '../work-management-canary'; journal.entries[0].source = sibling }],
+    ['parent traversal', (journal) => { journal.entries[0].path = '../sibling-product-canary'; journal.entries[0].source = sibling }],
     ['empty repository path', (journal) => { journal.entries[0].path = ''; journal.entries[0].source = canonicalRepo }],
     ['git metadata target', (journal) => { journal.entries[0].path = '.git'; journal.entries[0].source = join(canonicalRepo, '.git') }],
   ]) {

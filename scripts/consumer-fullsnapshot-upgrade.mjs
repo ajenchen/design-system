@@ -22,7 +22,7 @@
  * ## 用法
  *
  *   node scripts/consumer-fullsnapshot-upgrade.mjs \
- *     --repo-id work-management --consumer-root <path> \
+ *     --repo-id <舊制 consumer 的 repo id> --consumer-root <path> \
  *     --base <上一版 template tree> --incoming <本版 template tree> \
  *     --release-bom <release-bom.json> --required-checks-digest <sha256> \
  *     [--acknowledge-consumer-owned a,b,c] [--output <materialize 目錄>] [--apply]

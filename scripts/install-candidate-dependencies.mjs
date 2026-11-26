@@ -17,6 +17,7 @@ import {
   assertVerifiedExactNpmRuntimeCapability,
   prepareVerifiedExactNpmRuntime,
   resolveExactNpmRuntimeContract,
+  verifiedNpmNodeArgv,
 } from './lib/verified-exact-npm-runtime.mjs'
 import {
   assertGitVisibleWorktreeUnchanged,
@@ -35,7 +36,7 @@ function inside(parent, child) {
 }
 
 function runNpm(cli, args, { candidate, environment, runner }) {
-  const result = runner(process.execPath, [cli, ...args], {
+  const result = runner(process.execPath, verifiedNpmNodeArgv(cli, args), {
     cwd: candidate,
     env: {
       ...environment,

@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process'
 import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createHash, randomUUID } from 'node:crypto'
 import { classifyConsentPrompt } from './lib/release-consent-language.mjs'
-import { requestedConsumersFromEnv, selectReleaseConsumers } from './lib/release-consumer-selection.mjs'
+import { consumerBlocksRelease, consumerMergeMode, requestedConsumersFromEnv, selectReleaseConsumers } from './lib/release-consumer-selection.mjs'
 import { createRequire } from 'node:module'
 import { homedir, tmpdir } from 'node:os'
 import { dirname, resolve, join } from 'node:path'
@@ -425,16 +425,23 @@ export function validateReleaseWorkflow(workflow) {
     invariant(['pull_request', 'repository_dispatch'].includes(check.producerEvent), `consumer ${target.repository} verification event is invalid`)
     invariant(['pull-request-head', 'pull-request-base'].includes(check.producerHead), `consumer ${target.repository} verification head binding is invalid`)
     invariant([undefined, 'automatic', 'on-request'].includes(target.upgrade), `consumer ${target.repository} upgrade must be automatic or on-request`)
+    invariant([undefined, 'automatic', 'consumer-owned'].includes(target.merge), `consumer ${target.repository} merge must be automatic or consumer-owned`)
   }
+  // 第五步的完成條件只算「合併由 orchestrator 負責」的 consumer。一個都沒有的話,`[].every()` 恆真,
+  // 第五步會在零筆證據下報 complete(零筆不得當全綠,M37 第八種形狀)—— 設定層就擋掉。
+  invariant(
+    (workflow.automation?.consumers ?? []).some(target => consumerBlocksRelease(target) && target.upgrade !== 'on-request'),
+    'at least one automatically upgraded consumer must be a completion condition of the consumer step',
+  )
   return workflow
 }
 
 /**
- * 這一輪第五步要升級哪些 consumer:唯一實作在 `scripts/lib/release-consumer-selection.mjs`
- * (user 2026-11-05 原話:「以後WM的升級都不要自動做除非我有特別要求」)。這裡只 re-export,
- * 深度稽核的 dim 64/66 證據也 import 同一支 —— 兩處各寫一份就會一邊不升 WM、一邊要 WM 證據。
+ * 這一輪第五步要升級哪些 consumer、哪些算完成條件:唯一實作在 `scripts/lib/release-consumer-selection.mjs`
+ * (on-request 的由來與 merge: consumer-owned 的依據都寫在那一支的檔頭)。這裡只 re-export,
+ * 深度稽核的 dim 64/66 證據也 import 同一支 —— 兩處各寫一份就會一邊不升、另一邊卻要它的證據。
  */
-export { selectReleaseConsumers, requestedConsumersFromEnv }
+export { selectReleaseConsumers, requestedConsumersFromEnv, consumerBlocksRelease, consumerMergeMode }
 
 /**
  * 額外一次 release 的 incident 證據來源。刻意只認明確傳入的環境變數,不做任何推測 ——
@@ -1768,6 +1775,83 @@ export function consumerStepAction({ delivery, branchExists, dispatched = false,
   return 'wait' // release-published-pr:分支由上游 release 事件推上來,這裡只能等
 }
 
+// ── `merge: consumer-owned` 的 consumer(產品 canary)────────────────────────────────────────
+//
+// 2026-11-25:產品 canary 從 work-management 換成 ajenchen/workspace,而且要「發版時自動收到升級 PR」。
+// 原本的模型只有一種完成條件:orchestrator 把升級 PR 合併、讀回 protected main —— 套在 canary 上就等於
+// 設計系統的發版要等別的產品把 PR 合掉,它的檢查紅了發版也跟著紅。canonical 明文不准(AGENTS.md
+// 「Decision／Engineering Authority」:preview-canary 是附加 assurance,不得進入標準五步的 blocking graph)。
+// 所以多一個區分(設定欄位 `merge`,判定在 scripts/lib/release-consumer-selection.mjs):這類 consumer
+// **只開 PR、讀回連結與檢查狀態,到此為止**。下面幾支純函式是它的判定表,呼叫端在 executeAutomaticRelease。
+// 這個區分是 AI 的工程判斷,不是 user 逐字指定的。
+
+/**
+ * `merge: consumer-owned` 的 consumer 這一圈該做什麼。跟 consumerStepAction 同一張表,只多一格:
+ * 它的 main 已經是這一版、或升級 PR 已經存在(開著、已被它自己合併、檢查紅或綠都一樣)→ 'settled'。
+ * **這張表沒有「合併」這個輸出** —— 合不合由 consumer 自己決定。
+ */
+export function consumerOwnedStepAction({ exactVersion = false, hasPullRequest = false, ...rest } = {}) {
+  if (exactVersion || hasPullRequest) return 'settled'
+  return consumerStepAction(rest)
+}
+
+/** `merge: consumer-owned` 的 consumer 這一版升級的現況(給回報用,只講不擋)。 */
+export function consumerOwnedUpgradeState(item = {}) {
+  if (item.readError) return 'unreadable'
+  if (item.exactVersion) return 'up-to-date'
+  if (item.pullRequest?.state === 'MERGED') return 'merged'
+  if (item.pullRequest) return 'pull-request-open'
+  return 'awaiting-pull-request'
+}
+
+/** 五步都完成之後,為 `merge: consumer-owned` 的 consumer 最多再看多久(分支要等它自己的接收 workflow 推上來)。 */
+export const CONSUMER_OWNED_FOLLOW_UP_MS = 5 * 60 * 1000
+
+/**
+ * 五步都完成之後,還要不要為這類 consumer 多看一圈。
+ * outcomes = 這一圈每個這類 consumer 的結果:'settled' 沒事了 / 'acted' 剛派工或剛開 PR /
+ * 'waiting' 已派工、分支還沒上來 / 'failed' 這一圈讀不到或動作失敗。
+ * 回傳 'return'(收工、照實回報)/ 'observe'(馬上再讀一次,讓回報帶到剛開出的 PR)/ 'wait'(期限內,等一下再看)。
+ * 期限到、`--no-wait`、或只剩失敗(同一個失敗重試沒有意義)→ 一律 'return':設計系統的發版已經完成,
+ * 不為它空轉到逾時,更不為它丟錯。
+ */
+export function consumerOwnedFollowUp({ outcomes = [], noWait = false, now, deadline } = {}) {
+  if (noWait || !(now < deadline)) return 'return'
+  if (outcomes.includes('acted')) return 'observe'
+  if (outcomes.includes('waiting')) return 'wait'
+  return 'return'
+}
+
+/** 回報用:這類 consumer 的升級 PR 現況(版本、連結、必過檢查)。只講不擋。 */
+export function summarizeConsumerOwnedUpgrades(observation = {}) {
+  return (observation.consumers ?? []).filter(target => !consumerBlocksRelease(target)).map(target => ({
+    repository: target.repository,
+    version: target.upgradeVersion ?? observation.version ?? null,
+    state: consumerOwnedUpgradeState(target),
+    pullRequest: target.pullRequest?.url ?? null,
+    checks: target.pullRequest ? checkRollupStatus(target.pullRequest.requiredChecks ?? []) : null,
+    ...(target.readError ? { readError: target.readError } : {}),
+  }))
+}
+
+const CONSUMER_OWNED_STATE_TEXT = Object.freeze({
+  'up-to-date': '它的 main 已經是這一版',
+  merged: '升級 PR 已由它自己合併',
+  'pull-request-open': '升級 PR 已開出,合不合由它決定',
+  'awaiting-pull-request': '升級 PR 還沒開出(它的接收 workflow 還沒把分支推上來;重跑 npm run release:auto 會接著開)',
+  unreadable: '讀不到它的狀態',
+})
+
+export function formatConsumerOwnedUpgradeLines(upgrades = []) {
+  return upgrades.map(item => {
+    const version = item.version ? ` ${item.version}` : ''
+    const link = item.pullRequest ? ` ${item.pullRequest}` : ''
+    const checks = item.checks ? `;必過檢查 ${item.checks}` : ''
+    const error = item.readError ? `(${item.readError})` : ''
+    return `   ⓘ ${item.repository}(合併由它自己決定,不算發版完成條件)${version}:${CONSUMER_OWNED_STATE_TEXT[item.state] ?? item.state}${link}${checks}${error}`
+  })
+}
+
 function expectedConsumerBranch(target, version) {
   if (target.delivery === 'release-published-pr') return `automation/release-v${version}`
   if (target.delivery === 'repository-dispatch-pr') return `automation/design-system-${version}`
@@ -2091,8 +2175,11 @@ export function buildFiveStepStatus(workflow, observation) {
   const readback = publish === 'complete' && observation.npmPackages.every(item => item.exactVersion)
     ? 'complete'
     : publish === 'complete' ? 'pending' : 'blocked'
+  // 完成條件只算「合併由 orchestrator 負責」的 consumer(consumerBlocksRelease)。`merge: consumer-owned`
+  // 的 consumer(產品 canary)只開升級 PR、讀回狀態:它沒合併、它的檢查紅,都不讓這一步停在 pending。
   const consumer = readback === 'complete'
-    ? observation.consumers.every(item => item.exactVersion && item.checkReadback?.trusted === true) ? 'complete' : 'pending'
+    ? observation.consumers.filter(consumerBlocksRelease)
+      .every(item => item.exactVersion && item.checkReadback?.trusted === true) ? 'complete' : 'pending'
     : 'blocked'
   return [
     { id: 'pr-checks', authority: 'AUTO', status: prChecksResolved },
@@ -2101,6 +2188,14 @@ export function buildFiveStepStatus(workflow, observation) {
     { id: 'readback', authority: 'AUTO', status: readback },
     { id: 'consumer', authority: 'AUTO', status: consumer },
   ]
+}
+
+/** `merge: consumer-owned` 的 consumer 現在該收哪一版:它手上那一版在 tag 順序上的下一版(讀不到就退回目前這一版)。 */
+function consumerOwnedUpgradeTarget(target, { repository, version, releaseCommitSha }) {
+  const next = nextConsumerVersion(installedConsumerVersion(target), listReleaseTags(), version)
+  return next === version
+    ? { version, commit: releaseCommitSha }
+    : { version: next, commit: releaseCommitForTag(repository, `v${next}`) }
 }
 
 export function collectLiveObservation(workflow = loadReleaseWorkflow()) {
@@ -2123,16 +2218,35 @@ export function collectLiveObservation(workflow = loadReleaseWorkflow()) {
   const tagCommitSha = tagRef?.object?.sha || null
   const releaseCommitSha = tagCommitSha || main?.sha || null
   const release = ghJson(['release', 'view', tag, '--repo', repository, '--json', 'tagName,isDraft,isImmutable,isPrerelease,publishedAt,url'], { allowFailure: true })
-  // 只讀回這一輪要升級的 consumer:`upgrade: on-request`(WM)沒被要求就不讀、不派工、不算完成條件
+  // 只讀回這一輪要升級的 consumer:`upgrade: on-request` 的沒被要求就不讀、不派工、不算完成條件
   const releaseConsumers = selectReleaseConsumers(consumers, requestedConsumersFromEnv())
   const consumerObservations = releaseConsumers.map(target => {
-    const exactVersion = release ? consumerPackageReadback(target, version) : false
-    const targetPullRequest = release ? matchingConsumerPullRequest(target, version, releaseCommitSha) : null
-    return {
-      ...target,
-      exactVersion,
-      pullRequest: targetPullRequest,
-      checkReadback: release ? consumerCheckReadback(target, targetPullRequest, desired) : { trusted: false, reason: 'release is unavailable' },
+    try {
+      const exactVersion = release ? consumerPackageReadback(target, version) : false
+      // `merge: consumer-owned` 的 consumer 讀回的是「它接得上的那一版」的升級 PR(它手上那一版的下一版,
+      // 見 nextConsumerVersion):合併由它自己決定,它落後時要它先收的是鏈上中間那一版,不是線上最新。
+      const upgrade = release && !consumerBlocksRelease(target) && !exactVersion
+        ? consumerOwnedUpgradeTarget(target, { repository, version, releaseCommitSha })
+        : { version, commit: releaseCommitSha }
+      const targetPullRequest = release ? matchingConsumerPullRequest(target, upgrade.version, upgrade.commit) : null
+      return {
+        ...target,
+        exactVersion,
+        pullRequest: targetPullRequest,
+        checkReadback: release ? consumerCheckReadback(target, targetPullRequest, desired) : { trusted: false, reason: 'release is unavailable' },
+        ...(consumerBlocksRelease(target) ? {} : { upgradeVersion: upgrade.version, upgradeCommit: upgrade.commit }),
+      }
+    } catch (error) {
+      // `merge: consumer-owned` 的 consumer 不是完成條件:讀不到它(權限、它那邊的設定)只能照實記成讀不到,
+      // 不得讓整份讀回丟錯而擋住設計系統自己的發版。登入類邊界與完成條件內的 consumer 照舊往上丟。
+      if (consumerBlocksRelease(target) || error instanceof HumanBoundaryError) throw error
+      return {
+        ...target,
+        exactVersion: false,
+        pullRequest: null,
+        checkReadback: { trusted: false, reason: 'consumer readback failed' },
+        readError: error instanceof Error ? error.message : String(error),
+      }
     }
   })
   return {
@@ -2227,6 +2341,8 @@ function printReport(workflow, observation, json) {
   // 這一版,若沿用舊名(previous…)會讓機器可讀輸出的欄位名與實際語意相反。全 repo 零讀取端。
   report.publishedBaselineRef = baselineRef
   report.productChange = productChangeSinceBaseline(baselineRef, observation.headSha)
+  // `merge: consumer-owned` 的 consumer(產品 canary):不在上面五步的狀態裡,但要講出來 —— 只講不擋。
+  report.consumerOwnedUpgrades = observation.release ? summarizeConsumerOwnedUpgrades(observation) : []
   // 排程監看的最新結論:**只講不擋**,而且**全部**讀 —— 清單從 .github/workflows 機械列出(listScheduledWorkflows),
   // 不手寫檔名。視覺回歸週跑 2026-08-12 起連紅六週沒人看見之後只補了它一支,其餘六個排程 job 照樣沒有觀眾(SM9)。
   const monitors = scheduledMonitorsForReport(observation.repository)
@@ -2244,6 +2360,7 @@ function printReport(workflow, observation, json) {
       // 「量不到」不得看起來像「量到沒變」——講清楚是哪一種,否則這行的沉默無法與「沒差異」區分。
       console.log(`   ⚠️ 無法判斷這一版會不會改變畫面(基準 ref=${baselineRef ?? '找不到'};本地可能沒有 tag,請先 git fetch --tags)。`)
     }
+    for (const line of formatConsumerOwnedUpgradeLines(report.consumerOwnedUpgrades)) console.log(line)
     for (const line of formatScheduledMonitorLines(monitors)) console.log(line)
   }
   return report
@@ -2326,18 +2443,72 @@ export function buildPublishMutationPlan(workflow, {
   return { releaseCommitSha, operations }
 }
 
+/**
+ * `merge: consumer-owned` 的 consumer:派工 / 開升級 PR,**到此為止** —— 不合併、不等合併、它的檢查紅也不丟錯。
+ * 每個 consumer 回一個結果給 consumerOwnedFollowUp。任何讀取或動作失敗都只印出來、記成 'failed',不往上丟
+ *(它不是完成條件);登入類邊界例外,那是整條流程的事。判斷在 consumerOwnedStepAction(純函式),這裡只負責執行。
+ */
+function advanceConsumerOwnedUpgrades(observation, { dispatchedConsumers, openedConsumerPullRequests }) {
+  return observation.consumers.filter(target => !consumerBlocksRelease(target)).map(target => {
+    try {
+      if (target.readError) return 'failed'
+      const version = target.upgradeVersion ?? observation.version
+      const commit = target.upgradeCommit ?? observation.releaseCommitSha
+      const key = `${target.repository}@${version}`
+      const hasPullRequest = Boolean(target.pullRequest)
+      const step = consumerOwnedStepAction({
+        exactVersion: target.exactVersion,
+        hasPullRequest,
+        delivery: target.delivery,
+        branchExists: target.exactVersion || hasPullRequest ? false : consumerAutomationBranchExists(target, version),
+        dispatched: dispatchedConsumers.has(key),
+        pullRequestOpened: openedConsumerPullRequests.has(key),
+      })
+      if (step === 'create-pr') {
+        gh(buildConsumerPullRequestCreateArgs(target, { version, commit }).args)
+        openedConsumerPullRequests.add(key)
+        return 'acted'
+      }
+      if (step === 'dispatch') {
+        dispatchConsumer(target, { version, tag: `v${version}`, commit })
+        dispatchedConsumers.add(key)
+        return 'acted'
+      }
+      return step === 'settled' ? 'settled' : 'waiting'
+    } catch (error) {
+      if (error instanceof HumanBoundaryError) throw error
+      console.log(`   ⚠️ ${target.repository} 的升級 PR 這一圈沒處理成(不擋發版):${error instanceof Error ? error.message : error}`)
+      return 'failed'
+    }
+  })
+}
+
 export function executeAutomaticRelease({ json = false, noWait = false, maxWaitMs = 45 * 60 * 1000 } = {}) {
   const workflow = loadReleaseWorkflow()
   const deadline = Date.now() + maxWaitMs
   releaseDeadline = noWait ? null : deadline // 內層 watch 迴圈共用同一個期限
   const dispatchedConsumers = new Set()        // 只擋重複派工
   const openedConsumerPullRequests = new Set() // 只擋重複開 PR —— 與上面是**兩件事**
+  let consumerOwnedFollowUpDeadline = null     // 五步完成之後才設;設了就代表發版已完成,不再丟「沒收斂」
   for (;;) {
-    invariant(noWait || Date.now() <= deadline, 'release:auto did not converge within 45 minutes; live state is preserved and the command is safe to rerun')
+    invariant(noWait || consumerOwnedFollowUpDeadline !== null || Date.now() <= deadline, 'release:auto did not converge within 45 minutes; live state is preserved and the command is safe to rerun')
     const observation = collectLiveObservation(workflow)
     const report = printReport(workflow, observation, json)
     const incomplete = report.steps.find(step => step.status !== 'complete')
-    if (!incomplete) return report
+    if (!incomplete) {
+      // 五步完成 = 設計系統這次發版完成。`merge: consumer-owned` 的 consumer 不在完成條件裡;它的升級 PR 在這裡
+      // 開出、讀回。分支還沒被它的接收 workflow 推上來時,在期限內多看幾圈;期限到就照實回報,仍以完成結束。
+      consumerOwnedFollowUpDeadline ??= Math.min(Date.now() + CONSUMER_OWNED_FOLLOW_UP_MS, deadline)
+      const next = consumerOwnedFollowUp({
+        outcomes: advanceConsumerOwnedUpgrades(observation, { dispatchedConsumers, openedConsumerPullRequests }),
+        noWait,
+        now: Date.now(),
+        deadline: consumerOwnedFollowUpDeadline,
+      })
+      if (next === 'return') return report
+      if (next === 'wait') sleep(5000)
+      continue
+    }
 
     if (incomplete.id === 'pr-checks') {
       if (!observation.pullRequest) {
@@ -2532,7 +2703,10 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
 
     const desired = readJson(GITHUB_DESIRED_PATH)
     const releaseTags = listReleaseTags()
-    for (const target of observation.consumers.filter(item => !item.exactVersion || item.checkReadback?.trusted !== true)) {
+    // `merge: consumer-owned` 的 consumer 先派工 / 開 PR:排在前面,不被下面 template 的檢查監看卡住,
+    // 它的接收 workflow 才有時間把分支推上來。這一段不合併、不丟錯(見 advanceConsumerOwnedUpgrades)。
+    advanceConsumerOwnedUpgrades(observation, { dispatchedConsumers, openedConsumerPullRequests })
+    for (const target of observation.consumers.filter(consumerBlocksRelease).filter(item => !item.exactVersion || item.checkReadback?.trusted !== true)) {
       invariant(
         !(target.exactVersion && target.checkReadback?.trusted !== true),
         `consumer ${target.repository} has the exact package version but lacks trusted release-check provenance: ${target.checkReadback?.reason || 'unknown reason'}`,

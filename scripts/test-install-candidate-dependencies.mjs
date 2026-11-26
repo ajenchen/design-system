@@ -5,7 +5,14 @@ import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { diffAuditFindings, installCandidateDependencies, parseAuditFindings } from './install-candidate-dependencies.mjs'
-import { resolveExactNpmRuntimeContract } from './lib/verified-exact-npm-runtime.mjs'
+import { resolveExactNpmRuntimeContract, verifiedNodeTrustArgs } from './lib/verified-exact-npm-runtime.mjs'
+
+// 2026-11-26:鎖定 npm 一律以 `--use-system-ca`(本 Node 支援時)啟動;fake runner 先驗前綴再取出 npm 自己的參數。
+const TRUST_ARGS = verifiedNodeTrustArgs()
+function npmArgv(args) {
+  assert.deepEqual(args.slice(0, TRUST_ARGS.length), TRUST_ARGS, 'verified npm must start with the system trust-store flag')
+  return args.slice(TRUST_ARGS.length + 1)
+}
 import { runVerifiedNpm } from './run-verified-npm.mjs'
 
 const exactNpm = {
@@ -273,7 +280,7 @@ test('candidate dependency install applies and verifies the exact runtime overla
     },
     runner(command, args, options) {
       calls.push({ command, args, options })
-      const npmArgs = args.slice(1)
+      const npmArgs = npmArgv(args)
       events.push(npmArgs.join(' '))
       return npmArgs[0] === 'audit' && npmArgs[1] === '--audit-level=high'
         ? { status: 1, stdout: auditReport, stderr: '' }
@@ -299,7 +306,7 @@ test('candidate dependency install applies and verifies the exact runtime overla
     'audit --audit-level=high --json --registry=https://registry.npmjs.org/',
     'audit --audit-level=high --json --registry=https://registry.npmjs.org/',
   ])
-  assert.deepEqual(calls.map(({ args }) => args.slice(1)), [
+  assert.deepEqual(calls.map(({ args }) => npmArgv(args)), [
     ['ci', '--legacy-peer-deps', '--ignore-scripts', '--registry=https://registry.npmjs.org/'],
     ['audit', 'signatures', '--registry=https://registry.npmjs.org/'],
     ['audit', '--audit-level=high', '--json', '--registry=https://registry.npmjs.org/'],
@@ -551,7 +558,7 @@ test('verified npm ci and full install apply then independently verify the insta
         }
       },
       runner(_executable, args) {
-        events.push(args[1])
+        events.push(npmArgv(args)[0])
         return { status: 0 }
       },
     })
@@ -728,7 +735,7 @@ test('verified npm high audit verifies the installed overlay and uses the exact 
   assert.deepEqual(result.vulnerabilityAudit.remediatedFindings, ['brace-expansion'])
   assert.equal(calls.length, 1)
   assert.equal(calls[0].command, process.execPath)
-  assert.deepEqual(calls[0].args.slice(1), [
+  assert.deepEqual(npmArgv(calls[0].args), [
     'audit',
     '--audit-level=high',
     '--json',
@@ -877,7 +884,7 @@ test('verified npm pack accepts only the canonical real release destination', as
   assert.equal(cleaned, 1)
   assert.equal(calls.length, 1)
   assert.equal(calls[0].options.cwd, realpathSync(trusted))
-  assert.deepEqual(calls[0].args.slice(1), [
+  assert.deepEqual(npmArgv(calls[0].args), [
     'pack',
     './packages/design-system',
     '--pack-destination',
@@ -914,7 +921,7 @@ function differentialFixture({ baseReport, candidateReport }) {
     environment: { PATH: process.env.PATH, GITHUB_WORKSPACE: workspace },
     runtimeFactory: async () => verifiedRuntime(trusted),
     runner(command, args, options) {
-      const npmArgs = args.slice(1)
+      const npmArgs = npmArgv(args)
       if (npmArgs[0] !== 'audit' || npmArgs[1] !== '--audit-level=high') return { status: 0 }
       const side = options.cwd === trustedReal ? 'base' : options.cwd === candidateReal ? 'candidate' : 'unknown'
       audits.push(side)

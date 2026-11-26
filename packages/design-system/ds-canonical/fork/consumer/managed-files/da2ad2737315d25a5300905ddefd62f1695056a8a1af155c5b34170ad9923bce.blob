@@ -5,7 +5,7 @@ cat <<'BANNER'
 
 ╭─────────────────────────────────────────────────────────────╮
 │  Codespace ready                                             │
-│  Node >=22.12.0 + Claude Code + Codex                      │
+│  Node >=22.13.0 + Claude Code + Codex                      │
 │  Exact npm snapshot + hooks-off governance check passed      │
 ╰─────────────────────────────────────────────────────────────╯
 

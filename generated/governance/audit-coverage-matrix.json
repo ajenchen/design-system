@@ -557,7 +557,7 @@
     },
     "66": {
       "tier": "CI-ENFORCED",
-      "mechanism": "repository_dispatch mirror + exact template/work-management lockfiles and Verify consumer required checks;dim64/66 share one atomic live-observation digest",
+      "mechanism": "repository_dispatch mirror + exact template lockfile and Verify consumer required check(產品 canary workspace 只開升級 PR、合併由它決定,記成 consumerOwned);dim64/66 share one atomic live-observation digest",
       "id": "DS-DIM-066",
       "critical": true
     },

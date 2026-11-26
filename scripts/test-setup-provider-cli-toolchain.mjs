@@ -30,8 +30,15 @@ import {
   verifyProviderCliRuntimeForCertification,
   verifyProviderCliToolchainStatic,
 } from './setup-provider-cli-toolchain.mjs'
-import { resolveExactNpmRuntimeContract } from './lib/verified-exact-npm-runtime.mjs'
+import { resolveExactNpmRuntimeContract, verifiedNodeTrustArgs } from './lib/verified-exact-npm-runtime.mjs'
 import { captureGitVisibleWorktree } from './lib/worktree-fingerprint.mjs'
+
+// 2026-11-26:鎖定 npm 一律以 `--use-system-ca`(本 Node 支援時)開頭;只有帶這個前綴的呼叫才算 verified npm。
+const TRUST_ARGS = verifiedNodeTrustArgs()
+const isVerifiedNpmCall = (command, args) => command === process.execPath
+  && JSON.stringify(args.slice(0, TRUST_ARGS.length)) === JSON.stringify(TRUST_ARGS)
+  && args[TRUST_ARGS.length] === '/verified/npm-cli.js'
+const npmArgsOf = (args) => args.slice(TRUST_ARGS.length + 1)
 
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const SETUP_MODULE_URL = pathToFileURL(join(REPOSITORY_ROOT, 'scripts/setup-provider-cli-toolchain.mjs')).href
@@ -369,8 +376,8 @@ function harness(root, {
   let cleanupCount = 0
   const runner = (command, args, options) => {
     calls.push({ command, args: [...args], options: { ...options, env: { ...options.env } } })
-    if (command === process.execPath && args[0] === '/verified/npm-cli.js') {
-      if (args[1] === 'ci') {
+    if (isVerifiedNpmCall(command, args)) {
+      if (npmArgsOf(args)[0] === 'ci') {
         const manifestPath = [
           join(root, 'infra/governance/providers/provider-cli-toolchain.json'),
           join(root, 'governance/provider-cli-toolchain.json'),
@@ -438,7 +445,7 @@ function harness(root, {
   return {
     calls,
     get cleanupCount() { return cleanupCount },
-    npmCalls: () => calls.filter(call => call.command === process.execPath && call.args[0] === '/verified/npm-cli.js'),
+    npmCalls: () => calls.filter(call => isVerifiedNpmCall(call.command, call.args)),
     runner,
     runtimeEnvironments,
     runtimeFactory,
@@ -622,7 +629,7 @@ test('installs locked provider CLIs atomically, probes real shims, and is idempo
 
   const npmCalls = testHarness.npmCalls()
   assert.equal(npmCalls.length, 3)
-  assert.deepEqual(npmCalls.map(call => call.args.slice(1, 3)), [
+  assert.deepEqual(npmCalls.map(call => npmArgsOf(call.args).slice(0, 2)), [
     ['ci', '--ignore-scripts'],
     ['audit', 'signatures'],
     ['audit', '--audit-level=high'],
@@ -711,7 +718,7 @@ test('writer-safe setup installs and statically verifies runtime and shims witho
   assert.equal(result.versions, null)
   assert.equal(testHarness.calls.length, 3)
   assert.equal(testHarness.npmCalls().length, 3)
-  assert.ok(testHarness.calls.every(call => call.command === process.execPath && call.args[0] === '/verified/npm-cli.js'))
+  assert.ok(testHarness.calls.every(call => isVerifiedNpmCall(call.command, call.args)))
 
   const verified = verifyProviderCliToolchainStatic({
     root,
