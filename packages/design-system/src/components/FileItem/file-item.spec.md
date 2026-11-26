@@ -291,7 +291,7 @@ upload-manager 的 completed(100% bar + ✓)屬「剛完成的 upload session」
 
 ### List wrapper 本身不加視覺
 
-**規則**(2026-04-22 user 直指):FileItem 各自 own 視覺(rich card / compact bg),list wrapper 只負責垂直排列 + gap。**不應該有外框**(無 `border` / 無 `rounded-*` / 無 `overflow-hidden`)— 否則:
+**規則**(2026-04-22 user 直指):FileItem 各自 own 視覺(rich card / compact bg),list wrapper 只負責垂直排列 + gap。上傳控件(FileUpload)到它的清單也一樣:兩者同包一層 `flex flex-col gap-N`(N 同清單列距:rich `gap-2` / compact `gap-1`,與 FileUpload 內建 files 清單同距,`file-upload.tsx:314`),不在清單上寫 `mt-*`。**不應該有外框**(無 `border` / 無 `rounded-*` / 無 `overflow-hidden`)— 否則:
 - FileItem rich 自帶 card,list 再加外框 → 雙重 card
 - 強制邊框合併(user 2026-04-22 指出的 `border rounded-lg overflow-hidden` 反例)
 

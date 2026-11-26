@@ -232,6 +232,25 @@ C_CANONICAL_MICRO_SAME_LINE='const Meta = () => <span className="flex items-cent
 run_hook "Write" "$CONSUMER" "content" "$C_CANONICAL_MICRO_SAME_LINE"
 expect_pass "N13. same-line proven canonical micro marker excluded from ceiling"
 
+# N14.(2026-11-27 H2 + H3 + H4)規格登記的寫法(頁面列表列 gap-3 px-4 py-3 + 頭像 / Item 零件)上方的
+# layout 標記已經多餘,不佔每檔額度 —— 與 N11 同一個判法,只是分類器多認一種規格寫法。
+C_SPEC_PATTERN_MARKER='// @layout-space-magic-ok: legacy rationale for the page list row
+const Row = () => <div className="flex items-start gap-3 px-4 py-3"><Avatar src={u.photo} alt={u.name} /><ItemContent label={u.name} /></div>;
+// @ds-misuse-allow: one true exception
+// @benchmark-unverified cited in audit notes
+export const App = 1;'
+run_hook "Write" "$CONSUMER" "content" "$C_SPEC_PATTERN_MARKER"
+expect_pass "N14. spec-registered page-list row marker excluded from per-file ceiling"
+
+# N15. 反例對照:同一組 gap-3 px-4 py-3 旁邊沒有頭像 / Item 零件 → 不是規格寫法 → 標記照佔額度 → 三族湊滿就擋
+C_SPEC_PATTERN_LOOKALIKE='// @layout-space-magic-ok: claimed page list row
+const Row = () => <div className="flex items-start gap-3 px-4 py-3"><Info /><span>維護通知</span></div>;
+// @ds-misuse-allow: one true exception
+// @benchmark-unverified cited in audit notes
+export const App = 1;'
+run_hook "Write" "$CONSUMER" "content" "$C_SPEC_PATTERN_LOOKALIKE"
+expect_block "N15. lookalike gap-3 px-4 py-3 without avatar / Item parts still consumes ceiling" "$BLOCK_NEEDLE"
+
 # ── R-series:repo 級累計 ratchet(2026-07-08 WM 戰役 R4)──────────────────────
 # 存量 ≥10(apps/** 全 repo)後,只擋「本次 edit 再新增 marker」;無 marker edit 不 brick。
 mkdir -p "$TMP_DIR/apps/work/src"

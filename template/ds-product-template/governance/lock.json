@@ -42,7 +42,7 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "98c6456960acb7bab74f24d35978f5944842d95f614a53db96c0b43eedcbed5f",
+    "forkCorpusLockSha256": "ddeaf4c2e7471612afb42969197a360d336d10f266cedff3f9b35da12f5494fd",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
     "providerLifecycleSha256": "69fa942cf9c3cddd5026b1844b5f2d943e8ceeb21f679b4089fd2701f6e0eae3",
@@ -73,7 +73,7 @@
       "claude": "b17888945b06f3433e8cbeb0b659d63e41dbd391906461b6453500d8ec8ecec1"
     },
     "governanceCheckSha256": "cbb7207b3e504073384ca352cfb6a9074782e7de8da630de79132544a67794d2",
-    "utilityRegistrySha256": "43a65246ceb46401aa536b20f2c1cfd0a7bc70666471c4ebd5d61c5c0c77ded9",
+    "utilityRegistrySha256": "473fb705e490b39739361c82f6063b80865990b01f3c35dd30a9cfa18e216e70",
     "sharedSkillsSha256": "9a7912ed1e261b1bbc259f141c5badb5d8f564f59fb2bb778e0b11c409bdf070",
     "sharedSkillCount": 11,
     "requiredScripts": {

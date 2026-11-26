@@ -276,7 +276,7 @@ const ListItemPreview = ({ size, startIcon: StartIcon, avatar, label, descriptio
     : 'h-[1lh]'
 
   return (
-    // @layout-space-magic-ok: 頁面列表列 px 16 / py 12 / gap 12 = item-anatomy.spec.md「頁面列表（閱讀式列，以 slot 零件組）」表 padding-y `py-3`、padding-x `px-4`、prefix ↔ content gap `gap-3`
+    // 頁面列表列 px 16 / py 12 / gap 12 = item-anatomy.spec.md「頁面列表（閱讀式列，以 slot 零件組）」表;規格登記的寫法 page-list-row,間距分類器認得,不需豁免
     <div className={`flex items-start gap-3 px-4 py-3 ${size === 'lg' ? 'text-body-lg' : 'text-body'}`}>
       {(StartIcon || avatar) && (
         <div className={`${alignClass} flex items-center shrink-0`}>

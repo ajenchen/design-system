@@ -125,6 +125,7 @@ InlineEdit 為**泛型 `<T>`**（非只 string）:`value: T` / `onCommit: (next:
 - **DataTable 密集可編輯格** → 用 naked cell(host cell 自管 border + focus、hover outline affordance;見 `field-controls.spec.md`「Cell(naked variant)」),不是每格包一個 InlineEdit 狀態機。
 - **一律唯讀展示**(整區不可編、也不會在原地變成表單的資訊區塊,例:訂單明細、檔案資訊) → `DescriptionList`(`../DescriptionList/description-list.spec.md`;`../Field/field.spec.md`「何時不用」第一列),不需要 Pressable;**同場或權限鎖定** → 留 InlineEdit 傳 `editable=false`(不灰化,見「editable 閘」)。
 - **多欄位一次編輯** → 用表單(進入一次編輯全部欄位),不是逐欄 inline edit;這種「整組按『編輯』才變表單」的區塊,平常的樣子用 Field 層純顯示 `<Field mode="view">`(唯一用途,`../Field/field.spec.md`「閱讀情境」的「不變與邊界」;範例 `../Field/field.stories.tsx`「按編輯整組變表單」)。
+- **長文 / 富文字(例:任務描述)** → 由產品自組編輯器與儲存 / 取消;InlineEdit 點外面就結算(見「互動模型」),不適用「按儲存才結束」的長文編輯。user 2026-11-27 原話(逐字):「長文和豐富文字不是用就地編輯元件，目前由消費者自己客製化即可」。
 
 ## 近親分界
 

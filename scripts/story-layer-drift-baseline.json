@@ -16,7 +16,7 @@
     "div-heading": 0,
     "unknown-typography": 0,
     "story-counter-example": 4,
-    "layout-space-magic-ok": 296
+    "layout-space-magic-ok": 282
   },
   "files": {
     "packages/design-system/src/components/AccountMenu/account-menu.stories.tsx": {
@@ -171,12 +171,10 @@
     },
     "packages/design-system/src/components/Dialog/dialog.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 4,
+        "count": 2,
         "hits": [
           "8308568ef322",
-          "8529cb87aa04",
-          "ae71e1307129",
-          "ae71e1307129"
+          "8529cb87aa04"
         ]
       }
     },
@@ -204,34 +202,11 @@
         ]
       }
     },
-    "packages/design-system/src/components/FileItem/file-item.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 7,
-        "hits": [
-          "1f549f550f4c",
-          "1f549f550f4c",
-          "5b4b66472f5b",
-          "5b4b66472f5b",
-          "62dd94ba953b",
-          "8a0296678df5",
-          "8a0296678df5"
-        ]
-      }
-    },
     "packages/design-system/src/components/FileUpload/file-upload.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 2,
-        "hits": [
-          "8a0296678df5",
-          "8a0296678df5"
-        ]
-      }
-    },
-    "packages/design-system/src/components/FileViewer/file-viewer.stories.tsx": {
       "layout-space-magic-ok": {
         "count": 1,
         "hits": [
-          "e47cb50d97b8"
+          "8a0296678df5"
         ]
       }
     },
@@ -517,7 +492,7 @@
     },
     "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 78,
+        "count": 75,
         "hits": [
           "087d8635074b",
           "0bce48f677f7",
@@ -526,7 +501,6 @@
           "132136dc17cc",
           "132136dc17cc",
           "163e399b1fc2",
-          "169bebcefa11",
           "186e7289ebd6",
           "1b22ed8af2bc",
           "21f8de3b3fe9",
@@ -542,14 +516,12 @@
           "38736cc147ab",
           "38e8bb3f474d",
           "3afc979b91e2",
-          "3fb45e02d67e",
           "460a98b2b7ba",
           "46ac55d9736d",
           "47c5cec26ff6",
           "48cca825e893",
           "49bc0f551892",
           "50779c05bbdd",
-          "52e7316bb5e2",
           "533833d06087",
           "58a62d9725e0",
           "5a3690da8ec6",

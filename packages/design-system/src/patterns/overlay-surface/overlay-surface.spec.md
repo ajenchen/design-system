@@ -406,7 +406,7 @@ border-l border-divider">`)/ Atlassian [`modal-dialog/examples/101-full-height-i
 - **左欄 = 分類導覽**:照本檔「List-as-region in overlay body」(從 body 頂起,上下留白由清單自己的 py 給,列自帶 `px-loose`);
   外觀同 Sidebar —— 列直接消費 Sidebar 的列元件(`SidebarGroup` / `SidebarMenu` / `SidebarMenuItem` / `SidebarMenuButton`),
   不手抄列幾何。依據:user 第五輪決策卡 C15 逐字「我不確定你程式上想要怎麼做比較 ssot,但視覺上肯定是要 ssot 的吧？類似概念或是操作應該都會跟 sidebar 長得很像？」
-  (問句;AI 讀成「視覺跟 Sidebar 同一套」)。列元件要的 context 由 `SidebarProvider` 給(寫法同
+  (問句;AI 讀成「視覺跟 Sidebar 同一套」)。列元件要的 context 由 `SidebarProvider` 給,用預設尺寸、不傳 `size="sm"`(sm 只給頁面內次導覽與緊湊空間,`../../components/Sidebar/sidebar.spec.md:13`;Dialog body 屬 md 檔)(寫法同
   `../../components/ScrollArea/scroll-area.stories.tsx#SidebarNav`);**不放 `<Sidebar>` 外框** —— 它是版面上的 Menu,對話框在 AppShell 裡打開時仍在
   AppShell 的元件樹裡,外框會去登記成 Menu(`../../components/Sidebar/sidebar.tsx` 的 `Sidebar`)【AI 推導】。
 - **分隔線由左欄畫**(`border-r border-divider`,貫穿 body 頂到底)—— 第 2 條原文寫右欄畫,換成左導覽時改由左欄畫,

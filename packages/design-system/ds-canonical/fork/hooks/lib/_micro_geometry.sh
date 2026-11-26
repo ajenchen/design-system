@@ -59,11 +59,45 @@ expected_keys = {
     "nearby_line_limit",
     "rationale",
     "rationale_path",
+    "spec_registered_patterns",
 }
 if not isinstance(policy, dict) or set(policy) != expected_keys:
     raise ValueError("canonical micro-geometry policy is invalid")
 
-array_keys = expected_keys - {"assist_chip_row", "nearby_line_limit", "rationale", "rationale_path"}
+# 規格登記的寫法(2026-11-27,上游判定 H2 + H3 + H4):規格明文叫產品寫的固定間距組合(檔案清單、頁面列表列、
+# 浮層清單外框),每筆 = 完整 class 組合 + 鄰近必須出現的 DS 元件 / 結構 + 出處 spec 行號。只有整組對得上才放行,
+# 同一行混入別的 magic 不放行;反例(沒 FileItem 的 flex-col gap-2、沒頭像或 Item 零件的 gap-3 px-4 py-3、
+# 不在浮層主體裡的 py-2 清單)照擋。
+SPEC_PATTERN_KEYS = {
+    "id", "utilities", "utilities_any", "magic_tokens_exact", "magic_tokens_subset", "nearby_all",
+    "nearby_components", "nearby_min", "same_line_any", "ancestor_any", "ancestor_line_limit", "source",
+}
+spec_patterns = policy["spec_registered_patterns"]
+if not isinstance(spec_patterns, list) or not spec_patterns:
+    raise ValueError("canonical micro-geometry spec patterns are invalid")
+for pattern in spec_patterns:
+    if (
+        not isinstance(pattern, dict)
+        or set(pattern) - SPEC_PATTERN_KEYS
+        or not {"id", "utilities", "source"} <= set(pattern)
+        or ("magic_tokens_exact" in pattern) == ("magic_tokens_subset" in pattern)
+        or ("nearby_components" in pattern) != ("nearby_min" in pattern)
+        or ("ancestor_any" in pattern) != ("ancestor_line_limit" in pattern)
+    ):
+        raise ValueError("canonical micro-geometry spec pattern shape is invalid")
+    for key in SPEC_PATTERN_KEYS - {"id", "source", "nearby_min", "ancestor_line_limit"}:
+        if key in pattern and (
+            not isinstance(pattern[key], list) or not pattern[key]
+            or any(not isinstance(item, str) or not item for item in pattern[key])
+        ):
+            raise ValueError(f"canonical micro-geometry spec pattern list is invalid:{pattern.get('id')}:{key}")
+    for key, upper in (("nearby_min", 8), ("ancestor_line_limit", 64)):
+        if key in pattern and (not isinstance(pattern[key], int) or not 1 <= pattern[key] <= upper):
+            raise ValueError(f"canonical micro-geometry spec pattern bound is invalid:{pattern.get('id')}:{key}")
+    if not isinstance(pattern["source"], str) or not pattern["source"]:
+        raise ValueError("canonical micro-geometry spec pattern source is invalid")
+
+array_keys = expected_keys - {"assist_chip_row", "nearby_line_limit", "rationale", "rationale_path", "spec_registered_patterns"}
 for key in array_keys:
     value = policy[key]
     if (
@@ -186,12 +220,59 @@ def nearby_window(lines, index):
     return "\n".join(lines[index:index + nearby_limit + 1])
 
 
+def has_open_ancestor(lines, index, names, limit):
+    """往上看 limit 行內,最近一個 <Name 開標籤之後沒有對應的 </Name> = 本行在它底下。"""
+    text = "\n".join(lines[max(0, index - limit):index])
+    for name in names:
+        opens = [m.end() for m in re.finditer(rf"<(?:DS\.)?{re.escape(name)}\b", text)]
+        if opens and not re.search(rf"</(?:DS\.)?{re.escape(name)}>", text[opens[-1]:]):
+            return True
+    return False
+
+
+def matches_spec_registered_pattern(lines, index, line, tokens):
+    if not re.search(r"\bclass(?:Name)?\s*=", line):
+        return False
+    token_set = set(tokens)
+    window = nearby_window(lines, index)
+    for pattern in spec_patterns:
+        if not all(has_utility(line, utility) for utility in pattern["utilities"]):
+            continue
+        if "utilities_any" in pattern and not has_any_utility(line, pattern["utilities_any"]):
+            continue
+        if "magic_tokens_exact" in pattern and token_set != set(pattern["magic_tokens_exact"]):
+            continue
+        if "magic_tokens_subset" in pattern and not token_set <= set(pattern["magic_tokens_subset"]):
+            continue
+        if "same_line_any" in pattern and not any(re.search(rx, line) for rx in pattern["same_line_any"]):
+            continue
+        if "nearby_all" in pattern and not all(needle in window for needle in pattern["nearby_all"]):
+            continue
+        if "nearby_components" in pattern:
+            found = sum(
+                len(re.findall(rf"<{re.escape(component)}\b", window))
+                for component in pattern["nearby_components"]
+            )
+            if found < pattern["nearby_min"]:
+                continue
+        if "ancestor_any" in pattern and not has_open_ancestor(
+            lines, index, pattern["ancestor_any"], pattern["ancestor_line_limit"]
+        ):
+            continue
+        return True
+    return False
+
+
 def is_canonical_micro_line(lines, index):
     if index < 0 or index >= len(lines):
         return False
     line = lines[index]
     tokens = magic_token_re.findall(line)
-    if not tokens or any(token not in allowed_gaps for token in tokens):
+    if not tokens:
+        return False
+    if matches_spec_registered_pattern(lines, index, line, tokens):
+        return True
+    if any(token not in allowed_gaps for token in tokens):
         return False
     # A quoted class assignment or JSX class attribute is required. Prose mentioning gap-1/2 is
     # not executable structural evidence.
