@@ -473,7 +473,7 @@ function ReadonlyDisplay({
           </span>
         )
       }
-      // 截斷必附 tooltip(tooltip.spec.md:32)— 改消費 truncated-text primitive(同 input.tsx:219 同型修;
+      // 截斷必附 tooltip(tooltip.spec.md:30)— 改消費 truncated-text primitive(同 input.tsx:219 同型修;
       // display='tag' 路徑由 Tag 內建 useTruncated 自管,text 路徑原本裸 truncate = gap)
       if (isTextDisplay) return <TruncatedText className={cn(fieldDisplayTextClass(sz), className)}>{label}</TruncatedText>
       return <Tag size={sz} color={optionTagColor(selectedOpt)} className={className}>{label}</Tag>
@@ -493,7 +493,7 @@ function ReadonlyDisplay({
             {selectedItemRenderer(selectedOpt)}
           </span>
         ) : isTextDisplay ? (
-          // 截斷必附 tooltip(tooltip.spec.md:32;data-table.spec.md「十一、Cell 單行截斷原則」view 態元件自管 truncation)
+          // 截斷必附 tooltip(tooltip.spec.md:30;data-table.spec.md「十一、Cell 單行截斷原則」view 態元件自管 truncation)
           <TruncatedText className={cn(bareInputStyles, 'flex-1 min-w-0', !value && emptyColorCls)}>
             {value ? label : emptyText}
           </TruncatedText>
@@ -535,7 +535,7 @@ function ReadonlyDisplay({
     return (
       <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width: fieldWidthVariant(width), size: sz }), className)} style={fieldWidthStyle(width)} data-field-mode={resolvedMode} aria-disabled={ariaDisabled} {...readonlyStop}>
         {StartIcon && <ItemPrefix><StartIcon size={iconSize} className={cn('pointer-events-none', iconColor)} aria-hidden /></ItemPrefix>}
-        {/* 截斷必附 tooltip(tooltip.spec.md:32)— readonly/disabled 無下拉入口,tooltip 是唯一補救路徑 */}
+        {/* 截斷必附 tooltip(tooltip.spec.md:30)— readonly/disabled 無下拉入口,tooltip 是唯一補救路徑 */}
         <TruncatedText className={cn('flex-1', resolvedMode === 'disabled' && 'text-fg-disabled')}>
           {value ? label : <span className={emptyColorCls}>{emptyText}</span>}
         </TruncatedText>
@@ -749,7 +749,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     // 級 fallback `?? value`。
     const selectedLabel = selectedOpt?.label ?? value ?? ''
     const SelectedIcon = selectedOpt?.icon
-    // 截斷 tooltip(tooltip.spec.md:32 截斷 → 顯完整內容,僅實際截斷時):closed trigger text
+    // 截斷 tooltip(tooltip.spec.md:30 截斷 → 顯完整內容,僅實際截斷時):closed trigger text
     // display 的值 span 是截斷元素;trigger = 整個 combobox host(interactive host,hover 直達)、
     // 量測內層值 span — useTruncated 自組 pattern(truncated-text.spec.md「兩層架構(對齊世界級聯集)」:trigger ≠ 量測元素時只用 hook 自組;
     // 範本 inline-edit.tsx:258。tag display 由 Tag 內建 useTruncated 自管,不經此路)。

@@ -586,7 +586,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
       }
     }, [onChange, showTime, locale, disabledDate])
 
-    // 截斷 tooltip(tooltip.spec.md:32 截斷 → 顯完整內容,僅實際截斷時):非 typeable edit
+    // 截斷 tooltip(tooltip.spec.md:30 截斷 → 顯完整內容,僅實際截斷時):非 typeable edit
     // trigger 的值 span(bareInputStyles + truncate)是截斷元素;trigger = 整個 field wrapper
     // (interactive host,hover 直達)、量測內層值 span — useTruncated 自組 pattern
     // (truncated-text.spec.md「兩層架構(對齊世界級聯集)」:trigger ≠ 量測元素時只用 hook 自組;範本 inline-edit.tsx:258)。
@@ -613,7 +613,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
         // 2026-05-14 I2 fix(spec contract (e) view typography canonical):bare span 套
         // `fieldDisplayTextClass(size)`(sm/md→text-body,lg→text-body-lg)— 對齊 Field family 統一。
         if (!value) return <span className={cn(fieldDisplayTextClass(size), fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
-        // 截斷必附 tooltip(tooltip.spec.md:32)— 改消費 truncated-text primitive(同 input.tsx:219 同型修)
+        // 截斷必附 tooltip(tooltip.spec.md:30)— 改消費 truncated-text primitive(同 input.tsx:219 同型修)
         return <TruncatedText className={cn(fieldDisplayTextClass(size), className)}>{displayCommitted}</TruncatedText>
       }
       return (
@@ -622,7 +622,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
           style={fieldWidthStyle(width)}
           data-field-mode="view"
         >
-          {/* 截斷必附 tooltip(tooltip.spec.md:32;data-table.spec.md「十一、Cell 單行截斷原則」view 態元件自管 truncation) */}
+          {/* 截斷必附 tooltip(tooltip.spec.md:30;data-table.spec.md「十一、Cell 單行截斷原則」view 態元件自管 truncation) */}
           <TruncatedText className={cn(bareInputStyles, 'flex-1 min-w-0', !value && fieldEmptyColorClass(resolvedMode))}>
             {value ? displayCommitted : emptyDisplay}
           </TruncatedText>
@@ -644,7 +644,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
           {...(props as React.HTMLAttributes<HTMLDivElement>)}
           style={fieldWidthStyle(width, props.style)}
         >
-          {/* 截斷必附 tooltip(tooltip.spec.md:32)— readonly/disabled 無編輯入口,tooltip 是唯一補救路徑(同 Range readonly 分支同型) */}
+          {/* 截斷必附 tooltip(tooltip.spec.md:30)— readonly/disabled 無編輯入口,tooltip 是唯一補救路徑(同 Range readonly 分支同型) */}
           <TruncatedText className={cn('flex-1', resolvedMode === 'disabled' && 'text-fg-disabled')}>
             {value
               ? displayCommitted
@@ -1110,7 +1110,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
       ? formatDateOrDateTime(endIso, showTime, showSeconds, { formatOptions, locale })
       : resolvedPlaceholder[1]
 
-    // 截斷 tooltip(tooltip.spec.md:32 截斷 → 顯完整內容,僅實際截斷時):Range 兩端 edit
+    // 截斷 tooltip(tooltip.spec.md:30 截斷 → 顯完整內容,僅實際截斷時):Range 兩端 edit
     // trigger button 各自截斷、各自量測顯示 — trigger = button 本體(interactive host,hover
     // 直達)、量測內層文字 span,useTruncated 自組 pattern(truncated-text.spec.md「trigger 需
     // 自控」指定解;範本 inline-edit.tsx:258)。popover 開啟時靜默;hook 必在 view / readonly
@@ -1269,7 +1269,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
       if (mergedText !== null) {
         return (
           <span className={cn('inline-flex items-center min-w-0', nakedCellRowModeAlign, className)}>
-            {/* 截斷必附 tooltip(tooltip.spec.md:32)— 合併後只有一段,一個 TruncatedText */}
+            {/* 截斷必附 tooltip(tooltip.spec.md:30)— 合併後只有一段,一個 TruncatedText */}
             <TruncatedText>{mergedText}</TruncatedText>
           </span>
         )
@@ -1280,7 +1280,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
         ?? formatDateOrDateTime(iso, showTime, showSeconds, { formatOptions, locale })
       return (
         <span className={cn('inline-flex items-center min-w-0', nakedCellRowModeAlign, className)}>
-          {/* 截斷必附 tooltip(tooltip.spec.md:32)— start / end 各自獨立截斷、各自量測 */}
+          {/* 截斷必附 tooltip(tooltip.spec.md:30)— start / end 各自獨立截斷、各自量測 */}
           <TruncatedText className={cn(!startIso && 'text-fg-muted')}>
             {startIso ? viewEndpointText(startIso, startDate) : resolvedPlaceholder[0]}
           </TruncatedText>
@@ -1304,7 +1304,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
           {...props}
           style={fieldWidthStyle(width, props.style)}
         >
-          {/* 截斷必附 tooltip(tooltip.spec.md:32)— readonly/disabled 無編輯入口,tooltip 是唯一補救路徑 */}
+          {/* 截斷必附 tooltip(tooltip.spec.md:30)— readonly/disabled 無編輯入口,tooltip 是唯一補救路徑 */}
           <TruncatedText className={cn('flex-1', !startIso && 'text-fg-muted', resolvedMode === 'disabled' && 'text-fg-disabled')}>
             {startIso ? formatDateOrDateTime(startIso, showTime, showSeconds, { formatOptions, locale }) : resolvedPlaceholder[0]}
           </TruncatedText>

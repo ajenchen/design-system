@@ -69,17 +69,24 @@ export interface CalendarEventDetail<E = unknown> {
   categories?: readonly CalendarCategory[]
 }
 
-/** 詳情的字串(Calendar `labels` 的詳情那幾個鍵;預設繁中,calendar.tsx DEFAULT_LABELS) */
+/** 詳情的字串(Calendar `labels` 的詳情那幾個鍵,calendar.tsx `CalendarLabels` 繼承這一份;預設繁中,calendar.tsx DEFAULT_LABELS) */
 export interface CalendarEventDetailLabels {
+  /** 事件詳情浮層右上角 × 的讀屏名稱(calendar.spec.md「A11y 預設」字串可覆寫「清單 / 詳情的關閉」;經 PopoverHeader `closeAriaLabel`) */
   detailClose: string
+  /** 詳情標題(就地編輯)的欄位名稱:讀屏念「編輯 {此字}」、編輯中輸入框的名稱(看得見的是標題本身) */
   detailTitle: string
+  /** 詳情各欄的標籤(看得見的字,也是該欄的名稱;calendar.spec.md「事件詳情浮層」內文欄位) */
   detailTime: string
   detailAllDay: string
   detailLocation: string
+  /** 地點空著時的佔位字(可編輯時) */
   detailLocationPlaceholder: string
   detailDescription: string
+  /** 說明空著時的佔位字(可編輯時) */
   detailDescriptionPlaceholder: string
+  /** 類別欄的標籤(`eventDetail.categories` 有傳才出現) */
   detailCategory: string
+  /** 類別空著時的佔位字(可編輯時) */
   detailCategoryPlaceholder: string
 }
 
@@ -121,7 +128,7 @@ export interface CalendarEventDetailEntry<E> {
   range: [string, string]
 }
 
-export interface CalendarEventDetailPopoverProps<E> {
+interface CalendarEventDetailPopoverProps<E> {
   /** 開著時的那一筆;null = 關著 */
   entry: CalendarEventDetailEntry<E> | null
   anchor: CalendarDetailAnchor | null
@@ -209,7 +216,7 @@ function DetailTitle<E>({ entry, editable, label, onChange }: { entry: CalendarE
  * 每一欄都是 Field;可改的值走 InlineEdit、不能改的值 InlineEdit editable={false}(不混放純顯示,inline-edit.spec.md:52 / :126);
  * 「全天」是自己一個 Field、Switch 直接切換【Q5(定)】。只能看時空欄位不列【AI 推導】。
  */
-function DetailFields<E>({ entry, detail, labels, locale, readFormat, onChange, onToggleAllDay }: Omit<CalendarEventDetailPopoverProps<E>, 'anchor' | 'side' | 'onClose' | 'onCloseAutoFocus'> & { entry: CalendarEventDetailEntry<E> }) {
+function DetailFields<E>({ entry, detail, labels, locale, readFormat, onChange, onToggleAllDay }: Omit<CalendarEventDetailPopoverProps<E>, 'anchor' | 'onClose' | 'onCloseAutoFocus'> & { entry: CalendarEventDetailEntry<E> }) {
   const editable = isEditableOf(detail, entry)
   const { event, allDay, range } = entry
   const showTime = !allDay

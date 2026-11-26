@@ -2,7 +2,7 @@
 // (scripts/gen-component-indexes.mjs findFeatureSiblings:檔頭 10 行含 @internal 的 `calendar-*.tsx` 不 re-export)。只給 calendar.tsx 用。
 import * as React from 'react'
 import { Popover, PopoverAnchor, PopoverBody, PopoverContent, PopoverHeader, PopoverTitle, PopoverTrigger } from '@/design-system/components/Popover/popover'
-import { halfRowCap } from '@/design-system/tokens/elevation/overlay-geometry'
+import { halfRowCap, OVERLAY_LIST_ROWS } from '@/design-system/tokens/elevation/overlay-geometry'
 import { CALENDAR_GEOMETRY_STYLE } from './calendar-geometry'
 
 /**
@@ -18,11 +18,11 @@ import { CALENDAR_GEOMETRY_STYLE } from './calendar-geometry'
  */
 
 /**
- * 清單預設完整看得到幾列(半列原則的 N;上限 = 標題列 + N 列 + 半列)【AI 推導,實量後回報 user】。
- * 取 9 = DS 清單型浮層單行列的同一個 N(overlay-geometry.ts `OVERLAY_LIST_ROWS.single`,由來:最接近改前寫死的 300px);
+ * 清單預設完整看得到幾列(半列原則的 N;上限 = 標題列 + N 列 + 半列)—— 直接讀 DS 清單型浮層單行列的同一個 N(overlay-geometry.ts `OVERLAY_LIST_ROWS.single` = 9,
+ * 由來:最接近改前寫死的 300px),不另抄一份數字【MORE-CAP(定)】:user 2026-11-26 決策卡 more-cap 點選「維持 9 列」。
  * 列高 24 + 列距 4 時一般密度上限 = 框 2 + 標題列 45 + 9 × 28 + 12 = 311px(瀏覽器實量見 calendar-month ML-half);世界級對照與來源只住 calendar.spec.md「「+N」清單浮層」高度與捲動。
  */
-export const CALENDAR_MORE_LIST_ROWS = 9
+export const CALENDAR_MORE_LIST_ROWS = OVERLAY_LIST_ROWS.single
 
 /**
  * 清單上限裡、第一列上方的固定高 = PopoverContent 上下框 + 標題列。
@@ -34,14 +34,14 @@ export const CALENDAR_MORE_LIST_ROWS = 9
 const LIST_BEFORE_FIRST_ROW = 'calc(var(--font-body-size) * 1.5 + 2 * var(--layout-space-tight) + 2px)'
 
 /** 清單的高度上限預設(半列原則;列高 = 事件列 Tag md、列距 = 格內列距,兩者讀同一組變數) */
-export const CALENDAR_MORE_LIST_MAX_HEIGHT = halfRowCap({
+const CALENDAR_MORE_LIST_MAX_HEIGHT = halfRowCap({
   rows: CALENDAR_MORE_LIST_ROWS,
   rowHeight: 'var(--tag-height-md)',
   gap: 'var(--calendar-gap)',
   before: LIST_BEFORE_FIRST_ROW,
 })
 
-export interface CalendarMoreListProps {
+interface CalendarMoreListProps {
   /** 這一天(yyyy-MM-dd)。「+N」帶 `data-calendar-more={day}`:格內導覽依日子找到它(排在這一天的事件之後) */
   day: string
   open: boolean

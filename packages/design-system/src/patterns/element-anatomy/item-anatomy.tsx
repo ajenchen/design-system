@@ -248,7 +248,7 @@ export const itemPrefixAlignVariants = cva(
 )
 
 // ── 單行截斷偵測 measure(ItemLabel / ItemContent 共用)──────────────────────
-// 截斷 → tooltip 顯完整內容、僅實際截斷時顯示(owner:components/Tooltip/tooltip.spec.md:32;
+// 截斷 → tooltip 顯完整內容、僅實際截斷時顯示(owner:components/Tooltip/tooltip.spec.md:30;
 // 引擎 SSOT:patterns/element-anatomy/truncated-text.spec.md)。不消費 `<TruncatedText>`——
 // trigger 需自控(ItemLabel 要 forwardRef + data-sidebar attr + props spread;ItemContent 要保留
 // labelTruncate / clamp className 原樣)→ 走 spec 指定解:public `useTruncated` 自組
@@ -271,7 +271,7 @@ const measureSingleLineClipped = (el: HTMLElement): boolean => {
  * `<ItemLabel>` — Row primitive 的 label span。
  *
  * 預設 `min-w-0 flex-1 truncate`——單行截斷,佔滿剩餘 flex 空間。
- * 截斷時 hover 顯 tooltip 補全(截斷才顯,tooltip.spec.md:32;內建,consumer 免自接)。
+ * 截斷時 hover 顯 tooltip 補全(截斷才顯,tooltip.spec.md:30;內建,consumer 免自接)。
  * 加 `data-sidebar="menu-label"` attribute 讓 sidebar icon 模式的 CSS selector 能命中。
  *
  * 用法:
@@ -323,7 +323,7 @@ ItemLabel.displayName = "ItemLabel"
  *
  * ── 截斷 → tooltip(內建,consumer 免自接)──
  * label(`truncate` 或 `line-clamp-1` escape)與單行截斷 description 在實際截斷時 hover 顯
- * tooltip 補全(截斷才顯,tooltip.spec.md:32);多行 clamp(≥2 行)排除 —— 見
+ * tooltip 補全(截斷才顯,tooltip.spec.md:30);多行 clamp(≥2 行)排除 —— 見
  * `measureSingleLineClipped` 註解(truncated-text.spec.md「何時不用」(a))。
  *
  * ── Consumer 偏離 canonical ──
@@ -383,7 +383,7 @@ export interface ItemContentProps extends Omit<React.HTMLAttributes<HTMLDivEleme
   /**
    * Description 多行截斷(line-clamp-N)。undefined = 不 clamp(自由 wrap)。
    * Tailwind line-clamp utilities 支援 1-6。
-   * `1`(單行 clamp)截斷時 hover 顯 tooltip 補全(截斷才顯,tooltip.spec.md:32);
+   * `1`(單行 clamp)截斷時 hover 顯 tooltip 補全(截斷才顯,tooltip.spec.md:30);
    * `>= 2`(多行)不配 tooltip —— truncated-text.spec.md「何時不用」(a) 排除多行,
    * DS 尚無多行截斷↔補全 canonical(owner 決策前維持排除)。
    */
@@ -449,7 +449,7 @@ export const ItemContent = React.forwardRef<HTMLDivElement, ItemContentProps>(
 
     const clampClass = lineClampClass(descriptionClamp) ?? ""
 
-    // 截斷 → tooltip(截斷才顯,tooltip.spec.md:32)。量測走 measureSingleLineClipped(檔內
+    // 截斷 → tooltip(截斷才顯,tooltip.spec.md:30)。量測走 measureSingleLineClipped(檔內
     // SSOT 註解):label 蓋 labelTruncate `truncate` + MenuItem labelClassName `line-clamp-1`
     // escape 兩路;description 只在單行截斷(`descriptionClamp === 1` 或 !descriptionWrap 的
     // truncate 分支,含 className escape)顯示——多行 clamp(≥2)由量測 gate 機械排除
