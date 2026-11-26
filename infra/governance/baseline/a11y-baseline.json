@@ -1,8 +1,8 @@
 {
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
-    "generatedAt": "2026-11-26T08:10:32.268Z",
-    "stories": 1110,
+    "generatedAt": "2026-11-26T14:00:56.486Z",
+    "stories": 1113,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
       "apps-template-appshell-dashboard--default",
@@ -47,6 +47,7 @@
       "design-system-components-agentpanel-展示--resizable-width",
       "design-system-components-agentpanel-展示--task-assistant",
       "design-system-components-agentpanel-展示--title-truncated",
+      "design-system-components-agentpanel-展示--toolbar-i-18-n",
       "design-system-components-agentpanel-展示--unsaved-changes-guard",
       "design-system-components-agentpanel-展示--url-registry-demo",
       "design-system-components-agentpanel-設計原則--content-guidelines",
@@ -285,6 +286,7 @@
       "design-system-components-coachmark-設計規格--size-matrix",
       "design-system-components-coachmark-設計規格--state-behavior",
       "design-system-components-combobox-展示--field-keys-contract",
+      "design-system-components-combobox-展示--groups-and-min-width",
       "design-system-components-combobox-展示--in-data-table",
       "design-system-components-combobox-展示--inline-search-focus-contract",
       "design-system-components-combobox-展示--loading-first-open",
@@ -363,6 +365,7 @@
       "design-system-components-datatable-設計規格--row-height-matrix",
       "design-system-components-datepicker-展示--clearable",
       "design-system-components-datepicker-展示--default",
+      "design-system-components-datepicker-展示--disabled-dates",
       "design-system-components-datepicker-展示--modes",
       "design-system-components-datepicker-展示--need-confirm-date-only-open",
       "design-system-components-datepicker-展示--range-picker",
@@ -1115,8 +1118,8 @@
       "design-system-tokens-uisize--overview",
       "design-system-tokens-uisize--product-alignment"
     ],
-    "storyIdsSha256": "3dcbb9f616f23786680ff15b1287db326734ff12d4b93f0398ba9ae2c71b0090",
-    "fingerprints": 756,
+    "storyIdsSha256": "b85efab6041a101a6c15d72882f2ae062f7c8c5b3aa37d10cf65ea03e4da98bc",
+    "fingerprints": 757,
     "linuxOnly": {
       "design-system-components-combobox-設計規格--inspector|color-contrast": "藍圖區塊的 9px text-fg-muted 小標(anatomy-utils.tsx:174):macOS 等寬字溢出區塊、axe 歸 incomplete 不計,Linux 放得下才計入 —— 只有 Linux(CI)量得到;值 = 2f367ee3(A76)寫入的 CI 實測;main 的 a11y drift 排程 2026-11-19(run 44499310317)在 Linux 量到同值 23 / 41。--color-fg-muted 已定案例外(color.spec.md「已定案(禁再問)」)",
       "design-system-components-select-設計規格--inspector|color-contrast": "藍圖區塊的 9px text-fg-muted 小標(anatomy-utils.tsx:174):macOS 等寬字溢出區塊、axe 歸 incomplete 不計,Linux 放得下才計入 —— 只有 Linux(CI)量得到;值 = 2f367ee3(A76)寫入的 CI 實測;main 的 a11y drift 排程 2026-11-19(run 44499310317)在 Linux 量到同值 23 / 41。--color-fg-muted 已定案例外(color.spec.md「已定案(禁再問)」)"
@@ -1379,6 +1382,7 @@
     "design-system-components-datatable-設計規格--overview|color-contrast": 4,
     "design-system-components-datatable-設計規格--row-height-matrix|color-contrast": 5,
     "design-system-components-datepicker-展示--clearable|color-contrast": 1,
+    "design-system-components-datepicker-展示--disabled-dates|color-contrast": 2,
     "design-system-components-datepicker-展示--need-confirm-date-only-open|color-contrast": 8,
     "design-system-components-datepicker-展示--range-picker|color-contrast": 4,
     "design-system-components-datepicker-展示--show-time-popover-open|color-contrast": 3,
