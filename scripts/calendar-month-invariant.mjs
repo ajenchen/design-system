@@ -164,7 +164,7 @@ const STORY = {
 const MORE_DAY = '2026-07-22'
 const MORE_DAY_ORDER = ['大會週', '場地布置(場館排定)', '來賓報到', '開幕致詞', '主題演講:下一代工作流程', '產品新功能展示', '午餐交流', '分組 A:自動化實戰', '分組 B:資料治理', '客戶座談', '合作夥伴論壇', '閉幕', '晚宴']
 
-// DT-side-right / DT-side-flip(事件詳情開向,子選單擺法):gap / edge = popover.spec.md「與觸發點隔 8」「離視窗邊 8」(不 import overlay-geometry.ts);
+// DT-side-right / DT-side-flip(事件詳情開向,子選單擺法):gap / edge = popover.spec.md「觸發距離 canonical」(sideOffset)與「Viewport 邊距 canonical」(collisionPadding)(不 import overlay-geometry.ts);
 // roomWidth = 情境「月曆右邊留出空位」時 Calendar 根元素的寬 —— 1280 寬的視窗裡,最右一欄的事件右側留得下 352 寬的詳情(前提在量測時現算,不成立 = 儀器失效)
 const DETAIL_SIDE = { gap: 8, edge: 8, roomWidth: 720, eventId: 'd3' }
 
@@ -1735,7 +1735,7 @@ const BLOCKS = {
   // 不另開 context:沙箱裡的 Chromium 是 --single-process,開第二個 context 會整個崩掉(實測 SIGTRAP)。
   // ── DT 事件詳情浮層(設計規格「狀態行為:事件詳情開著」「狀態行為:從清單開詳情」;calendar.spec.md「事件詳情浮層」「點清單裡的事件」)──
   // 期望值由規格與 token 現算(tight / sm 欄位高 / fg-secondary 讀浮層上的變數),不 import 元件常數;
-  // sideOffset / collisionPadding 8 = popover.spec.md「與觸發點隔 8」「離視窗邊 8」(calendar.spec.md 位置段指向它的用法 (2),不重述數值)。
+  // sideOffset / collisionPadding 8 = popover.spec.md「觸發距離 canonical」與「Viewport 邊距 canonical」(calendar.spec.md 位置段指向它的用法 (2),不重述數值)。
   async detail(mutate) {
     const detailSel = '[data-calendar-event-detail]'
     const waitSel = (sel, state) => page.waitForFunction(({ s, st }) => {
