@@ -86,17 +86,21 @@ expect_pass_silent "7. @audit-sample-allow escape → silent"
 
 # ── 派工預算提醒(2026-11-27;AGENTS.md「分診與預算」「派工先寫預算(代理數/花費/牆鐘)」)──
 # 模擬 adapter 啟動的 session:Git-owned runtime root(照 test_check_solo_workflow.sh 的做法)
+# GOVERNANCE_READ_ONLY=0 要明寫(2026-11-27 CI 紅的根因):run-all.sh(hooks:test、CI hooks-linux)export
+# GOVERNANCE_READ_ONLY=1,功能狀態一律唯讀 → 記號落不了地。直接跑本檔時沒有這個變數,所以本機綠、經 run-all 紅
+#(與 Linux / macOS 無關,本機 `bash tests/run-all.sh test_check_audit_sample_escape.sh` 一樣紅)。
+# test_check_solo_workflow.sh 開頭 export GOVERNANCE_READ_ONLY=0 是同一個理由;唯讀那一面由下面 B7 單獨鎖。
 BUDGET_TMP=$(mktemp -d)
 [ -n "${BUDGET_TMP:-}" ] && [ -d "$BUDGET_TMP" ] || { echo "❌ mktemp -d failed(BUDGET_TMP;TMPDIR=${TMPDIR:-unset})" >&2; exit 1; }
 BUDGET_TMP="$(cd "$BUDGET_TMP" && pwd -P)"
 trap 'rm -rf "$BUDGET_TMP"' EXIT
 git -C "$BUDGET_TMP" init -q
 BUDGET_GIT_DIR="$(cd "$(git -C "$BUDGET_TMP" rev-parse --absolute-git-dir)" && pwd -P)"
-run_budget() { # run_budget <session> <prompt>:同時收 stdout
+run_budget() { # run_budget <session> <prompt> [READ_ONLY 值,預設 0 = adapter 啟動的一般 session]:同時收 stdout
   local payload
   payload=$(jq -n --arg s "$1" --arg p "$2" '{hook_event_name:"PreToolUse", session_id:$s, tool_name:"Agent", tool_input:{prompt:$p}}')
   set +e
-  BUDGET_OUT=$(printf '%s' "$payload" | GOVERNANCE_PROJECT_DIR="$BUDGET_TMP" GOVERNANCE_RUNTIME_ROOT="$BUDGET_GIT_DIR/governance-runtime" \
+  BUDGET_OUT=$(printf '%s' "$payload" | GOVERNANCE_READ_ONLY="${3:-0}" GOVERNANCE_PROJECT_DIR="$BUDGET_TMP" GOVERNANCE_RUNTIME_ROOT="$BUDGET_GIT_DIR/governance-runtime" \
     GOVERNANCE_STATE_DIR="$BUDGET_GIT_DIR/governance-runtime" GOVERNANCE_TELEMETRY_OPT_IN=0 bash "$HOOK" 2>"$BUDGET_TMP/stderr")
   EXIT=$?
   set -e
@@ -154,6 +158,20 @@ run_budget "sess-Q" "讀 Tag 的 spec"
 expect_budget "B6b. 第一次被擋、提醒沒送出 → 第二次仍提醒" reminder
 run_budget "sess-Q" "再讀 Badge 的 spec"
 expect_budget "B6c. 提醒送出之後 → 同 session 靜默" silent
+# B7. READ_ONLY=1(CI replay / hooks:test 的 run-all.sh):功能狀態唯讀 → 一筆都不寫;記不住 → 同 session 每次都提醒
+#     (hook 檔頭「寫不了 runtime 狀態時記不住 → 照舊每次提醒」)
+BUDGET_LINES_BEFORE=$(wc -l < "$BUDGET_GIT_DIR/governance-runtime/dispatch-budget.jsonl" 2>/dev/null | tr -d ' ')
+run_budget "sess-RO" "讀 Tag 的 spec" 1
+expect_budget "B7a. READ_ONLY=1 第一次 → 提醒" reminder
+run_budget "sess-RO" "再讀 Badge 的 spec" 1
+expect_budget "B7b. READ_ONLY=1 記不住 → 第二次照樣提醒" reminder
+BUDGET_LINES_AFTER=$(wc -l < "$BUDGET_GIT_DIR/governance-runtime/dispatch-budget.jsonl" 2>/dev/null | tr -d ' ')
+if [ -n "$BUDGET_LINES_BEFORE" ] && [ "$BUDGET_LINES_BEFORE" = "$BUDGET_LINES_AFTER" ] \
+  && ! grep -qF '"sess-RO"' "$BUDGET_GIT_DIR/governance-runtime/dispatch-budget.jsonl"; then
+  echo "  PASS  B7c. READ_ONLY=1 一筆都沒寫(${BUDGET_LINES_BEFORE} 行 → ${BUDGET_LINES_AFTER} 行)"; PASS=$((PASS+1))
+else
+  echo "  FAIL  B7c. READ_ONLY=1 仍寫入(${BUDGET_LINES_BEFORE:-?} → ${BUDGET_LINES_AFTER:-?})"; FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - B7c"
+fi
 
 echo ""
 echo "=== Summary ==="

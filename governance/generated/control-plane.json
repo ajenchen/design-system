@@ -142,7 +142,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 221,
-      "hash": "sha256:9f9e78737f9c1e06505726073b1af9076ee062d44193468b1bd81c1462941fdf",
+      "hash": "sha256:e7567d8233586ce5ca9a782d453626acb0a4f4c213b9327ee173709ab606e3ac",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2604,12 +2604,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:c8166c626a4510b0f590f8780743f37aacac3652bd0553d39e56e1173c336edf",
+      "hash": "sha256:738c52f838bb060376d57edf69fdf1909319d580130256e341592436f830db24",
       "id": "provider-hook-coverage-artifact",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "generated/governance/provider-hook-coverage.json",
-      "size": 103929,
+      "size": 103986,
       "type": "file"
     },
     {
@@ -2640,12 +2640,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:ad593e09ee63295cd89dfcf0391542f97c0e23cd448e3fa7fb333417f6577996",
+      "hash": "sha256:7d14566be989cf9544f366cb41e1cb78433fc837a3ca939dccf1efedb828efd4",
       "id": "provider-hook-registrations",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "packages/design-system/ds-canonical/hooks/registrations.json",
-      "size": 12277,
+      "size": 12296,
       "type": "file"
     },
     {

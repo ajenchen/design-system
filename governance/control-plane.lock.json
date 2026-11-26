@@ -10,7 +10,7 @@
   "contractDigest": "sha256:2999aed4c75bc36823db0b4ea5729744c0920f74b1cd2b2e1bfb4110dd825ef1",
   "files": [
     {
-      "hash": "sha256:24596e0b83db6bf95bd476f1755227fac17f5a358ecfb08b0bc77a3655476dd7",
+      "hash": "sha256:ba9f5c4e669292de30e5c7365e50f9f3172fde61611652fe0234750ed22ca4ab",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 59307,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:b63417a4281e89c16252d28bfd90d9e79d01a0fc182469ee107855bfb8dc412e",
+      "hash": "sha256:3e846ac54562d9019c6d7ad699c784dcf789be42ee33ecdac8272343ba2a83da",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 140204,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:88bb265c9bd914fdca61c33ab517c417aba6d6468b0b8bb9a99c8736a63d84b6",
+  "inputDigest": "sha256:2c8e33644946b3d31ac37cdf10a1c55cf712ec8db4a4587f2608a40e82f835a1",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:fffe311c223e92a7132764383989130c4edf6530bc3326f5a01902f2a5df39c6",
+  "snapshotDigest": "sha256:04b6db20e1a910c02968763061306dc43d80e7ab65ef834c9d89e94149728db8",
   "sources": [
     {
       "hash": "sha256:f2452198c08c44c99dc7afcfb7f78f834d7cc2a8c97d041571db15779f388c6c",
@@ -654,7 +654,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 221,
-      "hash": "sha256:9f9e78737f9c1e06505726073b1af9076ee062d44193468b1bd81c1462941fdf",
+      "hash": "sha256:e7567d8233586ce5ca9a782d453626acb0a4f4c213b9327ee173709ab606e3ac",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3116,12 +3116,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:c8166c626a4510b0f590f8780743f37aacac3652bd0553d39e56e1173c336edf",
+      "hash": "sha256:738c52f838bb060376d57edf69fdf1909319d580130256e341592436f830db24",
       "id": "provider-hook-coverage-artifact",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "generated/governance/provider-hook-coverage.json",
-      "size": 103929,
+      "size": 103986,
       "type": "file"
     },
     {
@@ -3152,12 +3152,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:ad593e09ee63295cd89dfcf0391542f97c0e23cd448e3fa7fb333417f6577996",
+      "hash": "sha256:7d14566be989cf9544f366cb41e1cb78433fc837a3ca939dccf1efedb828efd4",
       "id": "provider-hook-registrations",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "packages/design-system/ds-canonical/hooks/registrations.json",
-      "size": 12277,
+      "size": 12296,
       "type": "file"
     },
     {
