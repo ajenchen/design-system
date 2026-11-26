@@ -114,7 +114,7 @@ Consumer 無需額外處理,保留 Radix `data-state` 屬性即可。
 
 ## 邊界狀態
 
-Empty state 由 consumer 處理(無 items 則不渲染);loading 狀態由 consumer 用 `<Skeleton />` 包;本元件無 density 概念,padding 固定為 `py-4 / pb-4`(不隨 density token 變動);trigger 左右另有焦點框的位置 4px(以負外距借回,不占版面;見「視覺規則」焦點框不壓字)—— 這 4px 畫在項目盒子外,放進**右側沒有內距的捲動容器**時,右邊這 4px 會讓那個容器多 4px 可捲寬度,容器請留內距(往左的溢出不產生捲動)【AI 推導,2026-11-27】。
+Empty state 由 consumer 處理(無 items 則不渲染);loading 狀態由 consumer 用 `<Skeleton />` 包;本元件無 density 概念,padding 固定為 `py-4 / pb-4`(不隨 density token 變動);trigger 左右另有焦點框的位置 4px(以負外距借回,不占版面;見「視覺規則」焦點框不壓字)—— 這 4px 畫在項目盒子外,放進**右側沒有內距的捲動容器**時,右邊這 4px 會讓那個容器多 4px 可捲寬度,容器請留內距(往左的溢出不產生捲動);借出的 4px 仍接指標,標題的滑過 / 點擊範圍左右各比底線寬 4px【AI 推導,2026-11-27】。
 
 **Disabled**(Accordion 是 composite 家族,**非 Field 家族**——disabled 行為由 Radix Accordion 提供,不走 field-controls SSOT):
 

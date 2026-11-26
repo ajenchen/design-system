@@ -67,12 +67,14 @@ import {
 // 溢出模式(scroll / menu)的捲動容器會裁掉第一個 tab 借出去的 4px,所以捲動容器同樣「負外距撐大、等量內距推回」
 //(Combobox `tagRowFocusRoomClass` 同一個做法),遮罩與「選到就露出來」的預留寬跟著加同一個數字,畫面位置不變。
 // 值只寫這一處:這個數字經 TabsList 外層的 `--tab-focus-room` 給 CSS 讀,遮罩 / 揭露 / inlineAction 幾何直接用數字。
+// CSS 讀它一律帶後備值 0px(`var(--tab-focus-room,0px)`):`tabsTriggerVariants` 是公開出口,在 TabsList 外單獨用時沒有這個變數,
+// 沒後備值的話選中底線的 left / right 失效、寬度變 0(2026-11-27 規格核對抓到);後備 0 = 補內距之前的樣子。閘:F7「單獨使用」那一格。
 // 閘:scripts/focus-indicator-invariants.mjs F7(框內緣到字 ≥ 2、平常畫面字與底線位置不變)。
 const TABS_FOCUS_RING_WIDTH_PX = 2 // = styles/base.css `@utility focus-ring-inset` 的線寬(outline: 2px)
 const TABS_FOCUS_ROOM_PX = TABS_FOCUS_RING_WIDTH_PX + STACK_GAP_PX
 const TABS_FOCUS_ROOM_STYLE = { '--tab-focus-room': `${TABS_FOCUS_ROOM_PX}px` } as React.CSSProperties
 // 溢出模式的捲動容器:裁切邊往外推一個焦點框的位置,內容(tablist)用等量內距推回原位
-const TABS_SCROLLER_FOCUS_ROOM_CLASS = '-mx-[var(--tab-focus-room)] px-[var(--tab-focus-room)]'
+const TABS_SCROLLER_FOCUS_ROOM_CLASS = '-mx-[var(--tab-focus-room,0px)] px-[var(--tab-focus-room,0px)]'
 
 // ── Size context ──
 type TabsSize = 'sm' | 'md' | 'lg'
@@ -217,7 +219,7 @@ Tabs.displayName = 'Tabs'
 const TABS_LIST_BASE = [
   'inline-flex items-stretch',
   // 字與字的距離 = --layout-space-loose;每個 tab 左右各多一個焦點框的位置(TABS_FOCUS_ROOM_PX),gap 扣掉兩份
-  'gap-[calc(var(--layout-space-loose)_-_2_*_var(--tab-focus-room))]',
+  'gap-[calc(var(--layout-space-loose)_-_2_*_var(--tab-focus-room,0px))]',
   'border-b border-divider',
 ].join(' ')
 
@@ -502,11 +504,11 @@ const tabsTriggerVariants = cva(
     'focus-visible:focus-ring-inset',
     // 左右各一個焦點框的位置(TABS_FOCUS_ROOM_PX = 框 2px + --stack-gap 2px):框內緣離字 2px,不壓字(2026-11-27 E13 A)。
     // 第一個 / 最後一個 tab 往外借同一個寬度、TabsList 的 gap 扣掉兩份 → 字的位置與補之前相同(第一個字仍對齊下方內容左緣)。
-    'px-[var(--tab-focus-room)] first:-ml-[var(--tab-focus-room)] last:-mr-[var(--tab-focus-room)]',
+    'px-[var(--tab-focus-room,0px)] first:-ml-[var(--tab-focus-room,0px)] last:-mr-[var(--tab-focus-room,0px)]',
     // selected underline：::after 絕對定位在 bottom:-1px，2px primary（持續選中 base）
     // 兩端各縮一個焦點框的位置 → 底線仍貼字寬(tabs.spec.md「label 不包 padding wrapper」的用意:底線 fit content)
     // 底線蓋住 TabsList 的 1px gray border，視覺單一線條
-    'after:absolute after:left-[var(--tab-focus-room)] after:right-[var(--tab-focus-room)] after:bottom-[-1px] after:h-0.5',
+    'after:absolute after:left-[var(--tab-focus-room,0px)] after:right-[var(--tab-focus-room,0px)] after:bottom-[-1px] after:h-0.5',
     'after:bg-transparent after:transition-colors after:duration-150',
     // hover（未選）：文字轉深
     'hover:text-foreground',

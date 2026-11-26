@@ -41,7 +41,10 @@
 //        F7-零位移 平常畫面(未聚焦)量內容本身,不量盒子:第一個分頁的字貼齊 tablist 內容左緣、字與字相距 `--layout-space-loose`、
 //                  選中底線兩端 = 字(含徽章)兩端、inlineAction 與字相距 8px;Accordion 標題字左緣 = 項目左緣、箭頭右緣 = 項目右緣。
 //                  這些正是補內距之前的幾何(盒子 = 內容)→ 修前修後都要綠;只補內距不借回 / 只借不補,這幾格就紅。
-//        對照組 `--selftest-focus-room`:把補的內距(與捲動容器外推)拿掉 → 距離、零位移、不被裁三類各指定的格必紅。
+//        F7-單獨使用 `tabsTriggerVariants` 是公開出口:套在 TabsList 外的按鈕上(沒有 `--tab-focus-room`),選中底線寬 = 按鈕寬 > 0
+//                  (變數讀取一律帶後備值 0px;2026-11-27 規格核對抓到沒後備值時底線寬 0)。
+//        對照組 `--selftest-focus-room`:把補的內距(與捲動容器外推)拿掉、把「單獨使用」的底線改回沒有後備值的寫法
+//        → 距離、零位移、不被裁、單獨使用四類各指定的格必紅。
 //        另一面「改回修前 → 距離格紅、零位移格綠」用 `--static-dir <修前建置>` 手動跑(CI 只有現行建置;收據寫在 progress / 交接)。
 //
 // 為什麼用真瀏覽器:F1 的「差異集合」與 F2 的「有幾個框」都只有 computed style 答得出來。
@@ -117,7 +120,9 @@ if (SELFTEST_ROOM) {
       style.id = '__selftest_strip_focus_room'
       style.textContent = '[role="tab"]{padding-left:0!important;padding-right:0!important}' +
         ':has(> [data-slot="tabs-list"]){margin-left:0!important;margin-right:0!important;padding-left:0!important;padding-right:0!important}' +
-        'h3[data-orientation] > button{padding-left:0!important;padding-right:0!important}'
+        'h3[data-orientation] > button{padding-left:0!important;padding-right:0!important}' +
+        // 「單獨使用」那一格的對照:把底線兩端改回沒有後備值的寫法(= 規格核對前的 class),底線寬必須變 0、那一格紅
+        '[data-f7-standalone]::after{left:var(--tab-focus-room)!important;right:var(--tab-focus-room)!important}'
       ;(document.head || document.documentElement).appendChild(style)
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply)
@@ -264,6 +269,24 @@ const ringCheck = async (label, sel) => {
     check('F7-零位移 Tabs 預設:選中底線兩端 = 字(含徽章)兩端', !!sel && near(sel.ul.left, sel.cb.left) && near(sel.ul.right, sel.cb.right),
       sel ? `${sel.name} 底線 ${f2(sel.ul.left)}–${f2(sel.ul.right)} / 字 ${f2(sel.cb.left)}–${f2(sel.cb.right)}` : '沒有選中的分頁')
   }
+  // ── 單獨使用 tabsTriggerVariants(公開出口,index.ts):放在 TabsList 外、沒有 --tab-focus-room 時,選中底線仍要畫得出來 ──
+  // 2026-11-27 規格核對抓到:變數沒有後備值時 ::after 的 left / right 失效、寬度 0,底線整條消失(修前可用 = 改壞既有東西)。
+  // 做法:拿這頁選中分頁的 class(= cva 輸出)套到 body 底下的新按鈕上量 ::after 寬。後備值 0 → 底線寬 = 按鈕寬(補內距之前的樣子)。
+  const sa = await pg.evaluate(() => {
+    const src = document.querySelector('[role="tab"][aria-selected="true"]')
+    if (!src) return { err: '找不到選中的分頁(拿不到 class)' }
+    const b = document.createElement('button')
+    b.className = src.className; b.setAttribute('data-state', 'active'); b.setAttribute('data-f7-standalone', ''); b.textContent = '總覽'
+    document.body.appendChild(b)
+    const r = b.getBoundingClientRect(), a = getComputedStyle(b, '::after')
+    const out = { room: getComputedStyle(b).getPropertyValue('--tab-focus-room').trim(), ulWidth: parseFloat(a.width), boxWidth: r.width, bg: a.backgroundColor }
+    b.remove()
+    return out
+  })
+  if (sa.err) check('F7-單獨使用 tabsTriggerVariants', false, sa.err)
+  else check('F7-單獨使用 tabsTriggerVariants(TabsList 外,沒有 --tab-focus-room):選中底線寬 = 按鈕寬 > 0',
+    sa.room === '' && sa.ulWidth > 0 && near(sa.ulWidth, sa.boxWidth),
+    `--tab-focus-room「${sa.room}」 底線寬 ${f2(sa.ulWidth)} / 按鈕寬 ${f2(sa.boxWidth)} 底線色 ${sa.bg}`)
   if (await tabTo(TAB, 'F7-距離 Tabs')) {
     const m = await ringCheck('F7-距離 Tabs 預設', TAB)
     if (!m.err) check('F7-距離 Tabs 預設:前提 —— 聚焦的是第一個分頁(往外借位的那一個)、框沒被祖先切掉', m.first === true && m.clipped.length === 0,
@@ -309,7 +332,7 @@ const ringCheck = async (label, sel) => {
 if (SELFTEST_ROOM) {
   console.log(out.join('\n'))
   // 拿掉補的內距 → 三類格各指定一條必紅;少紅一條 = 那一類的綠燈不算證據
-  const MUST = ['F7-距離 Tabs 預設:框內緣', 'F7-距離 Accordion 預設:框內緣', 'F7-零位移 Tabs 預設:第一個字', 'F7-零位移 Accordion:字左緣', 'F7-不被裁 Tabs 溢出捲動:']
+  const MUST = ['F7-距離 Tabs 預設:框內緣', 'F7-距離 Accordion 預設:框內緣', 'F7-零位移 Tabs 預設:第一個字', 'F7-零位移 Accordion:字左緣', 'F7-不被裁 Tabs 溢出捲動:', 'F7-單獨使用 tabsTriggerVariants']
   const reds = out.filter((l) => l.startsWith('✗ '))
   const missing = MUST.filter((m) => !reds.some((l) => l.startsWith(`✗ ${m}`)))
   await br.close(); await server.stop()
