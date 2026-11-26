@@ -1351,8 +1351,16 @@ const BLOCKS = {
       const hit = document.elementFromPoint(x, y)
       return { under: under ? stopOf(under)?.getAttribute('data-calendar-day') ?? null : null, cursor: hit ? getComputedStyle(hit).cursor : null, inCell: Boolean(hit?.closest('[role="gridcell"]')) }
     }, at)
-    // 捲軸只在指標進到捲動區時畫出來(ScrollArea 的 Radix type="hover"):先把指標放進週列,再找捲軸與滑塊(都在格陣裡)
-    await page.mouse.move(vp.x, vp.y)
+    // 捲軸只在指標進到捲動區時畫出來(ScrollArea 的 Radix type="hover",只聽 pointerenter / pointerleave):指標從格陣外分段移進週列,
+    // 再滾一下週列(2026-11-26 前這一區先量捲動,捲軸是在滾輪之後找的),等捲軸滑塊本身出現(不睡固定時間,M32 第四問)
+    await page.mouse.move(0, 0)
+    await frames()
+    await page.mouse.move(vp.x, vp.y, { steps: 4 })
+    await page.mouse.wheel(0, 61)
+    await page.waitForFunction(() => {
+      const t = document.querySelector('[role="grid"] [data-radix-scroll-area-viewport] ~ [data-orientation="vertical"]')?.firstElementChild?.getBoundingClientRect()
+      return Boolean(t && t.height > 0)
+    }, null, { timeout: 3000 }).catch(() => {})
     await frames()
     const bar = await page.evaluate(() => {
       const sb = document.querySelector('[role="grid"] [data-radix-scroll-area-viewport] ~ [data-orientation="vertical"]')
