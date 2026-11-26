@@ -86,17 +86,31 @@ export function radixTriggerOf(content: Element | null): HTMLElement | null {
  * 消費者:DialogContent、SheetContent、FileViewer(不經 DialogContent、直接用 Radix Dialog;2026-10-20 前自己記 `captureFocusOrigin`、少了
  * `persistentOpenerOf` 那一步 → 從選單項開、關閉後焦點掉到 body,獨立驗證 OV-01)。
  */
-export function useTriggerlessFocusReturn(modal: boolean): {
+export function useTriggerlessFocusReturn(modal: boolean, { preferLiveOpener = false }: {
+  /**
+   * 關閉時開啟者本身還在、而且它所在的那一層(選單 / 浮層)沒有關 → 還給開啟者本身,不換成那一層的觸發鈕(2026-11-27,PopoverContent 用;H20)。
+   * 為什麼 Popover 要、Dialog 不要:錨點型 Popover 可以從**還開著的**另一層浮層裡開(篩選面板裡的欄位),那時改記外層觸發鈕 = 焦點跳出外層、外層跟著關;
+   * Dialog 從選單項開時選單早已關掉,`persistentOpenerOf` 的替代才是對的(Dialog / Sheet / FileViewer 照舊不傳,行為不變)。
+   */
+  preferLiveOpener?: boolean
+} = {}): {
   onOpenAutoFocus: (event: Event) => void
   onCloseAutoFocus: (event: Event) => void
 } {
   const openerRef = React.useRef<HTMLElement | null>(null)
+  const rawOpenerRef = React.useRef<HTMLElement | null>(null)
   return {
     // FocusScope 派發 onOpenAutoFocus 時焦點還沒搬進來 → 讀到的是開啟者;住在選單裡的開啟者改記選單的觸發鈕
-    onOpenAutoFocus: () => { openerRef.current = persistentOpenerOf(captureFocusOrigin()) },
+    onOpenAutoFocus: () => {
+      rawOpenerRef.current = captureFocusOrigin()
+      openerRef.current = persistentOpenerOf(rawOpenerRef.current)
+    },
     onCloseAutoFocus: (event) => {
       // 不在這裡清掉:modal 收起那一刻若沒還成,卸載時會再呼叫一次(useExitStartFocusReturn 的 (2));下一次開啟時 onOpenAutoFocus 會重記
-      const opener = openerRef.current
+      const raw = rawOpenerRef.current
+      const rawLayer = raw?.closest('[role="menu"], [data-radix-popper-content-wrapper] > [role]')
+      const rawLive = preferLiveOpener && !!raw?.isConnected && rawLayer?.getAttribute('data-state') !== 'closed'
+      const opener = rawLive ? raw : openerRef.current
       const content = event.currentTarget instanceof Element ? event.currentTarget : null
       const trigger = radixTriggerOf(content)
       // 有觸發點:Radix 自己會還,這裡只接手指標造成的收起(不畫鍵盤框);沒有:一律還

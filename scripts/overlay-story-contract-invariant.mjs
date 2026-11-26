@@ -23,14 +23,15 @@
  *         兩欄 dialog 組合(2026-11-26,R21–R24;overlay-surface.spec.md「兩欄 dialog 組合 canonical」,設定類 = C14 user 選「A:頂部全寬標題列 + 左分類 + 右內容(右欄頂端可選標題 = 選中分類)」):
  *         Dialog 展示「超大檔位:兩欄個人設定」與「超大檔位:兩欄記錄詳情」按開後(md / lg)—— 標題列左右貼外殼內緣、兩欄從標題列底下開始(R21);
  *         × 只有一顆、在標題列裡、是最右邊的按鈕且右緣貼標題列內距(R22);兩欄各有一個捲動區,往一欄塞 3000px 再捲,它自己捲得動、另一欄與標題列不動(R23);
- *         右欄沒有 SurfaceHeader / <header>、捲動區從右欄頂端開始、欄內標題都在捲動區裡(R24)。為什麼擴這支、不另開:同一條規則只由一支閘守,
+ *         右欄沒有 SurfaceHeader / <header>、捲動區從右欄頂端開始、欄內標題都在捲動區裡(R24);右欄內容上方 = tight(R25,2026-11-27 user 回 H24a
+ *         「確保左邊是 sidebar 右邊有按照 layout space 設計原則即可…」:兩欄頂端不要求對齊,右欄照 layoutSpace 規則 2)。為什麼擴這支、不另開:同一條規則只由一支閘守,
  *         這支已是「浮層範例契約」的住處(按開 Dialog、量像素、每列各自拆修法),兩欄的幾何此前沒有任何閘量(consumer 端 check_consumer_app_invariants.sh C19 只看原始碼簽名)。
  *   紅: 任一列不符 → 逐列點名 exit 1。`--selftest`:靜態每列注入一個修前形狀(2026-10-20 前的原始碼片段)必須紅在那一列;
  *       真建置每列在頁面上拆掉修法(拿掉字色 / 陰影、移一則說明、把觸發點設成不可聚焦、換掉 CTA 的事件、拿掉欄的主題、
  *       寫回懸空的 aria-describedby、把卡片移開、把標題改回舊名、把地標名稱改回英文、把按鈕字改回英文、把兩個欄位值對調、拿掉欄位值的 break-words、
  *       把 break-words 換成 break-all、把溢出清單改成橫排、把 Coachmark 頁腳改成靠左、Coachmark 媒體區上方 / 左邊各多 4px、
  *       Coachmark 外殼壓回置中觸發點時的可用高度 370px、Coachmark 內容區改成不縮、兩欄 dialog 的標題列只蓋左半 / × 搬到右欄右上角浮著 /
- *       兩欄共用一條捲軸 / 右欄頂端多一條標題列)必須紅在那一列 —— 少一列沒紅 = 量具沒在量它宣稱的東西 → exit 1;
+ *       兩欄共用一條捲軸 / 右欄頂端多一條標題列 / 右欄上方改成 8)必須紅在那一列 —— 少一列沒紅 = 量具沒在量它宣稱的東西 → exit 1;
  *       另有「乾淨對照」:注入本來就正確的歷史句(S5)不得讓任何一列紅 —— 防止量具把對的東西判錯、逼人改寫正確的句子(M37)。
  *       對修前建置(`--build=<修前 storybook-static>`)跑 = 天然對照組。
  *   綠: 現行原始碼與建置每列都量到且符合;找不到要量的元素、story 開不起來、建置缺 = 儀器失效(exit 2,M37:沒量到 ≠ 沒發生),不讀成通過。
@@ -436,7 +437,7 @@ const ROWS = {
   R4: 'HoverCard 原則頁:@mention 觸發點 Tab 到得了、到了就開卡;頁面沒有原生 title 提示(OV-V02 / OV-07)',
   R5: 'Coachmark 原則頁每顆 CTA 真的有作用:知道了 / 略過 / 完成 關卡片,下一步 / 上一步 換步(OV-08)',
   R6: 'Toast「有標題與描述」淺 / 深兩欄各畫自己標的主題,欄標在兩種頁面都看得清楚(OV-03)',
-  R7: '開著的 Dialog / Sheet / FileViewer:aria-describedby 不指向不存在的元素,也不印 Missing Description 警告(OV-15)',
+  R7: '開著的 Dialog / Sheet / FileViewer:aria-describedby 不指向不存在的元素,也不印 Missing Description 警告(OV-15);危險操作確認框的 aria-describedby 指到後果句(dialog.spec.md「A11y 預設」確認框的後果句;2026-11-27 H21)',
   R8: 'Elevation「層級對比」Popover 卡真的疊在 Card 上(OV-V06)',
   R9: 'Sheet「編輯成員詳情」改名存檔後再打開,標題與觸發鈕跟著存下的名字(OV-V04)',
   R10: '通知清單地標名稱是 DS 預設中文「通知」(OV-V05)',
@@ -454,6 +455,7 @@ const ROWS = {
   R22: '兩欄 dialog:× 只有一顆、在標題列裡、是標題列最右邊的按鈕且右緣貼標題列內距(overlay-surface.spec.md「兩欄 dialog 組合 canonical」第 4 條 + dialog.spec.md「關閉按鈕」)',
   R23: '兩欄 dialog:兩欄各有自己的捲動區、各自捲 —— 捲一欄時另一欄與標題列不動(overlay-surface.spec.md「兩欄 dialog 組合 canonical」第 1 條)',
   R24: '兩欄 dialog:右欄沒有第二條標題列 —— 沒有 SurfaceHeader / <header>,捲動區從右欄頂端開始,欄內標題在捲動區裡隨內容捲(overlay-surface.spec.md「左導覽 + 右內容」+ header-canonical.spec.md「何時不用」)',
+  R25: '兩欄 dialog:右欄內容上方 = tight(右欄照 layoutSpace 規則 2,第一個是標題 / 屬性清單等一般元素;兩欄頂端不要求對齊 —— overlay-surface.spec.md「左導覽 + 右內容」,user 2026-11-27 H24a)',
 }
 const results = new Map()
 const mark = (id, ok, detail = []) => {
@@ -724,6 +726,32 @@ async function runRuntime({ mutateRow = null } = {}) {
       const warned = consoleLines.filter((l) => /Missing `Description`/.test(l))
       rec('R7', dangling.length === 0 && warned.length === 0, `${id.split('--').join(' ')}:aria-describedby 指向不存在的 ${dangling.join(', ') || '-'};Missing Description 警告 ${warned.length} 次`)
     }
+    // R7 確認框的後果句綁成說明(2026-11-27,產品 canary 回報 H21;dialog.spec.md「A11y 預設」確認框的後果句):
+    // 危險操作確認框的 aria-describedby 指到的元素存在、字含那一句後果。三處:Dialog 展示「危險操作」(按「刪除專案」開)、test-only「開啟狀態」、
+    // AgentPanel 歷史浮層裡第一列的「刪除」開的確認框(DS 元件內建)。同一列的拆法(把 aria-describedby 換成不存在的 id)也讓這一格紅。
+    const CONSEQUENCE = [
+      ['design-system-components-dialog-展示--destructive', 'button', '刪除專案', '刪除後無法復原'],
+      ['design-system-components-dialog-展示--open-snapshot', null, null, '這個操作無法復原'],
+      ['design-system-components-agentpanel-展示--history-open', 'inline', '刪除', '不可復原'],
+    ]
+    for (const [id, how, trigger, phrase] of CONSEQUENCE) {
+      await open(id)
+      if (how === 'button') await page.getByRole('button', { name: trigger, exact: true }).click({ timeout: 10_000 }).catch(() => {})
+      if (how === 'inline') {
+        await waitFor((t) => !!document.querySelector(`[role="dialog"] button[aria-label="${t}"]`), trigger, `${id} 歷史浮層裡的「${trigger}」鈕`)
+        await page.evaluate((t) => document.querySelector(`[role="dialog"] button[aria-label="${t}"]`)?.click(), trigger)
+      }
+      await waitFor((p) => [...document.querySelectorAll('[role="dialog"][data-state="open"]')].some((d) => d.textContent?.includes(p)), phrase, `${id} 開著、含「${phrase}」的確認框`)
+      await settle(300)
+      await mutate('R7')
+      const got = await page.evaluate((p) => {
+        const d = [...document.querySelectorAll('[role="dialog"][data-state="open"]')].find((x) => x.textContent?.includes(p))
+        const ids = (d?.getAttribute('aria-describedby') ?? '').split(/\s+/).filter(Boolean)
+        const text = ids.map((x) => document.getElementById(x)?.textContent ?? '').join(' ')
+        return { ids, text }
+      }, phrase)
+      rec('R7', got.text.includes(phrase), `${id.split('--').join(' ')}:確認框 aria-describedby = ${got.ids.join(' ') || '(沒有)'},指到的字「${got.text.slice(0, 40)}」不含後果句「${phrase}」`)
+    }
 
     // R8 Elevation 層級對比
     await open('design-system-tokens-elevation--overview')
@@ -937,7 +965,7 @@ async function runRuntime({ mutateRow = null } = {}) {
     ]
     for (const [storyId, trigger, what] of TWO_PANE) {
       for (const density of ['md', 'lg']) {
-        for (const row of ['R21', 'R22', 'R23', 'R24']) {
+        for (const row of ['R21', 'R22', 'R23', 'R24', 'R25']) {
           await open(storyId, { density })
           await page.getByRole('button', { name: trigger, exact: true }).click({ timeout: 10_000 }).catch(() => {})
           await waitFor(() => {
@@ -999,6 +1027,15 @@ async function runRuntime({ mutateRow = null } = {}) {
               splitInScroller: !!split.closest(VP),
               scroll,
               right: { secondHeader, headingsOutside, vpTopGap: rr && rvp ? rvp.getBoundingClientRect().top - rr.top : NaN },
+              // R25:右欄內容上方 = 捲動區頂 → 第一個看得見的內容頂(捲在最上面時);期望值讀那一層的 --layout-space-tight(md 12 / lg 16)
+              rightContent: (() => {
+                if (!rvp) return null
+                rvp.scrollTop = 0
+                const body = rvp.querySelector('[data-layout-body]')
+                const first = body ? [...body.children].find(vis) : null
+                if (!body || !first) return null
+                return { gap: first.getBoundingClientRect().top - rvp.getBoundingClientRect().top, tight: parseFloat(getComputedStyle(body).getPropertyValue('--layout-space-tight')), what: first.tagName.toLowerCase() }
+              })(),
             }
           })
           if (!m) fail(`${what}(${density}):找不到開著的對話框、兩欄區或標題列`)
@@ -1015,6 +1052,11 @@ async function runRuntime({ mutateRow = null } = {}) {
             const bad = m.scroll.filter((s) => !s.ok).map((s) => s.why)
             rec('R23', m.cols === 2 && m.vpCounts.every((n) => n === 1) && !m.splitInScroller && bad.length === 0,
               `${tag}:每欄捲動區數 ${m.vpCounts.join(' / ')}(應各 1)${m.splitInScroller ? ';兩欄被包在同一個捲動區裡' : ''}${bad.length ? `;${bad.join(';')}` : ''}`)
+          } else if (row === 'R25') {
+            const c = m.rightContent
+            if (!c || !Number.isFinite(c.tight)) fail(`${what}(${density}):右欄捲動區裡找不到 data-layout-body 或第一個內容,或讀不到 --layout-space-tight —— 量不到右欄上方`)
+            rec('R25', Math.abs(c.gap - c.tight) <= 0.5,
+              `${tag}:右欄捲動區頂 → 第一個內容(${c.what})= ${c.gap.toFixed(1)}(應 tight ${c.tight})`)
           } else {
             rec('R24', m.right.secondHeader === 0 && m.right.headingsOutside === 0 && Math.abs(m.right.vpTopGap) <= 0.5,
               `${tag}:右欄標題列 ${m.right.secondHeader} 條(應 0)、捲動區外的標題 ${m.right.headingsOutside} 個(應 0)、捲動區頂離右欄頂 ${Number.isNaN(m.right.vpTopGap) ? '-' : m.right.vpTopGap.toFixed(1)}(應 0)`)
@@ -1190,6 +1232,11 @@ const MUTATIONS = {
     bar.style.cssText = 'height:48px;flex:none;border-bottom:1px solid currentColor'
     bar.textContent = '通知'
     col.prepend(bar)
+  },
+  // R25:右欄上方改成 8(H24a 決策卡選項 B「右欄上方改 8,跟左欄底色齊」的形狀)—— 不再是 tight
+  R25: () => {
+    const body = document.querySelector('[role="dialog"][data-state="open"] [data-dialog-body]')?.lastElementChild?.querySelector('[data-radix-scroll-area-viewport] [data-layout-body]')
+    if (body) body.style.setProperty('padding-top', '8px', 'important')
   },
   // R16:照 action-bar :109「沒有標題 → 靠左」的錯誤推論把頁腳改成靠左(單步卡)
   R16: () => { const card = document.querySelector('[role="dialog"].w-80'); const g = [...(card?.querySelectorAll('button') ?? [])].at(-1)?.closest('div')?.parentElement; if (g) g.style.justifyContent = 'flex-start' },

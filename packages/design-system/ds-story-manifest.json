@@ -752,6 +752,7 @@
           "design-system-components-dialog-展示--long-content",
           "design-system-components-dialog-展示--destructive",
           "design-system-components-dialog-展示--list-body",
+          "design-system-components-dialog-展示--empty-body",
           "design-system-components-dialog-展示--header-actions",
           "design-system-components-dialog-展示--large-with-table",
           "design-system-components-dialog-展示--extra-large-two-column",
@@ -1908,5 +1909,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1071
+  "totalStories": 1072
 }

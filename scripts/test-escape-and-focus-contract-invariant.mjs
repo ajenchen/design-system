@@ -11,6 +11,7 @@
 //   Calendar 出格回長條 DOM 所在那一天(不記進格那一天)
 // 2026-11-26(產品 canary 回報 C11 / C13 / C20):Dialog / Sheet 殼不抑制焦點框 / 背景頁側欄不看 modal / 不可收合側欄攔 ⌘B / 不可收合側欄寫 cookie /
 //   行內動作鈕不看自身停用
+// 2026-11-27(產品 canary 回報 H20):Popover 沒有觸發點時不還焦點 / 還焦點當成 modal(按在外面也搶回)
 // —— 各自必須剛好紅它負責的契約列,對照列全程綠)必紅。跑法與判準的單一實作住 scripts/lib/gate-selftest-meta.mjs。
 import { runGateSelftestMeta } from './lib/gate-selftest-meta.mjs'
 

@@ -87,6 +87,8 @@ export const SIDES = {
   'header-with-tabs': { last: 'element', box: 'hug', pattern: 'AB' },
   'fileviewer-info-panel': { last: 'element', box: 'fill', pattern: 'AB' },
   'dialog-body': { last: 'element', box: 'fill', pattern: 'AB' },
+  // 主體只有空狀態(2026-11-27 H10):空狀態在撐滿的主體裡正中 → 底不套規則 4(原閘 centered),左右照 DialogBody 給 loose
+  'dialog-empty-centered': { last: 'element', box: 'fill', pattern: 'AB' },
   'sheet-body': { last: 'element', box: 'fill', pattern: 'AB' },
   'surface-body': { last: 'element', box: 'hug', pattern: 'AB' },
   'header-anatomy-surface': { last: 'element', box: 'hug', pattern: 'AB' },
@@ -226,7 +228,7 @@ function selftest() {
   // 置中的格(原閘 centered;user 2026-11-14 在 A5 成品頁的留言 ②):底不套規則 4 —— 修後實量 0 綠;A5 建置的 48 也不在本閘紅(上下由原閘驗在可用範圍正中);
   // 左右照舊(改 tight 必紅);底沒量到照樣儀器失效。對照組:拿掉 centered(= A5 的判法:撐滿 → 第 1 列 48)→ 修後的底 0 必紅「應 48」,證明這一支真的在起作用
   const CENTERED = CASES.filter((c) => c.centered).map((c) => c.id)
-  expect(JSON.stringify([...CENTERED].sort()) === JSON.stringify(['agentpanel-new-conversation', 'appshell-full-page-403', 'appshell-full-page-404']), `置中的格應是新對話空白頁與整頁 404 / 403(與原閘同一份登記),實得 ${CENTERED.join(', ')}`)
+  expect(JSON.stringify([...CENTERED].sort()) === JSON.stringify(['agentpanel-new-conversation', 'appshell-full-page-403', 'appshell-full-page-404', 'dialog-empty-centered']), `置中的格應是新對話空白頁、整頁 404 / 403 與對話框主體只有空狀態(與原閘同一份登記),實得 ${CENTERED.join(', ')}`)
   // 整頁 404 / 403(2026-11-26):同一套置中判法 —— 底 0 / 48 都不在本閘紅、左改 tight 紅
   for (const id of CENTERED.filter((x) => x !== 'agentpanel-new-conversation')) {
     expect(judge(DENSITIES.map((d) => row(id, d, { bottom: 0 }))).length === 0, `${id} 置中的格底 0 應綠`)

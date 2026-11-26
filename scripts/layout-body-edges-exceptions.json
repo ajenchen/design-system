@@ -30,6 +30,17 @@
       "source": "empty.spec.md「整頁狀態」第 4 點;layoutSpace.spec.md 規則 2「適用範圍與量法三點」(3)。userQuote 是 user 在第六輪決策卡 C22 選的選項 A 的原文(意見欄空白)",
       "userQuote": "A:不建元件;Empty 可用在整頁 + AppShell 範例,狀態置中",
       "quoteDate": "2026-11-26"
+    },
+    {
+      "key": "dialog-empty-body-centered",
+      "stories": [
+        "design-system-components-dialog-展示--empty-body"
+      ],
+      "container": "[data-layout-body]:has(> [data-empty]:only-child), [data-dialog-body]:has([data-layout-body] > [data-empty]:only-child)",
+      "reason": "對話框主體只有一個空狀態(從分享連結打開已不存在的任務):主體撐滿可視高、空狀態垂直置中,上下同值,不套規則 4 的結論留白(上下在不在主體可視區正中由 header-first-gap 的 dialog-empty-centered 驗)。2026-11-27 產品 canary 回報 H10",
+      "source": "empty.spec.md「垂直定位」有框 → 垂直置中;layoutSpace.spec.md 規則 2「適用範圍與量法三點」(3)與規則 4 Note(第 2 列不給 48 那一段引的同一則留言)。userQuote 是 user 2026-11-14 在 A5 成品頁的留言 ② 原文(該則問的就是「垂直置中」的狀態為何還要下方 bottom)",
+      "userQuote": "bottom 是創造一個空間用來表示內容已經結束了吧？但當內容區的元素很明顯的就表示該區只有這些元素，像是’撐滿容器’的 table ，或是此類’垂直置中’的狀態，到底為何還要下方有bottom?",
+      "quoteDate": "2026-11-14"
     }
   ],
   "exceptions": [

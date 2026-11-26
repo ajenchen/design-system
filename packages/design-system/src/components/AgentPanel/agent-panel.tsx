@@ -725,9 +725,9 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
     const [renameTarget, setRenameTarget] = React.useState<AgentConversationSummary | null>(null)
     const [deleteTarget, setDeleteTarget] = React.useState<AgentConversationSummary | null>(null)
     const triggerRef = React.useRef<HTMLButtonElement>(null)
-    // 改名 / 刪除對話框關閉後焦點(WCAG 2.4.3):還給開啟它的那顆行內動作鈕;那一列已跟著歷史浮層收起(焦點外移)→ 回標題觸發鈕。
-    // 對話框是受控開啟、沒有 DialogTrigger,Radix 沒有東西可還 → 由 lib/overlay-focus-return.ts 還(全 DS 一支:沒有觸發點 + modal,
-    // 開啟者不在了走 fallback)。2026-09-30 前這裡另寫一份:關閉時 setTimeout 0 聚焦標題(浮層仍開就交給 Radix),是第六份平行實作。
+    // 改名 / 刪除對話框關閉後焦點(WCAG 2.4.3):還給開啟它的那顆行內動作鈕;那一列已跟著歷史浮層收起(焦點外移)→ 回標題觸發鈕。對話框是受控開啟、沒有 DialogTrigger,Radix 沒有東西可還 → 由 lib/overlay-focus-return.ts 還
+    // (全 DS 一支:沒有觸發點 + modal,開啟者不在了走 fallback)。2026-09-30 前這裡另寫一份:關閉時 setTimeout 0 聚焦標題(浮層仍開就交給 Radix),是第六份平行實作。下一行:刪除確認框後果句的 id(aria-describedby,dialog.spec.md「A11y 預設」確認框的後果句;H21)
+    const deleteConsequenceId = React.useId()
     const dialogOpenerRef = React.useRef<HTMLElement | null>(null)
     const openDialog = (open: () => void) => {
       dialogOpenerRef.current = captureFocusOrigin()
@@ -881,12 +881,12 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
             }}
           >
             {/* 確認框:height="hug" 隨內容(dialog.spec.md「高度軸」)、寬 sm(只有一件事:一句確認;dialog.spec.md「寬度檔位」,2026-11-15 前 440)。 */}
-            <DialogContent height="hug" width="sm" onCloseAutoFocus={returnFocusFromDialog}>
+            <DialogContent height="hug" width="sm" onCloseAutoFocus={returnFocusFromDialog} aria-describedby={deleteConsequenceId}>
               <DialogHeader>
                 <DialogTitle>刪除對話</DialogTitle>
               </DialogHeader>
               <DialogBody>
-                確定刪除「{deleteTarget.title}」?此動作立即生效且不可復原。
+                <p id={deleteConsequenceId}>確定刪除「{deleteTarget.title}」?此動作立即生效且不可復原。</p>
               </DialogBody>
               <DialogFooter>
                 <Button variant="tertiary" onClick={() => setDeleteTarget(null)}>
