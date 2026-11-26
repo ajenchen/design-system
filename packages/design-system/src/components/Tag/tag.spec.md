@@ -133,7 +133,7 @@ Tag 是 inline label，用於分類標籤、狀態標記、多選已選值。不
 
 ## Solid 模式
 
-`solid` boolean prop，預設 false。開啟後使用 step-6 全色背景 + on-emphasis 配對前景（yellow / amber / orange / lime 用深字，詳下「Solid 文字色規則」），適合需要更強視覺權重的場景（狀態標記、重點標籤）。
+`solid` boolean prop，預設 false。開啟後使用 step-6 全色背景 + on-emphasis 配對前景（yellow / amber / lime 用深字，詳下「Solid 文字色規則」），適合需要更強視覺權重的場景（狀態標記、重點標籤）。
 
 ### Subtle vs Solid 選用準則(2026-06-11 user 拍板補,M8 benchmark)
 
@@ -150,11 +150,11 @@ Tag 是 inline label，用於分類標籤、狀態標記、多選已選值。不
 |---|---|---|---|---|
 | neutral | `--secondary`（neutral-3） | `--foreground` | `--color-neutral-9` | `--inverse-fg` |
 | blue | `--color-blue-1` | `--color-blue-7` | `--color-blue-6` | `--on-emphasis`（白） |
-| green | `--color-green-1` | `--color-green-7` | `--color-green-6` | `--on-emphasis`（白）★ |
+| green | `--color-green-1` | `--color-green-7` | `--color-green-6` | `--on-emphasis`（白,基準） |
 | deep-orange | `--color-deep-orange-1` | `--color-deep-orange-7` | `--color-deep-orange-6` | `--on-emphasis`（白） |
 | yellow | `--color-yellow-1` | `--color-yellow-7` | `--color-yellow-6` | **`--on-emphasis-dark`（深）** |
 | red | `--color-red-1` | `--color-red-7` | `--color-red-6` | `--on-emphasis`（白） |
-| orange | `--color-orange-1` | `--color-orange-7` | `--color-orange-6` | **`--on-emphasis-dark`（深）** |
+| orange | `--color-orange-1` | `--color-orange-7` | `--color-orange-6` | `--on-emphasis`（白） |
 | amber | `--color-amber-1` | `--color-amber-7` | `--color-amber-6` | **`--on-emphasis-dark`（深）** |
 | lime | `--color-lime-1` | `--color-lime-7` | `--color-lime-6` | **`--on-emphasis-dark`（深）** |
 | turquoise | `--color-turquoise-1` | `--color-turquoise-7` | `--color-turquoise-6` | `--on-emphasis`（白） |
@@ -162,7 +162,7 @@ Tag 是 inline label，用於分類標籤、狀態標記、多選已選值。不
 | purple | `--color-purple-1` | `--color-purple-7` | `--color-purple-6` | `--on-emphasis`（白） |
 | magenta | `--color-magenta-1` | `--color-magenta-7` | `--color-magenta-6` | `--on-emphasis`（白） |
 
-**Solid 文字色規則（on-emphasis 配對,2026-06-04）**：依 step-6 底色明暗分桶，合規門檻 = WCAG **large/bold 3:1**（solid Tag 視為大粗字，user 拍板「以最低為原則」）。底夠深 → `--on-emphasis`（白）；底太亮(白字連 3:1 都不過)→ `--on-emphasis-dark`（深，= `black-a85`，原 `warning-foreground` 改名）：**yellow / amber / orange / lime** 四個。**★ green 例外**：green-6 白字實測 2.47（連 3:1 都不過），但維持白字（沿用慣見「綠底白字」觀感）= documented exception。2026-08-04 複審後決策已定：維持現狀（既有 documented exception 無新事證），非待辦，勿再重開。**SSOT**：上表機械對應 `tokens/categorical-color.ts`（`CAT_SUBTLE` / `CAT_SOLID`，1:1 + 對比由 `categorical-color-invariants.mjs` I4 機械驗，green exempt）。
+**Solid 文字色規則（實心底字色原則,2026-11-26 user 決定）**：白字對比**不低於綠色** → `--on-emphasis`（白）；低於綠色 → `--on-emphasis-dark`（深，= `black-a85`）。綠色是 user 接受的最低白字對比，是這條原則的**基準、不是例外**；淺色、深色兩個模式各自和綠色在同一模式的值比（淺 2.47 / 深 2.21），兩個都達才是白字。目前深字只有 **yellow / amber / lime** 三個（orange 2.51 / 2.24、turquoise 3.23 / 2.77 都不低於綠色 → 白字）。user 原話（2026-11-26，節錄；三段全文在 `tokens/categorical-color.ts`）：「我認為上面是要白色，請確保整個 ds 此類邏輯配色的地方都按這個 ssot」「應該照你建議啊，而且超奇怪，2.47都過了，2.77憑什麼不過？？？」「橘色要一起改啊，2.47以上的都應該過吧？」。深字桶的深字對比照舊 ≥ 3:1（2026-06-04 user「以最低為原則」）。**換桶**（primitives 改了亮度，讓某色相跨過門檻）= 畫面變化，要 user 確認後才改；原則本身要改 = 產品決策。**SSOT**：逐色實測表與沿革在 `tokens/categorical-color.ts`「實心底字色原則」（`CAT_SOLID` / `CAT_SOLID_TOKENS`）；上表 solid 文字欄由 `categorical-color-invariants.mjs` I4 逐列核對，門檻每次由 primitives 現算。
 
 ### Dismiss 行為（Inline Action 客製）
 
@@ -225,7 +225,7 @@ Inline Action 的其他規則（尺寸、hover 背景 pattern）不變。
 | `onRemove` | `() => void` | 可移除——Tag 自動渲染 remove 按鈕並控制尺寸與互動樣式(從集合移除 item) |
 | `removeAriaLabel` | `string` | remove 按鈕 aria-label 的目標名(對齊 FileUpload `removeAriaLabel` 同場景 + `<動作>AriaLabel` 命名慣例)。**children 為非字串 ReactNode 時必傳**,否則 SR 只讀得出泛稱「移除」、辨識不出移除哪個 Tag;children 為字串時預設取 children |
 | ~~`dismissLabel`~~ | — | **已移除**(2026-07-17 改名 `removeAriaLabel`,2026-11-15 拿掉舊名;dismiss 保留給 Alert/Notice/Toast「通知被忽略」)。升版對照:`dismissLabel="…"` → `removeAriaLabel="…"` |
-| `solid` | `boolean` | 深底配對前景模式（step-6 背景；yellow/amber/orange/lime 用深字，其餘白字），預設 false |
+| `solid` | `boolean` | 深底配對前景模式（step-6 背景；yellow/amber/lime 用深字，其餘白字），預設 false |
 | `unbounded` | `boolean` | 預設 false = 寬度 cap 160px;true = 寬度交給 parent constrain（cell-as-input narrow cell 場景），詳「邊界案例」 |
 
 ## 圓角與間距

@@ -66,22 +66,47 @@ export const CAT_SUBTLE: Record<CategoricalHue, string> = {
 
 /**
  * solid 模式 class:step-6 底 + on-emphasis 配對文字。
- * 文字色依「step-6 底亮度」分桶(WCAG ≥3:1 大粗字門檻,2026-06-04 user「以最低為原則」):
- *   - 夠深的色底 → `text-on-emphasis`(白):blue / deep-orange / red / indigo / purple / magenta
- *   - 太亮的色底 → `text-on-emphasis-dark`(深):yellow / amber / orange / lime / turquoise(白字連 3:1 都不過;turquoise 2026-07-16 dark 色相修正後 L=0.68 白字 2.77 → 切深字,兩 mode 5.65/6.47 全過)
- *   - ★ green 例外:白字 2.47 連 3:1 都不過,但 user 拍板維持白字(綠底白字慣見觀感)= documented exception。
- * 對比為 oklch→相對亮度實測(scripts/categorical-color-invariants.mjs 機械驗,green 列 exempt)。
+ *
+ * **實心底字色原則**(2026-11-26 user 決定;全 DS「類別色 step-6 實心底上的字」都照這一條,字色只從本檔兩張 solid map 取):
+ *   白字對比**不低於綠色** → 白字 `text-on-emphasis`;低於綠色 → 深字 `text-on-emphasis-dark`。
+ *   綠色 = user 接受的最低白字對比,是這條原則的**基準**,不是例外。淺色、深色兩個模式各自和綠色在同一模式的值比較
+ *  (兩個模式都達門檻才是白字)。
+ * user 原話(2026-11-26,依序逐字):
+ *   1.「turquoise的 solid tag的配色為何其上字體不是跟blue上的字體顏色一樣都是白色？這是何時改的？這個沒經過我同意吧？我認為上面是要白色，請確保整個 ds 此類邏輯配色的地方都按這個 ssot」
+ *   2. 選「白字,照綠色先例登記例外 (Recommended)」並寫「應該照你建議啊，而且超奇怪，2.47都過了，2.77憑什麼不過？？？」
+ *   3.「橘色要一起改啊，2.47以上的都應該過吧？」
+ *   「以綠色為基準、兩個模式各自比較」是依這三段整理成一條的寫法,回覆 user 時已列出、user 未反對【AI 整理;深色門檻 2.21 是 AI 推導 —— user 原話只提到淺色的 2.47】。
+ * 實測(oklch → 相對亮度;`scripts/categorical-color-invariants.mjs` I4 每次由 primitives 現算門檻,並逐格核對下表 —— 數字或字色和現算不符就紅):
+ *   | 色相 | 淺 白字 | 深 白字 | 字 |
+ *   | green | 2.47 | 2.21 | 白(基準) |
+ *   | blue | 5.20 | 3.69 | 白 |
+ *   | deep-orange | 4.67 | 3.78 | 白 |
+ *   | red | 7.19 | 6.36 | 白 |
+ *   | indigo | 5.99 | 4.90 | 白 |
+ *   | purple | 6.05 | 4.84 | 白 |
+ *   | magenta | 5.11 | 4.12 | 白 |
+ *   | turquoise | 3.23 | 2.77 | 白 |
+ *   | orange | 2.51 | 2.24 | 白 |
+ *   | amber | 1.98 | 1.78 | 深 |
+ *   | lime | 1.73 | 1.57 | 深 |
+ *   | yellow | 1.49 | 1.42 | 深 |
+ * 深字桶的深字對比照舊要 ≥ 3:1(2026-06-04 user「以最低為原則」的大粗字門檻;同一支閘驗)。
+ * **換桶**(primitives 改了某色相亮度,讓它跨過門檻)= 畫面變化:閘只會紅、不會自動換,要 user 確認後才同時改上表與兩張 solid map。
+ * **原則本身要改**(換基準色、改門檻)= 產品／UI／UX 決策(AGENTS.md#canonical-decision-authority)。
+ * 沿革:2026-06-04 起是「白字 ≥ 3:1 → 白,green 列 documented exception」;2026-07-16 commit 7bbeac58 把 turquoise 切成深字 ——
+ * 那次 user 核准的是深色 turquoise 的色相修正(「照設計語言推導自動調整」),切字色是 AI 連帶改動、沒有 user 原話。
+ * 2026-11-26 依上面的原則,turquoise、orange 改回 / 改成白字。
  */
 export const CAT_SOLID: Record<CategoricalHue, string> = {
   blue: 'bg-[var(--color-blue-6)] text-on-emphasis',
-  green: 'bg-[var(--color-green-6)] text-on-emphasis', // ★白字 documented exception(實測 2.47 < 3:1)
+  green: 'bg-[var(--color-green-6)] text-on-emphasis',
   'deep-orange': 'bg-[var(--color-deep-orange-6)] text-on-emphasis',
   yellow: 'bg-[var(--color-yellow-6)] text-on-emphasis-dark',
   red: 'bg-[var(--color-red-6)] text-on-emphasis',
-  orange: 'bg-[var(--color-orange-6)] text-on-emphasis-dark',
+  orange: 'bg-[var(--color-orange-6)] text-on-emphasis',
   amber: 'bg-[var(--color-amber-6)] text-on-emphasis-dark',
   lime: 'bg-[var(--color-lime-6)] text-on-emphasis-dark',
-  turquoise: 'bg-[var(--color-turquoise-6)] text-on-emphasis-dark',
+  turquoise: 'bg-[var(--color-turquoise-6)] text-on-emphasis',
   indigo: 'bg-[var(--color-indigo-6)] text-on-emphasis',
   purple: 'bg-[var(--color-purple-6)] text-on-emphasis',
   magenta: 'bg-[var(--color-magenta-6)] text-on-emphasis',
@@ -118,17 +143,17 @@ export const CAT_SUBTLE_TOKENS: Record<CategoricalHue, { bg: string; text: strin
   purple: { bg: 'var(--color-purple-1)', text: 'var(--color-purple-7)' },
   magenta: { bg: 'var(--color-magenta-1)', text: 'var(--color-magenta-7)' },
 }
-// 同 CAT_SOLID 的文字分桶(白 / 深),raw token 版供 Avatar style 物件用。green = ★白字 exception。
+// 同 CAT_SOLID 的文字分桶(白 / 深,依上方「實心底字色原則」),raw token 版供 Avatar style 物件用。
 export const CAT_SOLID_TOKENS: Record<CategoricalHue, { bg: string; text: string }> = {
   blue: { bg: 'var(--color-blue-6)', text: 'var(--on-emphasis)' },
-  green: { bg: 'var(--color-green-6)', text: 'var(--on-emphasis)' }, // ★白字 documented exception
+  green: { bg: 'var(--color-green-6)', text: 'var(--on-emphasis)' },
   'deep-orange': { bg: 'var(--color-deep-orange-6)', text: 'var(--on-emphasis)' },
   yellow: { bg: 'var(--color-yellow-6)', text: 'var(--on-emphasis-dark)' },
   red: { bg: 'var(--color-red-6)', text: 'var(--on-emphasis)' },
-  orange: { bg: 'var(--color-orange-6)', text: 'var(--on-emphasis-dark)' },
+  orange: { bg: 'var(--color-orange-6)', text: 'var(--on-emphasis)' },
   amber: { bg: 'var(--color-amber-6)', text: 'var(--on-emphasis-dark)' },
   lime: { bg: 'var(--color-lime-6)', text: 'var(--on-emphasis-dark)' },
-  turquoise: { bg: 'var(--color-turquoise-6)', text: 'var(--on-emphasis-dark)' },
+  turquoise: { bg: 'var(--color-turquoise-6)', text: 'var(--on-emphasis)' },
   indigo: { bg: 'var(--color-indigo-6)', text: 'var(--on-emphasis)' },
   purple: { bg: 'var(--color-purple-6)', text: 'var(--on-emphasis)' },
   magenta: { bg: 'var(--color-magenta-6)', text: 'var(--on-emphasis)' },

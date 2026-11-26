@@ -248,11 +248,20 @@ run_hook "$PROD_TSX" 'export const C = () => <button type="button" aria-pressed=
 expect_silent "30d. hover:bg-neutral-selected-hover(切換鈕)不算 menu-item 列簽名 → silent"
 
 # ── 2026-07-10 批次 A(治理覆蓋 matrix 收官)──
-# 31. C5 POSITIVE:亮色底 + text-white 對比配對違規 → BLOCK
+# 31. C5 POSITIVE:類別色實心底 + 寫死 text-white → BLOCK(深字桶 amber)
 run_hook "$PROD_TSX" 'export const T = () => <span className="bg-[var(--color-amber-6)] text-white size-4">A</span>'
 expect_block "31. C5 亮色底+text-white 配對 → BLOCK"
 
-# 32. C5 NEGATIVE:CAT_SOLID 正道(深字桶自帶 on-emphasis-dark)→ silent
+# 31b. C5 POSITIVE(2026-11-26):白字桶的 turquoise 寫死 text-white 也擋 —— 字色不得寫死,不看桶(桶由 categorical-color.ts 決定;
+#      舊版只認 yellow/amber/orange/lime 名單,這一格在舊版是 silent)
+run_hook "$PROD_TSX" 'export const T = () => <span className="bg-[var(--color-turquoise-6)] text-white size-4">A</span>'
+expect_block "31b. C5 turquoise-6 寫死 text-white → BLOCK"
+
+# 31c. C5 NEGATIVE(near-miss):step-1 淡底 + text-white 在別處 → 不是實心底,silent
+run_hook "$PROD_TSX" 'export const T = () => <><span className="bg-[var(--color-orange-1)] text-[var(--color-orange-7)]">A</span><span className="text-white-space">B</span></>'
+expect_silent "31c. C5 淡底 step-1 不算實心底 → silent"
+
+# 32. C5 NEGATIVE:CAT_SOLID 正道(字色由 SSOT 決定)→ silent
 run_hook "$PROD_TSX" 'export const T = () => <span className={`size-4 ${CAT_SOLID[hue]}`}>A</span>'
 expect_silent "32. C5 消費 CAT_SOLID → silent"
 

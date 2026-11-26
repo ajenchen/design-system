@@ -211,16 +211,16 @@
      Polaris text-{x}-on-bg-fill —— 「填色底的文字色」依底色明暗成對提供,不是單一固定白。
      本 DS 採「2-bucket」(白 + 深)而非 per-hue(12 個 token = 過度設計;深底白字已是最大對比,
      per-hue 救不了暗色邊緣):
-       --on-emphasis       = 白字,用於「夠深」的飽和色底(WCAG ≥3:1 大粗字達標的 hue)
-       --on-emphasis-dark  = 深字(= black-a85),用於「太亮」的色底(白字連 3:1 都不及格:yellow/amber/orange/lime)
+       --on-emphasis       = 白字,用於白字對比「不低於綠色」的飽和色底
+       --on-emphasis-dark  = 深字(= black-a85),用於白字對比「低於綠色」的亮色底(目前 categorical yellow/amber/lime 與 --warning)
      命名:配對白↔深;不用「inverse」(已保留給 --inverse-* 反相 surface 命名空間),不用 mode 字眼
      (token 名一律不編碼 light/dark mode,mode 靠 redefinition)。
-     合規門檻(2026-06-04 user 拍板「以最低為原則」)= WCAG large/bold 3:1(solid chip/avatar 視大粗字)。
+     分桶判準 = 實心底字色原則(2026-11-26 user 決定,取代 2026-06-04 的「白字 ≥ 3:1 + green 例外」):
+        白字對比不低於綠色 → 白、低於 → 深;綠色是基準不是例外,淺 / 深兩個模式各自比。user 原話、逐色實測表與沿革住 tokens/categorical-color.ts「實心底字色原則」,機械 = scripts/categorical-color-invariants.mjs I4 / I6。
+        深字桶的深字對比照舊 ≥ 3:1(2026-06-04 user「以最低為原則」,solid chip/avatar 視大粗字)。
      消費者:Avatar / Tag solid color variants、Steps filled indicator、Calendar today、Tooltip、
      warning solid surface(黃底深字)等 —— 「亮底深字」一律消費 --on-emphasis-dark(不再有 warning 專屬 token)。
      兩者都「Dark mode 不反轉」(白 / 深字在飽和底永遠同極性,底色明暗跨 mode 不變)。
-     ⚠️ green 例外:green-6 白字實測 2.47(連 3:1 都不過),但 user 拍板維持白字(沿用世界級慣見的
-        「綠底白字」按鈕觀感)→ documented exception(知情違反),待日後評估是否調 green-6。
      2026-06-04 改名:原 --warning-foreground 被 categorical yellow/amber 借用 = 誤名(它跟 warning 無關,
         本質是「亮底深字」通用概念)→ 改名 --on-emphasis-dark + 移除 warning 專屬 alias(user 要求以乾淨為主 —— 轉述,那段對話紀錄已不存在、登記簿查無原話)。 */
   --on-emphasis:          var(--color-white);

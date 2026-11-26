@@ -398,18 +398,18 @@ Tag、Avatar 等需要多色區分的場景（專案標籤、團隊分類等）�
 
 填色底上的文字色**依底色明暗成對**提供(世界級共識:Material `on-primary`(深色主題 primary20、淺色主題 primary100)、Polaris `color-text-brand-on-bg-fill` —— 都是「成對 on-color token」,不是單一固定白)([來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/tokens/versions/v0_192/_md-sys-color.scss#L34)、[來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/tokens/versions/v0_192/_md-sys-color.scss#L93)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/themes/base/color.ts#L747)):
 
-- `--on-emphasis = oklch(1 0 0)`(純白,dark mode 不反轉)—— 用於**夠深的飽和色底**(白字達 WCAG 門檻):primitive 6 階深色 / `--primary` / `--error` 等,及 categorical blue/deep-orange/red/indigo/purple/magenta(turquoise 2026-07-16 移入深字組)。
-- `--on-emphasis-dark = var(--black-a85)`(深字,dark mode 不反轉)—— 用於**太亮的色底**(白字對比不足):categorical **yellow / amber / orange / lime / turquoise**(turquoise 2026-07-16 dark 色相修正後加入)。
+- `--on-emphasis = oklch(1 0 0)`(純白,dark mode 不反轉)—— 用於白字對比**不低於綠色**的飽和色底:`--primary` / `--info` / `--error` / `--success` 等,及 categorical blue / green / deep-orange / red / orange / turquoise / indigo / purple / magenta。
+- `--on-emphasis-dark = var(--black-a85)`(深字,dark mode 不反轉)—— 用於白字對比**低於綠色**的亮色底:`--warning`,及 categorical **yellow / amber / lime**。
 
-**合規門檻(2026-06-04 user 拍板「以最低為原則」)= WCAG large/bold 3:1**(solid chip / avatar 的字視為大粗字)。底色 step-6 白字達 3:1 → 用 `--on-emphasis`;不達 → 用 `--on-emphasis-dark`。
+**實心底字色原則(2026-11-26 user 決定,取代 2026-06-04 的「白字 ≥ 3:1 + green 例外」)**:step-6 實心底上,白字對比**不低於綠色** → `--on-emphasis`;低於綠色 → `--on-emphasis-dark`。綠色是 user 接受的最低白字對比,是原則的**基準、不是例外**;淺色、深色兩個模式各自和綠色在同一模式的值比(淺 2.47 / 深 2.21),兩個都達才是白字。user 原話(2026-11-26,節錄;三段全文與逐色實測表在 `tokens/categorical-color.ts`「實心底字色原則」):「我認為上面是要白色，請確保整個 ds 此類邏輯配色的地方都按這個 ssot」「應該照你建議啊，而且超奇怪，2.47都過了，2.77憑什麼不過？？？」「橘色要一起改啊，2.47以上的都應該過吧？」。
 
-**★ green documented exception**:green-6 白字實測對比 2.47(連 3:1 都不過),但 user 拍板維持白字(沿用世界級慣見的「綠底白字」按鈕觀感)→ 列為知情違反,待日後評估是否調整 green-6 本身。
+實測(白字,淺 / 深):orange 2.51 / 2.24、turquoise 3.23 / 2.77 → 白;amber 1.98 / 1.78、lime 1.73 / 1.57、yellow 1.49 / 1.42 → 深。深字桶的深字對比照舊 ≥ 3:1(2026-06-04 user「以最低為原則」,solid chip / avatar 的字視為大粗字)。**換桶**(primitives 改了亮度,讓某色相跨過門檻)= 畫面變化,要 user 確認;原則本身要改 = 產品決策。機械:`scripts/categorical-color-invariants.mjs` I4 每次由 primitives 現算門檻、兩個方向都驗(該白卻深、該深卻白都紅),I6 擋元件自己寫死實心底的字色。2026-07-16 turquoise 曾被切成深字 —— 那次 user 核准的是深色 turquoise 的色相修正,切字色是 AI 連帶改動、沒有 user 原話;2026-11-26 改回白字。
 
 **`--warning-foreground` 2026-06-04 移除(改名 + 不留 alias;user 要求以乾淨為主 —— 轉述,那段對話紀錄已不存在、登記簿查無原話)**:原 `--warning-foreground`(= black-a85)被 categorical yellow/amber 借用 = 誤名(它跟 warning 無關,本質是「亮底深字」通用概念)→ 統一改名 `--on-emphasis-dark`,**不保留 warning 專屬 token**(grep 確認無任何元件消費 `text-warning-foreground`)。warning solid surface 若需黃底深字,一律消費通用 `--on-emphasis-dark`(與其他亮色 hue 同),不再有 warning 專屬前景。
 
 **為什麼獨立於 `--foreground`**:`--foreground` = neutral-9 文字色(淺色 neutral 底的主文字);on-emphasis 配對是「飽和 / 填色底」專用,跟 neutral 表面前景語義不同(數值巧合相同也不可合併:light mode `--foreground` 是深色,混用會 break 飽和底白字)。
 
-**消費者**(目前):Avatar / Tag solid color variants、Steps filled indicator(icon 色)、Calendar today、Tooltip 等。對比由 `scripts/categorical-color-invariants.mjs` I4 機械驗(oklch→相對亮度→contrast,green exempt)。
+**消費者**(目前):Avatar / Tag solid color variants、Steps filled indicator(icon 色)、Calendar today、Tooltip 等。字色分桶照本節「實心底字色原則」,由 `scripts/categorical-color-invariants.mjs` I4 機械驗(門檻 = 綠色在同一模式的白字對比,每次由 primitives 現算,沒有豁免)。
 
 **不該消費的情境**:
 - ❌ 淺色 subtle 底(step-1)用 on-emphasis 配對 — 請用 `--foreground` / `--color-{hue}-7` family。
@@ -494,7 +494,7 @@ Badge 使用語義色的 text token（`--info-text`、`--error-text`），不直
 
 **step-7 vs semantic active 的區別**：兩者在 light mode 都指向 step-7，但 dark mode 行為不同。semantic active（如 `--primary-active`）在 dark mode 反轉為 step-5（壓暗模擬按壓感），而 primitive step-7 在 dark mode 仍維持高對比方向。簡言之：active 服務於互動回饋，step-7 服務於閱讀對比，兩者目的不同，dark mode 方向相反。
 
-**例外：step-6 滿版底色上的「亮色 hue」文字用 `--on-emphasis-dark`（`black-a85`,深色)**——yellow / amber / orange / lime / turquoise 亮度極高,白字（`--on-emphasis`）連 WCAG 3:1 都不過,必須深色文字（見上「`--on-emphasis` 配對」段)。此例外只在底色是 step-6 時觸發,step-1 subtle 底色上仍用 step-7。（green-6 白字亦不過 3:1,但列 documented exception 維持白字。)**2026-09-29 user 重新確認維持 step-7**(原話:「要我拍板的第一題就照舊規格」):淡底上 yellow / lime / amber / green / orange 的 step-7 文字對比實測 2.46–3.82(1×1 canvas 讀 token 值、WCAG 公式),已知未達 AA,維持現狀不改 token;a11y 基線(`infra/governance/baseline/a11y-baseline.json`)記為已知。
+**例外：step-6 滿版底色上的字不用 step-7,用 on-emphasis 配對**——白字對比不低於綠色用白字（`--on-emphasis`）,低於綠色（目前 yellow / amber / lime）用深字（`--on-emphasis-dark`,`black-a85`）;判準與實測見上「`--on-emphasis` / `--on-emphasis-dark` 配對」段的實心底字色原則（2026-11-26 user 決定）。此例外只在底色是 step-6 時觸發,step-1 subtle 底色上仍用 step-7。**2026-09-29 user 重新確認維持 step-7**(原話:「要我拍板的第一題就照舊規格」):淡底上 yellow / lime / amber / green / orange 的 step-7 文字對比實測 2.46–3.82(1×1 canvas 讀 token 值、WCAG 公式),已知未達 AA,維持現狀不改 token;a11y 基線(`infra/governance/baseline/a11y-baseline.json`)記為已知。
 
 ### Subtle 背景（淡色填充）
 

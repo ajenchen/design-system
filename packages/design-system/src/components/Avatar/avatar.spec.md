@@ -170,7 +170,7 @@ Avatar 堆疊的「+N」hover 也出 **HoverCard**（不是 Tooltip）——列�
 
 ## 背景色
 
-Icon 和 Text 模式使用 primitive step-1 subtle 背景 + 對應 step-7 前景色。`solid` boolean prop 可切換為 step-6 全色背景 + on-emphasis 配對前景(yellow / amber / orange / lime 深字,詳「Solid」段)。
+Icon 和 Text 模式使用 primitive step-1 subtle 背景 + 對應 step-7 前景色。`solid` boolean prop 可切換為 step-6 全色背景 + on-emphasis 配對前景(yellow / amber / lime 深字,詳「Solid」段)。
 
 與 Tag 元件完全對齊——**消費同一組 categorical 色相 SSOT**（`tokens/categorical-color.ts`），所有有色 variant 直接使用 primitive token（`--color-{hue}-*`），不使用 semantic token（`--primary`、`--error`）。色名即色相 1:1 對 color token（零 offset）。Avatar 的「blue」代表藍色本身，不代表「主要操作」語義。neutral 用 `foreground`，有色用 primitive step-7（`--color-{hue}-7`）優先辨識度。
 
@@ -184,7 +184,7 @@ Icon 和 Text 模式使用 primitive step-1 subtle 背景 + 對應 step-7 前景
 
 **通則**:12 色相一律 `--color-{hue}-6` 全色背景;**neutral 例外**:`--color-neutral-9` 背景 + `--inverse-fg` 前景。前景依底色明暗分桶（見下）。
 
-**Solid 文字色規則（on-emphasis 配對,2026-06-04,與 Tag 共用 SSOT）**：依 step-6 底色明暗分桶,合規門檻 = WCAG **large/bold 3:1**（user 拍板「以最低為原則」）。底夠深 → `--on-emphasis`（白）；底太亮 → `--on-emphasis-dark`（深,= `black-a85`,原 `warning-foreground` 改名）:**yellow / amber / orange / lime** 四色用深字,其餘用白。**★ green 例外**:white 實測 2.47 連 3:1 都不過,但維持白字（慣見「綠底白字」觀感）= documented exception。對比由 `categorical-color-invariants.mjs` I4 機械驗(green exempt);逐色 mapping SSOT = `tokens/categorical-color.ts`。
+**Solid 文字色規則（實心底字色原則,2026-11-26 user 決定,與 Tag 共用 SSOT）**：白字對比**不低於綠色** → `--on-emphasis`（白）；低於綠色 → `--on-emphasis-dark`（深,= `black-a85`）。綠色是 user 接受的最低白字對比,是原則的基準、不是例外;淺色、深色兩個模式各自和綠色比（淺 2.47 / 深 2.21）。目前 **yellow / amber / lime** 三色用深字,其餘用白（orange、turquoise 白字對比都不低於綠色）。user 原話（2026-11-26,節錄）:「我認為上面是要白色，請確保整個 ds 此類邏輯配色的地方都按這個 ssot」「橘色要一起改啊，2.47以上的都應該過吧？」。三段全文、逐色實測表與沿革 SSOT = `tokens/categorical-color.ts`「實心底字色原則」;`categorical-color-invariants.mjs` I4 每次由 primitives 現算門檻並逐色核對。
 
 Image 模式不顯示背景色（圖片填滿），`solid` prop 無效果。
 
