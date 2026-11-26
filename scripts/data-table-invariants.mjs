@@ -2916,6 +2916,9 @@ for (const [label, r, c, kind] of [
     filterMenu.ok && JSON.stringify(labels(filterMenu.menu)) === JSON.stringify(FULL), filterMenu.ok ? `讀到 [${labels(filterMenu.menu)}]` : `INSTRUMENT-FAIL ${filterMenu.why}`)
   await closeAll()
   await page.setViewportSize(prevView)
+  // 本段逐條印出(上面的 PASS 清單只印到 I1–I8 那一段;I40 的判定表、對照組與瀏覽器結果要看得到,不只算進總數)
+  console.log('\n--- I40 select 欄依列可選項 ---')
+  console.log([...passes, ...failures].filter((l) => l.includes(' I40 | ')).join('\n'))
 }
 
 if (failures.length > 0) {
