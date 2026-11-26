@@ -5,8 +5,11 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import {
   assertVerifiedExactNpmRuntimeCapability,
+  isGovernanceProxyFamilyName,
   prepareVerifiedExactNpmRuntime,
+  reportGovernanceProxyNoticesOnce,
   resolveExactNpmRuntimeContract,
+  resolveGovernanceProxyForwarding,
   verifiedNodeTrustArgs,
   verifiedNpmNodeArgv,
 } from './verified-exact-npm-runtime.mjs'
@@ -134,10 +137,20 @@ export function assertNoRootNpmShrinkwrap(rootPath, { errorPrefix = 'GOV-DEPENDE
   return root
 }
 
-export function sanitizeGovernanceBootstrapEnvironment(baseEnvironment = process.env) {
-  return Object.fromEntries(Object.entries(baseEnvironment).filter(([name, value]) => (
-    value !== undefined && !CREDENTIAL_NAME.test(name) && !HOSTILE_NAME.test(name)
-  )))
+// 代理變數(2026-11-26):整族不分大小寫剝除,再只放回 resolveGovernanceProxyForwarding 判定「不帶帳密」的 HTTPS_PROXY / NO_PROXY
+//(判定表與 npm 讀代理的原始碼出處都在 verified-exact-npm-runtime.mjs「代理轉送」段)。只用來路由、不新增信任:CA 類
+//(NODE_EXTRA_CA_CERTS / SSL_CERT_FILE / SSL_CERT_DIR)、NODE_OPTIONS、NPM_CONFIG_*、ALL_PROXY、HTTP_PROXY 照舊剝除。
+export function sanitizeGovernanceBootstrapEnvironment(baseEnvironment = process.env, {
+  report = reportGovernanceProxyNoticesOnce,
+} = {}) {
+  const forwarding = resolveGovernanceProxyForwarding(baseEnvironment)
+  report(forwarding)
+  return {
+    ...Object.fromEntries(Object.entries(baseEnvironment).filter(([name, value]) => (
+      value !== undefined && !CREDENTIAL_NAME.test(name) && !HOSTILE_NAME.test(name) && !isGovernanceProxyFamilyName(name)
+    ))),
+    ...forwarding.forwarded,
+  }
 }
 
 export function assertGovernanceBootstrapRuntime({
@@ -518,7 +531,8 @@ function assertRemediatedFinding(name, finding, findings = {}) {
     // <=10.7.3,修在 10.7.4),range 從 <=10.7.0 變 <=10.7.3、via 從 7 則變 8 則 —— PR #169 的 CI(10-22 之後每一輪)會死在
     // 「Install locked dependencies once」。bundled 仍是 10.2.0;npm 最新的 11.21.1 / 12.2.1 內建 10.7.2,仍在範圍。
     // npm 內唯一用到 ip-address 的是 socks(@npmcli/agent 的 proxy.js 只在設定 socks 代理時才走到);本檔的 npm 執行
-    // 不帶任何代理設定(createIsolatedGovernanceNpmEnvironment 剝除所有 proxy 變數、user/global npmrc 只寫 registry 等四行)。照舊只認列新形狀。
+    // 只會帶到 http: / https: 的代理(2026-11-26 起轉送不帶帳密的 HTTPS_PROXY,scheme 不是 http(s) 一律剝除,
+    // 見 verified-exact-npm-runtime.mjs「代理轉送」;user/global npmrc 只寫 registry 等四行),socks 走不到。照舊只認列新形狀。
     invariant(
       finding.severity === 'high'
         && finding.isDirect === false

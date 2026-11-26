@@ -47,7 +47,9 @@ import {
 import {
   assertVerifiedExactNpmRuntimeCapability,
   prepareVerifiedExactNpmRuntime,
+  reportGovernanceProxyNoticesOnce,
   resolveExactNpmRuntimeContract,
+  resolveGovernanceProxyForwarding,
   verifiedNpmNodeArgv,
 } from './lib/verified-exact-npm-runtime.mjs'
 import {
@@ -457,7 +459,11 @@ function readEvidence(evidenceDirectory) {
   }
 }
 
-function isolatedNpmEnvironment(root) {
+// 這份環境不繼承任何變數;唯一的例外是代理路由(2026-11-26,同族全修 M10):只放回 resolveGovernanceProxyForwarding 判定
+// 不帶帳密的 HTTPS_PROXY / NO_PROXY,與 setup / 候選安裝的鎖定 npm 同一支判定(verified-exact-npm-runtime.mjs「代理轉送」)。
+export function isolatedNpmEnvironment(root, baseEnvironment = process.env) {
+  const forwarding = resolveGovernanceProxyForwarding(baseEnvironment)
+  reportGovernanceProxyNoticesOnce(forwarding)
   const configRoot = join(root, '.npm-config')
   const cacheRoot = join(root, '.npm-cache')
   const homeRoot = join(root, '.npm-home')
@@ -507,6 +513,7 @@ function isolatedNpmEnvironment(root) {
     NPM_CONFIG_STRICT_SSL: 'true',
     NPM_CONFIG_UPDATE_NOTIFIER: 'false',
     ...(process.platform === 'darwin' ? { __CF_USER_TEXT_ENCODING: '0x1F5:0x0:0x0' } : {}),
+    ...forwarding.forwarded,
   })
 }
 
