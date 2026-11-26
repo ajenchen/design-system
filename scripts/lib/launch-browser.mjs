@@ -1040,13 +1040,16 @@ export async function installRenderErrorLedger(page) {
 // highlights 換成新的空陣列 → 在 #storybook-root 掛 subtree childList 的 MutationObserver;之後 story 裡**每一批 DOM 增刪**
 // 都 elements.set(新的空 Map) → 重跑 `document.body.querySelectorAll('*')` + 每個元素 getComputedStyle(找可捲動元素掛 scroll 監聽)。
 // 8.6 的 @storybook/addon-highlight 沒有這段。虛擬捲動的 DataTable 每一格都在增刪列 → 每一格多付一次整頁樣式計算,
-// 主執行緒被吃掉,CDP 送幀出現 > 100ms 的缺口(test-data-table-scroll-perception 的 delayed 對照組 5 次全作廢)、
-// 整支閘變慢(verify-browser-datatable-handles 撞 25 分上限)。A/B 數字(同一支量測腳本、兩份建置只差 Storybook 版本)
-// 寫在引入這段的 commit 訊息。
+// 主執行緒被吃掉,CDP 送幀出現 > 100ms 的缺口(test-data-table-scroll-perception 的 delayed 對照組 5 次全作廢)。
+// 整支閘在 Storybook 10 下變慢,有多少算 highlight、多少是 10.x 其他成本(completing 階段等),只認引入這段的 commit 訊息裡
+// 同一台機器的修前 / 修後實測,本註解不下結論。A/B 數字(同一支量測腳本、兩份建置只差 Storybook 版本)也寫在那裡。
 // 閘量的是元件,不是 Storybook 的開發工具;所以 openStory 開 Storybook iframe 時,在 iframe.html 第一支腳本之前把
 // `window.FEATURES.highlight` 定成 false —— Storybook 自己文件化的開關(等同 main 設定 `features.highlight: false`),
 // 只作用在這個分頁的 preview 文件。給讀者看的預覽站(storybook-static / 部署預覽)與管理介面(index.html)照舊;
-// a11y 閘跑的是 axe 本身,不經過 highlight。opts.storybookHighlight = true 保留 Storybook 原樣(要量 highlight 本身的閘用;目前沒有)。
+// a11y 閘(audit-a11y.mjs、data-table-multi-sort-invariant.mjs)用 AxeBuilder 掃整頁、沒有 exclude:修前 body 裡多一個
+// #storybook-highlights-root(排除它的是 Storybook 自己的 addon-a11y,不是我們的閘),關掉之後掃描範圍少了這個 div,
+// 所以以實測為準:DataTable 48 則 + 前 40 則,修前 / 修後每則違規逐條相同、audit-error 0 / 0(2026-11-26)。
+// opts.storybookHighlight = true 保留 Storybook 原樣(要量 highlight 本身的閘用;目前沒有)。
 // 對照組:scripts/test-open-story.mjs 真實建置段「Storybook highlight 關 / 開兩面」。
 function disableStorybookHighlightInPage() {
   // 只動 preview 文件(iframe.html);管理介面與非 Storybook 頁原樣
