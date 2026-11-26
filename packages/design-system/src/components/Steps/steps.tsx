@@ -529,7 +529,7 @@ function StepItemHeader({ children, className, style }: { children: React.ReactN
         // 可點的 header 有 role="button" + tabIndex={0} + onClick + onKeyDown(上方同一個 div 的四個屬性)= 可操作,
         // 依 focus-canonical「可操作就必須有可見焦點指示」必須畫。
         // 修法是把 outline-none 收進「不可點」那一支,並刪掉本地那三個 class —— 全域
-        // `styles/base.css:53-56` 的 `outline: 2px solid var(--ring); outline-offset: 2px`
+        // `styles/base.css:61-64` 的 `outline: 2px solid var(--ring); outline-offset: 2px`
         // 與它們逐字等價,本地重寫一份只是把全域抄一遍(同 H1c 那類冗餘)。
         item.clickable
           ? 'cursor-pointer rounded-md'

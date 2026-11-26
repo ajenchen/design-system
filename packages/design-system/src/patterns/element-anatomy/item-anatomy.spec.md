@@ -304,7 +304,7 @@ user 2026-09-24 原始提問:「所以所有可以被點擊且其中提供按鈕
 
 ### 單行截斷 → tooltip(截斷才顯;2026-07-28)
 
-Row label / description 的**單行截斷**(`truncate`,或 `line-clamp-1` 單行 clamp)必配「僅實際截斷時顯示」的 tooltip 補全——owner = `components/Tooltip/tooltip.spec.md:32`,引擎 SSOT = `patterns/element-anatomy/truncated-text.spec.md`(`useTruncated` + 永遠 wrap、`open` 控制)。`<ItemLabel>` 與 `<ItemContent>` 已內建(量測含 MenuItem 的 `line-clamp-1` className escape),Sidebar / DropdownMenu / SelectMenu / FileItem / DataTable 欄位面板等 row consumer 免自接;手刻 label span 的 consumer 要自己消費 `useTruncated`。
+Row label / description 的**單行截斷**(`truncate`,或 `line-clamp-1` 單行 clamp)必配「僅實際截斷時顯示」的 tooltip 補全——owner = `components/Tooltip/tooltip.spec.md:30`,引擎 SSOT = `patterns/element-anatomy/truncated-text.spec.md`(`useTruncated` + 永遠 wrap、`open` 控制)。`<ItemLabel>` 與 `<ItemContent>` 已內建(量測含 MenuItem 的 `line-clamp-1` className escape),Sidebar / DropdownMenu / SelectMenu / FileItem / DataTable 欄位面板等 row consumer 免自接;手刻 label span 的 consumer 要自己消費 `useTruncated`。
 
 - **Hover-only**:trigger = label/description span 本身,不可聚焦、**不加 `tabIndex`**——Family 1 menu row 的 roving focus 在宿主 row 上,label 加 tab stop 會破壞 APG menu 鍵盤導航。先例:Tag 帶內建截斷 tooltip 渲染於 SelectMenu option 內(`select.tsx` renderLabel → `tag.tsx` open-controlled),menu 內無任何抑制(Tag 的 tooltip 抑制只存在於 closed-trigger 顯示 `pointer-events-none`,非 menu context)。鍵盤/SR 無損失:row 的 accessible name 本就含完整文字([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/menubar/menu-and-menubar-pattern.html#L60-L65))。
 - **多行 clamp(≥2 行)排除**:`truncated-text.spec.md`「何時不用」(a) 明文排除多行;`descriptionClamp >= 2` / `descMaxLines >= 2` 不顯 tooltip(DS 尚無多行截斷↔補全 canonical,owner 決策前維持排除)——由「可視高度 ≈ 1 行」量測 gate 機械保證,非 prop 判斷(MenuItem clamp 走 className escape,量 DOM 才能全蓋)。
@@ -1132,7 +1132,7 @@ Selection control(Dropdown / Menu / List / SegmentedControl / Chip)的 item 視�
 6. ✅ 外層 `flex items-start`,prefix / suffix 各自包 `h-[1lh]`(或 block calc)wrapper
 7. ✅ Prefix 用 `<ItemIcon>` / `<ItemAvatar>` helper,**禁止**硬寫 `<Avatar size={N} />` 或 `<Icon size={N} />`
 8. ✅ Icon 尺寸用 `ICON_SIZE` 常數 + `size` prop 直接傳給 Lucide,不用 CSS `[&>svg]:size-*` selector
-9. ✅ Label span 有 `min-w-0 flex-1 truncate`(或用 `<ItemLabel>` helper);截斷必配「截斷才顯」tooltip(tooltip.spec.md:32)—— `<ItemLabel>` / `<ItemContent>` 已內建,手刻 span 要自己消費 `useTruncated`(見「單行截斷 → tooltip」節)
+9. ✅ Label span 有 `min-w-0 flex-1 truncate`(或用 `<ItemLabel>` helper);截斷必配「截斷才顯」tooltip(tooltip.spec.md:30)—— `<ItemLabel>` / `<ItemContent>` 已內建,手刻 span 要自己消費 `useTruncated`(見「單行截斷 → tooltip」節)
 10. ✅ Suffix inline action 用 `<ItemInlineAction>` / `<ItemInlineActionButton>`,**禁止**複製 hover-bg 絕對定位 JSX
 11. ✅ Row primitive 容器用 `<RowSizeProvider value={size}>` 包住所有 children,讓 helper 元件能讀到 size
 12. ✅ icon 色彩遵循「代表內容 = label 同色,指示方向 = fg-muted」

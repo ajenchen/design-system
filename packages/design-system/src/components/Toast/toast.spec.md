@@ -254,6 +254,7 @@ Toast 的 public API 是 `toast()` 函式(imperative 觸發)+ `<Toaster />` Prov
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `alert.spec.md`
+- `calendar.spec.md`
 - `dialog.spec.md`
 - `form-validation.spec.md`
 - `notice.spec.md`
