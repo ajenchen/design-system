@@ -737,14 +737,16 @@ try {
   console.log('✅ negative: mutable semver range blocked')
 
   const bypassPath = join(mirror, 'apps/template/src/GovernanceBypass.tsx')
-  writeFileSync(bypassPath, `export const GovernanceBypass = () => <table style={{ padding: '13px', color: '#ff0000' }}><tbody><tr><td>x</td></tr></tbody></table>\n`)
+  // className 的 p-4 / opacity-50 讓同一個檔再違反 layout-space 與 opacity 兩支 hook(E15:每支各一筆)
+  writeFileSync(bypassPath, `export const GovernanceBypass = () => <table className="p-4 opacity-50" style={{ padding: '13px', color: '#ff0000' }}><tbody><tr><td>x</td></tr></tbody></table>\n`)
   const contentBlocked = expectFailure('GOV-CONTENT-001')
   if (contentBlocked.report.evidence?.staticReplay?.skippedForPreexistingBlocker !== false
     || !(contentBlocked.report.evidence?.staticReplay?.hookExecutions > 0)) {
     throw new Error(`content-only violation bypassed complete replay:${JSON.stringify(contentBlocked.report.evidence?.staticReplay)}`)
   }
   // 2026-11-27(上游判定 E15):同一個檔違反兩支以上 hook 時,每支各記一筆(以前停在第一支)。
-  // 這個檔同時有原生 <table>、行內 style 的 magic padding 與寫死色碼,至少兩支 hook 會報。改回 break 時這一條紅。
+  // 這個檔同時有原生 <table>(consumer app invariants)、className 的 p-4(layout-space)與 opacity-50(opacity),至少兩支 hook 會報。
+  // 改回 break 時這一條紅(只剩第一支)。
   const bypassHooks = new Set((contentBlocked.report.diagnostics || [])
     .map((d) => String(d.message || '').match(/^apps\/template\/src\/GovernanceBypass\.tsx violates (\S+)/)?.[1])
     .filter(Boolean))
