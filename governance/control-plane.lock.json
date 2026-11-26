@@ -10,7 +10,7 @@
   "contractDigest": "sha256:2999aed4c75bc36823db0b4ea5729744c0920f74b1cd2b2e1bfb4110dd825ef1",
   "files": [
     {
-      "hash": "sha256:f82ae21289a7316219797a7e2ae441629d5bde18d5ace0bb26c4d073c7a62572",
+      "hash": "sha256:6f67afdf215c650ff1b24ceba8bd09b3be7a67d408ce4caa8fa28e5d1e9e124c",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 59307,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:9e8891780ed7c9b68d47060ae608886d21f31152284e45f7cb4286c786278355",
+      "hash": "sha256:117a5cab6cc0cbfcf96f0d24d440b61ac83e7c81984c03f4ff6f4f28cf0f207a",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 140204,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:089cd7d3e5acd40bd9b43445674a6c0c92bd2a172aaf0d513d7eecb327aa9089",
+  "inputDigest": "sha256:c0739c48697b13fb925f49d5ca3a58ea62e915f59d10c99ecf077db2842148a1",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:6dab1258f9671db28c6cfe7be2770e73878f0dc49c9ce4b26a27e05a4673c191",
+  "snapshotDigest": "sha256:94fc89afa5ebe077dba7aaed752bc7489cf49ff81e6f38dedeb1c7ad2e24c352",
   "sources": [
     {
       "hash": "sha256:f2452198c08c44c99dc7afcfb7f78f834d7cc2a8c97d041571db15779f388c6c",
@@ -654,7 +654,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 221,
-      "hash": "sha256:e48812d6295b42c10343e37606ddcc680c5f2379a5191667a07fcfbc2881a783",
+      "hash": "sha256:72bcdc32a4baa5e2ebd1ed95d90b9c5ef348ade235f6a89943a4787d313ed258",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -676,7 +676,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 27,
-      "hash": "sha256:b49e4216ea159e306015694b575258f227935609664c0241e2e6ac4ae64938e3",
+      "hash": "sha256:8db1b460c0539cccfd6b039861607a437f6e70792a91b249f00c0016c8d04f70",
       "id": "canonical-references",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3606,7 +3606,7 @@
         "scripts/generated/"
       ],
       "files": 819,
-      "hash": "sha256:978f56f782044612b152cdba896d54cde1d9cee73db8464b456c488b7c7ff01d",
+      "hash": "sha256:3dd6500a9036403aa89323d0e12df69f91d8824333de9ebf5ffc1038f6270052",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
