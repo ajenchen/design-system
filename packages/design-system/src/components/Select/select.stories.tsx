@@ -389,7 +389,10 @@ export const OptionPrefix: Story = {
     // 狀態清單:已完成那一列的圖示是 success 色
     await userEvent.click(statusTrigger)
     const doneRow = await body.findByRole('option', { name: /已完成/ })
-    await expect(getComputedStyle(doneRow.querySelector('[data-prefix-type="icon"] svg')!).color, '「已完成」那一列的圖示沒有套 iconClassName').toBe(successColor)
+    // MenuItem 的前綴圖示本身就是帶 data-prefix-type="icon" 的 svg(menu-item.tsx)
+    const doneIcon = doneRow.querySelector('[data-prefix-type="icon"]')
+    await expect(doneIcon, '「已完成」那一列沒有前綴圖示').not.toBeNull()
+    await expect(getComputedStyle(doneIcon!).color, '「已完成」那一列的圖示沒有套 iconClassName').toBe(successColor)
     await userEvent.click(statusTrigger)
     await waitFor(() => expect(body.queryAllByRole('option')).toHaveLength(0))
   },

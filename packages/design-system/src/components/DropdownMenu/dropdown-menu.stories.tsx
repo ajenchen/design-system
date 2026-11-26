@@ -327,7 +327,10 @@ export const OptionPrefix: StoryObj = {
       await expect(item.querySelector('[data-prefix-type="content"]'), `類型項目「${item.textContent}」沒有前綴節點`).not.toBeNull()
     }
     const done = body.getByRole('menuitem', { name: /已完成/ })
-    await expect(getComputedStyle(done.querySelector('[data-prefix-type="icon"] svg')!).color, '「已完成」的圖示沒有套 startIconClassName').toBe(successColor)
+    // MenuItem 的前綴圖示本身就是帶 data-prefix-type="icon" 的 svg(menu-item.tsx)
+    const doneIcon = done.querySelector('[data-prefix-type="icon"]')
+    await expect(doneIcon, '「已完成」沒有前綴圖示').not.toBeNull()
+    await expect(getComputedStyle(doneIcon!).color, '「已完成」的圖示沒有套 startIconClassName').toBe(successColor)
     await userEvent.keyboard('{Escape}')
     await waitFor(() => expect(body.queryAllByRole('menuitemradio')).toHaveLength(0))
   },
