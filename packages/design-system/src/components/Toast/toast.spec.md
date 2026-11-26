@@ -49,14 +49,15 @@ Toast 是**短暫的浮動通知，自動消失**。用於操作結果回饋（�
 - **背景非同步動作完成**：檔案上傳完成、資料同步完成、通知已寄出
 - **需要「復原」按鈕的操作**：刪除後 10 秒內可 Undo（sonner action 模式；含 `action` 的 toast 預設 `duration` = 10000ms，見「API」段）
 - **非關鍵資訊**：訊息即使使用者沒看到也不影響流程
+- **需要處理的通知(核准 / 回覆)的入口**:Toast 只當入口 —— 標題寫誰請你做什麼,唯一的 `action` 用「查看」帶到處理的地方(核准頁、對話串);待處理的項目本身由產品放在常駐位置(通知清單 + 鈴鐺數字,`../Badge/badge.spec.md:104`「通知中心 bell icon 的數字」那一列)。不在 Toast 上直接放「核准」「回覆」,也不把 `duration` 拉長讓它留著等人處理(理由見「禁止事項」下的「為什麼 Toast 不能是唯一的路」)。由來:user 2026-11-26 第六輪決策卡 C17 選「A:用現有 Toast 當入口,待處理項目放常駐位置(不改元件)」(選項文字由 AI 撰寫,user 沒有另附意見)。
 
 ## 何時不用
 
 | 場景 | 改用 | 原因 |
 |------|------|------|
-| 關鍵錯誤或警告（使用者必須看到）| `Alert` + `Dialog` | Toast 會自動消失，關鍵訊息必須 persistent |
+| 關鍵錯誤或警告（使用者必須看到）| `Alert` + `Dialog` | Toast 不能是使用者看到它的唯一途徑:沒看到就錯過,後面再來 3 則也會把它藏起來(見「禁止事項」下的「為什麼 Toast 不能是唯一的路」);要一直看得到用 Alert,要擋下來確認用 Dialog |
 | 欄位級驗證錯誤 | Field error message | Toast 是頁面級，欄位錯誤靠在欄位下方 |
-| 需要使用者確認的訊息（「是否繼續？」）| `Dialog` | Toast 非阻斷且自動消失，無法承載確認流程 |
+| 需要使用者確認的訊息（「是否繼續？」）| `Dialog` | 確認要擋下流程、等使用者回答,Toast 不阻斷;確認也不能只放在一則 Toast 上(見「禁止事項」下的「為什麼 Toast 不能是唯一的路」) |
 | 持久性系統狀態（方案過期、帳戶未驗證）| `Alert` | Toast 短暫，狀態需要 persistent |
 
 ---
@@ -71,10 +72,30 @@ Toast 是**短暫的浮動通知，自動消失**。用於操作結果回饋（�
 
 ## 禁止事項
 
-- ❌ **不用 Toast 做 critical confirmation**：Toast 會自動消失，使用者可能沒看到就消失——關鍵訊息改用 Alert 或 Dialog
+- ❌ **不用 Toast 做 critical confirmation**:確認要擋下流程、等使用者回答,Toast 不阻斷,也不能是唯一的路(見下方「為什麼 Toast 不能是唯一的路」)——關鍵訊息改用 Alert 或 Dialog
 - ❌ **不用 Toast 取代 error validation**：欄位錯誤訊息要貼近發生位置（FieldError），Toast 定位遠離錯誤欄位,使用者難對應到錯誤來源
 - ❌ **不同時彈 > 3 個 Toast**：同時多則 Toast 視覺雜訊重且無法閱讀，sonner 預設只顯示最近 3 則（`visibleToasts=3`），超出的仍在 DOM 內但以 `data-visible=false` 隱藏堆疊（非 queue 到 DOM 外或延後建立）；應用層若批量觸發 toast,整理成單一 Toast with list 或改用 Alert
-- ❌ **不把需要 user action 的內容放 Toast**：action 按鈕只放非必要後手(不按也不影響流程、Toast 消失後頁面上找得到同一條路):復原、重試、查看;字要短、一個動詞——強制 CTA（付款、確認刪除）用 Dialog
+- ❌ **Toast 的按鈕不能是唯一的路**:action 按鈕只放非必要後手(不按也不影響流程、Toast 消失後頁面上或產品的常駐位置找得到同一條路):復原、重試、查看;字要短、一個動詞——強制 CTA（付款、確認刪除）用 Dialog;需要處理的通知(核准 / 回覆)只用「查看」當入口(見「何時用」)
+
+### 為什麼 Toast 不能是唯一的路
+
+**規則**:Toast 上的訊息與按鈕都不能是使用者做到那件事的唯一途徑 —— 錯過這則 Toast,頁面上或產品的常駐位置(通知清單)仍找得到同一條路。上方「何時用」的「需要處理的通知(核准 / 回覆)的入口」、「何時不用」的「關鍵錯誤或警告」與「需要使用者確認的訊息」兩列、「禁止事項」第 1 條與第 4 條都以本段為依據。
+
+**理由**:
+
+1. **三家原文都這樣規定**(2026-11-26 查證,一手原文):
+   - Polaris:「Only include an action in toast if the same action is available elsewhere on the page.」(「Toast with action」段,https://github.com/Shopify/polaris-react-archive/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris.shopify.com/content/components/internal-only/toast.mdx#L108)
+   - Carbon:「Because toast notifications can dismiss automatically, users should be able to access them elsewhere after the toast notification disappears if they need more time to read the notification or who want to refer to it later.」(「Dismissal」段,https://github.com/carbon-design-system/carbon-website/blob/39aa62021577d066eb45a19da08548b8a2f701f0/src/pages/components/notification/usage.mdx#L340-L348);可操作的通知只准一個動作,而且「this action frequently takes users to a flow or page related to the message where they can resolve the notification」,並建議「Consider using a notification center where a user can revisit and act on past notifications.」(「Actionable」段,同檔 https://github.com/carbon-design-system/carbon-website/blob/39aa62021577d066eb45a19da08548b8a2f701f0/src/pages/components/notification/usage.mdx#L350-L360)
+   - Material 第一版指引:「Snackbars automatically time out from the screen. For usability reasons, snackbars should not contain the only way to access a core use case. They should not be persistent or be stacked, as they are above other elements on screen.」;確認類:「If the action described in the snackbar is important enough to block the use of the screen, it should be a dialog.」(https://m1.material.io/components/snackbars-toasts.html)
+2. **疊放上限會把等人處理的那則藏起來**:sonner 只顯示最近 3 則 —— sonner 2.0.7 `const VISIBLE_TOASTS_AMOUNT = 3;`、`const isVisible = index + 1 <= visibleToasts;`,看不到的那幾則樣式是 `[data-sonner-toast][data-visible=false]{opacity:0;pointer-events:none}`,跟清單有沒有展開無關,滑鼠移上去展開也看不到、點不到(https://cdn.jsdelivr.net/npm/sonner@2.0.7/dist/index.mjs)。DS 的 `<Toaster>` 沒傳 `visibleToasts`,`ToasterProps` 也不開放這個參數(`toast.tsx` `ToasterProps`)。所以就算把一則 Toast 開成不消失,後面再來 3 則「已儲存」,它就從畫面上不見了(同一個上限見「禁止事項」第 3 條)。
+3. **一直停著會削弱「不避讓」那個決定的一條理由**:user 定 Toast 不為任何東西避讓〔UD-H31〕。user 自己的理由「而且又不是關不掉toast」(「落點」由來的 user 原話)不受影響 —— 不消失的 Toast 一樣有 × 可以關。受影響的只有本檔「落點」理由 1(AI 撰寫)「Toast 本來就讓得開:可關、會自己消失、滑過暫停」裡的「會自己消失」這一項,以及跟著它的「被蓋住的東西只會被擋一下(4 / 10 秒)」:一則不消失、等人處理的 Toast 不會自己讓開,會一直蓋在代理面板的輸入框這類東西上,直到使用者按 × 關掉。「可關」仍然成立,所以是削弱那條理由,不是推翻「不避讓」這個決定。等人處理的事因此不靠拉長 `duration` 讓 Toast 留著,而是放進產品的常駐位置。
+
+**規則來源(2026-11-26 更正)**:
+
+- 「禁止事項」第 4 條的原句「不把需要 user action 的內容放 Toast」由 21e26c4e(2026-04-18)寫入,原句沒有寫理由,只限定 `action 按鈕僅限「復原 / Undo」這類非必要後手`;設計原則頁「持續時間選擇」禁止 `duration=Infinity` 那條由 01a775ff(2026-04-18)寫入,當時的理由是「Toast 長時間停留會堆積,而且使用者注意力已轉移」。兩者都是 AI 推導(兩個 commit 都有 AI 共同作者註記),沒有 user 原話;現在兩條的依據改為上面三條。
+- 「Toast 會自動消失」這個理由原本寫在:「何時不用」的「關鍵錯誤或警告」與「需要使用者確認的訊息」兩列(d32f806c,2026-04-18)、「禁止事項」第 1 條(21e26c4e)、設計原則頁「使用指引」的兩張「何時不用」卡片(「關鍵錯誤 / 警告」「需要使用者確認的動作」,01a775ff),同樣是 AI 撰寫。它是循環論證:`duration` 型別上收得下 `Infinity`,sonner 遇到 `Infinity` 就不倒數(同上 sonner 2.0.7 `toast.duration === Infinity`),把倒數關掉這個理由就不存在了。2026-11-26 這幾處的理由都改成本段的「不能是唯一的路」。
+- user 相關的原話是 D10 乙「d10我就是要可以查看，為何不能查看？？有不合規？？」(8eb473c7,2026-11-06 寫入),它把「查看」加進允許清單;「禁止事項」第 4 條括號裡的判準(8eb473c7 的原句「不按也不影響流程、Toast 消失後頁面上找得到同一條路」)是 AI 寫的字,現在由理由 1 的三家原文支持,2026-11-26 依 C17 補上「或產品的常駐位置」。
+- Toast 規則裡由 user 決定的:有 `action` 預設 10 秒(「API」`duration`,2026-07-05 D4)、落點不避讓(「落點」〔UD-H31〕),以及 2026-11-26 C17 的「需要處理的通知(核准 / 回覆)的入口」(見「何時用」)。
 
 ---
 

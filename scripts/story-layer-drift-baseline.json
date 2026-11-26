@@ -16,7 +16,7 @@
     "div-heading": 0,
     "unknown-typography": 0,
     "story-counter-example": 4,
-    "layout-space-magic-ok": 300
+    "layout-space-magic-ok": 295
   },
   "files": {
     "packages/design-system/src/components/AccountMenu/account-menu.stories.tsx": {
@@ -29,16 +29,11 @@
     },
     "packages/design-system/src/components/AgentPanel/agent-panel.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 8,
+        "count": 3,
         "hits": [
-          "4ec43176031c",
           "53e1508b5d93",
-          "8340d7767714",
-          "bf89226d4740",
-          "c3f70974c8c1",
           "c839fbfeaba9",
-          "dd598861dfd3",
-          "f3ceec75d331"
+          "dd598861dfd3"
         ]
       }
     },
