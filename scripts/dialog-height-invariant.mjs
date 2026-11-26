@@ -15,7 +15,9 @@
  *   H5 視窗變矮時「內容溢出走 body 捲動」(`dialog.spec.md`「父層契約」逐字)——**每一支 dialog story** 都要
  *      (a) 沒有任何後代畫到容器外(容器自己 `overflow: hidden`,對齊 `overlay-surface.tsx:173-175`
  *          明文要求的父層契約:「parent…是 flex flex-col + max-h + overflow-hidden」)
- *      (b) 內容搆得到:捲動區 `scrollHeight > clientHeight` 時,捲到底之後最後一個互動元素要完整可見
+ *      (b) 內容搆得到:**每一個**捲動區 `scrollHeight > clientHeight` 時,各自捲到底之後,那個捲動區裡最後一個互動元素要完整可見
+ *          (不超出捲動區與容器);捲動區外最後一個互動元素(頁腳按鈕)不超出容器。2026-11-26 前只捲第一個捲動區、量整個對話框最後一個
+ *          互動元素,兩欄 dialog(每欄自帶捲動區)會量錯欄 —— 捲左欄、量右欄。
  *      H5 是 2026-09-12 user 截圖「dialog body 內容超出容器」的防線。當時 H1-H4 全綠 ——
  *      因為它們只測 dialog **自己**的高度,沒測「dialog 與 body 之間夾了別的 wrapper」的情形。
  *      根因:Tabs Root 是裸 `display:block` + `min-height:auto`,在受限的 flex column 裡收縮不了。
@@ -245,13 +247,20 @@ try {
           while (p && p !== c) { if (getComputedStyle(p).overflowY !== 'visible') return false; p = p.parentElement }
           return b.bottom > cr.bottom + 1 || b.top < cr.top - 1
         })
-        const vp = c.querySelector('[data-radix-scroll-area-viewport]')
+        // 每一個捲得動的捲動區各自捲到底,量「那個捲動區裡」最後一個互動元素(2026-11-26 起;兩欄 dialog 每欄自帶捲動區,
+        // overlay-surface.spec.md「兩欄 dialog 組合 canonical」第 1 條)。修前只捲第一個捲動區、卻量整個對話框最後一個互動元素:
+        // 「超大檔位:兩欄個人設定」捲的是左欄、量的是右欄最後一個開關 → 量具自己造出的紅。單一捲動區的 dialog 照舊:
+        // 捲動區最後一個互動元素 = 原本量的那一個(頁腳的按鈕在捲動區外,下方另量,與修前相同)。
         let reachable = true
-        if (vp && vp.scrollHeight > vp.clientHeight + 1) {
+        const ITEMS = 'input,button,label,a'
+        for (const vp of c.querySelectorAll('[data-radix-scroll-area-viewport]')) {
+          if (!(vp.scrollHeight > vp.clientHeight + 1)) continue
           vp.scrollTop = vp.scrollHeight
-          const last = [...c.querySelectorAll('input,button,label,a')].pop()
-          if (last) { const lb = last.getBoundingClientRect(); reachable = lb.bottom <= cr.bottom + 1 }
+          const last = [...vp.querySelectorAll(ITEMS)].pop()
+          if (last) { const lb = last.getBoundingClientRect(); reachable = reachable && lb.bottom <= Math.min(cr.bottom, vp.getBoundingClientRect().bottom) + 1 }
         }
+        const lastOverall = [...c.querySelectorAll(ITEMS)].pop()
+        if (lastOverall && !lastOverall.closest('[data-radix-scroll-area-viewport]')) { const lb = lastOverall.getBoundingClientRect(); reachable = reachable && lb.bottom <= cr.bottom + 1 }
         return { 溢出數: outside.length, 可達: reachable, 容器overflow: getComputedStyle(c).overflowY }
       }) } catch (error) {
         // 量測本身丟例外(頁面在量的途中換掉 / 崩潰)= 沒量到,不是「這支沒有 dialog」

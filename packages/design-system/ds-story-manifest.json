@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-11-26T01:32:47.442Z"
+    "generatedAt": "2026-11-26T11:46:49.634Z"
   },
   "components": {
     "accordion": {
@@ -745,6 +745,7 @@
           "design-system-components-dialog-展示--header-actions",
           "design-system-components-dialog-展示--large-with-table",
           "design-system-components-dialog-展示--extra-large-two-column",
+          "design-system-components-dialog-展示--extra-large-settings",
           "design-system-components-dialog-展示--with-tabs-in-header",
           "design-system-components-dialog-展示--open-snapshot",
           "design-system-components-dialog-展示--long-content-open",
@@ -1893,5 +1894,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1056
+  "totalStories": 1057
 }
