@@ -298,7 +298,7 @@ API 形狀對照:MUI X `singleSelect` 的 `valueOptions` 可以是函式,參數�
 
 Action measure 固定不隨 row tier 放大；row tier 只調整資料內容與 padding，utility affordance 維持同一視覺權重。
 
-**收納邏輯(consumer 自建)**:`rowActions` 是 raw callback `(row)=>ReactNode`,DataTable 原樣渲染回傳內容,**不代管計數 / 不自動 MoreVertical 收納**。建議 consumer 自行實作:1-2 個 → icon buttons 並排(全 size="xs");3+ → 前 1-2 個 inline + MoreVertical dropdown(全 size="xs";dropdown 包含所有操作,確保鍵盤可存取全部)。**Header/body 寬度同步**(DataTable 代管):header 渲染同一 `rowActions` 輸出但設為 invisible 佔位,確保 header 和 body 的 right region 同寬。**每列操作數量可以不一樣**(某些列回 `null`、某些列多一顆):佔位把**目前畫出來的每一列**(沒有虛擬捲動 = 這一頁;有 = 虛擬範圍裡的列)的輸出疊在同一格,操作欄寬 = 最寬那一列,空表 0(2026-11-27,workspace H 組 H8 回報的 bug:修前只畫第一列那一份,第一列沒有操作或比較少時其他列的按鈕被裁掉)。虛擬捲動時操作欄寬跟著範圍裡最寬的那一列走【AI 推導:捲到操作較多的段落時右區會變寬】。機械閘 `scripts/data-table-invariants.mjs` I43。
+**收納邏輯(consumer 自建)**:`rowActions` 是 raw callback `(row)=>ReactNode`,DataTable 原樣渲染回傳內容,**不代管計數 / 不自動 MoreVertical 收納**。建議 consumer 自行實作:1-2 個 → icon buttons 並排(全 size="xs");3+ → 前 1-2 個 inline + MoreVertical dropdown(全 size="xs";dropdown 包含所有操作,確保鍵盤可存取全部)。**Header/body 寬度同步**(DataTable 代管):header 渲染同一 `rowActions` 輸出但設為 invisible 佔位,確保 header 和 body 的 right region 同寬。**每列操作數量可以不一樣**(某些列回 `null`、某些列多一顆):佔位把**目前畫出來的每一列**(沒有虛擬捲動 = 這一頁;有 = 虛擬範圍裡的列)的輸出疊在同一格,操作欄寬 = 最寬那一列,空表 0(2026-11-27,workspace H 組 H8 回報的 bug:修前只畫第一列那一份,第一列沒有操作或比較少時其他列的按鈕被裁掉)。虛擬捲動時操作欄寬跟著範圍裡最寬的那一列走,捲動中沿用捲動前的範圍、停下後(約 250ms)才換,捲動的每一幀不多畫一份操作鈕【AI 推導:捲到操作較多的段落時右區會變寬;捲動途中新進的列若操作較多,停下前可能短暫被裁】。機械閘 `scripts/data-table-invariants.mjs` I43。
 
 ### 九之二、Cell action primitive 分類(2026-04-29 codified)
 

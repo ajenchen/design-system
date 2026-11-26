@@ -3179,14 +3179,22 @@ function DataTableInner<TData>(
    * 修前只畫 `rows[0]` 一份:第一列沒有操作(回 null)或比較少,右區就只有第一列那麼寬,其他列的按鈕被裁掉。
    * 「畫出來的列」= 沒有虛擬捲動時這一頁的全部列,有虛擬捲動時虛擬範圍裡的列(含 overscan,與表身同一份 `rowVirtualItems`);
    * 空表 0 份。每列一份元素快取(列身分與 rowActions 都沒變就回同一個元素):捲動時範圍裡留著的列直接 bail out,只畫新進範圍的列。
+   * **捲動中沿用捲動前的範圍,停下後才換**(虛擬化器 isScrolling,最後一個 scroll 事件後 isScrollingResetDelay 250ms 才轉 false、觸發重畫):
+   * 捲動的每一幀不多畫一份操作鈕(快速捲動的主執行緒成本,data-table-scroll-cost 量的就是這個);代價是捲動途中新進範圍的列若操作比較多,
+   * 停下前那 250ms 內可能被裁【AI 推導】,停下後一定齊(I43 量的是靜止狀態)。
    */
-  const actionsPlaceholderIdxKey = !hasRowActions ? '' : useVirtual ? rowVirtualItems.map((v) => v.index).join(',') : `0-${rows.length}`
+  const liveActionsIdxKey = !hasRowActions ? '' : useVirtual ? rowVirtualItems.map((v) => v.index).join(',') : `all:${rows.length}`
+  const frozenActionsIdxKeyRef = React.useRef(liveActionsIdxKey)
+  const actionsScrollingNow = useVirtual && virtualizer.isScrolling
+  if (!actionsScrollingNow) frozenActionsIdxKeyRef.current = liveActionsIdxKey
+  const actionsPlaceholderIdxKey = actionsScrollingNow ? frozenActionsIdxKeyRef.current : liveActionsIdxKey
   const actionsPlaceholderCacheRef = React.useRef<{ fn: unknown; map: Map<string, { original: unknown; el: React.ReactElement }> }>({ fn: null, map: new Map() })
   const headerActionsPlaceholder = React.useMemo(() => {
     if (!hasRowActions) return null
     const cache = actionsPlaceholderCacheRef.current
     if (cache.fn !== rowActions) { cache.fn = rowActions; cache.map = new Map() }
-    const idxs = useVirtual ? rowVirtualItems.map((v) => v.index) : rows.map((_, i) => i)
+    // 範圍由 key 本身表達(捲動中是凍結的那一份):虛擬 = 逗號分隔的列索引;非虛擬 = 這一頁全部列
+    const idxs = actionsPlaceholderIdxKey.startsWith('all:') ? rows.map((_, i) => i) : actionsPlaceholderIdxKey.split(',').filter(Boolean).map(Number)
     const next = new Map<string, { original: unknown; el: React.ReactElement }>()
     const out: React.ReactElement[] = []
     for (const i of idxs) {
@@ -3201,8 +3209,7 @@ function DataTableInner<TData>(
     }
     cache.map = next
     return out
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- rowVirtualItems 的範圍已由 actionsPlaceholderIdxKey 表達(同範圍不重算)
-  }, [hasRowActions, rowActions, rows, useVirtual, actionsPlaceholderIdxKey])
+  }, [hasRowActions, rowActions, rows, actionsPlaceholderIdxKey])
   const rightHeaderRef = React.useRef<HTMLDivElement>(null)
   const [measuredRightWidth, setMeasuredRightWidth] = React.useState(0)
   React.useLayoutEffect(() => {
