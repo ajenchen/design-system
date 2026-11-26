@@ -1,8 +1,8 @@
 {
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
-    "generatedAt": "2026-11-26T12:11:08.600Z",
-    "stories": 1111,
+    "generatedAt": "2026-11-26T14:16:46.775Z",
+    "stories": 1113,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
       "apps-template-appshell-dashboard--default",
@@ -75,6 +75,8 @@
       "design-system-components-alert-設計規格--state-behavior",
       "design-system-components-appshell-展示--agent-overlay",
       "design-system-components-appshell-展示--four-regions",
+      "design-system-components-appshell-展示--full-page-no-access",
+      "design-system-components-appshell-展示--full-page-not-found",
       "design-system-components-appshell-展示--menu-overlay",
       "design-system-components-appshell-展示--primary-header",
       "design-system-components-appshell-展示--primary-sidebar",
@@ -1116,7 +1118,7 @@
       "design-system-tokens-uisize--overview",
       "design-system-tokens-uisize--product-alignment"
     ],
-    "storyIdsSha256": "3aa3cc9aaea3020776b1f05bee2fdb968ee8db46c77d3093c215ecd2f75b9366",
+    "storyIdsSha256": "6ee30a95db3bb6b6907326cb8e285387ff3ca93c1e8dbaf4d4ff7d9e72bb4bb3",
     "fingerprints": 756,
     "linuxOnly": {
       "design-system-components-combobox-設計規格--inspector|color-contrast": "藍圖區塊的 9px text-fg-muted 小標(anatomy-utils.tsx:174):macOS 等寬字溢出區塊、axe 歸 incomplete 不計,Linux 放得下才計入 —— 只有 Linux(CI)量得到;值 = 2f367ee3(A76)寫入的 CI 實測;main 的 a11y drift 排程 2026-11-19(run 44499310317)在 Linux 量到同值 23 / 41。--color-fg-muted 已定案例外(color.spec.md「已定案(禁再問)」)",
@@ -1430,7 +1432,7 @@
     "design-system-components-empty-設計原則--copy-rule|color-contrast": 4,
     "design-system-components-empty-設計原則--next-action-rule|color-contrast": 6,
     "design-system-components-empty-設計原則--structure-rule|color-contrast": 4,
-    "design-system-components-empty-設計原則--usage-guidance|color-contrast": 10,
+    "design-system-components-empty-設計原則--usage-guidance|color-contrast": 9,
     "design-system-components-empty-設計規格--overview|color-contrast": 1,
     "design-system-components-empty-設計規格--scenario-matrix|color-contrast": 1,
     "design-system-components-empty-設計規格--slot-combinations|color-contrast": 4,
