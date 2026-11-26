@@ -52,7 +52,7 @@ import { resolveTimeFormatOptions, resolveTimePanelFormat, timePlaceholder } fro
  * Trigger:`<div role="combobox">` + `fieldWrapperStyles`(視覺仍是 Input wrapper,改為可點擊觸發浮層;
  *   2026-04-25 由 `<button>` 改 div 避 nested-interactive,對齊 Select / Combobox,鍵盤靠顯式 onKeyDown)
  * Popup:`Popover`(消費 overlay-surface pattern)
- * Panel 主體:自建 column picker(三欄 scrollable list),不引入第三方 time library
+ * Panel 主體:自建 column picker(時 / 分 / 秒 / 上下午 2–4 欄 scrollable list,欄數見 `./time-columns.tsx`),不引入第三方 time library
  *
  * ── 共用規則 ──
  * Mode / size / disabled / error 等詳見 `../Field/field-controls.spec.md`。
@@ -159,7 +159,7 @@ export interface TimePickerProps
   /** 允許清空已選值 */
   clearable?: boolean
   /**
-   * 是否顯示秒欄(三欄 picker)。預設 false(兩欄:時/分)。
+   * 是否顯示秒欄(面板多一欄秒)。預設 false。欄數跟語系:24 小時語系是時 / 分兩欄、開秒三欄;12 小時語系(例預設 zh-TW)最後多一欄上午 / 下午,是三欄、開秒四欄。
    * value 格式自動對應:false → "HH:mm",true → "HH:mm:ss";顯示(沒傳 formatOptions 時)有秒才寫秒,12 / 24 跟語系(例 zh-TW「下午2:30:15」)。
    */
   showSeconds?: boolean

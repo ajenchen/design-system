@@ -22,7 +22,7 @@ TimePicker 是**單一時間**(時/分/秒)輸入與顯示元件,對齊 Ant Desi
 **實作基礎**:
 - **Trigger**:`<div role="combobox">` + `fieldWrapperStyles`(視覺 = Input wrapper;**不用 `<button>`** —— 避免內層 `ItemInlineAction` 清除 button 構成 nested-interactive,對齊 Select / Combobox 同 pattern。Radix PopoverTrigger 在 `asChild` 下只 compose onClick 與 aria / data attributes,**不** inject 任何 onKeyDown——Enter / Space / ↓ 鍵盤開啟由 trigger 顯式 `onKeyDown` 實作,對齊 select.tsx canonical + APG select-only combobox 範例的開啟鍵)([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/combobox/examples/combobox-select-only.html#L102-L131)、[來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/combobox/combobox-pattern.html#L126))
 - **Popup**:`<Popover>`(消費 `patterns/overlay-surface/` 的 surface chrome)
-- **Panel 主體**:**自建** 2-3 欄 column picker(時 / 分 / 秒),**不引入第三方 time library**——自建讓 DS own 視覺與交互(對齊 Ant Design 的 Panel 結構 — [react-component/picker TimePanel](https://github.com/react-component/picker/tree/master/src/PickerPanel/TimePanel) + 本 DS token)
+- **Panel 主體**:**自建** 2–4 欄 column picker(時 / 分 / 秒 / 上下午;欄數見下方「Panel 寬度」),**不引入第三方 time library**——自建讓 DS own 視覺與交互(對齊 Ant Design 的 Panel 結構 — [react-component/picker TimePanel](https://github.com/react-component/picker/tree/master/src/PickerPanel/TimePanel) + 本 DS token)
 - **交互契約**:column scroll selector、minuteStep、Now / OK footer 與 clearable 共同構成這個元件的最小完整流程
 
 ---
@@ -83,7 +83,7 @@ open 軸同樣只開最小 API — **uncontrolled-only**:`defaultOpen`(初始開
   error={boolean}
   clearable={boolean}
   placeholder="請選擇時間"
-  showSeconds={boolean}          // 預設 false(兩欄:時/分)
+  showSeconds={boolean}          // 預設 false(時 / 分;12 小時語系另加上下午欄,欄數見「Panel 寬度」)
   minuteStep={1 | 5 | 10 | 15 | 30}   // 會議常用 15
   secondStep={1 | 5 | 10 | 15 | 30}   // showSeconds=true 時生效
   disabledTime={(parts) => ({    // 動態禁用某些時/分/秒
@@ -200,7 +200,7 @@ Panel 展開後的 column picker 結構:
 **寬度 rationale**:本 DS 以每欄約 80px 保留雙位數字的穩定 hit area；欄數變化不壓縮單欄可操作面積,所以 12 小時制多出的上下午欄同樣約 80px、面板跟著加寬【AI 推導 2026-11-26:照既有每欄 80px 推出,列入預覽清單】。
 
 **showSeconds / 12 小時制切換時 panel 寬度會跟著變**(刻意):
-- showSeconds=false 的 panel 本就應該更窄(`w-40`),兩欄 + 大量留白會顯得 panel 空洞
+- 欄數少的 panel 本就應該更窄(兩欄 `w-40`、三欄 `w-60`),少欄卻沿用多欄的寬度,大量留白會顯得 panel 空洞
 - Popover position 受 side / align / collisionPadding 控制,寬度變化只移動 panel 位置不影響 anchor 關係
 
 ---

@@ -197,18 +197,18 @@ export const ModeMatrix: Story = {
   ),
 }
 
-/** Panel 精度:showSeconds 三欄 vs 兩欄 / minuteStep 粒度 */
+/** Panel 精度:showSeconds 多一欄秒(預設語系 zh-TW 是 12 小時:時 / 分 / 上下午三欄 vs 時 / 分 / 秒 / 上下午四欄;24 小時語系沒有上下午欄,是兩欄 vs 三欄)/ 12 / 24 小時跟語系 / minuteStep 粒度 */
 export const PrecisionMatrix: Story = {
   name: '精度對照',
   render: () => (
     <div className="flex flex-col gap-3 w-80">
       <div>
         <div className="text-caption text-fg-muted mb-1">時 / 分(showSeconds=false,預設;預設語系 zh-TW 是 12 小時,面板最後多一欄上午 / 下午)</div>
-        <LiveTimePicker value="09:00" aria-label="時分兩欄時間選擇器" />
+        <LiveTimePicker value="09:00" aria-label="選到分鐘的時間選擇器" />
       </div>
       <div>
         <div className="text-caption text-fg-muted mb-1">時 / 分 / 秒(showSeconds=true)</div>
-        <LiveTimePicker value="09:00:00" showSeconds aria-label="時分秒三欄時間選擇器" />
+        <LiveTimePicker value="09:00:00" showSeconds aria-label="選到秒的時間選擇器" />
       </div>
       {/* 12 / 24 小時跟語系(TIME-12H-PANEL(定)2026-11-26;time-picker.spec.md「顯示格式化」):同一個時刻、同一份判斷,
           欄位的字、面板的欄、空白提示字一起換 */}
