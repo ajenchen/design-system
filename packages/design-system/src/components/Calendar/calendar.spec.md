@@ -130,15 +130,15 @@ Calendar 是**看事件的頁面 canvas**:在一段日期範圍裡瀏覽、定�
 
 | 目標 | 選項 | 結果 |
 |---|---|---|
-| 日期格 | `onDateClick`(必填) | 整格可點、滑過 `--neutral-hover`;日期數字是 `<button>`(Enter / Space → `onDateClick`) |
-| 日期格 | `readOnlyDates`(不可以傳 `onDateClick`) | 整格不亮、日期數字是一般文字、游標不變;鍵盤停靠點改為格子本身(見「A11y 預設」) |
+| 日期格 | `onDateClick`(必填) | 整格可點、手形游標、滑過不變色【CELL-HOVER(定)】;日期數字是 `<button>`(Enter / Space → `onDateClick`) |
+| 日期格 | `readOnlyDates`(不可以傳 `onDateClick`) | 整格不是點擊目標、日期數字是一般文字、游標不變(箭頭);鍵盤停靠點改為格子本身(見「A11y 預設」) |
 | 事件方塊 | `eventDetail` | 點了開內建詳情浮層(見「事件詳情浮層」) |
 | 事件方塊 | `onEventClick` | 點了呼叫產品的回呼,多帶 `{ anchor }` = 被點的那一列 / 那一段【總帳更正 #4】 |
 | 事件方塊 | `readOnlyEvents` | 方塊不可點、不亮、不是按鈕、沒有詳情;截斷時仍有完整標題提示 |
 | 單筆事件 | `CalendarEvent.readOnly` | 同上一列,只作用在這一筆(例:假日)【AI 推導:原本唯讀只能整個月曆一起設,假日要「單筆唯讀、其他可點」】 |
 
 - **為什麼擇一、不是可省略**:元件沒有內建的「新增」行為(不自動開表單);回呼若可省略、又拿「有沒有傳」決定長相,忘了傳的 consumer 會得到看起來能點、點了沒反應的月曆 —— M23(f) 禁的就是這件事。
-- **為什麼要有唯讀**:沒有「點日子新增」的月曆(新增走右上角、純看的假日行事曆)若照樣整格亮、日期照樣是按鈕,就是「看起來能點、點了沒反應」。只有「點了會有反應」的元素才有底色的滑過回饋(`../../../ds-canonical/references/hit-area-canonical.md`「一、可以操作的東西」第 5 條、「四、其他東西滑過不變」)。
+- **為什麼要有唯讀**:沒有「點日子新增」的月曆(新增走右上角、純看的假日行事曆)若照樣整格手形游標、日期照樣是按鈕,就是「看起來能點、點了沒反應」。只有「點了會有反應」的地方才是手形、才有底色的滑過回饋(`../../../ds-canonical/references/hit-area-canonical.md`「一、可以操作的東西」第 3 條、第 5 條、「四、其他東西滑過不變」)。
 - **命名**:沿用 DS 的 `readOnly` 語彙(`../Rating/rating.tsx` 的 `readOnly`、Field 家族的 readonly 模式),加上作用對象。世界級同語意:[MUI X `FormProps.readOnly`](https://github.com/mui/mui-x/blob/v9.14.0/packages/x-date-pickers/src/internals/models/formProps.ts#L8-L13)(「When read-only, the value cannot be changed but the user can interact with the interface.」)、[React Aria `useCalendarCell.ts#L207-L212`](https://github.com/adobe/react-spectrum/blob/4dd44e0f400636a87a9ad4390903e78c5ae6113c/packages/react-aria/src/calendar/useCalendarCell.ts#L207-L212)(唯讀時按下只移焦點,格陣導覽照常)。
 - **`onCreateEvent` 也必填,而且沒有唯讀版本**:右上角「新事件」是全域新增入口、工具列的固定元素、恆渲染,與日期格 / 事件方塊可不可點無關;哪些日期不能新增由新增流程自己擋【維持 U1】。
 - **唯讀事件與「詳情只能看」是兩件事**:`readOnlyEvents` / `readOnly` = 沒有詳情可開;`eventDetail.isEditable(event) === false` = 詳情照開、每個欄位只能看【`isEditable` 是 AI 推導,出處見「API(第一段)」`eventDetail` 那條】(MUI X Scheduler 官方文件原句「Events with `readOnly: true` (or belonging to a read-only resource) open the dialog in view-only mode.」,<https://mui.com/x/react-scheduler/event-calendar/editing/>;2026-11-26 前這裡引的 `dialog-utils.ts` 只有算浮層位置的 `calculatePosition`、沒有唯讀邏輯,出處不實,已換)。
@@ -209,22 +209,22 @@ interface CalendarEvent {
 - **日期數字在左上**【C10(改)】:今天的實心底與 1 號的「7月1日」一起在左上。這是 user 的可讀性判斷;研究查不到任何來源寫過「數字置左或置右」的理由,數字在左上的事件月曆有 Mantine(<https://github.com/mantinedev/mantine/blob/master/packages/@mantine/schedule/src/components/MonthView/MonthView.module.css>)、Toast UI(<https://unpkg.com/@toast-ui/calendar@2.1.3/dist/toastui-calendar.css>)、Syncfusion(<https://unpkg.com/@syncfusion/ej2-schedule@31.1.17/styles/material.css>)、FullCalendar v7 breezy / forma 主題(<https://unpkg.com/fullcalendar@7.1.5/themes/breezy/index.js>),只當背景。
 - **今天 = 實心底**【C8(定)】:日期框 `bg-info text-on-emphasis`(`--info`,不得改用 `--primary` 家族,`scripts/status-color-invariant.mjs` 守)【維持 U12】;讀屏見「A11y 預設」。事件月曆今天用實心的:MUI X 實心圓角方塊(<https://github.com/mui/mui-x/blob/master/packages/x-scheduler/src/month-view/month-view-row/MonthViewCell.tsx#L53-L109>)、Mantine 實心圓(<https://github.com/mantinedev/mantine/blob/master/packages/@mantine/schedule/src/components/MonthView/MonthView.module.css#L76-L131>)、Google Calendar 藍色實心圓(<https://workspaceupdates.googleblog.com/2024/10/new-look-and-feel-and-dark-mode-google-calendar.html>)、Apple 行事曆紅色實心圓(官方截圖是週檢視,<https://support.apple.com/guide/calendar/icl1010/mac>)、Notion 資料庫月曆紅色實心圓(<https://www.notion.com/help/calendars>)。**同一家的日期選擇器與事件月曆今天長得不同是常態**:MUI(<https://github.com/mui/mui-x/blob/master/packages/x-date-pickers/src/PickerDay/PickerDay.tsx#L93-L141>)、Ant Design(<https://github.com/ant-design/ant-design/blob/5d2ba41768697a3bc8912e9ab84590db44dc9b4c/components/calendar/style/index.ts#L133-L218>)、Mantine(<https://github.com/mantinedev/mantine/blob/master/packages/@mantine/dates/src/components/Day/Day.module.css#L58-L109>)—— 所以 `../DateGrid/date-grid.spec.md` 的今天短線不動。日後行事曆加「選取日期」時,選取的樣子**不得**與今天的實心底相同(待定 Q14b)。
 - **每月 1 號帶月份**【Q15(定)】:每月 1 號(含前後月溢出的那幾格)顯示 `Intl` `{ month: 'short', day: 'numeric' }`(zh-TW「7月1日」);今天剛好是 1 號時實心底包住整段字。窄到拿掉時間時只顯示「1」【總帳更正 #8】。讀屏名稱不受影響。世界級:Google Calendar「Nov 1」(<https://calendar.google.com/calendar/embed?src=j7gov1cmnqr9tvg14k621j7t5c%40group.calendar.google.com&src=3haig2m9msslkpf2tn1h56nn9g%40group.calendar.google.com&mode=MONTH&dates=20261101%2F20261128&ctz=UTC&hl=en>)、MUI X 1 號顯示「月 日」(<https://github.com/mui/mui-x/blob/master/packages/x-scheduler/src/month-view/month-view-row/MonthViewCell.tsx>)、Notion 資料庫「Feb 1」(<https://www.notion.com/help/calendars>)、Trello「Jun 1」(<https://support.atlassian.com/trello/docs/calendar-view/>)。
-- **非當月格**:只用淡字(日期數字 `fg-muted`),**不加底色**,滑過與當月格同一個滑過色 —— 非當月格與當月格可點性相同,disabled 字色留給真的不能操作的東西【維持 U3】。
+- **非當月格**:只用淡字(日期數字 `fg-muted`),**不加底色** —— 非當月格與當月格可點性相同(一樣手形游標、滑過一樣不變色、點了一樣在那天新增),disabled 字色與 `bg-muted`(「不可操作」的底,`../../tokens/color/color.spec.md`「Static Subtle Background」)留給真的不能操作的東西【維持 U3】。
 - **星期列**:是格陣的第一列(每格 `role="columnheader"`,見「A11y 預設」);文字**置中**【C10(改)】;字樣 `text-foreground text-body font-medium` 維持【P6,總帳更正 #6】;灰底條 `bg-muted` 維持現狀(沒有證據顯示是問題,【總帳更正 #9】)。內距【AI 推導,預覽時回報 user】:每格四邊 = 格子內距 4,內容盒高 = 列高單位 24(`h-tag-md`,字在盒內垂直置中)→ 列高 = 4 + 24 + 4 = 32,與日期列同一個列高單位,不跟字型行高走(「間距」表沒有列到這一格;改前寫死 `px-2 py-1.5`,列高 33)。星期列不跟週列捲、不做 sticky:`--muted` 是半透明,捲過去的內容會從灰底透出來。
 - **週末不加底**【Q10(定)】(Google Calendar 週末無底色,<https://calendar.google.com/calendar/embed?src=j7gov1cmnqr9tvg14k621j7t5c%40group.calendar.google.com&src=3haig2m9msslkpf2tn1h56nn9g%40group.calendar.google.com&mode=MONTH&dates=20261101%2F20261128&ctz=UTC&hl=en>)。假日由產品傳入**單筆唯讀的全天事件**,不做特殊日期樣式。
 - **隱藏週末 `hideWeekends`**【Q10(定)】:預設關;開了以後那兩欄不畫。【AI 推導】「週末」= 語系的週末(`Intl` weekInfo);只落在週末的事件不畫;跨過週末的長條在週五收、週一起,兩端直角(「跨日長條」);車道只用看得見的日子分配,只在週末的事件不佔車道(否則平白多出「+1」);週末由 `lib/date-locale.ts` `resolveWeekend(locale)` 給(zh-TW 週六日、en-IL 週五六),星期列同步拿掉那幾欄;鍵盤跳過被藏的日子,落點規則見「A11y 預設」鍵盤表。世界級:Notion Calendar 可選顯示週末(<https://www.notion.com/help/notion-calendar-settings>)、MUI X 可藏週末(<https://github.com/mui/mui-x/blob/master/packages/x-scheduler/src/month-view/month-view-row/MonthViewCell.tsx>)、FullCalendar `weekends`(<https://github.com/fullcalendar/fullcalendar/blob/main/packages/preact/src/themes/classic/index.tsx>)、Mantine(<https://github.com/mantinedev/mantine/blob/master/packages/@mantine/schedule/src/components/MonthView/MonthView.module.css>)。
 - **週數欄 `showWeekNumbers`**【Q10(定)、Q10b(定)】:預設關;左側獨立窄欄,寬 = 格子左內距 × 2 + 最寬週數(等寬數字;格子左內距 = 4,見「間距」)。週數 `text-body` 一般字重 `text-fg-secondary`、水平置中、上邊距與高度同日期框;欄頭「週」(`labels` 可換)`text-body` 一般字重 `text-fg-secondary`、上下左右置中。週數格的格線與日期格同一套(右 / 下各一條、最後一週不畫下線),星期列的灰底條延伸到欄頭「週」【AI 推導】。第一段不可點,第二段點了切到該週的週檢視。第一週怎麼算跟語系走,資料來源由工程定(`Intl` weekInfo 沒有「第一週最少幾天」,不得自編規則)—— 定為 CLDR `minDays`(`lib/date-locale.ts` `resolveFirstWeekMinDays`),週數 = 該週第一天的 `date-fns` `getWeek`、週起始日用本元件解析後的那一個【AI 推導】:2026 年底那一週(含 2027-01-01)en-GB 是第 53 週、en-US 與 zh-TW 是第 1 週。欄寬實作 = `calc(2 × 格子內距 + 2ch)`,星期列與週列讀同一個欄設定(POC:tabular-nums 兩位數實寬與 `2ch` 差 0.28px,zh-TW / en-US 相同)【AI 推導】。世界級:MUI X 左側獨立 28px 欄、欄頭「W」、不可點(<https://github.com/mui/mui-x/tree/master/packages/x-scheduler>),第一週依 CLDR(<https://github.com/mui/mui-x/tree/master/packages/x-scheduler-internals>);Syncfusion 左側 36px 欄、欄頭空白、不可點(<https://help.syncfusion.com/scheduler-sdk/react/schedule/views>);Mantine 左側 42px 欄、點了切週檢視(<https://mantine.dev/schedule/month-view/>);Outlook 官方說週數在月檢視的左邊界、預設關(<https://support.microsoft.com/en-US/outlook/calendar/turn-on-or-off-week-numbers-in-month-view-and-the-date-navigator-for-outlook>);FullCalendar 開 `navLinks` 時點週數切週檢視(<https://fullcalendar.io/docs/weekNumberCalculation>)。
 - **每一週等高**【C3】:週列平分格陣高度,格高不被內容撐高(MUI X 週列 `minmax(0,1fr)`,<https://github.com/mui/mui-x/blob/master/packages/x-scheduler/src/month-view/MonthView.tsx>)。月有幾週就畫幾週(4–6 列)。【AI 推導】格最小高 = 上內距 + 日期框 + 日期到第一列 + 一列 + 下內距 + 格線(4 + 24 + 4 + 24 + 4 + 1 = 61,至少看得到完整的一列或「+N」、下內距完整 4;格子的底線畫在格高裡面,不算進去時內容只剩 59);**事件列不被壓扁**:格子比內容矮時,放不下的列由格子裁掉,看得到的列一律高 24(放幾列見「每格筆數」);容器比「週數 × 格最小高」還矮時,格陣區在 Calendar 殼裡用 `ScrollArea` 捲動,工具列與星期列不捲;最後一週的格子不畫底線(避免與外框疊成雙線)。
-- **滑過**:日期格可點時整格 `--neutral-hover`,瞬間切換、不做過渡【維持 U2】;指標在可點的事件列 / 「+N」上時,格的滑過底不熄、事件列自己的滑過疊上去(`../../tokens/color/color.spec.md`「巢狀滑過」)【維持 U6;套到月曆是 AI 推導】;`readOnlyDates` 時不亮。
-- **命中區**【Q6(定)、總帳更正 #3】:懸停回饋的形狀 = 命中區(`../../../ds-canonical/references/hit-area-canonical.md`「一、可以操作的東西」第 1 條:滑過有樣式變化的位置,按下去就必須觸發它)。
+- **滑過**【CELL-HOVER(定)】:日期格可點時**滑過不變色**,只有手形游標告訴你「點了在這天新增」—— 依據 `../../../ds-canonical/references/hit-area-canonical.md`「一、可以操作的東西」第 2 條「點得到的地方不一定要有樣式變化。〔user N50〕」與第 3 條(點得到 → 手形);user 2026-11-26 第五輪決策卡點選「A:拿掉日期格的滑過底色,只留手形游標」(選項由 AI 擬)。三件事照舊、不能少:(1) 手形游標蓋滿整格(格內空白、日期鈕;第 3 條);(2) 鍵盤焦點框照舊(日期鈕走全域 `:focus-visible`,見「焦點框」);(3) 格內可點的事件列 / 長條 / 「+N」照舊有自己的滑過,瞬間切換、不做過渡【維持 U2】(第 1 條:畫面有變化的地方按下去都要觸發它)。`readOnlyDates` 時游標不變(箭頭)。2026-11-26 前整格滑過上 `--neutral-hover`(2026-04-21 首版 86c5436c 由 AI 放入、沒有出處,之後沒有一列決定過它)。只管月檢視的日期格,不延伸到其他格狀元件或日後有時段的週 / 日檢視(換一類東西要重新查證,meta-patterns M8「跨類別外推本身就是新主張」)。世界級:事件月曆的空白格多數滑過沒有底色 —— FullCalendar v7 經典主題格子只有今天 / 停用的底(<https://raw.githubusercontent.com/fullcalendar/fullcalendar/v7.1.5/packages/preact/src/themes/classic/index.tsx>)、Toast UI(<https://raw.githubusercontent.com/nhn/tui.calendar/main/apps/calendar/src/css/daygrid/dayGrid.css>)、React Big Calendar(<https://raw.githubusercontent.com/bigcalendar/react-big-calendar/master/src/sass/month.scss>)、MUI X(格子只有鍵盤焦點底色,<https://raw.githubusercontent.com/mui/mui-x/master/packages/x-scheduler/src/month-view/month-view-row/MonthViewCell.tsx>)、Kendo(<https://raw.githubusercontent.com/telerik/kendo-themes/develop/packages/core/scss/components/scheduler/_theme.scss>)、SAP OpenUI5(只有已選取的格子有滑過,<https://raw.githubusercontent.com/SAP/openui5/master/src/sap.m/src/sap/m/themes/base/SinglePlanningCalendarMonthGrid.less>);有底色的是 Syncfusion(<https://cdn.jsdelivr.net/npm/@syncfusion/ej2-schedule@31.2.15/styles/schedule/_theme.scss>)與 DevExtreme(<https://raw.githubusercontent.com/DevExpress/DevExtreme/main/packages/devextreme-scss/scss/widgets/generic/scheduler/_index.scss>)。沒有一家把不做的理由寫成文字。
+- **命中區**【Q6(定)、總帳更正 #3】:滑過有樣式變化的位置,按下去就必須觸發它(`../../../ds-canonical/references/hit-area-canonical.md`「一、可以操作的東西」第 1 條);日期格本身滑過不變,它的訊號是手形游標 —— 手形的範圍 = 命中區(格內空白與日期鈕是手形、點了在這天新增;唯讀的列與長條是箭頭、點了什麼都不發生)。
 
-| 位置 | 點了 | 滑過 |
+| 位置 | 點了 | 滑過 / 游標 |
 |---|---|---|
-| 可點的事件列 / 長條 | 開詳情(或呼叫 `onEventClick`);**阻止冒泡** | 自己的配對(淡底 step-1 → step-2;透明列 → `--neutral-hover`,`color.spec.md`「Hover 換色配對總則」),格的滑過照留 |
-| 「+N」 | 開「+N」清單浮層;**阻止冒泡** | `--neutral-hover`,格的滑過照留 |
-| 唯讀事件列 / 唯讀長條 | **阻止冒泡,什麼都不發生**(不開詳情、不新增) | 自己不亮,**格子在它上面也不亮** |
-| 日期數字鈕 | `onDateClick`(在這天新增) | 自己不亮,格亮(它是同一個目標的鍵盤入口,不是第二個目標:沒有自己的滑過、底色透明、完全落在格內;24 的框是列高,不是最小點擊尺寸 —— DS 不採觸控尺寸建議,`hit-area-canonical.md`「本 DS 不採納觸控尺寸建議」)【維持 U4】 |
-| 格內其他地方(內距、列與列的縫、日期列空白) | `onDateClick`(在這天新增) | 格 `--neutral-hover` |
+| 可點的事件列 / 長條 | 開詳情(或呼叫 `onEventClick`);**阻止冒泡** | 自己的配對(淡底 step-1 → step-2;透明列 → `--neutral-hover`,`color.spec.md`「Hover 換色配對總則」);格子不變;手形 |
+| 「+N」 | 開「+N」清單浮層;**阻止冒泡** | `--neutral-hover`;格子不變;手形 |
+| 唯讀事件列 / 唯讀長條 | **阻止冒泡,什麼都不發生**(不開詳情、不新增) | 自己不亮、格子不變;**箭頭**(蓋掉格子的手形) |
+| 日期數字鈕 | `onDateClick`(在這天新增) | 自己不亮、格子不變;手形(它是同一個目標的鍵盤入口,不是第二個目標:沒有自己的滑過、底色透明、完全落在格內;24 的框是列高,不是最小點擊尺寸 —— DS 不採觸控尺寸建議,`hit-area-canonical.md`「本 DS 不採納觸控尺寸建議」)【維持 U4】 |
+| 格內其他地方(內距、列與列的縫、日期列空白) | `onDateClick`(在這天新增) | 格子不變;手形 |
 
 **點格內空白處也把鍵盤位置帶過來**:格陣的停靠點(roving tabindex)搬到這一天、焦點落在這一天的日期鈕,之後 `Tab` 回來停在剛點的那天、consumer 開的對話框關掉後焦點也回到它(與 DataTable 試算表模式同一條:滑鼠點到哪一格,鍵盤位置就跟到哪一格,`../DataTable/data-table.spec.md`「試算表模式」);點日期鈕也走同一條路(Safari 點按鈕不給焦點,要主動給)。唯讀列阻止冒泡同時解掉一個錯日問題:長條的 DOM 放在它這一週第一個可見日的格子裡(見「跨日長條」),冒泡會落到第一格 —— 所有長條一律阻止冒泡,點第 3 天那段不會在第 1 天新增。單擊空白即新增的世界級:Google Calendar 點空白時段跳快速新增(說明頁寫的是時段,沒有專寫月檢視;<https://support.google.com/calendar/answer/72143?hl=en&co=GENIE.Platform%3DDesktop>)、MUI X 單擊空格新增(<https://github.com/mui/mui-x/blob/master/docs/data/scheduler/event-calendar/editing/editing.md>)、Syncfusion 單擊開快速新增(<https://help.syncfusion.com/scheduler-sdk/react/schedule/editor-template>)。
 
@@ -257,7 +257,7 @@ interface CalendarEvent {
 | 前綴 | 無(舊的左側 3px 色條拿掉)【AI 推導:色條改成有時段專用,兩種都有就分不出來】 | 左側類別色色條:類別 step-6(`CAT_ACCENT`,只給顏色)、寬 4(`calendar-geometry.ts`)、**高 = 字高、上下置中、圓頭**【BAR(定)】 |
 | 內容 | 標題;滿 24 小時的有時段事件,含真起點的那一段(`segment.isStart`)前面加開始時間【AI 推導】 | 開始時間 + 標題(同一行,一起截斷、省略號在行尾)【一起截斷是 AI 推導】 |
 | 字色 | 類別字色 step-7【維持 U10】 | 時間 `text-fg-secondary`、標題 `text-foreground`【TIMECOLOR(定)】 |
-| 滑過(可點時) | 同色深一格 step-2(`CAT_EVENT`) | `--neutral-hover`(透明底的配對,`../../tokens/color/color.spec.md`「Hover 換色配對總則」),疊在格子的滑過上 |
+| 滑過(可點時) | 同色深一格 step-2(`CAT_EVENT`) | `--neutral-hover`(透明底的配對,`../../tokens/color/color.spec.md`「Hover 換色配對總則」);格子本身不變(「Cell 規則」滑過條) |
 | 形狀 | `rounded-md`;斷開那一端直角(「跨日長條」) | `rounded-md`,只在滑過 / 焦點時看得見(permanent transparent,`item-anatomy.spec.md`「關鍵定義」) |
 
 - **色條 = 字高、圓頭**【BAR(定)】:user 原話「選 a 字高+圓頭好了，把色條視為字的一部分也一樣是有韻律的，且撐滿的話跟文字的落差有點太大且事件之間的間隔也不明顯」(三個對照版本 A 字高圓頭 / B 撐滿圓頭 / C 撐滿直角是 AI 做的對照圖)。實作:高 = `text-body` 的字級 token `--font-body-size`(14,不寫死)、在 24 的列裡上下置中(上下各 5,相鄰兩條色條之間 4 + 5 + 5 = 14);圓頭 = `rounded-sm`(`../../tokens/radius/radius.css`「短邊 ≤ 10px 用 sm」,寬 4 的 2px 圓角 = 兩端半圓)。世界級:Apple 行事曆 macOS 26 / 27 月檢視有時段事件 = 約一行字高的圓頭短豎條、上下置中(<https://support.apple.com/guide/calendar/symbols-used-in-calendar-symbls/27.0/mac/27>);另一種做法 Cron(2022 官方月檢視圖)撐滿列高(<https://www.cron.com/changelog/2022-01-17-month-view>)。
@@ -274,7 +274,7 @@ interface CalendarEvent {
 - **斷開那一端一律直角**【Q3(定)】:換週的兩端、起點在可見範圍前、終點在可見範圍後(以上 = Q3(定) 備註的「換週與超出可見範圍」);被溢出格的「+N」切開時靠那一格的那一端、「+N」清單裡這一天之前 / 之後還有的那一端【AI 推導:依 Q3(定)「一律」】—— 一律拿掉該端圓角,只有事件真正的起點 / 終點留 `rounded-md`;不新增箭頭等形狀。FullCalendar 只有真起點 / 終點圓角(<https://fullcalendar.io/docs/eventSlicing>)、React Big Calendar 斷開那端直角(<https://unpkg.com/react-big-calendar@1.20.0/lib/css/react-big-calendar.css>)、Toast UI 接續段直角(<https://github.com/nhn/tui.calendar/blob/main/apps/calendar/src/components/events/horizontalEvent.tsx>)。
 - **車道分配**【AI 推導】:每一週列各自分配;依「格內排序」逐筆放進「它涵蓋的每一天都還空著」的最低車道,同一個事件在同一週每一天保持同一條車道;單日事件照同一規則補進空著的車道。每一列在一週裡的 y 位置固定(列高 24 + 列距 4 的等距),長條才能在相鄰格對齊。
 - **放不下時逐格切**【AI 推導】:同一條長條在有空間的格照畫,在溢出的那一格被「+N」取代(FullCalendar 預設也這樣切,<https://fullcalendar.io/docs/eventSlicing>)。
-- **滑過 / 點擊 / 焦點**【AI 推導】:整段是一個目標;點哪一段,詳情就錨在那一段。指標在長條上時,**指標底下那一格**保留格的滑過底(長條不一定是那一格的 DOM 子孫,實作要自己保證,不能只靠 CSS `:hover`)。
+- **滑過 / 點擊 / 焦點**【AI 推導】:整段是一個目標;點哪一段,詳情就錨在那一段。指標在長條上時只有長條自己變,格子不變(「Cell 規則」滑過條【CELL-HOVER(定)】)。長條不一定是指標底下那一格的 DOM 子孫,所以「按在哪一段 = 從哪一天進格」由實作用指標所在點的命中測試認,不沿 DOM 祖先找。
 - **實作備註**【AI 推導,實作前寫 POC 驗證(M2)】:ARIA 規定 `row` 底下只能是 `gridcell`,所以長條的 DOM 放在它這一週第一個可見日的格子裡、用定位畫過後面幾格;從它涵蓋的其他日子進格也走得到同一個元素(「A11y 預設」)。
 
 ### 格內排序【AI 推導】
@@ -386,9 +386,9 @@ DS 以桌機為主(`../../tokens/typography/typography.spec.md`「DS 主場景�
 
 ## 第一段實作範圍(相對 2026-11-24 程式)
 
-**畫面看得見的變化**:有時段事件改無底 + 色條 + 開始時間 + 標題,全天改淡底長條、拿掉左 3px 條【C2】(色條字高、圓頭【BAR(定)】;時間灰、標題主色【TIMECOLOR(定)】;新增 neutral 事件色;窄寬時拿掉時間);多日事件改橫跨長條、換週切段、斷開端直角【C1、Q3(定)】;每格筆數依格高、各週等高,「+N more」改「+N」、與事件同高、可點【C3、C6】;日期數字右上 → 左上,今天實心底跟著移【C10(改)】;每月 1 號顯示「7月1日」【Q15(定)】;整套間距改「間距」表(事件列 24 / 14px、列距 2 → 4、格內距 6 → 4)【SPACING(定)】;焦點框往外;工具列改 ChromeHeader;沒傳語系時新加的時間也是中文格式【Q9(定)】(標題與星期已在 0.1.0-beta.151 的 `Calendar.locale` 改成中文,不在本段);「+N」字色 muted → secondary;容器太矮時格陣可捲、底緣雙線拿掉;週數欄 / 隱藏週末 / 載入中骨架(選用)【Q10(定)、Q10b(定)、Q11(定)】。
+**畫面看得見的變化**:有時段事件改無底 + 色條 + 開始時間 + 標題,全天改淡底長條、拿掉左 3px 條【C2】(色條字高、圓頭【BAR(定)】;時間灰、標題主色【TIMECOLOR(定)】;新增 neutral 事件色;窄寬時拿掉時間);多日事件改橫跨長條、換週切段、斷開端直角【C1、Q3(定)】;每格筆數依格高、各週等高,「+N more」改「+N」、與事件同高、可點【C3、C6】;日期數字右上 → 左上,今天實心底跟著移【C10(改)】;每月 1 號顯示「7月1日」【Q15(定)】;整套間距改「間距」表(事件列 24 / 14px、列距 2 → 4、格內距 6 → 4)【SPACING(定)】;焦點框往外;工具列改 ChromeHeader;沒傳語系時新加的時間也是中文格式【Q9(定)】(標題與星期已在 0.1.0-beta.151 的 `Calendar.locale` 改成中文,不在本段);「+N」字色 muted → secondary;容器太矮時格陣可捲、底緣雙線拿掉;週數欄 / 隱藏週末 / 載入中骨架(選用)【Q10(定)、Q10b(定)、Q11(定)】;日期格滑過不再變灰、只有手形游標【CELL-HOVER(定)】。
 
-**行為變化**:點「+N」開以格子為中心的當天清單、不再變成新增【Q2b(定)】;點事件開詳情浮層、各欄位就地改【C7、Q5(定)、Q16(定)】;從清單點事件,詳情開在旁邊、清單不關,`onEventClick` 也一樣【C4、總帳更正 #4】;點唯讀事件不再新增、格子在唯讀列上不亮【總帳更正 #3】;午夜結束與過夜不滿 24 小時只畫開始那天【Q7(定)】;只有日期沒標全天的改畫全天長條。
+**行為變化**:點「+N」開以格子為中心的當天清單、不再變成新增【Q2b(定)】;點事件開詳情浮層、各欄位就地改【C7、Q5(定)、Q16(定)】;從清單點事件,詳情開在旁邊、清單不關,`onEventClick` 也一樣【C4、總帳更正 #4】;點唯讀事件不再新增、游標是箭頭【總帳更正 #3】;午夜結束與過夜不滿 24 小時只畫開始那天【Q7(定)】;只有日期沒標全天的改畫全天長條。
 
 **對產品工程師的破壞性變更**:全天事件 `end` 改「不含」(現有資料 +1 天);`renderEventTile` 內容只能一列高、多收 `segment` 參數(`{ isStart, isEnd, continuesBefore, continuesAfter, isSegmentRepeat }`,畫延續與重複標題用);星期列移進格陣(DOM 結構換了);讀屏字串改寫(事件名稱從「事件:{標題}」改成「{標題},{時間或日期}{,全天}」);`CalendarEvent.color` 多收 `'neutral'`(在 `renderEventTile` 裡拿 `event.color` 去查 12 色相表的要先處理它);`CAT_ACCENT` 的內容從左側 3px 邊框改成色條底色。
 
@@ -434,6 +434,7 @@ DS 以桌機為主(`../../tokens/typography/typography.spec.md`「DS 主場景�
 | BAR(定) | 有時段事件的色條 = 字高、上下置中、圓頭(寬 4、間隔 4 不變);2026-11-25 決策總帳 | 「選 a 字高+圓頭好了，把色條視為字的一部分也一樣是有韻律的，且撐滿的話跟文字的落差有點太大且事件之間的間隔也不明顯」(A 字高圓頭 / B 撐滿圓頭 / C 撐滿直角三個對照版本是 AI 做的圖) |
 | TIMECOLOR(定) | 有時段事件的時間 `text-fg-secondary`、標題 `text-foreground`;2026-11-25 決策總帳 | 選「時間灰、標題主色 (Recommended)」 |
 | DT-DIRECTION(定) | 事件詳情在格陣與「+N」清單都照 DS 子選單擺法:開在右側、對齊上緣、隔 8,右邊放不下翻左(見「事件詳情浮層」位置;2026-11-26 已實作,閘 `scripts/calendar-month-invariant.mjs` DT-side / DT-side-right / DT-side-flip / DT-list);2026-11-26 決策卡 | 第一輪留言「詳情的觸發點很明確就是事件吧？為何不是按照ds既有pattern?」;第二輪 user 點選「格陣和清單都照子選單擺法:先開右側」(2026-11-26 決策卡;選項與建議是 AI 擬的),同卡留言「可以照你建議，但一般 popover 在下方空間不足時也會往上開，對吧？跟 select menu 的行為是同一個 ssot?」(問句;協調者回覆:是,Popover / SelectMenu / DropdownMenu 同一套 Radix 碰撞翻面,詳情照子選單先開右、放不下翻左) |
+| CELL-HOVER(定) | 月檢視可點的日期格滑過不變色、只留手形游標;鍵盤焦點框、事件 /「+N」自己的滑過、點空白新增、唯讀照舊(見「Cell 規則」滑過條;2026-11-26 已實作,閘 `scripts/calendar-month-invariant.mjs` HV1–HV4);2026-11-26 第五輪決策卡 | user 點選「A:拿掉日期格的滑過底色,只留手形游標」(選項與建議是 AI 擬的;留言欄空白) |
 | DATE-TIME(定) | 時間 12 / 24 跟語系、可用既有參數覆寫(本元件 `eventTimeFormat`);數字日期一律補零、不給補零開關(見「資料語意」時間顯示、「事件詳情浮層」時間欄;2026-11-26 已實作,DatePicker / TimePicker 同一條);2026-11-26 決策卡 | 第一輪兩則留言「為何不補零？」「可以跟著語系有一個預設？但是一樣可以獨立調整？然後跟著中文語系預設是12小時，英文的話是24小時？」;第二輪 user 點選「時間跟語系(12 / 24)、日期一律補零,兩者都能單獨覆寫」(2026-11-26 決策卡;選項與建議是 AI 擬的;跟語系時 en-US 也是 12 小時,卡上 en-US 例字「10:00 AM」),同卡留言「補零這件事應該可以不用給覆寫？一律都補零？」(問句;協調者依此回覆「日期一律補零、不另給補零開關」) |
 
 **維持(先前的 user 決定,預設不重議)**:user 2026-11-23 原話「我決定過的部分基本上就不用重議了吧？除非跟研究或是擴充性有關或是有衝突或是違背ds一致的設計語言 才需要重新評估吧？」
@@ -444,10 +445,10 @@ DS 以桌機為主(`../../tokens/typography/typography.spec.md`「DS 主場景�
 | U2 | 滑過瞬間切換、不做過渡(全 DS) | 「第三題改成全部瞬間」(2026-09-10) |
 | U3 | 非當月格不加底色 | 選『可以，拿掉底色 (Recommended)』(2026-09-25,選項由 AI 提供) |
 | U4 | 格子是非互動容器 | 2026-06-11「2c 修 code」(程式註記;逐字原話引不出) |
-| U6 | 巢狀滑過:卡片保留、按鈕往上一階(全 DS) | 選『卡片保留、按鈕再亮一層 (Recommended)』(2026-09-25;原文在 `color.spec.md`「巢狀滑過」) |
+| U6 | 巢狀滑過:卡片保留、按鈕往上一階(全 DS;2026-11-26 起月曆格子沒有滑過色,格內事件不再疊在格子的滑過上【CELL-HOVER(定)】) | 選『卡片保留、按鈕再亮一層 (Recommended)』(2026-09-25;原文在 `color.spec.md`「巢狀滑過」) |
 | U7 | 月格鍵盤:一個停靠點、方向鍵、F2 進格 | 「符合我們一致的設計語言且不違背世界級的設計就照建議」(有條件同意) |
 | U8 | 唯讀日期格 / 事件方塊 | 「確保符合我們一致的設計語言且不違背世界級的設計且都有確保整個ds 是SSOT,避免漂移就照你建議做」 |
-| U9 | 深色滑過格上 7 個色相對比 < 4.5 擱置 | 「這個先忽略」(2026-09-26) |
+| U9 | 深色滑過格上 7 個色相對比 < 4.5 擱置(2026-11-26 起格子不上滑過底【CELL-HOVER(定)】,月曆不再出現這個組合) | 「這個先忽略」(2026-09-26) |
 | U10 | 淺色類別淡底上的字維持 step-7 | 「要我拍板的第一題就照舊規格」(2026-09-29) |
 | U11 | `--fg-muted` 維持現狀 | 「這個問題你很早之前就問過我了,而且上次我就說維持現狀。這次也是,等我要改再等我主動」(2026-09-21) |
 | U12 | 今天用 `--info` | commit 96f75ac1 記 user 選『改用 --info(對齊 token 字典)』(原對話已不存在) |
@@ -516,11 +517,11 @@ DS 以桌機為主(`../../tokens/typography/typography.spec.md`「DS 主場景�
 
 **`renderEventTile` 的鍵盤責任歸屬**:自訂方塊的外層 wrapper 由本元件統一 own `role="button"`、`tabIndex={-1}`、`data-calendar-tile`、焦點框與 Enter/Space activation —— 自訂視覺不會把鍵盤責任推給 consumer。`readOnlyEvents` 時外層只是一層排版用的 `div`。回傳內容必為 presentational(不可再巢狀 button / link),而且必須放得進一列的高度(車道等距)【AI 推導】;第二個參數 `segment` 帶這一段的延續資訊【AI 推導】。
 
-**`renderEventTile` 的滑過責任歸屬**:外層 wrapper 只 own 鍵盤與命中、不畫滑過(它不知道自訂內容的靜止底);滑過由 consumer 在回傳內容上畫,規則與內建事件列同一份:可點才有、唯讀不畫;滑過值 = 自己靜止底的配對(`color.spec.md`「Hover 換色配對總則」);亮起來的形狀 = 命中區,回傳內容要鋪滿 wrapper(`hit-area-canonical.md`「一-4 細則」);指到方塊上時宿主格的滑過照亮。
+**`renderEventTile` 的滑過責任歸屬**:外層 wrapper 只 own 鍵盤與命中、不畫滑過(它不知道自訂內容的靜止底);滑過由 consumer 在回傳內容上畫,規則與內建事件列同一份:可點才有、唯讀不畫;滑過值 = 自己靜止底的配對(`color.spec.md`「Hover 換色配對總則」);亮起來的形狀 = 命中區,回傳內容要鋪滿 wrapper(`hit-area-canonical.md`「一-4 細則」);宿主格本身不上滑過底(「Cell 規則」滑過條【CELL-HOVER(定)】)。
 
 **Focus**:鍵盤聚焦時(`focus-visible`)畫外描邊,幾何見 `focus-canonical.md`「框怎麼畫」;日期數字鈕走全域 `:focus-visible`;事件列、長條、「+N」、自訂外層往外(見「焦點框」);`readOnlyDates` 的格子往內。
 
-**驗證**:Storybook a11y addon 0 critical violation。對比:文字 4.5:1 / UI 3:1,已知例外兩條 —— 淺色主題類別淡底上 step-7 的字有 5 個色相不到 4.5【維持 U10】;深色滑過中的格上 7 個色相不到 4.5【維持 U9】。
+**驗證**:Storybook a11y addon 0 critical violation。對比:文字 4.5:1 / UI 3:1,已知例外一條 —— 淺色主題類別淡底上 step-7 的字有 5 個色相不到 4.5【維持 U10】。(原本的第二條「深色滑過中的格上 7 個色相不到 4.5【U9】」2026-11-26 起不再發生:格子不上滑過底【CELL-HOVER(定)】。)
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 

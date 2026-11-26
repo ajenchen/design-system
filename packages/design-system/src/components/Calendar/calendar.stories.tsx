@@ -360,7 +360,7 @@ export const SidePanelNarrow: Story = {
 export const ReadOnlyDatesCustomTileKeyboard: Story = {
   name: '唯讀日期 × 自訂事件方塊鍵盤',
   tags: ['test-only'],
-  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:517「Enter/Space activation」
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:518「Enter/Space activation」
   parameters: { demoFocus: 'keep' },
   render: () => (
     <div className="h-screen p-4 bg-canvas">
@@ -555,7 +555,7 @@ const ENGLISH_EVENTS: CalendarEvent[] = [
 export const EnglishLabelsOverride: Story = {
   name: '英文讀屏字串覆寫',
   tags: ['test-only'],
-  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:498「字串可覆寫」
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:499「字串可覆寫」
   render: () => (
     <div className="h-screen p-4 bg-canvas">
       <Calendar

@@ -199,17 +199,17 @@ export const ColorMatrix: Story = {
                 <tr>
                   <Td>Outside day cell</Td>
                   <Td mono>text-fg-muted · 無底色</Td>
-                  <Td>上/下月溢出日期只用淡字區分;格子跟當月一樣可點、一樣的滑過色(同 DateGrid 鄰月日子)</Td>
+                  <Td>上/下月溢出日期只用淡字區分;格子跟當月一樣可點、滑過一樣不變色(同 DateGrid 鄰月日子)</Td>
                 </tr>
                 <tr>
                   <Td>Hover cell</Td>
-                  <Td mono>data-[hovered]:bg-neutral-hover</Td>
-                  <Td>提示可點擊新增入口(日期格可點時)。亮的是指標底下那一格:指在跨日長條上亮指標所在的那一天(不是長條起點那一天),指在可點的事件上格子照亮、事件自己的滑過疊上去;指在唯讀的事件上格子不亮</Td>
+                  <Td mono>cursor-pointer · 無滑過底色</Td>
+                  <Td>日期格可點時:滑過格子不變色,只有手形游標提示「點了在這天新增」。指到事件上只有事件自己變;指到唯讀的事件上游標是箭頭、點了什麼都不發生。鍵盤焦點框照舊</Td>
                 </tr>
                 <tr>
                   <Td>唯讀的格(readOnlyDates)</Td>
-                  <Td mono>無 hover 底色 · 日期數字為 span(同字級、同今天 pill)· 格子 focus-visible:focus-ring-inset</Td>
-                  <Td>沒有「點日子新增」時宣告:格子不亮、日期數字不是按鈕、游標不變;鍵盤停靠點改為格子本身,方向鍵照常</Td>
+                  <Td mono>無 cursor-pointer · 日期數字為 span(同字級、同今天 pill)· 格子 focus-visible:focus-ring-inset</Td>
+                  <Td>沒有「點日子新增」時宣告:格子不是點擊目標、日期數字不是按鈕、游標不變(箭頭);鍵盤停靠點改為格子本身,方向鍵照常</Td>
                 </tr>
                 <tr>
                   <Td>週末(hideWeekends)</Td>
@@ -267,12 +267,12 @@ export const ColorMatrix: Story = {
                 <tr>
                   <Td>滑過(可點時)</Td>
                   <Td mono>長條 {BAR_HOVER_CLASS_GUIDE} · 有時段 hover:bg-neutral-hover</Td>
-                  <Td>長條換同色濃一階(淺色變深、深色變亮);有時段的透明列換透明底的配對 --neutral-hover,疊在格子的滑過色上;瞬間切換、不做過渡</Td>
+                  <Td>長條換同色濃一階(淺色變深、深色變亮);有時段的透明列換透明底的配對 --neutral-hover;格子本身不變色;瞬間切換、不做過渡</Td>
                 </tr>
                 <tr>
                   <Td>唯讀的事件(readOnlyEvents / 單筆 readOnly)</Td>
                   <Td mono>長條同上色、不帶 hover(CAT_SUBTLE)· 有時段列不亮 · 無 cursor-pointer</Td>
-                  <Td>事件沒有詳情可開時宣告:方塊不亮、不是按鈕、不進格內導覽(F2 找不到它);指在它上面時格子也不亮(點了什麼都不發生);截斷時仍有提示</Td>
+                  <Td>事件沒有詳情可開時宣告:方塊不亮、不是按鈕、不進格內導覽(F2 找不到它);指在它上面游標是箭頭(點了什麼都不發生);截斷時仍有提示</Td>
                 </tr>
                 <tr>
                   <Td>放不下的格</Td>
@@ -295,13 +295,13 @@ export const StateBehavior: Story = {
     <div className="h-screen p-4 bg-canvas">
       <div className="mb-2 text-body text-fg-muted space-y-1">
         <div>• <b>today</b> cell:date 數字加 <code>bg-info text-on-emphasis rounded-full</code> 圓</div>
-        <div>• <b>outside month</b>:前後月日期數字走淡字 <code>text-fg-muted</code>,cell 不加底色(跟當月格一樣可點、一樣的滑過色)</div>
+        <div>• <b>outside month</b>:前後月日期數字走淡字 <code>text-fg-muted</code>,cell 不加底色(跟當月格一樣可點、滑過一樣不變色)</div>
         <div>• <b>放不下的 cell</b>:每格放幾列依格高;放不下時最後一列換成「+N」,點它展開當天清單(見下一則「「+N」清單開著」)</div>
         <div>• <b>跨日事件</b>:一條橫跨多格的長條,換週切段,斷開那一端直角(「Alex 休假」7/20–7/22、「機房搬遷」7/24–7/27)</div>
         <div>• <b>event hover</b>:長條切同色濃一階(淺色變深、深色變亮)<code>hover:bg-{'{color}'}-2</code>(如 blue → <code>--color-blue-2</code>);有時段的透明列換 <code>--neutral-hover</code>;都帶 <code>cursor-pointer</code></div>
         <div>• <b>兩種長相</b>:全天 / 跨日 = 類別淡底長條;有時段 = 無底一列「色條 + 開始時間 + 標題」(「設計審查」7/5 上午10:00)</div>
         <div>• <b>empty cell</b>:無事件保持純底色,點擊觸發 onDateClick</div>
-        <div>• <b>cell hover</b>:只亮指標底下那一格 —— 指在「Alex 休假」7/22 那段亮 7/22;指在可點的事件上格子照亮;指在唯讀的事件上(例:展示頁「團隊行事曆」7/3 的公司創立紀念日)格子不亮</div>
+        <div>• <b>cell hover</b>:格子不變色,只有手形游標(點了在那天新增);指在可點的事件上只有事件自己變;指在唯讀的事件上(例:展示頁「團隊行事曆」7/3 的公司創立紀念日)游標是箭頭、點了什麼都不發生</div>
         <div>• <b>唯讀</b>(<code>readOnlyDates</code> / <code>readOnlyEvents</code>,各自宣告):格子 / 事件方塊不亮、不是按鈕、游標不變;鍵盤仍可在格陣內走動(見<StoryLink kind="Design System/Components/Calendar/設計原則" name="唯讀的日期格與事件">設計原則 — 唯讀的日期格與事件</StoryLink>);右上角「新事件」是全域新增入口,唯讀時照樣在</div>
       </div>
       <CalendarDemo events={sampleEvents} defaultReferenceDate={now} today={now} locale={LOCALE} />
