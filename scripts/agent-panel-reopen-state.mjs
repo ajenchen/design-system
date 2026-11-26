@@ -1,7 +1,22 @@
 #!/usr/bin/env node
 // ═══════════════════════════════════════════════════════════════════════════
 // AgentPanel 關閉後再打開:狀態必須還在(spec E 條「閱讀位置保存」/ F 條「初始化為關閉」)
+// 另守 N30(入口鈕殼重掛的第一格,見檔尾)與 P 系列(代理回覆的內文,見下一段)
 // ═══════════════════════════════════════════════════════════════════════════
+//
+// ── P 系列(2026-11-26,第六輪決策卡 E1)── 代理回覆的內文
+// SSOT:`components/AgentPanel/agent-panel.spec.md`「4. AgentMessage」的「代理回覆的內文」(user 2026-11-26 選 A)。
+// 量展示「回覆內文:段落、清單與引用」裡含 blockquote 的那一則代理回覆,一般 / 大密度各一次:
+//   P1 直接子節點之間的距離 = 規格段距(一般 12 / 大 16),頁面上的 --layout-space-tight 也是這個值
+//   P2 ul / ol 有項目符號:li 是 list-item、圓點 / 數字、標記在外,標記那一格截圖真的有非底色的像素;字左緣離代理那一則左緣 20
+//   P3 清單項目之間 4
+//   P4 第一個子節點頂 = 代理那一則頂、最後一個底 = 代理那一則底(首尾不留外距)
+//   P5 我方氣泡不受影響:在氣泡裡暫放兩段 p + 一個 ul,段距 0、沒有項目符號、沒有縮排
+//   P6 引用:左線 1px、線色 = --divider、字色 = --fg-secondary、不斜體、線到字 12
+//   P7 帶 class 的清單不受影響:在代理那一則暫放一個帶 class 的 ul → 沒有項目符號、沒有縮排、項目之間 0
+// `--selftest`(對照組,只跑 P 系列):先量一次不動的頁面必須全綠,再逐一注入舊病,每一種都必須讓指定的那一條紅 ——
+//   拿掉這組樣式(回到只管連結的舊版)→ P1 / P2 / P3 / P6;把樣式套到我方氣泡 → P5;第一段加 8px 上外距 → P4;
+//   段距改回範例舊值 8 → P1;樣式不分有沒有 class 套到所有清單 → P7。任一種沒紅 = 量具瞎了,exit 1。
 //
 // SSOT:`components/AgentPanel/agent-panel-fab.spec.md`「放置與互斥」段(2026-09-27 自 agent-panel.spec.md 拆出)。
 //
@@ -33,13 +48,15 @@
 // G2:關閉面板後再打開,閱讀位置與草稿必須還在
 import { statSync } from 'node:fs'
 import { join } from 'node:path'
+import { PNG } from 'pngjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { launchBrowserOrSkip, openStory, requireFreshStorybookBuild, settleAfterInteraction, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 const S=join(process.cwd(),'storybook-static')
 // 沒有建置 → MISSING-BUILD exit 2(缺前置;lib/launch-browser.mjs 的共用標記)。原本下一段 statSync 直接 ENOENT 崩掉(2026-09-25,待辦總帳 C5)
 // 建置存在、且不比被驗的原始碼舊:lib/launch-browser.mjs requireFreshStorybookBuild(全部瀏覽器閘同一份;2026-09-27,待辦總帳 C5)
 requireFreshStorybookBuild(S, ['packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx',
-                               'packages/design-system/src/components/AgentPanel/agent-panel.tsx'])
+                               'packages/design-system/src/components/AgentPanel/agent-panel.tsx',
+                               'packages/design-system/src/components/AgentPanel/agent-panel.stories.tsx'])
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
 const sv=await startA11yStaticServer({rootDirectory:S,defaultFile:'iframe.html'})
 process.once('exit',(code)=>{ if(code&&sv.notFound.length) console.error('同源 404:', [...new Set(sv.notFound)].join(', ')) })
@@ -57,6 +74,144 @@ const settle=async(what)=>{
   console.error(`✗ INSTRUMENT-FAIL ${what}:互動之後 ${r.framesWaited} 格內版面沒有靜止(變動 ${r.lateChanges} 次)—— 儀器失效,不是產品裁決`)
   await br.close(); await sv.stop(); process.exit(2)
 }
+
+// ── P 系列:代理回覆的內文(檔頭「P 系列」;規格值住 agent-panel.spec.md「代理回覆的內文」那張表)──
+const PROSE_STORY_ID = 'design-system-components-agentpanel-展示--reply-prose'
+const PROSE_SPEC = { gap: { md: 12, lg: 16 }, indent: 20, liGap: 4, quoteInset: 12, quoteBorder: 1 }
+const near = (a, b) => Number.isFinite(a) && Math.abs(a - b) <= 0.5
+async function openProse(density) {
+  await pg.setViewportSize({ width: 1600, height: 900 })
+  const url = `${B}/iframe.html?id=${encodeURIComponent(PROSE_STORY_ID)}&viewMode=story&globals=${encodeURIComponent(`theme:light;density:${density}`)}`
+  try {
+    await openStory(pg, url, { waitFor: '[role="log"] blockquote', settleFrames: 10, notFound: sv.notFound })
+  } catch (error) {
+    if (!(error instanceof StoryRenderInstrumentError)) throw error
+    console.error(`✗ ${error.message}`); console.error(`✗ agent-panel-reopen-state P 系列:儀器失效 —— 「回覆內文」範例開不起來(@${density})`)
+    await br.close(); await sv.stop(); process.exit(2)
+  }
+}
+/** 頁面上量一次(先把那一則捲到畫面中間再量:截圖要量標記那一格,座標必須是捲完之後的 —— M32(f)) */
+async function measureProse() {
+  const scrolled = await pg.evaluate(() => { const q = document.querySelector('[role="log"] blockquote'); q?.parentElement?.scrollIntoView({ block: 'center' }); return !!q })
+  if (!scrolled) return { err: '找不到含 blockquote 的代理那一則(範例沒有畫出來)' }
+  await settle('捲到代理回覆')
+  const m = await pg.evaluate(() => {
+    const round = (n) => Math.round(n * 10) / 10
+    const rect = (e) => e.getBoundingClientRect()
+    // 字的左緣:元素裡第一個有寬度的行框(Range 量的是字,不是盒子 —— 縮排在盒子的內距裡)
+    const firstLine = (el) => { const range = document.createRange(); range.selectNodeContents(el); return [...range.getClientRects()].find((x) => x.width > 0) ?? null }
+    const textLeft = (el) => firstLine(el)?.left ?? NaN
+    const log = document.querySelector('[role="log"]')
+    const quote = log.querySelector('blockquote')
+    const body = quote.parentElement
+    const kids = [...body.children]
+    const listOf = (l, originLeft) => {
+      const lis = [...l.children]; const cs = getComputedStyle(l); const line = firstLine(lis[0])
+      return { tag: l.tagName.toLowerCase(), type: cs.listStyleType, position: cs.listStylePosition, display: getComputedStyle(lis[0]).display,
+        indent: round(textLeft(lis[0]) - originLeft), liGaps: lis.slice(1).map((li, i) => round(rect(li).top - rect(lis[i]).bottom)),
+        markerClip: line ? { x: rect(l).left, y: line.top, width: Math.max(0, line.left - rect(l).left - 2), height: line.height } : null }
+    }
+    const out = { tight: parseFloat(getComputedStyle(body).getPropertyValue('--layout-space-tight')) }
+    out.gaps = kids.slice(1).map((k, i) => ({ pair: `${kids[i].tagName.toLowerCase()}→${k.tagName.toLowerCase()}`, gap: round(rect(k).top - rect(kids[i]).bottom) }))
+    out.edges = { top: round(rect(kids[0]).top - rect(body).top), bottom: round(rect(body).bottom - rect(kids.at(-1)).bottom) }
+    out.lists = kids.filter((k) => k.matches('ul, ol')).map((l) => listOf(l, rect(body).left))
+    const qs = getComputedStyle(quote)
+    const probe = document.createElement('div')
+    probe.style.cssText = 'position:absolute;visibility:hidden;color:var(--fg-secondary);border-inline-start:1px solid var(--divider)'
+    document.body.appendChild(probe)
+    const want = { color: getComputedStyle(probe).color, border: getComputedStyle(probe).borderInlineStartColor }
+    probe.remove()
+    const bw = parseFloat(qs.borderInlineStartWidth)
+    out.quote = { borderWidth: bw, borderColor: qs.borderInlineStartColor, color: qs.color, fontStyle: qs.fontStyle, inset: round(textLeft(quote) - rect(quote).left - bw), want }
+    // P5:我方氣泡(有底色的那一個訊息內層)暫放兩段 p + 一個 ul,量完拿掉
+    const bubble = [...log.children].map((msg) => msg.firstElementChild).find((x) => x && getComputedStyle(x).backgroundColor !== 'rgba(0, 0, 0, 0)')
+    if (!bubble) { out.user = { err: '找不到我方氣泡' } } else {
+      const added = ['<p>甲</p>', '<p>乙</p>', '<ul><li>丙</li><li>丁</li></ul>'].map((html) => { const t = document.createElement('template'); t.innerHTML = html; const n = t.content.firstElementChild; bubble.appendChild(n); return n })
+      const [p1, p2, ul] = added
+      out.user = { pGap: round(rect(p2).top - rect(p1).bottom), list: listOf(ul, rect(ul).left) }
+      added.forEach((n) => n.remove())
+    }
+    // P7:代理那一則暫放一個帶 class 的 ul(DS 元件內部的清單都帶 class),量完拿掉
+    const classed = document.createElement('ul'); classed.className = 'p7-probe'; classed.innerHTML = '<li>戊</li><li>己</li>'
+    body.appendChild(classed)
+    out.classed = listOf(classed, rect(classed).left)
+    classed.remove()
+    return out
+  })
+  // 標記那一格截圖:數跟底色差很多的像素(有圓點 / 數字才會有;沒有標記 = 全是底色)
+  for (const list of m.lists) {
+    const c = list.markerClip
+    if (!c || c.width < 1 || c.height < 1) { list.markerInk = 0; continue }
+    const png = PNG.sync.read(await pg.screenshot({ clip: { x: c.x, y: c.y, width: c.width, height: c.height } }))
+    const counts = new Map()
+    for (let i = 0; i < png.data.length; i += 4) { const k = `${png.data[i]},${png.data[i + 1]},${png.data[i + 2]}`; counts.set(k, (counts.get(k) ?? 0) + 1) }
+    const bg = [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0].split(',').map(Number)
+    let ink = 0
+    for (let i = 0; i < png.data.length; i += 4) if (Math.max(Math.abs(png.data[i] - bg[0]), Math.abs(png.data[i + 1] - bg[1]), Math.abs(png.data[i + 2] - bg[2])) > 60) ink++
+    list.markerInk = ink
+  }
+  return m
+}
+/** 純判定:量到的數字 → 不符合的條目([{ id, msg }]);主判定與 --selftest 共用這一份 */
+function judgeProse(m, density) {
+  const bad = []
+  const fail = (id, msg) => bad.push({ id, msg: `${id} @${density}:${msg}` })
+  if (m.err) { fail('P0', m.err); return bad }
+  const gap = PROSE_SPEC.gap[density]
+  if (m.gaps.length < 5 || m.lists.length < 2) fail('P0', `前提:範例要有段落、ul、ol、引用至少 6 個子節點(量到 ${m.gaps.length + 1} 個、清單 ${m.lists.length} 個)`)
+  if (!near(m.tight, gap)) fail('P1', `--layout-space-tight = ${m.tight},規格 ${gap}`)
+  for (const g of m.gaps) if (!near(g.gap, gap)) fail('P1', `${g.pair} 距離 ${g.gap},應 ${gap}`)
+  for (const l of m.lists) {
+    const want = l.tag === 'ol' ? 'decimal' : 'disc'
+    if (l.type !== want || l.position !== 'outside' || l.display !== 'list-item') fail('P2', `${l.tag} 項目符號 ${l.type} / ${l.position} / li ${l.display},應 ${want} / outside / list-item`)
+    if (!(l.markerInk >= 3)) fail('P2', `${l.tag} 標記那一格沒有畫出東西(非底色像素 ${l.markerInk})`)
+    if (!near(l.indent, PROSE_SPEC.indent)) fail('P2', `${l.tag} 字左緣離代理那一則左緣 ${l.indent},應 ${PROSE_SPEC.indent}`)
+    for (const g of l.liGaps) if (!near(g, PROSE_SPEC.liGap)) fail('P3', `${l.tag} 項目之間 ${g},應 ${PROSE_SPEC.liGap}`)
+  }
+  if (!near(m.edges.top, 0) || !near(m.edges.bottom, 0)) fail('P4', `首段頂離代理那一則頂 ${m.edges.top}、末段底離底 ${m.edges.bottom},都應 0`)
+  if (m.user.err) fail('P5', m.user.err)
+  else if (!near(m.user.pGap, 0) || m.user.list.type !== 'none' || !near(m.user.list.indent, 0) || m.user.list.liGaps.some((g) => !near(g, 0))) fail('P5', `我方氣泡被套到內文樣式:段距 ${m.user.pGap}、ul ${m.user.list.type}、縮排 ${m.user.list.indent}、項目之間 ${m.user.list.liGaps.join('/')}(都應 0 / none)`)
+  const q = m.quote
+  if (!near(q.borderWidth, PROSE_SPEC.quoteBorder) || q.borderColor !== q.want.border || q.color !== q.want.color || q.fontStyle !== 'normal' || !near(q.inset, PROSE_SPEC.quoteInset)) fail('P6', `引用 左線 ${q.borderWidth}px ${q.borderColor}(應 1px ${q.want.border})、字色 ${q.color}(應 ${q.want.color})、${q.fontStyle}(應 normal)、線到字 ${q.inset}(應 ${PROSE_SPEC.quoteInset})`)
+  const c = m.classed
+  if (c.type !== 'none' || !near(c.indent, 0) || c.liGaps.some((g) => !near(g, 0))) fail('P7', `帶 class 的 ul 被套到內文樣式:${c.type}、縮排 ${c.indent}、項目之間 ${c.liGaps.join('/')}(應 none / 0 / 0)`)
+  return bad
+}
+
+if (process.argv.includes('--selftest')) {
+  // 對照組(檔頭 P 系列最後一段):mutate 在頁面裡執行,必須自足(不能引用本檔的變數)
+  const MUTANTS = [
+    { name: '不動的頁面', expect: [] },
+    { name: '拿掉這組樣式(回到只管連結的舊版)', expect: ['P1', 'P2', 'P3', 'P6'], mutate: () => {
+      const b = document.querySelector('[role="log"] blockquote').parentElement
+      for (const c of [...b.classList]) if (c.startsWith('[&') && !c.startsWith('[&_a')) b.classList.remove(c)
+    } },
+    { name: '樣式套到我方氣泡', expect: ['P5'], mutate: () => {
+      const log = document.querySelector('[role="log"]'); const b = log.querySelector('blockquote').parentElement
+      const bubble = [...log.children].map((msg) => msg.firstElementChild).find((x) => x && getComputedStyle(x).backgroundColor !== 'rgba(0, 0, 0, 0)')
+      for (const c of b.classList) if (c.startsWith('[&')) bubble.classList.add(c)
+    } },
+    { name: '第一段加 8px 上外距', expect: ['P4'], mutate: () => { document.querySelector('[role="log"] blockquote').parentElement.firstElementChild.style.marginTop = '8px' } },
+    { name: '段距改回範例舊值 8', expect: ['P1'], mutate: () => { [...document.querySelector('[role="log"] blockquote').parentElement.children].slice(1).forEach((k) => { k.style.marginTop = '8px' }) } },
+    { name: '樣式不分有沒有 class 套到所有清單', expect: ['P7'], mutate: () => {
+      const s = document.createElement('style'); s.textContent = '[role="log"] ul { list-style-type: disc; padding-inline-start: 20px } [role="log"] ul > li + li { margin-top: 4px }'; document.head.appendChild(s)
+    } },
+  ]
+  let blind = 0
+  for (const mu of MUTANTS) {
+    await openProse('md')
+    if (mu.mutate) { await pg.evaluate(mu.mutate); await settle(`注入:${mu.name}`) }
+    const got = judgeProse(await measureProse(), 'md')
+    const ids = new Set(got.map((f) => f.id))
+    const ok = mu.expect.length === 0 ? got.length === 0 : mu.expect.every((id) => ids.has(id)) && !ids.has('P0')
+    if (!ok) blind++
+    console.log(`${ok ? '✓' : '✗'} selftest「${mu.name}」應紅 [${mu.expect.join(', ') || '無'}],實際紅 [${[...ids].join(', ') || '無'}]`)
+    if (!ok) got.forEach((f) => console.log(`    ${f.msg}`))
+  }
+  console.log(blind ? `\n✗ selftest:${blind} 種情況量具沒有照預期紅 / 綠` : '\n✓ selftest:每一種舊病都被指名紅、不動的頁面全綠')
+  await br.close(); await sv.stop(); process.exit(blind ? 1 : 0)
+}
+
 const st={id:'design-system-components-agentpanel-展示--task-assistant'}
 console.log('story:', st.id)
 try {
@@ -185,6 +340,18 @@ const homeTop = await shellTop()
 const homeExpect = n30.H - n30.loose - 40
 ck('N30 貼邊 → 回家:過渡中途(100ms)位置落在兩端之間(calc / clamp 之間仍有內插)', fromTop != null && midTop != null && homeTop != null && midTop > Math.min(fromTop, homeTop) + 2 && midTop < Math.max(fromTop, homeTop) - 2, `貼邊 ${fromTop} → 100ms ${midTop} → 家 ${homeTop}`)
 ck('N30 回家後 top = 舞台高 − loose − 40(right / top 都由 CSS 變數錨定,不吃 fallback 16)', homeTop != null && Math.abs(homeTop - homeExpect) <= 1 && (await pg.evaluate(() => document.querySelector('[data-placement]').style.right)) === 'var(--layout-space-loose)', `top ${homeTop} / 應 ${homeExpect}`)
+
+// ── P 系列(檔頭):代理回覆的內文,一般 / 大密度各量一次 ──
+for (const density of ['md', 'lg']) {
+  await openProse(density)
+  const m = await measureProse()
+  const got = judgeProse(m, density)
+  for (const id of ['P0', 'P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7']) {
+    const mine = got.filter((f) => f.id === id)
+    if (id === 'P0' && !mine.length) continue
+    ck(`${id} @${density} 代理回覆的內文${id === 'P0' ? '(前提)' : ''}`, mine.length === 0, mine.map((f) => f.msg).join(';') || (id === 'P1' ? `段距 ${m.gaps?.map((g) => g.gap).join(' / ')}` : ''))
+  }
+}
 
 console.log(out.join('\n')); console.log(fail?`\n✗ ${fail} 項未通過`:'\n✓ 全部通過')
 await br.close(); await sv.stop(); process.exit(fail?1:0)

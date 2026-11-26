@@ -138,8 +138,8 @@ function SprintReply() {
         steps={[<span key="1">已讀取 48 筆待辦</span>, <span key="2">比對排程規則 12 條</span>]}
         currentStep={<span>正在標記衝突項目…</span>}
       />
-      {/* @layout-space-magic-ok: 同一則代理訊息的內文段距 8px(思考塊 / 回執 / 清單 / 段落之間)—— 規格沒寫這個值(agent-panel.spec.md「4. AgentMessage(訊息)」沒有定義代理訊息的段距),不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
-      <p className="mt-2">{SPRINT_REPLY}</p>
+      {/* 思考塊 → 段落的距離由 AgentMessage 代理那一側給(agent-panel.spec.md「代理回覆的內文」),這裡不加 class */}
+      <p>{SPRINT_REPLY}</p>
     </>
   )
 }
@@ -243,6 +243,73 @@ export const MultipleReplies: Story = {
           { role: 'agent', content: '物流延遲主要來自北倉(62%),多集中在 8 月中旬颱風週;南倉 23%、外包倉 15%。', copyText: '物流延遲主要來自北倉(62%),多集中在 8 月中旬颱風週;南倉 23%、外包倉 15%。' },
           { role: 'user', content: '好,幫我寫一段給北倉主管的摘要。' },
           { role: 'agent', content: COMPLAINT_SUMMARY, copyText: COMPLAINT_SUMMARY },
+        ],
+      }),
+    })
+    return (
+      <PanelFrame>
+        {({ close }) => (
+          <AgentPanel onClose={close}>
+            <AgentPanelHeader {...demo.header} onClose={close} />
+            <DemoConversation messages={demo.messages} />
+            <AgentPromptInput {...demo.prompt} />
+          </AgentPanel>
+        )}
+      </PanelFrame>
+    )
+  },
+}
+
+/** 「回覆內文」那一則複製時放進剪貼簿的字(段落、清單、引用照順序換行) */
+const RELEASE_CHECK_REPLY = [
+  '公告排在週四 20:00 發出,發之前還有三件事:',
+  '・封面圖還沒選,設計組給了兩個版本',
+  '・「離線模式」那一段的上線日期要等 QA 確認',
+  '・英文版還沒送翻譯',
+  '建議照這個順序處理:',
+  '1. 先問 QA 離線模式能不能週四上線,不能就把那一段移到下一期',
+  '2. 選定封面圖',
+  '3. 最後送翻譯,週三下班前交回',
+  'QA 負責人 Alan 在 #release 頻道:「離線模式還有 2 個 P1,最快週五才能驗完。」',
+  '照他的說法,離線模式這期趕不上;要我先把那一段從草稿拿掉嗎?',
+].join('\n')
+
+/**
+ * 回覆內文:代理的回覆多半是 markdown 轉出來、不帶 class 的 `p` / `ul` / `ol` / `blockquote`,直接放進代理那一則就好 ——
+ * 段距、項目符號與縮排、項目間距、引用左線都由 AgentMessage 代理那一側給,第一段上面、最後一段下面不多留空。
+ * 我方氣泡不套這組樣式。
+ */
+export const ReplyProse: Story = {
+  name: '回覆內文:段落、清單與引用',
+  render: function ReplyProseStory() {
+    const demo = useAgentDemo({
+      ...demoScene('c2', {
+        messages: [
+          { role: 'user', content: 'Sprint 24 的公告發出去之前,還有哪些事要先確認?' },
+          {
+            role: 'agent',
+            content: (
+              <>
+                <p>公告排在週四 20:00 發出,發之前還有三件事:</p>
+                <ul>
+                  <li>封面圖還沒選,設計組給了兩個版本</li>
+                  <li>「離線模式」那一段的上線日期要等 QA 確認</li>
+                  <li>英文版還沒送翻譯</li>
+                </ul>
+                <p>建議照這個順序處理:</p>
+                <ol>
+                  <li>先問 QA 離線模式能不能週四上線,不能就把那一段移到下一期</li>
+                  <li>選定封面圖</li>
+                  <li>最後送翻譯,週三下班前交回</li>
+                </ol>
+                <blockquote>
+                  <p>QA 負責人 Alan 在 #release 頻道:「離線模式還有 2 個 P1,最快週五才能驗完。」</p>
+                </blockquote>
+                <p>照他的說法,離線模式這期趕不上;要我先把那一段從草稿拿掉嗎?</p>
+              </>
+            ),
+            copyText: RELEASE_CHECK_REPLY,
+          },
         ],
       }),
     })
@@ -527,10 +594,8 @@ export const DecisionSummaryInFlow: Story = {
             role: 'agent',
             content: (
               <>
-                已按你的選擇繼續:
+                <p>已按你的選擇繼續:</p>
                 <AgentDecisionSummary
-                  // @layout-space-magic-ok: 同一則代理訊息的內文段距 8px(思考塊 / 回執 / 清單 / 段落之間)—— 規格沒寫這個值(agent-panel.spec.md「4. AgentMessage(訊息)」沒有定義代理訊息的段距),不由 AI 補進規格(F-S7),沿用已發布值(main 同值)
-                  className="mt-2"
                   entries={[
                     { question: '公告要用哪種語氣?', answer: '正式版' },
                     { question: '什麼時候發布?', answer: '今晚 20:00' },
@@ -1148,16 +1213,15 @@ function UrlRegistryScene({ initial }: { initial?: SceneInitial }) {
       { role: 'agent', content: (
         <>
           <p>跟你問的有關的有四處:</p>
-          {/* @layout-space-magic-ok: 清單上方 8px = 同一則代理訊息的內文段距 —— 規格沒寫這個值(agent-panel.spec.md「4. AgentMessage(訊息)」沒有定義代理訊息的段距),不由 AI 補進規格(F-S7),沿用已發布值(main 同值);清單項之間 4px 是 ul 裡的同質清單列(utility-registry canonical_micro_geometry 認得) */}
-          <ul className="mt-2 flex flex-col gap-1">
+          {/* 段距、項目符號、縮排與項目間距由 AgentMessage 代理那一側給(agent-panel.spec.md「代理回覆的內文」),清單不加 class */}
+          <ul>
             <li><a href={taskUrl(4821)} id="demo-link-task-4821" onClick={(e) => { e.preventDefault(); fromAgent(() => openTask(4821), 'modal') }}>任務 #4821 修正登入逾時</a></li>
             <li><a href={taskUrl(4830)} id="demo-link-task-4830" onClick={(e) => { e.preventDefault(); fromAgent(() => openTask(4830), 'modal') }}>任務 #4830 對帳批次逾時重試</a>(Alan 的,跟登入逾時共用同一組 timeout 設定)</li>
             <li><a href={MY_TASKS.url} id="demo-link-mine" onClick={(e) => { e.preventDefault(); fromAgent(() => go({ url: MY_TASKS.url }), 'page') }}>{MY_TASKS.label}</a>(你名下的「支付失敗通知信」跟它同一條路徑)</li>
             {/* @layout-space-magic-ok: 連結文字 ↔ 外部連結圖示 4px —— 同一個連結內部的行內間距;規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
             <li><a href="https://support.example.com/tickets/88213" id="demo-link-zendesk" target="_blank" rel="noopener noreferrer">Zendesk 客訴 #88213<ExternalLink size={14} className="ml-1 inline-block align-[-2px]" aria-hidden /></a></li>
           </ul>
-          {/* @layout-space-magic-ok: 同一則代理訊息的內文段距 8px —— 規格沒寫這個值(agent-panel.spec.md「4. AgentMessage(訊息)」沒有定義代理訊息的段距),不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
-          <p className="mt-2">另外有人在討論串提到 <span id="demo-unconfirmed">/projects/9999</span>,但系統裡查不到這個專案,我就沒有放連結。</p>
+          <p>另外有人在討論串提到 <span id="demo-unconfirmed">/projects/9999</span>,但系統裡查不到這個專案,我就沒有放連結。</p>
         </>
       ) },
     ] },

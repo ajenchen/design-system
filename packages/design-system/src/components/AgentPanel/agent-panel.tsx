@@ -1094,6 +1094,29 @@ export interface AgentMessageProps extends React.HTMLAttributes<HTMLDivElement> 
   toolbar?: React.ReactNode
 }
 
+/**
+ * 代理那一側的內文樣式(agent-panel.spec.md「4. AgentMessage」的「代理回覆的內文」;E1 user 2026-11-26 選 A)。
+ * 產品直接放不加 class 的 p / ul / ol / blockquote(markdown 轉出來的樣子),間距、項目符號、引用線由這裡給。
+ * ── 消費的 SSOT ──
+ * - 連結:text-primary / hover text-primary-hover + 底線(spec「4. AgentMessage」第一條)
+ * - 段距:`--layout-space-tight`(tokens/layoutSpace/layoutSpace.css;與文件頁的文字 / 清單同一個值 ——
+ *   stories-helpers/examples/tutorial-page.tsx `createTutorialRule`「文字 / 清單 … 彼此照順序以 tight 排」)【AI 推導 2026-11-26】
+ * - 清單縮排 20(`ps-5`)、項目之間 4(`mt-1`):DS 清單既有值(stories-helpers/examples/tutorial-page.tsx `TutorialList` 的 `list-disc pl-5 space-y-1`)
+ * - 引用:AgentThinking 內文那條左線(本檔「5. AgentThinking」:`border-l border-divider` + 左縮排 12 + `text-fg-secondary`)
+ * 只管直接子節點之間(段距)與不帶 class 的清單 / 引用 —— DS 元件內部的清單都帶 class,不會被套上項目符號。
+ * 首尾不留外距:第一個子節點的上外距、最後一個的下外距歸零(三家世界級同做法,spec「世界級對照」);
+ * `flow-root` 讓外距留在這一則裡、量得到,不穿出去跟訊息之間的輪距疊在一起。
+ */
+const AGENT_PROSE_CLASSES = [
+  '[&_a]:text-primary [&_a:hover]:text-primary-hover [&_a]:underline-offset-2 [&_a]:underline', // spec:151 長文閱讀需要底線可掃描(2026-09-08 從 hover 才畫改回恆畫)
+  'flow-root [&>:first-child]:mt-0 [&>:last-child]:mb-0',
+  '[&>*+*]:mt-[var(--layout-space-tight)]',
+  '[&_ul:not([class])]:list-disc [&_ul:not([class])]:ps-5 [&_ul:not([class])>li+li]:mt-1',
+  '[&_ol:not([class])]:list-decimal [&_ol:not([class])]:ps-5 [&_ol:not([class])>li+li]:mt-1',
+  '[&_blockquote:not([class])]:border-s [&_blockquote:not([class])]:border-divider [&_blockquote:not([class])]:ps-3 [&_blockquote:not([class])]:text-fg-secondary',
+  '[&_blockquote:not([class])>*+*]:mt-[var(--layout-space-tight)]',
+]
+
 const AgentMessage = React.forwardRef<HTMLDivElement, AgentMessageProps>(
   (
     { role = 'agent', attachments, onAttachmentClick, toolbar, className, children, ...props },
@@ -1114,7 +1137,7 @@ const AgentMessage = React.forwardRef<HTMLDivElement, AgentMessageProps>(
                   'max-w-[85%] rounded-md bg-secondary px-3 py-2',
                   'animate-in fade-in-0 slide-in-from-bottom-2 duration-[var(--motion-duration-overlay)] motion-reduce:animate-none',
                 ]
-              : 'w-full [&_a]:text-primary [&_a:hover]:text-primary-hover [&_a]:underline-offset-2 [&_a]:underline' // spec:151 長文閱讀需要底線可掃描(2026-09-08 從 hover 才畫改回恆畫),
+              : ['w-full', AGENT_PROSE_CLASSES],
           )}
         >
           {attachments && attachments.length > 0 && (
@@ -1326,7 +1349,7 @@ function PromptAttachmentRow({
     // 鍵盤停在 Tag / +N 時焦點框下緣被切掉(列底沒有內距)—— focus-canonical.md「框怎麼畫」:預設往外、四邊完整(SH-clip)。
     // 同 Combobox 單行 Tag 列的 `tagRowOverflowClass`(combobox.tsx:同一份 OverflowTagList、同一個理由;`clip` 不建捲動容器,
     // 不可改成 overflow-x-hidden —— 單軸 hidden 會把另一軸算成 auto)。
-    // @layout-space-magic-ok: Tag 相互間距 4、距內緣 4 = 本元件規格寫的值 —— agent-panel.spec.md:247「相互間距 4、距內緣 4」(「7. AgentPromptInput(複合輸入盒)」附件列那一行)
+    // @layout-space-magic-ok: Tag 相互間距 4、距內緣 4 = 本元件規格寫的值 —— agent-panel.spec.md:267「相互間距 4、距內緣 4」(「7. AgentPromptInput(複合輸入盒)」附件列那一行)
     <div ref={rowRef} className={cn(TAG_ROW_CONTAINER_CLASS, 'flex items-center gap-1 overflow-x-clip px-1 pt-1')}>
       <OverflowTagList
         items={items}
@@ -1421,9 +1444,9 @@ const AgentPromptInput = React.forwardRef<HTMLDivElement, AgentPromptInputProps>
             'block w-full resize-none bg-transparent outline-none',
             'px-[var(--field-px)] py-[var(--field-control-py-md)] text-body text-foreground',
             // @disabled-color-allow: 這個輸入盒沒有 disabled 狀態,placeholder 的 muted 不會跟 disabled 疊在一起(M24 管的是 disabled 元件內的字)——
-            // textarea(本檔 :1403)不帶 disabled;props(:1279 AgentPromptInputProps 只繼承 div 的 HTMLAttributes)沒有 disabled 可傳;
-            // 外框寫死 fieldChromeStyles({ mode: 'edit' })(:1391);代理進行中(busy,:1285)只把送出鈕換成停止,輸入框照常可打字。
-            // 規格 agent-panel.spec.md:241 外框 =「Textarea edit×default 同一組字串」,沒有停用態。日後若加 disabled,
+            // textarea(本檔 :1426)不帶 disabled;props(:1302 AgentPromptInputProps 只繼承 div 的 HTMLAttributes)沒有 disabled 可傳;
+            // 外框寫死 fieldChromeStyles({ mode: 'edit' })(:1414);代理進行中(busy,:1308)只把送出鈕換成停止,輸入框照常可打字。
+            // 規格 agent-panel.spec.md:261 外框 =「Textarea edit×default 同一組字串」,沒有停用態。日後若加 disabled,
             // 照同族 textarea.tsx:45 的寫法補 disabled 時 placeholder 換 fg-disabled 的覆寫,並拿掉這段豁免。
             'placeholder:text-fg-muted',
             'field-sizing-content max-h-40',

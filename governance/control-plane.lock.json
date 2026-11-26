@@ -10,7 +10,7 @@
   "contractDigest": "sha256:2999aed4c75bc36823db0b4ea5729744c0920f74b1cd2b2e1bfb4110dd825ef1",
   "files": [
     {
-      "hash": "sha256:48f7916cc557bb48d7186077f445a891e35efee0260ec60c9ea9311ac164f7dc",
+      "hash": "sha256:0400ba07aa43af86f59f92aa0f6093ffdf4ccf66c787a059fe154383d7710a8c",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 59307,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:33310252ba40617627bff5ba8e05d2f5198d8f1db0eb870aea4b1bf1c32ed6c9",
+      "hash": "sha256:d317fde2fb7bd10836d350cef166cc7cd98634153a3a15110f1a2440f0e0fd36",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 140204,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:4f35a5073e70b59d6d5b10e6e8daa5490b0b917eece09bf1be2c15bd1714a84f",
+  "inputDigest": "sha256:29e86ba162f27280696db9f200e5ec6df5a0aca3b1b563fbab240d1148b0d66f",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:1e904218f70be408da1080af5a3800fd495ba31a3fc87182b8c26a985c83c113",
+  "snapshotDigest": "sha256:11e1cea843d65f954a4d3da04612d57d1719931c00a3e694e3f673215866b1e8",
   "sources": [
     {
       "hash": "sha256:f2452198c08c44c99dc7afcfb7f78f834d7cc2a8c97d041571db15779f388c6c",
@@ -2200,7 +2200,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 232,
-      "hash": "sha256:b629e2a5e301f7a17fd9644af6b8ca0702b7cc38cd8af93f1759920b6051cb44",
+      "hash": "sha256:772ac67ba4571f835fc1057315a8237ba4fa12b0061995c7640671a42381cd1d",
       "id": "governance-baseline-authority",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2577,12 +2577,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:4c50448e8a78ddb3a9238d8ed0b2a1bc4c89296669df9b57ae414e0447d9680a",
+      "hash": "sha256:300cd5681c30d7f658d2515a0720870cac481a8778af4f7193dd6bbc9bcc630d",
       "id": "governance-root-script-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "package.json",
-      "size": 35449,
+      "size": 35505,
       "type": "file"
     },
     {
@@ -3606,7 +3606,7 @@
         "scripts/generated/"
       ],
       "files": 816,
-      "hash": "sha256:f3cb48456a027cab280bd208ad39f401b2ad043b8de47b8e1b82269d44b4abb0",
+      "hash": "sha256:50e592bbf054ee9c30f0d53f43de5f7bbc9ab5c2a47d04859cac4d15ffa8cea9",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
