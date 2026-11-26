@@ -193,7 +193,10 @@ try {
     },
   }, null, 2) + '\n')
 
+  // 2026-11-27(上游判定 B2(a) / B3):Verify consumer 的 timeout-minutes 要依一次 hooks-off 全量重播的實測秒數定,這裡印出來(template 規模)。
+  const positiveStarted = Date.now()
   const positive = runCheck()
+  const positiveSeconds = ((Date.now() - positiveStarted) / 1000).toFixed(1)
   if (positive.status !== 0 || !positive.report.ok || positive.report.hooksRequired !== false) {
     throw new Error(`positive clean-room failed:${JSON.stringify(positive.report, null, 2)}`)
   }
@@ -201,7 +204,7 @@ try {
     || !(positive.report.evidence?.staticReplay?.hookExecutions > 0)) {
     throw new Error(`positive clean-room did not execute the complete replay:${JSON.stringify(positive.report.evidence?.staticReplay)}`)
   }
-  console.log(`✅ positive: hooks-off immutable snapshot PASS(${positive.report.attestationDigest.slice(0, 16)})`)
+  console.log(`✅ positive: hooks-off immutable snapshot PASS(${positive.report.attestationDigest.slice(0, 16)})(一次全量重播 ${positiveSeconds} 秒、hook 執行 ${positive.report.evidence.staticReplay.hookExecutions} 次)`)
 
   const privateChecker = freezePrivateCheckerSnapshot(join(dsDest, 'ds-canonical/fork'), privateCheckerRoot)
   try {
@@ -734,11 +737,21 @@ try {
   console.log('✅ negative: mutable semver range blocked')
 
   const bypassPath = join(mirror, 'apps/template/src/GovernanceBypass.tsx')
-  writeFileSync(bypassPath, `export const GovernanceBypass = () => <table style={{ padding: '13px', color: '#ff0000' }}><tbody><tr><td>x</td></tr></tbody></table>\n`)
+  // className 的 p-4 / opacity-50 讓同一個檔再違反 layout-space 與 opacity 兩支 hook(E15:每支各一筆)
+  writeFileSync(bypassPath, `export const GovernanceBypass = () => <table className="p-4 opacity-50" style={{ padding: '13px', color: '#ff0000' }}><tbody><tr><td>x</td></tr></tbody></table>\n`)
   const contentBlocked = expectFailure('GOV-CONTENT-001')
   if (contentBlocked.report.evidence?.staticReplay?.skippedForPreexistingBlocker !== false
     || !(contentBlocked.report.evidence?.staticReplay?.hookExecutions > 0)) {
     throw new Error(`content-only violation bypassed complete replay:${JSON.stringify(contentBlocked.report.evidence?.staticReplay)}`)
+  }
+  // 2026-11-27(上游判定 E15):同一個檔違反兩支以上 hook 時,每支各記一筆(以前停在第一支)。
+  // 這個檔同時有原生 <table>(consumer app invariants)、className 的 p-4(layout-space)與 opacity-50(opacity),至少兩支 hook 會報。
+  // 改回 break 時這一條紅(只剩第一支)。
+  const bypassHooks = new Set((contentBlocked.report.diagnostics || [])
+    .map((d) => String(d.message || '').match(/^apps\/template\/src\/GovernanceBypass\.tsx violates (\S+)/)?.[1])
+    .filter(Boolean))
+  if (bypassHooks.size < 2) {
+    throw new Error(`E15: one file violating several hooks must yield one diagnostic per hook, got ${JSON.stringify([...bypassHooks])}`)
   }
   rmSync(bypassPath)
   console.log('✅ negative: hooks-off exhaustive source replay blocks raw table/magic values')

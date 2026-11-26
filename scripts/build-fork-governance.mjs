@@ -378,6 +378,8 @@ const MANAGED_FILE_SOURCES = {
   'scripts/lint-ds-internal-imports.mjs': join(ROOT, 'scripts/lint-ds-internal-imports.mjs'),
   'scripts/lib/a11y-static-server.mjs': join(ROOT, 'scripts/lib/a11y-static-server.mjs'),
   'scripts/lib/canonical-path-containment.mjs': join(ROOT, 'scripts/lib/canonical-path-containment.mjs'),
+  // 2026-11-27(上游判定 B4):lint-ds-internal-imports.mjs 與 consumer-source-harness.mjs 都 import 它(規範位置的建置輸出清單)。
+  'scripts/lib/consumer-output-roots.mjs': join(ROOT, 'scripts/lib/consumer-output-roots.mjs'),
   // a11y-static-server.mjs 2026-09-24 起 import 它(Storybook 建置先凍結成快照再供檔)。
   'scripts/lib/storybook-static-snapshot.mjs': join(ROOT, 'scripts/lib/storybook-static-snapshot.mjs'),
   // audit-consumer-a11y.mjs 2026-09-25 起用共用的 openStory(document 模式)證明 app 真的渲染出來才跑 axe
@@ -1230,7 +1232,8 @@ export function buildCorpus({
   // valid policy replay into reserved integrity exit 70 on every provider and in hooks-off CI.
   // tsx-governance-analysis.mjs:check_item_list_gap.sh(SHIP_AS_IS)的 TypeScript AST 量法(2026-11-22 WP-USER)。
   mkdirSync(join(outDir, 'hooks/lib'), { recursive: true })
-  for (const helper of ['_hook_integrity.sh', '_provider_paths.sh', '_micro_geometry.sh', '_ds_removed_names.sh', 'tsx-governance-analysis.mjs']) {
+  // _comment_mask.sh(2026-11-27 上游判定 E16 + E14):opacity / layout-space / consumer 品質三支出貨 hook 共用的註解遮罩。
+  for (const helper of ['_hook_integrity.sh', '_provider_paths.sh', '_micro_geometry.sh', '_comment_mask.sh', '_ds_removed_names.sh', 'tsx-governance-analysis.mjs']) {
     const helperPath = assertRegularSource(
       join(canonicalSources.hooksDir, 'lib', helper),
       `canonical fork hook helper ${helper}`,

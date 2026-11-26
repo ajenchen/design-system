@@ -76,13 +76,10 @@ VIOLATIONS=""
 
 # Pattern 1: file basename forbidden
 basename=$(basename "$FILE" .stories.tsx)
+# 2026-11-27(上游判定 E18):範本的 import smoke 改名 DsImportSmoke.stories.tsx(不再是 catalog 檔名),
+# AllDsComponents 的 portal 專屬例外一併拿掉 —— catalog 檔名一律擋,真有需要走上方 @consumer-catalog-allow。
 if echo "$basename" | grep -qE '^(EveryDsComponent|AllDsComponents|AllComponents|DsCatalog|EveryComponent)$'; then
-  # AllDsComponents allowed IF it's only portal proxy (check title)
-  if [ "$basename" = "AllDsComponents" ] && grep -qE 'DsCanonicalPortal|iframe.*design-system|@consumer-catalog-allow' <<<"$CONTENT"; then
-    : # portal proxy OK
-  else
-    VIOLATIONS="${VIOLATIONS}  - File basename '$basename' = catalog pattern. PW 不該重寫 DS catalog.\n"
-  fi
+  VIOLATIONS="${VIOLATIONS}  - File basename '$basename' = catalog pattern. PW 不該重寫 DS catalog.\n"
 fi
 
 # Pattern 2: title claims per-component default
@@ -116,7 +113,7 @@ $(echo -e "$VIOLATIONS")
   歷史錨點 2026-05-27 7 bugs:CircularProgress size=32 hardcode / RadioGroup raw item 沒 SelectionItem / DataTable mock 欄位語意薄弱 / LinkInput placeholder mock / Empty 缺說明 / Overlay trigger-only / Tooltip context — ALL 從 PW hand-mock minimal-prop drift.
 
   修法 2 選 1:
-    (a) 改用 DS canonical Storybook iframe portal(per template AllDsComponents.stories.tsx#DsCanonicalPortal pattern)
+    (a) 改成 import smoke + 連到 DS canonical Storybook 的入口(per template apps/template/src/DsImportSmoke.stories.tsx)
     (b) Escape:加 \`// @consumer-catalog-allow: <rationale>\` 顯式 documented
 
   完整 SSOT → DS package ds-story-manifest.json + codex M31 synthesis output /tmp/codex-ssot-output.txt
@@ -590,6 +587,75 @@ if grep -qE '<(DS\.)?(Select|Combobox|DatePicker|PeoplePicker)\b[^>]*className="
    ! grep -q '@field-width-ok:' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - Field 家族控件 className 硬寬(w-N / w-[Npx])→ 用 width=\"hug\"(內容自適)或預設 fill(field-controls.spec.md「寬度」;WM 詳情 metadata 全 hug 拍板錨例)。特例 → @field-width-ok: <rationale>\n"
 fi
+# C24(2026-11-27,上游判定 E21):header 內的 field-height 控件一律 size="sm"
+# (patterns/header-canonical/header-canonical.spec.md:73「永遠 size="sm"…header 內所有 field-height 控件一律 sm」;
+# Button 預設 md,沒寫 size 就違規)。範圍 = Surface/Dialog/Sheet/PopoverHeader 的 actions={…} 與 <ChromeHeader> 子樹裡的
+# Button / Input / Select / SegmentedControl / Combobox;唯一例外「Tabs 取代整個 header 的 standalone size="lg"」不是這幾種控件。
+# 開標籤以大括號深度判結尾(actions={<Button>…</Button>} 裡的 > 不算)。
+# PERL_TAG_END = C24 / C25 共用的開標籤結尾判法(2026-11-27 規格核對必修 2:C25 原本用 [^/]> 找結尾,停在 => 的 >)。
+PERL_TAG_END='
+  my $tag_end = sub {
+    my ($t, $i) = @_; my $d = 0;
+    for (my $j = $i; $j < length $t; $j++) {
+      my $c = substr($t, $j, 1);
+      if ($c eq "{") { $d++ } elsif ($c eq "}") { $d-- if $d > 0 } elsif ($c eq ">" && $d == 0) { return $j }
+    }
+    return length($t) - 1;
+  };'
+HEADER_SIZE_HITS=$(printf '%s' "$CONTENT" | perl -0777 -n -e "$PERL_TAG_END" -e '
+  my $s = $_;
+  my @regions;
+  while ($s =~ /<(?:DS\.)?(?:Surface|Dialog|Sheet|Popover)Header\b/g) {
+    my $p = $-[0]; my $e = $tag_end->($s, $p); my $open = substr($s, $p, $e - $p + 1);
+    push @regions, $open if $open =~ /\bactions=\{/;
+  }
+  while ($s =~ /<(?:DS\.)?ChromeHeader\b/g) {
+    my $p = $-[0]; my $e = $tag_end->($s, $p);
+    if (substr($s, $e - 1, 1) eq "/") { push @regions, substr($s, $p, $e - $p + 1); next }
+    my $rest = substr($s, $e);
+    my $close = ($rest =~ /<\/(?:DS\.)?ChromeHeader>/) ? $e + $-[0] : length($s);
+    push @regions, substr($s, $p, $close - $p);
+  }
+  for my $r (@regions) {
+    while ($r =~ /<(?:DS\.)?(Button|Input|Select|SegmentedControl|Combobox)\b/g) {
+      my ($name, $q) = ($1, $-[0]); my $e = $tag_end->($r, $q); my $tag = substr($r, $q, $e - $q + 1);
+      next if $tag =~ /\bsize=(?:"sm"|\x27sm\x27|\{\s*["\x27]sm["\x27]\s*\})/;
+      (my $show = $tag) =~ s/\s+/ /g; print "$name: " . substr($show, 0, 80) . "\n";
+    }
+  }
+' 2>/dev/null) || HEADER_SIZE_HITS='__PARSE_FAILED__'
+if [ "$HEADER_SIZE_HITS" = '__PARSE_FAILED__' ]; then
+  printf '🚨 GOVERNANCE_INTEGRITY: header control size parser failed\n' >&2
+  exit 70
+fi
+if [ -n "$HEADER_SIZE_HITS" ] && ! grep -q '@header-control-size-ok:' <<<"$CONTENT"; then
+  VIOLATIONS="${VIOLATIONS}  - header 內 field-height 控件沒寫 size=\"sm\"(或寫了 md / lg)→ 一律 size=\"sm\"(header-canonical.spec.md:73;Button 預設 md):$(printf '%s' "$HEADER_SIZE_HITS" | tr '\n' ';')。特例 → @header-control-size-ok: <rationale>\n"
+fi
+# C25(2026-11-27,上游判定 E24 (b)):<DropdownMenuItem> 的 badge= / tag= 或子元素裡放 <Switch> / <Checkbox>
+# → 選單裡的開關用 DropdownMenuCheckboxItem(dropdown-menu.spec.md:103「CheckboxItem 切換開關狀態…選單保持開啟」;
+# :211「不要在 item 內放獨立互動元素(如 Button、Switch)—— item 本身就是互動單位」)。DropdownMenuCheckboxItem 不在此列。
+# 開標籤結尾用 PERL_TAG_END(與 C24 同一支,大括號深度):onSelect={() => …} 的 > 不是結尾;自閉合 item 沒有子元素,
+# 只看它自己的屬性(badge={<Switch/>})。子元素範圍 = 開標籤之後到 </DropdownMenuItem> 或下一個 <DropdownMenuItem 為止。
+DROPDOWN_ITEM_CONTROL=$(printf '%s' "$CONTENT" | perl -0777 -n -e "$PERL_TAG_END" -e '
+  my $s = $_; my $hit = 0;
+  while ($s =~ /<(?:DS\.)?DropdownMenuItem\b/g) {
+    my $p = $-[0]; my $e = $tag_end->($s, $p); my $open = substr($s, $p, $e - $p + 1);
+    if ($open =~ /<(?:DS\.)?(?:Switch|Checkbox)\b/) { $hit = 1; last }
+    next if substr($s, $e - 1, 1) eq "/";
+    my $rest = substr($s, $e + 1);
+    my $stop = ($rest =~ /<\/(?:DS\.)?DropdownMenuItem>|<(?:DS\.)?DropdownMenuItem\b/) ? $-[0] : length($rest);
+    if (substr($rest, 0, $stop) =~ /<(?:DS\.)?(?:Switch|Checkbox)\b/) { $hit = 1; last }
+    pos($s) = $e + 1;
+  }
+  print $hit ? "hit" : "";
+' 2>/dev/null) || DROPDOWN_ITEM_CONTROL='__PARSE_FAILED__'
+if [ "$DROPDOWN_ITEM_CONTROL" = '__PARSE_FAILED__' ]; then
+  printf '🚨 GOVERNANCE_INTEGRITY: dropdown item control parser failed\n' >&2
+  exit 70
+fi
+if [ "$DROPDOWN_ITEM_CONTROL" = 'hit' ] && ! grep -q '@dropdown-item-control-ok:' <<<"$CONTENT"; then
+  VIOLATIONS="${VIOLATIONS}  - <DropdownMenuItem> 裡放 <Switch> / <Checkbox>(badge= / tag= / 子元素)→ 改用 <DropdownMenuCheckboxItem checked onCheckedChange>(dropdown-menu.spec.md:103;:211 item 內不放獨立互動元素)。特例 → @dropdown-item-control-ok: <rationale>\n"
+fi
 
 # Pattern 6: Overlay trigger without defaultOpen state for visual demo
 # (Skip in production .tsx; only enforce in .stories.tsx where visual snapshot matters)
@@ -646,8 +712,13 @@ CONTENT=$(echo "$INPUT" | jq -r '.tool_input.new_string // .tool_input.content /
 # Escape clause
 if grep -qE '@app-story-title-skip:' <<<"$CONTENT"; then exit 0; fi
 
-# Extract expected app name from file path
-APP_NAME=$(echo "$FILE" | sed -E 's|.*/apps/([^/]+)/.*|\1|')
+# Extract expected app name from file path(2026-11-27 M10 同族:以前貪婪 sed 取最後一個 apps/<x>/,巢狀路徑
+# apps/alpha/src/apps/zzz/x.stories.tsx 會要求 Apps/zzz/;改用與 escape marker 計數同一支取法 —— 相對專案根、apps/ 之後第一段)
+source "$(dirname "$0")/lib/_provider_paths.sh" 2>/dev/null || {
+  printf '🚨 GOVERNANCE_INTEGRITY: app story title path helper unavailable\n' >&2
+  exit 70
+}
+APP_NAME=$(governance_app_name_for_path "$FILE")
 [ -z "$APP_NAME" ] && exit 0
 
 # Find title field(支援 single/double/backtick quote)

@@ -287,7 +287,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/governance-check.mjs",
-      "sha256": "bb3cc3bf1a401c0e1b6de688147a09fa568b57890715a03e5a98f1919b7ffd8d",
+      "sha256": "cbb7207b3e504073384ca352cfb6a9074782e7de8da630de79132544a67794d2",
       "source": "scripts/governance-check.mjs",
       "classification": null,
       "destination": null
@@ -375,7 +375,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/423729840acdd43c812f17c245b871716c6b60f76e4d3e94864d0e34a815bf8d.blob",
-      "sha256": "aad4e8ba31f3efbead67700bcff05855dc89cab6f562943d61aae3842cc2276f",
+      "sha256": "98ad59797d13bca7be2b39005a89b4dc27dbc51344ad12ffde14d5f49f0b93f2",
       "source": "scripts/consumer-source-harness.mjs",
       "classification": null,
       "destination": "scripts/consumer-source-harness.mjs"
@@ -395,6 +395,14 @@
       "source": "scripts/setup-workspace.mjs",
       "classification": null,
       "destination": "scripts/setup-workspace.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/566d16c80543409d12c49b0979eb0c882106a4840b948820268b221dd85801ac.blob",
+      "sha256": "440837081c3b8f714b099d91f0235b71ea5493ee8836697d559ef342f5cf7392",
+      "source": "scripts/lib/consumer-output-roots.mjs",
+      "classification": null,
+      "destination": "scripts/lib/consumer-output-roots.mjs"
     },
     {
       "schemaVersion": 1,
@@ -471,7 +479,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/7937321877e5c34c27dae36c0d507d21cd42fa3f46a8f11a284b8b4a52b6faa4.blob",
-      "sha256": "86edd952fb5c3871896515440693abeb08c1d1da9f887fa073b9ddda1363f572",
+      "sha256": "9b046590c4664e58db920d5b54339ba57eeec563ce858602920cfcaffcdbc231",
       "source": "scripts/lint-ds-internal-imports.mjs",
       "classification": null,
       "destination": "scripts/lint-ds-internal-imports.mjs"
@@ -703,7 +711,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_app_invariants.sh",
-      "sha256": "a622e73320b00c3a304d42886c3f689f349b4d1f739dc77f0e2b795d617a727c",
+      "sha256": "08c593d902433ce7d7225fd1188905e1aaccce5ca643318cbc881237f1209ff8",
       "source": "check_consumer_app_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -711,7 +719,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_code_quality.sh",
-      "sha256": "27cd1472b0896d8d9ad8a18d9dfe41d1f9a8db7d04be1c1326c45e300a64f1da",
+      "sha256": "1a0c4309dd8db8c634e3dd269222398f0e177f868983a61f0b5e9efddff27f69",
       "source": "check_consumer_code_quality.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -735,7 +743,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_escape_marker_abuse.sh",
-      "sha256": "1307a70e7ff776a6f100e173d93f6b2b8b58cc535c15688c08afa61ad1bc5651",
+      "sha256": "d360dcc99d6619ff111114fa199785f47d7c35b5658c7a25c5ad66b8e3c0ced4",
       "source": "check_escape_marker_abuse.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -767,7 +775,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_layout_space_magic_numbers.sh",
-      "sha256": "4566da7ab0ebadcdced8bc9325c6410029d5ae0155c6a3c77f56c9e76fbab658",
+      "sha256": "700b54e8cbf15d396013c68afdf1da29eba2cb980aac3523c04108c3b1a3e6fe",
       "source": "check_layout_space_magic_numbers.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -775,7 +783,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_opacity_token_usage.sh",
-      "sha256": "fa89c8ae5937e990260ef7572ac95a96ab570515877c54f088f70dba41cba185",
+      "sha256": "b557fe9eeca7c87ffc7613ab12144fa1cf3a3892c4f82128e433fbda4260af81",
       "source": "check_opacity_token_usage.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -838,6 +846,14 @@
     },
     {
       "schemaVersion": 1,
+      "file": "hooks/lib/_comment_mask.sh",
+      "sha256": "b1f8401c2357583452da54739304900d060dcc250a98d073570eab96fc9f0599",
+      "source": "lib/_comment_mask.sh",
+      "classification": "HELPER",
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
       "file": "hooks/lib/_ds_removed_names.sh",
       "sha256": "07a79b1af5d50070b9aeb39c21fcc7e4acc54bdaf968812c656fdd76c924942f",
       "source": "lib/_ds_removed_names.sh",
@@ -855,7 +871,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/lib/_micro_geometry.sh",
-      "sha256": "3fa825f51536181fa3fb6ac38d81ac9793f93f392988131e52442bcf2c451def",
+      "sha256": "455b78d4c4e534dc936eb4b12e20e780651ee8c8a7783764b55d8cb95890f0d6",
       "source": "lib/_micro_geometry.sh",
       "classification": "HELPER",
       "destination": null
@@ -863,7 +879,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/lib/_provider_paths.sh",
-      "sha256": "b4d9d661d2875d390f0214b49901c62aa95272528dee86cce73ee7f505472648",
+      "sha256": "c9067a77a3c3ee47cdf1a1c836afff10e04dbd7cf534d003b4227b8f280db88a",
       "source": "lib/_provider_paths.sh",
       "classification": "HELPER",
       "destination": null
@@ -975,7 +991,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "97eaf248d20456e8a3f2b7930141af9895f6ae9fc421f8f91e1649693671a061",
+      "sha256": "a35a4eb9a60971a2612562019c7fd384293862a7c6b989bc20d331e0cbe46a0e",
       "source": null,
       "classification": null,
       "destination": null
@@ -1511,7 +1527,7 @@
     {
       "schemaVersion": 1,
       "file": "references/utility-registry.json",
-      "sha256": "656e823ace9d5f86f086cbf40fce0ddb09e492a1b214366506caf28c901f579b",
+      "sha256": "43a65246ceb46401aa536b20f2c1cfd0a7bc70666471c4ebd5d61c5c0c77ded9",
       "source": "packages/design-system/src/tokens/utility-registry.json",
       "classification": null,
       "destination": null
@@ -1519,7 +1535,7 @@
     {
       "schemaVersion": 1,
       "file": "references/utility-registry.schema.json",
-      "sha256": "aa19ea26750c018a62ba8fb1c89bbb912200578d5aacbb32c3ba9f29b601da34",
+      "sha256": "c9b09d4a57b585cb338c845640fda4e4c8ba0e5933511193b6ca703a8e3e2f22",
       "source": "packages/design-system/src/tokens/utility-registry.schema.json",
       "classification": null,
       "destination": null

@@ -392,6 +392,28 @@ else
   FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - P16. 讀不到 layoutSpace.css"
 fi
 
+# ── E16 + E14 (1)(2026-11-27):註解不是程式 —— 掃遮罩後的內容,豁免標記仍對原文判 ──
+# M1. 行尾註解提到 p-4 → 放行(舊實作逐行掃整段:紅)
+run_hook "Write" "$APP_TSX" "content" \
+  'export const Card = () => <div className="flex">內容</div>; // 以前是 p-4,已改 token'
+expect_silent "M1. 行尾 // 註解裡的 p-4 不算 → silent"
+# M2. JSX 註解 {/* gap-2 … */} → 放行
+run_hook "Write" "$APP_TSX" "content" \
+  'const A = () => <section className="flex">{/* 這裡不要用 gap-2,改用 token */}<span>x</span></section>;'
+expect_silent "M2. {/* … */} 裡的 gap-2 不算 → silent"
+# M3. 同一行程式真的寫 p-4、只是行尾也有說明 → 照擋(遮罩不吃程式)
+run_hook "Write" "$APP_TSX" "content" \
+  'export const Card = () => <div className="p-4">內容</div>; // 卡片內距'
+expect_block "M3. 程式裡的 p-4 + 行尾一般註解 → BLOCK"
+# M4. 同行豁免標記(本身是註解、遮罩後被抹掉)仍對原文判 → 放行
+run_hook "Write" "$APP_TSX" "content" \
+  'export const Card = () => <div className="p-4">內容</div>; // @layout-space-magic-ok: 第三方嵌入框固定內距'
+expect_silent "M4. 同行 @layout-space-magic-ok 仍有效 → silent"
+# M5. 字串裡的 https:// 不當註解起點(否則同一行後面的 p-4 會被遮掉 = 漏判)
+run_hook "Write" "$APP_TSX" "content" \
+  'export const L = () => <a href="https://example.com" className="p-4">x</a>;'
+expect_block "M5. href 裡的 // 不是註解,後面的 p-4 照擋 → BLOCK"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

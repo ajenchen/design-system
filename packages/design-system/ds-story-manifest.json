@@ -5,7 +5,7 @@
     "consumedBy": [
       "packages/design-system/ds-canonical/hooks/check_consumer_app_invariants.sh#r2_story_baseline",
       "scripts/composition-fidelity-visual-diff.mjs",
-      "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
+      "product-workspace apps/template/src/DsImportSmoke.stories.tsx (ImportSmoke → DS Storybook link)"
     ],
     "generatedAt": "2026-11-26T17:38:57.418Z"
   },

@@ -1664,6 +1664,14 @@ test('consumer documentation describes the release mirror gate without the retir
   // 和程式一致(verify-upgrade-evidence.mjs / sync-all.mjs:GOV-UPGRADE-BOOTSTRAP-001/002 2026-08-12 退役,控制面改動以資料入 PR diff)
   assert.match(upgradeDoc, /GOV-UPGRADE-BOOTSTRAP-001[^\n]*retired[^\n]*2026-08-12/)
   assert.doesNotMatch(documentation, /stop the ordinary flow|it fails closed with the recurring reviewed control-plane route|require a\s+separately reviewed full-snapshot PR/i)
+  // 2026-11-27(上游判定 B7(c)):同一族舊說法 —— README 寫「fails closed … routes … to a separately reviewed full-snapshot PR」、
+  // 「Later control-plane changes … go through the same separately reviewed full-snapshot PR route」、receiver「open a protected PR」,
+  // docs/05 寫 v2 consumer「改走 … recurring reviewed control-plane 六階段流程」;audit.yml 說明漏了 governance:check(B2)。
+  assert.doesNotMatch(documentation, /fails closed with the stable compatibility IDs|routes those control-plane changes to a separately reviewed|go through the same separately reviewed full-snapshot PR route|lock, and open a protected PR|opens a protected PR|開 protected PR|已是 v2 的 consumer 改走 DS authority 的 recurring/i)
+  // 2026-11-27 規格核對加做:上一行原本只收 README 那一句「lock, and open a protected PR」,docs/01「opens a protected PR」、
+  // docs/02「開 protected PR」同族沒擋到(regex 比規格窄,M7 / M34)→ 一併收進來
+  assert.match(readFileSync('template/ds-product-template/README.md', 'utf8'), /`audit\.yml`, which performs one locked install followed by the hooks-off `governance:check`/)
+  assert.match(readFileSync('template/ds-product-template/docs/03-co-edit-workflow.md', 'utf8'), /locked install \+ hooks-off `governance:check`/)
   assert.doesNotMatch(documentation, /(?:禁止|do not) (?:改用|replace)[^\n]*(?:Writer App|GitHub App)/i)
 })
 
@@ -2131,5 +2139,60 @@ test('only the render-only reference policy may install a historically certified
   assert.deepEqual(Object.keys(table).sort(), [...GOVERNANCE_VULNERABILITY_POLICIES].sort(), 'every vulnerability policy needs an explicit row')
   for (const [policy, expected] of Object.entries(table)) assert.equal(acceptsHistoricalNpmOverlay(policy), expected, policy)
   assert.equal(acceptsHistoricalNpmOverlay(undefined), false)
+})
+
+// 2026-11-27(上游判定 E18):範本的 import smoke 不再是 catalog 檔名、0 個豁免標記 —— create-app 複製 apps/template 時
+// 不會再帶進 AllDsComponents 那 4 個會被 escape-marker 計數的標記。計數用 hook 端同一支 countable_markers(不另寫一份)。
+test('template import smoke ships as DsImportSmoke with zero countable escape markers', () => {
+  assert.equal(existsSync('apps/template/src/AllDsComponents.stories.tsx'), false, 'the catalog-named portal must not come back')
+  const hooks = join(process.cwd(), 'packages/design-system/ds-canonical/hooks/lib')
+  const scratch = mkdtempSync(join(tmpdir(), 'import-smoke-markers-'))
+  temporary.push(scratch)
+  // 存成檔交給 bash(不用 -c 求值):source hook 端同一組 lib,呼叫同一支 governance_countable_escape_markers
+  const counter = join(scratch, 'count-markers.sh')
+  writeFileSync(counter, [
+    '#!/bin/bash',
+    `. "${hooks}/_hook_integrity.sh" && . "${hooks}/_provider_paths.sh" && . "${hooks}/_micro_geometry.sh" || exit 70`,
+    'governance_countable_escape_markers "$(cat -- "$1")"',
+    '',
+  ].join('\n'))
+  const run = spawnSync('bash', ['--', counter, 'apps/template/src/DsImportSmoke.stories.tsx'], {
+    encoding: 'utf8',
+    env: { ...process.env, GOVERNANCE_CORPUS_ROOT: process.cwd() },
+  })
+  assert.equal(run.status, 0, run.stderr)
+  assert.deepEqual(run.stdout.split('\n').filter(Boolean), [], 'DsImportSmoke.stories.tsx must carry zero countable escape markers')
+})
+
+// 2026-11-27(上游判定 B4):規範位置的建置輸出清單只住 scripts/lib/consumer-output-roots.mjs。
+// lint-ds-internal-imports / consumer-source-harness import 它;governance-check.mjs(單一檔出貨)與 hook 端 _micro_geometry.sh
+// 不能 import,寫成字面值 —— 這裡守兩處字面值與正本逐字相同(漂移就紅),並兩面驗 lint 只在規範位置略過。
+test('consumer output roots: one canonical list, and lint skips build output only at canonical roots', async () => {
+  const { CONSUMER_OUTPUT_DIRECTORY_NAMES } = await import('./lib/consumer-output-roots.mjs')
+  const literal = (source, pattern, label) => {
+    const match = source.match(pattern)
+    assert.ok(match, `${label}: output-root list literal not found`)
+    return [...match[1].matchAll(/'([^']+)'/g)].map((m) => m[1])
+  }
+  assert.deepEqual(literal(readFileSync('scripts/governance-check.mjs', 'utf8'), /const generatedOutputNames = \[([^\]]*)\]/, 'governance-check.mjs'), [...CONSUMER_OUTPUT_DIRECTORY_NAMES])
+  assert.deepEqual(literal(readFileSync('packages/design-system/ds-canonical/hooks/lib/_micro_geometry.sh', 'utf8'), /output_names = \(([^)]*)\)/, '_micro_geometry.sh'), [...CONSUMER_OUTPUT_DIRECTORY_NAMES])
+  for (const path of ['scripts/lint-ds-internal-imports.mjs', 'scripts/consumer-source-harness.mjs']) {
+    assert.match(readFileSync(path, 'utf8'), /from '\.\/lib\/consumer-output-roots\.mjs'/, `${path} must import the canonical output-root list`)
+  }
+  const forkManifest = JSON.parse(readFileSync('packages/design-system/ds-canonical/fork/manifest.json', 'utf8'))
+  assert.ok(forkManifest.consumer.managedFiles['scripts/lib/consumer-output-roots.mjs'], 'the shared list ships with the scripts that import it')
+
+  const { findDsInternalImportViolations } = await import('./lint-ds-internal-imports.mjs')
+  const repo = mkdtempSync(join(tmpdir(), 'output-roots-'))
+  temporary.push(repo)
+  const bad = "import x from '@qijenchen/design-system/src/components/Button/button'\n"
+  mkdirSync(join(repo, 'apps/x/storybook-static'), { recursive: true })
+  mkdirSync(join(repo, 'apps/x/dist'), { recursive: true })
+  writeFileSync(join(repo, 'apps/x/storybook-static/built.js'), bad)
+  writeFileSync(join(repo, 'apps/x/dist/built.js'), bad)
+  assert.deepEqual(findDsInternalImportViolations(repo), [], 'apps/x/storybook-static and apps/x/dist are canonical build output: not reported')
+  mkdirSync(join(repo, 'apps/x/src/dist'), { recursive: true })
+  writeFileSync(join(repo, 'apps/x/src/dist/source.ts'), bad)
+  assert.deepEqual(findDsInternalImportViolations(repo).map((v) => v.file), ['apps/x/src/dist/source.ts'], 'source under a dist-named folder outside the canonical root is still scanned')
 })
 

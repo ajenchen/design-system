@@ -23,6 +23,11 @@ expect() {
 
 printf 'export const clean: string = "ok"\n' > "$FILE"; expect 0 clean
 printf 'export const bad: any = 1\n' > "$FILE"; expect 2 any
+# E16 + E14 (1)(2026-11-27):`any` 對遮罩後的行判 —— 行尾 // 與 {/* … */} 裡的字不算;程式裡的 any 照擋;any-allow 仍對原文判
+printf 'export const n: number = 1 // the API may return: any shape\n' > "$FILE"; expect 0 any-in-trailing-comment
+printf 'export const V = () => <div>{/* props: any were removed */}</div>\n' > "$FILE"; expect 0 any-in-jsx-comment
+printf 'export const bad: any = 1 // legacy\n' > "$FILE"; expect 2 any-code-with-trailing-comment
+printf 'export const ok: any = 1 // any-allow: third-party callback payload is untyped upstream\n' > "$FILE"; expect 0 any-allow-same-line
 printf '<div className="flex gap-2 px-[var(--layout-space-loose)] hover:bg-neutral-hover rounded-md" />\n' > "$FILE"; expect 2 raw-row
 # 2026-09-25 滑過底色放寬:任何 `-hover` 配對 token 都是手刻列簽名(含 var() 與 ! 寫法);非配對 token 不算(對照組)
 printf '<div className="flex gap-2 px-[var(--layout-space-loose)] hover:bg-secondary-hover rounded-md" />\n' > "$FILE"; expect 2 raw-row-secondary-hover

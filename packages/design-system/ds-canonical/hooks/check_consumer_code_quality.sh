@@ -22,6 +22,10 @@ source "$(dirname "$0")/lib/_ds_removed_names.sh" 2>/dev/null || {
   printf 'GOVERNANCE_INTEGRITY: removed-names helper unavailable\n' >&2
   exit 70
 }
+source "$(dirname "$0")/lib/_comment_mask.sh" 2>/dev/null || {
+  printf 'GOVERNANCE_INTEGRITY: consumer quality comment mask unavailable\n' >&2
+  exit 70
+}
 
 governance_hook_load_input
 governance_hook_require_commands grep head perl python3 tr wc
@@ -98,16 +102,26 @@ while IFS= read -r ALIAS; do
 done <<< "$SHADCN_ALIASES"
 
 # TypeScript escape hatch requires a concrete rationale on the same or immediately preceding line.
-ANY_HITS=$(perl -ne '
-  BEGIN { our $prev = 0; our $hit_count = 0 }
-  my $allow = /any-allow:\s*.{8,}/; next if /^\s*(\/\/|\*|\/\*)/;
-  if (!$prev && !$allow && (/(:\s*any\b|\bas\s+any\b|<any>|\bany\[\]|Record<[^,]+,\s*any>)/)) {
-    print "$.:$_";
-    $hit_count++;
-    exit 0 if $hit_count >= 5;
+# 2026-11-27(上游判定 E16 + E14 (1)):`any` 對遮罩後的行判(行尾 //、{/* … */} 裡的字不算),any-allow 豁免仍對原文判。
+ANY_MASKED=$(governance_mask_comments < "$FILE_PATH") \
+  || governance_hook_integrity_fail 'consumer quality comment mask failed'
+ANY_HITS=$(ORIG_PATH="$FILE_PATH" perl -e '
+  open(my $fh, "<", $ENV{ORIG_PATH}) or exit 3;
+  my @orig = <$fh>; close $fh;
+  my @masked = split /\n/, do { local $/; my $m = <STDIN>; defined $m ? $m : "" }, -1;
+  my ($prev, $hit_count) = (0, 0);
+  for my $i (0 .. $#orig) {
+    my $line = $orig[$i];
+    my $code = defined $masked[$i] ? $masked[$i] : "";
+    my $allow = $line =~ /any-allow:\s*.{8,}/; next if $line =~ /^\s*(\/\/|\*|\/\*)/;
+    if (!$prev && !$allow && ($code =~ /(:\s*any\b|\bas\s+any\b|<any>|\bany\[\]|Record<[^,]+,\s*any>)/)) {
+      print(($i + 1) . ":$line");
+      $hit_count++;
+      last if $hit_count >= 5;
+    }
+    $prev = $allow;
   }
-  $prev = $allow;
-' "$FILE_PATH" 2>/dev/null) || governance_hook_integrity_fail 'consumer quality any parser failed'
+' <<< "$ANY_MASKED" 2>/dev/null) || governance_hook_integrity_fail 'consumer quality any parser failed'
 [ -n "$ANY_HITS" ] && add_violation "TypeScript any without // any-allow: <specific rationale>: ${ANY_HITS//$'\n'/ | }"
 
 if printf '%s' "$FILE_PATH" | grep -qE '\.tsx$'; then

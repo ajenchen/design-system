@@ -84,6 +84,77 @@ run_hook "Agent" "// @audit-sample-allow: rare integration test scope
 audit Dim 99 sample top 3"
 expect_pass_silent "7. @audit-sample-allow escape → silent"
 
+# ── 派工預算提醒(2026-11-27;AGENTS.md「分診與預算」「派工先寫預算(代理數/花費/牆鐘)」)──
+# 模擬 adapter 啟動的 session:Git-owned runtime root(照 test_check_solo_workflow.sh 的做法)
+BUDGET_TMP=$(mktemp -d)
+[ -n "${BUDGET_TMP:-}" ] && [ -d "$BUDGET_TMP" ] || { echo "❌ mktemp -d failed(BUDGET_TMP;TMPDIR=${TMPDIR:-unset})" >&2; exit 1; }
+BUDGET_TMP="$(cd "$BUDGET_TMP" && pwd -P)"
+trap 'rm -rf "$BUDGET_TMP"' EXIT
+git -C "$BUDGET_TMP" init -q
+BUDGET_GIT_DIR="$(cd "$(git -C "$BUDGET_TMP" rev-parse --absolute-git-dir)" && pwd -P)"
+run_budget() { # run_budget <session> <prompt>:同時收 stdout
+  local payload
+  payload=$(jq -n --arg s "$1" --arg p "$2" '{hook_event_name:"PreToolUse", session_id:$s, tool_name:"Agent", tool_input:{prompt:$p}}')
+  set +e
+  BUDGET_OUT=$(printf '%s' "$payload" | GOVERNANCE_PROJECT_DIR="$BUDGET_TMP" GOVERNANCE_RUNTIME_ROOT="$BUDGET_GIT_DIR/governance-runtime" \
+    GOVERNANCE_STATE_DIR="$BUDGET_GIT_DIR/governance-runtime" GOVERNANCE_TELEMETRY_OPT_IN=0 bash "$HOOK" 2>"$BUDGET_TMP/stderr")
+  EXIT=$?
+  set -e
+  STDERR_TEXT=$(cat "$BUDGET_TMP/stderr")
+}
+expect_budget() { # expect_budget <name> reminder|silent
+  local name="$1" want="$2" got=silent
+  if [ -n "$BUDGET_OUT" ]; then
+    if printf '%s' "$BUDGET_OUT" | jq -e '.governanceContext.hookEventName == "PreToolUse" and (.governanceContext.message | contains("派工先寫預算(代理數/花費/牆鐘)"))' >/dev/null 2>&1; then got=reminder; else got=malformed; fi
+  fi
+  if [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ] && [ "$got" = "$want" ]; then
+    echo "  PASS  $name"; PASS=$((PASS+1))
+  else
+    echo "  FAIL  $name (want $want, got $got, exit=$EXIT, stdout=$BUDGET_OUT, stderr=$STDERR_TEXT)"
+    FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
+  fi
+}
+run_budget "sess-A" "幫我把 Button 的 spec 讀一遍"
+expect_budget "B1. session 第一次派工、沒寫預算 → 非阻擋提醒(引 AGENTS.md 原文)" reminder
+run_budget "sess-A" "派工預算:代理 2 個、花費 1 包額度、牆鐘 30 分鐘
+幫我把 Button 的 spec 讀一遍"
+expect_budget "B2. prompt 寫了派工預算那一行 → 落記號、silent" silent
+if grep -qF '"session_id":"sess-A"' "$BUDGET_GIT_DIR/governance-runtime/dispatch-budget.jsonl" 2>/dev/null; then
+  echo "  PASS  B2b. 記號落在 Git-owned runtime 的 dispatch-budget.jsonl"; PASS=$((PASS+1))
+else
+  echo "  FAIL  B2b. 記號沒落地"; FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - B2b"
+fi
+run_budget "sess-A" "再派一個:讀 Tag 的 spec"
+expect_budget "B3. 同 session 已有記號 → silent" silent
+run_budget "sess-B" "讀 Tag 的 spec"
+expect_budget "B4. 另一個 session 沒有記號 → 提醒(互不影響)" reminder
+# B4b.(2026-11-27 規格核對必修 3)同 session 第二次、prompt 仍沒寫預算 → 靜默(提醒只在第一次;第一次提醒時已落 kind=reminded)
+run_budget "sess-B" "再讀一次 Tag 的 spec"
+expect_budget "B4b. 同 session 第二次、無記號 → silent(只提醒第一次)" silent
+if jq -e 'select(.session_id == "sess-B" and .kind == "reminded")' "$BUDGET_GIT_DIR/governance-runtime/dispatch-budget.jsonl" >/dev/null 2>&1; then
+  echo "  PASS  B4c. 第一次提醒時落了 kind=reminded 記號"; PASS=$((PASS+1))
+else
+  echo "  FAIL  B4c. 提醒記號沒落地"; FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - B4c"
+fi
+run_budget "sess-B" "audit Dim 99 sample top 3 components"
+if [ "$EXIT" = "2" ] && [ -z "$BUDGET_OUT" ] && grep -qF 'AUDIT NO-SAMPLE ESCAPE CLAUSE BLOCKER' <<<"$STDERR_TEXT"; then
+  echo "  PASS  B5. 抽樣條款照擋(擋下時 stdout 不帶提醒)"; PASS=$((PASS+1))
+else
+  echo "  FAIL  B5. block contract changed (exit=$EXIT stdout=$BUDGET_OUT)"; FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - B5"
+fi
+# B6.(2026-11-27 再驗 nonMust)新 session 第一次派工就被抽樣條款擋下 → 提醒沒送出 → 不落「已提醒」記號;
+#     第二次正常派工照樣提醒,第三次才靜默(以前算出提醒就落記號 → 第二次 0B,整個 session 再也看不到)
+run_budget "sess-Q" "audit Dim 3 sample top 3 components"
+if [ "$EXIT" = "2" ] && [ -z "$BUDGET_OUT" ]; then
+  echo "  PASS  B6a. sess-Q 第一次被抽樣條款擋下(exit 2、stdout 不送)"; PASS=$((PASS+1))
+else
+  echo "  FAIL  B6a. 預期被擋(exit=$EXIT stdout=$BUDGET_OUT)"; FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - B6a"
+fi
+run_budget "sess-Q" "讀 Tag 的 spec"
+expect_budget "B6b. 第一次被擋、提醒沒送出 → 第二次仍提醒" reminder
+run_budget "sess-Q" "再讀 Badge 的 spec"
+expect_budget "B6c. 提醒送出之後 → 同 session 靜默" silent
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

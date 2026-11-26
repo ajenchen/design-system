@@ -151,6 +151,22 @@ print(os.path.relpath(target, root).replace(os.sep, '/'))
 PY
 }
 
+# 編輯檔屬於哪一個 apps/<name>(2026-11-27 規格核對必修 1 + M10 同族:escape marker 計數根與 app story title
+# 共用這一支)。取「相對專案根的路徑」在 apps/ 之後的**第一段**:巢狀 apps/alpha/src/apps/zzz/… → alpha;
+# 專案根本身在 …/apps/proj/ 底下也不會取到 proj(以前兩處各用貪婪 sed 抓整條路徑最後一個 apps/<x>/)。
+# 不在任何 app 底下、在專案外、或名字不像資料夾名 → 印空字串(回 0)。
+governance_app_name_for_path() {
+  local rel app=''
+  rel="$(governance_project_relative_path "$1" 2>/dev/null)" || rel=''
+  case "$rel" in
+    apps/*/*) app="${rel#apps/}"; app="${app%%/*}" ;;
+  esac
+  case "$app" in
+    ''|.*|*[!A-Za-z0-9._-]*) app='' ;;
+  esac
+  printf '%s' "$app"
+}
+
 governance_path_is_under() {
   local candidate="${1#./}" root="${2#./}"
   root="${root%/}"

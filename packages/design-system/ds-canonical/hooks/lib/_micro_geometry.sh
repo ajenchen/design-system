@@ -326,10 +326,17 @@ elif mode == "repo-markers":
     if not stat.S_ISDIR(root_stat.st_mode) or stat.S_ISLNK(root_stat.st_mode):
         raise ValueError("repository marker root is unsafe")
     output = []
+    # 規範位置的建置輸出只在 app 根(apps/<name>)的直接子資料夾略過;清單正本 scripts/lib/consumer-output-roots.mjs
+    #(hook 端寫成字面值,逐字相同由 scripts/test-setup-governance.mjs 守;2026-11-27 上游判定 B4)。
+    # root 是 apps/<name> 時 app 根 = root;root 是 apps/ 時 app 根 = root 的每個子資料夾。
+    output_names = ('node_modules', 'dist', 'build', 'coverage', 'storybook-static', '.next', '.turbo', '.cache', '.vite')
+    app_depth = 0 if os.path.basename(os.path.dirname(root)) == "apps" else 1
     for current, dirs, files in os.walk(root, followlinks=False):
+        depth = 0 if current == root else len(os.path.relpath(current, root).split(os.sep))
         dirs[:] = sorted(
             name for name in dirs
             if not os.path.islink(os.path.join(current, name))
+            and not (depth == app_depth and name in output_names)
         )
         for name in sorted(files):
             if not name.endswith((".ts", ".tsx")):
