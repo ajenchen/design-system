@@ -41,14 +41,15 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // 2026-11-16(A25 覆核二 SF-R3):verify-browser-datatable-pinned(自 verify-browser-datatable;快速捲動 pinned 比值閘 + A/A + 追蹤,時間重估在 ci.yml 該 job 檔頭)。
   // 2026-11-17(A102):verify-browser-layout-edges(新 job,容器底距全站盤點 + 點開浮層)。
   // 2026-11-26:verify-browser-calendar-month(自 verify-browser-horizontal-overflow;Calendar 月檢視閘在原 job 跑 14.1 分未完被取消,分片表只住腳本)。
-  assert.deepEqual(Object.keys(workflow.jobs).sort(), ['container-closed-git', 'governance-control-plane', 'hooks-linux', 'verify', 'verify-browser-a11y', 'verify-browser-agent', 'verify-browser-calendar-month', 'verify-browser-control-groups', 'verify-browser-cursor', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-handles', 'verify-browser-datatable-perception', 'verify-browser-datatable-pinned', 'verify-browser-doc-headings', 'verify-browser-escape-focus-control', 'verify-browser-field-dialog-steps', 'verify-browser-field-edges', 'verify-browser-footer-gutter', 'verify-browser-horizontal-overflow', 'verify-browser-interaction', 'verify-browser-layout', 'verify-browser-layout-edges', 'verify-browser-nested-dismiss', 'verify-browser-overlay', 'verify-browser-overlay-rows', 'verify-browser-searchable-fields', 'verify-browser-searchable-menu-focus', 'verify-browser-select-all', 'verify-browser-sidebar-keyboard', 'verify-browser-sweeps', 'verify-browser-tree-navigation', 'verify-static'])
+  // 2026-11-27:verify-browser-overlay-rows-control(自 verify-browser-overlay-rows;選項列前緣閘「主掃 + --selftest」同一步在 CI 40244e50 跑 1398 秒撞 25 分上限被取消)。
+  assert.deepEqual(Object.keys(workflow.jobs).sort(), ['container-closed-git', 'governance-control-plane', 'hooks-linux', 'verify', 'verify-browser-a11y', 'verify-browser-agent', 'verify-browser-calendar-month', 'verify-browser-control-groups', 'verify-browser-cursor', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-handles', 'verify-browser-datatable-perception', 'verify-browser-datatable-pinned', 'verify-browser-doc-headings', 'verify-browser-escape-focus-control', 'verify-browser-field-dialog-steps', 'verify-browser-field-edges', 'verify-browser-footer-gutter', 'verify-browser-horizontal-overflow', 'verify-browser-interaction', 'verify-browser-layout', 'verify-browser-layout-edges', 'verify-browser-nested-dismiss', 'verify-browser-overlay', 'verify-browser-overlay-rows', 'verify-browser-overlay-rows-control', 'verify-browser-searchable-fields', 'verify-browser-searchable-menu-focus', 'verify-browser-select-all', 'verify-browser-sidebar-keyboard', 'verify-browser-sweeps', 'verify-browser-tree-navigation', 'verify-static'])
   assert.equal(workflow.jobs.verify.name, 'Verify(tsc + tests + compile + build)')
   assert.equal(workflow.jobs.verify.timeoutMinutes, 15)
   assert.equal(workflow.jobs.verify.if, 'always()')
   // 2026-09-21:hooks-linux 進 fan-in。先前它**既不在 needs、也不是 required check** ——
   // 發版同意 hook 的整套端對端測試(17 格)全紅也擋不住合併與發版,等於那道防線沒有機械面。
   // 原註解說「它留在 verify 之外,讓 hook 失敗讀起來就是 hook 失敗」—— 可讀性不該用「不把關」換。
-  assert.deepEqual([...workflow.jobs.verify.needs].sort(), ['container-closed-git', 'governance-control-plane', 'hooks-linux', 'verify-browser-a11y', 'verify-browser-agent', 'verify-browser-calendar-month', 'verify-browser-control-groups', 'verify-browser-cursor', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-handles', 'verify-browser-datatable-perception', 'verify-browser-datatable-pinned', 'verify-browser-doc-headings', 'verify-browser-escape-focus-control', 'verify-browser-field-dialog-steps', 'verify-browser-field-edges', 'verify-browser-footer-gutter', 'verify-browser-horizontal-overflow', 'verify-browser-interaction', 'verify-browser-layout', 'verify-browser-layout-edges', 'verify-browser-nested-dismiss', 'verify-browser-overlay', 'verify-browser-overlay-rows', 'verify-browser-searchable-fields', 'verify-browser-searchable-menu-focus', 'verify-browser-select-all', 'verify-browser-sidebar-keyboard', 'verify-browser-sweeps', 'verify-browser-tree-navigation', 'verify-static'])
+  assert.deepEqual([...workflow.jobs.verify.needs].sort(), ['container-closed-git', 'governance-control-plane', 'hooks-linux', 'verify-browser-a11y', 'verify-browser-agent', 'verify-browser-calendar-month', 'verify-browser-control-groups', 'verify-browser-cursor', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-datatable-handles', 'verify-browser-datatable-perception', 'verify-browser-datatable-pinned', 'verify-browser-doc-headings', 'verify-browser-escape-focus-control', 'verify-browser-field-dialog-steps', 'verify-browser-field-edges', 'verify-browser-footer-gutter', 'verify-browser-horizontal-overflow', 'verify-browser-interaction', 'verify-browser-layout', 'verify-browser-layout-edges', 'verify-browser-nested-dismiss', 'verify-browser-overlay', 'verify-browser-overlay-rows', 'verify-browser-overlay-rows-control', 'verify-browser-searchable-fields', 'verify-browser-searchable-menu-focus', 'verify-browser-select-all', 'verify-browser-sidebar-keyboard', 'verify-browser-sweeps', 'verify-browser-tree-navigation', 'verify-static'])
   // 解析器只留 runSha256 與 env(不留 run 原文):上游 result 必須經 env 進來,再由原始文字驗它們全部 = success 才過。
   const fanInEnv = JSON.stringify(workflow.jobs.verify.steps[0].env)
   // 2026-09-11:兩個 DataTable job 的上限 15 → 25。那天 `verify-browser-datatable` 跑到 15.4 分被砍掉
@@ -115,10 +116,19 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
     assert.ok(raw.steps.some((s) => s.env?.SHARD === '${{ matrix.shard }}'))
     assert.equal(source.split('\n').filter((line) => !line.trimStart().startsWith('#') && /calendar-month-invariant\.mjs|test:calendar-month/.test(line)).length, 2, 'ci.yml 只准 verify-browser-calendar-month 的那兩行跑月檢視閘(同一支閘一次 CI 只跑一次)')
   }
+  // 2026-11-27:verify-browser-overlay-rows-control(自 verify-browser-overlay-rows)沿用原 job 的 25(不是調高):選項列前緣閘「主掃 + --selftest」
+  // 同一步在 CI 40244e50 跑 1398 秒撞上限被取消(實測與出處記在 ci.yml 原 job 檔頭)。主掃留原 job、對照組搬到新 job;
+  // 同一支閘一次 CI 只跑一次:ci.yml 只准這兩個 job 各跑一行(原 job 主掃、新 job --selftest),不准再走同時跑兩者的 test:overlay-list-as-region。
+  {
+    const run = (id) => loadYaml(source).jobs[id].steps.map((s) => s.run ?? '').join('\n')
+    assert.match(run('verify-browser-overlay-rows'), /^\s*node scripts\/overlay-list-as-region-invariant\.mjs\s*$/m, '選項列前緣閘的主掃留在 verify-browser-overlay-rows')
+    assert.match(run('verify-browser-overlay-rows-control'), /^\s*node scripts\/overlay-list-as-region-invariant\.mjs --selftest\s*$/m, '選項列前緣閘的對照組在 verify-browser-overlay-rows-control')
+    assert.equal(source.split('\n').filter((line) => !line.trimStart().startsWith('#') && /overlay-list-as-region-invariant\.mjs|test:overlay-list-as-region/.test(line)).length, 2, 'ci.yml 只准上面那兩行跑選項列前緣閘(同一支閘一次 CI 只跑一次)')
+  }
   // 2026-11-16:verify-browser-datatable-pinned(自 verify-browser-datatable)沿用原 job 的 25(不是調高):A/A 與追蹤加進來之後不拆時估 19.7 分、
   // 最壞 24.2 分,超過計畫的 22 分拆 job 線(2026-11-15 兩份 job log 的時間戳重估,寫在 ci.yml 該 job 檔頭)。
-  const SLOW_BROWSER_JOBS = new Set(['verify-browser-searchable-fields', 'verify-browser-datatable', 'verify-browser-datatable-pinned', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-overlay-rows', 'verify-browser-datatable-handles', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-control-groups', 'verify-browser-escape-focus-control', 'verify-browser-field-dialog-steps', 'verify-browser-searchable-menu-focus', 'verify-browser-nested-dismiss', 'verify-browser-sidebar-keyboard', 'verify-browser-layout', 'verify-browser-horizontal-overflow', 'verify-browser-calendar-month', 'verify-browser-doc-headings', 'verify-browser-layout-edges', 'verify-browser-a11y'])
-  for (const upstream of ['verify-static', 'verify-browser-datatable', 'verify-browser-datatable-pinned', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-searchable-fields', 'verify-browser-tree-navigation', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-agent', 'verify-browser-sweeps', 'verify-browser-doc-headings', 'verify-browser-layout-edges', 'verify-browser-select-all', 'verify-browser-field-edges', 'verify-browser-overlay-rows', 'verify-browser-datatable-handles', 'verify-browser-control-groups', 'verify-browser-cursor', 'verify-browser-escape-focus-control', 'verify-browser-field-dialog-steps', 'verify-browser-footer-gutter', 'verify-browser-searchable-menu-focus', 'verify-browser-nested-dismiss', 'verify-browser-sidebar-keyboard', 'verify-browser-layout', 'verify-browser-horizontal-overflow', 'verify-browser-calendar-month', 'verify-browser-a11y', 'hooks-linux', 'governance-control-plane', 'container-closed-git']) {
+  const SLOW_BROWSER_JOBS = new Set(['verify-browser-searchable-fields', 'verify-browser-datatable', 'verify-browser-datatable-pinned', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-sweeps', 'verify-browser-select-all', 'verify-browser-overlay-rows', 'verify-browser-overlay-rows-control', 'verify-browser-datatable-handles', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-control-groups', 'verify-browser-escape-focus-control', 'verify-browser-field-dialog-steps', 'verify-browser-searchable-menu-focus', 'verify-browser-nested-dismiss', 'verify-browser-sidebar-keyboard', 'verify-browser-layout', 'verify-browser-horizontal-overflow', 'verify-browser-calendar-month', 'verify-browser-doc-headings', 'verify-browser-layout-edges', 'verify-browser-a11y'])
+  for (const upstream of ['verify-static', 'verify-browser-datatable', 'verify-browser-datatable-pinned', 'verify-browser-datatable-perception', 'verify-browser-datatable-dpr2', 'verify-browser-searchable-fields', 'verify-browser-tree-navigation', 'verify-browser-interaction', 'verify-browser-overlay', 'verify-browser-agent', 'verify-browser-sweeps', 'verify-browser-doc-headings', 'verify-browser-layout-edges', 'verify-browser-select-all', 'verify-browser-field-edges', 'verify-browser-overlay-rows', 'verify-browser-overlay-rows-control', 'verify-browser-datatable-handles', 'verify-browser-control-groups', 'verify-browser-cursor', 'verify-browser-escape-focus-control', 'verify-browser-field-dialog-steps', 'verify-browser-footer-gutter', 'verify-browser-searchable-menu-focus', 'verify-browser-nested-dismiss', 'verify-browser-sidebar-keyboard', 'verify-browser-layout', 'verify-browser-horizontal-overflow', 'verify-browser-calendar-month', 'verify-browser-a11y', 'hooks-linux', 'governance-control-plane', 'container-closed-git']) {
     assert.match(fanInEnv, new RegExp(`needs\\.${upstream}\\.result`))
     assert.equal(workflow.jobs[upstream].timeoutMinutes, SLOW_BROWSER_JOBS.has(upstream) ? 25 : 15)
     assert.equal(workflow.jobs[upstream].if, null)
@@ -235,8 +245,9 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // scripts/lib/ds-source-harness.mjs(原始碼直接打包進空白頁),兩個 job 拿掉 build:lib / build-storybook(下方 SOURCE_HARNESS_JOBS 另驗)。
   // 27 → 28 / 26 → 27(2026-11-26,地基修正 F4):verify-browser-a11y(新 job,axe 全 story 基線回歸閘;準備步驟與 verify-browser-sweeps 逐字相同)。夜間 a11y-and-size.yml 的 a11y-axe 同時退役,算力是搬家不是新增。
   // 28 → 29 / 27 → 28(2026-11-26):verify-browser-calendar-month 拆自 verify-browser-horizontal-overflow(準備步驟逐字相同)。
-  assert.equal((source.match(/npm run build-storybook/g) ?? []).length, 29)
-  assert.equal((source.match(/playwright install chromium/g) ?? []).length, 28)
+  // 29 → 30 / 28 → 29(2026-11-27):verify-browser-overlay-rows-control 拆自 verify-browser-overlay-rows(準備步驟逐字相同)。
+  assert.equal((source.match(/npm run build-storybook/g) ?? []).length, 30)
+  assert.equal((source.match(/playwright install chromium/g) ?? []).length, 29)
   // 2026-09-25:**必需瀏覽器的 lane**。裝了 Chromium 跑閘的 job 裡起不了瀏覽器 = 這個 job 壞了;
   // 共用政策(scripts/lib/launch-browser.mjs exitOnBrowserLaunchFailure)只有在 GOVERNANCE_BROWSER_REQUIRED=1 時
   // 才 exit 非 0,未宣告就印 SKIPPED-ENV、exit 0 —— 整批閘靜默通過(M37:沒量到被讀成沒發生)。
@@ -272,7 +283,8 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // 25 → 26(2026-11-17):verify-browser-layout-edges(新 job)。
   // 26 → 27(2026-11-26):verify-browser-a11y(新 job,axe 全 story 基線回歸閘;夜間 a11y-axe 同時退役)。
   // 27 → 28(2026-11-26):verify-browser-calendar-month(自 verify-browser-horizontal-overflow)。
-  assert.equal(browserJobs.length, 28, '宣告必需瀏覽器的 job 數必須等於裝 Chromium 的 job 數')
+  // 28 → 29(2026-11-27):verify-browser-overlay-rows-control(自 verify-browser-overlay-rows)。
+  assert.equal(browserJobs.length, 29,'宣告必需瀏覽器的 job 數必須等於裝 Chromium 的 job 數')
   assert.match(jobBlock('verify-static'), /\n\s+npm run test:launch-browser\n/, '「起不了瀏覽器」政策的兩面對照必須在沒有瀏覽器的 verify-static 跑')
   // 2026-10-14(待辦總帳 G10):拆出來的 job 準備步驟(簽出 / Node / 安裝 / build:lib / build-storybook)必須與原 job 逐字相同 ——
   // 量到的時間才能互相比較,拆完也不會有一半在不同的環境跑。比的是 steps 從開頭到 build-storybook 那一步(含)的原始文字。
@@ -296,6 +308,7 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
     ['verify-browser-layout', 'verify-browser-field-dialog-steps'],
     ['verify-browser-horizontal-overflow', 'verify-browser-layout'],
     ['verify-browser-calendar-month', 'verify-browser-horizontal-overflow'],
+    ['verify-browser-overlay-rows-control', 'verify-browser-overlay-rows'],
     ['verify-browser-doc-headings', 'verify-browser-sweeps'],
     ['verify-browser-layout-edges', 'verify-browser-doc-headings'],
     ['verify-browser-a11y', 'verify-browser-sweeps'],
