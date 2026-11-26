@@ -205,7 +205,7 @@ export const DurationRule: Story = {
 
       <TutorialRule
         title="❌ 極長 duration（> 15000ms）或 duration=Infinity"
-        note="Toast 只顯示最近 3 則:不消失的那則,後面再來 3 則就被藏起來;一直停著也會一直蓋住底下的東西(Toast 不避讓,靠自己消失讓開)。要一直看得到的訊息用 Alert,等人處理的事放產品的常駐位置"
+        note="Toast 只顯示最近 3 則:不消失的那則,後面再來 3 則就被藏起來;一直停著也會一直蓋住底下的東西,要等使用者按 × 才讓開(Toast 不避讓;平常除了可關,它還會自己消失讓開,不消失就少了這一種)。要一直看得到的訊息用 Alert,等人處理的事放產品的常駐位置"
       >
         <ExampleCaption warn>Toast 不該永遠停留——真的需要 persistent 用 Alert</ExampleCaption>
       </TutorialRule>
