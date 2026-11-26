@@ -5,6 +5,7 @@
 //
 // Copies apps/template/ → apps/<name>/ + patches:
 //   - package.json `name` → @product/<name>
+//   - package.json 受管套件(@qijenchen/design-system / storybook-config)版號 → 與根目錄同版
 //   - index.html `<title>` → <name>
 //   - story `title:` field 從 `Apps/template/...` → `Apps/<name>/...`(防 Storybook id 撞)
 // 排除 build artifacts(node_modules / dist / *.tsbuildinfo / .turbo / .next)
@@ -61,6 +62,20 @@ cpSync(src, dest, {
 const pkgPath = join(dest, 'package.json')
 const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'))
 pkg.name = `@product/${name}`
+// 受管套件跟根目錄同版(2026-11-26 產品 canary 缺陷 1):apps/template 的版號可能是建 repo 當時的版,
+// 照抄會讓新 app 鎖舊版、lock 替它裝一份舊版巢狀副本。根目錄宣告的 exact 版號就是 lock 解析到的版號。
+const rootPkg = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf8'))
+const EXACT_SEMVER = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/
+const alignedDeclarations = []
+for (const packageName of ['@qijenchen/design-system', '@qijenchen/storybook-config']) {
+  const rootVersion = rootPkg.dependencies?.[packageName] ?? rootPkg.devDependencies?.[packageName]
+  if (!EXACT_SEMVER.test(rootVersion || '')) continue
+  for (const section of ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']) {
+    if (pkg[section]?.[packageName] === undefined || pkg[section][packageName] === rootVersion) continue
+    pkg[section][packageName] = rootVersion
+    alignedDeclarations.push(`${section}.${packageName}=${rootVersion}`)
+  }
+}
 writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
 
 // Patch index.html title
@@ -114,6 +129,7 @@ for (const cache of ['dist', 'tsconfig.tsbuildinfo', 'storybook-static']) {
 }
 
 console.log(`✓ Created apps/${name}/`)
+if (alignedDeclarations.length) console.log(`✓ Aligned design-system packages with the root: ${alignedDeclarations.join(', ')}`)
 console.log(`✓ Patched story titles → Apps/${name}/...(防 Storybook id 撞 template)`)
 console.log(`✓ Excluded build artifacts(node_modules / dist / *.tsbuildinfo / .turbo / .next / .cache)`)
 console.log(``)

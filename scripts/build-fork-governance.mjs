@@ -367,6 +367,8 @@ const MANAGED_FILE_SOURCES = {
   'governance/consumer-governance.md': join(ROOT, 'packages/design-system/ds-canonical/templates/consumer-governance.md'),
   'governance/provider-cli-toolchain.json': join(ROOT, 'infra/governance/providers/provider-cli-toolchain.json'),
   'governance/provider-cli-toolchain.package-lock.json': join(ROOT, 'infra/governance/providers/provider-cli-toolchain.package-lock.json'),
+  // 2026-11-26:產品內容欠債基準(governance/content-debt-baseline.json,產品自有)的 schema 由 DS 受管出貨。
+  'governance/schemas/content-debt-baseline.schema.json': join(ROOT, 'infra/governance/schemas/content-debt-baseline.schema.json'),
   'governance/schemas/issuer-registry.schema.json': join(ROOT, 'infra/governance/schemas/issuer-registry.schema.json'),
   'governance/schemas/visual-baseline-review-policy.schema.json': join(ROOT, 'infra/governance/schemas/visual-baseline-review-policy.schema.json'),
   'governance/trust/issuers.json': join(ROOT, 'infra/governance/trust/issuers.json'),
@@ -419,6 +421,7 @@ const TEMPLATE_GOVERNANCE_PROJECTIONS = Object.freeze([
   'governance/consumer-governance.md',
   'governance/provider-cli-toolchain.json',
   'governance/provider-cli-toolchain.package-lock.json',
+  'governance/schemas/content-debt-baseline.schema.json',
   'governance/schemas/issuer-registry.schema.json',
   'governance/schemas/visual-baseline-review-policy.schema.json',
   'governance/trust/issuers.json',
@@ -1738,6 +1741,15 @@ export function buildCorpus({
     file: 'consumer/governance-check.mjs',
     sha256: createHash('sha256').update(governanceCheckBody).digest('hex'),
     source: 'scripts/governance-check.mjs',
+  })
+  // 內容欠債基準的唯一寫入口(npm run governance:debt):與 checker 同目錄出貨,向同一支 checker 要提案再寫檔。
+  const contentDebtWriterSource = assertRegularSource(join(ROOT, 'scripts/governance-content-debt.mjs'), 'consumer content-debt writer source')
+  const contentDebtWriterBody = readFileSync(contentDebtWriterSource, 'utf8')
+  writeFileSync(join(corpusConsumerDir, 'governance-content-debt.mjs'), contentDebtWriterBody, { mode: 0o755 })
+  lockEntries.push({
+    file: 'consumer/governance-content-debt.mjs',
+    sha256: createHash('sha256').update(contentDebtWriterBody).digest('hex'),
+    source: 'scripts/governance-content-debt.mjs',
   })
   mkdirSync(join(corpusConsumerDir, 'lib'), { recursive: true })
   writeFileSync(

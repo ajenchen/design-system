@@ -360,6 +360,18 @@ Object.assign(lock.packages['node_modules/' + SB], {
   resolved: 'https://registry.npmjs.org/@qijenchen/storybook-config/-/storybook-config-' + selectedVersion + '.tgz',
   integrity: fixture.FAKE_SB_SRI,
 })
+if (isUpgradeInstall) {
+  // Like npm, record every workspace's current declarations in its lock entry.
+  const appsRoot = path.join(process.cwd(), 'apps')
+  for (const name of fs.existsSync(appsRoot) ? fs.readdirSync(appsRoot).sort() : []) {
+    const manifestPath = path.join(appsRoot, name, 'package.json')
+    if (!fs.existsSync(manifestPath)) continue
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
+    const entry = { name: manifest.name, version: manifest.version }
+    for (const section of ['dependencies', 'devDependencies']) if (manifest[section]) entry[section] = manifest[section]
+    lock.packages['apps/' + name] = entry
+  }
+}
 fs.writeFileSync(lockPath, JSON.stringify(lock, null, 2) + '\\n')
 const npm = path.join(process.cwd(), 'node_modules/npm')
 fs.mkdirSync(path.join(npm, 'bin'), { recursive: true })
@@ -643,6 +655,19 @@ try {
   baselineManifest.dependencies['@qijenchen/design-system'] = previousVersion
   baselineManifest.dependencies['@qijenchen/storybook-config'] = previousVersion
   writeFileSync(baselineManifestPath, JSON.stringify(baselineManifest, null, 2) + '\n')
+  // 2026-11-26(產品 canary 缺陷 1):兩個 app 都鎖舊版。升級交易以前只改根目錄,lock 因此替每個 app
+  // 各裝一份舊版巢狀副本;下面的成功路徑要求兩個 app 都變新版、lock 只剩一份。
+  const templateAppManifest = JSON.parse(readFileSync(join(repo, 'apps/template/package.json'), 'utf8'))
+  const workspaceAppManifests = new Map([
+    ['apps/template', templateAppManifest.name],
+    ['apps/order-dashboard', '@product/order-dashboard'],
+  ].map(([app, name]) => {
+    const manifest = { ...structuredClone(templateAppManifest), name }
+    manifest.dependencies['@qijenchen/design-system'] = previousVersion
+    mkdirSync(join(repo, app), { recursive: true })
+    writeFileSync(join(repo, app, 'package.json'), JSON.stringify(manifest, null, 2) + '\n')
+    return [app, manifest]
+  }))
   // Widen the observable recovery interval without adding a production-only test hook.
   writeFileSync(join(repo, 'scripts/recovery-phase-payload.bin'), Buffer.alloc(4 * 1024 * 1024, 0x5a))
   const dsCanonical = join(temp, 'generated-ds-canonical')
@@ -683,6 +708,12 @@ try {
         devDependencies: pkg.devDependencies,
         engines: pkg.engines,
       },
+      ...Object.fromEntries([...workspaceAppManifests].map(([app, manifest]) => [app, {
+        name: manifest.name,
+        version: manifest.version,
+        dependencies: manifest.dependencies,
+        devDependencies: manifest.devDependencies,
+      }])),
       'node_modules/@qijenchen/design-system': {
         version: previousVersion,
         resolved: `https://registry.npmjs.org/@qijenchen/design-system/-/design-system-${previousVersion}.tgz`,
@@ -1653,6 +1684,19 @@ try {
     || liveNpmFixtureProbe.status !== 0
     || liveNpmFixtureProbe.stdout.trim() !== exactNpmVersion
   ) throw new Error(`candidate node_modules .bin link was rewritten to the deleted disposable sandbox:${liveNpmFixtureProbe.stderr}`)
+  const upgradedLock = JSON.parse(readFileSync(join(repo, 'package-lock.json'), 'utf8'))
+  for (const app of workspaceAppManifests.keys()) {
+    const declared = JSON.parse(readFileSync(join(repo, app, 'package.json'), 'utf8')).dependencies['@qijenchen/design-system']
+    if (declared !== dsVersion || upgradedLock.packages[app]?.dependencies?.['@qijenchen/design-system'] !== dsVersion) {
+      throw new Error(`${app} still pins ${declared} after the upgrade to ${dsVersion}(defect 1: only the root moved)`)
+    }
+  }
+  const nestedGovernedCopies = Object.keys(upgradedLock.packages)
+    .filter((entryPath) => /\/node_modules\/@qijenchen\/(?:design-system|storybook-config)$/.test(entryPath))
+  if (nestedGovernedCopies.length || upgradedLock.packages['node_modules/@qijenchen/design-system']?.version !== dsVersion) {
+    throw new Error(`upgraded lock keeps more than one design-system copy:${nestedGovernedCopies.join(',')}`)
+  }
+  console.log('✅ success: every apps/*/package.json moves to the exact release with the root; the lock keeps one copy')
   console.log(`✅ success: exact apply certified(${successReport.verification.attestationDigest.slice(0, 16)})`)
   console.log('✅ success: relative npm .bin symlink remains byte-exact and executable after disposable sandbox cleanup')
   must(run('git', ['add', '-A']), 'git add initial refreshed snapshot')

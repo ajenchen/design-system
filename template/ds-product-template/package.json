@@ -26,6 +26,7 @@
     "ds:migrate": "qijenchen-ds-codemod",
     "visual-baseline:review": "qijenchen-ds-visual-baseline",
     "governance:check": "node node_modules/@qijenchen/design-system/ds-canonical/fork/consumer/governance-check.mjs --repo . --hooks-off",
+    "governance:debt": "node node_modules/@qijenchen/design-system/ds-canonical/fork/consumer/governance-content-debt.mjs --repo .",
     "audit:a11y": "node scripts/audit-consumer-a11y.mjs"
   },
   "dependencies": {

@@ -263,7 +263,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/hooks.json",
-      "sha256": "810c6fe1f33554d2ccc33eeb91cda4ab95209442649a204e996963ca10ed4fe0",
+      "sha256": "78748b0379593f8575a7937c84a70671367ed1d58448b0de70f94cd584ac2996",
       "source": "providers/codex/hook-config.json",
       "classification": null,
       "destination": null
@@ -287,8 +287,16 @@
     {
       "schemaVersion": 1,
       "file": "consumer/governance-check.mjs",
-      "sha256": "1c4c4455910f1e88aebb84add9f756717395519d84913beafaa654a9f1c3126e",
+      "sha256": "bb3cc3bf1a401c0e1b6de688147a09fa568b57890715a03e5a98f1919b7ffd8d",
       "source": "scripts/governance-check.mjs",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/governance-content-debt.mjs",
+      "sha256": "1c9bc383702d364667cffc9bb4a5d5847c3c392f6986d09ba4da3fb991fa1b24",
+      "source": "scripts/governance-content-debt.mjs",
       "classification": null,
       "destination": null
     },
@@ -350,6 +358,14 @@
     },
     {
       "schemaVersion": 1,
+      "file": "consumer/managed-files/3c86a5e4ebab690ca3a4ea40e456036c6568190d900e57885b4da25a510c1352.blob",
+      "sha256": "e57421ff52ee68510bf070009f25941aa5ff45126c08e32d571c57fd76b59d3a",
+      "source": "infra/governance/schemas/content-debt-baseline.schema.json",
+      "classification": null,
+      "destination": "governance/schemas/content-debt-baseline.schema.json"
+    },
+    {
+      "schemaVersion": 1,
       "file": "consumer/managed-files/3ddedc67b464bdfe3dde9803a2d917920c96d633678b802eee638a44cd47366a.blob",
       "sha256": "6bc05d2597a54e8f6a5a087901e92ccc89acc3d5873d96ad20814f8f539a146b",
       "source": "template/ds-product-template/.devcontainer/post-create.mjs",
@@ -375,7 +391,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/475fba657eaeb8abd88f60635f3eadab27a9d0d3114ba4fffc65f43a2a0fe6e2.blob",
-      "sha256": "95dc0fef1f7570efe277a66f7edf4640055ad6abbae0245615eceb9b041560e9",
+      "sha256": "c566101c4d0e461c0cbd056a909cdf113817b441bbc4faa9ca44a647248f6a47",
       "source": "scripts/setup-workspace.mjs",
       "classification": null,
       "destination": "scripts/setup-workspace.mjs"
@@ -391,7 +407,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/5aeda1df235815f40dd755951f2b868d4e02035653d4536a8dde209cdc75b493.blob",
-      "sha256": "b4921ad903a3ed3d901187d406a87270190945c5ca1874b089e80df898d47a97",
+      "sha256": "40161bac07da3ce65b59f6d1e5439c1c43f398b4305c1ad5a0e1309d287c812f",
       "source": "scripts/lib/exact-workspace-dependencies.mjs",
       "classification": null,
       "destination": "scripts/lib/exact-workspace-dependencies.mjs"
@@ -511,7 +527,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/884721550b56308812b20917adac7a12f36fdb4ecda6b02460a7f5a219c0c966.blob",
-      "sha256": "9e8392da03fa8f3700d3f8d2ac6f0ffb11465f74748aca739ca933dd632ef4f6",
+      "sha256": "3436f42b34c34563476af421d6ec1ed32bd49b995cd1357f48bdd8589f754d32",
       "source": "packages/design-system/ds-canonical/templates/consumer-governance.md",
       "classification": null,
       "destination": "governance/consumer-governance.md"
@@ -535,7 +551,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/93a89f16f6717d1e4e4e27ec20ef916e3355c7aa890ca74cd9b12db30d8a899f.blob",
-      "sha256": "3cb259c8d83d8d378a6d282b0cde0a8884d96c51cf49e655405c3e416e646726",
+      "sha256": "ff1bb33e94c6de2f96e242c8853089565e292d9dbf183cb25151ec02e95eeff2",
       "source": "template/ds-product-template/.github/workflows/audit.yml",
       "classification": null,
       "destination": ".github/workflows/audit.yml"
@@ -551,7 +567,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/9791c85388d2e2e2bd564e2550fadc3351c4c960a47ce838098afcba7544eb90.blob",
-      "sha256": "04f0748843e926981465429ec9054bb8a743180729a05699e14d609b7107f9c6",
+      "sha256": "db5345e305535705340963cac328e915413be208e6ada3c15498c897b394991b",
       "source": "scripts/verify-upgrade-evidence.mjs",
       "classification": null,
       "destination": "scripts/verify-upgrade-evidence.mjs"
@@ -567,7 +583,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/ab072e7f2eca51f0e18a5e18c4b333260ee5d219a12cc6df5bb2d683f0b2734d.blob",
-      "sha256": "89e21d46327c33fda400c0d2f3344cf4e862327e198ae823d86e1c2a00d69e7e",
+      "sha256": "0c948666421047abd708c9f677b0f6679481ba8005cc6cc6b455840582d9ba62",
       "source": "scripts/sync-all.mjs",
       "classification": null,
       "destination": "scripts/sync-all.mjs"
@@ -959,7 +975,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/settings-hooks.json",
-      "sha256": "12c0448b84223ae62fe5bc742e4c3cdd3e934ec7c00a5f2f47682f92b1f9c19d",
+      "sha256": "4e5dba549e654dd54768310edfb1cf8f52a741c0c8e261e10ce90505393d9228",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + packages/governance/canonical/providers.json",
       "classification": null,
       "destination": null
@@ -967,7 +983,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "585f61eb395f47df7cc3afc7bab255efefe3faa4833e9811f253da526f286b40",
+      "sha256": "71b420b0a7f92d2e861b75f6b62a09cb518567e7c42646d7bf657e4a3bb54450",
       "source": null,
       "classification": null,
       "destination": null
@@ -1231,7 +1247,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/hook-config.json",
-      "sha256": "810c6fe1f33554d2ccc33eeb91cda4ab95209442649a204e996963ca10ed4fe0",
+      "sha256": "78748b0379593f8575a7937c84a70671367ed1d58448b0de70f94cd584ac2996",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + providers.json:codex",
       "classification": null,
       "destination": null

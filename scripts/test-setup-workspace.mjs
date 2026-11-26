@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
@@ -71,7 +71,8 @@ for (const [role, command, expected] of [
     assert.match(output, /^scope=local-bootstrap$/m)
     assert.match(output, /^providerCertification=not-checked$/m)
     assert.match(output, /^externalActivationRequired=false$/m)
-    assert.doesNotMatch(output, /cloud[- ]?ready|provider[- ]?certified|complete workspace setup/i)
+    assert.match(output, /^recordedContentDebt=0$/m, 'no baseline file = zero recorded debt')
+    assert.doesNotMatch(output, /cloud[- ]?ready|provider[- ]?certified|complete workspace setup|content[- ]?complian(?:t|ce)=/i)
     assert.deepEqual(
       calls.map(({ args }) => args[0].split('/').at(-1)),
       role === 'authority'
@@ -85,6 +86,36 @@ for (const [role, command, expected] of [
     }
   })
 }
+
+test('setup:all reports the recorded content-debt count without claiming content compliance', () => {
+  const root = fixture('node scripts/setup-governance.mjs')
+  mkdirSync(join(root, 'governance'), { recursive: true })
+  writeFileSync(join(root, 'governance/content-debt-baseline.json'), `${JSON.stringify({
+    entries: [
+      { file: 'apps/order-dashboard/src/Header.tsx' },
+      { file: 'apps/order-dashboard/src/InvoiceTable.tsx' },
+      { file: 'apps/order-dashboard/src/RefundDrawer.tsx' },
+    ],
+  })}\n`)
+  git(root, ['add', '.'])
+  git(root, ['-c', 'user.name=fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'baseline'])
+  const result = runWorkspaceSetup({ root, environment: { PATH: process.env.PATH }, runner() {} })
+  assert.equal(result.recordedContentDebt, 3)
+  const output = formatWorkspaceSetupResult(result)
+  assert.match(output, /^recordedContentDebt=3$/m)
+  assert.match(output, /^scope=local-bootstrap$/m, 'recorded debt never upgrades the bootstrap scope')
+  assert.throws(() => formatWorkspaceSetupResult({ ...result, recordedContentDebt: -1 }), /recorded content debt is invalid/)
+})
+
+test('setup:all refuses a symlinked content-debt baseline', () => {
+  const root = fixture('node scripts/setup-governance.mjs')
+  mkdirSync(join(root, 'governance'), { recursive: true })
+  writeFileSync(join(root, 'outside-baseline.json'), '{"entries":[]}\n')
+  symlinkSync(join(root, 'outside-baseline.json'), join(root, 'governance/content-debt-baseline.json'))
+  git(root, ['add', '.'])
+  git(root, ['-c', 'user.name=fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'linked baseline'])
+  assert.throws(() => runWorkspaceSetup({ root, environment: { PATH: process.env.PATH }, runner() {} }), /must be one regular file/)
+})
 
 test('setup:all rejects an unregistered role setup instead of executing package data', () => {
   const root = fixture('node attacker.mjs')

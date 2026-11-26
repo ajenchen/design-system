@@ -58,7 +58,9 @@ import {
 } from './lib/verified-exact-npm-runtime.mjs'
 import {
   discoverPackageManifestPaths,
+  assertDependencyOnlyManifestChange,
   discoverReceiverDependencyPaths,
+  discoverWorkspaceManifestPaths,
   pinExactWorkspaceDependencies,
   verifyExactWorkspaceDependencies,
 } from './lib/exact-workspace-dependencies.mjs'
@@ -1553,7 +1555,7 @@ test('consumer governance guide is canonical, protected, exact-hash managed and 
   const checker = readFileSync('scripts/governance-check.mjs', 'utf8')
   assert.match(
     checker,
-    /const fixedGovernanceEntryNames = new Set\(\[\s*'consumer-governance\.md', 'lock\.json', 'lock\.schema\.json', 'overlay\.md',\s*\]\)/,
+    /const fixedGovernanceEntryNames = new Set\(\[\s*'consumer-governance\.md', 'content-debt-baseline\.json', 'lock\.json', 'lock\.schema\.json', 'overlay\.md',\s*\]\)/,
   )
   const refresh = readFileSync('scripts/refresh-fork-launchers.mjs', 'utf8')
   assert.match(refresh, /launcherDestination\.split\('\/'\)\.slice\(0, -1\)\.join\('\/'\)/)
@@ -1913,6 +1915,36 @@ test('workspace dependency authority discovers, pins, verifies, and lists receiv
     () => discoverReceiverDependencyPaths(root),
     /exactly one dependency lock/,
     'ambiguous lock authority must fail closed',
+  )
+})
+
+// 2026-11-26(產品 canary 缺陷 1):兩個 app 鎖舊版 → 交易用的兩支小工具。discover 只列非根目錄的
+// workspace manifest(沒有 workspaces = 空);dependency-only 判定只放行「受管相依改成目標版號」。
+test('upgrade transaction workspace helpers list app manifests and accept only dependency-version changes', () => {
+  const root = mkdtempSync(join(tmpdir(), 'workspace-transaction-helpers-'))
+  temporary.push(root)
+  writeFileSync(join(root, 'package.json'), `${JSON.stringify({ name: 'single', private: true }, null, 2)}\n`)
+  assert.deepEqual(discoverWorkspaceManifestPaths(root), [], 'a repository without workspaces carries no workspace manifests')
+  mkdirSync(join(root, 'apps/order-dashboard'), { recursive: true })
+  mkdirSync(join(root, 'apps/template'), { recursive: true })
+  writeFileSync(join(root, 'package.json'), `${JSON.stringify({ name: 'consumer', private: true, workspaces: ['apps/*'] }, null, 2)}\n`)
+  for (const app of ['order-dashboard', 'template']) {
+    writeFileSync(join(root, `apps/${app}/package.json`), `${JSON.stringify({ name: `@product/${app}`, dependencies: { '@qijenchen/design-system': '1.2.3-beta.3' } }, null, 2)}\n`)
+  }
+  assert.deepEqual(discoverWorkspaceManifestPaths(root), ['apps/order-dashboard/package.json', 'apps/template/package.json'])
+
+  const before = JSON.stringify({ name: '@product/order-dashboard', scripts: { dev: 'vite' }, dependencies: { '@qijenchen/design-system': '1.2.3-beta.3', react: '^19.0.0' } }, null, 2)
+  const pinned = JSON.stringify({ name: '@product/order-dashboard', scripts: { dev: 'vite' }, dependencies: { '@qijenchen/design-system': '1.2.3-beta.4', react: '^19.0.0' } }, null, 2)
+  assert.deepEqual(assertDependencyOnlyManifestChange(before, pinned, '1.2.3-beta.4'), ['dependencies.@qijenchen/design-system'])
+  // 對照組:順手改了別的欄位 / 改成別的版號 / 新宣告一個受管套件 → 都拒絕
+  assert.throws(
+    () => assertDependencyOnlyManifestChange(before, pinned.replace('"vite"', '"vite --host"'), '1.2.3-beta.4'),
+    /changed more than its governed dependency versions/,
+  )
+  assert.throws(() => assertDependencyOnlyManifestChange(before, before, '1.2.3-beta.4'), /does not pin every governed package/)
+  assert.throws(
+    () => assertDependencyOnlyManifestChange(before, JSON.stringify({ ...JSON.parse(pinned), devDependencies: { '@qijenchen/storybook-config': '1.2.3-beta.4' } }), '1.2.3-beta.4'),
+    /changed which governed packages it declares/,
   )
 })
 

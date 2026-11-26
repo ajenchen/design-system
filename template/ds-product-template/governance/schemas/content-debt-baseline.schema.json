@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/content-debt-baseline-v1.json",
+  "title": "Product content-debt baseline (ratchet)",
+  "description": "Recorded pre-existing content findings of the installed provider-neutral governance check (governance/content-debt-baseline.json in a product repository). Findings listed here do not block; findings not in the baseline still block; findings that disappear must be removed (the baseline may only shrink). Each cell is one rule + file + hook + event; items are the normalized, line-number-free fingerprints of the hook output lines, matched as a multiset. The file is written only by `npm run governance:debt` (governance-content-debt.mjs); entriesSha256 binds registrations and entries so a hand edit fails the check. Ordering, uniqueness and the digest are enforced by governance-check.mjs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "kind", "note", "registrations", "entries", "entriesSha256"],
+  "properties": {
+    "$schema": {"const": "./schemas/content-debt-baseline.schema.json"},
+    "schemaVersion": {"const": 1},
+    "kind": {"const": "consumer-content-debt-baseline"},
+    "note": {"type": "string"},
+    "registrations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "by", "reason", "recordedAt", "release"],
+        "properties": {
+          "id": {"type": "integer", "minimum": 1},
+          "by": {"$ref": "#/$defs/text200"},
+          "reason": {"type": "string", "minLength": 1, "maxLength": 2000},
+          "recordedAt": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{3})?Z$"},
+          "release": {"anyOf": [{"type": "null"}, {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?(?:\\+[0-9A-Za-z][0-9A-Za-z.-]*)?$"}]}
+        }
+      }
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ruleId", "file", "hook", "event", "items"],
+        "properties": {
+          "ruleId": {"enum": ["GOV-CONTENT-001", "GOV-CONTENT-003"]},
+          "file": {"type": "string", "minLength": 1, "maxLength": 1024, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(?:/|$))[^\\\\]+$"},
+          "hook": {"type": "string", "minLength": 1, "maxLength": 512},
+          "event": {"type": "string", "minLength": 1, "maxLength": 128},
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["fingerprint", "text", "registration"],
+              "properties": {
+                "fingerprint": {"type": "string", "pattern": "^[a-f0-9]{16}$"},
+                "text": {"type": "string", "maxLength": 240},
+                "registration": {"type": "integer", "minimum": 1}
+              }
+            }
+          }
+        }
+      }
+    },
+    "entriesSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  },
+  "$defs": {
+    "text200": {"type": "string", "minLength": 1, "maxLength": 200}
+  }
+}

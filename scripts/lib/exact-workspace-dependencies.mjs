@@ -121,6 +121,59 @@ export function discoverPackageManifestPaths(rootPath) {
   )))
 }
 
+// Upgrade transactions must carry every workspace manifest that declares a governed package, but a
+// repository without workspaces simply has none to carry. Unlike discoverPackageManifestPaths (whose
+// callers require at least one workspace), this lists only the non-root manifests and returns an
+// empty list when the root declares no workspaces or the patterns match nothing.
+export function discoverWorkspaceManifestPaths(rootPath) {
+  const root = realpathSync(resolve(rootPath))
+  const rootManifest = containedRegularFile(root, 'package.json', 'root package.json')
+  const packageJson = readJson(rootManifest.absolute, rootManifest.relative)
+  const declared = Array.isArray(packageJson.workspaces)
+    ? packageJson.workspaces
+    : packageJson.workspaces?.packages
+  if (declared === undefined || (Array.isArray(declared) && declared.length === 0)) return Object.freeze([])
+  const paths = new Set()
+  for (const pattern of workspacePatterns(packageJson)) {
+    for (const matched of globSync(`${pattern}/package.json`, { cwd: root })) {
+      if (matched.split('/').includes('node_modules')) continue
+      const manifest = containedRegularFile(root, matched, `workspace manifest ${matched}`)
+      if (manifest.relative !== 'package.json') paths.add(manifest.relative)
+    }
+  }
+  return Object.freeze([...paths].sort(compareUtf8Bytes))
+}
+
+// A workspace manifest may change inside an upgrade transaction only by moving its governed
+// declarations to the exact target release. Any other byte-level difference (a new script, a new
+// dependency, a reordered key that changes meaning) is product content and stays outside the
+// upgrade authority.
+export function assertDependencyOnlyManifestChange(beforeText, afterText, expectedVersion, label = 'workspace manifest') {
+  exactVersion(expectedVersion, 'expected version')
+  let before
+  let after
+  try {
+    before = JSON.parse(beforeText)
+    after = JSON.parse(afterText)
+  } catch (error) {
+    throw new Error(`WORKSPACE-EXACT-DEPENDENCY-001:${label} is not valid JSON:${error.message}`, { cause: error })
+  }
+  invariant(before && typeof before === 'object' && !Array.isArray(before), `${label} before-image must be one object`)
+  invariant(after && typeof after === 'object' && !Array.isArray(after), `${label} after-image must be one object`)
+  const beforeDeclarations = governedDeclarations(before, `${label} before-image`)
+  const afterDeclarations = governedDeclarations(after, `${label} after-image`)
+  invariant(
+    JSON.stringify(beforeDeclarations.map(({ packageName, section }) => [packageName, section]))
+      === JSON.stringify(afterDeclarations.map(({ packageName, section }) => [packageName, section])),
+    `${label} changed which governed packages it declares`,
+  )
+  invariant(afterDeclarations.every(({ value }) => value === expectedVersion), `${label} does not pin every governed package to ${expectedVersion}`)
+  const normalized = structuredClone(before)
+  for (const { packageName, section } of beforeDeclarations) normalized[section][packageName] = expectedVersion
+  invariant(JSON.stringify(normalized) === JSON.stringify(after), `${label} changed more than its governed dependency versions`)
+  return Object.freeze(afterDeclarations.map(({ packageName, section }) => `${section}.${packageName}`))
+}
+
 export function discoverDependencyLockPath(rootPath) {
   const root = realpathSync(resolve(rootPath))
   const present = LOCK_CANDIDATES.filter(name => existsSync(resolve(root, name)))

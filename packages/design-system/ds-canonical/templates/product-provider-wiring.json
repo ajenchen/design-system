@@ -32,6 +32,7 @@
   "requiredPackageScripts": [
     "audit:a11y",
     "governance:check",
+    "governance:debt",
     "lint:imports",
     "setup:all",
     "setup:governance",

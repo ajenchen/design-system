@@ -64,6 +64,7 @@
       "prefixItems": [
         { "const": "audit:a11y" },
         { "const": "governance:check" },
+        { "const": "governance:debt" },
         { "const": "lint:imports" },
         { "const": "setup:all" },
         { "const": "setup:governance" },
@@ -72,8 +73,8 @@
         { "const": "sync:workspace-dependencies" }
       ],
       "items": false,
-      "minItems": 8,
-      "maxItems": 8
+      "minItems": 9,
+      "maxItems": 9
     },
     "settings": {
       "type": "object",
