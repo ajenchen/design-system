@@ -8,13 +8,18 @@
  *         B2  框寬補位的算式讀 --field-border-width,不寫死 1px / 2px(tagPadding、fieldViewGeometry、Textarea 行數上限、InlineEdit 命中區、
  *             LinkInput 延伸區、併排欄位組的重疊、--field-control-py-*、DataTable --table-cell-py)
  *         S2  field.tsx 內縮規則寫的屬性名 = field-context.ts 的 FIELD_FRAMELESS_VALUE_ATTR
- *         S3  閱讀情境的判斷只住 components/Field/field.css 一處(該檔每條規則的判斷一字不差),而且由對外彙總檔 styles/tokens.css 匯入
+ *         S3  閱讀情境的判斷只住 components/Field/field.css 一處(該檔每條規則的判斷一字不差),而且由對外彙總檔 styles/tokens.css 匯入;
+ *             標籤那條三句判斷都在(就地編輯 / 組裡有 Field 層純顯示 / 不在組裡的 Field 層純顯示),沒有框的值那條只有就地編輯那一句
  *         S4  --field-border-width = 1px、--field-bleed = calc(框寬 + --field-px)、InlineEdit 垂直外伸與可編輯標題列讓位都讀 --field-bleed
  *         瀏覽器段(真實情境「閱讀情境:工作項目與行事曆事件詳情」+ 邊界「閱讀情境驗證」,淺 / 深 × 不指定 / sm / md):
  *         G1  值線:閱讀範圍每一列靜止時第一個看得見的東西(字用 DOM 文字範圍、不用字形墨跡;輸入框用內容盒)
  *             標籤在左 = 控件欄左緣 + --field-bleed(框內字線),標籤在上 = 標籤左緣,±0.5;文字列進編輯後字的位置不變 ±0.5(零跳)。
  *             InlineEdit 各範例裡的 Field 也量(取代手動探針 probe-inline-edit-align.mjs 第一組);
- *         G1-V Field 層純顯示「純顯示齊標籤驗證」18 種 × 兩種標籤位置(取代探針第二組;不在閱讀情境,行為不變)
+ *         G1-V Field 層純顯示「純顯示齊標籤驗證」18 種 × 兩種標籤位置(取代探針第二組):值齊控件欄左緣 —— 純顯示只進閱讀情境的標籤色,
+ *             值不內縮(開關 / 勾選框的 ✓ 也在控件欄左緣)
+ *         G3-V 純顯示的標籤(2026-11-26,field.spec.md「閱讀情境」純顯示一段):「純顯示齊標籤驗證」36 個不在組裡的純顯示欄位(範圍 = 自己)
+ *             淺 / 深各一次,標籤 = 該主題的 --fg-secondary(格名「G3-V:單獨:」);邊界夾具 VG 組(三列純顯示 + 混放一列一般輸入框)
+ *             每一列標籤 = --fg-secondary,含輸入框那一列(同一個範圍只用一個標籤色;格名「G3-V:組:」)
  *         G2  標籤↔框:滑過的底色(截圖差分)與編輯中的輸入框,標籤在左時左緣 ≥ 控件欄左緣(離標籤欄 = 表單欄距 12),標籤在上時離標籤下緣 ≥ 欄內間距
  *         CONT 框(靜止 / 編輯中)不出容器的內緣(容器左右內距 ≥ --field-bleed);InlineEdit 各範例一併掃
  *         G3  三者同色:閱讀標籤 = DescriptionList dt = DataTable 表頭 = --fg-secondary;閱讀範圍裡停用的列 = --fg-disabled
@@ -37,11 +42,13 @@
  *             EDITABLE_TITLE_HEADER_SLOT 的 --surface-title-bleed 解出來 = --field-bleed
  *         SC  範圍 = 最外層 FieldGroup:巢狀組(外層就地編輯、內層只有輸入框 N2)內層與外層同色同高,頁面上沒有範圍套在範圍裡;不在組裡的 Field 範圍是自己
  *   紅: --selftest 逐一注入(每個都必須讓預期的格紅;清單與預期紅的格 = 下方 STATIC_MUTANTS / MUTANTS,本段不寫個數):
- *       靜態段(裸 border、補位寫死、屬性名不同、判斷寫兩處、field.css 兩條判斷不一致、bleed 公式、標題讓位讀 --field-px),
+ *       靜態段(裸 border、補位寫死、屬性名不同、判斷寫兩處、field.css 兩條判斷不一致、bleed 公式、標題讓位讀 --field-px、
+ *       內縮那條也認純顯示、標籤那條漏了不在組裡的純顯示、純顯示的判斷多寫一份在 field.tsx),
  *       瀏覽器段(某一列字推 4px 只有那列紅、垂直外伸改回 12、沒有框的值不內縮、拿掉標籤判斷、判斷過寬、標籤色在範圍元素上先算好
  *       (主題套層跟不上,沒套層的列照綠)、編輯中跳字、水平框壓進標籤 1px、容器內距 12、記號只掛靜止外框、同組列高跑掉、
  *       列高晚一個計時器才到、bleed 公式只剩內距、框寬 2px、標題讓位斷開、範圍改成最近一層、純顯示補回左內距 13、
- *       表格只修 view 一半(編輯中的欄位內距回到 --table-cell-px)、只修 edit 一半(靜止的左右透明框還在)、Where 標籤左內距回到 --field-px)
+ *       表格只修 view 一半(編輯中的欄位內距回到 --table-cell-px)、只修 edit 一半(靜止的左右透明框還在)、Where 標籤左內距回到 --field-px、
+ *       拿掉不在組裡的純顯示判斷、拿掉組裡的純顯示判斷、組裡逐列換色(只有純顯示那幾列變淡)、純顯示也內縮開關 / 勾選框)
  *   綠: 全部照規格時 exit 0。開 story 走 lib/launch-browser.mjs openStory(等 Storybook 回報渲染完成與被量的列本身出現,不睡固定時間);
  *       開不起來 / 回 0 筆 = 儀器失效(INSTRUMENT-FAIL,exit 1 並點名),不讀成通過。
  */
@@ -117,16 +124,32 @@ function staticChecks(files) {
   put('S2:沒有框的值記號同名', Boolean(attr) && fieldTsx.includes(`[&_[${attr}]]:ml-[var(--scope-value-inset,0px)]`),
     attr ? `field-context.ts 記號 ${attr};field.tsx 內縮規則${fieldTsx.includes(`[&_[${attr}]]`) ? '同名' : '不同名'}` : '找不到 FIELD_FRAMELESS_VALUE_ATTR')
   // S3 判斷只住一處 + 進彙總檔。field.css 的效果分兩條規則寫在讀者身上(標籤 / 沒有框的值,理由在該檔檔頭),
-  // 每條規則提到 data-field-reading 的選擇器都必須以同一句判斷開頭 —— 兩條各寫各的判斷,改一條漏一條就分岔
+  // 每條規則提到判斷記號(data-field-reading / data-field-mode)的選擇器都必須以允許的判斷開頭 —— 各寫各的判斷,改一條漏一條就分岔。
+  // 標籤那條 = 就地編輯 + Field 層純顯示(組裡 / 不在組裡)三句都要在;沒有框的值那條只准就地編輯那一句
+  //(純顯示的值本來就在控件欄左緣,field-controls.spec.md「軸一 view mode」;2026-11-26 純顯示進閱讀情境只動標籤色)
   const JUDGE = '[data-field-scope]:has([data-field-reading])'
+  const VIEW_JUDGES = ['[data-field-scope]:has([data-field-orientation][data-field-mode="view"])', '[data-field-scope][data-field-mode="view"]']
+  const LABEL_JUDGES = [JUDGE, ...VIEW_JUDGES]
   const owner = `${DS}/components/Field/field.css`
   const judged = [...stripComments(files.get(owner) ?? '').matchAll(/([^{}]+)\{[^{}]*\}/g)]
-    .flatMap((m) => m[1].split(',').map((s) => s.trim())).filter((s) => s.includes('data-field-reading'))
-  const drift = judged.filter((s) => !s.startsWith(`${JUDGE} `))
-  const elsewhere = [...files].filter(([f, src]) => f !== owner && /(:has\(\[data-field-reading|has-\[\[data-field-reading|:has\(\[data-field-scope)/.test(stripComments(src))).map(([f]) => f)
+    .flatMap((m) => m[1].split(',').map((s) => s.trim())).filter((s) => /data-field-(?:reading|mode)/.test(s))
+  const opens = (s, judges) => judges.some((j) => s.startsWith(`${j} `))
+  const labelSel = judged.filter((s) => s.endsWith('[data-field-slot="label"]'))
+  const insetSel = judged.filter((s) => s.endsWith('[data-field-frameless-value]'))
+  const drift = [
+    ...judged.filter((s) => !labelSel.includes(s) && !insetSel.includes(s)),
+    ...labelSel.filter((s) => !opens(s, LABEL_JUDGES)),
+    ...insetSel.filter((s) => !opens(s, [JUDGE])),
+  ]
+  const missing = [
+    ...LABEL_JUDGES.filter((j) => !labelSel.some((s) => s.startsWith(`${j} `))).map((j) => `標籤那條缺「${j}」`),
+    ...(insetSel.some((s) => s.startsWith(`${JUDGE} `)) ? [] : [`沒有框的值那條缺「${JUDGE}」`]),
+  ]
+  const elsewhere = [...files].filter(([f, src]) => f !== owner
+    && /(:has\(\[data-field-reading|has-\[\[data-field-reading|:has\(\[data-field-scope|:has\(\[data-field-orientation\]\[data-field-mode|has-\[\[data-field-orientation\]\[data-field-mode|\[data-field-scope\]\[data-field-mode)/.test(stripComments(src))).map(([f]) => f)
   const aggregated = (files.get(`${DS}/styles/tokens.css`) ?? '').includes("@import './../components/Field/field.css';")
-  put('S3:判斷只住 field.css', judged.length > 0 && drift.length === 0 && elsewhere.length === 0 && aggregated,
-    `field.css 用到判斷的選擇器 ${judged.length} 條${drift.length ? `,其中跟「${JUDGE}」不同:${drift.join(' / ')}` : '(同一句判斷)'};別處 ${elsewhere.length ? elsewhere.join(', ') : '0'};彙總檔${aggregated ? '有' : '沒有'}匯入`)
+  put('S3:判斷只住 field.css', judged.length > 0 && drift.length === 0 && missing.length === 0 && elsewhere.length === 0 && aggregated,
+    `field.css 用到判斷的選擇器 ${judged.length} 條${drift.length ? `,其中開頭不是允許的判斷:${drift.join(' / ')}` : '(標籤那條 = 就地編輯 + 純顯示、內縮那條 = 只有就地編輯)'}${missing.length ? `;${missing.join(';')}` : ''};別處 ${elsewhere.length ? elsewhere.join(', ') : '0'};彙總檔${aggregated ? '有' : '沒有'}匯入`)
   // S4 token 公式與讀者
   const ui = files.get(`${DS}/tokens/uiSize/uiSize.css`) ?? ''
   const ie = files.get(`${DS}/components/InlineEdit/inline-edit.tsx`) ?? ''
@@ -152,6 +175,13 @@ const STATIC_MUTANTS = [
   { name: '內縮規則的屬性名跟記號不同名', expect: 'S2:沒有框的值記號同名', file: `${DS}/components/Field/field.tsx`, from: '[&_[data-field-frameless-value]]', to: '[&_[data-field-frameless]]' },
   { name: '判斷多寫一份在 InlineEdit', expect: 'S3:判斷只住 field.css', file: `${DS}/components/InlineEdit/inline-edit.tsx`, from: "'relative flex min-w-0 rounded-md", to: "'[[data-field-scope]:has([data-field-reading])_&]:text-fg-secondary relative flex min-w-0 rounded-md" },
   { name: 'field.css 兩條規則的判斷不一致(只改了沒有框的值那一條)', expect: 'S3:判斷只住 field.css', file: `${DS}/components/Field/field.css`, from: '[data-field-scope]:has([data-field-reading]) [data-field-frameless-value]', to: '[data-field-scope]:has([data-field-reading][data-editing="false"]) [data-field-frameless-value]' },
+  // 2026-11-26 純顯示進閱讀情境(只動標籤色):內縮那條不准認純顯示、標籤那條三句判斷缺一不可、純顯示的判斷也只住 field.css
+  { name: '內縮那條也認純顯示(純顯示的開關 / 勾選框被推到框內字線)', expect: 'S3:判斷只住 field.css', file: `${DS}/components/Field/field.css`,
+    from: '[data-field-scope]:has([data-field-reading]) [data-field-frameless-value] {', to: '[data-field-scope]:has([data-field-reading]) [data-field-frameless-value],\n[data-field-scope][data-field-mode="view"] [data-field-frameless-value] {' },
+  { name: '標籤那條漏了不在組裡的純顯示', expect: 'S3:判斷只住 field.css', file: `${DS}/components/Field/field.css`,
+    from: '[data-field-slot="label"],\n[data-field-scope][data-field-mode="view"] [data-field-slot="label"] {', to: '[data-field-slot="label"] {' },
+  { name: '純顯示的判斷多寫一份在 field.tsx', expect: 'S3:判斷只住 field.css', file: `${DS}/components/Field/field.tsx`,
+    from: "const LABEL_COLOR_CLASS = 'text-[color:var(--scope-label-color,var(--foreground))]'", to: "const LABEL_COLOR_CLASS = 'text-[color:var(--scope-label-color,var(--foreground))] [[data-field-scope][data-field-mode=view]_&]:text-fg-secondary'" },
   { name: '--field-bleed 只剩內距', expect: 'S4:token 公式與讀者', file: `${DS}/tokens/uiSize/uiSize.css`, from: '--field-bleed: calc(var(--field-border-width) + var(--field-px));', to: '--field-bleed: var(--field-px);' },
   { name: '標題讓位讀回 --field-px', expect: 'S4:token 公式與讀者', file: `${DS}/patterns/overlay-surface/overlay-surface.tsx`, from: '[--surface-title-bleed:var(--field-bleed)]', to: '[--surface-title-bleed:var(--field-px)]' },
 ]
@@ -371,6 +401,8 @@ function diffBounds(a, b, clip, scale = 2) {
 
 const READING = ['RH', 'RV', 'ONE', 'WRAP', 'N2', 'S1', 'DIS']
 const FORM = ['FH', 'FV']
+// Field 層純顯示的組(閱讀情境只動標籤色;不進 READING —— 值線、同組同高是就地編輯的效果,純顯示不套)
+const VIEW_GROUP = ['VG']
 const RUNS = [
   { theme: 'light', size: 'unset' }, { theme: 'light', size: 'sm' }, { theme: 'light', size: 'md' },
   { theme: 'dark', size: 'unset' }, { theme: 'dark', size: 'sm' }, { theme: 'dark', size: 'md' },
@@ -402,6 +434,18 @@ function judgeStatic(p, run, { only = null } = {}) {
       const want_ = r.disabled ? ex.fgDisabled : ex.fgSecondary
       check(`G3:${r.nestedTheme ? '主題套層:' : ''}${r.probe}`, r.label?.color === want_,
         `${tag}${r.nestedTheme ? '(這一列套了另一層主題)' : ''} 閱讀${r.disabled ? '(停用)' : ''}標籤 ${r.label?.color} vs ${r.disabled ? '--fg-disabled' : '--fg-secondary'} ${want_}`)
+    }
+    // G3-V 組:Field 層純顯示的組(VG)整組 = 次要色,混放的一般輸入框那一列也是(同一個範圍只用一個標籤色)。
+    // 值線 / 列高不在這裡量:純顯示只動標籤色,值齊控件欄左緣由 G1-V 量
+    if (rows.some((r) => r.set === 'N2')) {
+      const vg = rows.filter((r) => VIEW_GROUP.includes(r.set))
+      if (vg.length !== 4 || !vg.some((r) => r.kind !== 'view')) instrumentFails.push({ cell: 'G3-V 組', detail: `${tag} 邊界夾具的純顯示組量到 ${vg.length} 列(應 4 列,含 1 列一般輸入框)` })
+      for (const r of vg) {
+        const ex = r.expect ?? refs
+        const want_ = r.disabled ? ex.fgDisabled : ex.fgSecondary
+        check(`G3-V:組:${r.probe}`, r.label?.color === want_,
+          `${tag} 純顯示組${r.kind === 'view' ? '' : '(混放的一般輸入框)'}標籤 ${r.label?.color} vs ${r.disabled ? '--fg-disabled' : '--fg-secondary'} ${want_}`)
+      }
     }
   }
   if (want('G4')) for (const r of form) {
@@ -560,7 +604,7 @@ async function judgeNoFlip(run, set, probe, { only = null, after = null } = {}) 
   await parkPointer(page)
 }
 
-/** G1-V:Field 層純顯示「純顯示齊標籤驗證」(18 種 × 兩種標籤位置;不在閱讀情境) */
+/** G1-V / G3-V 單獨:Field 層純顯示「純顯示齊標籤驗證」(18 種 × 兩種標籤位置,都不在組裡 = 範圍是自己):值齊控件欄左緣、標籤 = 次要色 */
 const VIEW_READY = () => Boolean(document.querySelector('[data-view-case="radio"] [data-field-slot="control"]'))
 const VIEW_PROBE = () => {
   const visible = (el) => {
@@ -586,15 +630,22 @@ const VIEW_PROBE = () => {
     const sizer = document.createElement('div'); sizer.style.height = 'var(--field-height-md)'; ctrl.appendChild(sizer)
     const fieldHeight = sizer.getBoundingClientRect().height; sizer.remove()
     const c = ctrl.getBoundingClientRect(), l = label.getBoundingClientRect()
-    rows.push({ orient: wrap.dataset.viewOrientation, key: f.dataset.viewCase, labelTag: label.tagName, dx: left - c.left, labelDx: l.left - c.left, dy: center - (c.top + fieldHeight / 2) })
+    // 期望色在標籤自己所在的主題下解(同 PROBE themedColors)
+    const s = document.createElement('span'); label.appendChild(s); s.style.color = 'var(--fg-secondary)'; const fgSecondary = getComputedStyle(s).color; s.remove()
+    rows.push({ orient: wrap.dataset.viewOrientation, key: f.dataset.viewCase, labelTag: label.tagName, dx: left - c.left, labelDx: l.left - c.left, dy: center - (c.top + fieldHeight / 2),
+      color: getComputedStyle(label).color, fgSecondary, scopeIsSelf: f.closest('[data-field-scope]') === f })
   }
   return rows
 }
-function judgeView(rows) {
-  if (!rows || rows.length !== 36) { instrumentFails.push({ cell: 'G1-V', detail: `純顯示齊標籤驗證量到 ${rows?.length ?? 0} 格(應 18 × 2 = 36)` }); return }
+function judgeView(rows, { theme = 'light', geometry = true } = {}) {
+  if (!rows || rows.length !== 36) { instrumentFails.push({ cell: `G1-V ${theme}`, detail: `純顯示齊標籤驗證量到 ${rows?.length ?? 0} 格(應 18 × 2 = 36)` }); return }
   for (const r of rows) {
     const id = `G1-V:${r.orient}/${r.key}`
     if (r.missing || r.empty) { check(id, false, r.missing ? '找不到標籤或控件欄' : '控件欄裡沒有可見內容'); continue }
+    // G3-V 單獨:不在組裡的純顯示欄位,範圍是自己 → 標籤 = 次要色(field.spec.md「閱讀情境」;:has() 不含自己,field.css 另寫一句)
+    check(`G3-V:單獨:${theme}:${r.orient}/${r.key}`, r.scopeIsSelf && r.color === r.fgSecondary,
+      `${theme} 純顯示標籤 ${r.color} vs --fg-secondary ${r.fgSecondary}${r.scopeIsSelf ? '' : '(這一格的範圍不是它自己 —— 夾具被包進組裡了)'}`)
+    if (!geometry) continue
     const errs = []
     if (Math.abs(r.dx) > 0.5) errs.push(`值左緣離控件欄左緣 ${f2(r.dx)}`)
     if (r.orient === 'vertical' && Math.abs(r.labelDx) > 0.5) errs.push(`標籤左緣離控件欄左緣 ${f2(r.labelDx)}`)
@@ -683,7 +734,12 @@ const BLOCKS = {
       }
     }
   },
-  async view({ dom }) { judgeView(await open(STORY.view, { label: '純顯示齊標籤驗證', dom, waitFor: VIEW_READY, probe: VIEW_PROBE, probeArg: null })) },
+  // 淺 / 深各開一次:位置與主題無關,只在淺色量(G1-V);標籤色兩個主題都量(G3-V 單獨)
+  async view({ dom = null, css = null, themes = ['light', 'dark'] } = {}) {
+    for (const theme of themes) {
+      judgeView(await open(STORY.view, { theme, label: `純顯示齊標籤驗證 ${theme}`, dom, css, waitFor: VIEW_READY, probe: VIEW_PROBE, probeArg: null }), { theme, geometry: theme === 'light' })
+    }
+  },
   async sweep() {
     if (!SWEEP.length) { instrumentFails.push({ cell: 'InlineEdit 範例', detail: 'index 裡找不到 InlineEdit 的 story' }); return }
     let measured = 0
@@ -903,6 +959,18 @@ const MUTANTS = [
     css: '[data-field-group] [data-field-group] [data-field-slot="label"] { --scope-label-color: var(--foreground) !important; } [data-field-group] [data-field-group] [data-field-frameless-value] { --scope-value-inset: 0px !important; }' },
   { name: '純顯示補回左內距 13(C1 甲之前)', block: 'view', expect: ['G1-V:vertical/input', 'G1-V:horizontal/input'],
     dom: () => { for (const el of document.querySelectorAll('[data-view-case="input"] [data-field-slot="control"] > *')) el.style.setProperty('padding-left', '13px', 'important') } },
+  // 2026-11-26 純顯示進閱讀情境(只動標籤色):破法注入在標籤自己身上(變數設在讀者身上,同「拿掉標籤判斷」)
+  { name: '拿掉不在組裡的純顯示判斷(範圍是自己時 :has() 認不到)', block: 'view', expect: ['G3-V:單獨:light:vertical/input', 'G3-V:單獨:light:horizontal/switch'],
+    greenToo: ['G1-V:vertical/input'],
+    css: '[data-field-scope][data-field-mode="view"] [data-field-slot="label"] { --scope-label-color: var(--foreground) !important; }' },
+  { name: '拿掉組裡的純顯示判斷(組裡只有純顯示時整組回到表單色)', block: 'statics', only: ['G3'], runs: ONE_RUN, expect: ['G3-V:組:VG:客服單號', 'G3-V:組:VG:內部備註'],
+    greenToo: ['G3:RH:摘要', 'G3:N2:預估工時'],
+    css: '[data-field-group][data-field-scope]:not(:has([data-field-reading])) [data-field-slot="label"] { --scope-label-color: var(--foreground) !important; }' },
+  { name: '組裡逐列換色(只有純顯示那幾列變淡,混放的輸入框留在表單色)', block: 'statics', only: ['G3'], runs: ONE_RUN, expect: ['G3-V:組:VG:內部備註'],
+    greenToo: ['G3-V:組:VG:客服單號', 'G3-V:組:VG:優先級'],
+    css: '[data-field-scope]:not(:has([data-field-reading])) [data-field-orientation]:not([data-field-mode="view"]) > [data-field-slot="label"] { --scope-label-color: var(--foreground) !important; }' },
+  { name: '純顯示也內縮開關 / 勾選框(值離開控件欄左緣)', block: 'view', expect: ['G1-V:horizontal/switch', 'G1-V:horizontal/checkbox'], greenToo: ['G1-V:vertical/switch'],
+    css: '[data-field-scope][data-field-mode="view"] [data-field-frameless-value] { --scope-value-inset: var(--field-bleed) !important; }' },
   // G7:表格兩半各自壞一次 —— 只修了靜止那一半(編輯中的欄位內距回到 --table-cell-px,字在 13)/ 只修了編輯那一半(靜止的左右透明框還在)
   { name: '表格只修 view 一半(格內欄位編輯中的左右內距回到 --table-cell-px)', block: 'table', runs: [{ theme: 'light' }],
     expect: ['G7:編輯:inline-edit:Product', 'G7:編輯:inline-edit:Qty', 'G7:編輯:inline-edit:Release', 'G7:編輯:auto-height:Note (wrap text)'],
@@ -934,7 +1002,7 @@ if (!SELFTEST) {
   for (const m of MUTANTS) {
     const from = results.length, fromFails = instrumentFails.length
     console.log(`── 對照組:${m.name}(預期 ${m.expect.join(' / ')} 紅)`)
-    if (m.block === 'view') await BLOCKS.view({ dom: m.dom })
+    if (m.block === 'view') await BLOCKS.view({ dom: m.dom, css: m.css, themes: ['light'] })
     else if (m.block === 'themeNest') await BLOCKS.themeNest({ css: m.css, runs: m.runs })
     else if (m.block === 'table') await BLOCKS.table({ css: m.css, dom: m.dom, runs: m.runs, edit: m.edit ?? true, filter: m.filter ?? true })
     else if (m.block === 'interactive') await BLOCKS.interactive({ css: m.css, only: m.only, runs: m.runs, after: m.after, fixture: m.only.includes('G5') || m.only.includes('G2') })
