@@ -254,7 +254,7 @@ function DetailFields<E>({ entry, detail, labels, locale, readFormat, onChange, 
       </Field>
       <Field data-calendar-detail-field="allDay">
         <FieldLabel>{labels.detailAllDay}</FieldLabel>
-        {/* 可改:直接切換(就地編輯沒有給布林值的編輯態;同 DataTable 布林欄 data-table.spec.md:557)。
+        {/* 可改:直接切換(就地編輯沒有給布林值的編輯態;同 DataTable 布林欄 data-table.spec.md「Inline Edit — per-column opt-in」boolean 列)。
             只能看:同組其他欄一樣是 InlineEdit editable={false}(同一場景不混放純顯示與就地編輯,inline-edit.spec.md:52 / :126),
             值的格式化委派 Switch mode="view"(勾 / 叉,switch.spec.md:156;inline-edit.spec.md「值-格式化」委派路徑) */}
         {editable ? (
