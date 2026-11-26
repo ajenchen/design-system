@@ -3,6 +3,6 @@
   "branch": "feat/batch2-2026-11-24",
   "update_baseline": true,
   "reference_ref": "",
-  "reason": "第 2 批 PR #174 合併前重拍基準圖。超 0.5% 預算:tag-all-variants、button-state-behavior(字級 14/21)、datatable-pinned(亮暗)、scrollarea-vertical-issue-list(表格字線 13→12);預算內有差、user 逐張確認:dategrid-range、dategrid-single、separator-horizontal、appshell-overview、sidebar-icon-collapse(亮暗)、datatable-nested-rows-expander-hover-state",
-  "requestedAt": "2026-11-24T19:43:55Z"
+  "reason": "PR #174 全部工作線合回後(a078f22a)合併前重拍基準圖,產出審核包給 user 逐張確認:本批含行事曆月檢視、分頁 / 手風琴焦點框不壓字、Steps 截斷、對話框主體空狀態置中、DataTable 操作欄與浮層宿主、選項前綴、Field 檢視 / 編輯等畫面變化",
+  "requestedAt": "2026-11-27T06:50:00+08:00"
 }
