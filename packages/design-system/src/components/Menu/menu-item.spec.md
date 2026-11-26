@@ -123,7 +123,7 @@ description 降一級：sm/md 的 label 14px → description 12px；lg 的 label
 
 需要大塊 suffix 的場景應該:
 
-1. **重新評估這個東西是不是 menu item**——如果 suffix 是大塊內容,可能需要 ListItem(列表行)而非 menu item
+1. **重新評估這個東西是不是 menu item**——如果 suffix 是大塊內容,可能是閱讀式列(DS 不另做 ListItem 元件,以 slot 零件組,見 item-anatomy.spec.md 判斷流程「閱讀式」那一支)而非 menu item
 2. **包一個 wrapper 元件**——consumer 自己組合 prefix + content + 大塊 suffix,套用 item-anatomy.spec.md 的完整 4-slot 規則
 3. 不要 hack `endContent` 塞大東西進去——layout 會壞
 

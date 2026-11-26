@@ -1323,12 +1323,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:40f93d4b1faf2afb9a9541eb2890c792e33e671f464edacc0ada645d6f3b040e",
+      "hash": "sha256:86068e4f83dec341f6ca81a380a03a70bc71d319df926d74f7bff8fc30b00e38",
       "id": "exact-published-template-mirror-builder",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/build-published-template-mirror.mjs",
-      "size": 25159,
+      "size": 25184,
       "type": "file"
     },
     {
@@ -2452,7 +2452,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 5,
-      "hash": "sha256:6dc46386b461aa8ad1d7fe87c140ea3b947d2d9135619f0e8713f113cded1dcb",
+      "hash": "sha256:5b1e3fca5166dae46083404cf6829f49b71e5a535111a57403e61863c2ea8fda",
       "id": "product-template-documentation",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3094,7 +3094,7 @@
         "scripts/generated/"
       ],
       "files": 815,
-      "hash": "sha256:99bb1195f9bdc0660bc6887d5962ac4c99670f22207895af9bc8be13dc84fd5c",
+      "hash": "sha256:97c871495730f2df2526d0744fa25d39bc32d224908c060f553b95f29ea32be0",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

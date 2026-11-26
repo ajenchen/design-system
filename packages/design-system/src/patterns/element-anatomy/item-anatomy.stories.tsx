@@ -128,7 +128,7 @@ const CONSUMERS: Record<ConsumerKey, ConsumerPreset> = {
   },
   ListItem: {
     label: 'ListItem',
-    desc: '頁面列表（未來元件）',
+    desc: '頁面列表（閱讀式列，以 slot 零件組）',
     mode: 'reading',
     py: 'py-3 (12px)',
     pyDesc: '頁面級列表的寬鬆行高(配閱讀模式與較大 avatar)',
@@ -258,7 +258,7 @@ function lineClampClass(maxLines: number | 'none'): string {
   return ''
 }
 
-/** ListItem preview (simulated — component not yet built) */
+/** 頁面列表列預覽(模擬:DS 不另做 ListItem 元件,消費端以 slot 零件組,見 item-anatomy.spec.md 判斷流程「閱讀式」那一支) */
 const ListItemPreview = ({ size, startIcon: StartIcon, avatar, label, description, suffix, labelMaxLines = 1, descMaxLines = 2 }: {
   size: SizeKey
   startIcon?: LucideIcon
@@ -276,7 +276,7 @@ const ListItemPreview = ({ size, startIcon: StartIcon, avatar, label, descriptio
     : 'h-[1lh]'
 
   return (
-    // @layout-space-magic-ok: 頁面列表列 px 16 / py 12 / gap 12 = item-anatomy.spec.md「ListItem（頁面列表，未來元件）」表 padding-y `py-3`、padding-x `px-4`、prefix ↔ content gap `gap-3`
+    // @layout-space-magic-ok: 頁面列表列 px 16 / py 12 / gap 12 = item-anatomy.spec.md「頁面列表（閱讀式列，以 slot 零件組）」表 padding-y `py-3`、padding-x `px-4`、prefix ↔ content gap `gap-3`
     <div className={`flex items-start gap-3 px-4 py-3 ${size === 'lg' ? 'text-body-lg' : 'text-body'}`}>
       {(StartIcon || avatar) && (
         <div className={`${alignClass} flex items-center shrink-0`}>

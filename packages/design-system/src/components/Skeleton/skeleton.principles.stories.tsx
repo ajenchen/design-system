@@ -68,7 +68,7 @@ export const UsageGuidance: Story = {
           title="❌ 不要 mix 資料跟 skeleton 在同一 row"
           note="同一個 row 裡一半顯示真實資料、一半顯示 skeleton,視覺上會像「半載入」狀態,使用者不知道這筆資料到底算不算讀完。Row 是原子單位,要嘛全 skeleton 要嘛全真實"
         >
-          {/* @layout-space-magic-ok: 真 Avatar ↔ 文字區 = 列的 prefix ↔ content,item-anatomy.spec.md「ListItem（頁面列表，未來元件）」表「prefix ↔ content gap」12px(`gap-3`)(已發布同值) */}
+          {/* @layout-space-magic-ok: 真 Avatar ↔ 文字區 = 列的 prefix ↔ content,item-anatomy.spec.md「頁面列表（閱讀式列，以 slot 零件組）」表「prefix ↔ content gap」12px(`gap-3`)(已發布同值) */}
           <div className="flex items-center gap-3 border border-border rounded-md p-[var(--layout-space-loose)] w-72">
             {/* 人員頭像滑過出名片(avatar.spec.md「Avatar HoverCard 原則」:ALL person avatars,無例外;稽核 M010)——
                 反例示範的是「半載入」,已經載入的頭像行為仍跟正式產品一樣 */}
@@ -95,7 +95,7 @@ export const UsageGuidance: Story = {
           note="初次載入 list / table / card grid 時使用。Skeleton 的形狀貼近真實內容,資料回來後版面不跳動,使用者預期不被打破"
         >
           <div className="flex flex-col w-72 border border-border rounded-md p-[var(--layout-space-loose)]">
-            {/* @layout-space-magic-ok: 頭像骨架 ↔ 文字區 = 載入後那一列的 prefix ↔ content,item-anatomy.spec.md「ListItem（頁面列表，未來元件）」表「prefix ↔ content gap」12px(`gap-3`)(已發布同值) */}
+            {/* @layout-space-magic-ok: 頭像骨架 ↔ 文字區 = 載入後那一列的 prefix ↔ content,item-anatomy.spec.md「頁面列表（閱讀式列，以 slot 零件組）」表「prefix ↔ content gap」12px(`gap-3`)(已發布同值) */}
             <div className="flex items-center gap-3">
               <Skeleton className="h-10 w-10 rounded-full" />
               {/* @layout-space-magic-ok: 骨架文字行之間 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
@@ -140,7 +140,7 @@ export const ShapeMatchRule: Story = {
       >
         {/* 2026-06-11:改為「載入中 vs 載入完成」對照(原單卡 demo 與使用指引「vs 近親元件」段重複)。 */}
         <ExampleGroup>
-          {/* @layout-space-magic-ok: 頭像骨架 ↔ 文字區 = 載入後那一列的 prefix ↔ content,item-anatomy.spec.md「ListItem（頁面列表，未來元件）」表「prefix ↔ content gap」12px(`gap-3`)(已發布同值) */}
+          {/* @layout-space-magic-ok: 頭像骨架 ↔ 文字區 = 載入後那一列的 prefix ↔ content,item-anatomy.spec.md「頁面列表（閱讀式列，以 slot 零件組）」表「prefix ↔ content gap」12px(`gap-3`)(已發布同值) */}
           <div className="flex items-center gap-3 border border-border rounded-md p-[var(--layout-space-loose)] w-72">
             <Skeleton className="h-10 w-10 rounded-full" />
             {/* @layout-space-magic-ok: 骨架文字行之間 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
@@ -152,7 +152,7 @@ export const ShapeMatchRule: Story = {
           <ExampleCaption>載入中 — 圓形對應頭像、兩行對應名字 + 最新訊息</ExampleCaption>
         </ExampleGroup>
         <ExampleGroup>
-          {/* @layout-space-magic-ok: 真 Avatar ↔ 文字區 = 列的 prefix ↔ content,item-anatomy.spec.md「ListItem（頁面列表，未來元件）」表「prefix ↔ content gap」12px(`gap-3`)(已發布同值) */}
+          {/* @layout-space-magic-ok: 真 Avatar ↔ 文字區 = 列的 prefix ↔ content,item-anatomy.spec.md「頁面列表（閱讀式列，以 slot 零件組）」表「prefix ↔ content gap」12px(`gap-3`)(已發布同值) */}
           <div className="flex items-center gap-3 border border-border rounded-md p-[var(--layout-space-loose)] w-72">
             {/* 人員頭像滑過出名片(avatar.spec.md「Avatar HoverCard 原則」;稽核 M010) */}
             <Avatar alt="林雅婷" src={demoPersonPhoto('林雅婷', 80)} size={40} color="blue" className="shrink-0" hoverCard={samplePersonCard({ name: '林雅婷', avatarSrc: demoPersonPhoto('林雅婷', 128) })} />

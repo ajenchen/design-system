@@ -1001,7 +1001,7 @@ Primitive 直接封裝 scanning / reading 兩種 typography:
 | prefix ↔ content gap | 8px (`gap-2`) | 控件與 label 的標準間距 |
 | 閱讀模式 | 閱讀模式 | 表單內仔細閱讀 |
 
-### ListItem（頁面列表，未來元件）
+### 頁面列表（閱讀式列，以 slot 零件組）
 
 | 屬性 | 值 | 原因 |
 |---|---|---|
