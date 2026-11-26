@@ -26,6 +26,7 @@
 | **overlay 開啟**(`data-state=open`)| **同 host hover**(該元件 hover 什麼樣就維持) | **瞬間**(同上)|
 | focus-visible | `outline: 2px solid var(--ring)`,**往外**(offset +2px,吃 `styles/base.css` 全域規則,元件不寫任何 class) | focus-canonical「問題二」:2026-09-10 逐站點實測 —— 26 個真實站點 × sm/md/lg,四周最小淨空 5–192px(最小值 4.00 = Breadcrumb 兩側分隔符,canonical「4.00 算放得下」),DPR2 逐像素數框帶零裁切。**列不裁它**:截斷是 label 自己的 `truncate`(兄弟節點),不是祖先。先前寫「往內、上下各被裁 1px」是把 **Tag 宿主**的量測(h-6 + 1px 邊框 + `overflow-hidden` → 淨空 3px、sm 1px)套到整個元件種類;依 canonical「往內由外層元件承擔」,那一處的 `focus-ring-inset` 在 `tag.tsx` TagDismiss。對照 SidebarMenuAction 同樣往外 |
 | 宿主 disabled | 不渲染 inline action | — |
+| 自身停用(宿主可用、這一顆不能按:原生 `disabled` 或 `aria-disabled`,例:欄位顯示面板鎖住的欄)| 圖示 `text-fg-disabled`、游標 `not-allowed`;滑過 / 按住**不變色、不出底色**(釘在靜止,consumer 傳的 `hoverBgClassName` 也不掛)。同 `components/Button/button.spec.md`「停用不給互動回饋」、`components/Menu/menu-item.spec.md`「disabled item 不可有 hover 效果」;實作 `item-anatomy.tsx` `ItemInlineActionButton` 停用時不掛 hover / active class | — |
 
 **Loading(明文 N/A)**:inline action **無 loading 態**——icon 級靶子沒有空間承載 spinner 且換渲會位移幾何,故不設 `aria-busy` / spinner surface。async 動作(row approve / retry / API delete)兩條路:(a) 觸發後由宿主層呈現 in-flight 結果(row pending 樣式 / Toast / optimistic update);(b) 需要使用者可感知的進行中狀態 → **升級為 `<Button loading>`**(行為見 `components/Button/button.spec.md`「loading」段),不用 inline action。double-trigger 防護由 consumer handler 冪等 / 重入 guard 承擔(對齊 `form-validation.spec.md`「Double-submit 防護」)。
 

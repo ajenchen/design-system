@@ -1113,7 +1113,7 @@ Overlay primitive → SurfaceBody 中間 wrapper 必 `flex flex-col h-full`,斷�
 
 ## 38. Inline-action gap canonical
 
-**Type**: Absolute / **Canonical**: `inline-action.spec.md:80` / **Home**: spec.md
+**Type**: Absolute / **Canonical**: `inline-action.spec.md:81` / **Home**: spec.md
 
 `<ItemInlineAction>` sibling gap = `gap-2`(8px)。Hook `check_pattern_invariants.sh`(C.2 inline-action canonical gap,原 check_inline_action_canonical_gap.sh folded 已合入)同源,本 dim batch verify consumer。
 

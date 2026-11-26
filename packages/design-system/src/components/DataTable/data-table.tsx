@@ -1975,10 +1975,18 @@ function DataTableInner<TData>(
    * 的 `onVScroll` 也是在捲動事件裡把 `scrollTop` 記進 `nextScrollTop`,畫列時讀那個記錄,不回頭問 DOM。
    */
   const scrollGeomRef = React.useRef({ height: 0 })
+  // 空表(2026-11-26,產品 canary 回報 C2;data-table.spec.md「空表」):表身只畫中間區那一格、左右釘選面板不畫,
+  // 中間捲動區因此是整表的可見寬。欄寬分配要的仍是「表頭中間區的寬」→ 量表頭;Empty 置中要的是可見寬 → 另記一個值。
+  const isEmptyRef = React.useRef(isEmpty)
+  const [emptyVisibleWidth, setEmptyVisibleWidth] = React.useState(0)
   const measureScrollbarGutters = React.useCallback(() => {
     const body = centerBodyRef.current
     if (!body) return
-    setCenterBodyWidth((prev) => (prev === body.clientWidth ? prev : body.clientWidth))
+    const centerHeader = centerHeaderRef.current
+    const empty = isEmptyRef.current
+    const centerWidth = empty && centerHeader ? centerHeader.clientWidth : body.clientWidth
+    setCenterBodyWidth((prev) => (prev === centerWidth ? prev : centerWidth))
+    if (empty) setEmptyVisibleWidth((prev) => (prev === body.clientWidth ? prev : body.clientWidth))
     // 橫軸量的是**不變式本身**(header 與 body 的**內容盒等寬**),不是「捲軸多寬」這個代理值。
     // `clientWidth` = padding box 減捲軸(不含 border),所以兩者相減 = header 必須讓出的量。
     // **不可用 `body.offsetWidth − body.clientWidth`**(2026-09-03 抓到):那個式子把 body 自己的
@@ -2009,6 +2017,12 @@ function DataTableInner<TData>(
   // RO 會 fire)。原本無依賴 → **每次 render 都讀 clientWidth/offsetHeight**(強制 layout),
   // 捲動時虛擬列一換就 render、就量 —— 是「上一次大修正後變慢」的一半元兇。
   React.useLayoutEffect(measureScrollbarGutters, [measureScrollbarGutters])
+  // 有資料 ↔ 空表切換時(篩選到沒結果、資料載入):左右釘選面板掛上 / 卸下,量測的對象跟著換 → 當下重量一次
+  React.useLayoutEffect(() => {
+    if (isEmptyRef.current === isEmpty) return
+    isEmptyRef.current = isEmpty
+    measureScrollbarGutters()
+  }, [isEmpty, measureScrollbarGutters])
   React.useLayoutEffect(() => {
     const body = centerBodyRef.current
     if (!body) return
@@ -2971,7 +2985,8 @@ function DataTableInner<TData>(
    * 外層不捲動,軌道就不會飄。位置用 `--table-pinned-left-w` / `--table-pinned-right-w`,跟邊界線同一組變數、
    * 跟面板寬同一個 state,不可能對不齊。
    */
-  const scrollbarTroughs = hScrollbarGutter > 0 ? (
+  // 空表不畫:左右釘選面板不在表身,捲軸是中間區自己那一條、跨全寬(見下方空表段)
+  const scrollbarTroughs = hScrollbarGutter > 0 && !isEmpty ? (
     <>
       {hasLeft && (
         <div
@@ -3107,6 +3122,8 @@ function DataTableInner<TData>(
     return () => obs.disconnect()
   }, [hasRowActions, rightCols, rows.length])
   const rightWidth = hasRowActions ? measuredRightWidth : rightColsWidth
+  // 空表會不會橫向捲動(欄寬總和 L + C + R 比可見寬寬):決定空表的捲動區要不要給 tab stop(見中間區 tabIndex)
+  const emptyScrollsX = isEmpty && emptyVisibleWidth > 0 && leftWidth + centerColsWidth + rightWidth > emptyVisibleWidth
 
   /* ── 缺陷 F:列高單一真相來源(2026-09-04)────────────────────────────────────────
    * 兩容器架構下,同一列在 left / center / right 是**三個各自獨立的 DOM row**。固定行高時它們
@@ -4239,14 +4256,14 @@ function DataTableInner<TData>(
               不在外層留 gap(寬 0 的節點仍會吃到 flex gap)。
             ItemInlineActionButton asChild-compatible,size="md" 因 header 不在 RowSizeProvider。 */}
         {/* `data-col-menu`:讓左側排序區用 `:has(~[data-col-menu]:hover)` 認出「指標在本欄 ⌄ 上」,保留自己的 hover 字色(巢狀 hover,見排序區 className 註解)。 */}
-        {/* @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:92「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給) */}
+        {/* @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:93「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給) */}
         <div data-col-menu className={cn(
           'shrink-0 inline-flex w-0 overflow-hidden opacity-0',
-          // @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:92「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給)
+          // @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:93「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給)
           'group-hover:w-auto group-hover:ml-2 group-hover:overflow-visible group-hover:opacity-100',
-          // @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:92「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給)
+          // @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:93「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給)
           'group-has-[:focus-visible:not([data-pointer-focus])]:w-auto group-has-[:focus-visible:not([data-pointer-focus])]:ml-2 group-has-[:focus-visible:not([data-pointer-focus])]:overflow-visible group-has-[:focus-visible:not([data-pointer-focus])]:opacity-100',
-          // @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:92「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給)
+          // @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:93「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給)
           'has-[[data-state=open]]:w-auto has-[[data-state=open]]:ml-2 has-[[data-state=open]]:overflow-visible has-[[data-state=open]]:opacity-100',
           // 沒有滑過能力的裝置(觸控)不另外處理,跟桌機同一套 —— user 2026-09-26 對「手機上滑過才出現的按鈕」已決「先維持」、不客製
           // (governance/planning/2026-09-25-interaction-and-hover-remediation.md 的 L11 那一列,含原話)。2026-11-12 AI 曾在這裡加過
@@ -4577,10 +4594,19 @@ function DataTableInner<TData>(
       const emptyContent = emptyState && typeof emptyState !== 'string'
         ? emptyState
         : <Empty description={typeof emptyState === 'string' ? emptyState : '沒有資料'} /> // i18n-allow: DS default fallback; consumer override via emptyState prop
+      // 2026-11-26(產品 canary 回報 C2):這一格跨**全部**欄 —— 左右釘選面板在空表時不畫表身,中間區撐成 L + C + R(見中間區內層 minWidth)。
+      // Empty 對「可見寬」置中:內層 sticky 貼左、寬 = 捲動區可見寬(measureScrollbarGutters 記的 emptyVisibleWidth),橫向捲動時 Empty 留在畫面中央;
+      // 修前只在中間區置中,左右釘選寬不同時偏一邊、欄寬總和比容器寬時捲到一半才看得到。
       return (
         <div role="row" aria-rowindex={2}>
-          <div role={spreadsheetMode ? 'gridcell' : 'cell'} aria-colspan={table.getVisibleLeafColumns().length} className="flex-1 flex items-center justify-center py-12">
-            {emptyContent}
+          <div role={spreadsheetMode ? 'gridcell' : 'cell'} aria-colspan={table.getVisibleLeafColumns().length} className="flex-1 flex">
+            <div
+              data-datatable-empty=""
+              className="sticky left-0 flex items-center justify-center py-12"
+              style={{ width: emptyVisibleWidth > 0 ? emptyVisibleWidth : '100%' }}
+            >
+              {emptyContent}
+            </div>
           </div>
         </div>
       )
@@ -5189,15 +5215,16 @@ function DataTableInner<TData>(
           // 接縫消失且不產生新的明暗差。缺陷 R 性質不變:面板底部讓位用的透明 border 之下
           // 露出的仍是同一個 surface,只是由 root 提供。**面板不得再各自宣告底色。**
           isFillHeight && 'min-h-0 min-w-0',
-          hasLeft && 'dtLeftBoundary',
-          hasRight && 'dtRightBoundary',
+          // 空表:表身沒有左右釘選區(只有跨全欄的那一格),凍結線只畫在表頭那一段,不從空狀態列畫到底(2026-11-26 C2)
+          hasLeft && !isEmpty && 'dtLeftBoundary',
+          hasRight && !isEmpty && 'dtRightBoundary',
         )}
         style={{
           ...(hasLeft ? { ['--table-pinned-left-w' as string]: `${leftWidth}px` } : {}),
           ...(hasRight ? { ['--table-pinned-right-w' as string]: `${rightWidth}px` } : {}),
         }}
       >
-        {hasLeft && (
+        {hasLeft && !isEmpty && (
           <div
             ref={bindLeftPanel}
             data-datatable-panel="left"
@@ -5255,10 +5282,11 @@ function DataTableInner<TData>(
           // 打斷 table→row ownership(修 scrollable-region-focusable 反引爆 required-children,
           // 與 Tabs 2026-07-18 決策1 同型)。rowgroup = W3C ARIA 1.2 合法 table 子代 + 可具名
           // (Name from author §5.2.8.4)+ 容納 rows,兩規則唯一同時滿足解。
-          // 空表:Empty 塊包成一列一格(見 renderBodyRows),同樣是這個 rowgroup 的列;空表無 overflow,不需 tabIndex/名稱。
+          // 空表:Empty 塊包成一列一格(見 renderBodyRows),同樣是這個 rowgroup 的列。空表只有「欄寬總和比可見寬寬」時會橫向捲動
+          //(捲它才看得到右邊的表頭)→ 那時一樣要能用鍵盤聚焦捲動;捲不動就不給 tab stop(2026-11-26 C2 重新判斷;原句「空表無 overflow」只在欄窄時成立)。
           role="rowgroup"
-          tabIndex={enabled || spreadsheetMode || isEmpty ? undefined : 0}
-          aria-label={enabled || spreadsheetMode || isEmpty ? undefined : '表格內容,可捲動'}
+          tabIndex={enabled || spreadsheetMode || (isEmpty && !emptyScrollsX) ? undefined : 0}
+          aria-label={enabled || spreadsheetMode || (isEmpty && !emptyScrollsX) ? undefined : '表格內容,可捲動'}
           // overflow-x/y: auto — 沒 overflow 就不顯 bar。wrapper minWidth 仍 trigger H 真 overflow。
           // **不**用 scrollbar-gutter: stable — 那會永遠保留 V 軸 15px 空間,
           // content fit 時看起來像「永遠有 V 捲軸」(Image #5 bug)。
@@ -5282,11 +5310,12 @@ function DataTableInner<TData>(
           {/* 缺陷 S 的寬度觀測點 —— 0 高、不佔版面、不進無障礙樹。欄間線判準已改吃
               `data-dt-last-col` attribute(缺陷 M),不再依 DOM 位置,放哪裡都不會影響它。 */}
           <div ref={widthSentinelRef} role="presentation" aria-hidden className="h-0 w-full" />
-          <div style={{ minWidth: centerColsWidth }}>
+          {/* 空表:左右釘選面板不畫,中間區撐成 L + C + R —— 捲動範圍與表頭中間區相同((L+C+R) − 可見寬 = C − 表頭中間區寬),捲動同步不變 */}
+          <div style={{ minWidth: isEmpty ? leftWidth + centerColsWidth + rightWidth : centerColsWidth }}>
             {renderBodyRows(centerCols, true, false, centerColsWidth)}
           </div>
         </div>
-        {hasRight && (
+        {hasRight && !isEmpty && (
           <div
             ref={bindRightPanel}
             data-datatable-panel="right"

@@ -648,7 +648,7 @@ Consumer 只要加 `collapsible` 與群組識別 `value`(必填):
 
 **API 破壞性變更**:`SidebarMenuAction` / `SidebarGroupAction` 從 children 改成 `icon` prop(`icon={MoreVertical}`),並移除 `asChild`(需要 Radix `asChild` 時照 `sidebar.tsx` SidebarGroupLabel 收合箭頭的作法(`Collapsible.Trigger asChild` 包 `ItemInlineActionButton`)從外面包 `Trigger asChild`)。**刻意不留 children 後備** —— M23(f):「『向後相容』不是把新裁示變成可選的理由」。消費端(`work-management` 的 `AppSidebar.tsx`)在升版 PR 裡一併改。
 
-**user 核准(2026-09-25,逐字)**:「「側欄按鈕從 20 改成 18」這按照我們的ds設計規則改的，可以通過」。核准的對象是「委派 `ItemInlineActionButton`、懸停底色 20 → 18」這一項可見改動。同一顆 primitive 連帶的兩個結果—— 圖示與底色貼齊右緣後約右移 2px(`SidebarGroupAction` 另貼上緣約上移 2px —— 2026-10-27 查明貼上緣本身就是錯位,修前 md 圖示中線比標題文字高 8px,已改住標題列列尾槽)、按下時多一層較深的底色(`item-anatomy.tsx:743`)—— 屬於「按照 ds 設計規則」的同一個來源,**視為一併核准是 AI 推導**,不是 user 逐字。
+**user 核准(2026-09-25,逐字)**:「「側欄按鈕從 20 改成 18」這按照我們的ds設計規則改的，可以通過」。核准的對象是「委派 `ItemInlineActionButton`、懸停底色 20 → 18」這一項可見改動。同一顆 primitive 連帶的兩個結果—— 圖示與底色貼齊右緣後約右移 2px(`SidebarGroupAction` 另貼上緣約上移 2px —— 2026-10-27 查明貼上緣本身就是錯位,修前 md 圖示中線比標題文字高 8px,已改住標題列列尾槽)、按下時多一層較深的底色(`item-anatomy.tsx:749`)—— 屬於「按照 ds 設計規則」的同一個來源,**視為一併核准是 AI 推導**,不是 user 逐字。
 
 **依據不是觸控尺寸建議。** 我們做的是 web component,尺寸以滑鼠指標的精度為前提(user 2026-09-24 原話逐字:「此外我們在做的是web component ，你他媽不要一直拿觸控裝置的設計原則來規範吧？滑鼠的指標是可以比手指頭精細很多的欸」)。觸控門檻類的外部準則是**已知的外部準則,本 DS 不採納為尺寸依據**;本節每一個數字都不是從那裡推出來的。
 
@@ -682,6 +682,8 @@ Consumer 只要加 `collapsible` 與群組識別 `value`(必填):
 
 - **Cookie**：`sidebar_state`, 7 天。SSR 環境下 `SidebarProvider` 必須接 `defaultOpen` 從 server cookie 傳入以避免 hydration flash
 - **快捷鍵**：`Cmd+B` / `Ctrl+B` 切換收合（VS Code、shadcn 一致，不要發明新鍵:VS Code [layoutActions.ts#L288-L309](https://github.com/microsoft/vscode/blob/ccf7045f40625e4ed0080da9c65dc342f7cfa132/src/vs/workbench/browser/actions/layoutActions.ts#L288-L309)、shadcn [sidebar.tsx#L33-L101](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/sidebar.tsx#L33-L101)）
+- **只有可收合的側欄接 ⌘B、寫 cookie**(2026-11-26 修正,產品 canary 回報 C13;本段兩條是既有規則的落實,不是新規則):快捷鍵與 cookie 記的都是「收合狀態」,`collapsible="none"`(上方 Mode 表「不可收合」)沒有這個狀態 → 它的 Provider **不攔** `Cmd+B` / `Ctrl+B`(不 `preventDefault`,讓給同頁其他側欄或瀏覽器)、開關**不寫** `sidebar_state`(修前照寫,會蓋掉同頁可收合那一份的紀錄)。實作:`<Sidebar>` 把 `collapsible` 登記回 Provider(`sidebar.tsx` `SidebarInternals.setCollapsible`)
+- **modal 浮層開著時,背景頁的側欄不接 ⌘B**:modal 的 Dialog / Sheet 開著時,浮層以外整頁對使用者不可操作(Radix 把它標成 `aria-hidden`;並存面是 `inert`),在浮層裡按的 ⌘B 不得切到背景頁的側欄、不得寫 cookie(修前頁面的 Provider 比浮層裡的先註冊監聽,實際被切的是背景那一份)。例外:浮層就是這個側欄自己的 Menu 浮層(`../AppShell/app-shell.spec.md`「版面規則」§9,在浮層裡按 ⌘B 收回它)。機械閘 `scripts/escape-and-focus-contract-invariant.mjs` K-cmdb-modal / K-cmdb-none-cookie(與 Esc 分層同一類:按鍵歸焦點所在那一層;真按 ⌘B 量背景側欄狀態、cookie 有沒有寫、`defaultPrevented`,三處修正各有拿掉必紅的突變,CTRL-cmdb 證明量具看得到)
 
 ---
 
