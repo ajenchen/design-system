@@ -145,7 +145,7 @@ async function measure(build, { afterScroll, sabotage }) {
       const r = await (await page.$('#storybook-preview-iframe')).boundingBox()
       frameOffset = { x: r.x, y: r.y }
       // 原本這裡固定睡 6000ms,理由是「等 manager 外掛(a11y 等)的背景工作跑完,它們沒有『做完了』的訊號可等」。
-      // 2026-09-25 查證那是代理量:a11y addon 8.6 的 axe 在 preview 的 afterEach 裡跑(@storybook/addon-a11y dist/preview.mjs;10.6.9 仍是 afterEach,dist/_browser-chunks),
+      // 2026-09-25 查證那是代理量:a11y addon 8.6 的 axe 在 preview 的 afterEach 裡跑(@storybook/addon-a11y dist/preview.mjs),
       // 而 phase 要走完 afterEach 才到 finished —— 訊號本來就有;外掛面板之後的重畫由上面「兩份文件同時靜止」接住。
       // 實測 openStory 回傳後再看 8 秒:管理介面與 preview 兩份文件 0 次 DOM 變動、0 個長任務 —— 那 6 秒裡沒有任何要等的事。
     } else {

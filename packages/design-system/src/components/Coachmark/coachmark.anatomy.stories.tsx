@@ -1,5 +1,5 @@
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { Bot, Sparkles, Users } from 'lucide-react'
 import { Coachmark } from './coachmark'
 import { MediaGradient } from './coachmark-story-helpers'

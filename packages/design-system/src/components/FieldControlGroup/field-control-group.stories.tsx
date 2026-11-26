@@ -1,5 +1,5 @@
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { Phone } from 'lucide-react'
 import { FieldControlGroup } from './field-control-group'
 import { ProductSearchDemo } from './_field-control-group-demo'

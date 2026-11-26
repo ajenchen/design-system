@@ -4,8 +4,8 @@
 // Tabs / ChipGroup / FileViewer filmstrip 等 consumer 自組 outer wrapper,
 // overflow affordance(scroll arrows / menu trigger / fade mask)一律從這裡取用。
 // 本頁給 DS contributor 看 primitive 的組裝方式與 canonical 規則。
-import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, waitFor, within } from 'storybook/test'
+import type { Meta, StoryObj } from '@storybook/react'
+import { expect, waitFor, within } from '@storybook/test'
 import {
   useScrollEdges,
   useScrollByPage,

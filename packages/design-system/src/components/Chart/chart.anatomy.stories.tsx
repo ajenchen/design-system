@@ -6,7 +6,7 @@
 //   StateBehavior N/A — Chart 是 data viz 容器,互動(hover tooltip / legend
 //     toggle)由 Recharts library 處理且為內部行為。已由 Inspector 的 tooltip
 //     indicator 切換涵蓋,無 DS 層級的 hover / focus / disabled state。
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import {
   Area,
   AreaChart,

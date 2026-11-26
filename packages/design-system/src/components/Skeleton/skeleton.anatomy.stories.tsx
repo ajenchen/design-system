@@ -6,7 +6,7 @@
 //   loading 是唯一狀態(無 hover / focus / active)。
 //   本檔保留 Overview + CommonShapes + DesignPrinciple + Accessibility 四個 story。
 //   2026-11-21 複查仍成立:skeleton.tsx 仍只收 className 與 HTML 屬性(沒有 size / color / variant prop)、底色仍是 bg-muted(見 skeleton.spec.md)。
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { Skeleton } from './skeleton'
 import { H3, Desc } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 

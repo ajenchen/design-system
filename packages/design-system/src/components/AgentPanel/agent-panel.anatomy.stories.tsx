@@ -1,7 +1,7 @@
 // @anatomy-rationale: Inspector N/A — 家族沒有 variant/size prop 可切換(面板寬是連續值、標誌狀態已由展示層「標誌三態」承載),即時預覽面板會退化成一個空殼;SizeMatrix / ColorMatrix 於本檔提供(2026-09-03 稽核補齊)
 // 設計規格層:結構解剖 + 幾何規格(輪距/內距/尺寸);動態行為見展示層。
 import * as React from 'react'
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import {
   AgentPanel,
   AgentPanelHeader,

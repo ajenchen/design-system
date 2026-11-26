@@ -1,5 +1,5 @@
 import * as React from 'react'
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { InlineEdit } from './inline-edit'
 import { Select } from '@/design-system/components/Select/select'
 import { Field, FieldLabel } from '@/design-system/components/Field/field'

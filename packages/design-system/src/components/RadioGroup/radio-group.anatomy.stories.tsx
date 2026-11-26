@@ -1,4 +1,4 @@
-import type { Meta } from '@storybook/react-vite'
+import type { Meta } from '@storybook/react'
 import { useState } from 'react'
 import { RadioGroup, RadioGroupItem } from './radio-group'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'

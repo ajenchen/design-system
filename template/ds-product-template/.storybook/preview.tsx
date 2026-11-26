@@ -4,7 +4,7 @@
 //   - 對齊 DS repo `.storybook/preview.tsx` 走 `../src/globals.css` 同 pattern
 import './storybook.css'
 import basePreview from '@qijenchen/storybook-config/preview'
-import type { Preview } from '@storybook/react-vite'
+import type { Preview } from '@storybook/react'
 
 // 2026-05-29 fix landing:published template 只有 Apps stories。Base storySort 以 "Design System" 起頭、
 // 無 "Apps" 條目 → Apps stories 退化成字母序 → "All DS Components (Portal)" 排前 → Storybook 落在

@@ -1,7 +1,7 @@
 // @principles-rationale: Merged WhenToUse + CalendarVsDatePickerRule + NotAnEventViewRule
 // into a single `UsageGuidance` story (3 sections) per 2026-04-26 user mandate to
 // consolidate decision-related stories. ModeRule / VisualTokenRule / LocaleRule kept.
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
 import { zhTW } from 'date-fns/locale/zh-TW'
 import type { DateRange } from 'react-day-picker'

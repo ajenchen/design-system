@@ -7,7 +7,7 @@
 //     不提供 size prop;所有尺寸 token 已於 Overview「Layout Token」段列出
 //     (avatar 64px / padding / gap)。ProfileCard 只有一種結構(spec「取消「精簡版」變體」),
 //     SectionMatrix 只畫那一種完整結構。
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { ProfileCard, ProfileCardDefaultActions } from './profile-card'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'

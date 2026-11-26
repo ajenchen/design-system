@@ -1,6 +1,5 @@
 import * as React from 'react'
-import type { Meta, StoryObj } from '@storybook/react-vite'
-import { userEvent } from 'storybook/test'
+import type { Meta, StoryObj } from '@storybook/react'
 import { InlineEdit } from './inline-edit'
 import { Select } from '@/design-system/components/Select/select'
 import { Field, FieldLabel, FieldGroup } from '@/design-system/components/Field/field'
@@ -115,6 +114,7 @@ export const States: Story = {
     </div>
   ),
   play: async ({ canvasElement }) => {
+    const { userEvent } = await import('@storybook/test')
     // 只標記第二列；真實 CSS :hover 由 visual-audit 的 Playwright pointer 建立。
     const hoverBtn = canvasElement
       .querySelector('[data-testid="inline-edit-hover-row"]')

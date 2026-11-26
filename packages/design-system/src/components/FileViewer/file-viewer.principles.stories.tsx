@@ -1,5 +1,5 @@
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { Trash2, FolderOpen, Info, Keyboard } from 'lucide-react'
 import { FileViewer, type FileInfo } from './file-viewer'
 import {

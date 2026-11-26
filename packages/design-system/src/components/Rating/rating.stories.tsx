@@ -1,6 +1,6 @@
 // @story-baseline: packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx#AlignmentRule — 商品列表平均分:唯讀元件放進 DataTable 自訂儲存格(同 ProgressBar「DataTable 儲存格內進度」)
 // @story-baseline: packages/design-system/src/components/Field/field.stories.tsx#FormValidation — 包在 Field 內:CreateProjectForm 同款 useFormValidation 建立表單
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
 import { Rating } from './rating'
 import { Button } from '@/design-system/components/Button/button'

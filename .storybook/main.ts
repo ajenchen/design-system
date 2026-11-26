@@ -5,7 +5,6 @@
 import type { StorybookConfig } from '@storybook/react-vite'
 import {
   sharedAddons,
-  sharedFeatures,
   sharedFramework,
   sharedDocsConfig,
   sharedTypescriptConfig,
@@ -22,11 +21,10 @@ const config: StorybookConfig = {
   addons: [
     ...sharedAddons,
     // 2026-05-26 DS-internal HTML viewer addon(2026-05-26 移出 shared preset 因 consumer 缺 peer deps)。
-    // 9.x 起它的 preview 直接 import `prettier/standalone`(peer `prettier ^3.7.1`),根 devDependencies 有 prettier 才 load 得起來。
+    // DS repo 有 react-syntax-highlighter + prettier(via design-system devDeps),可正常 load。
     '@whitespace/storybook-addon-html',
   ],
 
-  features: sharedFeatures,
   framework: sharedFramework,
   docs: sharedDocsConfig,
   typescript: sharedTypescriptConfig,

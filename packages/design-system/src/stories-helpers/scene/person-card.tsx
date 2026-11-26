@@ -1,4 +1,4 @@
-import { fn } from 'storybook/test'
+import { fn } from '@storybook/test'
 import { buildPersonProfileCard, type PersonData } from '@/design-system/components/PeoplePicker/person-display'
 import { demoPersonPhoto, type DemoPersonName } from '../data/people'
 

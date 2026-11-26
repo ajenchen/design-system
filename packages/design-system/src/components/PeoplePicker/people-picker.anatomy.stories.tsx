@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { useState, type ComponentProps } from 'react'
 import { SAMPLE_PEOPLE as PEOPLE_DIRECTORY, samplePersonData } from '@/design-system/stories-helpers/scene/person-card'
 import { PeoplePicker } from './people-picker'

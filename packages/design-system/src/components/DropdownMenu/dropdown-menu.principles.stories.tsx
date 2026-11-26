@@ -3,7 +3,7 @@
 // forced defaultOpen 會讓 ~10 個浮層互疊;overlay open-state 快照由 dropdown-menu.anatomy.stories.tsx
 // StateBehavior(defaultOpen)canonical 涵蓋(對齊 hover-card.principles.stories.tsx 同 rationale)。
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import {
   MoreVertical, Copy, Trash2, Share2, Download,
   ArrowUp, Eye,

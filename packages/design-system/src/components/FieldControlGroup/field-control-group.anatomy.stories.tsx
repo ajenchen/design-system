@@ -4,7 +4,7 @@
 // 無 cva color variant → ColorMatrix N/A;無 interactive prop control(僅 children layout)→ Inspector N/A。
 // 對齊 design-system-audit Dim 13 `@anatomy-rationale` 例外 marker(audit-prompts.md Dim 13;
 // 2026-07-04 修:原誤用 @story-trait-rationale — 那是 R3 trait escape,Dim 13 機械檢查認不得)。
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { FieldControlGroup } from './field-control-group'
 import { Select } from '@/design-system/components/Select/select'
 import { Input } from '@/design-system/components/Input/input'

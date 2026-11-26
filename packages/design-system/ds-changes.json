@@ -223,11 +223,6 @@
         {"id":"0.1.0-beta.149/PopoverBody-end-by-last-edge","surface":"behavior","target":"PopoverBody","change":"behavior","do":"PopoverBody(SurfaceBody)的上下內距改由容器自己給(帶 data-layout-body=\"hug\"):最後一個東西是有完整外框的表格時底部 = loose,是自帶上下內距的清單時 = 0,一般元素照舊與頂部同值(tight)。不用改程式;className 寫的內距覆寫(含 important 寫法)照樣蓋得過。","spec":"src/tokens/layoutSpace/layoutSpace.spec.md「容器自己判,不由寫的人挑值」"},
         {"id":"0.1.0-beta.149/layout-body-attribute-contract","surface":"rule","target":"data-layout-body","change":"rule","do":"產品自己寫會給上下內距的容器(頁面主區、右欄內容的包層)時改成加 data-layout-body=\"fill\"(擋住頁面或撐滿)或 \"hug\"(不擋頁面、貼著內容),不要再自己挑 pb-*,底距由 DS 依最後一個東西照規則 4 給:最後一個是有邊界的區塊(有完整外框的表格 / 卡片 / 面板,data-layout-region=\"bounded\")時容器底 = loose,是自帶上下內距的清單(unbounded)時 = 0,一般元素照容器種類給(fill = 48、hug = 與頂部同值)。頂部(規則 2,看第一個東西)容器仍固定給 tight:第一個東西是有框的表格 / 卡片時,要 loose 就自己寫 pt-*。自己做的有框卡片 / 面板放在容器最後時,在它的根元素加 data-layout-region=\"bounded\"(DataTable / CommandList / SidebarGroup 已帶)。","spec":"src/tokens/layoutSpace/layoutSpace.spec.md「容器自己判,不由寫的人挑值」"}
       ]
-    },
-    "0.1.0-beta.150": {
-      "changes": [
-        {"id":"0.1.0-beta.150/storybook-10","surface":"rule","target":"@qijenchen/storybook-config 的 peerDependencies(storybook、@storybook/react-vite)","change":"rule","do":"把 storybook、@storybook/react-vite、@storybook/addon-docs 升到 10.6.9(精確版號),移除 @storybook/react、@storybook/addon-essentials、@storybook/blocks、@storybook/test;story 與設定裡 `@storybook/react` → `@storybook/react-vite`、`@storybook/test` → `storybook/test`,`.storybook/main.*` 必為合法 ESM,Node 需 20.19+ 或 22.12+。照官方 `npx storybook@10.6.9 upgrade` 跑 automigrate;@qijenchen/storybook-config 不再支援 Storybook 8 / 9。","spec":"ds-canonical/rules/story-rules.md「Storybook 版本與匯入路徑(10.x)」"}
-      ]
     }
   }
 }

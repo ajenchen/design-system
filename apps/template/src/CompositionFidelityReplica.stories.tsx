@@ -13,7 +13,7 @@
 //
 // 維護規則:DS `button.stories.tsx#IconOnly` 改動時本檔必同步(CI 紅 = 提醒同步,非誤報)。
 // 禁改成「自己的內容」— 內容一旦刻意不同,請移除 @composition-fidelity-mode 退回 conformance-only。
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { Plus, Trash2, Search, Settings, Download, Maximize2 } from 'lucide-react'
 import { Button } from '@qijenchen/design-system'
 

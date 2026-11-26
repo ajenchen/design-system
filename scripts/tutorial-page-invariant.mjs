@@ -1057,7 +1057,7 @@ export const BASE_FIXTURES = [
 /** be2f1324 的共用元件(本輪修正前):沒有 text-body、沒有三段段名、還有 noteTone、用 Children.count → R8 */
 export const BASE_HELPER = { fixture: 'scripts/test-fixtures/tutorial-page/tutorial-page.be2f1324.tsx.txt', blob: 'a936b95a28faf7d52420cc150b5bc78a8b505909' }
 
-export const CLEAN = `import type { Meta, StoryObj } from '@storybook/react-vite'
+export const CLEAN = `import type { Meta, StoryObj } from '@storybook/react'
 import { Button } from '@/design-system/components/Button/button'
 import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 import { TutorialPage, TutorialSection, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'

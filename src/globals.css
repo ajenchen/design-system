@@ -23,7 +23,7 @@
    為什麼:瀏覽器允許在「-」後面換行,`--field-height-*`、`opacity-disabled`、`--bg-disabled` 這類 token / class 名
    一被拆開就讀不出是同一個名字(重拍審核 A113 點名 rating-sizes、radiogroup-states 兩張;PV1 只在那兩頁逐個加 whitespace-nowrap,
    其餘 800 多處 <code> 沒有保護,五種寬度合計量到 181 次一行放得下卻被拆開)。Storybook 自己的說明頁(autodocs)行內 code 也是不斷行
-   (8.6 的 @storybook/blocks、10.6 的 storybook/internal/components `codeCommon` 都是 whiteSpace: "nowrap"),畫布裡的說明頁跟它一致。
+   (@storybook/blocks 8.6 的 code 樣式 whiteSpace: "nowrap"),畫布裡的說明頁跟它一致。
    為什麼是 nowrap、不是行內方塊(inline-block + max-width: 100%):兩種都整批量過(全 DS 有 <code> 的 579 則 × 五種寬度,
    數字在加入本規則的 commit 訊息)。行內方塊在 Chromium 會讓「(」留在上一行末、「、」「,」「:」跑到下一行首(五種寬度合計 21 次),
    nowrap 是一般文字,括號與標點照常跟著程式碼走,這類 0 處。

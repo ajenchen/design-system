@@ -1,7 +1,7 @@
 // @story-baseline: packages/design-system/src/components/AppShell/_demo-helpers.tsx#GlobalHeader
 // (WorkspaceBrand + AccountMenu archetype;_demo-helpers 依 naming-conventions 只供同資料夾消費,
 //  故本檔照 M23(d) 抄 production baseline 結構 + cite,不 cross-folder import demo helper)
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { AccountMenu } from './account-menu'
 import { demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 import { Avatar } from '@/design-system/components/Avatar/avatar'

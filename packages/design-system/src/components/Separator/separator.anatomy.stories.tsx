@@ -4,7 +4,7 @@
 //   decorative 兩個 prop;1px 固定厚度、永遠走 --divider token、非互動。本檔
 //   僅保留 Overview + TokenMatrix 兩個 story 教 SSOT 分工(--divider vs
 //   --border),完整設計規則見 separator.spec.md。
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { Separator } from './separator'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 

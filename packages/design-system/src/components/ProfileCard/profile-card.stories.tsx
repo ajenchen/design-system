@@ -1,4 +1,4 @@
-import type { Meta } from '@storybook/react-vite'
+import type { Meta } from '@storybook/react'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { SAMPLE_PEOPLE, samplePersonCard, type SamplePerson } from '@/design-system/stories-helpers/scene/person-card'
 

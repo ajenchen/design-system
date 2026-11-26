@@ -1,7 +1,7 @@
 // @story-baseline: packages/design-system/src/components/DataTable/data-table.stories.tsx#WithBulkActions
 // (per .claude/references/story-baseline-registry.json#DataTable)
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { NumberInput } from './number-input'
 import { DataTable } from '@/design-system/components/DataTable/data-table'

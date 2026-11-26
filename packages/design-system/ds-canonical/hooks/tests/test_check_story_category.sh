@@ -364,7 +364,7 @@ traits:
 ---
 EOF
 cat > "$TMP_PROJ/src/design-system/components/Foo/foo.anatomy.stories.tsx" <<EOF
-import type { StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react';
 type Story = StoryObj;
 export const SizeMatrix: Story = {};
 EOF
@@ -389,7 +389,7 @@ EOF
 cat > "$TMP_PROJ/src/design-system/components/Foo/foo.anatomy.stories.tsx" <<EOF
 // @anatomy-rationale:
 //   SizeMatrix represented by Overview — the component has one fixed visual tier.
-import type { StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react';
 export const Overview = {};
 EOF
 run_hook "export const Representative = {};" "$TMP_PROJ/src/design-system/components/Foo/foo.stories.tsx"

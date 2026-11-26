@@ -2,8 +2,7 @@
 // into a single `UsageGuidance` story (3 sections — 何時用 / 何時不用 + 替代 / vs 近親)
 // per 2026-04-26 user mandate. SizeSelection + TriggerSlots kept as separate principles.
 import * as React from 'react'
-import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, waitFor, within } from 'storybook/test'
+import type { Meta, StoryObj } from '@storybook/react'
 import { Users, Settings, Bell, Search, Filter } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
@@ -184,6 +183,7 @@ export const UsageGuidance: Story = {
     </TutorialPage>
   ),
   play: async ({ canvasElement }) => {
+    const { expect, userEvent, waitFor, within } = await import('@storybook/test')
     const canvas = within(canvasElement)
     const assertControlledPanelExists = async (name: string) => {
       const tab = canvas.getByRole('tab', { name })

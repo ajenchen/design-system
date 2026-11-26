@@ -239,7 +239,7 @@ const dupFile = join(repoRoot, 'packages/design-system/src/components/Button/but
 const buttonTitle = orig.match(/^\s*title:\s*['"]([^'"]+)['"]/m)?.[1]
 if (!buttonTitle) { console.error('✗ Button 展示檔讀不到 title — 注入基礎失效'); process.exit(1) }
 try {
-  writeFileSync(dupFile, `import type { Meta, StoryObj } from '@storybook/react-vite'\nconst meta: Meta = { title: '${buttonTitle}' }\nexport default meta\nexport const InjectedDuplicateTitle: StoryObj = { name: '注入的同 title 檔' }\n`)
+  writeFileSync(dupFile, `import type { Meta, StoryObj } from '@storybook/react'\nconst meta: Meta = { title: '${buttonTitle}' }\nexport default meta\nexport const InjectedDuplicateTitle: StoryObj = { name: '注入的同 title 檔' }\n`)
   const r = spawnSync(process.execPath, ['--', 'scripts/audit-content-quality.mjs', '--check'], { stdio: 'pipe', encoding: 'utf8' })
   const hit = (r.status ?? 1) !== 0 && /title "[^"]+" is shared by 2 CSF files/.test(r.stdout)
   if (!hit) { console.error('✗ 兩個 CSF 檔共用同一個 title 未被抓(exit ' + r.status + ')'); ok = false }

@@ -8,7 +8,7 @@
 //     TimePicker 的色彩繼承上游 SSOT(Field + SelectMenu),無 own state 變化,
 //     集中於 ColorMatrix + ModeMatrix 比拆 5. 更直觀。
 import * as React from 'react'
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { TimePicker } from './time-picker'
 import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 

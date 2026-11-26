@@ -3,7 +3,7 @@
 //     + ColorMatrix「edit mode 三狀態 / readonly / disabled / hover 狀態」段。
 //     LinkInput 的核心狀態是 edit 模式內的 link ↔ input ↔ error 三態切換以及
 //     mode(edit / readonly / disabled)組合,集中於 ColorMatrix 比拆 5. 更直觀。
-import type { Meta } from '@storybook/react-vite'
+import type { Meta } from '@storybook/react'
 import { useState, useEffect, type ComponentProps } from 'react'
 import { LinkInput } from './link-input'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'

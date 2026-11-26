@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import {
   Plus, Trash2, Settings, RefreshCw, MoreVertical,
   Save, Maximize2, Upload, Download, Filter,

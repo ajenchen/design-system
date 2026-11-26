@@ -5,7 +5,7 @@
 //     僅由 state 驅動(OFF / ON / Disabled OFF / Disabled ON / Readonly)。
 //     色彩 token 矩陣已由 StateBehavior(5.)「Track / Thumb / Check icon」三欄
 //     對照涵蓋,獨立 ColorMatrix 會與 StateBehavior 重複。
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { Switch, type SwitchProps } from './switch'
 import { H3, Desc, Td, Th, Swatch, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 import { StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'

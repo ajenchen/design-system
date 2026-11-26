@@ -9,7 +9,7 @@
 //     selected 互動狀態。互動由 action slot 的 Button 提供,屬 Button 元件範疇。
 //     例外:disabled context state(disabled prop,2026-06-03 加)非互動但元件支援——
 //     title / description / icon glyph 轉 text-fg-disabled(供 FileUpload disabled 消費)。
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { Inbox, Search, SearchX, FileText, FolderOpen, Bell, Users, ClipboardList } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Empty } from './empty'

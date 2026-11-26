@@ -4,7 +4,7 @@
 //     不隨 density 縮放(僅 placement="fixed" 的水平 px 走 --layout-space-loose,density-aware)。Placement(inline / fixed)取代 size 作為佈局決策,
 //     已由 PlacementMatrix 涵蓋。
 import { useState } from 'react'
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { Alert, type AlertProps } from './alert'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 

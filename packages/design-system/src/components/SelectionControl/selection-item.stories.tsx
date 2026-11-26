@@ -1,5 +1,5 @@
 // @story-history: SelectionControl 是 isInternal primitive,被 Checkbox / RadioGroup 消費;本檔為 primitive 自家 Internal 結構文件,裸用 <SelectionItem control={...}> 為 API 展示豁免(consumer 仍走 wrapper 形態 <Checkbox icon>/<RadioGroupItem avatar>,spec「不准裸用」;2026-07-04 audit 判定);hasSizes 由 anatomy.stories.tsx SizeMatrix auto-compile owns size showcase(2026-05-15 F-migration);Default 由 NotificationPreferences / PlanPicker 等真實 consumer 情境覆蓋。
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { Mail, Bell, Folder, Shield } from 'lucide-react'
 import { SelectionItem } from './selection-item'
 import { samplePersonCard, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'

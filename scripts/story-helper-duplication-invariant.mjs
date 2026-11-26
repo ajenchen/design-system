@@ -170,7 +170,7 @@ const catalogRows = (count: number): Product[] =>
 const P = 'packages/design-system/src/components/DataTable/data-table.principles.stories.tsx'
 const A = 'packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx'
 const S = 'packages/design-system/src/components/DataTable/data-table.stories.tsx'
-const HEAD = "import type { Meta, StoryObj } from '@storybook/react-vite'\n"
+const HEAD = "import type { Meta, StoryObj } from '@storybook/react'\n"
 
 export function runSelftest() {
   const ok = []

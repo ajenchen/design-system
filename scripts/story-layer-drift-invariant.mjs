@@ -1392,7 +1392,7 @@ export function selftest(log = console.log, repo = REPO, instruments = loadInstr
   // 4e. test-only 兩面對照:同一段四條漂移放在 test-only story(含只被它用到的模組層小元件)→ 0 筆;
   //     拿掉標記 → 4 筆;test-only 之外還有給人看的 story 也用到那個小元件 → 4 筆
   const probeStory = (tags, extraStory = '') => [
-    "import type { StoryObj } from '@storybook/react-vite'",
+    "import type { StoryObj } from '@storybook/react'",
     "import { useState } from 'react'",
     "import { Button } from '@/design-system/components/Button/button'",
     "import { Input } from '@/design-system/components/Input/input'",

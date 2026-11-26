@@ -1,4 +1,4 @@
-import type { Meta } from '@storybook/react-vite'
+import type { Meta } from '@storybook/react'
 import { useState, useEffect } from 'react'
 import * as React from 'react'
 import { Search, Mail, X, Eye, EyeOff, Globe } from 'lucide-react'

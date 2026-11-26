@@ -4,7 +4,7 @@
 //     + ModeMatrix(6.)edit / readonly / disabled / error 視覺對照。Textarea
 //     的狀態本質就是 mode × state 的色彩 token 組合,集中於 ColorMatrix 比拆
 //     5. 更直觀。
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { Textarea } from './textarea'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 import { ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'

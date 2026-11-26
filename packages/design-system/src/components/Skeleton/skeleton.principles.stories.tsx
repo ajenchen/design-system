@@ -1,5 +1,5 @@
 // @principles-rationale: UsageGuidance merges WhenToUse + WhenNotToUse + Vs*Rule into single 使用指引 story per refactor task (2026-04-26)
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { Skeleton } from './skeleton'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { Avatar } from '@/design-system/components/Avatar/avatar'

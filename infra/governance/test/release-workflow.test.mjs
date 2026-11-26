@@ -1895,7 +1895,7 @@ test('預覽可見集合不得退回 2026-09-20 修掉的破口', () => {
     'packages/storybook-config/preview.tsx',
     'packages/storybook-config/addons-preset.ts',
     'packages/storybook-config/addons/ds-devmode/preview.ts',
-    'packages/storybook-config/addons/ds-devmode/preset.ts',
+    'packages/storybook-config/addons/ds-devmode/preset.cjs',
   ]) assert.ok(hit(p), `${p} 是預覽看得見的,漏掉就是 2026-09-20 那個破口`)
   for (const p of [
     'packages/design-system/package.json',

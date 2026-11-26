@@ -1,7 +1,7 @@
 
 // @story-history: hasInteractiveStates 由 anatomy.stories.tsx StateBehavior auto-compile owns(2026-05-15 F-migration);Default scenario 由 Rich / Compact / HoverSwap 等真實上傳情境 story 覆蓋,Disabled state 由 status="error" / "uploading" 真實 state 體現。
-import type { Meta } from '@storybook/react-vite'
-import { expect, fn, userEvent, within } from 'storybook/test'
+import type { Meta } from '@storybook/react'
+import { expect, fn, userEvent, within } from '@storybook/test'
 import { Trash2 } from 'lucide-react'
 import { FileItem } from './file-item'
 import { useFileDemo, UploadManagerPanel, type DemoFile } from './_demo-files'

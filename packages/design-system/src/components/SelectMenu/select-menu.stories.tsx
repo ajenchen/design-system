@@ -1,5 +1,5 @@
 // @story-history: isInputLike trait — SelectMenu(internal,Select/Combobox 觸發)的 error state 由 Select.stories.tsx + Combobox.stories.tsx WithError 覆蓋(SelectMenu 是 internal popover surface,不直接 own input state)。AllSizes 同理 retired(anatomy auto-compile SizeMatrix owns)per F migration 2026-05-15。
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import React, { useState } from 'react'
 import { Select } from '@/design-system/components/Select/select'
 import { Combobox } from '@/design-system/components/Combobox/combobox'

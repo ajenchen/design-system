@@ -3,7 +3,7 @@
 //   集中在 anatomy.stories.tsx 的 ColorMatrix + StateBehavior(Inspector 互動);本 showcase
 //   提供真實業務 scenario(部署 / 系統警示)而非 trait grid 重複展示。
 import { useState } from 'react'
-import type { Meta } from '@storybook/react-vite'
+import type { Meta } from '@storybook/react'
 import { RefreshCw, Share2 } from 'lucide-react'
 import { Alert } from './alert'
 import { Button } from '@/design-system/components/Button/button'

@@ -3,7 +3,7 @@
 // ContentTypeChoice(SidebarMenu vs TreeView 是元件內部的選擇,不屬「和相近元件怎麼選」)/
 // GroupHeaderRules / SettingsScenario / IconModeRules / ActiveState 全保留。
 import * as React from 'react'
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import {
   Inbox, Users, Settings, Folder, FileText, FileCode,
 } from 'lucide-react'

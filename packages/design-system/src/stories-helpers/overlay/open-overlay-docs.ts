@@ -22,10 +22,9 @@ export function openOverlayDocsStory(height = '560px') {
 /**
  * 完整 `parameters`:`layout: 'padded'` + docs 隔離。
  *
- * meta 是 `layout: 'centered'` 的檔案必用這個:Storybook 的 Canvas block 取 layout 的順序是
+ * meta 是 `layout: 'centered'` 的檔案必用這個:Storybook 8.6 的 Canvas block 取 layout 的順序是
  * `props.layout ?? parameters.layout ?? parameters.docs.canvas.layout ?? 'padded'`
- * (8.6 在 `@storybook/blocks/dist/index.mjs`;10.6.9 併進 `@storybook/addon-docs/dist/blocks.js`,同一行順序不變),
- * docs 專用的 `docs.canvas.layout` 蓋不過 meta 的 `layout`;
+ * (`node_modules/@storybook/blocks/dist/index.mjs`),docs 專用的 `docs.canvas.layout` 蓋不過 meta 的 `layout`;
  * 而 centered 的 docs 畫布是 flex 置中、寬度縮到內容,iframe 的內建寬度 300px 就成了整個 story 的寬度
  * (2026-09-09 實測:對話框被擠到 204px)。padded 的畫布是 block,iframe 才撐滿。
  * 對 canvas 的影響只有觸發鈕從置中變成左上(對話框本來就是 fixed 置中,不受 layout 影響)。

@@ -1,9 +1,9 @@
 // @benchmark-cited: Sidebar full-layout baseline + DataTable toolbar pattern + 議題追蹤產品的真實場景。
 // @story-baseline: packages/design-system/src/components/Sidebar/sidebar.stories.tsx#IconCollapse (Sidebar 完整佈局)
 // @story-baseline: packages/design-system/src/components/DataTable/data-table.stories.tsx#WithBulkActions (Toolbar + DataTable)
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import * as React from 'react'
-import { userEvent, within } from 'storybook/test'
+import { userEvent, within } from '@storybook/test'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Search, Filter, ArrowUpDown, Info } from 'lucide-react'
 import { AppShell, AppShellAside, useAppShell } from './app-shell'

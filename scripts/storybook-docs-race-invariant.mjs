@@ -2,7 +2,7 @@
 /**
  * Storybook docs 生命週期競態閘(2026-09-10;user:「剛進 storybook 時,點進範例裡,很常會出現此時不應該出現的選單在左上角…重新整理又會變正常」)
  *
- * 根因(Storybook 8.6.18,`@storybook/core/dist/preview-api/index.js:4985-5000`;10.6.9 同一段在 `storybook/dist/preview/runtime.js` 36454-36472,形狀不變):`CsfDocsRender.renderToElement` 先 `await` DocsRenderer chunk、
+ * 根因(Storybook 8.6.18,`@storybook/core/dist/preview-api/index.js:4985-5000`):`CsfDocsRender.renderToElement` 先 `await` DocsRenderer chunk、
  * `DocsRenderer.render` 再 `await` @mdx-js/react chunk,兩段 await 之後都不再檢查這次 render 是否已被 teardown;teardownRender 要等第一段 await
  * 之後才掛上,所以 user 在 Docs 頁載入中點進 story 時 teardown 根本沒東西可取消 → docs 在 `#storybook-docs[hidden]` 裡渲染成殭屍,
  * 裡面預設開啟的浮層(AgentPanel「歷史浮層開啟」快照)portal 到 body、錨點 0×0 → 定位到視窗左上角 (0, 8) 還搶焦點,直到 reload。
@@ -18,7 +18,6 @@
  *   任一等不到 = 儀器失效 exit 1(點名、附 404),不當產品結果。
  *   node scripts/storybook-docs-race-invariant.mjs [--static=<dir>] [--selftest] [--delay=3000]
  */
-import { readFileSync, readdirSync } from 'node:fs'
 import { join, dirname, isAbsolute } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild, waitForDocsRender, waitForStoryRender } from './lib/launch-browser.mjs'
@@ -93,20 +92,6 @@ const MEASURE = () => {
 }
 
 const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
-// 「DocsRenderer 的 chunk」是哪個檔(2026-11-25 升 Storybook 10.6.9):8.6 的 Vite 輸出把它切成 `DocsRenderer-<hash>.js`,
-// 10.6.9 併進 addon-docs 的 `index-<hash>.js`(模組物件 `{__proto__:null,DocsRenderer:…}`)。原本用檔名前綴認它 = 代理,換版就攔到 0 次(M37);
-// 改量「哪個 chunk 匯出 DocsRenderer」:從正在服務的建置逐檔讀,認不出任何一個 = 儀器失效,不往下量。
-const DOCS_RENDERER_CHUNKS = (() => {
-  const dir = join(server.snapshot?.dir ?? STATIC, 'assets')
-  return new Set(readdirSync(dir).filter((f) => f.endsWith('.js'))
-    .filter((f) => /^DocsRenderer-[\w-]+\.js$/.test(f) || /__proto__:null,DocsRenderer:/.test(readFileSync(join(dir, f), 'utf8'))))
-})()
-if (DOCS_RENDERER_CHUNKS.size === 0) {
-  console.error('✗ INSTRUMENT-FAIL 建置裡認不出匯出 DocsRenderer 的 chunk(檔名 DocsRenderer-*.js 或模組物件 DocsRenderer:)—— 延遲不了它,競態量不到')
-  process.exit(1)
-}
-const isDocsRendererChunk = (url) => { try { return DOCS_RENDERER_CHUNKS.has(new URL(url).pathname.split('/').pop()) } catch { return false } }
-console.log(`DocsRenderer chunk:${[...DOCS_RENDERER_CHUNKS].join(', ')}`)
 try {
   /** 開管理介面並等到要點的側欄節點本身出現(openStory,document 模式:根節點有內容、無關鍵資源失敗、無頁面例外)。
    *  原本是 networkidle + 固定睡 800ms —— 代理量;缺檔時一路點下去,最後被讀成「守衛誤殺 docs」。 */
@@ -139,13 +124,13 @@ try {
       const routed = { delayed: 0, patched: 0, delivered: 0 }
       // 延遲的 DocsRenderer chunk **真的送達**才算數(M37):量測當下若它還在路上,殭屍根本還沒機會長出來,「沒有殭屍」不是證據
       // (404 也會觸發 requestfinished —— 只算 2xx,缺檔的 chunk 不算送達)
-      page.on('requestfinished', async (request) => { if (isDocsRendererChunk(request.url()) && (await request.response().catch(() => null))?.ok()) routed.delivered++ })
+      page.on('requestfinished', async (request) => { if (/DocsRenderer-[^/]+\.js$/.test(request.url()) && (await request.response().catch(() => null))?.ok()) routed.delivered++ })
       await page.route((url) => /\.js$/.test(url.pathname), async (route) => {
         const url = route.request().url()
-        if (isDocsRendererChunk(url) && delayMs > 0) { routed.delayed++; await sleep(delayMs) }
+        if (/DocsRenderer-[^/]+\.js$/.test(url) && delayMs > 0) { routed.delayed++; await sleep(delayMs) }
         if (!disableGuard) return route.continue().catch(() => {})
         // 重載會中止進行中的請求,這時 `route.fetch()` 會丟例外 —— 2026-09-12 我加的重試就是這樣把整支腳本炸掉的
-        // (CI `storybook-docs-race-invariant.mjs:63` 未捕捉例外)。攔截器必須對「請求已被中止」免疫。
+        // (CI `storybook-docs-race-invariant.mjs:62` 未捕捉例外)。攔截器必須對「請求已被中止」免疫。
         let res
         try { res = await route.fetch() } catch { return route.continue().catch(() => {}) }
         let body = await res.text().catch(() => null)

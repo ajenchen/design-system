@@ -7,7 +7,7 @@
 //     有 hover / focus / active / disabled。實際「狀態」是 status prop(inProgress /
 //     success / error)的色彩切換已於 ColorMatrix 展示;affix 三種模式(value /
 //     status-icon / ReactNode)的行為差異由 AffixBehavior(4.)涵蓋。
-import type { Meta } from '@storybook/react-vite'
+import type { Meta } from '@storybook/react'
 import { useState } from 'react'
 import { CircleCheck, XCircle, X } from 'lucide-react'
 import { ProgressBar } from './progress-bar'

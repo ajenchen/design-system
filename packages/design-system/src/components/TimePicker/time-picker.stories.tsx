@@ -1,7 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // M22 retrofit DONE 2026-05-03 v11(spec.md SSOT bears full citations; stories cite via spec.md ref line 15)
 import * as React from 'react'
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { ArrowRight } from 'lucide-react'
 import { TimePicker } from './time-picker'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'

@@ -4,7 +4,7 @@
 // per 2026-04-26 user mandate. NextActionRule / StructureRule / CopyRule kept as
 // separate principles.
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { FolderOpen, Inbox, WifiOff, FileText, Users, BarChart3, Mail } from 'lucide-react'
 import { Empty } from './empty'
 import { Button } from '@/design-system/components/Button/button'

@@ -77,7 +77,7 @@ export function consentCoversHead({ receipt, branch, headSha, productFilesChange
  * 「預覽看得見」的檔案集合:真的會進 Storybook 預覽、使用者在預覽站看得到的那些。
  *
  * 集合本身也曾是代理(M37):原本只寫 `packages/<pkg>/src`,漏掉 `.storybook/`(preview 設定、
- * 佈景、decorator —— 改了畫面一定變)與 `apps/**` 的 stories(`.storybook/main.ts:20` 的
+ * 佈景、decorator —— 改了畫面一定變)與 `apps/**` 的 stories(`.storybook/main.ts:19` 的
  * `stories: [...sharedStoryGlobs, '../apps/**\/*.stories.@(tsx|mdx)']` 明確把它們納入)。
  * 漏掉就會出現「畫面明明變了卻不重問」—— 那是 2026-09-02 事故那一格的破口。
  */

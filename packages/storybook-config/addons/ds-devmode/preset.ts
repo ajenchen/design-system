@@ -1,26 +1,26 @@
-// ds-devmode addon preset —— Storybook 10 起 preset 必須是合法 ESM(2026-11-25 升 10.6.9 改寫)。
+// Static package-string paths — let Storybook's module resolver handle path lookup
+// via package.json `exports` map(wildcard `./dist/addons/ds-devmode/*` maps to
+// compiled .js files)。
 //
-// tsc 把本檔編成 dist/addons/ds-devmode/preset.js(套件 `"type": "module"` → Node 當 ESM 載入),
-// package.json `exports["./addons/ds-devmode/preset"]` 指向它;manager.js / preview.js 是同一個 dist 資料夾裡的兄弟檔。
+// Why NOT dynamic resolution:
+// - `createRequire(import.meta.url) + require.resolve('./manager')` → esbuild-register
+//   transpiles ESM-import to CJS-require but package.json `"type":"module"` makes Node
+//   treat output as ESM → ReferenceError: require not defined(beta.27/.28/.29/.30 fails)
+// - `fileURLToPath(import.meta.url)` → 同樣被 esbuild-register CJS transpile 干擾
 //
-// 依據(官方):storybookjs/storybook MIGRATION.md「From version 9.x to 10.0.0」——
-//   ·「The `.storybook/main.*` file and other presets must be valid ESM」:preset 以 ESM 載入,`require` / `__dirname` /
-//     `__filename` 不存在;「A `main.ts` file that's CJS is no longer supported. The same applies to any custom preset files.」
-//   ·「Local addons must be fully resolved」:managerEntries 要回傳解析好的絕對路徑,官方寫法就是
-//     `fileURLToPath(import.meta.resolve('./x.js'))`。
+// Static strings are the ONLY pattern that works in both:
+// (a) Node 22 ESM scope(this file evaluated as pure ESM)
+// (b) esbuild-register CJS wrapping(Storybook's internal preset loader)
 //
-// 為什麼不再用 8.x 時代的 preset.cjs:那是為了繞開 8.x preset loader 的 esbuild-register(CJS 轉譯)與
-// `"type":"module"` 的衝突(beta.27-.31 五連敗)。10.6.9 的 loader 改成原生 `import()`(storybook/dist 已沒有
-// esbuild-register),兩種寫法 2026-11-25 都實測建得起來,但只有 ESM 是官方支援的格式 —— 兩面實測與出處見
-// governance/memory/feedback_storybook_addon_preset_esm.md。
-import { fileURLToPath } from 'node:url'
+// Anchor:beta.27-30 4 連敗 + 連 1 commit 死(2026-05-28 全天炸 5 次)— root cause = mixed
+// CJS/ESM evaluation。Static strings 是 Storybook 自家 addon(@storybook/addon-essentials
+// 等)的 canonical pattern,世界級對照。
 
 export const managerEntries = (entry: string[] = []) => [
   ...entry,
-  fileURLToPath(import.meta.resolve('./manager.js')),
+  '@qijenchen/storybook-config/dist/addons/ds-devmode/manager.js',
 ]
-
 export const previewAnnotations = (entry: string[] = []) => [
   ...entry,
-  fileURLToPath(import.meta.resolve('./preview.js')),
+  '@qijenchen/storybook-config/dist/addons/ds-devmode/preview.js',
 ]

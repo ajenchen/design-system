@@ -3,7 +3,7 @@
 // header-canonical.spec.md 固定 24px，選單色彩、尺寸與互動狀態由 DropdownMenu
 // canonical 擁有。本檔保留 Overview / Inspector / StateBehavior / Accessibility。
 // @story-baseline: packages/design-system/src/components/AccountMenu/account-menu.stories.tsx#GlobalHeaderEntry
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { AccountMenu } from './account-menu'
 import { demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'

@@ -1,6 +1,6 @@
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react-vite'
-import { within } from 'storybook/test'
+import type { Meta, StoryObj } from '@storybook/react'
+import { within } from '@storybook/test'
 import { Tag } from './tag'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { samplePersonCard, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'

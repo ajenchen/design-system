@@ -1,6 +1,6 @@
 // @principles-rationale: UsageGuidance merges WhenToUse + WhenNotToUse into single 使用指引 story per refactor task (2026-04-26)
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import {
   Search, Mail, Lock, Globe, X, Eye, EyeOff, AlertCircle, CheckCircle2,
 } from 'lucide-react'

@@ -6,7 +6,7 @@
 //   SizeMatrix N/A — 不提供 size prop;大小固定 text-body(14px reading mode),
 //     由 layout(cols / orientation / divided)而非 size 決定差異。ColsMatrix 已
 //     涵蓋 layout 變化。
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { DescriptionList, DescriptionItem } from './description-list'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'

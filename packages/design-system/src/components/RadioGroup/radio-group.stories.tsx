@@ -1,7 +1,6 @@
 // @story-history: hasSizes 由 anatomy.stories.tsx SizeMatrix auto-compile owns size showcase(2026-05-15 F-migration);Default scenario 由 WithLabel / HorizontalLayout 等真實 form 情境 story 覆蓋。
 import * as React from 'react'
-import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, waitFor, within } from 'storybook/test'
+import type { Meta, StoryObj } from '@storybook/react'
 import { RadioGroup, RadioGroupItem } from './radio-group'
 import { Button } from '@/design-system/components/Button/button'
 import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
@@ -165,6 +164,7 @@ export const StateContract: Story = {
   parameters: { chromatic: { disableSnapshot: true } },
   render: () => <RadioGroupStateContractHarness />,
   play: async ({ canvasElement }) => {
+    const { expect, userEvent, waitFor, within } = await import('@storybook/test')
     const canvas = within(canvasElement)
 
     const uncontrolled = within(canvas.getByTestId('radio-uncontrolled-mode'))

@@ -1,6 +1,6 @@
 // @principles-rationale: UsageGuidance merges WhenToUse + Vs*Rule into single 使用指引 story per refactor task (2026-04-26)
 import * as React from 'react'
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { Field, FieldLabel, FieldDescription, FieldGroup } from './field'
 import { Input } from '@/design-system/components/Input/input'
 import { Select } from '@/design-system/components/Select/select'

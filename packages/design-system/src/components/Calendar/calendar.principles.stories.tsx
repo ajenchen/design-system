@@ -1,7 +1,7 @@
 // @principles-rationale: Merged WhenToUse + WhenNotToUse + VsDatePicker into a single
 // `UsageGuidance` story (3 sections) per 2026-04-26 user mandate to consolidate
 // decision-related stories. ColorSemantic + MonthViewOnlyRule + ReadOnlyRule kept as separate principles.
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { type CalendarEvent } from './calendar'
 import { CalendarDemo } from './_calendar-demo'
 import { DatePicker } from '@/design-system/components/DatePicker/date-picker'

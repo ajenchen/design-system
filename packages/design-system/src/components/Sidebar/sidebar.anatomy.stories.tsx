@@ -1,5 +1,5 @@
 import * as React from 'react'
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { LayoutDashboard, Inbox, Folder, Plus } from 'lucide-react'
 import {
   SidebarProvider,

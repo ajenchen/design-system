@@ -5,7 +5,7 @@
 //     selected / disabled × bg / text / border / z-index)已由 StateBehavior(5.)
 //     完整對照,獨立 ColorMatrix 會與 StateBehavior 重複。
 import * as React from 'react'
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { AlignLeft, AlignCenter, AlignRight, List, LayoutGrid, Calendar } from 'lucide-react'
 import { SegmentedControl, SegmentedControlItem } from './segmented-control'
 import { Badge } from '@/design-system/components/Badge/badge'

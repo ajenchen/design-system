@@ -1,6 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — 本檔 brand 引用(Jira/Linear/Notion)為真實業務場景示意(mindset #4),非 URL-citable 的 DS 行為 benchmark claim。
 import * as React from 'react'
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { InlineEdit } from './inline-edit'
 import { Field, FieldLabel } from '@/design-system/components/Field/field'
 import { Input } from '@/design-system/components/Input/input'

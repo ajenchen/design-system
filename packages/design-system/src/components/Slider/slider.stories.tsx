@@ -1,6 +1,6 @@
 // @story-history: hasSizes 由 anatomy.stories.tsx SizeMatrix auto-compile owns size showcase(2026-05-15 F-migration)。
 import * as React from 'react'
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { Slider } from './slider'
 import { NumberInput } from '@/design-system/components/NumberInput/number-input'
 import { Field, FieldLabel, FieldDescription } from '@/design-system/components/Field/field'

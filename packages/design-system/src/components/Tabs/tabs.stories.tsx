@@ -1,7 +1,6 @@
 // @story-history: hasSizes 由 anatomy.stories.tsx SizeMatrix owns size showcase;hasInteractiveStates 由 anatomy.stories.tsx StateBehavior owns(展示層 Disabled + AllWithStartIcon story 2026-07-17 Dim 24 retire — 分別與 anatomy StateBehavior disabled 列 / Overview startIcon slot + principles TriggerSlots 全 icon 示範重複)。
 import * as React from 'react'
-import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, waitFor, within } from 'storybook/test'
+import type { Meta, StoryObj } from '@storybook/react'
 import { ChevronDown, Archive, Pin, EyeOff } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs'
 import { Badge } from '@/design-system/components/Badge/badge'
@@ -209,6 +208,7 @@ export const StateContract: Story = {
   parameters: { chromatic: { disableSnapshot: true } },
   render: () => <TabsStateContractHarness />,
   play: async ({ canvasElement }) => {
+    const { expect, userEvent, waitFor, within } = await import('@storybook/test')
     const canvas = within(canvasElement)
 
     const noDefault = within(canvas.getByTestId('tabs-no-default'))

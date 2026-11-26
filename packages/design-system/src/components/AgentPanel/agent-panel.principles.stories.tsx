@@ -1,5 +1,5 @@
 // 設計原則層:使用指引(固定三段)+ 決策卡出題守則(內容準則)+ 動態規則 —— 2026-10-20 前三者擠在使用指引裡(T4)
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { TutorialPage, UsageSection, TutorialList } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {

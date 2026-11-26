@@ -1,7 +1,7 @@
 // @story-history: hasSizes/hasInteractiveStates 由 anatomy.stories.tsx SizeMatrix + StateBehavior
 // owns 完整 trait grid;展示層 States 保留為 compact all-states overview(對齊 Switch 同 Family 檔頭豁免,
 // 2026-07-14 audit Dim 46 補),跟 anatomy focused subsection 不同教學,不另開抽象 Default/AllSizes。
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { Checkbox } from './checkbox'
 import { CheckboxGroup } from './checkbox-group'
 import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'

@@ -5,7 +5,7 @@
 //     類功能性 primitive,thumb 唯一狀態(default / hover)已於 ColorMatrix 展示。
 //     真正的行為差異是 orientation(vertical / horizontal / both)與 type(hover /
 //     scroll / always / auto)顯示時機,由 OrientationBehavior(5.)涵蓋。
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { ScrollArea, ScrollBar } from './scroll-area'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'

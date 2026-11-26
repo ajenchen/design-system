@@ -68,7 +68,7 @@ export const Overview = {
 // @anatomy-rationale:
 // SizeMatrix N/A — Skeleton 為純結構 placeholder,寬高由 consumer 控制,無 size tier
 // StateBehavior N/A — Skeleton 無互動 state(僅 loading 一態,Overview 已示範)
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 // ...
 ```
 

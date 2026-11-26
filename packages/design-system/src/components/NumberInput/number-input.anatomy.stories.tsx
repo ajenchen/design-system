@@ -1,4 +1,4 @@
-import type { Meta } from '@storybook/react-vite'
+import type { Meta } from '@storybook/react'
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import { NumberInput } from './number-input'

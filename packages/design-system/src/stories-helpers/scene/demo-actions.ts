@@ -1,4 +1,4 @@
-import { fn } from 'storybook/test'
+import { fn } from '@storybook/test'
 
 /**
  * 範例裡「跳到別頁」的連結:讀者點了不會真的離開 Storybook,改成在 Storybook「Actions」面板記一筆要去哪

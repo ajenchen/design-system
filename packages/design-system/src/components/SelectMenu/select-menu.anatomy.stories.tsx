@@ -5,7 +5,7 @@
 //     消費的 MenuItem 決定(見 menu-item.anatomy「State 色彩對照」)。實際決策
 //     面向是 4 個功能 flag 的組合(multiple / searchable / creatable / groups)
 //     × consumer 場景,由 ModeMatrix(3.)6 種模式對照涵蓋。
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { useState, type ComponentProps } from 'react'
 import { Mail, MessageSquare, Smartphone } from 'lucide-react'
 import { SelectMenu, type SelectMenuOption, type SelectMenuGroupConfig } from './select-menu'

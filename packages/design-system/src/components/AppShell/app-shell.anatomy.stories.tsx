@@ -5,7 +5,7 @@
 // @story-baseline: packages/design-system/src/components/Sidebar/sidebar.stories.tsx#IconCollapse
 // (透過 ./_demo-helpers AcmeSidebar / PageHeader / WorkspaceBrand / UserFooter 共用 baseline,
 //  避免 anatomy stories 跟 showcase + Sidebar 既有完整佈局 範例視覺偏移)
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import * as React from 'react'
 import { AppShell, AppShellAside, useAppShell, type PanelDisplay, type PanelWidthRange } from './app-shell'
 import { AcmeSidebar, PageHeader, ActiveSprintView, ISSUES, ISSUE_DETAIL_WIDTH, IssueDetail, navLabel } from './_demo-helpers'

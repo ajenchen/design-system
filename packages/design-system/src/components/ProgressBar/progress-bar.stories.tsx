@@ -1,6 +1,6 @@
 // @story-baseline: packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx#AlignmentRule
 import * as React from 'react'
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { FileText } from 'lucide-react'
 import { ProgressBar } from './progress-bar'
 import { DataTable, type DataTableColumnDef } from '@/design-system/components/DataTable/data-table'

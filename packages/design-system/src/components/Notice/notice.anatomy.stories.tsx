@@ -9,7 +9,7 @@
 //     md tier(text-body 14px、px-4 py-3、gap-2、icon 16px),不隨 density 縮放
 //     ——通知是跨 density 一致的訊息載體,業界共識(Polaris / Material 同樣
 //     單一 size)。Inspector 已展示尺寸藍圖。
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
 import {
   Info,

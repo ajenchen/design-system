@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import type { Meta } from '@storybook/react-vite'
-import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
+import type { Meta } from '@storybook/react'
+import { fn } from '@storybook/test'
 import type { NoticeVariant } from '@/design-system/components/Notice/notice'
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup } from '@/design-system/components/Button/button-group'
@@ -158,6 +158,7 @@ export const LiveRegionContract = {
     </div>
   ),
   play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+    const { expect, userEvent, waitFor, within } = await import('@storybook/test')
     const canvas = within(canvasElement)
     const sonnerRegion = canvasElement.querySelector<HTMLElement>('section[aria-live="polite"]')
     const politeRegion = canvasElement.querySelector<HTMLElement>('[data-toast-live-region="polite"]')

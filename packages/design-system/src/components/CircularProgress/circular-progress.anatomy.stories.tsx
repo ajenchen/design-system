@@ -8,7 +8,7 @@
 //   SizeMatrix N/A — size 為自由 number,Button / Input 等 consumer 內部依規
 //     則程式化縮放(field iconSize),由 UsageInButton / UsageInline 涵蓋。
 //   StateBehavior N/A — 無 hover / focus / active 狀態(載入中是唯一狀態)。
-import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { Meta, StoryObj } from '@storybook/react'
 import { CircularProgress } from './circular-progress'
 import { Button } from '@/design-system/components/Button/button'
 import { Input } from '@/design-system/components/Input/input'
