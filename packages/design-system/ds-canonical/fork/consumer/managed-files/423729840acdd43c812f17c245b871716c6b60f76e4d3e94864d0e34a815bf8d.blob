@@ -40,6 +40,7 @@ export const TRUSTED_PRODUCT_CHECK_FILES = Object.freeze([
   'scripts/consumer-source-harness.mjs',
   'scripts/lib/a11y-static-server.mjs',
   'scripts/lib/canonical-path-containment.mjs',
+  'scripts/lib/consumer-output-roots.mjs',
   'scripts/lib/launch-browser.mjs',
   'scripts/lib/provider-lifecycle.mjs',
   'scripts/lib/storybook-render-health.mjs',

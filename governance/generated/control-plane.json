@@ -1323,21 +1323,21 @@
       "type": "file"
     },
     {
-      "hash": "sha256:86068e4f83dec341f6ca81a380a03a70bc71d319df926d74f7bff8fc30b00e38",
+      "hash": "sha256:1bbf91fb4ac933c66d1a606a02b7acdbd9815d1f12e87914991129e242ae183a",
       "id": "exact-published-template-mirror-builder",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/build-published-template-mirror.mjs",
-      "size": 25184,
+      "size": 25355,
       "type": "file"
     },
     {
-      "hash": "sha256:edb2ad500c23829cd34251cb32f53ca81737685c1b668c1d989d81876af1289f",
+      "hash": "sha256:e986db6ee9a787a2dcadb8a695f117f168d442d8502c3fc2b3b36011fa2dd67d",
       "id": "exact-published-template-mirror-policy",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/published-template-mirror-policy.json",
-      "size": 2348,
+      "size": 2393,
       "type": "file"
     },
     {
@@ -3094,7 +3094,7 @@
         "scripts/generated/"
       ],
       "files": 819,
-      "hash": "sha256:62502750bf2afba0396eec430e4d607ebc24126ee9fe5653be30f2def4a9d4db",
+      "hash": "sha256:eda76957f8423505ee09e6ff38d1b4d91ab091bf2e2a2a39f49eca10dbdc3d1d",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

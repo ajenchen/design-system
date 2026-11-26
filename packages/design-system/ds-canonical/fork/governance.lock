@@ -375,7 +375,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/423729840acdd43c812f17c245b871716c6b60f76e4d3e94864d0e34a815bf8d.blob",
-      "sha256": "c5ffee111d8a31c874ac3bd6de79b94f0b21e21600fb184c4d5a71594e7115a1",
+      "sha256": "98ad59797d13bca7be2b39005a89b4dc27dbc51344ad12ffde14d5f49f0b93f2",
       "source": "scripts/consumer-source-harness.mjs",
       "classification": null,
       "destination": "scripts/consumer-source-harness.mjs"

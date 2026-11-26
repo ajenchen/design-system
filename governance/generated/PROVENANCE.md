@@ -156,8 +156,8 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | exact-provider-runtime-conformance-library | `infra/governance/lib/provider-runtime-conformance.mjs` | `sha256:f7af3c5cbcef2862f5918a32acf2e0a79d5f5a8d10d70c3ba3dd223c959b248f` |
 | exact-provider-runtime-contract-library | `scripts/lib/provider-runtime-contract.mjs` | `sha256:2d5d6f56cd49600ad5c387511fde557118cbc482d6864630f408b8d44ddd3eac` |
 | exact-provider-runtime-validation-library | `scripts/lib/provider-runtime-validation.mjs` | `sha256:461d50f3b27d73b4ae42fd89c6f03b9b3197345bf8059e29378decae70075103` |
-| exact-published-template-mirror-builder | `scripts/build-published-template-mirror.mjs` | `sha256:86068e4f83dec341f6ca81a380a03a70bc71d319df926d74f7bff8fc30b00e38` |
-| exact-published-template-mirror-policy | `scripts/published-template-mirror-policy.json` | `sha256:edb2ad500c23829cd34251cb32f53ca81737685c1b668c1d989d81876af1289f` |
+| exact-published-template-mirror-builder | `scripts/build-published-template-mirror.mjs` | `sha256:1bbf91fb4ac933c66d1a606a02b7acdbd9815d1f12e87914991129e242ae183a` |
+| exact-published-template-mirror-policy | `scripts/published-template-mirror-policy.json` | `sha256:e986db6ee9a787a2dcadb8a695f117f168d442d8502c3fc2b3b36011fa2dd67d` |
 | exact-release-finalizer-mirror-handoff | `scripts/release-finalizer-mirror-handoff.mjs` | `sha256:f823d253ac0ff06c536b4240e7abfc3bf5ed378c3f5b1476273a714b66bb959f` |
 | exact-release-version-sync-entrypoint | `scripts/sync-version-to-all-manifests.mjs` | `sha256:77d3416c9eec8f716bae05a4d3dbcd98d40e7750932a2e66af5b0b09a020ebfe` |
 | exact-repository-subject-proof-library | `infra/governance/lib/repository-subject-proof.mjs` | `sha256:9ff415132923ef22e97cb735c3af542272fc9b844999725edef163f137480edf` |
@@ -348,7 +348,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:be47fab0695ff6895c60a541f14786692b3032f5aedda5a650563cd5f49c4ec5` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:279d452f559b3d1d85eb3a7e4fed704c0e12826579c80d3ea10b3e0ea80c38ed` |
-| repository-automation-corpus | `scripts` | `sha256:62502750bf2afba0396eec430e4d607ebc24126ee9fe5653be30f2def4a9d4db` |
+| repository-automation-corpus | `scripts` | `sha256:eda76957f8423505ee09e6ff38d1b4d91ab091bf2e2a2a39f49eca10dbdc3d1d` |
 | repository-ignore-boundary | `.gitignore` | `sha256:5d4a413c4947c7d63058cce0c93fa1adfa8c83efb41006e5b3876fd2706d81f8` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |
