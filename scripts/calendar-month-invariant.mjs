@@ -86,9 +86,12 @@
  *           DT-list 從清單開:清單不關、詳情左緣 − 清單右緣 = 8、上緣對齊那一列;DT-esc-layers 第一下 Esc 只關詳情(焦點回那一列)、第二下關清單(焦點回「+N」)。
  *           DT-readonly(test-only「詳情只能看」)isEditable 回 false:空的地點 / 說明 / 類別不列、欄位與標題沒有可聚焦 / 可點的元素、點值不進編輯;
  *           DT-tip(test-only「詳情交回的修改」,標題被截斷)用滑鼠開、點 × 關 → 焦點由程式還給那一段,截斷提示不開(tooltip.spec.md「A11y 預設」);
+ *           DT-tip-delay 接著滑過工具列「下個月」,提示仍等初始延遲(≥ MOTION_DELAY_PLAIN_MS;擋下程式焦點不得動到全站的開啟延遲,tooltip.spec.md「時間參數」);
  *           DT-commit-call 提交標題 → onEventChange 只呼叫一次、patch = { title };DT-move 產品把事件移到別天 → 詳情換新錨點跟過去(頂端對齊、隔 8、
  *           新那一段帶 data-detail-open、舊那一段卸載),Esc 後焦點在新位置的方塊;DT-fallback 移到畫面外 → 詳情留在原位、Esc 後焦點回原來那一天的停靠點;
  *           DT-esc4-L1–L4 真 Calendar 四層 Esc(時間欄的日期浮層 → 欄位編輯中 → 詳情 → 清單),每一下只關最內層、焦點回該回的地方;
+ *           DT-esc4-tip 每一下之前:焦點所在元素被截斷且是可見焦點時,它的截斷提示是最內層 —— 等它打開、按一下只關它(其他層原樣、焦點不動);
+ *           不截斷時不得開著任何提示(字寬依機器字型:Linux CI 起訖鈕會截斷、mac 不會,兩種都照規格判);
  *           DT-nest 點詳情裡面、點詳情裡時間欄的日期浮層,清單都不關;點兩層外面兩層都關。以上每格各一個對照組(MUTANTS,block 'detail')。
  *   紅: --selftest 逐一注入:星期列搬出格陣、週列高改 auto、最後一週留底線、格子內距 6、工具列改回內距撐高、nav 沒名稱、
  *       欄頭名稱改成短字、捲動區變成可聚焦(axe required-children)、捲動區不能捲、事件列高 20、事件列焦點框改回往內、1 號的實心底被壓成 24 寬、
@@ -129,6 +132,9 @@ const SELFTEST = process.argv.includes('--selftest')
 const ONLY_BLOCK = arg('block', null)
 const root = path.resolve(REPO, arg('static', 'storybook-static'))
 const CAL = 'packages/design-system/src/components/Calendar'
+// 提示的初始延遲(DT-tip-delay 的下限):值的唯一住處 tokens/motion/motion.ts(tooltip.spec.md「時間參數」),讀原始碼不寫死
+const TOOLTIP_DELAY_MS = Number(/export const MOTION_DELAY_PLAIN_MS = (\d+)/u.exec(fs.readFileSync(path.join(REPO, 'packages/design-system/src/tokens/motion/motion.ts'), 'utf8'))?.[1] ?? NaN)
+if (!(TOOLTIP_DELAY_MS > 0)) throw new Error('calendar-month:讀不到 tokens/motion/motion.ts 的 MOTION_DELAY_PLAIN_MS —— DT-tip-delay 沒有下限可比(儀器失效)')
 requireFreshStorybookBuild(root, [`${CAL}/calendar.tsx`, `${CAL}/calendar-more-list.tsx`, `${CAL}/calendar-event-detail.tsx`, `${CAL}/calendar-geometry.ts`, `${CAL}/calendar-layout.ts`, `${CAL}/_calendar-demo.tsx`, `${CAL}/calendar.stories.tsx`, `${CAL}/calendar.anatomy.stories.tsx`, `${CAL}/calendar.principles.stories.tsx`],
   { hint: '先 build storybook(或用 --static=<dir> 指定)' })
 const server = await startA11yStaticServer({ rootDirectory: root, defaultFile: 'iframe.html' })
@@ -455,10 +461,14 @@ async function detailDeep(mutate, { waitSel, detailSel, listSel }) {
   // DT-tip / DT-commit-call / DT-move / DT-fallback:test-only「詳情交回的修改」(標題長到被截斷;onEventChange 每呼叫一次記一筆在 output[data-calendar-change-log])
   const tileSel = '[data-calendar-tile][data-calendar-event-id="mv1"]'
   const logOf = () => page.evaluate(() => JSON.parse(document.querySelector('[data-calendar-change-log]')?.getAttribute('data-calendar-change-log') ?? 'null'))
-  if (runs(mutate, 'tipFocusVisible')) {
+  if (runs(mutate, 'tipFocusVisible') || runs(mutate, 'tipDelaySkip')) {
     // DT-tip:用滑鼠點開詳情、點 × 關掉 → 焦點由程式還給被截斷的那一段(不是 :focus-visible)→ 截斷提示不開(tooltip.spec.md「A11y 預設」)。
     // 對照組(tipFocusVisible):關掉後先按一下 Shift(最近一次輸入 = 鍵盤)再把焦點重新交給同一段 → 這次是 :focus-visible → 提示照開 → 這一格紅
     //(證明這一格看得到提示,差別只在焦點是不是 :focus-visible)
+    // DT-tip-delay(2026-11-26):被擋下的那一下不得動到全站的開啟延遲 —— 接著滑過工具列「下個月」,提示仍要等初始延遲
+    //(tooltip.spec.md「時間參數」;值讀 tokens/motion/motion.ts MOTION_DELAY_PLAIN_MS)。從移動指標之前起算,延遲照開時必 ≥ 該值。
+    // 修前(在 Tooltip 根的 onOpenChange 擋)Radix 已先呼叫 Provider 的 onOpen、又沒有 onClose 還原 → 8ms 就開(正常 525ms)。
+    // 對照組(tipDelaySkip):滑過「下個月」之前先讓「上個月」的提示打開再移過去(Radix 掃描窗口內 = 正當的立即開)→ 這一格紅,證明量得到「立即開」
     const p = await open(STORY.detailChangeLog, { label: '詳情交回的修改(提示)', mutate })
     if (p) {
       const truncated = await page.evaluate((t) => { const s = document.querySelector(`${t} .truncate`); return s ? s.scrollWidth > s.clientWidth : false }, tileSel)
@@ -476,6 +486,21 @@ async function detailDeep(mutate, { waitSel, detailSel, listSel }) {
         const f = await focusInfo()
         const tip = await page.evaluate(() => Boolean(document.querySelector('[data-radix-popper-content-wrapper] [role="tooltip"], [role="tooltip"]')))
         check('DT-tip', f.id === 'mv1' && !tip, `關詳情後焦點${f.id === 'mv1' ? '回到被截斷的那一段' : '不在那一段'}、截斷提示${tip ? '開了' : '沒開'}(規格:程式還回來的焦點不開提示)`)
+        if (!tip) {
+          const center = async (name) => { const b = await page.getByRole('button', { name, exact: true }).first().boundingBox(); return b ? { x: b.x + b.width / 2, y: b.y + b.height / 2 } : null }
+          const next = await center('下個月'), prev = await center('上個月')
+          const tipOpen = () => page.waitForFunction(() => Boolean(document.querySelector('[role="tooltip"]')), null, { timeout: 5000, polling: 'raf' }).then(() => true, () => false)
+          if (!next || !prev) instrumentFails.push({ cell: 'DT-tip-delay', detail: '工具列「上個月 / 下個月」找不到 —— 量不到開啟延遲' })
+          else {
+            if (mutate?.tipDelaySkip) { await page.mouse.move(prev.x, prev.y, { steps: 2 }); await tipOpen() }
+            const t0 = Date.now()
+            await page.mouse.move(next.x, next.y, { steps: 2 })
+            const opened = await tipOpen()
+            const ms = Date.now() - t0
+            if (!opened) instrumentFails.push({ cell: 'DT-tip-delay', detail: '滑過「下個月」5 秒內提示沒開 —— 量不到開啟延遲' })
+            else check('DT-tip-delay', ms >= TOOLTIP_DELAY_MS, `擋下程式還回來的焦點之後,滑過「下個月」${ms}ms 開提示(規格:初始延遲 ${TOOLTIP_DELAY_MS}ms,從移動指標前起算必 ≥ 它)`)
+          }
+        }
       }
     }
   }
@@ -561,14 +586,49 @@ async function detailDeep(mutate, { waitSel, detailSel, listSel }) {
           date: Boolean(document.querySelector(dp)), detail: Boolean(document.querySelector(d)), list: Boolean(document.querySelector(l)),
           editing: Boolean(document.querySelector(`${f} button[aria-haspopup="dialog"]`)),
         }), { dp: DATE_POPOVER, d: detailSel, l: listSel, f: field })
+        // 截斷提示那一層(2026-11-26,CI Linux 紅的根因):第一下 Esc 關日期浮層後,焦點由鍵盤還回時間欄的起訖鈕(:focus-visible);
+        // 起訖鈕的字被截斷時(字寬依機器字型:Linux CI 截斷、mac 不截斷),截斷提示依 tooltip.spec.md「A11y 預設」照開 —— 它這時就是最內層,
+        // 下一下 Esc 只關它(WCAG 1.4.13 可關閉;keyboard-model-canonical「Esc 一次只關最內層」)。所以每一下之前先看:焦點所在的鈕字被截斷
+        // 且是可見焦點 → 等它的提示打開(等元素本身,不賭時間)→ 按一下 Esc,驗「只關了提示、其他層原樣、焦點不動」(DT-esc4-tip)。
+        // 該開卻沒開、或不該開卻開著,都紅。對照組(escDoubleAt = 'tip',同時用字距把起訖鈕撐到截斷 = 在任何機器上造出 Linux 的情況):
+        // 關提示那一下按兩下 → 連編輯一起取消 → DT-esc4-tip 紅。
+        // 截斷 = 焦點所在元素(含子孫)有 text-overflow: ellipsis 且內容比框寬(TruncatedText / 起訖鈕的 .truncate,與 useTruncated 同一個判準)
+        const focusedTip = () => page.evaluate(() => {
+          const a = document.activeElement
+          const truncated = a ? [a, ...a.querySelectorAll('*')].some((el) => getComputedStyle(el).textOverflow === 'ellipsis' && el.scrollWidth > el.clientWidth) : false
+          const id = a?.getAttribute('aria-describedby')
+          const tip = id ? document.getElementById(id) : null
+          return { truncated, fv: Boolean(a?.matches(':focus-visible')), open: Boolean(tip && tip.getAttribute('role') === 'tooltip'), any: document.querySelectorAll('[role="tooltip"]').length }
+        })
+        const closeTipLayer = async (k, doubleTip = false) => {
+          const t = await focusedTip()
+          if (!(t.truncated && t.fv)) {
+            check('DT-esc4-tip', t.any === 0, `第 ${k} 下之前:焦點所在的元素${t.truncated ? '被截斷' : '沒有被截斷'}、${t.fv ? '是' : '不是'}可見焦點 → 沒有提示這一層;開著的提示 ${t.any} 個(規格 0)`)
+            return
+          }
+          const shown = await page.waitForFunction(() => { const id = document.activeElement?.getAttribute('aria-describedby'); return Boolean(id && document.getElementById(id)?.getAttribute('role') === 'tooltip') }, null, { timeout: 5000, polling: 'raf' }).then(() => true, () => false)
+          const before = await state(), fBefore = await focusInfo()
+          await page.keyboard.press('Escape')
+          if (doubleTip) { await page.waitForTimeout(400); await page.keyboard.press('Escape') }
+          await page.waitForTimeout(350); await frames(4)
+          const after = await state(), t2 = await focusedTip(), fAfter = await focusInfo()
+          const same = after.date === before.date && after.editing === before.editing && after.detail === before.detail && after.list === before.list
+          const stayed = JSON.stringify(fAfter) === JSON.stringify(fBefore)
+          check('DT-esc4-tip', shown && !t2.open && t2.any === 0 && same && stayed,
+            `第 ${k} 下之前焦點所在的元素被截斷、是可見焦點 → 截斷提示${shown ? '開了' : '該開沒開'};關提示那一下 Esc 後提示${t2.any ? '還在' : '關了'}、其他層${same ? '原樣' : '跟著變了'}(時間欄${after.editing ? '仍在編輯' : '不在編輯'}、詳情${after.detail ? '在' : '關了'}、清單${after.list ? '在' : '關了'})、焦點${stayed ? '沒動' : '移走了'}`)
+        }
         // 對照組的第二下等上一層收起動畫跑完才按(收起中的那一層還在 Radix 的層堆疊裡,會把第二下吃掉,等於沒造出「一下關兩層」)
-        const press = async (k) => { await page.keyboard.press('Escape'); if (mutate?.escDoubleAt === k) { await page.waitForTimeout(400); await page.keyboard.press('Escape') } await page.waitForTimeout(350); await frames(4) }
+        // 第二下之前若截斷提示打開了,先把它關掉(不記格):對照組要造的是「同一下關了兩個**邏輯**層」,不是「關了提示又關一層」
+        const press = async (k) => { await page.keyboard.press('Escape'); if (mutate?.escDoubleAt === k) { await page.waitForTimeout(400); const t = await focusedTip(); if (t.truncated && t.fv) { await page.waitForFunction(() => document.querySelector('[role="tooltip"]'), null, { timeout: 5000, polling: 'raf' }).catch(() => {}); await page.keyboard.press('Escape'); await page.waitForTimeout(350) } await page.keyboard.press('Escape') } await page.waitForTimeout(350); await frames(4) }
         await press(1); const s1 = await state()
         check('DT-esc4-L1', !s1.date && s1.editing && s1.detail && s1.list, `第一下:日期浮層${s1.date ? '還在' : '關了'}、時間欄${s1.editing ? '仍在編輯' : '不在編輯'}、詳情${s1.detail ? '在' : '關了'}、清單${s1.list ? '在' : '關了'}`)
+        await closeTipLayer(2, mutate?.escDoubleAt === 'tip')
         await press(2); const s2 = await state(); const f2 = await focusInfo()
         check('DT-esc4-L2', !s2.editing && s2.detail && s2.list && f2.field === 'time', `第二下:時間欄${s2.editing ? '仍在編輯' : '取消了'}、焦點${f2.field === 'time' ? '回時間欄' : '不在時間欄'}、詳情${s2.detail ? '在' : '關了'}、清單${s2.list ? '在' : '關了'}`)
+        await closeTipLayer(3)
         await press(3); const s3 = await state(); const f3 = await focusInfo()
         check('DT-esc4-L3', !s3.detail && s3.list && f3.id === 'c3', `第三下:詳情${s3.detail ? '還在' : '關了'}、清單${s3.list ? '在' : '關了'}、焦點${f3.id === 'c3' ? '回清單那一列' : '不在那一列'}`)
+        await closeTipLayer(4)
         await press(4); const s4 = await state(); const f4 = await focusInfo()
         check('DT-esc4-L4', !s4.list && f4.more === MORE_DAY, `第四下:清單${s4.list ? '還在' : '關了'}、焦點${f4.more === MORE_DAY ? '回「+N」' : '不在「+N」'}`)
       }
@@ -2120,6 +2180,8 @@ const MUTANTS = [
   { name: '取消編輯那一下 Esc 連詳情一起關', block: 'detail', expect: ['DT-esc4-L2'], escDoubleAt: 2 },
   { name: '關詳情那一下 Esc 連清單一起關', block: 'detail', expect: ['DT-esc4-L3'], escDoubleAt: 3 },
   { name: '關清單那一下 Esc 又往外傳(焦點離開「+N」)', block: 'detail', expect: ['DT-esc4-L4'], escDoubleAt: 4 },
+  { name: '起訖鈕被截斷(字距撐開 = Linux 字寬)時,關截斷提示那一下 Esc 連編輯一起取消', block: 'detail', expect: ['DT-esc4-tip'], escDoubleAt: 'tip', css: '[data-calendar-event-detail] [data-calendar-detail-field="time"] button span { letter-spacing: 3px !important; }' },
+  { name: '滑過「下個月」之前「上個月」的提示剛開過(掃描窗口內立即開)', block: 'detail', expect: ['DT-tip-delay'], tipDelaySkip: true },
   { name: '點詳情改成點格子(清單外)', block: 'detail', expect: ['DT-nest'], nestClickGrid: true },
   // 必須最後一個(todayFirst 會釘住時鐘,見該區塊註解)
   { name: '1 號的實心底被壓成 24 寬', block: 'todayFirst', expect: ['R1'], css: '[data-calendar-day="2026-07-01"] { padding: 0 !important; max-width: var(--tag-height-md) !important; }' },

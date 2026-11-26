@@ -1145,6 +1145,8 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   )
   // 事件不在了(產品刪掉 / 換了 id)→ 關掉;打開它的那一段被換掉(改了日期、換週、清單那一列卸載)→ 新位置在畫面上就跟過去(換一個新錨點),
   // 不在就留在原位(錨點回上一次量到的矩形,calendar-event-detail.tsx createDetailAnchor)
+  // 依賴 = 會讓那一段 / 那一列換掉或消失的每一個來源:目標本身、這一筆的最新資料(events 換了)、清單開在哪一天(清單那一列)、
+  // 事件版面(週、量到的 k、語系變了,方塊重排或收進「+N」)。其他重畫不會換掉 DOM,不必重查(2026-11-26 前無依賴 = 每次重畫都跑)。
   React.useLayoutEffect(() => {
     if (!detailTarget) return
     if (!detailNormalized) { setDetailTarget(null); return }
@@ -1158,7 +1160,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
       const list = next.closest<HTMLElement>('[data-calendar-more-list]')
       setDetailTarget({ ...detailTarget, opener: next, anchor: createDetailAnchor(next, list), host: list ? 'list' : 'grid' })
     }
-  })
+  }, [detailTarget, detailNormalized, moreListDay, monthLayout])
   const closeDetail = () => setDetailTarget(null)
   // 焦點歸還(calendar.spec.md「事件詳情浮層」Esc / 點外面):回打開它的那一列 / 那一段;它不在了 → 事件新位置的方塊,再不在 → 原日期的停靠點。
   // 指標在外面關的不搶焦點(returnFocusToOpener 的非 modal 規則)。
