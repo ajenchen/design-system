@@ -129,8 +129,8 @@ export interface CalendarEventDetailPopoverProps<E> {
   labels: CalendarEventDetailLabels
   locale: string
   /**
-   * 時間欄平常的顯示寫法(DatePicker.Range `formatOptions`,經 `formatRange` 同一天自動合併)—— Calendar 交進來的那一份:
-   * 日期段 = DatePicker 合併顯示的預設、時間段 = 月格的 `eventTimeFormat`(同一個畫面同一種時間寫法);全天時只有日期段
+   * 時間欄的寫法(DatePicker.Range `formatOptions`;平常經 `formatRange` 同一天自動合併,編輯中兩端也用它)—— Calendar 交進來的那一份:
+   * 日期段 = DatePicker 的預設日期寫法(兩位數月日)、時間段 = 月格的 `eventTimeFormat`(同一個畫面同一種寫法);全天時只有日期段
    */
   readFormat: { timed: Intl.DateTimeFormatOptions; allDay: Intl.DateTimeFormatOptions }
   onClose: () => void
@@ -234,12 +234,14 @@ function DetailFields<E>({ entry, detail, labels, locale, readFormat, onChange, 
             <DatePicker.Range mode="view" value={value} showTime={showTime} formatRange locale={locale} formatOptions={showTime ? readFormat.timed : readFormat.allDay} />
           )}
           // 編輯:一個 DatePicker.Range,有時段時加 showTime(date-picker.spec.md:69)。兩端都選好才提交(Range 自己的 onChange 在完成時才呼叫)
+          // 兩端的字與平常同一份寫法(readFormat;日期兩位數月日、時間同月格)—— 看和改不會是兩種寫法(DATE-TIME(定)2026-11-26)
           renderEdit={(p) => (
             <DatePicker.Range
               size={p.size}
               value={p.value}
               showTime={showTime}
               locale={locale}
+              formatOptions={showTime ? readFormat.timed : readFormat.allDay}
               aria-label={labels.detailTime}
               onChange={(next) => {
                 if (!next[0] || !next[1]) return

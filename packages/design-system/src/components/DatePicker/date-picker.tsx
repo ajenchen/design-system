@@ -1,5 +1,11 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // code-quality-allow: file-size — foundational composite(DatePicker single + Range + showTime + format/ISO helpers + TimePickerSidePanel sub-components),拆 sub-file 會 (a) 增 cross-file context binding 複雜度 (b) M21 過度抽象(每 helper 1 consumer)。等 inline filter UI 真接入第 2 consumer 再拆。
+/**
+ * ── 消費的 SSOT ──(本段只列日期時間的文字寫法;其餘見各 import 旁的註解)
+ * - 日期 / 時間的預設寫法、合併顯示、打字解析的上下午: `./range-format.ts`(DATE-TIME(定)2026-11-26:日期一律補零、時間 12 / 24 跟語系;
+ *   date-picker.spec.md「格式化」「區間檢視合併(formatRange)」「Typed input」)
+ * - 預設語系與週起始日: `../../lib/date-locale.ts`
+ */
 import * as React from 'react'
 import { escapeLayerProps, isEscapeForControl, isEscapeTakenElsewhere } from '@/design-system/lib/overlay-escape'
 import { useCompositeFieldBlur, fieldOpenProps } from '@/design-system/lib/composite-field-focus'
@@ -16,7 +22,8 @@ import { useTruncated } from '@/design-system/hooks/use-truncated'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { DateGrid, EMPHASIS_FOCUS_RING_CLASSNAME, RANGE_PREVIEW_ARMED_CLASSNAME, RANGE_PREVIEW_CLASSNAMES, RANGE_TRACK_CLASSNAMES } from '@/design-system/components/DateGrid/date-grid'
 import { computeRangePreview, rangePreviewModifiers } from './range-preview'
-import { formatDateRange, formatDateRangeEndpoint } from './range-format'
+// 合併顯示 + 日期 / 時間的預設寫法 + 打字解析的上下午(DATE-TIME(定)2026-11-26:日期一律補零、時間 12 / 24 跟語系;date-picker.spec.md「格式化」)
+import { formatDateRange, formatDateRangeEndpoint, DATE_RANGE_DEFAULT_DATE_OPTIONS, resolveDateRangeFormatOptions, parseTimeText } from './range-format'
 import { Button } from '@/design-system/components/Button/button'
 import { SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
@@ -35,7 +42,10 @@ import { DEFAULT_DATE_LOCALE, resolveWeekStartsOn, type WeekStartsOn } from '@/d
 // ── Format ──────────────────────────────────────────────────────────────────
 
 export interface DateFormatOptions {
-  /** Intl.DateTimeFormat options（預設 { year: 'numeric', month: '2-digit', day: '2-digit' }） */
+  /**
+   * Intl.DateTimeFormat options(預設 { year: 'numeric', month: '2-digit', day: '2-digit' };`showTime` 時再補時、分 ——
+   * 12 / 24 小時跟語系,zh-TW「2026/07/05 下午2:30」)。自己寫了時間欄位(例 `hourCycle: 'h23'`)就照它;規則見 date-picker.spec.md「格式化」。
+   */
   formatOptions?: Intl.DateTimeFormatOptions
   /**
    * 語系(BCP 47,預設 'zh-TW' = `DEFAULT_DATE_LOCALE`)。傳了 `formatOptions` / `locale` 才走 `Intl.DateTimeFormat`;
@@ -80,7 +90,7 @@ function formatDate(
   if (Number.isNaN(date.getTime())) return String(value)
   // 若 consumer 顯式傳 formatOptions / locale → 走 Intl.DateTimeFormat
   if (options.formatOptions || options.locale) {
-    return getDateTimeFormatter(options.locale ?? DEFAULT_DATE_LOCALE, options.formatOptions ?? { year: 'numeric', month: '2-digit', day: '2-digit' }).format(date)
+    return getDateTimeFormatter(options.locale ?? DEFAULT_DATE_LOCALE, options.formatOptions ?? DATE_RANGE_DEFAULT_DATE_OPTIONS).format(date)
   }
   // 預設:YYYY/MM/DD(直接組,locale-independent + 視覺穩定;與預設語系 zh-TW 走 Intl 兩位數年月日的輸出字面相同)
   const y = date.getFullYear()
@@ -89,7 +99,12 @@ function formatDate(
   return `${y}/${m}/${d}`
 }
 
-/** 顯示用:date 或 datetime,根據 showTime / showSeconds 切換 */
+/**
+ * 顯示用:date 或 datetime,根據 showTime / showSeconds 切換。
+ * 帶時間時日期段與時間段一次交給 Intl,選項與合併顯示同一支(range-format.ts `resolveDateRangeFormatOptions`):
+ * 日期兩位數月日、時間 12 / 24 跟語系(zh-TW「2026/07/05 下午2:30」、en-US「07/05/2026, 2:30 PM」、en-GB「05/07/2026, 14:30」);
+ * `formatOptions` 寫了時間欄位就照它。DATE-TIME(定)2026-11-26;改前時間一律接 24 小時 `HH:MM`(不看語系也不看 formatOptions)。
+ */
 function formatDateOrDateTime(
   iso: string | null | undefined,
   showTime: boolean,
@@ -97,11 +112,13 @@ function formatDateOrDateTime(
   options: DateFormatOptions = {},
 ): string {
   if (!iso) return ''
-  const dateText = formatDate(iso, options)
-  if (!showTime) return dateText
-  const time = isoToTimeParts(iso)
-  if (!time) return dateText
-  return `${dateText} ${timePartsToString(time, showSeconds)}`
+  if (!showTime || !isoToTimeParts(iso)) return formatDate(iso, options)
+  const date = isoToDate(iso)
+  if (!date || Number.isNaN(date.getTime())) return formatDate(iso, options)
+  return getDateTimeFormatter(
+    options.locale ?? DEFAULT_DATE_LOCALE,
+    resolveDateRangeFormatOptions(true, showSeconds, options.formatOptions),
+  ).format(date)
 }
 
 // ── ISO <-> Date conversion ─────────────────────────────────────────────────
@@ -128,6 +145,8 @@ function isoToDate(iso: string | null | undefined): Date | undefined {
  * 支援 format(per Material X DatePicker / Ant DatePicker typed input idiom):
  *   - `YYYY-MM-DD` / `YYYY/MM/DD` / `YYYY.MM.DD`(ISO + 慣例 separator,明確 parse branch)
  *   - `YYYY-MM-DD HH:MM[:SS]` / `YYYY-MM-DDTHH:MM[:SS]`(datetime,showTime 才接)
+ *   - 時間段也認這個語系的上下午(`YYYY/MM/DD 下午2:30`、`2026/07/05 2:30 PM`):顯示跟語系之後輸入框裡就是這種寫法,
+ *     解析交給 range-format.ts `parseTimeText`(上下午的字從 Intl formatToParts 反推,不寫死;DATE-TIME(定)2026-11-26)
  *   - native `Date.parse()` fallback(handle 'Mar 12 2025' 等英文 RFC;US `MM/DD/YYYY` 亦由此判讀,ambiguous)
  *   ⚠️ 不支援 EU `DD/MM/YYYY`:無專屬 parser branch;native Date.parse 把 slash 日期當 US MM/DD,
  *      `31/12/2026`(月 > 12)直接 Invalid。v1 known-gap,需 EU 請走 formatOptions/locale 或另加 parser branch。
@@ -137,26 +156,20 @@ function isoToDate(iso: string | null | undefined): Date | undefined {
  *
  * 對齊 Material X-DatePicker `formats` parser + Ant DatePicker `format` array + dayjs.parse。
  */
-function parseDateInput(input: string, opts: { allowTime: boolean }): { iso: string | null; valid: boolean } {
+function parseDateInput(input: string, opts: { allowTime: boolean; locale: string }): { iso: string | null; valid: boolean } {
   const trimmed = input.trim()
   if (trimmed === '') return { iso: null, valid: true }  // empty = no value, OK
-  // 1. ISO date YYYY-MM-DD or with separators / . /(可選 time YYYY-MM-DD[T| ]HH:MM[:SS])
-  const isoDateMatch = trimmed.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:[T\s](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/)
+  // 1. ISO date YYYY-MM-DD or with separators / . /(可選時間段:24 小時 HH:MM[:SS],或這個語系的上下午 + 時:分)
+  const isoDateMatch = trimmed.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:[T\s]\s*(.+))?$/)
   if (isoDateMatch) {
-    const [, y, m, d, hh, mm, ss] = isoDateMatch
-    const date = new Date(Number(y), Number(m) - 1, Number(d), Number(hh ?? 0), Number(mm ?? 0), Number(ss ?? 0))
+    const [, y, m, d, timeText] = isoDateMatch
+    // 時間段:越界(25:99、下午13:00)或認不得的字 → 不合法(JS Date 會把越界的時分默默進位,不能交給它判)
+    const time = timeText === undefined ? null : parseTimeText(timeText, opts.locale, getDateTimeFormatter)
+    if (timeText !== undefined && time === null) return { iso: null, valid: false }
+    const date = new Date(Number(y), Number(m) - 1, Number(d))
     if (isNaN(date.getTime()) || date.getMonth() !== Number(m) - 1) return { iso: null, valid: false }
-    // time 分量越界校驗:JS Date 會 silently normalize(25:99:99 → 隔日某時,getTime 仍 valid、
-    // getMonth 未必變),但回傳 iso 用的是原始越界字串 → 需在此擋掉 hh>23 / mm>59 / ss>59。
-    if (hh != null && (Number(hh) > 23 || Number(mm) > 59 || Number(ss ?? 0) > 59)) return { iso: null, valid: false }
-    const datePart = dateToIso(date)
-    if (hh != null && opts.allowTime) {
-      const h2 = String(Number(hh)).padStart(2, '0')
-      const m2 = String(Number(mm)).padStart(2, '0')
-      const s2 = String(Number(ss ?? 0)).padStart(2, '0')
-      return { iso: `${datePart}T${h2}:${m2}:${s2}`, valid: true }
-    }
-    return { iso: datePart, valid: true }
+    if (time && opts.allowTime) return { iso: combineDateAndTime(date, time), valid: true }
+    return { iso: dateToIso(date), valid: true }
   }
   // 2. US / EU locale MM/DD/YYYY or DD/MM/YYYY — ambiguous;v1 fallback Date.parse 並接受結果
   // 3. native Date.parse fallback(RFC-style 'Mar 12 2025')
@@ -252,6 +265,8 @@ function TimePickerSidePanel({
   className,
 }: TimePickerSidePanelProps & { className?: string }) {
   // Dynamic header text — 顯示當前選擇的 HH:MM(對齊 user Q4 + Ant idiom)
+  // 面板的時欄只有 0–23 一欄,標題照欄的寫法維持 24 小時;12 小時語系的面板(加上午 / 下午欄)是新 UI、待 user 決定
+  // (DATE-TIME(定)2026-11-26 的範圍是顯示與輸入框;欄位裡的字已跟語系,見 formatDateOrDateTime)
   const headerText = value
     ? timePartsToString(value, showSeconds)
     : (showSeconds ? '--:--:--' : '--:--')
@@ -521,7 +536,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
       }
     }, [displayLive])
     const handleInputCommit = React.useCallback((raw: string) => {
-      const { iso, valid } = parseDateInput(raw, { allowTime: showTime })
+      const { iso, valid } = parseDateInput(raw, { allowTime: showTime, locale: locale ?? DEFAULT_DATE_LOCALE })
       if (!valid) { setInputInvalid(true); return }
       setInputInvalid(false)
       if (iso === null) {
@@ -532,7 +547,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
         onChange?.(iso)
         setDraft(iso)
       }
-    }, [onChange, showTime])
+    }, [onChange, showTime, locale])
 
     // 截斷 tooltip(tooltip.spec.md:32 截斷 → 顯完整內容,僅實際截斷時):非 typeable edit
     // trigger 的值 span(bareInputStyles + truncate)是截斷元素;trigger = 整個 field wrapper
@@ -928,7 +943,8 @@ export interface DatePickerRangeProps
   weekStartsOn?: WeekStartsOn
   /**
    * 檢視模式(`mode="view"`)把區間寫成一段文字,用標準 `Intl.DateTimeFormat.prototype.formatRange`:同一天自動合併
-   * (`2026/7/15 10:00 – 11:00`)、跨日寫兩端(`2026/7/15至2026/7/17`)、起訖相同只寫一個值。預設 `false` = 起 → 終兩段各自格式化。
+   * (`2026/07/15 上午10:00至11:00`)、跨日寫兩端(`2026/07/15至2026/07/17`)、起訖相同只寫一個值。預設 `false` = 起 → 終兩段各自格式化。
+   * 日期一律兩位數月日(ICU 在區間丟掉的零補回)、時間 12 / 24 跟語系(DATE-TIME(定)2026-11-26)。
    * 只管 view;edit / readonly / disabled 仍是兩段(兩端各是一個欄位值)。只有一端有值等合併不了時照兩段版面,每一端的日期寫法與合併時相同。
    * 結束日照舊是「含」,不做全天換算。日期寫法與判定表 → date-picker.spec.md「區間檢視合併(formatRange)」。
    */
@@ -1155,7 +1171,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
       if (!hasAny) return <span className={cn(fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
       // formatRange(選填,預設關):兩端都有值 → 一段文字(Intl formatRange:同一天合併、跨日寫兩端、起訖相同只寫一個值)。
       // 合併不了(一端空 / 解析不了 / 起點晚於終點 / showTime 但只有一端帶時間 / 環境沒有 formatRange)回 null → 照下方兩段版面,
-      // 每一端仍用合併的同一套寫法(同一頁不會一列 2026/7/15、一列 2026/07/15)。
+      // 每一端仍用合併的同一套寫法(兩位數月日、時間跟語系;同一頁不會一列 07、一列 7)。
       // 判定住 range-format.ts(判定表 scripts/test-date-range-format.mjs),規則 date-picker.spec.md「區間檢視合併(formatRange)」
       const rangeTextOptions = {
         showTime,

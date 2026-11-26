@@ -55,8 +55,9 @@ import {
   type CalendarEventDetailEntry,
   type CalendarEventPatch,
 } from './calendar-event-detail'
-// 詳情時間欄平常顯示的日期段 = DatePicker.Range 合併顯示的預設(同一個常數,不在 Calendar 另寫一份;calendar.spec.md「事件詳情浮層」時間欄)
-import { DATE_RANGE_DEFAULT_DATE_OPTIONS } from '@/design-system/components/DatePicker/range-format'
+// 詳情時間欄的日期段 = DatePicker 的預設日期寫法(兩位數月日);月格時間的預設 = DS 日期元件共用的時間寫法(12 / 24 跟語系)——
+// 同一份常數,不在 Calendar 另寫一份(DATE-TIME(定)2026-11-26;calendar.spec.md「資料語意」時間顯示、「事件詳情浮層」時間欄)
+import { DATE_RANGE_DEFAULT_DATE_OPTIONS, DEFAULT_TIME_FORMAT_OPTIONS } from '@/design-system/components/DatePicker/range-format'
 import { returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
 
 /**
@@ -76,13 +77,14 @@ import { returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
  *   --fg-secondary / --foreground(有時段事件的時間 / 標題【TIMECOLOR(定)】), --font-body-size(色條高 = 字高【BAR(定)】), --radius-sm(色條圓頭,radius.css 短邊 ≤ 10px),
  *   categorical-color.ts(長條 CAT_EVENT / 唯讀 CAT_SUBTLE / 色條 CAT_ACCENT;neutral CAT_EVENT_NEUTRAL)]
  * - 幾何常數: ./calendar-geometry.ts(格內所有空隙、文字內距、色條寬、格最小高、週數欄寬、窄寬度門檻、每格列數 k 的算式、跨日長條的寬;元件內變數 --calendar-*)
- * - 時間字: Intl.DateTimeFormat(locale, eventTimeFormat ?? { hour: 'numeric', minute: '2-digit' })(calendar.spec.md「資料語意」時間顯示;zh-TW「上午10:00」)
+ * - 時間字: Intl.DateTimeFormat(locale, eventTimeFormat ?? DatePicker/range-format.ts DEFAULT_TIME_FORMAT_OPTIONS = { hour: 'numeric', minute: '2-digit' })
+ *   (12 / 24 跟語系,DATE-TIME(定)2026-11-26;calendar.spec.md「資料語意」時間顯示;zh-TW「上午10:00」)
  * - 事件版面: ./calendar-layout.ts(資料語意、長條判定、車道、切段、「+N」計數、格內排序、「+N」清單的一天 layoutDay、CalendarEventSegment 的唯一實作;本檔不另算)
  * - 「+N」與當天清單: ./calendar-more-list.tsx(@internal;按鈕、浮層外殼、半列上限);清單的列與格內同一個元件(MonthEventPiece,只換宿主)
  * - 事件詳情浮層: ./calendar-event-detail.tsx(@internal;Popover + 可編輯標題列 + 垂直排 Field / InlineEdit / Switch / DatePicker.Range / Select);
  *   本檔只管錨在哪(被點的那一段;從清單開時左右取清單外框)—— 開向由詳情浮層照 DS 子選單擺法定(先開右、放不下翻左,popover.spec.md「禁止事項」用法 (2));
  *   從當下 events 依 id 取最新那一筆、全天切換的記憶、焦點歸還(lib/overlay-focus-return.ts returnFocusToOpener);
- *   時間欄平常的寫法 = DatePicker 合併顯示的日期段(DatePicker/range-format.ts DATE_RANGE_DEFAULT_DATE_OPTIONS)+ 月格同一份 eventTimeFormat;
+ *   時間欄平常與編輯中的寫法 = DatePicker 的預設日期段(DatePicker/range-format.ts DATE_RANGE_DEFAULT_DATE_OPTIONS,兩位數月日)+ 月格同一份 eventTimeFormat;
  *   詳情開著時那一段維持滑過色 = categorical-color.ts CAT_EVENT_OPEN / CAT_EVENT_NEUTRAL.open / --neutral-hover
  * - spec refs: calendar.spec.md「工具列」「Cell 規則」(隱藏週末 / 週數欄)「間距」「焦點框」「狀態與邊界案例」(載入中)「窄寬度」「A11y 預設」;
  *   header-canonical.spec.md:26 / :68 / :73;tag.spec.md「尺寸」;focus-canonical.md「問題二」;
@@ -378,7 +380,8 @@ interface CalendarOwnProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'o
 
   /**
    * 事件開始時間的格式(`Intl.DateTimeFormat` 的選項,與 `locale` 一起用;傳了就整份取代預設,不合併)。
-   * 預設 `{ hour: 'numeric', minute: '2-digit' }`:zh-TW「上午10:00」、en-US「10:00 AM」(calendar.spec.md「資料語意」時間顯示)。
+   * 預設 `{ hour: 'numeric', minute: '2-digit' }`(DS 日期元件共用的時間寫法,12 / 24 跟語系):zh-TW「上午10:00」、en-US「10:00 AM」、
+   * en-GB「10:00」(calendar.spec.md「資料語意」時間顯示)。詳情時間欄(平常與編輯中)的時間段也用這一份。
    * 月格只顯示開始時間:有時段的事件在標題前、滿 24 小時的有時段長條在含真起點的那一段標題前;窄寬時不顯示(calendar.spec.md「窄寬度」(1))。
    * 事件的讀屏名稱用同一個格式(`labels.event` 收到的 `when`)。時區一律是瀏覽器的時區 —— 顯示用時區參數第二段再定(calendar.spec.md「API(第一段)」)。
    * 命名同 FullCalendar `eventTimeFormat`(<https://fullcalendar.io/docs/eventTimeFormat>)。
@@ -430,8 +433,11 @@ function resolveEventColor(color: CategoricalColor | undefined): CategoricalColo
   return color !== undefined && Object.prototype.hasOwnProperty.call(CAT_EVENT, color) ? color : 'blue'
 }
 
-/** 事件開始時間的預設格式(calendar.spec.md「資料語意」時間顯示;zh-TW「上午10:00」)。`eventTimeFormat` 傳了就整份取代。 */
-const DEFAULT_EVENT_TIME_FORMAT: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' }
+/**
+ * 事件開始時間的預設格式 = DS 日期元件共用的時間寫法(DatePicker/range-format.ts;12 / 24 跟語系,DATE-TIME(定)2026-11-26;
+ * calendar.spec.md「資料語意」時間顯示;zh-TW「上午10:00」)。`eventTimeFormat` 傳了就整份取代。
+ */
+const DEFAULT_EVENT_TIME_FORMAT: Readonly<Intl.DateTimeFormatOptions> = DEFAULT_TIME_FORMAT_OPTIONS
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 // 日期字串解析、事件資料語意、長條、車道、切段、「+N」都在 ./calendar-layout.ts(唯一實作);2026-11-25 前本檔另有一份 coerceDate
@@ -916,11 +922,12 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
     }),
     [locale, eventTimeFormatKey],
   )
-  // 詳情時間欄平常的寫法(DatePicker.Range `formatOptions`,經 `formatRange` 同一天自動合併【TIMEFIELD(定)】):
-  //   日期段 = DatePicker 合併顯示的預設(DATE_RANGE_DEFAULT_DATE_OPTIONS,同一個常數);時間段 = 月格同一份 eventTimeFormat(預設 zh-TW「上午10:00」)——
-  //   同一個畫面只有一種時間寫法(月格與詳情;DatePicker 合併顯示自己的預設是 24 小時,range-format.ts resolveDateRangeFormatOptions:
-  //   consumer 寫了時間欄位就照它、不補 h23)【AI 推導,列給 user 看:兩種寫法統一成月格那一種】。
-  //   eventTimeFormat 用 timeStyle 時不能和年月日欄位混寫(Intl 規定)→ 日期段改 dateStyle short,同一套「consumer 寫了就照它」。
+  // 詳情時間欄的寫法(DatePicker.Range `formatOptions`;平常經 `formatRange` 同一天自動合併【TIMEFIELD(定)】,編輯中的兩端也傳同一份):
+  //   日期段 = DatePicker 的預設日期寫法(DATE_RANGE_DEFAULT_DATE_OPTIONS,兩位數月日;ICU 在區間丟掉的零由 range-format.ts 補回);
+  //   時間段 = 月格同一份 eventTimeFormat(預設 zh-TW「上午10:00」)—— 同一個畫面只有一種寫法(月格、詳情平常、詳情編輯中)。
+  //   DATE-TIME(定)2026-11-26:日期一律補零、時間 12 / 24 跟語系(eventTimeFormat 是本元件的覆寫參數)。
+  //   eventTimeFormat 用 timeStyle 時不能和年月日欄位混寫(Intl 規定)→ 日期段改 dateStyle short(語系自己的數字日期,不保證補零),
+  //   同一套「consumer 寫了就照它」。
   const detailReadFormat = React.useMemo(() => {
     const timeFormat = JSON.parse(eventTimeFormatKey) as Intl.DateTimeFormatOptions
     const usesStyle = 'timeStyle' in timeFormat || 'dateStyle' in timeFormat

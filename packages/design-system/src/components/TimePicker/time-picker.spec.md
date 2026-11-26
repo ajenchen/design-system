@@ -93,7 +93,7 @@ open 軸同樣只開最小 API — **uncontrolled-only**:`defaultOpen`(初始開
   })}
   endIcon={Clock}                // 預設 Clock,傳 null 關閉(2026-05-05 v9:點擊觸發浮層 indicator 一律 suffix,對齊 DatePicker / Material endAdornment)([來源](https://github.com/mui/mui-x/blob/7d387072c89002693bd423eef0b3ab6db87837f9/docs/data/date-pickers/custom-opening-button/custom-opening-button.md?plain=1#L42-L44))
   locale="zh-TW"                 // 預設 'zh-TW'(DS 日期元件共用的 DEFAULT_DATE_LOCALE;2026-11-24 前是 'en-US')
-  formatOptions={{ hour: '2-digit', minute: '2-digit', hour12: false }}   // 預設值
+  formatOptions={{ hour: 'numeric', minute: '2-digit' }}   // 預設值(showSeconds 時再加 second: '2-digit';12 / 24 跟語系,見「顯示格式化」)
 />
 ```
 
@@ -105,7 +105,9 @@ open 軸同樣只開最小 API — **uncontrolled-only**:`defaultOpen`(初始開
 
 **View 走 `Intl.DateTimeFormat`**(跨 locale 統一、12h/24h 支援)。`formatOptions` 透傳進去。
 
-**預設語系 zh-TW(2026-11-24)**:user 選「全 DS 日期元件一起改 zh-TW (Recommended)」(選項為 AI 擬;Calendar / DatePicker / TimePicker 同一個預設,`../../lib/date-locale.ts` `DEFAULT_DATE_LOCALE`)。預設 `formatOptions` 是 24 小時制,zh-TW 與 en-US 輸出相同(「09:05」「14:30」),什麼都沒傳的畫面不變;自己傳了 12 小時制 `formatOptions` 卻沒傳 `locale` 的,「02:30 PM」→「下午02:30」。TimePicker 只選時分秒,沒有「一週從哪天開始」這件事。
+**預設語系 zh-TW(2026-11-24)**:user 選「全 DS 日期元件一起改 zh-TW (Recommended)」(選項為 AI 擬;Calendar / DatePicker / TimePicker 同一個預設,`../../lib/date-locale.ts` `DEFAULT_DATE_LOCALE`)。自己傳了 12 小時制 `formatOptions` 卻沒傳 `locale` 的,「02:30 PM」→「下午02:30」。TimePicker 只選時分秒,沒有「一週從哪天開始」這件事。
+
+**時間 12 / 24 跟語系(DATE-TIME(定)2026-11-26)**:沒傳 `formatOptions` 時顯示 =「時(不補零)+ 兩位數分」,`showSeconds` 再加兩位數秒,12 / 24 小時交給語系(CLDR 依地區):zh-TW「下午2:30」、en-US「2:30 PM」、en-GB「14:30」;與 DatePicker 帶時間的顯示、Calendar 月格的開始時間同一份(`../DatePicker/range-format.ts` `resolveTimeFormatOptions`)。user 點選「時間跟語系(12 / 24)、日期一律補零,兩者都能單獨覆寫」(選項文字由 AI 擬;原話與卡上的 CLDR 說明見 `../DatePicker/date-picker.spec.md`「區間檢視合併(formatRange)」日期寫法)。覆寫用既有的 `formatOptions`:要固定 24 小時傳 `{ hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }`。改前預設寫死 24 小時(`hour12: false`,「14:30」),該預設與 24 小時都沒有 user 原話(AI 推導,已由上述決定取代);改前 `showSeconds` 時顯示也不寫秒,與 `showSeconds` 參數說明的「true → HH:mm:ss」不符,一併照同一條規則補上【AI 推導】。**下拉面板仍只有 0–23 一欄**:12 小時語系的面板要不要加「上午 / 下午」欄是新 UI,待 user 決定;面板不跟著換,只有欄位裡的字跟語系。
 
 **數字等寬(`tabular-nums`)**:觸發欄位與各 mode 顯示的時間值,跟下拉時間欄(`time-columns.tsx` 的欄內 item)同一個寫法 —— 同一個元件兩處一致;值的寬度不隨字型的數字寬度變(例:系統字型下「22:00」比「10:00」寬,兩個欄位並排時一寬一窄)。【AI 推導 2026-11-17:起因是「店家營業時間」展示在 macOS 字型下把「22:00」截成「22:…」;本檔原本沒有相反規定】
 
