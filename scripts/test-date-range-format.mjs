@@ -15,6 +15,15 @@
  *        (c) 打字解析的時間段(parseTimeText):zh-TW「下午2:30」「上午12:00」「下午12:30」、en-US「2:30 PM」「12:05 am」、
  *            en-GB「2:30 pm」、沒有上下午的 24 小時「14:30」、帶秒各得對的時刻;「下午13:00」、認不得的字、前後都有字、24:00、
  *            分 61 各回 null;三個語系 × 0–23 點,預設時間寫法寫出來的字打回去都認得回同一個時刻(往返)。
+ *        (d) 下拉時間面板的 12 / 24 小時(TIME-12H-PANEL(定)2026-11-26:user 第三輪決策卡點選「A:12 小時語系時,面板加一欄「上午 / 下午」,
+ *            時欄改成 1–12;面板標題和空白提示字也用 12 小時」;24 小時語系不變):resolveTimePanelFormat 在 zh-TW / en-US 是 12 小時(上下午的字
+ *            取語系)、en-GB 是 24 小時、zh-TW 傳 hourCycle: 'h23' 變 24、en-GB 傳 h12 變 12、ja-JP 傳 hour12 是 h11、DatePicker 的欄位寫法
+ *            (含 dateStyle)只取時間欄位;時欄只列這半天、h12 寫 12 / 1…11、切上下午時留在鐘面同一格;面板標題 12 小時寫「下午2:00」、
+ *            24 小時回 null;空白提示字 24 小時照舊 HH:MM、12 小時照語系順序(「上午/下午HH:MM」「HH:MM AM/PM」)。
+ *            性質(K14):zh-TW / en-US / ko-KR × 0–23 點,面板上選中的那兩格(上下午 + 時欄的字)等於欄位寫出來的上下午與時,
+ *            面板標題的字打回去(parseTimeText)是同一個時刻。
+ *            接線:time-columns.tsx 的時欄字與值、上下午欄、容器寬都經 range-format / timeColumnsWidthClass;time-picker.tsx 與 date-picker.tsx
+ *            的單日、Range 兩處都從欄位寫法算面板格式、把 clock 傳下去、標題與提示字經同一份(C5 / C6 / W12–W14)。
  *        「同一頁日期樣式一致」這條性質直接量:預設選項在 zh-TW / en-US 一批日期上,DS 合併後的每一段(ICU 的段經 padRangeDateParts)
  *        與退回兩段的每一端的日期樣式(年月日字 / 斜線、補零、星期、括號、上下午)都等於單獨 format 的樣式。退回那一端的樣式從它實際
  *        呼叫的 formatter 錄下的 parts 量(不是假設它用了哪組選項;文字不是那份 parts 拼出來的 = 量不到 = 紅)。
@@ -51,6 +60,7 @@ const DIR = 'packages/design-system/src/components/DatePicker'
 const SOURCE_PATH = `${DIR}/range-format.ts`
 const PICKER_PATH = `${DIR}/date-picker.tsx`
 const TIME_PICKER_PATH = 'packages/design-system/src/components/TimePicker/time-picker.tsx'
+const TIME_COLUMNS_PATH = 'packages/design-system/src/components/TimePicker/time-columns.tsx'
 const CALENDAR_PATH = 'packages/design-system/src/components/Calendar/calendar.tsx'
 const DETAIL_PATH = 'packages/design-system/src/components/Calendar/calendar-event-detail.tsx'
 const SELFTEST = process.argv.includes('--selftest')
@@ -76,7 +86,10 @@ async function bundle(file, sources) {
   }).catch((e) => instrumentFail(`esbuild 打包 range-format.ts 失敗:${e.message}`))
   writeFileSync(join(ROOT, 'scripts/.gate-bundles', file), result.outputFiles[0].text)
 }
-const EXPORTS = ['formatDateRange', 'formatDateRangeEndpoint', 'resolveDateRangeFormatOptions', 'resolveTimeFormatOptions', 'padRangeDateParts', 'parseTimeText']
+const EXPORTS = [
+  'formatDateRange', 'formatDateRangeEndpoint', 'resolveDateRangeFormatOptions', 'resolveTimeFormatOptions', 'padRangeDateParts', 'parseTimeText',
+  'resolveTimePanelFormat', 'periodOfHour', 'clockHourValues', 'clockHourLabel', 'hourWithPeriod', 'formatPanelTime', 'timePlaceholder',
+]
 const assertExports = (lib, label) => {
   const missing = EXPORTS.filter((name) => typeof lib?.[name] !== 'function')
   if (missing.length) instrumentFail(`${label} 取不到出口:${missing.join('、')}(出口名稱改了?)`)
@@ -196,7 +209,68 @@ const ROWS = [
   ['Q13', 'en-US「2:61 PM」→ null(分 0–59)', (lib) => parsed(lib, '2:61 PM', 'en-US'), null],
   ['Q14', 'zh-TW 帶秒「下午2:30:15」→ 14:30:15', (lib) => parsed(lib, '下午2:30:15', 'zh-TW'), '14:30:15'],
   ['Q15', '往返:zh-TW / en-US / en-GB × 0–23 點,預設時間寫法寫出來的字打回去認得回同一個時刻', (lib) => roundTrip(lib), '[]'],
+  // 下拉時間面板的 12 / 24 小時(TIME-12H-PANEL(定)2026-11-26)
+  ['K1', 'zh-TW 預設時間寫法 → 12 小時面板,上下午字取語系「上午 / 下午」', (lib) => clockOf(lib, 'zh-TW', lib.resolveTimeFormatOptions(false)), JSON.stringify({ hourCycle: 'h12', periodLabels: ['上午', '下午'] })],
+  ['K2', 'en-US 預設時間寫法 → 12 小時面板「AM / PM」', (lib) => clockOf(lib, 'en-US', lib.resolveTimeFormatOptions(false)), JSON.stringify({ hourCycle: 'h12', periodLabels: ['AM', 'PM'] })],
+  ['K3', 'en-GB 預設時間寫法 → 24 小時面板(null,時欄 00–23 一欄)', (lib) => clockOf(lib, 'en-GB', lib.resolveTimeFormatOptions(false)), 'null'],
+  ['K4', "zh-TW 欄位寫法寫了 hourCycle: 'h23' → 面板也是 24 小時", (lib) => clockOf(lib, 'zh-TW', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }), 'null'],
+  ['K5', "en-GB 欄位寫法寫了 hourCycle: 'h12' → 面板 12 小時、上下午字 am / pm", (lib) => clockOf(lib, 'en-GB', { hour: 'numeric', minute: '2-digit', hourCycle: 'h12' }), JSON.stringify({ hourCycle: 'h12', periodLabels: ['am', 'pm'] })],
+  ['K6', 'ja-JP 欄位寫法寫了 hour12: true → h11(時欄 0–11)、午前 / 午後', (lib) => clockOf(lib, 'ja-JP', { hour: 'numeric', minute: '2-digit', hour12: true }), JSON.stringify({ hourCycle: 'h11', periodLabels: ['午前', '午後'] })],
+  ['K7', 'DatePicker 的欄位寫法(日期 + 時間)→ 面板只取時間欄位', (lib) => JSON.stringify(lib.resolveTimePanelFormat('zh-TW', lib.resolveDateRangeFormatOptions(true, false), false, nativeFactory).timeOptions), JSON.stringify({ hour: 'numeric', minute: '2-digit' })],
+  ['K8', "DatePicker consumer dateStyle: 'full' → 面板取補上的 timeStyle、12 / 24 照語系", (lib) => JSON.stringify(lib.resolveTimePanelFormat('zh-TW', lib.resolveDateRangeFormatOptions(true, false, { dateStyle: 'full' }), false, nativeFactory)), JSON.stringify({ locale: 'zh-TW', timeOptions: { timeStyle: 'short' }, clock: { hourCycle: 'h12', periodLabels: ['上午', '下午'] } })],
+  ['K9', '時欄只列這半天的 12 個時(值仍是 0–23)', (lib) => JSON.stringify([lib.clockHourValues(14), lib.clockHourValues(3), lib.periodOfHour(11), lib.periodOfHour(12)]), JSON.stringify([[12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 0, 1])],
+  ['K10', '時欄的字:h12 → 12、1…11(午夜與中午都寫 12);h11 → 0–11', (lib) => JSON.stringify([[0, 1, 11, 12, 13, 23].map((h) => lib.clockHourLabel(h, 'h12')), [0, 11, 12, 23].map((h) => lib.clockHourLabel(h, 'h11'))]), JSON.stringify([[12, 1, 11, 12, 1, 11], [0, 11, 0, 11]])],
+  ['K11', '切上下午:時留在鐘面同一格(14→2、2→14、0→12、12→0)', (lib) => JSON.stringify([lib.hourWithPeriod(14, 0), lib.hourWithPeriod(2, 1), lib.hourWithPeriod(0, 1), lib.hourWithPeriod(12, 0)]), JSON.stringify([2, 14, 12, 0])],
+  ['K12', '面板標題:zh-TW「下午2:00」、en-US「2:00 PM」、en-GB null(照舊 HH:MM)、帶秒的午夜「上午12:05:09」', (lib) => JSON.stringify([
+    lib.formatPanelTime({ hours: 14, minutes: 0, seconds: 0 }, panelOf(lib, 'zh-TW', false), nativeFactory),
+    lib.formatPanelTime({ hours: 14, minutes: 0, seconds: 0 }, panelOf(lib, 'en-US', false), nativeFactory),
+    lib.formatPanelTime({ hours: 14, minutes: 0, seconds: 0 }, panelOf(lib, 'en-GB', false), nativeFactory),
+    lib.formatPanelTime({ hours: 0, minutes: 5, seconds: 9 }, panelOf(lib, 'zh-TW', true), nativeFactory),
+  ]), JSON.stringify(['下午2:00', '2:00 PM', null, '上午12:05:09'])],
+  ['K13', '空白提示字:24 小時照舊 HH:MM / HH:MM:SS;12 小時照語系順序(zh-TW「上午/下午HH:MM」、en-US「HH:MM AM/PM」)', (lib) => JSON.stringify([
+    lib.timePlaceholder(panelOf(lib, 'zh-TW', false), false, nativeFactory),
+    lib.timePlaceholder(panelOf(lib, 'zh-TW', true), true, nativeFactory),
+    lib.timePlaceholder(panelOf(lib, 'en-US', false), false, nativeFactory),
+    lib.timePlaceholder(panelOf(lib, 'en-GB', false), false, nativeFactory),
+    lib.timePlaceholder(panelOf(lib, 'en-GB', true), true, nativeFactory),
+  ]), JSON.stringify(['上午/下午HH:MM', '上午/下午HH:MM:SS', 'HH:MM AM/PM', 'HH:MM', 'HH:MM:SS'])],
+  ['K14', '性質:zh-TW / en-US / ko-KR × 0–23 點,面板選中的上下午與時欄的字 = 欄位寫的上下午與時;面板標題打回去是同一個時刻', (lib) => panelAgreesWithField(lib), '[]'],
 ]
+
+/** 面板的 clock(JSON 好比對) */
+function clockOf(lib, locale, fieldOptions) {
+  return JSON.stringify(lib.resolveTimePanelFormat(locale, fieldOptions, false, nativeFactory).clock)
+}
+/** TimePicker 沒傳 formatOptions 時的面板格式(預設時間寫法) */
+function panelOf(lib, locale, showSeconds) {
+  return lib.resolveTimePanelFormat(locale, lib.resolveTimeFormatOptions(showSeconds), showSeconds, nativeFactory)
+}
+/**
+ * K14:面板上「選中的那兩格」要跟欄位的字說同一個時刻 —— 不信面板自己的判斷,直接拿欄位那支 formatter 的 formatToParts
+ * 讀出上下午與時,比對面板會選的上下午格(periodLabels[periodOfHour])與時欄格(clockHourLabel);再把面板標題打回 parseTimeText。
+ * 回不一致的那幾筆。
+ */
+function panelAgreesWithField(lib) {
+  const bad = []
+  for (const locale of ['zh-TW', 'en-US', 'ko-KR']) {
+    const panel = panelOf(lib, locale, false)
+    if (!panel.clock) { bad.push(`${locale} 不是 12 小時面板`); continue }
+    const field = new Intl.DateTimeFormat(locale, lib.resolveTimeFormatOptions(false))
+    for (let hour = 0; hour < 24; hour++) {
+      const parts = field.formatToParts(d(2026, 7, 15, hour, 5))
+      const fieldPeriod = parts.find((p) => p.type === 'dayPeriod')?.value
+      const fieldHour = Number(parts.find((p) => p.type === 'hour')?.value)
+      const panelPeriod = panel.clock.periodLabels[lib.periodOfHour(hour)]
+      const panelHour = lib.clockHourLabel(hour, panel.clock.hourCycle)
+      const inColumn = lib.clockHourValues(hour).includes(hour)
+      if (fieldPeriod !== panelPeriod || fieldHour !== panelHour || !inColumn) bad.push(`${locale} ${hour} 點:欄位「${fieldPeriod} ${fieldHour}」≠ 面板「${panelPeriod} ${panelHour}」${inColumn ? '' : '(時欄沒有這一格)'}`)
+      const title = lib.formatPanelTime({ hours: hour, minutes: 5, seconds: 0 }, panel, nativeFactory)
+      const back = title === null ? null : parsed(lib, title, locale)
+      if (back !== `${hour}:5:0`) bad.push(`${locale} ${hour} 點:面板標題「${title}」打回去 → ${back}`)
+    }
+  }
+  return JSON.stringify(bad)
+}
 
 function runRows(lib) {
   const result = new Map()
@@ -354,10 +428,29 @@ function checkWiring(picker) {
   if (!/options\.formatOptions \?\? DATE_RANGE_DEFAULT_DATE_OPTIONS/.test(dateOnly) || /month: '2-digit'/.test(dateOnly)) bad.push('[W10] formatDate 的 Intl 預設沒讀 DATE_RANGE_DEFAULT_DATE_OPTIONS(另寫了一份字面)')
   const parse = functionBody(picker, 'parseDateInput') ?? ''
   if (!/parseTimeText\(timeText, opts\.locale, getDateTimeFormatter\)/.test(parse) || !/parseDateInput\(raw, \{ allowTime: showTime, locale: locale \?\? DEFAULT_DATE_LOCALE \}\)/.test(picker)) bad.push('[W11] 打字解析沒有帶語系呼叫 parseTimeText(輸入框顯示的上下午打不回去)')
+  // showTime 面板的 12 / 24(TIME-12H-PANEL):單日與 Range 都從欄位寫法算面板格式,面板(標題 + 欄)與佔位(寬)都拿到同一份
+  const panelFromField = (picker.match(/resolveTimePanelFormat\(locale \?\? DEFAULT_DATE_LOCALE, resolveDateRangeFormatOptions\(true, showSeconds, formatOptions\), showSeconds, getDateTimeFormatter\)/g) ?? []).length
+  const panelPassed = (picker.match(/panelFormat=\{timePanelFormat\}/g) ?? []).length
+  if (panelFromField !== 2 || panelPassed !== 4) bad.push(`[W12] 單日與 Range 沒有都從欄位寫法算面板格式、傳給面板與佔位(算 ${panelFromField} 處應 2;傳 ${panelPassed} 處應 4)`)
+  const side = functionBody(picker, 'TimePickerSidePanel') ?? ''
+  const container = functionBody(picker, 'CalendarTimeContainer') ?? ''
+  if (!/formatPanelTime\(value, panelFormat, getDateTimeFormatter\)/.test(side) || !/clock=\{panelFormat\.clock\}/.test(side)
+    || !/timeColumnsWidthClass\(showSeconds, panelFormat\.clock\)/.test(container) || /'w-(40|60|80)'/.test(container)) bad.push('[W13] 面板標題沒經 formatPanelTime、面板沒把 clock 傳給 TimeColumns,或佔位寬沒讀 timeColumnsWidthClass(面板與佔位一寬一窄)')
+  if (!/placeholder \?\? \(showTime \? `YYYY\/MM\/DD \$\{timePlaceholder\(timePanelFormat, false, getDateTimeFormatter\)\}`/.test(picker)) bad.push('[W14] showTime 的空白提示字沒經 timePlaceholder(12 小時語系仍寫 HH:MM)')
   return bad
 }
-function checkConsumers({ timePicker, calendar, detail }) {
+function checkConsumers({ timePicker, timeColumns, calendar, detail }) {
   const bad = []
+  // 下拉面板(TIME-12H-PANEL):時欄的值與字、上下午欄、容器寬都經 range-format / timeColumnsWidthClass
+  if (!/from '@\/design-system\/components\/DatePicker\/range-format'/.test(timeColumns)
+    || !/clockHourValues\(period \* 12\)/.test(timeColumns)
+    || !/formatValue=\{hourCycle \? \(h\) => pad2\(clockHourLabel\(h, hourCycle\)\) : pad2\}/.test(timeColumns)
+    || !/\{clock && \(\s*<TimeColumn\s+values=\{PERIOD_VALUES\}/.test(timeColumns)
+    || !/onSelect=\{selectPeriod\}/.test(timeColumns) || !/hourWithPeriod\(safeValue\.hours, target\)/.test(timeColumns)
+    || !/timeColumnsWidthClass\(showSeconds, clock\),/.test(timeColumns)) bad.push('[C5] time-columns.tsx 的 12 小時面板沒經 range-format(時欄只列半天、寫 12 / 01…11、上下午欄、切上下午留同一格)或容器寬沒讀 timeColumnsWidthClass')
+  if (!/resolveTimePanelFormat\(locale \?\? DEFAULT_DATE_LOCALE, formatOptions \?\? resolveTimeFormatOptions\(showSeconds\), showSeconds, getDateTimeFormatter\)/.test(timePicker)
+    || !/clock=\{panelFormat\.clock\}/.test(timePicker)
+    || !/const defaultPlaceholder = timePlaceholder\(panelFormat, showSeconds, getDateTimeFormatter\)/.test(timePicker)) bad.push('[C6] time-picker.tsx 的面板格式沒從欄位寫法算、沒把 clock 傳給面板,或空白提示字沒經 timePlaceholder')
   const formatTime = functionBody(timePicker, 'formatTime') ?? ''
   if (!/from '@\/design-system\/components\/DatePicker\/range-format'/.test(timePicker) || !/formatOptions = resolveTimeFormatOptions\(options\.showSeconds\)/.test(formatTime)) bad.push('[C1] time-picker.tsx 的顯示預設沒讀 range-format.ts resolveTimeFormatOptions(showSeconds)')
   if (/hour12\s*:|hourCycle\s*:/.test(timePicker.replace(/\/\/.*$|^\s*\*.*$/gm, ''))) bad.push('[C2] time-picker.tsx 程式碼裡寫了 hour12 / hourCycle 字面(12 / 24 應交給語系)')
@@ -369,7 +462,7 @@ function checkConsumers({ timePicker, calendar, detail }) {
 const source = read(SOURCE_PATH)
 const indexSource = read(`${DIR}/index.ts`)
 const picker = read(PICKER_PATH)
-const consumers = { timePicker: read(TIME_PICKER_PATH), calendar: read(CALENDAR_PATH), detail: read(DETAIL_PATH) }
+const consumers = { timePicker: read(TIME_PICKER_PATH), timeColumns: read(TIME_COLUMNS_PATH), calendar: read(CALENDAR_PATH), detail: read(DETAIL_PATH) }
 
 if (!SELFTEST) {
   await bundle('date-range-format.mjs', [source])
@@ -402,7 +495,7 @@ if (!SELFTEST) {
     console.log(`✓ 對照組「${name}」被抓到 ${found.length} 筆不一致(例:${found[0]})`)
   }
   const staticBad = [...checkStatic(source, indexSource), ...checkWiring(picker), ...checkConsumers(consumers)]
-  if (staticBad.length === 0) console.log('✓ S / W / C 靜態與接線:@internal + 消費的 SSOT、不 import、不開 timeZone、index 不轉出;date-picker.tsx 以 formatRange 為閘呼叫、預設 false、共用選項帶預設語系與快取、null 退回兩段且兩端用同一套寫法、帶時間的顯示與打字解析經 range-format;TimePicker / Calendar / 詳情讀同一份寫法')
+  if (staticBad.length === 0) console.log('✓ S / W / C 靜態與接線:@internal + 消費的 SSOT、不 import、不開 timeZone、index 不轉出;date-picker.tsx 以 formatRange 為閘呼叫、預設 false、共用選項帶預設語系與快取、null 退回兩段且兩端用同一套寫法、帶時間的顯示與打字解析經 range-format;TimePicker / Calendar / 詳情讀同一份寫法;下拉面板的 12 / 24、標題、提示字與寬度經同一份')
   else { console.log('✗ S / W / C 靜態與接線'); for (const x of staticBad) console.log(`   - ${x}`); fail += staticBad.length }
   if (fail) { console.log(`\n✗ ${fail} 處不符`); process.exit(1) }
   console.log(`\n✓ DatePicker 日期時間文字:${ROWS.length} 格判定表、樣式性質、${CONTROLS.length} 個對照組與靜態接線全部相符`)
@@ -442,6 +535,16 @@ const MUTANTS = [
   ['認不得的上下午字照數字收', (s, n) => replaceOnce(s, '  return hours === undefined ? null : { hours, minutes, seconds }\n', '  return { hours: hours ?? shownHour, minutes, seconds }\n', n), ['Q9', 'Q10']],
   ['前後都有字也收', (s, n) => replaceOnce(s, '  if (markers.length > 1) return null\n', '', n), ['Q11']],
   ['分秒不驗 0–59', (s, n) => replaceOnce(s, '  if (minutes > 59 || seconds > 59) return null\n', '', n), ['Q13']],
+  // 下拉面板的 12 / 24(TIME-12H-PANEL)
+  ['面板一律 24 小時(clock 永遠 null)', (s, n) => replaceOnce(s, '  if (!hourCycle) return { locale, timeOptions, clock: null }\n', '  if (!hourCycle || timeOptions) return { locale, timeOptions, clock: null }\n', n), ['K1', 'K2', 'K5', 'K6', 'K8', 'K12', 'K13', 'K14']],
+  ['上下午欄的字寫死英文(不取語系)', (s, n) => replaceOnce(s, "getFormatter(locale, { hour: 'numeric', hourCycle })", "getFormatter('en-US', { hour: 'numeric', hourCycle })", n), ['K1', 'K6', 'K8', 'K14']],
+  ['面板不看欄位寫法的 hourCycle / hour12', (s, n) => replaceOnce(s, "'timeStyle', 'hourCycle', 'hour12'])", "'timeStyle'])", n), ['K4', 'K5', 'K6']],
+  ['h12 的午夜 / 中午寫 0', (s, n) => replaceOnce(s, "hourCycle === 'h12' && onDial === 0 ? 12 : onDial", 'onDial', n), ['K10', 'K14']],
+  ['12 小時的提示字仍寫 HH:MM', (s, n) => replaceOnce(s, "  if (!panel.clock) return showSeconds ? 'HH:MM:SS' : 'HH:MM'\n", "  if (panel) return showSeconds ? 'HH:MM:SS' : 'HH:MM'\n", n), ['K13']],
+  ['切上下午時跑到那半天第一格', (s, n) => replaceOnce(s, 'return (hours % 12) + period * 12', 'return period * 12', n), ['K11']],
+  ['時欄仍列 24 個時', (s, n) => replaceOnce(s, 'Array.from({ length: 12 }, (_, i) => base + i)', 'Array.from({ length: 24 }, (_, i) => i + base * 0)', n), ['K9']],
+  ['中午 12 點算上午', (s, n) => replaceOnce(s, 'return hours >= 12 ? 1 : 0', 'return hours > 12 ? 1 : 0', n), ['K9', 'K14']],
+  ['面板標題不用欄位寫法(寫死 24 小時)', (s, n) => replaceOnce(s, 'getFormatter(panel.locale, panel.timeOptions).format(timeOfDayDate(time))', "getFormatter(panel.locale, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(timeOfDayDate(time))", n), ['K12']],
 ]
 const STATIC_MUTANTS = [
   ['檔頭拿掉 @internal', (s) => s.replace('@internal — ', ''), /\[S1\]/],
@@ -449,7 +552,7 @@ const STATIC_MUTANTS = [
   ['import 語系模組', (s) => `import { DEFAULT_DATE_LOCALE } from '../../lib/date-locale'\n${s}`, /\[S3\]/],
   ['開 timeZone 參數', (s) => s.replace('  locale: string\n  getFormatter?', '  locale: string\n  timeZone?: string\n  getFormatter?'), /\[S4\]/],
 ]
-const RANGE_IMPORT = "import { formatDateRange, formatDateRangeEndpoint, DATE_RANGE_DEFAULT_DATE_OPTIONS, resolveDateRangeFormatOptions, parseTimeText } from './range-format'\n"
+const RANGE_IMPORT = "import { formatDateRange, formatDateRangeEndpoint, DATE_RANGE_DEFAULT_DATE_OPTIONS, resolveDateRangeFormatOptions, parseTimeText, resolveTimePanelFormat, formatPanelTime, timePlaceholder, type TimePanelFormat } from './range-format'\n"
 const WIRING_MUTANTS = [
   ['date-picker.tsx 拿掉 import', (p) => p.replace(RANGE_IMPORT, ''), /\[W1\]/],
   ['view 分支不呼叫(永遠兩段)', (p) => p.replace('const mergedText = formatRange\n        ? formatDateRange({', 'const mergedText = false\n        ? formatDateRange({'), /\[W2\]/],
@@ -463,12 +566,24 @@ const WIRING_MUTANTS = [
   ['帶時間的顯示改回接 24 小時 HH:MM(修正前)', (p) => p.replace('resolveDateRangeFormatOptions(true, showSeconds, options.formatOptions),\n  ).format(date)', 'resolveDateRangeFormatOptions(true, showSeconds, options.formatOptions),\n  ).format(date) + timePartsToString({ hours: 0, minutes: 0, seconds: 0 })'), /\[W9\]/],
   ['只有日期的 Intl 預設另寫字面', (p) => p.replace('options.formatOptions ?? DATE_RANGE_DEFAULT_DATE_OPTIONS', "options.formatOptions ?? { year: 'numeric', month: '2-digit', day: '2-digit' }"), /\[W10\]/],
   ['打字解析不帶語系', (p) => p.replace('parseDateInput(raw, { allowTime: showTime, locale: locale ?? DEFAULT_DATE_LOCALE })', "parseDateInput(raw, { allowTime: showTime, locale: 'zh-TW' })"), /\[W11\]/],
+  ['單日面板不從欄位寫法算(另寫一份)', (p) => p.replace('resolveTimePanelFormat(locale ?? DEFAULT_DATE_LOCALE, resolveDateRangeFormatOptions(true, showSeconds, formatOptions), showSeconds, getDateTimeFormatter)', "resolveTimePanelFormat('zh-TW', {}, showSeconds, getDateTimeFormatter)"), /\[W12\]/],
+  ['Range 的佔位沒拿到面板格式', (p) => p.replace('              panelFormat={timePanelFormat}\n              calendar={', '              calendar={'), /\[W12\]/],
+  ['面板標題寫回 24 小時', (p) => p.replace('(formatPanelTime(value, panelFormat, getDateTimeFormatter) ?? timePartsToString(value, showSeconds))', 'timePartsToString(value, showSeconds)'), /\[W13\]/],
+  ['面板佔位寬寫死兩檔(不看上下午欄)', (p) => p.replace('const panelWidth = timeColumnsWidthClass(showSeconds, panelFormat.clock)', "const panelWidth = showSeconds ? 'w-60' : 'w-40'"), /\[W13\]/],
+  ['showTime 提示字寫死 HH:MM', (p) => p.replace('`YYYY/MM/DD ${timePlaceholder(timePanelFormat, false, getDateTimeFormatter)}`', "'YYYY/MM/DD HH:MM'"), /\[W14\]/],
 ]
 const CONSUMER_MUTANTS = [
   ['TimePicker 顯示預設改回寫死 24 小時', (c) => ({ ...c, timePicker: c.timePicker.replace('formatOptions = resolveTimeFormatOptions(options.showSeconds),', "formatOptions = { hour: '2-digit', minute: '2-digit', hour12: false },") }), /\[C1\]/],
   ['TimePicker 程式碼另寫 hourCycle', (c) => ({ ...c, timePicker: c.timePicker.replace('    locale = DEFAULT_DATE_LOCALE,\n  } = options', "    locale = DEFAULT_DATE_LOCALE,\n  } = { ...options, hourCycle: 'h23' }") }), /\[C2\]/],
   ['Calendar 月格時間預設另寫一份', (c) => ({ ...c, calendar: c.calendar.replace('const DEFAULT_EVENT_TIME_FORMAT: Readonly<Intl.DateTimeFormatOptions> = DEFAULT_TIME_FORMAT_OPTIONS', "const DEFAULT_EVENT_TIME_FORMAT: Readonly<Intl.DateTimeFormatOptions> = { hour: 'numeric', minute: '2-digit' }") }), /\[C3\]/],
   ['詳情編輯中不傳 readFormat(看和改兩種寫法)', (c) => ({ ...c, detail: c.detail.replace('              locale={locale}\n              formatOptions={showTime ? readFormat.timed : readFormat.allDay}\n', '              locale={locale}\n') }), /\[C4\]/],
+  ['時欄的字不換成 12 小時', (c) => ({ ...c, timeColumns: c.timeColumns.replace('formatValue={hourCycle ? (h) => pad2(clockHourLabel(h, hourCycle)) : pad2}', 'formatValue={pad2}') }), /\[C5\]/],
+  ['拿掉上下午欄', (c) => ({ ...c, timeColumns: c.timeColumns.replace('{clock && (\n        <TimeColumn\n          values={PERIOD_VALUES}', '{false && (\n        <TimeColumn\n          values={PERIOD_VALUES}') }), /\[C5\]/],
+  ['12 小時制時欄仍列 24 個', (c) => ({ ...c, timeColumns: c.timeColumns.replace('clockHourValues(period * 12)', 'buildRange(24, 1)') }), /\[C5\]/],
+  ['面板容器寬只看秒(不看上下午欄)', (c) => ({ ...c, timeColumns: c.timeColumns.replace('timeColumnsWidthClass(showSeconds, clock),', "showSeconds ? 'w-60' : 'w-40',") }), /\[C5\]/],
+  ['TimePicker 不把 clock 傳給面板', (c) => ({ ...c, timePicker: c.timePicker.replace('              clock={panelFormat.clock}\n', '') }), /\[C6\]/],
+  ['TimePicker 提示字寫死 HH:MM', (c) => ({ ...c, timePicker: c.timePicker.replace('const defaultPlaceholder = timePlaceholder(panelFormat, showSeconds, getDateTimeFormatter)', "const defaultPlaceholder = showSeconds ? 'HH:MM:SS' : 'HH:MM'") }), /\[C6\]/],
+  ['TimePicker 面板不看 formatOptions', (c) => ({ ...c, timePicker: c.timePicker.replace('formatOptions ?? resolveTimeFormatOptions(showSeconds), showSeconds, getDateTimeFormatter)', 'resolveTimeFormatOptions(showSeconds), showSeconds, getDateTimeFormatter)') }), /\[C6\]/],
 ]
 
 const variants = [source, ...MUTANTS.map(([name, mutate]) => mutate(source, name))]
