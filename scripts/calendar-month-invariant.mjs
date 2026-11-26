@@ -81,7 +81,8 @@
  *         DT 事件詳情浮層(設計規格「狀態行為:事件詳情開著」「狀態行為:從清單開詳情」;calendar.spec.md「事件詳情浮層」;一般 / 大密度各一趟):
  *           DT-name 浮層名稱 = 事件標題本身;DT-head 標題列 = 2 × tight + sm 欄位高、× 與標題同中線;DT-side 左半邊的事件往右開、隔 8、頂端對齊;
  *           DT-vertical 欄位垂直排(標籤在上);DT-label 標籤 = fg-secondary(閱讀情境);DT-gap 標頭 → 第一欄 = tight、最後一欄 → 底 = tight(hug);
- *           DT-mark 打開詳情的那一段帶 data-detail-open;DT-esc Esc 關詳情、焦點回那一段;DT-commit 改標題 → 月格跟著換;DT-blank 清空提交 = 還原原值;
+ *           DT-mark 打開詳情的那一段帶 data-detail-open;DT-esc Esc 關詳情、焦點回那一段;DT-outside 減少動態下改地點、點外面 = 先提交再關(再打開看得到新值);
+ *           DT-commit 改標題 → 月格跟著換;DT-blank 清空提交 = 還原原值;
  *           DT-list 從清單開:清單不關、詳情左緣 − 清單右緣 = 8、上緣對齊那一列;DT-esc-layers 第一下 Esc 只關詳情(焦點回那一列)、第二下關清單(焦點回「+N」)。
  *   紅: --selftest 逐一注入:星期列搬出格陣、週列高改 auto、最後一週留底線、格子內距 6、工具列改回內距撐高、nav 沒名稱、
  *       欄頭名稱改成短字、捲動區變成可聚焦(axe required-children)、捲動區不能捲、事件列高 20、事件列焦點框改回往內、1 號的實心底被壓成 24 寬、
@@ -1583,6 +1584,32 @@ const BLOCKS = {
       await frames(4)
       const escFocus = await page.evaluate(() => document.activeElement?.getAttribute('data-calendar-event-id') === 'd1')
       check(`DT-esc${tag}`, closed && escFocus, `Esc 後詳情${closed ? '關了' : '沒關'}、焦點${escFocus ? '回到「設計審查」' : '不在「設計審查」'}`)
+      // DT-outside(一般密度):減少動態下,地點改到一半點頁面空白 = 先提交再關(calendar.spec.md「點外面」(1));再打開看得到新的地點。
+      // 對照組(outsideAsEscape)改成按 Esc 取消編輯、再按 Esc 關 → 地點沒存 → 紅(證明這一格看得到「沒提交」)
+      if (density === 'md' && (!mutate || mutate.outsideAsEscape)) {
+        const tile = '[data-calendar-tile][data-calendar-event-id="d1"]'
+        const field = `${detailSel} [data-calendar-detail-field="location"]`
+        const newPlace = '台北辦公室 5F 訓練教室'
+        await page.emulateMedia({ reducedMotion: 'reduce' })
+        await page.click(tile)
+        const reopened = await waitSel(detailSel, 'open')
+        await page.click(`${field} button`).catch(() => {})
+        const input = await page.waitForSelector(`${field} input`, { timeout: 5000 }).catch(() => null)
+        if (!reopened || !input) instrumentFails.push({ cell: 'DT-outside', detail: `詳情${reopened ? '' : '沒'}打開、地點${input ? '' : '沒'}進編輯 —— 量不到點外面` })
+        else {
+          await input.fill(newPlace)
+          if (mutate?.outsideAsEscape) { await page.keyboard.press('Escape'); await frames(2); await page.keyboard.press('Escape') }
+          else await page.mouse.click(5, 5) // 範例外框的內距(不在月曆上,點了不會新增事件)
+          const gone = await waitSel(detailSel, 'closed')
+          await frames(4)
+          await page.click(tile)
+          await waitSel(detailSel, 'open')
+          const shown = await page.evaluate((s) => document.querySelector(s)?.textContent ?? '', field)
+          check('DT-outside', gone && shown.includes(newPlace), `減少動態下改地點、點外面:詳情${gone ? '關了' : '沒關'},再打開地點「${shown.replace(/^地點/u, '')}」(規格:先提交再關 → 「${newPlace}」)`)
+          await page.keyboard.press('Escape'); await waitSel(detailSel, 'closed')
+        }
+        await page.emulateMedia({ reducedMotion: null })
+      }
       if (density !== 'md' || mutate) continue
       // DT-commit / DT-blank(只在一般密度、正式跑):改標題 → 月格跟著換;清空提交 → 還原原值
       const tileSel = '[data-calendar-tile][data-calendar-event-id="d1"]'
@@ -1884,6 +1911,7 @@ const MUTANTS = [
   { name: '打開詳情的那一段沒有標記', block: 'detail', expect: ['DT-mark@md', 'DT-mark@lg'], detailDom: () => document.querySelectorAll('[data-detail-open]').forEach((el) => el.removeAttribute('data-detail-open')) },
   { name: 'Esc 關詳情後焦點不回事件', block: 'detail', expect: ['DT-esc@md', 'DT-esc@lg'], detailDom: () => document.querySelectorAll('[data-calendar-event-id]').forEach((el) => { el.focus = () => {} }) },
   { name: '從清單開時詳情沒貼著清單(往右偏 40)', block: 'detail', expect: ['DT-list'], css: '[data-calendar-event-detail] { margin-left: 40px !important; }' },
+  { name: '點外面沒提交(改成按 Esc 取消編輯再關,地點沒存)', block: 'detail', expect: ['DT-outside'], outsideAsEscape: true },
   // 必須最後一個(todayFirst 會釘住時鐘,見該區塊註解)
   { name: '1 號的實心底被壓成 24 寬', block: 'todayFirst', expect: ['R1'], css: '[data-calendar-day="2026-07-01"] { padding: 0 !important; max-width: var(--tag-height-md) !important; }' },
 ]
