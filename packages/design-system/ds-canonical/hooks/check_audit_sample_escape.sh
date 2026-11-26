@@ -67,13 +67,9 @@ if [ "${EVENT:-}" != "PostToolUse" ]; then
     && jq -e --arg s "$BUDGET_SESSION" 'select(.session_id == $s)' "$BUDGET_FILE" >/dev/null 2>&1; then
     :
   else
-    # 規格是「同 session 第一次」才提醒(2026-11-27 規格核對必修 3:以前沒記號時每次派工都提醒)→ 提醒當下替這個
-    # session 落一筆 kind=reminded(功能狀態,與預算記號同一份 dispatch-budget.jsonl,不需遙測),之後同 session 靜默。
-    # 沒有 session_id 或寫不了 runtime 狀態時記不住 → 照舊每次提醒(寧可多提醒,不默默漏掉第一次)。
-    if [ -n "$BUDGET_SESSION" ] && command -v governance_append_enforcement_record >/dev/null 2>&1; then
-      governance_append_enforcement_record dispatch-budget.jsonl \
-        "$(jq -cn --arg s "$BUDGET_SESSION" --arg t "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '{session_id:$s,recorded_at:$t,kind:"reminded"}')" || true
-    fi
+    # 規格是「同 session 第一次」才提醒(2026-11-27 規格核對必修 3:以前沒記號時每次派工都提醒)→ 提醒**真的送出**時
+    # (allow_exit)替這個 session 落一筆 kind=reminded,之後同 session 靜默。算出提醒但這次被抽樣條款擋下(exit 2、
+    # stdout 不送)不落記號,下一次派工照樣提醒(再驗 nonMust:以前在這裡就寫,第一次被擋 → 整個 session 再也看不到)。
     BUDGET_REMINDER='派工預算還沒寫(這個 session 第一次派工)。AGENTS.md「分診與預算」原文:「派工先寫預算(代理數/花費/牆鐘),用滿就停派、交付已完成的並回報。」要寫的三項:代理數、花費、牆鐘。寫法:在這一次或下一次派工的 prompt 放一行「派工預算:代理 <N> 個、花費 <上限>、牆鐘 <分鐘>」—— hook 看到這一行就替這個 session 落記號,之後不再提醒。(非阻擋提醒,本次派工照常進行)'
   fi
 fi
@@ -82,6 +78,12 @@ allow_exit() {
   if [ -n "$BUDGET_REMINDER" ]; then
     jq -cn --arg message "$BUDGET_REMINDER" '{governanceContext:{hookEventName:"PreToolUse",message:$message}}' \
       || { printf 'GOVERNANCE_INTEGRITY: dispatch budget reminder envelope encoding failed\n' >&2; exit 70; }
+    # 提醒已送出 → 才落「已提醒」記號(功能狀態,與預算記號同一份 dispatch-budget.jsonl,不需遙測)。
+    # 沒有 session_id 或寫不了 runtime 狀態時記不住 → 照舊每次提醒(寧可多提醒,不默默漏掉第一次)。
+    if [ -n "${BUDGET_SESSION:-}" ] && command -v governance_append_enforcement_record >/dev/null 2>&1; then
+      governance_append_enforcement_record dispatch-budget.jsonl \
+        "$(jq -cn --arg s "$BUDGET_SESSION" --arg t "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '{session_id:$s,recorded_at:$t,kind:"reminded"}')" || true
+    fi
   fi
   exit 0
 }

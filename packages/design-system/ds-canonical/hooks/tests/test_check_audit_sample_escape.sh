@@ -142,6 +142,18 @@ if [ "$EXIT" = "2" ] && [ -z "$BUDGET_OUT" ] && grep -qF 'AUDIT NO-SAMPLE ESCAPE
 else
   echo "  FAIL  B5. block contract changed (exit=$EXIT stdout=$BUDGET_OUT)"; FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - B5"
 fi
+# B6.(2026-11-27 再驗 nonMust)新 session 第一次派工就被抽樣條款擋下 → 提醒沒送出 → 不落「已提醒」記號;
+#     第二次正常派工照樣提醒,第三次才靜默(以前算出提醒就落記號 → 第二次 0B,整個 session 再也看不到)
+run_budget "sess-Q" "audit Dim 3 sample top 3 components"
+if [ "$EXIT" = "2" ] && [ -z "$BUDGET_OUT" ]; then
+  echo "  PASS  B6a. sess-Q 第一次被抽樣條款擋下(exit 2、stdout 不送)"; PASS=$((PASS+1))
+else
+  echo "  FAIL  B6a. 預期被擋(exit=$EXIT stdout=$BUDGET_OUT)"; FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - B6a"
+fi
+run_budget "sess-Q" "讀 Tag 的 spec"
+expect_budget "B6b. 第一次被擋、提醒沒送出 → 第二次仍提醒" reminder
+run_budget "sess-Q" "再讀 Badge 的 spec"
+expect_budget "B6c. 提醒送出之後 → 同 session 靜默" silent
 
 echo ""
 echo "=== Summary ==="
