@@ -187,7 +187,7 @@ const Switch = React.forwardRef<
     const effectiveReadOnly = readOnly || resolvedMode === 'readonly'
     // mode='disabled' 直傳(無 Field ctx 的 cell 場景)必須落到真 disabled chrome(同 Checkbox 2026-06-12 修)
     const effectiveDisabled = disabled || resolvedMode === 'disabled'
-    // readonly 灰框 size:走 SSOT resolver(prop > ctx > 'md',field-context.ts:154-165)
+    // readonly 灰框 size:走 SSOT resolver(prop > ctx > 'md',field-context.ts:166-177)
     const resolvedBoxSize = useResolvedFieldSize(size ?? undefined, 'md') as 'sm' | 'md' | 'lg'
     const insideField = fieldCtx?.hasFieldWrapper === true
     const effectiveLabel = insideField ? undefined : label

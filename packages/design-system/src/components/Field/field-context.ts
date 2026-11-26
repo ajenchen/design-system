@@ -1,12 +1,19 @@
 import * as React from 'react'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from './field-types'
 import { EMPTY_DISPLAY } from './field-wrapper'
+// 型別只 import 不執行(field-count.tsx 執行期 import 本檔;type-only 不成循環)
+import type { FieldCountValue } from './field-count'
 
 // ── Types ──
 export type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth }
 export type FieldOrientation = 'vertical' | 'horizontal'
 export type FieldSize = 'sm' | 'md' | 'lg'
 export type FieldControlLayout = 'inline' | 'block'
+
+// Label / Description / Error / 字數計數的字體固定 text-body (14px)，不隨 field size 變。
+// 世界級共識：field size 只影響 input 高度，不影響表單佈局元素的 typography。
+// 2026-11-26 由 field.tsx 搬來(字數計數 field-count.tsx 是第二個讀者,同一個值只留一個住所)。
+export const FIELD_TEXT_CLASS = 'text-body'
 
 /**
  * Field surface(2026-05-12 codex Q2 verdict — Stream C 4-issues Cluster B fix):
@@ -53,6 +60,11 @@ export interface FieldContextValue {
    *  `../LinkInput/link-input.spec.md`「錯誤說明」)。畫法同 `<FieldError>`(位置、字級、顏色、`role="alert"`、id = `errorId`);
    *  使用端自己的 `<FieldError>` 有字時以使用端為準、不畫這行(一個欄位只有一行錯誤)。沒有 control 宣告時 Field 畫面不變。 */
   registerControlError?: (text: string | null) => void
+  /** 字數計數那一格的 id(Input / Textarea 開 `showCount` 時 `aria-describedby` 接它;field-controls.spec.md「字數計數」) */
+  countId: string
+  /** Control 把字數交給 Field,畫在說明那一行的右端(`null` = 收回;2026-11-26 C7,`./field-count.tsx`)。
+   *  沒有 control 宣告時 Field 畫面不變(說明照舊是欄裡的直接子元素)。 */
+  registerControlCount?: (count: FieldCountValue | null) => void
   orientation: FieldOrientation
   controlLayout: FieldControlLayout
   hasFieldWrapper: true

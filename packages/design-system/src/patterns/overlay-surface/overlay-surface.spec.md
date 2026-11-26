@@ -373,7 +373,7 @@ API,欄由 layout primitive 組)。DS 只 codify 組合鐵律(違規簽名由 co
 2. **divider = 右欄(`<aside>`)自持 `border-l border-divider`,貫穿 body 頂到底**——非獨立
    div、非只切半高。
 3. **欄底 footer(如 comment composer)釘在所屬欄內**(欄內 `SurfaceFooter` chrome),
-   非 dialog 全寬 footer——對齊 Atlassian 官方兩欄範例把 ModalFooter 巢狀進左欄([101-full-height-illustration.tsx#L88-L106](https://github.com/pioug/atlassian-frontend-mirror/blob/cee82aa5ac9c07849d00ae757b15b07214cae59b/design-system/modal-dialog/examples/101-full-height-illustration.tsx#L88-L106))。
+   非 dialog 全寬 footer——對齊 Atlassian 官方兩欄範例把 ModalFooter 巢狀進左欄([101-full-height-illustration.tsx#L88-L106](https://github.com/pioug/atlassian-frontend-mirror/blob/cee82aa5ac9c07849d00ae757b15b07214cae59b/design-system/modal-dialog/examples/101-full-height-illustration.tsx#L88-L106))。留言框本身**常駐在原地**:DS 沒有「收起的留言框、點了才展開成編輯器」這種設計,留言 / 回覆輸入框就是一直顯示在原地的輸入框 + 送出鈕,不論放在對話框欄底、側欄或頁面(範例 `../../components/Dialog/dialog.stories.tsx` ExtraLargeTwoColumn 的留言框)。出處:user 2026-11-26 第五輪決策卡 D1 留言(逐字,問句):「我們沒有收起的設計，那不是應該就是一個常駐在原地的輸入框嗎？」;協調者判讀為不做收合(問句的判讀 = AI)。
 4. **header 維持全寬**,分欄從 body 才開始。
 
 **Archetype**(照抄結構,禁憑記憶手刻):WM `WorkItemDetailDialog.tsx`(產品實證,2026-07-08

@@ -13,7 +13,7 @@
 //   - scripts/{create-app,setup-netlify-access,check-plugin-installed,lint-ds-internal-imports,deploy-url,sync-all,audit-consumer-a11y,verify-consumer-css-entry}.mjs(以 ALLOWLIST 常數為準)
 //   - .devcontainer/                       (Codespaces cloud-dev path)
 //   - .storybook/                          (from template/ds-product-template/.storybook,apps-only glob)
-//   - .github/{workflows,CODEOWNERS,dependabot.yml}
+//   - .github/{workflows,CODEOWNERS,dependabot.yml,pull_request_template.md}
 //   - .gitignore, .npmrc
 //   - netlify.toml                         (Storybook Netlify deploy + access headers)
 //   - README.md + common/provider instructions (consumer-facing; destinations derive from the

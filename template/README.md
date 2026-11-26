@@ -68,6 +68,7 @@ template/ds-product-template/
 ├── .github/
 │   ├── CODEOWNERS                        ← team review
 │   ├── dependabot.yml                    ← daily DS version bump PR
+│   ├── pull_request_template.md          ← PR 說明提醒(改到別人負責的 app:寫明動了哪個 app、為什麼)
 │   └── workflows/
 │       ├── audit.yml                     ← per-PR tsc + lint:imports + build + a11y CI
 │       └── sync-design-system.yml        ← DS release dispatch → exact sync-all → push automation branch(PR 由 release orchestrator 開)

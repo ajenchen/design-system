@@ -7,6 +7,7 @@ import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '
 import { fieldWrapperStyles, fieldWidthVariant, fieldWidthStyle, bareInputStyles, focusFieldInputFromChrome, FIELD_TEXT_ENTRY_CURSOR } from '@/design-system/components/Field/field-wrapper'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { useControllable } from '@/design-system/hooks/use-controllable'
+import { FieldDescriptionRow, useControlCharCount } from '@/design-system/components/Field/field-count'
 import { ItemInlineAction, ItemPrefix, type InlineActionConfig } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
@@ -66,6 +67,13 @@ export interface InputProps
    *   不要再用 `className="!w-[…]"` 硬蓋。
    */
   width?: FieldWidth
+  /**
+   * 顯示字數計數(預設 false)。上限用原生 `maxLength`:有上限顯示「12 / 100」、沒有只顯示「12」;
+   * 打到上限照原生規則擋住不能再打。計數畫在 Field 說明那一行的右端、沒有說明時那一行只有計數;
+   * 不在 Field 裡時畫在框下一行的右端。只在可輸入的框(編輯 / 唯讀 / 停用)顯示,純顯示與表格格不顯示。
+   * 規則住 `Field/field-controls.spec.md`「字數計數」(2026-11-26 C7)。
+   */
+  showCount?: boolean
 }
 
 // ── Component ───────────────────────────────────────────────────────────────
@@ -83,6 +91,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       endSlot,
       loading = false,
       width = 'fill',
+      showCount = false,
       className,
       disabled: disabledProp,
       readOnly,
@@ -159,6 +168,18 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       else if (ref) (ref as React.MutableRefObject<HTMLInputElement | null>).current = el
     }, [ref])
 
+    // 字數計數(Field/field-count.tsx;規則 field-controls.spec.md「字數計數」):只在有輸入元素的框顯示(純顯示 / 表格格不顯示)。
+    // 在 Field 裡交給 Field 畫在說明那一行右端;單獨用時下方自己畫一行。Hook 一律呼叫(Rules of Hooks),不顯示時 enabled=false。
+    const inputId = idProp ?? fieldCtx?.id
+    const charCount = useControlCharCount({
+      enabled: showCount && !showDisplaySpan && variant !== 'naked',
+      value: resolved,
+      maxLength: props.maxLength,
+      controlId: inputId,
+      disabled: resolvedMode === 'disabled',
+    })
+    const ariaDescribedBy = [ariaDescribedByProp ?? fieldCtx?.descriptionId, charCount.countId].filter(Boolean).join(' ') || undefined
+
     if (showDisplaySpan) {
       const spanMode = isView ? 'view' : 'readonly'
       return (
@@ -201,7 +222,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       )
     }
 
-    return (
+    const frame = (
       <div
         className={cn(
           fieldWrapperStyles({ mode: resolvedMode, variant: variant, size, error: resolvedError, width: hug ? undefined : fieldWidthVariant(width) }),
@@ -231,13 +252,14 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <input
           ref={setRef}
           type="text"
-          id={idProp ?? fieldCtx?.id}
+          // 開了計數又沒有 id(單獨用、使用端沒給)時,計數 hook 自動給一個(播報以 id 找輸入元素);其餘 = inputId
+          id={charCount.controlId}
           value={resolved}
           readOnly={resolvedMode === 'readonly'}
           disabled={resolvedMode === 'disabled'}
           aria-invalid={resolvedError || undefined}
           aria-required={fieldCtx?.required || undefined}
-          aria-describedby={ariaDescribedByProp ?? fieldCtx?.descriptionId}
+          aria-describedby={ariaDescribedBy}
           aria-errormessage={ariaErrorMessageProp ?? (resolvedError ? fieldCtx?.errorId : undefined)}
           className={cn(
             bareInputStyles,
@@ -261,6 +283,19 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         ) : endAction && isEditable ? (
           <ItemInlineAction action={endAction} size={size ?? 'md'} />
         ) : null}
+      </div>
+    )
+    // 沒開計數、或在 Field 裡(計數由 Field 畫):只有框,DOM 跟以前一樣
+    if (!charCount.standalone || !charCount.countId) return frame
+    // 單獨用:框 + 計數那一行包在同一層 `flex-col gap-1`(= Field 欄內的排法,框下 4px;同 link-input.tsx 單獨用的錯誤說明),
+    // 寬度跟框同一套:fill 撐滿 / 數字 = 固定寬 / hug 跟框一起縮到內容寬。這一層一律存在(開了計數就包),打字時框不重掛。
+    return (
+      <div
+        className={cn('flex flex-col gap-1 min-w-0', hug ? 'w-fit max-w-full' : typeof width === 'number' ? 'max-w-full' : 'w-full')}
+        style={fieldWidthStyle(width)}
+      >
+        {frame}
+        <FieldDescriptionRow count={charCount.standalone} countId={charCount.countId} />
       </div>
     )
   }

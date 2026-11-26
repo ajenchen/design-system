@@ -54,7 +54,7 @@ Field 和 Field Controls（Input / NumberInput / DatePicker / Select / Combobox 
 |---|---|---|
 | label | `<FieldLabel>` | 欄位名稱，handles required 星號、disabled 灰化、htmlFor 連結 |
 | control | 任何非 label/desc/error 的 child | 輸入元件本體（Input、Checkbox、Switch...） |
-| description | `<FieldDescription>` | 次要說明文字，fg-secondary |
+| description | `<FieldDescription>` | 次要說明文字，fg-secondary;控件(Input / Textarea `showCount`)的字數計數畫在**這一行的右端**,沒有說明時這一行只有計數(user 2026-11-26 第五輪決策卡 C7 點選「A:放在說明那一行的右端(「12 / 100」);沒有說明時那一行只有計數」;規則住 `./field-controls.spec.md`「字數計數」) |
 | error | `<FieldError>` | 錯誤訊息，error-text 色，`role="alert"`，無內容時不渲染 |
 
 子元件寫法採**扁平結構**（直接作為 Field children），Field 內部用 `displayName` 判別 slot 類型並自動組合。consumer 不需要包 wrapper。
@@ -78,7 +78,7 @@ Field 若需要次要 action（如「重設」「全選」「從範本帶入」�
 | FieldLabel（一般） | `text-body`（14px）/ `text-foreground`（neutral-9）;閱讀情境 `text-fg-secondary`(見「閱讀情境」) |
 | FieldLabel（disabled） | `text-body` / `text-fg-disabled`（neutral-6） |
 | FieldLabel 的 required `*` | `text-fg-muted`（neutral-7），**貼齊 label 文字無 gap**，disabled 時 `text-fg-disabled` |
-| FieldDescription（一般） | `text-body`（14px）/ `text-fg-secondary`（neutral-8） |
+| FieldDescription（一般） | `text-body`（14px）/ `text-fg-secondary`（neutral-8）;字數計數（同一行的右端）同字級同色 + `tabular-nums`、說明 ↔ 計數 `gap-x-3`（`./field-controls.spec.md`「字數計數」） |
 | FieldDescription（disabled） | `text-body` / `text-fg-disabled` |
 | FieldError | `text-body`（14px）/ `text-error-text` / `role="alert"` |
 | Field 內部 gap（vertical） | `gap-1`（4px） |
@@ -222,7 +222,7 @@ Field 透過 Context 暴露以下狀態給子元件（Primitive 可以透過 `us
 | `size` | Control 自動同步尺寸（sm / md / lg） |
 | `orientation` | FieldLabel 的垂直對齊策略（horizontal 模式套用 padding-top 公式） |
 | `hasFieldWrapper` | Primitive 讀到此旗標時應忽略自己的 label / description prop，由 FieldLabel / FieldDescription 接管 |
-| `registerControlError` | Control 把**自己驗出來的**錯誤說明交給 Field 的錯誤區畫(畫法同 `<FieldError>`);使用端的 `<FieldError>` 有字時以使用端為準、只出一行。2026-11-22 起,目前只有 LinkInput 用(`../LinkInput/link-input.spec.md`「錯誤說明」);沒有 control 宣告時 Field 畫面不變 |
+| `registerControlError` | Control 把**自己驗出來的**錯誤說明交給 Field 的錯誤區畫(畫法同 `<FieldError>`);使用端的 `<FieldError>` 有字時以使用端為準、只出一行。2026-11-22 起,目前只有 LinkInput 用(`../LinkInput/link-input.spec.md`「錯誤說明」);沒有 control 宣告時 Field 畫面不變。`registerControlCount` / `countId` 同一種做法:Input / Textarea 開 `showCount` 時把字數交給 Field 畫在說明那一行的右端,`countId` = 計數那一格的 id(2026-11-26,`./field-controls.spec.md`「字數計數」) |
 
 ### Control 偏好尺寸（`fieldPreferredSize`）SSOT
 
@@ -269,10 +269,10 @@ Field 未收到顯式 `size` 時，依序取 **顯式 prop → control 宣告的
 
 label 文字後可帶 info icon(ℹ)hover 出 tooltip 補充說明:`<FieldLabel info="說明文字">`。
 
-- **與 label 間距 `gap-1`(4px)**、InfoIcon **16px 固定**、色 `fg-muted` hover `fg-secondary`(`field.tsx:490-506`)
-- **游標一般箭頭**(`cursor-default`,`field.tsx:499`):ⓘ 點下去不做事(Radix Tooltip 點擊只會收起說明),手形會讓人以為點了有作用。全域 `base.css` 讓所有 `<button>` 預設手形,所以要明寫 `cursor-default`,只刪 `cursor-pointer` 蓋不掉。〔2026-09-26 由手形改箭頭;user 條件式同意「I 可以從手形改掉，若改掉更合理的話」,AI 研究後提出、user 選「同意,照清單寫入」〕
-- **disabled 時整顆不渲染**(`field.tsx:490`)— info 是滑過／聚焦才浮出的補充說明,非類型身份 indicator,non-editable 隱藏
-- 設計定位:**給資訊的觸發處**(`ds-canonical/references/hit-area-canonical.md` 三-1),**不是**行內動作 —— 只借行內動作「顏色退後、滑過深一階」的長相,不套 `inline-action.spec.md` 的「必須手形」(那條給清除、顯示密碼這類按下去會做事的鈕)。label 的主要互動是 input,info 是輔助
+- **與 label 間距 `gap-1`(4px)**、InfoIcon **16px 固定**、色 `fg-muted` hover `fg-secondary`(`field.tsx:498-514`)
+- **游標一般箭頭**(`cursor-default`,`field.tsx:507`):ⓘ 點下去不做事(Radix Tooltip 點擊只會收起說明),手形會讓人以為點了有作用。全域 `base.css` 讓所有 `<button>` 預設手形,所以要明寫 `cursor-default`,只刪 `cursor-pointer` 蓋不掉。〔2026-09-26 由手形改箭頭;user 條件式同意「I 可以從手形改掉，若改掉更合理的話」,AI 研究後提出、user 選「同意,照清單寫入」〕
+- **disabled 時整顆不渲染**(`field.tsx:498`)— info 是滑過／聚焦才浮出的補充說明,非類型身份 indicator,non-editable 隱藏
+- 設計定位:**給資訊的觸發處**(`ds-canonical/references/hit-area-canonical.md` 三-1),**不是**行內動作 —— 只借行內動作「顏色退後、滑過深一階」的長相,不套 `inline-action.spec.md` 的「必須手形」(那條給清除、顯示密碼這類按下去會做事的鈕)。label 的主要互動是 input,info 是輔助。**FieldLabel 以外要放 ⓘ**(設定列標題、區塊標題旁):**不另做公開的說明圖示元件**,在那裡既有的圖示槽位把圖示換成 info 圖示,掛 `Tooltip` 讓它滑過就出說明。前提:**觸發處必須是可聚焦的按鈕**(本段的 ⓘ 就是一顆 `<button type="button">`),不能只放一顆圖示 —— `../Tooltip/tooltip.spec.md`「A11y 預設」寫明「Tab — focus trigger 時顯示」、鍵盤完整可操作(無需滑鼠),走不到焦點的圖示用鍵盤永遠打不開說明;長相與游標照本段前三點與 hit-area-canonical 三-1(不上滑過底色、一般箭頭)【AI 推導:前提與長相兩句是 AI 依這兩處既有規則補上的】。出處:user 2026-11-26 第五輪決策卡 C8 留言(逐字,問句):「不用特別抽出來吧？可以放 icon的地方都有 slot, 然後想要放info的地方就把 icon變成info icon再使其hover會有 tooltip就可以了吧？」
 - 範例:`field.stories.tsx`「標籤旁的說明圖示」
 
 ---
@@ -281,7 +281,7 @@ label 文字後可帶 info icon(ℹ)hover 出 tooltip 補充說明:`<FieldLabel 
 
 - `invalid` 透過 context 讓 Control 顯示 error 邊框、自動 `aria-invalid`
 - `errorId` 讓 Control 自動 `aria-errormessage`
-- `descriptionId` 讓 Control 自動 `aria-describedby`
+- `descriptionId` 讓 Control 自動 `aria-describedby`;開了字數計數時再接 `countId`(說明在前、計數在後;`./field-controls.spec.md`「字數計數」)
 - `<FieldError>` 自帶 `role="alert"` 並有 id = `errorId`
 - 無 children 的 `<FieldError>` 不渲染，不佔位
 - 控件自己驗出來的錯誤(目前只有 LinkInput 的網址格式)經 `registerControlError` 由 Field 畫在同一個錯誤區、同一個 `errorId`;使用端的 `<FieldError>` 有字時只畫使用端那行(一個欄位只有一行錯誤)

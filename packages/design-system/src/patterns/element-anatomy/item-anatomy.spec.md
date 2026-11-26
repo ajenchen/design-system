@@ -87,7 +87,7 @@
 | **Ant Design** | `List.Item` + `List.Item.Meta` | avatar / title / description / actions |
 | **GitHub Primer** | `ActionList.Item`(+ `LeadingVisual` / `TrailingVisual` / `Description`) | leadingVisual / trailingVisual / description |
 
-**共識**:每家 DS 都 ship list item primitive + slot API,禁止 consumer 自刻 — 自刻 = 跨產品視覺語言斷裂。
+**共識**:每家 DS 都 ship list item primitive + slot API,禁止 consumer 自刻 — 自刻 = 跨產品視覺語言斷裂。本 DS 的閱讀式列(Family 2)由公開的 slot 零件 + 本檔推導規則提供(下方「判斷流程」),照這些組出來的列不算自刻。
 
 ### 判斷流程(content 類型 → primitive 選擇)
 
@@ -100,11 +100,11 @@
 │   │   → <MenuItem>(Family 1 scanning,SSOT) + slot components
 │   │
 │   ├─ 閱讀式(頁面上、overlay body 內、avatar+title+desc)?
-│   │   → Family 2(reading) — 目前沒有單一 <ListItem> primitive,
-│   │     先 compose:使用 slot components(<ItemIcon> / <ItemAvatar> /
-│   │     <ItemLabel> / <ItemSuffix> / <ItemInlineAction>)照 Family 2
-│   │     結構 + tokens 組裝;或直接消費既有 Family 2 consumer
-│   │     (FileItem rich / SelectionItem / Notice 的 anatomy)
+│   │   → Family 2(reading)— 不另做單一 <ListItem> 元件(成員清單、通訊錄也一樣),用 slot
+│   │     components(<ItemIcon> / <ItemAvatar> / <ItemLabel> / <ItemSuffix> / <ItemInlineAction>)
+│   │     照 Family 2 結構 + tokens 組;整列可點時照下方「整列可點時,誰當那顆控件」推;或直接消費既有
+│   │     Family 2 consumer(FileItem rich / SelectionItem / Notice 的 anatomy)。user 2026-11-26 第五輪決策卡
+│   │     C32 留言(逐字,問句):「不是都可以正確推導出來嗎？可以正確無漂移的推導出來或是複用就可以了吧」
 │   │
 │   └─ Key-Value 配對(Label: Value 形式的屬性展示 / metadata 列)?
 │       → <DescriptionList> + <DescriptionItem>(horizontal / vertical)
@@ -1001,7 +1001,7 @@ Primitive 直接封裝 scanning / reading 兩種 typography:
 | prefix ↔ content gap | 8px (`gap-2`) | 控件與 label 的標準間距 |
 | 閱讀模式 | 閱讀模式 | 表單內仔細閱讀 |
 
-### ListItem（頁面列表，未來元件）
+### 頁面列表（閱讀式列，以 slot 零件組）
 
 | 屬性 | 值 | 原因 |
 |---|---|---|

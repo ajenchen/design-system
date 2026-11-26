@@ -41,6 +41,13 @@ sed -i '' 's/@ajenchen/@<your-github-username>/g' .github/CODEOWNERS
 /apps/order-dashboard/ @wendy @teammate2
 ```
 
+### 改到別人負責的 app:提醒與通知,不強制核准
+
+- **不強制**:合併只看 `Verify consumer` 綠燈與 PR 對話串都已解決;不設「必須那個 app 的負責人核准才能合併」的規則(ruleset 核准數 0、不要求 Code Owner 核准)。
+- **通知管道 = CODEOWNERS**:PR 改到 `apps/<別人的 app>/` 時,GitHub 依上面的 per-app owner 自動把負責人加進審查者並通知他。
+- **提醒改的人**:開 PR 時 GitHub 會自動帶入 `.github/pull_request_template.md`,照它寫明動了哪個 app、為什麼,讓負責人收到通知時看得懂。
+- 依據:user 2026-11-26 第五輪決策卡 B5 留言(逐字):「先建議和提醒想要更改的人就好，給想要更改的人有通知的管道，不要強制限制」
+
 ## 多人協作的私有 repo:協作者的預覽建置
 
 產品 repo 是**私有**、又有 Netlify 團隊以外的人推 branch / 開 PR 時,先讀這段。要用哪一種放行做法、付不付費,是 **Netlify 帳號擁有者(Team Owner)的決定**;這段只列限制、做法與各自的費用和風險,不替你選。以下事實 2026-11-26 對照 Netlify 官方文件(每條附來源),方案與價格以官方頁面為準。
