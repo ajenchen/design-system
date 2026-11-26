@@ -333,11 +333,13 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 - `calendar.spec.md`
 - `density.spec.md`
 - `dialog.spec.md`
+- `elevation.spec.md`
 - `file-viewer.spec.md`
 - `item-anatomy.spec.md`
 - `layoutSpace.spec.md`
 - `overlay-surface.spec.md`
 - `popover.spec.md`
+- `radius.spec.md`
 - `sheet.spec.md`
 - `sidebar.spec.md`
 - `tabs.spec.md`

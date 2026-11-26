@@ -287,7 +287,7 @@ export const DisabledDates: Story = {
   name: '不可選日期:門市維修預約',
   parameters: { docs: { description: { story: '週末與 12/25 不開放預約:這些日子在日曆上不可選(灰底圓圈 + 淺灰字、點不動、鍵盤跳過);直接打字輸入不開放的日期,欄位標成錯誤、保留打的字讓使用者修。' } } },
   render: () => (
-    // @layout-space-magic-ok: 展開快照在欄位下方保留 420px 畫布高度,讓開著的月曆落在 story 畫布內(畫布留白,不是元素間距)—— 與「需確認:合約生效日確認」同一個畫布留白值,規格沒寫這個值、不由 AI 補進規格(F-S7)
+    // @layout-space-magic-ok: 展開快照在欄位下方保留 420px 畫布高度,讓開著的月曆落在 story 畫布內(畫布留白,不是元素間距)—— 與「需確認:合約生效日確認」同一個畫布留白值,規格沒寫這個值、不由 AI 補進規格(F-S7;2026-11-26 新增,C33 範例)
     <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-xs pb-[420px]">
       <p className="text-caption text-fg-muted">預約到店維修(週末與 12/25 不開放)</p>
       <LiveDatePicker typeable value="2026-12-08" disabledDate={isStoreClosed} aria-label="預約日期" />

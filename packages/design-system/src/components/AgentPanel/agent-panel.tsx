@@ -62,7 +62,6 @@ const StopFilled = createLucideIcon('StopFilled', [
 ])
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonDivider } from '@/design-system/components/Button/button-group'
-import { useI18n } from '@/design-system/lib/i18n/i18n-context'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { fieldChromeStyles, keepFieldFocusBeforeUnmount, pressFieldClear } from '@/design-system/components/Field/field-wrapper'

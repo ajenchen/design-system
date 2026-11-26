@@ -163,6 +163,7 @@ elevation-100 < elevation-200，數字越大浮起越高。`*-hover` 兩枚為�
 - `hover-card.spec.md`
 - `motion.spec.md`
 - `overlay-surface.spec.md`
+- `radius.spec.md`
 - `slider.spec.md`
 - `toast.spec.md`
 - `tooltip.spec.md`
