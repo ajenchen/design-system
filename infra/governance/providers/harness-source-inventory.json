@@ -68,10 +68,14 @@
         "path": "packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs",
         "sha256": "e1b26967fad39d9b7dbd4aac8eb2a568eca910cd6857e6fd1ffd4b1b99f0157b",
         "consumers": [
+          "packages/design-system/ds-canonical/hooks/check_consumer_code_quality.sh",
           "packages/design-system/ds-canonical/hooks/check_item_list_gap.sh",
+          "packages/design-system/ds-canonical/hooks/check_story_invariants.sh",
           "packages/design-system/ds-canonical/hooks/lib/_app_shell_primary_header_consistency.sh",
           "packages/design-system/ds-canonical/hooks/lib/_chrome_header_handcraft.sh",
-          "packages/design-system/ds-canonical/hooks/lib/_header_with_tabs_border.sh"
+          "packages/design-system/ds-canonical/hooks/lib/_header_with_tabs_border.sh",
+          "packages/design-system/ds-canonical/hooks/lib/_overlay_handcraft.sh",
+          "packages/design-system/ds-canonical/hooks/tests/test_check_story_invariants.sh"
         ]
       },
       {
