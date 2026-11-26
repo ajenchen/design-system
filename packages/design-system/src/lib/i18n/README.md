@@ -45,6 +45,10 @@ const { t } = useI18n()
 2. **Context labels**(`labels[componentKey][labelKey]`)
 3. **DS default**(fallback 參數,i18n-allow 的 CJK)
 
+## 巢狀 provider 會合併(2026-11-27)
+
+`I18nProvider` 包在另一個 `I18nProvider` 裡時,內層讀外層的 labels,**以 componentKey 為單位合併**:內層沒寫的 componentKey 照外層;同一個 componentKey 兩層都寫時以內層那一組為準(整組取代,不逐字合併 —— 要沿用外層同一組的其他字,內層那一組要寫齊)。例:app root 包整份英文字表,某一區再包 `{ dialog: { close: 'Dismiss' } }`,那一區裡 Pagination、Sidebar 等元件照樣是英文,只有 Dialog 的 × 換掉。修前內層整份取代外層,那一區裡其他元件全部退回 DS 預設中文(workspace H 組 H23)。閘:`scripts/i18n-labels-override-invariant.mjs` 的 `I-nest-other-key` / `I-nest-same-key`。
+
 ## Migration status
 
 - **infrastructure**:✅ shipped(`i18n-context.tsx`);root 出口 ✅ 2026-10-27

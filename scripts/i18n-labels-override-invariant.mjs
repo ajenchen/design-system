@@ -13,6 +13,8 @@
  *             用 react-dom/server 量;要按過才出現的 4 個(上一題、三句錯誤訊息)在瀏覽器裡真的按:先包 I18nProvider,按「下一題」→ 量上一題鈕的字,
  *             按「送出」→ 量 role="alert" 錯誤訊息(複選沒勾 / 不預選單選沒選 / 選了「其他」沒打字),不包的那一份量預設中文。
  *             找按鈕只靠結構(區塊裡最後一顆 button = 主鈕、最後一個 radio =「其他」),不靠被驗的字 —— 突變把字弄回中文時照樣按得到、紅在格上。
+ *         (I) I18nProvider 巢狀合併(2026-11-27,workspace H 組 H23;README「巢狀 provider 會合併」):內層只寫別的 componentKey → 外層的字照樣換上;
+ *             同一個 componentKey 兩層都寫 → 內層那一組為準(整組)。修前內層整份取代 → I-nest-other-key 退回預設中文(`--root=` 修前樹實跑紅)。
  *   紅: 任一格不符 → 逐格點名 exit 1。`--selftest` 在 DS 原始碼上各造一個根因突變(含修前寫法:Pagination 兩段字寫死、DataTable 不轉發、
  *       AgentThinking 標題寫死、AgentDecisionCard 不讀 I18nProvider),每個突變必須**剛好**紅它負責的那幾格,而且每一條契約格都被某個突變弄紅過。
  *   綠: 現行原始碼每格都量到且符合。打包 / 執行失敗、任一場景渲染出空字串、突變錨點對不到、瀏覽器裡按不到 / 等不到錯誤訊息 = 儀器失效
@@ -40,6 +42,7 @@ const SOURCE_ROOT = resolveSourceRoot()
 const PAGINATION = 'components/Pagination/pagination.tsx'
 const DATA_TABLE = 'components/DataTable/data-table.tsx'
 const AGENT = 'components/AgentPanel/agent-panel.tsx'
+const I18N_CTX = 'lib/i18n/i18n-context.tsx'
 
 /** Pagination 的自訂字(彼此不同、與預設不同;range 帶三個數字 → 參數順序錯一個就量得到) */
 const P_LABELS_SRC = '{ range: (s: number, e: number, t: number) => `Showing ${s}–${e} of ${t}`, pageSizeOption: (n: number) => `${n} per page` }'
@@ -47,6 +50,8 @@ const P_TOTAL = 128
 const DT_TOTAL = 45
 const T_PROP = { titleThinking: 'Thinking', titleDone: 'Thought process' }
 const T_I18N = { titleThinking: 'Working it out', titleDone: 'How I got here' }
+/** 巢狀(H23)內層同一個 componentKey 只換的那一個字 */
+const T_NEST_INNER = 'Reasoning'
 /**
  * 決策卡 13 個鍵全換(彼此不同、與預設不同)。左邊是 `AgentDecisionCardLabels` 的鍵(判定用),I18nProvider 裡的鍵是公開契約
  * `decision` + 首字大寫,下面 D_I18N_KEYS 逐字寫出來(不從元件匯入換算函式 —— 鍵名本身就是被驗的東西)。
@@ -123,6 +128,9 @@ const SCENES: Record<string, React.ReactElement> = {
   'thinking-i18n-on': <I18nProvider labels={T_I18N}><AgentThinking thinking /></I18nProvider>,
   'thinking-i18n-off': <I18nProvider labels={T_I18N}><AgentThinking /></I18nProvider>,
   'thinking-both-on': <I18nProvider labels={T_I18N}><AgentThinking thinking labels={T_PROP} /></I18nProvider>,
+  // 巢狀(H23):外層整份字表、內層只換另一個 componentKey / 同一個 componentKey 的一個字
+  'thinking-nest-other-key': <I18nProvider labels={T_I18N}><I18nProvider labels={{ pagination: { previous: 'Previous' } }}><AgentThinking thinking /></I18nProvider></I18nProvider>,
+  'thinking-nest-same-key': <I18nProvider labels={T_I18N}><I18nProvider labels={{ 'agent-panel': { titleThinking: '${T_NEST_INNER}' } }}><AgentThinking thinking /><AgentThinking /></I18nProvider></I18nProvider>,
   'decision-default-steps': <AgentDecisionCard questions={Q_STEPS} onSubmit={noop} onCancel={noop} />,
   'decision-default-single': <AgentDecisionCard questions={Q_SINGLE} onSubmit={noop} onCancel={noop} />,
   'decision-i18n-steps': <I18nProvider labels={D_I18N}><AgentDecisionCard questions={Q_STEPS} onSubmit={noop} onCancel={noop} /></I18nProvider>,
@@ -265,6 +273,12 @@ const ROWS = [
   ['T-i18n-done', 'I18nProvider agent-panel.titleDone → 完成後的標題', (o) => has(o['thinking-i18n-off'], T_I18N.titleDone)],
   ['T-prop-over-i18n', 'AgentThinking 兩層都給 → labels prop 勝過 I18nProvider', (o) => has(o['thinking-both-on'], T_PROP.titleThinking) && !has(o['thinking-both-on'], T_I18N.titleThinking)],
   ['T-defaults', 'AgentThinking 都不給 → 預設「思考中」/「思考過程」', (o) => has(o['thinking-default-on'], '思考中') && has(o['thinking-default-off'], '思考過程')],
+  // ── (I) I18nProvider 巢狀合併(H23;lib/i18n/README.md「巢狀 provider 會合併」)──
+  ['I-nest-other-key', 'I18nProvider 巢狀:內層只寫別的 componentKey → 外層的 agent-panel 字照樣換上(不退回預設中文)', (o) => has(o['thinking-nest-other-key'], T_I18N.titleThinking) && !has(o['thinking-nest-other-key'], '思考中')],
+  ['I-nest-same-key', 'I18nProvider 巢狀:同一個 componentKey 兩層都寫 → 內層那一組為準(整組:內層換的字換上、內層沒寫的 titleDone 回 DS 預設,不沿用外層)', (o) => {
+    const s = o['thinking-nest-same-key']
+    return has(s, T_NEST_INNER) && !has(s, T_I18N.titleThinking) && has(s, '思考過程') && !has(s, T_I18N.titleDone)
+  }],
   // ── (D) AgentDecisionCard:I18nProvider 那一層(第一次渲染看得到的 9 個鍵)──
   ['D-i18n-cancel', 'I18nProvider agent-panel.decisionCancel → 標題列 × 的讀屏名稱', (o) => hasAttr(o['decision-i18n-steps'], 'aria-label', D_I18N.cancel)],
   ['D-i18n-next', 'I18nProvider agent-panel.decisionNext → footer 推進鈕', (o) => has(o['decision-i18n-steps'], D_I18N.next)],
@@ -306,10 +320,10 @@ const MUTANTS = [
     expectRed: ['DT-range', 'DT-size', 'DT-prev', 'DT-next'],
     apply: (src) => replaceOnce(src, /\s+labels=\{paginationOpts\?\.labels\}\s+prevAriaLabel=\{paginationOpts\?\.prevAriaLabel\}\s+nextAriaLabel=\{paginationOpts\?\.nextAriaLabel\}/, '') },
   { id: 'thinking-hardcoded', what: 'AgentThinking 標題寫死(= 2026-11-26 前)', file: AGENT,
-    expectRed: ['T-prop-thinking', 'T-prop-done', 'T-i18n-thinking', 'T-i18n-done', 'T-prop-over-i18n'],
+    expectRed: ['T-prop-thinking', 'T-prop-done', 'T-i18n-thinking', 'T-i18n-done', 'T-prop-over-i18n', 'I-nest-other-key', 'I-nest-same-key'],
     apply: (src) => replaceOnce(src, /\{thinking \? titleThinking : titleDone\}/, "{thinking ? '思考中' : '思考過程'}") },
   { id: 'thinking-no-i18n', what: 'AgentThinking 只接 labels prop、不讀 I18nProvider', file: AGENT,
-    expectRed: ['T-i18n-thinking', 'T-i18n-done'],
+    expectRed: ['T-i18n-thinking', 'T-i18n-done', 'I-nest-other-key', 'I-nest-same-key'],
     apply: (src) => replaceOnce(replaceOnce(src, /t\('agent-panel', 'titleThinking', DEFAULT_THINKING_LABELS\.titleThinking\)/, 'DEFAULT_THINKING_LABELS.titleThinking'),
       /t\('agent-panel', 'titleDone', DEFAULT_THINKING_LABELS\.titleDone\)/, 'DEFAULT_THINKING_LABELS.titleDone') },
   { id: 'thinking-i18n-wins', what: 'AgentThinking 先後顛倒:I18nProvider 勝過 labels prop', file: AGENT,
@@ -317,8 +331,14 @@ const MUTANTS = [
     apply: (src) => replaceOnce(src, /labelsOverride\?\.titleThinking \?\? t\('agent-panel', 'titleThinking', DEFAULT_THINKING_LABELS\.titleThinking\)/,
       "t('agent-panel', 'titleThinking', labelsOverride?.titleThinking ?? DEFAULT_THINKING_LABELS.titleThinking)") },
   { id: 'thinking-swapped', what: 'AgentThinking 兩種狀態的字對調', file: AGENT,
-    expectRed: ['T-prop-thinking', 'T-prop-done', 'T-i18n-thinking', 'T-i18n-done', 'T-prop-over-i18n', 'T-defaults'],
+    expectRed: ['T-prop-thinking', 'T-prop-done', 'T-i18n-thinking', 'T-i18n-done', 'T-prop-over-i18n', 'T-defaults', 'I-nest-other-key'],
     apply: (src) => replaceOnce(src, /\{thinking \? titleThinking : titleDone\}/, '{thinking ? titleDone : titleThinking}') },
+  { id: 'i18n-no-merge', what: 'I18nProvider 不讀外層、內層整份取代(= 2026-11-27 前)', file: I18N_CTX,
+    expectRed: ['I-nest-other-key'],
+    apply: (src) => replaceOnce(src, /outer \? \{ \.\.\.outer, \.\.\.labels \} : labels/, 'labels') },
+  { id: 'i18n-outer-wins', what: 'I18nProvider 巢狀時先後顛倒:外層同一個 componentKey 勝過內層', file: I18N_CTX,
+    expectRed: ['I-nest-same-key'],
+    apply: (src) => replaceOnce(src, /outer \? \{ \.\.\.outer, \.\.\.labels \} : labels/, 'outer ? { ...labels, ...outer } : labels') },
   { id: 'decision-no-i18n', what: 'AgentDecisionCard 不讀 I18nProvider(= 2026-11-26 前只吃 labels prop)', file: AGENT,
     expectRed: ['D-i18n-cancel', 'D-i18n-next', 'D-i18n-submit', 'D-i18n-clear', 'D-i18n-other', 'D-i18n-other-placeholder', 'D-i18n-other-aria', 'D-i18n-recommended', 'D-i18n-optional', 'D-prop-over-i18n',
       'D-i18n-previous', 'D-i18n-error-multi', 'D-i18n-error-single', 'D-i18n-error-other'],
