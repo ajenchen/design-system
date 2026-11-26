@@ -22,8 +22,9 @@
  *   對照組(`--selftest`):(a) 判定表 —— 修前實測數字(垂直 18.2 / 2.2 / 0、水平 480 的 216–240 對 208)與每一項的壞形狀必紅、好形狀必綠;
  *         (b) 有建置時,在真的建置上注入六種破壞,各自讓指定那一項紅:拿掉截斷(步驟名照修前不准縮)→ 窄的連接線進圓;
  *         步驟名改回折行 → 窄的單行紅;tooltip 藏掉 → 窄的 tooltip 紅;最後一步照修前不准縮 → 長名字的「前面被擠成…」紅
- *         (本機字寬一次、字寬縮成約 8px 一次);最後一步撐滿 → 寬的「最後一步自然寬」紅;
- *         (c) 綠面:字寬縮成約 8px 時,修後的長名字場景必須全綠(只有破壞會紅,不是窄字型本身就紅)。
+ *         (本機字寬一次、字寬模擬到 8px 一次 —— 字距 = 8 − 這台機器實測的字寬,實測已 ≤ 8 就不套、照跑);
+ *         最後一步撐滿 → 寬的「最後一步自然寬」紅;
+ *         (c) 綠面:字寬模擬到 8px 時,修後的長名字場景必須全綠(只有破壞會紅,不是窄字型本身就紅)。
  *   長名字場景的寬度(2026-11-27,PR #174 CI 紅的根因):原本寫死視窗 592。CI 的 Linux 沒有 CJK 字型,中文每字約 8px(本機 14px),
  *         「最後一步照修前不准縮」時最後一步的自然寬只有 36 + 88 = 124,前面每步還剩 37px 給字 —— 沒被擠,對照組只拿到 premise、量具無效
  *         (M32 第四問「換一台機器 / 環境還會成立嗎」)。改成先在參考寬開一次、量出圓欄 + 縫、字級、最後一步的自然寬,
@@ -231,6 +232,11 @@ function selftestDerive() {
   // 最後一步不夠長(展示 story 原本的「完成」)→ 推不出寬度 = 儀器失效,不是通過
   if (!deriveLongLastWidth({ n: 5, gap: 12, chromeFront: 36 + 12 + MIN_LINE_PX, fontSize: 14, lastNatural: 36 + 28 }).infeasible) { console.error('✗ selftest:最後一步「完成」推不出區間,應 infeasible'); ok = false }
   if (!deriveLongLastWidth({ n: 5, gap: 12, chromeFront: NaN, fontSize: 14, lastNatural: 190 }).infeasible) { console.error('✗ selftest:量不到值應 infeasible'); ok = false }
+  // 字寬模擬(narrowGlyphCss):本機 14px → 字距 −6;CI 本來就 8px(或更窄)→ 不套。
+  // 對照:寫死 −6 套在 CI 的 8px 上 = 每字 2px,長名字 11 字 → 最後一步自然寬 36 + 22 = 58 → 推不出(CI 3eca5afd 的兩格儀器失效)
+  if (!/letter-spacing:-6\.00px/.test(narrowGlyphCss(14))) { console.error('✗ selftest:實測 14px 應注入字距 −6.00px,實得', narrowGlyphCss(14)); ok = false }
+  if (narrowGlyphCss(8) !== '' || narrowGlyphCss(7.5) !== '') { console.error('✗ selftest:實測 ≤ 8px 應不套字距'); ok = false }
+  if (!deriveLongLastWidth({ n: 5, gap: 12, chromeFront: 36 + 12 + MIN_LINE_PX, fontSize: 14, lastNatural: 36 + 11 * (8 - 6) }).infeasible) { console.error('✗ selftest:寫死 −6 套在 8px 上應重現推不出'); ok = false }
   return ok
 }
 
@@ -387,8 +393,30 @@ async function measureHorizontalScene(page, origin, name, sabotageCss = null) {
 
 const HORIZONTAL_SCENES = ['narrow', 'wide', 'long-last']
 
-// 字寬縮成約 8px(中文 14px 字 − 6px 字距),模擬 CI Linux 沒有 CJK 字型時的字寬(PR #174 log:購物車 24 / 長名字 88)
-const NARROW_GLYPH_CSS = 'ol[data-orientation="horizontal"] [data-steps-label] > *{letter-spacing:-6px!important}'
+// 模擬 CI Linux 沒有 CJK 字型時的字寬:目標每字 8px(PR #174 log:購物車 24 / 長名字 88)。
+// 字距 = 目標 − 這台機器實測的字寬(selftest 開跑先量 measureGlyphPx);實測已 ≤ 目標 → 不套(模擬即現況)。
+// 不寫死 −6:2026-11-27 寫死時在 CI(本來就 8px)變成每字約 2px,最後一步自然寬只剩 58,推不出寬度 → 兩格儀器失效(CI 3eca5afd)。
+export const TARGET_GLYPH_PX = 8
+/** 純函式:實測字寬 → 模擬目標字寬要注入的 CSS;實測 ≤ 目標回 ''(不套) */
+export function narrowGlyphCss(measuredPx) {
+  if (!(measuredPx > TARGET_GLYPH_PX)) return ''
+  return `ol[data-orientation="horizontal"] [data-steps-label] > *{letter-spacing:${(TARGET_GLYPH_PX - measuredPx).toFixed(2)}px!important}`
+}
+/** 量這台機器上步驟名中文字的平均字寬(寬版、沒被截斷的第一步「購物車」,Range 取次像素寬 ÷ 字數)。回 { px } 或 { instrument } */
+async function measureGlyphPx(page, origin) {
+  const opened = await openHorizontal(page, origin, WIDE_VW, null, false)
+  if (opened.instrument) return { instrument: opened.instrument }
+  const px = await page.evaluate(() => {
+    const host = document.querySelector('ol[data-orientation="horizontal"] > li[data-state] [data-steps-label]')
+    const text = host?.firstElementChild ?? host
+    const node = text?.firstChild
+    if (!node || node.nodeType !== Node.TEXT_NODE || !/^[一-鿿]+$/.test(node.nodeValue)) return NaN
+    const range = document.createRange()
+    range.selectNodeContents(node)
+    return range.getBoundingClientRect().width / node.nodeValue.length
+  })
+  return Number.isFinite(px) && px > 0 ? { px: Math.round(px * 100) / 100 } : { instrument: `量不到步驟名的中文字寬(${px})` }
+}
 const NO_SHRINK_LAST_CSS = 'ol[data-orientation="horizontal"] > li:last-child{flex:none!important;max-width:none!important}'
 
 // 真建置上的六種破壞(selftest (b)):各自必須讓指定那一項紅
@@ -398,12 +426,13 @@ const LIVE_SABOTAGE = [
   ['步驟名改回折行', 'narrow', '[data-steps-label] > *{white-space:normal!important}', 'single-line'],
   ['tooltip 藏掉', 'narrow', '[data-radix-popper-content-wrapper]{display:none!important}', 'tooltip'],
   ['最後一步照修前不准縮', 'long-last', NO_SHRINK_LAST_CSS, 'long-last-squeezed'],
-  ['最後一步照修前不准縮(字寬約 8px,模擬 CI Linux)', 'long-last', NARROW_GLYPH_CSS + NO_SHRINK_LAST_CSS, 'long-last-squeezed'],
+  // css 是函式的格:以實測字寬組 CSS(見 narrowGlyphCss)
+  ['最後一步照修前不准縮(字寬約 8px,模擬 CI Linux)', 'long-last', (glyphPx) => narrowGlyphCss(glyphPx) + NO_SHRINK_LAST_CSS, 'long-last-squeezed'],
   ['最後一步撐滿(拿掉自然寬上限)', 'wide', 'ol[data-orientation="horizontal"] > li:last-child{max-width:none!important}', 'wide-last-natural'],
 ]
 // 綠面(selftest (c)):只換字寬、不破壞,修後形狀必須全綠 —— 證明上一組的紅來自破壞,不是窄字型本身
 const LIVE_GREEN = [
-  ['字寬約 8px(模擬 CI Linux)的修後長名字場景', 'long-last', NARROW_GLYPH_CSS],
+  ['字寬約 8px(模擬 CI Linux)的修後長名字場景', 'long-last', (glyphPx) => narrowGlyphCss(glyphPx)],
 ]
 
 async function withBrowser(fn) {
@@ -425,8 +454,15 @@ if (isMain) {
       // (b) 真建置上的破壞:沒有建置 → requireFreshStorybookBuild 印 MISSING-BUILD / STALE-BUILD(meta-test 認得的略過標記)
       const live = await withBrowser(async (page, origin) => {
         const problems = []
+        const glyph = await measureGlyphPx(page, origin)
+        if (glyph.instrument) return [`${INSTRUMENT_FAIL_MARKER}(量字寬):${glyph.instrument}`]
+        const glyphNote = narrowGlyphCss(glyph.px)
+          ? `實測字寬 ${glyph.px}px → 字距 ${(TARGET_GLYPH_PX - glyph.px).toFixed(2)}px 模擬到 ${TARGET_GLYPH_PX}px`
+          : `本機字寬 ${glyph.px}px 已 ≤ ${TARGET_GLYPH_PX},模擬即現況(不套字距)`
+        console.log(`  字寬模擬:${glyphNote}`)
+        const cssOf = (css) => { const s = typeof css === 'function' ? css(glyph.px) : css; return s || null }
         for (const [name, sceneName, css, kind] of LIVE_SABOTAGE) {
-          const r = await measureHorizontalScene(page, origin, sceneName, css)
+          const r = await measureHorizontalScene(page, origin, sceneName, cssOf(css))
           if (r.instrument) { problems.push(`${INSTRUMENT_FAIL_MARKER}(對照組「${name}」):${r.instrument}`); continue }
           const fails = judgeHorizontal(r.scene)
           const hit = fails.filter((x) => x.kind === kind)
@@ -434,7 +470,7 @@ if (isMain) {
           else problems.push(`對照組「${name}」沒有讓 ${kind} 紅 —— 量具無效;實得 ${fails.map((x) => x.kind).join(', ') || '全綠'}`)
         }
         for (const [name, sceneName, css] of LIVE_GREEN) {
-          const r = await measureHorizontalScene(page, origin, sceneName, css)
+          const r = await measureHorizontalScene(page, origin, sceneName, cssOf(css))
           if (r.instrument) { problems.push(`${INSTRUMENT_FAIL_MARKER}(綠面「${name}」):${r.instrument}`); continue }
           const fails = judgeHorizontal(r.scene)
           const at = r.scene.derived ? `容器 ${r.scene.derived.container}(區間 [${r.scene.derived.lower}, ${r.scene.derived.upper}))` : ''
