@@ -83,6 +83,8 @@
  *           DT-name 浮層名稱 = 事件標題本身;DT-head 標題列 = 2 × tight + sm 欄位高、× 與標題同中線;
  *           DT-side / DT-side-right / DT-side-flip 子選單擺法【DT-DIRECTION(定)】先開右、放不下翻左:左半邊的事件往右開、隔 8、頂端對齊;
  *           右半邊(最右一欄 7/25)但右側放得下(情境:Calendar 根元素收窄,右邊留出空位)也往右開;同一筆在原版面右側放不下 → 翻到左側、隔 8;
+ *           DT-time-fit 時間欄進編輯 → DatePicker.Range showTime 兩端的字都不被裁(scrollWidth ≤ clientWidth;詳情寬 CALENDAR_EVENT_DETAIL_WIDTH_PX 唯一的目的,
+ *           寬是推算的【AI 推導】,訊息印每端要的寬 / 分到的寬 = 實量);
  *           DT-vertical 欄位垂直排(標籤在上);DT-label 標籤 = fg-secondary(閱讀情境);DT-gap 標頭 → 第一欄 = tight、最後一欄 → 底 = tight(hug);
  *           DT-mark 打開詳情的那一段帶 data-detail-open;DT-esc Esc 關詳情、焦點回那一段;DT-outside 減少動態下改地點、點外面 = 先提交再關(再打開看得到新值);
  *           DT-commit 改標題 → 月格跟著換;DT-blank 清空提交 = 還原原值;
@@ -165,7 +167,7 @@ const MORE_DAY = '2026-07-22'
 const MORE_DAY_ORDER = ['大會週', '場地布置(場館排定)', '來賓報到', '開幕致詞', '主題演講:下一代工作流程', '產品新功能展示', '午餐交流', '分組 A:自動化實戰', '分組 B:資料治理', '客戶座談', '合作夥伴論壇', '閉幕', '晚宴']
 
 // DT-side-right / DT-side-flip(事件詳情開向,子選單擺法):gap / edge = popover.spec.md「觸發距離 canonical」(sideOffset)與「Viewport 邊距 canonical」(collisionPadding)(不 import overlay-geometry.ts);
-// roomWidth = 情境「月曆右邊留出空位」時 Calendar 根元素的寬 —— 1280 寬的視窗裡,最右一欄的事件右側留得下 352 寬的詳情(前提在量測時現算,不成立 = 儀器失效)
+// roomWidth = 情境「月曆右邊留出空位」時 Calendar 根元素的寬 —— 1280 寬的視窗裡,最右一欄的事件右側留得下詳情(寬 = calendar-geometry.ts CALENDAR_EVENT_DETAIL_WIDTH_PX;前提在量測時現算,不成立 = 儀器失效)
 const DETAIL_SIDE = { gap: 8, edge: 8, roomWidth: 720, eventId: 'd3' }
 
 // 規格值(calendar.spec.md「間距」與 header-canonical.spec.md:68);1 號的字是規格寫的 zh-TW 例子
@@ -1852,6 +1854,34 @@ const BLOCKS = {
       if (sf && !(sf.col === sf.cols - 1 && !sf.fitsRight)) instrumentFails.push({ cell: `DT-side-flip${tag}`, detail: `情境沒成立:第 ${sf.col + 1} / ${sf.cols} 欄、右側${sf.fitsRight ? '放得下' : '放不下'}(要最右一欄且右側放不下)` })
       else if (sf) check(`DT-side-flip${tag}`, near(sf.tile.left - sf.detail.right, DETAIL_SIDE.gap) && sf.detail.left >= DETAIL_SIDE.edge - 0.5 && sf.topOk,
         `最右一欄右側放不下:事件左緣 − 詳情右緣 ${fmtPx(sf.tile.left - sf.detail.right)}(規格 8,翻到左側)、詳情左緣 ${fmtPx(sf.detail.left)}(≥ 8)、詳情上緣 ${fmtPx(sf.detail.top)} / 事件上緣 ${fmtPx(sf.tile.top)}`)
+      // DT-time-fit(詳情寬 calendar-geometry.ts CALENDAR_EVENT_DETAIL_WIDTH_PX 唯一的目的;calendar.spec.md「事件詳情浮層」寬):
+      // 「設計審查」的時間欄進編輯 → DatePicker.Range showTime 兩端的字都不被裁。判準與截斷提示同一個(hooks/use-truncated.ts 預設:scrollWidth > clientWidth 才算被裁)。
+      // DATE-TIME(定)2026-11-26 後預設 zh-TW 兩端是「2026/07/05 上午10:00」,寬是照數字推算的【AI 推導】—— 訊息印詳情寬與每端要的寬 / 分到的寬,CI 讀回的就是實量。
+      // 對照組(timeFit)把詳情壓回 Popover 預設 288(2026-11-26 實量:288 時連 24 小時的「2026/07/05 10:00」都被裁)→ 這一格紅。
+      if (!mutate || mutate.timeFit) {
+        const tile = '[data-calendar-tile][data-calendar-event-id="d1"]'
+        const field = `${detailSel} [data-calendar-detail-field="time"]`
+        const ENDS = `${field} button[aria-haspopup="dialog"] > span`
+        await page.click(tile)
+        const reopened = await waitSel(detailSel, 'open')
+        if (reopened) await page.click(`${field} button`).catch(() => {})
+        const editing = reopened && await page.waitForFunction((s) => document.querySelectorAll(s).length === 2, ENDS, { timeout: 5000 }).then(() => true, () => false)
+        if (editing) await frames(3)
+        const fit = editing ? await page.evaluate(({ s, d }) => ({
+          width: document.querySelector(d)?.getBoundingClientRect().width ?? NaN,
+          ends: [...document.querySelectorAll(s)].map((el) => ({ text: el.textContent ?? '', need: el.scrollWidth, have: el.clientWidth })),
+        }), { s: ENDS, d: detailSel }) : null
+        if (!fit) instrumentFails.push({ cell: `DT-time-fit${tag}`, detail: `詳情${reopened ? '打開了,但時間欄沒進編輯(找不到 DatePicker.Range 的兩端)' : '沒打開'} —— 量不到` })
+        else if (fit.ends.some((e) => !e.text.trim())) instrumentFails.push({ cell: `DT-time-fit${tag}`, detail: `編輯中兩端有一端沒有字(${fit.ends.map((e) => `「${e.text}」`).join(' / ')})—— 量不到截斷` })
+        else check(`DT-time-fit${tag}`, fit.ends.every((e) => e.need <= e.have),
+          `詳情寬 ${fmtPx(fit.width)};編輯中兩端 ${fit.ends.map((e) => `「${e.text}」要 ${e.need} / 分到 ${e.have}`).join('、')}(規格:兩端都不被裁)`)
+        // 收:第一下 Esc 取消編輯(焦點回時間欄,同 DT-esc4-L2)、還開著才按第二下關詳情
+        if (reopened) {
+          await page.keyboard.press('Escape'); await frames(4)
+          if (await page.$(`${detailSel}[data-state="open"]`)) await page.keyboard.press('Escape')
+          if (!(await waitSel(detailSel, 'closed'))) { await page.keyboard.press('Escape'); await waitSel(detailSel, 'closed') }
+        }
+      }
       // DT-outside(一般密度):減少動態下,地點改到一半點頁面空白 = 先提交再關(calendar.spec.md「點外面」(1));再打開看得到新的地點。
       // 對照組(outsideAsEscape)改成按 Esc 取消編輯、再按 Esc 關 → 地點沒存 → 紅(證明這一格看得到「沒提交」)
       if (density === 'md' && (!mutate || mutate.outsideAsEscape)) {
@@ -2192,6 +2222,7 @@ const MUTANTS = [
       if (!detail || !tile) return
       detail.style.setProperty('translate', `${tile.getBoundingClientRect().right + gap - detail.getBoundingClientRect().left}px 0px`, 'important')
     } },
+  { name: '詳情寬壓回 Popover 預設 288(時間欄編輯中兩端被裁)', block: 'detail', expect: ['DT-time-fit@md', 'DT-time-fit@lg'], timeFit: true, css: '[data-calendar-event-detail] { width: 288px !important; }' },
   { name: '欄位改回水平排(標籤在左)', block: 'detail', expect: ['DT-vertical@md', 'DT-vertical@lg'], css: '[data-calendar-detail-field] { display: grid !important; grid-template-columns: 96px minmax(0, 1fr) !important; }' },
   { name: '標籤沒套閱讀情境(主色)', block: 'detail', expect: ['DT-label@md', 'DT-label@lg'], css: '[data-calendar-detail-field] label { color: var(--foreground) !important; }' },
   { name: 'body 底部改成 48(大容器的 bottom)', block: 'detail', expect: ['DT-gap@md', 'DT-gap@lg'], css: '[data-calendar-event-detail] [data-popover-body] { padding-bottom: 48px !important; }' },
