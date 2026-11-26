@@ -29,7 +29,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:bea61e07f46305f3e2be61a53018750e2847775bc0d15830d03722bb5d210f6f` |
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:469ddebfe1b24a1d1e234e6047dcb6a00111bcfa4110d8e4ff8f8a624041ebc9` |
 | canonical-references | `packages/design-system/ds-canonical/references` | `sha256:ffaa10b5987203886351bf2c32a5e990828d21d21643681f390cc05b4c216f5b` |
-| canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:8899fb6f7393ebe87dbb7aef166af15d93185c2c5f02d1b8e9d6c3474e8e6c66` |
+| canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:e61709c30ce3b03c1e76b985a3be6781c45cd06ab0ba2dd5ebf12970e0d58d25` |
 | canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:83bc8b8cb54a9f499b5ca2ad4231e8e21f0320bb23f93f8a289f7d08adb6e55f` |
 | changeset-release-policy | `.changeset/config.json` | `sha256:a65a7f9ee6dc6c56eab99f77876bb61297cc59909943ba4ab08705b2d110e86c` |
 | claude-instruction-adapter | `packages/design-system/ds-canonical/adapters/claude-root-instructions.md` | `sha256:6c2c5fb2d2ffe93c74d74d88c35596d6e360973fec6e058290742cb52b39d8b9` |

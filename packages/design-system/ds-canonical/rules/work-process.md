@@ -54,8 +54,6 @@ v1(輕做法 = 實作者照規格實作並自驗、沒有審查,本檔再加第 
 
 v4:本機照 CI 逐條跑一輪(c4460faa)機器 294 分、牆鐘約 130 分,CI 同一套 20 分 58 秒;那輪 9 條紅,2 條真紅 CI 同一個 job 也跑,其餘是 mac 假紅與執行器問題。escape 閘一天單跑 226 分、非實作者約 41%。出處:`governance/planning/2026-11-26-work-process-evidence-v4.md`
 
-v5:axe 全掃接進 PR 的 CI(與原夜間同一行指令、同一份基線),本機補跑 axe 的前提「CI 沒跑 axe」不再成立;本機 `--tag` 又不能配 `--gate`,判的是「任何 serious 就紅」,1,089 則裡 734 則帶既有違規。出處:`governance/planning/2026-11-26-work-process-evidence-v5.md`
-
 ## 迭代
 
 - 流程只在本檔改。改動必附量測證據(同任務對照,或實測花費 / 品質),證據原文放 `governance/planning/` 新檔並登記在 `governance/planning/registry.json`。
@@ -70,4 +68,4 @@ v5:axe 全掃接進 PR 的 CI(與原夜間同一行指令、同一份基線),本
 | v2 | 2026-11-22 | 加兩句:選做法前先查監督邊界;收尾頁照 Sub-rule 7 篩 | `governance/planning/2026-11-22-work-process-evidence.md` |
 | v3 | 2026-11-22 | 「每一包」加第 8 點:改到範例時實作與規格核對都照 story-rules.md 兩段核對 | `governance/planning/2026-11-22-work-process-evidence-v3.md` |
 | v4 | 2026-11-26 | 加「本機檢查」;合回點不重跑全套;核對者不重跑同 commit | `governance/planning/2026-11-26-work-process-evidence-v4.md` |
-| v5 | 2026-11-26 | 「本機檢查」拿掉核對者補跑 axe(`--tag`):axe 改由 PR 的 CI 全掃判 | `governance/planning/2026-11-26-work-process-evidence-v5.md` |
+| v5 | 2026-11-26 | axe 只由 CI 判 | `governance/planning/2026-11-26-work-process-evidence-v5.md` |
