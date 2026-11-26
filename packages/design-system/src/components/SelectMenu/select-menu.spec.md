@@ -79,7 +79,7 @@ Popover（浮動容器，handle 展開 / 定位）
 
 **定位**:SelectMenu 的 `sideOffset` 與 `align` 直接走 Popover canonical——`sideOffset=8` / `align` 跟隨 trigger 位置(見 `../Popover/popover.spec.md`「Align 對齊 canonical(跨浮層 SSOT)」)。SelectMenu 不自訂浮層定位規則。
 
-**視覺 vs 語意**(2026-04-20 精緻化):SelectMenu 的預設 `min-width = max(trigger width, 240px)`；trigger ≥ 240px 時與 trigger 同寬，較窄 trigger 會擴至 240px。`minWidth` prop **只能把這個下限往上拉**:有效下限 = `max(trigger width, 240px, minWidth)`(2026-11-17 A95;規則住 `../../../ds-canonical/references/props-naming.md`「尺寸參數」第 8 條;之前是整個取代預設,可以比 trigger 窄)。寬度相等時 `start` / `end` 兩種 align 呈現視覺相同；popover 寬於 trigger 時，align 差異才會顯現，並嚴格遵守 structured overlay canonical(trigger 在左 → start / 右 → end)。(SelectMenu `align` prop 僅暴露 `'start' | 'end'`,不開放底層的 `center`。)
+**視覺 vs 語意**(2026-04-20 精緻化):SelectMenu 的預設 `min-width = max(trigger width, 240px)`；trigger ≥ 240px 時與 trigger 同寬，較窄 trigger 會擴至 240px。`minWidth` prop **只能把這個下限往上拉**:有效下限 = `max(trigger width, 240px, minWidth)`(2026-11-17 A95;規則住 `../../../ds-canonical/references/props-naming.md`「尺寸參數」第 8 條;之前是整個取代預設,可以比 trigger 窄)。Select / Combobox / PeoplePicker 都把同名參數 `minWidth` 轉到這裡(2026-11-26,產品 canary 回報 C1;之前三個包裝元件都沒有這個參數)。寬度相等時 `start` / `end` 兩種 align 呈現視覺相同；popover 寬於 trigger 時，align 差異才會顯現，並嚴格遵守 structured overlay canonical(trigger 在左 → start / 右 → end)。(SelectMenu `align` prop 僅暴露 `'start' | 'end'`,不開放底層的 `center`。)
 
 換言之 SelectMenu **永遠照 canonical**；只有 trigger ≥ 240px 且未再提高 `minWidth` 時，等寬會讓 align 差異被視覺遮蔽。一旦 popover 寬於 trigger，canonical 立即顯現。
 
@@ -145,7 +145,7 @@ Popover（浮動容器，handle 展開 / 定位）
 
 ## 分組（group）
 
-透過 `groups` prop 定義分組標籤，每個 option 的 `group` 欄位指向 group key。
+透過 `groups` prop 定義分組標籤，每個 option 的 `group` 欄位指向 group key。Select 與 Combobox 都收 `groups` 並原樣轉到這裡(Combobox 2026-11-26 補,產品 canary 回報 C24:之前選項有 `group` 欄位卻沒有 `groups` 參數);PeoplePicker 不收(人員資料 `PersonData` 沒有 group 欄位)。
 
 **何時使用**：
 - 選項明顯分兩個以上邏輯群組（「Recent」/「All」、「Your team」/「Others」）

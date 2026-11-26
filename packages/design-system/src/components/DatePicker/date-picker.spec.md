@@ -385,6 +385,7 @@ View / readonly / disabled 模式(含 DataTable cell)與 Edit 模式 trigger 文
 - **Range**:「順序不合」與 `disabledDate` 任一成立就不可選(同一支判斷,`date-picker.tsx` `isDayDisabled`);起訖兩端都不能落在不可選的日子。區間中間跨過不可選的日子不另擋(本參數只管「能不能點那一天」)。
 - **可打字**(`typeable`):打進一個不可選的日期 = 跟解析失敗同一條路(`aria-invalid`、保留草稿讓使用者修,見「驗證時機」)【AI 推導 2026-11-26,依「Typed input」與「驗證時機」的解析失敗寫法,列入預覽清單】。
 - **後端給清單**:在函式裡查那份清單;清單還在抓時怎麼辦見「邊界案例」Loading 那條。
+- **範例**:`date-picker.stories.tsx`「不可選日期:門市維修預約」(週末與 12/25 不可選,可打字)。
 - **命名**:三重測試 —— (1) DS 詞彙:DateGrid 已用 `disabled` 表示「不可選的日子」,DatePicker 的 `disabled` 是整個欄位停用,所以加 `Date` 區分;(2) Ant DatePicker 公共 API 同名同義「disabledDate — Specify the date that cannot be selected」(https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/index.en-US.md),Element Plus 同名「The disabled date is set by `disabledDate`, which is a function」(https://element-plus.org/en-US/component/date-picker.html);(3) DS 內沒有其他元件用 `disabledDate`。
 - **尚未定案**:showTime 時面板底的「此刻」鈕在今天不可選時要不要停用,屬新的畫面決定,本次不改(鈕照舊可按),待 user 決定。
 
