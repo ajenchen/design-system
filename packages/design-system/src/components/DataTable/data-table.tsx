@@ -173,12 +173,15 @@ export interface DataTableLabels {
   rowDragHandleDisabled: string
   /** 排序中滑過把手的停用提示(Tooltip) */
   rowDragDisabledTooltip: string
+  /** 多選時表頭「全選」勾選框的讀屏名(2026-11-27 起經 labels;之前寫死在元件裡) */
+  selectAllVisibleRows: string
 }
 
 export const DATA_TABLE_DEFAULT_LABELS: DataTableLabels = {
   rowDragHandle: '拖曳重排此列', // i18n-allow: DS 預設(中文);labels prop / I18nProvider 可換
   rowDragHandleDisabled: '排序中無法拖曳', // i18n-allow: DS 預設
   rowDragDisabledTooltip: '排序中無法拖曳,清除排序後可重排', // i18n-allow: DS 預設
+  selectAllVisibleRows: '全選可見列', // i18n-allow: DS 預設
 }
 
 export interface DataTableProps<TData>
@@ -788,6 +791,14 @@ interface SortableRowCtxValue {
   handleAttributes: Record<string, unknown>
 }
 const SortableRowCtx = React.createContext<SortableRowCtxValue | null>(null)
+/**
+ * 表格的浮層宿主(2026-11-27,PR #174 CI layout-body-edges):**放在表格外框之前**的零尺寸元素,收 dnd-kit 的讀屏節點
+ * (HiddenText + LiveRegion,dnd-kit 預設就地接在 DndContext 子節點之後)與列拖曳把手 / 定位基準探針的 portal。
+ * 修前這些節點接在表格外框**後面**,容器自判底距(tokens/layoutSpace/layoutSpace.css `:nth-last-child(1 of …)`)看到的最後一個子元素
+ * 變成它們、不是有框的表格 → 底距從 loose 變 48(DialogBody 裡 enableRowDrag 的表格實測 48,應 16 / 24);
+ * 規格「容器看最後一個佔版面的子孫」(layoutSpace.spec.md),這些節點都不佔版面。放在前面同 sortLiveRegion 的理由(下方 return 註解)。
+ */
+const DataTableOverlayHostCtx = React.createContext<HTMLElement | null>(null)
 
 /** Per-region per-row drag wrapper(v15.4 architectural split)。
  *  同 row.id 在 left/center/right 三 region 各 mount 一次,但 hook mount tree 完全分離:
@@ -1173,6 +1184,7 @@ const rowDragScrollLatch = {
 // 由父層直接傳,不在 render 裡讀 `rowEl.dataset.rowIndex`:render 時 DOM 還是上一輪的值,列換索引(排序 / 虛擬捲動)會差一拍。
 function RowDragHandle({ disabled, anyDragActive, hoverRowIndex, labels }: { disabled: boolean; anyDragActive: boolean; hoverRowIndex: number; labels: DataTableLabels }) {
   const ctx = React.useContext(SortableRowCtx)
+  const overlayHost = React.useContext(DataTableOverlayHostCtx)
   const [rowEl, setRowEl] = React.useState<HTMLDivElement | null>(null)
   const [portalTarget, setPortalTarget] = React.useState<HTMLElement | null>(null)
   // fits = 24px 把手整顆落在所屬 body 面板的可視帶(client box,不含水平捲軸)內;放不下就不顯示(見 update())
@@ -1238,8 +1250,8 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex, labels }: { dis
   React.useLayoutEffect(() => {
     if (!rowEl || ctxRole !== 'primary') return
 
-    // Portal target = table outer 的 parent(保持 CSS variable / theme scope 繼承,
-    // 不 portal 到 document.body — body 沒 theme tokens 會使 Button tertiary 變透明)
+    // Portal target = 表格的浮層宿主(DataTableOverlayHostCtx;跟 table outer 同一個 parent、排在外框之前 → 同樣的 CSS variable / theme scope
+    // 與同一個 fixed 定位基準;沒有宿主時退回 table outer 的 parent)。不 portal 到 document.body — body 沒 theme tokens 會使 Button tertiary 變透明
     const tableEl = rowEl.closest<HTMLElement>('[data-data-table-outer]')
     const update = () => {
       if (!tableEl) return
@@ -1248,7 +1260,7 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex, labels }: { dis
         rowDragScrollLatch.deferred.set(update, () => rowEl.isConnected && (rowEl.hasAttribute('data-hovered') || hasPosRef.current))
         return
       }
-      setPortalTarget(tableEl.parentElement)
+      setPortalTarget(overlayHost ?? tableEl.parentElement)
       const rRect = rowEl.getBoundingClientRect()
       const tRect = tableEl.getBoundingClientRect()
       // v15.1:drag 期間 source button hide(visible 邏輯已 guard isDragging),
@@ -1315,7 +1327,7 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex, labels }: { dis
       rowDragScrollLatch.deferred.delete(update)
       updateRef.current = null
     }
-  }, [rowEl, ctxRole, ctxDragging, buttonHovered, syncHandlePosition, measureHandleOrigin])
+  }, [rowEl, ctxRole, ctxDragging, buttonHovered, syncHandlePosition, measureHandleOrigin, overlayHost])
 
   // 閂鎖訂閱:只有渲染過把手的實例(pos 非 null)訂閱。閂上 → 直接把 DOM 藏掉(不等 React commit、不淡出);
   // 鬆開 → 這列若仍被 hover 就重量位置(列在捲動期間移動過)再顯示;React 的 visible 也讀同一個閂鎖,兩邊一致。
@@ -1621,7 +1633,7 @@ function DataTableInner<TData>(
   const { t } = useI18n()
   const tableLabels = React.useMemo<DataTableLabels>(() => {
     const pick = (key: keyof DataTableLabels) => labelsProp?.[key] ?? t('data-table', key, DATA_TABLE_DEFAULT_LABELS[key])
-    return { rowDragHandle: pick('rowDragHandle'), rowDragHandleDisabled: pick('rowDragHandleDisabled'), rowDragDisabledTooltip: pick('rowDragDisabledTooltip') }
+    return { rowDragHandle: pick('rowDragHandle'), rowDragHandleDisabled: pick('rowDragHandleDisabled'), rowDragDisabledTooltip: pick('rowDragDisabledTooltip'), selectAllVisibleRows: pick('selectAllVisibleRows') }
   }, [labelsProp, t])
   // 對外參數 `rowHeight="hug"`(2026-11-17 前叫 `autoRowHeight`);內部一整串判斷(列殼、儲存格、per-row 錯誤撐高、
   // scripts/audit-data-table-row-mode-ssot.mjs 盯的 cell-render 範圍)沿用這個布林名,意思 = 「整張表跟內容長高」。
@@ -2201,6 +2213,8 @@ function DataTableInner<TData>(
     getOutcome: () => reorderOutcomeRef.current,
     kind: (active) => (active.data?.current?.type === 'column' ? '欄位' : '列'),
   })
+  // 浮層宿主(DataTableOverlayHostCtx):掛上後才有元素,所以用 state(ref 不觸發重畫,dnd-kit 的 container 與把手 portal 都要拿到它)
+  const [overlayHost, setOverlayHost] = React.useState<HTMLDivElement | null>(null)
 
   // 快速捲動的列殼 —— **自適應機器畫列能力**(2026-09-09,AD56:R17 的固定判準在慢機器失效)。
   // 不用兩次 render 的瞬時速度(快機器的正常短捲會被誤判,R17 H1),也不用固定跳距(慢機器 commit 頻繁、每次位移不到一個
@@ -4238,7 +4252,7 @@ function DataTableInner<TData>(
               checked={headerCheckedState}
               onClick={(e) => e.stopPropagation()}
               onCheckedChange={() => toggleHeaderCheckbox()}
-              aria-label="全選可見列"
+              aria-label={tableLabels.selectAllVisibleRows}
               disabled={isHeaderDisabled}
             />
           )}
@@ -6017,11 +6031,15 @@ function DataTableInner<TData>(
         // 繁中播報 + 誠實回報結果(C1/B2 修,2026-09-07)。
         // 先前四個 DndContext 全都沒傳 accessibility(全 DS grep = 0 命中),於是吃 dnd-kit
         // 的英文預設,而且是從它自己的生命週期發的 —— 會在我們根本沒重排時播「已放到 X」。
-        accessibility={drag.accessibility}
+        // dnd-kit 的讀屏節點(HiddenText + LiveRegion)portal 進表格外框之前的浮層宿主,不接在外框後面(DataTableOverlayHostCtx 註解)
+        accessibility={{ ...drag.accessibility, container: overlayHost ?? undefined }}
       >
+        {/* 浮層宿主:零尺寸、絕對定位(不佔版面),**排在表格外框之前**;把手 / 探針 / dnd-kit 讀屏節點都 portal 進來。不加 aria-hidden:
+            dnd-kit 的 LiveRegion 在裡面,藏起來就整趟拖曳無聲 */}
+        <div ref={setOverlayHost} data-dt-overlay-host="" style={{ position: 'absolute', width: 0, height: 0 }} />
         {/* v15.0 Path B:無 SortableContext(useDraggable + useDroppable 各自獨立,不需 sort context)。
             無 auto-shift visual reorder — source 留原位,indicator 顯 drop preview。 */}
-        {node}
+        <DataTableOverlayHostCtx.Provider value={overlayHost}>{node}</DataTableOverlayHostCtx.Provider>
         {/* 拖曳播報的 polite 區域(sr-only;lib/drag-announcements.ts useDragAccessibility)—— 沒渲染 = 整趟拖曳無聲 */}
         {drag.liveRegion}
         {/* DragOverlay 就地渲染(dnd-kit 的 `<DragOverlay>` 不是 portal:@dnd-kit/core `const DragOverlay` 沒有 createPortal)—— row 跟 column
