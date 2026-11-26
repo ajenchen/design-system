@@ -10,8 +10,12 @@ import { CalendarDemo } from './_calendar-demo'
 import { DatePicker } from '@/design-system/components/DatePicker/date-picker'
 import { Field, FieldLabel } from '@/design-system/components/Field/field'
 import { Button } from '@/design-system/components/Button/button'
-import { Input } from '@/design-system/components/Input/input'
+import { PeoplePicker } from '@/design-system/components/PeoplePicker/people-picker'
+import type { PersonValue } from '@/design-system/components/PeoplePicker/person-display'
 import { Select } from '@/design-system/components/Select/select'
+import { toast } from '@/design-system/components/Toast/toast'
+import { demoPersonData } from '@/design-system/stories-helpers/scene/person-card'
+import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter, DialogClose } from '@/design-system/components/Dialog/dialog'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, ExampleSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
@@ -31,13 +35,13 @@ const LOCALE = 'zh-TW'
 //(calendar.spec.md「日期格與事件方塊:可點或唯讀」)。右上角「新事件」是全域新增入口、恆渲染,onCreateEvent 必填(同段末條,M23(f))。
 // 原則頁的可點範例也給**真的結果**(CalendarDemo:點事件開內建詳情、點日期 / 新事件開「新增事件」對話框、送出跳 Toast),與展示頁同一個示範殼。
 
-// 規則外框(標題 / 說明 / 間距)= 共用教學頁元件;本頁的範例是整塊行事曆,放進一個有邊框的展示框(原本寫在本頁 Rule 裡的同一個框)。
-// 說明的字級 / 字色由共用元件擁有(text-caption + text-fg-muted,tutorial-page.tsx 檔頭;字色 = color.spec.md:96 caption 列),本頁不另選
-//(2026-10-20 前本頁傳 noteTone 選 fg-secondary,同一層說明全 DS 兩種字色,已收成一種)。
+// 規則外框(標題 / 說明 / 間距)= 共用教學頁元件。
+// 說明的字級 / 字色由共用元件擁有(text-caption + text-fg-muted,tutorial-page.tsx 檔頭;字色 = color.spec.md:96 caption 列),本頁不另選。
 const TutorialRule = createTutorialRule()
 
+// 範例只限寬度、不再包框:月曆自己的外殼已經有框線與圓角(calendar.spec.md「外殼」;外面再包一層 = 框中框,同 DataTable 設計原則頁直接放元件)
 const ExampleFrame = ({ children }: { children: React.ReactNode }) => (
-  <div className="max-w-5xl rounded-md border border-divider p-[var(--layout-space-loose)] bg-surface">{children}</div>
+  <div className="max-w-5xl">{children}</div>
 )
 
 export const UsageGuidance: Story = {
@@ -55,7 +59,10 @@ export const UsageGuidance: Story = {
               <StoryLink kind="Design System/Components/Calendar/展示" name="內容發佈月曆">內容發佈月曆</StoryLink>
             </li>
             <li>
-              <StoryLink kind="Design System/Components/Calendar/展示" name="空行事曆">空行事曆</StoryLink>
+              <StoryLink kind="Design System/Components/Calendar/展示" name="產品上線週">專案里程碑:程式碼凍結、上線日</StoryLink>
+            </li>
+            <li>
+              <StoryLink kind="Design System/Components/Calendar/設計原則" name="唯讀的日期格與事件">唯讀的參考月曆:公司假日</StoryLink>
             </li>
           </TutorialList>
         </div>
@@ -64,10 +71,9 @@ export const UsageGuidance: Story = {
       <UsageSection kind="whenNot">
         <div className="text-body text-fg-secondary max-w-3xl">
           <TutorialList>
-            <li><b>「選一個日期」表單欄位</b> → 用 <code>{'<DatePicker>'}</code>:Calendar 是檢視 canvas,不是 form control</li>
-            <li><b>「選一個日期範圍」表單欄位</b> → 用 <code>{'<DatePicker.Range>'}</code>:同上</li>
-            <li><b>時間 granularity 是時分秒的儀表板</b> → Timeline / Gantt chart:event calendar 的最小 granularity 是時段(15-60 分鐘),不是秒級</li>
-            <li><b>單純事件列表</b>(沒時間軸視覺需求)→ 用 <code>{'<DataTable>'}</code> / <code>{'<Empty>'}</code>:列表是「linear」瀏覽,calendar 是「spatial」瀏覽</li>
+            <li><b>表單裡「選一個日期」</b> → 用 <code>{'<DatePicker>'}</code>:Calendar 是看事件的頁面畫布,不是表單欄位</li>
+            <li><b>表單裡「選一個日期範圍」</b> → 用 <code>{'<DatePicker.Range>'}</code>:同上</li>
+            <li><b>事件要依欄位排序、篩選、批次處理</b> → 用 <code>{'<DataTable>'}</code>:表格是一筆一筆往下讀,月曆是依日期在格子裡看分布</li>
           </TutorialList>
         </div>
       </UsageSection>
@@ -114,27 +120,32 @@ export const ColorSemantic: Story = {
     <TutorialPage>
       <TutorialRule
         title="事件的 color 是「這是哪一類事件」(團隊 / 專案),不是嚴重度"
-        note="Calendar 的 color = 12 categorical 色相,與 Tag / Avatar 共用同一組 SSOT(blue / green / deep-orange / yellow / red / orange / amber / lime / turquoise / indigo / purple / magenta),色名 1:1 對 color token;不屬於任何類別的事件(例:全公司的假日)用 neutral 中性灰。色相本身無 severity 語義——紅色 ≠「緊急」、橙色 ≠「警告」,只是類別選擇。若要標示緊急,寫在事件標題文字裡。顏色出現在全天事件的淡底長條、有時段事件的左側色條。下例以藍 / 綠 / 橙 / 紫四種色相代表四個不同團隊或專案。"
+        note="Calendar 的 color = 12 categorical 色相,與 Tag / Avatar 共用同一組 SSOT(blue / green / deep-orange / yellow / red / orange / amber / lime / turquoise / indigo / purple / magenta),色名 1:1 對 color token;不屬於任何類別的事件(例:全公司的假日)用 neutral 中性灰。色相本身無 severity 語義——紅色 ≠「緊急」、橙色 ≠「警告」,只是類別選擇。若要標示緊急,寫在事件標題文字裡。顏色出現在全天事件的淡底長條、有時段事件的左側色條。下例一個顏色 = 一個團隊:藍 = 設計組、橘 = 工程組、綠 = 業務組、紫 = 行銷組;工程組的緊急修正照樣是橘色,緊急寫在標題裡。"
         paragraph={false}
       >
         <ExampleFrame>
-          {/* 容器刻意比整月矮(格陣在裡面捲),但四個團隊的事件(第二到第四週)都要整列看得到:h-84 時第四週 7/22 那一列離可視範圍底 14、
-              第五週露出一點(提示可捲)。2026-11-25 前是 h-80 —— 格最小高 60(沒算格線)時剛好放得下,改成 61 後 7/22 那一列被裁掉 2px。 */}
+          {/* 容器刻意比整月矮(格陣在裡面捲),但四個團隊的事件(第二到第四週)都要整列看得到:h-84 時第四週 7/22 那一列離可視範圍底 14、第五週露出一點(提示可捲) */}
           <div className="h-84">
             <CalendarDemo
               defaultReferenceDate={now}
               locale={LOCALE}
               today={now}
               events={[
-                { id: '1', title: '設計審查', start: `${thisMonth}-05T10:00`, end: `${thisMonth}-05T11:00`, color: 'blue' },
-                { id: '2', title: '衝刺規劃會議', start: `${thisMonth}-08T14:00`, end: `${thisMonth}-08T15:30`, color: 'blue' },
-                { id: '3', title: '版本發布截止', start: `${thisMonth}-12T18:00`, end: `${thisMonth}-12T18:00`, color: 'orange' },
-                { id: '4', title: '季度檢討', start: `${thisMonth}-18T14:00`, end: `${thisMonth}-18T16:00`, color: 'green' },
-                { id: '5', title: '行銷週會', start: `${thisMonth}-22T10:00`, end: `${thisMonth}-22T11:00`, color: 'purple' },
+                { id: '1', title: '設計組:設計審查', start: `${thisMonth}-05T10:00`, end: `${thisMonth}-05T11:00`, color: 'blue' },
+                { id: '2', title: '工程組:衝刺規劃', start: `${thisMonth}-08T14:00`, end: `${thisMonth}-08T15:30`, color: 'orange' },
+                { id: '3', title: '工程組:緊急修正結帳頁金額', start: `${thisMonth}-12T18:00`, end: `${thisMonth}-12T18:00`, color: 'orange' },
+                { id: '4', title: '業務組:季度檢討', start: `${thisMonth}-18T14:00`, end: `${thisMonth}-18T16:00`, color: 'green' },
+                { id: '5', title: '行銷組:行銷週會', start: `${thisMonth}-22T10:00`, end: `${thisMonth}-22T11:00`, color: 'purple' },
               ] as CalendarEvent[]}
             />
           </div>
         </ExampleFrame>
+      </TutorialRule>
+      <TutorialRule
+        title="❌ 不用紅色表示緊急、橘色表示警告"
+        note="顏色一旦拿來表示嚴重度,就不再代表類別:同一個團隊的事件會因為急不急換來換去,讀者分不出是哪一組;紅橘兩色也跟 DS 的錯誤 / 警告狀態色撞在一起。緊急與否寫在標題文字裡(上例「工程組:緊急修正結帳頁金額」)。"
+      >
+        <ExampleCaption warn>把「緊急修正」改成紅色、其他工程組事件維持橘色 → 同一組兩種顏色,顏色的類別意義就斷了</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -148,8 +159,8 @@ export const MonthViewOnlyRule: Story = {
   render: () => (
     <TutorialPage>
       <TutorialRule
-        title="只支援月檢視;週 / 日檢視、拖拉新增事件目前不支援"
-        note="本元件只實作月檢視;週 / 日檢視、拖拉新增事件目前不支援(點事件打開的詳情可以就地修改各欄)。"
+        title="規格定了月 / 週 / 日 / 議程四種檢視,目前只做月檢視;不要先傳 view 預留"
+        note="規格一次定四種檢視、實作分兩段:第一段只做月檢視,週 / 日 / 議程與拖選新增在第二段。現在不開 view 參數,因為只有一個值的參數沒有用,還沒做的能力也不先佔用參數名 —— 第二段加上 view 是新增、不會破壞現有用法;所以別先傳 view 參數預留週檢視。月檢視裡點事件打開的詳情可以就地修改各欄。"
         paragraph={false}
       >
         <ExampleFrame>
@@ -255,8 +266,17 @@ export const DetailBesideListRule: Story = {
   },
 }
 
+// 完整編輯的與會者:DS 的 PeoplePicker + 名冊裡的人(stories-helpers/data/people.ts;scripts/demo-people-roster-invariant.mjs)
+const ATTENDEE_POOL = [demoPersonData('張美真', 64), demoPersonData('林伯彥', 64), demoPersonData('Alice Chen', 64), demoPersonData('Bob Lin', 64)]
+
 function FullEditExample() {
   const [editing, setEditing] = React.useState<CalendarEvent | null>(null)
+  const [attendees, setAttendees] = React.useState<PersonValue[]>(ATTENDEE_POOL.slice(0, 2))
+  // 儲存給真的結果(同示範殼送出新增:成功跳 Toast;form-validation.spec.md「Submit 成功宣告」),不是只把對話框關掉
+  const save = () => {
+    toast({ variant: 'success', title: `已儲存「${editing?.title ?? ''}」` })
+    setEditing(null)
+  }
   return (
     <>
       <CalendarDemo
@@ -276,7 +296,7 @@ function FullEditExample() {
             <div className="flex flex-col gap-[var(--layout-space-loose)]">
               <Field>
                 <FieldLabel>與會者</FieldLabel>
-                <Input placeholder="輸入姓名或 email" />
+                <PeoplePicker value={attendees} people={ATTENDEE_POOL} onChange={setAttendees} />
               </Field>
               <Field>
                 <FieldLabel>重複</FieldLabel>
@@ -286,7 +306,7 @@ function FullEditExample() {
           </DialogBody>
           <DialogFooter>
             <DialogClose asChild><Button variant="tertiary">取消</Button></DialogClose>
-            <Button variant="primary" onClick={() => setEditing(null)}>儲存</Button>
+            <Button variant="primary" onClick={save}>儲存</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -333,8 +353,9 @@ export const ReadOnlyRule: Story = {
               noun="假日"
               events={[
                 // 全天,end 不含(calendar.spec.md「資料語意」):創立紀念日一天 → end 隔天;年中盤點週四、週五關兩天 → end 週六,畫成一條橫跨兩格的長條
-                { id: 'h1', title: '公司創立紀念日', start: `${thisMonth}-03`, end: `${thisMonth}-04`, color: 'green', allDay: true },
-                { id: 'h2', title: '年中盤點(辦公室關閉)', start: `${thisMonth}-23`, end: `${thisMonth}-25`, color: 'green', allDay: true },
+                // 全公司的假日不屬於任何類別 → 中性灰 neutral(calendar.spec.md「事件的兩種長相」neutral 那條;與展示頁「團隊行事曆」同一筆同一色)
+                { id: 'h1', title: '公司創立紀念日', start: `${thisMonth}-03`, end: `${thisMonth}-04`, color: 'neutral', allDay: true },
+                { id: 'h2', title: '年中盤點(辦公室關閉)', start: `${thisMonth}-23`, end: `${thisMonth}-25`, color: 'neutral', allDay: true },
               ] as CalendarEvent[]}
             />
           </div>

@@ -789,7 +789,7 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
                   'rounded-md',
                 )}
               >
-                {/* 單行截斷 → 截斷時才顯 tooltip 補全(tooltip.spec.md:32;引擎 truncated-text.spec.md),
+                {/* 單行截斷 → 截斷時才顯 tooltip 補全(tooltip.spec.md:30;引擎 truncated-text.spec.md),
                     禁手刻 truncate span。 */}
                 <TruncatedText className="text-body-lg font-medium">{title}</TruncatedText>
                 {/* 指示 chevron 與 Select 觸發器逐字同款:同色 text-fg-muted、同線粗、同「字級↔icon tier」

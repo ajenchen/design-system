@@ -76,7 +76,7 @@
  *           日期格畫面寬 ≤ 60),前提不成立 = 儀器失效。斷點看的是版面上的欄寬,不是畫面上被縮放後的寬。
  *         ML「+N」與當天清單(設計規格「狀態行為:「+N」清單開著」,年度使用者大會 7/22;calendar.spec.md「每格筆數與「+N」」「「+N」清單浮層」「焦點框」;
  *           一般 / 大密度各一趟):ML-esc play 開的清單按 Esc 關、焦點回「+N」;ML-trigger「+N」是原生 button、高 24、字級同事件列、色 = --fg-secondary、
- *           aria-haspopup=dialog、手形、名稱「{完整日期},還有 N 個事件」;ML-ring 鍵盤焦點的框往外(offset > 0);ML-click 真滑鼠點「+N」開清單、沒有開「新增事件」;
+ *           aria-haspopup=dialog、手形、名稱「{完整日期},還有 N 個事件」;ML-ring 鍵盤焦點的框往外(offset > 0);ML-row-ring 鍵盤打開清單時第一列的焦點框四邊都在捲動區裡(量幾何,往外會被頂邊裁掉 → 列往內畫);ML-click 真滑鼠點「+N」開清單、沒有開「新增事件」;
  *           ML-center 清單中心 = 格子中心(±0.5);ML-width 清單寬 ≥ 格寬;ML-open 開啟後焦點在第一筆事件;ML-head 標題列沒有分隔線、標題底 → 第一列 = tight
  *          (header-first-gap NOT_COVERED 登記的那一格由這裡量);ML-order 清單順序 = 格內排序、格內畫出來的同一個相對順序;ML-ro 唯讀的那一筆是純文字;
  *           ML-rowh 清單每一列(全天長條 / 唯讀純文字 / 有時段)外框高 = 列高 token(--tag-height-md,浮層上量),清單行高放大到 3 倍(模擬字型上下緣較大的平台)時也一樣;
@@ -948,9 +948,9 @@ const BLOCKS = {
       const head = '2026年7月2日 星期四,1 個事件'
       const rest = withEvent?.name?.startsWith(head) ? withEvent.name.slice(head.length) : null
       check('N3-publish', today?.ariaLabel === null && today.name === '今天,2026年7月15日 星期三,0 個事件' && today.tab === '0'
-        && withEvent?.ariaLabel === null && rest !== null && rest.includes('週五電子報') && !/(^|\s)2(\s|$)/u.test(rest),
+        && withEvent?.ariaLabel === null && rest !== null && rest.includes('每週電子報') && !/(^|\s)2(\s|$)/u.test(rest),
         `唯讀格名稱:7/15「${today?.name}」(aria-label ${today?.ariaLabel}、tabindex ${today?.tab});7/2「${withEvent?.name}」(aria-label ${withEvent?.ariaLabel})`
-        + `(規格:沒有 aria-label;開頭日期 + 今天 + 筆數、接事件標題「週五電子報」、看得見的「2」不重念)`)
+        + `(規格:沒有 aria-label;開頭日期 + 今天 + 筆數、接事件標題「每週電子報」、看得見的「2」不重念)`)
       // getByRole 也找得到同一格(Playwright 自己的名稱計算,與 Chromium 的無障礙樹互相對照)
       const byRole = await page.getByRole('gridcell', { name: '今天,2026年7月15日 星期三,0 個事件', exact: true }).count()
       check('N3-byrole', byRole === 1, `getByRole('gridcell', 今天那格的名稱) 找到 ${byRole} 格(規格 1)`)
@@ -1204,7 +1204,7 @@ const BLOCKS = {
   },
   // ── 跨日長條(calendar.spec.md「跨日長條」【C1、Q3(定)】、Cell 規則「命中區」【Q6(定)、總帳更正 #3】、「A11y 預設」格內那段)──
   // B1 團隊行事曆「Alex 休假」7/20–7/22 是一個元素,左緣 = 7/20 內容左緣、右緣 = 7/22 內容右緣(≈ 3 欄);
-  // B4 點長條第 3 天(7/22)那一段:命中長條、開的是這個事件(示範殼的事件浮層,日期寫「7 月 20 日 – 7 月 22 日 · 全天」)、不會開「新增事件」;
+  // B4 點長條第 3 天(7/22)那一段:命中長條、開的是這個事件(內建詳情,浮層名稱 = 事件標題)、不會開「新增事件」;
   //    點單筆唯讀的公司假日(7/3):什麼都不開;B6 從長條涵蓋的第 2 天(7/21)按 F2,焦點落在同一條長條上(DOM 在第 1 天那格)。
   async bars(mutate) {
     const p = await open(STORY.team, { label: '團隊行事曆 跨日長條', mutate })
@@ -1789,6 +1789,24 @@ const BLOCKS = {
         return st === 'open' ? shown : !el
       }, { s: listSel, st: state }, { timeout: 10000 }).then(() => true, () => false)
       if (!(await waitList('open'))) { instrumentFails.push({ cell: `ML ${tag}`, detail: 'play 打開的「+N」清單等不到(story 改了?)' }); continue }
+      // ML-row-ring:play 用鍵盤打開清單,焦點在第一列;那一列的焦點框四邊都要落在會裁切它的最近祖先(內文捲動區)裡面。
+      // 量幾何(元素框 ± outline-offset + outline-width 對裁切框),不只看 offset 正負 —— 2026-11-27 R8 稽核:第一列貼著捲動區頂邊,
+      // 往外畫時上緣被裁(像素上 0 px 可見),而 ML-ring 那種「offset > 0」的量法照樣綠(M32)。
+      // 量在 listDom 突變之前:「清單順序倒過來」那類 DOM 突變會把焦點所在的列搬走(焦點掉到 body),不是這一格要抓的事。
+      const rr = await page.evaluate((ls) => {
+        const list = document.querySelector(ls), a = document.activeElement
+        if (!list || !a || !list.contains(a) || !a.matches('[data-calendar-list-row]')) return null
+        const cs = getComputedStyle(a), r = a.getBoundingClientRect()
+        const grow = parseFloat(cs.outlineOffset) + parseFloat(cs.outlineWidth)
+        let clip = a.parentElement
+        while (clip && clip !== list && getComputedStyle(clip).overflowY === 'visible' && getComputedStyle(clip).overflowX === 'visible') clip = clip.parentElement
+        const c = (clip ?? list).getBoundingClientRect()
+        return { fv: a.matches(':focus-visible'), style: cs.outlineStyle, grow,
+          over: { t: c.top - (r.top - grow), b: (r.bottom + grow) - c.bottom, l: c.left - (r.left - grow), r: (r.right + grow) - c.right } }
+      }, listSel)
+      if (!rr || !rr.fv || rr.style === 'none') instrumentFails.push({ cell: `ML-row-ring${tag}`, detail: rr ? `第一列沒有可見的鍵盤焦點框(:focus-visible ${rr.fv}、outline ${rr.style})` : '清單打開後焦點不在清單的列上(play 改了?)' })
+      else check(`ML-row-ring${tag}`, Object.values(rr.over).every((v) => v <= 0.01),
+        `清單第一列焦點框超出裁切框:上 ${fmtPx(rr.over.t)} / 下 ${fmtPx(rr.over.b)} / 左 ${fmtPx(rr.over.l)} / 右 ${fmtPx(rr.over.r)}(> 0 = 被裁掉的 px;框外擴 ${fmtPx(rr.grow)};focus-canonical.md「問題二」淨空 < 4 → 往內)`)
       if (mutate?.listDom) await page.evaluate(mutate.listDom, { day: MORE_DAY })
       // ML-esc:Esc 關清單、焦點回「+N」
       await page.keyboard.press('Escape')
@@ -1902,8 +1920,9 @@ const BLOCKS = {
       check(`ML-sticky${tag}`, end.scrolled && near(end.headerTop, m.header.t) && near(end.bodyTop, end.headerBottom),
         end.scrolled ? `捲到底:標題列頂 ${fmtPx(m.header.t)} → ${fmtPx(end.headerTop)}、內文頂 ${fmtPx(end.bodyTop)} vs 標題列底 ${fmtPx(end.headerBottom)}` : '清單捲不動(內容沒有超過上限?)')
       check(`ML-bottom${tag}`, end.scrolled && near(end.lastToBottom, m.tight), end.scrolled ? `捲到底:最後一列底 → 清單底 ${fmtPx(end.lastToBottom)}(規格 tight ${m.tight})` : '清單捲不動')
-      // ML-outside:點清單外面(說明文字)關清單,焦點留在點的地方、不被搶回「+N」
-      const outside = await page.evaluate(() => { const r = document.querySelector('.mb-2')?.getBoundingClientRect(); return r ? { x: r.left + 4, y: r.top + 4 } : null })
+      // ML-outside:點清單外面(說明文字)關清單,焦點留在點的地方、不被搶回「+N」。
+      // 說明區塊用範例自己掛的 data-story-notes 認(不靠 mb-2 這類間距 class —— 2026-11-27 R8 E2 改版面時拿掉 mb-2,這裡就找不到了)
+      const outside = await page.evaluate(() => { const r = document.querySelector('[data-story-notes]')?.getBoundingClientRect(); return r ? { x: r.left + 4, y: r.top + 4 } : null })
       if (!outside) { instrumentFails.push({ cell: `ML ${tag}`, detail: '找不到清單外可點的說明文字' }); continue }
       await page.mouse.click(outside.x, outside.y)
       const closedOut = await waitList('closed')
@@ -2380,6 +2399,7 @@ const MUTANTS = [
   { name: '「+N」的焦點歸還失效(Esc 後焦點不回「+N」)', block: 'moreList', expect: ['ML-esc@md', 'ML-esc@lg'], listDom: ({ day }) => { const b = document.querySelector(`[data-calendar-more="${day}"]`); if (b) b.focus = () => {} } },
   { name: '「+N」改回淡灰小字(text-caption text-fg-muted,改前的長相)', block: 'moreList', expect: ['ML-trigger@md', 'ML-trigger@lg'], css: '[data-calendar-more] { font-size: var(--font-caption-size) !important; color: var(--fg-muted) !important; }' },
   { name: '「+N」焦點框改往內', block: 'moreList', expect: ['ML-ring@md', 'ML-ring@lg'], css: '[data-calendar-more]:focus-visible { outline-offset: -2px !important; }' },
+  { name: '清單列焦點框改回往外', block: 'moreList', expect: ['ML-row-ring@md', 'ML-row-ring@lg'], css: '[data-calendar-list-row]:focus-visible { outline-offset: 2px !important; }' },
   // 點擊冒泡到格子(= 「+N」沒阻止冒泡):在「+N」上點一下,同時在格子上派一次點擊 —— 格子的 onDateClick 開「新增事件」
   { name: '點「+N」冒泡到格子(沒阻止冒泡)', block: 'moreList', expect: ['ML-click@md', 'ML-click@lg'], dom: () => document.querySelectorAll('[data-calendar-more]').forEach((b) => b.addEventListener('click', () => b.closest('[role="gridcell"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true })))) },
   { name: '清單沒蓋在格子上(往下偏 40)', block: 'moreList', expect: ['ML-center@md', 'ML-center@lg'], css: '[data-calendar-more-list] { margin-top: 40px !important; }' },

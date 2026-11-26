@@ -109,7 +109,7 @@ function renderLinkAnchor(value: string, label?: string, stretch = false, coverB
         stretch && (coverBorder ? 'before:-inset-[var(--field-border-width)]' : 'before:inset-0'),
       )}
     >
-      {/* 截斷必附 tooltip(tooltip.spec.md:32)— anchor 自身即 hover 目標、無疊層,TruncatedText
+      {/* 截斷必附 tooltip(tooltip.spec.md:30)— anchor 自身即 hover 目標、無疊層,TruncatedText
           放 anchor 內(trigger = 其 span child)即可;view/readonly/edit-showLink 共用本 helper 一處修。
           display="block":anchor 是 inline-block 容器,裡面照樣是 block formatting context,截斷照常運作(對照 breadcrumb.tsx anchor 內同型消費)。 */}
       <TruncatedText display="block">{displayText}</TruncatedText>

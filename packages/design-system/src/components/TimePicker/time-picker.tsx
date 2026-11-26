@@ -317,7 +317,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
         // 2026-05-14 I2 fix(spec contract (e) view typography canonical):bare span 套
         // `fieldDisplayTextClass(size)`(sm/md→text-body,lg→text-body-lg)— 對齊 Field family 統一。
         if (!value) return <span {...props} ref={ref as React.Ref<HTMLSpanElement>} className={cn(fieldDisplayTextClass(size), fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
-        // 截斷必附 tooltip(tooltip.spec.md:32)— 外層 span 保留 ref/props 轉發(2026-07-16 DA3),
+        // 截斷必附 tooltip(tooltip.spec.md:30)— 外層 span 保留 ref/props 轉發(2026-07-16 DA3),
         // 值文字包 TruncatedText(display="block":外層 span 在 flex cell 內是 block container)
         return <span {...props} ref={ref as React.Ref<HTMLSpanElement>} className={cn(fieldDisplayTextClass(size), 'truncate tabular-nums', className)}><TruncatedText display="block">{formatTime(value, { formatOptions, locale, showSeconds })}</TruncatedText></span>
       }
@@ -329,7 +329,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
           style={fieldWidthStyle(width, props.style)}
           data-field-mode="view"
         >
-          {/* 截斷必附 tooltip(tooltip.spec.md:32;data-table.spec.md「十一、Cell 單行截斷原則」view 態元件自管 truncation) */}
+          {/* 截斷必附 tooltip(tooltip.spec.md:30;data-table.spec.md「十一、Cell 單行截斷原則」view 態元件自管 truncation) */}
           <TruncatedText className={cn(bareInputStyles, 'flex-1 min-w-0 tabular-nums', !value && fieldEmptyColorClass(resolvedMode))}>
             {value ? formatTime(value, { formatOptions, locale, showSeconds }) : emptyDisplay}
           </TruncatedText>
@@ -447,7 +447,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
               if (e.key === 'Escape') setOpen(false)
             }}
           >
-            {/* 截斷必附 tooltip(tooltip.spec.md:32)— trigger div 自身是 hover 目標、無疊層,
+            {/* 截斷必附 tooltip(tooltip.spec.md:30)— trigger div 自身是 hover 目標、無疊層,
                 值 span 直接消費 TruncatedText(對照 date-picker Range edit trigger 同型) */}
             {/* 值的數字等寬(tabular-nums):同下拉時間欄 time-columns.tsx 的欄內 item(time-picker.spec.md「顯示格式化」) */}
             <TruncatedText className={cn(bareInputStyles, 'tabular-nums', !value && 'text-fg-muted')}>
