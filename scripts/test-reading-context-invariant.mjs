@@ -7,8 +7,6 @@
 //  (2) 閘本身:現況必綠 + --selftest 對照組必紅(靜態段與瀏覽器段的破法、各破法預期紅的格都住閘檔 STATIC_MUTANTS / MUTANTS,這裡不寫個數)。
 // 缺建置 / 起不了瀏覽器的略過判準與其他閘同一份(runGateSelftestMeta),不另抄。
 import { existsSync, statSync } from 'node:fs'
-import { pathToFileURL } from 'node:url'
-import { resolve } from 'node:path'
 import { runGateSelftestMeta } from './lib/gate-selftest-meta.mjs'
 import { MISSING_BUILD_MARKER, STALE_BUILD_MARKER, isBrowserRequired } from './lib/launch-browser.mjs'
 
@@ -21,7 +19,9 @@ if (!existsSync(DIST) || statSync(DIST).mtimeMs < statSync(SRC).mtimeMs) {
   console.log(`${marker} ${DIST} ${existsSync(DIST) ? '比原始碼舊' : '不存在'}(先跑 npm run build:lib)—— 同組同高判定表這次沒驗`)
   if (isBrowserRequired()) { console.error('✗ 這個 lane 宣告必需建置,缺了就是 job 壞了,不准略過'); ok = false }
 } else {
-  const { resolveGroupPreferredSize, fieldFramelessValueProps } = await import(pathToFileURL(resolve(DIST)).href)
+  // 載入路徑寫成字面字串:harness 來源審查(infra/governance/lib/harness-source-inventory.mjs)不准動態算出的模組路徑。
+  // 相對本檔(scripts/)解析,與上面 DIST(相對 repo 根)指同一個檔。
+  const { resolveGroupPreferredSize, fieldFramelessValueProps } = await import('../packages/design-system/dist/components/Field/field-context.js')
   const table = [
     ['沒有人登記 → null(各列照舊:自己的控件偏好 → md)', [], null],
     ['只有 InlineEdit 的 sm', ['sm'], 'sm'],
