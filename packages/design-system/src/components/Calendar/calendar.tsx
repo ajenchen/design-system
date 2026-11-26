@@ -80,7 +80,8 @@ import { returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
  * - 事件版面: ./calendar-layout.ts(資料語意、長條判定、車道、切段、「+N」計數、格內排序、「+N」清單的一天 layoutDay、CalendarEventSegment 的唯一實作;本檔不另算)
  * - 「+N」與當天清單: ./calendar-more-list.tsx(@internal;按鈕、浮層外殼、半列上限);清單的列與格內同一個元件(MonthEventPiece,只換宿主)
  * - 事件詳情浮層: ./calendar-event-detail.tsx(@internal;Popover + 可編輯標題列 + 垂直排 Field / InlineEdit / Switch / DatePicker.Range / Select);
- *   本檔只管開在哪(側邊朝格陣中央、從清單開時貼著清單)、從當下 events 依 id 取最新那一筆、全天切換的記憶、焦點歸還(lib/overlay-focus-return.ts returnFocusToOpener);
+ *   本檔只管錨在哪(被點的那一段;從清單開時左右取清單外框)—— 開向由詳情浮層照 DS 子選單擺法定(先開右、放不下翻左,popover.spec.md「禁止事項」用法 (2));
+ *   從當下 events 依 id 取最新那一筆、全天切換的記憶、焦點歸還(lib/overlay-focus-return.ts returnFocusToOpener);
  *   時間欄平常的寫法 = DatePicker 合併顯示的日期段(DatePicker/range-format.ts DATE_RANGE_DEFAULT_DATE_OPTIONS)+ 月格同一份 eventTimeFormat;
  *   詳情開著時那一段維持滑過色 = categorical-color.ts CAT_EVENT_OPEN / CAT_EVENT_NEUTRAL.open / --neutral-hover
  * - spec refs: calendar.spec.md「工具列」「Cell 規則」(隱藏週末 / 週數欄)「間距」「焦點框」「狀態與邊界案例」(載入中)「窄寬度」「A11y 預設」;
@@ -1105,7 +1106,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   // 只記「開的是哪一筆、錨在哪、從哪裡開」;事件本身一律依 id 從當下的 events 取最新那一筆(元件不存事件,calendar.spec.md「禁止事項」第 2 條)。
   //   anchor = 交給 PopoverAnchor 的虛擬錨點(換錨點 = 換物件,Radix 才重算);opener = 打開它的那一段 / 那一列(焦點歸還、維持滑過色);
   //   originIso = 打開時是哪一天(打開它的元素與事件新位置都不在時,焦點回這一天的停靠點);host = 從格陣或「+N」清單開的。
-  type DetailTarget = { eventId: string; anchor: CalendarDetailAnchor; side: 'left' | 'right'; opener: HTMLElement; originIso: string | null; host: 'grid' | 'list' }
+  type DetailTarget = { eventId: string; anchor: CalendarDetailAnchor; opener: HTMLElement; originIso: string | null; host: 'grid' | 'list' }
   const [detailTarget, setDetailTarget] = React.useState<DetailTarget | null>(null)
   // 關閉的那一刻 detailTarget 已是 null,焦點歸還與卸載時的提交(InlineEdit 卸載仍在編輯 = 提交)讀這一份最後的目標
   const lastDetailTargetRef = React.useRef<DetailTarget | null>(null)
@@ -1120,23 +1121,17 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
     return target ? latestNormalizedRef.current.find((entry) => entry.event.id === target.eventId) ?? null : null
   }
 
-  // 側邊朝格陣中央(calendar.spec.md「事件詳情浮層」位置【AI 推導】):那一天在左半邊的欄 → 往右開、右半邊 → 往左開,正中那一欄往右。
-  // 欄 = 那一天的格子在它那一週(role=row)裡是第幾個看得見的日子(週數欄不算)。
-  const sideTowardCenter = (iso: string | null): 'left' | 'right' => {
-    const cell = iso ? dayStopByIso(iso)?.closest<HTMLElement>('[role="gridcell"]') ?? null : null
-    const cells = cell?.parentElement ? Array.from(cell.parentElement.children).filter((el) => el.getAttribute('role') === 'gridcell') : []
-    const index = cell ? cells.indexOf(cell) : -1
-    return index < 0 || index <= (cells.length - 1) / 2 ? 'right' : 'left'
-  }
   // 點事件(滑鼠點與格內導覽的 Enter / Space 同一條,MonthEventPieceShell 交出被點的元素):
-  //   格陣裡 = 錨在被點的那一段;「那一天」= 進格那一天(滑鼠按下的那一天 / F2 進來的那一天;跨日長條以點擊點所在的欄判斷),不在這一段裡取第一天;
+  //   本檔只給錨點,開向不在這裡算 —— 詳情一律照 DS 子選單擺法先開右側、放不下由碰撞翻左(calendar.spec.md「事件詳情浮層」位置
+  //   【DT-DIRECTION(定)】,calendar-event-detail.tsx;2026-11-26 前這裡依「那一天在星期的哪一半」朝格陣中央開,已撤);
+  //   格陣裡 = 錨在被點的那一段;originIso(焦點後備)= 進格那一天(滑鼠按下的那一天 / F2 進來的那一天),不在這一段裡取第一天;
   //   清單裡 = 左右取清單外框、上下取那一列(水平貼著清單外緣、垂直對齊那一列),錨點元素 = 那一列(lib/overlay-nesting.ts 才認得「從清單開出來的」,清單不關)。
   const openDetail = (event: CalendarEvent, { anchor }: { anchor: HTMLElement }) => {
     const list = anchor.closest<HTMLElement>('[data-calendar-more-list]')
     const covers = anchor.getAttribute('data-calendar-covers')?.split(' ') ?? []
     const entry = entryDayRef.current
     const iso = list ? list.getAttribute('data-calendar-more-list') : (entry !== null && covers.includes(entry) ? entry : covers[0] ?? null)
-    setDetailTarget({ eventId: event.id, anchor: createDetailAnchor(anchor, list), side: sideTowardCenter(iso), opener: anchor, originIso: iso, host: list ? 'list' : 'grid' })
+    setDetailTarget({ eventId: event.id, anchor: createDetailAnchor(anchor, list), opener: anchor, originIso: iso, host: list ? 'list' : 'grid' })
   }
   const detailNormalized = detailTarget ? normalizedEvents.find((entry) => entry.event.id === detailTarget.eventId) ?? null : null
   // 時間欄的值依 start / end 字面 memo:同一筆沒改就是同一個陣列(InlineEdit 以參照比對草稿有沒有變,每次新陣列會被當成改過)
@@ -1760,7 +1755,6 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
         <CalendarEventDetailPopover
           entry={detailEntry}
           anchor={detailTarget?.anchor ?? null}
-          side={detailTarget?.side ?? 'right'}
           detail={eventDetail}
           labels={labels}
           locale={locale}

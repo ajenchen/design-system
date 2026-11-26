@@ -80,7 +80,9 @@
  *           ML-half 捲在頂端時可見底邊切在第 N + 1 列(N = 9)的一半(±1;訊息印各列高);ML-sticky 捲到底標題列不動、內文頂 = 標題列底;ML-bottom 捲到底最後一列 → 底 = tight;
  *           ML-outside 點清單外面關清單、焦點不被搶回「+N」。期望值由規格與 token 現算(tight 讀浮層上的 --layout-space-tight),不 import 元件常數。
  *         DT 事件詳情浮層(設計規格「狀態行為:事件詳情開著」「狀態行為:從清單開詳情」;calendar.spec.md「事件詳情浮層」;一般 / 大密度各一趟):
- *           DT-name 浮層名稱 = 事件標題本身;DT-head 標題列 = 2 × tight + sm 欄位高、× 與標題同中線;DT-side 左半邊的事件往右開、隔 8、頂端對齊;
+ *           DT-name 浮層名稱 = 事件標題本身;DT-head 標題列 = 2 × tight + sm 欄位高、× 與標題同中線;
+ *           DT-side / DT-side-right / DT-side-flip 子選單擺法【DT-DIRECTION(定)】先開右、放不下翻左:左半邊的事件往右開、隔 8、頂端對齊;
+ *           右半邊(最右一欄 7/25)但右側放得下(情境:Calendar 根元素收窄,右邊留出空位)也往右開;同一筆在原版面右側放不下 → 翻到左側、隔 8;
  *           DT-vertical 欄位垂直排(標籤在上);DT-label 標籤 = fg-secondary(閱讀情境);DT-gap 標頭 → 第一欄 = tight、最後一欄 → 底 = tight(hug);
  *           DT-mark 打開詳情的那一段帶 data-detail-open;DT-esc Esc 關詳情、焦點回那一段;DT-outside 減少動態下改地點、點外面 = 先提交再關(再打開看得到新值);
  *           DT-commit 改標題 → 月格跟著換;DT-blank 清空提交 = 還原原值;
@@ -161,6 +163,10 @@ const STORY = {
 // 「+N」清單那一則(設計規格「狀態行為:「+N」清單開著」):年度使用者大會那天,與格內排序(calendar.spec.md「格內排序」)推出的清單順序
 const MORE_DAY = '2026-07-22'
 const MORE_DAY_ORDER = ['大會週', '場地布置(場館排定)', '來賓報到', '開幕致詞', '主題演講:下一代工作流程', '產品新功能展示', '午餐交流', '分組 A:自動化實戰', '分組 B:資料治理', '客戶座談', '合作夥伴論壇', '閉幕', '晚宴']
+
+// DT-side-right / DT-side-flip(事件詳情開向,子選單擺法):gap / edge = popover.spec.md「與觸發點隔 8」「離視窗邊 8」(不 import overlay-geometry.ts);
+// roomWidth = 情境「月曆右邊留出空位」時 Calendar 根元素的寬 —— 1280 寬的視窗裡,最右一欄的事件右側留得下 352 寬的詳情(前提在量測時現算,不成立 = 儀器失效)
+const DETAIL_SIDE = { gap: 8, edge: 8, roomWidth: 720, eventId: 'd3' }
 
 // 規格值(calendar.spec.md「間距」與 header-canonical.spec.md:68);1 號的字是規格寫的 zh-TW 例子
 // 格最小高 61 = 上內距 4 + 日期框 24 + 4 + 一列 24 + 下內距 4 + 格線 1(格子 border-box,底線在格高裡;calendar.spec.md「每一週等高」)
@@ -1728,7 +1734,8 @@ const BLOCKS = {
   // 時鐘是整個 context 共用、釘了就回不去 —— 本區塊一律排在最後跑(其他區塊的 story 都明傳 today,本來也不受影響);
   // 不另開 context:沙箱裡的 Chromium 是 --single-process,開第二個 context 會整個崩掉(實測 SIGTRAP)。
   // ── DT 事件詳情浮層(設計規格「狀態行為:事件詳情開著」「狀態行為:從清單開詳情」;calendar.spec.md「事件詳情浮層」「點清單裡的事件」)──
-  // 期望值由規格與 token 現算(tight / sm 欄位高 / fg-secondary 讀浮層上的變數),不 import 元件常數;sideOffset 8 = popover.spec.md 與 calendar.spec.md 寫的值。
+  // 期望值由規格與 token 現算(tight / sm 欄位高 / fg-secondary 讀浮層上的變數),不 import 元件常數;
+  // sideOffset / collisionPadding 8 = popover.spec.md「與觸發點隔 8」「離視窗邊 8」(calendar.spec.md 位置段指向它的用法 (2),不重述數值)。
   async detail(mutate) {
     const detailSel = '[data-calendar-event-detail]'
     const waitSel = (sel, state) => page.waitForFunction(({ s, st }) => {
@@ -1780,7 +1787,7 @@ const BLOCKS = {
       // DT-head:標題是 InlineEdit sm → 標題列 = 2 × tight + sm 欄位高(一般 52 / 大 56),× 與標題那一列中線對齊
       check(`DT-head${tag}`, near(g.headerH, 2 * g.tight + g.fieldSm) && near(g.dismissMid, g.titleMid),
         `標題列高 ${fmtPx(g.headerH)}(規格 2 × ${g.tight} + ${g.fieldSm})、× 中線 ${fmtPx(g.dismissMid)} / 標題中線 ${fmtPx(g.titleMid)}`)
-      // DT-side:7/5 在星期的左半邊 → 往右開、與事件隔 8、頂端對齊(calendar.spec.md「事件詳情浮層」位置)
+      // DT-side:7/5 在星期的左半邊 → 先開右側、與事件隔 8、頂端對齊(calendar.spec.md「事件詳情浮層」位置【DT-DIRECTION(定)】子選單擺法)
       check(`DT-side${tag}`, near(g.detail.left - g.tile.right, 8) && near(g.detail.top, g.tile.top),
         `詳情左緣 − 事件右緣 ${fmtPx(g.detail.left - g.tile.right)}(規格 8)、詳情上緣 ${fmtPx(g.detail.top)} / 事件上緣 ${fmtPx(g.tile.top)}`)
       // DT-vertical:每一欄標籤在上(標籤底 ≤ 值頂)、標籤左緣 = 欄位左緣【FIELD-ORIENT(定)】
@@ -1799,6 +1806,52 @@ const BLOCKS = {
       await frames(4)
       const escFocus = await page.evaluate(() => document.activeElement?.getAttribute('data-calendar-event-id') === 'd1')
       check(`DT-esc${tag}`, closed && escFocus, `Esc 後詳情${closed ? '關了' : '沒關'}、焦點${escFocus ? '回到「設計審查」' : '不在「設計審查」'}`)
+      if (!closed) { await page.keyboard.press('Escape'); await waitSel(detailSel, 'closed') }
+      // DT-side-right / DT-side-flip【DT-DIRECTION(定)】:子選單擺法 = 先開右側、右側放不下由碰撞翻左,不依那一天在星期的哪一半換邊
+      //(calendar.spec.md「事件詳情浮層」位置 → popover.spec.md「禁止事項」用法 (2))。被點的是最右一欄 7/25「客戶會議」:
+      //   right:情境(不是突變)把 Calendar 根元素收窄到 roomWidth(月曆右邊留出空位)—— 它仍在星期的右半邊,但右側放得下 → 照樣開右側、隔 8;
+      //         2026-11-26 前「朝格陣中央」的寫法在這裡往左開 → 紅。
+      //   flip:原版面右側放不下 → 翻到左側:事件左緣 − 詳情右緣 = 8、詳情不出視窗。
+      //   兩者垂直都對齊事件上緣;放不下時被推回視窗內、底留 8(同 DT-list)。前提(右半邊 / 右側放不放得下)在量測時現算,不成立 = 儀器失效,不讀成通過。
+      const sideSample = async (cell, room) => {
+        const tileSel = `[data-calendar-tile][data-calendar-event-id="${DETAIL_SIDE.eventId}"]`
+        await page.evaluate((w) => { const root = document.querySelector('[role="grid"]')?.parentElement; if (root) root.style.width = w ? `${w}px` : '' }, room)
+        await frames(4)
+        let m = null
+        if (!(await page.$(tileSel))) instrumentFails.push({ cell: `${cell}${tag}`, detail: '找不到 7/25「客戶會議」那一段(範例資料變了?)' })
+        else {
+          await page.click(tileSel)
+          if (!(await waitSel(detailSel, 'open'))) instrumentFails.push({ cell: `${cell}${tag}`, detail: '點「客戶會議」後等不到詳情' })
+          else {
+            if (mutate?.sideDom) await page.evaluate(mutate.sideDom, { d: detailSel, t: tileSel, gap: DETAIL_SIDE.gap, edge: DETAIL_SIDE.edge })
+            await frames(3)
+            m = await page.evaluate(({ d, t }) => {
+              const detail = document.querySelector(d), tile = document.querySelector(t)
+              const gridCell = tile?.closest('[role="gridcell"]')
+              if (!detail || !tile || !gridCell) return null
+              const cells = [...gridCell.parentElement.children].filter((el) => el.getAttribute('role') === 'gridcell')
+              const dr = detail.getBoundingClientRect(), tr = tile.getBoundingClientRect()
+              return { col: cells.indexOf(gridCell), cols: cells.length, tile: { left: tr.left, right: tr.right, top: tr.top }, detail: { left: dr.left, right: dr.right, top: dr.top, bottom: dr.bottom, width: dr.width },
+                vw: document.documentElement.clientWidth, vh: document.documentElement.clientHeight }
+            }, { d: detailSel, t: tileSel })
+            await page.keyboard.press('Escape'); await waitSel(detailSel, 'closed')
+          }
+        }
+        await page.evaluate(() => { const root = document.querySelector('[role="grid"]')?.parentElement; if (root) root.style.width = '' })
+        await frames(4)
+        if (!m) return null
+        const fitsRight = m.tile.right + DETAIL_SIDE.gap + m.detail.width + DETAIL_SIDE.edge <= m.vw
+        const topOk = near(m.detail.top, m.tile.top) || (m.detail.top < m.tile.top && near(m.detail.bottom, m.vh - DETAIL_SIDE.edge))
+        return { ...m, fitsRight, topOk, rightHalf: m.col > (m.cols - 1) / 2 }
+      }
+      const sr = await sideSample('DT-side-right', DETAIL_SIDE.roomWidth)
+      if (sr && !(sr.rightHalf && sr.fitsRight)) instrumentFails.push({ cell: `DT-side-right${tag}`, detail: `情境沒成立:第 ${sr.col + 1} / ${sr.cols} 欄${sr.rightHalf ? '' : '(不在右半邊)'}、右側${sr.fitsRight ? '' : '放不下'}(事件右緣 ${fmtPx(sr.tile.right)} + 8 + 詳情寬 ${fmtPx(sr.detail.width)} + 8 vs 視窗 ${sr.vw})` })
+      else if (sr) check(`DT-side-right${tag}`, near(sr.detail.left - sr.tile.right, DETAIL_SIDE.gap) && sr.topOk,
+        `右半邊(第 ${sr.col + 1} / ${sr.cols} 欄)但右側放得下:詳情左緣 − 事件右緣 ${fmtPx(sr.detail.left - sr.tile.right)}(規格 8,先開右側)、詳情上緣 ${fmtPx(sr.detail.top)} / 事件上緣 ${fmtPx(sr.tile.top)}`)
+      const sf = await sideSample('DT-side-flip', 0)
+      if (sf && !(sf.col === sf.cols - 1 && !sf.fitsRight)) instrumentFails.push({ cell: `DT-side-flip${tag}`, detail: `情境沒成立:第 ${sf.col + 1} / ${sf.cols} 欄、右側${sf.fitsRight ? '放得下' : '放不下'}(要最右一欄且右側放不下)` })
+      else if (sf) check(`DT-side-flip${tag}`, near(sf.tile.left - sf.detail.right, DETAIL_SIDE.gap) && sf.detail.left >= DETAIL_SIDE.edge - 0.5 && sf.topOk,
+        `最右一欄右側放不下:事件左緣 − 詳情右緣 ${fmtPx(sf.tile.left - sf.detail.right)}(規格 8,翻到左側)、詳情左緣 ${fmtPx(sf.detail.left)}(≥ 8)、詳情上緣 ${fmtPx(sf.detail.top)} / 事件上緣 ${fmtPx(sf.tile.top)}`)
       // DT-outside(一般密度):減少動態下,地點改到一半點頁面空白 = 先提交再關(calendar.spec.md「點外面」(1));再打開看得到新的地點。
       // 對照組(outsideAsEscape)改成按 Esc 取消編輯、再按 Esc 關 → 地點沒存 → 紅(證明這一格看得到「沒提交」)
       if (density === 'md' && (!mutate || mutate.outsideAsEscape)) {
@@ -1851,7 +1904,7 @@ const BLOCKS = {
       check('DT-blank', okBlank && (tileName2 ?? '').startsWith(`${renamed},`), `清空提交後月格「${tileName2}」(規格:清空 = 還原原值)`)
       await page.keyboard.press('Escape'); await waitSel(detailSel, 'closed')
     }
-    // DT-list:從「+N」清單開(設計規格「狀態行為:從清單開詳情」,7/22 星期三 = 正中那一欄 → 往右):清單不關、詳情貼著清單外緣 8、上緣對齊那一列;
+    // DT-list:從「+N」清單開(設計規格「狀態行為:從清單開詳情」;子選單擺法先開右,7/22 右側放得下 → 往右):清單不關、詳情貼著清單外緣 8、上緣對齊那一列;
     // Esc 一次一層:第一下關詳情、焦點回那一列,第二下關清單、焦點回「+N」
     const p = await open(STORY.detailFromList, { label: '從清單開詳情', mutate })
     if (!p) return
@@ -2123,6 +2176,22 @@ const MUTANTS = [
   { name: '詳情拿掉 aria-label(浮層沒有名字 / 念成隱形編輯鈕)', block: 'detail', expect: ['DT-name@md', 'DT-name@lg'], detailDom: () => document.querySelector('[data-calendar-event-detail]')?.removeAttribute('aria-label') },
   { name: '標題列沒用可編輯標題的 slot(× 佔位回到一行字高)', block: 'detail', expect: ['DT-head@md', 'DT-head@lg'], css: '[data-calendar-event-detail] [data-slot="surface-header"] { --surface-chrome-slot-h: calc(var(--font-body-size) * 1.5) !important; }' },
   { name: '詳情開在事件下方(沒有側邊開、頂端對齊)', block: 'detail', expect: ['DT-side@md', 'DT-side@lg'], css: '[data-calendar-event-detail] { margin-top: 40px !important; }' },
+  // 以位移重現舊幾何(元件的 side 由 React 傳給定位器,頁面外改不到):在星期右半邊、左側放得下 → 搬到事件左側隔 8(= 2026-11-26 前 sideTowardCenter 的結果)
+  { name: '改回朝格陣中央(右半邊的欄往左開)', block: 'detail', expect: ['DT-side-right@md', 'DT-side-right@lg'],
+    sideDom: ({ d, t, gap, edge }) => {
+      const detail = document.querySelector(d), tile = document.querySelector(t), cell = tile?.closest('[role="gridcell"]')
+      const cells = cell ? [...cell.parentElement.children].filter((el) => el.getAttribute('role') === 'gridcell') : []
+      if (!detail || !cell || cells.indexOf(cell) <= (cells.length - 1) / 2) return
+      const dr = detail.getBoundingClientRect(), want = tile.getBoundingClientRect().left - gap - dr.width
+      if (want >= edge) detail.style.setProperty('translate', `${want - dr.left}px 0px`, 'important')
+    } },
+  // 重現「關掉碰撞翻面」(avoidCollisions false):不管放不放得下都留在事件右側隔 8
+  { name: '右側放不下也不翻面', block: 'detail', expect: ['DT-side-flip@md', 'DT-side-flip@lg'],
+    sideDom: ({ d, t, gap }) => {
+      const detail = document.querySelector(d), tile = document.querySelector(t)
+      if (!detail || !tile) return
+      detail.style.setProperty('translate', `${tile.getBoundingClientRect().right + gap - detail.getBoundingClientRect().left}px 0px`, 'important')
+    } },
   { name: '欄位改回水平排(標籤在左)', block: 'detail', expect: ['DT-vertical@md', 'DT-vertical@lg'], css: '[data-calendar-detail-field] { display: grid !important; grid-template-columns: 96px minmax(0, 1fr) !important; }' },
   { name: '標籤沒套閱讀情境(主色)', block: 'detail', expect: ['DT-label@md', 'DT-label@lg'], css: '[data-calendar-detail-field] label { color: var(--foreground) !important; }' },
   { name: 'body 底部改成 48(大容器的 bottom)', block: 'detail', expect: ['DT-gap@md', 'DT-gap@lg'], css: '[data-calendar-event-detail] [data-popover-body] { padding-bottom: 48px !important; }' },

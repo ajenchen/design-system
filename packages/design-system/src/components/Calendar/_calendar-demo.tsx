@@ -127,7 +127,8 @@ export function CalendarDemo({
         <Popover open={openEvent != null} onOpenChange={(next) => { if (!next) setOpenEvent(null) }}>
           <PopoverAnchor virtualRef={anchorRef as React.RefObject<HTMLElement>} />
           {/* 只有錨點、沒有觸發鈕:收起時焦點還給事件方塊(點外面收起不搶;同 date-picker.tsx DatePickerRange 的接法)。
-              開的方向照 calendar.spec.md「事件詳情浮層」位置:側邊、頂端對齊(這裡固定往右,產品自己決定) */}
+              開的方向與內建詳情同一種擺法(calendar.spec.md「事件詳情浮層」位置 → popover.spec.md「禁止事項」用法 (2) 子選單擺法):
+              右側、上緣對齊,右邊放不下由 Popover 碰撞翻左;隔多少用 Popover 預設(產品自己的浮層也可以另選,這裡照 DS 的擺法) */}
           <PopoverContent side="right" align="start" onCloseAutoFocus={(e) => returnFocusToOpener(e, anchorRef.current, { noTrigger: true })}>
             <PopoverHeader><PopoverTitle>{openEvent?.title}</PopoverTitle></PopoverHeader>
             <PopoverBody>{openEvent ? eventWhen(openEvent) : null}</PopoverBody>

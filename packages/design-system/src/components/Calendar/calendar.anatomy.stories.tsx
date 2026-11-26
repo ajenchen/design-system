@@ -380,7 +380,7 @@ export const MoreListOpen: Story = {
 }
 
 // ── 5c. 狀態行為:事件詳情開著(M15:點一下才看得到的狀態,用 play 打開)──────────────────────────────
-// 點「設計審查」= 內建詳情浮層(calendar.spec.md「事件詳情浮層」):開在事件側邊、頂端對齊(7/5 在左半邊 → 往右開);標題就地改、
+// 點「設計審查」= 內建詳情浮層(calendar.spec.md「事件詳情浮層」):照 DS 子選單擺法開在事件右側、頂端對齊(右邊放不下才翻左);標題就地改、
 // 欄位垂直排(閱讀情境:標籤次要色);被點的那一段在詳情開著時維持滑過色。
 const detailEvents: CalendarEvent[] = [
   { id: 'd1', title: '設計審查', start: `${thisMonth}-05T10:00`, end: `${thisMonth}-05T11:00`, color: 'blue', categoryId: 'meeting', location: '台北辦公室 3F 大會議室', description: '結帳頁改版第二輪:確認信用卡分期的金額顯示與錯誤訊息。' },
@@ -398,7 +398,7 @@ export const DetailOpen: Story = {
   render: () => (
     <div className="h-screen p-4 bg-canvas">
       <div className="mb-2 text-body text-fg-muted space-y-1">
-        <div>• <b>位置</b>:開在事件側邊、頂端對齊;那一天在星期的左半邊 → 往右開、右半邊 → 往左開(放不下自動翻面);與事件隔 8</div>
+        <div>• <b>位置</b>:與選單的子選單同一種擺法 —— 開在事件右側、頂端對齊、與事件隔 8;右邊放不下才翻到左側(例:最右一欄 7/25 的「客戶會議」)</div>
         <div>• <b>標題列</b>:標題就地改(點標題進編輯),右側〔⋯〕〔×〕;沒有儲存鈕,每一欄自己提交</div>
         <div>• <b>欄位</b>:時間(同一天合併成一段)、全天(開關直接切)、地點、說明、類別,標籤在上;Esc 一次關一層,焦點回打開它的那一段</div>
       </div>
