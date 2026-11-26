@@ -399,17 +399,20 @@ Field 家族在此之上**額外**有欄位邊框轉 primary(`field-wrapper.tsx#
 
 **規則:同一個承擔者被兩個以上 tab stop 共用時,每一顆必須另有自己的區分指示。**
 
-DatePicker 自己早就有那個指示 —— 作用端下方一條主色粗線
-(`decoration-primary decoration-2 underline-offset-4`),對照
+DatePicker 自己早就有那個指示 —— 作用端一條主色粗線,對照
 [Ant Design RangePicker 的 `-active-bar`](https://raw.githubusercontent.com/ant-design/ant-design/master/components/date-picker/style/index.ts)
 (`height: lineWidthBold, background: colorPrimary, bottom: -lineWidth`,一手 source)。
 問題只是那條線原本掛在 `data-active-end`(帶 `open &&` 條件),
 所以**面板關著用 Tab 在起訖之間移動時,兩顆長得一模一樣**。
-2026-09-08 補上 `focus-visible:underline` —— 用的是同一條線,不是第二種指示。
+2026-09-08 補上 focus-visible 這一半(當時寫 `focus-visible:underline`)—— 用的是同一條線,不是第二種指示。
+2026-11-26 起那條線**壓在欄位框的下邊上**(線的下緣 = 框外緣、粗 2px、蓋住那段框線;線長 = 該端文字寬;線色 = 框當下的顏色,
+欄位錯誤時紅),與 Ant 的 `bottom: -lineWidth` 同位置(RANGE-FOCUS-BAR(定),user 決策卡留言逐字:「應該是甲，但是你的圖片的底線長度應該要等同於上方的時間吧？」)。
+此前是文字底線(`decoration-primary decoration-2 underline-offset-4`),離框的距離隨字級而變。
+規則 owner = `packages/design-system/src/components/DatePicker/date-picker.spec.md`「Active-end 機制」視覺指示。
 
 機械強制:`scripts/focus-suppression-registry.mjs` 把同檔內承擔者字串相同的 C 類分組,
 ≥2 個就要求每一處後 8 行內有 `focus-visible:` 的非 `outline-none` 樣式。
-對照組驗過:拿掉 `focus-visible:underline` → 閘紅並指名兩行;補回 → 綠。
+對照組驗過(2026-09-08,當時的寫法):拿掉 `focus-visible:underline` → 閘紅並指名兩行;補回 → 綠。
 
 ### C 類為什麼是「從自己往上」而不是「往上」
 

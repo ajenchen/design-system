@@ -184,6 +184,12 @@ export const WithError: Story = {
         <LiveDatePicker error value="2026-04-02" />
       </div>
       <LiveDatePicker error value={null} placeholder="必填日期" />
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <p className="text-caption text-fg-muted">
+          出差期間超過公司上限 14 天:點開其中一端時,那一端壓在外框下邊的線也是紅色,跟外框同色。
+        </p>
+        <LiveDatePickerRange error value={['2026-04-01', '2026-04-20']} placeholder={['出發日期', '返回日期']} />
+      </div>
     </div>
   ),
 }

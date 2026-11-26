@@ -176,7 +176,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 
 ### 結構
 
-外層是 `fieldWrapperStyles` 容器,內含**兩個獨立 button**(start / end input,點任一個都開 Popover **並設定 activeEnd**)、中間 `ArrowRight` icon(`mx-2`,`text-fg-muted`)、右側固定 `CalendarIcon`。Active 端點視覺以 `data-active-end="true"` underline 標示(對齊 Ant RangePicker active input 視覺:底部 active bar,https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/style/index.ts#L276-L283)。
+外層是 `fieldWrapperStyles` 容器,內含**兩個獨立 button**(start / end input,點任一個都開 Popover **並設定 activeEnd**)、中間 `ArrowRight` icon(`mx-2`,`text-fg-muted`)、右側固定 `CalendarIcon`。作用端(面板開著的那一端 `data-active-end="true"`、面板關著時鍵盤聚焦的那一顆)以一條**壓在欄位框下邊上**的線標示(線長 = 該端文字寬、線色 = 框色;規則見下方「Active-end 機制」視覺指示;對齊 Ant RangePicker 底部 active bar,https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/style/index.ts#L276-L283)。
 
 **外框本身就是點擊目標(2026-09-27)**:外框的內距與 1px 邊框底下沒有按鈕,指到那裡外框會亮(`hover:border-border-hover`),此前點下去什麼都不發生 =「亮著卻點不到」(`ds-canonical/references/hit-area-canonical.md` 一-1;09-27 全面稽核實測抓到,是 N53 那一族漏掉的第 7 處)。規則:點在外框裡、不是任何控件上 → **開離指標最近的那一段**(以起訖兩顆鈕的中線為界:左半開起始日、右半開結束日),焦點落在該鈕;外框游標一般手形(它會開面板,不能打字 —— 此前的 `cursor-text` 是錯的)。同家族 Select / Combobox / TimePicker / PeoplePicker 的外框本身就是點擊目標(`field-wrapper.tsx`「點外框 = 點輸入處」註解),本條只是補齊漏網。世界級同向:Ant RangePicker 整個外框掛 `onClick`(rc-picker https://github.com/react-component/picker/blob/9ecb0508645e1c0d9f3181263eecafdd1e262f6b/src/PickerInput/Selector/RangeSelector.tsx#L238-L249 根節點 `onClick={onClick}` → https://github.com/react-component/picker/blob/9ecb0508645e1c0d9f3181263eecafdd1e262f6b/src/PickerInput/RangePicker.tsx#L471-L487 `onSelectorClick` → `triggerOpen(true)`;mousedown 時 `preventDefault` 讓焦點留在輸入處)、Carbon DatePicker 走 flatpickr `clickOpens: !readOnly`(https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/react/src/components/DatePicker/DatePicker.tsx#L677)。〔做法由 AI 提出;user 09-27 對甲案(點外框 = 開那一段)答「確保符合我們一致的設計語言且不違背世界級的設計就照你建議」,條件式同意,條件核對如上〕
 
@@ -194,7 +194,13 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 - 點 end input → `activeEnd='end'` + 開 popover;同理只更新 end
 - **Auto-advance**:選完 start → 自動切 `activeEnd='end'` 等待 user 選 end(一次連續選完一段區間,不必再去點結束欄)
 - **showTime=true 時 TimeColumns 套 active end 的 time**(只能編一端的時間,符合單一焦點原則)
-- 視覺指示:active input 加 `decoration-primary underline-offset-4 decoration-2`(對齊 Field focus 語意)【AI 推導 2026-11-16:`decoration-2` = 畫出來就是 2px,不是只有樣式值 2px。sm / md 的 14px 字級下這條線有一半落在行盒下緣之外,所以起訖文字的截斷只能裁水平(`overflow-x-clip`),不能雙軸裁;2026-11-17 前雙軸裁切把下半裁掉、只畫出 1px(A50)。閘 `scripts/datepicker-range-active-underline-invariant.mjs`(三種 size × 起訖兩端 × 鍵盤 / 點開兩種出現方式 × 像素比 1 / 2,外加長日期仍截斷)】
+- 視覺指示:作用端一條**壓在欄位框下邊上**的線(RANGE-FOCUS-BAR(定)2026-11-26;user 第四輪決策卡留言,逐字:「應該是甲，但是你的圖片的底線長度應該要等同於上方的時間吧？」;對話內確認「可以,照甲做」「可以,套用」)
+  - 位置:線的下緣 = 欄位框外緣、粗 2px,蓋住那一段 1px 框線,與框線合成一條(不是框線上方再一條)。各尺寸 × 各密度都一樣 —— 位置由文字行盒下緣往下 `--field-control-py-*` + `--field-border-width` 推(`tokens/uiSize/uiSize.css`),不寫死 px。
+  - 線長 = 該端文字寬(長日期被截斷時 = 看得到的那一段),不是按鈕寬。
+  - 顏色 = 框當下的顏色:一般主色(`--color-primary`,同聚焦時的框);欄位錯誤時紅(`--color-error`,同錯誤的框 —— Field 的錯誤色勝過聚焦色,`../Field/field-wrapper.tsx` error 條)。Field 家族目前沒有警告態;日後加了,線色跟框色走同一個變數(`--range-end-bar-color`)。
+  - 理由(決策卡上甲案的說明,AI 提出、user 選甲):線與框線合成一條,框裡不會多出第二條線(同 Tabs 選中線蓋住下方分隔線 —— `../Tabs/tabs.spec.md`「這兩條線視覺上必須是同一條」);位置貼框,不隨字級與行高變(此前的文字底線 `decoration-primary underline-offset-4 decoration-2` 離框的距離隨尺寸而變)。Ant RangePicker 同位置:active bar `bottom: -lineWidth`、`height: lineWidthBold`、`background: colorPrimary`(https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/style/index.ts#L276-L283),錯誤 / 警告時 active bar 換成 `colorError` / `colorWarning`(同檔 `genPickerStatusStyle`)。
+  - 文字段只裁水平(`overflow-x-clip`),不能雙軸裁 —— 線從文字段往下伸到框外緣,雙軸裁切會把它整條裁掉(2026-11-17 A50 是同一類:當時文字底線的下半被裁、2px 只畫出 1px)。
+  - 閘 `scripts/datepicker-range-active-underline-invariant.mjs`(量像素:線下緣 = 框外緣、線長 = 文字寬、線色 = 框色;一般 / 大密度 × sm / md / lg × 帶 / 不帶時間、錯誤態、長日期截斷、Calendar 詳情時間欄,起訖兩端 × 鍵盤 / 點開兩種出現方式 × 像素比 1 / 2)
 
 ### Popover 行為
 
@@ -415,7 +421,7 @@ DatePicker 套 `React.forwardRef` + `displayName`;`DatePickerProps` extends `Omi
 
 ## A11y 預設
 
-**Focus**:Field 家族的焦點指示 = **欄位邊框轉主色 1px**,不畫全域 2px 外框,**不分滑鼠鍵盤**(owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列;關閉時觸發器 wrapper 自己是焦點站,只有邊框轉色 —— 全域 `:focus-visible` 由 `fieldWrapperStyles` 的 `focus-visible:outline-none` 抑制,@focus-suppress C)。**自己的浮層開著時**維持同一個聚焦的框,不看焦點留在欄位裡還是已搬進浮層(唯一出處 `../Field/field.spec.md`「Field state machine SSOT」;本句 2026-11-12 前寫「不分開著關著」並說開啟時焦點在裡面的插入點控件,對焦點會搬進浮層的情形不成立,已更正)。唯讀態:同樣是邊框轉主色 1px,但**只在鍵盤聚焦時畫、滑鼠點不變**(2026-11-11;`../Field/field-controls.spec.md`「Focus 行為」readonly 段。本句 2026-09-10 前寫「改由全域外描邊畫」,已過時)。閘:`virtual-cursor-modality-invariant.mjs` G / H 段。 typeable 變體焦點在真 `<input>`(插入點控件)、非 typeable 在 wrapper,兩者同樣只有邊框轉色;Range 的起訖兩顆共用同一圈邊框,靠主色底線區分(見上方 trigger 段)。
+**Focus**:Field 家族的焦點指示 = **欄位邊框轉主色 1px**,不畫全域 2px 外框,**不分滑鼠鍵盤**(owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列;關閉時觸發器 wrapper 自己是焦點站,只有邊框轉色 —— 全域 `:focus-visible` 由 `fieldWrapperStyles` 的 `focus-visible:outline-none` 抑制,@focus-suppress C)。**自己的浮層開著時**維持同一個聚焦的框,不看焦點留在欄位裡還是已搬進浮層(唯一出處 `../Field/field.spec.md`「Field state machine SSOT」;本句 2026-11-12 前寫「不分開著關著」並說開啟時焦點在裡面的插入點控件,對焦點會搬進浮層的情形不成立,已更正)。唯讀態:同樣是邊框轉主色 1px,但**只在鍵盤聚焦時畫、滑鼠點不變**(2026-11-11;`../Field/field-controls.spec.md`「Focus 行為」readonly 段。本句 2026-09-10 前寫「改由全域外描邊畫」,已過時)。閘:`virtual-cursor-modality-invariant.mjs` G / H 段。 typeable 變體焦點在真 `<input>`(插入點控件)、非 typeable 在 wrapper,兩者同樣只有邊框轉色;Range 的起訖兩顆共用同一圈邊框,靠作用端那條壓在框下邊上的線區分(線色 = 框色;見上方「Active-end 機制」視覺指示)。
 
 - Trigger:非 typeable 由 Field wrapper 持 `role="combobox"`;typeable 由真 `<input>` 持 combobox 語意,外層 wrapper 不重複 ARIA。兩者皆有 `aria-haspopup="dialog"` + `aria-expanded={open}` + accessible name(`aria-label` / 或外層 `<label>` / 或 fieldCtx label),並只在 popup 已掛載時輸出 `aria-controls` 指向同一個 dialog ID(關閉時移除,不得留下懸空 IDREF)
 - Popover content:`role="dialog"`;單一日期 popover 的 PopoverContent 帶 `aria-label="日期選擇"`(date-picker.tsx#DatePicker,DS default dialog label),Range popover 加 `aria-label="日期區間選擇"`
