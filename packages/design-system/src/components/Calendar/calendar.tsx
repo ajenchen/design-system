@@ -1384,6 +1384,11 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
         'flex flex-col w-full h-full bg-surface rounded-md border border-divider overflow-hidden',
         className,
       )}
+      // 邊緣標記(2026-11-26,calendar.spec.md「外殼」):一圈完整外框 = bounded region 的邊緣 —— layoutSpace.spec.md:156
+      // 「元件根部宣告自己的邊緣 `data-layout-region="bounded"`(有完整外框:表格 / 卡片 / 面板)」,與 DataTable 外框同一個標記(data-table.tsx)。
+      // 放進會自己給上下內距的容器(DialogBody / SheetBody 等 data-layout-body)且是最後一塊時,容器底自動 = loose(規則 4 第 2 列;
+      // tokens/layoutSpace/layoutSpace.css),不是一般元素的 48。放在 {...props} 之前:consumer 改掉外框時可一併改標記。
+      data-layout-region="bounded"
       {...props}
       // 幾何常數設成元件內變數(--calendar-gap / --calendar-text-inset / --calendar-cell-min-h;calendar-geometry.ts)。
       // consumer 傳的 style 照併進來;這三個名字只有 Calendar 自己讀(元件內變數,不是 token)。

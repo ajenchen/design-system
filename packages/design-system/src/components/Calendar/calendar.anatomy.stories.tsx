@@ -66,7 +66,7 @@ const WEEK_START_OPTIONS = [0, 1, 2, 3, 4, 5, 6]
 export const Overview: Story = {
   name: '元件總覽',
   render: () => (
-    <div className="h-screen p-4 bg-canvas">
+    <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
       <CalendarDemo events={sampleEvents} defaultReferenceDate={now} today={now} locale={LOCALE} />
     </div>
   ),
@@ -104,7 +104,7 @@ export const Inspector: Story = {
   },
   // 可點模式的三個回調由示範殼接上(點得出真的結果);Controls 只切外觀與資料
   render: (args) => (
-    <div className="h-screen p-4 bg-canvas">
+    <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
       <CalendarDemo
         defaultReferenceDate={now}
         today={args.today}
@@ -135,7 +135,7 @@ export const ColorMatrix: Story = {
       { id: `timed-${c}`, title: c, start: `${day(i)}T10:00`, end: `${day(i)}T11:00`, color: c },
     ])
     return (
-      <div className="p-4 bg-canvas flex flex-col gap-10">
+      <div className="p-[var(--layout-space-loose)] bg-canvas flex flex-col gap-10">
         <div>
           <H3>事件類別色</H3>
           <Desc>
@@ -292,7 +292,7 @@ export const ColorMatrix: Story = {
 export const StateBehavior: Story = {
   name: '狀態行為',
   render: () => (
-    <div className="h-screen p-4 bg-canvas">
+    <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
       <div className="mb-2 text-body text-fg-muted space-y-1">
         <div>• <b>today</b> cell:date 數字加 <code>bg-info text-on-emphasis rounded-full</code> 圓</div>
         <div>• <b>outside month</b>:前後月日期數字走淡字 <code>text-fg-muted</code>,cell 不加底色(跟當月格一樣可點、一樣的滑過色)</div>
@@ -344,7 +344,7 @@ const conferenceEvents: CalendarEvent[] = [
 export const MoreListOpen: Story = {
   name: '狀態行為:「+N」清單開著',
   render: () => (
-    <div className="h-screen p-4 bg-canvas">
+    <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
       <div className="mb-2 text-body text-fg-muted space-y-1">
         <div>• <b>位置</b>:以「+N」那一格為中心(水平 + 垂直)蓋在格子上,碰到視窗邊推回、留 8;寬 = 格寬與浮層預設寬取大</div>
         <div>• <b>內容</b>:當天全部事件(含格內已畫出來的),順序與格內相同;跨日的「大會週」兩端都斷開、直角;唯讀的「場地布置」照樣列出、是純文字</div>
@@ -396,7 +396,7 @@ const DETAIL_CATEGORIES = [
 export const DetailOpen: Story = {
   name: '狀態行為:事件詳情開著',
   render: () => (
-    <div className="h-screen p-4 bg-canvas">
+    <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
       <div className="mb-2 text-body text-fg-muted space-y-1">
         <div>• <b>位置</b>:與選單的子選單同一種擺法 —— 開在事件右側、頂端對齊、與事件隔 8;右邊放不下才翻到左側(例:最右一欄 7/25 的「客戶會議」)</div>
         <div>• <b>標題列</b>:標題就地改(點標題進編輯),右側〔⋯〕〔×〕;沒有儲存鈕,每一欄自己提交</div>
@@ -434,7 +434,7 @@ void [
 export const DetailFromMoreList: Story = {
   name: '狀態行為:從清單開詳情',
   render: () => (
-    <div className="h-screen p-4 bg-canvas">
+    <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
       <div className="mb-2 text-body text-fg-muted space-y-1">
         <div>• <b>兩層並存</b>:點清單裡的事件,詳情開在清單旁、水平貼著清單外緣、上緣對齊那一列;清單不關,那一列維持滑過色</div>
         <div>• <b>Esc 一次一層</b>:第一下關詳情(焦點回那一列),第二下關清單(焦點回「+N」);點清單上 = 只關詳情,點頁面 = 兩層都關</div>

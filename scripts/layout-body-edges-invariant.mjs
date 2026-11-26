@@ -60,6 +60,8 @@
  *           對照組畫回分隔線 → 改量標頭外框、紅「與頂部同值」;決策卡(body 後面還有一樣拿掉線的 footer)照舊量標頭外框、綠;
  *         ι 就地編輯的框(InlineEdit 根 data-field-reading)算一個欄位、量框外框(Calendar 事件詳情,最後一欄是就地編輯):頂 = 底 = tight、綠;
  *           對照組拿掉 data-field-reading → 量到框裡的 Tag / 字、紅(field.spec.md「閱讀情境」表「就地編輯的框」;2026-11-26);
+ *         κ Calendar 根節點的邊緣標記(calendar.spec.md「外殼」;2026-11-26):範例外層改成 data-layout-body="fill" 的容器、月曆是最後一塊
+ *           → 標記 bounded、底 = loose、綠(月曆根節點沒有標記時這一格就紅);對照組拿掉標記 → 底 48、紅「應 loose…缺標記」;
  *         標記造假兩種(Sidebar 群組改標 bounded、表格外框改標 unbounded)→ 標記檢查紅。
  *   分片(--shard=i/n,i 從 0 起;CI 兩格 0/2、1/2):story id 依字碼穩定排序後取模。每片照常判(量測、標記、0 個容器 / 0 則 story = 儀器失效);
  *         例外帳「只准變少」與 --selftest 只在第 0 片做(--selftest 帶非 0 片直接略過、印出來);過期:整筆對到的 story 都在這一片的由這一片判,
@@ -126,6 +128,8 @@ const DECISION_STORY = 'design-system-components-agentpanel-展示--decision-car
 const INLINE_FRAME_STORY = 'design-system-components-calendar-設計規格--detail-open'
 const INLINE_FRAME_HEADER = '設計審查'
 const DECISION_HEADER = '公告要用哪種語氣'
+/** --selftest κ:Calendar 根節點的邊緣標記(calendar.spec.md「外殼」)。用「產品上線週」:外層 div 裡最後一個元素就是月曆根節點 */
+const CALENDAR_FRAME_STORY = 'design-system-components-calendar-展示--launch-week'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 頁面端(被 toString 送進頁面,不得引用外層變數;量具一律用 window.__layoutKit = header-first-gap 的 pageKit)
@@ -1295,6 +1299,31 @@ async function selftestBrowser(browser, server, ex) {
       const ok = now.length === 1 && Math.abs(now[0].bottom - want) <= TOL && Math.abs(now[0].top - want) <= TOL && !nowRed.length && bare.length === 1 && bRed.length > 0
       if (!ok) problems.push(`ι @${density}:Calendar 詳情最後一欄是就地編輯 → 應量框外框、頂 = 底 = ${want}、綠;拿掉 data-field-reading 應紅;實得 ${JSON.stringify(now.map((r) => ({ top: r.top, bottom: r.bottom, last: r.lastDesc })))} ${JSON.stringify(nowRed)} / 拿掉 ${JSON.stringify(bare.map((r) => ({ bottom: r.bottom, last: r.lastDesc })))} ${JSON.stringify(bRed)}`)
       else out(`  ✓ ι @${density}:Calendar 詳情最後一欄是就地編輯 → 量框外框,頂 ${now[0].top} = 底 ${now[0].bottom};拿掉 data-field-reading → 底 ${bare[0].bottom}、紅`)
+    }
+    // κ(2026-11-26):Calendar 根節點的邊緣標記(calendar.spec.md「外殼」;layoutSpace.spec.md:156)。全庫還沒有範例把月曆放進會給上下內距的容器,
+    // 這裡把「產品上線週」的外層 div 改成那種容器(拿掉範例自己的 p-*、宣告 data-layout-body="fill";月曆固定 600 高,下方留空白 = 撐滿的容器),
+    // 月曆是最後一塊 → 標記 bounded、底 = loose、綠。月曆根節點沒有標記時這一格量不到容器、紅(這一格就是「Calendar 根節點標 bounded」);
+    // 對照組拿掉標記 → 容器把月曆當一般元素給 48、紅「應 loose…缺標記」(同 γ 的表格)。月曆根節點 = 格陣往上第一個帶標記的祖先。
+    const asFillBody = (strip) => (p) => p.evaluate((strip) => {
+      const cal = document.querySelector('#storybook-root [role=grid]')?.closest('[data-layout-region]')
+      const wrap = cal?.parentElement
+      if (!cal || !wrap || wrap.lastElementChild !== cal) return
+      for (const c of [...wrap.classList]) if (/^p[trblxy]?-/.test(c)) wrap.classList.remove(c)
+      wrap.setAttribute('data-layout-body', 'fill')
+      cal.style.setProperty('height', '600px')
+      if (strip) cal.removeAttribute('data-layout-region')
+    }, strip)
+    for (const density of DENSITIES) {
+      const want = T[density].loose
+      const pick = (got) => got.rows.filter((r) => r.declared === 'fill')
+      const now = pick(await measureStory(page, server.origin, server.notFound, CALENDAR_FRAME_STORY, density, { exSel, triggers: false, explore: false, beforeMeasure: asFillBody(false) }))
+      const nowRed = now.flatMap((r) => [...judgeRow(r, ex).failures, ...judgeRow(r, ex).instrument])
+      const bare = pick(await measureStory(page, server.origin, server.notFound, CALENDAR_FRAME_STORY, density, { exSel, triggers: false, explore: false, beforeMeasure: asFillBody(true) }))
+      const bRed = bare.flatMap((r) => judgeRow(r, ex).failures)
+      const ok = now.length === 1 && now[0].regionMark === 'bounded' && Math.abs(now[0].bottom - want) <= TOL && !nowRed.length
+        && bare.length === 1 && Math.abs(bare[0].bottom - T[density].bottomToken) <= TOL && bRed.some((s) => s.includes('缺標記') && s.includes(`應 ${want}`))
+      if (!ok) problems.push(`κ @${density}:月曆放進 data-layout-body="fill" 的容器、是最後一塊 → 應量到 1 個容器、標記 bounded、底 ${want}、綠;拿掉標記應底 48、紅「應 ${want}…缺標記」;實得 ${JSON.stringify(now.map((r) => ({ bottom: r.bottom, mark: r.regionMark, last: r.lastDesc })))} ${JSON.stringify(nowRed)} / 拿掉 ${JSON.stringify(bare.map((r) => ({ bottom: r.bottom, last: r.lastDesc })))} ${JSON.stringify(bRed)}`)
+      else out(`  ✓ κ @${density}:月曆是 fill 容器的最後一塊 → 邊緣標記 bounded、底 ${now[0].bottom} = loose;拿掉標記 → 底 ${bare[0].bottom}、紅「應 ${want}…缺標記」`)
     }
     // 標記造假:Sidebar 群組改標 bounded、表格外框改標 unbounded → 標記檢查紅
     const fake = await measureStory(page, server.origin, server.notFound, SIDEBAR_STORY, 'md', {

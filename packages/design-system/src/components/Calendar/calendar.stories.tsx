@@ -360,10 +360,10 @@ export const SidePanelNarrow: Story = {
 export const ReadOnlyDatesCustomTileKeyboard: Story = {
   name: '唯讀日期 × 自訂事件方塊鍵盤',
   tags: ['test-only'],
-  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:517「Enter/Space activation」
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md「A11y 預設」的「`renderEventTile` 的鍵盤責任歸屬」:「Enter/Space activation」
   parameters: { demoFocus: 'keep' },
   render: () => (
-    <div className="h-screen p-4 bg-canvas">
+    <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
       <Calendar
         events={[{ id: 'p1', title: '週五電子報', start: `${thisMonth}-02T08:00`, end: `${thisMonth}-02T08:00`, color: 'blue' }]}
         defaultReferenceDate={now}
@@ -408,7 +408,7 @@ export const EventClickAnchor: Story = {
   // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:96「onEventClick={(event, { anchor }) => …}」
   parameters: { demoFocus: 'keep' },
   render: () => (
-    <div className="h-screen p-4 bg-canvas">
+    <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
       <Calendar
         defaultReferenceDate={now}
         today={now}
@@ -462,7 +462,7 @@ export const DetailViewOnly: Story = {
   tags: ['test-only'],
   // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md「事件詳情浮層」內文欄位最後一條(isEditable 為 false)
   render: () => (
-    <div className="h-screen p-4 bg-canvas">
+    <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
       <CalendarDemo
         defaultReferenceDate={now}
         today={now}
@@ -493,7 +493,7 @@ const shiftDays = (value: string | Date, days: number): string | Date => {
 function DetailChangeLogDemo() {
   const [log, setLog] = React.useState<{ id: string; patch: Partial<CalendarEvent> }[]>([])
   return (
-    <div className="h-screen p-4 bg-canvas flex flex-col gap-2">
+    <div className="h-screen p-[var(--layout-space-loose)] bg-canvas flex flex-col gap-2">
       <output data-calendar-change-log={JSON.stringify(log)} className="text-body text-fg-secondary">
         onEventChange 呼叫 {log.length} 次{log.length ? `,最後一次:${JSON.stringify(log[log.length - 1].patch)}` : ''}
       </output>
@@ -555,9 +555,9 @@ const ENGLISH_EVENTS: CalendarEvent[] = [
 export const EnglishLabelsOverride: Story = {
   name: '英文讀屏字串覆寫',
   tags: ['test-only'],
-  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:498「字串可覆寫」
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md「A11y 預設」的「字串可覆寫」
   render: () => (
-    <div className="h-screen p-4 bg-canvas">
+    <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
       <Calendar
         defaultReferenceDate={now}
         today={now}
@@ -613,10 +613,10 @@ export const EmptyCalendar: Story = {
 export const CellBlankClickMovesKeyboardStop: Story = {
   name: '點格內空白帶鍵盤位置',
   tags: ['test-only'],
-  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:229「點格內空白處也把鍵盤位置帶過來」
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md「Cell 規則」的「點格內空白處也把鍵盤位置帶過來」
   parameters: { demoFocus: 'keep' },
   render: () => (
-    <div className="h-screen p-4 bg-canvas">
+    <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
       <Calendar defaultReferenceDate={now} today={now} events={[]} onDateClick={fn()} onEventClick={fn()} onCreateEvent={fn()} />
     </div>
   ),
