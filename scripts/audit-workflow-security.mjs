@@ -331,6 +331,8 @@ export function auditWorkflowSources(sources, {
       }
       // 產品 repo 的接收升級 workflow:升級交易(sync-all → verify-upgrade-evidence.mjs)自己跑「只擋這次升級新帶進來的」
       // 差集弱點稽核。在這裡對升級前的樹擋 high,會把帶著修補的那次升級也擋掉(beta.146 / 147 WM 同步連環 GOV-SUPPLY-005)。
+      // 這條例外先於本體發布(TRACKER R22:PR 的「Verify authority candidate」跑 main 上的本閘,不認 PR 裡新加的例外),
+      // 0.1.0-beta.151 只發例外與 scripts/test-workflow-security.mjs 的兩面測試,本體下一版才進 template。
       if (file === CONSUMER_RECEIVER_WORKFLOW) continue
       if (!/\bnpm\s+audit\b[^\n]*--audit-level=high\b/.test(executable)) {
         add(file, 'WF-VULNERABILITY-AUDIT', `job ${job}: npm ci must reject high-severity advisories`)

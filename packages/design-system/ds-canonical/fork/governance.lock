@@ -470,14 +470,6 @@
     },
     {
       "schemaVersion": 1,
-      "file": "consumer/managed-files/77e06f62670dfee01e9b5e8b0f8dad085ce711d75538c1fb0679d9818acaca82.blob",
-      "sha256": "bdb40c97372782ccd2fe29890937a91fe8d99efebe2b321c7ebb6258bb49b2c8",
-      "source": "template/ds-product-template/.github/workflows/sync-design-system.yml",
-      "classification": null,
-      "destination": ".github/workflows/sync-design-system.yml"
-    },
-    {
-      "schemaVersion": 1,
       "file": "consumer/managed-files/7937321877e5c34c27dae36c0d507d21cd42fa3f46a8f11a284b8b4a52b6faa4.blob",
       "sha256": "86edd952fb5c3871896515440693abeb08c1d1da9f887fa073b9ddda1363f572",
       "source": "scripts/lint-ds-internal-imports.mjs",
@@ -527,7 +519,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/884721550b56308812b20917adac7a12f36fdb4ecda6b02460a7f5a219c0c966.blob",
-      "sha256": "3436f42b34c34563476af421d6ec1ed32bd49b995cd1357f48bdd8589f754d32",
+      "sha256": "200d2e6c29e7bbde2be3a8d66c92fad1c6232d0ad4891bba06b299984d1eb932",
       "source": "packages/design-system/ds-canonical/templates/consumer-governance.md",
       "classification": null,
       "destination": "governance/consumer-governance.md"
@@ -983,7 +975,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "71b420b0a7f92d2e861b75f6b62a09cb518567e7c42646d7bf657e4a3bb54450",
+      "sha256": "97eaf248d20456e8a3f2b7930141af9895f6ae9fc421f8f91e1649693671a061",
       "source": null,
       "classification": null,
       "destination": null

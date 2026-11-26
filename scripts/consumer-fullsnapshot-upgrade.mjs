@@ -149,7 +149,7 @@ inConsumer([join(consumerRoot, 'scripts/sync-exact-workspace-dependencies.mjs'),
 const lockPath = join(consumerRoot, 'package-lock.json')
 if (existsSync(lockPath)) {
   // 先清 nested、再讓 npm 重建 lock —— 順序不可調換,而且兩步都不能少(對齊 consumer 端
-  // sync-design-system.yml 的同一段):
+  // sync-design-system.yml 的同一段;template 自 8c595fcf(2026-08-01)起不帶那支,新的接收 workflow 0.1.0-beta.151 也還沒出貨):
   //   (a) npm install --package-lock-only 只補缺的東西,不會清「已被滿足但多餘」的 nested node,
   //       升級交易留下的舊版 nested entry 因此會活到 exact-version 檢查(2026-08-06 事故)。
   //   (b) 但 root dependencies 的 pin 只有 npm 會寫,--set 只改 manifest。少了這步,

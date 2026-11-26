@@ -7,7 +7,7 @@
 #   3. 完成。每次 push main → Netlify auto rebuild。
 #
 # 註:本 repo 無獨立 deploy workflow — deploy 全經 Netlify Git integration(讀本 file build command)。
-# CI 只有 audit.yml(tsc + lint:imports + build)+ sync-design-system.yml(Dependabot/DS 版本同步)。
+# CI 只有 audit.yml(tsc + lint:imports + build)。
 
 [build]
   command = "npm run build-storybook"

@@ -80,18 +80,19 @@ the protected base; incoming control-plane code runs only after the PR merges.
 ## Release mirror and protected PR trust chain
 
 Automatic template delivery is owned upstream by the release mirror. It opens a normal PR containing
-the exact published snapshot. Product repositories carry one upstream-managed receiver,
-`.github/workflows/sync-design-system.yml`: on `repository_dispatch` `design-system-published` it
-validates the exact `{ version, tag, commit }` payload, runs `sync-all --apply` on a GitHub runner,
-and pushes only `automation/design-system-<version>`, holding nothing but `contents: write`.
-Repository Actions defaults remain read-only, and ordinary delivery requires no hosted environment or
-App credential in the consumer.
+the exact published snapshot. Product repositories do not carry an upgrade receiver in this release:
+the upstream-managed `.github/workflows/sync-design-system.yml` (on `repository_dispatch`
+`design-system-published` it validates the exact `{ version, tag, commit }` payload, runs
+`sync-all --apply` on a GitHub runner, and pushes only `automation/design-system-<version>`, holding
+nothing but `contents: write`) arrives in a later release. Until then each product upgrade runs
+`sync-all` on a local terminal (`docs/04-ds-upgrade.md`). Repository Actions defaults remain
+read-only, and ordinary delivery requires no hosted environment or App credential in the consumer.
 
 The provider-neutral standard release order is exactly
 `pr-checks → merge → publish → readback → consumer`. The upstream release mirror owns template
-delivery. The product receiver is downstream-only: it pushes its automation branch, and the upstream
-release orchestrator opens the PR so that `Verify consumer` runs on it. The receiver may not open or
-merge that PR, publish, direct-write `main`, or replace mirror authority.
+delivery. The product receiver, once shipped, is downstream-only: it pushes its automation branch,
+and the upstream release orchestrator opens the PR so that `Verify consumer` runs on it. The receiver
+may not open or merge that PR, publish, direct-write `main`, or replace mirror authority.
 
 Protected `main` requires the single `Verify consumer` context from `audit.yml`. That workflow performs
 one locked install followed by the hooks-off `governance:check`, typecheck, import lint, and build. The normal PR review and protected

@@ -310,8 +310,9 @@ ${install.map(line => `          ${line}`).join('\n')}
   )
   assert.deepEqual(rules(['npm ci --ignore-scripts', 'npm audit signatures']), [])
   assert.deepEqual(rules(['npm ci --ignore-scripts']), ['WF-SIGNATURE-AUDIT'])
-  assert.equal(existsSync(path), true)
-  assert.deepEqual(rules(readFileSync(path, 'utf8').split('\n').filter(line => /\bnpm\s+(?:ci|audit)\b/.test(line)).map(line => line.trim())), [])
+  // 0.1.0-beta.151 只發這條例外與本測試(TRACKER R22 兩段式:PR 的「Verify authority candidate」跑 main 上的本閘,
+  // 不認 PR 裡新加的例外),receiver 本體下一版才進 template(「這一版不出貨」只由 scripts/test-setup-governance.mjs 守);
+  // 下一版放回本體時,把 962ec2ac 的「真實檔案也過」那兩行(existsSync 與讀檔稽核)一起放回來。
 })
 
 test('registry and OIDC authority cannot be co-located through inherited workflow permissions', () => {
