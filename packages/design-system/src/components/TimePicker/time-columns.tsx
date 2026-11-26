@@ -265,7 +265,7 @@ export interface TimeColumnsProps {
 /** 上下午欄的兩格(值 0 = 上午、1 = 下午,與 `periodOfHour` 同一套) */
 const PERIOD_VALUES = [0, 1]
 
-// code-quality-allow: long-function — 時 / 分 / 秒 / 上下午四欄的值、停用集合與切上下午的規則彼此相依,拆開會把「切半天時時留在同一格」散到兩處
+// code-quality-allow: long-function — 時 / 分 / 秒 / 上下午四欄的值、停用集合與切上下午的規則彼此相依,拆開會把「切半天時時留在同一格」散到兩處(2026-11-26 複查;規則住 time-picker.spec.md「面板的 12 / 24 小時」)
 export function TimeColumns({
   value,
   onChange,
