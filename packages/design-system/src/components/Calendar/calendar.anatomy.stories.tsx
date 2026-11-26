@@ -92,7 +92,8 @@ export const Overview: Story = {
       <div className="flex-1 min-w-0">
         <CalendarDemo events={sampleEvents} defaultReferenceDate={now} today={now} locale={LOCALE} />
       </div>
-      <div className="w-80 shrink-0 overflow-y-auto flex flex-col gap-[var(--layout-space-loose)]">
+      {/* 右欄不設捲動:捲動區沒有可聚焦的東西時鍵盤捲不到(axe scrollable-region-focusable),內容比視窗高就整頁捲 */}
+      <div className="w-80 shrink-0 flex flex-col gap-[var(--layout-space-loose)]">
         <div>
           <H3>部位</H3>
           <table className="text-caption border-collapse">
@@ -340,7 +341,7 @@ export const StateBehavior: Story = {
   name: '狀態行為',
   render: () => (
     <div className="h-screen p-[var(--layout-space-loose)] bg-canvas flex flex-col gap-2">
-      <div className="text-body text-fg-muted space-y-1">
+      <div className="text-body text-fg-muted space-y-1" data-story-notes>
         <div>• <b>今天</b>:日期數字加 <code>bg-info text-on-emphasis rounded-full</code> 實心底</div>
         <div>• <b>非當月格</b>:前後月日期數字走淡字 <code>text-fg-muted</code>,格子不加底色(跟當月格一樣可點、滑過一樣不變色)</div>
         <div>• <b>放不下的格</b>:每格放幾列依格高;放不下時最後一列換成「+N」,點它展開當天清單(見下一則「「+N」清單開著」)</div>
@@ -394,7 +395,7 @@ export const MoreListOpen: Story = {
   name: '狀態行為:「+N」清單開著',
   render: () => (
     <div className="h-screen p-[var(--layout-space-loose)] bg-canvas flex flex-col gap-2">
-      <div className="text-body text-fg-muted space-y-1">
+      <div className="text-body text-fg-muted space-y-1" data-story-notes>
         <div>• <b>位置</b>:以「+N」那一格為中心(水平 + 垂直)蓋在格子上,碰到視窗邊推回、留 8;寬 = 格寬與浮層預設寬取大</div>
         <div>• <b>內容</b>:當天全部事件(含格內已畫出來的),順序與格內相同;跨日的「大會週」兩端都斷開、直角;唯讀的「場地布置」照樣列出、是純文字</div>
         <div>• <b>標題列與內距</b>:標準浮層標題列、底下不畫分隔線,內文頂部 0;上下 12、列距 4(同格內)、左右 16</div>
@@ -449,7 +450,7 @@ export const DetailOpen: Story = {
   name: '狀態行為:事件詳情開著',
   render: () => (
     <div className="h-screen p-[var(--layout-space-loose)] bg-canvas flex flex-col gap-2">
-      <div className="text-body text-fg-muted space-y-1">
+      <div className="text-body text-fg-muted space-y-1" data-story-notes>
         <div>• <b>位置</b>:與選單的子選單同一種擺法 —— 開在事件右側、頂端對齊、與事件隔 8;右邊放不下才翻到左側(例:最右一欄 7/25 的「客戶會議」)</div>
         <div>• <b>寬與標題列</b>:寬 26rem = 416(時間欄進編輯兩端不被裁);標題列高 52(就地編輯標題 28 + 上下 12),標題就地改(點標題進編輯),右側〔⋯〕〔×〕;沒有儲存鈕,每一欄自己提交</div>
         <div>• <b>欄位</b>:時間(同一天合併成一段)、全天(開關直接切)、地點、說明、類別,標籤在上;Esc 一次關一層,焦點回打開它的那一段</div>
@@ -489,7 +490,7 @@ export const DetailFromMoreList: Story = {
   name: '狀態行為:從清單開詳情',
   render: () => (
     <div className="h-screen p-[var(--layout-space-loose)] bg-canvas flex flex-col gap-2">
-      <div className="text-body text-fg-muted space-y-1">
+      <div className="text-body text-fg-muted space-y-1" data-story-notes>
         <div>• <b>兩層並存</b>:點清單裡的事件,詳情開在清單旁、水平貼著清單外緣、上緣對齊那一列;清單不關,那一列維持滑過色</div>
         <div>• <b>Esc 一次一層</b>:第一下關詳情(焦點回那一列),第二下關清單(焦點回「+N」);點清單上 = 只關詳情,點頁面 = 兩層都關</div>
       </div>

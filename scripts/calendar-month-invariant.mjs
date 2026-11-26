@@ -1789,10 +1789,10 @@ const BLOCKS = {
         return st === 'open' ? shown : !el
       }, { s: listSel, st: state }, { timeout: 10000 }).then(() => true, () => false)
       if (!(await waitList('open'))) { instrumentFails.push({ cell: `ML ${tag}`, detail: 'play 打開的「+N」清單等不到(story 改了?)' }); continue }
-      if (mutate?.listDom) await page.evaluate(mutate.listDom, { day: MORE_DAY })
       // ML-row-ring:play 用鍵盤打開清單,焦點在第一列;那一列的焦點框四邊都要落在會裁切它的最近祖先(內文捲動區)裡面。
       // 量幾何(元素框 ± outline-offset + outline-width 對裁切框),不只看 offset 正負 —— 2026-11-27 R8 稽核:第一列貼著捲動區頂邊,
       // 往外畫時上緣被裁(像素上 0 px 可見),而 ML-ring 那種「offset > 0」的量法照樣綠(M32)。
+      // 量在 listDom 突變之前:「清單順序倒過來」那類 DOM 突變會把焦點所在的列搬走(焦點掉到 body),不是這一格要抓的事。
       const rr = await page.evaluate((ls) => {
         const list = document.querySelector(ls), a = document.activeElement
         if (!list || !a || !list.contains(a) || !a.matches('[data-calendar-list-row]')) return null
@@ -1807,6 +1807,7 @@ const BLOCKS = {
       if (!rr || !rr.fv || rr.style === 'none') instrumentFails.push({ cell: `ML-row-ring${tag}`, detail: rr ? `第一列沒有可見的鍵盤焦點框(:focus-visible ${rr.fv}、outline ${rr.style})` : '清單打開後焦點不在清單的列上(play 改了?)' })
       else check(`ML-row-ring${tag}`, Object.values(rr.over).every((v) => v <= 0.01),
         `清單第一列焦點框超出裁切框:上 ${fmtPx(rr.over.t)} / 下 ${fmtPx(rr.over.b)} / 左 ${fmtPx(rr.over.l)} / 右 ${fmtPx(rr.over.r)}(> 0 = 被裁掉的 px;框外擴 ${fmtPx(rr.grow)};focus-canonical.md「問題二」淨空 < 4 → 往內)`)
+      if (mutate?.listDom) await page.evaluate(mutate.listDom, { day: MORE_DAY })
       // ML-esc:Esc 關清單、焦點回「+N」
       await page.keyboard.press('Escape')
       const closed = await waitList('closed')
@@ -1919,8 +1920,9 @@ const BLOCKS = {
       check(`ML-sticky${tag}`, end.scrolled && near(end.headerTop, m.header.t) && near(end.bodyTop, end.headerBottom),
         end.scrolled ? `捲到底:標題列頂 ${fmtPx(m.header.t)} → ${fmtPx(end.headerTop)}、內文頂 ${fmtPx(end.bodyTop)} vs 標題列底 ${fmtPx(end.headerBottom)}` : '清單捲不動(內容沒有超過上限?)')
       check(`ML-bottom${tag}`, end.scrolled && near(end.lastToBottom, m.tight), end.scrolled ? `捲到底:最後一列底 → 清單底 ${fmtPx(end.lastToBottom)}(規格 tight ${m.tight})` : '清單捲不動')
-      // ML-outside:點清單外面(說明文字)關清單,焦點留在點的地方、不被搶回「+N」
-      const outside = await page.evaluate(() => { const r = document.querySelector('.mb-2')?.getBoundingClientRect(); return r ? { x: r.left + 4, y: r.top + 4 } : null })
+      // ML-outside:點清單外面(說明文字)關清單,焦點留在點的地方、不被搶回「+N」。
+      // 說明區塊用範例自己掛的 data-story-notes 認(不靠 mb-2 這類間距 class —— 2026-11-27 R8 E2 改版面時拿掉 mb-2,這裡就找不到了)
+      const outside = await page.evaluate(() => { const r = document.querySelector('[data-story-notes]')?.getBoundingClientRect(); return r ? { x: r.left + 4, y: r.top + 4 } : null })
       if (!outside) { instrumentFails.push({ cell: `ML ${tag}`, detail: '找不到清單外可點的說明文字' }); continue }
       await page.mouse.click(outside.x, outside.y)
       const closedOut = await waitList('closed')
