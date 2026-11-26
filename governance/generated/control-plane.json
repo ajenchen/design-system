@@ -142,7 +142,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 221,
-      "hash": "sha256:6ed9b08f825aacb4f44919073f356f8240b660229c7d76c398792560d4d73ed0",
+      "hash": "sha256:8cc8762ed8c2c98af15056a797474259218355302ee300be5c5f1fcfb3afbc8f",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -186,7 +186,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 68,
-      "hash": "sha256:38381528cbcb2e9895a7cb740e0da578cdac4720916f7efab43ae865797db768",
+      "hash": "sha256:fc03ce38f2ce046e5f50079f28c7f1462d41465b9fcfad017a9e3b51bb2cccfe",
       "id": "canonical-skills",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3094,7 +3094,7 @@
         "scripts/generated/"
       ],
       "files": 819,
-      "hash": "sha256:3777af93aefea1dfbc413992868cf5e1bb2ba2420b1d8070cf211258575a32a6",
+      "hash": "sha256:593f1e2a68d69d954f35b8eb6b8e79b6e8de682597636cf82ddc7fd905e39e70",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3474,10 +3474,10 @@
           "targetDigest": "sha256:38c2a2a5e29ab6a57591fa60f416886e33b52c1a18d3b2493a0f25f66d705374"
         },
         {
-          "expectedTargetDigest": "sha256:c899b9125b4029cee566ff08e4644e5782d43085d50bc85eb96d3c53a2da2db7",
+          "expectedTargetDigest": "sha256:bd5a42a31eb564f043067d3698aa4db161688e061a3d1a28a25a56229852e73f",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:2e6f6f09e4701941234c0a6c79f72928c3bbdd3cbf8a039188c76ad8b67274d3",
-          "targetDigest": "sha256:c899b9125b4029cee566ff08e4644e5782d43085d50bc85eb96d3c53a2da2db7"
+          "sourceDigest": "sha256:cf83cebf4ad459be88b0491c3aaa6d40fcaec9139c43bfb0341dc7b136aaee8e",
+          "targetDigest": "sha256:bd5a42a31eb564f043067d3698aa4db161688e061a3d1a28a25a56229852e73f"
         },
         {
           "expectedTargetDigest": "sha256:d590bde5b1ae393a8f79938900219eaf3e47ef709a99eb442a93dc680a075361",
@@ -3504,10 +3504,10 @@
           "targetDigest": "sha256:ac3aa59f84b761cc763e3add28c39bc8195676305f614e4def9e7b72a074e937"
         },
         {
-          "expectedTargetDigest": "sha256:30dc138c4b4e3d1f8358450f40b001077044b8bcd797857158311345c52321eb",
+          "expectedTargetDigest": "sha256:6beff93297b4e0289b267403e6c2ac62bfda7cee822b5914d9059474c4dac978",
           "name": "knowledge-prune",
-          "sourceDigest": "sha256:3fc57f624ef7c82cb02ecb754b63de6c08c452f7f20e5821ff8e7db44cc2bc24",
-          "targetDigest": "sha256:30dc138c4b4e3d1f8358450f40b001077044b8bcd797857158311345c52321eb"
+          "sourceDigest": "sha256:8de2d0c43a4e07bc2ddbb882ba418605403a0bec8f5bff8f036417330ca39593",
+          "targetDigest": "sha256:6beff93297b4e0289b267403e6c2ac62bfda7cee822b5914d9059474c4dac978"
         },
         {
           "expectedTargetDigest": "sha256:e4016a41233453d432b19dbe687deb70b43bfaa2aac95ad0668fc9906e680d8f",
@@ -3697,10 +3697,10 @@
           "targetDigest": "sha256:2deab250f13ab3747e03beeb622ac3316c71d4b70a98b498c961f35bcfb36442"
         },
         {
-          "expectedTargetDigest": "sha256:0c800eef0a368758a5aa5d94b43f2e780d8a3d2113e0ac702684154acbb4bbdc",
+          "expectedTargetDigest": "sha256:a2d0b12876332583b073e5695dd6d32a58dcd3a842b1ef62b9e100687fd3a81a",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:2e6f6f09e4701941234c0a6c79f72928c3bbdd3cbf8a039188c76ad8b67274d3",
-          "targetDigest": "sha256:0c800eef0a368758a5aa5d94b43f2e780d8a3d2113e0ac702684154acbb4bbdc"
+          "sourceDigest": "sha256:cf83cebf4ad459be88b0491c3aaa6d40fcaec9139c43bfb0341dc7b136aaee8e",
+          "targetDigest": "sha256:a2d0b12876332583b073e5695dd6d32a58dcd3a842b1ef62b9e100687fd3a81a"
         },
         {
           "expectedTargetDigest": "sha256:6a078b4b4921f4a116b81d49695d2449a2821df284f1304a70cbee3d379b1cb8",
@@ -3727,10 +3727,10 @@
           "targetDigest": "sha256:322dcee9d7bf470f7f79c358a3b8d66a992360b6460443e5f46259ecf3733e91"
         },
         {
-          "expectedTargetDigest": "sha256:2080ffb0f10d3693f05f912cb392d5944060931c9601a503521ddf50e97c6303",
+          "expectedTargetDigest": "sha256:fb39d1af39abba52f8b6b640b3da1691fc0417857ba5292b49d45d649df684cb",
           "name": "knowledge-prune",
-          "sourceDigest": "sha256:3fc57f624ef7c82cb02ecb754b63de6c08c452f7f20e5821ff8e7db44cc2bc24",
-          "targetDigest": "sha256:2080ffb0f10d3693f05f912cb392d5944060931c9601a503521ddf50e97c6303"
+          "sourceDigest": "sha256:8de2d0c43a4e07bc2ddbb882ba418605403a0bec8f5bff8f036417330ca39593",
+          "targetDigest": "sha256:fb39d1af39abba52f8b6b640b3da1691fc0417857ba5292b49d45d649df684cb"
         },
         {
           "expectedTargetDigest": "sha256:bc2337082ec6264f75f7b168155315434c9dddc0444a569064454c3686da7a40",

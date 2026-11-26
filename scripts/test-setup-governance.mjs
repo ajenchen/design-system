@@ -2143,8 +2143,18 @@ test('only the render-only reference policy may install a historically certified
 // 不會再帶進 AllDsComponents 那 4 個會被 escape-marker 計數的標記。計數用 hook 端同一支 countable_markers(不另寫一份)。
 test('template import smoke ships as DsImportSmoke with zero countable escape markers', () => {
   assert.equal(existsSync('apps/template/src/AllDsComponents.stories.tsx'), false, 'the catalog-named portal must not come back')
-  const hooks = 'packages/design-system/ds-canonical/hooks'
-  const run = spawnSync('bash', ['-c', `. ${hooks}/lib/_hook_integrity.sh && . ${hooks}/lib/_provider_paths.sh && . ${hooks}/lib/_micro_geometry.sh && governance_countable_escape_markers "$(cat apps/template/src/DsImportSmoke.stories.tsx)"`], {
+  const hooks = join(process.cwd(), 'packages/design-system/ds-canonical/hooks/lib')
+  const scratch = mkdtempSync(join(tmpdir(), 'import-smoke-markers-'))
+  temporary.push(scratch)
+  // 存成檔交給 bash(不用 -c 求值):source hook 端同一組 lib,呼叫同一支 governance_countable_escape_markers
+  const counter = join(scratch, 'count-markers.sh')
+  writeFileSync(counter, [
+    '#!/bin/bash',
+    `. "${hooks}/_hook_integrity.sh" && . "${hooks}/_provider_paths.sh" && . "${hooks}/_micro_geometry.sh" || exit 70`,
+    'governance_countable_escape_markers "$(cat -- "$1")"',
+    '',
+  ].join('\n'))
+  const run = spawnSync('bash', ['--', counter, 'apps/template/src/DsImportSmoke.stories.tsx'], {
     encoding: 'utf8',
     env: { ...process.env, GOVERNANCE_CORPUS_ROOT: process.cwd() },
   })

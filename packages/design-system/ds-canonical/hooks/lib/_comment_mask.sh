@@ -1,4 +1,4 @@
-# shellcheck shell=bash
+#!/bin/bash
 # 共用註解遮罩(2026-11-27,上游判定 E16 + E14 第 (1) 點)。
 #
 # 掃「寫法」的 hook 不該把註解裡的字當成程式:以前 opacity / layout-space 兩支逐行掃整段內容、consumer 品質的 ANY_HITS
