@@ -195,15 +195,14 @@ expect_not_block "N8. empty content → not blocked"
 run_hook_bypass "Write" "$CONSUMER" "content" "$C_3DISTINCT"
 expect_not_block "N9. GOVERNANCE_BYPASS_ESCAPE_MARKER_AUDIT=1 override → not blocked"
 
-# N10. Canonical proxy portal has three separately justified marker families by design. Its
-# threshold is six distinct markers (the ordinary three-marker ceiling would make the shipped
-# template fail its own hard gate).
+# N10.(2026-11-27 上游判定 E18 改寫)以前 AllDsComponents.stories.tsx 有專屬放寬(distinct ≥6);範本改名
+# DsImportSmoke.stories.tsx、0 個 marker 後例外刪除 —— 同樣 3 種 marker 在舊檔名也照一般門檻擋(拿掉例外的對照組)。
 C_PORTAL='// @anatomy-exempt: canonical proxy portal
 // @consumer-catalog-allow: imports only, never hand-mocks components
 // @layout-space-magic-ok: debug-only export dump
 export const Portal = 1;'
 run_hook "Write" "/repo/apps/template/src/AllDsComponents.stories.tsx" "content" "$C_PORTAL"
-expect_not_block "N10. sanctioned proxy portal 3 distinct markers (< portal cap 6) → not blocked"
+expect_block "N10. 舊 portal 檔名不再有專屬放寬:3 distinct markers → blocked" "$BLOCK_NEEDLE"
 
 # N11. A layout-space marker that documents mechanically proven canonical micro geometry is
 # redundant compatibility metadata, not an active governance escape. It must not consume the

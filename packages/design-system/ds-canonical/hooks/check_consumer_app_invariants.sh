@@ -76,13 +76,10 @@ VIOLATIONS=""
 
 # Pattern 1: file basename forbidden
 basename=$(basename "$FILE" .stories.tsx)
+# 2026-11-27(上游判定 E18):範本的 import smoke 改名 DsImportSmoke.stories.tsx(不再是 catalog 檔名),
+# AllDsComponents 的 portal 專屬例外一併拿掉 —— catalog 檔名一律擋,真有需要走上方 @consumer-catalog-allow。
 if echo "$basename" | grep -qE '^(EveryDsComponent|AllDsComponents|AllComponents|DsCatalog|EveryComponent)$'; then
-  # AllDsComponents allowed IF it's only portal proxy (check title)
-  if [ "$basename" = "AllDsComponents" ] && grep -qE 'DsCanonicalPortal|iframe.*design-system|@consumer-catalog-allow' <<<"$CONTENT"; then
-    : # portal proxy OK
-  else
-    VIOLATIONS="${VIOLATIONS}  - File basename '$basename' = catalog pattern. PW 不該重寫 DS catalog.\n"
-  fi
+  VIOLATIONS="${VIOLATIONS}  - File basename '$basename' = catalog pattern. PW 不該重寫 DS catalog.\n"
 fi
 
 # Pattern 2: title claims per-component default
@@ -116,7 +113,7 @@ $(echo -e "$VIOLATIONS")
   歷史錨點 2026-05-27 7 bugs:CircularProgress size=32 hardcode / RadioGroup raw item 沒 SelectionItem / DataTable mock 欄位語意薄弱 / LinkInput placeholder mock / Empty 缺說明 / Overlay trigger-only / Tooltip context — ALL 從 PW hand-mock minimal-prop drift.
 
   修法 2 選 1:
-    (a) 改用 DS canonical Storybook iframe portal(per template AllDsComponents.stories.tsx#DsCanonicalPortal pattern)
+    (a) 改成 import smoke + 連到 DS canonical Storybook 的入口(per template apps/template/src/DsImportSmoke.stories.tsx)
     (b) Escape:加 \`// @consumer-catalog-allow: <rationale>\` 顯式 documented
 
   完整 SSOT → DS package ds-story-manifest.json + codex M31 synthesis output /tmp/codex-ssot-output.txt

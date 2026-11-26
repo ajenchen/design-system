@@ -711,7 +711,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_app_invariants.sh",
-      "sha256": "ff06d99db4a9f4a4eaa168187fed5bbe49b0d158adac884a78b071cb6564d636",
+      "sha256": "a069a8bd41c92dc7ae561c8495132901aacbd4408f42efbb272b6fdb0b4d91d6",
       "source": "check_consumer_app_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -743,7 +743,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_escape_marker_abuse.sh",
-      "sha256": "7964b7fd10d4a6bef46bf5cfa8bc6691aa6907a115c116a0e0cdac197ea7875b",
+      "sha256": "330196506201c57527c451beb0679d651c9c10ccca1a63aa97ba79c0231b294e",
       "source": "check_escape_marker_abuse.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null

@@ -2139,6 +2139,19 @@ test('only the render-only reference policy may install a historically certified
   assert.equal(acceptsHistoricalNpmOverlay(undefined), false)
 })
 
+// 2026-11-27(上游判定 E18):範本的 import smoke 不再是 catalog 檔名、0 個豁免標記 —— create-app 複製 apps/template 時
+// 不會再帶進 AllDsComponents 那 4 個會被 escape-marker 計數的標記。計數用 hook 端同一支 countable_markers(不另寫一份)。
+test('template import smoke ships as DsImportSmoke with zero countable escape markers', () => {
+  assert.equal(existsSync('apps/template/src/AllDsComponents.stories.tsx'), false, 'the catalog-named portal must not come back')
+  const hooks = 'packages/design-system/ds-canonical/hooks'
+  const run = spawnSync('bash', ['-c', `. ${hooks}/lib/_hook_integrity.sh && . ${hooks}/lib/_provider_paths.sh && . ${hooks}/lib/_micro_geometry.sh && governance_countable_escape_markers "$(cat apps/template/src/DsImportSmoke.stories.tsx)"`], {
+    encoding: 'utf8',
+    env: { ...process.env, GOVERNANCE_CORPUS_ROOT: process.cwd() },
+  })
+  assert.equal(run.status, 0, run.stderr)
+  assert.deepEqual(run.stdout.split('\n').filter(Boolean), [], 'DsImportSmoke.stories.tsx must carry zero countable escape markers')
+})
+
 // 2026-11-27(上游判定 B4):規範位置的建置輸出清單只住 scripts/lib/consumer-output-roots.mjs。
 // lint-ds-internal-imports / consumer-source-harness import 它;governance-check.mjs(單一檔出貨)與 hook 端 _micro_geometry.sh
 // 不能 import,寫成字面值 —— 這裡守兩處字面值與正本逐字相同(漂移就紅),並兩面驗 lint 只在規範位置略過。

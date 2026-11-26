@@ -101,21 +101,10 @@ EOF
   exit 2
 fi
 
-# ── Sanctioned portal 檔 allowlist(2026-06-11 R2 held-item #10)──────────────
-# AllDsComponents.stories.tsx 是 documented DS proxy portal(檔頭 @anatomy-exempt +
-# @consumer-catalog-allow per 2026-05-27 M31 codex synthesis + @layout-space-magic-ok
-# dev-artifact 豁免)— 3 個 marker 各帶 rationale 是它的 sanctioned 常態,數量 gate
-# (≥3 distinct)對它必誤擋 = hook-vs-hook 張力。只豁免數量 gate;justification gate
-# (空理由 BLOCK)上方已跑完照常生效,真保護不削弱。
-IS_SANCTIONED_PORTAL=0
-case "$FILE" in
-  *apps/*/src/AllDsComponents.stories.tsx) IS_SANCTIONED_PORTAL=1 ;;
-esac
-
 # ── 數量 gate(≥3 distinct / ≥5 total）— 僅 consumer(DS source 有大量 legit exception,只走上方 justification gate）──
-# 2026-06-11 R2 Phase B(codex b3 抓縫):portal 無限豁免會放走「第 4、5 個新增 marker」——
-# 改為提高閾值(portal ≥6 / 一般 ≥3)保留 ceiling,justification gate 不變。
-if [ "$IS_SANCTIONED_PORTAL" -eq 1 ]; then DISTINCT_CAP=6; else DISTINCT_CAP=3; fi
+# 2026-11-27(上游判定 E18):以前 AllDsComponents.stories.tsx(帶 3 種 marker 的 portal)有專屬放寬(distinct ≥6);
+# 範本改名成 DsImportSmoke.stories.tsx 並拿掉全部 marker(0 個)後不再需要,專屬例外刪除 —— 每個檔同一套門檻。
+DISTINCT_CAP=3
 if [ "$IS_CONSUMER" -eq 1 ]; then
   # 2026-05-31 廣化 marker family 仍在 shared classifier 裡閉包納管。layout-space marker
   # 若附著在 utility-registry 可機械證明的 canonical micro geometry,已沒有繞過

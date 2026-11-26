@@ -34,7 +34,7 @@ const DS = join(REPO_ROOT, 'packages/design-system')
 const SRC = join(DS, 'src')
 const LLMS = join(DS, 'llms.txt')
 const LLMS_FULL = join(DS, 'llms-full.txt')
-const SB_BASE = 'https://ajenchen-design-system.netlify.app'  // DS canonical public Storybook(同 AllDsComponents portal)
+const SB_BASE = 'https://ajenchen-design-system.netlify.app'  // DS canonical public Storybook(同 apps/template DsImportSmoke 的連結)
 const CHECK = process.argv.includes('--check')
 const SELFTEST = process.argv.includes('--selftest')
 

@@ -3,9 +3,9 @@
   "generatedBy": "scripts/exemption-expiry-invariant.mjs --update-baseline",
   "reviewAfterDays": 180,
   "recordedAt": "2026-11-21",
-  "count": 410,
+  "count": 409,
   "byKind": {
-    "unanchored": 382,
+    "unanchored": 381,
     "expired": 28
   },
   "entries": [
@@ -3216,14 +3216,6 @@
       "marker": "@benchmark-unverified",
       "kind": "unanchored",
       "hint": "- 對齊 **Polaris / Atlassian** 的 iconOnly idiom(2/4 家世界級派,另 2 家 Material/Ant 用 padding-based 屬不同設計取捨) "
-    },
-    {
-      "key": "escape|apps/template/src/AllDsComponents.stories.tsx|@layout-space-magic-ok|4d7ebdaa4e0f",
-      "family": "escape",
-      "file": "apps/template/src/AllDsComponents.stories.tsx",
-      "marker": "@layout-space-magic-ok",
-      "kind": "unanchored",
-      "hint": "{/* @layout-space-magic-ok: export list debug dump(dev artifact)— code-block 內距,非 consumer 產品 layout"
     },
     {
       "key": "escape|apps/template/src/App.tsx|@layout-space-magic-ok|b2d9c91dfcf6",

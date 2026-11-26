@@ -21,7 +21,7 @@ const expected = new Map([
   ['packages/design-system/src/components/Sheet/sheet.stories.tsx', ['OpenSnapshot']],
   // 2026-11-22 STORY-PROBE:Coachmark 捲動回歸量測夾具(超長說明只給 overlay-story-contract R20 量,不給讀者當範例)
   ['packages/design-system/src/components/Coachmark/coachmark.stories.tsx', ['LongContent']],
-  ['apps/template/src/AllDsComponents.stories.tsx', ['ImportSmoke']],
+  ['apps/template/src/DsImportSmoke.stories.tsx', ['ImportSmoke']],
   ['apps/template/src/CompositionFidelityReplica.stories.tsx', ['IconOnlyReplica']],
 ])
 
@@ -96,8 +96,8 @@ for (const directory of ['packages/design-system/src', 'apps/template/src']) {
 const appStory = readFileSync(join(root, 'apps/template/src/App.stories.tsx'), 'utf8')
 if (/tags:\s*\[[^\]]*['"]autodocs['"]/.test(appStory)) failures.push('App.stories.tsx: template category must keep autodocs disabled')
 
-const allComponents = readFileSync(join(root, 'apps/template/src/AllDsComponents.stories.tsx'), 'utf8')
-if (/62\/62/.test(allComponents)) failures.push('AllDsComponents.stories.tsx: stale hard-coded component count remains')
+const allComponents = readFileSync(join(root, 'apps/template/src/DsImportSmoke.stories.tsx'), 'utf8')
+if (/62\/62/.test(allComponents)) failures.push('DsImportSmoke.stories.tsx: stale hard-coded component count remains')
 
 const preview = readFileSync(join(root, 'packages/storybook-config/preview.tsx'), 'utf8')
 if (!/stories:\s*\{[\s\S]*filter:[\s\S]*!story\.tags\?\.includes\('test-only'\)/.test(preview)) {
