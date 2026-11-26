@@ -2437,6 +2437,30 @@ const settled = async () => (await settleAfterInteraction(page, { frames: 10 }))
       }
     }
   }
+
+  // 步驟 6(2026-11-26,workspace F 組 F3):表格祖先帶 `transform: translateZ(0)`(AppShell portalContainer 舞台、DS Dialog 置中位移同類)
+  // → 格游標框仍 = 那一格(±1px)。互動圖層是 position:fixed inset:0,祖先帶 transform 時定位基準換成那個祖先;修前用視窗座標,
+  // 實測格子在 (1051,171)、框畫在 (1307,201)(偏出祖先原點 +256 / +30)。修法:lib/fixed-layer-origin.ts originFromInsetLayer。
+  // 儀器:先證明位移真的生效(格子左緣離視窗左緣 > 200px),否則量的是沒有祖先的情況(空轉 → 紅)。
+  await loadStory(SHEET_URL, SHEET_READY)
+  await page.addStyleTag({ content: '#storybook-root{transform:translateZ(0);margin:30px 0 0 240px}' })
+  ok = await settled()
+  const shifted = await sheetCellBox(await sheetCellId(0, 1))
+  if (!ok || !shifted || shifted.x <= 200) record('I32', '祖先帶 translateZ(0):儀器', false, `INSTRUMENT-FAIL ${!ok ? '加祖先樣式後版面沒有靜止' : !shifted ? '找不到第 0 列 Product 格' : `格子左緣 ${shifted.x}px —— 位移沒生效`}`)
+  else {
+    await page.mouse.click(shifted.x + shifted.width / 2, shifted.y + shifted.height / 2)
+    ok = await settled()
+    const m = await page.evaluate(() => {
+      const ring = document.querySelector('[data-selected-cell-id]')
+      const id = ring?.getAttribute('data-selected-cell-id')
+      const cell = id ? document.querySelector(`[data-cell-id="${CSS.escape(id)}"]`) : null
+      const rb = ring?.getBoundingClientRect(), cb = cell?.getBoundingClientRect()
+      return rb && cb ? { id, dx: rb.x - cb.x, dy: rb.y - cb.y, dw: rb.width - cb.width, dh: rb.height - cb.height } : { id: id ?? null, err: ring ? '找不到格游標對應的格' : '沒有格游標框' }
+    })
+    if (!ok || m.err) record('I32', '祖先帶 translateZ(0):儀器', false, `INSTRUMENT-FAIL ${!ok ? '點格後版面沒有靜止' : m.err}`)
+    else record('I32', '祖先帶 translateZ(0):格游標框 = 那一格(左上與寬高差都 ≤ 1px)',
+      Math.abs(m.dx) <= 1 && Math.abs(m.dy) <= 1 && Math.abs(m.dw) <= 1 && Math.abs(m.dh) <= 1, JSON.stringify(m))
+  }
 }
 
 /* ── I33:試算表模式點任何格,格游標都跟過去(2026-09-26,user 同意 R21 第 5 題 (c))──────────

@@ -2237,6 +2237,48 @@ export const RowDragInteractive: Story = {
   },
 }
 
+// 列拖曳把手在 DS Dialog 裡(test-only,2026-11-26,workspace F 組 F3):給 `scripts/data-table-handle-clip-invariant.mjs` P5 量
+// 「把手中心 = 表格外框左緣、列中心」。Dialog 置中靠 `-translate-x/y-1/2`(獨立的 translate 屬性)→ fixed 把手的定位基準換成 Dialog,
+// 修前把手偏出 Dialog 的原點。設定照 workspace 回報的那一組(enableRowDrag、size="sm"、rowHeight="hug")。
+export const RowDragInDialog: Story = {
+  name: '列拖曳把手(對話框內)',
+  tags: ['test-only'],
+  render: () => {
+    const [list, setList] = React.useState<Product[]>(sampleData.slice(0, 6))
+    const handleReorder = (sourceId: string, targetId: string, position: 'before' | 'after') => {
+      setList((prev) => {
+        const next = prev.filter((r) => r.sku !== sourceId)
+        const moved = prev.find((r) => r.sku === sourceId)
+        const at = next.findIndex((r) => r.sku === targetId)
+        if (!moved || at === -1) return prev
+        next.splice(position === 'before' ? at : at + 1, 0, moved)
+        return next
+      })
+    }
+    return (
+      <Dialog defaultOpen>
+        <DialogContent width="lg" height="hug">
+          <DialogHeader>
+            <DialogTitle>調整商品上架順序</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            <DataTable
+              columns={columnsWithPrice}
+              data={list}
+              size="sm"
+              rowHeight="hug"
+              maxHeight="none"
+              getRowId={(row) => row.sku}
+              enableRowDrag
+              onRowReorder={handleReorder}
+            />
+          </DialogBody>
+        </DialogContent>
+      </Dialog>
+    )
+  },
+}
+
 /* ── 列拖曳 × 虛擬捲動（200 列）────────────────────────────────────────────
    v3 fix(2026-05-05)— scroll bug 修法:
    1. enableRowDrag 時 overscan 自動拉到 Math.max(overscan, 5)(避免 row unmount 時 useDraggable/useDroppable subscription 跟著
