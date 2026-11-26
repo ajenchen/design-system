@@ -2,7 +2,7 @@
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
     "generatedAt": "2026-11-26T13:15:57.759Z",
-    "stories": 1111,
+    "stories": 1114,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
       "apps-template-appshell-dashboard--default",
@@ -190,6 +190,7 @@
       "design-system-components-calendar-展示--product-own-detail",
       "design-system-components-calendar-展示--quarter-planning",
       "design-system-components-calendar-展示--read-only-dates-custom-tile-keyboard",
+      "design-system-components-calendar-展示--shared-view-only-events",
       "design-system-components-calendar-展示--side-panel-narrow",
       "design-system-components-calendar-展示--team-calendar",
       "design-system-components-calendar-設計原則--color-semantic",
@@ -475,12 +476,14 @@
       "design-system-components-field-展示--state-cascade",
       "design-system-components-field-展示--vertical",
       "design-system-components-field-展示--view-alignment-contract",
+      "design-system-components-field-展示--view-then-edit",
       "design-system-components-field-展示--with-slider",
       "design-system-components-field-設計原則--not-for-form-actions-rule",
       "design-system-components-field-設計原則--orientation-rule",
       "design-system-components-field-設計原則--usage-guidance",
       "design-system-components-field-設計規格--accessibility",
       "design-system-components-field-設計規格--color-matrix",
+      "design-system-components-field-設計規格--custom-control-wiring",
       "design-system-components-field-設計規格--field-group-behavior",
       "design-system-components-field-設計規格--inspector",
       "design-system-components-field-設計規格--orientation-matrix",
@@ -1116,8 +1119,8 @@
       "design-system-tokens-uisize--overview",
       "design-system-tokens-uisize--product-alignment"
     ],
-    "storyIdsSha256": "b8de87026fb8e0de04e33f630cdb5b187dbcc03f5983b03b0bf2f898a4362f6e",
-    "fingerprints": 756,
+    "storyIdsSha256": "395cab3aed7201fa183ce9f02bb4761ad3c3fb1039ffce425a32c905212a050c",
+    "fingerprints": 758,
     "linuxOnly": {
       "design-system-components-combobox-設計規格--inspector|color-contrast": "藍圖區塊的 9px text-fg-muted 小標(anatomy-utils.tsx:174):macOS 等寬字溢出區塊、axe 歸 incomplete 不計,Linux 放得下才計入 —— 只有 Linux(CI)量得到;值 = 2f367ee3(A76)寫入的 CI 實測;main 的 a11y drift 排程 2026-11-19(run 44499310317)在 Linux 量到同值 23 / 41。--color-fg-muted 已定案例外(color.spec.md「已定案(禁再問)」)",
       "design-system-components-select-設計規格--inspector|color-contrast": "藍圖區塊的 9px text-fg-muted 小標(anatomy-utils.tsx:174):macOS 等寬字溢出區塊、axe 歸 incomplete 不計,Linux 放得下才計入 —— 只有 Linux(CI)量得到;值 = 2f367ee3(A76)寫入的 CI 實測;main 的 a11y drift 排程 2026-11-19(run 44499310317)在 Linux 量到同值 23 / 41。--color-fg-muted 已定案例外(color.spec.md「已定案(禁再問)」)"
@@ -1248,6 +1251,7 @@
     "design-system-components-calendar-展示--product-own-detail|color-contrast": 5,
     "design-system-components-calendar-展示--quarter-planning|color-contrast": 5,
     "design-system-components-calendar-展示--read-only-dates-custom-tile-keyboard|color-contrast": 4,
+    "design-system-components-calendar-展示--shared-view-only-events|color-contrast": 5,
     "design-system-components-calendar-展示--side-panel-narrow|color-contrast": 4,
     "design-system-components-calendar-展示--team-calendar|color-contrast": 5,
     "design-system-components-calendar-設計原則--color-semantic|color-contrast": 5,
@@ -1447,6 +1451,7 @@
     "design-system-components-field-設計原則--orientation-rule|color-contrast": 6,
     "design-system-components-field-設計原則--usage-guidance|color-contrast": 8,
     "design-system-components-field-設計規格--color-matrix|color-contrast": 6,
+    "design-system-components-field-設計規格--custom-control-wiring|color-contrast": 1,
     "design-system-components-field-設計規格--field-group-behavior|color-contrast": 4,
     "design-system-components-field-設計規格--orientation-matrix|color-contrast": 2,
     "design-system-components-field-設計規格--overview|color-contrast": 3,

@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-11-26T12:17:11.713Z"
+    "generatedAt": "2026-11-26T16:28:56.038Z"
   },
   "components": {
     "accordion": {
@@ -320,6 +320,7 @@
       "tiers": {
         "展示": [
           "design-system-components-calendar-展示--team-calendar",
+          "design-system-components-calendar-展示--shared-view-only-events",
           "design-system-components-calendar-展示--product-own-detail",
           "design-system-components-calendar-展示--launch-week",
           "design-system-components-calendar-展示--quarter-planning",
@@ -848,6 +849,7 @@
           "design-system-components-field-展示--slider-aligns-with-other-fields",
           "design-system-components-field-展示--slider-with-live-number-input",
           "design-system-components-field-展示--form-validation",
+          "design-system-components-field-展示--view-then-edit",
           "design-system-components-field-展示--inline-search-yield-width-contract",
           "design-system-components-field-展示--view-alignment-contract",
           "design-system-components-field-展示--reading-context-detail",
@@ -861,6 +863,7 @@
           "design-system-components-field-設計規格--state-behavior",
           "design-system-components-field-設計規格--color-matrix",
           "design-system-components-field-設計規格--field-group-behavior",
+          "design-system-components-field-設計規格--custom-control-wiring",
           "design-system-components-field-設計規格--accessibility"
         ],
         "設計原則": [
@@ -1894,5 +1897,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1057
+  "totalStories": 1060
 }
