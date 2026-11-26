@@ -89,6 +89,9 @@
  *                      背景 / 字 / 四邊框 / 不透明度 / 游標;忙碌鈕確實是可聚焦的停用(data-disabled-focusable、原生 disabled=false)
  *   F-shell-ring       Dialog / Sheet / Popover 裡沒有可聚焦控件(只有標題列的 ×):鍵盤開啟 → 開啟落點是殼、殼是 :focus-visible → 殼不畫焦點框
  *                      (focus-canonical.md「E. 浮層程式落點」;2026-11-26 產品 canary 回報 C11:修前 Dialog / Sheet 畫 2px 框,Popover 同族、早已抑制)
+ *   F-popover-anchor   錨點型 Popover(PopoverAnchor 定位、普通按鈕開,沒有 PopoverTrigger):鍵盤開 → Esc → 焦點回開啟鈕;滑鼠開 → 點選項選完收起 → 焦點回開啟鈕
+ *                      (popover.spec.md「A11y 預設」關閉返回;2026-11-27 產品 canary 回報 H20:修前 Radix 沒東西可還,焦點落 body)
+ *   F-popover-anchor-outside 同一個錨點型 Popover,滑鼠點頁面空白處收起 → 焦點不被搶回開啟鈕(非 modal 不搶)
  *   F-inline-disabled  行內動作鈕自身停用(SidebarGroupAction disabled):游標 not-allowed、字色 = text-fg-disabled、滑過 / 按住字色與底色釘在靜止
  *                      (與 F-look 同一類「停用不給互動回饋」;inline-action.spec.md「自身停用」列;2026-11-26 產品 canary 回報 C20)。CTRL-inline-hover 對照:可用那顆滑過會變
  *   K-cmdb-modal       「這一下 ⌘B 由誰處理」(與 Esc 分層同一類:按鍵歸焦點所在那一層):頁面有可收合側欄、modal「工作區設定」對話框裡是不可收合的設定導覽,
@@ -118,6 +121,7 @@
  *   DataTable 游標的有效性不看欄是否可見 → E-datatable-hidden-col;守門不驗收(沒人認領也不重新派)→ E-unchained;
  *   DatePicker 草稿乾淨時也替 consumer 認領 → E-unchained;Combobox 不把「+N」卡算進欄位 → B-overflow;
  *   可聚焦的停用保留 aria-disabled 那一組長相(2026-10-07 前的寫法:滑過變回原本的填色)→ F-look
+ *   PopoverContent 沒有觸發點時不記開啟者、不還(2026-11-27 前)→ F-popover-anchor;還焦點當成 modal(按在外面也搶回)→ F-popover-anchor-outside
  *
  * 用法:
  *   node scripts/escape-and-focus-contract-invariant.mjs                  判定(現行原始碼)
@@ -514,6 +518,20 @@ const MUTANTS = [
     expectRed: ['K-cmdb-none-cookie'],
     apply: (src) => replaceOnce(src, /\n {8}if \(collapsibleRef\.current === "none"\) return\n/, '\n'),
   },
+  {
+    id: 'popover-anchor-no-return',
+    what: 'PopoverContent 沒有觸發點時不記開啟者、不還焦點(2026-11-27 前:只還給 PopoverTrigger,錨點型浮層 Esc / 選完收起焦點掉到 body;產品 canary 回報 H20)',
+    file: 'components/Popover/popover.tsx',
+    expectRed: ['F-popover-anchor'],
+    apply: (src) => replaceOnce(src, /const focusReturn = useTriggerlessFocusReturn\(false, \{ preferLiveOpener: true \}\)/, 'const focusReturn = { onOpenAutoFocus: (_e: Event) => {}, onCloseAutoFocus: (_e: Event) => {} }'),
+  },
+  {
+    id: 'popover-anchor-steal-outside',
+    what: 'PopoverContent 的還焦點當成 modal(指標按在浮層外收起也搶回開啟者 —— 非 modal 該讓使用者把注意力帶走)',
+    file: 'components/Popover/popover.tsx',
+    expectRed: ['F-popover-anchor-outside'],
+    apply: (src) => replaceOnce(src, /useTriggerlessFocusReturn\(false, \{ preferLiveOpener: true \}\)/, 'useTriggerlessFocusReturn(true, { preferLiveOpener: true })'),
+  },
 ]
 
 // ─── harness(打包進空白頁)──────────────────────────────────────────────────
@@ -524,7 +542,7 @@ import { createRoot } from 'react-dom/client'
 import { TooltipProvider } from '@/design-system/components/Tooltip/tooltip'
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/design-system/components/Dialog/dialog'
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetBody } from '@/design-system/components/Sheet/sheet'
-import { Popover, PopoverTrigger, PopoverContent } from '@/design-system/components/Popover/popover'
+import { Popover, PopoverTrigger, PopoverAnchor, PopoverContent } from '@/design-system/components/Popover/popover'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { FileViewer } from '@/design-system/components/FileViewer/file-viewer'
 import { Button } from '@/design-system/components/Button/button'
@@ -822,6 +840,30 @@ function LookScene() {
   )
 }
 
+// F-popover-anchor(2026-11-27,產品 canary 回報 H20;keyboard-model-canonical.md「關了之後焦點去哪」;popover.spec.md「A11y 預設」關閉返回):
+// 錨點型 Popover —— 用 PopoverAnchor 定位、普通按鈕開(沒有 PopoverTrigger,Radix 沒有東西可還)。真實情境:任務列上的「狀態」鈕開出狀態清單,點選即改、收起。
+// 旁邊一塊不可聚焦的空白(data-outside)給「指標按在外面收起」那一格。
+function AnchorPopoverScene() {
+  const [open, setOpen] = React.useState(false)
+  const [status, setStatus] = React.useState('進行中')
+  window.__closeScene = () => setOpen(false)
+  return (
+    <div>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverAnchor asChild>
+          <button type="button" data-open data-anchor-opener onClick={() => setOpen(true)}>狀態:{status}</button>
+        </PopoverAnchor>
+        <PopoverContent id="scene-popover" aria-label="任務狀態">
+          {['待處理', '進行中', '已完成'].map((s) => (
+            <button key={s} type="button" data-status-option={s} onClick={() => { setStatus(s); setOpen(false) }}>{s}</button>
+          ))}
+        </PopoverContent>
+      </Popover>
+      <div data-outside style={{ height: 80, marginTop: 240 }}>頁面空白處</div>
+    </div>
+  )
+}
+
 // F-shell-ring(2026-11-26,產品 canary 回報 C11;focus-canonical.md「E. 浮層程式落點」):浮層裡沒有任何可聚焦控件(只有標題列的 ×,它被排除在開啟落點之外),
 // 開啟落點退回殼本身。Dialog / Sheet 修前殼畫出 2px 焦點框;Popover 早已抑制,同場量當同族對照。開啟鈕都用鍵盤 Enter 按(殼才會是 :focus-visible,量得到框)。
 function ShellRingScene({ kind }) {
@@ -1048,6 +1090,7 @@ const SCENES = {
   shellDialog: () => <ShellRingScene kind="dialog" />,
   shellSheet: () => <ShellRingScene kind="sheet" />,
   shellPopover: () => <ShellRingScene kind="popover" />,
+  anchorPopover: () => <AnchorPopoverScene />,
   cmdb: () => <CmdBScene />,
   inlineDisabled: () => <InlineDisabledScene />,
 }
@@ -1756,6 +1799,34 @@ async function runChecks(page) {
 
   check('F-shell-ring', 'contract', '浮層裡沒有可聚焦控件(Dialog / Sheet / Popover,只有標題列的 ×),用鍵盤開啟 → 開啟落點是殼、殼是 :focus-visible,殼不畫焦點框(outline-style none;focus-canonical E 類;修前 Dialog / Sheet 畫 2px 框)',
     shellRows.length === 3 && shellRows.every((r) => r.outlineStyle === 'none'), shellRows)
+
+  // ── F-popover-anchor / F-popover-anchor-outside(錨點型 Popover:沒有 PopoverTrigger;popover.spec.md「A11y 預設」關閉返回;產品 canary 回報 H20)──
+  // 三格:(1) 鍵盤開 → Esc → 焦點回開啟鈕;(2) 滑鼠開 → 點選項(選完收起)→ 焦點回開啟鈕(字已換成選的值);(3) 滑鼠開 → 點頁面空白處收起 → 焦點不被搶回開啟鈕。
+  // 量具前提(needs):浮層真的開了、真的收了 —— 沒開 / 沒收就不是在量還焦點。對照組:突變 popover-anchor-no-return(拿掉預設)→ 前兩格焦點落 body 必紅;
+  // popover-anchor-steal-outside(當成 modal)→ 第三格焦點被搶回開啟鈕必紅。
+  const anchorOpener = (s) => s.active.startsWith('BUTTON:狀態:')
+  await scene('anchorPopover')
+  await d.focus('[data-open]')
+  await d.press('Enter')
+  await waitSel('#scene-popover[data-state="open"]', '錨點型 Popover 沒開(鍵盤)')
+  const anchorEsc = await escapeUntilClosed(null, 2, 'popover')
+  needs(closedAt(anchorEsc, 'popover') === 1, '錨點型 Popover 第一下 Esc 沒收起(量不到 Esc 之後的還焦點)', anchorEsc)
+  await d.click('[data-open]')
+  await waitSel('#scene-popover[data-state="open"]', '錨點型 Popover 沒開(滑鼠)')
+  await d.click('[data-status-option="已完成"]')
+  const anchorPick = await snap()
+  needs(!anchorPick.popover, '錨點型 Popover 點選項後沒收起', anchorPick)
+  check('F-popover-anchor', 'contract', '錨點型 Popover(PopoverAnchor 定位、普通按鈕開,沒有 PopoverTrigger)收起後焦點回開啟鈕:鍵盤開 → Esc;滑鼠開 → 點選項選完收起(修前 Radix 沒東西可還 → 焦點落 body)',
+    anchorOpener(anchorEsc.at(-1)) && anchorOpener(anchorPick) && anchorPick.active.includes('已完成'), { esc: anchorEsc, pick: anchorPick })
+  await d.click('[data-open]')
+  await waitSel('#scene-popover[data-state="open"]', '錨點型 Popover 沒開(滑鼠,第二次)')
+  const outsideAt = await centerOf('[data-outside]')
+  await page.mouse.click(outsideAt.x, outsideAt.y)
+  await d.settle(); await d.focusStable()
+  const anchorOut = await snap()
+  needs(!anchorOut.popover, '錨點型 Popover 點頁面空白處後沒收起', anchorOut)
+  check('F-popover-anchor-outside', 'contract', '錨點型 Popover 用滑鼠點頁面空白處收起 → 焦點不被搶回開啟鈕(非 modal:使用者把注意力移到別處;returnFocusToOpener 非 modal 規則)',
+    !anchorOpener(anchorOut), anchorOut)
 
   // ── K-cmdb(⌘B 只歸可收合、而且不在 modal 背景的側欄;sidebar.spec.md「持久化與快捷鍵」;產品 canary 回報 C13)──
   // 每一下前在 window 掛一個**最後註冊**的監聽(晚於兩個 SidebarProvider)→ 讀得到它們處理完的 defaultPrevented;cookie 量「寫了沒」(harness 的 document.cookie 換成記錄器)

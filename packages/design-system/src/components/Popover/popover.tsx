@@ -10,7 +10,7 @@ import { Button } from "@/design-system/components/Button/button"
 import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING, OVERLAY_HIDE_WHEN_DETACHED, OVERLAY_VIEWPORT_MAX_WIDTH, OVERLAY_AVAILABLE_HEIGHT, OVERLAY_COVER_AVAILABLE_HEIGHT, capHeight, coverAnchorPosition } from "@/design-system/tokens/elevation/overlay-geometry"
 import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
 import { withOverlayEscape } from "@/design-system/lib/overlay-escape"
-import { useExitStartFocusReturn } from "@/design-system/lib/overlay-focus-return"
+import { useExitStartFocusReturn, useTriggerlessFocusReturn } from "@/design-system/lib/overlay-focus-return"
 import { useI18n } from "@/design-system/lib/i18n/i18n-context"
 import { OverlayAnchorScope, elementOfVirtual, regionSourceNode, useOverlayAnchorRegistry, useRegisterOverlayNode, useRegisterVirtualAnchor, useTriggerRegionDensity } from "@/design-system/lib/overlay-density"
 import { isInChildLayer, useOverlayLayer } from "@/design-system/lib/overlay-nesting"
@@ -209,15 +209,15 @@ const PopoverContent = React.forwardRef<
   )
   // Esc 守門要知道「焦點所在的控件在不在這一層裡面」(lib/overlay-escape.ts withOverlayEscape):內容節點走內部 ref,再合進 forwarded ref
   const contentRef = React.useRef<HTMLDivElement | null>(null)
-  // 收起動畫不延後焦點歸還(lib/overlay-focus-return.ts useExitStartFocusReturn;2026-10-21 r1b fields N1):
-  // 關閉的那一刻就跑 consumer 的 onCloseAutoFocus,沒被擋再走 Radix 非 modal 的預設 —— 沒互動過外面就還給觸發點
-  // (@radix-ui/react-popover 1.1.15 dist/index.mjs PopoverContentNonModal 的 onCloseAutoFocus / onInteractOutside,這裡照抄同一個判斷)。
+  // 收起動畫不延後焦點歸還(lib/overlay-focus-return.ts useExitStartFocusReturn;2026-10-21 r1b fields N1):關閉的那一刻就跑 consumer 的 onCloseAutoFocus,沒被擋再走 Radix 非 modal 的預設 —— 沒互動過外面就還給觸發點(@radix-ui/react-popover 1.1.15 dist/index.mjs PopoverContentNonModal 的 onCloseAutoFocus / onInteractOutside,這裡照抄同一個判斷)。
+  // 沒有 PopoverTrigger(PopoverAnchor 定位、普通按鈕 / 受控 open 開的)時 Radix 沒東西可還、焦點掉到 body → 開啟時記下開啟者、關閉時還(2026-11-27 H20,與 Dialog 同一支 useTriggerlessFocusReturn;非 modal:指標按在外面收起不搶;有觸發點照舊不經它;keyboard-model-canonical.md「關了之後焦點去哪」)
+  const focusReturn = useTriggerlessFocusReturn(false, { preferLiveOpener: true })
   const anchorRegistry = useOverlayAnchorRegistry("popover")
   const triggerNodeRef = anchorRegistry?.trigger ?? null
   const interactedOutsideRef = React.useRef(false)
   const resolvedOpenAutoFocus = onOpenAutoFocus ?? handlePopoverOpenAutoFocus
   const exitFocus = useExitStartFocusReturn({
-    onCloseAutoFocus,
+    onCloseAutoFocus: (e: Event) => { onCloseAutoFocus?.(e); if (!triggerNodeRef?.current) focusReturn.onCloseAutoFocus(e) },
     onOpenAutoFocus: resolvedOpenAutoFocus,
     radixDefault: () => {
       if (!interactedOutsideRef.current) triggerNodeRef?.current?.focus()
@@ -268,7 +268,7 @@ const PopoverContent = React.forwardRef<
           // 輕量浮層,header/footer 用 py-tight(layout-space)→ 鎖 layout-space=md 保持精簡 padding;寫在上面那組屬性之後,
           // 覆蓋讀到的版面間距檔位。[data-layout-space="md"] 有 reset selector(layoutSpace.css「鎖回一般密度」段)→ lg 上正確回到 md。
           data-layout-space="md"
-          onOpenAutoFocus={(e) => { interactedOutsideRef.current = false; resolvedOpenAutoFocus(e) }}
+          onOpenAutoFocus={(e) => { interactedOutsideRef.current = false; focusReturn.onOpenAutoFocus(e); resolvedOpenAutoFocus(e) }}
           onCloseAutoFocus={(e) => { exitFocus.onCloseAutoFocus(e); interactedOutsideRef.current = false }}
           // 與 Radix 同一個判準記「互動過外面」:consumer 沒擋 = 記(Radix 自己的那一份不外露)
           // 從這一層開出來的那一層(錨點在這一層裡、比這一層晚開;lib/overlay-nesting.ts)不算外面 —— 同 Radix 對元件樹裡的子孫,不轉呼叫 consumer
