@@ -12,8 +12,8 @@ import * as React from 'react'
  * 包 provider 時各元件照 prop 與預設文字(Fallback chain 見下)。
  *
  * ── Fallback chain(每個 label resolution)──
- *   1. Consumer 傳的 prop(e.g. `<Notice dismissAriaLabel="X" />`)
- *   2. Context labels(useI18n().t('notice', 'dismiss', default))
+ *   1. Consumer 傳的 prop(e.g. `<Pagination prevAriaLabel="X" />`)
+ *   2. Context labels(useI18n().t('pagination', 'previous', default))
  *   3. DS default(CJK `i18n-allow` rationale)
  *
  * ── Usage ──
@@ -23,9 +23,9 @@ import * as React from 'react'
  * import { I18nProvider } from '@/design-system/lib/i18n/i18n-context'
  *
  * const labels = {
- *   notice: { dismiss: 'Dismiss' },
- *   fileViewer: { close: 'Close viewer', download: 'Download' },
- *   // ... 覆寫需要的項
+ *   dialog: { close: 'Close' },
+ *   pagination: { previous: 'Previous page', next: 'Next page' },
+ *   // ... 只寫 README「已 opt-in I18nProvider 的元件」表裡有接的鍵
  * }
  *
  * <I18nProvider labels={labels}>
@@ -38,7 +38,7 @@ import * as React from 'react'
  * import { useI18n } from '@/design-system/lib/i18n/i18n-context'
  *
  * const { t } = useI18n()
- * <button aria-label={props.dismissAriaLabel ?? t('notice', 'dismiss', '關閉通知')}>
+ * <button aria-label={props.prevAriaLabel ?? t('pagination', 'previous', '上一頁')}>
  * ```
  *
  * ── 為什麼 opt-in(不強制)──
@@ -47,7 +47,7 @@ import * as React from 'react'
  * 工作,同時開放 context-based i18n 給想統一管理的 consumer。
  *
  * ── 為什麼 hierarchical key(component, label)而非 flat key ──
- * Flat key(e.g. 'notice.dismiss')需要命名 convention + grep-based validation;
+ * Flat key(e.g. 'pagination.previous')需要命名 convention + grep-based validation;
  * hierarchical object 天然分 namespace + TypeScript 可做 discriminated union。
  */
 
@@ -59,8 +59,8 @@ import * as React from 'react'
  * ```ts
  * declare module '@/design-system/lib/i18n/i18n-context' {
  *   interface I18nLabels {
- *     notice?: { dismiss?: string }
- *     fileViewer?: { close?: string; download?: string }
+ *     dialog?: { close?: string }
+ *     pagination?: { label?: string; previous?: string; next?: string; pageSize?: string }
  *   }
  * }
  * ```
@@ -96,8 +96,8 @@ export interface I18nHookResult {
   /**
    * Translate:return labels[componentKey]?.[labelKey] ?? fallback。
    *
-   * @param componentKey - 元件 namespace(kebab-case,e.g. 'notice' / 'file-viewer')
-   * @param labelKey - 該元件內的 label 名(camelCase,e.g. 'dismiss' / 'close')
+   * @param componentKey - 元件 namespace(kebab-case,e.g. 'pagination' / 'file-upload')
+   * @param labelKey - 該元件內的 label 名(camelCase,e.g. 'previous' / 'close')
    * @param fallback - DS default(無 context / no key 時用)
    */
   t: (componentKey: string, labelKey: string, fallback: string) => string

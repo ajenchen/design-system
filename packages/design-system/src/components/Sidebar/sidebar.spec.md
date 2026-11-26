@@ -10,7 +10,7 @@ variants:
 sizes:
   sm:
     px: 28
-    when: "次導覽 / 設定頁分類 / 緊湊空間;對齊 field-height-sm"
+    when: "頁面內次導覽(整頁設定頁的分類)/ 緊湊空間;對齊 field-height-sm。對話框裡的分類導覽用預設 md(Dialog body 屬 md 檔,見 patterns/overlay-surface/overlay-chrome-sizing.spec.md「Size canonical」)"
   md:
     px: 32
     when: "預設 — 應用程式主導覽 row;對齊 TreeView / MenuItem 同 size 視覺無縫"

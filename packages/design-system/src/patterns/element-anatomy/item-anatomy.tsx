@@ -527,7 +527,7 @@ ItemContent.displayName = "ItemContent"
 
 const RowSizeContext = React.createContext<RowSize | null>(null)
 
-/** @internal — L3 row-size primitive;app code 不直接 import,由 MenuItem/Row/Field 等內部消費(inline-action.spec.md)。 */
+/** @internal — L3 row-size primitive;不進 root barrel,DS 內由 MenuItem/Row/Field 消費;產品經子路徑 @qijenchen/design-system/patterns/element-anatomy 包裝成自己的元件後可用(ds-canonical/rules/ui-development.md「Root barrel front-door 排除」;inline-action.spec.md「Escape hatch — config 表達不出時的 10% case」)。 */
 export const RowSizeProvider = RowSizeContext.Provider
 
 /**
@@ -639,7 +639,7 @@ ItemAvatar.displayName = "ItemAvatar"
 //
 // 接受任何 button props 並 spread(讓 Radix Slot 可以 merge onClick / data-state 等)
 
-/** @internal — internal ItemInlineActionButton 的 props;隨其元件同走 subpath,不進 root barrel front-door。 */
+/** @internal — ItemInlineActionButton 的 props;隨其元件走子路徑 @qijenchen/design-system/patterns/element-anatomy、不進 root barrel(包裝後可用,見 ItemInlineActionButton)。 */
 export interface ItemInlineActionButtonProps
   extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
   /** Lucide icon 元件 */
@@ -684,7 +684,7 @@ export interface ItemInlineActionButtonProps
   overlayTrigger?: boolean
 }
 
-/** @internal — L3 inline-action primitive;app code 禁直接 import,經 MenuItem/Row endActions 消費(inline-action.spec.md)。 */
+/** @internal — L3 inline-action primitive;不進 root barrel,DS 內經 MenuItem/Row endActions 消費;產品經子路徑 @qijenchen/design-system/patterns/element-anatomy 包裝成自己的元件後可用(ds-canonical/rules/ui-development.md「Root barrel front-door 排除」;inline-action.spec.md「Escape hatch — config 表達不出時的 10% case」)。 */
 export const ItemInlineActionButton = React.forwardRef<
   HTMLButtonElement,
   ItemInlineActionButtonProps
@@ -773,14 +773,14 @@ ItemInlineActionButton.displayName = "ItemInlineActionButton"
 // 需要接 Radix asChild(例如 collapsible trigger)時改用 `ItemInlineActionButton`,
 // 那層沒有 Tooltip 包裝,Root 就是 button,可直接塞進 Radix Slot。
 
-/** @internal — internal ItemInlineAction 的 props;隨其元件同走 subpath,不進 root barrel front-door。 */
+/** @internal — ItemInlineAction 的 props;隨其元件走子路徑 @qijenchen/design-system/patterns/element-anatomy、不進 root barrel(包裝後可用,見 ItemInlineAction)。 */
 export interface ItemInlineActionProps {
   action: InlineActionConfig
   /** Size 覆寫(見 `ItemInlineActionButtonProps.size`)——Field Controls / Tag 必傳 */
   size?: RowSize
 }
 
-/** @internal — L3 inline-action primitive;app code 禁直接 import,經 row 元件消費(inline-action.spec.md)。 */
+/** @internal — L3 inline-action primitive;不進 root barrel,DS 內經 row 元件消費;產品經子路徑 @qijenchen/design-system/patterns/element-anatomy 包裝成自己的元件後可用(ds-canonical/rules/ui-development.md「Root barrel front-door 排除」;inline-action.spec.md「Escape hatch — config 表達不出時的 10% case」)。 */
 export const ItemInlineAction = React.forwardRef<
   HTMLButtonElement,
   ItemInlineActionProps

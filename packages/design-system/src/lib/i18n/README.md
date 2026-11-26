@@ -18,10 +18,11 @@ Route B provider 一次注入 label catalog,per-call-site override 仍可(prop >
 // Consumer app root(npm 套件 root;lib 沒有 subpath)
 import { I18nProvider } from '@qijenchen/design-system'
 
+// 只寫下方「已 opt-in I18nProvider 的元件」表裡真的有接的鍵(沒接的元件寫了也不會生效,要經它自己的 labels prop)
 const enLabels = {
-  notice: { dismiss: 'Dismiss' },
-  'file-viewer': { close: 'Close viewer', download: 'Download' },
-  carousel: { previous: 'Previous slide', next: 'Next slide' },
+  dialog: { close: 'Close' },
+  pagination: { previous: 'Previous page', next: 'Next page' },
+  popover: { close: 'Close' },
   // ... consumer 覆寫需要的項
 }
 
@@ -36,7 +37,7 @@ DS 元件內部(逐步 migration):
 import { useI18n } from '@/design-system/lib/i18n/i18n-context'
 
 const { t } = useI18n()
-<Button aria-label={propLabel ?? t('notice', 'dismiss', '關閉通知')} />
+<Button aria-label={prevAriaLabelProp ?? t('pagination', 'previous', '上一頁')} />  // 同 Pagination 的實際寫法
 ```
 
 ## Fallback chain
