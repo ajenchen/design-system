@@ -2,7 +2,7 @@
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
     "generatedAt": "2026-11-25T12:58:21.757Z",
-    "stories": 1108,
+    "stories": 1110,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
       "apps-template-appshell-dashboard--default",
@@ -178,6 +178,8 @@
       "design-system-components-calendar-展示--cell-blank-click-moves-keyboard-stop",
       "design-system-components-calendar-展示--content-publishing-schedule",
       "design-system-components-calendar-展示--customer-support-weekdays",
+      "design-system-components-calendar-展示--detail-change-log",
+      "design-system-components-calendar-展示--detail-view-only",
       "design-system-components-calendar-展示--empty-calendar",
       "design-system-components-calendar-展示--english-labels-override",
       "design-system-components-calendar-展示--event-click-anchor",
@@ -1113,8 +1115,8 @@
       "design-system-tokens-uisize--overview",
       "design-system-tokens-uisize--product-alignment"
     ],
-    "storyIdsSha256": "1aa855b31603600c1ff8937fe2a21b306968174357413fb5329ac08751fd915d",
-    "fingerprints": 748,
+    "storyIdsSha256": "3dcbb9f616f23786680ff15b1287db326734ff12d4b93f0398ba9ae2c71b0090",
+    "fingerprints": 756,
     "linuxOnly": {
       "design-system-components-combobox-設計規格--inspector|color-contrast": "藍圖區塊的 9px text-fg-muted 小標(anatomy-utils.tsx:174):macOS 等寬字溢出區塊、axe 歸 incomplete 不計,Linux 放得下才計入 —— 只有 Linux(CI)量得到;值 = 2f367ee3(A76)寫入的 CI 實測;main 的 a11y drift 排程 2026-11-19(run 44499310317)在 Linux 量到同值 23 / 41。--color-fg-muted 已定案例外(color.spec.md「已定案(禁再問)」)",
       "design-system-components-select-設計規格--inspector|color-contrast": "藍圖區塊的 9px text-fg-muted 小標(anatomy-utils.tsx:174):macOS 等寬字溢出區塊、axe 歸 incomplete 不計,Linux 放得下才計入 —— 只有 Linux(CI)量得到;值 = 2f367ee3(A76)寫入的 CI 實測;main 的 a11y drift 排程 2026-11-19(run 44499310317)在 Linux 量到同值 23 / 41。--color-fg-muted 已定案例外(color.spec.md「已定案(禁再問)」)"
@@ -1234,6 +1236,8 @@
     "design-system-components-calendar-展示--cell-blank-click-moves-keyboard-stop|color-contrast": 4,
     "design-system-components-calendar-展示--content-publishing-schedule|color-contrast": 4,
     "design-system-components-calendar-展示--customer-support-weekdays|color-contrast": 2,
+    "design-system-components-calendar-展示--detail-change-log|color-contrast": 4,
+    "design-system-components-calendar-展示--detail-view-only|color-contrast": 4,
     "design-system-components-calendar-展示--empty-calendar|color-contrast": 4,
     "design-system-components-calendar-展示--english-labels-override|color-contrast": 4,
     "design-system-components-calendar-展示--event-click-anchor|color-contrast": 4,

@@ -32,8 +32,10 @@ type CalendarDemoProps = Omit<CalendarProps, 'onDateClick' | 'onEventClick' | 'e
   isEditable?: (event: CalendarEvent) => boolean
   /** 詳情的額外欄位(`eventDetail.renderExtra`) */
   renderExtra?: (event: CalendarEvent) => React.ReactNode
-  /** 標題列「⋯」前面再放的操作(例:「開完整編輯」;`eventDetail.actions` 的一部分) */
-  extraActions?: (event: CalendarEvent) => React.ReactNode
+  /** 標題列「⋯」前面再放的操作(例:「開完整編輯」;`eventDetail.actions` 的一部分);第二個參數把修改寫回這一筆(產品自己的操作,例「延後一週」) */
+  extraActions?: (event: CalendarEvent, update: (patch: Partial<CalendarEvent>) => void) => React.ReactNode
+  /** 詳情交回修改時另外通知(寫回事件之後;test-only 夾具記錄呼叫次數與內容用) */
+  onEventChange?: (event: CalendarEvent, patch: Partial<CalendarEvent>) => void
   /** 產品自己開詳情(onEventClick + 自己的 Popover),不用內建詳情 */
   productDetail?: boolean
 }
@@ -55,7 +57,7 @@ const eventWhen = (event: CalendarEvent) => {
 
 /** 月曆 + 三個點擊目標的結果 + 這一則 story 自己的 Toaster(toast.spec.md「app-level-one」允許 Storybook 每個 story root 一個) */
 export function CalendarDemo({
-  events: initialEvents = [], readOnlyDates, readOnlyEvents, noun = '事件', today, categories, isEditable, renderExtra, extraActions, productDetail = false, ...rest
+  events: initialEvents = [], readOnlyDates, readOnlyEvents, noun = '事件', today, categories, isEditable, renderExtra, extraActions, onEventChange, productDetail = false, ...rest
 }: CalendarDemoProps) {
   const [events, setEvents] = React.useState<CalendarEvent[]>(initialEvents)
   const [createOpen, setCreateOpen] = React.useState(false)
@@ -77,6 +79,8 @@ export function CalendarDemo({
     form.setFieldValue('date', isoOf(on))
     setCreateOpen(true)
   }
+  const updateEvent = (target: CalendarEvent, patch: Partial<CalendarEvent>) =>
+    setEvents((prev) => prev.map((e) => (e.id === target.id ? { ...e, ...patch } : e)))
   const removeEvent = (target: CalendarEvent) => {
     setEvents((prev) => prev.filter((e) => e.id !== target.id))
     toast({ variant: 'success', title: `${noun}已刪除`, action: { label: '復原', onClick: () => setEvents((prev) => [...prev, target]) } })
@@ -92,15 +96,17 @@ export function CalendarDemo({
       : {
           eventDetail: {
             // 改了哪一欄就寫回哪一欄(事件資料由產品持有;calendar.spec.md「禁止事項」第 2 條)
-            onEventChange: (event: CalendarEvent, patch: Partial<CalendarEvent>) =>
-              setEvents((prev) => prev.map((e) => (e.id === event.id ? { ...e, ...patch } : e))),
+            onEventChange: (event: CalendarEvent, patch: Partial<CalendarEvent>) => {
+              updateEvent(event, patch)
+              onEventChange?.(event, patch)
+            },
             isEditable,
             renderExtra,
             categories,
             // 標題列操作位:「⋯」收「刪除」(破壞性動作預設收進溢出選單,action-bar.spec.md:123;溢出圖示 MoreVertical,ui-development.md Icon canonical)
             actions: (event: CalendarEvent) => (
               <>
-              {extraActions?.(event)}
+              {extraActions?.(event, (patch) => updateEvent(event, patch))}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="text" iconOnly size="sm" startIcon={MoreVertical} aria-label="更多操作" />

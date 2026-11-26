@@ -38,9 +38,9 @@ const sampleEvents: CalendarEvent[] = [
   { id: 'e6', title: '機房搬遷', start: `${thisMonth}-24`, end: `${thisMonth}-28`, color: 'red', allDay: true },
 ]
 
-// 日期格 / 事件方塊各自二擇一:可點就接回調(型別層必填),不可點就寫 readOnlyDates / readOnlyEvents
+// 日期格二擇一、事件方塊三擇一:可點就接回調(型別層必填;事件方塊是 eventDetail 內建詳情或 onEventClick),不可點就寫 readOnlyDates / readOnlyEvents
 //(calendar.spec.md「日期格與事件方塊:可點或唯讀」)。右上角「新事件」是全域新增入口、恆渲染,onCreateEvent 必填(同段末條,M23(f))。
-// 規格頁的可點範例也給**真的結果**(CalendarDemo:點事件開 Popover、點日期 / 新事件開「新增事件」對話框、送出跳 Toast),與展示頁同一個示範殼。
+// 規格頁的可點範例也給**真的結果**(CalendarDemo:點事件開內建詳情、點日期 / 新事件開「新增事件」對話框、送出跳 Toast),與展示頁同一個示範殼。
 
 // Keep dynamic-token documentation readable without presenting Tailwind's
 // source scanner with an invalid literal arbitrary-value candidate.

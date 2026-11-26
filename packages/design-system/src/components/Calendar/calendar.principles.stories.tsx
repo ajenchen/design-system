@@ -27,9 +27,9 @@ const now = new Date(2026, 6, 15)
 const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')
 // 月份標題 / 星期名照讀者的中文產品排(同展示頁 calendar.stories.tsx 的 LOCALE;元件預設 2026-11-24 起也是 'zh-TW',之前是 'en-US');事件名稱也用中文(2026-11-21 前是英文,SIB-PV)。
 const LOCALE = 'zh-TW'
-// 日期格 / 事件方塊各自二擇一:可點就接回調(型別層必填),不可點就寫 readOnlyDates / readOnlyEvents
+// 日期格二擇一、事件方塊三擇一:可點就接回調(型別層必填;事件方塊是 eventDetail 內建詳情或 onEventClick),不可點就寫 readOnlyDates / readOnlyEvents
 //(calendar.spec.md「日期格與事件方塊:可點或唯讀」)。右上角「新事件」是全域新增入口、恆渲染,onCreateEvent 必填(同段末條,M23(f))。
-// 原則頁的可點範例也給**真的結果**(CalendarDemo:點事件開 Popover、點日期 / 新事件開「新增事件」對話框、送出跳 Toast),與展示頁同一個示範殼。
+// 原則頁的可點範例也給**真的結果**(CalendarDemo:點事件開內建詳情、點日期 / 新事件開「新增事件」對話框、送出跳 Toast),與展示頁同一個示範殼。
 
 // 規則外框(標題 / 說明 / 間距)= 共用教學頁元件;本頁的範例是整塊行事曆,放進一個有邊框的展示框(原本寫在本頁 Rule 裡的同一個框)。
 // 說明的字級 / 字色由共用元件擁有(text-caption + text-fg-muted,tutorial-page.tsx 檔頭;字色 = color.spec.md:96 caption 列),本頁不另選

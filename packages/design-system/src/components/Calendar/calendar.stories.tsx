@@ -1,9 +1,11 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
+import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { expect, fn, userEvent, within } from '@storybook/test'
 import { Calendar, type CalendarEvent, type CalendarLabels } from './calendar'
 import { CalendarDemo } from './_calendar-demo'
 import { Tag } from '@/design-system/components/Tag/tag'
+import { Button } from '@/design-system/components/Button/button'
 import { DataTable, type DataTableColumnDef } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging
 
@@ -25,9 +27,9 @@ export default meta
 
 type Story = StoryObj<typeof Calendar>
 const customTileActivated = fn()
-// 日期格 / 事件方塊各自二擇一:可點就接回調(型別層必填),不可點就寫 readOnlyDates / readOnlyEvents
+// 日期格二擇一、事件方塊三擇一:可點就接回調(型別層必填;事件方塊是 eventDetail 內建詳情或 onEventClick),不可點就寫 readOnlyDates / readOnlyEvents
 //(calendar.spec.md「日期格與事件方塊:可點或唯讀」;M23(f):不拿「有沒有傳」當渲染閘)。
-// 可點的示範一律給**真的結果**(CalendarDemo:點事件開 Popover、點日期 / 新事件開「新增事件」對話框、送出跳 Toast),不給空函式。
+// 可點的示範一律給**真的結果**(CalendarDemo:點事件開內建詳情、點日期 / 新事件開「新增事件」對話框、送出跳 Toast),不給空函式。
 
 // ── 真實業務情境 ─────────────────────────────────────────────────────
 
@@ -450,6 +452,74 @@ export const EventClickAnchor: Story = {
     await expect(document.activeElement).toBe(day13)
     await expect(anchorOf(4)).toBe(first)
   },
+}
+
+// 詳情只能看(test-only 夾具;calendar.spec.md「事件詳情浮層」內文欄位【AI 推導】「isEditable 為 false 時空欄位不列、各欄位 InlineEdit editable={false}」):
+// 客戶端行事曆同步進來的會議,本產品不能改 → isEditable 一律 false。這一筆沒有地點、說明、類別 → 詳情只列時間與全天;
+// 每一欄都不可點(沒有隱形的編輯鈕)。scripts/calendar-month-invariant.mjs DT-readonly 量這一則。
+export const DetailViewOnly: Story = {
+  name: '詳情只能看',
+  tags: ['test-only'],
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md「事件詳情浮層」內文欄位最後一條(isEditable 為 false)
+  render: () => (
+    <div className="h-screen p-4 bg-canvas">
+      <CalendarDemo
+        defaultReferenceDate={now}
+        today={now}
+        locale={LOCALE}
+        categories={TEAM_CATEGORIES}
+        isEditable={() => false}
+        events={[{ id: 'sync1', title: '宏達工業季度回顧(客戶行事曆同步)', start: `${thisMonth}-16T14:00`, end: `${thisMonth}-16T15:30`, color: 'orange' }]}
+      />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: /^宏達工業季度回顧/ }))
+    await within(document.body).findByRole('dialog', { name: '宏達工業季度回顧(客戶行事曆同步)' })
+  },
+}
+
+// 詳情交回的修改(test-only 夾具):onEventChange 每呼叫一次記一筆(畫在範例下方的紀錄列,閘從 DOM 讀),
+// 標題故意長到在格子裡被截斷(關詳情後焦點回到截斷方塊時不跳提示的量測用,DT-tip)。標題列放產品自己的兩個操作「延後一週」「延到下個月」(eventDetail.actions;事件被移走時詳情跟到新位置 / 留在原位、焦點歸還的量測用)。
+// scripts/calendar-month-invariant.mjs DT-commit / DT-move / DT-fallback 量這一則。
+const shiftDays = (value: string | Date, days: number): string | Date => {
+  if (value instanceof Date) return new Date(value.getFullYear(), value.getMonth(), value.getDate() + days, value.getHours(), value.getMinutes())
+  const [date, time] = value.split('T')
+  const [y, m, d] = date.split('-').map(Number)
+  const next = new Date(y, m - 1, d + days)
+  const iso = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`
+  return time ? `${iso}T${time}` : iso
+}
+function DetailChangeLogDemo() {
+  const [log, setLog] = React.useState<{ id: string; patch: Partial<CalendarEvent> }[]>([])
+  return (
+    <div className="h-screen p-4 bg-canvas flex flex-col gap-2">
+      <output data-calendar-change-log={JSON.stringify(log)} className="text-body text-fg-secondary">
+        onEventChange 呼叫 {log.length} 次{log.length ? `,最後一次:${JSON.stringify(log[log.length - 1].patch)}` : ''}
+      </output>
+      <div className="flex-1 min-h-0">
+        <CalendarDemo
+          defaultReferenceDate={now}
+          today={now}
+          locale={LOCALE}
+          events={[{ id: 'mv1', title: '設計審查:結帳頁改版第二輪(信用卡分期顯示)', start: `${thisMonth}-05T10:00`, end: `${thisMonth}-05T11:00`, color: 'blue' }]}
+          onEventChange={(event, patch) => setLog((prev) => [...prev, { id: event.id, patch }])}
+          extraActions={(event, update) => (
+            <>
+              <Button variant="text" size="sm" onClick={() => update({ start: shiftDays(event.start, 7), end: shiftDays(event.end ?? event.start, 7) })}>延後一週</Button>
+              <Button variant="text" size="sm" onClick={() => update({ start: shiftDays(event.start, 31), end: shiftDays(event.end ?? event.start, 31) })}>延到下個月</Button>
+            </>
+          )}
+        />
+      </div>
+    </div>
+  )
+}
+export const DetailChangeLog: Story = {
+  name: '詳情交回的修改',
+  tags: ['test-only'],
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:115「eventDetail.onEventChange(event, patch) 必填;patch 只帶這一次改到的欄位」
+  render: () => <DetailChangeLogDemo />,
 }
 
 // 英文產品覆寫讀屏字串(test-only 夾具):`labels` 逐鍵換掉 DS 預設的繁中(calendar.spec.md「A11y 預設」字串可覆寫),

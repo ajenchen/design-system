@@ -152,8 +152,8 @@ export type { CalendarEventDetail, CalendarEventPatch, CalendarCategory } from '
 export type { CalendarEventSegment }
 
 // ── 日期格 / 事件方塊:可點或唯讀(2026-09-26,待辦總帳 L8 / C15;calendar.spec.md「日期格與事件方塊:可點或唯讀」)──
-// 兩者各自二擇一,由型別層逼出來 —— 不拿「回調有沒有傳」當渲染閘(meta-patterns M23(f)):
-//   可點(預設)= 必傳回調;長成可點的樣子(按鈕、滑過換色、手形游標、Enter / Space)。
+// 日期格二擇一、事件方塊三擇一,由型別層逼出來 —— 不拿「回調有沒有傳」當渲染閘(meta-patterns M23(f)):
+//   可點(預設)= 必傳回調(日期格 `onDateClick`;事件方塊 `eventDetail` 內建詳情或 `onEventClick` 產品自己處理);長成可點的樣子(按鈕、滑過換色、手形游標、Enter / Space)。
 //   唯讀      = 寫 `readOnlyDates` / `readOnlyEvents`、**不可以**傳回調;不是按鈕、滑過不變、游標不變。
 // 先前(2026-09-25 批次)把兩個回調改成無條件必填,等於規定月曆一定可點,與「沒有新增功能的月曆格子不亮」相反(C15),已撤回。
 // 命名:沿用 DS 既有的 `readOnly`(Rating `readOnly`「唯讀:…不響應 hover / click / 鍵盤」、Field 家族 readonly 模式),
@@ -726,16 +726,6 @@ function MonthEventPiece({
   }
   // 「詳情開著」的記號也掛在畫顏色的內層(Tailwind data-[detail-open]: 看元素自己);自訂內容只有外層帶,由 consumer 自己畫
   const openMark = detailOpen ? { 'data-detail-open': '' } : null
-  // 截斷提示只在「看得見的焦點」或滑過時開:用滑鼠關掉詳情後,焦點由程式還給這一段(lib/overlay-focus-return.ts,focusVisible: false)——
-  // 那不是使用者聚焦到它,Radix 的 Tooltip 一收到 focus 就開(不看 :focus-visible),截斷的方塊會在關詳情的那一下跳出提示。
-  // 與 popover.tsx 開啟落點避開 ×、防 × 的提示外洩同一類:程式搬的焦點不帶出只給使用者看的提示。鍵盤 Esc 關的照樣開(那一下是 :focus-visible)。
-  const shellRef = React.useRef<HTMLElement | null>(null)
-  const [tipOpen, setTipOpen] = React.useState(false)
-  const handleTipOpenChange = (next: boolean) => {
-    const el = shellRef.current
-    if (next && el && !el.matches(':hover') && !el.matches(':focus-visible')) return
-    setTipOpen(next)
-  }
   if (renderEventTile) {
     // 自訂內容:外層只 own 位置、命中與鍵盤,不畫滑過、不墊底(它不知道自訂內容的靜止底;calendar.spec.md「renderEventTile 的滑過責任歸屬」)。
     // 第二段起照樣呼叫,segment 帶這一段的延續資訊(isSegmentRepeat = 不是畫面上第一段)。
@@ -765,10 +755,12 @@ function MonthEventPiece({
   return (
     // 恆 wrap、未截斷 open={false} 靜默(truncated-text.spec.md always-wrap:條件 wrap 會 remount 丟 RO 訂閱)。
     // 唯讀方塊照樣掛:截斷提示是「資訊揭露」,不是點擊回饋(tooltip.spec.md「截斷文字 → 用 tooltip 顯示完整內容。」不分可不可點)。
-    <Tooltip open={isTruncated && tipOpen} onOpenChange={handleTipOpenChange}>
+    // 用滑鼠關掉詳情後焦點由程式還給這一段:不跳提示由 DS Tooltip 統一處理(程式搬來、不是 :focus-visible 的焦點不開;
+    // ../../patterns/element-anatomy/truncated-text.spec.md「A11y 預設」),本檔不另寫。
+    <Tooltip open={isTruncated ? undefined : false}>
       <TooltipTrigger asChild>
         {/* 墊底只在格陣裡(蓋住格線);清單裡沒有格線,長條直接疊在浮層底上【AI 推導】 */}
-        <MonthEventPieceShell ref={shellRef} {...shell} underlay={isBar && grid !== null}>
+        <MonthEventPieceShell {...shell} underlay={isBar && grid !== null}>
           {isBar ? (
             // 長條(左欄):類別淡底 + 字 step-7,可點時滑過 step-2(CAT_EVENT)、唯讀不帶滑過(CAT_SUBTLE)【維持 U10】;不帶色條(色條只給有時段事件)。
             // 文字左右內距 8 用 Tag 的兩層結構表示(外層 4 + 文字 4,同 tag.tsx 的 size md 與 data-tag-text 那兩層),兩層都讀 --calendar-gap。

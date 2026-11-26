@@ -17,7 +17,7 @@ import { CALENDAR_EVENT_DETAIL_WIDTH_PX } from './calendar-geometry'
  * ── 消費的 SSOT ──
  * - components: [Popover(PopoverAnchor virtualRef / PopoverContent side + align="start" + aria-label / PopoverHeader closeAriaLabel + actions / PopoverBody),
  *   InlineEdit(標題 as="h2" size="sm" + 各欄 renderRead / renderEdit / multiline / editable 閘), Field + FieldLabel + FieldGroup(垂直排、閱讀情境),
- *   Switch(全天直接切換;只能看時 mode="view"), DatePicker.Range(檢視 formatRange、編輯 showTime), Select(類別:display="tag")]
+ *   Switch(全天:可改時直接切換;只能看時 InlineEdit editable={false} 委派 Switch mode="view"), DatePicker.Range(檢視 formatRange、編輯 showTime), Select(類別:display="tag")]
  * - patterns: [overlay-surface `EDITABLE_TITLE_HEADER_SLOT`(標題是 InlineEdit sm 時的標題列 slot 與 × 讓位;overlay-chrome-sizing.spec.md「可編輯標題的標題列」)]
  * - tokens: 無直接讀取 —— 標題列高、欄位間距、body 上下左右內距、垂直排就地編輯外伸,全由上面的元件與 layoutSpace.css(PopoverBody = hug)給,本檔不寫任何間距
  * - 資料: ./calendar-layout.ts(detailRangeOf / rangeToTimePatch / toggleAllDayPatch:時間欄的值、全天 end 不含 ↔ Range 結束日含、全天切換)
@@ -87,7 +87,7 @@ export interface CalendarEventDetailLabels {
 /** 交給 PopoverAnchor virtualRef 的錨點:Radix 只在物件換了才重算位置(popover.tsx PopoverAnchor 上方「換錨點 = 換一個包裝物件」),所以換錨點一律建新的 */
 export interface CalendarDetailAnchor {
   getBoundingClientRect: () => DOMRect
-  /** floating-ui 找捲動祖先用;lib/overlay-nesting.ts 以它認「這一層從哪一層開出來」(清單那一列 → 點詳情不關清單) */
+  /** Popover 定位找捲動祖先用(虛擬錨點沒有自己的 DOM);lib/overlay-nesting.ts 以它認「這一層從哪一層開出來」(清單那一列 → 點詳情不關清單) */
   readonly contextElement: Element
 }
 
@@ -251,8 +251,14 @@ function DetailFields<E>({ entry, detail, labels, locale, readFormat, onChange, 
       </Field>
       <Field data-calendar-detail-field="allDay">
         <FieldLabel>{labels.detailAllDay}</FieldLabel>
-        {/* 直接切換(就地編輯沒有給布林值的編輯態;同 DataTable 布林欄 data-table.spec.md:557);只能看 → mode="view"(switch.spec.md:156) */}
-        <Switch checked={allDay} onCheckedChange={onToggleAllDay} mode={editable ? undefined : 'view'} />
+        {/* 可改:直接切換(就地編輯沒有給布林值的編輯態;同 DataTable 布林欄 data-table.spec.md:557)。
+            只能看:同組其他欄一樣是 InlineEdit editable={false}(同一場景不混放純顯示與就地編輯,inline-edit.spec.md:52 / :126),
+            值的格式化委派 Switch mode="view"(勾 / 叉,switch.spec.md:156;inline-edit.spec.md「值-格式化」委派路徑) */}
+        {editable ? (
+          <Switch checked={allDay} onCheckedChange={onToggleAllDay} />
+        ) : (
+          <InlineEdit<boolean> value={allDay} label={labels.detailAllDay} editable={false} onCommit={onToggleAllDay} renderRead={(value) => <Switch mode="view" checked={value} />} />
+        )}
       </Field>
       {(editable || !!event.location) && (
         <Field data-calendar-detail-field="location">

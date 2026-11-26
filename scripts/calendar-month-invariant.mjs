@@ -84,6 +84,12 @@
  *           DT-mark 打開詳情的那一段帶 data-detail-open;DT-esc Esc 關詳情、焦點回那一段;DT-outside 減少動態下改地點、點外面 = 先提交再關(再打開看得到新值);
  *           DT-commit 改標題 → 月格跟著換;DT-blank 清空提交 = 還原原值;
  *           DT-list 從清單開:清單不關、詳情左緣 − 清單右緣 = 8、上緣對齊那一列;DT-esc-layers 第一下 Esc 只關詳情(焦點回那一列)、第二下關清單(焦點回「+N」)。
+ *           DT-readonly(test-only「詳情只能看」)isEditable 回 false:空的地點 / 說明 / 類別不列、欄位與標題沒有可聚焦 / 可點的元素、點值不進編輯;
+ *           DT-tip(test-only「詳情交回的修改」,標題被截斷)用滑鼠開、點 × 關 → 焦點由程式還給那一段,截斷提示不開(tooltip.spec.md「A11y 預設」);
+ *           DT-commit-call 提交標題 → onEventChange 只呼叫一次、patch = { title };DT-move 產品把事件移到別天 → 詳情換新錨點跟過去(頂端對齊、隔 8、
+ *           新那一段帶 data-detail-open、舊那一段卸載),Esc 後焦點在新位置的方塊;DT-fallback 移到畫面外 → 詳情留在原位、Esc 後焦點回原來那一天的停靠點;
+ *           DT-esc4-L1–L4 真 Calendar 四層 Esc(時間欄的日期浮層 → 欄位編輯中 → 詳情 → 清單),每一下只關最內層、焦點回該回的地方;
+ *           DT-nest 點詳情裡面、點詳情裡時間欄的日期浮層,清單都不關;點兩層外面兩層都關。以上每格各一個對照組(MUTANTS,block 'detail')。
  *   紅: --selftest 逐一注入:星期列搬出格陣、週列高改 auto、最後一週留底線、格子內距 6、工具列改回內距撐高、nav 沒名稱、
  *       欄頭名稱改成短字、捲動區變成可聚焦(axe required-children)、捲動區不能捲、事件列高 20、事件列焦點框改回往內、1 號的實心底被壓成 24 寬、
  *       格最小高沒算格線(回到 60)、
@@ -107,7 +113,7 @@
  *   綠: 全部量到且照規格時 exit 0。開 story 走 lib/launch-browser.mjs openStory(等 Storybook 回報渲染完成與被量的格陣出現,不睡固定時間);
  *       開不起來 / 等不到格陣 = 儀器失效(INSTRUMENT-FAIL,exit 1 並點名),不讀成通過。
  */
-// 用法:node scripts/calendar-month-invariant.mjs [--static=<dir>] [--selftest]
+// 用法:node scripts/calendar-month-invariant.mjs [--static=<dir>] [--selftest] [--block=<區塊名,除錯用>]
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -119,6 +125,8 @@ import { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, requireFreshStorybook
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
 const SELFTEST = process.argv.includes('--selftest')
+// --block=<名字>:只跑那一個區塊(與它的突變);本機除錯用,CI 不帶
+const ONLY_BLOCK = arg('block', null)
 const root = path.resolve(REPO, arg('static', 'storybook-static'))
 const CAL = 'packages/design-system/src/components/Calendar'
 requireFreshStorybookBuild(root, [`${CAL}/calendar.tsx`, `${CAL}/calendar-more-list.tsx`, `${CAL}/calendar-event-detail.tsx`, `${CAL}/calendar-geometry.ts`, `${CAL}/calendar-layout.ts`, `${CAL}/_calendar-demo.tsx`, `${CAL}/calendar.stories.tsx`, `${CAL}/calendar.anatomy.stories.tsx`, `${CAL}/calendar.principles.stories.tsx`],
@@ -146,6 +154,8 @@ const STORY = {
   moreList: storyId(/calendar-設計規格--more-list-open$/u),
   detailOpen: storyId(/calendar-設計規格--detail-open$/u),
   detailFromList: storyId(/calendar-設計規格--detail-from-more-list$/u),
+  detailViewOnly: storyId(/calendar-展示--detail-view-only$/u),
+  detailChangeLog: storyId(/calendar-展示--detail-change-log$/u),
 }
 // 「+N」清單那一則(設計規格「狀態行為:「+N」清單開著」):年度使用者大會那天,與格內排序(calendar.spec.md「格內排序」)推出的清單順序
 const MORE_DAY = '2026-07-22'
@@ -413,6 +423,193 @@ const srgbLum = ([r, g, b]) => { const f = (v) => { v /= 255; return v <= 0.0404
 const ratio = (a, b) => { const x = srgbLum(a), y = srgbLum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05) }
 
 // 每一個量測區塊 = 一個函式(selftest 重用同一份,只換突變)
+// ── DT 詳情:只能看 / 交回的修改 / 事件被移走 / 四層 Esc / 巢狀關閉 / 程式還焦點不跳提示(P13 / P14 閘;detail 區塊尾端呼叫)──
+// 每一段只在正式跑、或指名它的突變時跑(突變帶自己的旗標),其他突變不重跑這幾段。
+const DATE_POPOVER = '[role="dialog"][aria-label="日期區間選擇"]'
+const runs = (mutate, flag) => !mutate || Boolean(mutate[flag])
+async function detailDeep(mutate, { waitSel, detailSel, listSel }) {
+  const focusInfo = () => page.evaluate(() => {
+    const a = document.activeElement
+    return { body: a === document.body || a === null, id: a?.getAttribute('data-calendar-event-id') ?? null, day: a?.getAttribute('data-calendar-day') ?? null, more: a?.getAttribute('data-calendar-more') ?? null, field: a?.closest('[data-calendar-detail-field]')?.getAttribute('data-calendar-detail-field') ?? null }
+  })
+  // DT-readonly(P13):isEditable 回 false → 空的地點 / 說明 / 類別不列;每一欄、標題都不可點(沒有隱形編輯鈕),點值不進編輯
+  if (runs(mutate, 'readonlyDom')) {
+    const p = await open(STORY.detailViewOnly, { label: '詳情只能看', mutate })
+    if (p && (await waitSel(detailSel, 'open'))) {
+      if (mutate?.readonlyDom) await page.evaluate(mutate.readonlyDom)
+      await frames(3)
+      const before = await page.evaluate((s) => {
+        const d = document.querySelector(s)
+        const fields = [...d.querySelectorAll('[data-calendar-detail-field]')].map((f) => f.getAttribute('data-calendar-detail-field'))
+        const focusables = [...d.querySelectorAll('[data-calendar-detail-field] :is(button, input, textarea, [role="switch"], [tabindex]:not([tabindex="-1"]))')].length
+        const titleButtons = d.querySelector('[data-slot="surface-header"] h2')?.closest('[data-editable]') ? 1 : 0
+        return { fields, focusables, titleButtons }
+      }, detailSel)
+      await page.click(`${detailSel} [data-calendar-detail-field="time"]`).catch(() => {})
+      await frames(4)
+      const editing = await page.evaluate((s) => Boolean(document.querySelector(`${s} [data-calendar-detail-field] [data-editing="true"], ${s} [data-calendar-detail-field] input`)), detailSel)
+      check('DT-readonly', before.fields.join(',') === 'time,allDay' && before.focusables === 0 && before.titleButtons === 0 && !editing,
+        `只能看:欄位 ${before.fields.join(' / ')}(規格:空的地點 / 說明 / 類別不列 → 時間 / 全天)、欄位裡可聚焦的元素 ${before.focusables} 個(規格 0)、標題可編輯 ${before.titleButtons ? '是' : '否'}、點時間欄${editing ? '進了編輯' : '沒進編輯'}`)
+    } else instrumentFails.push({ cell: 'DT-readonly', detail: 'play 打開的詳情等不到(story 改了?)' })
+  }
+  // DT-tip / DT-commit-call / DT-move / DT-fallback:test-only「詳情交回的修改」(標題長到被截斷;onEventChange 每呼叫一次記一筆在 output[data-calendar-change-log])
+  const tileSel = '[data-calendar-tile][data-calendar-event-id="mv1"]'
+  const logOf = () => page.evaluate(() => JSON.parse(document.querySelector('[data-calendar-change-log]')?.getAttribute('data-calendar-change-log') ?? 'null'))
+  if (runs(mutate, 'tipFocusVisible')) {
+    // DT-tip:用滑鼠點開詳情、點 × 關掉 → 焦點由程式還給被截斷的那一段(不是 :focus-visible)→ 截斷提示不開(tooltip.spec.md「A11y 預設」)。
+    // 對照組(tipFocusVisible):關掉後先按一下 Shift(最近一次輸入 = 鍵盤)再把焦點重新交給同一段 → 這次是 :focus-visible → 提示照開 → 這一格紅
+    //(證明這一格看得到提示,差別只在焦點是不是 :focus-visible)
+    const p = await open(STORY.detailChangeLog, { label: '詳情交回的修改(提示)', mutate })
+    if (p) {
+      const truncated = await page.evaluate((t) => { const s = document.querySelector(`${t} .truncate`); return s ? s.scrollWidth > s.clientWidth : false }, tileSel)
+      await page.click(tileSel)
+      const opened = await waitSel(detailSel, 'open')
+      if (!opened || !truncated) instrumentFails.push({ cell: 'DT-tip', detail: `詳情${opened ? '' : '沒'}打開、事件方塊${truncated ? '' : '沒有'}被截斷 —— 量不到` })
+      else {
+        await page.click(`${detailSel} [data-dismiss]`)
+        await waitSel(detailSel, 'closed')
+        if (mutate?.tipFocusVisible) {
+          await page.keyboard.press('Shift')
+          await page.evaluate((t) => { const el = document.querySelector(t); el?.blur(); el?.focus() }, tileSel)
+        }
+        await page.waitForTimeout(900) // 提示的開啟延遲 500(MOTION_DELAY_PLAIN_MS)之後
+        const f = await focusInfo()
+        const tip = await page.evaluate(() => Boolean(document.querySelector('[data-radix-popper-content-wrapper] [role="tooltip"], [role="tooltip"]')))
+        check('DT-tip', f.id === 'mv1' && !tip, `關詳情後焦點${f.id === 'mv1' ? '回到被截斷的那一段' : '不在那一段'}、截斷提示${tip ? '開了' : '沒開'}(規格:程式還回來的焦點不開提示)`)
+      }
+    }
+  }
+  if (runs(mutate, 'commitExtra')) {
+    // DT-commit-call:提交標題 → onEventChange 只被呼叫一次、patch 只帶 { title }。對照組(commitExtra)再改一次地點 → 兩次 → 紅
+    const p = await open(STORY.detailChangeLog, { label: '詳情交回的修改(提交)', mutate })
+    if (p) {
+      await page.click(tileSel)
+      await waitSel(detailSel, 'open')
+      const renamed = '設計審查 第三輪'
+      await page.click(`${detailSel} [data-slot="surface-header"] button`).catch(() => {})
+      const input = await page.waitForSelector(`${detailSel} [data-slot="surface-header"] input`, { timeout: 5000 }).catch(() => null)
+      if (!input) instrumentFails.push({ cell: 'DT-commit-call', detail: '標題沒進編輯' })
+      else {
+        await input.fill(renamed)
+        await page.keyboard.press('Enter')
+        await frames(4)
+        if (mutate?.commitExtra) {
+          await page.click(`${detailSel} [data-calendar-detail-field="location"] button`).catch(() => {})
+          const loc = await page.waitForSelector(`${detailSel} [data-calendar-detail-field="location"] input`, { timeout: 5000 }).catch(() => null)
+          if (loc) { await loc.fill('台北辦公室 5F'); await page.keyboard.press('Enter'); await frames(4) }
+        }
+        const log = await logOf()
+        const ok = Array.isArray(log) && log.length === 1 && log[0].id === 'mv1' && JSON.stringify(log[0].patch) === JSON.stringify({ title: renamed })
+        check('DT-commit-call', ok, `onEventChange 呼叫 ${log?.length ?? '?'} 次、內容 ${JSON.stringify(log)}(規格:1 次、{"title":"${renamed}"})`)
+      }
+      await page.keyboard.press('Escape'); await waitSel(detailSel, 'closed')
+    }
+  }
+  if (runs(mutate, 'moveFocusNoop') || runs(mutate, 'fallbackStrip')) {
+    // DT-move:產品把事件移到別天(標題列「延後一週」)→ 詳情跟到新位置(換新錨點:頂端對齊新那一段、新那一段帶 data-detail-open、舊那一段已卸載),
+    // Esc 後焦點落在新位置的方塊。對照組(moveFocusNoop)新那一段拿不到焦點 → 焦點掉到 body → 紅。
+    // DT-fallback:移到畫面外(「延到下個月」)→ 詳情留在原位(不跑到 0,0);Esc 後焦點回原來那一天的日期停靠點。
+    // 對照組(fallbackStrip)拿掉日期停靠點的 data-calendar-day(= 找不到後備)→ 焦點掉到 body → 紅
+    const p = await open(STORY.detailChangeLog, { label: '詳情交回的修改(移走)', mutate })
+    if (p) {
+      await page.click(tileSel)
+      await waitSel(detailSel, 'open')
+      await page.evaluate((t) => { window.__calOldTile = document.querySelector(t) }, tileSel)
+      await page.getByRole('button', { name: '延後一週' }).click()
+      await frames(6)
+      const mv = await page.evaluate(({ t, d }) => {
+        const tile = document.querySelector(t), detail = document.querySelector(d)
+        if (!tile || !detail) return null
+        const tr = tile.getBoundingClientRect(), dr = detail.getBoundingClientRect()
+        return { covers: tile.getAttribute('data-calendar-covers'), oldGone: !window.__calOldTile?.isConnected, open: tile.hasAttribute('data-detail-open'), top: dr.top, tileTop: tr.top, gap: Math.min(Math.abs(dr.left - tr.right), Math.abs(tr.left - dr.right)) }
+      }, { t: tileSel, d: detailSel })
+      if (mutate?.moveFocusNoop) await page.evaluate((t) => { const el = document.querySelector(t); if (el) el.focus = () => {} }, tileSel)
+      await page.keyboard.press('Escape')
+      await waitSel(detailSel, 'closed'); await frames(4)
+      const f1 = await focusInfo()
+      check('DT-move', Boolean(mv) && mv.covers === '2026-07-12' && mv.oldGone && mv.open && near(mv.top, mv.tileTop, 1) && near(mv.gap, 8, 1) && f1.id === 'mv1',
+        mv ? `延後一週:新那一段 ${mv.covers}(規格 2026-07-12)、舊那一段${mv.oldGone ? '已卸載' : '還在'}、新那一段${mv.open ? '' : '沒有'}帶 data-detail-open、詳情上緣 ${fmtPx(mv.top)} / 新那一段上緣 ${fmtPx(mv.tileTop)}、側邊間距 ${fmtPx(mv.gap)}(規格 8);Esc 後焦點${f1.id === 'mv1' ? '在新位置的方塊' : f1.body ? '掉到 body' : '在別處'}` : '找不到新位置的方塊或詳情')
+      if (!mutate?.moveFocusNoop) {
+        await page.click(tileSel)
+        await waitSel(detailSel, 'open')
+        await page.getByRole('button', { name: '延到下個月' }).click()
+        await frames(6)
+        const fb = await page.evaluate(({ t, d }) => ({ tileGone: !document.querySelector(t), open: document.querySelector(d)?.getAttribute('data-state') === 'open', top: document.querySelector(d)?.getBoundingClientRect().top ?? NaN }), { t: tileSel, d: detailSel })
+        if (mutate?.fallbackStrip) await page.evaluate(() => document.querySelectorAll('[data-calendar-day]').forEach((el) => el.removeAttribute('data-calendar-day')))
+        await page.keyboard.press('Escape')
+        await waitSel(detailSel, 'closed'); await frames(4)
+        const f2 = await focusInfo()
+        check('DT-fallback', fb.tileGone && fb.open && fb.top > 20 && f2.day === '2026-07-12',
+          `延到下個月:月格${fb.tileGone ? '已沒有這一筆' : '還有這一筆'}、詳情${fb.open ? '留著' : '關了'}、上緣 ${fmtPx(fb.top)}(不得跑到視窗頂);Esc 後焦點 ${f2.day ?? (f2.body ? 'body' : '別處')}(規格:原來那一天 2026-07-12 的停靠點)`)
+      }
+    }
+  }
+  if (runs(mutate, 'escDoubleAt')) {
+    // DT-esc4(P14 四層 Esc,真 Calendar):清單 → 詳情 → 時間欄編輯中 → 時間欄自己的日期浮層。每按一下 Esc 只關最內層:
+    // L1 日期浮層關、時間欄仍在編輯;L2 取消編輯、焦點回時間欄;L3 詳情關、焦點回清單那一列;L4 清單關、焦點回「+N」。
+    // 對照組(escDoubleAt = k):第 k 層一次按兩下(= 一下 Esc 關了兩層)→ 第 k 層那一格紅
+    const p = await open(STORY.detailFromList, { label: '從清單開詳情(四層 Esc)', mutate })
+    if (p && (await waitSel(detailSel, 'open'))) {
+      const field = `${detailSel} [data-calendar-detail-field="time"]`
+      await page.click(`${field} button`).catch(() => {})
+      await frames(4)
+      await page.click(`${field} button[aria-haspopup="dialog"]`).catch(() => {})
+      const dateOpen = await waitSel(DATE_POPOVER, 'open')
+      if (!dateOpen) instrumentFails.push({ cell: 'DT-esc4', detail: '時間欄的日期浮層打不開 —— 量不到四層' })
+      else {
+        const state = () => page.evaluate(({ dp, d, l, f }) => ({
+          date: Boolean(document.querySelector(dp)), detail: Boolean(document.querySelector(d)), list: Boolean(document.querySelector(l)),
+          editing: Boolean(document.querySelector(`${f} button[aria-haspopup="dialog"]`)),
+        }), { dp: DATE_POPOVER, d: detailSel, l: listSel, f: field })
+        // 對照組的第二下等上一層收起動畫跑完才按(收起中的那一層還在 Radix 的層堆疊裡,會把第二下吃掉,等於沒造出「一下關兩層」)
+        const press = async (k) => { await page.keyboard.press('Escape'); if (mutate?.escDoubleAt === k) { await page.waitForTimeout(400); await page.keyboard.press('Escape') } await page.waitForTimeout(350); await frames(4) }
+        await press(1); const s1 = await state()
+        check('DT-esc4-L1', !s1.date && s1.editing && s1.detail && s1.list, `第一下:日期浮層${s1.date ? '還在' : '關了'}、時間欄${s1.editing ? '仍在編輯' : '不在編輯'}、詳情${s1.detail ? '在' : '關了'}、清單${s1.list ? '在' : '關了'}`)
+        await press(2); const s2 = await state(); const f2 = await focusInfo()
+        check('DT-esc4-L2', !s2.editing && s2.detail && s2.list && f2.field === 'time', `第二下:時間欄${s2.editing ? '仍在編輯' : '取消了'}、焦點${f2.field === 'time' ? '回時間欄' : '不在時間欄'}、詳情${s2.detail ? '在' : '關了'}、清單${s2.list ? '在' : '關了'}`)
+        await press(3); const s3 = await state(); const f3 = await focusInfo()
+        check('DT-esc4-L3', !s3.detail && s3.list && f3.id === 'c3', `第三下:詳情${s3.detail ? '還在' : '關了'}、清單${s3.list ? '在' : '關了'}、焦點${f3.id === 'c3' ? '回清單那一列' : '不在那一列'}`)
+        await press(4); const s4 = await state(); const f4 = await focusInfo()
+        check('DT-esc4-L4', !s4.list && f4.more === MORE_DAY, `第四下:清單${s4.list ? '還在' : '關了'}、焦點${f4.more === MORE_DAY ? '回「+N」' : '不在「+N」'}`)
+      }
+    } else instrumentFails.push({ cell: 'DT-esc4', detail: 'play 打開的詳情等不到' })
+  }
+  if (runs(mutate, 'nestClickGrid')) {
+    // DT-nest(P14 巢狀關閉,真 Calendar):點詳情裡面、點詳情裡時間欄自己的日期浮層,清單都不關;點兩層外面 → 兩層都關。
+    // 對照組(nestClickGrid):第一下改點格陣上的格子(在清單與詳情外)→ 清單被關 → 紅(證明這一格看得到「清單被關」)
+    const p = await open(STORY.detailFromList, { label: '從清單開詳情(巢狀關閉)', mutate })
+    if (p && (await waitSel(detailSel, 'open'))) {
+      const alive = () => page.evaluate(({ d, l }) => ({ detail: Boolean(document.querySelector(d)), list: Boolean(document.querySelector(l)) }), { d: detailSel, l: listSel })
+      if (mutate?.nestClickGrid) {
+        const cell = await page.evaluate(() => { const r = document.querySelector('[role="gridcell"][data-calendar-day="2026-07-01"], [role="gridcell"]')?.getBoundingClientRect(); return r ? { x: r.left + r.width - 6, y: r.top + r.height - 6 } : null })
+        if (cell) await page.mouse.click(cell.x, cell.y)
+      } else {
+        const label = await page.evaluate((d) => { const r = document.querySelector(`${d} [data-calendar-detail-field="time"] label`)?.getBoundingClientRect(); return r ? { x: r.left + 2, y: r.top + r.height / 2 } : null }, detailSel)
+        if (label) await page.mouse.click(label.x, label.y)
+      }
+      await page.waitForTimeout(300); await frames(4)
+      const a1 = await alive()
+      const field = `${detailSel} [data-calendar-detail-field="time"]`
+      await page.click(`${field} button`).catch(() => {})
+      await frames(4)
+      await page.click(`${field} button[aria-haspopup="dialog"]`).catch(() => {})
+      const dateOpen = await waitSel(DATE_POPOVER, 'open')
+      let a2 = { detail: false, list: false }
+      if (dateOpen) {
+        const head = await page.evaluate((dp) => { const r = document.querySelector(`${dp} [role="columnheader"], ${dp} th`)?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null }, DATE_POPOVER)
+        if (head) await page.mouse.click(head.x, head.y)
+        await page.waitForTimeout(300); await frames(4)
+        a2 = await alive()
+      }
+      await page.mouse.click(5, 5)
+      await page.waitForTimeout(400); await frames(6)
+      const a3 = await alive()
+      check('DT-nest', a1.detail && a1.list && dateOpen && a2.detail && a2.list && !a3.detail && !a3.list,
+        `點詳情裡面:詳情${a1.detail ? '在' : '關了'}、清單${a1.list ? '在' : '關了'};點詳情裡的日期浮層:${dateOpen ? `詳情${a2.detail ? '在' : '關了'}、清單${a2.list ? '在' : '關了'}` : '日期浮層打不開'};點兩層外面:詳情${a3.detail ? '還在' : '關了'}、清單${a3.list ? '還在' : '關了'}`)
+    } else instrumentFails.push({ cell: 'DT-nest', detail: 'play 打開的詳情等不到' })
+  }
+}
+
 const BLOCKS = {
   async layout(mutate) {
     for (const density of ['md', 'lg']) {
@@ -1665,6 +1862,7 @@ const BLOCKS = {
     const onMore = await page.evaluate((day) => document.activeElement === document.querySelector(`[data-calendar-more="${day}"]`), MORE_DAY)
     check('DT-esc-layers', detailClosed && first.listOpen && first.onRow && listClosed && onMore,
       `第一下 Esc:詳情${detailClosed ? '關了' : '沒關'}、清單${first.listOpen ? '還在' : '被關了'}、焦點${first.onRow ? '回那一列' : '不在那一列'};第二下:清單${listClosed ? '關了' : '沒關'}、焦點${onMore ? '回「+N」' : '不在「+N」'}`)
+    await detailDeep(mutate, { waitSel, detailSel, listSel })
   },
   async todayFirst(mutate) {
     await context.clock.setFixedTime(new Date(2026, 6, 1, 10, 0, 0))
@@ -1912,15 +2110,27 @@ const MUTANTS = [
   { name: 'Esc 關詳情後焦點不回事件', block: 'detail', expect: ['DT-esc@md', 'DT-esc@lg'], detailDom: () => document.querySelectorAll('[data-calendar-event-id]').forEach((el) => { el.focus = () => {} }) },
   { name: '從清單開時詳情沒貼著清單(往右偏 40)', block: 'detail', expect: ['DT-list'], css: '[data-calendar-event-detail] { margin-left: 40px !important; }' },
   { name: '點外面沒提交(改成按 Esc 取消編輯再關,地點沒存)', block: 'detail', expect: ['DT-outside'], outsideAsEscape: true },
+  { name: '只能看時欄位裡多一顆可點的鈕', block: 'detail', expect: ['DT-readonly'], readonlyDom: () => { const f = document.querySelector('[data-calendar-event-detail] [data-calendar-detail-field="time"]'); const b = document.createElement('button'); b.textContent = '編輯'; f?.append(b) } },
+  { name: '只能看時空的地點欄照樣列出', block: 'detail', expect: ['DT-readonly'], readonlyDom: () => { const g = document.querySelector('[data-calendar-event-detail] [data-calendar-detail-field="time"]')?.parentElement; const f = document.createElement('div'); f.setAttribute('data-calendar-detail-field', 'location'); g?.append(f) } },
+  { name: '還回來的焦點是看得見的焦點(先按 Shift 再交還)→ 提示照開', block: 'detail', expect: ['DT-tip'], tipFocusVisible: true },
+  { name: '提交標題之外又多交回一次(再改地點)', block: 'detail', expect: ['DT-commit-call'], commitExtra: true },
+  { name: '事件移走後新位置的方塊拿不到焦點', block: 'detail', expect: ['DT-move'], moveFocusNoop: true },
+  { name: '移到畫面外時找不到後備的日期停靠點', block: 'detail', expect: ['DT-fallback'], fallbackStrip: true },
+  { name: '日期浮層那一下 Esc 連編輯一起取消', block: 'detail', expect: ['DT-esc4-L1'], escDoubleAt: 1 },
+  { name: '取消編輯那一下 Esc 連詳情一起關', block: 'detail', expect: ['DT-esc4-L2'], escDoubleAt: 2 },
+  { name: '關詳情那一下 Esc 連清單一起關', block: 'detail', expect: ['DT-esc4-L3'], escDoubleAt: 3 },
+  { name: '關清單那一下 Esc 又往外傳(焦點離開「+N」)', block: 'detail', expect: ['DT-esc4-L4'], escDoubleAt: 4 },
+  { name: '點詳情改成點格子(清單外)', block: 'detail', expect: ['DT-nest'], nestClickGrid: true },
   // 必須最後一個(todayFirst 會釘住時鐘,見該區塊註解)
   { name: '1 號的實心底被壓成 24 寬', block: 'todayFirst', expect: ['R1'], css: '[data-calendar-day="2026-07-01"] { padding: 0 !important; max-width: var(--tag-height-md) !important; }' },
 ]
 
 if (!SELFTEST) {
-  for (const block of Object.values(BLOCKS)) await block(null)
+  for (const [name, block] of Object.entries(BLOCKS)) if (!ONLY_BLOCK || ONLY_BLOCK === name) await block(null)
 } else {
   let caught = 0
   for (const m of MUTANTS) {
+    if (ONLY_BLOCK && m.block !== ONLY_BLOCK) { caught++; continue }
     const from = results.length, fromFails = instrumentFails.length
     console.log(`── 突變:${m.name}(預期 ${m.expect.join(' / ')} 紅)`)
     await BLOCKS[m.block](m)

@@ -44,9 +44,9 @@ const HUES = [...huesBlock[1].matchAll(/'([a-z-]+)'/g)].map((m) => m[1])
 rec('I2', `CATEGORICAL_HUES 解析出 12 色相`, HUES.length === 12, `got ${HUES.length}: ${HUES.join(',')}`)
 
 // ── 解析每個 map 的 block(export const NAME...= { ... }) ──
-// 7 個 categorical map:CAT_SUBTLE / CAT_SOLID / CAT_INTERACT / CAT_SUBTLE_TOKENS /
-// CAT_SOLID_TOKENS / CAT_EVENT / CAT_ACCENT。neutral 非色相,不在 map(consumer 自處理),不檢查。
-const MAP_NAMES = ['CAT_SUBTLE', 'CAT_SOLID', 'CAT_INTERACT', 'CAT_SUBTLE_TOKENS', 'CAT_SOLID_TOKENS', 'CAT_EVENT', 'CAT_ACCENT']
+// 8 個 categorical map:CAT_SUBTLE / CAT_SOLID / CAT_INTERACT / CAT_SUBTLE_TOKENS /
+// CAT_SOLID_TOKENS / CAT_EVENT / CAT_EVENT_OPEN(Calendar 詳情開著的那一段維持滑過色,2026-11-26 加)/ CAT_ACCENT。neutral 非色相,不在 map(consumer 自處理),不檢查。
+const MAP_NAMES = ['CAT_SUBTLE', 'CAT_SOLID', 'CAT_INTERACT', 'CAT_SUBTLE_TOKENS', 'CAT_SOLID_TOKENS', 'CAT_EVENT', 'CAT_EVENT_OPEN', 'CAT_ACCENT']
 
 function extractMapBlock(name) {
   // 從 `export const NAME` 到該宣告的第一個 top-level `}` 收尾(map 內無巢狀 { 除了 CAT_INTERACT 的 { hover, active })。
@@ -205,5 +205,5 @@ if (failures.length) {
   console.error(`\n✗ ${failures.length} invariant(s) failed — categorical 色相 SSOT 偏移 / 漏色相 / 漏 token。Block.`)
   process.exit(1)
 }
-console.log(`✓ All ${passes.length} categorical-color invariants pass(12 色相 × 7 map,1:1 零 offset + token 存在性).`)
+console.log(`✓ All ${passes.length} categorical-color invariants pass(${HUES.length} 色相 × ${MAP_NAMES.length} map,1:1 零 offset + token 存在性).`)
 process.exit(0)
