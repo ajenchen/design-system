@@ -68,6 +68,7 @@ import { RadioGroupItem } from '@/design-system/components/RadioGroup/radio-grou
 import * as RadioGroupPrimitive from '@radix-ui/react-radio-group'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
+import { isFocusLost } from '@/design-system/lib/overlay-focus-return'
 import { isOwnPointerTarget, pressLandedInDom } from '@/design-system/lib/pointer-press'
 import { originFromCenteredElement, toLocal, VIEWPORT_ORIGIN, type FixedLayerOrigin } from '@/design-system/lib/fixed-layer-origin'
 import { useI18n } from '@/design-system/lib/i18n/i18n-context'
@@ -1671,11 +1672,11 @@ function DataTableInner<TData>(
       // 修前直接 return:編輯器卸載後焦點掉到 <body>(keyboard-model-canonical.md「焦點不可因 DOM unmount 掉到 body」)。
       // 只在結算當下焦點還在編輯器裡(鍵盤 Enter / Esc / F2、在浮層清單裡選值)才接手;失焦結算(點了別處、Tab 走了)
       // 的那一刻焦點已經是 body(blur 期間)或別人,不搶 —— 同 LinkInput「只在焦點真的掉了才接手」。
-      const active = document.activeElement
-      if (!active || active === document.body) return
+      // 「焦點掉了沒」一律用 lib isFocusLost(2026-11-27,workspace H 組 H16):浮層(DS Dialog / Sheet)裡編輯器卸載後,
+      // Radix FocusScope 先把焦點搬到對話框外框 —— 修前只認 body,在浮層裡永遠不接手,焦點停在外框。
+      if (isFocusLost(document.activeElement, tableRef.current)) return
       requestAnimationFrame(() => {
-        const now = document.activeElement
-        if (now && now !== document.body && now.isConnected) return
+        if (!isFocusLost(document.activeElement, tableRef.current)) return
         const cellEl = tableRef.current?.querySelector<HTMLElement>(`[data-cell-id="${CSS.escape(cellId)}"]`)
         if (!cellEl) return
         const entry = cellEl.querySelector<HTMLElement>(`[${CELL_EDIT_ENTRY_ATTR}] button`)
@@ -1687,13 +1688,12 @@ function DataTableInner<TData>(
     setSelectedCellId(cellId)
     setRangeAnchor(cellId)
     setRangeFocus(null)
-    // 等 editor unmount 完成後才收回焦點;activeElement 非 body(user 點了其他 focusable /
-    // Tab 換格後下一格 editor autoFocus)時不搶焦點。
+    // 等 editor unmount 完成後才收回焦點;焦點已被別的東西接走(user 點了其他 focusable /
+    // Tab 換格後下一格 editor autoFocus)時不搶焦點。「掉了」= isFocusLost(含浮層外框接住的那種,H16)。
     requestAnimationFrame(() => {
       const el = tableRef.current
       if (!el) return
-      const active = document.activeElement
-      if (active === document.body || active === null) el.focus({ preventScroll: true })
+      if (isFocusLost(document.activeElement, el)) el.focus({ preventScroll: true })
     })
   }, [spreadsheetMode])
   const commitCell = React.useCallback(
