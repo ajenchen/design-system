@@ -1473,7 +1473,10 @@ test('canonical execution runtime is the single machine SSOT for setup, package 
     `npm@${runtime.exactNpmVersion} ${PRODUCT_TEMPLATE_PACKAGE_LOCK_NPM_COMMAND.join(' ')}`,
   )
 
-  const workflowPaths = ['template/ds-product-template/.github/workflows/audit.yml']
+  const workflowPaths = [
+    'template/ds-product-template/.github/workflows/audit.yml',
+    'template/ds-product-template/.github/workflows/sync-design-system.yml',
+  ]
   for (const path of workflowPaths) {
     const body = readFileSync(path, 'utf8')
     const declared = [...body.matchAll(/node-version:\s*['"]?(\d+\.\d+\.\d+)['"]?/g)].map(match => match[1])
@@ -1611,7 +1614,7 @@ test('consumer a11y runtime helpers stay aligned across fork, mirror, workflow, 
   assert.match(mirrorWorkflow, /published-template-mirror-policy\.json/)
 })
 
-test('consumer desired state uses one native Verify consumer gate without an updater workflow', () => {
+test('consumer desired state uses one native Verify consumer gate without an App-gated updater environment', () => {
   const desired = JSON.parse(readFileSync('infra/governance/desired/github.json', 'utf8'))
   for (const profileName of ['product-consumer', 'published-template']) {
     const profile = desired.profiles[profileName]
@@ -1630,7 +1633,118 @@ test('consumer desired state uses one native Verify consumer gate without an upd
   assert.match(audit, /npm ci --ignore-scripts/)
   for (const command of ['npm run typecheck', 'npm run lint:imports', 'npm run build']) assert.match(audit, new RegExp(command))
   assert.doesNotMatch(audit, /setup:governance|audit:a11y|playwright|GOVERNANCE_(?:CHECK|WRITER)_APP/)
-  assert.equal(existsSync('template/ds-product-template/.github/workflows/sync-design-system.yml'), false)
+})
+
+// 2026-11-26 改寫(原本這裡斷言 template「沒有」sync-design-system.yml)。
+// 原斷言來自 8c595fcf(2026-08-01):當時那支是三段信任域 + Governance Writer App + governance-upgrade 環境的升級儀式,
+// 隨五步發版自動化一起退役,斷言是防它回流。但 release-workflow.json 的 `repository-dispatch-pr` consumer(workspace)
+// 仍要靠「接收 dispatch → sync-all → 推 automation/design-system-<版>」才收得到升級 PR(release-orchestrator.mjs 第 5 步
+// consumerStepAction / expectedConsumerBranch),而 template 不出貨這支,下游永遠停在 awaiting-pull-request。
+// 現在出貨的是最小形狀:只吃 repository_dispatch、權限只有 contents: write、不開 PR、不碰任何 App 或 secrets。
+// 這裡守的是那個形狀,退役儀式的回流仍由上面 environments === [] 與下面文件測試的禁字擋。
+test('consumer upgrade receiver ships as the minimal repository_dispatch → sync-all → automation-branch workflow', async () => {
+  const path = 'template/ds-product-template/.github/workflows/sync-design-system.yml'
+  assert.equal(existsSync(path), true, `${path}: the repository-dispatch-pr consumer has no receiver to push its upgrade branch`)
+  const source = readFileSync(path, 'utf8')
+  const { load: loadYaml } = await import('js-yaml')
+  const workflow = loadYaml(source)
+
+  // 事件名與 payload 形狀以 orchestrator 實際送出的為準(不在這裡另寫一份)
+  const { buildConsumerDispatch, buildConsumerPullRequestCreateArgs } = await import('./release-orchestrator.mjs')
+  const releaseWorkflow = JSON.parse(readFileSync('infra/governance/release-workflow.json', 'utf8'))
+  const dispatchConsumers = releaseWorkflow.automation.consumers.filter(target => target.delivery === 'repository-dispatch-pr')
+  assert.ok(dispatchConsumers.length > 0, 'no repository-dispatch-pr consumer left to bind the receiver to')
+  const dispatchEvents = [...new Set(dispatchConsumers.map(target => target.dispatchEvent))]
+  assert.equal(dispatchEvents.length, 1, `receiver serves exactly one dispatch event: ${dispatchEvents.join(', ')}`)
+  assert.deepEqual(Object.keys(workflow.on), ['repository_dispatch'], 'receiver may only load from the default-branch repository_dispatch')
+  assert.deepEqual(workflow.on.repository_dispatch, { types: dispatchEvents })
+
+  // 權限最小:整支只有 contents: write;不開 PR、不拿 secrets、不碰 App
+  assert.deepEqual(workflow.permissions, { contents: 'write' })
+  const jobs = Object.values(workflow.jobs)
+  assert.equal(jobs.length, 1)
+  const [job] = jobs
+  assert.equal(job.permissions, undefined, 'job-level permissions would widen the workflow grant')
+  assert.doesNotMatch(source, /\bsecrets\.|GOVERNANCE_(?:CHECK|WRITER)_APP|environment:|\bgh\s+pr\b|pulls|--force|pull_request_target|workflow_dispatch/)
+
+  // payload 只經 job env 進 shell:任何一步的 run 都不得內嵌 ${{ }}
+  const steps = job.steps
+  for (const step of steps) {
+    if (typeof step.run === 'string') assert.doesNotMatch(step.run, /\$\{\{/, `${step.name || step.uses}: run text interpolates an expression`)
+  }
+  assert.deepEqual(
+    Object.entries(job.env).filter(([, value]) => /client_payload/.test(value)).map(([name]) => name).sort(),
+    ['DS_COMMIT', 'DS_TAG', 'DS_VERSION'],
+  )
+
+  // payload 驗證照 orchestrator 送出的 payload 實跑:合法 → 綠且分支名 = orchestrator 等的那條;任何一處不對 → 紅
+  const validation = steps.find(step => step.name === 'Validate dispatch payload')
+  assert.ok(validation?.run, 'payload validation step is missing')
+  const target = dispatchConsumers[0]
+  const version = '0.1.0-beta.151'
+  const commit = 'a'.repeat(40)
+  const payload = JSON.parse(buildConsumerDispatch(target, { version, tag: `v${version}`, commit }).input).client_payload
+  const expectedBranch = buildConsumerPullRequestCreateArgs(target, { version, commit }).branch
+  const scratch = mkdtempSync(join(tmpdir(), 'receiver-payload-'))
+  temporary.push(scratch)
+  // 跑的就是 workflow 裡那一步的原文(存成檔交給 bash,不用 -c 求值)
+  const validationScript = join(scratch, 'validate-dispatch-payload.sh')
+  writeFileSync(validationScript, validation.run)
+  const runValidation = (values, label) => {
+    const output = join(scratch, `${label}.out`)
+    writeFileSync(output, '')
+    const result = spawnSync('bash', ['--', validationScript], {
+      encoding: 'utf8',
+      env: {
+        PATH: process.env.PATH,
+        GITHUB_OUTPUT: output,
+        DS_VERSION: values.version,
+        DS_TAG: values.tag,
+        DS_COMMIT: values.commit,
+      },
+    })
+    return { status: result.status, output: readFileSync(output, 'utf8') }
+  }
+  const accepted = runValidation(payload, 'accepted')
+  assert.equal(accepted.status, 0, 'the payload the orchestrator sends must validate')
+  assert.equal(accepted.output, `branch=${expectedBranch}\n`)
+  for (const [label, values] of [
+    ['empty version', { ...payload, version: '', tag: 'v' }],
+    ['mutable dist-tag', { ...payload, version: 'latest', tag: 'vlatest' }],
+    ['range', { ...payload, version: '^0.1.0', tag: 'v^0.1.0' }],
+    ['prefixed version', { ...payload, version: 'v0.1.0-beta.151', tag: 'vv0.1.0-beta.151' }],
+    ['leading zero', { ...payload, version: '0.01.0', tag: 'v0.01.0' }],
+    ['shell metacharacters', { ...payload, version: '0.1.0-beta.151;id', tag: 'v0.1.0-beta.151;id' }],
+    ['trailing newline', { ...payload, version: `${version}\nbranch=main`, tag: `v${version}\nbranch=main` }],
+    ['option-looking version', { ...payload, version: '--value', tag: 'v--value' }],
+    ['tag mismatch', { ...payload, tag: 'v0.1.0-beta.150' }],
+    ['short commit', { ...payload, commit: 'a'.repeat(7) }],
+    ['uppercase commit', { ...payload, commit: 'A'.repeat(40) }],
+    ['missing commit', { ...payload, commit: '' }],
+  ]) {
+    const rejected = runValidation(values, label.replace(/\W+/g, '-'))
+    assert.notEqual(rejected.status, 0, `${label}: invalid payload was accepted`)
+    assert.equal(rejected.output, '', `${label}: invalid payload still emitted a branch`)
+  }
+
+  // 推送:只推驗證過的那條 automation 分支、不 force;動到 workflow 檔就在推之前停(GITHUB_TOKEN 推不了)
+  const push = steps.find(step => step.name === 'Push the automation branch')
+  assert.ok(push, 'push step is missing')
+  assert.equal(push.env.BRANCH, '${{ steps.payload.outputs.branch }}')
+  assert.equal(push.if, "steps.commit.outputs.changed == 'true'")
+  assert.equal([...push.run.matchAll(/\bgit\s+push\b[^\n]*/g)].length, 1)
+  assert.match(push.run, /git push origin "HEAD:refs\/heads\/\$\{BRANCH\}"/)
+  const commitStep = steps.find(step => step.name === 'Commit the upgrade')
+  assert.match(commitStep.run, /git diff --cached --name-only -- \.github\/workflows/)
+  assert.match(steps.find(step => step.name === 'Apply the exact upgrade transaction').run, /npm run sync-all -- --apply --to "\$DS_VERSION"/)
+  assert.ok(steps.filter(step => step.uses?.startsWith('actions/checkout@')).every(step => step.with?.['persist-credentials'] === false))
+
+  // 以受管檔出貨給每個產品 repo
+  const forkManifest = JSON.parse(readFileSync('packages/design-system/ds-canonical/fork/manifest.json', 'utf8'))
+  const consumerLock = JSON.parse(readFileSync('packages/design-system/ds-canonical/fork/consumer/lock.json', 'utf8'))
+  const managedPath = '.github/workflows/sync-design-system.yml'
+  assert.ok(forkManifest.consumer.managedFiles[managedPath], `${managedPath}: not shipped as a managed file`)
+  assert.equal(consumerLock.payload.managedFiles[managedPath], createHash('sha256').update(readFileSync(path)).digest('hex'), `${managedPath}: shipped bytes differ from the template source`)
 })
 
 test('consumer documentation describes the release mirror gate without the retired App publishing ceremony', () => {
@@ -1643,10 +1757,17 @@ test('consumer documentation describes the release mirror gate without the retir
   const documentation = documentationPaths.map(path => readFileSync(path, 'utf8')).join('\n')
   assert.match(documentation, /Verify consumer/)
   assert.match(documentation, /release mirror|上游 release mirror/i)
+  // sync-design-system.yml 2026-11-26 以最小形狀回到 template(見上一則測試),文件可以、也必須講它;
+  // 退役儀式(candidate validation、Writer App 環境)的字仍不得回流。
   assert.doesNotMatch(
     documentation,
-    /sync-design-system\.yml|governance-upgrade-candidate-validation|Immutable consumer snapshot|environment may mint[^\n]*Writer App/i,
+    /governance-upgrade-candidate-validation|Immutable consumer snapshot|environment may mint[^\n]*Writer App/i,
   )
+  const upgradeDoc = readFileSync('template/ds-product-template/docs/04-ds-upgrade.md', 'utf8')
+  assert.match(upgradeDoc, /sync-design-system\.yml/, '04-ds-upgrade.md must document the upgrade receiver')
+  // 和程式一致(verify-upgrade-evidence.mjs / sync-all.mjs:GOV-UPGRADE-BOOTSTRAP-001/002 2026-08-12 退役,控制面改動以資料入 PR diff)
+  assert.match(upgradeDoc, /GOV-UPGRADE-BOOTSTRAP-001[^\n]*retired[^\n]*2026-08-12/)
+  assert.doesNotMatch(documentation, /stop the ordinary flow|it fails closed with the recurring reviewed control-plane route|require a\s+separately reviewed full-snapshot PR/i)
   assert.doesNotMatch(documentation, /(?:禁止|do not) (?:改用|replace)[^\n]*(?:Writer App|GitHub App)/i)
 })
 

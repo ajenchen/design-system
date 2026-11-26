@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
@@ -157,7 +157,7 @@ test('live governance model encodes exact trust anchors, solo review settings, t
   assert.match(templateAuditWorkflow, /npm ci --ignore-scripts/)
   for (const command of ['npm run typecheck', 'npm run lint:imports', 'npm run build']) assert.match(templateAuditWorkflow, new RegExp(command))
   assert.doesNotMatch(templateAuditWorkflow, /setup:governance|audit:a11y|playwright|GOVERNANCE_(?:CHECK|WRITER)_APP/)
-  assert.equal(existsSync(resolve(ROOT, '../../template/ds-product-template/.github/workflows/sync-design-system.yml')), false)
+  // template 的接收升級 workflow(sync-design-system.yml)形狀只由 scripts/test-setup-governance.mjs 一處守(2026-11-26 起出貨)。
   assert.match(authorityVersionWorkflow, /uses: changesets\/action@[a-f0-9]{40}/)
   assert.match(authorityVersionWorkflow, /^on:\s*\n(?:  #.*\n)*  workflow_dispatch:\s*$/m)
   assert.doesNotMatch(authorityVersionWorkflow, /^\s+push:\s*$/m)
