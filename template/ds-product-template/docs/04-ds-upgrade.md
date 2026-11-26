@@ -103,7 +103,11 @@ fingerprints are computed by the checker from the hook output and cannot be repr
 
 1. run `npm run governance:debt -- --list` and confirm that every unrecorded finding it prints is an
    item of the old list (same file and rule) — a finding that is not on the old list is new debt and
-   should be fixed rather than recorded;
+   should be fixed rather than recorded. `--list` prints one line per finding and is exactly the set
+   step 2 registers. It can print more than the old list held: a list copied from `setup:all` or
+   `governance:check` without a baseline names only the first failing hook of each file, while
+   `--list` replays every hook, so a further finding in a file that is on the old list is existing
+   debt that was hidden behind the first one, not new debt;
 2. run `npm run governance:debt -- --record --by "<who>" --reason "migrated from
    apps/repo-health/ds-debt-baseline.json (<N> items)"`;
 3. remove the old list, or let the product's own health check read `recordedContentDebt` from

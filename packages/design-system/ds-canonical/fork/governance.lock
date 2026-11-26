@@ -287,7 +287,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/governance-check.mjs",
-      "sha256": "51cdc93a3a4bd72bead882f2e710a880bd2fa9e42bb86ae128cf323924a98801",
+      "sha256": "bb3cc3bf1a401c0e1b6de688147a09fa568b57890715a03e5a98f1919b7ffd8d",
       "source": "scripts/governance-check.mjs",
       "classification": null,
       "destination": null
@@ -295,7 +295,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/governance-content-debt.mjs",
-      "sha256": "616227b874df138322486c950b4a92fb1d73147c4f22ea2be4c13bacd369e6e1",
+      "sha256": "1c9bc383702d364667cffc9bb4a5d5847c3c392f6986d09ba4da3fb991fa1b24",
       "source": "scripts/governance-content-debt.mjs",
       "classification": null,
       "destination": null
@@ -527,7 +527,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/884721550b56308812b20917adac7a12f36fdb4ecda6b02460a7f5a219c0c966.blob",
-      "sha256": "727ac0cfffea5d8ad9699565242e46f04e32c1d6f866afb17aa403ef4f31d700",
+      "sha256": "3436f42b34c34563476af421d6ec1ed32bd49b995cd1357f48bdd8589f754d32",
       "source": "packages/design-system/ds-canonical/templates/consumer-governance.md",
       "classification": null,
       "destination": "governance/consumer-governance.md"

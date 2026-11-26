@@ -61,11 +61,17 @@ installed checker reads the same baseline in `setup:all`, `npm run governance:ch
 - a recorded finding that no longer occurs blocks (`GOV-CONTENT-DEBT-002`) until you shrink the
   baseline with `npm run governance:debt -- --prune` — the baseline may only shrink;
 - a hand-edited baseline (its `entriesSha256` no longer matches) blocks as `GOV-CONTENT-DEBT-001`;
-  growth goes only through `--record`, which writes who registered the findings and why;
+  growth goes only through `--record`, which writes who registered the findings and why. To recover,
+  restore the file with `git checkout -- governance/content-debt-baseline.json`, or rebuild it from
+  scratch with `--record` (the rebuilt file does not keep the old registrations; `--prune` refuses an
+  invalid baseline);
 - without a baseline file every finding blocks, as before.
 
-`npm run governance:debt -- --list` shows recorded, unrecorded, and fixed-but-still-recorded findings
-without writing. This is the same model as ESLint bulk suppressions
+`npm run governance:debt -- --list` shows recorded, unrecorded, and fixed-but-still-recorded findings,
+one line per finding, without writing. It replays every hook on every file even when there is no
+baseline yet, so its unrecorded findings are exactly what `--record` would register. (Without a
+baseline, `governance:check` and `setup:all` stop at the first failing hook of each file, so they can
+name fewer findings than `--list`.) This is the same model as ESLint bulk suppressions
 ([eslint.org/docs/latest/use/suppressions](https://eslint.org/docs/latest/use/suppressions):
 existing violations are not reported while new code is enforced, and once a suppressed violation is
 fixed ESLint exits non-zero until `--prune-suppressions` removes it). Native write-time hooks are

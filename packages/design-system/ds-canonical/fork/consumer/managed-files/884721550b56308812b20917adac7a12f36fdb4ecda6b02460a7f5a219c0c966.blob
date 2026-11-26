@@ -107,9 +107,11 @@ they are not hidden prerequisites for the standard release path.
 hooks did not report when the baseline was recorded block (by file, rule, hook, and reported finding
 line), recorded findings that no longer occur block until
 `npm run governance:debt -- --prune` removes them (the baseline only shrinks), and a hand edit fails
-`entriesSha256` (`GOV-CONTENT-DEBT-001`). It grows only through
+`entriesSha256` (`GOV-CONTENT-DEBT-001`; restore it from Git, or rebuild it from scratch with
+`--record`, which does not keep the old registrations). It grows only through
 `npm run governance:debt -- --record --by <who> --reason <why>`, whose registration is reviewed in the
-PR diff. Without the file every content finding blocks. `recordedContentDebt=<N>` reports registered
+PR diff. `npm run governance:debt -- --list` prints every finding without writing; its unrecorded part
+is exactly what `--record` registers. Without the file every content finding blocks. `recordedContentDebt=<N>` reports registered
 debt; it is not a content-compliance claim. Creating and shrinking it: `docs/01-first-time-setup.md`
 and `docs/04-ds-upgrade.md`.
 

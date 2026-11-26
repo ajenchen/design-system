@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Provider-neutral consumer hard gate. Read-only by construction: no install, repair, refresh,
 // registry lookup, or generated-file write. `--content-debt-proposal` only computes the next
-// content-debt baseline into the JSON report; the separate governance-content-debt writer stores it. Native Claude/Codex hooks are optional accelerators;
+// content-debt baseline (record / prune) or the complete per-finding listing (list) into the JSON
+// report; the separate governance-content-debt writer stores it. Native Claude/Codex hooks are optional accelerators;
 // this check binds all provider views to the same immutable release BOM and npm payload.
 
 import { createHash } from 'node:crypto'
@@ -67,12 +68,12 @@ const contentDebtText = (value, max) => typeof value === 'string'
   && value === value.normalize('NFC')
   && !/[\u0000-\u0008\u000b-\u001f\u007f]/.test(value)
 if (
-  (contentDebtProposalMode !== undefined && !['record', 'prune'].includes(contentDebtProposalMode))
+  (contentDebtProposalMode !== undefined && !['list', 'record', 'prune'].includes(contentDebtProposalMode))
   || (contentDebtProposalMode === 'record' && (!contentDebtText(contentDebtRegistrant, 200) || !contentDebtText(contentDebtReason, 2000)))
   || (contentDebtProposalMode !== 'record' && (args.includes('--by') || args.includes('--reason')))
   || (contentDebtProposalMode !== undefined && !asJson)
 ) {
-  console.error('usage: governance-check.mjs [--repo <dir>] [--hooks-off] [--json [--content-debt-proposal (prune | record --by <who> --reason <why>)]]')
+  console.error('usage: governance-check.mjs [--repo <dir>] [--hooks-off] [--json [--content-debt-proposal (list | prune | record --by <who> --reason <why>)]]')
   process.exit(64)
 }
 const canonicalOutputRoots = new Set()
@@ -3050,7 +3051,8 @@ if (pathEntryExists(contentDebtBaselineFile)) {
   }
 }
 const contentDebtBaselineByKey = new Map((contentDebtBaseline?.entries || []).map((entry) => [contentDebtEntryKey(entry), entry]))
-// 有基準或要算提案時,每個檔案的每支 hook 都要重播完(不能停在第一個違規),比對才完整。
+// 有基準或要算提案 / 列清單(--list 也要完整,才會等於 --record 登記的集合)時,每個檔案的每支 hook 都要
+// 重播完(不能停在第一個違規),比對才完整。
 const completeContentReplay = Boolean(contentDebtBaseline) || contentDebtProposalMode !== undefined
 const contentDebtObserved = new Map()
 const contentDebtReplayedPairs = new Set()
@@ -3297,7 +3299,14 @@ if (contentDebtBaseline && contentReplayComplete) {
   }
 }
 if (contentDebtBaselineError) {
-  add('GOV-CONTENT-DEBT-001', 'BLOCKER', `${CONTENT_DEBT_BASELINE_PATH} is invalid; every content finding blocks until it is restored or re-recorded with ${CONTENT_DEBT_COMMAND} -- --record`, contentDebtBaselineError)
+  // 兩條出路都要真的走得通:還原 = git 取回上一版;重新登記 = --record 從頭重建(提案模式在 record 時
+  // 不把本條當結構性阻擋,見下方 structuralBlockers),舊檔的登記紀錄無法沿用。--prune 在這裡一律拒絕。
+  add(
+    'GOV-CONTENT-DEBT-001',
+    'BLOCKER',
+    `${CONTENT_DEBT_BASELINE_PATH} is invalid; every content finding blocks until it is restored (git checkout -- ${CONTENT_DEBT_BASELINE_PATH}) or re-recorded from scratch with ${CONTENT_DEBT_COMMAND} -- --record --by <who> --reason <why>, which replaces the invalid file and does not keep its registrations`,
+    contentDebtBaselineError,
+  )
 }
 const recordedContentDebt = contentDebtBaseline?.entries.length || 0
 const recordedContentDebtItems = (contentDebtBaseline?.entries || []).reduce((total, entry) => total + entry.items.length, 0)
@@ -3321,15 +3330,40 @@ evidence.contentDebt = {
   staleEntries: contentDebtStale.length,
   registrations: (contentDebtBaseline?.registrations || []).map((registration) => ({ ...registration })),
 }
-if (contentDebtProposalMode !== undefined) {
+// 每一格「目前有、基準沒有」的發現:--list 印的、--record 登記的、GOV-CONTENT-001 / 003 擋的,都是這同一個集合。
+const contentDebtUnrecorded = () => [...contentDebtObserved.keys()].sort(compareUtf8Bytes).flatMap((key) => {
+  const observed = contentDebtObserved.get(key)
+  const items = contentDebtMinus(observed.items, contentDebtBaselineByKey.get(key)?.items || [])
+  return items.length ? [{ ruleId: observed.ruleId, file: observed.file, hook: observed.hook, event: observed.event, items }] : []
+})
+if (contentDebtProposalMode === 'list') {
+  // 唯讀清單:不寫、不需登記人。重播沒跑完 = 清單不完整,照實拒絕,不印半份。
+  const unrecorded = contentReplayComplete ? contentDebtUnrecorded() : []
+  evidence.contentDebt.proposal = {
+    mode: 'list',
+    refused: contentReplayComplete ? null : 'content replay did not complete, so the listing would be partial; fix the structural blockers first',
+    document: null,
+    summary: null,
+    listing: {
+      baselineValid: contentDebtBaselineError === null,
+      unrecorded,
+      unrecordedFindings: unrecorded.reduce((total, entry) => total + entry.items.length, 0),
+      stale: contentDebtStale.map(({ entry, stale }) => ({ ruleId: entry.ruleId, file: entry.file, hook: entry.hook, event: entry.event, items: stale })),
+    },
+  }
+} else if (contentDebtProposalMode !== undefined) {
   const structuralBlockers = diagnostics.filter((diagnostic) => (
     diagnostic.severity === 'BLOCKER'
     && !contentViolationDiagnostics.has(diagnostic)
     && diagnostic.ruleId !== 'GOV-CONTENT-DEBT-002'
+    // 基準無效時 --record 從頭重新登記(GOV-CONTENT-DEBT-001 訊息指的就是這條路);--prune 沒有可縮小的基準,照擋。
+    && !(contentDebtProposalMode === 'record' && diagnostic.ruleId === 'GOV-CONTENT-DEBT-001')
   ))
   let refused = null
   if (!contentReplayComplete) refused = 'content replay did not complete; fix the structural blockers first'
-  else if (structuralBlockers.length) refused = `structural blockers must be fixed first:${[...new Set(structuralBlockers.map((diagnostic) => diagnostic.ruleId))].sort().join(',')}`
+  else if (contentDebtProposalMode === 'prune' && contentDebtBaselineError) {
+    refused = `${CONTENT_DEBT_BASELINE_PATH} is invalid, so there is nothing valid to shrink; restore it (git checkout -- ${CONTENT_DEBT_BASELINE_PATH}) or re-record it from scratch with ${CONTENT_DEBT_COMMAND} -- --record --by <who> --reason <why>`
+  } else if (structuralBlockers.length) refused = `structural blockers must be fixed first:${[...new Set(structuralBlockers.map((diagnostic) => diagnostic.ruleId))].sort().join(',')}`
   let proposal = { mode: contentDebtProposalMode, refused, document: null, summary: null }
   if (!refused) {
     const previousRegistrations = contentDebtBaseline?.registrations || []
@@ -3394,6 +3428,7 @@ if (contentDebtProposalMode !== undefined) {
         entries: entries.length,
         findings: entries.reduce((total, entry) => total + entry.items.length, 0),
         registration: added ? registrations.at(-1) : null,
+        replacedInvalidBaseline: contentDebtBaselineError !== null,
       },
     }
   }

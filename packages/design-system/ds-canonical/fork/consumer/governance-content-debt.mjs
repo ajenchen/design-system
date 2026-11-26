@@ -6,13 +6,15 @@
 // 基準外的違規(新檔案、新規則 / hook、hook 新報出的發現行),基準只准縮小(棘輪)。
 //
 // 判定全部在 governance-check.mjs(同一支 checker、同一份基準;setup:all、governance:check、CI 都跑它):
-// 本檔只用 `--content-debt-proposal` 向 checker 要「下一版基準」,checker 維持唯讀,本檔負責寫檔。
+// 本檔只用 `--content-debt-proposal` 向 checker 要「下一版基準」或逐筆清單,checker 維持唯讀,本檔負責寫檔。
 //
-//   --list                          列出已登記 / 未登記 / 已修好待移除的內容發現(不寫檔)
+//   --list                          逐筆列出已登記 / 未登記 / 已修好待移除的內容發現(不寫檔);checker 完整
+//                                   重播,未登記那份 = --record 會登記的同一個集合(沒有基準時也一樣)
 //   --prune                         把已經不存在的條目從基準移除(只會變小,不需登記人)
 //   --record --by <誰> --reason <為什麼>
 //                                   把目前所有內容發現登記進基準;新增的條目記在這次登記名下,
-//                                   已修好的同時移除。輸出寫明誰登記、為什麼。
+//                                   已修好的同時移除。輸出寫明誰登記、為什麼。基準檔無效
+//                                   (GOV-CONTENT-DEBT-001)時從頭重建,舊檔的登記紀錄無法沿用。
 //
 // 用法:npm run governance:debt -- --record --by "Ada" --reason "beta.151 升級時既有的版面欠債,排進 Q1 清理"
 
@@ -51,8 +53,8 @@ export function parseContentDebtArgs(argv) {
 }
 
 function runChecker({ checker, repo, mode, by, reason, spawn }) {
-  const args = [checker, '--repo', repo, '--hooks-off', '--json']
-  if (mode === 'prune' || mode === 'record') args.push('--content-debt-proposal', mode)
+  // 三種模式都走提案旗標:checker 才會每檔每支 hook 重播完,--list 列的才等於 --record 登記的。
+  const args = [checker, '--repo', repo, '--hooks-off', '--json', '--content-debt-proposal', mode]
   if (mode === 'record') args.push('--by', by, '--reason', reason)
   const result = spawn(process.execPath, args, {
     cwd: repo,
@@ -106,21 +108,38 @@ export function runContentDebt({
   const repo = realpathSync(resolve(options.repo))
   const { report, status } = runChecker({ checker, repo, ...options, spawn })
   const debt = report.evidence.contentDebt
-  const unrecorded = report.diagnostics.filter((item) => item.severity === 'BLOCKER' && /^GOV-CONTENT-00[13]$/.test(item.ruleId))
-  const stale = report.diagnostics.filter((item) => item.ruleId === 'GOV-CONTENT-DEBT-002')
+  const proposal = debt.proposal
+  if (!proposal || proposal.mode !== options.mode) throw new Error('governance check did not return the requested content-debt proposal')
 
   if (options.mode === 'list') {
+    if (proposal.refused || !proposal.listing) {
+      err(`✗ 清單不完整,不列出:${proposal.refused || 'checker 沒有回傳逐筆清單'}`)
+      for (const item of report.diagnostics.filter((diagnostic) => diagnostic.severity === 'BLOCKER')) err(`  ${item.ruleId} ${item.message}`)
+      return 1
+    }
+    const { listing } = proposal
+    const cells = (entries) => entries.reduce((total, entry) => total + entry.items.length, 0)
+    if (!listing.baselineValid) out(`⚠ ${CONTENT_DEBT_BASELINE_PATH} 無效(GOV-CONTENT-DEBT-001):以下把它當成沒有基準;--record 會從頭重建。`)
     out(`recordedContentDebt=${debt.recordedContentDebt}(${debt.recordedFindings} 筆已登記的內容發現;登記 ≠ 合規)`)
     for (const registration of debt.registrations) out(`  登記 #${registration.id}:${registration.by},${registration.recordedAt},理由:${registration.reason}`)
-    out(`未登記(會擋):${unrecorded.length}`)
-    for (const item of unrecorded) out(`  ${item.ruleId} ${item.message}${item.evidence ? `\n    ${item.evidence}` : ''}`)
-    out(`已修好、待從基準移除(會擋,跑 --prune):${stale.length}`)
-    for (const item of stale) out(`  ${item.message}`)
+    out(`未登記(會擋;--record 會登記的就是這些):${listing.unrecorded.length} 格 / ${cells(listing.unrecorded)} 筆`)
+    for (const entry of listing.unrecorded) {
+      out(`  ${entry.ruleId} ${entry.file} ← ${entry.hook} (${entry.event})`)
+      for (const item of entry.items) out(`    ${item.fingerprint} ${item.text}`)
+    }
+    out(`已修好、待從基準移除(會擋,跑 --prune):${listing.stale.length} 格 / ${cells(listing.stale)} 筆`)
+    for (const entry of listing.stale) {
+      out(`  ${entry.ruleId} ${entry.file} ← ${entry.hook} (${entry.event})`)
+      for (const item of entry.items) out(`    ${item.fingerprint} ${item.text}`)
+    }
+    const other = report.diagnostics.filter((item) => item.severity === 'BLOCKER' && !/^GOV-CONTENT-(00[13]|DEBT-00[12])$/.test(item.ruleId))
+    if (other.length) {
+      out(`其他會擋的(不是內容欠債,登記不了):${other.length}`)
+      for (const item of other) out(`  ${item.ruleId} ${item.message}`)
+    }
     return status === 0 ? 0 : 1
   }
 
-  const proposal = debt.proposal
-  if (!proposal || proposal.mode !== options.mode) throw new Error('governance check did not return the requested content-debt proposal')
   if (proposal.refused) {
     err(`✗ 沒有寫入 ${CONTENT_DEBT_BASELINE_PATH}:${proposal.refused}`)
     for (const item of report.diagnostics.filter((diagnostic) => diagnostic.severity === 'BLOCKER')) err(`  ${item.ruleId} ${item.message}`)
@@ -132,11 +151,12 @@ export function runContentDebt({
     out(`沒有 ${CONTENT_DEBT_BASELINE_PATH},不需要縮小。`)
     return 0
   }
-  if (exists && summary.added === 0 && summary.removed === 0) {
+  if (exists && !summary.replacedInvalidBaseline && summary.added === 0 && summary.removed === 0) {
     out(`${CONTENT_DEBT_BASELINE_PATH} 已是現況,沒有改動。recordedContentDebt=${summary.entries}`)
     return 0
   }
   writeBaselineAtomically(repo, document)
+  if (summary.replacedInvalidBaseline) out(`原本的 ${CONTENT_DEBT_BASELINE_PATH} 無效(GOV-CONTENT-DEBT-001),這次從頭重建;舊檔的登記紀錄沒有沿用。`)
   out(`已寫入 ${CONTENT_DEBT_BASELINE_PATH}:新增 ${summary.added} 筆、移除 ${summary.removed} 筆已修好的;現有 ${summary.entries} 格 / ${summary.findings} 筆。`)
   if (summary.registration) {
     out(`登記 #${summary.registration.id}:登記人 ${summary.registration.by};理由:${summary.registration.reason};版本 ${summary.registration.release || 'unknown'}`)

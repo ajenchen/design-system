@@ -790,6 +790,13 @@ try {
   }
   const usage = runDebt('--record')
   if (usage.status !== 64 || existsSync(debtBaselinePath)) throw new Error(`--record without --by/--reason must be refused:${usage.stdout}${usage.stderr}`)
+  // --list 在沒有基準時也要完整重播:它列的未登記集合 = 下一步 --record 登記的集合(轉換舊清單時靠它逐筆核對)。
+  // 對照組:checker 只在有基準 / record / prune 時完整重播的話,沒有基準的 --list 每檔只剩第一支違規的 hook,下面的比對紅。
+  const listed = runDebt('--list')
+  const listedCount = /未登記\(會擋;--record 會登記的就是這些\):(\d+) 格 \/ (\d+) 筆/.exec(listed.stdout)
+  if (listed.status !== 1 || !listedCount || existsSync(debtBaselinePath) || !listed.stdout.includes('LegacyInvoiceTable.tsx') || !listed.stdout.includes('LegacyRefundBanner.tsx')) {
+    throw new Error(`content-debt --list must list every unrecorded finding without writing:${listed.stdout}\n${listed.stderr}`)
+  }
   const recorded = runDebt('--record', '--by', 'Ada Chen (payments lead)', '--reason', 'Existing invoice and refund screens predate the 0.1.0-beta.151 upgrade; cleanup planned for Q1')
   if (recorded.status !== 0 || !existsSync(debtBaselinePath)) throw new Error(`content-debt record failed:${recorded.stdout}\n${recorded.stderr}`)
   const recordedBaseline = JSON.parse(readFileSync(debtBaselinePath, 'utf8'))
@@ -804,6 +811,11 @@ try {
     || !recorded.stdout.includes('Ada Chen (payments lead)')
     || JSON.stringify(recordedBaseline).includes(mirror)
   ) throw new Error(`content-debt record did not name its owner, count, or stay path-independent:${recorded.stdout}\n${JSON.stringify(recordedBaseline, null, 2)}`)
+  const recordedFindings = recordedBaseline.entries.reduce((total, entry) => total + entry.items.length, 0)
+  if (Number(listedCount[1]) !== recordedCount || Number(listedCount[2]) !== recordedFindings) {
+    throw new Error(`--list showed ${listedCount[1]} cells / ${listedCount[2]} findings but --record registered ${recordedCount} / ${recordedFindings}:\n${listed.stdout}`)
+  }
+  console.log(`✅ positive: --list without a baseline shows exactly what --record registers (${recordedCount} cells / ${recordedFindings} findings)`)
   const baselined = runCheck()
   const debtInfo = baselined.report.diagnostics.find((d) => d.ruleId === 'GOV-CONTENT-DEBT-003')
   if (
@@ -859,9 +871,31 @@ try {
   widened.entries.push({ ...structuredClone(widened.entries.at(-1)), file: 'apps/template/src/ZzHiddenPayoutTable.tsx' })
   writeFileSync(debtBaselinePath, JSON.stringify(widened, null, 2) + '\n')
   const widenedBlocked = expectFailure('GOV-CONTENT-DEBT-001')
-  if (!widenedBlocked.report.diagnostics.some((d) => d.ruleId === 'GOV-CONTENT-DEBT-001' && String(d.evidence).includes('npm run governance:debt'))) {
-    throw new Error(`a hand-widened baseline must block:${JSON.stringify(widenedBlocked.report.diagnostics)}`)
+  if (!widenedBlocked.report.diagnostics.some((d) => d.ruleId === 'GOV-CONTENT-DEBT-001'
+    && String(d.evidence).includes('npm run governance:debt')
+    && d.message.includes('git checkout -- governance/content-debt-baseline.json')
+    && d.message.includes('--record'))) {
+    throw new Error(`a hand-widened baseline must block and name both ways out:${JSON.stringify(widenedBlocked.report.diagnostics)}`)
   }
+  // GOV-CONTENT-DEBT-001 指的兩條路都要走得通。--prune 沒有有效的基準可縮小 → 拒絕、不動檔。
+  const widenedBytes = readFileSync(debtBaselinePath)
+  const pruneInvalid = runDebt('--prune')
+  if (pruneInvalid.status !== 1 || !pruneInvalid.stderr.includes('is invalid') || !readFileSync(debtBaselinePath).equals(widenedBytes)) {
+    throw new Error(`--prune on an invalid baseline must refuse without writing:${pruneInvalid.stdout}\n${pruneInvalid.stderr}`)
+  }
+  // 對照組:提案模式把 GOV-CONTENT-DEBT-001 算成結構性阻擋的話,這次 --record 會回 refused,訊息指的路走不通。
+  const phantomFile = widened.entries.at(-1).file
+  const rerecorded = runDebt('--record', '--by', 'Ada Chen (payments lead)', '--reason', 'Baseline was hand-edited in a merge; re-recorded from scratch')
+  const rerecordedBaseline = existsSync(debtBaselinePath) ? JSON.parse(readFileSync(debtBaselinePath, 'utf8')) : null
+  if (
+    rerecorded.status !== 0
+    || !rerecorded.stdout.includes('從頭重建')
+    || rerecordedBaseline?.registrations.length !== 1
+    || rerecordedBaseline.registrations[0].reason !== 'Baseline was hand-edited in a merge; re-recorded from scratch'
+    || rerecordedBaseline.entries.some((entry) => entry.file === phantomFile)
+    || runCheck().status !== 0
+  ) throw new Error(`--record must rebuild an invalid baseline as GOV-CONTENT-DEBT-001 says:${rerecorded.stdout}\n${rerecorded.stderr}`)
+  console.log('✅ recovery: an invalid baseline refuses --prune and is rebuilt from scratch by --record, as GOV-CONTENT-DEBT-001 says')
   writeFileSync(debtBaselinePath, prunedBytes)
   rmSync(legacyInvoice)
   rmSync(debtBaselinePath)

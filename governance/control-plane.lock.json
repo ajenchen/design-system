@@ -10,7 +10,7 @@
   "contractDigest": "sha256:2999aed4c75bc36823db0b4ea5729744c0920f74b1cd2b2e1bfb4110dd825ef1",
   "files": [
     {
-      "hash": "sha256:2b5dc714158c4f86d2f77fa0269ddb21bf619598317be9c224d6402b3410f85c",
+      "hash": "sha256:c36ea31191a49e278c8a53ce28e3809c8140038427fef9cc1d0ef891c723e9f9",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 59307,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:8a9eb9e3067ac49e3869ebba1ba6c4b7d6590957d94da57e5a08f8652caf1d4c",
+      "hash": "sha256:eac759565414009731897c57e395967c5431e05a52bfd99fd57f3c1d85d4b58d",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 140204,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:de521a53a6344d1c95b119ff7d28fbb709464be299c11c92666be7f5e53c6746",
+  "inputDigest": "sha256:821449afcdb74cd77578027be0d9ca6e994950ac4275b6f3d90c919501baec00",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:d1ee93d814391dbc26e5e71b1d02b2ab50dd287d3e8d90f1af78c015f586255a",
+  "snapshotDigest": "sha256:fcbaec91fc8cf4f187ab5337a4a448e5bada35a987c065b305591d81624f4d28",
   "sources": [
     {
       "hash": "sha256:f2452198c08c44c99dc7afcfb7f78f834d7cc2a8c97d041571db15779f388c6c",
@@ -665,7 +665,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 11,
-      "hash": "sha256:79699e1b80c63268bee3aa73f5a5d489e60ba149e847fc694d03f58916573d92",
+      "hash": "sha256:a68cdfebb273ae19099e2f716fb9f9f66a0c3721efe78b74d8efe7b3280d5c36",
       "id": "canonical-product-templates",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2964,7 +2964,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 5,
-      "hash": "sha256:606fea400debbb9de367a34d40b52fe343d29c82b469575242d219d21ca3cd9d",
+      "hash": "sha256:dd66cd1240f2775baecde22e2ecf1f4b63be61dbaa445479dd19b6590ed038ba",
       "id": "product-template-documentation",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3606,7 +3606,7 @@
         "scripts/generated/"
       ],
       "files": 816,
-      "hash": "sha256:bcc312acf7520add249ebb3956f422e70491f1332b38c1d18a57167c8503df56",
+      "hash": "sha256:5e2dc4b5da9802a227eb7354049c3ef688672f23db4b90c3d8c9ed022a4b1370",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
