@@ -195,7 +195,8 @@ const MUTANTS = [
     id: 'edit-settle-no-escape-layer',
     what: 'editSettleKeyProps 不宣告 Esc 層(就地編輯中按 Esc 連浮層一起關)',
     file: 'components/Field/field-edit-keys.ts',
-    expectRed: ['E-inline-edit', 'E-link-edit', 'E-link-typed'],
+    // F-datatable-edit-in-dialog:格裡的文字編輯器也經 editSettleKeyProps 宣告這一層(2026-11-27 實跑:不宣告 → Esc 連對話框一起關)
+    expectRed: ['E-inline-edit', 'E-link-edit', 'E-link-typed', 'F-datatable-edit-in-dialog'],
     apply: (src) => replaceOnce(src, /return \{ onKeyDown: makeEditSettleKeyHandler\(settle\), \.\.\.escapeLayerProps\(escapeLayer\) \}/,
       'return { onKeyDown: makeEditSettleKeyHandler(settle) }'),
   },
@@ -1393,37 +1394,31 @@ async function runChecks(page) {
   // 修前(2026-11-27 一次性探針在修前樹實跑):一般模式 Esc / Enter 結算 / 選值、試算表 Esc / Enter 結算,焦點全部停在對話框外框
   // (只認 body 的判準在浮層裡永遠不接手);本列另以 --root=<修前樹> 實跑當天然對照組。
   // 「進得了編輯」是儀器前置(needs):進不了 = 量不到要守的事,不是通過。
+  // 六段各自重開場景(上一段若被突變弄得對話框關掉,下一段照樣量得到,不讓一段的失敗變成整列儀器失效)
   const editRuns = {}
-  const editStep = async (key, run) => { await run(); editRuns[key] = await snap('tableEdit') }
-  const enterEdit = async (what) => {
+  const editRun = async (key, sceneName, cell, place, act) => {
+    await scene(sceneName); await openDialog()
+    if (place === 'click') await d.click(`${DIALOG} [data-cell-id="${cell}"]`)
+    else await d.focus(`${DIALOG} [data-cell-id="${cell}"]`)
     await d.press('Enter')
-    const s = await snap('tableEdit')
-    needs(s.editing, `${what}:Enter 沒進編輯`, s)
+    const entered = await snap('tableEdit')
+    needs(entered.editing, `${key}:Enter 沒進編輯`, entered)
+    await act()
+    editRuns[key] = await snap('tableEdit')
   }
-  await scene('tableEdit'); await openDialog()
-  await d.focus(`${DIALOG} [data-cell-id="r1:title"]`)
-  await enterEdit('一般模式文字格')
-  await editStep('plainTextEsc', () => d.press('Escape'))
-  await enterEdit('一般模式文字格(第二次)')
-  await editStep('plainTextEnter', async () => { await page.keyboard.type('(急)'); await d.settle(); await d.press('Enter') })
-  await d.focus(`${DIALOG} [data-cell-id="r1:status"]`)
-  await enterEdit('一般模式 select 格')
-  await editStep('plainSelectPick', async () => { await d.press('ArrowDown'); await d.press('Enter') })
-  await scene('tableEditSheet'); await openDialog()
-  await d.click(`${DIALOG} [data-cell-id="r1:title"]`)
-  await enterEdit('試算表文字格')
-  await editStep('sheetTextEsc', () => d.press('Escape'))
-  await enterEdit('試算表文字格(第二次)')
-  await editStep('sheetTextEnter', async () => { await page.keyboard.type('(急)'); await d.settle(); await d.press('Enter') })
-  await d.press('ArrowRight')
-  await enterEdit('試算表 select 格')
-  await editStep('sheetSelectPick', async () => { await d.press('ArrowDown'); await d.press('Enter') })
-  const plainOk = (s, cell) => s.dialog && !s.editing && s.focusCell === cell && !lost(s.active)
-  const sheetOk = (s, cell) => s.dialog && !s.editing && s.onGrid && s.cursorId === cell && !lost(s.active)
-  check('F-datatable-edit-in-dialog', 'contract', 'Dialog 裡可編輯的 DataTable:編輯結束(Esc / Enter 結算 / 選單選值)後焦點回到那一格(一般模式)或表格根、格游標停在那一格(試算表模式),不停在對話框外框、不落 body;Enter 結算與選值真的寫回(一般 / 試算表各 2 次 commit)',
-    plainOk(editRuns.plainTextEsc, 'r1:title') && plainOk(editRuns.plainTextEnter, 'r1:title') && plainOk(editRuns.plainSelectPick, 'r1:status')
-      && sheetOk(editRuns.sheetTextEsc, 'r1:title') && sheetOk(editRuns.sheetTextEnter, 'r1:title') && sheetOk(editRuns.sheetSelectPick, 'r1:status')
-      && editRuns.plainSelectPick.calls === 2 && editRuns.sheetSelectPick.calls === 2, editRuns)
+  const typeAndEnter = async () => { await page.keyboard.type('(急)'); await d.settle(); await d.press('Enter') }
+  const pickNext = async () => { await d.press('ArrowDown'); await d.press('Enter') }
+  await editRun('plainTextEsc', 'tableEdit', 'r1:title', 'focus', () => d.press('Escape'))
+  await editRun('plainTextEnter', 'tableEdit', 'r1:title', 'focus', typeAndEnter)
+  await editRun('plainSelectPick', 'tableEdit', 'r1:status', 'focus', pickNext)
+  await editRun('sheetTextEsc', 'tableEditSheet', 'r1:title', 'click', () => d.press('Escape'))
+  await editRun('sheetTextEnter', 'tableEditSheet', 'r1:title', 'click', typeAndEnter)
+  await editRun('sheetSelectPick', 'tableEditSheet', 'r1:status', 'click', pickNext)
+  const plainOk = (s, cell, calls) => s.dialog && !s.editing && s.focusCell === cell && !lost(s.active) && s.calls === calls
+  const sheetOk = (s, cell, calls) => s.dialog && !s.editing && s.onGrid && s.cursorId === cell && !lost(s.active) && s.calls === calls
+  check('F-datatable-edit-in-dialog', 'contract', 'Dialog 裡可編輯的 DataTable:編輯結束(Esc 不寫回 / Enter 結算 / 選單選值,後兩者各寫回一次)後焦點回到那一格(一般模式)或表格根、格游標停在那一格(試算表模式),不停在對話框外框、不落 body、對話框不關',
+    plainOk(editRuns.plainTextEsc, 'r1:title', 0) && plainOk(editRuns.plainTextEnter, 'r1:title', 1) && plainOk(editRuns.plainSelectPick, 'r1:status', 1)
+      && sheetOk(editRuns.sheetTextEsc, 'r1:title', 0) && sheetOk(editRuns.sheetTextEnter, 'r1:title', 1) && sheetOk(editRuns.sheetSelectPick, 'r1:status', 1), editRuns)
 
   // ── E-calendar-tile ──
   await scene('calendar'); await openDialog()
