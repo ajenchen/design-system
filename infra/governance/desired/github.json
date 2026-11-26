@@ -86,9 +86,9 @@
           "trustSource": "repository-workflow",
           "workflow": ".github/workflows/ci.yml",
           "workflowIdentity": {
-            "contentSha256": "b6e1862c9092c4057075e2270649a610d9b67c80711e5e8562122b4f4b87f50f",
-            "gitBlobSha": "c8592f87b8e143a4a89e8a311fe6f7be53881da1",
-            "semanticSha256": "3f05a6dcaa23e1b735ca6069b9223c053fb6453d1981afe8cd6f884837925459",
+            "contentSha256": "9761b6feca74ad0f88246d1e685a5fda2be7a00047c0af9dee0789da59851553",
+            "gitBlobSha": "7ebbec55a05c41072f426c24afb1703919650474",
+            "semanticSha256": "cbd08145929df2c060b516db09d0885badcd466d5ac5e56b041fdad49a5a6761",
             "semanticVersion": 2
           }
         }
@@ -212,9 +212,9 @@
           "trustSource": "repository-workflow",
           "workflow": ".github/workflows/audit.yml",
           "workflowIdentity": {
-            "contentSha256": "3cb259c8d83d8d378a6d282b0cde0a8884d96c51cf49e655405c3e416e646726",
-            "gitBlobSha": "6055ba361714e41ed27e35ab33535eabfb1f29df",
-            "semanticSha256": "73a13c186299ca41e0d7de814bb2cad21109d70ffb79fb5e76982853b7581fdd",
+            "contentSha256": "ff1bb33e94c6de2f96e242c8853089565e292d9dbf183cb25151ec02e95eeff2",
+            "gitBlobSha": "722278ef6fb7ec9d327c1d8af369b7883fb37a8d",
+            "semanticSha256": "eec932e78559c3a94e6c886b05339bb2c32edd30e6a42f3ed318e6b8d77c7e07",
             "semanticVersion": 2
           }
         }
@@ -331,9 +331,9 @@
           "trustSource": "repository-workflow",
           "workflow": ".github/workflows/audit.yml",
           "workflowIdentity": {
-            "contentSha256": "3cb259c8d83d8d378a6d282b0cde0a8884d96c51cf49e655405c3e416e646726",
-            "gitBlobSha": "6055ba361714e41ed27e35ab33535eabfb1f29df",
-            "semanticSha256": "73a13c186299ca41e0d7de814bb2cad21109d70ffb79fb5e76982853b7581fdd",
+            "contentSha256": "ff1bb33e94c6de2f96e242c8853089565e292d9dbf183cb25151ec02e95eeff2",
+            "gitBlobSha": "722278ef6fb7ec9d327c1d8af369b7883fb37a8d",
+            "semanticSha256": "eec932e78559c3a94e6c886b05339bb2c32edd30e6a42f3ed318e6b8d77c7e07",
             "semanticVersion": 2
           }
         }

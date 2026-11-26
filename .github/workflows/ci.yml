@@ -1927,7 +1927,8 @@ jobs:
 
       - name: DatePicker range active-end underline (browser)
         run: |
-          # 日期區間作用端主色底線畫滿 2px(date-picker.spec.md:193;A50)+ --selftest(該紅列由實量幾何推、跨邊列任何字型都裁得到)。
+          # 日期區間作用端那條線壓在欄位框下邊上:下緣 = 框外緣、線長 = 文字寬、線色 = 框色(date-picker.spec.md「Active-end 機制」;RANGE-FOCUS-BAR)
+          # 高對比模式線色 = Highlight;+ --selftest(七個單一根因突變各自剛好紅該紅的列)。
           # 2026-11-17 從 verify-browser-interaction 搬來:那支 job 41622d91 撞 25 分上限被取消(d23df592 已 22.9 分),本 job 約 8.5 分 / 上限 25。
           npm run test:datepicker-range-active-underline
 
