@@ -20,11 +20,17 @@
  *         Coachmark 媒體區貼齊(2026-11-13,R17 / R18):左右貼外殼內緣,上緣有標題列時貼標題列的分隔線、沒有時貼外殼頂(md / lg 量像素)。
  *         Coachmark 高度與捲動(2026-11-22,R19 / R20;coachmark.spec.md「高度與捲動」):1280×800 下「多步提示」第 1 步(3 行說明)說明底不低於頁腳頂、
  *         放得下時內容區不是 Tab 停點;test-only「捲動回歸量測夾具」(故意超長、不是範例)內容區真的捲得動、Tab 到得了、按 End 捲到底後說明底不低於頁腳頂、標題列與頁腳整條在外殼與視窗裡(md / lg)。
+ *         兩欄 dialog 組合(2026-11-26,R21–R24;overlay-surface.spec.md「兩欄 dialog 組合 canonical」,設定類 = C14 user 選「A:頂部全寬標題列 + 左分類 + 右內容(右欄頂端可選標題 = 選中分類)」):
+ *         Dialog 展示「超大檔位:兩欄個人設定」與「超大檔位:兩欄記錄詳情」按開後(md / lg)—— 標題列左右貼外殼內緣、兩欄從標題列底下開始(R21);
+ *         × 只有一顆、在標題列裡、是最右邊的按鈕且右緣貼標題列內距(R22);兩欄各有一個捲動區,往一欄塞 3000px 再捲,它自己捲得動、另一欄與標題列不動(R23);
+ *         右欄沒有 SurfaceHeader / <header>、捲動區從右欄頂端開始、欄內標題都在捲動區裡(R24)。為什麼擴這支、不另開:同一條規則只由一支閘守,
+ *         這支已是「浮層範例契約」的住處(按開 Dialog、量像素、每列各自拆修法),兩欄的幾何此前沒有任何閘量(consumer 端 check_consumer_app_invariants.sh C19 只看原始碼簽名)。
  *   紅: 任一列不符 → 逐列點名 exit 1。`--selftest`:靜態每列注入一個修前形狀(2026-10-20 前的原始碼片段)必須紅在那一列;
  *       真建置每列在頁面上拆掉修法(拿掉字色 / 陰影、移一則說明、把觸發點設成不可聚焦、換掉 CTA 的事件、拿掉欄的主題、
  *       寫回懸空的 aria-describedby、把卡片移開、把標題改回舊名、把地標名稱改回英文、把按鈕字改回英文、把兩個欄位值對調、拿掉欄位值的 break-words、
  *       把 break-words 換成 break-all、把溢出清單改成橫排、把 Coachmark 頁腳改成靠左、Coachmark 媒體區上方 / 左邊各多 4px、
- *       Coachmark 外殼壓回置中觸發點時的可用高度 370px、Coachmark 內容區改成不縮)必須紅在那一列 —— 少一列沒紅 = 量具沒在量它宣稱的東西 → exit 1;
+ *       Coachmark 外殼壓回置中觸發點時的可用高度 370px、Coachmark 內容區改成不縮、兩欄 dialog 的標題列只蓋左半 / × 搬到右欄右上角浮著 /
+ *       兩欄共用一條捲軸 / 右欄頂端多一條標題列)必須紅在那一列 —— 少一列沒紅 = 量具沒在量它宣稱的東西 → exit 1;
  *       另有「乾淨對照」:注入本來就正確的歷史句(S5)不得讓任何一列紅 —— 防止量具把對的東西判錯、逼人改寫正確的句子(M37)。
  *       對修前建置(`--build=<修前 storybook-static>`)跑 = 天然對照組。
  *   綠: 現行原始碼與建置每列都量到且符合;找不到要量的元素、story 開不起來、建置缺 = 儀器失效(exit 2,M37:沒量到 ≠ 沒發生),不讀成通過。
@@ -444,6 +450,10 @@ const ROWS = {
   R18: 'Coachmark 媒體區左右貼齊外殼內緣(滿版;coachmark.spec.md「Media 區規則」位置)',
   R19: 'Coachmark 放得下時高度貼內容:1280×800「多步提示」第 1 步(3 行說明)說明底不低於頁腳頂、內容區不是 Tab 停點(coachmark.spec.md「高度與捲動」;user 2026-11-22「丙」)',
   R20: 'Coachmark 超過可用高度時內容區捲動:test-only「捲動回歸量測夾具」內容區捲得動、Tab 到得了、鍵盤捲到底後說明底不低於頁腳頂,標題列與頁腳整條在外殼與視窗裡(coachmark.spec.md「高度與捲動」)',
+  R21: '兩欄 dialog:標題列跨全寬(左右貼外殼內緣)、兩欄都從標題列底下才開始(overlay-surface.spec.md「兩欄 dialog 組合 canonical」第 4 條;設定類 = 2026-11-26 C14)',
+  R22: '兩欄 dialog:× 只有一顆、在標題列裡、是標題列最右邊的按鈕且右緣貼標題列內距(overlay-surface.spec.md「兩欄 dialog 組合 canonical」第 4 條 + dialog.spec.md「關閉按鈕」)',
+  R23: '兩欄 dialog:兩欄各有自己的捲動區、各自捲 —— 捲一欄時另一欄與標題列不動(overlay-surface.spec.md「兩欄 dialog 組合 canonical」第 1 條)',
+  R24: '兩欄 dialog:右欄沒有第二條標題列 —— 沒有 SurfaceHeader / <header>,捲動區從右欄頂端開始,欄內標題在捲動區裡隨內容捲(overlay-surface.spec.md「左導覽 + 右內容」+ header-canonical.spec.md「何時不用」)',
 }
 const results = new Map()
 const mark = (id, ok, detail = []) => {
@@ -918,6 +928,101 @@ async function runRuntime({ mutateRow = null } = {}) {
     const contradict = /(線上|Online)/.test(card.text) && /(休假|Out of Office)/.test(card.text)
     rec('R12', id === parts[1] && emp === parts[2] && !contradict, `列上「${parts.join('｜')}」;名片 ID ${id}、員工編號 ${emp}${contradict ? ';線上卻寫休假' : ''}`)
 
+    // R21–R24 兩欄 dialog 組合(overlay-surface.spec.md「兩欄 dialog 組合 canonical」;2026-11-26 C14 擴到「左導覽 + 右內容」)。
+    // 兩則兩欄範例(設定類 + 工作項詳情類)× md / lg;每一列在新開的頁面上量(拆法不漏到別列)。按了才開(D2 甲),等對話框動畫跑完才量。
+    // 選擇器只認 role=dialog、[data-dialog-body](兩欄區;dialog.tsx 開啟焦點的標記)、[data-slot="surface-header"]、[data-dismiss](×)、Radix 捲動區 viewport。
+    const TWO_PANE = [
+      ['design-system-components-dialog-展示--extra-large-settings', '個人設定', '兩欄個人設定'],
+      ['design-system-components-dialog-展示--extra-large-two-column', '開啟任務詳情(兩欄)', '兩欄記錄詳情'],
+    ]
+    for (const [storyId, trigger, what] of TWO_PANE) {
+      for (const density of ['md', 'lg']) {
+        for (const row of ['R21', 'R22', 'R23', 'R24']) {
+          await open(storyId, { density })
+          await page.getByRole('button', { name: trigger, exact: true }).click({ timeout: 10_000 }).catch(() => {})
+          await waitFor(() => {
+            const d = document.querySelector('[role="dialog"][data-state="open"]')
+            return !!d?.querySelector('[data-dialog-body]') && d.getAnimations({ subtree: true }).every((a) => a.playState !== 'running')
+          }, null, `${what}(${density})對話框打開`)
+          await mutate(row)
+          const m = await page.evaluate(() => {
+            const d = document.querySelector('[role="dialog"][data-state="open"]')
+            const split = d?.querySelector('[data-dialog-body]')
+            const header = d?.querySelector('[data-slot="surface-header"]')
+            if (!d || !split || !header) return null
+            const vis = (el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden' }
+            const cols = [...split.children].filter(vis)
+            const dr = d.getBoundingClientRect(), dcs = getComputedStyle(d)
+            const inner = { left: dr.left + parseFloat(dcs.borderLeftWidth), right: dr.right - parseFloat(dcs.borderRightWidth) }
+            const hr = header.getBoundingClientRect(), hcs = getComputedStyle(header)
+            const VP = '[data-radix-scroll-area-viewport]'
+            // R22:× 與標題列裡的按鈕
+            const xs = [...d.querySelectorAll('[data-dismiss]')].filter(vis)
+            const x = xs[0]
+            const headerButtons = [...header.querySelectorAll('button')].filter(vis)
+            const xr = x?.getBoundingClientRect()
+            // R23:每欄的捲動區;捲一欄,看另一欄與標題列有沒有跟著動
+            const vps = cols.map((c) => [...c.querySelectorAll(VP)].filter(vis))
+            const scroll = cols.map((c, i) => {
+              const vp = vps[i][0]
+              if (!vp) return { ok: false, why: `第 ${i + 1} 欄沒有捲動區` }
+              const others = cols.filter((_, j) => j !== i)
+              // 另一欄的內容層(捲動區裡的第一層):那一欄被帶著捲,它的頂就會動
+              const firstOf = (col) => { const v = col.querySelector(VP); return v?.firstElementChild ?? v ?? col }
+              const before = { header: hr.top, others: others.map((o) => { const f = firstOf(o); return f ? f.getBoundingClientRect().top : NaN }), otherScroll: others.map((o) => o.querySelector(VP)?.scrollTop ?? 0) }
+              const spacer = document.createElement('div')
+              spacer.style.cssText = 'height:3000px;flex:none'
+              ;(vp.firstElementChild ?? vp).appendChild(spacer)
+              vp.scrollTop = 400
+              const moved = vp.scrollTop
+              const after = { header: header.getBoundingClientRect().top, others: others.map((o) => { const f = firstOf(o); return f ? f.getBoundingClientRect().top : NaN }), otherScroll: others.map((o) => o.querySelector(VP)?.scrollTop ?? 0) }
+              vp.scrollTop = 0
+              spacer.remove()
+              const still = Math.abs(after.header - before.header) <= 0.5 && after.others.every((t, j) => Math.abs(t - before.others[j]) <= 0.5) && after.otherScroll.every((s, j) => s === before.otherScroll[j])
+              return { ok: moved > 0 && still, why: `第 ${i + 1} 欄捲了 ${moved}px${still ? '' : `;另一欄或標題列跟著動(標題列 ${before.header.toFixed(1)} → ${after.header.toFixed(1)}、另一欄第一個東西 ${before.others.map((t) => t.toFixed(1))} → ${after.others.map((t) => t.toFixed(1))})`}` }
+            })
+            // R24:右欄
+            const right = cols[cols.length - 1]
+            const rr = right?.getBoundingClientRect()
+            const rvp = right ? vps[cols.length - 1][0] : null
+            const secondHeader = right ? [...right.querySelectorAll('[data-slot="surface-header"], header, [data-slot="chrome-header"]')].filter(vis).length : 0
+            const headingsOutside = right ? [...right.querySelectorAll('h1, h2, h3, h4, h5, h6, [role="heading"]')].filter((h) => vis(h) && !h.closest(VP)).length : 0
+            return {
+              cols: cols.length,
+              header: { left: hr.left - inner.left, right: inner.right - hr.right, bottom: hr.bottom },
+              colTops: cols.map((c) => c.getBoundingClientRect().top),
+              xCount: xs.length,
+              xInHeader: !!x && header.contains(x),
+              xRightmost: !!xr && headerButtons.every((b) => b === x || b.getBoundingClientRect().right <= xr.right + 0.5),
+              xInset: xr ? hr.right - parseFloat(hcs.paddingRight) - xr.right : NaN,
+              vpCounts: vps.map((v) => v.length),
+              splitInScroller: !!split.closest(VP),
+              scroll,
+              right: { secondHeader, headingsOutside, vpTopGap: rr && rvp ? rvp.getBoundingClientRect().top - rr.top : NaN },
+            }
+          })
+          if (!m) fail(`${what}(${density}):找不到開著的對話框、兩欄區或標題列`)
+          if (!SELFTEST && m.cols !== 2) fail(`${what}(${density}):兩欄區裡看得見的欄有 ${m.cols} 個(應 2)—— 範例換了結構,量不到兩欄`)
+          const tag = `${what} ${density}`
+          if (row === 'R21') {
+            const below = m.colTops.every((t) => t >= m.header.bottom - 0.5)
+            rec('R21', m.cols === 2 && Math.abs(m.header.left) <= 0.5 && Math.abs(m.header.right) <= 0.5 && below,
+              `${tag}:標題列左離外殼內緣 ${m.header.left.toFixed(1)}、右 ${m.header.right.toFixed(1)}(應 0)${below ? '' : `;有欄的頂(${m.colTops.map((t) => t.toFixed(1)).join(' / ')})高過標題列底 ${m.header.bottom.toFixed(1)}`}`)
+          } else if (row === 'R22') {
+            rec('R22', m.xCount === 1 && m.xInHeader && m.xRightmost && Math.abs(m.xInset) <= 0.5,
+              `${tag}:× ${m.xCount} 顆(應 1)、${m.xInHeader ? '在' : '不在'}標題列裡、${m.xRightmost ? '' : '不是'}最右邊、右緣離標題列內距 ${Number.isNaN(m.xInset) ? '-' : m.xInset.toFixed(1)}(應 0)`)
+          } else if (row === 'R23') {
+            const bad = m.scroll.filter((s) => !s.ok).map((s) => s.why)
+            rec('R23', m.cols === 2 && m.vpCounts.every((n) => n === 1) && !m.splitInScroller && bad.length === 0,
+              `${tag}:每欄捲動區數 ${m.vpCounts.join(' / ')}(應各 1)${m.splitInScroller ? ';兩欄被包在同一個捲動區裡' : ''}${bad.length ? `;${bad.join(';')}` : ''}`)
+          } else {
+            rec('R24', m.right.secondHeader === 0 && m.right.headingsOutside === 0 && Math.abs(m.right.vpTopGap) <= 0.5,
+              `${tag}:右欄標題列 ${m.right.secondHeader} 條(應 0)、捲動區外的標題 ${m.right.headingsOutside} 個(應 0)、捲動區頂離右欄頂 ${Number.isNaN(m.right.vpTopGap) ? '-' : m.right.vpTopGap.toFixed(1)}(應 0)`)
+          }
+        }
+      }
+    }
+
     // R13 ProfileCard 兩欄欄位:值的文字右緣不超過自己那一欄(grid 項目的 min-width:auto 會讓沒有空白的長字串整段撐出欄外,
     // 量 dd 自己的 scrollWidth 量不到 —— 要拿文字範圍的右緣比欄的右緣)
     await open('design-system-components-profilecard-設計規格--overview')
@@ -1060,6 +1165,32 @@ const MUTATIONS = {
   R19: () => { const c = document.querySelector('[role="dialog"][data-state="open"]'); if (c) c.style.maxHeight = '370px' },
   // R20:內容區不縮(拿掉 flex-1 min-h-0 的效果)—— 外殼被可用高度卡住時頁腳被推到外殼外、內容區也不再捲得動
   R20: () => { const c = document.querySelector('[role="dialog"][data-state="open"] [data-coachmark-content]'); if (c) { c.style.flex = 'none'; c.style.minHeight = 'auto' } },
+  // R21:標題列只蓋左半(Atlassian 101 範例的形狀:標題列放在左半欄裡)—— 右緣離外殼內緣不再是 0
+  R21: () => { const h = document.querySelector('[role="dialog"][data-state="open"] [data-slot="surface-header"]'); if (h) h.style.width = '50%' },
+  // R22:× 搬出標題列、浮在右欄右上角(上一輪推薦的乙 / shadcn 設定對話框的形狀)
+  R22: () => {
+    const d = document.querySelector('[role="dialog"][data-state="open"]')
+    const x = d?.querySelector('[data-dismiss]')
+    const col = d?.querySelector('[data-dialog-body]')?.lastElementChild
+    if (x && col) { col.style.position = 'relative'; x.style.cssText = 'position:absolute;top:12px;right:16px'; col.appendChild(x) }
+  },
+  // R23:兩欄共用一條捲軸(兩欄區自己捲、欄內捲動區不再是捲動容器)
+  R23: () => {
+    const split = document.querySelector('[role="dialog"][data-state="open"] [data-dialog-body]')
+    if (!split) return
+    split.style.overflowY = 'auto'
+    for (const vp of split.querySelectorAll('[data-radix-scroll-area-viewport]')) { vp.style.overflow = 'visible'; vp.style.height = 'auto' }
+  },
+  // R24:右欄頂端多一條標題列(第二條 SurfaceHeader)
+  R24: () => {
+    const col = document.querySelector('[role="dialog"][data-state="open"] [data-dialog-body]')?.lastElementChild
+    if (!col) return
+    const bar = document.createElement('div')
+    bar.setAttribute('data-slot', 'surface-header')
+    bar.style.cssText = 'height:48px;flex:none;border-bottom:1px solid currentColor'
+    bar.textContent = '通知'
+    col.prepend(bar)
+  },
   // R16:照 action-bar :109「沒有標題 → 靠左」的錯誤推論把頁腳改成靠左(單步卡)
   R16: () => { const card = document.querySelector('[role="dialog"].w-80'); const g = [...(card?.querySelectorAll('button') ?? [])].at(-1)?.closest('div')?.parentElement; if (g) g.style.justifyContent = 'flex-start' },
   // R15:2026-10-20 第一版修法 —— 溢出清單的名字直接放進 OverflowIndicator(ShrinkWrapList 橫排成一行)

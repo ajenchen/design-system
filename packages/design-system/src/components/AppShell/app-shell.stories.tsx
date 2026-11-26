@@ -26,6 +26,8 @@ import { SimulatedBrowser } from '@/design-system/stories-helpers/scene/simulate
 import { openOverlayDocsStory } from '@/design-system/stories-helpers/overlay/open-overlay-docs'
 import { useAgentDemo, DemoConversation } from '@/design-system/stories-helpers/scene/agent-demo'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/components/Tabs/tabs'
+import { Empty } from '@/design-system/components/Empty/empty'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import type { SortingState } from '@tanstack/react-table'
 
 const meta: Meta<typeof AppShell> = {
@@ -370,6 +372,101 @@ export const PrimaryHeader: Story = {
       </SidebarProvider>
     )
   },
+}
+
+// ── 整頁 404 / 403(Empty 放在主內容區;empty.spec.md「整頁狀態」)──────────────────────────────
+// ── 消費的 SSOT ──
+//   - Empty(說明 + 動作;不傳 title,標題在外層包 h1 —— empty.spec.md「A11y 預設」Title slot heading level、「整頁狀態」)
+//   - h1 的字級 / 字重 / 色 = Empty 標題那一格(empty.spec.md「Typography」Title:body-lg + medium / foreground);h1 → 說明的距離 = Empty 標題 → 說明
+//     的同一個 token `--item-gap-label-desc-reading-lg`(empty.tsx、item-anatomy.spec.md)—— 標題拿到外層,畫面仍是 Empty 的樣子
+//   - 主內容區撐滿高度、狀態在正中:layoutSpace.spec.md 規則 2「適用範圍與量法三點」(3)(標頭底 → 內容頂 = 內容底 → 主內容區底;上下不給「結論留白」),
+//     左右照規則 1 = `--layout-space-loose`
+//   - 導覽照常:primary-header 的 GlobalHeader(品牌、側欄開關、帳號)+ AcmeSidebar 與「主標頭佈局」那一則同一份(@story-baseline 同檔 PrimaryHeader)
+//   - 動作:404 = 回首頁(Dashboard);403 = 申請存取(empty.spec.md「何時用」容器級無權限提示那一條的 request-access 規則,整頁同樣適用)
+//   - Toast(申請送出的回饋;每個獨立 story root 掛一個 Toaster,toast.spec.md)
+// 閘:scripts/header-first-gap-invariant.mjs 的 appshell-full-page-404 / appshell-full-page-403(在主內容區正中、頁面唯一的 h1 = 狀態標題、有動作)。
+
+/** 整頁狀態:主內容區撐滿高度、內容在正中;標題包 h1(頁面上唯一的 h1),說明與動作交給 Empty。 */
+function FullPageState({ title, description, action }: { title: string; description: string; action: React.ReactNode }) {
+  return (
+    <div className="flex h-full flex-col items-center justify-center px-[var(--layout-space-loose)]">
+      <h1 className="text-center text-body-lg font-medium text-foreground">{title}</h1>
+      <Empty className="mt-[var(--item-gap-label-desc-reading-lg)]" description={description} action={action} />
+    </div>
+  )
+}
+
+/** 打不開的那一頁(側欄沒有這一項:404 是已刪除的專案、403 是別人的私人專案)—— 選中項 = 這個 id 時主內容區放整頁狀態、不放本頁標頭 */
+const UNREACHABLE = 'unreachable-page'
+
+/**
+ * 打開一條連結卻到不了那一頁:全域標頭與 Menu 照常(還能去別的地方),主內容區只放整頁狀態。
+ * 那一頁不存在 / 看不到 → 沒有本頁的標題與動作可放,主內容欄不放本頁標頭;狀態標題就是這一頁的 h1【AI 推導 2026-11-26】。
+ * 從 Menu 或 404 的「回到 Dashboard」換頁後,回到一般頁面的樣子(本頁標頭 + 議題清單,同「主標頭佈局」那一則)。
+ */
+function UnreachablePageShell({ state }: { state: (goTo: (id: string) => void) => { title: string; description: string; action: React.ReactNode } }) {
+  const [activeId, setActiveId] = React.useState<string>(UNREACHABLE)
+  const [asideOpen, setAsideOpen] = React.useState(false)
+  const [selected, setSelected] = React.useState<Issue | null>(ISSUES[0])
+  const unreachable = activeId === UNREACHABLE
+  const page = state(setActiveId)
+  return (
+    <>
+      <Toaster />
+      <SidebarProvider activeId={activeId} onActiveChange={setActiveId}>
+        <AppShell
+          layout="primary-header"
+          mainMinWidth={MAIN_MIN_WIDTH}
+          sidebar={<AcmeSidebar includeWorkspaceBrand={false} includeUserFooter={false} />}
+          globalHeader={<GlobalHeader />}
+          header={unreachable ? undefined : <PageHeader title={navLabel(activeId)} includeSidebarTrigger={false} />}
+          aside={
+            unreachable ? undefined : (
+              <AppShellAside title={selected ? selected.id : '詳情'} contentType="issue-detail" widthRange={ISSUE_DETAIL_WIDTH}>
+                <IssueDetail issue={selected} />
+              </AppShellAside>
+            )
+          }
+          asideOpen={asideOpen}
+          onAsideOpenChange={setAsideOpen}
+        >
+          {unreachable ? <FullPageState {...page} /> : <IssuesView selectedId={selected?.id} onSelectIssue={setSelected} />}
+        </AppShell>
+      </SidebarProvider>
+    </>
+  )
+}
+
+export const FullPageNotFound: Story = {
+  name: '整頁 404 — 打開已刪除的專案連結',
+  parameters: {
+    docs: { description: { story: '從聊天訊息點開一個專案連結,那個專案已被刪除:全域標頭與 Menu 照常,主內容區正中放 Empty 說明原因與下一步,標題是這一頁的 h1。按「回到 Dashboard」回到首頁。' } },
+  },
+  render: () => (
+    <UnreachablePageShell
+      state={(goTo) => ({
+        title: '找不到這個專案',
+        description: '「舊版計費系統」可能已被刪除,或連結打錯了。請向分享連結的人確認,或回到 Dashboard 看你參與的專案。',
+        action: <Button variant="primary" onClick={() => goTo('dashboard')}>回到 Dashboard</Button>,
+      })}
+    />
+  ),
+}
+
+export const FullPageNoAccess: Story = {
+  name: '整頁 403 — 沒有權限的私人專案',
+  parameters: {
+    docs: { description: { story: '打開同事分享的「2027 年度預算」專案,那是只有成員看得到的私人專案:全域標頭與 Menu 照常,主內容區正中放 Empty 說明原因,並附「申請存取」。' } },
+  },
+  render: () => (
+    <UnreachablePageShell
+      state={() => ({
+        title: '你沒有這個專案的存取權限',
+        description: '「2027 年度預算」是私人專案,只有成員看得到。送出申請後,專案擁有者 Alan Chen 核准就會寄信通知你。',
+        action: <Button variant="primary" onClick={() => toast({ variant: 'success', title: '已送出申請,Alan Chen 核准後會寄信通知你' })}>申請存取</Button>,
+      })}
+    />
+  ),
 }
 
 

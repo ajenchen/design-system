@@ -1,7 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { ChevronUp, ChevronDown, MoreVertical } from 'lucide-react'
+import { ChevronUp, ChevronDown, MoreVertical, User, Bell, Palette, Globe } from 'lucide-react'
 import {
   Dialog, DialogTrigger, DialogContent, DialogHeader, DialogBody, DialogFooter, DialogTitle, DialogClose,
 } from './dialog'
@@ -17,6 +17,8 @@ import { Switch } from '@/design-system/components/Switch/switch'
 import { Command, CommandList, CommandGroup, CommandItem } from '@/design-system/components/Command/command'
 import { DataTable, type DataTableColumnDef } from '@/design-system/components/DataTable/data-table'
 import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
+import { Select } from '@/design-system/components/Select/select'
+import { SidebarProvider, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/design-system/components/Sidebar/sidebar'
 import { samplePersonCard, demoPersonPhoto, type DemoPersonName } from '@/design-system/stories-helpers/scene/person-card'
 
 /**
@@ -717,6 +719,156 @@ export const ExtraLargeTwoColumn = {
     },
   },
   render: () => <TaskDetailTwoColumnDialog />,
+}
+
+// 超大檔位 xl —— 左導覽 + 右內容(設定類):從帳號選單打開的「個人設定」(sidebar.spec.md「A 和 C 並用」路徑 C:只影響自己、低頻的偏好)。
+// 版面 = 2026-11-26 第六輪決策卡 C14,user 選「A:頂部全寬標題列 + 左分類 + 右內容(右欄頂端可選標題 = 選中分類)」;
+// 組合照 overlay-surface.spec.md「兩欄 dialog 組合 canonical」的「左導覽 + 右內容」:
+//   ① 標題列 = DialogHeader(標題 + ×,dialog.spec.md「關閉按鈕」),跨全寬,分欄從 body 才開始(同段第 4 條);
+//   ② 左欄 = List-as-region(overlay-surface.spec.md「List-as-region in overlay body」):從 body 頂起,上下留白由 SidebarGroup 自己的 py 給;
+//      列直接用 Sidebar 的列元件(外觀同 Sidebar);SidebarProvider 只為了列元件要的 context(作用中項目 / 列尺寸),
+//      寫法照 scroll-area.stories.tsx「垂直捲動 — Notion 側欄導覽」(min-h-0、捲動區不當 Tab 停靠點);不放 <Sidebar> 外框 —— 它是版面上的 Menu,
+//      對話框在 AppShell 裡打開時仍在 AppShell 的元件樹裡,外框會去登記成 Menu【AI 推導,讀 sidebar.tsx 的 Sidebar】;
+//      欄寬 = Sidebar 預設寬(--sidebar-width,DS 內可讀)、分隔線由左欄畫(border-r border-divider,同 sidebar.tsx 左側 Sidebar)【AI 推導】;
+//   ③ 右欄自帶 ScrollArea 獨立捲動(同段第 1 條);頂端標題 = 選中分類的字,讀同一份資料(同 sidebar.spec.md「選中項的字 = 那一頁標頭的字」)【AI 推導】,
+//      用文字樣式、隨內容捲動,不做第二條標題列(header-canonical.spec.md「何時不用」);字級 text-h5 照 dialog.anatomy.stories.tsx 對話框內 h3 的現有寫法;
+//      標題 → 第一列 = 列與列之間 = loose(layoutSpace.spec.md「標題區 → 內容」第 1、3 題:同一種版型每頁同一距離);切分類時捲動區重掛、回到頂端;
+//   ④ 寬 xl(兩欄)、高 fill(切分類時內容高度會變,dialog.spec.md「高度軸」)。開關與選單改了就生效、沒有要儲存的東西 → 不放頁腳,關閉走標題列的 ×【AI 推導】。
+const SETTINGS_SECTIONS = [
+  { id: 'account', label: '帳號', icon: User },
+  { id: 'notifications', label: '通知', icon: Bell },
+  { id: 'appearance', label: '外觀', icon: Palette },
+  { id: 'locale', label: '語言與地區', icon: Globe },
+] as const
+type SettingsSectionId = (typeof SETTINGS_SECTIONS)[number]['id']
+
+const NOTIFICATION_PREFS = [
+  { key: 'assigned', title: '有人指派任務給我', desc: '桌面通知與信件同時送出', on: true },
+  { key: 'mention', title: '有人在留言中提到我', desc: '只通知 @我 的留言,不含整個團隊的提及', on: true },
+  { key: 'status', title: '我追蹤的任務狀態有變', desc: '例:WM-142 從「進行中」改成「待驗收」', on: false },
+  { key: 'digest', title: '每日摘要', desc: '每天早上 9:00 寄一封今天到期的任務清單到信箱', on: true },
+] as const
+const APPEARANCE_PREFS = [
+  { key: 'system-theme', title: '跟隨系統深淺色', desc: '電腦切換深色模式時一起切換', on: true },
+  { key: 'reduce-motion', title: '減少動態效果', desc: '關掉面板展開與頁面切換的動畫', on: false },
+] as const
+const LANGUAGE_OPTIONS = [
+  { value: 'zh-TW', label: '繁體中文(台灣)' },
+  { value: 'en-US', label: 'English (US)' },
+  { value: 'ja-JP', label: '日本語' },
+]
+const TIME_ZONE_OPTIONS = [
+  { value: 'Asia/Taipei', label: '台北(GMT+8)' },
+  { value: 'Asia/Tokyo', label: '東京(GMT+9)' },
+  { value: 'America/Los_Angeles', label: '洛杉磯(GMT-8)' },
+]
+
+const INITIAL_SWITCHES: Record<string, boolean> = Object.fromEntries([...NOTIFICATION_PREFS, ...APPEARANCE_PREFS].map((p) => [p.key, p.on]))
+
+type PersonalSettingsValues = { switches: Record<string, boolean>; language: string; timeZone: string }
+
+/** 右欄內容:只示範「改了就生效」的設定(開關、選單),沒有要另外儲存的欄位。值住在對話框那一層:切分類時右欄重掛,改過的值不會被重設 */
+function PersonalSettingsSection({ section, values, onChange }: {
+  section: SettingsSectionId
+  values: PersonalSettingsValues
+  onChange: (next: PersonalSettingsValues) => void
+}) {
+  if (section === 'account') {
+    return (
+      <DescriptionList orientation="horizontal">
+        <DescriptionItem label="姓名">Alan Chen</DescriptionItem>
+        <DescriptionItem label="電子郵件">alan.chen@acme.io</DescriptionItem>
+        <DescriptionItem label="角色">工作區管理員</DescriptionItem>
+        <DescriptionItem label="所屬團隊">Design</DescriptionItem>
+      </DescriptionList>
+    )
+  }
+  if (section === 'locale') {
+    return (
+      <>
+        <Field>
+          <FieldLabel>介面語言</FieldLabel>
+          <Select options={LANGUAGE_OPTIONS} value={values.language} onChange={(language) => onChange({ ...values, language })} />
+        </Field>
+        <Field>
+          <FieldLabel>時區</FieldLabel>
+          <FieldDescription>截止日與每日摘要的寄送時間照這個時區算</FieldDescription>
+          <Select options={TIME_ZONE_OPTIONS} value={values.timeZone} onChange={(timeZone) => onChange({ ...values, timeZone })} />
+        </Field>
+      </>
+    )
+  }
+  // 設定列 = 自帶標題的 <Switch label description>(與本檔「通知設定」同一個寫法,switch.spec.md「設定列 vs 水平 Field」)
+  const prefs = section === 'notifications' ? NOTIFICATION_PREFS : APPEARANCE_PREFS
+  return (
+    <>
+      {prefs.map((p) => (
+        <Switch
+          key={p.key}
+          label={p.title}
+          description={p.desc}
+          checked={values.switches[p.key]}
+          onCheckedChange={(on) => onChange({ ...values, switches: { ...values.switches, [p.key]: on } })}
+        />
+      ))}
+    </>
+  )
+}
+
+function PersonalSettingsDialog() {
+  const [section, setSection] = useState<SettingsSectionId>('notifications')
+  const [values, setValues] = useState<PersonalSettingsValues>({ switches: INITIAL_SWITCHES, language: 'zh-TW', timeZone: 'Asia/Taipei' })
+  const current = SETTINGS_SECTIONS.find((s) => s.id === section) ?? SETTINGS_SECTIONS[0]
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="tertiary">個人設定</Button>
+      </DialogTrigger>
+      <DialogContent width="xl">
+        <DialogHeader>
+          <DialogTitle>個人設定</DialogTitle>
+        </DialogHeader>
+        {/* data-dialog-body:開啟時焦點落在兩欄區第一個互動元素(dialog.tsx onOpenAutoFocus 只認這個標記);兩欄各自捲動,所以兩欄區自己組 */}
+        <div data-dialog-body className="flex min-h-0 flex-1">
+          <nav aria-label="設定分類" className="flex w-[var(--sidebar-width)] shrink-0 flex-col border-r border-divider">
+            <SidebarProvider activeId={section} onActiveChange={(id) => setSection(id as SettingsSectionId)} className="min-h-0 flex-1 flex-col">
+              <ScrollArea fillX className="min-h-0 flex-1" viewportTabIndex={-1}>
+                <SidebarGroup>
+                  <SidebarGroupContent>
+                    <SidebarMenu>
+                      {SETTINGS_SECTIONS.map((s) => (
+                        <SidebarMenuItem key={s.id}>
+                          <SidebarMenuButton id={s.id} startIcon={s.icon}>{s.label}</SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ))}
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </SidebarGroup>
+              </ScrollArea>
+            </SidebarProvider>
+          </nav>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <ScrollArea key={section} fillX className="min-h-0 flex-1">
+              <div data-layout-body="fill" className="flex flex-col gap-[var(--layout-space-loose)] px-[var(--layout-space-loose)]">
+                <h3 className="text-h5 text-foreground">{current.label}</h3>
+                <PersonalSettingsSection section={section} values={values} onChange={setValues} />
+              </div>
+            </ScrollArea>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+export const ExtraLargeSettings = {
+  name: '超大檔位:兩欄個人設定',
+  parameters: {
+    docs: {
+      description: { story: '寬度 `xl`、高度 `fill`:左欄是設定分類(列的樣子同 Sidebar),右欄是選中分類的設定,頂端的字就是選中的分類。標題列與 × 跨整個對話框,兩欄各自捲動。只影響自己、低頻的個人偏好才用對話框;要和別人協作、會分享連結的設定改用整頁。分類少、一排放得下時,也可以把分頁放進標題列(本頁「標頭內含分頁」)。' },
+    },
+  },
+  render: () => <PersonalSettingsDialog />,
 }
 
 // 標頭內含分頁(2026-05-18 從 patterns/header-canonical/header-canonical.stories.tsx 整合過來;user 當時要求整合進 Dialog、不另開 header canonical 資料夾)

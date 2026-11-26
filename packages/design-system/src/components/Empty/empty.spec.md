@@ -30,7 +30,8 @@ benchmark:
 - **Table / list / grid 空狀態**：DataTable 查無資料、搜尋無結果
 - **Page section 無內容**：dashboard widget 暫無資料、設定頁未建立任何項目
 - **初次引導**：讓使用者首次使用時知道「這裡會放什麼」+ 有 CTA 建立
-- **容器級無權限提示**（2026-07-04 Q7 拍板）：卡片 / 區塊 / 面板內容因權限不可見 — **必附 request-access 類 action**（對齊 Atlassian「Request access」empty state 官方範例([empty-state examples](https://atlassian.design/components/empty-state/examples)「You don't have access to this work item … Request access」)+ Carbon error-management scenario([empty states pattern](https://www.carbondesignsystem.com/building-blocks/core/patterns/empty-states)「Permissions issue … Suggest steps or process to request access.」);皆 2026-11-05 讀回）；整頁級 403 / 404 仍禁用（→ 專屬錯誤頁面，見「何時不用」）
+- **容器級無權限提示**（2026-07-04 Q7 拍板）：卡片 / 區塊 / 面板內容因權限不可見 — **必附 request-access 類 action**（對齊 Atlassian「Request access」empty state 官方範例([empty-state examples](https://atlassian.design/components/empty-state/examples)「You don't have access to this work item … Request access」)+ Carbon error-management scenario([empty states pattern](https://www.carbondesignsystem.com/building-blocks/core/patterns/empty-states)「Permissions issue … Suggest steps or process to request access.」);皆 2026-11-05 讀回）；整頁 403 同樣必附這類 action，組法見「整頁狀態」
+- **整頁 404 / 403**:打開的那一頁不存在、或沒有權限看 —— Empty 放在 AppShell 主內容區正中,見「整頁狀態」
 
 ## 何時不用
 
@@ -39,7 +40,6 @@ benchmark:
 | Loading 中(資料還沒來) | `Skeleton` / `CircularProgress` | Empty 是「確定沒有」,Loading 是「還沒確定」 |
 | 下拉選單 0 筆 / 搜尋無結果(SelectMenu / Select / Combobox / PeoplePicker / Command) | 一列 `MenuItem message`(`CommandEmpty` own) | 選單裡的 0 筆只是一句提示,沒有解釋、圖示與動作;走選項的列幾何、與 1 筆等高(`../SelectMenu/select-menu.spec.md`「Empty state」,2026-09-08) |
 | 錯誤 / 失敗狀態 | `Alert` + 重試按鈕 | Error 需要明確告知「發生什麼問題」+ 解決途徑，Empty 是中性提示 |
-| 整頁級別的 404 / 無權限 | 專屬錯誤頁面 | Empty 是容器內提示，整頁錯誤需要完整頁面佈局 |
 | Disabled 狀態 | 禁用元件本身 | Empty 是「沒東西」，disabled 是「不能操作」 |
 
 ```
@@ -88,11 +88,35 @@ Empty 只管**水平居中**。垂直定位由 consumer 的容器決定:
 | **有框**(Table / Dialog / Card,有明確 border 或 shadow 包圍) | **垂直置中** | 容器 `flex items-center justify-center min-h-[...]` |
 | **無框**(Page section,沒有外框線) | **頂部對齊 + generous padding** | 容器 `py-[calc(var(--layout-space-bottom)*2)]` |
 
+**例外:整頁狀態**(404 / 403,Empty 是 AppShell 主內容區裡唯一的東西)—— 主內容區沒有外框,但照 user 2026-11-26 的選擇垂直置中,不照上表「無框 → 頂部對齊」;見下方「整頁狀態」。
+
 ### 為什麼有框置中、無框不置中
 
 有框容器有明確的視覺邊界——使用者知道「這個框裡面是空的」。居中把 Empty 放在框的視覺重心,安定。
 
 無框容器沒有邊界——如果居中,Empty 會脫離頁面視覺中心,使用者不知道空的範圍有多大。頂部對齊 + `calc(var(--layout-space-bottom) * 2)` padding 讓 Empty 有固定位置,用留白空間本身創造「這裡是空的」的視覺重量,取代框線的作用。
+
+## 整頁狀態(404 / 403)
+
+打開的那一頁不存在(404)、或使用者沒有權限看(403)時,不另建元件,用 Empty 放在 AppShell 主內容區。出處:user 2026-11-26 在第六輪決策卡 C22 選 A,選項原文(逐字)「A:不建元件;Empty 可用在整頁 + AppShell 範例,狀態置中」(意見欄空白)。
+
+1. **位置**:AppShell 主內容區(`../AppShell/app-shell.spec.md`「Main slot」),導覽照常 —— 全域標頭、Menu、帳號入口都在,使用者可以直接去別的地方。
+2. **標題包 h1**:不傳 Empty 的 `title`,在外層自包 `<h1>`(同「A11y 預設」的 Title slot heading level);這是這一頁唯一的 h1。
+3. **一定附動作**(同「禁止事項」整頁 Empty 但無 action):404 → 回首頁或上一頁;403 → 申請權限 / 聯絡擁有者(同「何時用」容器級無權限提示那一條的 request-access 規則)。
+4. **在主內容區垂直置中**:user 的選擇(上方出處「狀態置中」);做法照 `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 2「適用範圍與量法三點」(3)(例:空狀態 / 結果頁)—— 標頭底 → 內容頂 = 內容底 → 主內容區底,上下不給「結論留白」,左右 `loose`。「垂直定位」表「無框 → 頂部對齊」那一列不適用這裡(該表下方的例外)。
+
+【AI 推導 2026-11-26】以下是照上面四點與既有規格推出來的畫面細節,範例照這樣做、等 user 看預覽:
+- 主內容欄不放本頁標頭(那一頁不存在 / 看不到,沒有本頁的標題與動作可放);範例用 `primary-header` 版面,側欄開關住在全域標頭裡,拿掉本頁標頭不影響導覽。
+- h1 的外觀 = Empty 標題那一格(「Typography」Title:body-lg + medium / foreground),h1 → 說明的距離 = Empty 標題 → 說明的同一個 token(`--item-gap-label-desc-reading-lg`)—— 標題拿到外層,畫面仍是 Empty 的樣子。
+- 不放圖示:Empty 的圖示畫在 Empty 裡、標題上方;標題拿到外層後圖示會排到標題下面,順序顛倒,所以範例不放。要不要圖示、圖示怎麼放,尚未定。
+
+**500(載入失敗)尚未定**:「何時不用」的「錯誤 / 失敗狀態 → Alert」管的是容器內;整頁失敗要用什麼版面,本次沒有決定。
+
+世界級:Atlassian EmptyState 把整頁與錯誤頁放進同一個空狀態元件([usage](https://atlassian.design/components/empty-state/usage)「An empty state can appear as a full screen message or within panels, tables, and other containers.」「Some error messages, such as not found errors, may also fit this component layout.」);Adobe Spectrum IllustratedMessage 同樣兼顧空狀態與錯誤頁([IllustratedMessage](https://react-spectrum.adobe.com/react-spectrum/IllustratedMessage.html)「An IllustratedMessage displays an illustration and a message, usually for an empty state or an error page.」,範例「Error 404: Page not found」「Error 403: Access not allowed」);皆 2026-11-26 讀回。
+
+範例:AppShell 展示「整頁 404 — 打開已刪除的專案連結」「整頁 403 — 沒有權限的私人專案」(`../AppShell/app-shell.stories.tsx#UnreachablePageShell`)。閘:`scripts/header-first-gap-invariant.mjs` 的 `appshell-full-page-404` / `appshell-full-page-403`(在主內容區正中、頁面唯一的 h1 = 狀態標題、有動作)。
+
+**來源說明(2026-11-26 更正)**:2026-11-26 前本規格寫「整頁級別的 404 / 無權限 → 專屬錯誤頁面」,並在「何時用」容器級那一行寫「整頁級 403 / 404 仍禁用」。DS 從來沒有「專屬錯誤頁面」這個東西。整頁那句最早在 2026-04-18 的 commit 02f4141b 由 AI 寫入(commit 訊息「新增 何時不用 table(Skeleton loading / Alert error / 專屬 404 / …)」),沒有 user 原話;容器級那一行標的「2026-07-04 Q7 拍板」只涵蓋容器級(Q7 題目只問容器級可否用 Empty),「整頁級仍禁用」是 2026-07-05 commit 7e69aad7 一起寫進來的 AI 建議文字,不是拍板內容。之前的判讀把整頁禁令說成 2026-07-04 拍板,是誤植。
 
 ## 邊界案例
 
@@ -157,6 +181,7 @@ Empty primitive 不自帶 role；consumer 擁有 table、search region 或 initi
 |---|---|---|
 | DataTable | 外層 `<div className="flex-1 flex items-center justify-center py-12">` 包 `<Empty description={emptyState} />`(有框置中) | wrapper div(非 Empty className) |
 | AgentPanel 新對話(DS 元件本身沒有空狀態容器,包層住在範例輔助檔 `stories-helpers/scene/agent-demo.tsx` 的 `DemoConversation`) | 外層 `<div className="flex min-h-0 flex-1 items-center justify-center px-[var(--layout-space-loose)]">` 包 `<Empty icon={<AgentLogo state="attract" size={48} />} title description />`(有框置中:在標頭與輸入框之間的可用範圍正中) | wrapper div(非 Empty className):只給左右 `--layout-space-loose`,上下不給 —— 垂直置中的狀態不套規則 2 / 4 的上下距離(user 2026-11-14 在 A5 成品頁的留言 ②,逐字住 `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 2「適用範圍與量法三點」(3);面板算有框、左右為什麼留著【AI 推導】住 `../AgentPanel/agent-panel.spec.md`「附:空狀態」)。【更正 2026-11-14】2026-11-13(A5)包層補過上 `tight` / 下 `bottom`,已拿掉;再之前包層沒有內距 |
+| AppShell 整頁 404 / 403(範例 `../AppShell/app-shell.stories.tsx#FullPageState`) | 主內容區裡撐滿高度的包層 `<div className="flex h-full flex-col items-center justify-center px-[var(--layout-space-loose)]">` 包 `<h1>` + `<Empty description action className="mt-[var(--item-gap-label-desc-reading-lg)]" />`(見「整頁狀態」) | wrapper div:只給左右 `--layout-space-loose`,上下不給(垂直置中的狀態,同 AgentPanel 那一列) |
 | SelectMenu | **不再消費 Empty**(2026-09-08):選單訊息列走 `MenuItem message`,由 `CommandEmpty` own(`../SelectMenu/select-menu.spec.md`「Empty state」);spinner-only loading 走 `CommandLoading` 訊息列(列圖示尺寸轉圈) | —(無 Empty) |
 | Select / Combobox / PeoplePicker | 透過 SelectMenu → 同上,不消費 Empty | — |
 
@@ -185,6 +210,7 @@ Empty 是 **pure layout primitive**(排列 icon / title / description / action �
 ## 相關
 
 - `../Avatar/avatar.tsx` — Icon 渲染實作
+- `../AppShell/app-shell.spec.md` — 整頁 404 / 403 的位置(主內容區;見本檔「整頁狀態」)
 - `../CircularProgress/circular-progress.spec.md` — Loading 狀態(非「空」而是「還沒來」;spinner-only loading 用具 accessible name 的 `role="status"` host)
 - `../Alert/alert.spec.md` — Error 狀態（非中性空，是需處理的問題）
 - `../FileUpload/file-upload.spec.md` — **本元件 consumer**:FileUpload 預設 children 直接渲染 `<Empty icon={Upload} title description />`,共用 icon+title+desc SSOT

@@ -10,7 +10,7 @@
  *           頂距本身對不對是規則 2 的事,由原閘判)。容器被 max-height 卡住而在捲動、高度寫死、被 min-height 撐住(規則 4 表沒逐字寫的三種)
  *           → 依規則 4「沒寫到的三種容器」(Note 的理由推導,【AI 推導】):不擋頁面、高度不是視窗 / 版面欄給的 = 與頂部同值。
  *           2026-11-11 前這三種一律紅「待規格」。
- *           原閘登記 centered 的格(內容在撐滿的容器裡垂直置中,目前只有 AgentPanel 新對話空白頁):不套規則 4 的底 —— 垂直置中的狀態不是從上往下排到底的內容,
+ *           原閘登記 centered 的格(內容在撐滿的容器裡垂直置中:AgentPanel 新對話空白頁、2026-11-26 起 AppShell 整頁 404 / 403):不套規則 4 的底 —— 垂直置中的狀態不是從上往下排到底的內容,
  *           不需要表示「內容結束了」的 bottom(user 2026-11-14 在 A5 成品頁的留言 ②);上下在不在可用範圍正中由原閘判。左右照舊 = loose。
  *           【更正 2026-11-14】2026-11-13(A5)這一格期望底 = bottom 48(包層補了 pb-bottom),把空狀態往上推了 18 / 16px;留言 ② 問垂直置中的狀態為何還要 bottom(問句),AI 評估同意,改成不比底。
  *         盤點 = 原閘的 CASES(同一份,import;不在盤點裡的理由同原閘 NOT_COVERED),本檔只補每處的 SIDES 登記
@@ -100,6 +100,10 @@ export const SIDES = {
   'agentpanel-chat-user-first': { last: 'element', box: 'fill', pattern: 'AB' },
   'agentpanel-chat-agent-first': { last: 'element', box: 'fill', pattern: 'AB' },
   'agentpanel-new-conversation': { last: 'element', box: 'fill', pattern: 'AB' },
+  // 整頁 404 / 403(2026-11-26;empty.spec.md「整頁狀態」):主內容區撐滿、狀態在正中 → 底不套規則 4(原閘 centered),左右由撐滿的包層給 loose(規則 1);
+  // 最後一個東西是動作鈕(控件 = element)。原閘用 CASES body 指名主內容區(全域標頭的下一塊是整列),本檔量同一塊。
+  'appshell-full-page-404': { last: 'element', box: 'fill', pattern: 'AB' },
+  'appshell-full-page-403': { last: 'element', box: 'fill', pattern: 'AB' },
 }
 
 /**
@@ -222,7 +226,12 @@ function selftest() {
   // 置中的格(原閘 centered;user 2026-11-14 在 A5 成品頁的留言 ②):底不套規則 4 —— 修後實量 0 綠;A5 建置的 48 也不在本閘紅(上下由原閘驗在可用範圍正中);
   // 左右照舊(改 tight 必紅);底沒量到照樣儀器失效。對照組:拿掉 centered(= A5 的判法:撐滿 → 第 1 列 48)→ 修後的底 0 必紅「應 48」,證明這一支真的在起作用
   const CENTERED = CASES.filter((c) => c.centered).map((c) => c.id)
-  expect(CENTERED.length === 1 && CENTERED[0] === 'agentpanel-new-conversation', `置中的格應只有新對話空白頁一格(與原閘同一份登記),實得 ${CENTERED.join(', ')}`)
+  expect(JSON.stringify([...CENTERED].sort()) === JSON.stringify(['agentpanel-new-conversation', 'appshell-full-page-403', 'appshell-full-page-404']), `置中的格應是新對話空白頁與整頁 404 / 403(與原閘同一份登記),實得 ${CENTERED.join(', ')}`)
+  // 整頁 404 / 403(2026-11-26):同一套置中判法 —— 底 0 / 48 都不在本閘紅、左改 tight 紅
+  for (const id of CENTERED.filter((x) => x !== 'agentpanel-new-conversation')) {
+    expect(judge(DENSITIES.map((d) => row(id, d, { bottom: 0 }))).length === 0, `${id} 置中的格底 0 應綠`)
+    expect(judge([row(id, 'md', { left: 12 })]).some((s) => s.includes('左 = 12px')), `${id} 左改 tight 應紅`)
+  }
   expect(judge(DENSITIES.map((d) => row(CENTERED[0], d, { bottom: 0 }))).length === 0, `置中的格底 0 應綠,實得 ${JSON.stringify(judge(DENSITIES.map((d) => row(CENTERED[0], d, { bottom: 0 }))))}`)
   expect(judge(DENSITIES.map((d) => row(CENTERED[0], d, { bottom: 48 }))).length === 0, '置中的格底 48 不在本閘紅(上下由原閘驗在可用範圍正中)')
   expect(judge([row(CENTERED[0], 'md', { left: 12 })]).some((s) => s.includes('左 = 12px')), '置中的格左右仍照規則 1 / 6:左改 tight 應紅')
@@ -300,12 +309,12 @@ function selftest() {
  * 頁面函式(依賴 window.__layoutKit = 原閘 pageKit):量標頭之後那塊的左 / 右 / 底結構內距、最後 / 第一個東西的特徵、容器種類、pattern。
  * scroll = 'top'(預設):先把那一塊裡捲動過的容器捲回頂端再找東西、量位置(同原閘 probeFirst);'keep' 只給對照用的腳本(不捲)。量完讀回 scrolled(judge 要求是 0)。
  */
-export const probeSides = ({ header, headerText = null, nth = 0, followStep, scroll = 'top' }) => {
+export const probeSides = ({ header, headerText = null, nth = 0, followStep, scroll = 'top', body: bodySel = null }) => {
   const K = window.__layoutKit
   const h = K.findHeader(header, headerText, nth)
   if (!h) return { err: `找不到標頭 ${header}${headerText ? `(含「${headerText}」)` : ''}` }
-  const body = K.findBody(h)
-  if (!body) return { err: '標頭之後沒有內容' }
+  const body = K.bodyFor(h, bodySel) // 原閘 CASES 寫了 body 就量指名的那一塊(整頁狀態:主內容區),沒寫照 findBody
+  if (!body) return { err: bodySel ? `找不到指名的那一塊 ${bodySel}` : '標頭之後沒有內容' }
   const scrolledBefore = scroll === 'keep' ? null : K.scrollBody(body, scroll)
   const things = K.collectThings(body)
   if (!things.length) return { err: '標頭之後找不到看得見的內容' }
@@ -482,7 +491,7 @@ export async function measureCase(page, origin, c, density, { scroll = 'top' } =
   const opened = await openCase(page, origin, c, density)
   if (opened) return opened
   await installPageKit(page)
-  const r = await page.evaluate(probeSides, { header: c.header, headerText: c.headerText ?? null, nth: c.nth ?? 0, followStep: FOLLOW_STEP, scroll })
+  const r = await page.evaluate(probeSides, { header: c.header, headerText: c.headerText ?? null, nth: c.nth ?? 0, followStep: FOLLOW_STEP, scroll, body: c.body ?? null })
   if (r.err) return r
   const { lastF, firstF, ...rest } = r
   return { ...rest, box: classifyBox(rest), last: classifyFirst(lastF), first: classifyFirst(firstF), centered: c.centered }

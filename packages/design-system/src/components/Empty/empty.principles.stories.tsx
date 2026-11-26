@@ -50,6 +50,13 @@ export const UsageGuidance: Story = {
             <li>
               <StoryLink kind="Design System/Components/Empty/展示" name="空清單">空清單</StoryLink>
             </li>
+            {/* 整頁 404 / 403(user 2026-11-26 第六輪決策卡 C22 選 A,empty.spec.md「整頁狀態」):範例住 AppShell,Empty 放在主內容區正中 */}
+            <li>
+              <StoryLink kind="Design System/Components/AppShell/展示" name="整頁 404 — 打開已刪除的專案連結">整頁 404:打開已刪除的專案連結</StoryLink>
+            </li>
+            <li>
+              <StoryLink kind="Design System/Components/AppShell/展示" name="整頁 403 — 沒有權限的私人專案">整頁 403:沒有權限的私人專案</StoryLink>
+            </li>
           </TutorialList>
         </div>
       </UsageSection>
@@ -74,13 +81,6 @@ export const UsageGuidance: Story = {
             />
           </Example>
           <ExampleCaption warn>↑ 錯誤用 Empty 傳達不出「這是問題」的緊迫感 → 應改用 Alert variant=error</ExampleCaption>
-        </TutorialRule>
-
-        <TutorialRule
-          title="❌ 不用 Empty 做整頁級 404 / 無權限"
-          note="整頁錯誤需要完整頁面佈局(navigation + hero 錯誤訊息)。Empty 是容器內提示。GitHub 的 404 頁是整頁設計"
-        >
-          <ExampleCaption warn>整頁 404 → 專屬錯誤頁面設計,Empty 只用容器內</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule

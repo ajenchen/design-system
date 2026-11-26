@@ -14,7 +14,10 @@
  *   紅: 任一處「標頭底 → 第一個內容頂」與該角色的期望值差 > 0.5px → 指名 case / 密度 / 角色 / 數字並 exit 1;
  *       從 DOM 判出的角色 ≠ 盤點時登記的角色 → 紅(範例換了第一個東西,要重新照規則 2 推一次,不准默默沿用舊頂距)。
  *       登記 topException 的格(目前只有對話區「代理文字在前」一格):頂距期望值改用例外寫的 token,紅燈訊息附例外的理由;角色仍照登記比對。
- *       登記 centered 的格(目前只有新對話空白頁):不比規則 2 的值,改比「標頭底 → 內容頂」與「內容底 → 下一塊頂」差 > 0.5px → 紅(不在可用範圍正中)。
+ *       登記 centered 的格(新對話空白頁、整頁 404 / 403):不比規則 2 的值,改比「標頭底 → 內容頂」與「內容底 → 下一塊頂」差 > 0.5px → 紅(不在可用範圍正中)。
+ *       整頁 404 / 403(2026-11-26 加;user 第六輪決策卡 C22 選 A,選項原文「A:不建元件;Empty 可用在整頁 + AppShell 範例,狀態置中」;empty.spec.md「整頁狀態」):
+ *       主內容區之後沒有下一塊 → 「下一塊頂」改量主內容區底(availableEnd);另驗頁面上看得見的 h1 只有一個、在主內容區裡、字 = 狀態標題,
+ *       主內容區裡看得到那顆動作鈕 —— 少了任一樣紅(CASES fullPage)。這兩則沒有本頁標頭,標頭 = 全域標頭,用 CASES body 指名主內容區。
  *       量的當下第一個內容所在的捲動區沒有捲在最上面(捲回頂端後讀回的捲動位置不是 0)→ 儀器失效,那一格不再往下判 —— 不拿被捲走的距離指控產品(見量法)。
  *       歷史紅燈(c2fc683d 建置實測):Sidebar「混合內容」資料夾 → 檔案表格、檔案 → 版本紀錄表格,第一個是有框的 DataTable
  *       (bounded),頂距卻是 tight(md 12 / lg 16)—— 抄旁邊 TableSection(第一個是區段標題 = element = tight)沒照角色重推。
@@ -53,6 +56,10 @@
  *         「代理文字在前」(例外 loose)頂距是 tight 必紅且訊息附例外理由、例外只准登記一格且要寫理由、
  *         空白頁不在可用範圍正中(A5 建置以本閘視窗 1280×900 實測 標頭底 → 空狀態頂 308.5 / 300.5、空狀態底 → 輸入框頂 344.5 / 332.5)必紅、
  *         沒量到 / 距離 NaN / 置中的下一段量不到 / 密度沒套上 / 沒捲在最上面 / 沒讀到捲動位置判儀器失效、修後形狀必綠;(b) classifyFirst 逐列;
+ *         整頁 404 / 403 每格 × 兩密度:修後綠、頂部對齊(empty.spec.md「垂直定位」無框那一列的做法)紅、第二個 h1 / 沒有 h1 / h1 不在主內容區 / 字不對紅、
+ *         拿掉動作紅、h1 / 動作沒量到與主內容區底沒量到判儀器失效;
+ *         (d) 整頁狀態對照(真建置、真瀏覽器;(c) 之後跑):整頁 404 / 403 兩格 @md,先量現況 → 綠;同一頁注入一行 CSS 讓狀態貼頂(justify-content: flex-start)
+ *         → 紅「在可用範圍正中」;把 h1 換成 div → 紅「唯一的 h1」;藏起動作鈕 → 紅「一定附動作」(每一步量完還原,證明量具看得到這三件事)。
  *         (c) 對話溢出對照(真建置、真瀏覽器;(a)(b) 先過才跑;沒有建置 / 起不了瀏覽器照共用政策印缺前置 / 略過標記):對話區兩格 × 兩密度,
  *         把視窗高縮到對話內容真的比捲動區高(從 300 往下試,量到捲得動才算數;都造不出溢出 = 對照組不成立 = selftest 失敗 —— 不靠範例現在剛好多長),
  *         同一頁量兩次:不先捲(把對話捲到底,= 進頁自動捲到底的那個狀態)→ 必須判成儀器失效「對話沒有捲在最上面」而且沒有任何一行指控產品;
@@ -83,7 +90,11 @@ const AGENT_PANEL_HEADER = '[data-agent-panel-mode] header'
  * steps = 量之前要點到的狀態(click = 樹列 / 按鈕的可見文字,或 clickSelector),點完等 waitFor 那個元素出現;
  * role = 盤點時照規則 2 判的角色;src = 給頂部內距的那一行(repo 相對路徑,也是新鮮度守衛的來源清單)。
  * centered = 內容在撐滿的容器裡垂直置中的格:不比規則 2 的值,改驗「標頭底 → 內容頂」=「內容底 → 下一塊頂」(在可用範圍正中;量法見檔頭);
- *   nextBlock = 那個「下一塊」在訊息裡的稱呼(例:輸入框)。
+ *   nextBlock = 那個「下一塊」在訊息裡的稱呼(例:輸入框)。availableEnd = 'body':那一塊之後沒有下一塊(例:主內容區),可用範圍到那一塊的內容框底 ——
+ *   「內容底 → 下一塊頂」改量「內容底 → 那一塊底」。
+ * body = 標頭之後那一塊的選擇器(沒寫 = pageKit.findBody 找同層下一個看得見的兄弟)。只給「標頭的下一塊不是內容區」的格(整頁狀態:全域標頭的下一塊是 Menu + 主內容欄整列)。
+ * fullPage = { heading, action }:整頁 404 / 403(empty.spec.md「整頁狀態」)—— 頁面上看得見的 h1 只能有一個、在那一塊裡、字 = heading;
+ *   那一塊裡要看得到字 = action 的按鈕 / 連結。少了任一樣 → 紅(產品,不是儀器失效);沒量到 → 儀器失效。
  * topException = { want: 'loose' | 'tight', why }:頂距不照角色查規則 2 表、改用這個 token 的格(理由寫在 why,紅燈訊息會印出來);角色仍照 role 比對。
  *   只准登記真的「容器只有一個值、不知道第一個是誰」的格(目前只有對話區「代理文字在前」一格,selftest 鎖數量)。
  * scroller = 第一個內容所在的捲動區在訊息裡怎麼稱呼(沒捲在最上面時點名用;沒寫 = 「第一個內容所在的捲動區」)。寫了這一欄的格 = 進頁會自己捲動的格
@@ -137,6 +148,11 @@ export const CASES = [
   { id: 'agentpanel-chat-agent-first', story: `${C}agentpanel-展示--decision-summary-in-flow`, header: AGENT_PANEL_HEADER, waitFor: '[role="log"] > *', role: 'element', topException: { want: 'loose', why: '對話區只有一個上內距值(agent-panel.tsx#AgentConversation),容器不知道第一則是誰 —— 第一則是我方氣泡時照規則 2 表 = loose,代理先開口也是同一個值(layoutSpace.spec.md 規則 2「適用範圍與量法三點」(1)「容器只有一個上內距、標頭底下第一個東西隨內容換的」【AI 推導 2026-11-14】)' }, scroller: '對話', src: `${DS}components/AgentPanel/agent-panel.tsx#AgentConversation`, label: 'AgentPanel 對話區 → 第一則是代理文字(element;例外:頂 = 對話區唯一的上內距 loose)' },
   // 新對話空白頁:空狀態在撐滿的包層裡垂直置中 → 不套規則 2 / 4 的上下,驗「在可用範圍正中」(centered,量法見檔頭;user 2026-11-14 在 A5 成品頁的留言 ②);
   // 等的是包層裡的招喚態標誌本身(不認文案)
+  // 整頁 404 / 403(2026-11-26;user 第六輪決策卡 C22 選 A,選項原文「A:不建元件;Empty 可用在整頁 + AppShell 範例,狀態置中」;empty.spec.md「整頁狀態」):
+  // 狀態在主內容區正中 → centered。這兩則沒有本頁標頭(empty.spec.md「整頁狀態」【AI 推導】),標頭 = 全域標頭;全域標頭的下一塊是整列(Menu + 主內容欄),
+  // 所以用 body 指名主內容區;主內容區之後沒有下一塊 → 可用範圍到主內容區底(availableEnd: 'body')。fullPage:頁面唯一的 h1 = 狀態標題、在主內容區裡;主內容區裡有這顆動作鈕。
+  { id: 'appshell-full-page-404', story: `${C}appshell-展示--full-page-not-found`, header: 'header', headerText: 'Acme Inc', body: '#app-shell-main', waitFor: '#app-shell-main h1', role: 'element', centered: true, availableEnd: 'body', nextBlock: '主內容區底', fullPage: { heading: '找不到這個專案', action: '回到 Dashboard' }, src: `${DS}components/AppShell/app-shell.stories.tsx#FullPageState`, label: 'AppShell 整頁 404 → 狀態(在主內容區正中:全域標頭底 → 標題頂 = 動作鈕底 → 主內容區底;唯一的 h1 = 狀態標題;有「回到 Dashboard」)' },
+  { id: 'appshell-full-page-403', story: `${C}appshell-展示--full-page-no-access`, header: 'header', headerText: 'Acme Inc', body: '#app-shell-main', waitFor: '#app-shell-main h1', role: 'element', centered: true, availableEnd: 'body', nextBlock: '主內容區底', fullPage: { heading: '你沒有這個專案的存取權限', action: '申請存取' }, src: `${DS}components/AppShell/app-shell.stories.tsx#FullPageState`, label: 'AppShell 整頁 403 → 狀態(在主內容區正中;唯一的 h1 = 狀態標題;有「申請存取」)' },
   { id: 'agentpanel-new-conversation', story: `${C}agentpanel-展示--new-conversation`, header: AGENT_PANEL_HEADER, waitFor: `${AGENT_PANEL_HEADER} + div svg[role="img"]`, role: 'element', centered: true, nextBlock: '輸入框', src: `${DS}stories-helpers/scene/agent-demo.tsx#DemoConversation`, label: 'AgentPanel 新對話空白頁 → 空狀態(在可用範圍正中:標頭底 → 空狀態頂 = 空狀態底 → 輸入框頂)' },
 ]
 
@@ -198,6 +214,16 @@ export function judge(rows) {
       const why = r.topException ? `例外:${r.topException.why}` : `規則 2:${RULE[r.role]}`
       if (Math.abs(r.gap - want) > TOL) failures.push(`${where} 標頭底 → 第一個內容頂 = ${r.gap}px,應 ${want}(${why};第一個內容 = ${r.first ?? '?'})`)
     }
+    // 整頁 404 / 403(empty.spec.md「整頁狀態」第 2、3 點;user 2026-11-26 第六輪決策卡 C22 選 A):唯一的 h1 = 狀態標題、在主內容區裡;一定附動作
+    if (r.fullPage) {
+      const got = r.fullPageGot
+      if (!got || !Array.isArray(got.h1s) || !Array.isArray(got.actions)) failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 整頁狀態沒量到頁面上的 h1 / 主內容區裡的動作`)
+      else {
+        const h = got.h1s
+        if (!(h.length === 1 && h[0].inBody && h[0].text === r.fullPage.heading)) failures.push(`${where} 整頁狀態的標題要是這一頁唯一的 h1、在主內容區裡、字 =「${r.fullPage.heading}」(empty.spec.md「整頁狀態」第 2 點:不傳 Empty 的 title、外層自包 h1),量到看得見的 h1 = ${JSON.stringify(h)}`)
+        if (!got.actions.includes(r.fullPage.action)) failures.push(`${where} 整頁狀態一定附動作「${r.fullPage.action}」(empty.spec.md「整頁狀態」第 3 點),主內容區裡看得見的按鈕 / 連結 = ${JSON.stringify(got.actions)}`)
+      }
+    }
     // 主區只有一張表、不放區段標題的頁(app-shell.spec.md「Main 內塞什麼」):表格的讀屏名稱是那個標題唯一剩下的地方 —— 拿掉不能沒人知道
     if (r.tableName && !(r.tableNameGot ?? []).includes(r.tableName)) failures.push(`${where} 主區表格的讀屏名稱(aria-label)= ${JSON.stringify(r.tableNameGot ?? [])},應含「${r.tableName}」—— 主區不放區段標題後,表格的名字只剩 aria-label`)
   }
@@ -217,7 +243,9 @@ function selftest() {
   const row = (id, declared, role, density, gap) => ({ id, density, declared, role, gap, ...T[density], first: 'x', scrolled: 0, topException: CASES.find((c) => c.id === id)?.topException })
   // 置中的格:量測另帶「最後一個內容底 → 下一塊頂」(after;修後 = gap,在可用範圍正中)
   const centeredRow = (id, density, gap, after = gap) => ({ ...row(id, 'element', 'element', density, gap), centered: true, after, afterWhat: '輸入框' })
-  const good = CASES.flatMap((c) => DENSITIES.map((d) => (c.centered ? centeredRow(c.id, d, 326.5) :row(c.id, c.role, c.role, d, wantGap({ ...c, ...T[d] })))))
+  // 整頁狀態的格(CASES fullPage):量測另帶頁面上看得見的 h1 與主內容區裡的動作(修後 = 唯一的 h1 是狀態標題、動作在)
+  const fullGot = (c, over = {}) => ({ h1s: [{ text: c.fullPage.heading, inBody: true }], actions: [c.fullPage.action], ...over })
+  const good = CASES.flatMap((c) => DENSITIES.map((d) => (c.centered ? { ...centeredRow(c.id, d, 326.5), ...(c.fullPage ? { fullPage: c.fullPage, fullPageGot: fullGot(c) } : {}) } : row(c.id, c.role, c.role, d, wantGap({ ...c, ...T[d] })))))
   expect(judge(good).length === 0, `修後形狀應綠,實得 ${JSON.stringify(judge(good))}`)
   expect(new Set(CASES.map((c) => c.id)).size === CASES.length, 'CASES id 不得重複')
   // 「透明」的判定表(2026-11-14):透明度 0 的各種寫法都算透明;結尾剛好是 0 的不透明色、滑過時的淡底色(透明度 0.02)不算
@@ -258,7 +286,9 @@ function selftest() {
   // 空狀態底 → 輸入框頂 344.5 / 332.5,兩密度都必紅(不是儀器失效);修後在可用範圍正中(326.5 / 326.5、316.5 / 316.5)綠;內容貼頂必紅;
   // 下一段量不到 / 缺 → 儀器失效;登記必須是 centered
   const EMPTY = 'agentpanel-new-conversation'
-  expect(caseOf(EMPTY)?.centered === true && CASES.filter((c) => c.centered).length === 1, `置中的格目前只有 ${EMPTY} 一處(新增置中的格要在這裡補對照)`)
+  const FULL = ['appshell-full-page-404', 'appshell-full-page-403']
+  const centeredIds = CASES.filter((c) => c.centered).map((c) => c.id).sort()
+  expect(JSON.stringify(centeredIds) === JSON.stringify([EMPTY, ...FULL].sort()), `置中的格目前只有 ${EMPTY} 與整頁 404 / 403 兩格(新增置中的格要在這裡補對照),實得 ${centeredIds.join(', ')}`)
   const a5Empty = judge([centeredRow(EMPTY, 'md', 308.5, 344.5), centeredRow(EMPTY, 'lg', 300.5, 332.5)])
   expect(a5Empty.length === 2 && a5Empty.every((s) => s.includes('在可用範圍正中') && !s.includes(INSTRUMENT_FAIL_MARKER)) && a5Empty.some((s) => s.includes('差 -36')) && a5Empty.some((s) => s.includes('差 -32')),`空白頁不在可用範圍正中(A5 建置實測)應兩密度都紅,實得 ${JSON.stringify(a5Empty)}`)
   expect(judge([centeredRow(EMPTY, 'md', 326.5), centeredRow(EMPTY, 'lg', 316.5)]).length === 0, '空白頁在可用範圍正中(上下相等)應綠')
@@ -266,6 +296,29 @@ function selftest() {
   expect(stuckTop.length === 1 && stuckTop[0].includes('在可用範圍正中') && !stuckTop[0].includes(INSTRUMENT_FAIL_MARKER), `登記置中但內容貼頂應紅(不是儀器失效),實得 ${JSON.stringify(stuckTop)}`)
   expect(judge([centeredRow(EMPTY, 'md', 326.5, NaN)]).some((s) => s.includes(INSTRUMENT_FAIL_MARKER) && s.includes('置中')), '置中的格「內容底 → 下一塊頂」沒量到應判儀器失效')
   expect(judge([{ ...row(EMPTY, 'element', 'element', 'md', 326.5), centered: true }]).some((s) => s.includes(INSTRUMENT_FAIL_MARKER)), '置中的格缺 after 應判儀器失效(不准默默當成一般格)')
+  // 整頁 404 / 403(2026-11-26,empty.spec.md「整頁狀態」;user 第六輪決策卡 C22 選 A「…狀態置中」):每一格 × 兩密度的對照組 ——
+  //   修後(上下相等、唯一的 h1 = 狀態標題、動作在)綠;照 empty.spec.md「垂直定位」無框那一列頂部對齊(上 = bottom × 2 = 96、下 = 剩下的)紅「在可用範圍正中」;
+  //   本頁標頭放回來(第二個 h1)、標題改傳 Empty 的 title(沒有 h1)、h1 跑出主內容區、h1 字不對 → 紅「唯一的 h1」;拿掉動作 → 紅「一定附動作」;
+  //   h1 / 動作沒量到 → 儀器失效;登記必須是 centered + body + availableEnd 'body'
+  const fullCases = CASES.filter((c) => c.fullPage)
+  expect(JSON.stringify(fullCases.map((c) => c.id).sort()) === JSON.stringify([...FULL].sort()) && fullCases.every((c) => c.centered && c.body === '#app-shell-main' && c.availableEnd === 'body' && c.fullPage.heading && c.fullPage.action),
+    `整頁狀態的格應是 ${FULL.join(' / ')},且登記 centered + body #app-shell-main + availableEnd body + heading / action,實得 ${JSON.stringify(fullCases.map((c) => c.id))}`)
+  for (const c of fullCases) for (const d of DENSITIES) {
+    const fr = (gap, after, got) => ({ ...centeredRow(c.id, d, gap, after), afterWhat: '那一塊的底', fullPage: c.fullPage, fullPageGot: got })
+    const where = `${c.id} @${d}`
+    expect(judge([fr(300, 300, fullGot(c))]).length === 0, `${where} 修後(在主內容區正中、唯一的 h1、有動作)應綠,實得 ${JSON.stringify(judge([fr(300, 300, fullGot(c))]))}`)
+    const top = judge([fr(96, 504, fullGot(c))])
+    expect(top.length === 1 && top[0].includes('在可用範圍正中') && !top[0].includes(INSTRUMENT_FAIL_MARKER), `${where} 頂部對齊(無框那一列的做法)應紅「在可用範圍正中」,實得 ${JSON.stringify(top)}`)
+    const twoH1 = judge([fr(300, 300, fullGot(c, { h1s: [{ text: '專案', inBody: false }, { text: c.fullPage.heading, inBody: true }] }))])
+    expect(twoH1.length === 1 && twoH1[0].includes('唯一的 h1') && !twoH1[0].includes(INSTRUMENT_FAIL_MARKER), `${where} 本頁標頭放回來(第二個 h1)應紅「唯一的 h1」,實得 ${JSON.stringify(twoH1)}`)
+    for (const [h1s, what] of [[[], '標題改傳 Empty 的 title(沒有 h1)'], [[{ text: c.fullPage.heading, inBody: false }], 'h1 不在主內容區裡'], [[{ text: '發生錯誤', inBody: true }], 'h1 的字不是狀態標題']]) {
+      expect(judge([fr(300, 300, fullGot(c, { h1s }))]).some((s) => s.includes('唯一的 h1')), `${where} ${what} 應紅「唯一的 h1」`)
+    }
+    const noAction = judge([fr(300, 300, fullGot(c, { actions: [] }))])
+    expect(noAction.length === 1 && noAction[0].includes('一定附動作') && !noAction[0].includes(INSTRUMENT_FAIL_MARKER), `${where} 拿掉動作應紅「一定附動作」,實得 ${JSON.stringify(noAction)}`)
+    expect(judge([fr(300, 300, undefined)]).some((s) => s.includes(INSTRUMENT_FAIL_MARKER) && s.includes('整頁狀態沒量到')), `${where} h1 / 動作沒量到應判儀器失效`)
+    expect(judge([fr(300, NaN, fullGot(c))]).some((s) => s.includes(INSTRUMENT_FAIL_MARKER)), `${where} 主內容區底沒量到應判儀器失效`)
+  }
   // 角色沒量到(量測列缺 role)→ 儀器失效
   expect(judge([row('x', 'element', null, 'md', 12)]).some((s) => s.includes(INSTRUMENT_FAIL_MARKER) && s.includes('判不出角色')), '角色判不出來應判儀器失效')
   // 主區表格的讀屏名稱(2026-11-11 r3 審查:拿掉區段標題後,AppShell Active sprint(原 Insights)/ 範本兩張表的 aria-label 被拿掉不會有任何紅燈)
@@ -438,7 +491,9 @@ export const pageKit = () => {
   // 角色判法回到「有框就是 bounded」、置中格改量「在可用範圍正中」之後兩支都沒人用,拿掉(姊妹閘量左右 / 底用它自己的 insetOfBox)。
   // 標頭那一塊之後的下一塊(置中的格量「內容底 → 下一塊頂」用,例:新對話空白頁 → 輸入框):同層下一個看得見的兄弟,沒有回 null
   const nextBlock = (body) => { let s = body.nextElementSibling; while (s && !vis(s)) s = s.nextElementSibling; return s }
-  return { vis, transparent, effBg, LIST_ROLE, feat, isThing, boxedOf, topOf, bottomOf, scrollBody, scrollOffset, findHeader, findBody, collectThings, nextBlock }
+  // 標頭之後那一塊:CASES 寫了 body(選擇器)就用頁面上看得見的那一個(整頁狀態:全域標頭的下一塊是整列,指名主內容區),沒寫照 findBody
+  const bodyFor = (h, sel) => (sel ? [...document.querySelectorAll(sel)].find(vis) ?? null : findBody(h))
+  return { vis, transparent, effBg, LIST_ROLE, feat, isThing, boxedOf, topOf, bottomOf, scrollBody, scrollOffset, findHeader, findBody, bodyFor, collectThings, nextBlock }
 }
 
 /** 把 pageKit 裝進目前頁面(window.__layoutKit);每次換頁後、量之前呼叫。 */
@@ -449,12 +504,12 @@ export const installPageKit = (page) => page.evaluate(`window.__layoutKit = (${p
  * scroll = 'top'(預設):先把那一塊裡捲動過的容器捲回頂端再找東西、量位置;'keep'(不捲)/ 'end'(捲到底)只給 --selftest 對照組。
  * 不論哪一種,量完都讀回第一個內容所在各層的捲動位置(scrolled;judge 要求是 0)。
  */
-export const probeFirst = ({ header, headerText = null, nth = 0, scroll = 'top' }) => {
+export const probeFirst = ({ header, headerText = null, nth = 0, scroll = 'top', body: bodySel = null, availableEnd = null, fullPage = false }) => {
   const K = window.__layoutKit
   const h = K.findHeader(header, headerText, nth)
   if (!h) return { err: `找不到標頭 ${header}${headerText ? `(含「${headerText}」)` : ''}` }
-  const body = K.findBody(h)
-  if (!body) return { err: '標頭之後沒有內容' }
+  const body = K.bodyFor(h, bodySel)
+  if (!body) return { err: bodySel ? `找不到指名的那一塊 ${bodySel}` : '標頭之後沒有內容' }
   const scrolledBefore = scroll === 'keep' ? null : K.scrollBody(body, scroll)
   const things = K.collectThings(body)
   if (!things.length) return { err: '標頭之後找不到看得見的內容' }
@@ -468,14 +523,23 @@ export const probeFirst = ({ header, headerText = null, nth = 0, scroll = 'top' 
   // 置中的格用(CASES centered,量法見檔頭):最後一個內容(底最低的,同 topOf 的判法量底邊)→ 標頭那一塊之後的下一塊頂
   const bottomOf = (t) => K.bottomOf(t.el, t.f)
   const last = things.reduce((a, t) => (bottomOf(t) > bottomOf(a) + 0.5 ? t : a))
-  const next = K.nextBlock(body)
+  const next = availableEnd === 'body' ? null : K.nextBlock(body)
   const nextCls = next ? (next.getAttribute('class') ?? '').split(/\s+/).slice(0, 3).join(' ') : ''
+  // availableEnd = 'body'(那一塊之後沒有下一塊,例:主內容區):可用範圍到那一塊的內容框底
+  const bodyCs = getComputedStyle(body)
+  const bodyEnd = body.getBoundingClientRect().bottom - parseFloat(bodyCs.borderBottomWidth) - parseFloat(bodyCs.paddingBottom)
+  // 整頁狀態(CASES fullPage):頁面上看得見的每一個 h1(字、在不在那一塊裡)與那一塊裡看得見的按鈕 / 連結的字
+  const fullPageGot = fullPage ? {
+    h1s: [...document.querySelectorAll('h1')].filter(K.vis).map((e) => ({ text: (e.textContent ?? '').trim(), inBody: body.contains(e) })),
+    actions: [...body.querySelectorAll('button, a[href], [role="button"]')].filter(K.vis).map((e) => (e.textContent ?? '').trim()),
+  } : undefined
   // 捲完讀回:第一個內容往上到那一塊的每一層,量的當下捲在哪(scrolled)、內容比捲動區高出多少(scrollOverflow,只供列印與對照組的前提)
   const at = K.scrollOffset(pick.el, body)
   return {
     scrolled: round(at.top), scrollOverflow: round(at.overflow), scrolledBefore: scrolledBefore === null ? null : round(scrolledBefore),
-    after: next ? round(next.getBoundingClientRect().top - bottomOf(last)) : NaN,
-    afterWhat: next ? `<${next.tagName.toLowerCase()}${nextCls ? ` class="${nextCls}…"` : ''}>` : null,
+    after: availableEnd === 'body' ? round(bodyEnd - bottomOf(last)) : next ? round(next.getBoundingClientRect().top - bottomOf(last)) : NaN,
+    afterWhat: availableEnd === 'body' ? '那一塊的底' : next ? `<${next.tagName.toLowerCase()}${nextCls ? ` class="${nextCls}…"` : ''}>` : null,
+    fullPageGot,
     gap: round(pick.top - h.getBoundingClientRect().bottom), f,
     loose: v('--layout-space-loose'), tight: v('--layout-space-tight'),
     rootLoose: parseFloat(getComputedStyle(document.querySelector('#storybook-root') ?? document.documentElement).getPropertyValue('--layout-space-loose')),
@@ -513,13 +577,13 @@ export async function openCase(page, origin, c, density) {
 /** 已經開到那一處之後量一次(同一頁可以重複量;scroll 見 probeFirst —— 預設先捲回頂端,--selftest (c) 才傳 'end')。 */
 async function probeCase(page, c, { scroll = 'top' } = {}) {
   await installPageKit(page)
-  const r = await page.evaluate(probeFirst, { header: c.header, headerText: c.headerText ?? null, nth: c.nth ?? 0, scroll })
+  const r = await page.evaluate(probeFirst, { header: c.header, headerText: c.headerText ?? null, nth: c.nth ?? 0, scroll, body: c.body ?? null, availableEnd: c.availableEnd ?? null, fullPage: !!c.fullPage })
   if (r.err) return r
   // 主區不放區段標題的那幾處:表格的名字只剩 aria-label(看得見的標題拿掉了)—— 量畫面上那張表格的讀屏名稱本身,不靠 waitFor 猜
   const tableNameGot = c.tableName ? await page.evaluate((sel) => [...document.querySelectorAll(sel)].map((t) => t.getAttribute('aria-label') ?? '').filter(Boolean), c.waitFor) : undefined
   // 置中的格:judge 比「標頭底 → 內容頂」(gap)與「內容底 → 下一塊頂」(after);下一塊的稱呼優先用 CASES 寫的(例:輸入框),沒寫用 DOM 描述
   const centered = c.centered ? { centered: true, afterWhat: c.nextBlock ?? r.afterWhat } : {}
-  return { ...r, ...centered, role: classifyFirst(r.f), tableName: c.tableName, tableNameGot, scroller: c.scroller, topException: c.topException }
+  return { ...r, ...centered, role: classifyFirst(r.f), tableName: c.tableName, tableNameGot, scroller: c.scroller, topException: c.topException, fullPage: c.fullPage }
 }
 
 /** 開到盤點那一處再量(一格的完整量法;對照用的腳本可以換視窗高度後呼叫同一支)。 */
@@ -584,6 +648,57 @@ async function selftestOverflow() {
   return ok
 }
 
+/**
+ * --selftest (d):整頁狀態對照(真建置、真瀏覽器)。CASES 裡登記 fullPage 的每一格 @md:同一頁先量現況(必須綠),再各弄壞一件事量一次、量完還原 ——
+ *   注入 CSS 讓狀態在主內容區貼頂 → 必須只紅「在可用範圍正中」;h1 換成 div → 必須紅「唯一的 h1」;藏起動作鈕 → 必須紅「一定附動作」。
+ *   三種都不得判成儀器失效(量具真的看到了東西,只是產品壞了)。
+ */
+async function selftestFullPage() {
+  if (!staticArg) requireFreshStorybookBuild(STATIC, freshSources())
+  const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
+  const browser = await launchBrowserOrSkip({}, { cleanup: () => server.stop() })
+  if (!browser) { await server.stop(); return true }
+  let ok = true
+  const expect = (cond, msg) => { if (!cond) { console.error(`✗ selftest (d):${msg}`); ok = false } }
+  const plain = (list) => JSON.stringify(list).replaceAll(INSTRUMENT_FAIL_MARKER, '儀器失效')
+  try {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
+    for (const c of CASES.filter((x) => x.fullPage)) {
+      const density = 'md'
+      const where = `${c.id} @${density}`
+      const opened = await openCase(page, server.origin, c, density)
+      if (opened) { expect(false, `${where} 開不起來:${opened.err}`); continue }
+      const measureNow = async () => judge([{ id: c.id, density, declared: c.role, ...(await probeCase(page, c)) }]).filter((s) => !s.includes('密度沒套上'))
+      const now = await measureNow()
+      expect(now.length === 0, `${where} 現況應綠,實得 ${plain(now)}`)
+      // ① 狀態貼頂:主內容區裡那一層撐滿的包層改成從頂端排(= empty.spec.md「垂直定位」無框那一列的頂部對齊,少了 generous padding 也一樣不在正中)
+      await page.addStyleTag({ content: '#app-shell-main > * { justify-content: flex-start !important }' }).then((h) => h.evaluate((el) => el.setAttribute('data-selftest-d', '')))
+      const stuckTop = await measureNow()
+      expect(stuckTop.length > 0 && stuckTop.every((s) => !s.includes(INSTRUMENT_FAIL_MARKER)) && stuckTop.some((s) => s.includes('在可用範圍正中')), `${where} 狀態貼頂應紅「在可用範圍正中」、不判儀器失效,實得 ${plain(stuckTop)}`)
+      await page.evaluate(() => document.querySelectorAll('[data-selftest-d]').forEach((el) => el.remove()))
+      // ② h1 換成 div(= 標題沒有 heading 語意)
+      const h1Html = await page.evaluate(() => { const h = document.querySelector('#app-shell-main h1'); const html = h.outerHTML; const d = document.createElement('div'); d.className = h.className; d.textContent = h.textContent; d.setAttribute('data-selftest-d', ''); h.replaceWith(d); return html })
+      const noH1 = await measureNow()
+      expect(noH1.some((s) => s.includes('唯一的 h1') && !s.includes(INSTRUMENT_FAIL_MARKER)), `${where} h1 換成 div 應紅「唯一的 h1」,實得 ${plain(noH1)}`)
+      await page.evaluate((html) => { const d = document.querySelector('[data-selftest-d]'); d.outerHTML = html }, h1Html)
+      // ③ 藏起動作鈕
+      await page.evaluate(() => document.querySelectorAll('#app-shell-main button').forEach((b) => { b.style.display = 'none'; b.setAttribute('data-selftest-hidden', '') }))
+      const noAction = await measureNow()
+      expect(noAction.some((s) => s.includes('一定附動作') && !s.includes(INSTRUMENT_FAIL_MARKER)), `${where} 藏起動作鈕應紅「一定附動作」,實得 ${plain(noAction)}`)
+      await page.evaluate(() => document.querySelectorAll('[data-selftest-hidden]').forEach((b) => { b.style.display = ''; b.removeAttribute('data-selftest-hidden') }))
+      const restored = await measureNow()
+      expect(restored.length === 0, `${where} 還原後應綠,實得 ${plain(restored)}`)
+      console.log(`  (d) ${where}:現況綠 / 貼頂紅 ${stuckTop.length} 筆 / h1 換成 div 紅 / 藏起動作紅 / 還原綠`)
+    }
+  } catch (error) {
+    if (!(error instanceof StoryRenderInstrumentError)) throw error
+    console.error(`✗ ${INSTRUMENT_FAIL_MARKER}:${error.message}`)
+    ok = false
+  } finally { await browser.close(); await server.stop() }
+  console.log(ok ? '✅ header-first-gap selftest (d) 整頁狀態對照 PASS' : '❌ header-first-gap selftest (d) 整頁狀態對照 FAIL')
+  return ok
+}
+
 async function measure() {
   if (!staticArg) requireFreshStorybookBuild(STATIC, freshSources())
   const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
@@ -602,7 +717,8 @@ if (isMain) {
   if (process.argv.includes('--selftest')) {
     // (a)(b) 判定表先過才開瀏覽器:起不了瀏覽器時 launchBrowserOrSkip 以 0 結束(SKIPPED-ENV),不能讓它蓋掉判定表的紅
     if (!selftest()) process.exit(1)
-    process.exit((await selftestOverflow()) ? 0 : 1)
+    const overflowOk = await selftestOverflow()
+    process.exit(overflowOk && (await selftestFullPage()) ? 0 : 1)
   }
   try {
     const rows = await measure()
