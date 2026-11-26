@@ -392,7 +392,9 @@ if [ "$ALLOW_C3" = "0" ]; then
     echo '🚨 check_pattern_invariants: required interpreter perl is unavailable — C3 gate cannot run(fail-closed)' >&2
     exit 2
   fi
-  PRIMITIVES_REGEX='DateGrid|Calendar|Surface|SurfaceHeader|SurfaceBody|SurfaceFooter'
+  # Calendar 不在名單:它的根節點沒有內距、四周距離由容器給(calendar.spec.md「外殼」的「四周距離:元件不帶外距,由容器給」),
+  # 外層包 p-* 是正確用法;2026-11-27 前名單裡有它,會把照規格寫的範例外層擋下(R8-E27)。
+  PRIMITIVES_REGEX='DateGrid|Surface|SurfaceHeader|SurfaceBody|SurfaceFooter'
   VIOLATIONS_C3=$(printf '%s' "$NEW_CONTENT" | perl -0777 -ne '
     while (/<div\b[^>]*className\s*=\s*["\x27`][^"\x27`]*\bp-\d+[^"\x27`]*["\x27`][^>]*>(?:[^<]*<(?!\/div\b)){0,8}\s*<('"$PRIMITIVES_REGEX"')\b/gs) {
       my $primitive = $1;
@@ -411,7 +413,7 @@ if [ "$ALLOW_C3" = "0" ]; then
 ${VIOLATIONS_C3}
 
 SSOT primitive 自帶 outer padding,**consumer 不得另加 padding wrapper**:
-  - DateGrid / Calendar:root 自帶 p-3
+  - DateGrid:root 自帶 p-3
   - Surface{Header,Body,Footer}:各 segment 自帶 padding
 
 修法:直接放 primitive,不包 padding div。

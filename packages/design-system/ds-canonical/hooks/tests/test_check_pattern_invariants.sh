@@ -312,6 +312,15 @@ function Foo() {
 '
 expect_exit "C.3.3 file allowlist → silent" 0 ""
 
+# 9b. <div p-4><Calendar /></div> → silent:Calendar 根節點沒有內距、四周距離由容器給(calendar.spec.md「外殼」),
+#     外層包 p-* 是照規格的寫法(R8-E27;名單還有 Calendar 時這一格會被擋)
+run_hook "/r/src/app/foo.tsx" '
+function Foo() {
+  return <div className="p-4"><Calendar /></div>
+}
+'
+expect_exit "C.3.4 p-4 wrapping Calendar → silent(container gives the spacing)" 0 ""
+
 echo ""
 echo "=== C.4 row slot handcraft (BLOCK) ==="
 
