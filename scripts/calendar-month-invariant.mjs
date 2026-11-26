@@ -76,7 +76,8 @@
  *           aria-haspopup=dialog、手形、名稱「{完整日期},還有 N 個事件」;ML-ring 鍵盤焦點的框往外(offset > 0);ML-click 真滑鼠點「+N」開清單、沒有開「新增事件」;
  *           ML-center 清單中心 = 格子中心(±0.5);ML-width 清單寬 ≥ 格寬;ML-open 開啟後焦點在第一筆事件;ML-head 標題列沒有分隔線、標題底 → 第一列 = tight
  *          (header-first-gap NOT_COVERED 登記的那一格由這裡量);ML-order 清單順序 = 格內排序、格內畫出來的同一個相對順序;ML-ro 唯讀的那一筆是純文字;
- *           ML-half 捲在頂端時可見底邊切在第 N + 1 列(N = 9)的一半(±1);ML-sticky 捲到底標題列不動、內文頂 = 標題列底;ML-bottom 捲到底最後一列 → 底 = tight;
+ *           ML-rowh 清單每一列(全天長條 / 唯讀純文字 / 有時段)外框高 = 列高 token(--tag-height-md,浮層上量),清單行高放大到 3 倍(模擬字型上下緣較大的平台)時也一樣;
+ *           ML-half 捲在頂端時可見底邊切在第 N + 1 列(N = 9)的一半(±1;訊息印各列高);ML-sticky 捲到底標題列不動、內文頂 = 標題列底;ML-bottom 捲到底最後一列 → 底 = tight;
  *           ML-outside 點清單外面關清單、焦點不被搶回「+N」。期望值由規格與 token 現算(tight 讀浮層上的 --layout-space-tight),不 import 元件常數。
  *   紅: --selftest 逐一注入:星期列搬出格陣、週列高改 auto、最後一週留底線、格子內距 6、工具列改回內距撐高、nav 沒名稱、
  *       欄頭名稱改成短字、捲動區變成可聚焦(axe required-children)、捲動區不能捲、事件列高 20、事件列焦點框改回往內、1 號的實心底被壓成 24 寬、
@@ -96,7 +97,7 @@
  *       全天長條帶回左側 3px 色條、有時段列有底、色條撐滿列高且直角、色條後面不留間隔、時間字改主色、時間格式寫死 en-US、事件名稱改回「事件:」、
  *       有時段列滑過借了別的配對、neutral 回落成 blue、12 色相色條錯位、唯讀的列滑過會亮、eventTimeFormat 沒接上、窄寬沒拿掉時間、時間字太淡、
  *       「+N」焦點歸還失效 / 改回淡灰小字 / 焦點框往內 / 點擊冒泡到格子、清單沒蓋在格子上 / 比格子窄 / 標題列畫回分隔線 / body 恢復上內距 / 順序倒過來 /
- *       唯讀的列變按鈕 / 沒有高度上限 / 標題列跟著捲 / 底部沒有內距 / 點外面後焦點被搶回「+N」
+ *       唯讀的列變按鈕 / 可點列改回 inline-block(列高由字型撐)/ 沒有高度上限 / 標題列跟著捲 / 底部沒有內距 / 點外面後焦點被搶回「+N」
  *       —— 每一個都必須讓對應的那一格紅。
  *   綠: 全部量到且照規格時 exit 0。開 story 走 lib/launch-browser.mjs openStory(等 Storybook 回報渲染完成與被量的格陣出現,不睡固定時間);
  *       開不起來 / 等不到格陣 = 儀器失效(INSTRUMENT-FAIL,exit 1 並點名),不讀成通過。
@@ -1468,12 +1469,29 @@ const BLOCKS = {
       check(`ML-order${tag}`, JSON.stringify(titles) === JSON.stringify(MORE_DAY_ORDER) && sub,
         `清單順序 ${titles.join(' / ')};格內畫出來的 ${m.drawn.join(' / ')}${sub ? '(同一個相對順序)' : '(相對順序不同)'}`)
       check(`ML-ro${tag}`, m.roButton === false, m.roButton === null ? '清單裡找不到唯讀的「場地布置」' : `唯讀的「場地布置」${m.roButton ? '是按鈕 / 可聚焦' : '是純文字'}`)
+      // ML-rowh:清單每一列(全天長條、唯讀純文字、有時段)的外框高 = 列高 token(--tag-height-md,在浮層上量),與字型無關 ——
+      // 本機字型下量一次,再把清單的行高放大到 3 倍量一次(模擬字型上下緣較大的平台:列的外框若由那一行的字型撐,會跟著變高;
+      // 2026-11-26 Linux CI 有時段列 25、mac 24,ML-half 因此只在 Linux 紅)。量完拿掉放大,後面各格照常量。
+      const rowH = await page.evaluate((ls) => {
+        const c = document.querySelector(ls)
+        const heights = () => [...c.querySelectorAll('[role="listitem"]')].map((r) => r.getBoundingClientRect().height)
+        // 量 token 的探針脫離版面(浮層是有高度上限的 flex 欄,探針若是 flex 子項會被壓扁 —— 第一版量到 15.75)
+        const probe = document.createElement('div'); probe.style.cssText = 'position:absolute;visibility:hidden;height:var(--tag-height-md)'; c.append(probe)
+        const token = probe.getBoundingClientRect().height; probe.remove()
+        const local = heights()
+        const s = document.createElement('style'); s.textContent = `${ls} [role="list"] { line-height: 3 !important; }`; document.head.append(s)
+        const stressed = heights(); s.remove()
+        return { token, local, stressed }
+      }, listSel)
+      const fmtRows = (hs) => hs.map((h) => fmtPx(h).replace(/\.00$/u, '')).join(' / ')
+      check(`ML-rowh${tag}`, rowH.local.length > 0 && [...rowH.local, ...rowH.stressed].every((h) => near(h, rowH.token)),
+        `清單各列高 ${fmtRows(rowH.local)};行高放大 3 倍時 ${fmtRows(rowH.stressed)}(規格:每一列 = 列高 token --tag-height-md ${fmtPx(rowH.token)},與字型無關)`)
       // ML-half:捲在頂端時,內文區可見底邊切在第 N + 1 列的一半(N = 9;±1)
       const visBottom = m.body.t + m.scroll.ch
       const cut = m.rows.findIndex((r) => r.t < visBottom - 0.5 && r.b > visBottom + 0.5)
       const cutAt = cut >= 0 ? visBottom - m.rows[cut].t : NaN
       check(`ML-half${tag}`, cut === SPEC.moreListRows && Math.abs(cutAt - SPEC.row / 2) <= 1,
-        `捲在頂端:可見底邊切在第 ${cut + 1} 列、切在列內 ${fmtPx(cutAt)}(規格:第 ${SPEC.moreListRows + 1} 列的一半 ${SPEC.row / 2});清單高 ${fmtPx(m.c.h)}`)
+        `捲在頂端:可見底邊切在第 ${cut + 1} 列、切在列內 ${fmtPx(cutAt)}(規格:第 ${SPEC.moreListRows + 1} 列的一半 ${SPEC.row / 2});清單高 ${fmtPx(m.c.h)};各列高 ${fmtRows(m.rows.map((r) => r.h))}`)
       // ML-sticky / ML-bottom:捲到底 —— 標題列不動、內文頂邊 = 標題列底邊;最後一列底 → 內文區底 = tight(hug 容器底 = 頂的值)
       const end = await page.evaluate((ls) => {
         const c = document.querySelector(ls)
@@ -1735,6 +1753,8 @@ const MUTANTS = [
   { name: '清單順序與格內不同(倒過來)', block: 'moreList', expect: ['ML-order@md', 'ML-order@lg'], listDom: ({ day }) => { const l = document.querySelector(`[data-calendar-more-list="${day}"] [role="list"]`); if (l) [...l.children].reverse().forEach((c) => l.append(c)) } },
   { name: '唯讀的列變成按鈕', block: 'moreList', expect: ['ML-ro@md', 'ML-ro@lg'], listDom: ({ day }) => document.querySelectorAll(`[data-calendar-more-list="${day}"] [role="listitem"] > div`).forEach((d) => d.setAttribute('role', 'button')) },
   { name: '清單沒有高度上限(maxHeight 不設)', block: 'moreList', expect: ['ML-half@md', 'ML-half@lg'], css: '[data-calendar-more-list] { max-height: none !important; }' },
+  // 拿掉修法(可點的列回到 <button> 預設的 inline-block):本機字型下列高可能剛好 24,行高放大那一次一定撐高 —— 2026-11-26 Linux CI 的成因
+  { name: '清單的可點列改回 inline-block(列高由那一行的字型撐)', block: 'moreList', expect: ['ML-rowh@md', 'ML-rowh@lg'], css: '[data-calendar-more-list] button[data-calendar-list-row] { display: inline-block !important; }' },
   { name: '標題列跟著捲(外殼自己捲、內文區不捲)', block: 'moreList', expect: ['ML-sticky@md', 'ML-sticky@lg'], css: '[data-calendar-more-list] { overflow-y: auto !important; } [data-calendar-more-list] [data-slot="surface-body"] { flex: none !important; overflow: visible !important; }' },
   { name: '清單底部沒有內距(最後一列貼底)', block: 'moreList', expect: ['ML-bottom@md', 'ML-bottom@lg'], css: '[data-calendar-more-list] [data-slot="surface-body"] { padding-bottom: 0 !important; }' },
   { name: '點外面關清單後焦點被搶回「+N」', block: 'moreList', expect: ['ML-outside@md', 'ML-outside@lg'], dom: () => document.addEventListener('pointerup', (e) => { if (e.target instanceof Element && e.target.closest('[data-calendar-more], [data-calendar-more-list]')) return; setTimeout(() => document.querySelector('[data-calendar-more="2026-07-22"]')?.focus(), 30) }, true) },

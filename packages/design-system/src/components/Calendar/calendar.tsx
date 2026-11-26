@@ -522,7 +522,11 @@ const MonthEventPieceShell = React.forwardRef<HTMLElement, MonthEventPieceShellP
         }}
         aria-label={name}
         // 焦點框往外(全域 :focus-visible):上下是列距 4 / 標題列 / 底部內距,左右是 body 內距 16 → 都 ≥ 4
-        className={cn(shape, 'w-full text-start cursor-pointer')}
+        // block:列的外框高 = h-tag-md,與字型無關(calendar.spec.md「「+N」清單浮層」高度與捲動的半列原則以列高 24 算)。<button> 預設 inline-block,
+        // 放在 listitem 裡會坐在一行文字的基線上,listitem 高 = max(24, 按鈕基線以上 + 那一行字型的下緣),下緣大的字型把每列撐高 ——
+        // 2026-11-26 Linux CI 每個有時段列 25(色條是空 span,按鈕基線落在色條底),9 列累積 7px,最後一列切在 5 不是 12(calendar-month ML-rowh / ML-half)。
+        // 唯讀列是 div,本來就是 block。
+        className={cn(shape, 'block w-full text-start cursor-pointer')}
       >
         {children}
       </button>
