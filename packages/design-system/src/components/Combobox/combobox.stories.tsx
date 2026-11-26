@@ -235,7 +235,7 @@ const InlineSearchProbe = () => {
 export const InlineSearchFocusContract: Story = {
   name: '欄位內搜尋焦點驗證',
   // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的焦點
-  // @example-basis: packages/design-system/src/components/Combobox/combobox.spec.md:192「開啟後插入點就在這裡,打字即過濾」
+  // @example-basis: packages/design-system/src/components/Combobox/combobox.spec.md:193「開啟後插入點就在這裡,打字即過濾」
   parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => <InlineSearchProbe />,
@@ -589,6 +589,42 @@ export const UnrestrictedOffInert: Story = {
   name: '不限:關著時完全惰性',
   tags: ['test-only'],
   render: () => <UnrestrictedOffInertProbe />,
+}
+
+
+/* ── 分組與浮層寬度(2026-11-26,產品 canary 回報 C1 / C24)── */
+// 權限設定:角色可勾的權限分三類。`groups` 與選項的 `group` 配對(轉給 SelectMenu「分組」);
+// 權限名稱比欄位寬,`minWidth` 把浮層下限拉到 320px(只能往上拉,select-menu.spec.md「視覺 vs 語意」)。
+const PERMISSION_GROUPS = [
+  { key: 'issue', label: '議題' },
+  { key: 'project', label: '專案' },
+  { key: 'admin', label: '管理' },
+]
+const PERMISSION_OPTIONS = [
+  { value: 'issue.create', label: '建立議題', group: 'issue' },
+  { value: 'issue.edit', label: '編輯他人建立的議題', group: 'issue' },
+  { value: 'issue.delete', label: '刪除議題', group: 'issue' },
+  { value: 'project.board', label: '管理看板與篩選器', group: 'project' },
+  { value: 'project.release', label: '建立與發布版本', group: 'project' },
+  { value: 'admin.members', label: '邀請與移除專案成員', group: 'admin' },
+  { value: 'admin.billing', label: '檢視帳單與用量', group: 'admin' },
+]
+export const GroupsAndMinWidth: Story = {
+  name: '分組與浮層寬度',
+  render: () => (
+    <div className="w-[200px]">
+      <Field>
+        <FieldLabel>開發者角色的權限</FieldLabel>
+        <LiveCombobox
+          options={PERMISSION_OPTIONS}
+          groups={PERMISSION_GROUPS}
+          minWidth={320}
+          searchable
+          value={['issue.create', 'issue.edit']}
+        />
+      </Field>
+    </div>
+  ),
 }
 
 

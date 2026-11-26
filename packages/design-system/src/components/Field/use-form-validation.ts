@@ -38,7 +38,8 @@
  *
  * ── v1 邊界(spec「可執行層」段 documented)──
  * - getInputProps 支援 value/onChange 型控件(Input / Textarea / NumberInput / Select /
- *   Combobox / DatePicker / TimePicker / Rating;onChange 收 event 或裸值皆可)。Checkbox / Switch
+ *   Combobox / DatePicker / TimePicker / Rating / PeoplePicker 單選與多選(2026-11-26 補列,經 Select / Combobox 轉;
+ *   onChange 收 event 或裸值皆可)。Checkbox / Switch
  *   (onCheckedChange)consumer 自接 setFieldValue。回傳的是一整組:覆寫其中的 handler(例 onKeyDown)要轉呼叫原本那一支 ——
  *   欄位改過時同一組帶著 Esc 層宣告,浮層把第一下 Esc 留給這一格回復;蓋掉不轉呼叫 = 回復沒人做,浮層守門會在派送完發現沒人認領而照常關
  *   (lib/overlay-escape.ts「宣告 ≠ 處理」;不會困住,但規則 4 沒了)。規格 form-validation.spec.md v1 邊界 (a)。LinkInput **不在清單**:它的連結狀態不渲 input,

@@ -146,6 +146,15 @@ export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElem
    * 傳再大也不超出可用高;不傳 = 半列原則的預設上限(`../Command/command.spec.md`「清單捲動上限(半列原則)」)。數字 = px,字串照原樣。
    */
   maxHeight?: number | string
+  /** 選單浮層的最小寬度(px;單選轉給 Select、多選轉給 Combobox,最後到 SelectMenu `minWidth`,2026-11-26 產品 canary 回報 C1):
+   *  **只能把下限往上拉** —— 有效下限 = max(觸發欄位寬, 15rem, minWidth)(`../SelectMenu/select-menu.spec.md`「視覺 vs 語意」;
+   *  規則住 `ds-canonical/references/props-naming.md`「尺寸參數」第 8 條)。 */
+  minWidth?: number
+  /** 表單欄位名稱(2026-11-26 產品 canary 回報 C25):`useFormValidation` 規則 8 以 DOM `name` 定位、聚焦第一個錯誤欄位。
+   *  只轉給編輯中的 Select(單選)/ Combobox(多選),由它們掛到可聚焦的觸發欄位;檢視 / 唯讀不掛(沒有可聚焦的欄位)。
+   *  `{...form.getInputProps('owner')}` 帶的 value / onChange / onBlur / onKeyDown / data-* 照常經其餘屬性轉下去
+   *  (`../Field/form-validation.spec.md`「v1 邊界」(a))。之前型別沿用 div 屬性、沒有 `name`,只能靠展開語法帶進來。 */
+  name?: string
   /**
    * 一鍵清空(2026-08-05):X 在 ChevronDown 左,family SSOT → field-controls.spec.md「下拉箭頭」段。
    * 機械轉發 wrapped Select(single)/ Combobox(multi)的 `clearable` — X 渲染與清空行為 SSOT 在基座(Select「清除選取」/ Combobox
@@ -195,6 +204,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   pillWrap = true,
   searchIn = 'menu',
   maxHeight,
+  minWidth,
+  name,
   clearable = false,
   showDisplayEndIcon = false,
   'aria-label': ariaLabel,
@@ -423,6 +434,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         // SelectMenu 接線(search-empty 語意,與 trigger-empty 分離)。
         emptyText={emptyText}
         maxHeight={maxHeight}
+        minWidth={minWidth}
+        name={name}
         // `selectAllLabel` / `deselectAllLabel` 不傳:那是多選 footer「全選」鈕的字,單選沒有這顆鈕、Select 也不收這兩個 prop ——
         // 2026-11-13 前照傳,落進 Select 的 rest 被展開到觸發欄位的 div 上,React 各報一則「不認得的 prop」(下方 `rest as any` 讓型別檢查看不到)
         loading={loading}
@@ -483,6 +496,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         placeholder={placeholder}
         emptyText={emptyText}
         maxHeight={maxHeight}
+        minWidth={minWidth}
+        name={name}
         wrap={pillWrap}
         defaultOpen={defaultOpen}
         onOpenChange={onOpenChange}
@@ -558,6 +573,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       placeholder={placeholder}
       emptyText={emptyText}
       maxHeight={maxHeight}
+      minWidth={minWidth}
+      name={name}
       wrap={false}
       defaultOpen={defaultOpen}
       onOpenChange={onOpenChange}

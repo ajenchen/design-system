@@ -453,12 +453,39 @@ const FieldLabel = React.forwardRef<HTMLLabelElement, FieldLabelProps>(
         ? { paddingTop: `calc((${FIELD_HEIGHT_VAR[size]} - 1lh) / 2)` }
         : undefined
 
+    // ⓘ 是 <button>(HTML「可被標籤的元素」),HTML 不准它住在 <label> 裡(WHATWG label 的內容規定:不得含 labelable 後代,
+    // 除了它標的那個控件;2026-11-26 產品 canary 回報 C8 (b))—— 住在裡面時,控件經 aria-labelledby / <label for> 算出的讀屏名稱
+    // 會把 ⓘ 的說明文字一起念進去。有 ⓘ 時改成:外層 span 帶版面(同一組 class / style / data-field-slot,版面與顏色不變),
+    // <label> 只包星號 + 標籤文字,ⓘ 是它的兄弟。沒有 ⓘ(或檢視態本來就是 span)維持原本單一 <label> / <span>。
+    const showInfo = Boolean(info) && !disabled
+    const splitInfo = showInfo && !isViewMode
     const LabelTag = (isViewMode ? 'span' : 'label') as 'label'
+    const RootTag = (splitInfo ? 'span' : LabelTag) as 'label'
+    const labelAttrs = {
+      ref,
+      id: ctx?.labelId,
+      htmlFor: isViewMode ? undefined : htmlFor,
+      // 2026-06-10 a11y:styled-disabled label 必明告 inactive(WCAG 1.4.3 inactive-UI 豁免需可機判;
+      // axe 對無 aria-disabled 的 fg-disabled 文字誤報 color-contrast — deep-audit 抓 8 筆)
+      'aria-disabled': disabled || undefined,
+      ...props,
+    }
+    const labelText = (
+      <>
+        {required && (
+          <span
+            aria-hidden="true"
+            className={disabled ? 'text-fg-disabled' : 'text-fg-muted'}
+          >
+            *
+          </span>
+        )}
+        {children}
+      </>
+    )
     return (
-      <LabelTag
-        ref={ref}
-        id={ctx?.labelId}
-        htmlFor={isViewMode ? undefined : htmlFor}
+      <RootTag
+        {...(splitInfo ? {} : labelAttrs)}
         className={cn(
           FIELD_TEXT_CLASS,
           'font-normal select-none',
@@ -470,24 +497,10 @@ const FieldLabel = React.forwardRef<HTMLLabelElement, FieldLabelProps>(
         style={{ ...horizontalBlockStyle, ...style }}
         data-field-slot="label"
         data-field-disabled={disabled ? '' : undefined}
-        // 2026-06-10 a11y:styled-disabled label 必明告 inactive(WCAG 1.4.3 inactive-UI 豁免需可機判;
-        // axe 對無 aria-disabled 的 fg-disabled 文字誤報 color-contrast — deep-audit 抓 8 筆)
-        aria-disabled={disabled || undefined}
-        {...props}
       >
         <span className="inline-flex items-center gap-1">
-          <span>
-            {required && (
-              <span
-                aria-hidden="true"
-                className={disabled ? 'text-fg-disabled' : 'text-fg-muted'}
-              >
-                *
-              </span>
-            )}
-            {children}
-          </span>
-          {info && !disabled && (
+          {splitInfo ? <label {...labelAttrs}>{labelText}</label> : <span>{labelText}</span>}
+          {showInfo && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -505,7 +518,7 @@ const FieldLabel = React.forwardRef<HTMLLabelElement, FieldLabelProps>(
             </Tooltip>
           )}
         </span>
-      </LabelTag>
+      </RootTag>
     )
   }
 )

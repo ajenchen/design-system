@@ -29,7 +29,7 @@ import { fieldRowPaddingY } from '@/design-system/components/Field/field-wrapper
 //   - ROW_PADDING_BY_SIZE:`text-body leading-compact`(scanning mode,緊湊)
 //   - SelectionItem:`text-body`(**無 leading-compact** — reading mode,Checkbox/Radio 搭配
 //     較長 label + description,需預設 1.5 leading 而非 1.3 compact)
-// py 公式本身相同 — 若 field-height token 變動,本檔需手動同步(contained,由本註解 anchor 追)。
+// py 公式本身相同 —— 兩邊都由 field-wrapper.tsx `fieldRowPaddingY` 組成(2026-11-26 起;之前 ROW_PADDING_BY_SIZE 另寫一份),不需手動同步。
 
 // code-quality-allow: dead-export — public API surface — consumer-exposed for future use
 export const selectionItemStyles = cva(

@@ -454,11 +454,13 @@ export const fieldTagInsetY: Record<'sm' | 'md' | 'lg', string> = {
   lg: 'py-[calc((var(--field-height-lg)_-_2_*_var(--field-border-width)_-_var(--tag-height-lg))_/_2)]',
 }
 /**
- * 表單控件列(控件 + 標題 + 說明)的上下內距:py = (field-height − 1lh) / 2 → 單行列高 = 同 size 的欄位高
+ * 列的上下內距:py = (field-height − 1lh) / 2 → 單行列高 = 同 size 的欄位高
  *(`selection-item.spec.md`「padding 公式」;`item-anatomy.spec.md` SelectionItem「單行高度 = field-height」)。
- * 1lh 取列自己的字級,所以套用處要同時設 text-body / text-body-lg。
- * 消費者:SelectionItem(Checkbox / Radio 選項列)、Switch 自帶標題的設定列 —— 同一個公式只住這裡,
- * Switch 不必為了這一行去 import 整支 selection-item(那支會連帶 Avatar)。
+ * 1lh 取列自己的字級與行高,所以套用處要同時設字級(text-body / text-body-lg),掃描模式再加 leading-compact。
+ * **這條式子的唯一住所**(2026-11-26 起名實相符;之前 item-anatomy.tsx 的 `ROW_PADDING_BY_SIZE` 另寫一份,這裡卻寫「只住這裡」):
+ * - SelectionItem(Checkbox / Radio 選項列)、Switch 自帶標題的設定列:閱讀模式,直接用本表
+ * - `ROW_PADDING_BY_SIZE`(選單 / 側欄 / 樹狀等列,掃描模式 `leading-compact`):由本表組成,不再自己寫式子
+ * 住在這支輕量檔、不住 item-anatomy:Switch 不必為了這一行去 import 整支 item-anatomy / selection-item(那兩支會連帶 Avatar)。
  */
 export const fieldRowPaddingY: Record<'sm' | 'md' | 'lg', string> = {
   sm: 'py-[calc((var(--field-height-sm)_-_1lh)_/_2)]',

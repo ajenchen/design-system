@@ -61,6 +61,7 @@ const StopFilled = createLucideIcon('StopFilled', [
 ])
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonDivider } from '@/design-system/components/Button/button-group'
+import { useI18n } from '@/design-system/lib/i18n/i18n-context'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { fieldChromeStyles, keepFieldFocusBeforeUnmount, pressFieldClear } from '@/design-system/components/Field/field-wrapper'
@@ -672,7 +673,7 @@ function HistoryRow({
             <ItemInlineAction
               action={{
                 icon: Pencil,
-                label: '改名', // i18n-allow: DS 預設文案(Dialog「關閉」同前例)
+                label: '改名', // i18n-allow: DS 預設文案,尚未接 i18n(Dialog「關閉」已接 t();本面板目前只有訊息工具列三顆鈕接上)
                 onClick: (e) => {
                   e?.stopPropagation()
                   onRename()
@@ -682,7 +683,7 @@ function HistoryRow({
             <ItemInlineAction
               action={{
                 icon: Trash2,
-                label: '刪除', // i18n-allow: DS 預設文案(Dialog「關閉」同前例)
+                label: '刪除', // i18n-allow: DS 預設文案,尚未接 i18n(Dialog「關閉」已接 t();本面板目前只有訊息工具列三顆鈕接上)
                 onClick: (e) => {
                   e?.stopPropagation()
                   onDelete()
@@ -852,7 +853,7 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
             size="sm"
             iconOnly
             startIcon={Plus}
-            aria-label="新對話" // i18n-allow: DS 預設文案(Dialog「關閉」同前例)
+            aria-label="新對話" // i18n-allow: DS 預設文案,尚未接 i18n(Dialog「關閉」已接 t();本面板目前只有訊息工具列三顆鈕接上)
             disabled={conversationEmpty}
             onClick={onNewConversation}
           />
@@ -1238,6 +1239,9 @@ const AgentToolbar = React.forwardRef<HTMLDivElement, AgentToolbarProps>(
   ({ pinned: pinnedProp, onCopy, onLike, onDislike, className, children, ...props }, ref) => {
     const pinnedFromConversation = React.useContext(LastAgentMessageContext)
     const pinned = pinnedProp ?? pinnedFromConversation
+    // 三顆鈕的名稱(= iconOnly 的提示)接 i18n opt-in(2026-11-26,產品 canary 回報 C19;lib/i18n/README.md「Fallback chain」):
+    // 包了 I18nProvider 且有 labels['agent-panel'].copy / like / dislike 時用它,否則中文預設不變
+    const { t } = useI18n()
     return (
     <div
       ref={ref}
@@ -1256,10 +1260,10 @@ const AgentToolbar = React.forwardRef<HTMLDivElement, AgentToolbarProps>(
       )}
       {...props}
     >
-      <Button variant="text" size="xs" iconOnly startIcon={Copy} aria-label="複製" onClick={onCopy} />
+      <Button variant="text" size="xs" iconOnly startIcon={Copy} aria-label={t('agent-panel', 'copy', '複製')} onClick={onCopy} />
       <ButtonDivider />
-      <Button variant="text" size="xs" iconOnly startIcon={ThumbsUp} aria-label="讚" onClick={onLike} />
-      <Button variant="text" size="xs" iconOnly startIcon={ThumbsDown} aria-label="倒讚" onClick={onDislike} />
+      <Button variant="text" size="xs" iconOnly startIcon={ThumbsUp} aria-label={t('agent-panel', 'like', '讚')} onClick={onLike} />
+      <Button variant="text" size="xs" iconOnly startIcon={ThumbsDown} aria-label={t('agent-panel', 'dislike', '倒讚')} onClick={onDislike} />
       {children}
     </div>
     )
@@ -1326,7 +1330,7 @@ function PromptAttachmentRow({
     // 鍵盤停在 Tag / +N 時焦點框下緣被切掉(列底沒有內距)—— focus-canonical.md「框怎麼畫」:預設往外、四邊完整(SH-clip)。
     // 同 Combobox 單行 Tag 列的 `tagRowOverflowClass`(combobox.tsx:同一份 OverflowTagList、同一個理由;`clip` 不建捲動容器,
     // 不可改成 overflow-x-hidden —— 單軸 hidden 會把另一軸算成 auto)。
-    // @layout-space-magic-ok: Tag 相互間距 4、距內緣 4 = 本元件規格寫的值 —— agent-panel.spec.md:247「相互間距 4、距內緣 4」(「7. AgentPromptInput(複合輸入盒)」附件列那一行)
+    // @layout-space-magic-ok: Tag 相互間距 4、距內緣 4 = 本元件規格寫的值 —— agent-panel.spec.md:248「相互間距 4、距內緣 4」(「7. AgentPromptInput(複合輸入盒)」附件列那一行)
     <div ref={rowRef} className={cn(TAG_ROW_CONTAINER_CLASS, 'flex items-center gap-1 overflow-x-clip px-1 pt-1')}>
       <OverflowTagList
         items={items}
@@ -1423,7 +1427,7 @@ const AgentPromptInput = React.forwardRef<HTMLDivElement, AgentPromptInputProps>
             // @disabled-color-allow: 這個輸入盒沒有 disabled 狀態,placeholder 的 muted 不會跟 disabled 疊在一起(M24 管的是 disabled 元件內的字)——
             // textarea(本檔 :1403)不帶 disabled;props(:1279 AgentPromptInputProps 只繼承 div 的 HTMLAttributes)沒有 disabled 可傳;
             // 外框寫死 fieldChromeStyles({ mode: 'edit' })(:1391);代理進行中(busy,:1285)只把送出鈕換成停止,輸入框照常可打字。
-            // 規格 agent-panel.spec.md:241 外框 =「Textarea edit×default 同一組字串」,沒有停用態。日後若加 disabled,
+            // 規格 agent-panel.spec.md:242 外框 =「Textarea edit×default 同一組字串」,沒有停用態。日後若加 disabled,
             // 照同族 textarea.tsx:45 的寫法補 disabled 時 placeholder 換 fg-disabled 的覆寫,並拿掉這段豁免。
             'placeholder:text-fg-muted',
             'field-sizing-content max-h-40',

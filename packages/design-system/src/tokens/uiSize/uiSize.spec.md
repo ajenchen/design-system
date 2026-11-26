@@ -232,7 +232,7 @@ field-wrapper / Textarea / Select+Combobox,Menu 漏掉。
 | Slider thumb/track | `components/Slider/slider.spec.md:86` | thumb 16 / track 4px 固定不隨 size 變(視覺 single tier)| Material 3 / iOS / Ant / Radix 固定 thumb | <!-- @benchmark-unverified -->
 | Checkbox/Switch check | `components/Checkbox/checkbox.tsx:52` + `components/Switch/switch.tsx:83` | `{sm:12, md:12, lg:16}` form-control internal + stroke 下限 12 | iOS HIG / Material 3 / Polaris | <!-- @benchmark-unverified -->
 
-**程式化 SSOT**:`patterns/element-anatomy/item-anatomy.tsx:66` `ICON_SIZE = {sm:16, md:16, lg:20}` 是本 tier 的 type-safe const。**Form control 透過 `tokens/uiSize/icon-size.ts` re-export entry import**(避 components→patterns 反向 dependency)。
+**程式化 SSOT**:`patterns/element-anatomy/item-anatomy.tsx:67` `ICON_SIZE = {sm:16, md:16, lg:20}` 是本 tier 的 type-safe const。**Form control 透過 `tokens/uiSize/icon-size.ts` re-export entry import**(避 components→patterns 反向 dependency)。
 
 **新加 carve-out 流程**:必同時(1)在 owner spec 內部宣告 + cite(2)補本表 row。Audit dim 30 cross-doc consistency 抓 drift。
 

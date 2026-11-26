@@ -161,7 +161,7 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 ### Row primitives 必須共用的規格
 
 - **水平 padding**: `px-[var(--layout-space-loose)]`(sidebar context) / `px-3`(menu context),由 consumer 脈絡決定
-- **垂直 padding**: `py-[calc((var(--field-height-N) N∈{sm,md,lg}-1lh)/2)]` 的 item-layout 公式
+- **垂直 padding**: `py = (field-height − 1lh) / 2` 的 item-layout 公式;式子只住 `components/Field/field-wrapper.tsx` 的 `fieldRowPaddingY`,`ROW_PADDING_BY_SIZE`(掃描模式,加 `leading-compact`)與 SelectionItem / Switch 設定列(閱讀模式)都由它組成(2026-11-26 起;之前 `ROW_PADDING_BY_SIZE` 另寫一份)
 - **字重**(SidebarMenuButton、TreeItem): `font-medium`(500),**不隨 selected 變**
 - **預設文字色**(SidebarMenuButton、TreeItem): `text-fg-secondary`(neutral-8);icon 透過 currentColor 繼承
 - **Hover**(有列底色的列;沒有列底色的設定列 / 勾選框列不適用): `bg-neutral-hover` + `text-foreground`,**瞬間切換不做過渡**(owner = `tokens/motion/motion.spec.md`「hover 回饋不做過渡」,user 2026-09-10 拍板「全部瞬間」;機械閘 `hover-instant-invariant.mjs`)

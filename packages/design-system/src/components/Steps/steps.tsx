@@ -508,7 +508,7 @@ function StepItemHeader({ children, className, style }: { children: React.ReactN
         // leading-compact:scanning-family header 行高 = 1.3(item-anatomy.spec.md:770 掃描模式 label 行高)。
         // 設在 header 而非 li 根 → prefix h-[1lh] + 水平 connector h-[1lh] + label(StepLabel 亦 leading-compact)
         // 全用 1.3 對齊;li 根 text-body(1.5,`stepItemVariants` 的 size 變體)留給 StepContent 的 reading 行高,不被
-        // scanning 波及(避免 改A壞B)。對齊 MenuItem 把 leading-compact 放 row 容器之原則(item-anatomy.tsx:144-146)。
+        // scanning 波及(避免 改A壞B)。對齊 MenuItem 把 leading-compact 放 row 容器之原則(item-anatomy.tsx `ROW_PADDING_BY_SIZE`)。
         'leading-compact',
         // 2026-09-07 修 WCAG 2.4.7:原本這裡是**無條件** `outline-none`,而下一行的
         // `focus-visible:outline-2` 只設寬度、樣式吃 `var(--tw-outline-style)` —— 被上面那個

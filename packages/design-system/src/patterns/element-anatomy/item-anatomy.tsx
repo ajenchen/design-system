@@ -11,6 +11,7 @@ import {
   TooltipContent,
 } from "@/design-system/components/Tooltip/tooltip"
 import { useTruncated } from "@/design-system/hooks/use-truncated"
+import { fieldRowPaddingY } from "@/design-system/components/Field/field-wrapper"
 
 // ── InlineActionConfig ─────────────────────────────────────────────────────
 // 宣告式 API:consumer 只宣告 intent,host 根據 size tier 自動渲染。
@@ -140,12 +141,14 @@ export const INLINE_ACTION_HOVER_BG_SIZE: Record<RowSize, number> = {
  * **Rationale**:前先 3 cva 各自寫同一公式 → drift risk(item-anatomy.spec 有明文「SidebarMenuButton
  * 獨立實作風險」)。抽本 export 後改**一處全同步**,risk 消失(對齊 Meta-Pattern M17「SSOT 必可傳播」)。
  *
- * 2026-04-24 D Phase 1+2 consolidation 建立。
+ * 2026-04-24 D Phase 1+2 consolidation 建立。2026-11-26:py 不再自己寫式子,改由 `fieldRowPaddingY`
+ *(`components/Field/field-wrapper.tsx`,式子唯一住所;SelectionItem / Switch 設定列也用它)組成 —— 本表只加
+ * 掃描模式的字級與 `leading-compact`。之前兩份各寫一次同一條式子(產品 canary 回報 C16)。
  */
 export const ROW_PADDING_BY_SIZE: Record<RowSize, string> = {
-  sm: 'text-body leading-compact py-[calc((var(--field-height-sm)-1lh)/2)]',
-  md: 'text-body leading-compact py-[calc((var(--field-height-md)-1lh)/2)]',
-  lg: 'text-body-lg leading-compact py-[calc((var(--field-height-lg)-1lh)/2)]',
+  sm: `text-body leading-compact ${fieldRowPaddingY.sm}`,
+  md: `text-body leading-compact ${fieldRowPaddingY.md}`,
+  lg: `text-body-lg leading-compact ${fieldRowPaddingY.lg}`,
 }
 
 // ── Helper components ──────────────────────────────────────────────────────
