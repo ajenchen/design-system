@@ -267,6 +267,7 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 - 觸控 overlay 路徑的 Tag 設為 `pointer-events-none`，點擊穿透到底層 select
 - edit 模式：Tag + ChevronDown + 可選 clear
 - readonly：Tag 顯示，**ChevronDown 不顯示**（純值、不可開選單）；disabled：Tag 顯示 + **ChevronDown 保留**（類型身份 indicator，fg-disabled），不可開選單
+- **選項顏色 `tagVariant`**(2026-11-25 型別收窄):= Tag 的 `color`,只收 `CategoricalColor` —— `'neutral'` 或 12 個類別色相(唯一住所 `../../tokens/categorical-color.ts`)。欄位上(編輯 / 唯讀 / 停用 / 檢視 / 手機原生)與選單列都從同一個取值處拿顏色(`select.tsx` `optionTagColor`);沒給或認不得的值(JS、`as` 繞過型別):欄位上是 neutral Tag、選單列是純文字。修前型別收任何字串、內部再轉型成五色 —— 轉型只在型別層,執行期仍把原字串交給 Tag:13 個合法值本來就畫得出顏色,認不得的字讓 Tag 沒有底色。顏色是 Select 的 wrapper 專屬欄位,**不上擴到 SelectMenu primitive**(`select.tsx` `SelectOption` 上方的 M30 註解;Combobox / PeoplePicker 的 Tag 不畫類別色)【AI 推導 2026-11-25:Calendar 事件詳情「顏色」欄要用 Select 選出全部類別色(Calendar 規格事件詳情「內文欄位」表的「顏色」列),工程上選「留在 wrapper、只把型別收成 `CategoricalColor`」,消費端不必改用新欄位名】。對照表:`select.anatomy.stories.tsx` 色彩對照表「tag 模式的選項顏色(全部類別色)」,play 量每列 Tag 的底色 / 字色 = 該色 token;型別守門 = 同檔的 `@ts-expect-error`(`npm run typecheck:stories`,型別放寬回 string 就編不過)。
 
 ---
 
@@ -321,7 +322,7 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 
 - **搜尋結果空**:dropdown 顯一列 `MenuItem message` 的 `emptyText`(預設「沒有選項」,可覆寫;與 1 筆結果等高、無最小高度、不用 `Empty`)——只在真的沒有任何可選時;遠端搜尋還沒打字是建議群組或「輸入關鍵字搜尋」提示列,不是「沒有選項」。SSOT `select-menu.spec.md`「Empty state」「Suggestions」
 - **disabled 選項**:`option.disabled` forward 至 menu item——不可點選,鍵盤導覽自動跳過(cmdk `aria-disabled` 行為)
-- **大量選項**:選單固定最大高度內捲動(300px,值與理由住 `../Command/command.spec.md`「邊界案例」清單捲動上限),無分頁 / 虛擬捲動——長清單開 `searchable`(見「Searchable 開啟判斷」)
+- **大量選項**:選單在高度上限內捲動 —— 預設半列原則(最後一列切在半列),`maxHeight`(數字 px 或字串)取代預設、不超出可用高(桌機;手機走原生 `<select>` 不適用;理由與公式住 `../Command/command.spec.md`「清單捲動上限(半列原則)」,參數轉給 `../SelectMenu/select-menu.spec.md`「清單的高度上限」),無分頁 / 虛擬捲動——長清單開 `searchable`(見「Searchable 開啟判斷」)
 - **空值**:無選擇時顯 placeholder;「無選擇是有效狀態」場景開 `clearable`(見「Clearable」)
 
 ---

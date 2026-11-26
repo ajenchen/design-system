@@ -547,8 +547,8 @@ const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
         {/* HoverCardContent canonical(2026-04-23):
             - 無 inner padding(consumer ProfileCard 自帶 `px-4 py-3` chrome)
             - `overflow-hidden` + `rounded-lg` → child(ProfileCard)圓角裁切
-            - **不設 max-height**:ProfileCard 自己消費 `--radix-hover-card-content-available-height`
-              自約束高度 + 內部 ScrollArea 處理捲動
+            - **這裡不另設 max-height**:HoverCardContent 本身已夾到可用高,ProfileCard 也自己讀同一個
+              `OVERLAY_AVAILABLE_HEIGHT`(tokens/elevation/overlay-geometry.ts)自約束高度 + 內部 ScrollArea 處理捲動
             - `data-theme={documentTheme}`:ProfileCard 永遠跟隨 **app-level theme**(從 `<html data-theme>`
               動態讀),不受 trigger subtree theme 污染。範例:Avatar 位於 OverflowIndicator 的 dark
               tooltip 內,其 Portal 會繼承該 subtree dark theme → ProfileCard 變全黑。顯式設回 app theme

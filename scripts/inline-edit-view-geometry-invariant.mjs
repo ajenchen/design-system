@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * inline-edit-view-geometry-invariant.mjs — 機械鎖 InlineEdit 多行 view py == Textarea edit py。
+ * inline-edit-view-geometry-invariant.mjs — 機械鎖 InlineEdit 多行 view py == Textarea edit py,與 view 高度下限扣掉外框 1px 邊框。
  *
  * 為何存在(2026-07-16 Model A round16 + 對抗稽核 F1):InlineEdit 多行 read↔edit 零跳依賴
  *   `fieldViewGeometry(size, multiline=true)` 的 `py-2` **等於** Textarea edit base 的 `py-2`。
@@ -12,15 +12,22 @@
  *   (1) field-wrapper.tsx `fieldViewGeometry` 多行分支的 py class
  *   (2) textarea.tsx cva base 的 py class
  *   兩者必相等 → 不等 exit 1。
+ *   (5) 2026-11-25 加:`fieldViewGeometry` 的高度下限必為 min-h-[calc(var(--field-height-N)_-_2_*_var(--field-border-width))](三個尺寸),而且
+ *       inline-edit.tsx 靜止外框仍是一條 --field-border-width 透明邊框(`border-[length:var(--field-border-width)] border-transparent`)
+ *       —— 扣的兩個框寬就是那上下兩條邊框(框寬只有一個住處 --field-border-width;寫死 1px / 2px 由 reading-context-invariant 靜態段擋),
+ *       少扣 → 靜止外框比編輯中的 <Input> 高 2px(修前 sm 30 / 編輯 28),邊框拿掉卻還在扣 → 矮 2px。像素實量在
+ *       popover.anatomy.stories.tsx 的 EditableTitleHeaderProbe(靜止 / 編輯中標題列同為 2×tight + sm 欄位高)。
  *
  * 用法:node scripts/inline-edit-view-geometry-invariant.mjs [--check]
  *
  * @gate-contract
  *   保證: sm / md / lg 三個尺寸,field-wrapper.tsx 多行 view 的 py class 與 textarea.tsx 同尺寸的 py class 相同,而且都是
- *         py-[var(--field-control-py-<size>)];uiSize.css 的 --field-control-py-<size> 是 calc((var(--field-height-<size>) - 1lh) / 2 - 1px)
- *   紅: 任一邊找不到 class、兩邊不同、沒用 token、或 uiSize.css 公式漂移(少了 −1px)→ 逐條印出並 exit 1;
- *       配對測試把 field-wrapper 的 md 改回字面 py-2、或拿掉 uiSize.css 的 −1px,本閘都必須紅
- *   綠: 全部成立時 exit 0 並印出三個尺寸兩邊的 class;只讀三個檔,不讀時間、不開瀏覽器,重複跑結果相同
+ *         py-[var(--field-control-py-<size>)];uiSize.css 的 --field-control-py-<size> 是 calc((var(--field-height-<size>) - 1lh) / 2 - var(--field-border-width));
+ *         fieldViewGeometry 的高度下限是 min-h-[calc(var(--field-height-<size>)_-_2_*_var(--field-border-width))],
+ *         且 inline-edit.tsx 靜止外框帶 border-[length:var(--field-border-width)] border-transparent
+ *   紅: 任一邊找不到 class、兩邊不同、沒用 token、uiSize.css 公式漂移(少了減框寬)、min-h 沒扣邊框、或 InlineEdit 外框不再是透明邊框
+ *       → 逐條印出並 exit 1;配對測試把 field-wrapper 的 md 改回字面 py-2、拿掉 uiSize.css 的減框寬、把 sm 的 min-h 改回不扣邊框、拿掉 inline-edit.tsx 外框的邊框,本閘都必須紅
+ *   綠: 全部成立時 exit 0 並印出三個尺寸兩邊的 class;只讀四個檔,不讀時間、不開瀏覽器,重複跑結果相同
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -55,22 +62,32 @@ for (const size of SIZES) {
   if (viewPy[size] !== editPy[size]) {
     errors.push(`${size} py 不一致:fieldViewGeometry 多行=${viewPy[size]} vs Textarea edit=${editPy[size]} — InlineEdit 多行 read↔edit 垂直不齊`)
   } else if (viewPy[size] !== expected) {
-    errors.push(`${size} py 未消費 SSOT token:得到 ${viewPy[size]},應為 ${expected}(uiSize.css 公式 = (field-height − 1lh)/2 − 1px)`)
+    errors.push(`${size} py 未消費 SSOT token:得到 ${viewPy[size]},應為 ${expected}(uiSize.css 公式 = (field-height − 1lh)/2 − 框寬)`)
   }
   console.log(`  ${size}: view=${viewPy[size] ?? '?'} | edit=${editPy[size] ?? '?'}`)
 }
 
-// (4) token 本身必在 uiSize.css 且維持邊框修正項——少了 −1px 三個 size 都會比 Input 高 2px
+// (4) token 本身必在 uiSize.css 且維持邊框修正項(減一個 --field-border-width)——少了它三個 size 都會比 Input 高 2px
 const uiSize = read('packages/design-system/src/tokens/uiSize/uiSize.css')
 for (const size of SIZES) {
-  const decl = uiSize.match(new RegExp(`--field-control-py-${size}:\\s*calc\\(\\(var\\(--field-height-${size}\\) - 1lh\\) / 2 - 1px\\);`))
-  if (!decl) errors.push(`uiSize.css 缺 --field-control-py-${size} 或公式漂移(必為 calc((var(--field-height-${size}) - 1lh) / 2 - 1px))`)
+  const decl = uiSize.includes(`--field-control-py-${size}: calc((var(--field-height-${size}) - 1lh) / 2 - var(--field-border-width));`)
+  if (!decl) errors.push(`uiSize.css 缺 --field-control-py-${size} 或公式漂移(必為 calc((var(--field-height-${size}) - 1lh) / 2 - var(--field-border-width)))`)
+}
+
+// (5) 高度下限:外框(InlineEdit 靜止外框,上下各一條透明邊框)含邊框 = --field-height-N → 內層 min-h 扣兩個框寬
+for (const size of SIZES) {
+  const expected = `size === '${size}' && 'min-h-[calc(var(--field-height-${size})_-_2_*_var(--field-border-width))]'`
+  if (!fw.includes(expected)) errors.push(`fieldViewGeometry ${size} 高度下限不是 min-h-[calc(var(--field-height-${size})_-_2_*_var(--field-border-width))] —— InlineEdit 靜止外框會比編輯中的 <Input> 高或矮 2px(field-wrapper.tsx)`)
+}
+const ie = read('packages/design-system/src/components/InlineEdit/inline-edit.tsx')
+if (!ie.includes("'relative flex min-w-0 rounded-md border-[length:var(--field-border-width)] border-transparent'")) {
+  errors.push('inline-edit.tsx 靜止外框不再是 `border-[length:var(--field-border-width)] border-transparent`(一條框寬的透明邊框)—— fieldViewGeometry min-h 扣的兩個框寬失去依據,兩邊要一起改')
 }
 
 if (errors.length) {
   console.error('\n❌ InlineEdit view geometry invariant FAIL:')
   for (const e of errors) console.error(`   - ${e}`)
-  console.error('\n修:讓 fieldViewGeometry 多行 py 與 textarea.tsx base py 對齊(Model A read↔edit 零跳契約)。')
+  console.error('\n修:讓 fieldViewGeometry 多行 py 與 textarea.tsx base py 對齊、min-h 扣掉 InlineEdit 外框上下 1px 邊框(Model A read↔edit 零跳契約)。')
   process.exit(1)
 }
 console.log('✅ InlineEdit view geometry invariant PASS')

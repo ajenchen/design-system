@@ -128,7 +128,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 
 ### Typed input(Issue 10,2026-05-10 opt-in)
 
-`typeable?: boolean`(default false)→ trigger 內渲 real `<input type="text" role="combobox">` 取代 `<span>`,user 可直接打字 + Calendar icon 仍開 popover(兩種方式並存:記得日期的人直接打,要對照星期的人開日曆點)。外層 Field wrapper 只負責視覺與 Popover click anchor,不重複 `role` / `aria-*`;popup 開啟、dialog 實際掛載後,真 input 才輸出 `aria-controls` 指向該 dialog,關閉後移除,禁止把 Radix 的懸空 IDREF 留在純視覺 wrapper。Parser `parseDateInput(input, { allowTime })` 接 ISO YYYY-MM-DD / YYYY/MM/DD / YYYY.MM.DD + native `Date.parse` fallback(RFC 'Mar 12 2026')。Partial input allow;`Enter`/`Blur` commit;`Esc` reset(**草稿 ≠ 顯示值或格式錯時,那一下 Esc 歸輸入框還原草稿、不關外層浮層**:放在 Dialog 裡第一下只還原草稿、第二下才輪到表單回復 / 關對話框;日曆開著時日曆才是最內層 —— 只關日曆、草稿不動,2026-10-01 前同一下又關日曆又還原;`ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」);接 `useFormValidation` 時 consumer 的 `onKeyDown` / `onBlur` 先跑再走元件的、`name` 掛在這個 `<input>`(規則 8 聚焦),輸入框 + 日曆浮層算同一個欄位(`../../lib/composite-field-focus.ts`:焦點搬進日曆不算離開,2026-10-01 待辦總帳 N83;從觸發欄位離開、從彈出層直接離開(開著點空白處 / 直接點下一格 / 不可搜尋的 Select 開著按 Tab)、握著焦點的節點隨收起卸載,都算離開一次(2026-10-21 r1b fields F1:修前判準只掛在觸發欄位,從彈出層直接離開時 consumer 收不到 blur;`useCompositeFieldBlur` 兩邊都聽、關的那一下補量);不可打字的觸發欄位同一條);IME 組字中不誤觸發(鍵盤 `Enter` / `Esc` / `↓` 走全 DS 一支 `../../lib/ime-composition.ts` `isImeComposing` —— 2026-09-30 前這裡只看 `compositionstart/end` 記的旗標,Safari 注音按 `Enter` 選字時 `compositionend` 先到,那一下被當成提交;失焦不是鍵盤事件,仍靠那個旗標)。Invalid → `aria-invalid`。**v1 limits**:US `MM/DD/YYYY` vs EU `DD/MM/YYYY` ambiguous → Date.parse fallback;locale-aware format prop deferred v2;TimePicker typed input deferred(column picker UX 不同)。
+`typeable?: boolean`(default false)→ trigger 內渲 real `<input type="text" role="combobox">` 取代 `<span>`,user 可直接打字 + Calendar icon 仍開 popover(兩種方式並存:記得日期的人直接打,要對照星期的人開日曆點)。外層 Field wrapper 只負責視覺與 Popover click anchor,不重複 `role` / `aria-*`;popup 開啟、dialog 實際掛載後,真 input 才輸出 `aria-controls` 指向該 dialog,關閉後移除,禁止把 Radix 的懸空 IDREF 留在純視覺 wrapper。Parser `parseDateInput(input, { allowTime, locale })` 接 ISO YYYY-MM-DD / YYYY/MM/DD / YYYY.MM.DD + native `Date.parse` fallback(RFC 'Mar 12 2026');時間段可以是 24 小時 `HH:MM[:SS]`(照舊),或這個語系 12 小時制的上下午寫法(zh-TW「2026/07/05 下午2:30」、en-US「2:30 PM」,大小寫不分)—— 顯示跟語系之後(下方「格式化」)輸入框裡就是這種寫法,打回去必須認得;上下午的字從 Intl `formatToParts` 反推、不寫死任何語言,「下午13:00」、認不得的字一律不合法(`range-format.ts` `parseTimeText`,判定表 `scripts/test-date-range-format.mjs` Q 列含三個語系 × 0–23 點的往返)【AI 推導 2026-11-26,DATE-TIME(定)的落地細節】。Partial input allow;`Enter`/`Blur` commit;`Esc` reset(**草稿 ≠ 顯示值或格式錯時,那一下 Esc 歸輸入框還原草稿、不關外層浮層**:放在 Dialog 裡第一下只還原草稿、第二下才輪到表單回復 / 關對話框;日曆開著時日曆才是最內層 —— 只關日曆、草稿不動,2026-10-01 前同一下又關日曆又還原;`ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」);接 `useFormValidation` 時 consumer 的 `onKeyDown` / `onBlur` 先跑再走元件的、`name` 掛在這個 `<input>`(規則 8 聚焦),輸入框 + 日曆浮層算同一個欄位(`../../lib/composite-field-focus.ts`:焦點搬進日曆不算離開,2026-10-01 待辦總帳 N83;從觸發欄位離開、從彈出層直接離開(開著點空白處 / 直接點下一格 / 不可搜尋的 Select 開著按 Tab)、握著焦點的節點隨收起卸載,都算離開一次(2026-10-21 r1b fields F1:修前判準只掛在觸發欄位,從彈出層直接離開時 consumer 收不到 blur;`useCompositeFieldBlur` 兩邊都聽、關的那一下補量);不可打字的觸發欄位同一條);IME 組字中不誤觸發(鍵盤 `Enter` / `Esc` / `↓` 走全 DS 一支 `../../lib/ime-composition.ts` `isImeComposing` —— 2026-09-30 前這裡只看 `compositionstart/end` 記的旗標,Safari 注音按 `Enter` 選字時 `compositionend` 先到,那一下被當成提交;失焦不是鍵盤事件,仍靠那個旗標)。Invalid → `aria-invalid`。**v1 limits**:US `MM/DD/YYYY` vs EU `DD/MM/YYYY` ambiguous → Date.parse fallback;locale-aware format prop deferred v2;TimePicker typed input deferred(column picker UX 不同)。
 
 **預設 false 的理由**(user 2026-11-17 決定):user 對決策頁 r10 第 6 題④的留言(逐字,貼在「我的建議：乙」那一段):「我要選甲，維持，這開關本來就是由消費者自行評斷情境決定開與否，改成乙並不是在所有情境都比較方便」—— 要不要能直接打字由消費者依情境開 `typeable`;預設維持只能點開日曆選,行為不變。AI 當時建議乙(預設可打字),user 未採。2026-11-15 前這裡的理由只寫了相容,已撤。
 
@@ -164,11 +164,13 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
   disabled
   clearable                             // 一次清空兩端點
   formatOptions                         // Intl.DateTimeFormatOptions,與 single 共用
-  locale
+  locale                                // 預設 'zh-TW';也決定日曆面週首日(見「週起始日」)
+  weekStartsOn={prefs.weekStartsOn}     // 選填,0 = 週日 … 6 = 週六;沒傳由 locale 推,與 single 共用(app 層同一個值)
   showTime                              // 啟用時間欄位 → value 變 [datetime, datetime]
   showSeconds                           // showTime 時是否顯示秒
   minuteStep={15}
   needConfirm                           // 預設 showTime=true 時為 true
+  formatRange                           // 選填,預設 false;只管 mode="view":兩端寫成一段(同一天合併),見「區間檢視合併(formatRange)」
 />
 ```
 
@@ -240,6 +242,52 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 
 完整 class 對照見 anatomy `CalendarTokens`(State canonical 表的 `selected` / `range track`)。
 
+### 區間檢視合併(formatRange)
+
+**來源**:user 2026-11-25 在 TIMEFIELD 題選「日期元件檢視加「自動合併」選項，行事曆開啟 (Recommended)」(選項文字由 AI 擬,逐字)。user 定的範圍:`DatePicker.Range` 的 view 加一個選填設定,用 Intl formatRange 同一天自動合併、跨日寫兩端,預設關;Calendar 詳情開啟(由 Calendar 那一包接)。下面的參數名、預設寫法與退回條件是 AI 依此推導的工程細節,逐條標【AI 推導】。
+
+**規則**:
+- `formatRange`(預設 `false`)只管 `mode="view"`:兩端都有值時輸出**一段文字**,用標準 `Intl.DateTimeFormat.prototype.formatRange` —— 同一天自動合併、跨日寫兩端、起訖完全相同只寫一個值。合併規則全交給 Intl(ECMA-402 §11.5.8 [PartitionDateTimeRangePattern](https://tc39.es/ecma402/#sec-partitiondatetimerangepattern);MDN:「If the start and end dates are equivalent at the precision of the output, the output will only contain a single date.」[formatRange](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/formatRange)),元件不自己判斷「同一天」。
+- **不合併、退回兩段**【AI 推導】:只有一端有值;任一端解析不了;起點晚於終點(值本身有問題,照兩段讓人看到兩端;舊版引擎的 formatRange 對它丟例外、新版照順序寫,兩種都不採);`showTime` 但一端帶時間、一端沒有(合併會吃掉其中一端的時間);執行環境沒有 `formatRange`。
+- **退回兩段的長相**【AI 推導 2026-11-25】:版面與 `formatRange={false}` 相同(起 → 終兩段、中間箭頭、各自截斷、空的那端顯示 placeholder),**每一端的日期與時間用合併顯示的同一套寫法**(下方「日期寫法」:兩位數月日、時間 12 / 24 跟語系;傳了 `formatOptions` 也是同一套補法)—— 開了 `formatRange` 的一頁上,合併的列與退回的列並排出現,不會一列 `07`、一列 `7`。2026-11-26 起這套寫法與兩段顯示的預設相同(都是兩位數月日)。時間照每一端自己:只有一端帶時間時,另一端只寫日期(與兩段顯示相同)。只有解析不了的那一端照原樣(與不開相同)。實作 `range-format.ts` `formatDateRangeEndpoint`;判定表 F 列與「同一頁日期樣式一致」性質把退回的列算進去(對照組:退回的列換成 2026-11-25 版的不補零寫法,同一支檢查必紅)。
+- **只管 view**【AI 推導】:edit / readonly / disabled 仍是起 → 終兩段 —— 那三種模式的兩端各是一個欄位值(edit 時各是一顆可點、會切換作用端的鈕),合併之後「改哪一端」沒有對象。所以開了 `formatRange` 的 view 與 edit 觸發文字**刻意不同**(下方「格式化」那句「兩者一致」的例外)。
+- **結束日照舊是「含」**:本元件的值本來就是含,不做全天換算;拿「不含結束日」資料(例 iCal 的 DTEND)來顯示的呼叫端先自己換成含(Calendar 由 `../Calendar/calendar.spec.md` 那一端換算)。
+- **截斷照舊**:一段文字一個 `TruncatedText`,實際截斷才顯示完整值的 tooltip(`../Tooltip/tooltip.spec.md:32`)。
+
+**日期寫法(判定表)**【DATE-TIME(定)2026-11-26】:沒傳 `formatOptions` 時,合併顯示用「數字年月日、**兩位數月日**」+ 時間「時(不補零)+ 兩位數分,**12 / 24 小時跟語系**」—— 與兩段顯示、edit 觸發文字、可打字輸入框同一套(下方「格式化」)。
+
+- **user 原話**(2026-11-26 決策卡 DATE-TIME,逐字):第一輪兩則留言「為何不補零？」「可以跟著語系有一個預設？但是一樣可以獨立調整？然後跟著中文語系預設是12小時，英文的話是24小時？」;第二輪點選「時間跟語系(12 / 24)、日期一律補零,兩者都能單獨覆寫」(選項文字與建議由 AI 擬),同卡留言「補零這件事應該可以不用給覆寫？一律都補零？」(問句;協調者依此回覆「日期一律補零、不另給補零開關;時間 12 / 24 跟語系、可用既有參數覆寫」)。卡上註明 CLDR 依地區不依語言:en-US 也是 12 小時(「10:00 AM」),英文要 24 小時傳 `en-GB` 或用參數覆寫。
+- **取代的舊理由**:2026-11-25 版這裡寫「數字年月日、不補零 + 2 位數 24 小時」,理由是 ICU 在只有日期的跨日區間會丟掉補零、不補零才能整頁一致 —— 那是 AI 推導(commit cb4353d7),推不出「只能不補零」;已由上面的 user 決定取代。現在的做法是把 ICU 丟掉的零補回:合併時拿 `formatRangeToParts` 的每一段,選項要求兩位數的月 / 日若被寫成一位數就前面補 0 再接起來(`range-format.ts` `padRangeDateParts`;只補請求了兩位數的欄位,consumer 傳 `month: 'numeric'` 照它)。
+- **補零不給開關**:日期一律補零是 DS 預設,沒有另一個參數管它;要別的日期寫法照舊傳整份 `formatOptions`(既有參數)。
+- **12 / 24 的覆寫**:傳寫了時間欄位的 `formatOptions`(例 `{ year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }`)就照它、不補(判定表 X18)。世界級同一種做法:React Aria `hourCycle`「By default, this is determined by the user's locale.」(<https://react-aria.adobe.com/DateField>)、MUI X `ampm` 預設 `adapter.is12HourCycleInCurrentLocale()`(<https://mui.com/x/api/date-pickers/date-time-picker/>);Ant 是預設 24 小時、不看語系(反例,<https://raw.githubusercontent.com/ant-design/ant-design/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/time-picker/index.en-US.md>)。
+
+下表是 Node 24.14.0 / ICU 78.2 / CLDR 48.0 實得(判定表與對照組 `scripts/test-date-range-format.mjs`,純函式 `range-format.ts`;分隔號兩側與 en-US AM / PM 前的窄空白照 ICU):
+
+| 情況 | 值 | zh-TW | en-US | en-GB |
+|---|---|---|---|---|
+| 同一天有時段 | 7/15 10:00 → 7/15 11:00 | `2026/07/15 上午10:00至11:00` | `07/15/2026, 10:00 – 11:00 AM` | `15/07/2026, 10:00–11:00` |
+| 同一天下午 | 7/5 14:30 → 7/5 16:00 | `2026/07/05 下午2:30至4:00` | `07/05/2026, 2:30 – 4:00 PM` | `05/07/2026, 14:30–16:00` |
+| 跨日全天(只有日期) | 7/15 → 7/17 | `2026/07/15至2026/07/17`(ICU 原本寫 `2026/7/15至2026/7/17`,補回) | `07/15/2026 – 07/17/2026`(補回) | `15/07/2026 – 17/07/2026` |
+| 跨日有時段 | 7/15 22:00 → 7/16 01:00 | `2026/07/15 下午10:00 – 2026/07/16 上午1:00` | `07/15/2026, 10:00 PM – 07/16/2026, 1:00 AM` | `15/07/2026, 22:00 – 16/07/2026, 01:00` |
+| 同一刻 | 7/15 10:00 → 7/15 10:00 | `2026/07/15 上午10:00` | `07/15/2026, 10:00 AM` | `15/07/2026, 10:00` |
+| 一端空 | 7/15 10:00 → 空 | 兩段:`2026/07/15 上午10:00` → 結束端 placeholder | 兩段:`07/15/2026, 10:00 AM` → 結束端 placeholder | (同左,兩段) |
+
+對照組(換成它們,同一支「同一頁日期樣式一致」檢查必紅):
+- **區間不補零(ICU 原樣)**:只有日期的跨日區間與帶秒的區間,ICU 會丟掉補零 → `2026/7/15至2026/7/17`,同一頁同時出現 `07` 與 `7` —— 補回那一步拿掉就紅。
+- **文字月份 / `dateStyle`**(例 `dateStyle: 'full'` 同一天有時段是 `2026年7月15日 星期三 上午10:00–11:00`):zh-TW 只有日期的跨日區間一律換成數字月日 → `2026/7/15星期三至2026/7/17星期五`;同一頁會同時出現「年月日」與斜線兩種。
+- **退回兩段不補零(2026-11-25 版)**:合併的列補零、退回的列不補,同一頁一列 `07`、一列 `7`。
+
+傳了 `formatOptions` 時:日期段照它;`showTime` 而它沒寫任何時間欄位,就補上預設時間(用 `dateStyle` 的補 `timeStyle`,因為 Intl 不准兩者與 `hour` 混用;其餘補「時 + 兩位數分」、12 / 24 跟語系,有秒再補秒);退回兩段的每一端也用這同一組選項。自訂寫法的樣式一致由呼叫端負責 —— `dateStyle` 那條陷阱照樣會出現(判定表保留 `dateStyle: 'full'` 那兩列當證據)。其他語系照 CLDR 的區間資料,本表只保證 zh-TW、en-US、en-GB(例:ja-JP 同一天有時段的區間是「14時30分～16時00分」,與單獨 format 的「14:30」不同,本元件不改寫)。
+
+**為什麼是選填、預設關**:設計系統的日期區間元件不在檢視時自動合併,出口是自訂格式函式,或在欄位外的文字用 Intl formatRange ——
+- Mantine:預設兩端各自格式化再用 `labelSeparator` 接起來([get-formatted-date.ts L31-L33](https://github.com/mantinedev/mantine/blob/8f2ae606f8a37d5971f8315685e7daab44d9fbe2/packages/@mantine/dates/src/utils/get-formatted-date/get-formatted-date.ts#L31-L33));要別的寫法用 `valueFormatter`:「`valueFormatter` is a more powerful alternative to the `valueFormat` prop. It allows formatting the value label with a custom function.」([date-picker-input.mdx L59-L60](https://github.com/mantinedev/mantine/blob/8f2ae606f8a37d5971f8315685e7daab44d9fbe2/apps/mantine.dev/src/pages/dates/date-picker-input.mdx#L59-L60))。
+- MUI X:每一端的寫法用欄位的 `format`、中間的分隔號用 `dateSeparator`,沒有把兩端合併的選項 —— 「You can use the `dateSeparator` prop to change the separator rendered between the start and end dates」([custom-field.md L27](https://github.com/mui/mui-x/blob/30c4193c80aaaa0362aad752ae92fbfeb61b4461/docs/data/date-pickers/custom-field/custom-field.md#L27));官方 Button 欄位範例也是兩端各自 `date.format(pickerContext.fieldFormat)` 再用 ` – ` 接起來([MaterialDateRangePicker.tsx L38-L42](https://github.com/mui/mui-x/blob/30c4193c80aaaa0362aad752ae92fbfeb61b4461/docs/data/date-pickers/custom-field/behavior-button/MaterialDateRangePicker.tsx#L38-L42));要別的長相就整個換掉 field(custom-field.md「Using a Button」,[L125](https://github.com/mui/mui-x/blob/30c4193c80aaaa0362aad752ae92fbfeb61b4461/docs/data/date-pickers/custom-field/custom-field.md#L125))。
+- React Aria / Spectrum:欄位外的檢視文字示範 `formatter.formatRange(...)`([DateRangePicker.mdx L300](https://github.com/adobe/react-spectrum/blob/b1e8cf579fcc4cda0031f09d7d4e3bdff299fc3a/packages/@adobe/react-spectrum/docs/datepicker/DateRangePicker.mdx#L300));`DateFormatter.formatRange`「Formats a date range as a string.」([DateFormatter.ts L43-L44](https://github.com/adobe/react-spectrum/blob/b1e8cf579fcc4cda0031f09d7d4e3bdff299fc3a/packages/@internationalized/date/src/DateFormatter.ts#L43-L44))。
+
+本 DS 把「欄位外用 formatRange」收成元件自己的 view 選項,讓 InlineEdit 這類「檢視文字要渲染控件自己的 `mode="view"`、禁止自刻」的消費端(`../InlineEdit/inline-edit.spec.md` `renderRead` 那一列)不必另組字串;預設關,其他用到 `DatePicker.Range` 的地方畫面不變。
+
+**參數名**【AI 推導,命名 3 重 test】:(1)與同一個元件既有的 `formatOptions` 同一族(都是「交給 Intl 怎麼寫」);(2)同一個詞、同一個意思至少兩家:ECMA-402 `Intl.DateTimeFormat.prototype.formatRange`([MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/formatRange))、React Aria `DateFormatter.formatRange`([DateFormatter.ts L43-L44](https://github.com/adobe/react-spectrum/blob/b1e8cf579fcc4cda0031f09d7d4e3bdff299fc3a/packages/@internationalized/date/src/DateFormatter.ts#L43-L44));(3)全 DS 沒有同名參數,唯一同字是 `../DateGrid/date-grid.stories.tsx` 範例裡的本地函式,意思相同(把起訖寫成一段字),不是公開 API。Mantine `valueFormatter`([date-picker-input.mdx L59-L60](https://github.com/mantinedev/mantine/blob/8f2ae606f8a37d5971f8315685e7daab44d9fbe2/apps/mantine.dev/src/pages/dates/date-picker-input.mdx#L59-L60))、MUI 自訂 field([custom-field.md L125](https://github.com/mui/mui-x/blob/30c4193c80aaaa0362aad752ae92fbfeb61b4461/docs/data/date-pickers/custom-field/custom-field.md#L125))是「整個換掉格式函式 / 欄位」,不是同一件事,不採這兩個名字。
+
 ### 禁止
 
 - ❌ 不自刻「兩個 `<Input>` + 中間箭頭」繞過 `DatePicker.Range`(canonical 本元件提供)
@@ -270,7 +318,8 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 ### 行為
 
 - showTime=true:popover 右側出現 `<TimePickerSidePanel>`(內部消費 TimeColumns),通過 `<CalendarTimeContainer>` absolute positioning 讓 DateGrid 主導 row 高度(TimeColumns 不撐高)
-- TimePickerSidePanel **header dynamic 顯示當前 active time**(`HH:MM` / `HH:MM:SS`),對齊 Ant `<DatePicker showTime />` panel header(rc-picker TimePanel 標題列顯示目前值,https://github.com/react-component/picker/blob/9ecb0508645e1c0d9f3181263eecafdd1e262f6b/src/PickerPanel/TimePanel/index.tsx#L33-L35;canonical 2026-05-03 v9)
+- TimePickerSidePanel **header dynamic 顯示當前 active time**(`HH:MM` / `HH:MM:SS`),對齊 Ant `<DatePicker showTime />` panel header(rc-picker TimePanel 標題列顯示目前值,https://github.com/react-component/picker/blob/9ecb0508645e1c0d9f3181263eecafdd1e262f6b/src/PickerPanel/TimePanel/index.tsx#L33-L35;canonical 2026-05-03 v9)。面板的時欄只有 0–23 一欄,標題照欄的寫法維持 24 小時;12 小時語系的面板要不要加「上午 / 下午」欄是新 UI、**待 user 決定**(DATE-TIME(定)2026-11-26 落地的範圍是欄位裡的字與輸入框,見「格式化」)
+- 欄位裡的字(edit 觸發文字、view / readonly / disabled、可打字輸入框):日期 + 時間一次交給 `Intl.DateTimeFormat`,日期兩位數月日、時間 12 / 24 跟語系 —— zh-TW「2026/07/05 下午2:30」、en-US「07/05/2026, 2:30 PM」、en-GB「05/07/2026, 14:30」(DATE-TIME(定)2026-11-26,規則與原話見「區間檢視合併(formatRange)」日期寫法);改前時間一律接 24 小時 `HH:MM`、不看語系也不看 `formatOptions`
 - TimePickerSidePanel 結構:**pt-3 + h-field-xs flex center + mb-3**(top 對齊 DateGrid month_caption 同 Y baseline;**bottom = 0,讓 time list 連續延伸到 SurfaceFooter border-t**,對齊 Ant time-picker 「continuous scroll」idiom — canonical 2026-05-03 v10)
 - TimePickerSidePanel header **下方無 divider**(對齊 DateGrid month_caption 也無 border-b),DS internal canonical M23 優先於 Ant time-picker header divider 慣例 — 兩 panel 同層級 caption 視覺對稱(canonical 2026-05-03 v10)
 - 底部 footer **消費 SurfaceFooter SSOT**(`patterns/overlay-surface`)— border-t + py-tight,**不**自寫 Separator + p-2 + ml-auto wrapper(canonical 2026-05-03 v8)。
@@ -318,9 +367,19 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 | 選項 | 說明 | 範例 |
 |------|------|------|
 | `formatOptions` | `Intl.DateTimeFormatOptions` | `{ year: 'numeric', month: 'short', day: 'numeric' }` |
-| `locale` | BCP 47 locale | `'zh-TW'`、`'en-US'` |
+| `locale` | BCP 47 locale,預設 `'zh-TW'`(DS 日期元件共用的 `DEFAULT_DATE_LOCALE`,`../../lib/date-locale.ts`) | `'zh-TW'`、`'en-US'` |
 
-預設(未傳 `formatOptions` / `locale`)直接組 `YYYY/MM/DD`(locale-independent,對齊 Ant year-first:Ant 預設 `YYYY-MM-DD`,https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/index.en-US.md#L183;見 date-picker.tsx `formatDate` 註解);傳 `formatOptions` / `locale` 才走 `Intl.DateTimeFormat`。View / readonly / disabled 模式(含 DataTable cell)與 Edit 模式 trigger 文字同一條格式化路徑,兩者一致。
+預設(未傳 `formatOptions` / `locale`)直接組 `YYYY/MM/DD`(locale-independent,對齊 Ant year-first:Ant 預設 `YYYY-MM-DD`,https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/index.en-US.md#L183;見 date-picker.tsx `formatDate` 註解);這個字面跟預設語系 zh-TW 走 `Intl.DateTimeFormat` 兩位數年月日的輸出相同(`2026/07/15`)。傳 `formatOptions` / `locale` 才走 `Intl.DateTimeFormat`(沒傳 `formatOptions` 時用 `range-format.ts` `DATE_RANGE_DEFAULT_DATE_OPTIONS`,同一份兩位數年月日),只傳 `formatOptions` 時語系用 zh-TW。
+
+**日期一律補零、時間跟語系(DATE-TIME(定)2026-11-26)**:數字日期一律兩位數月日,不給補零開關;`showTime` 且值帶時間時,時間段 =「時(不補零)+ 兩位數分」、12 / 24 小時跟語系(CLDR 依地區:zh-TW、en-US 12 小時,en-GB、ja-JP 24 小時),zh-TW 例「2026/07/05 下午2:30」。單日、Range 兩段、edit 觸發文字、可打字輸入框、合併顯示全部同一套(`range-format.ts` `resolveDateRangeFormatOptions` 一支);要固定 24 小時就在 `formatOptions` 寫時間欄位(例 `hourCycle: 'h23'`),寫了就照它。user 原話與取代的舊理由見「區間檢視合併(formatRange)」日期寫法;同一條規則在 TimePicker(`../TimePicker/time-picker.spec.md`「顯示格式化」)與 Calendar(`../Calendar/calendar.spec.md`「資料語意」時間顯示)。
+
+View / readonly / disabled 模式(含 DataTable cell)與 Edit 模式 trigger 文字同一條格式化路徑,兩者一致;唯一例外是 `DatePicker.Range` 開了 `formatRange` 的 view(兩端寫成一段;合併不了而退回兩段時每一端也用同一套寫法;判定表見「區間檢視合併(formatRange)」)。
+
+**預設語系 zh-TW(2026-11-24)**:user 選「全 DS 日期元件一起改 zh-TW (Recommended)」(選項為 AI 擬;Calendar / DatePicker / TimePicker 同一個預設)。之前是 `'en-US'`:只傳 `formatOptions` 沒傳 `locale` 的欄位,文字從英文變中文(例 `{ year: 'numeric', month: 'long', day: 'numeric' }`:「April 2, 2026」→「2026年4月2日」);什麼格式參數都沒傳的欄位畫面不變。
+
+## 週起始日
+
+日曆面(單日與 `DatePicker.Range` 都是)一週從哪天開始:有傳 `weekStartsOn`(0 = 週日 … 6 = 週六)就用;沒傳時由 `locale` 推 —— 語系 → CLDR,規則的唯一住處是 `../DateGrid/date-grid.spec.md`「週起始日」(實作 `../../lib/date-locale.ts` `resolveWeekStartsOn`)。預設語系 zh-TW = 週日,所以沒傳 `locale` 也沒傳 `weekStartsOn` 的日曆畫面不變;傳 `locale="en-GB"` / `"de-DE"` / `"zh-CN"` 的,2026-11-24 起日曆面是週一起(之前日曆面一律是 react-day-picker 預設的週日起,不看 `locale`)。產品有「一週從週一開始」這類使用者偏好時,在 app 層把同一個值傳給每一個日期元件的 `weekStartsOn`(不要在個別元件寫死數字,理由見 DateGrid 設計原則「週首日不可在元件內硬寫」)。日曆面的月份與星期文字仍是 react-day-picker 預設的英文,`locale` 目前只管欄位文字與週首日。
 
 ---
 

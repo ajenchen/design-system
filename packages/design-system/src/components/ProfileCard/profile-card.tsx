@@ -14,6 +14,7 @@ import { Button } from '@/design-system/components/Button/button'
 import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
 import { ItemContent } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { OVERLAY_AVAILABLE_HEIGHT } from '@/design-system/tokens/elevation/overlay-geometry'
 import { useI18n } from '@/design-system/lib/i18n/i18n-context'
 
 /**
@@ -202,6 +203,7 @@ const ProfileCard = React.forwardRef<HTMLDivElement, ProfileCardProps>(
       viewMoreLabel: viewMoreLabelProp,
       labels: labelsOverride,
       className,
+      style,
       ...props
     },
     ref,
@@ -267,19 +269,16 @@ const ProfileCard = React.forwardRef<HTMLDivElement, ProfileCardProps>(
 
     // Layout canonical(2026-04-23):Header + Actions 固定上,Body(status + fields)可捲動,
     // View more 固定下。**ProfileCard 自己約束高度**,不依賴 consumer HoverCardContent 設 flex:
-    //   - `max-h-[var(--radix-hover-card-content-available-height,...)]`:HoverCard / Popover
-    //     context 自動繼承 Radix viewport-aware 變數;standalone 落到 100vh fallback
+    //   - `style.maxHeight = OVERLAY_AVAILABLE_HEIGHT`(tokens/elevation/overlay-geometry.ts;2026-11-24 前是 class 裡
+    //     hover-card → popover → 100vh 兩層後備值):HoverCard / Popover 裡繼承 Radix popper 寫在外殼上的可用高;standalone 落到 100vh 後備值
     //   - 內部 `flex flex-col + overflow-hidden`:Header(shrink-0)+ Body(flex-1 min-h-0 ScrollArea)
     //     + Footer(shrink-0)三層 chrome
     // 這是 overlay-surface 的 Header / Body / Footer 三層 chrome(內容多時只有 Body 捲動)。
     return (
       <div
         ref={ref}
-        className={cn(
-          'w-[320px] flex flex-col overflow-hidden',
-          'max-h-[var(--radix-hover-card-content-available-height,var(--radix-popover-content-available-height,100vh))]',
-          className,
-        )}
+        className={cn('w-[320px] flex flex-col overflow-hidden', className)}
+        style={{ maxHeight: OVERLAY_AVAILABLE_HEIGHT, ...style }}
         {...props}
       >
         {/* ── HEADER(固定): profile + actions ── */}

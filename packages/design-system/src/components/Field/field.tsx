@@ -52,7 +52,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/design-system/compone
 // field.tsx 只 import 不 re-export——consumer 直接從 field-context.ts import useFieldContext。
 
 import type { FieldMode, FieldVariant, FieldOrientation, FieldSize, FieldControlLayout, FieldContextValue } from './field-context'
-import { FieldContext, useFieldContext } from './field-context'
+import { FieldContext, useFieldContext, resolveGroupPreferredSize } from './field-context'
 
 // ── Internal helpers ────────────────────────────────────────────────────────
 
@@ -158,12 +158,33 @@ export interface FieldProps extends Omit<React.HTMLAttributes<HTMLDivElement>, '
   controlLayout?: FieldControlLayout
 }
 
-// ── FieldGroup Context(cascade horizontal labelWidth)──
+// ── FieldGroup Context(cascade horizontal labelWidth + 閱讀情境的範圍)──
 // 同一畫面多個 horizontal Field,label 寬度應統一對齊 → FieldGroup 提供 SSOT。
 // 下面 Field 組件自動 consume,consumer 可用 Field 的 labelWidth prop 覆寫單行。
+//
+// 範圍(field.spec.md「閱讀情境」):最外層 FieldGroup;不在組裡的 Field,範圍就是它自己。標籤色、沒有框的值的內縮、同組同高三件事同一個範圍。
+// 最外層 FieldGroup 建 `scope`,內層 FieldGroup 原樣往下傳(labelWidth 照舊是最近一層覆寫,scope 不是)。
+interface FieldScopeValue {
+  /** 同組同高:登記這一列的控件偏好(null = 收回)。key = 該 Field 的 id */
+  registerPreferredSize: (key: string, size: FieldSize | null) => void
+  /** 整組沒寫 size 的列共用的尺寸(field-context.ts resolveGroupPreferredSize);沒有人登記 = null */
+  preferredSize: FieldSize | null
+}
 interface FieldGroupContextValue {
   labelWidth?: number | string
+  /** 有值 = 這個 Field / FieldGroup 在某個 FieldGroup 裡(值 = 最外層那一組的範圍) */
+  scope?: FieldScopeValue
 }
+
+// 閱讀情境的兩顆元件內變數 --scope-label-color / --scope-value-inset:設在讀它的元素自己身上(標籤 / 沒有框的值)、只有 Field 自己讀;不是 token、不登記
+// (tokens/token-system.spec.md「命名」元件內變數)。設值住 ./field.css(閱讀情境唯一的判斷;不設在範圍元素上的理由在該檔檔頭);這裡只讀。名字不用 `--field-` 開頭
+// (那一族是共用刻度,field.spec.md「horizontal」labelWidth 段記的稽核 P20),改用掛它的記號 `data-field-scope` 的後半。
+// 後備值 = 表單(範圍裡沒有就地編輯)與範圍以外(FieldLabel 單獨使用)的樣子,一樣在讀者身上代換、跟著讀者所在的主題。
+// 標籤色:閱讀情境 → fg-secondary,否則 foreground;停用另走 text-fg-disabled(停用優先,M24)
+const LABEL_COLOR_CLASS = 'text-[color:var(--scope-label-color,var(--foreground))]'
+// 水平排:沒有框的值(開關 / 單一勾選框,掛 FIELD_FRAMELESS_VALUE_ATTR = data-field-frameless-value)往右內縮到同一欄框內的字線;
+// 表單範圍 0。字面寫出屬性名(Tailwind 只掃字面 class,不認樣板字串);兩邊同名由 scripts/reading-context-invariant.mjs 靜態段 S2 鎖。
+const FRAMELESS_VALUE_INSET_CLASS = '[&_[data-field-frameless-value]]:ml-[var(--scope-value-inset,0px)]'
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const FieldGroupContext = React.createContext<FieldGroupContextValue>({})
 
@@ -195,6 +216,7 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
 
     // FieldGroup cascade:group 的 labelWidth 是 fallback,單行 labelWidth 覆寫;數字 = px
     const groupCtx = React.useContext(FieldGroupContext)
+    const scope = groupCtx.scope
     const labelWidthValue = labelWidth ?? groupCtx.labelWidth
     const effectiveLabelWidth = typeof labelWidthValue === 'number' ? `${labelWidthValue}px` : labelWidthValue
 
@@ -236,7 +258,18 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
     const controlErrorNode = controlError != null && !consumerErrorShown ? <FieldError>{controlError}</FieldError> : null
 
     const detectedSize = detectPreferredSize(controlNodes)
-    const resolvedPreferredSize = sizeProp ?? detectedSize ?? registeredSize
+    const controlPreferredSize = detectedSize ?? registeredSize
+    // 同組同高(field.spec.md「閱讀情境」;繪製前登記):在組裡、自己沒寫 size 的列把控件偏好登記給範圍;
+    // 自己寫了 size 的列不登記(那一列的控件偏好已被它蓋掉,不該再帶動別列)。
+    const registerToScope = scope?.registerPreferredSize
+    const ownPreferenceForScope = sizeProp == null ? controlPreferredSize : null
+    React.useLayoutEffect(() => {
+      if (!registerToScope) return undefined
+      registerToScope(id, ownPreferenceForScope)
+      return () => registerToScope(id, null)
+    }, [registerToScope, id, ownPreferenceForScope])
+    // 解析順序:Field 自己寫的 → 範圍的同組偏好(各列控件偏好,不同時取最小)→ 自己控件的偏好 → md
+    const resolvedPreferredSize = sizeProp ?? scope?.preferredSize ?? controlPreferredSize
     const size: FieldSize = resolvedPreferredSize ?? 'md'
     const sizeExplicit = resolvedPreferredSize != null
 
@@ -285,7 +318,7 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
         </div>
       ) : (
         <div
-          className={cn('flex items-center min-w-0', MIN_H_CLASS[size])}
+          className={cn('flex items-center min-w-0', MIN_H_CLASS[size], orientation === 'horizontal' && FRAMELESS_VALUE_INSET_CLASS)}
           data-field-slot="control"
           data-field-control-layout="inline"
         >
@@ -307,6 +340,7 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
               ...style,
             }}
             data-field-orientation="horizontal"
+            data-field-scope={scope ? undefined : ''}
             data-field-mode={mode}
             data-field-size={size}
             data-field-disabled={disabled ? '' : undefined}
@@ -333,6 +367,7 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
           className={cn('flex flex-col gap-1 min-w-0', className)}
           style={style}
           data-field-orientation="vertical"
+          data-field-scope={scope ? undefined : ''}
           data-field-mode={mode}
           data-field-size={size}
           data-field-disabled={disabled ? '' : undefined}
@@ -427,7 +462,8 @@ const FieldLabel = React.forwardRef<HTMLLabelElement, FieldLabelProps>(
         className={cn(
           FIELD_TEXT_CLASS,
           'font-normal select-none',
-          disabled ? 'text-fg-disabled' : 'text-foreground',
+          // 停用優先(M24);否則讀標籤色變數(./field.css 在閱讀情境把它設在標籤自己身上 = fg-secondary;表單不設 → 後備 foreground;field.spec.md「閱讀情境」)
+          disabled ? 'text-fg-disabled' : LABEL_COLOR_CLASS,
           horizontalInlineClass,
           className
         )}
@@ -460,7 +496,7 @@ const FieldLabel = React.forwardRef<HTMLLabelElement, FieldLabelProps>(
                   // 滑過深一階 = 告訴你「這裡有說明可看」(hit-area-canonical.md 三-1)。
                   // 游標明寫 cursor-default:ⓘ 點下去不做事(Radix Tooltip 點擊只會收起說明),
                   // 不能用手形;base.css 讓所有 <button> 預設手形,只刪 cursor-pointer 蓋不掉(2026-09-26)
-                  className="inline-flex items-center text-fg-muted hover:text-fg-secondary bg-transparent border-0 p-0 cursor-default"  /* 2026-09-07 刪本地 outline-* — 與全域 base.css:44-47 逐字等價,本區塊無 outline-none */
+                  className="inline-flex items-center text-fg-muted hover:text-fg-secondary bg-transparent border-0 p-0 cursor-default"  /* 2026-09-07 刪本地 outline-* — 與全域 base.css:53-56 逐字等價,本區塊無 outline-none */
                 >
                   <InfoIcon size={16} aria-hidden />
                 </button>
@@ -568,11 +604,33 @@ export interface FieldGroupProps extends React.HTMLAttributes<HTMLDivElement> {
 //
 // md density 下新舊值都是 16px,所以 33 個用法裡 32 個視覺零變化;lg 下從凍結的 16px 變成 24px,
 // 也就是開始履行 density 的承諾。
+//
+// 範圍(2026-11-25,field.spec.md「閱讀情境」):最外層 FieldGroup 掛 `data-field-scope`、持有同組同高的登記;內層 FieldGroup 沿用外層的範圍。
+// 同組同高是內部機制,FieldGroup **不新增**公開的 size 參數(某一列要固定尺寸,照舊在那個 Field 上寫 size)。
 const FieldGroup = React.forwardRef<HTMLDivElement, FieldGroupProps>(
   ({ className, labelWidth, ...props }, ref) => {
+    const parent = React.useContext(FieldGroupContext)
+    const [preferences, setPreferences] = React.useState<Readonly<Record<string, FieldSize>>>({})
+    const registerPreferredSize = React.useCallback((key: string, size: FieldSize | null) => {
+      setPreferences((current) => {
+        if (size == null) {
+          if (!(key in current)) return current
+          const next = { ...current }
+          delete next[key]
+          return next
+        }
+        return current[key] === size ? current : { ...current, [key]: size }
+      })
+    }, [])
+    const preferredSize = resolveGroupPreferredSize(Object.values(preferences))
+    const ownScope = React.useMemo<FieldScopeValue>(
+      () => ({ registerPreferredSize, preferredSize }),
+      [registerPreferredSize, preferredSize],
+    )
+    const scope = parent.scope ?? ownScope
     const groupCtxValue = React.useMemo(
-      () => ({ labelWidth }),
-      [labelWidth],
+      () => ({ labelWidth, scope }),
+      [labelWidth, scope],
     )
     return (
       <FieldGroupContext.Provider value={groupCtxValue}>
@@ -580,6 +638,7 @@ const FieldGroup = React.forwardRef<HTMLDivElement, FieldGroupProps>(
           ref={ref}
           className={cn('flex flex-col min-w-0 gap-[var(--layout-space-loose)]', className)}
           data-field-group=""
+          data-field-scope={parent.scope ? undefined : ''}
           {...props}
         />
       </FieldGroupContext.Provider>

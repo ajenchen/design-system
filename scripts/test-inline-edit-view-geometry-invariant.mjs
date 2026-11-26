@@ -8,9 +8,11 @@
 //
 // @gate-contract
 //   保證: inline-edit-view-geometry-invariant.mjs 在該紅的時候會紅 —— (a) field-wrapper.tsx 的多行 md py 改回字面 py-2、
-//         (b) uiSize.css 的 --field-control-py-md 拿掉 −1px 邊框修正,兩次注入閘都必須 exit 非 0;注入前與還原後閘都必須 exit 0
+//         (b) uiSize.css 的 --field-control-py-md 拿掉減框寬的邊框修正、(c) field-wrapper.tsx 的 sm 高度下限改回不扣邊框
+//         (2026-11-25 前的寫法,靜止 30 / 編輯 28)、(d) inline-edit.tsx 靜止外框拿掉透明邊框,四次注入閘都必須 exit 非 0;
+//         注入前與還原後閘都必須 exit 0
 //   紅: 現況就紅、注入點不存在、任一注入後閘仍 exit 0、或還原後不綠 → 印出是哪一步並 exit 非 0
-//   綠: 都照預期時 exit 0;兩個檔在 finally 寫回原文,不讀時間,重複跑結果相同
+//   綠: 都照預期時 exit 0;被注入的檔在 finally 寫回原文,不讀時間,重複跑結果相同
 import { spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 
@@ -29,10 +31,22 @@ const MUTATIONS = [
     to: "multiline && size === 'md' && 'py-2'",
   },
   {
-    label: 'uiSize.css token 公式丟失 −1px 邊框修正',
+    label: 'uiSize.css token 公式丟失減框寬的邊框修正',
     target: 'packages/design-system/src/tokens/uiSize/uiSize.css',
-    from: '--field-control-py-md: calc((var(--field-height-md) - 1lh) / 2 - 1px);',
+    from: '--field-control-py-md: calc((var(--field-height-md) - 1lh) / 2 - var(--field-border-width));',
     to: '--field-control-py-md: calc((var(--field-height-md) - 1lh) / 2);',
+  },
+  {
+    label: 'field-wrapper sm 高度下限沒扣 InlineEdit 外框上下兩條邊框(2026-11-25 前的寫法)',
+    target: 'packages/design-system/src/components/Field/field-wrapper.tsx',
+    from: "size === 'sm' && 'min-h-[calc(var(--field-height-sm)_-_2_*_var(--field-border-width))]'",
+    to: "size === 'sm' && 'min-h-[var(--field-height-sm)]'",
+  },
+  {
+    label: 'inline-edit.tsx 靜止外框拿掉透明邊框(min-h 扣的兩個框寬失去依據)',
+    target: 'packages/design-system/src/components/InlineEdit/inline-edit.tsx',
+    from: "'relative flex min-w-0 rounded-md border-[length:var(--field-border-width)] border-transparent'",
+    to: "'relative flex min-w-0 rounded-md'",
   },
 ]
 for (const mutation of MUTATIONS) {

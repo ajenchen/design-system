@@ -78,6 +78,11 @@ interface OverlayAnchorRegistry {
   anchor: React.MutableRefObject<HTMLElement | null>
   /** `<PopoverAnchor virtualRef>`:Radix 不畫元素,登記的是 consumer 給的 ref 本身,讀的時候才取 current */
   virtualAnchor: React.MutableRefObject<VirtualAnchorRef | null>
+  /**
+   * 蓋在錨點上的浮層內容(PopoverContent `coverAnchor` 開著時 = 它的根元素,其餘 null;2026-11-24)。
+   * PopoverAnchor 交給 Radix 的虛擬錨點在**定位計算的那一刻**讀它:有 = 回「浮層中心 = 錨點中心」的位置(`components/Popover/popover.tsx` `useCoverAwareAnchor`)。
+   */
+  coverContent: React.MutableRefObject<HTMLElement | null>
 }
 
 const OverlayAnchorContexts: Record<OverlayFamily, React.Context<OverlayAnchorRegistry | null>> = {
@@ -92,7 +97,8 @@ export function OverlayAnchorScope({ family, children }: { family: OverlayFamily
   const trigger = React.useRef<HTMLElement | null>(null)
   const anchor = React.useRef<HTMLElement | null>(null)
   const virtualAnchor = React.useRef<VirtualAnchorRef | null>(null)
-  const value = React.useMemo(() => ({ trigger, anchor, virtualAnchor }), [])
+  const coverContent = React.useRef<HTMLElement | null>(null)
+  const value = React.useMemo(() => ({ trigger, anchor, virtualAnchor, coverContent }), [])
   const Context = OverlayAnchorContexts[family]
   return <Context.Provider value={value}>{children}</Context.Provider>
 }
@@ -130,7 +136,7 @@ export function useRegisterVirtualAnchor(family: OverlayFamily, virtualRef: Virt
 
 /** virtualRef 的 current 是元素就用它;是量測物件就用它的 contextElement(Floating UI 虛擬元素的慣例:「This property is useful if your
  *  `getBoundingClientRect` method is derived from a real element」,https://floating-ui.com/docs/virtual-elements );都沒有 = null。 */
-function elementOfVirtual(v: unknown): Element | null {
+export function elementOfVirtual(v: unknown): Element | null {
   if (v instanceof Element) return v
   if (v && typeof v === "object" && "contextElement" in v) {
     const ctx = (v as { contextElement?: unknown }).contextElement

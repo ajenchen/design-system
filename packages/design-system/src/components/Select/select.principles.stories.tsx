@@ -5,7 +5,7 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Flag } from 'lucide-react'
-import { Select } from './select'
+import { Select, type SelectOption } from './select'
 import { Field, FieldLabel } from '@/design-system/components/Field/field'
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup } from '@/design-system/components/Button/button-group'
@@ -27,7 +27,7 @@ const TutorialRule = createTutorialRule({ examples: true, examplesClassName: 'ma
 
 // ── Options ───────────────────────────────────────────────────────────────────
 
-const statusOptions = [
+const statusOptions: SelectOption[] = [
   { value: 'in_stock', label: 'In stock', tagVariant: 'green' },
   { value: 'low_stock', label: 'Low stock', tagVariant: 'yellow' },
   { value: 'out_of_stock', label: 'Out of stock', tagVariant: 'red' },

@@ -157,14 +157,44 @@ async function loadProviderHookGroupLaunchBuilder(repoRoot) {
   if (typeof loaded.buildProviderHookGroupLaunchArgv !== 'function') {
     throw new Error('provider hook output transport has no event-group launch builder')
   }
-  return loaded.buildProviderHookGroupLaunchArgv
+  return loaded
 }
 
-function expectedProviderHookInvocation(invocation, provider, buildProviderHookGroupLaunchArgv) {
-  const argv = buildProviderHookGroupLaunchArgv({
+// 派工命令帶的穩定群組 id(2026-11-26,gate-census C 組判定 B2;算法只住 transport 的 providerHookGroupId)。
+// 帶了就必須逐字等於 registrations.json 該群算出的 id —— 錯的 id 會讓入口判成沒登記、整群不跑;
+// 沒帶照舊比對不帶 id 的形狀(consumer 與舊產生器的相容)。兩段式上線(F3-fix-anchor):第一段產生器不輸出 id ——
+// PR 的 governance-anchor 用 protected main 那份本檔驗候選樹,那份還不認得 id;等認得 id 的這份上了 main,
+// 第二段才開輸出,DS repo 裡「必須帶」同時由 provider-view-group-reachability-invariant 守(開關 =
+// transport 的 PROVIDER_HOOK_GROUP_ID_IN_VIEWS)。
+function invocationGroupId(invocation) {
+  const tokens = invocation.transport === 'command-string' ? invocation.value.split(' ') : invocation.value
+  const at = tokens.indexOf('--group-id')
+  return at >= 0 ? String(tokens[at + 1] ?? '') : null
+}
+
+async function loadHookRegistrationsForGroupIds(repoRoot, providerRegistry) {
+  const pointer = providerRegistry?.canonical?.hookRegistrations
+  if (typeof pointer !== 'string' || !pointer) throw new Error('hook group id requires canonical.hookRegistrations')
+  const path = resolveWithin(repoRoot, pointer, 'hook registrations')
+  await assertRegularFileWithin(repoRoot, path, 'hook registrations')
+  return JSON.parse(await readFile(path, 'utf8'))
+}
+
+function expectedProviderHookInvocation(invocation, provider, transport, registrations) {
+  let groupId
+  if (invocationGroupId(invocation) !== null) {
+    if (typeof transport.providerHookGroupId !== 'function') throw new Error('provider hook output transport has no group id function')
+    const canonicalEvent = Object.entries(provider.adapter?.hookView?.eventBindings || {})
+      .find(([, native]) => native === invocation.event)?.[0]
+    const group = registrations?.hooks?.[canonicalEvent]?.[invocation.groupIndex]
+    if (!group) throw new Error(`hook group id names a group registrations.json does not have:${invocation.event}:${invocation.groupIndex}`)
+    groupId = transport.providerHookGroupId(canonicalEvent, group)
+  }
+  const argv = transport.buildProviderHookGroupLaunchArgv({
     provider,
     nativeEvent: invocation.event,
     groupIndex: invocation.groupIndex,
+    ...(groupId === undefined ? {} : { groupId }),
   })
   return {
     event: invocation.event,
@@ -267,11 +297,15 @@ async function validateProviderWiring({ repoRoot, role, providers, providerRegis
       const materializer = resolveRegisteredMaterializer(providerRegistry, 'hookViews', provider.adapter.hookView.materializerId)
       const config = JSON.parse(await readFile(hookConfig, 'utf8'))
       const { invocations, malformed } = providerHookInvocations(config, materializer)
-      const buildProviderHookGroupLaunchArgv = await loadProviderHookGroupLaunchBuilder(repoRoot)
+      const transport = await loadProviderHookGroupLaunchBuilder(repoRoot)
+      const registrations = invocations.some((invocation) => invocationGroupId(invocation) !== null)
+        ? await loadHookRegistrationsForGroupIds(repoRoot, providerRegistry)
+        : null
       const expectedInvocations = invocations.map((invocation) => expectedProviderHookInvocation(
         invocation,
         provider,
-        buildProviderHookGroupLaunchArgv,
+        transport,
+        registrations,
       ))
       const wired = invocations.length > 0
         && malformed.length === 0

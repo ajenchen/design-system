@@ -7,7 +7,7 @@ import { X as XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/design-system/components/Button/button"
-// (原 ButtonDivider import:分隔線 2026-11-10 移到 SurfaceHeader 的右側按鈕位;留這行讓別處引用本檔的行號不位移)
+import { MODAL_AVAILABLE_HEIGHT, MODAL_VIEWPORT_INSET, capHeight } from "@/design-system/tokens/elevation/overlay-geometry" // 本行原是 ButtonDivider import 的佔位註解(分隔線 2026-11-10 移到 SurfaceHeader 右側按鈕位),2026-11-24 換成這個 import,行號不位移
 import { SurfaceHeader, SurfaceFooter, type SurfaceHeaderProps } from "@/design-system/patterns/overlay-surface/overlay-surface"
 import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
 import { TruncatedText } from "@/design-system/patterns/element-anatomy/truncated-text"
@@ -28,7 +28,7 @@ import { DescriptionPresenceContext, useDescriptionPresence, useRegisterDescript
  * `--chrome-header-height` 48/56)。詳 dialog.spec.md「Density」節。
  *
  * ── Viewport Inset ──
- * Modal 與所在區塊(視窗,或 portalContainer 舞台)四邊保持 layout-space-viewport-inset (48px) 最小間距(2026-09-11 從 layout-space-bottom 拆出,見下方 DIALOG_INSET_VAR)。
+ * Modal 與所在區塊(視窗,或 portalContainer 舞台)四邊保持 layout-space-viewport-inset (48px) 最小間距(2026-09-11 從 layout-space-bottom 拆出,見 tokens/elevation/overlay-geometry.ts MODAL_VIEWPORT_INSET)。
  *
  * ── 寬度 ──
  * `width` = 檔位 sm 400 / md 480(預設)/ lg 640 / xl 960,或數字 px;都是最大寬,受上面的 inset 夾住、沒有下限。
@@ -62,9 +62,9 @@ const DialogTrigger = DialogPrimitive.Trigger
 const DialogPortal = DialogPrimitive.Portal
 const DialogClose = DialogPrimitive.Close
 
-// Modal 與 viewport 四邊的最小間距。2026-09-11 從 `--layout-space-bottom`(語意 = 結論留白)拆成同 family 的另一個 role token:
-// 兩者值都是 48px,但語意不同,耦合在一起會讓「調結論留白」意外改掉全站 Dialog 的高度與最大寬度(見 token 註解)。
-const DIALOG_INSET_VAR = 'var(--layout-space-viewport-inset)'
+// Modal 與 viewport 四邊的最小間距(MODAL_VIEWPORT_INSET)與 modal 可用高(MODAL_AVAILABLE_HEIGHT)住 tokens/elevation/overlay-geometry.ts
+// (2026-11-24 從本檔搬過去:浮層高度上限收成一份,與錨定浮層同一條 capHeight 公式)。為什麼不跟 `--layout-space-bottom` 共用(同值不同義)
+// 寫在那邊的常數註解。寬度那條算法(下方 maxWidth)也讀同一個 MODAL_VIEWPORT_INSET。
 // 寬度檔位(2026-11-15 A18;user 2026-11-11「對話框寬:訂檔位」,定義與用途 → dialog.spec.md「寬度檔位」)。值 = 寬螢幕時的寬,也是上限。
 // 檔位表**只住這裡**與 spec 那張表(元件級常數,同 Toast 360、AgentPanel 400 / 640;不開全域 token)。DS 自己的元件、範例只寫檔名。
 // 閘:scripts/dialog-width-invariant.mjs(1440 寬量到這四個值;--selftest 把表改壞必紅)。
@@ -73,9 +73,9 @@ type DialogWidthTier = keyof typeof DIALOG_WIDTH_TIERS
 // 所在區塊(containing block)的寬 / 高:沒傳 portalContainer → 視窗;傳了 → 那個帶 transform 的舞台(fixed 以它為準)。
 // 2026-11-15 前寫 100vw / 100svh,外框的 w-full 卻以所在區塊算 —— 放進比視窗窄或矮的並存舞台時四邊少於 48、超出的部分被舞台裁掉
 // (dialog.spec.md「Viewport Inset」;閘 dialog-width-invariant W3 實量,--selftest 改回 100vw / 100svh 必紅)。
-// 高另取 min(100svh, …):保留行動裝置網址列那道安全帽(下方 availableH 註解);沒傳 portalContainer 時兩者等值,畫面不變。
+// 高另取 min(100svh, …):保留行動裝置網址列那道安全帽;沒傳 portalContainer 時兩者等值,畫面不變。
 const DIALOG_BLOCK_WIDTH = '100%'
-const DIALOG_BLOCK_HEIGHT = 'min(100svh, 100%)'
+// 所在區塊的高(min(100svh, 100%))住 overlay-geometry.ts 的 MODAL_AVAILABLE_HEIGHT(2026-11-24 起;理由同上,也寫在那邊)。
 // 並存捲動鎖的「沒有 shards」:同一個參照,預設路徑的 effect 設回它時 React 會 bail out,不多一次 render。
 const NO_SCROLL_SHARDS: Array<{ current: Element }> = []
 
@@ -243,22 +243,22 @@ const DialogContent = React.forwardRef<
       }
     : {}
 
-  const insetCalc = `${DIALOG_INSET_VAR} * 2`
-  // `svh`(small viewport height)不是 `vh`:行動裝置的網址列收合時 `100vh` 會大於實際可視高度,
-  // 對話框底部(通常是主要動作鈕)會被切掉。DS 其他填滿視窗的外框已經是這個選擇
-  // (`app-shell.tsx` 的 `h-svh`、`sidebar.tsx` 的 `100svh`),Dialog 跟上。桌機兩者等值。
-  // 2026-11-15 起再與所在區塊高取小(DIALOG_BLOCK_HEIGHT):傳 portalContainer 時上限以舞台算。
-  const availableH = `calc(${DIALOG_BLOCK_HEIGHT} - ${insetCalc})`
+  const insetCalc = `${MODAL_VIEWPORT_INSET} * 2`
+  // 可用高 = MODAL_AVAILABLE_HEIGHT(tokens/elevation/overlay-geometry.ts;2026-11-24 從這裡搬過去,式子逐字不變):
+  // 所在區塊高與 `100svh` 取小、再扣上下 inset。為什麼是 `svh` 不是 `vh`(行動裝置網址列收合時 `100vh` 大於實際可視高度,
+  // 底部主要動作鈕會被切掉;DS 其他填滿視窗的外框 `app-shell.tsx` 的 `h-svh`、`sidebar.tsx` 的 `100svh` 同一個選擇)、
+  // 為什麼要與所在區塊高取小(傳 portalContainer 時上限以舞台算,2026-11-15)寫在那邊。
+  const availableH = MODAL_AVAILABLE_HEIGHT
   // 寬:width(檔位名或 px)> 預設 md。
   const tierPx = typeof width === 'string' ? DIALOG_WIDTH_TIERS[width] : undefined
   if (process.env.NODE_ENV !== 'production' && typeof width === 'string' && tierPx === undefined) {
     console.warn(`[DialogContent] 不認得的寬度檔位 \`${width}\`(只有 sm / md / lg / xl,或傳數字 px);這次以 md 為準。`)
   }
   const widthCss = typeof width === 'number' ? `${width}px` : `${tierPx ?? DIALOG_WIDTH_TIERS.md}px`
-  const maxHeightCss = typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight
-  // 上限只有一條公式,兩種模式共吃 —— 這就是「高度都不會超過最大高度」。
-  // consumer 傳的值只能讓它更矮(`min`),傳再大也不會超過視窗。
-  const heightCap = maxHeightCss ? `min(${availableH}, ${maxHeightCss})` : availableH
+  // 上限只有一條公式,兩種模式共吃 —— 這就是「高度都不會超過最大高度」(全 DS 同一支 capHeight,與錨定浮層共用)。
+  // consumer 傳的值只能讓它更矮(`min`),傳再大也不會超過視窗;數字 = px,字串照原樣。
+  // capHeight 在沒傳(undefined / null / 空字串)時回可用高本身,同 2026-11-24 前本檔自己寫的判斷。
+  const heightCap = capHeight(availableH, maxHeight)
 
   // fill 同時寫 height 與 maxHeight 不是冗餘:(a) 讓「兩種模式回報同一個上限」可被機械驗證;
   // (b) 擋住下方 `...style` 的逃生口 —— consumer 蓋掉 `height` 時 `maxHeight` 仍然生效。

@@ -63,7 +63,7 @@ export const TypedInput: Story = {
         </div>
         <div>
           <p className="text-caption text-fg-secondary mb-[var(--layout-space-tight)]">
-            日期 + 時間(showTime):支援 <code>2026-04-02 14:30</code> 這類輸入,月曆與時間欄仍可用。
+            日期 + 時間(showTime):框裡的時間跟語系(zh-TW「2026/04/02 下午2:30」),照這個寫法或 <code>2026-04-02 14:30</code> 打都收,月曆與時間欄仍可用。
           </p>
           <DatePicker typeable showTime value={showTimeValue} onChange={setShowTimeValue} />
         </div>
@@ -381,7 +381,8 @@ export const View: Story = {
         <DatePicker mode="view" value="2026-04-02" />
       </DescriptionItem>
       <DescriptionItem label="完整日期">
-        <DatePicker mode="view" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
+        {/* 明寫 en-US:元件預設語系 2026-11-24 起是 zh-TW,不寫會跟下一列「中文日期」一模一樣 */}
+        <DatePicker mode="view" value="2026-04-02" locale="en-US" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
       </DescriptionItem>
       <DescriptionItem label="中文日期">
         <DatePicker mode="view" value="2026-04-02" locale="zh-TW" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />

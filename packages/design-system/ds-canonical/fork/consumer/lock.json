@@ -3,8 +3,8 @@
   "schemaVersion": 1,
   "role": "template-consumer",
   "release": {
-    "designSystem": "0.1.0-beta.150",
-    "storybookConfig": "0.1.0-beta.150"
+    "designSystem": "0.1.0-beta.151",
+    "storybookConfig": "0.1.0-beta.151"
   },
   "upgradeTrust": {
     "schemaVersion": 1,
@@ -42,10 +42,10 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "b512e8da18af81e90fe7e6dfed0ecc87c114e0685e57335fa10cc5a4409dea46",
+    "forkCorpusLockSha256": "0a00ce65d7dda0dec8ef11b89544e3d216577ab936d91742ddd61bd622f8a5e6",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
-    "providerLifecycleSha256": "45ca791ec151f7f8067e0d2068c71b916cd6f6308ceedfabdbbc52de90d01583",
+    "providerLifecycleSha256": "69fa942cf9c3cddd5026b1844b5f2d943e8ceeb21f679b4089fd2701f6e0eae3",
     "providerInventorySha256": "00adf1c4f6b3367055a9cc3fdfe658660771b4c9931f696e12761a95076ad92c",
     "executionRuntimeSha256": "d9377cc45308731f287d7b1711b7c38fc4e02ff8f84729bcbbf01bb52d136904",
     "commonInstructionSha256": "d60911d6b1983d69588a927b37decd15d8b0bf6457e0bbd7e54752978651ccb6",
@@ -53,13 +53,13 @@
       "claude": {
         "instructionSha256": "b3590d8b3dfa4cafec559d6682b32b1c9702d68fbc2d08ab5f1d04df3d1ff304",
         "hookSha256": "b17888945b06f3433e8cbeb0b659d63e41dbd391906461b6453500d8ec8ecec1",
-        "skillsSha256": "455df0dea1750c5b6148533b7f3a423fb2bec4cb2c82ca12e1460e23e95dd528",
+        "skillsSha256": "54920639559994770429aa4de2eef2fae76a3dc5fd0993885b426a5370f19aab",
         "treeDigests": {}
       },
       "codex": {
         "instructionSha256": "d60911d6b1983d69588a927b37decd15d8b0bf6457e0bbd7e54752978651ccb6",
         "hookSha256": "810c6fe1f33554d2ccc33eeb91cda4ab95209442649a204e996963ca10ed4fe0",
-        "skillsSha256": "04221482a3af6da08b4977d356a61daf7f4c07e6cc321b172d1f1be221195d87",
+        "skillsSha256": "fb3bf655c329cbd2cb5d84d66a5ee6160dfccb3b29a0d1e803eb23dc3fa86184",
         "treeDigests": {}
       },
       "generic": {
@@ -74,7 +74,7 @@
     },
     "governanceCheckSha256": "1c4c4455910f1e88aebb84add9f756717395519d84913beafaa654a9f1c3126e",
     "utilityRegistrySha256": "0e78034d31ba8d1b0f7c08ab4a931990c4a461a5b53019574828849342f903b1",
-    "sharedSkillsSha256": "779ec90f94ba664361f1b39721bdc6e4fbbdf0b11eed5b5b36b4b5ddeb0245cb",
+    "sharedSkillsSha256": "4db39eaac2b2c70a9347a2dc55a23167de4d37a3a456fd9c775c6c55b583c9b3",
     "sharedSkillCount": 11,
     "requiredScripts": {
       "audit:a11y": "node scripts/audit-consumer-a11y.mjs",

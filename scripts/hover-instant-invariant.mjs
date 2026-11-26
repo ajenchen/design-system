@@ -481,9 +481,11 @@ if (isMain && process.argv.includes('--selftest')) {
     console.log(`${ok ? '✓' : '✗'} ${name} — 期望 ${expected} 命中,實得 ${n}`)
     if (!ok) bad++
   }
-  // 跨檔對照組:2026-09-25 Calendar 事件方塊的真實形狀(hover 底色在 .ts、過渡在 .tsx,中間隔兩個變數)
-  const tokensTs = `/** Calendar event tile */\nexport const CAT_EVENT: Record<Hue, string> = {\n  blue: 'bg-[var(--color-blue-1)] text-[var(--color-blue-7)] hover:bg-[var(--color-blue-2)]',\n}\nexport const CAT_ACCENT = { blue: 'border-l-[3px]' }\n`
-  const calendarTsx = (withTransition) => `import { CAT_EVENT, CAT_ACCENT } from '@/design-system/tokens/categorical-color'\nconst EVENT_COLOR_CLASSES = CAT_EVENT\nfunction Tile({ colorClass }: { colorClass: string }) {\n  return <div className={cn(\n    'rounded-md px-1.5 py-0.5 cursor-pointer${withTransition ? ' transition-colors' : ''}',\n    colorClass,\n  )} />\n}\nfunction Cell() {\n  const colorClass = allDay ? CAT_ACCENT.blue : EVENT_COLOR_CLASSES.blue\n  return <Tile colorClass={colorClass} />\n}\n`
+  // 跨檔對照組:Calendar 事件的真實形狀(hover 底色在 .ts 的色表、過渡在 .tsx,中間隔一個變數)。
+  // 2026-11-25 事件長相那一包起:全天 / 跨日長條取 CAT_EVENT(可點)/ CAT_SUBTLE(唯讀),neutral 取 CAT_EVENT_NEUTRAL 的同兩鍵,
+  // 有時段事件是透明列 + 色條(CAT_ACCENT 只給顏色),滑過寫在 .tsx 字面上(2026-09-25 首版是 CAT_ACCENT `border-l-[3px]` + 單一 colorClass 那個形狀)。
+  const tokensTs = `/** Calendar event */\nexport const CAT_EVENT: Record<Hue, string> = {\n  blue: 'bg-[var(--color-blue-1)] text-[var(--color-blue-7)] hover:bg-[var(--color-blue-2)]',\n}\nexport const CAT_SUBTLE: Record<Hue, string> = {\n  blue: 'bg-[var(--color-blue-1)] text-[var(--color-blue-7)]',\n}\nexport const CAT_ACCENT: Record<Hue, string> = {\n  blue: 'bg-[var(--color-blue-6)]',\n}\nexport const CAT_EVENT_NEUTRAL = {\n  event: 'bg-secondary text-foreground hover:bg-secondary-hover',\n  subtle: 'bg-secondary text-foreground',\n  accent: 'bg-[var(--color-neutral-9)]',\n} as const\n`
+  const calendarTsx = (withTransition) => `import { CAT_EVENT, CAT_SUBTLE, CAT_ACCENT, CAT_EVENT_NEUTRAL } from '@/design-system/tokens/categorical-color'\nfunction MonthEventPiece({ color, isBar, mode }: Props) {\n  const barClass = color === 'neutral'\n    ? (mode.readOnly ? CAT_EVENT_NEUTRAL.subtle : CAT_EVENT_NEUTRAL.event)\n    : (mode.readOnly ? CAT_SUBTLE[color] : CAT_EVENT[color])\n  const accentClass = color === 'neutral' ? CAT_EVENT_NEUTRAL.accent : CAT_ACCENT[color]\n  return isBar ? (\n    <div className={cn('flex items-center h-full rounded-[inherit] px-[var(--calendar-gap)]${withTransition ? ' transition-colors' : ''}', barClass)} />\n  ) : (\n    <div className={cn('flex items-center h-full rounded-[inherit]', !mode.readOnly && 'hover:bg-neutral-hover')}>\n      <span className={cn('shrink-0 rounded-sm', accentClass)} />\n    </div>\n  )\n}\n`
   const project = (withTransition) => new Map([
     ['tokens/categorical-color.ts', tokensTs],
     ['components/Calendar/calendar.tsx', calendarTsx(withTransition)],
@@ -495,7 +497,7 @@ if (isMain && process.argv.includes('--selftest')) {
   // 已 escape 的 cva 在元件本體被 cn() 引用:不得在引用處再報一次(Checkbox 的真實形狀)
   const checkbox = `const checkboxVariants = cva([\n  // @hover-transition-allow: 過渡屬於 checked 狀態切換,不是 hover\n  'transition-colors duration-150',\n  'hover:border-border-hover',\n])\nconst Checkbox = () => <Root className={cn(checkboxVariants({ size }), className)} />\n`
   const crossCases = [
-    ['跨檔:.ts 裡的 hover 底色經兩層變數傳進有 transition-colors 的 cn()(Calendar 事件方塊)', project(true), 1],
+    ['跨檔:.ts 色表裡的 hover 底色經一個變數傳進有 transition-colors 的 cn()(Calendar 全天 / 跨日長條)', project(true), 1],
     ['跨檔:同一條路徑但沒有過渡', project(false), 0],
     ['.ts 檔自己同時寫了 hover 底色與過渡', new Map([['lib/x.ts', `export const row = cn('transition-colors', 'hover:bg-neutral-hover')`]]), 1],
     ['無關的 const 與過渡同框(名字不是 carrier)', new Map([['lib/y.ts', `export const plain = 'text-body'`], ['components/z.tsx', `import { plain } from '@/design-system/lib/y'\nconst a = cn('transition-colors', plain)`]]), 0],

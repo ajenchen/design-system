@@ -8,7 +8,8 @@
  *   紅: W1 住處缺檔 / 帶 paths 前置設定 / 檔頭版本 ≠ 版本紀錄最後一列 / 版本紀錄某列有空欄或證據欄沒有存在的 governance/planning/*.md;
  *       W2 AGENTS.md 指向住處少於 2 處,或 Claude adapter 來源、rules/README.md 沒指向;
  *       W3 受管文字某一行命中流程指紋、同一行卻沒有 work-process.md(= 在別處重述);
- *       W4 受管文字(住處除外)出現已退場說法(verify-to-perfection、某一輪 0 條必修、修到 0 必修);
+ *       W4 受管文字(住處除外)出現已退場說法(verify-to-perfection、某一輪 0 條必修、修到 0 必修;v4 起加上合回點「本機跑 CI 導出的全部檢查」
+ *          與「合回點一律跑整套」—— 全套改在 CI 跑,本機重跑全套的說法不准從別處回流);
  *       W5 住處反引號裡的 packages / governance / scripts / infra 路徑或 rules/x.md 不存在;
  *       W6 住處「依據」段帶單位的數字不在它指向的證據檔裡;W0 受管文字收到不到 3 份(量具失效,不當通過)。
  *   綠: 以上皆無。--selftest 在系統暫存資料夾建合成 repo(跑完刪掉):乾淨樣本必須綠(含「同一行有指向住處」的正當引用),
@@ -24,6 +25,8 @@ import { fileURLToPath } from 'node:url'
 
 export const SSOT = 'packages/design-system/ds-canonical/rules/work-process.md'
 const RULES_DIR = 'packages/design-system/ds-canonical/rules'
+const SKILLS_DIR = 'packages/design-system/ds-canonical/skills'
+const HOOKS_DIR = 'packages/design-system/ds-canonical/hooks'
 const ADAPTER = 'packages/design-system/ds-canonical/adapters/claude-root-instructions.md'
 
 // W2 啟動面:Codex / generic 原生只讀 AGENTS.md(Rule Index 一列 + 自主執行段一處);Claude 的每次載入清單由 adapter 生成。
@@ -35,7 +38,8 @@ const STARTUP = [
 
 // W3 / W4 受管文字。
 const CORPUS_FILES = ['AGENTS.md', 'CONTRIBUTING.md']
-const CORPUS_TREES = ['rules', 'skills', 'references', 'adapters', 'commands'].map((d) => `packages/design-system/ds-canonical/${d}`)
+// hooks:hooks/README.md 寫了合回點本機檢查與 clone 的關係(v4 起照 W4 守,不准再寫回「本機跑全套」)。
+const CORPUS_TREES = ['rules', 'skills', 'references', 'adapters', 'commands', 'hooks'].map((d) => `packages/design-system/ds-canonical/${d}`)
 const CORPUS_FLAT = ['governance/memory', 'scripts/fork-role-sources']
 // 住處本身、證據 / 歷史紀錄、生成檢視不算受管文字。
 const EXCLUDED_PREFIXES = ['governance/planning/', 'governance/archive/', 'governance/generated/', '.claude/', '.agents/']
@@ -50,7 +54,7 @@ const FINGERPRINTS = [
   /72\.6\s*%/u,
 ]
 // 已退場的說法(W4):住處以外一律不准出現。
-const RETIRED = [/verify-to-perfection/iu, /某一輪\s*0\s*條必修/u, /修到\s*0\s*條?\s*必修/u]
+const RETIRED = [/verify-to-perfection/iu, /某一輪\s*0\s*條必修/u, /修到\s*0\s*條?\s*必修/u, /本機跑的?\s*CI\s*導出的?全部檢查/u, /合回點一律跑整套/u]
 
 // W6「帶單位的數字」:數字 + 單位,或金額。比對用整段原字(例:「72.6%」「6 小時」「4 個檔」)。
 const UNIT_NUMBER = /(?<![\d.,$])\d+(?:[.,]\d+)?\s*(?:%|分鐘|代理小時|小時|個檔|個代理|倍|天|秒|分)|\$\d[\d,]*(?:\.\d+)?/gu
@@ -192,7 +196,7 @@ const GOOD_SSOT = `# 多包 / 多步工作流程
 
 ## 合回點
 
-本機跑 CI 導出的全部檢查 → 推送 → 讀回。
+本機只跑合回新變動在 CI 對應的檢查 → 推送 → 讀回;全套只在 CI 跑。
 
 ## 依據(v1)
 
@@ -242,6 +246,9 @@ const CASES = [
   ['W3 rules 重述 72.6%', (r) => edit(r, `${RULES_DIR}/self-verify.md`, (t) => `${t}流程工具占 72.6% 花費\n`), 'W3'],
   ['W4 AGENTS.md 回流 verify-to-perfection', (r) => edit(r, 'AGENTS.md', (t) => `${t}**Default = autonomous + complete + verify-to-perfection**\n`), 'W4'],
   ['W4 memory 回流「修到 0 必修」', (r) => edit(r, 'governance/memory/a.md', () => '審查修到 0 必修為止\n'), 'W4'],
+  ['W4 skills 回流「合回點一律跑整套」', (r) => { mkdirSync(join(r, `${SKILLS_DIR}/x`), { recursive: true }); writeFileSync(join(r, `${SKILLS_DIR}/x/SKILL.md`), '收窄子集先驗過;合回點一律跑整套。\n') }, 'W4'],
+  // 同時證明 hooks/ 在受管範圍:hooks 沒收進 corpus 時這格會綠(BAD)。
+  ['W4 hooks/README.md 回流「本機跑 CI 導出的全部檢查」', (r) => { mkdirSync(join(r, HOOKS_DIR), { recursive: true }); writeFileSync(join(r, `${HOOKS_DIR}/README.md`), 'clone 的等價全樹檢查 = 合回點本機跑 CI 導出的全部檢查\n') }, 'W4'],
   ['W5 住處引用不存在的路徑', (r) => edit(r, SSOT, (t) => t.replace('`scripts/gate.mjs`', '`scripts/nope.mjs`')), 'W5'],
   ['W5 住處引用不存在的 rules/x.md', (r) => edit(r, SSOT, (t) => t.replace('`rules/self-verify.md`', '`rules/nope.md`')), 'W5'],
   ['W6 依據數字不在證據檔', (r) => edit(r, 'governance/planning/ev.md', (t) => t.replace('20 分鐘', '25 分鐘')), 'W6'],

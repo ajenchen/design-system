@@ -191,7 +191,7 @@ if (scanCorpus.storyIdsSha256 !== expectedScanCorpus.storyIdsSha256) {
 }
 
 prepareRuntimeEvidenceFile({ repoRoot: ROOT, relativePath: 'audit/a11y-audit.json' })
-// 2026-06-06 idempotent write:violations(排除 ts)無變則沿用既有 ts,避免 CI(a11y-and-size.yml --gate)每次跑 churn git tree
+// 2026-06-06 idempotent write:violations(排除 ts)無變則沿用既有 ts,避免 CI(--gate;2026-11-26 起在 ci.yml verify-browser-a11y,原本在夜間 a11y-and-size.yml)每次跑 churn git tree
 const __serializeA11y = (o) => JSON.stringify({ ...o, ts: undefined }, null, 2)
 if (fs.existsSync(LOG_FILE)) {
   try {

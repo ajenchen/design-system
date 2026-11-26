@@ -48,7 +48,7 @@ const SELFTEST = process.argv.includes('--selftest')
 const SELFTEST_H5 = process.argv.includes('--selftest-h5')
 const VH = 800
 const INSET = 48
-/** --selftest 要從送出的 bundle 拿掉的那段高度上限字面(dialog.tsx DIALOG_BLOCK_HEIGHT;2026-11-15 前是 `calc(100svh - `) */
+/** --selftest 要從送出的 bundle 拿掉的那段高度上限字面(tokens/elevation/overlay-geometry.ts MODAL_BLOCK_HEIGHT,2026-11-24 前是 dialog.tsx DIALOG_BLOCK_HEIGHT;2026-11-15 前是 `calc(100svh - `) */
 const DIALOG_HEIGHT_CAP = 'min(100svh, 100%)'
 const AVAILABLE = VH - INSET * 2 // 704
 
@@ -89,7 +89,7 @@ try {
         routeRetries++
         try { await fetchBody() } catch { return route.abort('failed').catch(() => {}) }
       }
-      // 2026-11-15(A18)起可用高 = `calc(min(100svh, 100%) - …)`(dialog.tsx DIALOG_BLOCK_HEIGHT:所在區塊高與 svh 取小);
+      // 2026-11-15(A18)起可用高 = `calc(min(100svh, 100%) - …)`(overlay-geometry.ts MODAL_BLOCK_HEIGHT,2026-11-24 前在 dialog.tsx:所在區塊高與 svh 取小);
       // 換掉的是這一段字串 —— 不論打包時常數有沒有被內聯進模板字串,字面都還在
       if (body.includes(DIALOG_HEIGHT_CAP)) { patchedChunks++; body = body.split(DIALOG_HEIGHT_CAP).join('100000px') }
       return route.fulfill({ response: res, body, headers: { ...res.headers(), 'content-type': 'application/javascript' } })
@@ -292,7 +292,7 @@ if (SELFTEST_H5) {
 if (SELFTEST) {
   // 對照組要能宣稱「儀器有效」,必須同時成立:(a) 真的改寫到了 chunk (b) 改寫之後真的紅了。
   // 少了 (a) 就只是「什麼都沒做所以沒紅」,那不是證據。
-  if (patchedChunks === 0) { console.log(`\n✗ 對照組沒有生效:沒有任何 chunk 含 \`${DIALOG_HEIGHT_CAP}\`(chunk 切法或 dialog.tsx 的上限寫法變了?)——這次什麼都沒驗到`); process.exit(1) }
+  if (patchedChunks === 0) { console.log(`\n✗ 對照組沒有生效:沒有任何 chunk 含 \`${DIALOG_HEIGHT_CAP}\`(chunk 切法或 overlay-geometry.ts 的 modal 上限寫法變了?)——這次什麼都沒驗到`); process.exit(1) }
   if (!preconditionOk) { console.log(`\n✗ 對照組前提失敗:dialog 沒開起來 —— 紅的是前提不是 H2 / H4,什麼都沒驗到`); process.exit(1) }
   if (fail === 0) { console.log(`\n✗ 對照組改寫了 ${patchedChunks} 個 chunk,但斷言全過 —— 儀器該紅卻沒紅`); process.exit(1) }
   console.log(`\n✓ 對照組:改寫 ${patchedChunks} 個 chunk 拿掉上限後,${fail} 條斷言如預期紅(儀器有效)${routeRetries ? `;轉送 .js 重送 ${routeRetries} 次` : ''}`)

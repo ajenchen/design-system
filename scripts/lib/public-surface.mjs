@@ -1,6 +1,7 @@
 // 公開介面量具(2026-11-16):一棵「含 packages/design-system 的樹」→ 消費端看得到的公開介面快照。
 //
-// 唯一呼叫端:scripts/public-surface-invariant.mjs(上一個發布 tag 的 git archive vs 工作樹,或兩個 tag 之間)。
+// 呼叫端:scripts/public-surface-invariant.mjs(上一個發布 tag 的 git archive vs 工作樹,或兩個 tag 之間;破壞性差異)、
+// scripts/release-notes-coverage-invariant.mjs(只量出口 measureExports + exportAdditions;新增的出口要登記)。
 // 量的五類(與 packages/design-system/ds-changes.json 的 surface / target 同一套鍵):
 //   (a) subpath:package.json exports 的每個子路徑(含 ./components/*、./tokens/*、./hooks/*、./styles/*)與每個子路徑的出口
 //       → subpaths Map<'./components/Button', {file}>、exports Map<名字, Map<子路徑, 'value'|'type'>>
@@ -615,7 +616,8 @@ export function effectiveCssValue(byContext, name, context) {
  * treeRoot = 含 packages/design-system 的樹根(工作樹 = repo 根;舊 tag = git archive 解開的暫存資料夾)。
  * repoRoot = 真的 repo 根(取 node_modules)。
  */
-export function measureSurface(treeRoot, repoRoot) {
+/** (a) 子路徑與每個子路徑的出口名(值 / 型別)。measureSurface 與 measureExports 共用 */
+function openExports(treeRoot, repoRoot) {
   const pkgDir = join(treeRoot, PKG_REL)
   const srcDir = join(pkgDir, 'src')
   if (!existsSync(srcDir)) throw new SurfaceInstrumentError(`讀不到 ${srcDir}`)
@@ -646,6 +648,20 @@ export function measureSurface(treeRoot, repoRoot) {
       if (!seenSymbol.has(key)) { seenSymbol.add(key); entries.push({ name, symbol: sym }) }
     }
   }
+  return { pkgDir, srcDir, subpaths, exportsMap, program, checker, entries }
+}
+
+/**
+ * 只量 (a):子路徑與出口名,不展開成員 / 預設值 / CSS。唯一呼叫端 = scripts/release-notes-coverage-invariant.mjs
+ * (找「新增的公開出口」,要對到帳本 added 條目)。回 { subpaths, exports }(與 measureSurface 同一套鍵)。
+ */
+export function measureExports(treeRoot, repoRoot) {
+  const { subpaths, exportsMap } = openExports(treeRoot, repoRoot)
+  return { subpaths, exports: exportsMap }
+}
+
+export function measureSurface(treeRoot, repoRoot) {
+  const { pkgDir, srcDir, subpaths, exportsMap, program, checker, entries } = openExports(treeRoot, repoRoot)
   const { members, anchorMembers, signatures } = collectMembers(checker, program, srcDir, entries)
   const { defaults, cvaVariants } = collectDefaults(checker, program, srcDir, entries)
   const cssFiles = walkFiles(srcDir).filter((abs) => abs.endsWith('.css')).map((abs) => [toPosix(relative(pkgDir, abs)), readFileSync(abs, 'utf8')])
@@ -755,6 +771,22 @@ export function diffSurfaces(before, after) {
     else if (!now && d.kind === 'cva' && after.cvaVariants?.get(key.slice(0, dot))?.has(key.slice(dot + 1))) push('default', key, 'default', `${d.value} → (不再有預設)`, d.at)
     // 元件參數的預設整個拿掉、參數還在(參數本身拿掉 / 改名由型別成員那一條報)
     else if (!now && (d.kind === 'param' || d.kind === 'fallback') && after.anchorMembers.get(key.slice(0, dot))?.has(key.slice(dot + 1))) push('default', key, 'default', `${d.value} → (不再有預設)`, d.at)
+  }
+  return out.sort((a, b) => (a.surface + a.target).localeCompare(b.surface + b.target))
+}
+
+/**
+ * 純函式:兩份 measureExports() / measureSurface() → 新增的公開出口 [{ surface, target, subpaths?, detail }]。
+ * surface = subpath(整個子路徑是新的)/ export(名字是新的,或既有名字多了能 import 它的子路徑;subpaths = 多出來的那些)。
+ * 破壞性差異在 diffSurfaces;本函式只看「多了什麼」。
+ */
+export function exportAdditions(before, after) {
+  const out = []
+  for (const [sp] of after.subpaths) if (!before.subpaths.has(sp)) out.push({ surface: 'subpath', target: sp, detail: '新的子路徑' })
+  for (const [name, bySp] of after.exports) {
+    const old = before.exports.get(name) ?? new Map()
+    const gained = [...bySp.keys()].filter((sp) => !old.has(sp)).sort()
+    if (gained.length) out.push({ surface: 'export', target: name, subpaths: gained, detail: `${old.size ? '既有出口多了' : '新出口,'}從 ${gained.join('、')} 可以 import` })
   }
   return out.sort((a, b) => (a.surface + a.target).localeCompare(b.surface + b.target))
 }

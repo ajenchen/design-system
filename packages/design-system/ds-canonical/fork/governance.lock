@@ -31,7 +31,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/bug-fix-rhythm/references/multi-agent-orchestration.md",
-      "sha256": "8371b3f470ca73901477c09efdbeaa544e44ee03fc863f1161b88ee9e15f395a",
+      "sha256": "8671987b1707f65413be9779a0bee2b965199ace7a429ae2eb3c61f333730f5d",
       "source": "providers/codex/skills/bug-fix-rhythm",
       "classification": null,
       "destination": null
@@ -111,7 +111,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/product-ui-audit/SKILL.md",
-      "sha256": "9fd8a8943af86a64f9460113ec6d0c3cefdf95067041fb1b07cbeb30dabd523a",
+      "sha256": "cf5c42df7065f6c0deb36b9ce792853a18487335e09484f447bae4c543967bb2",
       "source": "providers/codex/skills/product-ui-audit",
       "classification": null,
       "destination": null
@@ -127,7 +127,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/product-ui-audit/references/common-misuses.md",
-      "sha256": "5afa85d18b559d1ccb182b50489bd1744968d07203558f8efbccf4444b46b942",
+      "sha256": "7b6427bb02751c6860e462e2ba9cb6fc0e957a3d1a407aa16e9f27ac700ef9fc",
       "source": "providers/codex/skills/product-ui-audit",
       "classification": null,
       "destination": null
@@ -135,7 +135,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/product-ui-audit/references/report-template.md",
-      "sha256": "c61f2d9a87d6fa95accb45a3403075a26048b64f4c07f926aaa951085897f1de",
+      "sha256": "956954c83a3a72250f52ee309cbe5fdb6aa08a2ea0c99a345b475655f47292ce",
       "source": "providers/codex/skills/product-ui-audit",
       "classification": null,
       "destination": null
@@ -871,7 +871,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/approval-evidence.mjs",
-      "sha256": "db04b9d6484f9c861ff44d4f7c5d6f0ce3db5e22033ed0057a8058d415bf15be",
+      "sha256": "c52486d4398df2b95381fc34dae9ba55b0756e1048a0abcdd96b3a9c8ae6c426",
       "source": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
       "classification": null,
       "destination": null
@@ -951,7 +951,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/provider-hook-output-transport.mjs",
-      "sha256": "0e7c737b3c2106ed859cfc18449fc100cdaade17395b68b005d1c11751f8be3f",
+      "sha256": "c25a95883ef98dedbc32eb9a80ff9632b726f5e4e21607ff85243ee2cca67413",
       "source": "scripts/lib/provider-hook-output-transport.mjs",
       "classification": null,
       "destination": null
@@ -967,7 +967,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "9143a21ac676d468c295100f9f3a56960e4d32dc9a8296ffbf04315af80467fd",
+      "sha256": "585f61eb395f47df7cc3afc7bab255efefe3faa4833e9811f253da526f286b40",
       "source": null,
       "classification": null,
       "destination": null
@@ -999,7 +999,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/bug-fix-rhythm/references/multi-agent-orchestration.md",
-      "sha256": "8371b3f470ca73901477c09efdbeaa544e44ee03fc863f1161b88ee9e15f395a",
+      "sha256": "8671987b1707f65413be9779a0bee2b965199ace7a429ae2eb3c61f333730f5d",
       "source": "skills/bug-fix-rhythm/references/multi-agent-orchestration.md",
       "classification": null,
       "destination": null
@@ -1079,7 +1079,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/product-ui-audit/SKILL.md",
-      "sha256": "4f44e4a97e6c1c64af977daa9562b90ae8a26ddde3101041c9d6bb8099589c45",
+      "sha256": "ada1d5bd4b0ab52c5342f9093698254d8e9ebc1699fd0718456a145a32cde52c",
       "source": "skills/product-ui-audit/SKILL.md",
       "classification": null,
       "destination": null
@@ -1095,7 +1095,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/product-ui-audit/references/common-misuses.md",
-      "sha256": "5afa85d18b559d1ccb182b50489bd1744968d07203558f8efbccf4444b46b942",
+      "sha256": "7b6427bb02751c6860e462e2ba9cb6fc0e957a3d1a407aa16e9f27ac700ef9fc",
       "source": "skills/product-ui-audit/references/common-misuses.md",
       "classification": null,
       "destination": null
@@ -1103,7 +1103,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/product-ui-audit/references/report-template.md",
-      "sha256": "c61f2d9a87d6fa95accb45a3403075a26048b64f4c07f926aaa951085897f1de",
+      "sha256": "956954c83a3a72250f52ee309cbe5fdb6aa08a2ea0c99a345b475655f47292ce",
       "source": "skills/product-ui-audit/references/report-template.md",
       "classification": null,
       "destination": null
@@ -1247,7 +1247,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/bug-fix-rhythm/references/multi-agent-orchestration.md",
-      "sha256": "8371b3f470ca73901477c09efdbeaa544e44ee03fc863f1161b88ee9e15f395a",
+      "sha256": "8671987b1707f65413be9779a0bee2b965199ace7a429ae2eb3c61f333730f5d",
       "source": "skills/bug-fix-rhythm/references/multi-agent-orchestration.md",
       "classification": null,
       "destination": null
@@ -1327,7 +1327,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/product-ui-audit/SKILL.md",
-      "sha256": "9fd8a8943af86a64f9460113ec6d0c3cefdf95067041fb1b07cbeb30dabd523a",
+      "sha256": "cf5c42df7065f6c0deb36b9ce792853a18487335e09484f447bae4c543967bb2",
       "source": "skills/product-ui-audit/SKILL.md",
       "classification": null,
       "destination": null
@@ -1343,7 +1343,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/product-ui-audit/references/common-misuses.md",
-      "sha256": "5afa85d18b559d1ccb182b50489bd1744968d07203558f8efbccf4444b46b942",
+      "sha256": "7b6427bb02751c6860e462e2ba9cb6fc0e957a3d1a407aa16e9f27ac700ef9fc",
       "source": "skills/product-ui-audit/references/common-misuses.md",
       "classification": null,
       "destination": null
@@ -1351,7 +1351,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/product-ui-audit/references/report-template.md",
-      "sha256": "c61f2d9a87d6fa95accb45a3403075a26048b64f4c07f926aaa951085897f1de",
+      "sha256": "956954c83a3a72250f52ee309cbe5fdb6aa08a2ea0c99a345b475655f47292ce",
       "source": "skills/product-ui-audit/references/report-template.md",
       "classification": null,
       "destination": null
@@ -1479,7 +1479,7 @@
     {
       "schemaVersion": 1,
       "file": "references/ds-removed-names.json",
-      "sha256": "b4968f70e07c71c113994332ca4cc04a97f36014a3023b952f15bfcd2c40d899",
+      "sha256": "431eb79ce7711456e47738ee13f4a092ae0fdbaacc48ce134c4d41ba9eaa4dc2",
       "source": "packages/design-system/ds-changes.json",
       "classification": null,
       "destination": null
@@ -1543,7 +1543,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/bug-fix-rhythm/references/multi-agent-orchestration.md",
-      "sha256": "8371b3f470ca73901477c09efdbeaa544e44ee03fc863f1161b88ee9e15f395a",
+      "sha256": "8671987b1707f65413be9779a0bee2b965199ace7a429ae2eb3c61f333730f5d",
       "source": null,
       "classification": null,
       "destination": null
@@ -1623,7 +1623,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/product-ui-audit/SKILL.md",
-      "sha256": "65ab84c3d5eb4cb2f359174576736df07b4489f1b3194e8db65a34e66faa1752",
+      "sha256": "77f3b6a8e830286516c5d4b4c27abfd371c91aa9c79c358ba003b29eb046b7ba",
       "source": null,
       "classification": null,
       "destination": null
@@ -1639,7 +1639,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/product-ui-audit/references/common-misuses.md",
-      "sha256": "5afa85d18b559d1ccb182b50489bd1744968d07203558f8efbccf4444b46b942",
+      "sha256": "7b6427bb02751c6860e462e2ba9cb6fc0e957a3d1a407aa16e9f27ac700ef9fc",
       "source": null,
       "classification": null,
       "destination": null
@@ -1647,7 +1647,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/product-ui-audit/references/report-template.md",
-      "sha256": "c61f2d9a87d6fa95accb45a3403075a26048b64f4c07f926aaa951085897f1de",
+      "sha256": "956954c83a3a72250f52ee309cbe5fdb6aa08a2ea0c99a345b475655f47292ce",
       "source": null,
       "classification": null,
       "destination": null

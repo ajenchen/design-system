@@ -18,7 +18,7 @@
     "_meta": {
       "generatedAt": "2026-11-04",
       "unit": "kB = 1000 bytes(size-limit 的單位;上面 totalKB / entriesKB 是 1024 進位)",
-      "rule": "每項設現值 +10%(含相依套件、壓縮後;react / react-dom 列在 ignore 的不算);與上面的原始 byte budget 同一支 --init 重設、同一個 headroom"
+      "rule": "每項設現值 +10%(含相依套件、壓縮後;react / react-dom 列在 ignore 的不算);與上面的原始 byte budget 同一支 --init 重設、同一個 headroom。2026-11-25 只調 Calendar 一項(44.6 → 51.3 = 現值 46.6 kB × 1.10;其餘各項維持,沒有跟著放寬):Calendar 月檢視重做第一包 —— 週列改住格陣裡的 ScrollArea(Radix scroll-area,實測 +4.0 kB)、工具列改 ChromeHeader(+0.3 kB)、週起始日改呼叫 lib/date-locale 的 resolveWeekStartsOn 與骨架 / 間距改寫;改前 42.0 kB。列高常數刻意不 import tag.tsx 的 TAG_HEIGHT_PX(實測會把整個 Tag 模組帶進來、再 +7.8 kB),改成同值常數由 scripts/calendar-geometry-invariant.mjs 鎖住。新增 import 只有同 repo 的 ScrollArea、ChromeHeader、lib/date-locale,沒有 lucide 全庫或重複依賴。同日三個選用設定(hideWeekends / showWeekNumbers / loading)與窄寬度那一包後實測 47.88 kB(+1.3:Skeleton、lib/date-locale 的 resolveWeekend / resolveFirstWeekMinDays 與兩張 CLDR 字面表、date-fns getWeek / isSameWeek、量欄寬的 ResizeObserver),仍在 51.3 內,上限不動;該包必修把量欄寬從畫面寬(getBoundingClientRect)改成版面寬(layoutBorderBoxWidth,祖先縮放時不量錯)後實測 47.95 kB(+0.07),上限不動。事件版面那一包(接上 calendar-layout.ts:資料語意 / 長條判定 / 車道 / 切段 / 格內排序的 Intl.Collator,每一段事件共用一個外層元件、跨日長條的寬度式子與每格列數的算式;刪掉逐日分桶 eventsByDate 與 coerceDate)後實測 49.71 kB(+1.76;含日期格唯讀時橫跨過來的長條補給讀屏的標題),仍在 51.3 內,上限不動。事件長相那一包(有時段事件的色條 + 開始時間、長條拿掉左邊框、事件開始時間與起訖日期兩個 Intl formatter、事件讀屏名稱 labels.event、neutral 色表 CAT_EVENT_NEUTRAL;沒有新的相依套件)後實測 50.12 kB(+0.41),仍在 51.3 內,上限不動。格內互動那一包(格子的滑過改由屬性 data-hovered 驅動:指標底下那一格的命中測試、捲動與重畫後重對一次;進格那一天的記憶;onEventClick 交出 anchor;沒有新的相依套件)後實測 50.59 kB(+0.47),仍在 51.3 內,上限不動;該包必修(週列的捲軸上與拖捲軸滑塊時格子不亮:最上面的元素不在任何一格裡就不亮、指標被捕獲時照捕獲它的元素算;沒有新的相依套件)後實測 50.64 kB(+0.05),上限不動。2026-11-26「+N」清單那一包(P12-calendar-more-list)後實測 63.50 kB(+12.86),超過 51.3 → 只調 Calendar 一項 51.3 → 69.9(= 63.5 × 1.10;其餘各項維持):「+N」改成按鈕、點了以那一格為中心開當天清單,清單外殼照規格消費 PopoverContent / PopoverHeader / PopoverTitle / PopoverBody(calendar.spec.md「「+N」清單浮層」外殼條;不手刻浮層),Calendar 第一次帶進 Popover 整條相依 —— Radix popover(dismissable-layer、focus-scope、focus-guards、aria-hidden、react-remove-scroll)與 DS 浮層共用層(overlay-surface、overlay-density、overlay-nesting、overlay-focus-return、overlay-escape、i18n);Popover 單獨含相依 44.87 kB,與 Calendar 既有的 Tooltip / Button / floating-ui 重疊後淨增 12.86。新增 import 只有同 repo 的 Popover 與 overlay-geometry 的 halfRowCap,沒有 lucide 全庫或重複依賴。2026-11-26 事件詳情浮層那一包(P13-P14-event-detail)後實測 128.93 kB(+65.43),超過 69.9 → 只調 Calendar 一項 69.9 → 141.8(= 128.93 × 1.10;其餘各項維持):內建詳情 eventDetail 照規格消費 InlineEdit(標題與各欄就地改)、Field / FieldGroup(垂直排、閱讀情境)、Switch(全天)、DatePicker.Range(時間欄檢視 formatRange、編輯 showTime,帶進 DateGrid / react-day-picker / TimePicker 欄)、Select(類別,帶進 SelectMenu / cmdk)與 overlay-surface 的 EDITABLE_TITLE_HEADER_SLOT(calendar.spec.md「事件詳情浮層」外殼與內文欄位;不手刻欄位或浮層),新增 import 都是同 repo 的元件,沒有 lucide 全庫或重複依賴。只用 onEventClick / readOnlyEvents 的產品也一起帶進這些相依(靜態 import);是否改成按需載入詳情(React.lazy 分包)留給後續評估【AI 推導】。"
     },
     "checks": [
       {
@@ -72,7 +72,7 @@
       {
         "name": "Calendar(date grid + a11y)",
         "path": "packages/design-system/dist/components/Calendar/calendar.js",
-        "limit": "44.6 kB",
+        "limit": "141.8 kB",
         "gzip": true,
         "ignore": [
           "react",

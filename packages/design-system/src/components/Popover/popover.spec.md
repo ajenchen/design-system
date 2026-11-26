@@ -29,7 +29,7 @@ Popover 是**點擊觸發的浮層容器**——提供定位、動畫、焦點�
 - Row inline action(panel list row 內 Eye / drag / suffix toggle)→ `patterns/element-anatomy/inline-action.spec.md`「尺寸對照」table(md = 16+18 hover bg)
 - Footer action button → `action-bar.spec.md`(輕量 chrome,sm canonical)
 
-**觸發距離 canonical**：`sideOffset = 8`（px）—— trigger 到 Popover 邊緣的垂直/水平間距。小於 4px 會讓浮層貼死 trigger 失去「另一層」感，大於 12px 會拉斷 trigger ↔ content 的視覺關聯。本 DS 固定 8px 作為 overlay primitive 的共用呼吸距離；Dialog 居中或 full-screen，不適用此規則。
+**觸發距離 canonical**：`sideOffset = 8`（px）—— trigger 到 Popover 邊緣的垂直/水平間距。小於 4px 會讓浮層貼死 trigger 失去「另一層」感，大於 12px 會拉斷 trigger ↔ content 的視覺關聯。本 DS 固定 8px 作為 overlay primitive 的共用呼吸距離；Dialog 居中或 full-screen，不適用此規則。例外:蓋在錨點上的浮層(`coverAnchor`)沒有「與觸發點的間距」,見下方「蓋在錨點上(展開型)」。
 
 **Viewport 邊距 canonical**:`collisionPadding = 8`(px)——浮層與 viewport 邊緣的最小間距。當 popover 原本要貼近 viewport 邊(trigger 在頁面最右側、或視窗很窄)，定位 primitive 會自動推開 8px，防止內容與螢幕邊界相黏。`sideOffset` 管 trigger↔popover，`collisionPadding` 管 popover↔viewport，兩者互補。Consumer 不需傳 — 預設值是 canonical。
 
@@ -49,7 +49,16 @@ Popover 是**點擊觸發的浮層容器**——提供定位、動畫、焦點�
 
 **SelectMenu 特例**:SelectMenu 是 input-triggered,width 在 min/max 範圍內自動跟 input 同寬 → `align="start"`(對齊 input 左邊緣)在視覺上與「popover 跟 input 同寬」重疊,consumer 感知不到 alignment 差異。仍採用 canonical 以保 code 一致性,但視覺上是透明的。
 
-其他結構化浮層 spec 若討論 align 應 pointer 指回本節。
+其他結構化浮層 spec 若討論 align 應 pointer 指回本節。例外:蓋在錨點上的浮層不套本表(水平、垂直都置中於錨點),見下一節。
+
+**蓋在錨點上(展開型)**(2026-11-24;`PopoverContent coverAnchor`):浮層**蓋在錨點上、中心 = 錨點中心**(水平 + 垂直),碰到視窗邊推回、離邊 `collisionPadding` 8(上一段「Viewport 邊距 canonical」同一個值);高度上限的可用高 = 視窗高 − 上下各 8(它不在錨點的哪一側,Radix 算的「觸發點那一側剩多少」不適用),`maxHeight` 照樣只能往更矮調;標題列固定、內文區自己捲(下方「邊界案例」極長內容同一條鏈)。
+- **用途**:一格裡放不下、點「+N」展開那一格的全部內容 —— 浮層是那一格的放大版,所以以**那一格**(不是「+N」那顆鈕)為錨點、中心對齊。錨點用 `<PopoverAnchor virtualRef>` 給(例:月曆的那一格);「+N」可以是 `PopoverTrigger`(焦點歸還、`aria-expanded` 照舊)。
+- **不套的兩條**:「觸發距離 canonical」(與觸發點隔 8)與「Align 對齊 canonical」(align 跟著觸發點位置)—— 浮層在錨點上,沒有「哪一側」與「隔多遠」;開著時 `side` / `align` / `sideOffset` / `alignOffset` / `avoidCollisions` / `collisionPadding` 不作用。
+- **動畫**:沒有「從哪一側滑進來」,從自己的中心縮放淡入(其餘同一般 Popover,`overlayMotion`)。
+- **錨點不在畫面上**(沒有版面 / 整個捲出視窗):照一般浮層藏起來(`hideWhenDetached`),不推回畫面上一個看不到錨點的地方。
+- **實作**:Radix 只會把浮層貼在錨點某一側(`side` + `align`,`@radix-ui/react-popper` 1.2.8 `dist/index.mjs` 的 floating-ui `offset` / `shift` / `flip` 中介層),沒有置中蓋上的擺法 —— `PopoverAnchor` 交給 Radix 一個虛擬錨點,floating-ui 每次定位都問它的矩形,它回「浮層中心 = 錨點中心、碰邊推回」算好的左上角(`../../tokens/elevation/overlay-geometry.ts` `coverAnchorPosition`,純函式),`PopoverContent` 同時改成 bottom / start / 間距 0 / 不由 Radix 推回(`popover.tsx` `useCoverAwareAnchor`)。開啟、捲動、縮放視窗、浮層自己長高時 floating-ui 都會重算位置(`autoUpdate` 有觀察浮層尺寸);只有**換參考元素**要等 `virtualRef.current` 換了物件 —— Radix 才通知「錨點變了」、floating-ui 才換參考元素並重算(`@radix-ui/react-popper` 1.2.8 `dist/index.mjs:43-48`),所以 consumer 把 `virtualRef` 改指另一個元素時,交給 Radix 的包裝也跟著換一個 —— 浮層開著(含收起動畫中又被打開)時換錨點,浮層跟到新錨點,開不開 `coverAnchor` 都一樣。虛擬錨點的作法:Floating UI「Virtual elements」(<https://floating-ui.com/docs/virtual-elements>)。實作前 POC:6 種錨點位置 × 3 種內容高,中心與推回量誤差 0px(18 / 18),改回 Radix 預設的對照組 0 / 18;機械閘 `scripts/overlay-cover-anchor-invariant.mjs`(換錨點 = 其中的 M 列,不減少動態下量)。
+- **世界級**(總帳研究;只列核對過的):Google Calendar 點「N more」開當天總覽,疊在該格上、水平置中、寬大於格(實測公開 embed:<https://calendar.google.com/calendar/embed?src=j7gov1cmnqr9tvg14k621j7t5c%40group.calendar.google.com&src=3haig2m9msslkpf2tn1h56nn9g%40group.calendar.google.com&src=en.usa%23holiday%40group.v.calendar.google.com&mode=MONTH&dates=20261201%2F20261228&ctz=UTC&hl=en>);Toast UI「See more」水平置中、頂端對齊格子(<https://github.com/nhn/tui.calendar/blob/main/apps/calendar/src/components/dayGridMonth/gridCell.tsx>);MUI X Scheduler「More Events」蓋在格上、對齊按鈕左上(<https://github.com/mui/mui-x/blob/master/packages/x-scheduler/src/internals/components/more-events-popover/MoreEventsPopover.tsx>);FullCalendar 頂端對齊週列、左緣對齊日格(<https://github.com/fullcalendar/fullcalendar/blob/main/packages/preact/src/themes/classic/index.tsx>)。各家對位不一,「水平 + 垂直都置中」是 user 量過 Google 截圖後選的。
+- **來源**:總帳 Q2(定) user 選「蓋在那一格上，定位依據是格子 (Recommended)」;Q2b(定) user 先問「還是其實應該是以格子為中心長？我不太確定到底是怎樣比較好」,量 Google 兩張截圖後選「以格子為中心(水平 + 垂直) (Recommended)」(選項與建議是 AI 擬的)。可用高「視窗高 − 上下各 8」、動畫從中心縮放、錨點不在畫面上時藏起來【AI 推導 2026-11-24】。
 
 **結構化組合（可選）**：PopoverContent 外殼無內距，consumer 可選擇：
 - **單一 body**:包 `<PopoverBody>` 取得 SurfaceBody canonical padding(左右 `px-loose`;上下由容器自己給 —— `data-layout-body="hug"`,上 `tight`、最後是一般元素時底與頂同值、最後是有框的表格 `loose`、自帶內距的清單 0;`overlay-surface.spec.md` SSOT、`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 4。Dialog body 是擋住頁面的容器,最後是一般元素時底部 48 —— 同一條規則的第 1 列,不是特化)
@@ -60,7 +69,7 @@ Popover 是**點擊觸發的浮層容器**——提供定位、動畫、焦點�
 
 > **跨家族 SSOT pointer**:PopoverHeader 屬 **Padding-based overlay header 家族**;border / padding / dismiss size / tabsSlot(tabs 進 header 時 border auto-suppress + tabs size sm)的跨家族視覺契約 SSOT 詳 `patterns/header-canonical/header-canonical.spec.md`。本節僅 codify Popover 特有 close X v5 unbounded canonical。
 
-**Close X 按鈕(2026-04-22 v5 unbounded canonical)**:所有 `PopoverHeader` 內建右上 X 按鈕,`<Button data-dismiss iconOnly dismiss size="sm" />` native sm(28 md / 32 lg)。透過 SurfaceHeader 的 v5 CSS rule 自動套負 margin 讓 layout 佔位;PopoverHeader 走 `COMPACT_HEADER_SLOT`(= calc(--font-body-size×1.5) = 21 = title line-box,衍生)→ 佔位 21(輕量 chrome,見 `popover.tsx` docblock),非 Dialog 的 24。`hideClose` prop 可讓 composition 元件(如 Coachmark)選擇隱藏。詳 `patterns/overlay-surface/overlay-surface.spec.md`「Chrome dismiss size canonical」。 標題列操作放 `<PopoverHeader actions={…}>`(與 × 之間的分隔線由 SurfaceHeader 放,`../../patterns/overlay-surface/overlay-surface.spec.md`「SurfaceHeader」右側按鈕位)。
+**Close X 按鈕(2026-04-22 v5 unbounded canonical)**:所有 `PopoverHeader` 內建右上 X 按鈕,`<Button data-dismiss iconOnly dismiss size="sm" />` native sm(28 md / 32 lg)。透過 SurfaceHeader 的 v5 CSS rule 自動套負 margin 讓 layout 佔位;PopoverHeader 走 `COMPACT_HEADER_SLOT`(= calc(--font-body-size×1.5) = 21 = title line-box,衍生)→ 佔位 21(輕量 chrome,見 `popover.tsx` docblock),非 Dialog 的 24。`hideClose` prop 可讓 composition 元件(如 Coachmark)選擇隱藏。詳 `patterns/overlay-surface/overlay-surface.spec.md`「Chrome dismiss size canonical」。 標題列操作放 `<PopoverHeader actions={…}>`(與 × 之間的分隔線由 SurfaceHeader 放,`../../patterns/overlay-surface/overlay-surface.spec.md`「SurfaceHeader」右側按鈕位)。× 的讀屏名稱可用 `closeAriaLabel` 換(見「A11y 預設」)。標題位放可以就地改的 `InlineEdit`(不是 `PopoverTitle`)時,Header 加 `EDITABLE_TITLE_HEADER_SLOT`:× 佔位改成一列 sm 欄位高、標題欄尾端讓出欄位內距(`../../patterns/overlay-surface/overlay-chrome-sizing.spec.md`「可編輯標題的標題列」)。
 
 **Header / Footer 高度 canonical**:padding-based(繼承 SurfaceHeader / SurfaceFooter),高度 = max(child layout) + 2×tight。header:slot 佔位 21(`COMPACT_HEADER_SLOT` = title line-box,衍生)→ max(21 title, 21 slot) + 2×12 = **45**,自然比 Dialog / Sheet 48 輕一級(`popover.tsx` PopoverHeader docblock + overlay-surface.tsx 對照);footer:SurfaceFooter **不**套 unbounded slot trick(僅 padding + `border-t`,見 `overlay-surface.spec.md`「為什麼 SurfaceHeader 是 padding-based」)→ 高度 = max(child layout) + 2×tight(sm action button 28 → **52** md)。詳 `tokens/uiSize/uiSize.spec.md`「Chrome header 選型 canonical」。
 
@@ -82,6 +91,8 @@ Popover 是**點擊觸發的浮層容器**——提供定位、動畫、焦點�
 **Coachmark 的 PopoverTitle 消費**:Coachmark 的 header 小標籤(如 "新功能介紹" / "Tip 1 of 3")繼承 PopoverTitle 14px。Coachmark **body 內容的主 title**(長敘述型 "建立你的第一個 Workspace")另走 `text-body-lg`(見 `coachmark.tsx` CoachmarkBody 主 title `<h3>`)— 那是 body content 不是 chrome title,分離 concerns。
 
 **禁止**:consumer 自己在 PopoverContent 裡手刻 `<h2 className="text-body-lg">` 當 title(繞 PopoverTitle 的 canonical)。若需要大 title,視為該用 Dialog 而非 Popover(選對元件)。
+
+**內文字級**(2026-11-24):`PopoverContent` 與 `PopoverBody` 不設字級;Popover 經 Portal 掛在 `body` 底下,內文沒自己設字級的文字吃整頁預設字級(值與住處:`../../tokens/typography/typography.spec.md`「整頁預設字級」;外殼不另設的總則:`../../patterns/overlay-surface/overlay-surface.spec.md`「SurfaceBody」)。所以內文與上面的 PopoverTitle 同字級,標題靠 `font-medium` 區分(`../../tokens/typography/typography.spec.md`「同尺寸但不同角色的選法」)。2026-11-24 前整頁沒設字級,內文吃到瀏覽器預設、比標題大(例:Calendar 點事件開的 Popover)。
 
 ---
 
@@ -135,16 +146,20 @@ canonical 判斷:「使用者 click 單項是否立即改變系統狀態?」是 
 
 - ❌ **不把 Popover 當 Tooltip**：Tooltip 是 hover 觸發的純文字輔助，Popover 是 click 觸發的互動面板，語意與觸發模型不同
 - ❌ **不用 Popover 做 confirmation dialog**：確認框必須阻斷背景互動,使用者不能忽略——那是 Dialog 的職責
-- ❌ **不在 Popover 內放 nested Popover**：嵌套層級混亂、焦點管理崩壞，複雜互動改用 Dialog 或拆成多步驟
+- ❌ **不把內容多的操作疊成浮層裡的浮層**(2026-11-24 改寫):浮層裡再開浮層要**少用**,**不寫死層數**;內容多(要一次填寫多個欄位(表單)或篩選資料)改用 `Dialog` 或 `Sheet`,不再疊一層 Popover。閱讀為主、偶爾就地改一欄的詳情浮層不算內容多(`../InlineEdit/inline-edit.spec.md`「何時用」:「這個值大部分時間是被閱讀的,偶爾才編輯」)。
+  - **允許的兩種用法**:(1) 浮層裡的表單控件自己開的選單 —— DS 已有:表格篩選面板(Popover)裡的 `Select` / `Combobox` / `DatePicker` 下拉(`../DataTable/data-table.spec.md`「L4:Advanced Filter(進階篩選 panel)」);(2) 清單浮層點一項,在那一項旁邊開它的詳情浮層 —— 擺法與 DS 已有的 `DropdownMenu` 子選單相同:開在上一層那一項旁邊(`../DropdownMenu/dropdown-menu.spec.md`),也就是那一項的右側、上緣對齊(`side="right"`、`align="start"`,間距用本元件預設 `sideOffset`),右側放不下由碰撞翻面翻到左側。行事曆格陣裡被點的事件也照這條開詳情(錨點 = 被點的那一段;`../Calendar/calendar.spec.md`「事件詳情浮層」位置,2026-11-26 user 決策 DT-DIRECTION(定))。
+  - **鍵盤與點外面**:`Esc` 一次關一層、焦點回到開它的那一項,規則住 `../../../ds-canonical/references/keyboard-model-canonical.md`「`Esc` 一次只關最內層」;點外面怎麼關照 `../../patterns/overlay-surface/overlay-surface.spec.md`「A11y 預設」的「Esc / 點外面關閉」條 —— 用法 (2) 的詳情就算是產品畫在清單元件樹外的(錨點 = 被點的那一列),點它、焦點搬進它都不關清單;點兩層以外才全關(2026-11-24 起,同一條)。只有錨點的詳情浮層,關閉時把焦點還給那一列由 consumer 接:`onCloseAutoFocus={(e) => returnFocusToOpener(e, 那一列, { noTrigger: true })}`(`../../lib/overlay-focus-return.ts`)。
+  - **世界級對照**:少用 / 避免 —— Carbon「Avoid nesting popovers or placing popovers within other popovers.」(<https://carbondesignsystem.com/components/popover/usage/>)、Fluent 2 設計站「Don’t nest popovers.」(<https://fluent2.microsoft.design/components/web/react/core/popover/usage>)、Atlassian Popup「Avoid nesting popups wherever possible.」(<https://atlassian.design/components/popup/usage>)。清單項在旁邊開子層 —— Atlassian Popup 的 Nested 範例:清單裡「More actions」那一項用 `placement="right-start"` 在旁邊開子 popup,同段寫「Nesting popups inside other popups works out of the box.」(<https://atlassian.design/components/popup/examples#nested>)。限 2 層 —— Fluent UI React v9「Don't use more than 2 levels of nested `Popovers`.」(<https://github.com/microsoft/fluentui/blob/master/packages/react-components/react-popover/stories/src/Popover/PopoverBestPractices.md>)、Atlassian Dropdown menu「limit the menu to two layers wherever possible」(<https://atlassian.design/components/dropdown-menu/usage>);DS 不照抄層數上限(見下方「來源」)。內容多改用更大的容器 —— Primer:menu 裡不能放表單元素,所以不能把 SelectPanel 跟 ActionMenu 組在一起,「Alternatively, you can open a Dialog.」(<https://primer.style/product/components/action-menu/guidelines/>);Carbon「Consider using a modal or a different experience instead.」(<https://carbondesignsystem.com/components/popover/usage/>);Fluent 2 設計站:內容重要或太多時「include it on the main page or in another surface like a panel」(<https://fluent2.microsoft.design/components/web/react/core/popover/usage>)。
+  - **來源**:user 2026-11-24 問「需要限制嗎？世界級的設計都有限制層數？我認為可以建議少用，但不確定是否要限制層數」,選「建議少用，不寫死層數 (Recommended)」(選項與建議是 AI 擬的)。「內容多 = 要一次填寫多個欄位(表單)或篩選資料 → `Dialog` / `Sheet`」的分界【AI 推導 2026-11-24;「一次填寫(表單)」與「閱讀為主的詳情不算」兩句是同日依 `../InlineEdit/inline-edit.spec.md`「何時用」與「何時不用」末條(多欄位一次編輯 → 表單)補的】,依上一條「內容多改用更大的容器」那三筆。2026-11-24 前本條寫「不在 Popover 內放 nested Popover:嵌套層級混亂、焦點管理崩壞」—— 2026-04-18 `21e26c4e` AI 補規格時寫的,沒有 user 原話也沒有出處,而且與 DS 現況矛盾:上面兩種用法、`Esc` 一層一層關與點外面規則,以及 CI 的巢狀浮層點外面閘 `scripts/overlay-nested-dismiss-invariant.mjs`。
 
 ---
 
 ## 邊界案例
 
-- **實作 —— 極長內容**:PopoverContent 設 `max-h-[var(--radix-popover-content-available-height)]`(popover.tsx#PopoverContent),body 包 `<PopoverBody>`(SurfaceBody `flex-1 min-h-0 overflow-y-auto`)→ viewport 太小時 header / footer 留在視窗內、body 內捲。中間 wrapper 的 flex chain 規則見 `../../patterns/overlay-surface/overlay-surface.spec.md`「Viewport-aware scroll chain invariant」。
+- **實作 —— 極長內容**:PopoverContent 的高度上限 = 觸發點那一側的可用高(Radix 算到碰撞邊界、已扣 collisionPadding);**`maxHeight`(數字 px 或字串)只能再往更矮調**,傳再大也不超出視窗 —— 公式與常數的唯一住處 `../../tokens/elevation/elevation.spec.md`「浮層高度上限」(popover.tsx#PopoverContent 讀它,2026-11-24 起;之前是 class 寫死可用高、沒有 `maxHeight`),body 包 `<PopoverBody>`(SurfaceBody `flex-1 min-h-0 overflow-y-auto`)→ viewport 太小時 header / footer 留在視窗內、body 內捲。中間 wrapper 的 flex chain 規則見 `../../patterns/overlay-surface/overlay-surface.spec.md`「Viewport-aware scroll chain invariant」。
 - **Viewport 邊緣**:`collisionPadding = 8` 自動推開(見「Viewport 邊距 canonical」)。
 - **寬度(`width`,2026-11-15)**:不傳 = 18rem(`w-72`,畫面不變);**數字 = px 固定寬,夾在視窗內**(`min(…, 100vw − 2rem)`,`../../tokens/elevation/overlay-geometry.ts` `OVERLAY_VIEWPORT_MAX_WIDTH`,與表格三個工具面板同一份);**`"hug"` = 跟內容**(裡面的面板自己決定寬:`DataTableSortManager` / `DataTableFilterPanel`,以及指定了 `width` 的 `DataTableColumnVisibilityPanel` —— `../DataTable/data-table.spec.md`「工具面板的寬度」)。名字與值域照 user「尺寸:甲」(`../../../ds-canonical/references/props-naming.md`「尺寸參數」);依據是決策頁 r9「照既有原則直接做」的「Sheet、Popover 加寬度參數」(「要設定的值走元件參數」4甲 推得出來;**預選、user 未逐字選**,user 只回了 7 題、沒有提出異議)。2026-11-15 前只能寫 `className="w-80"` / `"w-auto"`(沒有型別;className 仍可用)。閘 `scripts/data-table-panel-reset-clear-invariant.mjs` (6)。
-- **嵌套 Popover**:禁止(見「禁止事項」)。
+- **浮層裡再開浮層**:少用、不寫死層數;內容多改用 `Dialog` / `Sheet`(見「禁止事項」)。
 - **Dark mode**:殼走 semantic token 自動 adapt(見 `color.spec.md`)。
 - **Density**:layout-space 鎖 `md`(header / footer padding 精簡);ui-size 跟觸發點那一區(見「定位」段;Trigger 與 Anchor 都登記,區間 DatePicker 只用 Anchor 也照樣讀得到)。
 - **空內容 / loading / error / validation ownership**:Popover shell **不擁有**這些狀態——由 `PopoverBody` 內的 consumer 內容層負責:空狀態放 `<Empty>`、載入放 `<Skeleton>`、錯誤放 `<Alert>`、表單驗證放 `<Field>` 的 `FieldError`。structural pattern 的職責邊界 SSOT 見 `../../patterns/overlay-surface/overlay-surface.spec.md` SurfaceBody「邊界」段(loading / error / empty 屬 consumer 內容層)。
@@ -162,10 +177,11 @@ canonical 判斷:「使用者 click 單項是否立即改變系統狀態?」是 
 - **收起動畫不延後焦點歸還**(2026-10-21,r1b fields N1):焦點在**關閉的那一刻**就還(內容的 `data-state` 變成 `closed`),淡出中的內容 `inert`(Tab、點擊都進不去),真正卸載時不再搬第二次 —— 修前 Radix 等收起動畫播完、FocusScope 卸載才還,Esc 後 150ms 內按 Tab 會被吃掉(焦點停在原欄位,或可搜尋 Select 掉到 body)。實作 `../../lib/overlay-focus-return.ts` `useExitStartFocusReturn`(PopoverContent 掛;還給誰照舊由 consumer 的 `onCloseAutoFocus` 與 Radix 非 modal 的預設決定,只改時機;Root / Trigger 經 DS 包一層登記觸發點節點,Radix 的 context 不外露)
 - **Tab 留在面板裡(Radix 內建,modal / non-modal 皆同)**:焦點在面板裡的可 Tab 元素上時,在最後一格按 Tab 回到第一格、在第一格按 Shift+Tab 回到最後一格,鍵盤走不出面板(面板裡沒有可 Tab 的元素、焦點落在 content 容器本身時,Tab 原地不動);要離開面板 = 按 Esc(焦點回 trigger)。機制:Radix Popover 內容的 FocusScope `loop: true`(`@radix-ui/react-popover` 1.1.15 `dist/index.mjs:225-226`;non-modal 時 `trapped: false`,見下一條)。這就是 W3C 對話框的規則 ——「Like non-modal dialogs, modal dialogs contain their tab sequence. That is, Tab and Shift + Tab do not move focus outside the dialog.」(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/dialog-modal/dialog-modal-pattern.html#L29-L30>),而 Popover content 本身就是 `role="dialog"`。2026-09-25 更正:本條原寫「預設 non-modal **不鎖焦點**」,R15 實測 Tab 出不去,與實作不符(待辦總帳 B11)
 - **Focus trap(Radix 內建,僅 modal)**:`modal={true}` 時連滑鼠點外面 / 程式移焦都出不去(`trapped: true`),焦點鎖在 content 內
-- **點外 / 焦點被移走即關(Radix 內建,non-modal)**:non-modal 不 trap 的意思是**滑鼠點到別處、程式把焦點移走**時焦點可以離開,一離開就由 DismissableLayer 觸發 dismiss 自動關閉——這是 dismiss-on-focus-out 機制,**不是**「Tab 可以走出去」
+- **點外 / 焦點被移走即關(Radix 內建,non-modal)**:non-modal 不 trap 的意思是**滑鼠點到別處、程式把焦點移走**時焦點可以離開,一離開就由 DismissableLayer 觸發 dismiss 自動關閉——這是 dismiss-on-focus-out 機制,**不是**「Tab 可以走出去」。**DS 覆寫(2026-11-24)**:從這一層開出來的另一層(錨點在這一層裡、比這一層晚開,含它再往下開的層)不算外面 —— 判準 `../../lib/overlay-nesting.ts`,規則住 `../../patterns/overlay-surface/overlay-surface.spec.md`「Esc / 點外面關閉」
 - **例外:選單類浮層按 Tab = 收起並往下走**:DropdownMenu 選單與單選下拉(Select / PeoplePicker single)不是對話框,開著按 Tab 收起、焦點從觸發鈕往下(Shift+Tab 往上)走;規則在各自 spec(`../SelectMenu/select-menu.spec.md`「A11y 預設」、`../DropdownMenu/dropdown-menu.spec.md`),來源 = 待辦總帳 B11。多選下拉(有全選鈕)面板裡有按鈕 / 搜尋框,是對話框型,照上面「Tab 留在面板裡」
 - **ARIA(Radix 內建)**：trigger 自動 `aria-expanded` / `aria-controls`，content `role="dialog"`
 - **Accessible name(DS 覆寫)**:Radix Popover 沒有 Radix Dialog Title 式的自動接線,content `role="dialog"` 預設**無 accessible name**。DS 以 context 補同機制(見 `popover.tsx` `PopoverTitleContext`):`<PopoverTitle>` 掛載時自動把 id 接上 content 的 `aria-labelledby`;consumer 自傳 `aria-label` / `aria-labelledby` 一律優先
+- **× 的讀屏名稱(DS 覆寫)**:`PopoverHeader` 右上 × 的名稱取值順序 = `closeAriaLabel` 參數 > `I18nProvider` 的 `popover.close` > DS 預設「關閉」(`../../lib/i18n/README.md`「Fallback chain」);不傳時照舊念「關閉」。用途:元件自己收讀屏字串的地方逐個換(例:`../Calendar/calendar.spec.md`「字串可覆寫」裡清單 / 詳情的關閉),全站換語言仍用 `I18nProvider`。命名照 DS 既有的「動作 + AriaLabel」(Notice `dismissAriaLabel`、Tag `removeAriaLabel`):Popover 的 × 是關閉浮層,屬 `onClose` 那一類(`../../../ds-canonical/references/props-naming.md`「關閉 / 移除類 callback canonical」),dismiss 留給「通知被忽略」;全 DS 沒有別的 `closeAriaLabel`。外部同樣以 close 命名這顆鈕的名字:Carbon Modal `closeButtonLabel`(<https://github.com/carbon-design-system/carbon/blob/3be33b4539b52fd859d80a318be552635794e2af/packages/react/src/components/Modal/Modal.tsx#L95-L98>)、Fluent UI Panel `closeButtonAriaLabel`(<https://github.com/microsoft/fluentui/blob/2898be4be6f8c01fcdd2ade8951bfd547ba156fa/packages/react/src/components/Panel/Panel.types.ts#L138-L141>)。閘:`popover.anatomy.stories.tsx` `EditableTitleHeaderProbe` 的 play(story-demo-focus 執行;傳了念傳入值、沒傳念「關閉」)
 
 焦點與 accessible name 的 DS 覆寫 default 已 wire 在 `PopoverContent`(consumer 可傳自己的 `onOpenAutoFocus` override),保留 Radix `data-state` 屬性即可。**無 `<PopoverTitle>` 的 naked popover 需 consumer 自傳 `aria-label`**,否則 `role="dialog"` 無 accessible name。
 
@@ -175,7 +191,7 @@ canonical 判斷:「使用者 click 單項是否立即改變系統狀態?」是 
 
 `Inspector` 提供互動 Controls 即時切換 PopoverContent 六個關鍵維度:`side` / `align`(12 種定位組合)、`sideOffset`(與 trigger 距離)、`width`(288 / 320 / 384 —— 2026-11-15 起是 PopoverContent 真的 `width` prop,之前是 story 自己的 className 字串)、`showHeader` / `showFooter`(chrome 結構開關)。內容區由 consumer 決定,Inspector 聚焦容器層級的可試玩 prop(對齊 `sheet.spec.md`「Inspector」canonical)。`PlacementMatrix` 另以靜態 12-cell side × align 矩陣一眼呈現所有定位組合;Header / Body / Footer padding 屬 `overlay-surface` SSOT,由 `ColorMatrix` 的 token 表 + 該 pattern spec 覆蓋。
 
-對應 anatomy story:保留 `Overview` + `Inspector` + 元件特有 `PlacementMatrix`(12-cell side × align 矩陣) + `ColorMatrix` + `SizeMatrix` + `StateBehavior`(open / close / animation) + `Accessibility`。
+對應 anatomy story:保留 `Overview` + `Inspector` + 元件特有 `PlacementMatrix`(12-cell side × align 矩陣) + `ColorMatrix` + `SizeMatrix` + `StateBehavior`(open / close / animation) + 元件特有 `EditableTitleHeader`(可編輯標題的標題列) + `Accessibility`;另有 test-only `EditableTitleHeaderProbe`(× 讀屏名稱與可編輯標題列幾何的量測,不進側欄與文件頁)。
 
 ---
 
@@ -195,6 +211,7 @@ canonical 判斷:「使用者 click 單項是否立即改變系統狀態?」是 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `agent-panel.spec.md`
+- `calendar.spec.md`
 - `coachmark.spec.md`
 - `dialog.spec.md`
 - `dropdown-menu.spec.md`

@@ -774,6 +774,17 @@
       ]
     },
     {
+      "id": "design-system-components-field-展示--mixed-control-alignment",
+      "file": "field-mixed-control-alignment.png",
+      "rationale": "一般表單的基準圖(2026-11-25 閱讀情境):標籤在上 / 並排 / 標籤在左三種一般表單,各有輸入框、勾選框、開關 —— 閱讀情境會動到的三件事(標籤色、開關與勾選框的位置、同組列高)在沒有就地編輯的表單上都不得變(field.spec.md「閱讀情境」:沒有就地編輯 = 一般表單,畫面與 2026-11-25 前逐像素相同)。這則 story 改動前就存在,重拍帶 reference_ref 時在同一個容器比改動前後;同一份建置的計算值另由 scripts/reading-context-invariant.mjs G4 在每支 PR 量。"
+    },
+    {
+      "id": "design-system-components-field-展示--mixed-control-alignment",
+      "file": "field-mixed-control-alignment--dark.png",
+      "globals": { "theme": "dark" },
+      "rationale": "深色主題版:一般表單的標籤在深色底上仍是 --foreground(閱讀情境才是 --fg-secondary),開關 / 勾選框位置與列高同淺色版。"
+    },
+    {
       "id": "design-system-components-datatable-展示--pinned-columns",
       "file": "datatable-pinned--dark.png",
       "globals": { "theme": "dark" },

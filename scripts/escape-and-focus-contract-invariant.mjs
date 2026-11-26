@@ -7,7 +7,8 @@
  *        整段過程焦點從不落在 body;控件自己的彈出層開著時那一下只關彈出層、不回復;拖曳中只取消拖曳;
  *        表單接線到得了 Combobox(name / Esc 層 / 焦點);開啟彈出層不算離開欄位(必填錯誤不會先長出來);
  *        沒有觸發點、從選單項開的對話框關閉後焦點回選單的觸發鈕;移除集合裡的一項後焦點接給下一顆 ×;
- *        就地編輯按 Enter 提交後不會把編輯重開;AgentPanel 輸入盒按附件 × 焦點不離開 textarea;按到底而自己停用的按鈕握著焦點;
+ *        就地編輯按 Enter 提交後不會把編輯重開;就地編輯換成自訂編輯控件(renderEdit = Select / 可打字 DatePicker)也是一層 —— 先關控件自己的選單 / 日曆、控件自己的草稿先還原、再取消編輯、才關浮層,
+ *        而且進編輯時焦點落在控件上(2026-11-25);AgentPanel 輸入盒按附件 × 焦點不離開 textarea;按到底而自己停用的按鈕握著焦點;
  *        可打字日期欄位收起日曆後焦點回輸入框;AgentPanel 改名對話框照表單可執行層(Esc 兩層、取消不落空、「儲存」沒改 / 空白停用、有字可按 —— 2026-11-17 起照「Submit Button 狀態」第二 + 第三列);
  *        宣告了 Esc 層卻沒有處理的那一下不會困住使用者(consumer 蓋掉 getInputProps 的 onKeyDown、DataTable 游標的欄被隱藏);
  *        試算表 DataTable 連結格 / 開關格的格內模式(Enter 進到格裡的連結 / 勾選框)也是一層:先回格導覽、再清游標、才關浮層(2026-10-13);
@@ -27,14 +28,27 @@
  *        2026-11-15 起 AgentDecisionCard 的卡片根也宣告一層(焦點在卡裡按 Esc = 取消):它只出現在 AgentPanel 裡,分層走的是面板的分區判定
  *        (`useEscapeRegion`)而不是 Dialog 守門,所以那一列住 `scripts/agent-decision-card-clear-invariant.mjs`(O29 / O29b / O29p / O29t,
  *        並排 / 浮層 / 提示開著各走一遍「一次少一層」),不在本閘重量。
+ *        2026-11-25 加 E-inline-edit-custom / F-inline-edit-enter-focus(Calendar 詳情浮層的欄位用 InlineEdit 包 Select / DatePicker,calendar.spec.md
+ *        「Esc(一次少一層)」):修前只有預設的 Input / Textarea 經 editSettleKeyProps 宣告一層,自訂 renderEdit 沒有任何人宣告,
+ *        桌機 Select 又不接 autoFocus —— 實測 Dialog 裡按 Esc 第一下(不開選單)/ 第二下(開選單)就連對話框一起關。
+ *        同日加 E-inline-edit-custom-date(審查者探針抓到):編輯容器的「就近的那一層」「Radix 已用掉」兩道防線在 Select 那兩列沒有一下 Esc 要它們擋,
+ *        拿掉兩道 37 列照綠;真正承重的是焦點留在輸入框的可打字 DatePicker —— 兩道各守一段(打了字 / 沒打字),所以那一列走兩段。
  *
  * ── 判定表(契約列;每列「層數 + 1」下關閉、焦點從不落 body)──
  *   E-link-edit        Dialog 裡的 LinkInput 按鉛筆進編輯 → Esc 取消編輯(焦點給鉛筆)→ 再 1–2 下關(鉛筆的 Tooltip 若開著算一層)
  *   E-link-typed       Dialog 裡沒有值的 LinkInput 打了字 → Esc 丟草稿、焦點留在輸入框 → 第 2 下關
  *   E-inline-edit      Dialog 裡的 InlineEdit 進編輯 → Esc 回檢視(焦點回檢視鈕)→ 第 2 下關
+ *   E-inline-edit-custom Dialog 裡的 InlineEdit 用 renderEdit = Select(進編輯即開選單,inline-edit.stories.tsx「狀態」同一個寫法;選了只改草稿、不提交):
+ *                      選「已完成」→ 再開選單 → 第一下 Esc 只關選單、草稿不動、仍在編輯 → 第二下取消編輯(值不變、onCommit 0 次、焦點回檢視鈕)、
+ *                      對話框不關 → 第三下關(2026-11-25,calendar.spec.md「Esc(一次少一層)」;修前第二下就連對話框一起關)
+ *   F-inline-edit-enter-focus Dialog 裡的 InlineEdit 用 renderEdit = Select、不開選單(桌機 Select 的 autoFocus 無作用)→ 進編輯後焦點在編輯控件上
+ *                      → 第一下 Esc 取消編輯、焦點回檢視鈕、對話框不關 → 第二下關(2026-11-25;修前焦點停在對話框本身,第一下就關)
+ *   E-inline-edit-custom-date Dialog 裡的 InlineEdit 用 renderEdit = 可打字 DatePicker(焦點留在輸入框;選了只改草稿、不提交),點輸入框開日曆:
+ *                      (a) 打一個字 → Esc 依序 關日曆 / 還原草稿 / 取消編輯(值不變、onCommit 0 次、焦點回檢視鈕)/ 關對話框,四下;
+ *                      (b) 沒打字 → 關日曆(仍在編輯)/ 取消編輯 / 關對話框,三下(2026-11-25;修前兩段都在取消編輯那一下連對話框一起關)
  *   E-datepicker-draft Dialog 裡可打字的 DatePicker:點欄位(日曆開)打字 → Esc 只關日曆、草稿不動 → Esc 還原草稿 → 第 3 下關
  *   E-datatable-cursor Dialog 裡試算表模式的 DataTable:點格(格游標)→ Esc 清游標、焦點留在表格 → 第 2 下關
- *   E-calendar-tile    Dialog 裡的 Calendar:F2 進格內(焦點在事件方塊)→ Esc 出格回日期鈕 → 第 2 下關
+ *   E-calendar-tile    Dialog 裡的 Calendar:從跨日長條的第 2 天 F2 進格內(焦點在長條;DOM 在第 1 天那格)→ Esc 出格回第 2 天的日期鈕 → 第 2 下關
  *   E-drag             Popover 裡的排序面板:焦點在拖曳把手按空白鍵提起 → ↓ → Esc 只取消拖曳(播報「已取消」)、面板不關 → 第 2 下關
  *   E-drag-table       Dialog 裡有格游標的 DataTable:表頭按空白鍵提起欄位 → Esc 只取消拖曳,格游標還在、對話框不關
  *   E-combobox-popup   Dialog 裡經 getInputProps 接線、值改過的 Combobox:清單開著按 Esc → 只關清單、值不動、對話框不關
@@ -77,8 +91,12 @@
  *
  * ── 突變 → 該紅的列(--selftest;MUTANTS 是單一來源,這裡是人讀版)──
  *   LinkInput 只看 raw defaultPrevented(第一輪的寫法)→ E-link-edit / E-link-typed(困住,永遠關不掉)
- *   editSettleKeyProps 不宣告 Esc 層 → E-inline-edit / E-link-edit / E-link-typed;DatePicker 草稿不宣告 → E-datepicker-draft;DatePicker 草稿的 Esc 不看 Radix 已用掉 → E-datepicker-draft
- *   DataTable 根不宣告 self 層 → E-datatable-cursor / E-datatable-hidden-col / E-datatable-cell-widget(它的第二下就是這一層);Calendar 方塊不宣告 → E-calendar-tile
+ *   editSettleKeyProps 不宣告 Esc 層 → E-inline-edit / E-link-edit / E-link-typed;DatePicker 草稿不宣告 → E-datepicker-draft / E-inline-edit-custom-date;
+ *   DatePicker 草稿的 Esc 不看 Radix 已用掉 → E-datepicker-draft / E-inline-edit-custom-date(同一個輸入框放進 InlineEdit,同一個根因)
+ *   InlineEdit 自訂編輯容器不宣告 Esc 層 → E-inline-edit-custom / E-inline-edit-custom-date / F-inline-edit-enter-focus;進編輯不把焦點補進編輯容器 → F-inline-edit-enter-focus;
+ *   編輯容器不看就近的那一層 / 不看 Radix 已用掉 → E-inline-edit-custom-date(各紅一段);編輯容器只看不認領 → E-inline-edit-custom / -date / F-inline-edit-enter-focus
+ *   DataTable 根不宣告 self 層 → E-datatable-cursor / E-datatable-hidden-col / E-datatable-cell-widget(它的第二下就是這一層);Calendar 方塊不宣告 → E-calendar-tile;
+ *   Calendar 出格回長條 DOM 所在那一天(2026-11-25 前的 dayStopOf(焦點所在那一格))→ E-calendar-tile
  *   DataTable 連結格 / 開關格不宣告格內那一層 → E-datatable-cell-widget
  *   拖曳不宣告 / 不獨占 → E-drag / E-drag-table;DataTable 拖曳中仍用 self 層 → E-drag-table
  *   Combobox 丟掉 name / data-* → E-combobox / C-combobox-focus;表單 Esc 不看 Radix 已用掉 → E-combobox-popup(+ 接著量的 E-combobox;也不認領 → F-rename)
@@ -127,10 +145,12 @@ const LANES = Math.max(1, Number(process.argv.find((a) => a.startsWith('--lanes=
 /** 除錯用:`--only=<突變 id>[,<id>…]` 只跑這幾個突變(不檢查覆蓋率 —— 這一趟不算 selftest 通過,結尾會明說) */
 const ONLY = process.argv.find((a) => a.startsWith('--only='))?.slice('--only='.length).split(',').filter(Boolean) ?? null
 /**
- * `--shard=<k>/<n>`(selftest):只跑 MUTANTS 裡索引 % n === k 的那一片(基準照跑)。CI 把對照組拆成 n 片平行跑(ci.yml
+ * `--shard=<k>/<n>`(selftest):只跑 MUTANTS 裡索引 % n === k 的那一片。CI 把對照組拆成 n 片平行跑(ci.yml
  * verify-browser-escape-focus-control 的 matrix;2026-10-21 加 B-leave / N-esc-tab 之後整趟估 1.3–1.5 倍,單一 job 會貼到 25 分上限):
  * 各片各自驗「每個突變剛好紅它的 expectRed」;覆蓋率改成靜態驗 —— 每一條契約列都必須出現在某個突變的 expectRed(各片都證明了自己的突變
- * 剛好紅 expectRed,所有片合起來 = 動態覆蓋)。不給 = 一片跑全部(本機 `npm run test:escape-and-focus-contract`、meta-test)。
+ * 剛好紅 expectRed,所有片合起來 = 動態覆蓋;靜態覆蓋只在第 0 片驗)。
+ * 基準 = 一趟完整判定,只在第 0 片跑(2026-11-26:每片都跑 = 同一趟判定一次 CI 跑 n 次);其他片的每個突變那一趟也量全部列、紅的列必須剛好等於 expectRed,所以現行原始碼哪一列退步,那幾片照樣紅,第 0 片的基準另印判定那一行。CI 不另跑判定(2026-11-26 拿掉 verify-browser-overlay 那一趟:它與這裡的基準是同一個 runVariant、同一個分頁設定)。
+ * 不給 = 一片跑全部(本機 `npm run test:escape-and-focus-contract`、meta-test)。
  */
 const SHARD = (() => {
   const raw = process.argv.find((a) => a.startsWith('--shard='))?.slice('--shard='.length)
@@ -160,17 +180,61 @@ const MUTANTS = [
       'return { onKeyDown: makeEditSettleKeyHandler(settle) }'),
   },
   {
+    id: 'inline-edit-custom-no-escape-layer',
+    what: 'InlineEdit 自訂 renderEdit 的編輯容器不宣告 Esc 層(2026-11-25 前的形狀:只有預設 Input / Textarea 經 editSettleKeyProps 宣告)',
+    file: 'components/InlineEdit/inline-edit.tsx',
+    // 三列的「取消編輯」那一下都靠這一層:拿掉 → 那一下 Radix 直接關對話框(E-inline-edit-custom-date 兩段都在這一下紅)
+    expectRed: ['E-inline-edit-custom', 'E-inline-edit-custom-date', 'F-inline-edit-enter-focus'],
+    apply: (src) => replaceOnce(src, /\{ \.\.\.escapeLayerProps\(true\), onKeyDown: handleCustomEditKeyDown \}/, '{ onKeyDown: handleCustomEditKeyDown }'),
+  },
+  {
+    id: 'inline-edit-no-enter-focus',
+    what: 'InlineEdit 進編輯時不把焦點補進編輯容器(控件不接 autoFocus 時焦點停在對話框本身;2026-11-25 前的形狀)',
+    file: 'components/InlineEdit/inline-edit.tsx',
+    // E-inline-edit-custom 不在內:那一列的 Select 進編輯即開選單,焦點由選單自己搬進彈出層、收起時 Radix 還給觸發欄位
+    expectRed: ['F-inline-edit-enter-focus'],
+    apply: (src) => replaceOnce(src, /\n    tabbableOrder\(box\)\[0\]\?\.focus\(\)\n/, '\n'),
+  },
+  {
+    id: 'inline-edit-custom-esc-not-nearest',
+    what: 'InlineEdit 編輯容器收 Esc 時不看「就近的那一層是不是自己」(焦點所在的可打字 DatePicker 有打了還沒存的字時,同一下又還原草稿又取消編輯)',
+    file: 'components/InlineEdit/inline-edit.tsx',
+    // Select 那兩列不在內:那兩列沒有一下 Esc 要這一道擋(2026-11-25 審查者探針:拿掉它 37 列照綠)
+    expectRed: ['E-inline-edit-custom-date'],
+    apply: (src) => replaceOnce(src, /\n      if \(nearest !== e\.currentTarget\) return\n/, '\n'),
+  },
+  {
+    id: 'inline-edit-custom-esc-ignores-radix-used',
+    what: 'InlineEdit 編輯容器收 Esc 時不看這一下是否已被 Radix 用掉(控件自己的日曆開著時,同一下又關日曆又取消編輯)',
+    file: 'components/InlineEdit/inline-edit.tsx',
+    expectRed: ['E-inline-edit-custom-date'],
+    // 只拿掉「看結果就停」那一道,呼叫照留:isEscapeForControl 同時是「認領」(下一個突變),一起拿掉就不是單一根因
+    apply: (src) => replaceOnce(src, /\n      if \(!isEscapeForControl\(e\)\) return\n      e\.preventDefault\(\)\n      cancel\(\)\n/, '\n      void isEscapeForControl(e)\n      e.preventDefault()\n      cancel()\n'),
+  },
+  {
+    id: 'inline-edit-custom-esc-no-claim',
+    what: 'InlineEdit 編輯容器只「看」這一下還在不在、不認領(isEscapeTakenElsewhere 代替 isEscapeForControl):取消了編輯,浮層守門卻當作沒人接、重新派一次,同一下連對話框一起關(lib/overlay-escape.ts「宣告 ≠ 處理」)',
+    file: 'components/InlineEdit/inline-edit.tsx',
+    expectRed: ['E-inline-edit-custom', 'E-inline-edit-custom-date', 'F-inline-edit-enter-focus'],
+    apply: (src) => replaceOnce(
+      replaceOnce(src, /import \{ ESCAPE_LAYER_ATTR, escapeLayerProps, isEscapeForControl \} from '@\/design-system\/lib\/overlay-escape'/,
+        "import { ESCAPE_LAYER_ATTR, escapeLayerProps, isEscapeForControl, isEscapeTakenElsewhere } from '@/design-system/lib/overlay-escape'"),
+      /\n      if \(!isEscapeForControl\(e\)\) return\n      e\.preventDefault\(\)\n      cancel\(\)\n/, '\n      if (isEscapeTakenElsewhere(e)) return\n      e.preventDefault()\n      cancel()\n'),
+  },
+  {
     id: 'datepicker-draft-no-layer',
     what: 'DatePicker 可打字欄位的草稿不宣告 Esc 層',
     file: 'components/DatePicker/date-picker.tsx',
-    expectRed: ['E-datepicker-draft'],
+    // 當 InlineEdit 的編輯控件時,就近的那一層變成編輯容器 → 還原草稿那一下同時取消編輯(E-inline-edit-custom-date (a) 第二下),同一個根因連帶紅
+    expectRed: ['E-datepicker-draft', 'E-inline-edit-custom-date'],
     apply: (src) => replaceOnce(src, /\{\.\.\.escapeLayerProps\(inputDraft !== displayLive \|\| inputInvalid\)\}/, ''),
   },
   {
     id: 'datepicker-esc-ignores-radix-used',
     what: 'DatePicker 可打字欄位的 Esc 不看這一下是否已被 Radix 用掉(日曆開著按 Esc 又關日曆又還原草稿 = 一下兩層)',
     file: 'components/DatePicker/date-picker.tsx',
-    expectRed: ['E-datepicker-draft'],
+    // 同一個輸入框放進 InlineEdit 也是一下兩層(E-inline-edit-custom-date (a) 第一下又關日曆又還原草稿),同一個根因連帶紅
+    expectRed: ['E-datepicker-draft', 'E-inline-edit-custom-date'],
     apply: (src) => replaceOnce(src, /\n                          if \(!isEscapeForControl\(e\)\) return\n/, '\n'),
   },
   {
@@ -199,6 +263,14 @@ const MUTANTS = [
     file: 'components/Calendar/calendar.tsx',
     expectRed: ['E-calendar-tile'],
     apply: (src) => src.split('{...escapeLayerProps(true)}').join(''),
+  },
+  {
+    // 2026-11-25 前的寫法:出格回焦點所在那一格的停靠點 —— 跨日長條的 DOM 在起點那一天,從第 2 天進格、Esc 回到第 1 天
+    id: 'calendar-tile-exit-dom-cell',
+    what: 'Calendar 出格回長條 DOM 所在那一天(不記進格那一天)',
+    file: 'components/Calendar/calendar.tsx',
+    expectRed: ['E-calendar-tile'],
+    apply: (src) => replaceOnce(src, /const exitTo = \(\) => \(day !== null \? dayStopByIso\(day\) : null\) \?\? dayStopOf\(cell\)/, 'const exitTo = () => dayStopOf(cell)'),
   },
   {
     id: 'drag-no-escape-layer',
@@ -454,6 +526,32 @@ function InlineScene() {
   const [v, setV] = React.useState('Q3 roadmap')
   return <Shell title="就地編輯"><InlineEdit label="標題" value={v} onCommit={(n) => { count('inline'); setV(n) }} /><p data-inline>{v}</p></Shell>
 }
+// E-inline-edit-custom / F-inline-edit-enter-focus:自訂編輯控件 = Select(工作項目「狀態」);選了只改草稿、不提交 ——「草稿不動」才量得到
+const STATUS = [{ value: 'todo', label: '待處理' }, { value: 'doing', label: '進行中' }, { value: 'done', label: '已完成' }]
+function InlineSelectScene({ openOnEdit }) {
+  const [v, setV] = React.useState('doing')
+  return (
+    <Shell title="工作項目">
+      <InlineEdit label="狀態" value={v} onCommit={(n) => { count('inlineSel'); setV(n) }}
+        renderRead={(x) => <Select mode="view" display="tag" value={x} options={STATUS} />}
+        renderEdit={(p) => <Select autoFocus display="tag" aria-label={p['aria-label']} value={p.value} options={STATUS} defaultOpen={openOnEdit} onChange={(n) => p.onChange(n)} />} />
+      <p data-inline-sel>{v}</p>
+    </Shell>
+  )
+}
+// E-inline-edit-custom-date:自訂編輯控件 = 可打字 DatePicker(工作項目「截止日」;焦點留在輸入框,這一下 Esc 冒泡經過編輯容器);
+// 選了只改草稿、不提交 —— 「取消編輯後值不變」才量得到
+function InlineDateScene() {
+  const [v, setV] = React.useState('2026-03-12')
+  return (
+    <Shell title="工作項目">
+      <InlineEdit label="截止日" value={v} onCommit={(n) => { count('inlineDate'); setV(n) }}
+        renderRead={(x) => <DatePicker mode="view" value={x} />}
+        renderEdit={(p) => <DatePicker typeable aria-label={p['aria-label']} value={p.value} onChange={(n) => p.onChange(n)} />} />
+      <p data-inline-date>{v}</p>
+    </Shell>
+  )
+}
 function DateScene() {
   const [v, setV] = React.useState('2026-03-12')
   return <Shell title="日期"><label>截止<DatePicker aria-label="截止日" typeable value={v} onChange={setV} /></label><p data-date>{v}</p></Shell>
@@ -489,7 +587,9 @@ function CalendarScene() {
   return (
     <Shell title="月曆">
       <Calendar aria-label="團隊行事曆" referenceDate={new Date(2026, 2, 1)} today={new Date(2026, 2, 1)}
-        events={[{ id: 'e1', title: 'Sprint review', start: '2026-03-12', end: '2026-03-12', allDay: true }]}
+        // 全天兩天 3/12–3/13:end 不含 → 3/14(calendar.spec.md「資料語意」;寫同一天 = 零長度 + 開發期警告)。
+        // 跨日長條的 DOM 在 3/12 那格;E-calendar-tile 從第 2 天(3/13)進格,出格要回 3/13(calendar.spec.md「A11y 預設」格內那段)
+        events={[{ id: 'e1', title: 'Sprint review', start: '2026-03-12', end: '2026-03-14', allDay: true }]}
         onCreateEvent={() => count('create')} onEventClick={() => count('event')} />
     </Shell>
   )
@@ -771,6 +871,9 @@ const SCENES = {
   link: () => <LinkScene initial="https://acme.com/docs" />,
   linkEmpty: () => <LinkScene initial="" />,
   inline: () => <InlineScene />,
+  inlineSelect: () => <InlineSelectScene openOnEdit />,
+  inlineSelectClosed: () => <InlineSelectScene openOnEdit={false} />,
+  inlineDate: () => <InlineDateScene />,
   date: () => <DateScene />,
   table: () => <TableScene reorder={false} />,
   tableDrag: () => <TableScene reorder />,
@@ -802,10 +905,23 @@ const q = (sel) => document.querySelector(sel)
 window.__extra = {
   link: () => ({ url: q('[data-url]')?.textContent, input: !!q('#scene-dialog input[type=url]'), inputValue: q('#scene-dialog input[type=url]')?.value ?? null, invalid: q('#scene-dialog input[type=url]')?.getAttribute('aria-invalid') === 'true', calls: window.__calls.link ?? 0 }),
   inline: () => ({ value: q('[data-inline]')?.textContent, editing: !!q('#scene-dialog input'), calls: window.__calls.inline ?? 0 }),
+  // 編輯中 = [data-editing="true"](檢視態那一層也帶 data-editing="false");draft = 編輯控件(Select 觸發欄位)此刻顯示的字;list = 選單開著
+  inlineSel: () => {
+    const box = q('#scene-dialog [data-editing="true"]')
+    return { value: q('[data-inline-sel]')?.textContent, editing: !!box, draft: box?.querySelector('[role="combobox"]')?.textContent ?? null,
+      list: !!q('[cmdk-root]'), focusInEdit: !!box && box.contains(document.activeElement), calls: window.__calls.inlineSel ?? 0 }
+  },
+  // draft = 可打字輸入框此刻的字(DatePicker 自己的草稿,不是 InlineEdit 的);calendar = 日曆開著
+  inlineDate: () => {
+    const box = q('#scene-dialog [data-editing="true"]')
+    return { value: q('[data-inline-date]')?.textContent, editing: !!box, draft: box?.querySelector('input[role=combobox]')?.value ?? null,
+      calendar: !!q('[role=dialog][aria-label="日期選擇"]'), focusInEdit: !!box && box.contains(document.activeElement), calls: window.__calls.inlineDate ?? 0 }
+  },
   date: () => ({ draft: q('#scene-dialog input[role=combobox]')?.value ?? null, calendar: !!q('[role=dialog][aria-label="日期選擇"]'), value: q('[data-date]')?.textContent }),
   table: () => ({ cursor: !!q('[data-selected-cell-id]'), cursorId: q('[data-selected-cell-id]')?.getAttribute('data-selected-cell-id') ?? null,
     focusCell: document.activeElement?.closest?.('[data-cell-id]')?.getAttribute('data-cell-id') ?? null, live: q('[data-drag-live-region]')?.textContent ?? '' }),
-  cal: () => ({ tile: document.activeElement?.hasAttribute('data-calendar-tile') ?? false, day: document.activeElement?.hasAttribute('data-calendar-day') ?? false }),
+  cal: () => ({ tile: document.activeElement?.hasAttribute('data-calendar-tile') ?? false, day: document.activeElement?.hasAttribute('data-calendar-day') ?? false,
+    dayIso: document.activeElement?.getAttribute('data-calendar-day') ?? null }),
   drag: () => ({ live: q('[data-drag-live-region]')?.textContent ?? '', handles: document.querySelectorAll('button[aria-label="拖曳重排"]').length }),
   combo: () => ({ tags: q('[data-tags]')?.textContent, listbox: !!q('[cmdk-root]') }),
   err: () => ({ errors: Array.from(document.querySelectorAll('[data-error-for]')).map((e) => e.getAttribute('data-error-for')), submits: Number(q('form')?.dataset.submits), activeName: document.activeElement?.getAttribute('name'), activeRole: document.activeElement?.getAttribute('role') }),
@@ -936,6 +1052,70 @@ async function runChecks(page) {
   check('E-inline-edit', 'contract', 'Dialog 裡的 InlineEdit 進編輯 → 第一下 Esc 回檢視(焦點回檢視鈕)、對話框不關 → 第二下關;焦點從不落 body',
     steps.length === 2 && steps[0].dialog && !steps[0].editing && steps[0].active === 'BUTTON:編輯 標題' && !steps[1].dialog && neverBody(steps), steps)
 
+  // ── E-inline-edit-custom(自訂編輯控件 = Select,進編輯即開選單)──
+  await scene('inlineSelect'); await openDialog()
+  await d.click('#scene-dialog button[aria-label="編輯 狀態"]')
+  await waitSel('[cmdk-item][data-value="done"]', 'InlineEdit 進編輯後 Select 選單沒開')
+  // 選「已完成」:只改草稿(場景的 onChange 不提交)→ 選單收起、仍在編輯;再用 ↓ 打開選單(焦點在觸發欄位上)
+  await d.click('[cmdk-item][data-value="done"]')
+  const picked = await snap('inlineSel')
+  needs(picked.editing && !picked.list && picked.draft?.includes('已完成') && picked.focusInEdit, '選了「已完成」後應仍在編輯、選單收起、焦點在編輯控件上', picked)
+  await d.press('ArrowDown')
+  await waitSel('[cmdk-item]', '觸發欄位按 ↓ 沒重開選單')
+  before = await snap('inlineSel')
+  needs(before.list && before.editing, '重開選單後狀態不對', before)
+  steps = await escapeUntilClosed('inlineSel')
+  check('E-inline-edit-custom', 'contract', 'Dialog 裡的 InlineEdit(renderEdit = Select,草稿改成「已完成」、選單開著)→ 第一下 Esc 只關選單、草稿不動、仍在編輯 → 第二下取消編輯(值不變、onCommit 0 次、焦點回檢視鈕)、對話框不關 → 第三下關;焦點從不落 body',
+    steps.length === 3 && steps[0].dialog && !steps[0].list && steps[0].editing && !!steps[0].draft?.includes('已完成') && steps[0].calls === 0
+    && steps[1].dialog && !steps[1].editing && steps[1].value === 'doing' && steps[1].calls === 0 && steps[1].active === 'BUTTON:編輯 狀態'
+    && !steps[2].dialog && neverBody(steps), { picked, before, steps })
+
+  // ── F-inline-edit-enter-focus(自訂編輯控件 = Select,不開選單;桌機 Select 的 autoFocus 無作用)──
+  await scene('inlineSelectClosed'); await openDialog()
+  await d.click('#scene-dialog button[aria-label="編輯 狀態"]')
+  const entered = await snap('inlineSel')
+  needs(entered.editing && !entered.list, 'InlineEdit 沒進編輯(或選單不該開卻開了)', entered)
+  steps = await escapeUntilClosed('inlineSel')
+  check('F-inline-edit-enter-focus', 'contract', 'Dialog 裡的 InlineEdit(renderEdit = Select、不開選單)進編輯 → 焦點在編輯控件上 → 第一下 Esc 取消編輯、焦點回檢視鈕、對話框不關 → 第二下關;焦點從不落 body',
+    entered.focusInEdit && steps.length === 2 && steps[0].dialog && !steps[0].editing && steps[0].calls === 0 && steps[0].active === 'BUTTON:編輯 狀態'
+    && !steps[1].dialog && neverBody(steps), { entered, steps })
+
+  // ── E-inline-edit-custom-date(自訂編輯控件 = 可打字 DatePicker;焦點留在輸入框,Esc 冒泡經過編輯容器)──
+  // 承重的是 handleCustomEditKeyDown 的兩道防線 —— Select 那兩列沒有一下 Esc 要它們擋(2026-11-25 審查者探針:拿掉兩道,37 列照綠)。
+  // 兩道各守一段,所以這一列走兩段(2026-11-25 實測:只走「打了字」那段,拿掉「Radix 已用掉」照綠 —— 打了字時第一下由「就近的那一層」先擋下):
+  //   (a) 打了字:輸入框自己宣告更內層 → 「就近的那一層」擋住編輯容器(拿掉 → 第二下同時還原草稿又取消編輯)
+  //   (b) 沒打字:輸入框沒有宣告,就近的是編輯容器;日曆是 Radix 那一層 → 「Radix 已用掉」擋住編輯容器(拿掉 → 第一下同時關日曆又取消編輯)
+  const enterDateEdit = async () => {
+    await d.click('#scene-dialog button[aria-label="編輯 截止日"]')
+    const s0 = await snap('inlineDate')
+    // 不要求進編輯時焦點已在輸入框(那是 F-inline-edit-enter-focus 量的;這裡接著就點輸入框):放進前置條件,
+    // 「進編輯不補焦點」的突變與修改前的基準樹會在這裡變成儀器失效,而不是照實量完這一列
+    needs(s0.editing && !s0.calendar, 'InlineEdit 沒進編輯 / 日曆不該開卻開了', s0)
+    await d.click('#scene-dialog [data-editing="true"] input[role=combobox]')
+    return s0
+  }
+  await scene('inlineDate'); await openDialog()
+  const dateEntered = await enterDateEdit()
+  await page.keyboard.press('End'); await d.type('9')
+  const dateTyped = await snap('inlineDate')
+  needs(dateTyped.calendar && dateTyped.draft === '2026/03/129', '點輸入框沒開日曆 / 打字沒進輸入框', dateTyped)
+  const typedSteps = await escapeUntilClosed('inlineDate', 6)
+  await openDialog()
+  await enterDateEdit()
+  const dateOpened = await snap('inlineDate')
+  needs(dateOpened.calendar && dateOpened.draft === '2026/03/12', '點輸入框沒開日曆(沒打字那一段)', dateOpened)
+  const cleanSteps = await escapeUntilClosed('inlineDate', 6)
+  check('E-inline-edit-custom-date', 'contract', 'Dialog 裡的 InlineEdit(renderEdit = 可打字 DatePicker),點輸入框開日曆:(a) 打一個字 → 第一下 Esc 只關日曆(草稿不動、仍在編輯)→ 第二下還原草稿(仍在編輯)→ 第三下取消編輯(值不變、onCommit 0 次、焦點回檢視鈕)、對話框不關 → 第四下關;(b) 沒打字 → 第一下只關日曆(仍在編輯、焦點在輸入框)→ 第二下取消編輯 → 第三下關;焦點從不落 body',
+    typedSteps.length === 4
+    && typedSteps[0].dialog && !typedSteps[0].calendar && typedSteps[0].editing && typedSteps[0].draft === '2026/03/129'
+    && typedSteps[1].dialog && typedSteps[1].editing && typedSteps[1].draft === '2026/03/12'
+    && typedSteps[2].dialog && !typedSteps[2].editing && typedSteps[2].value === '2026-03-12' && typedSteps[2].calls === 0 && typedSteps[2].active === 'BUTTON:編輯 截止日'
+    && !typedSteps[3].dialog && neverBody(typedSteps)
+    && cleanSteps.length === 3
+    && cleanSteps[0].dialog && !cleanSteps[0].calendar && cleanSteps[0].editing && cleanSteps[0].focusInEdit
+    && cleanSteps[1].dialog && !cleanSteps[1].editing && cleanSteps[1].value === '2026-03-12' && cleanSteps[1].calls === 0 && cleanSteps[1].active === 'BUTTON:編輯 截止日'
+    && !cleanSteps[2].dialog && neverBody(cleanSteps), { dateEntered, dateTyped, typedSteps, dateOpened, cleanSteps })
+
   // ── E-link-typed / F-link-enter-stay ──
   await scene('linkEmpty'); await openDialog()
   await d.click('#scene-dialog input[type=url]'); await d.type('acme')
@@ -1009,13 +1189,14 @@ async function runChecks(page) {
 
   // ── E-calendar-tile ──
   await scene('calendar'); await openDialog()
-  await d.focus('#scene-dialog [data-calendar-day="2026-03-12"]')
+  // 從長條的第 2 天(3/13)進格:長條的 DOM 在 3/12 那格,出格要回進格那一天 3/13(2026-11-25;之前回 DOM 所在的 3/12)
+  await d.focus('#scene-dialog [data-calendar-day="2026-03-13"]')
   await d.press('F2')
   before = await snap('cal')
   needs(before.tile, 'F2 沒進格內', before)
   steps = await escapeUntilClosed('cal')
-  check('E-calendar-tile', 'contract', 'Dialog 裡的 Calendar:F2 進格內(焦點在事件方塊)→ 第一下 Esc 出格回日期鈕、對話框不關 → 第二下關',
-    steps.length === 2 && steps[0].dialog && steps[0].day && !steps[1].dialog && neverBody(steps), steps)
+  check('E-calendar-tile', 'contract', 'Dialog 裡的 Calendar:從長條的第 2 天 F2 進格內(焦點在事件方塊)→ 第一下 Esc 出格回進格那一天的日期鈕、對話框不關 → 第二下關',
+    steps.length === 2 && steps[0].dialog && steps[0].day && steps[0].dayIso === '2026-03-13' && !steps[1].dialog && neverBody(steps), steps)
 
   // ── E-drag(排序面板 in Popover)──
   await scene('drag'); await d.click('[data-open]')
@@ -1443,6 +1624,8 @@ function report({ label, checks }) {
   }
 }
 const redIds = (checks) => checks.filter((c) => !c.pass).map((c) => c.id).sort()
+/** 判定紅的那一行 —— 判定模式與 selftest 基準共用(CI 只跑 --selftest,基準紅就是產品裁決,不能只印「量具不可信」) */
+const verdictRedLine = (red) => `\n✗ escape-and-focus 契約:${red.length} 條不符(${red.join(' / ')})—— SSOT keyboard-model-canonical.md「焦點所在的控件自己那一層也算一層」「按了之後自己變停用」「關了之後焦點去哪」`
 
 let browser
 const laneBrowsers = []
@@ -1455,17 +1638,25 @@ try {
     report(result)
     const red = redIds(result.checks)
     if (red.length) {
-      console.log(`\n✗ escape-and-focus 契約:${red.length} 條不符(${red.join(' / ')})—— SSOT keyboard-model-canonical.md「焦點所在的控件自己那一層也算一層」「按了之後自己變停用」「關了之後焦點去哪」`)
+      console.log(verdictRedLine(red))
       process.exitCode = 1
     } else {
       console.log(`\n✓ escape-and-focus 契約:${result.checks.length} 條全綠(含 ${result.checks.filter((c) => c.kind === 'control').length} 條對照)`)
     }
   } else {
-    const baseline = await runVariant(page, '現行原始碼(selftest 基準,必須全綠)', null)
-    report(baseline)
     const problems = []
-    if (redIds(baseline.checks).length) problems.push(`現行原始碼本身就紅(${redIds(baseline.checks).join(' / ')}),突變的紅燈無法歸因`)
-    const contractIds = baseline.checks.filter((c) => c.kind === 'contract').map((c) => c.id)
+    // 基準只在不分片或第 0 片跑(見 SHARD 的說明);其他片 contractIds = null,靜態覆蓋也由第 0 片驗
+    let contractIds = null
+    if (!SHARD || SHARD.k === 0) {
+      const baseline = await runVariant(page, '現行原始碼(selftest 基準,必須全綠)', null)
+      report(baseline)
+      const baseRed = redIds(baseline.checks)
+      if (baseRed.length) {
+        console.log(verdictRedLine(baseRed))
+        problems.push(`現行原始碼本身就紅(${baseRed.join(' / ')}),突變的紅燈無法歸因`)
+      }
+      contractIds = baseline.checks.filter((c) => c.kind === 'contract').map((c) => c.id)
+    } else console.log(`\n· 分片 ${SHARD.k}/${SHARD.n}:基準(一趟完整判定)與靜態覆蓋只在第 0 片跑;這一片每個突變那一趟仍量全部列,紅的列必須剛好等於 expectRed`)
     const covered = new Set()
     // 突變彼此獨立:分 LANES 條 lane 並行跑(第一條 lane 沿用上面那個分頁),結果依 MUTANTS 的順序回報
     const RUN = (ONLY ? MUTANTS.filter((m) => ONLY.includes(m.id)) : MUTANTS)
@@ -1507,20 +1698,24 @@ try {
       if (JSON.stringify(red) !== JSON.stringify(want)) problems.push(`${m.id}:紅的是 [${red.join(', ')}],應剛好是 [${want.join(', ')}]`)
       for (const id of red) covered.add(id)
     }
-    const uncovered = contractIds.filter((id) => !covered.has(id))
     // 靜態覆蓋:每一條契約列都要有突變宣告會讓它紅(分片時各片只看得到自己那幾個突變,動態覆蓋要所有片合起來才完整)
-    const claimed = new Set(MUTANTS.flatMap((m) => m.expectRed))
-    const unclaimed = contractIds.filter((id) => !claimed.has(id))
-    if (unclaimed.length) problems.push(`契約列 ${unclaimed.join(' / ')} 不在任何突變的 expectRed —— 它的綠燈是零證據`)
+    if (contractIds) {
+      const claimed = new Set(MUTANTS.flatMap((m) => m.expectRed))
+      const unclaimed = contractIds.filter((id) => !claimed.has(id))
+      if (unclaimed.length) problems.push(`契約列 ${unclaimed.join(' / ')} 不在任何突變的 expectRed —— 它的綠燈是零證據`)
+    }
     if (ONLY) problems.push(`只跑了 --only 指名的 ${RUN.length} 個突變(除錯用):這一趟不算 selftest 通過`)
-    else if (!SHARD && uncovered.length) problems.push(`契約列 ${uncovered.join(' / ')} 沒有任何突變能讓它紅 —— 它的綠燈是零證據`)
+    else if (!SHARD) {
+      const uncovered = contractIds.filter((id) => !covered.has(id))
+      if (uncovered.length) problems.push(`契約列 ${uncovered.join(' / ')} 沒有任何突變能讓它紅 —— 它的綠燈是零證據`)
+    }
     if (problems.length) {
       console.log('\n✗ selftest:量具不可信 ——')
       for (const p of problems) console.log(`  - ${p}`)
       process.exitCode = 1
     } else {
       console.log(SHARD
-        ? `\n✓ selftest 第 ${SHARD.k + 1} / ${SHARD.n} 片:${RUN.length} 個根因突變各自剛好紅了該紅的列,對照列全程綠(全部 ${MUTANTS.length} 個突變的 expectRed 涵蓋契約 ${contractIds.length} 條;其餘片在 CI 同一個 matrix 的另一格跑)`
+        ? `\n✓ selftest 第 ${SHARD.k + 1} / ${SHARD.n} 片:${RUN.length} 個根因突變各自剛好紅了該紅的列,對照列全程綠(${contractIds ? `全部 ${MUTANTS.length} 個突變的 expectRed 涵蓋契約 ${contractIds.length} 條` : '基準與契約覆蓋在第 0 片驗'};其餘片在 CI 同一個 matrix 的另一格跑)`
         : `\n✓ selftest:${MUTANTS.length} 個根因突變各自剛好紅了該紅的列(契約 ${contractIds.length} 條全被覆蓋),對照列全程綠 —— 量具會紅`)
     }
   }

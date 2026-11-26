@@ -29,6 +29,9 @@ import {
   type TimeColumnsDisabled,
 } from '@/design-system/components/TimePicker/time-columns'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
+import { DEFAULT_DATE_LOCALE } from '@/design-system/lib/date-locale'
+// 顯示的預設時間寫法(12 / 24 跟語系)與 DatePicker / Calendar 同一份(DATE-TIME(定)2026-11-26;time-picker.spec.md「顯示格式化」)
+import { resolveTimeFormatOptions } from '@/design-system/components/DatePicker/range-format'
 
 /**
  * TimePicker — 單一時間(時/分/秒)輸入與顯示元件
@@ -52,6 +55,12 @@ import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
  *
  * ── 共用規則 ──
  * Mode / size / disabled / error 等詳見 `../Field/field-controls.spec.md`。
+ *
+ * ── 消費的 SSOT ──
+ * - 時間顯示的預設寫法: `../DatePicker/range-format.ts` `resolveTimeFormatOptions`(12 / 24 跟語系,DATE-TIME(定)2026-11-26;
+ *   time-picker.spec.md「顯示格式化」)
+ * - 預設語系: `../../lib/date-locale.ts` `DEFAULT_DATE_LOCALE`
+ * - 欄位外框 / 尺寸 / 圖示: `../Field/field-wrapper.tsx`、`../../tokens/uiSize/icon-size.ts`;面板: `./time-columns.tsx` + `../../patterns/overlay-surface`
  */
 
 // ── Time ISO <-> parts conversion ───────────────────────────────────────────
@@ -62,9 +71,12 @@ import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 // ── Display formatting ──────────────────────────────────────────────────────
 
 export interface TimeFormatOptions {
-  /** Intl.DateTimeFormat options(預設 { hour: '2-digit', minute: '2-digit', hour12: false }) */
+  /**
+   * Intl.DateTimeFormat options(預設 { hour: 'numeric', minute: '2-digit' },`showSeconds` 時再加兩位數秒 —— 12 / 24 小時跟語系:
+   * zh-TW「下午2:30」、en-US「2:30 PM」、en-GB「14:30」)。要固定 24 小時就傳寫了時間欄位的選項(例 `{ hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }`)。
+   */
   formatOptions?: Intl.DateTimeFormatOptions
-  /** locale(預設 'en-US') */
+  /** locale(預設 'zh-TW' = DS 日期元件共用的 `DEFAULT_DATE_LOCALE`;沒傳 formatOptions 時也決定 12 / 24 小時) */
   locale?: string
 }
 
@@ -83,15 +95,20 @@ function getDateTimeFormatter(locale: string, options: Intl.DateTimeFormatOption
   return fmt
 }
 
+/**
+ * 顯示用的時間文字。沒傳 `formatOptions` = 預設時間寫法(range-format.ts `resolveTimeFormatOptions`:12 / 24 跟語系,有秒才寫秒)——
+ * DATE-TIME(定)2026-11-26「時間跟語系(12 / 24)」;改前預設寫死 24 小時、而且 `showSeconds` 也不寫秒(與本檔 `showSeconds` 註解的
+ * 「true → HH:mm:ss」不符)。
+ */
 function formatTime(
   iso: string,
-  options: TimeFormatOptions = {},
+  options: TimeFormatOptions & { showSeconds: boolean },
 ): string {
   const parts = isoToTimeParts(iso)
   if (!parts) return iso
   const {
-    formatOptions = { hour: '2-digit', minute: '2-digit', hour12: false },
-    locale = 'en-US',
+    formatOptions = resolveTimeFormatOptions(options.showSeconds),
+    locale = DEFAULT_DATE_LOCALE,
   } = options
   // 借用 Date 讓 Intl.DateTimeFormat 處理 locale / 12h-24h
   const d = new Date()
@@ -140,7 +157,7 @@ export interface TimePickerProps
   clearable?: boolean
   /**
    * 是否顯示秒欄(三欄 picker)。預設 false(兩欄:時/分)。
-   * format 自動對應:false → "HH:mm",true → "HH:mm:ss"。
+   * value 格式自動對應:false → "HH:mm",true → "HH:mm:ss";顯示(沒傳 formatOptions 時)有秒才寫秒,12 / 24 跟語系(例 zh-TW「下午2:30:15」)。
    */
   showSeconds?: boolean
   /** 分鐘步進(會議常用 15)。預設 1 */
@@ -293,7 +310,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
         if (!value) return <span {...props} ref={ref as React.Ref<HTMLSpanElement>} className={cn(fieldDisplayTextClass(size), fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
         // 截斷必附 tooltip(tooltip.spec.md:32)— 外層 span 保留 ref/props 轉發(2026-07-16 DA3),
         // 值文字包 TruncatedText(display="block":外層 span 在 flex cell 內是 block container)
-        return <span {...props} ref={ref as React.Ref<HTMLSpanElement>} className={cn(fieldDisplayTextClass(size), 'truncate tabular-nums', className)}><TruncatedText display="block">{formatTime(value, { formatOptions, locale })}</TruncatedText></span>
+        return <span {...props} ref={ref as React.Ref<HTMLSpanElement>} className={cn(fieldDisplayTextClass(size), 'truncate tabular-nums', className)}><TruncatedText display="block">{formatTime(value, { formatOptions, locale, showSeconds })}</TruncatedText></span>
       }
       return (
         <div
@@ -305,7 +322,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
         >
           {/* 截斷必附 tooltip(tooltip.spec.md:32;data-table.spec.md「十一、Cell 單行截斷原則」view 態元件自管 truncation) */}
           <TruncatedText className={cn(bareInputStyles, 'flex-1 min-w-0 tabular-nums', !value && fieldEmptyColorClass(resolvedMode))}>
-            {value ? formatTime(value, { formatOptions, locale }) : emptyDisplay}
+            {value ? formatTime(value, { formatOptions, locale, showSeconds }) : emptyDisplay}
           </TruncatedText>
           {EndIconCmp && (
             <ItemSuffix className="pointer-events-none">
@@ -338,7 +355,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
             )}
           >
             {value
-              ? formatTime(value, { formatOptions, locale })
+              ? formatTime(value, { formatOptions, locale, showSeconds })
               : <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>
             }
           </span>
@@ -357,7 +374,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
     }
 
     const displayText = value
-      ? formatTime(value, { formatOptions, locale })
+      ? formatTime(value, { formatOptions, locale, showSeconds })
       : <span className="text-fg-muted">{resolvedPlaceholder}</span>
 
     return (

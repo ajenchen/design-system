@@ -269,6 +269,7 @@ CLAUDE_VIEW_13=$(jq -r '.providers[] | select(.id == "claude") | .hookConfig' "$
 REACH_VIEWS_13=$(jq -r '.providers[] | select(.capabilities.nativeHooks == true and .hookConfigFormat == "json") | .hookConfig' "$REPO_ROOT_13/$REGISTRY_13")
 FIXTURE_OK_13=1
 for f in scripts/provider-view-group-reachability-invariant.mjs scripts/lib/provider-runtime-contract.mjs \
+         scripts/lib/provider-hook-output-transport.mjs \
          packages/governance/src/provider-review-binding.mjs packages/governance/src/canonical-order.mjs \
          "$REGISTRY_13" "$REACH_REG_13" $REACH_VIEWS_13; do
   if [ ! -f "$REPO_ROOT_13/$f" ]; then

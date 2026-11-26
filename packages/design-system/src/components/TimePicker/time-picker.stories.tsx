@@ -86,7 +86,7 @@ export const MeetingSlot: Story = {
 }
 
 /**
- * 航班時刻 — HH:mm 格式,不需要秒。
+ * 航班時刻 — 分鐘粒度、不需要秒:值是 "HH:mm",欄位顯示跟語系(zh-TW「下午2:35」)。
  * 對照:Google Flights / Expedia / KAYAK 時間選擇都是分鐘粒度。
  */
 export const FlightDepartureTime: Story = {
@@ -128,7 +128,7 @@ export const ShopBusinessHours: Story = {
 }
 
 /**
- * 精確 log 時間 — 需要秒時啟用 showSeconds,format 自動升級到 HH:mm:ss。
+ * 精確 log 時間 — 需要秒時啟用 showSeconds:值升級到 "HH:mm:ss",欄位顯示多寫秒、12 / 24 照樣跟語系(zh-TW「下午2:35:22」)。
  * 對照:DevTools timeline / Datadog event timestamp 都秒級。
  */
 export const EventTimestamp: Story = {

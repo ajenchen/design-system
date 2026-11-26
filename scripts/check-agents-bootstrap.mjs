@@ -170,11 +170,20 @@ try {
 // feedback_propose_discipline.md Sub-rule 7 篩)+ 版本紀錄一列 —— 兩條都是 user 11-22 指出的實際出錯,要所有 session 開場就讀到。
 // 2026-11-22 STORY-PROBE 明改 76,256 → 76,691(+435):work-process.md v3「每一包」加第 8 點(改到範例時實作與規格核對都照
 // story-rules.md「範例最高準則」「Technical probe visibility」核對)+ 版本紀錄一列 —— user 11-22 指出只給量具用的極端內容被做成給讀者看的範例。
-// 2026-11-25 HANDOFF-QUOTA 明改 76,691 → 76,769(+78):AGENTS.md「分診與預算」段尾加一句指向
+// 2026-11-24 RELEASE-NOTES-SCOPE 明改 76,691 → 76,803(+112):work-process.md「合回點」加一句指標,指向發版說明的登記規則
+// (props-naming.md「相容政策」;只放指向、不重述)—— 包規格要求合回點指得到它,新的發版說明涵蓋閘在合回點跑的 CI 裡。
+// 2026-11-25 HANDOFF-QUOTA 明改 76,803 → 76,881(+78):AGENTS.md「分診與預算」段尾加一句指向
 // governance/memory/feedback_orchestration_verify_before_scale.md「交接常備與額度」(只放指向、不重述)。指向那句 +88
 //(初稿帶節名 +127,已縮),同段刪掉重複的「,不開工」-10(「只開工 ①②③」已涵蓋),淨增 78 只能明改上限 —— 再縮就要刪規則。
 // user 11-25:「這個上一次就講過了，難道沒有在工作規範ssot內嗎？」—— 要每個 session 開場就讀得到這個指向。
-const OPENING_FILES_MAX_BYTES = 76_769
+// 2026-11-26 F1-process-rules 明改 76,881 → 78,625(+1,744):work-process.md v4 加「本機檢查」段(--selftest / hook 測試 /
+// governance:generate / story 清單與 a11y 基線 / Storybook 建置各何時才跑)、合回點改成本機只跑合回新變動 + 全套交給 CI、核對者引用
+// 同 commit 紀錄、再驗只跑修正的檢查、「依據」v4 一段實測與版本紀錄一列;同時拿掉「迭代」段與檔頭重複的一句、壓短 v1 名詞定義。
+// 初稿 +2,146,縮句後 +1,744(-402);再縮就要刪規則或刪「為什麼品質不降」的實測數字。換到的是每個合回點本機約 294 分機器時間不重跑
+//(governance/planning/2026-11-26-work-process-evidence-v4.md 第 1 節),每個代理開場都要讀到才會照做。
+// 2026-11-26 F1 規格核對必修明改 78,625 → 78,590(−35):Storybook 那句改成以 8 支原始碼 harness 閘提示字串裡的那串字辨認(+9;
+// 只有 2 支檔頭寫,本註解刻意不抄那串字,免得多命中),刪掉「依據」v4 與「本機檢查」a11y 那項重複的一句(−44)。開場變小,上限照釘回實量、不留空位。
+const OPENING_FILES_MAX_BYTES = 78_590
 const RULES_DIR = path.join(ROOT, 'packages/design-system/ds-canonical/rules')
 const alwaysLoadedRules = fs.existsSync(RULES_DIR)
   ? fs.readdirSync(RULES_DIR).filter((name) => name.endsWith('.md')).sort().filter((name) => {

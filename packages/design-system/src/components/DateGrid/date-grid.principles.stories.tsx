@@ -4,6 +4,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
 import { zhTW } from 'date-fns/locale/zh-TW'
+import { enGB } from 'date-fns/locale/en-GB'
 import type { DateRange } from 'react-day-picker'
 import { DateGrid } from './date-grid'
 import { DatePicker } from '@/design-system/components/DatePicker/date-picker'
@@ -282,14 +283,14 @@ export const LocaleRule: Story = {
   render: () => (
     <TutorialPage>
       <TutorialRule
-        title="locale prop 控制週首日與星期標頭語言"
-        note="react-day-picker 接受 date-fns locale 物件。週首日由 locale 物件決定,不以語言籠統判斷:en-US 週日起、en-GB 週一起——同樣是英文,週首日就不同;zhTW / de / fr(date-fns 內建值)都是週一起。下方對照:zhTW 首欄是週一,en-US 首欄是週日。Consumer 決定傳哪個 locale;locale 只控制「可見」的日期格式與週首日,不內建可見語言層。註:螢幕報讀器 aria-label(上/下月、日期朗讀等)DS 內建繁中 default,可透過 labels prop 逐鍵覆寫做 i18n(見 tsx labels 段)。"
+        title="locale 控制月份與星期標頭的語言,週首日跟語系的 CLDR"
+        note="react-day-picker 接受 date-fns locale 物件,它決定月份與星期標頭用哪種語言。週首日則拿這個物件的語系代碼(locale.code)問 CLDR(瀏覽器的 Intl 週資料,不支援的瀏覽器查 DS 內建的同一份表),不讀物件裡自己寫的週首日:date-fns 的 zhTW 寫的是週一,CLDR 的台灣是週日,DS 以 CLDR 為準(2026-11-24 起)。不以語言籠統判斷:zh-TW / en-US 週日起,zh-CN / en-GB / de 週一起 —— 同樣是中文或英文,週首日就不同。下方對照:zhTW 首欄是週日,enGB 首欄是週一;沒傳 locale 時用 react-day-picker 預設的 en-US,週日起。Consumer 決定傳哪個 locale;locale 只控制「可見」的日期格式與週首日,不內建可見語言層。註:螢幕報讀器 aria-label(上/下月、日期朗讀等)DS 內建繁中 default,可透過 labels prop 逐鍵覆寫做 i18n(見 tsx labels 段)。"
       >
-        <Demo title="zhTW(繁體中文 · 週一起)">
+        <Demo title="zhTW(繁體中文 · 週日起)">
           <DateGrid mode="single" defaultMonth={new Date(2026, 3, 1)} today={STORY_TODAY} locale={zhTW} />
         </Demo>
-        <Demo title="預設(en-US · 週日起)">
-          <DateGrid mode="single" defaultMonth={new Date(2026, 3, 1)} today={STORY_TODAY} />
+        <Demo title="enGB(英式英文 · 週一起)">
+          <DateGrid mode="single" defaultMonth={new Date(2026, 3, 1)} today={STORY_TODAY} locale={enGB} />
         </Demo>
       </TutorialRule>
 

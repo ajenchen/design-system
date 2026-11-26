@@ -53,6 +53,7 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 ### SurfaceBody
 - 根節點帶 `data-slot="surface-body"`
 - 左右 `px-[var(--layout-space-loose)]`;上下內距由容器自己給 —— 根節點宣告 `data-layout-body="hug"`(不擋頁面、貼內容),底依最後一個東西照 `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 4「容器自己判,不由寫的人挑值」(實作 `layoutSpace.css`)。本規格不寫上下內距的值(2026-11-17 前這一行寫死 `py-[var(--layout-space-tight)]`)
+- **內文字級繼承整頁預設,外殼不另設**(2026-11-24):`SurfaceBody` 與各浮層外殼(`PopoverContent` / `HoverCardContent` / `DialogContent` / `SheetContent`,含 `DialogBody` / `SheetBody` 的 ScrollArea 內層)都不設字級;浮層經 Portal 掛在 `body` 底下,沒自己設字級的內文吃整頁預設字級 —— 值與住處只在 `../../tokens/typography/typography.spec.md`「整頁預設字級」,本檔不重述。要別的字級,在那段文字(或使用端自己包它的容器)上設 `text-*`(例:Coachmark 內文區的主標 `text-body-lg`、說明 `text-body`,`components/Coachmark/coachmark.tsx`);DS 的外殼與 `SurfaceBody` 原始碼不加字級 class,免得成為整頁預設以外的第二個住處。Tooltip 不在此列:泡泡本身就是那段文字,自帶 `text-body`(`components/Tooltip/tooltip.tsx` 的 `TooltipContent`)。
 - **永遠套 `flex-1 min-h-0 overflow-y-auto`**(viewport-aware scroll:視窗太小時 body 內捲動;非 flex-col parent 內 flex-1/min-h-0 不起作用,放在任何容器都安全)。2026-05-31 infra-audit 修:原寫「無額外 flex 屬性」與 code(overlay-surface.tsx#SurfaceBody 恆套)矛盾。consumer 依浮層類型:
 - **Focus ownership**:SurfaceBody 不預設 `tabIndex`——短內容時它不是 scroll region,一律塞進 sequential focus order 會製造多餘 tab stop。當 bare SurfaceBody 在定高/viewport 壓縮下**實際 overflow**時,consumer 必須傳 `tabIndex={0}` + `role="region"` + 語意明確的 `aria-label`;SurfaceBody runtime 內建 inset DS focus ring。`BodyScrollKeyboard` story(test-only)的 play assertion 機械驗證該具名節點確實 overflow 且可聚焦。Dialog / Sheet 正式 consumer 仍優先走下節 ScrollArea canonical。
   - **Popover**:多數 bare consume,padding 即是總 padding
@@ -197,7 +198,7 @@ search 列放 body 外(不跟清單捲),自帶 `px-loose pt-tight`、下方不�
 不要另外用表單控制項(`CheckboxGroup` + 裸 `Checkbox`)自組。
 
 - **為什麼**:同一個「從清單裡挑」的互動,不該因為容器是下拉選單還是浮層就長得不一樣。
-  `DropdownMenu` 已經是選單列(`dropdown-menu.tsx:383`),DataTable 的欄位顯示面板也已經是
+  `DropdownMenu` 已經是選單列(`dropdown-menu.tsx#DropdownMenuItem`),DataTable 的欄位顯示面板也已經是
   (`data-table-column-visibility-panel.tsx#DataTableColumnVisibilityPanel`)—— 篩選面板原本是唯一的例外,是漂移不是設計。
 - **點一下就生效、還是要按 CTA 才 commit,不影響本條**:那是上一段「更高層設計判斷」在決定容器,
   跟列用什麼元件是兩個獨立的軸。
@@ -324,8 +325,8 @@ DatePicker **不是**例外 —— 它的日曆格線有左緣,footer 的預設 
 
 ## Viewport-aware scroll chain invariant(2026-05-04 K11 升 SSOT)
 
-> **背景**:Popover / HoverCard content 設 `max-h-[var(--radix-{popover|hover-card}-content-available-height)] flex flex-col overflow-hidden`,讓 viewport 太小時 header/footer 永遠 in-viewport,body 壓縮 scroll。但**中間任何 wrapper div 沒 forward `flex flex-col h-full` 就斷鏈**,SurfaceBody flex-1 失效,body 不會 scroll。
-> **Dialog / Sheet 不走這條(2026-09-11 更正,原句把它們一起列進去是錯的)**:`--radix-dialog-content-available-height` 這個 CSS 變數**不存在** —— 它由 `@radix-ui/react-popper` 提供,而 Radix Dialog 不是 popper-based(全庫 grep 0 命中)。Dialog 的上限由 DialogContent 自己算(`min(100svh - inset*2, maxHeight)`),owner 是 `dialog.spec.md`「高度」段。
+> **背景**:Popover / HoverCard content 有高度上限(觸發點那一側的可用高,`maxHeight` 只能再往更矮調;公式與常數的唯一住處 `../../tokens/elevation/elevation.spec.md`「浮層高度上限」)+ `flex flex-col overflow-hidden`,讓 viewport 太小時 header/footer 永遠 in-viewport,body 壓縮 scroll。但**中間任何 wrapper div 沒 forward `flex flex-col h-full` 就斷鏈**,SurfaceBody flex-1 失效,body 不會 scroll。
+> **Dialog / Sheet 不走這條(2026-09-11 更正,原句把它們一起列進去是錯的)**:`--radix-dialog-content-available-height` 這個 CSS 變數**不存在** —— 它由 `@radix-ui/react-popper` 提供,而 Radix Dialog 不是 popper-based(全庫 grep 0 命中)。Dialog 的上限由 DialogContent 算(modal 的可用高 + 同一支 `capHeight`,`../../tokens/elevation/elevation.spec.md`「浮層高度上限」),規則的 owner 是 `dialog.spec.md`「高度」段。
 >
 > **真實 bug(2026-05-04)**:Filter / Sort panel 內 wrapper div 設 `w-[640px]` 無 flex-col → user 縮視窗時 body 不 scroll,內容被 clip。ProfileCard 之所以 work 因為它直接是 PopoverContent 唯一 child(無 wrapper)+ 自設 max-h flex-col。
 
@@ -395,7 +396,7 @@ overlay-surface 是 **layout pattern**(`SurfaceHeader` / `SurfaceBody` / `Surfac
 
 - **Role + ARIA**:`Dialog.Content` / `Sheet.Content`(皆 wrap Radix Dialog)自帶 `role="dialog"` + `aria-labelledby`(連 DialogTitle id)+ `aria-describedby`(optional Description)。**modality 機制**:Radix 不發 `aria-modal` 屬性,而是用 `hideOthers`(把背景 sibling subtree 套 `aria-hidden`)+ `RemoveScroll` 達成 modal — 對齊 WAI-ARIA APG「aria-hidden on background content」做法(APG 指出 `aria-modal` 的 AT 支援不一致,hideOthers 較穩健)。`Popover.Content` 同樣 wrap Radix(non-modal,Radix `modal` 預設 false)且**也帶** `role="dialog"`(Radix non-modal dialog,APG sanctioned)——Tab 在面板裡繞圈但滑鼠點外面可離開(見下一條)、**不**自動 `aria-labelledby`(consumer 需自設 `aria-label`)。`HoverCard.Content` 才是真的**無 role**(Radix react-hover-card 不發任何 role)
 - **Focus trap / Tab 走向**(2026-09-25 更正,原句「Popover / HoverCard 不 trap」被讀成 Tab 可以走出 Popover,與實測不符;待辦總帳 B11):**對話框型浮層 Tab 留在裡面** —— Dialog / Sheet 是 modal trap(Tab 繞圈,滑鼠點外面也出不去);Popover 是 non-modal:Tab / Shift+Tab 同樣在面板裡繞圈(Radix FocusScope `loop: true`,`@radix-ui/react-popover` 1.1.15 `dist/index.mjs:225-226`),只是滑鼠點外面 / 程式移焦可離開並關閉。依據 W3C「Like non-modal dialogs, modal dialogs contain their tab sequence.」(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/dialog-modal/dialog-modal-pattern.html#L29-L30>)。**選單類浮層 Tab = 收起並往下走**(DropdownMenu、單選下拉;規則在 `components/SelectMenu/select-menu.spec.md`「A11y 預設」與 `components/DropdownMenu/dropdown-menu.spec.md`)。HoverCard 焦點不進卡片(Radix 把卡片內可 Tab 節點設 `tabindex="-1"`),Tab 從觸發元素照頁面順序走
-- **Esc / 點外面關閉**:Radix 處理(可被 `onEscapeKeyDown` / `onPointerDownOutside` 攔截)。浮層疊浮層時點外面與 Esc 一樣一層一層關:點在外層上(裝著它的面板)、點在同一個外層裡的另一個欄位(連同那個欄位掛在另一層的零件)= 內層的外面;攔截只准認「這個元件自己的零件」—— 以**元件樹**認(這一下事件有沒有經過這個元件,含它 portal 出去的零件;Radix 判斷「按在這一層裡」也是這樣認),不得以「按在任何一層浮層裡」或「按在不裝著它的那一層」代替(判準 `../../lib/composite-field-focus.ts` `useOwnTreeEvents`;2026-11-03 SelectMenu / InlineEdit 修前就是前一種代理,讓面板裡的選單點外不關)
+- **Esc / 點外面關閉**:Radix 處理(可被 `onEscapeKeyDown` / `onPointerDownOutside` 攔截)。浮層疊浮層時點外面與 Esc 一樣一層一層關:點在外層上(裝著它的面板)、點在同一個外層裡的另一個欄位(連同那個欄位掛在另一層的零件)= 內層的外面;攔截只准認「這個元件自己的零件」—— 以**元件樹**認(這一下事件有沒有經過這個元件,含它 portal 出去的零件;Radix 判斷「按在這一層裡」也是這樣認),不得以「按在任何一層浮層裡」或「按在不裝著它的那一層」代替(判準 `../../lib/composite-field-focus.ts` `useOwnTreeEvents`;2026-11-03 SelectMenu / InlineEdit 修前就是前一種代理,讓面板裡的選單點外不關)。**只多認一種(2026-11-24)**:從這一層開出來、畫在它元件樹外的另一層 —— **錨點在這一層裡、而且比這一層晚開**(含它再往下開的層,鏈上每一層都要比這一層晚開)—— 算這一層的內部:點它、焦點搬進它都不關這一層;Esc 照舊一次一層(Radix 只讓最上層處理 Esc,跨元件樹也成立);點兩層以外全關。典型:清單浮層點一項,產品在那一項旁邊開詳情(`../../components/Popover/popover.spec.md`「禁止事項」允許的第 (2) 種用法;Calendar 把被點的那一列交給 `onEventClick` 當錨點)。兩個條件缺一不可:只看錨點,一個先開著、後來被改錨到這一層某一列的浮層會被誤認;只看先後,一個晚開但錨在頁面別處的浮層會被誤認 —— 同樣不得放寬成「按在任何一層浮層裡」。判準 `../../lib/overlay-nesting.ts` `isInChildLayer`(PopoverContent 在 `onInteractOutside` 問;Popover / DropdownMenu(含子選單)/ HoverCard 的內容都登記開啟順序與錨點);閘 `scripts/overlay-nested-dismiss-invariant.mjs` N 列(對照組:不認、放寬成任何一層、只看錨點、只看先後、只認一層,各自紅)。世界級:Radix 判斷「按在這一層裡」以元件樹認(<https://github.com/radix-ui/primitives/blob/d8b1ffadc6fe0bd2486816751953dfadf14b3357/packages/react/dismissable-layer/src/dismissable-layer.tsx#L221-L296>);FullCalendar 與 React Big Calendar 的「+more」清單外按下滑鼠就關,開發者自己開的詳情一被點,清單就關(<https://github.com/fullcalendar/fullcalendar/blob/main/packages/preact/src/common/MorePopover.tsx>、<https://github.com/jquense/react-big-calendar/blob/master/src/Month.js>);Google Calendar 從當天總覽點事件,詳情開在總覽旁、總覽留著、Esc 一次只關最上層(實測公開 embed:<https://calendar.google.com/calendar/embed?src=j7gov1cmnqr9tvg14k621j7t5c%40group.calendar.google.com&src=3haig2m9msslkpf2tn1h56nn9g%40group.calendar.google.com&src=en.usa%23holiday%40group.v.calendar.google.com&mode=MONTH&dates=20261201%2F20261228&ctz=UTC&hl=en>)。來源:總帳 C4 user「我覺得可以照你建議，但我好奇我們DS為何要禁止浮層開浮層？…」,採納的建議(AI 擬)= 從清單點事件、在旁邊再開詳情浮層;總帳更正 #4(`onEventClick` 那條路清單也不先關)與「錨點在這一層裡、比這一層晚開」這條判準【AI 判定,工程決策】
 - **AutoFocus on open**:consumer 自管 `onOpenAutoFocus`(Popover 範例:`handlePopoverOpenAutoFocus` 找 body 第一個 interactive 元素,跳過 close X 避免 tooltip leak)
 
 **SurfaceHeader Title 可被 ARIA 關聯**:consumer 把 `id` 傳到 SurfaceHeader 的 Title 元素,Radix Content 用 `aria-labelledby={id}`。本 pattern 不強制 id naming(consumer 自決)。
@@ -433,6 +434,7 @@ overlay-surface 是 **layout pattern**(`SurfaceHeader` / `SurfaceBody` / `Surfac
 - `action-bar.spec.md`
 - `agent-decision-card.spec.md`
 - `app-shell.spec.md`
+- `calendar.spec.md`
 - `coachmark.spec.md`
 - `date-picker.spec.md`
 - `dialog.spec.md`

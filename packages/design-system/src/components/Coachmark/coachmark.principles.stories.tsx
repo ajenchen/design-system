@@ -190,9 +190,9 @@ export const UsageGuidance: Story = {
 
         <TutorialRule
           title="❌ 在 Coachmark 內放 nested Popover / Dialog"
-          note="浮層嵌套浮層 = 層級混亂 + 焦點管理崩壞 + Esc 不知道關哪個。複雜互動結束 tour 後再開啟;tour 的角色是「指向功能」不是「讓使用者在 tour 內完成任務」"
+          note="tour 的角色是「指向功能」不是「讓使用者在 tour 內完成任務」。要填資料、要選值的複雜互動,結束 tour 後再開啟"
         >
-          <ExampleCaption warn>❌ Coachmark 內放 Popover / Dialog — 焦點管理崩壞</ExampleCaption>
+          <ExampleCaption warn>❌ Coachmark 內放 Popover / Dialog — 指向功能的 tour 變成在 tour 裡辦事</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule

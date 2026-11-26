@@ -2,10 +2,13 @@
 //
 // 帳本住 `packages/design-system/ds-changes.json`(出貨後 = node_modules/@qijenchen/design-system/ds-changes.json)。
 // 每節的鍵 = **含這些變更的那個版本號**(下一次發布的版本);節只加不刪,已發布的節逐位元不再改,寫錯用新節的 errata 更正。
+// 一節 = { changes(破壞性變更), errata?, added?(新增), updated?(行為與畫面變更), noVisibleChange?(改到預覽看得見的檔、消費端看不到差異的豁免) };
+// 哪些改動算哪一類、誰在什麼時候登記:ds-canonical/references/props-naming.md「相容政策」(唯一住處)。
 // 呼叫端:
-//   - scripts/public-surface-invariant.mjs —— 公開介面比對閘(帳本形狀、與偵測到的差異逐條對應)
-//   - tools/codemods/index.mjs —— `qijenchen-ds-codemod upgrade`(選節、套 fix、列剩下的)
-//   - scripts/release-github-release.mjs —— GitHub Release「破壞性變更」段(renderReleaseSection + idsMissingFromText)
+//   - scripts/public-surface-invariant.mjs —— 公開介面比對閘(帳本形狀、與偵測到的破壞性差異逐條對應)
+//   - scripts/release-notes-coverage-invariant.mjs —— 發版說明涵蓋閘(改到預覽看得見的檔 / 新增出口都要有 added / updated / changes / noVisibleChange 涵蓋)
+//   - tools/codemods/index.mjs —— `qijenchen-ds-codemod upgrade`(選節、套 fix、列剩下的;只讀 changes)
+//   - scripts/release-github-release.mjs —— GitHub Release 說明的「新增 / 行為與畫面變更 / 破壞性變更」三段(renderReleaseNotes + releaseNotesMissingFromText)
 //   - scripts/build-fork-governance.mjs —— 消費端 hook 的「曾刪除或改名的名字」名單(removedNamesDocument → fork references/ds-removed-names.json)
 //   - ds-canonical/hooks/lib/_ds_removed_names.sh —— DS 作者 repo 裡由 CLI `removed-names` 當場投影同一份名單
 // 本檔只准用 node 內建模組:Release 的 publish job 沒有 npm install,消費端的升版指令也不該多帶依賴。
@@ -21,9 +24,14 @@ export const LEDGER_CHANGES = Object.freeze(['removed', 'renamed', 'required', '
 /** 這幾種 change 一定對到比對閘偵測到的差異(寫了卻沒發生 = 紅);behavior / rule 是機器看不到、由作者登記的 */
 export const LEDGER_DETECTED_CHANGES = Object.freeze(['removed', 'renamed', 'required', 'narrowed', 'default'])
 export const LEDGER_FIX_OPS = Object.freeze(['rename-prop', 'rename-export', 'rename-token'])
-const ENTRY_KEYS = new Set(['id', 'surface', 'target', 'change', 'to', 'fix', 'do', 'spec'])
+const ENTRY_KEYS = new Set(['id', 'surface', 'target', 'change', 'to', 'fix', 'do', 'spec', 'paths'])
 const ERRATUM_KEYS = new Set(['supersedes', 'surface', 'target', 'change', 'to', 'fix', 'do', 'spec'])
-const SECTION_KEYS = new Set(['changes', 'errata'])
+/** 發版說明的「新增」「行為與畫面變更」兩類(鍵 → 段名);破壞性變更仍是 changes。renderer 依序產生 新增 / 行為與畫面變更 / 破壞性變更 */
+export const LEDGER_NOTE_KINDS = Object.freeze({ added: '新增', updated: '行為與畫面變更' })
+export const RELEASE_NOTE_HEADINGS = Object.freeze([LEDGER_NOTE_KINDS.added, LEDGER_NOTE_KINDS.updated, '破壞性變更'])
+const NOTE_KEYS = Object.freeze({ added: new Set(['id', 'target', 'note', 'spec', 'paths', 'exports']), updated: new Set(['id', 'target', 'note', 'spec', 'paths']) })
+const EXEMPTION_KEYS = new Set(['paths', 'exports', 'reason'])
+const SECTION_KEYS = new Set(['changes', 'errata', ...Object.keys(LEDGER_NOTE_KINDS), 'noVisibleChange'])
 const ID_SLUG = /^[A-Za-z0-9._:-]+$/
 
 export class LedgerError extends Error {}
@@ -115,6 +123,64 @@ function entryShapeProblems(e, where, { erratum = false } = {}) {
   }
   if (has('spec') && !/^[^「」\s]+「[^「」]+」$/.test(e.spec.trim())) problems.push(`${where}:spec 要寫成「出貨檔路徑「段名」」(例 src/components/Dialog/dialog.spec.md「寬度檔位」)`)
   if (e.fix !== undefined) problems.push(...fixProblems(e.fix, where))
+  if (!erratum && e.paths !== undefined) problems.push(...pathsProblems(e.paths, where))
+  return problems
+}
+
+// ── 涵蓋路徑(paths)──────────────────────────────────────────────────────────────
+/**
+ * 條目的 paths = 這一條涵蓋的 repo 檔案:寫完整檔案路徑,或以「/」結尾的資料夾(涵蓋底下所有檔)。
+ * 不准用萬用字元;資料夾至少三層,`packages/<套件>/src/` 底下至少五層(要指到 `src/<類別>/<名字>/`)——
+ * 一條寫 `packages/design-system/src/` 就把整個 DS 蓋掉,等於沒登記(發版說明涵蓋閘:scripts/release-notes-coverage-invariant.mjs)。
+ */
+export function pathsProblems(paths, where) {
+  if (!Array.isArray(paths) || !paths.length) return [`${where}:paths 要是非空陣列(repo 路徑;資料夾以「/」結尾)`]
+  const problems = []
+  for (const p of paths) {
+    if (typeof p !== 'string' || !p.trim() || p !== p.trim()) { problems.push(`${where}:paths 有空白或不是字串的項目`); continue }
+    if (/^\/|^\.\/|\\|(?:^|\/)\.\.(?:\/|$)|[*?[\]{}]/.test(p)) { problems.push(`${where}:paths「${p}」要寫 repo 相對路徑(不以 / 或 ./ 開頭、沒有 ..、不用萬用字元)`); continue }
+    if (!p.endsWith('/')) continue
+    const segs = p.split('/').filter(Boolean)
+    const min = segs[0] === 'packages' && segs[2] === 'src' ? 5 : 3
+    if (segs.length < min) problems.push(`${where}:paths「${p}」太寬(資料夾 ${segs.length} 層,至少 ${min} 層${min === 5 ? ',要指到 src/<類別>/<名字>/' : ''})—— 改列真正改到的檔或元件資料夾`)
+  }
+  if (new Set(paths).size !== paths.length) problems.push(`${where}:paths 有重複`)
+  return problems
+}
+
+/** paths 的一項是否涵蓋某個檔(資料夾 = 前綴;檔案 = 全等) */
+export function pathCovers(pattern, file) {
+  return pattern.endsWith('/') ? file.startsWith(pattern) : file === pattern
+}
+
+function noteShapeProblems(e, where, kind) {
+  if (!e || typeof e !== 'object' || Array.isArray(e)) return [`${where}:不是物件`]
+  const problems = []
+  for (const k of Object.keys(e)) if (!NOTE_KEYS[kind].has(k)) problems.push(`${where}:不認得欄位「${k}」(${kind} 條目只有 ${[...NOTE_KEYS[kind]].join(' / ')})`)
+  const has = (k) => typeof e[k] === 'string' && e[k].trim()
+  for (const k of ['id', 'target', 'note', 'spec']) if (!has(k)) problems.push(`${where}:${k} 空白`)
+  if (has('note')) {
+    const n = sentenceCount(e.note)
+    if (n < 1 || n > 3) problems.push(`${where}:note 要一到三句(實得 ${n} 句)`)
+  }
+  if (has('spec') && !/^[^「」\s]+「[^「」]+」$/.test(e.spec.trim())) problems.push(`${where}:spec 要寫成「出貨檔路徑「段名」」`)
+  problems.push(...pathsProblems(e.paths, where))
+  if (e.exports !== undefined && (!Array.isArray(e.exports) || !e.exports.length || !e.exports.every((x) => typeof x === 'string' && x.trim()))) problems.push(`${where}:exports 要是非空的名字陣列(出口名或 ./子路徑)`)
+  return problems
+}
+
+function exemptionShapeProblems(e, where) {
+  if (!e || typeof e !== 'object' || Array.isArray(e)) return [`${where}:不是物件`]
+  const problems = []
+  for (const k of Object.keys(e)) if (!EXEMPTION_KEYS.has(k)) problems.push(`${where}:不認得欄位「${k}」(noVisibleChange 只有 paths / exports / reason)`)
+  if (typeof e.reason !== 'string' || !e.reason.trim()) problems.push(`${where}:reason 空白 —— 「無使用者可見變化」一定要寫理由`)
+  else {
+    const n = sentenceCount(e.reason)
+    if (n < 1 || n > 3) problems.push(`${where}:reason 要一到三句(實得 ${n} 句)`)
+  }
+  if (e.paths === undefined && e.exports === undefined) problems.push(`${where}:要寫 paths 或 exports(豁免的是哪些檔 / 出口)`)
+  if (e.paths !== undefined) problems.push(...pathsProblems(e.paths, where))
+  if (e.exports !== undefined && (!Array.isArray(e.exports) || !e.exports.length || !e.exports.every((x) => typeof x === 'string' && x.trim()))) problems.push(`${where}:exports 要是非空的名字陣列(出口名或 ./子路徑)`)
   return problems
 }
 
@@ -125,8 +191,8 @@ export function parseSpecRef(spec) {
 }
 
 /**
- * 帳本自己的形狀(不需要知道公開介面):節的鍵是版本號、依版本排序、欄位齊全、id 全帳本唯一且以節的版本開頭、
- * errata 指到更早一節的 id。回 problems(字串陣列)。
+ * 帳本自己的形狀(不需要知道公開介面):節的鍵是版本號、依版本排序、欄位齊全、id 全帳本唯一(changes / added / updated 共用一套)
+ * 且以節的版本開頭、errata 指到更早一節 changes 的 id、paths 不准太寬、noVisibleChange 一定有理由。回 problems(字串陣列)。
  */
 export function ledgerShapeProblems(ledger) {
   const problems = []
@@ -135,20 +201,37 @@ export function ledgerShapeProblems(ledger) {
   const keys = Object.keys(ledger.releases)
   if (keys.join('\n') !== sections.map(([v]) => v).join('\n')) problems.push('releases 的節要依版本由舊到新排')
   const ids = new Map()
+  const allIds = new Map()
+  const claimId = (e, version, where) => {
+    if (typeof e?.id !== 'string') return false
+    if (!e.id.startsWith(`${version}/`) || !ID_SLUG.test(e.id.slice(version.length + 1))) problems.push(`${where}:id 要寫成「${version}/<英數 . _ : ->」`)
+    if (allIds.has(e.id)) problems.push(`${where}:id「${e.id}」重複(${allIds.get(e.id)} 已用)`)
+    allIds.set(e.id, version)
+    return true
+  }
   for (const [version, section] of sections) {
     const at = `releases["${version}"]`
-    if (!section || typeof section !== 'object' || Array.isArray(section)) { problems.push(`${at} 要是 { changes: [...], errata?: [...] }`); continue }
+    if (!section || typeof section !== 'object' || Array.isArray(section)) { problems.push(`${at} 要是 { changes: [...], errata?, added?, updated?, noVisibleChange? }`); continue }
     for (const k of Object.keys(section)) if (!SECTION_KEYS.has(k)) problems.push(`${at}:不認得「${k}」`)
     if (!Array.isArray(section.changes)) { problems.push(`${at}.changes 要是陣列`); continue }
     section.changes.forEach((e, i) => {
       const where = `${at}.changes[${i}]${e?.id ? `(${e.id})` : ''}`
       problems.push(...entryShapeProblems(e, where))
-      if (typeof e?.id === 'string') {
-        if (!e.id.startsWith(`${version}/`) || !ID_SLUG.test(e.id.slice(version.length + 1))) problems.push(`${where}:id 要寫成「${version}/<英數 . _ : ->」`)
-        if (ids.has(e.id)) problems.push(`${where}:id「${e.id}」重複(${ids.get(e.id)} 已用)`)
-        ids.set(e.id, version)
-      }
+      if (claimId(e, version, where)) ids.set(e.id, version)
     })
+    for (const kind of Object.keys(LEDGER_NOTE_KINDS)) {
+      if (section[kind] === undefined) continue
+      if (!Array.isArray(section[kind])) { problems.push(`${at}.${kind} 要是陣列`); continue }
+      section[kind].forEach((e, i) => {
+        const where = `${at}.${kind}[${i}]${e?.id ? `(${e.id})` : ''}`
+        problems.push(...noteShapeProblems(e, where, kind))
+        claimId(e, version, where)
+      })
+    }
+    if (section.noVisibleChange !== undefined) {
+      if (!Array.isArray(section.noVisibleChange)) problems.push(`${at}.noVisibleChange 要是陣列`)
+      else section.noVisibleChange.forEach((e, i) => problems.push(...exemptionShapeProblems(e, `${at}.noVisibleChange[${i}]`)))
+    }
     if (section.errata !== undefined) {
       if (!Array.isArray(section.errata)) { problems.push(`${at}.errata 要是陣列`); continue }
       section.errata.forEach((e, i) => {
@@ -223,14 +306,72 @@ export function renderReleaseSection(ledger, version) {
   return lines.join('\n')
 }
 
-/** 發布說明讀回驗收:那一節每個條目 id(與勘誤指到的 id)都要出現在說明裡(整個 id 比對,不比子字串) */
+const NOTE_INTRO = Object.freeze({
+  added: '原本的寫法不用改;要用再照規格段落接上。',
+  updated: '不用改程式,但畫面或行為和上一版不同;有測試或截圖依賴舊樣子的要更新。',
+})
+
+/** 「新增」或「行為與畫面變更」段:帳本那一節的 added / updated → markdown(沒有條目也照樣出段,寫明這一節沒有登記) */
+function renderNoteSection(section, version, kind) {
+  const entries = section?.[kind] ?? []
+  const label = LEDGER_NOTE_KINDS[kind]
+  const lines = [`## ${label}(${entries.length} 條)`, '']
+  if (!entries.length) return [...lines, `帳本「${version}」節沒有登記${label}。`].join('\n')
+  lines.push(`來源:套件內 \`${LEDGER_PACKAGE_PATH}\` 的「${version}」節 \`${kind}\`(唯一來源,本段由它產生)。${NOTE_INTRO[kind]}`, '')
+  for (const e of entries) lines.push(`- \`${e.id}\` \`${e.target}\`:${oneLine(e.note)}(規格:${oneLine(e.spec)})`)
+  return lines.join('\n')
+}
+
+/**
+ * GitHub Release 說明的帳本部分:依序「新增 / 行為與畫面變更 / 破壞性變更」三段(RELEASE_NOTE_HEADINGS),一段都不省 ——
+ * 沒有條目的段寫「帳本這一節沒有登記」,讀回驗收靠三個段名都在(releaseNotesMissingFromText)。節不存在 = 三段都沒有登記。
+ */
+export function renderReleaseNotes(ledger, version) {
+  const problems = ledgerShapeProblems(ledger)
+  if (problems.length) throw new LedgerError(`帳本形狀不對:${problems.slice(0, 3).join(';')}`)
+  const section = ledger.releases[version]
+  const breaking = renderReleaseSection(ledger, version)
+    || [`## ${RELEASE_NOTE_HEADINGS[2]}(0 條)`, '', `帳本「${version}」節沒有登記${RELEASE_NOTE_HEADINGS[2]}。`].join('\n')
+  return [renderNoteSection(section, version, 'added'), renderNoteSection(section, version, 'updated'), breaking].join('\n\n')
+}
+
+/** 發布說明讀回驗收:那一節每個條目 id(changes、勘誤指到的 id、added、updated)都要出現在說明裡(整個 id 比對,不比子字串) */
 export function idsMissingFromText(ledger, version, text) {
   if (typeof text !== 'string' || !text.trim()) throw new LedgerError('發布說明是空的 —— 沒驗到不是通過')
   const section = ledger?.releases?.[version]
   if (!section) return []
   const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const ids = [...(section.changes ?? []).map((e) => e.id), ...(section.errata ?? []).map((e) => e.supersedes)]
+  const ids = [
+    ...(section.changes ?? []).map((e) => e.id), ...(section.errata ?? []).map((e) => e.supersedes),
+    ...Object.keys(LEDGER_NOTE_KINDS).flatMap((kind) => (section[kind] ?? []).map((e) => e.id)),
+  ]
   return ids.filter((id) => !new RegExp(`(?<![A-Za-z0-9._:/-])${esc(id)}(?![A-Za-z0-9_:/-]|\\.[A-Za-z0-9])`).test(text))
+}
+
+/** 讀回驗收的段名那一半:三個段名(行首「## 段名(」)都要在,而且依序出現。回缺的 / 順序錯的段名 */
+export function headingsMissingFromText(text) {
+  if (typeof text !== 'string' || !text.trim()) throw new LedgerError('發布說明是空的 —— 沒驗到不是通過')
+  const missing = []
+  let last = -1
+  for (const label of RELEASE_NOTE_HEADINGS) {
+    const at = text.search(new RegExp(`^## ${label}\\(`, 'mu'))
+    if (at < 0 || at < last) missing.push(`## ${label}`)
+    else last = at
+  }
+  return missing
+}
+
+/** 讀回驗收(release-github-release 發布前用):缺的段名 + 缺的條目 id;說明空白 = 全部缺 */
+export function releaseNotesMissingFromText(ledger, version, text) {
+  if (typeof text !== 'string' || !text.trim()) {
+    const section = ledger?.releases?.[version] ?? {}
+    return [
+      ...RELEASE_NOTE_HEADINGS.map((label) => `## ${label}`),
+      ...(section.changes ?? []).map((e) => e.id), ...(section.errata ?? []).map((e) => e.supersedes),
+      ...Object.keys(LEDGER_NOTE_KINDS).flatMap((kind) => (section[kind] ?? []).map((e) => e.id)),
+    ]
+  }
+  return [...headingsMissingFromText(text), ...idsMissingFromText(ledger, version, text)]
 }
 
 // ── 消費端名單 ────────────────────────────────────────────────────────────────────

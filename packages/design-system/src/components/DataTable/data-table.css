@@ -69,18 +69,19 @@
    Field 家族的 `--field-control-py-*`(`tokens/uiSize/uiSize.css`)為了同一個理由**早就帶 `- 1px`**;
    這裡補上之後兩邊對稱。`uiSize.css` 那句「DataTable cell 的 padding 載體無邊框,故不帶 −1px」
    是這個缺陷的根:**載體無邊框 ≠ 內容無邊框**。
-   固定行高不受影響有代數理由:置中盒的位置 = (H − c) / 2,與 padding 無關。 */
+   固定行高不受影響有代數理由:置中盒的位置 = (H − c) / 2,與 padding 無關。
+   2026-11-25:減的那一份讀 --field-border-width(那圈框就是欄位的框,框寬只有一個住處 tokens/uiSize/uiSize.css;值不變)。 */
 [data-table-size="sm"] {
-  --table-cell-py: calc((var(--table-row-sm) - 1lh) / 2 - 1px);
+  --table-cell-py: calc((var(--table-row-sm) - 1lh) / 2 - var(--field-border-width));
 }
 
 :root,
 [data-table-size="md"] {
-  --table-cell-py: calc((var(--table-row-md) - 1lh) / 2 - 1px);
+  --table-cell-py: calc((var(--table-row-md) - 1lh) / 2 - var(--field-border-width));
 }
 
 [data-table-size="lg"] {
-  --table-cell-py: calc((var(--table-row-lg) - 1lh) / 2 - 1px);
+  --table-cell-py: calc((var(--table-row-lg) - 1lh) / 2 - var(--field-border-width));
 }
 
 /* ────────────────────────────────────────────────────────────

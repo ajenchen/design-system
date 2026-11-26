@@ -60,6 +60,26 @@ elevation-100 < elevation-200，數字越大浮起越高。`*-hover` 兩枚為�
 | SelectMenu | 8px | PopoverContent sideOffset |
 | DropdownMenu | 8px | DropdownMenuContent sideOffset |
 | Popover | 8px | 通用浮層 |
+| Popover `coverAnchor`(蓋在錨點上) | 不適用 | 例外:浮層蓋在錨點上、中心 = 錨點中心,沒有「與觸發點的間距」;碰到視窗邊推回時仍離邊 `OVERLAY_COLLISION_PADDING`(8px)。規則 → `../../components/Popover/popover.spec.md`「蓋在錨點上(展開型)」 |
+
+## 浮層高度上限
+
+**SSOT** → `tokens/elevation/overlay-geometry.ts`(2026-11-24 收成一份;之前同一件事寫在 7 處、寫法各異,`DropdownMenuSubContent` 完全沒有上限)。
+全 DS 只有一條公式 `capHeight(可用高, maxHeight)`:有 `maxHeight` 取兩者小的、沒有就是可用高 —— 使用端**只能往更矮調**,傳再大也不超出可用高
+(數字 = px,字串照原樣;名字與型別照 `../../../ds-canonical/references/props-naming.md`「尺寸參數」)。可用高有三種:
+
+| 可用高 | 常數 | 誰在讀 |
+|---|---|---|
+| 錨定浮層:觸發點那一側到碰撞邊界的剩餘高度(Radix popper 算,已扣間距與 collisionPadding) | `OVERLAY_AVAILABLE_HEIGHT` | `PopoverContent`、`HoverCardContent`、`DropdownMenuContent`(三者都收 `maxHeight`)、`DropdownMenuSubContent`(只用可用高)、`ProfileCard`(放進 HoverCard / Popover 時) |
+| Modal:所在區塊高扣上下 inset | `MODAL_AVAILABLE_HEIGHT` | `DialogContent`(收 `maxHeight`;規則與兩種高度模式的 owner → `../../components/Dialog/dialog.spec.md`「最大高度(上限)」) |
+| 蓋在錨點上的浮層:視窗高扣上下各 collisionPadding(它不在錨點的哪一側,Radix 的「觸發點那一側剩多少」不適用;2026-11-24) | `OVERLAY_COVER_AVAILABLE_HEIGHT` | `PopoverContent coverAnchor`(規則 → `../../components/Popover/popover.spec.md`「蓋在錨點上(展開型)」;位置函式 `coverAnchorPosition` 同住 `overlay-geometry.ts`) |
+
+清單型浮層的捲動區另有一個閱讀上限:半列原則 —— 最後一列切在半列(`halfRowCap`;預設值 `OVERLAY_LIST_MAX_HEIGHT`,依列的長相與尺寸;理由與 N 住 `../../components/Command/command.spec.md`「清單捲動上限(半列原則)」),
+它夾的是清單捲動區,外殼照上表。清單一樣收 `maxHeight`(`CommandList` / `SelectMenu` / `Select` / `Combobox` / `PeoplePicker`;2026-11-24 起):取代半列預設,實際上限 = `capHeight(可用高, maxHeight)`,傳再大也不超出可用高。
+超過上限時標題列 / 頁尾留在畫面內、只有內容區捲動 —— 中間 wrapper 的 flex 鏈規則住 `../../patterns/overlay-surface/overlay-surface.spec.md`「Viewport-aware scroll chain invariant」。
+
+- **寫法**:消費端一律寫 inline `style.maxHeight`(Tailwind class 讀不到 TS 常數);浮層元件裡不另寫 `max-h-*`、不直接讀 `--radix-*-available-height`。
+- **機械檢查**:`scripts/overlay-height-ssot-invariant.mjs`(靜態:浮層元件的高度上限只准從 `overlay-geometry.ts` 來)、`scripts/overlay-height-cap-invariant.mjs`(執行期:量夾具裡渲染出來的各種錨定浮層 —— Popover / HoverCard / DropdownMenu 與其子選單、放在 Popover 裡的 ProfileCard 的 computed `max-height` = `capHeight` 的結果,CommandList 捲動區 = 半列預設(最後一列切在半列,單行列與帶說明的兩行列各一格)或 `maxHeight`;不是全 DS 每個浮層)、`scripts/overlay-cover-anchor-invariant.mjs`(執行期:蓋在錨點上的浮層高 = 視窗高 − 16、標題列固定、內文自己捲)。
 
 ## 浮層共用樣式
 
@@ -136,8 +156,13 @@ elevation-100 < elevation-200，數字越大浮起越高。`*-hover` 兩枚為�
 
 - `agent-panel.spec.md`
 - `app-shell.spec.md`
+- `calendar.spec.md`
+- `coachmark.spec.md`
+- `command.spec.md`
+- `dropdown-menu.spec.md`
 - `hover-card.spec.md`
 - `motion.spec.md`
+- `overlay-surface.spec.md`
 - `slider.spec.md`
 - `toast.spec.md`
 - `tooltip.spec.md`

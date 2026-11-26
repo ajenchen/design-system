@@ -79,7 +79,7 @@ benchmark:
 
 層級靠色彩區分，不靠字體大小。Token 為 SSOT（具體 px / 色值由各 token spec 定義，本 spec 不硬寫）：
 
-- **label (dt)**：`text-body` + `text-fg-secondary`
+- **label (dt)**：`text-body` + `text-fg-secondary`(與 DataTable 表頭、閱讀情境的 FieldLabel 同色;同色清單住 `../../tokens/color/color.spec.md` `text-fg-secondary` 用途列)
 - **value (dd)**：`text-body` + `text-foreground`
 - 兩者行高均為 1.5（閱讀模式）
 

@@ -355,7 +355,8 @@
             "kind": "hook",
             "hook": "log_governance_fires.sh",
             "runtime": "bash",
-            "outputMode": "diagnostic"
+            "outputMode": "diagnostic",
+            "activation": "telemetry-opt-in"
           }
         ]
       }

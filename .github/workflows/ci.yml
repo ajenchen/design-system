@@ -56,6 +56,8 @@ jobs:
           /usr/bin/git diff --exit-code -- packages/design-system/ds-story-manifest.json
           # a11y 基線的 story 清單 = 這次建置的 story 清單(2026-11-04,總帳 SM4):加 / 刪 / 改名 story 沒跑
           # `npm run a11y:check -- --baseline-write`,以前要等隔天夜間 a11y 全掃才紅;這裡只比清單(不開瀏覽器,約 1 秒)。
+          # 2026-11-26 起 axe 全掃也在 PR(verify-browser-a11y),它遇到清單不同只會拒絕判定(閘的前提,不是另一條規則);
+          # 「清單要跟著 story 重生」這條規則仍只由這一支守,而且一秒就紅,不用等全掃十多分鐘。
           npm run test:a11y-corpus
           # 2026-09-29(OE18 盤點):隨 npm 出貨的 llms.txt / llms-full.txt 檔頭自稱「CI --check 守」,但從沒接進任何 workflow,
           # 提交的檔停在 beta.132 過期 14 版沒人知道。build-storybook 鏈尾已重生,這裡驗 git 樹沒有漂移 + 對照組會紅。
@@ -116,6 +118,8 @@ jobs:
           # 機器可讀浮層表(觸發點 / 整頁)= 原始碼 = density.spec.md 情境 1 表。掃元件 / pattern / story / apps;--selftest 該紅的全紅、該綠的全綠(條數以閘印的為準)。
           node scripts/overlay-density-lock-invariant.mjs --selftest
           node scripts/overlay-density-lock-invariant.mjs
+          node scripts/overlay-height-ssot-invariant.mjs --selftest
+          node scripts/overlay-height-ssot-invariant.mjs
           # 2026-11-18 合回 knowledge-prune 第一波時接進來(原本紅面只經夜間 harness):WP-19 新增「紅面只在排程跑的配對名單只准變短」棘輪,
           # 名單量在合回前的基準點(71 筆);同一波 WP-03 / WP-02 各新增一支閘,紅面只經夜間 harness —— 三包各自全綠,合起來多 2 筆,棘輪正確地紅。
           # 兩支都是純靜態、秒級,不該只在夜間跑:
@@ -230,6 +234,13 @@ jobs:
           # 「下一版」那一節(漏寫 / 寫了卻沒發生 / 改名 to 不存在 / spec 非出貨檔都紅),已發布的節逐位元不改。帳本隨 npm 出貨,消費端升版讀它。
           # 對照組在 --selftest(合成樹十二類各破一處 + 146→147 真實資料)。純靜態 + git 讀 tag,約 25 秒(引入帳本的這一版另逐段驗回填的三節)。
           npm run test:public-surface
+          # 發版說明涵蓋(2026-11-24):GitHub Release 說明依序「新增 / 行為與畫面變更 / 破壞性變更」三段,上面那支只保證破壞性變更 ——
+          # beta.149 的說明因此只有破壞性變更(95 條),LinkInput errorText / clearable、Coachmark 高度隨內容等都沒寫。
+          # 跟上一個發布 tag 比:改到預覽看得見的檔(scripts/release-orchestrator.mjs 的 PRODUCT_VISIBLE,不另立清單)、新增的公開出口 / 子路徑,
+          # 每一個都要被帳本「下一版」那一節的 added / updated / changes(帶 paths)/ noVisibleChange(附理由)某一條涵蓋;
+          # renderer 產生的說明要過發版端同一支讀回驗收。登記規則 ds-canonical/references/props-naming.md「相容政策」。
+          # 對照組在 --selftest(合成資料逐條各紅一面 + beta.148 → beta.149 真實資料照新規則全紅)。純靜態 + git 讀 tag,約 10 秒。
+          npm run test:release-notes-coverage
           # 相容政策(2026-11-15,user:「我認為還是 beta 的狀況下都不要再顧及所有向後相容的部分」;規則 ds-canonical/references/props-naming.md「相容政策」,
           # 版本判斷 scripts/lib/compat-policy.mjs):0.x / 預發布版 DS 原始碼不得有 @deprecated、不得拿「向後相容 / 保留一版」當理由。
           # 修前的樹:NC1 14 筆 @deprecated、NC2 77 行。對照組在 --selftest(含 beta.148 真實原始碼)。純靜態,約 3 秒。
@@ -247,6 +258,26 @@ jobs:
           # 結構圖色塊(2026-10-21,r1b fields 複驗 D2):同一列裡不同色名必須畫成不同顏色 —— Combobox 結構圖的搜尋框用 primary,
           # 與 chevron 的 info 同是 --color-blue-6,畫出來一模一樣。照 semantic.css / primitives.css 展開到底,淺色深色都比。純靜態,約 1 秒。
           npm run test:anatomy-chip-palette
+          # 週起始日只有一條規則(2026-11-24,user 選「跟語系的 CLDR (Recommended)」;lib/date-locale.ts):有傳 weekStartsOn 就用,沒傳時語系 → CLDR
+          # (先 Intl getWeekInfo、沒有就查內建表,-u-fw- 兩條都認)。判定表 × 三條路、內建表對每個地區代碼與執行環境 CLDR 相同、DataTable
+          # 本週 / 上週 / 下週固定時鐘判定表、消費端(DateGrid / DatePicker / 篩選寫入點 / 格編輯器 / 預設語系 zh-TW、Calendar 的週起始日 / 週末 / 週數)真的呼叫;
+          # 對照組:表少 TW、不解析 fw、不換算 %7、忽略參數、篩選寫死週一、消費端各拿掉一處(含 Calendar 寫死週日 / 週末 / 第一週天數 / Home),各自必紅。純函式 + 讀檔,約 2 秒。
+          npm run test:week-start
+          # Calendar 月檢視事件版面只有一份(components/Calendar/calendar-layout.ts;calendar.spec.md「資料語意」「跨日長條」「格內排序」「每格筆數與「+N」」):
+          # 三種字串格式、只有日期 → 全天(兩端都是)、end 不含、Q7(定)滿 24 小時才是長條、日光節約那天(TZ 固定 America/New_York)、start > end 與全天
+          # end === start 的處理與警告、最低空車道 / 同一事件同一車道 / 只在週末的事件不佔車道、被藏的日子切段、m 看最高車道、「+1」、逐格切、排序五條、
+          # 延續旗標五個;k 是誰算的(calendar-geometry.ts 格高 → k 判定表,calendar.tsx 的 maxRows 只有「量到的格高經這支算式」一個來源);
+          # --selftest 31 個行為突變 + 5 個靜態突變 + k 的 2 個算式突變與 3 個接線突變各自讓指定的格紅。純函式 + 讀檔,本機兩條合計約 1 秒。
+          npm run test:calendar-layout
+          # Calendar 原始碼在 Node 端渲染(esbuild + react-dom/server,NODE_ENV=development 讓開發期警告打開;Storybook 建置是 production、量不到):
+          # 三層範例每一則載入時沒有 [Calendar] 警告(資料照 calendar.spec.md「資料語意」:end 不含)、renderEventTile 收到版面那一段的 segment、
+          # 單筆 readOnly 不是按鈕;--selftest 三個原始碼突變(範例留一筆「含」的資料 / segment 寫死 / 單筆唯讀沒接上)各自只讓指定的格紅。本機兩條合計約 2 秒(主判定 0.5 秒、--selftest 1.7 秒)。
+          npm run test:calendar-render-contract
+          # DatePicker.Range 檢視模式 formatRange 只有一份判定(components/DatePicker/range-format.ts;date-picker.spec.md「區間檢視合併(formatRange)」):
+          # zh-TW / en-US × 同一天有時段 / 跨日全天 / 跨日有時段 / 同一刻 / 一端空的判定表 + 其他退回條件 + 退回兩段時每一端的寫法 +
+          # 「同一頁日期樣式一致」性質(合併與退回的列都算;對照組:兩位數月日、dateStyle full、退回的列用補零寫法,都必須被同一支檢查抓到)
+          # + date-picker.tsx 真的呼叫它;--selftest 的行為 / 靜態 / 接線突變各自必紅(數量以腳本輸出為準)。純函式 + 讀檔,約 1 秒。
+          npm run test:date-range-format
 
       - name: Registered test scripts nothing was running
         run: |
@@ -307,12 +338,10 @@ jobs:
           # 下面各瀏覽器 job 宣告的 GOVERNANCE_BROWSER_REQUIRED=1 → exit 非 0,永不略過;另掃全 repo 不准有閘自己抄一份略過。
           # 不需要瀏覽器(故意指向不存在的執行檔),所以放在這個沒有 Chromium 的 job。
           npm run test:launch-browser
-          npm run test:audit-coverage-tier-sync
-          npm run test:ci-evidence
+          # test:audit-coverage-tier-sync / test:ci-evidence / test:hook-evidence / test:deterministic-deep-audit 由 governance-control-plane 的
+          # test:governance-evidence-control-plane 組合指令跑(2026-11-26:同一次 CI 跑兩次 → 只留組合指令那一處;infra/governance/README.md 記的也是它)。
           npm run test:privileged-change-authorization
-          npm run test:hook-evidence
           npm run test:setup-netlify
-          npm run test:deterministic-deep-audit
           # 這條 meta 閘守「宣稱有閘、其實沒人跑」本身:
           # 凡註冊成 test:* 的,CI 就必須觸達得到,否則紅。
           node scripts/ci-gate-coverage.mjs
@@ -421,6 +450,12 @@ jobs:
           # 四個狀態元件的進度 / 步驟填色用 --info,不混 --primary(color.spec.md「Status」段)。
           node scripts/status-color-invariant.mjs
           node scripts/test-status-color-invariant.mjs
+          # Calendar 格內不寫死尺寸(calendar.spec.md「間距」【SPACING(定)】、「禁止事項」第 7 條):元件檔 class 字串不寫數字型內距 / 間距 / 寬高 / 邊框寬
+          # 與 [Npx],列高常數 = TAG_HEIGHT_PX.md,讀到的 --calendar-* 都有設值;有時段事件的色條寬 = 4 且「色條 + 間隔 = 文字內距」、寬只從常數來,
+          # 類別色表 CAT_ACCENT / CAT_EVENT_NEUTRAL.accent 只給顏色(「事件的兩種長相」)。配對測試在暫存目錄的實檔注入 p-1.5 / gap-0.5 / min-h-28 /
+          # border-l-[3px] / 列高 20 / 色表恢復 border-l-[3px] / 色條寬寫死 w-1 / 色條寬常數 3 各自必紅,並跑閘自己的 --selftest(十二個突變)。純靜態,本機兩條合計約 2 秒。
+          node scripts/calendar-geometry-invariant.mjs
+          node scripts/test-calendar-geometry-invariant.mjs
           # 一組選項的 Checkbox 一律包 <CheckboxGroup>(zero-gap canonical,checkbox.spec.md),不手刻 <div flex|grid|space-y-N>;
           # 各自獨立的「單一同意」勾選框用逐行豁免 @checkbox-group-handcraft-ok,出處要引得出 spec 原文。
           # 2026-11-21(knowledge-prune WP-21b)接上:11-20 那批時它在 HEAD 上紅(3 筆手刻開關列),WP-17(904d00b4、c2d35677)修好後
@@ -435,7 +470,7 @@ jobs:
           # 剛好跨過 180 天而紅(M37 第九個形狀)。純 Node,本機約 5 秒。
           node scripts/test-exemption-expiry-invariant.mjs
           # 同一份「只在夜間可達」清單裡刻意沒接的(2026-11-20 逐支在 HEAD 上跑過;接紅閘等於讓每個 PR 一起紅,所以紅的先留在夜間、原因記在這裡):
-          #   要瀏覽器 —— audit-a11y、audit-consumer-a11y。要網路或本機環境 —— check-branch-protection(GitHub API)、check-src-republish(npm registry)、
+          #   要瀏覽器 —— audit-consumer-a11y(audit-a11y 2026-11-26 已接進 verify-browser-a11y)。要網路或本機環境 —— check-branch-protection(GitHub API)、check-src-republish(npm registry)、
           #     check-codex-freshness(讀寫本機 ~/.codex 設定)。
           #   工具 / 報告,不是閘 —— audit-hook-quality(寫 runtime 報告)、consolidate-audit-material、dispatch-audit-dims、prepare-deep-audit-run、
           #     run-gate-meta-tests(夜間執行器本身);governance-check 是裝在 consumer repo 的閘,check-plugin-installed 是 consumer 安裝後的提示。
@@ -945,7 +980,8 @@ jobs:
   verify-browser-control-groups:
     # 2026-10-14 拆自 verify-browser-datatable-perception(待辦總帳 G10;照主題拆平行 job、不調高上限,上限沿用原 job 的 25)。
     # 前兩支都是「判定在別的 job、對照組按預算放」的 --selftest:虛擬游標模態(判定在 verify-browser-cursor)、
-    # useFormValidation 契約(判定在 verify-browser-interaction)。逐支計時合計 513–583 秒,加建置與安裝約 2.2 分 → 估約 12 分。
+    # useFormValidation 契約(判定原在 verify-browser-interaction;2026-11-26 起判定 = 這裡 --selftest 開頭的基準,interaction 不另跑)。
+    # 逐支計時合計 513–583 秒,加建置與安裝約 2.2 分 → 估約 12 分。
     # 第三支浮層家族範例契約(2026-10-21 由 verify-browser-overlay 移來,判定與對照組同一趟):本機 125–281 秒 → 估約 14–17 分。
     name: Verify browser(virtual cursor + form validation control groups)
     runs-on: ubuntu-24.04
@@ -986,7 +1022,7 @@ jobs:
           # 現況那趟在 verify-browser-cursor(上限 15);對照組 CI 逐支計時 102–139 秒,
           # 照 2026-09-15 按預算拆 job 的先例放在這裡(原本在 verify-browser-datatable-perception,2026-10-14 拆出)。
           node scripts/virtual-cursor-modality-invariant.mjs --selftest
-          # useFormValidation 契約的**對照組**(2026-10-01):判定在 verify-browser-interaction,
+          # useFormValidation 契約的**對照組**(2026-10-01):判定 = 這一趟開頭的基準(2026-11-26 起 CI 只在這裡跑,interaction 不另跑),
           # 二十六個單一根因突變(hook 十一個 + 對話框 Esc 分層 / 受控對話框還焦點 / Button 忙碌、握著焦點與離開後的停用 / 存檔後重設基準 / Toast / 浮層表單送出就關十五個)
           # 各自必須剛好紅它負責的列、對照列全程綠;不需要 storybook,四條 lane 並行(每條一個瀏覽器)本機 6 分(2026-10-07 實測 356 秒,循序約 25 分),CI 逐支計時 411–444 秒;同上一支按預算放。
           node scripts/form-validation-contract-invariant.mjs --selftest
@@ -1421,6 +1457,8 @@ jobs:
           # 先對照組(檔位表改壞 / 寬改回 100vw / 高改回 100svh 各自必紅)再判定。
           node scripts/dialog-width-invariant.mjs --selftest
           node scripts/dialog-width-invariant.mjs
+          node scripts/overlay-height-cap-invariant.mjs --selftest
+          node scripts/overlay-height-cap-invariant.mjs
           # 浮層快捷鍵的作用域:焦點在檢視器外時方向鍵不得切換檔案,
           # 「靜止時同色的顏色配對,hover 後必須還是同色」全 DS 掃描(2026-09-11;user 截圖:
           # Switch hover 時白色圓浮出一圈灰邊)。根因是 spec 要求 thumb 邊框「與 OFF track 同色」,
@@ -1455,8 +1493,8 @@ jobs:
           # DataTable 游標的欄被隱藏、Combobox「+N」卡、可聚焦停用與原生停用同色(後兩列用同一棵樹編出的 DS 樣式);
           # 2026-10-13 加試算表 DataTable 連結格 / 開關格的格內模式(Enter 進格裡的控件,Esc 先回格導覽、再清游標、才關)。
           # 不需要 storybook(原始碼打包進空白頁),本機約 90 秒。
-          # 對照組(--selftest,突變清單與個數以腳本的 MUTANTS 為準,這裡不抄數字)在 verify-browser-escape-focus-control(2026-10-14 從 verify-browser-select-all 拆出)。
-          node scripts/escape-and-focus-contract-invariant.mjs
+          # 2026-11-26 起這裡不另跑判定:verify-browser-escape-focus-control 第 0 格的 --selftest 基準就是同一趟判定(同一個 runVariant、同一個分頁設定),
+          # 基準紅會印判定那一行並 exit 1;這裡再跑 = 同一趟判定一次 CI 跑兩次(那個 job 也在 verify 的必過清單)。
           # 開合動畫(2026-10-07 / 10-13,待辦總帳 T6 / T7 / T10 / T11 / T12;本機合計約 60 秒):11 個成員(TreeView / Accordion /
           # AgentPanel 思考塊 / Dialog / Sheet / FileViewer / Popover / Tooltip / HoverCard / DropdownMenu 含子選單 / Select)——
           # E0 關閉時收起動畫真的有播;E1 / E2 JS 收尾晚到 200ms 每一格都不得長回來;N1 每種打開方式都播看得見的進場
@@ -1470,15 +1508,18 @@ jobs:
     # 原 job 最近 15 次 CI p50 16.4 / p90 18.7 / 最大 19.2 分(上限 25,p90 佔 75%)。浮層點外關閉閘的判定本機 137–148 秒、對照組(基準 + 全部突變)
     # 單線 607 秒 —— 兩支疊進原 job 估 +13 分 ≈ 29 分,撞上限被取消(取消 = 那一輪沒有裁決,發布閘 fail closed);只放判定也 +2.5 分、p90 ≈ 87%,
     # 已在 2026-10-21 escape-focus-control 判為要拆的區間(86–92%)。所以兩支都搬到這裡,原 job 的閘清單與 108a736f 相同。
-    # 兩格 matrix 各跑一半突變(--shard,腳本檔頭);每一格的基準 = 一趟完整判定,所以判定每個 PR 都跑兩次;覆蓋率由腳本靜態驗(每條契約列都在某個突變的 expectRed)。
-    # 每格 2 條 lane 並行(--lanes=2,每條一個瀏覽器)。本機量測與估計寫在下方 run 註解。兩格都過 needs.<job>.result 才是 success(fan-in 不變)。
+    # matrix 各格跑一片突變(--shard,腳本檔頭);基準(= 一趟完整判定)與覆蓋率靜態驗只在第 0 格跑(2026-11-26 前每格都跑 = 判定一次 CI 跑五次)。
+    # 2026-11-26 拿掉 build:lib / build-storybook:這個 job 的閘全走 scripts/lib/ds-source-harness.mjs(原始碼直接打包進空白頁),不讀任何建置。
+    # 每格 2 條 lane 並行(--lanes=2,每條一個瀏覽器)。本機量測與估計寫在下方 run 註解。每一格都過 needs.<job>.result 才是 success(fan-in 不變)。
+    # 2026-11-24 兩格 → 五格(OVERLAY-CAPABILITIES):浮層點外閘加「清單旁的詳情」N 列與 6 個突變(7 → 13 個)後,判定一趟本機 137–148 → 182 秒;
+    # 兩格時每格 = 基準 + 7 個突變,估本機 ≈ 4 輪 × 約 270 秒(下方 0/5 片一輪約 273 秒)≈ 18 分,加上同 job 其餘步驟會撞上限 25 分。五格每格 = 基準 + 2–3 個突變(2 輪),量測見下方 run 註解。
     name: Verify browser(overlay nested dismiss)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
-        shard: ['0/2', '1/2']
+        shard: ['0/5', '1/5', '2/5', '3/5', '4/5']
     # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
     env:
       GOVERNANCE_BROWSER_REQUIRED: '1'
@@ -1498,12 +1539,6 @@ jobs:
       - name: Install locked dependencies once
         run: npm run --silent setup:dependencies
 
-      - name: Build publishable libraries and declarations
-        run: npm run build:lib
-
-      - name: Build the Storybook the browser gates load
-        run: npm run build-storybook
-
       - name: Nested overlay dismiss + spreadsheet click-outside (browser)
         run: |
           npx --no-install playwright install chromium
@@ -1514,20 +1549,27 @@ jobs:
           # 不需要 storybook(原始碼打包進空白頁)。對照組:單一根因突變(清單與個數以腳本的 MUTANTS 為準,這裡不抄數字)各自剛好紅該紅的列、對照列全程綠。
           # 本機(8 核、負載 2.6–4.2)判定 148 秒;--selftest --lanes=2 第 0 片(基準 + 4 突變)495 秒、第 1 片(基準 + 3 突變)453 秒 → 估每格 CI 約 9–11 分
           # (同類閘 escape-and-focus 對照組 CI / 本機 ≈ 1.1)+ 準備約 1–2 分(原 job 最近 15 次安裝 + build 合計 40–64 秒)≈ 上限 25 分的 45%。
+          # 2026-11-24 加 N 列與 6 個突變後重量(本機):判定 182 秒;--selftest --lanes=3 不分片(基準 + 13 突變)1084 秒;--shard=0/3 --lanes=2(基準 + 5 突變)757 秒;
+          # --shard=0/5 --lanes=2(基準 + 3 突變)546 秒,同格 data-table-panel-reset-clear --shard=0/5 213 秒 → 這一步每格本機約 13.5 分,加準備 ≈ CI 18–19 分(上限 25 的約 75%)。
           node scripts/overlay-nested-dismiss-invariant.mjs --selftest --shard="$SHARD" --lanes=2
+          # 蓋在錨點上的浮層(2026-11-24;PopoverContent coverAnchor,總帳 Q2b(定)「以格子為中心(水平 + 垂直)」):6 種錨點位置 × 3 種內容高,
+          # 中心 = 錨點中心、碰邊推回離邊 8、高 = 視窗高 − 16、標題列固定內文捲;對照組(--selftest,突變以腳本的 MUTANTS 為準)各自剛好紅該紅的列。
+          # 不需要 storybook(原始碼打包進空白頁),本機判定 + 對照組合計約 21 秒(2026-11-24 量)→ 只在第 0 格跑:由閘自己依 --shard 的 k 判斷
+          #(其他格印略過、exit 0;不寫 YAML 條件式,格數改了也不會整支被略過;matrix 涵蓋 0..n−1 由 infra/governance/test/ci-workflow-scope.test.mjs 驗;同下一支)。
+          npm run test:overlay-cover-anchor -- --shard="$SHARD"
           # 試算表點外清除認本表(2026-11-03;同一個形狀的第三處):同一頁兩張試算表時點另一張表的格、表格裝在另一張表的格子裡時點外層表格,
           # 本表的游標與區間都要清掉(修前只認「任何一張表的外框」,兩種都留著);點頁面空白與 Shift+點本表是對照列。不需要 storybook;
-          # 判定 + --selftest 一個根因突變,本機合計約 30 秒 → 兩格都跑(不寫條件式)。
-          npm run test:data-table-click-outside
+          # 判定 + --selftest 一個根因突變,本機合計約 30 秒 → 只在第 0 格跑(同上一支,閘自己依 --shard 判斷)。
+          npm run test:data-table-click-outside -- --shard="$SHARD"
           # DataTable 排序 / 篩選面板的「恢復預設 / 清除全部」(2026-11-11;user 同日「重置與清除所有就是完全不同的意思，所以本來就要有兩個入口吧？」),
           # 欄位顯示面板的「恢復預設」2026-11-15 併入同一條:恢復預設看資料(值 ≠ defaultSorting / defaultValue / defaultVisibility + defaultColumnOrder —— 欄位顯示面板連順序一起比、一起還原)、
           # 清除全部在加條件那一排靠最右(量 rect)、clearable 開關、按下後焦點給加條件鈕(欄位顯示面板沒有 → 標題列 ×)不掉 body、polite 播報;
           # 欄位顯示面板的固定零件(搜尋框、拖曳把手不靠參數,2026-11-15);另驗排序面板 labels 每個字畫在對的元素 / 屬性(2026-11-15);
           # 三個面板的寬度參數(width / minWidth / maxWidth、下限、375px 視窗夾限)與 PopoverContent width(2026-11-15 A19,腳本檔頭 (6))。不需要 storybook;
-          # 對照組照最上面那支的做法分片(--shard,腳本檔頭;清單與個數以腳本的 MUTANTS 為準,這裡不寫數字):每一格 = 基準(一趟完整判定 = 主跑,所以主跑兩格都跑)
+          # 對照組照最上面那支的做法分片(--shard,腳本檔頭;清單與個數以腳本的 MUTANTS 為準,這裡不寫數字):第 0 格 = 基準(一趟完整判定 = 主跑;2026-11-26 起只在第 0 格)
           # + 一半根因突變(含修前寫法),覆蓋率由腳本靜態驗(每條契約列都在某個突變的 expectRed;不分片的完整動態覆蓋由本機 npm run test:data-table-panel-reset-clear 與 meta-test 跑)。
           # 2026-11-15 前兩格各跑「主跑 + 完整 --selftest」,本 job 兩格 CI 實測 16.1 / 16.9 分(上限 25)。本機 2026-11-15 重量(負載均值約 7):
-          # 不分片 --selftest(基準 + 全部突變)578 秒;兩片同時跑 --shard=0/2 307 秒、--shard=1/2 288 秒 → 每格這支閘的時間約剩一半(改前每格還多一趟主跑)。
+          # 不分片 --selftest(基準 + 全部突變)578 秒;兩片同時跑 --shard=0/2 307 秒、--shard=1/2 288 秒 → 每格這支閘的時間約剩一半(改前每格還多一趟主跑)。2026-11-24 job 改五格後 --shard=0/5 213 秒。
           node scripts/data-table-panel-reset-clear-invariant.mjs --selftest --shard="$SHARD"
         env:
           SHARD: ${{ matrix.shard }}
@@ -1626,9 +1668,8 @@ jobs:
           # 2026-10-01 下午(待辦總帳 N64 / N68 / N69 / OE29)加十列:對話框裡的表單 Esc 一次一層、受控對話框關閉後焦點回開啟者、
           # 送出中 / 存檔後焦點留在送出鈕(可聚焦的停用)、更新表單存檔後重設比對基準、送出成功跳 Toast(三則 story 原始碼)。
           # 2026-10-07 加 T-dialog / T-sheet(放在浮層裡、送出成功就關的三則 story:Toast、關閉、再打開時 reset)。
-          # 這裡只跑判定(本機約 45 秒);--selftest(二十六個單一根因突變,四條 lane 並行本機 6 分)按預算放在 verify-browser-control-groups
-          #(2026-10-14 從 verify-browser-datatable-perception 拆出),照 virtual-cursor-modality 對照組的先例。
-          node scripts/form-validation-contract-invariant.mjs
+          # 2026-11-26 起這裡不另跑判定(原本本機約 45 秒,在全 CI 最長的 job 上):verify-browser-control-groups 的 --selftest 基準就是同一趟判定
+          #(同一個 runVariant、同一個 CONTEXT),基準紅會印判定那一行並 exit 1。
           npm run test:shared-carrier-focus
       # Cloud sessions load the committed provider config as-is; the only two ways that config has
       # ever broken (fatal sandbox flag in containers, hooks/scripts pointing at a retired mirror)
@@ -1726,7 +1767,7 @@ jobs:
           npm run test:steps-content-follows-current
           # 視覺稽核只掃這次改到的元件(2026-09-29 待辦總帳 OE8:126 個場景只有 7 個掛斷言、從沒在 PR 上跑過)。只跑 render error 與
           # 幾何 / 顏色斷言:--no-diff(基準圖是視覺回歸 workflow 釘死容器裡的 Ubuntu 渲染,別的 runner 會整排假破預算)、
-          # --no-a11y(a11y 另有 a11y-and-size.yml 的基線閘)。base 明確傳入 —— PR 用 base 分支的 sha、push 用前一個 head ——
+          # --no-a11y(a11y 另有 verify-browser-a11y 的基線閘)。base 明確傳入 —— PR 用 base 分支的 sha、push 用前一個 head ——
           # 不讓腳本在沒有本地 main 的乾淨 checkout 裡靜默算出 0 個元件(M37);base 不存在是 INSTRUMENT-FAIL 紅,不是綠。
           # 本機實測:沒改元件 0.5 秒結束、單一元件 2–11 秒、19 個元件 53 個場景 81 秒。
           node scripts/visual-audit.mjs --static --scope=changed --no-diff --no-a11y --base="${VISUAL_AUDIT_BASE}"
@@ -1888,6 +1929,28 @@ jobs:
           # 日期區間作用端主色底線畫滿 2px(date-picker.spec.md:193;A50)+ --selftest(該紅列由實量幾何推、跨邊列任何字型都裁得到)。
           # 2026-11-17 從 verify-browser-interaction 搬來:那支 job 41622d91 撞 25 分上限被取消(d23df592 已 22.9 分),本 job 約 8.5 分 / 上限 25。
           npm run test:datepicker-range-active-underline
+
+      - name: Calendar month skeleton invariant (browser)
+        run: |
+          # Calendar 月檢視骨架與間距(calendar.spec.md「工具列」「Cell 規則」「間距」「A11y 預設」;2026-11-25 月檢視重做第一包):
+          # 工具列 = ChromeHeader 48 / 56、nav 名稱、星期列是格陣第一個 row(7 個 columnheader、完整星期名、列高 32)、各週等高、最後一週沒底線、
+          # 日期框 4 / 4 / 24、1 號「7月1日」、事件列 24 / 列距 4 / 文字內距 8、事件列焦點框往外、axe required-children / parent 0、太矮時週列可捲(工具列與星期列不動)、
+          # 鍵盤走到看不見的週會捲進來、點日期鈕 / 按「今天」搬停靠點、en-GB 週一起、titleAs、今天是 1 號時實心底包住「7月1日」;
+          # 讀屏名稱(日期停靠點 = 完整日期 + 筆數、只有今天 aria-current=date 與「今天,」、唯讀格名稱由內容來念得到事件標題、labels 覆寫生效);
+          # 三個選用設定與窄寬度(隱藏週末 5 欄 / 鍵盤跳過被藏的日子 / en-IL 藏週五六、週數欄寬一致與年底週數 en-GB 53 / en-US 1、
+          # 載入中 aria-busy 與每格一條骨架、窄寬掃 20 個欄寬不來回跳);
+          # 事件版面(跨日長條一個元素畫過涵蓋的格、斷開端直角(換週 / 延續到下個月 / 被藏的週末)、每格列數照量到的格高(掃 14 個格高、剛好放滿不出「+N」)、
+          # 點長條任一段與唯讀列不會在這天新增、從長條涵蓋的每一天 F2 都走得到、日期格唯讀時長條涵蓋的每一天都念得到它的標題、深色主題長條不透出格線、
+          # renderEventTile 回傳過大的內容裁在外層裡(不畫到下一列 / 隔壁格、不接走點擊)而外層的焦點框照樣畫在外面);
+          # 事件的兩種長相(全天長條 = 類別淡底、沒有左色條;有時段 = 透明列 + 色條寬 4 / 高 = 字高 / 圓頭 + 時間 fg-secondary + 標題 foreground,
+          # 兩種長相字左緣同一條線、zh-TW「上午10:00」、事件讀屏名稱「{標題},{時間或日期}{,全天}」、12 色相與 neutral 的色、唯讀滑過不變、
+          # eventTimeFormat 覆寫、窄寬拿掉時間、時間字對比兩個主題 ≥ 4.5);
+          # 格子的滑過與格內鍵盤(只亮指標底下那一格 —— 指在長條第 3 天那段亮第 3 天、唯讀列上不亮、指標不動捲週列也跟著換、
+          # 停在週列的捲軸上 / 在捲軸上滾輪 / 拖捲軸滑塊時一格都不亮;
+          # 從長條的第 X 天進格、Esc / F2 回第 X 天,滑鼠點那一段再出格也回那一天;長條的焦點框往外);
+          # --selftest 七十三個突變各自讓預期那一格紅。本機(同一份建置)主判定約 40 秒、--selftest 約 113 秒,CI 未實測 ——
+          # 放在本 job 是因為它是 25 分 job 裡餘裕大的一個(約 8.5 分),不是主題相同(同 sidebar-keyboard job 檔頭「不往沒有餘裕的 job 疊」)。
+          npm run test:calendar-month
 
   verify-browser-sidebar-keyboard:
     # 2026-11-05 拆自 verify-browser-field-dialog-steps(照主題拆平行 job、不調高上限,上限沿用原 job 的 25;同 2026-10-14 待辦總帳 G10 的拆法)。
@@ -2262,6 +2325,14 @@ jobs:
           # selftest 把列多推 12px,簽名與當初真實 bug 完全一致(607 vs 595,差 12px)。
           npm run test:overlay-list-as-region
 
+      - name: Global body font size (static + browser)
+        run: |
+          # 整頁預設字級 = text-body,唯一住處 base.css 的 body(typography.spec.md「整頁預設字級」,2026-11-24)。
+          # 靜態:body 字級必須是 var(--font-body-size)、行高等於 @utility text-body、別的 CSS 不在 html / body 設字級;
+          # 瀏覽器:Popover / Dialog / Sheet 浮層經 Portal 的內文 = 14px、外殼不另設(body 暫改 20px 做 A/B)。修前 72c99de0 量到 16px。
+          # 對照組:改壞 CSS 各紅一條、注入 body{font-size:medium} 重放修前、外殼自己設字級。本機判定 + 對照組約 10 秒。
+          npm run test:global-body-font
+
   verify-browser-select-all:
     # 2026-09-17 拆出來的第八個 job。它跟 sweeps 一樣是「全 1034 支 story 掃一遍」,但**還要開面板**
     # (每支 story 逐一點開 [role=combobox] 觸發點、按一下全選、再量一次),本機實測 6.6 分鐘 ——
@@ -2326,7 +2397,8 @@ jobs:
 
   verify-browser-escape-focus-control:
     # 2026-10-14 拆自 verify-browser-select-all(待辦總帳 G10;照主題拆平行 job、不調高上限,上限沿用原 job 的 25)。
-    # escape-and-focus 契約的對照組(判定在 verify-browser-overlay);原 job 最近 15 次 CI p90 24.9 分 / 上限 25,本 job 估約 15 分。
+    # escape-and-focus 契約的對照組;判定 = 第 0 格的基準(2026-11-26 起 verify-browser-overlay 不另跑)。原 job 最近 15 次 CI p90 24.9 分 / 上限 25,本 job 估約 15 分。
+    # 2026-11-26 拿掉 build:lib / build-storybook:這支閘走 scripts/lib/ds-source-harness.mjs(原始碼直接打包進空白頁),不讀任何建置。
     name: Verify browser(escape and focus contract control group)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -2358,16 +2430,10 @@ jobs:
       - name: Install locked dependencies once
         run: npm run --silent setup:dependencies
 
-      - name: Build publishable libraries and declarations
-        run: npm run build:lib
-
-      - name: Build the Storybook the browser gates load
-        run: npm run build-storybook
-
       - name: Escape and focus contract — control group (browser)
         run: |
           npx --no-install playwright install chromium
-          # escape-and-focus 契約的**對照組**(2026-10-01;判定在 verify-browser-overlay):單一根因突變(清單與個數以腳本的 MUTANTS 為準,這裡不抄數字)
+          # escape-and-focus 契約的**對照組**(2026-10-01;判定 = 第 0 格的基準,2026-11-26 起只在這裡):單一根因突變(清單與個數以腳本的 MUTANTS 為準,這裡不抄數字)
           # (LinkInput 困住 Esc / 各控件不宣告 Esc 層 / 拖曳不獨占 / Combobox 丟掉表單 props / 複合欄位 blur / 選單項開的對話框不還焦點 /
           # 集合移除基準 / Enter 不 preventDefault / DatePicker 收日曆不還焦點 / Button 握著焦點轉原生 disabled / 改名空白停用 / 輸入盒焦點與接力 /
           # 2026-10-07:守門不驗收 / DatePicker 替 consumer 認領 / DataTable 游標不看欄 / Combobox「+N」卡不算欄位 / 可聚焦停用保留 aria-disabled 長相 /
@@ -2390,6 +2456,8 @@ jobs:
     # footer 內距約 315 秒 → p90 390 秒。footer 內距搬到 verify-browser-footer-gutter,兩邊各約 8.5 分。
     # 2026-11-13 加欄位開啟外框閘的**判定**(本機 85–90 秒,CI 約本機 1.2–1.4 倍 → 約 2 分)→ 估約 10.5 分,上限 15 不動;
     # 它的對照組(本機 380 秒,CI 估約 8.4 分 —— 照原句 5.3 分 / 239 秒的同一個比例;380 秒出處 67b83c7e。2026-11-18 audit PV4 加 S、T 兩段與三種破法之前是 239 秒,2026-11-13 加第二組併排欄位組與兩種破法之前是 202 秒)疊進來會超過 15 分,照 virtual-cursor-modality「判定與對照組按預算分開放」的先例放 verify-browser-sidebar-keyboard。
+    # 2026-11-25 加閱讀情境閘的判定與對照組(本機約 25 + 20 秒,CI 照 1.2–1.4 倍約 1 分)→ 估約 11.5 分,上限 15 不動。
+    # 同日 G7(DataTable 內容線)併進同一支閘:本機判定 31 + 對照組 54 秒(比上一句多約 40 秒,CI 約 +1 分)→ 估約 12.5 分,上限 15 不動。
     name: Verify browser(field edges + combobox single path + field open border)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -2457,6 +2525,21 @@ jobs:
           # 這裡只跑判定;對照組(九種破法)在 verify-browser-sidebar-keyboard(見本 job 檔頭的預算說明)。
           npm run test:field-open-border
 
+      - name: Reading context (browser)
+        run: |
+          # 閱讀情境(field.spec.md「閱讀情境」;user 2026-11-25 留言改版):範圍(最外層 FieldGroup / 不在組裡的 Field)裡有就地編輯時,
+          # 標籤 = fg-secondary(與 DescriptionList dt、DataTable 表頭同色)、標籤在左時開關 / 勾選框內縮到框內字線(--field-bleed)、同組同高(繪製前登記);
+          # 標籤在上時就地編輯外伸 --field-bleed、字齊標籤(修掉 +1px)。量的是像素與瀏覽器算好的值,期望值從同一份建置讀:
+          # 靜態段(欄位家族不寫裸 border、框寬補位讀 --field-border-width、判斷只住 field.css)+ 兩則 test-only 夾具 × 淺 / 深 × 不指定 / sm / md
+          # + InlineEdit 各範例(取代原本不在 CI、2026-11-25 退役的手動對齊探針)
+          # + G7 DataTable 內容線 = 表頭字(data-table.spec.md「一、Table Size」):就地編輯 / 自動行高 / 檢閱器 sm、lg 每一欄靜止與編輯中不跳、
+          # 篩選面板 Where 對齊 And/Or 下拉框內的字。本機判定約 31 秒、對照組約 54 秒。
+          # 組裡某幾列再套一層另一個主題(data-theme)時,閱讀與表單的標籤色都要跟著那一層(G3 / G4「主題套層」格)。
+          # 對照組:靜態段與瀏覽器段的破法(某列字推 4px 只有那列紅、垂直外伸改回 12、沒有框的值不內縮、標籤色在範圍元素上先算好、範圍改成最近一層、
+          # 首繪晚一個計時器、表格只修 view / edit 一半 ……;清單與個數只住閘檔 STATIC_MUTANTS / MUTANTS),每種都必須讓預期的格紅;量不到 = INSTRUMENT-FAIL,不當成對照組如預期紅。
+          npm run test:reading-context
+          node scripts/reading-context-invariant.mjs --selftest
+
   verify-browser-footer-gutter:
     # 2026-10-14 拆自 verify-browser-field-edges(待辦總帳 G10;照主題拆平行 job、不調高上限,上限沿用原 job 的 15)。
     # 原 job 最近 15 次 CI p90 14.9 分 / 上限 15,一次撞上限被取消;本 job 只跑浮層 footer 內距全 story 掃描(判定 + 兩組對照),估約 8.8 分。
@@ -2500,6 +2583,68 @@ jobs:
           # 2026-10-14 從 verify-browser-field-edges 拆成自己的 job(待辦總帳 G10):本步 CI 實測 p50 377 / p90 390 秒。
           npm run test:overlay-footer-gutter
 
+  verify-browser-a11y:
+    # 2026-11-26(地基修正 F4):axe 無障礙閘接進 PR。修前 PR 的 CI 沒有任何 axe 檢查 —— verify-static 的 test:a11y-corpus 只比 story 清單、
+    # 不開瀏覽器;真正的 axe 閘只在夜間 a11y-and-size.yml(排程 + 手動、自稱 non-blocking),新違規要合併後隔天才看得到而且不擋。
+    # 指令與夜間那支逐字相同(npm run a11y:check -- --gate):同一支 scripts/audit-a11y.mjs、同一套 scripts/lib/a11y-gate.mjs 回歸判定
+    #(storyId|ruleId 的節點數比基線多 = 紅)、同一份 infra/governance/baseline/a11y-baseline.json,不另寫判準;夜間那趟因此退役(同一支閘一次只跑一次)。
+    # 全掃不只掃改到的 story:違規 5,391 筆裡 5,384 筆是 color-contrast,色票 / 共用樣式一改就散到不相干的 story,而現有唯一的
+    #「改到哪些 story」對照(visual-audit.mjs getChangedComponents)只認元件資料夾,拿它縮範圍會漏掉色票改動。
+    # 時間:本機(macOS)全掃 1,089 則 564–758 秒;夜間 job(含裝依賴 / 建置)11-21 → 11-25 牆鐘 14.6–17.3 分;本 job 的安裝與兩次建置在 PR 約 1.5 分。
+    # 上限 25 = 全 story 掃描型 job 的既有檔位,準備步驟與 verify-browser-sweeps 逐字相同(ci-workflow-scope 斷言)。量測與對照組:governance/planning/2026-11-26-work-process-evidence-v5.md。
+    # 在 verify 總關卡(needs / env / 判斷式):紅了擋合併。2026-11-26 先暫不接、等 Linux 值;PR #174 第一次讀回(run 45725978357)
+    # 紅的 5 格 color-contrast Linux 與 macOS 同值,逐節點全是 --fg-muted(color.spec.md「已定案:維持現狀」),照產生器寫進基線後接回(證據檔第 3 節)。
+    name: Verify browser(a11y axe baseline gate)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      - name: Install Chromium
+        run: npx --no-install playwright install chromium
+
+      - name: Axe WCAG 2A + AA regression gate vs governed baseline (browser,全 story)
+        run: |
+          # 只擋回歸:新的 storyId|ruleId,或同一組的違規節點數比基線多;掃描出錯(audit-error)與 story 清單跟基線不同都拒絕放行。
+          # 既有違規在基線裡(大宗是 --fg-muted 淺色主題對比,user 已定案的取捨:color.spec.md「已定案(禁再問)」)。
+          # 對照組(2026-11-26 本機,governance/planning/2026-11-26-work-process-evidence-v5.md 第 4 節):拿本機全掃的真實結果,基線一個指紋減 1 或刪掉一格,
+          # 判定必紅且只點名那一格;不動基線則照實紅出既有增量。
+          npm run a11y:check -- --gate
+
+      - name: Preserve a11y report
+        # 紅的時候要拿得到 Linux 的逐則數字:基線裡有些指紋只有 Linux 量得到(基線 _meta.linuxOnly),本機重寫基線補不出來。
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: a11y-audit-report
+          path: .git/governance-runtime/evidence/audit/a11y-audit.json
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14
+
   verify:
     # Required check 的名字不變(ruleset / desired/github.json 的 context 都指它)。它只做 fan-in:
     # 五個真正跑東西的 job 平行跑(2026-09-08 單一 job 連兩次 15 分鐘逾時被取消:瀏覽器閘 586 秒 +
@@ -2509,7 +2654,7 @@ jobs:
     name: Verify(tsc + tests + compile + build)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-pinned, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-searchable-fields, verify-browser-tree-navigation, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-doc-headings, verify-browser-layout-edges, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles, verify-browser-control-groups, verify-browser-searchable-menu-focus, verify-browser-field-dialog-steps, verify-browser-cursor, verify-browser-escape-focus-control, verify-browser-footer-gutter, verify-browser-nested-dismiss, verify-browser-sidebar-keyboard, verify-browser-layout, verify-browser-horizontal-overflow, hooks-linux, governance-control-plane, container-closed-git]
+    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-pinned, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-searchable-fields, verify-browser-tree-navigation, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-doc-headings, verify-browser-layout-edges, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles, verify-browser-control-groups, verify-browser-searchable-menu-focus, verify-browser-field-dialog-steps, verify-browser-cursor, verify-browser-escape-focus-control, verify-browser-footer-gutter, verify-browser-a11y, verify-browser-nested-dismiss, verify-browser-sidebar-keyboard, verify-browser-layout, verify-browser-horizontal-overflow, hooks-linux, governance-control-plane, container-closed-git]
     if: always()
     steps:
       - name: Every verify job must have succeeded
@@ -2537,6 +2682,7 @@ jobs:
           BROWSER_CURSOR: ${{ needs.verify-browser-cursor.result }}
           BROWSER_ESCAPE_FOCUS_CONTROL: ${{ needs.verify-browser-escape-focus-control.result }}
           BROWSER_FOOTER_GUTTER: ${{ needs.verify-browser-footer-gutter.result }}
+          BROWSER_A11Y: ${{ needs.verify-browser-a11y.result }}
           BROWSER_NESTED_DISMISS: ${{ needs.verify-browser-nested-dismiss.result }}
           BROWSER_SIDEBAR_KEYBOARD: ${{ needs.verify-browser-sidebar-keyboard.result }}
           BROWSER_LAYOUT: ${{ needs.verify-browser-layout.result }}
@@ -2545,8 +2691,8 @@ jobs:
           GOV_CONTROL_PLANE: ${{ needs.governance-control-plane.result }}
           CONTAINER_CLOSED_GIT: ${{ needs.container-closed-git.result }}
         run: |
-          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-pinned=$BROWSER_DT_PINNED verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-searchable-fields=$BROWSER_SEARCH_FIELDS verify-browser-tree-navigation=$BROWSER_TREE_NAV verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-doc-headings=$BROWSER_DOC_HEADINGS verify-browser-layout-edges=$BROWSER_LAYOUT_EDGES verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES verify-browser-control-groups=$BROWSER_CONTROL_GROUPS verify-browser-searchable-menu-focus=$BROWSER_SEARCH_MENU_FOCUS verify-browser-field-dialog-steps=$BROWSER_FIELD_DIALOG_STEPS verify-browser-cursor=$BROWSER_CURSOR verify-browser-escape-focus-control=$BROWSER_ESCAPE_FOCUS_CONTROL verify-browser-footer-gutter=$BROWSER_FOOTER_GUTTER verify-browser-nested-dismiss=$BROWSER_NESTED_DISMISS verify-browser-sidebar-keyboard=$BROWSER_SIDEBAR_KEYBOARD verify-browser-layout=$BROWSER_LAYOUT verify-browser-horizontal-overflow=$BROWSER_HORIZONTAL_OVERFLOW hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE container-closed-git=$CONTAINER_CLOSED_GIT"
-          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT_PINNED" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_SEARCH_FIELDS" = success ] && [ "$BROWSER_TREE_NAV" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_DOC_HEADINGS" = success ] && [ "$BROWSER_LAYOUT_EDGES" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$BROWSER_CONTROL_GROUPS" = success ] && [ "$BROWSER_SEARCH_MENU_FOCUS" = success ] && [ "$BROWSER_FIELD_DIALOG_STEPS" = success ] && [ "$BROWSER_CURSOR" = success ] && [ "$BROWSER_ESCAPE_FOCUS_CONTROL" = success ] && [ "$BROWSER_FOOTER_GUTTER" = success ] && [ "$BROWSER_NESTED_DISMISS" = success ] && [ "$BROWSER_SIDEBAR_KEYBOARD" = success ] && [ "$BROWSER_LAYOUT" = success ] && [ "$BROWSER_HORIZONTAL_OVERFLOW" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ] && [ "$CONTAINER_CLOSED_GIT" = success ]
+          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-pinned=$BROWSER_DT_PINNED verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-searchable-fields=$BROWSER_SEARCH_FIELDS verify-browser-tree-navigation=$BROWSER_TREE_NAV verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-doc-headings=$BROWSER_DOC_HEADINGS verify-browser-layout-edges=$BROWSER_LAYOUT_EDGES verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES verify-browser-control-groups=$BROWSER_CONTROL_GROUPS verify-browser-searchable-menu-focus=$BROWSER_SEARCH_MENU_FOCUS verify-browser-field-dialog-steps=$BROWSER_FIELD_DIALOG_STEPS verify-browser-cursor=$BROWSER_CURSOR verify-browser-escape-focus-control=$BROWSER_ESCAPE_FOCUS_CONTROL verify-browser-footer-gutter=$BROWSER_FOOTER_GUTTER verify-browser-a11y=$BROWSER_A11Y verify-browser-nested-dismiss=$BROWSER_NESTED_DISMISS verify-browser-sidebar-keyboard=$BROWSER_SIDEBAR_KEYBOARD verify-browser-layout=$BROWSER_LAYOUT verify-browser-horizontal-overflow=$BROWSER_HORIZONTAL_OVERFLOW hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE container-closed-git=$CONTAINER_CLOSED_GIT"
+          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT_PINNED" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_SEARCH_FIELDS" = success ] && [ "$BROWSER_TREE_NAV" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_DOC_HEADINGS" = success ] && [ "$BROWSER_LAYOUT_EDGES" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$BROWSER_CONTROL_GROUPS" = success ] && [ "$BROWSER_SEARCH_MENU_FOCUS" = success ] && [ "$BROWSER_FIELD_DIALOG_STEPS" = success ] && [ "$BROWSER_CURSOR" = success ] && [ "$BROWSER_ESCAPE_FOCUS_CONTROL" = success ] && [ "$BROWSER_FOOTER_GUTTER" = success ] && [ "$BROWSER_A11Y" = success ] && [ "$BROWSER_NESTED_DISMISS" = success ] && [ "$BROWSER_SIDEBAR_KEYBOARD" = success ] && [ "$BROWSER_LAYOUT" = success ] && [ "$BROWSER_HORIZONTAL_OVERFLOW" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ] && [ "$CONTAINER_CLOSED_GIT" = success ]
 
   hooks-linux:
     name: Governance hooks(Linux portability)
@@ -2607,8 +2753,7 @@ jobs:
 
       - name: Governance control-plane suites
         run: |
-          npm run --silent test:provider-neutral-residue
-          npm run --silent test:waived-self-review
+          # test:provider-neutral-residue / test:waived-self-review 已在下一行的組合指令裡(package.json),2026-11-26 拿掉前面各自單跑的那一趟。
           npm run --silent test:governance-evidence-control-plane
           npm run --silent test:governance-control-plane
 

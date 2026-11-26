@@ -7,6 +7,10 @@
  *        而且是那個欄位的);`Esc` 一次只關一層(先關彈出層、再關面板)。屬於這個欄位自己的零件(Combobox「+N」浮出清單)不算外面:
  *        按卡片、按卡片裡的 × 選單照開;**另一個**欄位的「+N」卡是外面。InlineEdit 放在浮層裡時,點浮層空白處 / Tab 到浮層裡的下一格 = 離開 → 回到檢視。
  *        並存對話框(`persistentElements`)portal 進另一個 dialog 裡時,點外層 dialog = 點外面(外層是宿主,不是疊在上面的確認框)。
+ *        清單旁的詳情(2026-11-24,N 列):清單浮層點一項 → 產品用那一列當錨點、在清單**元件樹外**開詳情 Popover —— 詳情打開(焦點搬進去)、點詳情、
+ *        點詳情裡欄位自己的選單(第三層)都不關清單;Esc 一次一層、焦點回那一列再回「+3」;點清單空白只關詳情;點兩層以外全關。
+ *        「錨在頁面別處、清單開著時才開」與「清單之前就開、後來改錨到清單裡」的浮層都不是清單開出來的 → 按它們清單照關
+ *        (判準 `lib/overlay-nesting.ts` `isInChildLayer`:錨點在這一層裡、而且比這一層晚開;規則 overlay-surface.spec.md「Esc / 點外面關閉」)。
  *        規則:`patterns/overlay-surface/overlay-surface.spec.md`「Esc / 點外面關閉:Radix 處理」、`ds-canonical/references/keyboard-model-canonical.md`
  *        「`Esc` 一次只關最內層」(浮層疊浮層「一層一層關」)、`components/SelectMenu/select-menu.spec.md`「+N」那一列與「指標按在觸發欄位上不算按在外面」、
  *        `components/InlineEdit/inline-edit.spec.md`「滑鼠 blur(點外面)→ commit」、`components/Dialog/dialog.spec.md`「框外事件的守衛」(3)。
@@ -37,6 +41,17 @@
  *   I-<宿主>-tab           InlineEdit(編輯控件 = Select、不開選單)→ 焦點在編輯控件 → Tab → 焦點到宿主裡的下一格、回檢視、宿主不關(鍵盤 focusout 那條路)
  *   C-nested-host-blank    Dialog 裡放一個並存對話框(persistentElements,portalContainer 指到外層 dialog 裡的容器)→ 點外層 dialog 的空白 → 並存對話框關、外層不關
  *   C-stacked-confirm      [對照] 同一個並存對話框開著 → 從它裡面開一個一般確認框(疊在上面,portal 到 body)→ 並存對話框照開(守衛 (3) 本來的用途)
+ *   N-detail-focus         清單(Popover)點第一列 → 產品在清單元件樹外開詳情(錨 = 那一列、焦點搬進詳情)→ 清單不關
+ *   N-detail-click         詳情開著 → 點詳情空白 → 清單、詳情都不關
+ *   N-esc                  Esc → 只關詳情、焦點回那一列 → 再 Esc → 關清單、焦點回「+3」
+ *   N-third-layer          詳情裡「狀態」欄位開選單、選一項(第三層:錨在詳情、詳情錨在清單)→ 清單、詳情都不關
+ *   N-detail-menu          詳情裡「⋯」選單(DropdownMenu,錨在詳情裡)打開、按一項 → 清單、詳情都不關
+ *   N-list-blank           詳情開著 → 點清單空白 → 只關詳情
+ *   N-outside-both         [對照] 詳情開著 → 點頁面空白 → 兩層都關
+ *   N-foreign-later        清單開著時由程式打開、錨在頁面別處的浮層 → 按它 → 清單關(晚開、錨點不在清單裡)
+ *   N-reanchored-earlier   清單之前就開著的浮層、後來改錨到清單第一列 → 按它 → 清單關(錨點在清單裡、但早開)
+ *   2026-11-24 起 Popover 面板裡的 DatePicker / TimePicker 兩列(D-popover-date-* / D-popover-time-*)也是契約:它們同樣經 PopoverContent 的點外判斷,
+ *   放寬成「任何一層」時一起壞(nesting-any-layer)。
  *   宿主:popover / dialog / sheet。欄位:select / select-search / combobox / combobox-trigger / people-single / people-multi / date / time / menu。
  *
  * ── 突變 → 該紅的列(--selftest;MUTANTS 是單一來源,個數不抄進註解)──
@@ -46,7 +61,7 @@
  * 用法:
  *   node scripts/overlay-nested-dismiss-invariant.mjs                判定(現行原始碼)
  *   node scripts/overlay-nested-dismiss-invariant.mjs --selftest     對照組(全部單一根因突變;基準 = 一趟完整判定)
- *   node scripts/overlay-nested-dismiss-invariant.mjs --selftest --shard=<k>/<n>   只跑第 k 片突變(CI matrix 平行;覆蓋率靜態驗)
+ *   node scripts/overlay-nested-dismiss-invariant.mjs --selftest --shard=<k>/<n>   只跑第 k 片突變(CI matrix 平行;基準與覆蓋率靜態驗只在第 0 片)
  *   node scripts/overlay-nested-dismiss-invariant.mjs --selftest --lanes=<n>       突變分 n 條 lane 並行(每條一個瀏覽器;預設 2)
  *   node scripts/overlay-nested-dismiss-invariant.mjs --selftest --only=<id>[,<id>]  除錯:只跑這幾個突變(不算 selftest 通過)
  *   node scripts/overlay-nested-dismiss-invariant.mjs --root=<dir>   改量另一棵原始碼(例:git archive 出來的修改前基準樹)
@@ -79,9 +94,10 @@ const LANES = Math.max(1, Number(process.argv.find((a) => a.startsWith('--lanes=
 /** 除錯用:`--only=<突變 id>[,<id>…]` 只跑這幾個突變(不檢查覆蓋率 —— 這一趟不算 selftest 通過,結尾會明說) */
 const ONLY = process.argv.find((a) => a.startsWith('--only='))?.slice('--only='.length).split(',').filter(Boolean) ?? null
 /**
- * `--shard=<k>/<n>`(selftest):只跑 MUTANTS 裡索引 % n === k 的那一片(基準照跑 = 每一片都是一趟完整判定)。CI 把對照組拆成 n 片平行跑
+ * `--shard=<k>/<n>`(selftest):只跑 MUTANTS 裡索引 % n === k 的那一片。CI 把對照組拆成 n 片平行跑
  * (ci.yml verify-browser-nested-dismiss 的 matrix;同 escape-and-focus-contract-invariant.mjs):各片各自驗「每個突變剛好紅它的 expectRed」;
- * 覆蓋率改成靜態驗 —— 每一條契約列都必須出現在某個突變的 expectRed。不給 = 一片跑全部(本機 `npm run test:overlay-nested-dismiss`、meta-test)。
+ * 覆蓋率改成靜態驗 —— 每一條契約列都必須出現在某個突變的 expectRed(只在第 0 片驗:同一份 MUTANTS,各片驗 = 重複)。
+ * 基準 = 一趟完整判定,只在第 0 片跑(2026-11-26:每片都跑 = 同一趟判定一次 CI 跑 n 次);其他片的每個突變那一趟也量全部列、紅的列必須剛好等於 expectRed,所以現行原始碼哪一列退步,那幾片照樣紅,第 0 片的基準另印判定那一行。不給 = 一片跑全部(本機 `npm run test:overlay-nested-dismiss`、meta-test)。
  */
 const SHARD = (() => {
   const raw = process.argv.find((a) => a.startsWith('--shard='))?.slice('--shard='.length)
@@ -97,10 +113,14 @@ const HOSTS = ['popover', 'dialog', 'sheet']
 /** SelectMenu 家族(Select / Combobox / PeoplePicker 都經 SelectMenu)—— 修前在 Popover 裡紅的就是這六種 */
 const SELECT_MENU_FAMILY = ['select', 'select-search', 'combobox', 'combobox-trigger', 'people-single', 'people-multi']
 const CONTROLS = [...SELECT_MENU_FAMILY, 'date', 'time', 'menu']
+/** 也用 PopoverContent 開彈出層的欄位:2026-11-24 起 PopoverContent 的點外判斷多認「從這一層開出來的那一層」,放成任何一層時它們在 Popover 面板裡同樣會壞(N 列的 nesting-any-layer)→ 那兩列是契約 */
+const NESTING_SENSITIVE = ['date', 'time']
 
 /** 修前 InlineEdit 兩條結算路共用的「任何一層浮層」選擇器(突變用,原樣重放) */
 const OLD_EDIT_OVERLAY = `'[data-radix-popper-content-wrapper],[data-radix-select-viewport],[role="listbox"],[role="dialog"]'`
 const SELECT_MENU_OWN = /ownTree\.owns\(e\.detail\.originalEvent\)/
+/** N 列:點的是清單第一列(與 harness 的 NEST_ROWS[0] 同字;只在 node 端用來組選擇器) */
+const NEST_FIRST_ROW = '設計審查'
 
 const MUTANTS = [
   {
@@ -156,6 +176,55 @@ const MUTANTS = [
     apply: (src) => replaceOnce(src, /if \(ownTree\.focusInside\(\)\) return/, `if (active && active.closest(${OLD_EDIT_OVERLAY})) return`),
   },
   {
+    id: 'nesting-none',
+    what: 'PopoverContent 不認「從這一層開出來的那一層」(2026-11-24 前:產品畫在清單元件樹外的詳情,打開就關清單、點詳情也關清單)',
+    file: 'components/Popover/popover.tsx',
+    expectRed: ['N-detail-focus', 'N-detail-click', 'N-third-layer', 'N-detail-menu', 'N-esc', 'N-list-blank'],
+    apply: (src) => replaceOnce(src, /if \(isInChildLayer\(contentRef\.current, e\.detail\.originalEvent\.target\)\) \{ e\.preventDefault\(\); return \}/, ''),
+  },
+  {
+    id: 'nesting-any-layer',
+    what: '放寬成「按在任何一層浮層裡」都算清單的內部(本閘要擋的代理:不看錨點、不看先後)',
+    file: 'lib/overlay-nesting.ts',
+    // 放寬成任何一層 = 2026-11-03 修掉的那個代理換個地方回來:Popover 面板裡每一種用 Popover 開彈出層的欄位(SelectMenu 家族、DatePicker、TimePicker)
+    // 都把裝著它的面板當成自己的子層,點面板空白 / 點下一格都不關;另一個欄位的「+N」卡也算自己的
+    expectRed: [
+      ...[...SELECT_MENU_FAMILY, ...NESTING_SENSITIVE].flatMap((c) => [`D-popover-${c}-blank`, `D-popover-${c}-next`]),
+      'P-sort-blank', 'P-sort-next', 'P-filter-blank', 'P-filter-next', 'K-foreign-card',
+      'N-foreign-later', 'N-list-blank', 'N-reanchored-earlier',
+    ],
+    apply: (src) => replaceOnce(src, /while \(layer && layer !== own && !seen\.has\(layer\)\) \{/, 'if (layer && layer !== own) return true\n  while (false) {'),
+  },
+  {
+    id: 'nesting-no-order',
+    what: '只看錨點、不看先後(先開著、後來被改錨到清單某一列上的浮層被當成清單的子層)',
+    file: 'lib/overlay-nesting.ts',
+    expectRed: ['N-reanchored-earlier'],
+    apply: (src) => replaceOnce(src, /if \(layer\.order <= own\.order\) return false/, ''),
+  },
+  {
+    id: 'nesting-no-anchor',
+    what: '只看先後、不看錨點(清單開著時另外打開、錨在頁面別處的浮層被當成清單的子層)',
+    file: 'lib/overlay-nesting.ts',
+    // 另一個欄位的「+N」卡也比欄位甲的選單晚開 → 只看先後就被當成欄位甲的子層
+    expectRed: ['K-foreign-card', 'N-foreign-later'],
+    apply: (src) => replaceOnce(src, /if \(own\.node\.contains\(anchor\)\) return true/, 'return true'),
+  },
+  {
+    id: 'nesting-not-transitive',
+    what: '只認一層(詳情裡的欄位自己開的選單不算清單的內部 —— 開它、點它就關清單)',
+    file: 'lib/overlay-nesting.ts',
+    expectRed: ['N-third-layer', 'N-detail-menu'],
+    apply: (src) => replaceOnce(src, /layer = layerContaining\(anchor\)\n/, 'layer = null\n'),
+  },
+  {
+    id: 'nesting-dropdown-unregistered',
+    what: 'DropdownMenuContent 不登記進浮層疊(詳情標題列「⋯」這種從詳情開出來的選單不被認成清單的子層 —— 一打開就關清單)',
+    file: 'components/DropdownMenu/dropdown-menu.tsx',
+    expectRed: ['N-detail-menu'],
+    apply: (src) => replaceOnce(src, /useTriggerRegionDensity\("dropdown-menu", layerRef\)/, 'useTriggerRegionDensity("dropdown-menu", menuKeyboard.ref)'),
+  },
+  {
     id: 'coexist-any-dialog',
     what: '並存對話框的守衛 (3) 把「自己以外的任何一個 dialog」都當成疊在上面的確認框(修前的寫法;裝著它的外層 dialog 也算)',
     file: 'lib/overlay-coexistence.ts',
@@ -170,7 +239,7 @@ import { createRoot } from 'react-dom/client'
 import { TooltipProvider } from '@/design-system/components/Tooltip/tooltip'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody } from '@/design-system/components/Dialog/dialog'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetBody } from '@/design-system/components/Sheet/sheet'
-import { Popover, PopoverTrigger, PopoverContent } from '@/design-system/components/Popover/popover'
+import { Popover, PopoverTrigger, PopoverAnchor, PopoverContent, PopoverHeader, PopoverTitle, PopoverBody } from '@/design-system/components/Popover/popover'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { Button } from '@/design-system/components/Button/button'
 import { Select } from '@/design-system/components/Select/select'
@@ -181,6 +250,7 @@ import { TimePicker } from '@/design-system/components/TimePicker/time-picker'
 import { InlineEdit } from '@/design-system/components/InlineEdit/inline-edit'
 import { DataTableSortManager } from '@/design-system/components/DataTable/data-table-sort-manager'
 import { DataTableFilterPanel } from '@/design-system/components/DataTable/data-table-filter-panel'
+import { returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
 
 const STATUS = [{ value: 'todo', label: '待處理' }, { value: 'doing', label: '進行中' }, { value: 'review', label: '審查中' }, { value: 'done', label: '已完成' }]
 const LABELS = [{ value: 'bug', label: 'Bug' }, { value: 'ux', label: '使用者體驗' }, { value: 'perf', label: '效能' }, { value: 'docs', label: '文件' }]
@@ -294,6 +364,80 @@ function Coexist() {
   )
 }
 
+/**
+ * 清單旁的詳情(N 列;2026-11-24 OVERLAY-CAPABILITIES ②,popover.spec.md「禁止事項」允許的第 (2) 種用法):清單浮層裡點一項 → **產品**在那一項旁邊
+ * 開詳情浮層 —— 詳情畫在清單的元件樹外、錨點(virtualRef)= 被點的那一列,同 Calendar 經 onEventClick 第二個參數 { anchor } 交出被點的那一列 / 那一段、
+ * 示範殼拿它當錨點的寫法(_calendar-demo.tsx;2026-11-25 前示範殼從 document.activeElement 反推)。
+ * 另有兩個「不是清單開出來的」浮層當對照:「通知」= 清單開著時由程式打開、錨在頁面別處;「導覽」= 清單之前就開著、後來被改錨到清單第一列。
+ * 兩者都不搶焦點、點外面不關(onInteractOutside 擋掉),只用來量「按在它們裡面,清單關不關」。
+ */
+const NEST_ROWS = ['設計審查', '週會', '產品發布']
+function NestScene() {
+  const [listOpen, setListOpen] = React.useState(false)
+  const [detail, setDetail] = React.useState(null)
+  const [status, setStatus] = React.useState('todo')
+  const detailAnchor = React.useRef(null)
+  const [later, setLater] = React.useState(false)
+  const laterAnchor = React.useRef(null)
+  const [early, setEarly] = React.useState(false)
+  const earlyAnchor = React.useRef(null)
+  window.__nest = {
+    openLater: () => setLater(true),
+    openEarly: () => setEarly(true),
+    // 只改 ref、不重繪:導覽浮層留在原地,判斷「是不是清單的子層」的那一刻才讀到新錨點
+    reanchorEarly: (sel) => { earlyAnchor.current = document.querySelector(sel) },
+  }
+  return (
+    <div style={{ position: 'relative', width: 1180, height: 820 }}>
+      <p data-page-blank style={{ margin: 0, padding: 8, width: 200 }}>專案行事曆</p>
+      <div style={{ position: 'absolute', right: 24, top: 0 }}><Button ref={earlyAnchor} data-early-anchor variant="secondary">導覽</Button></div>
+      <div style={{ position: 'absolute', right: 24, top: 420 }}><Button ref={laterAnchor} data-later-anchor variant="secondary">通知</Button></div>
+      <Popover open={listOpen} onOpenChange={setListOpen}>
+        <PopoverTrigger asChild><Button data-open-list variant="secondary">+3</Button></PopoverTrigger>
+        <PopoverContent id="nest-list" align="start">
+          <PopoverHeader><PopoverTitle>7月15日</PopoverTitle></PopoverHeader>
+          <PopoverBody>
+            <div role="list" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {NEST_ROWS.map((r) => <Button key={r} data-row={r} variant="tertiary" onClick={(e) => { detailAnchor.current = e.currentTarget; setDetail(r) }}>{r}</Button>)}
+            </div>
+            <p data-list-blank style={{ margin: 0, paddingTop: 8 }}>共 3 個事件</p>
+          </PopoverBody>
+        </PopoverContent>
+      </Popover>
+      <Popover open={detail != null} onOpenChange={(o) => { if (!o) setDetail(null) }}>
+        <PopoverAnchor virtualRef={detailAnchor} />
+        <PopoverContent id="nest-detail" side="right" align="start" onCloseAutoFocus={(e) => returnFocusToOpener(e, detailAnchor.current, { noTrigger: true })}>
+          <PopoverHeader><PopoverTitle>{detail}</PopoverTitle></PopoverHeader>
+          <PopoverBody>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <p data-detail-blank style={{ margin: 0 }}>7月15日 上午10:00 – 11:00</p>
+              <div data-detail-field><Select aria-label="狀態" options={STATUS} value={status} onChange={setStatus} /></div>
+              <div data-detail-menu>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild><Button variant="secondary" aria-label="更多動作">⋯</Button></DropdownMenuTrigger>
+                  <DropdownMenuContent><DropdownMenuItem data-menu-item>複製連結</DropdownMenuItem><DropdownMenuItem>刪除</DropdownMenuItem></DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+          </PopoverBody>
+        </PopoverContent>
+      </Popover>
+      <Popover open={later} onOpenChange={setLater}>
+        <PopoverAnchor virtualRef={laterAnchor} />
+        <PopoverContent id="nest-later" align="end" onOpenAutoFocus={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
+          <PopoverBody><p data-later-blank style={{ margin: 0 }}>3 則新通知</p></PopoverBody>
+        </PopoverContent>
+      </Popover>
+      <Popover open={early} onOpenChange={setEarly}>
+        <PopoverAnchor virtualRef={earlyAnchor} />
+        <PopoverContent id="nest-early" align="end" onOpenAutoFocus={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
+          <PopoverBody><p data-early-blank style={{ margin: 0 }}>導覽:這裡是當天全部事件</p></PopoverBody>
+        </PopoverContent>
+      </Popover>
+    </div>
+  )
+}
+
 function Host({ host, children }) {
   const [open, setOpen] = React.useState(false)
   window.__closeScene = () => setOpen(false)
@@ -342,7 +486,7 @@ function App() {
   return (
     <TooltipProvider>
       <main data-scene={scene.host + ':' + scene.ctl + ':' + scene.key} style={{ padding: 24 }}>
-        <Host key={scene.key} host={scene.host}>{body}</Host>
+        {scene.host === 'nest' ? <NestScene key={scene.key} /> : <Host key={scene.key} host={scene.host}>{body}</Host>}
       </main>
     </TooltipProvider>
   )
@@ -365,6 +509,13 @@ window.__openLayers = () => {
 }
 /** 某個 dialog 內容此刻是否開著(並存對話框 / 確認框用 id 找) */
 window.__dialogOpen = (id) => {
+  const el = document.getElementById(id)
+  if (!el || el.getAttribute('data-state') === 'closed') return false
+  const r = el.getBoundingClientRect()
+  return r.width > 0 && r.height > 0
+}
+/** 某個浮層內容此刻是否開著(id;N 列用) */
+window.__layerOpen = (id) => {
   const el = document.getElementById(id)
   if (!el || el.getAttribute('data-state') === 'closed') return false
   const r = el.getBoundingClientRect()
@@ -447,7 +598,7 @@ async function runChecks(page) {
     await d.settle()
     return open[0]
   }
-  const finish = async () => { await page.evaluate(() => window.__closeScene()); await d.settle() }
+  const finish = async () => { await page.evaluate(() => (window.__closeScene ? window.__closeScene() : undefined)); await d.settle() }
   /** 觸發欄位此刻宣告的彈出層 id(開著時 `aria-controls`);「開著的那一層是不是這個欄位的」用它對 */
   const controlsOf = (selector) => page.evaluate((sel) => document.querySelector(sel)?.getAttribute('aria-controls') ?? null, selector)
   /** 「應該一下就打開下一個」:前一個關、畫面上剛好 1 個而且是 next 的;給 CLOSE_GRACE_MS(到了就提早往下) */
@@ -477,8 +628,9 @@ async function runChecks(page) {
     for (const ctl of CONTROLS) {
       const family = SELECT_MENU_FAMILY.includes(ctl)
       // 點空白:修前只在 Popover 裡壞(Dialog / Sheet 不是 popper 殼)→ 其餘是對照;點下一格「一下就打開」是 SelectMenu 家族在每一種宿主的契約
-      const kind = host === 'popover' && family ? 'contract' : 'control'
-      const nextKind = family ? 'contract' : 'control'
+      const nesting = host === 'popover' && NESTING_SENSITIVE.includes(ctl)
+      const kind = host === 'popover' && (family || nesting) ? 'contract' : 'control'
+      const nextKind = family || nesting ? 'contract' : 'control'
       // ── 點宿主空白處 ──
       await sceneOf(host, ctl)
       const a1 = await openA(host, ctl)
@@ -655,6 +807,148 @@ async function runChecks(page) {
     stacked.inner && stacked.confirm, stacked)
   await page.keyboard.press('Escape'); await d.settle()
   await finish()
+
+  // ── 清單旁的詳情(N 列;2026-11-24 OVERLAY-CAPABILITIES ②;判準 lib/overlay-nesting.ts、規則 overlay-surface.spec.md「Esc / 點外面關閉」)──
+  const open = (id) => page.evaluate((x) => window.__layerOpen(x), id)
+  const nestScene = async () => {
+    await page.evaluate(() => window.__setScene('nest', 'nest'))
+    await waitIn(() => !!document.querySelector('main[data-scene^="nest:nest:"] [data-open-list]'), null, '清單旁的詳情場景沒有渲染')
+    await parkPointer(page); await d.settle()
+  }
+  const openList = async () => {
+    await pressOn('[data-open-list]', '「+3」')
+    await waitIn(() => window.__layerOpen('nest-list'), null, '清單浮層沒有打開')
+    await parkPointer(page); await d.settle()
+  }
+  /** 點清單第一列 → 產品開詳情(錨在那一列、畫在清單元件樹外);等詳情開好、焦點搬進去 */
+  const openDetail = async () => {
+    await openList()
+    await pressOn(`[data-row="${NEST_FIRST_ROW}"]`, '清單第一列')
+    await waitIn(() => window.__layerOpen('nest-detail'), null, '詳情浮層沒有打開')
+    await d.focusStable()
+    await parkPointer(page); await d.settle()
+  }
+  const focusOn = () => page.evaluate(() => {
+    const a = document.activeElement
+    return a?.getAttribute('data-row') ? `row:${a.getAttribute('data-row')}` : a?.hasAttribute('data-open-list') ? 'trigger' : a?.closest('#nest-detail') ? 'detail' : a?.closest('#nest-list') ? 'list' : a?.tagName.toLowerCase() ?? null
+  })
+  /** 「應該還開著」的層:給它 CLOSE_GRACE_MS 看會不會被關(會關的話這段時間內就關了);讀數在這之後取 */
+  const stillOpenAfterGrace = async (id) => !(await page.waitForFunction((x) => !window.__layerOpen(x), id, { timeout: CLOSE_GRACE_MS }).then(() => true, () => false))
+  const closedWithinGrace = (id) => page.waitForFunction((x) => !window.__layerOpen(x), id, { timeout: CLOSE_GRACE_MS }).then(() => true, () => false)
+
+  // S1:詳情打開(焦點搬進詳情)清單不關 → 點詳情不關清單 → Esc 一次一層、焦點回那一列 → 再 Esc 關清單、焦點回「+3」
+  // 清單在詳情打開那一下就被關了(N-detail-focus 紅的那種)時,詳情的錨點(清單裡那一列)跟著卸載、詳情被藏起來(hideWhenDetached)——
+  // 後面幾步沒有東西可點:照實判紅、寫明原因,不讀成儀器失效
+  const LIST_GONE = '清單在詳情打開時就關了(詳情的錨點跟著卸載、詳情被藏起來),這一步沒有東西可量'
+  await nestScene()
+  await openDetail()
+  const s1 = { list: await stillOpenAfterGrace('nest-list'), detail: await open('nest-detail'), focus: await focusOn() }
+  check('N-detail-focus', 'contract', '清單裡點一列 → 產品在旁邊開詳情(畫在清單元件樹外、焦點搬進詳情)→ 清單不關', s1.list && s1.detail && s1.focus === 'detail', s1)
+  if (!s1.list) {
+    check('N-detail-click', 'contract', '詳情開著 → 點詳情裡的空白 → 清單、詳情都不關', false, { why: LIST_GONE })
+    check('N-esc', 'contract', 'Esc → 只關詳情、焦點回開它的那一列 → 再 Esc → 關清單、焦點回「+3」', false, { why: LIST_GONE })
+  } else {
+    await pressOn('[data-detail-blank]', '詳情的空白處')
+    const s1b = { list: await stillOpenAfterGrace('nest-list'), detail: await open('nest-detail') }
+    check('N-detail-click', 'contract', '詳情開著 → 點詳情裡的空白 → 清單、詳情都不關', s1b.list && s1b.detail, s1b)
+    await d.focus('#nest-detail')
+    await d.press('Escape')
+    const esc1 = { list: await open('nest-list'), detail: await open('nest-detail'), focus: await focusOn() }
+    await d.press('Escape')
+    const esc2 = { list: await open('nest-list'), detail: await open('nest-detail'), focus: await focusOn() }
+    check('N-esc', 'contract', 'Esc → 只關詳情、焦點回開它的那一列 → 再 Esc → 關清單、焦點回「+3」',
+      !esc1.detail && esc1.list && esc1.focus === `row:${NEST_FIRST_ROW}` && !esc2.list && esc2.focus === 'trigger', { esc1, esc2 })
+  }
+  await finish()
+
+  // S2:詳情裡的欄位自己開的選單(第三層:錨在詳情裡、詳情錨在清單裡)—— 開它、選一項,清單與詳情都不關
+  await nestScene()
+  await openDetail()
+  if (!(await stillOpenAfterGrace('nest-list'))) {
+    check('N-third-layer', 'contract', '詳情裡的「狀態」欄位開選單、選「進行中」(第三層)→ 選單關,清單與詳情都不關', false, { why: LIST_GONE })
+  } else {
+  await pressOn('[data-detail-field] [role="combobox"]', '詳情裡的「狀態」欄位', { own: true })
+  const statusMenu = await page.waitForFunction(() => document.querySelector('[data-detail-field] [role="combobox"]')?.getAttribute('aria-controls'), null, { timeout: WAIT_CAP_MS })
+    .then((h) => h.jsonValue(), () => null)
+  if (!statusMenu || !(await page.waitForFunction((x) => window.__layerOpen(x), statusMenu, { timeout: WAIT_CAP_MS }).then(() => true, () => false))) throw new InstrumentError('詳情裡「狀態」欄位的選單沒有打開')
+  await parkPointer(page); await d.settle()
+  // 選單一打開、焦點搬進去的那一下清單就可能被關(只認一層的那種錯)→ 詳情被藏起來,選單的錨點也跟著沒了 —— 照實判紅
+  if (!(await open('nest-list')) || !(await open('nest-detail'))) {
+    check('N-third-layer', 'contract', '詳情裡的「狀態」欄位開選單、選「進行中」(第三層)→ 選單關,清單與詳情都不關', false, { why: '「狀態」選單一打開清單(或詳情)就關了', list: await open('nest-list'), detail: await open('nest-detail') })
+  } else {
+  await pressOn(`[id="${statusMenu}"] [cmdk-item][data-value="doing"]`, '「狀態」選單的「進行中」')
+  await page.waitForFunction((x) => !window.__layerOpen(x), statusMenu, { timeout: CLOSE_GRACE_MS }).catch(() => {})
+  const s2 = { list: await stillOpenAfterGrace('nest-list'), detail: await open('nest-detail'), menu: await open(statusMenu) }
+  check('N-third-layer', 'contract', '詳情裡的「狀態」欄位開選單、選「進行中」(第三層)→ 選單關,清單與詳情都不關', s2.list && s2.detail && !s2.menu, s2)
+  }
+  }
+  await finish()
+
+  // S2b:詳情裡的「⋯」(DropdownMenu,錨在詳情裡)開選單、按一項 —— 清單與詳情都不關(DropdownMenu 也登記進浮層疊)
+  await nestScene()
+  await openDetail()
+  if (!(await stillOpenAfterGrace('nest-list'))) {
+    check('N-detail-menu', 'contract', '詳情裡的「⋯」選單(DropdownMenu)打開、按「複製連結」→ 選單關,清單與詳情都不關', false, { why: LIST_GONE })
+  } else {
+    await pressOn('[data-detail-menu] button', '詳情裡的「⋯」')
+    const menuOpen = await page.waitForSelector('[data-menu-item]', { timeout: WAIT_CAP_MS, state: 'visible' }).then(() => true, () => false)
+    if (!menuOpen) throw new InstrumentError('詳情裡的「⋯」選單沒有打開')
+    await d.focusStable()
+    if (!(await open('nest-list')) || !(await open('nest-detail'))) {
+      check('N-detail-menu', 'contract', '詳情裡的「⋯」選單(DropdownMenu)打開、按「複製連結」→ 選單關,清單與詳情都不關', false, { why: '「⋯」選單一打開清單(或詳情)就關了', list: await open('nest-list'), detail: await open('nest-detail') })
+    } else {
+      await parkPointer(page); await d.settle()
+      await pressOn('[data-menu-item]', '「⋯」選單的「複製連結」')
+      await page.waitForFunction(() => !document.querySelector('[data-menu-item]'), null, { timeout: CLOSE_GRACE_MS }).catch(() => {})
+      const s2b = { list: await stillOpenAfterGrace('nest-list'), detail: await open('nest-detail'), menu: !!(await page.$('[data-menu-item]')) }
+      check('N-detail-menu', 'contract', '詳情裡的「⋯」選單(DropdownMenu)打開、按「複製連結」→ 選單關,清單與詳情都不關', s2b.list && s2b.detail && !s2b.menu, s2b)
+    }
+  }
+  await finish()
+
+  // S3:點清單的空白 = 詳情的外面 → 只關詳情、清單留著
+  await nestScene()
+  await openDetail()
+  // 清單在詳情打開時就被關了(N-detail-focus 紅的那種)→ 這一列沒有清單可點:照實判紅,不讀成儀器失效
+  const s3 = { listBefore: await open('nest-list'), detail: null, list: null }
+  if (s3.listBefore) {
+    await pressOn('[data-list-blank]', '清單的空白處')
+    s3.detail = !(await closedWithinGrace('nest-detail')) ? await open('nest-detail') : false
+    s3.list = await open('nest-list')
+  }
+  check('N-list-blank', 'contract', '詳情開著 → 點清單的空白 → 只關詳情、清單留著', s3.listBefore && !s3.detail && s3.list, s3)
+  await finish()
+
+  // S4:點兩層以外(頁面空白)→ 兩層都關(對照:點外面本來就會關,不得被「子層」吃掉)
+  await nestScene()
+  await openDetail()
+  await pressOn('[data-page-blank]', '頁面空白處')
+  await closedWithinGrace('nest-detail'); await closedWithinGrace('nest-list')
+  const s4 = { detail: await open('nest-detail'), list: await open('nest-list') }
+  check('N-outside-both', 'control', '詳情開著 → 點頁面空白(兩層以外)→ 詳情、清單都關', !s4.detail && !s4.list, s4)
+  await finish()
+
+  // S5:清單開著時另外打開、錨在頁面別處的浮層(通知)不是清單開出來的 → 按它,清單關
+  await nestScene()
+  await openList()
+  await page.evaluate(() => window.__nest.openLater())
+  await waitIn(() => window.__layerOpen('nest-later'), null, '「通知」浮層沒有打開')
+  if (!(await open('nest-list'))) throw new InstrumentError('「通知」浮層一打開清單就關了(它不搶焦點,不該有任何框外事件)—— 場景壞了')
+  await pressOn('[data-later-blank]', '「通知」浮層的空白處')
+  const s5 = { list: !(await closedWithinGrace('nest-list')) ? await open('nest-list') : false, later: await open('nest-later') }
+  check('N-foreign-later', 'contract', '清單開著 → 另外打開錨在頁面別處的「通知」浮層 → 按它 → 清單關(比清單晚開、但錨點不在清單裡)', !s5.list && s5.later, s5)
+  await finish()
+
+  // S6:清單之前就開著的浮層(導覽),後來被改錨到清單第一列 → 按它,清單關(錨點在清單裡、但比清單早開)
+  await nestScene()
+  await page.evaluate(() => window.__nest.openEarly())
+  await waitIn(() => window.__layerOpen('nest-early'), null, '「導覽」浮層沒有打開')
+  await openList()
+  await page.evaluate((sel) => window.__nest.reanchorEarly(sel), `[data-row="${NEST_FIRST_ROW}"]`)
+  await pressOn('[data-early-blank]', '「導覽」浮層的空白處')
+  const s6 = { list: !(await closedWithinGrace('nest-list')) ? await open('nest-list') : false, early: await open('nest-early') }
+  check('N-reanchored-earlier', 'contract', '「導覽」浮層先開著 → 開清單 → 導覽改錨到清單第一列 → 按導覽 → 清單關(錨點在清單裡、但比清單早開)', !s6.list && s6.early, s6)
+  await finish()
   return checks
 }
 
@@ -683,6 +977,8 @@ function report({ label, checks }) {
   }
 }
 const redIds = (checks) => checks.filter((c) => !c.pass).map((c) => c.id).sort()
+/** 判定紅的那一行 —— 判定模式與 selftest 基準共用(CI 只跑 --selftest,基準紅就是產品裁決,不能只印「量具不可信」) */
+const verdictRedLine = (red) => `\n✗ 浮層裡的欄位點外關閉:${red.length} 條不符(${red.join(' / ')})—— SSOT overlay-surface.spec.md「Esc / 點外面關閉」、keyboard-model-canonical.md「Esc 一次只關最內層」`
 
 let browser
 const laneBrowsers = []
@@ -696,17 +992,25 @@ try {
     report(result)
     const red = redIds(result.checks)
     if (red.length) {
-      console.log(`\n✗ 浮層裡的欄位點外關閉:${red.length} 條不符(${red.join(' / ')})—— SSOT overlay-surface.spec.md「Esc / 點外面關閉」、keyboard-model-canonical.md「Esc 一次只關最內層」`)
+      console.log(verdictRedLine(red))
       process.exitCode = 1
     } else {
       console.log(`\n✓ 浮層裡的欄位點外關閉:${result.checks.length} 條全綠(含 ${result.checks.filter((c) => c.kind === 'control').length} 條對照)`)
     }
   } else {
-    const baseline = await runVariant(page, '現行原始碼(selftest 基準 = 一趟完整判定,必須全綠)', null)
-    report(baseline)
     const problems = []
-    if (redIds(baseline.checks).length) problems.push(`現行原始碼本身就紅(${redIds(baseline.checks).join(' / ')}),突變的紅燈無法歸因`)
-    const contractIds = baseline.checks.filter((c) => c.kind === 'contract').map((c) => c.id)
+    // 基準只在不分片或第 0 片跑(見 SHARD 的說明);其他片 contractIds = null,靜態覆蓋兩項也由第 0 片驗
+    let contractIds = null
+    if (!SHARD || SHARD.k === 0) {
+      const baseline = await runVariant(page, '現行原始碼(selftest 基準 = 一趟完整判定,必須全綠)', null)
+      report(baseline)
+      const baseRed = redIds(baseline.checks)
+      if (baseRed.length) {
+        console.log(verdictRedLine(baseRed))
+        problems.push(`現行原始碼本身就紅(${baseRed.join(' / ')}),突變的紅燈無法歸因`)
+      }
+      contractIds = baseline.checks.filter((c) => c.kind === 'contract').map((c) => c.id)
+    } else console.log(`\n· 分片 ${SHARD.k}/${SHARD.n}:基準(一趟完整判定)與靜態覆蓋只在第 0 片跑;這一片每個突變那一趟仍量全部列,紅的列必須剛好等於 expectRed`)
     const covered = new Set()
     const RUN = (ONLY ? MUTANTS.filter((m) => ONLY.includes(m.id)) : MUTANTS)
       .filter((m) => !SHARD || MUTANTS.indexOf(m) % SHARD.n === SHARD.k)
@@ -747,21 +1051,25 @@ try {
       for (const id of red) covered.add(id)
     }
     // 靜態覆蓋:每一條契約列都要有突變宣告會讓它紅(分片時各片只看得到自己那幾個突變,動態覆蓋要所有片合起來才完整)
-    const claimed = new Set(MUTANTS.flatMap((m) => m.expectRed))
-    const unclaimed = contractIds.filter((id) => !claimed.has(id))
-    if (unclaimed.length) problems.push(`契約列 ${unclaimed.join(' / ')} 不在任何突變的 expectRed —— 它的綠燈是零證據`)
-    const phantom = [...claimed].filter((id) => !contractIds.includes(id))
-    if (phantom.length) problems.push(`突變的 expectRed 寫了不是契約列的 ${phantom.join(' / ')}(列名改了沒跟上,或把對照列當契約)`)
-    const uncovered = contractIds.filter((id) => !covered.has(id))
+    if (contractIds) {
+      const claimed = new Set(MUTANTS.flatMap((m) => m.expectRed))
+      const unclaimed = contractIds.filter((id) => !claimed.has(id))
+      if (unclaimed.length) problems.push(`契約列 ${unclaimed.join(' / ')} 不在任何突變的 expectRed —— 它的綠燈是零證據`)
+      const phantom = [...claimed].filter((id) => !contractIds.includes(id))
+      if (phantom.length) problems.push(`突變的 expectRed 寫了不是契約列的 ${phantom.join(' / ')}(列名改了沒跟上,或把對照列當契約)`)
+    }
     if (ONLY) problems.push(`只跑了 --only 指名的 ${RUN.length} 個突變(除錯用):這一趟不算 selftest 通過`)
-    else if (!SHARD && uncovered.length) problems.push(`契約列 ${uncovered.join(' / ')} 沒有任何突變能讓它紅 —— 它的綠燈是零證據`)
+    else if (!SHARD) {
+      const uncovered = contractIds.filter((id) => !covered.has(id))
+      if (uncovered.length) problems.push(`契約列 ${uncovered.join(' / ')} 沒有任何突變能讓它紅 —— 它的綠燈是零證據`)
+    }
     if (problems.length) {
       console.log('\n✗ selftest:量具不可信 ——')
       for (const p of problems) console.log(`  - ${p}`)
       process.exitCode = 1
     } else {
       console.log(SHARD
-        ? `\n✓ selftest 第 ${SHARD.k + 1} / ${SHARD.n} 片:${RUN.length} 個根因突變各自剛好紅了該紅的列,對照列全程綠(全部 ${MUTANTS.length} 個突變的 expectRed 涵蓋契約 ${contractIds.length} 條;其餘片在 CI 同一個 matrix 的另一格跑)`
+        ? `\n✓ selftest 第 ${SHARD.k + 1} / ${SHARD.n} 片:${RUN.length} 個根因突變各自剛好紅了該紅的列,對照列全程綠(${contractIds ? `全部 ${MUTANTS.length} 個突變的 expectRed 涵蓋契約 ${contractIds.length} 條` : '基準與契約覆蓋在第 0 片驗'};其餘片在 CI 同一個 matrix 的另一格跑)`
         : `\n✓ selftest:${MUTANTS.length} 個根因突變各自剛好紅了該紅的列(契約 ${contractIds.length} 條全被覆蓋),對照列全程綠 —— 量具會紅`)
     }
   }

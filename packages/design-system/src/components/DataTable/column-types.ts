@@ -1,4 +1,5 @@
 import type { RowData } from '@tanstack/react-table'
+import type { WeekStartsOn } from '@/design-system/lib/date-locale'
 
 // ── Column Types ─────────────────────────────────────────────────────────────
 
@@ -120,6 +121,10 @@ declare module '@tanstack/react-table' {
     prefix?: string
     suffix?: string
     precision?: number
+    /**
+     * 語系(BCP 47)。number / currency 的數字格式、date / time 格的 `Intl.DateTimeFormat`(轉給 DatePicker / TimePicker 的 `locale`),
+     * 以及 date 欄的週起始日(沒傳 `weekStartsOn` 時由它推,語系 → CLDR;`locale` 也沒傳時用 DS 日期元件的預設語系 zh-TW = 週日)都讀它。
+     */
     locale?: string
     /** Select/multiSelect options — maps value to display label */
     /** select/multiSelect 選項:消費 Select 的 SelectOption 完整 schema(M30 wrapper-extends-primitive;
@@ -145,6 +150,11 @@ declare module '@tanstack/react-table' {
      * `<DatePickerRange showTime>`(詳 `filter-operators.ts` `getValueShape`)。
      */
     includeTime?: boolean
+    /**
+     * Date: 這一欄的一週從哪天開始(0 = 週日 … 6 = 週六)。篩選「本週 / 上週 / 下週」的區間、日期格編輯器與篩選值的日曆面都用它;
+     * 沒傳 = 由 `locale` 推(語系 → CLDR,`lib/date-locale.ts`)。規則 → filter-operators.spec.md「8. 邊界案例」relative 區間邊界。
+     */
+    weekStartsOn?: WeekStartsOn
     /** Link: 自訂顯示文字（不設則自動從 URL 提取 hostname） */
     linkLabel?: string
     /**
