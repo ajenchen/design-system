@@ -70,7 +70,7 @@ template/ds-product-template/
 │   ├── dependabot.yml                    ← daily DS version bump PR
 │   ├── pull_request_template.md          ← PR 說明提醒(改到別人負責的 app:寫明動了哪個 app、為什麼)
 │   └── workflows/
-│       └── audit.yml                     ← per-PR tsc + lint:imports + build + a11y CI(接收升級的 sync-design-system.yml 下一版才出貨,這一版升級在本機跑 sync-all)
+│       └── audit.yml                     ← per-PR locked install + hooks-off governance:check + typecheck + lint:imports + build(a11y 是選用 lane:npm run audit:a11y;要擋請另建自己的 workflow)。接收升級的 sync-design-system.yml 下一版才出貨,這一版升級在本機跑 sync-all
 └── docs/
     ├── 01-first-time-setup.md            ← Day 0 上工
     ├── 02-create-new-product.md          ← 生新 app

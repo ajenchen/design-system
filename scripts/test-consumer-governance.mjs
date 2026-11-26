@@ -193,7 +193,10 @@ try {
     },
   }, null, 2) + '\n')
 
+  // 2026-11-27(上游判定 B2(a) / B3):Verify consumer 的 timeout-minutes 要依一次 hooks-off 全量重播的實測秒數定,這裡印出來(template 規模)。
+  const positiveStarted = Date.now()
   const positive = runCheck()
+  const positiveSeconds = ((Date.now() - positiveStarted) / 1000).toFixed(1)
   if (positive.status !== 0 || !positive.report.ok || positive.report.hooksRequired !== false) {
     throw new Error(`positive clean-room failed:${JSON.stringify(positive.report, null, 2)}`)
   }
@@ -201,7 +204,7 @@ try {
     || !(positive.report.evidence?.staticReplay?.hookExecutions > 0)) {
     throw new Error(`positive clean-room did not execute the complete replay:${JSON.stringify(positive.report.evidence?.staticReplay)}`)
   }
-  console.log(`✅ positive: hooks-off immutable snapshot PASS(${positive.report.attestationDigest.slice(0, 16)})`)
+  console.log(`✅ positive: hooks-off immutable snapshot PASS(${positive.report.attestationDigest.slice(0, 16)})(一次全量重播 ${positiveSeconds} 秒、hook 執行 ${positive.report.evidence.staticReplay.hookExecutions} 次)`)
 
   const privateChecker = freezePrivateCheckerSnapshot(join(dsDest, 'ds-canonical/fork'), privateCheckerRoot)
   try {
