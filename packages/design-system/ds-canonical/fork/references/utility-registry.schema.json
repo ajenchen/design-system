@@ -120,8 +120,8 @@
         "engine": { "const": "utility-registry-rules-v1" },
         "block": {
           "type": "array",
-          "minItems": 18,
-          "maxItems": 18,
+          "minItems": 19,
+          "maxItems": 19,
           "items": { "$ref": "#/$defs/enforcementRule" }
         },
         "warn": {

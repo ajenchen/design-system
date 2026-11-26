@@ -538,7 +538,8 @@ MenuItem 承載 Switch 時,**整列 row 的 click = toggle 這個 control**(不�
 
 ```tsx
 // ✅ Canonical:row click 與 suffix Switch 同步 toggle(row 可點擊、Switch 視覺反映狀態)
-// (DropdownMenuItem 無任意 suffix slot——trailing 互動 control 用 MenuItem endContent)
+// (這是不在 DropdownMenu 裡的 MenuItem 容器的寫法;DropdownMenu 裡的開關一律用 DropdownMenuCheckboxItem,
+//  見 ../../components/DropdownMenu/dropdown-menu.spec.md:103,:211 禁在 item 內放 Switch —— 2026-11-27 上游判定 E24 (c))
 // row = 唯一 ARIA owner:role="menuitemcheckbox" + aria-checked 讓 AT 感知 on/off
 //(Switch aria-hidden 後,沒有這兩個屬性 toggle 狀態對 SR 完全隱形)
 <MenuItem
@@ -563,7 +564,8 @@ MenuItem 承載 Switch 時,**整列 row 的 click = toggle 這個 control**(不�
 
 | 情境 | 用 | 原因 |
 |------|---|------|
-| **Menu / Dropdown 內的 toggle 清單**(View menu / Display options / Page toolbar filter menu) | `MenuItem` + suffix Switch | 已在 overlay 容器,menu 整列 row 就是 click target,Switch 是狀態視覺 |
+| **DropdownMenu 內的 toggle 清單**(View menu / Display options / Page toolbar filter menu) | `DropdownMenuCheckboxItem`(`checked` + `onCheckedChange`) | 最近的同目的規格勝出(M23(d)):`../../components/DropdownMenu/dropdown-menu.spec.md:103`「CheckboxItem 切換開關狀態…選單保持開啟」,`:211` 禁在 item 內放 Switch;DS 內 DropdownMenu 的開關全是這種寫法 |
+| **不在 DropdownMenu 裡的 MenuItem 容器的 toggle 列**(例:自組的 MenuItem 清單面板) | `MenuItem` + suffix Switch | 已在 overlay 容器,menu 整列 row 就是 click target,Switch 是狀態視覺(寫法見上方 Canonical 範例) |
 | **Settings page 的獨立 toggle row**(不在 overlay,是 page layout) | `<Field orientation="horizontal">` + Switch 齊右 | 見 `components/Switch/switch.spec.md`「對齊情境:Settings list vs Form edit」 |
 
 兩者**結構一致**(label 左 / toggle 右齊),差別只在**容器層級**(menu item = overlay row / Field horizontal = page row)。

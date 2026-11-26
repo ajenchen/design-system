@@ -142,7 +142,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 221,
-      "hash": "sha256:34836c89819553444e762e58554d89ab6256faf9d71ebaa269f1db836e5bd143",
+      "hash": "sha256:818953cc4972a51a3a4daee74e819a9f6129119ba7a49c96d2bb2952da8b0f28",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -727,16 +727,16 @@
       "type": "file"
     },
     {
-      "hash": "sha256:0e78034d31ba8d1b0f7c08ab4a931990c4a461a5b53019574828849342f903b1",
+      "hash": "sha256:ad9a703242173d81b60a70e722b04a2960c3cd5f5f7691f7997cc017f10f4fba",
       "id": "design-system-utility-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "packages/design-system/src/tokens/utility-registry.json",
-      "size": 18207,
+      "size": 18524,
       "type": "file"
     },
     {
-      "hash": "sha256:6e41f5522ab3e2d0364042bb433e129dceba1e85db170c2785d4271cc48e889c",
+      "hash": "sha256:a6b97a07e13204e6b58f5b9014ab7be7b67de741531c736cdbc8f81572ac11cd",
       "id": "design-system-utility-registry-schema",
       "mode": "0644",
       "ownerRepo": "design-system",

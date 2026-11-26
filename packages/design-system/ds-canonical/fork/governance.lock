@@ -711,7 +711,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_app_invariants.sh",
-      "sha256": "a622e73320b00c3a304d42886c3f689f349b4d1f739dc77f0e2b795d617a727c",
+      "sha256": "ff06d99db4a9f4a4eaa168187fed5bbe49b0d158adac884a78b071cb6564d636",
       "source": "check_consumer_app_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -783,7 +783,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_opacity_token_usage.sh",
-      "sha256": "574d1c03d0967df6350d62ce0e08f775554abd26d2e8bbd6ed6258c693d1280c",
+      "sha256": "b557fe9eeca7c87ffc7613ab12144fa1cf3a3892c4f82128e433fbda4260af81",
       "source": "check_opacity_token_usage.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -1527,7 +1527,7 @@
     {
       "schemaVersion": 1,
       "file": "references/utility-registry.json",
-      "sha256": "0e78034d31ba8d1b0f7c08ab4a931990c4a461a5b53019574828849342f903b1",
+      "sha256": "ad9a703242173d81b60a70e722b04a2960c3cd5f5f7691f7997cc017f10f4fba",
       "source": "packages/design-system/src/tokens/utility-registry.json",
       "classification": null,
       "destination": null
@@ -1535,7 +1535,7 @@
     {
       "schemaVersion": 1,
       "file": "references/utility-registry.schema.json",
-      "sha256": "6e41f5522ab3e2d0364042bb433e129dceba1e85db170c2785d4271cc48e889c",
+      "sha256": "a6b97a07e13204e6b58f5b9014ab7be7b67de741531c736cdbc8f81572ac11cd",
       "source": "packages/design-system/src/tokens/utility-registry.schema.json",
       "classification": null,
       "destination": null

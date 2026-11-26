@@ -26,7 +26,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-hook-provider-marker-regex-helper | `packages/design-system/ds-canonical/hooks/lib/provider-marker-regex.mjs` | `sha256:7395275574a3d3c1b65b6e6fc58aedbbd95caf157e0cd5cf07d0107a4531bd65` |
 | canonical-hook-registration-output-contract-helper | `packages/design-system/ds-canonical/hooks/tests/registration-output-contracts.mjs` | `sha256:96c5a30cf956ecd9471b106396e0b80823c9e8e1c29c5b21f052b3bcd68d7fa0` |
 | canonical-hook-tsx-governance-analysis-helper | `packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs` | `sha256:d690a3a67697c7be99ffd54a9eac0c465a5202232c480a3a622ac8ea8159f3a2` |
-| canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:34836c89819553444e762e58554d89ab6256faf9d71ebaa269f1db836e5bd143` |
+| canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:818953cc4972a51a3a4daee74e819a9f6129119ba7a49c96d2bb2952da8b0f28` |
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:79415aaec40715aa1a90d7d9185faa52b9845893682f5d45087ea87d68149a03` |
 | canonical-references | `packages/design-system/ds-canonical/references` | `sha256:bee3718a897f507c1b9c72772dc7f22830cf1a289f948a74e1798e5a01038e1f` |
 | canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:3aef9c97187af7b905064bbe18f735402b6764580f515e8135eef67c51be0fa7` |
@@ -90,8 +90,8 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | deep-audit-waived-self-review-tests | `scripts/test-import-waived-self-review.mjs` | `sha256:c40f5c06ccfaafa54e6955b9c1e0eab34418760ac5e56c62b09add528b4b421b` |
 | design-system-migration-tools | `packages/design-system/tools` | `sha256:d178273fec1a3ded92be1af08a3189f5b6f1506142a1ec82c6220602d4352a37` |
 | design-system-package-contract | `packages/design-system/package.json` | `sha256:44a8ea7f9546827cabc7eccb2c3c6f9312b0a9f7b5e8ee5b23678442addd50d5` |
-| design-system-utility-registry | `packages/design-system/src/tokens/utility-registry.json` | `sha256:0e78034d31ba8d1b0f7c08ab4a931990c4a461a5b53019574828849342f903b1` |
-| design-system-utility-registry-schema | `packages/design-system/src/tokens/utility-registry.schema.json` | `sha256:6e41f5522ab3e2d0364042bb433e129dceba1e85db170c2785d4271cc48e889c` |
+| design-system-utility-registry | `packages/design-system/src/tokens/utility-registry.json` | `sha256:ad9a703242173d81b60a70e722b04a2960c3cd5f5f7691f7997cc017f10f4fba` |
+| design-system-utility-registry-schema | `packages/design-system/src/tokens/utility-registry.schema.json` | `sha256:a6b97a07e13204e6b58f5b9014ab7be7b67de741531c736cdbc8f81572ac11cd` |
 | development-container-contract | `.devcontainer/` | `sha256:61e19cd5eafeb2b6d8ee66f055f5dd3691c8e42cf91103056367917c059b36d7` |
 | eslint-plugin-package-contract | `packages/eslint-plugin/package.json` | `sha256:eb9ef794be8466ad96798d8e565e3807c2c23f912534c8a2ec0075160376d703` |
 | exact-artifact-attestation-schema | `packages/governance/canonical/schemas/attestation.schema.json` | `sha256:44b9b9deb24ae3dc041903e6bfeba4be2ed72500ba0e63322464cadce3bcc6ba` |

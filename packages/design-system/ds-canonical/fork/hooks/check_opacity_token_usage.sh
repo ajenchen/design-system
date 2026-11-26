@@ -139,6 +139,23 @@ fi
 # Keep the two path segments separate so the fork path projection rewrites REGISTRY above without
 # rewriting this identity assertion.
 CANONICAL_REGISTRY_OWNER='packages/design-system'"/src/tokens/utility-registry.json"
+# 2026-11-27(上游判定 E17 (a)):原料色經 var() 讀(bg-[var(--color-blue-6)])規則 primitive-color-var-bracket 的唯一例外 =
+# token-registry.json「--color-」那一列的 dsReaders(DS 自己的 Tag / Avatar / Calendar 類別色);產品端沒有例外。
+# 只在 DS 原始碼路徑才讀 token-registry(產品 repo 不會落到這裡);讀不到 = 不豁免(照擋,fail closed)。
+EXEMPT_RULES=''
+DS_SOURCE_MARK='packages/design-system'"/src/"
+case "$FILE_PATH" in
+  *"/$DS_SOURCE_MARK"*)
+    DS_RELATIVE="${FILE_PATH##*/$DS_SOURCE_MARK}"
+    TOKEN_REGISTRY="$CORPUS_ROOT/${DS_SOURCE_MARK}tokens/token-registry.json"
+    if jq -e --arg rel "$DS_RELATIVE" \
+      'any(.rows[] | select(.match == "--color-") | .dsReaders[]?; . as $reader | $rel | startswith($reader + "/"))' \
+      "$TOKEN_REGISTRY" >/dev/null 2>&1; then
+      EXEMPT_RULES='primitive-color-var-bracket'
+    fi
+    ;;
+esac
+export EXEMPT_RULES
 # The registry carries both the token lists and the executable matcher inventory. The hook only
 # implements one bounded engine; it never repeats aliases in shell regexes. Adding a token to an
 # authenticated list therefore changes enforcement immediately, while schema/build closure rejects
@@ -207,6 +224,8 @@ def token_list(pointer):
 
 result = {"block": [], "warn": []}
 seen_ids = set()
+# 只准豁免 pattern 規則(token-list 規則的指標仍要逐一對上 expected_pointers);名單由 hook 依 token-registry dsReaders 算
+exempt_rules = {name for name in os.environ.get("EXEMPT_RULES", "").split(",") if name}
 for level in ("block", "warn"):
     rules = registry["enforcement"].get(level)
     if not isinstance(rules, list) or not rules:
@@ -249,7 +268,7 @@ for level in ("block", "warn"):
                 raise ValueError("empty enforcement pattern")
             matcher = re.compile(pattern)
             excluded = set(token_list(rule["excludeTokenListPointer"])) if "excludeTokenListPointer" in rule else set()
-            hits = {match.group(0) for match in matcher.finditer(content) if match.group(0) not in excluded}
+            hits = set() if identifier in exempt_rules else {match.group(0) for match in matcher.finditer(content) if match.group(0) not in excluded}
 
         if hits:
             result[level].append({

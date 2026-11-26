@@ -590,6 +590,57 @@ if grep -qE '<(DS\.)?(Select|Combobox|DatePicker|PeoplePicker)\b[^>]*className="
    ! grep -q '@field-width-ok:' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - Field 家族控件 className 硬寬(w-N / w-[Npx])→ 用 width=\"hug\"(內容自適)或預設 fill(field-controls.spec.md「寬度」;WM 詳情 metadata 全 hug 拍板錨例)。特例 → @field-width-ok: <rationale>\n"
 fi
+# C24(2026-11-27,上游判定 E21):header 內的 field-height 控件一律 size="sm"
+# (patterns/header-canonical/header-canonical.spec.md:73「永遠 size="sm"…header 內所有 field-height 控件一律 sm」;
+# Button 預設 md,沒寫 size 就違規)。範圍 = Surface/Dialog/Sheet/PopoverHeader 的 actions={…} 與 <ChromeHeader> 子樹裡的
+# Button / Input / Select / SegmentedControl / Combobox;唯一例外「Tabs 取代整個 header 的 standalone size="lg"」不是這幾種控件。
+# 開標籤以大括號深度判結尾(actions={<Button>…</Button>} 裡的 > 不算)。
+HEADER_SIZE_HITS=$(printf '%s' "$CONTENT" | perl -0777 -ne '
+  my $s = $_;
+  my $tag_end = sub {
+    my ($t, $i) = @_; my $d = 0;
+    for (my $j = $i; $j < length $t; $j++) {
+      my $c = substr($t, $j, 1);
+      if ($c eq "{") { $d++ } elsif ($c eq "}") { $d-- if $d > 0 } elsif ($c eq ">" && $d == 0) { return $j }
+    }
+    return length($t) - 1;
+  };
+  my @regions;
+  while ($s =~ /<(?:DS\.)?(?:Surface|Dialog|Sheet|Popover)Header\b/g) {
+    my $p = $-[0]; my $e = $tag_end->($s, $p); my $open = substr($s, $p, $e - $p + 1);
+    push @regions, $open if $open =~ /\bactions=\{/;
+  }
+  while ($s =~ /<(?:DS\.)?ChromeHeader\b/g) {
+    my $p = $-[0]; my $e = $tag_end->($s, $p);
+    if (substr($s, $e - 1, 1) eq "/") { push @regions, substr($s, $p, $e - $p + 1); next }
+    my $rest = substr($s, $e);
+    my $close = ($rest =~ /<\/(?:DS\.)?ChromeHeader>/) ? $e + $-[0] : length($s);
+    push @regions, substr($s, $p, $close - $p);
+  }
+  for my $r (@regions) {
+    while ($r =~ /<(?:DS\.)?(Button|Input|Select|SegmentedControl|Combobox)\b/g) {
+      my ($name, $q) = ($1, $-[0]); my $e = $tag_end->($r, $q); my $tag = substr($r, $q, $e - $q + 1);
+      next if $tag =~ /\bsize=(?:"sm"|\x27sm\x27|\{\s*["\x27]sm["\x27]\s*\})/;
+      (my $show = $tag) =~ s/\s+/ /g; print "$name: " . substr($show, 0, 80) . "\n";
+    }
+  }
+' 2>/dev/null) || HEADER_SIZE_HITS='__PARSE_FAILED__'
+if [ "$HEADER_SIZE_HITS" = '__PARSE_FAILED__' ]; then
+  printf '🚨 GOVERNANCE_INTEGRITY: header control size parser failed\n' >&2
+  exit 70
+fi
+if [ -n "$HEADER_SIZE_HITS" ] && ! grep -q '@header-control-size-ok:' <<<"$CONTENT"; then
+  VIOLATIONS="${VIOLATIONS}  - header 內 field-height 控件沒寫 size=\"sm\"(或寫了 md / lg)→ 一律 size=\"sm\"(header-canonical.spec.md:73;Button 預設 md):$(printf '%s' "$HEADER_SIZE_HITS" | tr '\n' ';')。特例 → @header-control-size-ok: <rationale>\n"
+fi
+# C25(2026-11-27,上游判定 E24 (b)):<DropdownMenuItem> 的 badge= / tag= 或子元素裡放 <Switch> / <Checkbox>
+# → 選單裡的開關用 DropdownMenuCheckboxItem(dropdown-menu.spec.md:103「CheckboxItem 切換開關狀態…選單保持開啟」;
+# :211「不要在 item 內放獨立互動元素(如 Button、Switch)—— item 本身就是互動單位」)。DropdownMenuCheckboxItem 不在此列。
+if printf '%s' "$CONTENT" | perl -0777 -ne '
+  exit((/<(?:DS\.)?DropdownMenuItem\b[^>]*<(?:DS\.)?(?:Switch|Checkbox)\b/s
+     || /<(?:DS\.)?DropdownMenuItem\b[^>]*[^\/]>(?:(?!<\/(?:DS\.)?DropdownMenuItem>|<(?:DS\.)?DropdownMenuItem\b).)*?<(?:DS\.)?(?:Switch|Checkbox)\b/s) ? 0 : 1)
+' && ! grep -q '@dropdown-item-control-ok:' <<<"$CONTENT"; then
+  VIOLATIONS="${VIOLATIONS}  - <DropdownMenuItem> 裡放 <Switch> / <Checkbox>(badge= / tag= / 子元素)→ 改用 <DropdownMenuCheckboxItem checked onCheckedChange>(dropdown-menu.spec.md:103;:211 item 內不放獨立互動元素)。特例 → @dropdown-item-control-ok: <rationale>\n"
+fi
 
 # Pattern 6: Overlay trigger without defaultOpen state for visual demo
 # (Skip in production .tsx; only enforce in .stories.tsx where visual snapshot matters)

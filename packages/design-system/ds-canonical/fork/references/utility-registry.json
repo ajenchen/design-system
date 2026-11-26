@@ -164,6 +164,11 @@
         "pattern": "(?<![A-Za-z0-9_-])(?:bg|text|border)-(?:neutral|blue|red|green|yellow|orange|purple|pink|cyan|teal|deep-orange|deep-purple|light-blue|light-green|lime|amber|indigo|brown|gray|magenta|turquoise|emerald|fuchsia|mauve|mist|olive|rose|sky|slate|stone|taupe|violet|zinc)-[0-9]+(?![A-Za-z0-9_-])"
       },
       {
+        "id": "primitive-color-var-bracket",
+        "label": "primitive color via var() bracket",
+        "pattern": "(?<![A-Za-z0-9_-])(?:bg|text|border(?:-[trblxy])?|ring|outline|fill|stroke|from|via|to|divide|decoration|caret|accent|placeholder)-\\[var\\(--color-[a-z]+(?:-[a-z]+)*-[0-9]+\\)\\]"
+      },
+      {
         "id": "phantom-state-suffix",
         "label": "phantom state suffix(silent no-op)",
         "pattern": "(?<![A-Za-z0-9_-])(?:(?:hover|active|focus):)?(?:bg|text|border|ring)-[a-z][a-z-]*-(?:hovered|actived|focussed|pressed)(?![A-Za-z0-9_-])"
