@@ -153,7 +153,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 11,
-      "hash": "sha256:6c89c7a8495ca60731b7e091697bc10b3c571bf635e54f228b1e2b77ec66232b",
+      "hash": "sha256:268d466f790fd2a90e6921ad0fa7528b3357c5a94154abc9a33fd3d219ee2e38",
       "id": "canonical-product-templates",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2452,7 +2452,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 5,
-      "hash": "sha256:cd5d83d5d11ae826d99bd7f976990b8a476357be2d59eb43c608daf5ca1c72d3",
+      "hash": "sha256:d1239ccdfb1375498f9a184006dd671afbe8c421ac9d5c15596d4c5d1e76eafb",
       "id": "product-template-documentation",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2496,12 +2496,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:60f3776bf673d89268de7b46d594b07ff3748bbd0c8331b86edc91d00ba3982d",
+      "hash": "sha256:167e0ce256b0cbc0fde695c83b3b1902b506d06d2b833a26817bae90708c0dc8",
       "id": "product-template-readme",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "template/ds-product-template/README.md",
-      "size": 20247,
+      "size": 20383,
       "type": "file"
     },
     {
@@ -3094,7 +3094,7 @@
         "scripts/generated/"
       ],
       "files": 793,
-      "hash": "sha256:9da952cf6aaa552aef0f93315b07bb5085a637ee52b87bf657462fa0b6f9583c",
+      "hash": "sha256:f42afe6fb0136ae9aae8e4d89c8fa026b3266e565ee0330286e8b7a7c129fae4",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

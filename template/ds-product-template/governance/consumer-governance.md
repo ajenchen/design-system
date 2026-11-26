@@ -8,13 +8,14 @@ product rules belong only in `governance/overlay.md`.
 
 ## One setup path in every environment
 
-Run `npm run setup:all` from a fresh checkout on local macOS/Linux, Codex Cloud, Claude Code
-on the web, Codespaces, or another Linux devcontainer host. Configure that same command as each
+Run `npm run setup:all` from a fresh checkout on local macOS/Linux, Codex Cloud, Codespaces, or
+another Linux devcontainer host. Configure that same command as each
 hosted environment's setup command; Codex Cloud also uses it as the maintenance command after a
 cached container is restored. Session-start hooks never install or repair dependencies.
 
-On Claude Code on the web, put the setup script in a cloud environment dedicated to this
-repository, never in the shared Default environment: a setup script that exits non-zero makes the
+On Claude Code on the web `setup:all` does not complete yet (known limitation below), so do not
+set its setup script until a release fixes it. The intended setup: put the setup script in a cloud
+environment dedicated to this repository, never in the shared Default environment: a setup script that exits non-zero makes the
 session fail to start or start without what it failed to install, and the official guide does not
 document the script's working directory. Use the script in the template README ("Local, cloud, and
 container setup"), which finds the checkout itself and then runs `npm run setup:all`
@@ -26,10 +27,11 @@ trusts Node's bundled CA store plus the system store (the exact npm runs with `-
 and still ignores CA, proxy, and `NODE_OPTIONS` environment variables. On Node.js 22.13.x–22.14.x
 the locked npm trusts only the bundled store.
 
-Known limitation: on Claude Code on the web `setup:all` still stops at `npm audit signatures`
-(`ENOTFOUND tuf-repo-cdn.sigstore.dev`): that environment reaches the Sigstore TUF CDN only through
-its proxy, and the locked setup ignores proxy variables. Until a release fixes this, do not set that
-setup script there; such a session has not run `setup:all`, is degraded, and must not claim compliance.
+Known limitation: on Claude Code on the web `setup:all` still stops at the registry signature
+audit (`audit signatures`, `ENOTFOUND tuf-repo-cdn.sigstore.dev`): that environment reaches the
+Sigstore TUF CDN only through its proxy, and the locked setup ignores proxy variables. Until a
+release fixes this, do not set that setup script there; such a session has not completed
+`setup:all`, is degraded, and must not claim compliance.
 
 Successful setup deliberately reports `scope=local-bootstrap`,
 `providerCertification=not-checked`, and `externalActivationRequired=false`. Ordinary bootstrap is

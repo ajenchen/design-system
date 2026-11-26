@@ -92,8 +92,9 @@ verification. Neither PATH npm nor an ignored `node_modules/npm` is executed as 
 calls the exact installed provider-neutral checker with hooks off. This repository proof assumes the
 committed Git snapshot, Node runtime/TLS, and canonical registry endpoint are not malicious; it
 cannot certify a hostile host. Any step failing stops setup. Repository SessionStart remains verification-only; it never installs
-or repairs dependencies. The same `setup:all` works on local macOS/Linux, Codex Cloud, Claude Code
-on the web, Codespaces, and other Linux devcontainer hosts. Native Windows is unsupported; use
+or repairs dependencies. The same `setup:all` works on local macOS/Linux, Codex Cloud, Codespaces,
+and other Linux devcontainer hosts; on Claude Code on the web it does not complete yet (see the
+known limitation below). Native Windows is unsupported; use
 WSL2 or the committed Linux dev container.
 
 Outbound HTTPS that a proxy re-signs (Claude Code on the web, most corporate proxies) works when
@@ -105,12 +106,13 @@ host needs Node.js 22.15.0+. Install a proxy CA into the system trust store; `NO
 `SSL_CERT_FILE` alone is not used.
 
 Known limitation: on Claude Code on the web `setup:all` still does not complete. The locked
-install now gets past the proxy CA, but the next step, `npm audit signatures`, fails with
-`ENOTFOUND tuf-repo-cdn.sigstore.dev`: that environment resolves the npm registry directly but
-reaches the Sigstore TUF CDN only through its proxy, and the locked setup ignores proxy variables.
-Until a release fixes this, do not set the Setup script above in a Claude Code cloud environment
-(it would exit non-zero and stop sessions from starting); a session there has not run `setup:all`,
-so treat it as degraded and do not claim compliance.
+install now gets past the proxy CA, but the next step, the registry signature audit
+(`audit signatures`), fails with `ENOTFOUND tuf-repo-cdn.sigstore.dev`: that environment resolves
+the npm registry directly but reaches the Sigstore TUF CDN only through its proxy, and the locked
+setup ignores proxy variables. Until a release fixes this, do not set the Setup script above in a
+Claude Code cloud environment: it would exit non-zero, so the session fails to start or starts
+without what it failed to install. A session there has not completed `setup:all`, so treat it as
+degraded and do not claim compliance.
 
 Successful `setup:all` output is intentionally scoped as `scope=local-bootstrap`,
 `providerCertification=not-checked`, and `externalActivationRequired=false`. Ordinary bootstrap is

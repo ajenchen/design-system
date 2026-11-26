@@ -91,12 +91,13 @@ host needs Node.js 22.15.0+. Install a proxy CA into the system trust store; `NO
 `SSL_CERT_FILE` alone is not used.
 
 Known limitation: on Claude Code on the web `setup:all` still does not complete. The locked
-install now gets past the proxy CA, but the next step, `npm audit signatures`, fails with
-`ENOTFOUND tuf-repo-cdn.sigstore.dev`: that environment resolves the npm registry directly but
-reaches the Sigstore TUF CDN only through its proxy, and the locked setup ignores proxy variables.
-Until a release fixes this, do not set the Setup script above in a Claude Code cloud environment
-(it would exit non-zero and stop sessions from starting); a session there has not run `setup:all`,
-so treat it as degraded and do not claim compliance.
+install now gets past the proxy CA, but the next step, the registry signature audit
+(`audit signatures`), fails with `ENOTFOUND tuf-repo-cdn.sigstore.dev`: that environment resolves
+the npm registry directly but reaches the Sigstore TUF CDN only through its proxy, and the locked
+setup ignores proxy variables. Until a release fixes this, do not set the Setup script above in a
+Claude Code cloud environment: it would exit non-zero, so the session fails to start or starts
+without what it failed to install. A session there has not completed `setup:all`, so treat it as
+degraded and do not claim compliance.
 
 Do not move installation into SessionStart. The repository SessionStart adapter is deliberately
 read-only so opening or resuming any local/cloud agent cannot mutate the checkout.
