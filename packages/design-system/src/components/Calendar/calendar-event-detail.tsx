@@ -10,6 +10,8 @@ import { Switch } from '@/design-system/components/Switch/switch'
 import { DatePicker } from '@/design-system/components/DatePicker/date-picker'
 import { Select, type SelectOption } from '@/design-system/components/Select/select'
 import type { FieldSize } from '@/design-system/components/Field/field-context'
+import { rangeToTimePatch } from './calendar-layout'
+import { CALENDAR_EVENT_DETAIL_WIDTH_PX } from './calendar-geometry'
 
 /**
  * ── 消費的 SSOT ──
@@ -161,6 +163,8 @@ export function CalendarEventDetailPopover<E>({
           // sideOffset / collisionPadding 用 Popover 預設 8,放不下由 Radix 自動翻面(avoidCollisions 預設開)
           side={side}
           align="start"
+          // 寬:Popover 預設 288 放不下時間欄編輯中的 DatePicker.Range showTime(實量見 calendar-geometry.ts CALENDAR_EVENT_DETAIL_WIDTH_PX)
+          width={CALENDAR_EVENT_DETAIL_WIDTH_PX}
           // 浮層的名字 = 事件標題本身(標題是 InlineEdit、沒有 PopoverTitle 可自動接線;consumer aria-label 優先,popover.tsx PopoverContent)——
           // 不念隱形編輯鈕的「編輯 …」,編輯中也不會變空
           aria-label={shown.event.title}
@@ -222,7 +226,8 @@ function DetailFields<E>({ entry, detail, labels, locale, readFormat, onChange, 
           value={range}
           label={labels.detailTime}
           editable={editable}
-          onCommit={(next) => onChange({ start: next[0], end: next[1], allDay })}
+          // 全天:Range 的結束日「含」→ 事件 end「不含」,加一個日曆日(calendar-layout.ts rangeToTimePatch;本檔不另算)
+          onCommit={(next) => onChange(rangeToTimePatch(next, allDay))}
           // 平常:一段文字,同一天自動合併(DatePicker.Range `formatRange`【TIMEFIELD(定)】);寫法 = Calendar 交進來的 readFormat
           renderRead={(value) => (
             <DatePicker.Range mode="view" value={value} showTime={showTime} formatRange locale={locale} formatOptions={showTime ? readFormat.timed : readFormat.allDay} />

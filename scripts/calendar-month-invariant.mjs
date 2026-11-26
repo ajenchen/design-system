@@ -825,7 +825,8 @@ const BLOCKS = {
       `「Alex 休假」${geo.count} 個元素、左緣 ${geo.left.toFixed(2)} / 右緣 ${geo.right.toFixed(2)}(規格:一個元素,從 7/20 內容左緣 ${geo.expLeft.toFixed(2)} 畫到 7/22 內容右緣 ${geo.expRight.toFixed(2)};一欄 ${geo.colW.toFixed(2)})`)
     // 點擊:真的滑鼠點在 7/22 那一段的正中(不是程式化 click —— 量的是命中與冒泡)
     const newEvent = () => page.getByRole('dialog', { name: '新增事件' }).count()
-    const eventPopover = () => page.getByRole('dialog').filter({ hasText: 'Alex 休假' }).filter({ hasText: '7 月 20 日 – 7 月 22 日 · 全天' }).count()
+    // 開的是這個事件 = 名字是「Alex 休假」的詳情浮層(2026-11-26 起示範殼用內建詳情 eventDetail,浮層名稱 = 事件標題;改前是示範殼自己的浮層、內文寫「7 月 20 日 – 7 月 22 日 · 全天」)
+    const eventPopover = () => page.getByRole('dialog', { name: 'Alex 休假' }).count()
     const settle = () => page.evaluate(() => new Promise((res) => { let n = 0; const f = () => (++n >= 10 ? res() : requestAnimationFrame(f)); requestAnimationFrame(f) }))
     await page.mouse.click(geo.at.x, geo.at.y)
     await page.getByRole('dialog').first().waitFor({ state: 'visible', timeout: 3000 }).catch(() => {})
@@ -1553,7 +1554,8 @@ const BLOCKS = {
         return {
           tight, fieldSm, secondary, rows,
           detail: { left: dr.left, right: dr.right, top: dr.top }, tile: { left: tr.left, right: tr.right, top: tr.top },
-          headerH: hr?.height, dismissMid: xr ? xr.top + xr.height / 2 : NaN, titleMid: ttr ? ttr.top + ttr.height / 2 : NaN,
+          // 標題列高不含它底下那條分隔線(標準 PopoverHeader 的 border-b;calendar.spec.md「標題列」的 52 = 28 + 上下 12)
+          headerH: hr ? hr.height - parseFloat(getComputedStyle(header).borderBottomWidth) : NaN, dismissMid: xr ? xr.top + xr.height / 2 : NaN, titleMid: ttr ? ttr.top + ttr.height / 2 : NaN,
           firstGap: first && hr ? first.top - hr.bottom : NaN, bottomGap: last && br ? br.bottom - last.bottom : NaN,
           tileOpen: tile.hasAttribute('data-detail-open'),
         }
@@ -1595,14 +1597,16 @@ const BLOCKS = {
         await frames(4)
         return true
       }
-      const okCommit = await editTitle('設計審查(第二輪)')
+      // 事件名稱 = labels.event 的「{標題},{時間}」(calendar.tsx DEFAULT_LABELS,分隔是半形逗號)
+      const renamed = '設計審查 第二輪'
+      const okCommit = await editTitle(renamed)
       const tileName1 = await axNameOf(`document.querySelector(${JSON.stringify(tileSel)})`)
       const detailName1 = await axNameOf(`document.querySelector(${JSON.stringify(detailSel)})`)
-      check('DT-commit', okCommit && /^設計審查(第二輪),/u.test(tileName1 ?? '') && detailName1 === '設計審查(第二輪)', `改標題後月格「${tileName1}」、詳情名稱「${detailName1}」`)
+      check('DT-commit', okCommit && (tileName1 ?? '').startsWith(`${renamed},`) && detailName1 === renamed, `改標題後月格「${tileName1}」、詳情名稱「${detailName1}」`)
       await page.keyboard.press('Escape'); await waitSel(detailSel, 'closed'); await frames(2)
       const okBlank = await editTitle('')
       const tileName2 = await axNameOf(`document.querySelector(${JSON.stringify(tileSel)})`)
-      check('DT-blank', okBlank && /^設計審查(第二輪),/u.test(tileName2 ?? ''), `清空提交後月格「${tileName2}」(規格:清空 = 還原原值)`)
+      check('DT-blank', okBlank && (tileName2 ?? '').startsWith(`${renamed},`), `清空提交後月格「${tileName2}」(規格:清空 = 還原原值)`)
       await page.keyboard.press('Escape'); await waitSel(detailSel, 'closed')
     }
     // DT-list:從「+N」清單開(設計規格「狀態行為:從清單開詳情」,7/22 星期三 = 正中那一欄 → 往右):清單不關、詳情貼著清單外緣 8、上緣對齊那一列;
@@ -1618,10 +1622,12 @@ const BLOCKS = {
       const row = list?.querySelector('[data-calendar-event-id="c3"]')
       if (!detail || !list || !row) return null
       const dr = detail.getBoundingClientRect(), lr = list.getBoundingClientRect(), rr = row.getBoundingClientRect()
-      return { gap: dr.left - lr.right, top: dr.top, rowTop: rr.top, rowOpen: row.hasAttribute('data-detail-open') }
+      return { gap: dr.left - lr.right, top: dr.top, bottom: dr.bottom, rowTop: rr.top, viewportH: document.documentElement.clientHeight, rowOpen: row.hasAttribute('data-detail-open') }
     }, { d: detailSel, s: listSel })
-    check('DT-list', Boolean(l) && near(l.gap, 8) && near(l.top, l.rowTop) && l.rowOpen,
-      l ? `詳情左緣 − 清單右緣 ${fmtPx(l.gap)}(規格 8)、詳情上緣 ${fmtPx(l.top)} / 那一列上緣 ${fmtPx(l.rowTop)}、那一列${l.rowOpen ? '' : '沒有'}帶 data-detail-open` : '找不到清單 / 詳情 / 那一列')
+    // 垂直:對齊那一列上緣;放不下時被推回視窗內、底留 collisionPadding 8(popover.spec.md / calendar.spec.md「放不下自動翻面」)—— 兩者之一
+    const vOk = l && (near(l.top, l.rowTop) || (l.top < l.rowTop && near(l.bottom, l.viewportH - 8)))
+    check('DT-list', Boolean(l) && near(l.gap, 8) && vOk && l.rowOpen,
+      l ? `詳情左緣 − 清單右緣 ${fmtPx(l.gap)}(規格 8)、詳情上緣 ${fmtPx(l.top)} / 那一列上緣 ${fmtPx(l.rowTop)}(放不下時底 ${fmtPx(l.bottom)} = 視窗 ${l.viewportH} − 8)、那一列${l.rowOpen ? '' : '沒有'}帶 data-detail-open` : '找不到清單 / 詳情 / 那一列')
     await page.keyboard.press('Escape')
     const detailClosed = await waitSel(detailSel, 'closed')
     await frames(4)

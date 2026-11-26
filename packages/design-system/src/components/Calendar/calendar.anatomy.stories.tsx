@@ -416,6 +416,20 @@ export const DetailOpen: Story = {
   },
 }
 
+// ── 型別層:事件方塊三擇一(calendar.spec.md「日期格與事件方塊:可點或唯讀」;typecheck:stories 量,不是範例、不匯出)──
+// 每一行少了 @ts-expect-error 就是型別層沒擋(三者同時傳 / 唯讀又有詳情 / 詳情缺必填的 onEventChange 都要是型別錯)。
+const noopTypeProbe = () => {}
+void [
+  // @ts-expect-error eventDetail 與 onEventClick 不能同時傳
+  <Calendar key="both" onCreateEvent={noopTypeProbe} onDateClick={noopTypeProbe} eventDetail={{ onEventChange: noopTypeProbe }} onEventClick={noopTypeProbe} />,
+  // @ts-expect-error readOnlyEvents 與 eventDetail 不能同時傳
+  <Calendar key="readonly" onCreateEvent={noopTypeProbe} onDateClick={noopTypeProbe} readOnlyEvents eventDetail={{ onEventChange: noopTypeProbe }} />,
+  // @ts-expect-error eventDetail 缺必填的 onEventChange(M23(f))
+  <Calendar key="missing" onCreateEvent={noopTypeProbe} onDateClick={noopTypeProbe} eventDetail={{ isEditable: () => true }} />,
+  // 三擇一的正常寫法要能過
+  <Calendar key="ok" onCreateEvent={noopTypeProbe} onDateClick={noopTypeProbe} eventDetail={{ onEventChange: noopTypeProbe }} />,
+]
+
 // ── 5d. 狀態行為:從「+N」清單開詳情(清單留著、詳情開在旁邊)──────────────────────────────────────
 export const DetailFromMoreList: Story = {
   name: '狀態行為:從清單開詳情',

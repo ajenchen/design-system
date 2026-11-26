@@ -86,6 +86,15 @@ export const CALENDAR_WEEK_NUMBER_DIGITS = 2
 export const CALENDAR_NARROW_COLUMN_MAX_PX = 60
 
 /**
+ * 事件詳情浮層的寬(PopoverContent `width` 數字;calendar.spec.md「事件詳情浮層」外殼「寬先用 Popover 預設,不夠才傳 `width` 數字,不新增寬度檔位」)【AI 推導,實量後回報 user】。
+ * 2026-11-26 在 1280 × 900 實量(團隊行事曆「設計審查」):Popover 預設 288 時,時間欄進編輯的 `DatePicker.Range showTime` 兩端
+ * 「2026/07/05 10:00」各要 113–115、只分到 91 → 兩端都被裁;兩端平分多出來的寬,所以至少 288 + 2 × 24 = 336。
+ * 取 22rem = 352(預設 18rem 之上的整數 rem;多 16 給字型 / 語系差異的餘量)。平常的檢視(一段合併文字)在 288 就放得下,
+ * 但浮層寬不隨編輯 / 全天切換變,所以一律用這個寬。
+ */
+export const CALENDAR_EVENT_DETAIL_WIDTH_PX = 352
+
+/**
  * 量到的版面尺寸是 Chromium 的 LayoutUnit(1/64 px)取整後的值:高 117 的格子可能量成 116.984。
  * 每格列數取整數前加回這一點點,「剛好放滿」那一格才不會因為取整少一列(差距小於一個 LayoutUnit 不是真的放不下)。
  */

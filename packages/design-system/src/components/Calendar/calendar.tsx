@@ -1145,11 +1145,11 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   const detailNormalized = detailTarget ? normalizedEvents.find((entry) => entry.event.id === detailTarget.eventId) ?? null : null
   // 時間欄的值依 start / end 字面 memo:同一筆沒改就是同一個陣列(InlineEdit 以參照比對草稿有沒有變,每次新陣列會被當成改過)
   const detailRangeKey = detailNormalized ? detailRangeOf(detailNormalized).join('|') : null
+  // 陣列只隨字面變(events 換了別筆、父層重畫都不換陣列;編輯中換陣列會讓沒改的草稿被當成改過)
+  const detailRange = React.useMemo(() => (detailRangeKey === null ? null : (detailRangeKey.split('|') as [string, string])), [detailRangeKey])
   const detailEntry = React.useMemo<CalendarEventDetailEntry<CalendarEvent> | null>(
-    () => (detailNormalized && detailRangeKey !== null
-      ? { event: detailNormalized.event, allDay: detailNormalized.allDay, range: detailRangeKey.split('|') as [string, string] }
-      : null),
-    [detailNormalized, detailRangeKey],
+    () => (detailNormalized && detailRange ? { event: detailNormalized.event, allDay: detailNormalized.allDay, range: detailRange } : null),
+    [detailNormalized, detailRange],
   )
   // 事件不在了(產品刪掉 / 換了 id)→ 關掉;打開它的那一段被換掉(改了日期、換週、清單那一列卸載)→ 新位置在畫面上就跟過去(換一個新錨點),
   // 不在就留在原位(錨點回上一次量到的矩形,calendar-event-detail.tsx createDetailAnchor)
