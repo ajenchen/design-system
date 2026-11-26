@@ -711,7 +711,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_app_invariants.sh",
-      "sha256": "5bccbd71dec0ea0382c61c550b7476aac7ccc89862fda2ab819b4f5e50b160bd",
+      "sha256": "08c593d902433ce7d7225fd1188905e1aaccce5ca643318cbc881237f1209ff8",
       "source": "check_consumer_app_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -743,7 +743,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_escape_marker_abuse.sh",
-      "sha256": "43d89bbeae825b39e263a36a60b1028726337f9e284b968c5fc91c1570556bed",
+      "sha256": "d360dcc99d6619ff111114fa199785f47d7c35b5658c7a25c5ad66b8e3c0ced4",
       "source": "check_escape_marker_abuse.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -879,7 +879,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/lib/_provider_paths.sh",
-      "sha256": "b4d9d661d2875d390f0214b49901c62aa95272528dee86cce73ee7f505472648",
+      "sha256": "c9067a77a3c3ee47cdf1a1c836afff10e04dbd7cf534d003b4227b8f280db88a",
       "source": "lib/_provider_paths.sh",
       "classification": "HELPER",
       "destination": null

@@ -712,8 +712,13 @@ CONTENT=$(echo "$INPUT" | jq -r '.tool_input.new_string // .tool_input.content /
 # Escape clause
 if grep -qE '@app-story-title-skip:' <<<"$CONTENT"; then exit 0; fi
 
-# Extract expected app name from file path
-APP_NAME=$(echo "$FILE" | sed -E 's|.*/apps/([^/]+)/.*|\1|')
+# Extract expected app name from file path(2026-11-27 M10 同族:以前貪婪 sed 取最後一個 apps/<x>/,巢狀路徑
+# apps/alpha/src/apps/zzz/x.stories.tsx 會要求 Apps/zzz/;改用與 escape marker 計數同一支取法 —— 相對專案根、apps/ 之後第一段)
+source "$(dirname "$0")/lib/_provider_paths.sh" 2>/dev/null || {
+  printf '🚨 GOVERNANCE_INTEGRITY: app story title path helper unavailable\n' >&2
+  exit 70
+}
+APP_NAME=$(governance_app_name_for_path "$FILE")
 [ -z "$APP_NAME" ] && exit 0
 
 # Find title field(支援 single/double/backtick quote)

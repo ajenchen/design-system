@@ -174,15 +174,8 @@ EOF
     SCAN_LABEL='apps/**'
     # app 名 = 編輯檔相對專案根的路徑在 apps/ 之後的**第一段**(2026-11-27 規格核對必修 1:以前用貪婪 sed 抓整條
     # 路徑裡最後一個 apps/<x>/,巢狀路徑 apps/alpha/src/apps/zzz/… 取到 zzz、專案根本身在 …/apps/proj/ 底下時取到 proj)。
-    # 相對路徑由 governance_project_relative_path 算(realpath,/tmp 與 /private/tmp 同一處;在專案外 = 不屬於任何 app)。
-    EDIT_APP=''
-    EDIT_REL=$(governance_project_relative_path "$FILE" 2>/dev/null) || EDIT_REL=''
-    case "$EDIT_REL" in
-      apps/*/*) EDIT_APP=${EDIT_REL#apps/}; EDIT_APP=${EDIT_APP%%/*} ;;
-    esac
-    case "$EDIT_APP" in
-      ''|.*|*[!A-Za-z0-9._-]*) EDIT_APP='' ;;
-    esac
+    # 取法住 lib/_provider_paths.sh governance_app_name_for_path(r4_app_story_title 共用同一支)。
+    EDIT_APP=$(governance_app_name_for_path "$FILE")
     if [ -n "$EDIT_APP" ]; then
       SCAN_ROOT="$APPS_ROOT/$EDIT_APP"
       SCAN_LABEL="apps/$EDIT_APP"

@@ -74,7 +74,7 @@ expect_block() {
 
 echo "=== check_consumer_app_story_title tests ==="
 
-APP_STORY="/repo/apps/order-dashboard/src/App.stories.tsx"
+APP_STORY="$TMP_DIR/apps/order-dashboard/src/App.stories.tsx"
 BLOCK_NEEDLE="CONSUMER APP STORY TITLE BLOCKER"
 
 # ─────────────────────────────────────────────────────────────
@@ -138,7 +138,7 @@ expect_pass_silent "N6 DS-internal stories.tsx out of scope → silent"
 
 # N7. Out-of-scope path: non-story file in apps/ → silent
 #     (near-miss: same dir, plain .tsx not .stories.tsx)
-run_hook "Write" "/repo/apps/order-dashboard/src/App.tsx" \
+run_hook "Write" "$TMP_DIR/apps/order-dashboard/src/App.tsx" \
   "export default { title: 'Whatever' };"
 expect_pass_silent "N7 apps/ non-story .tsx out of scope → silent"
 
@@ -151,9 +151,29 @@ run_hook "Write" "$APP_STORY" ""
 expect_pass_silent "N9 empty content → silent"
 
 # N10. .stories.ts (not tsx) in scope, correct prefix → silent (extension coverage)
-run_hook "Write" "/repo/apps/order-dashboard/src/App.stories.ts" \
+run_hook "Write" "$TMP_DIR/apps/order-dashboard/src/App.stories.ts" \
   "export default { title: 'Apps/order-dashboard/Overview' };"
 expect_pass_silent "N10 .stories.ts correct prefix → silent"
+
+# ── 巢狀路徑(2026-11-27 M10 同族:與 escape marker 計數共用 governance_app_name_for_path)──
+# app 名 = 相對專案根、apps/ 之後第一段。舊貪婪 sed 取最後一個 apps/<x>/ → 下面 A1 要求 Apps/zzz/、A2 要求 Apps/proj/
+NESTED_STORY="$TMP_DIR/apps/order-dashboard/src/apps/zzz/Board.stories.tsx"
+# A1. apps/order-dashboard/src/apps/zzz/… 屬於 order-dashboard:寫 Apps/order-dashboard/ → silent(舊:BLOCK,要 Apps/zzz/)
+run_hook "Write" "$NESTED_STORY" "export default { title: 'Apps/order-dashboard/Board' };"
+expect_pass_silent "A1 巢狀路徑屬於第一段 app,Apps/order-dashboard/ → silent"
+# A1b. 對照:同一個巢狀檔寫 Apps/zzz/ → BLOCK(舊:silent)
+run_hook "Write" "$NESTED_STORY" "export default { title: 'Apps/zzz/Board' };"
+expect_block "A1b 巢狀路徑寫成最後一段 Apps/zzz/ → BLOCK" "$BLOCK_NEEDLE"
+# A2. 專案根本身在 …/apps/proj/ 底下:專案根 src/ 的 story 不屬於任何 app → 不套 Apps/<app>/ 規則 → silent
+#     (舊貪婪 sed 從絕對路徑取到 proj → 要求 Apps/proj/ → BLOCK)
+NEST_PROJ="$TMP_DIR/outer/apps/proj"
+mkdir -p "$NEST_PROJ/.claude/logs" "$NEST_PROJ/src" "$NEST_PROJ/apps/web/src"
+GOVERNANCE_PROJECT_DIR="$NEST_PROJ" run_hook "Write" "$NEST_PROJ/src/Home.stories.tsx" "export default { title: 'Pages/Home' };"
+expect_pass_silent "A2 專案根在 …/apps/proj/ 底下,專案根 src/ 的 story 不屬於任何 app → silent"
+# A2b. 對照:同一個專案裡 apps/web 的 story 寫 Apps/proj/ → BLOCK(要 Apps/web/)
+GOVERNANCE_PROJECT_DIR="$NEST_PROJ" run_hook "Write" "$NEST_PROJ/apps/web/src/Home.stories.tsx" "export default { title: 'Apps/proj/Home' };"
+expect_block "A2b apps/web 的 story 寫 Apps/proj/ → BLOCK" "$BLOCK_NEEDLE"
+rm -rf "$TMP_DIR/outer"
 
 echo ""
 echo "=== Summary ==="
