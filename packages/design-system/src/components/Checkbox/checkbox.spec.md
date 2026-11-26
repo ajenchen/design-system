@@ -305,6 +305,8 @@ Group 內的 Checkbox 透過 `CheckboxGroupContext` 知道自己在 group 裡:
 
 Horizontal 需 `gap-4` 因 row 的 py 不擴散到左右。
 
+本表同時管 `CheckboxGroup` 與 `RadioGroup` 的 `orientation`;兩者的版面字串都由 `../SelectionControl/selection-item.tsx` 的 `selectionGroupLayoutClass` 提供,不各自寫。
+
 ### Field 整合
 
 `<CheckboxGroup>` 有 `fieldLayout: 'block'` 屬性(跟 RadioGroup 一致),在 `<Field orientation="horizontal">` 內 control area 自動切 `items-start` + padding-top 對齊第一個 item 的 label 第一行。

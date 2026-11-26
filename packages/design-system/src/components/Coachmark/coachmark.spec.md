@@ -264,4 +264,5 @@ disabled / layout-space 繼承 Popover(鎖 `data-layout-space="md"` 保持 heade
 
 - `aspect-ratio.spec.md`
 - `overlay-surface.spec.md`
+- `pagination.spec.md`
 - `popover.spec.md`

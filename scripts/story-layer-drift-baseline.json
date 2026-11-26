@@ -16,7 +16,7 @@
     "div-heading": 0,
     "unknown-typography": 0,
     "story-counter-example": 4,
-    "layout-space-magic-ok": 301
+    "layout-space-magic-ok": 300
   },
   "files": {
     "packages/design-system/src/components/AccountMenu/account-menu.stories.tsx": {
@@ -82,8 +82,8 @@
       "layout-space-magic-ok": {
         "count": 2,
         "hits": [
-          "352a30033899",
-          "ed0d4093a9b6"
+          "ed0d4093a9b6",
+          "fdc11a475418"
         ]
       }
     },
@@ -100,7 +100,7 @@
       "layout-space-magic-ok": {
         "count": 4,
         "hits": [
-          "7b69709cc717",
+          "477845bc4648",
           "e7035f58379d",
           "ed0d4093a9b6",
           "ed0d4093a9b6"
@@ -112,7 +112,7 @@
         "count": 2,
         "hits": [
           "2a3d2a7e2791",
-          "d7784dd691c1"
+          "8683ee03168a"
         ]
       }
     },
@@ -128,13 +128,13 @@
       "layout-space-magic-ok": {
         "count": 7,
         "hits": [
+          "1d6fc2e75bc1",
           "24b4968c6808",
           "2eb690f8e049",
           "91f9be4a1d5b",
           "96dcb223326f",
-          "a977051c9cf5",
-          "ae124d46a247",
-          "cba16fb45611"
+          "db1118f22972",
+          "fb90923d5080"
         ]
       }
     },
@@ -196,7 +196,7 @@
       "layout-space-magic-ok": {
         "count": 1,
         "hits": [
-          "3b182c8a94fc"
+          "be267c864d74"
         ]
       }
     },
@@ -289,7 +289,7 @@
       "layout-space-magic-ok": {
         "count": 1,
         "hits": [
-          "8de37197d71c"
+          "b5fbdd3ec1bb"
         ]
       }
     },
@@ -317,14 +317,6 @@
         "count": 1,
         "hits": [
           "ed0d4093a9b6"
-        ]
-      }
-    },
-    "packages/design-system/src/components/RadioGroup/radio-group.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "3e70d9144c98"
         ]
       }
     },
@@ -357,7 +349,7 @@
       "layout-space-magic-ok": {
         "count": 1,
         "hits": [
-          "0e6e9a5ed73a"
+          "e9bcf7ee90bb"
         ]
       }
     },
@@ -397,14 +389,14 @@
         "hits": [
           "2eb690f8e049",
           "2eb690f8e049",
-          "49967b1d49a0",
-          "49967b1d49a0",
           "7257f09b0745",
-          "9027e2e5ea66",
-          "9027e2e5ea66",
-          "9027e2e5ea66",
-          "9027e2e5ea66",
-          "9027e2e5ea66"
+          "77bd04b76da7",
+          "77bd04b76da7",
+          "77bd04b76da7",
+          "77bd04b76da7",
+          "77bd04b76da7",
+          "b31067606c1c",
+          "b31067606c1c"
         ]
       }
     },
@@ -415,9 +407,9 @@
           "1f549f550f4c",
           "1f549f550f4c",
           "2eb690f8e049",
-          "e28ccd117f22",
           "ed0d4093a9b6",
-          "ed0d4093a9b6"
+          "ed0d4093a9b6",
+          "fafa8daa58a5"
         ]
       }
     },
@@ -479,8 +471,8 @@
       "layout-space-magic-ok": {
         "count": 2,
         "hits": [
-          "6508af65e97e",
-          "c919bf408adb"
+          "9c4bf1446592",
+          "e0a7a024e911"
         ]
       }
     },
@@ -504,13 +496,13 @@
       "layout-space-magic-ok": {
         "count": 7,
         "hits": [
-          "f1d9e4225ce4",
-          "f1d9e4225ce4",
-          "f1d9e4225ce4",
-          "f1d9e4225ce4",
-          "f1d9e4225ce4",
-          "f1d9e4225ce4",
-          "f1d9e4225ce4"
+          "8b494561b4b5",
+          "8b494561b4b5",
+          "8b494561b4b5",
+          "8b494561b4b5",
+          "8b494561b4b5",
+          "8b494561b4b5",
+          "8b494561b4b5"
         ]
       }
     },
@@ -518,12 +510,12 @@
       "layout-space-magic-ok": {
         "count": 6,
         "hits": [
-          "b42b3b2dc497",
-          "b42b3b2dc497",
-          "c251bdfcbab7",
+          "6d07a9d845b6",
+          "7324d363bce3",
+          "7324d363bce3",
           "c7c24caa9823",
-          "d84c2a50aa08",
-          "fdc25b59af8f"
+          "d6b46713a6c6",
+          "fb0a24fc5c28"
         ]
       }
     },
@@ -532,7 +524,6 @@
         "count": 78,
         "hits": [
           "087d8635074b",
-          "0a4c7f85cf97",
           "0bce48f677f7",
           "0f8b16603ad4",
           "0f8b16603ad4",
@@ -558,6 +549,7 @@
           "3fb45e02d67e",
           "460a98b2b7ba",
           "46ac55d9736d",
+          "47c5cec26ff6",
           "48cca825e893",
           "49bc0f551892",
           "50779c05bbdd",
@@ -566,8 +558,10 @@
           "58a62d9725e0",
           "5a3690da8ec6",
           "5b29948ac710",
+          "5c141309a78e",
           "600e286225a2",
           "63dfc7ccaa17",
+          "646da066736a",
           "6d656e3e3e43",
           "75034be5c5f6",
           "8017d9c053be",
@@ -578,7 +572,6 @@
           "88ff40071121",
           "8f5ade646a85",
           "9fc991968666",
-          "a4ab054314c5",
           "b0c50982df04",
           "b1de465fd4df",
           "b1de465fd4df",
@@ -588,7 +581,6 @@
           "c8c130a4558d",
           "c8c130a4558d",
           "cd14379aab33",
-          "d163f4fa4932",
           "d81ee35a4d6b",
           "dd5cdcb7d800",
           "e233c7271af4",
@@ -601,8 +593,8 @@
           "ed0d4093a9b6",
           "ed0d4093a9b6",
           "ed0d4093a9b6",
-          "ee4434f22514",
           "f1a319016226",
+          "f51af80636ad",
           "f76fc5930b6b",
           "f81bb652bdbe",
           "f81bb652bdbe",

@@ -13,6 +13,15 @@
  *        `--selftest` 以頁面層注入三種病(每個圓都 tabindex=0 / 整組拿掉停留點 / 進群組時焦點被搶到非已選的圓)各自必須被指名紅
  *   綠: 每組兩個方向各停一次、停在對的圓上時綠;Tab 次數是真按數出來的,不是從 tabindex 屬性推算
  *
+ *   保證(排列方向,2026-11-26 加): RadioGroup 的 orientation 真的決定版面,版面與 CheckboxGroup 同一張表(checkbox.spec.md「Orientation」,
+ *        該檔「Radio 共用本規格」)—— aria-orientation="horizontal" 的群組前兩個選項在同一列、同一列相鄰選項的水平間距 = Checkbox 展示頁
+ *        「水平排列」那一組實量的相鄰間距(不寫死 16,兩邊都量);RadioGroup 自己 story 裡的直排群組,相鄰選項列距 = 0(零外部間距,
+ *        列距由 SelectionItem 的 py 獨家擁有)。全部量 getBoundingClientRect 像素,不看 class 字串。
+ *   紅: 橫排群組的選項上下堆疊(2026-11-26 前根節點寫死 grid 的實況)/ 同一列間距 ≠ Checkbox 橫排 / 直排列距 ≠ 0 → 指名 story、第幾組、
+ *        實量值並 exit 1;`--selftest` 另以頁面層樣式注入三種病(橫排變直排 / 橫排間距改 8 / 直排加 8 列距)各自必須被指名紅。
+ *        Checkbox 參考組量不到、或量到的橫排群組 / 直排選項對少於下限 = 儀器失效(exit 2),不當通過。
+ *        AgentPanel 決策卡的單選題是卡片式選項(卡片間距屬該元件),直排列距只量 RadioGroup 自己的 story。
+ *
  * ── 為什麼有這支 ──
  *
  * 2026-11-04 n6(決策卡清除選取)審查時實按發現:RadioGroup 每個圓各是一個 Tab 停留點,三個圓 Tab 三下才出得去。
@@ -50,7 +59,11 @@ const SELFTEST = process.argv.includes('--selftest')
 requireFreshStorybookBuild(STATIC, [
   'packages/design-system/src/components/RadioGroup/radio-group.tsx',
   'packages/design-system/src/components/RadioGroup/radio-group.stories.tsx',
+  'packages/design-system/src/components/RadioGroup/radio-group.anatomy.stories.tsx',
   'packages/design-system/src/components/AgentPanel/agent-panel.tsx',
+  'packages/design-system/src/components/SelectionControl/selection-item.tsx',
+  'packages/design-system/src/components/Checkbox/checkbox-group.tsx',
+  'packages/design-system/src/components/Checkbox/checkbox.stories.tsx',
 ])
 
 /**
@@ -63,6 +76,13 @@ const CONSUMERS = ['design-system-components-agentpanel-展示--decision-card-op
 const STORIES = [...OWN, ...CONSUMERS]
 if (OWN.length < 5) { console.error(`✗ INSTRUMENT-FAIL RadioGroup Tab 停留點:index.json 只找到 ${OWN.length} 則 RadioGroup story(建置不完整?)`); process.exit(2) }
 for (const id of CONSUMERS) if (!index.entries[id]) { console.error(`✗ INSTRUMENT-FAIL RadioGroup Tab 停留點:index.json 沒有 ${id}`); process.exit(2) }
+/** 排列方向的參考組:Checkbox 展示頁「水平排列」(<CheckboxGroup orientation="horizontal">),橫排間距的對照值從這裡實量。 */
+const CHECKBOX_HORIZONTAL = 'design-system-components-checkbox-展示--horizontal'
+if (!index.entries[CHECKBOX_HORIZONTAL]) { console.error(`✗ INSTRUMENT-FAIL RadioGroup 排列方向:index.json 沒有 ${CHECKBOX_HORIZONTAL}(橫排間距沒有參考值)`); process.exit(2) }
+/** 像素容差:相鄰兩列的邊界是同一個版面算出來的,只容許次像素捨入。 */
+const PX_TOLERANCE = 0.5
+/** 樣式注入的病(只在 --selftest):<style> 一次插進 head,之後才渲染的群組照樣吃到。 */
+const STYLE = (css) => `(() => { const s = document.createElement('style'); s.setAttribute('data-selftest-fault', ''); s.textContent = ${JSON.stringify(css)}; (document.head || document.documentElement).appendChild(s) })()`
 
 /** 頁面層注入的病要從安裝那一刻就成立,也要蓋到之後才渲染的群組(先跑一次再觀察之後的變動)。 */
 const SICK = (fn) => `(() => { const f = ${fn}; f(); new MutationObserver(f).observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ['tabindex', 'data-state'] }) })()`
@@ -84,6 +104,80 @@ const FAULTS = {
     // 從群組外進來(relatedTarget 不在本組的圓 / 控件上;Radix 的群組根節點先拿到焦點再轉給已選的圓,根節點本身算「外面」)且落在已選的圓 → 改送到本組另一個可用的圓
     script: `document.addEventListener('focusin', (e) => { const t = e.target; const g = t instanceof Element && t.getAttribute('role') === 'radio' && t.closest('[role="radiogroup"]'); if (!g || (e.relatedTarget && e.relatedTarget !== g && g.contains(e.relatedTarget))) return; if (t.getAttribute('aria-checked') !== 'true') return; const other = [...g.querySelectorAll('[role="radio"]:not([disabled])')].find((r) => r !== t); if (other) setTimeout(() => other.focus(), 0) }, true)`,
   },
+  // 排列方向的三種病只動版面,不需要真按 Tab(layoutOnly:跳過停留點的走訪,只量版面)
+  horizontalStacked: {
+    layoutOnly: true,
+    expect: ['horizontal-row'],
+    what: '④ 橫排群組被排成直排(2026-11-26 前的實況:根節點寫死 grid,orientation 只改方向鍵)',
+    script: STYLE('[role="radiogroup"][aria-orientation="horizontal"] { display: grid !important }'),
+  },
+  horizontalGap: {
+    layoutOnly: true,
+    expect: ['horizontal-gap'],
+    what: '⑤ 橫排間距跟 Checkbox 橫排不一樣(改成 8px)',
+    script: STYLE('[role="radiogroup"][aria-orientation="horizontal"] { column-gap: 8px !important }'),
+  },
+  verticalGap: {
+    layoutOnly: true,
+    expect: ['vertical-gap'],
+    what: '⑥ 直排群組外加列距(修前 anatomy 範例手寫的 flex flex-col gap-2 = 8px)',
+    script: STYLE('[role="radiogroup"]:not([aria-orientation="horizontal"]) { display: flex !important; flex-direction: column !important; row-gap: 8px !important }'),
+  },
+}
+
+/**
+ * 一個群組的「選項列」= 群組的直屬子元素裡含有本組圓的那些(帶 label 的是 SelectionItem 那一列,沒 label 的就是圓本身)。
+ * 回傳每列的框;sel = 群組選擇器,role = 選項的 role(radio / checkbox)。
+ */
+const measureRows = (sel, role) => page.evaluate(({ sel, role }) => {
+  return [...document.querySelectorAll(`#storybook-root ${sel}`)].map((g, gi) => {
+    const own = (el) => (el.getAttribute('role') === role ? el : el.querySelector(`[role="${role}"]`))
+    const rows = [...g.children].filter((c) => { const r = own(c); return r && (role !== 'radio' || r.closest('[role="radiogroup"]') === g) })
+    const visible = g.checkVisibility() && g.getBoundingClientRect().width > 0
+    const name = g.getAttribute('aria-label') || (g.getAttribute('aria-labelledby') && document.getElementById(g.getAttribute('aria-labelledby').split(' ')[0])?.textContent?.trim()) || ''
+    return {
+      gi, visible, name: name.slice(0, 30), orientation: g.getAttribute('aria-orientation'),
+      rows: rows.map((c) => { const b = c.getBoundingClientRect(); return { top: b.top, bottom: b.bottom, left: b.left, right: b.right } }),
+    }
+  })
+}, { sel, role })
+
+/** Checkbox 橫排參考組的相鄰間距(像素,實量);量不到 = 儀器失效。 */
+async function measureCheckboxReference() {
+  await openStory(page, storyUrl(CHECKBOX_HORIZONTAL), { settleFrames: 10, notFound: server.notFound })
+  const groups = (await measureRows('[role="group"]', 'checkbox')).filter((g) => g.visible && g.rows.length >= 2)
+  if (groups.length !== 1) throw new StoryRenderInstrumentError(`${CHECKBOX_HORIZONTAL}:應有一組看得見、至少兩個選項的 CheckboxGroup,實得 ${groups.length} 組`)
+  const [a, b] = groups[0].rows
+  if (Math.abs(a.top - b.top) > PX_TOLERANCE) throw new StoryRenderInstrumentError(`${CHECKBOX_HORIZONTAL}:參考組前兩個選項不在同一列(top ${a.top} / ${b.top})—— 參考值不可用`)
+  const gap = b.left - a.right
+  if (!(gap > 0)) throw new StoryRenderInstrumentError(`${CHECKBOX_HORIZONTAL}:參考組相鄰間距 ${gap}px ≤ 0 —— 參考值不可用`)
+  return gap
+}
+
+/** 本則 story 的排列方向檢查(見檔頭「保證(排列方向)」);own = 是不是 RadioGroup 自己的 story(直排列距只量自己的)。 */
+async function layoutResults(id, own) {
+  const results = []
+  for (const g of (await measureRows('[role="radiogroup"]', 'radio')).filter((x) => x.visible && x.rows.length >= 2)) {
+    const tag = `${id} 第 ${g.gi + 1} 組${g.name ? `「${g.name}」` : ''}(${g.rows.length} 個選項)`
+    const r = g.rows
+    if (g.orientation === 'horizontal') {
+      layoutMeasured.horizontalGroups++
+      const sameRow = Math.abs(r[0].top - r[1].top) <= PX_TOLERANCE
+      results.push({ id: 'horizontal-row', story: id, pass: sameRow, label: `${tag} orientation="horizontal" 前兩個選項在同一列`, detail: `第 1 / 2 個選項 top = ${r[0].top.toFixed(1)} / ${r[1].top.toFixed(1)}px` })
+      for (let i = 1; i < r.length; i++) {
+        if (Math.abs(r[i - 1].top - r[i].top) > PX_TOLERANCE) continue // 換行到下一列的那一對不量水平間距
+        const gap = r[i].left - r[i - 1].right
+        results.push({ id: 'horizontal-gap', story: id, pass: Math.abs(gap - checkboxGap) <= PX_TOLERANCE, label: `${tag} 第 ${i} / ${i + 1} 個選項水平間距 = Checkbox 橫排 ${checkboxGap}px`, detail: `實量 ${gap.toFixed(1)}px` })
+      }
+    } else if (own) {
+      for (let i = 1; i < r.length; i++) {
+        layoutMeasured.verticalPairs++
+        const gap = r[i].top - r[i - 1].bottom
+        results.push({ id: 'vertical-gap', story: id, pass: Math.abs(gap) <= PX_TOLERANCE, label: `${tag} 直排第 ${i} / ${i + 1} 個選項列距 = 0(零外部間距)`, detail: `實量 ${gap.toFixed(1)}px` })
+      }
+    }
+  }
+  return results
 }
 
 const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
@@ -159,7 +253,9 @@ async function runStory(id, fault) {
   const groups = (await listGroups()).filter((g) => g.visible && g.enabled.length > 0)
   if (!groups.length && CONSUMERS.includes(id)) throw new StoryRenderInstrumentError(`${id}:消費者 story 裡沒有看得見、可操作的 radiogroup`)
   measured.set(id, groups.length)
-  const results = []
+  // 排列方向先量(還沒插哨兵、還沒按鍵,版面是 story 原樣)
+  const results = await layoutResults(id, OWN.includes(id))
+  if (f?.layoutOnly) return results
   for (const g of groups) {
     const expectTarget = g.checked >= 0 ? g.checked : g.enabled[0]
     const cap = g.radios + g.otherFocusables + 2
@@ -184,6 +280,19 @@ const report = []
 const measured = new Map()
 /** 下限:2026-11-05 在 52ec0b6a 建置實數 RadioGroup 自己的 story 合計 20 組;少於 15 組 = story 被改到量不到,不是通過。 */
 const MIN_GROUPS = 15
+/** 排列方向量到的橫排群組 / 直排相鄰選項對(主跑時印出;低於下限 = 儀器失效)。 */
+const layoutMeasured = { horizontalGroups: 0, verticalPairs: 0 }
+/** 下限:2026-11-26 實數見主跑輸出;橫排 = 展示頁「水平排列」+ 設計規格頁的即時預覽兩組,少於 2 組 = 橫排範例被改到量不到。 */
+const MIN_HORIZONTAL_GROUPS = 2
+const MIN_VERTICAL_PAIRS = 10
+let checkboxGap
+try {
+  checkboxGap = await measureCheckboxReference()
+} catch (e) {
+  console.error(`✗ INSTRUMENT-FAIL RadioGroup 排列方向:${e?.message ?? String(e)}`)
+  await browser.close(); await server.stop(); process.exit(2)
+}
+console.log(`Checkbox 橫排參考間距(${CHECKBOX_HORIZONTAL}):${checkboxGap}px`)
 for (const fault of runs) {
   const results = []
   let error = null
@@ -225,10 +334,15 @@ if (ownGroups < MIN_GROUPS) {
   console.error(`✗ INSTRUMENT-FAIL RadioGroup Tab 停留點:RadioGroup 自己的 story 只量到 ${ownGroups} 組(下限 ${MIN_GROUPS})—— story 被改到量不到,不能算通過`)
   process.exit(2)
 }
+console.log(`排列方向量到:橫排群組 ${layoutMeasured.horizontalGroups} 組、直排相鄰選項 ${layoutMeasured.verticalPairs} 對`)
+if (layoutMeasured.horizontalGroups < MIN_HORIZONTAL_GROUPS || layoutMeasured.verticalPairs < MIN_VERTICAL_PAIRS) {
+  console.error(`✗ INSTRUMENT-FAIL RadioGroup 排列方向:橫排群組 ${layoutMeasured.horizontalGroups} 組(下限 ${MIN_HORIZONTAL_GROUPS})/ 直排相鄰選項 ${layoutMeasured.verticalPairs} 對(下限 ${MIN_VERTICAL_PAIRS})—— 範例被改到量不到,不能算通過`)
+  process.exit(2)
+}
 const failed = results.filter((r) => !r.pass)
 for (const r of failed) console.log(`✗ ${r.id} | ${r.label} | ${r.detail}`)
 if (failed.length) {
-  console.error(`\n✗ RadioGroup Tab 停留點:${failed.length} / ${results.length} 格失敗(${new Set(failed.map((r) => r.story)).size} / ${STORIES.length} 則 story)`)
+  console.error(`\n✗ RadioGroup Tab 停留點 / 排列方向:${failed.length} / ${results.length} 格失敗(${new Set(failed.map((r) => r.story)).size} / ${STORIES.length} 則 story)`)
   process.exit(1)
 }
-console.log(`✓ RadioGroup Tab 停留點全過:${STORIES.length} 則 story、${results.length} 格(每組 Tab / Shift+Tab 各停一次,停在已選 / 第一個可用的圓)`)
+console.log(`✓ RadioGroup Tab 停留點與排列方向全過:${STORIES.length} 則 story、${results.length} 格(每組 Tab / Shift+Tab 各停一次,停在已選 / 第一個可用的圓;橫排同一列、間距 = Checkbox 橫排 ${checkboxGap}px;直排列距 0)`)

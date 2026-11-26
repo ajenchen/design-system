@@ -50,6 +50,25 @@ const { t } = useI18n()
 - **infrastructure**:✅ shipped(`i18n-context.tsx`);root 出口 ✅ 2026-10-27
 - **元件逐步 adopt**:Notice / FileViewer labels object / etc 已 Route A prop-based;Route B 可並存,未來有需要再逐元件 opt-in 換成 context reader
 
+### 已 opt-in I18nProvider 的元件(componentKey → 鍵)
+
+照原始碼 `t('<componentKey>', '<鍵>', …)` 列(2026-11-26 整理;新增 opt-in 時同一次改這張表):
+
+| componentKey | 鍵 | 元件 |
+|---|---|---|
+| `app-shell` | `skipLinks` / `skipToMain` / `closePanel` | AppShell |
+| `breadcrumb` | `navigation` / `showCollapsed` | Breadcrumb |
+| `dialog` | `close` | Dialog |
+| `sheet` | `close` | Sheet |
+| `popover` | `close` | PopoverHeader 的 ×(DataTable 欄位顯示面板的 × 也是它) |
+| `file-upload` | `buttonLabel` / `loadingTitle` / `title` / `descriptionMultiple` / `descriptionSingle` | FileUpload |
+| `pagination` | `label` / `previous` / `next` / `pageSize` | Pagination(帶數字的 range 資訊與「N 筆/頁」只經 `labels` 函式,見 pagination.spec.md「完整形態」) |
+| `profile-card` | `chat` / `audioCall` / `viewMore` | ProfileCard |
+| `sidebar` | `resizeHandle` / `overlayTitle` | Sidebar |
+| `agent-panel` | `titleThinking` / `titleDone`(AgentThinking);`decision` + `AgentDecisionCardLabels` 的鍵首字大寫(AgentDecisionCard,例:`decisionCancel` / `decisionNext` / `decisionErrorOther`) | AgentPanel 家族共用一個 componentKey(2026-11-26;兩者的 `labels` prop 照舊最優先)。決策卡的鍵加 `decision` 前綴:卡上的 `submit` / `cancel` / `next` / `other` 跟面板其他零件同字不同義,同一個 namespace 不加前綴會撞名 |
+
+只經 `labels` prop、沒有 I18nProvider 這一層的(Route A):Coachmark、FileViewer、Calendar、DataTable 排序 / 篩選 / 欄位顯示三個工具面板(欄位顯示面板 2026-11-26 起)等。閘:`scripts/i18n-labels-override-invariant.mjs` 量 Pagination / AgentThinking / AgentDecisionCard「傳進去真的換字」;`scripts/data-table-panel-reset-clear-invariant.mjs` (5) / (5b) 量排序與欄位顯示面板的 `labels`。
+
 ## 世界級對照
 
 - **Material MUI**:`createTheme({ locale })` — monolithic locale

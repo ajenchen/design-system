@@ -163,6 +163,7 @@
     "test:modifier-click-focus": "node scripts/modifier-click-focus-invariant.mjs --selftest && node scripts/modifier-click-focus-invariant.mjs",
     "test:data-table-sort-cycle": "node scripts/test-data-table-sort-cycle.mjs && node scripts/test-data-table-sort-cycle.mjs --selftest",
     "test:link-input-url-display": "node scripts/test-link-input-url-display-invariant.mjs",
+    "test:i18n-labels-override": "node scripts/test-i18n-labels-override-invariant.mjs",
     "test:link-input-clear": "node scripts/link-input-clear-invariant.mjs && node scripts/link-input-clear-invariant.mjs --selftest",
     "test:link-input-error-text": "node scripts/link-input-error-text-invariant.mjs && node scripts/link-input-error-text-invariant.mjs --selftest",
     "test:data-table-handle-clip": "node scripts/data-table-handle-clip-invariant.mjs --selftest && node scripts/data-table-handle-clip-invariant.mjs",

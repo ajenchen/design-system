@@ -221,6 +221,9 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 
 - Anatomy:`[標題+chevron][內文:border-l border-divider + 左縮排 12 + 上距 8 之步驟串流]`。
 - 標題狀態換字:進行中「思考中」/完成「思考過程」;AI 回覆中自動展開、回覆完自動收合。
+- 標題的字可換(2026-11-26 起,E11;之前寫死):`labels?: Partial<AgentThinkingLabels>` —— `titleThinking`(進行中)/ `titleDone`(完成);
+  取值順序 = `labels` → I18nProvider 的 `agent-panel` 那一組(AgentPanel 家族共用的 componentKey;鍵名同上)→ DS 預設「思考中 / 思考過程」(`../../lib/i18n/README.md`「Fallback chain」)。
+  同家族的 AgentDecisionCard 同一套三層(`./agent-decision-card.spec.md`「字」條);閘 `scripts/i18n-labels-override-invariant.mjs`(T 列)。
 - Chevron=accordion 慣例(Suffix 位、rotate-180、減少動態下不轉);旋轉跟下方思考內容同一份時長與曲線 —— `disclosureIndicatorMotion`,`--motion-duration-disclosure` 200ms、`ease-out`(本檔「動畫總表」;2026-10-13 起,原本 150ms 與內容 200ms 不同步;owner = `tokens/motion/motion.spec.md「展開箭頭跟它打開的東西同步」`);色=`text-fg-muted`
   恆定(同 Select/Combobox 觸發器 chevron:select.tsx `text-fg-muted`),**不吃微光、不隨懸停變色**
   (Accordion 亦僅 chevron 靜色;2026-09-02 拍板)。

@@ -558,6 +558,7 @@
           "scripts/test-data-table-invariants.mjs",
           "scripts/test-data-table-scroll-perception.mjs",
           "scripts/test-dialog-height-invariant.mjs",
+          "scripts/test-i18n-labels-override-invariant.mjs",
           "scripts/test-radio-group-tab-stop-invariant.mjs",
           "scripts/test-select-all-footer-invariant.mjs",
           "scripts/test-sidebar-label-matches-header-invariant.mjs",

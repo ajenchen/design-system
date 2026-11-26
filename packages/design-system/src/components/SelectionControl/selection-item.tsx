@@ -49,6 +49,18 @@ export const selectionItemStyles = cva(
   }
 )
 
+// ── Selection Group 版面(CheckboxGroup / RadioGroup 共用)──
+// 規格唯一住所 = checkbox.spec.md「Orientation」(該檔「Radio 共用本規格」):
+//   vertical(預設)= `grid`,零外部間距 —— 列距由每列 SelectionItem 的 py 獨家擁有(「Canonical 鐵律:零外部 gap」)
+//   horizontal      = `flex flex-wrap gap-4` —— 列的 py 不往左右擴散,並排才需要顯式間距
+// 兩個群組元件都呼叫這一支,不各自寫字串:2026-11-26 前 RadioGroup 根節點寫死 `grid`,
+// orientation="horizontal" 只交給 Radix 改方向鍵與 aria-orientation、版面照樣直排(DS 自家範例因此手寫 gap-4 加豁免)。
+// 機械閘 scripts/radio-group-tab-stop-invariant.mjs 量 Radio 橫排同一列、間距 = Checkbox 橫排實量值,直排列距 = 0。
+export type SelectionGroupOrientation = 'vertical' | 'horizontal'
+export function selectionGroupLayoutClass(orientation: SelectionGroupOrientation | undefined = 'vertical'): string {
+  return orientation === 'horizontal' ? 'flex flex-wrap gap-4' : 'grid'
+}
+
 type SizeKey = 'sm' | 'md' | 'lg'
 
 // Avatar 尺寸 + Icon 尺寸從 item-layout module 共用,不在此 re-declare(避免漂移)
