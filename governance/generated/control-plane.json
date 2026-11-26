@@ -141,8 +141,8 @@
     {
       "carrierProjections": [],
       "excludes": [],
-      "files": 220,
-      "hash": "sha256:3fda64570a3cb4d70bd06b8190da847ae2d7579ec51abe1486bb6882e545f7d5",
+      "files": 221,
+      "hash": "sha256:34836c89819553444e762e58554d89ab6256faf9d71ebaa269f1db836e5bd143",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -954,12 +954,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:ade6f01f003cd0829970df9e6fd79394f64424a5a7fb895bc759c2b28f673263",
+      "hash": "sha256:c5b7f4be847f9fed82ea9e02f954c6d3c8426f9246d7b0e6759df1b08a0dee80",
       "id": "exact-fork-governance-builder",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/build-fork-governance.mjs",
-      "size": 121890,
+      "size": 122050,
       "type": "file"
     },
     {
@@ -3094,7 +3094,7 @@
         "scripts/generated/"
       ],
       "files": 819,
-      "hash": "sha256:113ee1f1c474c236fd78fa8bc8b105bef69b244a44a37ae4086571f0d4ab7bb5",
+      "hash": "sha256:6e084a5e82d989d22514e865d4111802e90e931df8cf54721da4653c100092e1",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

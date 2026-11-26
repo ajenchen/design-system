@@ -1232,7 +1232,8 @@ export function buildCorpus({
   // valid policy replay into reserved integrity exit 70 on every provider and in hooks-off CI.
   // tsx-governance-analysis.mjs:check_item_list_gap.sh(SHIP_AS_IS)的 TypeScript AST 量法(2026-11-22 WP-USER)。
   mkdirSync(join(outDir, 'hooks/lib'), { recursive: true })
-  for (const helper of ['_hook_integrity.sh', '_provider_paths.sh', '_micro_geometry.sh', '_ds_removed_names.sh', 'tsx-governance-analysis.mjs']) {
+  // _comment_mask.sh(2026-11-27 上游判定 E16 + E14):opacity / layout-space / consumer 品質三支出貨 hook 共用的註解遮罩。
+  for (const helper of ['_hook_integrity.sh', '_provider_paths.sh', '_micro_geometry.sh', '_comment_mask.sh', '_ds_removed_names.sh', 'tsx-governance-analysis.mjs']) {
     const helperPath = assertRegularSource(
       join(canonicalSources.hooksDir, 'lib', helper),
       `canonical fork hook helper ${helper}`,

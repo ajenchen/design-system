@@ -10,7 +10,7 @@
   "contractDigest": "sha256:2999aed4c75bc36823db0b4ea5729744c0920f74b1cd2b2e1bfb4110dd825ef1",
   "files": [
     {
-      "hash": "sha256:4dd42fe39ec364d428f7308d56a727803c8a636462110e2a0a1a9dc08a9a95f4",
+      "hash": "sha256:039a72b8e7f9beb73be2276886d812c98710e8371855d8abbe3447c33632ebf9",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 59307,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:eb65b39efe0ca790fccc0930d4a324466ecbb2bf72e3b07c96b2a3d765a9a543",
+      "hash": "sha256:3dcf3f50d8c9308f1d1fe1911b9283d62c5375f102c9d9a57668905dee4e247f",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 140204,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:8e97e40708f43a0800d7f170655913d2d52d8e7ed491a27c9d50251b662f8a5d",
+  "inputDigest": "sha256:2c2452f0e40679377083007a65eb635e2e5dc4213ccadd5867b73fb322ee5da4",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:dfb36e6acc5be41c62322a3da887e2a54ce03296556f7a208a28972c16030c9d",
+  "snapshotDigest": "sha256:9637d3c86de6c480232abb95bdf09a05515a963e9926f3d0476ff41553dc73b7",
   "sources": [
     {
       "hash": "sha256:f2452198c08c44c99dc7afcfb7f78f834d7cc2a8c97d041571db15779f388c6c",
@@ -653,8 +653,8 @@
     {
       "carrierProjections": [],
       "excludes": [],
-      "files": 220,
-      "hash": "sha256:3fda64570a3cb4d70bd06b8190da847ae2d7579ec51abe1486bb6882e545f7d5",
+      "files": 221,
+      "hash": "sha256:34836c89819553444e762e58554d89ab6256faf9d71ebaa269f1db836e5bd143",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1466,12 +1466,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:ade6f01f003cd0829970df9e6fd79394f64424a5a7fb895bc759c2b28f673263",
+      "hash": "sha256:c5b7f4be847f9fed82ea9e02f954c6d3c8426f9246d7b0e6759df1b08a0dee80",
       "id": "exact-fork-governance-builder",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/build-fork-governance.mjs",
-      "size": 121890,
+      "size": 122050,
       "type": "file"
     },
     {
@@ -3606,7 +3606,7 @@
         "scripts/generated/"
       ],
       "files": 819,
-      "hash": "sha256:113ee1f1c474c236fd78fa8bc8b105bef69b244a44a37ae4086571f0d4ab7bb5",
+      "hash": "sha256:6e084a5e82d989d22514e865d4111802e90e931df8cf54721da4653c100092e1",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

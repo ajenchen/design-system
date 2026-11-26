@@ -287,7 +287,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/governance-check.mjs",
-      "sha256": "2bcb29b557838e0e61b14541e3f6500120abab5d5cd55d2395ad6ab124693396",
+      "sha256": "cbb7207b3e504073384ca352cfb6a9074782e7de8da630de79132544a67794d2",
       "source": "scripts/governance-check.mjs",
       "classification": null,
       "destination": null
@@ -719,7 +719,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_code_quality.sh",
-      "sha256": "1bc750f6731800d4983c97cbe3c7eb1957b038880fb8759d8fb3c4959932fbe8",
+      "sha256": "b8e8cc55f6189b59547b1bd68e08920db122a74fc20419593b7ed1c37981c9ec",
       "source": "check_consumer_code_quality.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -775,7 +775,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_layout_space_magic_numbers.sh",
-      "sha256": "258126371e53c98fc398399ce429a9aaf3cca9a7d1c1399be47d6de2a23b9a05",
+      "sha256": "b7cc4b89d250edfd3b10d1632c0c7b11ecd2f63d1a01269b11bc1e5e423c9ff3",
       "source": "check_layout_space_magic_numbers.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -783,7 +783,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_opacity_token_usage.sh",
-      "sha256": "fa89c8ae5937e990260ef7572ac95a96ab570515877c54f088f70dba41cba185",
+      "sha256": "574d1c03d0967df6350d62ce0e08f775554abd26d2e8bbd6ed6258c693d1280c",
       "source": "check_opacity_token_usage.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -842,6 +842,14 @@
       "sha256": "a7ac015727ae490fcf8a4cb1e50241a0479a2ab9751adfc80681d8385bd0bcb0",
       "source": "inject_deploy_url_after_push.sh",
       "classification": "SHIP_REWRITTEN",
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "hooks/lib/_comment_mask.sh",
+      "sha256": "d7955b68a07a0334d370f7cec758e03ee6c4fe3b676d38ae1b3cd4d844104e5c",
+      "source": "lib/_comment_mask.sh",
+      "classification": "HELPER",
       "destination": null
     },
     {

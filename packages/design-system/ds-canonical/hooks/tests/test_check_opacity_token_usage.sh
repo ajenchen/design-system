@@ -255,6 +255,23 @@ else
   FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 15. malformed input"
 fi
 
+# ── E16 + E14 (1)(2026-11-27):註解不是程式;豁免標記仍對原文判 ──
+# 16. 行尾註解寫到 opacity-50 → silent(舊實作逐行掃整段:warn)
+run_hook "/repo/packages/design-system/src/components/Foo/foo.tsx" '
+className="opacity-disabled" // 以前用 opacity-50,已換 token
+'
+expect_pass_silent "16. 行尾 // 註解裡的 opacity-50 不算 → silent"
+# 17. {/* … */} 裡的 opacity-30 → silent
+run_hook "/repo/packages/design-system/src/components/Foo/foo.tsx" '
+<div className="opacity-disabled">{/* 不要寫 opacity-30 */}</div>
+'
+expect_pass_silent "17. JSX 註解裡的 opacity-30 不算 → silent"
+# 18. 程式裡真的寫 opacity-50 + 行尾一般註解 → 照 warn(遮罩不吃程式)
+run_hook "/repo/packages/design-system/src/components/Foo/foo.tsx" '
+className="opacity-50" // 半透明
+'
+expect_warn "18. 程式裡的 opacity-50 + 行尾註解 → warn" "M23 / Dim 47 violation"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

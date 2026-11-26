@@ -26,7 +26,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-hook-provider-marker-regex-helper | `packages/design-system/ds-canonical/hooks/lib/provider-marker-regex.mjs` | `sha256:7395275574a3d3c1b65b6e6fc58aedbbd95caf157e0cd5cf07d0107a4531bd65` |
 | canonical-hook-registration-output-contract-helper | `packages/design-system/ds-canonical/hooks/tests/registration-output-contracts.mjs` | `sha256:96c5a30cf956ecd9471b106396e0b80823c9e8e1c29c5b21f052b3bcd68d7fa0` |
 | canonical-hook-tsx-governance-analysis-helper | `packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs` | `sha256:d690a3a67697c7be99ffd54a9eac0c465a5202232c480a3a622ac8ea8159f3a2` |
-| canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:3fda64570a3cb4d70bd06b8190da847ae2d7579ec51abe1486bb6882e545f7d5` |
+| canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:34836c89819553444e762e58554d89ab6256faf9d71ebaa269f1db836e5bd143` |
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:79415aaec40715aa1a90d7d9185faa52b9845893682f5d45087ea87d68149a03` |
 | canonical-references | `packages/design-system/ds-canonical/references` | `sha256:bee3718a897f507c1b9c72772dc7f22830cf1a289f948a74e1798e5a01038e1f` |
 | canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:3aef9c97187af7b905064bbe18f735402b6764580f515e8135eef67c51be0fa7` |
@@ -115,7 +115,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | exact-fleet-reconcile-cli | `infra/governance/bin/reconcile-github.mjs` | `sha256:49d4352b66c59f22866d0e16ab43782ff960cd2aabaca0b858687a5175e8fe03` |
 | exact-fleet-reconcile-journal-schema | `infra/governance/schemas/fleet-reconcile-journal.schema.json` | `sha256:af2d61e41048b6639ca7cb3bef5880908264b41ca4d69746a060c9608cc152b0` |
 | exact-fleet-reconcile-mirror-library | `infra/governance/lib/fleet-reconcile-mirror.mjs` | `sha256:3f475d3847fee3e4dff4ac7d7f6cd4accf9dbfb8ed9087c3a1712e4544c99f0c` |
-| exact-fork-governance-builder | `scripts/build-fork-governance.mjs` | `sha256:ade6f01f003cd0829970df9e6fd79394f64424a5a7fb895bc759c2b28f673263` |
+| exact-fork-governance-builder | `scripts/build-fork-governance.mjs` | `sha256:c5b7f4be847f9fed82ea9e02f954c6d3c8426f9246d7b0e6759df1b08a0dee80` |
 | exact-fork-governance-classification | `scripts/fork-governance-classification.json` | `sha256:b5226ed55f9c08affd75b65fb338cdb4fe47e6764e99c5fe8ae3953d8350047e` |
 | exact-fork-launcher-refresher | `scripts/refresh-fork-launchers.mjs` | `sha256:8d2058e9b32307a80e3a564f18abac6ea093d09e79164f468af5e1893217283f` |
 | exact-gate-meta-test-auditor | `scripts/audit-gate-meta-test-coverage.mjs` | `sha256:e2e87202b2244f23132c4c8654225d79296bb3579e2da54cb255ba0cf153b937` |
@@ -348,7 +348,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:be47fab0695ff6895c60a541f14786692b3032f5aedda5a650563cd5f49c4ec5` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:279d452f559b3d1d85eb3a7e4fed704c0e12826579c80d3ea10b3e0ea80c38ed` |
-| repository-automation-corpus | `scripts` | `sha256:113ee1f1c474c236fd78fa8bc8b105bef69b244a44a37ae4086571f0d4ab7bb5` |
+| repository-automation-corpus | `scripts` | `sha256:6e084a5e82d989d22514e865d4111802e90e931df8cf54721da4653c100092e1` |
 | repository-ignore-boundary | `.gitignore` | `sha256:5d4a413c4947c7d63058cce0c93fa1adfa8c83efb41006e5b3876fd2706d81f8` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |

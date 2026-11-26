@@ -3252,7 +3252,9 @@ if (
         if (!completeContentReplay) {
           add(ruleId, 'BLOCKER', `${relative(repo, file)} violates ${hookName} (${hook.event})`, detail)
           contentViolationDiagnostics.add(diagnostics.at(-1))
-          break
+          // 2026-11-27(上游判定 E15):同一個檔後面的 hook 照樣重播(以前 break → 第一條違規之後的 hook 都不跑,
+          // 與「exhaustive hooks-off replay」不符,產品一次只看得到一條、修完才冒下一條)。每支違規的 hook 各記一筆,訊息格式不變。
+          continue
         }
         const recorded = contentDebtBaselineByKey.get(contentDebtEntryKey(observed))?.items || []
         const unrecorded = contentDebtMinus(observed.items, recorded)

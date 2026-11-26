@@ -743,6 +743,14 @@ try {
     || !(contentBlocked.report.evidence?.staticReplay?.hookExecutions > 0)) {
     throw new Error(`content-only violation bypassed complete replay:${JSON.stringify(contentBlocked.report.evidence?.staticReplay)}`)
   }
+  // 2026-11-27(上游判定 E15):同一個檔違反兩支以上 hook 時,每支各記一筆(以前停在第一支)。
+  // 這個檔同時有原生 <table>、行內 style 的 magic padding 與寫死色碼,至少兩支 hook 會報。改回 break 時這一條紅。
+  const bypassHooks = new Set((contentBlocked.report.diagnostics || [])
+    .map((d) => String(d.message || '').match(/^apps\/template\/src\/GovernanceBypass\.tsx violates (\S+)/)?.[1])
+    .filter(Boolean))
+  if (bypassHooks.size < 2) {
+    throw new Error(`E15: one file violating several hooks must yield one diagnostic per hook, got ${JSON.stringify([...bypassHooks])}`)
+  }
   rmSync(bypassPath)
   console.log('✅ negative: hooks-off exhaustive source replay blocks raw table/magic values')
 

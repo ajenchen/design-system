@@ -31,6 +31,10 @@ source "$(dirname "$0")/lib/_hook_integrity.sh" 2>/dev/null || {
   printf 'GOVERNANCE_INTEGRITY: hook integrity helper unavailable\n' >&2
   exit 70
 }
+source "$(dirname "$0")/lib/_comment_mask.sh" 2>/dev/null || {
+  printf 'GOVERNANCE_INTEGRITY: token registry comment mask unavailable\n' >&2
+  exit 70
+}
 
 _HOOK_CONTEXT_EVENT="PreToolUse"
 _HOOK_OUTPUT_CAPTURE=$(mktemp "${TMPDIR:-/tmp}/check-opacity-token-usage.XXXXXX") || {
@@ -114,11 +118,12 @@ esac
 NEW_CONTENT=$(printf '%s' "$INPUT" | jq -r '.tool_input.content // .tool_input.new_string // ""' 2>/dev/null) \
   || governance_hook_integrity_fail 'token registry content extraction failed'
 [ -z "$NEW_CONTENT" ] && exit 0
-# Per-line escape(2026-07-07 方向 2 升 P0 配套):行內含 `@token-registry-ok: <rationale>` 豁免該行
-governance_hook_grep_capture NEW_CONTENT_FILTERED 'token registry escape filter failed' \
-  "$NEW_CONTENT" -v '@token-registry-ok:'
+# Per-line escape(2026-07-07 方向 2 升 P0 配套):行內含 `@token-registry-ok: <rationale>` 豁免該行(對原文判)。
+# 註解不是程式(2026-11-27 上游判定 E16 + E14 (1)):其餘行掃遮罩後的內容(註解換成等長空白、行號不變)。
+NEW_CONTENT_FILTERED=$(printf '%s' "$NEW_CONTENT" | governance_mask_comments '@token-registry-ok:') \
+  || governance_hook_integrity_fail 'token registry comment mask failed'
 NEW_CONTENT="$NEW_CONTENT_FILTERED"
-[ -z "$NEW_CONTENT" ] && exit 0
+case "$NEW_CONTENT" in *[![:space:]]*) ;; *) exit 0 ;; esac
 
 # The registry is corpus-owned SSOT. The project resolver is still required to validate the active
 # provider project boundary; no hook-relative or opacity-only fallback may silently weaken policy.
