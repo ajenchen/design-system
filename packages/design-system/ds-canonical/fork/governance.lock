@@ -871,7 +871,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/lib/_micro_geometry.sh",
-      "sha256": "3bd4b97d24f26896240af1cbc08097a8a90e05e2762a96c1ae38ef4780c37851",
+      "sha256": "80422cb5f62d2c65223ddc0490b48f559d815b4e19295917f1b94511e29a0e47",
       "source": "lib/_micro_geometry.sh",
       "classification": "HELPER",
       "destination": null
@@ -1527,7 +1527,7 @@
     {
       "schemaVersion": 1,
       "file": "references/utility-registry.json",
-      "sha256": "ad9a703242173d81b60a70e722b04a2960c3cd5f5f7691f7997cc017f10f4fba",
+      "sha256": "368bb47bb8a9cf644a0f5ffb51be82f8024c6cc361ac5d83ad3c6ca6653d67f3",
       "source": "packages/design-system/src/tokens/utility-registry.json",
       "classification": null,
       "destination": null
@@ -1535,7 +1535,7 @@
     {
       "schemaVersion": 1,
       "file": "references/utility-registry.schema.json",
-      "sha256": "a6b97a07e13204e6b58f5b9014ab7be7b67de741531c736cdbc8f81572ac11cd",
+      "sha256": "a1b543ca4c4576ac3a1c6b9f5d130de3c4f884741dc3b8791a01db1cf01682cf",
       "source": "packages/design-system/src/tokens/utility-registry.schema.json",
       "classification": null,
       "destination": null

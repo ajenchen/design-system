@@ -327,6 +327,113 @@ run_hook "Write" "$APP_TSX" "content" \
   'export const L = () => <a href="https://example.com" className="p-4">x</a>;'
 expect_block "M5. href 裡的 // 不是註解,後面的 p-4 照擋 → BLOCK"
 
+# ── H2 + H3 + H4(2026-11-27):規格登記的寫法(utility-registry canonical_micro_geometry.spec_registered_patterns)──
+# 三種規格寫法放行(舊分類器:三格全紅 —— 對照組在交接紀錄);反例照擋。
+# S1. 檔案清單:flex flex-col gap-2,鄰近 .map( 產出 <FileItem(file-item.spec.md「List wrapper 本身不加視覺」)
+run_hook "Write" "$APP_TSX" "content" \
+  'const Attachments = () => (
+  <div className="flex flex-col gap-2">
+    {files.map((f) => <FileItem key={f.id} mode="rich" name={f.name} />)}
+  </div>
+);'
+expect_silent "S1. FileItem 清單 flex-col gap-2(規格寫法)→ silent"
+# S1b. compact 清單 gap-1 同一筆登記
+run_hook "Write" "$APP_TSX" "content" \
+  'const Attachments = () => (
+  <div className="flex flex-col gap-1">
+    {files.map((f) => <FileItem key={f.id} mode="compact" name={f.name} />)}
+  </div>
+);'
+expect_silent "S1b. FileItem 清單 flex-col gap-1(規格寫法)→ silent"
+# S2. 頁面列表列:flex items-start gap-3 px-4 py-3,鄰近頭像 / Item 零件(item-anatomy.spec.md「頁面列表」)
+run_hook "Write" "$APP_TSX" "content" \
+  'const MemberRow = ({ member }) => (
+  <div className="flex items-start gap-3 px-4 py-3">
+    <Avatar src={member.photo} alt={member.name} size={32} />
+    <ItemContent label={member.name} description={member.role} mode="reading" />
+  </div>
+);'
+expect_silent "S2. 頁面列表列 gap-3 px-4 py-3 + Avatar / ItemContent → silent"
+# S3. 浮層清單外框:role=list + flex flex-col py-2,在 DialogBody 底下(overlay-surface.spec.md「List-as-region」)
+run_hook "Write" "$APP_TSX" "content" \
+  'const Members = () => (
+  <Dialog open>
+    <DialogContent>
+      <DialogBody className="!px-0 !pt-0 !pb-0">
+        <div role="list" className="flex flex-col py-2">
+          {members.map((m) => <MemberRow key={m.id} member={m} />)}
+        </div>
+      </DialogBody>
+    </DialogContent>
+  </Dialog>
+);'
+expect_silent "S3. DialogBody 裡 role=list flex-col py-2 → silent"
+# S3b. <ul> + data-layout-region 在 SheetBody 底下
+run_hook "Write" "$APP_TSX" "content" \
+  'const Recent = () => (
+  <SheetBody>
+    <ul data-layout-region="unbounded" className="flex flex-col py-2">
+      {projects.map((p) => <li key={p.id}>{p.name}</li>)}
+    </ul>
+  </SheetBody>
+);'
+expect_silent "S3b. SheetBody 裡 ul flex-col py-2 → silent"
+# X1. 反例:沒有 FileItem 的 flex-col gap-2 → 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const Cards = () => (
+  <div className="flex flex-col gap-2">
+    {cards.map((c) => <ProjectCard key={c.id} card={c} />)}
+  </div>
+);'
+expect_block "X1. 沒有 FileItem 的 flex-col gap-2 → BLOCK"
+# X2. 反例:沒有頭像也沒有 Item 零件的 gap-3 px-4 py-3 → 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const Notice = () => (
+  <div className="flex items-start gap-3 px-4 py-3">
+    <Info size={16} />
+    <span>本週五 22:00 系統維護</span>
+  </div>
+);'
+expect_block "X2. 沒有頭像 / Item 零件的 gap-3 px-4 py-3 → BLOCK"
+# X3. 反例:不在浮層主體裡的 py-2 清單 → 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const Members = () => (
+  <section>
+    <div role="list" className="flex flex-col py-2">
+      {members.map((m) => <MemberRow key={m.id} member={m} />)}
+    </div>
+  </section>
+);'
+expect_block "X3. 不在 DialogBody / SheetBody / SurfaceBody 裡的 py-2 清單 → BLOCK"
+# X3b. 反例:DialogBody 已經關掉,後面那份清單不在它底下 → 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const Page = () => (
+  <>
+    <DialogBody>摘要</DialogBody>
+    <div role="list" className="flex flex-col py-2">
+      {members.map((m) => <MemberRow key={m.id} member={m} />)}
+    </div>
+  </>
+);'
+expect_block "X3b. DialogBody 已關閉後的 py-2 清單 → BLOCK"
+# X4. 反例:規格組合多帶一個 magic(mb-4)→ 整組對不上 → 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const MemberRow = ({ member }) => (
+  <div className="flex items-start gap-3 px-4 py-3 mb-4">
+    <Avatar src={member.photo} alt={member.name} size={32} />
+    <ItemContent label={member.name} mode="reading" />
+  </div>
+);'
+expect_block "X4. 頁面列表列多帶 mb-4 → BLOCK"
+# X5. 反例:FileItem 清單換成 gap-3(不在登記的 gap-1 / gap-2)→ 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const Attachments = () => (
+  <div className="flex flex-col gap-3">
+    {files.map((f) => <FileItem key={f.id} name={f.name} />)}
+  </div>
+);'
+expect_block "X5. FileItem 清單 gap-3(未登記)→ BLOCK"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"
