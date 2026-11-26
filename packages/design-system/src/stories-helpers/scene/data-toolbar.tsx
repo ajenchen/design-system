@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
  * 主按鈕右緣跑出表格(user 2026-09-16 回報:視窗小時搜尋框把「新增任務」按鈕往右推出去,按鈕右緣對不齊表格右緣)。
  *
  * 這裡把幾何定一次,四支示範都消費它:
- * - 搜尋框是列裡**唯一可壓縮**的項目:上限 `max-w-sm`(384px),下限 `min-w-40`(160px = sm 欄位的放大鏡 + 內距 50px + 約 7.8 個
+ * - 搜尋框是列裡**唯一可壓縮**的項目:上限 `max-w-xs`(320px;2026-11-26 user 選甲、原 384,理由見 action-bar.spec.md 七「搜尋框」「上限」列),下限 `min-w-40`(160px = sm 欄位的放大鏡 + 內距 50px + 約 7.8 個
  *   14px 中文字;示範裡最長的提示字「搜尋商品 / SKU」整顆需 146px,四句都放得下)。**值由消費端(示範)自己定,不建 token** ——
  *   `tokens/token-system.spec.md`「判斷流程」第 0 題:消費者只算 DS 元件與產品端程式,只有 stories / 範例重複不構成建 token 的理由。
  *   世界級同樣不為此發 token:Carbon 表格工具列的搜尋收合時吃通用版面尺寸 `layout.size('height')`、展開時 `inline-size: 100%`
@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils'
  * - 空間連下限都放不下時(操作鈕很多的列在約 400px 以下)本零件**不**收合搜尋框 —— 世界級的「收成放大鏡、點了展開」是另一個互動,
  *   尚未採用(user 2026-09-16 說目前先做到縮到下限就好);操作鈕的收合規則見 action-bar.spec.md 七。
  *
- * 機械閘:`scripts/action-bar-toolbar-invariant.mjs`(五個寬度 × 四支示範:列不溢出、最後一顆按鈕右緣 = 內容右緣、搜尋框 ≥ 下限)。
+ * 機械閘:`scripts/action-bar-toolbar-invariant.mjs`(五個寬度 × 四支示範:列不溢出、最後一顆按鈕右緣 = 內容右緣、搜尋框 ≥ 下限、≤ 上限且空間夠時撐到上限;上限值讀自規格)。
  */
 export interface DataToolbarProps extends React.HTMLAttributes<HTMLDivElement> {
   /** 左側搜尋欄位(`<Input size="sm" startIcon={Search} …/>`);業務層 search,與 filter / sort 同區(action-bar.spec.md「Search 的角色判斷」) */
@@ -41,7 +41,7 @@ export function DataToolbar({ search, children, className, ...rest }: DataToolba
       className={cn('flex min-w-0 items-center justify-between gap-[var(--layout-space-loose)] px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]', className)}
       {...rest}
     >
-      <div data-toolbar-search className="min-w-40 max-w-sm flex-1">
+      <div data-toolbar-search className="min-w-40 max-w-xs flex-1">
         {search}
       </div>
       <div data-toolbar-actions className="flex shrink-0 items-center gap-2">

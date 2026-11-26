@@ -7,10 +7,17 @@
  * 列不換行、不裁切 → 空間不夠時整列往右溢出。量的是像素不是 class(M32):每支消費 DataToolbar 的示範 × 五個視窗寬,
  *   (1) 列不溢出:scrollWidth ≤ clientWidth;
  *   (2) 最後一顆操作鈕右緣 = 列的內容右緣(±1);
- *   (3) 搜尋框寬 ≥ 下限(讀 data-toolbar-search 的 computed min-width,不寫死 160)。
- * 空間夠(內容寬 ≥ 下限 + gap + 操作群寬)時 (1)(2)(3) 全部必成立;空間連下限都放不下時(操作鈕多的列在極窄寬度)
- * 只驗 (3) 下限守住,並把該格印成「已知極窄極限」(不算失敗、也不靜默 —— action-bar.spec.md 七:本輪不收合搜尋框)。
- * 對照組(--selftest):注入 `[data-toolbar-search]{min-width:auto!important}`(拿掉下限 = 修前狀態)→ 空間夠的格子裡至少一格 (1) 或 (2) 必紅。
+ *   (3) 搜尋框寬 ≥ 下限(讀 data-toolbar-search 的 computed min-width,不寫死 160);
+ *   (4) 搜尋框寬 ≤ 上限(2026-11-26 起,user 畫面確認選「甲:上限改 320px(Tailwind max-w-xs)」)——
+ *       上限值**從規格讀**:action-bar.spec.md 七「搜尋框」表格的「| 上限 = Npx」那一列,不在閘裡寫第二份;
+ *       不讀 computed max-width 當標準(那是被驗的東西本身:示範改回 384 時它也跟著變 384,閘會跟著綠 —— M37 代理);
+ *   (5) 空間放得下上限(內容寬 ≥ 上限 + gap + 操作群寬)的格子,搜尋框要撐到上限(±1)—— 守「撐開到上限」這一半,
+ *       而且這種格子至少要量到一格,否則 (5) 從沒被執行過(沒量到 ≠ 沒問題)。
+ * 空間夠(內容寬 ≥ 下限 + gap + 操作群寬)時 (1)(2)(3)(4) 全部必成立;空間連下限都放不下時(操作鈕多的列在極窄寬度)
+ * 只驗 (3) 下限守住與 (4) 不超過上限,並把該格印成「已知極窄極限」(不算失敗、也不靜默 —— action-bar.spec.md 七:本輪不收合搜尋框)。
+ * 對照組(--selftest,兩組各跑一輪、各自必紅):
+ *   · 下限:注入 `[data-toolbar-search]{min-width:auto!important}`(拿掉下限 = 修前狀態)→ 空間夠的格子裡至少一格 (1) 或 (2) 必紅;
+ *   · 上限:注入 `[data-toolbar-search]{max-width:384px!important}`(改回舊值 384)→ 至少一格 (4) 必紅。
  *
  * 開 story(2026-09-25 起):共用的 openStory(lib/launch-browser.mjs)—— Storybook 回報渲染完成、畫面健康、
  * **被量的東西**(搜尋框與它同列的操作群最後一顆鈕)出現、版面連續靜止 10 個影格,並在最後一個靜止影格的
@@ -36,6 +43,20 @@ const server = await startA11yStaticServer({ rootDirectory: root, defaultFile: '
 process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
 // story 清單也讀同一份快照,不讀活目錄(否則清單與實際供檔可能來自兩份建置)
 const index = JSON.parse(fs.readFileSync(path.join(server.snapshot?.dir ?? root, 'index.json'), 'utf8'))
+// 上限的規格值(檔頭 (4)):action-bar.spec.md 七「搜尋框」表格「| 上限 = Npx」那一列。讀不到 = 儀器失效(不是通過)。
+const SPEC_PATH = 'packages/design-system/src/patterns/action-bar/action-bar.spec.md'
+const capRow = fs.readFileSync(path.join(REPO, SPEC_PATH), 'utf8').match(/^\| 上限 = (\d+)px/mu)
+if (!capRow) {
+  console.log(`✗ ${INSTRUMENT_FAIL_MARKER}:${SPEC_PATH} 七「搜尋框」找不到「| 上限 = Npx」那一列 —— 讀不到規格的上限值,不能驗 (4)(5)`)
+  await server.stop()
+  process.exit(1)
+}
+const CAP = Number(capRow[1])
+// 對照組:每組 = 注入的樣式 + 它要讓哪一條紅(兩組各跑一輪,互不混在同一輪裡 —— 各自證明各自的判定會紅)
+const SABOTAGES = [
+  { name: '拿掉搜尋框下限', css: '[data-toolbar-search]{min-width:auto!important}', expect: '(1) 或 (2)' },
+  { name: '上限改回 384', css: '[data-toolbar-search]{max-width:384px!important}', expect: '(4)' },
+]
 // 四支消費 DataToolbar 的整頁示範(少一支 = 有人把示範改回手抄,閘要紅)
 const WANT = [/agentpanel-展示--url-registry-demo$/u, /datatable-展示--with-bulk-actions$/u, /datatable-展示--roadmap-all-in-one$/u, /appshell-展示--primary-sidebar-with-tabs$/u]
 const STORIES = WANT.map((re) => Object.values(index.entries).find((e) => e.type === 'story' && re.test(e.id))?.id)
@@ -63,74 +84,116 @@ const PROBE = () => {
     lastRight: Math.round(L.right * 10) / 10, contentRight: Math.round((T.right - padR) * 10) / 10, fits: contentW >= minW + gap + A.width }
 }
 const browser = await launchBrowser(); const page = await browser.newPage({ viewport: { width: 768, height: 900 } })
-let failed = 0, measured = 0, tight = 0, sabotageReds = 0
+let failed = 0
 /** 沒量到的格子(story 開不起來 / 等不到工具列):儀器失效,不是產品裁決,也絕不算通過 */
 const instrumentFails = []
 const rec = (ok, msg) => { console.log(`${ok ? '✓' : '✗'} ${msg}`); if (!ok) failed++ }
-for (const [i, id] of STORIES.entries()) {
-  if (!id) { rec(false, `找不到示範 story:${WANT[i]}`); continue }
-  const name = id.replace(/^design-system-components-/u, '')
-  for (const w of WIDTHS_FOR(id)) {
-    await page.setViewportSize({ width: w, height: 900 })
-    let r
-    let floor = NaN
-    try {
-      const opened = await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, {
-        waitFor: TOOLBAR_READY,
-        // 對照組:在靜止判定**之前**拿掉搜尋框下限,量到的是拿掉之後的穩態(取代舊的「注入後固定睡 100ms」)。
-        // 「空間夠不夠」要用**拿掉前**的下限算(拿掉後 computed min-width 變回 auto = NaN,每格都會被判成極窄、對照組永遠不紅);
-        // 下限是樣式表給的值,元素一出現就定了,不隨版面變動,所以在這裡讀。
-        beforeSettle: SELFTEST ? async (p) => {
-          floor = await p.evaluate(() => parseFloat(getComputedStyle(document.querySelector('[data-toolbar-search]')).minWidth))
-          await p.addStyleTag({ content: '[data-toolbar-search]{min-width:auto!important}' })
-        } : null,
-        settleFrames: 10, probe: PROBE, notFound: server.notFound,
-      })
-      r = opened.probe
-    } catch (error) {
-      if (!(error instanceof StoryRenderInstrumentError)) throw error
-      console.log(`✗ ${name} @${w}:${error.message}`)
-      if (error.kind === 'wait-for-timeout') {
-        console.log('  (Storybook 已回報渲染完成、畫面健康,但等不到搜尋框 + 操作群:示範若真的不再消費 DataToolbar,改示範或改本閘的 WANT 清單;這不是「睡不夠久」)')
-      }
-      instrumentFails.push({ cell: `${name} @${w}`, detail: error.detail })
-      continue
-    }
-    // 等到之後、靜止當下又不見 = 工具列在渲染完成後被拿掉(不是還沒畫出來)—— 照實報,不猜原因
-    if (r.missing) { rec(false, `${name} @${w}:等到工具列之後,版面靜止時 ${r.missing} 又不見了`); continue }
-    if (SELFTEST) { r.minW = floor; r.fits = r.contentW >= floor + r.gap + r.opsW }
-    measured++
-    const noOverflow = r.scrollW <= r.clientW
-    const aligned = Math.abs(r.lastRight - r.contentRight) <= 1
-    const floorDefined = Number.isFinite(r.minW) && r.minW > 0
-    const floorHeld = floorDefined && r.searchW >= r.minW - 1
-    const detail = `內容寬 ${r.contentW} / 搜尋 ${r.searchW}(下限 ${r.minW}) / 操作群 ${r.opsW} / 鈕右 ${r.lastRight} vs 內容右 ${r.contentRight}`
-    if (SELFTEST) { if (r.fits && !(noOverflow && aligned)) sabotageReds++; console.log(`  · ${name} @${w}:${r.fits ? (noOverflow && aligned ? '仍對齊' : '溢出 / 錯位(對照組預期)') : '極窄'} | ${detail}`); continue }
-    if (!floorDefined) { rec(false, `${name} @${w}:搜尋框沒有明確下限(computed min-width = auto)—— 這正是修前的病 | ${detail}`); continue }
-    if (r.fits) {
-      rec(noOverflow && aligned && floorHeld, `${name} @${w}:列不溢出、最後一顆操作鈕右緣 = 內容右緣、搜尋框 ≥ 下限 | ${detail}`)
-    } else {
-      tight++
-      rec(floorHeld, `${name} @${w}:空間連下限都放不下(已知極窄極限,操作鈕收合另案),搜尋框仍守住下限 | ${detail}`)
-    }
+/** 一格量到的值 → (1)–(5) 各條的判定(現況與對照組共用同一份判定,對照組才證明得了「這份判定會紅」) */
+const judge = (label, r) => {
+  const floorDefined = Number.isFinite(r.minW) && r.minW > 0
+  return {
+    label, fits: r.fits,
+    noOverflow: r.scrollW <= r.clientW, // (1)
+    aligned: Math.abs(r.lastRight - r.contentRight) <= 1, // (2)
+    floorDefined, floorHeld: floorDefined && r.searchW >= r.minW - 1, // (3)
+    capHeld: r.searchW <= CAP + 1, // (4)
+    roomy: r.contentW >= CAP + r.gap + r.opsW, reachedCap: r.searchW >= CAP - 1, // (5)
+    detail: `內容寬 ${r.contentW} / 搜尋 ${r.searchW}(下限 ${r.minW}、上限 ${CAP}) / 操作群 ${r.opsW} / 鈕右 ${r.lastRight} vs 內容右 ${r.contentRight}`,
   }
 }
+/** 量一輪(sabotage = null 是現況,否則是 SABOTAGES 其中一組);回傳量到的每一格,沒量到的記進 instrumentFails */
+async function measurePass(sabotage) {
+  const cells = []
+  for (const [i, id] of STORIES.entries()) {
+    if (!id) { rec(false, `找不到示範 story:${WANT[i]}`); continue }
+    const name = id.replace(/^design-system-components-/u, '')
+    for (const w of WIDTHS_FOR(id)) {
+      await page.setViewportSize({ width: w, height: 900 })
+      let r
+      let floor = NaN
+      try {
+        const opened = await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, {
+          waitFor: TOOLBAR_READY,
+          // 對照組:在靜止判定**之前**注入,量到的是注入之後的穩態(取代舊的「注入後固定睡 100ms」)。
+          // 「空間夠不夠」要用**注入前**的下限算(拿掉下限後 computed min-width 變回 auto = NaN,每格都會被判成極窄、對照組永遠不紅);
+          // 下限是樣式表給的值,元素一出現就定了,不隨版面變動,所以在這裡讀。上限不讀 computed 值(檔頭 (4):標準是規格的 CAP)。
+          beforeSettle: sabotage ? async (p) => {
+            floor = await p.evaluate(() => parseFloat(getComputedStyle(document.querySelector('[data-toolbar-search]')).minWidth))
+            await p.addStyleTag({ content: sabotage.css })
+          } : null,
+          settleFrames: 10, probe: PROBE, notFound: server.notFound,
+        })
+        r = opened.probe
+      } catch (error) {
+        if (!(error instanceof StoryRenderInstrumentError)) throw error
+        console.log(`✗ ${name} @${w}:${error.message}`)
+        if (error.kind === 'wait-for-timeout') {
+          console.log('  (Storybook 已回報渲染完成、畫面健康,但等不到搜尋框 + 操作群:示範若真的不再消費 DataToolbar,改示範或改本閘的 WANT 清單;這不是「睡不夠久」)')
+        }
+        instrumentFails.push({ cell: `${sabotage ? `[對照組:${sabotage.name}] ` : ''}${name} @${w}`, detail: error.detail })
+        continue
+      }
+      // 等到之後、靜止當下又不見 = 工具列在渲染完成後被拿掉(不是還沒畫出來)—— 照實報,不猜原因
+      if (r.missing) { rec(false, `${name} @${w}:等到工具列之後,版面靜止時 ${r.missing} 又不見了`); continue }
+      if (sabotage) { r.minW = floor; r.fits = r.contentW >= floor + r.gap + r.opsW }
+      cells.push(judge(`${name} @${w}`, r))
+    }
+  }
+  return cells
+}
+// 對照組各自「紅」的定義 = 它要證明會紅的那幾條(與 SABOTAGES 同序)
+const SABOTAGE_RED = [(c) => c.fits && !(c.noOverflow && c.aligned), (c) => !c.capHeld]
+if (SELFTEST) {
+  const reds = []
+  for (const [k, s] of SABOTAGES.entries()) {
+    console.log(`— 對照組「${s.name}」:注入 ${s.css} → 預期 ${s.expect} 紅`)
+    let n = 0
+    for (const c of await measurePass(s)) {
+      const red = SABOTAGE_RED[k](c)
+      if (red) n++
+      console.log(`  · ${c.label}:${red ? '紅(對照組預期)' : c.fits ? '仍綠' : '極窄'} | ${c.detail}`)
+    }
+    reds.push(n)
+  }
+  await browser.close()
+  await server.stop()
+  if (instrumentFails.length) {
+    console.log(`✗ ${INSTRUMENT_FAIL_MARKER}:${instrumentFails.length} 格沒量到 —— 紅的不全是對照組造成的,不能宣稱「紅得對」:`)
+    for (const f of instrumentFails) console.log(`  · ${f.cell}:${f.detail}`)
+  }
+  for (const [k, s] of SABOTAGES.entries()) {
+    console.log(reds[k] >= 1 ? `✓ selftest:對照組「${s.name}」讓 ${reds[k]} 格 ${s.expect} 紅,量具會紅` : `✗ selftest:對照組「${s.name}」沒有任何一格 ${s.expect} 紅 —— 量具無效`)
+  }
+  process.exit(reds.every((n) => n >= 1) && instrumentFails.length === 0 ? 0 : 1)
+}
+const cells = await measurePass(null)
 await browser.close()
 await server.stop()
+let tight = 0, roomy = 0
+for (const c of cells) {
+  if (!c.floorDefined) { rec(false, `${c.label}:搜尋框沒有明確下限(computed min-width = auto)—— 這正是修前的病 | ${c.detail}`); continue }
+  const problems = []
+  if (c.fits && !c.noOverflow) problems.push('(1) 列溢出')
+  if (c.fits && !c.aligned) problems.push('(2) 最後一顆操作鈕右緣 ≠ 內容右緣')
+  if (!c.floorHeld) problems.push('(3) 搜尋框比下限窄')
+  if (!c.capHeld) problems.push(`(4) 搜尋框比規格上限 ${CAP}px 寬`)
+  if (c.roomy && !c.reachedCap) problems.push(`(5) 空間放得下上限,搜尋框卻沒撐到 ${CAP}px`)
+  if (c.roomy) roomy++
+  if (!c.fits) tight++
+  const claim = c.fits
+    ? `列不溢出、最後一顆操作鈕右緣 = 內容右緣、下限 ≤ 搜尋框 ≤ 上限${c.roomy ? '、空間夠所以撐到上限' : ''}`
+    : '空間連下限都放不下(已知極窄極限,操作鈕收合另案),搜尋框仍守住下限、不超過上限'
+  rec(problems.length === 0, `${c.label}:${claim}${problems.length ? `(失敗:${problems.join(';')})` : ''} | ${c.detail}`)
+}
 if (instrumentFails.length) {
   console.log(`✗ ${INSTRUMENT_FAIL_MARKER}:${instrumentFails.length} 格沒量到 —— 不是產品裁決,但這次不能宣稱工具列合規:`)
   for (const f of instrumentFails) console.log(`  · ${f.cell}:${f.detail}`)
 }
-if (SELFTEST) {
-  // 有格子沒量到時,對照組「紅了」不全是注入造成的,不能宣稱量具有效
-  const ok = sabotageReds >= 1 && instrumentFails.length === 0
-  console.log(sabotageReds >= 1 ? `✓ selftest:對照組(拿掉搜尋框下限)讓 ${sabotageReds} 格溢出 / 錯位,量具會紅` : '✗ selftest:對照組沒有任何一格紅 —— 量具無效')
-  if (instrumentFails.length) console.log(`✗ selftest:${instrumentFails.length} 格沒量到 —— 紅的不全是對照組造成的,不能宣稱「紅得對」`)
-  process.exit(ok ? 0 : 1)
-}
 // 每一格都要有下落:量到,或以儀器失效記名(上方已紅)—— 兩者都沒有的格子才是這裡要抓的「靜默消失」
 const CELLS = STORIES.reduce((sum, id) => sum + WIDTHS_FOR(id).length, 0)
-rec(measured + instrumentFails.length === CELLS, `取樣:${measured} 格${instrumentFails.length ? `(另 ${instrumentFails.length} 格沒量到,已記儀器失效)` : ''}(需 ${STORIES.length} 支示範 × 各自的寬度 = ${CELLS} 格)`)
-if (tight) console.log(`  · ${tight} 格是空間連下限都放不下的極窄組合(只驗下限守住;action-bar.spec.md 七:本輪不收合搜尋框)`)
-console.log(failed || instrumentFails.length ? `✗ action-bar-toolbar ${failed} 條失敗、${instrumentFails.length} 格沒量到(SSOT:action-bar.spec.md 七「搜尋框」)` : `✅ action-bar-toolbar PASS(${measured} 格)`)
+rec(cells.length + instrumentFails.length === CELLS, `取樣:${cells.length} 格${instrumentFails.length ? `(另 ${instrumentFails.length} 格沒量到,已記儀器失效)` : ''}(需 ${STORIES.length} 支示範 × 各自的寬度 = ${CELLS} 格)`)
+// (5) 至少量到一格:沒有任何一格放得下上限時,「撐到上限」這一半從沒被驗過 —— 沒量到 ≠ 沒問題(M37)
+rec(roomy >= 1, `空間放得下上限 ${CAP}px 的格子量到 ${roomy} 格(至少要 1 格,(5)「撐到上限」才算驗過)`)
+if (tight) console.log(`  · ${tight} 格是空間連下限都放不下的極窄組合(只驗下限守住、不超過上限;action-bar.spec.md 七:本輪不收合搜尋框)`)
+console.log(failed || instrumentFails.length ? `✗ action-bar-toolbar ${failed} 條失敗、${instrumentFails.length} 格沒量到(SSOT:action-bar.spec.md 七「搜尋框」)` : `✅ action-bar-toolbar PASS(${cells.length} 格,上限 ${CAP}px 讀自規格)`)
 process.exit(failed || instrumentFails.length ? 1 : 0)
