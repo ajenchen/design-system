@@ -2756,7 +2756,11 @@ for (const [label, r, c, kind] of [
 // data-table.spec.md「空表」;story = 展示 / 空狀態「釘選欄的空表」(左釘選 SKU 100、右釘選 Updated 120 + 操作欄、欄寬總和 1000 > 容器 640)。
 // 量像素:Empty 裡看得到的東西(文字 + 插圖)的外接框中心 vs 中間捲動區可見寬的中心,差 ≤ 1px;捲到最右再量一次(sticky 才留得住)。
 // 表身那一段:沒有左右釘選面板、沒有凍結線元素;表頭照常有左右釘選區(前置:證明量到的是有釘選的那張)。可橫捲 → 中間區是 tab stop 且有名稱。
-// 對照組(2026-11-26 實跑,紀錄在交接回報):修前建置 → 捲動 0 時中心差數百 px、面板 2 個 / 凍結線 1 個(紅);只拿掉 sticky → 捲到最右那一格紅。
+// 對照組(2026-11-26 實跑兩組):
+// (1) 修前建置:data-table.tsx 的空表程式碼還原成 bd8fe7ae(story 與本閘用新版),另建一份 Storybook 用 --build= 量 →
+//     前置綠(表頭左右釘選 2 區、可捲 386px);I40 其餘四條全紅:表身面板 2 個 / 凍結線 1 個、捲動 0 中心差 193px、
+//     中間區沒有 tab stop(tabindex 與名稱都沒有)、捲到最右中心差 −193px;本閘其他斷言全綠(只紅這四條)。
+// (2) 修後建置注入 CSS 只拿掉 Empty 內層的 sticky(C2 實作者實跑)→ 捲到最右那一條紅(中心差 −386px)。
 {
   const STORY_EMPTY = `${BASE}/iframe.html?id=design-system-components-datatable-展示--empty-state&viewMode=story`
   await loadStory(STORY_EMPTY, '[data-datatable-header-panel="left"]')
