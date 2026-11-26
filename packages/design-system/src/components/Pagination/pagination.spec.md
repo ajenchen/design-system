@@ -85,6 +85,7 @@ Pagination 是「大量資料切成多頁後的位置導覽」——顯示當前
 - `showTotal`(opt-in):左側 range 格式「第 x–y 筆,共 N 筆」——Ant「1-20 of 85 items」([demo/total.tsx#L15](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/pagination/demo/total.tsx#L15),Ant 本身無預設格式、這是官方範例)/ MUI「1–5 of 13」(預設 [TablePagination.js#L140-L141](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/TablePagination/TablePagination.js#L140-L141))/ Carbon「1–10 of 128 items」(預設 [Pagination.tsx#L223](https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/react/src/components/Pagination/Pagination.tsx#L223))三家共識,非單純總數。
 - `pageSizeOptions`(opt-in):頁碼右側顯示「N 筆/頁」選單，並消費既有 `Select size="sm"`。變更每頁筆數時自動回第 1 頁，避免換大 pageSize 後停在超界頁而出現 clamp 歧義。
 - 兩者皆未開 = 純頁碼 inline 形態(consumer layout 決定對齊;表格情境靠右由 DataTable 處理)。
+- **換字**(2026-11-26 起,E10;之前這兩段字寫死、改不了):`labels?: Partial<PaginationLabels>`,只給要換的鍵、其餘用 DS 預設 —— `range(start, end, total)` = 左側 range 資訊(預設「第 x–y 筆,共 N 筆」)、`pageSizeOption(size)` = 選單每一項與觸發鈕上的字(預設「N 筆/頁」)。兩個都是**函式**:句子裡有數字、各語言語序不同,I18nProvider 只收字串,所以這兩段只經 `labels`(同 `../Coachmark/coachmark.spec.md` 的 `labels.step(current, total)`;`lib/i18n/README.md`「Fallback chain」第 1 層)。不傳 = 畫面不變。DataTable 的 `pagination` 設定原樣轉發(`../DataTable/data-table.spec.md`「L5:分頁」)。閘 `scripts/i18n-labels-override-invariant.mjs`(P / DT 列)。
 
 ---
 
@@ -184,6 +185,8 @@ Ant Pagination 的 `responsive`(`useBreakpoint`,[Pagination.tsx#L99-L120](https:
 - 當前頁按鈕 `aria-current="page"`(**不用** `aria-pressed`——pressed 是可取消的 toggle 語意,當前頁不可「取消」)
 - ellipsis `aria-hidden`(純視覺指示)
 - 上下頁 iconOnly 按鈕帶 `aria-label`(預設「上一頁」/「下一頁」,`prevAriaLabel` / `nextAriaLabel` props 或 I18nProvider `pagination.previous` / `pagination.next` 可覆寫)
+- 每頁筆數選單的讀屏名稱預設「每頁筆數」(I18nProvider `pagination.pageSize` 可覆寫);選項的字由 `labels.pageSizeOption` 給(見「完整形態」的換字條)
+- I18nProvider 的 `pagination` 那一組現有四個鍵:`label`(landmark)/ `previous` / `next` / `pageSize`;帶數字的兩段(range 資訊、「N 筆/頁」)不在這一組,經 `labels`
 
 **鍵盤**:Tab 逐鈕聚焦(原生 button 序)、Enter / Space 觸發——全部繼承 Button 原生語意,無自訂 key handler;不做 roving tabindex(頁碼是 nav landmark 內的獨立按鈕群,非 composite widget,對齊 shadcn / Ant / MUI:shadcn 與 MUI 分頁檔全無 key handler(shadcn [pagination.tsx](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/pagination.tsx)、MUI [Pagination.js](https://github.com/mui/material-ui/blob/34d78acfd16dfe3426c0b2c7d9f94b7fb930f5f8/packages/mui-material/src/Pagination/Pagination.js) / [PaginationItem.js](https://github.com/mui/material-ui/blob/34d78acfd16dfe3426c0b2c7d9f94b7fb930f5f8/packages/mui-material/src/PaginationItem/PaginationItem.js) / [usePagination.js](https://github.com/mui/material-ui/blob/34d78acfd16dfe3426c0b2c7d9f94b7fb930f5f8/packages/mui-material/src/usePagination/usePagination.js) 皆無 `onKeyDown`),Ant 只在各格自己處理 Enter / Space([rc-pagination #L260-L276](https://github.com/react-component/pagination/blob/f71d381edfabb6047ff5f1f3d8a82651f1377fcd/src/Pagination.tsx#L260-L276)),三家都沒有 roving)。
 

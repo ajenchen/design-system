@@ -110,6 +110,9 @@
 - 選項=**RadioGroup md 包裝不改造**(Popover all-sm 律之顯式拍板豁免;footer 鈕維持 sm 守律);
   預選項(`defaultValue`,省略=第一項)由元件在 label 後加「(建議)」。
 - 進出=淡入+下滑 8、`--motion-duration-overlay`。
+- 字:卡上自帶的字全部經 `labels?: Partial<AgentDecisionCardLabels>` 換(× 的名字、上一題 / 下一題 / 送出、清除選取、「其他」與它的輸入格、(建議)、(選填)、三句錯誤訊息)。
+  取值順序(每個鍵)= `labels` → I18nProvider 的 `agent-decision-card` 那一組(鍵名同 `AgentDecisionCardLabels`)→ DS 預設中文(`../../lib/i18n/README.md`「Fallback chain」);
+  中間那一層 2026-11-26 起(E11,與同家族 AgentThinking 一致),之前只吃 `labels`、照舊相容。閘 `scripts/i18n-labels-override-invariant.mjs`(D 列)。
 - A11y:`role="group"` + `aria-labelledby`;radiogroup / checkbox 原生鍵盤;必答單選題的 radiogroup 帶 `aria-required`(`../Field/field.spec.md`「SR 識別路徑」),複選群組是 `role="group"`、WAI-ARIA 1.2 的 `aria-required` 不適用,不帶。
   選填題的「(選填)」在題目那個元素裡,卡片 group、radiogroup 與複選 group 都以 `aria-labelledby` 指向它 —— 名稱含「(選填)」,讀屏跟題目一起念(複選群組沒有 `aria-required` 可報,只靠這幾個字)。
 

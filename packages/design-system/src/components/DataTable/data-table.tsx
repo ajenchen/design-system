@@ -22,7 +22,7 @@ import { Empty } from '@/design-system/components/Empty/empty'
 import { Skeleton } from '@/design-system/components/Skeleton/skeleton'
 // L5 分頁(2026-07-06):Pagination = 分頁完整功能 SSOT(頁碼 + showTotal + 每頁筆數選單
 // 全 own 在 Pagination;共用模式,Ant Table 消費 Pagination 同派)—— DataTable 只轉發 config
-import { Pagination } from '@/design-system/components/Pagination/pagination'
+import { Pagination, type PaginationLabels } from '@/design-system/components/Pagination/pagination'
 import {
   useReactTable,
   getCoreRowModel,
@@ -380,6 +380,12 @@ export interface DataTablePaginationOptions {
   defaultPage?: number
   onPageChange?: (page: number) => void
   onPageSizeChange?: (pageSize: number) => void
+  /** 分頁列帶數字的兩段字(range 資訊、「N 筆/頁」),原樣轉發 `<Pagination labels>`(pagination.spec.md「完整形態」;2026-11-26 前沒有轉發,表格裡的分頁列換不了字) */
+  labels?: Partial<PaginationLabels>
+  /** 上一頁鈕的 aria-label,原樣轉發 `<Pagination prevAriaLabel>`(不傳 = I18nProvider `pagination.previous` → 「上一頁」) */
+  prevAriaLabel?: string
+  /** 下一頁鈕的 aria-label,原樣轉發 `<Pagination nextAriaLabel>`(不傳 = I18nProvider `pagination.next` → 「下一頁」) */
+  nextAriaLabel?: string
 }
 
 // ── Cell Rendering(Phase C 2026-05-05 — type-keyed registry SSOT)─────────────
@@ -5816,6 +5822,9 @@ function DataTableInner<TData>(
         }}
         showTotal={paginationOpts?.showTotal}
         pageSizeOptions={paginationOpts?.pageSizeOptions}
+        labels={paginationOpts?.labels}
+        prevAriaLabel={paginationOpts?.prevAriaLabel}
+        nextAriaLabel={paginationOpts?.nextAriaLabel}
       />
     </div>
   ) : null

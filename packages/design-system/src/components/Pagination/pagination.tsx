@@ -156,6 +156,28 @@ export interface PaginationProps extends React.ComponentPropsWithoutRef<'nav'> {
   prevAriaLabel?: string
   /** 下一頁按鈕 aria-label。 */
   nextAriaLabel?: string
+  /**
+   * 完整形態兩段帶數字的字(Partial 傳入、與 DS 預設合併 —— 同 Coachmark `labels.step(current, total)` 的函式寫法:
+   * I18nProvider 只收字串,帶數字的句子只能經這裡換;2026-11-26 前寫死、改不了)。預設「第 x–y 筆,共 N 筆」「N 筆/頁」,
+   * 規則見 pagination.spec.md「完整形態」。其他讀屏名稱照舊走個別 prop / I18nProvider(`pagination.*`)。
+   */
+  labels?: Partial<PaginationLabels>
+}
+
+/** 完整形態上帶數字的字(全部可覆寫;函式,因為句子裡有數字)。 */
+export interface PaginationLabels {
+  /** `showTotal` 左側 range 資訊(1-based,start / end 為這一頁第一 / 最後一筆) */
+  range: (start: number, end: number, total: number) => string
+  /** `pageSizeOptions` 選單每一項(含觸發鈕上顯示的那一項) */
+  pageSizeOption: (size: number) => string
+}
+
+// i18n-allow: DS 預設文案(中文;lib/i18n/README.md「Fallback chain」3)—— consumer 經 `labels` 覆寫(同 Coachmark DEFAULT_LABELS)。
+// range 格式 = Ant / MUI / Carbon 共識(三家出處見 pagination.spec.md「完整形態」);「N 筆/頁」= Ant「20 / page」內嵌同款
+//(rc-pagination 英文語系 `items_per_page: '/ page'`,https://github.com/react-component/pagination/blob/f71d381edfabb6047ff5f1f3d8a82651f1377fcd/src/locale/en_US.ts )
+const DEFAULT_PAGINATION_LABELS: PaginationLabels = {
+  range: (start, end, total) => `第 ${start}–${end} 筆,共 ${total} 筆`,
+  pageSizeOption: (size) => `${size} 筆/頁`,
 }
 
 /**
@@ -180,11 +202,14 @@ const Pagination = React.forwardRef<HTMLElement, PaginationProps>(
       pageSizeOptions,
       prevAriaLabel: prevAriaLabelProp,
       nextAriaLabel: nextAriaLabelProp,
+      labels: labelsOverride,
       className,
       ...props
     },
     ref,
   ) => {
+    // 帶數字的兩段字:consumer `labels` → DS 預設中文(函式,I18nProvider 收不了;同 Coachmark `labels.step`)
+    const labels = { ...DEFAULT_PAGINATION_LABELS, ...labelsOverride }
     // 讀屏名稱的換字管道:prop → I18nProvider(`pagination.*`)→ DS 預設中文(lib/i18n/README.md「Fallback chain」;
     // user 2026-10-21 F1「預設語言是中文」,WM 要能一次換成英文)
     const { t } = useI18n()
@@ -330,13 +355,13 @@ const Pagination = React.forwardRef<HTMLElement, PaginationProps>(
         {...props}
       >
         {hasExtras && (
-          // i18n-allow: DS default(range 格式 = Ant/MUI/Carbon 共識,三家出處見 pagination.spec.md「完整形態」);showTotal=false 時渲染
+          // 字 = `labels.range`(預設「第 x–y 筆,共 N 筆」,DEFAULT_PAGINATION_LABELS);showTotal=false 時渲染
           // 空 span 佔 justify-between 左位,不含 stray 文字節點
           // `whitespace-nowrap` + `shrink-0`:資訊文字**永遠不會超過一行**(2026-09-04 user 要求)。
           // 沒有這兩個,flex 會把它壓到剩一個字寬再逐字斷行 —— 實測 440px 容器下分頁列高度
           // 從 28px 爆成 147px。階梯在它需要換行之前就先砍別的,砍到最後是整段拿掉,不會有半行。
           <span className="text-body text-fg-secondary shrink-0 whitespace-nowrap">
-            {showTotalNow ? `第 ${rangeStart}–${rangeEnd} 筆,共 ${total} 筆` : null}
+            {showTotalNow ? labels.range(rangeStart, rangeEnd, total) : null}
           </span>
         )}
         <div className="flex shrink-0 items-center gap-[var(--layout-space-tight)]">
@@ -358,7 +383,7 @@ const Pagination = React.forwardRef<HTMLElement, PaginationProps>(
                 // 本 DS 採 reset-to-1(spec「完整形態」段有註記)
                 setPage(1)
               }}
-              options={sizeOptions.map((n) => ({ value: String(n), label: `${n} 筆/頁` }))} // i18n-allow: DS default(Ant「20 / page」內嵌同款:rc-pagination 英文語系 `items_per_page: '/ page'`,https://github.com/react-component/pagination/blob/f71d381edfabb6047ff5f1f3d8a82651f1377fcd/src/locale/en_US.ts )
+              options={sizeOptions.map((n) => ({ value: String(n), label: labels.pageSizeOption(n) }))}
             />
           )}
         </div>

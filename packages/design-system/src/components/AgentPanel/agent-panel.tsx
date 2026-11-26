@@ -48,6 +48,7 @@ import {
   X as XIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/design-system/lib/i18n/i18n-context'
 import { useOverlayCoexistence, CoexistenceMask } from '@/design-system/lib/overlay-coexistence'
 import { useCursorMover } from '@/design-system/hooks/use-input-modality'
 
@@ -1156,10 +1157,33 @@ export interface AgentThinkingProps
   /** 開合(未受控時:回覆中自動展開、回覆完自動收合)。 */
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  /**
+   * 標題的字(Partial 傳入;取值順序 = 本參數 → I18nProvider 的 `agent-thinking` 那一組(鍵名同本介面)→ DS 預設中文,
+   * lib/i18n/README.md「Fallback chain」;2026-11-26 前寫死「思考中 / 思考過程」、產品換不了)。
+   */
+  labels?: Partial<AgentThinkingLabels>
+}
+
+/** 思考塊標題的字(全部可覆寫)。 */
+export interface AgentThinkingLabels {
+  /** 進行中(`thinking`)的標題,套微光 */
+  titleThinking: string
+  /** 完成後的標題(靜態) */
+  titleDone: string
+}
+
+// i18n-allow: DS 預設文案(中文;lib/i18n/README.md「Fallback chain」3)—— consumer 經 `labels` 或 I18nProvider `agent-thinking.*` 覆寫
+const DEFAULT_THINKING_LABELS: AgentThinkingLabels = {
+  titleThinking: '思考中',
+  titleDone: '思考過程',
 }
 
 const AgentThinking = React.forwardRef<HTMLDivElement, AgentThinkingProps>(
-  ({ thinking = false, steps, currentStep, open, onOpenChange, className, ...props }, ref) => {
+  ({ thinking = false, steps, currentStep, open, onOpenChange, labels: labelsOverride, className, ...props }, ref) => {
+    // 標題的字:prop(`labels`)→ I18nProvider `agent-thinking` → DS 預設中文(同 ProfileCardDefaultActions 的逐鍵寫法)
+    const { t } = useI18n()
+    const titleThinking = labelsOverride?.titleThinking ?? t('agent-thinking', 'titleThinking', DEFAULT_THINKING_LABELS.titleThinking)
+    const titleDone = labelsOverride?.titleDone ?? t('agent-thinking', 'titleDone', DEFAULT_THINKING_LABELS.titleDone)
     // 非受控:AI 回覆中自動展開、回覆完自動收合(拍板;三套元件庫一致慣例)。
     const [uncontrolledOpen, setUncontrolledOpen] = React.useState(thinking)
     React.useEffect(() => {
@@ -1192,7 +1216,7 @@ const AgentThinking = React.forwardRef<HTMLDivElement, AgentThinkingProps>(
           )}
         >
           <span className={cn(thinking && 'agent-shimmer')}>
-            {thinking ? '思考中' : '思考過程'}
+            {thinking ? titleThinking : titleDone}
           </span>
           {/* chevron=裝飾指示(accordion 慣例),不吃微光;色同 Select 觸發器 chevron(fg-muted)。
               旋轉跟下方思考內容的高度動畫同一個時長與曲線(disclosureIndicatorMotion;motion.spec.md「展開箭頭跟它打開的東西同步」)。 */}
@@ -1326,7 +1350,7 @@ function PromptAttachmentRow({
     // 鍵盤停在 Tag / +N 時焦點框下緣被切掉(列底沒有內距)—— focus-canonical.md「框怎麼畫」:預設往外、四邊完整(SH-clip)。
     // 同 Combobox 單行 Tag 列的 `tagRowOverflowClass`(combobox.tsx:同一份 OverflowTagList、同一個理由;`clip` 不建捲動容器,
     // 不可改成 overflow-x-hidden —— 單軸 hidden 會把另一軸算成 auto)。
-    // @layout-space-magic-ok: Tag 相互間距 4、距內緣 4 = 本元件規格寫的值 —— agent-panel.spec.md:247「相互間距 4、距內緣 4」(「7. AgentPromptInput(複合輸入盒)」附件列那一行)
+    // @layout-space-magic-ok: Tag 相互間距 4、距內緣 4 = 本元件規格寫的值 —— agent-panel.spec.md:250「相互間距 4、距內緣 4」(「7. AgentPromptInput(複合輸入盒)」附件列那一行)
     <div ref={rowRef} className={cn(TAG_ROW_CONTAINER_CLASS, 'flex items-center gap-1 overflow-x-clip px-1 pt-1')}>
       <OverflowTagList
         items={items}
@@ -1421,9 +1445,9 @@ const AgentPromptInput = React.forwardRef<HTMLDivElement, AgentPromptInputProps>
             'block w-full resize-none bg-transparent outline-none',
             'px-[var(--field-px)] py-[var(--field-control-py-md)] text-body text-foreground',
             // @disabled-color-allow: 這個輸入盒沒有 disabled 狀態,placeholder 的 muted 不會跟 disabled 疊在一起(M24 管的是 disabled 元件內的字)——
-            // textarea(本檔 :1403)不帶 disabled;props(:1279 AgentPromptInputProps 只繼承 div 的 HTMLAttributes)沒有 disabled 可傳;
-            // 外框寫死 fieldChromeStyles({ mode: 'edit' })(:1391);代理進行中(busy,:1285)只把送出鈕換成停止,輸入框照常可打字。
-            // 規格 agent-panel.spec.md:241 外框 =「Textarea edit×default 同一組字串」,沒有停用態。日後若加 disabled,
+            // textarea(本檔 :1427)不帶 disabled;props(:1303 AgentPromptInputProps 只繼承 div 的 HTMLAttributes)沒有 disabled 可傳;
+            // 外框寫死 fieldChromeStyles({ mode: 'edit' })(:1415);代理進行中(busy,:1309)只把送出鈕換成停止,輸入框照常可打字。
+            // 規格 agent-panel.spec.md:244 外框 =「Textarea edit×default 同一組字串」,沒有停用態。日後若加 disabled,
             // 照同族 textarea.tsx:45 的寫法補 disabled 時 placeholder 換 fg-disabled 的覆寫,並拿掉這段豁免。
             'placeholder:text-fg-muted',
             'field-sizing-content max-h-40',
@@ -1520,7 +1544,11 @@ export interface AgentDecisionCardProps
    * (留著 = 舊寫法照舊「拿建議繼續」);傳 `onSkip` 在型別層就會報錯(不是 props 裡的名字)。
    */
   onCancel: () => void
-  /** 卡上自帶的文字(Partial 傳入、與 DS 預設合併 —— 同 Coachmark / FileViewer `labels`);DS 預設中文,英文由 consumer 傳。 */
+  /**
+   * 卡上自帶的文字(Partial 傳入、與 DS 預設合併 —— 同 Coachmark / FileViewer `labels`);DS 預設中文,英文由 consumer 傳。
+   * 取值順序(每個鍵)= 本參數 → I18nProvider 的 `agent-decision-card` 那一組(鍵名同 `AgentDecisionCardLabels`)→ DS 預設
+   * (lib/i18n/README.md「Fallback chain」;中間那一層 2026-11-26 起,與同家族 AgentThinking 一致)。
+   */
   labels?: Partial<AgentDecisionCardLabels>
 }
 
@@ -1589,6 +1617,17 @@ const DEFAULT_DECISION_LABELS: AgentDecisionCardLabels = {
   errorMulti: '請至少選擇一個選項',
   errorOther: '請輸入其他選項',
 }
+const DECISION_LABEL_KEYS = Object.keys(DEFAULT_DECISION_LABELS) as (keyof AgentDecisionCardLabels)[]
+
+/** 每個鍵:consumer `labels` → I18nProvider `agent-decision-card` → DS 預設(lib/i18n/README.md「Fallback chain」;同 ProfileCardDefaultActions 的逐鍵寫法) */
+function resolveDecisionLabels(
+  override: Partial<AgentDecisionCardLabels> | undefined,
+  t: ReturnType<typeof useI18n>['t'],
+): AgentDecisionCardLabels {
+  return Object.fromEntries(
+    DECISION_LABEL_KEYS.map((key) => [key, override?.[key] ?? t('agent-decision-card', key, DEFAULT_DECISION_LABELS[key])]),
+  ) as unknown as AgentDecisionCardLabels
+}
 type DecisionError = 'empty' | 'other'
 
 /** 產題守則機械層(agent-decision-card.spec.md §8「產題守則」⚙ 條):DEV 只警告不阻擋,內容規則靠稽核。 */
@@ -1654,7 +1693,8 @@ const OPTION_CHECKBOX_HOVER =
 
 const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProps>(
   ({ questions, onSubmit, onCancel, labels: labelsOverride, className, onKeyDown, ...props }, ref) => {
-    const labels = { ...DEFAULT_DECISION_LABELS, ...labelsOverride }
+    const { t } = useI18n()
+    const labels = resolveDecisionLabels(labelsOverride, t)
     const titleId = React.useId()
     const otherInputId = React.useId()
     const optionIdBase = React.useId()

@@ -785,6 +785,7 @@
           "scripts/test-hook-test-fixture-guard-invariant.mjs",
           "scripts/test-hover-instant-invariant.mjs",
           "scripts/test-hover-own-pair-invariant.mjs",
+          "scripts/test-i18n-labels-override-invariant.mjs",
           "scripts/test-import-waived-self-review.mjs",
           "scripts/test-inline-action-hand-craft-invariant.mjs",
           "scripts/test-inline-edit-view-geometry-invariant.mjs",

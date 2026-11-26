@@ -60,6 +60,7 @@ export type {
   AgentPanelProps,
   AgentPromptAttachment,
   AgentPromptInputProps,
+  AgentThinkingLabels,
   AgentThinkingProps,
   AgentToolbarProps,
 } from './components/AgentPanel/index'
@@ -214,6 +215,7 @@ export type {
   ComboboxTagRenderState,
 } from './components/Combobox/index'
 export {
+  DATA_TABLE_COLUMN_VISIBILITY_PANEL_DEFAULT_LABELS,
   DATA_TABLE_FILTER_PANEL_DEFAULT_LABELS,
   DATA_TABLE_SORT_MANAGER_DEFAULT_LABELS,
   DataTable,
@@ -230,6 +232,7 @@ export {
 export type {
   Conjunction,
   DataTableColumnDef,
+  DataTableColumnVisibilityPanelLabels,
   DataTableColumnVisibilityPanelProps,
   DataTableFilterPanelLabels,
   DataTableFilterPanelProps,
@@ -387,6 +390,7 @@ export {
   Pagination,
 } from './components/Pagination/index'
 export type {
+  PaginationLabels,
   PaginationProps,
 } from './components/Pagination/index'
 export {
