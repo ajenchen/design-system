@@ -1041,8 +1041,10 @@ export async function installRenderErrorLedger(page) {
 // 都 elements.set(新的空 Map) → 重跑 `document.body.querySelectorAll('*')` + 每個元素 getComputedStyle(找可捲動元素掛 scroll 監聽)。
 // 8.6 的 @storybook/addon-highlight 沒有這段。虛擬捲動的 DataTable 每一格都在增刪列 → 每一格多付一次整頁樣式計算,
 // 主執行緒被吃掉,CDP 送幀出現 > 100ms 的缺口(test-data-table-scroll-perception 的 delayed 對照組 5 次全作廢)。
-// 整支閘的耗時:同一台機器修前 / 修後(2026-11-26,不節流)perception 步驟 371 → 352s、handles 步驟 470 → 457s,兩面都綠,
-// highlight 只佔 3–5%;CI 上 Storybook 10 整支 job 變慢的其餘部分沒有歸因到 highlight。A/B 全部數字在引入這段與其後更正的 commit 訊息。
+// 整支閘的耗時:同一台機器修前 / 修後(2026-11-26,不節流,各跑一次)perception 步驟 371 → 352s、handles 步驟 470 → 457s,兩面都綠。
+// 這 3–5% 的差落在同機重跑的散布之內(同一批量測裡前 13 支閘修後反而 398 → 406s、還有一支 31s 的單次離群),
+// **不能**據此說 highlight 佔整支閘多少時間;有實測直接撐住的只有捲動量測期間的送幀缺口:delayed 對照組(--cpu-throttle=3)
+// 修前 25/25 次作廢、修後 5 輪都有效。CI 上 Storybook 10 整支 job 變慢沒有歸因到 highlight。A/B 全部數字在引入這段與其後更正的 commit 訊息。
 // 閘量的是元件,不是 Storybook 的開發工具;所以 openStory 開 Storybook iframe 時,在 iframe.html 第一支腳本之前把
 // `window.FEATURES.highlight` 定成 false —— Storybook 自己文件化的開關(等同 main 設定 `features.highlight: false`),
 // 只作用在這個分頁的 preview 文件。給讀者看的預覽站(storybook-static / 部署預覽)與管理介面(index.html)照舊;

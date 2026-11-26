@@ -123,7 +123,7 @@ reader-facing 的 scenario 不得標 `test-only`。機械 gate=`scripts/audit-co
 
 ## Storybook 版本與匯入路徑(10.x)
 
-storybook / @storybook/* 全 repo 同一個精確版號(現為 10.6.9)。
+storybook / @storybook/* 全 repo 同一個精確版號(版號以根 `package.json` 的 `storybook` 為準,本檔不寫數字,免得與它漂移)。
 story 的型別從 `@storybook/react-vite` 匯入、測試工具從 `storybook/test`;`@storybook/react`、`@storybook/test`、
 `@storybook/addon-essentials`、`@storybook/blocks` 已退場(官方 MIGRATION.md「From version 8.x to 9.0.0」)。
 全域初始值寫 `initialGlobals`、收尾寫 `afterEach`;`.storybook/main.*` 與 addon preset 必為合法 ESM
