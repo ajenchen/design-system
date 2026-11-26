@@ -370,6 +370,21 @@ done
 # ─────────────────────────────────────────────────────────────────────────────
 # R9 — hand_craft_overlay_header(零誤判簽名:px-loose + border-b border-divider 同 className)
 # ─────────────────────────────────────────────────────────────────────────────
+# 頁面內不可關閉的有框區塊,標頭由消費者自組(header-canonical.spec.md「何時不用」;user 2026-11-26 E6),
+# 可能也寫成 px-loose + border-divider。先用 hooks/lib/tsx-governance-analysis.mjs page-block-header-mask(與 DS 版同一份判法)
+# 把「正向認得出、不在浮層裡」的區塊標頭遮掉再跑簽名;解析不了(片段、專案沒有 TypeScript)→ 用原文 = 照擋。
+# 兩個字都沒出現就不叫 parser(大檔不付成本);輸入用 here-string,parser 提早結束也不會 broken pipe。
+R9_CONTENT="$NEW_CONTENT"
+if grep -qF 'border-divider' <<< "$NEW_CONTENT" && grep -qF 'px-[var(--layout-space-loose)]' <<< "$NEW_CONTENT"; then
+  R9_ANALYZER="$SCRIPT_DIR/lib/tsx-governance-analysis.mjs"
+  for R9_ROOT in "$(governance_project_root 2>/dev/null)" "$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null)"; do
+    [ -n "$R9_ROOT" ] && [ -f "$R9_ANALYZER" ] || continue
+    if R9_MASKED=$(cd "$R9_ROOT" && node -- "$R9_ANALYZER" page-block-header-mask 2>/dev/null <<< "$NEW_CONTENT"); then
+      R9_CONTENT="$R9_MASKED"
+      break
+    fi
+  done
+fi
 # Drop pure comment lines and flatten in one awk pass. Do not strip inline //
 # because doing so mutilates URLs and changes executable JSX.
 FLAT9=$(awk '
@@ -379,7 +394,7 @@ FLAT9=$(awk '
     printf "%s", $0
     first=0
   }
-' <<< "$NEW_CONTENT") \
+' <<< "$R9_CONTENT") \
   || governance_hook_integrity_fail 'R9 consumer story content flatten failed'
 if governance_hook_grep_q \
   'R9 consumer hand-craft matcher failed' \
@@ -392,6 +407,8 @@ if governance_hook_grep_q \
     echo "   理由:px-loose + divider border 的 header chrome 是 overlay-surface SSOT;手刻 = drift"
     echo "   (anchor 2026-06-04 upload-manager 手刻面板 py-2≠py-tight / 殼 token 全偏,user 抓)。"
     echo "   Spec:node_modules/@qijenchen/design-system/src/patterns/overlay-surface/overlay-surface.spec.md"
+    echo "   不在此限:頁面內不可關閉的有框區塊標頭(直接寫在 rounded-md + border 區塊最上方、不在浮層裡)由你自組,"
+    echo "   不會被擋(node_modules/@qijenchen/design-system/src/patterns/header-canonical/header-canonical.spec.md「何時不用」)。"
     echo "   豁免:檔頭加 // @story-baseline-allow: <reason>。"
   } >&2
   record_worst 2

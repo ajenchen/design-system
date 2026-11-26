@@ -74,8 +74,22 @@ classify() {
 }
 
 # ── Check 1: 自刻 overlay chrome ──
+# 頁面內不可關閉的有框區塊,標頭由消費者自組(header-canonical.spec.md「何時不用」;user 2026-11-26 E6),可能也寫成
+# px-loose + border-divider。先用 tsx-governance-analysis.mjs page-block-header-mask(與 story 閘 R9 同一份判法)把
+# 「正向認得出、不在浮層裡」的區塊標頭遮掉(只換字、不動行號)再跑簽名;解析不了 → 用原檔 = 照擋。
+CHROME_SCAN=$(cat "$FILE_PATH") || integrity 'target read failed'
+if grep -qF 'border-divider' "$FILE_PATH" && grep -qF 'px-[var(--layout-space-loose)]' "$FILE_PATH"; then
+  CHROME_ANALYZER="$(cd "$(dirname "$0")" 2>/dev/null && pwd -P)/tsx-governance-analysis.mjs"
+  for CHROME_ROOT in "${GOVERNANCE_PROJECT_DIR:-$(pwd)}" "$(git -C "$(dirname "$0")" rev-parse --show-toplevel 2>/dev/null)"; do
+    [ -n "$CHROME_ROOT" ] && [ -d "$CHROME_ROOT" ] && [ -f "$CHROME_ANALYZER" ] || continue
+    if CHROME_MASKED=$( (cd "$CHROME_ROOT" && node -- "$CHROME_ANALYZER" page-block-header-mask 2>/dev/null) < "$FILE_PATH"); then
+      CHROME_SCAN="$CHROME_MASKED"
+      break
+    fi
+  done
+fi
 classify chrome \
-  "$(grep -nE '<div className="[^"]*px-\[var\(--layout-space-loose\)\][^"]*border-(b|t) border-divider' "$FILE_PATH" 2>/dev/null)" \
+  "$(printf '%s\n' "$CHROME_SCAN" | grep -nE '<div className="[^"]*px-\[var\(--layout-space-loose\)\][^"]*border-(b|t) border-divider' 2>/dev/null)" \
   'overlay-handcraft-allow:[ \t]*[^ \t]' \
   '自刻 overlay chrome(違 mindset #2)' \
   "  → 改用 primitive:

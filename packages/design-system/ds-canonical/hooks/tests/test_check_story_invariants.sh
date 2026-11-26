@@ -457,6 +457,45 @@ export const P = () => (<div className="px-[var(--layout-space-loose)] border-b 
 '
 expect_pass_silent "23. R9 skip FileViewer(isOverlay 家)→ 不檢查"
 
+# 23a–23c. R9 頁面內有框區塊標頭(header-canonical.spec.md「何時不用」;user 2026-11-26 E6:消費者用 typography + token +
+#   item anatomy 自組)。判法 = lib/tsx-governance-analysis.mjs page-block-header-mask。兩面:頁面區塊不擋、浮層內照擋。
+run_hook "PreToolUse" "Write" "$TMP_DIR/r9-page-block.stories.tsx" '
+export const NotificationSettings = () => (
+  <div className="rounded-md border border-border bg-surface">
+    <div className="flex items-center justify-between px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] border-b border-divider">
+      <h2 className="text-h6">通知設定</h2>
+    </div>
+    <div className="p-[var(--layout-space-loose)]">有人在留言中提及你時寄信通知</div>
+  </div>
+);
+'
+expect_pass_silent "23a. R9 頁面內有框區塊標頭(rounded-md + border、不在浮層裡)→ 不擋"
+
+run_hook "PreToolUse" "Write" "$TMP_DIR/r9-block-in-dialog.stories.tsx" '
+export const InDialog = () => (
+  <Dialog open>
+    <DialogContent>
+      <div className="rounded-md border border-border bg-surface">
+        <div className="flex items-center px-[var(--layout-space-loose)] py-2 border-b border-divider">
+          <span className="text-body font-medium">付款方式</span>
+        </div>
+      </div>
+    </DialogContent>
+  </Dialog>
+);
+'
+expect_block "23b. R9 同一個有框區塊放進 DialogContent(浮層內)→ 照擋" "R9 hand-craft overlay"
+
+run_hook "PreToolUse" "Write" "$TMP_DIR/r9-block-not-first.stories.tsx" '
+export const Rows = () => (
+  <div className="rounded-md border border-border bg-surface">
+    <p className="text-body">本週部署紀錄</p>
+    <div className="px-[var(--layout-space-loose)] py-2 border-b border-divider">v2.4.1 已上線</div>
+  </div>
+);
+'
+expect_block "23c. R9 簽名元素不是區塊第一個子元素(不是區塊標頭)→ 照擋" "R9 hand-craft overlay"
+
 # 24. R10 link_canonical: text-primary hover:underline → P1 warn(非 block)
 run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/Foo/foo.principles.stories.tsx" '
 <span className="text-primary hover:underline font-medium cursor-pointer">查看詳情</span>

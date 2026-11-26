@@ -40,7 +40,7 @@ paths:
 
 **先 `ls packages/design-system/src/{components,patterns}/`**。必查 spec:Tokens(`tokens/{color|typography|density|uiSize|layoutSpace|elevation|radius|opacity|motion}/*.spec.md`;**選 token 先判斷元素是哪一種東西,再查該類用途表**,不照 Tailwind 名字猜 —— 例:圓角看 `radius.spec.md`「四檔」,`rounded-sm` 在本系統是 2px、只給短邊 ≤ 10px 的指示,`scripts/radius-usage-invariant.mjs` 在建置好的 Storybook 上逐元素量)/ Row + List item(`item-anatomy.spec.md` Family 1+2 SSOT)/ Action bar / Overflow / Overlay(`patterns/{action-bar,horizontal-overflow,overlay-surface}/*.spec.md`)/ Field(`components/Field/*.spec.md`)。
 
-**既有 primitive 優先消費**:命中既有 → 必消費不 hand-craft。**自我檢查**:icon+text 垂直 → `<Empty>`;橫向 row → `<MenuItem>` + slot(消費 item-anatomy);chrome header(toolbar / page top bar / panel 標題列)→ `<ChromeHeader>`(消費 header-canonical,讀其 spec + `Patterns/Header Anatomy` story);浮層 → `overlay-surface`;跨 OS 捲軸 → `<ScrollArea>`;鎖長寬比 → `<AspectRatio>`。完整對照 → `packages/design-system/ds-canonical/references/build-ui-canonicals.md`。
+**既有 primitive 優先消費**:命中既有 → 必消費不 hand-craft。**自我檢查**:icon+text 垂直 → `<Empty>`;橫向 row → `<MenuItem>` + slot(消費 item-anatomy);chrome header(toolbar / page top bar / panel 標題列)→ `<ChromeHeader>`(消費 header-canonical,讀其 spec + `Patterns/Header Anatomy` story);頁面內不可關閉的有框區塊(設定卡、資訊區塊)的標題不是 chrome header → 消費者用 typography + token + item anatomy 自組,DS 不提供區塊標頭元件(`header-canonical.spec.md`「何時不用」);浮層 → `overlay-surface`;跨 OS 捲軸 → `<ScrollArea>`;鎖長寬比 → `<AspectRatio>`。完整對照 → `packages/design-system/ds-canonical/references/build-ui-canonicals.md`。
 
 ## UI 開發 4 條核心
 

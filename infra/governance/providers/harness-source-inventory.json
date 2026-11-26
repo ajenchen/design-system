@@ -66,7 +66,7 @@
       },
       {
         "path": "packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs",
-        "sha256": "d690a3a67697c7be99ffd54a9eac0c465a5202232c480a3a622ac8ea8159f3a2",
+        "sha256": "64f1545dca8b366bf7f2172d7422bf31c34c415a286970157ef1749b0667530b",
         "consumers": [
           "packages/design-system/ds-canonical/hooks/check_item_list_gap.sh",
           "packages/design-system/ds-canonical/hooks/lib/_app_shell_primary_header_consistency.sh",

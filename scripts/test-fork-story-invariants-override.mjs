@@ -55,6 +55,16 @@ function buildFixture() {
     join(SOURCE_HELPER_ROOT, 'lib/_provider_paths.sh'),
     join(HOOK_ROOT, 'lib/_provider_paths.sh'),
   )
+  // R9 頁面區塊標頭的判法(page-block-header-mask)隨 fork corpus 出貨;TypeScript 由被管專案提供。
+  copyFileSync(
+    join(SOURCE_HELPER_ROOT, 'lib/tsx-governance-analysis.mjs'),
+    join(HOOK_ROOT, 'lib/tsx-governance-analysis.mjs'),
+  )
+  try {
+    symlinkSync(join(ROOT, 'node_modules/typescript'), join(TEST_ROOT, 'node_modules/typescript'), 'dir')
+  } catch (error) {
+    if (error.code !== 'EEXIST') throw error
+  }
   copyFileSync(SOURCE_REGISTRY, REGISTRY)
   writeFileSync(APP_FILE, 'export const App = () => null\n')
 }
@@ -276,6 +286,26 @@ try {
       content: '<div className="px-[var(--layout-space-loose)]" data-x="border-b border-divider" />',
     })),
     'R9 cross-attribute signature → silent',
+  )
+  // 頁面內有框區塊的標頭(header-canonical.spec.md「何時不用」;user 2026-11-26 E6)→ 放行;同一塊放進浮層 → 照擋。
+  const pageBlock = [
+    'export const Billing = () => (',
+    '  <div className="rounded-md border border-border bg-surface">',
+    '    <div className="flex items-center px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] border-b border-divider"><h2 className="text-h6">帳單資訊</h2></div>',
+    '    <p>下次扣款日 12/01</p>',
+    '  </div>',
+    ')',
+  ].join('\n')
+  assertSilent(
+    await runHook(eventPayload({ content: pageBlock })),
+    'R9 page block header outside overlays → silent',
+  )
+  assertBlock(
+    await runHook(eventPayload({
+      content: pageBlock.replace('  <div className="rounded-md', '  <HoverCardContent><div className="rounded-md').replace('  </div>\n)', '  </div></HoverCardContent>\n)'),
+    })),
+    'R9 page block header inside HoverCardContent → block',
+    'R9 hand-craft overlay',
   )
 
   const largeFiller = 'safe-padding-0123456789abcdef'.repeat(12_000)

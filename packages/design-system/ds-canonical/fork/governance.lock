@@ -719,7 +719,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_code_quality.sh",
-      "sha256": "1bc750f6731800d4983c97cbe3c7eb1957b038880fb8759d8fb3c4959932fbe8",
+      "sha256": "27cd1472b0896d8d9ad8a18d9dfe41d1f9a8db7d04be1c1326c45e300a64f1da",
       "source": "check_consumer_code_quality.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -815,7 +815,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_story_invariants.sh",
-      "sha256": "f7e7a17d4ee6f335d2c9088cd6d815767bf76cf54906fd0c238d36ef01e4101c",
+      "sha256": "2a3f7a440f87ac923cd18530814ddd423e59c1dc2d4b2bda58c78c73ff062ecd",
       "source": "check_story_invariants.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -879,7 +879,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/lib/tsx-governance-analysis.mjs",
-      "sha256": "d690a3a67697c7be99ffd54a9eac0c465a5202232c480a3a622ac8ea8159f3a2",
+      "sha256": "64f1545dca8b366bf7f2172d7422bf31c34c415a286970157ef1749b0667530b",
       "source": "lib/tsx-governance-analysis.mjs",
       "classification": "HELPER",
       "destination": null

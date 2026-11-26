@@ -13,6 +13,7 @@ const modes = new Set([
   'app-shell-primary-header',
   'chrome-header-handcraft',
   'item-list-gap',
+  'page-block-header-mask',
 ])
 if (extra.length !== 0 || !modes.has(mode)) process.exit(2)
 
@@ -443,6 +444,121 @@ function analyzeChromeHeaderHandcraft() {
   process.stdout.write(hit ? 'HIT' : 'CLEAN')
 }
 
+// 頁面內有框區塊的標頭 —— 手刻浮層標頭四支閘的共用判法(check_story_invariants.sh 規則 R9、
+// scripts/fork-hook-overrides/check_story_invariants.sh 規則 R9、check_consumer_code_quality.sh 浮層段、
+// lib/_overlay_handcraft.sh 規則 1)。
+// SSOT:patterns/header-canonical/header-canonical.spec.md「何時不用」—— 頁面內不可關閉的有框區塊,標題由消費者用
+// typography + token + item anatomy 自組,DS 不提供區塊標頭元件(user 2026-11-26 第六輪 E6)。這種標頭可能也寫成
+// px-loose + border-divider,跟手刻浮層標頭同一組 class;四支閘只看 class,會把它當浮層擋下。
+// 本模式只把「正向認得出是頁面區塊標頭」的那個 className 字串裡的 border-divider 換成同長度的 page-block-hdr,
+// 其餘原文照印;閘拿遮過的內容跑自己原本的 regex。條件全成立才遮:
+//   (a) 這個元素是 <div>,className 是純字串,含 px-[var(--layout-space-loose)] + border-divider + border-b 或 border-t;
+//   (b) 它直接寫在父元素底下(中間沒有 `{…}`、條件式或 callback),而且是父元素的第一個子元素(標頭在區塊最上方);
+//   (c) 父元素是原生元素、className 是純字串、含 rounded-md(radius.spec.md「不浮起來的容器(頁面上的卡片…)」)
+//       且含 border 或 shadow-[var(--elevation-100)](elevation.spec.md「頁面內容層」);
+//   (d) 父元素與往上所有祖先都不是浮層:元件名不含下方 OVERLAY_NAME 任一字;原生元素的 className(含條件式裡的字串)
+//       不含浮層記號(rounded-lg / bg-surface-raised / elevation-200 系 / fixed / absolute;radius.spec.md
+//       「rounded-lg 浮層外殼」、elevation.spec.md「--elevation-200 浮層」)。
+// 認不出(className 不是純字串、父元素是元件、區塊寫在別的函式裡被浮層引用)一律不遮 = 照擋;解析失敗 exit 3,
+// 呼叫端改用原文 = 照擋。
+function maskPageBlockHeaders() {
+  const OVERLAY_NAME = /(Dialog|Sheet|Drawer|Popover|HoverCard|Menu|Tooltip|Coachmark|Toast|Surface|Overlay|Portal)/
+  const FLOATING = (token) => (
+    token === 'rounded-lg'
+    || token === 'bg-surface-raised'
+    || token === 'fixed'
+    || token === 'absolute'
+    || token.startsWith('shadow-[var(--elevation-200')
+  )
+  const classAttribute = (opening) => {
+    let found = null
+    for (const item of opening.attributes.properties) {
+      if (ts.isJsxSpreadAttribute(item)) return { known: false, attribute: null }
+      if (ts.isJsxAttribute(item) && item.name.getText(sourceFile) === 'className') found = item
+    }
+    return { known: true, attribute: found }
+  }
+  const plainClass = (opening) => {
+    const { known, attribute } = classAttribute(opening)
+    if (!known || !attribute || !attribute.initializer) return null
+    const init = attribute.initializer
+    if (ts.isStringLiteral(init)) return { literal: init, tokens: new Set(init.text.split(/\s+/).filter(Boolean)) }
+    if (
+      ts.isJsxExpression(init)
+      && init.expression
+      && (ts.isStringLiteral(init.expression) || ts.isNoSubstitutionTemplateLiteral(init.expression))
+    ) {
+      return { literal: init.expression, tokens: new Set(init.expression.text.split(/\s+/).filter(Boolean)) }
+    }
+    return null
+  }
+  // 祖先的浮層記號:className 底下所有字串都算(條件式裡的 'fixed' 也算 —— 寧可多擋)
+  const anyClassTokens = (opening) => {
+    const { attribute } = classAttribute(opening)
+    const tokens = new Set()
+    if (!attribute || !attribute.initializer) return tokens
+    const collect = (node) => {
+      if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+        for (const token of node.text.split(/\s+/)) if (token) tokens.add(token)
+      } else if (ts.isTemplateExpression(node)) {
+        for (const token of node.head.text.split(/\s+/)) if (token) tokens.add(token)
+        for (const span of node.templateSpans) {
+          for (const token of span.literal.text.split(/\s+/)) if (token) tokens.add(token)
+        }
+      }
+      ts.forEachChild(node, collect)
+    }
+    collect(attribute.initializer)
+    return tokens
+  }
+  const isIntrinsic = (opening) => /^[a-z][a-z0-9]*$/.test(opening.tagName.getText(sourceFile))
+  const isOverlayAncestor = (opening) => {
+    if (!isIntrinsic(opening)) return OVERLAY_NAME.test(opening.tagName.getText(sourceFile))
+    for (const token of anyClassTokens(opening)) if (FLOATING(token)) return true
+    return false
+  }
+  const firstElementChild = (element) => element.children.find((child) => (
+    !(ts.isJsxText(child) && child.containsOnlyTriviaWhiteSpaces)
+  ))
+
+  const masks = []
+  const visit = (node) => {
+    if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node)) {
+      const opening = ts.isJsxElement(node) ? node.openingElement : node
+      const own = opening.tagName.getText(sourceFile) === 'div' ? plainClass(opening) : null
+      const signature = own
+        && own.tokens.has('px-[var(--layout-space-loose)]')
+        && own.tokens.has('border-divider')
+        && (own.tokens.has('border-b') || own.tokens.has('border-t'))
+      const parent = node.parent
+      if (signature && ts.isJsxElement(parent) && firstElementChild(parent) === node) {
+        const block = plainClass(parent.openingElement)
+        const pageBlock = isIntrinsic(parent.openingElement)
+          && block
+          && block.tokens.has('rounded-md')
+          && (block.tokens.has('border') || block.tokens.has('shadow-[var(--elevation-100)]'))
+        let floating = false
+        for (let up = parent; up && !floating; up = up.parent) {
+          if (ts.isJsxElement(up) && isOverlayAncestor(up.openingElement)) floating = true
+          else if (ts.isJsxSelfClosingElement(up) && isOverlayAncestor(up)) floating = true
+        }
+        if (pageBlock && !floating) masks.push(own.literal)
+      }
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sourceFile)
+
+  let output = source
+  for (const literal of masks.sort((a, b) => b.getStart(sourceFile) - a.getStart(sourceFile))) {
+    const start = literal.getStart(sourceFile)
+    const end = literal.getEnd()
+    const masked = output.slice(start, end).replace(/(^|[\s"'`])border-divider(?=[\s"'`]|$)/g, '$1page-block-hdr')
+    output = output.slice(0, start) + masked + output.slice(end)
+  }
+  process.stdout.write(output)
+}
+
 // FileItem 清單的外層(list wrapper)—— `check_item_list_gap.sh` 的量法。
 // SSOT:components/FileItem/file-item.spec.md「List wrapper canonical」(gap 表)+「List wrapper 本身不加視覺」;
 // 規則的原理在 patterns/element-anatomy/item-anatomy.spec.md「連續 item 貼邊合法性」(原 meta-patterns M16)。
@@ -754,4 +870,5 @@ function analyzeItemListGap() {
 if (mode === 'header-with-tabs-border') analyzeHeaderWithTabsBorder()
 else if (mode === 'app-shell-primary-header') analyzeAppShellPrimaryHeader()
 else if (mode === 'item-list-gap') analyzeItemListGap()
+else if (mode === 'page-block-header-mask') maskPageBlockHeaders()
 else analyzeChromeHeaderHandcraft()

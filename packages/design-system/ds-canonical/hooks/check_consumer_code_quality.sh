@@ -121,10 +121,24 @@ fi
 
 FLAT=$(printf '%s' "$BODY" | tr '\n' ' ')
 
-OVERLAY=$(printf '%s' "$BODY" | perl -0777 -ne 'print "hit" if /<div\b[^>]*className="(?=[^"]*px-\[var\(--layout-space-loose\)\])(?=[^"]*border-(?:b|t))(?=[^"]*border-divider)[^"]*"/s') \
+# 頁面內不可關閉的有框區塊,標頭由消費者自組(header-canonical.spec.md「何時不用」;user 2026-11-26 E6),可能也寫成
+# px-loose + border-divider。先用 lib/tsx-governance-analysis.mjs page-block-header-mask(與 story 閘 R9 同一份判法)把
+# 「正向認得出、不在浮層裡」的區塊標頭遮掉再跑簽名;解析不了 → 用原文 = 照擋。
+OVERLAY_BODY="$BODY"
+if grep -qF 'border-divider' <<< "$BODY" && grep -qF 'px-[var(--layout-space-loose)]' <<< "$BODY"; then
+  OVERLAY_ANALYZER="$(cd "$(dirname "$0")" 2>/dev/null && pwd -P)/lib/tsx-governance-analysis.mjs"
+  for OVERLAY_ROOT in "$(governance_project_root 2>/dev/null)" "$(git -C "$(dirname "$0")" rev-parse --show-toplevel 2>/dev/null)"; do
+    [ -n "$OVERLAY_ROOT" ] && [ -f "$OVERLAY_ANALYZER" ] || continue
+    if OVERLAY_MASKED=$(cd "$OVERLAY_ROOT" && node -- "$OVERLAY_ANALYZER" page-block-header-mask 2>/dev/null <<< "$BODY"); then
+      OVERLAY_BODY="$OVERLAY_MASKED"
+      break
+    fi
+  done
+fi
+OVERLAY=$(printf '%s' "$OVERLAY_BODY" | perl -0777 -ne 'print "hit" if /<div\b[^>]*className="(?=[^"]*px-\[var\(--layout-space-loose\)\])(?=[^"]*border-(?:b|t))(?=[^"]*border-divider)[^"]*"/s') \
   || governance_hook_integrity_fail 'consumer quality overlay parser failed'
 if [ -n "$OVERLAY" ] && ! has_rationale 'overlay-handcraft-allow'; then
-  add_violation 'hand-crafted overlay chrome; consume Popover/Dialog/Sheet/Surface header/body/footer primitives'
+  add_violation 'hand-crafted overlay chrome; consume Popover/Dialog/Sheet/Surface header/body/footer primitives(頁面內不可關閉的有框區塊標頭不在此限:直接寫在 rounded-md + border 區塊最上方、不在浮層裡,由你用 typography + token + item anatomy 自組,見 header-canonical.spec.md「何時不用」)'
 fi
 
 # 滑過底色認任何 `-hover` 配對 token(2026-09-25;color.spec.md「Hover 換色配對總則」:有自己靜止底色的列換成那個底自己的 -hover,
