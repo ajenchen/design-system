@@ -223,9 +223,9 @@ export const toastMeta = {
   component: 'Toast',
   family: 2, // Family 2(List item layout)— 透過 Notice 繼承,對齊 toast.spec.md frontmatter L3 + L39
   variants: {
-    neutral: { when: '非狀態通知;一般 announcement / tip' },
+    neutral: { when: '預設 · 無圖示;一般操作回饋 / 通知(已複製 / 偏好已儲存)' },
     info: { when: '資訊性提示(新版本 / 同步完成)' },
-    success: { when: '成功確認(已寄送 / 付款完成)' },
+    success: { when: '選用:要用綠勾強調完成時傳(已寄送 / 付款完成 / 已儲存)' },
     warning: { when: '可恢復警告(未儲存 / 連線不穩)' },
     error: { when: '錯誤(匯入失敗 / 權限不足);action prop 可加重試' },
   },

@@ -422,9 +422,9 @@ Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/Toast/
 
 ### Variants
-- **neutral**: 非狀態通知;一般 announcement / tip(『已複製到剪貼簿』『偏好已儲存』)
+- **neutral**: 預設(不傳 variant 就是它)· 無圖示;一般操作回饋與通知(『已複製到剪貼簿』『偏好已儲存』『檔案已開始下載』)。儲存、送出、建立這類『做完了』的回饋,用它或用 success 由消費者決定
 - **info**: 資訊性提示(『新版本可用』『同步完成』);非錯誤、非成功
-- **success**: 成功確認(『訂單已寄送』『付款完成』『5 筆資料已匯入』)
+- **success**: 選用 —— 消費者想用綠勾強調『做完了』時傳 variant: 'success'(『訂單已寄送』『付款完成』『5 筆資料已匯入』『專案已儲存』);不傳就是 neutral
 - **warning**: 可恢復警告(『有未儲存變更』『連線不穩』『token 將過期』)
 - **error**: 錯誤(『匯入失敗』『權限不足』『網路斷線』);action prop 可加重試
 
