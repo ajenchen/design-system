@@ -70,25 +70,26 @@ through ordinary `sync-all`. A legacy v1 consumer cannot use its old updater to 
 or cross the v2 runtime boundary: it first needs one reviewed full-snapshot bootstrap PR.
 Product-owned root README and other root documents are never taken over.
 
-Changes to `.github/**`, `.npmrc`, `governance/bin/**`, `scripts/**`, or package scripts require a
-separately reviewed full-snapshot PR — ordinary `sync-all` cannot replace the control plane that
-authorizes its own next execution. Reviewed paths run from the DS authority, materialize only a
-fresh snapshot, execute no candidate code, and emit proposals rather than applying to the live
-consumer or inventory.
+Changes to `.github/**`, `.npmrc`, `governance/bin/**`, `scripts/**`, or package scripts travel
+through ordinary `sync-all` as data in the upgrade PR diff (`GOV-UPGRADE-BOOTSTRAP-001/002` retired
+2026-08-12; each such path prints an `INFO` line). The transaction still executes only the scripts on
+the protected base; incoming control-plane code runs only after the PR merges.
 
 ## Release mirror and protected PR trust chain
 
 Automatic template delivery is owned upstream by the release mirror. It opens a normal PR containing
-the exact published snapshot; a consumer does not carry a second release-dispatch/updater workflow.
+the exact published snapshot. Product repositories carry one upstream-managed receiver,
+`.github/workflows/sync-design-system.yml`: on `repository_dispatch` `design-system-published` it
+validates the exact `{ version, tag, commit }` payload, runs `sync-all --apply` on a GitHub runner,
+and pushes only `automation/design-system-<version>`, holding nothing but `contents: write`.
 Repository Actions defaults remain read-only, and ordinary delivery requires no hosted environment or
 App credential in the consumer.
 
 The provider-neutral standard release order is exactly
 `pr-checks → merge → publish → readback → consumer`. The upstream release mirror owns template
-delivery. A registered product receiver is downstream-only: it pins every manifest discovered from
-the root workspace declaration to the exact release, regenerates the single npm lock, and derives
-both status and staging paths from `sync-exact-workspace-dependencies.mjs --list-receiver-paths`.
-It may open a protected PR; it may not publish, direct-write `main`, or replace mirror authority.
+delivery. The product receiver is downstream-only: it pushes its automation branch, and the upstream
+release orchestrator opens the PR so that `Verify consumer` runs on it. The receiver may not open or
+merge that PR, publish, direct-write `main`, or replace mirror authority.
 
 Protected `main` requires the single `Verify consumer` context from `audit.yml`. That workflow performs
 one locked install followed by typecheck, import lint, and build. The normal PR review and protected

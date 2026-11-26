@@ -9,6 +9,7 @@ import { compareUtf8Bytes } from './lib/provider-lifecycle.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const WORKFLOW_DIRS = ['.github/workflows', 'template/ds-product-template/.github/workflows']
+const CONSUMER_RECEIVER_WORKFLOW = 'template/ds-product-template/.github/workflows/sync-design-system.yml'
 const REQUIRED_PR_WORKFLOWS = [
   '.github/workflows/ci.yml',
   'template/ds-product-template/.github/workflows/audit.yml',
@@ -328,6 +329,9 @@ export function auditWorkflowSources(sources, {
       if (!/\bnpm\s+audit\s+signatures\b/.test(executable)) {
         add(file, 'WF-SIGNATURE-AUDIT', `job ${job}: npm ci must be followed by registry signature verification`)
       }
+      // 產品 repo 的接收升級 workflow:升級交易(sync-all → verify-upgrade-evidence.mjs)自己跑「只擋這次升級新帶進來的」
+      // 差集弱點稽核。在這裡對升級前的樹擋 high,會把帶著修補的那次升級也擋掉(beta.146 / 147 WM 同步連環 GOV-SUPPLY-005)。
+      if (file === CONSUMER_RECEIVER_WORKFLOW) continue
       if (!/\bnpm\s+audit\b[^\n]*--audit-level=high\b/.test(executable)) {
         add(file, 'WF-VULNERABILITY-AUDIT', `job ${job}: npm ci must reject high-severity advisories`)
       }

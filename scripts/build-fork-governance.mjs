@@ -357,6 +357,8 @@ for (const provider of PROVIDER_REGISTRY.providers.filter((item) => item.adapter
 
 const MANAGED_FILE_SOURCES = {
   '.github/workflows/audit.yml': join(ROOT, 'template/ds-product-template/.github/workflows/audit.yml'),
+  // 2026-11-26:產品 repo 的接收升級 workflow(repository_dispatch → sync-all → 推 automation 分支;PR 由 release orchestrator 開)。
+  '.github/workflows/sync-design-system.yml': join(ROOT, 'template/ds-product-template/.github/workflows/sync-design-system.yml'),
   '.npmrc': join(ROOT, 'template/ds-product-template/.npmrc'),
   '.devcontainer/devcontainer.json': join(ROOT, 'template/ds-product-template/.devcontainer/devcontainer.json'),
   '.devcontainer/devcontainer-lock.json': join(ROOT, 'template/ds-product-template/.devcontainer/devcontainer-lock.json'),

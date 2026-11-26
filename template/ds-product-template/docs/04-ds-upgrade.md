@@ -5,11 +5,49 @@ governance material, provider adapters, and skills—not an install-time lookup 
 
 ## Automated proposal
 
-The design-system authority owns the five-step release SSOT and mirrors the exact published snapshot
-into this template repository through a normal protected-main PR. The template intentionally carries
-no second release-dispatch/updater workflow and requires no Governance App environment.
+The design-system authority owns the five-step release SSOT. Its last step (`consumer`) reaches two
+kinds of repository, and neither needs a Governance App environment:
 
-The PR must pass exactly one required context, `Verify consumer`, from `audit.yml`. That job performs
+- **This template repository** receives the exact published snapshot from the upstream release mirror
+  as a normal protected-main PR.
+- **Product repositories created from the template** receive upgrades through
+  `.github/workflows/sync-design-system.yml`, an upstream-managed file that `sync-all` keeps current.
+
+### Upgrade receiver (`sync-design-system.yml`)
+
+When a release is published, the release orchestrator sends `repository_dispatch` with event type
+`design-system-published` and `client_payload = { version, tag, commit }` to each product repository
+registered for automatic delivery. GitHub runs this event only from the workflow on the default
+branch, so the receiver must be on `main`. On a GitHub-hosted runner it:
+
+1. validates the payload: `version` is one exact SemVer (no `latest`, range, or `v` prefix), `tag`
+   equals `v<version>`, and `commit` is a lowercase 40-character SHA that the design-system tag
+   actually points at;
+2. installs the current lock with `npm ci --ignore-scripts`, then `npm audit signatures`;
+3. runs `npm run sync-all -- --apply --to <version>` on a new branch `automation/design-system-<version>`;
+4. commits the result and pushes only that branch.
+
+It holds only `contents: write`, reads no secrets, and does not open the PR. GitHub does not run
+workflows for a PR opened by the run's own `GITHUB_TOKEN`, so such a PR would never receive
+`Verify consumer`. Instead the orchestrator opens `chore(ds): sync v<version>` from the pushed branch
+with its own credential; if the branch arrives after the orchestrator has stopped waiting, its next
+run (`npm run release:auto` in the design-system repository) opens it. Merging stays with the product repository.
+
+A repository that the orchestrator does not dispatch to can send the same event itself and then open
+the PR from `automation/design-system-X.Y.Z`:
+
+```text
+printf '%s\n' '{"event_type":"design-system-published","client_payload":{"version":"X.Y.Z","tag":"vX.Y.Z","commit":"<40-character commit of tag vX.Y.Z>"}}' \
+  | gh api --method POST repos/<owner>/<repo>/dispatches --input -
+```
+
+Two limits. GitHub refuses workflow-file changes pushed with `GITHUB_TOKEN`, so when a release
+changes `.github/workflows/**` the receiver stops before pushing; run that upgrade on a local terminal
+(Manual proposal below). And the automated branch carries only the upgrade transaction: when
+`ds-changes.json` lists entries for the versions crossed, check out the branch and run
+`npm run ds:migrate` there before merging (see Manual proposal).
+
+Every upgrade PR, automated or manual, must pass exactly one required context, `Verify consumer`, from `audit.yml`. That job performs
 one `npm ci --ignore-scripts` followed by typecheck, import-boundary lint, and build. Review
 conversations and protected-main exact readback remain required. Preview, a11y, visual, canary, fleet,
 and independent-review evidence are optional or scheduled unless explicitly requested and never
@@ -47,11 +85,20 @@ Before running the codemod, read `node_modules/@qijenchen/design-system/ds-chang
 
 Review all generated changes, run product CI, then open a PR. Mutable values such as `beta`, `latest`, `^0.1.0`, or `*` are rejected in a consumer release.
 
-If the plan changes a protected control-plane path or any package script, stop the ordinary flow and use the recurring reviewed control-plane route below. This is intentional: an updater may not automatically replace the workflow/verifier that grants its next update authority. The historical `GOV-UPGRADE-BOOTSTRAP-001/002` identifiers remain stable compatibility IDs; they do not mean an established v2 consumer should repeat the one-time legacy bootstrap.
+A release may also change protected control-plane paths (`.github/**`, `.npmrc`, `governance/bin/**`, `scripts/**`) or `package.json#scripts`. That no longer stops the ordinary flow: `GOV-UPGRADE-BOOTSTRAP-001/002` were retired on 2026-08-12 and now only print an `INFO` line. During the transaction only the scripts already on your protected `main` execute (the provider module loads from the protected-base sandbox); the incoming `scripts/**` and package scripts enter the PR diff as data, are reviewed with it, and run only in runs after the merge. The two IDs stay as stable compatibility names; they do not mean an established v2 consumer should repeat the one-time legacy bootstrap.
+
+## Where to run an upgrade
+
+This section answers the question「一般使用 ds template 的消費者也是用一樣的方式可以建置等價的雲端環境？」(asked by the design-system owner, 2026-11-26).
+
+- **New consumers.** The release workflow upgrades the template repository automatically at every release, so a repository created from the template starts at the template's current version (0.1.0-beta.150 or later). Follow the README Setup script (with your own folder name) and set network access to Full; there is no version gate to cross.
+- **Existing consumers at 0.1.0-beta.149 or older.** The first upgrade to 0.1.0-beta.150 runs the transaction scripts frozen on your own `main` (the older copies), not the ones fixed in 0.1.0-beta.150, and in a Claude Code cloud session those older scripts hit the certificate and proxy problems that 0.1.0-beta.150 fixed. Run that first upgrade on a GitHub runner (the receiver above) or on a local terminal; do not run `sync-all` inside a Claude Code cloud session. The receiver ships in a release after 0.1.0-beta.150, so an older repository adds it once by hand: copy `.github/workflows/sync-design-system.yml` byte-for-byte from the published template repository (before that release, from `template/ds-product-template/.github/workflows/sync-design-system.yml` on design-system `main`) into a PR on its `main`, merge it, then send the dispatch above.
+- **After 0.1.0-beta.150**, later upgrades and `setup:all` can also run in a Claude Code cloud session 【AI 推導,待實測】: nobody has yet upgraded from 0.1.0-beta.150 to a newer release inside a cloud session.
+- **Common conditions for a cloud session:** Node.js 22.15.0 or newer (the cloud image measured 22.23.5); network access set to Full; a proxy URL that carries credentials is not forwarded, by design. The README proxy and network notes have the details.
 
 ## Recurring reviewed control-plane updates
 
-New template snapshots (`new-snapshot-v2`) and consumers that already completed legacy bootstrap (`reviewed-bootstrap-established-v2`) use the same recurring route whenever a release changes a protected control-plane path or `package.json#scripts`. Run these commands in the **DS authority repository**, which owns inventory, release evidence, schemas, and `consumerctl`; do not expect the consumer checkout to self-authorize its own updater replacement.
+New template snapshots (`new-snapshot-v2`) and consumers that already completed legacy bootstrap (`reviewed-bootstrap-established-v2`) may use this route as an opt-in fleet hardening lane when a release changes a protected control-plane path or `package.json#scripts`; ordinary `sync-all` no longer requires it (see above). Run these commands in the **DS authority repository**, which owns inventory, release evidence, schemas, and `consumerctl`.
 
 The route is a six-stage, full-tree protocol:
 
@@ -91,7 +138,7 @@ The one-time bootstrap ends with the reviewed full-snapshot PR merging on the co
 
 ## Failed upgrade and rollback
 
-`sync-all --apply` writes an atomic process-recovery journal, authenticates and reconstructs the incoming release's complete managed-file map, and classifies the exact add/modify/delete set before live mutation. An ordinary upgrade writes only the permitted exact dependency changes plus non-executable governance data, instructions, and provider views. If reconstruction detects `.github/**`, `.npmrc`, `governance/bin/**`, `scripts/**`, or `package.json#scripts` drift, it fails closed with the recurring reviewed control-plane route (or the one-time bootstrap route for a still-legacy profile) and does not partially activate that release. For a permitted ordinary change, the journal snapshots every path the transaction may write **including the common instruction (`AGENTS.md`)** and atomically moves the original `node_modules` on the same filesystem. If install, materialization, or the post-upgrade hard check fails, it restores both tracked state and the original installed tree byte-for-byte. A later invocation also recovers safely after SIGKILL or abrupt process termination. Path-visible concurrent edits are revalidated and fail closed, but the upgrade must run while editors and other writers are quiesced: a non-cooperative process that retains an old open file descriptor is outside the pathname-CAS guarantee. This is process-crash recovery; physical storage/power-loss durability is not claimed because the workflow does not recursively `fsync` every package tree and directory entry.
+`sync-all --apply` writes an atomic process-recovery journal, authenticates and reconstructs the incoming release's complete managed-file map, and classifies the exact add/modify/delete set before live mutation. An ordinary upgrade writes the permitted exact dependency changes, governance data, instructions, and provider views. Changes to `.github/**`, `.npmrc`, `governance/bin/**`, `scripts/**`, or `package.json#scripts` travel in the same change as data (an `INFO` line names each one; `GOV-UPGRADE-BOOTSTRAP-001/002` retired 2026-08-12): none of that incoming code runs during the transaction, and it takes effect only after the PR merges. For a permitted change, the journal snapshots every path the transaction may write **including the common instruction (`AGENTS.md`)** and atomically moves the original `node_modules` on the same filesystem. If install, materialization, or the post-upgrade hard check fails, it restores both tracked state and the original installed tree byte-for-byte. A later invocation also recovers safely after SIGKILL or abrupt process termination. Path-visible concurrent edits are revalidated and fail closed, but the upgrade must run while editors and other writers are quiesced: a non-cooperative process that retains an old open file descriptor is outside the pathname-CAS guarantee. This is process-crash recovery; physical storage/power-loss durability is not claimed because the workflow does not recursively `fsync` every package tree and directory entry.
 
 That transaction is pre-merge recovery, not a way to republish or silently downgrade an already promoted release. If a bad snapshot has merged, keep the evidence, revert product-only changes when safe, fix the canonical source, and publish a strictly newer corrected DS release. Then open a normal exact upgrade PR:
 

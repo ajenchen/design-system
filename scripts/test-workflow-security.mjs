@@ -283,6 +283,37 @@ test('consumer template keeps only the native Verify consumer workflow', () => {
   assert.equal(existsSync('template/ds-product-template/.github/workflows/audit.yml'), true)
 })
 
+test('consumer upgrade receiver keeps registry signature verification and delegates vulnerability gating to the transaction', () => {
+  const path = 'template/ds-product-template/.github/workflows/sync-design-system.yml'
+  const receiver = (install) => `on:
+  repository_dispatch:
+    types: [design-system-published]
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    steps:
+      - run: |
+${install.map(line => `          ${line}`).join('\n')}
+`
+  const rules = (install) => auditWorkflowSources({ [path]: receiver(install) })
+    .filter(finding => finding.file === path)
+    .map(finding => finding.rule)
+  // 同一份 receiver 在別的路徑仍要兩道都過:豁免只綁這一個檔,不是對 repository_dispatch 開口
+  const otherPath = '.github/workflows/other-receiver.yml'
+  assert.deepEqual(
+    auditWorkflowSources({ [otherPath]: receiver(['npm ci --ignore-scripts', 'npm audit signatures']) })
+      .filter(finding => finding.file === otherPath)
+      .map(finding => finding.rule),
+    ['WF-VULNERABILITY-AUDIT'],
+  )
+  assert.deepEqual(rules(['npm ci --ignore-scripts', 'npm audit signatures']), [])
+  assert.deepEqual(rules(['npm ci --ignore-scripts']), ['WF-SIGNATURE-AUDIT'])
+  assert.equal(existsSync(path), true)
+  assert.deepEqual(rules(readFileSync(path, 'utf8').split('\n').filter(line => /\bnpm\s+(?:ci|audit)\b/.test(line)).map(line => line.trim())), [])
+})
+
 test('registry and OIDC authority cannot be co-located through inherited workflow permissions', () => {
   const path = '.github/workflows/inherited-authority-fixture.yml'
   const source = `on:

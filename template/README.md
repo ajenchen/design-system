@@ -70,7 +70,7 @@ template/ds-product-template/
 │   ├── dependabot.yml                    ← daily DS version bump PR
 │   └── workflows/
 │       ├── audit.yml                     ← per-PR tsc + lint:imports + build + a11y CI
-│       └── sync-design-system.yml        ← DS publish event → auto npm update + commit
+│       └── sync-design-system.yml        ← DS release dispatch → exact sync-all → push automation branch(PR 由 release orchestrator 開)
 └── docs/
     ├── 01-first-time-setup.md            ← Day 0 上工
     ├── 02-create-new-product.md          ← 生新 app
