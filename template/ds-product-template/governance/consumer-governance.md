@@ -64,7 +64,9 @@ mistaken for a verified release. The guarded apply path performs immutable-relea
 npm provenance, and signature verification before any live mutation. On a clean dedicated branch,
 `npm run sync-all -- --apply --to X.Y.Z` authenticates the exact release, reconstructs the complete
 managed snapshot, and transactionally updates eligible package, instruction, provider, skill, and
-non-executable governance data. This guide is one of those exact-hash upstream-managed files.
+non-executable governance data, including the exact `@qijenchen/*` versions declared by every
+`apps/*/package.json` (one lock, no nested second copy; `governance:check` blocks a split as
+`GOV-WORKSPACE-VERSION-001/002`). This guide is one of those exact-hash upstream-managed files.
 Consumers already established on the current runtime/bootstrap contract receive later guide updates
 through ordinary `sync-all`. A legacy v1 consumer cannot use its old updater to replace that updater
 or cross the v2 runtime boundary: it first needs one reviewed full-snapshot bootstrap PR.
@@ -92,10 +94,24 @@ release orchestrator opens the PR so that `Verify consumer` runs on it. The rece
 merge that PR, publish, direct-write `main`, or replace mirror authority.
 
 Protected `main` requires the single `Verify consumer` context from `audit.yml`. That workflow performs
-one locked install followed by typecheck, import lint, and build. The normal PR review and protected
+one locked install followed by the hooks-off `governance:check`, typecheck, import lint, and build. The normal PR review and protected
 branch rules decide whether the mirror proposal can merge. Preview, visual, accessibility, canary, and
 external readback evidence are optional hardening lanes unless a repository explicitly opts into them;
 they are not hidden prerequisites for the standard release path.
+
+## Recorded content debt
+
+`governance/content-debt-baseline.json` is product-owned; its schema is the upstream-managed
+`governance/schemas/content-debt-baseline.schema.json`. The installed checker reads it in
+`setup:all`, `governance:check`, and `Verify consumer`: recorded findings do not block, findings the
+hooks did not report when the baseline was recorded block (by file, rule, hook, and reported finding
+line), recorded findings that no longer occur block until
+`npm run governance:debt -- --prune` removes them (the baseline only shrinks), and a hand edit fails
+`entriesSha256` (`GOV-CONTENT-DEBT-001`). It grows only through
+`npm run governance:debt -- --record --by <who> --reason <why>`, whose registration is reviewed in the
+PR diff. Without the file every content finding blocks. `recordedContentDebt=<N>` reports registered
+debt; it is not a content-compliance claim. Creating and shrinking it: `docs/01-first-time-setup.md`
+and `docs/04-ds-upgrade.md`.
 
 ## Verification boundary
 

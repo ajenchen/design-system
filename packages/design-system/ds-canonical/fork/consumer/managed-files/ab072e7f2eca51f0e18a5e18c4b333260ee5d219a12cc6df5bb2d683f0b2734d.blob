@@ -48,6 +48,7 @@ import {
   runClosedGit,
 } from './lib/closed-tool-execution.mjs'
 import { compareUtf8Bytes } from './lib/provider-lifecycle.mjs'
+import { discoverWorkspaceManifestPaths } from './lib/exact-workspace-dependencies.mjs'
 
 const repoRoot = canonicalRepositoryRoot(process.cwd())
 assertNoRootNpmShrinkwrap(repoRoot, { errorPrefix: 'GOV-UPGRADE-LOCK-001' })
@@ -74,6 +75,25 @@ const TRANSACTION_PATHS = Object.freeze([
   'package.json', 'package-lock.json', 'npm-shrinkwrap.json', '.npmrc',
   'governance', 'schemas', '.devcontainer', '.github', 'scripts',
 ])
+// 2026-11-26(產品 canary 回報缺陷 1):每個 workspace 的 package.json 也要隨交易改成目標版號。
+// 它們不是固定根目錄,而是交易開始時從乾淨的 protected base 列出來、寫進 journal(schemaVersion 7
+// 的 workspaceManifests),復原時照 journal 那份清單驗證,不重新探索(復原時 live 可能半新半舊)。
+const validateWorkspaceManifestList = (value, label) => {
+  if (!Array.isArray(value)) throw new Error(`${label} must be an array`)
+  const paths = value.map((path) => normalizeRepositoryRelative(path, label))
+  for (const path of paths) {
+    if (path === 'package.json' || !path.endsWith('/package.json') || path.split('/').includes('node_modules')) {
+      throw new Error(`${label} contains a non-workspace manifest:${path}`)
+    }
+    if (TRANSACTION_PATHS.some((root) => path === root || path.startsWith(`${root}/`))) {
+      throw new Error(`${label} overlaps a fixed transaction root:${path}`)
+    }
+  }
+  if (JSON.stringify(paths) !== JSON.stringify([...new Set(paths)].sort(compareUtf8Bytes))) {
+    throw new Error(`${label} must be sorted and unique`)
+  }
+  return Object.freeze(paths)
+}
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const SHA256_RE = /^[a-f0-9]{64}$/
 const sha256 = (value) => createHash('sha256').update(value).digest('hex')
@@ -1020,8 +1040,12 @@ const validateRecoveryJournal = () => {
       throw new Error('upgrade recovery journal has an unexpected hard-link alias')
     }
   }
-  exactKeys(journal, ['schemaVersion', 'repoRoot', 'transactionId', 'transactionRoot', 'owner', 'entries', 'nodeModules', 'providerSnapshot', 'commonSnapshot'], 'upgrade recovery journal')
-  const modernJournal = journal.schemaVersion === 6
+  const workspaceJournal = journal?.schemaVersion === 7
+  exactKeys(journal, [
+    'schemaVersion', 'repoRoot', 'transactionId', 'transactionRoot', 'owner', 'entries', 'nodeModules', 'providerSnapshot', 'commonSnapshot',
+    ...(workspaceJournal ? ['workspaceManifests'] : []),
+  ], 'upgrade recovery journal')
+  const modernJournal = journal.schemaVersion === 6 || workspaceJournal
   const legacyJournal = journal.schemaVersion === 5
   if ((!modernJournal && !legacyJournal) || journal.repoRoot !== repoRoot) throw new Error('journal repository/schema binding mismatch')
   if (!UUID_RE.test(journal.transactionId || '')) throw new Error('journal transactionId is invalid')
@@ -1037,12 +1061,16 @@ const validateRecoveryJournal = () => {
     || journal.transactionRoot !== transactionRoot
     || JSON.stringify(journal.owner) !== JSON.stringify(binding.owner)
   ) throw new Error('upgrade recovery journal state differs from its pointer binding')
-  if (!Array.isArray(journal.entries) || journal.entries.length !== TRANSACTION_PATHS.length) {
+  const journalFixedPaths = [
+    ...TRANSACTION_PATHS,
+    ...(workspaceJournal ? validateWorkspaceManifestList(journal.workspaceManifests, 'journal workspaceManifests') : []),
+  ]
+  if (!Array.isArray(journal.entries) || journal.entries.length !== journalFixedPaths.length) {
     throw new Error('journal entries do not match the closed transaction allowlist')
   }
   const entries = journal.entries.map((entry, index) => {
     exactKeys(entry, ['path', 'source', 'backup', 'present', 'beforeFingerprint', 'afterRecorded', 'afterPresent', 'afterFingerprint', 'replacementStarted', 'replacementCompleted'], `journal entry ${index}`)
-    const expectedPath = TRANSACTION_PATHS[index]
+    const expectedPath = journalFixedPaths[index]
     const expectedSource = join(repoRoot, expectedPath)
     const expectedBackup = join(transactionRoot, String(index))
     if (
@@ -1847,6 +1875,24 @@ try {
   process.exit(1)
 }
 
+let workspaceManifestPaths
+try {
+  workspaceManifestPaths = validateWorkspaceManifestList(
+    discoverWorkspaceManifestPaths(repoRoot),
+    'workspace manifest transaction targets',
+  )
+} catch (error) {
+  report.ok = false
+  report.diagnostics.push({
+    ruleId: 'GOV-UPGRADE-007',
+    severity: 'BLOCKER',
+    message: `無法列出要隨升級改版號的 workspace package.json:${error?.message || error}`,
+  })
+  emit()
+  process.exit(1)
+}
+const fixedTransactionPaths = Object.freeze([...TRANSACTION_PATHS, ...workspaceManifestPaths])
+
 // The host's ignored node_modules is never a toolchain trust root. The protected reconstruction
 // independently downloads, measures and extracts the exact npm tarball bound by the committed
 // package-lock, then uses only that disposable runtime for ci/install/signature/high-audit gates.
@@ -1864,8 +1910,8 @@ let journalLeaseIdentity = null
 let journalStateSequence = -1
 let journalStateSha256 = null
 try {
-  assertNoIgnoredManagedContent(repoRoot, TRANSACTION_PATHS, 'live fixed transaction authority')
-  for (const path of TRANSACTION_PATHS) {
+  assertNoIgnoredManagedContent(repoRoot, fixedTransactionPaths, 'live fixed transaction authority')
+  for (const path of fixedTransactionPaths) {
     assertSafeTree(repoRoot, join(repoRoot, path), `transaction source:${path}`, { allowMissing: true })
   }
   const initialNodeModulesPresent = pathEntryExists(join(repoRoot, 'node_modules'))
@@ -1881,7 +1927,7 @@ try {
     transactionId,
     owner: transactionOwner,
   }, null, 2) + '\n', { flag: 'wx', mode: 0o600 })
-  transactionState = TRANSACTION_PATHS.map((path, index) => {
+  transactionState = fixedTransactionPaths.map((path, index) => {
     const source = join(repoRoot, path)
     const backup = join(transactionRoot, String(index))
     const present = pathEntryExists(source)
@@ -1892,7 +1938,7 @@ try {
   // Repeat after every before-image is complete. An ignored file created during a recursive copy
   // must remain live and block the transaction; it must never become invisible backup content that
   // is later deleted by a whole-tree replacement.
-  assertNoIgnoredManagedContent(repoRoot, TRANSACTION_PATHS, 'snapshotted live fixed transaction authority')
+  assertNoIgnoredManagedContent(repoRoot, fixedTransactionPaths, 'snapshotted live fixed transaction authority')
   nodeModulesState = {
     source: join(repoRoot, 'node_modules'),
     backup: join(transactionRoot, 'node_modules'),
@@ -1908,7 +1954,7 @@ try {
   }
   assertNoSymlinkPath(transactionRoot, nodeModulesState.backup, 'node_modules transaction backup')
   journal = {
-    schemaVersion: 6,
+    schemaVersion: 7,
     repoRoot,
     transactionId,
     transactionRoot,
@@ -1917,6 +1963,7 @@ try {
     nodeModules: nodeModulesState,
     providerSnapshot: null,
     commonSnapshot: null,
+    workspaceManifests: workspaceManifestPaths,
   }
 } catch (error) {
   rmSync(transactionRoot, { recursive: true, force: true })
@@ -2177,11 +2224,11 @@ const copyClosedCandidatePath = (sandbox, relativePath) => {
 const captureDisposableCandidate = async ({ sandbox, incomingCorpus, providerTransition, provenance, toolchain, authority, operations }) => {
   assertNoSymlinkPath(transactionRoot, candidateTemporary, 'candidate materialization temporary root')
   mkdirSync(candidateTemporary, { mode: 0o700 })
-  for (const path of TRANSACTION_PATHS) copyClosedCandidatePath(sandbox, path)
+  for (const path of fixedTransactionPaths) copyClosedCandidatePath(sandbox, path)
 
   const providerPaths = providerTransition.paths.map((record) => ({ ...record }))
   for (const record of providerPaths) {
-    const covered = TRANSACTION_PATHS.some((root) => record.path === root || record.path.startsWith(`${root}/`))
+    const covered = fixedTransactionPaths.some((root) => record.path === root || record.path.startsWith(`${root}/`))
     if (covered) throw new Error(`provider path overlaps fixed transaction authority:${record.path}`)
     copyClosedCandidatePath(sandbox, record.path)
   }
@@ -2197,7 +2244,7 @@ const captureDisposableCandidate = async ({ sandbox, incomingCorpus, providerTra
 
   assertNoIgnoredManagedContent(
     sandbox,
-    [...TRANSACTION_PATHS, ...providerPaths.map((record) => record.path), commonPath],
+    [...fixedTransactionPaths, ...providerPaths.map((record) => record.path), commonPath],
     'disposable candidate managed authority',
   )
 
@@ -2501,7 +2548,7 @@ try {
   // common path. Any later path-visible edit is caught by the per-entry fingerprint CAS.
   assertNoIgnoredManagedContent(
     repoRoot,
-    [...TRANSACTION_PATHS, ...providerPaths.map((record) => record.path), commonPath],
+    [...fixedTransactionPaths, ...providerPaths.map((record) => record.path), commonPath],
     'fully snapshotted live transaction authority',
   )
 
@@ -2557,7 +2604,7 @@ try {
   if (journal.commonSnapshot) assertExactAfterImage(journal.commonSnapshot, 'common-instruction target')
   assertNoIgnoredManagedContent(
     repoRoot,
-    [...TRANSACTION_PATHS, ...providerPaths.map((record) => record.path), commonPath],
+    [...fixedTransactionPaths, ...providerPaths.map((record) => record.path), commonPath],
     'live upgraded transaction authority',
   )
   assertClosedGitLocalConfiguration(repoRoot)

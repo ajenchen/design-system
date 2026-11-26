@@ -24,7 +24,9 @@ branch, so the receiver must be on `main`. On a GitHub-hosted runner it:
    equals `v<version>`, and `commit` is a lowercase 40-character SHA that the design-system tag
    actually points at;
 2. installs the current lock with `npm ci --ignore-scripts`, then `npm audit signatures`;
-3. runs `npm run sync-all -- --apply --to <version>` on a new branch `automation/design-system-<version>`;
+3. runs `npm run sync-all -- --apply --to <version>` on a new branch `automation/design-system-<version>`
+   (the transaction moves the root **and every `apps/*/package.json`** to the exact version and
+   recomputes one lock; see Workspace package versions below);
 4. commits the result and pushes only that branch.
 
 It holds only `contents: write`, reads no secrets, and does not open the PR. GitHub does not run
@@ -48,10 +50,64 @@ changes `.github/workflows/**` the receiver stops before pushing; run that upgra
 `npm run ds:migrate` there before merging (see Manual proposal).
 
 Every upgrade PR, automated or manual, must pass exactly one required context, `Verify consumer`, from `audit.yml`. That job performs
-one `npm ci --ignore-scripts` followed by typecheck, import-boundary lint, and build. Review
+one `npm ci --ignore-scripts` followed by the hooks-off `npm run governance:check` (with the product's
+recorded content-debt baseline, the same checker and file `setup:all` uses), typecheck,
+import-boundary lint, and build. Review
 conversations and protected-main exact readback remain required. Preview, a11y, visual, canary, fleet,
 and independent-review evidence are optional or scheduled unless explicitly requested and never
 block the standard release path by default.
+
+## Workspace package versions
+
+`sync-all --apply` rewrites `@qijenchen/design-system` / `@qijenchen/storybook-config` in the root
+`package.json` and in every workspace manifest (`apps/*/package.json`, including `apps/template`) that
+declares them — in `dependencies`, `devDependencies`, `optionalDependencies`, or `peerDependencies` —
+to the exact target, drops the old nested lock entries, and lets the same locked install recompute
+one lock. The transaction journals those manifests with the rest of the snapshot, and the upgrade
+authority accepts a workspace manifest only when the change is exactly those version values.
+`npm run create-app` gives a new app the root's exact version.
+
+`governance:check` blocks the split state the transaction used to leave behind:
+`GOV-WORKSPACE-VERSION-001` names an app whose declaration differs from the root, and
+`GOV-WORKSPACE-VERSION-002` names a nested second copy in `package-lock.json`
+(`apps/<app>/node_modules/@qijenchen/design-system`), which is the copy that app would actually load.
+
+The receiving transaction runs the scripts already on your `main`. The first upgrade **to** the release
+that ships this fix therefore still runs the old transaction, which moves only the root; that PR fails
+`Verify consumer` with the two rules above. Repair it on the upgrade branch, once:
+
+```text
+npm run sync:workspace-dependencies -- --set X.Y.Z
+npm install --ignore-scripts --legacy-peer-deps --package-lock-only
+npm ci --ignore-scripts
+npm run sync:workspace-dependencies -- --check X.Y.Z
+npm run governance:check
+```
+
+Every later upgrade moves the workspaces itself.
+
+## Content debt across upgrades
+
+The product's `governance/content-debt-baseline.json` (how to create it: `docs/01-first-time-setup.md`,
+Recorded content debt) is product-owned and survives every upgrade unchanged. A release can add or
+tighten a content rule; findings that the new rule reports are not in the baseline, so the upgrade PR
+fails `Verify consumer` and names each file. Either fix them in the same PR or register them
+explicitly with `npm run governance:debt -- --record --by "<who>" --reason "<release X.Y.Z tightened
+rule …>"`; the baseline diff is reviewed with the upgrade. When findings are fixed, shrink the
+baseline with `npm run governance:debt -- --prune` (a stale entry blocks as `GOV-CONTENT-DEBT-002`).
+
+A product that kept its own debt list before this baseline existed (for example
+`apps/repo-health/ds-debt-baseline.json`) should not translate it field by field, because the
+fingerprints are computed by the checker from the hook output and cannot be reproduced by hand.
+【AI 推導,待實測】 Convert it this way instead:
+
+1. run `npm run governance:debt -- --list` and confirm that every unrecorded finding it prints is an
+   item of the old list (same file and rule) — a finding that is not on the old list is new debt and
+   should be fixed rather than recorded;
+2. run `npm run governance:debt -- --record --by "<who>" --reason "migrated from
+   apps/repo-health/ds-debt-baseline.json (<N> items)"`;
+3. remove the old list, or let the product's own health check read `recordedContentDebt` from
+   `npm run governance:check` instead of keeping a second copy.
 
 ## Fleet onboarding
 

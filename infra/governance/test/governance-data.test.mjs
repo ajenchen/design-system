@@ -289,6 +289,7 @@ test('every immutable sync-all managed file is upstream-owned for every template
     assert.equal(matches[0].owner, 'design-system-governance')
   }
   for (const path of [
+    'governance/schemas/content-debt-baseline.schema.json',
     'governance/schemas/issuer-registry.schema.json',
     'governance/schemas/visual-baseline-review-policy.schema.json',
     'governance/trust/issuers.json',

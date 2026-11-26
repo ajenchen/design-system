@@ -62,6 +62,12 @@ import {
   runClosedGit,
 } from './lib/closed-tool-execution.mjs'
 import { compareUtf8Bytes } from './lib/provider-lifecycle.mjs'
+import {
+  assertDependencyOnlyManifestChange,
+  discoverWorkspaceManifestPaths,
+  pinExactWorkspaceDependencies,
+  verifyExactWorkspaceDependencies,
+} from './lib/exact-workspace-dependencies.mjs'
 
 const RECEIPT_KEYS = Object.freeze([
   'schemaVersion', 'baseSha', 'version', 'patchSha256', 'treeSha256', 'paths', 'operations',
@@ -80,6 +86,7 @@ const OPERATION_KEYS = Object.freeze(['path', 'status'])
 const AUTHORITY_KEYS = Object.freeze([
   'schemaVersion', 'previousCorpus', 'incomingCorpus', 'provenance', 'toolchain',
   'previousMaterialization', 'incomingMaterialization', 'retirementDeletes',
+  'workspaceDependencyManifests',
 ])
 const MATERIALIZATION_KEYS = Object.freeze(['exactPaths', 'pathPrefixes'])
 const SHA256 = /^[a-f0-9]{64}$/
@@ -252,6 +259,34 @@ function canonicalOperations(operations, label = 'upgrade operations') {
   return normalized
 }
 
+// 2026-11-26(產品 canary 回報缺陷 1):升級交易原本只改根目錄 package.json,每個 app 的
+// apps/*/package.json 仍鎖舊版,lock 因此替每個 app 各裝一份舊版巢狀副本。交易現在一併把 workspace
+// manifest 的受管相依改成目標版號 —— 這些檔不在 DS 受管清單(materialization)裡,所以授權另列:
+// 只認「重建時逐檔驗證過、只改了受管相依版號」的 workspace manifest,而且只認修改(M)。
+function canonicalWorkspaceDependencyManifests(value, label = 'workspace dependency manifests') {
+  invariant(Array.isArray(value), `${label} must be an array`)
+  const paths = value.map((path) => {
+    const normalized = normalizedPath(path)
+    invariant(normalized !== 'package.json' && normalized.endsWith('/package.json') && !normalized.split('/').includes('node_modules'), `${label} contains a non-workspace manifest:${normalized}`)
+    return normalized
+  })
+  invariant(JSON.stringify(paths) === JSON.stringify([...new Set(paths)].sort(compareUtf8Bytes)), `${label} must be sorted and unique`)
+  return paths
+}
+
+export function stagedWorkspaceDependencyManifests(repository, baseRef, expectedVersion, operations) {
+  const workspaceManifests = new Set(discoverWorkspaceManifestPaths(repository))
+  const verified = []
+  for (const { path, status } of operations) {
+    if (status !== 'M' || !workspaceManifests.has(path)) continue
+    const before = git(repository, ['show', `${baseRef}:${path}`])
+    const after = git(repository, ['show', `:${path}`])
+    assertDependencyOnlyManifestChange(before, after, expectedVersion, path)
+    verified.push(path)
+  }
+  return canonicalWorkspaceDependencyManifests(verified)
+}
+
 function policyAllows(policy, path) {
   return policy.exactPaths.includes(path) || policy.pathPrefixes.some(prefix => path.startsWith(prefix))
 }
@@ -277,8 +312,10 @@ export function validateUpgradeOperations(operations, authority) {
     return { kind: surface.kind, path: normalizedPath(surface.path), sha256: surface.sha256 }
   })
   invariant(JSON.stringify(retirements) === JSON.stringify([...retirements].sort((left, right) => compareUtf8Bytes(left.path, right.path))), 'retirement deletions must be sorted')
+  const workspaceDependencyManifests = new Set(canonicalWorkspaceDependencyManifests(authority.workspaceDependencyManifests))
   const normalized = canonicalOperations(operations)
   for (const operation of normalized) {
+    if (operation.status === 'M' && workspaceDependencyManifests.has(operation.path)) continue
     // 2026-08-12 GOV-UPGRADE-BOOTSTRAP-001 退役(canonical:AGENTS.md「簽章儀式對 standard
     // small-team release 已退役,不得阻斷」;policy 註解自承 reviewed lane 需非作者簽署,
     // 單人 fleet 結構上不可滿足 = 控制面更新永久死路)。補償控制完整:上游 protected main
@@ -297,7 +334,7 @@ export function validateUpgradeOperations(operations, authority) {
   return normalized
 }
 
-export function buildUpgradeAuthority({ previousCorpus, incomingCorpus, provenance, toolchain, providerTransition = null }) {
+export function buildUpgradeAuthority({ previousCorpus, incomingCorpus, provenance, toolchain, providerTransition = null, workspaceDependencyManifests = [] }) {
   const transition = providerTransition || validateInstalledProviderTransition(previousCorpus, incomingCorpus)
   invariant(transition.mode === 'upgrade', 'upgrade authority requires one monotonic lifecycle transition')
   const retirementDeletes = transition.retirements
@@ -313,6 +350,7 @@ export function buildUpgradeAuthority({ previousCorpus, incomingCorpus, provenan
     previousMaterialization: canonicalMaterialization(previousCorpus.manifest.consumer.materialization, 'previous materialization'),
     incomingMaterialization: canonicalMaterialization(incomingCorpus.manifest.consumer.materialization, 'incoming materialization'),
     retirementDeletes,
+    workspaceDependencyManifests: canonicalWorkspaceDependencyManifests(workspaceDependencyManifests),
   }
 }
 
@@ -614,6 +652,10 @@ export async function reconstructExpectedUpgrade({
       prefix: 'GOV-UPGRADE-DEPENDENCY-001',
     })
     const previousCorpus = validateInstalledForkCorpus(sandbox)
+    // 缺陷 1(2026-11-26):先把每個 workspace manifest 的受管相依改成目標版號、清掉舊版的巢狀 lock 條目,
+    // 再走同一次鎖定安裝重算 lockfile —— 否則 npm 只改根目錄,替還鎖舊版的每個 app 各裝一份舊版副本。
+    const workspaceManifests = discoverWorkspaceManifestPaths(sandbox)
+    if (workspaceManifests.length) pinExactWorkspaceDependencies(sandbox, expectedVersion)
     run(process.execPath, verifiedNpmNodeArgv(cli, [
       'install',
       `@qijenchen/design-system@${expectedVersion}`,
@@ -628,6 +670,8 @@ export async function reconstructExpectedUpgrade({
     let auditReport
     try { auditReport = JSON.parse(signatureJson) } catch { throw new Error('protected-base npm signature audit did not produce closed JSON') }
     invariant(installedOverlayReceipt?.status === 'verified', 'GOV-UPGRADE-DEPENDENCY-001:npm security overlay was not verified on the reconstructed tree')
+    // lock 只剩一份:每個 workspace 宣告與 lock 條目都是目標版號,巢狀的舊版副本不存在。
+    if (workspaceManifests.length) verifyExactWorkspaceDependencies(sandbox, expectedVersion)
     const candidateVulnerabilityAudit = runAuditFindingsJson(cli, sandbox, {
       environment: npmEnv,
       label: 'candidate',
@@ -664,7 +708,8 @@ export async function reconstructExpectedUpgrade({
     git(sandbox, ['add', '-A', '--', '.'])
     assertNoChangedSymlinkOrSubmodule(sandbox)
     const operations = stagedUpgradeOperations(sandbox)
-    const authority = buildUpgradeAuthority({ previousCorpus, incomingCorpus, provenance, toolchain, providerTransition })
+    const workspaceDependencyManifests = stagedWorkspaceDependencyManifests(sandbox, 'HEAD', expectedVersion, operations)
+    const authority = buildUpgradeAuthority({ previousCorpus, incomingCorpus, provenance, toolchain, providerTransition, workspaceDependencyManifests })
     validateUpgradeOperations(operations, authority)
     if (captureMaterialized !== undefined) {
       invariant(typeof captureMaterialized === 'function', 'protected-base materialization capture must be a function')
@@ -863,9 +908,10 @@ export function certifyStagedUpgradeEvidence({
   invariant(incomingCorpus.evidence.releaseVersion === expectedVersion, 'certifier incoming corpus release differs from requested exact version')
   const identity = syncReportIdentity(JSON.parse(readFileSync(regularFile(syncReportPath, 'sync-all report'), 'utf8')), expectedVersion)
   const providerTransition = validateInstalledProviderTransition(previousCorpus, incomingCorpus)
-  const authority = buildUpgradeAuthority({ previousCorpus, incomingCorpus, providerTransition, ...identity })
   assertProtectedPackageScripts(repo, expectedBaseSha)
   const operations = stagedUpgradeOperations(repo)
+  const workspaceDependencyManifests = stagedWorkspaceDependencyManifests(repo, expectedBaseSha, expectedVersion, operations)
+  const authority = buildUpgradeAuthority({ previousCorpus, incomingCorpus, providerTransition, workspaceDependencyManifests, ...identity })
   validateUpgradeOperations(operations, authority)
   assertNoChangedSymlinkOrSubmodule(repo)
   const patchBytes = stagedPatch(repo)

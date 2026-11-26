@@ -34,6 +34,30 @@ function invariant(condition, message) {
   if (!condition) throw new Error(`GOV-WORKSPACE-SETUP-002:${message}`)
 }
 
+// 產品自有的內容欠債基準(2026-11-26,產品 canary 缺陷 2)。setup 跑的那支 checker 已用它判定過
+// (基準內的不擋、新增的擋、已不存在的要求移除);這裡只把已登記的數量照實印出來,不宣稱內容合規。
+export const CONTENT_DEBT_BASELINE_PATH = 'governance/content-debt-baseline.json'
+
+export function readRecordedContentDebt(root) {
+  const absolute = join(root, CONTENT_DEBT_BASELINE_PATH)
+  let info
+  try {
+    info = lstatSync(absolute)
+  } catch (error) {
+    if (error?.code === 'ENOENT') return 0
+    throw error
+  }
+  invariant(info.isFile() && !info.isSymbolicLink(), `${CONTENT_DEBT_BASELINE_PATH} must be one regular file`)
+  let baseline
+  try {
+    baseline = JSON.parse(readFileSync(absolute, 'utf8'))
+  } catch (error) {
+    invariant(false, `${CONTENT_DEBT_BASELINE_PATH} is not valid JSON:${error.message}`)
+  }
+  invariant(Array.isArray(baseline?.entries), `${CONTENT_DEBT_BASELINE_PATH} has no entries array`)
+  return baseline.entries.length
+}
+
 function regularFile(root, path) {
   const absolute = join(root, path)
   const info = lstatSync(absolute)
@@ -84,6 +108,7 @@ export function runWorkspaceSetup({
   assertGitVisibleWorktreeUnchanged(root, before, { label: 'setup:all provider CLI phase' })
   return {
     root,
+    recordedContentDebt: readRecordedContentDebt(root),
     roleSetup: roleSetup.path,
     steps: [
       ...(hookSetup ? ['canonical-git-hook'] : []),
@@ -104,11 +129,17 @@ export function formatWorkspaceSetupResult(result) {
     result.externalActivationRequired === WORKSPACE_SETUP_ASSURANCE.externalActivationRequired,
     'workspace setup result external activation claim is invalid',
   )
+  invariant(
+    Number.isSafeInteger(result.recordedContentDebt) && result.recordedContentDebt >= 0,
+    'workspace setup result recorded content debt is invalid',
+  )
   return [
     `✅ local workspace bootstrap verified:${result.root}`,
     `scope=${result.scope}`,
     `providerCertification=${result.providerCertification}`,
     `externalActivationRequired=${result.externalActivationRequired}`,
+    // 已登記的既有內容欠債(governance/content-debt-baseline.json);登記 ≠ 內容合規。
+    `recordedContentDebt=${result.recordedContentDebt}`,
   ].join('\n')
 }
 

@@ -93,6 +93,8 @@
         {"pattern": ".devcontainer/post-create.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": "governance/provider-cli-toolchain.json", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": "governance/provider-cli-toolchain.package-lock.json", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "governance/content-debt-baseline.json", "mode": "consumer-owned", "owner": "product-team"},
+        {"pattern": "governance/schemas/content-debt-baseline.schema.json", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": "governance/schemas/issuer-registry.schema.json", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": "governance/schemas/visual-baseline-review-policy.schema.json", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": "governance/trust/issuers.json", "mode": "upstream-managed", "owner": "design-system-governance"},

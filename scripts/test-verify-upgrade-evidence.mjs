@@ -14,6 +14,7 @@ import {
   assertProtectedPackageScripts,
   requiresReviewedBootstrap,
   stagedUpgradeOperations,
+  stagedWorkspaceDependencyManifests,
   upgradeAuthoritySha256,
   upgradeVerificationSha256,
   validateUpgradeOperations,
@@ -78,6 +79,7 @@ const authority = {
     pathPrefixes: ['.agents/skills/existing/', '.agents/skills/new-skill/'],
   },
   retirementDeletes: [{ kind: 'tree', path: '.legacy-provider', sha256: 'b'.repeat(64) }],
+  workspaceDependencyManifests: [],
 }
 
 const patch = Buffer.from('fixture patch\n')
@@ -834,6 +836,92 @@ test('reconstruction mismatch blocks before the writer checkout is mutated', asy
       }),
     }), /certifier patch differs/)
     assert.equal(git(repo, ['status', '--porcelain']).trim(), '')
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+// 2026-11-26(產品 canary 缺陷 1):升級交易把 apps/*/package.json 的受管相依改成目標版號。這些檔不在 DS
+// 受管清單裡,授權只認「重建時逐檔驗證過只改版號」的 workspace manifest,而且只認修改(M)。
+test('workspace manifests are upgrade authority only when listed and only for modification', () => {
+  const workspaceAuthority = { ...authority, workspaceDependencyManifests: ['apps/order-dashboard/package.json', 'apps/template/package.json'] }
+  assert.equal(validateUpgradeOperations([
+    { path: 'apps/order-dashboard/package.json', status: 'M' },
+    { path: 'apps/template/package.json', status: 'M' },
+    { path: 'governance/lock.json', status: 'M' },
+  ], workspaceAuthority).length, 3)
+  // 對照組:同一個 manifest 沒被列進授權 → 擋(以前的行為)
+  assert.throws(
+    () => validateUpgradeOperations([{ path: 'apps/order-dashboard/package.json', status: 'M' }], authority),
+    /not retained governance authority/,
+  )
+  for (const status of ['A', 'D']) {
+    assert.throws(
+      () => validateUpgradeOperations([{ path: 'apps/template/package.json', status }], workspaceAuthority),
+      /GOV-UPGRADE-PATH-007/,
+      `${status} must stay outside workspace dependency authority`,
+    )
+  }
+  assert.throws(
+    () => validateUpgradeOperations([{ path: 'apps/order-dashboard/src/InvoiceTable.tsx', status: 'M' }], workspaceAuthority),
+    /not retained governance authority/,
+    'a listed manifest never widens to the rest of the app',
+  )
+  for (const invalid of [['package.json'], ['apps/b/package.json', 'apps/a/package.json'], ['apps/a/node_modules/x/package.json'], ['apps/a/README.md']]) {
+    assert.throws(
+      () => validateUpgradeOperations([{ path: 'governance/lock.json', status: 'M' }], { ...authority, workspaceDependencyManifests: invalid }),
+      /workspace dependency manifests/,
+      JSON.stringify(invalid),
+    )
+  }
+  assert.notEqual(upgradeAuthoritySha256(workspaceAuthority), upgradeAuthoritySha256(authority), 'the workspace list is bound into the authority digest')
+})
+
+test('staged workspace manifests are verified as dependency-version-only changes', () => {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'workspace-manifest-authority-')))
+  try {
+    const repo = join(root, 'consumer')
+    mkdirSync(join(repo, 'apps/order-dashboard'), { recursive: true })
+    mkdirSync(join(repo, 'apps/template'), { recursive: true })
+    const stale = '0.1.0-beta.149'
+    const target = '0.1.0-beta.151'
+    const manifest = (name, version, extra = {}) => `${JSON.stringify({
+      name,
+      private: true,
+      scripts: { dev: 'vite' },
+      dependencies: { '@qijenchen/design-system': version, react: '^19.0.0' },
+      ...extra,
+    }, null, 2)}\n`
+    writeFileSync(join(repo, 'package.json'), `${JSON.stringify({ name: 'consumer', private: true, workspaces: ['apps/*'], dependencies: { '@qijenchen/design-system': stale } }, null, 2)}\n`)
+    writeFileSync(join(repo, 'apps/order-dashboard/package.json'), manifest('@product/order-dashboard', stale))
+    writeFileSync(join(repo, 'apps/template/package.json'), manifest('@product/template', stale))
+    git(repo, ['init', '--quiet'])
+    git(repo, ['add', '-A'])
+    git(repo, ['-c', 'user.name=fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '--quiet', '-m', 'base'])
+    const fixtureBase = git(repo, ['rev-parse', 'HEAD']).trim()
+
+    writeFileSync(join(repo, 'apps/order-dashboard/package.json'), manifest('@product/order-dashboard', target))
+    writeFileSync(join(repo, 'apps/template/package.json'), manifest('@product/template', target))
+    git(repo, ['add', '-A'])
+    assert.deepEqual(
+      stagedWorkspaceDependencyManifests(repo, fixtureBase, target, stagedUpgradeOperations(repo)),
+      ['apps/order-dashboard/package.json', 'apps/template/package.json'],
+    )
+
+    // 對照組:同一個 manifest 順手多改一個 script → 不是只改版號,拒絕
+    writeFileSync(join(repo, 'apps/order-dashboard/package.json'), manifest('@product/order-dashboard', target, { scripts: { dev: 'vite', postinstall: 'node steal.js' } }))
+    git(repo, ['add', '-A'])
+    assert.throws(
+      () => stagedWorkspaceDependencyManifests(repo, fixtureBase, target, stagedUpgradeOperations(repo)),
+      /changed more than its governed dependency versions/,
+    )
+    // 對照組:改到別的版號 → 拒絕
+    writeFileSync(join(repo, 'apps/order-dashboard/package.json'), manifest('@product/order-dashboard', '0.1.0-beta.150'))
+    git(repo, ['add', '-A'])
+    assert.throws(
+      () => stagedWorkspaceDependencyManifests(repo, fixtureBase, target, stagedUpgradeOperations(repo)),
+      /does not pin every governed package/,
+    )
   } finally {
     rmSync(root, { recursive: true, force: true })
   }
