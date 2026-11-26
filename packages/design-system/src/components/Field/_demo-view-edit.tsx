@@ -7,7 +7,8 @@
 //   值的第一個字齊標籤欄右邊那條線,進編輯後字落在框內(field-controls.spec.md「軸一 view mode」;切換時左右會移 13,user 已知)。
 // 版面:標籤在左的設定區塊 → FieldGroup labelWidth 統一標籤寬(field.spec.md「硬規則」);標題 → 欄位 = loose、
 // 欄位 → 按鈕列 = loose × 2(layoutSpace.spec.md 規則 3,同 field.stories.tsx 表單驗證那兩張表);
-// 單獨的「編輯」= tertiary、取消 tertiary + 儲存 primary(button.spec.md「Variant 控制視覺強調等級」)。
+// 單獨的「編輯」= tertiary、取消 tertiary + 儲存 primary(button.spec.md「Variant 控制視覺強調等級」);
+// 底部那排沒有標題 → 靠左、primary 在最左(action-bar.spec.md 第二節「對齊方向的決定」與第三節「全局排序」;閘 scripts/action-row-order-invariant.mjs)。
 // 【AI 推導】編輯中不畫「編輯」鈕(已在編輯);儲存 / 取消後焦點回「編輯」鈕(按鈕消失時焦點不丟到 body,鍵盤使用者接著操作)。
 import * as React from 'react'
 import { Pencil } from 'lucide-react'
@@ -82,9 +83,9 @@ export function ViewThenEditDemo() {
           </Field>
         </FieldGroup>
         {editing && (
-          <ButtonGroup className="mt-[calc(var(--layout-space-loose)*2)] justify-end">
-            <Button variant="tertiary" onClick={() => { setDraft(saved); finish() }}>取消</Button>
+          <ButtonGroup className="mt-[calc(var(--layout-space-loose)*2)]">
             <Button variant="primary" onClick={() => { setSaved(draft); toast({ variant: 'success', title: '專案資料已儲存' }); finish() }}>儲存</Button>
+            <Button variant="tertiary" onClick={() => { setDraft(saved); finish() }}>取消</Button>
           </ButtonGroup>
         )}
       </section>
