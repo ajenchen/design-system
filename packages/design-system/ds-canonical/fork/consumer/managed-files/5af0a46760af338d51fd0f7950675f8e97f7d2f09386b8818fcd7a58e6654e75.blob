@@ -1051,6 +1051,10 @@ export async function installRenderErrorLedger(page) {
 // a11y 閘(audit-a11y.mjs、data-table-multi-sort-invariant.mjs)用 AxeBuilder 掃整頁、沒有 exclude:修前 body 裡多一個
 // #storybook-highlights-root(排除它的是 Storybook 自己的 addon-a11y,不是我們的閘),關掉之後掃描範圍少了這個 div,
 // 所以以實測為準:DataTable 48 則 + 前 40 則,修前 / 修後每則違規逐條相同、audit-error 0 / 0(2026-11-26)。
+// 挑回 0.1.0-beta.151 後全量複核(2026-11-26,同一份 SB10 建置):openStory 預設開的頁 body 裡 #storybook-highlights-root
+// 0/3 則、storybookHighlight: true 3/3 則(兩面探針:開的那面量得到它,關的那面的 0 才算數);npm run a11y:check -- --gate 全量 1110 則
+// exit 0,audit-error 0;與 infra/governance/baseline/a11y-baseline.json 逐則逐規則比:756 組裡比基線多 0 組、
+// 比基線少 4 組(color-contrast 節點 −1~−2,coachmark / combobox / field / select 各一則),其餘相同。
 // opts.storybookHighlight = true 保留 Storybook 原樣(要量 highlight 本身的閘用;目前沒有)。
 // 對照組:scripts/test-open-story.mjs 真實建置段「Storybook highlight 關 / 開兩面」。
 function disableStorybookHighlightInPage() {
