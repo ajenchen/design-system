@@ -10,7 +10,7 @@
   "contractDigest": "sha256:2999aed4c75bc36823db0b4ea5729744c0920f74b1cd2b2e1bfb4110dd825ef1",
   "files": [
     {
-      "hash": "sha256:a88fe4147b36105c5ed284857705f86a9a66de9ea03ab491191b9450c9498ceb",
+      "hash": "sha256:65ccc11a746b47e62f851118402352de40ff6c2676131e644b4b1418f87f3103",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 59307,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:36abc4f19fdf2587243420c744d3c95ff068e9d6f26d598d2dede672e91f0ad4",
+      "hash": "sha256:864e426affc252cec15fd1d8c042c38bb41db125696c2387fc86757e50ab776d",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 140204,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:0670e09a21c7ec4993f850ce2c92a8b3801e5603edaf65a3d6c1d8810de56e34",
+  "inputDigest": "sha256:4b7ccd7cec76d5f79add40568b64f30060410da3c069bd910bac993f902129b2",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:9d836d0e903d47e97686105cc44e9b4edd80feebc80391132d0787c3dfde8db6",
+  "snapshotDigest": "sha256:422b29a6009cdaa3961b268d3c0201603e96a55f3eaba45a420dc0a999d6ae53",
   "sources": [
     {
       "hash": "sha256:f2452198c08c44c99dc7afcfb7f78f834d7cc2a8c97d041571db15779f388c6c",
@@ -2964,7 +2964,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 5,
-      "hash": "sha256:dd66cd1240f2775baecde22e2ecf1f4b63be61dbaa445479dd19b6590ed038ba",
+      "hash": "sha256:3a801a95b88b6881d2956d1f17c313a57d311ef10ace190ddccb8c776632fd84",
       "id": "product-template-documentation",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3008,12 +3008,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:851069f6c6aab791096e595536d8f31e42c3c1193f0f23ad74ffff2cb3502d59",
+      "hash": "sha256:6c543ca1cf244507d68baba352739836098b2acf0ae78c07a2c7be941af253a8",
       "id": "product-template-readme",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "template/ds-product-template/README.md",
-      "size": 21574,
+      "size": 21914,
       "type": "file"
     },
     {
@@ -3606,7 +3606,7 @@
         "scripts/generated/"
       ],
       "files": 816,
-      "hash": "sha256:7d73fc8501345aa3d2a83b225c03f7a7a14899510bf2ecaa57cce7af2e6ba57d",
+      "hash": "sha256:52b96de382099876b4ba017dbe7161eeb497b75b1386e648efcfe68b212dfcc2",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
