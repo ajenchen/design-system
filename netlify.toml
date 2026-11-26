@@ -7,6 +7,11 @@
 
 [build.environment]
   NODE_VERSION = "22"
+  # 2026-11-26:PR #174 的預覽建置時好時壞(efce5630 / a94583d4 / 1e468c7d 敗,612c7097 / cc2d70a6 成;成敗都約 1.5 分)。
+  # 部署 6b07d38c5bfd1e21dc11b26f 的日誌:storybook build 預覽建完後「FATAL ERROR: Ineffective mark-compacts near heap limit … JavaScript heap out of memory」,
+  # 堆積用到 1955 MB —— Node 依機器記憶體自訂的預設上限(約 2 GB)。本機與 GitHub CI 機器記憶體較大、預設上限較高,所以從沒失敗。
+  # 給 Node 明確的 4 GB 上限;用量貼著上限就是時好時壞的原因。
+  NODE_OPTIONS = "--max-old-space-size=4096"
 
 # Per-branch deploy previews 需在 Netlify dashboard 手動開啟(Site configuration → Build & deploy →
 #   Branch deploys → Deploy all branches)—— Netlify 預設只部署 production branch,branch deploys 非預設啟用。
