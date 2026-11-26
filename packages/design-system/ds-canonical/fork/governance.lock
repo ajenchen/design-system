@@ -487,7 +487,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/7eb6cc60abfdabaf6617c336058fad1454ccde08889295767bfd9b7fd153cc6e.blob",
-      "sha256": "80126981f5fec45bdf4f827c8bd7b6aab58384910004d67ee979cd23df6477c8",
+      "sha256": "09f884b5314d53c17c8cbb94edafdc9cb5679ba9f0a81af89a72af7e68cae57f",
       "source": "scripts/lib/verified-exact-npm-runtime.mjs",
       "classification": null,
       "destination": "scripts/lib/verified-exact-npm-runtime.mjs"

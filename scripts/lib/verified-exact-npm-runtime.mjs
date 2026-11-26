@@ -243,8 +243,8 @@ export function resolveGovernanceProxyForwarding(environment = process.env) {
     if (proxy) {
       const noProxyCandidate = firstNonEmpty(environment, ['no_proxy', 'NO_PROXY'])
       if (noProxyCandidate) {
-        // eslint-disable-next-line no-control-regex
-        if (/[\u0000-\u001f\u007f]/.test(noProxyCandidate.value)) {
+        // 含控制字元(U+0000–U+001F、U+007F)的 NO_PROXY 不轉送;逐字元比字元碼,不用控制字元正規式(免 lint 豁免)
+        if ([...noProxyCandidate.value].some((ch) => { const code = ch.charCodeAt(0); return code < 0x20 || code === 0x7f })) {
           notices.push(Object.freeze({ kind: 'dropped', name: noProxyCandidate.name, reason: 'unparseable', label: GOVERNANCE_PROXY_DROP_REASONS.unparseable }))
         } else {
           noProxy = Object.freeze({ source: noProxyCandidate.name, value: noProxyCandidate.value })

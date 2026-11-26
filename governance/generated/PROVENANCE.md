@@ -173,7 +173,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | exact-template-package-lock-generator | `scripts/generate-product-template-package-lock.mjs` | `sha256:a1adefe5d395edabfb73965e92f1877ad6bdcd79f6bf7b8ea4770ee0e21eca24` |
 | exact-upgrade-evidence-verifier | `scripts/verify-upgrade-evidence.mjs` | `sha256:04f0748843e926981465429ec9054bb8a743180729a05699e14d609b7107f9c6` |
 | exact-upgrade-provenance-verifier | `scripts/verify-upgrade-provenance.mjs` | `sha256:8a643a60eaf64bf131a2a4da197d5670a52e4705d11402b53fb32ae93302f6ef` |
-| exact-verified-npm-runtime-library | `scripts/lib/verified-exact-npm-runtime.mjs` | `sha256:80126981f5fec45bdf4f827c8bd7b6aab58384910004d67ee979cd23df6477c8` |
+| exact-verified-npm-runtime-library | `scripts/lib/verified-exact-npm-runtime.mjs` | `sha256:09f884b5314d53c17c8cbb94edafdc9cb5679ba9f0a81af89a72af7e68cae57f` |
 | exact-visual-baseline-cli | `packages/design-system/tools/visual-baseline/cli.mjs` | `sha256:1351eeee34180c44174f3436b6a984008f69752146d93c39c9cdf5cbac4b6889` |
 | exact-visual-baseline-library | `packages/design-system/tools/visual-baseline/index.mjs` | `sha256:4a18e1dfbb6f96761506e4bb72d60f8b7514a6b3458472c9e6ef1b130dfaad0a` |
 | exact-workspace-post-create-library | `scripts/lib/workspace-post-create.mjs` | `sha256:f3ddc6db740d5c4d48b1c6e16c55222325e4d1c16fe6644a455e7b7e5bea0a0d` |
@@ -348,7 +348,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:810632ebf499c9587e32ee45cd998dc887c6dc255d5bb705b69aba89597cde55` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:e4f8e14f19a67c7f902003ede60759beb1d55abcb5cc30ccb0d13468c5e441fa` |
-| repository-automation-corpus | `scripts` | `sha256:f2bc96567df6aee62b36934976c89674455dbcf1b492b8b984f9ac169599db46` |
+| repository-automation-corpus | `scripts` | `sha256:334f5aac9926348007ad5c4d16de80936059a19e7d53147528c95e1ea617c082` |
 | repository-ignore-boundary | `.gitignore` | `sha256:5d4a413c4947c7d63058cce0c93fa1adfa8c83efb41006e5b3876fd2706d81f8` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |
