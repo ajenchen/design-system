@@ -2985,6 +2985,120 @@ for (const [label, r, c, kind] of [
   }
 }
 
+// ── I42:名片(portal)上的點擊不算點儲存格(2026-11-26,workspace F 組 F1)──────────────────────────────
+// 要保證的性質(逐字):點畫在 portal 的頭像名片(按鈕或空白),**不算點那一格** ——
+//   一般模式:格子不進編輯(沒有選人清單、格內沒有 combobox / aria-expanded);
+//   試算表模式:格游標不搬到頭像那一格、沒有編輯器。
+// SSOT:data-table.spec.md「Inline Edit」段「click cell 只認落在格子 DOM 裡的點擊」+「試算表模式」點任何格那一列;
+//   判準 lib/pointer-press.ts `pressLandedInDom`(React 文件 createPortal「Events from portals propagate according to the React tree」)。
+// 修前(beta.150 / 151 建置實跑):InlineEdit 的 Owner(person)與 Reviewers(multiPerson)× {傳訊息, 語音通話, 查看更多, 名片空白}
+//   8 種全部進編輯(listbox 0 → 1)。
+// 儀器(M32):(1) 名片等名片元素本身出現(waitFor,不用固定睡眠);沒開 = INSTRUMENT-FAIL 紅,不當通過。
+//   (2) 對照列:點同一格的內距必須進編輯 / 必須把格游標搬過去 —— 證明「進編輯」「游標搬過去」量得到。
+//   (3) 「名片空白」的落點先證明在名片裡、不在任何按鈕上。
+// 試算表模式讀游標:點名片的按鈕焦點會移到按鈕上,格游標框只在焦點在格線區時才畫(gridHasFocus)→ 點完把焦點還給表格根節點
+//   (程式 focus,不命中 :focus-visible → 不會替空游標放第一格)再讀 `[data-selected-cell-id]`。修好後點外清除會先把游標清掉,
+//   所以斷言寫「不是頭像那一格」,不寫「保留原格」(點外清除本身在 data-table.spec.md 試算表段標【待確認】)。
+// 對照組:建置複本把 `pressLandedInDom` 的判斷改成恆真(等同修前)→ 本段一般模式 8 條與試算表 2 條必紅、對照列照綠。
+{
+  const INLINE_URL = `${BASE}/iframe.html?id=design-system-components-datatable-展示--inline-edit&viewMode=story`
+  const CURSOR_URL = `${BASE}/iframe.html?id=design-system-components-datatable-展示--spreadsheet-cursor-contract&viewMode=story`
+  const editState = (id) => page.evaluate((id) => {
+    const cell = document.querySelector(`[data-cell-id="${CSS.escape(id)}"]`)
+    return {
+      found: !!cell,
+      listboxes: [...document.querySelectorAll('[role="listbox"]')].filter((n) => n.getBoundingClientRect().height > 0).length,
+      comboboxInCell: cell ? cell.querySelectorAll('[role="combobox"]').length : -1,
+      expandedInCell: cell ? cell.querySelectorAll('[aria-expanded="true"]').length : -1,
+      activeEditor: document.querySelectorAll('[data-active-editor-host] [role="combobox"], [data-active-editor-host] input').length,
+    }
+  }, id)
+  const entered = (s) => s.listboxes > 0 || s.comboboxInCell > 0 || s.expandedInCell > 0 || s.activeEditor > 0
+  /** 滑過格裡的頭像 → 等名片元素本身可見(含「查看更多」的 popper);等不到回 null(呼叫端記 INSTRUMENT-FAIL) */
+  const openCard = async (id) => {
+    await page.mouse.move(2, 2)
+    try {
+      await page.locator(`[data-cell-id="${id}"] [role="img"][tabindex="0"]`).first().hover({ timeout: 5000 })
+      const card = page.locator('[data-radix-popper-content-wrapper]').filter({ hasText: '查看更多' }).first()
+      await card.waitFor({ state: 'visible', timeout: 5000 })
+      return card
+    } catch { return null }
+  }
+  /** 點名片上的 target;回傳儀器問題(空字串 = 點到了) */
+  const clickOnCard = async (card, target) => {
+    if (target !== '名片空白') {
+      try { await card.getByRole('button', { name: target }).click({ timeout: 5000 }); return '' } catch (e) { return `名片上找不到 / 點不到「${target}」:${String(e.message).split('\n')[0]}` }
+    }
+    const box = await card.boundingBox()
+    if (!box) return '名片沒有矩形'
+    const x = box.x + box.width - 12, y = box.y + 20
+    const where = await page.evaluate(([x, y]) => {
+      const el = document.elementFromPoint(x, y)
+      return { inCard: !!el?.closest('[data-radix-popper-content-wrapper]'), onControl: !!el?.closest('button, a[href], input, [role="button"]') }
+    }, [x, y])
+    if (!where.inCard || where.onControl) return `名片空白落點 (${Math.round(x)},${Math.round(y)}) 不在名片空白處:${JSON.stringify(where)}`
+    await page.mouse.click(x, y)
+    return ''
+  }
+  const TARGETS = ['傳訊息', '語音通話', '查看更多', '名片空白']
+
+  // (a)(b) 一般模式:InlineEdit 的 Owner(person)/ Reviewers(multiPerson)
+  for (const id of ['PRD-001:owner', 'PRD-001:reviewers']) {
+    // 對照列:點格子自己的內距 → 必須進編輯(證明量得到「進編輯」)
+    await loadStory(INLINE_URL, `[data-cell-id="${id}"]`)
+    const c0 = await editState(id)
+    await page.locator(`[data-cell-id="${id}"]`).click({ position: { x: 4, y: 4 } })
+    const cOk = await settled()
+    const c1 = await editState(id)
+    record('I42', `一般模式 ${id}:對照列 —— 點格子內距進編輯(儀器看得到進編輯)`, cOk && c0.found && !entered(c0) && entered(c1), `前 ${JSON.stringify(c0)} → 後 ${JSON.stringify(c1)}${cOk ? '' : ' / 互動後版面沒有靜止'}`)
+    for (const target of TARGETS) {
+      await loadStory(INLINE_URL, `[data-cell-id="${id}"]`)
+      const card = await openCard(id)
+      if (!card) { record('I42', `一般模式 ${id} × ${target}:儀器`, false, 'INSTRUMENT-FAIL 滑過頭像後名片沒出現(量不到要守的事)'); continue }
+      const before = await editState(id)
+      if (entered(before)) { record('I42', `一般模式 ${id} × ${target}:儀器`, false, `INSTRUMENT-FAIL 開名片前格子已在編輯 ${JSON.stringify(before)}`); continue }
+      const problem = await clickOnCard(card, target)
+      if (problem) { record('I42', `一般模式 ${id} × ${target}:儀器`, false, `INSTRUMENT-FAIL ${problem}`); continue }
+      const ok = await settled()
+      const after = await editState(id)
+      record('I42', `一般模式 ${id}:點名片「${target}」格子不進編輯`, ok && !entered(after), `${JSON.stringify(after)}${ok ? '' : ' / 互動後版面沒有靜止'}`)
+    }
+  }
+
+  // (c) 試算表模式:SpreadsheetCursorContract 最後一欄 Owner(person)
+  const OWNER = 'SKU-001:owner', OTHER = 'SKU-001:name'
+  const cursorNow = () => page.evaluate(() => document.querySelector('[data-selected-cell-id]')?.getAttribute('data-selected-cell-id') ?? null)
+  const refocusRoot = () => page.evaluate(() => document.querySelector('[data-data-table-outer]')?.focus({ preventScroll: true }))
+  // 對照列:點頭像那一格的內距 → 游標必須搬到那一格(證明量得到「游標搬到頭像那一格」)
+  await loadStory(CURSOR_URL, `[data-cell-id="${OWNER}"]`)
+  await page.locator(`[data-cell-id="${OTHER}"]`).click({ position: { x: 4, y: 4 } })
+  let sOk = await settled()
+  const sStart = await cursorNow()
+  await page.locator(`[data-cell-id="${OWNER}"]`).click({ position: { x: 4, y: 4 } })
+  sOk = (await settled()) && sOk
+  const sCtl = await cursorNow()
+  record('I42', `試算表 ${OWNER}:對照列 —— 先選 ${OTHER} 再點頭像那一格內距,游標搬過去(儀器看得到)`, sOk && sStart === OTHER && sCtl === OWNER, `起點 ${sStart} → ${sCtl}`)
+  for (const target of ['傳訊息', '名片空白']) {
+    await loadStory(CURSOR_URL, `[data-cell-id="${OWNER}"]`)
+    await page.locator(`[data-cell-id="${OTHER}"]`).click({ position: { x: 4, y: 4 } })
+    const preOk = await settled()
+    const start = await cursorNow()
+    if (!preOk || start !== OTHER) { record('I42', `試算表 × ${target}:儀器`, false, `INSTRUMENT-FAIL 先選 ${OTHER} 沒成功(游標 ${start})`); continue }
+    const card = await openCard(OWNER)
+    if (!card) { record('I42', `試算表 × ${target}:儀器`, false, 'INSTRUMENT-FAIL 滑過頭像後名片沒出現'); continue }
+    const problem = await clickOnCard(card, target)
+    if (problem) { record('I42', `試算表 × ${target}:儀器`, false, `INSTRUMENT-FAIL ${problem}`); continue }
+    let ok = await settled()
+    await refocusRoot()
+    ok = (await settled()) && ok
+    const cursor = await cursorNow()
+    const st = await editState(OWNER)
+    record('I42', `試算表:點名片「${target}」格游標不搬到頭像那一格、沒有編輯器`, ok && cursor !== OWNER && !entered(st), `游標 ${cursor} / ${JSON.stringify(st)}${ok ? '' : ' / 互動後版面沒有靜止'}`)
+  }
+  console.log('\n--- I42 名片 portal 點擊不算點格 ---')
+  console.log([...passes, ...failures].filter((l) => l.includes(' I42 | ')).join('\n'))
+}
+
 if (failures.length > 0) {
   console.log('\n--- FAILURES ---')
   console.log(failures.join('\n'))

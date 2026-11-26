@@ -68,7 +68,7 @@ import { RadioGroupItem } from '@/design-system/components/RadioGroup/radio-grou
 import * as RadioGroupPrimitive from '@radix-ui/react-radio-group'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
-import { isOwnPointerTarget } from '@/design-system/lib/pointer-press'
+import { isOwnPointerTarget, pressLandedInDom } from '@/design-system/lib/pointer-press'
 import { pointerFocusGuard } from '@/design-system/lib/pointer-focus-guard'
 import { Button } from '@/design-system/components/Button/button'
 
@@ -3560,8 +3560,13 @@ function DataTableInner<TData>(
       const selection = window.getSelection()
       return !!selection && !selection.isCollapsed && !!selection.anchorNode && e.currentTarget.contains(selection.anchorNode)
     }
+    // 兩支格子 click 都先過 `pressLandedInDom`(2026-11-26,workspace F 組 F1;data-table.spec.md「Inline Edit」段):
+    // 格裡頭像的名片、多人格的「+N」浮出清單畫在 portal(body),上面的點擊照元件樹冒到格子 —— 那不是點這一格:
+    // 修前點名片的「傳訊息 / 語音通話 / 查看更多」或名片空白處,格子就進編輯(檢視態卸載、名片跟著消失、選人清單打開),
+    // 試算表模式則把格游標搬到頭像那一格。判準全 DS 共用 lib/pointer-press.ts(Calendar 日期格、SelectMenu 觸發欄位同一支)。
     const onEditableCellClick = cellClickEntersEdit && !isEditingThisCell
       ? (e: React.MouseEvent<HTMLElement>) => {
+        if (!pressLandedInDom(e)) return
         if (clickIsForCellContent(e)) return
         // Default(non-spreadsheet)inline-edit behavior:click → enter edit
         setEditingCellId(cellEditId(cellRowId, cellColId))
@@ -3584,6 +3589,8 @@ function DataTableInner<TData>(
     // 鉛筆鈕 `stopPropagation` 進編輯 —— 這裡只負責「游標跟過去」。
     const onSpreadsheetCellClick = spreadsheetMode && !isEditingThisCell
       ? (e: React.MouseEvent<HTMLElement>) => {
+        // portal 浮層(名片 / 「+N」清單)冒上來的點擊不算點這一格 —— 放最上面,Shift+點延伸那一支一起擋(上方 onEditableCellClick 註解)
+        if (!pressLandedInDom(e)) return
         // Slice D Step 4 spreadsheet semantics(2026-05-10 user 拍板,2026-05-12 v2 fix):
         //   Shift+click → extend range(set focus,**anchor 保持 selectedCellId**)
         //   Click on already-selected → enter edit(只有點格即編輯的格;其餘沒有可進的編輯)

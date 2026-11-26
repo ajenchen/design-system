@@ -12,6 +12,7 @@ import type { AvatarData } from '@/design-system/components/Avatar/avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/design-system/components/Popover/popover'
 import { Command, CommandInput, CommandList, CommandEmpty, CommandLoading, CommandGroup, CommandItem, type CommandActiveOption } from '@/design-system/components/Command/command'
 import { returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
+import { pressLandedInDom } from '@/design-system/lib/pointer-press'
 import { useCompositeFieldBlur, useOwnTreeEvents } from '@/design-system/lib/composite-field-focus'
 // cmdk 的預設比對函式(公開匯出)。遠端模式 cmdk 不過濾,要自己比 ——
 // 用**同一支**函式,才不會本機一套標準、遠端另一套(見下方「不限與搜尋」)。
@@ -556,7 +557,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   // 旗標在這一次 click 的同步派發裡設,緊接著被 Radix 的開關(→ 下方 onOpenChange)用掉;事件已被別人 preventDefault 時 Radix 不開關,旗標也不設。
   const ignoreToggleRef = React.useRef(false)
   const handleTriggerClick = React.useCallback((e: React.MouseEvent<HTMLElement>) => {
-    ignoreToggleRef.current = !e.defaultPrevented && !e.currentTarget.contains(e.target as Node)
+    ignoreToggleRef.current = !e.defaultPrevented && !pressLandedInDom(e) // 判準全 DS 共用 lib/pointer-press.ts
   }, [])
   const handlePopoverOpenChange = React.useCallback((next: boolean) => {
     if (ignoreToggleRef.current) { ignoreToggleRef.current = false; return }

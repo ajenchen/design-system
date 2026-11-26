@@ -22,7 +22,32 @@
  * MUI Autocomplete 根元素 `handleMouseDown` 按在輸入框以外就擋預設
  * (https://github.com/mui/material-ui/blob/809a7717b4c050ba3f69b75300689f07c050a16e/packages/mui-material/src/useAutocomplete/useAutocomplete.js#L1316-L1329)。
  * 2026-09-30 之前這份清單住 field-wrapper.tsx(`FIELD_CHROME_OWN_TARGET`,只有 Field 與 LinkInput 用);選單要用同一份,搬來這裡,不另寫第二份。
+ *
+ * 另一個同族判準 `pressLandedInDom`(2026-11-26,workspace F 組 F1):容器的 click「只認 DOM 上真的落在容器裡的那一下」——
+ * portal 浮層(頭像名片、「+N」浮出清單)上的點擊照元件樹冒上來,不算點容器。宿主:
+ *   - DataTable 儲存格(`components/DataTable/data-table.tsx` `onEditableCellClick` / `onSpreadsheetCellClick`):點名片的按鈕不進編輯、不搬格游標
+ *   - Calendar 月檢視日期格(`components/Calendar/calendar.tsx`):點「+N」清單不新增
+ *   - SelectMenu 觸發欄位的開關(`components/SelectMenu/select-menu.tsx` `handleTriggerClick`):點名片 / 「+N」卡片不開關選單
  */
+
+/** click 事件裡 `pressLandedInDom` 用得到的部分(React 合成事件與原生事件都符合)。 */
+export interface DomPressEvent {
+  readonly target: EventTarget | null
+  readonly currentTarget: Node
+}
+
+/**
+ * 這一下點擊是否**在 DOM 上**落在掛事件的容器(`currentTarget`)裡。
+ * React 的合成事件照元件樹冒泡、不照 DOM:React 文件 `createPortal` 注意事項原文
+ * 「Events from portals propagate according to the React tree rather than the DOM tree. For example, if you click inside a portal,
+ * and the portal is wrapped in `<div onClick>`, that `onClick` handler will fire.」
+ * (<https://react.dev/reference/react-dom/createPortal>;釘版 <https://github.com/reactjs/react.dev/blob/75ef18a9172e4c100b5d5650ae14c395c5c8ef42/src/content/reference/react-dom/createPortal.md#L61>)。
+ * 所以掛在容器上的 click,也會收到「畫在 body 的另一層、但元件樹上是容器子孫」的點擊(Avatar 的名片、「+N」浮出清單)——
+ * 那不是點容器。容器的「點一下 = 做某件事」一律先過這一關;不擋事件(照常往上冒,浮層自己的按鈕照常動作)。
+ */
+export function pressLandedInDom(event: DomPressEvent): boolean {
+  return event.target instanceof Node && event.currentTarget.contains(event.target)
+}
 
 /**
  * 容器裡本身可操作、照它自己行為走的東西:按它不擋預設(按鈕照常聚焦與啟動 / 輸入框放插入點、拖曳選字 / 連結照常)。
