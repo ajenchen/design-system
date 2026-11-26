@@ -358,7 +358,7 @@ export const SidePanelNarrow: Story = {
 export const ReadOnlyDatesCustomTileKeyboard: Story = {
   name: '唯讀日期 × 自訂事件方塊鍵盤',
   tags: ['test-only'],
-  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:502「Enter/Space activation」
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:507「Enter/Space activation」
   parameters: { demoFocus: 'keep' },
   render: () => (
     <div className="h-screen p-4 bg-canvas">
@@ -465,6 +465,17 @@ const ENGLISH_LABELS: CalendarLabels = {
   event: (title, when, allDay) => `${title}, ${when}${allDay ? ', all day' : ''}`,
   more: (fullDate, count) => `${fullDate}, ${count} more ${count === 1 ? 'event' : 'events'}`,
   moreListClose: 'Close',
+  // 事件詳情的字(這一則用 onEventClick、不開內建詳情;CalendarLabels 是整份型別,英文產品照樣要給)
+  detailClose: 'Close',
+  detailTitle: 'Event title',
+  detailTime: 'Time',
+  detailAllDay: 'All day',
+  detailLocation: 'Location',
+  detailLocationPlaceholder: 'Add location…',
+  detailDescription: 'Description',
+  detailDescriptionPlaceholder: 'Add description…',
+  detailCategory: 'Category',
+  detailCategoryPlaceholder: 'Choose a category…',
 }
 const ENGLISH_EVENTS: CalendarEvent[] = [
   { id: 'en1', title: 'Design review', start: `${thisMonth}-07T10:00`, end: `${thisMonth}-07T11:00`, color: 'blue' },
@@ -474,7 +485,7 @@ const ENGLISH_EVENTS: CalendarEvent[] = [
 export const EnglishLabelsOverride: Story = {
   name: '英文讀屏字串覆寫',
   tags: ['test-only'],
-  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:483「字串可覆寫」
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:488「字串可覆寫」
   render: () => (
     <div className="h-screen p-4 bg-canvas">
       <Calendar
@@ -532,7 +543,7 @@ export const EmptyCalendar: Story = {
 export const CellBlankClickMovesKeyboardStop: Story = {
   name: '點格內空白帶鍵盤位置',
   tags: ['test-only'],
-  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:220「點格內空白處也把鍵盤位置帶過來」
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:221「點格內空白處也把鍵盤位置帶過來」
   parameters: { demoFocus: 'keep' },
   render: () => (
     <div className="h-screen p-4 bg-canvas">
