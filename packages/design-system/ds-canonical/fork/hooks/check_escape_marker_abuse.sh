@@ -172,7 +172,14 @@ EOF
     # 編輯檔不在 apps/<name>/ 底下(例:consumer/…)時照舊以整個 apps/ 為根。
     SCAN_ROOT="$APPS_ROOT"
     SCAN_LABEL='apps/**'
-    EDIT_APP=$(printf '%s' "$FILE" | sed -nE 's#^(.*/)?apps/([^/]+)/.*#\2#p')
+    # app 名 = 編輯檔相對專案根的路徑在 apps/ 之後的**第一段**(2026-11-27 規格核對必修 1:以前用貪婪 sed 抓整條
+    # 路徑裡最後一個 apps/<x>/,巢狀路徑 apps/alpha/src/apps/zzz/… 取到 zzz、專案根本身在 …/apps/proj/ 底下時取到 proj)。
+    # 相對路徑由 governance_project_relative_path 算(realpath,/tmp 與 /private/tmp 同一處;在專案外 = 不屬於任何 app)。
+    EDIT_APP=''
+    EDIT_REL=$(governance_project_relative_path "$FILE" 2>/dev/null) || EDIT_REL=''
+    case "$EDIT_REL" in
+      apps/*/*) EDIT_APP=${EDIT_REL#apps/}; EDIT_APP=${EDIT_APP%%/*} ;;
+    esac
     case "$EDIT_APP" in
       ''|.*|*[!A-Za-z0-9._-]*) EDIT_APP='' ;;
     esac
@@ -184,15 +191,17 @@ EOF
       fi
     fi
     if [ "$SCAN_ROOT" != "$APPS_ROOT" ] && [ ! -e "$SCAN_ROOT" ]; then
-      # 新 app 還沒有任何檔:存量 0
-      REPO_MARKERS=''
-    else
-      if [ ! -d "$SCAN_ROOT" ] || [ ! -r "$SCAN_ROOT" ]; then
-        governance_hook_integrity_fail 'escape-marker app scan root is unavailable or unsafe'
-      fi
-      REPO_MARKERS=$(governance_countable_repository_escape_markers "$SCAN_ROOT") \
-        || governance_hook_integrity_fail 'escape-marker repository scan failed'
+      # apps/<x> 還不存在 → 退回整個 apps/ 計數(必修 1 擇一:不 fail closed)。理由:新 app 由 npm run create-app 先建好
+      # 資料夾,不存在只剩手動第一筆或路徑異常;以前這裡把存量當 0 = ratchet 整個關掉。退回全 apps 計數讓 ratchet 不關、
+      # 最壞是多擋一次並指名 apps/**;fail closed 會把合法的第一筆報成「儀器失效」,訊息不實。
+      SCAN_ROOT="$APPS_ROOT"
+      SCAN_LABEL="apps/**(apps/$EDIT_APP 還不存在,以整個 apps/ 計)"
     fi
+    if [ ! -d "$SCAN_ROOT" ] || [ ! -r "$SCAN_ROOT" ]; then
+      governance_hook_integrity_fail 'escape-marker app scan root is unavailable or unsafe'
+    fi
+    REPO_MARKERS=$(governance_countable_repository_escape_markers "$SCAN_ROOT") \
+      || governance_hook_integrity_fail 'escape-marker repository scan failed'
     if [ -n "$REPO_MARKERS" ]; then
       governance_hook_grep_capture REPO_TOTAL 'escape-marker repository counter failed' "$REPO_MARKERS" -c .
     else

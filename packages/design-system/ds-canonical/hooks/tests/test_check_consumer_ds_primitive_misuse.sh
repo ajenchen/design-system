@@ -455,6 +455,16 @@ expect_block "70. DropdownMenuItem 子元素放 Checkbox → BLOCK" 'DropdownMen
 # 71. DropdownMenuCheckboxItem → silent;自閉合的 DropdownMenuItem 之後另一處的 Switch 不算
 run_hook "$PROD_TSX" 'export const M = () => (<><DropdownMenuContent><DropdownMenuCheckboxItem checked={dense} onCheckedChange={setDense}>緊湊顯示</DropdownMenuCheckboxItem><DropdownMenuItem label="重新整理" /></DropdownMenuContent><Switch checked={on} /></>)'
 expect_silent "71. DropdownMenuCheckboxItem / 選單外的 Switch → silent"
+# 72.(2026-11-27 規格核對必修 2)自閉合 item 帶箭頭函式 onSelect={() => …}:=> 的 > 不是開標籤結尾;
+#     檔內別處(選單外)的 Checkbox 不算 → silent(舊判法停在 => 的 >,把後面整段當子元素 → 誤擋)
+run_hook "$PROD_TSX" 'export const Row = ({ row }) => (<><DropdownMenuContent><DropdownMenuItem onSelect={() => edit(row)} label="編輯" /></DropdownMenuContent><Checkbox checked={row.selected} aria-label="選取這一列" /></>)'
+expect_silent "72. 自閉合 item + 箭頭 onSelect + 選單外 Checkbox → silent"
+# 73. 對照:同樣的箭頭 onSelect,Checkbox 真的放在 item 裡 → BLOCK
+run_hook "$PROD_TSX" 'export const Row = ({ row }) => (<DropdownMenuContent><DropdownMenuItem onSelect={() => toggle(row)}><Checkbox checked={row.done} />標記完成</DropdownMenuItem></DropdownMenuContent>)'
+expect_block "73. 箭頭 onSelect + item 內 Checkbox → BLOCK" 'DropdownMenuCheckboxItem'
+# 74. 對照:箭頭 onSelect 在前、badge={<Switch />} 在後的屬性寫法 → BLOCK(舊第一式 [^>]* 停在 => 的 >,漏判)
+run_hook "$PROD_TSX" 'export const M = () => <DropdownMenuContent><DropdownMenuItem onSelect={() => setDense(!dense)} badge={<Switch checked={dense} />}>緊湊顯示</DropdownMenuItem></DropdownMenuContent>'
+expect_block "74. 箭頭 onSelect 之後 badge 放 Switch → BLOCK" 'DropdownMenuCheckboxItem'
 
 echo ""
 echo "=== Summary ==="

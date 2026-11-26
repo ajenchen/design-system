@@ -1667,7 +1667,9 @@ test('consumer documentation describes the release mirror gate without the retir
   // 2026-11-27(上游判定 B7(c)):同一族舊說法 —— README 寫「fails closed … routes … to a separately reviewed full-snapshot PR」、
   // 「Later control-plane changes … go through the same separately reviewed full-snapshot PR route」、receiver「open a protected PR」,
   // docs/05 寫 v2 consumer「改走 … recurring reviewed control-plane 六階段流程」;audit.yml 說明漏了 governance:check(B2)。
-  assert.doesNotMatch(documentation, /fails closed with the stable compatibility IDs|routes those control-plane changes to a separately reviewed|go through the same separately reviewed full-snapshot PR route|lock, and open a protected PR|已是 v2 的 consumer 改走 DS authority 的 recurring/i)
+  assert.doesNotMatch(documentation, /fails closed with the stable compatibility IDs|routes those control-plane changes to a separately reviewed|go through the same separately reviewed full-snapshot PR route|lock, and open a protected PR|opens a protected PR|開 protected PR|已是 v2 的 consumer 改走 DS authority 的 recurring/i)
+  // 2026-11-27 規格核對加做:上一行原本只收 README 那一句「lock, and open a protected PR」,docs/01「opens a protected PR」、
+  // docs/02「開 protected PR」同族沒擋到(regex 比規格窄,M7 / M34)→ 一併收進來
   assert.match(readFileSync('template/ds-product-template/README.md', 'utf8'), /`audit\.yml`, which performs one locked install followed by the hooks-off `governance:check`/)
   assert.match(readFileSync('template/ds-product-template/docs/03-co-edit-workflow.md', 'utf8'), /locked install \+ hooks-off `governance:check`/)
   assert.doesNotMatch(documentation, /(?:禁止|do not) (?:改用|replace)[^\n]*(?:Writer App|GitHub App)/i)

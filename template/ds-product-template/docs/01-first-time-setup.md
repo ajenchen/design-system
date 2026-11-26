@@ -160,10 +160,10 @@ Now start the provider you prefer (`claude`, `codex`, or another registered inte
 
 Every provider uses the same standard five-step release SSOT:
 `pr-checks → merge → publish → readback → consumer`. The upstream release mirror alone delivers an
-exact snapshot to the template repository. A registered product receiver is downstream-only: it
+exact snapshot to the template repository. A product receiver, once shipped, is downstream-only: it
 dynamically discovers every root-workspace `package.json`, pins governed packages to one exact
 release, updates the single package lock, uses that same dynamic path set for status and staging,
-and opens a protected PR. It cannot publish or write protected `main`.
+and pushes an automation branch; the upstream release orchestrator opens the PR so that `Verify consumer` runs on it. The receiver never opens or merges that PR, publishes, or writes protected `main`.
 
 ## Verify product creation
 

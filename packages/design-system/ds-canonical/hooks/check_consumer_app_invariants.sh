@@ -592,8 +592,8 @@ fi
 # Button 預設 md,沒寫 size 就違規)。範圍 = Surface/Dialog/Sheet/PopoverHeader 的 actions={…} 與 <ChromeHeader> 子樹裡的
 # Button / Input / Select / SegmentedControl / Combobox;唯一例外「Tabs 取代整個 header 的 standalone size="lg"」不是這幾種控件。
 # 開標籤以大括號深度判結尾(actions={<Button>…</Button>} 裡的 > 不算)。
-HEADER_SIZE_HITS=$(printf '%s' "$CONTENT" | perl -0777 -ne '
-  my $s = $_;
+# PERL_TAG_END = C24 / C25 共用的開標籤結尾判法(2026-11-27 規格核對必修 2:C25 原本用 [^/]> 找結尾,停在 => 的 >)。
+PERL_TAG_END='
   my $tag_end = sub {
     my ($t, $i) = @_; my $d = 0;
     for (my $j = $i; $j < length $t; $j++) {
@@ -601,7 +601,9 @@ HEADER_SIZE_HITS=$(printf '%s' "$CONTENT" | perl -0777 -ne '
       if ($c eq "{") { $d++ } elsif ($c eq "}") { $d-- if $d > 0 } elsif ($c eq ">" && $d == 0) { return $j }
     }
     return length($t) - 1;
-  };
+  };'
+HEADER_SIZE_HITS=$(printf '%s' "$CONTENT" | perl -0777 -n -e "$PERL_TAG_END" -e '
+  my $s = $_;
   my @regions;
   while ($s =~ /<(?:DS\.)?(?:Surface|Dialog|Sheet|Popover)Header\b/g) {
     my $p = $-[0]; my $e = $tag_end->($s, $p); my $open = substr($s, $p, $e - $p + 1);
@@ -632,10 +634,26 @@ fi
 # C25(2026-11-27,上游判定 E24 (b)):<DropdownMenuItem> 的 badge= / tag= 或子元素裡放 <Switch> / <Checkbox>
 # → 選單裡的開關用 DropdownMenuCheckboxItem(dropdown-menu.spec.md:103「CheckboxItem 切換開關狀態…選單保持開啟」;
 # :211「不要在 item 內放獨立互動元素(如 Button、Switch)—— item 本身就是互動單位」)。DropdownMenuCheckboxItem 不在此列。
-if printf '%s' "$CONTENT" | perl -0777 -ne '
-  exit((/<(?:DS\.)?DropdownMenuItem\b[^>]*<(?:DS\.)?(?:Switch|Checkbox)\b/s
-     || /<(?:DS\.)?DropdownMenuItem\b[^>]*[^\/]>(?:(?!<\/(?:DS\.)?DropdownMenuItem>|<(?:DS\.)?DropdownMenuItem\b).)*?<(?:DS\.)?(?:Switch|Checkbox)\b/s) ? 0 : 1)
-' && ! grep -q '@dropdown-item-control-ok:' <<<"$CONTENT"; then
+# 開標籤結尾用 PERL_TAG_END(與 C24 同一支,大括號深度):onSelect={() => …} 的 > 不是結尾;自閉合 item 沒有子元素,
+# 只看它自己的屬性(badge={<Switch/>})。子元素範圍 = 開標籤之後到 </DropdownMenuItem> 或下一個 <DropdownMenuItem 為止。
+DROPDOWN_ITEM_CONTROL=$(printf '%s' "$CONTENT" | perl -0777 -n -e "$PERL_TAG_END" -e '
+  my $s = $_; my $hit = 0;
+  while ($s =~ /<(?:DS\.)?DropdownMenuItem\b/g) {
+    my $p = $-[0]; my $e = $tag_end->($s, $p); my $open = substr($s, $p, $e - $p + 1);
+    if ($open =~ /<(?:DS\.)?(?:Switch|Checkbox)\b/) { $hit = 1; last }
+    next if substr($s, $e - 1, 1) eq "/";
+    my $rest = substr($s, $e + 1);
+    my $stop = ($rest =~ /<\/(?:DS\.)?DropdownMenuItem>|<(?:DS\.)?DropdownMenuItem\b/) ? $-[0] : length($rest);
+    if (substr($rest, 0, $stop) =~ /<(?:DS\.)?(?:Switch|Checkbox)\b/) { $hit = 1; last }
+    pos($s) = $e + 1;
+  }
+  print $hit ? "hit" : "";
+' 2>/dev/null) || DROPDOWN_ITEM_CONTROL='__PARSE_FAILED__'
+if [ "$DROPDOWN_ITEM_CONTROL" = '__PARSE_FAILED__' ]; then
+  printf '🚨 GOVERNANCE_INTEGRITY: dropdown item control parser failed\n' >&2
+  exit 70
+fi
+if [ "$DROPDOWN_ITEM_CONTROL" = 'hit' ] && ! grep -q '@dropdown-item-control-ok:' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - <DropdownMenuItem> 裡放 <Switch> / <Checkbox>(badge= / tag= / 子元素)→ 改用 <DropdownMenuCheckboxItem checked onCheckedChange>(dropdown-menu.spec.md:103;:211 item 內不放獨立互動元素)。特例 → @dropdown-item-control-ok: <rationale>\n"
 fi
 

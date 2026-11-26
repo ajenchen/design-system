@@ -128,6 +128,14 @@ run_budget "sess-A" "再派一個:讀 Tag 的 spec"
 expect_budget "B3. 同 session 已有記號 → silent" silent
 run_budget "sess-B" "讀 Tag 的 spec"
 expect_budget "B4. 另一個 session 沒有記號 → 提醒(互不影響)" reminder
+# B4b.(2026-11-27 規格核對必修 3)同 session 第二次、prompt 仍沒寫預算 → 靜默(提醒只在第一次;第一次提醒時已落 kind=reminded)
+run_budget "sess-B" "再讀一次 Tag 的 spec"
+expect_budget "B4b. 同 session 第二次、無記號 → silent(只提醒第一次)" silent
+if jq -e 'select(.session_id == "sess-B" and .kind == "reminded")' "$BUDGET_GIT_DIR/governance-runtime/dispatch-budget.jsonl" >/dev/null 2>&1; then
+  echo "  PASS  B4c. 第一次提醒時落了 kind=reminded 記號"; PASS=$((PASS+1))
+else
+  echo "  FAIL  B4c. 提醒記號沒落地"; FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - B4c"
+fi
 run_budget "sess-B" "audit Dim 99 sample top 3 components"
 if [ "$EXIT" = "2" ] && [ -z "$BUDGET_OUT" ] && grep -qF 'AUDIT NO-SAMPLE ESCAPE CLAUSE BLOCKER' <<<"$STDERR_TEXT"; then
   echo "  PASS  B5. 抽樣條款照擋(擋下時 stdout 不帶提醒)"; PASS=$((PASS+1))
