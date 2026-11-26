@@ -420,9 +420,9 @@ export const DetailOpen: Story = {
 // 每一行少了 @ts-expect-error 就是型別層沒擋(三者同時傳 / 唯讀又有詳情 / 詳情缺必填的 onEventChange 都要是型別錯)。
 const noopTypeProbe = () => {}
 void [
-  // @ts-expect-error eventDetail 與 onEventClick 不能同時傳
+  // @ts-expect-error eventDetail 與 onEventClick 不能同時傳(calendar.spec.md「日期格與事件方塊:可點或唯讀」)
   <Calendar key="both" onCreateEvent={noopTypeProbe} onDateClick={noopTypeProbe} eventDetail={{ onEventChange: noopTypeProbe }} onEventClick={noopTypeProbe} />,
-  // @ts-expect-error readOnlyEvents 與 eventDetail 不能同時傳
+  // @ts-expect-error readOnlyEvents 與 eventDetail 不能同時傳(calendar.spec.md「日期格與事件方塊:可點或唯讀」)
   <Calendar key="readonly" onCreateEvent={noopTypeProbe} onDateClick={noopTypeProbe} readOnlyEvents eventDetail={{ onEventChange: noopTypeProbe }} />,
   // @ts-expect-error eventDetail 缺必填的 onEventChange(M23(f))
   <Calendar key="missing" onCreateEvent={noopTypeProbe} onDateClick={noopTypeProbe} eventDetail={{ isEditable: () => true }} />,
