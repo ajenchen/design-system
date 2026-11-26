@@ -2452,7 +2452,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 5,
-      "hash": "sha256:dd66cd1240f2775baecde22e2ecf1f4b63be61dbaa445479dd19b6590ed038ba",
+      "hash": "sha256:3a801a95b88b6881d2956d1f17c313a57d311ef10ace190ddccb8c776632fd84",
       "id": "product-template-documentation",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2496,12 +2496,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:851069f6c6aab791096e595536d8f31e42c3c1193f0f23ad74ffff2cb3502d59",
+      "hash": "sha256:6c543ca1cf244507d68baba352739836098b2acf0ae78c07a2c7be941af253a8",
       "id": "product-template-readme",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "template/ds-product-template/README.md",
-      "size": 21574,
+      "size": 21914,
       "type": "file"
     },
     {
@@ -3094,7 +3094,7 @@
         "scripts/generated/"
       ],
       "files": 816,
-      "hash": "sha256:f3cb48456a027cab280bd208ad39f401b2ad043b8de47b8e1b82269d44b4abb0",
+      "hash": "sha256:1b21fba66afefe2f8aeda2eebdba8366b43856eeb6f09591b4444a8635509836",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

@@ -213,6 +213,8 @@ Work on a branch and push it for a Netlify branch preview. Use the preview, requ
 
 Run `npm run setup:netlify` for a read-only diagnostic and the official Dashboard steps. It intentionally exits with code 2 (`MANUAL ACTION REQUIRED`): the reviewed Netlify CLI candidate is blocked, so the script never installs or invokes it. In the Dashboard, import this GitHub repository, then enable **Project configuration → Build & deploy → Continuous Deployment → Branches and deploy contexts → Branch deploys: All**. Netlify does not enable branch deploys by default.
 
+In a private repository, builds from people who are not members of the Netlify team wait for a Team Owner's approval. The approval options, their cost and environment-variable risk, and the fact that this is the account holder's decision are documented once in the private-repository collaborator section of `docs/03-co-edit-workflow.md`.
+
 ## Free password protection on Netlify
 
 This template includes `netlify/edge-functions/basic-auth.ts`. In Netlify, add:

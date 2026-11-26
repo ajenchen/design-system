@@ -43,6 +43,7 @@
 | Deploy 404 | 第一次 deploy 還沒成功 → 看 Netlify build log debug |
 | ERESOLVE during deploy | `.npmrc` legacy-peer-deps=true 已配,確認 file 在 repo root |
 | Build 過但 site 純白 | SPA root `<div id="root">` 沒 hydrate,看 console JS error(F12)|
+| 協作者的預覽沒出來,Deploys 頁顯示 Pending approval / deploy log 寫 Deploy request is pending review | 私有 repo 裡不是 Netlify 團隊成員的人推的變更要 Team Owner 放行 → `docs/03-co-edit-workflow.md`「多人協作的私有 repo:協作者的預覽建置」 |
 
 ## Misc
 
