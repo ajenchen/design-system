@@ -239,7 +239,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/visual-audit/references/audit-architecture.md",
-      "sha256": "dea0197e9557b6b56a08c7110fa82df80f933632e8db599cfee38238c81f70d0",
+      "sha256": "90b5b7e3cc5dca3ec48140bd15df304285e19d81e600c0e2962946ecf3ace43c",
       "source": "providers/codex/skills/visual-audit",
       "classification": null,
       "destination": null
@@ -399,7 +399,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/5af0a46760af338d51fd0f7950675f8e97f7d2f09386b8818fcd7a58e6654e75.blob",
-      "sha256": "91beff2f1718062f53cb1a10d6629af1bfec362f789ef5ed2ef08ee3c4fc612c",
+      "sha256": "fd74ea5feb6c4bb5fbcbfee8fb8a2c58aae67e3e2d3e0663aeb2e08f4a52fbb7",
       "source": "scripts/lib/launch-browser.mjs",
       "classification": null,
       "destination": "scripts/lib/launch-browser.mjs"
@@ -1207,7 +1207,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/visual-audit/references/audit-architecture.md",
-      "sha256": "dea0197e9557b6b56a08c7110fa82df80f933632e8db599cfee38238c81f70d0",
+      "sha256": "90b5b7e3cc5dca3ec48140bd15df304285e19d81e600c0e2962946ecf3ace43c",
       "source": "skills/visual-audit/references/audit-architecture.md",
       "classification": null,
       "destination": null
@@ -1455,7 +1455,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/visual-audit/references/audit-architecture.md",
-      "sha256": "dea0197e9557b6b56a08c7110fa82df80f933632e8db599cfee38238c81f70d0",
+      "sha256": "90b5b7e3cc5dca3ec48140bd15df304285e19d81e600c0e2962946ecf3ace43c",
       "source": "skills/visual-audit/references/audit-architecture.md",
       "classification": null,
       "destination": null
@@ -1751,7 +1751,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/visual-audit/references/audit-architecture.md",
-      "sha256": "dea0197e9557b6b56a08c7110fa82df80f933632e8db599cfee38238c81f70d0",
+      "sha256": "90b5b7e3cc5dca3ec48140bd15df304285e19d81e600c0e2962946ecf3ace43c",
       "source": null,
       "classification": null,
       "destination": null

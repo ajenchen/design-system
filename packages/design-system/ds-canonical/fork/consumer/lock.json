@@ -42,7 +42,7 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "0a4d19c7b010d2341b0aaca3b8be379c3058e0f2e251f2f3fd7b2de344aec2ee",
+    "forkCorpusLockSha256": "79935260e7caf68007601ab09a34d59459eb67fbef7b66390971516d7f4614ee",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
     "providerLifecycleSha256": "69fa942cf9c3cddd5026b1844b5f2d943e8ceeb21f679b4089fd2701f6e0eae3",
@@ -53,13 +53,13 @@
       "claude": {
         "instructionSha256": "b3590d8b3dfa4cafec559d6682b32b1c9702d68fbc2d08ab5f1d04df3d1ff304",
         "hookSha256": "b17888945b06f3433e8cbeb0b659d63e41dbd391906461b6453500d8ec8ecec1",
-        "skillsSha256": "ec4779a1c5c675634ac396d604f7b30975a366281bfdfacb7cf948109ae73ce2",
+        "skillsSha256": "3856ad27088b2a2f5398592e101a55531287cd425fb667d0d42522e972014028",
         "treeDigests": {}
       },
       "codex": {
         "instructionSha256": "d60911d6b1983d69588a927b37decd15d8b0bf6457e0bbd7e54752978651ccb6",
         "hookSha256": "810c6fe1f33554d2ccc33eeb91cda4ab95209442649a204e996963ca10ed4fe0",
-        "skillsSha256": "2d9d32fdee4b06a442a912b3b4d115d14415c77fca3d278bcc714f6dea770376",
+        "skillsSha256": "c6ab99bc6a0a5728b35b59e59f44a70358854e9a3bd62cf2c4528de709139d74",
         "treeDigests": {}
       },
       "generic": {
@@ -74,7 +74,7 @@
     },
     "governanceCheckSha256": "1c4c4455910f1e88aebb84add9f756717395519d84913beafaa654a9f1c3126e",
     "utilityRegistrySha256": "0e78034d31ba8d1b0f7c08ab4a931990c4a461a5b53019574828849342f903b1",
-    "sharedSkillsSha256": "79f9d9d3d2e302c7a675ee71e1b8da1a999a23ac71aa948fd95d18406fd3c00c",
+    "sharedSkillsSha256": "9a7912ed1e261b1bbc259f141c5badb5d8f564f59fb2bb778e0b11c409bdf070",
     "sharedSkillCount": 11,
     "requiredScripts": {
       "audit:a11y": "node scripts/audit-consumer-a11y.mjs",
@@ -111,7 +111,7 @@
       "scripts/lib/consumer-control-plane-policy.mjs": "51aba211bb2f755eff7fa48bb060f9835356a62d2643ab5049147a9896c7bb72",
       "scripts/lib/exact-workspace-dependencies.mjs": "b4921ad903a3ed3d901187d406a87270190945c5ca1874b089e80df898d47a97",
       "scripts/lib/governance-dependency-bootstrap.mjs": "5414f385799cb5d52243be48bf62378cd572a7aa98d5e6064ae08e4c64379003",
-      "scripts/lib/launch-browser.mjs": "91beff2f1718062f53cb1a10d6629af1bfec362f789ef5ed2ef08ee3c4fc612c",
+      "scripts/lib/launch-browser.mjs": "fd74ea5feb6c4bb5fbcbfee8fb8a2c58aae67e3e2d3e0663aeb2e08f4a52fbb7",
       "scripts/lib/provider-lifecycle.mjs": "9aabb2c98efc454b8555308a34830e6590b034b10a63f76f788fbd4cf37ce7e7",
       "scripts/lib/storybook-render-health.mjs": "583beac441f2f2bc88630da73a00d38bfb4da0b1c1e11152b1e9a87030837418",
       "scripts/lib/storybook-static-snapshot.mjs": "a6ed23c4285d57ded8b4943d276cb2b71bc1a545ab867b80c06eda7d59ea48b9",
