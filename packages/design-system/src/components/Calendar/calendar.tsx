@@ -1721,7 +1721,7 @@ export const calendarMeta = {
 
   },
   // 'active' 移除 — 日期格按壓視覺屬 DateGrid(其 meta 已 −active);nav 按壓屬內嵌 Button(2026-07-07 詞彙統一 DS-wide 按壓訊號盤點:檔內 0 active: utility / 0 *-active token)。
-  // 沒有 disabled:Calendar 沒有停用參數(calendar.spec.md「Anatomy N/A rationale」StateBehavior 那條)
+  // 沒有 disabled:Calendar 沒有停用參數(calendar.spec.md「API(第一段)」沒有 disabled;唯讀用 readOnlyDates / readOnlyEvents)
   states: ['default', 'hover', 'focus-visible'],
   tokens: {
     bg: ['bg-muted', 'bg-neutral-hover', 'bg-info', 'bg-surface'],
