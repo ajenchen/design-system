@@ -279,7 +279,7 @@ export const RadioItems: StoryObj = {
 }
 
 // ── 選項前綴:工作項類型方塊 + 狀態色(2026-11-26,workspace F 組 F4-2)──
-// 工作項詳情頁的「變更類型」選單:類型項目前面是類型方塊(`startContent`),「設定狀態」子選單的項目是圖示 + 語意色
+// 工作項詳情頁的「變更類型」選單:類型項目前面是類型方塊(`startContent`);同一個選單下半段以「設定狀態」標題分組的項目是圖示 + 語意色
 //(`startIcon` + `startIconClassName`)。play 斷言:類型每一項都有自訂前綴節點、「已完成」的圖示是 success 色 —— 轉發一斷就紅,並點名是哪一項。
 function WorkItemTypeMenuDemo() {
   const [type, setType] = useState('bug')

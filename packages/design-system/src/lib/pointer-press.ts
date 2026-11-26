@@ -30,7 +30,7 @@
  *   - SelectMenu 觸發欄位的開關(`components/SelectMenu/select-menu.tsx` `handleTriggerClick`):點名片 / 「+N」卡片不開關選單
  */
 
-/** click 事件裡 `pressLandedInDom` 用得到的部分(React 合成事件與原生事件都符合)。 */
+/** click 事件裡 `pressLandedInDom` 用得到的部分(React 合成事件符合;原生事件的 `currentTarget` 型別是 `EventTarget | null`,不符合)。 */
 export interface DomPressEvent {
   readonly target: EventTarget | null
   readonly currentTarget: Node

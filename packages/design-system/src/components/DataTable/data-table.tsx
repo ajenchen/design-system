@@ -69,7 +69,7 @@ import * as RadioGroupPrimitive from '@radix-ui/react-radio-group'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
 import { isOwnPointerTarget, pressLandedInDom } from '@/design-system/lib/pointer-press'
-import { originFromCenteredElement, toLocal, VIEWPORT_ORIGIN, type FixedLayerOrigin } from '@/design-system/lib/fixed-layer-origin'
+import { FIXED_ORIGIN_PROBE_INNER_STYLE, FIXED_ORIGIN_PROBE_STYLE, originFromProbe, toLocal, VIEWPORT_ORIGIN, type FixedLayerOrigin } from '@/design-system/lib/fixed-layer-origin'
 import { useI18n } from '@/design-system/lib/i18n/i18n-context'
 import { pointerFocusGuard } from '@/design-system/lib/pointer-focus-guard'
 import { Button } from '@/design-system/components/Button/button'
@@ -1188,8 +1188,11 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex, labels }: { dis
   const positionRef = React.useRef<{ top: number; left: number; fits: boolean } | null>(null)
   // fixed 把手此刻真正的定位基準(2026-11-26,workspace F 組 F3):表格祖先帶 transform / translate / filter(DS Dialog 的置中位移、
   // AppShell portalContainer 舞台)時,fixed 不再以視窗為基準,視窗座標直接寫進 style 會多偏出那個祖先的原點(實測 +256 / +30)。
-  // 直接量把手自己畫在哪裡反推(lib/fixed-layer-origin.ts,不列舉會產生基準的屬性 —— M37);沒有這類祖先時 = VIEWPORT_ORIGIN,座標逐字不變。
+  // 量跟把手放在同一個 portal 目標的常駐零尺寸探針反推(lib/fixed-layer-origin.ts originFromProbe,不列舉會產生基準的屬性 —— M37);
+  // **不量把手本身**:把手自己的位移(量具注入的偏移、誤套的 translate)會被當成基準扣掉、從此量不出來(2026-11-26 規格核對抓到)。
+  // 沒有這類祖先時 = VIEWPORT_ORIGIN,座標逐字不變。
   const originRef = React.useRef<FixedLayerOrigin>(VIEWPORT_ORIGIN)
+  const probeRef = React.useRef<HTMLSpanElement | null>(null)
   // Logical hover ends before the existing opacity transition finishes painting.
   // Track only handles that have been visible; never measure every hidden row.
   const trackingPositionRef = React.useRef(false)
@@ -1209,11 +1212,11 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex, labels }: { dis
     handle.style.top = `${local.top}px`
     handle.style.left = `${local.left}px`
   }, [])
-  /** 量把手此刻畫在哪裡、反推定位基準(在**寫新座標之前**讀:版面乾淨,不多一次強制排版)。 */
+  /** 量探針、反推定位基準(在**寫新座標之前**讀:版面乾淨,不多一次強制排版)。探針還沒掛上(第一次 update)就沿用目前的值。 */
   const measureHandleOrigin = React.useCallback(() => {
-    const handle = handleRef.current
-    if (!handle || !handle.style.left || !handle.style.top) return
-    originRef.current = originFromCenteredElement(handle, parseFloat(handle.style.left), parseFloat(handle.style.top))
+    const probe = probeRef.current
+    if (!probe) return
+    originRef.current = originFromProbe(probe)
   }, [])
   // A render caused by hover/DnD must not restore an earlier scroll position.
   React.useLayoutEffect(syncHandlePosition)
@@ -1263,7 +1266,7 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex, labels }: { dis
       const bandBottom = panelEl ? bandTop + panelEl.clientHeight : pRect.bottom
       const half = (handleRef.current?.offsetHeight || 24) / 2
       const fits = top - half >= bandTop - 0.5 && top + half <= bandBottom + 0.5
-      // 定位基準跟著這一次一起量(把手已掛上時;第一次掛上由下方 hasPos 的 layout effect 校正)
+      // 定位基準跟著這一次一起量(探針已掛上時;第一次掛上由下方 hasPos 的 layout effect 校正)
       measureHandleOrigin()
       positionRef.current = { top, left, fits }
       if (fits && (rowHovered || buttonHovered || ctxDragging)) trackingPositionRef.current = true
@@ -1316,7 +1319,7 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex, labels }: { dis
   // 閂鎖訂閱:只有渲染過把手的實例(pos 非 null)訂閱。閂上 → 直接把 DOM 藏掉(不等 React commit、不淡出);
   // 鬆開 → 這列若仍被 hover 就重量位置(列在捲動期間移動過)再顯示;React 的 visible 也讀同一個閂鎖,兩邊一致。
   const hasPos = pos != null
-  // 把手第一次掛上:量一次定位基準,不是視窗就改寫(layout effect = paint 之前,畫面不會先閃到偏掉的位置)。之後每次 update() 都順手重量。
+  // 把手與探針第一次掛上:量一次定位基準,不是視窗就改寫(layout effect = paint 之前,畫面不會先閃到偏掉的位置)。之後每次 update() 都順手重量。
   React.useLayoutEffect(() => {
     if (!hasPos) return
     const before = originRef.current
@@ -1473,10 +1476,17 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex, labels }: { dis
     </Tooltip>
   ) : handle
 
+  // 定位基準探針:跟把手放在同一個 portal 目標 → 同一個 fixed 定位基準;零尺寸、看不見、不接指標,只給 originFromProbe 量
+  const probe = (
+    <span ref={probeRef} aria-hidden data-fixed-origin-probe="" style={FIXED_ORIGIN_PROBE_STYLE}>
+      <span style={FIXED_ORIGIN_PROBE_INNER_STYLE} />
+    </span>
+  )
+
   return (
     <>
       {anchor}
-      {portalTarget && createPortal(wrapped, portalTarget)}
+      {portalTarget && createPortal(<>{probe}{wrapped}</>, portalTarget)}
     </>
   )
 }

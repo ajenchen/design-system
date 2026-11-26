@@ -11,11 +11,14 @@
  *
  * **直接量,不列舉屬性**(M37):會產生定位基準的屬性清單有瀏覽器差異(MDN 同頁「There are browser inconsistencies with perspective
  * and filter」;Floating UI `isContainingBlock` 為此分 WebKit 分支),列舉就是拿「我想得到的屬性」代替「此刻真正的基準」。
- * 這裡只量 fixed 元素**自己此刻畫在哪裡**,反推基準的原點與縮放:
+ * 這裡只量**和浮層同一個定位基準、而且本身不會被任何人位移的** fixed 參考物此刻畫在哪裡,反推基準的原點與縮放:
  *   - `originFromInsetLayer`:`position: fixed; inset: 0` 的宿主層 —— 它的框就是基準的 padding box(沒有這類祖先時 = 視窗)。
- *   - `originFromCenteredElement`:已知 `style.left / top` 的 fixed 元素、且以 `translate(-50%, -50%)` 讓 (left, top) 落在自己的中心
- *     —— 原點 = 實際中心 −(style 值 × 縮放)。
- * 縮放 = 畫出來的寬 ÷ 版面寬(`offsetWidth`),涵蓋 Dialog 進場 `zoom-in-95` 那一段。只處理平移 + 縮放(旋轉 / 歪斜不在範圍)。
+ *   - `originFromProbe`:跟浮層放在同一個 portal 目標裡的常駐探針(`FIXED_ORIGIN_PROBE_*`:零尺寸、看不見的 fixed 點 (0,0),
+ *     裡面再一個零尺寸的點在 (100,100))—— 原點 = 第一點的位置,縮放 = 兩點距離 ÷ 100。
+ * **不量浮層本身**(2026-11-26 規格核對抓到):拿浮層自己的位置當基準,浮層身上的任何位移(量具注入的偏移、樣式誤套的 translate)
+ * 都會在下一次重量時被當成「基準」扣掉、從此量不出來 —— 那是拿「浮層此刻在哪」代替「基準在哪」(M37)。`data-table-handle-position.mjs
+ * --hover=follow --selftest` 的 20px 注入偏移因此漏抓過。
+ * 縮放涵蓋 Dialog 進場 `zoom-in-95` 那一段。只處理平移 + 縮放(旋轉 / 歪斜不在範圍)。
  *
  * **沒有這類祖先時逐字不變**:量到的原點與縮放離「視窗」不到 `IDENTITY_EPSILON` 就回 `VIEWPORT_ORIGIN`,
  * `toLocal` 回傳的就是原本的視窗座標(同一個數字,不是近似值),既有閘零差異。
@@ -57,19 +60,31 @@ export function originFromInsetLayer(layer: HTMLElement): FixedLayerOrigin {
   })
 }
 
+/** 探針第二點離第一點的距離(基準座標 px);兩點距離 ÷ 這個值 = 縮放 */
+export const FIXED_ORIGIN_PROBE_SPAN = 100
+/** 探針外層(第一點,基準的 (0,0)):零尺寸、看不見、不接指標;跟浮層放在同一個 portal 目標 → 同一個定位基準 */
+export const FIXED_ORIGIN_PROBE_STYLE = {
+  position: 'fixed', left: 0, top: 0, width: 0, height: 0, overflow: 'visible', visibility: 'hidden', pointerEvents: 'none',
+} as const
+/** 探針內層(第二點,基準的 (SPAN, SPAN)) */
+export const FIXED_ORIGIN_PROBE_INNER_STYLE = {
+  position: 'absolute', left: FIXED_ORIGIN_PROBE_SPAN, top: FIXED_ORIGIN_PROBE_SPAN, width: 0, height: 0,
+} as const
+
 /**
- * 已知寫在 `style.left / top` 的值(`styleLeft` / `styleTop`,基準座標)、以 `translate(-50%, -50%)` 讓那一點落在自己中心的 fixed 元素:
- * 量它此刻的實際中心,反推基準。呼叫端在**寫新值之前**讀(那時版面是乾淨的,不多一次強制排版)。
+ * 常駐探針(外層 = `FIXED_ORIGIN_PROBE_STYLE`,唯一子元素 = `FIXED_ORIGIN_PROBE_INNER_STYLE`)→ 它所在的 fixed 定位基準。
+ * 呼叫端在**寫新座標之前**讀(那時版面是乾淨的,不多一次強制排版)。結構不對(沒有子元素)回視窗。
  */
-export function originFromCenteredElement(el: HTMLElement, styleLeft: number, styleTop: number): FixedLayerOrigin {
-  const r = el.getBoundingClientRect()
-  const sx = el.offsetWidth > 0 ? r.width / el.offsetWidth : 1
-  const sy = el.offsetHeight > 0 ? r.height / el.offsetHeight : 1
+export function originFromProbe(probe: HTMLElement): FixedLayerOrigin {
+  const inner = probe.firstElementChild
+  if (!inner) return VIEWPORT_ORIGIN
+  const a = probe.getBoundingClientRect()
+  const b = inner.getBoundingClientRect()
   return normalize({
-    x: r.left + r.width / 2 - styleLeft * sx,
-    y: r.top + r.height / 2 - styleTop * sy,
-    sx,
-    sy,
+    x: a.left,
+    y: a.top,
+    sx: (b.left - a.left) / FIXED_ORIGIN_PROBE_SPAN,
+    sy: (b.top - a.top) / FIXED_ORIGIN_PROBE_SPAN,
   })
 }
 

@@ -60,7 +60,7 @@ const SUPPRESS = /\boutline-none\b|\boutline-0\b|\boutline-hidden\b/
  *       檢查的是那個宣告(或那一項)**剝掉註解後的程式**真的掛畫框的 class。**跨檔一律用這種。**
  *   `檔名.tsx:行號` —— 只准指**同一個檔**(那一行前後 3 行,同樣剝掉註解後檢查)。
  *
- * **為什麼跨檔不准寫行號**(2026-11-11):data-table.tsx 的 A 類標記寫「承擔者:data-table-interaction-layer.tsx:392」。
+ * **為什麼跨檔不准寫行號**(2026-11-11):data-table.tsx 的 A 類標記把承擔者寫成 data-table-interaction-layer.tsx 當時第 379 行。
  * 4bc1b6e9 在 interaction-layer 的 379 行**上方**加了 4 行(滑過外框的註解),承擔者 `CELL_RING_STYLES.selected` 一字未改、
  * 只是被推到 383 行 —— 閘就在**另一個檔**(data-table.tsx)紅,改 interaction-layer 的人看不出因果,下一位代理還誤判成「基底本來就紅」。
  * 行號是承擔者身分的代理(M37):它只在寫下的那一刻剛好等於承擔者。同一次盤點(M10)8 個行號指標有 4 個已經過期 ——
