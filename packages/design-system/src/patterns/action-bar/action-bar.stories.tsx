@@ -237,7 +237,7 @@ export const Structure: Story = {
           <ButtonGroup>
             <Button variant="tertiary" size="sm" startIcon={Save} onClick={done('已儲存草稿')}>儲存草稿</Button>
             <Button variant="primary" size="sm" onClick={done('已發佈文件')}>發佈</Button>
-            <DemoMenu items={[{ label: '複製連結', done: '已複製連結' }, '移動到資料夾']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多操作" /></DemoMenu>
+            <DemoMenu items={[{ label: '複製連結', done: '已複製連結', doneVariant: 'neutral' }, '移動到資料夾']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多操作" /></DemoMenu>
           </ButtonGroup>
         </ToolbarFrame>
         <ExampleCaption>有框按鈕結尾（tertiary + primary）→ 接無框工具操作：沒有對上任何加線理由，所以不加</ExampleCaption>
@@ -258,7 +258,7 @@ export const Dividers: Story = {
             <ButtonGroup>
               <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" />
               <Button variant="text" size="sm" iconOnly startIcon={Download} aria-label="匯出" onClick={done('已匯出檔案')} />
-              <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製分享連結')} />
+              <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製分享連結', 'neutral')} />
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption>✅ 同類別操作 — 間距即可，不加分隔線</ExampleCaption>
@@ -280,7 +280,7 @@ export const Dividers: Story = {
         <ToolbarFrame title="面板">
           <ButtonGroup>
             <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" />
-            <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製分享連結')} />
+            <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製分享連結', 'neutral')} />
             <ButtonDivider />
             <CloseToolbar>{(close) => <Button iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" onClick={close} />}</CloseToolbar>
           </ButtonGroup>
@@ -297,7 +297,7 @@ export const Dividers: Story = {
               <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" />
               <Button variant="text" size="sm" iconOnly startIcon={Save} aria-label="儲存" onClick={done('已儲存文件')} />
               <ButtonDivider />
-              <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製分享連結')} />
+              <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製分享連結', 'neutral')} />
               <DemoMenu items={['邀請成員', { label: '匯出 PDF', done: '已匯出 PDF' }]}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" /></DemoMenu>
             </ButtonGroup>
           </ToolbarFrame>
@@ -305,7 +305,7 @@ export const Dividers: Story = {
           <ToolbarFrame title="檔案">
             <ButtonGroup>
               <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" />
-              <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製分享連結')} />
+              <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製分享連結', 'neutral')} />
               <ButtonDivider />
               <ConfirmDelete noun="檔案" target="「2026 Q3 營收報告.pdf」">{(open) => <Button variant="text" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" onClick={open} />}</ConfirmDelete>
             </ButtonGroup>
@@ -588,7 +588,7 @@ export const CommonMistakes: Story = {
               <Button variant="text" size="sm" startIcon={Upload}>上傳</Button>
               <Button variant="text" size="sm" startIcon={Download} onClick={done('已匯出 3 份文件')}>匯出</Button>
               <ButtonDivider />
-              <DemoMenu items={['移動到資料夾', { label: '複製連結', done: '已複製連結' }]}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" /></DemoMenu>
+              <DemoMenu items={['移動到資料夾', { label: '複製連結', done: '已複製連結', doneVariant: 'neutral' }]}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" /></DemoMenu>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption warn>❌ 無角色邊界，分隔線無意義</ExampleCaption>
@@ -596,7 +596,7 @@ export const CommonMistakes: Story = {
             <ButtonGroup>
               <Button variant="text" size="sm" startIcon={Upload}>上傳</Button>
               <Button variant="text" size="sm" startIcon={Download} onClick={done('已匯出 3 份文件')}>匯出</Button>
-              <DemoMenu items={['移動到資料夾', { label: '複製連結', done: '已複製連結' }]}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" /></DemoMenu>
+              <DemoMenu items={['移動到資料夾', { label: '複製連結', done: '已複製連結', doneVariant: 'neutral' }]}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" /></DemoMenu>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption>✅ 無工具層，溢出直接接在末端</ExampleCaption>

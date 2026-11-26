@@ -297,7 +297,7 @@ export const IconRule: Story = {
       >
         <ButtonGroup>
           <Button variant="text" size="sm" iconOnly startIcon={Download} aria-label="匯出" onClick={done('已匯出「Q3 訂單.csv」')} />
-          <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製分享連結')} />
+          <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製分享連結', 'neutral')} />
           <DemoMenu items={['移動到資料夾', { label: '複製一份', done: '已複製一份' }]}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多操作" /></DemoMenu>
         </ButtonGroup>
         <ExampleCaption>↑ MoreVertical 在群組末端，左側不加分隔線</ExampleCaption>

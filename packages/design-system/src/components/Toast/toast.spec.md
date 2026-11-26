@@ -9,16 +9,19 @@ variants:
     world-class: ["Polaris Toast default", "Sonner default"]
   info:
     when: "資訊性提示(『新版本可用』『同步完成』);非錯誤、非成功"
-    world-class: ["Material Snackbar info", "Ant notification info"]
+    world-class: ["Carbon toast notification Informational", "Spectrum Toast variant=info", "Ant notification.info"]  # ([來源](https://github.com/carbon-design-system/carbon-website/blob/5e9cd1da43c32d3d3b991dc947b427f674da61a8/src/pages/components/notification/usage.mdx#L166-L171)、[來源](https://opensource.adobe.com/spectrum-web-components/components/toast/)、[來源](https://github.com/ant-design/ant-design/blob/5a102fe28abc8624eb27c5e1365cdbb0a4dead73/components/notification/index.en-US.md#L43-L46))
   success:
     when: "成功確認(『訂單已寄送』『付款完成』『5 筆資料已匯入』)"
-    world-class: ["Polaris Toast success"]
+    world-class: ["Carbon toast notification Success", "Spectrum Toast variant=positive", "Atlassian Flag success"]  # ([來源](https://github.com/carbon-design-system/carbon-website/blob/5e9cd1da43c32d3d3b991dc947b427f674da61a8/src/pages/components/notification/usage.mdx#L166-L171)、[來源](https://opensource.adobe.com/spectrum-web-components/components/toast/)、[來源](https://atlassian.design/components/flag/usage))
   warning:
     when: "可恢復警告(『有未儲存變更』『連線不穩』『token 將過期』)"
     world-class: ["Ant notification warning", "Carbon Notification warning"]
   error:
     when: "錯誤(『匯入失敗』『權限不足』『網路斷線』);action prop 可加重試"
-    world-class: ["Polaris Toast error", "Material Snackbar error"]
+    world-class: ["Polaris Toast error", "Carbon toast notification Error", "Spectrum Toast variant=negative"]  # ([來源](https://github.com/Shopify/polaris-react-archive/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/utilities/frame/types.ts#L64-L67)、[來源](https://github.com/carbon-design-system/carbon-website/blob/5e9cd1da43c32d3d3b991dc947b427f674da61a8/src/pages/components/notification/usage.mdx#L166-L171)、[來源](https://opensource.adobe.com/spectrum-web-components/components/toast/))
+  # 2026-11-26 出處更正:舊表寫的「Polaris Toast success」「Material Snackbar info / error」都查無此物 ——
+  # Polaris Toast 的外觀參數只有 error?: boolean 與 tone?: 'magic'(https://github.com/Shopify/polaris-react-archive/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/utilities/frame/types.ts#L64-L67),沒有 success;
+  # Material Snackbar 只有一個容器色(預設 colorSurfaceInverse,https://github.com/material-components/material-components-android/blob/60ff09436d5d477a4b9d02940f31eb01e1250620/docs/components/Snackbar.md#L59),沒有狀態變體。
 sizes: {}
 benchmark:
   - Radix Toast primitive: github.com/radix-ui/primitives/tree/main/packages/react/toast
