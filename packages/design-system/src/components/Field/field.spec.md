@@ -272,7 +272,7 @@ label 文字後可帶 info icon(ℹ)hover 出 tooltip 補充說明:`<FieldLabel 
 - **與 label 間距 `gap-1`(4px)**、InfoIcon **16px 固定**、色 `fg-muted` hover `fg-secondary`(`field.tsx:498-514`)
 - **游標一般箭頭**(`cursor-default`,`field.tsx:507`):ⓘ 點下去不做事(Radix Tooltip 點擊只會收起說明),手形會讓人以為點了有作用。全域 `base.css` 讓所有 `<button>` 預設手形,所以要明寫 `cursor-default`,只刪 `cursor-pointer` 蓋不掉。〔2026-09-26 由手形改箭頭;user 條件式同意「I 可以從手形改掉，若改掉更合理的話」,AI 研究後提出、user 選「同意,照清單寫入」〕
 - **disabled 時整顆不渲染**(`field.tsx:498`)— info 是滑過／聚焦才浮出的補充說明,非類型身份 indicator,non-editable 隱藏
-- 設計定位:**給資訊的觸發處**(`ds-canonical/references/hit-area-canonical.md` 三-1),**不是**行內動作 —— 只借行內動作「顏色退後、滑過深一階」的長相,不套 `inline-action.spec.md` 的「必須手形」(那條給清除、顯示密碼這類按下去會做事的鈕)。label 的主要互動是 input,info 是輔助
+- 設計定位:**給資訊的觸發處**(`ds-canonical/references/hit-area-canonical.md` 三-1),**不是**行內動作 —— 只借行內動作「顏色退後、滑過深一階」的長相,不套 `inline-action.spec.md` 的「必須手形」(那條給清除、顯示密碼這類按下去會做事的鈕)。label 的主要互動是 input,info 是輔助。**FieldLabel 以外要放 ⓘ**(設定列標題、區塊標題旁):**不另做公開的說明圖示元件**,在那裡既有的圖示槽位把圖示換成 info 圖示,掛 `Tooltip` 讓它滑過就出說明。前提:**觸發處必須是可聚焦的按鈕**(本段的 ⓘ 就是一顆 `<button type="button">`),不能只放一顆圖示 —— `../Tooltip/tooltip.spec.md`「A11y 預設」寫明「Tab — focus trigger 時顯示」、鍵盤完整可操作(無需滑鼠),走不到焦點的圖示用鍵盤永遠打不開說明;長相與游標照本段前三點與 hit-area-canonical 三-1(不上滑過底色、一般箭頭)【AI 推導:前提與長相兩句是 AI 依這兩處既有規則補上的】。出處:user 2026-11-26 第五輪決策卡 C8 留言(逐字,問句):「不用特別抽出來吧？可以放 icon的地方都有 slot, 然後想要放info的地方就把 icon變成info icon再使其hover會有 tooltip就可以了吧？」
 - 範例:`field.stories.tsx`「標籤旁的說明圖示」
 
 ---

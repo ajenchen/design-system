@@ -92,7 +92,7 @@ const ALLOWLIST = [
   {
     key: 'src/components/Field/field.tsx#InfoIcon',
     reason: 'FieldLabel 的 ⓘ 是「給資訊的觸發處」:點下去不做事(Radix Tooltip 點擊只會收起說明),只借行內動作「顏色退後、滑過深一階」的長相,游標明寫 cursor-default;spec 明文「不是行內動作」。',
-    spec: 'packages/design-system/src/components/Field/field.spec.md:278(設計定位:給資訊的觸發處 … 不是行內動作)+ ds-canonical/references/hit-area-canonical.md:54(三-1:觸發處若是 <button> 要明寫 cursor-default)',
+    spec: 'packages/design-system/src/components/Field/field.spec.md「FieldLabel `info` icon」的「設計定位」那一點(給資訊的觸發處 … 不是行內動作)+ ds-canonical/references/hit-area-canonical.md:54(三-1:觸發處若是 <button> 要明寫 cursor-default)',
   },
   {
     key: 'src/components/PeoplePicker/person-display.tsx#X',

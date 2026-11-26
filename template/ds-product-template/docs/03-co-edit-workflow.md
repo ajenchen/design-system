@@ -41,6 +41,13 @@ sed -i '' 's/@ajenchen/@<your-github-username>/g' .github/CODEOWNERS
 /apps/order-dashboard/ @wendy @teammate2
 ```
 
+### 改到別人負責的 app:提醒與通知,不強制核准
+
+- **不強制**:合併只看 `Verify consumer` 綠燈與 PR 對話串都已解決;不設「必須那個 app 的負責人核准才能合併」的規則(ruleset 核准數 0、不要求 Code Owner 核准)。
+- **通知管道 = CODEOWNERS**:PR 改到 `apps/<別人的 app>/` 時,GitHub 依上面的 per-app owner 自動把負責人加進審查者並通知他。
+- **提醒改的人**:PR 說明寫明動了哪個 app、為什麼,讓負責人收到通知時看得懂。
+- 依據:user 2026-11-26 第五輪決策卡 B5 留言(逐字):「先建議和提醒想要更改的人就好，給想要更改的人有通知的管道，不要強制限制」
+
 ## Conflict resolution
 
 ```

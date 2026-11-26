@@ -278,7 +278,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | product-seed-package-contract | `apps/template/package.json` | `sha256:ac43e9255a933da736e672e21d25370773f84632210110e47a118f379e40c66b` |
 | product-shared-instruction | `scripts/fork-role-sources/AGENTS.product.md` | `sha256:4df8873c13f0e123a7f83ba06f717c7d254269c6c7b4e45c401ad636e610cbe7` |
 | product-template-audit-workflow | `template/ds-product-template/.github/workflows/audit.yml` | `sha256:3cb259c8d83d8d378a6d282b0cde0a8884d96c51cf49e655405c3e416e646726` |
-| product-template-documentation | `template/ds-product-template/docs` | `sha256:9d3acf95aa2eec36e67108092fafd31ad7ea8cc81f273ba85afa2fe656fa868c` |
+| product-template-documentation | `template/ds-product-template/docs` | `sha256:6dc46386b461aa8ad1d7fe87c140ea3b947d2d9135619f0e8713f113cded1dcb` |
 | product-template-npm-policy | `template/ds-product-template/.npmrc` | `sha256:79eff2d98653857c11ab6a0354fa62685a72ec214545e7fdfabc450e91b7ba63` |
 | product-template-onboarding-banner | `template/ds-product-template/.devcontainer/onboard-banner.sh` | `sha256:762c1fda165b0f8c9d2f6e13ac313f37da65d427334328638f4445d29da50a63` |
 | product-template-package-contract | `template/ds-product-template/package.json` | `sha256:7fe0dbfd64323a5a3dc746184df2c1d8695dd04b698c6772608e9dba67a82aa0` |
@@ -348,7 +348,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:4d732a42d9b81a802abf374cdf38528e3368eab58e8e11f4ea4f99ccf0e17b4a` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:508a6ce140e588729d8f22dc296ae93376c4b36e2657072941ef767ef1881406` |
-| repository-automation-corpus | `scripts` | `sha256:9bdc6d947273483831726ca66dbf568a6722f2a8d44e7ef687c6471b56be14a8` |
+| repository-automation-corpus | `scripts` | `sha256:99bb1195f9bdc0660bc6887d5962ac4c99670f22207895af9bc8be13dc84fd5c` |
 | repository-ignore-boundary | `.gitignore` | `sha256:5d4a413c4947c7d63058cce0c93fa1adfa8c83efb41006e5b3876fd2706d81f8` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |
