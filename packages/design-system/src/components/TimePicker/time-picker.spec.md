@@ -317,3 +317,9 @@ trigger 的互動狀態(focus / invalid / disabled / readonly)完全繼承 `../F
 - `../Field/field-controls.spec.md` — Mode / size / error 共用規則
 - `../Field/form-validation.spec.md` — 驗證時機
 - `../../patterns/element-anatomy/inline-action.spec.md`「Real case 表(所有 DS 用法一覽)」 — clear button 規則(clear X = Inline Action)
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `date-picker.spec.md`
