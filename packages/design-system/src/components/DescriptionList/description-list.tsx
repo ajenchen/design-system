@@ -1,6 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import * as React from 'react'
 import { cn } from '@/lib/utils'
+import { useFieldEmptyDisplay } from '@/design-system/components/Field/field-context'
 
 /**
  * DescriptionList — 唯讀 label + value 展示
@@ -22,6 +23,9 @@ import { cn } from '@/lib/utils'
  * ── divided（horizontal 專用，預設 false）──
  * 每個 item 下方加 `border-b border-divider`，rows 視覺對齊。長列表、key 長度
  * 不一時需要對齊格線才易讀 → 開 divided；短列表（< 4 rows）不需要。
+ *
+ * ── 空值(2026-11-26)──
+ * 值空時元件自動顯示半形「-」(useFieldEmptyDisplay,與 Field 家族同一個符號);consumer 不用自己傳。
  *
  * ── 間距 ──
  * vertical: label → value（同 item 內）: `var(--item-gap-label-desc-reading)` token（2px,item-anatomy reading tier SSOT;code L115 dd 消費）
@@ -87,12 +91,20 @@ DescriptionList.displayName = 'DescriptionList'
 
 export interface DescriptionItemProps extends React.HTMLAttributes<HTMLDivElement> {
   label: string
-  children: React.ReactNode
+  /** 值。空(沒傳、null / undefined / false、空字串或只有空白)時元件自動顯示半形「-」(description-list.spec.md「無障礙」段「空值呈現」) */
+  children?: React.ReactNode
 }
 
+/** 空值的範圍(description-list.spec.md「空值呈現」):0 與其他 ReactNode 照原樣畫 */
+const isEmptyValue = (value: React.ReactNode): boolean =>
+  value == null || value === false || (typeof value === 'string' && value.trim() === '')
+
 const DescriptionItem = React.forwardRef<HTMLDivElement, DescriptionItemProps>(
-  ({ label, children, className, ...props }, ref) => {
+  ({ label, children: childrenProp, className, ...props }, ref) => {
     const { orientation, divided } = React.useContext(DescriptionContext)
+    // 空值符號經 Field 的空值 hook 取(DS 唯一一份;DescriptionList 不在表格格子裡,一律得到「-」)
+    const emptyDisplay = useFieldEmptyDisplay()
+    const children = isEmptyValue(childrenProp) ? emptyDisplay : childrenProp
     if (orientation === 'horizontal') {
       return (
         <div

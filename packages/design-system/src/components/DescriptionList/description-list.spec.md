@@ -30,14 +30,15 @@ benchmark:
 - **ProfileCard 的 info fields**：HoverCard 內的次要資訊展示
 - **固定資訊展示**：產品規格、訂單明細、設定值（唯讀）
 - **HTML 語義為 `dl` + `dt` + `dd`**：對 screen reader 明確表達「屬性-值」關係
+- **只有一組 label + value 也可以用**(例:卡片底部只有一列「最後更新」)【AI 推導 2026-11-26,FIELD-VIEW 隨題小建議,user 點選「甲」時一併採用;2026-11-26 前這裡列在「何時不用」(「單組殺雞用牛刀」)】:一組照樣需要「屬性-值」語意、標籤次要色與空值「-」,手刻一組 label + value 等於在別處重做這三件事;`<dl>` 只放一組 `<dt>` / `<dd>` 是合法的 HTML。
 
 ## 何時不用
 
 | 場景 | 改用 | 原因 |
 |------|------|------|
 | 需要編輯的 label + value | `Field` 系統（`Input` / `Select` / `DatePicker` 等）| DescriptionList 是唯讀，編輯用 Field |
+| 整組按「編輯」才變表單的區塊(平常的樣子) | Field 層純顯示 `<Field mode="view">`(`../Field/field.spec.md`「閱讀情境」的「不變與邊界」) | 按下「編輯」後同一組欄位原地變成表單,平常與編輯中是同一組 Field;user 2026-11-25 FIELD-VIEW 點選「甲：欄位純顯示 (Recommended)」 |
 | Table 式資料展示（多 row 相同結構）| `DataTable` | DescriptionList 是單實體屬性，Table 是多筆同結構 |
-| 單一 label + value（只有一組）| 自訂 layout | DescriptionList 設計為多組屬性；單組殺雞用牛刀 |
 | 需要 cell 編輯的表格 | `DataTable` + inline edit | DescriptionList 無 cell 編輯 |
 
 ## 結構
@@ -174,7 +175,7 @@ Heading 與第一個 item 的 gap 使用同一 section rhythm，不另開一個�
 
 - **語意 HTML**:外層 `<dl>`,每組內 `<dt>` 為 term、`<dd>` 為 description——screen reader 會讀成「term X, description Y」對話,明確表達屬性-值關係
 - **DT / DD 配對**:每個 `<dt>` 必須有對應的 `<dd>`(不可孤立),否則 SR 敘事會中斷;元件內建一組 `DescriptionItem` 強制配對,不分開暴露 `<dt>` / `<dd>` primitive
-- **空值呈現**:value 空時由 **consumer 自行傳入** `<span className="text-foreground">-</span>` 占位(半形 hyphen `-`,對齊 Field `EMPTY_DISPLAY` DS-wide 空值符號,2026-07-08 user 拍板(轉述:空值都用半形 -,從沒說過要用全形)〔UD-J35〕;元件不自動 normalize——`<dd>` 直接 render `children`),`text-foreground`(同 value 色——「-」是不可編輯供檢視的值,非 placeholder 提示,2026-07-09 user 拍板)。**a11y known follow-up**:裸 `-` SR 敘事弱(半形連字號多被 SR 略過),宜補 `<span className="sr-only">無資料</span>` 或 `aria-label`,比空 `<dd>` 更明確
+- **空值呈現**:value 空(`children` 沒傳、`null` / `undefined` / `false`、空字串或只有空白)時**元件自動顯示**半形 hyphen `-`(對齊 Field `EMPTY_DISPLAY` DS-wide 空值符號,2026-07-08 user 拍板(轉述:空值都用半形 -,從沒說過要用全形)〔UD-J35〕;符號經 `../Field/field-context.ts` `useFieldEmptyDisplay()` 取,不另寫一份),consumer 不用自己傳 `-`;`0` 與其他 ReactNode 照原樣畫。色同 value `text-foreground`(「-」是不可編輯供檢視的值,非 placeholder 提示,2026-07-09 user 拍板)。【AI 推導 2026-11-26,FIELD-VIEW 隨題小建議,user 點選「甲」時一併採用;2026-11-26 前是 consumer 自行傳入 `<span className="text-foreground">-</span>`,元件不 normalize —— 不同 consumer 會漏傳或改用別的字,例 `../FileViewer/file-viewer.tsx` 的檔案類型欄自己寫 `|| '-'`,已改成交給元件】**a11y known follow-up**:裸 `-` SR 敘事弱(半形連字號多被 SR 略過),宜補 `<span className="sr-only">無資料</span>` 或 `aria-label`,比空 `<dd>` 更明確
 - **多欄 `cols > 1`**:視覺為 grid 欄位,但 DOM 順序為 item 順序——SR 仍依 DOM 敘事(term1 → desc1 → term2 → desc2),不依視覺欄位;設計時確保 DOM 順序符合語意分組
 - **長值換行**:horizontal 模式的 value(`<dd>`)以 `break-all min-w-0` 處理,讓 URL / ID 等無空白長字串能斷行,避免撐破單列;vertical 模式 value 佔滿整欄寬,自然流文字依字詞換行(不強制單行 truncate,長內容保留可讀完整性)。若 vertical 模式需展示無空白長字串(連續英數 token),由 consumer 自行於該 value 加 `break-all`
 - **列表識別**:預設 `<dl>` 有部分瀏覽器 SR 不視為 list,若需明確 list 語意,DL 根容器可搭配 `role="list"` + `<div role="listitem">`(目前預設不加,保留標準 `<dl>` 語意,consumer 可自行加 role 覆蓋)
@@ -197,7 +198,7 @@ DescriptionList 是**唯讀 label / value 資料呈現**(非互動 / 非 variant
 
 - **Disabled(action cell)**:DescriptionList 主體為唯讀資料呈現,本身無 disabled state。**dd 內互動內容 canonical(2026-07-04 Q9 拍板,三處立場收斂)**:操作型互動(Button / Input)**禁止**(見「禁止事項」— 需要動作 → Field read-only / inline-edit / action row / 卡片 header action);展示 / 導覽型 ReactNode(Tag / Badge / **Link**)**允許**,Link 自行 own disabled,DL 不干預。對齊 Polaris(`description: React.ReactNode` + 純敘述範例)/ Ant(動作放 `extra`「The action area of the description list」,不放 dd)([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/DescriptionList/DescriptionList.tsx#L10-L12)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/descriptions/index.en-US.md?plain=1#L90))。
 - **Loading**:DL 非 async surface,無 loading prop。若 page-level data 載入中,consumer 應在 DL 外層用 `<Skeleton>`(每組 dt/dd 對應一條 skeleton line)取代;DL 本體不渲染 loading state。
-- **Empty(no items / empty value)**:no items → consumer 應 conditional 渲 `<Empty>` 取代 DL,不渲空 `<dl>`(SR 會讀「empty list」造成混淆);individual value 空 → consumer 應自行傳入半形 `-`(hyphen,對齊 Field `EMPTY_DISPLAY`,2026-07-08 user 拍板;包 `text-foreground`(色同 value,2026-07-09);元件不自動 normalize,已在「無障礙」段 codify)。
+- **Empty(no items / empty value)**:no items → consumer 應 conditional 渲 `<Empty>` 取代 DL,不渲空 `<dl>`(SR 會讀「empty list」造成混淆);individual value 空 → 元件自動顯示半形 `-`(hyphen,對齊 Field `EMPTY_DISPLAY`,2026-07-08 user 拍板;色同 value `text-foreground`,2026-07-09;規則與「空」的範圍住「無障礙」段「空值呈現」)。
 - **長 label / 長值**:horizontal 模式 label(`dt`)`shrink-0` 不收縮、不截斷,value(`dd`)`break-all min-w-0` 斷行吸收擠壓;vertical 模式兩者佔滿欄寬自然換行。無空白長字串(URL / ID)詳「無障礙」段「長值換行」。
 - **Dark mode**:走 semantic token(`text-fg-secondary` / `text-foreground`)自動 adapt。
 - **Density**:垂直 gap 隨 `layout-space` token density-aware(見「間距」段),typography fixed reading mode tier 不變。

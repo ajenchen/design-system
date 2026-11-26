@@ -94,6 +94,42 @@ const teamEvents: CalendarEvent[] = [
 ]
 
 /**
+ * 團隊行事曆:共享進來的事件只能看 — 詳情照開、每一欄只能看(`eventDetail.isEditable`;calendar.spec.md「API(第一段)」eventDetail 那條)。
+ * 能不能改由產品決定:這裡看事件 metadata 記的來源行事曆 —— 業務部共享進來、你只有檢視權限的那幾筆回 false。
+ */
+const SALES_CALENDAR = '業務部行事曆(只能檢視)'
+const sharedEvents: CalendarEvent[] = [
+  { id: 'own1', title: '設計審查', start: `${thisMonth}-05T10:00`, end: `${thisMonth}-05T11:00`, color: 'blue', categoryId: 'meeting', location: '台北辦公室 3F 大會議室' },
+  { id: 'own2', title: '衝刺規劃會議', start: `${thisMonth}-08T14:00`, end: `${thisMonth}-08T15:30`, color: 'blue', categoryId: 'meeting', location: 'Google Meet' },
+  { id: 'own3', title: '每日站會', start: `${thisMonth}-15T09:30`, end: `${thisMonth}-15T09:45`, color: 'blue', categoryId: 'meeting', location: 'Slack 語音頻道' },
+  { id: 'sales1', title: '宏達工業季度回顧', start: `${thisMonth}-16T14:00`, end: `${thisMonth}-16T15:30`, color: 'orange', categoryId: 'customer', location: '宏達工業 新竹廠', description: '業務部主持:回顧 Q2 出貨與下一季報價,產品團隊列席回答結帳流程的問題。', metadata: { calendar: SALES_CALENDAR } },
+  { id: 'sales2', title: '經銷商年度大會', start: `${thisMonth}-22`, end: `${thisMonth}-24`, color: 'orange', allDay: true, categoryId: 'customer', location: '台北國際會議中心', metadata: { calendar: SALES_CALENDAR } },
+]
+export const SharedViewOnlyEvents: Story = {
+  name: '團隊行事曆:共享進來的事件只能看',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '產品團隊的月曆裡也排著業務部共享過來的客戶行程(橘色)。你對業務部行事曆只有檢視權限,所以點開這兩筆,詳情照樣列出時間、地點、說明與類別,但每一欄都只能看、點了不會進編輯,標題列也沒有「刪除」;自己團隊的會議(藍色)照常就地改。能不能改由產品決定:`eventDetail.isEditable(event)` 看事件記在 `metadata` 的來源行事曆,業務部的回 false。這跟「團隊行事曆」裡公司假日的單筆唯讀(`readOnly`:沒有詳情可開、點了什麼都不發生)是兩件事。',
+      },
+    },
+  },
+  render: () => (
+    <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
+      <CalendarDemo
+        defaultReferenceDate={now}
+        today={now}
+        events={sharedEvents}
+        locale={LOCALE}
+        categories={TEAM_CATEGORIES}
+        isEditable={(event) => event.metadata?.calendar !== SALES_CALENDAR}
+      />
+    </div>
+  ),
+}
+
+/**
  * 產品自己的詳情 — `onEventClick` 帶 `{ anchor }`(被點的那一段 / 清單裡那一列),產品用 DS 的 Popover 錨在它上面開自己的內容。
  * 從「+N」清單點的,清單留著、詳情開在旁邊(錨點在清單那一列 → lib/overlay-nesting.ts 認得是清單開出來的那一層,點它不關清單)。
  */

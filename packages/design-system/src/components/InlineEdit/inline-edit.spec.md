@@ -123,8 +123,8 @@ InlineEdit 為**泛型 `<T>`**（非只 string）:`value: T` / `onCommit: (next:
 
 - **表單欄位** → 直接用 `<Field>` + Field 控件(表單本來就是編輯情境,不需要 view 態偽裝成純文字)。
 - **DataTable 密集可編輯格** → 用 naked cell(host cell 自管 border + focus、hover outline affordance;見 `field-controls.spec.md`「Cell(naked variant)」),不是每格包一個 InlineEdit 狀態機。
-- **一律唯讀展示**(整區不可編) → `<Input mode="view">` / 純文字,不需要 Pressable;**同場或權限鎖定** → 留 InlineEdit 傳 `editable=false`(不灰化,見「editable 閘」)。
-- **多欄位一次編輯** → 用表單(進入一次編輯全部欄位),不是逐欄 inline edit。
+- **一律唯讀展示**(整區不可編、也不會在原地變成表單的資訊區塊,例:訂單明細、檔案資訊) → `DescriptionList`(`../DescriptionList/description-list.spec.md`;`../Field/field.spec.md`「何時不用」第一列),不需要 Pressable;**同場或權限鎖定** → 留 InlineEdit 傳 `editable=false`(不灰化,見「editable 閘」)。
+- **多欄位一次編輯** → 用表單(進入一次編輯全部欄位),不是逐欄 inline edit;這種「整組按『編輯』才變表單」的區塊,平常的樣子用 Field 層純顯示 `<Field mode="view">`(唯一用途,`../Field/field.spec.md`「閱讀情境」的「不變與邊界」;範例 `../Field/field.stories.tsx`「按編輯整組變表單」)。
 
 ## 近親分界
 

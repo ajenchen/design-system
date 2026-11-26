@@ -104,9 +104,11 @@ export function CalendarDemo({
             renderExtra,
             categories,
             // 標題列操作位:「⋯」收「刪除」(破壞性動作預設收進溢出選單,action-bar.spec.md:123;溢出圖示 MoreVertical,ui-development.md Icon canonical)
+            // 只能看的那一筆(isEditable 回 false)不給「刪除」:能不能刪跟能不能改是同一個權限判斷,由產品決定(calendar.spec.md「API(第一段)」eventDetail 那條「誰決定」)【AI 推導】
             actions: (event: CalendarEvent) => (
               <>
               {extraActions?.(event, (patch) => updateEvent(event, patch))}
+              {isEditable?.(event) !== false && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="text" iconOnly size="sm" startIcon={MoreVertical} aria-label="更多操作" />
@@ -115,6 +117,7 @@ export function CalendarDemo({
                   <DropdownMenuItem startIcon={Trash2} className="text-error" onSelect={() => removeEvent(event)}>刪除</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              )}
               </>
             ),
           },

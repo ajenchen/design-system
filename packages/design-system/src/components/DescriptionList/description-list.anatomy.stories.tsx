@@ -18,6 +18,9 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
+// 空值示範的資料:這位成員的職稱、電話、直屬主管還沒填(API 回 null / 空字串);元件自動顯示「-」(description-list.spec.md「空值呈現」)
+const EMPTY_PROFILE: { title: string | null; phone: string; manager?: string } = { title: null, phone: '', manager: undefined }
+
 export const Overview: Story = {
   name: '元件總覽',
   render: () => (
@@ -158,17 +161,18 @@ export const StateBehavior: Story = {
       <div>
         <H3>空值呈現 — 一律用半形 <code>-</code> 字元(hyphen)</H3>
         <Desc>
-          DescriptionList 是唯讀資訊展示,空值不留空白(會讓使用者以為資料沒載入完)。一律用半形連字號
-          (<code>-</code>,對齊 Field <code>EMPTY_DISPLAY</code>)明確表達「有查過,但這個欄位目前沒值」;色同 value <code>text-foreground</code>(「-」是供檢視的值,不是 placeholder 提示)。
+          DescriptionList 是唯讀資訊展示,空值不留空白(會讓使用者以為資料沒載入完)。值空時元件自動顯示半形連字號
+          (<code>-</code>,對齊 Field <code>EMPTY_DISPLAY</code>),明確表達「有查過,但這個欄位目前沒值」;色同 value <code>text-foreground</code>(「-」是供檢視的值,不是 placeholder 提示)。
+          下例「職稱」「電話」「直屬主管」三欄的資料是空的,沒有另外傳「-」。
         </Desc>
         <div className="border border-dashed border-divider rounded-md p-4 max-w-md">
           <DescriptionList cols={2}>
             <DescriptionItem label="姓名">Ada Chen</DescriptionItem>
-            <DescriptionItem label="職稱"><span className="text-foreground">-</span></DescriptionItem>
+            <DescriptionItem label="職稱">{EMPTY_PROFILE.title}</DescriptionItem>
             <DescriptionItem label="Email">user@example.com</DescriptionItem>
-            <DescriptionItem label="電話"><span className="text-foreground">-</span></DescriptionItem>
+            <DescriptionItem label="電話">{EMPTY_PROFILE.phone}</DescriptionItem>
             <DescriptionItem label="團隊">Engineering</DescriptionItem>
-            <DescriptionItem label="直屬主管"><span className="text-foreground">-</span></DescriptionItem>
+            <DescriptionItem label="直屬主管">{EMPTY_PROFILE.manager}</DescriptionItem>
           </DescriptionList>
         </div>
         <p className="text-footnote text-fg-muted mt-3">

@@ -83,7 +83,7 @@ Field 若需要次要 action（如「重設」「全選」「從範本帶入」�
 | FieldError | `text-body`（14px）/ `text-error-text` / `role="alert"` |
 | Field 內部 gap（vertical） | `gap-1`（4px） |
 | Field 內部 gap（horizontal，content 欄） | `gap-1`（4px） |
-| Horizontal 模式 label 與 control 的 gap | `gap-x-3`（12px） |
+| Horizontal 模式 label 與 control 的 gap | `gap-x-3`（12px）;**固定 12、是 Field 自己的值,不隨密度與 size 變**(2026-11-25 定)。不借別的刻度:不用 `--field-px`(那顆是控件框裡的左右內距,`../../tokens/uiSize/uiSize.spec.md`「Field Horizontal Padding」;只是剛好也是 12,改它不該連帶改欄距);不用 `--layout-space-tight`(版面間距管元件與元件之間,標籤 ↔ 控件是 Field 一個元件裡面怎麼排 —— `../../tokens/layoutSpace/layoutSpace.spec.md`「親疏 3 級」表「同範疇 / bundled component family」列:元件 spec own、layout rule 跳過;同檔「規則 3」的「幾塊怎麼數」第 1 步:一個 Field 算一塊,元件裡面怎麼排是元件自己的事)。**出處**(M36):12 最早在 9917993e(2026-04-10)建立 Field 時寫入,當時沒有寫理由、也沒有 user 原話;2026-11-25 user 問(問句,逐字)「另外我好奇水平排的 label和control的間距到底要是 field-px, tight 還是固定的12px或是8px?怎樣比較符合我們ds一致的設計語言且不違背世界級的設計？當初定義12px的理由是？」,查證後 user 在決策卡選「固定 12 (Recommended)」(選項與建議是 AI 擬的);畫面不變(值本來就是 12)。**世界級**:Fluent 2(Fluent UI React v9 `Field`)水平排的標籤也是一個固定值、不跟密度走 —— 標籤的 `horizontal` 樣式寫 `marginRight: tokens.spacingHorizontalM,`(<https://raw.githubusercontent.com/microsoft/fluentui/master/packages/react-components/react-field/library/src/components/Field/useFieldStyles.styles.ts>),`spacingHorizontalM: spacings.m,`、`m: '12px',`(<https://raw.githubusercontent.com/microsoft/fluentui/master/packages/tokens/src/global/spacings.ts>);兩檔 2026-11-26 讀取 |
 | Control area（任何 size） | `min-h-field-{size}` + `flex items-center` |
 
 **Label / Description / Error 字體固定 `text-body`（14px），不隨 field size 變**——Field size 只影響 input 高度，不影響表單佈局元素的 typography。
