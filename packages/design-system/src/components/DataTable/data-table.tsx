@@ -1184,7 +1184,7 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex, labels }: { dis
   // Fix:button 自帶 hover state,visibility = rowHovered || buttonHovered || isDragging。
   const [buttonHovered, setButtonHovered] = React.useState(false)
   const handleRef = React.useRef<HTMLButtonElement | null>(null)
-  // positionRef 存**視窗座標**(fits 的可視帶判定用);寫進把手 style 的是換算到 fixed 定位基準的座標(下方 handleStyleOf)。
+  // positionRef 存**視窗座標**(fits 的可視帶判定用);寫進把手 style 的是換算到 fixed 定位基準的座標(syncHandlePosition 與 render 的 styleAt,同一份 toLocal)。
   const positionRef = React.useRef<{ top: number; left: number; fits: boolean } | null>(null)
   // fixed 把手此刻真正的定位基準(2026-11-26,workspace F 組 F3):表格祖先帶 transform / translate / filter(DS Dialog 的置中位移、
   // AppShell portalContainer 舞台)時,fixed 不再以視窗為基準,視窗座標直接寫進 style 會多偏出那個祖先的原點(實測 +256 / +30)。
