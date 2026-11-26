@@ -416,7 +416,8 @@ try {
     NODE_AUTH_TOKEN: 'must-not-reach-child',
     NODE_OPTIONS: '--no-warnings',
     NODE_PATH: join(base, 'attacker-node-path'),
-    HTTPS_PROXY: 'https://attacker.invalid/',
+    // 帶帳密的代理照舊剝除;不帶帳密的 HTTPS_PROXY / NO_PROXY 自 2026-11-26 起只用來路由而轉送(判定表在 test-verified-exact-npm-runtime.mjs)。
+    HTTPS_PROXY: 'https://attacker:secret@attacker.invalid/',
     SSL_CERT_FILE: join(base, 'attacker-ca.pem'),
     NODE_TLS_REJECT_UNAUTHORIZED: '0',
     BASH_ENV: join(base, 'attacker-bash-env'),
