@@ -1140,14 +1140,14 @@ async function runChecks(page) {
   }
   await scene('vis-labels')
   const vl = await probeVisLabels('vis-labels')
-  const unlocked = vl.rows.filter((r) => !r.locked)
+  const vlUnlocked = vl.rows.filter((r) => !r.locked)
   check('vis-labels-title', 'contract', `欄位顯示面板 labels:標題列的標題 = title「${VL.title}」`, vl.title === VL.title, { title: vl.title })
   check('vis-labels-search-placeholder', 'contract', `欄位顯示面板 labels:搜尋框的 placeholder = searchPlaceholder「${VL.searchPlaceholder}」`, vl.searchPlaceholder === VL.searchPlaceholder, { placeholder: vl.searchPlaceholder })
   check('vis-labels-search-aria', 'contract', `欄位顯示面板 labels:搜尋框的讀屏名稱 = searchAriaLabel「${VL.searchAriaLabel}」`, vl.searchAria === VL.searchAriaLabel, { aria: vl.searchAria })
   check('vis-labels-reset', 'contract', `欄位顯示面板 labels:標題列 RotateCcw 鈕的讀屏名稱 = resetToDefault「${VL.resetToDefault}」`, vl.reset === VL.resetToDefault, { reset: vl.reset })
   check('vis-labels-show-all', 'contract', `欄位顯示面板 labels:有一欄收起 → 底部按鈕的字 = showAll「${VL.showAll}」`, vl.bulk === VL.showAll, { bulk: vl.bulk })
   check('vis-labels-drag', 'contract', `欄位顯示面板 labels:每一個沒鎖的欄位列,拖曳把手的讀屏名稱 = dragToReorder「${VL.dragToReorder}」(${VIS_IDS.length - 1} 列)`,
-    unlocked.length === VIS_IDS.length - 1 && unlocked.every((r) => r.drag === VL.dragToReorder), { rows: unlocked.map((r) => r.drag) })
+    vlUnlocked.length === VIS_IDS.length - 1 && vlUnlocked.every((r) => r.drag === VL.dragToReorder), { rows: vlUnlocked.map((r) => r.drag) })
   check('vis-labels-hide-column', 'contract', `欄位顯示面板 labels:顯示中的欄(Eye)的眼睛鈕讀屏名稱 = hideColumn「${VL.hideColumn}」`,
     vl.rows.filter((r) => !r.hidden).length === VIS_IDS.length - 1 && vl.rows.filter((r) => !r.hidden).every((r) => r.toggle === VL.hideColumn), { rows: vl.rows })
   check('vis-labels-show-column', 'contract', `欄位顯示面板 labels:收起的欄(EyeOff)的眼睛鈕讀屏名稱 = showColumn「${VL.showColumn}」`,
