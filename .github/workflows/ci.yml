@@ -151,10 +151,7 @@ jobs:
           # 網址值的顯示(2026-10-13,待辦總帳 Q3e):LinkInput view / readonly / disabled / edit 與 DataTable 連結格,只有合法 http(s) 畫成連結,
           # `javascript:` / 少了 https:// 等一律一般文字、沒有任何非 http(s) 的 href。純靜態(esbuild + react-dom/server),含 selftest 對照組。
           npm run test:link-input-url-display
-          # 換字管道真的換得掉(2026-11-26 E10 / E11):Pagination 兩段帶數字的字 + DataTable 分頁轉發、AgentThinking 標題、AgentDecisionCard 的 I18nProvider 層,
-          # 傳進去的字畫到畫面 / 讀屏名稱上、不傳是 DS 預設(lib/i18n/README.md「Fallback chain」)。純靜態(esbuild 打包 DS 原始碼 + react-dom/server),
-          # 含 selftest 對照組(12 個根因突變,含修前寫法;E9 欄位顯示面板 labels 住 data-table-panel-reset-clear 的 (5b))。
-          npm run test:i18n-labels-override
+          # 換字管道(test:i18n-labels-override)2026-11-26 起要真的按決策卡,搬到 verify-browser-control-groups 的「form validation contract control groups」那一步(有 Chromium)。
           # spec 之間的「被引用」段(reciprocal pointer):閘 2026-05 就有,但 `--check` 從沒有任何執行面呼叫過(只被
           # deep-audit plan 引用;待辦總帳 N61,2026-09-27 發版前全掃抓到 22 個 spec 漂移)—— 2026-09-27 接進來,漂移當場紅;
           # 修法是跑 `node scripts/add-reciprocal-pointers.mjs`(無 --check)重生後 commit。
@@ -1030,6 +1027,11 @@ jobs:
           # 二十六個單一根因突變(hook 十一個 + 對話框 Esc 分層 / 受控對話框還焦點 / Button 忙碌、握著焦點與離開後的停用 / 存檔後重設基準 / Toast / 浮層表單送出就關十五個)
           # 各自必須剛好紅它負責的列、對照列全程綠;不需要 storybook,四條 lane 並行(每條一個瀏覽器)本機 6 分(2026-10-07 實測 356 秒,循序約 25 分),CI 逐支計時 411–444 秒;同上一支按預算放。
           node scripts/form-validation-contract-invariant.mjs --selftest
+          # 換字管道真的換得掉(2026-11-26 E10 / E11):Pagination 兩段帶數字的字 + DataTable 分頁轉發、AgentThinking 標題、AgentDecisionCard 的 I18nProvider 層
+          # (AgentPanel 家族共用 componentKey agent-panel),傳進去的字畫到畫面 / 讀屏名稱上、不傳是 DS 預設(lib/i18n/README.md「Fallback chain」)。
+          # esbuild 打包 DS 原始碼:react-dom/server 量第一次渲染的字,瀏覽器裡真的按決策卡量上一題與三句錯誤訊息(所以住這個有 Chromium、必需瀏覽器的 job;
+          # 不需要 storybook)。含 selftest 對照組(根因突變含修前寫法;E9 欄位顯示面板 labels 住 data-table-panel-reset-clear 的 (5b))。
+          npm run test:i18n-labels-override
 
       - name: Overlay story contract — judgment + control groups (browser)
         run: |

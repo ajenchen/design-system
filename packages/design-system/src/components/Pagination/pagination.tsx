@@ -173,7 +173,7 @@ export interface PaginationLabels {
 }
 
 // i18n-allow: DS 預設文案(中文;lib/i18n/README.md「Fallback chain」3)—— consumer 經 `labels` 覆寫(同 Coachmark DEFAULT_LABELS)。
-// range 格式 = Ant / MUI / Carbon 共識(三家出處見 pagination.spec.md「完整形態」);「N 筆/頁」= Ant「20 / page」內嵌同款
+// range 格式的依據與出處見 pagination.spec.md「完整形態」;「N 筆/頁」= Ant「20 / page」內嵌同款
 //(rc-pagination 英文語系 `items_per_page: '/ page'`,https://github.com/react-component/pagination/blob/f71d381edfabb6047ff5f1f3d8a82651f1377fcd/src/locale/en_US.ts )
 const DEFAULT_PAGINATION_LABELS: PaginationLabels = {
   range: (start, end, total) => `第 ${start}–${end} 筆,共 ${total} 筆`,

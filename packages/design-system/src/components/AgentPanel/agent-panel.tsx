@@ -1158,8 +1158,8 @@ export interface AgentThinkingProps
   open?: boolean
   onOpenChange?: (open: boolean) => void
   /**
-   * 標題的字(Partial 傳入;取值順序 = 本參數 → I18nProvider 的 `agent-thinking` 那一組(鍵名同本介面)→ DS 預設中文,
-   * lib/i18n/README.md「Fallback chain」;2026-11-26 前寫死「思考中 / 思考過程」、產品換不了)。
+   * 標題的字(Partial 傳入;取值順序 = 本參數 → I18nProvider 的 `agent-panel` 那一組(整個 AgentPanel 家族共用一個 componentKey,
+   * 鍵 `titleThinking` / `titleDone`,同本介面)→ DS 預設中文,lib/i18n/README.md「Fallback chain」;2026-11-26 前寫死「思考中 / 思考過程」、產品換不了)。
    */
   labels?: Partial<AgentThinkingLabels>
 }
@@ -1172,7 +1172,7 @@ export interface AgentThinkingLabels {
   titleDone: string
 }
 
-// i18n-allow: DS 預設文案(中文;lib/i18n/README.md「Fallback chain」3)—— consumer 經 `labels` 或 I18nProvider `agent-thinking.*` 覆寫
+// i18n-allow: DS 預設文案(中文;lib/i18n/README.md「Fallback chain」3)—— consumer 經 `labels` 或 I18nProvider `agent-panel.titleThinking` / `agent-panel.titleDone` 覆寫
 const DEFAULT_THINKING_LABELS: AgentThinkingLabels = {
   titleThinking: '思考中',
   titleDone: '思考過程',
@@ -1180,10 +1180,10 @@ const DEFAULT_THINKING_LABELS: AgentThinkingLabels = {
 
 const AgentThinking = React.forwardRef<HTMLDivElement, AgentThinkingProps>(
   ({ thinking = false, steps, currentStep, open, onOpenChange, labels: labelsOverride, className, ...props }, ref) => {
-    // 標題的字:prop(`labels`)→ I18nProvider `agent-thinking` → DS 預設中文(同 ProfileCardDefaultActions 的逐鍵寫法)
+    // 標題的字:prop(`labels`)→ I18nProvider `agent-panel` → DS 預設中文(同 ProfileCardDefaultActions 的逐鍵寫法)
     const { t } = useI18n()
-    const titleThinking = labelsOverride?.titleThinking ?? t('agent-thinking', 'titleThinking', DEFAULT_THINKING_LABELS.titleThinking)
-    const titleDone = labelsOverride?.titleDone ?? t('agent-thinking', 'titleDone', DEFAULT_THINKING_LABELS.titleDone)
+    const titleThinking = labelsOverride?.titleThinking ?? t('agent-panel', 'titleThinking', DEFAULT_THINKING_LABELS.titleThinking)
+    const titleDone = labelsOverride?.titleDone ?? t('agent-panel', 'titleDone', DEFAULT_THINKING_LABELS.titleDone)
     // 非受控:AI 回覆中自動展開、回覆完自動收合(拍板;三套元件庫一致慣例)。
     const [uncontrolledOpen, setUncontrolledOpen] = React.useState(thinking)
     React.useEffect(() => {
@@ -1546,7 +1546,8 @@ export interface AgentDecisionCardProps
   onCancel: () => void
   /**
    * 卡上自帶的文字(Partial 傳入、與 DS 預設合併 —— 同 Coachmark / FileViewer `labels`);DS 預設中文,英文由 consumer 傳。
-   * 取值順序(每個鍵)= 本參數 → I18nProvider 的 `agent-decision-card` 那一組(鍵名同 `AgentDecisionCardLabels`)→ DS 預設
+   * 取值順序(每個鍵)= 本參數 → I18nProvider 的 `agent-panel` 那一組(整個 AgentPanel 家族共用一個 componentKey;鍵 = `decision` +
+   * `AgentDecisionCardLabels` 的鍵首字大寫,例:`cancel` → `decisionCancel`、`errorOther` → `decisionErrorOther`)→ DS 預設
    * (lib/i18n/README.md「Fallback chain」;中間那一層 2026-11-26 起,與同家族 AgentThinking 一致)。
    */
   labels?: Partial<AgentDecisionCardLabels>
@@ -1619,13 +1620,19 @@ const DEFAULT_DECISION_LABELS: AgentDecisionCardLabels = {
 }
 const DECISION_LABEL_KEYS = Object.keys(DEFAULT_DECISION_LABELS) as (keyof AgentDecisionCardLabels)[]
 
-/** 每個鍵:consumer `labels` → I18nProvider `agent-decision-card` → DS 預設(lib/i18n/README.md「Fallback chain」;同 ProfileCardDefaultActions 的逐鍵寫法) */
+/**
+ * I18nProvider 裡決策卡的鍵:`decision` + labels 鍵首字大寫。整個 AgentPanel 家族共用 componentKey `agent-panel`(同一支檔、同一個 namespace),
+ * 決策卡的鍵一律加前綴 —— 卡上的 `submit`「送出」/ `cancel` / `next` / `other` 跟面板其他零件(例:輸入盒的送出鈕)同字不同義,那些零件也接上 `agent-panel` 之後,不加前綴就會撞名。
+ */
+const decisionI18nKey = (key: keyof AgentDecisionCardLabels) => `decision${key.charAt(0).toUpperCase()}${key.slice(1)}`
+
+/** 每個鍵:consumer `labels` → I18nProvider `agent-panel.decision*` → DS 預設(lib/i18n/README.md「Fallback chain」;同 ProfileCardDefaultActions 的逐鍵寫法) */
 function resolveDecisionLabels(
   override: Partial<AgentDecisionCardLabels> | undefined,
   t: ReturnType<typeof useI18n>['t'],
 ): AgentDecisionCardLabels {
   return Object.fromEntries(
-    DECISION_LABEL_KEYS.map((key) => [key, override?.[key] ?? t('agent-decision-card', key, DEFAULT_DECISION_LABELS[key])]),
+    DECISION_LABEL_KEYS.map((key) => [key, override?.[key] ?? t('agent-panel', decisionI18nKey(key), DEFAULT_DECISION_LABELS[key])]),
   ) as unknown as AgentDecisionCardLabels
 }
 type DecisionError = 'empty' | 'other'

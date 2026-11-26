@@ -213,6 +213,7 @@ canonical 判斷:「使用者 click 單項是否立即改變系統狀態?」是 
 - `agent-panel.spec.md`
 - `calendar.spec.md`
 - `coachmark.spec.md`
+- `data-table.spec.md`
 - `dialog.spec.md`
 - `dropdown-menu.spec.md`
 - `hover-card.spec.md`

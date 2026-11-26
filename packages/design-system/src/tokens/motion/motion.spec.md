@@ -231,6 +231,7 @@ Radix 關閉時先把 `data-state` 改成 `closed`、等收起動畫的 `animati
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `agent-panel-fab.spec.md`
+- `agent-panel.spec.md`
 - `data-table.spec.md`
 - `dialog.spec.md`
 - `file-upload.spec.md`
