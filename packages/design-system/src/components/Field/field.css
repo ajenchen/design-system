@@ -45,3 +45,22 @@
 [data-field-scope]:has([data-field-reading]) [data-field-frameless-value] {
   --scope-value-inset: var(--field-bleed);
 }
+
+/* Field 層純顯示 → 沒有框的按鈕(Button text / link 在 Field 裡掛 data-field-frameless-action;只有圖示的、有框的都不掛)。
+   規則與出處住 field.spec.md「閱讀情境」的「檢視態的按鈕」(user 2026-11-26 C9:可見元素的邊界要看起來對齊)。
+   看得見的邊界 = 圖示 / 字本身 → 收掉左右內距、左右框寬、最小寬與標籤字兩端的 px-1,內容貼著按鈕自己的左右緣 = 控件欄左緣;
+   命中區與滑過底色跟著縮成內容那一塊(hit-area-canonical.md 一-4)。有框的按鈕不動:框本來就在控件欄左緣。
+   判斷看的是這一個 Field 自己(不是範圍):組裡別列是純顯示、這一列是一般表單時,這一列的按鈕不收。
+   只認 Field 自己控件槽的直接子元素:控件裡面自帶的按鈕(例:LinkInput 的編輯鉛筆)不算。
+   不是變數、直接寫屬性:這三個值是「收掉」(0),與主題 / 密度無關;本檔不在任何 @layer,蓋得過 Button 在 utilities 層的 px / min-w / border。 */
+[data-field-orientation][data-field-mode="view"] [data-field-slot="control"] > [data-field-frameless-action] {
+  min-width: 0;
+  padding-inline: 0;
+  border-inline-width: 0;
+}
+[data-field-orientation][data-field-mode="view"] [data-field-slot="control"] > [data-field-frameless-action] > [data-button-label]:first-child {
+  padding-inline-start: 0;
+}
+[data-field-orientation][data-field-mode="view"] [data-field-slot="control"] > [data-field-frameless-action] > [data-button-label]:last-child {
+  padding-inline-end: 0;
+}

@@ -243,6 +243,16 @@ export function fieldFramelessValueProps(insideField: boolean): Record<typeof FI
 }
 
 /**
+ * 沒有框的按鈕(Button `text` / `link`,不含只有圖示的)放在 `<Field>` 裡時掛的記號 —— Field 層純顯示(`<Field mode="view">`)時,
+ * 它看得見的邊界是圖示 / 字本身,Field 讓它收掉左右內距、左右框寬與最小寬,內容齊控件欄左緣(field.spec.md「閱讀情境」的「檢視態的按鈕」)。
+ * 只是記號、不帶樣式:要不要收只住 field.css。在 Field 外回 undefined,DOM 不多任何屬性。
+ */
+export const FIELD_FRAMELESS_ACTION_ATTR = 'data-field-frameless-action'
+export function fieldFramelessActionProps(framelessInField: boolean): Record<typeof FIELD_FRAMELESS_ACTION_ATTR, ''> | undefined {
+  return framelessInField ? { [FIELD_FRAMELESS_ACTION_ATTR]: '' } : undefined
+}
+
+/**
  * Resolve Field control 的 **disabled** — 取代散落的 `disabledProp ?? fieldCtx?.disabled`(2026-06-08 SSOT)。
  * 優先序:顯式 prop > FieldContext.disabled(`<Field disabled>` / `<Field mode="disabled">`)> false。
  * **caller 必傳「未預設」的原始 prop**(沒傳 = undefined),否則 `disabled=false` 預設會吃掉 `??` fallback。

@@ -4,7 +4,7 @@
  *   保證: hover-own-pair-invariant 在「滑過底色借了別的底的配對」時會紅、在元素用自己的配對(或釘住)時不紅,
  *         而且它的綠燈來自真的掃到東西(判了 N 組)而不是配對表或解析器壞掉後的空集合
  *   紅: 026d5788 之前的 Calendar 非當月格原文(bg-muted + hover:bg-neutral-hover)必須指名 bg-muted 紅;
- *       把現行 calendar.tsx 的非當月格塞回 `!inMonth && 'bg-muted'`(突變)也必須紅;閘的 selftest 正反例(含合成違規)全過;
+ *       把 bg-muted 塞進現行 calendar.tsx 有時段列(透明底、滑過 --neutral-hover)的同一個 cn()(突變)也必須紅;閘的 selftest 正反例(含合成違規)全過;
  *       (2026-09-25 C12②)「底」滑過 / 按住直接換成 --neutral-* 必須紅且提示指到疊層 utility;疊層疊在「底」以外(secondary / 透明)必須紅;
  *       單檔模式判到 0 組必須是 NO-EVIDENCE(exit 1),全樹判到 0 組必須是 INSTRUMENT-FAIL —— 兩者都不得是 PASS
  *   綠: 現行 calendar.tsx 整份檔案 0 筆;全樹掃描(套已知清單)沒有新命中、已知清單格式合法、而且判到的組數 > 0;
@@ -40,22 +40,24 @@ check('026d5788 之前的 Calendar 非當月格原文 → 紅,且指名 bg-muted
 })
 
 const current = readFileSync(join(REPO, CAL_REL), 'utf8')
-// 日期格的滑過 2026-11-25 起由屬性 data-hovered 驅動(`data-[hovered]:bg-neutral-hover`,calendar.tsx「格子的滑過」;之前是 `hover:bg-neutral-hover`):
-// 閘把 data-[hovered] 當滑過類前綴(JS 代理標記),同一組配對照判 —— 下面兩題就是證明換了前綴之後還判得到、還會紅
-const CELL_HOVER = 'data-[hovered]:bg-neutral-hover'
+// 錨點 = 有時段事件那一列(透明底,可點時滑過 --neutral-hover;calendar.tsx MonthEventPiece「有時段(右欄)」那一支)。
+// 2026-11-26 前錨在日期格的滑過(先 `hover:bg-neutral-hover`、2026-11-25 起 `data-[hovered]:bg-neutral-hover`);日期格的滑過底色
+// 拿掉後(calendar.spec.md「Cell 規則」滑過條【CELL-HOVER(定)】)格子沒有滑過色可配,非當月格再塞回 bg-muted 也不構成「借了別的底的配對」
+//(那一條改由 U3「非當月格不加底色」管),所以改錨在 calendar.tsx 現存的這一組透明底配對。
+const ROW_HOVER = 'hover:bg-neutral-hover'
+const ROW_ANCHOR = `!mode.readOnly && '${ROW_HOVER} data-[detail-open]:bg-neutral-hover'`
 check('現行 calendar.tsx 整份 → 0 筆', () => {
   const { violations, evaluated } = scanSource(current, CAL_REL, table)
   assert.deepEqual(violations, [])
-  assert.ok(evaluated.some((e) => e.hover === CELL_HOVER), `現行 calendar.tsx 裡應該判到日期格那一組(${CELL_HOVER})—— 沒判到代表解析器沒看到它`)
+  assert.ok(evaluated.some((e) => e.hover === ROW_HOVER && e.verdict === '✓'), `現行 calendar.tsx 裡應該判到有時段列那一組(${ROW_HOVER})—— 沒判到代表解析器沒看到它`)
 })
 
-check('突變:把 `!inMonth && \'bg-muted\'` 塞回現行 calendar.tsx 的同一段 → 紅', () => {
-  const anchor = `'${CELL_HOVER}',`
-  const idx = current.indexOf(anchor)
-  assert.ok(idx > 0, `現行 calendar.tsx 找不到 ${anchor}(被改寫了?請更新本突變的錨點)`)
-  const mutated = `${current.slice(0, idx + anchor.length)}\n                !inMonth && 'bg-muted',${current.slice(idx + anchor.length)}`
+check('突變:把 bg-muted 塞進現行 calendar.tsx 有時段列(透明底)的同一個 cn() → 紅', () => {
+  const idx = current.indexOf(ROW_ANCHOR)
+  assert.ok(idx > 0, `現行 calendar.tsx 找不到 ${ROW_ANCHOR}(被改寫了?請更新本突變的錨點)`)
+  const mutated = `${current.slice(0, idx + ROW_ANCHOR.length)}, 'bg-muted'${current.slice(idx + ROW_ANCHOR.length)}`
   const { violations } = scanSource(mutated, CAL_REL, table)
-  assert.ok(violations.some((v) => v.rest === 'bg-muted' && v.hover === CELL_HOVER), JSON.stringify(violations))
+  assert.ok(violations.some((v) => v.rest === 'bg-muted' && v.hover === ROW_HOVER), JSON.stringify(violations))
 })
 
 // 整份 026d5788^ 的 calendar.tsx 已於 2026-09-25 手動驗過(`git show 026d5788^:… | node scripts/hover-own-pair-invariant.mjs --file=… --stdin --no-baseline`

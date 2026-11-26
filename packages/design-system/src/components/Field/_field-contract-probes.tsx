@@ -4,7 +4,8 @@
 // 挑到只放 probe 的那一個時,整頁「Field/展示」文件只剩 probe、側欄也把它當 test-only 藏掉(2026-10-13 獨立驗證抓到)。
 // 慣例同 `AppShell/_demo-helpers.tsx`(`_` 前綴 = demo / private helper,naming-structure-invariant R2)。
 import * as React from 'react'
-import { CircleDot, Globe } from 'lucide-react'
+import { CircleDot, Globe, RefreshCw } from 'lucide-react'
+import { Button } from '@/design-system/components/Button/button'
 import { Select, type SelectOption } from '@/design-system/components/Select/select'
 import { Combobox } from '@/design-system/components/Combobox/combobox'
 import { PeoplePicker } from '@/design-system/components/PeoplePicker/people-picker'
@@ -146,7 +147,9 @@ function F3Cells() {
 }
 
 // ── 純顯示齊標籤 × 兩種標籤位置(test-only 契約 probe,2026-10-27 C1 甲)──────────────────────────────────────────
-// 18 種 `<Field mode="view">` 純顯示 × 標籤在上 / 標籤在左:值的第一個可見元素左緣 = 控件欄左緣(標籤在上時 = 標籤左緣),
+// 21 種 `<Field mode="view">` 純顯示 × 標籤在上 / 標籤在左:值的第一個可見元素左緣 = 控件欄左緣(標籤在上時 = 標籤左緣),
+// 最後三種是當控件的按鈕(2026-11-26 user C9「可見元素的邊界要看起來對齊」;field.spec.md「閱讀情境」的「檢視態的按鈕」):
+// 沒有框的(連結樣 / 文字)看得見的是字與圖示 → 字 / 圖示齊左;有框的看得見的是框 → 框齊左(閘另量沒有框的按鈕左右緣 = 內容、有框的框與內距還在)。
 // 值的第一行中線 = 控件欄頂 + field-height / 2(RadioGroup 修前高 5.5 / lg 7.5px)。規則住 field-controls.spec.md
 // 「軸一 view mode」(user 2026-10-21 C1 甲);`scripts/reading-context-invariant.mjs` G1-V 在 CI 逐格量(`data-view-case` 是它找格子的錨;
 // 2026-11-25 取代不在 CI 的手動探針 probe-inline-edit-align.mjs)。`scripts/field-text-left-edge-invariant.mjs` 另量其中一部分格子的
@@ -185,6 +188,9 @@ const viewCases: { key: string; label: string; control: React.ReactNode }[] = [
   { key: 'checkbox', label: '同意條款', control: <Checkbox checked /> },
   { key: 'switch', label: '已啟用', control: <Switch checked /> },
   { key: 'radio', label: '付款方式', control: <RadioGroup value="card"><RadioGroupItem value="card" label="信用卡" /><RadioGroupItem value="cash" label="貨到付款" /></RadioGroup> },
+  { key: 'button-link', label: '合約附件', control: <Button variant="link">下載 PDF</Button> },
+  { key: 'button-text', label: '同步狀態', control: <Button variant="text" startIcon={RefreshCw}>重新同步</Button> },
+  { key: 'button-framed', label: 'Slack 通知', control: <Button variant="tertiary">連結帳號</Button> },
 ]
 export function ViewAlignmentProbe() {
   return (

@@ -415,6 +415,10 @@ Button 自動加 **`data-unbounded="true"`** attribute 當 **`variant === 'text'
 
 **Consumer 無需手動加**:Button 自動設。若 consumer 自刻非 Button 的 unbounded control(罕見),可手動加 `data-unbounded="true"` 加入 canonical。
 
+#### 在 Field 純顯示裡當控件(2026-11-26)
+
+Button 在 `<Field>` 裡、沒有框(`text` / `link`)且不是只有圖示時另掛 `data-field-frameless-action`(與 `data-unbounded` 分開:那個只管垂直縮位、不含 `link`)。`<Field mode="view">` 時沒有框的按鈕收掉左右內距、左右框寬與最小寬,字 / 圖示齊標籤左緣;有框的按鈕不動(框本來就齊左)。規則、出處(user C9「可見元素的邊界要看起來對齊」)與閘只住 `../Field/field.spec.md`「閱讀情境」的「檢視態的按鈕」,本檔不重述。
+
 ### 禁止事項(dismiss)
 
 - ❌ Trash / Delete / Clear 套 `dismiss` prop — 語意誤用;destructive/clear 本身有明確語意,弱化會混淆
