@@ -43,14 +43,50 @@ case "${EVENT:-}" in
     ;;
 esac
 
+# ── 派工預算(2026-11-27;user 2026-11-26 問「這個其實是ds本來就有規範的工作流程吧？」)──────────────
+# 規則正本 AGENTS.md「分診與預算」:「派工先寫預算(代理數/花費/牆鐘),用滿就停派、交付已完成的並回報。」
+# 過去只有散文、零機械面(meta-patterns「同一條規則重犯 → 補機械強制面」)。這裡只做**非阻擋提醒**,不另建流程工具
+#(work-process.md 第 7 點):同一 session 第一次派工時,runtime 狀態裡沒有「預算已寫」記號 → 提醒一次;
+# 記號寫法 = 在派工 prompt 放一行「派工預算:代理 <N> 個、花費 <上限>、牆鐘 <分鐘>」(同一行要有 代理 / 花費 / 牆鐘 三項),
+# 本 hook 看到就替這個 session 落記號(Git-owned runtime 狀態 dispatch-budget.jsonl,照 check_solo_workflow 的做法),之後靜默。
+# 不同 session 各自記;沒有 adapter 給的 runtime root(直接探測)時寫不了記號 —— 照樣看本次 prompt 有沒有那一行。
+BUDGET_REMINDER=''
+if [ "${EVENT:-}" != "PostToolUse" ]; then
+  BUDGET_SESSION=$(jq -r '.session_id // empty' <<<"$INPUT" 2>/dev/null)
+  BUDGET_FILE=''
+  if command -v governance_enforcement_state_dir >/dev/null 2>&1; then
+    BUDGET_DIR="$(governance_enforcement_state_dir 2>/dev/null)" || BUDGET_DIR=''
+    [ -n "$BUDGET_DIR" ] && BUDGET_FILE="$(governance_runtime_file_path dispatch-budget.jsonl "$BUDGET_DIR" 2>/dev/null)" || true
+  fi
+  if grep -qE '派工預算.*代理.*花費.*牆鐘' <<<"$PROMPT"; then
+    if [ -n "$BUDGET_SESSION" ] && command -v governance_append_enforcement_record >/dev/null 2>&1; then
+      governance_append_enforcement_record dispatch-budget.jsonl \
+        "$(jq -cn --arg s "$BUDGET_SESSION" --arg t "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '{session_id:$s,recorded_at:$t}')" || true
+    fi
+  elif [ -n "$BUDGET_SESSION" ] && [ -n "$BUDGET_FILE" ] && [ -f "$BUDGET_FILE" ] \
+    && jq -e --arg s "$BUDGET_SESSION" 'select(.session_id == $s)' "$BUDGET_FILE" >/dev/null 2>&1; then
+    :
+  else
+    BUDGET_REMINDER='派工預算還沒寫(這個 session 第一次派工)。AGENTS.md「分診與預算」原文:「派工先寫預算(代理數/花費/牆鐘),用滿就停派、交付已完成的並回報。」要寫的三項:代理數、花費、牆鐘。寫法:在這一次或下一次派工的 prompt 放一行「派工預算:代理 <N> 個、花費 <上限>、牆鐘 <分鐘>」—— hook 看到這一行就替這個 session 落記號,之後不再提醒。(非阻擋提醒,本次派工照常進行)'
+  fi
+fi
+# 放行出口:有提醒就以 governance context 送出(stdout 只有這個 envelope;擋下時不送)
+allow_exit() {
+  if [ -n "$BUDGET_REMINDER" ]; then
+    jq -cn --arg message "$BUDGET_REMINDER" '{governanceContext:{hookEventName:"PreToolUse",message:$message}}' \
+      || { printf 'GOVERNANCE_INTEGRITY: dispatch budget reminder envelope encoding failed\n' >&2; exit 70; }
+  fi
+  exit 0
+}
+
 # Allow escape(極罕見)
 if grep -qE '@audit-sample-allow:' <<<"$PROMPT"; then
-  exit 0
+  allow_exit
 fi
 
 # Only enforce on audit-related dispatch(detect by prompt keyword)
 if ! grep -qE 'audit|Dim [0-9]+|DS-wide|sub-agent|sweep' <<<"$PROMPT"; then
-  exit 0
+  allow_exit
 fi
 
 # Detect sample escape clause keyword
@@ -73,4 +109,4 @@ if [ -n "$ESCAPE_HITS" ]; then
   exit 2
 fi
 
-exit 0
+allow_exit
