@@ -250,7 +250,7 @@ export const Accessibility = {
     <div className="max-w-3xl text-body text-fg-secondary">
       {/* 標題 → 一段文字 = tight(A4 甲,寫死 mb-2 改 token、跟著密度)。完整條文在 description-list.spec.md「無障礙」段(不給讀者看檔名) */}
       <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"- 語意 HTML:外層 <dl>,每組 <dt>(term)+ <dd>(description)— screen reader 讀「term X, description Y」配對敘事\n- DT/DD 配對:DescriptionItem 強制一組配對,不分開暴露 <dt>/<dd> primitive\n- 空值:consumer 傳半形 - 占位(裸 - SR 敘事弱,宜補 sr-only「無資料」,比空 <dd> 明確)\n- 多欄 cols>1:視覺 grid、DOM 仍 item 順序,SR 依 DOM 敘事\n- 無互動:純唯讀呈現,無 keyboard / focus state(無 ARIA 補強需求,語意由原生 dl/dt/dd 承載)"}</p>
+      <p className="whitespace-pre-line">{"- 語意 HTML:外層 <dl>,每組 <dt>(term)+ <dd>(description)— screen reader 讀「term X, description Y」配對敘事\n- DT/DD 配對:DescriptionItem 強制一組配對,不分開暴露 <dt>/<dd> primitive\n- 空值:值空時元件自動顯示半形 -(不用自己傳;裸 - SR 敘事弱,宜補 sr-only「無資料」,比空 <dd> 明確)\n- 多欄 cols>1:視覺 grid、DOM 仍 item 順序,SR 依 DOM 敘事\n- 無互動:純唯讀呈現,無 keyboard / focus state(無 ARIA 補強需求,語意由原生 dl/dt/dd 承載)"}</p>
     </div>
   ),
 }

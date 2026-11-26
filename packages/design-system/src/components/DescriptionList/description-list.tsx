@@ -1,7 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import * as React from 'react'
 import { cn } from '@/lib/utils'
-import { useFieldEmptyDisplay } from '@/design-system/components/Field/field-context'
+import { EMPTY_DISPLAY } from '@/design-system/components/Field/field-wrapper' // @empty-display-allow: DescriptionList 不是 Field 家族,不在 useFieldEmptyDisplay 的「可編輯表格格子 → 空白」分流裡,一律畫 DS 的空值符號;經那支 hook 取的話,放進可編輯格子開出來的浮層(人員格 → 名片 → ProfileCard)會因 context 穿過 Portal 而畫成空白
 
 /**
  * DescriptionList — 唯讀 label + value 展示
@@ -25,7 +25,7 @@ import { useFieldEmptyDisplay } from '@/design-system/components/Field/field-con
  * 不一時需要對齊格線才易讀 → 開 divided；短列表（< 4 rows）不需要。
  *
  * ── 空值(2026-11-26)──
- * 值空時元件自動顯示半形「-」(useFieldEmptyDisplay,與 Field 家族同一個符號);consumer 不用自己傳。
+ * 值空時元件自動顯示半形「-」(EMPTY_DISPLAY,與 Field 家族同一個符號;不跟可編輯表格格子的空白分流);consumer 不用自己傳。
  *
  * ── 間距 ──
  * vertical: label → value（同 item 內）: `var(--item-gap-label-desc-reading)` token（2px,item-anatomy reading tier SSOT;code L115 dd 消費）
@@ -102,9 +102,8 @@ const isEmptyValue = (value: React.ReactNode): boolean =>
 const DescriptionItem = React.forwardRef<HTMLDivElement, DescriptionItemProps>(
   ({ label, children: childrenProp, className, ...props }, ref) => {
     const { orientation, divided } = React.useContext(DescriptionContext)
-    // 空值符號經 Field 的空值 hook 取(DS 唯一一份;DescriptionList 不在表格格子裡,一律得到「-」)
-    const emptyDisplay = useFieldEmptyDisplay()
-    const children = isEmptyValue(childrenProp) ? emptyDisplay : childrenProp
+    // 空值一律畫 DS 的空值符號(field-wrapper.tsx EMPTY_DISPLAY,唯一一份);不經 useFieldEmptyDisplay —— 理由見檔頭 import 那行的 @empty-display-allow
+    const children = isEmptyValue(childrenProp) ? EMPTY_DISPLAY : childrenProp
     if (orientation === 'horizontal') {
       return (
         <div

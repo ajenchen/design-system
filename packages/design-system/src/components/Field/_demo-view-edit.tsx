@@ -54,7 +54,8 @@ export function ViewThenEditDemo() {
     <>
       <Toaster />
       <section aria-labelledby="project-info-title" className="w-[30rem] border border-border rounded-md p-[var(--layout-space-loose)]">
-        <div className="flex items-center justify-between gap-[var(--layout-space-tight)] mb-[var(--layout-space-loose)]">
+        {/* 標題列最小高 = 「編輯」鈕(sm)的高:編輯中鈕不畫,標題列不變矮、下面整組不上移【AI 推導】 */}
+        <div className="flex items-center justify-between gap-[var(--layout-space-tight)] min-h-field-sm mb-[var(--layout-space-loose)]">
           <h3 id="project-info-title" className="text-h6 text-foreground">專案資料</h3>
           {!editing && (
             <Button ref={editButtonRef} variant="tertiary" size="sm" startIcon={Pencil} onClick={() => { setDraft(saved); setEditing(true) }}>
