@@ -150,7 +150,7 @@ export const InContext = {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export const FillParent = {
-  name: '填滿父容器(fill)',
+  name: '填滿父容器',
   tags: ['test-only'],
   render: () => (
     <div className="flex items-center gap-[var(--layout-space-loose)]">
