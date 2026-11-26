@@ -379,7 +379,8 @@ export const ColorMatrix: Story = {
         <H3>Field 元素色彩 Token</H3>
         <Desc>
           Field 本身不擁有 control 邊框色(那由 Field Controls 管),但擁有 label / description /
-          error / required-star 的色彩。這裡列出 Field 容器的所有色彩 token。
+          error / required-star 的色彩。這裡列出 Field 容器的所有色彩 token。FieldLabel 的 Default 色是一般表單的樣子;
+          閱讀情境(同一組裡有就地編輯,或 Field 層純顯示 —— mode 設成 view)標籤改用 fg-secondary,停用仍是 fg-disabled(field.spec.md「閱讀情境」)。
         </Desc>
         <div className="overflow-x-auto mb-4">
           <table className="text-caption border-collapse">

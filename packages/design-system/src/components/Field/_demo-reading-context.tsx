@@ -3,13 +3,16 @@
 //   ReadingContextDemo     真實情境 —— 工作項目詳情(標籤在左)+ 行事曆事件詳情(標籤在上),各有文字、日期、類別 Tag、負責人頭像、
 //                          開關、勾選框、editable=false 鎖定的值。給 scripts/reading-context-invariant.mjs 量,也是給 user 看的前後對照圖的唯一來源。
 //   ReadingContextFixture  邊界 —— 只有一個就地編輯的組(編輯中不翻轉)、包一層的就地編輯、巢狀組(範圍 = 最外層)、不在組裡的單一欄位、
-//                          停用、一般表單(對照:不得變)、DescriptionList(三者同色的參照)。
-// 照規格不混純顯示:就地編輯的組裡只有就地編輯與直接切換的開關 / 勾選框(inline-edit.spec.md「editable 閘」「何時不用」)。
+//                          停用、一般表單(對照:不得變)、DescriptionList(三者同色的參照)、
+//                          Field 層純顯示的組混放一個輸入框(VG:純顯示也觸發標籤色、同一組只用一個顏色;2026-11-26)。
+// 照規格不混純顯示:就地編輯的組裡只有就地編輯與直接切換的開關 / 勾選框(inline-edit.spec.md「editable 閘」「何時不用」);
+// 純顯示的組(VG)另外一組,不放就地編輯。
 // 人員照片一律走名冊(stories-helpers/data/people.ts;本檔是 _demo-* 檔,scripts/demo-people-roster-invariant.mjs 會掃)。
 // 每列 Field 帶 data-probe(組:欄名)與 data-kind(值的種類),閘靠它們指名;不影響畫面。
 import * as React from 'react'
 import { Field, FieldLabel, FieldGroup } from './field'
 import type { FieldSize } from './field-context'
+import type { FieldMode } from './field-types'
 import { InlineEdit } from '@/design-system/components/InlineEdit/inline-edit'
 import { Input } from '@/design-system/components/Input/input'
 import { Switch } from '@/design-system/components/Switch/switch'
@@ -32,6 +35,10 @@ const EVENT_CATEGORY: SelectOption[] = [
   { value: 'customer', label: '客戶會議', tagVariant: 'yellow' },
   { value: 'internal', label: '內部會議', tagVariant: 'blue' },
 ]
+const TICKET_PRIORITY: SelectOption[] = [
+  { value: 'high', label: '高' },
+  { value: 'normal', label: '一般' },
+]
 // 名冊裡的人(同一支檔不同人不共用臉):負責人 / 主辦人可選的團隊成員
 const TEAM: PersonValue[] = [
   demoPersonData('Alice Chen', 48),
@@ -40,14 +47,14 @@ const TEAM: PersonValue[] = [
   demoPersonData('林伯彥', 48),
 ]
 
-type Kind = 'text' | 'date' | 'tag' | 'person' | 'switch' | 'checkbox' | 'locked' | 'input'
+type Kind = 'text' | 'date' | 'tag' | 'person' | 'switch' | 'checkbox' | 'locked' | 'input' | 'view'
 
-/** 一列:Field + 標籤 + 控件;size 只在 story 的 args 指定時才寫(沒寫 = 看同組同高怎麼解) */
-function Row({ set, label, kind, orientation, size, disabled, children }: {
-  set: string; label: string; kind: Kind; orientation: 'horizontal' | 'vertical'; size?: FieldSize; disabled?: boolean; children: React.ReactNode
+/** 一列:Field + 標籤 + 控件;size 只在 story 的 args 指定時才寫(沒寫 = 看同組同高怎麼解);mode 只有純顯示那組寫 */
+function Row({ set, label, kind, orientation, size, disabled, mode, children }: {
+  set: string; label: string; kind: Kind; orientation: 'horizontal' | 'vertical'; size?: FieldSize; disabled?: boolean; mode?: FieldMode; children: React.ReactNode
 }) {
   return (
-    <Field orientation={orientation} size={size} disabled={disabled} data-probe={`${set}:${label}`} data-kind={kind}>
+    <Field orientation={orientation} size={size} disabled={disabled} mode={mode} data-probe={`${set}:${label}`} data-kind={kind}>
       <FieldLabel>{label}</FieldLabel>
       {children}
     </Field>
@@ -234,6 +241,17 @@ export function ReadingContextFixture({ size }: { size?: FieldSize }) {
           <FieldGroup labelWidth={112}>
             <Row set="DIS" label="摘要" kind="text" orientation="horizontal" size={size}><TextValue initial="匯出報表缺少稅額欄" label="摘要" /></Row>
             <Row set="DIS" label="同步到客服系統" kind="switch" orientation="horizontal" size={size} disabled><ToggleValue initial /></Row>
+          </FieldGroup>
+        </section>
+      </div>
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <p className="text-body text-fg-secondary">純顯示的組混放一個輸入框(整組同一個標籤色)</p>
+        <section data-reading-set="VG" className={`w-[320px] ${CARD}`}>
+          <FieldGroup>
+            <Row set="VG" label="客服單號" kind="view" orientation="vertical" size={size} mode="view"><Input value="CS-20481" onChange={() => {}} /></Row>
+            <Row set="VG" label="建立時間" kind="view" orientation="vertical" size={size} mode="view"><DatePicker value="2026-11-20" onChange={() => {}} /></Row>
+            <Row set="VG" label="優先級" kind="view" orientation="vertical" size={size} mode="view"><Select options={TICKET_PRIORITY} value="high" /></Row>
+            <Row set="VG" label="內部備註" kind="input" orientation="vertical" size={size}><Input defaultValue="客戶下午三點後才方便接電話" /></Row>
           </FieldGroup>
         </section>
       </div>
