@@ -46,7 +46,7 @@ type VariantKey = 'subtle' | 'solid'
 
 // 與 Tag 元件完全對齊：**消費 categorical-color SSOT**(strip `var()` 取顯示用 token 名),
 // key X 一律對 `--color-X-*`(1:1,零 offset)。subtle = step-1 底 + step-7 字,solid = step-6 底
-// + on-emphasis 配對字(亮 hue yellow/amber/orange/lime → --on-emphasis-dark 深字;green 白字例外)。neutral 非色相,Avatar 用 --muted 自處理。
+// + on-emphasis 配對字(白字對比低於綠色的 hue,目前 yellow/amber/lime → --on-emphasis-dark 深字;categorical-color.ts「實心底字色原則」)。neutral 非色相,Avatar 用 --muted 自處理。
 // 2026-06-04 SSOT 重構後 anatomy 表機械衍生,永遠與 tsx COLOR_MAP 1:1 無漂移(M17)。
 const stripVar = (s: string) => s.replace(/^var\(/, '').replace(/\)$/, '')
 const hueTokens = (m: Record<CategoricalHue, { bg: string; text: string }>) =>
@@ -158,7 +158,7 @@ export const Overview = {
                 ['alt', 'string', '—', '替代文字（圖片失敗時取首字作 fallback）'],
                 ['icon', 'LucideIcon', '—', 'Icon 模式（與 src/alt 互斥優先）'],
                 ['color', 'ColorKey', "'neutral'", 'Icon / Text 模式的背景色'],
-                ['solid', 'boolean', 'false', '深底配對前景模式（step-6 背景；yellow/amber/orange/lime 用深字，其餘白字）'],
+                ['solid', 'boolean', 'false', '深底配對前景模式（step-6 背景；yellow/amber/lime 用深字，其餘白字）'],
                 ['status', "'online' | 'away' | 'busy' | 'offline'", '—', '在線狀態 dot（presence），顯示在右下角；可與 badgeCount（右上）並存'],
                 ['badgeCount', 'number', '—', '未讀 / 通知計數 badge，顯示在右上角（消費 Badge critical，>99 顯示 99+）；可與 status（右下）並存'],
                 ['hoverCard', 'ReactNode', '—', 'hover 時彈出的內容（如 ProfileCard），person avatar 預設必帶'],

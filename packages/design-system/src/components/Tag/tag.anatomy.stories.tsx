@@ -202,7 +202,7 @@ export const Overview = {
                 ['icon', 'LucideIcon', '—', '左側 icon，統一 16px。與 avatar 互斥'],
                 ['avatar', 'ReactNode', '—', '左側 avatar（16px 圓形）。與 icon 互斥'],
                 ['onRemove', '() => void', '—', '可移除——Tag 自動渲染 remove 按鈕'],
-                ['solid', 'boolean', 'false', '深底配對前景模式（step-6 背景；yellow/amber/orange/lime 用深字，其餘白字）'],
+                ['solid', 'boolean', 'false', '深底配對前景模式（step-6 背景；yellow/amber/lime 用深字，其餘白字）'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}
@@ -387,7 +387,7 @@ export const ColorMatrix = {
   name: '色彩對照表',
   render: () => (
     <ExampleStack>
-      <ExampleSection title="Variant 色彩對照" description="Tag 無 hover/active 狀態（非互動元件），只有單一色彩組合。Subtle 模式有色 variant 文字用 --color-&#123;hue&#125;-7 primitive（step-7，不隨 dark mode 反轉），neutral 用 foreground。Solid 模式 step-6 背景 + on-emphasis 配對文字:夠深的 hue 用白字（--on-emphasis），亮色 hue（yellow/amber/orange/lime）用深字（--on-emphasis-dark），green 維持白字（documented exception）。色塊即時渲染，切 dark mode 自動更新。" />
+      <ExampleSection title="Variant 色彩對照" description="Tag 無 hover/active 狀態（非互動元件），只有單一色彩組合。Subtle 模式有色 variant 文字用 --color-&#123;hue&#125;-7 primitive（step-7，不隨 dark mode 反轉），neutral 用 foreground。Solid 模式 step-6 背景 + on-emphasis 配對文字:白字對比不低於綠色的 hue 用白字（--on-emphasis），低於綠色的 hue（yellow/amber/lime）用深字（--on-emphasis-dark）。色塊即時渲染，切 dark mode 自動更新。" />
 
       {/* Subtle */}
       <ExampleSection title="Subtle（預設）">

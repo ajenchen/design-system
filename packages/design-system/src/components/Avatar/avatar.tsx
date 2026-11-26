@@ -31,7 +31,7 @@ import { STACK_GAP_PX } from '@/design-system/tokens/uiSize/stack-gap'
 // ── 色彩 ──
 // **消費 categorical-color SSOT**(CAT_SUBTLE_TOKENS / CAT_SOLID_TOKENS,key X 一律對 `--color-X-*`,
 // 1:1 零 offset)。subtle=step-1 底 + step-7 字;solid=step-6 全色底 + on-emphasis 字
-//(亮 hue yellow/amber/orange/lime 用 --on-emphasis-dark 深字;green 白字例外)。neutral 非色相,自處理(subtle=muted、solid=neutral-9)。
+//(白字對比低於綠色的 hue,目前 yellow/amber/lime,用 --on-emphasis-dark 深字;判準 = categorical-color.ts「實心底字色原則」)。neutral 非色相,自處理(subtle=muted、solid=neutral-9)。
 // 2026-06-04 修:原 `red` 誤接 `--color-deep-orange-*`(red=品牌紅 hue-25 ≠ deep-orange);
 // 改消費 SSOT 後 red→`--color-red-*`,並補齊全 12 色相。
 type ColorKey = CategoricalColor
@@ -280,7 +280,7 @@ export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   icon?: LucideIcon
   /** Icon / text fallback 的背景色，預設 neutral */
   color?: ColorKey
-  /** 深底模式（step-6 背景 + on-emphasis 配對前景；亮色 hue yellow/amber/orange/lime 用深字 --on-emphasis-dark），預設 false */
+  /** 深底模式（step-6 背景 + on-emphasis 配對前景；白字對比低於綠色的 hue（目前 yellow/amber/lime）用深字 --on-emphasis-dark,其餘白字），預設 false */
   solid?: boolean
   /**
    * 在線狀態指示器(presence),顯示在 avatar **右下角**。

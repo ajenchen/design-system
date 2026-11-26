@@ -516,12 +516,14 @@ if [ -n "$ROW_HOVER_TOKENS" ] && \
 fi
 
 # ── 2026-07-10 批次 A(治理覆蓋 matrix 收官;來源 governance/planning/2026-07-10-consumer-coverage-remediation.md)──
-# C5 對比配對:深字桶 hue(yellow/amber/orange/lime step-6)配 text-white — 各自合法、組合對比違規
-# (tag.spec.md 深字桶 = text-on-emphasis-dark)。修 → 消費 CAT_SOLID token pair。
-if grep -q 'text-white' <<<"$CONTENT" && \
-   grep -qE 'bg-\[var\(--color-(yellow|amber|orange|lime)-[0-9]' <<<"$CONTENT" && \
+# C5 類別色實心底的字色不得寫死:任一類別色相 step-6 當底 + 寫死 text-white / text-black。
+# 2026-11-26 改:原本只認「深字桶 yellow/amber/orange/lime + text-white」,桶的名單寫死在這裡,原則一改就說錯話
+# (orange 那天改成白字)。字色由 tokens/categorical-color.ts「實心底字色原則」決定(user 2026-11-26),
+# 消費端只准拿 CAT_SOLID / CAT_SOLID_TOKENS 的配對;DS repo 內同一條規則的 CI 閘 = scripts/categorical-color-invariants.mjs I6。
+if grep -qE '(^|[^A-Za-z0-9_-])text-(white|black)([^A-Za-z0-9_-]|$)' <<<"$CONTENT" && \
+   grep -qE 'bg-\[var\(--color-(blue|green|deep-orange|yellow|red|orange|amber|lime|turquoise|indigo|purple|magenta)-6\)\]' <<<"$CONTENT" && \
    ! grep -q '@cat-solid-ok:' <<<"$CONTENT"; then
-  VIOLATIONS="${VIOLATIONS}  - 亮色底(yellow/amber/orange/lime step-6)配 text-white = 對比違規 → 消費 CAT_SOLID / CAT_SOLID_TOKENS pair(深字桶自帶 text-on-emphasis-dark;tokens/categorical-color.ts)。特例 → @cat-solid-ok: <rationale>\n"
+  VIOLATIONS="${VIOLATIONS}  - 類別色實心底(--color-<hue>-6)配寫死的 text-white / text-black → 消費 CAT_SOLID / CAT_SOLID_TOKENS pair(字色由 tokens/categorical-color.ts「實心底字色原則」決定,白字對比不低於綠色才是白字)。特例 → @cat-solid-ok: <rationale>\n"
 fi
 # C18 計數串接:element children 出現 {label} ({count/length/total})。attr(aria-label)字串層合法
 # — regex 錨 children 的 > 前綴,attribute 不中(item-anatomy.spec.md:187 禁括號串接)。
