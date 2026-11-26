@@ -445,7 +445,8 @@
           "design-system-components-chip-展示--default",
           "design-system-components-chip-展示--with-badge",
           "design-system-components-chip-展示--single-selection",
-          "design-system-components-chip-展示--assist-attachments"
+          "design-system-components-chip-展示--assist-attachments",
+          "design-system-components-chip-展示--assist-suggestion-row"
         ],
         "設計規格": [
           "design-system-components-chip-設計規格--overview",
@@ -1900,5 +1901,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1063
+  "totalStories": 1064
 }

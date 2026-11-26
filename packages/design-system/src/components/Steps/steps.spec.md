@@ -288,6 +288,19 @@ hit-area-canonical 找例外理由,但根本沒有外擴這回事。
 - **為什麼是根層修**:線長原本 = li 高 − 2r − 16(餘數),沒有說明時 md 只剩 2.2px、lg 是 0 —— 違反上方「對齊不變量」:指示欄節奏是元件本體,不得隨說明有無變動。
 - **閘**:`scripts/steps-connector-geometry-invariant.mjs`(量三尺寸無說明的垂直線高 ≥ 24、兩端縫 = 8;selftest 用修法前的實測 2.2 / 0 當對照組必紅)。
 
+### 水平版步驟名放不下 → 單行截斷,截斷才顯提示;直式折行(2026-11-26,決策卡 E12)
+
+- **水平**:步驟名維持一行;放不下時用「…」截斷,**只有真的被截斷時**滑過才出現完整名稱(tooltip)。寬度夠時畫面完全不變。
+- **直式**:維持折行(`StepLabel` 的 `break-words`),不截斷。
+- **讓位順序**:寬度不夠時先縮步驟名;連接線停在最短寬(上一節的 24,`steps.tsx#CONNECTOR_MIN_PX`;要調只改這一個常數),圓不縮。修前步驟名外層不准縮(`shrink-0`),字照原寬撐出去、連接線被推到下一步的圓上(480 寬實測:第 2 步的線在 216–240,下一步從 208 開始)。
+- **最後一步**:寬度夠時照舊是自然寬(剩下的寬由前面每一步的連接線吃掉);放不下時和前面每一步一起分寬、步驟名一起截斷(`stepItemVariants` 水平的 `last:max-w-max`)。修前最後一步不准縮(`last:flex-none last:shrink-0`),最後一步名字長時前面每一步都被擠成「…」。
+- **做法**:`StepLabel` 在水平版直接消費 `TruncatedText`(`../../patterns/element-anatomy/truncated-text.spec.md`;與麵包屑、表格格子、TreeView 步驟導覽樹同一套),不另寫偵測或 tooltip。
+- **讀屏與鍵盤**:截斷只是畫面,完整名稱仍在 DOM 裡,header 的可及名稱念全名;用鍵盤移到那一步不跳提示,與列家族的單行截斷同一條(`../../patterns/element-anatomy/item-anatomy.spec.md`「單行截斷 → tooltip」的 Hover-only)。手機與平板沒有「滑過」,行動裝置本來就用直式(下方「何時用 vertical」)。
+- **依據**:DS 通則 `../Tooltip/tooltip.spec.md:30`「截斷文字 → 用 tooltip 顯示完整內容。但只有當文字實際被截斷時才顯示」;Steps 屬於 item-anatomy 的列家族(本檔開頭「Layout Family」),家族檢查表 `../../patterns/element-anatomy/item-anatomy.spec.md:1135` 第 9 條「截斷必配『截斷才顯』tooltip」。DS 已有的規則優先於外部做法(meta-patterns M23)。
+- **外部對照**:Carbon ProgressIndicator 明文放不下時截斷加提示([usage.mdx#L160-L164](https://github.com/carbon-design-system/carbon-website/blob/5e9cd1da43c32d3d3b991dc947b427f674da61a8/src/pages/components/progress-indicator/usage.mdx#L160-L164) 原文:「When there is not enough space, consider rewording the label or truncate the label text with an ellipsis and provide a tooltip to convey additional information.」);Adobe Spectrum CSS Steplist 名稱折行([index.css#L177-L186](https://github.com/adobe/spectrum-css/blob/70d3660a992a98837d8177d8c25dc5a282e8f361/components/steplist/index.css#L177-L186) `white-space: normal`);MUI Stepper 要求「Avoid using long step names in horizontal steppers.」([react-stepper.md](https://unpkg.com/@mui/material@9.5.0/docs/material-ui/react-stepper.md));Atlassian Progress tracker 要求「keep options to a single line of text, be short and concise (1-2 words)」([usage](https://atlassian.design/components/progress-tracker/usage));Ant Design Steps 5.27.4 在螢幕寬小於 532px 時自動改直式,看的是螢幕寬、不是外框寬([index.en-US.md#L54](https://github.com/ant-design/ant-design/blob/5.27.4/components/steps/index.en-US.md#L54))。各家都要求步驟名寫短;本 DS 取截斷的根據是 DS 自己的通則,不是外部做法的多寡。
+- **來源**:AI 建議、user 採納。user 2026-11-26 第七輪決策卡 E12 回「照你建議」(AI 建議丙:單行截斷,被截斷時才出現完整名稱);前一輪 user 原問句「c不就是原本嗎？為何不選c?c不是比較建議的方式？」。同一則回覆另問連接線最短寬要不要改小(「可能最小寬度8px?你看怎樣好」),查證中,本條不改這個值。
+- **閘**:`scripts/steps-connector-geometry-invariant.mjs` 水平三個場景(480 寬截斷不壓圓 + 截斷才顯 tooltip、960 寬與修前同形、最後一步長名字不把前面擠成「…」);`--selftest` 在真建置上注入五種破壞,各自讓指定那一項紅。
+
 **何時用 horizontal**:步驟 ≤ 5、重視「進度條」感、水平空間充足、不需要 per-step content 區。
 **何時用 vertical**:步驟 > 5、需要 description 或 content、行動裝置、主流程精靈。
 

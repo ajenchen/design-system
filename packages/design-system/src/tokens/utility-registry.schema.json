@@ -247,6 +247,7 @@
             "field_group_elements",
             "field_group_roles",
             "field_control_elements",
+            "assist_chip_row",
             "nearby_line_limit",
             "rationale",
             "rationale_path"
@@ -263,6 +264,26 @@
             "field_group_elements": { "$ref": "#/$defs/tokenArray" },
             "field_group_roles": { "$ref": "#/$defs/tokenArray" },
             "field_control_elements": { "$ref": "#/$defs/tokenArray" },
+            "assist_chip_row": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "gap_utilities",
+                "wrap_utilities",
+                "item_component",
+                "item_variant",
+                "rationale",
+                "rationale_path"
+              ],
+              "properties": {
+                "gap_utilities": { "$ref": "#/$defs/tokenArray" },
+                "wrap_utilities": { "$ref": "#/$defs/tokenArray" },
+                "item_component": { "$ref": "#/$defs/nonEmptyString" },
+                "item_variant": { "$ref": "#/$defs/nonEmptyString" },
+                "rationale": { "$ref": "#/$defs/nonEmptyString" },
+                "rationale_path": { "$ref": "#/$defs/nonEmptyString" }
+              }
+            },
             "nearby_line_limit": { "type": "integer", "minimum": 1, "maximum": 32 },
             "rationale": { "$ref": "#/$defs/nonEmptyString" },
             "rationale_path": { "$ref": "#/$defs/nonEmptyString" }
