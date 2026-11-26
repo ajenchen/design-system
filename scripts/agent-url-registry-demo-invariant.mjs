@@ -121,6 +121,8 @@ export const popoverFollowsHiddenAnchor = (st) => !!st && st.popoverAfterHide ==
 export const noResidualSuppression = (st) => !!st && st.dialogs === 0 && st.hostUnder === false && Array.isArray(st.inert) && st.inert.length === 0
 /** 並存時播報區判定:並存對話框開著(≥ 1)、宿主(清單連結)被擋在 inert 底下、而且沒有任何 [aria-live] 在 inert 底下。 */
 export const liveRegionsAudible = (st) => !!st && st.dialogs >= 1 && st.hostBlocked === true && Array.isArray(st.silencedLive) && st.silencedLive.length === 0
+/** S0 W2:第一個 tab 的字左緣與標題左緣差 ≤ 1px(量字,不量 tab 盒子 —— 盒子左邊多一個焦點框的位置,tabs.spec.md「焦點框不壓字」);量不到(NaN)= 紅。 */
+export const tabTextAlignsTitle = ({ tabTextLeft, titleLeft }) => Number.isFinite(tabTextLeft) && Number.isFinite(titleLeft) && Math.abs(tabTextLeft - titleLeft) <= 1
 
 if (process.argv.includes('--selftest')) {
   // 對照組:舊 build 2026-09-09 實測抓到的壞值(洞 = 外框)必須紅;修好後的值(只有入口鈕的洞)必須綠
@@ -153,8 +155,14 @@ if (process.argv.includes('--selftest')) {
     && !liveRegionsAudible({ dialogs: 1, hostBlocked: true, silencedLive: ['section[aria-label=Notifications]', 'span[role=status]'] })
     && !liveRegionsAudible({ dialogs: 1, hostBlocked: false, silencedLive: [] })
     && !liveRegionsAudible({ dialogs: 0, hostBlocked: true, silencedLive: [] })
-  const ok2 = !stale.ok && fresh.ok && !twoHoles.ok && s11 && s12 && s13 && s14 && s15
-  console.log(`${ok2 ? '✓' : '✗'} selftest:S10 舊洞(距 ${stale.d}px)判紅、洞心 = 鈕心判綠、兩個洞判紅;S11 選單消失 / 對話框關 / 遮罩沒了判紅;S12 對話框關 / 選項沒執行 / 選單沒關判紅;S13 浮層留在 (0,8) / 再開不在觸發鈕下判紅;殘留 inert / aria-hidden / 對話框未關判紅;播報區被靜音 / 宿主沒被擋 / 沒有對話框判紅`)
+  // S0 W2 對照組(2026-11-27):字對齊標題 → 綠;字往右推偏 4px(焦點框位置補了內距卻沒借回)→ 紅;字往左偏 4px(借了沒補)→ 紅;
+  // 量不到 → 紅。(CI 47c9eb64 的紅是舊量法量 tab 盒子:補內距並借回後,盒子左緣本來就在字左邊 4px)
+  const w2 = tabTextAlignsTitle({ tabTextLeft: 256, titleLeft: 256 })
+    && !tabTextAlignsTitle({ tabTextLeft: 260, titleLeft: 256 })
+    && !tabTextAlignsTitle({ tabTextLeft: 252, titleLeft: 256 })
+    && !tabTextAlignsTitle({ tabTextLeft: NaN, titleLeft: 256 })
+  const ok2 = !stale.ok && fresh.ok && !twoHoles.ok && s11 && s12 && s13 && s14 && s15 && w2
+  console.log(`${ok2 ? '✓' : '✗'} selftest:S10 舊洞(距 ${stale.d}px)判紅、洞心 = 鈕心判綠、兩個洞判紅;S11 選單消失 / 對話框關 / 遮罩沒了判紅;S12 對話框關 / 選項沒執行 / 選單沒關判紅;S13 浮層留在 (0,8) / 再開不在觸發鈕下判紅;殘留 inert / aria-hidden / 對話框未關判紅;播報區被靜音 / 宿主沒被擋 / 沒有對話框判紅;S0 W2 字往右 / 往左偏 4px、量不到判紅`)
   process.exit(ok && ok2 ? 0 : 1)
 }
 
@@ -225,7 +233,9 @@ const SHAPE = `(() => {
     tablistBorder: tablist ? px(getComputedStyle(tablist).borderBottomWidth) : NaN,
     tabs: tabs.map((t) => t.textContent?.trim()), selected: selected?.textContent?.trim(),
     tabControlsPanel: !!selected && !!panel && selected.getAttribute('aria-controls') === panel.id && panel.getAttribute('aria-labelledby') === selected.id,
-    tabLeftEqH1Left: !!tabs[0] && !!h1 && Math.abs(R(tabs[0]).left - R(h1).left) <= 1,
+    // W2 量第一個 tab 的**內容**(字)左緣,不量 tab 盒子:2026-11-27 起 tab 左右各有一個焦點框的位置(4px)、第一個 tab 往外借回
+    //(tabs.tsx TABS_FOCUS_ROOM_PX;tabs.spec.md「焦點框不壓字」),盒子左緣本來就在字左邊 4px。判定在 tabTextAlignsTitle(selftest 有兩面)
+    firstTabTextLeft: tabs[0] ? textLeft(tabs[0]) : NaN, h1Left: h1 ? R(h1).left : NaN,
     panelFlushUnderTabs: !!panel && !!tablist && Math.abs(R(panel).top - R(tablist).bottom) <= 1,
     // 間距 owner = toolbar 自帶 py-tight(WithBulkActions 同款):toolbar 上緣貼 TabsList、下緣貼表格,py 就是那兩段 tight
     toolbarPadTop: toolbar ? px(getComputedStyle(toolbar).paddingTop) : NaN,
@@ -348,7 +358,7 @@ for (const width of [1440, 1180]) {
   check(`${W} S0 header:專案標題 h1「結帳流程改版」(PageHeader = ChromeHeader + tabsSlot)`, s0.h1 === '結帳流程改版' && s0.h1Tag === 'H1', JSON.stringify({ h1: s0.h1, tag: s0.h1Tag }))
   check(`${W} S0 tabs:所有任務 / 我的任務,預設選「所有任務」`, JSON.stringify(s0.tabs) === JSON.stringify(['所有任務', '我的任務']) && s0.selected === '所有任務', JSON.stringify({ tabs: s0.tabs, selected: s0.selected }))
   check(`${W} S0 W1:header 不畫 border-b(0)、TabsList 畫(1)—— 視覺同一條線`, s0.headerBorder === 0 && s0.tablistBorder === 1, JSON.stringify({ header: s0.headerBorder, tablist: s0.tablistBorder }))
-  check(`${W} S0 W2:第一個 tab 左緣 = 標題左緣(px-loose 對齊)`, s0.tabLeftEqH1Left)
+  check(`${W} S0 W2:第一個 tab 的字左緣 = 標題左緣(px-loose 對齊)`, tabTextAlignsTitle({ tabTextLeft: s0.firstTabTextLeft, titleLeft: s0.h1Left }))
   check(`${W} S0 W4 / TabsContent mt-0:tabpanel 緊貼 TabsList 下緣`, s0.panelFlushUnderTabs)
   check(`${W} S0 a11y:tablist / tab / aria-selected;選中 tab 的 aria-controls 指向 tabpanel、tabpanel aria-labelledby 指回 tab`, s0.tabControlsPanel)
   check(`${W} S0 toolbar:「新增任務」在 toolbar 內、表格上方、業務層最右(action-bar §二 靠右對齊,primary 最右)`, s0.newBtnInToolbar && s0.newBtnAboveTable && s0.newBtnRightmost, JSON.stringify({ inToolbar: s0.newBtnInToolbar, above: s0.newBtnAboveTable, rightmost: s0.newBtnRightmost }))
