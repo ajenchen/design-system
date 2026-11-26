@@ -71,6 +71,7 @@ export function useFieldCountRegistry() {
 /**
  * 控件(Input / Textarea)用:開了 `showCount` 時算字數,包在 Field 裡就交給 Field 畫。
  * @returns countId = 輸入元素的 `aria-describedby` 要接的 id(沒開計數 = undefined);
+ *          controlId = 輸入元素要掛的 `id`(開了計數又沒有 id 時自動給一個,見下方);
  *          standalone = 不在 Field 裡時控件自己要畫的計數(在 Field 裡 / 沒開 = null)
  */
 export function useControlCharCount({ enabled, value, maxLength, controlId, disabled }: {
@@ -79,15 +80,19 @@ export function useControlCharCount({ enabled, value, maxLength, controlId, disa
   maxLength: number | undefined
   controlId: string | undefined
   disabled: boolean
-}): { countId: string | undefined; standalone: FieldCountValue | null } {
+}): { countId: string | undefined; controlId: string | undefined; standalone: FieldCountValue | null } {
   const fieldCtx = useFieldContext()
   const register = fieldCtx?.registerControlCount
-  const standaloneId = `${React.useId()}-count`
+  const autoId = React.useId()
+  const standaloneId = `${autoId}-count`
+  // 播報只在焦點還在這個輸入元素上時念,FieldCount 以 id 找它(field-controls.spec.md「字數計數」讀屏)。
+  // 不在 Field 裡、使用端也沒給 id 時沒有 id 可找 → 開了計數就自動給一個,否則單獨用的計數永遠不念;沒開計數照舊不給,DOM 不變。
+  const resolvedControlId = controlId ?? (enabled ? `${autoId}-control` : undefined)
   const count = enabled ? String(value ?? '').length : null
   const max = typeof maxLength === 'number' && maxLength > 0 ? maxLength : undefined
   const countValue = React.useMemo<FieldCountValue | null>(
-    () => (count == null ? null : { count, max, controlId, disabled }),
-    [count, max, controlId, disabled],
+    () => (count == null ? null : { count, max, controlId: resolvedControlId, disabled }),
+    [count, max, resolvedControlId, disabled],
   )
   // layout effect:計數跟著這一格畫面一起出現 / 更新,不先畫一格沒有計數的說明行
   React.useLayoutEffect(() => {
@@ -95,10 +100,10 @@ export function useControlCharCount({ enabled, value, maxLength, controlId, disa
     register(countValue)
     return () => register(null)
   }, [register, countValue])
-  if (!countValue) return { countId: undefined, standalone: null }
+  if (!countValue) return { countId: undefined, controlId: resolvedControlId, standalone: null }
   return register && fieldCtx
-    ? { countId: fieldCtx.countId, standalone: null }
-    : { countId: standaloneId, standalone: countValue }
+    ? { countId: fieldCtx.countId, controlId: resolvedControlId, standalone: null }
+    : { countId: standaloneId, controlId: resolvedControlId, standalone: countValue }
 }
 
 /** 計數那一格 + 一直掛著的禮貌播報區(兄弟節點,見檔頭「讀屏」) */

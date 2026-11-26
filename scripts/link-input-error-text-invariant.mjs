@@ -20,13 +20,15 @@
  *     C3 打字後計數 = 輸入框目前的字數;打超過上限(原生 maxLength)擋住,停在上限
  *     C4 讀屏:aria-describedby 連得到計數那一格、念的是含字數與上限的整句(看得見的「n / max」隱藏);
  *        播報區 role="status" + polite、在那一格外面、打字前空白;停下來之後焦點還在 → 念一次目前的整句
- *     C5 單獨用(不在 Field 裡):框下 4px 一行只有計數、右端、describedby 連得到
+ *     C5 單獨用(不在 Field 裡、夾具沒給 id):框下 4px 一行只有計數、右端、describedby 連得到;打字停下來之後焦點還在 → 念一次目前的整句
+ *        (播報以 id 找輸入元素,單獨用又沒給 id 時控件自動給一個;2026-11-26 規格核對抓到單獨用永遠不念)
  *   紅: --selftest 在送到瀏覽器的夾具程式裡造回錯的寫法,各組必紅(兩面對照):
  *     M1 不畫說明(errorLineText 換成 null)→ E1 / E4 / E5 紅;M2 aria-describedby 不接說明 → E1 紅;
  *     M3 Field 不讓使用端的字優先 → E6 紅;M4 打字不清錯誤 → E2 紅;
  *     M5 外部存進來的值一掛上就驗(localError 初值 = 值非空白;夾具裡外部給的值都不是網址,等同 2026-11-22 第 1 次修正撤掉的那版)→ E7 紅。
  *     M6 Field 不畫計數 → C1 / C2 / C4 紅;M7 計數掉到說明下面一行 → C1 紅;M8 計數不靠右 → C2 / C5 紅;M9 打字不更新 → C3 紅;
- *     M10 aria-describedby 不接計數 → C4 / C5 紅;M11 播報區不念 → C4 紅;M12 原生 maxLength 沒傳到輸入元素 → C3 紅。
+ *     M10 aria-describedby 不接計數 → C4 / C5 紅;M11 播報區不念 → C4 / C5 紅;M12 原生 maxLength 沒傳到輸入元素 → C3 紅;
+ *     M13 單獨用又沒給 id 時不自動給輸入元素 id(修前的寫法:計數找不到輸入元素、永遠不念)→ C5 紅。
  *     改寫 0 處 = 儀器失效(不准當成「改了也沒紅」)
  *   綠: 現行原始碼全綠;夾具掛不起來 / 找不到要量的欄位 / 互動後版面不靜止 = 儀器失效(exit 2),不當通過
  * ─────
@@ -332,6 +334,15 @@ async function runCountChecks() {
   await page.keyboard.press('End'); await page.keyboard.type('月結三十天匯款請附發票'); await settle('C3 打超過上限')
   const b = await countField('count-only', 'C3 上限')
   ck('C3', '打到上限擋住:字數停在 10、計數「10 / 10」', b.valueLength === 10 && b.visible === countText(10, 10), J(b))
+  // C5 單獨用也要念:夾具的 count-alone 沒給 id、不在 Field 裡 —— 停下來之後、焦點還在 → 念一次目前的整句(等播報區本身出現字)
+  await clickControl('count-alone', 'C5 點搜尋框')
+  await page.keyboard.press('End'); await page.keyboard.type('退款'); await settle('C5 打字')
+  const at = await countField('count-alone', 'C5 打字後')
+  if (!at.focus) throw new Instrument(`C5:點進 count-alone 之後焦點不在輸入框:${J(at)}`)
+  const saidAlone = await waitStatusText('count-alone', 4000)
+  const at2 = await countField('count-alone', 'C5 播報後')
+  ck('C5', '單獨用:停下來之後以禮貌模式念一次目前的整句(= 計數那一格念的字)',
+    saidAlone != null && saidAlone === at2.spoken && at2.spoken.includes(String(at2.valueLength)) && at2.valueLength === a.valueLength + 2, J({ said: saidAlone, spoken: at2.spoken, before: a.valueLength }))
 }
 
 // 對照組:每組破法 → 指定的組必須至少一條紅
@@ -359,13 +370,15 @@ const MUTANTS = [
   // M10 輸入元素的 aria-describedby 不接計數
   { name: 'M10 aria-describedby 不接計數', patches: [[/,\s*charCount\d*\.countId\s*\]/g, ']']], mustRed: ['C4', 'C5'] },
   // M11 停下來之後不念(播報區永遠空白)
-  { name: 'M11 播報區不念', patches: [[/text: countSpeech\d*\(\{[^}]*\}\)/g, 'text: ""']], mustRed: ['C4'] },
+  { name: 'M11 播報區不念', patches: [[/text: countSpeech\d*\(\{[^}]*\}\)/g, 'text: ""']], mustRed: ['C4', 'C5'] },
   // M12 控件吞掉原生 maxLength(展開 props 之後再蓋成 undefined)→ 超過上限照打
   {
     name: 'M12 原生 maxLength 沒傳到輸入元素',
     patches: [[/(\.\.\.(props\d*),\s*onChange: \((\w+)\) => \{\s*setResolved\d*\(\3\.target\.value\);\s*\2\.onChange\?\.\(\3\);\s*\})/g, (_, all) => `${all}, maxLength: void 0`]],
     mustRed: ['C3'],
   },
+  // M13 單獨用又沒給 id 時不自動給輸入元素 id(= 修前的寫法:輸入元素的 id 只有使用端給的或 Field 的)→ 計數找不到輸入元素,停下來之後永遠不念
+  { name: 'M13 單獨用不自動給 id', patches: [[/(const resolvedControlId\d* = )(\w+) \?\? \([^)]*\)/g, (_, head, id) => `${head}${id}`]], mustRed: ['C5'] },
 ]
 
 try {

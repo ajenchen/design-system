@@ -252,7 +252,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <input
           ref={setRef}
           type="text"
-          id={inputId}
+          // 開了計數又沒有 id(單獨用、使用端沒給)時,計數 hook 自動給一個(播報以 id 找輸入元素);其餘 = inputId
+          id={charCount.controlId}
           value={resolved}
           readOnly={resolvedMode === 'readonly'}
           disabled={resolvedMode === 'disabled'}

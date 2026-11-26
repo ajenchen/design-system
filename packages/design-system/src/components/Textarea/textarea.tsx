@@ -292,7 +292,8 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     const control = (
       <textarea
         ref={setRef}
-        id={inputId}
+        // 開了計數又沒有 id(單獨用、使用端沒給)時,計數 hook 自動給一個(播報以 id 找輸入元素);其餘 = inputId
+        id={charCount.controlId}
         rows={rows}
         style={autoSizeStyle ? { ...autoSizeStyle, ...props.style } : props.style}
         value={resolved}
