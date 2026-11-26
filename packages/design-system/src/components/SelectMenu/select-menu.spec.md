@@ -79,7 +79,7 @@ Popover（浮動容器，handle 展開 / 定位）
 
 **定位**:SelectMenu 的 `sideOffset` 與 `align` 直接走 Popover canonical——`sideOffset=8` / `align` 跟隨 trigger 位置(見 `../Popover/popover.spec.md`「Align 對齊 canonical(跨浮層 SSOT)」)。SelectMenu 不自訂浮層定位規則。
 
-**視覺 vs 語意**(2026-04-20 精緻化):SelectMenu 的預設 `min-width = max(trigger width, 240px)`；trigger ≥ 240px 時與 trigger 同寬，較窄 trigger 會擴至 240px。`minWidth` prop **只能把這個下限往上拉**:有效下限 = `max(trigger width, 240px, minWidth)`(2026-11-17 A95;規則住 `../../../ds-canonical/references/props-naming.md`「尺寸參數」第 8 條;之前是整個取代預設,可以比 trigger 窄)。寬度相等時 `start` / `end` 兩種 align 呈現視覺相同；popover 寬於 trigger 時，align 差異才會顯現，並嚴格遵守 structured overlay canonical(trigger 在左 → start / 右 → end)。(SelectMenu `align` prop 僅暴露 `'start' | 'end'`,不開放底層的 `center`。)
+**視覺 vs 語意**(2026-04-20 精緻化):SelectMenu 的預設 `min-width = max(trigger width, 240px)`；trigger ≥ 240px 時與 trigger 同寬，較窄 trigger 會擴至 240px。`minWidth` prop **只能把這個下限往上拉**:有效下限 = `max(trigger width, 240px, minWidth)`(2026-11-17 A95;規則住 `../../../ds-canonical/references/props-naming.md`「尺寸參數」第 8 條;之前是整個取代預設,可以比 trigger 窄)。Select / Combobox / PeoplePicker 都把同名參數 `minWidth` 轉到這裡(2026-11-26,產品 canary 回報 C1;之前三個包裝元件都沒有這個參數)。寬度相等時 `start` / `end` 兩種 align 呈現視覺相同；popover 寬於 trigger 時，align 差異才會顯現，並嚴格遵守 structured overlay canonical(trigger 在左 → start / 右 → end)。(SelectMenu `align` prop 僅暴露 `'start' | 'end'`,不開放底層的 `center`。)
 
 換言之 SelectMenu **永遠照 canonical**；只有 trigger ≥ 240px 且未再提高 `minWidth` 時，等寬會讓 align 差異被視覺遮蔽。一旦 popover 寬於 trigger，canonical 立即顯現。
 
@@ -145,7 +145,7 @@ Popover（浮動容器，handle 展開 / 定位）
 
 ## 分組（group）
 
-透過 `groups` prop 定義分組標籤，每個 option 的 `group` 欄位指向 group key。
+透過 `groups` prop 定義分組標籤，每個 option 的 `group` 欄位指向 group key。Select 與 Combobox 都收 `groups` 並原樣轉到這裡(Combobox 2026-11-26 補,產品 canary 回報 C24:之前選項有 `group` 欄位卻沒有 `groups` 參數);PeoplePicker 不收(人員資料 `PersonData` 沒有 group 欄位)。
 
 **何時使用**：
 - 選項明顯分兩個以上邏輯群組（「Recent」/「All」、「Your team」/「Others」）
@@ -212,7 +212,7 @@ Popover（浮動容器，handle 展開 / 定位）
 
 **訊息列規格**(`menu-item.tsx:200-219`;樣式 owner `../Menu/menu-item.spec.md`「Message row」):
 - 非互動:`role="presentation"` + `pointer-events-none`;次要色 `text-fg-muted`;一般字重(medium 是群組標題的辨識訊號,訊息列不用);內容水平 + 垂直置中
-- 列幾何與選項**完全相同**(`ROW_PADDING_BY_SIZE`,`item-anatomy.tsx:145-149`:`py = (field-height − 1lh) / 2`;字級 sm/md `text-body`、lg `text-body-lg`),所以一列高 = `--field-height-{size}`(sm 28 / md 32 / lg 36,`tokens/uiSize/uiSize.css` `:root` 段的 `--field-height-*`)
+- 列幾何與選項**完全相同**(`ROW_PADDING_BY_SIZE`,`item-anatomy.tsx:148-152`:`py = (field-height − 1lh) / 2`;字級 sm/md `text-body`、lg `text-body-lg`),所以一列高 = `--field-height-{size}`(sm 28 / md 32 / lg 36,`tokens/uiSize/uiSize.css` `:root` 段的 `--field-height-*`)
 - 住在 `MenuGroup`(`py-2` 上下各 8px,`../Menu/menu-item.spec.md`「Group」):**md 浮層高 = 8 + 32 + 8 = 48px,與 1 筆結果等高**;sm 44 / lg 52。density 切換跟著 token 走
 - **沒有任何最小高度**:舊的 `minRows` / `getMenuListMinHeight` 已移除(`field-types.ts:98-100` 退役註解);0 筆與 1 筆一樣高,不撐 3 列
 - 不放圖示、**不用 `Empty` 元件**:Empty 是頁面 / 區塊層級「有解釋、可帶圖示與動作」的空狀態(`../Empty/empty.spec.md`「何時用」);選單裡的 0 筆只是一句提示

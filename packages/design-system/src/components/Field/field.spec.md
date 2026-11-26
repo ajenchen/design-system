@@ -269,9 +269,10 @@ Field 未收到顯式 `size` 時，依序取 **顯式 prop → control 宣告的
 
 label 文字後可帶 info icon(ℹ)hover 出 tooltip 補充說明:`<FieldLabel info="說明文字">`。
 
-- **與 label 間距 `gap-1`(4px)**、InfoIcon **16px 固定**、色 `fg-muted` hover `fg-secondary`(`field.tsx:498-514`)
-- **游標一般箭頭**(`cursor-default`,`field.tsx:507`):ⓘ 點下去不做事(Radix Tooltip 點擊只會收起說明),手形會讓人以為點了有作用。全域 `base.css` 讓所有 `<button>` 預設手形,所以要明寫 `cursor-default`,只刪 `cursor-pointer` 蓋不掉。〔2026-09-26 由手形改箭頭;user 條件式同意「I 可以從手形改掉，若改掉更合理的話」,AI 研究後提出、user 選「同意,照清單寫入」〕
-- **disabled 時整顆不渲染**(`field.tsx:498`)— info 是滑過／聚焦才浮出的補充說明,非類型身份 indicator,non-editable 隱藏
+- **與 label 間距 `gap-1`(4px)**、InfoIcon **16px 固定**、色 `fg-muted` hover `fg-secondary`(`field.tsx:504-532`)
+- **結構:ⓘ 不住在 `<label>` 裡**(2026-11-26,產品 canary 回報 C8 (b)):ⓘ 是 `<button>`,HTML 規定 `<label>` 不得含其他可被標籤的元素(WHATWG HTML「The label element」內容模型:https://html.spec.whatwg.org/multipage/forms.html#the-label-element);住在裡面時控件的讀屏名稱會把說明文字一起念進去。有 ⓘ 時外層改 `<span>` 帶同一組版面 class 與 `data-field-slot="label"`,`<label>`(id / for)只包星號 + 標籤文字,ⓘ 是它的兄弟(`field.tsx:464-474`、`field.tsx:504-515`)。外觀、間距、ⓘ 的滑過 / 聚焦行為不變;**點擊範圍也不變**:修前整個標籤列都是 `<label>`(直排時撐滿整列、橫排時是整個標籤欄),點文字右邊或文字與 ⓘ 之間的空白會交給控件 —— 拆開後外層把點在空白處的那一下轉成點 `<label>`,交給瀏覽器原生的 label 行為;點 `<label>` 本身照原生、點 ⓘ 是看說明,都不轉(`field.tsx:484-488`;範例 `field.stories.tsx`「標籤旁的說明圖示」的 play 逐一點 ⓘ / 空白 / 間隙 / 文字,量焦點與控件收到幾次 click —— 一下只交給控件一次,勾選類控件不會一下切兩次)。沒有 ⓘ 時仍是單一 `<label>`
+- **游標一般箭頭**(`cursor-default`,`field.tsx:525`):ⓘ 點下去不做事(Radix Tooltip 點擊只會收起說明),手形會讓人以為點了有作用。全域 `base.css` 讓所有 `<button>` 預設手形,所以要明寫 `cursor-default`,只刪 `cursor-pointer` 蓋不掉。〔2026-09-26 由手形改箭頭;user 條件式同意「I 可以從手形改掉，若改掉更合理的話」,AI 研究後提出、user 選「同意,照清單寫入」〕
+- **disabled 時整顆不渲染**(`field.tsx:471`)— info 是滑過／聚焦才浮出的補充說明,非類型身份 indicator,non-editable 隱藏
 - 設計定位:**給資訊的觸發處**(`ds-canonical/references/hit-area-canonical.md` 三-1),**不是**行內動作 —— 只借行內動作「顏色退後、滑過深一階」的長相,不套 `inline-action.spec.md` 的「必須手形」(那條給清除、顯示密碼這類按下去會做事的鈕)。label 的主要互動是 input,info 是輔助。**FieldLabel 以外要放 ⓘ**(設定列標題、區塊標題旁):**不另做公開的說明圖示元件**,在那裡既有的圖示槽位把圖示換成 info 圖示,掛 `Tooltip` 讓它滑過就出說明。前提:**觸發處必須是可聚焦的按鈕**(本段的 ⓘ 就是一顆 `<button type="button">`),不能只放一顆圖示 —— `../Tooltip/tooltip.spec.md`「A11y 預設」寫明「Tab — focus trigger 時顯示」、鍵盤完整可操作(無需滑鼠),走不到焦點的圖示用鍵盤永遠打不開說明;長相與游標照本段前三點與 hit-area-canonical 三-1(不上滑過底色、一般箭頭)【AI 推導:前提與長相兩句是 AI 依這兩處既有規則補上的】。出處:user 2026-11-26 第五輪決策卡 C8 留言(逐字,問句):「不用特別抽出來吧？可以放 icon的地方都有 slot, 然後想要放info的地方就把 icon變成info icon再使其hover會有 tooltip就可以了吧？」
 - 範例:`field.stories.tsx`「標籤旁的說明圖示」
 
@@ -285,6 +286,14 @@ label 文字後可帶 info icon(ℹ)hover 出 tooltip 補充說明:`<FieldLabel 
 - `<FieldError>` 自帶 `role="alert"` 並有 id = `errorId`
 - 無 children 的 `<FieldError>` 不渲染，不佔位
 - 控件自己驗出來的錯誤(目前只有 LinkInput 的網址格式)經 `registerControlError` 由 Field 畫在同一個錯誤區、同一個 `errorId`;使用端的 `<FieldError>` 有字時只畫使用端那行(一個欄位只有一行錯誤)
+
+### 產品自己寫的控件怎麼接 aria-*(2026-11-26)
+
+上面的「自動」只發生在 DS 控件身上:它們從 `field-context.ts` 讀 `useFieldContext()`,那支是 DS 內部用的,套件沒有匯出(`field.tsx:51-52`;`index.ts` 只匯出 `field` 與 `field-types`)。產品放進 Field 的自訂控件(自己畫的滑桿、評分條、色票格)照下面接,不必讀 context:
+
+1. **給 Field 一個 `id`**。Field 由它推出其餘三個 id,規則固定(`field.tsx:212-215`):標籤 `${id}-label`、說明 `${id}-description`、錯誤 `${id}-error`;`<FieldDescription>` / `<FieldError>` 沒傳 `id` 時就用這兩個(`field.tsx:552`、`:584`),傳了 `id` 則以傳入的為準。
+2. **控件自己掛 aria-***:`id={id}`、`aria-labelledby="${id}-label"`(`<label for>` 只標得到原生可被標籤的元素,`role="slider"` 這類自訂元素要靠 `aria-labelledby`)、有說明時 `aria-describedby="${id}-description"`、有錯誤時 `aria-errormessage="${id}-error"` + `aria-invalid="true"`;`required` 時掛 `aria-required="true"`。沒有說明 / 錯誤時不要掛指向不存在元素的 id。
+3. **錯誤狀態跟同一個 `invalid` 走**:`<Field invalid>` 決定 FieldError 是否該出現,控件的 `aria-invalid` 用同一個值,兩者不會各說各話。
 
 ---
 

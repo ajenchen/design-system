@@ -16,7 +16,7 @@ import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useRes
 import { TAG_HEIGHT_PX, Tag } from '@/design-system/components/Tag/tag'
 import { ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { OverflowTagList, TAG_ROW_CONTAINER_CLASS, TAG_ROW_GAP_PX } from '@/design-system/components/OverflowIndicator/overflow-tag-list'
-import { SelectMenu, forwardKeyToListbox, useActiveDescendant, moveHighlightToFirst, isRemoveLastValueKey, routeTypingToSearch, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
+import { SelectMenu, forwardKeyToListbox, useActiveDescendant, moveHighlightToFirst, isRemoveLastValueKey, routeTypingToSearch, type SelectMenuOption, type SelectMenuGroupConfig } from '@/design-system/components/SelectMenu/select-menu'
 import { RemovalStatus, removalValueKey, useRemovalAnnouncement } from '@/design-system/components/SelectMenu/select-menu-removal-status'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { keepFocusOnPointerPress } from '@/design-system/lib/pointer-press'
@@ -175,6 +175,10 @@ export interface ComboboxProps {
   error?: boolean
   size?: 'sm' | 'md' | 'lg'
   options: ComboboxOption[]
+  /** 分組顯示(原樣轉給 SelectMenu `groups`,2026-11-26 產品 canary 回報 C24):option.group 對應 groups[].key。
+   *  之前 `ComboboxOption` 繼承了 `group` 欄位、也轉給了 SelectMenu,卻沒有這個參數 —— group 填了等於沒用(M30(b))。
+   *  何時分組、分隔線與標題的規則住 `../SelectMenu/select-menu.spec.md`「分組(group)」。 */
+  groups?: SelectMenuGroupConfig[]
   value?: string[]
   onChange?: (value: string[]) => void
   /** 無值時的提示文字(`searchIn='trigger'` 時由欄位內搜尋框顯示)。Default:「選擇…」(2026-11-15 前另有舊名 `emptyPlaceholder`,已移除) */
@@ -190,6 +194,10 @@ export interface ComboboxProps {
    * 不傳 = 半列原則的預設上限(`../Command/command.spec.md`「清單捲動上限(半列原則)」)。數字 = px,字串照原樣。
    */
   maxHeight?: number | string
+  /** 選單浮層的最小寬度(px,原樣轉給 SelectMenu `minWidth`,2026-11-26 產品 canary 回報 C1):**只能把下限往上拉** ——
+   *  有效下限 = max(觸發欄位寬, 15rem, minWidth),傳得比預設小照預設畫(`../SelectMenu/select-menu.spec.md`「視覺 vs 語意」;
+   *  規則住 `ds-canonical/references/props-naming.md`「尺寸參數」第 8 條)。 */
+  minWidth?: number
   /** 「這個值」在讀取 / 驗證 / 儲存(Field 家族 `loading` SSOT,`field-controls.spec.md`「Loading state」;2026-09-09 user 拍板
    *  收窄語意,與 Input `loading` 同義):觸發點右側、ChevronDown 左邊放列圖示尺寸的 CircularProgress(react-select / Atlassian
    *  的順序:清除 → 轉圈 → 箭頭)+ 觸發點 `aria-busy`;選單照常可開、可選。**不是**選項載入 —— 選項載入用 `optionsLoading`。 */
@@ -478,7 +486,7 @@ const toMenuOption = (opt: ComboboxOption): SelectMenuOption => ({
 function CustomCombobox({
   mode, variant: variantProp, width, error: errorProp = false, size = 'md', options, value = [], onChange,
   placeholder = '選擇…', // i18n-allow: DS default
-  className, disabled: disabledProp, wrap = false, clearable = false, searchable = false, maxHeight, loading, optionsLoading, searchIn = 'menu', filterOption = true, onSearchChange,
+  className, disabled: disabledProp, wrap = false, clearable = false, searchable = false, maxHeight, minWidth, groups, loading, optionsLoading, searchIn = 'menu', filterOption = true, onSearchChange,
   suggestions, suggestionsLabel, searchHintText,
   searchPlaceholder = '搜尋…', // i18n-allow: DS default
   searchAriaLabel = '搜尋選項', // i18n-allow: DS default
@@ -807,7 +815,7 @@ function CustomCombobox({
             style={searchCellIdle ? { marginLeft: -tagAreaGap } : undefined}>
             {/* 量尺:與輸入框同一格、同字級(兩者都繼承欄位字型),高 0 不佔列高;justify-self-start = 寬就是字寬(findInlineSearchMirror 找它)。
                 空值、還沒打字時量尺放提示字本身:依內容寬的欄位才放得下整句提示字(field-controls.spec.md「寬度軸」;
-                combobox.spec.md:192「字級、顏色、左緣與上一條的 span 逐像素相同」;修前量尺只有一個插入點寬,提示字被切,r-F3 缺陷 P) */}
+                combobox.spec.md:193「字級、顏色、左緣與上一條的 span 逐像素相同」;修前量尺只有一個插入點寬,提示字被切,r-F3 缺陷 P) */}
             <span aria-hidden {...{ [INLINE_SEARCH_MIRROR_ATTR]: '' }} className="invisible col-start-1 row-start-1 justify-self-start h-0 whitespace-pre pointer-events-none">{search || hasTags || isUnrestrictedOnly ? `${search} ` : placeholder}</span>
             {/* 只選「不限」× 欄位內搜尋框(2026-10-07 待辦總帳 K4):照單選欄位的讓位做法(select.tsx `showSelectedOverlay`)——「不限」是純文字、沒有框,
                 不和打的關鍵字並排(2026-10-01 起畫成「不限 fo」,同一個欄位裡值與關鍵字同字級同色、只隔 4px)。
@@ -903,6 +911,9 @@ function CustomCombobox({
       unrestrictedLabel={unrestrictedLabel}
       unrestrictedValue={unrestrictedValue}
       options={menuOptions}
+      // 分組與浮層最小寬度原樣轉下去(2026-11-26 C1 / C24;Select 同樣轉 groups,select.tsx「groups={groups}」)
+      groups={groups}
+      minWidth={minWidth}
       value={value}
       // 欄位內搜尋 × 多選「每挑一項就清空關鍵字」由 SelectMenu 做(經下方 onSearchChange = setSearch;select-menu-keyboard.ts useTriggerSearch)
       onValueChange={onChange as (value: string | string[]) => void}

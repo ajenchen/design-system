@@ -648,7 +648,7 @@ Consumer 只要加 `collapsible` 與群組識別 `value`(必填):
 
 **API 破壞性變更**:`SidebarMenuAction` / `SidebarGroupAction` 從 children 改成 `icon` prop(`icon={MoreVertical}`),並移除 `asChild`(需要 Radix `asChild` 時照 `sidebar.tsx` SidebarGroupLabel 收合箭頭的作法(`Collapsible.Trigger asChild` 包 `ItemInlineActionButton`)從外面包 `Trigger asChild`)。**刻意不留 children 後備** —— M23(f):「『向後相容』不是把新裁示變成可選的理由」。消費端(`work-management` 的 `AppSidebar.tsx`)在升版 PR 裡一併改。
 
-**user 核准(2026-09-25,逐字)**:「「側欄按鈕從 20 改成 18」這按照我們的ds設計規則改的，可以通過」。核准的對象是「委派 `ItemInlineActionButton`、懸停底色 20 → 18」這一項可見改動。同一顆 primitive 連帶的兩個結果—— 圖示與底色貼齊右緣後約右移 2px(`SidebarGroupAction` 另貼上緣約上移 2px —— 2026-10-27 查明貼上緣本身就是錯位,修前 md 圖示中線比標題文字高 8px,已改住標題列列尾槽)、按下時多一層較深的底色(`item-anatomy.tsx:749`)—— 屬於「按照 ds 設計規則」的同一個來源,**視為一併核准是 AI 推導**,不是 user 逐字。
+**user 核准(2026-09-25,逐字)**:「「側欄按鈕從 20 改成 18」這按照我們的ds設計規則改的，可以通過」。核准的對象是「委派 `ItemInlineActionButton`、懸停底色 20 → 18」這一項可見改動。同一顆 primitive 連帶的兩個結果—— 圖示與底色貼齊右緣後約右移 2px(`SidebarGroupAction` 另貼上緣約上移 2px —— 2026-10-27 查明貼上緣本身就是錯位,修前 md 圖示中線比標題文字高 8px,已改住標題列列尾槽)、按下時多一層較深的底色(`item-anatomy.tsx:752`)—— 屬於「按照 ds 設計規則」的同一個來源,**視為一併核准是 AI 推導**,不是 user 逐字。
 
 **依據不是觸控尺寸建議。** 我們做的是 web component,尺寸以滑鼠指標的精度為前提(user 2026-09-24 原話逐字:「此外我們在做的是web component ，你他媽不要一直拿觸控裝置的設計原則來規範吧？滑鼠的指標是可以比手指頭精細很多的欸」)。觸控門檻類的外部準則是**已知的外部準則,本 DS 不採納為尺寸依據**;本節每一個數字都不是從那裡推出來的。
 

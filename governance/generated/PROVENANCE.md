@@ -28,7 +28,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-hook-tsx-governance-analysis-helper | `packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs` | `sha256:e1b26967fad39d9b7dbd4aac8eb2a568eca910cd6857e6fd1ffd4b1b99f0157b` |
 | canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:51eeb7b0b0a4ecfd7640b6974487b5b726bc058ba9e11fde743c21a9eb0343ec` |
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:79415aaec40715aa1a90d7d9185faa52b9845893682f5d45087ea87d68149a03` |
-| canonical-references | `packages/design-system/ds-canonical/references` | `sha256:bee3718a897f507c1b9c72772dc7f22830cf1a289f948a74e1798e5a01038e1f` |
+| canonical-references | `packages/design-system/ds-canonical/references` | `sha256:5691a9461d6efb2f5785e58e86ed99d3da2faee7ef1da66497229c59c6288962` |
 | canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:f7d68913db89c3bb6a76e615b0885310a1034c04c386520860037ae83bb29054` |
 | canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:8cd3b1ff66ac8ca5edc7903154763f04365610ffc6b6208fa8fb21f4e24a8f41` |
 | changeset-release-policy | `.changeset/config.json` | `sha256:a65a7f9ee6dc6c56eab99f77876bb61297cc59909943ba4ab08705b2d110e86c` |
@@ -196,7 +196,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-audit-coverage-metadata | `generated/governance/audit-coverage-matrix.json` | `sha256:52dfb50aac9573aa72da4b7c4f21fbe45e32eaf8012fa6194c0b7e829056a118` |
 | governance-authority-setup-cli | `scripts/setup-authority-governance.mjs` | `sha256:78ad76b31b334fc4b1f32b3e31e0ac9dc324dbd1b03674afb7445452c61ff44d` |
 | governance-authority-setup-tests | `infra/governance/test/authority-setup.test.mjs` | `sha256:381f42152c323227963a68f71632839a0ef7689a3841eae2dda38ecfa8bd36cf` |
-| governance-baseline-authority | `infra/governance/baseline/` | `sha256:3e5d5bc6f8b35bfc59053b8c30c57d9944e3a0a15b23bba060acd374b58b9638` |
+| governance-baseline-authority | `infra/governance/baseline/` | `sha256:514bbbd0369c2bd4460a51fc2f38bd8fc2d60ce2b2c1993656fbfd87c7218235` |
 | governance-build-graph-definition | `scripts/governance-build-graph.json` | `sha256:f0d5d65a33c3c8eb2d3a5cf9aae04f78643bb5f326b0159bafa89cff38e23d5a` |
 | governance-build-graph-runner | `scripts/governance-build-graph.mjs` | `sha256:f4789d8860b398539d709e5e4b6670156d6d7fc8a3530a8177a6aa19440e0d31` |
 | governance-build-graph-schema | `scripts/schemas/governance-build-graph.schema.json` | `sha256:ea1104ef5d4fb9a8741ef352b95c79703db33db7fe561453d41caa649c7fdc58` |
@@ -348,7 +348,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:be47fab0695ff6895c60a541f14786692b3032f5aedda5a650563cd5f49c4ec5` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:279d452f559b3d1d85eb3a7e4fed704c0e12826579c80d3ea10b3e0ea80c38ed` |
-| repository-automation-corpus | `scripts` | `sha256:1a612abeebfac4d0ac708d2675c2f827cf3d97f81c126f362c921a5b23de17f7` |
+| repository-automation-corpus | `scripts` | `sha256:2d1ec7db1952d2e3ca37d207293673061fdeac58932d86902a4bc64e277e5c66` |
 | repository-ignore-boundary | `.gitignore` | `sha256:5d4a413c4947c7d63058cce0c93fa1adfa8c83efb41006e5b3876fd2706d81f8` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |

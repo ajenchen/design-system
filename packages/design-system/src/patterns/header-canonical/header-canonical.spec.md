@@ -93,7 +93,7 @@ benchmark:
 - WorkspaceBrand demo 即此 pattern 的 reference implementation(`components/AppShell/_demo-helpers.tsx:WorkspaceBrand`)
 - **帳號入口(account entry)同規則**:primary-header globalHeader 右側的個人設定 avatar 也用 raw `<Avatar size={24}>`(reference:`components/AccountMenu/account-menu.tsx`,2026-07-30 F9 升 public 元件;demo wrapper 在 `_demo-helpers.tsx`)。放置 / 開帳號選單 / 邊距對稱 canonical 見 `../../components/AppShell/app-shell.spec.md`「帳號入口(Account entry)放置 SSOT」段。
 
-**Sync invariant**:`--chrome-header-avatar-size` CSS 值 + `CHROME_HEADER_AVATAR_PX`(WorkspaceBrand `_demo-helpers.tsx` + AccountMenu `components/AccountMenu/account-menu.tsx` 兩處讀它;前兩者相等由 `scripts/token-twin-invariant.mjs` 擋)+ 產品範本 `apps/template` 的字面值 `size={24}` + `AVATAR_SIZE.inline.md = 24`(`item-anatomy.tsx:94`,L93 是 `export const AVATAR_SIZE = {` 宣告開頭)必同 24px 值。改 spec canonical 時 grep `--chrome-header-avatar-size` + `chrome header avatar canonical` keyword 找全 sync 點。
+**Sync invariant**:`--chrome-header-avatar-size` CSS 值 + `CHROME_HEADER_AVATAR_PX`(WorkspaceBrand `_demo-helpers.tsx` + AccountMenu `components/AccountMenu/account-menu.tsx` 兩處讀它;前兩者相等由 `scripts/token-twin-invariant.mjs` 擋)+ 產品範本 `apps/template` 的字面值 `size={24}` + `AVATAR_SIZE.inline.md = 24`(`item-anatomy.tsx:95`,L93 是 `export const AVATAR_SIZE = {` 宣告開頭)必同 24px 值。改 spec canonical 時 grep `--chrome-header-avatar-size` + `chrome header avatar canonical` keyword 找全 sync 點。
 
 ### 5. Title typography
 

@@ -49,6 +49,7 @@ const { t } = useI18n()
 
 - **infrastructure**:✅ shipped(`i18n-context.tsx`);root 出口 ✅ 2026-10-27
 - **元件逐步 adopt**:Notice / FileViewer labels object / etc 已 Route A prop-based;Route B 可並存,未來有需要再逐元件 opt-in 換成 context reader
+- **AgentPanel 訊息工具列**:✅ 2026-11-26(產品 canary 回報 C19)—— `agent-panel.copy` / `agent-panel.like` / `agent-panel.dislike`,面板其他字串尚未接(`../../components/AgentPanel/agent-panel.spec.md`「AgentToolbar」)
 
 ### 已 opt-in I18nProvider 的元件(componentKey → 鍵)
 

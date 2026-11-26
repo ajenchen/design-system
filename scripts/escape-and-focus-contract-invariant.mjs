@@ -54,7 +54,10 @@
  *   E-combobox-popup   Dialog 裡經 getInputProps 接線、值改過的 Combobox:清單開著按 Esc → 只關清單、值不動、對話框不關
  *   E-combobox         接上題:清單關著按 Esc → 值回復(對話框不關)→ 下一下關
  *   C-combobox-focus   必填的 Combobox 空著送出 → 焦點落在它的觸發區(name 掛在可聚焦的元素上)
- *   B-popup            必填的 Select / Combobox / DatePicker / TimePicker 經 getInputProps 接線:打開彈出層時沒有錯誤;Esc 關掉後 Tab 離開才有
+ *   C-people-focus     必填的 PeoplePicker 經 getInputProps 接線、空著送出 → 焦點落在第一個錯誤欄位:單選在前 → 單選(name 經 Select 掛在表單鏡像輸入框)、
+ *                      多選在前 → 多選的觸發區(name 經 Combobox 掛上)(2026-11-26 產品 canary 回報 C25)
+ *   B-popup            必填的 Select / Combobox / DatePicker / TimePicker / PeoplePicker(單選、多選)經 getInputProps 接線:打開彈出層時沒有錯誤;
+ *                      Esc 關掉後 Tab 離開才有
  *   F-menu             DropdownMenu 的項目開了受控 Dialog → Esc → 焦點回選單的觸發鈕(不是 body)
  *   F-menu-fileviewer  DropdownMenu 的項目開了受控 FileViewer(不經 DialogContent、直接用 Radix Dialog)→ Esc → 焦點回選單的觸發鈕
  *                      (2026-10-20 獨立驗證 OV-01:FileViewer 自己記開啟者、少了 persistentOpenerOf,修前掉到 body;只有這一列紅)
@@ -107,7 +110,7 @@
  *   Calendar 出格回長條 DOM 所在那一天(2026-11-25 前的 dayStopOf(焦點所在那一格))→ E-calendar-tile
  *   DataTable 連結格 / 開關格不宣告格內那一層 → E-datatable-cell-widget
  *   拖曳不宣告 / 不獨占 → E-drag / E-drag-table;DataTable 拖曳中仍用 self 層 → E-drag-table
- *   Combobox 丟掉 name / data-* → E-combobox / C-combobox-focus;表單 Esc 不看 Radix 已用掉 → E-combobox-popup(+ 接著量的 E-combobox;也不認領 → F-rename)
+ *   Combobox 丟掉 name / data-* → E-combobox / C-combobox-focus / C-people-focus;PeoplePicker 解構了 name 卻不轉下去 → C-people-focus;表單 Esc 不看 Radix 已用掉 → E-combobox-popup(+ 接著量的 E-combobox;也不認領 → F-rename)
  *   複合欄位的 blur 一律轉呼叫 → B-popup / B-overflow / B-leave-* / N-esc-tab;彈出層關掉的那一下不補量 → B-leave-blank / -next / -tab;
  *   收起動畫期間不提早還焦點 → N-esc-tab / N-esc-tab-modal;modal 收起時不撤這次開啟加上的 aria-hidden → N-esc-tab-modal;
  *   不記選單的觸發鈕 → F-menu / F-menu-fileviewer;
@@ -298,8 +301,21 @@ const MUTANTS = [
     id: 'combobox-drops-form-props',
     what: 'Combobox 觸發區不接 name / data-*(2026-10-01 前的解構丟棄)',
     file: 'components/Combobox/combobox.tsx',
-    expectRed: ['E-combobox', 'C-combobox-focus'],
+    // 多選 PeoplePicker 經 Combobox 把 name 掛到觸發區,同一個根因連帶紅 C-people-focus 的多選那一半
+    expectRed: ['E-combobox', 'C-combobox-focus', 'C-people-focus'],
     apply: (src) => replaceOnce(src, /\{\.\.\.\(\(\{ \.\.\.dataAttrs, name \}\) as unknown as React\.HTMLAttributes<HTMLDivElement>\)\}/, ''),
+  },
+  {
+    id: 'people-picker-drops-name',
+    what: 'PeoplePicker 解構了 name 卻不轉給 Select / Combobox(三處 `name={name}` 全拿掉;C25 之前型別上沒有 name)',
+    file: 'components/PeoplePicker/people-picker.tsx',
+    expectRed: ['C-people-focus'],
+    apply: (src) => {
+      const out = src.replace(/\n +name=\{name\}(?=\n)/g, '')
+      const removed = src.split('\n').length - out.split('\n').length
+      if (removed !== 3) throw new InstrumentError(`突變錨點命中 ${removed} 次(應為 3):PeoplePicker 的 name={name} —— 原始碼改了,selftest 的突變要跟著改`)
+      return out
+    },
   },
   {
     id: 'form-esc-ignores-radix-used',
@@ -534,6 +550,7 @@ import { DatePicker } from '@/design-system/components/DatePicker/date-picker'
 import { TimePicker } from '@/design-system/components/TimePicker/time-picker'
 import { Select } from '@/design-system/components/Select/select'
 import { Combobox } from '@/design-system/components/Combobox/combobox'
+import { PeoplePicker } from '@/design-system/components/PeoplePicker/people-picker'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import { DataTableSortManager } from '@/design-system/components/DataTable/data-table-sort-manager'
 import { Calendar } from '@/design-system/components/Calendar/calendar'
@@ -690,6 +707,36 @@ function PopupScene() {
       <label>標籤<Combobox aria-label="標籤" options={TAGS} {...form.getInputProps('tags')} /></label>{err('tags')}
       <label>截止<DatePicker aria-label="截止日" {...form.getInputProps('due')} value={form.values.due || null} /></label>{err('due')}
       <label>時間<TimePicker aria-label="時間" {...form.getInputProps('at')} /></label>{err('at')}
+      <button type="submit" data-submit>送出</button>
+      <button type="button" data-after>之後</button>
+    </form>
+  )
+}
+// PeoplePicker 放進表單(people-picker.spec.md「放入表單」):單選的值是一個人 → value 取陣列第一個(傳陣列會變成多選);多選直接用陣列
+const PEOPLE = [{ name: 'Alice Wang', description: '產品經理' }, { name: 'Bob Lin', description: '前端工程師' }]
+function PeopleScene({ multiFirst = false }) {
+  const form = useFormValidation({
+    initialValues: { lead: [], watchers: [] },
+    validate: {
+      lead: (v) => (v.length ? undefined : '專案負責人必填'),
+      watchers: (v) => (v.length ? undefined : '關注者必填'),
+    },
+    onSubmit: () => {},
+  })
+  const err = (k) => (form.errors[k] ? <p role="alert" data-error-for={k}>{form.errors[k]}</p> : null)
+  const lead = (
+    <React.Fragment key="lead">
+      <label>專案負責人<PeoplePicker aria-label="專案負責人" people={PEOPLE} {...form.getInputProps('lead')} value={form.values.lead[0] ?? null} /></label>{err('lead')}
+    </React.Fragment>
+  )
+  const watchers = (
+    <React.Fragment key="watchers">
+      <label>關注者<PeoplePicker aria-label="關注者" people={PEOPLE} {...form.getInputProps('watchers')} /></label>{err('watchers')}
+    </React.Fragment>
+  )
+  return (
+    <form aria-label="人員表單" onSubmit={form.handleSubmit}>
+      {multiFirst ? [watchers, lead] : [lead, watchers]}
       <button type="submit" data-submit>送出</button>
       <button type="button" data-after>之後</button>
     </form>
@@ -1034,6 +1081,8 @@ const SCENES = {
   drag: () => <DragScene />,
   combo: () => <ComboScene />,
   popup: () => <PopupScene />,
+  people: () => <PeopleScene />,
+  peopleMultiFirst: () => <PeopleScene multiFirst />,
   menu: () => <MenuScene />,
   menuFileViewer: () => <MenuFileViewerScene />,
   remove: () => <RemoveScene />,
@@ -1388,8 +1437,8 @@ async function runChecks(page) {
   // 用鍵盤開彈出層(harness 沒有版面 CSS,觸發區正中央可能是隱藏的表單鏡像輸入框);
   // DatePicker / TimePicker 的觸發區用滑鼠開:修前 `{...props}` 排在觸發區自己的 onKeyDown 後面,consumer 的鍵盤 handler 把 Enter / ↓ 開面板蓋掉,
   // 鍵盤在基準樹上開不了 → 對照組會變成儀器失效而不是紅(先聚焦再按,blur 一樣會發生,量的性質不變)
-  const popupPart = async (label, selector, popupSel, openKey = 'ArrowDown') => {
-    await scene('popup')
+  const popupPart = async (label, selector, popupSel, openKey = 'ArrowDown', sceneName = 'popup') => {
+    await scene(sceneName)
     await d.focus(selector)
     if (openKey === 'click') await d.click(selector); else await d.press(openKey)
     await waitSel(popupSel, `${label} 的彈出層沒開`)
@@ -1405,8 +1454,11 @@ async function runChecks(page) {
   const okCombo = await popupPart('combobox', 'form [role="combobox"][aria-label="標籤"]', '[cmdk-item]')
   const okDate = await popupPart('datepicker', 'form [role="combobox"][aria-label="截止日"]', '[role="dialog"][aria-label="日期選擇"]', 'click')
   const okTime = await popupPart('timepicker', 'form [role="combobox"][aria-label="時間"]', '[role="dialog"][aria-label="選擇時間"]', 'click')
-  check('B-popup', 'contract', '必填的 Select / Combobox / DatePicker / TimePicker 經 getInputProps 接線:打開彈出層時沒有錯誤(焦點搬進彈出層不算離開)、Esc 關掉後也沒有、Tab 離開欄位才有',
-    okSelect && okCombo && okDate && okTime, parts)
+  // PeoplePicker(2026-11-26 C25):單選經 Select、多選經 Combobox,同一條複合欄位判準;各在自己的表單場景裡量
+  const okPeopleSingle = await popupPart('people-single', 'form [role="combobox"][aria-label="專案負責人"]', '[cmdk-root]', 'ArrowDown', 'people')
+  const okPeopleMulti = await popupPart('people-multi', 'form [role="combobox"][aria-label="關注者"]', '[cmdk-item]', 'ArrowDown', 'people')
+  check('B-popup', 'contract', '必填的 Select / Combobox / DatePicker / TimePicker / PeoplePicker(單選、多選)經 getInputProps 接線:打開彈出層時沒有錯誤(焦點搬進彈出層不算離開)、Esc 關掉後也沒有、Tab 離開欄位才有',
+    okSelect && okCombo && okDate && okTime && okPeopleSingle && okPeopleMulti, parts)
 
   // ── C-combobox-focus(填好 Select 再送出,第一個錯誤 = Combobox)──
   await scene('popup')
@@ -1417,6 +1469,21 @@ async function runChecks(page) {
   s = await snap('err')
   check('C-combobox-focus', 'contract', '必填表單填好 Select 後送出(Combobox / DatePicker / TimePicker 空著)→ 三欄報錯,焦點落在 DOM 第一個錯誤 = Combobox 的觸發區(name="tags"、role=combobox;修前觸發區沒有 name,焦點落不到)',
     s.errors.includes('tags') && !s.errors.includes('owner') && s.activeName === 'tags' && s.activeRole === 'combobox', s)
+
+  // ── C-people-focus(PeoplePicker 兩個都空著送出;單選在前 / 多選在前各一趟)──
+  await scene('people')
+  await d.click('[data-submit]')
+  const peopleSingleFirst = await snap('err')
+  await scene('peopleMultiFirst')
+  await d.click('[data-submit]')
+  const peopleMultiFirst = await snap('err')
+  // 單選經桌機 Select:name 在觸發欄位裡的表單鏡像輸入框上,焦點落在它、觸發欄位以 focus-within 顯示焦點框
+  //(select.tsx「Hidden input form mirror」、select.spec.md「原生表單參與」;同 Select 本身),所以只看 name、不看 role
+  check('C-people-focus', 'contract', '必填的 PeoplePicker(單選、多選)經 getInputProps 接線、兩個都空著送出 → 兩欄報錯,焦點落在 DOM 第一個錯誤:單選在前 = 單選經 Select 掛 name 的那個元素(name="lead",桌機 Select 的表單鏡像輸入框,在觸發欄位裡)、多選在前 = 多選的觸發區(name="watchers"、role=combobox,經 Combobox 掛上)(C25:之前型別上沒有 name)',
+    [peopleSingleFirst, peopleMultiFirst].every((p) => p.errors.includes('lead') && p.errors.includes('watchers'))
+      && peopleSingleFirst.activeName === 'lead'
+      && peopleMultiFirst.activeName === 'watchers' && peopleMultiFirst.activeRole === 'combobox',
+    { singleFirst: peopleSingleFirst, multiFirst: peopleMultiFirst })
 
   // ── F-menu ──
   await scene('menu')

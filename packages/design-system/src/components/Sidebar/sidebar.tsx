@@ -1543,7 +1543,7 @@ const sidebarMenuButtonVariants = cva(
     // 2026-09-09 之前非當前項的焦點用 hover 同色底(AI 推導,user 撤回);hover 的底色與文字色只屬於滑鼠。
     "focus-visible:focus-ring-inset",
     // 2026-05-31 M24:SidebarMenuButton 主要為 icon+label(currentColor 可改寫)→ 用 semantic
-    // text-fg-disabled 對齊 MenuItem primitive(menu-item.tsx:198/221/248 + item-anatomy.tsx:374),
+    // text-fg-disabled 對齊 MenuItem primitive(menu-item.tsx:198/221/248 + item-anatomy.tsx:377),
     // 非 opacity-disabled(opacity 保留給圖片/avatar/Switch 等無法改寫內部色者,per color.spec.md「Disabled 狀態」/「Utility Tokens」)。
     // 原生 disabled 的 button 本來就不會發 click,不再 pointer-events-none:留著接指標只為了掛禁止符號
     //(hit-area-canonical.md 滑過原則一-3「停用的用禁止符號」;2026-09-29 全站掃出:「混合內容」的「delta（已封存）」游標是箭頭,

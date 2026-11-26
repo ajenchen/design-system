@@ -261,6 +261,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 - 高 24;代理**最後一則**常駐(由 AgentConversation 判定,在流內佔位);其他訊息懸停 / 鍵盤聚焦(`has-[:focus-visible]`,滑鼠點過不常駐)時**瞬間出現**(滑過造成的變化一律不做過渡,`tokens/motion/motion.spec.md`;hover 底色瞬間 = user 2026-09-10「第三題改成全部瞬間」,延伸到所有滑過造成的變化 = 2026-09-26 待辦總帳 L9 那一題 user 答「確定這樣才是一致設計語言就做」),
   絕對定位於輪距內、不推擠版面。
 - `[複製][ButtonDivider][讚][倒讚]`=Button text xs + Tooltip;各鈕 aria-label。
+- **文案可換語系(2026-11-26,產品 canary 回報 C19)**:三顆鈕的名稱(iconOnly 的提示也由它產生)接 DS i18n opt-in —— key 為 `agent-panel.copy` / `agent-panel.like` / `agent-panel.dislike`,沒包 `I18nProvider` 或沒給這三個 key 時照舊顯示「複製 / 讚 / 倒讚」(`../../lib/i18n/README.md`「Fallback chain」)。面板其他字串尚未接,仍是 `// i18n-allow` 的 DS 預設。範例:`agent-panel.stories.tsx`「英文介面的訊息工具列」。
 
 ### 7. AgentPromptInput(複合輸入盒)
 

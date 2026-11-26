@@ -17,9 +17,12 @@ import {
   AgentPromptInput,
   AgentDecisionCard,
   AgentDecisionSummary,
+  AgentMessage,
+  AgentToolbar,
   type AgentDecisionQuestion,
   type AgentPanelMode,
 } from './agent-panel'
+import { I18nProvider } from '@/design-system/lib/i18n/i18n-context'
 import { AgentLogo, type AgentLogoState } from './agent-panel-logo'
 import { AgentPanelDock } from './agent-panel-fab'
 import { Button } from '@/design-system/components/Button/button'
@@ -1361,6 +1364,28 @@ export const UrlRegistryDemo: Story = {
 // 同一個世界的第二則示意(2026-09-29,待辦總帳 OE11):任務對話框裡改了標題還沒儲存,代理回覆裡的「我的任務」被點下 ——
 // 導航停下來問(沒有網址的確認框,蓋住一切含代理),取消留在原地、確認才前往。一開場就停在這個當口(M15 OpenSnapshot)。
 // (開發備忘用一般註解,不進 docs —— 稽核 L136;讀者看的說明在 docs.description)
+// 英文介面(2026-11-26,產品 canary 回報 C19):產品在 app 根包一次 I18nProvider,訊息工具列三顆鈕的名稱與提示換成英文;
+// 沒給的 key 照舊中文(lib/i18n/README.md「Fallback chain」)。
+const AGENT_TOOLBAR_EN = { 'agent-panel': { copy: 'Copy', like: 'Helpful', dislike: 'Not helpful' } }
+export const ToolbarI18n: Story = {
+  name: '英文介面的訊息工具列',
+  render: () => (
+    <I18nProvider labels={AGENT_TOOLBAR_EN}>
+      <div className="w-[360px]">
+        <AgentMessage role="agent" toolbar={<AgentToolbar pinned onCopy={() => {}} onLike={() => {}} onDislike={() => {}} />}>
+          The release checklist has 3 open items: update the changelog, tag v2.4.0, and notify the support team.
+        </AgentMessage>
+      </div>
+    </I18nProvider>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('button', { name: 'Copy' })).toBeInTheDocument()
+    await expect(canvas.getByRole('button', { name: 'Helpful' })).toBeInTheDocument()
+    await expect(canvas.getByRole('button', { name: 'Not helpful' })).toBeInTheDocument()
+  },
+}
+
 export const UnsavedChangesGuard: Story = {
   name: '示意(假資料)— 未存檔的修改:離開前先確認',
   parameters: {

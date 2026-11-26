@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-11-26T15:29:22.172Z"
+    "generatedAt": "2026-11-26T13:28:42.110Z"
   },
   "components": {
     "accordion": {
@@ -81,6 +81,7 @@
           "design-system-components-agentpanel-展示--logo-states",
           "design-system-components-agentpanel-展示--logo-think-stop",
           "design-system-components-agentpanel-展示--url-registry-demo",
+          "design-system-components-agentpanel-展示--toolbar-i-18-n",
           "design-system-components-agentpanel-展示--unsaved-changes-guard"
         ],
         "設計規格": [
@@ -535,6 +536,7 @@
           "design-system-components-combobox-展示--unrestricted-inline-search",
           "design-system-components-combobox-展示--unrestricted-message-states",
           "design-system-components-combobox-展示--unrestricted-off-inert",
+          "design-system-components-combobox-展示--groups-and-min-width",
           "design-system-components-combobox-展示--in-data-table"
         ],
         "設計規格": [
@@ -680,6 +682,7 @@
           "design-system-components-datepicker-展示--range-popover-open",
           "design-system-components-datepicker-展示--show-time-popover-open",
           "design-system-components-datepicker-展示--need-confirm-date-only-open",
+          "design-system-components-datepicker-展示--disabled-dates",
           "design-system-components-datepicker-展示--show-time-range-popover-open",
           "design-system-components-datepicker-展示--range-preview-extend",
           "design-system-components-datepicker-展示--range-preview-shrink",
@@ -1897,5 +1900,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1060
+  "totalStories": 1059
 }

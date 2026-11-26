@@ -31,7 +31,7 @@
  *
  * 數字出處(本檔不新造任何數字):
  *   列高 sm 28 / md 32 / lg 36 = `--field-height-{sm,md,lg}`(packages/design-system/src/tokens/uiSize/uiSize.css 的 `:root` 段 `--field-height-*`);
- *     訊息列吃 ROW_PADDING_BY_SIZE 的 py = (field-height − 1lh) / 2(patterns/element-anatomy/item-anatomy.tsx:145-149),所以列高 = field-height
+ *     訊息列吃 ROW_PADDING_BY_SIZE 的 py = (field-height − 1lh) / 2(patterns/element-anatomy/item-anatomy.tsx:148-152),所以列高 = field-height
  *   群組上下留白 8 = MenuGroup `py-2`(components/Menu/menu-item.tsx MenuGroup)
  *   轉圈 sm/md 16、lg 20 = ICON_SIZE(item-anatomy.tsx ICON_SIZE;components/Command/command.tsx CommandLoading 用 ICON_SIZE[size])
  *   群組標題字重 medium = MenuItem header `font-medium`(components/Menu/menu-item.tsx header 分支)

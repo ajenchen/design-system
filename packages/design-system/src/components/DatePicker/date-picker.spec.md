@@ -384,6 +384,18 @@ View / readonly / disabled 模式(含 DataTable cell)與 Edit 模式 trigger 文
 
 **預設語系 zh-TW(2026-11-24)**:user 選「全 DS 日期元件一起改 zh-TW (Recommended)」(選項為 AI 擬;Calendar / DatePicker / TimePicker 同一個預設)。之前是 `'en-US'`:只傳 `formatOptions` 沒傳 `locale` 的欄位,文字從英文變中文(例 `{ year: 'numeric', month: 'long', day: 'numeric' }`:「April 2, 2026」→「2026年4月2日」);什麼格式參數都沒傳的欄位畫面不變。
 
+## 不可選日期(`disabledDate`,2026-11-26)
+
+`disabledDate?: (date: Date) => boolean`:回 `true` 的那天不可選。單日與 `DatePicker.Range` 都收。產品 canary 回報 C33:不可選日期的樣子與行為早已定好(本檔「Cell state canonical」的 disabled 列、`../DateGrid/date-grid.spec.md`「Disabled day」),Range 內部也已經用同一條管線把順序不合的日子設成不可選,缺的只是公開參數。
+
+- **畫面與互動**:不另定 —— 轉給 DateGrid 的 `disabled`,灰底圓圈 + 淺灰字、點不動、鍵盤導覽跳過(date-grid.spec.md「Disabled day」)。
+- **Range**:「順序不合」與 `disabledDate` 任一成立就不可選(同一支判斷,`date-picker.tsx` `isDayDisabled`);起訖兩端都不能落在不可選的日子。區間中間跨過不可選的日子不另擋(本參數只管「能不能點那一天」)。
+- **可打字**(`typeable`):打進一個不可選的日期 = 跟解析失敗同一條路(`aria-invalid`、保留草稿讓使用者修,見「驗證時機」)【AI 推導 2026-11-26,依「Typed input」與「驗證時機」的解析失敗寫法,列入預覽清單】。
+- **後端給清單**:在函式裡查那份清單;清單還在抓時怎麼辦見「邊界案例」Loading 那條。
+- **範例**:`date-picker.stories.tsx`「不可選日期:門市維修預約」(週末與 12/25 不可選,可打字)。
+- **命名**:三重測試 —— (1) DS 詞彙:DateGrid 已用 `disabled` 表示「不可選的日子」,DatePicker 的 `disabled` 是整個欄位停用,所以加 `Date` 區分;(2) Ant DatePicker 公共 API 同名同義「disabledDate — Specify the date that cannot be selected」(https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/index.en-US.md),Element Plus 同名「The disabled date is set by `disabledDate`, which is a function」(https://element-plus.org/en-US/component/date-picker.html);(3) DS 內沒有其他元件用 `disabledDate`。
+- **尚未定案**:showTime 時面板底的「此刻」鈕在今天不可選時要不要停用,屬新的畫面決定,本次不改(鈕照舊可按),待 user 決定。
+
 ## 週起始日
 
 日曆面(單日與 `DatePicker.Range` 都是)一週從哪天開始:有傳 `weekStartsOn`(0 = 週日 … 6 = 週六)就用;沒傳時由 `locale` 推 —— 語系 → CLDR,規則的唯一住處是 `../DateGrid/date-grid.spec.md`「週起始日」(實作 `../../lib/date-locale.ts` `resolveWeekStartsOn`)。預設語系 zh-TW = 週日,所以沒傳 `locale` 也沒傳 `weekStartsOn` 的日曆畫面不變;傳 `locale="en-GB"` / `"de-DE"` / `"zh-CN"` 的,2026-11-24 起日曆面是週一起(之前日曆面一律是 react-day-picker 預設的週日起,不看 `locale`)。產品有「一週從週一開始」這類使用者偏好時,在 app 層把同一個值傳給每一個日期元件的 `weekStartsOn`(不要在個別元件寫死數字,理由見 DateGrid 設計原則「週首日不可在元件內硬寫」)。日曆面的月份與星期文字仍是 react-day-picker 預設的英文,`locale` 目前只管欄位文字與週首日。
@@ -438,13 +450,13 @@ DatePicker 套 `React.forwardRef` + `displayName`;`DatePickerProps` extends `Omi
 
 - `required` + `value=null` → submit 時 trigger error,`aria-invalid="true"` + error border
 - Range mode:start > end → invalid;component 內建 `isOutOfRangeOrder` 在 picker 端視覺 disable 違序日期(activeEnd='end' 時 `date < start` disable;activeEnd='start' 時 `date > end` disable),consumer 仍應在 submit 端確保 start 先 commit 才接受 end
-- Typed input(`typeable=true`):`parseDateInput` 失敗 → `aria-invalid`,blur 觸發 error message
+- Typed input(`typeable=true`):`parseDateInput` 失敗 → `aria-invalid`,blur 觸發 error message;解析成功但落在 `disabledDate` 回 `true` 的日子,同樣處理(見「不可選日期」)
 - Validation timing:typed input → blur + submit;picker pick → onChange 即時(已選有效日期不需延遲)
 
 ## 邊界案例
 
 - **Disabled**:Field SSOT own;resolvedMode='disabled' 走 readonly / disabled 純 wrapper 分支(無 Popover trigger、`aria-disabled`、不開 picker),文字與 Calendar icon 切 `text-fg-disabled`。readonly 不顯示 Calendar icon(類型身份 indicator 規則,SSOT field-controls.spec.md「下拉箭頭（Select / Combobox）與類型身份 indicator」);disabled 保留並切 `fg-disabled`。顯式 `mode="view"` 永遠最優先(useResolvedFieldMode step 1,見 field-context.ts):view + disabled 同傳走 view 分支不套 disabled token;要 disabled chrome 傳 `disabled` 或 `mode="disabled"`。
-- **Loading(server-rendered grid)**:DatePicker 為 sync UI 不獨立 own loading。若 consumer 場景需 async date constraint fetch(如後端 disabled-dates list),consumer 應先 disable trigger 直到 fetch 完成,或在 popover 開啟後 body 切 `<Empty icon={<CircularProgress/>}/>`(對齊 panel-body loading SSOT)。本 spec scope 內不渲 loading state。
+- **Loading(server-rendered grid)**:DatePicker 為 sync UI 不獨立 own loading。若 consumer 場景需 async date constraint fetch(如後端 disabled-dates list;清單本身經 `disabledDate` 傳入,見「不可選日期」),consumer 應先 disable trigger 直到 fetch 完成,或在 popover 開啟後 body 切 `<Empty icon={<CircularProgress/>}/>`(對齊 panel-body loading SSOT)。本 spec scope 內不渲 loading state。
 - **Empty(no value)**:`value=null` → trigger 顯 placeholder(預設 `YYYY/MM/DD`,showTime 時 24 小時語系 `YYYY/MM/DD HH:MM`、12 小時語系照面板同一份 12 / 24 寫成 zh-TW `YYYY/MM/DD 上午/下午HH:MM`【AI 推導 2026-11-26,TIME-12H-PANEL(定)「空白提示字也用 12 小時」的寫法,列入預覽清單】;consumer 可傳 `placeholder` 覆寫)。無導覽目標時鍵盤焦點停留(react-day-picker v9 內建)。
 - **Invalid date input**:Field validation 處理 `aria-invalid="true"` + error border + 下方 error message;DatePicker 本身不 own validation 規則。
 - **極長格式化日期**:trigger 文字單行 `truncate`(ellipsis),不換行不撐高(View / Edit / typeable / Range 雙 input 皆同);實際截斷時 hover / focus 顯完整值 tooltip(僅實際截斷才顯——rule owner `components/Tooltip/tooltip.spec.md`「截斷文字 → 用 tooltip 顯示完整內容。」):View 路徑消費 `<TruncatedText>`;Edit trigger 與 Range 兩端 button 為 interactive host,消費 `useTruncated` 自組(trigger = host、量測內層值 span,SSOT `patterns/element-anatomy/truncated-text.spec.md`「兩層架構(對齊世界級聯集)」:trigger ≠ 量測元素時只用 hook 自組),popover 開啟時靜默。typeable `<input>` 可捲動編輯,無截斷補救需求。

@@ -427,6 +427,12 @@ export interface DatePickerProps
    * 對齊 Material X-DatePicker `format` prop / Ant DatePicker `format` array / Notion typed-input。
    */
   typeable?: boolean
+  /**
+   * 不可選的日期(2026-11-26,產品 canary 回報 C33):回 `true` 的那天在日曆上畫成不可選(樣子與行為照 date-grid.spec.md「Disabled day」:
+   * 灰底圓圈 + 淺灰字、點不動、鍵盤跳過),可打字時打進一個不可選的日期 = 跟解析失敗同一條路(`aria-invalid`、保留草稿讓使用者修)。
+   * 後端給一份不可選日期清單時,在這支函式裡查那份清單(date-picker.spec.md「不可選日期」)。不傳 = 每天都可選。
+   */
+  disabledDate?: (date: Date) => boolean
 }
 
 // Trigger uses `<div role="combobox" tabIndex={...}>` instead of `<button>` —
@@ -461,6 +467,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
       defaultOpen = false,
       onOpenChange,
       typeable = false,
+      disabledDate,
       id: idProp,
       name,
       onBlur: onBlurProp,
@@ -563,6 +570,11 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
     const handleInputCommit = React.useCallback((raw: string) => {
       const { iso, valid } = parseDateInput(raw, { allowTime: showTime, locale: locale ?? DEFAULT_DATE_LOCALE })
       if (!valid) { setInputInvalid(true); return }
+      // 打進不可選的日期 = 跟解析失敗同一條路(aria-invalid + 保留草稿;date-picker.spec.md「不可選日期」)
+      if (iso !== null && disabledDate) {
+        const typedDate = isoToDate(iso)
+        if (typedDate && disabledDate(typedDate)) { setInputInvalid(true); return }
+      }
       setInputInvalid(false)
       if (iso === null) {
         // empty input = clear value
@@ -572,7 +584,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
         onChange?.(iso)
         setDraft(iso)
       }
-    }, [onChange, showTime, locale])
+    }, [onChange, showTime, locale, disabledDate])
 
     // 截斷 tooltip(tooltip.spec.md:32 截斷 → 顯完整內容,僅實際截斷時):非 typeable edit
     // trigger 的值 span(bareInputStyles + truncate)是截斷元素;trigger = 整個 field wrapper
@@ -855,8 +867,11 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
                     mode="single"
                     weekStartsOn={resolvedWeekStartsOn}
                     selected={displayDate}
+                    // 不可選日期(C33):轉給 DateGrid 的 disabled(react-day-picker matcher;date-grid.spec.md「Disabled day」)
+                    disabled={disabledDate}
                     onSelect={(date) => {
                       if (!date) return
+                      if (disabledDate?.(date)) return  // 防護:不可選的那天 RDP 已不派送點擊,雙保險(同 Range 的 isOutOfRangeOrder)
                       if (showTime) {
                         commitDraft(combineDateAndTime(date, draftTime))
                       } else {
@@ -997,6 +1012,9 @@ export interface DatePickerRangeProps
    * 結束日照舊是「含」,不做全天換算。日期寫法與判定表 → date-picker.spec.md「區間檢視合併(formatRange)」。
    */
   formatRange?: boolean
+  /** 不可選的日期(同單日 DatePicker 的 `disabledDate`,2026-11-26 C33):起訖兩端都不能落在回 `true` 的那天;
+   *  與「順序不合」(選結束日時早於開始日)任一成立就不可選。 */
+  disabledDate?: (date: Date) => boolean
 }
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
@@ -1023,6 +1041,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
       needConfirm: needConfirmProp,
       weekStartsOn,
       formatRange = false,
+      disabledDate,
       id: idProp,
       'aria-describedby': ariaDescribedByProp,
       'aria-errormessage': ariaErrorMessageProp,
@@ -1217,6 +1236,11 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
       }
       return false
     }, [activeEnd, startDate, endDate])
+    // 這一格能不能選 = 順序合 + 不在產品給的不可選日期裡(C33;任一成立就不可選,同一條 DateGrid disabled 管線)
+    const isDayDisabled = React.useCallback(
+      (date: Date): boolean => isOutOfRangeOrder(date) || Boolean(disabledDate?.(date)),
+      [isOutOfRangeOrder, disabledDate],
+    )
 
     // mode='view'(Phase B2 2026-05-05):純內容輸出 — 無 Field wrapper / 無 Calendar icon。
     if (resolvedMode === 'view') {
@@ -1443,7 +1467,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   selected={activeDate}
                   onSelect={(date) => {
                     if (!date) return
-                    if (isOutOfRangeOrder(date)) return  // 防護:disable 邏輯內 click 已被 RDP 擋,但雙保險
+                    if (isDayDisabled(date)) return  // 防護:disable 邏輯內 click 已被 RDP 擋,但雙保險
                     const preservedTime = isoToTimeParts(activeEnd === 'start' ? draft[0] : draft[1]) ?? activeTime
                     const nextIso = showTime
                       ? combineDateAndTime(date, preservedTime)
@@ -1525,8 +1549,8 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                     keyboardDayRef.current = null
                     setPreviewAnchor((prev) => (prev?.source === 'keyboard' ? null : prev))
                   }}
-                  // Cell disable:防 user 點下違反順序的日期(對齊 Ant useRangeDisabledDate)
-                  disabled={isOutOfRangeOrder}
+                  // Cell disable:防 user 點下違反順序的日期(對齊 Ant useRangeDisabledDate)+ 產品給的不可選日期(C33)
+                  disabled={isDayDisabled}
                   // showTime → 1 cal(對齊 Ant `multiplePanel=false`);date-only → 2 cal(`multiplePanel=true`)
                   numberOfMonths={showTime ? 1 : 2}
                   defaultMonth={activeDate ?? startDate ?? endDate ?? undefined}
