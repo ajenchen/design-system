@@ -243,7 +243,7 @@ const InspectorInner = () => {
         <div className="flex flex-col gap-5 min-w-[300px]">
           {/* Live preview */}
           <div className="px-10 py-8 rounded-md bg-canvas border border-divider flex items-center justify-center gap-6">
-            <RadioGroup defaultValue={checked === 'checked' ? 'preview' : undefined} className="flex gap-4">
+            <RadioGroup defaultValue={checked === 'checked' ? 'preview' : undefined} orientation="horizontal">
               <RadioGroupItem
                 size={size}
                 value="preview"
@@ -507,7 +507,7 @@ default / hover / checked / disabled 色彩對照見<StoryLink kind="Design Syst
         <div className="flex gap-6 items-start">
           <div className="px-6 py-5 rounded-md bg-canvas border border-divider min-w-[280px]">
             <div className="text-[11px] text-fg-muted mb-3 font-mono">value = "{plan}"</div>
-            <RadioGroup value={plan} onValueChange={setPlan} className="flex flex-col gap-2">
+            <RadioGroup value={plan} onValueChange={setPlan}>
               <RadioGroupItem value="starter" label="Starter" description="個人使用 · 免費" />
               <RadioGroupItem value="pro" label="Pro" description="小型團隊 · $12/月" />
               <RadioGroupItem value="business" label="Business" description="企業級 · $49/月" />
@@ -526,7 +526,7 @@ default / hover / checked / disabled 色彩對照見<StoryLink kind="Design Syst
       <ExampleSection title="個別 item disabled(不影響其他)" description={<>單一選項 disabled 時其他仍可互動——disabled item 保留其 checked 視覺但 cursor-not-allowed,無法被選中。適用「功能尚未開放 / 方案不含」等情境。</>}>
         <div className="flex gap-6 items-start">
           <div className="px-6 py-5 rounded-md bg-canvas border border-divider min-w-[280px]">
-            <RadioGroup value={billing} onValueChange={setBilling} className="flex flex-col gap-2">
+            <RadioGroup value={billing} onValueChange={setBilling}>
               <RadioGroupItem value="monthly" label="每月付款" description="可隨時取消" />
               <RadioGroupItem value="yearly" label="每年付款" description="省 20%" />
               <RadioGroupItem value="enterprise" label="企業年約" description="請聯繫業務" disabled />
@@ -543,7 +543,7 @@ default / hover / checked / disabled 色彩對照見<StoryLink kind="Design Syst
       <ExampleSection title="整組 disabled(Field context 接管)" description={<>整組放進停用的 Field 時,裡面每個選項會自動一起變灰,不需逐一設定。下方為靜態示意(逐 item 傳 disabled 重現相同視覺);實際使用以 {'<Field disabled>'} 包裹即可。</>}>
         <div className="flex gap-6 items-start">
           <div className="px-6 py-5 rounded-md bg-canvas border border-divider min-w-[280px]">
-            <RadioGroup defaultValue="b" className="flex flex-col gap-2">
+            <RadioGroup defaultValue="b">
               <RadioGroupItem value="a" label="個人版" disabled />
               <RadioGroupItem value="b" label="團隊版(目前方案)" disabled />
               <RadioGroupItem value="c" label="企業版" disabled />

@@ -1737,6 +1737,8 @@ jobs:
           # RadioGroup 整組一個 Tab 停留點(2026-11-05 3f-n6-radio-tabstop):每則 RadioGroup story + 決策卡單選題,真按 Tab / Shift+Tab
           # 數停留點,每組各方向只停一次、停在已選 / 第一個可用的圓(radio-group.spec.md「Focus」、WAI-ARIA APG Radio Group);
           # --selftest 注入三種病(每個圓都 tabindex=0 / 整組沒停留點 / 進群組落錯圓)各自必紅。
+          # 同一支也量排列方向(2026-11-26,E7):orientation="horizontal" 前兩個選項同一列、相鄰間距 = Checkbox 展示頁「水平排列」實量值,
+          # RadioGroup 自己 story 的直排列距 = 0(checkbox.spec.md「Orientation」,Radio 共用);--selftest 另注入橫排變直排 / 橫排間距 8 / 直排加列距 8 各自必紅。
           npm run test:radio-group-tab-stop
           # Dialog 並存契約:兩條路都驗 —— 預設路徑照舊隔離、並存路徑指定區域仍可用。
           # 只驗後者的話「把預設路徑一起弄壞」不會被發現。
