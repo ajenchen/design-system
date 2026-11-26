@@ -51,8 +51,9 @@ are activated.
 - In Codex Cloud, configure both the environment **Setup script** and cached-container
   **Maintenance script** as `npm run setup:all`. The ordering and cache behavior are defined
   by the [official Codex Cloud environment guide](https://developers.openai.com/codex/cloud/environments).
-- In Claude Code on the web: create a cloud environment dedicated to this repository and set its
-  **Setup script** to the script below. Do not put it in the shared **Default** environment: other
+- In Claude Code on the web: `setup:all` does not complete there yet (see the known limitation
+  below), so do not set this Setup script until a release fixes it. The intended setup: create a
+  cloud environment dedicated to this repository and set its **Setup script** to the script below. Do not put it in the shared **Default** environment: other
   repositories have no such folder, and a setup script that exits non-zero makes a session fail to
   start or start without what it failed to install. The official guide documents that the script
   runs as root on Ubuntu 24.04 after the repository is cloned and before Claude Code launches, and
@@ -88,6 +89,14 @@ exact npm runs with `--use-system-ca`) and still ignores CA, proxy, and `NODE_OP
 variables. On Node.js 22.13.x–22.14.x the locked npm trusts only Node's bundled store, so such a
 host needs Node.js 22.15.0+. Install a proxy CA into the system trust store; `NODE_EXTRA_CA_CERTS` or
 `SSL_CERT_FILE` alone is not used.
+
+Known limitation: on Claude Code on the web `setup:all` still does not complete. The locked
+install now gets past the proxy CA, but the next step, `npm audit signatures`, fails with
+`ENOTFOUND tuf-repo-cdn.sigstore.dev`: that environment resolves the npm registry directly but
+reaches the Sigstore TUF CDN only through its proxy, and the locked setup ignores proxy variables.
+Until a release fixes this, do not set the Setup script above in a Claude Code cloud environment
+(it would exit non-zero and stop sessions from starting); a session there has not run `setup:all`,
+so treat it as degraded and do not claim compliance.
 
 Do not move installation into SessionStart. The repository SessionStart adapter is deliberately
 read-only so opening or resuming any local/cloud agent cannot mutate the checkout.

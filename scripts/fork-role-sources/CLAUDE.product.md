@@ -31,7 +31,11 @@ runs the shared locked install, signature audit, and exact installed hooks-off c
 The web environment may reuse a cached setup result, so rebuild that cache or run
 `npm run setup:all` explicitly whenever the committed lock changes. Opening or resuming a Claude session does not
 mutate the checkout through repository SessionStart. If setup cannot authenticate the locked
-snapshot, treat the environment as degraded and do not claim compliance.
+snapshot, treat the environment as degraded and do not claim compliance. Known limitation: on
+Claude Code on the web `setup:all` still stops at `npm audit signatures` (`ENOTFOUND
+tuf-repo-cdn.sigstore.dev`; that host is reachable there only through the proxy, which the locked
+setup ignores), so until a release fixes this do not set that Setup script and treat the session as
+degraded.
 
 No Claude plugin is required. Installing one may add convenience, but it cannot replace or override the committed bootstrap, exact release lock, generated provider views, or hard gates.
 

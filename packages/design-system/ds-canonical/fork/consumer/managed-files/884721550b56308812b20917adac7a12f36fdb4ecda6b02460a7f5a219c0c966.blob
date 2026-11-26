@@ -26,6 +26,11 @@ trusts Node's bundled CA store plus the system store (the exact npm runs with `-
 and still ignores CA, proxy, and `NODE_OPTIONS` environment variables. On Node.js 22.13.x–22.14.x
 the locked npm trusts only the bundled store.
 
+Known limitation: on Claude Code on the web `setup:all` still stops at `npm audit signatures`
+(`ENOTFOUND tuf-repo-cdn.sigstore.dev`): that environment reaches the Sigstore TUF CDN only through
+its proxy, and the locked setup ignores proxy variables. Until a release fixes this, do not set that
+setup script there; such a session has not run `setup:all`, is degraded, and must not claim compliance.
+
 Successful setup deliberately reports `scope=local-bootstrap`,
 `providerCertification=not-checked`, and `externalActivationRequired=false`. Ordinary bootstrap is
 complete on its own; the external-activation/readback lane is an explicit opt-in hardening path.

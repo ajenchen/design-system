@@ -42,7 +42,7 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "748aa592a8bc9e992a446d4786ed4fce310b5b7bdb59232f9543bdf3f763f476",
+    "forkCorpusLockSha256": "8b11954892d26201d886c0bef5ee504c8fd5d77004af73a8ee3f41fe863137ba",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
     "providerLifecycleSha256": "45ca791ec151f7f8067e0d2068c71b916cd6f6308ceedfabdbbc52de90d01583",
@@ -51,7 +51,7 @@
     "commonInstructionSha256": "d60911d6b1983d69588a927b37decd15d8b0bf6457e0bbd7e54752978651ccb6",
     "providerArtifactDigests": {
       "claude": {
-        "instructionSha256": "d5e2985308308c1a964e5b90c60bb2ffa7543fb85c4a6ab7c6c3ec0c11badb6c",
+        "instructionSha256": "d1105e14b4f6eaa02a8ff413c11a0d1885fb03323e966481e6d408f6a7d53e4b",
         "hookSha256": "b17888945b06f3433e8cbeb0b659d63e41dbd391906461b6453500d8ec8ecec1",
         "skillsSha256": "455df0dea1750c5b6148533b7f3a423fb2bec4cb2c82ca12e1460e23e95dd528",
         "treeDigests": {}
@@ -93,7 +93,7 @@
       ".devcontainer/post-create.mjs": "6bc05d2597a54e8f6a5a087901e92ccc89acc3d5873d96ad20814f8f539a146b",
       ".github/workflows/audit.yml": "3cb259c8d83d8d378a6d282b0cde0a8884d96c51cf49e655405c3e416e646726",
       ".npmrc": "79eff2d98653857c11ab6a0354fa62685a72ec214545e7fdfabc450e91b7ba63",
-      "governance/consumer-governance.md": "c72bea318c93ae6dc3936ec2d43658c06c7f8032381aec02aae7f78d7a169b8b",
+      "governance/consumer-governance.md": "349a1d755879527a72dc71856ecf6c2c84c898faa0d0baa4a4fd7fd301deb84d",
       "governance/provider-cli-toolchain.json": "5280bc83de46486d6fd13e29349eee849d347970ed5fdf32412d463629124170",
       "governance/provider-cli-toolchain.package-lock.json": "d0a5fceebe21101b67848e7ace1856e9bc35f6532e4ba4deaf64462fe4fc81bb",
       "governance/schemas/issuer-registry.schema.json": "52616f59420942b96b33001e00d2c9a23ca3aa14dc236d8cb2aa9756787bfb90",

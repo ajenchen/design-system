@@ -53,8 +53,9 @@ Use the same canonical fresh-checkout bootstrap everywhere; run it locally and c
 - Codex Cloud: set both the environment **Setup script** and **Maintenance script** to
   `npm run setup:all`. Codex runs setup after checkout and maintenance after restoring a
   cached container, as described in the [official Codex Cloud environment guide](https://developers.openai.com/codex/cloud/environments).
-- Claude Code on the web: create a cloud environment dedicated to this repository and set its
-  **Setup script** to the script below. Do not put it in the shared **Default** environment: other
+- Claude Code on the web: `setup:all` does not complete there yet (see the known limitation
+  below), so do not set this Setup script until a release fixes it. The intended setup: create a
+  cloud environment dedicated to this repository and set its **Setup script** to the script below. Do not put it in the shared **Default** environment: other
   repositories have no such folder, and a setup script that exits non-zero makes a session fail to
   start or start without what it failed to install. The official guide documents that the script
   runs as root on Ubuntu 24.04 after the repository is cloned and before Claude Code launches, and
@@ -102,6 +103,14 @@ exact npm runs with `--use-system-ca`) and still ignores CA, proxy, and `NODE_OP
 variables. On Node.js 22.13.x–22.14.x the locked npm trusts only Node's bundled store, so such a
 host needs Node.js 22.15.0+. Install a proxy CA into the system trust store; `NODE_EXTRA_CA_CERTS` or
 `SSL_CERT_FILE` alone is not used.
+
+Known limitation: on Claude Code on the web `setup:all` still does not complete. The locked
+install now gets past the proxy CA, but the next step, `npm audit signatures`, fails with
+`ENOTFOUND tuf-repo-cdn.sigstore.dev`: that environment resolves the npm registry directly but
+reaches the Sigstore TUF CDN only through its proxy, and the locked setup ignores proxy variables.
+Until a release fixes this, do not set the Setup script above in a Claude Code cloud environment
+(it would exit non-zero and stop sessions from starting); a session there has not run `setup:all`,
+so treat it as degraded and do not claim compliance.
 
 Successful `setup:all` output is intentionally scoped as `scope=local-bootstrap`,
 `providerCertification=not-checked`, and `externalActivationRequired=false`. Ordinary bootstrap is
