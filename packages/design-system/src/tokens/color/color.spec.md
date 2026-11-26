@@ -983,6 +983,7 @@ SSOT → `../orphan-tokens.spec.md`(保留 / 退場分類的唯一住處,2026-11
 - `button.spec.md`
 - `calendar.spec.md`
 - `chart.spec.md`
+- `data-table.spec.md`
 - `date-grid.spec.md`
 - `description-list.spec.md`
 - `file-item.spec.md`

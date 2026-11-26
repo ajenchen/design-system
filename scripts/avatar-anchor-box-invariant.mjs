@@ -2,7 +2,8 @@
 /**
  * @gate-contract
  *   保證: 每個當 hover card 觸發點的 Avatar,最外層的框等於看得見的那個圓;而且覆蓋清單(scripts/avatar-anchor-box-inventory.json,
- *         由本閘自己全掃量出)裡每一則 story 這次量到的觸發點不少於清單記的數 —— 少量就紅,不會再「量到 1 個也算綠」。
+ *         由本閘自己全掃量出)裡每一則 story 這次量到的觸發點不少於清單記的數 —— 少量就紅,不會再「量到 1 個也算綠」;
+ *         另一格(2026-11-27):每個 `size="fill"` 的 Avatar 最外層 = 父容器的內容盒、可見圓 = 最外層、不是 0×0(夾具 story 至少量到 3 顆)。
  *   紅: 任一觸發點外框比可見圓大超過 0.5px → 指名 story;清單裡任一則少量(或不在建置裡)→ 指名記幾個、這次幾個;
  *       缺清單 / 格式不對 / 空清單、任一則沒量到(儀器失效)→ 紅。
  *   綠: 全掃量完、0 個被拉大、清單逐則不少量時綠;--selftest 兩組對照組都要被抓到才綠:①注入被拉寬的 Avatar 形狀 → 外框判紅;
@@ -90,6 +91,32 @@ const PROBE = () => {
   return out
 }
 
+// ── fill 那一格(2026-11-27,workspace H 組 H14):`size="fill"` 的最外層 = 父容器的內容盒、看得見的圓(內層)= 最外層,而且不是 0 ──
+// avatar.spec.md「兩種模式」'fill' 那列(填滿父容器)。修前最外層沒有寬高、內層是 inline-size 容器查詢、不貢獻寬 → 整顆 0×0;
+// 原本的觸發點比對(外框 − 內層)在 0 = 0 時照綠,量不到這個病(M37)。全 story 掃,夾具 story 至少要量到 FILL_FLOOR 顆(圖片 / 首字 / 圖示)。
+// 對照組(2026-11-27 實跑):修前原始碼(avatar.tsx boxClass 的 fill 分支 = '')→ 夾具三顆 0×0,本格紅;修後綠。
+const FILL_STORY = 'design-system-components-avatar-展示--fill-parent'
+const FILL_FLOOR = 3
+const FILL_PROBE = () => {
+  const out = []
+  for (const inner of document.querySelectorAll('[data-avatar-size="fill"]')) {
+    const root = inner.parentElement
+    const parent = root?.parentElement
+    if (!root || !parent) continue
+    const rr = root.getBoundingClientRect()
+    const ir = inner.getBoundingClientRect()
+    const pcs = getComputedStyle(parent)
+    const pw = parent.clientWidth - parseFloat(pcs.paddingLeft) - parseFloat(pcs.paddingRight)
+    const ph = parent.clientHeight - parseFloat(pcs.paddingTop) - parseFloat(pcs.paddingBottom)
+    const r1 = (n) => Math.round(n * 10) / 10
+    out.push({ rootW: r1(rr.width), rootH: r1(rr.height), innerW: r1(ir.width), innerH: r1(ir.height), parentW: r1(pw), parentH: r1(ph) })
+  }
+  return out
+}
+const fillBad = (a) => a.rootW <= 0 || a.rootH <= 0
+  || Math.abs(a.rootW - a.parentW) > BOX_TOLERANCE_PX || Math.abs(a.rootH - a.parentH) > BOX_TOLERANCE_PX
+  || Math.abs(a.innerW - a.rootW) > BOX_TOLERANCE_PX || Math.abs(a.innerH - a.rootH) > BOX_TOLERANCE_PX
+
 /** 讀覆蓋清單:{ ok, stories, why } —— 缺檔、格式不對、空清單都不是 ok */
 function readInventory() {
   if (!existsSync(INVENTORY)) return { ok: false, why: `讀不到覆蓋清單 ${INVENTORY.slice(ROOT.length + 1)}(先在本機跑 --write-inventory)` }
@@ -125,6 +152,10 @@ function compareCoverage(recorded, measured, { scannedIds, buildIds }) {
 
 const browser = await launchBrowser()
 const stretched = []
+/** fill 那一格:不符的 fill 頭像 / 量到的 fill 頭像總數 / 夾具 story 量到幾顆(null = 這一趟沒掃到夾具) */
+const fillWrong = []
+let fillCount = 0
+let fillFixtureCount = null
 let scanned = 0
 let triggers = 0
 /** 每則 story 量到的觸發點數(覆蓋清單比對 / 重寫用) */
@@ -175,6 +206,12 @@ try {
         triggers += 1
         if (a.dx > BOX_TOLERANCE_PX || a.dy > BOX_TOLERANCE_PX) stretched.push({ ...a, story: s.id, name: s.name })
       }
+      const fills = await page.evaluate(FILL_PROBE)
+      if (s.id === FILL_STORY) fillFixtureCount = fills.length
+      for (const a of fills) {
+        fillCount += 1
+        if (fillBad(a)) fillWrong.push({ ...a, story: s.id, name: s.name })
+      }
     } catch (error) {
       // 量測途中丟例外 = 這則沒量完 → 儀器失效(原本只記一行「載入失敗」、照樣 exit 0)
       instrumentFailures.push({ story: s.id, detail: `量測途中丟例外:${String(error?.message || error).split('\n')[0]}` })
@@ -214,6 +251,10 @@ for (const s of stretched) {
 }
 if (stretched.length) {
   console.log('\n修法見 avatar.spec.md「外框 = 可見圓」:固定尺寸模式的最外層要鎖寬,不能只靠 shrink-0。')
+}
+console.log(`size="fill" 的 Avatar:${fillCount} 個(夾具 ${FILL_STORY} ${fillFixtureCount ?? '這一趟沒掃到'}),沒填滿父容器 ${fillWrong.length} 個`)
+for (const s of fillWrong) {
+  console.log(`  ✗ ${s.story} :: ${s.name} — fill 最外層 ${s.rootW}x${s.rootH} vs 父容器內容盒 ${s.parentW}x${s.parentH},可見 ${s.innerW}x${s.innerH}(avatar.spec.md「兩種模式」fill = 填滿父容器)`)
 }
 // 儀器失效優先於任何裁決(兩種跑法都一樣):沒量到的 story 不得被讀成「外框都對」,也不得被讀成「對照組抓到了」
 if (instrumentFailures.length) {
@@ -304,4 +345,9 @@ if (!LIMIT && triggers === 0) {
   console.log('\n✗ 一個 hover card 觸發點的 Avatar 都沒量到 —— 探針或 build 壞了,這支等於沒跑,不能當綠燈')
   process.exit(1)
 }
-process.exit(stretched.length ? 1 : 0)
+// fill 那一格的地板:完整掃描(或這一趟有掃到夾具)時,夾具至少要量到 FILL_FLOOR 顆,否則這一格等於沒驗
+if ((!LIMIT || fillFixtureCount !== null) && (fillFixtureCount ?? 0) < FILL_FLOOR) {
+  console.log(`\n✗ fill 夾具 ${FILL_STORY} 只量到 ${fillFixtureCount ?? 0} 顆(要 ≥ ${FILL_FLOOR})—— 探針或夾具壞了,fill 那一格等於沒驗`)
+  process.exit(1)
+}
+process.exit(stretched.length || fillWrong.length ? 1 : 0)

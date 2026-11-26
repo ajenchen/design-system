@@ -42,6 +42,21 @@
 import * as React from 'react'
 import { getLastUserInput } from '@/design-system/hooks/use-input-modality'
 
+/**
+ * 「焦點掉了沒」的唯一判準(2026-11-27,workspace H 組 H16):元件裡握著焦點的東西卸載之後,要不要把焦點收回來。
+ * 算掉了:沒有(null)、在 body、落在已卸載的節點上、或落在**包著 host 的外殼**上(now 包著 host、又不是 host 本身)。
+ * 最後一種是浮層裡的常態:Radix FocusScope(DS Dialog / Sheet / 有 trap 的 Popover)在握著焦點的節點被移除後,
+ * 把焦點搬到浮層容器本身(`@radix-ui/react-focus-scope` 1.1.7 dist/index.mjs `handleMutations`:trapped 時,焦點在 body 且有節點被移除 → `focus(container)`)——
+ * 只認 body 的判準(修前 DataTable 兩條分支)在浮層裡永遠不接手,焦點停在對話框外框(M37:「不在 body」是「沒掉」的代理)。
+ * host = 要收回焦點的那個元件的根(DataTable 的表格根)。焦點在 host 自己或它裡面、或在 host 以外的別的東西上(使用者點了別處)→ 沒掉。
+ */
+export function isFocusLost(now: Element | null, host: Element | null): boolean {
+  if (!now) return true
+  if (now === now.ownerDocument.body) return true
+  if (!now.isConnected) return true
+  return !!host && now !== host && now.contains(host)
+}
+
 /** 開啟的那一刻記下「此刻握著焦點的元素」(= 之後要還的對象);焦點在 body / 沒有 → null。 */
 export function captureFocusOrigin(doc: Document = document): HTMLElement | null {
   const active = doc.activeElement

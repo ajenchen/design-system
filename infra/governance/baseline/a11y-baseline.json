@@ -2,7 +2,7 @@
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
     "generatedAt": "2026-11-26T14:00:56.486Z",
-    "stories": 1126,
+    "stories": 1128,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
       "apps-template-appshell-dashboard--default",
@@ -102,6 +102,7 @@
       "design-system-components-aspectratio-設計規格--overview",
       "design-system-components-aspectratio-設計規格--standard-ratios",
       "design-system-components-avatar-展示--fallback",
+      "design-system-components-avatar-展示--fill-parent",
       "design-system-components-avatar-展示--in-context",
       "design-system-components-avatar-展示--modes",
       "design-system-components-avatar-設計原則--fallback-rule",
@@ -341,6 +342,7 @@
       "design-system-components-datatable-展示--roadmap-all-in-one",
       "design-system-components-datatable-展示--roadmap-perf-budget",
       "design-system-components-datatable-展示--row-actions",
+      "design-system-components-datatable-展示--row-actions-varying-width",
       "design-system-components-datatable-展示--row-auto-height",
       "design-system-components-datatable-展示--row-auto-height-inline-edit",
       "design-system-components-datatable-展示--row-auto-height-modes",
@@ -1131,8 +1133,8 @@
       "design-system-tokens-uisize--overview",
       "design-system-tokens-uisize--product-alignment"
     ],
-    "storyIdsSha256": "c664d3ead608e6230536a0ccd9d04b27e080a7cb989aa95d4fb264ef45dce510",
-    "fingerprints": 759,
+    "storyIdsSha256": "5c30e14c7833d5cbff925a83eeba64b400bc0a8f10721d9cd5f62d105642712b",
+    "fingerprints": 760,
     "linuxOnly": {
       "design-system-components-combobox-設計規格--inspector|color-contrast": "藍圖區塊的 9px text-fg-muted 小標(anatomy-utils.tsx:174):macOS 等寬字溢出區塊、axe 歸 incomplete 不計,Linux 放得下才計入 —— 只有 Linux(CI)量得到;值 = 2f367ee3(A76)寫入的 CI 實測;main 的 a11y drift 排程 2026-11-19(run 44499310317)在 Linux 量到同值 23 / 41。--color-fg-muted 已定案例外(color.spec.md「已定案(禁再問)」)",
       "design-system-components-select-設計規格--inspector|color-contrast": "藍圖區塊的 9px text-fg-muted 小標(anatomy-utils.tsx:174):macOS 等寬字溢出區塊、axe 歸 incomplete 不計,Linux 放得下才計入 —— 只有 Linux(CI)量得到;值 = 2f367ee3(A76)寫入的 CI 實測;main 的 a11y drift 排程 2026-11-19(run 44499310317)在 Linux 量到同值 23 / 41。--color-fg-muted 已定案例外(color.spec.md「已定案(禁再問)」)"
@@ -1372,6 +1374,7 @@
     "design-system-components-datatable-展示--nested-rows|color-contrast": 1,
     "design-system-components-datatable-展示--pinned-columns|color-contrast": 2,
     "design-system-components-datatable-展示--row-actions|color-contrast": 2,
+    "design-system-components-datatable-展示--row-actions-varying-width|color-contrast": 2,
     "design-system-components-datatable-展示--row-auto-height-modes|color-contrast": 2,
     "design-system-components-datatable-展示--row-auto-height|color-contrast": 4,
     "design-system-components-datatable-展示--row-drag-interactive|color-contrast": 1,

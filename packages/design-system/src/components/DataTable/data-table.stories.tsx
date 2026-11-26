@@ -2279,6 +2279,56 @@ export const RowDragInDialog: Story = {
   },
 }
 
+// 每列操作數量不一(test-only,2026-11-27,workspace H 組 H8):給 `scripts/data-table-invariants.mjs` I43 量
+// 「每一列的操作格都沒被裁、表頭與表身右區同寬」。總部鎖定的商品(第一列)沒有操作、草稿商品(第三列)可編輯也可刪除、其他只能編輯;
+// 修前表頭佔位只畫第一列那一份(null)→ 右區只剩內距寬,第三列的兩顆鈕被裁掉。下面那張 200 列有虛擬捲動,走「虛擬範圍裡的列」那條路。
+export const RowActionsVaryingWidth: Story = {
+  name: '每列操作數量不一',
+  tags: ['test-only'],
+  render: function RowActionsVaryingWidthStory() {
+    const few = useProductRowActions(sampleData)
+    const manyRows = React.useMemo(() => generateLargeData(200), [])
+    const many = useProductRowActions(manyRows)
+    const lockedSku = sampleData[0].sku
+    const draftSku = sampleData[2].sku
+    return (
+      <>
+        <Toaster />
+        <ExampleStack>
+          <ExampleSection title="一頁 6 筆" description="總部鎖定的商品沒有操作;草稿商品可以編輯也可以刪除;其他只能編輯">
+            <div data-case="page" style={{ maxWidth: 760 }}>
+              <DataTable
+                columns={baseColumns}
+                data={few.rows}
+                maxHeight="none"
+                getRowId={(row) => row.sku}
+                rowActions={(row) => (row.sku === lockedSku ? null : row.sku === draftSku ? <>{few.editButton(row)}{few.deleteButton(row)}</> : few.editButton(row))}
+              />
+            </div>
+          </ExampleSection>
+          <ExampleSection title="200 筆(虛擬捲動)" description="第一筆鎖定沒有操作;每三筆一筆草稿,可編輯也可刪除">
+            <div data-case="virtual" style={{ maxWidth: 760 }}>
+              <DataTable
+                columns={baseColumns}
+                data={many.rows}
+                maxHeight={300}
+                getRowId={(row) => row.sku}
+                rowActions={(row) => {
+                  const i = manyRows.findIndex((r) => r.sku === row.sku)
+                  if (i === 0) return null
+                  return i % 3 === 2 ? <>{many.editButton(row)}{many.deleteButton(row)}</> : many.editButton(row)
+                }}
+              />
+            </div>
+          </ExampleSection>
+        </ExampleStack>
+        {few.dialogs}
+        {many.dialogs}
+      </>
+    )
+  },
+}
+
 /* ── 列拖曳 × 虛擬捲動（200 列）────────────────────────────────────────────
    v3 fix(2026-05-05)— scroll bug 修法:
    1. enableRowDrag 時 overscan 自動拉到 Math.max(overscan, 5)(避免 row unmount 時 useDraggable/useDroppable subscription 跟著

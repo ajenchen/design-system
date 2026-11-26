@@ -491,7 +491,10 @@ const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
     // 所以要鎖寬只能用 w-fit。root 一被撐寬會同時壞三處:狀態圓點 / badgeCount(相對 root 絕對定位)、
     // :focus-visible 焦點框(畫在 root 的 border box,帶 rounded-full → 變膠囊)、hoverCard 的 Radix 錨點(浮層橫向偏移)。
     // fill 模式的語意就是填滿父容器,必須排除。機械閘:scripts/avatar-anchor-box-invariant.mjs。
-    const boxClass = isFill ? '' : 'w-fit'
+    // fill 模式最外層 = 父容器的寬高(size-full;有無 status / badge 兩條分支共用這一個 class):內層是 inline-size 容器查詢
+    // (containerType: inline-size),不貢獻寬度 —— 最外層若沒有自己的寬高,整顆量起來 0×0(2026-11-27,workspace H 組 H14;
+    // avatar.spec.md「兩種模式」'fill' 那列 = 填滿父容器)。
+    const boxClass = isFill ? 'size-full' : 'w-fit'
     const stackAttr = isStackItem ? { 'data-avatar-stack': '' } : {}
     const baseEl = !hasOverlay
       ? <div ref={ref} className={cn('inline-flex shrink-0', boxClass, focusableClass, className)} style={style} {...stackAttr} {...focusableProps} {...props}>{avatarEl}</div>

@@ -186,7 +186,8 @@
         "展示": [
           "design-system-components-avatar-展示--modes",
           "design-system-components-avatar-展示--fallback",
-          "design-system-components-avatar-展示--in-context"
+          "design-system-components-avatar-展示--in-context",
+          "design-system-components-avatar-展示--fill-parent"
         ],
         "設計規格": [
           "design-system-components-avatar-設計規格--overview",
@@ -617,6 +618,7 @@
           "design-system-components-datatable-展示--filter-panel-labels-and-limit",
           "design-system-components-datatable-展示--row-drag-interactive",
           "design-system-components-datatable-展示--row-drag-in-dialog",
+          "design-system-components-datatable-展示--row-actions-varying-width",
           "design-system-components-datatable-展示--row-drag-with-virtualization",
           "design-system-components-datatable-展示--roadmap-all-in-one",
           "design-system-components-datatable-展示--roadmap-perf-budget",
@@ -1909,5 +1911,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1072
+  "totalStories": 1074
 }

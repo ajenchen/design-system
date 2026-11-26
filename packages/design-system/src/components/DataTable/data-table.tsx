@@ -68,6 +68,7 @@ import { RadioGroupItem } from '@/design-system/components/RadioGroup/radio-grou
 import * as RadioGroupPrimitive from '@radix-ui/react-radio-group'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
+import { isFocusLost } from '@/design-system/lib/overlay-focus-return'
 import { isOwnPointerTarget, pressLandedInDom } from '@/design-system/lib/pointer-press'
 import { FIXED_ORIGIN_PROBE_INNER_STYLE, FIXED_ORIGIN_PROBE_STYLE, originFromProbe, toLocal, VIEWPORT_ORIGIN, type FixedLayerOrigin } from '@/design-system/lib/fixed-layer-origin'
 import { useI18n } from '@/design-system/lib/i18n/i18n-context'
@@ -1681,11 +1682,11 @@ function DataTableInner<TData>(
       // 修前直接 return:編輯器卸載後焦點掉到 <body>(keyboard-model-canonical.md「焦點不可因 DOM unmount 掉到 body」)。
       // 只在結算當下焦點還在編輯器裡(鍵盤 Enter / Esc / F2、在浮層清單裡選值)才接手;失焦結算(點了別處、Tab 走了)
       // 的那一刻焦點已經是 body(blur 期間)或別人,不搶 —— 同 LinkInput「只在焦點真的掉了才接手」。
-      const active = document.activeElement
-      if (!active || active === document.body) return
+      // 「焦點掉了沒」一律用 lib isFocusLost(2026-11-27,workspace H 組 H16):浮層(DS Dialog / Sheet)裡編輯器卸載後,
+      // Radix FocusScope 先把焦點搬到對話框外框 —— 修前只認 body,在浮層裡永遠不接手,焦點停在外框。
+      if (isFocusLost(document.activeElement, tableRef.current)) return
       requestAnimationFrame(() => {
-        const now = document.activeElement
-        if (now && now !== document.body && now.isConnected) return
+        if (!isFocusLost(document.activeElement, tableRef.current)) return
         const cellEl = tableRef.current?.querySelector<HTMLElement>(`[data-cell-id="${CSS.escape(cellId)}"]`)
         if (!cellEl) return
         const entry = cellEl.querySelector<HTMLElement>(`[${CELL_EDIT_ENTRY_ATTR}] button`)
@@ -1697,13 +1698,12 @@ function DataTableInner<TData>(
     setSelectedCellId(cellId)
     setRangeAnchor(cellId)
     setRangeFocus(null)
-    // 等 editor unmount 完成後才收回焦點;activeElement 非 body(user 點了其他 focusable /
-    // Tab 換格後下一格 editor autoFocus)時不搶焦點。
+    // 等 editor unmount 完成後才收回焦點;焦點已被別的東西接走(user 點了其他 focusable /
+    // Tab 換格後下一格 editor autoFocus)時不搶焦點。「掉了」= isFocusLost(含浮層外框接住的那種,H16)。
     requestAnimationFrame(() => {
       const el = tableRef.current
       if (!el) return
-      const active = document.activeElement
-      if (active === document.body || active === null) el.focus({ preventScroll: true })
+      if (isFocusLost(document.activeElement, el)) el.focus({ preventScroll: true })
     })
   }, [spreadsheetMode])
   const commitCell = React.useCallback(
@@ -3183,6 +3183,43 @@ function DataTableInner<TData>(
    * body 面板一定要拿到明確寬度:虛擬捲動時列是 `position:absolute`,面板沒有固有寬會塌成 0
    * (2026-09-04 實測:改成純算出來時,右區 body 面板寬 = 0,整區消失)。
    */
+  /**
+   * 表頭操作格的隱形佔位(2026-11-27,workspace H 組 H8):**目前畫出來的每一列**的 rowActions 疊在同一格
+   * (grid,每份 `[grid-area:1/1]`),格寬 = 最寬那一列 —— 右區寬是量這一格量出來的(上方說明),
+   * 修前只畫 `rows[0]` 一份:第一列沒有操作(回 null)或比較少,右區就只有第一列那麼寬,其他列的按鈕被裁掉。
+   * 「畫出來的列」= 沒有虛擬捲動時這一頁的全部列,有虛擬捲動時虛擬範圍裡的列(含 overscan,與表身同一份 `rowVirtualItems`);
+   * 空表 0 份。每列一份元素快取(列身分與 rowActions 都沒變就回同一個元素):捲動時範圍裡留著的列直接 bail out,只畫新進範圍的列。
+   * **捲動中沿用捲動前的範圍,停下後才換**(虛擬化器 isScrolling,最後一個 scroll 事件後 isScrollingResetDelay 250ms 才轉 false、觸發重畫):
+   * 捲動的每一幀不多畫一份操作鈕(快速捲動的主執行緒成本,data-table-scroll-cost 量的就是這個);代價是捲動途中新進範圍的列若操作比較多,
+   * 停下前那 250ms 內可能被裁【AI 推導】,停下後一定齊(I43 量的是靜止狀態)。
+   */
+  const liveActionsIdxKey = !hasRowActions ? '' : useVirtual ? rowVirtualItems.map((v) => v.index).join(',') : `all:${rows.length}`
+  const frozenActionsIdxKeyRef = React.useRef(liveActionsIdxKey)
+  const actionsScrollingNow = useVirtual && virtualizer.isScrolling
+  if (!actionsScrollingNow) frozenActionsIdxKeyRef.current = liveActionsIdxKey
+  const actionsPlaceholderIdxKey = actionsScrollingNow ? frozenActionsIdxKeyRef.current : liveActionsIdxKey
+  const actionsPlaceholderCacheRef = React.useRef<{ fn: unknown; map: Map<string, { original: unknown; el: React.ReactElement }> }>({ fn: null, map: new Map() })
+  const headerActionsPlaceholder = React.useMemo(() => {
+    if (!hasRowActions) return null
+    const cache = actionsPlaceholderCacheRef.current
+    if (cache.fn !== rowActions) { cache.fn = rowActions; cache.map = new Map() }
+    // 範圍由 key 本身表達(捲動中是凍結的那一份):虛擬 = 逗號分隔的列索引;非虛擬 = 這一頁全部列
+    const idxs = actionsPlaceholderIdxKey.startsWith('all:') ? rows.map((_, i) => i) : actionsPlaceholderIdxKey.split(',').filter(Boolean).map(Number)
+    const next = new Map<string, { original: unknown; el: React.ReactElement }>()
+    const out: React.ReactElement[] = []
+    for (const i of idxs) {
+      const row = rows[i]
+      if (!row) continue
+      const hit = cache.map.get(row.id)
+      const entry = hit && hit.original === row.original
+        ? hit
+        : { original: row.original, el: <div key={row.id} className="flex items-center justify-end gap-2 [grid-area:1/1]">{rowActions!(row.original)}</div> }
+      next.set(row.id, entry)
+      out.push(entry.el)
+    }
+    cache.map = next
+    return out
+  }, [hasRowActions, rowActions, rows, actionsPlaceholderIdxKey])
   const rightHeaderRef = React.useRef<HTMLDivElement>(null)
   const [measuredRightWidth, setMeasuredRightWidth] = React.useState(0)
   React.useLayoutEffect(() => {
@@ -3199,7 +3236,7 @@ function DataTableInner<TData>(
     const obs = new ResizeObserver(measure)
     obs.observe(el)
     return () => obs.disconnect()
-  }, [hasRowActions, rightCols, rows.length])
+  }, [hasRowActions, rightCols, rows.length, actionsPlaceholderIdxKey])
   const rightWidth = hasRowActions ? measuredRightWidth : rightColsWidth
   // 空表會不會橫向捲動(欄寬總和 L + C + R 比可見寬寬):決定空表的捲動區要不要給 tab stop(見中間區 tabIndex)
   const emptyScrollsX = isEmpty && emptyVisibleWidth > 0 && leftWidth + centerColsWidth + rightWidth > emptyVisibleWidth
@@ -4608,13 +4645,14 @@ function DataTableInner<TData>(
           )
         })}
         {isRight && hasRowActions && (
-          <div className="flex items-center justify-end shrink-0 gap-2 flex-1 invisible" aria-hidden="true" style={cellPadding}>
-            {/* 渲染一個假 row 的 actions 來佔位,確保 header 和 body 同寬(aria-hidden 避免 screen reader 讀出 invisible 內容)。
+          <div data-dt-actions-placeholder="" className="grid items-center shrink-0 flex-1 invisible" aria-hidden="true" style={cellPadding}>
+            {/* 畫出來的每一列的 actions 疊在同一格佔位(headerActionsPlaceholder,H8),格寬 = 最寬那一列,確保 header 和每一列的 body 都同寬
+                (aria-hidden 避免 screen reader 讀出 invisible 內容)。
                 **`flex-1` 必須跟 body 那格一致**(2026-09-03 稽核抓到):body 的操作格是 `flex-1`
                 (basis 0 且會 grow),header 這格若只有固有寬,右側 pinned 區的剩餘空間在兩邊會分給
                 不同的項目集合 → 同一欄的 header 比 body 窄 `(P−F)/(n+1)`(n=1、P≈80 時就是 40px)。
                 目前 stories 沒有「pinned right + rowActions」的組合,所以是 API 允許但沒被看見的地雷。*/}
-            {rows[0] && rowActions!(rows[0].original)}
+            {headerActionsPlaceholder}
           </div>
         )}
       </RowTag>
@@ -4643,6 +4681,8 @@ function DataTableInner<TData>(
     // Codex R7(2026-09-08)補:tableStateForEpoch.sorting(consumer 可經 tableOptions.state 覆蓋本地 sorting)、tableOptions(enableSorting /
     // enableHiding / meta 等 table options 都從它來;TanStack 改 options 時 rows / cols / column 身分全不變,快取不會順便失效)、setSelection(只依 isControlled)。
     rows, cellErrors, selection, onCellCommit, rowActions, editingCellId, editingDraft, selectedCellId, rangeAnchor, rangeFocus, columnSizingState, isResizingColumn, spreadsheetMode, size, bordered, autoRowHeight, dragDisabled, paginationEnabled, currentPage, pageSizeState, hasRowActions, enableRowDrag, sorting, columnVisibility, tableStateForEpoch.rowSelection, tableStateForEpoch.expanded, tableStateForEpoch.columnOrder, tableStateForEpoch.columnFilters, tableStateForEpoch.globalFilter, tableStateForEpoch.grouping, resolvedWidths, selectable, inlineEdit, enableColumnResize, experimentalActiveEditorController, experimentalSpreadsheetOverlay, dropIndicator, rangeCellIdSet, leftCols, rightCols, cancelCellEdit, commitCell, enterCellEdit, isCellEditable, isSelectedId, toggleRow, getRowAriaLabel, isRowSelectable, activeDragId, virtualizer, centerIds, leftIds, rightIds, enabled, mode, iconSize, rowHeight, tableStateForEpoch.sorting, tableOptions, setSelection, enableMultiSort,
+    // 2026-11-27(HB2 包尾):F3 起列拖曳把手讀 tableLabels(labels prop → I18nProvider → 預設中文),換字時舊列要重畫
+    tableLabels,
   ]
   // 診斷(閘設 window.__dtRowRenderStats 才計):記 epoch 是被哪一個依賴換掉的
   const prevEpochDepsRef = React.useRef<unknown[] | null>(null)
@@ -4663,7 +4703,8 @@ function DataTableInner<TData>(
   const headerElCacheRef = React.useRef<Map<string, { deps: unknown[]; el: React.ReactElement }>>(new Map())
   const renderHeaderRow = (cols: Column<TData, unknown>[], isRight: boolean) => {
     const key = cols === leftCols ? 'left' : cols === rightCols ? 'right' : 'center'
-    const deps: unknown[] = [cols, isRight, headerRenderEpoch]
+    // 右區另依「表頭操作格佔位」(H8):虛擬捲動換範圍時它會變,只讓右區這一列重畫,三區表頭不整批失效
+    const deps: unknown[] = [cols, isRight, headerRenderEpoch, isRight ? headerActionsPlaceholder : null]
     const hit = headerElCacheRef.current.get(key)
     if (hit && hit.deps.every((d, i) => Object.is(d, deps[i]))) return hit.el
     const el = renderHeaderRowFresh(cols, isRight)

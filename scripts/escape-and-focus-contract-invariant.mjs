@@ -74,6 +74,10 @@
  *   E-datatable-cell-widget Dialog 裡試算表 DataTable(SKU / 連結 / 完成三欄):方向鍵把格游標移到連結格 / 開關格 → Enter 焦點進到格裡的
  *                      連結 / 勾選框 → 第一下 Esc 回格導覽(游標停在原格、對話框不關)→ 第二下清游標 → 第三下關;兩種格各走一次
  *                      (2026-10-13 待辦總帳 Q3c;獨立驗證抓到這一層沒有登記、也沒有閘。7777b61c 基準樹:Enter 按了沒反應、兩下就關,只有這一列紅)
+ *   F-datatable-edit-in-dialog Dialog 裡可編輯的 DataTable(文字格 + select 格):一般模式 Enter → Esc / Enter → 打字 → Enter / select 格 Enter → 選值,
+ *                      焦點回到那一格;試算表模式同三種,焦點回表格根、格游標停在那一格;都不停在對話框外框(2026-11-27,workspace H 組 H16)
+ *   (全閘)「焦點不落 body」一律也不准落在包著被測物的浮層外殼上(__describe 的 SHELL:;Radix FocusScope 在握著焦點的節點卸載後把焦點搬到容器,
+ *                      只量 body 是代理 —— M37;2026-11-27 H16)
  *   E-unchained        Dialog 裡 consumer 展開 getInputProps 後自己蓋掉 onKeyDown、沒轉呼叫(輸入框 + 可打字 DatePicker),欄位改過 → 第一下 Esc 就關
  *                      (沒有回復,但不困住;lib/overlay-escape.ts「宣告 ≠ 處理」)
  *   B-leave-blank / B-leave-next / B-leave-tab(2026-10-21 r1b fields F1)必填的 Select / 可搜尋 Select / Combobox / DatePicker / TimePicker:
@@ -112,6 +116,7 @@
  *   DataTable 根不宣告 self 層 → E-datatable-cursor / E-datatable-hidden-col / E-datatable-cell-widget(它的第二下就是這一層);Calendar 方塊不宣告 → E-calendar-tile;
  *   Calendar 出格回長條 DOM 所在那一天(2026-11-25 前的 dayStopOf(焦點所在那一格))→ E-calendar-tile
  *   DataTable 連結格 / 開關格不宣告格內那一層 → E-datatable-cell-widget
+ *   「焦點掉了」只認 body(lib/overlay-focus-return.ts isFocusLost 不認外殼;= 2026-11-27 前 DataTable 的寫法)→ F-datatable-edit-in-dialog
  *   拖曳不宣告 / 不獨占 → E-drag / E-drag-table;DataTable 拖曳中仍用 self 層 → E-drag-table
  *   Combobox 丟掉 name / data-* → E-combobox / C-combobox-focus / C-people-focus;PeoplePicker 解構了 name 卻不轉下去 → C-people-focus;表單 Esc 不看 Radix 已用掉 → E-combobox-popup(+ 接著量的 E-combobox;也不認領 → F-rename)
  *   複合欄位的 blur 一律轉呼叫 → B-popup / B-overflow / B-leave-* / N-esc-tab;彈出層關掉的那一下不補量 → B-leave-blank / -next / -tab;
@@ -180,6 +185,13 @@ const SHARD = (() => {
 // ─── 單一根因突變(--selftest;file 相對 packages/design-system/src;個數不抄進註解)──────────────────────
 const MUTANTS = [
   {
+    id: 'focus-lost-body-only',
+    what: '「焦點掉了」只認 null / body / 已卸載,不認浮層外框接住的那種(= 2026-11-27 前 DataTable 兩條分支的寫法;workspace H 組 H16)',
+    file: 'lib/overlay-focus-return.ts',
+    expectRed: ['F-datatable-edit-in-dialog'],
+    apply: (src) => replaceOnce(src, /return !!host && now !== host && now\.contains\(host\)/, 'return false'),
+  },
+  {
     id: 'link-input-consumer-first-raw',
     what: 'LinkInput 的 Esc 不先歸自己、只看 raw defaultPrevented(2026-10-01 第一輪的寫法,獨立驗證抓到的困住)',
     file: 'components/LinkInput/link-input.tsx',
@@ -190,7 +202,8 @@ const MUTANTS = [
     id: 'edit-settle-no-escape-layer',
     what: 'editSettleKeyProps 不宣告 Esc 層(就地編輯中按 Esc 連浮層一起關)',
     file: 'components/Field/field-edit-keys.ts',
-    expectRed: ['E-inline-edit', 'E-link-edit', 'E-link-typed'],
+    // F-datatable-edit-in-dialog:格裡的文字編輯器也經 editSettleKeyProps 宣告這一層(2026-11-27 實跑:不宣告 → Esc 連對話框一起關)
+    expectRed: ['E-inline-edit', 'E-link-edit', 'E-link-typed', 'F-datatable-edit-in-dialog'],
     apply: (src) => replaceOnce(src, /return \{ onKeyDown: makeEditSettleKeyHandler\(settle\), \.\.\.escapeLayerProps\(escapeLayer\) \}/,
       'return { onKeyDown: makeEditSettleKeyHandler(settle) }'),
   },
@@ -673,6 +686,22 @@ function TableWidgetScene() {
     </Shell>
   )
 }
+// F-datatable-edit-in-dialog(2026-11-27,workspace H 組 H16):對話框裡可編輯的 DataTable(文字格 + select 格),一般模式 / 試算表模式各一份
+const ESTATUS = [{ value: 'todo', label: '待處理' }, { value: 'doing', label: '進行中' }, { value: 'done', label: '已完成' }]
+const EROWS = [{ id: 'r1', title: '更新報價單', status: 'todo' }, { id: 'r2', title: '寄出合約', status: 'doing' }]
+const ECOLS = [
+  { accessorKey: 'title', header: '標題', meta: { type: 'string', editable: true, width: 200 } },
+  { accessorKey: 'status', header: '狀態', meta: { type: 'select', editable: true, options: ESTATUS, width: 160 } },
+]
+function TableEditScene({ sheet }) {
+  const [rows, setRows] = React.useState(EROWS)
+  return (
+    <Shell title="工作項目">
+      <DataTable columns={ECOLS} data={rows} getRowId={(r) => r.id} maxHeight="none" inlineEdit spreadsheetMode={sheet}
+        onCellCommit={(rowId, colId, v) => { count('tableEdit'); setRows((rs) => rs.map((r) => (r.id === rowId ? { ...r, [colId]: v } : r))) }} />
+    </Shell>
+  )
+}
 function CalendarScene() {
   return (
     <Shell title="月曆">
@@ -1119,6 +1148,8 @@ const SCENES = {
   table: () => <TableScene reorder={false} />,
   tableDrag: () => <TableScene reorder />,
   tableLink: () => <TableWidgetScene />,
+  tableEdit: () => <TableEditScene sheet={false} />,
+  tableEditSheet: () => <TableEditScene sheet />,
   calendar: () => <CalendarScene />,
   drag: () => <DragScene />,
   combo: () => <ComboScene />,
@@ -1147,6 +1178,8 @@ const SCENES = {
 // 量具讀的快照(頁面端;Node 端用 key 取,不把函式字串送進頁面)
 window.__describe = (el) => {
   if (!el || el === document.body) return 'BODY'
+  // 浮層外殼本身(Radix FocusScope 在握著焦點的節點卸載後把焦點搬到容器)= 焦點掉了的另一種樣子,不是「沒落 body 就沒掉」(M37;2026-11-27 H16)
+  if (el.id === 'scene-dialog' || el.id === 'scene-popover') return 'SHELL:' + el.id
   const label = el.getAttribute?.('aria-label') ?? ((el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) ? (el.name || '') : (el.textContent ?? '').trim().slice(0, 20))
   return el.tagName + (label ? ':' + label : '')
 }
@@ -1169,6 +1202,13 @@ window.__extra = {
   date: () => ({ draft: q('#scene-dialog input[role=combobox]')?.value ?? null, calendar: !!q('[role=dialog][aria-label="日期選擇"]'), value: q('[data-date]')?.textContent }),
   table: () => ({ cursor: !!q('[data-selected-cell-id]'), cursorId: q('[data-selected-cell-id]')?.getAttribute('data-selected-cell-id') ?? null,
     focusCell: document.activeElement?.closest?.('[data-cell-id]')?.getAttribute('data-cell-id') ?? null, live: q('[data-drag-live-region]')?.textContent ?? '' }),
+  // F-datatable-edit-in-dialog:編輯中 = 格裡或試算表浮層編輯器裡有輸入框 / 開著的選單;onGrid = 焦點在表格根(試算表模式結束編輯後的落點)
+  tableEdit: () => ({ cursorId: q('[data-selected-cell-id]')?.getAttribute('data-selected-cell-id') ?? null,
+    focusCell: document.activeElement?.closest?.('[data-cell-id]')?.getAttribute('data-cell-id') ?? null,
+    onGrid: document.activeElement?.getAttribute?.('role') === 'grid' && !!document.activeElement.closest('#scene-dialog'),
+    editing: !!q('#scene-dialog [data-cell-id] input, [data-active-editor-host] input, #scene-dialog [data-cell-id] [aria-expanded="true"], [data-active-editor-host] [aria-expanded="true"]'),
+    title: q('#scene-dialog [data-cell-id="r1:title"]')?.textContent?.trim() ?? null, status: q('#scene-dialog [data-cell-id="r1:status"]')?.textContent?.trim() ?? null,
+    calls: window.__calls.tableEdit ?? 0 }),
   cal: () => ({ tile: document.activeElement?.hasAttribute('data-calendar-tile') ?? false, day: document.activeElement?.hasAttribute('data-calendar-day') ?? false,
     dayIso: document.activeElement?.getAttribute('data-calendar-day') ?? null }),
   drag: () => ({ live: q('[data-drag-live-region]')?.textContent ?? '', handles: document.querySelectorAll('button[aria-label="拖曳重排"]').length }),
@@ -1258,7 +1298,10 @@ async function runChecks(page) {
     }
     return steps
   }
-  const neverBody = (steps) => steps.every((s) => s.active !== 'BODY')
+  // 「焦點掉了」= 落 body,**或落在包著被測物的浮層外殼上**(__describe 的 SHELL:;2026-11-27 H16 補 —— 只量 body 是代理,M37:
+  // Radix FocusScope 在握著焦點的節點卸載後把焦點搬到容器本身,修前 DataTable 在對話框裡就停在那裡,這張表全綠)。名字沿用 neverBody。
+  const lost = (active) => active === 'BODY' || String(active).startsWith('SHELL:')
+  const neverBody = (steps) => steps.every((s) => !lost(s.active))
   const closedAt = (steps, layer = 'dialog') => steps.findIndex((s) => !s[layer]) + 1 // 1-based;0 = 沒關
   const needs = (cond, what, got) => { if (!cond) throw new InstrumentError(`${what}:${JSON.stringify(got)}`) }
 
@@ -1399,7 +1442,7 @@ async function runChecks(page) {
   needs(before.cursor, '點格沒有格游標', before)
   steps = await escapeUntilClosed('table')
   check('E-datatable-cursor', 'contract', 'Dialog 裡試算表模式的 DataTable 有格游標 → 第一下 Esc 清游標、焦點留在表格、對話框不關 → 第二下關',
-    steps.length === 2 && steps[0].dialog && !steps[0].cursor && steps[0].active !== 'BODY' && !steps[1].dialog && neverBody(steps), steps)
+    steps.length === 2 && steps[0].dialog && !steps[0].cursor && !lost(steps[0].active) && !steps[1].dialog && neverBody(steps), steps)
 
   // ── E-drag-table ──
   await scene('tableDrag'); await openDialog()
@@ -1414,7 +1457,7 @@ async function runChecks(page) {
   if (await page.$('#scene-dialog[data-state="open"] [role="grid"]')) await d.focus('#scene-dialog [role="grid"]')
   s = await snap('table')
   check('E-drag-table', 'contract', 'Dialog 裡有格游標的 DataTable:表頭按空白鍵提起欄位 → Esc 只取消拖曳(播報「已取消」),格游標還在、對話框不關、焦點不落 body',
-    s.dialog && s.cursor && /已取消/.test(s.live) && s.active !== 'BODY', s)
+    s.dialog && s.cursor && /已取消/.test(s.live) && !lost(s.active), s)
 
   // ── E-datatable-cell-widget(試算表模式連結格 / 開關格的格內模式;2026-10-13 待辦總帳 Q3c)──
   // 兩種格各走一次:點 SKU 格放上游標 → 方向鍵走到該格(鍵盤路徑,不點格 —— 點連結格的網址文字會開連結)→ Enter 進格內 → 連按 Esc。
@@ -1435,6 +1478,39 @@ async function runChecks(page) {
     && st[1].dialog && !st[1].cursor && !st[2].dialog && neverBody(st)
   check('E-datatable-cell-widget', 'contract', 'Dialog 裡試算表 DataTable:格游標在連結格 / 開關格按 Enter → 焦點進到格裡的連結 / 勾選框 → 第一下 Esc 回格導覽(游標停在原格、焦點離開格內、對話框不關)→ 第二下清游標 → 第三下關;焦點從不落 body(兩種格各一次)',
     widgetOk(widgetRuns.link, 'link') && widgetOk(widgetRuns.ok, 'ok'), widgetRuns)
+
+  // ── F-datatable-edit-in-dialog(2026-11-27,workspace H 組 H16;data-table.spec.md 鍵盤段「兩種模式的『焦點掉了』都含浮層外框接住的那種」)──
+  // 對話框裡可編輯的 DataTable:編輯器卸載後焦點要回到那一格(一般模式)或表格根、格游標停在那一格(試算表模式),不停在對話框外框。
+  // 一般模式:文字格 Enter 進編輯 → Esc;文字格 Enter → 打字 → Enter 結算;select 格 Enter 開選單 → ↓ → Enter 選值。
+  // 試算表模式:點文字格放游標 → Enter 進編輯 → Esc;→ Enter → 打字 → Enter;select 格(→ 移過去)Enter → ↓ → Enter 選值。
+  // 修前(2026-11-27 一次性探針在修前樹實跑):一般模式 Esc / Enter 結算 / 選值、試算表 Esc / Enter 結算,焦點全部停在對話框外框
+  // (只認 body 的判準在浮層裡永遠不接手);本列另以 --root=<修前樹> 實跑當天然對照組。
+  // 「進得了編輯」是儀器前置(needs):進不了 = 量不到要守的事,不是通過。
+  // 六段各自重開場景(上一段若被突變弄得對話框關掉,下一段照樣量得到,不讓一段的失敗變成整列儀器失效)
+  const editRuns = {}
+  const editRun = async (key, sceneName, cell, place, act) => {
+    await scene(sceneName); await openDialog()
+    if (place === 'click') await d.click(`${DIALOG} [data-cell-id="${cell}"]`)
+    else await d.focus(`${DIALOG} [data-cell-id="${cell}"]`)
+    await d.press('Enter')
+    const entered = await snap('tableEdit')
+    needs(entered.editing, `${key}:Enter 沒進編輯`, entered)
+    await act()
+    editRuns[key] = await snap('tableEdit')
+  }
+  const typeAndEnter = async () => { await page.keyboard.type('(急)'); await d.settle(); await d.press('Enter') }
+  const pickNext = async () => { await d.press('ArrowDown'); await d.press('Enter') }
+  await editRun('plainTextEsc', 'tableEdit', 'r1:title', 'focus', () => d.press('Escape'))
+  await editRun('plainTextEnter', 'tableEdit', 'r1:title', 'focus', typeAndEnter)
+  await editRun('plainSelectPick', 'tableEdit', 'r1:status', 'focus', pickNext)
+  await editRun('sheetTextEsc', 'tableEditSheet', 'r1:title', 'click', () => d.press('Escape'))
+  await editRun('sheetTextEnter', 'tableEditSheet', 'r1:title', 'click', typeAndEnter)
+  await editRun('sheetSelectPick', 'tableEditSheet', 'r1:status', 'click', pickNext)
+  const plainOk = (s, cell, calls) => s.dialog && !s.editing && s.focusCell === cell && !lost(s.active) && s.calls === calls
+  const sheetOk = (s, cell, calls) => s.dialog && !s.editing && s.onGrid && s.cursorId === cell && !lost(s.active) && s.calls === calls
+  check('F-datatable-edit-in-dialog', 'contract', 'Dialog 裡可編輯的 DataTable:編輯結束(Esc 不寫回 / Enter 結算 / 選單選值,後兩者各寫回一次)後焦點回到那一格(一般模式)或表格根、格游標停在那一格(試算表模式),不停在對話框外框、不落 body、對話框不關',
+    plainOk(editRuns.plainTextEsc, 'r1:title', 0) && plainOk(editRuns.plainTextEnter, 'r1:title', 1) && plainOk(editRuns.plainSelectPick, 'r1:status', 1)
+      && sheetOk(editRuns.sheetTextEsc, 'r1:title', 0) && sheetOk(editRuns.sheetTextEnter, 'r1:title', 1) && sheetOk(editRuns.sheetSelectPick, 'r1:status', 1), editRuns)
 
   // ── E-calendar-tile ──
   await scene('calendar'); await openDialog()
@@ -1470,7 +1546,7 @@ async function runChecks(page) {
   await d.press('Escape')
   s = await snap('combo')
   check('E-combobox-popup', 'contract', 'Dialog 裡值改過的 Combobox 清單開著按 Esc → 只關清單、值不動、對話框不關',
-    s.dialog && !s.listbox && s.tags === 'a,b' && s.active !== 'BODY', s)
+    s.dialog && !s.listbox && s.tags === 'a,b' && !lost(s.active), s)
   steps = await escapeUntilClosed('combo')
   check('E-combobox', 'contract', '接上題:清單關著按 Esc → 值回復成 a、對話框不關 → 下一下關;焦點從不落 body',
     steps.length === 2 && steps[0].dialog && steps[0].tags === 'a' && !steps[1].dialog && neverBody(steps), steps)
@@ -1928,7 +2004,7 @@ async function runChecks(page) {
   await d.focus('[data-cmdb="dialog"] [data-sidebar="menu-button"]')
   const inDialog = await cmdbPress()
   check('K-cmdb-modal', 'contract', '「工作區設定」對話框開著、焦點在裡面不可收合的設定導覽上按 ⌘B → 背景頁的側欄不切換、不寫 sidebar_state、沒有人攔下(不可收合的不攔;背景頁的被 modal 藏起來、不接)',
-    inDialog.page === 'expanded' && inDialog.prevented === false && inDialog.cookie.length === 0 && inDialog.active !== 'BODY', inDialog)
+    inDialog.page === 'expanded' && inDialog.prevented === false && inDialog.cookie.length === 0 && !lost(inDialog.active), inDialog)
   const noneCookie = await page.evaluate(() => {
     window.__cookieWrites = []
     window.__dialogSidebar.setOpen(false)
