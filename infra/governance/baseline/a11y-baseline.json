@@ -1,7 +1,7 @@
 {
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
-    "generatedAt": "2026-11-26T11:34:42.651Z",
+    "generatedAt": "2026-11-26T13:15:57.759Z",
     "stories": 1110,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
@@ -1347,7 +1347,7 @@
     "design-system-components-datatable-展示--column-resize|color-contrast": 2,
     "design-system-components-datatable-展示--column-visibility-panel-states|color-contrast": 6,
     "design-system-components-datatable-展示--container-height|color-contrast": 4,
-    "design-system-components-datatable-展示--empty-state|color-contrast": 1,
+    "design-system-components-datatable-展示--empty-state|color-contrast": 3,
     "design-system-components-datatable-展示--filter-panel-labels-and-limit|color-contrast": 2,
     "design-system-components-datatable-展示--filter-panel-states|color-contrast": 3,
     "design-system-components-datatable-展示--inline-edit-with-spreadsheet-overlay|color-contrast": 1,
@@ -1739,7 +1739,7 @@
     "design-system-components-timepicker-設計原則--rule-minute-step-for-meetings|color-contrast": 2,
     "design-system-components-timepicker-設計規格--color-matrix|color-contrast": 13,
     "design-system-components-timepicker-設計規格--mode-matrix|color-contrast": 1,
-    "design-system-components-timepicker-設計規格--precision-matrix|color-contrast": 4,
+    "design-system-components-timepicker-設計規格--precision-matrix|color-contrast": 10,
     "design-system-components-timepicker-設計規格--size-matrix|color-contrast": 3,
     "design-system-components-toast-展示--interactive|color-contrast": 1,
     "design-system-components-toast-展示--with-description|color-contrast": 9,
