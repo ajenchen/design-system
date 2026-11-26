@@ -2,7 +2,7 @@
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
     "generatedAt": "2026-11-26T14:00:56.486Z",
-    "stories": 1121,
+    "stories": 1125,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
       "apps-template-appshell-dashboard--default",
@@ -297,6 +297,7 @@
       "design-system-components-combobox-展示--loading-first-open",
       "design-system-components-combobox-展示--modes",
       "design-system-components-combobox-展示--modes-remove-focus-contract",
+      "design-system-components-combobox-展示--option-prefix",
       "design-system-components-combobox-展示--remote-search",
       "design-system-components-combobox-展示--remote-search-hint",
       "design-system-components-combobox-展示--searchable",
@@ -343,6 +344,7 @@
       "design-system-components-datatable-展示--row-auto-height",
       "design-system-components-datatable-展示--row-auto-height-inline-edit",
       "design-system-components-datatable-展示--row-auto-height-modes",
+      "design-system-components-datatable-展示--row-drag-in-dialog",
       "design-system-components-datatable-展示--row-drag-interactive",
       "design-system-components-datatable-展示--row-drag-with-virtualization",
       "design-system-components-datatable-展示--selection-disabled-rows",
@@ -440,6 +442,7 @@
       "design-system-components-dropdownmenu-展示--item-hover",
       "design-system-components-dropdownmenu-展示--nested-sub-menu",
       "design-system-components-dropdownmenu-展示--open-snapshot",
+      "design-system-components-dropdownmenu-展示--option-prefix",
       "design-system-components-dropdownmenu-展示--radio-items",
       "design-system-components-dropdownmenu-展示--sub-menu",
       "design-system-components-dropdownmenu-展示--with-suffix",
@@ -761,6 +764,7 @@
       "design-system-components-select-展示--loading-first-open",
       "design-system-components-select-展示--modes",
       "design-system-components-select-展示--no-options",
+      "design-system-components-select-展示--option-prefix",
       "design-system-components-select-展示--remote-search",
       "design-system-components-select-展示--searchable",
       "design-system-components-select-展示--size-alignment",
@@ -1126,7 +1130,7 @@
       "design-system-tokens-uisize--overview",
       "design-system-tokens-uisize--product-alignment"
     ],
-    "storyIdsSha256": "56385b60173e1fc4e2487c3a8a221abcdf4bdd0486d1fa0836de4e55f39f0453",
+    "storyIdsSha256": "c73d99f3a93089c0225bca3e159fd857623cc7ec1f4afd0ae690c4659ed801d5",
     "fingerprints": 759,
     "linuxOnly": {
       "design-system-components-combobox-設計規格--inspector|color-contrast": "藍圖區塊的 9px text-fg-muted 小標(anatomy-utils.tsx:174):macOS 等寬字溢出區塊、axe 歸 incomplete 不計,Linux 放得下才計入 —— 只有 Linux(CI)量得到;值 = 2f367ee3(A76)寫入的 CI 實測;main 的 a11y drift 排程 2026-11-19(run 44499310317)在 Linux 量到同值 23 / 41。--color-fg-muted 已定案例外(color.spec.md「已定案(禁再問)」)",

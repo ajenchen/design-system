@@ -59,6 +59,7 @@ import {
 // 同一份常數,不在 Calendar 另寫一份(DATE-TIME(定)2026-11-26;calendar.spec.md「資料語意」時間顯示、「事件詳情浮層」時間欄)
 import { DATE_RANGE_DEFAULT_DATE_OPTIONS, DEFAULT_TIME_FORMAT_OPTIONS } from '@/design-system/components/DatePicker/range-format'
 import { returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
+import { pressLandedInDom } from '@/design-system/lib/pointer-press'
 
 /**
  * Calendar — 月事件檢視 canvas
@@ -1533,8 +1534,8 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                             // 日期鈕、事件列 / 長條(可點與唯讀)、「+N」自己的 onClick 都 stopPropagation(calendar.spec.md「命中區」);
                             // 走到這裡的只有格內空白處(內距、列與列的縫、日期列空白)。
                             // 「+N」清單畫在 Portal 裡,React 的點擊照元件樹冒泡上來(點清單的標題列 / 內距也會到這裡)——
-                            // 那不是點這一格,不新增:只認 DOM 上真的在這一格裡的點擊。
-                            if (!(e.target instanceof Node) || !e.currentTarget.contains(e.target)) return
+                            // 那不是點這一格,不新增:只認 DOM 上真的在這一格裡的點擊(判準全 DS 共用 lib/pointer-press.ts `pressLandedInDom`)。
+                            if (!pressLandedInDom(e)) return
                             dayStopOf(e.currentTarget)?.focus({ preventScroll: true })
                             setFocusedDateState(date)
                             onDateClick(date)

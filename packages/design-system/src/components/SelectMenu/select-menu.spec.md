@@ -312,6 +312,8 @@ SelectMenu 是 **composite**(Popover trigger + Command search + 滾動 MenuItem 
 ## Option schema 增項紀錄
 
 - `iconClassName?`(2026-07-08):option icon 染色通道(status 類彩色選項;WM 戰役——原窄 schema 逼 consumer 手刻 bare trigger)。disabled 色仍勝出(menu-item.tsx 順序保證)。
+- `startContent?`(2026-11-26,workspace F 組 F4-2):選項前綴的自訂節點(例:工作項類型的色塊方塊),轉給 MenuItem 的 `startContent`;與 `icon` / `avatar` 三選一(`../Menu/menu-item.spec.md`「❌ `startIcon` / `avatar` / `startContent` 三者不可同時使用」),節點尺寸 = `ICON_SIZE[size]`,方塊本身每種 size 的規格待 C5 定案。Select 欄位上的已選值前綴跟著選中項畫(`../Select/select.spec.md` 圖示對照表)。
+- **包裝元件的轉換只住一處**(2026-11-26):Select / Combobox 把自己的選項轉成 `SelectMenuOption` 一律呼叫 `select-menu.tsx` 的 `toSelectMenuOption`(鍵表 `SELECT_MENU_OPTION_KEYS` 逐鍵照抄 + 型別斷言:`SelectMenuOption` 新增欄位卻沒加進鍵表,`npm run build:lib` 紅)。之前兩邊各寫一份手寫物件,兩份都漏轉 `iconClassName`,TypeScript 結構型別不報錯。Select tag 模式不給前綴圖形(`suppressPrefixIcon`,`icon` 與 `startContent` 一起收)。
 - **類別色不進 primitive schema**(2026-11-25,AI 推導):選項要帶 Tag 類別色時用 Select 的 wrapper 專屬欄位 `tagVariant`(`CategoricalColor`;`../Select/select.spec.md`「tag 模式」),選單列經 `renderLabel` 畫成 Tag。只有 Select 的 tag 顯示畫類別色(Combobox / PeoplePicker 的 Tag 不畫),所以顏色不上擴到 `SelectMenuOption`。
 
 ## 相關

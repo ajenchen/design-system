@@ -16,7 +16,7 @@ import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useRes
 import { TAG_HEIGHT_PX, Tag } from '@/design-system/components/Tag/tag'
 import { ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { OverflowTagList, TAG_ROW_CONTAINER_CLASS, TAG_ROW_GAP_PX } from '@/design-system/components/OverflowIndicator/overflow-tag-list'
-import { SelectMenu, forwardKeyToListbox, useActiveDescendant, moveHighlightToFirst, isRemoveLastValueKey, routeTypingToSearch, type SelectMenuOption, type SelectMenuGroupConfig } from '@/design-system/components/SelectMenu/select-menu'
+import { SelectMenu, forwardKeyToListbox, useActiveDescendant, moveHighlightToFirst, isRemoveLastValueKey, routeTypingToSearch, toSelectMenuOption, type SelectMenuOption, type SelectMenuGroupConfig } from '@/design-system/components/SelectMenu/select-menu'
 import { RemovalStatus, removalValueKey, useRemovalAnnouncement } from '@/design-system/components/SelectMenu/select-menu-removal-status'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { keepFocusOnPointerPress } from '@/design-system/lib/pointer-press'
@@ -75,10 +75,10 @@ export function findInlineSearchMirror(root: ParentNode | null | undefined): HTM
  *
  * Fix(post-Issue-4 follow-up):extend SelectMenuOption → 全 primitive surface 自動繼承。
  * Wrapper-only field 都沒有 → empty body interface(future 加 wrapper-only field 加在此處)。
- * `menuOptions` mapping(below)forward 全 SelectMenuOption surface。
+ * `menuOptions` mapping(below)經 `toSelectMenuOption`(select-menu.tsx 鍵表 + 型別斷言)逐鍵轉發全 SelectMenuOption surface(2026-11-26 起;之前手寫一份漏 iconClassName)。
  *
  * Hook `check_wrapper_primitive_schema_drift.sh`(M30;寫入當下跑的 governance-context-or-block hook:同名 `XxxOption`
- * 沒 extends 另一個 Option 型別 → 擋;`menuOptions` mapping 漏 forward avatar / description / disabled → 只提醒)。
+ * 沒 extends 另一個 Option 型別 → 擋;手寫 SelectMenuOption 物件字面值、沒經 `toSelectMenuOption` → 提醒)。
  */
 export interface ComboboxOption extends SelectMenuOption {
   // (no wrapper-only fields yet — kept for future扩 + same-name SSOT cross-wrapper)
@@ -470,16 +470,9 @@ type ComboboxInternalProps = ComboboxProps & { __triggerRef?: React.Ref<HTMLDivE
 // (2026-10-01 由本檔 `focusAfterTagRemoval`、FileUpload、AgentPanel 輸入盒附件列三份收成;本檔那份是最完整的底稿:只在焦點會跟著消失時才動 + rAF 重套)。
 
 // 轉換 ComboboxOption → SelectMenuOption:同一份 mapping 給 options 與 suggestions(2026-09-09 建議清單),不複製第二份。
-// 2026-05-10 post-Issue-4 follow-up:forward 全 SelectMenuOption surface(avatar / description / disabled / icon / group)。
-const toMenuOption = (opt: ComboboxOption): SelectMenuOption => ({
-  value: opt.value,
-  label: opt.label,
-  icon: opt.icon,
-  avatar: opt.avatar,
-  description: opt.description,
-  disabled: opt.disabled,
-  group: opt.group,
-})
+// 轉換本體是全 DS 一支 `toSelectMenuOption`(select-menu.tsx,鍵表 + 型別斷言:SelectMenuOption 加欄位沒轉 → build:lib 紅)。
+// 2026-11-26 前這裡手寫一份、自稱「forward 全 SelectMenuOption surface」,實際漏轉 iconClassName(workspace F 組 F4-2)。
+const toMenuOption = (opt: ComboboxOption): SelectMenuOption => toSelectMenuOption(opt)
 
 // ── Custom Combobox (desktop — consumes SelectMenu) ───────────────────
 
@@ -612,8 +605,8 @@ function CustomCombobox({
   }
 
   // 轉換 ComboboxOption → SelectMenuOption(搜尋字在欄位內時的本機過濾由 SelectMenu 依受控 search 做,2026-09-30 自本檔收回那一份)
-  // 2026-05-10 post-Issue-4 follow-up:forward 全 SelectMenuOption surface(avatar / description /
-  // disabled / icon / group)— 修先前 PeoplePicker multi-mode dropdown 漏 avatar drift bug。
+  // 經上方 toMenuOption → `toSelectMenuOption` 逐鍵轉發全部 SelectMenuOption 欄位(2026-05-10 起的目標;2026-11-26 前漏 iconClassName)
+  // — 修先前 PeoplePicker multi-mode dropdown 漏 avatar drift bug 的同一條路。
   const menuOptions: SelectMenuOption[] = React.useMemo(
     () => options.map(toMenuOption),
     [options]

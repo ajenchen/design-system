@@ -68,7 +68,9 @@ import { RadioGroupItem } from '@/design-system/components/RadioGroup/radio-grou
 import * as RadioGroupPrimitive from '@radix-ui/react-radio-group'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
-import { isOwnPointerTarget } from '@/design-system/lib/pointer-press'
+import { isOwnPointerTarget, pressLandedInDom } from '@/design-system/lib/pointer-press'
+import { FIXED_ORIGIN_PROBE_INNER_STYLE, FIXED_ORIGIN_PROBE_STYLE, originFromProbe, toLocal, VIEWPORT_ORIGIN, type FixedLayerOrigin } from '@/design-system/lib/fixed-layer-origin'
+import { useI18n } from '@/design-system/lib/i18n/i18n-context'
 import { pointerFocusGuard } from '@/design-system/lib/pointer-focus-guard'
 import { Button } from '@/design-system/components/Button/button'
 
@@ -157,6 +159,26 @@ type TableSize = 'sm' | 'md' | 'lg'
 // any-allow: TanStack ColumnDef TValue idiom(per-column value 型別異質,官方範例同)— 同下方 DataTableProps.columns(2026-11-18 複查仍成立:table-core 的 ColumnDef 預設 TValue = unknown,值型別不同的 accessor 欄放進同一個陣列會 TS2322)
 export type DataTableColumnDef<TData, TValue = any> =
   (DisplayColumnDef<TData, TValue> | AccessorColumnDef<TData, TValue>) & { columns?: never }
+
+/**
+ * DataTable 主體的字(2026-11-26,workspace F 組 F3):列拖曳把手的讀屏名與排序中的停用提示,原本寫死中文。
+ * 取值順序照 `lib/i18n/README.md`「Fallback chain」:`labels` prop → I18nProvider 的 `data-table` 那一組 → 下方預設(就是原本寫死的字,一字不改)。
+ * 表頭其他字串(隱藏欄位、自動調整寬度、依此欄篩選…)仍寫死,要開放是另一題(data-table.spec.md「文案」)。
+ */
+export interface DataTableLabels {
+  /** 列拖曳把手的讀屏名(可拖) */
+  rowDragHandle: string
+  /** 列拖曳把手的讀屏名(排序中不能拖) */
+  rowDragHandleDisabled: string
+  /** 排序中滑過把手的停用提示(Tooltip) */
+  rowDragDisabledTooltip: string
+}
+
+export const DATA_TABLE_DEFAULT_LABELS: DataTableLabels = {
+  rowDragHandle: '拖曳重排此列', // i18n-allow: DS 預設(中文);labels prop / I18nProvider 可換
+  rowDragHandleDisabled: '排序中無法拖曳', // i18n-allow: DS 預設
+  rowDragDisabledTooltip: '排序中無法拖曳,清除排序後可重排', // i18n-allow: DS 預設
+}
 
 export interface DataTableProps<TData>
   extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'>,
@@ -323,6 +345,11 @@ export interface DataTableProps<TData>
    * @param position 'before' | 'after' — 放在 target 前 OR 後
    */
   onRowReorder?: (sourceId: string, targetId: string, position: 'before' | 'after') => void
+  /**
+   * DataTable 主體的字(Partial,與 `DATA_TABLE_DEFAULT_LABELS` 合併;沒給的鍵再看 I18nProvider 的 `data-table` 那一組):
+   * 列拖曳把手的讀屏名與排序中的停用提示。2026-11-26 起(workspace F 組 F3),之前寫死中文。
+   */
+  labels?: Partial<DataTableLabels>
   /**
    * 啟用全表 column resize(2026-05-06 v11):
    * - `true`: 所有 data columns 全 fixed width,header 右邊出現 resize handle(hover 顯色 +
@@ -1143,7 +1170,7 @@ const rowDragScrollLatch = {
 // `hoverRowIndex` = 所屬列的 `data-row-index` 值,寫到把手的專用屬性 `data-hover-row-index` 上,
 // 讓表格層的 hover 代理把「指標在把手上」算成「指標還在這一列」(巢狀 hover;理由見 enterLeaveHandlers 的 findRowIndex 註解)。
 // 由父層直接傳,不在 render 裡讀 `rowEl.dataset.rowIndex`:render 時 DOM 還是上一輪的值,列換索引(排序 / 虛擬捲動)會差一拍。
-function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: boolean; anyDragActive: boolean; hoverRowIndex: number }) {
+function RowDragHandle({ disabled, anyDragActive, hoverRowIndex, labels }: { disabled: boolean; anyDragActive: boolean; hoverRowIndex: number; labels: DataTableLabels }) {
   const ctx = React.useContext(SortableRowCtx)
   const [rowEl, setRowEl] = React.useState<HTMLDivElement | null>(null)
   const [portalTarget, setPortalTarget] = React.useState<HTMLElement | null>(null)
@@ -1157,7 +1184,15 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
   // Fix:button 自帶 hover state,visibility = rowHovered || buttonHovered || isDragging。
   const [buttonHovered, setButtonHovered] = React.useState(false)
   const handleRef = React.useRef<HTMLButtonElement | null>(null)
+  // positionRef 存**視窗座標**(fits 的可視帶判定用);寫進把手 style 的是換算到 fixed 定位基準的座標(syncHandlePosition 與 render 的 styleAt,同一份 toLocal)。
   const positionRef = React.useRef<{ top: number; left: number; fits: boolean } | null>(null)
+  // fixed 把手此刻真正的定位基準(2026-11-26,workspace F 組 F3):表格祖先帶 transform / translate / filter(DS Dialog 的置中位移、
+  // AppShell portalContainer 舞台)時,fixed 不再以視窗為基準,視窗座標直接寫進 style 會多偏出那個祖先的原點(實測 +256 / +30)。
+  // 量跟把手放在同一個 portal 目標的常駐零尺寸探針反推(lib/fixed-layer-origin.ts originFromProbe,不列舉會產生基準的屬性 —— M37);
+  // **不量把手本身**:把手自己的位移(量具注入的偏移、誤套的 translate)會被當成基準扣掉、從此量不出來(2026-11-26 規格核對抓到)。
+  // 沒有這類祖先時 = VIEWPORT_ORIGIN,座標逐字不變。
+  const originRef = React.useRef<FixedLayerOrigin>(VIEWPORT_ORIGIN)
+  const probeRef = React.useRef<HTMLSpanElement | null>(null)
   // Logical hover ends before the existing opacity transition finishes painting.
   // Track only handles that have been visible; never measure every hidden row.
   const trackingPositionRef = React.useRef(false)
@@ -1172,8 +1207,16 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
     const handle = handleRef.current
     const position = positionRef.current
     if (!handle || !position) return
-    handle.style.top = `${position.top}px`
-    handle.style.left = `${position.left}px`
+    // React inline style(下方 render)與這裡寫同一份換算(toLocal),否則下一次 render 會把修正蓋回去
+    const local = toLocal(originRef.current, position.left, position.top)
+    handle.style.top = `${local.top}px`
+    handle.style.left = `${local.left}px`
+  }, [])
+  /** 量探針、反推定位基準(在**寫新座標之前**讀:版面乾淨,不多一次強制排版)。探針還沒掛上(第一次 update)就沿用目前的值。 */
+  const measureHandleOrigin = React.useCallback(() => {
+    const probe = probeRef.current
+    if (!probe) return
+    originRef.current = originFromProbe(probe)
   }, [])
   // A render caused by hover/DnD must not restore an earlier scroll position.
   React.useLayoutEffect(syncHandlePosition)
@@ -1223,6 +1266,8 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
       const bandBottom = panelEl ? bandTop + panelEl.clientHeight : pRect.bottom
       const half = (handleRef.current?.offsetHeight || 24) / 2
       const fits = top - half >= bandTop - 0.5 && top + half <= bandBottom + 0.5
+      // 定位基準跟著這一次一起量(探針已掛上時;第一次掛上由下方 hasPos 的 layout effect 校正)
+      measureHandleOrigin()
       positionRef.current = { top, left, fits }
       if (fits && (rowHovered || buttonHovered || ctxDragging)) trackingPositionRef.current = true
       // Position belongs to the scroll event, not to a later React render/rAF.
@@ -1269,11 +1314,18 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
       rowDragScrollLatch.deferred.delete(update)
       updateRef.current = null
     }
-  }, [rowEl, ctxRole, ctxDragging, buttonHovered, syncHandlePosition])
+  }, [rowEl, ctxRole, ctxDragging, buttonHovered, syncHandlePosition, measureHandleOrigin])
 
   // 閂鎖訂閱:只有渲染過把手的實例(pos 非 null)訂閱。閂上 → 直接把 DOM 藏掉(不等 React commit、不淡出);
   // 鬆開 → 這列若仍被 hover 就重量位置(列在捲動期間移動過)再顯示;React 的 visible 也讀同一個閂鎖,兩邊一致。
   const hasPos = pos != null
+  // 把手與探針第一次掛上:量一次定位基準,不是視窗就改寫(layout effect = paint 之前,畫面不會先閃到偏掉的位置)。之後每次 update() 都順手重量。
+  React.useLayoutEffect(() => {
+    if (!hasPos) return
+    const before = originRef.current
+    measureHandleOrigin()
+    if (originRef.current !== before) syncHandlePosition()
+  }, [hasPos, measureHandleOrigin, syncHandlePosition])
   React.useEffect(() => {
     if (!hasPos) return
     return rowDragScrollLatch.subscribe((engaged) => {
@@ -1313,6 +1365,8 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
   //   - 捲動閂鎖(2026-09-10):捲動後、指標未真的移動前一律隱藏;放不進 body 可視帶(fits=false)也不顯示
   const latched = rowDragScrollLatch.active
   const visible = ctx.isDragging || (!anyDragActive && !latched && pos.fits && (pos.rowHovered || buttonHovered))
+  // 寫進 style 的座標 = 視窗座標換算到 fixed 定位基準(與 syncHandlePosition 同一份換算;沒有會產生基準的祖先時逐字等於視窗座標)
+  const styleAt = toLocal(originRef.current, positionRef.current?.left ?? pos.left, positionRef.current?.top ?? pos.top)
 
   // 2026-05-12 fix(user 抓 image 1):
   //   (a) tooltip 偶爾不出 — root cause:`disabled={!canDrag}` HTML attribute 阻 pointer events
@@ -1335,8 +1389,10 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
       iconOnly
       size="xs"
       startIcon={GripVertical}
-      aria-label={canDrag ? '拖曳重排此列' : '排序中無法拖曳'}
+      aria-label={canDrag ? labels.rowDragHandle : labels.rowDragHandleDisabled}
       aria-disabled={!canDrag || undefined}
+      // 量具認「這是列拖曳把手」用的記號(2026-11-26):閘原本用 aria-label 文字選把手 —— 文案是「這是把手」的代理值,換字就找不到(M37)
+      data-row-drag-handle=""
       // 2026-05-12 fix(a):移除 disabled HTML attr(改 aria-disabled);pointer events 必 fire 才能
       // 接 Tooltip pointerenter。Button cva 已 handle aria-disabled visual styling。
       onMouseEnter={() => setButtonHovered(true)}
@@ -1346,8 +1402,8 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
       data-hover-row-index={hoverRowIndex}
       style={{
         position: 'fixed',
-        top: positionRef.current?.top ?? pos.top,
-        left: positionRef.current?.left ?? pos.left,
+        top: styleAt.top,
+        left: styleAt.left,
         // 閂鎖期間隱藏是瞬時的(捲動中留一顆停在舊座標淡出的把手就是殘影);鬆開後回到 150ms 淡入
         transitionDuration: latched ? '0s' : undefined,
         transform: 'translate(-50%, -50%)',
@@ -1416,14 +1472,21 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
   const wrapped = disabled ? (
     <Tooltip>
       <TooltipTrigger asChild>{handle}</TooltipTrigger>
-      <TooltipContent>排序中無法拖曳,清除排序後可重排</TooltipContent>
+      <TooltipContent>{labels.rowDragDisabledTooltip}</TooltipContent>
     </Tooltip>
   ) : handle
+
+  // 定位基準探針:跟把手放在同一個 portal 目標 → 同一個 fixed 定位基準;零尺寸、看不見、不接指標,只給 originFromProbe 量
+  const probe = (
+    <span ref={probeRef} aria-hidden data-fixed-origin-probe="" style={FIXED_ORIGIN_PROBE_STYLE}>
+      <span style={FIXED_ORIGIN_PROBE_INNER_STYLE} />
+    </span>
+  )
 
   return (
     <>
       {anchor}
-      {portalTarget && createPortal(wrapped, portalTarget)}
+      {portalTarget && createPortal(<>{probe}{wrapped}</>, portalTarget)}
     </>
   )
 }
@@ -1535,6 +1598,7 @@ function DataTableInner<TData>(
     onCellCommit,
     enableRowDrag = false,
     onRowReorder,
+    labels: labelsProp,
     enableColumnResize = false,
     onColumnResize,
     enableColumnReorder = false,
@@ -1552,6 +1616,12 @@ function DataTableInner<TData>(
   // 未分頁 = 既有 '400px' 預設不變。顯式傳一律尊重(prop docblock 有完整規則)。
   // 下面的 `height` 是內部的 CSS 上限字串('auto' = 沒有上限),下游一整串判斷都吃它;對外參數叫 `maxHeight`(「尺寸:甲」)。
   const height = maxHeightToCss(maxHeightProp) ?? (pagination ? 'auto' : '400px')
+  // 主體的字:prop → I18nProvider `data-table` → DS 預設(lib/i18n/README.md「Fallback chain」;DataTableLabels 註解)
+  const { t } = useI18n()
+  const tableLabels = React.useMemo<DataTableLabels>(() => {
+    const pick = (key: keyof DataTableLabels) => labelsProp?.[key] ?? t('data-table', key, DATA_TABLE_DEFAULT_LABELS[key])
+    return { rowDragHandle: pick('rowDragHandle'), rowDragHandleDisabled: pick('rowDragHandleDisabled'), rowDragDisabledTooltip: pick('rowDragDisabledTooltip') }
+  }, [labelsProp, t])
   // 對外參數 `rowHeight="hug"`(2026-11-17 前叫 `autoRowHeight`);內部一整串判斷(列殼、儲存格、per-row 錯誤撐高、
   // scripts/audit-data-table-row-mode-ssot.mjs 盯的 cell-render 範圍)沿用這個布林名,意思 = 「整張表跟內容長高」。
   const autoRowHeight = rowHeightProp === 'hug'
@@ -3560,8 +3630,13 @@ function DataTableInner<TData>(
       const selection = window.getSelection()
       return !!selection && !selection.isCollapsed && !!selection.anchorNode && e.currentTarget.contains(selection.anchorNode)
     }
+    // 兩支格子 click 都先過 `pressLandedInDom`(2026-11-26,workspace F 組 F1;data-table.spec.md「Inline Edit」段):
+    // 格裡頭像的名片、多人格的「+N」浮出清單畫在 portal(body),上面的點擊照元件樹冒到格子 —— 那不是點這一格:
+    // 修前點名片的「傳訊息 / 語音通話 / 查看更多」或名片空白處,格子就進編輯(檢視態卸載、名片跟著消失、選人清單打開),
+    // 試算表模式則把格游標搬到頭像那一格。判準全 DS 共用 lib/pointer-press.ts(Calendar 日期格、SelectMenu 觸發欄位同一支)。
     const onEditableCellClick = cellClickEntersEdit && !isEditingThisCell
       ? (e: React.MouseEvent<HTMLElement>) => {
+        if (!pressLandedInDom(e)) return
         if (clickIsForCellContent(e)) return
         // Default(non-spreadsheet)inline-edit behavior:click → enter edit
         setEditingCellId(cellEditId(cellRowId, cellColId))
@@ -3584,6 +3659,8 @@ function DataTableInner<TData>(
     // 鉛筆鈕 `stopPropagation` 進編輯 —— 這裡只負責「游標跟過去」。
     const onSpreadsheetCellClick = spreadsheetMode && !isEditingThisCell
       ? (e: React.MouseEvent<HTMLElement>) => {
+        // portal 浮層(名片 / 「+N」清單)冒上來的點擊不算點這一格 —— 放最上面,Shift+點延伸那一支一起擋(上方 onEditableCellClick 註解)
+        if (!pressLandedInDom(e)) return
         // Slice D Step 4 spreadsheet semantics(2026-05-10 user 拍板,2026-05-12 v2 fix):
         //   Shift+click → extend range(set focus,**anchor 保持 selectedCellId**)
         //   Click on already-selected → enter edit(只有點格即編輯的格;其餘沒有可進的編輯)
@@ -4803,7 +4880,7 @@ function DataTableInner<TData>(
           {...(extra?.attributes ?? {})}
           {...(extra?.listeners ?? {})}
         >
-          {showDragHandle && <RowDragHandle disabled={dragDisabled} anyDragActive={anyDragActive} hoverRowIndex={idx} />}
+          {showDragHandle && <RowDragHandle disabled={dragDisabled} anyDragActive={anyDragActive} hoverRowIndex={idx} labels={tableLabels} />}
           {/* 2026-05-06 v14.6 row drop indicator(SSOT 對齊 TreeView):水平 2px primary line at top/bottom edge */}
           {dropIndicator?.type === 'row' && dropIndicator.id === row.id && dropIndicator.side === 'before' && (
             <div className={dropIndicatorRow.before} aria-hidden />

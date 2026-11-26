@@ -167,6 +167,37 @@ mkdir -p "$COMPONENTS_DIR/PeoplePicker"
 run_hook "$COMPONENTS_DIR/PeoplePicker/people-picker.tsx" "Write" "$MAP_DROPS_FIELDS"
 expect_warn_exit0 "6. menuOptions mapping drops fields → governance context" "M30 schema partial-forward"
 
+# 7.(2026-11-26 紅案,workspace F 組 F4-2)toMenuOption 漏 iconClassName:轉發了 avatar / description / disabled
+# (舊 Check 2「三欄有一欄就放行」會放過),也沒宣告任何 Option interface(舊版在 Check 1 前就提早 exit 0)→ 必須提醒
+TOMENU_DROPS_ICONCLASS='import { SelectMenu, type SelectMenuOption } from "@/design-system/components/SelectMenu/select-menu"
+const toMenuOption = (opt: ComboboxOption): SelectMenuOption => ({
+  value: opt.value,
+  label: opt.label,
+  icon: opt.icon,
+  avatar: opt.avatar,
+  description: opt.description,
+  disabled: opt.disabled,
+  group: opt.group,
+})'
+run_hook "$COMBOBOX_TSX" "Write" "$TOMENU_DROPS_ICONCLASS"
+expect_warn_exit0 "7. hand-written toMenuOption (drops iconClassName) → governance context" "toSelectMenuOption"
+
+# 8. 經共用 toSelectMenuOption → 不提醒
+TOMENU_SHARED='import { SelectMenu, toSelectMenuOption, type SelectMenuOption } from "@/design-system/components/SelectMenu/select-menu"
+const toMenuOption = (opt: ComboboxOption): SelectMenuOption => toSelectMenuOption(opt)'
+run_hook "$COMBOBOX_TSX" "Write" "$TOMENU_SHARED"
+expect_pass_silent "8. toSelectMenuOption used → silent"
+if [ -n "$STDOUT_TEXT" ]; then echo "  FAIL  8b. toSelectMenuOption used → no governance context"; FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 8b"; else echo "  PASS  8b. no governance context"; PASS=$((PASS+1)); fi
+
+# 9. Edit 只帶片段(import 不在片段裡):看磁碟上的原檔有匯入 → 片段裡的手寫字面值照樣提醒
+printf '%s\n' 'import { SelectMenu, type SelectMenuOption } from "@/design-system/components/SelectMenu/select-menu"' 'export const X = 1' > "$COMPONENTS_DIR/Select/select.tsx"
+EDIT_SNIPPET='    const toMenuOption = React.useCallback((opt: SelectOption): SelectMenuOption => ({
+      value: opt.value,
+      label: opt.label,
+    }), [])'
+run_hook "$COMPONENTS_DIR/Select/select.tsx" "Edit" "$EDIT_SNIPPET"
+expect_warn_exit0 "9. Edit snippet + on-disk import → governance context" "toSelectMenuOption"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

@@ -10,6 +10,7 @@ import { Field, FieldError, FieldLabel } from '@/design-system/components/Field/
 import '@/design-system/components/DataTable/column-types'
 import { CATEGORY_OPTIONS_WITH_CLOTHING as categoryOptions } from '@/design-system/stories-helpers/data/product-catalog'
 import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { WORK_ITEM_STATUSES, WORK_ITEM_TYPES, workItemTypeBadge } from '@/design-system/stories-helpers/scene/work-item-type'
 
 const meta: Meta<typeof Combobox> = {
   title: 'Design System/Components/Combobox/展示',
@@ -649,6 +650,54 @@ export const GroupsAndMinWidth: Story = {
 
 
 /* ── DataTable 整合 ── */
+/* ── 選項前綴:工作項類型方塊 + 狀態色(2026-11-26,workspace F 組 F4-2)── */
+// 看板篩選:勾要看的工作項類型與狀態。類型選項前面是類型方塊(`startContent`),狀態選項是圖示 + 語意色(`icon` + `iconClassName`)。
+// play 斷言:類型清單每一列都有自訂前綴節點、「已完成」那一列的圖示是 success 色 —— 2026-11-26 前 Combobox 的轉換漏轉 iconClassName。
+const workItemTypeOptions = WORK_ITEM_TYPES.map((t) => ({ value: t.value, label: t.label, startContent: workItemTypeBadge(t.value) }))
+const workItemStatusOptions = WORK_ITEM_STATUSES.map((s) => ({ value: s.value, label: s.label, icon: s.icon, iconClassName: s.iconClassName }))
+
+export const OptionPrefix: Story = {
+  name: '選項前綴:工作項類型',
+  parameters: { docs: { description: { story: '看板篩選:勾要看的工作項類型與狀態。類型選項前面是類型方塊(選項的 `startContent`),狀態選項是圖示加語意色(`icon` + `iconClassName`)。' } } },
+  render: () => (
+    <div className="flex flex-wrap gap-[var(--layout-space-loose)]">
+      <Field className="w-72">
+        <FieldLabel>類型</FieldLabel>
+        <LiveCombobox options={workItemTypeOptions} value={['bug', 'story']} />
+      </Field>
+      <Field className="w-72">
+        <FieldLabel>狀態</FieldLabel>
+        <LiveCombobox options={workItemStatusOptions} value={['in_progress']} />
+      </Field>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const body = within(canvasElement.ownerDocument.body)
+    const probe = canvasElement.ownerDocument.createElement('span')
+    probe.className = 'text-success'
+    canvasElement.appendChild(probe)
+    const successColor = getComputedStyle(probe).color
+    probe.remove()
+    const [typeTrigger, statusTrigger] = canvas.getAllByRole('combobox')
+    await userEvent.click(typeTrigger)
+    const typeRows = await body.findAllByRole('option')
+    for (const row of typeRows) {
+      await expect(row.querySelector('[data-prefix-type="content"]'), `類型選項「${row.textContent}」沒有前綴節點`).not.toBeNull()
+    }
+    await userEvent.click(typeTrigger)
+    await waitFor(() => expect(body.queryAllByRole('option')).toHaveLength(0))
+    await userEvent.click(statusTrigger)
+    const doneRow = await body.findByRole('option', { name: /已完成/ })
+    // MenuItem 的前綴圖示本身就是帶 data-prefix-type="icon" 的 svg(menu-item.tsx)
+    const doneIcon = doneRow.querySelector('[data-prefix-type="icon"]')
+    await expect(doneIcon, '「已完成」那一列沒有前綴圖示').not.toBeNull()
+    await expect(getComputedStyle(doneIcon!).color, '「已完成」那一列的圖示沒有套 iconClassName').toBe(successColor)
+    await userEvent.click(statusTrigger)
+    await waitFor(() => expect(body.queryAllByRole('option')).toHaveLength(0))
+  },
+}
+
 export const InDataTable: Story = {
   name: 'DataTable 整合',
   render: () => {

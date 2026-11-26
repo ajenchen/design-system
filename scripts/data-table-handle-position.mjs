@@ -106,11 +106,12 @@ try {
     });
   if (cfg.control === "no-transition")
     await page.addStyleTag({
-      content: 'button[aria-label="拖曳重排此列"]{transition:none!important}',
+      // 把手的專用記號 data-row-drag-handle(2026-11-26 起;之前用 aria-label 文字選 —— DataTable labels 換字就選不到,M37)
+      content: '[data-row-drag-handle]{transition:none!important}',
     });
   if (cfg.control === "offset")
     await page.addStyleTag({
-      content: 'button[aria-label="拖曳重排此列"]{translate:0 20px!important}',
+      content: '[data-row-drag-handle]{translate:0 20px!important}',
     });
   // 對照組 unlatch:每個 scroll 事件之後派發一個座標遞增的合成 pointermove(= 指標真的在動),閂鎖每次都會鬆開,
   // 把手在捲動中回來 → stationary 斷言必須紅
@@ -127,7 +128,7 @@ try {
       const el = document.querySelector("[data-datatable-hscroll]");
       const follow = () => {
         for (const b of document.querySelectorAll(
-          'button[aria-label="拖曳重排此列"]'
+          '[data-row-drag-handle]'
         )) {
           if (+getComputedStyle(b).opacity <= 0.001) continue;
           const k = Object.keys(b).find((k) => k.startsWith("__reactFiber$"));
@@ -152,8 +153,7 @@ try {
         if (!ids.has(n)) ids.set(n, ++seq);
         return ids.get(n);
       };
-      const buttonSelector =
-        'button[aria-label="拖曳重排此列"],button[aria-label="排序中無法拖曳"]';
+      const buttonSelector = '[data-row-drag-handle]';
       const rowSelector = "[data-datatable-hscroll] [data-row-index]";
       const ownedRow = (b) => {
         const key = Object.keys(b).find((k) => k.startsWith("__reactFiber$"));

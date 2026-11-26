@@ -947,6 +947,8 @@ export const InlineEditWithSpreadsheetOverlay: Story = {
 //      根節點與格游標框恆只出現一個(修前:id 留著、格不在、根節點也不畫 = 鍵盤聚焦零指示)。
 //   2. 鍵盤移動時游標格捲進可視範圍(60 列、限高 → 虛擬捲動;修前:游標走到畫面外就沒有任何指示)。
 // 資料是 `editableSampleData` 複製 60 份、名稱加 `#序號`,篩「#2」會把第 1 列篩掉、留 #2 與 #20–#29。
+//   3. 點格裡頭像名片(portal)上的按鈕,格游標不搬到頭像那一格(I42,2026-11-26 workspace F 組 F1)——
+//      Owner(person)欄加在**最後**,不改 I32 量的第一格與 I39 挑的文字格。
 export const SpreadsheetCursorContract: Story = {
   name: '試算表游標契約',
   tags: ['test-only'],
@@ -963,6 +965,7 @@ export const SpreadsheetCursorContract: Story = {
         editCol.accessor('sku', { header: 'SKU', meta: { type: 'string', width: 110 } }),
         editCol.accessor('name', { header: 'Product', meta: { type: 'string', editable: true, width: 240 } }),
         editCol.accessor('qty', { header: 'Qty', meta: { type: 'number', editable: true, width: 110 } }),
+        editCol.accessor('owner', { header: 'Owner', meta: { type: 'person', people: SAMPLE_PEOPLE, editable: true, width: 160 } }),
       ],
       []
     )
@@ -2230,6 +2233,48 @@ export const RowDragInteractive: Story = {
           onRowReorder={handleReorder}
         />
       </div>
+    )
+  },
+}
+
+// 列拖曳把手在 DS Dialog 裡(test-only,2026-11-26,workspace F 組 F3):給 `scripts/data-table-handle-clip-invariant.mjs` P5 量
+// 「把手中心 = 表格外框左緣、列中心」。Dialog 置中靠 `-translate-x/y-1/2`(獨立的 translate 屬性)→ fixed 把手的定位基準換成 Dialog,
+// 修前把手偏出 Dialog 的原點。設定照 workspace 回報的那一組(enableRowDrag、size="sm"、rowHeight="hug")。
+export const RowDragInDialog: Story = {
+  name: '列拖曳把手(對話框內)',
+  tags: ['test-only'],
+  render: () => {
+    const [list, setList] = React.useState<Product[]>(sampleData.slice(0, 6))
+    const handleReorder = (sourceId: string, targetId: string, position: 'before' | 'after') => {
+      setList((prev) => {
+        const next = prev.filter((r) => r.sku !== sourceId)
+        const moved = prev.find((r) => r.sku === sourceId)
+        const at = next.findIndex((r) => r.sku === targetId)
+        if (!moved || at === -1) return prev
+        next.splice(position === 'before' ? at : at + 1, 0, moved)
+        return next
+      })
+    }
+    return (
+      <Dialog defaultOpen>
+        <DialogContent width="lg" height="hug">
+          <DialogHeader>
+            <DialogTitle>調整商品上架順序</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            <DataTable
+              columns={columnsWithPrice}
+              data={list}
+              size="sm"
+              rowHeight="hug"
+              maxHeight="none"
+              getRowId={(row) => row.sku}
+              enableRowDrag
+              onRowReorder={handleReorder}
+            />
+          </DialogBody>
+        </DialogContent>
+      </Dialog>
     )
   },
 }

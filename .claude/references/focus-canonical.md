@@ -356,7 +356,7 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 
 **共同前提**:四類都要指得出**承擔者是誰**(file:line)。指不出來就是要畫,沒有第五類。
 **指標怎麼寫(2026-11-11)**:別檔的承擔者一律寫**宣告名** `檔名.tsx#宣告名`(物件裡的一項寫 `檔名.tsx#宣告名.鍵`),
-不准寫行號;`檔名.tsx:行號` 只准指同一個檔。原因是一次真實事故:data-table.tsx 的 A 類標記寫「承擔者:data-table-interaction-layer.tsx:379」,
+不准寫行號;`檔名.tsx:行號` 只准指同一個檔。原因是一次真實事故:data-table.tsx 的 A 類標記把承擔者寫成 data-table-interaction-layer.tsx 當時第 379 行,
 4bc1b6e9 在對方檔案上方加了 4 行註解,承擔者 `CELL_RING_STYLES.selected` 一字未改、只被推到 383 行,閘卻在**另一個檔**紅 ——
 行號只在寫下的那一刻剛好等於承擔者(M37 代理)。同次盤點 8 個行號指標有 4 個已過期,其中 3 個因為同檔另有證據而從沒被驗過。
 `scripts/focus-suppression-registry.mjs` 現在:跨檔寫行號 → 紅;標記裡寫出來的**每一個**指標(含旁白)都要指得到、而且指到的程式
@@ -393,7 +393,7 @@ Field 家族在此之上**額外**有欄位邊框轉 primary(`field-wrapper.tsx#
 ### 一個承擔者只能服務一個 tab stop
 
 判斷程序問「有沒有人畫」,但沒問「**畫的那一個分不分得出是誰**」。
-`combobox.tsx:680` 那種自己畫的情況沒問題(一個元素一個 tab stop),
+`combobox.tsx:673` 那種自己畫的情況沒問題(一個元素一個 tab stop),
 但 **DatePicker 的範圍模式**是兩顆 button 罩在同一圈欄位邊框裡 ——
 邊框只會說「焦點在這個欄位」,不會說「在起日還是迄日」。
 
@@ -418,7 +418,7 @@ DatePicker 自己早就有那個指示 —— 作用端一條主色粗線,對照
 
 ### C 類為什麼是「從自己往上」而不是「往上」
 
-同一次對照又撞到第二面牆:`combobox.tsx:680`、`time-picker.tsx:417` 這兩行,
+同一次對照又撞到第二面牆:`combobox.tsx:673`、`time-picker.tsx:417` 這兩行,
 **元素本身就是那圈欄位外框**(`fieldWrapperStyles` + `focus-within:!border-primary`)。
 `:focus-within` 在元素自己取得焦點時也會命中,所以它們其實**有畫**,只是用邊框轉色而不是外框。
 寫成「往上找祖先」會把這種情況判成無承擔者 —— 但它是全 Field 家族觸發器的標準寫法。

@@ -538,6 +538,7 @@
           "design-system-components-combobox-展示--unrestricted-inline-search",
           "design-system-components-combobox-展示--unrestricted-message-states",
           "design-system-components-combobox-展示--unrestricted-off-inert",
+          "design-system-components-combobox-展示--option-prefix",
           "design-system-components-combobox-展示--groups-and-min-width",
           "design-system-components-combobox-展示--in-data-table"
         ],
@@ -615,6 +616,7 @@
           "design-system-components-datatable-展示--column-visibility-panel-states",
           "design-system-components-datatable-展示--filter-panel-labels-and-limit",
           "design-system-components-datatable-展示--row-drag-interactive",
+          "design-system-components-datatable-展示--row-drag-in-dialog",
           "design-system-components-datatable-展示--row-drag-with-virtualization",
           "design-system-components-datatable-展示--roadmap-all-in-one",
           "design-system-components-datatable-展示--roadmap-perf-budget",
@@ -791,6 +793,7 @@
           "design-system-components-dropdownmenu-展示--nested-sub-menu",
           "design-system-components-dropdownmenu-展示--checkbox-items",
           "design-system-components-dropdownmenu-展示--radio-items",
+          "design-system-components-dropdownmenu-展示--option-prefix",
           "design-system-components-dropdownmenu-展示--open-snapshot",
           "design-system-components-dropdownmenu-展示--item-hover"
         ],
@@ -1460,6 +1463,7 @@
           "design-system-components-select-展示--no-options",
           "design-system-components-select-展示--grouped-search",
           "design-system-components-select-展示--remote-search",
+          "design-system-components-select-展示--option-prefix",
           "design-system-components-select-展示--in-data-table"
         ],
         "設計規格": [
@@ -1904,5 +1908,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1067
+  "totalStories": 1071
 }

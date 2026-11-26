@@ -216,6 +216,7 @@ export type {
 } from './components/Combobox/index'
 export {
   DATA_TABLE_COLUMN_VISIBILITY_PANEL_DEFAULT_LABELS,
+  DATA_TABLE_DEFAULT_LABELS,
   DATA_TABLE_FILTER_PANEL_DEFAULT_LABELS,
   DATA_TABLE_SORT_MANAGER_DEFAULT_LABELS,
   DataTable,
@@ -236,6 +237,7 @@ export type {
   DataTableColumnVisibilityPanelProps,
   DataTableFilterPanelLabels,
   DataTableFilterPanelProps,
+  DataTableLabels,
   DataTablePaginationOptions,
   DataTableProps,
   DataTableSelection,
@@ -715,6 +717,7 @@ export type {
 //   - lib/collection-removal-focus.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/composite-field-focus.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/date-locale.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
+//   - lib/fixed-layer-origin.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/focus-after-trigger.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/ime-composition.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/overlay-density.tsx(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)

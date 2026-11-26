@@ -17,7 +17,7 @@ import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncate
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { useTruncated } from '@/design-system/hooks/use-truncated'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
-import { SelectMenu, forwardKeyToListbox, useActiveDescendant, moveHighlightToFirst, isRemoveLastValueKey, routeTypingToSearch, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
+import { SelectMenu, forwardKeyToListbox, useActiveDescendant, moveHighlightToFirst, isRemoveLastValueKey, routeTypingToSearch, toSelectMenuOption, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
 import { RemovalStatus, useRemovalAnnouncement } from '@/design-system/components/SelectMenu/select-menu-removal-status'
 import { useIsTouchDevice } from '@/design-system/hooks/use-is-touch-device'
 import { useControllable } from '@/design-system/hooks/use-controllable'
@@ -279,6 +279,8 @@ type CustomSelectTriggerContentProps = {
   selectedLabel: string
   selectedOpt?: SelectOption
   SelectedIcon?: LucideIcon
+  /** 選中項的 `startContent`(沒有 icon 時畫在值前綴;與 SelectedIcon 同一條「起始圖示在時不畫」規則) */
+  SelectedStartContent?: React.ReactNode
   StartIcon?: LucideIcon
   iconSize: number
   placeholder?: string
@@ -305,6 +307,7 @@ function CustomSelectTriggerContent(props: CustomSelectTriggerContentProps): Rea
     selectedLabel,
     selectedOpt,
     SelectedIcon,
+    SelectedStartContent,
     StartIcon,
     iconSize,
     placeholder,
@@ -339,7 +342,7 @@ function CustomSelectTriggerContent(props: CustomSelectTriggerContentProps): Rea
     // 這一格的寬 = 兩者取大,輸入框填滿那一格、自己不帶寬(原生 input 的固有寬 —— size=20 約 150–200px —— 就是修前依內容寬的欄位一打開
     // 從 151 撐到 204px 的原因)。與 Combobox 欄位內搜尋框同一招(combobox.tsx 欄位內搜尋框那一格、`yieldedTagText`)。填滿寬的欄位看不出差別。
     // 關著時那一段值 = 關著的那一支本身(同一支函式、同一份 class,寬度逐像素相同);起始圖示在下面另外畫,量尺裡不再算一次
-    const closedValue = CustomSelectTriggerContent({ ...props, open: false, StartIcon: undefined, SelectedIcon: StartIcon ? undefined : SelectedIcon, truncationRef: undefined })
+    const closedValue = CustomSelectTriggerContent({ ...props, open: false, StartIcon: undefined, SelectedIcon: StartIcon ? undefined : SelectedIcon, SelectedStartContent: StartIcon ? undefined : SelectedStartContent, truncationRef: undefined })
     // 起始圖示與搜尋框那一格直接當觸發欄位的子項(Fragment)—— 與關著時同一個結構,圖示與那一格之間就是欄位外框的 gap-2(fieldWrapperStyles)。
     // 修前外面多包一層沒有間距的 span:有起始圖示時打開字往左跳 8px、依內容寬的欄位窄 8px,覆蓋的名字還壓在圖示上(K7 同一條:框線、互動、樣式不變)。
     return (
@@ -403,7 +406,9 @@ function CustomSelectTriggerContent(props: CustomSelectTriggerContentProps): Rea
     return (
       <>
         {StartIcon && <ItemPrefix><StartIcon size={iconSize} className="text-fg-muted pointer-events-none" aria-hidden /></ItemPrefix>}
-        {!StartIcon && SelectedIcon && value && <ItemPrefix><SelectedIcon size={iconSize} className="pointer-events-none" aria-hidden /></ItemPrefix>}
+        {/* 值前綴 = 選中項的前綴(select.spec.md 圖示對照表「Value icon」;與選單列同色 → 套 iconClassName;沒有 icon 時畫 startContent) */}
+        {!StartIcon && SelectedIcon && value && <ItemPrefix><SelectedIcon size={iconSize} className={cn('pointer-events-none', selectedOpt?.iconClassName)} aria-hidden /></ItemPrefix>}
+        {!StartIcon && !SelectedIcon && SelectedStartContent && value && <ItemPrefix>{SelectedStartContent}</ItemPrefix>}
         <span ref={truncationRef} className={cn('flex-1 min-w-0 truncate', !value && 'text-fg-muted')}>
           {value ? selectedLabel : (placeholder ?? '選擇…')}
         </span>
@@ -674,7 +679,9 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
         style={fieldWidthStyle(width)}
         data-field-mode="edit" data-error={error ? '' : undefined}>
         {StartIcon && <ItemPrefix><StartIcon size={iconSize} className="text-fg-muted pointer-events-none" aria-hidden /></ItemPrefix>}
-        {!StartIcon && SelectedOptIcon && value && <ItemPrefix><SelectedOptIcon size={iconSize} className="pointer-events-none" aria-hidden /></ItemPrefix>}
+        {/* 與桌機同一條(select.spec.md「display-layer renderer props 必雙分支同消費」):值前綴 = 選中項的前綴,icon 套 iconClassName,沒有 icon 時畫 startContent */}
+        {!StartIcon && SelectedOptIcon && value && <ItemPrefix><SelectedOptIcon size={iconSize} className={cn('pointer-events-none', selectedOpt?.iconClassName)} aria-hidden /></ItemPrefix>}
+        {!StartIcon && !SelectedOptIcon && selectedOpt?.startContent && value && <ItemPrefix>{selectedOpt.startContent}</ItemPrefix>}
         {selectEl}
         {clearEl}
         {chevronEl}
@@ -749,6 +756,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     // 級 fallback `?? value`。
     const selectedLabel = selectedOpt?.label ?? value ?? ''
     const SelectedIcon = selectedOpt?.icon
+    const SelectedStartContent = selectedOpt?.startContent
     // 截斷 tooltip(tooltip.spec.md:32 截斷 → 顯完整內容,僅實際截斷時):closed trigger text
     // display 的值 span 是截斷元素;trigger = 整個 combobox host(interactive host,hover 直達)、
     // 量測內層值 span — useTruncated 自組 pattern(truncated-text.spec.md「兩層架構(對齊世界級聯集)」:trigger ≠ 量測元素時只用 hook 自組;
@@ -763,17 +771,12 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     // 過濾選項:搜尋字在觸發欄位時由 SelectMenu 依受控 `search` 過濾(label 含關鍵字、去頭尾空白;2026-09-30 自本檔與 combobox.tsx
     // 兩份收回 SelectMenu 一份,「不限」列同一條 —— select-menu.tsx labelMatchesSearch),這裡只轉換。
     // ── 轉換 SelectOption → SelectMenuOption(必在 early return 前) ──
-    // Issue 4(2026-05-10):forward avatar / description / disabled SSOT(per SelectMenuOption schema)。
-    // 同一份 mapping 給 options 與 suggestions(2026-09-09 建議清單),不複製第二份。
-    const toMenuOption = React.useCallback((opt: SelectOption): SelectMenuOption => ({
-      value: opt.value,
-      label: opt.label,
-      icon: isTextDisplay ? opt.icon : undefined,
-      avatar: opt.avatar,
-      description: opt.description,
-      disabled: opt.disabled,
-      group: opt.group,
-    }), [isTextDisplay])
+    // 全 DS 一支 `toSelectMenuOption`(select-menu.tsx,鍵表 + 型別斷言:SelectMenuOption 加欄位沒轉 → build:lib 紅;2026-11-26 前這裡手寫一份、漏轉 iconClassName)。
+    // tag 模式選單列是純文字(欄位上是 Tag):前綴圖形(icon / startContent)不給。同一份 mapping 給 options 與 suggestions(2026-09-09 建議清單)。
+    const toMenuOption = React.useCallback(
+      (opt: SelectOption): SelectMenuOption => toSelectMenuOption(opt, { suppressPrefixIcon: !isTextDisplay }),
+      [isTextDisplay],
+    )
     const menuOptions: SelectMenuOption[] = React.useMemo(
       () => options.map(toMenuOption),
       [options, toMenuOption]
@@ -873,6 +876,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         selectedLabel={selectedLabel}
         selectedOpt={selectedOpt}
         SelectedIcon={SelectedIcon}
+        SelectedStartContent={SelectedStartContent}
         StartIcon={StartIcon}
         iconSize={iconSize}
         placeholder={placeholder}
