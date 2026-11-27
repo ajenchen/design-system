@@ -13,6 +13,9 @@ bash "$DIR/test_check_consumer_app_story_title.sh" < /dev/null || { echo "SUB-FA
 FAULT_DIR=$(mktemp -d)
 [ -n "${FAULT_DIR:-}" ] && [ -d "$FAULT_DIR" ] || { echo "❌ mktemp -d failed(FAULT_DIR;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf -- "$FAULT_DIR"' EXIT
+# 2026-11-27 r72:hook 改成 source lib/_comment_mask.sh(缺 lib = GOVERNANCE_INTEGRITY exit 70,與 check_consumer_code_quality 同);
+# 注入故障的複本放在 FAULT_DIR,旁邊要有同一份 lib,否則每一格都先停在「helper unavailable」,測不到它要測的故障。
+mkdir -p "$FAULT_DIR/lib" && cp "$DIR/../lib/_comment_mask.sh" "$FAULT_DIR/lib/_comment_mask.sh"
 awk '
   { print }
   $0 == "r1_no_ds_catalog() {" { print "return 1" }

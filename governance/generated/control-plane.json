@@ -142,7 +142,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 221,
-      "hash": "sha256:b1d99a4dc4ce28dbeb067348a377881d2ef56e396c275d4eea914d9fb7851670",
+      "hash": "sha256:f66f61905607c389767cb4ab4247ecf5fd52155e6120d591da3b50bec2bddcc2",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -153,7 +153,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 11,
-      "hash": "sha256:79415aaec40715aa1a90d7d9185faa52b9845893682f5d45087ea87d68149a03",
+      "hash": "sha256:19917e8305b00c993ab0f41b636e27ee5374f998f606fc908e0716c3572dc1fe",
       "id": "canonical-product-templates",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2431,12 +2431,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:4df8873c13f0e123a7f83ba06f717c7d254269c6c7b4e45c401ad636e610cbe7",
+      "hash": "sha256:88ec96dca63f8c3e8bc41b5c44ab8e458adc42f79cb663508d0fac4001860bd0",
       "id": "product-shared-instruction",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/fork-role-sources/AGENTS.product.md",
-      "size": 6866,
+      "size": 7346,
       "type": "file"
     },
     {
@@ -3094,7 +3094,7 @@
         "scripts/generated/"
       ],
       "files": 819,
-      "hash": "sha256:9750385f3d5d8a04b75a3a857cf205f5eed8026ca0a900cc2fd138afaaa7c845",
+      "hash": "sha256:d5560453a61f67fd0a37a733461f4a3e0012fafdcb10bbe716ec53fdb8d5a6c4",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

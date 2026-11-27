@@ -66,6 +66,12 @@ expect_silent "6. text-\${color}(非尺寸間距)→ silent"
 run_hook "$PROD_TSX" 'const cls = `size-${px}` // @dynamic-tailwind-allow: 傳給 canvas 非 class'
 expect_silent "7. @dynamic-tailwind-allow escape → silent"
 
+# 7b / 7c(2026-11-27 r72):豁免要冒號 + 理由;只寫標記或只寫冒號 → 照擋
+run_hook "$PROD_TSX" 'const cls = `size-${px}` // @dynamic-tailwind-allow'
+expect_block "7b. 沒冒號沒理由的 @dynamic-tailwind-allow → BLOCK"
+run_hook "$PROD_TSX" 'const cls = `size-${px}` // @dynamic-tailwind-allow:   '
+expect_block "7c. 空理由的 @dynamic-tailwind-allow: → BLOCK"
+
 # 8. NEGATIVE:非 production path(tests/)→ silent
 run_hook "/Users/x/proj/scripts/gen-something.mjs" 'const cls = `h-${x}`'
 expect_silent "8. 非 tsx production path → silent"

@@ -2,10 +2,17 @@
 # check_escape_marker_abuse.sh — P0 BLOCKER (codify warning)
 #
 # 偵測 consumer code(.tsx/.stories.tsx)濫用 escape markers 跳 SSOT enforcement.
-# Per user 2026-05-27 verbatim「不亂加 escape markers — 加就跳 enforcement」.
+# 舊檔頭寫「Per user 2026-05-27 verbatim「不亂加 escape markers — 加就跳 enforcement」」:2026-11-27 r72 查出處,
+# 引入的 commit 0e525f98 訊息、governance/memory、現存對話紀錄都找不到這句 user 原話 → 依 M36 改標「出處未能查證」;
+# 下方的額度數字(每檔 ≥3 種 / ≥5 個、每個 app 10 個)是 AI 訂的(0e525f98、2026-07-08 WM 戰役 R4),不是 user 原話。
 #
-# Escape markers exist for真 exceptions(per-line documented rationale)。但 fork
-# user 若大量加 escape markers (eg. ≥3 同一 file) = 違反 escape philosophy → BLOCK.
+# 2026-11-27 r72(user 同日原話,交接資料夾 notes/decisions/morning-151-answers.md model2:「…當消費者有合理的理由
+# 想要修正應該也要給予可以調整的空間吧？…若所有特例都要經過 ds拍板決策同意 那ds的事情不是永遠做不完嗎？」):
+#   額度改成「額度內放行;超過額度不再一律擋,改要求每個豁免的理由更具體」——
+#   超過額度時,這次內容裡每個計入額度的標記都要寫「冒號 + 至少 10 個字的理由」,而且同一份內容裡不得重複同一句理由
+#   (複製貼上的理由 = 沒有針對那一行);做到就放行,做不到照擋並逐行指出哪幾個不夠具體。
+#   空理由在任何數量下都照擋(下方 justification gate),預設照擋不變,沒有降成只警告。
+#   豁免清單:governance-check 每次都列出各規則被豁免幾次(evidence.exemptions),讓 DS 定期回看補情境。
 #
 # Detected markers:
 #   - @ds-misuse-allow:    (check_consumer_ds_primitive_misuse.sh escape)
@@ -24,9 +31,9 @@
 #   - @benchmark-unverified: (M22 cite)
 #   - @benchmark-citation-allow / @benchmark-unverified-blanket (M22 file-level cite escapes)
 #
-# Threshold:≥3 distinct markers OR ≥5 total occurrences in same file → BLOCK
-# Forces fork user to either (a) fix root cause OR (b) refactor properly OR
-# (c) explicitly cite reason in commit message via env override.
+# Threshold:≥3 distinct markers OR ≥5 total occurrences in same file → 超過額度
+#   (2026-11-27 r72 起:超過額度 = 每個標記都要具體理由,做到就放行;見檔頭)。
+#   修法:(a) 重構走 DS canonical(最好)(b) 每個標記寫這一行自己的具體理由 (c) env override(只在本機寫入當下有效)。
 #
 # 2026-05-31 升級(per 3-hardening-items 調查,折進本 hook 不新增檔):
 #   1. Justification gate:escape marker 後空理由(@x-allow: 後純空白 / bare @benchmark-unverified)
@@ -83,20 +90,24 @@ if [ "${GOVERNANCE_BYPASS_ESCAPE_MARKER_AUDIT:-0}" = "1" ]; then exit 0; fi
 #   (a) @<x>-allow: 後純空白到行尾(有 marker 有冒號但無理由)
 #   (b) bare @benchmark-unverified 後純空白到行尾(非 -blanket / 非 ": 理由" / 非後接說明文字)
 # 對齊 ESLint eslint-comments/require-description + Google NOLINT(category) 必帶說明。
+# 2026-11-27 r72:家族從只認 `-allow` 擴到 `-allow` / `-ok` / `-skip` 三種(產品端檢查的豁免標記全是這三種字尾,
+# 例 @cat-solid-ok / @nondeterministic-ok / @app-story-title-skip),並把「冒號後只剩註解收尾 `*/`、`}`、`-->`」
+# 也算空理由(JSX 寫成 {/* @x-ok: */} 以前會漏)。`-rationale` 家族是多行說明的開頭(@anatomy-rationale: 後接下一行),不在此列。
 governance_hook_grep_capture EMPTY_RATIONALE 'escape-marker rationale matcher failed' "$CONTENT" -nE \
-  '@[a-z][a-z-]+-allow:[[:space:]]*$|@benchmark-unverified[[:space:]]*$'
+  '@[a-z][a-z0-9-]*-(allow|ok|skip):[[:space:]]*(\*/|-->|$)|@benchmark-unverified[[:space:]]*$'
 if [ -n "$EMPTY_RATIONALE" ]; then
   cat >&2 << EOF
 🚨 ESCAPE-MARKER-NO-RATIONALE BLOCKER(P0,2026-05-31 folded into check_escape_marker_abuse)
 
-  File $FILE — escape marker 後無 rationale(空理由 = 靜默繞過 SSOT):
+  File $FILE — 豁免標記冒號後沒有理由(空理由 = 靜默繞過規範,照擋):
 $(echo "$EMPTY_RATIONALE" | sed 's/^/    /')
 
-  修法:marker 冒號後寫具體理由,eg.
+  修法:在同一行的標記冒號後寫這一行為什麼要例外,例:
     // @ds-misuse-allow: Notion-style inline edit canonical(Field 在 cell 內編輯)
+    {/* @cat-solid-ok: 品牌指定的活動色塊,白字已量過對比 */}
     /* @benchmark-unverified: AG Grid pixel-snapshot 共識,待補 URL cite */
 
-  Escape directive 世界級共識(ESLint require-description / Google NOLINT)必帶 rationale。
+  有合理理由就可以自己豁免、不必等 DS 同意;理由寫在那一行的註解,DS 會定期看豁免清單補情境。
 EOF
   exit 2
 fi
@@ -105,6 +116,46 @@ fi
 # 2026-11-27(上游判定 E18):以前 AllDsComponents.stories.tsx(帶 3 種 marker 的 portal)有專屬放寬(distinct ≥6);
 # 範本改名成 DsImportSmoke.stories.tsx 並拿掉全部 marker(0 個)後不再需要,專屬例外刪除 —— 每個檔同一套門檻。
 DISTINCT_CAP=3
+# 超過額度時要求的「具體理由」(2026-11-27 r72,數字為 AI 訂定):冒號後至少這麼多個字(Unicode 字元,不是位元組;
+# CI 重播是 LANG=C,所以交給 python 以 UTF-8 解碼後數),而且同一份內容裡不重複同一句理由。
+SPECIFIC_MIN=10
+UNSPECIFIC=''
+UNSPECIFIC_DONE=0
+# 印出這次內容裡理由不夠具體的豁免標記(「行號: 原文(原因)」一行一筆);全部夠具體 → 不印任何字。
+# 標記家族與 lib/_micro_geometry.sh 的 marker_re(會計入額度的那一組)逐字相同。
+collect_unspecific_escape_reasons() {
+  [ "$UNSPECIFIC_DONE" = 1 ] && return 0
+  UNSPECIFIC=$(printf '%s' "$CONTENT" | python3 -c '
+import re, sys
+minimum = int(sys.argv[1])
+text = sys.stdin.buffer.read().decode("utf-8", "replace")
+marker = re.compile(
+    r"@(?:[a-z][a-z-]*-allow|benchmark-unverified(?:-blanket)?|template-customized|"
+    r"anatomy-exempt(?:-next)?|overlay-open-skip|layout-space-magic-ok|"
+    r"propose-cite-skip|story-(?:trait|split)-rationale)(?![a-z0-9-])(:?)"
+)
+seen = {}
+bad = []
+for number, line in enumerate(text.splitlines(), 1):
+    for match in marker.finditer(line):
+        reason = ""
+        if match.group(1):
+            rest = re.split(r"\*/|-->", line[match.end():], maxsplit=1)[0]
+            following = marker.search(rest)
+            if following:
+                rest = rest[:following.start()]
+            reason = re.sub(r"\s+", " ", rest.strip().rstrip("}").strip())
+        shown = line.strip()
+        if len(reason) < minimum:
+            bad.append(f"{number}: {shown}(理由不到 {minimum} 個字)")
+        elif reason in seen:
+            bad.append(f"{number}: {shown}(與第 {seen[reason]} 行同一句理由)")
+        else:
+            seen[reason] = number
+sys.stdout.buffer.write("\n".join(bad).encode("utf-8"))
+' "$SPECIFIC_MIN") || governance_hook_integrity_fail 'escape-marker rationale specificity check failed'
+  UNSPECIFIC_DONE=1
+}
 if [ "$IS_CONSUMER" -eq 1 ]; then
   # 2026-05-31 廣化 marker family 仍在 shared classifier 裡閉包納管。layout-space marker
   # 若附著在 utility-registry 可機械證明的 canonical micro geometry,已沒有繞過
@@ -123,30 +174,36 @@ if [ "$IS_CONSUMER" -eq 1 ]; then
     TOTAL_COUNT=0
   fi
 
-  # Threshold: ≥3 distinct types OR ≥5 total
+  # Threshold: ≥3 distinct types OR ≥5 total → 超過每檔額度。2026-11-27 r72 起超過額度不再一律擋:
+  # 每個標記的理由都夠具體(見 collect_unspecific_escape_reasons)就放行,還有不夠具體的才擋並逐行列出。
   if [ "$DISTINCT_COUNT" -ge "$DISTINCT_CAP" ] || [ "$TOTAL_COUNT" -ge 5 ]; then
-    cat >&2 << EOF
-🚨 ESCAPE-MARKER-ABUSE BLOCKER(P0,user 2026-05-27 verbatim「不亂加 escape markers — 加就跳 enforcement」)
+    collect_unspecific_escape_reasons
+    if [ -n "$UNSPECIFIC" ]; then
+      cat >&2 << EOF
+🚨 ESCAPE-MARKER-ABUSE BLOCKER(P0;超過每檔豁免額度,而且有豁免的理由不夠具體)
 
   File $FILE:
-    Distinct escape markers: $DISTINCT_COUNT(threshold ≥$DISTINCT_CAP)
-    Total occurrences: $TOTAL_COUNT(threshold ≥5)
+    豁免標記種類:$DISTINCT_COUNT(額度:少於 $DISTINCT_CAP 種)
+    豁免標記個數:$TOTAL_COUNT(額度:少於 5 個)
 
   Markers detected:
 $(echo "$MARKERS_FOUND" | sed 's/^/    /')
 
-  Escape markers 設計為「rare per-line documented exception」,不該 routine 加。
-  Fork user file 大量加 marker = 違反 SSOT 哲學 — 應該:
+  理由不夠具體的標記:
+$(echo "$UNSPECIFIC" | sed 's/^/    /')
+
+  額度內的豁免,冒號後有理由就放行;超過額度時,每一個豁免都要寫「這一行自己的理由」
+  (冒號後至少 $SPECIFIC_MIN 個字,同一份內容裡不重複同一句)。做到就放行,不必等 DS 同意。
 
   修法 3 選 1:
-    (a) **重構 code** 走 DS canonical pattern(消除根因,不繞)
-    (b) **拆 file**:1 個 escape 對應 1 個 specific case,分散到不同 file
-    (c) **Override env**(極罕見,documented in commit msg):
-        GOVERNANCE_BYPASS_ESCAPE_MARKER_AUDIT=1 git commit -m "<rationale>"
+    (a) 重構 code 走 DS canonical pattern(消除根因,最好)
+    (b) 把上面列出的每一行理由改寫成針對那一行的具體說明
+    (c) Override env(只在本機寫入當下有效,CI 重播不認):GOVERNANCE_BYPASS_ESCAPE_MARKER_AUDIT=1
 
-  per check_consumer_*.sh hooks SSOT — escape 是 emergency exit,不是 daily tool.
+  DS 會定期看豁免清單(npm run governance:check 的 exemptions 那一行:各規則被豁免幾次)補規格沒想到的情境。
 EOF
-    exit 2
+      exit 2
+    fi
   fi
 
   # ── Repo 級累計 ratchet(2026-07-08 WM 戰役 R4)──────────────────────────────
@@ -201,28 +258,34 @@ EOF
       REPO_TOTAL=0
     fi
       # Exhaustive CI replays committed full files, not a prospective edit fragment. In that mode
-      # the current snapshot is valid at the ceiling and fails only when it already exceeds it.
-      # Native write-time mode keeps the ratchet semantics:once at cap, any marker-bearing edit
-      # is blocked so the count cannot grow.
+      # the current snapshot is valid at the ceiling and is over quota only when it already exceeds it.
+      # Native write-time mode keeps the ratchet semantics:once at cap, any marker-bearing edit is over quota.
+      # 2026-11-27 r72:超過額度不再一律擋 —— 這次內容(原生 = 這次寫入的片段;CI = 整份檔)每個標記的理由都夠具體
+      # 就放行,還有不夠具體的才擋。每個 app 都在 CI 逐檔重播,所以超過額度的 app 每一個標記都會被要求具體理由。
       if [ "${GOVERNANCE_STATIC_REPLAY:-0}" = "1" ]; then
         [ "${REPO_TOTAL:-0}" -le "$REPO_CAP" ] && exit 0
       elif [ "${REPO_TOTAL:-0}" -lt "$REPO_CAP" ]; then
         exit 0
       fi
-      if [ "${REPO_TOTAL:-0}" -gt "$REPO_CAP" ] || [ "${GOVERNANCE_STATIC_REPLAY:-0}" != "1" ]; then
-        cat >&2 << EOF
-🚨 ESCAPE-MARKER-REPO-RATCHET BLOCKER(P0,2026-07-08 WM 戰役 R4)
+      collect_unspecific_escape_reasons
+      [ -z "$UNSPECIFIC" ] && exit 0
+      cat >&2 << EOF
+🚨 ESCAPE-MARKER-REPO-RATCHET BLOCKER(P0,2026-07-08 WM 戰役 R4;2026-11-27 r72 起超過額度改要求具體理由)
 
-  $SCAN_LABEL escape marker 存量已 $REPO_TOTAL 個(ceiling 每個 app $REPO_CAP),本次 edit 又要新增 $EDIT_ADDS_MARKER 個。
-  每檔 1-2 個散多檔 = 繞 per-file gate 的同型濫用 — repo 級 ratchet 攔。
+  $SCAN_LABEL escape marker 存量已 $REPO_TOTAL 個(額度每個 app $REPO_CAP),本次內容有 $EDIT_ADDS_MARKER 個,其中理由不夠具體的:
+$(echo "$UNSPECIFIC" | sed 's/^/    /')
 
-  修法 2 選 1:
-    (a) 先清既有 escape 的根因(重構走 DS canonical),存量 < $REPO_CAP 後再加真必要的
-    (b) Override env(極罕見,commit msg 必記 rationale):
-        GOVERNANCE_BYPASS_ESCAPE_MARKER_AUDIT=1
+  額度內的豁免,冒號後有理由就放行;超過額度時,每一個豁免都要寫「這一行自己的理由」
+  (冒號後至少 $SPECIFIC_MIN 個字,同一份內容裡不重複同一句)。做到就放行,不必等 DS 同意。
+
+  修法 3 選 1:
+    (a) 先清既有豁免的根因(重構走 DS canonical),存量回到額度內
+    (b) 把上面列出的每一行理由改寫成針對那一行的具體說明
+    (c) Override env(只在本機寫入當下有效,CI 重播不認):GOVERNANCE_BYPASS_ESCAPE_MARKER_AUDIT=1
+
+  DS 會定期看豁免清單(npm run governance:check 的 exemptions 那一行:各規則被豁免幾次)補規格沒想到的情境。
 EOF
-        exit 2
-      fi
+      exit 2
   fi
 fi
 

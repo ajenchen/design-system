@@ -127,6 +127,34 @@ else
   FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - Test 8"
 fi
 
+# Test 8b/8c/8d(2026-11-27 r72):CI 重播的逐檔豁免 @story-baseline-allow —— 附理由放行、空理由照擋、訊息教怎麼豁免
+echo "Test 8b: static replay + reasoned @story-baseline-allow → pass"
+run_hook "/some/apps/product/src/App.tsx" "// @story-baseline-allow: DS 沒有可對照的唯讀側欄範例
+$CONTENT" "" 1
+if [ "$EXIT" = "0" ]; then
+  echo "  PASS  Test 8b"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 8b (reasoned allow rejected;exit=$EXIT)"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - Test 8b"
+fi
+echo "Test 8c: static replay + empty @story-baseline-allow → block"
+run_hook "/some/apps/product/src/App.tsx" "{/* @story-baseline-allow: */}
+$CONTENT" "" 1
+if [ "$EXIT" = "2" ] && echo "$STDERR_TEXT" | grep -q "deterministic evidence missing"; then
+  echo "  PASS  Test 8c"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 8c (empty allow accepted;exit=$EXIT)"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - Test 8c"
+fi
+echo "Test 8d: block message teaches the reasoned exemption shape"
+run_hook "/some/apps/product/src/App.tsx" "$CONTENT" "" 1
+if [ "$EXIT" = "2" ] && echo "$STDERR_TEXT" | grep -qF "@story-baseline-allow: <理由>"; then
+  echo "  PASS  Test 8d"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 8d (message does not teach the exemption;exit=$EXIT)"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - Test 8d"
+fi
+
 # Test 9:soft handcraft warning must use the neutral model-visible context channel, never stderr.
 echo "Test 9: handcraft soft warning → governanceContext JSON"
 HANDCRAFT_CONTENT='<div className="flex border px-2">

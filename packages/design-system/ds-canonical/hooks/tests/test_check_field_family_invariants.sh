@@ -399,6 +399,16 @@ const cls = open && 'border-primary' // @field-state-ring-allow: 遷移中的相
 "
 expect_exit "A.3.3 該放:@field-state-ring-allow" 0
 
+# 2026-11-27 r72:豁免要冒號 + 理由才算;只有標記字、或冒號後空白 → 照擋
+run_hook "/r/packages/design-system/src/components/Select/select.tsx" "
+const cls = open && 'border-primary' // 見 @field-state-ring-allow
+"
+expect_exit "A.3.3 該擋:只在說明裡提到標記(沒冒號沒理由)" 2
+run_hook "/r/packages/design-system/src/components/Select/select.tsx" "
+const cls = open && 'border-primary' // @field-state-ring-allow:
+"
+expect_exit "A.3.3 該擋:空理由的 @field-state-ring-allow:" 2
+
 echo ""
 echo "=== A.3.4 data-field-open 記號只有 lib/composite-field-focus.ts 會寫(2026-11-13)==="
 A34="data-field-open 記號手寫"

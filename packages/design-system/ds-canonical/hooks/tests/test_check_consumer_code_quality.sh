@@ -60,6 +60,25 @@ grep -qF 'duplicate account entry' "$TMP/acct.stderr" \
   || { echo "FAIL account-entry-dup-needle: stderr lacks 'duplicate account entry'"; exit 1; }
 printf '<div className="h-[var(--chrome-header-height)] border-b border-divider" />\n' > "$FILE"; expect 2 chrome
 printf '<div className="bg-popover text-popover-foreground" />\n' > "$FILE"; expect 2 shadcn-alias
+# 2026-11-27 r72:shadcn 別名的逐行豁免(以前沒有任何出口)。附理由放行;空理由 / 太短 / 有一行沒標記照擋
+printf '<div className="bg-popover text-popover-foreground" /> {/* @shadcn-alias-ok: 第三方日曆套件只吃 shadcn 變數名 */}\n' > "$FILE"; expect 0 shadcn-alias-exempt-same-line
+printf '// @shadcn-alias-ok: 第三方日曆套件只吃 shadcn 變數名\n<div className="bg-popover text-popover-foreground" />\n' > "$FILE"; expect 0 shadcn-alias-exempt-previous-line
+printf '// @shadcn-alias-ok:\n<div className="bg-popover text-popover-foreground" />\n' > "$FILE"; expect 2 shadcn-alias-empty-reason
+printf '// @shadcn-alias-ok: 暫時\n<div className="bg-popover text-popover-foreground" />\n' > "$FILE"; expect 2 shadcn-alias-short-reason
+printf '// @shadcn-alias-ok: 第三方日曆套件只吃 shadcn 變數名\n<div className="bg-popover" />\n<p />\n<span className="bg-popover" />\n' > "$FILE"; expect 2 shadcn-alias-one-line-unmarked
+printf '<div className="bg-popover" />\n' > "$FILE"
+set +e
+payload | bash "$HOOK" >/dev/null 2>"$TMP/alias.stderr"
+set -e
+grep -qF '@shadcn-alias-ok: <至少 8 個字的理由>' "$TMP/alias.stderr" \
+  || { echo "FAIL shadcn-alias-teaches-escape: stderr lacks the escape shape"; exit 1; }
+printf '<div className="px-[var(--layout-space-loose)] border-b border-divider" />\n' > "$FILE"
+set +e
+payload | bash "$HOOK" >/dev/null 2>"$TMP/overlay.stderr"
+set -e
+grep -qF '@overlay-handcraft-allow: <至少 8 個字的理由>' "$TMP/overlay.stderr" \
+  || { echo "FAIL overlay-teaches-escape: stderr lacks the escape shape"; exit 1; }
+printf '// @overlay-handcraft-allow: 這是報表匯出預覽,不是可關閉的浮層\n<div className="px-[var(--layout-space-loose)] border-b border-divider" />\n' > "$FILE"; expect 0 overlay-escape-with-reason
 while IFS= read -r ALIAS; do
   printf '<div className="%s" />\n' "$ALIAS" > "$FILE"
   expect 2 "registry-alias-$ALIAS"

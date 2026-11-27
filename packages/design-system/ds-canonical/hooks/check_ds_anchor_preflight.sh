@@ -120,12 +120,22 @@ if governance_hook_grep_q 'DS story-baseline marker matcher failed' "$NEW_CONTEN
   -qE '@story-baseline:[[:space:]]*[^[:space:]]+'; then
   exit 0
 fi
+# 有理由的豁免(2026-11-27 r72;以前 CI 重播這條只有 env 出口、CI 不帶 env = 產品在 CI 沒有出口):
+# DS 沒有可對照的範例、或這段刻意偏離範例時,寫 `@story-baseline-allow: <理由>`(與 check_consumer_app_invariants r2、
+# check_story_invariants R8 同一個標記;冒號後要有理由,只有冒號或只剩註解收尾照擋)。
+if governance_hook_grep_q 'DS story-baseline allow matcher failed' "$NEW_CONTENT" \
+  -qE '@story-baseline-allow:[[:space:]]*[^[:space:]*]'; then
+  exit 0
+fi
 
 if [ "${GOVERNANCE_STATIC_REPLAY:-0}" = "1" ] || [ -z "$TRANSCRIPT_PATH" ]; then
   cat >&2 <<'EOF_STATIC'
 🚨 M29 DS Anchor Preflight — deterministic evidence missing
 DS primitive production code must contain `@story-baseline: <canonical-path>#<StoryName>` when no
 provider transcript is available. Transcript-dependent advice is not counted as CI enforcement.
+有合理理由(DS 沒有可對照的範例、或刻意偏離範例)可自行豁免:在檔內寫
+  // @story-baseline-allow: <理由>
+理由必填;不必等 DS 同意,DS 會定期看豁免清單補情境。
 EOF_STATIC
   exit 2
 fi
@@ -201,7 +211,9 @@ cat >&2 <<EOF
 → 這違反 M29 anchor preflight invariant + story-rules.md「Production-grade composition fidelity」。
 → 對 fork-user 後果:憑記憶寫 simplified mock(像 2026-05-26 App.tsx SidebarTrigger 漏 / collapsible 漏 / startIcon 漏)。
 
-修法 — 2 選 1(對齊 check_substantive_edit_approval_preflight.sh hybrid):
+修法 — 3 選 1(對齊 check_substantive_edit_approval_preflight.sh hybrid):
+  (0) 有合理理由(DS 沒有可對照的範例、或刻意偏離範例):檔內寫 \`// @story-baseline-allow: <理由>\`
+      (理由必填;CI 重播也認;不必等 DS 同意,DS 會定期看豁免清單補情境)
   (a) 先 Grep / Read DS canonical:
         - \`packages/design-system/src/<Component>/*.spec.md\`(找 owner SSOT)
         - \`packages/design-system/src/<Component>/*.stories.tsx\`(找完整佈局 baseline)

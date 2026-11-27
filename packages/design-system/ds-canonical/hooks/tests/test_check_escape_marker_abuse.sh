@@ -197,9 +197,10 @@ expect_not_block "N9. GOVERNANCE_BYPASS_ESCAPE_MARKER_AUDIT=1 override → not b
 
 # N10.(2026-11-27 上游判定 E18 改寫)以前 AllDsComponents.stories.tsx 有專屬放寬(distinct ≥6);範本改名
 # DsImportSmoke.stories.tsx、0 個 marker 後例外刪除 —— 同樣 3 種 marker 在舊檔名也照一般門檻擋(拿掉例外的對照組)。
+# (2026-11-27 r72:超過額度改成「理由都夠具體就放行」;這裡第三個理由改成不到 10 個字的 debug,維持測「超過額度」這條路)
 C_PORTAL='// @anatomy-exempt: canonical proxy portal
 // @consumer-catalog-allow: imports only, never hand-mocks components
-// @layout-space-magic-ok: debug-only export dump
+// @layout-space-magic-ok: debug
 export const Portal = 1;'
 run_hook "Write" "/repo/apps/template/src/AllDsComponents.stories.tsx" "content" "$C_PORTAL"
 expect_block "N10. 舊 portal 檔名不再有專屬放寬:3 distinct markers → blocked" "$BLOCK_NEEDLE"
@@ -303,14 +304,16 @@ expect_not_block "P1a. alpha 9 < cap(beta 的 9 不算進來)+ 加 1 → not blo
 run_hook "Write" "$TMP_DIR/apps/beta/src/new.tsx" "content" '<div /> // @ds-misuse-allow: beta bounded exception'
 expect_not_block "P1b. beta 9 < cap + 加 1 → not blocked"
 # P2. alpha 到 11 個 → 只擋 alpha;beta 仍可新增
+# (2026-11-27 r72:超過額度改成「理由都夠具體就放行」;P2a / P3a / P5a / P5b 的理由改成不到 10 個字,維持測計數根這條路;
+#  理由夠具體就放行的那一面在下方 Q-series)
 seed_app alpha 11
-run_hook "Write" "$TMP_DIR/apps/alpha/src/new.tsx" "content" '<div /> // @ds-misuse-allow: alpha one more'
+run_hook "Write" "$TMP_DIR/apps/alpha/src/new.tsx" "content" '<div /> // @ds-misuse-allow: alpha'
 expect_block "P2a. alpha 存量 11 ≥ cap + 加 marker → blocked(只擋 alpha)" "ESCAPE-MARKER-REPO-RATCHET"
 run_hook "Write" "$TMP_DIR/apps/beta/src/new.tsx" "content" '<div /> // @ds-misuse-allow: beta still fine'
 expect_not_block "P2b. alpha 超標不拖累 beta(beta 9 < cap)→ not blocked"
 # P3.(2026-11-27 規格核對必修 1 改寫)apps/<x> 還不存在 → 退回整個 apps/ 計數,不再當存量 0(那等於 ratchet 關掉)
 #    此時 alpha 11 + beta 9 = 20 ≥ cap → 擋並指名 apps/**
-run_hook "Write" "$TMP_DIR/apps/gamma/src/new.tsx" "content" '<div /> // @ds-misuse-allow: first exception in a new app'
+run_hook "Write" "$TMP_DIR/apps/gamma/src/new.tsx" "content" '<div /> // @ds-misuse-allow: first'
 expect_block "P3a. apps/gamma 還不存在 → 以整個 apps/ 計(20 ≥ cap)→ blocked" "apps/gamma 還不存在"
 # P3b. 對照:整個 apps/ 未達上限時,不存在的 app 第一筆照放行
 rm -rf "$TMP_DIR/apps"; seed_app alpha 3
@@ -319,7 +322,7 @@ expect_not_block "P3b. apps/gamma 還不存在、整個 apps/ 只有 3 → not b
 # P5.(必修 1)巢狀路徑:app 名取 apps/ 之後的第一段。apps/alpha/src/apps/zzz/… 屬於 alpha(舊貪婪 sed 取到 zzz → 存量 0 → 放行)
 seed_app alpha 11
 mkdir -p "$TMP_DIR/apps/alpha/src/apps/zzz"
-run_hook "Write" "$TMP_DIR/apps/alpha/src/apps/zzz/new.tsx" "content" '<div /> // @ds-misuse-allow: nested path exception'
+run_hook "Write" "$TMP_DIR/apps/alpha/src/apps/zzz/new.tsx" "content" '<div /> // @ds-misuse-allow: nested'
 expect_block "P5a. apps/alpha/src/apps/zzz/new.tsx 算 alpha(11 ≥ cap)→ blocked" "apps/alpha escape marker"
 # P5b. 專案根本身在 …/apps/proj/ 底下、編輯 consumer/…:不屬於任何 app → 以整個 apps/ 計(舊貪婪 sed 取到 proj → 不存在 → 0 → 放行)
 NEST_PROJ="$TMP_DIR/outer/apps/proj"
@@ -329,7 +332,7 @@ while [ "$i" -le 11 ]; do
   printf '// @ds-misuse-allow: seeded nested %s\n' "$i" > "$NEST_PROJ/apps/one/src/seed$i.tsx"
   i=$((i + 1))
 done
-GOVERNANCE_PROJECT_DIR="$NEST_PROJ" run_hook "Write" "$NEST_PROJ/consumer/src/new.tsx" "content" '<div /> // @ds-misuse-allow: consumer exception'
+GOVERNANCE_PROJECT_DIR="$NEST_PROJ" run_hook "Write" "$NEST_PROJ/consumer/src/new.tsx" "content" '<div /> // @ds-misuse-allow: consumer'
 expect_block "P5b. 專案根在 …/apps/proj/ 底下、consumer/ 檔 → 整個 apps/ 11 ≥ cap → blocked" "apps/** escape marker"
 # P5c. 對照:同一個專案,apps/one 降到 3 → 放行(證明 P5b 紅是因為存量,不是路徑本身被擋)
 rm -f "$NEST_PROJ"/apps/one/src/seed[4-9].tsx "$NEST_PROJ"/apps/one/src/seed1[01].tsx
@@ -354,6 +357,54 @@ run_hook "Write" "$TMP_DIR/apps/delta/src/new.tsx" "content" '<div /> // @ds-mis
 expect_block "P4b. apps/delta/src/dist 是原始碼(不在規範位置)、12 個照計 → blocked" "ESCAPE-MARKER-REPO-RATCHET"
 
 rm -rf "$TMP_DIR/apps"
+
+# ── Q-series(2026-11-27 r72,user 同日 model2 留言「當消費者有合理的理由想要修正應該也要給予可以調整的空間」)──
+# 超過額度不再一律擋:每個標記冒號後至少 10 個字、同一份內容不重複同一句 → 放行;否則擋並逐行指出。
+# 空理由在任何數量下都擋(-allow / -ok / -skip 三種字尾,JSX 註解收尾也算空)。
+mkdir -p "$TMP_DIR/apps/template/src"
+# Q1. 每檔超過額度(3 種),每個理由都針對那一行 → 放行(以前這裡一律擋)
+C_Q_SPECIFIC='// @ds-misuse-allow: 表格在側欄內寬度不夠,放不下 DataTable 的工具列
+// @story-baseline-allow: 這支只測鍵盤操作順序,不做畫面比對
+// @consumer-catalog-allow: 只匯入元件確認打包成功,沒有手刻元件
+export const App = 1;'
+run_hook "Write" "$CONSUMER" "content" "$C_Q_SPECIFIC"
+expect_pass "Q1. 超過每檔額度 + 每個理由都夠具體 → 放行"
+# Q2. 對照:同樣超過額度,但兩行複製貼上同一句理由 → 擋並指出是同一句
+C_Q_DUP='// @ds-misuse-allow: 產品經理指定的特殊版面需求
+// @story-baseline-allow: 產品經理指定的特殊版面需求
+// @consumer-catalog-allow: 只匯入元件確認打包成功,沒有手刻元件
+export const App = 1;'
+run_hook "Write" "$CONSUMER" "content" "$C_Q_DUP"
+expect_block "Q2. 超過每檔額度 + 兩行同一句理由 → 擋" "與第 1 行同一句理由"
+# Q3. 對照:超過額度、其中一個理由太短 → 擋並指出不到 10 個字
+C_Q_SHORT='// @ds-misuse-allow: 表格在側欄內寬度不夠,放不下 DataTable 的工具列
+// @story-baseline-allow: 暫時
+// @consumer-catalog-allow: 只匯入元件確認打包成功,沒有手刻元件
+export const App = 1;'
+run_hook "Write" "$CONSUMER" "content" "$C_Q_SHORT"
+expect_block "Q3. 超過每檔額度 + 一個理由太短 → 擋" "理由不到 10 個字"
+# Q4. app 存量 11 ≥ 額度(原生寫入)+ 本次理由夠具體 → 放行;對照 R1 / P2a(理由太短 → 擋)
+seed_app alpha 11
+run_hook "Write" "$TMP_DIR/apps/alpha/src/new.tsx" "content" '<div /> // @ds-misuse-allow: 這一列是唯讀摘要,刻意不用可互動的 MenuItem'
+expect_pass "Q4. app 存量超過額度 + 本次理由夠具體 → 放行"
+# Q5. CI 重播(整份檔,GOVERNANCE_STATIC_REPLAY=1):app 存量 11 > 10。理由太短 → 擋;改成具體理由 → 放行(兩面)
+GOVERNANCE_STATIC_REPLAY=1 run_hook "Write" "$TMP_DIR/apps/alpha/src/new.tsx" "content" '<div /> // @ds-misuse-allow: 暫時'
+expect_block "Q5a. CI 重播 app 超過額度 + 理由太短 → 擋" "ESCAPE-MARKER-REPO-RATCHET"
+GOVERNANCE_STATIC_REPLAY=1 run_hook "Write" "$TMP_DIR/apps/alpha/src/new.tsx" "content" '<div /> // @ds-misuse-allow: 這一列是唯讀摘要,刻意不用可互動的 MenuItem'
+expect_pass "Q5b. CI 重播 app 超過額度 + 理由夠具體 → 放行"
+rm -rf "$TMP_DIR/apps"; mkdir -p "$TMP_DIR/apps/template/src"
+# Q6. 空理由:-ok 家族(以前只認 -allow)與 JSX 註解收尾 `*/}` 都算空 → 擋;寫了理由 → 放行
+run_hook "Write" "$CONSUMER" "content" '<span>{/* @cat-solid-ok: */}</span>'
+expect_block "Q6a. {/* @cat-solid-ok: */} 空理由 → 擋" "ESCAPE-MARKER-NO-RATIONALE"
+run_hook "Write" "$CONSUMER" "content" 'const now = Date.now(); // @nondeterministic-ok:'
+expect_block "Q6b. // @nondeterministic-ok: 空理由 → 擋" "ESCAPE-MARKER-NO-RATIONALE"
+run_hook "Write" "$CONSUMER" "content" 'export const S = 1; // @app-story-title-skip:   '
+expect_block "Q6c. -skip 家族空理由 → 擋" "ESCAPE-MARKER-NO-RATIONALE"
+run_hook "Write" "$CONSUMER" "content" '<span>{/* @cat-solid-ok: 品牌指定活動色,白字對比已量過 */}</span>'
+expect_pass "Q6d. -ok 家族寫了理由 → 放行"
+run_hook "Write" "$CONSUMER" "content" '// @anatomy-rationale:
+// 這支 anatomy 只有兩個零件,理由寫在下一行'
+expect_pass "Q6e. -rationale 家族是多行說明開頭,不算空理由 → 放行"
 
 echo ""
 echo "=== Summary ==="

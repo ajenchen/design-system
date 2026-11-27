@@ -75,6 +75,12 @@ user-visible changes.
 Never replace a check with `true`, an empty script, a notice-only waiver, or an unverified claim.
 Missing required tooling is a failure, not a pass. Evidence must bind the checked source snapshot.
 
+Content checks default to the DS norm and block deviations. When this product has a reasonable cause
+the DS did not foresee, exempt that one place yourself — no DS approval needed: write the marker named
+in the block message plus a concrete reason in a comment on that line (e.g. `// @<rule>-ok: <reason>`).
+Empty reasons still block; the DS periodically reviews the exemption list to add the missing cases
+(details: `governance/consumer-governance.md` "Reasoned exemptions").
+
 ## Claude, Codex, and future agents
 
 - Registry materializers project one skill source into every enabled provider view; no view is SSOT.

@@ -38,8 +38,9 @@ esac
 # 排除:`[` 之後(arbitrary value,如 `h-[var(--x-${y})]`)、`var(` 內。
 governance_hook_grep_capture hits_candidates 'dynamic Tailwind matcher failed' "$content" -nE \
   '`[^`]*\b(h|w|min-h|max-h|min-w|max-w|size|gap|space-[xy]|p[xytblr]?|m[xytblr]?)-[a-z0-9-]*\$\{'
+# 2026-11-27 r72:豁免要「冒號 + 理由」才算(以前只要字串出現 @dynamic-tailwind-allow 就放行,空理由也過)。
 governance_hook_grep_capture hits_unescaped 'dynamic Tailwind escape filter failed' \
-  "$hits_candidates" -vE '@dynamic-tailwind-allow'
+  "$hits_candidates" -vE '@dynamic-tailwind-allow:[[:space:]]*[^[:space:]*]'
 governance_hook_grep_capture hits 'dynamic Tailwind arbitrary-value filter failed' \
   "$hits_unescaped" -vE '\[[^]]*\$\{|var\('
 
@@ -51,7 +52,7 @@ if [ -n "$hits" ]; then
   echo "  病根:2026-07-09 DataTable row-height regression(h-table-row-\${size} → utility 消失 → row 塌 + 選取走位)" >&2
   echo "  正解:改 literal map,class 名寫完整字面 —" >&2
   echo "    const cls = { sm: 'h-table-row-sm', md: 'h-table-row-md', lg: 'h-table-row-lg' }[size]" >&2
-  echo "  逃生:確實非 class(CSS var 值等)→ 行尾加 // @dynamic-tailwind-allow: <理由>" >&2
+  echo "  逃生:確實非 class(CSS var 值等)→ 行尾加 // @dynamic-tailwind-allow: <理由>(理由必填;有合理理由可自行豁免,DS 會定期看豁免清單)" >&2
   exit 2
 fi
 exit 0

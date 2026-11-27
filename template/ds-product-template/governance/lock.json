@@ -42,13 +42,13 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "c737587c176339a10c86d89bab9edf20714c164ea5bfb9e6c42afdc4da4ae8b5",
+    "forkCorpusLockSha256": "9444a515716ab2d08c6ce771ffcae7a1c01884a8ca998dfbfbe60051da9ad8b5",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
     "providerLifecycleSha256": "69fa942cf9c3cddd5026b1844b5f2d943e8ceeb21f679b4089fd2701f6e0eae3",
     "providerInventorySha256": "00adf1c4f6b3367055a9cc3fdfe658660771b4c9931f696e12761a95076ad92c",
     "executionRuntimeSha256": "d9377cc45308731f287d7b1711b7c38fc4e02ff8f84729bcbbf01bb52d136904",
-    "commonInstructionSha256": "d60911d6b1983d69588a927b37decd15d8b0bf6457e0bbd7e54752978651ccb6",
+    "commonInstructionSha256": "5684c92d9dc338597d46e0bb89482762b1f0f5592583e2ba6bc9d23ef07657fb",
     "providerArtifactDigests": {
       "claude": {
         "instructionSha256": "b3590d8b3dfa4cafec559d6682b32b1c9702d68fbc2d08ab5f1d04df3d1ff304",
@@ -57,7 +57,7 @@
         "treeDigests": {}
       },
       "codex": {
-        "instructionSha256": "d60911d6b1983d69588a927b37decd15d8b0bf6457e0bbd7e54752978651ccb6",
+        "instructionSha256": "5684c92d9dc338597d46e0bb89482762b1f0f5592583e2ba6bc9d23ef07657fb",
         "hookSha256": "78748b0379593f8575a7937c84a70671367ed1d58448b0de70f94cd584ac2996",
         "skillsSha256": "c6ab99bc6a0a5728b35b59e59f44a70358854e9a3bd62cf2c4528de709139d74",
         "treeDigests": {}
@@ -72,7 +72,7 @@
     "mergeSurfaceDigests": {
       "claude": "b17888945b06f3433e8cbeb0b659d63e41dbd391906461b6453500d8ec8ecec1"
     },
-    "governanceCheckSha256": "cbb7207b3e504073384ca352cfb6a9074782e7de8da630de79132544a67794d2",
+    "governanceCheckSha256": "e123bedc113bfb45b7c8eaf9be0e77a87245e60ddbc84b740adfecf6366daa5a",
     "utilityRegistrySha256": "473fb705e490b39739361c82f6063b80865990b01f3c35dd30a9cfa18e216e70",
     "sharedSkillsSha256": "9a7912ed1e261b1bbc259f141c5badb5d8f564f59fb2bb778e0b11c409bdf070",
     "sharedSkillCount": 11,
@@ -94,7 +94,7 @@
       ".devcontainer/post-create.mjs": "6bc05d2597a54e8f6a5a087901e92ccc89acc3d5873d96ad20814f8f539a146b",
       ".github/workflows/audit.yml": "ff1bb33e94c6de2f96e242c8853089565e292d9dbf183cb25151ec02e95eeff2",
       ".npmrc": "2984e2fb8b6ba8fad758ad0e18c3bc49be706a1e1ed56e1fc2b45ec4dfdc7f07",
-      "governance/consumer-governance.md": "200d2e6c29e7bbde2be3a8d66c92fad1c6232d0ad4891bba06b299984d1eb932",
+      "governance/consumer-governance.md": "cb9ed0113490ba9918a8d70ebae0b32cf99b36d327ebe4404455d9c7095cbc79",
       "governance/provider-cli-toolchain.json": "5280bc83de46486d6fd13e29349eee849d347970ed5fdf32412d463629124170",
       "governance/provider-cli-toolchain.package-lock.json": "d0a5fceebe21101b67848e7ace1856e9bc35f6532e4ba4deaf64462fe4fc81bb",
       "governance/schemas/content-debt-baseline.schema.json": "e57421ff52ee68510bf070009f25941aa5ff45126c08e32d571c57fd76b59d3a",
