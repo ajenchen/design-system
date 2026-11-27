@@ -18,7 +18,7 @@ import { CALENDAR_EVENT_DETAIL_WIDTH_PX } from './calendar-geometry'
  * - components: [Popover(PopoverAnchor virtualRef / PopoverContent side="right" + align="start"(子選單擺法,popover.spec.md「禁止事項」用法 (2);
  *   sideOffset / collisionPadding / 碰撞翻面 = Popover 預設,tokens/elevation/overlay-geometry.ts)+ aria-label / PopoverHeader closeAriaLabel + actions / PopoverBody),
  *   InlineEdit(標題 as="h2" size="sm" + 各欄 renderRead / renderEdit / multiline / editable 閘), Field + FieldLabel + FieldGroup(垂直排、閱讀情境),
- *   Switch(全天:可改時直接切換;只能看時不畫這一欄【ALLDAY-VIEW(定)】), DatePicker.Range(檢視 formatRange、編輯 showTime), Select(類別:display="tag")]
+ *   Switch(全天:可改時直接切換;只能看時不畫這一欄【ALLDAY-VIEW(定)】), DatePicker.Range(檢視 formatRange、編輯 showTime + defaultOpen), Select(類別:display="tag")]
  * - patterns: [overlay-surface `EDITABLE_TITLE_HEADER_SLOT`(標題是 InlineEdit sm 時的標題列 slot 與 × 讓位;overlay-chrome-sizing.spec.md「可編輯標題的標題列」)]
  * - tokens: 無直接讀取 —— 標題列高、欄位間距、body 上下左右內距、垂直排就地編輯外伸,全由上面的元件與 layoutSpace.css(PopoverBody = hug)給,本檔不寫任何間距
  * - 資料: ./calendar-layout.ts(detailRangeOf / rangeToTimePatch / toggleAllDayPatch:時間欄的值、全天 end 不含 ↔ Range 結束日含、全天切換)
@@ -242,8 +242,11 @@ function DetailFields<E>({ entry, detail, labels, locale, readFormat, onChange, 
           )}
           // 編輯:一個 DatePicker.Range,有時段時加 showTime(date-picker.spec.md:69)。兩端都選好才提交(Range 自己的 onChange 在完成時才呼叫)
           // 兩端的字與平常同一份寫法(readFormat;日期兩位數月日、時間同月格)—— 看和改不會是兩種寫法(DATE-TIME(定)2026-11-26)
+          // defaultOpen:點一下進編輯就開日曆、焦點在日曆裡(同下方類別欄的 Select defaultOpen、DataTable 日期格;2026-11-27 前只把焦點交給
+          // 開始端、日曆沒開,要再點一次)
           renderEdit={(p) => (
             <DatePicker.Range
+              defaultOpen
               size={p.size}
               value={p.value}
               showTime={showTime}

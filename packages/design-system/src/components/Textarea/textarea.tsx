@@ -36,7 +36,7 @@ import { FieldDescriptionRow, useControlCharCount } from '@/design-system/compon
 // chrome 規則由 compoundVariants 決定,鏡射 fieldWrapperStyles 對齊 canonical(Phase D 將整併進 fieldWrapperStyles)。
 const textareaVariants = cva(
   [
-    'w-full rounded-md',
+    'block w-full rounded-md', // block:預設 inline-block 在一般區塊容器裡下方多 5px(InlineEdit 多行進編輯跳高;textarea.spec.md「Rows / 高度控制」區塊層級)
     'text-foreground font-normal',
     // @focus-suppress B — B Field 家族輸入控件;承擔者:指示器是 Field wrapper 的邊框
     'outline-none resize-y',

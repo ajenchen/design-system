@@ -47,7 +47,7 @@ open 軸同樣只開最小 API — **uncontrolled-only**:`defaultOpen`(初始開
 
 **為什麼**:
 - 已知需求只要「初始開 + 知道何時關」:(1) 視覺快照 — Storybook OpenSnapshot / visual-audit(M15)`defaultOpen` 一行達成;(2) DataTable cell-as-input(`DataTable/cell-registry.tsx`)— `defaultOpen` 1-step 開 calendar,`onOpenChange(false)` → cell exit edit mode
-- open 跟 draft 暫存生命週期綁死:確認 commit(date-picker.tsx `handleConfirm` → `onChange` + close)/ `needConfirm=false` 選日即關 / Esc + outside-click dismiss。controlled `open` 等於把 draft-commit 時機切一半給 consumer,漏接 → draft 沒 commit / cell 卡 edit。`DatePicker.Range` 更進一步 — open + `activeEnd` 純內部編排,連 pair 都不收
+- open 跟 draft 暫存生命週期綁死:確認 commit(date-picker.tsx `handleConfirm` → `onChange` + close)/ `needConfirm=false` 選日即關 / Esc + outside-click dismiss。controlled `open` 等於把 draft-commit 時機切一半給 consumer,漏接 → draft 沒 commit / cell 卡 edit。`DatePicker.Range` 更進一步 — open + `activeEnd` 純內部編排,只收 `defaultOpen`(2026-11-27:放在 `InlineEdit` 裡時點一下進編輯就開好日曆、焦點在日曆裡,同 (2) 的 1-step;修前沒有這個參數,Calendar 詳情的時間欄點一下只把焦點交給開始端、要再點一次,user 2026-11-27 原話「為何日期就地編輯點了第一下不會自動 focus?」),不收 `onOpenChange` 與 controlled `open`
 - 世界級對照:Radix Popover([radix-ui.com/primitives/docs/components/popover](https://www.radix-ui.com/primitives/docs/components/popover))/ Ant Select([ant.design/components/select](https://ant.design/components/select))/ MUI Select([mui.com/material-ui/api/select](https://mui.com/material-ui/api/select/))皆提供 controlled `open` — 它們是泛用 primitive / library,必須支援任意 orchestration;本 DS 是 opinionated form control,無真實 consumer 需求前不為「可能性」付受控成本(Rule-of-3)
 
 **若未來要開 controlled open**:同 value 軸引入 `useControllableState` helper + 測 controlled↔uncontrolled switch,屬 major API 擴充,非本 session scope。
@@ -170,6 +170,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
   showSeconds                           // showTime 時是否顯示秒
   minuteStep={15}
   needConfirm                           // 預設 showTime=true 時為 true
+  defaultOpen                           // 選填,預設 false;掛上時面板就開著、作用端從開始端起(就地編輯用,見「Open-pair rationale」)
   formatRange                           // 選填,預設 false;只管 mode="view":兩端寫成一段(同一天合併),見「區間檢視合併(formatRange)」
 />
 ```

@@ -17,6 +17,8 @@
  *       —— 扣的兩個框寬就是那上下兩條邊框(框寬只有一個住處 --field-border-width;寫死 1px / 2px 由 reading-context-invariant 靜態段擋),
  *       少扣 → 靜止外框比編輯中的 <Input> 高 2px(修前 sm 30 / 編輯 28),邊框拿掉卻還在扣 → 矮 2px。像素實量在
  *       popover.anatomy.stories.tsx 的 EditableTitleHeaderProbe(靜止 / 編輯中標題列同為 2×tight + sm 欄位高)。
+ *   (6) 2026-11-27 加:textarea.tsx 的 textareaVariants 基底是 `block`(<textarea> 預設 inline-block,在 InlineEdit 的編輯容器裡下方多 5px,
+ *       多行就地編輯進編輯跳高;像素實量見 textarea.spec.md「Rows / 高度控制」區塊層級那一條)。
  *
  * 用法:node scripts/inline-edit-view-geometry-invariant.mjs [--check]
  *
@@ -82,6 +84,13 @@ for (const size of SIZES) {
 const ie = read('packages/design-system/src/components/InlineEdit/inline-edit.tsx')
 if (!ie.includes("'relative flex min-w-0 rounded-md border-[length:var(--field-border-width)] border-transparent'")) {
   errors.push('inline-edit.tsx 靜止外框不再是 `border-[length:var(--field-border-width)] border-transparent`(一條框寬的透明邊框)—— fieldViewGeometry min-h 扣的兩個框寬失去依據,兩邊要一起改')
+}
+
+// (6) 2026-11-27 加:Textarea 是區塊層級(cva 基底第一個 class 字串以 `block ` 開頭)。<textarea> 預設 inline-block,InlineEdit 多行的編輯容器
+//     是一般區塊 → 它坐在行框基線上、下方多一段字元下伸的空間:修前一般 / 大密度、空值 / 有值都是編輯中比靜止高 5px(Chromium 實測,
+//     檢視 28 → 編輯 33;user 2026-11-27 回報空的「說明」點了會變高)。像素實量的出處:textarea.spec.md「Rows / 高度控制」區塊層級那一條
+if (!/const textareaVariants = cva\(\n  \[\n(?:\s*\/\/[^\n]*\n)*\s*'block w-full /.test(ta)) {
+  errors.push('textarea.tsx 的 textareaVariants 基底不是 `block`(第一個 class 字串應以 `block w-full` 開頭)—— <textarea> 回到 inline-block,放進 InlineEdit 的編輯容器會比靜止外框高 5px(多行就地編輯進編輯跳高)')
 }
 
 if (errors.length) {
