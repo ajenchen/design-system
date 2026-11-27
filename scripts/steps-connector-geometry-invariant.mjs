@@ -22,11 +22,13 @@
  *   量法: 靜態站開 story,讀 `[data-steps-indicator]` / `[data-steps-connector]` / `[data-steps-label]` 的 getBoundingClientRect 與
  *         scrollWidth / clientWidth(M32:量像素幾何,不看 class);tooltip 由 Playwright 真的滑過步驟名、等 `[role="tooltip"]` 畫出來。
  *   對照組(`--selftest`):(a) 判定表 —— 修前實測數字(垂直 18.2 / 2.2 / 0、水平 480 的 216–240 對 208)與每一項的壞形狀必紅、好形狀必綠;
- *         (b) 有建置時,在真的建置上注入九種破壞,各自讓指定那一項紅:拿掉截斷(步驟名照修前不准縮)→ 推導窄寬的連接線進圓
+ *         (b) 有建置時,在真的建置上注入十一種破壞,各自讓指定那一項紅:拿掉截斷(步驟名照修前不准縮)→ 推導窄寬的連接線進圓
  *         (本機字寬一次、字寬模擬到 8px 一次);步驟名改回折行 → 窄的單行紅;tooltip 藏掉 → 窄的 tooltip 紅;
  *         最後一步照修前不准縮 → 長名字的「前面被擠成…」紅(本機字寬一次、字寬模擬到 8px 一次 ——
  *         字距 = 8 − 這台機器實測的字寬,實測已 ≤ 8 就不套、照跑);最後一步撐滿 → 寬的「最後一步自然寬」紅;
- *         水平地板改回 24 / 改成 8 → 推導窄寬的水平地板各自紅(E12w);
+ *         水平地板改回 24 / 改成 8 → 推導窄寬的水平地板各自紅(E12w;本機字寬與字寬模擬到 8px 各一次)。
+ *         每一格只量它要證明的那一項:只有 tooltip 那一格滑過步驟名,其餘只量幾何(地板 24 在 8px 字下把步驟名擠到 0 寬、滑不到,
+ *         PR #174 CI 639927c0 紅;見 LIVE_SABOTAGE 檔頭);
  *         (c) 綠面:字寬模擬到 8px 時修後的長名字場景、本機字寬與字寬模擬到 8px 時修後的推導窄寬場景,都必須全綠
  *         (只有破壞會紅,不是窄字型或推導出的寬度本身就紅)。
  *   長名字場景的寬度(2026-11-27,PR #174 CI 紅的根因):原本寫死視窗 592。CI 的 Linux 沒有 CJK 字型,中文每字約 8px(本機 14px),
@@ -432,8 +434,12 @@ async function openHorizontal(page, origin, vw, sabotageCss, longLast) {
   return { items, olWidth }
 }
 
-/** 開展示「水平」story 量一個場景;sabotageCss = 對照組注入的破壞。回 { scene } 或 { instrument }。 */
-async function measureHorizontalScene(page, origin, name, sabotageCss = null) {
+/**
+ * 開展示「水平」story 量一個場景;sabotageCss = 對照組注入的破壞。回 { scene } 或 { instrument }。
+ * hover = false:只量幾何、不滑過步驟名(tooltips 留空)。只給「要證明的那一項是幾何」的破壞格用(見 LIVE_SABOTAGE 檔頭);
+ * 主跑與綠面一律滑過,tooltip 判準與「窄場景沒有滑過任何步驟名」前提照舊。
+ */
+async function measureHorizontalScene(page, origin, name, sabotageCss = null, { hover = true } = {}) {
   let opened
   let derived = null
   try {
@@ -489,8 +495,8 @@ async function measureHorizontalScene(page, origin, name, sabotageCss = null) {
   if (opened.instrument) return { instrument: `${name}:${opened.instrument}` }
   const { items } = opened
   const tooltips = []
-  // 窄:每一步都滑過(被截斷的要出、沒被截斷的不出);寬:滑過第一步(不該出);長名字只量幾何
-  const toHover = isNarrowScene(name) ? items.map((_, i) => i) : name === 'wide' ? [0] : []
+  // 窄:每一步都滑過(被截斷的要出、沒被截斷的不出);寬:滑過第一步(不該出);長名字只量幾何;hover = false 的破壞格不滑
+  const toHover = !hover ? [] : isNarrowScene(name) ? items.map((_, i) => i) : name === 'wide' ? [0] : []
   for (const i of toHover) {
     const it = items[i]
     const truncated = isTruncated(it.label)
@@ -537,10 +543,18 @@ const NO_SHRINK_LAST_CSS = 'ol[data-orientation="horizontal"] > li:last-child{fl
 
 const NO_TRUNCATE_CSS = 'div:has(> [data-steps-label]){flex-shrink:0!important}[data-steps-label] > *{overflow:visible!important;text-overflow:clip!important}'
 
-// 真建置上的九種破壞(selftest (b)):各自必須讓指定那一項紅
+// 水平地板 12 的兩面(E12w):連接線外層的 inline minWidth 被 !important 蓋掉
+const FLOOR_24_CSS = 'div:has(> [data-steps-connector="horizontal"]){min-width:24px!important}'
+const FLOOR_8_CSS = 'div:has(> [data-steps-connector="horizontal"]){min-width:8px!important}'
+
+// 真建置上的十一種破壞(selftest (b)):各自必須讓指定那一項紅
 // 「拿掉截斷」與水平地板兩格在 narrow-derived(由實測內容推導的窄寬,deriveNarrowWidth)上注入,不在固定的 480:
 // 480 是否擠得爆取決於這台機器的字寬(CI 每字 8px 時拿掉截斷只把線推出本步 5px,進不了下一步的圓 —— PR #174 CI 1b6eed00 紅)。
 // 推導寬保證:最長的步驟名照原寬時線必進下一步的圓;同一個寬度下,地板 24 時必有截斷(線 24 > 12)、地板 8 時最長那步線必 < 12。
+// 每一格只量它要證明的那一項:只有證明 tooltip 的那一格滑過步驟名(hover),其餘各格要證明的都是幾何(線進圓 / 單行 / 被擠成「…」/
+// 自然寬 / 地板),不滑。地板改回 24 在字窄的機器上會把步驟名擠到 0 寬(CI 8px 字、推導寬每步 70:36 + 12 + 24 = 72 > 70),
+// 0 寬的元素滑不到(locator.hover「Element is outside of the viewport」)→ 記成儀器失效,而那一格根本不需要滑(PR #174 CI 639927c0 紅)。
+// 地板兩格與拿掉截斷各在本機字寬與字寬模擬到 8px 下各跑一次。
 const LIVE_SABOTAGE = [
   ['拿掉截斷(步驟名照修前不准縮、不截斷)', 'narrow-derived', NO_TRUNCATE_CSS, 'connector-into-next'],
   ['拿掉截斷(字寬約 8px,模擬 CI Linux)', 'narrow-derived', (glyphPx) => narrowGlyphCss(glyphPx) + NO_TRUNCATE_CSS, 'connector-into-next'],
@@ -550,9 +564,10 @@ const LIVE_SABOTAGE = [
   // css 是函式的格:以實測字寬組 CSS(見 narrowGlyphCss)
   ['最後一步照修前不准縮(字寬約 8px,模擬 CI Linux)', 'long-last', (glyphPx) => narrowGlyphCss(glyphPx) + NO_SHRINK_LAST_CSS, 'long-last-squeezed'],
   ['最後一步撐滿(拿掉自然寬上限)', 'wide', 'ol[data-orientation="horizontal"] > li:last-child{max-width:none!important}', 'wide-last-natural'],
-  // 水平地板 12 的兩面(E12w):連接線外層的 inline minWidth 被 !important 蓋掉
-  ['水平地板改回 24', 'narrow-derived', 'div:has(> [data-steps-connector="horizontal"]){min-width:24px!important}', 'connector-floor'],
-  ['水平地板改成 8', 'narrow-derived', 'div:has(> [data-steps-connector="horizontal"]){min-width:8px!important}', 'connector-floor'],
+  ['水平地板改回 24', 'narrow-derived', FLOOR_24_CSS, 'connector-floor'],
+  ['水平地板改回 24(字寬約 8px,模擬 CI Linux)', 'narrow-derived', (glyphPx) => narrowGlyphCss(glyphPx) + FLOOR_24_CSS, 'connector-floor'],
+  ['水平地板改成 8', 'narrow-derived', FLOOR_8_CSS, 'connector-floor'],
+  ['水平地板改成 8(字寬約 8px,模擬 CI Linux)', 'narrow-derived', (glyphPx) => narrowGlyphCss(glyphPx) + FLOOR_8_CSS, 'connector-floor'],
 ]
 // 綠面(selftest (c)):不破壞,修後形狀必須全綠 —— 證明上一組的紅來自破壞,不是窄字型或推導出的寬度本身
 const LIVE_GREEN = [
@@ -588,7 +603,8 @@ if (isMain) {
         console.log(`  字寬模擬:${glyphNote}`)
         const cssOf = (css) => { const s = typeof css === 'function' ? css(glyph.px) : css; return s || null }
         for (const [name, sceneName, css, kind] of LIVE_SABOTAGE) {
-          const r = await measureHorizontalScene(page, origin, sceneName, cssOf(css))
+          // 只有證明 tooltip 的那一格需要滑過;其餘只量幾何(LIVE_SABOTAGE 檔頭)
+          const r = await measureHorizontalScene(page, origin, sceneName, cssOf(css), { hover: kind === 'tooltip' })
           if (r.instrument) { problems.push(`${INSTRUMENT_FAIL_MARKER}(對照組「${name}」):${r.instrument}`); continue }
           const fails = judgeHorizontal(r.scene)
           const hit = fails.filter((x) => x.kind === kind)
