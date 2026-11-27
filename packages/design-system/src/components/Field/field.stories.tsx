@@ -20,7 +20,6 @@ import { FileUpload } from '@/design-system/components/FileUpload/file-upload'
 import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 import { InlineSearchYieldWidthProbe, ViewAlignmentProbe } from './_field-contract-probes'
 import { ReadingContextDemo, ReadingContextFixture } from './_demo-reading-context'
-import { ViewThenEditDemo, VIEW_THEN_EDIT_DOC } from './_demo-view-edit'
 import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
@@ -802,9 +801,6 @@ export const FormValidation: Story = {
     </>
   ),
 }
-
-// ── 按編輯整組變表單(Field 層純顯示的唯一用途,field.spec.md「閱讀情境」的「不變與邊界」;畫面與說明住 `_demo-view-edit.tsx`)──
-export const ViewThenEdit: Story = { name: '按編輯整組變表單', parameters: { docs: { description: { story: VIEW_THEN_EDIT_DOC } } }, render: () => <ViewThenEditDemo /> }
 
 // ── 欄位內搜尋讓位 × 欄寬(test-only 契約 probe,2026-10-07 待辦總帳 K4;2026-10-13 加 K6 / K7)──────────────────────────
 // probe 元件住 `_field-contract-probes.tsx`(K9:本檔超過 800 行上限而搬出;說明、規則 owner 與閘都寫在那裡)。

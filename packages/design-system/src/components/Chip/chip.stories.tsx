@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { fn } from 'storybook/test'
 import { useState } from 'react'
 import { Chip, ChipGroup } from './chip'
 import { Badge } from '@/design-system/components/Badge/badge'
@@ -110,34 +109,4 @@ export const AssistAttachments: Story = {
       </div>
     )
   },
-}
-
-// 一排 assist chip(訊息附件以外;chip.spec.md「一排 assist chip(訊息附件以外)」,user 2026-11-26 決策卡 E2 選
-// 「A:照附件列同一套寫進 chip 規格,閘放行」):會換行的語意清單 ul role="list" + li、間距 gap-1(= AgentMessage 附件列同值,
-// 主人 agent-panel.spec.md「4. AgentMessage(訊息)」附件列)。max-w-xs 讓四個建議在預覽裡換成兩排,看得到上下也是 4。
-const QUICK_SUGGESTIONS = [
-  { id: 'summary', label: '摘要這份報告' },
-  { id: 'todos', label: '列出待辦事項' },
-  { id: 'reply', label: '草擬回覆' },
-  { id: 'translate', label: '翻成英文' },
-] as const
-
-const askAgent = fn().mockName('送出給智慧代理')
-
-export const AssistSuggestionRow: Story = {
-  name: '一排可點的建議',
-  parameters: {
-    docs: { description: { story: '文件頁上方給智慧代理的快捷建議:一排按鈕語意的 Chip,寬度不夠就換到下一排,點一下直接把那句話送給代理。' } },
-  },
-  render: () => (
-    <div className="max-w-xs">
-      <ul role="list" className="flex flex-wrap gap-1">
-        {QUICK_SUGGESTIONS.map((suggestion) => (
-          <li key={suggestion.id}>
-            <Chip variant="assist" onClick={() => askAgent(suggestion.label)}>{suggestion.label}</Chip>
-          </li>
-        ))}
-      </ul>
-    </div>
-  ),
 }

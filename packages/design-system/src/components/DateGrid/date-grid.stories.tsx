@@ -35,7 +35,9 @@ const Card = ({
   // 區段標題 + 說明 = 共用 ExampleSection(標題 ↔ 說明 2px、標題區 → 內容 loose;A4 甲)
   <ExampleSection title={title} description={desc}>
     {/* 外框不加內距:DateGrid 每張月曆自己四周留 --item-px(date-grid.tsx month),與 DatePicker 的 PopoverContent(不另加內距)是同一個單一內距 owner;
-        讀數列同樣用 --item-px 內縮,不再另加間距 */}
+        行內小卡的標題列同樣用 --item-px 內縮,不再另加間距。
+        單日 / 多日 / 範圍三則不在月曆下方放「已選…」讀數:產品裡的選取結果在呼叫端的欄位或報表上,不在月曆元件裡(user 2026-11-27 確認頁:
+        「下面那幾張日期選單，最下面那行已選生日和查詢範圍不可能會在元件內出現吧？為何要這樣展示不現實的東西？」)*/}
     <div className="inline-flex bg-surface-raised border border-border rounded-md w-fit">
       {children}
     </div>
@@ -44,12 +46,6 @@ const Card = ({
 
 const formatDate = (d: Date) =>
   new Intl.DateTimeFormat('zh-TW', { year: 'numeric', month: 'short', day: 'numeric' }).format(d)
-
-const formatRange = (from?: Date, to?: Date) => {
-  if (!from) return '尚未選擇'
-  if (!to) return `${formatDate(from)} — 選擇結束日期`
-  return `${formatDate(from)} → ${formatDate(to)}`
-}
 
 // ── Stories ──────────────────────────────────────────────────────────────────
 
@@ -67,19 +63,14 @@ export const Single: Story = {
           title="選擇生日"
           desc="使用者設定頁填寫個人資料時的生日欄位,對標 Notion / Google Account。單日選擇,點新日取代舊選。"
         >
-          <div className="flex flex-col">
-            <DateGrid
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              defaultMonth={date}
-              today={STORY_TODAY}
-              locale={zhTW}
-            />
-            <div className="text-caption text-fg-secondary px-[var(--item-px,var(--field-px))] pb-[var(--item-px,var(--field-px))]">
-              已選生日:<span className="font-medium text-foreground">{date ? formatDate(date) : '尚未選擇'}</span>
-            </div>
-          </div>
+          <DateGrid
+            mode="single"
+            selected={date}
+            onSelect={setDate}
+            defaultMonth={date}
+            today={STORY_TODAY}
+            locale={zhTW}
+          />
         </Card>
       </div>
     )
@@ -104,22 +95,14 @@ export const Multiple: Story = {
           title="活動可參加日期"
           desc="參考 Luma / Calendly — 受邀者勾選所有能參加的日期,主辦方彙整後決定最終日期。不連續多選,點已選日即取消。"
         >
-          <div className="flex flex-col">
-            <DateGrid
-              mode="multiple"
-              selected={dates}
-              onSelect={(d) => setDates(d ?? [])}
-              defaultMonth={STORY_TODAY}
-              today={STORY_TODAY}
-              locale={zhTW}
-            />
-            <div className="text-caption text-fg-secondary px-[var(--item-px,var(--field-px))] pb-[var(--item-px,var(--field-px))]">
-              已選 <span className="font-medium text-foreground">{dates.length}</span> 天:
-              <span /* @layout-space-magic-ok: 同一行讀數裡「已選 N 天:」↔ 日期清單的行內 4px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(ec7466f5 同值) */ className="ml-1 text-fg-secondary">
-                {dates.length ? dates.map(formatDate).join('、') : '尚未選擇'}
-              </span>
-            </div>
-          </div>
+          <DateGrid
+            mode="multiple"
+            selected={dates}
+            onSelect={(d) => setDates(d ?? [])}
+            defaultMonth={STORY_TODAY}
+            today={STORY_TODAY}
+            locale={zhTW}
+          />
         </Card>
       </div>
     )
@@ -143,20 +126,15 @@ export const Range: Story = {
           title="營收報表時段"
           desc="參考 Stripe Dashboard / Vercel Analytics — 選擇查詢的起訖日。第一次點擊設起日,第二次點擊設迄日,中間自動填滿。"
         >
-          <div className="flex flex-col">
-            <DateGrid
-              mode="range"
-              selected={range}
-              onSelect={setRange}
-              defaultMonth={range?.from ?? STORY_TODAY}
-              today={STORY_TODAY}
-              locale={zhTW}
-              numberOfMonths={2}
-            />
-            <div className="text-caption text-fg-secondary px-[var(--item-px,var(--field-px))] pb-[var(--item-px,var(--field-px))]">
-              查詢範圍:<span className="font-medium text-foreground">{formatRange(range?.from, range?.to)}</span>
-            </div>
-          </div>
+          <DateGrid
+            mode="range"
+            selected={range}
+            onSelect={setRange}
+            defaultMonth={range?.from ?? STORY_TODAY}
+            today={STORY_TODAY}
+            locale={zhTW}
+            numberOfMonths={2}
+          />
         </Card>
       </div>
     )

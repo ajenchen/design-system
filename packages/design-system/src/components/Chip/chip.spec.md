@@ -224,7 +224,7 @@ Chip 的 overflow 處理有三種模式：
 </ul>
 ```
 
-**閘**:產品程式寫入當下由 `check_layout_space_magic_numbers.sh` 認得這一個結構(`src/tokens/utility-registry.json` 的 `canonical_micro_geometry.assist_chip_row`),`gap-1` 不必加豁免註解;手刻 `div`、`ul` 沒寫 `role="list"`、間距不是 `gap-1`、清單裡有不是 assist 的 Chip,照擋。範例:`chip.stories.tsx`「一排可點的建議」。
+**閘**:產品程式寫入當下由 `check_layout_space_magic_numbers.sh` 認得這一個結構(`src/tokens/utility-registry.json` 的 `canonical_micro_geometry.assist_chip_row`),`gap-1` 不必加豁免註解;手刻 `div`、`ul` 沒寫 `role="list"`、間距不是 `gap-1`、清單裡有不是 assist 的 Chip,照擋。範例:不另開一則 —— 換行與間距的畫面同 `chip.stories.tsx`「按鈕語意附件」的附件列,結構照上方程式碼(user 2026-11-27 確認頁留言,逐字:「Chip當初不是說不會有新範例？因為目前chips裡面就有類似範例了？」;第六輪同題留言「chips不是已經就有這種範例了嗎？？？？」)。
 
 ---
 
