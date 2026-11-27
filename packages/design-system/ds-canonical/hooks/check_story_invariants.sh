@@ -1187,7 +1187,36 @@ rule_secondary_variant_pair() {
   hits=$(printf '%s' "$NEW_CONTENT" | python3 -c '
 import re, sys
 text = sys.stdin.buffer.read().decode("utf-8", "replace")
-danger = re.compile(r"(?<![\w$.-])danger(?![\w-])(?!\s*=\s*\{\s*false\s*\})")
+# danger 要是「屬性」本身:先把引號字串與 {…} 運算式的內容拿掉再找(aria-label="danger zone" / foo={danger}
+# 裡的字不算 —— 規格核對 E1 對抗樣本),danger={false} 不算 danger。
+danger_attr = re.compile(r"(?:^|\s)danger(?=\s*=\s*\{\}|[\s/>]|$)")
+danger_false = re.compile(r"(?<![\w$.-])danger\s*=\s*\{\s*false\s*\}")
+def scrub(tag):
+    out, depth, quote = [], 0, ""
+    for char in tag:
+        if quote:
+            if char == quote:
+                quote = ""
+            continue
+        if depth == 0 and char in "\"\x27`":
+            quote = char
+            out.append(char)
+            continue
+        if char == "{":
+            depth += 1
+            if depth == 1:
+                out.append(char)
+            continue
+        if char == "}":
+            depth = max(depth - 1, 0)
+            if depth == 0:
+                out.append(char)
+            continue
+        if depth == 0:
+            out.append(char)
+    return "".join(out)
+def has_danger(tag):
+    return bool(danger_attr.search(scrub(tag))) and not danger_false.search(tag)
 def open_tag(pos):
     start = text.rfind("<", 0, pos)
     while start >= 0 and not re.match(r"<[A-Za-z]", text[start:start + 2]):
@@ -1213,7 +1242,7 @@ def open_tag(pos):
 lines = text.split("\n")
 out = []
 for match in re.finditer(r"variant=\"secondary\"", text):
-    if danger.search(open_tag(match.start())):
+    if has_danger(open_tag(match.start())):
         continue
     number = text.count("\n", 0, match.start()) + 1
     entry = f"{number}:{lines[number - 1]}"

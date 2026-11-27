@@ -666,6 +666,16 @@ run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/compone
 <Button variant="secondary" danger={false}>複製檔案</Button>
 '
 expect_block "28n. R12 danger={false} → P0 block" "R12 secondary_variant_pair"
+# 28o. 對照(規格核對 E1):danger 只出現在字串值裡(aria-label)/ 別的屬性的運算式裡 → 不是 danger 屬性 → 照擋
+run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/Toast/toast.stories.tsx" '
+<Button variant="secondary" aria-label="danger zone 設定" onClick={() => warn(danger)}>設定</Button>
+'
+expect_block "28o. R12 danger 只在字串 / 運算式裡 → P0 block" "R12 secondary_variant_pair"
+# 28p. danger={isRisky}(動態)仍是 danger 屬性 → silent
+run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/Toast/toast.stories.tsx" '
+<Button variant="secondary" danger={isRisky}>移除成員</Button>
+'
+expect_pass_silent "28p. R12 danger={變數} → silent"
 
 # 29. Multiple PostToolUse warnings from independent rules must become one exact envelope.
 STORIES_MULTI="$TMP_DIR/multi-warning.stories.tsx"
