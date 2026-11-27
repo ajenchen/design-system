@@ -3190,6 +3190,75 @@ for (const [label, r, c, kind] of [
   console.log([...passes, ...failures].filter((l) => l.includes(' I43 | ')).join('\n'))
 }
 
+/* ── I44:布林欄的控件 meta.control(2026-11-27,決策頁第 9 題乙)──────────────────────────────────────
+ * 要保證的性質(逐字):`control: 'switch'` 的可編輯格畫開關(role="switch" + aria-checked、名字 = 欄標題),預設欄照舊是勾選框;
+ *   兩種點控件都切換;焦點在開關上按空白鍵切換;唯讀格兩種欄都畫 ✓ / ✗(格裡沒有互動控件)。
+ * SSOT:data-table.spec.md「七、Column Type」的「布林欄的控件」+ checkbox.spec.md「表格格子裡」。story:DataTable 展示「布林欄:開關與勾選」。
+ * 儀器對照:每一條先讀「之前」的值,讀不到 = 儀器失效;切換後值要真的翻面(不是「沒報錯」)。
+ * 對照組:test-data-table-invariants.mjs 在建置複本注入「目標在 role=switch 裡的 click 一律吞掉」(= 開關不接點擊)
+ *   → 「點開關」「空白鍵」兩條必紅,勾選框那條照常綠(證明不是整張表壞掉)。 */
+{
+  const BC_URL = `${BASE}/iframe.html?id=design-system-components-datatable-展示--boolean-control&viewMode=story`
+  const cellSel = (row, col) => `[data-cell-id="${row}:${col}"]`
+  await loadStory(BC_URL, `${cellSel('C-1002', 'autoRenew')} [role="switch"]`)
+  const read = (row, col) => page.evaluate((sel) => {
+    const c = document.querySelector(sel)
+    if (!c) return null
+    const sw = c.querySelectorAll('[role="switch"]'); const cb = c.querySelectorAll('[role="checkbox"]')
+    const ctl = sw[0] ?? cb[0] ?? null
+    return { switches: sw.length, checkboxes: cb.length, checked: ctl?.getAttribute('aria-checked') ?? null, name: ctl?.getAttribute('aria-label') ?? null,
+      icons: c.querySelectorAll('svg').length, interactive: c.querySelectorAll('button, input, [role="switch"], [role="checkbox"]').length }
+  }, cellSel(row, col))
+  const center = (row, col, role) => page.evaluate(([sel, r]) => {
+    const el = document.querySelector(`${sel} [role="${r}"]`)
+    if (!el) return null
+    const b = el.getBoundingClientRect()
+    return { x: b.left + b.width / 2, y: b.top + b.height / 2 }
+  }, [cellSel(row, col), role])
+  const sw2 = await read('C-1002', 'autoRenew'); const cb2 = await read('C-1002', 'paid')
+  const ro1 = await read('C-1001', 'autoRenew'); const ro2 = await read('C-1001', 'paid')
+  if (!sw2 || !cb2 || !ro1 || !ro2) record('I44', '儀器', false, `INSTRUMENT-FAIL 找不到「布林欄:開關與勾選」的格(${JSON.stringify({ sw2, cb2, ro1, ro2 })})`)
+  else {
+    record('I44', '開關欄(control: switch)的可編輯格是開關:role="switch" + aria-checked、名字 = 欄標題「自動續約」、沒有勾選框',
+      sw2.switches === 1 && sw2.checkboxes === 0 && /^(true|false)$/.test(sw2.checked ?? '') && sw2.name === '自動續約', JSON.stringify(sw2))
+    record('I44', '預設欄照舊是勾選框:role="checkbox"、名字 = 欄標題「已付款」、沒有開關',
+      cb2.checkboxes === 1 && cb2.switches === 0 && cb2.name === '已付款', JSON.stringify(cb2))
+    record('I44', '唯讀格(合約客戶)兩種欄都畫 ✓ / ✗、格裡沒有互動控件',
+      ro1.interactive === 0 && ro2.interactive === 0 && ro1.icons >= 1 && ro2.icons >= 1, `開關欄 ${JSON.stringify(ro1)};勾選欄 ${JSON.stringify(ro2)}`)
+    // 點開關:C-1002 自動續約 false → true
+    const p = await center('C-1002', 'autoRenew', 'switch')
+    if (!p || sw2.checked !== 'false') record('I44', '點開關:儀器', false, `INSTRUMENT-FAIL 起始值不是 false 或量不到開關位置(${JSON.stringify({ p, before: sw2.checked })})`)
+    else {
+      await page.mouse.click(p.x, p.y)
+      const ok = await settled()
+      const after = (await read('C-1002', 'autoRenew'))?.checked ?? null
+      record('I44', '點開關 → 切換並存起來(自動續約 false → true)', ok && after === 'true', `aria-checked ${sw2.checked} → ${after}`)
+    }
+    // 空白鍵:C-1003 自動續約 true → false(焦點直接放在開關上;Enter / F2 進格裡控件那條由試算表的閘守,型別同 boolean)
+    const sw3 = await read('C-1003', 'autoRenew')
+    if (!sw3 || sw3.checked !== 'true') record('I44', '空白鍵:儀器', false, `INSTRUMENT-FAIL C-1003 自動續約起始值不是 true(${JSON.stringify(sw3)})`)
+    else {
+      await page.locator(`${cellSel('C-1003', 'autoRenew')} [role="switch"]`).focus()
+      await page.keyboard.press('Space')
+      const ok = await settled()
+      const after = (await read('C-1003', 'autoRenew'))?.checked ?? null
+      record('I44', '焦點在開關上按空白鍵 → 切換(自動續約 true → false)', ok && after === 'false', `aria-checked ${sw3.checked} → ${after}`)
+    }
+    // 對照:勾選框照常可點(C-1003 已付款 false → true)—— 對照組注入只吞開關,這一條必須照樣綠
+    const cb3 = await read('C-1003', 'paid')
+    const q = await center('C-1003', 'paid', 'checkbox')
+    if (!cb3 || !q || cb3.checked !== 'false') record('I44', '勾選框對照:儀器', false, `INSTRUMENT-FAIL C-1003 已付款起始值不是 false 或量不到位置(${JSON.stringify({ cb3, q })})`)
+    else {
+      await page.mouse.click(q.x, q.y)
+      const ok = await settled()
+      const after = (await read('C-1003', 'paid'))?.checked ?? null
+      record('I44', '對照:點勾選框 → 切換(已付款 false → true)', ok && after === 'true', `aria-checked ${cb3.checked} → ${after}`)
+    }
+  }
+  console.log('\n--- I44 布林欄的控件 ---')
+  console.log([...passes, ...failures].filter((l) => l.includes(' I44 | ')).join('\n'))
+}
+
 if (failures.length > 0) {
   console.log('\n--- FAILURES ---')
   console.log(failures.join('\n'))

@@ -873,6 +873,54 @@ export const InlineEdit: Story = {
   },
 }
 
+// ── 布林欄的控件(meta.control,2026-11-27 決策頁第 9 題乙;判準 checkbox.spec.md「表格格子裡」)──
+// 「已付款」是這一筆的資料屬性 → 預設勾選框;「自動續約」是這一筆的一個功能開不開 → 開關;
+// 合約客戶的續約由業務管理(editable 回 false)→ 唯讀格,兩種欄都畫 ✓ / ✗。scripts/data-table-invariants.mjs I44 量這一則。
+interface SubscriptionRow { id: string; customer: string; plan: string; paid: boolean; autoRenew: boolean; contract: boolean }
+const SUBSCRIPTION_ROWS: SubscriptionRow[] = [
+  { id: 'C-1001', customer: 'ACME 股份有限公司', plan: '企業版', paid: true, autoRenew: true, contract: true },
+  { id: 'C-1002', customer: '青田設計工作室', plan: '專業版', paid: true, autoRenew: false, contract: false },
+  { id: 'C-1003', customer: '北辰物流', plan: '專業版', paid: false, autoRenew: true, contract: false },
+  { id: 'C-1004', customer: '小島咖啡', plan: '入門版', paid: true, autoRenew: true, contract: false },
+]
+
+export const BooleanControl: Story = {
+  name: '布林欄:開關與勾選',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '布林欄可編輯時畫哪一種控件由 `meta.control` 決定:「已付款」是這一筆的資料屬性,用預設的勾選框;「自動續約」是這一筆的一個功能開不開,用 `control: \'switch\'`。' +
+          '兩種點了都立刻存;合約客戶的續約由業務管理、這裡不能改,唯讀格兩種欄都畫 ✓ / ✗。',
+      },
+    },
+  },
+  render: () => {
+    const [data, setData] = React.useState(SUBSCRIPTION_ROWS)
+    const subCol = createColumnHelper<SubscriptionRow>()
+    const columns = React.useMemo(
+      () => [
+        subCol.accessor('customer', { header: '客戶', meta: { type: 'string', width: 200 } }),
+        subCol.accessor('plan', { header: '方案', meta: { type: 'string', width: 120 } }),
+        subCol.accessor('paid', { header: '已付款', meta: { type: 'boolean', editable: (row: SubscriptionRow) => !row.contract, width: 110 } }),
+        subCol.accessor('autoRenew', { header: '自動續約', meta: { type: 'boolean', control: 'switch', editable: (row: SubscriptionRow) => !row.contract, width: 120 } }),
+      ],
+      []
+    )
+    return (
+      <DataTable
+        columns={columns}
+        data={data}
+        maxHeight="none"
+        inlineEdit
+        tableOptions={{ getRowId: (row) => row.id }}
+        getRowId={(row) => row.id}
+        onCellCommit={(rowId, colId, value) => setData((prev) => prev.map((row) => (row.id === rowId ? { ...row, [colId]: value } : row)))}
+      />
+    )
+  },
+}
+
 // (開發備忘,用一般註解:不進 Autodocs 的說明;2026-10-28 前寫成 JSDoc,讀者在 docs 頁看到的是這段開發備忘)
 // Slice D spreadsheet semantics + overlay 整合 demo(2026-05-10 Issue 7 移過來)。
 //
