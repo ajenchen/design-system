@@ -3,6 +3,6 @@
   "branch": "feat/batch2-2026-11-24",
   "update_baseline": true,
   "reference_ref": "",
-  "reason": "PR #174 全部工作線合回後(a078f22a)合併前重拍基準圖,產出審核包給 user 逐張確認:本批含行事曆月檢視、分頁 / 手風琴焦點框不壓字、Steps 截斷、對話框主體空狀態置中、DataTable 操作欄與浮層宿主、選項前綴、Field 檢視 / 編輯等畫面變化",
-  "requestedAt": "2026-11-27T06:50:00+08:00"
+  "reason": "PR #174 依 user 2026-11-27 確認頁回覆修正後重拍:DateGrid 範例拿掉讀數列(dategrid-single / dategrid-range 會變)、Steps 水平線最短 12、行事曆唯讀詳情不畫全天欄、Select 檢視 / 唯讀 / 停用畫選項圖示;其餘場景應與 0d2de1b5 審核包同圖,產出審核包給 user 確認變了的那幾張",
+  "requestedAt": "2026-11-27T09:40:00+08:00"
 }
