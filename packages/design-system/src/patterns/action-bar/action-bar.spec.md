@@ -363,6 +363,8 @@ Icon 的目的是幫助辨識，不是視覺對稱。
 3. 單一按鈕的群組不需要溢出，空間極端不足時整個隱藏
 ```
 
+**量法 = `../../hooks/use-overflow-items.ts` `useOverflowCollapse`**(末端溢出與群組溢出同一支公開 hook;2026-11-27 workspace H31,工程,協調者採用查證選項甲):量容器寬與每一項的寬,依消費端給的 `priority`(數字越大越晚收)把放不下的收進所屬群組的觸發鈕 —— 誰先收、誰當群組代表由消費端決定(下方「搜尋框」表 C30);**全部放得下時不出觸發鈕、不替它留位**,只有真的放不下才替收了東西的那一組留觸發鈕寬(與 `../../components/Combobox/combobox.spec.md`「單行溢出」同一條、同一份決定 `decideCollapsedCount`)。上面第 3 條:單一按鈕的群組不註冊觸發鈕,收起時整個隱藏,旁邊的分隔線(`registerDivider`)一起藏。用法與前提見該 hook 的 JSDoc;閘 `scripts/action-bar-toolbar-invariant.mjs`「收合」段。
+
 ### 搜尋框(業務層裡唯一可壓縮的項目;2026-09-16)
 
 「左搜尋 / 右操作」的資料工具列(DataTable / AppShell / AgentPanel 整頁示範皆此型)空間不足時**先讓搜尋框讓路**,操作群不縮;只要空間放得下「下限 + 間距 + 操作群」,列就不溢出:

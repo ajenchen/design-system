@@ -105,7 +105,7 @@ scope: "utility primitives module (use-overflow-items hooks: useScrollEdges + us
 
 為了消費者只 import 一處,本 module re-export `useScrollEdges` / `useOverflowIndices` from `hooks/use-overflow-items.ts`。
 
-> **`useOverflowIndices` 目前 0 consumer(reserved primitive)**:DS 內 menu 模式(Tabs / Chip)走「show-all navigator」派(dropdown 永遠列全部 items,不需動態 overflow 計算),刻意不用此 hook(見 `tabs.tsx` / `chip.tsx` 註解)。本 hook 保留給未來真正需「collapse-overflow」的 consumer;其 a11y(roving tabindex)由 consumer 渲染決定,非 hook 保證(詳 `hooks/use-overflow-items.ts` jsDoc)。`useScrollEdges` 則由 Tabs / Chip scroll 模式實際消費。
+> **`useOverflowIndices` 目前 0 consumer(reserved primitive)**:DS 內 menu 模式(Tabs / Chip)走「show-all navigator」派(dropdown 永遠列全部 items,不需動態 overflow 計算),刻意不用此 hook(見 `tabs.tsx` / `chip.tsx` 註解)。不捲動、放不下就收進「…」的工具列改用同檔的 `useOverflowCollapse`(action-bar.spec.md「量法」段;2026-11-27 H31),本 hook 只留給捲動容器;其 a11y(roving tabindex)由 consumer 渲染決定,非 hook 保證(詳 `hooks/use-overflow-items.ts` jsDoc)。`useScrollEdges` 則由 Tabs / Chip scroll 模式實際消費。
 
 ---
 

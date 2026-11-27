@@ -706,6 +706,8 @@ export type {
 //   - components/Toast:ToastSurfaceProps
 //   - hooks/use-input-modality.ts:dispatchRelayedKey(subpath 仍有)
 //   - hooks/use-input-modality.ts:getLastUserInput(subpath 仍有)
+//   - hooks/use-overflow-items.ts:FIT_EPSILON_PX(subpath 仍有)
+//   - hooks/use-overflow-items.ts:decideCollapsedCount(subpath 仍有)
 //   - patterns/element-anatomy:ItemInlineAction
 //   - patterns/element-anatomy:ItemInlineActionButton
 //   - patterns/element-anatomy:ItemInlineActionButtonProps
@@ -746,7 +748,8 @@ export { markPointerGrab, useCursorMover } from './hooks/use-input-modality'
 export type { InputModality } from './hooks/use-input-modality'
 export * from './hooks/use-is-touch-device'
 export * from './hooks/use-known-options'
-export * from './hooks/use-overflow-items'
+export { useOverflowCollapse, useOverflowIndices, useScrollEdges } from './hooks/use-overflow-items'
+export type { OverflowCollapseItemOptions, UseOverflowCollapseResult, UseOverflowIndicesOptions, UseOverflowIndicesResult, UseScrollEdgesResult } from './hooks/use-overflow-items'
 export * from './hooks/use-truncated'
 
 // ─── Lib utilities ────────────────────────────────────────────────────────
