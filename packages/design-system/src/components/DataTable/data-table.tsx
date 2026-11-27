@@ -297,7 +297,7 @@ export interface DataTableProps<TData>
    * Enable 後 cell click 行為(**每一格都一樣**,含唯讀格、開關格與連結格的空白處;user 2026-09-26
    * 點任何格,藍框都跟過去(轉述)):
    *   - Plain click → setSelectedCellId(格游標移到這一格),**不**進 edit mode
-   *   - Click on already-selected → enter edit(只有「點格即編輯」的格;唯讀 / boolean 沒有可進的編輯,不動;url 點網址文字開連結、點格的其他地方進編輯)
+   *   - Click on already-selected → 執行這一格的主要動作:「點格即編輯」的格進 edit;可編輯的 boolean 格切換並送出;有連結的 url 格開連結;唯讀格不動(data-table.spec.md「格的主要動作:整格是點擊範圍」)
    *   - Shift+click → extend range from anchor
    *   - Double-click / Enter / F2 / printable(deferred) → enter edit on selected
    *   - Click empty area → clear selection
