@@ -83,6 +83,9 @@ try {
     + 'document.addEventListener("keydown",function(e){var t=e.target&&e.target.tagName;if((e.shiftKey&&/^Arrow/.test(e.key))||(e.key==="F2"&&(t==="INPUT"||t==="TEXTAREA")))e.stopImmediatePropagation()},true);'
     // 第八個違規(2026-11-27,I44):目標在 role=switch 裡的 click 一律吞掉 = 開關格不接點擊(滑鼠與空白鍵都經 click);勾選框不受影響
     + 'document.addEventListener("click",function(e){var t=e.target;if(t&&t.closest&&t.closest("[role=\\"switch\\"]"))e.stopImmediatePropagation()},true);'
+    // 第十一個違規(2026-11-27,I44 選取欄):點選取欄的勾選框之後,順手點同一列的「客戶」格 = 試算表的選取欄把格游標搬走
+    //   (只有訂閱範例有 customer 欄,其他範例不受影響;選取欄畫在釘選面板的同一列,用 data-row-index 配對,不靠同一個列元素)
+    + 'document.addEventListener("click",function(e){var t=e.target;var k=t&&t.closest&&t.closest("[data-column-id=\\"__select__\\"] [role=\\"checkbox\\"]");if(!k)return;var r=k.closest("[data-row-index]");var c=r&&document.querySelector("[data-row-index=\\""+r.getAttribute("data-row-index")+"\\"] [data-column-id=\\"customer\\"]");if(c)setTimeout(function(){c.dispatchEvent(new MouseEvent("click",{bubbles:true}))},0)},true);'
     + 'new MutationObserver(function(){'
     + 'document.querySelectorAll("[cmdk-root]").forEach(function(root){var opts=[].slice.call(root.querySelectorAll("[role=\\"option\\"]"));if(!opts.length)return;var t=opts.map(function(o){return o.textContent.trim()});'
     + 'if(t.indexOf("完成")>=0&&t.indexOf("未開始")<0&&t.indexOf("取消")<0&&!root.querySelector("[data-i40-injected]")){var c=opts[0].cloneNode(false);c.setAttribute("data-i40-injected","");c.textContent="未開始";opts[0].parentNode.appendChild(c)}'
@@ -93,7 +96,13 @@ try {
   const iframeHtml = join(copy, 'iframe.html')
   const html = readFileSync(iframeHtml, 'utf8')
   if (!/<head>/.test(html)) { console.error('✗ 複本的 iframe.html 找不到 <head>,無法注入對照組(meta-test 無效)'); process.exit(1) }
-  writeFileSync(iframeHtml, html.replace('<head>', '<head>' + BREAK))
+  // 第九、十個違規(2026-11-27,I33 續 / I44「格的主要動作:整格是點擊範圍」):
+  //   ⑨ 布林格控件的延伸區拿掉 = 修前(只有控件本身能點)—— 一般模式空白處切換 / 滑過、試算表「已選再點」必紅;
+  //   ⑩ 訂閱範例(格 id 以 C- 開頭)沒選中的格也鋪延伸區 = 試算表第一下就切換 —— 「第一下只選格」必紅。
+  //      ⑩ 只打訂閱範例:I33 主迴圈在 SKU 範例上用 elementFromPoint 找「不屬於控件的落點」,鋪了延伸區就找不到、紅成儀器失效,那不算被抓。
+  const BREAK_CSS = '<style>[data-bool-stretch]::before{display:none!important}'
+    + '[data-cell-id^="C-"][data-dt-select-first] [data-bool-stretch]::before{display:block!important}</style>'
+  writeFileSync(iframeHtml, html.replace('<head>', '<head>' + BREAK + BREAK_CSS))
   resignBuildManifest(copy)
   const { status: code, text } = runGate([`--build=${copy}`])
   if (code === 0) { console.error('✗ 注入違規後 gate 未 FAIL(I6 font detection 失效)'); ok = false }
@@ -108,7 +117,14 @@ try {
   else if (!/✗ I44 \| 點開關 → 切換並存起來/.test(text)) { console.error('✗ 開關不接點擊後 I44「點開關」那條沒有紅 —— 不能證明 I44 會紅\n' + text.slice(-1500)); ok = false }
   else if (!/✗ I44 \| 焦點在開關上按空白鍵/.test(text)) { console.error('✗ 開關不接點擊後 I44「空白鍵」那條沒有紅 —— 不能證明 I44 會抓到鍵盤切不動\n' + text.slice(-1500)); ok = false }
   else if (/✗ I44 \| 對照:點勾選框/.test(text)) { console.error('✗ 只吞開關的注入卻讓 I44 勾選框對照也紅 —— 注入打到別的東西,對照組不成立\n' + text.slice(-1500)); ok = false }
-  else console.log('✓ 注入違規被抓(I6 @lg 字級崩 + I34 勾選格空白處點不到 + I35 Shift+方向鍵被吞 + I36 編輯中 F2 被吞 + I40 選單多一項不允許的值 / 觸發欄位只剩原始值 / 篩選值少一項 + I44 開關不接點擊,exit ' + code + ')')
+  else if (!/✗ I44 \| 一般模式 勾選格:點格裡空白處/.test(text)) { console.error('✗ 拿掉布林格延伸區後 I44「一般模式 勾選格 點空白處」那條沒有紅 —— 不能證明整格切換會被量到\n' + text.slice(-1500)); ok = false }
+  else if (!/✗ I44 \| 一般模式 勾選格:滑過格裡空白處/.test(text)) { console.error('✗ 拿掉布林格延伸區後 I44「滑過空白處」那條沒有紅 —— 不能證明滑過回饋 ≡ 點擊範圍會被量到\n' + text.slice(-1500)); ok = false }
+  else if (!/✗ I33 \| 開關格已選的格再點空白處 → 切換值/.test(text)) { console.error('✗ 拿掉布林格延伸區後 I33「已選再點切換」那條沒有紅 —— 不能證明 I33 續會紅\n' + text.slice(-1500)); ok = false }
+  else if (!/✗ I44 \| 試算表 勾選格:點空白處第一下只選格/.test(text)) { console.error('✗ 沒選中的格也鋪延伸區後 I44「第一下只選格」那條沒有紅 —— 不能證明試算表第一下切換會被抓\n' + text.slice(-1500)); ok = false }
+  else if (!/✗ I44 \| 試算表 選取欄:點空白處一下就勾選這一列/.test(text)) { console.error('✗ 選取格容器吞點擊後 I44「試算表 選取欄 點空白處」那條沒有紅\n' + text.slice(-1500)); ok = false }
+  else if (!/✗ I44 \| 試算表 選取欄:點勾選框後格游標不動/.test(text)) { console.error('✗ 點選取欄勾選框後格游標被搬走,I44「格游標不動」那條沒有紅\n' + text.slice(-1500)); ok = false }
+  else if (/✗ I44 \| 試算表 點勾選框本身/.test(text)) { console.error('✗ 只動延伸區的注入卻讓 I44「試算表 點勾選框本身」也紅 —— 注入打到控件本身,對照組不成立\n' + text.slice(-1500)); ok = false }
+  else console.log('✓ 注入違規被抓(I6 @lg 字級崩 + I34 勾選格空白處點不到 + I35 Shift+方向鍵被吞 + I36 編輯中 F2 被吞 + I40 選單多一項不允許的值 / 觸發欄位只剩原始值 / 篩選值少一項 + I44 開關不接點擊 + I33 / I44 布林格延伸區拿掉 / 試算表第一下就切換 / 選取欄搬走格游標,exit ' + code + ')')
 } finally {
   rmSync(copyRoot, { recursive: true, force: true })
 }
