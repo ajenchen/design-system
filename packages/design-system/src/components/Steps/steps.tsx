@@ -54,19 +54,27 @@ const INDICATOR_BOX_WIDTH: Record<StepsSize, number> = {
   lg: INDICATOR_SIZE.lg,
 }
 
-// 連接線幾何(`steps.spec.md`「Connector 幾何」;2026-09-29 待辦總帳 N52):
+// 連接線幾何(`steps.spec.md`「Connector 幾何」;2026-09-29 待辦總帳 N52;水平最短寬 2026-11-26 E12w):
 // - 圓到線的縫兩端各 8px:MUI StepLabel vertical `padding: '8px 0'`(每側 8)/ Ant `marginXXS × 1.5` = 6 / Chakra gutter 12 的區間正中,
 //   與 DS 列內 prefix / suffix 的 `gap-2` 同一個數。
-// - 線最短 24px:唯一一手明文地板是 MUI StepConnector vertical `minHeight: 24`;也剛好等於 DS 的步間距 `pb-6`。
+// - 線最短 = 一個步間距(規格「線至少一個步間距」)。兩個方向的步間距本來就不同,所以是兩個常數、同一條規則:
+//   · 垂直 24 = 步與步之間的 `pb-6`。一手明文地板也剛好是 24:MUI StepConnector vertical `minHeight: 24`,只寫在垂直那一組
+//     (https://github.com/mui/material-ui/blob/9f8fe586afb3d81f4108a96f3b943a0990ee3f08/packages/mui-material/src/StepConnector/StepConnector.js#L84-L96)。
+//   · 水平 12 = 水平版的步間距 `gap-3`(字 → 線、線 → 下一步的圓都是 12,見下方 HorizontalLayout 註解「等距保證」)。
+//     世界級的水平線都沒有地板數字,空間不夠時可縮到 0:MUI 水平那一組只有 `borderTopWidth: 1`(同上連結)、
+//     Ant 6 水平線明寫 `minWidth: 0`(https://github.com/ant-design/ant-design/blob/6a3a64141af825983b418f81f2ed1ce97f015c5c/components/steps/style/horizontal.ts#L16-L25)、
+//     Chakra 分隔線 `width: "100%"` 加左右 margin、沒有最短寬(https://github.com/chakra-ui/chakra-ui/blob/f8694afccec28694c1940c55f06d6f56d30987eb/packages/react/src/theme/recipes/steps.ts#L101-L105)
+//     —— 沒有外部數字可依,以 DS 既有規則為準(meta-patterns M23)。
+//     在此之前水平也吃 24:那是把 MUI 垂直的地板外推到水平,沒有一手依據(M8 跨類別外推);user 定 12(steps.spec.md「Connector 幾何」來源)。
 // 線長原本是「列高的餘數」(li 高 − 2r − 16):沒有說明文字時 md 只剩 2.2px、lg 是 0 —— 而規格說指示欄節奏是元件本體、
-// 不得隨說明有無變動。所以非末項的垂直 li 給最小高度 = 圓 + 兩端縫 + 線地板(sm 48 / md 64 / lg 72;有說明時自然更高、不受影響);
-// 水平線的最短寬吃同一個常數(先前是 `min-w-4` 16px、規格沒寫,同元件同概念不該有兩個地板)。
-// 水平版放不下時先縮步驟名(單行截斷),線停在這個最短寬、不再被擠出去壓到下一步的圓(steps.spec.md「水平版步驟名放不下」)。
-// 要調最短寬只改這一行(垂直列高 verticalItemMinHeight 與水平線 minWidth 都讀它)。
+// 不得隨說明有無變動。所以非末項的垂直 li 給最小高度 = 圓 + 兩端縫 + 垂直線地板(sm 48 / md 64 / lg 72;有說明時自然更高、不受影響)。
+// 水平版放不下時先縮步驟名(單行截斷),線停在水平最短寬、不再被擠出去壓到下一步的圓(steps.spec.md「水平版步驟名放不下」)。
+// 要調最短寬只改對應的那一行(垂直列高 verticalItemMinHeight 讀垂直、水平線外層 minWidth 讀水平)。
 // 閘:`scripts/steps-connector-geometry-invariant.mjs`。
 const CONNECTOR_GAP_PX = 8
-const CONNECTOR_MIN_PX = 24
-const verticalItemMinHeight = (size: StepsSize) => INDICATOR_SIZE[size] + 2 * CONNECTOR_GAP_PX + CONNECTOR_MIN_PX
+const CONNECTOR_MIN_VERTICAL_PX = 24
+const CONNECTOR_MIN_HORIZONTAL_PX = 12
+const verticalItemMinHeight = (size: StepsSize) => INDICATOR_SIZE[size] + 2 * CONNECTOR_GAP_PX + CONNECTOR_MIN_VERTICAL_PX
 
 // ── Outer ring(outline + offset,不佔排版)─────────────────────────────────
 //
@@ -437,7 +445,7 @@ const StepItem = React.forwardRef<HTMLLIElement, StepItemProps>(
           aria-disabled={disabled || undefined}
           className={cn(
             stepItemVariants({ orientation: steps.orientation, size: steps.size }),
-            // 這一步 → 下一步(非末項):平常 24(pb-6,同連接線地板 CONNECTOR_MIN_PX);展開內容的那一步 = bottom 48 ——
+            // 這一步 → 下一步(非末項):平常 24(pb-6,同垂直連接線地板 CONNECTOR_MIN_VERTICAL_PX);展開內容的那一步 = bottom 48 ——
             // 這一步的內容就是一塊 body 的收尾(layoutSpace.spec.md token 表 `--layout-space-bottom`「結論留白」;user 2026-10-21 A3「照你建議」= 甲)。
             // 最後一步不給,交給外層容器(否則放在 Dialog 裡會跟 body 底的 48 疊成 96)。閘 steps-content-follows-current (4)
             isVertical && !__isLast && (showsContent ? 'pb-[var(--layout-space-bottom)]' : 'pb-6'),
@@ -447,7 +455,7 @@ const StepItem = React.forwardRef<HTMLLIElement, StepItemProps>(
             className,
           )}
           {...props}
-          // 垂直非末項的最小高度 = 圓 + 兩端縫 + 線地板(見 CONNECTOR_MIN_PX 註解);consumer 傳的 style 仍保留
+          // 垂直非末項的最小高度 = 圓 + 兩端縫 + 垂直線地板(見 CONNECTOR_MIN_VERTICAL_PX 註解);consumer 傳的 style 仍保留
           style={isVertical && !__isLast
             ? { minHeight: verticalItemMinHeight(steps.size), ...(props as { style?: React.CSSProperties }).style }
             : (props as { style?: React.CSSProperties }).style}
@@ -670,12 +678,12 @@ function HorizontalLayout({
         <ItemPrefix>
           <StepIndicator />
         </ItemPrefix>
-        {/* 步驟名:不長(多的寬給連接線)、可縮 —— 放不下時先縮它(StepLabel 在水平版單行截斷),連接線停在 CONNECTOR_MIN_PX、圓不縮。
+        {/* 步驟名:不長(多的寬給連接線)、可縮 —— 放不下時先縮它(StepLabel 在水平版單行截斷),連接線停在 CONNECTOR_MIN_HORIZONTAL_PX、圓不縮。
             修前這裡是 `shrink-0`(不准縮):字照原寬撐出去,連接線被推到下一步的圓上(2026-11-26 E12 480 寬實測)。 */}
         <div className="min-w-0">{label}</div>
         {/* Connector 在 item 內部,flex-1 填滿剩餘寬度 */}
         {!item.isLast && (
-          <div className="h-[1lh] flex-1 flex items-center" style={{ minWidth: CONNECTOR_MIN_PX }} aria-hidden>
+          <div className="h-[1lh] flex-1 flex items-center" style={{ minWidth: CONNECTOR_MIN_HORIZONTAL_PX }} aria-hidden>
             <div data-steps-connector="horizontal" className={cn('h-px w-full', isBlue ? 'bg-info' : 'bg-border')} />
           </div>
         )}
