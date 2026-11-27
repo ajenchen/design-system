@@ -196,4 +196,6 @@ if (outPath) {
 process.stdout.write(`CODEX-OUTCOME: ${verdict.outcome}\n`)
 if (verdict.outcome !== 'SUCCESS') process.stdout.write(`${verdict.action}\n${r.out.slice(-1200)}\n`)
 else if (!outPath) process.stdout.write(`${r.reply}\n`)
-process.exit(verdict.code)
+// 只設結束碼、自然結束(2026-11-27,同 governance-check.mjs 結尾):回覆長度沒有上限,stdout 是管線時
+// 寫完立刻 process.exit() 會截掉還沒送出的部分。run() 的計時器在 close / error 都已清掉,不會掛住。
+process.exitCode = verdict.code

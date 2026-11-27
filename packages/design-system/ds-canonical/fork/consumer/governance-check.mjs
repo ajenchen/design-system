@@ -3540,4 +3540,8 @@ else {
   console.log(`   attestationDigest: ${attestationDigest}`)
   for (const item of diagnostics) console.log(`   ${item.severity} ${item.ruleId}: ${item.message}${item.evidence ? ` (${item.evidence})` : ''}`)
 }
-process.exit(ok ? 0 : 1)
+// 2026-11-27(產品 canary 回報):stdout 是管線時 process.stdout.write 是非同步的,寫完立刻 process.exit() 會丟掉
+// 還沒送出的部分 —— workspace 的 --json 報告 182,001 bytes,governance:debt 經 spawnSync 只收到 146,176 bytes,
+// JSON.parse 失敗,--list / --record 都做不了。改成只設結束碼、讓程式自然結束:本檔到這裡已沒有計時器、子行程或
+// 其他會讓程式掛住的東西(子行程全是同步呼叫),自然結束前 Node 會把 stdout 寫完。對照組在 scripts/test-consumer-governance.mjs。
+process.exitCode = ok ? 0 : 1

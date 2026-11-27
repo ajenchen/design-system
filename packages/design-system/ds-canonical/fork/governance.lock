@@ -287,7 +287,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/governance-check.mjs",
-      "sha256": "cbb7207b3e504073384ca352cfb6a9074782e7de8da630de79132544a67794d2",
+      "sha256": "8d44e109b42a3032cf4d44d6408e0632e2ce45da1e3ec64cdc19954595c634ab",
       "source": "scripts/governance-check.mjs",
       "classification": null,
       "destination": null
@@ -383,7 +383,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/46f10bc55cdfdf834d0749eebff42ea0bb8576f361b36d2b6ba1851354c50150.blob",
-      "sha256": "5414f385799cb5d52243be48bf62378cd572a7aa98d5e6064ae08e4c64379003",
+      "sha256": "c58fa8fcc31f4db0397e8ff2c2121487a66b13c63c2d915185207235742a6eab",
       "source": "scripts/lib/governance-dependency-bootstrap.mjs",
       "classification": null,
       "destination": "scripts/lib/governance-dependency-bootstrap.mjs"

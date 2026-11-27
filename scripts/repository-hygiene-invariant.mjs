@@ -340,4 +340,6 @@ function main() {
   return result.ok ? 0 : 1
 }
 
-if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) process.exit(main())
+// 只設結束碼、自然結束(2026-11-27,同 governance-check.mjs 結尾):--json 的違規清單沒有上限,
+// stdout 是管線時寫完立刻 process.exit() 會截掉還沒送出的部分。main() 全同步,不會掛住。
+if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) process.exitCode = main()

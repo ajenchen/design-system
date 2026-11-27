@@ -879,6 +879,46 @@ try {
   }
   console.log('✅ ratchet: a fixed finding blocks as GOV-CONTENT-DEBT-002 until --prune shrinks the baseline')
 
+  // 2026-11-27(產品 canary 回報):workspace 的 checker --json 報告 182,001 bytes,governance:debt 經 spawnSync 的管線
+  // 只收到 146,176 bytes —— checker 寫完立刻 process.exit(),還沒送出的部分被丟掉,JSON.parse 失敗,--list / --record 都做不了。
+  // 這裡讓基準多出 1,000 筆已修好的發現,--list 的 checker 報告超過 200 KB,兩條讀法都要拿到完整 JSON:
+  // checker 直接經 spawnSync 讀,以及 debt writer 逐筆列出。對照組:checker 結尾改回 `process.exit(ok ? 0 : 1)`,這一格紅。
+  {
+    const original = readFileSync(debtBaselinePath)
+    const inflated = JSON.parse(original.toString('utf8'))
+    const target = inflated.entries[0]
+    const registration = target.items[0].registration
+    const extraCount = 1000
+    const extra = Array.from({ length: extraCount }, (_, index) => ({
+      fingerprint: sha(`historical-finding-${index}`).slice(0, 16),
+      text: `${target.file}: inline style padding 13px / color #ff0000 on a hand-built table cell (historical finding #, fixed in a later release; padding text so the report exceeds the pipe buffer)`,
+      registration,
+    }))
+    target.items = [...target.items, ...extra].sort((left, right) => compareUtf8Bytes(left.fingerprint, right.fingerprint)
+      || compareUtf8Bytes(left.text, right.text)
+      || (left.registration ?? 0) - (right.registration ?? 0))
+    inflated.entriesSha256 = sha(JSON.stringify({ schemaVersion: 1, kind: inflated.kind, registrations: inflated.registrations, entries: inflated.entries }))
+    writeFileSync(debtBaselinePath, JSON.stringify(inflated, null, 2) + '\n')
+    const direct = spawnSync(process.execPath, ['--', checkScript, '--repo', mirror, '--hooks-off', '--json', '--content-debt-proposal', 'list'], {
+      cwd: mirror,
+      encoding: 'utf8',
+      maxBuffer: 256 * 1024 * 1024,
+    })
+    let directReport = null
+    try { directReport = JSON.parse(direct.stdout) } catch { /* 下面帶著長度報錯 */ }
+    if (Buffer.byteLength(direct.stdout) <= 200 * 1024 || !directReport?.evidence?.contentDebt?.proposal?.listing) {
+      throw new Error(`a >200 KB checker report must reach a spawnSync reader intact (got ${Buffer.byteLength(direct.stdout)} bytes, parsed=${Boolean(directReport)}):${String(direct.stderr).slice(0, 2000)}`)
+    }
+    const bigList = runDebt('--list')
+    if (
+      bigList.status !== 1
+      || !bigList.stdout.includes(`已修好、待從基準移除(會擋,跑 --prune):1 格 / ${extraCount} 筆`)
+      || bigList.stderr.includes('did not return a JSON report')
+    ) throw new Error(`content-debt --list must read a >200 KB checker report in full:${bigList.stdout.slice(0, 2000)}\n${bigList.stderr.slice(0, 2000)}`)
+    writeFileSync(debtBaselinePath, original)
+    console.log(`✅ positive: a ${Buffer.byteLength(direct.stdout)}-byte checker report reaches spawnSync readers intact (checker and governance:debt --list)`)
+  }
+
   const prunedBytes = readFileSync(debtBaselinePath)
   const widened = JSON.parse(prunedBytes.toString('utf8'))
   widened.entries.push({ ...structuredClone(widened.entries.at(-1)), file: 'apps/template/src/ZzHiddenPayoutTable.tsx' })
