@@ -358,7 +358,7 @@ expect_block "P4b. apps/delta/src/dist 是原始碼(不在規範位置)、12 個
 
 rm -rf "$TMP_DIR/apps"
 
-# ── Q-series(2026-11-27 r72,user 同日 model2 留言「當消費者有合理的理由想要修正應該也要給予可以調整的空間」)──
+# ── Q-series(2026-11-27 r72,user 同日 model2 留言「當消費者有合理的理由想要修正應該也要給予可以調整的空間吧？」)──
 # 超過額度不再一律擋:每個標記冒號後至少 10 個字、同一份內容不重複同一句 → 放行;否則擋並逐行指出。
 # 空理由在任何數量下都擋(-allow / -ok / -skip 三種字尾,JSX 註解收尾也算空)。
 mkdir -p "$TMP_DIR/apps/template/src"
