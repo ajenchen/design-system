@@ -3,6 +3,7 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { createColumnHelper } from '@tanstack/react-table'
+import { Flag } from 'lucide-react'
 import { Select, type SelectOption } from './select'
 import { Field, FieldError, FieldLabel } from '@/design-system/components/Field/field'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
@@ -395,6 +396,78 @@ export const OptionPrefix: Story = {
     await expect(getComputedStyle(doneIcon!).color, '「已完成」那一列的圖示沒有套 iconClassName').toBe(successColor)
     await userEvent.click(statusTrigger)
     await waitFor(() => expect(body.queryAllByRole('option')).toHaveLength(0))
+  },
+}
+
+// 回歸鎖的夾具(play 斷言),不是給讀者看的範例(story-rules「Technical probe visibility」):已選值前綴在每個 mode 都畫(workspace H33,2026-11-27)。
+// field-controls.spec.md 共享 contract (a)「同一 value identity 不可因 mode 改變而丟失 renderer 資訊」+ select.spec.md 圖示對照表「Value icon」:
+// 狀態(icon + iconClassName)與類型(startContent)× 編輯 / 檢視 / 檢視含下拉箭頭(表格格 opt-in)/ 唯讀 / 停用;起始圖示有傳時只畫起始圖示(不疊兩個)。
+// 修前只有編輯態畫,檢視 / 唯讀 / 停用只剩文字 —— 拿掉 ReadonlyDisplay 的前綴就紅,並點名是哪一格。
+const PREFIX_MODE_CELLS = [
+  { key: 'edit', title: '編輯', mode: 'edit' as const, showDisplayEndIcon: undefined },
+  { key: 'view', title: '檢視', mode: 'view' as const, showDisplayEndIcon: undefined },
+  { key: 'view-cell', title: '檢視(表格格)', mode: 'view' as const, showDisplayEndIcon: true },
+  { key: 'readonly', title: '唯讀', mode: 'readonly' as const, showDisplayEndIcon: undefined },
+  { key: 'disabled', title: '停用', mode: 'disabled' as const, showDisplayEndIcon: undefined },
+]
+
+export const OptionPrefixAcrossModes: Story = {
+  name: '選項前綴:各模式都畫(回歸鎖)',
+  tags: ['test-only'],
+  render: () => (
+    <div className="grid grid-cols-2 gap-[var(--layout-space-loose)] max-w-xl">
+      {PREFIX_MODE_CELLS.map((cell) => (
+        <React.Fragment key={cell.key}>
+          <div data-prefix-probe={`status-${cell.key}`}>
+            <Field mode={cell.mode}>
+              <FieldLabel>狀態({cell.title})</FieldLabel>
+              <Select options={workItemStatusOptions} value="done" showDisplayEndIcon={cell.showDisplayEndIcon} />
+            </Field>
+          </div>
+          <div data-prefix-probe={`type-${cell.key}`}>
+            <Field mode={cell.mode}>
+              <FieldLabel>類型({cell.title})</FieldLabel>
+              <Select options={workItemTypeOptions} value="bug" showDisplayEndIcon={cell.showDisplayEndIcon} />
+            </Field>
+          </div>
+        </React.Fragment>
+      ))}
+      <div data-prefix-probe="start-icon-readonly">
+        <Field mode="readonly">
+          <FieldLabel>優先處理的狀態</FieldLabel>
+          <Select options={workItemStatusOptions} value="done" startIcon={Flag} />
+        </Field>
+      </div>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const colorOf = (cls: string) => {
+      const probe = canvasElement.ownerDocument.createElement('span')
+      probe.className = cls
+      canvasElement.appendChild(probe)
+      const c = getComputedStyle(probe).color
+      probe.remove()
+      return c
+    }
+    const success = colorOf('text-success')
+    const disabled = colorOf('text-fg-disabled')
+    const muted = colorOf('text-fg-muted')
+    const cellOf = (key: string) => {
+      const el = canvasElement.querySelector(`[data-prefix-probe="${key}"]`)
+      if (!el) throw new Error(`找不到量測格 ${key}`)
+      return el
+    }
+    // 前綴圖示 = 欄位裡不是下拉箭頭的 svg(lucide 的 class 帶圖示名)
+    const prefixIcons = (el: Element) => [...el.querySelectorAll('svg')].filter((svg) => !svg.classList.contains('lucide-chevron-down'))
+    for (const cell of PREFIX_MODE_CELLS) {
+      const status = prefixIcons(cellOf(`status-${cell.key}`))
+      await expect(status, `狀態(${cell.title}):已選值「已完成」沒有畫選項圖示`).toHaveLength(1)
+      await expect(getComputedStyle(status[0]).color, `狀態(${cell.title}):選項圖示顏色不對(唯讀 / 檢視 = 選項的 iconClassName,停用 = fg-disabled)`).toBe(cell.mode === 'disabled' ? disabled : success)
+      await expect(cellOf(`type-${cell.key}`).querySelector('[aria-hidden].size-4'), `類型(${cell.title}):已選值「錯誤」沒有畫選項的前綴方塊`).not.toBeNull()
+    }
+    const startIconOnly = prefixIcons(cellOf('start-icon-readonly'))
+    await expect(startIconOnly, '起始圖示有傳時只畫起始圖示,不再疊選項圖示').toHaveLength(1)
+    await expect(getComputedStyle(startIconOnly[0]).color, '唯讀的起始圖示是 fg-muted').toBe(muted)
   },
 }
 

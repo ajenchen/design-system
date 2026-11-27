@@ -232,6 +232,26 @@ const getIconSize = (size: string) => ICON_SIZE[size as 'sm' | 'md' | 'lg']
 // ── Shared sub-components ───────────────────────────────────────────────────
 
 /**
+ * 已選值的前綴 = 選中項的前綴(select.spec.md 圖示對照表「Value icon」「Value 前綴節點」):有 `icon` 畫圖示(套選項的 `iconClassName`,
+ * 與選單列同色;停用時 `text-fg-disabled` 勝出 —— M24,同 menu-item.tsx 的 class 順序),沒有 `icon` 才畫 `startContent`(節點自帶顏色;
+ * 停用時外層帶 `text-fg-disabled`,給沒自帶顏色的部分繼承,同 ReadonlyDisplay renderer 路徑)。`startIcon` 有傳時呼叫端不畫(startIcon 勝、不疊兩個)。
+ * 編輯(桌機 / 手機原生)、檢視(無外框 / D-path)、唯讀 / 停用五條文字路徑唯一的畫法(M17)—— 2026-11-27 前只有兩條編輯路徑畫,
+ * 檢視 / 唯讀 / 停用只剩文字(workspace H33;field-controls.spec.md 共享 contract (a)「同一 value identity 不可因 mode 改變而丟失 renderer 資訊」)。
+ * tag 模式不畫前綴(欄位上是 Tag、選單列純文字,select-menu.spec.md `suppressPrefixIcon`)。
+ */
+function SelectedValuePrefix({ icon: Icon, iconClassName, startContent, iconSize, disabled = false }: {
+  icon?: LucideIcon
+  iconClassName?: string
+  startContent?: React.ReactNode
+  iconSize: number
+  disabled?: boolean
+}): React.ReactNode {
+  if (Icon) return <ItemPrefix><Icon size={iconSize} className={cn('pointer-events-none', iconClassName, disabled && 'text-fg-disabled')} aria-hidden /></ItemPrefix>
+  if (startContent) return <ItemPrefix className={disabled ? 'text-fg-disabled' : undefined}>{startContent}</ItemPrefix>
+  return null
+}
+
+/**
  * Inline clear button for Select trigger.
  * Native + Custom 兩變體統一消費;× 本身與「焦點交接 → 清」是 Field 家族共用的一份(`../Field/field-clear-button.tsx` FieldClearButton,
  * 2026-11-21 LINK-CLEAR 收成一份),這裡只加 Select 自己的外層(`relative z-10`:畫在原生 / tag 模式那層透明 `<select>` 上面)與 label。
@@ -406,9 +426,8 @@ function CustomSelectTriggerContent(props: CustomSelectTriggerContentProps): Rea
     return (
       <>
         {StartIcon && <ItemPrefix><StartIcon size={iconSize} className="text-fg-muted pointer-events-none" aria-hidden /></ItemPrefix>}
-        {/* 值前綴 = 選中項的前綴(select.spec.md 圖示對照表「Value icon」;與選單列同色 → 套 iconClassName;沒有 icon 時畫 startContent) */}
-        {!StartIcon && SelectedIcon && value && <ItemPrefix><SelectedIcon size={iconSize} className={cn('pointer-events-none', selectedOpt?.iconClassName)} aria-hidden /></ItemPrefix>}
-        {!StartIcon && !SelectedIcon && SelectedStartContent && value && <ItemPrefix>{SelectedStartContent}</ItemPrefix>}
+        {/* 值前綴 = 選中項的前綴(select.spec.md 圖示對照表「Value icon」;畫法唯一住所 SelectedValuePrefix) */}
+        {!StartIcon && value && <SelectedValuePrefix icon={SelectedIcon} iconClassName={selectedOpt?.iconClassName} startContent={SelectedStartContent} iconSize={iconSize} />}
         <span ref={truncationRef} className={cn('flex-1 min-w-0 truncate', !value && 'text-fg-muted')}>
           {value ? selectedLabel : (placeholder ?? '選擇…')}
         </span>
@@ -454,6 +473,11 @@ function ReadonlyDisplay({
   //   user canonical:disabled 顯著性優於 muted。同時 plain mode 必須 respect placeholder prop(之前忽略 = bug)
   const emptyColorCls = fieldEmptyColorClass(resolvedMode)
   const emptyText = placeholder ?? emptyDisplay
+  // 值前綴(選中項的 icon / startContent):與編輯態同一支 SelectedValuePrefix、同一條優先序(startIcon 有傳就不畫)。
+  // 三條文字路徑(view 無外框 / view D-path / readonly・disabled)都畫;2026-11-27 前只有編輯態畫(workspace H33,contract (a))。
+  const valuePrefix = !StartIcon && value && selectedOpt && (selectedOpt.icon || selectedOpt.startContent)
+    ? <SelectedValuePrefix icon={selectedOpt.icon} iconClassName={selectedOpt.iconClassName} startContent={selectedOpt.startContent} iconSize={iconSize} disabled={resolvedMode === 'disabled'} />
+    : null
 
   // mode='view':2 path(2026-05-08 D path Phase 1 Select canary)
   //   ❌ 預設(無 showDisplayEndIcon):純內容輸出 bare span/Tag(理由:檢視態只顯示值,跟表格 2026-07-08 A 案同一方向,見 field-controls.spec.md「LinkInput / PeoplePicker 預設 view 路徑不包 wrapper」)
@@ -480,7 +504,19 @@ function ReadonlyDisplay({
       }
       // 截斷必附 tooltip(tooltip.spec.md:30)— 改消費 truncated-text primitive(同 input.tsx:219 同型修;
       // display='tag' 路徑由 Tag 內建 useTruncated 自管,text 路徑原本裸 truncate = gap)
-      if (isTextDisplay) return <TruncatedText className={cn(fieldDisplayTextClass(sz), className)}>{label}</TruncatedText>
+      if (isTextDisplay) {
+        // 有值前綴:包一層行內列放前綴 + 文字;字級留在外層(contract (e)),前綴 ↔ 文字 gap-2 = 編輯態欄位的 gap-2(contract (d) 編輯幾何減外框);
+        // 截斷仍由 TruncatedText 自管(變成 flex 子項後 min-w-0 讓它真的能縮)。沒有前綴照舊單獨回傳,DOM 不變。
+        if (valuePrefix) {
+          return (
+            <span className={cn(fieldDisplayTextClass(sz), 'inline-flex max-w-full items-center gap-2 min-w-0', nakedCellRowModeAlign, className)}>
+              {valuePrefix}
+              <TruncatedText>{label}</TruncatedText>
+            </span>
+          )
+        }
+        return <TruncatedText className={cn(fieldDisplayTextClass(sz), className)}>{label}</TruncatedText>
+      }
       return <Tag size={sz} color={optionTagColor(selectedOpt)} className={className}>{label}</Tag>
     }
     // D path opt-in: Field naked-view wrapper + ItemSuffix ChevronDown
@@ -499,9 +535,12 @@ function ReadonlyDisplay({
           </span>
         ) : isTextDisplay ? (
           // 截斷必附 tooltip(tooltip.spec.md:30;data-table.spec.md「十一、Cell 單行截斷原則」view 態元件自管 truncation)
-          <TruncatedText className={cn(bareInputStyles, 'flex-1 min-w-0', !value && emptyColorCls)}>
-            {value ? label : emptyText}
-          </TruncatedText>
+          <>
+            {valuePrefix}
+            <TruncatedText className={cn(bareInputStyles, 'flex-1 min-w-0', !value && emptyColorCls)}>
+              {value ? label : emptyText}
+            </TruncatedText>
+          </>
         ) : value ? (
           <Tag size={sz} color={optionTagColor(selectedOpt)}>{label}</Tag>
         ) : (
@@ -540,6 +579,7 @@ function ReadonlyDisplay({
     return (
       <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width: fieldWidthVariant(width), size: sz }), className)} style={fieldWidthStyle(width)} data-field-mode={resolvedMode} aria-disabled={ariaDisabled} {...readonlyStop}>
         {StartIcon && <ItemPrefix><StartIcon size={iconSize} className={cn('pointer-events-none', iconColor)} aria-hidden /></ItemPrefix>}
+        {valuePrefix}
         {/* 截斷必附 tooltip(tooltip.spec.md:30)— readonly/disabled 無下拉入口,tooltip 是唯一補救路徑 */}
         <TruncatedText className={cn('flex-1', resolvedMode === 'disabled' && 'text-fg-disabled')}>
           {value ? label : <span className={emptyColorCls}>{emptyText}</span>}
@@ -679,9 +719,8 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
         style={fieldWidthStyle(width)}
         data-field-mode="edit" data-error={error ? '' : undefined}>
         {StartIcon && <ItemPrefix><StartIcon size={iconSize} className="text-fg-muted pointer-events-none" aria-hidden /></ItemPrefix>}
-        {/* 與桌機同一條(select.spec.md「display-layer renderer props 必雙分支同消費」):值前綴 = 選中項的前綴,icon 套 iconClassName,沒有 icon 時畫 startContent */}
-        {!StartIcon && SelectedOptIcon && value && <ItemPrefix><SelectedOptIcon size={iconSize} className={cn('pointer-events-none', selectedOpt?.iconClassName)} aria-hidden /></ItemPrefix>}
-        {!StartIcon && !SelectedOptIcon && selectedOpt?.startContent && value && <ItemPrefix>{selectedOpt.startContent}</ItemPrefix>}
+        {/* 與桌機同一條(select.spec.md「display-layer renderer props 必雙分支同消費」):值前綴 = 選中項的前綴(SelectedValuePrefix) */}
+        {!StartIcon && value && <SelectedValuePrefix icon={SelectedOptIcon} iconClassName={selectedOpt?.iconClassName} startContent={selectedOpt?.startContent} iconSize={iconSize} />}
         {selectEl}
         {clearEl}
         {chevronEl}
