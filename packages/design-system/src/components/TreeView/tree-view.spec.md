@@ -141,7 +141,7 @@ Chevron 是**展開/收合控件**,不是 prefix icon:`fg-muted`(指示色,hover
   - **Auto-render `<Checkbox>`**:`selectionMode="multiple"` 時 TreeItem 內建 render checkbox(reflect `selectedIds`),consumer **無需手動傳** `checkbox` prop
   - **Row 不套 `bg-neutral-selected`**(該 token 保留給 single mode 補無 checkbox 的視覺信號)
   - **Text 也不變 `text-foreground`**(已有 checkbox 強信號,text 變色會雙重 noise)→ 維持 `text-fg-secondary` muted
-  - 對齊 cite:`menu-item.tsx:194-195`(MenuItem selected → bg only)+ `select-menu.tsx` option render `checkbox={multiple}` / `selected={!multiple && …}`(SelectMenu multi → checkbox only)
+  - 對齊 cite:`menu-item.tsx:202-203`(MenuItem selected → bg only)+ `select-menu.tsx` option render `checkbox={multiple}` / `selected={!multiple && …}`(SelectMenu multi → checkbox only)
 - API:`selectionMode="multiple"` 自動 render checkbox;consumer 傳 `checkbox={<Checkbox/>}` 可 override(parent-child cascade 等 advanced 場景)
 - 多選互動:點擊逐項 toggle(`handleRowClick` → `select(id)`;**不支援** `Shift+Click` 範圍選取 / `Ctrl/Cmd+Click` 修飾鍵切換——`handleRowClick` 不讀 `shiftKey/metaKey/ctrlKey`)/ `aria-multiselectable="true"` 在 TreeView 上
 

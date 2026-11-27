@@ -59,7 +59,7 @@ Switch 是**即時套用的布林開關**——切換即生效，心智模型是
 
 簡言：
 - **Form 內、有 submit 流程、使用者可反悔** → `Checkbox`
-- **獨立 inline、切換即生效、無 submit** → `Switch`
+- **獨立 inline、切換即生效、無 submit** → `Switch`;**選單裡**(DropdownMenu)不要把 `<Switch>` 放進選單項:單獨一個即時生效的設定用 `<DropdownMenuCheckboxItem indicator="switch">`(列尾開關外觀,整列才是互動單位),一組裡挑幾個用勾選 —— 判準住 `../Checkbox/checkbox.spec.md`「選單裡」
 
 ---
 

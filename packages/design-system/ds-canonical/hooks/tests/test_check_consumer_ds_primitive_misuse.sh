@@ -465,6 +465,13 @@ expect_block "73. 箭頭 onSelect + item 內 Checkbox → BLOCK" 'DropdownMenuCh
 # 74. 對照:箭頭 onSelect 在前、badge={<Switch />} 在後的屬性寫法 → BLOCK(舊第一式 [^>]* 停在 => 的 >,漏判)
 run_hook "$PROD_TSX" 'export const M = () => <DropdownMenuContent><DropdownMenuItem onSelect={() => setDense(!dense)} badge={<Switch checked={dense} />}>緊湊顯示</DropdownMenuItem></DropdownMenuContent>'
 expect_block "74. 箭頭 onSelect 之後 badge 放 Switch → BLOCK" 'DropdownMenuCheckboxItem'
+# ── C25 續(2026-11-27 H41):開關外觀的新寫法 indicator="switch" 不擋;被擋訊息要指向它 ──
+# 75. Chat 房間選單的舊寫法(Switch 自己接點擊,放在 DropdownMenuItem 子元素)→ BLOCK,訊息指名 indicator="switch"
+run_hook "$PROD_TSX" 'export const RoomMenu = () => (<DropdownMenuContent><DropdownMenuItem onSelect={(e) => e.preventDefault()}>Full width<Switch checked={fullWidth} onCheckedChange={setFullWidth} /></DropdownMenuItem></DropdownMenuContent>)'
+expect_block "75. DropdownMenuItem 子元素放會自己接點擊的 Switch → BLOCK、訊息指向 indicator=\"switch\"" 'indicator="switch"'
+# 76. 新寫法:<DropdownMenuCheckboxItem indicator="switch"> → silent(選單外另有一顆 Switch 也不算)
+run_hook "$PROD_TSX" 'export const RoomMenu = () => (<><DropdownMenuContent><DropdownMenuItem onSelect={() => copyLink()}>Copy link</DropdownMenuItem><DropdownMenuCheckboxItem indicator="switch" checked={fullWidth} onCheckedChange={setFullWidth}>Full width</DropdownMenuCheckboxItem></DropdownMenuContent><Switch checked={notify} aria-label="Notify" /></>)'
+expect_silent "76. DropdownMenuCheckboxItem indicator=\"switch\" / 選單外的 Switch → silent"
 
 echo ""
 echo "=== Summary ==="

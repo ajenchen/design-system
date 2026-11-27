@@ -34,7 +34,7 @@ prefix                                      content               suffix
 
 - **Prefix**：checkbox（多選，由父層注入）+ startIcon 或 avatar 或 startContent（三者互斥）
 - **Content**：label + 可選 description
-- **Suffix**：tag（ml-auto 靠右）
+- **Suffix**：tag（ml-auto 靠右）;`switchIndicator`(2026-11-27)= 列尾開關外觀的狀態指示,與 `checkbox` 擇一、值讀 `checked`,純畫面(aria-hidden + inert,停用時跟著 suffix 容器 `opacity-disabled` 一次);只由 `DropdownMenuCheckboxItem indicator="switch"` 用,何時用 → `../Checkbox/checkbox.spec.md`「選單裡」
 
 **`startContent`（2026-07-10 加，WM TypeIcon 彩色徽章需求）**：LucideIcon / Avatar 表達不了的自訂 leading 視覺（類型徽章 = 彩底方塊 + glyph、status 組合點等）。**渲染在同一個 prefix 對齊容器內——佔位與排列邏輯跟 startIcon 一模一樣**（gap / 24px 閾值對齊 / shrink 全繼承 `itemPrefixAlignVariants` SSOT，零平行 layout），consumer 唯一責任是節點尺寸對齊 `ICON_SIZE[size]`（sm/md=16px、lg=20px）。與 `endContent` 對稱（同為自訂 ReactNode slot）。disabled 時容器套 `opacity-disabled`（對齊 `tag` / `endContent` 自訂節點同款處理;**與 `avatar` 不變暗的分界**:Avatar 有自己的 self-dim 體系〔`fieldCtx.disabled` 觸發,同一顆 `opacity-disabled` token,avatar.spec.md「Disabled」段〕,MenuItem 非 Field context 故不觸發;startContent 是任意 consumer 節點、無任何 DS context 可自 dim → 容器套 opacity 是唯一可靠機制。放頭像請用 `avatar` prop 非 startContent）。**公開入口**(MenuItem 本身是內部元件;2026-11-26 workspace F 組 F4-2 前公開元件一個都轉不到):`SelectMenuOption.startContent`(Select / Combobox 的選項資料,`../SelectMenu/select-menu.spec.md`「Option schema 增項紀錄」)、DropdownMenu 四種 item(Item / SubTrigger / CheckboxItem / RadioItem 的 `startContent`)、`CommandItem` 的 `startContent`。類型方塊每種 size 的邊長、圖案大小、圓角、筆畫待 C5 定案。
 
@@ -205,7 +205,7 @@ Menu item 的 prefix icon 跟 label 同色（foreground），不是 fg-muted。P
 
 ### Message row(訊息列,2026-09-08 user 拍板)
 
-`message` prop(`menu-item.tsx:114,200-219`)讓 item 變為選單裡「不是選項」的提示列——沒有結果 / 沒有選項 / 載入中:
+`message` prop(`menu-item.tsx:121,208-227`)讓 item 變為選單裡「不是選項」的提示列——沒有結果 / 沒有選項 / 載入中:
 - **用途**:搜尋無結果、打開就沒選項、清單為空時的載入中。owner:`../SelectMenu/select-menu.spec.md`「Empty state」「Loading」
 - **樣式,與 header 的差異**:同樣 `text-fg-muted`、非互動(`role="presentation"` + `pointer-events-none`)、與一般 item **完全相同的列幾何**(`ROW_PADDING_BY_SIZE`,列高 = `--field-height-{size}`);差別是**一般字重**(medium 是群組標題的辨識訊號)、內容**水平置中**(`items-center justify-center`)、可帶**前綴槽**(`startContent` / `startIcon`,節點尺寸 `ICON_SIZE[size]`,例如載入列的 `CircularProgress`)
 - **必住 `MenuGroup`**:訊息列不自帶邊界留白,由群組的 `py-2` 提供(`item-anatomy.spec.md`「Group auto-separation」)——md 一列訊息 = 8 + 32 + 8 = 48px,與 1 筆選項等高;沒有任何最小高度
