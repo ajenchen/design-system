@@ -254,6 +254,71 @@ run_hook "/fake/packages/design-system/src/components/DataTable/data-table.stori
   '<table><tbody><tr><td>x</td></tr></tbody></table>'
 expect_pass "Test 12 DataTable raw-table family exemption is preserved"
 
+# ── Test 13-16: B 只管角落的關閉 ×,頁腳的「取消 / 關閉」動作鈕放行(2026-11-27,h46 線回報) ─────────
+# 13 = dialog.stories.tsx 標籤選擇 / 匯入預覽兩則的形狀:頁腳「取消」包 DialogClose、旁邊主鈕套用後 setOpen(false)。
+#      修前 B 只看上下 4 行有沒有 setOpen(false),把它當違規(對照組:修前 hook 對同一份內容 exit 2)。
+echo ""
+echo "Test 13: footer 取消 next to a primary that calls setOpen(false) → pass"
+read -r -d '' T13_CONTENT <<'EOF' || true
+import { Dialog, DialogContent, DialogFooter, DialogClose } from '@/design-system/components/Dialog/dialog'
+import { Button } from '@/design-system/components/Button/button'
+
+export const Picker = {
+  render: ({ setOpen, apply }: { setOpen: (v: boolean) => void; apply: () => void }) => (
+    <Dialog>
+      <DialogContent>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="tertiary">取消</Button>
+          </DialogClose>
+          <Button variant="primary" onClick={() => { apply(); setOpen(false) }}>套用</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  ),
+}
+EOF
+run_hook "/fake/src/design-system/components/Dialog/dialog.stories.tsx" "$T13_CONTENT"
+expect_pass "Test 13 footer cancel beside a closing primary is not dismiss-via-label"
+
+# 14 = 頁腳寫在同一行(dialog.stories.tsx 焦點鎖夾具的形狀)
+echo ""
+echo "Test 14: single-line footer 關閉 with onClose nearby → pass"
+run_hook "/fake/src/design-system/components/Dialog/dialog.stories.tsx" \
+  $'const f = ({ onClose }) => (\n  <DialogFooter><DialogClose asChild><Button variant="tertiary">關閉</Button></DialogClose></DialogFooter>\n)\nconst g = onClose'
+expect_pass "Test 14 single-line footer close button passes"
+
+# 15 = 頁腳已經關掉之後,標題列裡的有字關閉鈕照擋(深度要扣回 0,不能整檔一出現 Footer 就放行)
+echo ""
+echo "Test 15: labeled close in a header after a closed footer → block"
+read -r -d '' T15_CONTENT <<'EOF' || true
+export const A = {
+  render: () => (
+    <DialogFooter>
+      <Button variant="primary">儲存</Button>
+    </DialogFooter>
+  ),
+}
+export const B = {
+  render: ({ onClose }: { onClose: () => void }) => (
+    <SheetHeader>
+      <Button variant="tertiary" onClick={onClose}>關閉</Button>
+    </SheetHeader>
+  ),
+}
+EOF
+# (按鈕屬性裡有箭頭函式 `onClick={() => …}` 時,B 的按鈕比對 `<Button\b[^>]*>` 停在 `=>`、整顆按鈕比不到 —— 修前就是如此,
+#  本次只修頁腳誤判、不擴大比對範圍;已寫進 h46 回報)
+run_hook "/fake/src/design-system/components/Sheet/sheet.stories.tsx" "$T15_CONTENT"
+expect_block "Test 15 labeled header close after a closed footer is still blocked" "[B dismiss via label]"
+
+# 16 = 自閉合的 <DialogFooter /> 不算打開頁腳
+echo ""
+echo "Test 16: self-closing footer does not open a footer scope → block"
+run_hook "/fake/src/design-system/components/Dialog/dialog.stories.tsx" \
+  $'const f = ({ onClose }) => (\n  <DialogHeader>\n    <DialogFooter />\n    <Button onClick={onClose}>關閉</Button>\n  </DialogHeader>\n)'
+expect_block "Test 16 self-closing footer does not exempt a labeled close" "[B dismiss via label]"
+
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""
 echo "════════════════════════════════════════"

@@ -259,6 +259,28 @@ dismiss_context = re.compile(
     r'onClose\b|onDismiss\b|<(Dialog|Sheet|Popover|Coachmark|Surface)Header\b'
     r'|setOpen\(false\)|dismiss',
 )
+# B 只管「拿有字的按鈕當角落的關閉 ×」(button.spec.md「Dismiss 視覺類(X close only)」、
+# inline-action.spec.md「Dismiss canonical — X close only」的位置表:Chrome corner 才是 dismiss)。
+# 頁腳的「取消 / 關閉」是頁腳的動作鈕,不是 ×:dialog.spec.md「Footer 按鈕」、overlay-surface.spec.md
+# 「底部區域:按鈕列 vs 列式」典型內容「取消 / 儲存 / … / 套用」、「左導覽 + 右內容」底部「DialogFooter(取消 / 儲存)」。
+# 2026-11-27 前只看上下 4 行有沒有 setOpen(false) 等字,旁邊主鈕「套用後關閉」的 setOpen(false) 讓頁腳的取消被當成違規
+# (dialog.stories.tsx 標籤選擇 / 匯入預覽兩則;h46 線回報)。判準改成:按鈕在頁腳元素裡面 → 不是 B。
+# 頁腳深度 = 按鈕之前出現的 <XFooter 開頭 − 自閉合的 <XFooter … /> − </XFooter>,在整段文字上算(標籤可跨行、可同一行)。
+footer_open = re.compile(r'<(?:Dialog|Sheet|Popover|Surface|Coachmark|AlertDialog|Drawer)Footer\b')
+footer_self_closing = re.compile(r'<(?:Dialog|Sheet|Popover|Surface|Coachmark|AlertDialog|Drawer)Footer\b[^<>]*/>')
+footer_close = re.compile(r'</(?:Dialog|Sheet|Popover|Surface|Coachmark|AlertDialog|Drawer)Footer\s*>')
+full_text = '\n'.join(lines)
+line_starts = []
+_offset = 0
+for _line in lines:
+    line_starts.append(_offset)
+    _offset += len(_line) + 1
+
+
+def in_footer(position):
+    before = full_text[:position]
+    depth = len(footer_open.findall(before)) - len(footer_self_closing.findall(before)) - len(footer_close.findall(before))
+    return depth > 0
 overlay_surface = re.compile(
     r'<div[^>]*className="[^"]*\babsolute\b[^"]*(bg-|shadow-|border)',
 )
@@ -316,7 +338,8 @@ for index, line in enumerate(lines):
             '  改用 <Input> / <NumberInput> / <Select> / <Combobox>'
         )
 
-    if dismiss_button.search(line):
+    dismiss_match = dismiss_button.search(line)
+    if dismiss_match and not in_footer(line_starts[index] + dismiss_match.start()):
         context = '\n'.join(lines[max(0, index - 4):index + 5])
         if dismiss_context.search(context):
             findings.append(
