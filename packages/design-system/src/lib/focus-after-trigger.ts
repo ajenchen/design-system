@@ -22,19 +22,44 @@
 
 /** 瀏覽器可能放進 Tab 順序的元素(候選;再經 `isTabbableElement` 過濾) */
 const TABBABLE_CANDIDATES = [
-  'a[href]', 'area[href]', 'button', 'input', 'select', 'textarea', 'iframe', 'summary',
+  'a[href]', 'area[href]', 'button', 'input', 'select', 'textarea', 'iframe', 'summary', 'details',
   'audio[controls]', 'video[controls]', '[contenteditable]:not([contenteditable="false"])', '[tabindex]',
 ].join(',')
 
 /** 呼叫端要排除的元素(例:正在關的那個彈出框本身 —— 關閉動畫期間還在 DOM 裡) */
 export type TabStopExclude = (el: HTMLElement) => boolean
 
+const hasTabIndexAttribute = (el: HTMLElement) => !Number.isNaN(Number.parseInt(el.getAttribute('tabindex') ?? '', 10))
+const isEditableAttribute = (el: HTMLElement) => {
+  const v = el.getAttribute('contenteditable')?.toLowerCase()
+  return v === '' || v === 'true' || v === 'plaintext-only'
+}
+
+/**
+ * 元素在 Tab 順序裡實際用的 tabindex 值(2026-11-27,workspace 第七輪 H39)。
+ * 沒寫 tabindex 屬性的可編輯區(contenteditable)、`<details>`、有 controls 的影音:瀏覽器的 `tabIndex` 可能回 -1,
+ * 自己按 Tab 卻照樣停在上面 —— 視為 0;寫了 `tabindex="-1"` 的照舊不在 Tab 路上。
+ * 依據:focus-trap/tabbable `getTabIndex`
+ * (https://github.com/focus-trap/tabbable/blob/7b065abbbfd4dc78b3d74ffc23648c9a9c60475c/src/index.js#L235-L258):
+ * 「Also browsers do not return `tabIndex` correctly for contentEditable nodes;
+ *  so if they don't have a tabindex attribute specifically set, assume it's 0.」
+ * 實測 Chromium 147:沒寫 tabindex 的 contenteditable(含 plaintext-only)與沒有 summary 的 details 回 -1 但 Tab 會停;
+ * audio / video[controls] 已回 0(tabbable 註解裡的舊 Chrome 行為),照同一範圍一併處理、不影響結果。
+ * 修前用 `el.tabIndex < 0` 直接濾掉:選單開著按 Tab,焦點越過觸發鈕後面的富文字編輯區。
+ */
+function tabIndexOf(el: HTMLElement): number {
+  if (el.tabIndex < 0 && !hasTabIndexAttribute(el) && (/^(AUDIO|VIDEO|DETAILS)$/.test(el.tagName) || isEditableAttribute(el))) return 0
+  return el.tabIndex
+}
+
 /**
  * 這個元素此刻在不在頁面的 Tab 路上(照瀏覽器規則;判準對齊 Radix FocusScope `getTabbableCandidates` + `isHidden`)。
  * Radix 焦點護欄(body 首尾 tabindex=0 的隱形 span)不是頁面上的一站。
  */
 export function isTabbableElement(el: HTMLElement): boolean {
-  if (el.tabIndex < 0) return false
+  if (tabIndexOf(el) < 0) return false
+  // 有 summary 的 details:停的是 summary,不是 details 本身(tabbable `isDetailsWithSummary`,同上檔 #L292-L299)
+  if (el.tagName === 'DETAILS' && Array.from(el.children).some((c) => c.tagName === 'SUMMARY')) return false
   if (el.matches(':disabled')) return false
   if (el instanceof HTMLInputElement && el.type === 'hidden') return false
   if (el.closest('[inert],[data-radix-focus-guard]')) return false
@@ -53,8 +78,8 @@ export function tabbableOrder(scope: HTMLElement, exclude?: TabStopExclude): HTM
   const candidates = Array.from(scope.querySelectorAll<HTMLElement>(TABBABLE_CANDIDATES)).filter(
     (el) => isTabbableElement(el) && !exclude?.(el),
   )
-  const positive = candidates.filter((el) => el.tabIndex > 0).sort((a, b) => a.tabIndex - b.tabIndex)
-  return [...positive, ...candidates.filter((el) => el.tabIndex === 0)]
+  const positive = candidates.filter((el) => tabIndexOf(el) > 0).sort((a, b) => tabIndexOf(a) - tabIndexOf(b))
+  return [...positive, ...candidates.filter((el) => tabIndexOf(el) === 0)]
 }
 
 /** 觸發點外層的對話框 / 面板(`role="dialog"` / `"alertdialog"`):Tab 本來就在那個框裡繞圈(W3C dialog pattern) */
@@ -77,7 +102,7 @@ export function tabStopFromTrigger(trigger: HTMLElement, backward: boolean, excl
     target = order[backward ? at - 1 : at + 1]
   } else {
     // 觸發點本身不在 Tab 路上(例:tabindex=-1 的列上小按鈕)→ 跟瀏覽器一樣,以它在文件裡的位置為起點
-    const flow = order.filter((el) => el.tabIndex === 0)
+    const flow = order.filter((el) => tabIndexOf(el) === 0)
     target = backward
       ? [...flow].reverse().find((el) => trigger.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_PRECEDING)
       : flow.find((el) => trigger.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING)
