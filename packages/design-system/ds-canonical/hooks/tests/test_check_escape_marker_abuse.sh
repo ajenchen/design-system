@@ -1,6 +1,6 @@
 #!/bin/bash
-# Tests for check_escape_marker_abuse.sh(P0 BLOCKER,user 2026-05-27 verbatim
-# 「不亂加 escape markers — 加就跳 enforcement」)
+# Tests for check_escape_marker_abuse.sh(P0 BLOCKER;舊註「user 2026-05-27 verbatim「不亂加 escape markers — 加就跳 enforcement」」
+# 出處未能查證,見 hook 檔頭。2026-11-27 r72 起超過額度改要求具體理由,見下方 Q-series)
 #
 # Hook 規則(PreToolUse,Edit / Write / MultiEdit):
 #   Scope gate:
