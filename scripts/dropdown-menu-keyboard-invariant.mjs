@@ -2,8 +2,11 @@
 /**
  * @gate-contract
  *   保證: 選單開著時真按鍵的結果符合待辦總帳 B10 / B11 —— 子選單 Esc 每按一次只少一層、焦點回上一層打開它的那一項;
- *         按 Tab / Shift+Tab 收起全部層、焦點落在「選單關著時在觸發鈕上按同一鍵」的落點;AI 浮鈕選單只有 Esc 把焦點還給浮鈕、點外面不搶
+ *         按 Tab / Shift+Tab 收起全部層、焦點落在「選單關著時在觸發鈕上按同一鍵」的落點;AI 浮鈕選單只有 Esc 把焦點還給浮鈕、點外面不搶;
+ *         開關外觀的項目(indicator="switch",2026-11-27 H41)整列 = menuitemcheckbox + aria-checked、列尾開關只是畫面(不可聚焦、移出無障礙樹、在列尾),
+ *         點字 / 空白鍵 / Enter 都整列切換且選單不關
  *   紅: --selftest 以 capture 監聽把 Radix 舊行為造回來(Tab 被吞、Esc 一次全關、點外面後搶回浮鈕),每個情境(E / Q / T / S / C1 / C2 / F1–F3)都必須判紅;
+ *       W1 把開關改回可聚焦且在無障礙樹裡(= Switch 自己接點擊的舊寫法)、W2 點了列就送 Esc(= 選了就關)、W3 吞掉整列上的空白鍵 / Enter,三格都必須判紅;
  *       story 開不起來或層數 / 焦點量不到 = INSTRUMENT-FAIL,不算通過也不算對照組抓到
  *   綠: 沒弄壞時必須綠;「下一站」的正確答案由瀏覽器在選單關著時實按一次得出(不由本閘自算),每個情境重開 story,
  *       層數與焦點身分以 waitForFunction 逐影格等到再判,判定式是純函式(判定表 scripts/test-dropdown-menu-keyboard-invariant.mjs,含量不到那幾格)
@@ -30,6 +33,13 @@
  *      (浮鈕是頁面最後一站時,關著按 Tab 會離開文件 → 正本「頁面上已經沒有下一站時,焦點留在觸發點」,答案 = 浮鈕本身;judgeTabOut)
  *   F2 浮鈕選單按 Esc → 焦點回浮鈕
  *   F3 浮鈕選單開著點外面 → 選單關、焦點**不在**浮鈕上(舊版會搶回)
+ *   W1 「開關項」story(聊天室選單):「全寬顯示」與停用的「自動翻譯訊息」兩列都是 menuitemcheckbox + aria-checked,列尾開關狀態一致、
+ *      aria-hidden、對它 focus() 拿不到焦點、在字的右邊且離列右緣 ≤ 列的右內距;停用列另要 aria-disabled(判定 judgeSwitchRow)
+ *   W2 滑鼠點「全寬顯示」的字 → aria-checked 翻面、選單仍開 1 層、列尾開關跟著翻(judgeRowToggle)
+ *   W3 焦點在「全寬顯示」按空白鍵、再按 Enter → 每次都同 W2
+ *   CH1 Chip 展示「單選:放不下時的選單」:溢出選單每一項是 menuitem、沒有 menuitemcheckbox 與勾選框,剛好一項帶選中底色(量算繪背景色)= 目前那一類
+ *       (item-anatomy.spec.md 規則 B;2026-11-27 前單選也畫勾選項 —— 對照組把角色改回 menuitemcheckbox 必紅)
+ *   CH2 同一則選「工程筆記」→ 選單關、那一顆 chip 選中(對照組吞掉選單項點擊必紅)
  * 對照組(--selftest):在頁面上掛 capture 監聽把舊行為造回來 ——
  *   Tab 被吞(= Radix 擋 Tab)、Esc 改成「點外面」(= 一次全關)、浮鈕選單**卸載後**下一個 macrotask 把焦點搶回浮鈕
  *   (= 舊 onCloseAutoFocus 的真實時序,不是閘自己睡完再 .focus())—— 每個情境都必須被判紅,儀器才算有效。
@@ -82,6 +92,49 @@ export function judgeFabReturn({ how, openAfter, focusOnFab }) {
   throw new TypeError(`judgeFabReturn:未知的關法 ${how}`)
 }
 
+/**
+ * 開關外觀的項目(`DropdownMenuCheckboxItem indicator="switch"`,2026-11-27 H41)的靜態契約:
+ * 整列 = `role="menuitemcheckbox"` + `aria-checked`;列尾開關只是畫面 —— 狀態跟整列一致、移出無障礙樹(aria-hidden)、
+ * 拿不到焦點(對它呼叫 focus() 後焦點不在它身上)、畫在列尾(在字的右邊,離列右緣不超過列的右內距)。
+ * 任一量測值量不到 → 'instrument'(開關元素不存在也算量不到:那是這一格量不到東西,不是產品裁決)。
+ */
+export function judgeSwitchRow({ role, ariaChecked, switchState, switchHidden, switchFocused, switchAfterLabel, endGap, endGapMax }) {
+  if ([role, ariaChecked, switchState, endGap, endGapMax].some(unmeasured)) return 'instrument'
+  if (typeof switchHidden !== 'boolean' || typeof switchFocused !== 'boolean' || typeof switchAfterLabel !== 'boolean') return 'instrument'
+  if (role !== 'menuitemcheckbox' || (ariaChecked !== 'true' && ariaChecked !== 'false')) return 'fail'
+  const mirrors = switchState === (ariaChecked === 'true' ? 'checked' : 'unchecked')
+  return mirrors && switchHidden && !switchFocused && switchAfterLabel && endGap >= 0 && endGap <= endGapMax ? 'pass' : 'fail'
+}
+
+/**
+ * 整列切換一次(點字 / 空白鍵 / Enter):aria-checked 必須翻面、選單仍開著(1 層)、列尾開關跟著翻面。
+ * 選單量到已經關了(0 層)= 量到了「選了就關」,判 fail —— 那時列已卸載、切換後的值量不到是它的後果,不是儀器失效。
+ */
+export function judgeRowToggle({ before, after, openAfter, switchStateAfter }) {
+  if (unmeasured(before) || unmeasured(openAfter)) return 'instrument'
+  if (openAfter === 0) return 'fail'
+  if (unmeasured(after) || unmeasured(switchStateAfter)) return 'instrument'
+  if (!['true', 'false'].includes(before) || !['true', 'false'].includes(after)) return 'fail'
+  const mirrors = switchStateAfter === (after === 'true' ? 'checked' : 'unchecked')
+  return after !== before && openAfter === 1 && mirrors ? 'pass' : 'fail'
+}
+
+/**
+ * 單選 Chip 的溢出選單(2026-11-27,item-anatomy.spec.md 規則 B:單選 in dropdown = DropdownMenuItem selected、禁方塊勾):
+ * 每一項都是 menuitem(沒有 menuitemcheckbox、選單裡沒有勾選框),而且剛好一項帶選中底色、字 = 目前選中的那顆 chip。
+ */
+export function judgeChipSingleMenu({ items, checkboxItems, checkboxes, selectedTexts, chipOnText }) {
+  if ([items, checkboxItems, checkboxes, chipOnText].some(unmeasured) || !Array.isArray(selectedTexts)) return 'instrument'
+  if (items + checkboxItems === 0) return 'instrument'
+  return items > 0 && checkboxItems === 0 && checkboxes === 0 && selectedTexts.length === 1 && selectedTexts[0] === chipOnText ? 'pass' : 'fail'
+}
+
+/** 單選 Chip 溢出選單選了一項:選單關掉(0 層)、那一顆 chip 變成選中 */
+export function judgeChipSinglePick({ openAfter, chipOnText, picked }) {
+  if (unmeasured(openAfter) || unmeasured(picked)) return 'instrument'
+  return openAfter === 0 && chipOnText === picked ? 'pass' : 'fail'
+}
+
 // ── 瀏覽器量測 ──
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 if (isMain) await main()
@@ -95,12 +148,14 @@ async function main() {
   const root = path.resolve(REPO, arg('static', 'storybook-static'))
   // 建置存在、且不比被驗的原始碼舊:lib/launch-browser.mjs requireFreshStorybookBuild(全部瀏覽器閘同一份;2026-09-27,待辦總帳 C5)
   // dropdown-menu-keyboard.ts / lib/focus-after-trigger.ts:2026-09-26 從 dropdown-menu.tsx 拆出的鍵盤接線與共用落點計算,只改它們時也要擋住舊建置
-  requireFreshStorybookBuild(root, ['packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx', 'packages/design-system/src/components/DropdownMenu/dropdown-menu-keyboard.ts', 'packages/design-system/src/lib/focus-after-trigger.ts', 'packages/design-system/src/components/DropdownMenu/dropdown-menu.stories.tsx', 'packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx'])
+  requireFreshStorybookBuild(root, ['packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx', 'packages/design-system/src/components/Menu/menu-item.tsx', 'packages/design-system/src/components/Chip/chip.tsx', 'packages/design-system/src/components/Chip/chip.stories.tsx', 'packages/design-system/src/components/DropdownMenu/dropdown-menu-keyboard.ts', 'packages/design-system/src/lib/focus-after-trigger.ts', 'packages/design-system/src/components/DropdownMenu/dropdown-menu.stories.tsx', 'packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx'])
   const server = await startA11yStaticServer({ rootDirectory: root, defaultFile: 'iframe.html' })
   process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
   const browser = await launchBrowser(); const page = await browser.newPage({ viewport: { width: 1280, height: 800 } })
 
   const NESTED = 'design-system-components-dropdownmenu-展示--nested-sub-menu'
+  const SWITCH_STORY = 'design-system-components-dropdownmenu-展示--switch-items'
+  const SWITCH_TRIGGER = '#storybook-root button:has-text("行動 App 改版")'
   const FAB_STORY = 'design-system-components-agentpanel-展示--fab'
   const TRIGGER = '#storybook-root button:has-text("更多動作")'
   const FAB = 'button[aria-label*="開啟智慧代理"]'
@@ -266,6 +321,140 @@ async function main() {
       rec(`${name} 觸發鈕後面是${attrs.tabindex ? '寫了 tabindex=-1 的' : '沒寫 tabindex 的'}可編輯區,選單開著按 Tab → 焦點 = 關著時按 Tab 的落點(${attrs.tabindex ? '越過它' : '它本身'})`, v, `期望「${expectedKey}」,實際「${await activeKey()}」`)
     })
   }
+  // W1–W3:開關外觀的項目(indicator="switch",2026-11-27 H41;判準 checkbox.spec.md「選單裡」)。
+  // story 的 play 會打開選單;沒開(play 沒跑)就自己點觸發鈕 —— 兩條路都只是前提,開不起來 = instrument。
+  const SWITCH_ROW = (name) => `[role="menuitemcheckbox"]:has-text("${name}")`
+  const openSwitchMenu = async () => {
+    if (!(await waitOpen(1, 1500))) { await page.locator(SWITCH_TRIGGER).first().click(); if (!(await waitOpen(1))) return '前提:開不了「行動 App 改版」選單' }
+    // `:has-text()` 只有 Playwright 認得,不能拿去 document.querySelector(會丟錯、被讀成「找不到」)—— 頁面端一律比 textContent
+    if (!(await waitFor((label) => [...document.querySelectorAll('[role="menuitemcheckbox"]')].some((r) => (r.textContent ?? '').includes(label)), '全寬顯示'))) return '前提:找不到「全寬顯示」那一列'
+    // 等開啟動畫停(M32 等穩態再量):量的是列尾位置,動畫中的 scale 會讓座標偏
+    if (!(await waitFor(() => { const m = document.querySelector('[role="menu"][data-state="open"]'); return !!m && m.getAnimations({ subtree: true }).length === 0 }))) return '前提:選單 3 秒內沒停在開好的樣子'
+    return null
+  }
+  /** 讀一列:role / aria-checked / aria-disabled / 列尾開關的狀態、是否移出無障礙樹、focus() 後拿不拿得到焦點、位置 */
+  const readSwitchRow = (name) => page.evaluate((label) => {
+    const row = [...document.querySelectorAll('[role="menuitemcheckbox"]')].find((r) => (r.textContent ?? '').includes(label))
+    const sw = row?.querySelector('button[role="switch"]')
+    if (!row || !sw) return null
+    const text = [...row.querySelectorAll('*')].find((e) => e.children.length === 0 && (e.textContent ?? '').trim() === label)
+    const inner = row.firstElementChild
+    const prev = document.activeElement
+    sw.focus()
+    const switchFocused = document.activeElement === sw
+    if (prev instanceof HTMLElement) prev.focus()
+    const r = row.getBoundingClientRect(); const s = sw.getBoundingClientRect()
+    return {
+      role: row.getAttribute('role'), ariaChecked: row.getAttribute('aria-checked'), ariaDisabled: row.getAttribute('aria-disabled'),
+      switchState: sw.getAttribute('data-state'), switchHidden: !!sw.closest('[aria-hidden="true"]'), switchFocused,
+      switchAfterLabel: text ? s.left >= text.getBoundingClientRect().right : null,
+      endGap: Math.round((r.right - s.right) * 10) / 10,
+      endGapMax: inner ? Number.parseFloat(getComputedStyle(inner).paddingRight) + 1 : null,
+    }
+  }, name)
+  const switchState = (name) => page.evaluate((label) => {
+    const row = [...document.querySelectorAll('[role="menuitemcheckbox"]')].find((r) => (r.textContent ?? '').includes(label))
+    return row?.querySelector('button[role="switch"]')?.getAttribute('data-state') ?? null
+  }, name)
+  const ariaCheckedOf = (name) => page.evaluate((label) => [...document.querySelectorAll('[role="menuitemcheckbox"]')].find((r) => (r.textContent ?? '').includes(label))?.getAttribute('aria-checked') ?? null, name)
+  const waitChecked = (name, want) => waitFor(([label, v]) => [...document.querySelectorAll('[role="menuitemcheckbox"]')].find((r) => (r.textContent ?? '').includes(label))?.getAttribute('aria-checked') === v, [name, want])
+
+  await scenario('W1', SWITCH_STORY, SWITCH_TRIGGER, async () => {
+    const pre = await openSwitchMenu()
+    if (pre) { rec('W1', 'instrument', pre); return }
+    // 對照組 = 舊寫法「Switch 自己接點擊」:開關回到無障礙樹、可聚焦(只破壞「全寬顯示」;停用那一列照樣必須綠)
+    if (SELFTEST) await page.evaluate((label) => { const sw = [...document.querySelectorAll('[role="menuitemcheckbox"]')].find((r) => (r.textContent ?? '').includes(label))?.querySelector('button[role="switch"]'); if (sw) { sw.removeAttribute('inert'); sw.removeAttribute('aria-hidden'); sw.tabIndex = 0 } }, '全寬顯示')
+    const a = await readSwitchRow('全寬顯示')
+    rec('W1a 「全寬顯示」整列 = menuitemcheckbox + aria-checked;列尾開關狀態一致、移出無障礙樹、拿不到焦點、畫在列尾', a ? judgeSwitchRow(a) : 'instrument', JSON.stringify(a))
+    const d = await readSwitchRow('自動翻譯訊息')
+    const dv = d ? judgeSwitchRow(d) : 'instrument'
+    rec('W1b 停用的「自動翻譯訊息」同一套契約 + aria-disabled', dv === 'pass' && d.ariaDisabled !== 'true' ? 'fail' : dv, JSON.stringify(d), { sabotaged: false })
+  })
+  await scenario('W2', SWITCH_STORY, SWITCH_TRIGGER, async () => {
+    const pre = await openSwitchMenu()
+    if (pre) { rec('W2', 'instrument', pre); return }
+    // 對照組 = 一般動作項的語意「選了就關」:點了列之後送一個 Esc 把選單關掉
+    if (SELFTEST) await page.evaluate(() => document.addEventListener('click', (e) => {
+      if (e.target instanceof Element && e.target.closest('[role="menuitemcheckbox"]')) setTimeout(() => document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })), 0)
+    }, true))
+    const before = await ariaCheckedOf('全寬顯示')
+    // 點在字的位置上:字所在的內層是 pointer-events-none(整列才是點擊靶),Playwright 的 locator.click 對字會判「被列擋住」而重試到逾時 ——
+    // 改用滑鼠點那個座標,命中的是整列,跟真人點字一樣
+    const at = await page.evaluate((label) => {
+      const row = [...document.querySelectorAll('[role="menuitemcheckbox"]')].find((r) => (r.textContent ?? '').includes(label))
+      const text = row && [...row.querySelectorAll('*')].find((e) => e.children.length === 0 && (e.textContent ?? '').trim() === label)
+      const r = text?.getBoundingClientRect()
+      return r && r.width > 0 ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null
+    }, '全寬顯示')
+    if (!at) { rec('W2', 'instrument', '前提:量不到「全寬顯示」那幾個字的位置'); return }
+    await page.mouse.click(at.x, at.y)
+    await waitChecked('全寬顯示', before === 'true' ? 'false' : 'true')
+    await settleAfterInteraction(page, { frames: 6 })
+    const after = await ariaCheckedOf('全寬顯示')
+    rec('W2 滑鼠點「全寬顯示」的字 → 整列切換、選單不關、列尾開關跟著翻面', judgeRowToggle({ before, after, openAfter: await openCount(), switchStateAfter: await switchState('全寬顯示') }), `aria-checked ${before} → ${after},開著 ${await openCount()} 層`)
+  })
+  await scenario('W3', SWITCH_STORY, SWITCH_TRIGGER, async () => {
+    const pre = await openSwitchMenu()
+    if (pre) { rec('W3', 'instrument', pre); return }
+    // 對照組 = 鍵盤切不動(空白鍵 / Enter 在整列上被吞掉)
+    if (SELFTEST) await page.evaluate(() => document.addEventListener('keydown', (e) => {
+      if ((e.key === ' ' || e.key === 'Enter') && document.activeElement?.getAttribute('role') === 'menuitemcheckbox') { e.preventDefault(); e.stopImmediatePropagation() }
+    }, true))
+    await page.locator(SWITCH_ROW('全寬顯示')).first().focus()
+    for (const key of [' ', 'Enter']) {
+      const before = await ariaCheckedOf('全寬顯示')
+      await page.keyboard.press(key === ' ' ? 'Space' : 'Enter')
+      await waitChecked('全寬顯示', before === 'true' ? 'false' : 'true')
+      await settleAfterInteraction(page, { frames: 6 })
+      const after = await ariaCheckedOf('全寬顯示')
+      rec(`W3 焦點在「全寬顯示」按 ${key === ' ' ? '空白鍵' : 'Enter'} → 整列切換、選單不關、列尾開關跟著翻面`, judgeRowToggle({ before, after, openAfter: await openCount(), switchStateAfter: await switchState('全寬顯示') }), `aria-checked ${before} → ${after},開著 ${await openCount()} 層`)
+    }
+  })
+
+  // CH1 / CH2:單選 Chip 的溢出選單(2026-11-27;規則 B)。觸發鈕 = OverflowMenuTriggerButton「選項選單(共 N 個)」
+  const CHIP_STORY = 'design-system-components-chip-展示--single-selection-menu'
+  const CHIP_TRIGGER = '#storybook-root button[aria-label^="選項選單"]'
+  const chipOnText = () => page.evaluate(() => [...document.querySelectorAll('#storybook-root button[data-state="on"]')].map((b) => (b.textContent ?? '').trim()).join('|') || null)
+  const openChipMenu = async () => {
+    await page.locator(CHIP_TRIGGER).first().click()
+    if (!(await waitOpen(1))) return '前提:按選單鈕開不了選單'
+    if (!(await waitFor(() => { const m = document.querySelector('[role="menu"][data-state="open"]'); return !!m && m.getAnimations({ subtree: true }).length === 0 }))) return '前提:選單 3 秒內沒停在開好的樣子'
+    return null
+  }
+  await scenario('CH1', CHIP_STORY, CHIP_TRIGGER, async () => {
+    const pre = await openChipMenu()
+    if (pre) { rec('CH1', 'instrument', pre); return }
+    // 對照組 = 2026-11-27 前的長相:單選也畫成勾選項(把選單項的角色改回 menuitemcheckbox)
+    if (SELFTEST) await page.evaluate(() => document.querySelectorAll('[role="menu"][data-state="open"] [role="menuitem"]').forEach((i) => i.setAttribute('role', 'menuitemcheckbox')))
+    const m = await page.evaluate(() => {
+      const menu = document.querySelector('[role="menu"][data-state="open"]')
+      if (!menu) return null
+      const items = menu.querySelectorAll('[role="menuitem"]').length
+      const checkboxItems = menu.querySelectorAll('[role="menuitemcheckbox"]').length
+      const checkboxes = menu.querySelectorAll('button[role="checkbox"]').length
+      // 選中底色量算繪出來的背景色:跟沒選中的項不同的那幾項 = 帶選中底色(不讀 class)
+      const rows = [...menu.querySelectorAll('[role="menuitem"], [role="menuitemcheckbox"]')]
+      const bg = rows.map((r) => getComputedStyle(r).backgroundColor)
+      const counts = bg.reduce((a, c) => ((a[c] = (a[c] ?? 0) + 1), a), {})
+      const common = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0]
+      const selectedTexts = rows.filter((_, i) => bg[i] !== common).map((r) => (r.textContent ?? '').trim())
+      return { items, checkboxItems, checkboxes, selectedTexts }
+    })
+    const on = await chipOnText()
+    rec('CH1 單選 Chip 溢出選單:每一項是 menuitem、沒有勾選框、只有目前那一類帶選中底色', m ? judgeChipSingleMenu({ ...m, chipOnText: on }) : 'instrument', `${JSON.stringify(m)} chip=${on}`)
+  })
+  await scenario('CH2', CHIP_STORY, CHIP_TRIGGER, async () => {
+    const pre = await openChipMenu()
+    if (pre) { rec('CH2', 'instrument', pre); return }
+    // 對照組 = 選了沒反應(吞掉選單項的點擊)
+    if (SELFTEST) await page.evaluate(() => document.addEventListener('click', (e) => { if (e.target instanceof Element && e.target.closest('[role="menu"] [role="menuitem"]')) { e.preventDefault(); e.stopImmediatePropagation() } }, true))
+    const picked = '工程筆記'
+    await page.locator('[role="menu"][data-state="open"] [role="menuitem"]').filter({ hasText: picked }).first().click()
+    await waitOpen(0)
+    await waitFor((t) => [...document.querySelectorAll('#storybook-root button[data-state="on"]')].some((b) => (b.textContent ?? '').trim() === t), picked)
+    rec('CH2 單選 Chip 溢出選單選「工程筆記」→ 選單關、那一顆 chip 選中', judgeChipSinglePick({ openAfter: await openCount(), chipOnText: await chipOnText(), picked }), `開著 ${await openCount()} 層,chip=${await chipOnText()}`)
+  })
+
   // F1–F3:AI 浮鈕右鍵選單
   const fabMenuOpen = async () => {
     await page.locator(FAB).first().focus()

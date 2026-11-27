@@ -651,8 +651,9 @@ if [ -n "$HEADER_SIZE_HITS" ] && ! grep -q '@header-control-size-ok:' <<<"$CONTE
   VIOLATIONS="${VIOLATIONS}  - header 內 field-height 控件沒寫 size=\"sm\"(或寫了 md / lg)→ 一律 size=\"sm\"(header-canonical.spec.md:73;Button 預設 md):$(printf '%s' "$HEADER_SIZE_HITS" | tr '\n' ';')。特例 → @header-control-size-ok: <rationale>\n"
 fi
 # C25(2026-11-27,上游判定 E24 (b)):<DropdownMenuItem> 的 badge= / tag= 或子元素裡放 <Switch> / <Checkbox>
-# → 選單裡的開關用 DropdownMenuCheckboxItem(dropdown-menu.spec.md:103「CheckboxItem 切換開關狀態…選單保持開啟」;
-# :211「不要在 item 內放獨立互動元素(如 Button、Switch)—— item 本身就是互動單位」)。DropdownMenuCheckboxItem 不在此列。
+# → 選單裡的開關用 DropdownMenuCheckboxItem(dropdown-menu.spec.md「Item 類型」CheckboxItem 列;「禁止事項」
+# 「不要在 item 內放獨立互動元素(如 Button、Switch)—— item 本身就是互動單位」)。DropdownMenuCheckboxItem 不在此列
+# (含 2026-11-27 H41 的開關外觀 indicator="switch":單獨一個即時設定用它,一組裡挑幾個用預設勾選;判準 checkbox.spec.md「選單裡」)。
 # 開標籤結尾用 PERL_TAG_END(與 C24 同一支,大括號深度):onSelect={() => …} 的 > 不是結尾;自閉合 item 沒有子元素,
 # 只看它自己的屬性(badge={<Switch/>})。子元素範圍 = 開標籤之後到 </DropdownMenuItem> 或下一個 <DropdownMenuItem 為止。
 DROPDOWN_ITEM_CONTROL=$(printf '%s' "$CODE_CONTENT" | perl -0777 -n -e "$PERL_TAG_END" -e '
@@ -673,7 +674,7 @@ if [ "$DROPDOWN_ITEM_CONTROL" = '__PARSE_FAILED__' ]; then
   exit 70
 fi
 if [ "$DROPDOWN_ITEM_CONTROL" = 'hit' ] && ! grep -q '@dropdown-item-control-ok:' <<<"$CONTENT"; then
-  VIOLATIONS="${VIOLATIONS}  - <DropdownMenuItem> 裡放 <Switch> / <Checkbox>(badge= / tag= / 子元素)→ 改用 <DropdownMenuCheckboxItem checked onCheckedChange>(dropdown-menu.spec.md:103;:211 item 內不放獨立互動元素)。特例 → @dropdown-item-control-ok: <rationale>\n"
+  VIOLATIONS="${VIOLATIONS}  - <DropdownMenuItem> 裡放 <Switch> / <Checkbox>(badge= / tag= / 子元素)→ 改用 <DropdownMenuCheckboxItem checked onCheckedChange>:單獨一個即時生效的設定(例:全寬顯示)加 indicator=\"switch\"(列尾開關外觀),一組裡挑幾個用預設勾選外觀(checkbox.spec.md「選單裡」;dropdown-menu.spec.md「禁止事項」item 內不放獨立互動元素)。特例 → @dropdown-item-control-ok: <rationale>\n"
 fi
 
 # Pattern 6: Overlay trigger without defaultOpen state for visual demo

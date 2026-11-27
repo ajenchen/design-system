@@ -306,6 +306,7 @@ Tab 聚焦觸發區，方向鍵在選項間移動，Enter 選取，Esc 關閉。
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `action-bar.spec.md`
 - `agent-panel.spec.md`
 - `checkbox.spec.md`
 - `overflow-indicator.spec.md`

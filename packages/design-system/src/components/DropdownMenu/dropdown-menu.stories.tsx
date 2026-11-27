@@ -1,7 +1,7 @@
 // @story-history: isOverlay OpenSnapshot / hasInteractiveStates Disabled 由 anatomy.stories.tsx StateBehavior + Inspector auto-compile owns(2026-05-15 F-migration);showcase 展示真實多選 / 角色切換 / Checkbox 整合情境。
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
-import { Trash2, Copy, Pencil, ExternalLink, ChevronDown, FileText, FileSpreadsheet, CalendarClock, MessageSquare, ListCollapse, Rows3, RotateCcw, FolderInput, Link, Share2, UserPlus, Eye } from 'lucide-react'
+import { Trash2, Copy, Pencil, ExternalLink, ChevronDown, FileText, FileSpreadsheet, CalendarClock, MessageSquare, ListCollapse, Rows3, RotateCcw, FolderInput, Link, Share2, UserPlus, Eye, Hash, MoveHorizontal, Languages } from 'lucide-react'
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import { WORK_ITEM_STATUSES, WORK_ITEM_TYPES, workItemTypeBadge } from '@/design-system/stories-helpers/scene/work-item-type'
 import {
@@ -241,7 +241,62 @@ const CheckboxDemo = () => {
 
 export const CheckboxItems: StoryObj = {
   name: '勾選項',
+  parameters: {
+    docs: { description: { story: '從一組裡挑幾個(這裡是表格要顯示哪幾欄)用勾選外觀:每一項都是同一組的成員。判準住 checkbox.spec.md「與 Switch 的分界」的「選單裡」。' } },
+  },
   render: () => <CheckboxDemo />,
+}
+
+// ── 開關項:單獨一個即時生效的設定 → indicator="switch"(2026-11-27 H41;判準 checkbox.spec.md「選單裡」)──
+
+const SwitchDemo = () => {
+  const [fullWidth, setFullWidth] = useState(false)
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        {/* 聊天室標題列的頻道名 = 開聊天室選單 */}
+        <Button variant="tertiary" startIcon={Hash} endIcon={ChevronDown}>行動 App 改版</Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuGroup>
+          <DropdownMenuItem startIcon={Link}>複製聊天室連結</DropdownMenuItem>
+          <DropdownMenuItem startIcon={UserPlus}>邀請成員</DropdownMenuItem>
+        </DropdownMenuGroup>
+        <DropdownMenuGroup>
+          <DropdownMenuCheckboxItem indicator="switch" startIcon={MoveHorizontal} checked={fullWidth} onCheckedChange={setFullWidth}>
+            全寬顯示
+          </DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem indicator="switch" startIcon={Languages} checked disabled description="工作區管理員已統一開啟">
+            自動翻譯訊息
+          </DropdownMenuCheckboxItem>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+export const SwitchItems: StoryObj = {
+  name: '開關項',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '單獨一個點了就生效的設定(全寬顯示)跟一般動作並列時用開關外觀:`<DropdownMenuCheckboxItem indicator="switch">`。' +
+          '整列點了就切換、選單不關;列尾的開關只是畫面(不能單獨點、不會拿到焦點),讀屏念的是整列的「已勾選 / 未勾選」。' +
+          '一組裡挑幾個(上一則「勾選項」)仍用勾選外觀。',
+      },
+    },
+  },
+  render: () => <SwitchDemo />,
+  // 打開選單給截圖與讀者看到開關外觀;整列點擊切換 / 選單不關 / 開關不可聚焦的量測在 scripts/dropdown-menu-keyboard-invariant.mjs 的 W 情境
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(canvas.getByRole('button', { name: /行動 App 改版/ }))
+    const row = await body.findByRole('menuitemcheckbox', { name: /全寬顯示/ })
+    await expect(row).toHaveAttribute('aria-checked', 'false')
+  },
 }
 
 // ── 單選（RadioGroup + selected + bg-neutral-selected）──

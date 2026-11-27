@@ -8,6 +8,7 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
+import { Switch } from '@/design-system/components/Switch/switch'
 import { Avatar, type AvatarData } from '@/design-system/components/Avatar/avatar'
 // Row primitive 共用常數——統一從 item-layout pattern module 引入
 import { ICON_SIZE, AVATAR_SIZE, ItemContent, itemPrefixAlignVariants, ROW_PADDING_BY_SIZE } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -106,7 +107,13 @@ export interface MenuItemProps
   startContent?: React.ReactNode
   /** 顯示 checkbox（多選模式由父層控制） */
   checkbox?: boolean
-  /** Checkbox 選中狀態 */
+  /**
+   * 列尾畫開關外觀的狀態指示(2026-11-27 H41;與 `checkbox` 擇一,值讀 `checked`)。
+   * 純視覺:開關不接點擊、不可聚焦、不進無障礙樹 —— 外層那一列才是互動單位並宣告 checked(DropdownMenuCheckboxItem `indicator="switch"`)。
+   * 何時用開關外觀、何時用勾選 → `../Checkbox/checkbox.spec.md`「與 Switch 的分界」的「選單裡」。
+   */
+  switchIndicator?: boolean
+  /** Checkbox / 開關指示的選中狀態(開關指示沒有 indeterminate,當成未選) */
   checked?: boolean | 'indeterminate'
   /** 單選選中（bg-neutral-selected 背景高亮，持續選中狀態） */
   selected?: boolean
@@ -175,6 +182,7 @@ const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
       avatar,
       startContent,
       checkbox,
+      switchIndicator,
       checked,
       selected,
       tag,
@@ -360,7 +368,7 @@ const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
           descriptionClassName={cn(descClampClass || 'break-words')}
         />
 
-        {(tag || endContent) && (
+        {(tag || endContent || switchIndicator) && (
           // @row-slot-handcraft-allow: MenuItem 自身即 row primitive（item-anatomy Family 1 owner），此 tag/endContent 容器是 MenuItem 自有 suffix slot 實作，非外部 consumer hand-craft → 不再 wrap ItemSuffix
           <div className={cn(
             'flex items-center gap-2 shrink-0 h-[1lh] ml-auto',
@@ -368,6 +376,20 @@ const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
           )}>
             {tag}
             {endContent}
+            {switchIndicator && (
+              // 開關外觀的狀態指示(2026-11-27 H41):純視覺,理由同上方 prefix 的 checkbox —— checked 由外層 row 單一 owner
+              // 宣告(Radix menuitemcheckbox),Radix Switch 渲染的是可聚焦的 <button role="switch">,巢狀在互動 row 內 = axe nested-interactive;
+              // aria-hidden 移出無障礙樹 + inert 移出焦點順序(item-anatomy.spec.md「互動 control 在 suffix」的 Switch 實作細節)。
+              // 停用不傳給 Switch:這個 suffix 容器已經 opacity-disabled,再傳 = 透明度疊兩次;一次就等於單獨一顆停用的開關(Switch 停用也是 opacity-disabled)。
+              <Switch
+                size={sizeKey}
+                checked={checked === true}
+                tabIndex={-1}
+                aria-hidden
+                {...INERT_SPREAD}
+                className="pointer-events-none"
+              />
+            )}
           </div>
         )}
       </div>

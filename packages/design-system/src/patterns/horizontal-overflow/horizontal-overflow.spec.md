@@ -117,7 +117,7 @@ scope: "utility primitives module (use-overflow-items hooks: useScrollEdges + us
 
 - Tabs 的 separator owner 是 **Tabs 自己**(none 模式 = list 的 border;scroll / menu 模式 = 畫在遮罩外的那一條,list border 只留透明列給選中底線疊合 —— 見下方「典型 scroll 模式組裝」後的遮罩註),Chip 的 boundary owner 是**各 item**;本 module 的 primitive 都不畫分隔線,只負責 overflow orchestration。責任歸屬不同，不能藏進同一個封閉 container prop。確切 utility、DOM 結構與歷史瀏覽器修復由 `tabs.tsx` / `chip.tsx` source comments 與 regression checks 擁有。
 - Tabs 用 `TabsPrimitive.List` 作為 inner list;Chip 用 `ToggleGroupPrimitive.Root`
-- Tabs 用 `DropdownMenuItem + selected`(單選);Chip 用 `DropdownMenuCheckboxItem`(多選)
+- Tabs 用 `DropdownMenuItem + selected`(單選);Chip 單選同 Tabs、多選用 `DropdownMenuCheckboxItem`(`../../components/Chip/chip.spec.md`「menu」段)
 - Tabs 有 `gap-[var(--layout-space-loose)]`;Chip 有 `gap-2`
 
 把這些差異塞進一個 container prop 只會讓 API 變成 bag of flags。**讓 consumer 組裝,但強制消費 canonical primitive**,是更乾淨的做法——跟 `item-anatomy` module(`patterns/element-anatomy/item-anatomy.tsx`)提供 `ItemPrefix` / `ItemLabel` / `ItemIcon` 但不做「ItemRow 容器」是同一個設計哲學。

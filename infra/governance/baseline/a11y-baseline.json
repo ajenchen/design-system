@@ -2,7 +2,7 @@
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
     "generatedAt": "2026-11-26T14:00:56.486Z",
-    "stories": 1132,
+    "stories": 1134,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
       "apps-template-appshell-dashboard--default",
@@ -253,6 +253,7 @@
       "design-system-components-chip-展示--assist-attachments",
       "design-system-components-chip-展示--default",
       "design-system-components-chip-展示--single-selection",
+      "design-system-components-chip-展示--single-selection-menu",
       "design-system-components-chip-展示--with-badge",
       "design-system-components-chip-設計原則--layout-rule",
       "design-system-components-chip-設計原則--selected-style-rule",
@@ -448,6 +449,7 @@
       "design-system-components-dropdownmenu-展示--option-prefix",
       "design-system-components-dropdownmenu-展示--radio-items",
       "design-system-components-dropdownmenu-展示--sub-menu",
+      "design-system-components-dropdownmenu-展示--switch-items",
       "design-system-components-dropdownmenu-展示--with-suffix",
       "design-system-components-dropdownmenu-設計原則--destructive-rule",
       "design-system-components-dropdownmenu-設計原則--group-vs-separator-rule",
@@ -1137,8 +1139,8 @@
       "design-system-tokens-uisize--overview",
       "design-system-tokens-uisize--product-alignment"
     ],
-    "storyIdsSha256": "0d63e189ac89fcded52d9c77b266121e33e2eb332ff44c73a38a874434ac570d",
-    "fingerprints": 762,
+    "storyIdsSha256": "a3f434763f49b16743b8d9196ada5834267d5f96a34a8d51a832cafcab6b4174",
+    "fingerprints": 763,
     "linuxOnly": {
       "design-system-components-combobox-設計規格--inspector|color-contrast": "藍圖區塊的 9px text-fg-muted 小標(anatomy-utils.tsx:174):macOS 等寬字溢出區塊、axe 歸 incomplete 不計,Linux 放得下才計入 —— 只有 Linux(CI)量得到;值 = 2f367ee3(A76)寫入的 CI 實測;main 的 a11y drift 排程 2026-11-19(run 44499310317)在 Linux 量到同值 23 / 41。--color-fg-muted 已定案例外(color.spec.md「已定案(禁再問)」)",
       "design-system-components-select-設計規格--inspector|color-contrast": "藍圖區塊的 9px text-fg-muted 小標(anatomy-utils.tsx:174):macOS 等寬字溢出區塊、axe 歸 incomplete 不計,Linux 放得下才計入 —— 只有 Linux(CI)量得到;值 = 2f367ee3(A76)寫入的 CI 實測;main 的 a11y drift 排程 2026-11-19(run 44499310317)在 Linux 量到同值 23 / 41。--color-fg-muted 已定案例外(color.spec.md「已定案(禁再問)」)"
@@ -1441,9 +1443,10 @@
     "design-system-components-dialog-設計規格--state-behavior|color-contrast": 1,
     "design-system-components-dropdownmenu-展示--item-hover|color-contrast": 3,
     "design-system-components-dropdownmenu-展示--open-snapshot|color-contrast": 3,
+    "design-system-components-dropdownmenu-展示--switch-items|color-contrast": 1,
     "design-system-components-dropdownmenu-設計原則--destructive-rule|color-contrast": 5,
     "design-system-components-dropdownmenu-設計原則--group-vs-separator-rule|color-contrast": 5,
-    "design-system-components-dropdownmenu-設計原則--item-type-rule|color-contrast": 5,
+    "design-system-components-dropdownmenu-設計原則--item-type-rule|color-contrast": 7,
     "design-system-components-dropdownmenu-設計原則--suffix-rule|color-contrast": 3,
     "design-system-components-dropdownmenu-設計原則--usage-guidance|color-contrast": 5,
     "design-system-components-dropdownmenu-設計規格--accessibility|color-contrast": 1,

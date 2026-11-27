@@ -494,6 +494,7 @@ Icon 的目的是幫助辨識，不是視覺對稱。
 - `data-table.spec.md`
 - `file-viewer.spec.md`
 - `header-canonical.spec.md`
+- `horizontal-overflow.spec.md`
 - `overlay-surface.spec.md`
 - `popover.spec.md`
 - `separator.spec.md`

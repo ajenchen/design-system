@@ -538,7 +538,7 @@ MenuItem 承載 Switch 時,**整列 row 的 click = toggle 這個 control**(不�
 
 ```tsx
 // ✅ Canonical:row click 與 suffix Switch 同步 toggle(row 可點擊、Switch 視覺反映狀態)
-// (這是不在 DropdownMenu 裡的 MenuItem 容器的寫法;DropdownMenu 裡的開關一律用 DropdownMenuCheckboxItem —— dropdown-menu.spec.md:103,:211 禁在 item 內放 Switch;2026-11-27 上游判定 E24 (c))
+// (這是不在 DropdownMenu 裡的 MenuItem 容器的寫法;DropdownMenu 裡同一套語意由元件做好:<DropdownMenuCheckboxItem indicator="switch">,不要在 DropdownMenuItem 裡放 Switch —— dropdown-menu.spec.md「禁止事項」;外觀判準 checkbox.spec.md「選單裡」,2026-11-27 H41 取代同日 E24 (c)「一律勾選」)
 // row = 唯一 ARIA owner:role="menuitemcheckbox" + aria-checked 讓 AT 感知 on/off
 //(Switch aria-hidden 後,沒有這兩個屬性 toggle 狀態對 SR 完全隱形)
 <MenuItem
@@ -563,7 +563,7 @@ MenuItem 承載 Switch 時,**整列 row 的 click = toggle 這個 control**(不�
 
 | 情境 | 用 | 原因 |
 |------|---|------|
-| **DropdownMenu 內的 toggle 清單**(View menu / Display options / Page toolbar filter menu) | `DropdownMenuCheckboxItem`(`checked` + `onCheckedChange`);不在 DropdownMenu 裡的 MenuItem 容器才用 `MenuItem` + suffix Switch(上方 Canonical 範例) | 最近的同目的規格勝出(M23(d)):`../../components/DropdownMenu/dropdown-menu.spec.md:103`「CheckboxItem 切換開關狀態…選單保持開啟」,`:211` 禁在 item 內放 Switch;DS 內 DropdownMenu 的開關全是這種寫法。MenuItem 容器已在 overlay、整列 row 就是 click target,Switch 是狀態視覺 |
+| **DropdownMenu 內的 toggle 清單**(View menu / Display options / Page toolbar filter menu) | `DropdownMenuCheckboxItem`(`checked` + `onCheckedChange`):單獨一個設定加 `indicator="switch"`(列尾開關,即上方 Canonical 語意),一組裡挑幾個用預設勾選;不在 DropdownMenu 裡的 MenuItem 容器才自己用 `MenuItem` + suffix Switch(上方 Canonical 範例) | 最近的同目的規格勝出(M23(d)):`../../components/DropdownMenu/dropdown-menu.spec.md`「Item 類型」CheckboxItem 列與「禁止事項」(item 內不放 Switch);選哪個外觀只看 `../../components/Checkbox/checkbox.spec.md`「選單裡」(2026-11-27 user 定開關外觀,H41)。MenuItem 容器已在 overlay、整列 row 就是 click target,Switch 是狀態視覺 |
 | **Settings page 的獨立 toggle row**(不在 overlay,是 page layout) | `<Field orientation="horizontal">` + Switch 齊右 | 見 `components/Switch/switch.spec.md`「對齊情境:Settings list vs Form edit」 |
 
 兩者**結構一致**(label 左 / toggle 右齊),差別只在**容器層級**(menu item = overlay row / Field horizontal = page row)。
@@ -1099,7 +1099,8 @@ Selection control(Dropdown / Menu / List / SegmentedControl / Chip)的 item 視�
 | Selection Model | Canonical 視覺 | 禁止 |
 |---|---|---|
 | **多選**(checkbox semantic) | `DropdownMenuCheckboxItem`(方塊勾)、SelectionItem checkbox | radio 圓圈、bg 高亮(無方塊會誤以為單選) |
-| **單選 in dropdown / menu** | `DropdownMenuItem` 的 `selected` prop → `bg-neutral-selected` 持續選中背景(跟 SelectMenu 單選同一套) | **checkbox 方塊**(暗示多選)、**radio 圓圈**(dropdown 不用 radio 指示器,RadioGroup 才用) |
+| **單獨一個布林設定 in dropdown / menu**(開 / 關一個功能) | `DropdownMenuCheckboxItem indicator="switch"`(列尾開關;判準 `../../components/Checkbox/checkbox.spec.md`「選單裡」) | 方塊勾(暗示從一組裡挑)、`DropdownMenuItem` 裡自己放 Switch(兩個互動單位) |
+| **單選 in dropdown / menu** | `DropdownMenuItem` 的 `selected` prop → `bg-neutral-selected` 持續選中背景(跟 SelectMenu 單選同一套);選了要留在選單裡的用 `DropdownMenuRadioItem`(選中同樣是底色),怎麼分照 `../../components/Checkbox/checkbox.spec.md`「選單裡」(d) | **checkbox 方塊**(暗示多選)、**radio 圓圈**(dropdown 不用 radio 指示器,RadioGroup 才用) |
 | **單選 as always-visible form control** | `RadioGroup` + `RadioGroupItem`(圓圈) | — |
 
 #### 為什麼 dropdown 單選不用 radio 圓圈

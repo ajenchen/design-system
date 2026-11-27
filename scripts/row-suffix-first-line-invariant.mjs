@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * @gate-contract
- *   保證: 列上的小圖形(列尾行內動作 / 收合箭頭 / 關閉鈕 / 開關 / 列首轉圈 / 月曆上下月箭頭 / 快捷鍵後綴 / Alert・Toast 的前置狀態圖示與
+ *   保證: 列上的小圖形(列尾行內動作 / 收合箭頭 / 關閉鈕 / 開關(含選單列尾的開關外觀,2026-11-27 H41)/ 列首轉圈 / 月曆上下月箭頭 / 快捷鍵後綴 / Alert・Toast 的前置狀態圖示與
  *         右側操作區的動作鈕・分隔線・×)的中線,等於同一列**第一行文字**的中線
  *         (item-anatomy.spec.md「Suffix 一律 `h-[1lh]` inline 對齊第一行 label」與「24px 閾值對齊規則」;Alert / Toast 經共用底座 Notice
  *         消費同一套規則,notice.spec.md「Layout」)。量的是**中線本身**
@@ -93,6 +93,9 @@ const TARGETS = [
   { id: 'design-system-components-slider-設計原則--position-as-state-rule', min: { 'state-switch': 4 } },
   { id: 'design-system-internal-dategrid-展示--single', min: { 'month-nav': 2 } },
   { id: 'design-system-components-dropdownmenu-設計規格--inspector', min: { 'menu-shortcut': 2 } },
+  // 選單裡開關外觀的項目(indicator="switch",2026-11-27 H41):列尾開關的中線 = 該列第一行字的中線(「全寬顯示」+ 停用且有說明的「自動翻譯訊息」)。
+  // 選單要打開才量得到:story 的 play 會打開,沒開就按觸發鈕(openMenu)
+  { id: 'design-system-components-dropdownmenu-展示--switch-items', min: { 'menu-switch': 2 }, waitFor: ['button', '行動 App 改版'], openMenu: '行動 App 改版' },
   // Alert / Toast(共用底座 Notice),全部是多行(標題 + 說明):低調 / 實心 × 五色(neutral 沒有狀態圖示)、右上操作群組(重新整理 / 分享 / 分隔線 / ×)
   // 2026-11-05 整合:basic 0e2eeba9(稽核 M103「展示層每則一個真實情境」)把「含說明文字」改成一則、沒有 × —— n1 寫這兩列時它還是
   // 低調 / 實心 × 五色共 10 則(8 個圖示、10 個右側操作)。五色 × 兩種外觀的多行樣本改量設計規格「色彩對照表」(subtle 5 + solid 3,
@@ -117,6 +120,7 @@ const KIND_NAME = {
   'state-switch': 'Switch 狀態矩陣(小標 + 樣本)',
   'month-nav': 'DateGrid 上 / 下月箭頭',
   'menu-shortcut': '快捷鍵後綴(DropdownMenu 元件檢閱器的預覽列)',
+  'menu-switch': '選單列尾開關(DropdownMenuCheckboxItem indicator="switch")',
   'notice-prefix': 'Alert / Toast 前置狀態圖示',
   'notice-suffix': 'Alert / Toast 右側操作區',
 }
@@ -145,6 +149,7 @@ function measurePage({ kinds, sabotage }) {
     'month-nav': () => [...document.querySelectorAll('button[aria-label="上一個月"], button[aria-label="下一個月"]')],
     // 預覽列的快捷鍵:字以 ⌘ 開頭、自己沒有子元素的那個 span(修前它就是槽本身,修後是槽裡的 caption 字)
     'menu-shortcut': () => [...document.querySelectorAll('span')].filter((s) => !s.children.length && /^⌘/.test(s.textContent.trim())),
+    'menu-switch': () => [...document.querySelectorAll('[role="menuitemcheckbox"] button[role="switch"]')],
     // 前置狀態圖示 = 容器裡不在按鈕 / 分隔線裡的 svg;右側操作區 = 每一顆按鈕(endContent 與 ×)與 Notice 自動放的分隔線
     'notice-prefix': () => noticeParts((c) => [...c.querySelectorAll('svg')].filter((s) => !s.closest('button, [data-action-divider]'))),
     'notice-suffix': () => noticeParts((c) => [...c.querySelectorAll('button, [data-action-divider]')]),
@@ -288,6 +293,20 @@ async function openToast(p, name, storyId) {
   }
 }
 
+// 選單要打開才量得到列尾開關:story 的 play 會打開它;1.5 秒內沒開(play 沒跑)才按觸發鈕 —— 開著時再按會把它關掉。
+// 等到「開著的選單裡的開關」本身出現、選單的開啟動畫停下(scale 會讓中線偏),等不到 = 儀器失效
+async function openMenu(p, name, storyId) {
+  const OPEN = '[role="menu"][data-state="open"]'
+  try {
+    const opened = await p.waitForSelector(OPEN, { timeout: 1500 }).then(() => true, () => false)
+    if (!opened) await p.locator('#storybook-root').getByRole('button', { name }).click({ timeout: 15_000 })
+    await p.locator(`${OPEN} [role="menuitemcheckbox"] button[role="switch"]`).first().waitFor({ state: 'attached', timeout: 15_000 })
+    await p.waitForFunction((sel) => { const m = document.querySelector(sel); return !!m && m.getAnimations({ subtree: true }).length === 0 }, OPEN, { timeout: 15_000, polling: 'raf' })
+  } catch (error) {
+    throw new StoryRenderInstrumentError({ storyId, kind: 'open-menu', reason: `打開「${name}」選單後等不到開著的選單與列尾開關(${String(error?.message ?? error).split('\n')[0]})` })
+  }
+}
+
 async function runPages(page, sv, sabotage) {
   const rows = []
   const instrument = []
@@ -303,8 +322,9 @@ async function runPages(page, sv, sabotage) {
         // 等「要量的那個東西本身」出現(M32 第四題),不靠固定睡眠
         waitFor: ([sel, text]) => [...document.querySelectorAll(sel)].some((e) => !text || e.textContent.trim().startsWith(text)),
         waitForArg: t.waitFor ?? WAIT_FOR[kinds[0]],
-        beforeSettle: t.openToast || sabotage?.css ? async (p) => {
+        beforeSettle: t.openToast || t.openMenu || sabotage?.css ? async (p) => {
           if (t.openToast) await openToast(p, t.openToast, t.id)
+          if (t.openMenu) await openMenu(p, t.openMenu, t.id)
           if (sabotage?.css) await p.addStyleTag({ content: sabotage.css })
         } : null,
         probe: measurePage,
@@ -396,6 +416,9 @@ requireFreshStorybookBuild(S, [
   'packages/design-system/src/components/DateGrid/date-grid.tsx',
   'packages/design-system/src/components/DateGrid/date-grid.stories.tsx',
   'packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx',
+  'packages/design-system/src/components/DropdownMenu/dropdown-menu.stories.tsx',
+  'packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx',
+  'packages/design-system/src/components/Menu/menu-item.tsx',
   'packages/design-system/src/components/Notice/notice.tsx',
   'packages/design-system/src/components/Alert/alert.tsx',
   'packages/design-system/src/components/Alert/alert.stories.tsx',

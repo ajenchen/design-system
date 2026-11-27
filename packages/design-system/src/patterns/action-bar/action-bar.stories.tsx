@@ -70,7 +70,11 @@ const ToolbarFrame = ({ title, children }: { title?: string; children: ReactNode
   )
 }
 
-/** 設定:打開檢視設定選單(勾選項就是設定本身) */
+/**
+ * 設定:打開檢視設定選單 —— 兩項各是一個獨立的即時設定(不是從一組裡挑幾個)→ 開關外觀 indicator="switch"
+ *(checkbox.spec.md「與 Switch 的分界」的「選單裡」;2026-11-27 前是勾選外觀)。這兩項判成「獨立設定」是【AI 推導】,user 定的是原則
+ *(單獨一個即時設定用開關外觀),不是這兩項
+ */
 function SettingsMenuTrigger({ children }: { children: ReactNode }) {
   const [archived, setArchived] = useState(false)
   const [compact, setCompact] = useState(false)
@@ -78,8 +82,8 @@ function SettingsMenuTrigger({ children }: { children: ReactNode }) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuCheckboxItem checked={archived} onCheckedChange={setArchived}>顯示已封存</DropdownMenuCheckboxItem>
-        <DropdownMenuCheckboxItem checked={compact} onCheckedChange={setCompact}>緊湊列高</DropdownMenuCheckboxItem>
+        <DropdownMenuCheckboxItem indicator="switch" checked={archived} onCheckedChange={setArchived}>顯示已封存</DropdownMenuCheckboxItem>
+        <DropdownMenuCheckboxItem indicator="switch" checked={compact} onCheckedChange={setCompact}>緊湊列高</DropdownMenuCheckboxItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )
