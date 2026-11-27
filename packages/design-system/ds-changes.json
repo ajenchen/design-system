@@ -450,6 +450,19 @@
         {"paths":["packages/design-system/src/components/Tooltip/tooltip.spec.md","packages/design-system/src/components/Field/field.spec.md","packages/design-system/src/components/Field/form-validation.spec.md","packages/design-system/src/components/Select/select.spec.md"],"reason":"只改文件:Tooltip 規格補「觸發點是停用的控件」指向 Button aria-disabled 與 Field 外層掛 Tooltip 的兩處做法(C21);field.spec.md 寫出產品自訂控件用 Field id 推出的 label / description / error id 接 aria-* 的做法(C29 文件部分);form-validation 支援名單補 PeoplePicker;Select 規格補 minWidth 一行。元件行為不變。"},
         {"paths":["packages/design-system/src/tokens/uiSize/icon-size.ts","packages/design-system/src/components/Steps/steps.tsx","packages/design-system/src/components/Sidebar/sidebar.tsx","packages/design-system/src/components/PeoplePicker/person-display.tsx","packages/design-system/src/components/PeoplePicker/people-picker.stories.tsx"],"reason":"只改註解裡的「檔名:行號」引用:同一節的 C1 / C8 / C16 / C19 / C25 改動讓被引用的行往下移,owner-claims 的 --fix-moved-cites 把純位移的行號改成新位置(steps.tsx 那一處改寫成宣告名 `ROW_PADDING_BY_SIZE`)。程式與範例行為不變。"}
       ]
+    },
+    "0.1.0-beta.152": {
+      "changes": [
+      ],
+      "errata": [
+      ],
+      "added": [
+      ],
+      "updated": [
+        {"id":"0.1.0-beta.152/product-agents-quality-first","target":"產品 repo 的 AGENTS.md「Seven working principles」(原「Six working principles」)","note":"產品端 AGENTS.md 多第 7 條「Quality first, then speed」:完整、正確的產出是前提,在此之下以最快、最省時間 / 運算 / token 的方式完成,省的是重工與等待、不是檢查;做法依當下環境與 effort 決定,user 給目標、不逐項下指令(與 DS 根目錄 AGENTS.md「# 自主執行 canonical」第一段同一條)。另拿掉「Git and release flow」最後一條與前文重複的升級 PR 說明,同義內容仍在「Authority and trust boundary」與「Pilot and upstream feedback」。產品端程式不用改。","spec":"ds-canonical/fork/AGENTS.md「Seven working principles」","paths":["scripts/fork-role-sources/AGENTS.product.md","packages/design-system/ds-canonical/fork/AGENTS.md","template/ds-product-template/AGENTS.md"]}
+      ],
+      "noVisibleChange": [
+      ]
     }
   }
 }

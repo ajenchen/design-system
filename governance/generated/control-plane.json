@@ -9,12 +9,12 @@
   },
   "canonicalSources": [
     {
-      "hash": "sha256:5d72bb8c9b26331af5dea0069c16ac30fe123cc7dcc582f2e5805ff5e628fedc",
+      "hash": "sha256:fa36b497d8c9d84fbda0ae85a6fb42f1786bcd1940a7a58620f31c96e5c90bcf",
       "id": "agent-bootstrap",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "AGENTS.md",
-      "size": 22688,
+      "size": 22684,
       "type": "file"
     },
     {
@@ -142,7 +142,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 221,
-      "hash": "sha256:4de13bbad0f790d3dbb4b52c1759548b0bc3d5968f8d8135cfd95543b44682e2",
+      "hash": "sha256:a4cdf390ae0c2f3fdd307020b6208b90a882fac4e14ddb268cc03573779da624",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2431,12 +2431,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:4df8873c13f0e123a7f83ba06f717c7d254269c6c7b4e45c401ad636e610cbe7",
+      "hash": "sha256:4aad7eb828d248a7d90bb49ff9f0655dec546ec8a70d33aaf8cee06f56a5b80a",
       "id": "product-shared-instruction",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/fork-role-sources/AGENTS.product.md",
-      "size": 6866,
+      "size": 7105,
       "type": "file"
     },
     {
@@ -2708,7 +2708,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 22,
-      "hash": "sha256:f474a42f9ad3b0386f4e11d04282a8251a6ecefe296f9f02d66ec614d01e3ab7",
+      "hash": "sha256:cfe2838d0dfe98ea4ae7d04346df4c5338cc0c02b119b8264f7fadbd9a22cffa",
       "id": "provider-neutral-memory",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3094,7 +3094,7 @@
         "scripts/generated/"
       ],
       "files": 819,
-      "hash": "sha256:db46391d807318ee801f351ba0052b83f8b9aee481a0447056b15be577f87f97",
+      "hash": "sha256:6c4efd95bf0a1fe89870b5ca2df5047de4dd9534f4ac9966a25f0675d1977dfc",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

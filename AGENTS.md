@@ -37,9 +37,9 @@
 
 **規則放哪裡**:本檔只做每 session 導航,不是 home taxonomy 的第二份 SSOT。Level 1–9 的唯一 owner／scope／flowchart 是 `skills/design-system-audit/references/rule-placement.md`。Provider views 只作 discovery/delivery,不得反向成為 semantic owner。
 
-**行數預算**:Bootstrap(AGENTS.md + CLAUDE.md)/ SKILL / spec / memory / hooks 各有 cap,**具體數值不在本檔重述**(三處列舉必然漂移)—— 各檔(spec / SKILL / memory / 本檔)行數上限的 SSOT 是 `check_file_size_budget.sh` 的 case 表;開場檔總行數、hook 數、memory 筆數門檻是 `session_start_governance_check.sh` 檔頭「Checks + thresholds」與 Check 7 / 8,動態值以 `scripts/sync-governance-counters.mjs` 跑出為準。memory 條數和每個檔行數的 CI 正本是 `governance/memory/contract.json`(`maxIndexEntries` / `maxLinesPerMemory`)。
+**行數預算**(數值不在本檔重述):各檔上限 = `check_file_size_budget.sh` 的 case 表;開場檔總行數、hook 數、memory 筆數門檻 = `session_start_governance_check.sh` 檔頭「Checks + thresholds」與 Check 7 / 8;memory 的 CI 正本 = `governance/memory/contract.json`;動態值以 `scripts/sync-governance-counters.mjs` 跑出為準。
 
-**Anti-bloat** 三層:L1 pre-write 檔案大小閘 / L2 per-edit fire log(要 `GOVERNANCE_TELEMETRY_OPT_IN=1`,預設關)/ L3 季度 `/knowledge-prune`。各層的 owner 檔案、telemetry 路徑與「只移除有證據的噪音、禁為湊比例犧牲真實 invariant」的鐵律,SSOT 在 `skills/knowledge-prune/SKILL.md`,本檔不重述。
+**Anti-bloat** 三層(L1 檔案大小閘 / L2 fire log / L3 季度 `/knowledge-prune`)的 owner、遙測開關與「只移除有證據的噪音」鐵律 → `skills/knowledge-prune/SKILL.md`,本檔不重述。
 
 **加規則前必過 3 題**:(1) 既有 Meta-Pattern／近親 spec／canonical chapter 命中 → append pointer 不新寫;(2) **Rule-of-3**:同概念 ≥ 3 處 → 選 SSOT 其他 pointer;(3) 7 天後還會 fire 嗎?不確定 → 不寫。
 
@@ -125,9 +125,9 @@
 
 # 自主執行 canonical(Autonomy Default)
 
-**Default = autonomous + complete**;多包 / 多步工作照 `packages/design-system/ds-canonical/rules/work-process.md`(不在此重述)。跳過規格項或驗證 = 省工(違 mindset #1)。
+**Default = autonomous + complete**;多包 / 多步工作照 `packages/design-system/ds-canonical/rules/work-process.md`(不在此重述)。**品質是前提,其下才求快求省**:規格全做、驗證完整(跳過 = 省工,違 mindset #1),再以最快、最省時間／資源／token 完成,省的只能是重工與等待,衝突時品質優先;動手前依當下機器／環境／權限／工具／effort 判斷怎麼做最能達標,user 給目標、不逐項下指令(原話、產品端同一條、環境限制 → 下段記憶檔)。
 
-**分診與預算**(開工前):只開工 ① user/產品看得到的錯 ② CI 紅或弄壞已做好的 ③ user 明確要求(附原話 檔:行);其餘記一行進追蹤。派工先寫預算(代理數/花費/牆鐘),用滿就停派、交付已完成的並回報。只驗改到的檔在 CI 對應的檢查;改畫面加預覽讀回,AI 推導的先給 user 看再加固。小修不新寫閘,能擴既有閘就擴;與 M14/M19/M23/M32 的補閘、多層落地衝突時本段優先;user 原話定的規則(例 05-27「那為何不全部 ssot 都要強制吻合?」)除外。交接與額度 → `governance/memory/feedback_orchestration_verify_before_scale.md`。
+**分診與預算**(開工前):只開工 ① user/產品看得到的錯 ② CI 紅或弄壞已做好的 ③ user 明確要求(附原話 檔:行);其餘記一行進追蹤。派工先寫預算(代理數/花費/牆鐘),用滿就停派、交付已完成的並回報。只驗改到的檔在 CI 對應的檢查;改畫面加預覽讀回,AI 推導的先給 user 看再加固。小修不新寫閘,能擴既有閘就擴;與 M14/M19/M23/M32 的補閘、多層落地衝突時本段優先;user 原話定的規則(例 05-27「那為何不全部 ssot 都要強制吻合?」)除外。品質前提、交接與額度 → `governance/memory/feedback_orchestration_verify_before_scale.md`。
 
 | 動作類別 | 預設 |
 |---------|-----|

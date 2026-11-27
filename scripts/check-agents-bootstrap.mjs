@@ -186,7 +186,11 @@ try {
 // 2026-11-27 consumer-feedback-triage 明改 78,590 → 78,658(+68):AGENTS.md「任務導航表」加一列「收到下游／消費者回報 → /consumer-feedback-triage」,
 // 只有指向、沒有說明(初稿帶說明 +145,已縮);改前實量 78,589,可省的 1 byte 不夠一列。user 11-27:「確保 ds repo 接收到任何回饋永遠都會這樣做」——
 // hook 只認得另一個 session 傳來的訊息框,user 口頭轉述的回報只能靠每個 session 開場讀到這一列(governance/memory/feedback_propose_discipline.md Sub-rule 11)。
-const OPENING_FILES_MAX_BYTES = 78_658
+// 同日再釘回實量 78,658 → 78,654(−4):「# 自主執行 canonical」第一段的舊句「跳過規格項或驗證 = 省工」換成「品質是前提,其下才求快求省」一句
+// (user 11-27 原話在 governance/memory/feedback_orchestration_verify_before_scale.md),「行數預算」「Anti-bloat」兩段只拿掉與 owner 重複的說明
+//(指向全留),抵掉增加的字。這次縮的主因不是 A6 而是 A1:root + packages/design-system + fork 的 AGENTS 鏈只剩 13 bytes(32,755 / 32,768),
+// 產品端 AGENTS.product.md 第 7 條同一原則也算在這條鏈上 —— 之後兩邊再加字,先量 A1。
+const OPENING_FILES_MAX_BYTES = 78_654
 const RULES_DIR = path.join(ROOT, 'packages/design-system/ds-canonical/rules')
 const alwaysLoadedRules = fs.existsSync(RULES_DIR)
   ? fs.readdirSync(RULES_DIR).filter((name) => name.endsWith('.md')).sort().filter((name) => {
