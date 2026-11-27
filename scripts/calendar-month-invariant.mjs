@@ -302,7 +302,8 @@ const PROBE = () => {
   const grid = document.querySelector('[role="grid"]')
   if (!grid) return { missing: 'role=grid' }
   const shell = grid.parentElement
-  const toolbar = shell.querySelector(':scope > header')
+  // 工具列 = 根節點底下帶 data-calendar-toolbar 的那一列(2026-11-27 前是 ChromeHeader 的 <header>)
+  const toolbar = shell.querySelector(':scope > [data-calendar-toolbar]')
   const nav = toolbar?.querySelector('nav')
   const heading = toolbar?.querySelector('h1, h2, h3, h4, h5, h6')
   const rows = [...grid.querySelectorAll('[role="row"]')]
@@ -2319,15 +2320,15 @@ const MUTANTS = [
   { name: '週列高改 auto', block: 'layout', expect: ['W1'], css: '[role="grid"] [data-radix-scroll-area-viewport] > div > div { grid-template-rows: none !important; }' },
   { name: '最後一週留底線', block: 'layout', expect: ['W2'], css: '[role="gridcell"] { border-bottom-width: 1px !important; }' },
   { name: '格子內距 6(p-1.5)', block: 'layout', expect: ['D1'], css: '[role="gridcell"] { padding: 6px !important; }' },
-  { name: '工具列改回內距撐高', block: 'layout', expect: ['T1-md', 'T1-lg'], css: '[role="grid"] { } header { height: auto !important; padding-block: 12px !important; }' },
+  { name: '工具列改回內距撐高', block: 'layout', expect: ['T1-md', 'T1-lg'], css: '[role="grid"] { } [data-calendar-toolbar] { height: auto !important; padding-block: 12px !important; }' },
   // 外殼(calendar.spec.md「外殼」2026-11-27):框只圍格子區、工具列在框外 → tight → 框;不加框 / 貼邊兩種擺法
   { name: '框連工具列一起圍(2026-11-27 前的長相)', block: 'layout', expect: ['T5-md', 'T5-lg'], css: '[role="grid"] { border-width: 0 !important; border-radius: 0 !important; } div:has(> [role="grid"]) { border: 1px solid var(--divider) !important; }' },
   { name: '工具列貼著框(工具列 → 格子區 0)', block: 'layout', expect: ['T6-md', 'T6-lg'], css: 'div:has(> [role="grid"]) { gap: 0 !important; }' },
-  { name: '有框時工具列也帶左右內距(沒對齊框的兩緣)', block: 'layout', expect: ['T7-md', 'T7-lg'], css: 'div:has(> [role="grid"]) > header { padding-inline: 16px !important; }' },
+  { name: '有框時工具列也帶左右內距(沒對齊框的兩緣)', block: 'layout', expect: ['T7-md', 'T7-lg'], css: 'div:has(> [role="grid"]) > [data-calendar-toolbar] { padding-inline: 16px !important; }' },
   { name: '不加框時格子區照樣標 bounded', block: 'layout', expect: ['NB-T5-md', 'NB-T5-lg'], dom: () => document.querySelector('[role="grid"]')?.setAttribute('data-layout-region', 'bounded') },
-  { name: '貼邊時工具列沒有左右內距(字貼著容器邊)', block: 'layout', expect: ['FL-F2-md', 'FL-F2-lg'], css: 'header[data-flush] { padding-inline: 0 !important; }' },
-  { name: '貼邊時容器左右還留內距(格子區沒貼齊)', block: 'layout', expect: ['FL-F1-md', 'FL-F1-lg'], css: 'div:has(> div > header[data-flush]) { padding-inline: 16px !important; }' },
-  { name: 'nav 沒有名稱', block: 'layout', expect: ['T3'], dom: () => document.querySelector('header nav')?.removeAttribute('aria-label') },
+  { name: '貼邊時工具列沒有左右內距(字貼著容器邊)', block: 'layout', expect: ['FL-F2-md', 'FL-F2-lg'], css: '[data-calendar-toolbar][data-flush] { padding-inline: 0 !important; }' },
+  { name: '貼邊時容器左右還留內距(格子區沒貼齊)', block: 'layout', expect: ['FL-F1-md', 'FL-F1-lg'], css: 'div:has(> div > [data-calendar-toolbar][data-flush]) { padding-inline: 16px !important; }' },
+  { name: 'nav 沒有名稱', block: 'layout', expect: ['T3'], dom: () => document.querySelector('[data-calendar-toolbar] nav')?.removeAttribute('aria-label') },
   { name: '欄頭名稱改成短字', block: 'layout', expect: ['H2'], dom: () => document.querySelectorAll('[role="columnheader"]').forEach((h) => h.setAttribute('aria-label', h.textContent)) },
   { name: '事件列高 20', block: 'layout', expect: ['E1'], css: '[data-calendar-tile] { height: 20px !important; }' },
   { name: '事件列焦點框改回往內', block: 'layout', expect: ['E3'], css: '[data-calendar-tile]:focus-visible { outline-offset: -2px !important; }' },

@@ -1336,9 +1336,11 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
           左右內距:預設 0 → 第一顆鈕左緣 = 格子區左緣、「新事件」右緣 = 格子區右緣(同表格工具列對齊表格兩緣);貼邊擺法(flush)時格子區貼齊容器邊、
           容器不給內距,工具列自己帶 loose,字對齊內容左右邊距(一段距離只有一個主人:容器 0、工具列 loose)。
           排法:左 =〔‹〕〔今天〕〔›〕+ 標題,右 =〔+ 新事件〕(action-bar.spec.md:109 標題在左、按鈕靠右;:121 primary 在業務層最右)。
-          子項間距 gap-2(8)= 原本 ChromeHeader 子項的 gap-2(utility-registry canonical_micro_geometry;calendar-geometry-invariant 只在工具列 <header> 與 <nav> 上放行,
-          所以 className 寫成一個字串、貼邊的內距用 data-flush 開,不經 cn)。 */}
-      <header data-flush={flush || undefined} className="flex items-center gap-2 shrink-0 min-w-0 data-[flush]:px-[var(--layout-space-loose)]">
+          子項間距 gap-2(8)= 原本 ChromeHeader 子項的 gap-2(utility-registry canonical_micro_geometry;calendar-geometry-invariant 只在帶 data-calendar-toolbar
+          的工具列與 <nav> 上放行,所以 className 寫成一個字串、貼邊的內距用 data-flush 開,不經 cn)。
+          元素用 div、不用 <header>:它不是 chrome 標頭了(header-canonical.spec.md B 家族已拿掉 Calendar 工具列),與 DataTable 上方的工具列同一種;
+          <header> 會被版面閘當成 chrome 標頭、把下一塊(格子區)當成要給內距的容器(layout-body-edges (c))。 */}
+      <div data-calendar-toolbar="" data-flush={flush || undefined} className="flex items-center gap-2 shrink-0 min-w-0 data-[flush]:px-[var(--layout-space-loose)]">
         {/* 月份導覽 landmark:‹ / 今天 / › 包成 <nav aria-label>(calendar.spec.md「A11y 預設」第一條);標題與「新事件」留在 nav 外。
             gap-2 = 按鈕群 8px(utility-registry canonical_micro_geometry;calendar-geometry-invariant 只在 <nav> 上放行) */}
         <nav className="flex items-center gap-2" aria-label={navAriaLabel}>
@@ -1375,7 +1377,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
         <Button variant="primary" size="sm" startIcon={Plus} onClick={onCreateEvent}>
           {createLabel}
         </Button>
-      </header>
+      </div>
 
       {/* 格子區 = 月格陣(role="grid")= 星期列(第一個 row,不捲)+ 週列(在 ScrollArea 裡捲)。
           外框只圍這一塊(calendar.spec.md「外殼」bordered;同 DataTable dataTableVariants:bg-surface rounded-md overflow-hidden + 預設 border border-divider);

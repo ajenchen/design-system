@@ -4,8 +4,8 @@
  *   保證: Calendar 元件檔(components/Calendar/*.tsx,不含 *.stories.tsx 與 `_` 開頭的示範殼)的 class 字串裡,內距 / 外距 / 間距 /
  *         寬高 / 最小最大值 / 位置 / 邊框寬一律不寫數字(`p-1.5`、`gap-0.5`、`min-h-28`、`h-6`、`border-2`)也不寫 `[Npx]`、`[Nrem]`
  *         這類任意值 —— 一律讀 token 或 Calendar 自己的元件內變數(calendar.spec.md「間距」【SPACING(定)】與「禁止事項」第 7 條)。
- *         唯一放行:工具列 `<header>` 與它裡面 `<nav>` 上的按鈕群微距(utility-registry.json spacing.canonical_micro_geometry.gap_utilities,例 `gap-2`;
- *         `<header>` 2026-11-27 起 = 原本 ChromeHeader 那一列、gap-2 從 chrome-header.tsx 搬進來,calendar.spec.md「工具列」),
+ *         唯一放行:工具列那一列(帶 `data-calendar-toolbar` 的元素)與它裡面 `<nav>` 上的按鈕群微距(utility-registry.json spacing.canonical_micro_geometry.gap_utilities,
+ *         例 `gap-2`;那一列 2026-11-27 起 = 原本 ChromeHeader、gap-2 從 chrome-header.tsx 搬進來,calendar.spec.md「工具列」),
  *         只在這兩個元素的 className 上算數,搬到別的元素就紅。另核對三件事:
  *         (1) calendar-geometry.ts 的列高 `CALENDAR_ROW_HEIGHT_PX` 與 tag.tsx 的 `TAG_HEIGHT_PX.md` 同值(雙生常數:Calendar 不 import tag.tsx,
  *             免得整個 Tag 模組進 Calendar 的包;值由本閘從 tag.tsx 讀出來比),
@@ -89,7 +89,10 @@ function classNameHost(node) {
   while (n && (ts.isJsxExpression(n) || ts.isParenthesizedExpression(n))) n = n.parent
   if (!n || !ts.isJsxAttribute(n) || n.name.getText() !== 'className') return null
   const opening = n.parent?.parent
-  return opening && (ts.isJsxOpeningElement(opening) || ts.isJsxSelfClosingElement(opening)) ? opening.tagName.getText() : null
+  if (!opening || !(ts.isJsxOpeningElement(opening) || ts.isJsxSelfClosingElement(opening))) return null
+  // 工具列那一列(2026-11-27 起是帶 data-calendar-toolbar 的 div,不再是 ChromeHeader)認屬性、不認標籤名 —— 放行 div 會放行到所有 div
+  if (opening.attributes.properties.some((a) => ts.isJsxAttribute(a) && a.name.getText() === 'data-calendar-toolbar')) return 'toolbar'
+  return opening.tagName.getText()
 }
 
 /**
@@ -126,9 +129,9 @@ export function scanComponentSource(file, text, { microGaps }) {
       for (const token of node.text.split(/\s+/).filter(Boolean)) {
         const reason = hardcodedReason(token)
         if (!reason) continue
-        // 工具列 <nav> 的按鈕群微距與工具列 <header> 的子項間距(canonical_micro_geometry;<header> 2026-11-27 起 = 原本 ChromeHeader 那一列,
+        // 工具列 <nav> 的按鈕群微距與工具列那一列(data-calendar-toolbar)的子項間距(canonical_micro_geometry;那一列 2026-11-27 起 = 原本 ChromeHeader,
         // gap-2 從 chrome-header.tsx 搬進 calendar.tsx,calendar.spec.md「工具列」)
-        if ((host === 'nav' || host === 'header') && microGaps.includes(utilityOf(token))) continue
+        if ((host === 'nav' || host === 'toolbar') && microGaps.includes(utilityOf(token))) continue
         violations.push({ file, line, token, reason })
       }
     }
@@ -296,12 +299,12 @@ export const MUTANTS = [
   ['列高常數改成 20', 'geometry', (s) => s.replace('CALENDAR_ROW_HEIGHT_PX = 24', 'CALENDAR_ROW_HEIGHT_PX = 20')],
   ['格最小高沒算格線', 'geometry', (s) => s.replace(' + CALENDAR_GAP_PX + CALENDAR_GRID_LINE_PX', ' + CALENDAR_GAP_PX')],
   ['gap-2 搬到非 <nav> 的元素', 'components', (s) => s.replace('className="grid gap-y-[var(--calendar-gap)] shrink-0"', 'className="grid gap-2 shrink-0"')],
-  // 工具列 <header> 只放行微距那幾個(gap-1 / gap-2),其他數字照擋(2026-11-27 <header> 加進放行時的對照組)
-  ['工具列 <header> 子項間距寫成 gap-3', 'components', (s) => s.replace('className="flex items-center gap-2 shrink-0 min-w-0', 'className="flex items-center gap-3 shrink-0 min-w-0')],
+  // 工具列那一列只放行微距那幾個(gap-1 / gap-2),其他數字照擋(2026-11-27 那一列加進放行時的對照組)
+  ['工具列那一列子項間距寫成 gap-3', 'components', (s) => s.replace('className="flex items-center gap-2 shrink-0 min-w-0', 'className="flex items-center gap-3 shrink-0 min-w-0')],
   ['class 讀一個沒設值的 --calendar-*', 'components', (s) => s.replace('px-[var(--calendar-text-inset)]', 'px-[var(--calendar-txt-inset)]')],
   ['根節點沒設元件內變數', 'components', (s) => s.replace('style={{ ...CALENDAR_GEOMETRY_STYLE, ...style }}', 'style={style}')],
   // 根節點沒設、改設在別的元素上(只問「有元素設了」抓不到這一格)
-  ['元件內變數從根節點搬到工具列', 'components', (s) => s.replace('style={{ ...CALENDAR_GEOMETRY_STYLE, ...style }}', 'style={style}').replace('<header data-flush', '<header style={CALENDAR_GEOMETRY_STYLE} data-flush')],
+  ['元件內變數從根節點搬到工具列', 'components', (s) => s.replace('style={{ ...CALENDAR_GEOMETRY_STYLE, ...style }}', 'style={style}').replace('<div data-calendar-toolbar=""', '<div style={CALENDAR_GEOMETRY_STYLE} data-calendar-toolbar=""')],
   // 有時段事件的色條(2026-11-25 事件長相那一包):色表恢復成 2026-11-25 前的左側 3px 邊框、元件寫死色條寬、常數改成 3(字左緣與全天長條錯開 1px)
   ['色表 CAT_ACCENT 恢復 border-l-[3px]', 'categorical', (s) => s.replace("blue: 'bg-[var(--color-blue-6)]',", "blue: 'border-l-[3px] border-[var(--color-blue-6)]',")],
   ['色條寬寫死 w-1', 'components', (s) => s.replace('w-[var(--calendar-accent-w)]', 'w-1')],
