@@ -168,7 +168,8 @@ export type DataTableColumnDef<TData, TValue = any> =
  * (`DataTableSortLabels` 那一份,`lib/sort-cycle.ts`;鍵名照原樣併進來)。
  * 取值順序照 `lib/i18n/README.md`「Fallback chain」:`labels` prop → I18nProvider 的 `data-table` 那一組 → 下方預設(就是原本寫死的字,一字不改)。
  * 帶參數的句子是函式(`columnMenu`、`priorityDescription`、`announce…` 那幾句),I18nProvider 只收字串 → 只經 `labels` prop(同 Pagination `labels.range`)。
- * 還寫死、沒有接上的(欄寬把手的讀屏名、試算表 / 編輯 / 空狀態那幾處)列在 data-table.spec.md「九之二」表頭選單那一列。
+ * 還寫死、沒有接上的(欄寬把手的讀屏名、列勾選框的 fallback 讀屏名、展開鈕、預設空狀態、捲動區名稱、開關格、播報句之間的逗號、拖曳播報)
+ * 列在 data-table.spec.md「九之二」表頭選單那一列。
  */
 export interface DataTableLabels extends DataTableSortLabels {
   /** 列拖曳把手的讀屏名(可拖) */
