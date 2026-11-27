@@ -71,6 +71,7 @@ Textarea 是**多行文字**的輸入與顯示元件——Input 的多行版本�
 - **`resize-y`**：使用者可手動拖拉下邊緣垂直 resize
 - **`variant="naked"` 例外**：cell-as-input substrate（DataTable cell）naked 僅 edit/view 兩 mode（readonly/disabled×naked 死格 2026-07-16 移除），一律 `!resize-none` 覆蓋 `resize-y`，並以 `!h-full` 撐滿 cell——cell 內手動 resize 會破壞表格佈局（`textarea.tsx` naked compoundVariants，intentional divergence）
 - **`min-h-*` className**：消費者可透過 Tailwind utility 覆寫最小高度
+- **區塊層級(2026-11-27)**:Textarea 一律 `display: block`(【AI 推導:修在 Textarea 本身,不改 InlineEdit 編輯容器】)。`<textarea>` 的瀏覽器預設是 inline-block,放在一般區塊容器裡會坐在行框的基線上、下方多一段字元下伸的空間(CSS 2.1 行框與 `vertical-align: baseline`,<https://www.w3.org/TR/CSS21/visudet.html#line-height>);修前 InlineEdit 多行(編輯容器是一般區塊)一進編輯就比檢視高 5px(一般 / 大密度、空值 / 有值都一樣,實測 Chromium),user 2026-11-27 原話「為何事件詳情的說明，在未填的情況下點擊就地編輯，會有高度變化？」。放在 Field 控件槽(flex)裡本來就沒有這段,畫面不變。機械:`scripts/inline-edit-view-geometry-invariant.mjs` (6)
 - **禁止 `resize: horizontal` 或 `both`**：水平 resize 破壞 form 佈局
 
 ---

@@ -9,7 +9,8 @@
 // @gate-contract
 //   保證: inline-edit-view-geometry-invariant.mjs 在該紅的時候會紅 —— (a) field-wrapper.tsx 的多行 md py 改回字面 py-2、
 //         (b) uiSize.css 的 --field-control-py-md 拿掉減框寬的邊框修正、(c) field-wrapper.tsx 的 sm 高度下限改回不扣邊框
-//         (2026-11-25 前的寫法,靜止 30 / 編輯 28)、(d) inline-edit.tsx 靜止外框拿掉透明邊框,四次注入閘都必須 exit 非 0;
+//         (2026-11-25 前的寫法,靜止 30 / 編輯 28)、(d) inline-edit.tsx 靜止外框拿掉透明邊框、(e) textarea.tsx 基底拿掉 block
+//         (2026-11-27 前的寫法,多行就地編輯進編輯高 5px),五次注入閘都必須 exit 非 0;
 //         注入前與還原後閘都必須 exit 0
 //   紅: 現況就紅、注入點不存在、任一注入後閘仍 exit 0、或還原後不綠 → 印出是哪一步並 exit 非 0
 //   綠: 都照預期時 exit 0;被注入的檔在 finally 寫回原文,不讀時間,重複跑結果相同
@@ -47,6 +48,12 @@ const MUTATIONS = [
     target: 'packages/design-system/src/components/InlineEdit/inline-edit.tsx',
     from: "'relative flex min-w-0 rounded-md border-[length:var(--field-border-width)] border-transparent'",
     to: "'relative flex min-w-0 rounded-md'",
+  },
+  {
+    label: 'textarea.tsx 基底拿掉 block(2026-11-27 前的寫法:<textarea> 預設 inline-block,InlineEdit 多行進編輯高 5px)',
+    target: 'packages/design-system/src/components/Textarea/textarea.tsx',
+    from: "'block w-full rounded-md',",
+    to: "'w-full rounded-md',",
   },
 ]
 for (const mutation of MUTATIONS) {

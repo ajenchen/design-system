@@ -43,6 +43,9 @@
  *                      對話框不關 → 第三下關(2026-11-25,calendar.spec.md「Esc(一次少一層)」;修前第二下就連對話框一起關)
  *   F-inline-edit-enter-focus Dialog 裡的 InlineEdit 用 renderEdit = Select、不開選單(桌機 Select 的 autoFocus 無作用)→ 進編輯後焦點在編輯控件上
  *                      → 第一下 Esc 取消編輯、焦點回檢視鈕、對話框不關 → 第二下關(2026-11-25;修前焦點停在對話框本身,第一下就關)
+ *   F-inline-edit-click-open Calendar 內建詳情的時間欄(InlineEdit + DatePicker.Range showTime)用**滑鼠**點一下進編輯 → 日曆面板開好、焦點在面板裡
+ *                      → Esc 關面板(仍在編輯、焦點回編輯控件)→ Esc 取消編輯(焦點回檢視鈕、onEventChange 0 次)→ Esc 關詳情;焦點從不落 body
+ *                      (2026-11-27,user「為何日期就地編輯點了第一下不會自動 focus?」:修前 Range 沒有 defaultOpen,焦點只落在開始端、日曆沒開)
  *   E-inline-edit-custom-date Dialog 裡的 InlineEdit 用 renderEdit = 可打字 DatePicker(焦點留在輸入框;選了只改草稿、不提交),點輸入框開日曆:
  *                      (a) 打一個字 → Esc 依序 關日曆 / 還原草稿 / 取消編輯(值不變、onCommit 0 次、焦點回檢視鈕)/ 關對話框,四下;
  *                      (b) 沒打字 → 關日曆(仍在編輯)/ 取消編輯 / 關對話框,三下(2026-11-25;修前兩段都在取消編輯那一下連對話框一起關)
@@ -111,8 +114,9 @@
  *   LinkInput 只看 raw defaultPrevented(第一輪的寫法)→ E-link-edit / E-link-typed(困住,永遠關不掉)
  *   editSettleKeyProps 不宣告 Esc 層 → E-inline-edit / E-link-edit / E-link-typed;DatePicker 草稿不宣告 → E-datepicker-draft / E-inline-edit-custom-date;
  *   DatePicker 草稿的 Esc 不看 Radix 已用掉 → E-datepicker-draft / E-inline-edit-custom-date(同一個輸入框放進 InlineEdit,同一個根因)
- *   InlineEdit 自訂編輯容器不宣告 Esc 層 → E-inline-edit-custom / E-inline-edit-custom-date / F-inline-edit-enter-focus;進編輯不把焦點補進編輯容器 → F-inline-edit-enter-focus;
- *   編輯容器不看就近的那一層 / 不看 Radix 已用掉 → E-inline-edit-custom-date(各紅一段);編輯容器只看不認領 → E-inline-edit-custom / -date / F-inline-edit-enter-focus
+ *   InlineEdit 自訂編輯容器不宣告 Esc 層 → E-inline-edit-custom / E-inline-edit-custom-date / F-inline-edit-enter-focus / F-inline-edit-click-open;進編輯不把焦點補進編輯容器 → F-inline-edit-enter-focus;
+ *   Calendar 詳情時間欄的 DatePicker.Range 不傳 defaultOpen → F-inline-edit-click-open;
+ *   編輯容器不看就近的那一層 / 不看 Radix 已用掉 → E-inline-edit-custom-date(各紅一段);編輯容器只看不認領 → E-inline-edit-custom / -date / F-inline-edit-enter-focus / F-inline-edit-click-open
  *   DataTable 根不宣告 self 層 → E-datatable-cursor / E-datatable-hidden-col / E-datatable-cell-widget(它的第二下就是這一層);Calendar 方塊不宣告 → E-calendar-tile;
  *   Calendar 出格回長條 DOM 所在那一天(2026-11-25 前的 dayStopOf(焦點所在那一格))→ E-calendar-tile
  *   DataTable 連結格 / 開關格不宣告格內那一層 → E-datatable-cell-widget
@@ -211,8 +215,9 @@ const MUTANTS = [
     id: 'inline-edit-custom-no-escape-layer',
     what: 'InlineEdit 自訂 renderEdit 的編輯容器不宣告 Esc 層(2026-11-25 前的形狀:只有預設 Input / Textarea 經 editSettleKeyProps 宣告)',
     file: 'components/InlineEdit/inline-edit.tsx',
-    // 三列的「取消編輯」那一下都靠這一層:拿掉 → 那一下 Radix 直接關對話框(E-inline-edit-custom-date 兩段都在這一下紅)
-    expectRed: ['E-inline-edit-custom', 'E-inline-edit-custom-date', 'F-inline-edit-enter-focus'],
+    // 四列的「取消編輯」那一下都靠這一層:拿掉 → 那一下 Radix 直接關對話框 / 詳情(E-inline-edit-custom-date 兩段都在這一下紅;
+    // F-inline-edit-click-open 第二下 Esc 連詳情一起關,2026-11-27 實跑)
+    expectRed: ['E-inline-edit-custom', 'E-inline-edit-custom-date', 'F-inline-edit-click-open', 'F-inline-edit-enter-focus'],
     apply: (src) => replaceOnce(src, /\{ \.\.\.escapeLayerProps\(true\), onKeyDown: handleCustomEditKeyDown \}/, '{ onKeyDown: handleCustomEditKeyDown }'),
   },
   {
@@ -222,6 +227,13 @@ const MUTANTS = [
     // E-inline-edit-custom 不在內:那一列的 Select 進編輯即開選單,焦點由選單自己搬進彈出層、收起時 Radix 還給觸發欄位
     expectRed: ['F-inline-edit-enter-focus'],
     apply: (src) => replaceOnce(src, /\n    tabbableOrder\(box\)\[0\]\?\.focus\(\)\n/, '\n'),
+  },
+  {
+    id: 'calendar-detail-time-no-open',
+    what: 'Calendar 詳情的時間欄進編輯不開日曆(renderEdit 的 DatePicker.Range 不傳 defaultOpen;2026-11-27 前的形狀:焦點只落在開始端,要再點一次)',
+    file: 'components/Calendar/calendar-event-detail.tsx',
+    expectRed: ['F-inline-edit-click-open'],
+    apply: (src) => replaceOnce(src, /\n\s+defaultOpen\n/, '\n'),
   },
   {
     id: 'inline-edit-custom-esc-not-nearest',
@@ -243,7 +255,7 @@ const MUTANTS = [
     id: 'inline-edit-custom-esc-no-claim',
     what: 'InlineEdit 編輯容器只「看」這一下還在不在、不認領(isEscapeTakenElsewhere 代替 isEscapeForControl):取消了編輯,浮層守門卻當作沒人接、重新派一次,同一下連對話框一起關(lib/overlay-escape.ts「宣告 ≠ 處理」)',
     file: 'components/InlineEdit/inline-edit.tsx',
-    expectRed: ['E-inline-edit-custom', 'E-inline-edit-custom-date', 'F-inline-edit-enter-focus'],
+    expectRed: ['E-inline-edit-custom', 'E-inline-edit-custom-date', 'F-inline-edit-click-open', 'F-inline-edit-enter-focus'],
     apply: (src) => replaceOnce(
       replaceOnce(src, /import \{ ESCAPE_LAYER_ATTR, escapeLayerProps, isEscapeForControl \} from '@\/design-system\/lib\/overlay-escape'/,
         "import { ESCAPE_LAYER_ATTR, escapeLayerProps, isEscapeForControl, isEscapeTakenElsewhere } from '@/design-system/lib/overlay-escape'"),
@@ -714,6 +726,18 @@ function CalendarScene() {
     </Shell>
   )
 }
+// F-inline-edit-click-open(2026-11-27):Calendar 內建詳情的時間欄 = InlineEdit + 自訂 renderEdit = DatePicker.Range showTime
+// (calendar-event-detail.tsx 原封不動;詳情浮層本身就是宿主,不另包 Shell)。onEventChange 計次 —— 取消編輯不得交回修改
+function CalendarDetailScene() {
+  const [events, setEvents] = React.useState([{ id: 'd1', title: '設計審查', start: '2026-03-12T10:00', end: '2026-03-12T11:00', color: 'blue' }])
+  return (
+    <div style={{ height: 640 }}>
+      <Calendar aria-label="團隊行事曆" referenceDate={new Date(2026, 2, 1)} today={new Date(2026, 2, 1)} locale="zh-TW" events={events}
+        onCreateEvent={() => count('create')} onDateClick={() => count('date')}
+        eventDetail={{ onEventChange: (ev, patch) => { count('calDetail'); setEvents((es) => es.map((x) => (x.id === ev.id ? { ...x, ...patch } : x))) } }} />
+    </div>
+  )
+}
 function DragScene() {
   const [sorting, setSorting] = React.useState([{ id: 'sku', desc: false }, { id: 'qty', desc: true }])
   return (
@@ -1152,6 +1176,7 @@ const SCENES = {
   tableEdit: () => <TableEditScene sheet={false} />,
   tableEditSheet: () => <TableEditScene sheet />,
   calendar: () => <CalendarScene />,
+  calendarDetail: () => <CalendarDetailScene />,
   drag: () => <DragScene />,
   combo: () => <ComboScene />,
   popup: () => <PopupScene />,
@@ -1210,6 +1235,13 @@ window.__extra = {
     editing: !!q('#scene-dialog [data-cell-id] input, [data-active-editor-host] input, #scene-dialog [data-cell-id] [aria-expanded="true"], [data-active-editor-host] [aria-expanded="true"]'),
     title: q('#scene-dialog [data-cell-id="r1:title"]')?.textContent?.trim() ?? null, status: q('#scene-dialog [data-cell-id="r1:status"]')?.textContent?.trim() ?? null,
     calls: window.__calls.tableEdit ?? 0 }),
+  // F-inline-edit-click-open:detail = 詳情浮層開著;editing = 時間欄在編輯中;panel = 日期區間面板開著;focusInPanel / focusInEdit = 焦點在面板裡 / 編輯容器裡
+  calDetail: () => {
+    const edit = q('[data-calendar-detail-field="time"] [data-editing="true"]')
+    return { detail: !!q('[data-calendar-event-detail][data-state="open"]'), editing: !!edit, panel: !!q('[role=dialog][aria-label="日期區間選擇"]'),
+      focusInPanel: !!document.activeElement?.closest?.('[role=dialog][aria-label="日期區間選擇"]'), focusInEdit: !!edit && edit.contains(document.activeElement),
+      tile: document.activeElement?.hasAttribute?.('data-calendar-tile') ?? false, calls: window.__calls.calDetail ?? 0 }
+  },
   cal: () => ({ tile: document.activeElement?.hasAttribute('data-calendar-tile') ?? false, day: document.activeElement?.hasAttribute('data-calendar-day') ?? false,
     dayIso: document.activeElement?.getAttribute('data-calendar-day') ?? null }),
   drag: () => ({ live: q('[data-drag-live-region]')?.textContent ?? '', handles: document.querySelectorAll('button[aria-label="拖曳重排"]').length }),
@@ -1372,6 +1404,26 @@ async function runChecks(page) {
   check('F-inline-edit-enter-focus', 'contract', 'Dialog 裡的 InlineEdit(renderEdit = Select、不開選單)進編輯 → 焦點在編輯控件上 → 第一下 Esc 取消編輯、焦點回檢視鈕、對話框不關 → 第二下關;焦點從不落 body',
     entered.focusInEdit && steps.length === 2 && steps[0].dialog && !steps[0].editing && steps[0].calls === 0 && steps[0].active === 'BUTTON:編輯 狀態'
     && !steps[1].dialog && neverBody(steps), { entered, steps })
+
+  // ── F-inline-edit-click-open(Calendar 詳情的時間欄:InlineEdit + DatePicker.Range showTime;**滑鼠**點一下進編輯)──
+  // 有彈出層的控件進編輯 = 彈出層開好、焦點在裡面(inline-edit.spec.md「Focus 管理」;同 DataTable 格的一步打開)。
+  // 2026-11-27 前 DatePicker.Range 沒有 defaultOpen:焦點只落在開始端(F-inline-edit-enter-focus 那條保護有效),日曆沒開,要再點一次(user 2026-11-27)
+  // 詳情浮層要有真的版面才點得到(沒樣式時浮層被擠在視窗右緣、寬 16 高 6):這一列注入同一棵樹編出的 DS 樣式,量完拿掉(同下方 B-overflow 那段)
+  const calStyle = await page.addStyleTag({ content: STYLE })
+  await scene('calendarDetail')
+  await d.click('[role=button][aria-label^="設計審查,"]')
+  await waitSel('[data-calendar-event-detail][data-state="open"]', '點事件沒開詳情')
+  await d.click('[data-calendar-detail-field="time"] button[aria-label="編輯 時間"]')
+  const timeClicked = await snap('calDetail')
+  needs(timeClicked.detail && timeClicked.editing, '點時間欄後詳情不在 / 沒進編輯', timeClicked)
+  steps = await escapeUntilClosed('calDetail', 5, 'detail')
+  check('F-inline-edit-click-open', 'contract', 'Calendar 詳情的時間欄(InlineEdit + DatePicker.Range showTime)滑鼠點一下進編輯 → 日曆面板開好、焦點在面板裡;Esc 一下一層:關面板(仍在編輯、焦點回編輯控件)→ 取消編輯(焦點回檢視鈕、沒交回修改)→ 關詳情;焦點從不落 body',
+    timeClicked.panel && timeClicked.focusInPanel && steps.length === 3
+    && steps[0].detail && !steps[0].panel && steps[0].editing && steps[0].focusInEdit
+    && steps[1].detail && !steps[1].editing && steps[1].active === 'BUTTON:編輯 時間' && steps[1].calls === 0
+    && !steps[2].detail && neverBody(steps), { timeClicked, steps })
+  await calStyle.evaluate((el) => el.remove())
+  await d.settle()
 
   // ── E-inline-edit-custom-date(自訂編輯控件 = 可打字 DatePicker;焦點留在輸入框,Esc 冒泡經過編輯容器)──
   // 承重的是 handleCustomEditKeyDown 的兩道防線 —— Select 那兩列沒有一下 Esc 要它們擋(2026-11-25 審查者探針:拿掉兩道,37 列照綠)。
