@@ -413,6 +413,35 @@ expect_silent "M4. 同行 @layout-space-magic-ok 仍有效 → silent"
 run_hook "Write" "$APP_TSX" "content" \
   'export const L = () => <a href="https://example.com" className="p-4">x</a>;'
 expect_block "M5. href 裡的 // 不是註解,後面的 p-4 照擋 → BLOCK"
+# ── 字串先跳過再認註解(2026-11-27 h26 規格核對 + r72):151 的遮罩把字串裡的 /* 或 " // " 當註解開頭 ──
+# M7. accept="image/*" 之後的 p-4,再後面有 {/* */} → 照擋(151:從 image/* 一路遮到 */,p-4 漏判)
+run_hook "Write" "$APP_TSX" "content" \
+  'export const U = () => (
+  <div>
+    <FileUpload accept="image/*" />
+    <div className="p-4">內容</div>
+    {/* 附註 */}
+  </div>
+);'
+expect_block "M7. 字串裡的 /* 不是註解開頭,後面的 p-4 照擋 → BLOCK"
+# M8. 字串裡的 " // " 之後同一行的 p-4 → 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'export const C = () => <div title="上一步 // 下一步" className="p-4">內容</div>;'
+expect_block "M8. 字串裡的 // 不是註解開頭,同一行的 p-4 照擋 → BLOCK"
+# M9. 反引號字串裡的 /*(跨行)之後的 p-4,再後面有真註解 → 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const glob = `assets/*`
+export const G = () => <div className="p-4">{glob}</div>; /* 檔案清單 */'
+expect_block "M9. 反引號字串裡的 /* 不是註解開頭 → BLOCK"
+# M10. 字串之後的真註解照遮:字串裡有 //,同一行的 // 註解寫 gap-2 → 放行
+run_hook "Write" "$APP_TSX" "content" \
+  'const home = "https://example.com // 首頁"; // 這裡以前寫 gap-2
+export const H = () => <a href={home} className="flex">首頁</a>;'
+expect_silent "M10. 字串後面的 // 註解照遮 → silent"
+# M11. JSX 文字裡的 Don'"'"'t 不當字串開頭,後面的 {/* … */} 照遮 → 放行
+run_hook "Write" "$APP_TSX" "content" \
+  'export const D = () => <p>Don'"'"'t mix them {/* 不要寫 gap-2 */} up</p>;'
+expect_silent "M11. JSX 文字的撇號不吃掉後面的註解 → silent"
 
 # ── H2 + H3 + H4(2026-11-27):規格登記的寫法(utility-registry canonical_micro_geometry.spec_registered_patterns)──
 # 三種規格寫法放行(舊分類器:三格全紅 —— 對照組在交接紀錄);反例照擋。
@@ -520,6 +549,325 @@ run_hook "Write" "$APP_TSX" "content" \
   </div>
 );'
 expect_block "X5. FileItem 清單 gap-3(未登記)→ BLOCK"
+
+# ── H26(2026-11-27):layoutSpace 規則 3「標題塊」—— 標題字列 → 它標示的有框內容 = 8(utility-registry title_block)──
+# 三種寫法放行(改前分類器:三格全紅 —— 交接紀錄);缺標題 / 底下不是有框內容 / 不是 8 / 有框按鈕的標題列 /
+# 夾了工具列 / .map( 產生好幾個 照擋;T9 拿掉放行 → 同一份 T1 樣本紅(證明 T1 的綠來自這一條)。
+TITLE_BLOCK_GAP='const Statuses = () => (
+  <section className="flex flex-col gap-2">
+    <h3 className="text-h6 font-medium">Statuses</h3>
+    <DataTable columns={statusColumns} data={statuses} />
+  </section>
+);'
+# T1. 標題與表同包一層 flex flex-col gap-2 → 放行
+run_hook "Write" "$APP_TSX" "content" "$TITLE_BLOCK_GAP"
+expect_silent "T1. 標題塊:flex-col gap-2 [標題, DataTable] → silent"
+# T2. 標題列(右邊無框小圖示鈕)上的 mb-2,下一個兄弟是表 → 放行
+run_hook "Write" "$APP_TSX" "content" \
+  'const Statuses = () => (
+  <>
+    <div className="flex items-start justify-between mb-2">
+      <h3 className="text-h6 font-medium">Statuses</h3>
+      <Button size="xs" iconOnly variant="text" aria-label="新增狀態"><Plus /></Button>
+    </div>
+    <DataTable columns={statusColumns} data={statuses} />
+  </>
+);'
+expect_silent "T2. 標題塊:無框按鈕的標題列 mb-2 → DataTable → silent"
+# T3. 有框內容(一組選項卡)上的 mt-2,className 寫在開標籤的下一行,上一個兄弟是標題 → 放行
+run_hook "Write" "$APP_TSX" "content" \
+  'const Channels = () => (
+  <div>
+    <h4 className="text-h6 font-medium">Channels</h4>
+    <div
+      role="radiogroup"
+      className="mt-2 grid grid-cols-3 gap-[var(--layout-space-tight)]"
+    >
+      <label className="border border-border rounded-md">Email</label>
+      <label className="border border-border rounded-md">Push</label>
+    </div>
+  </div>
+);'
+expect_silent "T3. 標題塊:標題 → 選項卡群組 mt-2(className 換行)→ silent"
+# T4. 標題 → 搜尋列(role=search):mb-2 → 放行(搜尋列 → 表是 tight token,不是 8)
+run_hook "Write" "$APP_TSX" "content" \
+  'const Priorities = () => (
+  <>
+    <h3 className="text-h6 font-medium mb-2">Priorities</h3>
+    <div role="search" className="flex items-center gap-[var(--layout-space-tight)]">
+      <Input size="sm" placeholder="搜尋優先順序" />
+    </div>
+    <DataTable className="mt-[var(--layout-space-tight)]" columns={priorityColumns} data={priorities} />
+  </>
+);'
+expect_silent "T4. 標題塊:標題 mb-2 → 搜尋列 → (tight)表 → silent"
+# TX1. 缺標題(上面是一段說明文字)→ 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const Statuses = () => (
+  <section className="flex flex-col gap-2">
+    <p>狀態會出現在任務卡片上</p>
+    <DataTable columns={statusColumns} data={statuses} />
+  </section>
+);'
+expect_block "TX1. 標題塊:缺標題 → BLOCK"
+# TX2. 底下不是有框內容(一段文字)→ 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const Statuses = () => (
+  <>
+    <h3 className="text-h6 font-medium mb-2">Statuses</h3>
+    <p>還沒有任何狀態</p>
+  </>
+);'
+expect_block "TX2. 標題塊:底下不是有框內容 → BLOCK"
+# TX3. 數值不是 8(gap-3)→ 照擋
+run_hook "Write" "$APP_TSX" "content" "${TITLE_BLOCK_GAP/gap-2/gap-3}"
+expect_block "TX3. 標題塊:gap-3(不是 8)→ BLOCK"
+# TX4. 標題列放有框按鈕(沒寫 variant=\"text\")= 有框控件列 → 應是 tight,mb-2 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const Statuses = () => (
+  <>
+    <div className="flex items-start justify-between mb-2">
+      <h3 className="text-h6 font-medium">Statuses</h3>
+      <Button size="sm" variant="secondary">新增狀態</Button>
+    </div>
+    <DataTable columns={statusColumns} data={statuses} />
+  </>
+);'
+expect_block "TX4. 標題塊:有框按鈕的標題列 mb-2 → BLOCK"
+# TX5. 同一層夾了工具列(標題、工具列、表三個):工具列 → 表應是 tight,整層 gap-2 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const Statuses = () => (
+  <section className="flex flex-col gap-2">
+    <h3 className="text-h6 font-medium">Statuses</h3>
+    <div role="toolbar" className="flex items-center"><Input size="sm" /></div>
+    <DataTable columns={statusColumns} data={statuses} />
+  </section>
+);'
+expect_block "TX5. 標題塊:同層夾工具列(三個子元素)→ BLOCK"
+# TX6. .map( 產生好幾張有框卡(標題描述的是好幾個東西)→ 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const Projects = () => (
+  <section className="flex flex-col gap-2">
+    <h3 className="text-h6 font-medium">Projects</h3>
+    {projects.map((p) => <article key={p.id} className="border rounded-md">{p.name}</article>)}
+  </section>
+);'
+expect_block "TX6. 標題塊:.map( 產生的好幾張卡 → BLOCK"
+# TX7. 同一行多帶別的寫死間距(p-4)→ 照擋
+run_hook "Write" "$APP_TSX" "content" "${TITLE_BLOCK_GAP/gap-2/gap-2 p-4}"
+expect_block "TX7. 標題塊:同行多帶 p-4 → BLOCK"
+# TX8. 擋下時的訊息要講 JSX 裡怎麼寫豁免
+run_hook "Write" "$APP_TSX" "content" "${TITLE_BLOCK_GAP/gap-2/gap-3}"
+expect_block "TX8. 擋下訊息含 JSX 的豁免寫法" '{/* @layout-space-magic-ok:'
+# T5. 整塊寫在同一行(同一行有三個開標籤,只有帶 gap-2 的那一層算)→ 放行
+run_hook "Write" "$APP_TSX" "content" \
+  'const S = () => <section className="flex flex-col gap-2"><h3 className="text-h6">Statuses</h3><DataTable columns={statusColumns} data={statuses} /></section>;'
+expect_silent "T5. 標題塊寫在同一行 → silent"
+# TX9. 標題列裡放了搜尋框(有框的控件)= 有框控件列 → 應是 tight,mb-2 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const Statuses = () => (
+  <>
+    <div className="flex items-center justify-between mb-2">
+      <h3 className="text-h6 font-medium">Statuses</h3>
+      <Input size="sm" placeholder="搜尋狀態" />
+    </div>
+    <DataTable columns={statusColumns} data={statuses} />
+  </>
+);'
+expect_block "TX9. 標題塊:標題列裡有搜尋框 mb-2 → BLOCK"
+# TX10. 同一行兩層都帶 gap-2,只有內層是標題塊 → 外層仍是版面間距,照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const S = () => <div className="flex flex-col gap-2"><section className="flex flex-col gap-2"><h3 className="text-h6">Statuses</h3><DataTable columns={statusColumns} data={statuses} /></section><p>說明</p></div>;'
+expect_block "TX10. 同一行外層的 gap-2 不是標題塊 → BLOCK"
+# ── 規格核對對抗樣本(2026-11-27 h26 第一輪 P1 / P2 / P4 / P18–P22):標題列改白名單、有框內容只看元素本身 ──
+# TX11(P1). 整段內容(標題 + 說明 + 清單)當成標題列,mb-2 → 表 → 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const S = () => (
+  <>
+    <section className="mb-2">
+      <h3 className="text-h6">Members</h3>
+      <p>團隊成員與他們的角色</p>
+      <ul>
+        <li>Alice</li>
+        <li>Bob</li>
+      </ul>
+    </section>
+    <DataTable columns={memberColumns} data={members} />
+  </>
+);'
+expect_block "TX11. 整段內容(h3 + p + ul)不是標題列 → BLOCK"
+# TX12(P2). flex-col gap-2 包 [整段內容, 表] → 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const S = () => (
+  <div className="flex flex-col gap-2">
+    <section>
+      <h3 className="text-h6">Members</h3>
+      <p>團隊成員</p>
+      <ul><li>Alice</li><li>Bob</li></ul>
+    </section>
+    <DataTable columns={memberColumns} data={members} />
+  </div>
+);'
+expect_block "TX12. gap-2 [整段內容, 表] → BLOCK"
+# TX13(P4). 容器只有第一個子元素帶 border(容器本身不是有框內容)→ 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const S = () => (
+  <>
+    <h3 className="text-h6 mb-2">Projects</h3>
+    <div className="flex flex-col">
+      <div className="border rounded">Website redesign</div>
+      <p>其他說明文字</p>
+    </div>
+  </>
+);'
+expect_block "TX13. 只有第一個子元素帶 border 的容器 → BLOCK"
+# TX14(P18). TX6 的 .map( 有框卡外面多包一層 div → 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const Projects = () => (
+  <>
+    <h3 className="text-h6 mb-2">Projects</h3>
+    <div className="grid grid-cols-3 gap-[var(--layout-space-loose)]">
+      {projects.map((p) => <article key={p.id} className="border rounded-md">{p.name}</article>)}
+    </div>
+  </>
+);'
+expect_block "TX14. div 包 .map( 產生的好幾張有框卡 → BLOCK"
+# TX15–TX17(P19 / P20 / P21). 標題列裡放有框控件(TimePicker / PeoplePicker / Chip)= 有框控件列 → 照擋
+for CTRL in '<TimePicker size="sm" />' '<PeoplePicker size="sm" />' '<Chip variant="filter">只看我的</Chip>'; do
+  run_hook "Write" "$APP_TSX" "content" \
+    "const S = () => (
+  <>
+    <div className=\"flex justify-between mb-2\">
+      <h3 className=\"text-h6\">Shifts</h3>
+      $CTRL
+    </div>
+    <DataTable columns={shiftColumns} data={shifts} />
+  </>
+);"
+  expect_block "TX15–17. 標題列裡有 ${CTRL%% *} → BLOCK"
+done
+# TX18(P8). 標題列裡放 ToggleGroup(白名單外的元件)→ 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const S = () => (
+  <>
+    <div className="flex justify-between mb-2">
+      <h3 className="text-h6">Statuses</h3>
+      <ToggleGroup type="single"><ToggleGroupItem value="a">全部</ToggleGroupItem></ToggleGroup>
+    </div>
+    <DataTable columns={statusColumns} data={statuses} />
+  </>
+);'
+expect_block "TX18. 標題列裡有 ToggleGroup → BLOCK"
+# TX19(P22). 標題 mb-2 + 表 mt-2 疊成 16 → 照擋(同一段只由一邊給)
+run_hook "Write" "$APP_TSX" "content" \
+  'const S = () => (
+  <>
+    <h3 className="text-h6 mb-2">Statuses</h3>
+    <DataTable className="mt-2" columns={statusColumns} data={statuses} />
+  </>
+);'
+expect_block "TX19. mb-2 + mt-2 疊成 16 → BLOCK"
+# T6. 白名單內:標題 + ⓘ(Tooltip 包無框 Button)+ 連結樣式按鈕,mb-2 → 表 → 放行
+run_hook "Write" "$APP_TSX" "content" \
+  'const S = () => (
+  <>
+    <div className="flex items-start gap-[var(--layout-space-tight)] mb-2">
+      <h3 className="text-h6 font-medium">Statuses</h3>
+      <Tooltip>
+        <TooltipTrigger asChild><Button size="xs" iconOnly variant="text" startIcon={Info} aria-label="說明" /></TooltipTrigger>
+        <TooltipContent>狀態會出現在任務卡片上</TooltipContent>
+      </Tooltip>
+      <Button size="xs" variant="link">管理</Button>
+    </div>
+    <DataTable columns={statusColumns} data={statuses} />
+  </>
+);'
+expect_silent "T6. 標題列白名單(ⓘ + 連結樣式按鈕)mb-2 → silent"
+# T9. 拿掉放行:consumer corpus 的 registry 把 title_block 的 bordered_components 換成不存在的元件 → 同一份 T1 樣本 BLOCK
+TITLE_OFF_CORPUS="$TMP_DIR/title-block-off-corpus"
+mkdir -p "$TITLE_OFF_CORPUS/references"
+python3 - "$SCRIPT_DIR/../../../src/tokens/utility-registry.json" "$TITLE_OFF_CORPUS/references/utility-registry.json" <<'PY'
+import json, sys
+registry = json.load(open(sys.argv[1], encoding="utf-8"))
+registry["spacing"]["canonical_micro_geometry"]["title_block"]["bordered_components"] = ["LaneRemoved"]
+json.dump(registry, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+PY
+GOVERNANCE_CORPUS_ROOT="$TITLE_OFF_CORPUS" run_hook "Write" "$APP_TSX" "content" "$TITLE_BLOCK_GAP"
+expect_block "T9. 拿掉 title_block 的 DataTable → 同一份 T1 樣本 BLOCK"
+
+# ── H32(2026-11-27,workspace 回報;以 beta.150 實測):規格寫的固定間距檢查卻擋 ──
+# R1. 規則 5 非緊密(不同組值並列)gap-4 —— 證據同 gap-2 那一格(橫排 + fieldset / role=group + 兩個以上欄位)→ 放行
+run_hook "Write" "$APP_TSX" "content" \
+  'const Schedule = () => (
+  <fieldset className="flex items-start gap-4">
+    <div role="group" aria-label="睡眠時段" className="flex items-start gap-2">
+      <Field label="開始"><TimePicker /></Field>
+      <Field label="結束"><TimePicker /></Field>
+    </div>
+    <div role="group" aria-label="工作時段" className="flex items-start gap-2">
+      <Field label="開始"><TimePicker /></Field>
+      <Field label="結束"><TimePicker /></Field>
+    </div>
+  </fieldset>
+);'
+expect_silent "R1. 規則 5 不同組欄位並排 gap-4 → silent"
+# RX1. 直排(flex-col)gap-4 = 版面間距,照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const Schedule = () => (
+  <fieldset className="flex flex-col gap-4">
+    <Field label="開始"><TimePicker /></Field>
+    <Field label="結束"><TimePicker /></Field>
+  </fieldset>
+);'
+expect_block "RX1. 規則 5:flex-col gap-4 → BLOCK"
+# RX2. 沒有群組語意的 div gap-4 → 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const Schedule = () => (
+  <div className="flex items-start gap-4">
+    <Field label="開始"><TimePicker /></Field>
+    <Field label="結束"><TimePicker /></Field>
+  </div>
+);'
+expect_block "RX2. 規則 5:沒有 fieldset / role=group 的 gap-4 → BLOCK"
+# RX3. 只有一個欄位 → 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const Schedule = () => (
+  <div role="group" className="flex items-start gap-4">
+    <Field label="開始"><TimePicker /></Field>
+    <Button variant="text">清除</Button>
+  </div>
+);'
+expect_block "RX3. 規則 5:gap-4 只有一個欄位 → BLOCK"
+# I1. 公開 Item 零件組的一列:直屬子元素全是 Item 零件、至少兩個、gap-2(item-anatomy.spec.md「消費元件預設」)→ 放行
+ITEM_ROW='const Member = ({ m }) => (
+  <div className="flex items-start gap-2">
+    <ItemContent label={m.name} description={m.email} mode="reading" />
+    {m.role ? <ItemSuffix><Badge>{m.role}</Badge></ItemSuffix> : null}
+  </div>
+);'
+run_hook "Write" "$APP_TSX" "content" "$ITEM_ROW"
+expect_silent "I1. ItemContent + ItemSuffix 的列 gap-2 → silent"
+# IX1. 直屬子元素混了非 Item 零件(Badge 直接放)→ 照擋
+run_hook "Write" "$APP_TSX" "content" "${ITEM_ROW/<ItemSuffix><Badge>{m.role}<\/Badge><\/ItemSuffix>/<Badge>{m.role}<\/Badge>}"
+expect_block "IX1. Item 列混了非零件的直屬子元素 → BLOCK"
+# IX2. 只有一個零件 → 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const Member = ({ m }) => (
+  <div className="flex items-start gap-2">
+    <ItemContent label={m.name} mode="reading" />
+  </div>
+);'
+expect_block "IX2. Item 列只有一個零件 → BLOCK"
+# IX3. 直排(flex-col)→ 照擋
+run_hook "Write" "$APP_TSX" "content" "${ITEM_ROW/flex items-start gap-2/flex flex-col items-start gap-2}"
+expect_block "IX3. Item 零件直排 flex-col gap-2 → BLOCK"
+# M6. 多行 /* … */ 註解裡的 gap-2 → 放行(M1 = 行尾 //、M2 = {/* … */},這一格補第三種寫法)
+run_hook "Write" "$APP_TSX" "content" \
+  '/*
+ * 列與列之間不要寫 gap-2,改用 layout-space token
+ */
+export const Rows = () => <div className="flex">內容</div>;'
+expect_silent "M6. 多行 /* … */ 裡的 gap-2 不算 → silent"
 
 echo ""
 echo "=== Summary ==="

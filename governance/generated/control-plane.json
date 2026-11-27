@@ -142,7 +142,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 221,
-      "hash": "sha256:a4cdf390ae0c2f3fdd307020b6208b90a882fac4e14ddb268cc03573779da624",
+      "hash": "sha256:06bb6683261fcd9f158a001fbed7fb210928b91be062504889aa4134149f340d",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -727,21 +727,21 @@
       "type": "file"
     },
     {
-      "hash": "sha256:473fb705e490b39739361c82f6063b80865990b01f3c35dd30a9cfa18e216e70",
+      "hash": "sha256:7709faa7ebdb84fd5b6e1b12e6c4c43dd3abbc50dd7d19c34d62af8228b66cd6",
       "id": "design-system-utility-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "packages/design-system/src/tokens/utility-registry.json",
-      "size": 20961,
+      "size": 24498,
       "type": "file"
     },
     {
-      "hash": "sha256:a6b5710fa0794f40733505b23cc6389988767188ac5f0f9410af95fab22fd0e2",
+      "hash": "sha256:d5b19868b99e916482330686abf584d3fe6ba8476fd9cb490d7263b31d44d786",
       "id": "design-system-utility-registry-schema",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "packages/design-system/src/tokens/utility-registry.schema.json",
-      "size": 16115,
+      "size": 18285,
       "type": "file"
     },
     {
@@ -1688,7 +1688,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 233,
-      "hash": "sha256:5c409cac14947c02be8984c85fde29c1d9bd5c2d5d866faeb6d54c78d6d7f0b2",
+      "hash": "sha256:953a64c906f7eaa83e113e2c951b03b8a272562ba20473df990d4ff1980f1bb8",
       "id": "governance-baseline-authority",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3094,7 +3094,7 @@
         "scripts/generated/"
       ],
       "files": 819,
-      "hash": "sha256:1b8e6c413631b71947e6e89f0387a9409db707db70ea7c202626072d309a18e3",
+      "hash": "sha256:ac06f1be08137f7f8f2eeb341c44d50ebe42b740661e4c6dd5e1c5f7aee94ced",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

@@ -79,6 +79,8 @@ Overlay family 的 header title typography 依「modal vs non-modal」分級,**�
 | **Sheet** | (同 Dialog)| **md** | 同 | **md** |
 | **BulkActionBar** | N/A | N/A | N/A | **md**(default footer placement);未來 top-toolbar variant → sm |
 
+**緊接表格上方的搜尋列 / 工具列**(2026-11-27,workspace H38):照工具列用 **sm**(`../action-bar/action-bar.spec.md`「Size」那列「Toolbar 用小尺寸維持緊湊」),在 Dialog / Sheet 主體裡也是 —— 它是表格的工具列,不算上表的 body field controls。距離見 `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 3「標題塊」。出處:user 2026-11-27 問「那表格上方或是其上方標題附近的操作是否預設和建議使用 sm 以下的元件？」(問句,節錄;AI 對過既有條文答合理),之後回「我覺得可以照你目前建議的定義」(逐字節錄;全文記在交接資料夾 `notes/decisions/morning-151-answers.md`「H26」)。
+
 **核心 invariant**:overlay surface 內 **body field controls + footer Buttons 同一 size**(per-surface 一致)。違反 = 視覺重量割裂。
 
 **為什麼 Popover all-sm 而非 mix**:Popover 整體已是「輕量浮層」設計語言(chrome 短、title 小、版面間距鎖 md)。如果 body 用 md fields(一般密度 32 / 大密度 36 高)+ footer sm Buttons(28 / 32 高),視覺重量割裂破壞「輕量」一致性。**all-sm 是內部一致性**(body 與 footer 同高:一般密度 28、大密度 32,延伸 chrome 輕一級的密度)。
