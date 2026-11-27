@@ -434,8 +434,8 @@ export const MoreListOpen: Story = {
 }
 
 // ── 5c. 狀態行為:事件詳情開著(M15:點一下才看得到的狀態,用 play 打開)──────────────────────────────
-// 點「設計審查」= 內建詳情浮層(calendar.spec.md「事件詳情浮層」):照 DS 子選單擺法開在事件右側、頂端對齊(右邊放不下才翻左);標題就地改、
-// 欄位垂直排(閱讀情境:標籤次要色);被點的那一段在詳情開著時維持滑過色。
+// 點「設計審查」= 內建詳情浮層(calendar.spec.md「事件詳情浮層」):照 DS 子選單擺法開在事件右側、頂端對齊(右邊放不下才翻左);標題列放事件名稱、
+// 可改時內文第一欄「標題」就地改;欄位垂直排(閱讀情境:標籤次要色);被點的那一段在詳情開著時維持滑過色。
 const detailEvents: CalendarEvent[] = [
   { id: 'd1', title: '設計審查', start: `${thisMonth}-05T10:00`, end: `${thisMonth}-05T11:00`, color: 'blue', categoryId: 'meeting', location: '台北辦公室 3F 大會議室', description: '結帳頁改版第二輪:確認信用卡分期的金額顯示與錯誤訊息。' },
   { id: 'd2', title: 'Alex 休假', start: `${thisMonth}-20`, end: `${thisMonth}-23`, color: 'yellow', allDay: true, categoryId: 'leave' },
@@ -453,8 +453,8 @@ export const DetailOpen: Story = {
     <div className="h-screen p-[var(--layout-space-loose)] bg-canvas flex flex-col gap-2">
       <div className="text-body text-fg-muted space-y-1" data-story-notes>
         <div>• <b>位置</b>:與選單的子選單同一種擺法 —— 開在事件右側、頂端對齊、與事件隔 8;右邊放不下才翻到左側(例:最右一欄 7/25 的「客戶會議」)</div>
-        <div>• <b>寬與標題列</b>:寬 26rem = 416(時間欄進編輯兩端不被裁);標題列高 52(就地編輯標題 28 + 上下 12),標題就地改(點標題進編輯),右側〔⋯〕〔×〕;沒有儲存鈕,每一欄自己提交</div>
-        <div>• <b>欄位</b>:時間(同一天合併成一段)、全天(開關直接切)、地點、說明、類別,標籤在上;Esc 一次關一層,焦點回打開它的那一段</div>
+        <div>• <b>寬與標題列</b>:寬 26rem = 416(時間欄進編輯兩端不被裁);標題列跟一般浮層一樣放事件名稱(兩種密度同高),右側〔⋯〕〔×〕;沒有儲存鈕,每一欄自己提交</div>
+        <div>• <b>欄位</b>:標題(可改時才有;改完標題列跟著換)、時間(同一天合併成一段)、全天(開關直接切)、地點、說明、類別,標籤在上;Esc 一次關一層,焦點回打開它的那一段</div>
       </div>
       <div className="flex-1 min-h-0">
         <CalendarDemo events={detailEvents} defaultReferenceDate={now} today={now} locale={LOCALE} categories={DETAIL_CATEGORIES} />
@@ -464,7 +464,7 @@ export const DetailOpen: Story = {
   play: async ({ canvasElement }) => {
     const tile = within(canvasElement).getByRole('button', { name: /^設計審查,/ })
     await userEvent.click(tile)
-    // 浮層的名字 = 事件標題本身(不是「編輯 事件標題」)
+    // 浮層的名字 = 事件標題本身(標題列 PopoverTitle 自動接 aria-labelledby)
     const detail = await within(document.body).findByRole('dialog', { name: '設計審查' })
     await expect(within(detail).getByText('時間')).toBeTruthy()
     await expect(within(detail).getByText('台北辦公室 3F 大會議室')).toBeTruthy()

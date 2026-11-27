@@ -3094,7 +3094,7 @@
         "scripts/generated/"
       ],
       "files": 819,
-      "hash": "sha256:2f99bbfc28d1c5de150cc9cffdedc0f5369d990bce3f492d1df8285b3d23397c",
+      "hash": "sha256:a98490e767aa7221f3ad4bd0a682df89e44a5708cc8e51fa5a613f6de7762959",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

@@ -607,7 +607,7 @@ const ENGLISH_LABELS: CalendarLabels = {
   moreListClose: 'Close',
   // 事件詳情的字(這一則用 onEventClick、不開內建詳情;CalendarLabels 是整份型別,英文產品照樣要給)
   detailClose: 'Close',
-  detailTitle: 'Event title',
+  detailTitle: 'Title',
   detailTime: 'Time',
   detailAllDay: 'All day',
   detailLocation: 'Location',
