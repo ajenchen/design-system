@@ -34,6 +34,7 @@ export const Overview: Story = {
               <tr><Td mono>DialogHeader</Td><Td mono>border-b, px-loose py-tight</Td><Td>Title + Close button(靠右,flex 第一 child flex-1 grow 自然右推,非 position:fixed)</Td></tr>
               <tr><Td mono>DialogBody</Td><Td mono>ScrollArea(flex-1 min-h-0)+ inner div(px-loose;上下由容器自己給:data-layout-body=&quot;fill&quot;)</Td><Td>主要內容(ScrollArea 捲動;底部留白依最後一個東西,照 layoutSpace.spec.md 規則 4)</Td></tr>
               <tr><Td mono>DialogFooter</Td><Td mono>border-t, px-loose py-tight</Td><Td>Action buttons(justify-end, gap-2)</Td></tr>
+              <tr><Td mono>DialogPaneHeader</Td><Td mono>同 DialogHeader(同一個 SurfaceHeader),沒有 ×</Td><Td>兩欄對話框右欄頂端的欄內標頭:DialogPaneTitle(字樣同 DialogTitle)+ 右側操作(actions)+ 標題列下的分頁(tabsSlot);× 只在 DialogHeader</Td></tr>
             </tbody>
           </table>
         </div>

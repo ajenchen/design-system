@@ -450,6 +450,14 @@
         {"paths":["packages/design-system/src/components/Tooltip/tooltip.spec.md","packages/design-system/src/components/Field/field.spec.md","packages/design-system/src/components/Field/form-validation.spec.md","packages/design-system/src/components/Select/select.spec.md"],"reason":"只改文件:Tooltip 規格補「觸發點是停用的控件」指向 Button aria-disabled 與 Field 外層掛 Tooltip 的兩處做法(C21);field.spec.md 寫出產品自訂控件用 Field id 推出的 label / description / error id 接 aria-* 的做法(C29 文件部分);form-validation 支援名單補 PeoplePicker;Select 規格補 minWidth 一行。元件行為不變。"},
         {"paths":["packages/design-system/src/tokens/uiSize/icon-size.ts","packages/design-system/src/components/Steps/steps.tsx","packages/design-system/src/components/Sidebar/sidebar.tsx","packages/design-system/src/components/PeoplePicker/person-display.tsx","packages/design-system/src/components/PeoplePicker/people-picker.stories.tsx"],"reason":"只改註解裡的「檔名:行號」引用:同一節的 C1 / C8 / C16 / C19 / C25 改動讓被引用的行往下移,owner-claims 的 --fix-moved-cites 把純位移的行號改成新位置(steps.tsx 那一處改寫成宣告名 `ROW_PADDING_BY_SIZE`)。程式與範例行為不變。"}
       ]
+    },
+    "0.1.0-beta.152": {
+      "changes": [
+        {"id":"0.1.0-beta.152/Dialog.settings-right-pane-header","surface":"rule","target":"兩欄設定對話框(左導覽 + 右內容)的右欄標頭","change":"rule","do":"右欄可以放一條欄內標頭了:用 DialogPaneHeader + DialogPaneTitle(與 DialogHeader 同一個 SurfaceHeader、沒有 ×;右側可放操作、標題列下可放分頁),× 仍只在跨全寬的那條 DialogHeader。之前規格寫「右欄不做第二條標題列」,已撤回;只要文字標題時照舊用文字樣式、隨內容捲動。","spec":"src/components/Dialog/dialog.spec.md「欄內標頭(DialogPaneHeader)」","paths":["packages/design-system/src/components/Dialog/dialog.spec.md","packages/design-system/src/patterns/overlay-surface/overlay-surface.spec.md","packages/design-system/src/patterns/header-canonical/header-canonical.spec.md"]}
+      ],
+      "added": [
+        {"id":"0.1.0-beta.152/DialogPaneHeader","target":"DialogPaneHeader","exports":["DialogPaneHeader","DialogPaneTitle","DialogPaneHeaderProps"],"note":"新出口 DialogPaneHeader / DialogPaneTitle:兩欄設定對話框右欄頂端的欄內標頭,高度、內距、底線、右側操作位(actions)、標題列下的分頁(tabsSlot)與 DialogHeader 同一份,沒有 ×;DialogPaneTitle 字樣同 DialogTitle(h3)。產品不必再自己寫 px-loose + border-b 的標頭(那種寫法在浮層裡照樣被手刻浮層標頭的檢查擋)。","spec":"src/components/Dialog/dialog.spec.md「欄內標頭(DialogPaneHeader)」","paths":["packages/design-system/src/components/Dialog/dialog.tsx","packages/design-system/src/index.ts","packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx"]}
+      ]
     }
   }
 }

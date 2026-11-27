@@ -13,7 +13,7 @@ benchmark:
 
 # Header Canonical 設計原則
 
-> **Foundational SSOT rationale**(行數上限以 `check_file_size_budget.sh` 的 case 表為準,本檔走一般 spec 那一檔;2026-05-17 建檔時寫的「cap 800」case 表從沒列過):本 pattern 統一**所有 header 家族**(chrome page header + overlay header)的視覺契約 — border ownership / padding / 高度策略 / tabs 連動 / dismiss canonical。consumer(`SidebarHeader` / `FileViewer Toolbar+InfoPanel` / `AppShell PageHeader+GlobalHeader` / `Calendar 工具列` / `DialogHeader` / `SheetHeader` / `PopoverHeader` / `CoachmarkHeader` / 未來 Drawer)pointer 指向本 SSOT,**禁各自 hardcode**。
+> **Foundational SSOT rationale**(行數上限以 `check_file_size_budget.sh` 的 case 表為準,本檔走一般 spec 那一檔;2026-05-17 建檔時寫的「cap 800」case 表從沒列過):本 pattern 統一**所有 header 家族**(chrome page header + overlay header)的視覺契約 — border ownership / padding / 高度策略 / tabs 連動 / dismiss canonical。consumer(`SidebarHeader` / `FileViewer Toolbar+InfoPanel` / `AppShell PageHeader+GlobalHeader` / `Calendar 工具列` / `DialogHeader` / `DialogPaneHeader` / `SheetHeader` / `PopoverHeader` / `CoachmarkHeader` / 未來 Drawer)pointer 指向本 SSOT,**禁各自 hardcode**。
 
 ## 選哪個 header(decision — 做任何 header 前先回答這題)
 
@@ -24,13 +24,13 @@ benchmark:
 | 你的場景 | 用 | 家族 |
 |---|---|---|
 | **常駐 app chrome**:AppShell page top / global header、Sidebar header、FileViewer toolbar、固定在版面上的工具列 | **`<ChromeHeader>`**(`patterns/header-canonical/chrome-header`)| **B. Fixed-height** |
-| **浮層 overlay 標題列**:Dialog / Sheet / Popover / Coachmark 等 overlay 頂部(多數用 `DialogHeader`/`SheetHeader`/`PopoverHeader` consumer wrapper,底層是 SurfaceHeader)| **`<SurfaceHeader>`**(`patterns/overlay-surface`)| **A. Padding-based** |
+| **浮層 overlay 標題列**:Dialog / Sheet / Popover / Coachmark 等 overlay 頂部(多數用 `DialogHeader`/`SheetHeader`/`PopoverHeader` consumer wrapper;對話框兩欄設定的右欄標頭用 `DialogPaneHeader`,沒有 ×;底層都是 SurfaceHeader)| **`<SurfaceHeader>`**(`patterns/overlay-surface`)| **A. Padding-based** |
 | 用一整排 **Tabs 直接「取代」整個 header**(無獨立標題列)| **standalone `<Tabs size="lg">`**(tab 高 = chrome-header-height,見 W3 C)| —(tabs 即 chrome)|
 
 **何時不用(when NOT to use)— 最常見誤判**:
 - ❌ **chrome 與 overlay 搞混**:看 surface 本身是常駐 chrome 還是浮層,不看視覺像不像。**邊界案例**:Sidebar 內彈出的 flyout / popover header = **overlay → SurfaceHeader**,不因為它長在 sidebar 裡就當 chrome。
 - ❌ 純內容區小標題(section heading)→ 用 typography(`text-h6` 等),不是 header primitive
-- ❌ **Dialog / 浮層內「不可關閉的 side pane」標題**(如 detail dialog 右欄 metadata 欄的「General info」)→ 走 typography,不消費 header primitive。**判準一句話:「這個 pane 能不能自己被關掉」**(2026-07-08 user 拍板 codify)—— **可獨立 dismiss**(自帶 close、自帶 ScrollArea、旁有等高 chrome 需對齊,如 FileViewer InfoPanel:I 鍵 + close X)→ `<ChromeHeader>`;**不可關閉** = pane 標題只是 content 的一部分 → 純 typography,間距跟著 layoutSpace 原則走(不 flush、無 border-b、隨內容捲動)。反例先例:DatePicker TimePickerSidePanel 同層級 caption 不消費 header primitive(date-picker.spec.md「TimePickerSidePanel header 下方無 divider」段)。外部對照:Carbon SidePanel(https://github.com/carbon-design-system/ibm-products/blob/main/packages/ibm-products-styles/src/components/SidePanel/_side-panel.scss)/ Material side sheet(https://github.com/material-components/material-components-android/blob/master/docs/components/SideSheet.md)皆「有 close affordance 才有正式 header + divider」。
+- ❌ **Dialog / 浮層內「不可關閉的 side pane」標題**(如 detail dialog 右欄 metadata 欄的「General info」)→ 走 typography,不消費 header primitive。**判準一句話:「這個 pane 能不能自己被關掉」**(2026-07-08 user 拍板 codify)—— **可獨立 dismiss**(自帶 close、自帶 ScrollArea、旁有等高 chrome 需對齊,如 FileViewer InfoPanel:I 鍵 + close X)→ `<ChromeHeader>`;**不可關閉** = pane 標題只是 content 的一部分 → 純 typography,間距跟著 layoutSpace 原則走(不 flush、無 border-b、隨內容捲動)。反例先例:DatePicker TimePickerSidePanel 同層級 caption 不消費 header primitive(date-picker.spec.md「TimePickerSidePanel header 下方無 divider」段)。外部對照:Carbon SidePanel(https://github.com/carbon-design-system/ibm-products/blob/main/packages/ibm-products-styles/src/components/SidePanel/_side-panel.scss)/ Material side sheet(https://github.com/material-components/material-components-android/blob/master/docs/components/SideSheet.md)皆「有 close affordance 才有正式 header + divider」。**例外 —— 對話框兩欄設定(左導覽 + 右內容)的右欄**:可以放標頭(user 2026-11-27 回 H 批決策卡 H24a,逐字「確保左邊是 sidebar 右邊有按照 layout space 設計原則即可，若右邊有用到 header也是確保有維持header設計原則即可」),放了就照本 spec,寫法是 `DialogPaneHeader`(`../../components/Dialog/dialog.spec.md`「欄內標頭(DialogPaneHeader)」:與 DialogHeader 同一個 SurfaceHeader、沒有 ×);不放時照本條走文字(`../overlay-surface/overlay-surface.spec.md`「左導覽 + 右內容」右欄兩種寫法)。
 - ❌ 列表 row / menu item → 走 `item-anatomy`,不是 header
 - ❌ **頁面內不可關閉的有框區塊**(設定卡、資訊區塊)的標題 → 不是 header primitive:標題由消費者用 typography(同上「內容區小標題」)+ token + item anatomy 自組,DS 不提供 Card 或區塊標頭元件(user 2026-11-26 原話:「這個由消費者自己定義了吧？反正我們都提供 token跟 item anatomy的設計原則了，應該就是依照那些去延伸就夠了吧？？？」;同一方向的先例見 `components/AppShell/app-shell.spec.md`「Main 內塞什麼」段 user 2026-11-06 原話)。手刻浮層標頭的閘(下方「機械防呆」)不擋這種標頭:直接寫在 `rounded-md` + `border` 區塊最上方、而且不在 Dialog / Sheet / Popover / HoverCard 等浮層裡;放進浮層裡就照擋(判法認得出的浮層限同一檔:直接寫在浮層底下,或寫成同檔的元件 / 變數再放進浮層;區塊元件在別的檔被放進浮層不在判法內)
 
