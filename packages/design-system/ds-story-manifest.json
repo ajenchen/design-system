@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/DsImportSmoke.stories.tsx (ImportSmoke → DS Storybook link)"
     ],
-    "generatedAt": "2026-11-27T10:57:10.123Z"
+    "generatedAt": "2026-11-27T16:31:12.956Z"
   },
   "components": {
     "accordion": {
@@ -332,7 +332,7 @@
           "design-system-components-calendar-展示--customer-support-weekdays",
           "design-system-components-calendar-展示--manufacturing-week-numbers",
           "design-system-components-calendar-展示--loading-while-switching-month",
-          "design-system-components-calendar-展示--side-panel-narrow",
+          "design-system-components-calendar-展示--narrow-window",
           "design-system-components-calendar-展示--fill-main-area-borderless",
           "design-system-components-calendar-展示--read-only-dates-custom-tile-keyboard",
           "design-system-components-calendar-展示--event-click-anchor",

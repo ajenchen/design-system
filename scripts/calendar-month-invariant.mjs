@@ -1218,7 +1218,7 @@ const BLOCKS = {
     const start = await look()
     const todayName = await page.getByRole('button', { name: '今天,2026年7月15日 星期三,0 個事件', exact: true }).count()
     check('NW1', start.col <= NARROW_MAX && start.heads.every((h) => [...h].length === 1) && start.firsts.length >= 1 && start.firsts.every((t) => t === '1') && todayName === 1,
-      `側欄欄寬 ${start.col.toFixed(2)}:星期「${start.heads.join(' ')}」、1 號「${start.firsts.join(' / ')}」、今天的讀屏名稱照舊 ×${todayName}(規格:欄寬 ≤ ${NARROW_MAX} → 星期一字、1 號只寫「1」,名稱不受影響)`)
+      `窄視窗欄寬 ${start.col.toFixed(2)}:星期「${start.heads.join(' ')}」、1 號「${start.firsts.join(' / ')}」、今天的讀屏名稱照舊 ×${todayName}(規格:欄寬 ≤ ${NARROW_MAX} → 星期一字、1 號只寫「1」,名稱不受影響)`)
     // 掃 20 個欄寬(根節點寬 = 7 × 欄寬 + 左右外框 2),每個寬度先等 3 幀再連看 6 幀:狀態不得來回跳,而且「窄」⇔ 欄寬 ≤ 門檻
     const sweep = await page.evaluate(async ({ cols, samples }) => {
       const g = document.querySelector('[role="grid"]'), root = g.parentElement

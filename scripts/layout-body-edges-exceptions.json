@@ -65,6 +65,19 @@
       "source": "calendar.spec.md「事件詳情浮層」內距;交接資料夾 notes/decisions/decide152-answers.md「留白草案第 2 輪」(T5 甲 16 = AI 建議,user 對沒留言的項目「我沒回應的就是沒有意見」)與「留白草案第 3 輪」(客製留在元件:「…如果要客製化的部分是很niche的，其實用不著推回主幹吧？」;標題 → 第一欄 loose:「詳情感覺可以照你建議」)",
       "userQuote": "我沒回應的就是沒有意見",
       "quoteDate": "2026-11-27"
+    },
+    {
+      "key": "calendar-flush-main-bottom-0",
+      "stories": [
+        "design-system-components-calendar-展示--narrow-window",
+        "design-system-components-calendar-展示--fill-main-area-borderless"
+      ],
+      "container": "main#app-shell-main",
+      "want": 0,
+      "reason": "行事曆貼邊擺法(flush + 不加框)住在 AppShell 主區:格子區左、右、下貼齊主區的邊,主區那三邊不給內距,底 = 0(最後一週照畫底線收尾);不是一般元素的「底 = 頂」。只登記這兩則行事曆頁,不改規則 4 通則",
+      "source": "calendar.spec.md「外殼」貼邊擺法(格子區左、右、下貼齊容器的邊);交接資料夾 notes/decisions/decide152-answers.md「2026-11-27 晚」:user(問句)「但行事曆確實在市面上很常看到延伸到容器邊界緊貼著左右下邊的，如果畫框那應該就是長得跟表格十分類似吧」,AI 照它做貼邊擺法;user 看過 cal2 預覽後對「貼邊時格子左右要不要內縮」回「1. 不要」。底 = 0 是 AI 依「左右下」貼齊推的【AI 推導】",
+      "userQuote": "但行事曆確實在市面上很常看到延伸到容器邊界緊貼著左右下邊的，如果畫框那應該就是長得跟表格十分類似吧",
+      "quoteDate": "2026-11-27"
     }
   ],
   "pending": [],

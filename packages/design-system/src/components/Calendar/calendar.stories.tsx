@@ -411,7 +411,7 @@ export const NarrowWindow: Story = {
       { id: 'n5', title: '上線前審查', start: `${thisMonth}-27T14:00`, end: `${thisMonth}-27T15:00`, color: 'red' },
       { id: 'n4', title: '改版上線', start: `${thisMonth}-28`, end: `${thisMonth}-29`, color: 'red', allDay: true },
     ]
-    // 視窗 440:細列 48 之後主區約 391,月曆欄寬 ≈ 391 ÷ 7 ≈ 55.9 ≤ 60 → 窄;工具列的「2026年7月」仍放得下
+    // 視窗 440:細列 48 之後主區 392,月曆欄寬 = 392 ÷ 7 = 56 ≤ 60 → 窄(2026-11-28 實量 56.0);工具列的「2026年7月」仍放得下
     return (
       <CalendarPage frameWidth={440}>
         {(portalContainer) => (
