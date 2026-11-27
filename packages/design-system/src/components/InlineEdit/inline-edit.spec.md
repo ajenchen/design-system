@@ -189,4 +189,5 @@ InlineEdit 是 **composite 編排層**(view 對齊盒 + 隱形 Pressable + 動�
 - `date-picker.spec.md`
 - `field.spec.md`
 - `link-input.spec.md`
+- `overlay-chrome-sizing.spec.md`
 - `uiSize.spec.md`

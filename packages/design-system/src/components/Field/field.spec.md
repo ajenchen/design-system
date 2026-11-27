@@ -471,7 +471,6 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 
 - `agent-decision-card.spec.md`
 - `calendar-decision-ledger.spec.md`
-- `calendar.spec.md`
 - `combobox.spec.md`
 - `data-table.spec.md`
 - `date-picker.spec.md`
