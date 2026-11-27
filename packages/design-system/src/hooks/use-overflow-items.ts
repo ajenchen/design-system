@@ -334,7 +334,7 @@ export interface OverflowCollapseItemOptions {
   group?: string
 }
 
-// code-quality-allow: dead-export — hook return type — API surface for consumers who want to annotate
+// code-quality-allow: dead-export — hook return type — API surface for consumers who want to annotate(2026-11-27 H31,見 action-bar.spec.md「量法」)
 export interface UseOverflowCollapseResult<C extends HTMLElement> {
   /** 綁在工具列本身(項目、觸發鈕、分隔線的父元素);它的寬**不能由內容決定**(例如 `flex-1 min-w-0` 或 `w-full`) */
   containerRef: React.RefObject<C>
