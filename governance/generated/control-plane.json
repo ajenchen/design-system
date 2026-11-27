@@ -2431,12 +2431,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:88ec96dca63f8c3e8bc41b5c44ab8e458adc42f79cb663508d0fac4001860bd0",
+      "hash": "sha256:b607e8b4371ba203798799dc2fb901d9a1f7ed5cd5d8668ee4d1c1c8c3ca46e4",
       "id": "product-shared-instruction",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/fork-role-sources/AGENTS.product.md",
-      "size": 7346,
+      "size": 6883,
       "type": "file"
     },
     {
@@ -3094,7 +3094,7 @@
         "scripts/generated/"
       ],
       "files": 819,
-      "hash": "sha256:9f220bff2b588a005d02ef0e0490ef1d7cb23c3a504b08dd17571875350c24e2",
+      "hash": "sha256:2be80690175f78b09f8caab2ccbe0fb9548dc95d40d8606f9c32a48774e302d2",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

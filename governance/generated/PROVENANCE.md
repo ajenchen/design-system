@@ -276,7 +276,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | privileged-trust-root-schema | `infra/governance/schemas/privileged-trust-roots.schema.json` | `sha256:b5df3c7a3e1c0deafb04bd4d585159d6d8eaf47b661e32c395c507122102bbc1` |
 | product-independent-review-launcher | `packages/design-system/ds-canonical/templates/product-launchers/independent-review.mjs` | `sha256:94a6c891efccf389dbc5cf9f6505b8b85bfc759fe500e81589d934fbf16dc9cc` |
 | product-seed-package-contract | `apps/template/package.json` | `sha256:ac43e9255a933da736e672e21d25370773f84632210110e47a118f379e40c66b` |
-| product-shared-instruction | `scripts/fork-role-sources/AGENTS.product.md` | `sha256:88ec96dca63f8c3e8bc41b5c44ab8e458adc42f79cb663508d0fac4001860bd0` |
+| product-shared-instruction | `scripts/fork-role-sources/AGENTS.product.md` | `sha256:b607e8b4371ba203798799dc2fb901d9a1f7ed5cd5d8668ee4d1c1c8c3ca46e4` |
 | product-template-audit-workflow | `template/ds-product-template/.github/workflows/audit.yml` | `sha256:ff1bb33e94c6de2f96e242c8853089565e292d9dbf183cb25151ec02e95eeff2` |
 | product-template-documentation | `template/ds-product-template/docs` | `sha256:3bc6b49e1719935dd17c768bf78703c908a3a5492a0c86ad4dea02081390eb96` |
 | product-template-npm-policy | `template/ds-product-template/.npmrc` | `sha256:2984e2fb8b6ba8fad758ad0e18c3bc49be706a1e1ed56e1fc2b45ec4dfdc7f07` |
@@ -348,7 +348,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:be47fab0695ff6895c60a541f14786692b3032f5aedda5a650563cd5f49c4ec5` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:279d452f559b3d1d85eb3a7e4fed704c0e12826579c80d3ea10b3e0ea80c38ed` |
-| repository-automation-corpus | `scripts` | `sha256:9f220bff2b588a005d02ef0e0490ef1d7cb23c3a504b08dd17571875350c24e2` |
+| repository-automation-corpus | `scripts` | `sha256:2be80690175f78b09f8caab2ccbe0fb9548dc95d40d8606f9c32a48774e302d2` |
 | repository-ignore-boundary | `.gitignore` | `sha256:5d4a413c4947c7d63058cce0c93fa1adfa8c83efb41006e5b3876fd2706d81f8` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |

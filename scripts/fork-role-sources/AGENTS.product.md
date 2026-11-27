@@ -61,19 +61,14 @@ allowed only when the shipped spec makes it intentional and the exception is nar
 
 ## Verification contract
 
-Run every check this product has and report its real outcome. The minimum repository-wide contract is
+Run every check this product has and report its real outcome. The minimum contract is
 `npm run governance:check` (exact installed, hooks-off authority), `npm run typecheck`, `npm run build`,
-product lint/test/a11y scripts when present, and browser or Storybook visual verification for
-user-visible changes.
+product lint/test/a11y scripts if present, and browser/Storybook visual verification of user-visible
+changes.
 
-Never replace a check with `true`, an empty script, a notice-only waiver, or an unverified claim.
-Missing required tooling is a failure, not a pass. Evidence must bind the checked source snapshot.
-
-Content checks default to the DS norm and block deviations. When this product has a reasonable cause
-the DS did not foresee, exempt that one place yourself — no DS approval needed: write the marker named
-in the block message plus a concrete reason in a comment on that line (e.g. `// @<rule>-ok: <reason>`).
-Empty reasons still block; the DS periodically reviews the exemption list to add the missing cases
-(details: `governance/consumer-governance.md` "Reasoned exemptions").
+Never replace a check with `true`, an empty script, a notice-only waiver, or an unverified claim;
+reasoned exemptions: `governance/consumer-governance.md`. Missing required tooling fails.
+Evidence must bind the checked source snapshot.
 
 ## Claude, Codex, and future agents
 
