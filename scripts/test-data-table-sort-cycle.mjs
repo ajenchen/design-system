@@ -17,12 +17,17 @@
  *        不給 = 預設、只給一個鍵只換那一個、給全部全換(形狀同篩選面板 `labels`);面板(data-table-sort-manager.tsx)收
  *        `labels?: Partial<DataTableSortManagerLabels>`、把它交給 resolve、13 個鍵每個都有被讀,而且原始碼的字串 / JSX 文字裡
  *        **沒有任何寫死的中文**(註解不算;唯一例外 `'排序條件'` 是交給全 DS 共用拖曳播報的名詞,那一份還沒有換字管道)。
+ *        **⌄ 選單的項目**(2026-11-27,workspace H42;lib/column-menu.ts `columnMenuGroups` + sort-cycle.ts `columnMenuSortItems`):
+ *        沒有任何項目不畫 ⌄、分隔線只在兩組之間、整張表 `enableColumnMenu={false}` 每一欄都不畫 ⌄(判定表 7,10 格);呼叫端觸發鈕與選單讀同一份清單、字走 tableLabels(labels → I18nProvider → 預設)、
+ *        播報與順位描述拿同一份 tableLabels、表頭不自己判項目出不出。瀏覽器裡畫出來的樣子由 data-table-multi-sort-invariant.mjs C 段量。
  *   紅: 判定表任一格與純函式輸出不符即 exit 1(判定表列的是**期望值**,不是抄輸出);
  *        `--selftest` 換上兩份修前的行為當對照組,判定表對每一份都必須抓到 ≥ 4 格不符,抓不到 = 判定表沒在驗這條規則 → exit 1:
  *        (1) 2026-11-03 → 11-11 的三態版(升冪 → 降冪 → 清除、一般點擊清掉其他欄、⌄「取消排序」清掉全部;5db512f2 的 sort-cycle.ts 原樣搬進來);
  *        (2) 2026-11-03 以前的 TanStack v8.21.3 `toggleSorting`(add / toggle / replace / remove 分支原樣搬進來)。
  *        面板的字另有六個對照組(每一個都必須至少紅一格):resolve 不理 labels / resolve 不墊預設值 / 預設值改一個字 /
  *        面板把「加排序」寫回死字 / 面板不把 labels 交給 resolve / 拖曳把手的讀屏名稱寫回死字。
+ *        ⌄ 選單另有一個對照組 = 0.1.0-beta.151 的 data-table.tsx 寫法(觸發鈕一律畫、能排序時排序項後固定一條分隔線),判定表 7 必須抓到 ≥ 3 格;
+ *        `--src=<修前那份 data-table.tsx>` 跑呼叫端那段,⌄ 選單幾列必紅。
  *        `--manager-src=<檔>` 改讀另一份面板原始碼(拿 2026-11-15 前那份來跑,面板那幾格必須紅)。
  *   綠: 全部相符時綠;純函式無時鐘、無隨機、無 DOM,重複跑結果恆等。
  *
@@ -36,6 +41,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 import * as real from '../packages/design-system/src/components/DataTable/lib/sort-cycle.ts'
+import * as columnMenu from '../packages/design-system/src/components/DataTable/lib/column-menu.ts'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const SELFTEST = process.argv.includes('--selftest')
@@ -339,6 +345,45 @@ function checkManagerLabels(impl, managerSrc, { quiet = false } = {}) {
 
 const readManagerSrc = () => readFileSync(managerSrcArg ?? join(ROOT, MANAGER_PATH), 'utf8')
 
+// ── 判定表 7:⌄ 選單的項目(2026-11-27,workspace H42;lib/column-menu.ts `columnMenuGroups` + sort-cycle.ts `columnMenuSortItems`)──
+// 期望 = 畫出來的樣子:⌄ 畫不畫(trigger)+ 選單依序的項目('|' = 分隔線)。data-table.spec.md「九之二」表頭選單那一列:
+// 沒有任何項目不畫 ⌄;分隔線只在兩組之間。[名稱, 排序, 欄, 這一欄做得到的事, 期望 trigger, 期望項目]
+const MENU_ALL_OFF = { enabled: true, canSort: false, canFilter: false, canHide: false, canAutoFit: false }
+const MENU_ALL_ON = { enabled: true, canSort: true, canFilter: true, canHide: true, canAutoFit: true }
+const COLUMN_MENU_TABLE = [
+  ['workspace 回報:關掉隱藏的不可排序欄(沒有篩選 / 欄寬)→ 不畫 ⌄', '', 'sku', MENU_ALL_OFF, false, ''],
+  ['關掉隱藏、可排序、沒排序 → 升冪 降冪,沒有分隔線', '', 'title', { ...MENU_ALL_OFF, canSort: true }, true, 'sortAscending sortDescending'],
+  ['關掉隱藏、可排序、這一欄升冪 → 降冪 取消排序,沒有分隔線', 'title↑', 'title', { ...MENU_ALL_OFF, canSort: true }, true, 'sortDescending cancelSort'],
+  ['開著隱藏、可排序、沒排序 → 升冪 降冪 | 隱藏欄位', '', 'title', { ...MENU_ALL_OFF, canSort: true, canHide: true }, true, 'sortAscending sortDescending | hideColumn'],
+  ['開著隱藏、不可排序 → 只有隱藏欄位,沒有分隔線', '', 'sku', { ...MENU_ALL_OFF, canHide: true }, true, 'hideColumn'],
+  ['不可排序、只有篩選與欄寬 → 依此欄篩選 自動調整寬度', '', 'sku', { ...MENU_ALL_OFF, canFilter: true, canAutoFit: true }, true, 'filterByColumn autoFitColumnWidth'],
+  ['六項都能做、多重排序中間欄降冪 → 升冪 取消排序 | 篩選 隱藏 自動調整寬度', 'title↑ status↓ priority↑', 'status', MENU_ALL_ON, true, 'sortAscending cancelSort | filterByColumn hideColumn autoFitColumnWidth'],
+  ['不可排序、受控排序裡卻有這一欄 → 排序組照樣不列', 'sku↑', 'sku', { ...MENU_ALL_OFF, canHide: true }, true, 'hideColumn'],
+  // 整張表 enableColumnMenu={false}(workspace 2026-11-27 追加):每一欄都不畫 ⌄,不論能做幾件事、排序狀態如何
+  ['enableColumnMenu={false}、六項都能做、沒排序 → 不畫 ⌄', '', 'title', { ...MENU_ALL_ON, enabled: false }, false, ''],
+  ['enableColumnMenu={false}、這一欄在多重排序裡 → 不畫 ⌄', 'title↑ status↓', 'status', { ...MENU_ALL_ON, enabled: false }, false, ''],
+]
+const realColumnMenuView = (sorting, col, can) => {
+  const groups = columnMenu.columnMenuGroups(can.canSort ? real.columnMenuSortItems(sorting, col) : [], can)
+  return { trigger: groups.length > 0, items: groups.map((g) => g.join(' ')).join(' | ') }
+}
+// 對照組:0.1.0-beta.151 的 data-table.tsx(觸發鈕一律畫;能排序時排序項後面固定一條分隔線,不看後面有沒有東西)
+const legacyColumnMenuView = (sorting, col, can) => {
+  const sort = can.canSort ? ['sortAscending', 'sortDescending'].filter((k) => real.columnMenuShowsSortDirection(sorting, col, k === 'sortAscending' ? 'asc' : 'desc')).concat(real.columnMenuShowsCancelSort(sorting, col) ? ['cancelSort'] : []) : []
+  const actions = [can.canFilter && 'filterByColumn', can.canHide && 'hideColumn', can.canAutoFit && 'autoFitColumnWidth'].filter(Boolean)
+  const seq = [...sort, ...(can.canSort ? ['|'] : []), ...actions]
+  return { trigger: true, items: seq.join(' ') }
+}
+function checkColumnMenu(view, { quiet = false } = {}) {
+  let fail = 0
+  for (const [name, from, col, can, wantTrigger, wantItems] of COLUMN_MENU_TABLE) {
+    const got = view(S(from), col, can)
+    const ok = got.trigger === wantTrigger && (wantTrigger ? got.items === wantItems : true)
+    if (!ok) { fail++; console.log(`✗ ⌄ 選單 ${name}:期望 ${wantTrigger ? `⌄ +「${wantItems}」` : '不畫 ⌄'} 實得 ${got.trigger ? `⌄ +「${got.items}」` : '不畫 ⌄'}`) } else if (!quiet) console.log(`✓ ⌄ 選單 ${name}`)
+  }
+  return fail
+}
+
 if (SELFTEST) {
   // 對照組:兩份修前行為在判定表上都必須大量不符(各 ≥ 4 格);全綠 = 判定表沒在驗規則
   let ok = true
@@ -348,6 +393,12 @@ if (SELFTEST) {
     console.log(caught >= 4 ? `✅ 對照組 ${name}:被判定表抓到 ${caught} 格不符(≥ 4)` : `✗ 對照組 ${name}:只被抓到 ${caught} 格(< 4),判定表沒在驗這條規則`)
     if (caught < 4) ok = false
   }
+  // ⌄ 選單的項目:現況必綠(前提),0.1.0-beta.151 的寫法必須被抓到 ≥ 3 格(不畫 ⌄ 那格 + 兩格「後面沒東西的分隔線」)
+  const menuBase = checkColumnMenu(realColumnMenuView, { quiet: true })
+  const menuCaught = checkColumnMenu(legacyColumnMenuView, { quiet: true })
+  console.log(menuBase === 0 ? '✅ ⌄ 選單:現況全綠(對照組的前提)' : `✗ ⌄ 選單:現況就有 ${menuBase} 格不符`)
+  console.log(menuCaught >= 3 ? `✅ ⌄ 選單對照組 0.1.0-beta.151(觸發鈕一律畫、排序項後固定一條分隔線):被抓到 ${menuCaught} 格不符(≥ 3)` : `✗ ⌄ 選單對照組 0.1.0-beta.151:只被抓到 ${menuCaught} 格(< 3),判定表沒在驗這條規則`)
+  if (menuBase !== 0 || menuCaught < 3) ok = false
   // 面板的字:現況必綠(前提),六個破法各至少紅一格;破法套不上(要換的那段字不在)= 對照組不成立,也算失敗
   const managerSrc = readManagerSrc()
   const base = checkManagerLabels(real, managerSrc, { quiet: true })
@@ -373,6 +424,7 @@ if (SELFTEST) {
 
 let fail = runTables(real)
 fail += checkManagerLabels(real, readManagerSrc())
+fail += checkColumnMenu(realColumnMenuView)
 
 // ── 呼叫端真的消費這支判定、值由誰算(M37 / M32:判定表測的若是平行實作,或呼叫端交的值另外推,等於沒測)──
 // `--src=<檔>`:改讀另一份 data-table.tsx(對照組用:拿修前那份來跑,呼叫端這段必須紅)
@@ -383,10 +435,20 @@ const must = [
   ['additive 由 Shift + 表允許 + 欄允許多重排序算出,表頭點擊 / 鍵盤經 nextSorting', /const additive = shiftKey && enableMultiSort && header\.column\.getCanMultiSort\(\)\s*\n\s*applyHeaderSorting\(header\.column\.id, \{ kind: 'activate', additive \}\)/],
   ['點擊帶 Shift', /onClick=\{canSort \? \(e\) => activateSort\(e\.shiftKey\)/],
   ['Enter / Space 帶 Shift(與點擊同一支)', /if \(e\.key === 'Enter' \|\| e\.key === ' '\) \{ e\.preventDefault\(\); activateSort\(e\.shiftKey\) \}/],
-  ['⌄ 選單「升冪排序」:出不出經 columnMenuShowsSortDirection、按了經 nextSorting set asc', /\{columnMenuShowsSortDirection\(sortingState, header\.column\.id, 'asc'\) && <DropdownMenuItem startIcon=\{ArrowUp\} onClick=\{\(\) => applyHeaderSorting\(header\.column\.id, \{ kind: 'set', direction: 'asc' \}\)\}>/],
-  ['⌄ 選單「降冪排序」:出不出經 columnMenuShowsSortDirection、按了經 nextSorting set desc', /\{columnMenuShowsSortDirection\(sortingState, header\.column\.id, 'desc'\) && <DropdownMenuItem startIcon=\{ArrowDown\} onClick=\{\(\) => applyHeaderSorting\(header\.column\.id, \{ kind: 'set', direction: 'desc' \}\)\}>/],
-  ['⌄ 選單「取消排序」:出不出經 columnMenuShowsCancelSort、按了經 nextSorting remove', /\{columnMenuShowsCancelSort\(sortingState, header\.column\.id\) && <DropdownMenuItem startIcon=\{XIcon\} onClick=\{\(\) => applyHeaderSorting\(header\.column\.id, \{ kind: 'remove' \}\)\}>/],
-  ['選單項字串走 DATA_TABLE_SORT_DEFAULT_LABELS', /\{DATA_TABLE_SORT_DEFAULT_LABELS\.sortAscending\}[\s\S]*\{DATA_TABLE_SORT_DEFAULT_LABELS\.sortDescending\}[\s\S]*\{DATA_TABLE_SORT_DEFAULT_LABELS\.cancelSort\}/],
+  // ⌄ 選單(2026-11-27 H42 起項目清單只有一份):出不出經 columnMenuGroups(排序組 = columnMenuSortItems,內含 columnMenuShows… 兩支判定);
+  // 觸發鈕與選單內容讀同一份 `columnMenu`;每一項做什麼在 runColumnMenuItem 的 switch,排序三項經 nextSorting
+  ['⌄ 選單項目清單 = columnMenuGroups(能排序的欄,排序組 = columnMenuSortItems)', /const columnMenu = columnMenuGroups\(canSort \? columnMenuSortItems\(sortingState, header\.column\.id\) : \[\], \{/],
+  ['⌄ 觸發鈕只在清單有項目時畫(與選單內容讀同一份)', /\{columnMenu\.length > 0 && <div data-col-menu/],
+  ['整張表開關 enableColumnMenu 交給同一份清單(預設 true)', /enableColumnMenu = true,/],
+  ['清單的 enabled = enableColumnMenu', /enabled: enableColumnMenu,/],
+  ['分隔線只畫在組與組之間', /\{columnMenu\.map\(\(group, groupIndex\) => \([\s\S]{0,80}\{groupIndex > 0 && <DropdownMenuSeparator \/>\}/],
+  ['⌄ 選單「升冪排序」:按了經 nextSorting set asc', /case 'sortAscending': return applyHeaderSorting\(header\.column\.id, \{ kind: 'set', direction: 'asc' \}\)/],
+  ['⌄ 選單「降冪排序」:按了經 nextSorting set desc', /case 'sortDescending': return applyHeaderSorting\(header\.column\.id, \{ kind: 'set', direction: 'desc' \}\)/],
+  ['⌄ 選單「取消排序」:按了經 nextSorting remove', /case 'cancelSort': return applyHeaderSorting\(header\.column\.id, \{ kind: 'remove' \}\)/],
+  ['選單項與 ⌄ 讀屏名的字走 tableLabels(labels prop → I18nProvider → 預設)', /startIcon=\{COLUMN_MENU_ICONS\[item\]\} onClick=\{\(\) => runColumnMenuItem\(item\)\}>\{tableLabels\[item\]\}/],
+  ['⌄ 讀屏名 = tableLabels.columnMenu(欄名)', /aria-label=\{tableLabels\.columnMenu\(columnAccessibleName\(header\.column\)\)\}/],
+  ['播報與順位描述用 tableLabels(不是寫死的預設那一份)', /\}, tableLabels\)\)\s*\n\s*\}, \[table, tableLabels\]\)/],
+  ['順位描述用 tableLabels', /sortPriorityDescription\(sortingState, header\.column\.id, tableLabels\)/],
   ['數字經 sortPriorityLabel', /sortPriorityLabel\(sortingState, header\.column\.id\)/],
 ]
 for (const [name, re] of must) { const ok = re.test(src); if (!ok) fail++; console.log(`${ok ? '✓' : '✗'} 呼叫端 ${name}`) }
@@ -395,6 +457,8 @@ const forbid = [
   ['表頭不再用 column.toggleSorting / clearSorting', /header\.column\.(toggleSorting|clearSorting)\(/],
   ['多重排序不再藏箭頭(isMultiSort)', /isMultiSort/],
   ['舊的兩支判定(sortingAfterHeaderActivate / sortingFromColumnMenu)不再出現 = 只有 nextSorting 一支', /sortingAfterHeaderActivate|sortingFromColumnMenu/],
+  ['表頭不自己判 ⌄ 選單項出不出(columnMenuShows… 只經 columnMenuSortItems)', /columnMenuShows(SortDirection|CancelSort)\(/],
+  ['選單項不再直接讀寫死的預設字(DATA_TABLE_SORT_DEFAULT_LABELS.xxx)', /DATA_TABLE_SORT_DEFAULT_LABELS\./],
 ]
 for (const [name, re] of forbid) { const hit = re.test(src); if (hit) fail++; console.log(`${hit ? '✗' : '✓'} 呼叫端 ${name}`) }
 const setSortingCalls = (src.match(/table\.setSorting\(/g) || []).length
