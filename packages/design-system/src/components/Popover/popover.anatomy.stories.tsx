@@ -356,7 +356,7 @@ export const Accessibility = {
 //   (3) 標題欄尾端讓位:InlineEdit 外框右緣到 × 左緣 = 標題列的 gap;× 左緣內 1px 點到的是 ×。不讓位時 InlineEdit 蓋進 × 4px、那一點是隱形編輯鈕。
 //   (4) 靜止:InlineEdit 外框(含 1px 透明邊框)= --field-height-sm、標題列內容高 = 上下 tight + --field-height-sm(一般 52 / 大 56)、
 //       × 中線 = 標題外框中線(容許 0.5)。InlineEdit 靜止外框多算上下 1px 邊框時(2026-11-25 前):外框 30 / 34、標題列 54 / 58、差 −1.0。
-//   (5) 編輯中:標題列內容高同 (4)(兩態同高,calendar.spec.md「事件詳情浮層」標題列),× 中線 = 輸入框那一列的中線(容許 0.5)。
+//   (5) 編輯中:標題列內容高同 (4)(兩態同高,overlay-chrome-sizing.spec.md「可編輯標題的標題列」),× 中線 = 輸入框那一列的中線(容許 0.5)。
 const PROBE_CASES = [
   { probeCase: 'md', closeName: '關閉任務預覽' },
   { probeCase: 'lg', closeName: '關閉' },

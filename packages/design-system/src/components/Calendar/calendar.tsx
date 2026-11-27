@@ -84,7 +84,7 @@ import { pressLandedInDom } from '@/design-system/lib/pointer-press'
  *   (12 / 24 跟語系,DATE-TIME(定)2026-11-26;calendar.spec.md「資料語意」時間顯示;zh-TW「上午10:00」)
  * - 事件版面: ./calendar-layout.ts(資料語意、長條判定、車道、切段、「+N」計數、格內排序、「+N」清單的一天 layoutDay、CalendarEventSegment 的唯一實作;本檔不另算)
  * - 「+N」與當天清單: ./calendar-more-list.tsx(@internal;按鈕、浮層外殼、半列上限);清單的列與格內同一個元件(MonthEventPiece,只換宿主)
- * - 事件詳情浮層: ./calendar-event-detail.tsx(@internal;Popover + 可編輯標題列 + 垂直排 Field / InlineEdit / Switch / DatePicker.Range / Select);
+ * - 事件詳情浮層: ./calendar-event-detail.tsx(@internal;Popover + PopoverTitle 標題列 + 垂直排 Field / InlineEdit / Switch / DatePicker.Range / Select);
  *   本檔只管錨在哪(被點的那一段;從清單開時左右取清單外框)—— 開向由詳情浮層照 DS 子選單擺法定(先開右、放不下翻左,popover.spec.md「禁止事項」用法 (2));
  *   從當下 events 依 id 取最新那一筆、全天切換的記憶、焦點歸還(lib/overlay-focus-return.ts returnFocusToOpener);
  *   時間欄平常與編輯中的寫法 = DatePicker 的預設日期段(DatePicker/range-format.ts DATE_RANGE_DEFAULT_DATE_OPTIONS,兩位數月日)+ 月格同一份 eventTimeFormat;
@@ -285,7 +285,7 @@ const DEFAULT_LABELS: CalendarLabels = {
   moreListClose: '關閉',
   // 2026-11-26 加(事件詳情浮層):× 同 Popover 預設「關閉」;欄位名與佔位字【AI 推導】(佔位照 InlineEdit 空值的「加上…」寫法,inline-edit.spec.md「空值」)
   detailClose: '關閉',
-  detailTitle: '事件標題',
+  detailTitle: '標題', // 內文「標題」欄的標籤(可改時才有;2026-11-27 前是標題列就地編輯的讀屏名稱「事件標題」)【DT-TITLE(定)】
   detailTime: '時間',
   detailAllDay: '全天',
   detailLocation: '地點',
