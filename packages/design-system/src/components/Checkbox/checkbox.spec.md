@@ -125,7 +125,7 @@ Checkbox 和 Radio 是**表單內的選擇控件**，視覺語言完全一致，
 | (a) 單獨一個即時生效的設定,跟一般動作並列:聊天室選單「全寬顯示」、任務列表 ⋮「隱藏已完成和已取消」 | 開關外觀(user 定);寫法 `indicator="switch"`、開關畫在列尾【AI 推導】 | 字是功能名,心裡想的是「開 / 關它」(上方「Dark mode 切換 → Switch」同一題) |
 | (b) 從一組裡挑幾個:顯示哪幾欄、篩選哪幾個狀態、多選的 Chip 溢出選單 | 預設 `indicator="checkbox"`(前綴勾選框) | 字是成員名,心裡想的是「選這幾個」;`../Switch/switch.spec.md`「何時不用」:多選用 Checkbox。一組裡的每一項雖然也點了就生效,仍用勾選 |
 | (c) 勾了還要按「套用」才生效 | 不放選單:Popover / 表單裡的 `Checkbox` + 套用鈕 | 第 1 角度:隨送出才套用 → Checkbox;選單項點了就生效,裝不下這個流程 |
-| (d) 互斥選一個 | 設定類、選了選單不關(排序方式)→ `DropdownMenuRadioItem`;切到哪一個、選了就關(分頁溢出選單、單選的 Chip 溢出選單)→ `DropdownMenuItem` + `selected` | 不是布林,不用勾選框(`../DropdownMenu/dropdown-menu.spec.md`「Item 類型」;`../../patterns/element-anatomy/item-anatomy.spec.md` 規則 B「選擇語意必須對應指示器視覺」:單選 in dropdown 禁方塊勾) |
+| (d) 互斥選一個 | 只看一題:選了之後要不要留在選單裡。留著看結果、可能再改(列密度、排序方式、變更類型)→ `DropdownMenuRadioItem`;選了就完成、回到頁面(切分頁、單選的 Chip 溢出選單、設定狀態)→ `DropdownMenuItem` + `selected` 【AI 推導:判準取既有 `../DropdownMenu/dropdown-menu.spec.md`「Item 類型」表兩者的選中行為(RadioItem 選中後選單保持開啟;Item 執行後關閉)】 | 不是布林,不用勾選框(`../../patterns/element-anatomy/item-anatomy.spec.md` 規則 B「選擇語意必須對應指示器視覺」:單選 in dropdown 禁方塊勾)。例:DropdownMenu 展示「選項前綴:工作項類型」上半「變更類型」= RadioItem、下半「設定狀態」= Item + `selected`;Tabs 的溢出選單、Chip 展示「單選:放不下時的選單」= Item + `selected` |
 
 不在本段:DataTable 欄位顯示面板不是選單 —— 它是浮層裡可拖曳排序的清單,顯示 / 隱藏是列上的副動作(眼睛圖示鈕,`../DataTable/data-table-column-visibility-panel.tsx` 檔頭「固定零件」),零件清單照 `../DataTable/data-table.spec.md`「欄位顯示面板的固定零件」。不要把 `<Switch>` / `<Checkbox>` 放進 `DropdownMenuItem`(`../DropdownMenu/dropdown-menu.spec.md`「禁止事項」;產品 repo 由寫入檢查擋)。
 

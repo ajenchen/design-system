@@ -1100,7 +1100,7 @@ Selection control(Dropdown / Menu / List / SegmentedControl / Chip)的 item 視�
 |---|---|---|
 | **多選**(checkbox semantic) | `DropdownMenuCheckboxItem`(方塊勾)、SelectionItem checkbox | radio 圓圈、bg 高亮(無方塊會誤以為單選) |
 | **單獨一個布林設定 in dropdown / menu**(開 / 關一個功能) | `DropdownMenuCheckboxItem indicator="switch"`(列尾開關;判準 `../../components/Checkbox/checkbox.spec.md`「選單裡」) | 方塊勾(暗示從一組裡挑)、`DropdownMenuItem` 裡自己放 Switch(兩個互動單位) |
-| **單選 in dropdown / menu** | `DropdownMenuItem` 的 `selected` prop → `bg-neutral-selected` 持續選中背景(跟 SelectMenu 單選同一套) | **checkbox 方塊**(暗示多選)、**radio 圓圈**(dropdown 不用 radio 指示器,RadioGroup 才用) |
+| **單選 in dropdown / menu** | `DropdownMenuItem` 的 `selected` prop → `bg-neutral-selected` 持續選中背景(跟 SelectMenu 單選同一套);選了要留在選單裡的用 `DropdownMenuRadioItem`(選中同樣是底色),怎麼分照 `../../components/Checkbox/checkbox.spec.md`「選單裡」(d) | **checkbox 方塊**(暗示多選)、**radio 圓圈**(dropdown 不用 radio 指示器,RadioGroup 才用) |
 | **單選 as always-visible form control** | `RadioGroup` + `RadioGroupItem`(圓圈) | — |
 
 #### 為什麼 dropdown 單選不用 radio 圓圈
