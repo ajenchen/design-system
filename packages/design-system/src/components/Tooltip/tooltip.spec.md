@@ -97,8 +97,17 @@ Tooltip 最大寬度 **280px**（見 `.tsx` 的 `max-w-[280px]`）——超過�
 
 Radix idiom passthrough:`open`(受控)/ `defaultOpen`(非受控初始開啟)/ `onOpenChange`(開關回報)三 prop 語意與 Radix Root 一致。實作上 DS `Tooltip` wrapper **恆以受控模式掛 Radix Root**——`open` 未傳時由 wrapper internal state 鏡射 Radix 的 hover/focus/delay 決策(`defaultOpen` seed internal state),開/關**時機**仍由 Radix 決定(見「為何無 StateBehavior」)。理由:`truncated-text.tsx` 截斷抑制 canonical `open={isTruncated ? undefined : false}` 若直通 Radix 會反覆 controlled ↔ uncontrolled 切換(dev warning 噪音,consumer 實證)。`open` 與 `defaultOpen` 同傳時 `open` 勝(Radix idiom)。
 
+## 觸發點是停用的控件(2026-11-26,只放指向)
+
+Tooltip 靠觸發點收到指標事件才出現;原生 `disabled` 的元素靠不住 —— Button 的 `aria-disabled` 與原生 `disabled`「差別只在保留指標事件讓 Tooltip 能出現」(`../Button/button.spec.md`「狀態疊加」表;`../Button/button.tsx:69-71`「aria-disabled buttons 必保 pointer events」)。要說明「為什麼停用」時,做法住在各元件自己的規格:
+
+- **按鈕**:改用 `aria-disabled`,保留指標事件讓 Tooltip 能出現 → `../Button/button.spec.md`「狀態疊加」表的 `aria-disabled` 列
+- **欄位**:Tooltip 包住整個 Field(外層 `<div>` 不是停用元素)→ `../Field/field-controls.spec.md`「disabled 的停用原因」
+- **選單項等其他元件**:停用時怎麼說明還沒定案(產品 canary 回報 C18 / C20,待 user 決定),定案前不在本規格寫做法
+
 ## 禁止事項
 
+- ❌ 不要把 Tooltip 直接掛在原生 `disabled` 的元素上——說明出不來;照上一段「觸發點是停用的控件」的做法
 - ❌ 不要在已有完整 label 的按鈕上加 tooltip 重複同樣的文字
 - ❌ 不要在 tooltip 裡放互動元素——改用 HoverCard
 - ❌ 不要把 tooltip 當作必要資訊的唯一載體——tooltip 要滑過停 0.5 秒才出現、滑開就收,使用者不知道那裡藏著東西〔UD-U1021-27〕
@@ -134,6 +143,7 @@ Tooltip 是**單一職責 hover 提示 primitive**(一句話補充),刻意無變
 
 - Tab — focus trigger 時顯示
 - Esc — 關閉
+- **程式搬來的焦點不顯示**(2026-11-26):聚焦時只有焦點是 `:focus-visible`(鍵盤 Tab、鍵盤 Esc 關浮層後還回來的焦點)才顯示;用滑鼠關掉浮層後由程式還給觸發點的焦點(`lib/overlay-focus-return.ts`)不是使用者聚焦到它,不帶出只給使用者看的提示 —— 否則截斷的事件方塊、圖示鈕會在關浮層的那一下跳出提示。滑過照常顯示。Radix 只擋「指標按下造成的聚焦」(`isPointerDownRef`),程式 `.focus()` 一律開,所以由 DS `TooltipTrigger` 統一擋(`tooltip.tsx`「程式搬來的焦點不開提示」;擋在 Radix 開啟之前,不經 Provider —— 被擋的那一下不得動到上方「時間參數」的初始延遲),全 DS 的提示(含截斷提示,`../../patterns/element-anatomy/truncated-text.spec.md`「A11y 預設」)同一條,元件不各自另寫。世界級:React Aria 聚焦時只在 `isFocusVisible()` 才顯示([useTooltipTrigger.ts#L118-L124](https://github.com/adobe/react-spectrum/blob/6dec77beccf0545a04318e6a01b8eb9cbe2dccc6/packages/react-aria/src/tooltip/useTooltipTrigger.ts#L118-L124))。機械閘:`scripts/calendar-month-invariant.mjs` DT-tip(用滑鼠開詳情、點外面關掉後,焦點回到截斷的事件方塊,提示不開)、DT-tip-delay(接著滑過工具列「下個月」,提示仍等初始延遲)。
 
 **Focus**:non-modal hover/focus surface — focus 開啟 surface,**不 trap**,focus 仍 在 trigger,Esc 關閉。Visible focus ring 由 trigger 元件自身的 focus-visible 樣式提供(各 trigger 元件 canonical;Tooltip 本體不另加焦點框)。(2026-05-27 修正 codex M31 finding:Tooltip 非 modal,不該有 focus trap,原 wording 誤導)
 
@@ -156,3 +166,4 @@ Tooltip 是**單一職責 hover 提示 primitive**(一句話補充),刻意無變
 - `overlay-surface.spec.md`
 - `popover.spec.md`
 - `profile-card.spec.md`
+- `steps.spec.md`

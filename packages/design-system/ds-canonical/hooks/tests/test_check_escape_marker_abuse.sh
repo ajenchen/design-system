@@ -195,15 +195,14 @@ expect_not_block "N8. empty content → not blocked"
 run_hook_bypass "Write" "$CONSUMER" "content" "$C_3DISTINCT"
 expect_not_block "N9. GOVERNANCE_BYPASS_ESCAPE_MARKER_AUDIT=1 override → not blocked"
 
-# N10. Canonical proxy portal has three separately justified marker families by design. Its
-# threshold is six distinct markers (the ordinary three-marker ceiling would make the shipped
-# template fail its own hard gate).
+# N10.(2026-11-27 上游判定 E18 改寫)以前 AllDsComponents.stories.tsx 有專屬放寬(distinct ≥6);範本改名
+# DsImportSmoke.stories.tsx、0 個 marker 後例外刪除 —— 同樣 3 種 marker 在舊檔名也照一般門檻擋(拿掉例外的對照組)。
 C_PORTAL='// @anatomy-exempt: canonical proxy portal
 // @consumer-catalog-allow: imports only, never hand-mocks components
 // @layout-space-magic-ok: debug-only export dump
 export const Portal = 1;'
 run_hook "Write" "/repo/apps/template/src/AllDsComponents.stories.tsx" "content" "$C_PORTAL"
-expect_not_block "N10. sanctioned proxy portal 3 distinct markers (< portal cap 6) → not blocked"
+expect_block "N10. 舊 portal 檔名不再有專屬放寬:3 distinct markers → blocked" "$BLOCK_NEEDLE"
 
 # N11. A layout-space marker that documents mechanically proven canonical micro geometry is
 # redundant compatibility metadata, not an active governance escape. It must not consume the
@@ -233,6 +232,25 @@ C_CANONICAL_MICRO_SAME_LINE='const Meta = () => <span className="flex items-cent
 run_hook "Write" "$CONSUMER" "content" "$C_CANONICAL_MICRO_SAME_LINE"
 expect_pass "N13. same-line proven canonical micro marker excluded from ceiling"
 
+# N14.(2026-11-27 H2 + H3 + H4)規格登記的寫法(頁面列表列 gap-3 px-4 py-3 + 頭像 / Item 零件)上方的
+# layout 標記已經多餘,不佔每檔額度 —— 與 N11 同一個判法,只是分類器多認一種規格寫法。
+C_SPEC_PATTERN_MARKER='// @layout-space-magic-ok: legacy rationale for the page list row
+const Row = () => <div className="flex items-start gap-3 px-4 py-3"><Avatar src={u.photo} alt={u.name} /><ItemContent label={u.name} /></div>;
+// @ds-misuse-allow: one true exception
+// @benchmark-unverified cited in audit notes
+export const App = 1;'
+run_hook "Write" "$CONSUMER" "content" "$C_SPEC_PATTERN_MARKER"
+expect_pass "N14. spec-registered page-list row marker excluded from per-file ceiling"
+
+# N15. 反例對照:同一組 gap-3 px-4 py-3 旁邊沒有頭像 / Item 零件 → 不是規格寫法 → 標記照佔額度 → 三族湊滿就擋
+C_SPEC_PATTERN_LOOKALIKE='// @layout-space-magic-ok: claimed page list row
+const Row = () => <div className="flex items-start gap-3 px-4 py-3"><Info /><span>維護通知</span></div>;
+// @ds-misuse-allow: one true exception
+// @benchmark-unverified cited in audit notes
+export const App = 1;'
+run_hook "Write" "$CONSUMER" "content" "$C_SPEC_PATTERN_LOOKALIKE"
+expect_block "N15. lookalike gap-3 px-4 py-3 without avatar / Item parts still consumes ceiling" "$BLOCK_NEEDLE"
+
 # ── R-series:repo 級累計 ratchet(2026-07-08 WM 戰役 R4)──────────────────────
 # 存量 ≥10(apps/** 全 repo)後,只擋「本次 edit 再新增 marker」;無 marker edit 不 brick。
 mkdir -p "$TMP_DIR/apps/work/src"
@@ -242,17 +260,17 @@ for i in 1 2 3 4 5 6; do
 done
 
 # R1. 存量 12 ≥ cap 10 + 本次新增 1 marker → BLOCK(ratchet)
-run_hook "Write" "/repo/apps/work/src/new.tsx" "content" '<div /> // @ds-misuse-allow: one more'
+run_hook "Write" "$TMP_DIR/apps/work/src/new.tsx" "content" '<div /> // @ds-misuse-allow: one more'
 expect_block "R1. repo 存量 12 ≥ cap + edit 加 marker → blocked (ratchet)" "ESCAPE-MARKER-REPO-RATCHET"
 
 # R2. 存量 12 ≥ cap 但本次 edit 無 marker → not blocked(不因存量 brick 無關 edit)
-run_hook "Write" "/repo/apps/work/src/new.tsx" "content" '<div className="flex" />'
+run_hook "Write" "$TMP_DIR/apps/work/src/new.tsx" "content" '<div className="flex" />'
 expect_not_block "R2. repo 存量 ≥ cap 但 edit 無 marker → not blocked"
 
 # R3. 存量降到 4 < cap + 本次加 1 marker → not blocked
 rm -f "$TMP_DIR/apps/work/src/seed3.tsx" "$TMP_DIR/apps/work/src/seed4.tsx" \
       "$TMP_DIR/apps/work/src/seed5.tsx" "$TMP_DIR/apps/work/src/seed6.tsx"
-run_hook "Write" "/repo/apps/work/src/new.tsx" "content" '<div /> // @ds-misuse-allow: legit case'
+run_hook "Write" "$TMP_DIR/apps/work/src/new.tsx" "content" '<div /> // @ds-misuse-allow: legit case'
 expect_not_block "R3. repo 存量 4 < cap + edit 加 marker → not blocked"
 
 # R4. Repo ratchet must count real escapes, not legacy comments attached to geometry that the
@@ -264,8 +282,76 @@ for i in 1 2 3 4 5 6; do
   printf '// @layout-space-magic-ok: legacy canonical micro %s\nconst A%s = () => <span className="inline-flex items-center gap-1">A</span>\n// @layout-space-magic-ok: legacy canonical micro %sb\nconst B%s = () => <span className="flex items-start gap-2">B</span>\n' \
     "$i" "$i" "$i" "$i" > "$TMP_DIR/apps/work/src/micro$i.tsx"
 done
-run_hook "Write" "/repo/apps/work/src/new.tsx" "content" '<div /> // @ds-misuse-allow: one bounded true exception'
+run_hook "Write" "$TMP_DIR/apps/work/src/new.tsx" "content" '<div /> // @ds-misuse-allow: one bounded true exception'
 expect_pass "R4. repo canonical micro markers do not consume escape ratchet"
+
+# ── P-series:每個 app 各自計數(2026-11-27,上游判定 B1)+ 規範位置的建置輸出不計(B4)──────────
+# 計數根 = 本次編輯檔所在的 apps/<name>;template 是一個 repo 放多個 app(workspaces = apps/*)。
+seed_app() { # seed_app <app> <n>:在 apps/<app>/src 放 n 個真 escape marker
+  mkdir -p "$TMP_DIR/apps/$1/src"
+  i=1
+  while [ "$i" -le "$2" ]; do
+    printf '// @ds-misuse-allow: seeded reason %s %s\n' "$1" "$i" > "$TMP_DIR/apps/$1/src/seed$i.tsx"
+    i=$((i + 1))
+  done
+}
+rm -rf "$TMP_DIR/apps"; mkdir -p "$TMP_DIR/apps"
+seed_app alpha 9; seed_app beta 9
+# P1. 兩個 app 各 9 個(合計 18 > 10)→ 各自加 1 個都放行(舊實作:全 apps/** 合算 18 ≥ 10 → 擋)
+run_hook "Write" "$TMP_DIR/apps/alpha/src/new.tsx" "content" '<div /> // @ds-misuse-allow: alpha bounded exception'
+expect_not_block "P1a. alpha 9 < cap(beta 的 9 不算進來)+ 加 1 → not blocked"
+run_hook "Write" "$TMP_DIR/apps/beta/src/new.tsx" "content" '<div /> // @ds-misuse-allow: beta bounded exception'
+expect_not_block "P1b. beta 9 < cap + 加 1 → not blocked"
+# P2. alpha 到 11 個 → 只擋 alpha;beta 仍可新增
+seed_app alpha 11
+run_hook "Write" "$TMP_DIR/apps/alpha/src/new.tsx" "content" '<div /> // @ds-misuse-allow: alpha one more'
+expect_block "P2a. alpha 存量 11 ≥ cap + 加 marker → blocked(只擋 alpha)" "ESCAPE-MARKER-REPO-RATCHET"
+run_hook "Write" "$TMP_DIR/apps/beta/src/new.tsx" "content" '<div /> // @ds-misuse-allow: beta still fine'
+expect_not_block "P2b. alpha 超標不拖累 beta(beta 9 < cap)→ not blocked"
+# P3.(2026-11-27 規格核對必修 1 改寫)apps/<x> 還不存在 → 退回整個 apps/ 計數,不再當存量 0(那等於 ratchet 關掉)
+#    此時 alpha 11 + beta 9 = 20 ≥ cap → 擋並指名 apps/**
+run_hook "Write" "$TMP_DIR/apps/gamma/src/new.tsx" "content" '<div /> // @ds-misuse-allow: first exception in a new app'
+expect_block "P3a. apps/gamma 還不存在 → 以整個 apps/ 計(20 ≥ cap)→ blocked" "apps/gamma 還不存在"
+# P3b. 對照:整個 apps/ 未達上限時,不存在的 app 第一筆照放行
+rm -rf "$TMP_DIR/apps"; seed_app alpha 3
+run_hook "Write" "$TMP_DIR/apps/gamma/src/new.tsx" "content" '<div /> // @ds-misuse-allow: first exception in a new app'
+expect_not_block "P3b. apps/gamma 還不存在、整個 apps/ 只有 3 → not blocked"
+# P5.(必修 1)巢狀路徑:app 名取 apps/ 之後的第一段。apps/alpha/src/apps/zzz/… 屬於 alpha(舊貪婪 sed 取到 zzz → 存量 0 → 放行)
+seed_app alpha 11
+mkdir -p "$TMP_DIR/apps/alpha/src/apps/zzz"
+run_hook "Write" "$TMP_DIR/apps/alpha/src/apps/zzz/new.tsx" "content" '<div /> // @ds-misuse-allow: nested path exception'
+expect_block "P5a. apps/alpha/src/apps/zzz/new.tsx 算 alpha(11 ≥ cap)→ blocked" "apps/alpha escape marker"
+# P5b. 專案根本身在 …/apps/proj/ 底下、編輯 consumer/…:不屬於任何 app → 以整個 apps/ 計(舊貪婪 sed 取到 proj → 不存在 → 0 → 放行)
+NEST_PROJ="$TMP_DIR/outer/apps/proj"
+mkdir -p "$NEST_PROJ/.claude/logs" "$NEST_PROJ/consumer/src" "$NEST_PROJ/apps/one/src"
+i=1
+while [ "$i" -le 11 ]; do
+  printf '// @ds-misuse-allow: seeded nested %s\n' "$i" > "$NEST_PROJ/apps/one/src/seed$i.tsx"
+  i=$((i + 1))
+done
+GOVERNANCE_PROJECT_DIR="$NEST_PROJ" run_hook "Write" "$NEST_PROJ/consumer/src/new.tsx" "content" '<div /> // @ds-misuse-allow: consumer exception'
+expect_block "P5b. 專案根在 …/apps/proj/ 底下、consumer/ 檔 → 整個 apps/ 11 ≥ cap → blocked" "apps/** escape marker"
+# P5c. 對照:同一個專案,apps/one 降到 3 → 放行(證明 P5b 紅是因為存量,不是路徑本身被擋)
+rm -f "$NEST_PROJ"/apps/one/src/seed[4-9].tsx "$NEST_PROJ"/apps/one/src/seed1[01].tsx
+GOVERNANCE_PROJECT_DIR="$NEST_PROJ" run_hook "Write" "$NEST_PROJ/consumer/src/new.tsx" "content" '<div /> // @ds-misuse-allow: consumer exception'
+expect_not_block "P5c. 同一專案 apps/ 只剩 3 → not blocked"
+rm -rf "$TMP_DIR/outer"
+# P4(B4). 規範位置的建置輸出(apps/<name>/storybook-static、node_modules、dist …)不計;src 底下叫 dist 的資料夾照計
+rm -rf "$TMP_DIR/apps"; mkdir -p "$TMP_DIR/apps/delta/storybook-static" "$TMP_DIR/apps/delta/src/dist"
+i=1
+while [ "$i" -le 12 ]; do
+  printf '// @ds-misuse-allow: built output copy %s\n' "$i" > "$TMP_DIR/apps/delta/storybook-static/out$i.ts"
+  i=$((i + 1))
+done
+run_hook "Write" "$TMP_DIR/apps/delta/src/new.tsx" "content" '<div /> // @ds-misuse-allow: real source exception'
+expect_not_block "P4a. apps/delta/storybook-static 的 12 個 marker 是建置輸出、不計 → not blocked"
+i=1
+while [ "$i" -le 12 ]; do
+  printf '// @ds-misuse-allow: source under a dist-named folder %s\n' "$i" > "$TMP_DIR/apps/delta/src/dist/src$i.ts"
+  i=$((i + 1))
+done
+run_hook "Write" "$TMP_DIR/apps/delta/src/new.tsx" "content" '<div /> // @ds-misuse-allow: one more'
+expect_block "P4b. apps/delta/src/dist 是原始碼(不在規範位置)、12 個照計 → blocked" "ESCAPE-MARKER-REPO-RATCHET"
 
 rm -rf "$TMP_DIR/apps"
 

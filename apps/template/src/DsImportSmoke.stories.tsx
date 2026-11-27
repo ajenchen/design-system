@@ -1,21 +1,21 @@
-// @anatomy-exempt: DS canonical proxy portal (per 2026-05-27 M31 codex synthesis)
-// @consumer-catalog-allow: documented proxy portal — link 到 DS Storybook,不 hand-mock DS components(per M31 codex synthesis)
 /**
- * AllDsComponents.stories.tsx — DS canonical Storybook proxy portal
+ * DsImportSmoke.stories.tsx — DS 公開 API import smoke + 連到 DS canonical Storybook 的入口
  *
  * Per user 2026-05-27 verbatim「確保跟 ds repo 一模一樣」+「全盤避免 minimal mock 抹平」+ M31 codex synthesis.
  *
  * 規則(SSOT):
  *   1. DS owns per-component canonical pixels — 全部 manifest-discovered public components 的三層 stories(展示/設計規格/設計原則)在 DS Storybook
  *   2. PW(consumer template)只 owns 真實業務 composition demos(AppShell Dashboard 等)
- *   3. 想看「所有 DS 元件」default render → link 連 DS deployed Storybook(2026-06-03 移除壞掉+冗餘的 iframe 嵌入:在合併部署裡 iframe 等於把同一 Storybook 嵌進自己 → X-Frame-Options SAMEORIGIN 下渲染失敗,且連結指標 Import Smoke 已有一份)
+ *   3. 想看「所有 DS 元件」default render → link 連 DS deployed Storybook(2026-06-03 移除壞掉+冗餘的 iframe 嵌入:在合併部署裡 iframe 等於把同一 Storybook 嵌進自己 → X-Frame-Options SAMEORIGIN 下渲染失敗)
  *   4. **禁** PW 重寫 `<DS.X minimal props>` — 必 drift(2026-05-27 5+ bug 錨例:CircularProgress size=32 / RadioGroup raw item 沒 SelectionItem / DataTable one-col / LinkInput placeholder mock / Empty 缺 icon)
- *   5. Mechanical 強制:hook `check-consumer-no-ds-catalog.mjs` + `check-consumer-story-baseline.mjs` (DS 0.1.0-beta.26+)
+ *   5. Mechanical 強制:hook check_consumer_app_invariants.sh(r1 no-DS-catalog / r2 story baseline)
  *
- * Anchor codex M31 v1:「PW 可有 DS catalog 但只能是 DS canonical Storybook 的 proxy/manifest portal,不能在 PW 重新寫 JSX」
+ * 2026-11-27(上游判定 E18):原檔名 AllDsComponents.stories.tsx 是 catalog 檔名,逼出 consumer-catalog-allow 標記,再加 anatomy-exempt
+ * 與兩個 layout-space-magic-ok 標記,範本每建一個 app 就帶進 4 個會被計數的豁免標記。改名成 import smoke 的名字、外框與 code block 改用
+ * layout-space token 與語意色後,這個檔 0 個豁免標記(回歸測試 scripts/test-setup-governance.mjs「template import smoke」)。
  */
 
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import * as DS from '@qijenchen/design-system'
 
 // Dynamic export count(不寫死數字,隨 DS public API 增減)— import smoke only, no render
@@ -38,9 +38,8 @@ export const ImportSmoke: Story = {
   name: 'DS 公開 API import smoke',
   tags: ['test-only'],
   render: () => (
-    // 標題 → 第一塊內容、內容之間 = loose,跟著密度走(DS `layoutSpace.spec.md` 規則 3「標題區 → 內容」第 3 題:並列的好幾個 → 標題到第一個 = 東西之間 = loose)
-    // @layout-space-magic-ok: 只剩外框內距 p-6 —— portal 入口 dev artifact(import smoke + export dump)的除錯外框,非 consumer 產品 layout(2026-10-27 複查)
-    <div className="p-6 space-y-[var(--layout-space-loose)]" data-testid="all-ds-import-smoke">
+    // 外框內距與「標題 → 第一塊內容、內容之間」都 = loose,跟著密度走(DS `layoutSpace.spec.md` 規則 3「標題區 → 內容」第 3 題)
+    <div className="p-[var(--layout-space-loose)] space-y-[var(--layout-space-loose)]" data-testid="all-ds-import-smoke">
       <h1 className="text-h3">DS Public API — Import Smoke</h1>
       <p className="text-body">
         Imports resolved: <span data-testid="total">{allKeys.length}</span> exports
@@ -57,8 +56,8 @@ export const ImportSmoke: Story = {
       </p>
       <details className="text-caption">
         <summary className="cursor-pointer">Full export list ({allKeys.length})</summary>
-        {/* @layout-space-magic-ok: export list debug dump(dev artifact)— code-block 內距,非 consumer 產品 layout,不適用 layoutSpace 親疏 token */}
-        <pre className="mt-2 p-2 bg-neutral-1 rounded text-fg-secondary break-all">{allKeys.join(', ')}</pre>
+        {/* export 清單 code block:內距與上距 = tight、底色與圓角照 DS 內 <pre> 既有寫法(bg-canvas rounded-md)【AI 推導 2026-11-27】 */}
+        <pre className="mt-[var(--layout-space-tight)] p-[var(--layout-space-tight)] bg-canvas rounded-md text-fg-secondary break-all">{allKeys.join(', ')}</pre>
       </details>
     </div>
   ),

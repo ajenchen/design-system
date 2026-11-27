@@ -28,10 +28,54 @@ required external evidence/readback. Until those bindings exist, the launcher re
 must report `REVIEW-BLOCKED`. The host provider process remains vendor-managed; repository tooling
 never claims to replace or certify that host runtime.
 
-A successful command prints `scope=local-bootstrap`, `providerCertification=not-checked`, and
-`externalActivationRequired=false`. Treat these as an explicit boundary: the checkout bootstrap is
+A successful command prints `scope=local-bootstrap`, `providerCertification=not-checked`,
+`externalActivationRequired=false`, and `recordedContentDebt=<N>`. Treat these as an explicit boundary: the checkout bootstrap is
 verified, but cloud/provider runtime certification and external activation still require their
-independent target-bound evidence and readback.
+independent target-bound evidence and readback. `recordedContentDebt` counts the content findings
+the product has registered as existing debt (below); it is never a content-compliance claim.
+
+### Recorded content debt
+
+The last setup stage replays every content rule (layout magic numbers, consumer app invariants,
+escape-marker ratchet, `any`, and so on) over the product source. A product that already has such
+findings would otherwise fail `setup:all` with `GOV-CONTENT-001` until every one is fixed — and it
+cannot fix them without a working environment. Register the existing findings once instead:
+
+```text
+npm run governance:check                       # see what fails
+npm run governance:debt -- --record --by "<who>" --reason "<why these are accepted for now>"
+git add governance/content-debt-baseline.json  # commit it in the same PR, where reviewers see it
+```
+
+`governance/content-debt-baseline.json` is product-owned; its format is the upstream-managed
+`governance/schemas/content-debt-baseline.schema.json`. Each cell is rule + file + hook + event, and
+holds line-number-free fingerprints of the findings, so moving code does not change it. The same
+installed checker reads the same baseline in `setup:all`, `npm run governance:check`, and the
+`Verify consumer` CI job:
+
+- a finding that is in the baseline does not block;
+- a new finding blocks and names the file: a file, rule, or hook not in the baseline, or a finding
+  line the hook did not report when the baseline was recorded. The granularity is the hook's own
+  report — a hook that reports one line per kind of violation (for example one line for every
+  hand-written `<table>` in a file) shows a new kind, not a second occurrence of the same kind;
+- a recorded finding that no longer occurs blocks (`GOV-CONTENT-DEBT-002`) until you shrink the
+  baseline with `npm run governance:debt -- --prune` — the baseline may only shrink;
+- a hand-edited baseline (its `entriesSha256` no longer matches) blocks as `GOV-CONTENT-DEBT-001`;
+  growth goes only through `--record`, which writes who registered the findings and why. To recover,
+  restore the file with `git checkout -- governance/content-debt-baseline.json`, or rebuild it from
+  scratch with `--record` (the rebuilt file does not keep the old registrations; `--prune` refuses an
+  invalid baseline);
+- without a baseline file every finding blocks, as before.
+
+`npm run governance:debt -- --list` shows recorded, unrecorded, and fixed-but-still-recorded findings,
+one line per finding, without writing. It replays every hook on every file even when there is no
+baseline yet, so its unrecorded findings are exactly what `--record` would register. (Without a
+baseline, `governance:check` and `setup:all` stop at the first failing hook of each file, so they can
+name fewer findings than `--list`.) This is the same model as ESLint bulk suppressions
+([eslint.org/docs/latest/use/suppressions](https://eslint.org/docs/latest/use/suppressions):
+existing violations are not reported while new code is enforced, and once a suppressed violation is
+fixed ESLint exits non-zero until `--prune-suppressions` removes it). Native write-time hooks are
+per-write accelerators and do not read the baseline; the hooks-off checker above is the authority.
 
 The environment's npm only launches committed Node scripts. The governance phase resolves the canonical
 npm tarball URL and SHA-512 from the committed lock, downloads those bytes with Node HTTPS,
@@ -116,10 +160,10 @@ Now start the provider you prefer (`claude`, `codex`, or another registered inte
 
 Every provider uses the same standard five-step release SSOT:
 `pr-checks → merge → publish → readback → consumer`. The upstream release mirror alone delivers an
-exact snapshot to the template repository. A registered product receiver is downstream-only: it
+exact snapshot to the template repository. A product receiver, once shipped, is downstream-only: it
 dynamically discovers every root-workspace `package.json`, pins governed packages to one exact
 release, updates the single package lock, uses that same dynamic path set for status and staging,
-and opens a protected PR. It cannot publish or write protected `main`.
+and pushes an automation branch; the upstream release orchestrator opens the PR so that `Verify consumer` runs on it. The receiver never opens or merges that PR, publishes, or writes protected `main`.
 
 ## Verify product creation
 

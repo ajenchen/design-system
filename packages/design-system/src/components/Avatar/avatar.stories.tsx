@@ -1,4 +1,4 @@
-import type { Meta } from '@storybook/react'
+import type { Meta } from '@storybook/react-vite'
 import { Building2 } from 'lucide-react'
 import { Avatar } from './avatar'
 import { MenuItem, MenuGroup } from '@/design-system/components/Menu/menu-item'
@@ -140,5 +140,29 @@ export const InContext = {
         </div>
       </div>
     </ExampleSection>
+  ),
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   size="fill" 填滿父容器(test-only,2026-11-27,workspace H 組 H14)
+   給 scripts/avatar-anchor-box-invariant.mjs 的 fill 那一格量「最外層 = 父容器的寬高、看得見的圓 = 最外層」:
+   產品自己排的成員格由父層決定 40×40,三種內容(照片 / 姓名首字 / 團隊圖示)各一顆。修前最外層沒有寬高、內層是 inline-size 容器查詢 → 整顆 0×0。
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+export const FillParent = {
+  name: '填滿父容器',
+  tags: ['test-only'],
+  render: () => (
+    <div className="flex items-center gap-[var(--layout-space-loose)]">
+      <div data-avatar-fill-case="image" style={{ width: 40, height: 40 }}>
+        <Avatar size="fill" src={demoPersonPhoto('Alice Chen', 80)} alt={alice.name} hoverCard={samplePersonCard(alice)} />
+      </div>
+      <div data-avatar-fill-case="text" style={{ width: 40, height: 40 }}>
+        <Avatar size="fill" alt={bob.name} color="purple" hoverCard={samplePersonCard({ ...bob, avatarSrc: undefined })} />
+      </div>
+      <div data-avatar-fill-case="icon" style={{ width: 40, height: 40 }}>
+        <Avatar size="fill" icon={Building2} color="blue" alt="設計中心" />
+      </div>
+    </div>
   ),
 }

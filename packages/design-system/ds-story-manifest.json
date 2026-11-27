@@ -5,9 +5,9 @@
     "consumedBy": [
       "packages/design-system/ds-canonical/hooks/check_consumer_app_invariants.sh#r2_story_baseline",
       "scripts/composition-fidelity-visual-diff.mjs",
-      "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
+      "product-workspace apps/template/src/DsImportSmoke.stories.tsx (ImportSmoke → DS Storybook link)"
     ],
-    "generatedAt": "2026-11-22T16:38:42.289Z"
+    "generatedAt": "2026-11-27T00:57:42.019Z"
   },
   "components": {
     "accordion": {
@@ -66,6 +66,7 @@
           "design-system-components-agentpanel-展示--task-assistant",
           "design-system-components-agentpanel-展示--attachments",
           "design-system-components-agentpanel-展示--multiple-replies",
+          "design-system-components-agentpanel-展示--reply-prose",
           "design-system-components-agentpanel-展示--history-open",
           "design-system-components-agentpanel-展示--new-conversation",
           "design-system-components-agentpanel-展示--decision-card-open",
@@ -80,6 +81,7 @@
           "design-system-components-agentpanel-展示--logo-states",
           "design-system-components-agentpanel-展示--logo-think-stop",
           "design-system-components-agentpanel-展示--url-registry-demo",
+          "design-system-components-agentpanel-展示--toolbar-i-18-n",
           "design-system-components-agentpanel-展示--unsaved-changes-guard"
         ],
         "設計規格": [
@@ -135,6 +137,8 @@
           "design-system-components-appshell-展示--primary-sidebar",
           "design-system-components-appshell-展示--primary-sidebar-with-tabs",
           "design-system-components-appshell-展示--primary-header",
+          "design-system-components-appshell-展示--full-page-not-found",
+          "design-system-components-appshell-展示--full-page-no-access",
           "design-system-components-appshell-展示--four-regions",
           "design-system-components-appshell-展示--agent-overlay",
           "design-system-components-appshell-展示--menu-overlay"
@@ -182,7 +186,8 @@
         "展示": [
           "design-system-components-avatar-展示--modes",
           "design-system-components-avatar-展示--fallback",
-          "design-system-components-avatar-展示--in-context"
+          "design-system-components-avatar-展示--in-context",
+          "design-system-components-avatar-展示--fill-parent"
         ],
         "設計規格": [
           "design-system-components-avatar-設計規格--overview",
@@ -319,9 +324,20 @@
       "tiers": {
         "展示": [
           "design-system-components-calendar-展示--team-calendar",
+          "design-system-components-calendar-展示--shared-view-only-events",
+          "design-system-components-calendar-展示--product-own-detail",
           "design-system-components-calendar-展示--launch-week",
+          "design-system-components-calendar-展示--quarter-planning",
           "design-system-components-calendar-展示--content-publishing-schedule",
+          "design-system-components-calendar-展示--customer-support-weekdays",
+          "design-system-components-calendar-展示--manufacturing-week-numbers",
+          "design-system-components-calendar-展示--loading-while-switching-month",
+          "design-system-components-calendar-展示--side-panel-narrow",
           "design-system-components-calendar-展示--read-only-dates-custom-tile-keyboard",
+          "design-system-components-calendar-展示--event-click-anchor",
+          "design-system-components-calendar-展示--detail-view-only",
+          "design-system-components-calendar-展示--detail-change-log",
+          "design-system-components-calendar-展示--english-labels-override",
           "design-system-components-calendar-展示--empty-calendar",
           "design-system-components-calendar-展示--cell-blank-click-moves-keyboard-stop"
         ],
@@ -330,16 +346,25 @@
           "design-system-components-calendar-設計規格--inspector",
           "design-system-components-calendar-設計規格--color-matrix",
           "design-system-components-calendar-設計規格--state-behavior",
+          "design-system-components-calendar-設計規格--more-list-open",
+          "design-system-components-calendar-設計規格--detail-open",
+          "design-system-components-calendar-設計規格--detail-from-more-list",
           "design-system-components-calendar-設計規格--accessibility"
         ],
         "設計原則": [
           "design-system-components-calendar-設計原則--usage-guidance",
           "design-system-components-calendar-設計原則--color-semantic",
           "design-system-components-calendar-設計原則--month-view-only-rule",
+          "design-system-components-calendar-設計原則--detail-reading-first-rule",
+          "design-system-components-calendar-設計原則--detail-beside-list-rule",
+          "design-system-components-calendar-設計原則--full-edit-in-dialog-rule",
           "design-system-components-calendar-設計原則--read-only-rule"
         ]
       },
-      "openSnapshotIds": [],
+      "openSnapshotIds": [
+        "design-system-components-calendar-設計規格--more-list-open",
+        "design-system-components-calendar-設計規格--detail-open"
+      ],
       "exception": null
     },
     "carousel": {
@@ -513,6 +538,8 @@
           "design-system-components-combobox-展示--unrestricted-inline-search",
           "design-system-components-combobox-展示--unrestricted-message-states",
           "design-system-components-combobox-展示--unrestricted-off-inert",
+          "design-system-components-combobox-展示--groups-and-min-width",
+          "design-system-components-combobox-展示--option-prefix",
           "design-system-components-combobox-展示--in-data-table"
         ],
         "設計規格": [
@@ -589,6 +616,8 @@
           "design-system-components-datatable-展示--column-visibility-panel-states",
           "design-system-components-datatable-展示--filter-panel-labels-and-limit",
           "design-system-components-datatable-展示--row-drag-interactive",
+          "design-system-components-datatable-展示--row-drag-in-dialog",
+          "design-system-components-datatable-展示--row-actions-varying-width",
           "design-system-components-datatable-展示--row-drag-with-virtualization",
           "design-system-components-datatable-展示--roadmap-all-in-one",
           "design-system-components-datatable-展示--roadmap-perf-budget",
@@ -658,6 +687,7 @@
           "design-system-components-datepicker-展示--range-popover-open",
           "design-system-components-datepicker-展示--show-time-popover-open",
           "design-system-components-datepicker-展示--need-confirm-date-only-open",
+          "design-system-components-datepicker-展示--disabled-dates",
           "design-system-components-datepicker-展示--show-time-range-popover-open",
           "design-system-components-datepicker-展示--range-preview-extend",
           "design-system-components-datepicker-展示--range-preview-shrink",
@@ -723,9 +753,11 @@
           "design-system-components-dialog-展示--long-content",
           "design-system-components-dialog-展示--destructive",
           "design-system-components-dialog-展示--list-body",
+          "design-system-components-dialog-展示--empty-body",
           "design-system-components-dialog-展示--header-actions",
           "design-system-components-dialog-展示--large-with-table",
           "design-system-components-dialog-展示--extra-large-two-column",
+          "design-system-components-dialog-展示--extra-large-settings",
           "design-system-components-dialog-展示--with-tabs-in-header",
           "design-system-components-dialog-展示--open-snapshot",
           "design-system-components-dialog-展示--long-content-open",
@@ -763,6 +795,7 @@
           "design-system-components-dropdownmenu-展示--nested-sub-menu",
           "design-system-components-dropdownmenu-展示--checkbox-items",
           "design-system-components-dropdownmenu-展示--radio-items",
+          "design-system-components-dropdownmenu-展示--option-prefix",
           "design-system-components-dropdownmenu-展示--open-snapshot",
           "design-system-components-dropdownmenu-展示--item-hover"
         ],
@@ -829,7 +862,9 @@
           "design-system-components-field-展示--slider-with-live-number-input",
           "design-system-components-field-展示--form-validation",
           "design-system-components-field-展示--inline-search-yield-width-contract",
-          "design-system-components-field-展示--view-alignment-contract"
+          "design-system-components-field-展示--view-alignment-contract",
+          "design-system-components-field-展示--reading-context-detail",
+          "design-system-components-field-展示--reading-context-contract"
         ],
         "設計規格": [
           "design-system-components-field-設計規格--overview",
@@ -839,6 +874,7 @@
           "design-system-components-field-設計規格--state-behavior",
           "design-system-components-field-設計規格--color-matrix",
           "design-system-components-field-設計規格--field-group-behavior",
+          "design-system-components-field-設計規格--custom-control-wiring",
           "design-system-components-field-設計規格--accessibility"
         ],
         "設計原則": [
@@ -1002,7 +1038,8 @@
           "design-system-components-inlineedit-展示--states",
           "design-system-components-inlineedit-展示--select-tag-field",
           "design-system-components-inlineedit-展示--multiline-description",
-          "design-system-components-inlineedit-展示--vertical-field-form"
+          "design-system-components-inlineedit-展示--vertical-field-form",
+          "design-system-components-inlineedit-展示--commit-on-host-unmount"
         ],
         "設計規格": [
           "design-system-components-inlineedit-設計規格--overview",
@@ -1252,7 +1289,9 @@
           "design-system-components-popover-設計規格--color-matrix",
           "design-system-components-popover-設計規格--size-matrix",
           "design-system-components-popover-設計規格--state-behavior",
-          "design-system-components-popover-設計規格--accessibility"
+          "design-system-components-popover-設計規格--editable-title-header",
+          "design-system-components-popover-設計規格--accessibility",
+          "design-system-components-popover-設計規格--editable-title-header-probe"
         ],
         "設計原則": [
           "design-system-components-popover-設計原則--usage-guidance",
@@ -1425,6 +1464,8 @@
           "design-system-components-select-展示--no-options",
           "design-system-components-select-展示--grouped-search",
           "design-system-components-select-展示--remote-search",
+          "design-system-components-select-展示--option-prefix",
+          "design-system-components-select-展示--option-prefix-across-modes",
           "design-system-components-select-展示--in-data-table"
         ],
         "設計規格": [
@@ -1869,5 +1910,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1035
+  "totalStories": 1073
 }

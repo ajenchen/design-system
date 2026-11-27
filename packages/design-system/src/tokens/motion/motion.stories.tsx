@@ -1,6 +1,6 @@
 // @story-baseline: components/HoverCard/hover-card.stories.tsx#LinkPreview — 延遲體感 demo 消費真實 consumer(Button iconOnly auto-Tooltip + HoverCard 預設 delay),非手刻浮層
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import { fn } from 'storybook/test'
 import { Download } from 'lucide-react'
 import { Button } from '@/design-system/components/Button/button'
 import { Toaster, toast } from '@/design-system/components/Toast/toast'

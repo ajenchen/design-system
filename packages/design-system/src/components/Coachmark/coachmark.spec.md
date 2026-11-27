@@ -136,7 +136,7 @@ Media + Body 合稱**內容區**:超過可用高度時只有這一區捲動,Head
 〔user 2026-11-22 拍板「丙」:「我以為高度應該要隨著內容自動在設計規格下長高，消費者自己去把控內容高度，但 coachmark 跟其他 select menu 一樣，萬一真的遇到很極端的狀況也不會溢出螢幕之外，會變成body 是可以捲動的，這樣才是最 SSOT 的方式吧？」〕
 
 - **高度隨內容**:外殼寬度固定(見「與 Popover 的關係」),高度跟著內容長;說明寫幾行由使用端決定,元件不設行數上限
-- **最高到可用高度**:上限沿用 Popover 外殼(`../Popover/popover.spec.md`「實作 —— 極長內容」:`max-h` = Radix 算出的觸發點那一側可用高度,已扣安全邊距),卡片不會超出視窗
+- **最高到可用高度**:上限沿用 Popover 外殼(`../Popover/popover.spec.md`「實作 —— 極長內容」:Radix 算出的觸發點那一側可用高度,已扣安全邊距;公式與常數的唯一住處 `../../tokens/elevation/elevation.spec.md`「浮層高度上限」),卡片不會超出視窗
 - **超過時內容區捲動**:Header(標題列)與 Footer(步驟計數 / 按鈕)不縮、永遠看得到;中間的內容區(Media + Body)包 `ScrollArea` 捲動 —— 與長內容 Popover 同款(`../../patterns/overlay-surface/overlay-surface.spec.md`「Popover 例外」「Coachmark」)
 - **鍵盤**:內容區真的捲得動時才進 Tab 順序(`tabIndex=0`,焦點框是 ScrollArea 自帶的 inset DS focus ring,`../ScrollArea/scroll-area.spec.md`),聚焦後方向鍵 / PageDown / End 捲動;放得下時不多這一站(overlay-surface.spec.md「Focus ownership」:短內容不是捲動區)
 - **放得下時畫面不變**:內容區高度 = 內容高度,Media 照樣貼齊外殼(「Media 區規則」位置)、Body 內距照 overlay-surface
@@ -183,7 +183,7 @@ const steps = [
 上一步(可選)→ 略過(可選)→ 下一步 / 完成。
 
 **對齊與順序的 owner 都不在本檔**(三份,依序):
-1. **對齊**:依 `../../patterns/overlay-surface/overlay-surface.spec.md:243`「單側時用」(「底部區域:按鈕列 vs 列式」表的「排版」列:`SurfaceFooter` 是 `justify-end`,單側有內容時 `justify-between`,先例就是本元件左側的步驟計數;`PopoverFooter` 是它的純轉發)。實作:單步卡(沒有計數)也靠右 —— `coachmark.tsx` 用 `<span aria-hidden />` 佔住左側、維持 `justify-between`。Dialog 頁腳同一條:`../Dialog/dialog.spec.md`「Footer 按鈕」(`justify-end`)與「禁止事項」。
+1. **對齊**:依 `../../patterns/overlay-surface/overlay-surface.spec.md:244`「單側時用」(「底部區域:按鈕列 vs 列式」表的「排版」列:`SurfaceFooter` 是 `justify-end`,單側有內容時 `justify-between`,先例就是本元件左側的步驟計數;`PopoverFooter` 是它的純轉發)。實作:單步卡(沒有計數)也靠右 —— `coachmark.tsx` 用 `<span aria-hidden />` 佔住左側、維持 `justify-between`。Dialog 頁腳同一條:`../Dialog/dialog.spec.md`「Footer 按鈕」(`justify-end`)與「禁止事項」。
 2. **順序 = 全局排序**:`../../patterns/action-bar/action-bar.spec.md`「全局排序」(`primary > secondary > tertiary > text`;**靠右對齊時 primary 在最右**、靠左對齊時 primary 在最左)。本 footer 靠右 → 推進鍵(primary)在最右,上一步 / 略過(tertiary)在它左邊。
 3. **頁面裡的步驟列不套本段**:頁面裡跟著內容、沒有標題的一排「上一步 / 下一步」走 `action-bar.spec.md`「對齊方向的決定」(沒有標題 → 靠左)+ 同一條全局排序(靠左 → primary「下一步」在最左);放在頁面置底 footer 的(TreeView 步驟導覽右半邊,2026-10-20 user「Q1照建議」)照 `SurfaceFooter` 靠右、primary 在最右 —— 那是第 1 點同一個 owner,不是引本段。本段的結果(primary 在最右)來自「浮層頁腳靠右」,不是步驟流程的通則,別處不得引本段當依據(AI 查證,2026-10-20:TreeView 步驟引導的註解引本段當依據、排成靠左的「上一步 | 下一步」,與全局排序相反 —— 本段原本只寫 Coachmark 自己的語意理由、沒有指回 owner,是被錯引的原因;盤查由 user 2026-10-20 的提問觸發:「我們應該也有定義何時primary放右何時放左吧？為何沒注意？為何會漂移？我們有SSOT吧？」)。
 
@@ -221,7 +221,7 @@ const steps = [
 - ❌ **單步驟 CTA 不叫「下一步」**——沒有下一步就不用這個字眼,用 `'知道了'`(或 consumer 經 `doneLabel` 傳「開始使用」這類完成詞)
 - ❌ **有上一步時不同時顯示略過**——使用者投入進度後兩個退出路徑衝突(見 CTA 語義表)
 - ❌ **不自包視覺 token**——bg / shadow / radius / padding 一律繼承 Popover,改視覺就改 Popover
-- ❌ **不在 Coachmark 內放 nested Popover / Dialog**——層級混亂焦點崩壞,複雜互動結束 tour 後再開
+- ❌ **不在 Coachmark 內放 nested Popover / Dialog**——tour 的角色是指向功能,不是讓使用者在 tour 內完成任務;複雜互動結束 tour 後再開。2026-11-24 拿掉原本的理由「層級混亂焦點崩壞」:浮層疊浮層時 `Esc` 一層一層關、焦點回開它的那一項(`../../../ds-canonical/references/keyboard-model-canonical.md`「`Esc` 一次只關最內層」),一般浮層裡再開浮層的規則見 `../Popover/popover.spec.md`「禁止事項」
 
 ---
 
@@ -264,4 +264,5 @@ disabled / layout-space 繼承 Popover(鎖 `data-layout-space="md"` 保持 heade
 
 - `aspect-ratio.spec.md`
 - `overlay-surface.spec.md`
+- `pagination.spec.md`
 - `popover.spec.md`

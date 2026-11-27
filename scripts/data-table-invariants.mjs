@@ -25,6 +25,8 @@ import { StorybookBuildNotStableError } from './lib/storybook-static-snapshot.mj
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { openStory, StoryRenderInstrumentError, isBrowserRequired, launchBrowserOrSkip, requireStorybookBuild, requireFreshStorybookBuild, settleAfterInteraction } from './lib/launch-browser.mjs'
 import { measureRangeHoverPin, rangeHoverPinVerdict, rangeHoverVerdictCases, formatPixel } from './lib/data-table-range-hover.mjs'
+// I40:select 欄依列可選項的純函式(DataTable 內部 lib;判定表直接拿真的那支跑,不抄一份)
+import { rowSelectOptions } from '../packages/design-system/src/components/DataTable/lib/row-select-options.ts'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
@@ -1767,7 +1769,7 @@ if (!urlDisplay) {
 
 /* ── I25:巢狀列展開箭頭 = ItemPrefix + ItemInlineActionButton 的幾何(一-04)──
  * 根 invariant:同目的行內圖示按鈕與 prefix 槽必消費 item-anatomy primitive:按鈕盒 = `ICON_SIZE[size]`
- * (item-anatomy.tsx:67-71,md 16)、hover 底色 overlay = `INLINE_ACTION_HOVER_BG_SIZE[size]`(:128-132,md 18)
+ * (item-anatomy.tsx:68-72,md 16)、hover 底色 overlay = `INLINE_ACTION_HOVER_BG_SIZE[size]`(:129-133,md 18)
  * 且置中於按鈕;槽寬 + `mr-2` 必與 `--tree-indent-{size}`(uiSize.css 的 `--tree-indent-sm/md/lg`)同源,子列的箭頭 / 文字
  * 因此每深一層剛好位移一個 indent。修前是手刻 `w-4 h-4 mr-2` 的 button,三個常數與 token 分家。
  * 唯一的像素證據是 2026-08-01 的 curated baseline(早於修正、非 required check)。這裡對 `nested-rows`
@@ -2435,6 +2437,30 @@ const settled = async () => (await settleAfterInteraction(page, { frames: 10 }))
       }
     }
   }
+
+  // 步驟 6(2026-11-26,workspace F 組 F3):表格祖先帶 `transform: translateZ(0)`(AppShell portalContainer 舞台、DS Dialog 置中位移同類)
+  // → 格游標框仍 = 那一格(±1px)。互動圖層是 position:fixed inset:0,祖先帶 transform 時定位基準換成那個祖先;修前用視窗座標,
+  // 實測格子在 (1051,171)、框畫在 (1307,201)(偏出祖先原點 +256 / +30)。修法:lib/fixed-layer-origin.ts originFromInsetLayer。
+  // 儀器:先證明位移真的生效(格子左緣離視窗左緣 > 200px),否則量的是沒有祖先的情況(空轉 → 紅)。
+  await loadStory(SHEET_URL, SHEET_READY)
+  await page.addStyleTag({ content: '#storybook-root{transform:translateZ(0);margin:30px 0 0 240px}' })
+  ok = await settled()
+  const shifted = await sheetCellBox(await sheetCellId(0, 1))
+  if (!ok || !shifted || shifted.x <= 200) record('I32', '祖先帶 translateZ(0):儀器', false, `INSTRUMENT-FAIL ${!ok ? '加祖先樣式後版面沒有靜止' : !shifted ? '找不到第 0 列 Product 格' : `格子左緣 ${shifted.x}px —— 位移沒生效`}`)
+  else {
+    await page.mouse.click(shifted.x + shifted.width / 2, shifted.y + shifted.height / 2)
+    ok = await settled()
+    const m = await page.evaluate(() => {
+      const ring = document.querySelector('[data-selected-cell-id]')
+      const id = ring?.getAttribute('data-selected-cell-id')
+      const cell = id ? document.querySelector(`[data-cell-id="${CSS.escape(id)}"]`) : null
+      const rb = ring?.getBoundingClientRect(), cb = cell?.getBoundingClientRect()
+      return rb && cb ? { id, dx: rb.x - cb.x, dy: rb.y - cb.y, dw: rb.width - cb.width, dh: rb.height - cb.height } : { id: id ?? null, err: ring ? '找不到格游標對應的格' : '沒有格游標框' }
+    })
+    if (!ok || m.err) record('I32', '祖先帶 translateZ(0):儀器', false, `INSTRUMENT-FAIL ${!ok ? '點格後版面沒有靜止' : m.err}`)
+    else record('I32', '祖先帶 translateZ(0):格游標框 = 那一格(左上與寬高差都 ≤ 1px)',
+      Math.abs(m.dx) <= 1 && Math.abs(m.dy) <= 1 && Math.abs(m.dw) <= 1 && Math.abs(m.dh) <= 1, JSON.stringify(m))
+  }
 }
 
 /* ── I33:試算表模式點任何格,格游標都跟過去(2026-09-26,user 同意 R21 第 5 題 (c))──────────
@@ -2750,6 +2776,418 @@ for (const [label, r, c, kind] of [
     await page.keyboard.press('Escape')
   }
   await page.setViewportSize(prevView)
+}
+
+// ── I40:select 欄依列可選項(`meta.getRowOptions`;2026-11-26,user 第五輪決策卡 C4 點選「B:只列可選的」)──────────────
+// 規則住 data-table.spec.md「七、Column Type」依列可選項段。三件事 + 各自的對照組:
+//   (a) 判定表:lib/row-select-options.ts 的 rowSelectOptions(真的那支)—— 期望值是手寫的規則,不是抄輸出;
+//       四個突變(忽略 getRowOptions / 不補回目前值 / 補回放最後 / 把停用項濾掉)每個都必須被至少一格抓到,抓不到 = 判定表沒在分辨。
+//   (b) 呼叫端(M32「值是誰算的」):SelectCell 編輯態吃 rowSelectOptions(整欄, getRowOptions(row), 值)、檢視態仍吃整欄;
+//       data-table.tsx 兩條畫格子的路都把 row 傳進格子;篩選面板的值清單讀整欄 meta.options。每條規則式都在記憶體裡的壞版本上跑一次,必須不成立。
+//   (c) 瀏覽器(專案排程全功能整合,狀態欄):完成的列選單沒有「未開始」、目前值「完成」補回且打勾、觸發欄位顯示「完成」;
+//       未開始的列選單不同(同一欄每列不同);儀器對照 = 同一支讀選單的程式讀優先級欄(沒有 getRowOptions)要讀到全部 4 項;
+//       篩選面板的狀態值清單仍是整欄 5 項(照整欄順序)。test-data-table-invariants.mjs 另在建置複本裡往這兩個選單塞 / 拔一項,證明 (c) 會紅。
+{
+  // (a) 判定表
+  const S = (value, label, extra = {}) => Object.freeze({ value, label, ...extra })
+  const NS = S('not-started', '未開始'), IP = S('in-progress', '進行中'), BL = S('blocked', '受阻'), DN = S('done', '完成'), CX = S('cancelled', '取消')
+  const COL = Object.freeze([NS, IP, BL, DN, CX])
+  const F = (...xs) => Object.freeze(xs)
+  // [名稱, 整欄, 這一列(undefined = 沒給 getRowOptions), 目前值, 期望(value 依序), 期望停用旗標(選填)]
+  const CASES = [
+    ['沒給 getRowOptions → 整欄全部(現況)', COL, undefined, 'done', ['not-started', 'in-progress', 'blocked', 'done', 'cancelled']],
+    ['目前值在這一列清單裡 → 原樣、照回傳順序', COL, F(IP, BL, DN), 'in-progress', ['in-progress', 'blocked', 'done']],
+    ['目前值「完成」不在清單(只能回進行中)→ 補回在整欄順序的位置', COL, F(IP), 'done', ['in-progress', 'done']],
+    ['補回插在中間:受阻 → 清單 [進行中, 取消]', COL, F(IP, CX), 'blocked', ['in-progress', 'blocked', 'cancelled']],
+    ['補回插在最前:未開始 → 清單 [進行中, 取消]', COL, F(IP, CX), 'not-started', ['not-started', 'in-progress', 'cancelled']],
+    ['整欄也沒有目前值 → 不補(交給 Select 原值顯示)', COL, F(IP), 'archived', ['in-progress']],
+    ['目前值是 null → 不補', COL, F(IP, CX), null, ['in-progress', 'cancelled']],
+    ['目前值是空字串 → 不補', COL, F(IP, CX), '', ['in-progress', 'cancelled']],
+    ['這一列沒有任何可選 → 只剩目前值', COL, F(), 'done', ['done']],
+    ['列出但停用:回傳項目的 disabled 原樣保留(不被濾掉)', COL, F(S('not-started', '未開始', { disabled: true }), IP, S('done', '完成', { disabled: true })), 'in-progress', ['not-started', 'in-progress', 'done'], [true, false, true]],
+  ]
+  const judge = (impl, [, col, row, value, wantValues, wantDisabled]) => {
+    let got
+    try { got = impl(col, row, value) } catch (error) { return { ok: false, got: `丟例外 ${error.message}` } }
+    const values = got.map((o) => o.value)
+    const okValues = JSON.stringify(values) === JSON.stringify(wantValues)
+    const okDisabled = !wantDisabled || JSON.stringify(got.map((o) => o.disabled === true)) === JSON.stringify(wantDisabled)
+    // 補回的那一項 = 整欄那一項(文字一致,觸發欄位才顯示「完成」不是 done)
+    const okLabels = got.every((o) => { const c = col.find((x) => x.value === o.value); return !c || o.label === c.label })
+    return { ok: okValues && okDisabled && okLabels, got: `[${values}]${wantDisabled ? ` 停用 [${got.map((o) => o.disabled === true)}]` : ''}` }
+  }
+  for (const c of CASES) {
+    const v = judge(rowSelectOptions, c)
+    record('I40', `判定表|${c[0]}`, v.ok, `得 ${v.got},期望 [${c[4]}]`)
+  }
+  const MUTANTS = [
+    ['忽略 getRowOptions(編輯器永遠列整欄)', (col) => [...col]],
+    ['不補回目前值(值被清成原始字)', (col, row) => [...(row ?? col)]],
+    ['補回放在最後(不照整欄順序)', (col, row, value) => { if (row === undefined) return [...col]; const cur = col.find((o) => o.value === value); return value == null || value === '' || !cur || row.some((o) => o.value === value) ? [...row] : [...row, cur] }],
+    ['把停用項濾掉(「列出但停用」做不到)', (col, row, value) => rowSelectOptions(col, row?.filter((o) => !o.disabled), value)],
+  ]
+  for (const [name, impl] of MUTANTS) {
+    const caught = CASES.filter((c) => !judge(impl, c).ok).length
+    record('I40', `判定表對照組|突變「${name}」被抓到 ${caught} 格(必須 ≥ 1)`, caught >= 1)
+  }
+
+  // (b) 呼叫端:每條規則式在真原始碼上成立、在記憶體裡的壞版本上不成立
+  const DT = 'packages/design-system/src/components/DataTable'
+  const cellSrc = readFileSync(join(ROOT, DT, 'cell-registry.tsx'), 'utf8')
+  const tableSrc = readFileSync(join(ROOT, DT, 'data-table.tsx'), 'utf8')
+  const filterSrc = readFileSync(join(ROOT, DT, 'data-table-filter-panel.tsx'), 'utf8')
+  const selectCellBody = (src) => { const s = src.indexOf('function SelectCell('); const e = src.indexOf('function MultiSelectCell(', s); return s >= 0 && e > s ? src.slice(s, e) : '' }
+  const CALLERS = [
+    ['SelectCell 編輯態的選項 = rowSelectOptions(整欄 meta.options, meta.getRowOptions(row), 值)', cellSrc,
+      (src) => { const b = selectCellBody(src); return /rowSelectOptions\(meta\?\.options \?\? \[\], [^\n]*meta\.getRowOptions\(row\)[^\n]*, value\)/.test(b) && /key="edit"[\s\S]*?options=\{editOptions \?\? \[\]\}/.test(b) },
+      (src) => src.replace('options={editOptions ?? []}', 'options={meta?.options ?? []}')],
+    ['SelectCell 檢視態仍用整欄 meta.options 查顯示文字', cellSrc,
+      (src) => /key="view"[\s\S]*?options=\{meta\?\.options \?\? \[\]\}[\s\S]*?key="edit"/.test(selectCellBody(src)),
+      (src) => { const b = selectCellBody(src); return src.replace(b, b.replace(/(key="view"[\s\S]*?)options=\{meta\?\.options \?\? \[\]\}/, '$1options={editOptions ?? []}')) }],
+    ['data-table.tsx 一般格(MemoCellSlot)把 row.original 傳進格子', tableSrc,
+      (src) => /row=\{cell\.row\.original\}/.test(src) && /onRequestEdit=\{onRequestEdit\}\s*ariaLabel=\{ariaLabel\}\s*row=\{row\}/.test(src),
+      (src) => src.replace('row={cell.row.original}', '')],
+    ['data-table.tsx 試算表浮層編輯器(activeEditorRender)也把 row.original 傳進格子', tableSrc,
+      (src) => /mode="edit"[\s\S]{0,1200}?row=\{row\.original\}/.test(src),
+      (src) => src.replace(/row=\{row\.original\}/, '')],
+    ['篩選面板的值清單讀整欄 meta.options,全檔不讀 getRowOptions', filterSrc,
+      (src) => /options: meta\?\.options,/.test(src) && !/getRowOptions/.test(src),
+      (src) => src.replace('options: meta?.options,', 'options: meta?.getRowOptions?.({}) ?? meta?.options,')],
+  ]
+  for (const [name, src, holds, breakIt] of CALLERS) {
+    record('I40', `呼叫端|${name}`, holds(src))
+    const broken = breakIt(src)
+    record('I40', `呼叫端對照組|${name}:改壞後規則式必須不成立`, broken !== src && !holds(broken), broken === src ? '改壞的替換沒有命中(對照組空轉)' : '')
+  }
+
+  // (c) 瀏覽器
+  const prevView = page.viewportSize()
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--roadmap-all-in-one&viewMode=story`, '[data-cell-id]')
+  // 讀目前開著的選單(cmdk):每一項的文字、是否打勾(內層 MenuItem 的 data-selected)、是否停用
+  const readMenu = () => page.evaluate(() => {
+    const roots = [...document.querySelectorAll('[data-radix-popper-content-wrapper] [cmdk-root]')]
+    const opts = roots.flatMap((r) => [...r.querySelectorAll('[role="option"]')])
+    return opts.map((o) => ({ label: o.textContent.trim(), checked: !!o.querySelector('[role="presentation"][data-selected]'), disabled: o.getAttribute('aria-disabled') === 'true' }))
+  })
+  const waitMenu = async () => {
+    try { await page.waitForSelector('[data-radix-popper-content-wrapper] [cmdk-root] [role="option"]', { timeout: 5000 }) } catch { return false }
+    await settleAfterInteraction(page, { frames: 6 })
+    return true
+  }
+  const closeAll = async () => { for (let i = 0; i < 3; i++) { await page.keyboard.press('Escape'); await settleAfterInteraction(page, { frames: 4 }) } }
+  const openCellEditor = async (cellId) => {
+    const box = await page.evaluate((cellId) => {
+      const c = [...document.querySelectorAll(`[data-cell-id="${cellId}"]`)].find((el) => el.getBoundingClientRect().width > 0)
+      if (!c) return null
+      const b = c.getBoundingClientRect()
+      return { x: b.left + Math.min(b.width / 2, 50), y: b.top + b.height / 2 }
+    }, cellId)
+    if (!box) return { ok: false, why: `找不到格 ${cellId}` }
+    await page.mouse.click(box.x, box.y)
+    if (!(await waitMenu())) return { ok: false, why: `點 ${cellId} 後 5 秒內沒有選單` }
+    const trigger = await page.evaluate((cellId) => {
+      const c = [...document.querySelectorAll(`[data-cell-id="${cellId}"]`)].find((el) => el.getBoundingClientRect().width > 0)
+      const t = c?.querySelector('[role="combobox"]')
+      return t ? t.textContent.trim() : null
+    }, cellId)
+    return { ok: true, menu: await readMenu(), trigger }
+  }
+  const labels = (m) => m.map((o) => o.label)
+  const FULL = ['未開始', '進行中', '受阻', '完成', '取消']
+
+  // 儀器對照:同一支讀選單的程式讀優先級欄(沒有 getRowOptions)→ 全部 4 項。讀不到全部 = 下面「沒有某一項」不算數。
+  const pri = await openCellEditor('RDM-103:priority')
+  const instrumentOk = pri.ok && JSON.stringify(labels(pri.menu)) === JSON.stringify(['P0', 'P1', 'P2', 'P3'])
+  record('I40', '瀏覽器儀器對照|讀選單的程式在優先級欄(沒有 getRowOptions)讀到全部 4 項 P0–P3', instrumentOk, pri.ok ? `讀到 [${labels(pri.menu)}]` : `INSTRUMENT-FAIL ${pri.why}`)
+  await closeAll()
+  if (instrumentOk) {
+    // 完成的列(RDM-103):只能重新開啟回進行中 → 選單 [進行中, 完成(補回、打勾)];未開始不出現
+    const done = await openCellEditor('RDM-103:status')
+    record('I40', '瀏覽器|完成的列(RDM-103):選單 = [進行中, 完成],不允許的「未開始」「受阻」「取消」不出現',
+      done.ok && JSON.stringify(labels(done.menu)) === JSON.stringify(['進行中', '完成']), done.ok ? `選單 [${labels(done.menu)}]` : done.why)
+    record('I40', '瀏覽器|完成的列:目前值不在該列清單也正確顯示 —— 選單裡「完成」打勾、觸發欄位顯示「完成」(不是 done、不是空白)',
+      done.ok && done.menu.some((o) => o.label === '完成' && o.checked) && done.menu.filter((o) => o.checked).length === 1 && done.trigger === '完成',
+      done.ok ? `打勾 [${done.menu.filter((o) => o.checked).map((o) => o.label)}],觸發欄位「${done.trigger}」` : done.why)
+    await closeAll()
+    // 未開始的列(RDM-101):[未開始(補回、打勾), 進行中, 取消] —— 同一欄每列不同
+    const ns = await openCellEditor('RDM-101:status')
+    record('I40', '瀏覽器|未開始的列(RDM-101):選單 = [未開始, 進行中, 取消](與完成的列不同 = 依列),「完成」不出現',
+      ns.ok && JSON.stringify(labels(ns.menu)) === JSON.stringify(['未開始', '進行中', '取消']) && ns.menu.find((o) => o.label === '未開始')?.checked === true, ns.ok ? `選單 [${labels(ns.menu)}]` : ns.why)
+    await closeAll()
+    // Esc 取消後值沒變(補回的那一項只是顯示,不會自己提交)
+    const after = await page.evaluate(() => [...document.querySelectorAll('[data-cell-id="RDM-103:status"]')].find((el) => el.getBoundingClientRect().width > 0)?.textContent.trim())
+    record('I40', '瀏覽器|開過編輯器再 Esc,完成的列仍顯示「完成」(補回不會改值)', after === '完成', `格子文字「${after}」`)
+  }
+
+  // 篩選面板:狀態欄的值清單仍是整欄 5 項(照整欄順序)
+  const filterMenu = await (async () => {
+    const btn = page.locator('button[aria-label="篩選"]').first()
+    if (!(await btn.count())) return { ok: false, why: '找不到「篩選」按鈕' }
+    await btn.click()
+    try { await page.waitForSelector('[aria-label="篩選欄位"]', { timeout: 5000 }) } catch { return { ok: false, why: '篩選面板沒有出現欄位下拉' } }
+    await settleAfterInteraction(page, { frames: 6 })
+    await page.locator('[aria-label="篩選欄位"]').first().click()
+    if (!(await waitMenu())) return { ok: false, why: '欄位下拉沒有選單' }
+    await page.locator('[data-radix-popper-content-wrapper] [cmdk-root] [role="option"]', { hasText: /^狀態$/ }).first().click()
+    await settleAfterInteraction(page, { frames: 6 })
+    try { await page.waitForSelector('[aria-label="狀態 篩選值"]', { timeout: 5000 }) } catch { return { ok: false, why: '選了狀態後沒有「狀態 篩選值」' } }
+    await page.locator('[aria-label="狀態 篩選值"]').first().click()
+    if (!(await waitMenu())) return { ok: false, why: '狀態篩選值沒有選單' }
+    return { ok: true, menu: await readMenu() }
+  })()
+  record('I40', '瀏覽器|篩選面板的狀態值清單 = 整欄 5 項 [未開始, 進行中, 受阻, 完成, 取消](不受 getRowOptions 影響)',
+    filterMenu.ok && JSON.stringify(labels(filterMenu.menu)) === JSON.stringify(FULL), filterMenu.ok ? `讀到 [${labels(filterMenu.menu)}]` : `INSTRUMENT-FAIL ${filterMenu.why}`)
+  await closeAll()
+  await page.setViewportSize(prevView)
+  // 本段逐條印出(上面的 PASS 清單只印到 I1–I8 那一段;I40 的判定表、對照組與瀏覽器結果要看得到,不只算進總數)
+  console.log('\n--- I40 select 欄依列可選項 ---')
+  console.log([...passes, ...failures].filter((l) => l.includes(' I40 | ')).join('\n'))
+}
+
+// ── I41:釘選欄的空表 —— 空狀態「跨全欄」畫面上也跨、Empty 對可見寬置中、表身沒有凍結線(2026-11-26,產品 canary 回報 C2)──────
+// data-table.spec.md「空表」;story = 展示 / 空狀態「釘選欄的空表」(左釘選 SKU 100、右釘選 Updated 120 + 操作欄、欄寬總和 1000 > 容器 640)。
+// 量像素:Empty 裡看得到的東西(文字 + 插圖)的外接框中心 vs 中間捲動區可見寬的中心,差 ≤ 1px;捲到最右再量一次(sticky 才留得住)。
+// 表身那一段:沒有左右釘選面板、沒有凍結線元素;表頭照常有左右釘選區(前置:證明量到的是有釘選的那張)。可橫捲 → 中間區是 tab stop 且有名稱。
+// 對照組(2026-11-26 實跑兩組):
+// (1) 修前建置:data-table.tsx 的空表程式碼還原成 bd8fe7ae(story 與本閘用新版),另建一份 Storybook 用 --build= 量 →
+//     前置綠(表頭左右釘選 2 區、可捲 386px);I41 其餘四條全紅:表身面板 2 個 / 凍結線 1 個、捲動 0 中心差 193px、
+//     中間區沒有 tab stop(tabindex 與名稱都沒有)、捲到最右中心差 −193px;本閘其他斷言全綠(只紅這四條)。
+// (2) 修後建置注入 CSS 只拿掉 Empty 內層的 sticky(C2 實作者實跑)→ 捲到最右那一條紅(中心差 −386px)。
+{
+  const STORY_EMPTY = `${BASE}/iframe.html?id=design-system-components-datatable-展示--empty-state&viewMode=story`
+  await loadStory(STORY_EMPTY, '[data-datatable-header-panel="left"]')
+  const pickRoot = () => {
+    const roots = [...document.querySelectorAll('[data-data-table-outer]')]
+      .filter((r) => r.querySelector('[data-datatable-header-panel="left"]') && r.querySelector('[role="row"][aria-rowindex="2"] [aria-colspan]'))
+    return roots.length === 1 ? roots[0] : null
+  }
+  const measureEmpty = () => page.evaluate((pickSrc) => {
+    const pick = new Function(`return (${pickSrc})()`)
+    const root = pick()
+    if (!root) return { err: '找不到唯一一張「有左釘選表頭的空表」' }
+    const sc = root.querySelector('[data-datatable-panel="center"]')
+    const cell = root.querySelector('[role="row"][aria-rowindex="2"] [aria-colspan]')
+    // 看得到的東西 = 文字節點 + svg 插圖(不量區塊盒:區塊盒可能是整格寬,中心恆等於格中心,量不出偏移)
+    const rects = []
+    const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT)
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      if (!n.textContent.trim()) continue
+      const rg = document.createRange(); rg.selectNodeContents(n)
+      for (const r of rg.getClientRects()) if (r.width > 0) rects.push(r)
+    }
+    for (const svg of cell.querySelectorAll('svg')) { const r = svg.getBoundingClientRect(); if (r.width > 0) rects.push(r) }
+    if (!rects.length) return { err: 'Empty 裡量不到任何文字或插圖' }
+    const left = Math.min(...rects.map((r) => r.left)), right = Math.max(...rects.map((r) => r.right))
+    const s = sc.getBoundingClientRect()
+    const visibleCenter = s.left + sc.clientLeft + sc.clientWidth / 2
+    return {
+      delta: Math.round(((left + right) / 2 - visibleCenter) * 100) / 100,
+      scrollLeft: Math.round(sc.scrollLeft), maxScroll: sc.scrollWidth - sc.clientWidth,
+      boundaries: root.querySelectorAll('.dtLeftBoundary, .dtRightBoundary').length,
+      bodyPanels: root.querySelectorAll('[data-datatable-panel="left"], [data-datatable-panel="right"]').length,
+      headerPanels: root.querySelectorAll('[data-datatable-header-panel="left"], [data-datatable-header-panel="right"]').length,
+      tabIndex: sc.getAttribute('tabindex'), label: sc.getAttribute('aria-label'), colspan: cell.getAttribute('aria-colspan'),
+    }
+  }, pickRoot.toString())
+  const at0 = await measureEmpty()
+  if (at0.err) record('I41', '釘選欄的空表:量得到(否則以下斷言空轉)', false, at0.err)
+  else {
+    record('I41', `前置:這張空表真的有左右釘選表頭(${at0.headerPanels} 區)、欄寬總和比可見寬寬(可捲 ${at0.maxScroll}px)`, at0.headerPanels === 2 && at0.maxScroll > 40, JSON.stringify(at0))
+    record('I41', '空表的表身沒有左右釘選面板、沒有凍結線元素(凍結線只畫在表頭那一段)', at0.bodyPanels === 0 && at0.boundaries === 0, JSON.stringify(at0))
+    record('I41', `Empty 對可見寬置中(捲動 0:中心差 ${at0.delta}px,≤ 1)`, Math.abs(at0.delta) <= 1, JSON.stringify(at0))
+    record('I41', '可橫捲的空表:中間捲動區是 tab stop 且有名稱(scrollable-region-focusable)', at0.tabIndex === '0' && !!at0.label, JSON.stringify(at0))
+    await page.evaluate((pickSrc) => {
+      const root = new Function(`return (${pickSrc})()`)()
+      const sc = root.querySelector('[data-datatable-panel="center"]')
+      sc.scrollLeft = sc.scrollWidth
+    }, pickRoot.toString())
+    await settleAfterInteraction(page, { frames: SETTLE_FRAMES })
+    const atMax = await measureEmpty()
+    record('I41', `捲到最右(${atMax.scrollLeft} / ${atMax.maxScroll}px)Empty 仍在可見寬中央(中心差 ${atMax.delta}px,≤ 1)`,
+      !atMax.err && atMax.scrollLeft >= atMax.maxScroll - 1 && atMax.scrollLeft > 40 && Math.abs(atMax.delta) <= 1, JSON.stringify(atMax))
+  }
+}
+
+// ── I42:名片(portal)上的點擊不算點儲存格(2026-11-26,workspace F 組 F1)──────────────────────────────
+// 要保證的性質(逐字):點畫在 portal 的頭像名片(按鈕或空白),**不算點那一格** ——
+//   一般模式:格子不進編輯(沒有選人清單、格內沒有 combobox / aria-expanded);
+//   試算表模式:格游標不搬到頭像那一格、沒有編輯器。
+// SSOT:data-table.spec.md「Inline Edit」段「click cell 只認落在格子 DOM 裡的點擊」+「試算表模式」點任何格那一列;
+//   判準 lib/pointer-press.ts `pressLandedInDom`(React 文件 createPortal「Events from portals propagate according to the React tree」)。
+// 修前(beta.150 / 151 建置實跑):InlineEdit 的 Owner(person)與 Reviewers(multiPerson)× {傳訊息, 語音通話, 查看更多, 名片空白}
+//   8 種全部進編輯(listbox 0 → 1)。
+// 儀器(M32):(1) 名片等名片元素本身出現(waitFor,不用固定睡眠);沒開 = INSTRUMENT-FAIL 紅,不當通過。
+//   (2) 對照列:點同一格的內距必須進編輯 / 必須把格游標搬過去 —— 證明「進編輯」「游標搬過去」量得到。
+//   (3) 「名片空白」的落點先證明在名片裡、不在任何按鈕上。
+// 試算表模式讀游標:點名片的按鈕焦點會移到按鈕上,格游標框只在焦點在格線區時才畫(gridHasFocus)→ 點完把焦點還給表格根節點
+//   (程式 focus,不命中 :focus-visible → 不會替空游標放第一格)再讀 `[data-selected-cell-id]`。修好後點外清除會先把游標清掉,
+//   所以斷言寫「不是頭像那一格」,不寫「保留原格」(點外清除本身在 data-table.spec.md 試算表段標【待確認】)。
+// 對照組:建置複本把 `pressLandedInDom` 的判斷改成恆真(等同修前)→ 本段一般模式 8 條與試算表 2 條必紅、對照列照綠。
+{
+  const INLINE_URL = `${BASE}/iframe.html?id=design-system-components-datatable-展示--inline-edit&viewMode=story`
+  const CURSOR_URL = `${BASE}/iframe.html?id=design-system-components-datatable-展示--spreadsheet-cursor-contract&viewMode=story`
+  const editState = (id) => page.evaluate((id) => {
+    const cell = document.querySelector(`[data-cell-id="${CSS.escape(id)}"]`)
+    return {
+      found: !!cell,
+      listboxes: [...document.querySelectorAll('[role="listbox"]')].filter((n) => n.getBoundingClientRect().height > 0).length,
+      comboboxInCell: cell ? cell.querySelectorAll('[role="combobox"]').length : -1,
+      expandedInCell: cell ? cell.querySelectorAll('[aria-expanded="true"]').length : -1,
+      activeEditor: document.querySelectorAll('[data-active-editor-host] [role="combobox"], [data-active-editor-host] input').length,
+    }
+  }, id)
+  const entered = (s) => s.listboxes > 0 || s.comboboxInCell > 0 || s.expandedInCell > 0 || s.activeEditor > 0
+  /** 滑過格裡的頭像 → 等名片元素本身可見(含「查看更多」的 popper);等不到回 null(呼叫端記 INSTRUMENT-FAIL) */
+  const openCard = async (id) => {
+    await page.mouse.move(2, 2)
+    try {
+      await page.locator(`[data-cell-id="${id}"] [role="img"][tabindex="0"]`).first().hover({ timeout: 5000 })
+      const card = page.locator('[data-radix-popper-content-wrapper]').filter({ hasText: '查看更多' }).first()
+      await card.waitFor({ state: 'visible', timeout: 5000 })
+      return card
+    } catch { return null }
+  }
+  /** 點名片上的 target;回傳儀器問題(空字串 = 點到了) */
+  const clickOnCard = async (card, target) => {
+    if (target !== '名片空白') {
+      try { await card.getByRole('button', { name: target }).click({ timeout: 5000 }); return '' } catch (e) { return `名片上找不到 / 點不到「${target}」:${String(e.message).split('\n')[0]}` }
+    }
+    const box = await card.boundingBox()
+    if (!box) return '名片沒有矩形'
+    const x = box.x + box.width - 12, y = box.y + 20
+    const where = await page.evaluate(([x, y]) => {
+      const el = document.elementFromPoint(x, y)
+      return { inCard: !!el?.closest('[data-radix-popper-content-wrapper]'), onControl: !!el?.closest('button, a[href], input, [role="button"]') }
+    }, [x, y])
+    if (!where.inCard || where.onControl) return `名片空白落點 (${Math.round(x)},${Math.round(y)}) 不在名片空白處:${JSON.stringify(where)}`
+    await page.mouse.click(x, y)
+    return ''
+  }
+  const TARGETS = ['傳訊息', '語音通話', '查看更多', '名片空白']
+
+  // (a)(b) 一般模式:InlineEdit 的 Owner(person)/ Reviewers(multiPerson)
+  for (const id of ['PRD-001:owner', 'PRD-001:reviewers']) {
+    // 對照列:點格子自己的內距 → 必須進編輯(證明量得到「進編輯」)
+    await loadStory(INLINE_URL, `[data-cell-id="${id}"]`)
+    const c0 = await editState(id)
+    await page.locator(`[data-cell-id="${id}"]`).click({ position: { x: 4, y: 4 } })
+    const cOk = await settled()
+    const c1 = await editState(id)
+    record('I42', `一般模式 ${id}:對照列 —— 點格子內距進編輯(儀器看得到進編輯)`, cOk && c0.found && !entered(c0) && entered(c1), `前 ${JSON.stringify(c0)} → 後 ${JSON.stringify(c1)}${cOk ? '' : ' / 互動後版面沒有靜止'}`)
+    for (const target of TARGETS) {
+      await loadStory(INLINE_URL, `[data-cell-id="${id}"]`)
+      const card = await openCard(id)
+      if (!card) { record('I42', `一般模式 ${id} × ${target}:儀器`, false, 'INSTRUMENT-FAIL 滑過頭像後名片沒出現(量不到要守的事)'); continue }
+      const before = await editState(id)
+      if (entered(before)) { record('I42', `一般模式 ${id} × ${target}:儀器`, false, `INSTRUMENT-FAIL 開名片前格子已在編輯 ${JSON.stringify(before)}`); continue }
+      const problem = await clickOnCard(card, target)
+      if (problem) { record('I42', `一般模式 ${id} × ${target}:儀器`, false, `INSTRUMENT-FAIL ${problem}`); continue }
+      const ok = await settled()
+      const after = await editState(id)
+      record('I42', `一般模式 ${id}:點名片「${target}」格子不進編輯`, ok && !entered(after), `${JSON.stringify(after)}${ok ? '' : ' / 互動後版面沒有靜止'}`)
+    }
+  }
+
+  // (c) 試算表模式:SpreadsheetCursorContract 最後一欄 Owner(person)
+  const OWNER = 'SKU-001:owner', OTHER = 'SKU-001:name'
+  const cursorNow = () => page.evaluate(() => document.querySelector('[data-selected-cell-id]')?.getAttribute('data-selected-cell-id') ?? null)
+  const refocusRoot = () => page.evaluate(() => document.querySelector('[data-data-table-outer]')?.focus({ preventScroll: true }))
+  // 對照列:點頭像那一格的內距 → 游標必須搬到那一格(證明量得到「游標搬到頭像那一格」)
+  await loadStory(CURSOR_URL, `[data-cell-id="${OWNER}"]`)
+  await page.locator(`[data-cell-id="${OTHER}"]`).click({ position: { x: 4, y: 4 } })
+  let sOk = await settled()
+  const sStart = await cursorNow()
+  await page.locator(`[data-cell-id="${OWNER}"]`).click({ position: { x: 4, y: 4 } })
+  sOk = (await settled()) && sOk
+  const sCtl = await cursorNow()
+  record('I42', `試算表 ${OWNER}:對照列 —— 先選 ${OTHER} 再點頭像那一格內距,游標搬過去(儀器看得到)`, sOk && sStart === OTHER && sCtl === OWNER, `起點 ${sStart} → ${sCtl}`)
+  for (const target of ['傳訊息', '名片空白']) {
+    await loadStory(CURSOR_URL, `[data-cell-id="${OWNER}"]`)
+    await page.locator(`[data-cell-id="${OTHER}"]`).click({ position: { x: 4, y: 4 } })
+    const preOk = await settled()
+    const start = await cursorNow()
+    if (!preOk || start !== OTHER) { record('I42', `試算表 × ${target}:儀器`, false, `INSTRUMENT-FAIL 先選 ${OTHER} 沒成功(游標 ${start})`); continue }
+    const card = await openCard(OWNER)
+    if (!card) { record('I42', `試算表 × ${target}:儀器`, false, 'INSTRUMENT-FAIL 滑過頭像後名片沒出現'); continue }
+    const problem = await clickOnCard(card, target)
+    if (problem) { record('I42', `試算表 × ${target}:儀器`, false, `INSTRUMENT-FAIL ${problem}`); continue }
+    let ok = await settled()
+    await refocusRoot()
+    ok = (await settled()) && ok
+    const cursor = await cursorNow()
+    const st = await editState(OWNER)
+    record('I42', `試算表:點名片「${target}」格游標不搬到頭像那一格、沒有編輯器`, ok && cursor !== OWNER && !entered(st), `游標 ${cursor} / ${JSON.stringify(st)}${ok ? '' : ' / 互動後版面沒有靜止'}`)
+  }
+  console.log('\n--- I42 名片 portal 點擊不算點格 ---')
+  console.log([...passes, ...failures].filter((l) => l.includes(' I42 | ')).join('\n'))
+}
+
+// ── I43:每列操作數量不一時,每一列的操作格都沒被裁(2026-11-27,workspace H 組 H8)──────────────────────────
+// 要保證的性質(逐字):**每一列**的操作鈕都完整落在表身右區裡(沒被裁、沒伸出去),而且表頭佔位、每一列的操作格、兩邊右區面板同寬。
+// SSOT:data-table.spec.md 操作欄那一句(表頭隱形佔位 = 畫出來的每一列疊在同一格,寬 = 最寬那列);data-table.tsx headerActionsPlaceholder。
+// story = 展示「每列操作數量不一」(test-only):第一列沒有操作(rowActions 回 null)、第三列兩顆、其他一顆;下面那張 200 列走虛擬捲動,捲到中段再量一次。
+// 量法(M37):只量「操作格 scrollWidth ≤ clientWidth」是代理 —— 操作格是 flex-1 + shrink-0,最小寬 = 自己的內容,修前它不會內部溢出,
+//   而是整格伸出右區面板被裁掉。所以另量每顆鈕的外框是否落在表身右區面板裡(±0.5px),兩條都要過。
+// 前置(儀器):第一列 0 顆、第三列 2 顆(證明量的是那個夾具);任一張表找不到右區 = INSTRUMENT-FAIL 紅。
+// 對照組(2026-11-27 實跑):修後建置複本注入 CSS 只留佔位格第一份(`[data-dt-actions-placeholder] > :not(:first-child){display:none}` = 修前「只畫 rows[0]」)→
+//   本段「鈕在面板裡」「每列與表頭同寬」紅;還原綠。
+{
+  const URL_VARY = `${BASE}/iframe.html?id=design-system-components-datatable-展示--row-actions-varying-width&viewMode=story`
+  await loadStory(URL_VARY, '[data-case="virtual"] [data-datatable-panel="right"] [role="row"][data-row-index]')
+  const measureCase = (c) => page.evaluate((c) => {
+    const root = document.querySelector(`[data-case="${c}"] [data-data-table-outer]`)
+    const hp = root?.querySelector('[data-datatable-header-panel="right"]')
+    const bp = root?.querySelector('[data-datatable-panel="right"]')
+    if (!hp || !bp) return { err: `data-case=${c}:找不到右區表頭 / 表身面板` }
+    const ph = hp.querySelector('[data-dt-actions-placeholder]') ?? [...hp.querySelectorAll('div[aria-hidden="true"]')].find((d) => d.children.length > 0)
+    if (!ph) return { err: `data-case=${c}:找不到表頭操作格佔位` }
+    const pr = bp.getBoundingClientRect()
+    const r2 = (n) => Math.round(n * 100) / 100
+    const rows = [...bp.querySelectorAll('[role="row"][data-row-index]')].map((row) => {
+      const cells = row.querySelectorAll(':is([role="cell"], [role="gridcell"])')
+      const cell = cells[cells.length - 1]
+      if (!cell) return null
+      const cr = cell.getBoundingClientRect()
+      const buttons = [...cell.querySelectorAll('button')].map((b) => b.getBoundingClientRect())
+      const outside = buttons.filter((b) => b.left < pr.left - 0.5 || b.right > pr.right + 0.5).length
+      return { idx: Number(row.dataset.rowIndex), buttons: buttons.length, outside, cellW: r2(cr.width), scrollW: cell.scrollWidth, clientW: cell.clientWidth }
+    }).filter(Boolean)
+    return { phW: r2(ph.getBoundingClientRect().width), headerW: r2(hp.getBoundingClientRect().width), bodyW: r2(pr.width), rows }
+  }, c)
+  const judge = (label, m) => {
+    if (m.err) { record('I43', `${label}:儀器`, false, `INSTRUMENT-FAIL ${m.err}`); return }
+    if (!m.rows.length) { record('I43', `${label}:儀器`, false, 'INSTRUMENT-FAIL 右區一列操作格都沒量到'); return }
+    const bad = (pred) => m.rows.filter(pred).map((r) => `#${r.idx}`)
+    const clipped = bad((r) => r.outside > 0)
+    record('I43', `${label}:每一列的操作鈕都在表身右區面板裡(${m.rows.length} 列)`, clipped.length === 0, `伸出 / 被裁:${clipped.join(' ')}(面板寬 ${m.bodyW};${JSON.stringify(m.rows.filter((r) => r.outside > 0).slice(0, 3))})`)
+    const overflow = bad((r) => r.scrollW > r.clientW)
+    record('I43', `${label}:每一列的操作格 scrollWidth ≤ clientWidth`, overflow.length === 0, `溢出:${overflow.join(' ')}`)
+    const off = bad((r) => Math.abs(r.cellW - m.phW) > 0.5)
+    record('I43', `${label}:每一列的操作格與表頭佔位同寬(佔位 ${m.phW})`, off.length === 0, `不同寬:${off.join(' ')}(${JSON.stringify(m.rows.filter((r) => Math.abs(r.cellW - m.phW) > 0.5).slice(0, 3).map((r) => [r.idx, r.cellW]))})`)
+    record('I43', `${label}:表頭右區與表身右區同寬`, Math.abs(m.headerW - m.bodyW) <= 0.5, `表頭 ${m.headerW} vs 表身 ${m.bodyW}`)
+  }
+  const page0 = await measureCase('page')
+  if (!page0.err) {
+    const r0 = page0.rows.find((r) => r.idx === 0), r2 = page0.rows.find((r) => r.idx === 2)
+    record('I43', '前置:一頁 6 筆的夾具 —— 第一列 0 顆鈕、第三列 2 顆(量的是那個夾具)', r0?.buttons === 0 && r2?.buttons === 2, `第一列 ${r0?.buttons} / 第三列 ${r2?.buttons}`)
+  }
+  judge('一頁 6 筆', page0)
+  judge('200 筆虛擬捲動(頂端)', await measureCase('virtual'))
+  await page.evaluate(() => {
+    const root = document.querySelector('[data-case="virtual"] [data-data-table-outer]')
+    const sc = root.querySelector('[data-datatable-hscroll]') ?? root.querySelector('[data-datatable-panel="center"]')
+    sc.scrollTop = Math.round((sc.scrollHeight - sc.clientHeight) / 2)
+  })
+  const mid = await settleAfterInteraction(page, { frames: 10, capMs: 4000 })
+  const midM = await measureCase('virtual')
+  if (!mid.ok) record('I43', '200 筆虛擬捲動(中段):儀器', false, 'INSTRUMENT-FAIL 捲到中段後版面等不到靜止')
+  else {
+    record('I43', '前置:捲到中段後畫出來的是中段的列(不是頂端那幾列)', !midM.err && midM.rows.some((r) => r.idx > 50), JSON.stringify(midM.rows?.map((r) => r.idx).slice(0, 5)))
+    judge('200 筆虛擬捲動(中段)', midM)
+  }
+  console.log('\n--- I43 每列操作數量不一 ---')
+  console.log([...passes, ...failures].filter((l) => l.includes(' I43 | ')).join('\n'))
 }
 
 if (failures.length > 0) {

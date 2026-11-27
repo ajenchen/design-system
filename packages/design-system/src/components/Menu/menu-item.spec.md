@@ -36,7 +36,7 @@ prefix                                      content               suffix
 - **Content**：label + 可選 description
 - **Suffix**：tag（ml-auto 靠右）
 
-**`startContent`（2026-07-10 加，WM TypeIcon 彩色徽章需求）**：LucideIcon / Avatar 表達不了的自訂 leading 視覺（類型徽章 = 彩底方塊 + glyph、status 組合點等）。**渲染在同一個 prefix 對齊容器內——佔位與排列邏輯跟 startIcon 一模一樣**（gap / 24px 閾值對齊 / shrink 全繼承 `itemPrefixAlignVariants` SSOT，零平行 layout），consumer 唯一責任是節點尺寸對齊 `ICON_SIZE[size]`（sm/md=16px、lg=20px）。與 `endContent` 對稱（同為自訂 ReactNode slot）。disabled 時容器套 `opacity-disabled`（對齊 `tag` / `endContent` 自訂節點同款處理;**與 `avatar` 不變暗的分界**:Avatar 有自己的 self-dim 體系〔`fieldCtx.disabled` 觸發,同一顆 `opacity-disabled` token,avatar.spec.md「Disabled」段〕,MenuItem 非 Field context 故不觸發;startContent 是任意 consumer 節點、無任何 DS context 可自 dim → 容器套 opacity 是唯一可靠機制。放頭像請用 `avatar` prop 非 startContent）。
+**`startContent`（2026-07-10 加，WM TypeIcon 彩色徽章需求）**：LucideIcon / Avatar 表達不了的自訂 leading 視覺（類型徽章 = 彩底方塊 + glyph、status 組合點等）。**渲染在同一個 prefix 對齊容器內——佔位與排列邏輯跟 startIcon 一模一樣**（gap / 24px 閾值對齊 / shrink 全繼承 `itemPrefixAlignVariants` SSOT，零平行 layout），consumer 唯一責任是節點尺寸對齊 `ICON_SIZE[size]`（sm/md=16px、lg=20px）。與 `endContent` 對稱（同為自訂 ReactNode slot）。disabled 時容器套 `opacity-disabled`（對齊 `tag` / `endContent` 自訂節點同款處理;**與 `avatar` 不變暗的分界**:Avatar 有自己的 self-dim 體系〔`fieldCtx.disabled` 觸發,同一顆 `opacity-disabled` token,avatar.spec.md「Disabled」段〕,MenuItem 非 Field context 故不觸發;startContent 是任意 consumer 節點、無任何 DS context 可自 dim → 容器套 opacity 是唯一可靠機制。放頭像請用 `avatar` prop 非 startContent）。**公開入口**(MenuItem 本身是內部元件;2026-11-26 workspace F 組 F4-2 前公開元件一個都轉不到):`SelectMenuOption.startContent`(Select / Combobox 的選項資料,`../SelectMenu/select-menu.spec.md`「Option schema 增項紀錄」)、DropdownMenu 四種 item(Item / SubTrigger / CheckboxItem / RadioItem 的 `startContent`)、`CommandItem` 的 `startContent`。類型方塊每種 size 的邊長、圖案大小、圓角、筆畫待 C5 定案。
 
 prefix icon 跟 label 同色（foreground），不是 fg-muted。詳見 item-anatomy.spec.md 的 Icon 色彩原則。
 
@@ -123,7 +123,7 @@ description 降一級：sm/md 的 label 14px → description 12px；lg 的 label
 
 需要大塊 suffix 的場景應該:
 
-1. **重新評估這個東西是不是 menu item**——如果 suffix 是大塊內容,可能需要 ListItem(列表行)而非 menu item
+1. **重新評估這個東西是不是 menu item**——如果 suffix 是大塊內容,可能是閱讀式列(DS 不另做 ListItem 元件,以 slot 零件組,見 item-anatomy.spec.md 判斷流程「閱讀式」那一支)而非 menu item
 2. **包一個 wrapper 元件**——consumer 自己組合 prefix + content + 大塊 suffix,套用 item-anatomy.spec.md 的完整 4-slot 規則
 3. 不要 hack `endContent` 塞大東西進去——layout 會壞
 

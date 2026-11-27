@@ -37,6 +37,10 @@
  *      草稿還在;× → modal 顯露;agent 點「我的任務」→ 收成入口鈕、tab 切換、焦點交給舞台 main
  * `--static=<dir>`:讀哪個 storybook build(預設 storybook-static;並行工作者用自己的 build 目錄)
  * `--shots=<dir>`:存截圖(1440 並排開 modal / 900 浮層前 / 浮層收成入口鈕後)
+ * `--slow-close=<ms>`:把歷史浮層的收起動畫拉長到 <ms>(造出「慢機器上收起動畫還沒播完」;M32 第四問「它在機器慢的時候還會綠嗎」的對照組)。
+ *   數對話框 / 浮層之前一律等收起中的那一個**本身**卸載(`closingGone`、`history()` 的 detached 等待),不靠固定睡眠 ——
+ *   2026-11-27 PR #174 CI [1440px] S14 假紅:S6 收尾按 Esc 關掉的歷史浮層在 300ms + 送出訊息之後還在淡出,beforeShow 數到 2 個對話框。
+ *   兩面對照(實跑):舊寫法加 `--slow-close=1500` 重現同一行紅(beforeShow 2 → restored 1);新寫法加不加都綠。
  *   S12 遮罩在時滑鼠點右鍵選單的選項 → 選項執行、對話框不關、遮罩仍在(2026-09-10 user 抓「我在開啟dialog時,點擊 agent fab的右鍵再點擊展開後的選單選項,並無法執行選項,而是會直接關閉當前開啟的dialog」:
  *       守衛只認開著時的 aria-controls,選單關閉中 Radix 還焦點給選單容器那一次被當成框外;鍵盤 Enter 是對照)
  *   S13 歷史浮層開著時宿主不經指標收起面板(keep-mounted display:none)→ 浮層關了、焦點不在裡面、再開面板浮層仍關、再點標題開在觸發鈕下方
@@ -64,6 +68,7 @@ const staticArg = arg('static')
 const STATIC = staticArg ? (isAbsolute(staticArg) ? staticArg : join(process.cwd(), staticArg)) : join(REPO, 'storybook-static')
 const SHOTS = arg('shots')
 if (SHOTS) mkdirSync(SHOTS, { recursive: true })
+const SLOW_CLOSE = Number(arg('slow-close') ?? 0)
 
 const TASKS_URL = '/projects/8821/tasks'
 const MINE_URL = '/projects/8821/tasks/mine'
@@ -121,6 +126,8 @@ export const popoverFollowsHiddenAnchor = (st) => !!st && st.popoverAfterHide ==
 export const noResidualSuppression = (st) => !!st && st.dialogs === 0 && st.hostUnder === false && Array.isArray(st.inert) && st.inert.length === 0
 /** 並存時播報區判定:並存對話框開著(≥ 1)、宿主(清單連結)被擋在 inert 底下、而且沒有任何 [aria-live] 在 inert 底下。 */
 export const liveRegionsAudible = (st) => !!st && st.dialogs >= 1 && st.hostBlocked === true && Array.isArray(st.silencedLive) && st.silencedLive.length === 0
+/** S0 W2:第一個 tab 的字左緣與標題左緣差 ≤ 1px(量字,不量 tab 盒子 —— 盒子左邊多一個焦點框的位置,tabs.spec.md「焦點框不壓字」);量不到(NaN)= 紅。 */
+export const tabTextAlignsTitle = ({ tabTextLeft, titleLeft }) => Number.isFinite(tabTextLeft) && Number.isFinite(titleLeft) && Math.abs(tabTextLeft - titleLeft) <= 1
 
 if (process.argv.includes('--selftest')) {
   // 對照組:舊 build 2026-09-09 實測抓到的壞值(洞 = 外框)必須紅;修好後的值(只有入口鈕的洞)必須綠
@@ -153,8 +160,14 @@ if (process.argv.includes('--selftest')) {
     && !liveRegionsAudible({ dialogs: 1, hostBlocked: true, silencedLive: ['section[aria-label=Notifications]', 'span[role=status]'] })
     && !liveRegionsAudible({ dialogs: 1, hostBlocked: false, silencedLive: [] })
     && !liveRegionsAudible({ dialogs: 0, hostBlocked: true, silencedLive: [] })
-  const ok2 = !stale.ok && fresh.ok && !twoHoles.ok && s11 && s12 && s13 && s14 && s15
-  console.log(`${ok2 ? '✓' : '✗'} selftest:S10 舊洞(距 ${stale.d}px)判紅、洞心 = 鈕心判綠、兩個洞判紅;S11 選單消失 / 對話框關 / 遮罩沒了判紅;S12 對話框關 / 選項沒執行 / 選單沒關判紅;S13 浮層留在 (0,8) / 再開不在觸發鈕下判紅;殘留 inert / aria-hidden / 對話框未關判紅;播報區被靜音 / 宿主沒被擋 / 沒有對話框判紅`)
+  // S0 W2 對照組(2026-11-27):字對齊標題 → 綠;字往右推偏 4px(焦點框位置補了內距卻沒借回)→ 紅;字往左偏 4px(借了沒補)→ 紅;
+  // 量不到 → 紅。(CI 47c9eb64 的紅是舊量法量 tab 盒子:補內距並借回後,盒子左緣本來就在字左邊 4px)
+  const w2 = tabTextAlignsTitle({ tabTextLeft: 256, titleLeft: 256 })
+    && !tabTextAlignsTitle({ tabTextLeft: 260, titleLeft: 256 })
+    && !tabTextAlignsTitle({ tabTextLeft: 252, titleLeft: 256 })
+    && !tabTextAlignsTitle({ tabTextLeft: NaN, titleLeft: 256 })
+  const ok2 = !stale.ok && fresh.ok && !twoHoles.ok && s11 && s12 && s13 && s14 && s15 && w2
+  console.log(`${ok2 ? '✓' : '✗'} selftest:S10 舊洞(距 ${stale.d}px)判紅、洞心 = 鈕心判綠、兩個洞判紅;S11 選單消失 / 對話框關 / 遮罩沒了判紅;S12 對話框關 / 選項沒執行 / 選單沒關判紅;S13 浮層留在 (0,8) / 再開不在觸發鈕下判紅;殘留 inert / aria-hidden / 對話框未關判紅;播報區被靜音 / 宿主沒被擋 / 沒有對話框判紅;S0 W2 字往右 / 往左偏 4px、量不到判紅`)
   process.exit(ok && ok2 ? 0 : 1)
 }
 
@@ -225,7 +238,9 @@ const SHAPE = `(() => {
     tablistBorder: tablist ? px(getComputedStyle(tablist).borderBottomWidth) : NaN,
     tabs: tabs.map((t) => t.textContent?.trim()), selected: selected?.textContent?.trim(),
     tabControlsPanel: !!selected && !!panel && selected.getAttribute('aria-controls') === panel.id && panel.getAttribute('aria-labelledby') === selected.id,
-    tabLeftEqH1Left: !!tabs[0] && !!h1 && Math.abs(R(tabs[0]).left - R(h1).left) <= 1,
+    // W2 量第一個 tab 的**內容**(字)左緣,不量 tab 盒子:2026-11-27 起 tab 左右各有一個焦點框的位置(4px)、第一個 tab 往外借回
+    //(tabs.tsx TABS_FOCUS_ROOM_PX;tabs.spec.md「焦點框不壓字」),盒子左緣本來就在字左邊 4px。判定在 tabTextAlignsTitle(selftest 有兩面)
+    firstTabTextLeft: tabs[0] ? textLeft(tabs[0]) : NaN, h1Left: h1 ? R(h1).left : NaN,
     panelFlushUnderTabs: !!panel && !!tablist && Math.abs(R(panel).top - R(tablist).bottom) <= 1,
     // 間距 owner = toolbar 自帶 py-tight(WithBulkActions 同款):toolbar 上緣貼 TabsList、下緣貼表格,py 就是那兩段 tight
     toolbarPadTop: toolbar ? px(getComputedStyle(toolbar).paddingTop) : NaN,
@@ -254,7 +269,16 @@ function bind(page) {
   const $ = (sel) => page.evaluate((s) => !!document.querySelector(s), sel)
   const location = () => page.evaluate(() => { const el = document.querySelector('#demo-location'); return el ? (el.value ?? el.textContent ?? '') : '' })
   const selectedTab = () => page.evaluate(() => document.querySelector('[role="tab"][aria-selected="true"]')?.textContent?.trim() ?? '')
-  const dialogs = () => page.evaluate(() => document.querySelectorAll('[role="dialog"]').length)
+  /**
+   * 收起中的對話框 / 浮層(Radix Presence 播收起動畫期間仍掛著、`data-state="closed"`)全部卸載才回(2026-11-27,PR #174 CI [1440px] S14 假紅;檔頭 --slow-close)。
+   * 數「現在有幾個對話框」之前一律先等這一步:固定睡眠在慢機器上會數到還在淡出的那一個(M32 第四問)。
+   * 等不到(3 秒)照樣往下數 —— 收不掉的那一個會被算進去、由該格判紅(那是量到了的產品結果,不是沒量到)。
+   * 選單(S12「選單關了沒」)是同一個盲點,一起等。
+   */
+  const closingGone = () => page.waitForFunction(() => !document.querySelector('[role="dialog"][data-state="closed"], [role="menu"][data-state="closed"]'), null, { timeout: 3000, polling: 'raf' }).then(() => true, () => false)
+  const dialogs = async () => { await closingGone(); return page.evaluate(() => document.querySelectorAll('[role="dialog"]').length) }
+  /** 對話框身分(名稱 + 開合狀態),只放進 detail 供判讀「多出來的是哪一個」 */
+  const dialogNames = () => page.evaluate(() => [...document.querySelectorAll('[role="dialog"]')].map((d) => `${d.getAttribute('aria-label') || d.querySelector('h2')?.textContent?.trim() || '?'}:${d.getAttribute('data-state') ?? ''}`))
   const panelInput = () => page.evaluate(() => { const p = document.querySelector('[role="complementary"]'); const i = p?.querySelector('textarea, input'); return i ? { value: i.value, inert: !!p.closest('[inert]') || p.getAttribute('aria-hidden') === 'true' } : null })
   const panelOpen = () => page.evaluate(() => { const p = document.querySelector('[role="complementary"]'); return !!p && getComputedStyle(p).display !== 'none' && p.getBoundingClientRect().width > 0 })
   // 80ms:等打字觸發的受控輸入 state 提交(React commit)後再讀值
@@ -264,13 +288,15 @@ function bind(page) {
   const rows = () => page.evaluate(() => [...document.querySelectorAll('[role="row"] a[href*="/tasks/"]')].map((a) => a.closest('[role="row"]')?.textContent ?? ''))
   const panelTitle = () => page.evaluate(() => document.querySelector('[role="complementary"] button[aria-haspopup="dialog"]')?.textContent?.trim() ?? '')
   /** 殘留抑制量測:對話框數、清單連結是否在 inert / aria-hidden 底下、整份文件的 [inert] 清單。 */
-  const suppression = () => page.evaluate(() => {
+  const suppressionNow = () => page.evaluate(() => {
     const d = (el) => (el.id ? '#' + el.id : el.tagName.toLowerCase() + (el.getAttribute('role') ? `[role=${el.getAttribute('role')}]` : ''))
     const link = document.querySelector('[role="row"] a[href*="/tasks/"]')
     return { dialogs: document.querySelectorAll('[role="dialog"]').length, hostUnder: link ? !!link.closest('[inert], [aria-hidden="true"]') : null, inert: [...document.querySelectorAll('[inert]')].map(d) }
   })
+  // 兩支都數對話框:先等收起中的那一個卸載(closingGone,同 dialogs)
+  const suppression = async () => { await closingGone(); return suppressionNow() }
   /** 並存時播報區量測:對話框數、清單連結是否被 inert 擋住、哪些 [aria-live] 在 inert 底下。 */
-  const liveAudit = () => page.evaluate(() => {
+  const liveAuditNow = () => page.evaluate(() => {
     const d = (el) => (el.id ? '#' + el.id : el.tagName.toLowerCase() + (el.getAttribute('role') ? `[role=${el.getAttribute('role')}]` : '') + (el.getAttribute('aria-label') ? `[aria-label=${el.getAttribute('aria-label').slice(0, 24)}]` : ''))
     const link = document.querySelector('[role="row"] a[href*="/tasks/"]')
     // 播報區是否屬於某個控件:祖先(到 body 為止)可聚焦(tabIndex ≥ 0 或帶 tabindex)或是互動角色 → 屬於該控件,不列入「應該念得到」
@@ -279,6 +305,7 @@ function bind(page) {
     const live = [...document.querySelectorAll('[aria-live]')].filter((el) => !inControl(el))
     return { dialogs: document.querySelectorAll('[role="dialog"]').length, hostBlocked: link ? !!link.closest('[inert]') : null, live: live.length, silencedLive: live.filter((el) => el.closest('[inert]')).map(d) }
   })
+  const liveAudit = async () => { await closingGone(); return liveAuditNow() }
   const inert = (sel) => page.evaluate((s) => { const el = document.querySelector(s); return el ? (!!el.closest('[inert]') || !!el.closest('[aria-hidden="true"]')) : null }, sel)
   const bg = (sel) => page.evaluate((s) => { const el = document.querySelector(s); return el ? getComputedStyle(el).backgroundColor : null }, sel)
   const mask = () => page.evaluate(() => { const m = document.querySelector('[data-coexistence-mask]:not([data-agent-panel-scrim])'); return m ? { clip: m.style.clipPath, bg: getComputedStyle(m).backgroundColor } : null })
@@ -292,8 +319,12 @@ function bind(page) {
       const items = pop ? [...pop.querySelectorAll('[cmdk-item]')] : []
       return { open: !!pop, rows: items.map((i) => i.textContent?.trim() ?? ''), current: items.filter((i) => i.querySelector('[role="presentation"][data-selected]')).map((i) => i.textContent?.trim() ?? '') }
     })
-    // 300ms:等歷史浮層關閉的 exit 過渡(--motion-duration-overlay 150ms)走完,下一步才不會點到還在淡出的浮層
-    await page.keyboard.press('Escape'); await page.waitForTimeout(300)
+    // 等歷史浮層**本身**卸載(收起動畫播完)才往下,不用固定睡眠(舊:300ms —— 2026-11-27 PR #174 CI [1440px] S14 假紅:
+    // 慢機器上 300ms + 送出一則訊息之後它還在淡出,下一步數到的對話框多一個;檔頭 --slow-close 兩面對照)。
+    // 3 秒內沒卸載 = 量到了的產品結果(浮層收不掉),判紅。
+    await page.keyboard.press('Escape')
+    const gone = await page.waitForSelector('[role="dialog"][aria-label="歷史對話"]', { state: 'detached', timeout: 3000 }).then(() => true, () => false)
+    if (!gone) check('歷史浮層按 Esc 後 3 秒內卸載', false, JSON.stringify(await dialogNames()))
     return data
   }
   const pickOption = async (comboSel, optionText) => {
@@ -302,7 +333,7 @@ function bind(page) {
     await page.click(`[role="option"]:has-text("${optionText}")`); await page.waitForTimeout(350)
   }
   const shot = async (name) => { if (SHOTS) { const file = join(SHOTS, name); await page.screenshot({ path: file, fullPage: false }); console.log(`  📷 ${file}`) } }
-  return { $, location, selectedTab, dialogs, panelInput, panelOpen, typeIntoPanel, click, rows, panelTitle, suppression, liveAudit, inert, bg, mask, alpha, shape, history, pickOption, shot }
+  return { $, location, selectedTab, closingGone, dialogs, dialogNames, panelInput, panelOpen, typeIntoPanel, click, rows, panelTitle, suppression, liveAudit, inert, bg, mask, alpha, shape, history, pickOption, shot }
 }
 
 /** story 開不起來的紀錄(儀器失效,不是產品裁決);結尾據此 exit 1。 */
@@ -326,6 +357,8 @@ async function openDemo(width, height = 900, storyId = id) {
     instrumentFails.push({ width, detail: error.detail })
     return null
   }
+  // 對照組(檔頭 --slow-close):只拉長歷史浮層的收起動畫;任務對話框不動(它收起期間遮罩照規格擋指標,拉長會連帶改變後面的點擊流程)
+  if (SLOW_CLOSE > 0) await page.addStyleTag({ content: `[role="dialog"][aria-label="歷史對話"][data-state="closed"]{animation-duration:${SLOW_CLOSE}ms !important}` })
   return { browser, page }
 }
 
@@ -348,7 +381,7 @@ for (const width of [1440, 1180]) {
   check(`${W} S0 header:專案標題 h1「結帳流程改版」(PageHeader = ChromeHeader + tabsSlot)`, s0.h1 === '結帳流程改版' && s0.h1Tag === 'H1', JSON.stringify({ h1: s0.h1, tag: s0.h1Tag }))
   check(`${W} S0 tabs:所有任務 / 我的任務,預設選「所有任務」`, JSON.stringify(s0.tabs) === JSON.stringify(['所有任務', '我的任務']) && s0.selected === '所有任務', JSON.stringify({ tabs: s0.tabs, selected: s0.selected }))
   check(`${W} S0 W1:header 不畫 border-b(0)、TabsList 畫(1)—— 視覺同一條線`, s0.headerBorder === 0 && s0.tablistBorder === 1, JSON.stringify({ header: s0.headerBorder, tablist: s0.tablistBorder }))
-  check(`${W} S0 W2:第一個 tab 左緣 = 標題左緣(px-loose 對齊)`, s0.tabLeftEqH1Left)
+  check(`${W} S0 W2:第一個 tab 的字左緣 = 標題左緣(px-loose 對齊)`, tabTextAlignsTitle({ tabTextLeft: s0.firstTabTextLeft, titleLeft: s0.h1Left }))
   check(`${W} S0 W4 / TabsContent mt-0:tabpanel 緊貼 TabsList 下緣`, s0.panelFlushUnderTabs)
   check(`${W} S0 a11y:tablist / tab / aria-selected;選中 tab 的 aria-controls 指向 tabpanel、tabpanel aria-labelledby 指回 tab`, s0.tabControlsPanel)
   check(`${W} S0 toolbar:「新增任務」在 toolbar 內、表格上方、業務層最右(action-bar §二 靠右對齊,primary 最右)`, s0.newBtnInToolbar && s0.newBtnAboveTable && s0.newBtnRightmost, JSON.stringify({ inToolbar: s0.newBtnInToolbar, above: s0.newBtnAboveTable, rightmost: s0.newBtnRightmost }))
@@ -562,6 +595,7 @@ for (const width of [1440, 1180]) {
     if (!item) return { noItem: true }
     await page.mouse.move(item.x, item.y); await page.waitForTimeout(80); await page.mouse.click(item.x, item.y); await page.waitForTimeout(800)
     const after = await fabCenter()
+    await h.closingGone() // 「選單關了沒」量穩態:收起中的選單卸載後再看(同 dialogs)
     const menu = await page.evaluate(() => !!document.querySelector('[role="menu"]'))
     return { item: item.text, moved: !!after && Math.hypot(after.x - at.x, after.y - at.y) > 8, menu, dialogs: await h.dialogs(), mask: !!(await h.mask()) }
   }
@@ -604,13 +638,13 @@ for (const width of [1440, 1180]) {
   //    headless 關著 bfcache(啟動參數 --disable-back-forward-cache),真的離開再回來量不到;瀏覽器還原時唯一送出的訊號就是
   //    `pageshow` + `persisted:true`,這裡合成同一個事件。對照組:`persisted:false`(一般載入也會發)必須什麼都不動。
   await h.typeIntoPanel('登入逾時的修法'); await page.keyboard.press('Enter'); await page.waitForTimeout(400)
-  const beforeShow = { open: await h.panelOpen(), title: await h.panelTitle(), loc: await h.location(), tab: await h.selectedTab(), dialogs: await h.dialogs() }
+  const beforeShow = { open: await h.panelOpen(), title: await h.panelTitle(), loc: await h.location(), tab: await h.selectedTab(), dialogs: await h.dialogs(), names: await h.dialogNames() }
   await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: false }))); await page.waitForTimeout(300)
   const notPersisted = { open: await h.panelOpen(), title: await h.panelTitle() }
   check(`${W} S14 對照組:pageshow(persisted:false = 一般載入)不動代理(仍開著、標題不變)`, beforeShow.open && notPersisted.open && notPersisted.title === beforeShow.title && /登入逾時的修法/.test(beforeShow.title), JSON.stringify({ beforeShow, notPersisted }))
   // 450ms:等面板關閉的過渡(--motion-duration-surface 250ms)走完、入口鈕掛上
   await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }))); await page.waitForTimeout(450)
-  const restored = { open: await h.panelOpen(), fab: await h.$('button[aria-label="開啟智慧代理"]'), loc: await h.location(), tab: await h.selectedTab(), dialogs: await h.dialogs() }
+  const restored = { open: await h.panelOpen(), fab: await h.$('button[aria-label="開啟智慧代理"]'), loc: await h.location(), tab: await h.selectedTab(), dialogs: await h.dialogs(), names: await h.dialogNames() }
   check(`${W} S14 BFCache 返回(pageshow persisted)→ 代理回到關閉、入口鈕在;宿主畫面原封不動(網址 / tab / 對話框都跟離開前一樣)`, !restored.open && restored.fab && restored.loc === beforeShow.loc && restored.tab === beforeShow.tab && restored.dialogs === beforeShow.dialogs, JSON.stringify({ beforeShow, restored }))
   await h.click('button[aria-label="開啟智慧代理"]')
   const s14reopened = { input: (await h.panelInput())?.value, title: await h.panelTitle(), history: await h.history() }
@@ -618,11 +652,13 @@ for (const width of [1440, 1180]) {
 
   // ── S13 歷史浮層開著時,宿主不經指標 / 焦點把面板收起(合成 click 重新整理 → 代理回初始關閉 = keep-mounted display:none)──
   //    AD68 產品側變體:浮層 portal 到 body 不會跟著消失,Radix 對 0×0 錨點只會定位到 (0,8)、焦點留在搜尋框;修法 = 觸發鈕失去版面就關浮層。
-  const popoverState = () => page.evaluate(() => {
+  const popoverStateNow = () => page.evaluate(() => {
     const pops = [...document.querySelectorAll('[aria-label="歷史對話"]')]
     const a = document.activeElement
     return { count: pops.length, rects: pops.map((el) => { const b = el.getBoundingClientRect(); return [Math.round(b.x), Math.round(b.y)] }), focusIn: pops.some((el) => el.contains(a)) }
   })
+  // 數浮層前先等收起中的那一個卸載(h.closingGone;「浮層關了」量的是穩態,不是淡出中的那一格)
+  const popoverState = async () => { await h.closingGone(); return popoverStateNow() }
   await h.click('[role="complementary"] button[aria-haspopup="dialog"]'); await page.waitForTimeout(400)
   const s13open = await popoverState()
   // 500ms:等示範的「重新整理」把代理收回初始關閉(keep-mounted display:none)與浮層的關閉過渡

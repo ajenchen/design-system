@@ -3,7 +3,7 @@
  * Listens for mode changes, binds DOM listeners, emits inspect payload,
  * renders redline overlay.
  */
-import { addons } from '@storybook/preview-api'
+import { addons } from 'storybook/preview-api'
 import { measureElement } from './utils/dom-geometry'
 import { extractComputed } from './utils/computed-style'
 import { annotateWithTokens, extractSourceVars, extractAllAuthorDecls } from './utils/token-reverse-lookup'

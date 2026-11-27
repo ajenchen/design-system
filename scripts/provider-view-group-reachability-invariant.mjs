@@ -2,7 +2,9 @@
 /**
  * @gate-contract
  *   保證: 每個 provider 的產生檢視,都派工得到**該 provider 適用的**每一個 hook 群組;沒有派工入口的群組等於整群 hook 從未被呼叫
- *   紅: 從任一 provider 檢視刪掉最後一群的派工命令(或把某群的 --group 序號改掉)→ 本閘必須指名該 event/群組序號與該群的 hook 名單並紅
+ *   紅: 從任一 provider 檢視刪掉最後一群的派工命令(或把某群的 --group 序號改掉)→ 本閘必須指名該 event/群組序號與該群的 hook 名單並紅;
+ *       派工命令帶的 --group-id 與 registrations.json 該群算出的穩定 id 對不上(2026-11-26 B2)→ 也紅並指名;
+ *       派工命令沒帶 --group-id → 只在第二段(PROVIDER_HOOK_GROUP_ID_IN_VIEWS = true,產生器輸出 id 之後)紅並指名
  *   綠: 檢視派工的序號集合 = 該 provider 適用的群組序號集合時必須綠。**包含「該群唯一的 hook 對這個 provider 不適用」時不得報紅** —— 這一格正是本閘第一版對 codex 報假紅的地方;selftest 以合成文件雙向驗,不看真檔
  *
  * ── 為什麼有這支 ──
@@ -35,6 +37,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { hasUsableVersionedTranscript } from './lib/provider-runtime-contract.mjs'
 import { resolveProviderHookEligibility } from '../packages/governance/src/provider-review-binding.mjs'
+import { providerHookGroupId, PROVIDER_HOOK_GROUP_ID_IN_VIEWS } from './lib/provider-hook-output-transport.mjs'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const REGISTRY = 'packages/governance/canonical/providers.json'
@@ -64,6 +67,30 @@ export function readDispatchedGroups(view) {
 }
 
 /**
+ * 每一條派工命令帶的穩定群組 id(2026-11-26,gate-census C 組判定 B2)。入口照 id 找群組、序號只是舊入口的相容欄位,
+ * 所以「派工到哪一群」真正由 id 決定:id 缺席或與 registrations.json 該群算出的 id 不同,入口會送「沒登記」通知、
+ * 整群不跑。id 的算法只住 provider-hook-output-transport 的 providerHookGroupId(產生器、入口、本閘同一支)。
+ *
+ * 兩段式上線(F3-fix-anchor):帶了 id 就必須對得上,兩段都查;「每條都必須帶」只在第二段查 ——
+ * 第一段產生器不輸出 id(protected main 的 contract.mjs 還不認得這個欄位),要求帶等於要求產生器先壞掉 anchor。
+ * 是否要求跟產生器是否輸出讀同一個 PROVIDER_HOOK_GROUP_ID_IN_VIEWS,不能只開一邊。
+ */
+export function readDispatchedGroupIds(view) {
+  const out = []
+  for (const [event, groups] of Object.entries(view?.hooks || {})) {
+    for (const group of groups || []) {
+      for (const entry of group?.hooks || []) {
+        const command = String(entry?.command ?? '')
+        const m = command.match(/--event\s+(\S+)\s+--group\s+(\d+)(?:\s+--group-id\s+(\S+))?/)
+        if (!m || m[1] !== event) continue
+        out.push({ event, groupIndex: Number(m[2]), groupId: m[3] ?? null })
+      }
+    }
+  }
+  return out
+}
+
+/**
  * 純判定:回傳所有「該 provider 應該派工、但檢視派工不到」與「檢視派工了、却不該派工」的群組。
  * 兩個方向都要,因為序號錯位會同時產生一缺一多,只查一邊會把錯位讀成正常。
  *
@@ -74,7 +101,12 @@ export function readDispatchedGroups(view) {
  * 所以那一群在 codex 檢視裡不存在是正確的。這正是本閘自己要防的 M37:
  * 用一個「當時剛好成立的觀察量」代替真正要保證的性質。現在改成逐 provider 試算適用性。
  */
-export function findGroupReachabilityDrift({ registrations, views, isEligible = () => true }) {
+export function findGroupReachabilityDrift({
+  registrations,
+  views,
+  isEligible = () => true,
+  requireGroupId = PROVIDER_HOOK_GROUP_ID_IN_VIEWS,
+}) {
   const problems = []
   const declared = registrations?.hooks || {}
   const eligible = isEligible
@@ -112,6 +144,20 @@ export function findGroupReachabilityDrift({ registrations, views, isEligible = 
         })
       }
     }
+    for (const { event, groupIndex, groupId } of readDispatchedGroupIds(view)) {
+      const group = (declared[event] || [])[groupIndex]
+      if (!group) continue // 序號本身就不存在 → 上面已記成 orphan
+      if (groupId === providerHookGroupId(event, group)) continue
+      if (groupId === null && !requireGroupId) continue // 第一段:沒帶 id 照序號派工是現行形狀
+      problems.push({
+        providerId,
+        event,
+        groupIndex,
+        kind: groupId === null ? 'missing-id' : 'stale-id',
+        matcher: group.matcher ?? '<無>',
+        hooks: (group.hooks || []).map((h) => h.hook || h.kind || '<未命名>'),
+      })
+    }
   }
   return problems
 }
@@ -147,9 +193,17 @@ function selftest() {
       Stop: [{ matcher: '', hooks: [{ kind: 'hook', hook: 's.sh' }] }],
     },
   }
-  const entry = (event, index) => ({
+  const idFor = (event, index) => {
+    const group = registrations.hooks[event]?.[index]
+    return group ? providerHookGroupId(event, group) : 'g0000000000000000'
+  }
+  const entry = (event, index, groupId = idFor(event, index)) => ({
     matcher: 'x',
-    hooks: [{ type: 'command', command: `node scripts/run-provider-hook.mjs --provider claude --event ${event} --group ${index}` }],
+    hooks: [{
+      type: 'command',
+      command: `node scripts/run-provider-hook.mjs --provider claude --event ${event} --group ${index}`
+        + (groupId === null ? '' : ` --group-id ${groupId}`),
+    }],
   })
   const complete = {
     hooks: {
@@ -170,11 +224,42 @@ function selftest() {
       Stop: [entry('Stop', 0)],
     },
   }
-  // 第 4 格的專用檢視:只派工 0/1,第 2 群缺席
+  // B2(2026-11-26):序號齊全、但第 2 群沒帶 --group-id(只能靠序號派工)→ 第二段紅並指名、第一段綠
+  const missingId = {
+    hooks: {
+      PreToolUse: [entry('PreToolUse', 0), entry('PreToolUse', 1), entry('PreToolUse', 2, null)],
+      Stop: [entry('Stop', 0)],
+    },
+  }
+  // B2:第 2 群的 id 是舊內容算的(session 載入的設定比 registrations.json 舊)→ 兩段都紅並指名
+  const staleId = {
+    hooks: {
+      PreToolUse: [
+        entry('PreToolUse', 0),
+        entry('PreToolUse', 1),
+        entry('PreToolUse', 2, providerHookGroupId('PreToolUse', { matcher: 'Edit|Bash', hooks: [{ kind: 'hook', hook: 'old.sh' }] })),
+      ],
+      Stop: [entry('Stop', 0)],
+    },
+  }
+  // 第一段的真實形狀:每條派工命令都沒帶 id(與 protected main 驗證器預期的形狀逐字相同)
+  const noIds = {
+    hooks: {
+      PreToolUse: [entry('PreToolUse', 0, null), entry('PreToolUse', 1, null), entry('PreToolUse', 2, null)],
+      Stop: [entry('Stop', 0, null)],
+    },
+  }
+  // 第 5 欄 = requireGroupId:兩段各驗一次,第二段的要求不因第一段關著而變成沒人驗的死碼
   const cases = [
-    ['齊全 → 必須綠', complete, 0, null],
-    ['少掉最後一群(2026-09-24 實況)→ 必須指名 group 2 並紅', stale, 1, 'approval.sh'],
-    ['群組數相同但序號錯位 → 必須紅(一缺一多)', misnumbered, 2, 'approval.sh'],
+    ['齊全 → 必須綠', complete, 0, null, true],
+    ['少掉最後一群(2026-09-24 實況)→ 必須指名 group 2 並紅', stale, 1, 'approval.sh', true],
+    ['群組數相同但序號錯位 → 必須紅(一缺一多)', misnumbered, 2, 'approval.sh', true],
+    ['第二段:派工命令沒帶 --group-id → 必須指名 group 2 並紅', missingId, 1, 'approval.sh', true],
+    ['--group-id 是舊群組內容算的 → 必須指名 group 2 並紅(第二段)', staleId, 1, 'approval.sh', true],
+    ['第一段:全部沒帶 --group-id(現行產出形狀)→ 必須綠', noIds, 0, null, false],
+    ['第一段:只有一群沒帶 --group-id → 必須綠', missingId, 0, null, false],
+    ['第一段:帶了但 --group-id 是舊群組內容算的 → 照樣指名 group 2 並紅', staleId, 1, 'approval.sh', false],
+    ['第一段:少掉最後一群 → 照樣指名 group 2 並紅', { hooks: { PreToolUse: noIds.hooks.PreToolUse.slice(0, 2), Stop: noIds.hooks.Stop } }, 1, 'approval.sh', false],
   ]
   let failed = 0
   // 適用性那一維:假設 approval.sh 對 'codex' 不適用。同一份 stale 檢視 ——
@@ -192,8 +277,8 @@ function selftest() {
     failed += 1
     console.error(`  ✗ 適用性維度 — claude 實得 ${redForClaude.length}(預期 1)、codex 實得 ${greenForCodex.length}(預期 0)`)
   }
-  for (const [name, view, expected, mustName] of cases) {
-    const problems = findGroupReachabilityDrift({ registrations, views: [{ providerId: 'claude', view }] })
+  for (const [name, view, expected, mustName, requireGroupId] of cases) {
+    const problems = findGroupReachabilityDrift({ registrations, views: [{ providerId: 'claude', view }], requireGroupId })
     const ok = problems.length === expected
       && (!mustName || problems.some((p) => p.hooks.includes(mustName)))
     if (!ok) {
@@ -234,6 +319,11 @@ if (process.argv.includes('--selftest')) {
     if (p.kind === 'unreachable') {
       console.error(`  [${p.providerId}] ${p.event} 第 ${p.groupIndex} 群(matcher: ${p.matcher})沒有派工入口`)
       console.error(`      失去覆蓋的 hook: ${p.hooks.join('、') || '<空群組>'}`)
+    } else if (p.kind === 'missing-id' || p.kind === 'stale-id') {
+      console.error(`  [${p.providerId}] ${p.event} 第 ${p.groupIndex} 群(matcher: ${p.matcher}):${p.kind === 'missing-id'
+        ? '派工命令沒帶 --group-id,入口只能靠序號派工(設定與工作樹版本錯開時會靜默派到另一組)'
+        : '派工命令的 --group-id 與 registrations.json 這一群對不上,入口會判成沒登記、整群不跑'}`)
+      console.error(`      這一群的 hook: ${p.hooks.join('、') || '<空群組>'}`)
     } else {
       console.error(`  [${p.providerId}] ${p.event} 第 ${p.groupIndex} 群:檢視派工了,但 registrations.json 沒有這一群`)
     }

@@ -551,7 +551,7 @@ const InfoPanel = React.memo(function InfoPanel({
           <span className="text-body font-normal text-foreground">{labels.fileInfoHeading}</span>
           <DescriptionList orientation="horizontal" divided>
             <DescriptionItem label="檔名">{file.name}</DescriptionItem>
-            <DescriptionItem label="類型">{file.mimeType || '-'}</DescriptionItem>
+            <DescriptionItem label="類型">{file.mimeType}</DescriptionItem>
             {sizeText && (
               <DescriptionItem label="大小">
                 <span className="tabular-nums">{sizeText}</span>

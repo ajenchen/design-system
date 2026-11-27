@@ -327,7 +327,7 @@ Source(AI 讀此看官方範例): src/components/Sidebar/
 - **meta**: Section 底部命令 row(「Show more」「載入更多」「+ 新增專案」);font-normal + fg-muted,不參與 selection
 
 ### Sizes
-- **sm**: 次導覽 / 設定頁分類 / 緊湊空間;對齊 field-height-sm
+- **sm**: 頁面內次導覽(整頁設定頁的分類)/ 緊湊空間;對齊 field-height-sm。對話框裡的分類導覽用預設 md(Dialog body 屬 md 檔,見 patterns/overlay-surface/overlay-chrome-sizing.spec.md「Size canonical」)
 - **md**: 預設 — 應用程式主導覽 row;對齊 TreeView / MenuItem 同 size 視覺無縫
 - **lg**: 重要主導覽(horizontal headroom 大)、icon-prominent workspace switcher
 
@@ -422,9 +422,9 @@ Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/Toast/
 
 ### Variants
-- **neutral**: 非狀態通知;一般 announcement / tip(『已複製到剪貼簿』『偏好已儲存』)
+- **neutral**: 預設(不傳 variant 就是它)· 無圖示;一般操作回饋與通知(『已複製到剪貼簿』『偏好已儲存』『檔案已開始下載』)。儲存、送出、建立這類『做完了』的回饋,用它或用 success 由消費者決定
 - **info**: 資訊性提示(『新版本可用』『同步完成』);非錯誤、非成功
-- **success**: 成功確認(『訂單已寄送』『付款完成』『5 筆資料已匯入』)
+- **success**: 選用 —— 消費者想用綠勾強調『做完了』時傳 variant: 'success'(『訂單已寄送』『付款完成』『5 筆資料已匯入』『專案已儲存』);不傳就是 neutral
 - **warning**: 可恢復警告(『有未儲存變更』『連線不穩』『token 將過期』)
 - **error**: 錯誤(『匯入失敗』『權限不足』『網路斷線』);action prop 可加重試
 

@@ -8,9 +8,10 @@
 //   StateBehavior covered by ColorMatrix「Row 狀態色彩」段(default / hover /
 //     selected / disabled)+ Features「排序」段。Row 互動是 row-level
 //     而非元件 level,集中於 Row 色彩展示更直觀。
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { createColumnHelper } from '@tanstack/react-table'
 import { DataTable } from './data-table'
+import type { SelectOption } from '@/design-system/components/Select/select'
 import './column-types'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 import { productCatalog, type ProductRow as Product } from '@/design-system/stories-helpers/data/product-catalog'
@@ -30,7 +31,7 @@ const SAMPLE_DATA: Product[] = [
   { name: 'Linen Shirt', category: 'clothing', stock: 'in_stock', price: 1580, available: true, launchDate: '2026-02-14' },
 ]
 
-const STATUS_OPTIONS = [
+const STATUS_OPTIONS: SelectOption[] = [
   { value: 'in_stock', label: 'In stock', tagVariant: 'green' },
   { value: 'low_stock', label: 'Low stock', tagVariant: 'yellow' },
   { value: 'out_of_stock', label: 'Out of stock', tagVariant: 'red' },

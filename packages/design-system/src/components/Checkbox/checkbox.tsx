@@ -6,7 +6,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 import type { FieldMode, FieldVariant } from "@/design-system/components/Field/field-types"
-import { useFieldContext, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldSize } from "@/design-system/components/Field/field-context"
+import { fieldFramelessValueProps, useFieldContext, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldSize } from "@/design-system/components/Field/field-context"
 import { useControllable } from "@/design-system/hooks/use-controllable"
 import { fieldWrapperStyles } from "@/design-system/components/Field/field-wrapper"
 import { SelectionItem } from "@/design-system/components/SelectionControl/selection-item"
@@ -211,7 +211,7 @@ const Checkbox = React.forwardRef<
     // 2026-06-12 修:原本只看 resolvedDisabled(prop/fieldCtx),mode='disabled' 無人消費
     // → disabled boolean cell 渲出可 focus 的正常外觀 checkbox(違 field-controls.spec L286)
     const effectiveDisabled = resolvedDisabled || resolvedMode === 'disabled'
-    // readonly 灰框 size:走 SSOT resolver(prop > ctx > 'md',field-context.ts:154-165)
+    // readonly 灰框 size:走 SSOT resolver(prop > ctx > 'md',field-context.ts:166-177)
     const resolvedBoxSize = useResolvedFieldSize(size ?? undefined, 'md') as 'sm' | 'md' | 'lg'
 
     // 2026-07-04 修:view / readonly-in-Field 分支的裸 span/div 原丟棄剩餘 props
@@ -270,6 +270,9 @@ const Checkbox = React.forwardRef<
       return (
         <span
           {...restDomProps}
+          // 沒有框的值:單獨放進 Field 時掛記號,水平排閱讀情境由 Field 內縮到框內字線(field.spec.md「閱讀情境」);
+          // CheckboxGroup 裡的選項不掛(那是一組選項列,不是這一欄的值)
+          {...fieldFramelessValueProps(shouldSuppressLabel)}
           ref={ref as React.Ref<HTMLSpanElement>}
           role="img"
           aria-label={viewAriaLabel}
@@ -333,6 +336,8 @@ const Checkbox = React.forwardRef<
         tabIndex={effectiveReadOnly ? -1 : undefined}
         aria-describedby={fieldCtx?.descriptionId}
         className={cn(checkboxVariants({ size }), className)}
+        // 沒有框的值:單獨放進 Field 時掛記號(同上方 view 分支;CheckboxGroup 裡的選項不掛)
+        {...fieldFramelessValueProps(shouldSuppressLabel)}
         {...props}
         // 2026-07-05 D4 修:readOnly 鎖互動補 label 繞道 — <label htmlFor> 的 synthetic click
         // 不是 pointer event,cva pointer-events-none 攔不到,點 label 文字仍 toggle。

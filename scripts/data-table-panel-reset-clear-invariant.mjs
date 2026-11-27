@@ -25,6 +25,10 @@
  *            放在這支而不是 data-table-multi-sort(那支量 storybook 建置的 story,要傳自訂字得新增 story = 動 a11y 語料)或
  *            test-data-table-sort-cycle(純 node、沒有瀏覽器,只能查鍵有出現 —— 審查 A 第 2 輪把欄位 / 方向兩個讀屏名稱對調,它照樣全綠):
  *            這支已經直接打包 DataTableSortManager 原始碼,而且 selftest 要求每一條契約列都被某個突變弄紅過。
+ *        (5b) 欄位顯示面板 `labels`(2026-11-26 E9 開放,同一個入口、同一種量法;data-table.spec.md L4「欄位顯示面板的固定零件」那一列):12 個鍵各一格 ——
+ *            標題、搜尋框的 placeholder 與讀屏名稱、RotateCcw 鈕的讀屏名稱、底部按鈕兩種字(顯示全部 / 全部隱藏)、每一列拖曳把手與眼睛鈕(兩種狀態)的讀屏名稱、
+ *            三句播報(恢復預設、顯示全部、全部隱藏;按下去才量得到);不傳 = 每個位置是出口的預設值(= 開放前寫死的字)。位置按結構找(圖示、輸入框、data-*),不靠字。
+ *            對照組:突變 vis-labels-ignored(面板不理 labels = 修前寫死)必須剛好紅這 12 格;vis-labels-wrong-key(標題讀錯鍵)紅標題與預設兩格。
  *        (6) 寬度(2026-11-15 A19;data-table.spec.md「工具面板的寬度」,user 2026-11-11 逐字「此外，所有data table的工具面板應該都要具備可以被
  *            消費者調整寬度的能力對吧？處理方式照你建議…」+「尺寸:甲」):三個面板的 `width` / `minWidth` / `maxWidth`(px)量面板根元素的
  *            getBoundingClientRect 寬 ± 0.5 —— 不傳 = 預設寬不變(排序 30rem / 篩選 640、巢狀 760 / 欄位顯示撐滿外層 18rem);width 照給;
@@ -47,7 +51,7 @@
  * 用法:
  *   node scripts/data-table-panel-reset-clear-invariant.mjs              判定(現行原始碼)
  *   node scripts/data-table-panel-reset-clear-invariant.mjs --selftest   對照組(全部單一根因突變;基準 = 一趟完整判定)
- *   node scripts/data-table-panel-reset-clear-invariant.mjs --selftest --shard=<k>/<n>   只跑第 k 片突變(CI matrix 平行;基準照跑、覆蓋率靜態驗)
+ *   node scripts/data-table-panel-reset-clear-invariant.mjs --selftest --shard=<k>/<n>   只跑第 k 片突變(CI matrix 平行;基準與覆蓋率靜態驗只在第 0 片)
  *   node scripts/data-table-panel-reset-clear-invariant.mjs --root=<dir> 改量另一棵原始碼(例:git archive 出來的修改前基準樹)
  */
 import { INSTRUMENT_FAIL_MARKER, launchBrowserOrSkip } from './lib/launch-browser.mjs'
@@ -66,9 +70,10 @@ import {
 
 const SELFTEST = process.argv.includes('--selftest')
 /**
- * `--shard=<k>/<n>`(selftest):只跑 MUTANTS 裡索引 % n === k 的那一片(基準照跑 = 每一片都是一趟完整判定)。CI 把對照組拆成 n 片平行跑
+ * `--shard=<k>/<n>`(selftest):只跑 MUTANTS 裡索引 % n === k 的那一片。CI 把對照組拆成 n 片平行跑
  * (ci.yml verify-browser-nested-dismiss 的 matrix;同 overlay-nested-dismiss-invariant.mjs 的寫法):各片各自驗「每個突變剛好紅它的 expectRed」;
- * 覆蓋率改成靜態驗 —— 每一條契約列都必須出現在某個突變的 expectRed。不給 = 一片跑全部(本機 `npm run test:data-table-panel-reset-clear`、meta-test)。
+ * 覆蓋率改成靜態驗 —— 每一條契約列都必須出現在某個突變的 expectRed(只在第 0 片驗)。
+ * 基準 = 一趟完整判定,只在第 0 片跑(2026-11-26:每片都跑 = 同一趟判定一次 CI 跑 n 次);其他片的每個突變那一趟也量全部列、紅的列必須剛好等於 expectRed,所以現行原始碼哪一列退步,那幾片照樣紅,第 0 片的基準另印判定那一行。不給 = 一片跑全部(本機 `npm run test:data-table-panel-reset-clear`、meta-test)。
  */
 const SHARD = (() => {
   const raw = process.argv.find((a) => a.startsWith('--shard='))?.slice('--shard='.length)
@@ -88,7 +93,10 @@ const VIS = 'components/DataTable/data-table-column-visibility-panel.tsx'
 const WIDTH_LIB = 'components/DataTable/lib/panel-width.ts'
 const POPOVER = 'components/Popover/popover.tsx'
 const VIS_RESET = /const showReset = hasDefault && !isPanelResetStateEqual\(columnIds, current, defaults\)/
-const VIS_RUN = /bulk\.run\(e, defaults, '已恢復預設欄位顯示'\)/
+// 播報句 2026-11-26 起由 labels 給(E9:欄位顯示面板 labels);錨點跟著原始碼走,不再找寫死的中文
+const VIS_RUN = /bulk\.run\(e, defaults, labels\.resetToDefaultDone\)/
+const VIS_LABELS_RESOLVE = /const labels = React\.useMemo\(\(\) => \(\{ \.\.\.DATA_TABLE_COLUMN_VISIBILITY_PANEL_DEFAULT_LABELS, \.\.\.labelsOverride \}\), \[labelsOverride\]\)/
+const VIS_TITLE = /<PopoverTitle>\{labels\.title\}<\/PopoverTitle>/
 const VIS_HAS_DEFAULT = /const hasDefault = defaultVisibility !== undefined \|\| defaultColumnOrder !== undefined/
 const VIS_ORDER_APPLY = /onColumnOrderChange\(applyPanelOrder\(fullOrder, next\.order, columnIdSet\)\)/
 const VIS_ORDER_MERGE = /applyPanelOrder\(fullOrder, next\.order, columnIdSet\)/
@@ -135,6 +143,18 @@ const SORT_LABELS_EN = {
 }
 /** labels 場景每一條契約列(突變 sort-labels-ignored 必須剛好紅這些) */
 const SORT_LABEL_ROWS = ['sort-labels-title', 'sort-labels-reset', 'sort-labels-close', 'sort-labels-add', 'sort-labels-clear', 'sort-labels-drag', 'sort-labels-field', 'sort-labels-direction', 'sort-labels-direction-text', 'sort-labels-delete', 'sort-labels-reset-announce', 'sort-labels-clear-announce']
+/**
+ * 欄位顯示面板 `labels`(2026-11-26 E9 開放;同排序面板那一段的量法):一整份與預設不同、彼此也不同的字,每個字只會出現在一個位置 ——
+ * 位置錯一個,那一格量到的就是別的鍵的字。12 個鍵各一格(播報句三句要按下去才量得到)。
+ */
+const VIS_LABELS_EN = {
+  title: 'Columns', searchPlaceholder: 'Search columns…', searchAriaLabel: 'Search columns', resetToDefault: 'Reset columns', resetToDefaultDone: 'Columns reset to default',
+  showAll: 'Show all', showAllDone: 'All columns shown', hideAll: 'Hide all', hideAllDone: 'All columns hidden',
+  dragToReorder: 'Drag to reorder column', hideColumn: 'Hide column', showColumn: 'Show column',
+}
+/** 欄位顯示面板 labels 場景每一條契約列(突變 vis-labels-ignored 必須剛好紅這些) */
+const VIS_LABEL_ROWS = ['vis-labels-title', 'vis-labels-search-placeholder', 'vis-labels-search-aria', 'vis-labels-reset', 'vis-labels-show-all', 'vis-labels-drag', 'vis-labels-hide-column', 'vis-labels-show-column',
+  'vis-labels-show-all-announce', 'vis-labels-hide-all', 'vis-labels-hide-all-announce', 'vis-labels-reset-announce']
 
 const MUTANTS = [
   {
@@ -237,7 +257,9 @@ const MUTANTS = [
     // 永遠不出現 → 順序場景裡「該出現」與「按下去」的列也全紅(按鈕該在卻不在 = 產品紅);「不該出現」的列照綠
     expectRed: ['vis-reset-shown', 'vis-reset-shown-unlisted', 'vis-reset-click-value', 'vis-reset-click-focus', 'vis-reset-click-announce', 'vis-reset-edit-silences',
       'vis-order-only-shown', 'vis-order-columns-click-order', 'vis-order-click-value', 'vis-order-click-order', 'vis-order-keeps-others', 'vis-order-click-focus', 'vis-order-click-announce',
-      'vis-order-locked-first', 'vis-order-default-only-shown', 'vis-order-default-only-click'],
+      'vis-order-locked-first', 'vis-order-default-only-shown', 'vis-order-default-only-click',
+      // labels 場景(5b):「恢復預設」該在卻不在 → 它的字、播報與不傳 labels 那一格都量不到
+      'vis-labels-reset', 'vis-labels-reset-announce', 'vis-labels-defaults'],
     apply: (src) => replaceOnce(src, VIS_RESET, 'const showReset = Boolean((props as { resettable?: unknown }).resettable) && columnIds.some((id) => visibility[id] === false)'),
   },
   {
@@ -262,7 +284,7 @@ const MUTANTS = [
     file: VIS,
     // 播報列綠:這次動作的結果就是「全部顯示 + 目前的順序」,hook 的「值仍等於這次動作的結果」成立 —— 那是這個突變自己的結果
     expectRed: ['vis-reset-click-value', 'vis-reset-click-focus', 'vis-order-columns-click-order', 'vis-order-click-value', 'vis-order-click-order', 'vis-order-click-focus', 'vis-order-locked-first'],
-    apply: (src) => replaceOnce(src, VIS_RUN, "bulk.run(e, { visibility: {}, order: orderedIds }, '已恢復預設欄位顯示')"),
+    apply: (src) => replaceOnce(src, VIS_RUN, 'bulk.run(e, { visibility: {}, order: orderedIds }, labels.resetToDefaultDone)'),
   },
   {
     id: 'vis-reset-keeps-order',
@@ -284,7 +306,8 @@ const MUTANTS = [
     id: 'vis-search-opt-in',
     what: '欄位顯示面板修前:搜尋框要另外傳 searchable 才有(預設關;harness 不傳 → 沒有搜尋框)',
     file: VIS,
-    expectRed: ['vis-search-shown'],
+    // labels 場景(5b):搜尋框該在卻不在 → 它的 placeholder / 讀屏名稱與不傳 labels 那一格都量不到
+    expectRed: ['vis-search-shown', 'vis-labels-search-placeholder', 'vis-labels-search-aria', 'vis-labels-defaults'],
     apply: (src) => replaceOnce(src, VIS_SEARCH_BLOCK, '{false && ($&)}'),
   },
   {
@@ -292,7 +315,8 @@ const MUTANTS = [
     what: '欄位顯示面板修前:拖曳把手要另外開才有(修前的開關是「傳了 columnOrder + onColumnOrderChange」;兩個現在必填、harness 一定傳,所以這裡以「沒開」重現同一個形狀)',
     file: VIS,
     // 沒有把手 → [] 場景也拖不動(把手該在卻不在 = 產品紅)
-    expectRed: ['vis-row-handles', 'vis-order-empty-drag'],
+    // labels 場景(5b):把手該在卻不在 → 每一列把手的讀屏名稱與不傳 labels 那一格都量不到
+    expectRed: ['vis-row-handles', 'vis-order-empty-drag', 'vis-labels-drag', 'vis-labels-defaults'],
     apply: (src) => replaceOnce(src, VIS_GRIP, '<>{false ? ($&) : null}</>'),
   },
   {
@@ -376,7 +400,8 @@ const MUTANTS = [
     id: 'hook-no-announce',
     what: '整批動作後不播報',
     file: HOOK,
-    expectRed: ['sort-reset-click-announce', 'sort-clear-click-announce', 'filter-reset-click-announce', 'filter-clear-click-announce', 'vis-reset-click-announce', 'vis-order-click-announce', 'sort-labels-reset-announce', 'sort-labels-clear-announce'],
+    expectRed: ['sort-reset-click-announce', 'sort-clear-click-announce', 'filter-reset-click-announce', 'filter-clear-click-announce', 'vis-reset-click-announce', 'vis-order-click-announce', 'sort-labels-reset-announce', 'sort-labels-clear-announce',
+      'vis-labels-reset-announce', 'vis-labels-show-all-announce', 'vis-labels-hide-all-announce'],
     apply: (src) => replaceOnce(src, /const message = notice && isEqual\(value, notice\.after\) \? notice\.text : ''/, "const message = notice ? '' : ''"),
   },
   {
@@ -392,6 +417,20 @@ const MUTANTS = [
     file: SORT,
     expectRed: SORT_LABEL_ROWS,
     apply: (src) => replaceOnce(src, SORT_LABELS_RESOLVE, 'const labels = React.useMemo(() => resolveDataTableSortManagerLabels(undefined), [labelsOverride])'),
+  },
+  {
+    id: 'vis-labels-ignored',
+    what: '欄位顯示面板不理 labels(一律用預設字;= 2026-11-26 前寫死的樣子)',
+    file: VIS,
+    expectRed: VIS_LABEL_ROWS,
+    apply: (src) => replaceOnce(src, VIS_LABELS_RESOLVE, 'const labels = React.useMemo(() => ({ ...DATA_TABLE_COLUMN_VISIBILITY_PANEL_DEFAULT_LABELS }), [labelsOverride])'),
+  },
+  {
+    id: 'vis-labels-wrong-key',
+    what: '欄位顯示面板標題列的標題讀錯鍵(讀成搜尋框的讀屏名稱;鍵都有接、字放錯位置)',
+    file: VIS,
+    expectRed: ['vis-labels-title', 'vis-labels-defaults'],
+    apply: (src) => replaceOnce(src, VIS_TITLE, '<PopoverTitle>{labels.searchAriaLabel}</PopoverTitle>'),
   },
   {
     id: 'hook-sticky-message',
@@ -476,14 +515,15 @@ const MUTANTS = [
     what: 'PopoverContent 不理 width 數字(修前:只能寫 className)',
     file: POPOVER,
     expectRed: ['popover-w-px'],
-    apply: (src) => replaceOnce(src, /style=\{typeof width === "number" \? \{ width: `\$\{width\}px`, maxWidth: OVERLAY_VIEWPORT_MAX_WIDTH, \.\.\.style \} : style\}/, 'style={style}'),
+    // 2026-11-24 起 PopoverContent 的 style 是一個物件(高度上限 capHeight + width 數字那一段 + consumer style);拿掉 width 數字那一段
+    apply: (src) => replaceOnce(src, /\.\.\.\(typeof width === "number" \? \{ width: `\$\{width\}px`, maxWidth: OVERLAY_VIEWPORT_MAX_WIDTH \} : null\),/, ''),
   },
   {
     id: 'popover-width-no-clamp',
     what: 'PopoverContent width 數字沒有視窗夾限',
     file: POPOVER,
     expectRed: ['popover-w-375'],
-    apply: (src) => replaceOnce(src, /maxWidth: OVERLAY_VIEWPORT_MAX_WIDTH, \.\.\.style/, '...style'),
+    apply: (src) => replaceOnce(src, /, maxWidth: OVERLAY_VIEWPORT_MAX_WIDTH \} : null\)/, ' } : null)'),
   },
   {
     id: 'popover-hug-ignored',
@@ -502,7 +542,7 @@ import { Popover, PopoverTrigger, PopoverContent, PopoverHeader, PopoverTitle, P
 import { Button } from '@/design-system/components/Button/button'
 import { DataTableSortManager, DATA_TABLE_SORT_MANAGER_DEFAULT_LABELS } from '@/design-system/components/DataTable/data-table-sort-manager'
 import { DataTableFilterPanel } from '@/design-system/components/DataTable/data-table-filter-panel'
-import { DataTableColumnVisibilityPanel } from '@/design-system/components/DataTable/data-table-column-visibility-panel'
+import { DataTableColumnVisibilityPanel, DATA_TABLE_COLUMN_VISIBILITY_PANEL_DEFAULT_LABELS } from '@/design-system/components/DataTable/data-table-column-visibility-panel'
 
 const SORT_COLS = [
   { accessorKey: 'priority', header: '優先級' },
@@ -569,6 +609,9 @@ const SCENES = {
   'vis-order-default-only': { panel: 'vis', value: { dueDate: false }, defOrder: VIS_SAVED_ORDER, locked: ['key'], order: VIS_SAVED_ORDER },
   // 拖過,但兩個預設都沒傳
   'vis-order-nodefault': { panel: 'vis', value: {}, locked: ['key'], order: VIS_DRAGGED_ORDER },
+  // ── labels(5b,2026-11-26 E9):收起「到期日」(一列眼睛閉、其餘開;底部是「顯示全部」)、與預設不同(「恢復預設」在)、鍵值鎖定(沒有把手)→ 每個位置都有字可量 ──
+  'vis-labels':         { panel: 'vis', value: { dueDate: false }, def: SAVED_VIS, locked: ['key'], labels: ${JSON.stringify(VIS_LABELS_EN)} },
+  'vis-labels-default': { panel: 'vis', value: { dueDate: false }, def: SAVED_VIS, locked: ['key'] },
   // ── 固定零件(4b,2026-11-15)──
   // consumer 的 columnOrder 從 TanStack 的初始值 [] 開始(照 columns 列出、拖得動)
   'vis-order-empty': { panel: 'vis', value: SAVED_VIS, def: SAVED_VIS, locked: ['key'], order: [] },
@@ -617,7 +660,7 @@ function Panel({ scene }) {
   }
   if (s.panel === 'vis') {
     return <DataTableColumnVisibilityPanel className="w-72" columns={s.cols || VIS_COLS} visibility={value} onVisibilityChange={setValue}
-      columnOrder={order} onColumnOrderChange={setOrder} defaultVisibility={s.def} defaultColumnOrder={s.defOrder} lockedIds={s.locked} {...(s.w || {})} />
+      columnOrder={order} onColumnOrderChange={setOrder} defaultVisibility={s.def} defaultColumnOrder={s.defOrder} lockedIds={s.locked} labels={s.labels} {...(s.w || {})} />
   }
   if (s.panel === 'sort') return <DataTableSortManager columns={SORT_COLS} sorting={value} onSortingChange={setValue} defaultSorting={s.def} labels={s.labels} {...extra} />
   return <DataTableFilterPanel columns={FILTER_COLS} value={value} onChange={setValue} defaultValue={s.def} maxConditions={s.maxConditions} {...extra} />
@@ -802,6 +845,46 @@ window.__probeLabels = () => {
   }
 }
 window.__sortManagerDefaults = DATA_TABLE_SORT_MANAGER_DEFAULT_LABELS
+// 欄位顯示面板 labels 場景:按**結構**找每個位置(不靠字):標題列的標題 / RotateCcw 圖示鈕、唯一的輸入框、底部按鈕、
+// 每一列 = 從每一顆眼睛鈕(Eye / EyeOff 圖示)往上找「只含這一顆」的最外層;列裡的 GripVertical 把手;鎖定列 = 眼睛鈕停用
+const visLabelParts = () => {
+  const host = document.getElementById('scene-host')
+  if (!host) return null
+  const header = host.querySelector('[data-slot="surface-header"]')
+  const eyes = [...host.querySelectorAll('button')].filter((b) => hasIcon(b, /lucide-eye/))
+  const rowOf = (b) => { let x = b; while (x.parentElement && x.parentElement !== host && eyes.filter((e) => x.parentElement.contains(e)).length === 1) x = x.parentElement; return x }
+  return {
+    title: header ? header.querySelector('h1,h2,h3,h4,h5,h6') : null,
+    reset: header ? [...header.querySelectorAll('button')].find((b) => !b.hasAttribute('data-dismiss') && hasIcon(b, /lucide-rotate-ccw/)) || null : null,
+    search: host.querySelector('input'),
+    bulk: host.querySelector('[data-popover-footer] button'),
+    rows: eyes.map((b) => {
+      const row = rowOf(b)
+      return { toggle: b, hidden: hasIcon(b, /lucide-eye-off/), locked: b.disabled, drag: [...row.querySelectorAll('[aria-label]')].find((el) => hasIcon(el, /lucide-grip-vertical/)) || null }
+    }),
+    live: host.querySelector('[data-panel-live-region]'),
+  }
+}
+window.__probeVisLabels = () => {
+  const p = visLabelParts()
+  if (!p) return null
+  const text = (el) => (el ? (el.textContent || '').replace(/\\s+/g, ' ').trim() : null)
+  const aria = (el) => (el ? el.getAttribute('aria-label') : null)
+  return {
+    title: text(p.title), reset: aria(p.reset), searchPlaceholder: p.search ? p.search.getAttribute('placeholder') : null, searchAria: aria(p.search), bulk: text(p.bulk),
+    rows: p.rows.map((r) => ({ toggle: aria(r.toggle), hidden: r.hidden, locked: r.locked, drag: aria(r.drag) })),
+    live: p.live ? (p.live.textContent || '') : null,
+  }
+}
+window.__visPanelDefaults = DATA_TABLE_COLUMN_VISIBILITY_PANEL_DEFAULT_LABELS
+/** 欄位顯示面板 labels 場景:把結構上的「恢復預設」/ 底部按鈕標上 data-press-target;不在 = false */
+window.__markVisLabels = (kind) => {
+  const p = visLabelParts()
+  const el = p ? (kind === 'reset' ? p.reset : p.bulk) : null
+  if (!el) return false
+  el.setAttribute('data-press-target', '')
+  return true
+}
 /** labels 場景:把結構上的「恢復預設」/「清除全部」標上 data-press-target;不在 = false */
 window.__markLabels = (kind) => {
   const p = sortLabelParts()
@@ -1047,6 +1130,58 @@ async function runChecks(page) {
   const gotDefault = { title: pd.title, reset: pd.reset, close: pd.close, add: pd.add, clear: pd.clear, rows: pd.rows }
   check('sort-labels-defaults', 'contract', '排序面板不傳 labels:每個位置 = DATA_TABLE_SORT_MANAGER_DEFAULT_LABELS 的同一個鍵', JSON.stringify(gotDefault) === JSON.stringify(wantDefault), { got: gotDefault, want: wantDefault })
 
+  // ── 欄位顯示面板 labels(5b,2026-11-26 E9):12 個鍵各一格,每個字在對的元素 / 屬性上(位置按結構找,見 harness visLabelParts)──
+  const VL = VIS_LABELS_EN
+  const probeVisLabels = async (name) => {
+    const p = await page.evaluate(() => window.__probeVisLabels())
+    // 五列找不到 = 量具對不到元件結構(不是產品裁決):場景給的就是五欄
+    if (!p || p.rows.length !== VIS_IDS.length) throw new InstrumentError(`欄位顯示面板 labels 場景 ${name}:找不到 ${VIS_IDS.length} 列(實得 ${p ? p.rows.length : '無'} 列)—— 量具的結構定位對不到元件`)
+    return p
+  }
+  await scene('vis-labels')
+  const vl = await probeVisLabels('vis-labels')
+  const vlUnlocked = vl.rows.filter((r) => !r.locked)
+  check('vis-labels-title', 'contract', `欄位顯示面板 labels:標題列的標題 = title「${VL.title}」`, vl.title === VL.title, { title: vl.title })
+  check('vis-labels-search-placeholder', 'contract', `欄位顯示面板 labels:搜尋框的 placeholder = searchPlaceholder「${VL.searchPlaceholder}」`, vl.searchPlaceholder === VL.searchPlaceholder, { placeholder: vl.searchPlaceholder })
+  check('vis-labels-search-aria', 'contract', `欄位顯示面板 labels:搜尋框的讀屏名稱 = searchAriaLabel「${VL.searchAriaLabel}」`, vl.searchAria === VL.searchAriaLabel, { aria: vl.searchAria })
+  check('vis-labels-reset', 'contract', `欄位顯示面板 labels:標題列 RotateCcw 鈕的讀屏名稱 = resetToDefault「${VL.resetToDefault}」`, vl.reset === VL.resetToDefault, { reset: vl.reset })
+  check('vis-labels-show-all', 'contract', `欄位顯示面板 labels:有一欄收起 → 底部按鈕的字 = showAll「${VL.showAll}」`, vl.bulk === VL.showAll, { bulk: vl.bulk })
+  check('vis-labels-drag', 'contract', `欄位顯示面板 labels:每一個沒鎖的欄位列,拖曳把手的讀屏名稱 = dragToReorder「${VL.dragToReorder}」(${VIS_IDS.length - 1} 列)`,
+    vlUnlocked.length === VIS_IDS.length - 1 && vlUnlocked.every((r) => r.drag === VL.dragToReorder), { rows: vlUnlocked.map((r) => r.drag) })
+  check('vis-labels-hide-column', 'contract', `欄位顯示面板 labels:顯示中的欄(Eye)的眼睛鈕讀屏名稱 = hideColumn「${VL.hideColumn}」`,
+    vl.rows.filter((r) => !r.hidden).length === VIS_IDS.length - 1 && vl.rows.filter((r) => !r.hidden).every((r) => r.toggle === VL.hideColumn), { rows: vl.rows })
+  check('vis-labels-show-column', 'contract', `欄位顯示面板 labels:收起的欄(EyeOff)的眼睛鈕讀屏名稱 = showColumn「${VL.showColumn}」`,
+    vl.rows.filter((r) => r.hidden).length === 1 && vl.rows.filter((r) => r.hidden).every((r) => r.toggle === VL.showColumn), { rows: vl.rows })
+  const pressVisLabel = async (kind) => {
+    const ok = await page.evaluate((k) => window.__markVisLabels(k), kind)
+    if (!ok) return false
+    await d.focus('[data-press-target]')
+    await page.evaluate(() => document.querySelector('[data-press-target]')?.removeAttribute('data-press-target'))
+    await d.press('Enter')
+    return true
+  }
+  // 底部按鈕按兩下:有一欄收起 →「顯示全部」→ 唸 showAllDone、字換成「全部隱藏」→ 再按 → 唸 hideAllDone
+  const pressedShowAll = await pressVisLabel('bulk')
+  const afterShowAll = await page.evaluate(() => window.__probeVisLabels())
+  check('vis-labels-show-all-announce', 'contract', `欄位顯示面板 labels:按底部「${VL.showAll}」→ polite 區域唸 showAllDone「${VL.showAllDone}」`, pressedShowAll && afterShowAll?.live === VL.showAllDone, { pressed: pressedShowAll, live: afterShowAll?.live })
+  check('vis-labels-hide-all', 'contract', `欄位顯示面板 labels:全部顯示之後 → 底部按鈕的字 = hideAll「${VL.hideAll}」`, pressedShowAll && afterShowAll?.bulk === VL.hideAll, { pressed: pressedShowAll, bulk: afterShowAll?.bulk })
+  const pressedHideAll = await pressVisLabel('bulk')
+  const afterHideAll = await page.evaluate(() => window.__probeVisLabels())
+  check('vis-labels-hide-all-announce', 'contract', `欄位顯示面板 labels:再按底部「${VL.hideAll}」→ polite 區域唸 hideAllDone「${VL.hideAllDone}」`, pressedHideAll && afterHideAll?.live === VL.hideAllDone, { pressed: pressedHideAll, live: afterHideAll?.live })
+  await scene('vis-labels')
+  const pressedVisReset = await pressVisLabel('reset')
+  const afterVisReset = await page.evaluate(() => window.__probeVisLabels())
+  check('vis-labels-reset-announce', 'contract', `欄位顯示面板 labels:按標題列 RotateCcw 鈕 → polite 區域唸 resetToDefaultDone「${VL.resetToDefaultDone}」`, pressedVisReset && afterVisReset?.live === VL.resetToDefaultDone, { pressed: pressedVisReset, live: afterVisReset?.live })
+  // 不傳 labels:每個位置 = 面板出口的預設值(DATA_TABLE_COLUMN_VISIBILITY_PANEL_DEFAULT_LABELS;預設字 = 2026-11-26 前寫死的字)
+  await scene('vis-labels-default')
+  const vd = await probeVisLabels('vis-labels-default')
+  const VD = await page.evaluate(() => window.__visPanelDefaults)
+  const visView = (p) => ({ title: p.title, reset: p.reset, searchPlaceholder: p.searchPlaceholder, searchAria: p.searchAria, bulk: p.bulk,
+    rows: p.rows.map((r) => ({ toggle: r.toggle, drag: r.locked ? null : r.drag })) })
+  const wantVisDefault = { title: VD.title, reset: VD.resetToDefault, searchPlaceholder: VD.searchPlaceholder, searchAria: VD.searchAriaLabel, bulk: VD.showAll,
+    rows: vd.rows.map((r) => ({ toggle: r.hidden ? VD.showColumn : VD.hideColumn, drag: r.locked ? null : VD.dragToReorder })) }
+  check('vis-labels-defaults', 'contract', '欄位顯示面板不傳 labels:每個位置 = DATA_TABLE_COLUMN_VISIBILITY_PANEL_DEFAULT_LABELS 的同一個鍵', JSON.stringify(visView(vd)) === JSON.stringify(wantVisDefault), { got: visView(vd), want: wantVisDefault })
+
   // ── 寬度(6,2026-11-15 A19):width / minWidth / maxWidth + 下限 + 視窗夾限;預設寬不變;PopoverContent width ──
   const widthScene = async (name) => {
     await scene(name)
@@ -1141,6 +1276,8 @@ function report({ label, checks }) {
   }
 }
 const redIds = (checks) => checks.filter((c) => !c.pass).map((c) => c.id).sort()
+/** 判定紅的那一行 —— 判定模式與 selftest 基準共用(CI 只跑 --selftest,基準紅就是產品裁決,不能只印「量具不可信」) */
+const verdictRedLine = (red) => `\n✗ 面板「恢復預設 / 清除全部」與寬度:${red.length} 條不符(${red.join(' / ')})—— SSOT data-table.spec.md L4「Header 恢復預設 / 清除全部」、「工具面板的寬度」`
 
 let browser
 try {
@@ -1152,29 +1289,37 @@ try {
     report(result)
     const red = redIds(result.checks)
     if (red.length) {
-      console.log(`\n✗ 面板「恢復預設 / 清除全部」與寬度:${red.length} 條不符(${red.join(' / ')})—— SSOT data-table.spec.md L4「Header 恢復預設 / 清除全部」、「工具面板的寬度」`)
+      console.log(verdictRedLine(red))
       process.exitCode = 1
     } else {
       console.log(`\n✓ 面板「恢復預設 / 清除全部」與寬度:${result.checks.length} 條全綠(含 ${result.checks.filter((c) => c.kind === 'control').length} 條對照)`)
     }
   } else {
-    const baseline = await runVariant(page, '現行原始碼(selftest 基準 = 一趟完整判定,必須全綠)', null)
-    report(baseline)
     const problems = []
-    if (redIds(baseline.checks).length) problems.push(`現行原始碼本身就紅(${redIds(baseline.checks).join(' / ')}),突變的紅燈無法歸因`)
-    // 對照:突變錨點對不到 → 共用 bundleDsHarness 必須丟回 InstrumentError(本閘接住 → INSTRUMENT-FAIL、exit 2),
-    // 不是被 esbuild 包成一般的 Build failed(2026-11-15 前:未捕捉、exit 1、沒有標記)
-    const missAnchor = await bundleDsHarness({
-      root: SOURCE_ROOT, harness: HARNESS, harnessName: 'data-table-panel-reset-clear-harness.tsx',
-      mutate: mutantFor(SOURCE_ROOT, SORT, (src) => replaceOnce(src, /這個錨點在原始碼裡不存在_anchor_miss_control/, '')),
-    }).then(() => null, (error) => error)
-    if (missAnchor instanceof InstrumentError && missAnchor.message.includes('突變錨點命中 0 次')) {
-      // 這一行不印儀器失效的標記字樣:gate-selftest-meta 看到標記一律判紅(對照組成立時印的是「抓到了」,不是「量不到」)
-      console.log('\n  ✓ 對照:突變錨點對不到 → InstrumentError(本閘印儀器失效標記、exit 2)')
-    } else {
-      problems.push(`突變錨點對不到時應丟 InstrumentError(「突變錨點命中 0 次」),實得 ${missAnchor ? `${missAnchor.constructor?.name}:${String(missAnchor.message).split('\n')[0]}` : '打包成功(錨點對照組不成立)'}`)
-    }
-    const contractIds = baseline.checks.filter((c) => c.kind === 'contract').map((c) => c.id)
+    // 基準、錨點對照與靜態覆蓋只在不分片或第 0 片跑(見 SHARD 的說明;各片都跑 = 同一件事一次 CI 跑 n 次);其他片 contractIds = null
+    let contractIds = null
+    if (!SHARD || SHARD.k === 0) {
+      const baseline = await runVariant(page, '現行原始碼(selftest 基準 = 一趟完整判定,必須全綠)', null)
+      report(baseline)
+      const baseRed = redIds(baseline.checks)
+      if (baseRed.length) {
+        console.log(verdictRedLine(baseRed))
+        problems.push(`現行原始碼本身就紅(${baseRed.join(' / ')}),突變的紅燈無法歸因`)
+      }
+      // 對照:突變錨點對不到 → 共用 bundleDsHarness 必須丟回 InstrumentError(本閘接住 → INSTRUMENT-FAIL、exit 2),
+      // 不是被 esbuild 包成一般的 Build failed(2026-11-15 前:未捕捉、exit 1、沒有標記)
+      const missAnchor = await bundleDsHarness({
+        root: SOURCE_ROOT, harness: HARNESS, harnessName: 'data-table-panel-reset-clear-harness.tsx',
+        mutate: mutantFor(SOURCE_ROOT, SORT, (src) => replaceOnce(src, /這個錨點在原始碼裡不存在_anchor_miss_control/, '')),
+      }).then(() => null, (error) => error)
+      if (missAnchor instanceof InstrumentError && missAnchor.message.includes('突變錨點命中 0 次')) {
+        // 這一行不印儀器失效的標記字樣:gate-selftest-meta 看到標記一律判紅(對照組成立時印的是「抓到了」,不是「量不到」)
+        console.log('\n  ✓ 對照:突變錨點對不到 → InstrumentError(本閘印儀器失效標記、exit 2)')
+      } else {
+        problems.push(`突變錨點對不到時應丟 InstrumentError(「突變錨點命中 0 次」),實得 ${missAnchor ? `${missAnchor.constructor?.name}:${String(missAnchor.message).split('\n')[0]}` : '打包成功(錨點對照組不成立)'}`)
+      }
+      contractIds = baseline.checks.filter((c) => c.kind === 'contract').map((c) => c.id)
+    } else console.log(`\n· 分片 ${SHARD.k}/${SHARD.n}:基準(一趟完整判定)、錨點對照與靜態覆蓋只在第 0 片跑;這一片每個突變那一趟仍量全部列,紅的列必須剛好等於 expectRed`)
     const covered = new Set()
     const RUN = MUTANTS.filter((m, i) => !SHARD || i % SHARD.n === SHARD.k)
     if (!RUN.length) throw new InstrumentError(`這一片沒有任何突變可跑(--shard=${SHARD.k}/${SHARD.n})—— 不得讀成通過`)
@@ -1189,20 +1334,24 @@ try {
       for (const id of red) covered.add(id)
     }
     // 靜態覆蓋:每一條契約列都要有突變宣告會讓它紅(分片時各片只看得到自己那幾個突變,動態覆蓋要所有片合起來才完整)
-    const claimed = new Set(MUTANTS.flatMap((m) => m.expectRed))
-    const unclaimed = contractIds.filter((id) => !claimed.has(id))
-    if (unclaimed.length) problems.push(`契約列 ${unclaimed.join(' / ')} 不在任何突變的 expectRed —— 它的綠燈是零證據`)
-    const phantom = [...claimed].filter((id) => !contractIds.includes(id))
-    if (phantom.length) problems.push(`突變的 expectRed 寫了不是契約列的 ${phantom.join(' / ')}`)
-    const uncovered = contractIds.filter((id) => !covered.has(id))
-    if (!SHARD && uncovered.length) problems.push(`契約列 ${uncovered.join(' / ')} 沒有任何突變能讓它紅 —— 它的綠燈是零證據`)
+    if (contractIds) {
+      const claimed = new Set(MUTANTS.flatMap((m) => m.expectRed))
+      const unclaimed = contractIds.filter((id) => !claimed.has(id))
+      if (unclaimed.length) problems.push(`契約列 ${unclaimed.join(' / ')} 不在任何突變的 expectRed —— 它的綠燈是零證據`)
+      const phantom = [...claimed].filter((id) => !contractIds.includes(id))
+      if (phantom.length) problems.push(`突變的 expectRed 寫了不是契約列的 ${phantom.join(' / ')}`)
+    }
+    if (!SHARD) {
+      const uncovered = contractIds.filter((id) => !covered.has(id))
+      if (uncovered.length) problems.push(`契約列 ${uncovered.join(' / ')} 沒有任何突變能讓它紅 —— 它的綠燈是零證據`)
+    }
     if (problems.length) {
       console.log('\n✗ selftest:量具不可信 ——')
       for (const p of problems) console.log(`  - ${p}`)
       process.exitCode = 1
     } else {
       console.log(SHARD
-        ? `\n✓ selftest 第 ${SHARD.k + 1} / ${SHARD.n} 片:${RUN.length} 個根因突變各自剛好紅了該紅的列,對照列全程綠(全部 ${MUTANTS.length} 個突變的 expectRed 涵蓋契約 ${contractIds.length} 條;其餘片在 CI 同一個 matrix 的另一格跑)`
+        ? `\n✓ selftest 第 ${SHARD.k + 1} / ${SHARD.n} 片:${RUN.length} 個根因突變各自剛好紅了該紅的列,對照列全程綠(${contractIds ? `全部 ${MUTANTS.length} 個突變的 expectRed 涵蓋契約 ${contractIds.length} 條` : '基準與契約覆蓋在第 0 片驗'};其餘片在 CI 同一個 matrix 的另一格跑)`
         : `\n✓ selftest:${MUTANTS.length} 個根因突變各自剛好紅了該紅的列(契約 ${contractIds.length} 條全被覆蓋),對照列全程綠 —— 量具會紅`)
     }
   }

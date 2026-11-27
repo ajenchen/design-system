@@ -79,9 +79,11 @@ Popover（浮動容器，handle 展開 / 定位）
 
 **定位**:SelectMenu 的 `sideOffset` 與 `align` 直接走 Popover canonical——`sideOffset=8` / `align` 跟隨 trigger 位置(見 `../Popover/popover.spec.md`「Align 對齊 canonical(跨浮層 SSOT)」)。SelectMenu 不自訂浮層定位規則。
 
-**視覺 vs 語意**(2026-04-20 精緻化):SelectMenu 的預設 `min-width = max(trigger width, 240px)`；trigger ≥ 240px 時與 trigger 同寬，較窄 trigger 會擴至 240px。`minWidth` prop **只能把這個下限往上拉**:有效下限 = `max(trigger width, 240px, minWidth)`(2026-11-17 A95;規則住 `../../../ds-canonical/references/props-naming.md`「尺寸參數」第 8 條;之前是整個取代預設,可以比 trigger 窄)。寬度相等時 `start` / `end` 兩種 align 呈現視覺相同；popover 寬於 trigger 時，align 差異才會顯現，並嚴格遵守 structured overlay canonical(trigger 在左 → start / 右 → end)。(SelectMenu `align` prop 僅暴露 `'start' | 'end'`,不開放底層的 `center`。)
+**視覺 vs 語意**(2026-04-20 精緻化):SelectMenu 的預設 `min-width = max(trigger width, 240px)`；trigger ≥ 240px 時與 trigger 同寬，較窄 trigger 會擴至 240px。`minWidth` prop **只能把這個下限往上拉**:有效下限 = `max(trigger width, 240px, minWidth)`(2026-11-17 A95;規則住 `../../../ds-canonical/references/props-naming.md`「尺寸參數」第 8 條;之前是整個取代預設,可以比 trigger 窄)。Select / Combobox / PeoplePicker 都把同名參數 `minWidth` 轉到這裡(2026-11-26,產品 canary 回報 C1;之前三個包裝元件都沒有這個參數)。寬度相等時 `start` / `end` 兩種 align 呈現視覺相同；popover 寬於 trigger 時，align 差異才會顯現，並嚴格遵守 structured overlay canonical(trigger 在左 → start / 右 → end)。(SelectMenu `align` prop 僅暴露 `'start' | 'end'`,不開放底層的 `center`。)
 
 換言之 SelectMenu **永遠照 canonical**；只有 trigger ≥ 240px 且未再提高 `minWidth` 時，等寬會讓 align 差異被視覺遮蔽。一旦 popover 寬於 trigger，canonical 立即顯現。
+
+**清單的高度上限(`maxHeight`,2026-11-24)**:預設 = 半列原則(最後一列切在半列;選項帶 `description` 時用兩行列的列高),傳 `maxHeight`(數字 px 或字串)取代預設,實際上限 = min(可用高, 此值)—— 與 `DropdownMenuContent` 的 `maxHeight` 同一個參數、同一條公式;夾的是清單捲動區(轉給 `CommandList`),搜尋框與全選頁尾不算在內。理由、N 與公式住 `../Command/command.spec.md`「清單捲動上限(半列原則)」。Select / Combobox / PeoplePicker 都把同名參數轉到這裡。
 
 **欄位的 blur(表單接線,2026-10-21 r1b fields F1)**:SelectMenu 同時握著觸發點與浮層,「觸發欄位 + 浮層 = 同一個欄位」的判準由它掛(`../../lib/composite-field-focus.ts` `useCompositeFieldBlur`)—— `onFieldBlur` 在整組真的離開時呼叫一次(含從浮層直接離開、握著焦點的搜尋框 / cmdk 殼隨收起卸載);`fieldParts` 回傳同一個欄位的其他零件(Combobox 的「+N」浮出清單)。Select / Combobox(PeoplePicker 經它們)用這兩個 prop 接 consumer 的 `onBlur`(`../Select/select.spec.md`「表單接線」、`../Combobox/combobox.spec.md`「表單整合」`onBlur` 列)。
 
@@ -143,7 +145,7 @@ Popover（浮動容器，handle 展開 / 定位）
 
 ## 分組（group）
 
-透過 `groups` prop 定義分組標籤，每個 option 的 `group` 欄位指向 group key。
+透過 `groups` prop 定義分組標籤，每個 option 的 `group` 欄位指向 group key。Select 與 Combobox 都收 `groups` 並原樣轉到這裡(Combobox 2026-11-26 補,產品 canary 回報 C24:之前選項有 `group` 欄位卻沒有 `groups` 參數);PeoplePicker 不收(人員資料 `PersonData` 沒有 group 欄位)。
 
 **何時使用**：
 - 選項明顯分兩個以上邏輯群組（「Recent」/「All」、「Your team」/「Others」）
@@ -210,7 +212,7 @@ Popover（浮動容器，handle 展開 / 定位）
 
 **訊息列規格**(`menu-item.tsx:200-219`;樣式 owner `../Menu/menu-item.spec.md`「Message row」):
 - 非互動:`role="presentation"` + `pointer-events-none`;次要色 `text-fg-muted`;一般字重(medium 是群組標題的辨識訊號,訊息列不用);內容水平 + 垂直置中
-- 列幾何與選項**完全相同**(`ROW_PADDING_BY_SIZE`,`item-anatomy.tsx:145-149`:`py = (field-height − 1lh) / 2`;字級 sm/md `text-body`、lg `text-body-lg`),所以一列高 = `--field-height-{size}`(sm 28 / md 32 / lg 36,`tokens/uiSize/uiSize.css` `:root` 段的 `--field-height-*`)
+- 列幾何與選項**完全相同**(`ROW_PADDING_BY_SIZE`,`item-anatomy.tsx:148-152`:`py = (field-height − 1lh) / 2`;字級 sm/md `text-body`、lg `text-body-lg`),所以一列高 = `--field-height-{size}`(sm 28 / md 32 / lg 36,`tokens/uiSize/uiSize.css` `:root` 段的 `--field-height-*`)
 - 住在 `MenuGroup`(`py-2` 上下各 8px,`../Menu/menu-item.spec.md`「Group」):**md 浮層高 = 8 + 32 + 8 = 48px,與 1 筆結果等高**;sm 44 / lg 52。density 切換跟著 token 走
 - **沒有任何最小高度**:舊的 `minRows` / `getMenuListMinHeight` 已移除(`field-types.ts:98-100` 退役註解);0 筆與 1 筆一樣高,不撐 3 列
 - 不放圖示、**不用 `Empty` 元件**:Empty 是頁面 / 區塊層級「有解釋、可帶圖示與動作」的空狀態(`../Empty/empty.spec.md`「何時用」);選單裡的 0 筆只是一句提示
@@ -310,6 +312,9 @@ SelectMenu 是 **composite**(Popover trigger + Command search + 滾動 MenuItem 
 ## Option schema 增項紀錄
 
 - `iconClassName?`(2026-07-08):option icon 染色通道(status 類彩色選項;WM 戰役——原窄 schema 逼 consumer 手刻 bare trigger)。disabled 色仍勝出(menu-item.tsx 順序保證)。
+- `startContent?`(2026-11-26,workspace F 組 F4-2):選項前綴的自訂節點(例:工作項類型的色塊方塊),轉給 MenuItem 的 `startContent`;與 `icon` / `avatar` 三選一(`../Menu/menu-item.spec.md`「❌ `startIcon` / `avatar` / `startContent` 三者不可同時使用」),節點尺寸 = `ICON_SIZE[size]`,方塊本身每種 size 的規格待 C5 定案。Select 欄位上的已選值前綴跟著選中項畫(`../Select/select.spec.md` 圖示對照表)。
+- **包裝元件的轉換只住一處**(2026-11-26):Select / Combobox 把自己的選項轉成 `SelectMenuOption` 一律呼叫 `select-menu.tsx` 的 `toSelectMenuOption`(鍵表 `SELECT_MENU_OPTION_KEYS` 逐鍵照抄 + 型別斷言:`SelectMenuOption` 新增欄位卻沒加進鍵表,`npm run build:lib` 紅)。之前兩邊各寫一份手寫物件,兩份都漏轉 `iconClassName`,TypeScript 結構型別不報錯。Select tag 模式不給前綴圖形(`suppressPrefixIcon`,`icon` 與 `startContent` 一起收)。
+- **類別色不進 primitive schema**(2026-11-25,AI 推導):選項要帶 Tag 類別色時用 Select 的 wrapper 專屬欄位 `tagVariant`(`CategoricalColor`;`../Select/select.spec.md`「tag 模式」),選單列經 `renderLabel` 畫成 Tag。只有 Select 的 tag 顯示畫類別色(Combobox / PeoplePicker 的 Tag 不畫),所以顏色不上擴到 `SelectMenuOption`。
 
 ## 相關
 

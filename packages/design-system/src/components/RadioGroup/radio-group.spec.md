@@ -32,6 +32,8 @@ RadioGroup 是**互斥單選且全選項可見**的表單控件——從 2-5 個
 
 共用規則見 `../Checkbox/checkbox.spec.md`（Checkbox & RadioGroup 設計原則，含 SelectionItem 佈局與 clamp 政策）。
 
+**排列方向**:`orientation` 同時決定版面與方向鍵,版面照 `../Checkbox/checkbox.spec.md`「Orientation」(與 CheckboxGroup 同一張表:直排 `grid` 零外部間距、`horizontal` = `flex flex-wrap gap-4`);不要在 `className` 另寫 `flex` / `gap-*` 排版。方向鍵與 `aria-orientation` 照常交給 Radix(見下方「A11y 預設」)。
+
 ---
 
 ## 何時用
@@ -136,7 +138,7 @@ Item-level default / hover / checked / disabled **色彩**與 Checkbox 共用同
 
 **Focus**:Radix primitive 以 roving tabindex 管理群組內焦點(整組只佔一個 Tab 停留點,方向鍵在選項間移動);**非** focus trap——Tab 仍會離開群組、跳到下一個表單欄位。聚焦時顯示焦點框:全域 `:focus-visible` 外描邊(`outline: 2px solid var(--ring)`,往外 2px;radio-group.tsx 不寫任何焦點 class,也不寫 `outline-none`,per design-system focus-visible canonical)。
 
-**驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。「整組只佔一個 Tab 停留點、停在已選 / 第一個可用的圓」由 `scripts/radio-group-tab-stop-invariant.mjs` 真按 Tab / Shift+Tab 量(2026-11-05 起;2026-06-05 409b91da 到 11-05 之間 `RadioGroupItem` 明寫的 `tabIndex={undefined}` 蓋掉 Radix roving,每個圓各一個停留點)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
+**驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。「整組只佔一個 Tab 停留點、停在已選 / 第一個可用的圓」由 `scripts/radio-group-tab-stop-invariant.mjs` 真按 Tab / Shift+Tab 量(2026-11-05 起;2026-06-05 409b91da 到 11-05 之間 `RadioGroupItem` 明寫的 `tabIndex={undefined}` 蓋掉 Radix roving,每個圓各一個停留點)。同一支閘也量排列方向:`orientation="horizontal"` 的群組選項在同一列、相鄰選項間距 = Checkbox 展示頁「水平排列」實量值,直排群組相鄰選項列距 = 0(2026-11-26 起;之前根節點寫死 `grid`,橫排只改了方向鍵)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 

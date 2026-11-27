@@ -1,7 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import { useState } from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
-import { ChevronUp, ChevronDown, MoreVertical } from 'lucide-react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import { ChevronUp, ChevronDown, MoreVertical, User, Bell, Palette, Globe, SearchX } from 'lucide-react'
 import {
   Dialog, DialogTrigger, DialogContent, DialogHeader, DialogBody, DialogFooter, DialogTitle, DialogClose,
 } from './dialog'
@@ -13,10 +13,13 @@ import { Input } from '@/design-system/components/Input/input'
 import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
+import { Empty } from '@/design-system/components/Empty/empty'
 import { Switch } from '@/design-system/components/Switch/switch'
 import { Command, CommandList, CommandGroup, CommandItem } from '@/design-system/components/Command/command'
 import { DataTable, type DataTableColumnDef } from '@/design-system/components/DataTable/data-table'
 import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
+import { Select } from '@/design-system/components/Select/select'
+import { SidebarProvider, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/design-system/components/Sidebar/sidebar'
 import { samplePersonCard, demoPersonPhoto, type DemoPersonName } from '@/design-system/stories-helpers/scene/person-card'
 
 /**
@@ -303,13 +306,14 @@ function LongMemberListDialog({ initiallyOpen = false }: { initiallyOpen?: boole
         <DialogHeader>
           <DialogTitle>成員列表</DialogTitle>
         </DialogHeader>
-        {/* Body 放 list canonical(2026-05-01):body 撤 chrome padding(`!px-0 !pt-0 !pb-0`)+ list outer
+        {/* Body 放 list canonical(2026-05-01):body 撤左右 chrome padding(`!px-0`)+ list outer
             wrapper 自帶 `py-2`(menu group 8px breathing)+ item 自帶 `px-loose`(前緣對齊 header 標題)。
+            上下:清單外框標 data-layout-region="unbounded",body 頂與底由容器自己判成 0(layoutSpace.css;2026-11-27 起頂部也自判,不再寫 !pt-0 / !pb-0)。
             成員列不可點,沒有 hover 底色(overlay-surface.spec.md:底色有無不是 List-as-region 的判定條件)。
             26 筆(MEMBERS 全名冊)超出 viewport → 驗證預設高度(填滿)+ body 區捲動。 */}
-        <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
-          {/* @layout-space-magic-ok: List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:97「list outer wrapper 自帶 `py-2`」;Dialog body 的 padding 由 overlay-surface 擁有,dialog.spec.md「結構」) */}
-          <div role="list" className="flex flex-col py-2">
+        <DialogBody className="!px-0">
+          {/* List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:98「list outer wrapper 自帶 `py-2`」;規格登記的寫法 overlay-list-region,間距分類器認得,不需豁免) */}
+          <div role="list" data-layout-region="unbounded" className="flex flex-col py-2">
             {MEMBERS.map((m, i) => (
               <MemberRow key={m.empNum} member={m} index={i} />
             ))}
@@ -342,13 +346,14 @@ export const Destructive = {
         <DialogTrigger asChild>
           <Button variant="secondary" danger>刪除專案</Button>
         </DialogTrigger>
-        {/* 確認刪除:單一決策的確認框,開啟期間內容高度不會變 → hug(spec「高度軸」判準);只有一件事 → sm(spec「寬度檔位」) */}
-        <DialogContent height="hug" width="sm">
+        {/* 確認刪除:單一決策的確認框,開啟期間內容高度不會變 → hug(spec「高度軸」判準);只有一件事 → sm(spec「寬度檔位」);
+            後果句綁成說明(aria-describedby,讀屏開啟時連同標題念出;dialog.spec.md「A11y 預設」確認框的後果句) */}
+        <DialogContent height="hug" width="sm" aria-describedby="destructive-delete-project-consequence">
           <DialogHeader>
             <DialogTitle>是否刪除專案</DialogTitle>
           </DialogHeader>
           <DialogBody>
-            <p className="text-body">確定要刪除「Q3 設計改版」?刪除後無法復原。</p>
+            <p id="destructive-delete-project-consequence" className="text-body">確定要刪除「Q3 設計改版」?刪除後無法復原。</p>
           </DialogBody>
           <DialogFooter>
             <DialogClose asChild>
@@ -387,8 +392,9 @@ function TagPickerDialog() {
         <DialogHeader>
           <DialogTitle>選擇標籤</DialogTitle>
         </DialogHeader>
-        <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
-          {/* 小 item 純文字 label → 選單列(世界級 Linear Cmd+K / Polaris OptionList /
+        <DialogBody className="!px-0">
+          {/* 上下:CommandList 自帶邊緣標記 unbounded,body 頂與底由容器自己判成 0(layoutSpace.css;頂部判法略過 cmdk 的讀屏標籤),只撤左右。
+              小 item 純文字 label → 選單列(世界級 Linear Cmd+K / Polaris OptionList /
               Atlassian Modal+Menu 共通 pattern:menu-like 內容在 dialog 內用 menu primitive)。
               容器用 Command(cmdk)而不是裸 MenuItem + `role="list"`:
               menu-item.spec.md「何時用 / 何時不用」禁止裸用 MenuItem(會失去鍵盤與焦點管理),而且 MenuItem 帶
@@ -439,9 +445,10 @@ function ListBodyDialogs({ membersOpen = false }: { membersOpen?: boolean }) {
           <DialogHeader>
             <DialogTitle>成員列表</DialogTitle>
           </DialogHeader>
-          <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
-            {/* @layout-space-magic-ok: List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:97「list outer wrapper 自帶 `py-2`」;Dialog body 的 padding 由 overlay-surface 擁有,dialog.spec.md「結構」) */}
-            <div role="list" className="flex flex-col py-2">
+          {/* 清單外框標 data-layout-region="unbounded":body 頂與底由容器自己判成 0(layoutSpace.css),只撤左右(列自帶 px-loose) */}
+          <DialogBody className="!px-0">
+            {/* List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:98「list outer wrapper 自帶 `py-2`」;規格登記的寫法 overlay-list-region,間距分類器認得,不需豁免) */}
+            <div role="list" data-layout-region="unbounded" className="flex flex-col py-2">
               {MEMBERS.slice(0, 6).map((m, i) => (
                 <MemberRow key={m.empNum} member={m} index={i} />
               ))}
@@ -481,6 +488,43 @@ export const ListBody = {
     },
   },
   render: () => <ListBodyDialogs />,
+}
+
+// 主體只有空狀態(2026-11-27,產品 canary 回報 H10):從分享連結打開一筆已經不存在的任務(Jira / Linear 打開已刪除的議題連結時的「找不到」)。
+// 主體只放一個 Empty、不寫任何 class:DialogBody 內層撐滿主體可視高(ScrollArea fillY + 內層 min-h-full),由 layoutSpace.css 讓它在可視區正中、上下同值
+// (empty.spec.md「垂直定位」有框 → 垂直置中;垂直置中的狀態不套規則 4 的結論留白)。高度用預設 fill:同一個對話框找得到時換成任務內容(dialog.spec.md「高度軸」)。
+// 沒有可做的事 → 頁尾只有「關閉」;開啟時焦點落在它(dialog.spec.md「A11y 預設」開啟落點)。閘:header-first-gap 的 dialog-empty-centered。
+function TaskNotFoundDialog() {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="tertiary">開啟分享連結 WM-208</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>WM-208</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <Empty icon={SearchX} title="找不到這個任務" description="它可能已被刪除,或你沒有這個專案的存取權限" />
+        </DialogBody>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="tertiary">關閉</Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+export const EmptyBody = {
+  name: '主體只有空狀態',
+  parameters: {
+    docs: {
+      description: { story: '從分享連結打開一筆已經不存在的任務。主體只放一個 `Empty` 就好:對話框主體撐滿可用高度,空狀態自動在正中,不用另外寫置中的 class。' },
+    },
+  },
+  render: () => <TaskNotFoundDialog />,
 }
 
 // 標頭操作(actions slot,2026-07-08 WM 戰役 codify — 關閉鈕分隔線 SSOT 化)
@@ -719,6 +763,156 @@ export const ExtraLargeTwoColumn = {
   render: () => <TaskDetailTwoColumnDialog />,
 }
 
+// 超大檔位 xl —— 左導覽 + 右內容(設定類):從帳號選單打開的「個人設定」(sidebar.spec.md「A 和 C 並用」路徑 C:只影響自己、低頻的偏好)。
+// 版面 = 2026-11-26 第六輪決策卡 C14,user 選「A:頂部全寬標題列 + 左分類 + 右內容(右欄頂端可選標題 = 選中分類)」;
+// 組合照 overlay-surface.spec.md「兩欄 dialog 組合 canonical」的「左導覽 + 右內容」:
+//   ① 標題列 = DialogHeader(標題 + ×,dialog.spec.md「關閉按鈕」),跨全寬,分欄從 body 才開始(同段第 4 條);
+//   ② 左欄 = List-as-region(overlay-surface.spec.md「List-as-region in overlay body」):從 body 頂起,上下留白由 SidebarGroup 自己的 py 給;
+//      列直接用 Sidebar 的列元件(外觀同 Sidebar);SidebarProvider 只為了列元件要的 context(作用中項目 / 列尺寸),
+//      寫法照 scroll-area.stories.tsx「垂直捲動 — Notion 側欄導覽」(min-h-0、捲動區不當 Tab 停靠點);不放 <Sidebar> 外框 —— 它是版面上的 Menu,
+//      對話框在 AppShell 裡打開時仍在 AppShell 的元件樹裡,外框會去登記成 Menu【AI 推導,讀 sidebar.tsx 的 Sidebar】;
+//      欄寬 = Sidebar 預設寬(--sidebar-width,DS 內可讀)、分隔線由左欄畫(border-r border-divider,同 sidebar.tsx 左側 Sidebar)【AI 推導】;
+//   ③ 右欄自帶 ScrollArea 獨立捲動(同段第 1 條);頂端標題 = 選中分類的字,讀同一份資料(同 sidebar.spec.md「選中項的字 = 那一頁標頭的字」)【AI 推導】,
+//      用文字樣式、隨內容捲動,不做第二條標題列(header-canonical.spec.md「何時不用」);字級 text-h5 照 dialog.anatomy.stories.tsx 對話框內 h3 的現有寫法;
+//      標題 → 第一列 = 列與列之間 = loose(layoutSpace.spec.md「標題區 → 內容」第 1、3 題:同一種版型每頁同一距離);切分類時捲動區重掛、回到頂端;
+//   ④ 寬 xl(兩欄)、高 fill(切分類時內容高度會變,dialog.spec.md「高度軸」)。開關與選單改了就生效、沒有要儲存的東西 → 不放頁腳,關閉走標題列的 ×【AI 推導】。
+const SETTINGS_SECTIONS = [
+  { id: 'account', label: '帳號', icon: User },
+  { id: 'notifications', label: '通知', icon: Bell },
+  { id: 'appearance', label: '外觀', icon: Palette },
+  { id: 'locale', label: '語言與地區', icon: Globe },
+] as const
+type SettingsSectionId = (typeof SETTINGS_SECTIONS)[number]['id']
+
+const NOTIFICATION_PREFS = [
+  { key: 'assigned', title: '有人指派任務給我', desc: '桌面通知與信件同時送出', on: true },
+  { key: 'mention', title: '有人在留言中提到我', desc: '只通知 @我 的留言,不含整個團隊的提及', on: true },
+  { key: 'status', title: '我追蹤的任務狀態有變', desc: '例:WM-142 從「進行中」改成「待驗收」', on: false },
+  { key: 'digest', title: '每日摘要', desc: '每天早上 9:00 寄一封今天到期的任務清單到信箱', on: true },
+] as const
+const APPEARANCE_PREFS = [
+  { key: 'system-theme', title: '跟隨系統深淺色', desc: '電腦切換深色模式時一起切換', on: true },
+  { key: 'reduce-motion', title: '減少動態效果', desc: '關掉面板展開與頁面切換的動畫', on: false },
+] as const
+const LANGUAGE_OPTIONS = [
+  { value: 'zh-TW', label: '繁體中文(台灣)' },
+  { value: 'en-US', label: 'English (US)' },
+  { value: 'ja-JP', label: '日本語' },
+]
+const TIME_ZONE_OPTIONS = [
+  { value: 'Asia/Taipei', label: '台北(GMT+8)' },
+  { value: 'Asia/Tokyo', label: '東京(GMT+9)' },
+  { value: 'America/Los_Angeles', label: '洛杉磯(GMT-8)' },
+]
+
+const INITIAL_SWITCHES: Record<string, boolean> = Object.fromEntries([...NOTIFICATION_PREFS, ...APPEARANCE_PREFS].map((p) => [p.key, p.on]))
+
+type PersonalSettingsValues = { switches: Record<string, boolean>; language: string; timeZone: string }
+
+/** 右欄內容:只示範「改了就生效」的設定(開關、選單),沒有要另外儲存的欄位。值住在對話框那一層:切分類時右欄重掛,改過的值不會被重設 */
+function PersonalSettingsSection({ section, values, onChange }: {
+  section: SettingsSectionId
+  values: PersonalSettingsValues
+  onChange: (next: PersonalSettingsValues) => void
+}) {
+  if (section === 'account') {
+    return (
+      <DescriptionList orientation="horizontal">
+        <DescriptionItem label="姓名">Alan Chen</DescriptionItem>
+        <DescriptionItem label="電子郵件">alan.chen@acme.io</DescriptionItem>
+        <DescriptionItem label="角色">工作區管理員</DescriptionItem>
+        <DescriptionItem label="所屬團隊">Design</DescriptionItem>
+      </DescriptionList>
+    )
+  }
+  if (section === 'locale') {
+    return (
+      <>
+        <Field>
+          <FieldLabel>介面語言</FieldLabel>
+          <Select options={LANGUAGE_OPTIONS} value={values.language} onChange={(language) => onChange({ ...values, language })} />
+        </Field>
+        <Field>
+          <FieldLabel>時區</FieldLabel>
+          <FieldDescription>截止日與每日摘要的寄送時間照這個時區算</FieldDescription>
+          <Select options={TIME_ZONE_OPTIONS} value={values.timeZone} onChange={(timeZone) => onChange({ ...values, timeZone })} />
+        </Field>
+      </>
+    )
+  }
+  // 設定列 = 自帶標題的 <Switch label description>(與本檔「通知設定」同一個寫法,switch.spec.md「設定列 vs 水平 Field」)
+  const prefs = section === 'notifications' ? NOTIFICATION_PREFS : APPEARANCE_PREFS
+  return (
+    <>
+      {prefs.map((p) => (
+        <Switch
+          key={p.key}
+          label={p.title}
+          description={p.desc}
+          checked={values.switches[p.key]}
+          onCheckedChange={(on) => onChange({ ...values, switches: { ...values.switches, [p.key]: on } })}
+        />
+      ))}
+    </>
+  )
+}
+
+function PersonalSettingsDialog() {
+  const [section, setSection] = useState<SettingsSectionId>('notifications')
+  const [values, setValues] = useState<PersonalSettingsValues>({ switches: INITIAL_SWITCHES, language: 'zh-TW', timeZone: 'Asia/Taipei' })
+  const current = SETTINGS_SECTIONS.find((s) => s.id === section) ?? SETTINGS_SECTIONS[0]
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="tertiary">個人設定</Button>
+      </DialogTrigger>
+      <DialogContent width="xl">
+        <DialogHeader>
+          <DialogTitle>個人設定</DialogTitle>
+        </DialogHeader>
+        {/* data-dialog-body:開啟時焦點落在兩欄區第一個互動元素(dialog.tsx onOpenAutoFocus 只認這個標記);兩欄各自捲動,所以兩欄區自己組 */}
+        <div data-dialog-body className="flex min-h-0 flex-1">
+          <nav aria-label="設定分類" className="flex w-[var(--sidebar-width)] shrink-0 flex-col border-r border-divider">
+            <SidebarProvider activeId={section} onActiveChange={(id) => setSection(id as SettingsSectionId)} className="min-h-0 flex-1 flex-col">
+              <ScrollArea fillX className="min-h-0 flex-1" viewportTabIndex={-1}>
+                <SidebarGroup>
+                  <SidebarGroupContent>
+                    <SidebarMenu>
+                      {SETTINGS_SECTIONS.map((s) => (
+                        <SidebarMenuItem key={s.id}>
+                          <SidebarMenuButton id={s.id} startIcon={s.icon}>{s.label}</SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ))}
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </SidebarGroup>
+              </ScrollArea>
+            </SidebarProvider>
+          </nav>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <ScrollArea key={section} fillX className="min-h-0 flex-1">
+              <div data-layout-body="fill" className="flex flex-col gap-[var(--layout-space-loose)] px-[var(--layout-space-loose)]">
+                <h3 className="text-h5 text-foreground">{current.label}</h3>
+                <PersonalSettingsSection section={section} values={values} onChange={setValues} />
+              </div>
+            </ScrollArea>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+export const ExtraLargeSettings = {
+  name: '超大檔位:兩欄個人設定',
+  parameters: {
+    docs: {
+      description: { story: '寬度 `xl`、高度 `fill`:左欄是設定分類(列的樣子同 Sidebar),右欄是選中分類的設定,頂端的字就是選中的分類。標題列與 × 跨整個對話框,兩欄各自捲動。只影響自己、低頻的個人偏好才用對話框;要和別人協作、會分享連結的設定改用整頁。分類少、一排放得下時,也可以把分頁放進標題列(本頁「標頭內含分頁」)。' },
+    },
+  },
+  render: () => <PersonalSettingsDialog />,
+}
+
 // 標頭內含分頁(2026-05-18 從 patterns/header-canonical/header-canonical.stories.tsx 整合過來;user 當時要求整合進 Dialog、不另開 header canonical 資料夾)
 // 對應 `header-canonical.spec.md` W1-W4:W1 Tabs 自畫 full-width border-divider 接管 chrome separator;W2 TabsList 全 dialog 寬 + 內 px-loose padding 對齊 title left;
 //   W4 header content row + tabs row flush stack(gap = 0)。
@@ -810,12 +1004,12 @@ export const OpenSnapshot = {
       <DialogTrigger asChild>
         <Button>打開 Dialog</Button>
       </DialogTrigger>
-      <DialogContent height="hug" width="sm">
+      <DialogContent height="hug" width="sm" aria-describedby="open-snapshot-delete-consequence">
         <DialogHeader>
           <DialogTitle>確認刪除專案</DialogTitle>
         </DialogHeader>
         <DialogBody>
-          <p className="text-body">這個操作無法復原。專案內的所有 task、討論與附件都會被永久刪除。</p>
+          <p id="open-snapshot-delete-consequence" className="text-body">這個操作無法復原。專案內的所有 task、討論與附件都會被永久刪除。</p>
         </DialogBody>
         <DialogFooter>
           <DialogClose asChild>

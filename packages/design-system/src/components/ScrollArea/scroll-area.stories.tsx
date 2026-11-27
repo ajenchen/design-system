@@ -1,5 +1,5 @@
 // @story-baseline: packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx#AlignmentRule
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { createColumnHelper } from '@tanstack/react-table'
 import React from 'react'
 import { ScrollArea, ScrollBar } from './scroll-area'
@@ -13,6 +13,7 @@ import {
   SidebarMenuButton,
 } from '@/design-system/components/Sidebar/sidebar'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
+import type { SelectOption } from '@/design-system/components/Select/select'
 import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging
 import { STRIPE_PRODUCTS, PRODUCT_COLUMNS } from '@/design-system/stories-helpers/data/stripe-products'
 
@@ -48,7 +49,7 @@ const LINEAR_ISSUES: Array<{ id: string; title: string; status: string }> = [
 ]
 
 // 狀態顯示中文(2026-11-18 前直接顯示英文 value —— 稽核 A113;同 inline-edit.stories.tsx STATUS_OPTIONS 的叫法)。value 是資料裡的鍵,不上畫面
-const ISSUE_STATUS_OPTIONS = [
+const ISSUE_STATUS_OPTIONS: SelectOption[] = [
   { value: 'Backlog', label: '待規劃', tagVariant: 'neutral' },
   { value: 'Todo', label: '待處理', tagVariant: 'neutral' },
   { value: 'In Progress', label: '進行中', tagVariant: 'blue' },
@@ -115,7 +116,7 @@ const PULL_REQUESTS: PullRequest[] = Array.from({ length: 18 }, (_, i) => ({
   deletions: 24 + i * 3,
 }))
 
-const CHECK_OPTIONS = [
+const CHECK_OPTIONS: SelectOption[] = [
   { value: 'passing', label: '12 / 12 通過', tagVariant: 'green' },
   { value: 'failing', label: '1 項失敗', tagVariant: 'red' },
   { value: 'pending', label: '執行中', tagVariant: 'yellow' },

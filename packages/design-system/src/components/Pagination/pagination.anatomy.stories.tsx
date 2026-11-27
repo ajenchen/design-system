@@ -2,7 +2,7 @@
 //   SizeMatrix N/A — 無 size 軸(按鈕固定 size="sm",chrome 級導覽不隨密度縮放;詳 pagination.spec.md「SizeMatrix N/A rationale」)
 // @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Pagination } from './pagination'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 

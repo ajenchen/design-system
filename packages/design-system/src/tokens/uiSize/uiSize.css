@@ -26,11 +26,11 @@
   --field-height-md: 2rem;      /* 32px */
   --field-height-lg: 2.25rem;   /* 36px */
   /* 清單型浮層的捲動上限(300px)**不設 token**(2026-11-11 token「3全收」收回):只有 CommandList 在讀、不隨密度切換,
-     值住 Command/command.tsx,理由住 command.spec.md「邊界案例」。 */
+     值住 elevation/overlay-geometry.ts 的 OVERLAY_LIST_MAX_HEIGHT,理由住 command.spec.md「邊界案例」。 */
 
   /* Field control vertical padding — 讓「單行的多行控件」與同 size 單行 Input 等高 SSOT。
-     公式 = (field-height − 1lh)/2 − 1px:`1lh` 在使用端解析成該元素自己的行高(text-body 21px /
-     text-body-lg 24px),`−1px` 補 border-box 內的上下各 1px 邊框——少了它三個 size 都會高 2px。
+     公式 = (field-height − 1lh)/2 − 框寬:`1lh` 在使用端解析成該元素自己的行高(text-body 21px /
+     text-body-lg 24px),減一個 --field-border-width(1px)補 border-box 內的上下各一條邊框——少了它三個 size 都會高 2px。
      density 連動:公式用 var() 引用 --field-height-*,所以住最下方「衍生值」段,在每個換密度的元素上用該處的
      --field-height-* 重算(2026-11-11 前只寫在 :root —— 整頁換密度成立,區塊換密度時卻沿用整頁的值:
      實測整頁 md、區塊 data-density="lg",單行高的多行盒(行高 21px、上下 1px 框)量到 32px,同區塊單行 Input 是 36px)。
@@ -56,6 +56,14 @@
      跟 --table-cell-px(cell-context)同 -px 慣例;Input/Select/Combobox/DatePicker/TimePicker/Textarea
      + tag 模式右緣 re-assert 全消費此 token(取代散落的 px-3 / inline 0.75rem,M17 SSOT 可傳播)。 */
   --field-px: 0.75rem;          /* 12px */
+
+  /* Field border width — 欄位外框寬 1px(不隨 size / density)。欄位家族的框**直接讀這一顆畫**(Field/field-wrapper.tsx 的
+     fieldWrapperStyles、Textarea、InlineEdit 靜止外框),所以它是「框有多寬」的原因、不是旁邊另抄的一份數字;
+     替框寬補位的算式也讀它(本檔 --field-control-py-* 與 --field-bleed、fieldTagInsetX / Y、fieldViewGeometry、
+     DataTable --table-cell-py、Textarea 行數上限、InlineEdit 命中區、LinkInput 延伸區、併排欄位組的重疊)。
+     欄位家族的框不准寫裸 `border` 這類寫死寬度的樣式:閘 scripts/reading-context-invariant.mjs 靜態段。
+     值與理由住 uiSize.spec.md「Field 外框寬與框內字線」。 */
+  --field-border-width: 1px;
 
   /* 標籤高 --tag-height-* 2026-11-11 搬到 components/Tag/tag.css(主人 = Tag;token「2甲」第二批) */
 
@@ -145,10 +153,17 @@
 [data-density],
 [data-ui-size],
 [data-layout-space] {
-  /* 多行輸入框上下內距(公式與理由在 :root 段「Field control vertical padding」) */
-  --field-control-py-sm: calc((var(--field-height-sm) - 1lh) / 2 - 1px);
-  --field-control-py-md: calc((var(--field-height-md) - 1lh) / 2 - 1px);
-  --field-control-py-lg: calc((var(--field-height-lg) - 1lh) / 2 - 1px);
+  /* 多行輸入框上下內距(公式與理由在 :root 段「Field control vertical padding」;減的那一份 = 上下各一條框,讀 --field-border-width) */
+  --field-control-py-sm: calc((var(--field-height-sm) - 1lh) / 2 - var(--field-border-width));
+  --field-control-py-md: calc((var(--field-height-md) - 1lh) / 2 - var(--field-border-width));
+  --field-control-py-lg: calc((var(--field-height-lg) - 1lh) / 2 - var(--field-border-width));
+  /* 框內字線 = 欄位框外緣到框裡第一個字的距離(框寬 + 左右內距)= 13px。同一個距離三種用法:
+     垂直排的就地編輯框往左右各外伸這麼多,字因此落在標籤左緣(InlineEdit alignBleed;可編輯標題列的讓位
+     patterns/overlay-surface EDITABLE_TITLE_HEADER_SLOT);水平排閱讀情境裡沒有框的值(開關、勾選框)往右內縮這麼多,
+     落在同一欄框內的字線上(components/Field/field.css);DataTable 篩選面板的 Where / 唯讀 And / Or 文字標籤同理,左內距讀它,
+     字落在同一欄 And/Or 下拉框內的字線上(components/DataTable/data-table-filter-group.tsx)。規則住 components/Field/field.spec.md「閱讀情境」;
+     值與理由住 uiSize.spec.md「Field 外框寬與框內字線」。 */
+  --field-bleed: calc(var(--field-border-width) + var(--field-px));
 }
 
 

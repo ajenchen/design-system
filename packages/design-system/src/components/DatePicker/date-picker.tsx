@@ -1,5 +1,19 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // code-quality-allow: file-size — foundational composite(DatePicker single + Range + showTime + format/ISO helpers + TimePickerSidePanel sub-components),拆 sub-file 會 (a) 增 cross-file context binding 複雜度 (b) M21 過度抽象(每 helper 1 consumer)。等 inline filter UI 真接入第 2 consumer 再拆。
+/**
+ * ── 消費的 SSOT ──(本段只列日期時間的文字寫法;其餘見各 import 旁的註解)
+ * - 日期 / 時間的預設寫法、合併顯示、打字解析的上下午: `./range-format.ts`(DATE-TIME(定)2026-11-26:日期一律補零、時間 12 / 24 跟語系;
+ *   date-picker.spec.md「格式化」「區間檢視合併(formatRange)」「Typed input」)
+ * - showTime 面板的 12 / 24 小時(上下午欄、時欄 12 / 01…11、面板標題)與空白提示字: `./range-format.ts` `resolveTimePanelFormat` /
+ *   `formatPanelTime` / `timePlaceholder`(TIME-12H-PANEL(定)2026-11-26,與欄位裡的字同一份判斷);面板寬
+ *   `../TimePicker/time-columns.tsx` `timeColumnsWidthClass`(date-picker.spec.md「showTime」)
+ * - 預設語系與週起始日: `../../lib/date-locale.ts`
+ * - Range 作用端那條線(RANGE-FOCUS-BAR(定)2026-11-26;date-picker.spec.md「Active-end 機制」視覺指示,見 RANGE_END_BAR_CLASS 註解):
+ *   畫法 = `../Tabs/tabs.tsx` 選中線(`::after` 絕對定位、`after:h-0.5`、壓住下面那條 1px 框線 —— tabs.spec.md「這兩條線視覺上必須是同一條」);
+ *   位置 = `tokens/uiSize/uiSize.css` 的 `--field-control-py-{sm,md,lg}` + `--field-border-width`(文字行盒下緣 → 框外緣);
+ *   顏色 = 框的同一組顏色 token `--color-primary` / `--color-error`(`../Field/field-wrapper.tsx` 聚焦 `!border-primary`、錯誤 `border-error`);
+ *   高對比模式(forced-colors)改用 CSS 系統色 `Highlight`(DS 沒有高對比 token;見 RANGE_END_BAR_CLASS 註解)
+ */
 import * as React from 'react'
 import { escapeLayerProps, isEscapeForControl, isEscapeTakenElsewhere } from '@/design-system/lib/overlay-escape'
 import { useCompositeFieldBlur, fieldOpenProps } from '@/design-system/lib/composite-field-focus'
@@ -16,6 +30,8 @@ import { useTruncated } from '@/design-system/hooks/use-truncated'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { DateGrid, EMPHASIS_FOCUS_RING_CLASSNAME, RANGE_PREVIEW_ARMED_CLASSNAME, RANGE_PREVIEW_CLASSNAMES, RANGE_TRACK_CLASSNAMES } from '@/design-system/components/DateGrid/date-grid'
 import { computeRangePreview, rangePreviewModifiers } from './range-preview'
+// 合併顯示 + 日期 / 時間的預設寫法 + 打字解析的上下午(DATE-TIME(定)2026-11-26:日期一律補零、時間 12 / 24 跟語系;date-picker.spec.md「格式化」)
+import { formatDateRange, formatDateRangeEndpoint, DATE_RANGE_DEFAULT_DATE_OPTIONS, resolveDateRangeFormatOptions, parseTimeText, resolveTimePanelFormat, formatPanelTime, timePlaceholder, type TimePanelFormat } from './range-format'
 import { Button } from '@/design-system/components/Button/button'
 import { SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
@@ -23,19 +39,27 @@ import {
   TimeColumns,
   isoToTimeParts,
   timePartsToString,
+  timeColumnsWidthClass,
   type TimeParts,
   type TimeStep,
 } from '@/design-system/components/TimePicker/time-columns'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
+import { DEFAULT_DATE_LOCALE, resolveWeekStartsOn, type WeekStartsOn } from '@/design-system/lib/date-locale'
 
 // ── Format ──────────────────────────────────────────────────────────────────
 
 export interface DateFormatOptions {
-  /** Intl.DateTimeFormat options（預設 { year: 'numeric', month: '2-digit', day: '2-digit' }） */
+  /**
+   * Intl.DateTimeFormat options(預設 { year: 'numeric', month: '2-digit', day: '2-digit' };`showTime` 時再補時、分 ——
+   * 12 / 24 小時跟語系,zh-TW「2026/07/05 下午2:30」)。自己寫了時間欄位(例 `hourCycle: 'h23'`)就照它;規則見 date-picker.spec.md「格式化」。
+   */
   formatOptions?: Intl.DateTimeFormatOptions
-  /** locale（預設 'en-US'） */
+  /**
+   * 語系(BCP 47,預設 'zh-TW' = `DEFAULT_DATE_LOCALE`)。傳了 `formatOptions` / `locale` 才走 `Intl.DateTimeFormat`;
+   * 日曆面一週從哪天開始也由它推(沒傳 `weekStartsOn` 時,語系 → CLDR,`lib/date-locale.ts`)。
+   */
   locale?: string
 }
 
@@ -75,16 +99,21 @@ function formatDate(
   if (Number.isNaN(date.getTime())) return String(value)
   // 若 consumer 顯式傳 formatOptions / locale → 走 Intl.DateTimeFormat
   if (options.formatOptions || options.locale) {
-    return getDateTimeFormatter(options.locale ?? 'en-US', options.formatOptions ?? { year: 'numeric', month: '2-digit', day: '2-digit' }).format(date)
+    return getDateTimeFormatter(options.locale ?? DEFAULT_DATE_LOCALE, options.formatOptions ?? DATE_RANGE_DEFAULT_DATE_OPTIONS).format(date)
   }
-  // 預設:YYYY/MM/DD(直接組,locale-independent + 視覺穩定)
+  // 預設:YYYY/MM/DD(直接組,locale-independent + 視覺穩定;與預設語系 zh-TW 走 Intl 兩位數年月日的輸出字面相同)
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
   const d = String(date.getDate()).padStart(2, '0')
   return `${y}/${m}/${d}`
 }
 
-/** 顯示用:date 或 datetime,根據 showTime / showSeconds 切換 */
+/**
+ * 顯示用:date 或 datetime,根據 showTime / showSeconds 切換。
+ * 帶時間時日期段與時間段一次交給 Intl,選項與合併顯示同一支(range-format.ts `resolveDateRangeFormatOptions`):
+ * 日期兩位數月日、時間 12 / 24 跟語系(zh-TW「2026/07/05 下午2:30」、en-US「07/05/2026, 2:30 PM」、en-GB「05/07/2026, 14:30」);
+ * `formatOptions` 寫了時間欄位就照它。DATE-TIME(定)2026-11-26;改前時間一律接 24 小時 `HH:MM`(不看語系也不看 formatOptions)。
+ */
 function formatDateOrDateTime(
   iso: string | null | undefined,
   showTime: boolean,
@@ -92,11 +121,13 @@ function formatDateOrDateTime(
   options: DateFormatOptions = {},
 ): string {
   if (!iso) return ''
-  const dateText = formatDate(iso, options)
-  if (!showTime) return dateText
-  const time = isoToTimeParts(iso)
-  if (!time) return dateText
-  return `${dateText} ${timePartsToString(time, showSeconds)}`
+  if (!showTime || !isoToTimeParts(iso)) return formatDate(iso, options)
+  const date = isoToDate(iso)
+  if (!date || Number.isNaN(date.getTime())) return formatDate(iso, options)
+  return getDateTimeFormatter(
+    options.locale ?? DEFAULT_DATE_LOCALE,
+    resolveDateRangeFormatOptions(true, showSeconds, options.formatOptions),
+  ).format(date)
 }
 
 // ── ISO <-> Date conversion ─────────────────────────────────────────────────
@@ -123,6 +154,8 @@ function isoToDate(iso: string | null | undefined): Date | undefined {
  * 支援 format(per Material X DatePicker / Ant DatePicker typed input idiom):
  *   - `YYYY-MM-DD` / `YYYY/MM/DD` / `YYYY.MM.DD`(ISO + 慣例 separator,明確 parse branch)
  *   - `YYYY-MM-DD HH:MM[:SS]` / `YYYY-MM-DDTHH:MM[:SS]`(datetime,showTime 才接)
+ *   - 時間段也認這個語系的上下午(`YYYY/MM/DD 下午2:30`、`2026/07/05 2:30 PM`):顯示跟語系之後輸入框裡就是這種寫法,
+ *     解析交給 range-format.ts `parseTimeText`(上下午的字從 Intl formatToParts 反推,不寫死;DATE-TIME(定)2026-11-26)
  *   - native `Date.parse()` fallback(handle 'Mar 12 2025' 等英文 RFC;US `MM/DD/YYYY` 亦由此判讀,ambiguous)
  *   ⚠️ 不支援 EU `DD/MM/YYYY`:無專屬 parser branch;native Date.parse 把 slash 日期當 US MM/DD,
  *      `31/12/2026`(月 > 12)直接 Invalid。v1 known-gap,需 EU 請走 formatOptions/locale 或另加 parser branch。
@@ -132,26 +165,20 @@ function isoToDate(iso: string | null | undefined): Date | undefined {
  *
  * 對齊 Material X-DatePicker `formats` parser + Ant DatePicker `format` array + dayjs.parse。
  */
-function parseDateInput(input: string, opts: { allowTime: boolean }): { iso: string | null; valid: boolean } {
+function parseDateInput(input: string, opts: { allowTime: boolean; locale: string }): { iso: string | null; valid: boolean } {
   const trimmed = input.trim()
   if (trimmed === '') return { iso: null, valid: true }  // empty = no value, OK
-  // 1. ISO date YYYY-MM-DD or with separators / . /(可選 time YYYY-MM-DD[T| ]HH:MM[:SS])
-  const isoDateMatch = trimmed.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:[T\s](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/)
+  // 1. ISO date YYYY-MM-DD or with separators / . /(可選時間段:24 小時 HH:MM[:SS],或這個語系的上下午 + 時:分)
+  const isoDateMatch = trimmed.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:[T\s]\s*(.+))?$/)
   if (isoDateMatch) {
-    const [, y, m, d, hh, mm, ss] = isoDateMatch
-    const date = new Date(Number(y), Number(m) - 1, Number(d), Number(hh ?? 0), Number(mm ?? 0), Number(ss ?? 0))
+    const [, y, m, d, timeText] = isoDateMatch
+    // 時間段:越界(25:99、下午13:00)或認不得的字 → 不合法(JS Date 會把越界的時分默默進位,不能交給它判)
+    const time = timeText === undefined ? null : parseTimeText(timeText, opts.locale, getDateTimeFormatter)
+    if (timeText !== undefined && time === null) return { iso: null, valid: false }
+    const date = new Date(Number(y), Number(m) - 1, Number(d))
     if (isNaN(date.getTime()) || date.getMonth() !== Number(m) - 1) return { iso: null, valid: false }
-    // time 分量越界校驗:JS Date 會 silently normalize(25:99:99 → 隔日某時,getTime 仍 valid、
-    // getMonth 未必變),但回傳 iso 用的是原始越界字串 → 需在此擋掉 hh>23 / mm>59 / ss>59。
-    if (hh != null && (Number(hh) > 23 || Number(mm) > 59 || Number(ss ?? 0) > 59)) return { iso: null, valid: false }
-    const datePart = dateToIso(date)
-    if (hh != null && opts.allowTime) {
-      const h2 = String(Number(hh)).padStart(2, '0')
-      const m2 = String(Number(mm)).padStart(2, '0')
-      const s2 = String(Number(ss ?? 0)).padStart(2, '0')
-      return { iso: `${datePart}T${h2}:${m2}:${s2}`, valid: true }
-    }
-    return { iso: datePart, valid: true }
+    if (time && opts.allowTime) return { iso: combineDateAndTime(date, time), valid: true }
+    return { iso: dateToIso(date), valid: true }
   }
   // 2. US / EU locale MM/DD/YYYY or DD/MM/YYYY — ambiguous;v1 fallback Date.parse 並接受結果
   // 3. native Date.parse fallback(RFC-style 'Mar 12 2025')
@@ -236,6 +263,11 @@ interface TimePickerSidePanelProps {
   showSeconds?: boolean
   minuteStep?: TimeStep
   secondStep?: TimeStep
+  /**
+   * 面板的時間寫法(`range-format.ts` `resolveTimePanelFormat`,與欄位裡的字同一份判斷)。必填:單日與 Range 兩處呼叫端都得算好傳進來,
+   * 不傳 = 面板與欄位各說各的 12 / 24(M23(f):沒有內建 fallback 的就必填)
+   */
+  panelFormat: TimePanelFormat
 }
 
 function TimePickerSidePanel({
@@ -244,11 +276,14 @@ function TimePickerSidePanel({
   showSeconds = false,
   minuteStep = 1,
   secondStep = 1,
+  panelFormat,
   className,
 }: TimePickerSidePanelProps & { className?: string }) {
-  // Dynamic header text — 顯示當前選擇的 HH:MM(對齊 user Q4 + Ant idiom)
+  // Dynamic header text — 顯示當前選擇的時間(對齊 user Q4 + Ant idiom)。
+  // 12 小時語系:標題與欄位同一份時間寫法(zh-TW「下午2:30」)、面板多一欄上下午 —— TIME-12H-PANEL(定)2026-11-26;
+  // 24 小時語系照舊 HH:MM(`formatPanelTime` 回 null)。空值的「--:--」不變【AI 推導】
   const headerText = value
-    ? timePartsToString(value, showSeconds)
+    ? (formatPanelTime(value, panelFormat, getDateTimeFormatter) ?? timePartsToString(value, showSeconds))
     : (showSeconds ? '--:--:--' : '--:--')
 
   return (
@@ -265,6 +300,7 @@ function TimePickerSidePanel({
           showSeconds={showSeconds}
           minuteStep={minuteStep}
           secondStep={secondStep}
+          clock={panelFormat.clock}
         />
       </div>
     </div>
@@ -274,28 +310,30 @@ function TimePickerSidePanel({
 /**
  * showTime panel container — 包 DateGrid + TimePicker side panel,DateGrid 主導 row 高度,
  * TimePicker absolute 撐滿同高,不影響 layout。Spacer div 留 layout 寬度給 absolute panel。
+ * 寬度讀 TimeColumns 同一支 `timeColumnsWidthClass`(欄數 × 約 80px;12 小時制多上下午一欄),佔位與面板不會一寬一窄。
  */
-const TIME_PANEL_WIDTH = (showSeconds: boolean) => showSeconds ? 'w-60' : 'w-40'
-
 interface CalendarTimeContainerProps {
   showTime: boolean
   showSeconds: boolean
+  /** 面板的時間寫法(與 `TimePickerSidePanel` 同一份);決定有沒有上下午欄 = 面板多寬 */
+  panelFormat: TimePanelFormat
   calendar: React.ReactNode
   timePanel?: React.ReactNode
 }
 
-function CalendarTimeContainer({ showTime, showSeconds, calendar, timePanel }: CalendarTimeContainerProps) {
+function CalendarTimeContainer({ showTime, showSeconds, panelFormat, calendar, timePanel }: CalendarTimeContainerProps) {
   if (!showTime) return <>{calendar}</>
+  const panelWidth = timeColumnsWidthClass(showSeconds, panelFormat.clock)
   return (
     <div className="relative">
       <div className="flex flex-row">
         {calendar}
         {/* Spacer 佔 layout 寬度給 absolute TimePicker;border-l 在這層,不在 absolute 層
             (避免 stacking + border 雙繪) */}
-        <div className={cn('shrink-0 border-l border-divider', TIME_PANEL_WIDTH(showSeconds))} />
+        <div className={cn('shrink-0 border-l border-divider', panelWidth)} />
       </div>
       {/* TimePicker absolute 撐滿 DateGrid 高度(top-0 bottom-0),right-0 對齊 spacer */}
-      <div className={cn('absolute top-0 right-0 bottom-0', TIME_PANEL_WIDTH(showSeconds))}>
+      <div className={cn('absolute top-0 right-0 bottom-0', panelWidth)}>
         {timePanel}
       </div>
     </div>
@@ -336,6 +374,11 @@ export interface DatePickerProps
   minuteStep?: TimeStep
   /** showTime 秒鐘步進 */
   secondStep?: TimeStep
+  /**
+   * 日曆面一週從哪天開始(0 = 週日 … 6 = 週六)。沒傳 = 由 `locale` 推(語系 → CLDR;預設 zh-TW = 週日)。
+   * 產品有「一週從週一開始」這類使用者偏好時,app 層把同一個值傳給每一個日期元件(不在個別元件寫死數字);規則與出處 → date-picker.spec.md「週起始日」。
+   */
+  weekStartsOn?: WeekStartsOn
   /**
    * 是否需 OK 確認才提交,預設 showTime=true 時為 true(對齊 Ant DatePicker showTime)
    * — datetime picker user 習慣編完才 commit,避免 calendar 點到就關。
@@ -384,6 +427,12 @@ export interface DatePickerProps
    * 對齊 Material X-DatePicker `format` prop / Ant DatePicker `format` array / Notion typed-input。
    */
   typeable?: boolean
+  /**
+   * 不可選的日期(2026-11-26,產品 canary 回報 C33):回 `true` 的那天在日曆上畫成不可選(樣子與行為照 date-grid.spec.md「Disabled day」:
+   * 灰底圓圈 + 淺灰字、點不動、鍵盤跳過),可打字時打進一個不可選的日期 = 跟解析失敗同一條路(`aria-invalid`、保留草稿讓使用者修)。
+   * 後端給一份不可選日期清單時,在這支函式裡查那份清單(date-picker.spec.md「不可選日期」)。不傳 = 每天都可選。
+   */
+  disabledDate?: (date: Date) => boolean
 }
 
 // Trigger uses `<div role="combobox" tabIndex={...}>` instead of `<button>` —
@@ -413,10 +462,12 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
       minuteStep = 1,
       secondStep = 1,
       needConfirm: needConfirmProp,
+      weekStartsOn,
       showDisplayEndIcon = false,
       defaultOpen = false,
       onOpenChange,
       typeable = false,
+      disabledDate,
       id: idProp,
       name,
       onBlur: onBlurProp,
@@ -441,6 +492,8 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
     // 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反 7+ 重複 ternary)
   const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
     const needConfirm = needConfirmProp ?? showTime  // datetime 預設需確認
+    // 日曆面週起始日:有傳 weekStartsOn 就用,沒傳由 locale 推(語系 → CLDR;lib/date-locale.ts,date-picker.spec.md「週起始日」)
+    const resolvedWeekStartsOn = React.useMemo(() => resolveWeekStartsOn(locale, weekStartsOn), [locale, weekStartsOn])
     const [open, setOpenState] = React.useState(defaultOpen)
     const setOpen = React.useCallback((next: boolean) => { setOpenState(next); onOpenChange?.(next) }, [onOpenChange])
     // Radix Popover 的預設 contentId 在 content 未掛載時仍會留在 trigger。
@@ -448,7 +501,14 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
     // 避免 closed state 的懸空 IDREF；typeable 模式則把關聯放到真正的 combobox input。
     const popupId = React.useId()
     const [draft, setDraft] = React.useState<string | null>(value ?? null)
-    const resolvedPlaceholder = placeholder ?? (showTime ? 'YYYY/MM/DD HH:MM' : 'YYYY/MM/DD')
+    // showTime 面板的時間寫法:欄位寫法(resolveDateRangeFormatOptions,與欄位裡的字同一支)交給 Intl 讀回 12 / 24(TIME-12H-PANEL(定)2026-11-26)
+    const timePanelFormat = React.useMemo(
+      () => resolveTimePanelFormat(locale ?? DEFAULT_DATE_LOCALE, resolveDateRangeFormatOptions(true, showSeconds, formatOptions), showSeconds, getDateTimeFormatter),
+      [locale, formatOptions, showSeconds],
+    )
+    // 空白提示字的時間段跟面板同一份 12 / 24:24 小時照舊「YYYY/MM/DD HH:MM」,12 小時 zh-TW「YYYY/MM/DD 上午/下午HH:MM」【AI 推導】
+    // (時間段沿用改前不寫秒的寫法)
+    const resolvedPlaceholder = placeholder ?? (showTime ? `YYYY/MM/DD ${timePlaceholder(timePanelFormat, false, getDateTimeFormatter)}` : 'YYYY/MM/DD')
     // a11y:role="combobox" 必須有 accessible name(aria-label / labelledby / fieldCtx label)
     const accessibleName = ariaLabelProp ?? (ariaLabelledByProp ? undefined : (fieldCtx?.id ? undefined : resolvedPlaceholder))
 
@@ -508,8 +568,13 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
       }
     }, [displayLive])
     const handleInputCommit = React.useCallback((raw: string) => {
-      const { iso, valid } = parseDateInput(raw, { allowTime: showTime })
+      const { iso, valid } = parseDateInput(raw, { allowTime: showTime, locale: locale ?? DEFAULT_DATE_LOCALE })
       if (!valid) { setInputInvalid(true); return }
+      // 打進不可選的日期 = 跟解析失敗同一條路(aria-invalid + 保留草稿;date-picker.spec.md「不可選日期」)
+      if (iso !== null && disabledDate) {
+        const typedDate = isoToDate(iso)
+        if (typedDate && disabledDate(typedDate)) { setInputInvalid(true); return }
+      }
       setInputInvalid(false)
       if (iso === null) {
         // empty input = clear value
@@ -519,12 +584,12 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
         onChange?.(iso)
         setDraft(iso)
       }
-    }, [onChange, showTime])
+    }, [onChange, showTime, locale, disabledDate])
 
-    // 截斷 tooltip(tooltip.spec.md:32 截斷 → 顯完整內容,僅實際截斷時):非 typeable edit
+    // 截斷 tooltip(tooltip.spec.md:30 截斷 → 顯完整內容,僅實際截斷時):非 typeable edit
     // trigger 的值 span(bareInputStyles + truncate)是截斷元素;trigger = 整個 field wrapper
     // (interactive host,hover 直達)、量測內層值 span — useTruncated 自組 pattern
-    // (truncated-text.spec.md「兩層架構(對齊世界級聯集)」:trigger ≠ 量測元素時只用 hook 自組;範本 inline-edit.tsx:257)。
+    // (truncated-text.spec.md「兩層架構(對齊世界級聯集)」:trigger ≠ 量測元素時只用 hook 自組;範本 inline-edit.tsx:258)。
     // typeable 走 <input>(可捲動編輯,無截斷補救需求);popover 開啟時靜默(open 是 hover 之外的 reveal 路徑)。
     // ⚠️ hook 必在下方 view / readonly early return 之前(React #310 hook-count 鐵律,同 select.tsx 教訓)。
     const { ref: triggerTruncationRef, isTruncated: triggerTruncated } = useTruncated<HTMLSpanElement>({
@@ -548,7 +613,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
         // 2026-05-14 I2 fix(spec contract (e) view typography canonical):bare span 套
         // `fieldDisplayTextClass(size)`(sm/md→text-body,lg→text-body-lg)— 對齊 Field family 統一。
         if (!value) return <span className={cn(fieldDisplayTextClass(size), fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
-        // 截斷必附 tooltip(tooltip.spec.md:32)— 改消費 truncated-text primitive(同 input.tsx:198 同型修)
+        // 截斷必附 tooltip(tooltip.spec.md:30)— 改消費 truncated-text primitive(同 input.tsx:219 同型修)
         return <TruncatedText className={cn(fieldDisplayTextClass(size), className)}>{displayCommitted}</TruncatedText>
       }
       return (
@@ -557,7 +622,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
           style={fieldWidthStyle(width)}
           data-field-mode="view"
         >
-          {/* 截斷必附 tooltip(tooltip.spec.md:32;data-table.spec.md「十一、Cell 單行截斷原則」view 態元件自管 truncation) */}
+          {/* 截斷必附 tooltip(tooltip.spec.md:30;data-table.spec.md「十一、Cell 單行截斷原則」view 態元件自管 truncation) */}
           <TruncatedText className={cn(bareInputStyles, 'flex-1 min-w-0', !value && fieldEmptyColorClass(resolvedMode))}>
             {value ? displayCommitted : emptyDisplay}
           </TruncatedText>
@@ -579,7 +644,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
           {...(props as React.HTMLAttributes<HTMLDivElement>)}
           style={fieldWidthStyle(width, props.style)}
         >
-          {/* 截斷必附 tooltip(tooltip.spec.md:32)— readonly/disabled 無編輯入口,tooltip 是唯一補救路徑(同 Range readonly 分支同型) */}
+          {/* 截斷必附 tooltip(tooltip.spec.md:30)— readonly/disabled 無編輯入口,tooltip 是唯一補救路徑(同 Range readonly 分支同型) */}
           <TruncatedText className={cn('flex-1', resolvedMode === 'disabled' && 'text-fg-disabled')}>
             {value
               ? displayCommitted
@@ -796,12 +861,17 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
               <CalendarTimeContainer
                 showTime={showTime}
                 showSeconds={showSeconds}
+                panelFormat={timePanelFormat}
                 calendar={
                   <DateGrid
                     mode="single"
+                    weekStartsOn={resolvedWeekStartsOn}
                     selected={displayDate}
+                    // 不可選日期(C33):轉給 DateGrid 的 disabled(react-day-picker matcher;date-grid.spec.md「Disabled day」)
+                    disabled={disabledDate}
                     onSelect={(date) => {
                       if (!date) return
+                      if (disabledDate?.(date)) return  // 防護:不可選的那天 RDP 已不派送點擊,雙保險(同 Range 的 isOutOfRangeOrder)
                       if (showTime) {
                         commitDraft(combineDateAndTime(date, draftTime))
                       } else {
@@ -823,6 +893,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
                     showSeconds={showSeconds}
                     minuteStep={minuteStep}
                     secondStep={secondStep}
+                    panelFormat={timePanelFormat}
                   />
                 }
               />
@@ -873,14 +944,35 @@ DatePicker.displayName = 'DatePicker'
 //   - Full range track 視覺(start / middle / end)
 //   - 走原 RDP mode='range' 配對 click 邏輯 + auto-swap
 //
-// **Trigger**:2 input button,active end blue underline 標示
+// **Trigger**:2 input button,作用端那條線壓在欄位框的下邊上(見下方 RANGE_END_BAR_CLASS)
 
-// 起訖兩顆按鈕裡的文字:**只裁水平**(長日期照樣「…」截斷),垂直不裁。作用端那條主色底線(`underline-offset-4` + `decoration-2`,
-// date-picker.spec.md「Active-end 機制」視覺指示)在 14px 字級(sm / md)時有一半落在 21px 行盒的下緣之外;2026-11-17 前文字與按鈕
-// 都是 `truncate`(雙軸 overflow:hidden),下半被裁掉、2px 只畫出 1px(A50;md 實量:按鈕高 21、底線畫在按鈕頂下 20.3–22.3,只剩上面那一列)。
+// 起訖兩顆按鈕裡的文字:**只裁水平**(長日期照樣「…」截斷),垂直不裁 —— 作用端那條線從文字往下伸到欄位框外緣(見下方),
+// 雙軸裁切(`truncate`)會把它整條裁掉(2026-11-17 A50 是同一類:當時文字底線的下半被裁、2px 只畫出 1px)。
 // 同一招與理由見 combobox.tsx `tagRowOverflowClass`:`clip` 不建捲動容器;**不可**改成 overflow-x-hidden(另一軸會算成 auto,變得可捲)。
-// 截斷提示(useTruncated 量 scrollWidth > clientWidth)在 `overflow-x: clip` 下照常量得到。閘:scripts/datepicker-range-active-underline-invariant.mjs。
-const RANGE_END_TEXT_CLASS = 'block overflow-x-clip text-ellipsis whitespace-nowrap'
+// 截斷提示(useTruncated 量 scrollWidth > clientWidth)在 `overflow-x: clip` 下照常量得到。
+// 文字段**不撐滿按鈕**(按鈕是 flex、文字段沒有 flex-1):文字段的寬 = 文字寬(放不下時 = 看得到的那一段),線長跟著它。
+const RANGE_END_TEXT_CLASS = 'relative min-w-0 overflow-x-clip text-ellipsis whitespace-nowrap'
+
+// 作用端那條線(RANGE-FOCUS-BAR(定)2026-11-26;date-picker.spec.md「Active-end 機制」視覺指示):
+//   · 壓在欄位框的下邊上 —— 線的下緣 = 框外緣、粗 2px,蓋住那一段 1px 框線,與框線合成一條(不是框線上方再一條)。
+//     畫法照 Tabs 選中線(tabs.tsx `after:absolute … after:h-0.5`,tabs.spec.md「這兩條線視覺上必須是同一條」);
+//     Ant RangePicker 的 active bar 同向:`bottom: -lineWidth`、`height: lineWidthBold`、`background: colorPrimary`
+//     (https://github.com/ant-design/ant-design/blob/master/components/date-picker/style/index.ts 約 L272-L290)。
+//   · 線長 = 該端文字寬(user 第四輪卡留言,逐字:「應該是甲，但是你的圖片的底線長度應該要等同於上方的時間吧？」)—— 掛在文字段上、左右貼齊文字段。
+//   · 下緣位置 = 文字行盒下緣往下「欄位上下內距 + 框寬」:欄位高度固定、內容垂直置中,行盒下緣到框內緣正好是 `--field-control-py-*`
+//     (uiSize.css 的定義就是 (欄位高 − 1lh) / 2 − 框寬;`lh` 在這條線自己身上解析 = 文字的行高),再加一條框寬就到框外緣。
+//     全部讀 token,換尺寸 / 換密度都跟著走,不寫死 px。
+//   · 顏色 = 框當下的顏色:外框掛 `--range-end-bar-color`(一般主色、欄位錯誤時紅,同 field-wrapper.tsx 聚焦 `!border-primary` / 錯誤 `border-error`
+//     那兩個 token);作用端(面板開著那一端 / 鍵盤聚焦那一顆)才把它交給 `--range-end-bar`,其餘時候沒設 = 背景透明、看不到線。
+//     高對比模式(forced-colors)下 background-color 會被強制換成底色(W3C css-color-adjust-1,只有系統色不換),
+//     所以外框在該模式把 `--range-end-bar-color` 換成系統色 `Highlight`(框線在該模式由瀏覽器換成 CanvasText,線用 Highlight 才分得出作用端)。
+//   閘:scripts/datepicker-range-active-underline-invariant.mjs(像素量:線下緣 = 框外緣、線長 = 文字寬、線色 = 框色)。
+const RANGE_END_BAR_CLASS = 'after:absolute after:inset-x-0 after:h-0.5 after:bg-[color:var(--range-end-bar,transparent)]'
+const RANGE_END_BAR_BOTTOM = {
+  sm: 'after:bottom-[calc(-1*(var(--field-control-py-sm)_+_var(--field-border-width)))]',
+  md: 'after:bottom-[calc(-1*(var(--field-control-py-md)_+_var(--field-border-width)))]',
+  lg: 'after:bottom-[calc(-1*(var(--field-control-py-lg)_+_var(--field-border-width)))]',
+} as const
 
 export interface DatePickerRangeProps
   extends DateFormatOptions,
@@ -910,6 +1002,19 @@ export interface DatePickerRangeProps
   minuteStep?: TimeStep
   secondStep?: TimeStep
   needConfirm?: boolean
+  /** 日曆面一週從哪天開始(0 = 週日 … 6 = 週六);沒傳 = 由 `locale` 推。同單日 DatePicker 的 `weekStartsOn`。 */
+  weekStartsOn?: WeekStartsOn
+  /**
+   * 檢視模式(`mode="view"`)把區間寫成一段文字,用標準 `Intl.DateTimeFormat.prototype.formatRange`:同一天自動合併
+   * (`2026/07/15 上午10:00至11:00`)、跨日寫兩端(`2026/07/15至2026/07/17`)、起訖相同只寫一個值。預設 `false` = 起 → 終兩段各自格式化。
+   * 日期一律兩位數月日(ICU 在區間丟掉的零補回)、時間 12 / 24 跟語系(DATE-TIME(定)2026-11-26)。
+   * 只管 view;edit / readonly / disabled 仍是兩段(兩端各是一個欄位值)。只有一端有值等合併不了時照兩段版面,每一端的日期寫法與合併時相同。
+   * 結束日照舊是「含」,不做全天換算。日期寫法與判定表 → date-picker.spec.md「區間檢視合併(formatRange)」。
+   */
+  formatRange?: boolean
+  /** 不可選的日期(同單日 DatePicker 的 `disabledDate`,2026-11-26 C33):起訖兩端都不能落在回 `true` 的那天;
+   *  與「順序不合」(選結束日時早於開始日)任一成立就不可選。 */
+  disabledDate?: (date: Date) => boolean
 }
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
@@ -934,6 +1039,9 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
       minuteStep = 1,
       secondStep = 1,
       needConfirm: needConfirmProp,
+      weekStartsOn,
+      formatRange = false,
+      disabledDate,
       id: idProp,
       'aria-describedby': ariaDescribedByProp,
       'aria-errormessage': ariaErrorMessageProp,
@@ -953,8 +1061,15 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
     // 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反 7+ 重複 ternary)
   const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
     const needConfirm = needConfirmProp ?? showTime
+    // 日曆面週起始日:同單日 DatePicker(date-picker.spec.md「週起始日」)
+    const resolvedWeekStartsOn = React.useMemo(() => resolveWeekStartsOn(locale, weekStartsOn), [locale, weekStartsOn])
     const resolvedPlaceholder: [string, string] = placeholder ?? (
       showTime ? ['Start date time', 'End date time'] : ['Start date', 'End date'] // i18n-allow: DS default; consumer override via placeholder prop
+    )
+    // showTime 面板的時間寫法:同單日 DatePicker(TIME-12H-PANEL(定)2026-11-26;與欄位裡的字同一份判斷)
+    const timePanelFormat = React.useMemo(
+      () => resolveTimePanelFormat(locale ?? DEFAULT_DATE_LOCALE, resolveDateRangeFormatOptions(true, showSeconds, formatOptions), showSeconds, getDateTimeFormatter),
+      [locale, formatOptions, showSeconds],
     )
 
     const [open, setOpen] = React.useState(false)
@@ -995,10 +1110,10 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
       ? formatDateOrDateTime(endIso, showTime, showSeconds, { formatOptions, locale })
       : resolvedPlaceholder[1]
 
-    // 截斷 tooltip(tooltip.spec.md:32 截斷 → 顯完整內容,僅實際截斷時):Range 兩端 edit
+    // 截斷 tooltip(tooltip.spec.md:30 截斷 → 顯完整內容,僅實際截斷時):Range 兩端 edit
     // trigger button 各自截斷、各自量測顯示 — trigger = button 本體(interactive host,hover
     // 直達)、量測內層文字 span,useTruncated 自組 pattern(truncated-text.spec.md「trigger 需
-    // 自控」指定解;範本 inline-edit.tsx:257)。popover 開啟時靜默;hook 必在 view / readonly
+    // 自控」指定解;範本 inline-edit.tsx:258)。popover 開啟時靜默;hook 必在 view / readonly
     // early return 之前(React #310 hook-count 鐵律,同 select.tsx 教訓)。
     const { ref: startTruncationRef, isTruncated: startTruncated } = useTruncated<HTMLSpanElement>({
       deps: [startIso ? startText : ''],
@@ -1121,20 +1236,57 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
       }
       return false
     }, [activeEnd, startDate, endDate])
+    // 這一格能不能選 = 順序合 + 不在產品給的不可選日期裡(C33;任一成立就不可選,同一條 DateGrid disabled 管線)
+    const isDayDisabled = React.useCallback(
+      (date: Date): boolean => isOutOfRangeOrder(date) || Boolean(disabledDate?.(date)),
+      [isOutOfRangeOrder, disabledDate],
+    )
 
     // mode='view'(Phase B2 2026-05-05):純內容輸出 — 無 Field wrapper / 無 Calendar icon。
     if (resolvedMode === 'view') {
       const hasAny = !!(startIso || endIso)
       if (!hasAny) return <span className={cn(fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
+      // formatRange(選填,預設關):兩端都有值 → 一段文字(Intl formatRange:同一天合併、跨日寫兩端、起訖相同只寫一個值)。
+      // 合併不了(一端空 / 解析不了 / 起點晚於終點 / showTime 但只有一端帶時間 / 環境沒有 formatRange)回 null → 照下方兩段版面,
+      // 每一端仍用合併的同一套寫法(兩位數月日、時間跟語系;同一頁不會一列 07、一列 7)。
+      // 判定住 range-format.ts(判定表 scripts/test-date-range-format.mjs),規則 date-picker.spec.md「區間檢視合併(formatRange)」
+      const rangeTextOptions = {
+        showTime,
+        showSeconds,
+        formatOptions,
+        locale: locale ?? DEFAULT_DATE_LOCALE,
+        getFormatter: getDateTimeFormatter,
+      }
+      const mergedText = formatRange
+        ? formatDateRange({
+            start: startDate,
+            end: endDate,
+            startHasTime: !!isoToTimeParts(startIso),
+            endHasTime: !!isoToTimeParts(endIso),
+            ...rangeTextOptions,
+          })
+        : null
+      if (mergedText !== null) {
+        return (
+          <span className={cn('inline-flex items-center min-w-0', nakedCellRowModeAlign, className)}>
+            {/* 截斷必附 tooltip(tooltip.spec.md:30)— 合併後只有一段,一個 TruncatedText */}
+            <TruncatedText>{mergedText}</TruncatedText>
+          </span>
+        )
+      }
+      // 一端的文字:開了 formatRange → 合併的同一套寫法;沒開,或這一端解析不了(回 null)→ 照原本的兩段寫法
+      const viewEndpointText = (iso: string, date: Date | undefined) =>
+        (formatRange ? formatDateRangeEndpoint({ date, hasTime: !!isoToTimeParts(iso), ...rangeTextOptions }) : null)
+        ?? formatDateOrDateTime(iso, showTime, showSeconds, { formatOptions, locale })
       return (
         <span className={cn('inline-flex items-center min-w-0', nakedCellRowModeAlign, className)}>
-          {/* 截斷必附 tooltip(tooltip.spec.md:32)— start / end 各自獨立截斷、各自量測 */}
+          {/* 截斷必附 tooltip(tooltip.spec.md:30)— start / end 各自獨立截斷、各自量測 */}
           <TruncatedText className={cn(!startIso && 'text-fg-muted')}>
-            {startIso ? formatDateOrDateTime(startIso, showTime, showSeconds, { formatOptions, locale }) : resolvedPlaceholder[0]}
+            {startIso ? viewEndpointText(startIso, startDate) : resolvedPlaceholder[0]}
           </TruncatedText>
           <ArrowRight size={iconSize} className="shrink-0 text-fg-muted mx-2" aria-hidden />
           <TruncatedText className={cn(!endIso && 'text-fg-muted')}>
-            {endIso ? formatDateOrDateTime(endIso, showTime, showSeconds, { formatOptions, locale }) : resolvedPlaceholder[1]}
+            {endIso ? viewEndpointText(endIso, endDate) : resolvedPlaceholder[1]}
           </TruncatedText>
         </span>
       )
@@ -1152,7 +1304,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
           {...props}
           style={fieldWidthStyle(width, props.style)}
         >
-          {/* 截斷必附 tooltip(tooltip.spec.md:32)— readonly/disabled 無編輯入口,tooltip 是唯一補救路徑 */}
+          {/* 截斷必附 tooltip(tooltip.spec.md:30)— readonly/disabled 無編輯入口,tooltip 是唯一補救路徑 */}
           <TruncatedText className={cn('flex-1', !startIso && 'text-fg-muted', resolvedMode === 'disabled' && 'text-fg-disabled')}>
             {startIso ? formatDateOrDateTime(startIso, showTime, showSeconds, { formatOptions, locale }) : resolvedPlaceholder[0]}
           </TruncatedText>
@@ -1187,6 +1339,10 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
               // 外框本身就是點擊目標(下方 onMouseDown),點了會開面板 → 手形(hit-area-canonical.md 一-3);
               // 2026-09-27 前寫 `cursor-text`,但起訖是兩顆按鈕、不能打字,文字游標是錯的
               'cursor-pointer',
+              // 作用端那條線的顏色 = 這圈框的顏色(見 RANGE_END_BAR_CLASS 註解)
+              error ? '[--range-end-bar-color:var(--color-error)]' : '[--range-end-bar-color:var(--color-primary)]',
+              // 高對比模式(forced-colors):背景色會被強制換成底色、線就消失(起訖兩顆又分不出焦點在哪一顆);換成系統色 Highlight 才畫得出來
+              'forced-colors:[--range-end-bar-color:Highlight]',
               className,
             )}
             // 外框的內距與 1px 邊框底下沒有按鈕:指到那裡外框會亮(hover:border-border-hover),2026-09-27 前點下去
@@ -1226,19 +1382,17 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   aria-expanded={open && activeEnd === 'start'}
                   className={cn(
                     bareInputStyles,
-                    // `overflow-visible` 蓋掉 bareInputStyles 的 truncate:按鈕本身不裁,截斷交給裡面的 RANGE_END_TEXT_CLASS(底線才不被按鈕下緣裁掉);寬度仍由 bareInputStyles 的 min-w-0 收
-                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx#fieldDefaultChromeCompounds);起訖兩顆靠下方主色底線區分(見下一行)
-                    'overflow-visible text-left cursor-pointer focus-visible:outline-none',
-                    // 起訖兩顆共用同一圈欄位邊框,邊框分不出焦點在哪一顆,所以作用端另有一條主色底線。
-                    // 這條線原本只在面板開著時畫(data-active-end 帶 open 條件),於是「面板關著用 Tab
-                    // 在起訖之間移動」時兩顆長得一模一樣。補上 focus-visible 這一半 —— 用的是本元件
-                    // 既有的同一條線,不是第二種指示。對照 Ant Design RangePicker 的 -active-bar
-                    // (components/date-picker/style/index.ts:`height: lineWidthBold, background: colorPrimary`)。
-                    'data-[active-end=true]:underline focus-visible:underline decoration-primary underline-offset-4 decoration-2',
+                    // `flex` + `overflow-visible`(蓋掉 bareInputStyles 的 truncate):按鈕本身不裁,截斷交給裡面的文字段(RANGE_END_TEXT_CLASS)——
+                    // 作用端那條線從文字段往下伸到欄位框外緣,按鈕一裁就沒了;`flex` 讓文字段收成文字寬(線長 = 文字寬)。寬度仍由 bareInputStyles 的 min-w-0 收
+                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx#fieldDefaultChromeCompounds);起訖兩顆靠作用端那條線區分(見下一行)
+                    'flex overflow-visible text-left cursor-pointer focus-visible:outline-none',
+                    // 起訖兩顆共用同一圈欄位邊框,邊框分不出焦點在哪一顆,所以作用端另有一條線(畫在文字段上,RANGE_END_BAR_CLASS):
+                    // 面板開著的那一端(data-active-end)與面板關著用 Tab 到的那一顆(focus-visible,2026-09-08 補)是同一條線,不是第二種指示。
+                    'data-[active-end=true]:[--range-end-bar:var(--range-end-bar-color)] focus-visible:[--range-end-bar:var(--range-end-bar-color)]',
                     !startIso && 'text-fg-muted',
                   )}
                 >
-                  <span ref={startTruncationRef} className={RANGE_END_TEXT_CLASS}>{startText}</span>
+                  <span ref={startTruncationRef} className={cn(RANGE_END_TEXT_CLASS, RANGE_END_BAR_CLASS, RANGE_END_BAR_BOTTOM[size ?? 'md'])}>{startText}</span>
                 </button>
               </TooltipTrigger>
               <TooltipContent>{startTooltipActive ? startText : null}</TooltipContent>
@@ -1256,19 +1410,16 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   aria-expanded={open && activeEnd === 'end'}
                   className={cn(
                     bareInputStyles,
-                    // `overflow-visible`:同起始端那顆(按鈕不裁,截斷交給 RANGE_END_TEXT_CLASS)
-                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx#fieldDefaultChromeCompounds);起訖兩顆靠下方主色底線區分(見下一行)
-                    'overflow-visible text-left cursor-pointer focus-visible:outline-none',
-                    // 起訖兩顆共用同一圈欄位邊框,邊框分不出焦點在哪一顆,所以作用端另有一條主色底線。
-                    // 這條線原本只在面板開著時畫(data-active-end 帶 open 條件),於是「面板關著用 Tab
-                    // 在起訖之間移動」時兩顆長得一模一樣。補上 focus-visible 這一半 —— 用的是本元件
-                    // 既有的同一條線,不是第二種指示。對照 Ant Design RangePicker 的 -active-bar
-                    // (components/date-picker/style/index.ts:`height: lineWidthBold, background: colorPrimary`)。
-                    'data-[active-end=true]:underline focus-visible:underline decoration-primary underline-offset-4 decoration-2',
+                    // `flex` + `overflow-visible`:同起始端那顆(按鈕不裁、文字段收成文字寬)
+                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx#fieldDefaultChromeCompounds);起訖兩顆靠作用端那條線區分(見下一行)
+                    'flex overflow-visible text-left cursor-pointer focus-visible:outline-none',
+                    // 起訖兩顆共用同一圈欄位邊框,邊框分不出焦點在哪一顆,所以作用端另有一條線(畫在文字段上,RANGE_END_BAR_CLASS):
+                    // 面板開著的那一端(data-active-end)與面板關著用 Tab 到的那一顆(focus-visible,2026-09-08 補)是同一條線,不是第二種指示。
+                    'data-[active-end=true]:[--range-end-bar:var(--range-end-bar-color)] focus-visible:[--range-end-bar:var(--range-end-bar-color)]',
                     !endIso && 'text-fg-muted',
                   )}
                 >
-                  <span ref={endTruncationRef} className={RANGE_END_TEXT_CLASS}>{endText}</span>
+                  <span ref={endTruncationRef} className={cn(RANGE_END_TEXT_CLASS, RANGE_END_BAR_CLASS, RANGE_END_BAR_BOTTOM[size ?? 'md'])}>{endText}</span>
                 </button>
               </TooltipTrigger>
               <TooltipContent>{endTooltipActive ? endText : null}</TooltipContent>
@@ -1304,8 +1455,10 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
             <CalendarTimeContainer
               showTime={showTime}
               showSeconds={showSeconds}
+              panelFormat={timePanelFormat}
               calendar={
                 <DateGrid
+                  weekStartsOn={resolvedWeekStartsOn}
                   // mode='single' + manual modifiers(canonical 2026-05-02 v3):
                   // 不用 RDP 內建 mode='range'(它的 click 配對邏輯跟我們的 activeEnd 衝突,
                   // 造成「點一次沒反應 / 要點兩次」bug)。改自管 modifiers 控視覺。
@@ -1314,7 +1467,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   selected={activeDate}
                   onSelect={(date) => {
                     if (!date) return
-                    if (isOutOfRangeOrder(date)) return  // 防護:disable 邏輯內 click 已被 RDP 擋,但雙保險
+                    if (isDayDisabled(date)) return  // 防護:disable 邏輯內 click 已被 RDP 擋,但雙保險
                     const preservedTime = isoToTimeParts(activeEnd === 'start' ? draft[0] : draft[1]) ?? activeTime
                     const nextIso = showTime
                       ? combineDateAndTime(date, preservedTime)
@@ -1396,8 +1549,8 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                     keyboardDayRef.current = null
                     setPreviewAnchor((prev) => (prev?.source === 'keyboard' ? null : prev))
                   }}
-                  // Cell disable:防 user 點下違反順序的日期(對齊 Ant useRangeDisabledDate)
-                  disabled={isOutOfRangeOrder}
+                  // Cell disable:防 user 點下違反順序的日期(對齊 Ant useRangeDisabledDate)+ 產品給的不可選日期(C33)
+                  disabled={isDayDisabled}
                   // showTime → 1 cal(對齊 Ant `multiplePanel=false`);date-only → 2 cal(`multiplePanel=true`)
                   numberOfMonths={showTime ? 1 : 2}
                   defaultMonth={activeDate ?? startDate ?? endDate ?? undefined}
@@ -1414,6 +1567,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   showSeconds={showSeconds}
                   minuteStep={minuteStep}
                   secondStep={secondStep}
+                  panelFormat={timePanelFormat}
                 />
               }
             />

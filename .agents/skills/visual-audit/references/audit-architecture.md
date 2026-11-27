@@ -63,13 +63,14 @@ Output:
 | **Menu item hover highlight** | ✗ 不抓 | 需 `play()` + hover first item after `defaultOpen` |
 | **Combobox / Select 展開後 listbox** | 部分 | 靠 `defaultOpen` 可抓 listbox,但 hover highlight 需 play |
 
-### 解法:Storybook `play()` + `@storybook/test`
+### 解法:Storybook `play()` + `storybook/test`
 
-Storybook v8 的 `play()` 在 story 渲染後執行,可觸發互動狀態。`@storybook/test` 提供 `userEvent` / `within` / `expect` 等 API:
+Storybook 的 `play()` 在 story 渲染後執行,可觸發互動狀態。`storybook/test`(10.x;8.x 時叫 `@storybook/test`)提供 `userEvent` / `within` / `expect` 等 API。
+一律檔頭靜態匯入:10.x 建置裡 `await import('storybook/test')` 會靜默失敗(story-rules「Storybook 版本與匯入路徑(10.x)」):
 
 ```tsx
-import type { StoryObj } from '@storybook/react'
-import { userEvent, within } from '@storybook/test'
+import type { StoryObj } from '@storybook/react-vite'
+import { userEvent, within } from 'storybook/test'
 
 export const HoverState: StoryObj = {
   render: () => <Button>Hover me</Button>,

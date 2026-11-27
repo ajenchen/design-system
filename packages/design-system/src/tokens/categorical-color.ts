@@ -42,7 +42,10 @@ export const CATEGORICAL_HUES = [
 
 export type CategoricalHue = (typeof CATEGORICAL_HUES)[number]
 
-/** neutral 不是色相(無 hue),用 secondary/foreground + neutral-9 solid,各 consumer 自處理(不在下列 map)。 */
+/**
+ * neutral 不是色相(無 hue),用 secondary/foreground + neutral-9 solid,不在下列 12 色相的 map(I1 / I2 只管色相)。
+ * Tag / Avatar 在各自元件裡處理;Calendar 事件的 neutral 收在本檔下方的 `CAT_EVENT_NEUTRAL`(決策總帳 2026-11-25「neutral 事件色放 categorical-color.ts」)。
+ */
 export type CategoricalColor = CategoricalHue | 'neutral'
 
 /** subtle 模式 class:step-1 底 + step-7 字。key X 一律對 `--color-X-*`(1:1)。 */
@@ -63,22 +66,47 @@ export const CAT_SUBTLE: Record<CategoricalHue, string> = {
 
 /**
  * solid 模式 class:step-6 底 + on-emphasis 配對文字。
- * 文字色依「step-6 底亮度」分桶(WCAG ≥3:1 大粗字門檻,2026-06-04 user「以最低為原則」):
- *   - 夠深的色底 → `text-on-emphasis`(白):blue / deep-orange / red / indigo / purple / magenta
- *   - 太亮的色底 → `text-on-emphasis-dark`(深):yellow / amber / orange / lime / turquoise(白字連 3:1 都不過;turquoise 2026-07-16 dark 色相修正後 L=0.68 白字 2.77 → 切深字,兩 mode 5.65/6.47 全過)
- *   - ★ green 例外:白字 2.47 連 3:1 都不過,但 user 拍板維持白字(綠底白字慣見觀感)= documented exception。
- * 對比為 oklch→相對亮度實測(scripts/categorical-color-invariants.mjs 機械驗,green 列 exempt)。
+ *
+ * **實心底字色原則**(2026-11-26 user 決定;全 DS「類別色 step-6 實心底上的字」都照這一條,字色只從本檔兩張 solid map 取):
+ *   白字對比**不低於綠色** → 白字 `text-on-emphasis`;低於綠色 → 深字 `text-on-emphasis-dark`。
+ *   綠色 = user 接受的最低白字對比,是這條原則的**基準**,不是例外。淺色、深色兩個模式各自和綠色在同一模式的值比較
+ *  (兩個模式都達門檻才是白字)。
+ * user 原話(2026-11-26,依序逐字):
+ *   1.「turquoise的 solid tag的配色為何其上字體不是跟blue上的字體顏色一樣都是白色？這是何時改的？這個沒經過我同意吧？我認為上面是要白色，請確保整個 ds 此類邏輯配色的地方都按這個 ssot」
+ *   2. 選「白字,照綠色先例登記例外 (Recommended)」並寫「應該照你建議啊，而且超奇怪，2.47都過了，2.77憑什麼不過？？？」
+ *   3.「橘色要一起改啊，2.47以上的都應該過吧？」
+ *   「以綠色為基準、兩個模式各自比較」是依這三段整理成一條的寫法,回覆 user 時已列出、user 未反對【AI 整理;深色門檻 2.21 是 AI 推導 —— user 原話只提到淺色的 2.47】。
+ * 實測(oklch → 相對亮度;`scripts/categorical-color-invariants.mjs` I4 每次由 primitives 現算門檻,並逐格核對下表 —— 數字或字色和現算不符就紅):
+ *   | 色相 | 淺 白字 | 深 白字 | 字 |
+ *   | green | 2.47 | 2.21 | 白(基準) |
+ *   | blue | 5.20 | 3.69 | 白 |
+ *   | deep-orange | 4.67 | 3.78 | 白 |
+ *   | red | 7.19 | 6.36 | 白 |
+ *   | indigo | 5.99 | 4.90 | 白 |
+ *   | purple | 6.05 | 4.84 | 白 |
+ *   | magenta | 5.11 | 4.12 | 白 |
+ *   | turquoise | 3.23 | 2.77 | 白 |
+ *   | orange | 2.51 | 2.24 | 白 |
+ *   | amber | 1.98 | 1.78 | 深 |
+ *   | lime | 1.73 | 1.57 | 深 |
+ *   | yellow | 1.49 | 1.42 | 深 |
+ * 深字桶的深字對比照舊要 ≥ 3:1(2026-06-04 user「以最低為原則」的大粗字門檻;同一支閘驗)。
+ * **換桶**(primitives 改了某色相亮度,讓它跨過門檻)= 畫面變化:閘只會紅、不會自動換,要 user 確認後才同時改上表與兩張 solid map。
+ * **原則本身要改**(換基準色、改門檻)= 產品／UI／UX 決策(AGENTS.md#canonical-decision-authority)。
+ * 沿革:2026-06-04 起是「白字 ≥ 3:1 → 白,green 列 documented exception」;2026-07-16 commit 7bbeac58 把 turquoise 切成深字 ——
+ * 那次 user 核准的是深色 turquoise 的色相修正(「照設計語言推導自動調整」),切字色是 AI 連帶改動、沒有 user 原話。
+ * 2026-11-26 依上面的原則,turquoise、orange 改回 / 改成白字。
  */
 export const CAT_SOLID: Record<CategoricalHue, string> = {
   blue: 'bg-[var(--color-blue-6)] text-on-emphasis',
-  green: 'bg-[var(--color-green-6)] text-on-emphasis', // ★白字 documented exception(實測 2.47 < 3:1)
+  green: 'bg-[var(--color-green-6)] text-on-emphasis',
   'deep-orange': 'bg-[var(--color-deep-orange-6)] text-on-emphasis',
   yellow: 'bg-[var(--color-yellow-6)] text-on-emphasis-dark',
   red: 'bg-[var(--color-red-6)] text-on-emphasis',
-  orange: 'bg-[var(--color-orange-6)] text-on-emphasis-dark',
+  orange: 'bg-[var(--color-orange-6)] text-on-emphasis',
   amber: 'bg-[var(--color-amber-6)] text-on-emphasis-dark',
   lime: 'bg-[var(--color-lime-6)] text-on-emphasis-dark',
-  turquoise: 'bg-[var(--color-turquoise-6)] text-on-emphasis-dark',
+  turquoise: 'bg-[var(--color-turquoise-6)] text-on-emphasis',
   indigo: 'bg-[var(--color-indigo-6)] text-on-emphasis',
   purple: 'bg-[var(--color-purple-6)] text-on-emphasis',
   magenta: 'bg-[var(--color-magenta-6)] text-on-emphasis',
@@ -115,24 +143,25 @@ export const CAT_SUBTLE_TOKENS: Record<CategoricalHue, { bg: string; text: strin
   purple: { bg: 'var(--color-purple-1)', text: 'var(--color-purple-7)' },
   magenta: { bg: 'var(--color-magenta-1)', text: 'var(--color-magenta-7)' },
 }
-// 同 CAT_SOLID 的文字分桶(白 / 深),raw token 版供 Avatar style 物件用。green = ★白字 exception。
+// 同 CAT_SOLID 的文字分桶(白 / 深,依上方「實心底字色原則」),raw token 版供 Avatar style 物件用。
 export const CAT_SOLID_TOKENS: Record<CategoricalHue, { bg: string; text: string }> = {
   blue: { bg: 'var(--color-blue-6)', text: 'var(--on-emphasis)' },
-  green: { bg: 'var(--color-green-6)', text: 'var(--on-emphasis)' }, // ★白字 documented exception
+  green: { bg: 'var(--color-green-6)', text: 'var(--on-emphasis)' },
   'deep-orange': { bg: 'var(--color-deep-orange-6)', text: 'var(--on-emphasis)' },
   yellow: { bg: 'var(--color-yellow-6)', text: 'var(--on-emphasis-dark)' },
   red: { bg: 'var(--color-red-6)', text: 'var(--on-emphasis)' },
-  orange: { bg: 'var(--color-orange-6)', text: 'var(--on-emphasis-dark)' },
+  orange: { bg: 'var(--color-orange-6)', text: 'var(--on-emphasis)' },
   amber: { bg: 'var(--color-amber-6)', text: 'var(--on-emphasis-dark)' },
   lime: { bg: 'var(--color-lime-6)', text: 'var(--on-emphasis-dark)' },
-  turquoise: { bg: 'var(--color-turquoise-6)', text: 'var(--on-emphasis-dark)' },
+  turquoise: { bg: 'var(--color-turquoise-6)', text: 'var(--on-emphasis)' },
   indigo: { bg: 'var(--color-indigo-6)', text: 'var(--on-emphasis)' },
   purple: { bg: 'var(--color-purple-6)', text: 'var(--on-emphasis)' },
   magenta: { bg: 'var(--color-magenta-6)', text: 'var(--on-emphasis)' },
 }
 
 /**
- * Calendar event tile:subtle 底 + hover step-2(1:1)。
+ * Calendar 全天 / 跨日長條(可點):淡底 step-1 + 字 step-7 + 滑過 step-2(1:1;calendar.spec.md「事件的兩種長相」左欄)。
+ * 唯讀的長條用 `CAT_SUBTLE`(同底同字、不帶滑過);有時段事件是透明列 + 左側色條(`CAT_ACCENT`),不用這張表。
  * 淡底的滑過 = 同色離底更遠一格:淺色變深、深色變亮(色階號碼 = 離所在底色多遠;primitives.css 檔頭、
  * color.spec.md「Dark mode subtle」)。與上方實心色互動 state 不同 —— 那是 semantic `--{hue}-hover`(深色要反轉),
  * 這裡是淡底區 step-1 → step-2,兩主題同向,直接用 primitive(2026-09-26 深色 step-2..4 改半透明淡底後成立)。
@@ -152,18 +181,60 @@ export const CAT_EVENT: Record<CategoricalHue, string> = {
   magenta: 'bg-[var(--color-magenta-1)] text-[var(--color-magenta-7)] hover:bg-[var(--color-magenta-2)]',
 }
 
-/** Calendar all-day accent:左側 step-6 實心條。 */
-export const CAT_ACCENT: Record<CategoricalHue, string> = {
-  blue: 'border-l-[3px] border-[var(--color-blue-6)]',
-  green: 'border-l-[3px] border-[var(--color-green-6)]',
-  'deep-orange': 'border-l-[3px] border-[var(--color-deep-orange-6)]',
-  yellow: 'border-l-[3px] border-[var(--color-yellow-6)]',
-  red: 'border-l-[3px] border-[var(--color-red-6)]',
-  orange: 'border-l-[3px] border-[var(--color-orange-6)]',
-  amber: 'border-l-[3px] border-[var(--color-amber-6)]',
-  lime: 'border-l-[3px] border-[var(--color-lime-6)]',
-  turquoise: 'border-l-[3px] border-[var(--color-turquoise-6)]',
-  indigo: 'border-l-[3px] border-[var(--color-indigo-6)]',
-  purple: 'border-l-[3px] border-[var(--color-purple-6)]',
-  magenta: 'border-l-[3px] border-[var(--color-magenta-6)]',
+/**
+ * Calendar 長條「詳情開著」:打開詳情的那一段 / 那一列在詳情開著時維持自己的滑過色(1:1,值 = `CAT_EVENT` 的滑過 step-2;
+ * calendar.spec.md「「+N」清單浮層」點清單裡的事件、「事件詳情浮層」位置【AI 推導】)。由元素上的 `data-detail-open` 驅動,
+ * 與滑過同值、不是另一種顏色:看得出「詳情是從這一筆開的」(Google Calendar 從 overview 點事件時,那一列維持反白)。
+ * 有時段事件的透明列用 `--neutral-hover`(透明底的配對),neutral 長條用 `CAT_EVENT_NEUTRAL.open`。
+ */
+export const CAT_EVENT_OPEN: Record<CategoricalHue, string> = {
+  blue: 'data-[detail-open]:bg-[var(--color-blue-2)]',
+  green: 'data-[detail-open]:bg-[var(--color-green-2)]',
+  'deep-orange': 'data-[detail-open]:bg-[var(--color-deep-orange-2)]',
+  yellow: 'data-[detail-open]:bg-[var(--color-yellow-2)]',
+  red: 'data-[detail-open]:bg-[var(--color-red-2)]',
+  orange: 'data-[detail-open]:bg-[var(--color-orange-2)]',
+  amber: 'data-[detail-open]:bg-[var(--color-amber-2)]',
+  lime: 'data-[detail-open]:bg-[var(--color-lime-2)]',
+  turquoise: 'data-[detail-open]:bg-[var(--color-turquoise-2)]',
+  indigo: 'data-[detail-open]:bg-[var(--color-indigo-2)]',
+  purple: 'data-[detail-open]:bg-[var(--color-purple-2)]',
+  magenta: 'data-[detail-open]:bg-[var(--color-magenta-2)]',
 }
+
+/**
+ * Calendar 有時段事件的色條:類別 step-6 實心(1:1;calendar.spec.md「事件的兩種長相」右欄)。**只給顏色** —— 色條是一個元素,
+ * 寬、高、圓角由 Calendar 自己給(寬 = calendar-geometry.ts 的常數、高 = 字高、圓頭),不寫在色表裡。
+ * 2026-11-25 前是全天事件的左側 3px 邊框(`border-l-[3px]` + 邊框色);全天改成淡底長條、不帶色條,色條改給有時段事件。
+ */
+export const CAT_ACCENT: Record<CategoricalHue, string> = {
+  blue: 'bg-[var(--color-blue-6)]',
+  green: 'bg-[var(--color-green-6)]',
+  'deep-orange': 'bg-[var(--color-deep-orange-6)]',
+  yellow: 'bg-[var(--color-yellow-6)]',
+  red: 'bg-[var(--color-red-6)]',
+  orange: 'bg-[var(--color-orange-6)]',
+  amber: 'bg-[var(--color-amber-6)]',
+  lime: 'bg-[var(--color-lime-6)]',
+  turquoise: 'bg-[var(--color-turquoise-6)]',
+  indigo: 'bg-[var(--color-indigo-6)]',
+  purple: 'bg-[var(--color-purple-6)]',
+  magenta: 'bg-[var(--color-magenta-6)]',
+}
+
+/**
+ * Calendar 事件的 neutral(`CalendarEvent.color = 'neutral'`;不是色相,所以不進上面 12 色相的 map)。三個鍵對上面三張表:
+ * - `event` ↔ `CAT_EVENT`:可點的全天 / 跨日長條 = `--secondary` 底 + `--foreground` 字,滑過換它自己的配對 `--secondary-hover`
+ *  (color.spec.md「Static Subtle Background」bg-secondary 列「站在這個底上而且可點的…滑過時換自己的配對」、「Hover 換色配對總則」;
+ *   同 Tag neutral 的底與字 `components/Tag/tag.tsx#tagVariants`,可點時的滑過同 FileItem 靜態小膠囊 `components/FileItem/file-item.tsx#FileItem`);
+ * - `subtle` ↔ `CAT_SUBTLE`:唯讀的長條,同底同字、不帶滑過;
+ * - `accent` ↔ `CAT_ACCENT`:有時段事件的色條 = `--color-neutral-9`(同 Tag / Avatar neutral solid 的 neutral-9);
+ * - `open` ↔ `CAT_EVENT_OPEN`:詳情開著時維持滑過色 `--secondary-hover`。
+ * 【AI 推導,calendar.spec.md「事件的兩種長相」neutral 那條;放在本檔 = 決策總帳 2026-11-25 AI 判定】
+ */
+export const CAT_EVENT_NEUTRAL = {
+  event: 'bg-secondary text-foreground hover:bg-secondary-hover',
+  subtle: 'bg-secondary text-foreground',
+  accent: 'bg-[var(--color-neutral-9)]',
+  open: 'data-[detail-open]:bg-secondary-hover',
+} as const

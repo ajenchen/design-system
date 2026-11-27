@@ -10,7 +10,7 @@
 // 原本寫著「1. Single-row —」這類序號與內部代號 → 開發備忘改成一般註解,docs 說明寫在 parameters.docs.description.story;
 // 標題一律包 TruncatedText(截斷時才出 DS Tooltip,同 DialogTitle),拿掉瀏覽器原生 title;標頭上的按鈕都接上本來的行為(F-S2)。
 import * as React from 'react'
-import type { Meta } from '@storybook/react'
+import type { Meta } from '@storybook/react-vite'
 import type { ReactNode } from 'react'
 import {
   FileText,

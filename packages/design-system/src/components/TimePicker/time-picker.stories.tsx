@@ -1,7 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // M22 retrofit DONE 2026-05-03 v11(spec.md SSOT bears full citations; stories cite via spec.md ref line 15)
 import * as React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { ArrowRight } from 'lucide-react'
 import { TimePicker } from './time-picker'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
@@ -86,7 +86,7 @@ export const MeetingSlot: Story = {
 }
 
 /**
- * 航班時刻 — HH:mm 格式,不需要秒。
+ * 航班時刻 — 分鐘粒度、不需要秒:值是 "HH:mm",欄位顯示跟語系(zh-TW「下午2:35」)。
  * 對照:Google Flights / Expedia / KAYAK 時間選擇都是分鐘粒度。
  */
 export const FlightDepartureTime: Story = {
@@ -128,7 +128,7 @@ export const ShopBusinessHours: Story = {
 }
 
 /**
- * 精確 log 時間 — 需要秒時啟用 showSeconds,format 自動升級到 HH:mm:ss。
+ * 精確 log 時間 — 需要秒時啟用 showSeconds:值升級到 "HH:mm:ss",欄位顯示多寫秒、12 / 24 照樣跟語系(zh-TW「下午2:35:22」)。
  * 對照:DevTools timeline / Datadog event timestamp 都秒級。
  */
 export const EventTimestamp: Story = {

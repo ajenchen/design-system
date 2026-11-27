@@ -2,20 +2,23 @@
 # 2026-06-11 repoint:check_storybook_addon_preset_cjs.sh 已合併進 check_storybook_addon_packaging.sh(prune merge;測試 payload 不變 = 行為等價驗證)
 # Tests for check_storybook_addon_packaging.sh(P0,2026-05-28 beta.27-.31 5 連敗 anchor)
 #
-# Hook 規則(PreToolUse,Edit|Write|MultiEdit):
-#   Scope:  tool_input.file_path 匹配 `/addons/<name>/preset.ts$`(storybook-config OR .storybook)
+# Hook 規則(PreToolUse,Edit|Write|MultiEdit)—— 2026-11-25 Storybook 10 翻轉(preset 必為合法 ESM):
+#   Scope:  tool_input.file_path 匹配 `/addons/<name>/preset.(ts|js|mjs|cjs)$`(storybook-config OR .storybook)
 #           其他 file / 其他 tool → exit 0 silent
 #   Content:tool_input.new_string // tool_input.content;empty → exit 0
-#   Strip:  grep 前先剝 line-level + inline /* */ + trailing // 註解(M7/M34 broad-vs-narrow
-#           fix — 正確 preset.ts 會在 comment 內「文件化」anti-pattern,raw grep 會假 BLOCK)
-#   BLOCK(exit 2):code-stripped content 含 `createRequire` / `require.resolve`
-#                 OR `fileURLToPath\s*\(\s*import\.meta\.url`
+#   Strip:  grep 前先剝 line-level + inline /* */ + 空白後的 // 註解(M7/M34 broad-vs-narrow
+#           fix — 正確 preset 會在 comment 內「文件化」anti-pattern,raw grep 會假 BLOCK)
+#   BLOCK(exit 2):preset.cjs(CJS preset 10.x 不支援)
+#                 OR code 用 require( / require.resolve( 而沒有 createRequire(
+#                 OR code 用 __dirname / __filename 而沒有自行宣告
+#                 OR code 用 module.exports / exports.x =
+#   ALLOW:  官方 ESM 寫法 import.meta.resolve、createRequire(import.meta.url)、fileURLToPath(import.meta.url)
 #   Escape: content 含 `@preset-cjs-skip:` → exit 0
 #   Needle: stderr 含 "STORYBOOK ADDON PRESET CJS BLOCKER"
 #
 # M34 broad-vs-narrow symmetry probes:
-#   - over-broad guard:keyword 只在 comment 內 → 必 NOT block(test 6,7,8)
-#   - over-narrow guard:keyword 在真 code → 必 block,且 fileURLToPath 需配 import.meta.url(test 9,10)
+#   - over-broad guard:keyword 只在 comment 內、或已自行定義 → 必 NOT block(test 1,3,4,6,7,8)
+#   - over-narrow guard:keyword 在真 code 且未定義 → 必 block(test 2,5,10b,10c,10d,12)
 
 set -u
 
@@ -99,28 +102,10 @@ echo "=== check_storybook_addon_preset_cjs tests ==="
 
 # ───────────────────────── POSITIVE(should BLOCK)─────────────────────────
 
-# 1. createRequire in real preset.ts code → BLOCK
-run_hook "Write" "$PRESET" "content" \
-'import { createRequire } from "module"
-const require = createRequire(import.meta.url)
-export const managerEntries = (e = []) => [...e, require.resolve("./manager")]'
-expect_block "1. createRequire in real code → BLOCK" "$NEEDLE"
-
 # 2. require.resolve in real code(no createRequire)→ BLOCK
 run_hook "Write" "$PRESET" "content" \
 'export const previewAnnotations = (e = []) => [...e, require.resolve("./preview")]'
-expect_block "2. require.resolve in real code → BLOCK" "$NEEDLE"
-
-# 3. fileURLToPath(import.meta.url) in real code → BLOCK(over-narrow guard: real violation must fire)
-run_hook "Write" "$PRESET" "content" \
-'import { fileURLToPath } from "url"
-const __dirname = path.dirname(fileURLToPath(import.meta.url))'
-expect_block "3. fileURLToPath(import.meta.url) real code → BLOCK" "$NEEDLE"
-
-# 4. Edit tool via new_string field → BLOCK(contract: new_string takes precedence over content)
-run_hook "Edit" "/x/.storybook/addons/density/preset.ts" "new_string" \
-'const r = createRequire(import.meta.url)'
-expect_block "4. Edit new_string createRequire → BLOCK" "$NEEDLE"
+expect_block "2. require.resolve without createRequire → BLOCK" "$NEEDLE"
 
 # 5. require.resolve with trailing inline // comment, code still present → BLOCK
 #    (guard: strip 只剝 comment portion,不可吃掉同行真 code)
@@ -129,49 +114,86 @@ run_hook "Write" "$PRESET" "content" \
 export const x = 1'
 expect_block "5. real require.resolve + trailing comment → BLOCK" "$NEEDLE"
 
+# 10b. 8.x 的 canonical(path.join(__dirname))在 10.x ESM preset 裡 __dirname 不存在 → BLOCK
+run_hook "Write" "$PRESET" "content" \
+'import path from "path"
+export const managerEntries = (e = []) => [...e, path.join(__dirname, "manager.tsx")]'
+expect_block "10b. bare __dirname in ESM preset → BLOCK" "$NEEDLE"
+
+# 10c. module.exports(CommonJS 匯出)→ BLOCK
+run_hook "Write" "$PRESET" "content" \
+'module.exports = { managerEntries: (e = []) => e }'
+expect_block "10c. module.exports in preset.ts → BLOCK" "$NEEDLE"
+
+# 10d. Edit new_string 用 __filename 沒宣告 → BLOCK(contract: new_string takes precedence over content)
+run_hook "Edit" "/x/.storybook/addons/density/preset.ts" "new_string" \
+'const here = __filename'
+expect_block "10d. Edit new_string bare __filename → BLOCK" "$NEEDLE"
+
+# 12. preset.cjs(8.x 時代寫法)→ BLOCK(10.x 不支援 CJS preset)
+run_hook "Write" "/x/addons/foo/preset.cjs" "content" \
+'const path = require("path")
+module.exports = {}'
+expect_block "12. preset.cjs → BLOCK" "$NEEDLE"
+
 # ───────────────────────── NEGATIVE(should NOT block)─────────────────────
 
-# 6. createRequire ONLY in a // full-line comment(M34 over-broad guard)→ silent
+# 1. 官方寫法:createRequire(import.meta.url) 之後 require.resolve → silent
 run_hook "Write" "$PRESET" "content" \
-'// WHY .cjs: createRequire / require.resolve 被 Node ESM scope 攔,故不用此檔
-const path = require("path")
-module.exports = {}'
-expect_pass_silent "6. createRequire only in // comment → silent"
+'import { createRequire } from "module"
+const require = createRequire(import.meta.url)
+export const managerEntries = (e = []) => [...e, require.resolve("./manager.js")]'
+expect_pass_silent "1. createRequire + require.resolve(官方 ESM 寫法)→ silent"
 
-# 7. require.resolve ONLY in a trailing // comment(M34 over-broad guard)→ silent
+# 3. 官方寫法:自行宣告 __dirname = dirname(fileURLToPath(import.meta.url))→ silent
 run_hook "Write" "$PRESET" "content" \
-'export const e = (x = []) => [...x, path.join(__dirname, "manager.tsx")] // avoid require.resolve'
-expect_pass_silent "7. require.resolve only in trailing comment → silent"
+'import { fileURLToPath } from "node:url"
+import { dirname, join } from "node:path"
+const __dirname = dirname(fileURLToPath(import.meta.url))
+export const managerEntries = (e = []) => [...e, join(__dirname, "manager.js")]'
+expect_pass_silent "3. fileURLToPath(import.meta.url) + 宣告 __dirname → silent"
 
-# 8. createRequire ONLY in inline /* ... */ block comment → silent
+# 4. Edit new_string 只有 createRequire → silent
+run_hook "Edit" "/x/.storybook/addons/density/preset.ts" "new_string" \
+'const r = createRequire(import.meta.url)'
+expect_pass_silent "4. Edit new_string createRequire → silent"
+
+# 6. require.resolve / module.exports ONLY in a // full-line comment(M34 over-broad guard)→ silent
 run_hook "Write" "$PRESET" "content" \
-'const path = require("path") /* not createRequire — pure CJS */
+'// 8.x 時代:require.resolve / module.exports 寫在 preset.cjs;10.x 改 ESM
+import { fileURLToPath } from "node:url"
+export const managerEntries = (e = []) => [...e, fileURLToPath(import.meta.resolve("./manager.js"))]'
+expect_pass_silent "6. CJS keywords only in // comment → silent"
+
+# 7. __dirname ONLY in a trailing // comment(M34 over-broad guard)→ silent
+run_hook "Write" "$PRESET" "content" \
+'export const e = (x = []) => [...x, fileURLToPath(import.meta.resolve("./manager.js"))] // not path.join(__dirname)'
+expect_pass_silent "7. __dirname only in trailing comment → silent"
+
+# 8. require ONLY in inline /* ... */ block comment → silent
+run_hook "Write" "$PRESET" "content" \
+'import { fileURLToPath } from "node:url" /* not require("path") */
 export const x = 1'
-expect_pass_silent "8. createRequire only in inline block comment → silent"
+expect_pass_silent "8. require only in inline block comment → silent"
 
-# 9. fileURLToPath called on a NON-import.meta.url arg → silent(over-narrow boundary: regex requires import.meta.url)
+# 9. fileURLToPath called on a NON-import.meta.url arg → silent
 run_hook "Write" "$PRESET" "content" \
 'const p = fileURLToPath(someConfiguredUrl)
 export const x = 1'
-expect_pass_silent "9. fileURLToPath(otherVar) ≠ import.meta.url → silent"
+expect_pass_silent "9. fileURLToPath(otherVar) → silent"
 
-# 10. Clean canonical preset.ts(path.join(__dirname))→ silent
+# 10. Clean canonical ESM preset(本 repo ds-devmode/preset.ts 同款)→ silent
 run_hook "Write" "$PRESET" "content" \
-'import path from "path"
-export const managerEntries = (e = []) => [...e, path.join(__dirname, "manager.tsx")]
-export const previewAnnotations = (e = []) => [...e, path.join(__dirname, "preview.ts")]'
-expect_pass_silent "10. clean path.join(__dirname) preset.ts → silent"
+'import { fileURLToPath } from "node:url"
+export const managerEntries = (entry = []) => [...entry, fileURLToPath(import.meta.resolve("./manager.js"))]
+export const previewAnnotations = (entry = []) => [...entry, fileURLToPath(import.meta.resolve("./preview.js"))]'
+expect_pass_silent "10. clean ESM import.meta.resolve preset → silent"
 
 # 11. Escape clause @preset-cjs-skip: present despite createRequire → silent
 run_hook "Write" "$PRESET" "content" \
 '// @preset-cjs-skip: legacy bundler migration, owner-approved
 const r = createRequire(import.meta.url)'
 expect_pass_silent "11. @preset-cjs-skip: escape → silent"
-
-# 12. Out of scope — preset.cjs(not preset.ts)→ silent
-run_hook "Write" "/x/addons/foo/preset.cjs" "content" \
-'const r = createRequire(import.meta.url)'
-expect_pass_silent "12. preset.cjs (not .ts) out of scope → silent"
 
 # 13. Out of scope — manager.tsx in addons/ dir → silent
 run_hook "Write" "/x/addons/foo/manager.tsx" "content" \

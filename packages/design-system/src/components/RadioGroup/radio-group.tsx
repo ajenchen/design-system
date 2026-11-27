@@ -7,7 +7,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import type { FieldMode, FieldVariant } from "@/design-system/components/Field/field-types"
 import { useFieldContext, useResolvedFieldMode, useResolvedFieldDisabled, useResolvedFieldSize } from "@/design-system/components/Field/field-context"
-import { SelectionItem, selectionItemStyles } from "@/design-system/components/SelectionControl/selection-item"
+import { SelectionItem, selectionItemStyles, selectionGroupLayoutClass } from "@/design-system/components/SelectionControl/selection-item"
 import type { LucideIcon } from "lucide-react"
 import type { AvatarData } from "@/design-system/components/Avatar/avatar"
 import { fieldWrapperStyles, fieldDisplayTextClass } from "@/design-system/components/Field/field-wrapper"
@@ -207,7 +207,10 @@ const RadioGroup = React.forwardRef<
     <RadioGroupReadonlyContext.Provider value={resolvedMode === 'readonly'}>
       <RadioGroupDisabledContext.Provider value={resolvedMode === 'disabled'}>
         <RadioGroupPrimitive.Root
-          className={cn("grid", className)}
+          // 版面跟 orientation 走,字串與 CheckboxGroup 同一支(selectionGroupLayoutClass;checkbox.spec.md「Orientation」,Radio 共用):
+          // 直排 grid 零外部間距、橫排 flex flex-wrap gap-4。orientation 本身照常經下方 {...props} 交給 Radix(方向鍵 + aria-orientation)。
+          // 2026-11-26 前這裡寫死 grid → orientation="horizontal" 版面照樣直排(閘 scripts/radio-group-tab-stop-invariant.mjs 量橫排與間距)。
+          className={cn(selectionGroupLayoutClass(props.orientation), className)}
           value={resolvedValue}
           onValueChange={setResolvedValue}
           // Field 內:role="radiogroup" 的 <div> 無法被 <label for> 命名 → 自讀 fieldCtx 接

@@ -38,8 +38,15 @@ export const NETLIFY_CLI_INSTALLATION_BLOCKER = Object.freeze({
 export const NETLIFY_DASHBOARD_URL = 'https://app.netlify.com/'
 export const NETLIFY_OFFICIAL_GUIDES = Object.freeze({
   branchDeploys: 'https://docs.netlify.com/deploy/deploy-types/branch-deploys/',
+  deployPermissions: 'https://docs.netlify.com/deploy/deploy-overview/#deploy-permissions',
   environmentVariables: 'https://docs.netlify.com/build/environment-variables/get-started/',
   importRepository: 'https://docs.netlify.com/start/quickstarts/deploy-from-repository/',
+})
+// 私有 repo 協作者預覽建置(Deploy Request Policy)的說明只住範本這一份文件;本腳本只提示、指過去,
+// 不呼叫 Netlify API、不判斷帳號設定(放行方式與費用是帳號擁有者的決定)。
+export const COLLABORATOR_PREVIEW_GUIDE = Object.freeze({
+  path: 'docs/03-co-edit-workflow.md',
+  section: '多人協作的私有 repo:協作者的預覽建置',
 })
 
 function invariant(condition, message) {
@@ -199,6 +206,10 @@ export function inspectNetlifyManualSetup(rootPath = ROOT) {
   const siteUrl = safeNetlifyUrl(metadata?.siteUrl) || (siteName ? `https://${siteName}.netlify.app` : '')
   const projectUrl = safeNetlifyUrl(metadata?.adminUrl, { dashboard: true })
   const basicAuthPolicy = inspectBasicAuthPolicy(edgeFunction)
+  const collaboratorGuideText = readOptionalRegularFile(root, COLLABORATOR_PREVIEW_GUIDE.path, 'collaborator preview guide')
+  const collaboratorPreviewGuide = collaboratorGuideText?.includes(COLLABORATOR_PREVIEW_GUIDE.section)
+    ? COLLABORATOR_PREVIEW_GUIDE.path
+    : ''
 
   const checks = Object.freeze({
     basicAuthEdgeFunctionPresent: basicAuthPolicy.present,
@@ -239,6 +250,7 @@ export function inspectNetlifyManualSetup(rootPath = ROOT) {
     discoveredSite: Object.freeze({ projectUrl, siteName, siteUrl }),
     dashboard: Object.freeze({ projectUrl: projectUrl || NETLIFY_DASHBOARD_URL, projects: NETLIFY_DASHBOARD_URL }),
     officialGuides: NETLIFY_OFFICIAL_GUIDES,
+    collaboratorPreviewGuide,
   })
 }
 
@@ -268,6 +280,10 @@ export function renderNetlifyManualSetup(diagnostic) {
   }
   lines.push(
     '5. Project configuration → Build & deploy → Continuous Deployment → Branches and deploy contexts → Branch deploys: All。',
+    '   私有 repo 有其他協作者時：Netlify 只自動建置團隊認得的作者推的變更，其他人的建置停在 Pending approval，要 Team Owner 放行。',
+    diagnostic.collaboratorPreviewGuide
+      ? `   放行方式、費用與風險（帳號擁有者決定）：${diagnostic.collaboratorPreviewGuide}「${COLLABORATOR_PREVIEW_GUIDE.section}」`
+      : `   放行方式、費用與風險（帳號擁有者決定）：${diagnostic.officialGuides.deployPermissions}`,
     '6. Deploy 後必做 live readback：無 Authorization 的無痕請求必回 401 + WWW-Authenticate，正確帳密必能讀到 Storybook。',
     '   若回 503，代表 STORYBOOK_BASIC_AUTH 缺失或格式錯誤；修正並重新 deploy，絕對不可分享該站台。',
     '7. 只有上述匿名／正確帳密兩項 live readback 都通過，才可從 Dashboard 的 Deploys 分享真實 production/preview URL。',
@@ -275,6 +291,7 @@ export function renderNetlifyManualSetup(diagnostic) {
     `Official import guide: ${diagnostic.officialGuides.importRepository}`,
     `Official environment-variable guide: ${diagnostic.officialGuides.environmentVariables}`,
     `Official branch-deploy guide: ${diagnostic.officialGuides.branchDeploys}`,
+    `Official deploy-permission guide: ${diagnostic.officialGuides.deployPermissions}`,
     '',
     '狀態：MANUAL ACTION REQUIRED（尚未驗證 Netlify 端 env 與 live readback，因此以 exit 2 fail-closed）',
   )

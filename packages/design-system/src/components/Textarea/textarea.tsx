@@ -7,6 +7,7 @@ import type { FieldMode, FieldVariant, FieldVariantInternal } from '@/design-sys
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid } from '@/design-system/components/Field/field-context'
 import { useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { useControllable } from '@/design-system/hooks/use-controllable'
+import { FieldDescriptionRow, useControlCharCount } from '@/design-system/components/Field/field-count'
 
 /**
  * Textarea — 多行文字輸入
@@ -96,10 +97,12 @@ const textareaVariants = cva(
         variant: 'naked',
         className: [
           'bg-transparent !rounded-none !resize-none !h-full',
-          '!px-[var(--table-cell-px)] !py-[var(--table-cell-py)]',
+          // 左右內距 = 格子內距 − 框寬(2026-11-25,同 field-wrapper.tsx naked 條):字落在格子左緣往內 --table-cell-px = 表頭字 = 靜止時的字
+          '!px-[calc(var(--table-cell-px)_-_var(--field-border-width))] !py-[var(--table-cell-py)]',
           // 框寬在這裡,靜止灰框 + 滑過只屬於沒有錯誤的那條(下一條)—— 同 field-wrapper.tsx naked 條(2026-11-17 A55):
           // 寫在這裡會排在共用錯誤條之後,tailwind-merge 拿掉 `border-error` / `hover:border-error-hover`,無框款 × 驗證錯誤靜止與滑過變灰框
-          'border',
+          // 框寬讀 --field-border-width(欄位家族不寫裸 `border`,閘 scripts/reading-context-invariant.mjs 靜態段)
+          'border-[length:var(--field-border-width)]',
           // textarea UA stylesheet 預設 line-height: normal(1.2-1.5 不定),會跟 view
           // `<div>` text-body line-height: 1.5(21px @ 14px)不一致 → cell 進 edit 後 height
           // shift。顯式 leading 對齊 div 行為。
@@ -113,7 +116,8 @@ const textareaVariants = cva(
       // multi-line text 需要撐滿 cell 而非依 line-height intrinsic。`!h-full` 讓 textarea 填滿 cell
       // 高度,文字 anchored to cell.top + cell padding(同視覺結果 Field wrapper autoRow !h-auto)。
       // 此 divergence intentional + documented;非 SSOT violation。
-      { mode: 'view', variant: 'naked', className: 'bg-transparent !rounded-none !h-full !resize-none !px-0 !py-0 border border-transparent !leading-[1.5]' },
+      // 透明框只留上下(2026-11-25,同 field-wrapper.tsx view×naked 條):上下是行高契約,左右那兩條讓字比表頭多 1
+      { mode: 'view', variant: 'naked', className: 'bg-transparent !rounded-none !h-full !resize-none !px-0 !py-0 border-y-[length:var(--field-border-width)] border-transparent !leading-[1.5]' },
       // 2026-07-16 round16:`readonly×naked` / `disabled×naked` 死格移除(鏡射 field-wrapper.tsx;
       //   DataTable cell 廢 disabled 態 + readonly 從不入 naked,全庫 0 消費)。
     ],
@@ -149,6 +153,12 @@ export interface TextareaProps
    * (原本只有 DataTable cell-registry 有這段膠水,InlineEdit 因此漂移)。
    */
   autoSize?: boolean | { maxRows?: number }
+  /**
+   * 顯示字數計數(預設 false),與 Input `showCount` 同一套:上限用原生 `maxLength`(「12 / 100」;沒有上限只顯示「12」),
+   * 打到上限照原生規則擋住;計數畫在 Field 說明那一行的右端、沒有說明時那一行只有計數,不在 Field 裡時畫在框下一行的右端;
+   * 純顯示與表格格不顯示。規則住 `Field/field-controls.spec.md`「字數計數」(2026-11-26 C7)。
+   */
+  showCount?: boolean
 }
 
 // code-quality-allow: long-function — Textarea forwardRef body 含 mode×size×variant×error 4 軸 prop + autoFocus + aria 完整覆蓋,拆 sub-fn 會把 useFieldContext / fieldWrapperStyles 跨檔 drilling
@@ -164,6 +174,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       readOnly,
       rows: rowsProp,
       autoSize = false,
+      showCount = false,
       value,
       defaultValue,
       id: idProp,
@@ -185,7 +196,6 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     const isEditable = resolvedMode === 'edit'
     const isView = resolvedMode === 'view'
     const inputId = idProp ?? fieldCtx?.id
-    const ariaDescribedBy = ariaDescribedByProp ?? fieldCtx?.descriptionId
     const ariaErrorMessage = ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)
 
     // ── view mode(+ readonly 空值)純展示,渲染 <div> 取代 <textarea>(white-space:pre-wrap 保留多行) ──
@@ -229,6 +239,16 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       else if (ref) (ref as React.MutableRefObject<HTMLTextAreaElement | null>).current = el
     }, [ref])
 
+    // 字數計數(Field/field-count.tsx;規則 field-controls.spec.md「字數計數」,同 Input):只在有輸入元素的框顯示(純顯示 / 表格格不顯示)。
+    const charCount = useControlCharCount({
+      enabled: showCount && !showDisplaySpan && variant !== 'naked',
+      value: resolved,
+      maxLength: props.maxLength,
+      controlId: inputId,
+      disabled: resolvedMode === 'disabled',
+    })
+    const ariaDescribedBy = [ariaDescribedByProp ?? fieldCtx?.descriptionId, charCount.countId].filter(Boolean).join(' ') || undefined
+
     if (showDisplaySpan) {
       const spanMode = isView ? 'view' : 'readonly'
       return (
@@ -264,14 +284,16 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         fieldSizing: 'content',
         ...(autoSizeMaxRows === undefined
           ? {}
-          : { maxHeight: `calc(${autoSizeMaxRows} * 1lh + 2 * var(--field-control-py-${size}) + 2px)` }),
+          // 行數上限的高 = N 行 + 上下內距 + 上下兩條框(框寬讀 --field-border-width;2026-11-25 前寫死 + 2px,值不變)
+          : { maxHeight: `calc(${autoSizeMaxRows} * 1lh + 2 * var(--field-control-py-${size}) + 2 * var(--field-border-width))` }),
       } as React.CSSProperties)
       : undefined
 
-    return (
+    const control = (
       <textarea
         ref={setRef}
-        id={inputId}
+        // 開了計數又沒有 id(單獨用、使用端沒給)時,計數 hook 自動給一個(播報以 id 找輸入元素);其餘 = inputId
+        id={charCount.controlId}
         rows={rows}
         style={autoSizeStyle ? { ...autoSizeStyle, ...props.style } : props.style}
         value={resolved}
@@ -294,6 +316,15 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           props.onChange?.(e)
         }}
       />
+    )
+    // 沒開計數、或在 Field 裡(計數由 Field 畫):只有 textarea,DOM 跟以前一樣
+    if (!charCount.standalone || !charCount.countId) return control
+    // 單獨用:textarea + 計數那一行包在同一層 `flex-col gap-1`(= Field 欄內的排法,框下 4px;同 Input 單獨用)
+    return (
+      <div className="flex flex-col gap-1 min-w-0 w-full">
+        {control}
+        <FieldDescriptionRow count={charCount.standalone} countId={charCount.countId} />
+      </div>
     )
   }
 )

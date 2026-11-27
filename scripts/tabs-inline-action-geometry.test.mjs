@@ -146,3 +146,23 @@ test('consumer style is preserved while canonical paddingRight wins last', () =>
     consumerStyle,
   )
 })
+
+test('endInset(分頁的焦點框位置,2026-11-27):action 往內退同一段,padding 一併加上', () => {
+  // 預留 = action 16 + 8px 縫 + 焦點框位置 4
+  assert.equal(geometry.getTabsInlineActionPaddingRight(16, true, 4), 28)
+  // action 右緣 = trigger 右緣 − 4(不是 trigger 右緣):字與 action 的位置跟沒有焦點框位置時相同
+  assert.deepEqual(
+    geometry.resolveTabsInlineActionPosition({ trigger: protoRect(40, 104), overlay: protoRect(0, 300), clips: [], actionWidth: 16, endInset: 4 }),
+    { left: 100, top: 0, height: 32 },
+  )
+  // 可見與否看 action 自己那一格:trigger 右緣那 4px 被切掉、action 完整 → 照樣渲染
+  assert.deepEqual(
+    geometry.resolveTabsInlineActionPosition({ trigger: rect(40, 104), overlay: rect(0, 300), clips: [clipX(0, 100)], actionWidth: 16, endInset: 4 }),
+    { left: 100, top: 0, height: 32 },
+  )
+  // 對照:action 那一格被切掉 1px → 不渲染(不夾進來蓋字)
+  assert.equal(
+    geometry.resolveTabsInlineActionPosition({ trigger: rect(40, 104), overlay: rect(0, 300), clips: [clipX(0, 99)], actionWidth: 16, endInset: 4 }),
+    null,
+  )
+})

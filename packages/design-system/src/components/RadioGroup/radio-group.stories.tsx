@@ -1,6 +1,7 @@
 // @story-history: hasSizes 由 anatomy.stories.tsx SizeMatrix auto-compile owns size showcase(2026-05-15 F-migration);Default scenario 由 WithLabel / HorizontalLayout 等真實 form 情境 story 覆蓋。
 import * as React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { RadioGroup, RadioGroupItem } from './radio-group'
 import { Button } from '@/design-system/components/Button/button'
 import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
@@ -83,8 +84,8 @@ export const VerticalGroup: Story = {
 export const Horizontal: Story = {
   name: '水平排列',
   render: () => (
-    // @layout-space-magic-ok: 水平選項群組:選擇控件家族水平 16px(checkbox.spec.md「Orientation」:horizontal = flex flex-wrap gap-4,SelectionItem 共用)(layoutSpace.spec.md:117 同範疇 spec-own)
-    <RadioGroup defaultValue="light" orientation="horizontal" className="flex flex-wrap gap-4 max-w-md">
+    // 橫排與選項間距由 orientation="horizontal" 自帶(checkbox.spec.md「Orientation」,Radio 共用),不手寫 gap
+    <RadioGroup defaultValue="light" orientation="horizontal" className="max-w-md">
       <RadioGroupItem value="light" label="淺色" />
       <RadioGroupItem value="dark" label="深色" />
       <RadioGroupItem value="system" label="系統" />
@@ -164,7 +165,6 @@ export const StateContract: Story = {
   parameters: { chromatic: { disableSnapshot: true } },
   render: () => <RadioGroupStateContractHarness />,
   play: async ({ canvasElement }) => {
-    const { expect, userEvent, waitFor, within } = await import('@storybook/test')
     const canvas = within(canvasElement)
 
     const uncontrolled = within(canvas.getByTestId('radio-uncontrolled-mode'))

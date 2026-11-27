@@ -62,7 +62,7 @@ const tagVariants = cva(
 )
 
 // ── Solid variant 色彩（step-6 底 + on-emphasis 配對文字,消費 categorical-color SSOT）──
-// 白字 --on-emphasis(夠深的 hue)/ 深字 --on-emphasis-dark(亮 hue:yellow/amber/orange/lime);green 白字例外。
+// 白字 --on-emphasis(白字對比不低於綠色)/ 深字 --on-emphasis-dark(低於綠色:目前 yellow/amber/lime);判準 = categorical-color.ts「實心底字色原則」。
 // **消費 categorical-color SSOT**(CAT_SOLID,1:1 色相)。neutral 非色相,用 neutral-9
 // + --inverse-fg（light=白字, dark=深字，自動反轉）自處理。
 const SOLID_CLASSES: Record<string, string> = {
@@ -81,7 +81,7 @@ export interface TagProps
   onRemove?: () => void
   /** remove 按鈕的 aria-label 目標名(a11y)。children 為非字串 ReactNode 時建議傳,否則 SR 讀不出移除哪個 tag。預設取 string children。對齊 FileUpload `removeAriaLabel`(同「移除集合項目」場景 + DS `<動作>AriaLabel` 命名慣例)。 */
   removeAriaLabel?: string
-  /** 深底模式（step-6 背景 + on-emphasis 配對前景;亮色 hue yellow/amber/orange/lime 用深字 --on-emphasis-dark,green 白字例外） */
+  /** 深底模式（step-6 背景 + on-emphasis 配對前景;白字對比低於綠色的 hue（目前 yellow/amber/lime）用深字 --on-emphasis-dark,其餘白字） */
   solid?: boolean
   /**
    * 2026-05-15 Q3 真 SSOT fix(per user 指出同空間兩判斷點、要求不要冰山一角):

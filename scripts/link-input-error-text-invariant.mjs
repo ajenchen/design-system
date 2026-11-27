@@ -13,10 +13,22 @@
  *     E5 包在 Field 裡(使用端的 FieldError 沒字)、離開之後 → 說明畫在 Field 的錯誤區:欄裡只有一行、在說明文字下面、間距 = Field 欄內 gap、
  *        id = 輸入框 aria-errormessage 且在 aria-describedby 裡
  *     E6 包在 Field 裡、使用端自己的 FieldError 有字、離開之後(LinkInput 自己也驗出不合法)→ 只有使用端那一行(不出兩行)
+ *   保證(2026-11-26 加,同一個機制「控件交給 Field 畫在欄裡的一行」的第二個用法):Input / Textarea 的字數計數
+ *   (field-controls.spec.md「字數計數」;第五輪決策卡 C7 user 點選「A:放在說明那一行的右端(「12 / 100」);沒有說明時那一行只有計數」)——
+ *     C1 有說明:計數跟說明同一行、在說明右邊、右緣 = 框右緣、那一行離框下緣 4px;字級 / 顏色 = 說明文字;看得見「字數 / 上限」
+ *     C2 沒有說明:那一行只有計數、在右端、緊接框下 4px,字級 / 顏色同說明
+ *     C3 打字後計數 = 輸入框目前的字數;打超過上限(原生 maxLength)擋住,停在上限
+ *     C4 讀屏:aria-describedby 連得到計數那一格、念的是含字數與上限的整句(看得見的「n / max」隱藏);
+ *        播報區 role="status" + polite、在那一格外面、打字前空白;停下來之後焦點還在 → 念一次目前的整句
+ *     C5 單獨用(不在 Field 裡、夾具沒給 id):框下 4px 一行只有計數、右端、describedby 連得到;打字停下來之後焦點還在 → 念一次目前的整句
+ *        (播報以 id 找輸入元素,單獨用又沒給 id 時控件自動給一個;2026-11-26 規格核對抓到單獨用永遠不念)
  *   紅: --selftest 在送到瀏覽器的夾具程式裡造回錯的寫法,各組必紅(兩面對照):
  *     M1 不畫說明(errorLineText 換成 null)→ E1 / E4 / E5 紅;M2 aria-describedby 不接說明 → E1 紅;
  *     M3 Field 不讓使用端的字優先 → E6 紅;M4 打字不清錯誤 → E2 紅;
  *     M5 外部存進來的值一掛上就驗(localError 初值 = 值非空白;夾具裡外部給的值都不是網址,等同 2026-11-22 第 1 次修正撤掉的那版)→ E7 紅。
+ *     M6 Field 不畫計數 → C1 / C2 / C4 紅;M7 計數掉到說明下面一行 → C1 紅;M8 計數不靠右 → C2 / C5 紅;M9 打字不更新 → C3 紅;
+ *     M10 aria-describedby 不接計數 → C4 / C5 紅;M11 播報區不念 → C4 / C5 紅;M12 原生 maxLength 沒傳到輸入元素 → C3 紅;
+ *     M13 單獨用又沒給 id 時不自動給輸入元素 id(修前的寫法:計數找不到輸入元素、永遠不念)→ C5 紅。
  *     改寫 0 處 = 儀器失效(不准當成「改了也沒紅」)
  *   綠: 現行原始碼全綠;夾具掛不起來 / 找不到要量的欄位 / 互動後版面不靜止 = 儀器失效(exit 2),不當通過
  * ─────
@@ -154,6 +166,73 @@ async function clickInput(key, what) {
 }
 async function press(key, what) { await page.keyboard.press(key); await settle(what) }
 
+// ── 字數計數(C 組;field-controls.spec.md「字數計數」)的量具 ──
+/** 某個有計數的欄位(data-eti)此刻的狀態;輸入元素 = input 或 textarea */
+const probeCount = (key) => page.evaluate((key) => {
+  const host = document.querySelector(`[data-eti="${key}"]`)
+  const control = host?.querySelector('input, textarea')
+  if (!host || !control) return null
+  const counts = [...host.querySelectorAll('[data-field-slot="count"]')]
+  const count = counts[0] ?? null
+  const row = count?.parentElement ?? null
+  const desc = host.querySelector('[data-field-slot="description"]')
+  // 框 = 輸入元素往上最近的 data-field-mode(Input 是外框 div,Textarea 是自己)
+  const frame = control.closest('[data-field-mode="edit"]') ?? control
+  const r = (el) => el.getBoundingClientRect()
+  const round = (n) => Math.round(n * 100) / 100
+  const describedby = (control.getAttribute('aria-describedby') ?? '').split(/\s+/).filter(Boolean)
+  const status = host.querySelector('[data-field-count-status]')
+  // 讀屏念的字 = 計數那一格裡沒有 aria-hidden 的字(看得見的「12 / 100」對讀屏隱藏)
+  const spoken = count ? [...count.childNodes].filter((n) => !(n.nodeType === 1 && n.getAttribute('aria-hidden') === 'true')).map((n) => n.textContent).join('').trim() : null
+  const cs = (el) => (el ? { size: getComputedStyle(el).fontSize, color: getComputedStyle(el).color } : null)
+  return {
+    counts: counts.length,
+    visible: count?.querySelector('[aria-hidden="true"]')?.textContent ?? null,
+    valueLength: control.value.length,
+    focus: document.activeElement === control,
+    countId: count?.id ?? null,
+    describedby,
+    describedResolved: count ? describedby.includes(count.id) && document.getElementById(count.id) === count : false,
+    spoken,
+    statusRole: status?.getAttribute('role') ?? null,
+    statusLive: status?.getAttribute('aria-live') ?? null,
+    statusText: status?.textContent ?? null,
+    statusOutsideCount: status && count ? !count.contains(status) : null,
+    // 說明那一行:計數跟說明同一行(上緣相同)、計數在說明右邊不重疊;計數右緣 = 欄右緣(框右緣)
+    rowChildren: row ? [...row.children].filter((c) => getComputedStyle(c).position !== 'absolute').length : null,
+    sameRowAsDesc: count && desc ? Math.abs(r(count).top - r(desc).top) < 0.5 : null,
+    rightOfDesc: count && desc ? r(count).left >= r(desc).right - 0.5 : null,
+    countRightGap: count ? round(r(frame).right - r(count).right) : null,
+    gapBelowFrame: row ? round(r(row).top - r(frame).bottom) : null,
+    countStyle: cs(count),
+    descStyle: cs(desc),
+  }
+}, key)
+async function countField(key, what) {
+  const s = await probeCount(key)
+  if (!s) throw new Instrument(`${what}:找不到欄位 ${key}`)
+  return s
+}
+async function clickControl(key, what) {
+  const b = await page.evaluate((key) => {
+    const el = document.querySelector(`[data-eti="${key}"] input, [data-eti="${key}"] textarea`)
+    if (!el) return null
+    const r = el.getBoundingClientRect()
+    return r.width > 0 && r.height > 0 ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null
+  }, key)
+  if (!b) throw new Instrument(`${what}:欄位 ${key} 找不到輸入元素`)
+  await page.mouse.click(b.x, b.y)
+  await settle(what)
+}
+/** 等播報區出現字(等的是那個元素本身的內容,不是固定睡眠);等不到 = 回 null 交給斷言紅 */
+async function waitStatusText(key, ms) {
+  try {
+    await page.waitForFunction((key) => !!document.querySelector(`[data-eti="${key}"] [data-field-count-status]`)?.textContent, key, { timeout: ms })
+  } catch { return null }
+  return (await countField(key, '等播報')).statusText
+}
+const countText = (n, max) => `${n} / ${max}`
+
 const results = []
 const ck = (group, name, ok, detail) => results.push({ group, name, ok: !!ok, detail })
 const J = (v) => JSON.stringify(v)
@@ -216,6 +295,54 @@ async function runChecks() {
   await press('Enter', 'Enter')
   const c = await field('typed', 'E3')
   ck('E3', 'Enter 結算不合法:說明出現、焦點留在輸入框', c.error && c.lines.length === 1 && c.lines[0] === DEFAULT_TEXT && c.focus, J(c))
+  await runCountChecks()
+}
+
+// ── C 組:字數計數(field-controls.spec.md「字數計數」;2026-11-26 C7 user 點選「A:放在說明那一行的右端(「12 / 100」);沒有說明時那一行只有計數」)──
+// 期望值都從同一頁量出來(輸入元素的 value.length、說明文字的 computed style),不在這裡另抄數字;上限 100 / 10 / 30 = 夾具寫死的 maxLength。
+async function runCountChecks() {
+  // C1 計數在說明那一行的右端
+  const d = await countField('count-desc', 'C1')
+  ck('C1', '有說明:欄裡正好一個計數、跟說明同一行、在說明右邊不重疊', d.counts === 1 && d.sameRowAsDesc === true && d.rightOfDesc === true, J(d))
+  ck('C1', '有說明:計數右緣 = 欄右緣(框右緣)、說明那一行離框下緣 4px(= Field 欄內 gap-1)', near(d.countRightGap, 0) && near(d.gapBelowFrame, 4), J(d))
+  ck('C1', '字級 / 顏色 = 說明文字', d.countStyle && d.descStyle && d.countStyle.size === d.descStyle.size && d.countStyle.color === d.descStyle.color, J(d))
+  ck('C1', `看得見的字 = 「字數 / 上限」`, d.visible === countText(d.valueLength, 100), J(d))
+  // C2 沒有說明時那一行只有計數(右端)
+  const o = await countField('count-only', 'C2')
+  ck('C2', '沒有說明:那一行只有計數、在右端(右緣 = 框右緣)、緊接框下 4px', o.counts === 1 && o.rowChildren === 1 && near(o.countRightGap, 0) && near(o.gapBelowFrame, 4), J(o))
+  ck('C2', '沒有說明:字級 / 顏色仍 = 說明文字(取同頁 count-desc 的說明)', o.countStyle && d.descStyle && o.countStyle.size === d.descStyle.size && o.countStyle.color === d.descStyle.color, J({ o: o.countStyle, desc: d.descStyle }))
+  // C5 單獨用(不在 Field 裡):框下一行、右端
+  const a = await countField('count-alone', 'C5')
+  ck('C5', '單獨用:框下 4px 一行只有計數、右緣 = 框右緣、「0 / 30」', a.counts === 1 && a.rowChildren === 1 && near(a.countRightGap, 0) && near(a.gapBelowFrame, 4) && a.visible === countText(a.valueLength, 30), J(a))
+  ck('C5', '單獨用:輸入框 aria-describedby 連得到計數', a.describedResolved, J(a))
+  // C4 讀屏關聯(打字前):aria-describedby 連得到計數那一格;念的是整句(含字數與上限)、播報區在那一格外面、禮貌模式
+  ck('C4', 'aria-describedby 連得到計數那一格', d.describedResolved, J(d))
+  ck('C4', '計數那一格念的字含目前字數與上限(看得見的「n / max」對讀屏隱藏)', !!d.spoken && d.spoken.includes(String(d.valueLength)) && d.spoken.includes('100') && !d.spoken.includes(' / '), J(d))
+  ck('C4', '播報區 role="status" + aria-live="polite"、在計數那一格外面(不會被描述念兩次)、打字前沒有字', d.statusRole === 'status' && d.statusLive === 'polite' && d.statusOutsideCount === true && !d.statusText, J(d))
+  // C3 打字後計數更新
+  await clickControl('count-desc', 'C3 點工單標題')
+  await page.keyboard.press('End'); await page.keyboard.type('(iOS)'); await settle('C3 打字')
+  const t = await countField('count-desc', 'C3')
+  if (!t.focus) throw new Instrument(`C3:點進 count-desc 之後焦點不在輸入框:${J(t)}`)
+  ck('C3', '打字後計數跟著變 = 輸入框目前的字數', t.valueLength === d.valueLength + 5 && t.visible === countText(t.valueLength, 100), J({ before: d.valueLength, after: t }))
+  // C4 播報:停下來之後、焦點還在 → 念一次目前的整句(等的是播報區本身出現字,不是固定睡眠)
+  const said = await waitStatusText('count-desc', 4000)
+  const t2 = await countField('count-desc', 'C4 播報後')
+  ck('C4', '停下來之後以禮貌模式念一次目前的整句(= 計數那一格念的字)', said != null && said === t2.spoken && t2.spoken.includes(String(t2.valueLength)), J({ said, spoken: t2.spoken }))
+  // C3 打到上限擋住(原生 maxLength;上限 10)
+  await clickControl('count-only', 'C3 點付款備註')
+  await page.keyboard.press('End'); await page.keyboard.type('月結三十天匯款請附發票'); await settle('C3 打超過上限')
+  const b = await countField('count-only', 'C3 上限')
+  ck('C3', '打到上限擋住:字數停在 10、計數「10 / 10」', b.valueLength === 10 && b.visible === countText(10, 10), J(b))
+  // C5 單獨用也要念:夾具的 count-alone 沒給 id、不在 Field 裡 —— 停下來之後、焦點還在 → 念一次目前的整句(等播報區本身出現字)
+  await clickControl('count-alone', 'C5 點搜尋框')
+  await page.keyboard.press('End'); await page.keyboard.type('退款'); await settle('C5 打字')
+  const at = await countField('count-alone', 'C5 打字後')
+  if (!at.focus) throw new Instrument(`C5:點進 count-alone 之後焦點不在輸入框:${J(at)}`)
+  const saidAlone = await waitStatusText('count-alone', 4000)
+  const at2 = await countField('count-alone', 'C5 播報後')
+  ck('C5', '單獨用:停下來之後以禮貌模式念一次目前的整句(= 計數那一格念的字)',
+    saidAlone != null && saidAlone === at2.spoken && at2.spoken.includes(String(at2.valueLength)) && at2.valueLength === a.valueLength + 2, J({ said: saidAlone, spoken: at2.spoken, before: a.valueLength }))
 }
 
 // 對照組:每組破法 → 指定的組必須至少一條紅
@@ -231,6 +358,27 @@ const MUTANTS = [
       (_, head, v) => `${head}() => !!${v} && ${v}.trim() !== "")`]],
     mustRed: ['E7'],
   },
+  // ── 字數計數(C 組)的對照組:改的是送到瀏覽器的 field-count.tsx / field.tsx / input.tsx / textarea.tsx 打包結果 ──
+  // M6 Field 不把說明那一行換成「說明 + 計數」(= 計數沒畫在 Field 裡):有說明 / 沒說明兩格都沒有計數,describedby 指到不存在的 id
+  { name: 'M6 Field 不畫計數', patches: [[/const descriptionArea(\d*) = controlCount\d* \?/g, (_, n) => `const descriptionArea${n} = false ?`]], mustRed: ['C1', 'C2', 'C4'] },
+  // M7 計數掉到說明下面一行(說明那一行改成上下疊)
+  { name: 'M7 計數不在說明那一行', patches: [[/"flex items-start gap-x-3 min-w-0"/g, '"flex flex-col gap-x-3 min-w-0"']], mustRed: ['C1'] },
+  // M8 計數不靠右端(沒有說明時就會落在左邊)
+  { name: 'M8 計數不靠右', patches: [[/"ml-auto shrink-0 whitespace-nowrap tabular-nums"/g, '"shrink-0 whitespace-nowrap tabular-nums"']], mustRed: ['C2', 'C5'] },
+  // M9 打字後計數不更新(字數恆為 0)
+  { name: 'M9 打字不更新計數', patches: [[/String\((\w+) \?\? ""\)\.length/g, '0']], mustRed: ['C3'] },
+  // M10 輸入元素的 aria-describedby 不接計數
+  { name: 'M10 aria-describedby 不接計數', patches: [[/,\s*charCount\d*\.countId\s*\]/g, ']']], mustRed: ['C4', 'C5'] },
+  // M11 停下來之後不念(播報區永遠空白)
+  { name: 'M11 播報區不念', patches: [[/text: countSpeech\d*\(\{[^}]*\}\)/g, 'text: ""']], mustRed: ['C4', 'C5'] },
+  // M12 控件吞掉原生 maxLength(展開 props 之後再蓋成 undefined)→ 超過上限照打
+  {
+    name: 'M12 原生 maxLength 沒傳到輸入元素',
+    patches: [[/(\.\.\.(props\d*),\s*onChange: \((\w+)\) => \{\s*setResolved\d*\(\3\.target\.value\);\s*\2\.onChange\?\.\(\3\);\s*\})/g, (_, all) => `${all}, maxLength: void 0`]],
+    mustRed: ['C3'],
+  },
+  // M13 單獨用又沒給 id 時不自動給輸入元素 id(= 修前的寫法:輸入元素的 id 只有使用端給的或 Field 的)→ 計數找不到輸入元素,停下來之後永遠不念
+  { name: 'M13 單獨用不自動給 id', patches: [[/(const resolvedControlId\d* = )(\w+) \?\? \([^)]*\)/g, (_, head, id) => `${head}${id}`]], mustRed: ['C5'] },
 ]
 
 try {
@@ -240,7 +388,7 @@ try {
     for (const r of results) console.log(`${r.ok ? '✓' : '✗'} [${r.group}] ${r.name}${r.ok ? '' : ` | ${r.detail}`}`)
     const red = results.filter((r) => !r.ok)
     if (!results.length) await bail('一條斷言都沒跑到')
-    console.log(red.length ? `\n✗ ${red.length} / ${results.length} 條未通過` : `\n✓ LinkInput 錯誤說明:${results.length} 條全部通過`)
+    console.log(red.length ? `\n✗ ${red.length} / ${results.length} 條未通過` : `\n✓ LinkInput 錯誤說明 + 字數計數:${results.length} 條全部通過`)
     await br.close(); await stopServers(); process.exit(red.length ? 1 : 0)
   }
   let bad = 0

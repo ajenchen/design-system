@@ -73,10 +73,14 @@ export const STORIES = Object.freeze([
   'design-system-components-combobox-展示--field-keys-contract',
   'design-system-components-combobox-展示--value-loading',
   'design-system-components-combobox-展示--remote-search',
+  // 2026-11-27(fbug F4-2):「選項前綴:工作項類型」兩個多選欄位(類型 / 狀態)都是單行 Tag 列。同族 select / dropdownmenu 的 option-prefix 沒有 Tag 列
+  'design-system-components-combobox-展示--option-prefix',
   'design-system-components-combobox-展示--unrestricted-option',
   'design-system-components-combobox-展示--unrestricted-contract',
   'design-system-components-combobox-展示--unrestricted-off-inert',
   'design-system-components-combobox-展示--in-data-table',
+  // 分組與浮層寬度(2026-11-26 ufc 新增範例;多選那一欄有一條單行 Tag 列)
+  'design-system-components-combobox-展示--groups-and-min-width',
   'design-system-components-combobox-設計規格--inspector',
   'design-system-components-combobox-設計規格--color-matrix',
   'design-system-components-combobox-設計規格--size-matrix',

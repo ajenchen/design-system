@@ -5,7 +5,7 @@ import { Check } from 'lucide-react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant } from '@/design-system/components/Field/field-types'
-import { useFieldContext, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldSize } from '@/design-system/components/Field/field-context'
+import { fieldFramelessValueProps, useFieldContext, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldSize } from '@/design-system/components/Field/field-context'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import { fieldRowPaddingY, fieldWrapperStyles } from '@/design-system/components/Field/field-wrapper'
 import { BooleanValueIcon } from '@/design-system/components/SelectionControl/boolean-value'
@@ -187,7 +187,7 @@ const Switch = React.forwardRef<
     const effectiveReadOnly = readOnly || resolvedMode === 'readonly'
     // mode='disabled' 直傳(無 Field ctx 的 cell 場景)必須落到真 disabled chrome(同 Checkbox 2026-06-12 修)
     const effectiveDisabled = disabled || resolvedMode === 'disabled'
-    // readonly 灰框 size:走 SSOT resolver(prop > ctx > 'md',field-context.ts:154-165)
+    // readonly 灰框 size:走 SSOT resolver(prop > ctx > 'md',field-context.ts:166-177)
     const resolvedBoxSize = useResolvedFieldSize(size ?? undefined, 'md') as 'sm' | 'md' | 'lg'
     const insideField = fieldCtx?.hasFieldWrapper === true
     const effectiveLabel = insideField ? undefined : label
@@ -257,6 +257,8 @@ const Switch = React.forwardRef<
       return (
         <span
           {...restDomProps}
+          // 沒有框的值:在 Field 裡掛記號,水平排閱讀情境由 Field 內縮到框內字線(field.spec.md「閱讀情境」)
+          {...fieldFramelessValueProps(insideField)}
           ref={ref as React.Ref<HTMLSpanElement>}
           role="img"
           aria-label={viewAriaLabel}
@@ -312,6 +314,8 @@ const Switch = React.forwardRef<
         tabIndex={effectiveReadOnly ? -1 : undefined}
         aria-labelledby={effectiveLabel != null && !consumerNamed ? ownTitleId : undefined}
         aria-describedby={effectiveLabel != null && effectiveDescription != null ? ownDescId : fieldCtx?.descriptionId}
+        // 沒有框的值:在 Field 裡掛記號,水平排閱讀情境由 Field 內縮到框內字線(field.spec.md「閱讀情境」)
+        {...fieldFramelessValueProps(insideField)}
         {...props}
         // 2026-07-05 D4 修:readOnly 鎖互動補 label 繞道 — <label htmlFor> 的 synthetic click
         // 不是 pointer event,cva pointer-events-none 攔不到,點 label 文字仍 toggle。

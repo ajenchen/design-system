@@ -3,7 +3,7 @@
  * @gate-contract
  *   保證: 選單開著時真按鍵的結果符合待辦總帳 B10 / B11 —— 子選單 Esc 每按一次只少一層、焦點回上一層打開它的那一項;
  *         按 Tab / Shift+Tab 收起全部層、焦點落在「選單關著時在觸發鈕上按同一鍵」的落點;AI 浮鈕選單只有 Esc 把焦點還給浮鈕、點外面不搶
- *   紅: --selftest 以 capture 監聽把 Radix 舊行為造回來(Tab 被吞、Esc 一次全關、點外面後搶回浮鈕),每個情境(E / Q / T / S / F1–F3)都必須判紅;
+ *   紅: --selftest 以 capture 監聽把 Radix 舊行為造回來(Tab 被吞、Esc 一次全關、點外面後搶回浮鈕),每個情境(E / Q / T / S / C1 / C2 / F1–F3)都必須判紅;
  *       story 開不起來或層數 / 焦點量不到 = INSTRUMENT-FAIL,不算通過也不算對照組抓到
  *   綠: 沒弄壞時必須綠;「下一站」的正確答案由瀏覽器在選單關著時實按一次得出(不由本閘自算),每個情境重開 story,
  *       層數與焦點身分以 waitForFunction 逐影格等到再判,判定式是純函式(判定表 scripts/test-dropdown-menu-keyboard-invariant.mjs,含量不到那幾格)
@@ -24,6 +24,8 @@
  *   Q  同上但 Esc 連按三下不等(第二、三下落在前一層的收合動畫中)→ 最後 0 層、焦點在「更多動作」
  *   T  第三層按 Tab → 0 層、焦點 = 關著時在觸發鈕上按 Tab 的落點(「分享」)
  *   S  第一層按 Shift+Tab → 0 層、焦點 = 關著時在觸發鈕上按 Shift+Tab 的落點(「指派給我」)
+ *   C1 觸發鈕後面插一個沒寫 tabindex 的可編輯區(contenteditable)→ 按 Tab 的落點 = 它(瀏覽器回報 tabIndex -1 卻會停;H39)
+ *   C2 同上但寫了 tabindex="-1" → 落點越過它(照瀏覽器);C1 是修前會紅的那一格(2026-11-27 對照組實跑)
  *   F1 AI 浮鈕 Shift+F10 開選單:浮鈕 aria-controls = 選單 id;按 Tab → 選單關、焦點 = 關著時在浮鈕上按 Tab 的落點
  *      (浮鈕是頁面最後一站時,關著按 Tab 會離開文件 → 正本「頁面上已經沒有下一站時,焦點留在觸發點」,答案 = 浮鈕本身;judgeTabOut)
  *   F2 浮鈕選單按 Esc → 焦點回浮鈕
@@ -233,6 +235,35 @@ async function main() {
       await waitOpen(0)
       const v = judgeTabOut({ openAfter: await openCount(), activeKey: await activeKey(), expectedKey, triggerKey })
       rec(`${name} ${fromLevel3 ? '第三層' : '第一層'}按 ${shift ? 'Shift+Tab' : 'Tab'} → 0 層、焦點 = 關著時在觸發鈕上按同一鍵的落點`, v, `期望「${expectedKey === 'BODY' ? `${triggerKey}(頁面邊緣:留在觸發鈕)` : expectedKey}」,實際「${await activeKey()}」`)
+    })
+  }
+  // C1 / C2:觸發鈕後面接一個沒寫 tabindex 的可編輯區(富文字編輯器)→ 選單開著按 Tab 的下一站是它;
+  // 寫了 tabindex="-1" → 照瀏覽器跳過(2026-11-27 workspace 第七輪 H39:修前 lib/focus-after-trigger.ts 以 `tabIndex < 0` 過濾,
+  // 而沒寫 tabindex 的 contenteditable 在 Chromium 回報 -1、瀏覽器自己按 Tab 卻會停 → 焦點越過編輯區)。
+  // 編輯區是本閘量測時插進 story 的 DOM(不是給讀者看的範例);正確答案照樣由瀏覽器在選單關著時實按 Tab 得出。
+  for (const [name, attrs] of [['C1', {}], ['C2', { tabindex: '-1' }]]) {
+    await scenario(name, NESTED, TRIGGER, async () => {
+      const visible = await page.locator(TRIGGER).first().evaluate((t, extra) => {
+        const ed = document.createElement('div')
+        ed.setAttribute('contenteditable', '')
+        for (const [k, v] of Object.entries(extra)) ed.setAttribute(k, v)
+        ed.setAttribute('aria-label', '週會紀錄')
+        ed.textContent = '行動 App 改版:下週三前定稿'
+        ed.style.cssText = 'display:inline-block;min-width:160px;padding:4px'
+        t.insertAdjacentElement('afterend', ed)
+        return ed.getClientRects().length > 0
+      }, attrs)
+      if (!visible) { rec(name, 'instrument', '前提:插入的可編輯區不可見'); return }
+      const { key: expectedKey, triggerKey } = await nativeLanding(TRIGGER, false)
+      // 前提:關著按 Tab 是否落在編輯區,必須符合本格設定(C1 落在它、C2 越過它);不符 = 這一格量的不是它要量的東西
+      const nativeOnEditor = typeof expectedKey === 'string' && expectedKey.startsWith('DIV|週會紀錄|')
+      if (nativeOnEditor !== !attrs.tabindex) { rec(name, 'instrument', `前提:關著按 Tab 落在「${expectedKey}」,與本格設定不符`); return }
+      await page.locator(TRIGGER).first().focus(); await page.keyboard.press('Enter')
+      if (!(await waitOpen(1))) { rec(name, 'instrument', '前提:Enter 開不了選單'); return }
+      await page.keyboard.press('Tab')
+      await waitOpen(0)
+      const v = judgeTabOut({ openAfter: await openCount(), activeKey: await activeKey(), expectedKey, triggerKey })
+      rec(`${name} 觸發鈕後面是${attrs.tabindex ? '寫了 tabindex=-1 的' : '沒寫 tabindex 的'}可編輯區,選單開著按 Tab → 焦點 = 關著時按 Tab 的落點(${attrs.tabindex ? '越過它' : '它本身'})`, v, `期望「${expectedKey}」,實際「${await activeKey()}」`)
     })
   }
   // F1–F3:AI 浮鈕右鍵選單

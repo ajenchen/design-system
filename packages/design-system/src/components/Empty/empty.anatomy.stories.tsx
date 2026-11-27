@@ -9,7 +9,7 @@
 //     selected 互動狀態。互動由 action slot 的 Button 提供,屬 Button 元件範疇。
 //     例外:disabled context state(disabled prop,2026-06-03 加)非互動但元件支援——
 //     title / description / icon glyph 轉 text-fg-disabled(供 FileUpload disabled 消費)。
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Inbox, Search, SearchX, FileText, FolderOpen, Bell, Users, ClipboardList } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Empty } from './empty'
@@ -23,7 +23,7 @@ const done = (title: string) => () => toast({ variant: 'success', title })
 const copyInviteLink = async () => {
   try {
     await navigator.clipboard.writeText('https://app.example.com/invite/acme-design')
-    toast({ variant: 'success', title: '邀請連結已複製' })
+    toast({ variant: 'neutral', title: '邀請連結已複製' })
   } catch {
     toast({ variant: 'error', title: '無法存取剪貼簿,請改從瀏覽器網址列複製' })
   }

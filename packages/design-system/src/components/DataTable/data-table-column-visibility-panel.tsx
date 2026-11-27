@@ -49,6 +49,59 @@ import { panelWidthStyle, useWarnBelowPanelFloor, type DataTablePanelWidthProps,
  */
 const VISIBILITY_PANEL_FLOOR: PanelWidthFloor = { rem: 15.5 }
 
+/**
+ * 欄位顯示面板上的字 —— 2026-11-26 起產品可經面板的 `labels` 換字(E9;之前全部寫死,產品換不了語言)。
+ * 形狀照排序面板(`lib/sort-cycle.ts` `DataTableSortManagerLabels`)與篩選面板:介面 + 預設值 + 淺合併,面板收 `labels?: Partial<…>`、
+ * 預設值與型別由本檔出口、進 root barrel。鍵名沿用兩個面板同義的那幾個(`title` / `resetToDefault` / `resetToDefaultDone` / `dragToReorder`),
+ * 面板自己才有的照同一個造字法(`searchPlaceholder` / `searchAriaLabel` 同篩選面板 `peopleSearchPlaceholder` / `peopleSearchAriaLabel`)。
+ * 預設值 = 開放之前寫死在面板裡的字,一字未改。
+ * 不在這裡:欄位名稱(consumer 的 `columns`);標題列 × 的讀屏名稱(PopoverHeader 內建,經 I18nProvider 的 `popover.close`);
+ * 拖曳把手的讀屏操作說明與拖曳時的播報句(全 DS 共用的 `../../lib/drag-announcements.ts`,還沒有換字管道 —— 同排序面板)。
+ */
+export interface DataTableColumnVisibilityPanelLabels {
+  /** 標題列的標題 */
+  title: string
+  /** 搜尋框的 placeholder */
+  searchPlaceholder: string
+  /** 搜尋框的 aria-label */
+  searchAriaLabel: string
+  /** 標題列「恢復預設」圖示鈕的 aria-label */
+  resetToDefault: string
+  /** 「恢復預設」按下後的 polite 播報 */
+  resetToDefaultDone: string
+  /** 底部切換鈕:有任一欄隱藏時的字(按下 = 全部顯示) */
+  showAll: string
+  /** 「顯示全部」按下後的 polite 播報 */
+  showAllDone: string
+  /** 底部切換鈕:全部可見時的字(按下 = 全部隱藏) */
+  hideAll: string
+  /** 「全部隱藏」按下後的 polite 播報 */
+  hideAllDone: string
+  /** 每一列:拖曳把手的 aria-label */
+  dragToReorder: string
+  /** 每一列:眼睛鈕的 aria-label(這一欄目前顯示 → 按下隱藏) */
+  hideColumn: string
+  /** 每一列:眼睛鈕的 aria-label(這一欄目前隱藏 → 按下顯示) */
+  showColumn: string
+}
+
+// code-quality-allow: dead-export — public i18n defaults(同排序面板 DATA_TABLE_SORT_MANAGER_DEFAULT_LABELS)。
+// i18n-allow: DS 預設文案(中文;lib/i18n/README.md「Fallback chain」3)—— consumer 經 `labels` 覆寫
+export const DATA_TABLE_COLUMN_VISIBILITY_PANEL_DEFAULT_LABELS: DataTableColumnVisibilityPanelLabels = {
+  title: '欄位顯示',
+  searchPlaceholder: '搜尋欄位…',
+  searchAriaLabel: '搜尋欄位',
+  resetToDefault: '恢復預設',
+  resetToDefaultDone: '已恢復預設欄位顯示',
+  showAll: '顯示全部',
+  showAllDone: '已顯示全部欄位',
+  hideAll: '全部隱藏',
+  hideAllDone: '已隱藏全部欄位',
+  dragToReorder: '拖曳重排',
+  hideColumn: '隱藏此欄',
+  showColumn: '顯示此欄',
+}
+
 interface ColumnVisibilityPanelColumn {
   /** Column id(stable identifier;對齊 DataTable column.id / accessorKey)*/
   id: string
@@ -95,6 +148,11 @@ export interface DataTableColumnVisibilityPanelProps extends React.HTMLAttribute
    * 不另設「不還原順序」開關(data-table.spec.md L4,【AI 推導 2026-11-15】)。
    */
   defaultColumnOrder?: string[]
+  /**
+   * 面板上的字(只給要換的鍵,其餘淺合併 `DATA_TABLE_COLUMN_VISIBILITY_PANEL_DEFAULT_LABELS`;同排序面板 / 篩選面板的 `labels`,
+   * 2026-11-26 前全部寫死)。欄位名稱來自 `columns` 的 label,不在這裡。
+   */
+  labels?: Partial<DataTableColumnVisibilityPanelLabels>
   // Issue 3 post-codex audit(2026-05-10):`onClose` prop retired — Radix `PopoverClose asChild`
   // 已自帶 popover dismiss,沒 concrete consumer 需 callback。Future 若需要再加。
 }
@@ -166,6 +224,7 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
   lockedIds = [],
   defaultVisibility,
   defaultColumnOrder,
+  labels: labelsOverride,
   width,
   minWidth,
   maxWidth,
@@ -174,6 +233,7 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
   ...props
 }, ref) => {
   useWarnBelowPanelFloor('DataTableColumnVisibilityPanel', width, VISIBILITY_PANEL_FLOOR)
+  const labels = React.useMemo(() => ({ ...DATA_TABLE_COLUMN_VISIBILITY_PANEL_DEFAULT_LABELS, ...labelsOverride }), [labelsOverride])
   const [search, setSearch] = React.useState('')
   const columnIds = React.useMemo(() => columns.map((c) => c.id), [columns])
   const columnIdSet = React.useMemo(() => new Set(columnIds), [columnIds])
@@ -225,7 +285,7 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
   const handleBulkToggle = (e: React.MouseEvent<HTMLElement>) => {
     const next: Record<string, boolean> = {}
     if (allVisible) togglableIds.forEach((id) => { next[id] = false })
-    bulk.run(e, { visibility: next, order: orderedIds }, allVisible ? '已隱藏全部欄位' : '已顯示全部欄位', (n) => onVisibilityChange(n.visibility))
+    bulk.run(e, { visibility: next, order: orderedIds }, allVisible ? labels.hideAllDone : labels.showAllDone, (n) => onVisibilityChange(n.visibility))
   }
 
   // C1/B2 修(2026-09-07):先前沒傳 accessibility → 吃 dnd-kit 英文預設,
@@ -288,19 +348,19 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
         actions={showReset ? (
           <Button
             variant="text" size="sm" iconOnly startIcon={RotateCcw}
-            aria-label="恢復預設"
-            onClick={(e) => bulk.run(e, defaults, '已恢復預設欄位顯示')}
+            aria-label={labels.resetToDefault}
+            onClick={(e) => bulk.run(e, defaults, labels.resetToDefaultDone)}
           />
         ) : undefined}
       >
-        <PopoverTitle>欄位顯示</PopoverTitle>
+        <PopoverTitle>{labels.title}</PopoverTitle>
       </PopoverHeader>
       {/* 搜尋框:固定零件、恆顯示(2026-11-15 前要傳 searchable 才有 —— M23(f);data-table.spec.md L4「欄位顯示面板的固定零件」) */}
       <div className="shrink-0 px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)]">
         <Input
           size="md"
-          placeholder="搜尋欄位…"
-          aria-label="搜尋欄位"
+          placeholder={labels.searchPlaceholder}
+          aria-label={labels.searchAriaLabel}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           startIcon={Search}
@@ -328,6 +388,7 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
                   visible={visibility[id] !== false}
                   locked={lockedSet.has(id)}
                   onToggle={() => handleToggle(id)}
+                  labels={labels}
                 />
               ))}
             </SortableContext>
@@ -336,7 +397,7 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
       </PopoverBody>
       <PopoverFooter className="justify-start">
         <Button variant="tertiary" size="sm" onClick={handleBulkToggle}>
-          {allVisible ? '全部隱藏' : '顯示全部'}
+          {allVisible ? labels.hideAll : labels.showAll}
         </Button>
       </PopoverFooter>
       {/* 恆渲染的 polite 區域(sr-only = 不佔版面):「恢復預設」與底部「顯示全部 / 全部隱藏」的結果播報 */}
@@ -348,13 +409,14 @@ DataTableColumnVisibilityPanel.displayName = 'DataTableColumnVisibilityPanel'
 
 // VisibilityRow:single column row。GripVertical handle 恆在(固定零件);鎖定欄 → Lock icon、不可拖。
 function VisibilityRow({
-  id, label, visible, locked, onToggle,
+  id, label, visible, locked, onToggle, labels,
 }: {
   id: string
   label: string
   visible: boolean
   locked: boolean
   onToggle: () => void
+  labels: DataTableColumnVisibilityPanelLabels
 }) {
   // Conditional hooks 不行 — 永遠呼 useSortable,鎖定欄 disabled(listeners no-op)
   const sortable = useSortable({ id, disabled: locked })
@@ -377,7 +439,7 @@ function VisibilityRow({
           <ItemInlineActionButton
             icon={GripVertical}
             size="md"
-            aria-label="拖曳重排"
+            aria-label={labels.dragToReorder}
             className="cursor-grab active:cursor-grabbing"
             {...forwardDragActivatorAttributes(attributes)}
             {...listeners}
@@ -388,10 +450,9 @@ function VisibilityRow({
       <ItemInlineActionButton
         icon={visible ? Eye : EyeOff}
         size="md"
-        aria-label={visible ? '隱藏此欄' : '顯示此欄'}
+        aria-label={visible ? labels.hideColumn : labels.showColumn}
         disabled={locked}
         onClick={onToggle}
-        className={locked ? 'cursor-not-allowed text-fg-disabled' : ''}
       />
     </div>
   )

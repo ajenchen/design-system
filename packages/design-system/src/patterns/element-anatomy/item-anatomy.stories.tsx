@@ -1,6 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @anatomy-exempt: Item Anatomy pattern spec 的教學 story,使用 raw <table> 呈現 token/align/primitive 對照表(類似 Figma inspect)。DataTable 的密度 / row 交互行為不適合純文件靜態對照;此為 pattern 自身 anatomy 檔,屬合理例外。
-import type { Meta } from '@storybook/react'
+import type { Meta } from '@storybook/react-vite'
 import { useState } from 'react'
 import {
   Mail, Bell, Settings, Star, ChevronRight, Globe, Lock,
@@ -128,7 +128,7 @@ const CONSUMERS: Record<ConsumerKey, ConsumerPreset> = {
   },
   ListItem: {
     label: 'ListItem',
-    desc: '頁面列表（未來元件）',
+    desc: '頁面列表（閱讀式列，以 slot 零件組）',
     mode: 'reading',
     py: 'py-3 (12px)',
     pyDesc: '頁面級列表的寬鬆行高(配閱讀模式與較大 avatar)',
@@ -258,7 +258,7 @@ function lineClampClass(maxLines: number | 'none'): string {
   return ''
 }
 
-/** ListItem preview (simulated — component not yet built) */
+/** 頁面列表列預覽(模擬:DS 不另做 ListItem 元件,消費端以 slot 零件組,見 item-anatomy.spec.md 判斷流程「閱讀式」那一支) */
 const ListItemPreview = ({ size, startIcon: StartIcon, avatar, label, description, suffix, labelMaxLines = 1, descMaxLines = 2 }: {
   size: SizeKey
   startIcon?: LucideIcon
@@ -276,7 +276,7 @@ const ListItemPreview = ({ size, startIcon: StartIcon, avatar, label, descriptio
     : 'h-[1lh]'
 
   return (
-    // @layout-space-magic-ok: 頁面列表列 px 16 / py 12 / gap 12 = item-anatomy.spec.md「ListItem（頁面列表，未來元件）」表 padding-y `py-3`、padding-x `px-4`、prefix ↔ content gap `gap-3`
+    // 頁面列表列 px 16 / py 12 / gap 12 = item-anatomy.spec.md「頁面列表（閱讀式列，以 slot 零件組）」表;規格登記的寫法 page-list-row,間距分類器認得,不需豁免
     <div className={`flex items-start gap-3 px-4 py-3 ${size === 'lg' ? 'text-body-lg' : 'text-body'}`}>
       {(StartIcon || avatar) && (
         <div className={`${alignClass} flex items-center shrink-0`}>
@@ -1645,7 +1645,7 @@ export const IconActionPrimitiveDecision = {
             actions={
               <>
                 <Button variant="text" size="xs" iconOnly startIcon={Download} aria-label="下載" onClick={done('已下載「2026 Q3 營收報告.pdf」')} />
-                <Button variant="text" size="xs" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製「2026 Q3 營收報告.pdf」的分享連結')} />
+                <Button variant="text" size="xs" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製「2026 Q3 營收報告.pdf」的分享連結', 'neutral')} />
                 <DemoMenu items={['重新命名', '移動到資料夾']}><Button variant="text" size="xs" iconOnly startIcon={MoreVertical} aria-label="更多" /></DemoMenu>
               </>
             }

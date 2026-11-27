@@ -130,7 +130,7 @@ Avatar 堆疊的「+N」hover 也出 **HoverCard**（不是 Tooltip）——列�
 
 **外框 = 可見圓（`size` 為 `number` 時的硬契約）**：Avatar 最外層節點的寬高必須等於 `size` 指定的可見尺寸，不得被父容器沿交叉軸拉伸（`size='fill'` 是唯一例外，它的語意就是填滿父容器）。三件事全部以這個外框為基準，所以外框一被撐大就同時壞三處：狀態圓點與 `badgeCount`（相對外框絕對定位）、`:focus-visible` 焦點框（畫在外框的 border box 上，外框帶 `rounded-full`，被撐寬會變成膠囊）、以及 `hoverCard` 的浮層錨點（Radix 以外框量位置，外框變寬浮層就橫向偏移）。**只寫 `shrink-0` 不足**：它只擋主軸收縮，擋不住交叉軸拉伸（直向 flex 會拉寬，grid 格子由 `justify-self` 管、`align-self` 也碰不到），所以固定尺寸模式必須另外鎖寬。機械閘 `scripts/avatar-anchor-box-invariant.mjs`：每個 hover-card trigger 的 Avatar，外框 box 與內層 `[data-avatar-size]` box 的差需 ≤ 0.5px。
 
-**為什麼有 `'fill'` 模式**：當 Avatar 放在 item-layout 的 prefix slot，prefix 的尺寸由消費元件（MenuItem、ListItem 等）依照 size variant 決定。Avatar 不該知道也不該寫死自己的尺寸——應該被動填滿父容器。`'fill'` 模式透過 CSS container query 讓內部 icon/text 自動隨父容器縮放。
+**為什麼有 `'fill'` 模式**：當 Avatar 放在 item-layout 的 prefix slot，prefix 的尺寸由消費端（MenuItem，或以 slot 零件組成的頁面列表列等）依照 size variant 決定。Avatar 不該知道也不該寫死自己的尺寸——應該被動填滿父容器。`'fill'` 模式透過 CSS container query 讓內部 icon/text 自動隨父容器縮放。
 
 ### 內部元素比例
 
@@ -170,7 +170,7 @@ Avatar 堆疊的「+N」hover 也出 **HoverCard**（不是 Tooltip）——列�
 
 ## 背景色
 
-Icon 和 Text 模式使用 primitive step-1 subtle 背景 + 對應 step-7 前景色。`solid` boolean prop 可切換為 step-6 全色背景 + on-emphasis 配對前景(yellow / amber / orange / lime 深字,詳「Solid」段)。
+Icon 和 Text 模式使用 primitive step-1 subtle 背景 + 對應 step-7 前景色。`solid` boolean prop 可切換為 step-6 全色背景 + on-emphasis 配對前景(yellow / amber / lime 深字,詳「Solid」段)。
 
 與 Tag 元件完全對齊——**消費同一組 categorical 色相 SSOT**（`tokens/categorical-color.ts`），所有有色 variant 直接使用 primitive token（`--color-{hue}-*`），不使用 semantic token（`--primary`、`--error`）。色名即色相 1:1 對 color token（零 offset）。Avatar 的「blue」代表藍色本身，不代表「主要操作」語義。neutral 用 `foreground`，有色用 primitive step-7（`--color-{hue}-7`）優先辨識度。
 
@@ -184,7 +184,7 @@ Icon 和 Text 模式使用 primitive step-1 subtle 背景 + 對應 step-7 前景
 
 **通則**:12 色相一律 `--color-{hue}-6` 全色背景;**neutral 例外**:`--color-neutral-9` 背景 + `--inverse-fg` 前景。前景依底色明暗分桶（見下）。
 
-**Solid 文字色規則（on-emphasis 配對,2026-06-04,與 Tag 共用 SSOT）**：依 step-6 底色明暗分桶,合規門檻 = WCAG **large/bold 3:1**（user 拍板「以最低為原則」）。底夠深 → `--on-emphasis`（白）；底太亮 → `--on-emphasis-dark`（深,= `black-a85`,原 `warning-foreground` 改名）:**yellow / amber / orange / lime** 四色用深字,其餘用白。**★ green 例外**:white 實測 2.47 連 3:1 都不過,但維持白字（慣見「綠底白字」觀感）= documented exception。對比由 `categorical-color-invariants.mjs` I4 機械驗(green exempt);逐色 mapping SSOT = `tokens/categorical-color.ts`。
+**Solid 文字色規則（實心底字色原則,2026-11-26 user 決定,與 Tag 共用 SSOT）**：白字對比**不低於綠色** → `--on-emphasis`（白）；低於綠色 → `--on-emphasis-dark`（深,= `black-a85`）。綠色是 user 接受的最低白字對比,是原則的基準、不是例外;淺色、深色兩個模式各自和綠色比（淺 2.47 / 深 2.21）。目前 **yellow / amber / lime** 三色用深字,其餘用白（orange、turquoise 白字對比都不低於綠色）。user 原話（2026-11-26,節錄）:「我認為上面是要白色，請確保整個 ds 此類邏輯配色的地方都按這個 ssot」「橘色要一起改啊，2.47以上的都應該過吧？」。三段全文、逐色實測表與沿革 SSOT = `tokens/categorical-color.ts`「實心底字色原則」;`categorical-color-invariants.mjs` I4 每次由 primitives 現算門檻並逐色核對。
 
 Image 模式不顯示背景色（圖片填滿），`solid` prop 無效果。
 

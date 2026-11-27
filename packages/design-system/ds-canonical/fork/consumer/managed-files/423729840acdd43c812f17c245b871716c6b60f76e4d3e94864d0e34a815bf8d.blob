@@ -18,6 +18,7 @@ import { dirname, join, relative, resolve, sep } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { compareUtf8Bytes } from './lib/provider-lifecycle.mjs'
+import { CONSUMER_OUTPUT_DIRECTORY_NAMES } from './lib/consumer-output-roots.mjs'
 
 // Product architecture is part of the protected template contract. Letting a candidate choose
 // different workspace roots would also let it choose which source the base-trusted compiler sees.
@@ -39,6 +40,7 @@ export const TRUSTED_PRODUCT_CHECK_FILES = Object.freeze([
   'scripts/consumer-source-harness.mjs',
   'scripts/lib/a11y-static-server.mjs',
   'scripts/lib/canonical-path-containment.mjs',
+  'scripts/lib/consumer-output-roots.mjs',
   'scripts/lib/launch-browser.mjs',
   'scripts/lib/provider-lifecycle.mjs',
   'scripts/lib/storybook-render-health.mjs',
@@ -172,7 +174,8 @@ function realDirectory(path, label) {
 
 function sourceFiles(root) {
   realDirectory(root, 'consumer source root')
-  const ignoredDirectories = new Set(['node_modules', 'dist', 'build', 'coverage', 'storybook-static', '.next'])
+  // 規範位置的建置輸出(root 的直接子資料夾)清單只住 lib/consumer-output-roots.mjs(2026-11-27 上游判定 B4)
+  const ignoredDirectories = new Set(CONSUMER_OUTPUT_DIRECTORY_NAMES)
   const files = []
   const visit = directory => {
     for (const entry of readdirSync(directory, { withFileTypes: true }).sort((a, b) => compareUtf8Bytes(a.name, b.name))) {

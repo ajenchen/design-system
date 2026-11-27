@@ -139,7 +139,13 @@ interface SidebarInternals {
    */
   groupOpen: Readonly<Record<string, boolean>>
   setGroupOpen: (value: string, open: boolean) => void
+  /**
+   * `<Sidebar>` 登記自己的 `collapsible`(卸載時 null)。Provider 據此判斷「包的側欄能不能收合」:
+   * `none` 不可收合 → 不攔 ⌘B、開關不寫全站共用的 sidebar cookie(sidebar.spec.md「持久化與快捷鍵」;2026-11-26 產品 canary 回報 C13)。
+   */
+  setCollapsible: (collapsible: SidebarCollapsible | null) => void
 }
+type SidebarCollapsible = "offcanvas" | "icon" | "none"
 const SidebarInternalsContext = React.createContext<SidebarInternals | null>(null)
 
 /**
@@ -252,6 +258,22 @@ const SidebarProvider = React.forwardRef<
       setGroupOpenState((prev) => (prev[value] === next ? prev : { ...prev, [value]: next }))
     }, [])
 
+    // 包的 <Sidebar> 能不能收合(<Sidebar> 掛上時登記;還沒登記 = null,照舊行為)
+    const collapsibleRef = React.useRef<SidebarCollapsible | null>(null)
+    const setCollapsible = React.useCallback((value: SidebarCollapsible | null) => {
+      collapsibleRef.current = value
+    }, [])
+    // 外層 div:⌘B 判斷「這個 Provider 是不是被 modal 浮層藏在背景」用(見下方快捷鍵第 (5) 道)
+    const wrapperRef = React.useRef<HTMLDivElement | null>(null)
+    const setWrapperRef = React.useCallback(
+      (node: HTMLDivElement | null) => {
+        wrapperRef.current = node
+        if (typeof ref === "function") ref(node)
+        else if (ref) ref.current = node
+      },
+      [ref]
+    )
+
     const [_open, _setOpen] = React.useState(defaultOpen)
     const open = openProp ?? _open
     const setOpen = React.useCallback(
@@ -262,6 +284,8 @@ const SidebarProvider = React.forwardRef<
         // internal state 永不更新,sidebar 凍結(同 SelectMenu R2 已修 bug class)。
         if (openProp === undefined) _setOpen(openState)
         setOpenProp?.(openState)
+        // 不可收合的側欄沒有「收合狀態」可記:不寫全站共用的 cookie,免得蓋掉頁面上可收合那一份的紀錄(2026-11-26 C13)
+        if (collapsibleRef.current === "none") return
         document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
       },
       [openProp, setOpenProp, open]
@@ -299,13 +323,25 @@ const SidebarProvider = React.forwardRef<
           ) {
             return
           }
+          // (4) 不可收合(`collapsible="none"`):沒有東西可切,快捷鍵不攔、不 preventDefault —— 讓給同頁其他側欄或瀏覽器(2026-11-26 C13)。
+          if (collapsibleRef.current === "none") return
+          // (5) 被 modal 浮層藏在背景:Dialog / Sheet(modal)開著時,浮層以外整頁被 Radix 標成 aria-hidden(並存面是 inert),
+          //     使用者在浮層裡按的 ⌘B 不是要切背景頁的側欄。修前頁面的 Provider 比浮層裡的先註冊監聽,在對話框裡按 ⌘B
+          //     切到背景頁側欄、寫了 cookie(2026-11-26 產品 canary 回報 C13)。例外:浮層就是本 Provider 自己的 Menu 浮層
+          //     (id = menuId)—— 在 Menu 浮層裡按 ⌘B 收回它是既有行為(app-shell.spec.md「版面規則」§9)。
+          if (
+            wrapperRef.current?.closest('[aria-hidden="true"], [inert]') &&
+            !(target instanceof Element && target.closest(`[id="${menuId}"]`))
+          ) {
+            return
+          }
           event.preventDefault()
           toggleSidebar()
         }
       }
       window.addEventListener("keydown", handleKeyDown)
       return () => window.removeEventListener("keydown", handleKeyDown)
-    }, [toggleSidebar])
+    }, [toggleSidebar, menuId])
 
     // code-quality-allow: long-function — SidebarProvider 內 dual-state(open + activeId)+ 版面接口 + handler refs + useMemo context 集中一處;拆 sub-fn 會打斷 useMemo dep stability + Context provider 順序。當前 < cap 200。Script naive heuristic 把 `const state = ?` 三元當 fn 起點誤報。
     // 畫面上的 Menu:在 AppShell 裡跟版面(展開的 Menu 佔版面才是 expanded);單獨使用時 = 開關紀錄
@@ -325,8 +361,8 @@ const SidebarProvider = React.forwardRef<
       [state, open, setOpen, toggleSidebar, size, activeId, setActiveId]
     )
     const internals = React.useMemo<SidebarInternals>(
-      () => ({ setHost, overlayOpenerRef, menuId, display, groupOpen, setGroupOpen }),
-      [setHost, menuId, display, groupOpen, setGroupOpen]
+      () => ({ setHost, overlayOpenerRef, menuId, display, groupOpen, setGroupOpen, setCollapsible }),
+      [setHost, menuId, display, groupOpen, setGroupOpen, setCollapsible]
     )
 
     // 不在此處包 TooltipProvider——shadcn 原版預設 delayDuration=0,會覆蓋
@@ -384,7 +420,7 @@ const SidebarProvider = React.forwardRef<
                 "has-[[data-prefix-type=icon]]:has-[[data-prefix-type=avatar]]:[--item-prefix-slot:var(--item-mixed-prefix-slot)] has-[[data-prefix-type=icon]]:has-[[data-prefix-type=avatar]]:![--item-icon-size:var(--item-mixed-prefix-slot)]",
               className
             )}
-            ref={ref}
+            ref={setWrapperRef}
             {...props}
           >
             {children}
@@ -469,6 +505,13 @@ const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
     const panel = useAppShellPanel("menu", inShell && range ? { contentType, widthRange: range, defaultWidth } : null, { onWidthCommit })
     useAppShellPanelOpen("menu", sidebar.open, sidebar.setOpen)
     React.useLayoutEffect(() => registry?.registerMenuRail(collapsible === "icon"), [registry, collapsible])
+    // 把「能不能收合」登記回 Provider:`none` 時 ⌘B 不攔、開關不寫 cookie(SidebarInternals.setCollapsible)
+    const setCollapsible = internals?.setCollapsible
+    React.useLayoutEffect(() => {
+      if (!setCollapsible) return
+      setCollapsible(collapsible)
+      return () => setCollapsible(null)
+    }, [setCollapsible, collapsible])
     const display = panel?.display
     const setHost = internals?.setHost
     React.useLayoutEffect(() => {
@@ -1500,7 +1543,7 @@ const sidebarMenuButtonVariants = cva(
     // 2026-09-09 之前非當前項的焦點用 hover 同色底(AI 推導,user 撤回);hover 的底色與文字色只屬於滑鼠。
     "focus-visible:focus-ring-inset",
     // 2026-05-31 M24:SidebarMenuButton 主要為 icon+label(currentColor 可改寫)→ 用 semantic
-    // text-fg-disabled 對齊 MenuItem primitive(menu-item.tsx:198/221/248 + item-anatomy.tsx:374),
+    // text-fg-disabled 對齊 MenuItem primitive(menu-item.tsx:198/221/248 + item-anatomy.tsx:377),
     // 非 opacity-disabled(opacity 保留給圖片/avatar/Switch 等無法改寫內部色者,per color.spec.md「Disabled 狀態」/「Utility Tokens」)。
     // 原生 disabled 的 button 本來就不會發 click,不再 pointer-events-none:留著接指標只為了掛禁止符號
     //(hit-area-canonical.md 滑過原則一-3「停用的用禁止符號」;2026-09-29 全站掃出:「混合內容」的「delta（已封存）」游標是箭頭,

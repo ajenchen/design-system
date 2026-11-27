@@ -2,7 +2,7 @@
 // `UsageGuidance` story (3 sections — 何時用 / 何時不用 / vs 近親) per 2026-04-26 user
 // mandate. IndeterminateVsDeterminateRule / ConsumptionScenarioRule / SizeMatchContextRule
 // kept as separate principles.
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Mail, Check } from 'lucide-react'
 import { CircularProgress } from './circular-progress'
 import { Button } from '@/design-system/components/Button/button'
@@ -119,7 +119,7 @@ export const UsageGuidance: Story = {
           title="Skeleton — 內容佔位(佈局已知、等資料填入)"
           note="List / table / card grid 初次載入——佈局結構確定,只差資料。用 Skeleton 讓版面先定型,避免資料回來時跳動"
         >
-          {/* @layout-space-magic-ok: 骨架列 頭像佔位 ↔ 文字佔位 12px = 載入後那一列的 item-anatomy.spec.md「ListItem（頁面列表，未來元件）」表「prefix ↔ content gap」12px(`gap-3`)(已發布同值) */}
+          {/* @layout-space-magic-ok: 骨架列 頭像佔位 ↔ 文字佔位 12px = 載入後那一列的 item-anatomy.spec.md「頁面列表（閱讀式列，以 slot 零件組）」表「prefix ↔ content gap」12px(`gap-3`)(已發布同值) */}
           <div className="flex items-center gap-3 w-72 border border-border rounded-md p-[var(--layout-space-loose)]">
             <Skeleton className="h-10 w-10 rounded-full" />
             {/* @layout-space-magic-ok: 骨架文字兩行之間 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}

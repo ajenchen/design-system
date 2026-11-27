@@ -29,6 +29,10 @@ import {
   type TimeColumnsDisabled,
 } from '@/design-system/components/TimePicker/time-columns'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
+import { DEFAULT_DATE_LOCALE } from '@/design-system/lib/date-locale'
+// 顯示的預設時間寫法(12 / 24 跟語系)與 DatePicker / Calendar 同一份(DATE-TIME(定)2026-11-26;time-picker.spec.md「顯示格式化」);
+// 面板的 12 / 24 小時與空白提示字也從同一份推(TIME-12H-PANEL(定)2026-11-26)
+import { resolveTimeFormatOptions, resolveTimePanelFormat, timePlaceholder } from '@/design-system/components/DatePicker/range-format'
 
 /**
  * TimePicker — 單一時間(時/分/秒)輸入與顯示元件
@@ -48,10 +52,18 @@ import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
  * Trigger:`<div role="combobox">` + `fieldWrapperStyles`(視覺仍是 Input wrapper,改為可點擊觸發浮層;
  *   2026-04-25 由 `<button>` 改 div 避 nested-interactive,對齊 Select / Combobox,鍵盤靠顯式 onKeyDown)
  * Popup:`Popover`(消費 overlay-surface pattern)
- * Panel 主體:自建 column picker(三欄 scrollable list),不引入第三方 time library
+ * Panel 主體:自建 column picker(時 / 分 / 秒 / 上下午 2–4 欄 scrollable list,欄數見 `./time-columns.tsx`),不引入第三方 time library
  *
  * ── 共用規則 ──
  * Mode / size / disabled / error 等詳見 `../Field/field-controls.spec.md`。
+ *
+ * ── 消費的 SSOT ──
+ * - 時間顯示的預設寫法: `../DatePicker/range-format.ts` `resolveTimeFormatOptions`(12 / 24 跟語系,DATE-TIME(定)2026-11-26;
+ *   time-picker.spec.md「顯示格式化」)
+ * - 面板的 12 / 24 小時(上下午欄、時欄 12 / 01…11)與空白提示字: `../DatePicker/range-format.ts` `resolveTimePanelFormat` / `timePlaceholder`
+ *   (TIME-12H-PANEL(定)2026-11-26;判斷與欄位裡的字同一份,本檔不寫 12 / 24 的字面)
+ * - 預設語系: `../../lib/date-locale.ts` `DEFAULT_DATE_LOCALE`
+ * - 欄位外框 / 尺寸 / 圖示: `../Field/field-wrapper.tsx`、`../../tokens/uiSize/icon-size.ts`;面板: `./time-columns.tsx` + `../../patterns/overlay-surface`
  */
 
 // ── Time ISO <-> parts conversion ───────────────────────────────────────────
@@ -62,9 +74,12 @@ import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 // ── Display formatting ──────────────────────────────────────────────────────
 
 export interface TimeFormatOptions {
-  /** Intl.DateTimeFormat options(預設 { hour: '2-digit', minute: '2-digit', hour12: false }) */
+  /**
+   * Intl.DateTimeFormat options(預設 { hour: 'numeric', minute: '2-digit' },`showSeconds` 時再加兩位數秒 —— 12 / 24 小時跟語系:
+   * zh-TW「下午2:30」、en-US「2:30 PM」、en-GB「14:30」)。要固定 24 小時就傳寫了時間欄位的選項(例 `{ hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }`)。
+   */
   formatOptions?: Intl.DateTimeFormatOptions
-  /** locale(預設 'en-US') */
+  /** locale(預設 'zh-TW' = DS 日期元件共用的 `DEFAULT_DATE_LOCALE`;沒傳 formatOptions 時也決定 12 / 24 小時) */
   locale?: string
 }
 
@@ -83,15 +98,20 @@ function getDateTimeFormatter(locale: string, options: Intl.DateTimeFormatOption
   return fmt
 }
 
+/**
+ * 顯示用的時間文字。沒傳 `formatOptions` = 預設時間寫法(range-format.ts `resolveTimeFormatOptions`:12 / 24 跟語系,有秒才寫秒)——
+ * DATE-TIME(定)2026-11-26「時間跟語系(12 / 24)」;改前預設寫死 24 小時、而且 `showSeconds` 也不寫秒(與本檔 `showSeconds` 註解的
+ * 「true → HH:mm:ss」不符)。
+ */
 function formatTime(
   iso: string,
-  options: TimeFormatOptions = {},
+  options: TimeFormatOptions & { showSeconds: boolean },
 ): string {
   const parts = isoToTimeParts(iso)
   if (!parts) return iso
   const {
-    formatOptions = { hour: '2-digit', minute: '2-digit', hour12: false },
-    locale = 'en-US',
+    formatOptions = resolveTimeFormatOptions(options.showSeconds),
+    locale = DEFAULT_DATE_LOCALE,
   } = options
   // 借用 Date 讓 Intl.DateTimeFormat 處理 locale / 12h-24h
   const d = new Date()
@@ -139,8 +159,8 @@ export interface TimePickerProps
   /** 允許清空已選值 */
   clearable?: boolean
   /**
-   * 是否顯示秒欄(三欄 picker)。預設 false(兩欄:時/分)。
-   * format 自動對應:false → "HH:mm",true → "HH:mm:ss"。
+   * 是否顯示秒欄(面板多一欄秒)。預設 false。欄數跟語系:24 小時語系是時 / 分兩欄、開秒三欄;12 小時語系(例預設 zh-TW)最後多一欄上午 / 下午,是三欄、開秒四欄。
+   * value 格式自動對應:false → "HH:mm",true → "HH:mm:ss";顯示(沒傳 formatOptions 時)有秒才寫秒,12 / 24 跟語系(例 zh-TW「下午2:30:15」)。
    */
   showSeconds?: boolean
   /** 分鐘步進(會議常用 15)。預設 1 */
@@ -218,7 +238,13 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
   const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
     const EndIconCmp: LucideIcon | null =
       endIcon === null ? null : (endIcon ?? Clock)
-    const defaultPlaceholder = showSeconds ? 'HH:MM:SS' : 'HH:MM'
+    // 面板的時間寫法:欄位寫法(沒傳 = 預設時間寫法)交給 Intl 讀回 12 / 24 —— 與欄位裡的字同一份判斷(TIME-12H-PANEL(定)2026-11-26)。
+    // 12 小時制:面板多一欄上下午、時欄寫 12 / 01…11;空白提示字也照語系寫(zh-TW「上午/下午HH:MM」【AI 推導】);24 小時制照舊 HH:MM
+    const panelFormat = React.useMemo(
+      () => resolveTimePanelFormat(locale ?? DEFAULT_DATE_LOCALE, formatOptions ?? resolveTimeFormatOptions(showSeconds), showSeconds, getDateTimeFormatter),
+      [locale, formatOptions, showSeconds],
+    )
+    const defaultPlaceholder = timePlaceholder(panelFormat, showSeconds, getDateTimeFormatter)
     const resolvedPlaceholder = placeholder ?? defaultPlaceholder
     const showClear = clearable && !!value && isEditable
     const [open, setOpenState] = React.useState(defaultOpen)
@@ -291,9 +317,9 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
         // 2026-05-14 I2 fix(spec contract (e) view typography canonical):bare span 套
         // `fieldDisplayTextClass(size)`(sm/md→text-body,lg→text-body-lg)— 對齊 Field family 統一。
         if (!value) return <span {...props} ref={ref as React.Ref<HTMLSpanElement>} className={cn(fieldDisplayTextClass(size), fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
-        // 截斷必附 tooltip(tooltip.spec.md:32)— 外層 span 保留 ref/props 轉發(2026-07-16 DA3),
+        // 截斷必附 tooltip(tooltip.spec.md:30)— 外層 span 保留 ref/props 轉發(2026-07-16 DA3),
         // 值文字包 TruncatedText(display="block":外層 span 在 flex cell 內是 block container)
-        return <span {...props} ref={ref as React.Ref<HTMLSpanElement>} className={cn(fieldDisplayTextClass(size), 'truncate tabular-nums', className)}><TruncatedText display="block">{formatTime(value, { formatOptions, locale })}</TruncatedText></span>
+        return <span {...props} ref={ref as React.Ref<HTMLSpanElement>} className={cn(fieldDisplayTextClass(size), 'truncate tabular-nums', className)}><TruncatedText display="block">{formatTime(value, { formatOptions, locale, showSeconds })}</TruncatedText></span>
       }
       return (
         <div
@@ -303,9 +329,9 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
           style={fieldWidthStyle(width, props.style)}
           data-field-mode="view"
         >
-          {/* 截斷必附 tooltip(tooltip.spec.md:32;data-table.spec.md「十一、Cell 單行截斷原則」view 態元件自管 truncation) */}
+          {/* 截斷必附 tooltip(tooltip.spec.md:30;data-table.spec.md「十一、Cell 單行截斷原則」view 態元件自管 truncation) */}
           <TruncatedText className={cn(bareInputStyles, 'flex-1 min-w-0 tabular-nums', !value && fieldEmptyColorClass(resolvedMode))}>
-            {value ? formatTime(value, { formatOptions, locale }) : emptyDisplay}
+            {value ? formatTime(value, { formatOptions, locale, showSeconds }) : emptyDisplay}
           </TruncatedText>
           {EndIconCmp && (
             <ItemSuffix className="pointer-events-none">
@@ -338,7 +364,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
             )}
           >
             {value
-              ? formatTime(value, { formatOptions, locale })
+              ? formatTime(value, { formatOptions, locale, showSeconds })
               : <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>
             }
           </span>
@@ -357,7 +383,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
     }
 
     const displayText = value
-      ? formatTime(value, { formatOptions, locale })
+      ? formatTime(value, { formatOptions, locale, showSeconds })
       : <span className="text-fg-muted">{resolvedPlaceholder}</span>
 
     return (
@@ -421,7 +447,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
               if (e.key === 'Escape') setOpen(false)
             }}
           >
-            {/* 截斷必附 tooltip(tooltip.spec.md:32)— trigger div 自身是 hover 目標、無疊層,
+            {/* 截斷必附 tooltip(tooltip.spec.md:30)— trigger div 自身是 hover 目標、無疊層,
                 值 span 直接消費 TruncatedText(對照 date-picker Range edit trigger 同型) */}
             {/* 值的數字等寬(tabular-nums):同下拉時間欄 time-columns.tsx 的欄內 item(time-picker.spec.md「顯示格式化」) */}
             <TruncatedText className={cn(bareInputStyles, 'tabular-nums', !value && 'text-fg-muted')}>
@@ -466,8 +492,9 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
             listbox.focus({ preventScroll: true })
           }}
         >
-          {/* Panel 對齊 ref/timepicker.png:2-3 個 SelectMenu 式欄位並排,分隔線分開。
-              Width 依欄數由 TimeColumns 決定:2 欄 w-40 / 3 欄 w-60。
+          {/* Panel 對齊 ref/timepicker.png:2-4 個 SelectMenu 式欄位並排,分隔線分開。
+              Width 依欄數由 TimeColumns 決定(time-columns.tsx timeColumnsWidthClass:每欄約 80px,
+              時 / 分 / 秒 / 上下午 2–4 欄 → w-40 / w-60 / w-80;12 小時制多上下午一欄)。
               Height 由 wrapper 控:216px 預設(扣 footer 後 list 約可見 5-6 items)。
               TimeColumns 本身 h-full,parent 控 height — 讓 DatePicker showTime / Range 可
               用 flex-row items-stretch 自動同 calendar 高。 */}
@@ -479,6 +506,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
               minuteStep={minuteStep}
               secondStep={secondStep}
               disabled={disabledForColumns}
+              clock={panelFormat.clock}
               // 2026-05-06 v9.1 M25 chain fix:TimeColumns 自然高 = 24 buttons × ~28.7px = 688px
               // 會撐破 parent h-[216px]。flex-1 + min-h-0 讓 TimeColumns 取 parent 剩餘空間
               // (216 − footer ≈53px ≈ 163px)→ ScrollArea h-full 才能正確收斂 →
@@ -488,7 +516,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
             />
             {/* Footer:消費 SurfaceFooter SSOT(border-t + py-tight + gap-2 + shrink-0 + justify-end)。
                 **本元件是「footer 對齊內容左邊界」那條規則的唯一例外**(2026-09-18 全庫掃描確認只有這一個):
-                時 / 分 / 秒是**置中的數字欄、欄本身零內距**(實測面板寬 162、欄寬 79.5 且貼齊面板邊),
+                時 / 分 / 秒是**置中的數字欄、欄本身零內距**(2 欄實測面板寬 162、欄寬 79.5 且貼齊面板邊;12 小時制多一欄同寬),
                 沒有任何內容左邊界可以對齊。所以 footer 的 px 不是「對齊誰」,是**面板自己的內距** ——
                 取 `layout-space-tight`,與同一顆 footer 的 `py-tight` 成對(12/12 方正內距)。
                 判準與對照表:`patterns/overlay-surface/overlay-surface.spec.md`「要對齊誰」;

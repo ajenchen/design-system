@@ -102,7 +102,7 @@ Avatar 元件的 `hoverCard` prop 接受 HoverCard content，自動將 Avatar �
 
 HoverCard 是**純行為 primitive**(只提供 hover 觸發邏輯 + 定位 + 動畫,不含視覺樣式),設計上刻意不擁有變體:
 
-- **無 Inspector**:HoverCard 的互動 prop 只有 `sideOffset`(預設 8px,統一浮層間距)與 placement(side / align),再多就侵入 consumer 的職責。元件特有 `VisualVariants` story 展示「同一個 HoverCard primitive 如何被 ProfileCard / OverflowIndicator 兩個 consumer 包出完全不同的視覺」才是 HoverCard 的設計精神——互動 Inspector 無法呈現此點。
+- **無 Inspector**:HoverCard 的互動 prop 只有 `sideOffset`(預設 8px,統一浮層間距)與 placement(side / align)(另有只能往更矮調的 `maxHeight`,見「邊界案例 / 空值」),再多就侵入 consumer 的職責。元件特有 `VisualVariants` story 展示「同一個 HoverCard primitive 如何被 ProfileCard / OverflowIndicator 兩個 consumer 包出完全不同的視覺」才是 HoverCard 的設計精神——互動 Inspector 無法呈現此點。
 - **無 ColorMatrix**:HoverCardContent **不提供** `bg` / `border` / `shadow` / `rounded`(見本 spec「純行為 primitive」段),consumer 決定視覺(ProfileCard 亮色 card / OverflowIndicator 深色 tooltip 風格)。色彩不屬 HoverCard 職責。
 - **無 SizeMatrix**:無 size prop,尺寸由 content 決定,寬高繼承 consumer。
 - **無 StateBehavior**:passive open / close(hover 觸發),無 hover / selected / active / disabled——這些屬於 consumer 元件(ProfileCard 的 section, OverflowIndicator 的 item)。
@@ -129,7 +129,7 @@ HoverCard 是**純行為 primitive**(只提供 hover 觸發邏輯 + 定位 + 動
 
 - **重複快速 hover**:open / close delay 自然 debounce——滑過不停留不開卡(open delay),短暫滑出再滑回不閃爍(close delay 緩衝)
 - **Content 為空**:純行為 primitive 不驗證 content,傳空仍渲染空浮層;consumer(如 Avatar `hoverCard`)應在無資料時不掛 hoverCard prop
-- **浮層超出 viewport**:Radix collision 自動 flip / shift(`collisionPadding=12` 保證視覺 ≥ 8px 邊距);高度以 `--radix-hover-card-content-available-height` 為 max-h + flex chain 壓縮 scroll(M25)
+- **浮層超出 viewport**:Radix collision 自動 flip / shift(`collisionPadding=12` 保證視覺 ≥ 8px 邊距);高度上限 = 觸發點那一側的可用高,`maxHeight`(數字 px 或字串,2026-11-24 起)只能再往更矮調(公式與常數的唯一住處 `../../tokens/elevation/elevation.spec.md`「浮層高度上限」)+ flex chain 壓縮 scroll(M25)
 - **Disabled / loading**:純行為 primitive 無此 state;fetch 中的內容(如 ProfileCard loading)由 consumer 自行渲 skeleton
 
 ---

@@ -229,9 +229,9 @@ export function decisionReceipt(questions: AgentDecisionQuestion[], answers: Rec
     role: 'agent',
     content: (
       <>
-        已按你的選擇繼續:
-        {/* @layout-space-magic-ok: 同一則代理訊息的內文段距 8px(思考塊 / 回執 / 清單 / 段落之間),沿用展示頁「決策回執」既有值;規格沒寫這個值(agent-panel.spec.md「4. AgentMessage(訊息)」沒有定義代理訊息的段距),不由 AI 補進規格(F-S7) */}
-        <AgentDecisionSummary className="mt-2" entries={decisionEntries(questions, answers)} />
+        {/* 段落 → 回執的距離由 AgentMessage 代理那一側給(agent-panel.spec.md「代理回覆的內文」),兩者都不加 class */}
+        <p>已按你的選擇繼續:</p>
+        <AgentDecisionSummary entries={decisionEntries(questions, answers)} />
       </>
     ),
   }

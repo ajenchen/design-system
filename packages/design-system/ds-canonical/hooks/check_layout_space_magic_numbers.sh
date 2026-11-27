@@ -27,6 +27,10 @@ source "$(dirname "$0")/lib/_micro_geometry.sh" 2>/dev/null || {
   printf 'GOVERNANCE_INTEGRITY: layout-space micro-geometry classifier unavailable\n' >&2
   exit 70
 }
+source "$(dirname "$0")/lib/_comment_mask.sh" 2>/dev/null || {
+  printf 'GOVERNANCE_INTEGRITY: layout-space comment mask unavailable\n' >&2
+  exit 70
+}
 
 set -uo pipefail
 
@@ -64,7 +68,11 @@ ESCAPE_MARKER='@layout-space-magic-ok:'
 #   (b) arbitrary bracket 固定 px:gap-[7px] / p-[13px] 類(spacing 家族)
 #   (c) 固定寬度 w-[Npx](WM w-[640px] 丟失 min() viewport clamp 實證;w-[min(...)]/var()/% 不攔)
 #   (d) grid-template 固定 px 欄寬:grid-cols-[...Npx...](WM mini-table 88px/72px 黏死實證)
-governance_hook_grep_capture MAGIC_LINES 'layout-space matcher failed' "$NEW_CONTENT" -nE \
+# 註解不是程式(2026-11-27 上游判定 E16 + E14 (1)):掃遮罩後的內容(註解換成等長空白、行號不變);
+# 豁免標記仍對原文判(下面逐行取 NEW_CONTENT 的原文)。
+MASKED_CONTENT=$(printf '%s' "$NEW_CONTENT" | governance_mask_comments) \
+  || governance_hook_integrity_fail 'layout-space comment mask failed'
+governance_hook_grep_capture MAGIC_LINES 'layout-space matcher failed' "$MASKED_CONTENT" -nE \
   '\b(p|px|py|pt|pb|pl|pr|ps|pe|gap|space-x|space-y|m|mx|my|mt|mb|ml|mr|ms|me)-(0\.5|[1-9][0-9]?(\.[0-9])?)\b|\b(p|px|py|pt|pb|pl|pr|ps|pe|gap|m|mx|my|mt|mb|ml|mr|ms|me)-\[[0-9]+(\.[0-9]+)?px\]|\bw-\[[0-9]+(\.[0-9]+)?px\]|\bgrid-(cols|rows)-\[[^]]*[0-9]+px[^]]*\]'
 
 # ── 幻覺 token 攔截(錨例 2026-07-08 WM 戰役:app 自創 var(--layout-space-distant) → CSS 未定義
@@ -72,7 +80,7 @@ governance_hook_grep_capture MAGIC_LINES 'layout-space matcher failed' "$NEW_CON
 # --layout-space-* 全部(SSOT 現讀,不寫死;新增 tier 走 DS token 流程,不在 consumer 端發明)。
 # 逐個 var() 判(-o),不逐行判:同一行有一顆合法 token 時,逐行的 -v 會把同行的幻覺 token 一起放掉 ──
 governance_hook_grep_capture PHANTOM_CANDIDATES 'layout-space phantom-token candidate matcher failed' \
-  "$NEW_CONTENT" -noE 'var\(--layout-space-[a-z0-9-]+\)'
+  "$MASKED_CONTENT" -noE 'var\(--layout-space-[a-z0-9-]+\)'
 PHANTOM=""
 if [ -n "$PHANTOM_CANDIDATES" ]; then
   # DS repo 讀 src;consumer 讀已安裝套件裡發布的同一份 src(package.json files 含 src/**/*.css)
@@ -130,12 +138,16 @@ fi
 # 實質失效。補實作前一行檢查(grep -n 行號 → sed 取前一行),對齊文件 + 解 JSX 必需。
 UNJUSTIFIED=""
 while IFS= read -r line; do
+  lineno="${line%%:*}"
+  # MAGIC_LINES 出自遮罩後的內容:報告與豁免判斷一律換回原文那一行
+  orig_line=$(sed -n "${lineno}p" <<< "$NEW_CONTENT" 2>/dev/null) \
+    || governance_hook_integrity_fail 'layout-space original-line extraction failed'
+  line="${lineno}:${orig_line}"
   # same-line marker
-  if governance_hook_grep_q 'layout-space same-line escape matcher failed' "$line" -qF "$ESCAPE_MARKER"; then continue; fi
+  if governance_hook_grep_q 'layout-space same-line escape matcher failed' "$orig_line" -qF "$ESCAPE_MARKER"; then continue; fi
   # preceding-line marker(JSX `{/* @layout-space-magic-ok: ... */}` 在上一行)。
   # 對齊 ESLint disable-next-line 慣例:前一行 marker 僅在該行是「註解專用行」(trimmed 開頭
   # //、{/*、/*、*)時生效 — 否則上一行 code 的「同行 escape」會誤串到下一行(P8 conflict)。
-  lineno="${line%%:*}"
   if [ "$lineno" -gt 1 ] 2>/dev/null; then
     prev=$(sed -n "$((lineno-1))p" <<< "$NEW_CONTENT" 2>/dev/null) \
       || governance_hook_integrity_fail 'layout-space preceding-line extraction failed'
@@ -170,9 +182,11 @@ $(printf '%b' "$UNJUSTIFIED" | sed 's/^/    /' | awk 'NR <= 10')
     (b) Escape:在該 line 加 \`// @layout-space-magic-ok: <rationale>\` 顯式 documented
         (eg.「\`gap-1\` 是 4px stack icon — non-spacing context,not consumer layout」)
 
-  注意:canonical inline item/control、semantic homogeneous list、toolbar 與 rule-5 grouped
-  horizontal fields 的 gap-1/2 會由 utility-registry 結構規則自動辨識,不需 escape。
-  一般 flex/grid/section 的 gap-1/2 沒有這些語意證據時仍是 blocker。
+  注意:canonical inline item/control、semantic homogeneous list、toolbar、rule-5 grouped
+  horizontal fields 與一排 assist chip(<ul role="list" className="flex flex-wrap gap-1">,每顆
+  <li><Chip variant="assist">;chip.spec.md「一排 assist chip(訊息附件以外)」)的 gap-1/2
+  會由 utility-registry 結構規則自動辨識,不需 escape。
+  一般 flex/grid/section 的 gap-1/2 沒有這些語意證據時仍是 blocker(手刻 div 排一排 chip 也是)。
 
   完整 6 條規則 → packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md
 EOF

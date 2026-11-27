@@ -22,7 +22,7 @@ TimePicker 是**單一時間**(時/分/秒)輸入與顯示元件,對齊 Ant Desi
 **實作基礎**:
 - **Trigger**:`<div role="combobox">` + `fieldWrapperStyles`(視覺 = Input wrapper;**不用 `<button>`** —— 避免內層 `ItemInlineAction` 清除 button 構成 nested-interactive,對齊 Select / Combobox 同 pattern。Radix PopoverTrigger 在 `asChild` 下只 compose onClick 與 aria / data attributes,**不** inject 任何 onKeyDown——Enter / Space / ↓ 鍵盤開啟由 trigger 顯式 `onKeyDown` 實作,對齊 select.tsx canonical + APG select-only combobox 範例的開啟鍵)([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/combobox/examples/combobox-select-only.html#L102-L131)、[來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/combobox/combobox-pattern.html#L126))
 - **Popup**:`<Popover>`(消費 `patterns/overlay-surface/` 的 surface chrome)
-- **Panel 主體**:**自建** 2-3 欄 column picker(時 / 分 / 秒),**不引入第三方 time library**——自建讓 DS own 視覺與交互(對齊 Ant Design 的 Panel 結構 — [react-component/picker TimePanel](https://github.com/react-component/picker/tree/master/src/PickerPanel/TimePanel) + 本 DS token)
+- **Panel 主體**:**自建** 2–4 欄 column picker(時 / 分 / 秒 / 上下午;欄數見下方「Panel 寬度」),**不引入第三方 time library**——自建讓 DS own 視覺與交互(對齊 Ant Design 的 Panel 結構 — [react-component/picker TimePanel](https://github.com/react-component/picker/tree/master/src/PickerPanel/TimePanel) + 本 DS token)
 - **交互契約**:column scroll selector、minuteStep、Now / OK footer 與 clearable 共同構成這個元件的最小完整流程
 
 ---
@@ -83,7 +83,7 @@ open 軸同樣只開最小 API — **uncontrolled-only**:`defaultOpen`(初始開
   error={boolean}
   clearable={boolean}
   placeholder="請選擇時間"
-  showSeconds={boolean}          // 預設 false(兩欄:時/分)
+  showSeconds={boolean}          // 預設 false(時 / 分;12 小時語系另加上下午欄,欄數見「Panel 寬度」)
   minuteStep={1 | 5 | 10 | 15 | 30}   // 會議常用 15
   secondStep={1 | 5 | 10 | 15 | 30}   // showSeconds=true 時生效
   disabledTime={(parts) => ({    // 動態禁用某些時/分/秒
@@ -92,8 +92,8 @@ open 軸同樣只開最小 API — **uncontrolled-only**:`defaultOpen`(初始開
     disabledSeconds: [...],
   })}
   endIcon={Clock}                // 預設 Clock,傳 null 關閉(2026-05-05 v9:點擊觸發浮層 indicator 一律 suffix,對齊 DatePicker / Material endAdornment)([來源](https://github.com/mui/mui-x/blob/7d387072c89002693bd423eef0b3ab6db87837f9/docs/data/date-pickers/custom-opening-button/custom-opening-button.md?plain=1#L42-L44))
-  locale="en-US"
-  formatOptions={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+  locale="zh-TW"                 // 預設 'zh-TW'(DS 日期元件共用的 DEFAULT_DATE_LOCALE;2026-11-24 前是 'en-US')
+  formatOptions={{ hour: 'numeric', minute: '2-digit' }}   // 預設值(showSeconds 時再加 second: '2-digit';12 / 24 跟語系,見「顯示格式化」)
 />
 ```
 
@@ -104,6 +104,17 @@ open 軸同樣只開最小 API — **uncontrolled-only**:`defaultOpen`(初始開
 ### 顯示格式化
 
 **View 走 `Intl.DateTimeFormat`**(跨 locale 統一、12h/24h 支援)。`formatOptions` 透傳進去。
+
+**預設語系 zh-TW(2026-11-24)**:user 選「全 DS 日期元件一起改 zh-TW (Recommended)」(選項為 AI 擬;Calendar / DatePicker / TimePicker 同一個預設,`../../lib/date-locale.ts` `DEFAULT_DATE_LOCALE`)。自己傳了 12 小時制 `formatOptions` 卻沒傳 `locale` 的,「02:30 PM」→「下午02:30」。TimePicker 只選時分秒,沒有「一週從哪天開始」這件事。
+
+**時間 12 / 24 跟語系(DATE-TIME(定)2026-11-26)**:沒傳 `formatOptions` 時顯示 =「時(不補零)+ 兩位數分」,`showSeconds` 再加兩位數秒,12 / 24 小時交給語系(CLDR 依地區):zh-TW「下午2:30」、en-US「2:30 PM」、en-GB「14:30」;與 DatePicker 帶時間的顯示、Calendar 月格的開始時間同一份(`../DatePicker/range-format.ts` `resolveTimeFormatOptions`)。user 點選「時間跟語系(12 / 24)、日期一律補零,兩者都能單獨覆寫」(選項文字由 AI 擬;原話與卡上的 CLDR 說明見 `../DatePicker/date-picker.spec.md`「區間檢視合併(formatRange)」日期寫法)。覆寫用既有的 `formatOptions`:要固定 24 小時傳 `{ hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }`。改前預設寫死 24 小時(`hour12: false`,「14:30」),該預設與 24 小時都沒有 user 原話(AI 推導,已由上述決定取代);改前 `showSeconds` 時顯示也不寫秒,與 `showSeconds` 參數說明的「true → HH:mm:ss」不符,一併照同一條規則補上【AI 推導】。下拉面板也跟同一份 12 / 24,見下一段。
+
+**面板的 12 / 24 小時(TIME-12H-PANEL(定)2026-11-26)**:user 第三輪決策卡點選「A:12 小時語系時,面板加一欄「上午 / 下午」,時欄改成 1–12;面板標題和空白提示字也用 12 小時」,對話內確認「可以,照 A 做」;24 小時語系不變。規則:
+- **判斷與欄位裡的字同一份**:欄位寫法(沒傳 `formatOptions` = 上段的預設時間寫法)交給 `Intl.DateTimeFormat`、讀回它實際用的 `hourCycle`,`h11` / `h12` = 12 小時制(`../DatePicker/range-format.ts` `resolveTimePanelFormat`)。所以 `formatOptions` 寫了 `hourCycle: 'h23'` 的面板也是 24 小時,欄位寫 12 小時、面板寫 24 小時(或反過來)的組合不會出現。
+- **12 小時制的面板**:時欄只列目前這半天的 12 個時,寫 `12`、`01`…`11`(值仍是 0–23,`clockHourValues` / `clockHourLabel`);最後多一欄上下午,字取這個語系 `formatToParts` 的 dayPeriod(zh-TW「上午 / 下午」、en-US「AM / PM」,不寫死任何語言);切上下午時,時留在鐘面同一格(下午 2 點 ↔ 上午 2 點,`hourWithPeriod`),那一格剛好被 `disabledTime` 停用就改選那半天第一個可選的時;那半天 12 個時全部停用時,上下午那一格也停用。
+- **上下午欄排在最後**【AI 推導 2026-11-26,列入預覽清單】:時 → 分 →(秒)→ 上下午。開面板時焦點照舊落在第一欄(時)。世界級對照:rc-picker(Ant 的面板)`use12Hours` 才畫上下午欄、時欄依上下午只列那半天、欄位依「時、分、秒、毫秒、上下午」的順序渲染,上下午的字取 9 點與 15 點的寫法(https://github.com/react-component/picker/blob/master/src/PickerPanel/TimePanel/TimePanelBody/index.tsx);MUI TimePicker 的 `ampm` 預設 = `adapter.is12HourCycleInCurrentLocale()`,跟語系(https://mui.com/x/api/date-pickers/time-picker/);Carbon 的 TimePicker 用另一個 `TimePickerSelect` 選 AM / PM(https://github.com/carbon-design-system/carbon/blob/main/packages/react/src/components/TimePicker/TimePicker.stories.js)。
+- **空白提示字**(不傳 `placeholder` 時):24 小時照舊 `HH:MM` / `HH:MM:SS`;12 小時照這個語系預設時間寫法的段落順序,上下午段寫成兩個字並列 —— zh-TW「上午/下午HH:MM」、en-US「HH:MM AM/PM」(`timePlaceholder`)【AI 推導 2026-11-26,寫法列入預覽清單】。
+- 面板加寬見「Panel 寬度」;讀屏名稱見「A11y 預設」。
 
 **數字等寬(`tabular-nums`)**:觸發欄位與各 mode 顯示的時間值,跟下拉時間欄(`time-columns.tsx` 的欄內 item)同一個寫法 —— 同一個元件兩處一致;值的寬度不隨字型的數字寬度變(例:系統字型下「22:00」比「10:00」寬,兩個欄位並排時一寬一窄)。【AI 推導 2026-11-17:起因是「店家營業時間」展示在 macOS 字型下把「22:00」截成「22:…」;本檔原本沒有相反規定】
 
@@ -137,6 +148,19 @@ Panel 展開後的 column picker 結構:
 └───────────────────────────────┘
 ```
 
+12 小時制(例 zh-TW,見「顯示格式化」的面板 12 / 24 小時):時欄只列這半天、最後多一欄上下午。
+
+```
+┌─────┬─────┬──────┐
+│  12 │  00 │ 上午 │
+│  01 │  15 │▓下午▓│  ← 上下午欄排最後(時 → 分 →(秒)→ 上下午)
+│▓02▓│▓30▓│      │
+│  03 │  45 │      │
+├─────┴─────┴──────┤
+│  [此刻]    [確定] │
+└──────────────────┘
+```
+
 ### 欄內 item 狀態(對齊 SelectMenu canonical,**非 DatePicker**)
 
 | State | 視覺 | Token |
@@ -155,26 +179,28 @@ Panel 展開後的 column picker 結構:
 
 ### Spacing + 結構(2026-04-21 canonical,2026-04-21 window width 修正)
 
-- Footer 內 padding = `--layout-space-tight`(12px;浮層鎖 `data-layout-space="md"`,不隨頁面密度變);**消費 `<SurfaceFooter>` SSOT**(border-t + py + gap + justify + shrink-0),px 經 `className` override 回 tight。**本元件是「footer 對齊浮層內容左邊界」那條規則的唯一例外**(判準 owner:`../../patterns/overlay-surface/overlay-surface.spec.md`「`SurfaceFooter` 的左右內距要對齊誰」;2026-09-18 全庫掃描確認只有這一個):時 / 分 / 秒是**置中的數字欄、欄本身零內距**(實測面板寬 162、欄寬 79.5 且貼齊面板邊),沒有任何內容左邊界可以對齊,所以這裡的 px 是**面板自己的內距**、與同一顆 footer 的 `py-tight` 成對,不是在對齊誰。此刻按鈕 `mr-auto` 推右,視覺等同原 justify-between(零視覺變化)
-- **Panel 容器固定寬:2 欄(時 / 分)`w-40`(160px)/ 3 欄(時 / 分 / 秒)`w-60`(240px)**;**每欄 `flex-1 h-full` 等分**容器寬(非固定 `w-12`)。**分隔「:」移除**(AR8 canonical，以 column 間距表達欄位分界)
+- Footer 內 padding = `--layout-space-tight`(12px;浮層鎖 `data-layout-space="md"`,不隨頁面密度變);**消費 `<SurfaceFooter>` SSOT**(border-t + py + gap + justify + shrink-0),px 經 `className` override 回 tight。**本元件是「footer 對齊浮層內容左邊界」那條規則的唯一例外**(判準 owner:`../../patterns/overlay-surface/overlay-surface.spec.md`「`SurfaceFooter` 的左右內距要對齊誰」;2026-09-18 全庫掃描確認只有這一個):時 / 分 / 秒是**置中的數字欄、欄本身零內距**(2026-09-18 實測 2 欄面板寬 162、欄寬 79.5 且貼齊面板邊;12 小時制多上下午一欄,欄寬相同),沒有任何內容左邊界可以對齊,所以這裡的 px 是**面板自己的內距**、與同一顆 footer 的 `py-tight` 成對,不是在對齊誰。此刻按鈕 `mr-auto` 推右,視覺等同原 justify-between(零視覺變化)
+- **Panel 容器固定寬:欄數 × 約 80px —— 2 欄 `w-40`(160px)/ 3 欄 `w-60`(240px)/ 4 欄 `w-80`(320px)**(欄 = 時 / 分,加秒、加 12 小時制的上下午各多一欄;見下方「Panel 寬度」);**每欄 `flex-1 h-full` 等分**容器寬(非固定 `w-12`)。**分隔「:」移除**(AR8 canonical，以 column 間距表達欄位分界)
 - Scrollable list 用 **`<ScrollArea>`**(對齊 DS 跨 OS 一致 overlay 捲軸 canonical);不 raw `overflow-y-auto`
 - **Scroll-into-view**:mount = `behavior:'auto'`(避閃爍),後續 `value` 變更 = `behavior:'smooth'`(讓選取移動保持可追蹤)。SSOT 在 `time-columns.tsx` `TimeColumn` useEffect
 - 每 item **`h-field-sm`(28px @ md / 32px @ lg)對齊 DatePicker date cell**(跨 picker 視覺一致)
 - Panel 容器高 `h-[216px]`(含 footer);TimeColumns 為 `flex-1 min-h-0`,實際可捲動 list 高 = 216 − footer 實高(Button sm 28px + `py-tight` 12px×2 + border-t 1px ≈ 53px @ md)≈ **~163px**(約可見 5-6 個 item)
 
-### Panel 寬度(固定容器寬,隨 showSeconds 切換)
+### Panel 寬度(固定容器寬,隨欄數切換)
 
-**Panel 容器固定寬度,欄位 `flex-1` 等分該寬度**(`TimeColumns` 的 `widthClass = showSeconds ? 'w-60' : 'w-40'`):
+**Panel 容器固定寬度,欄位 `flex-1` 等分該寬度**(`time-columns.tsx` `timeColumnsWidthClass(showSeconds, clock)`;DatePicker showTime 的面板佔位讀同一支):
 
 | 模式 | 欄數 | TimeColumns 容器寬 | 每欄寬(`flex-1` 等分) |
 |------|------|------|------|
-| HH:mm(預設)| 2 欄 | `w-40` = **160px** | ~80px |
-| HH:mm:ss(showSeconds=true)| 3 欄 | `w-60` = **240px** | ~80px |
+| 24 小時語系 HH:mm(預設 showSeconds=false)| 2 欄(時 / 分)| `w-40` = **160px** | ~80px |
+| 24 小時語系 HH:mm:ss(showSeconds=true)| 3 欄(時 / 分 / 秒)| `w-60` = **240px** | ~80px |
+| 12 小時語系(例預設 zh-TW)| 3 欄(時 / 分 / 上下午)| `w-60` = **240px** | ~80px |
+| 12 小時語系 + showSeconds | 4 欄(時 / 分 / 秒 / 上下午)| `w-80` = **320px** | ~80px |
 
-**寬度 rationale**:本 DS 以每欄約 80px 保留雙位數字的穩定 hit area；2 欄 160px、3 欄 240px，欄數變化不壓縮單欄可操作面積。
+**寬度 rationale**:本 DS 以每欄約 80px 保留雙位數字的穩定 hit area；欄數變化不壓縮單欄可操作面積,所以 12 小時制多出的上下午欄同樣約 80px、面板跟著加寬【AI 推導 2026-11-26:照既有每欄 80px 推出,列入預覽清單】。
 
-**showSeconds 切換時 panel 寬度會跟著變**(刻意):
-- showSeconds=false 的 panel 本就應該更窄(`w-40`),兩欄 + 大量留白會顯得 panel 空洞
+**showSeconds / 12 小時制切換時 panel 寬度會跟著變**(刻意):
+- 欄數少的 panel 本就應該更窄(兩欄 `w-40`、三欄 `w-60`),少欄卻沿用多欄的寬度,大量留白會顯得 panel 空洞
 - Popover position 受 side / align / collisionPadding 控制,寬度變化只移動 panel 位置不影響 anchor 關係
 
 ---
@@ -186,7 +212,7 @@ Panel 展開後的 column picker 結構:
 | 點 trigger | 開 Panel |
 | Enter / Space / ↓(focus 在 trigger)| 開 Panel(APG select-only combobox 範例的開啟鍵,trigger 顯式 `onKeyDown`)([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/combobox/examples/combobox-select-only.html#L102-L131)) |
 | Esc | 關 Panel(不確認) |
-| Tab | 焦點在 column 間移動;欄拿到鍵盤焦點時,框畫在目前選中的那一格(`aria-activedescendant` 指到的 option,selection-follows-focus;owner = focus-canonical「問題一之二」A 類「框畫在被指到的項目上」),不畫容器整圈 |
+| Tab | 焦點在 column 間移動(時 → 分 →(秒)→(12 小時制的上下午欄),上下午欄與其他欄同一套 ↑ / ↓ / Home / End);欄拿到鍵盤焦點時,框畫在目前選中的那一格(`aria-activedescendant` 指到的 option,selection-follows-focus;owner = focus-canonical「問題一之二」A 類「框畫在被指到的項目上」),不畫容器整圈 |
 | ↑ / ↓ | 欄內上下選(每次移動即 commit,無 highlight 中間態) |
 | Home / End | 跳該欄首 / 尾 enabled 值 |
 
@@ -217,7 +243,7 @@ N/A — TimePicker 是純同步輸入,無 async 狀態。
 - trigger `role="combobox"`,在 `<Field>` 內時以 `aria-labelledby` 指向 field label(`fieldCtx.labelId`)
 - **Standalone(無 `<Field>` 包裹)accessible name**:trigger 無預設 `aria-label`,`<Field>` 外使用時 consumer **必須**自帶 `aria-label` 或 `aria-labelledby`,否則 `role="combobox"` 成為無名稱控件(對齊 Select / Combobox / DatePicker 同家族 standalone 約定)。DS 不為 trigger 塞泛用 fallback name(如「時間」),避免遮蔽 consumer 的具體語意(如「會議開始時間」);Field 內則自動接線無需 consumer 介入。Panel 本體(Popover dialog)另有本 DS 提供的 `aria-label="選擇時間"`,與 trigger name 職責分離
 - Panel 開啟時 trigger `aria-expanded="true"` + `aria-haspopup="dialog"`
-- 每欄 `role="listbox"`(`aria-label` 為 `時` / `分` / `秒`;讀屏文字中文,2026-09-29 由 `hours` / `minutes` / `seconds` 改 —— 全庫 SR label 中文 2026-07-04,同元件的「清除時間」「選擇時間」早已是中文),item `role="option" aria-selected`
+- 每欄 `role="listbox"`(`aria-label` 為 `時` / `分` / `秒`,12 小時制的上下午欄為 `上下午`【AI 推導 2026-11-26】;讀屏文字中文,2026-09-29 由 `hours` / `minutes` / `seconds` 改 —— 全庫 SR label 中文 2026-07-04,同元件的「清除時間」「選擇時間」早已是中文),item `role="option" aria-selected`
 - Screen reader 經 trigger 的 label + 內層可見值文字朗讀目前選取時間(目前值以可見 `<span>` 呈現,無額外 `aria-valuetext`)
 
 ---
@@ -277,7 +303,7 @@ trigger 的互動狀態(focus / invalid / disabled / readonly)完全繼承 `../F
 
 - **Disabled**:Field SSOT own;trigger 自動 disabled(`text-fg-disabled` + 不開 picker)。顯式 `mode` 優先於 `disabled` prop(`useResolvedFieldMode` prop > disabled),view 分支無 disabled token 邏輯——要 disabled 視覺走 `mode="disabled"`(readonly/disabled 分支 `text-fg-disabled`,時間格式維持)。
 - **Loading**:TimePicker 為 sync UI(time math 在 client),無 loading state。極端 case(後端 disabled-times list)應由 consumer 先 disable trigger 直到 fetch 完成。
-- **Empty(no value)**:`value=null` 為合法 initial state,trigger 顯 placeholder;**未傳 `placeholder` 時 default = 格式遮罩**(`HH:MM`,showSeconds=true 時 `HH:MM:SS`),非固定文案。`null` + view mode 顯半形 `-`(hyphen + `text-foreground`;`mode="disabled"` → fg-disabled)對齊 Input view empty 慣例。
+- **Empty(no value)**:`value=null` 為合法 initial state,trigger 顯 placeholder;**未傳 `placeholder` 時 default = 格式遮罩**(24 小時 `HH:MM`,showSeconds=true 時 `HH:MM:SS`;12 小時照語系順序,zh-TW「上午/下午HH:MM」、en-US「HH:MM AM/PM」,見「顯示格式化」),非固定文案。`null` + view mode 顯半形 `-`(hyphen + `text-foreground`;`mode="disabled"` → fg-disabled)對齊 Input view empty 慣例。
 - **Empty(disabled all times)**:極端場景(`disabledHours` / `disabledMinutes` 覆蓋全範圍),panel column 全 disabled,鍵盤焦點停留無導覽目標。
 - **Panel 開啟中外部 value 變更**:controlled 單向資料流——欄位選中即時反映新 value,並 scroll-into-view(`behavior:'smooth'`,mount 後的變更;見「Spacing + 結構」的 Scroll-into-view 條)。
 - **Dark mode / density**:走 Field + Popover SSOT 自動 adapt;panel column item 由 MenuItem SSOT 控 density。
@@ -291,3 +317,9 @@ trigger 的互動狀態(focus / invalid / disabled / readonly)完全繼承 `../F
 - `../Field/field-controls.spec.md` — Mode / size / error 共用規則
 - `../Field/form-validation.spec.md` — 驗證時機
 - `../../patterns/element-anatomy/inline-action.spec.md`「Real case 表(所有 DS 用法一覽)」 — clear button 規則(clear X = Inline Action)
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `date-picker.spec.md`

@@ -18,6 +18,7 @@ import { Button } from '@/design-system/components/Button/button'
 import { Select, type SelectOption } from '@/design-system/components/Select/select'
 import { FieldControlGroup } from '@/design-system/components/FieldControlGroup/field-control-group'
 import type { ColumnType } from './column-types'
+import type { WeekStartsOn } from '@/design-system/lib/date-locale'
 import {
   OPERATOR_REGISTRY,
   DEFAULT_OPERATOR,
@@ -39,6 +40,8 @@ export interface FilterColumn {
   /** People pool for person/multiPerson filter picker(對齊 cell-registry meta.people SSOT)*/
   people?: Array<{ name: string; avatarUrl?: string; description?: string }>
   includeTime?: boolean
+  /** date 欄的一週從哪天開始(已解析:`meta.weekStartsOn` ?? 由 `meta.locale` 推;panel 的 extractColumns 算一次) */
+  weekStartsOn?: WeekStartsOn
 }
 
 function getOperatorOptions(
@@ -57,6 +60,10 @@ export function getDefaultOperator(type?: ColumnType): string {
 // 'time' 欄暫不寫(值非完整日期,truncate 語意不成立;見 filter-operators.spec v3 time 註)。
 export const datePrecisionOf = (col: FilterColumn | undefined): 'day' | 'ms' | undefined =>
   col?.type === 'date' ? (col.includeTime ? 'ms' : 'day') : undefined
+// 2026-11-24(user 決策「跟語系的 CLDR (Recommended)」):date 欄把「一週從哪天開始」也寫進 condition,
+// 「本週 / 上週 / 下週」照這一欄的語系算(filter-tree.ts relativeKeyToRange)。寫入點與 datePrecision 同一組(四處)。
+export const weekStartsOnOf = (col: FilterColumn | undefined): WeekStartsOn | undefined =>
+  col?.type === 'date' ? col.weekStartsOn : undefined
 
 // ── ConjunctionLabel ───────────────────────────────────────────────────
 
@@ -72,22 +79,25 @@ function ConjunctionLabel({
   // index === 1:**唯一可改**的 AND/OR Select(連動整 group conjunction)
   // index ≥ 2:被連動的 row,read-only 顯示當前 conjunction 文字(同 Where 視覺,A6 canonical)
   //   對齊 Airtable / Notion / Linear 共識 @benchmark-unverified(non-OSS)
-  //   px-[var(--field-px)] 對齊 Field 內部 padding 12px(Q13)
+  //   左內距 --field-bleed(框寬 + --field-px = 13):字落在同一欄 index 1 那顆 And/Or 下拉框內的字線上(data-table.spec.md「四、UI canonical」
+  //   第一點「對齊下方 Field value 起點」)。2026-11-25 前寫 px-[var(--field-px)],字在 12、下拉的字在 13(框寬那 1px 沒算;Q13 原註「對齊 Field 內部
+  //   padding 12px」漏了框)。右內距照舊 --field-px。閘 scripts/reading-context-invariant.mjs G7「篩選面板字線」
   //   h-field-sm flex items-center(2026-11-18):文字標籤佔一條條件列的高(條件列的欄位與 index 1 的 Select 都是 size="sm",同一顆 token),
   //   字在裡面垂直置中 → 字的中線 = 旁邊那一條條件的中線。平鋪列(FilterRow 的 items-center)本來就這樣;巢狀的群組標籤
   //   (GroupBlock 包層 pt-2,頂對齊)以前只有一行字高,字的中線比框內第一條條件高 3.5 / 5.5px(一般 / 大密度,38649f5a 實量)。
   //   規則與依據住 data-table.spec.md「巢狀群組的間距」;閘 data-table-filter-group-spacing-invariant.mjs 的 M 段
-  const TEXT_LABEL = 'w-20 shrink-0 h-field-sm flex items-center text-body text-fg-secondary px-[var(--field-px)]'
+  // data-panel-conjunction = 給閘定位這一欄用(同 data-panel-add-row 的寫法),不影響畫面
+  const TEXT_LABEL = 'w-20 shrink-0 h-field-sm flex items-center text-body text-fg-secondary pl-[var(--field-bleed)] pr-[var(--field-px)]'
   if (index === 0) {
-    return <div className={TEXT_LABEL}>{labels.where}</div>
+    return <div className={TEXT_LABEL} data-panel-conjunction="">{labels.where}</div>
   }
   if (index >= 2) {
     const label = conjunction === 'and' ? labels.and : labels.or
-    return <div className={TEXT_LABEL}>{label}</div>
+    return <div className={TEXT_LABEL} data-panel-conjunction="">{label}</div>
   }
   // index === 1:可切換的 AND/OR Select
   return (
-    <div className="w-20 shrink-0">
+    <div className="w-20 shrink-0" data-panel-conjunction="">
       <Select
         size="sm"
         options={[
@@ -225,7 +235,7 @@ export function GroupBlock({
             onChangeConjunction={onChangeGroupConjunction}
             onChangeField={(v) => {
               const newCol = filterableColumns.find((c) => c.id === v)
-              onChangeCondition(cond.id, { field: v, op: getDefaultOperator(newCol?.type), value: '', datePrecision: datePrecisionOf(newCol) })
+              onChangeCondition(cond.id, { field: v, op: getDefaultOperator(newCol?.type), value: '', datePrecision: datePrecisionOf(newCol), weekStartsOn: weekStartsOnOf(newCol) })
             }}
             onChangeOp={(v) => onChangeCondition(cond.id, { op: v, value: '' })}
             onChangeValue={(v) => onChangeCondition(cond.id, { value: v })}

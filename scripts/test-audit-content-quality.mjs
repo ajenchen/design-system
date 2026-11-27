@@ -239,13 +239,57 @@ const dupFile = join(repoRoot, 'packages/design-system/src/components/Button/but
 const buttonTitle = orig.match(/^\s*title:\s*['"]([^'"]+)['"]/m)?.[1]
 if (!buttonTitle) { console.error('✗ Button 展示檔讀不到 title — 注入基礎失效'); process.exit(1) }
 try {
-  writeFileSync(dupFile, `import type { Meta, StoryObj } from '@storybook/react'\nconst meta: Meta = { title: '${buttonTitle}' }\nexport default meta\nexport const InjectedDuplicateTitle: StoryObj = { name: '注入的同 title 檔' }\n`)
+  writeFileSync(dupFile, `import type { Meta, StoryObj } from '@storybook/react-vite'\nconst meta: Meta = { title: '${buttonTitle}' }\nexport default meta\nexport const InjectedDuplicateTitle: StoryObj = { name: '注入的同 title 檔' }\n`)
   const r = spawnSync(process.execPath, ['--', 'scripts/audit-content-quality.mjs', '--check'], { stdio: 'pipe', encoding: 'utf8' })
   const hit = (r.status ?? 1) !== 0 && /title "[^"]+" is shared by 2 CSF files/.test(r.stdout)
   if (!hit) { console.error('✗ 兩個 CSF 檔共用同一個 title 未被抓(exit ' + r.status + ')'); ok = false }
   else console.log('✓ 兩個 CSF 檔共用同一個 title 被抓(exit ' + r.status + ')')
 } finally {
   try { unlinkSync(dupFile) } catch {}
+}
+
+// 11c) 複製到剪貼簿的 Toast 不得用 success(Detects 7,2026-11-26;toast.spec.md 變體表 neutral 例「已複製到剪貼簿」)。
+//      紅面比對該條的訊息 + 檔名(只看 exit code 會被別條規則掩護);綠面同一位置只換變體 / 換成「另做一份」的標題 → exit 0。
+const COPY_RULE = /複製到剪貼簿的 Toast 用了 success/
+const runOut = () => spawnSync(process.execPath, ['--', 'scripts/audit-content-quality.mjs', '--check'], { stdio: 'pipe', encoding: 'utf8' })
+const copyFaces = [
+  { red: true, what: "toast({ variant: 'success' }) + 複製連結", render: `<button onClick={() => toast({ variant: 'success', title: '已複製任務連結' })}>分享</button>` },
+  { red: false, what: "同一則改 variant: 'neutral'", render: `<button onClick={() => toast({ variant: 'neutral', title: '已複製任務連結' })}>分享</button>` },
+  { red: false, what: "「已複製一份」(另做一份,不是剪貼簿)用 success", render: `<button onClick={() => toast({ variant: 'success', title: '已複製一份' })}>建立副本</button>` },
+  { red: true, what: 'done(複製類標題) 沒給變體(預設 success)', render: `<button onClick={done('已複製分享連結')}>分享</button>` },
+  { red: false, what: "done(複製類標題, 'neutral')", render: `<button onClick={done('已複製分享連結', 'neutral')}>分享</button>` },
+  { red: true, what: 'DemoMenu 項 { done: 複製類標題 } 沒給 doneVariant', render: `<DemoMenu items={[{ label: '複製連結', done: '已複製連結' }]}><button>更多</button></DemoMenu>` },
+  { red: false, what: "DemoMenu 項加 doneVariant: 'neutral'", render: `<DemoMenu items={[{ label: '複製連結', done: '已複製連結', doneVariant: 'neutral' }]}><button>更多</button></DemoMenu>` },
+]
+try {
+  for (const face of copyFaces) {
+    writeFileSync(specTarget, specOrig + `\nexport const InjectedCopyToast = {\n  name: '注入複製類 Toast',\n  render: () => ${face.render},\n};\n`)
+    const r = runOut()
+    const hit = (r.status ?? 1) !== 0 && COPY_RULE.test(r.stdout) && r.stdout.includes('select.anatomy.stories.tsx')
+    if (face.red && !hit) { console.error(`✗ ${face.what} 未被抓(exit ${r.status})`); ok = false }
+    else if (!face.red && r.status !== 0) { console.error(`✗ ${face.what} 被誤判(exit ${r.status})`); ok = false }
+    else console.log(`✓ ${face.what} → ${face.red ? '紅' : '綠'}(exit ${r.status})`)
+  }
+} finally {
+  writeFileSync(specTarget, specOrig)
+}
+// 真檔兩面:把 2026-11-26 修好的那一處改回去(action-bar 的分享鈕;stories-helpers 場景元件的複製 Toast 改寫 success)→ 必紅並指名該檔
+for (const { rel, from, to } of [
+  { rel: 'packages/design-system/src/patterns/action-bar/action-bar.stories.tsx', from: "done('已複製分享連結', 'neutral')", to: "done('已複製分享連結')" },
+  { rel: 'packages/design-system/src/stories-helpers/scene/agent-demo.tsx', from: "toast({ title: '已複製到剪貼簿' })", to: "toast({ variant: 'success', title: '已複製到剪貼簿' })" },
+]) {
+  const realTarget = join(repoRoot, rel)
+  const realOrig = readFileSync(realTarget, 'utf8')
+  if (!realOrig.includes(from)) { console.error(`✗ ${rel} 缺注入錨點「${from}」— 注入基礎失效`); process.exit(1) }
+  try {
+    writeFileSync(realTarget, realOrig.replace(from, to))
+    const r = runOut()
+    const hit = (r.status ?? 1) !== 0 && COPY_RULE.test(r.stdout) && r.stdout.includes(rel)
+    if (!hit) { console.error(`✗ ${rel} 改回 success 未被抓(exit ${r.status})`); ok = false }
+    else console.log(`✓ ${rel} 改回 success 被抓(exit ${r.status})`)
+  } finally {
+    writeFileSync(realTarget, realOrig)
+  }
 }
 
 // 12) 還原後必 PASS

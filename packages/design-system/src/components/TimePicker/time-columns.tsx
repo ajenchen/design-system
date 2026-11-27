@@ -15,11 +15,25 @@
  * - Step:每欄獨立 `minuteStep` / `secondStep`(會議常用 15)
  * - Disabled:`disabledHours / disabledMinutes / disabledSeconds`(動態根據已選其他欄位)
  * - Visual:對齊 ref/timepicker.png — 多欄並排 + border-r 分隔
+ * - 12 小時制(`clock`):時欄只列目前這半天、寫 12 / 01…11,最後多一欄上下午(TIME-12H-PANEL(定)2026-11-26)
+ *
+ * ── 消費的 SSOT ──
+ * - 12 / 24 小時與上下午的字: `../DatePicker/range-format.ts` `resolveTimePanelFormat`(呼叫端算好傳 `clock`;本檔不自己判斷語系)、
+ *   `clockHourValues` / `clockHourLabel` / `hourWithPeriod` / `periodOfHour`;規則 time-picker.spec.md「顯示格式化」「Panel 寬度」
+ * - 欄寬: 每欄約 80px、容器寬隨欄數(time-picker.spec.md「Panel 寬度」),`timeColumnsWidthClass` 給 DatePicker 的面板佔位共用
+ * - 欄內 item 狀態: `patterns/element-anatomy/item-anatomy.spec.md`「選中列 × 滑鼠 hover」+ time-picker.spec.md「欄內 item 狀態」
  */
 
 import * as React from 'react'
 import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
 import { cn } from '@/lib/utils'
+import {
+  clockHourLabel,
+  clockHourValues,
+  hourWithPeriod,
+  periodOfHour,
+  type TwelveHourClock,
+} from '@/design-system/components/DatePicker/range-format'
 
 // ── Types ───────────────────────────────────────────────────────────────
 
@@ -72,6 +86,20 @@ function buildRange(max: number, step: number): number[] {
   return arr
 }
 
+/** 欄內數字一律兩位數(時 / 分 / 秒;12 小時制的時欄也是 12、01…11) */
+const pad2 = (v: number) => String(v).padStart(2, '0')
+
+// ── Width(隨欄數)────────────────────────────────────────────────────────
+
+/** 每欄約 80px、容器寬 = 欄數 × 80(time-picker.spec.md「Panel 寬度」);Tailwind 要看得到完整 class 字面,所以寫成對照表 */
+const WIDTH_BY_COLUMN_COUNT: Readonly<Record<2 | 3 | 4, string>> = { 2: 'w-40', 3: 'w-60', 4: 'w-80' }
+
+/** 面板容器寬:時 / 分(/ 秒)(/ 上下午)的欄數決定。TimeColumns 自己與 DatePicker 的時間面板佔位讀同一支 */
+export function timeColumnsWidthClass(showSeconds: boolean, clock: TwelveHourClock | null | undefined): string {
+  const count = (2 + (showSeconds ? 1 : 0) + (clock ? 1 : 0)) as 2 | 3 | 4
+  return WIDTH_BY_COLUMN_COUNT[count]
+}
+
 // ── Single column ───────────────────────────────────────────────────────
 
 interface TimeColumnProps {
@@ -83,10 +111,12 @@ interface TimeColumnProps {
   onSelect: (value: number) => void
   /** 右側分隔線(對齊 ref 多欄樣式) */
   withDivider?: boolean
+  /** 每一格寫的字;預設兩位數字(12 小時制的時欄寫 12、01…11,上下午欄寫語系的上下午字) */
+  formatValue?: (value: number) => string
 }
 
 // code-quality-allow: long-function — column 含 scroll-into-view useEffect / WAI-ARIA listbox 鍵盤 handler / 視覺 state 計算,拆 sub-fn 會切散 listbox accessibility 邏輯
-function TimeColumn({ values, selected, disabledSet, label, onSelect, withDivider }: TimeColumnProps) {
+function TimeColumn({ values, selected, disabledSet, label, onSelect, withDivider, formatValue = pad2 }: TimeColumnProps) {
   const listRef = React.useRef<HTMLDivElement>(null)
 
   // 開啟時跳到 selected 位置(置中);後續變更走 smooth(對齊 iOS / Material / Ant timepicker idiom)。
@@ -203,7 +233,7 @@ function TimeColumn({ values, selected, disabledSet, label, onSelect, withDivide
                 isDisabled && !isSelected && 'hover:bg-transparent',
               )}
             >
-              {String(v).padStart(2, '0')}
+              {formatValue(v)}
             </button>
           )
         })}
@@ -225,8 +255,17 @@ export interface TimeColumnsProps {
   className?: string
   /** 是否在最左側加 border-l(配 DatePicker showTime / Range date+time 拼接時用) */
   leadingDivider?: boolean
+  /**
+   * 12 小時制的資訊(`range-format.ts` `resolveTimePanelFormat(...).clock`,與欄位裡的字同一份判斷);null / 不傳 = 24 小時制(時欄 00–23 一欄)。
+   * 有值時:時欄只列目前這半天(寫 12、01…11)、最後多一欄上下午 —— TIME-12H-PANEL(定)2026-11-26。
+   */
+  clock?: TwelveHourClock | null
 }
 
+/** 上下午欄的兩格(值 0 = 上午、1 = 下午,與 `periodOfHour` 同一套) */
+const PERIOD_VALUES = [0, 1]
+
+// code-quality-allow: long-function — 時 / 分 / 秒 / 上下午四欄的值、停用集合與切上下午的規則彼此相依,拆開會把「切半天時時留在同一格」散到兩處(2026-11-26 複查;規則住 time-picker.spec.md「面板的 12 / 24 小時」)
 export function TimeColumns({
   value,
   onChange,
@@ -236,9 +275,13 @@ export function TimeColumns({
   disabled,
   className,
   leadingDivider = false,
+  clock = null,
 }: TimeColumnsProps) {
   const safeValue: TimeParts = value ?? { hours: 0, minutes: 0, seconds: 0 }
-  const hourValues = React.useMemo(() => buildRange(24, 1), [])
+  const hourCycle = clock?.hourCycle ?? null
+  const period = periodOfHour(safeValue.hours)
+  // 12 小時制:時欄只列這半天的 12 個時(值仍是 0–23);相依只放基本型別,免得每次 render 換陣列、重跑捲動定位
+  const hourValues = React.useMemo(() => (hourCycle ? clockHourValues(period * 12) : buildRange(24, 1)), [hourCycle, period])
   const minuteValues = React.useMemo(() => buildRange(60, minuteStep), [minuteStep])
   const secondValues = React.useMemo(() => buildRange(60, secondStep), [secondStep])
 
@@ -248,13 +291,33 @@ export function TimeColumns({
     seconds: disabled?.seconds ? new Set(disabled.seconds) : undefined,
   }), [disabled?.hours, disabled?.minutes, disabled?.seconds])
 
-  const widthClass = showSeconds ? 'w-60' : 'w-40'
+  // 上下午欄:那半天 12 個時全部停用時,那一格也停用(切過去沒有任何時可選)
+  const periodDisabled = React.useMemo(() => {
+    const hours = disabledSets.hours
+    if (!hours) return undefined
+    const off = PERIOD_VALUES.filter((p) => clockHourValues(p * 12).every((h) => hours.has(h)))
+    return off.length ? new Set(off) : undefined
+  }, [disabledSets.hours])
+
+  // 切上下午:時留在鐘面同一格(下午 2 點 ↔ 上午 2 點);那一格剛好停用 → 改選那半天第一個可選的時
+  const selectPeriod = (next: number) => {
+    const target = next === 1 ? 1 : 0
+    const sameDial = hourWithPeriod(safeValue.hours, target)
+    const hours = disabledSets.hours?.has(sameDial)
+      ? (clockHourValues(target * 12).find((h) => !disabledSets.hours?.has(h)) ?? sameDial)
+      : sameDial
+    onChange({ ...safeValue, hours })
+  }
+
+  // 欄位順序:時 → 分 →(秒)→(上下午);上下午排最後【AI 推導 2026-11-26:同 rc-picker TimePanelBody 的渲染順序,開面板焦點仍落在時欄】。
+  // 分隔線畫在「除了最後一欄」的每一欄右側
+  const lastColumn = clock ? 'period' : showSeconds ? 'seconds' : 'minutes'
 
   return (
     <div
       className={cn(
         'flex flex-row',
-        widthClass,
+        timeColumnsWidthClass(showSeconds, clock),
         leadingDivider && 'border-l border-divider',
         className,
       )}
@@ -267,6 +330,7 @@ export function TimeColumns({
         label="時"
         onSelect={(h) => onChange({ ...safeValue, hours: h })}
         withDivider
+        formatValue={hourCycle ? (h) => pad2(clockHourLabel(h, hourCycle)) : pad2}
       />
       <TimeColumn
         values={minuteValues}
@@ -274,7 +338,7 @@ export function TimeColumns({
         disabledSet={disabledSets.minutes}
         label="分"
         onSelect={(m) => onChange({ ...safeValue, minutes: m })}
-        withDivider={showSeconds}
+        withDivider={lastColumn !== 'minutes'}
       />
       {showSeconds && (
         <TimeColumn
@@ -283,6 +347,18 @@ export function TimeColumns({
           disabledSet={disabledSets.seconds}
           label="秒"
           onSelect={(s) => onChange({ ...safeValue, seconds: s })}
+          withDivider={lastColumn !== 'seconds'}
+        />
+      )}
+      {clock && (
+        <TimeColumn
+          values={PERIOD_VALUES}
+          selected={period}
+          disabledSet={periodDisabled}
+          // 讀屏名稱【AI 推導 2026-11-26】:與「時」「分」「秒」同樣用中文短詞
+          label="上下午"
+          onSelect={selectPeriod}
+          formatValue={(p) => clock.periodLabels[p === 1 ? 1 : 0]}
         />
       )}
     </div>

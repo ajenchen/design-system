@@ -13,7 +13,7 @@
 //   - scripts/{create-app,setup-netlify-access,check-plugin-installed,lint-ds-internal-imports,deploy-url,sync-all,audit-consumer-a11y,verify-consumer-css-entry}.mjs(以 ALLOWLIST 常數為準)
 //   - .devcontainer/                       (Codespaces cloud-dev path)
 //   - .storybook/                          (from template/ds-product-template/.storybook,apps-only glob)
-//   - .github/{workflows,CODEOWNERS,dependabot.yml}
+//   - .github/{workflows,CODEOWNERS,dependabot.yml,pull_request_template.md}
 //   - .gitignore, .npmrc
 //   - netlify.toml                         (Storybook Netlify deploy + access headers)
 //   - README.md + common/provider instructions (consumer-facing; destinations derive from the
@@ -83,6 +83,8 @@ const ALLOWLIST = [
   'scripts/lint-ds-internal-imports.mjs',
   'scripts/lib/a11y-static-server.mjs',
   'scripts/lib/canonical-path-containment.mjs',
+  // lint-ds-internal-imports / consumer-source-harness 的依賴(2026-11-27 上游判定 B4:規範位置的建置輸出清單)
+  'scripts/lib/consumer-output-roots.mjs',
   // a11y-static-server 的依賴(2026-09-24 起)。036904a2 只登記了另外三個清單,這裡漏了 ——
   // 下一次 release 的 mirror 相依閉包檢查就會擋(2026-09-25 以 --out 到暫存目錄實跑重現)。
   'scripts/lib/storybook-static-snapshot.mjs',

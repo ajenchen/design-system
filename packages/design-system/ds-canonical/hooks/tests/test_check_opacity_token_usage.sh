@@ -255,6 +255,45 @@ else
   FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 15. malformed input"
 fi
 
+# ── E16 + E14 (1)(2026-11-27):註解不是程式;豁免標記仍對原文判 ──
+# 16. 行尾註解寫到 opacity-50 → silent(舊實作逐行掃整段:warn)
+run_hook "/repo/packages/design-system/src/components/Foo/foo.tsx" '
+className="opacity-disabled" // 以前用 opacity-50,已換 token
+'
+expect_pass_silent "16. 行尾 // 註解裡的 opacity-50 不算 → silent"
+# 17. {/* … */} 裡的 opacity-30 → silent
+run_hook "/repo/packages/design-system/src/components/Foo/foo.tsx" '
+<div className="opacity-disabled">{/* 不要寫 opacity-30 */}</div>
+'
+expect_pass_silent "17. JSX 註解裡的 opacity-30 不算 → silent"
+# 18. 程式裡真的寫 opacity-50 + 行尾一般註解 → 照 warn(遮罩不吃程式)
+run_hook "/repo/packages/design-system/src/components/Foo/foo.tsx" '
+className="opacity-50" // 半透明
+'
+expect_warn "18. 程式裡的 opacity-50 + 行尾註解 → warn" "M23 / Dim 47 violation"
+
+# ── E17 (a)(2026-11-27):原料色經 var() bracket 讀 = 越過語意層(color.spec.md「禁止事項」;registry rationale)──
+# 19. DS 一般元件寫 bg-[var(--color-blue-6)] → block
+run_hook "/repo/packages/design-system/src/components/Foo/foo.tsx" '
+<div className="bg-[var(--color-blue-6)]" />
+'
+expect_warn "19. bg-[var(--color-blue-6)] → block" "primitive color via var() bracket"
+# 20. 帶 variant 前綴與其他屬性家族(hover:text- / border-l-)也擋
+run_hook "/repo/packages/design-system/src/components/Foo/foo.tsx" '
+<div className="hover:text-[var(--color-red-7)] border-l-[var(--color-deep-orange-6)]" />
+'
+expect_warn "20. hover:text-[var(--color-red-7)] / border-l- → block" "primitive color via var() bracket"
+# 21. token-registry「--color-」的 dsReaders(Tag / Avatar / Calendar)→ 豁免
+run_hook "/repo/packages/design-system/src/components/Tag/tag.tsx" '
+const neutral = "bg-[var(--color-neutral-9)] text-inverse-fg"
+'
+expect_pass_silent "21. Tag(dsReaders)讀類別色 → silent"
+# 22. 語意 token 的 var() bracket 不是原料色 → silent
+run_hook "/repo/packages/design-system/src/components/Foo/foo.tsx" '
+<div className="bg-[var(--surface-hover)] text-[var(--fg-muted)]" />
+'
+expect_pass_silent "22. 語意 token var() bracket → silent"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

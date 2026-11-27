@@ -886,7 +886,10 @@ function collect(rel, text, instruments) {
     // 逃生口只認寫在註解裡、而且有理由的(與 @story-counter-example 同一套位置語意;2026-10-01 審查:
     // 字串屬性裡的「@layout-space-magic-ok:」、空理由、「{/* 標記 *\/}<div>」連帶放行下一行,原本都算數)
     const escapes = comments.markersFor(line, LAYOUT_ESCAPE).map(parseLayoutEscape)
-    if (tokens.every((t) => micro.gaps.has(t))) microCandidates.push(line)
+    // 2026-11-27(上游判定 H2 + H3 + H4):分類器另認「規格登記的寫法」(utility-registry canonical_micro_geometry
+    // .spec_registered_patterns,例 頁面列表列 gap-3 px-4 py-3),那些行的字不只 gap-1 / 2 —— 每一行都交給分類器判,
+    // 分類器說不是 micro 的照舊算命中(以前只送「全是 gap-1 / 2」的行,其餘一律算,判法相同、只是多問一次)。
+    microCandidates.push(line)
     survivors.push([line, tokens, escapes.some((e) => e.ok), escapes.find((e) => !e.ok)?.why])
   }
   return { rel, text, lines, layer, hits, stats, microCandidates, survivors, hit, comments }
@@ -1392,7 +1395,7 @@ export function selftest(log = console.log, repo = REPO, instruments = loadInstr
   // 4e. test-only 兩面對照:同一段四條漂移放在 test-only story(含只被它用到的模組層小元件)→ 0 筆;
   //     拿掉標記 → 4 筆;test-only 之外還有給人看的 story 也用到那個小元件 → 4 筆
   const probeStory = (tags, extraStory = '') => [
-    "import type { StoryObj } from '@storybook/react'",
+    "import type { StoryObj } from '@storybook/react-vite'",
     "import { useState } from 'react'",
     "import { Button } from '@/design-system/components/Button/button'",
     "import { Input } from '@/design-system/components/Input/input'",
@@ -1428,7 +1431,15 @@ export function selftest(log = console.log, repo = REPO, instruments = loadInstr
     `重建後的 Rating (b) 最多只能剩與 ${CANONICAL_FORM_FOOTER} 表單底列逐字相同的那 1 筆,實得 ${keysOf(spacing).join(' / ')}`)
 
   // 6. 棘輪本身:數字變少允許;基準被手改(count ≠ hits)拒收;基準裡的檔不見了只提示
-  const two = [{ ...drift[0] }, { ...drift[0], line: 9 }]
+  // 2026-11-27(H2 + H3 + H4):每一行寫死間距都交給分類器判之後,儀器壞成「永遠說 micro」時合成新檔一筆 (b) 都不剩;
+  // 第 2 步已記紅,後面的棘輪檢查要拿那一筆當樣本,這裡停下回報 false,不丟例外(meta-test 要的是紅,不是當掉)
+  if (drift[0]?.rule !== 'hardcoded-spacing') {
+    problems.push(`合成新檔第一筆應是 hardcoded-spacing(棘輪檢查的樣本),實得 ${keysOf(drift.slice(0, 1)).join('') || '0 筆'}`)
+    log('✗ story-layer-drift-invariant --selftest 失敗:')
+    for (const p of problems) log(`  · ${p}`)
+    return false
+  }
+  const two =[{ ...drift[0] }, { ...drift[0], line: 9 }]
   const fakeBase = buildBaseline(new Map([[SYNTHETIC_DRIFT, two], ['packages/design-system/src/gone.stories.tsx', [{ ...drift[1], file: 'gone' }]]]))
   const lower = compareWithBaseline(new Map([[SYNTHETIC_DRIFT, [drift[0]]]]), fakeBase)
   expect(lower.increases.length === 0 && lower.decreases.length === 2, `數字變少應綠並列出 2 處可收緊,實得 +${lower.increases.length} / -${lower.decreases.length}`)

@@ -91,6 +91,8 @@ if [ -n "$ROOT_SIG_A" ] || [ -n "$ROOT_SIG_B" ]; then
   ── 正解 ──
   <Tabs> wrap → <DialogHeader tabsSlot={<TabsList/>}> → <DialogBody><TabsContent className="mt-0">
   照 dialog.stories.tsx#WithTabsInHeader 逐字結構(header-canonical.spec.md Rule W2)。
+  body 最前面放的是自帶上下內距的清單(不是 tabs):清單外框請標 data-layout-region="unbounded",
+  不要寫 !pt-0 —— 容器頂部會自己判成 0(tokens/layoutSpace/layoutSpace.css「頂部」段;2026-11-27 起),只撤左右用 !px-0。
   Escape:`// @tabs-content-gap-ok: <rationale>`(例:tabs 本來就不屬 header 的內容分頁場景)
 EOF_C3
   exit 2

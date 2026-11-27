@@ -54,7 +54,7 @@ Field 和 Field Controls（Input / NumberInput / DatePicker / Select / Combobox 
 |---|---|---|
 | label | `<FieldLabel>` | 欄位名稱，handles required 星號、disabled 灰化、htmlFor 連結 |
 | control | 任何非 label/desc/error 的 child | 輸入元件本體（Input、Checkbox、Switch...） |
-| description | `<FieldDescription>` | 次要說明文字，fg-secondary |
+| description | `<FieldDescription>` | 次要說明文字，fg-secondary;控件(Input / Textarea `showCount`)的字數計數畫在**這一行的右端**,沒有說明時這一行只有計數(user 2026-11-26 第五輪決策卡 C7 點選「A:放在說明那一行的右端(「12 / 100」);沒有說明時那一行只有計數」;規則住 `./field-controls.spec.md`「字數計數」) |
 | error | `<FieldError>` | 錯誤訊息，error-text 色，`role="alert"`，無內容時不渲染 |
 
 子元件寫法採**扁平結構**（直接作為 Field children），Field 內部用 `displayName` 判別 slot 類型並自動組合。consumer 不需要包 wrapper。
@@ -71,19 +71,19 @@ Field 若需要次要 action（如「重設」「全選」「從範本帶入」�
 
 ---
 
-## 樣式規範（全部 codify 在 field.tsx，不依賴 consumer）
+## 樣式規範（全部 codify 在 field.tsx 與同資料夾的 field.css〔只放閱讀情境的判斷〕，不依賴 consumer）
 
 | 元素 | Token / 值 |
 |---|---|
-| FieldLabel（一般） | `text-body`（14px）/ `text-foreground`（neutral-9） |
+| FieldLabel（一般） | `text-body`（14px）/ `text-foreground`（neutral-9）;閱讀情境 `text-fg-secondary`(見「閱讀情境」) |
 | FieldLabel（disabled） | `text-body` / `text-fg-disabled`（neutral-6） |
 | FieldLabel 的 required `*` | `text-fg-muted`（neutral-7），**貼齊 label 文字無 gap**，disabled 時 `text-fg-disabled` |
-| FieldDescription（一般） | `text-body`（14px）/ `text-fg-secondary`（neutral-8） |
+| FieldDescription（一般） | `text-body`（14px）/ `text-fg-secondary`（neutral-8）;字數計數（同一行的右端）同字級同色 + `tabular-nums`、說明 ↔ 計數 `gap-x-3`（`./field-controls.spec.md`「字數計數」） |
 | FieldDescription（disabled） | `text-body` / `text-fg-disabled` |
 | FieldError | `text-body`（14px）/ `text-error-text` / `role="alert"` |
 | Field 內部 gap（vertical） | `gap-1`（4px） |
 | Field 內部 gap（horizontal，content 欄） | `gap-1`（4px） |
-| Horizontal 模式 label 與 control 的 gap | `gap-x-3`（12px） |
+| Horizontal 模式 label 與 control 的 gap | `gap-x-3`（12px）;**固定 12、是 Field 自己的值,不隨密度與 size 變**(2026-11-25 定)。不借別的刻度:不用 `--field-px`(那顆是控件框裡的左右內距,`../../tokens/uiSize/uiSize.spec.md`「Field Horizontal Padding」;只是剛好也是 12,改它不該連帶改欄距);不用 `--layout-space-tight`(版面間距管元件與元件之間,標籤 ↔ 控件是 Field 一個元件裡面怎麼排 —— `../../tokens/layoutSpace/layoutSpace.spec.md`「親疏 3 級」表「同範疇 / bundled component family」列:元件 spec own、layout rule 跳過;同檔「規則 3」的「幾塊怎麼數」第 1 步:一個 Field 算一塊,元件裡面怎麼排是元件自己的事)。**出處**(M36):12 最早在 9917993e(2026-04-10)建立 Field 時寫入,當時沒有寫理由、也沒有 user 原話;2026-11-25 user 問(問句,逐字)「另外我好奇水平排的 label和control的間距到底要是 field-px, tight 還是固定的12px或是8px?怎樣比較符合我們ds一致的設計語言且不違背世界級的設計？當初定義12px的理由是？」,查證後 user 在決策卡選「固定 12 (Recommended)」(選項與建議是 AI 擬的);畫面不變(值本來就是 12)。**世界級**:Fluent 2(Fluent UI React v9 `Field`)水平排的標籤也是一個固定值、不跟密度走 —— 標籤的 `horizontal` 樣式寫 `marginRight: tokens.spacingHorizontalM,`(<https://raw.githubusercontent.com/microsoft/fluentui/master/packages/react-components/react-field/library/src/components/Field/useFieldStyles.styles.ts>),`spacingHorizontalM: spacings.m,`、`m: '12px',`(<https://raw.githubusercontent.com/microsoft/fluentui/master/packages/tokens/src/global/spacings.ts>);兩檔 2026-11-26 讀取 |
 | Control area（任何 size） | `min-h-field-{size}` + `flex items-center` |
 
 **Label / Description / Error 字體固定 `text-body`（14px），不隨 field size 變**——Field size 只影響 input 高度，不影響表單佈局元素的 typography。
@@ -208,7 +208,7 @@ Field render 時迭代**全部** control child 的 `type.fieldLayout`,**任一**
 
 ## FieldContext — 子元件如何讀 Field 狀態
 
-Field 透過 Context 暴露以下狀態給子元件（Primitive 可以透過 `useFieldContext()` 讀取）：
+Field 透過 Context 暴露以下狀態給子元件（Primitive 可以透過 `useFieldContext()` 讀取）。**公開給產品的值**(2026-11-26,ws-upstream C29 / WS5-2):產品自己做的控件(DS 沒有的,例:接第三方富文字編輯器)放進 `<Field>` 時,改用根出口的 **`useFieldState()`**(不在 Field 裡回 `null`),只公開九個值 —— 下表的 `id`、`descriptionId`、`errorId`、`mode`、`disabled`、`required`、`invalid`、`size`,加上 `labelId`(`<FieldLabel>` 的 id);下表其他欄位與 `variant`、`surface` 是 DS 內部控件用的,不公開。自訂控件自己接 `aria-*`:`id` → `id`;不是原生表單元素(例 `role="textbox"` 的 div,`<label for>` 給不了它名字)時 `labelId` → `aria-labelledby`;`descriptionId` → `aria-describedby`;`required` → `aria-required`;`invalid` → `aria-invalid`,為 true 時再接 `errorId` → `aria-errormessage`(與 DS 自己的 Input 同一套接法)。不用 hook 也接得上:給 `<Field id="…">`,標籤 / 說明 / 錯誤的 id 固定是 `${id}-label` / `${id}-description` / `${id}-error`(`./field.tsx` `Field`)。完整寫法見範例 `./field.anatomy.stories.tsx`「自訂控件接上 Field」。**命名**(AGENTS.md「命名與語言一致性」3 重 test,三題都過才採用):① 既有 DS 詞彙 —— 本段標題就是「讀 Field 狀態」,同檔的 hook 都是 `useField` + 名詞(`useFieldContext` / `useFieldSurface` / `useFieldEmptyDisplay`);② 世界級 —— Base UI 的 Field 狀態型別 `type FieldRootState = {`(欄位含 `disabled` / `valid` / `focused`,<https://base-ui.com/react/components/field>);Adobe React Stately 的 `export interface NumberFieldState` 與 `export function useNumberFieldState(props: NumberFieldStateOptions): NumberFieldState {`(<https://raw.githubusercontent.com/adobe/react-spectrum/36f3adde26ccd12f3cc18c9d0293ece0f10e94c7/packages/react-stately/src/numberfield/useNumberFieldState.ts>),兩處 2026-11-27 讀取;③ 同字別義 —— DS 裡沒有別的 `FieldState` / `useFieldState`;`./use-form-validation.ts` 呼叫的 `getFieldState` 是表單引擎 react-hook-form 的方法(單一欄位的驗證狀態),不是 DS 的名字、也不出口。
 
 | 欄位 | 用途 |
 |---|---|
@@ -222,13 +222,13 @@ Field 透過 Context 暴露以下狀態給子元件（Primitive 可以透過 `us
 | `size` | Control 自動同步尺寸（sm / md / lg） |
 | `orientation` | FieldLabel 的垂直對齊策略（horizontal 模式套用 padding-top 公式） |
 | `hasFieldWrapper` | Primitive 讀到此旗標時應忽略自己的 label / description prop，由 FieldLabel / FieldDescription 接管 |
-| `registerControlError` | Control 把**自己驗出來的**錯誤說明交給 Field 的錯誤區畫(畫法同 `<FieldError>`);使用端的 `<FieldError>` 有字時以使用端為準、只出一行。2026-11-22 起,目前只有 LinkInput 用(`../LinkInput/link-input.spec.md`「錯誤說明」);沒有 control 宣告時 Field 畫面不變 |
+| `registerControlError` | Control 把**自己驗出來的**錯誤說明交給 Field 的錯誤區畫(畫法同 `<FieldError>`);使用端的 `<FieldError>` 有字時以使用端為準、只出一行。2026-11-22 起,目前只有 LinkInput 用(`../LinkInput/link-input.spec.md`「錯誤說明」);沒有 control 宣告時 Field 畫面不變。`registerControlCount` / `countId` 同一種做法:Input / Textarea 開 `showCount` 時把字數交給 Field 畫在說明那一行的右端,`countId` = 計數那一格的 id(2026-11-26,`./field-controls.spec.md`「字數計數」) |
 
 ### Control 偏好尺寸（`fieldPreferredSize`）SSOT
 
 Field 未收到顯式 `size` 時，依序取 **顯式 prop → control 宣告的 `fieldPreferredSize` → `md`**（`field.tsx` `detectPreferredSize`）。Control 以自身檔案的 static 宣告偏好（唯一現行宣告者 = InlineEdit `'sm'`，owner 句 `InlineEdit/inline-edit.spec.md`）。
 
-**解析時序**：control 是 Field 的直接子元件時，Field 可同步讀取 static 偏好。wrapper 元件、`React.memo` 或 HOC 會遮蔽 static，但 control 會在掛載時透過 `useRegisterFieldPreferredSize` 補註冊：control 自身以 fallback 同步解析為偏好尺寸，Field 的控件槽高度則在註冊後跟上。Consumer 在 Field 或 control 顯式傳入的 `size` 永遠優先，不會被註冊覆寫。
+**解析時序**：control 是 Field 的直接子元件時，Field 可同步讀取 static 偏好。wrapper 元件、`React.memo` 或 HOC 會遮蔽 static，但 control 會在掛載時透過 `useRegisterFieldPreferredSize` 補註冊：control 自身以 fallback 同步解析為偏好尺寸，Field 的控件槽高度則在註冊後跟上。Consumer 在 Field 或 control 顯式傳入的 `size` 永遠優先，不會被註冊覆寫。**繪製前登記與同組同高(2026-11-25)**:註冊用 layout effect,Field 的重繪在瀏覽器第一次畫之前完成(2026-11-25 前是 useEffect,先畫一格 md 32 再跳 sm 28)。在 FieldGroup 裡、自己沒寫 `size` 的 Field 再把控件偏好登記給範圍(最外層 FieldGroup),整組沒寫 `size` 的列共用範圍的偏好 —— 解析順序是 **Field 自己寫的 → 範圍的同組偏好 → 自己控件的偏好 → md**。規則與理由住下方「閱讀情境」效果第 3 條。
 
 ### Primitive 的 Field-aware 行為
 
@@ -269,10 +269,11 @@ Field 未收到顯式 `size` 時，依序取 **顯式 prop → control 宣告的
 
 label 文字後可帶 info icon(ℹ)hover 出 tooltip 補充說明:`<FieldLabel info="說明文字">`。
 
-- **與 label 間距 `gap-1`(4px)**、InfoIcon **16px 固定**、色 `fg-muted` hover `fg-secondary`(`field.tsx:454-470`)
-- **游標一般箭頭**(`cursor-default`,`field.tsx:463`):ⓘ 點下去不做事(Radix Tooltip 點擊只會收起說明),手形會讓人以為點了有作用。全域 `base.css` 讓所有 `<button>` 預設手形,所以要明寫 `cursor-default`,只刪 `cursor-pointer` 蓋不掉。〔2026-09-26 由手形改箭頭;user 條件式同意「I 可以從手形改掉，若改掉更合理的話」,AI 研究後提出、user 選「同意,照清單寫入」〕
-- **disabled 時整顆不渲染**(`field.tsx:454`)— info 是滑過／聚焦才浮出的補充說明,非類型身份 indicator,non-editable 隱藏
-- 設計定位:**給資訊的觸發處**(`ds-canonical/references/hit-area-canonical.md` 三-1),**不是**行內動作 —— 只借行內動作「顏色退後、滑過深一階」的長相,不套 `inline-action.spec.md` 的「必須手形」(那條給清除、顯示密碼這類按下去會做事的鈕)。label 的主要互動是 input,info 是輔助
+- **與 label 間距 `gap-1`(4px)**、InfoIcon **16px 固定**、色 `fg-muted` hover `fg-secondary`(`field.tsx:504-532`)
+- **結構:ⓘ 不住在 `<label>` 裡**(2026-11-26,產品 canary 回報 C8 (b)):ⓘ 是 `<button>`,HTML 規定 `<label>` 不得含其他可被標籤的元素(WHATWG HTML「The label element」內容模型:https://html.spec.whatwg.org/multipage/forms.html#the-label-element);住在裡面時控件的讀屏名稱會把說明文字一起念進去。有 ⓘ 時外層改 `<span>` 帶同一組版面 class 與 `data-field-slot="label"`,`<label>`(id / for)只包星號 + 標籤文字,ⓘ 是它的兄弟(`field.tsx:464-474`、`field.tsx:504-515`)。外觀、間距、ⓘ 的滑過 / 聚焦行為不變;**點擊範圍也不變**:修前整個標籤列都是 `<label>`(直排時撐滿整列、橫排時是整個標籤欄),點文字右邊或文字與 ⓘ 之間的空白會交給控件 —— 拆開後外層把點在空白處的那一下轉成點 `<label>`,交給瀏覽器原生的 label 行為;點 `<label>` 本身照原生、點 ⓘ 是看說明,都不轉(`field.tsx:484-488`;範例 `field.stories.tsx`「標籤旁的說明圖示」的 play 逐一點 ⓘ / 空白 / 間隙 / 文字,量焦點與控件收到幾次 click —— 一下只交給控件一次,勾選類控件不會一下切兩次)。沒有 ⓘ 時仍是單一 `<label>`
+- **游標一般箭頭**(`cursor-default`,`field.tsx:525`):ⓘ 點下去不做事(Radix Tooltip 點擊只會收起說明),手形會讓人以為點了有作用。全域 `base.css` 讓所有 `<button>` 預設手形,所以要明寫 `cursor-default`,只刪 `cursor-pointer` 蓋不掉。〔2026-09-26 由手形改箭頭;user 條件式同意「I 可以從手形改掉，若改掉更合理的話」,AI 研究後提出、user 選「同意,照清單寫入」〕
+- **disabled 時整顆不渲染**(`field.tsx:471`)— info 是滑過／聚焦才浮出的補充說明,非類型身份 indicator,non-editable 隱藏
+- 設計定位:**給資訊的觸發處**(`ds-canonical/references/hit-area-canonical.md` 三-1),**不是**行內動作 —— 只借行內動作「顏色退後、滑過深一階」的長相,不套 `inline-action.spec.md` 的「必須手形」(那條給清除、顯示密碼這類按下去會做事的鈕)。label 的主要互動是 input,info 是輔助。**FieldLabel 以外要放 ⓘ**(設定列標題、區塊標題旁):**不另做公開的說明圖示元件**,在那裡既有的圖示槽位把圖示換成 info 圖示,掛 `Tooltip` 讓它滑過就出說明。前提:**觸發處必須是可聚焦的按鈕**(本段的 ⓘ 就是一顆 `<button type="button">`),不能只放一顆圖示 —— `../Tooltip/tooltip.spec.md`「A11y 預設」寫明「Tab — focus trigger 時顯示」、鍵盤完整可操作(無需滑鼠),走不到焦點的圖示用鍵盤永遠打不開說明;長相與游標照本段前三點與 hit-area-canonical 三-1(不上滑過底色、一般箭頭)【AI 推導:前提與長相兩句是 AI 依這兩處既有規則補上的】。出處:user 2026-11-26 第五輪決策卡 C8 留言(逐字,問句):「不用特別抽出來吧？可以放 icon的地方都有 slot, 然後想要放info的地方就把 icon變成info icon再使其hover會有 tooltip就可以了吧？」
 - 範例:`field.stories.tsx`「標籤旁的說明圖示」
 
 ---
@@ -281,10 +282,18 @@ label 文字後可帶 info icon(ℹ)hover 出 tooltip 補充說明:`<FieldLabel 
 
 - `invalid` 透過 context 讓 Control 顯示 error 邊框、自動 `aria-invalid`
 - `errorId` 讓 Control 自動 `aria-errormessage`
-- `descriptionId` 讓 Control 自動 `aria-describedby`
+- `descriptionId` 讓 Control 自動 `aria-describedby`;開了字數計數時再接 `countId`(說明在前、計數在後;`./field-controls.spec.md`「字數計數」)
 - `<FieldError>` 自帶 `role="alert"` 並有 id = `errorId`
 - 無 children 的 `<FieldError>` 不渲染，不佔位
 - 控件自己驗出來的錯誤(目前只有 LinkInput 的網址格式)經 `registerControlError` 由 Field 畫在同一個錯誤區、同一個 `errorId`;使用端的 `<FieldError>` 有字時只畫使用端那行(一個欄位只有一行錯誤)
+
+### 產品自己寫的控件怎麼接 aria-*(2026-11-26)
+
+上面的「自動」只發生在 DS 控件身上:它們從 `field-context.ts` 讀 `useFieldContext()`,那支是 DS 內部用的,套件沒有匯出(`field.tsx:51-52`;`index.ts` 只匯出 `field` 與 `field-types`)。產品放進 Field 的自訂控件(自己畫的滑桿、評分條、色票格)要讀 Field 的狀態(四個 id、invalid / required / disabled / mode / size)時,用根出口公開的 `useFieldState()`,API 只住在上方「FieldContext」段(本檔 :211);不用 hook 時照下面手動接,不必讀 context:
+
+1. **給 Field 一個 `id`**。Field 由它推出其餘三個 id,規則固定(`field.tsx:212-215`):標籤 `${id}-label`、說明 `${id}-description`、錯誤 `${id}-error`;`<FieldDescription>` / `<FieldError>` 沒傳 `id` 時就用這兩個(`field.tsx:552`、`:584`),傳了 `id` 則以傳入的為準。
+2. **控件自己掛 aria-***:`id={id}`、`aria-labelledby="${id}-label"`(`<label for>` 只標得到原生可被標籤的元素,`role="slider"` 這類自訂元素要靠 `aria-labelledby`)、有說明時 `aria-describedby="${id}-description"`、有錯誤時 `aria-errormessage="${id}-error"` + `aria-invalid="true"`;`required` 時掛 `aria-required="true"`。沒有說明 / 錯誤時不要掛指向不存在元素的 id。
+3. **錯誤狀態跟同一個 `invalid` 走**:`<Field invalid>` 決定 FieldError 是否該出現,控件的 `aria-invalid` 用同一個值,兩者不會各說各話。
 
 ---
 
@@ -336,6 +345,24 @@ user 原話沒有點名這個參數;依據是盤點 audit-r7 INV-14 列在甲案
 
 ---
 
+## 閱讀情境(2026-11-25;本段是唯一住所,其他規格只指過來)
+
+**什麼時候算**:一個**範圍**(最外層 `FieldGroup`;不在組裡的 `Field` 就是它自己;巢狀時 labelWidth 照舊最近一層覆寫,範圍不是)裡有就地編輯(`InlineEdit`,含 `editable={false}` 鎖定的值)= 閱讀情境 —— 這組值大部分時間是被讀的(`../InlineEdit/inline-edit.spec.md`「何時用」)。Field 層純顯示 `<Field mode="view">` 也算,但只動標籤色(下方「效果」①;②③ 只看就地編輯,見「不變與邊界」)。沒有就地編輯、也沒有 Field 層純顯示 = 一般表單,畫面與 2026-11-25 前逐像素相同。**版面模型不變**:水平排 = 標籤欄(同組等寬,上方「硬規則」)+ 12(「樣式規範」表 `gap-x-3`)+ 控件框 —— DS 既有的兩條規則(user 2026-11-25 留言問「我上面講的是否是我們ds定義的？」,查證屬實)。看得見的值都落在同一條線:水平排 = 框內字線(`--field-bleed` = 框寬 + `--field-px` = 13,`../../tokens/uiSize/uiSize.spec.md`「Field 外框寬與框內字線」),垂直排 = 標籤左緣。
+
+| 東西 | 水平排(標籤在左) | 垂直排(標籤在上) |
+|---|---|---|
+| 就地編輯的框(靜止透明框 / 滑過底色 / 編輯中的輸入框) | 跟一般輸入框同位置、同寬,不外伸;離標籤欄 12 | 左右各外伸 `--field-bleed`;標籤下緣 ↔ 框上緣 4(`gap-1`) |
+| 框裡的字 / Tag / 頭像 | 框內 13 = 框內字線 | 標籤左緣 |
+| 沒有框的值(開關、單一勾選框;CheckboxGroup 選項不算) | 往右內縮 `--field-bleed` 到框內字線 | 不動(本來就在標籤左緣) |
+
+- **效果**:① 標籤色 = `fg-secondary`,停用仍 `fg-disabled`(M24)—— 與 DescriptionList dt、DataTable 表頭同色,同色清單住 `../../tokens/color/color.spec.md` `text-fg-secondary` 用途列;理由同那兩處:標籤是結構不是資訊本體(`../DataTable/data-table.spec.md`「Header 文字弱化」),一般表單的標籤仍是 `foreground`。**同一個範圍只用一個標籤色**(2026-11-26 user 決定,原話見下方「出處」):範圍裡混放一般輸入框(Input / Select / DatePicker 等)與就地編輯 → 整個範圍算閱讀情境,一般輸入框那一列的標籤也是 `fg-secondary`,不逐列換色(閘 `scripts/reading-context-invariant.mjs` SC:N2);純顯示同一條 —— 組裡有 Field 層純顯示、混放一般輸入框 → 整組 `fg-secondary`(同閘 G3-V 組)。理由:次要色看的是這一塊在做什麼(大部分時間被閱讀),不是每一列的控件長怎樣 —— 標籤是結構不是資訊本體(同上);有就地編輯的組就是閱讀區塊、不是表單(`../InlineEdit/inline-edit.spec.md`「何時不用」:表單欄位直接用 Field + 控件、多欄位一次編輯用表單),混進來的輸入框是放在閱讀區塊裡。世界級同一塊的標籤都只有一種顏色、不依那一列是不是輸入框換色:Atlassian InlineEdit 檢視與編輯都用表單同一顆 Field 的 Label(`color.text.subtle`,<https://raw.githubusercontent.com/pioug/atlassian-frontend-mirror/master/design-system/inline-edit/src/inline-edit.tsx>、<https://raw.githubusercontent.com/pioug/atlassian-frontend-mirror/master/design-system/form/src/label.tsx>);Salesforce 表單標籤只有一個顏色 `$color-text-label`,檢視型與就地編輯型都不換(<https://raw.githubusercontent.com/salesforce-ux/design-system/master/ui/components/form-element/base/_index.scss>);Ant ProDescriptions 一項設成一直是輸入框(`mode='edit'`)時,標籤仍是描述清單的弱化色(<https://raw.githubusercontent.com/ant-design/pro-components/master/src/descriptions/schemaToDescriptionsItem.tsx>、<https://raw.githubusercontent.com/ant-design/ant-design/master/components/descriptions/style/index.ts>)。整組都是輸入框(一般表單;整組按「編輯」變成表單之後)= 範圍裡沒有就地編輯也沒有純顯示 → 標籤仍是 `foreground`(照上方「什麼時候算」)。② 沒有框的值對齊框內字線(上表;只看就地編輯 —— 純顯示的組沒有框,值與開關 / 勾選框的 ✓ 都在控件欄左緣,`./field-controls.spec.md`「軸一 view mode」)。其他沒有框的值(RadioGroup / CheckboxGroup / Rating 等)目前全 DS 0 用法;出現時照本段開頭的根規則「看得見的值都落在同一條線」(上方「什麼時候算」末句),在上表加一列、不另立對齊規則;加列前依 M8「跨類別外推本身就是新主張」重新核對該元件怎麼套(例如整組內縮或逐項對齊)【AI 推導 2026-11-26,出處見下方「出處」】。③ **同組同高**:範圍裡有控件宣告偏好尺寸(目前只有 InlineEdit 的 `sm`)→ 整組沒寫 `size` 的列都用它(開關那列 32 → 28),自己寫了 `size` 永遠優先;依據 `../../tokens/uiSize/uiSize.spec.md` 不傳 size 自動對齊 + InlineEdit「Field 的預設 `md` 是『沒人決定過』的預設值,不得壓過本元件宣告的 `sm`」;偏好不同取最小【AI 推導 2026-11-25:同組只能一個高度、結果不能看掛載先後;今天只有一種偏好】;繪製前登記(上方「Control 偏好尺寸」),伺服器端渲染第一格仍可能是 md;FieldGroup **不新增**公開 `size`。
+- **不變與邊界**:進編輯後同範圍的標籤色、開關位置、列高都不變(記號同時掛在就地編輯的靜止外框與編輯容器)。垂直排的框外伸進容器內距 → **容器左右內距 ≥ `--field-bleed`**(詳情面板 / 卡片的 16 夠;12 的表格格子會凸 1px,規格本來就不在格子裡放 InlineEdit)。已知行為(0 用法、未定義):閱讀情境的 FieldDescription 與標籤同色同字級。同範圍混放一般輸入框與就地編輯 → 已定,見上方「效果」①「同一個範圍只用一個標籤色」。**Field 層純顯示 `<Field mode="view">`**(2026-11-26 實作)—— 用途 = 整組按「編輯」才變表單的區塊平常的樣子(唯讀清單仍用 DescriptionList,下方「何時不用」);它**也觸發閱讀情境**,標籤 `fg-secondary`,理由與就地編輯相同(標籤是結構不是資訊本體)。不在組裡的純顯示 Field 範圍是它自己;組裡有一列純顯示 → 整組同一個標籤色(混放一般輸入框也是,同上方「效果」①)。**只動標籤色**:沒有框的值不內縮、同組同高不跟 —— 純顯示的值本來就齊控件欄左緣(`./field-controls.spec.md`「軸一 view mode」,user 2026-10-21 C1 甲)、純顯示不宣告偏好尺寸【AI 推導 2026-11-26:內縮會把開關 / 勾選框的 ✓ 推離純顯示那條線】。整組按「編輯」切成表單之後每一列都是 `mode="edit"`,範圍裡沒有純顯示 → 標籤回到 `foreground`;表單裡不能改的欄位照 `./field-controls.spec.md` 開頭「每個元件統一以 `mode` prop 切換樣態」第 1 點用 `readonly`(表單三態),不用 `view`,所以不會把整張表單變成閱讀情境。依據:LABEL-COLOR —— 採納的 AI 建議範圍含純顯示(決策總帳該列結論「閱讀情境(純顯示 / 就地編輯及其 FieldGroup)標籤 = fg-secondary」),user 2026-11-25 附條件採納「確保可以確保SSOT且不違背世界級的設計就照你建議，然後我把我其他的問題留在成品內了，你再仔細看一下」;FIELD-VIEW —— user 2026-11-25 點選「甲：欄位純顯示 (Recommended)」(決策總帳同列記「閱讀情境觸發要加入 Field 層 view」);VIEW-LABEL —— user 2026-11-26 對話中問(問句;第二輪決策卡引用此句)「我順便再確認一件事，純檢視的 field, label會跟就地編輯一樣都會變得比較淡？因為兩者要淡化的理由應該都是一樣的？」,看過 AI 說明(「是,理由一樣」)後點選「了解,照這樣做」(2026-11-26 決策卡)。(2026-11-06 起刻意不寫用途,commit 8eb473c7「缺口 2 的用途不寫進規格」;2026-11-25 由 FIELD-VIEW 定案。)**檢視態的按鈕**(2026-11-26):Field 層純顯示裡當控件的按鈕(下方「Button 作為 control 的判斷標準」)照同一條「值的第一個可見元素齊控件左緣 = 標籤左緣」(`./field-controls.spec.md`「軸一 view mode」,user 2026-10-21 C1 甲),不另立規則 —— 按鈕「看得見的邊界」看它有沒有框:**有框的**(`primary` / `secondary` / `tertiary`,靜止就畫得出底色或框)看得見的是框 → 框齊控件欄左緣,本來就成立、不動;**沒有框的**(`text` / `link`,靜止只看得到字與圖示)看得見的是字 / 圖示 → 收掉左右內距、左右框寬、最小寬與標籤字兩端的 `px-1`,字 / 圖示齊控件欄左緣。導覽類(打開網址、前往另一頁)優先不放按鈕,改用 `<LinkInput mode="view">` 的文字連結(預設是裸 anchor、本來就齊左,`./field-controls.spec.md`「View — 值呈現」的「LinkInput / PeoplePicker 預設 view 路徑不包 wrapper」)。收完之後按鈕盒 = 內容那一塊(高仍是欄位高),滑過換色 / 底色與命中區都是這一塊(`ds-canonical/references/hit-area-canonical.md` 一-1、一-4);焦點框照全站預設畫在盒外、不跟著收(`../../styles/base.css` `:focus-visible:not([data-pointer-focus])` 那條:框寬 2 + 間隙 `--stack-gap` 2,Button 沒有改寫),標籤在左時框外緣離標籤欄還有 12 − 4 = 8、不壓進標籤欄;`text` 的滑過底色因此貼著字與圖示、不往外伸【AI 推導 2026-11-26:往外伸在標籤在左時會壓進標籤欄距 12,違反下方「出處」user 2026-11-25 要的「標籤跟輸入框……不會交錯」】。只有圖示的按鈕不在這一條【AI 推導 2026-11-26:正方形盒裡圖示置中,收內距移不動圖示;目前 0 用法,出現時照本段開頭的根規則加列、加列前依 M8 重新核對】。判斷看這一個 Field 自己,不看範圍:同一組裡一般表單那一列的按鈕不收;只認控件槽的直接子元素,控件裡面自帶的按鈕(LinkInput 的編輯鉛筆)不算。出處:user 2026-11-26 第五輪決策卡 C9 留言(逐字)「為何不是直接像 link input 一樣放文字連結？如果真的要放按鈕才去確保視覺對齊，但是按鈕又分有框和沒框，所以我不確定邏輯是否複雜，但視覺的原則就是很一致吧？反正就是可見元素的邊界要看起來對齊」(含問句;原則採這句最後一句);「有框看框、沒框看字」的分法與收法(收內距、不外伸)= AI 依這句推導。
+- **機制**:React 只掛記號 —— `data-field-scope`(最外層 FieldGroup 的根 / 不在組裡的 Field 的根)、`data-field-reading`(InlineEdit 兩個根,含 `editable={false}`)、`data-field-frameless-value`(開關、單一勾選框在 Field 裡,`field-context.ts` `fieldFramelessValueProps`);Field 層純顯示不另掛記號,用 Field 根本來就有的 `data-field-mode="view"` + `data-field-orientation`(控件外框也掛 `data-field-mode`,多認 `data-field-orientation` 才只認 Field 層,同 `../../lib/pointer-focus-guard.ts` 的區分)。判斷只住 `./field.css`(由 `styles/tokens.css` 匯入):就地編輯 `[data-field-scope]:has([data-field-reading])`(標籤、沒有框的值兩條都用);純顯示只寫在標籤那一條 —— 組裡 `[data-field-scope]:has([data-field-orientation][data-field-mode="view"])`、不在組裡 `[data-field-scope][data-field-mode="view"]`(`:has()` 不含自己);兩顆元件內變數(標籤色、沒有框的值的內縮)**設在讀它的元素自己身上**(標籤 / 沒有框的值),不設在範圍元素上,`field.tsx` 只讀 —— `var()` 在宣告它的元素上就代換,設在範圍元素上的話,組裡再套一層 `data-theme` 時標籤拿到的是範圍那一層主題的顏色(2026-11-25 規格核對實測:深色列裡一般表單的標籤是黑字;同一個理由見 `../../tokens/color/semantic.css`「Nested Theme 架構」)。表單不設值,後備 `foreground` / 0 一樣在讀者身上代換,所以「一般表單逐像素相同」在主題套層時也成立。深層 `:has()`,包 wrapper / memo / HOC 照樣成立;不支援 `:has()` 的瀏覽器停在表單樣子。檢視態的按鈕另一條:Button 在 Field 裡、沒有框且不是只有圖示時掛 `data-field-frameless-action`(`field-context.ts` `fieldFramelessActionProps`;標籤字的 span 掛 `data-button-label`),`./field.css` 以 `[data-field-orientation][data-field-mode="view"] [data-field-slot="control"] > [data-field-frameless-action]` 判斷,直接寫 0(與主題 / 密度無關,不經元件內變數;該檔不在任何 `@layer`,蓋得過 Button 在 utilities 層的內距、最小寬與框寬)。
+- **閘**:`scripts/reading-context-invariant.mjs`(CI)—— 值線、標籤 ↔ 框、三者同色、一般表單不變(含組裡某一列再套一層主題時,閱讀與表單的標籤色都跟著那一層)、編輯中不翻轉、同組同高(含晚一個計時器才到的對照組)、第一次繪製、token 公式與框寬、範圍 = 最外層(巢狀 N2)、容器內距不足、欄位家族不寫裸 `border`、純顯示的標籤(不在組裡 42 格淺 / 深、組裡混放輸入框整組同色 VG;判斷只寫在標籤那條,G3-V / S3)、檢視態的按鈕(G1-V 的 button-link / button-text / button-framed 兩種標籤位置:沒有框的字 / 圖示齊控件欄左緣且按鈕左右緣 = 內容、有框的框齊左且框與內距還在;記號同名與判斷只看 Field 自己,S2 / S3);夾具 = `field.stories.tsx` 三則 test-only「閱讀情境:工作項目與行事曆事件詳情」(真實情境,也是前後對照圖的來源)、「閱讀情境驗證」(邊界)與「純顯示齊標籤驗證」。一般表單另有像素基準圖:精選場景 `field-mixed-control-alignment`(淺 / 深,`scripts/visual-assertions.json`),只在釘死的容器裡比(視覺回歸 workflow;不是 PR 必過檢查)。
+- **出處**(M36):水平排可見的值齊左、標籤與框不交錯 = user 需求(2026-11-25:「你先不要關我說了什麼，但我要的結果就是水平排的時候，可見的視覺元素的值應該要按規格齊左，合理吧？然後要確保標籤跟輸入框至少有一定的間距不會交錯在一起，然後上述合理的話，再基於此去想最SSOT乾淨且好維護好擴充的解法吧？」);開關對齊不論方向都要成立、要寫進 SSOT = user 需求(2026-11-25:「我覺得可以改成垂直，但是開關對齊的問題無論什麼排列方式都要解決根本問題吧？都要確保是能夠對齊的吧？要確保 ssot 吧？」);閱讀情境標籤 = fg-secondary = AI 建議、user 附條件採納(2026-11-25:「確保可以確保SSOT且不違背世界級的設計就照你建議」);標籤欄 + 12 + 控件框、垂直排字齊標籤(`../InlineEdit/inline-edit.spec.md`「對齊盒」)= DS 既有規則;就地編輯尺寸 sm = user 決定(同檔尺寸兩段);範圍 = 最外層組、內縮與同組同高只看就地編輯(純顯示只動標籤色,見「不變與邊界」)、沒有框的值對齊框內字線、同組同高的解析順序與衝突規則、記號與 `field.css` 機制 = AI 推導 / 工程判斷(本段)。同一個範圍只用一個標籤色(混放一般輸入框也算閱讀情境)= user 決定:2026-11-26 決策卡第一輪留言「我覺得若真的要有輸入框，感覺 label 應該還是要按照原本的顏色？查證一下」(問句),查證後第二輪 user 點選「甲:同一組只用一個顏色(維持現況,把「未定義」寫成正式規則)」(2026-11-26 決策卡;選項與建議是 AI 擬的);整組都是輸入框時仍是 `foreground` = 照「什麼時候算」。其他沒有框的值出現時照根規則、加列前重新核對 = AI 推導:user 2026-11-26 決策卡留言(問句)「現在應該沒有這種吧？等到真的有也是要按照一致的視覺設計原則吧？」,看過 AI 說明後點選「了解,照這樣做」(2026-11-26 決策卡)。
+
+---
+
 ## Button 作為 control 的判斷標準
 
 Field 的 control 是「**承載這個欄位 value 的輸入介面**」。Button 在某些場景就是這個介面——例如 upload button(點擊開檔案選擇器,結果寫回 field)、picker opener(連結 OAuth、開選人對話框)。這類 Button **可以**作為 control:
@@ -355,7 +382,7 @@ Button 的 height 與 `field-height` 共用同一組 token,放進 inline control
 | 是 | 否 |
 |---|---|
 | ✅ Upload(產生 file value) | ❌ 表單 submit / cancel(form action:跟在欄位後面,或放進浮層 / 面板的 footer) |
-| ✅ Picker opener(開對話框選 value) | ❌ 「重設此欄位」(可放到 endAction 或 description 旁,不是 control) |
+| ✅ Picker opener(開對話框選 value) | ❌ 「重設此欄位」(欄位的次要 action:放到標籤行右端,見上方「Field 次要 action 的預留位置」;不是 control。2026-11-26 前這格寫「可放到 endAction 或 description 旁」,與該段「唯一預留位置 = label 行最右端」「禁止把次要 action 放在 control 下方」矛盾,已改;`<FieldLabelAction>` 還沒實作,狀態見該段) |
 | ✅ Connect OAuth(產生 token value) | ❌ 頁面導覽、刪除整筆資料(page action) |
 
 **規則**:Button 是 control 時通常 inline(高度 = field-height);若是 block 類的「上傳區塊」(FileDropzone),則該元件本身宣告為 block primitive。
@@ -408,7 +435,7 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 
 ## Anatomy stories
 
-對應 anatomy story:`Overview` + `Inspector`(元件檢閱器——切 orientation / size / mode / required / invalid 即時 render)+ `OrientationMatrix` + `SizeMatrix` + `StateBehavior` + `ColorMatrix` + 元件特有 `FieldGroupBehavior` + `Accessibility`。
+對應 anatomy story:`Overview` + `Inspector`(元件檢閱器——切 orientation / size / mode / required / invalid 即時 render)+ `OrientationMatrix` + `SizeMatrix` + `StateBehavior` + `ColorMatrix` + 元件特有 `FieldGroupBehavior`、`CustomControlWiring`(自訂控件接上 Field,見「FieldContext」段「公開給產品的值」)+ `Accessibility`。
 
 ## Field state machine SSOT(v13.3)
 
@@ -484,6 +511,8 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `agent-decision-card.spec.md`
+- `calendar.spec.md`
 - `combobox.spec.md`
 - `data-table.spec.md`
 - `date-picker.spec.md`
@@ -503,3 +532,4 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 - `steps-state-visuals.spec.md`
 - `switch.spec.md`
 - `time-picker.spec.md`
+- `uiSize.spec.md`

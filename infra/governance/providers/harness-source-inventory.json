@@ -25,7 +25,7 @@
     "entries": [
       {
         "path": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
-        "sha256": "db04b9d6484f9c861ff44d4f7c5d6f0ce3db5e22033ed0057a8058d415bf15be",
+        "sha256": "c52486d4398df2b95381fc34dae9ba55b0756e1048a0abcdd96b3a9c8ae6c426",
         "consumers": [
           "packages/design-system/ds-canonical/hooks/check_substantive_edit_approval_preflight.sh",
           "packages/design-system/ds-canonical/hooks/stop_self_audit.sh",
@@ -66,12 +66,16 @@
       },
       {
         "path": "packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs",
-        "sha256": "d690a3a67697c7be99ffd54a9eac0c465a5202232c480a3a622ac8ea8159f3a2",
+        "sha256": "e1b26967fad39d9b7dbd4aac8eb2a568eca910cd6857e6fd1ffd4b1b99f0157b",
         "consumers": [
+          "packages/design-system/ds-canonical/hooks/check_consumer_code_quality.sh",
           "packages/design-system/ds-canonical/hooks/check_item_list_gap.sh",
+          "packages/design-system/ds-canonical/hooks/check_story_invariants.sh",
           "packages/design-system/ds-canonical/hooks/lib/_app_shell_primary_header_consistency.sh",
           "packages/design-system/ds-canonical/hooks/lib/_chrome_header_handcraft.sh",
-          "packages/design-system/ds-canonical/hooks/lib/_header_with_tabs_border.sh"
+          "packages/design-system/ds-canonical/hooks/lib/_header_with_tabs_border.sh",
+          "packages/design-system/ds-canonical/hooks/lib/_overlay_handcraft.sh",
+          "packages/design-system/ds-canonical/hooks/tests/test_check_story_invariants.sh"
         ]
       },
       {
@@ -343,6 +347,7 @@
         "scripts/test-authority-decision-evidence.mjs",
         "scripts/test-authority-generation-reaper.mjs",
         "scripts/test-build-fork-filesystem-safety.mjs",
+        "scripts/test-calendar-layout.mjs",
         "scripts/test-canonical-path-containment.mjs",
         "scripts/test-cdp-trace-summary.mjs",
         "scripts/test-check-codex-freshness-authorization.mjs",
@@ -353,6 +358,7 @@
         "scripts/test-data-table-editing-rows.mjs",
         "scripts/test-data-table-range-hover.mjs",
         "scripts/test-data-table-sort-cycle.mjs",
+        "scripts/test-date-range-format.mjs",
         "scripts/test-deep-audit-evidence-schema-parity.mjs",
         "scripts/test-density-subtree-token-parity.mjs",
         "scripts/test-design-system-codemod.mjs",
@@ -401,6 +407,7 @@
         "scripts/test-verified-exact-npm-runtime.mjs",
         "scripts/test-visual-audit-interaction.mjs",
         "scripts/test-visual-baseline-review.mjs",
+        "scripts/test-week-start.mjs",
         "scripts/test-workflow-security.mjs"
       ]
     }
@@ -433,8 +440,10 @@
           "scripts/test-data-table-overscan-adaptive-invariant.mjs",
           "scripts/test-escape-and-focus-contract-invariant.mjs",
           "scripts/test-form-gap-token-invariant.mjs",
+          "scripts/test-global-body-font-invariant.mjs",
           "scripts/test-header-tabs-slot-invariants.mjs",
           "scripts/test-menu-message-row-invariant.mjs",
+          "scripts/test-overlay-height-cap-invariant.mjs",
           "scripts/test-pagination-narrow-ladder-invariant.mjs",
           "scripts/test-sidebar-handle-scrollbar-hit-invariant.mjs",
           "scripts/test-switch-thumb-ring-invariant.mjs"
@@ -465,6 +474,7 @@
           "scripts/test-agent-fab-drag-click-invariant.mjs",
           "scripts/test-agent-url-registry-demo-invariant.mjs",
           "scripts/test-avatar-anchor-box-invariant.mjs",
+          "scripts/test-calendar-month-invariant.mjs",
           "scripts/test-data-table-column-sorting-invariant.mjs",
           "scripts/test-focus-indicator-invariants.mjs",
           "scripts/test-form-example-card-invariant.mjs",
@@ -510,6 +520,7 @@
           "scripts/test-overlay-header-actions-invariant.mjs",
           "scripts/test-overlay-header-title-area-invariant.mjs",
           "scripts/test-overlay-shortcut-scope-invariant.mjs",
+          "scripts/test-reading-context-invariant.mjs",
           "scripts/test-row-suffix-first-line-invariant.mjs",
           "scripts/test-searchable-menu-focus-invariant.mjs",
           "scripts/test-storybook-docs-race-invariant.mjs",
@@ -551,6 +562,7 @@
           "scripts/test-data-table-invariants.mjs",
           "scripts/test-data-table-scroll-perception.mjs",
           "scripts/test-dialog-height-invariant.mjs",
+          "scripts/test-i18n-labels-override-invariant.mjs",
           "scripts/test-radio-group-tab-stop-invariant.mjs",
           "scripts/test-select-all-footer-invariant.mjs",
           "scripts/test-sidebar-label-matches-header-invariant.mjs",
@@ -735,6 +747,8 @@
           "scripts/test-benchmark-citation-invariant.mjs",
           "scripts/test-button-variant-invariant.mjs",
           "scripts/test-calc-self-audit-baseline.mjs",
+          "scripts/test-calendar-geometry-invariant.mjs",
+          "scripts/test-calendar-render-contract-invariant.mjs",
           "scripts/test-categorical-color-invariants.mjs",
           "scripts/test-category-classification-invariant.mjs",
           "scripts/test-check-agents-bootstrap.mjs",
@@ -791,7 +805,9 @@
           "scripts/test-motion-ssot-invariant.mjs",
           "scripts/test-named-constant-drift-invariant.mjs",
           "scripts/test-naming-structure-invariant.mjs",
+          "scripts/test-overlay-cover-anchor-invariant.mjs",
           "scripts/test-overlay-density-lock-invariant.mjs",
+          "scripts/test-overlay-height-ssot-invariant.mjs",
           "scripts/test-overlay-nested-dismiss-invariant.mjs",
           "scripts/test-owner-claims-invariant.mjs",
           "scripts/test-produce-hook-enforced-evidence.mjs",
@@ -801,6 +817,7 @@
           "scripts/test-public-surface-invariant.mjs",
           "scripts/test-rating-field-size-invariant.mjs",
           "scripts/test-release-finalizer-mirror-handoff.mjs",
+          "scripts/test-release-notes-coverage-invariant.mjs",
           "scripts/test-release-self-audit.mjs",
           "scripts/test-repository-hygiene-invariant.mjs",
           "scripts/test-rsync-checksum-invariant.mjs",

@@ -1,7 +1,7 @@
 // @story-history: hasInteractiveStates trait — TreeView interactive states(hover / focus / selected / disabled)由 TreeItem 內部處理(spec.md state machine + anatomy StateBehavior story 已 cover),showcase 層 manual Disabled/States story retired per F migration(2026-05-15)— anatomy.stories.tsx auto-compile owns StateBehavior 6-canonical。AllSizes 同理 retired(SizeMatrix anatomy auto-compile owns)。
 import * as React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
-import { expect, userEvent, waitFor, within } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import {
   Folder, FileText, FileCode, Image, Settings,
   MoreVertical, Plus, Trash2, Link2, Copy,
@@ -784,7 +784,7 @@ function DocRowActions({ node, onDuplicate, onAddPage }: { node: DocNode; onDupl
     const url = `https://wiki.example.com/docs/${node.id}`
     try {
       await navigator.clipboard.writeText(url)
-      toast({ variant: 'success', title: '連結已複製' })
+      toast({ variant: 'neutral', title: '連結已複製' })
     } catch {
       toast({ variant: 'error', title: '無法存取剪貼簿,請改用瀏覽器網址列複製' })
     }

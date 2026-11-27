@@ -7,7 +7,7 @@ import { X as XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/design-system/components/Button/button"
-// (原 ButtonDivider import:分隔線 2026-11-10 移到 SurfaceHeader 的右側按鈕位;留這行讓別處引用本檔的行號不位移)
+import { MODAL_AVAILABLE_HEIGHT, MODAL_VIEWPORT_INSET, capHeight } from "@/design-system/tokens/elevation/overlay-geometry" // 本行原是 ButtonDivider import 的佔位註解(分隔線 2026-11-10 移到 SurfaceHeader 右側按鈕位),2026-11-24 換成這個 import,行號不位移
 import { SurfaceHeader, SurfaceFooter, type SurfaceHeaderProps } from "@/design-system/patterns/overlay-surface/overlay-surface"
 import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
 import { TruncatedText } from "@/design-system/patterns/element-anatomy/truncated-text"
@@ -28,7 +28,7 @@ import { DescriptionPresenceContext, useDescriptionPresence, useRegisterDescript
  * `--chrome-header-height` 48/56)。詳 dialog.spec.md「Density」節。
  *
  * ── Viewport Inset ──
- * Modal 與所在區塊(視窗,或 portalContainer 舞台)四邊保持 layout-space-viewport-inset (48px) 最小間距(2026-09-11 從 layout-space-bottom 拆出,見下方 DIALOG_INSET_VAR)。
+ * Modal 與所在區塊(視窗,或 portalContainer 舞台)四邊保持 layout-space-viewport-inset (48px) 最小間距(2026-09-11 從 layout-space-bottom 拆出,見 tokens/elevation/overlay-geometry.ts MODAL_VIEWPORT_INSET)。
  *
  * ── 寬度 ──
  * `width` = 檔位 sm 400 / md 480(預設)/ lg 640 / xl 960,或數字 px;都是最大寬,受上面的 inset 夾住、沒有下限。
@@ -62,9 +62,9 @@ const DialogTrigger = DialogPrimitive.Trigger
 const DialogPortal = DialogPrimitive.Portal
 const DialogClose = DialogPrimitive.Close
 
-// Modal 與 viewport 四邊的最小間距。2026-09-11 從 `--layout-space-bottom`(語意 = 結論留白)拆成同 family 的另一個 role token:
-// 兩者值都是 48px,但語意不同,耦合在一起會讓「調結論留白」意外改掉全站 Dialog 的高度與最大寬度(見 token 註解)。
-const DIALOG_INSET_VAR = 'var(--layout-space-viewport-inset)'
+// Modal 與 viewport 四邊的最小間距(MODAL_VIEWPORT_INSET)與 modal 可用高(MODAL_AVAILABLE_HEIGHT)住 tokens/elevation/overlay-geometry.ts
+// (2026-11-24 從本檔搬過去:浮層高度上限收成一份,與錨定浮層同一條 capHeight 公式)。為什麼不跟 `--layout-space-bottom` 共用(同值不同義)
+// 寫在那邊的常數註解。寬度那條算法(下方 maxWidth)也讀同一個 MODAL_VIEWPORT_INSET。
 // 寬度檔位(2026-11-15 A18;user 2026-11-11「對話框寬:訂檔位」,定義與用途 → dialog.spec.md「寬度檔位」)。值 = 寬螢幕時的寬,也是上限。
 // 檔位表**只住這裡**與 spec 那張表(元件級常數,同 Toast 360、AgentPanel 400 / 640;不開全域 token)。DS 自己的元件、範例只寫檔名。
 // 閘:scripts/dialog-width-invariant.mjs(1440 寬量到這四個值;--selftest 把表改壞必紅)。
@@ -73,9 +73,9 @@ type DialogWidthTier = keyof typeof DIALOG_WIDTH_TIERS
 // 所在區塊(containing block)的寬 / 高:沒傳 portalContainer → 視窗;傳了 → 那個帶 transform 的舞台(fixed 以它為準)。
 // 2026-11-15 前寫 100vw / 100svh,外框的 w-full 卻以所在區塊算 —— 放進比視窗窄或矮的並存舞台時四邊少於 48、超出的部分被舞台裁掉
 // (dialog.spec.md「Viewport Inset」;閘 dialog-width-invariant W3 實量,--selftest 改回 100vw / 100svh 必紅)。
-// 高另取 min(100svh, …):保留行動裝置網址列那道安全帽(下方 availableH 註解);沒傳 portalContainer 時兩者等值,畫面不變。
+// 高另取 min(100svh, …):保留行動裝置網址列那道安全帽;沒傳 portalContainer 時兩者等值,畫面不變。
 const DIALOG_BLOCK_WIDTH = '100%'
-const DIALOG_BLOCK_HEIGHT = 'min(100svh, 100%)'
+// 所在區塊的高(min(100svh, 100%))住 overlay-geometry.ts 的 MODAL_AVAILABLE_HEIGHT(2026-11-24 起;理由同上,也寫在那邊)。
 // 並存捲動鎖的「沒有 shards」:同一個參照,預設路徑的 effect 設回它時 React 會 bail out,不多一次 render。
 const NO_SCROLL_SHARDS: Array<{ current: Element }> = []
 
@@ -243,22 +243,22 @@ const DialogContent = React.forwardRef<
       }
     : {}
 
-  const insetCalc = `${DIALOG_INSET_VAR} * 2`
-  // `svh`(small viewport height)不是 `vh`:行動裝置的網址列收合時 `100vh` 會大於實際可視高度,
-  // 對話框底部(通常是主要動作鈕)會被切掉。DS 其他填滿視窗的外框已經是這個選擇
-  // (`app-shell.tsx` 的 `h-svh`、`sidebar.tsx` 的 `100svh`),Dialog 跟上。桌機兩者等值。
-  // 2026-11-15 起再與所在區塊高取小(DIALOG_BLOCK_HEIGHT):傳 portalContainer 時上限以舞台算。
-  const availableH = `calc(${DIALOG_BLOCK_HEIGHT} - ${insetCalc})`
+  const insetCalc = `${MODAL_VIEWPORT_INSET} * 2`
+  // 可用高 = MODAL_AVAILABLE_HEIGHT(tokens/elevation/overlay-geometry.ts;2026-11-24 從這裡搬過去,式子逐字不變):
+  // 所在區塊高與 `100svh` 取小、再扣上下 inset。為什麼是 `svh` 不是 `vh`(行動裝置網址列收合時 `100vh` 大於實際可視高度,
+  // 底部主要動作鈕會被切掉;DS 其他填滿視窗的外框 `app-shell.tsx` 的 `h-svh`、`sidebar.tsx` 的 `100svh` 同一個選擇)、
+  // 為什麼要與所在區塊高取小(傳 portalContainer 時上限以舞台算,2026-11-15)寫在那邊。
+  const availableH = MODAL_AVAILABLE_HEIGHT
   // 寬:width(檔位名或 px)> 預設 md。
   const tierPx = typeof width === 'string' ? DIALOG_WIDTH_TIERS[width] : undefined
   if (process.env.NODE_ENV !== 'production' && typeof width === 'string' && tierPx === undefined) {
     console.warn(`[DialogContent] 不認得的寬度檔位 \`${width}\`(只有 sm / md / lg / xl,或傳數字 px);這次以 md 為準。`)
   }
   const widthCss = typeof width === 'number' ? `${width}px` : `${tierPx ?? DIALOG_WIDTH_TIERS.md}px`
-  const maxHeightCss = typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight
-  // 上限只有一條公式,兩種模式共吃 —— 這就是「高度都不會超過最大高度」。
-  // consumer 傳的值只能讓它更矮(`min`),傳再大也不會超過視窗。
-  const heightCap = maxHeightCss ? `min(${availableH}, ${maxHeightCss})` : availableH
+  // 上限只有一條公式,兩種模式共吃 —— 這就是「高度都不會超過最大高度」(全 DS 同一支 capHeight,與錨定浮層共用)。
+  // consumer 傳的值只能讓它更矮(`min`),傳再大也不會超過視窗;數字 = px,字串照原樣。
+  // capHeight 在沒傳(undefined / null / 空字串)時回可用高本身,同 2026-11-24 前本檔自己寫的判斷。
+  const heightCap = capHeight(availableH, maxHeight)
 
   // fill 同時寫 height 與 maxHeight 不是冗餘:(a) 讓「兩種模式回報同一個上限」可被機械驗證;
   // (b) 擋住下方 `...style` 的逃生口 —— consumer 蓋掉 `height` 時 `maxHeight` 仍然生效。
@@ -266,11 +266,11 @@ const DialogContent = React.forwardRef<
     ? { maxHeight: heightCap }
     : { height: heightCap, maxHeight: heightCap }
 
-  // AutoFocus canonical(對齊 Material / Polaris / Atlassian)—
-  // 開啟時 focus 落在 body 第一個有意義互動元素(input / button),不是 chrome close X。
-  // 預設 Radix 會 focus first tabbable = close X → Button iconOnly 的 focus-triggered
-  // tooltip 會立即顯示「關閉」,user-hostile。此 callback 攔截:先找 body 第一個
-  // input/textarea/select/button(排除 data-dismiss)focus;找不到就 focus container(不 focus X)。
+  // 開啟落點(順序與理由住 dialog.spec.md「A11y 預設」開啟落點;2026-11-27 H18 寫進規格)—
+  // 預設 Radix 會 focus first tabbable = 標題列的 × → Button iconOnly 的 focus-triggered tooltip 會立即顯示「關閉」,
+  // 所以這裡攔下:(1) body 第一個可用的 input / textarea / select / button(排除 data-dismiss 與停用)→
+  // (2) body 沒有 → 頁尾第一顆可用的按鈕 → (3) 都沒有 → 外框本身(不 focus ×)。兩邊都不可逆的決策框(核准 / 拒絕)
+  // 由 consumer 的 onOpenAutoFocus 先 preventDefault 再自己 focus;2026-11-27 前本段漏寫第 (2) 步(程式一直有)。
   // 2026-10-01:consumer 的 onOpenAutoFocus 不再被 `{...props}` 整支蓋掉 —— 先記開啟者、再跑 consumer 的、consumer 沒擋預設才走 DS 預設落點。
   // 選擇器排除 `aria-disabled="true"`:忙碌 / 握著焦點時被停用的 Button 不轉原生 disabled(button.tsx 可聚焦的停用),不該成為開啟時的落點。
   const handleOpenAutoFocus = (e: Event) => {
@@ -337,6 +337,9 @@ const DialogContent = React.forwardRef<
         // Dialog 與 Sheet 漏了 → 視窗變矮時內容直接畫到圓角容器外面(2026-09-12 user 截圖)。
         // 少了 min-h-0,dialog 自己在 flex 容器裡也收縮不到 max-height 以下。
         "flex flex-col overflow-hidden min-h-0 bg-surface-raised rounded-lg border border-border",
+        // 2026-11-26(產品 canary 回報 C11):對話框裡沒有可聚焦控件時開啟落點退回殼本身,修前殼畫出 2px 焦點框(同族 Popover 早已抑制)。
+        // @focus-suppress E — E 浮層程式落點;承擔者:對話框殼,body 與 footer 都沒有可聚焦控件時開啟落點退回殼本身(本檔 handleOpenAutoFocus);殼本身不可操作,內部控件各自有指示
+        "outline-none",
         // 進出場 = 從中心淡入 + 輕微縮放,**不位移**(dialog.spec.md「動畫」段;何時播 / 時長 / 曲線 / 收尾 / reduced-motion 由
         // surfaceMotion 消費 --motion-duration-surface / --motion-easing-enter / --motion-easing-exit,這裡只寫幾何)。
         // 2026-09-09 user 抓到 dialog 從左上角飛到中間:shadcn v3 時代的 `slide-in-from-left-1/2 slide-in-from-top-[48%]`
@@ -362,6 +365,11 @@ const DialogContent = React.forwardRef<
       //(改過的欄位 / 就地編輯中 / 格游標 / 拖曳中)且在這一層裡面 → 留給控件、不關;其餘照舊關閉
       onEscapeKeyDown={withOverlayEscape(onEscapeKeyDown, () => contentEl)}
     >
+      {/* consumer 自己指定 aria-describedby(確認框把 body 裡的後果句綁成說明;dialog.spec.md「A11y 預設」)時,Radix 仍去找它自己的說明 id:
+          @radix-ui/react-dialog 1.1.15 dist/index.mjs DescriptionWarning —— 內容上有 aria-describedby、而 context.descriptionId 的元素不在 → console.warn
+          「Missing `Description`」(誤報;2026-11-27 overlay-story-contract R7 實量到)。放一個 hidden 的空 Description 佔住那個 id:不被任何 aria-describedby
+          指到(consumer 的值蓋過 Radix 的預設)、hidden 不佔版面也不進無障礙樹;consumer 沒指定時不放(那時照 lib/overlay-description.ts 的判斷) */}
+      {props['aria-describedby'] != null && <DialogPrimitive.Description hidden />}
       <DescriptionPresenceContext.Provider value={descriptionPresence.register}>{children}</DescriptionPresenceContext.Provider>
     </DialogPrimitive.Content>
   )
@@ -448,10 +456,11 @@ DialogHeader.displayName = "DialogHeader"
 //
 // ── List-as-region 場景(menu group / Cmd+K)──
 // 不再提供 `flush` variant(2026-05-01 移除,先前曾叫 `variant="list"`)。
-// **canonical pattern** = consumer 自管 list outer wrapper + 用 `className` override 撤掉 chrome padding:
+// **canonical pattern** = consumer 自管 list outer wrapper(標 data-layout-region="unbounded")+ 用 `className` 撤掉左右 chrome padding;
+// 上下由容器自己判:清單在最前面 → 頂 0、在最後面 → 底 0(layoutSpace.css;2026-11-27 起頂部也自判,不再寫 !pt-0 / !pb-0):
 // ```tsx
-// <DialogBody className="!px-0 !pt-0 !pb-0">  ← @tabs-content-gap-ok: JSDoc 文件範例(list-as-region canonical,非 tabs !pt-0 hack)
-//   <div className="py-2">  {/* list outer wrapper 自帶 py-2(menu group canonical)*/}
+// <DialogBody className="!px-0">
+//   <div data-layout-region="unbounded" className="py-2">  {/* list outer wrapper 自帶 py-2(menu group canonical)*/}
 //     {items.map(item => <MenuItem className="px-[var(--layout-space-loose)] rounded-md" />)}
 //   </div>
 // </DialogBody>
@@ -468,8 +477,9 @@ const DialogBody = React.forwardRef<
   HTMLDivElement,
   React.ComponentPropsWithoutRef<typeof ScrollArea>
 >(({ className, children, ...props }, ref) => (
-  <ScrollArea fillX ref={ref} data-dialog-body className="flex-1 min-h-0" {...props}>
-    <div data-layout-body="fill" className={cn("px-[var(--layout-space-loose)]", className)}>
+  // fillY + 內層 min-h-full(2026-11-27 H10):內層至少撐滿主體可視高(仍是 block,內容從頂端排、捲動量不變);只放一個 Empty 時 layoutSpace.css 讓它在可視區正中
+  <ScrollArea fillX fillY ref={ref} data-dialog-body className="flex-1 min-h-0" {...props}>
+    <div data-layout-body="fill" className={cn("min-h-full px-[var(--layout-space-loose)]", className)}>
       {children}
     </div>
   </ScrollArea>

@@ -22,6 +22,10 @@ source "$(dirname "$0")/lib/_ds_removed_names.sh" 2>/dev/null || {
   printf 'GOVERNANCE_INTEGRITY: removed-names helper unavailable\n' >&2
   exit 70
 }
+source "$(dirname "$0")/lib/_comment_mask.sh" 2>/dev/null || {
+  printf 'GOVERNANCE_INTEGRITY: consumer quality comment mask unavailable\n' >&2
+  exit 70
+}
 
 governance_hook_load_input
 governance_hook_require_commands grep head perl python3 tr wc
@@ -98,16 +102,26 @@ while IFS= read -r ALIAS; do
 done <<< "$SHADCN_ALIASES"
 
 # TypeScript escape hatch requires a concrete rationale on the same or immediately preceding line.
-ANY_HITS=$(perl -ne '
-  BEGIN { our $prev = 0; our $hit_count = 0 }
-  my $allow = /any-allow:\s*.{8,}/; next if /^\s*(\/\/|\*|\/\*)/;
-  if (!$prev && !$allow && (/(:\s*any\b|\bas\s+any\b|<any>|\bany\[\]|Record<[^,]+,\s*any>)/)) {
-    print "$.:$_";
-    $hit_count++;
-    exit 0 if $hit_count >= 5;
+# 2026-11-27(上游判定 E16 + E14 (1)):`any` 對遮罩後的行判(行尾 //、{/* … */} 裡的字不算),any-allow 豁免仍對原文判。
+ANY_MASKED=$(governance_mask_comments < "$FILE_PATH") \
+  || governance_hook_integrity_fail 'consumer quality comment mask failed'
+ANY_HITS=$(ORIG_PATH="$FILE_PATH" perl -e '
+  open(my $fh, "<", $ENV{ORIG_PATH}) or exit 3;
+  my @orig = <$fh>; close $fh;
+  my @masked = split /\n/, do { local $/; my $m = <STDIN>; defined $m ? $m : "" }, -1;
+  my ($prev, $hit_count) = (0, 0);
+  for my $i (0 .. $#orig) {
+    my $line = $orig[$i];
+    my $code = defined $masked[$i] ? $masked[$i] : "";
+    my $allow = $line =~ /any-allow:\s*.{8,}/; next if $line =~ /^\s*(\/\/|\*|\/\*)/;
+    if (!$prev && !$allow && ($code =~ /(:\s*any\b|\bas\s+any\b|<any>|\bany\[\]|Record<[^,]+,\s*any>)/)) {
+      print(($i + 1) . ":$line");
+      $hit_count++;
+      last if $hit_count >= 5;
+    }
+    $prev = $allow;
   }
-  $prev = $allow;
-' "$FILE_PATH" 2>/dev/null) || governance_hook_integrity_fail 'consumer quality any parser failed'
+' <<< "$ANY_MASKED" 2>/dev/null) || governance_hook_integrity_fail 'consumer quality any parser failed'
 [ -n "$ANY_HITS" ] && add_violation "TypeScript any without // any-allow: <specific rationale>: ${ANY_HITS//$'\n'/ | }"
 
 if printf '%s' "$FILE_PATH" | grep -qE '\.tsx$'; then
@@ -121,10 +135,24 @@ fi
 
 FLAT=$(printf '%s' "$BODY" | tr '\n' ' ')
 
-OVERLAY=$(printf '%s' "$BODY" | perl -0777 -ne 'print "hit" if /<div\b[^>]*className="(?=[^"]*px-\[var\(--layout-space-loose\)\])(?=[^"]*border-(?:b|t))(?=[^"]*border-divider)[^"]*"/s') \
+# 頁面內不可關閉的有框區塊,標頭由消費者自組(header-canonical.spec.md「何時不用」;user 2026-11-26 E6),可能也寫成
+# px-loose + border-divider。先用 lib/tsx-governance-analysis.mjs page-block-header-mask(與 story 閘 R9 同一份判法)把
+# 「正向認得出、不在浮層裡」的區塊標頭遮掉再跑簽名;解析不了 → 用原文 = 照擋。
+OVERLAY_BODY="$BODY"
+if grep -qF 'border-divider' <<< "$BODY" && grep -qF 'px-[var(--layout-space-loose)]' <<< "$BODY"; then
+  OVERLAY_ANALYZER="$(cd "$(dirname "$0")" 2>/dev/null && pwd -P)/lib/tsx-governance-analysis.mjs"
+  for OVERLAY_ROOT in "$(governance_project_root 2>/dev/null)" "$(git -C "$(dirname "$0")" rev-parse --show-toplevel 2>/dev/null)"; do
+    [ -n "$OVERLAY_ROOT" ] && [ -f "$OVERLAY_ANALYZER" ] || continue
+    if OVERLAY_MASKED=$(cd "$OVERLAY_ROOT" && node -- "$OVERLAY_ANALYZER" page-block-header-mask 2>/dev/null <<< "$BODY"); then
+      OVERLAY_BODY="$OVERLAY_MASKED"
+      break
+    fi
+  done
+fi
+OVERLAY=$(printf '%s' "$OVERLAY_BODY" | perl -0777 -ne 'print "hit" if /<div\b[^>]*className="(?=[^"]*px-\[var\(--layout-space-loose\)\])(?=[^"]*border-(?:b|t))(?=[^"]*border-divider)[^"]*"/s') \
   || governance_hook_integrity_fail 'consumer quality overlay parser failed'
 if [ -n "$OVERLAY" ] && ! has_rationale 'overlay-handcraft-allow'; then
-  add_violation 'hand-crafted overlay chrome; consume Popover/Dialog/Sheet/Surface header/body/footer primitives'
+  add_violation 'hand-crafted overlay chrome; consume Popover/Dialog/Sheet/Surface header/body/footer primitives(頁面內不可關閉的有框區塊標頭不在此限:直接寫在 rounded-md + border 區塊最上方、不在浮層裡,由你用 typography + token + item anatomy 自組,見 header-canonical.spec.md「何時不用」)'
 fi
 
 # 滑過底色認任何 `-hover` 配對 token(2026-09-25;color.spec.md「Hover 換色配對總則」:有自己靜止底色的列換成那個底自己的 -hover,

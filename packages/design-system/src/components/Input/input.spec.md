@@ -103,6 +103,12 @@ endAction(host 內嵌 inline action)vs 獨立 `<Button iconOnly>` 的分界詳 `
 
 `loading?: boolean`(Field SSOT,詳 `Field/field-controls.spec.md`「Loading state」段):語意 = **這個值**在讀取 / 驗證 / 儲存(2026-09-09 user 拍板收窄;不是「建議清單在抓」—— 那是 Select / Combobox 的 `optionsLoading`,Input 沒有選項清單所以沒有)。右側 endAction 自動顯 `<CircularProgress/>` + `aria-busy="true"`;input 維持可編輯(Ant Input.Search 同款:loading 只交給搜尋鈕,輸入框的 disabled 不受 loading 影響,https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/input/Search.tsx#L208-L212)。
 
+## 字數上限與計數(`maxLength` / `showCount`;2026-11-26)
+
+- `maxLength`(原生 HTML 屬性,照原樣傳給 `<input>`)= 上限:打到上限擋住不能再打。
+- `showCount?: boolean`(預設 `false`)= 顯示字數:有上限「12 / 100」、沒有上限「12」。在 Field 裡畫在說明那一行的右端、沒有說明時那一行只有計數;不在 Field 裡時畫在框下一行的右端;純顯示(`mode="view"`)不畫。
+- 位置、長相、超過上限、數法、讀屏的規則只住 `../Field/field-controls.spec.md`「字數計數」(本段不重述)。出處:user 2026-11-26 第五輪決策卡 C7 點選「A:放在說明那一行的右端(「12 / 100」);沒有說明時那一行只有計數」(選項是 AI 擬的);`showCount` 這個名字與預設關、上限用原生 `maxLength`【AI 推導 2026-11-26,依據見 field-controls.spec.md 同段;名字同 DS 既有的 `show*` 開關 `showTime` / `showSeconds`】。
+
 ## 禁止事項
 
 - ❌ startIcon 不可隨 value 變化——它描述用途，不是狀態
@@ -161,7 +167,11 @@ Input 有**一個公開** visual chrome variant `default`(+ 一個 `@internal` �
 |------|------|
 | `width="fill"`(預設)| 走 Field canonical(w-full 或 Field wrapper 規則),寬度固定、跟欄位對齊 |
 | `width="hug"` | 跟內容寬:寬度自動等於「內容寬(value / placeholder)+ startIcon + endAction + padding」,基於 CSS `field-sizing: content`(Chrome 123+ / Safari 17.4+)。wrapper 改 `inline-flex w-auto`;input 改 `field-sizing:content w-auto min-w-0`,寬度隨 value 文字變化 |
-| `width={數字}` | 固定寬(px;`max-w-full`,窄容器裡不超出容器)—— 工具列搜尋框、篩選列條件欄這類「要固定寬」的地方,不再寫 `className="!w-[…]"` |
+| `width={數字}` | 固定寬(px;`max-w-full`,窄容器裡不超出容器)—— 篩選列條件欄、國碼下拉這類不可壓縮、「要固定寬」的那一格(與 `../Field/field-controls.spec.md`「寬度軸」數字那一列同一組例子),不再寫 `className="!w-[…]"` |
+
+**搜尋框用哪一種寬度**(各用在什麼情況;值不在本檔重述):
+- 資料工具列(左搜尋 / 右操作,例:表格上方)的搜尋框 → **不用** `width={數字}`:照 `../../patterns/action-bar/action-bar.spec.md` 七「搜尋框」—— 外層撐開(`flex-1`)+ 下限 + 上限,空間不夠時搜尋框先縮。視窗(Dialog / Sheet)裡「搜尋 + 表格」上方若同樣是左搜尋 / 右操作那一列,套同一條,不另立規則。
+- 浮層或面板頂端單獨一顆、整列只有它的搜尋框 → 預設 `fill`(例:DataTable 欄位顯示面板 `../DataTable/data-table-column-visibility-panel.tsx` 的「搜尋欄位…」)。
 
 **改名紀錄**(2026-11-15;user 2026-11-11 回覆「尺寸:甲」,甲 = 決策頁選項原文,AI 擬、user 選:「寬度一律叫 width,可以填 "fill"(撐滿)、"hug"(跟內容)或數字;……輸入框、下拉需要固定寬時也用 width 填數字。舊名字保留一個版本,畫面不變。」):
 原本的 `autoWidth` 就是 `width="hug"`(同一組 class)。「舊名字保留一個版本」那一句已被 user 2026-11-15 原話「我認為還是 beta 的狀況下都不要再顧及所有向後相容的部分」取代(0.x 相容政策 = `../../../ds-canonical/references/props-naming.md`「相容政策」):`autoWidth` 已移除、不留舊名。

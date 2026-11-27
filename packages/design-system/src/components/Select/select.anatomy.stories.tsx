@@ -3,10 +3,12 @@
 //     4 state + edit error 3 sub-states + text vs tag 模式色彩差異)。Select
 //     的狀態本身就是 mode × state 的色彩 token 組合,集中於 ColorMatrix 比拆
 //     5. 更直觀。
-import type { Meta } from '@storybook/react'
+import type { Meta } from '@storybook/react-vite'
+import { expect } from 'storybook/test'
 import { useState, useEffect } from 'react'
 import { Flag } from 'lucide-react'
-import { Select } from './select'
+import { Select, type SelectOption } from './select'
+import { CATEGORICAL_HUES, CAT_SUBTLE_TOKENS, type CategoricalColor, type CategoricalHue } from '@/design-system/tokens/categorical-color'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { BpZone, PropRow, Swatch, TkVal } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
@@ -541,6 +543,28 @@ export const Inspector = {
 
 const COLOR_STATES: StateKey[] = ['default', 'hover', 'focus', 'disabled']
 
+// ── tag 模式 × 全部類別色(2026-11-25)──────────────────────────────────────
+// 消費的 SSOT:tokens/categorical-color.ts `CATEGORICAL_HUES` / `CategoricalColor` / `CAT_SUBTLE_TOKENS`(Tag 淡底 = step-1、字 = step-7);
+// neutral 不是色相,Tag 自己用 --secondary 底 + --foreground 字(Tag/tag.tsx tagVariants)。表與 play 的期望值都由這兩處衍生,不另寫色值。
+const TAG_COLOR_ORDER: CategoricalColor[] = ['neutral', ...CATEGORICAL_HUES]
+const TAG_COLOR_TOKENS: Record<CategoricalColor, { bg: string; text: string }> = {
+  neutral: { bg: '--secondary', text: '--foreground' },
+  ...(Object.fromEntries(CATEGORICAL_HUES.map((h) => [h, {
+    bg: CAT_SUBTLE_TOKENS[h].bg.replace(/^var\((.*)\)$/, '$1'),
+    text: CAT_SUBTLE_TOKENS[h].text.replace(/^var\((.*)\)$/, '$1'),
+  }])) as Record<CategoricalHue, { bg: string; text: string }>),
+}
+// 議題追蹤工具裡的議題標籤:每個標籤一個顏色
+const ISSUE_LABEL_NAMES: Record<CategoricalColor, string> = {
+  neutral: '待分類', blue: '前端', green: '後端', 'deep-orange': '資安', yellow: '設計', red: '線上事故', orange: '效能',
+  amber: '文件', lime: '測試', turquoise: '資料', indigo: '基礎設施', purple: '行動版', magenta: '無障礙',
+}
+const issueLabelOptions: SelectOption[] = TAG_COLOR_ORDER.map((color) => ({ value: color, label: ISSUE_LABEL_NAMES[color], tagVariant: color }))
+// 型別守門(`npm run typecheck:stories`,ci.yml「TypeScript project check」):tagVariant 只收 CategoricalColor —— 型別若放寬回 string,
+// 下一行的 @ts-expect-error 變成沒用到而編不過(對照組)。
+// @ts-expect-error 'pink' 不是 DS 的類別色,tagVariant 必須擋下(select.spec.md「tag 模式」)
+void ({ value: 'growth', label: '成長', tagVariant: 'pink' } satisfies SelectOption)
+
 export const ColorMatrix = {
   name: '色彩對照表',
   render: () => (
@@ -623,8 +647,61 @@ export const ColorMatrix = {
           </table>
         </div>
       </ExampleSection>
+
+      {/* ── tag 模式 × 全部類別色 ── */}
+      <ExampleSection title="tag 模式的選項顏色(全部類別色)" description={<>選項的 <code>tagVariant</code> = Tag 的 <code>color</code>:<code>neutral</code> 或 12 個類別色相(<code>CategoricalColor</code>,<code>tokens/categorical-color.ts</code>)。編輯、唯讀、檢視、手機原生與選單列都從同一個值取色;沒給或認不得的值,欄位上是 neutral Tag、選單列是純文字。底色 = 該色相的淡底(step-1),字 = step-7,neutral = <code>--secondary</code> 底 + <code>--foreground</code> 字。</>}>
+        <div className="overflow-x-auto">
+          <table className="border-collapse">
+            <thead><tr><Th>tagVariant</Th><Th>編輯</Th><Th>唯讀</Th><Th>底色</Th><Th>字色</Th></tr></thead>
+            <tbody>
+              {TAG_COLOR_ORDER.map((color) => (
+                <tr key={color} data-tag-color-row={color}>
+                  <Td mono>{color}</Td>
+                  <Td><Select aria-label={`議題標籤(${ISSUE_LABEL_NAMES[color]} · 編輯)`} display="tag" options={issueLabelOptions} value={color} size="sm" /></Td>
+                  <Td><Select aria-label={`議題標籤(${ISSUE_LABEL_NAMES[color]} · 唯讀)`} mode="readonly" display="tag" options={issueLabelOptions} value={color} size="sm" /></Td>
+                  <Td mono><TokenValue value={TAG_COLOR_TOKENS[color].bg} /></Td>
+                  <Td mono><TokenValue value={TAG_COLOR_TOKENS[color].text} /></Td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </ExampleSection>
     </ExampleStack>
   ),
+  // 量每一列兩顆 Tag(編輯 / 唯讀)的實際底色與字色 = 該列 token 解出的顏色(同一個主題下,用探針元素解 var())。
+  // 對照組:select.tsx optionTagColor 只認舊的五色 → purple 等列變 neutral 灰底 → 這裡丟錯,storybook 的 play 失敗
+  // (story-demo-focus 全 story 掃描判 INSTRUMENT-FAIL、exit 1,ci.yml「Demo focus sweep」)。
+  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+    const probe = document.createElement('div')
+    canvasElement.appendChild(probe)
+    const resolveToken = (prop: 'backgroundColor' | 'color', token: string) => {
+      probe.style[prop] = `var(${token})`
+      return getComputedStyle(probe)[prop]
+    }
+    // Tag 帶 transition-colors:主題在渲染後才切(深色)時,這一刻量到的是淺 → 深的過渡中間值。先讓樣式生效、等過渡跑完再量(穩態)
+    const allTags = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-tag-color-row] [data-tag-root]'))
+    for (const tag of allTags) void getComputedStyle(tag).backgroundColor
+    await Promise.all(allTags.flatMap((tag) => tag.getAnimations().map((a) => a.finished.catch(() => undefined))))
+    const problems: string[] = []
+    let measured = 0
+    for (const color of TAG_COLOR_ORDER) {
+      const want = { bg: resolveToken('backgroundColor', TAG_COLOR_TOKENS[color].bg), text: resolveToken('color', TAG_COLOR_TOKENS[color].text) }
+      // 期望值解不出來(token 不存在 → 透明)時 Tag 也可能是透明 —— 兩邊相等不代表對,先擋掉這種假綠
+      if (want.bg === 'rgba(0, 0, 0, 0)' || want.bg === 'transparent') problems.push(`${color}:${TAG_COLOR_TOKENS[color].bg} 解不出顏色`)
+      const tags = Array.from(canvasElement.querySelectorAll<HTMLElement>(`[data-tag-color-row="${color}"] [data-tag-root]`))
+      if (tags.length !== 2) problems.push(`${color}:應有 2 顆 Tag(編輯、唯讀),量到 ${tags.length}`)
+      for (const tag of tags) {
+        const cs = getComputedStyle(tag)
+        measured++
+        if (cs.backgroundColor !== want.bg) problems.push(`${color}「${tag.textContent}」底色 ${cs.backgroundColor} ≠ ${TAG_COLOR_TOKENS[color].bg}(${want.bg})`)
+        if (cs.color !== want.text) problems.push(`${color}「${tag.textContent}」字色 ${cs.color} ≠ ${TAG_COLOR_TOKENS[color].text}(${want.text})`)
+      }
+    }
+    probe.remove()
+    if (measured !== TAG_COLOR_ORDER.length * 2) problems.push(`量到 ${measured} 顆 Tag,應為 ${TAG_COLOR_ORDER.length * 2}`)
+    await expect(problems).toEqual([])
+  },
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

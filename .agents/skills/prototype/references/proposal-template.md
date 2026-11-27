@@ -150,7 +150,7 @@ Phase 4 summary 整理完畢後,stakeholder 決定採用,走 graduation 流程:
 每個 `{candidate-name}.stories.tsx` 建議結構:
 
 ```tsx
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 // 從 DS import 既有元件
 import { Popover, PopoverContent, PopoverTrigger } from '@/design-system/components/Popover/popover'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'

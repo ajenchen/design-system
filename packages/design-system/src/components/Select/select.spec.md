@@ -257,7 +257,8 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 | Icon 角色 | Prop | 語意 | 色彩 | 優先序 |
 |---|---|---|---|---|
 | **Indicator icon**(field-level leading hint)| `startIcon` | 提示 field 類型 / 屬性(`Mail` / `Globe` / `Lock` / `Flag`),與選中值無關 | muted(對齊 `Input.startIcon` search-icon pattern)| 設定時恆顯,優先 |
-| **Value icon**(代表選中項)| `option.icon`(per-option)| 隨 selected option 變動 | fg-default(對齊 `MenuItem.startIcon` 跨元件 SSOT)| `startIcon` unset 時 fallback |
+| **Value icon**(代表選中項)| `option.icon`(per-option)| 隨 selected option 變動 | fg-default(對齊 `MenuItem.startIcon` 跨元件 SSOT);選項帶 `iconClassName` 時欄位上同樣套(與選單列同色,2026-11-26 前欄位上沒套);編輯 / 檢視 / 唯讀 / 停用都畫(`field-controls.spec.md` 共享 contract (a);2026-11-27 前只有編輯態畫,workspace H33),停用時 fg-disabled 勝出(M24,同選單列的停用列)| `startIcon` unset 時 fallback |
+| **Value 前綴節點**(代表選中項,2026-11-26,workspace F 組 F4-2)| `option.startContent`(per-option;例:工作項類型方塊)| 隨 selected option 變動;欄位上的值前綴 = 選中項的前綴(AI 推導,沿用上一列同一條規則)| 節點自帶(停用時外層帶 fg-disabled,給沒自帶顏色的部分繼承【AI 推導 2026-11-27:同 `selectedItemRenderer` 唯讀 / 停用路徑的外層】)| `startIcon` unset 且選中項沒有 `icon` 時;桌機與觸控(NativeSelect)兩條分支、四個 mode 都畫(「雙分支同 SSOT」段;上一列同一條) |
 
 兩 prop 不互斥——同時設定時 `startIcon` 勝(渲染分支見 `select.tsx`)。
 
@@ -267,6 +268,7 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 - 觸控 overlay 路徑的 Tag 設為 `pointer-events-none`，點擊穿透到底層 select
 - edit 模式：Tag + ChevronDown + 可選 clear
 - readonly：Tag 顯示，**ChevronDown 不顯示**（純值、不可開選單）；disabled：Tag 顯示 + **ChevronDown 保留**（類型身份 indicator，fg-disabled），不可開選單
+- **選項顏色 `tagVariant`**(2026-11-25 型別收窄):= Tag 的 `color`,只收 `CategoricalColor` —— `'neutral'` 或 12 個類別色相(唯一住所 `../../tokens/categorical-color.ts`)。欄位上(編輯 / 唯讀 / 停用 / 檢視 / 手機原生)與選單列都從同一個取值處拿顏色(`select.tsx` `optionTagColor`);沒給或認不得的值(JS、`as` 繞過型別):欄位上是 neutral Tag、選單列是純文字。修前型別收任何字串、內部再轉型成五色 —— 轉型只在型別層,執行期仍把原字串交給 Tag:13 個合法值本來就畫得出顏色,認不得的字讓 Tag 沒有底色。顏色是 Select 的 wrapper 專屬欄位,**不上擴到 SelectMenu primitive**(`select.tsx` `SelectOption` 上方的 M30 註解;Combobox / PeoplePicker 的 Tag 不畫類別色)【AI 推導 2026-11-25:Calendar 事件詳情「顏色」欄要用 Select 選出全部類別色(Calendar 規格事件詳情「內文欄位」表的「顏色」列),工程上選「留在 wrapper、只把型別收成 `CategoricalColor`」,消費端不必改用新欄位名】。對照表:`select.anatomy.stories.tsx` 色彩對照表「tag 模式的選項顏色(全部類別色)」,play 量每列 Tag 的底色 / 字色 = 該色 token;型別守門 = 同檔的 `@ts-expect-error`(`npm run typecheck:stories`,型別放寬回 string 就編不過)。
 
 ---
 
@@ -321,7 +323,8 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 
 - **搜尋結果空**:dropdown 顯一列 `MenuItem message` 的 `emptyText`(預設「沒有選項」,可覆寫;與 1 筆結果等高、無最小高度、不用 `Empty`)——只在真的沒有任何可選時;遠端搜尋還沒打字是建議群組或「輸入關鍵字搜尋」提示列,不是「沒有選項」。SSOT `select-menu.spec.md`「Empty state」「Suggestions」
 - **disabled 選項**:`option.disabled` forward 至 menu item——不可點選,鍵盤導覽自動跳過(cmdk `aria-disabled` 行為)
-- **大量選項**:選單固定最大高度內捲動(300px,值與理由住 `../Command/command.spec.md`「邊界案例」清單捲動上限),無分頁 / 虛擬捲動——長清單開 `searchable`(見「Searchable 開啟判斷」)
+- **大量選項**:選單在高度上限內捲動 —— 預設半列原則(最後一列切在半列),`maxHeight`(數字 px 或字串)取代預設、不超出可用高(桌機;手機走原生 `<select>` 不適用;理由與公式住 `../Command/command.spec.md`「清單捲動上限(半列原則)」,參數轉給 `../SelectMenu/select-menu.spec.md`「清單的高度上限」),無分頁 / 虛擬捲動——長清單開 `searchable`(見「Searchable 開啟判斷」)
+- **浮層最小寬度(`minWidth`,2026-11-26,產品 canary 回報 C1)**:桌機原樣轉給 SelectMenu,只能把下限往上拉(有效下限 = max(觸發欄位寬, 15rem, minWidth)),規則住 `../SelectMenu/select-menu.spec.md`「視覺 vs 語意」;手機走原生 `<select>` 不適用
 - **空值**:無選擇時顯 placeholder;「無選擇是有效狀態」場景開 `clearable`(見「Clearable」)
 
 ---
@@ -377,6 +380,7 @@ Select 是 **Field Controls family 成員**——互動狀態(focus / invalid / 
 - `checkbox.spec.md`
 - `combobox.spec.md`
 - `command.spec.md`
+- `data-table.spec.md`
 - `people-picker.spec.md`
 - `radio-group.spec.md`
 - `select-menu.spec.md`

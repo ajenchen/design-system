@@ -14,7 +14,7 @@
 // CI wire(future):add to audit.yml as job step。
 
 import { execFileSync } from 'node:child_process'
-import { existsSync, lstatSync, readFileSync, rmSync, mkdtempSync, readdirSync } from 'node:fs'
+import { existsSync, lstatSync, readFileSync, rmSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs'
 import { join, dirname, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
@@ -325,6 +325,26 @@ if (existsSync(b7AppDir) && existsSync(join(b7AppDir, 'package.json'))) {
   }
 } else {
   fail_test('B7', `create-app in mirror artifact failed — apps/${b7AppName}/ not created`, b7Result?.slice(-200))
+}
+
+// B7b(2026-11-26 產品 canary 缺陷 1):apps/template 可能還是建 repo 當時的版號;create-app 新建的 app
+// 必須跟根目錄同版,否則 lock 替它裝一份舊版巢狀副本。對照組 = 刻意讓 apps/template 落後。
+const b7bTemplateManifest = join(MIRROR_OUT, 'apps/template/package.json')
+const b7bOriginal = readFileSync(b7bTemplateManifest)
+const b7bStale = JSON.parse(b7bOriginal.toString('utf8'))
+b7bStale.dependencies['@qijenchen/design-system'] = '0.1.0-beta.1'
+writeFileSync(b7bTemplateManifest, JSON.stringify(b7bStale, null, 2) + '\n')
+const b7bAppName = 'invoice-review'
+const b7bAppDir = join(MIRROR_OUT, 'apps', b7bAppName)
+const b7bOutput = commandOut('create-app', [b7bAppName], MIRROR_OUT)
+const b7bAppPkg = readJsonAbs(join(b7bAppDir, 'package.json'))
+const b7bRootVersion = readJsonAbs(join(MIRROR_OUT, 'package.json'))?.dependencies?.['@qijenchen/design-system']
+writeFileSync(b7bTemplateManifest, b7bOriginal)
+rmSync(b7bAppDir, { recursive: true, force: true })
+if (b7bAppPkg?.dependencies?.['@qijenchen/design-system'] === b7bRootVersion && b7bRootVersion === canonicalDsVersion) {
+  pass_test('B7b', `create-app aligns a new app's design-system version with the root(${b7bRootVersion}) even when apps/template lags`)
+} else {
+  fail_test('B7b', 'create-app copied a stale design-system version from apps/template', `${b7bAppPkg?.dependencies?.['@qijenchen/design-system']} vs root ${b7bRootVersion}:${b7bOutput?.slice(-200)}`)
 }
 
 console.log('')

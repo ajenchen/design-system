@@ -1,5 +1,5 @@
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Trash2, FolderOpen, Info, Keyboard } from 'lucide-react'
 import { FileViewer, type FileInfo } from './file-viewer'
 import {
@@ -436,7 +436,7 @@ export const ReadOnlyRule: Story = {
   },
 }
 
-// ── Rule 6:禁止 nested 浮層 ───────────────────────────────────────────────────
+// ── Rule 6:資訊面板與換檔不另開浮層 ─────────────────────────────────────────────
 
 const splitFiles: FileInfo[] = [
   {
@@ -454,7 +454,7 @@ const splitFiles: FileInfo[] = [
 ]
 
 export const NoNestedOverlayRule: Story = {
-  name: '禁止巢狀浮層',
+  name: '資訊面板與換檔不另開浮層',
   render: () => {
     const [open, setOpen] = React.useState(false)
     return (
@@ -472,16 +472,16 @@ export const NoNestedOverlayRule: Story = {
 
         <TutorialRule
           title="❌ 不要在 viewer 內再開 Sheet / Dialog(例:info panel 用 Sheet)"
-          note="部分 DS 把 detail info 做成獨立 Sheet,開進 viewer 後變成 Dialog-on-Dialog。結果:(1) 兩層 focus-trap 打架 — Esc 不知道關哪個;(2) 兩層 overlay 疊加視覺混亂;(3) 鍵盤 shortcut 意圖模糊(I 鍵在哪個 context?)。一律 split,不 nest"
+          note="部分 DS 把 detail info 做成獨立 Sheet,開進 viewer 後變成 Dialog-on-Dialog。結果:(1) 兩層 overlay 疊加視覺混亂;(2) 鍵盤 shortcut 意圖模糊(I 鍵在哪個 context?)。資訊面板是 viewer 自己的一區,一律 split,不 nest"
         >
-          <ExampleCaption warn>↑ Sheet on FileViewer = focus-trap 雙層 + Esc 語義衝突 + 視覺多層 overlay</ExampleCaption>
+          <ExampleCaption warn>↑ Sheet on FileViewer = 視覺多層 overlay + 快捷鍵 context 模糊</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
           title="❌ 不要從 viewer 內開另一個 viewer(nested viewer)"
-          note="viewer 疊 viewer 焦點陷阱崩壞。要在 viewer 內展示另一個檔案,改用 filmstrip 切換 index(這是 filmstrip 的核心用途)。viewer 只能有一層 active"
+          note="要在 viewer 內展示另一個檔案,改用 filmstrip 切換 index(這是 filmstrip 的核心用途)。viewer 只能有一層 active"
         >
-          <ExampleCaption warn>↑ 檔案 A viewer 內點「相關檔案 B」再開 B viewer = 崩壞 focus management</ExampleCaption>
+          <ExampleCaption warn>↑ 檔案 A viewer 內點「相關檔案 B」再開 B viewer;改用 filmstrip 切到 B</ExampleCaption>
         </TutorialRule>
       </TutorialPage>
     )

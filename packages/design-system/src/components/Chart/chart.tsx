@@ -112,7 +112,7 @@ const ChartContainer = React.forwardRef<HTMLDivElement, ChartContainerProps>(
             // 2026-09-07 刪:recharts 3.x 的 accessibilityLayer 預設為 true,
         // RootSurface.js:54 `tabIndex = hasAccessibilityLayer ? 0 : undefined`、:59 `role = 'application'`
         // → surface 可 Tab、可用方向鍵瀏覽資料點 = 可操作,依 focus-canonical 必須有可見焦點指示。
-        // 原本這行把全域 base.css:44-47 的焦點框關掉 = WCAG 2.4.7 違規。
+        // 原本這行把全域 base.css:61-64 的焦點框關掉 = WCAG 2.4.7 違規。
         // 保留上一行的 .recharts-sector(扇形不可聚焦,那行是防禦性的)。
             className,
           )}

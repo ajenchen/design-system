@@ -378,8 +378,8 @@ test('actual clean-room mirror closes every generated provider/fork scaffold fil
     'npm-runtime-tar-patch': 'npm:tar@7.5.22',
   })
   assert.deepEqual(mirrorManifest.overrides, {
-    '@storybook/addon-actions': { uuid: '11.1.1' },
-    '@joshwooding/vite-plugin-react-docgen-typescript': '0.6.4',
+    // 2026-11-25 Storybook 10.6.9:`@storybook/addon-actions` 併進 storybook 本體(9.0)、樹上不再有它 → 它的 uuid override 退場;
+    // `@storybook/react-vite` 10.6.9 自己要 docgen 外掛 `^0.7.0`,原本 8.6 時代把它拉到 0.6.4 的 override 會反過來降級 → 退場。
     // 2026-11-05:GHSA-3g3m-2fjr-6pw4 / GHSA-g3hv-75wg-m249 —— storybook → docgen 外掛 → glob 13 → minimatch 10 在 consumer 樹上,
     // 修正只在新大版;與根 package.json 同一組 overrides(根樹實測 eslint / typescript-eslint / storybook 建置照常)。
     glob: '14.0.3',
@@ -389,7 +389,7 @@ test('actual clean-room mirror closes every generated provider/fork scaffold fil
   assert.deepEqual(
     readdirSync(join(mirror, '.github/workflows')).sort(),
     ['audit.yml'],
-    'published consumer mirror must contain exactly the native Verify consumer workflow',
+    'published consumer mirror must contain exactly the native Verify consumer workflow (the upgrade receiver returns in the release after 0.1.0-beta.151, TRACKER R22)',
   )
   assert.equal(
     readdirSync(join(mirror, 'scripts')).includes('governance-anchor-preflight.mjs'),

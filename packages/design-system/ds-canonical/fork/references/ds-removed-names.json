@@ -740,7 +740,7 @@
       "id": "0.1.0-beta.149/--menu-max-height",
       "to": null,
       "do": "收回成 CommandList 自己的值(18.75rem = 300px),CSS 變數刪除、沒有替代。",
-      "spec": "src/components/Command/command.spec.md「清單捲動上限 300px」"
+      "spec": "src/components/Command/command.spec.md「清單捲動上限(半列原則)」"
     },
     {
       "kind": "token",

@@ -58,6 +58,7 @@ const ALLOW_HEADER = {
   tableRef: 'useRef;只在事件當下讀 .current',
   headerIdBase: 'React.useId() 回傳值,元件生命週期內恆定(欄頭 id / 欄寬把手 aria-controls 的前綴)',
   applyHeaderSorting: 'useCallback([table]),身分恆定;只在事件當下呼叫(表頭點擊 / 鍵盤 / ⌄ 選單),不是 render 輸入(2026-11-03 多重排序)',
+  headerActionsPlaceholder: '只畫在右區表頭(isRight 分支);renderHeaderRow 的每區 deps 對右區另列它(其他區恆為 null),虛擬捲動換範圍只重畫右區那一列(2026-11-27 H8)',
   table: ALLOW_ROW.table,
 }
 const TARGETS = [

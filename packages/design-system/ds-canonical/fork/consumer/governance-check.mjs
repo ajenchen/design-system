@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // Provider-neutral consumer hard gate. Read-only by construction: no install, repair, refresh,
-// registry lookup, or generated-file write. Native Claude/Codex hooks are optional accelerators;
+// registry lookup, or generated-file write. `--content-debt-proposal` only computes the next
+// content-debt baseline (record / prune) or the complete per-finding listing (list) into the JSON
+// report; the separate governance-content-debt writer stores it. Native Claude/Codex hooks are optional accelerators;
 // this check binds all provider views to the same immutable release BOM and npm payload.
 
 import { createHash } from 'node:crypto'
@@ -51,6 +53,29 @@ const valueOf = (flag) => {
 }
 const repo = resolve(valueOf('--repo') || process.cwd())
 const asJson = args.includes('--json')
+// 產品自有的內容欠債基準(2026-11-26,產品 canary 缺陷 2):提案模式只算出「下一版基準」放進 JSON 報告,
+// 寫檔由 governance-content-debt.mjs 做,本檔維持唯讀。
+const CONTENT_DEBT_BASELINE_PATH = 'governance/content-debt-baseline.json'
+const CONTENT_DEBT_SCHEMA_REFERENCE = './schemas/content-debt-baseline.schema.json'
+const CONTENT_DEBT_KIND = 'consumer-content-debt-baseline'
+const CONTENT_DEBT_COMMAND = 'npm run governance:debt'
+const contentDebtProposalMode = args.includes('--content-debt-proposal') ? valueOf('--content-debt-proposal') : undefined
+const contentDebtRegistrant = valueOf('--by')
+const contentDebtReason = valueOf('--reason')
+const contentDebtText = (value, max) => typeof value === 'string'
+  && value.trim().length > 0
+  && value.length <= max
+  && value === value.normalize('NFC')
+  && !/[\u0000-\u0008\u000b-\u001f\u007f]/.test(value)
+if (
+  (contentDebtProposalMode !== undefined && !['list', 'record', 'prune'].includes(contentDebtProposalMode))
+  || (contentDebtProposalMode === 'record' && (!contentDebtText(contentDebtRegistrant, 200) || !contentDebtText(contentDebtReason, 2000)))
+  || (contentDebtProposalMode !== 'record' && (args.includes('--by') || args.includes('--reason')))
+  || (contentDebtProposalMode !== undefined && !asJson)
+) {
+  console.error('usage: governance-check.mjs [--repo <dir>] [--hooks-off] [--json [--content-debt-proposal (list | prune | record --by <who> --reason <why>)]]')
+  process.exit(64)
+}
 const canonicalOutputRoots = new Set()
 const canonicalReplayExcludedRoots = new Set()
 const canonicalReplayExcludedFiles = new Set()
@@ -484,6 +509,7 @@ if (!repositoryPathIsSafe(appsRoot) || !pathEntryExists(appsRoot) || !lstatSync(
     canonicalScanRoots.push(workspace)
   }
 }
+// 清單正本 scripts/lib/consumer-output-roots.mjs(本檔以單一檔出貨、不 import;逐字相同由 scripts/test-setup-governance.mjs 守)
 const generatedOutputNames = ['node_modules', 'dist', 'build', 'coverage', 'storybook-static', '.next', '.turbo', '.cache', '.vite']
 canonicalOutputRoots.add(resolve(repo, '.git'))
 discoveryTraversalExcludedRoots.add(resolve(repo, '.git'))
@@ -500,6 +526,9 @@ for (const path of canonicalOutputRoots) canonicalReplayExcludedRoots.add(path)
 // future adapter as product source (or silently trust an unregistered adapter root).
 canonicalReplayExcludedFiles.add(resolve(repo, 'governance/lock.json'))
 canonicalReplayExcludedFiles.add(resolve(repo, 'governance/lock.schema.json'))
+// The content-debt baseline quotes normalized findings and is validated as closed checker data
+// below; replaying it as product source would turn every recorded finding into a new one.
+canonicalReplayExcludedFiles.add(resolve(repo, CONTENT_DEBT_BASELINE_PATH))
 
 if (bom) {
   if (bom.schemaVersion !== 1 || bom.role !== 'template-consumer' || bom.generatedBy !== 'scripts/build-fork-governance.mjs') {
@@ -521,6 +550,51 @@ for (const [name, lockKey] of [['@qijenchen/design-system', 'designSystem'], ['@
   const canonicalTarball = declared ? `https://registry.npmjs.org/${name}/-/${unscoped}-${declared}.tgz` : null
   if (declared && lockEntry?.resolved !== canonicalTarball) add('GOV-SUPPLY-001', 'BLOCKER', `${name} resolved URL is not the canonical exact npm registry tarball`)
   if (!/^sha512-[A-Za-z0-9+/]+={0,2}$/.test(lockEntry?.integrity || '')) add('GOV-SUPPLY-001', 'BLOCKER', `${name} package-lock entry lacks npm sha512 integrity`)
+}
+
+// 2026-11-26(產品 canary 升到 beta.150 回報缺陷 1):升級只改了根目錄,apps/*/package.json 仍鎖舊版,
+// lockfile 因此替每個 app 各裝一份舊版巢狀副本 —— app 實際用的是舊版,根目錄的檢查卻全綠。
+// 每個 workspace 宣告的受管套件必須等於根目錄宣告(上面已驗它等於 lock 解析到的版號),
+// lock 裡也不得有任何巢狀的第二份(不論版號:兩份同版也是兩個模組實例)。
+const governedWorkspacePackages = ['@qijenchen/design-system', '@qijenchen/storybook-config']
+const workspaceDependencySections = ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']
+if (repositoryPathIsSafe(appsRoot) && pathEntryExists(appsRoot) && lstatSync(appsRoot).isDirectory()) {
+  for (const name of readdirSync(appsRoot).sort()) {
+    const workspaceManifest = join(appsRoot, name, 'package.json')
+    if (!isRegularFile(workspaceManifest)) continue
+    let workspacePackage
+    try {
+      workspacePackage = JSON.parse(readFileSync(workspaceManifest, 'utf8'))
+    } catch (error) {
+      add('GOV-WORKSPACE-VERSION-001', 'BLOCKER', `apps/${name}/package.json is not valid JSON`, error.message)
+      continue
+    }
+    for (const section of workspaceDependencySections) {
+      for (const packageName of governedWorkspacePackages) {
+        const declared = workspacePackage?.[section]?.[packageName]
+        if (declared === undefined) continue
+        const rootVersion = deps[packageName]
+        if (declared !== rootVersion) {
+          add(
+            'GOV-WORKSPACE-VERSION-001',
+            'BLOCKER',
+            `apps/${name}/package.json ${section}.${packageName}=${declared} differs from the root declaration ${rootVersion || 'missing'}; the app would install its own copy. Run npm run sync:workspace-dependencies -- --set ${rootVersion || '<root version>'} and reinstall.`,
+          )
+        }
+      }
+    }
+  }
+}
+for (const [entryPath, entry] of Object.entries(packageLock?.packages || {})) {
+  for (const packageName of governedWorkspacePackages) {
+    const suffix = `/node_modules/${packageName}`
+    if (!entryPath.endsWith(suffix)) continue
+    add(
+      'GOV-WORKSPACE-VERSION-002',
+      'BLOCKER',
+      `package-lock.json nests a second ${packageName}@${entry?.version || 'unknown'} at ${entryPath}; ${entryPath.slice(0, -suffix.length)} resolves that copy instead of the root ${deps[packageName] || 'missing'}`,
+    )
+  }
 }
 
 for (const [name, command] of Object.entries(bom?.payload?.requiredScripts || {})) {
@@ -2462,7 +2536,7 @@ if (repositoryRootSafe) visitDiscoverySurfaces(repo)
 
 const governanceRoot = join(repo, 'governance')
 if (!repositoryPathIsSafe(governanceRoot) || !pathEntryExists(governanceRoot) || lstatSync(governanceRoot).isSymbolicLink() || !lstatSync(governanceRoot).isDirectory()) {
-  add('GOV-EXTENSION-001', 'BLOCKER', 'governance must be a real directory containing only immutable locks, authenticated managed data, the declared launcher substrate, and optional overlay.md')
+  add('GOV-EXTENSION-001', 'BLOCKER', 'governance must be a real directory containing only immutable locks, authenticated managed data, the declared launcher substrate, optional overlay.md, and the optional content-debt-baseline.json')
 } else {
   // Governance data files are allowed only when the immutable consumer BOM declares their exact
   // repository path and digest. Deriving both files and parent directories from that authenticated
@@ -2475,8 +2549,9 @@ if (!repositoryPathIsSafe(governanceRoot) || !pathEntryExists(governanceRoot) ||
   if (!expectedManagedNames.includes(requiredManagedGuide)) {
     add('GOV-MANAGED-FILE-002', 'BLOCKER', `${requiredManagedGuide} must remain bound to the immutable managed-file BOM`)
   }
+  // content-debt-baseline.json:產品自有的內容欠債基準(2026-11-26),固定住處,形狀與 digest 由下方內容重播前驗證。
   const fixedGovernanceEntryNames = new Set([
-    'consumer-governance.md', 'lock.json', 'lock.schema.json', 'overlay.md',
+    'consumer-governance.md', 'content-debt-baseline.json', 'lock.json', 'lock.schema.json', 'overlay.md',
   ])
   const directGovernanceDataName = /^[a-z0-9][a-z0-9._-]*\.json$/
   const authenticatedManagedGovernanceEntries = []
@@ -2858,6 +2933,132 @@ const interpretReplayResult = ({ hook, status, stdout, stderr }) => {
 // preserving the complete replay for every otherwise-eligible repository and every content-only
 // violation. The report remains a hard failure and records zero hook executions, so this is an
 // explicit fail-closed short circuit rather than a hidden PASS-path optimization.
+// ── 內容欠債基準(content-debt baseline)────────────────────────────────────────────────
+// 同一套棘輪語言(DS 端 story-layer-drift / gate-reachability 基準):每格(規則 + 檔案 + hook + event)
+// 記下違規的「定位指紋」—— hook 輸出逐行正規化(路徑去掉 repo / 暫存根、數字一律換成 #,不靠行號),
+// 以多重集合比對。基準內的不擋;多出來的照擋;基準裡已經不存在的要求移除(只准縮小)。
+// 基準檔只能經 `npm run governance:debt` 改:entriesSha256 對不上 = 手改 → 擋。沒有基準檔 = 行為同以前(全擋)。
+const contentDebtByFingerprint = (left, right) => compareUtf8Bytes(left.fingerprint, right.fingerprint)
+  || compareUtf8Bytes(left.text, right.text)
+  || (left.registration ?? 0) - (right.registration ?? 0)
+const contentDebtEntryKey = (entry) => [entry.file, entry.hook, entry.event, entry.ruleId].join('\u0000')
+const contentDebtPairKey = (file, hook, event) => [file, hook, event].join('\u0000')
+const contentDebtDigest = ({ registrations, entries }) => sha256(JSON.stringify({
+  schemaVersion: 1,
+  kind: CONTENT_DEBT_KIND,
+  registrations,
+  entries,
+}))
+const contentDebtVolatileRoots = () => {
+  const roots = new Set()
+  const addRoot = (value) => {
+    if (typeof value !== 'string' || !value) return
+    roots.add(value)
+    try { roots.add(realpathSync(value)) } catch { /* absent roots only normalize lexically */ }
+  }
+  addRoot(repo)
+  addRoot(verifiedReplayCorpus?.forkRoot)
+  addRoot(closedToolProfile?.tempDirectory)
+  addRoot(closedToolProfile?.homeDirectory)
+  return [...roots].sort((left, right) => right.length - left.length)
+}
+const normalizeContentDebtText = (line, roots) => {
+  let text = String(line)
+  for (const root of roots) text = text.split(`${root}/`).join('').split(root).join('<root>')
+  return text.replace(/[0-9]+/g, '#').replace(/\s+/g, ' ').trim()
+}
+const contentDebtItems = (detail) => {
+  const roots = contentDebtVolatileRoots()
+  const lines = String(detail || '').split(/\r?\n/).map((line) => normalizeContentDebtText(line, roots)).filter(Boolean)
+  const texts = lines.length ? lines : ['<no detail>']
+  return texts
+    .map((text) => ({ fingerprint: sha256(text).slice(0, 16), text: text.slice(0, 240) }))
+    .sort(contentDebtByFingerprint)
+}
+// 多重集合差:left 中多於 right 的那些(依指紋計數)。
+const contentDebtMinus = (left, right) => {
+  const counts = new Map()
+  for (const item of right) counts.set(item.fingerprint, (counts.get(item.fingerprint) || 0) + 1)
+  const extra = []
+  for (const item of left) {
+    const count = counts.get(item.fingerprint) || 0
+    if (count > 0) counts.set(item.fingerprint, count - 1)
+    else extra.push(item)
+  }
+  return extra
+}
+const validateContentDebtBaseline = (document) => {
+  const fail = (message) => { throw new Error(message) }
+  const closed = (value, keys, label) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) fail(`${label} must be an object`)
+    const actual = Object.keys(value).sort(compareUtf8Bytes)
+    const expected = [...keys].sort(compareUtf8Bytes)
+    if (JSON.stringify(actual) !== JSON.stringify(expected)) fail(`${label} has an open or incomplete shape`)
+  }
+  closed(document, ['$schema', 'schemaVersion', 'kind', 'note', 'registrations', 'entries', 'entriesSha256'], 'baseline')
+  if (document.$schema !== CONTENT_DEBT_SCHEMA_REFERENCE) fail(`baseline $schema must be ${CONTENT_DEBT_SCHEMA_REFERENCE}`)
+  if (document.schemaVersion !== 1 || document.kind !== CONTENT_DEBT_KIND) fail('baseline schemaVersion/kind is not canonical')
+  if (typeof document.note !== 'string') fail('baseline note must be a string')
+  if (!Array.isArray(document.registrations) || !Array.isArray(document.entries)) fail('baseline registrations/entries must be arrays')
+  const registrationIds = new Set()
+  let previousId = 0
+  for (const [index, registration] of document.registrations.entries()) {
+    closed(registration, ['id', 'by', 'reason', 'recordedAt', 'release'], `registration[${index}]`)
+    if (!Number.isSafeInteger(registration.id) || registration.id <= previousId) fail(`registration[${index}].id must be an ascending positive integer`)
+    if (!contentDebtText(registration.by, 200) || !contentDebtText(registration.reason, 2000)) fail(`registration[${index}] must name who recorded it and why`)
+    if (typeof registration.recordedAt !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(registration.recordedAt)) fail(`registration[${index}].recordedAt must be an ISO-8601 UTC timestamp`)
+    if (registration.release !== null && !exactSemver.test(registration.release)) fail(`registration[${index}].release must be an exact version or null`)
+    previousId = registration.id
+    registrationIds.add(registration.id)
+  }
+  const referenced = new Set()
+  let previousKey = null
+  for (const [index, entry] of document.entries.entries()) {
+    closed(entry, ['ruleId', 'file', 'hook', 'event', 'items'], `entry[${index}]`)
+    if (!['GOV-CONTENT-001', 'GOV-CONTENT-003'].includes(entry.ruleId)) fail(`entry[${index}].ruleId is not a content rule`)
+    if (!canonicalManagedRepositoryPath(entry.file)) fail(`entry[${index}].file is not a canonical repository path`)
+    if (!contentDebtText(entry.hook, 512) || !contentDebtText(entry.event, 128)) fail(`entry[${index}] hook/event is invalid`)
+    const key = contentDebtEntryKey(entry)
+    if (previousKey !== null && compareUtf8Bytes(previousKey, key) >= 0) fail(`entry[${index}] is not sorted and unique`)
+    previousKey = key
+    if (!Array.isArray(entry.items) || entry.items.length === 0) fail(`entry[${index}].items must be a nonempty array`)
+    for (const [itemIndex, item] of entry.items.entries()) {
+      closed(item, ['fingerprint', 'text', 'registration'], `entry[${index}].items[${itemIndex}]`)
+      if (!/^[a-f0-9]{16}$/.test(item.fingerprint) || typeof item.text !== 'string' || item.text.length > 240) fail(`entry[${index}].items[${itemIndex}] fingerprint/text is invalid`)
+      if (!registrationIds.has(item.registration)) fail(`entry[${index}].items[${itemIndex}] names an unknown registration`)
+      referenced.add(item.registration)
+    }
+    if (JSON.stringify(entry.items) !== JSON.stringify([...entry.items].sort(contentDebtByFingerprint))) fail(`entry[${index}].items are not sorted`)
+  }
+  for (const id of registrationIds) if (!referenced.has(id)) fail(`registration ${id} no longer covers any entry; prune it with ${CONTENT_DEBT_COMMAND} -- --prune`)
+  if (document.entriesSha256 !== contentDebtDigest(document)) {
+    fail(`entriesSha256 does not match the entries: the baseline was edited outside ${CONTENT_DEBT_COMMAND}`)
+  }
+  return document
+}
+let contentDebtBaseline = null
+let contentDebtBaselineError = null
+const contentDebtBaselineFile = join(repo, CONTENT_DEBT_BASELINE_PATH)
+if (pathEntryExists(contentDebtBaselineFile)) {
+  try {
+    if (
+      !repositoryPathIsSafe(contentDebtBaselineFile)
+      || !isRegularFile(contentDebtBaselineFile)
+      || (lstatSync(contentDebtBaselineFile).mode & 0o111) !== 0
+    ) throw new Error('baseline must be one regular non-executable repository file')
+    contentDebtBaseline = validateContentDebtBaseline(JSON.parse(readFileSync(contentDebtBaselineFile, 'utf8')))
+  } catch (error) {
+    contentDebtBaselineError = error?.message || String(error)
+  }
+}
+const contentDebtBaselineByKey = new Map((contentDebtBaseline?.entries || []).map((entry) => [contentDebtEntryKey(entry), entry]))
+// 有基準或要算提案 / 列清單(--list 也要完整,才會等於 --record 登記的集合)時,每個檔案的每支 hook 都要
+// 重播完(不能停在第一個違規),比對才完整。
+const completeContentReplay = Boolean(contentDebtBaseline) || contentDebtProposalMode !== undefined
+const contentDebtObserved = new Map()
+const contentDebtReplayedPairs = new Set()
+const contentViolationDiagnostics = new Set()
+
 const replaySkippedForPreexistingBlocker = diagnostics.some((diagnostic) => diagnostic.severity === 'BLOCKER')
 let verifiedReplayCorpus = null
 const replaySourceCaptures = new Map()
@@ -3042,10 +3243,30 @@ if (
         )
         break outer
       }
+      const hookName = hook.sourceHook || hook.file
+      contentDebtReplayedPairs.add(contentDebtPairKey(repositoryFile, hookName, hook.event))
       if (interpreted.kind === 'content-violation') {
         const ruleId = hook.outputMode === 'diagnostic' ? 'GOV-CONTENT-003' : 'GOV-CONTENT-001'
-        add(ruleId, 'BLOCKER', `${relative(repo, file)} violates ${hook.sourceHook || hook.file} (${hook.event})`, detail)
-        break
+        const observed = { ruleId, file: repositoryFile, hook: hookName, event: hook.event, items: contentDebtItems(interpreted.detail) }
+        contentDebtObserved.set(contentDebtEntryKey(observed), observed)
+        if (!completeContentReplay) {
+          add(ruleId, 'BLOCKER', `${relative(repo, file)} violates ${hookName} (${hook.event})`, detail)
+          contentViolationDiagnostics.add(diagnostics.at(-1))
+          // 2026-11-27(上游判定 E15):同一個檔後面的 hook 照樣重播(以前 break → 第一條違規之後的 hook 都不跑,
+          // 與「exhaustive hooks-off replay」不符,產品一次只看得到一條、修完才冒下一條)。每支違規的 hook 各記一筆,訊息格式不變。
+          continue
+        }
+        const recorded = contentDebtBaselineByKey.get(contentDebtEntryKey(observed))?.items || []
+        const unrecorded = contentDebtMinus(observed.items, recorded)
+        if (unrecorded.length) {
+          add(
+            ruleId,
+            'BLOCKER',
+            `${relative(repo, file)} violates ${hookName} (${hook.event})${contentDebtBaseline ? `; ${unrecorded.length} finding(s) are not in ${CONTENT_DEBT_BASELINE_PATH}` : ''}`,
+            contentDebtBaseline ? unrecorded.map((item) => item.text).slice(0, 8).join(' | ') : detail,
+          )
+          contentViolationDiagnostics.add(diagnostics.at(-1))
+        }
       }
     }
   }
@@ -3056,6 +3277,165 @@ if (verifiedReplayCorpus) {
   } catch (error) {
     add('GOV-CONTENT-002', 'BLOCKER', 'live replay corpus failed final compare-and-swap verification', error.message)
   }
+}
+
+// 內容欠債收尾:基準裡已不存在的要求移除;已登記數量照實報出(登記 ≠ 合規)。
+const contentReplayComplete = Boolean(verifiedReplayCorpus)
+  && !replaySkippedForPreexistingBlocker
+  && !diagnostics.some((diagnostic) => diagnostic.ruleId === 'GOV-CONTENT-002')
+const sourceFileSet = new Set(sourceFiles.map((file) => relative(repo, file).replaceAll('\\', '/')))
+const contentDebtStale = []
+if (contentDebtBaseline && contentReplayComplete) {
+  for (const entry of contentDebtBaseline.entries) {
+    const pairKnown = !sourceFileSet.has(entry.file) || contentDebtReplayedPairs.has(contentDebtPairKey(entry.file, entry.hook, entry.event))
+    if (!pairKnown) continue
+    const stale = contentDebtMinus(entry.items, contentDebtObserved.get(contentDebtEntryKey(entry))?.items || [])
+    if (stale.length) contentDebtStale.push({ entry, stale })
+  }
+  for (const { entry, stale } of contentDebtStale) {
+    add(
+      'GOV-CONTENT-DEBT-002',
+      'BLOCKER',
+      `${entry.file} no longer has ${stale.length} recorded ${entry.hook} (${entry.event}) finding(s); the baseline may only shrink — run ${CONTENT_DEBT_COMMAND} -- --prune`,
+      stale.map((item) => item.text).slice(0, 8).join(' | '),
+    )
+  }
+}
+if (contentDebtBaselineError) {
+  // 兩條出路都要真的走得通:還原 = git 取回上一版;重新登記 = --record 從頭重建(提案模式在 record 時
+  // 不把本條當結構性阻擋,見下方 structuralBlockers),舊檔的登記紀錄無法沿用。--prune 在這裡一律拒絕。
+  add(
+    'GOV-CONTENT-DEBT-001',
+    'BLOCKER',
+    `${CONTENT_DEBT_BASELINE_PATH} is invalid; every content finding blocks until it is restored (git checkout -- ${CONTENT_DEBT_BASELINE_PATH}) or re-recorded from scratch with ${CONTENT_DEBT_COMMAND} -- --record --by <who> --reason <why>, which replaces the invalid file and does not keep its registrations`,
+    contentDebtBaselineError,
+  )
+}
+const recordedContentDebt = contentDebtBaseline?.entries.length || 0
+const recordedContentDebtItems = (contentDebtBaseline?.entries || []).reduce((total, entry) => total + entry.items.length, 0)
+if (contentDebtBaseline) {
+  const registrations = contentDebtBaseline.registrations
+    .map((registration) => `#${registration.id} ${registration.by}(${registration.recordedAt.slice(0, 10)}):${registration.reason}`)
+    .join(' | ')
+  add(
+    'GOV-CONTENT-DEBT-003',
+    'INFO',
+    `recordedContentDebt=${recordedContentDebt} (${recordedContentDebtItems} recorded findings in ${CONTENT_DEBT_BASELINE_PATH}; recorded debt is not content compliance)`,
+    registrations,
+  )
+}
+evidence.contentDebt = {
+  baseline: contentDebtBaseline ? CONTENT_DEBT_BASELINE_PATH : null,
+  baselineValid: contentDebtBaselineError === null,
+  recordedContentDebt,
+  recordedFindings: recordedContentDebtItems,
+  unrecordedViolations: contentViolationDiagnostics.size,
+  staleEntries: contentDebtStale.length,
+  registrations: (contentDebtBaseline?.registrations || []).map((registration) => ({ ...registration })),
+}
+// 每一格「目前有、基準沒有」的發現:--list 印的、--record 登記的、GOV-CONTENT-001 / 003 擋的,都是這同一個集合。
+const contentDebtUnrecorded = () => [...contentDebtObserved.keys()].sort(compareUtf8Bytes).flatMap((key) => {
+  const observed = contentDebtObserved.get(key)
+  const items = contentDebtMinus(observed.items, contentDebtBaselineByKey.get(key)?.items || [])
+  return items.length ? [{ ruleId: observed.ruleId, file: observed.file, hook: observed.hook, event: observed.event, items }] : []
+})
+if (contentDebtProposalMode === 'list') {
+  // 唯讀清單:不寫、不需登記人。重播沒跑完 = 清單不完整,照實拒絕,不印半份。
+  const unrecorded = contentReplayComplete ? contentDebtUnrecorded() : []
+  evidence.contentDebt.proposal = {
+    mode: 'list',
+    refused: contentReplayComplete ? null : 'content replay did not complete, so the listing would be partial; fix the structural blockers first',
+    document: null,
+    summary: null,
+    listing: {
+      baselineValid: contentDebtBaselineError === null,
+      unrecorded,
+      unrecordedFindings: unrecorded.reduce((total, entry) => total + entry.items.length, 0),
+      stale: contentDebtStale.map(({ entry, stale }) => ({ ruleId: entry.ruleId, file: entry.file, hook: entry.hook, event: entry.event, items: stale })),
+    },
+  }
+} else if (contentDebtProposalMode !== undefined) {
+  const structuralBlockers = diagnostics.filter((diagnostic) => (
+    diagnostic.severity === 'BLOCKER'
+    && !contentViolationDiagnostics.has(diagnostic)
+    && diagnostic.ruleId !== 'GOV-CONTENT-DEBT-002'
+    // 基準無效時 --record 從頭重新登記(GOV-CONTENT-DEBT-001 訊息指的就是這條路);--prune 沒有可縮小的基準,照擋。
+    && !(contentDebtProposalMode === 'record' && diagnostic.ruleId === 'GOV-CONTENT-DEBT-001')
+  ))
+  let refused = null
+  if (!contentReplayComplete) refused = 'content replay did not complete; fix the structural blockers first'
+  else if (contentDebtProposalMode === 'prune' && contentDebtBaselineError) {
+    refused = `${CONTENT_DEBT_BASELINE_PATH} is invalid, so there is nothing valid to shrink; restore it (git checkout -- ${CONTENT_DEBT_BASELINE_PATH}) or re-record it from scratch with ${CONTENT_DEBT_COMMAND} -- --record --by <who> --reason <why>`
+  } else if (structuralBlockers.length) refused = `structural blockers must be fixed first:${[...new Set(structuralBlockers.map((diagnostic) => diagnostic.ruleId))].sort().join(',')}`
+  let proposal = { mode: contentDebtProposalMode, refused, document: null, summary: null }
+  if (!refused) {
+    const previousRegistrations = contentDebtBaseline?.registrations || []
+    const nextId = previousRegistrations.reduce((max, registration) => Math.max(max, registration.id), 0) + 1
+    let added = 0
+    let removed = 0
+    const entries = []
+    const keys = new Set([...contentDebtBaselineByKey.keys(), ...(contentDebtProposalMode === 'record' ? contentDebtObserved.keys() : [])])
+    for (const key of [...keys].sort(compareUtf8Bytes)) {
+      const previous = contentDebtBaselineByKey.get(key)
+      const observed = contentDebtObserved.get(key)
+      const observedItems = observed?.items || []
+      // 留下仍存在的舊條目(保留原登記);prune 只會減少,record 另把新的登記在這次的名下。
+      const remaining = []
+      const available = [...observedItems]
+      for (const item of previous?.items || []) {
+        const match = available.findIndex((candidate) => candidate.fingerprint === item.fingerprint)
+        if (match >= 0) {
+          available.splice(match, 1)
+          remaining.push({ ...item })
+        } else removed += 1
+      }
+      if (contentDebtProposalMode === 'record') {
+        for (const item of available) {
+          remaining.push({ ...item, registration: nextId })
+          added += 1
+        }
+      }
+      if (!remaining.length) continue
+      const source = previous || observed
+      entries.push({ ruleId: source.ruleId, file: source.file, hook: source.hook, event: source.event, items: remaining.sort(contentDebtByFingerprint) })
+    }
+    const referenced = new Set(entries.flatMap((entry) => entry.items.map((item) => item.registration)))
+    const registrations = [
+      ...previousRegistrations.filter((registration) => referenced.has(registration.id)).map((registration) => ({ ...registration })),
+      ...(added ? [{
+        id: nextId,
+        by: contentDebtRegistrant,
+        reason: contentDebtReason,
+        recordedAt: new Date().toISOString(),
+        release: exactSemver.test(bom?.release?.designSystem || '') ? bom.release.designSystem : null,
+      }] : []),
+    ]
+    const document = {
+      $schema: CONTENT_DEBT_SCHEMA_REFERENCE,
+      schemaVersion: 1,
+      kind: CONTENT_DEBT_KIND,
+      note: `Recorded content debt for the installed provider-neutral governance check. Findings listed here do not block; findings not in the baseline still block; findings that disappear must be removed with ${CONTENT_DEBT_COMMAND} -- --prune. Edit only through ${CONTENT_DEBT_COMMAND}. Recorded debt is not content compliance.`,
+      registrations,
+      entries,
+      entriesSha256: null,
+    }
+    document.entriesSha256 = contentDebtDigest(document)
+    validateContentDebtBaseline(document)
+    proposal = {
+      mode: contentDebtProposalMode,
+      refused: null,
+      document,
+      summary: {
+        added,
+        removed,
+        entries: entries.length,
+        findings: entries.reduce((total, entry) => total + entry.items.length, 0),
+        registration: added ? registrations.at(-1) : null,
+        replacedInvalidBaseline: contentDebtBaselineError !== null,
+      },
+    }
+  }
+  evidence.contentDebt.proposal = proposal
 }
 
 evidence.providers = Object.fromEntries(generatedSurfaces.map(([providerId, surface]) => [providerId, {

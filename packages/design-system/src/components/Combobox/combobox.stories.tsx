@@ -1,8 +1,8 @@
 // @story-baseline: packages/design-system/src/components/DataTable/data-table.stories.tsx#WithBulkActions
 // Combobox 為主元件;當 stories 內 wrap DataTable 演示 cell-context,baseline = DataTable WithBulkActions(per .claude/references/story-baseline-registry.json#DataTable)
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
-import { expect, userEvent, waitFor, within } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Combobox } from './combobox'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
@@ -10,6 +10,7 @@ import { Field, FieldError, FieldLabel } from '@/design-system/components/Field/
 import '@/design-system/components/DataTable/column-types'
 import { CATEGORY_OPTIONS_WITH_CLOTHING as categoryOptions } from '@/design-system/stories-helpers/data/product-catalog'
 import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { WORK_ITEM_STATUSES, WORK_ITEM_TYPES, workItemTypeBadge } from '@/design-system/stories-helpers/scene/work-item-type'
 
 const meta: Meta<typeof Combobox> = {
   title: 'Design System/Components/Combobox/展示',
@@ -235,7 +236,7 @@ const InlineSearchProbe = () => {
 export const InlineSearchFocusContract: Story = {
   name: '欄位內搜尋焦點驗證',
   // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的焦點
-  // @example-basis: packages/design-system/src/components/Combobox/combobox.spec.md:191「開啟後插入點就在這裡,打字即過濾」
+  // @example-basis: packages/design-system/src/components/Combobox/combobox.spec.md:193「開啟後插入點就在這裡,打字即過濾」
   parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => <InlineSearchProbe />,
@@ -592,7 +593,111 @@ export const UnrestrictedOffInert: Story = {
 }
 
 
+/* ── 分組與浮層寬度(2026-11-26,產品 canary 回報 C1 / C24)── */
+// 權限設定:角色可勾的權限分三類。`groups` 與選項的 `group` 配對(轉給 SelectMenu「分組」);
+// 權限名稱比欄位寬,`minWidth` 把浮層下限拉到 320px(只能往上拉,select-menu.spec.md「視覺 vs 語意」)。
+const PERMISSION_GROUPS = [
+  { key: 'issue', label: '議題' },
+  { key: 'project', label: '專案' },
+  { key: 'admin', label: '管理' },
+]
+const PERMISSION_OPTIONS = [
+  { value: 'issue.create', label: '建立議題', group: 'issue' },
+  { value: 'issue.edit', label: '編輯他人建立的議題', group: 'issue' },
+  { value: 'issue.delete', label: '刪除議題', group: 'issue' },
+  { value: 'project.board', label: '管理看板與篩選器', group: 'project' },
+  { value: 'project.release', label: '建立與發布版本', group: 'project' },
+  { value: 'admin.members', label: '邀請與移除專案成員', group: 'admin' },
+  { value: 'admin.billing', label: '檢視帳單與用量', group: 'admin' },
+]
+export const GroupsAndMinWidth: Story = {
+  name: '分組與浮層寬度',
+  render: () => (
+    <div className="w-[200px]">
+      <Field>
+        <FieldLabel>開發者角色的權限</FieldLabel>
+        <LiveCombobox
+          options={PERMISSION_OPTIONS}
+          groups={PERMISSION_GROUPS}
+          minWidth={320}
+          searchable
+          value={['issue.create', 'issue.edit']}
+        />
+      </Field>
+    </div>
+  ),
+  // 斷言 groups / minWidth 真的轉到 SelectMenu(C1 / C24):三組標題、組與組之間各一條線、浮層下限 320;搜到只剩一組時沒有線
+  //(線由 CommandGroup 自動畫 = item-anatomy.spec.md「Group auto-separation」)。最後關掉清單,畫面回到初始狀態
+  play: async ({ canvasElement }) => {
+    const doc = canvasElement.ownerDocument
+    const trigger = within(canvasElement).getByRole('combobox')
+    await userEvent.click(trigger)
+    const listbox = await within(doc.body).findByRole('listbox')
+    const groups = () => [...listbox.querySelectorAll<HTMLElement>('[cmdk-group]:not([hidden])')]
+    const lines = () => groups().filter((g) => parseFloat(getComputedStyle(g).borderTopWidth) > 0).length
+    await waitFor(() => expect(groups().map((g) => g.querySelector('[cmdk-group-heading]')?.textContent)).toEqual(['議題', '專案', '管理']))
+    await expect(lines()).toBe(2)
+    const surface = listbox.closest<HTMLElement>('[data-radix-popper-content-wrapper]') ?? listbox
+    await expect(surface.getBoundingClientRect().width).toBeGreaterThanOrEqual(320)
+    await userEvent.type(doc.querySelector<HTMLInputElement>('[cmdk-input]')!, '版本')
+    await waitFor(() => expect(groups().length).toBe(1))
+    await expect(lines()).toBe(0)
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(trigger).toHaveAttribute('aria-expanded', 'false'))
+    trigger.blur()
+  },
+}
+
+
 /* ── DataTable 整合 ── */
+/* ── 選項前綴:工作項類型方塊 + 狀態色(2026-11-26,workspace F 組 F4-2)── */
+// 看板篩選:勾要看的工作項類型與狀態。類型選項前面是類型方塊(`startContent`),狀態選項是圖示 + 語意色(`icon` + `iconClassName`)。
+// play 斷言:類型清單每一列都有自訂前綴節點、「已完成」那一列的圖示是 success 色 —— 2026-11-26 前 Combobox 的轉換漏轉 iconClassName。
+const workItemTypeOptions = WORK_ITEM_TYPES.map((t) => ({ value: t.value, label: t.label, startContent: workItemTypeBadge(t.value) }))
+const workItemStatusOptions = WORK_ITEM_STATUSES.map((s) => ({ value: s.value, label: s.label, icon: s.icon, iconClassName: s.iconClassName }))
+
+export const OptionPrefix: Story = {
+  name: '選項前綴:工作項類型',
+  parameters: { docs: { description: { story: '看板篩選:勾要看的工作項類型與狀態。類型選項前面是類型方塊(選項的 `startContent`),狀態選項是圖示加語意色(`icon` + `iconClassName`)。' } } },
+  render: () => (
+    <div className="flex flex-wrap gap-[var(--layout-space-loose)]">
+      <Field className="w-72">
+        <FieldLabel>類型</FieldLabel>
+        <LiveCombobox options={workItemTypeOptions} value={['bug', 'story']} />
+      </Field>
+      <Field className="w-72">
+        <FieldLabel>狀態</FieldLabel>
+        <LiveCombobox options={workItemStatusOptions} value={['in_progress']} />
+      </Field>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const body = within(canvasElement.ownerDocument.body)
+    const probe = canvasElement.ownerDocument.createElement('span')
+    probe.className = 'text-success'
+    canvasElement.appendChild(probe)
+    const successColor = getComputedStyle(probe).color
+    probe.remove()
+    const [typeTrigger, statusTrigger] = canvas.getAllByRole('combobox')
+    await userEvent.click(typeTrigger)
+    const typeRows = await body.findAllByRole('option')
+    for (const row of typeRows) {
+      await expect(row.querySelector('[data-prefix-type="content"]'), `類型選項「${row.textContent}」沒有前綴節點`).not.toBeNull()
+    }
+    await userEvent.click(typeTrigger)
+    await waitFor(() => expect(body.queryAllByRole('option')).toHaveLength(0))
+    await userEvent.click(statusTrigger)
+    const doneRow = await body.findByRole('option', { name: /已完成/ })
+    // MenuItem 的前綴圖示本身就是帶 data-prefix-type="icon" 的 svg(menu-item.tsx)
+    const doneIcon = doneRow.querySelector('[data-prefix-type="icon"]')
+    await expect(doneIcon, '「已完成」那一列沒有前綴圖示').not.toBeNull()
+    await expect(getComputedStyle(doneIcon!).color, '「已完成」那一列的圖示沒有套 iconClassName').toBe(successColor)
+    await userEvent.click(statusTrigger)
+    await waitFor(() => expect(body.queryAllByRole('option')).toHaveLength(0))
+  },
+}
+
 export const InDataTable: Story = {
   name: 'DataTable 整合',
   render: () => {

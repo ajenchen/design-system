@@ -21,8 +21,9 @@
  *               下一塊本身是字(p / span / 標題 …)、裡面還有別的標頭(版面外層)、或它之後同層還有 (a)(b) 的容器(那一塊是搜尋列之類的 chrome)不算。
  *         容器裡又有容器 = 版面外層,不判(判裡面那個)。
  *   觸發點按它「自己的表面」(lib/launch-browser.mjs ownSurfacePosition),不按正中央 —— 正中央可能是欄位裡的 Tag 移除鈕(A103)。
- *   判法(全部從既有的閘 import,判法只有一個住所 —— M17):頁面量具 = header-first-gap-invariant.mjs 的 pageKit(只多一條:絕對定位的
- *         role=progressbar 算內容,pageKit 其餘絕對定位照舊當裝飾略過 —— FileItem 精簡列的進度條疊在列的下內距裡,A104);
+ *   判法(全部從既有的閘 import,判法只有一個住所 —— M17):頁面量具 = header-first-gap-invariant.mjs 的 pageKit(只多兩條:絕對定位的
+ *         role=progressbar 算內容,pageKit 其餘絕對定位照舊當裝飾略過 —— FileItem 精簡列的進度條疊在列的下內距裡,A104;
+ *         SurfaceHeader 的分隔線被拿掉、容器之後沒有別的一塊時,頂從標頭內容的底量 —— layoutSpace.spec.md 規則 2「量法三點」(2),Calendar「+N」清單);
  *         最後一個東西的角色 = classifyFirst(有框 → bounded、無框清單自帶 py → unbounded、其餘 element);容器種類 = header-content-sides 的 classifyBox
  *         (modal / 撐滿 / 貼內容 / 被上限卡住 / 高度寫死);期望值 = 同檔 bottomWant。本檔多三件事:
  *         ① 元件根部的邊緣標記 data-layout-region="bounded|unbounded" 優先於 DOM 判法(Sidebar 的 py 在群組那一層,DOM 分不出;舊閘 NOT_COVERED),
@@ -36,7 +37,12 @@
  *         每一筆對不到任何容器(完整跑)= 過期 → 紅。**只准變少**:對照 main 的分岔點(git merge-base)與 HEAD,**每一個**有這個檔的基準都要過 ——
  *         新出現的 key、或同一個 key 整筆有任何改寫(放寬 stories / container / trigger、換種類…;只把 stories 縮成子集不算)一律紅,
  *         除非那一筆帶**新的** userQuote(user 逐字)+ quoteDate —— AI 不能自己加或放寬例外。基準都沒有這個檔 = 第一次登記,不限。
- *   紅: (exit 1)任一容器 × 密度底距與期望值差 > 0.5px;標記與 DOM 對不上;宣告的容器種類與量到的不符;例外過期;新例外沒有 user 原話。
+ *   紅: (exit 1)任一容器 × 密度底距與期望值差 > 0.5px;標記與 DOM 對不上;宣告的容器種類與量到的不符;例外過期;新例外沒有 user 原話;
+ *         頂(2026-11-27 H4,layoutSpace.spec.md 規則 2 開頭「頂部也由容器自己判」;只看宣告了 data-layout-body、上內距沒被 consumer 覆寫的容器):
+ *         第一個東西標 unbounded → 清單外框離容器內緣 > 0.5px 紅;第一個是一般元素 → 容器上內距 ≠ tight 紅(有框的那一格頂部自判未做、沒標記的清單,都不判)。
+ *         對照 --selftest λ:Dialog「長內容:開啟狀態」釘回修前的頂(tight)必紅「應 0」。
+ *         貼內容(hug)的底「與頂部同值」比的是容器給一般元素的頂(tight):第一個是 unbounded 清單時量到的頂是 0、不拿它當期望值(規格核對 D);
+ *         對照 --selftest μ:SurfaceBody 夾具第一個插 unbounded 清單、最後是一般元素 → 底 tight 綠;底改回讀頂部變數 → 底 0、紅。
  *   儀器失效(exit 2,印 INSTRUMENT-FAIL;不是產品裁決,也不算通過): 建置沒有 story、任一則開不起來、觸發點點了沒有出現 role=dialog 又沒登記、
  *         一般按鈕 / 選單項目重開之後點不到或點了頁面不見了、選單觸發點點了沒出現 role=menu(都沒登記時)、一則的按鈕 + 選單觸發點超過 CLICK_CAP、
  *         量不到底 / 頂 / token / 容器種類、第一個內容沒捲在最上面、兩種密度在頁面根讀到同一個 loose、完整跑時一個容器都沒量到、
@@ -55,6 +61,12 @@
  *         同一則不點(triggers:false)就量不到;
  *         ζ 觸發點按「自己的表面」(DataTable 篩選面板大密度「類別 篩選值」正中央是 Tag 移除鈕)全打得開,對照組按正中央 → 打不開(A103);
  *         η 絕對定位的進度條算最後一個內容(FileItem 上傳管理面板精簡列:底 = 頂),對照組藏起進度條 → 量到說明字、紅(A104);
+ *         θ 標頭的分隔線被元件規格拿掉(Calendar「+N」清單)→ 頂從標頭內容的底量(layoutSpace.spec.md 規則 2「量法三點」(2))、頂 = 底、綠;
+ *           對照組畫回分隔線 → 改量標頭外框、紅「與頂部同值」;決策卡(body 後面還有一樣拿掉線的 footer)照舊量標頭外框、綠;
+ *         ι 就地編輯的框(InlineEdit 根 data-field-reading)算一個欄位、量框外框(Calendar 事件詳情,最後一欄是就地編輯):頂 = 底 = tight、綠;
+ *           對照組拿掉 data-field-reading → 量到框裡的 Tag / 字、紅(field.spec.md「閱讀情境」表「就地編輯的框」;2026-11-26);
+ *         κ Calendar 根節點的邊緣標記(calendar.spec.md「外殼」;2026-11-26):範例外層改成 data-layout-body="fill" 的容器、月曆是最後一塊
+ *           → 標記 bounded、底 = loose、綠(月曆根節點沒有標記時這一格就紅);對照組拿掉標記 → 底 48、紅「應 loose…缺標記」;
  *         標記造假兩種(Sidebar 群組改標 bounded、表格外框改標 unbounded)→ 標記檢查紅。
  *   分片(--shard=i/n,i 從 0 起;CI 兩格 0/2、1/2):story id 依字碼穩定排序後取模。每片照常判(量測、標記、0 個容器 / 0 則 story = 儀器失效);
  *         例外帳「只准變少」與 --selftest 只在第 0 片做(--selftest 帶非 0 片直接略過、印出來);過期:整筆對到的 story 都在這一片的由這一片判,
@@ -114,6 +126,17 @@ const OWN_SURFACE_STORY = 'design-system-components-datatable-展示--filter-pan
 const OWN_SURFACE_TRIGGER = '類別'
 /** --selftest η:最後一個內容是絕對定位的進度條(FileItem 精簡列;A104) */
 const PROGRESS_STORY = 'design-system-components-fileitem-展示--upload-manager-compact-surface'
+/** --selftest λ:頂部也由容器自己判(Dialog「長內容:開啟狀態」= 成員列表,主體第一個是標 unbounded 的清單;2026-11-27 H4) */
+const TOP_SELF_STORY = 'design-system-components-dialog-展示--long-content-open'
+/** --selftest θ:標頭的分隔線被元件規格拿掉(Calendar「+N」清單,點「+N」開)與決策卡(後面還有 footer,照舊量標頭外框) */
+const OPEN_HEAD_STORY = 'design-system-components-calendar-展示--launch-week'
+const DECISION_STORY = 'design-system-components-agentpanel-展示--decision-card-single'
+/** --selftest ι:就地編輯的框算一個欄位(Calendar 事件詳情,play 打開「設計審查」) */
+const INLINE_FRAME_STORY = 'design-system-components-calendar-設計規格--detail-open'
+const INLINE_FRAME_HEADER = '設計審查'
+const DECISION_HEADER = '公告要用哪種語氣'
+/** --selftest κ:Calendar 根節點的邊緣標記(calendar.spec.md「外殼」)。用「產品上線週」:外層 div 裡最後一個元素就是月曆根節點 */
+const CALENDAR_FRAME_STORY = 'design-system-components-calendar-展示--launch-week'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 頁面端(被 toString 送進頁面,不得引用外層變數;量具一律用 window.__layoutKit = header-first-gap 的 pageKit)
@@ -230,9 +253,19 @@ export const probeContainer = ({ k, followStep, exSel }) => {
     const row = t.el.closest('label')
     return row && body.contains(row) && row !== body && row.querySelector('input:not([type=hidden]), [role=switch], [role=checkbox], [role=radio]') ? { el: row, f: K.feat(row), boxed: true } : null
   }
+  // 就地編輯的框(InlineEdit 的根,帶 data-field-reading;含 editable={false})= 一個欄位:量框的外框,不量框裡的字 / Tag / 頭像。
+  // 依據:../packages/design-system/src/components/Field/field.spec.md「閱讀情境」表「就地編輯的框(靜止透明框 / 滑過底色 / 編輯中的輸入框)」——
+  // 靜止時框透明,但它就是編輯中輸入框的位置與大小;layoutSpace.spec.md 規則 2 / 4 表的 element 明列「欄位」。2026-11-26 前沒有這一條,
+  // 框裡的字被當成「只有字的包層」量內容框,Calendar 詳情(最後一欄是就地編輯)底量成 15.5 / 17.5、類別 Tag 被當成 bounded(P13-P14 實測)
+  const frameOf = (t) => {
+    const frame = t.el.closest('[data-field-reading]')
+    return frame && body.contains(frame) && frame !== body ? { el: frame, f: K.feat(frame), boxed: true } : null
+  }
   const asBox = (t) => {
     const row = rowOf(t)
     if (row) return row
+    const frame = frameOf(t)
+    if (frame) return frame
     const ctl = t.el.parentElement?.closest('button, a[href], [role=button]')
     return ctl && body.contains(ctl) && ctl !== body ? { el: ctl, f: K.feat(ctl), boxed: true } : { ...t, boxed: K.boxedOf(t.f) }
   }
@@ -241,7 +274,7 @@ export const probeContainer = ({ k, followStep, exSel }) => {
   const topOf = (t) => (t.row ? t.el.getBoundingClientRect().top : t.top)
   let last = bThings[0]
   for (const t of bThings) if (bottomOf(t) > bottomOf(last) + 0.5) last = t
-  const tThings = things.map((t) => { const row = rowOf(t); return row ? { ...row, row: true } : t })
+  const tThings = things.map((t) => { const row = rowOf(t) ?? frameOf(t); return row ? { ...row, row: true } : t })
   let first = tThings[0]
   for (const t of tThings) if (topOf(t) < topOf(first) - 0.5) first = t
   // 邊緣標記:最後一個東西本身或它往上到容器之間(不含容器)的第一個 data-layout-region → 角色照標記、量那一層的外框
@@ -249,7 +282,24 @@ export const probeContainer = ({ k, followStep, exSel }) => {
   for (let n = last.el; n && n !== body; n = n.parentElement) if (n.hasAttribute('data-layout-region')) { region = n; break }
   let lastF = last.f
   if (region) last = { el: region, f: K.feat(region), boxed: true }
-  const top = h ? topOf(first) - h.getBoundingClientRect().bottom : topOf(first) - (body.getBoundingClientRect().top + num(body, 'borderTopWidth'))
+  // 標頭的分隔線被元件規格明文拿掉時(layoutSpace.spec.md 規則 2「適用範圍與量法三點」(2):標頭與內容之間沒有看得見的邊界,這一段由標頭的下內距給、
+  // body 頂部歸零),頂改從「標頭內容的底」(標頭裡最低的那個看得見的東西;pageKit collectThings / bottomOf,同 header-first-gap NOT_COVERED 那兩格、
+  // agent-decision-card-validation G2 的量法)量 —— 例:Calendar「+N」清單(calendar.spec.md「「+N」清單浮層」標題列與內距)。
+  // 只認 SurfaceHeader(它預設一定畫分隔線,沒有 = 明文拿掉;一般的 <header> 本來就可能沒有線,不能這樣推);標頭底邊有任何一層畫了下框線
+  //(含 tabs 模式由 TabsList 畫的那條)= 還有分隔線。容器之後在外殼裡還有一塊(例:決策卡的 footer,上方的線也拿掉了)時不改:
+  // 那時底也停在一塊看不見邊界的 band 前,上下都量到 band 的外框才對稱(同上面「上下用同一個外框才對稱」)【AI 推導 2026-11-26】。
+  let headBottom = h ? h.getBoundingClientRect().bottom : null
+  let topFrom = h ? 'header-box' : 'container'
+  if (h && h.matches('[data-slot="surface-header"]')) {
+    const divider = [h, ...h.querySelectorAll('*')].some((n) => K.vis(n) && num(n, 'borderBottomWidth') > 0 && Math.abs(n.getBoundingClientRect().bottom - headBottom) < 1.5)
+    let band = body
+    while (band && band.parentElement !== h.parentElement) band = band.parentElement
+    let after = band?.nextElementSibling
+    while (after && !K.vis(after)) after = after.nextElementSibling
+    const inHead = !divider && band && !after ? K.collectThings(h, { skipSelf: true }) : []
+    if (inHead.length) { headBottom = Math.max(...inHead.map((t) => K.bottomOf(t.el, t.f))); topFrom = 'header-content' }
+  }
+  const top = h ? topOf(first) - headBottom : topOf(first) - (body.getBoundingClientRect().top + num(body, 'borderTopWidth'))
   const flexy = (n) => !!n && /flex|grid/.test(getComputedStyle(n).display)
   const scrolling = (n) => /(auto|scroll)/.test(getComputedStyle(n).overflowY) && n.scrollHeight > n.clientHeight + 1
   let e, pend = 0, scrolls = false, scroller = null
@@ -353,7 +403,19 @@ export const probeContainer = ({ k, followStep, exSel }) => {
   return {
     ...base,
     scrolled: round(K.scrollOffset(first.el, body).top),
-    top: round(top), bottom: round(e - bottomOf(last)), free: round(free), grow: round(grow),
+    // 頂(規則 2 開頭「頂部也由容器自己判」,2026-11-27 H4):第一個東西往上到容器之間的邊緣標記;有標記就量那一層的外框頂。
+    // topIn = 容器內緣頂 → 第一個東西頂;padTop = 容器實際的上內距;startVar = 容器自判出的 --layout-body-start(兩者相等 = consumer 沒覆寫上內距)
+    ...(() => {
+      let fr = null
+      for (let n = first.el; n && n !== body; n = n.parentElement) if (n.hasAttribute('data-layout-region')) { fr = n; break }
+      const fTop = fr ? fr.getBoundingClientRect().top : topOf(first)
+      return {
+        firstMark: fr ? fr.getAttribute('data-layout-region') : null, firstF: first.f, firstDesc: desc(fr ?? first.el),
+        topIn: round(fTop - (body.getBoundingClientRect().top + num(body, 'borderTopWidth'))),
+        padTop: round(num(body, 'paddingTop')), startVar: parseFloat(getComputedStyle(body).getPropertyValue('--layout-body-start')),
+      }
+    })(),
+    top: round(top), topFrom, bottom: round(e - bottomOf(last)), free: round(free), grow: round(grow),
     lastDesc: desc(last.el), lastF, regionMark: region ? region.getAttribute('data-layout-region') : null, regionF: region ? K.feat(region) : null,
     modal, scrolls, capped, pinned, boxDesc: boxEl === body ? null : desc(boxEl),
     loose: v('--layout-space-loose'), tight: v('--layout-space-tight'), bottomToken: v('--layout-space-bottom'),
@@ -419,8 +481,23 @@ export function judgeRow(r, ex) {
     else if (r.declared === 'fill' && box !== 'fill') out.failures.push(`${where} 宣告 data-layout-body="fill"(擋住頁面或撐滿),量到的容器種類是 ${box}(內容加高 ${FOLLOW_STEP}px 看得見的那一塊長 ${r.grow}、多出來的空白 ${r.free}、modal ${r.modal})—— 最後是一般元素時 CSS 會給 48,照規則 4 應與頂部同值;改宣告 hug`)
     else if (r.declared === 'hug' && box === 'fill') out.failures.push(`${where} 宣告 data-layout-body="hug"(不擋頁面、貼內容),量到的是撐滿 / 擋住頁面(內容加高 ${FOLLOW_STEP}px 看得見的那一塊長 ${r.grow}、多出來的空白 ${r.free}、modal ${r.modal})—— 最後是一般元素時 CSS 會給與頂部同值,照規則 4 第 1 列應 48;改宣告 fill`)
   }
+  // ③ 頂(layoutSpace.spec.md 規則 2 開頭「頂部也由容器自己判」,2026-11-27 產品 canary 回報 H4):容器宣告了 data-layout-body、上內距是容器自己給的
+  //   (padding-top = 它自判出的 --layout-body-start,consumer 沒覆寫)時 —— 第一個東西標 unbounded → 清單外框貼容器內緣(頂 0);
+  //   其餘(一般元素)→ 容器的上內距 = tight。有框的(bounded)在最前面那一格的頂部自判未做、不判;沒標記的清單不判(DOM 看是清單卻沒標記,底部那一段會指出缺標記)。
+  if (r.declared && Number.isFinite(r.startVar) && Number.isFinite(r.padTop) && Math.abs(r.padTop - r.startVar) <= TOL) {
+    const firstRole = r.firstMark ?? classifyFirst(r.firstF ?? {})
+    if (r.firstMark === 'unbounded') {
+      if (!Number.isFinite(r.topIn)) out.instrument.push(`${INSTRUMENT_FAIL_MARKER}:${where} 第一個東西標 unbounded,但沒量到它的頂`)
+      else if (Math.abs(r.topIn) > TOL) out.failures.push(`${where} 頂 = ${r.topIn}px,應 0(規則 2 開頭「頂部也由容器自己判」:第一個東西標 unbounded = 自帶上內距的清單 → 容器頂 0;第一個 = ${r.firstDesc ?? '?'}、容器上內距 ${r.padTop})`)
+    } else if (firstRole === 'element' && Math.abs(r.padTop - r.tight) > TOL) {
+      out.failures.push(`${where} 容器上內距 = ${r.padTop}px,應 tight ${r.tight}(規則 2 開頭:第一個東西是一般元素 → tight;第一個 = ${r.firstDesc ?? '?'})`)
+    }
+  }
   const t = { loose: r.loose, tight: r.tight, bottom: r.bottomToken }
-  let { want, rule } = bottomWant({ last: role, box, top: r.top }, t)
+  // 「與頂部同值」(規則 4 第 4 列)比的是容器給一般元素的頂(tight)。第一個是 unbounded 清單時頂由清單自己的上內距給、容器頂 0(規則 2 開頭),
+  // 量到的 top = 0 不是「容器的頂部值」—— 拿它當期望值,最後一個一般元素貼底也會被判綠(2026-11-27 規格核對 D:hug 的底讀了頂部自判的變數,底從 12 變 0)
+  const hugTop = r.firstMark === 'unbounded' ? r.tight : r.top
+  let { want, rule } = bottomWant({ last: role, box, top: hugTop }, t)
   const exc = entry('exceptions')
   if (exc) { out.matched.push(exc.key); want = typeof exc.want === 'number' ? exc.want : t[exc.want]; rule = `例外 ${exc.key}:${exc.reason}` }
   const pend = entry('pending')
@@ -1220,6 +1297,111 @@ async function selftestBrowser(browser, server, ex) {
       if (!(now.length === 1 && /progressbar/.test(now[0].lastDesc ?? '') && Math.abs(now[0].bottom - want) <= TOL && !nowRed.length && hidden.length === 1 && hidden[0].bottom > want + TOL && hRed.some((s) => s.includes('與頂部同值')))) {
         problems.push(`η @${density}:上傳管理面板(精簡列)應量到進度條、底 ${want}、綠;藏起進度條應紅「與頂部同值」;實得 ${JSON.stringify(now.map((r) => ({ bottom: r.bottom, last: r.lastDesc })))} ${JSON.stringify(nowRed)} / 藏起 ${JSON.stringify(hidden.map((r) => r.bottom))} ${JSON.stringify(hRed)}`)
       } else out(`  ✓ η @${density}:上傳管理面板(精簡列)最後是絕對定位的進度條 → 底 ${now[0].bottom} = 頂;藏起進度條 → 量到說明字、底 ${hidden[0].bottom}、紅「與頂部同值」`)
+    }
+    // θ(2026-11-26):標頭的分隔線被元件規格拿掉(Calendar「+N」清單)→ 頂從標頭內容的底量(規則 2「量法三點」(2)),頂 = 底 = tight、綠;
+    // 對照組畫回標頭的分隔線 → 頂改量標頭外框底(0)、底仍 tight → 紅「與頂部同值」;決策卡(標頭與 footer 的線都拿掉、body 後面還有 footer)照舊量 band 外框
+    for (const density of DENSITIES) {
+      const list = (got) => got.rows.filter((r) => /data-slot=surface-body/.test(r.containerDesc ?? '') && /^\d+月\d+日/u.test(r.headerText ?? ''))
+      const now = list(await measureStory(page, server.origin, server.notFound, OPEN_HEAD_STORY, density, { exSel, explore: false }))
+      const nowRed = now.flatMap((r) => [...judgeRow(r, ex).failures, ...judgeRow(r, ex).instrument])
+      // 期望值讀容器自己的 tight:Popover 外殼把版面間距鎖在一般密度(popover.tsx data-layout-space="md"),大密度也是 12
+      const want = now[0]?.tight ?? NaN
+      const lined = list(await measureStory(page, server.origin, server.notFound, OPEN_HEAD_STORY, density, {
+        exSel, explore: false, beforeMeasure: (p) => p.addStyleTag({ content: '[data-calendar-more-list] [data-slot="surface-header"]{border-bottom:1px solid currentColor!important}' }),
+      }))
+      const lRed = lined.flatMap((r) => judgeRow(r, ex).failures)
+      const card = (await measureStory(page, server.origin, server.notFound, DECISION_STORY, density, { exSel, triggers: false, explore: false })).rows
+        .filter((r) => (r.headerText ?? '').includes(DECISION_HEADER))
+      const cardRed = card.flatMap((r) => [...judgeRow(r, ex).failures, ...judgeRow(r, ex).instrument])
+      const ok = now.length === 1 && now[0].topFrom === 'header-content' && Math.abs(now[0].top - want) <= TOL && Math.abs(now[0].bottom - want) <= TOL && !nowRed.length
+        && lined.length === 1 && lined[0].topFrom === 'header-box' && lined[0].top < want - TOL && lRed.some((s) => s.includes('與頂部同值'))
+        && card.length === 1 && card[0].topFrom === 'header-box' && !cardRed.length
+      if (!ok) problems.push(`θ @${density}:Calendar「+N」清單應從標頭內容底量、頂 = 底 = ${want}、綠;畫回分隔線應改量標頭外框、紅「與頂部同值」;決策卡應照舊量標頭外框、綠;實得 ${JSON.stringify(now.map((r) => ({ topFrom: r.topFrom, top: r.top, bottom: r.bottom })))} ${JSON.stringify(nowRed)} / 畫回線 ${JSON.stringify(lined.map((r) => ({ topFrom: r.topFrom, top: r.top, bottom: r.bottom })))} ${JSON.stringify(lRed)} / 決策卡 ${JSON.stringify(card.map((r) => ({ topFrom: r.topFrom, top: r.top, bottom: r.bottom })))} ${JSON.stringify(cardRed)}`)
+      else out(`  ✓ θ @${density}:Calendar「+N」清單標頭沒有分隔線 → 從標頭內容底量,頂 ${now[0].top} = 底 ${now[0].bottom};畫回分隔線 → 量標頭外框、頂 ${lined[0].top}、紅「與頂部同值」;決策卡(後面還有 footer)照舊量標頭外框,頂 ${card[0].top} / 底 ${card[0].bottom}、綠`)
+    }
+    // ι(2026-11-26):就地編輯的框算一個欄位(Calendar 事件詳情,最後一欄是就地編輯的類別 Tag;play 打開)→ 量框外框、底 = 頂 = tight、綠;
+    // 對照組拿掉 InlineEdit 根的 data-field-reading(= 不認得框)→ 量到框裡的 Tag / 字、紅
+    for (const density of DENSITIES) {
+      const pick = (got) => got.rows.filter((r) => /data-slot=surface-body/.test(r.containerDesc ?? '') && (r.headerText ?? '') === INLINE_FRAME_HEADER)
+      const now = pick(await measureStory(page, server.origin, server.notFound, INLINE_FRAME_STORY, density, { exSel, triggers: false, explore: false }))
+      const nowRed = now.flatMap((r) => [...judgeRow(r, ex).failures, ...judgeRow(r, ex).instrument])
+      const want = now[0]?.tight ?? NaN
+      const bare = pick(await measureStory(page, server.origin, server.notFound, INLINE_FRAME_STORY, density, {
+        exSel, triggers: false, explore: false, beforeMeasure: (p) => p.evaluate(() => document.querySelectorAll('[data-field-reading]').forEach((el) => el.removeAttribute('data-field-reading'))),
+      }))
+      const bRed = bare.flatMap((r) => judgeRow(r, ex).failures)
+      const ok = now.length === 1 && Math.abs(now[0].bottom - want) <= TOL && Math.abs(now[0].top - want) <= TOL && !nowRed.length && bare.length === 1 && bRed.length > 0
+      if (!ok) problems.push(`ι @${density}:Calendar 詳情最後一欄是就地編輯 → 應量框外框、頂 = 底 = ${want}、綠;拿掉 data-field-reading 應紅;實得 ${JSON.stringify(now.map((r) => ({ top: r.top, bottom: r.bottom, last: r.lastDesc })))} ${JSON.stringify(nowRed)} / 拿掉 ${JSON.stringify(bare.map((r) => ({ bottom: r.bottom, last: r.lastDesc })))} ${JSON.stringify(bRed)}`)
+      else out(`  ✓ ι @${density}:Calendar 詳情最後一欄是就地編輯 → 量框外框,頂 ${now[0].top} = 底 ${now[0].bottom};拿掉 data-field-reading → 底 ${bare[0].bottom}、紅`)
+    }
+    // κ(2026-11-26):Calendar 根節點的邊緣標記(calendar.spec.md「外殼」;layoutSpace.spec.md:156)。全庫還沒有範例把月曆放進會給上下內距的容器,
+    // 這裡把「產品上線週」的外層 div 改成那種容器(拿掉範例自己的 p-*、宣告 data-layout-body="fill";月曆固定 600 高,下方留空白 = 撐滿的容器),
+    // 月曆是最後一塊 → 標記 bounded、底 = loose、綠。月曆根節點沒有標記時這一格量不到容器、紅(這一格就是「Calendar 根節點標 bounded」);
+    // 對照組拿掉標記 → 容器把月曆當一般元素給 48、紅「應 loose…缺標記」(同 γ 的表格)。月曆根節點 = 格陣往上第一個帶標記的祖先。
+    const asFillBody = (strip) => (p) => p.evaluate((strip) => {
+      const cal = document.querySelector('#storybook-root [role=grid]')?.closest('[data-layout-region]')
+      const wrap = cal?.parentElement
+      if (!cal || !wrap || wrap.lastElementChild !== cal) return
+      for (const c of [...wrap.classList]) if (/^p[trblxy]?-/.test(c)) wrap.classList.remove(c)
+      wrap.setAttribute('data-layout-body', 'fill')
+      cal.style.setProperty('height', '600px')
+      if (strip) cal.removeAttribute('data-layout-region')
+    }, strip)
+    for (const density of DENSITIES) {
+      const want = T[density].loose
+      const pick = (got) => got.rows.filter((r) => r.declared === 'fill')
+      const now = pick(await measureStory(page, server.origin, server.notFound, CALENDAR_FRAME_STORY, density, { exSel, triggers: false, explore: false, beforeMeasure: asFillBody(false) }))
+      const nowRed = now.flatMap((r) => [...judgeRow(r, ex).failures, ...judgeRow(r, ex).instrument])
+      const bare = pick(await measureStory(page, server.origin, server.notFound, CALENDAR_FRAME_STORY, density, { exSel, triggers: false, explore: false, beforeMeasure: asFillBody(true) }))
+      const bRed = bare.flatMap((r) => judgeRow(r, ex).failures)
+      const ok = now.length === 1 && now[0].regionMark === 'bounded' && Math.abs(now[0].bottom - want) <= TOL && !nowRed.length
+        && bare.length === 1 && Math.abs(bare[0].bottom - T[density].bottomToken) <= TOL && bRed.some((s) => s.includes('缺標記') && s.includes(`應 ${want}`))
+      if (!ok) problems.push(`κ @${density}:月曆放進 data-layout-body="fill" 的容器、是最後一塊 → 應量到 1 個容器、標記 bounded、底 ${want}、綠;拿掉標記應底 48、紅「應 ${want}…缺標記」;實得 ${JSON.stringify(now.map((r) => ({ bottom: r.bottom, mark: r.regionMark, last: r.lastDesc })))} ${JSON.stringify(nowRed)} / 拿掉 ${JSON.stringify(bare.map((r) => ({ bottom: r.bottom, last: r.lastDesc })))} ${JSON.stringify(bRed)}`)
+      else out(`  ✓ κ @${density}:月曆是 fill 容器的最後一塊 → 邊緣標記 bounded、底 ${now[0].bottom} = loose;拿掉標記 → 底 ${bare[0].bottom}、紅「應 ${want}…缺標記」`)
+    }
+    // λ(2026-11-27,產品 canary 回報 H4):頂部也由容器自己判 —— Dialog「長內容:開啟狀態」(成員列表)主體第一個是標 unbounded 的清單、沒寫 !pt-0
+    // → 容器頂 0、清單外框貼主體內緣、綠;對照組拿掉頂部那條 CSS(--layout-body-start 釘回 tight = 修前)→ 頂 = tight、紅「應 0」
+    for (const density of DENSITIES) {
+      const pick = (got) => got.rows.filter((r) => r.declared === 'fill' && r.firstMark === 'unbounded')
+      const now = pick(await measureStory(page, server.origin, server.notFound, TOP_SELF_STORY, density, { exSel, triggers: false, explore: false }))
+      const nowRed = now.flatMap((r) => [...judgeRow(r, ex).failures, ...judgeRow(r, ex).instrument])
+      const pinned = pick(await measureStory(page, server.origin, server.notFound, TOP_SELF_STORY, density, {
+        exSel, triggers: false, explore: false, beforeMeasure: (p) => p.addStyleTag({ content: '[data-layout-body]{--layout-body-start:var(--layout-space-tight)!important}' }),
+      }))
+      const pRed = pinned.flatMap((r) => judgeRow(r, ex).failures)
+      const ok = now.length === 1 && Math.abs(now[0].topIn) <= TOL && now[0].padTop === 0 && !nowRed.length
+        && pinned.length === 1 && Math.abs(pinned[0].topIn - T[density].tight) <= TOL && pRed.some((s) => s.includes('應 0'))
+      if (!ok) problems.push(`λ @${density}:成員列表主體第一個是 unbounded 清單 → 應頂 0、綠;拿掉頂部自判應頂 tight、紅「應 0」;實得 ${JSON.stringify(now.map((r) => ({ topIn: r.topIn, padTop: r.padTop, first: r.firstDesc })))} ${JSON.stringify(nowRed)} / ${JSON.stringify(pinned.map((r) => ({ topIn: r.topIn, padTop: r.padTop })))} ${JSON.stringify(pRed)}`)
+      else out(`  ✓ λ @${density}:成員列表主體第一個是 unbounded 清單 → 頂 ${now[0].topIn}、綠;拿掉頂部自判 → 頂 ${pinned[0].topIn}、紅「應 0」`)
+    }
+    // μ(2026-11-27 規格核對 D):hug 容器第一個是 unbounded 清單、最後一個是一般元素 → 頂 0(頂部自判)、底仍 = tight(不跟著頂部變 0)。
+    // DS 目前沒有這種範例:把 SurfaceBody 三段那一則的第一個 hug 容器最前面插一份標 unbounded 的清單(人名兩列,py-2 自帶上下內距)當夾具;
+    // 對照組把 hug 的底改回讀 --layout-body-start(= 已提交 d2680b30 的寫法)→ 底 0、紅「應 tight」
+    const withListFirst = (extraCss) => async (p) => {
+      if (extraCss) await p.addStyleTag({ content: extraCss })
+      await p.evaluate(() => {
+        const body = document.querySelector('[data-layout-body="hug"]')
+        if (!body) return
+        const list = document.createElement('div')
+        list.setAttribute('data-layout-region', 'unbounded')
+        list.className = 'py-2'
+        for (const name of ['Ada Chen', 'Ben Lin']) { const row = document.createElement('div'); row.textContent = name; list.appendChild(row) }
+        body.prepend(list)
+      })
+    }
+    for (const density of DENSITIES) {
+      const pick = (got) => got.rows.filter((r) => r.declared === 'hug' && r.firstMark === 'unbounded')
+      const now = pick(await measureStory(page, server.origin, server.notFound, HUG_STORY, density, { exSel, triggers: false, explore: false, beforeMeasure: withListFirst(null) }))
+      const nowRed = now.flatMap((r) => [...judgeRow(r, ex).failures, ...judgeRow(r, ex).instrument])
+      const back = pick(await measureStory(page, server.origin, server.notFound, HUG_STORY, density, {
+        exSel, triggers: false, explore: false, beforeMeasure: withListFirst('[data-layout-body="hug"]{--layout-body-end:var(--layout-body-start)!important}'),
+      }))
+      const bRed = back.flatMap((r) => judgeRow(r, ex).failures)
+      const want = now[0]?.tight ?? NaN
+      const ok = now.length === 1 && Math.abs(now[0].topIn) <= TOL && Math.abs(now[0].bottom - want) <= TOL && !nowRed.length
+        && back.length === 1 && Math.abs(back[0].bottom) <= TOL && bRed.some((s) => s.includes(`應 ${want}`))
+      if (!ok) problems.push(`μ @${density}:hug 容器第一個是 unbounded 清單、最後是一般元素 → 應頂 0、底 ${want}、綠;底改回讀頂部變數應底 0、紅「應 ${want}」;實得 ${JSON.stringify(now.map((r) => ({ topIn: r.topIn, bottom: r.bottom, last: r.lastDesc })))} ${JSON.stringify(nowRed)} / ${JSON.stringify(back.map((r) => ({ bottom: r.bottom })))} ${JSON.stringify(bRed)}`)
+      else out(`  ✓ μ @${density}:hug 容器第一個是 unbounded 清單、最後是一般元素 → 頂 ${now[0].topIn}、底 ${now[0].bottom} = tight;底改回讀頂部變數 → 底 ${back[0].bottom}、紅「應 ${want}」`)
     }
     // 標記造假:Sidebar 群組改標 bounded、表格外框改標 unbounded → 標記檢查紅
     const fake = await measureStory(page, server.origin, server.notFound, SIDEBAR_STORY, 'md', {

@@ -14,6 +14,7 @@ import { Button } from '@/design-system/components/Button/button'
 import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
 import { ItemContent } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { OVERLAY_AVAILABLE_HEIGHT } from '@/design-system/tokens/elevation/overlay-geometry'
 import { useI18n } from '@/design-system/lib/i18n/i18n-context'
 
 /**
@@ -176,7 +177,8 @@ export interface ProfileCardProps extends React.HTMLAttributes<HTMLDivElement> {
   fields?: { label: string; value: React.ReactNode }[]
   /**
    * Default field 的真實值。Object key = NAMECARD_DEFAULT_FIELD_KEYS 之一。
-   * 缺 key → render placeholder。Dev mode 會 console.warn 提醒消費者補資料。
+   * 缺 key(或值是 null / undefined)→ render placeholder `-`。Dev mode **逐 key 檢查值**:值缺(沒給 / null / undefined / 空字串)
+   * 而且沒被 `fields` 的同名欄位取代時 console.warn,列出缺的欄名,提醒消費者補資料。
    */
   defaultFieldValues?: Partial<Record<ProfileCardDefaultFieldKey, React.ReactNode>>
   onViewMore?: () => void
@@ -202,6 +204,7 @@ const ProfileCard = React.forwardRef<HTMLDivElement, ProfileCardProps>(
       viewMoreLabel: viewMoreLabelProp,
       labels: labelsOverride,
       className,
+      style,
       ...props
     },
     ref,
@@ -232,16 +235,20 @@ const ProfileCard = React.forwardRef<HTMLDivElement, ProfileCardProps>(
     const viewMoreLabel = viewMoreLabelProp ?? t('profile-card', 'viewMore', '查看更多') // i18n-allow: DS 預設(中文);prop / I18nProvider 可換
     const idLabel = labels.id
     const employeeNumberLabel = labels.employeeNumber
-    const allFields = React.useMemo(() => {
+    const { allFields, missingDefaultKeys } = React.useMemo(() => {
       const fieldLabel: Record<ProfileCardDefaultFieldKey, string> = { id: idLabel, employeeNumber: employeeNumberLabel }
       const consumerLabels = new Set((fields ?? []).map((f) => f.label))
-      const defaults = NAMECARD_DEFAULT_FIELD_KEYS
-        .map((key) => ({
-          label: fieldLabel[key],
-          value: defaultFieldValues?.[key] ?? FIELD_PLACEHOLDER,
-        }))
-        .filter((d) => !consumerLabels.has(d.label))
-      return fields && fields.length > 0 ? [...defaults, ...fields] : defaults
+      // 被 consumer `fields` 同名欄位取代的預設欄不畫、也不算缺值(同一份去重集合,下方 dev 警告用)
+      const shownKeys = NAMECARD_DEFAULT_FIELD_KEYS.filter((key) => !consumerLabels.has(fieldLabel[key]))
+      const defaults = shownKeys.map((key) => ({
+        label: fieldLabel[key],
+        value: defaultFieldValues?.[key] ?? FIELD_PLACEHOLDER,
+      }))
+      const missing = shownKeys.filter((key) => {
+        const value = defaultFieldValues?.[key]
+        return value == null || value === ''
+      })
+      return { allFields: fields && fields.length > 0 ? [...defaults, ...fields] : defaults, missingDefaultKeys: missing }
     }, [defaultFieldValues, fields, idLabel, employeeNumberLabel])
 
     // Dev warn:consumer 透過 `fields` 傳了跟預設欄位同名的 label → 指出來(預設欄位的值走 `defaultFieldValues`)
@@ -256,30 +263,30 @@ const ProfileCard = React.forwardRef<HTMLDivElement, ProfileCardProps>(
       }
     }
 
-    // Dev mode warn:consumer 沒傳 default field 任何 key → 提示補完(避免漂移成 placeholder-only)
-    if (process.env.NODE_ENV !== 'production' && !defaultFieldValues) {
+    // Dev mode warn:**逐欄檢查值**,有預設欄位缺值就列出缺的欄名(避免漂移成 placeholder-only)。
+    // 缺值 = 沒給 key、或值是 null / undefined / 空字串,而且這一欄沒被 consumer `fields` 的同名欄位取代(上方 allFields 同一份去重集合)。
+    // 2026-11-26(workspace F 組 F2)前只在「整個 defaultFieldValues 物件沒傳」時警告 —— PersonDisplay / PeoplePicker / DataTable
+    // 人員格經 `buildPersonProfileCard` 一律傳 `{ id, employeeNumber }` 物件,兩個值都是 undefined 也不警告。
+    if (process.env.NODE_ENV !== 'production' && missingDefaultKeys.length > 0) {
       console.warn(
-        `[ProfileCard] "${name}":no defaultFieldValues passed — sections will render placeholders. ` +
-        `Pass at least { id, employeeNumber } via defaultFieldValues prop. ` +
+        `[ProfileCard] "${name}":default field value missing for ${missingDefaultKeys.join(', ')} — ` +
+        `pass it via defaultFieldValues={{ ${missingDefaultKeys.join(', ')} }} (NAMECARD_DEFAULT_FIELD_KEYS). ` +
         `For other description items (email/phone/department/location etc),use \`fields\` prop array.`,
       )
     }
 
     // Layout canonical(2026-04-23):Header + Actions 固定上,Body(status + fields)可捲動,
     // View more 固定下。**ProfileCard 自己約束高度**,不依賴 consumer HoverCardContent 設 flex:
-    //   - `max-h-[var(--radix-hover-card-content-available-height,...)]`:HoverCard / Popover
-    //     context 自動繼承 Radix viewport-aware 變數;standalone 落到 100vh fallback
+    //   - `style.maxHeight = OVERLAY_AVAILABLE_HEIGHT`(tokens/elevation/overlay-geometry.ts;2026-11-24 前是 class 裡
+    //     hover-card → popover → 100vh 兩層後備值):HoverCard / Popover 裡繼承 Radix popper 寫在外殼上的可用高;standalone 落到 100vh 後備值
     //   - 內部 `flex flex-col + overflow-hidden`:Header(shrink-0)+ Body(flex-1 min-h-0 ScrollArea)
     //     + Footer(shrink-0)三層 chrome
     // 這是 overlay-surface 的 Header / Body / Footer 三層 chrome(內容多時只有 Body 捲動)。
     return (
       <div
         ref={ref}
-        className={cn(
-          'w-[320px] flex flex-col overflow-hidden',
-          'max-h-[var(--radix-hover-card-content-available-height,var(--radix-popover-content-available-height,100vh))]',
-          className,
-        )}
+        className={cn('w-[320px] flex flex-col overflow-hidden', className)}
+        style={{ maxHeight: OVERLAY_AVAILABLE_HEIGHT, ...style }}
         {...props}
       >
         {/* ── HEADER(固定): profile + actions ── */}
@@ -347,7 +354,7 @@ const ProfileCard = React.forwardRef<HTMLDivElement, ProfileCardProps>(
 
           {/* Fields section:status defined 才有 border-t separator;無 status section 時去除 border-t(因 ScrollArea 起點已有上方 border-t,不重疊) */}
           <div className={cn('px-4 py-3', status && 'border-t border-divider')}>
-            {/* 欄位值加 break-words:兩欄並排、每欄約 136px(320 − 左右內距 32 − 欄距 16,除以 2)。description-list.spec.md:179 直式的兩條規則同時要守 ——
+            {/* 欄位值加 break-words:兩欄並排、每欄約 136px(320 − 左右內距 32 − 欄距 16,除以 2)。description-list.spec.md:180 直式的兩條規則同時要守 ——
                 自然流文字依字詞換行(「Engineering / Platform」在空白處斷),沒有空白的長字串(email / URL)由 consumer 讓它能斷、不畫進右邊那一欄。
                 ProfileCard 的欄位值兩種都有,所以用 break-words(overflow-wrap: break-word:一個字放不下才在字中斷,同 item-anatomy.tsx / tooltip.tsx / inline-edit.tsx);
                 break-all 會讓多字值從字中間斷(「Engineering / Platfor」+「m」)。2026-10-20 前沒加 → 設計規格頁的 ada.chen@example.com 疊在「團隊」那欄上。

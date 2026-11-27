@@ -131,7 +131,7 @@
 不寫成三者全等。
 
 **沒有懸停回饋的按鈕怎麼辦**:按鈕的可視形狀本身就是訊號(例如 AgentPanel 入口鈕、一般 `Button`),此時「懸停回饋」退化成「可視形狀」,結論不變 —— user 2026-09-04 的原話講的就是這種按鈕(「按鈕的視覺 = 觸發事件的範圍 = 會觸發 tooltip 的範圍」)。
-這句**只管有可視邊界的按鈕**,不延伸成「所有沒有滑過變化的東西,點得到的範圍都要看得到」:整列、整張卡這類本身就是目標的東西照滑過原則一-2(點得到的地方不一定要有變化;例:步驟條整列點得到、滑過不變,右側空白也點得到)。2026-09-24 版本曾把這句寫成全 DS 通則,user 2026-09-26 同意改寫(N50)。
+這句**只管有可視邊界的按鈕**,不延伸成「所有沒有滑過變化的東西,點得到的範圍都要看得到」:整列、整張卡這類本身就是目標的東西照滑過原則一-2(點得到的地方不一定要有變化;例:步驟條整列點得到、滑過不變,右側空白也點得到;月曆日期格整格點得到、滑過不變,只有手形游標,`components/Calendar/calendar.spec.md`「Cell 規則」滑過條,user 2026-11-26 點選「A:拿掉日期格的滑過底色,只留手形游標」)。2026-09-24 版本曾把這句寫成全 DS 通則,user 2026-09-26 同意改寫(N50)。
 
 ### 適用範圍:這條規則管**控件**,不管**表格的格**(2026-09-24 撤回一次過度外推)
 
@@ -239,15 +239,15 @@ rdg 該 cell 變 active、Glide 直接選列。
 
 | # | 目標 | 可視形狀 | 命中區 | 關係 | 判定 |
 |---|---|---|---|---|---|
-| 1 | `ItemInlineActionButton`(Tag dismiss / Field endAction / TreeItem / Menu / DropdownMenu / DataTable 巢狀 chevron / 各 panel 列 / **Sidebar 列鈕與群組鈕**全走它)| 懸停底色 18 / 18 / 22(`item-anatomy.tsx:128-132`)| 同一塊 —— 底色 span **刻意沒有** `pointer-events-none`,溢出的 1px 自己接住點擊再冒泡到 button(`item-anatomy.tsx:730`)| 相等 | ✅ **2026-09-24 依 user 裁示修正並實測**:側欄列鈕量到 按鈕盒 16×16 / 懸停底色 18×18 / 圖示 16×16;底色邊緣**內** 1px 四面探針全打到它自己,邊緣**外** 2px 四面分別打到列鈕與列文字(沒有隱形帶)。修前命中 16.75×16.75,右緣與下緣各短約 1.25px |
+| 1 | `ItemInlineActionButton`(Tag dismiss / Field endAction / TreeItem / Menu / DropdownMenu / DataTable 巢狀 chevron / 各 panel 列 / **Sidebar 列鈕與群組鈕**全走它)| 懸停底色 18 / 18 / 22(`item-anatomy.tsx:129-133`)| 同一塊 —— 底色 span **刻意沒有** `pointer-events-none`,溢出的 1px 自己接住點擊再冒泡到 button(`item-anatomy.tsx:739`)| 相等 | ✅ **2026-09-24 依 user 裁示修正並實測**:側欄列鈕量到 按鈕盒 16×16 / 懸停底色 18×18 / 圖示 16×16;底色邊緣**內** 1px 四面探針全打到它自己,邊緣**外** 2px 四面分別打到列鈕與列文字(沒有隱形帶)。修前命中 16.75×16.75,右緣與下緣各短約 1.25px |
 | 2 | `Button iconOnly`(Pagination 上下頁等)| 整個 button 盒(底色填滿)| 同一個盒 —— `aspect-square p-0`(`button.tsx:372` `ICON_ONLY_BASE`,`:536` 套用)| 相等 | ✅ |
 | 3 | `AgentFabDock` 主鈕(家 40 / 貼邊 28)| button 的 border box(圓角也在 button 上)| 同一個盒,並有機械閘逐點驗(`agent-panel.spec.md`「遮擋與貼邊」段 :457-504,`scripts/agent-fab-hit-area-invariant.mjs` H1/H4/H5)| 相等 | ✅ 本規則的原點 |
 | 4 | `Slider` thumb | `h-4 w-4 rounded-full`(`slider.tsx:166`)| 同一個盒,無外擴 | 相等 | ✅ |
 | 5 | `FileItem` 整列主動作 | 整列 | 整列;透明覆蓋 button 是 `pointer-events-none`,只收鍵盤(`file-item.tsx#keyboardPrimaryAction`,理由在 `file-item.spec.md`「Row primary action 鍵盤可達且不 nested-interactive」條 :423)| 相等 | ✅ |
 | 6 | `ResizeHandle` 的 1px 線 | 1px 線(距外緣 3px)| 7px 命中區,外推 3px(`resize-handle.tsx#HIT_ZONE`、`resize-handle.tsx#HIT_OUTSET`,`resize-handle.spec.md`「視覺 canonical(對齊 DataTable v11)」)| 命中 > 可視 | ✅ **線的例外,理由與世界級對照(含 URL)已在該 spec** |
 | 7 | `CarouselDots` 指示點 | 6×6 圓點(現張 24×6)| 12×24(現張 30×24);垂直 ±9、水平 ±3(`carousel.tsx#CarouselDots`)| 命中 > 可視 | ✅ **點的例外,2026-09-24 逐案裁定並實測**:理由 / 外擴量 / 三家原始碼對照 / 實測數字都在 `carousel.spec.md`「指示點的命中區」。相鄰命中盒間隙 **0.00px**(相切零重疊);命中盒下緣在 carousel 根之內 3px(不越出宿主);帶底下是 carousel 視窗 div(非可點目標)。對照組:關掉 `::before` 命中收回 6×6 |
-| 8 | `DateGrid` 日期格 | 28×28(md)的**圓**(`rounded-full`;懸停 1.5px 藍圈畫在它身上,`date-grid.tsx:491`)| 同一個圓(`date-grid.tsx:482` 起的 `day_button`,已無 `::before`)| 相等 | ✅ **2026-09-24 修正**:原 `before:-inset-[2px]` 名義 2px、**實測最遠外推 9.33px**(`::before` 是方的,把圓四角外面也吃進去),非線非點吃不到例外 → 移除,改用根因層作法「只在指標真的離開整張格陣時才清停留日」(MUI 同款,`date-grid.tsx:193` `data-day-grid` + `handleDayMouseLeave` :300 / `handleGridMouseOver` :319)。修後圓內 2188 點全命中 0 漏、圓外最遠 1.10px(抗鋸齒容差內);跨格不閃實測框最少 17 格,對照組拔錨點掉到 0。**2026-09-26**:可點日子方格裡、圓以外的四個角與格間縫,指標經過時停留日照舊(角不再閃,實測偏離中線 6–14 步 → 0);預覽亮著時在縫或角裡點下去 = 確認預覽的那一天(一-6,是整個元件確認預覽、不是圓外擴;沒有預覽時點了沒反應)。全文 → `date-grid.spec.md`「日期格的命中區 = 可視形狀」(那節寫明藍圈就畫在這顆圓上,所以可視形狀 = 懸停回饋形狀)「縫與角裡的點擊」 |
-| 9 | `Calendar` 月檢視的日期數字鈕 | 今天:24 高的 `bg-info` pill;平日:只有數字字面,沒有任何形狀(`calendar.tsx#Calendar` 裡 `min-w-6 h-6` 的日期鈕)| `min-w-6 h-6` = 24×24(同上)| 相等(真正的目標是**整格**)| ✅ **2026-09-24 逐案裁定 + 實測**:懸停回饋是整格 `hover:bg-neutral-hover`,而整格正是命中區(cell div 的 onClick)。右上角數字鈕不是第二個目標,是同一目標的鍵盤入口 —— 自己零 hover 樣式(掃全 stylesheet 命中它的 `:hover` 規則 = 0 條)、平日底色恆透明、完全落在格內。24px 圓盒是**今天 pill 的高度 + 焦點框幾何**,不是最小點擊尺寸;原註解「WCAG 2.5.8 ≥24」已撤回(撤回說明寫在 `calendar.tsx#Calendar` 原處)。全文 → `calendar.spec.md`「命中區」條(:164) |
+| 8 | `DateGrid` 日期格 | 28×28(md)的**圓**(`rounded-full`;懸停 1.5px 藍圈畫在它身上,`date-grid.tsx:504`)| 同一個圓(`date-grid.tsx:495` 起的 `day_button`,已無 `::before`)| 相等 | ✅ **2026-09-24 修正**:原 `before:-inset-[2px]` 名義 2px、**實測最遠外推 9.33px**(`::before` 是方的,把圓四角外面也吃進去),非線非點吃不到例外 → 移除,改用根因層作法「只在指標真的離開整張格陣時才清停留日」(MUI 同款,`date-grid.tsx:194` `data-day-grid` + `handleDayMouseLeave` :300 / `handleGridMouseOver` :319)。修後圓內 2188 點全命中 0 漏、圓外最遠 1.10px(抗鋸齒容差內);跨格不閃實測框最少 17 格,對照組拔錨點掉到 0。**2026-09-26**:可點日子方格裡、圓以外的四個角與格間縫,指標經過時停留日照舊(角不再閃,實測偏離中線 6–14 步 → 0);預覽亮著時在縫或角裡點下去 = 確認預覽的那一天(一-6,是整個元件確認預覽、不是圓外擴;沒有預覽時點了沒反應)。全文 → `date-grid.spec.md`「日期格的命中區 = 可視形狀」(那節寫明藍圈就畫在這顆圓上,所以可視形狀 = 懸停回饋形狀)「縫與角裡的點擊」 |
+| 9 | `Calendar` 月檢視的日期數字鈕 | 今天:24 高的 `bg-info` pill;平日:只有數字字面,沒有任何形狀(`calendar.tsx#Calendar` 裡 `h-tag-md min-w-tag-md` 的日期鈕;2026-11-25 前寫死 `min-w-6 h-6`)| `h-tag-md min-w-tag-md` = 24×24(同上)| 相等(真正的目標是**整格**)| ✅ **2026-09-24 逐案裁定 + 實測**:當時懸停回饋是整格 `hover:bg-neutral-hover`,而整格正是命中區(cell div 的 onClick)。**2026-11-26 起日期格滑過不變色**(滑過原則一-2;user 點選「A:拿掉日期格的滑過底色,只留手形游標」):格子沒有懸停回饋,訊號是手形游標,手形的範圍 = 整格 = 命中區(一-3;唯讀的列蓋回箭頭、點了什麼都不發生),本列結論不變。日期數字鈕(2026-11-25 起在格子左上,之前右上)不是第二個目標,是同一目標的鍵盤入口 —— 自己零 hover 樣式(掃全 stylesheet 命中它的 `:hover` 規則 = 0 條)、平日底色恆透明、完全落在格內。24 的框是**列高(與事件列同一個列高單位,`calendar.spec.md`「間距」)+ 焦點框幾何**,不是最小點擊尺寸;原註解「WCAG 2.5.8 ≥24」已撤回(撤回說明寫在 `calendar.tsx#Calendar` 原處)。全文 → `calendar.spec.md`「命中區」條 |
 | 10 | `SidebarGroupAction` / `SidebarMenuAction` | 懸停底色 **18×18**(實測) | 同一塊 18×18 | 相等 | ✅ **2026-09-24 兩次修正**:(1) 拿掉 `after:-inset-2 after:md:hidden` 那圈只在 `<md` 生效、每邊 8px 的隱形帶 —— 實測上下各越出宿主 `<li>` 2px 並蓋掉緊貼的下一列列鈕(兩列間距實測 0.00px);(2) 發現它們本來就是 **從 shadcn 改寫進來的手刻品**(誕生 `4e53ff99`;`b7b34721` 只是搬家改名,2026-10-27 更正),寫死 `w-5` = **16 圖示裝在 20 盒裡**,而 `inline-action.spec.md` 的尺寸表只有 16/18 與 20/22 兩種組合,**20 兩種都不是** —— 同一個檔案 `sidebar.tsx#SidebarGroupLabel` 的收合箭頭早就在消費 `ItemInlineActionButton`。依 M23 / M30 改為委派 primitive,API 隨之從 children 改成 `icon` prop(breaking,刻意不留 children 後備:M23(f))。全文 → `sidebar.spec.md`「行內動作的命中區 = 懸停底色」
 | 11 | `Steps` sm 指示點 | 8×8 圓點(`steps.tsx#INDICATOR_SIZE` 的 `sm`)| **它不是命中目標** —— 24 的盒掛在 `aria-hidden` 的 `<span>` 上(`steps.tsx#SmIndicator` 最外層那個 span),真正可點的是整列 header(`steps.tsx#StepItemHeader`,`role="button"`);實測打在點正中心,收到事件的就是那一列 | 無外擴可言 | ✅ **2026-09-24 正名 + 逐案裁定**:`SM_HIT_AREA` → `SM_INDICATOR_BOX`(`steps.tsx#SM_INDICATOR_BOX`),它是排版欄寬(`steps.tsx#INDICATOR_BOX_WIDTH`)不是命中區。header 無懸停底色 → 依契約退化條款,判準回到可視形狀:命中 = header 自己的盒,一個 `-inset` 都沒有。全文 → `steps.spec.md`「指示點不是命中目標」 |
 | 12 | `Rating`(可以點的評分;2026-09-26 起只有整星,唯讀改精簡版「★ 4.7」不在本表) | 每顆星自己的盒(sm 20×20 / md、lg 24×24);星形 glyph 是裝在裡面的**內容** | 同一個盒(`rating.tsx` `StarIcon`)| 相等,**零外擴** | ✅ **2026-09-24 逐案裁定**:實測命中盒 = icon 盒 24×24、逐點擁有者地圖無一點漏接。glyph 比盒小是契約明文允許的「內容」;若改成貼星形輪廓,星角凹口會變成點不到的死區 = 踩到契約的另一邊。**2026-09-26**:星與星之間的 4px `gap-1`,預覽亮著時點下去 = 確認預覽值(一-6,是容器確認預覽、不是某顆星外擴)。**2026-09-27**:容器改成內容高(= 星列),沒有上下留白;sm 的星 20 不為了 24 地板撐大命中盒(地板管自帶盒子的獨立元件,見 `uiSize.spec.md`「元件高度地板」)。全文 → `rating.spec.md`「命中區」 |
@@ -312,6 +312,12 @@ rdg 該 cell 變 active、Glide 直接選列。
 - 評分:「唯讀直接一律給精簡版就好吧？搞得這麼麻煩幹嘛？其他照你建議」→ 四(唯讀精簡版)。一-6 評分星星縫裡點下去 = 確認預覽值**不在這一題**,是「其餘建議」那題列的項目、user 未另提 → AI 判讀為照建議做
 - AI 面板選項卡(提問;AI 選項卡 (E) 之後列入 09-26 寫入清單,user 選「同意，寫入」):「我覺得好像不用加上底色變化，若它是 radio 的話，那滑到整個 radio item 應該跟原本的radio item有一樣的設計語言？仔細研究查查原本hover radio item會長怎樣？全盤確認。」→ 一-4
 
+**2026-11-26(月曆日期格滑過,第五輪決策卡)** —— 卡片 cell-hover,user 點選(選項與推薦是 AI 擬的,留言欄空白):
+
+> 「A:拿掉日期格的滑過底色,只留手形游標」
+
+→ 一-2 的例子加上月曆日期格(上方「沒有懸停回饋的按鈕怎麼辦」段)、命中區表第 9 列;規格住 `components/Calendar/calendar.spec.md`「Cell 規則」滑過條【CELL-HOVER(定)】。
+
 2026-09-24 以前的兩段原話目前**沒有 repo 內的其他檔案出處**(本檔是首次落地),所以逐字轉錄在上面;
 日後若有人要引用,引本檔這一節,不要再改寫。2026-09-25 之後的原話以待辦總帳為第一手紀錄,本節是逐字副本。
 
@@ -329,7 +335,7 @@ rdg 該 cell 變 active、Glide 直接選列。
 | 相切零重疊的上限算法 | `carousel.tsx#CarouselDots` 既有實作 | **既有 code 的既成作法**,本檔只是引用 |
 | 上表的**初次盤點**(當時 12 列) | 2026-09-24 grep + Read(三輪字串簽名) | **AI 盤點,且不完整** —— 第 13 列證明三輪掃不到「父層掛 onClick」這種形狀,已補第 4 輪 |
 | 第 7 / 8 / 10 / 11 / 12 列的**逐案裁定與修正** | 2026-09-24 逐列實測(真 `page.mouse.click` + `elementFromPoint` 逐點掃描,每一條都附「該紅會紅」的對照組),依上方三條 user 裁示機械落地 | **AI 依既有裁示執行**;判定理由與實測數字住在各元件自己的 `spec.md`,本檔只記結論 |
-| 第 9 列(`Calendar`) | 2026-09-24 逐案裁定 + 實測,結論在 `calendar.spec.md`「命中區」條(:164) | **AI 依既有裁示執行**;已結案改判 ✅ |
+| 第 9 列(`Calendar`) | 2026-09-24 逐案裁定 + 實測,結論在 `calendar.spec.md`「命中區」條 | **AI 依既有裁示執行**;已結案改判 ✅ |
 | 第 13 / 14 列(`DataTable`) | 2026-09-24 先改錯、當天依四家一手原始碼改回 | **AI 錯誤外推後撤回** —— 原因是拿控件層的規則套到表格的格,沒做 M8/M26 benchmark |
 | 「列不可點時,格內留白不得掛 onClick」 | AI 2026-09-24 從 Carbon 的 row hover 句子推導 | **已撤回** —— 四家一手原始碼全否證;那一步是我自己加的 |
 | 「有格線 → 整格可點」這條因果 | 推導 | **查無一手依據,不採納** —— AG Grid 的 `columnBorder` 預設就是透明色,同一份 DOM、同一份 JS,只差上不上色 |
@@ -349,6 +355,7 @@ rdg 該 cell 變 active、Glide 直接選列。
 | 五 提示卡 | user N50 補充② + WCAG 2.2 SC 1.4.13 | **user 同意** |
 | 滑過原則整份措辭與判斷順序 | AI | user 2026-09-26 條件式同意(條件原話在「user 原話」節) |
 | 「沒有懸停回饋的按鈕」那句只管按鈕、不當全 DS 通則 | AI 改寫,user N50 同意 | **user 同意** |
+| 月曆日期格滑過不變、只有手形游標(一-2 的例子、命中區表第 9 列) | user 2026-11-26 第五輪決策卡點選「A:拿掉日期格的滑過底色,只留手形游標」(選項由 AI 擬) | **user 拍板**;不延伸到其他格狀元件(M8) |
 
 ## 交叉指向
 

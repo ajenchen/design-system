@@ -202,10 +202,37 @@ Chip 的 overflow 處理有三種模式：
 
 ---
 
+## 一排 assist chip(訊息附件以外)
+
+**決策**:user 2026-11-26 第七輪決策卡 E2 選「A:照附件列同一套寫進 chip 規格,閘放行」。
+
+一次給好幾個可點的動作、又不是訊息附件時(例:文件頁上方給智慧代理的快捷建議「摘要這份報告 / 列出待辦事項 / 草擬回覆 / 翻成英文」),一排 assist chip 照附件列同一套寫:
+
+- **會換行的一排**:寬度不夠就換到下一排(`flex flex-wrap`),同附件列;不水平捲動、不收進選單 —— `wrap` / `scroll` / `menu` 是 ChipGroup(filter)的 layout,assist 不進 ChipGroup。
+- **間距 4(`gap-1`),上下左右同值**:與 AgentMessage 附件列同一個值,主人是 `../AgentPanel/agent-panel.spec.md`「4. AgentMessage(訊息)」附件列那一句(2026-09-02 拍板),本檔引用、不重述理由;不是 ChipGroup filter 的 `gap-2`。
+- **語意清單**:`<ul role="list">`,每顆 chip 一個 `<li>`,讀屏先念出這是幾個項目的清單【AI 推導:依 E2 判定建議的做法(乙)】。`role="list"` 要明寫:Tailwind Preflight 拿掉清單符號後,VoiceOver 不把它當清單念(Tailwind 文件「Unstyled lists are not announced as lists by VoiceOver.」[來源](https://tailwindcss.com/docs/preflight#lists-are-unstyled))。
+- **不新增容器元件**:直接寫 `ul` / `li` 包 `<Chip variant="assist">`。
+- **附件列維持現狀**:AgentMessage 附件列的結構不在這次範圍,不改。
+
+```tsx
+<ul role="list" className="flex flex-wrap gap-1">
+  {suggestions.map((suggestion) => (
+    <li key={suggestion.id}>
+      <Chip variant="assist" onClick={() => askAgent(suggestion.prompt)}>{suggestion.label}</Chip>
+    </li>
+  ))}
+</ul>
+```
+
+**閘**:產品程式寫入當下由 `check_layout_space_magic_numbers.sh` 認得這一個結構(`src/tokens/utility-registry.json` 的 `canonical_micro_geometry.assist_chip_row`),`gap-1` 不必加豁免註解;手刻 `div`、`ul` 沒寫 `role="list"`、間距不是 `gap-1`、清單裡有不是 assist 的 Chip,照擋。範例:不另開一則 —— 換行與間距的畫面同 `chip.stories.tsx`「按鈕語意附件」的附件列,結構照上方程式碼(user 2026-11-27 確認頁留言,逐字:「Chip當初不是說不會有新範例？因為目前chips裡面就有類似範例了？」;第六輪同題留言「chips不是已經就有這種範例了嗎？？？？」)。
+
+---
+
 ## 禁止事項
 
 - ❌ filter Chip 單獨使用——必須在 ChipGroup 內(assist 分支才可獨立)
 - ❌ assist Chip 放進 ChipGroup 當可選項——按鈕語意無 toggle,混用會誤導選取心智模型
+- ❌ 一排 assist chip 用 `div` 手刻、或自訂間距——照「一排 assist chip(訊息附件以外)」寫 `ul role="list"` + `li`、`gap-1`
 - ❌ 用 `danger` / `loading` / `pressed` / `asChild` / `iconOnly`——不支援
 - ❌ 加 dismiss X——用 Input chip / Tag 代替(assist 分支同樣不支援 dismiss)
 - ❌ 手動改 `data-state` 或 `aria-pressed` / `aria-checked`——由 Radix 管理

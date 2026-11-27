@@ -1,12 +1,19 @@
 import * as React from 'react'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from './field-types'
 import { EMPTY_DISPLAY } from './field-wrapper'
+// 型別只 import 不執行(field-count.tsx 執行期 import 本檔;type-only 不成循環)
+import type { FieldCountValue } from './field-count'
 
 // ── Types ──
 export type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth }
 export type FieldOrientation = 'vertical' | 'horizontal'
 export type FieldSize = 'sm' | 'md' | 'lg'
 export type FieldControlLayout = 'inline' | 'block'
+
+// Label / Description / Error / 字數計數的字體固定 text-body (14px)，不隨 field size 變。
+// 世界級共識：field size 只影響 input 高度，不影響表單佈局元素的 typography。
+// 2026-11-26 由 field.tsx 搬來(字數計數 field-count.tsx 是第二個讀者,同一個值只留一個住所)。
+export const FIELD_TEXT_CLASS = 'text-body'
 
 /**
  * Field surface(2026-05-12 codex Q2 verdict — Stream C 4-issues Cluster B fix):
@@ -18,8 +25,8 @@ export type FieldControlLayout = 'inline' | 'block'
  * - `'table-cell'`— DataTable cell-as-input substrate(取代 variant='naked' cell-detection
  *   heuristic;canonical metrics 由 surface 推導,不再 hardcode in Field consumer)
  * - `'inline-edit'`(2026-07-17)— InlineEdit view 委派 surface。**唯一語義 = 委派控件 view 態
- *   左 px 統一 `--field-px`(不繼承 tagPadding / avatar inset / bare-span 0px)**,讓 InlineEdit
- *   固定 `-mx-[--field-px]` 對齊盒精準抵銷 → 值/tag/avatar 左緣落 label 左緣(x=0)。edit 態**不套**
+ *   左 px 統一 `--field-px`(不繼承 tagPadding / avatar inset / bare-span 0px)**,值/tag/avatar 左緣都在框內字線(框寬 + `--field-px` = `--field-bleed`);
+ *   InlineEdit 垂直排外伸 `--field-bleed` → 落 label 左緣,水平排不外伸 → 落一般輸入框字線(field.spec.md「閱讀情境」;舊的外伸 12 漏了框寬)。edit 態**不套**
  *   本 surface(edit 完全繼承原 field,含 tagPadding — Jira 式)。對齊 Atlassian inline-edit
  *   read-view「fixed negative margin + read=edit geometry by construction」。只 InlineEdit display
  *   box 注入;DataTable cell(table-cell)/ 純表單(form)的 tagPadding + bare-span 完全不受影響。
@@ -53,6 +60,11 @@ export interface FieldContextValue {
    *  `../LinkInput/link-input.spec.md`「錯誤說明」)。畫法同 `<FieldError>`(位置、字級、顏色、`role="alert"`、id = `errorId`);
    *  使用端自己的 `<FieldError>` 有字時以使用端為準、不畫這行(一個欄位只有一行錯誤)。沒有 control 宣告時 Field 畫面不變。 */
   registerControlError?: (text: string | null) => void
+  /** 字數計數那一格的 id(Input / Textarea 開 `showCount` 時 `aria-describedby` 接它;field-controls.spec.md「字數計數」) */
+  countId: string
+  /** Control 把字數交給 Field,畫在說明那一行的右端(`null` = 收回;2026-11-26 C7,`./field-count.tsx`)。
+   *  沒有 control 宣告時 Field 畫面不變(說明照舊是欄裡的直接子元素)。 */
+  registerControlCount?: (count: FieldCountValue | null) => void
   orientation: FieldOrientation
   controlLayout: FieldControlLayout
   hasFieldWrapper: true
@@ -193,13 +205,51 @@ export function useResolvedFieldSize<T extends string = FieldSize>(sizeProp?: T 
  * Field 的**直接子元件**時才偵測得到;包 wrapper / `React.memo` / HOC 會遮蔽它。本 hook 讓 control
  * 在掛載時主動註冊,Field 的**控件槽高度**因此也能跟上(控件本身的尺寸則由 `useResolvedFieldSize`
  * 同步解析,不等這次註冊)。
+ *
+ * **繪製前登記**(2026-11-25,field.spec.md「Control 偏好尺寸」解析時序與「閱讀情境」同組同高):用 layout effect —— 登記觸發的
+ * Field(與它所在範圍裡其他列)重繪在瀏覽器第一次畫之前完成,第一格就是對的高度。2026-11-25 前是 useEffect:先畫一格 md(32)再跳成 sm(28)。
  */
 export function useRegisterFieldPreferredSize(preferred?: FieldSize | null): void {
   const fieldCtx = React.useContext(FieldContext)
   const register = fieldCtx?.registerPreferredSize
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     if (preferred && register) register(preferred)
   }, [preferred, register])
+}
+
+/**
+ * 同組同高:一個範圍(最外層 FieldGroup)裡各列登記的控件偏好尺寸 → 整組沒寫 size 的列共用的那一個(field.spec.md「閱讀情境」)。
+ * 沒有人登記 → null(各列照舊:自己的控件偏好 → md)。**偏好不同時取最小的**(sm < md < lg)【AI 推導 2026-11-25】:
+ * 同組只能有一個高度(uiSize.spec.md「默認對齊」),結果不能取決於各列掛載的先後;目前唯一的宣告者是 InlineEdit 的 sm,
+ * 所以今天不會出現兩種偏好。純函式;判定表在 scripts/test-reading-context-invariant.mjs。
+ */
+const FIELD_SIZE_ORDER: Record<FieldSize, number> = { sm: 0, md: 1, lg: 2 }
+export function resolveGroupPreferredSize(registered: Iterable<FieldSize>): FieldSize | null {
+  let smallest: FieldSize | null = null
+  for (const size of registered) {
+    if (smallest == null || FIELD_SIZE_ORDER[size] < FIELD_SIZE_ORDER[smallest]) smallest = size
+  }
+  return smallest
+}
+
+/**
+ * 沒有框的值控件(開關、單一勾選框)放在 `<Field>` 裡時掛的記號 —— 水平排的閱讀情境裡,Field 把它往右內縮到同一欄框內的字線
+ * (`--field-bleed`;field.spec.md「閱讀情境」)。只是記號、不帶樣式:內縮的量與要不要內縮由 Field 決定(field.tsx 讀 field.css 的判斷)。
+ * 在 Field 外(表格格子、設定列、獨立使用)回 undefined,DOM 不多任何屬性。
+ */
+export const FIELD_FRAMELESS_VALUE_ATTR = 'data-field-frameless-value'
+export function fieldFramelessValueProps(insideField: boolean): Record<typeof FIELD_FRAMELESS_VALUE_ATTR, ''> | undefined {
+  return insideField ? { [FIELD_FRAMELESS_VALUE_ATTR]: '' } : undefined
+}
+
+/**
+ * 沒有框的按鈕(Button `text` / `link`,不含只有圖示的)放在 `<Field>` 裡時掛的記號 —— Field 層純顯示(`<Field mode="view">`)時,
+ * 它看得見的邊界是圖示 / 字本身,Field 讓它收掉左右內距、左右框寬與最小寬,內容齊控件欄左緣(field.spec.md「閱讀情境」的「檢視態的按鈕」)。
+ * 只是記號、不帶樣式:要不要收只住 field.css。在 Field 外回 undefined,DOM 不多任何屬性。
+ */
+export const FIELD_FRAMELESS_ACTION_ATTR = 'data-field-frameless-action'
+export function fieldFramelessActionProps(framelessInField: boolean): Record<typeof FIELD_FRAMELESS_ACTION_ATTR, ''> | undefined {
+  return framelessInField ? { [FIELD_FRAMELESS_ACTION_ATTR]: '' } : undefined
 }
 
 /**
@@ -334,4 +384,38 @@ export function useFieldEmptyDisplay(): string {
  */
 export function fieldEmptyColorClass(resolvedMode: FieldMode): string {
   return resolvedMode === 'disabled' ? 'text-fg-disabled' : 'text-foreground'
+}
+
+/**
+ * 公開、唯讀的 Field 狀態(2026-11-26,ws-upstream C29 / WS5-2):產品自己做的控件(DS 沒有的,例:接第三方編輯器)
+ * 放進 `<Field>` 時,用它拿到 id 與狀態,自己接 `aria-*`。只給下面九個值;登記用的函式、`variant`、`surface`、
+ * `hasFieldWrapper` 等 DS 內部欄位不外露(DS 自己的控件照舊讀 `useFieldContext`)。接法與範例:field.spec.md「FieldContext」段。
+ * 放在檔尾:別處以行號引用本檔(例 checkbox.tsx / switch.tsx 引 fieldFramelessValueProps 那幾行),插在中間會讓那些引用全部位移。
+ */
+export interface FieldState {
+  /** 控件本身的 id —— `<FieldLabel>` 的 `htmlFor` 指向它(原生 input / textarea / select 會因此有名字) */
+  id: string
+  /** `<FieldLabel>` 的 id —— 控件不是原生表單元素(例 `role="textbox"` 的 div)時,`aria-labelledby` 接它 */
+  labelId: string
+  /** `<FieldDescription>` 的 id —— `aria-describedby` 接它 */
+  descriptionId: string
+  /** `<FieldError>` 的 id —— `invalid` 為 true 時 `aria-errormessage` 接它 */
+  errorId: string
+  invalid: boolean
+  required: boolean
+  disabled: boolean
+  mode: FieldMode
+  size: 'sm' | 'md' | 'lg'
+}
+
+/** 讀所在 `<Field>` 的公開狀態;不在 Field 裡回 `null`。只挑出九個值,不把整個 context 交出去。 */
+export function useFieldState(): FieldState | null {
+  const ctx = React.useContext(FieldContext)
+  return React.useMemo(
+    () =>
+      ctx
+        ? { id: ctx.id, labelId: ctx.labelId, descriptionId: ctx.descriptionId, errorId: ctx.errorId, invalid: ctx.invalid, required: ctx.required, disabled: ctx.disabled, mode: ctx.mode, size: ctx.size }
+        : null,
+    [ctx],
+  )
 }

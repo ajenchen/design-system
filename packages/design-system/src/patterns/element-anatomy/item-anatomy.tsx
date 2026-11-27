@@ -11,6 +11,7 @@ import {
   TooltipContent,
 } from "@/design-system/components/Tooltip/tooltip"
 import { useTruncated } from "@/design-system/hooks/use-truncated"
+import { fieldRowPaddingY } from "@/design-system/components/Field/field-wrapper"
 
 // ── InlineActionConfig ─────────────────────────────────────────────────────
 // 宣告式 API:consumer 只宣告 intent,host 根據 size tier 自動渲染。
@@ -140,12 +141,14 @@ export const INLINE_ACTION_HOVER_BG_SIZE: Record<RowSize, number> = {
  * **Rationale**:前先 3 cva 各自寫同一公式 → drift risk(item-anatomy.spec 有明文「SidebarMenuButton
  * 獨立實作風險」)。抽本 export 後改**一處全同步**,risk 消失(對齊 Meta-Pattern M17「SSOT 必可傳播」)。
  *
- * 2026-04-24 D Phase 1+2 consolidation 建立。
+ * 2026-04-24 D Phase 1+2 consolidation 建立。2026-11-26:py 不再自己寫式子,改由 `fieldRowPaddingY`
+ *(`components/Field/field-wrapper.tsx`,式子唯一住所;SelectionItem / Switch 設定列也用它)組成 —— 本表只加
+ * 掃描模式的字級與 `leading-compact`。之前兩份各寫一次同一條式子(產品 canary 回報 C16)。
  */
 export const ROW_PADDING_BY_SIZE: Record<RowSize, string> = {
-  sm: 'text-body leading-compact py-[calc((var(--field-height-sm)-1lh)/2)]',
-  md: 'text-body leading-compact py-[calc((var(--field-height-md)-1lh)/2)]',
-  lg: 'text-body-lg leading-compact py-[calc((var(--field-height-lg)-1lh)/2)]',
+  sm: `text-body leading-compact ${fieldRowPaddingY.sm}`,
+  md: `text-body leading-compact ${fieldRowPaddingY.md}`,
+  lg: `text-body-lg leading-compact ${fieldRowPaddingY.lg}`,
 }
 
 // ── Helper components ──────────────────────────────────────────────────────
@@ -245,7 +248,7 @@ export const itemPrefixAlignVariants = cva(
 )
 
 // ── 單行截斷偵測 measure(ItemLabel / ItemContent 共用)──────────────────────
-// 截斷 → tooltip 顯完整內容、僅實際截斷時顯示(owner:components/Tooltip/tooltip.spec.md:32;
+// 截斷 → tooltip 顯完整內容、僅實際截斷時顯示(owner:components/Tooltip/tooltip.spec.md:30;
 // 引擎 SSOT:patterns/element-anatomy/truncated-text.spec.md)。不消費 `<TruncatedText>`——
 // trigger 需自控(ItemLabel 要 forwardRef + data-sidebar attr + props spread;ItemContent 要保留
 // labelTruncate / clamp className 原樣)→ 走 spec 指定解:public `useTruncated` 自組
@@ -268,7 +271,7 @@ const measureSingleLineClipped = (el: HTMLElement): boolean => {
  * `<ItemLabel>` — Row primitive 的 label span。
  *
  * 預設 `min-w-0 flex-1 truncate`——單行截斷,佔滿剩餘 flex 空間。
- * 截斷時 hover 顯 tooltip 補全(截斷才顯,tooltip.spec.md:32;內建,consumer 免自接)。
+ * 截斷時 hover 顯 tooltip 補全(截斷才顯,tooltip.spec.md:30;內建,consumer 免自接)。
  * 加 `data-sidebar="menu-label"` attribute 讓 sidebar icon 模式的 CSS selector 能命中。
  *
  * 用法:
@@ -320,7 +323,7 @@ ItemLabel.displayName = "ItemLabel"
  *
  * ── 截斷 → tooltip(內建,consumer 免自接)──
  * label(`truncate` 或 `line-clamp-1` escape)與單行截斷 description 在實際截斷時 hover 顯
- * tooltip 補全(截斷才顯,tooltip.spec.md:32);多行 clamp(≥2 行)排除 —— 見
+ * tooltip 補全(截斷才顯,tooltip.spec.md:30);多行 clamp(≥2 行)排除 —— 見
  * `measureSingleLineClipped` 註解(truncated-text.spec.md「何時不用」(a))。
  *
  * ── Consumer 偏離 canonical ──
@@ -380,7 +383,7 @@ export interface ItemContentProps extends Omit<React.HTMLAttributes<HTMLDivEleme
   /**
    * Description 多行截斷(line-clamp-N)。undefined = 不 clamp(自由 wrap)。
    * Tailwind line-clamp utilities 支援 1-6。
-   * `1`(單行 clamp)截斷時 hover 顯 tooltip 補全(截斷才顯,tooltip.spec.md:32);
+   * `1`(單行 clamp)截斷時 hover 顯 tooltip 補全(截斷才顯,tooltip.spec.md:30);
    * `>= 2`(多行)不配 tooltip —— truncated-text.spec.md「何時不用」(a) 排除多行,
    * DS 尚無多行截斷↔補全 canonical(owner 決策前維持排除)。
    */
@@ -446,7 +449,7 @@ export const ItemContent = React.forwardRef<HTMLDivElement, ItemContentProps>(
 
     const clampClass = lineClampClass(descriptionClamp) ?? ""
 
-    // 截斷 → tooltip(截斷才顯,tooltip.spec.md:32)。量測走 measureSingleLineClipped(檔內
+    // 截斷 → tooltip(截斷才顯,tooltip.spec.md:30)。量測走 measureSingleLineClipped(檔內
     // SSOT 註解):label 蓋 labelTruncate `truncate` + MenuItem labelClassName `line-clamp-1`
     // escape 兩路;description 只在單行截斷(`descriptionClamp === 1` 或 !descriptionWrap 的
     // truncate 分支,含 className escape)顯示——多行 clamp(≥2)由量測 gate 機械排除
@@ -527,7 +530,7 @@ ItemContent.displayName = "ItemContent"
 
 const RowSizeContext = React.createContext<RowSize | null>(null)
 
-/** @internal — L3 row-size primitive;app code 不直接 import,由 MenuItem/Row/Field 等內部消費(inline-action.spec.md)。 */
+/** @internal — L3 row-size primitive;不進 root barrel,DS 內由 MenuItem/Row/Field 消費;產品經子路徑 @qijenchen/design-system/patterns/element-anatomy 包裝成自己的元件後可用(ds-canonical/rules/ui-development.md「Root barrel front-door 排除」;inline-action.spec.md「Escape hatch — config 表達不出時的 10% case」)。 */
 export const RowSizeProvider = RowSizeContext.Provider
 
 /**
@@ -639,7 +642,7 @@ ItemAvatar.displayName = "ItemAvatar"
 //
 // 接受任何 button props 並 spread(讓 Radix Slot 可以 merge onClick / data-state 等)
 
-/** @internal — internal ItemInlineActionButton 的 props;隨其元件同走 subpath,不進 root barrel front-door。 */
+/** @internal — ItemInlineActionButton 的 props;隨其元件走子路徑 @qijenchen/design-system/patterns/element-anatomy、不進 root barrel(包裝後可用,見 ItemInlineActionButton)。 */
 export interface ItemInlineActionButtonProps
   extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
   /** Lucide icon 元件 */
@@ -684,7 +687,7 @@ export interface ItemInlineActionButtonProps
   overlayTrigger?: boolean
 }
 
-/** @internal — L3 inline-action primitive;app code 禁直接 import,經 MenuItem/Row endActions 消費(inline-action.spec.md)。 */
+/** @internal — L3 inline-action primitive;不進 root barrel,DS 內經 MenuItem/Row endActions 消費;產品經子路徑 @qijenchen/design-system/patterns/element-anatomy 包裝成自己的元件後可用(ds-canonical/rules/ui-development.md「Root barrel front-door 排除」;inline-action.spec.md「Escape hatch — config 表達不出時的 10% case」)。 */
 export const ItemInlineActionButton = React.forwardRef<
   HTMLButtonElement,
   ItemInlineActionButtonProps
@@ -693,6 +696,11 @@ export const ItemInlineActionButton = React.forwardRef<
   const size = sizeProp ?? contextSize
   const iconPx = ICON_SIZE[size]
   const hoverBgPx = INLINE_ACTION_HOVER_BG_SIZE[size]
+  // 自身停用(原生 disabled 或 aria-disabled;Radix asChild 合進來的 disabled 也走這裡):停用不給互動回饋
+  //(button.spec.md「停用不給互動回饋」、menu-item.spec.md「disabled item 不可有 hover 效果」;M24 停用字色 > 弱化字色)。
+  // 停用時**根本不掛**滑過 / 按住的字色與底色 class —— 連 consumer 的 hoverBgClassName 也不掛,不靠 CSS 順序或權重去壓
+  //(2026-11-26 修前:游標仍是手指、滑過字色 0.45→0.65、出 neutral-hover 底色,與啟用時相同;欄位顯示面板鎖住的欄手補 class 也壓不掉)。
+  const disabled = rest.disabled === true || rest["aria-disabled"] === true || rest["aria-disabled"] === "true"
   return (
     <button
       ref={ref}
@@ -705,19 +713,20 @@ export const ItemInlineActionButton = React.forwardRef<
         // 只在 **Tag 宿主**成立(h-6 + 1px 邊框 + overflow-hidden → 淨空 3px,sm 1px),
         // 依 focus-canonical「同一個底層元件被另一個元件放進貼邊位置,往內由那個外層元件承擔」,
         // 往內的 class 搬到 `tag.tsx` TagDismiss,不由 primitive 整個翻內。
-        "group/action relative grid place-content-center shrink-0 cursor-pointer",
+        "group/action relative grid place-content-center shrink-0",
+        disabled ? "cursor-not-allowed" : "cursor-pointer",
         // 弱化 icon hover 階梯 SSOT(2026-07-30 user 拍板):fg-muted(neutral-7)→ 一階 fg-secondary
         // (neutral-8),不跳到 foreground(neutral-9)。inline-action.spec.md「Icon 色彩」+
         // tokens/color/semantic.css:53 為 rule owner;世界級對照 Fluent 2
         // (neutralForeground3Hover === neutralForeground2 值)/ MUI Chip deleteIcon(.26 → .4)。
         // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
-        "text-fg-muted hover:text-fg-secondary active:text-fg-secondary",
+        disabled ? "text-fg-disabled" : "text-fg-muted hover:text-fg-secondary active:text-fg-secondary",
         // Overlay trigger active state — 只在 consumer 顯式宣告 overlayTrigger=true 時生效
         // (canonical 2026-05-05:Collapsible / drag / dismiss 等 in-place 互動 ≠ overlay,
         // 不應 leak 視覺 lock。詳 inline-action.spec.md「Overlay trigger canonical」)
         overlayTrigger && "data-[state=open]:text-fg-secondary",
         // 2026-09-07:刪掉本地 focus-visible:outline-2 + outline-ring —— 與全域
-      // styles/base.css:44-47 逐字等價(同 2px、同 --ring、offset 也吃全域的 2px),
+      // styles/base.css:61-64 逐字等價(同 2px、同 --ring、offset 也吃全域的 2px),
       // 且本區塊無 outline-none,全域本來就生效。刪除為零視覺變化。
         className
       )}
@@ -740,7 +749,7 @@ export const ItemInlineActionButton = React.forwardRef<
           "absolute",
           "rounded-md",
           "bg-transparent",
-          hoverBgClassName ?? "group-hover/action:bg-neutral-hover group-active/action:bg-neutral-active",
+          !disabled && (hoverBgClassName ?? "group-hover/action:bg-neutral-hover group-active/action:bg-neutral-active"),
           // Overlay 開啟 = 維持 host hover bg(只在 overlayTrigger=true 時生效)
           overlayTrigger && "group-data-[state=open]/action:bg-neutral-hover"
         )}
@@ -767,14 +776,14 @@ ItemInlineActionButton.displayName = "ItemInlineActionButton"
 // 需要接 Radix asChild(例如 collapsible trigger)時改用 `ItemInlineActionButton`,
 // 那層沒有 Tooltip 包裝,Root 就是 button,可直接塞進 Radix Slot。
 
-/** @internal — internal ItemInlineAction 的 props;隨其元件同走 subpath,不進 root barrel front-door。 */
+/** @internal — ItemInlineAction 的 props;隨其元件走子路徑 @qijenchen/design-system/patterns/element-anatomy、不進 root barrel(包裝後可用,見 ItemInlineAction)。 */
 export interface ItemInlineActionProps {
   action: InlineActionConfig
   /** Size 覆寫(見 `ItemInlineActionButtonProps.size`)——Field Controls / Tag 必傳 */
   size?: RowSize
 }
 
-/** @internal — L3 inline-action primitive;app code 禁直接 import,經 row 元件消費(inline-action.spec.md)。 */
+/** @internal — L3 inline-action primitive;不進 root barrel,DS 內經 row 元件消費;產品經子路徑 @qijenchen/design-system/patterns/element-anatomy 包裝成自己的元件後可用(ds-canonical/rules/ui-development.md「Root barrel front-door 排除」;inline-action.spec.md「Escape hatch — config 表達不出時的 10% case」)。 */
 export const ItemInlineAction = React.forwardRef<
   HTMLButtonElement,
   ItemInlineActionProps

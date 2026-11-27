@@ -8,7 +8,8 @@
 // (共用對話模型 stories-helpers/scene/agent-demo.tsx;稽核 H23、範例依據 E1)。「拖拉寬度」照 user 2026-09-02 指示
 // 從讀者版拿掉,寬度四個公開 prop 的覆蓋改住同名的 test-only 夾具(稽核 H09)。
 import * as React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import {
   AgentPanel,
   AgentPanelHeader,
@@ -16,9 +17,12 @@ import {
   AgentPromptInput,
   AgentDecisionCard,
   AgentDecisionSummary,
+  AgentMessage,
+  AgentToolbar,
   type AgentDecisionQuestion,
   type AgentPanelMode,
 } from './agent-panel'
+import { I18nProvider } from '@/design-system/lib/i18n/i18n-context'
 import { AgentLogo, type AgentLogoState } from './agent-panel-logo'
 import { AgentPanelDock } from './agent-panel-fab'
 import { Button } from '@/design-system/components/Button/button'
@@ -138,8 +142,8 @@ function SprintReply() {
         steps={[<span key="1">已讀取 48 筆待辦</span>, <span key="2">比對排程規則 12 條</span>]}
         currentStep={<span>正在標記衝突項目…</span>}
       />
-      {/* @layout-space-magic-ok: 同一則代理訊息的內文段距 8px(思考塊 / 回執 / 清單 / 段落之間)—— 規格沒寫這個值(agent-panel.spec.md「4. AgentMessage(訊息)」沒有定義代理訊息的段距),不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
-      <p className="mt-2">{SPRINT_REPLY}</p>
+      {/* 思考塊 → 段落的距離由 AgentMessage 代理那一側給(agent-panel.spec.md「代理回覆的內文」),這裡不加 class */}
+      <p>{SPRINT_REPLY}</p>
     </>
   )
 }
@@ -243,6 +247,73 @@ export const MultipleReplies: Story = {
           { role: 'agent', content: '物流延遲主要來自北倉(62%),多集中在 8 月中旬颱風週;南倉 23%、外包倉 15%。', copyText: '物流延遲主要來自北倉(62%),多集中在 8 月中旬颱風週;南倉 23%、外包倉 15%。' },
           { role: 'user', content: '好,幫我寫一段給北倉主管的摘要。' },
           { role: 'agent', content: COMPLAINT_SUMMARY, copyText: COMPLAINT_SUMMARY },
+        ],
+      }),
+    })
+    return (
+      <PanelFrame>
+        {({ close }) => (
+          <AgentPanel onClose={close}>
+            <AgentPanelHeader {...demo.header} onClose={close} />
+            <DemoConversation messages={demo.messages} />
+            <AgentPromptInput {...demo.prompt} />
+          </AgentPanel>
+        )}
+      </PanelFrame>
+    )
+  },
+}
+
+/** 「回覆內文」那一則複製時放進剪貼簿的字(段落、清單、引用照順序換行) */
+const RELEASE_CHECK_REPLY = [
+  '公告排在週四 20:00 發出,發之前還有三件事:',
+  '・封面圖還沒選,設計組給了兩個版本',
+  '・「離線模式」那一段的上線日期要等 QA 確認',
+  '・英文版還沒送翻譯',
+  '建議照這個順序處理:',
+  '1. 先問 QA 離線模式能不能週四上線,不能就把那一段移到下一期',
+  '2. 選定封面圖',
+  '3. 最後送翻譯,週三下班前交回',
+  'QA 負責人 Alan 在 #release 頻道:「離線模式還有 2 個 P1,最快週五才能驗完。」',
+  '照他的說法,離線模式這期趕不上;要我先把那一段從草稿拿掉嗎?',
+].join('\n')
+
+/**
+ * 回覆內文:代理的回覆多半是 markdown 轉出來、不帶 class 的 `p` / `ul` / `ol` / `blockquote`,直接放進代理那一則就好 ——
+ * 段距、項目符號與縮排、項目間距、引用左線都由 AgentMessage 代理那一側給,第一段上面、最後一段下面不多留空。
+ * 我方氣泡不套這組樣式。
+ */
+export const ReplyProse: Story = {
+  name: '回覆內文:段落、清單與引用',
+  render: function ReplyProseStory() {
+    const demo = useAgentDemo({
+      ...demoScene('c2', {
+        messages: [
+          { role: 'user', content: 'Sprint 24 的公告發出去之前,還有哪些事要先確認?' },
+          {
+            role: 'agent',
+            content: (
+              <>
+                <p>公告排在週四 20:00 發出,發之前還有三件事:</p>
+                <ul>
+                  <li>封面圖還沒選,設計組給了兩個版本</li>
+                  <li>「離線模式」那一段的上線日期要等 QA 確認</li>
+                  <li>英文版還沒送翻譯</li>
+                </ul>
+                <p>建議照這個順序處理:</p>
+                <ol>
+                  <li>先問 QA 離線模式能不能週四上線,不能就把那一段移到下一期</li>
+                  <li>選定封面圖</li>
+                  <li>最後送翻譯,週三下班前交回</li>
+                </ol>
+                <blockquote>
+                  <p>QA 負責人 Alan 在 #release 頻道:「離線模式還有 2 個 P1,最快週五才能驗完。」</p>
+                </blockquote>
+                <p>照他的說法,離線模式這期趕不上;要我先把那一段從草稿拿掉嗎?</p>
+              </>
+            ),
+            copyText: RELEASE_CHECK_REPLY,
+          },
         ],
       }),
     })
@@ -465,7 +536,6 @@ export const DecisionCardErrors: Story = {
   name: '決策卡錯誤狀態',
   render: () => <DecisionCardScene questions={THREE_QUESTIONS} intro="公告已寫好兩個版本,需要你決定語氣、發布時間與同步管道再繼續。" />,
   play: async ({ canvasElement }) => {
-    const { expect, userEvent, waitFor, within } = await import('@storybook/test')
     const canvas = within(canvasElement)
     // 只在決策卡裡找(輸入盒也有一顆「送出」):卡片根 = 標題列 ×(名字「取消」,整張卡唯一一顆)所在的 role="group"
     const card = () => within(canvas.getByRole('button', { name: '取消' }).closest('[role="group"]') as HTMLElement)
@@ -527,10 +597,8 @@ export const DecisionSummaryInFlow: Story = {
             role: 'agent',
             content: (
               <>
-                已按你的選擇繼續:
+                <p>已按你的選擇繼續:</p>
                 <AgentDecisionSummary
-                  // @layout-space-magic-ok: 同一則代理訊息的內文段距 8px(思考塊 / 回執 / 清單 / 段落之間)—— 規格沒寫這個值(agent-panel.spec.md「4. AgentMessage(訊息)」沒有定義代理訊息的段距),不由 AI 補進規格(F-S7),沿用已發布值(main 同值)
-                  className="mt-2"
                   entries={[
                     { question: '公告要用哪種語氣?', answer: '正式版' },
                     { question: '什麼時候發布?', answer: '今晚 20:00' },
@@ -1148,16 +1216,15 @@ function UrlRegistryScene({ initial }: { initial?: SceneInitial }) {
       { role: 'agent', content: (
         <>
           <p>跟你問的有關的有四處:</p>
-          {/* @layout-space-magic-ok: 清單上方 8px = 同一則代理訊息的內文段距 —— 規格沒寫這個值(agent-panel.spec.md「4. AgentMessage(訊息)」沒有定義代理訊息的段距),不由 AI 補進規格(F-S7),沿用已發布值(main 同值);清單項之間 4px 是 ul 裡的同質清單列(utility-registry canonical_micro_geometry 認得) */}
-          <ul className="mt-2 flex flex-col gap-1">
+          {/* 段距、項目符號、縮排與項目間距由 AgentMessage 代理那一側給(agent-panel.spec.md「代理回覆的內文」),清單不加 class */}
+          <ul>
             <li><a href={taskUrl(4821)} id="demo-link-task-4821" onClick={(e) => { e.preventDefault(); fromAgent(() => openTask(4821), 'modal') }}>任務 #4821 修正登入逾時</a></li>
             <li><a href={taskUrl(4830)} id="demo-link-task-4830" onClick={(e) => { e.preventDefault(); fromAgent(() => openTask(4830), 'modal') }}>任務 #4830 對帳批次逾時重試</a>(Alan 的,跟登入逾時共用同一組 timeout 設定)</li>
             <li><a href={MY_TASKS.url} id="demo-link-mine" onClick={(e) => { e.preventDefault(); fromAgent(() => go({ url: MY_TASKS.url }), 'page') }}>{MY_TASKS.label}</a>(你名下的「支付失敗通知信」跟它同一條路徑)</li>
             {/* @layout-space-magic-ok: 連結文字 ↔ 外部連結圖示 4px —— 同一個連結內部的行內間距;規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
             <li><a href="https://support.example.com/tickets/88213" id="demo-link-zendesk" target="_blank" rel="noopener noreferrer">Zendesk 客訴 #88213<ExternalLink size={14} className="ml-1 inline-block align-[-2px]" aria-hidden /></a></li>
           </ul>
-          {/* @layout-space-magic-ok: 同一則代理訊息的內文段距 8px —— 規格沒寫這個值(agent-panel.spec.md「4. AgentMessage(訊息)」沒有定義代理訊息的段距),不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
-          <p className="mt-2">另外有人在討論串提到 <span id="demo-unconfirmed">/projects/9999</span>,但系統裡查不到這個專案,我就沒有放連結。</p>
+          <p>另外有人在討論串提到 <span id="demo-unconfirmed">/projects/9999</span>,但系統裡查不到這個專案,我就沒有放連結。</p>
         </>
       ) },
     ] },
@@ -1297,6 +1364,28 @@ export const UrlRegistryDemo: Story = {
 // 同一個世界的第二則示意(2026-09-29,待辦總帳 OE11):任務對話框裡改了標題還沒儲存,代理回覆裡的「我的任務」被點下 ——
 // 導航停下來問(沒有網址的確認框,蓋住一切含代理),取消留在原地、確認才前往。一開場就停在這個當口(M15 OpenSnapshot)。
 // (開發備忘用一般註解,不進 docs —— 稽核 L136;讀者看的說明在 docs.description)
+// 英文介面(2026-11-26,產品 canary 回報 C19):產品在 app 根包一次 I18nProvider,訊息工具列三顆鈕的名稱與提示換成英文;
+// 沒給的 key 照舊中文(lib/i18n/README.md「Fallback chain」)。
+const AGENT_TOOLBAR_EN = { 'agent-panel': { copy: 'Copy', like: 'Helpful', dislike: 'Not helpful' } }
+export const ToolbarI18n: Story = {
+  name: '英文介面的訊息工具列',
+  render: () => (
+    <I18nProvider labels={AGENT_TOOLBAR_EN}>
+      <div className="w-[360px]">
+        <AgentMessage role="agent" toolbar={<AgentToolbar pinned onCopy={() => {}} onLike={() => {}} onDislike={() => {}} />}>
+          The release checklist has 3 open items: update the changelog, tag v2.4.0, and notify the support team.
+        </AgentMessage>
+      </div>
+    </I18nProvider>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('button', { name: 'Copy' })).toBeInTheDocument()
+    await expect(canvas.getByRole('button', { name: 'Helpful' })).toBeInTheDocument()
+    await expect(canvas.getByRole('button', { name: 'Not helpful' })).toBeInTheDocument()
+  },
+}
+
 export const UnsavedChangesGuard: Story = {
   name: '示意(假資料)— 未存檔的修改:離開前先確認',
   parameters: {

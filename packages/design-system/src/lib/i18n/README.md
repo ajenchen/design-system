@@ -18,10 +18,11 @@ Route B provider 一次注入 label catalog,per-call-site override 仍可(prop >
 // Consumer app root(npm 套件 root;lib 沒有 subpath)
 import { I18nProvider } from '@qijenchen/design-system'
 
+// 只寫下方「已 opt-in I18nProvider 的元件」表裡真的有接的鍵(沒接的元件寫了也不會生效,要經它自己的 labels prop)
 const enLabels = {
-  notice: { dismiss: 'Dismiss' },
-  'file-viewer': { close: 'Close viewer', download: 'Download' },
-  carousel: { previous: 'Previous slide', next: 'Next slide' },
+  dialog: { close: 'Close' },
+  pagination: { previous: 'Previous page', next: 'Next page' },
+  popover: { close: 'Close' },
   // ... consumer 覆寫需要的項
 }
 
@@ -36,7 +37,7 @@ DS 元件內部(逐步 migration):
 import { useI18n } from '@/design-system/lib/i18n/i18n-context'
 
 const { t } = useI18n()
-<Button aria-label={propLabel ?? t('notice', 'dismiss', '關閉通知')} />
+<Button aria-label={prevAriaLabelProp ?? t('pagination', 'previous', '上一頁')} />  // 同 Pagination 的實際寫法
 ```
 
 ## Fallback chain
@@ -45,10 +46,34 @@ const { t } = useI18n()
 2. **Context labels**(`labels[componentKey][labelKey]`)
 3. **DS default**(fallback 參數,i18n-allow 的 CJK)
 
+## 巢狀 provider 會合併(2026-11-27)
+
+`I18nProvider` 包在另一個 `I18nProvider` 裡時,內層讀外層的 labels,**以 componentKey 為單位合併**:內層沒寫的 componentKey 照外層;同一個 componentKey 兩層都寫時以內層那一組為準(整組取代,不逐字合併 —— 要沿用外層同一組的其他字,內層那一組要寫齊)。例:app root 包整份英文字表,某一區再包 `{ dialog: { close: 'Dismiss' } }`,那一區裡 Pagination、Sidebar 等元件照樣是英文,只有 Dialog 的 × 換掉。修前內層整份取代外層,那一區裡其他元件全部退回 DS 預設中文(workspace H 組 H23)。閘:`scripts/i18n-labels-override-invariant.mjs` 的 `I-nest-other-key` / `I-nest-same-key`。
+
 ## Migration status
 
 - **infrastructure**:✅ shipped(`i18n-context.tsx`);root 出口 ✅ 2026-10-27
 - **元件逐步 adopt**:Notice / FileViewer labels object / etc 已 Route A prop-based;Route B 可並存,未來有需要再逐元件 opt-in 換成 context reader
+- **AgentPanel 訊息工具列**:✅ 2026-11-26(產品 canary 回報 C19)—— `agent-panel.copy` / `agent-panel.like` / `agent-panel.dislike`,面板其他字串尚未接(`../../components/AgentPanel/agent-panel.spec.md`「AgentToolbar」)
+
+### 已 opt-in I18nProvider 的元件(componentKey → 鍵)
+
+照原始碼 `t('<componentKey>', '<鍵>', …)` 列(2026-11-26 整理;新增 opt-in 時同一次改這張表):
+
+| componentKey | 鍵 | 元件 |
+|---|---|---|
+| `app-shell` | `skipLinks` / `skipToMain` / `closePanel` | AppShell |
+| `breadcrumb` | `navigation` / `showCollapsed` | Breadcrumb |
+| `dialog` | `close` | Dialog |
+| `sheet` | `close` | Sheet |
+| `popover` | `close` | PopoverHeader 的 ×(DataTable 欄位顯示面板的 × 也是它) |
+| `file-upload` | `buttonLabel` / `loadingTitle` / `title` / `descriptionMultiple` / `descriptionSingle` | FileUpload |
+| `pagination` | `label` / `previous` / `next` / `pageSize` | Pagination(帶數字的 range 資訊與「N 筆/頁」只經 `labels` 函式,見 pagination.spec.md「完整形態」) |
+| `profile-card` | `chat` / `audioCall` / `viewMore` | ProfileCard |
+| `sidebar` | `resizeHandle` / `overlayTitle` | Sidebar |
+| `agent-panel` | `titleThinking` / `titleDone`(AgentThinking);`decision` + `AgentDecisionCardLabels` 的鍵首字大寫(AgentDecisionCard,例:`decisionCancel` / `decisionNext` / `decisionErrorOther`) | AgentPanel 家族共用一個 componentKey(2026-11-26;兩者的 `labels` prop 照舊最優先)。決策卡的鍵加 `decision` 前綴:卡上的 `submit` / `cancel` / `next` / `other` 跟面板其他零件同字不同義,同一個 namespace 不加前綴會撞名 |
+
+只經 `labels` prop、沒有 I18nProvider 這一層的(Route A):Coachmark、FileViewer、Calendar、DataTable 排序 / 篩選 / 欄位顯示三個工具面板(欄位顯示面板 2026-11-26 起)等。閘:`scripts/i18n-labels-override-invariant.mjs` 量 Pagination / AgentThinking / AgentDecisionCard「傳進去真的換字」;`scripts/data-table-panel-reset-clear-invariant.mjs` (5) / (5b) 量排序與欄位顯示面板的 `labels`。
 
 ## 世界級對照
 

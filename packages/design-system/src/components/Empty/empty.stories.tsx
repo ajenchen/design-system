@@ -1,5 +1,5 @@
 import * as React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { SearchX, Lock, Inbox, Search, X } from 'lucide-react'
 import { Empty } from './empty'
 import { Button } from '@/design-system/components/Button/button'
@@ -19,7 +19,7 @@ const meta: Meta<typeof Empty> = {
     docs: {
       description: {
         component:
-          '用於容器內沒有資料、搜尋無結果、尚未開始或無權檢視的狀態，並說明原因與下一步。錯誤或失敗改用 Alert / Notice，載入中改用 Spinner / Skeleton，整頁 403 / 404 使用專屬錯誤頁。',
+          '用於容器內沒有資料、搜尋無結果、尚未開始或無權檢視的狀態，並說明原因與下一步。錯誤或失敗改用 Alert / Notice，載入中改用 Spinner / Skeleton。整頁 404 / 403 也用 Empty:放在 AppShell 主內容區正中,導覽照常、標題包 h1、一定附動作(AppShell 展示「整頁 404」「整頁 403」)。',
       },
     },
   },

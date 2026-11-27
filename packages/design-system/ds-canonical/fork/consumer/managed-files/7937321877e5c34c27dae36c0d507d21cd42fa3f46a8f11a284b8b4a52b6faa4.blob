@@ -14,6 +14,7 @@
 import { readdirSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { join, dirname, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { isCanonicalOutputRoot } from './lib/consumer-output-roots.mjs'
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url)
 const DEFAULT_REPO_ROOT = join(dirname(SCRIPT_PATH), '..')
@@ -23,12 +24,27 @@ const FORBIDDEN_PATTERNS = [
   /@qijenchen\/design-system\/dist\//,
 ]
 
-function walk(dir) {
+// 建置輸出只在規範位置略過(workspace 根 apps/<name> / packages/<name> 的直接子資料夾,清單 = lib/consumer-output-roots.mjs;
+// 2026-11-27 上游判定 B4):以前按名字略過所有叫 dist 的資料夾,原始碼放在 src/dist 也被跳過。
+function walk(dir, workspaceRoot) {
   const out = []
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name.startsWith('.')) continue
+    if (entry.name.startsWith('.')) continue
     const full = join(dir, entry.name)
-    if (entry.isDirectory()) out.push(...walk(full))
+    if (entry.isDirectory()) {
+      if (isCanonicalOutputRoot(workspaceRoot, full)) continue
+      out.push(...walk(full, workspaceRoot))
+    } else if (/\.(tsx?|jsx?|mjs)$/.test(entry.name)) out.push(full)
+  }
+  return out
+}
+
+function workspaceFiles(top) {
+  const out = []
+  for (const entry of readdirSync(top, { withFileTypes: true })) {
+    if (entry.name.startsWith('.')) continue
+    const full = join(top, entry.name)
+    if (entry.isDirectory()) out.push(...walk(full, full))
     else if (/\.(tsx?|jsx?|mjs)$/.test(entry.name)) out.push(full)
   }
   return out
@@ -40,7 +56,7 @@ export function findDsInternalImportViolations(repoRoot = DEFAULT_REPO_ROOT) {
   for (const top of SCAN_DIRS) {
     const root = join(repoRoot, top)
     try { statSync(root) } catch { continue }
-    for (const file of walk(root)) {
+    for (const file of workspaceFiles(root)) {
       const content = readFileSync(file, 'utf8')
       for (const pattern of FORBIDDEN_PATTERNS) {
         if (pattern.test(content)) {

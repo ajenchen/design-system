@@ -1,7 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @principles-rationale: UsageGuidance merges WhenToUse + WhenNotToUse into single 使用指引 story per refactor task (2026-04-26)
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { DatePicker } from './date-picker'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
@@ -124,11 +124,12 @@ export const FormattingRule: Story = {
     <TutorialPage>
       <TutorialRule
         title="格式化跨模式一致 — 預設 YYYY/MM/DD,傳 formatOptions / locale 走 Intl.DateTimeFormat"
-        note="未傳格式 prop 時預設直接組 YYYY/MM/DD(locale-independent);傳 formatOptions + locale 才啟用 Intl.DateTimeFormat,同時控制 view / readonly / disabled 的格式化文字與 edit trigger 顯示文字。跨模式一致、跨頁面可預期。Calendar popup 的月份語言由 Calendar 內部 locale 處理"
+        note="未傳格式 prop 時預設直接組 YYYY/MM/DD(locale-independent);傳 formatOptions 或 locale 才啟用 Intl.DateTimeFormat(沒傳 locale 用預設語系 zh-TW),同時控制 view / readonly / disabled 的格式化文字與 edit trigger 顯示文字。跨模式一致、跨頁面可預期。Calendar popup 的月份語言由 Calendar 內部 locale 處理"
       >
         <DatePicker
           mode="readonly"
           value="2026-05-15"
+          locale="en-US"
           formatOptions={{ year: 'numeric', month: 'short', day: 'numeric' }}
         />
         <DatePicker

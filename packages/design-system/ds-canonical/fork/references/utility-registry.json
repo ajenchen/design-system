@@ -164,6 +164,11 @@
         "pattern": "(?<![A-Za-z0-9_-])(?:bg|text|border)-(?:neutral|blue|red|green|yellow|orange|purple|pink|cyan|teal|deep-orange|deep-purple|light-blue|light-green|lime|amber|indigo|brown|gray|magenta|turquoise|emerald|fuchsia|mauve|mist|olive|rose|sky|slate|stone|taupe|violet|zinc)-[0-9]+(?![A-Za-z0-9_-])"
       },
       {
+        "id": "primitive-color-var-bracket",
+        "label": "primitive color via var() bracket",
+        "pattern": "(?<![A-Za-z0-9_-])(?:bg|text|border(?:-[trblxy])?|ring|outline|fill|stroke|from|via|to|divide|decoration|caret|accent|placeholder)-\\[var\\(--color-[a-z]+(?:-[a-z]+)*-[0-9]+\\)\\]"
+      },
+      {
         "id": "phantom-state-suffix",
         "label": "phantom state suffix(silent no-op)",
         "pattern": "(?<![A-Za-z0-9_-])(?:(?:hover|active|focus):)?(?:bg|text|border|ring)-[a-z][a-z-]*-(?:hovered|actived|focussed|pressed)(?![A-Za-z0-9_-])"
@@ -361,9 +366,48 @@
         "select",
         "textarea"
       ],
+      "assist_chip_row": {
+        "gap_utilities": [
+          "gap-1"
+        ],
+        "wrap_utilities": [
+          "flex-wrap"
+        ],
+        "item_component": "Chip",
+        "item_variant": "assist",
+        "rationale": "一排 assist chip(訊息附件以外)= 會換行的語意清單(ul/ol 同時寫 role=\"list\",每顆包 li),間距 4 與 AgentMessage 附件列同值。只認這一個結構:手刻 div、沒寫 role=\"list\"、間距不是 gap-1、清單裡有非 assist 的 Chip,一律照擋。",
+        "rationale_path": "packages/design-system/src/components/Chip/chip.spec.md「一排 assist chip(訊息附件以外)」; packages/design-system/src/components/AgentPanel/agent-panel.spec.md「4. AgentMessage(訊息)」附件列"
+      },
       "nearby_line_limit": 16,
-      "rationale": "gap-1/2 只在同行或有界 nearby 證據可機械證明為 inline item/control、semantic homogeneous list、toolbar、或 layoutSpace rule-5 grouped horizontal fields 時是固定 micro geometry。一般 flex/grid/section gap-1/2 仍屬 macro 候選並阻擋；同行混入 p-/m-/space-* magic 也不能被 micro 證據隱藏。",
-      "rationale_path": "packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md L125-134,L150-163; packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md L869-900; packages/design-system/src/components/Button/button.spec.md L87-122"
+      "rationale": "gap-1/2 只在同行或有界 nearby 證據可機械證明為 inline item/control、semantic homogeneous list、toolbar、layoutSpace rule-5 grouped horizontal fields、或一排 assist chip(assist_chip_row)時是固定 micro geometry。一般 flex/grid/section gap-1/2 仍屬 macro 候選並阻擋；同行混入 p-/m-/space-* magic 也不能被 micro 證據隱藏。",
+      "rationale_path": "packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md L125-134,L150-163; packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md L869-900; packages/design-system/src/components/Button/button.spec.md L87-122; packages/design-system/src/components/Chip/chip.spec.md「一排 assist chip(訊息附件以外)」",
+      "spec_registered_patterns": [
+        {
+          "id": "file-item-list",
+          "utilities": ["flex", "flex-col"],
+          "magic_tokens_subset": ["gap-1", "gap-2"],
+          "nearby_all": [".map(", "<FileItem"],
+          "source": "packages/design-system/src/components/FileItem/file-item.spec.md:294「List wrapper 本身不加視覺」(rich gap-2 / compact gap-1;上傳控件 + 清單同包一層 flex-col gap-N,不用 mt-*)"
+        },
+        {
+          "id": "page-list-row",
+          "utilities": ["flex"],
+          "utilities_any": ["items-start", "items-center"],
+          "magic_tokens_exact": ["gap-3", "px-4", "py-3"],
+          "nearby_components": ["Avatar", "ItemAvatar", "ItemLabel", "ItemContent"],
+          "nearby_min": 1,
+          "source": "packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md:1004「頁面列表（閱讀式列，以 slot 零件組）」(py-3 / px-4 / prefix ↔ content gap-3)"
+        },
+        {
+          "id": "overlay-list-region",
+          "utilities": ["flex", "flex-col"],
+          "magic_tokens_exact": ["py-2"],
+          "same_line_any": ["\\brole\\s*=\\s*['\"]list['\"]", "<ul\\b", "\\bdata-layout-region\\s*=\\s*['\"]unbounded['\"]"],
+          "ancestor_any": ["DialogBody", "SheetBody", "SurfaceBody"],
+          "ancestor_line_limit": 24,
+          "source": "packages/design-system/src/patterns/overlay-surface/overlay-surface.spec.md:94「List-as-region in overlay body」(判定條件:list outer wrapper 自帶 py-2)"
+        }
+      ]
     },
     "warn": {
       "micro_gap": [

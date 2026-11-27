@@ -8,7 +8,8 @@
    每一檔的值與理由 → tag.spec.md「尺寸」。
 
    讀者:Tag 自己的 cva(h-tag-sm / h-tag-md / h-tag-lg,經下方 @theme inline 轉接名)、
-   Field/field-wrapper.tsx 的 fieldTagInsetX / fieldTagInsetY(輸入框替裡面的標籤算四邊等距內距)。
+   Field/field-wrapper.tsx 的 fieldTagInsetX / fieldTagInsetY(輸入框替裡面的標籤算四邊等距內距)、
+   Calendar 的事件列 / 日期框 /「+N」列 / 星期列內容盒(h-tag-md / min-w-tag-md;列高單位 = Tag md 盒高,calendar.spec.md「間距」)。
    程式對照常數 = tag.tsx TAG_HEIGHT_PX(遮罩與截斷量測要用數字算);兩邊相等由 scripts/token-twin-invariant.mjs
    靜態鎖住(住處從分類表讀),畫出來的高度由 scripts/tag-field-vertical-inset.mjs I7 在瀏覽器量。
 

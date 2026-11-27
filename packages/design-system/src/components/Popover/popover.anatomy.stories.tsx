@@ -1,9 +1,12 @@
 import { useState } from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { Popover, PopoverTrigger, PopoverContent, PopoverHeader, PopoverBody, PopoverFooter, PopoverTitle } from './popover'
+import { EDITABLE_TITLE_HEADER_SLOT } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import { Button } from '@/design-system/components/Button/button'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
+import { InlineEdit } from '@/design-system/components/InlineEdit/inline-edit'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 import { StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
 
@@ -76,7 +79,7 @@ export const Overview: Story = {
 
       <div>
         <H3>Props 速查</H3>
-        <Desc>Popover / PopoverTrigger / PopoverContent 沿用 Radix Popover 的同名 prop（定位 / 開關 / modal 等 props 與 Radix 一致），並接上設計系統 token。唯一例外:PopoverContent 覆寫兩處 a11y 行為(<code>onOpenAutoFocus</code> 讓開啟焦點落 body 首個互動元素、自動接線 <code>aria-labelledby</code>),故行為非全等 Radix，詳「A11y 預設」段。Props 依宣告元件分兩類——定位類(align / side / sideOffset / collisionPadding)寫在 {'<PopoverContent>'} 上,開關 / modal 類(open / onOpenChange / defaultOpen / modal)寫在最外層 {'<Popover>'}(Root)上;寫錯元件不會生效(見「所屬元件」欄)。完整 API 見 <a href="https://www.radix-ui.com/primitives/docs/components/popover" className="text-primary underline hover:text-primary-hover" target="_blank" rel="noreferrer">Radix Popover 官方文件</a>。</Desc>
+        <Desc>Popover / PopoverTrigger / PopoverContent 沿用 Radix Popover 的同名 prop（定位 / 開關 / modal 等 props 與 Radix 一致），並接上設計系統 token。唯一例外:PopoverContent 覆寫兩處 a11y 行為(<code>onOpenAutoFocus</code> 讓開啟焦點落 body 首個互動元素、自動接線 <code>aria-labelledby</code>),故行為非全等 Radix，詳「A11y 預設」段。Props 依宣告元件分開寫——定位類(align / side / sideOffset / collisionPadding)寫在 {'<PopoverContent>'} 上,開關 / modal 類(open / onOpenChange / defaultOpen / modal)寫在最外層 {'<Popover>'}(Root)上,× 的讀屏名稱(closeAriaLabel)寫在 {'<PopoverHeader>'} 上;寫錯元件不會生效(見「所屬元件」欄)。完整 API 見 <a href="https://www.radix-ui.com/primitives/docs/components/popover" className="text-primary underline hover:text-primary-hover" target="_blank" rel="noreferrer">Radix Popover 官方文件</a>。</Desc>
         <div className="overflow-x-auto">
           {/* @anatomy-exempt-next: Props 速查表為純文件對照(prop/type/default),非元件資料展示;DataTable 過重 */}
           <table className="text-caption border-collapse">
@@ -89,6 +92,7 @@ export const Overview: Story = {
               <tr><Td mono>open / onOpenChange</Td><Td mono>Popover(Root)</Td><Td mono>{'boolean / (o) => void'}</Td><Td mono>—</Td><Td>controlled 開關(選用)</Td></tr>
               <tr><Td mono>defaultOpen</Td><Td mono>Popover(Root)</Td><Td mono>boolean</Td><Td mono>false</Td><Td>uncontrolled 初始開啟狀態</Td></tr>
               <tr><Td mono>modal</Td><Td mono>Popover(Root)</Td><Td mono>boolean</Td><Td mono>false</Td><Td><code>true</code> 時阻斷背景互動 + 鎖 body scroll + focus trap</Td></tr>
+              <tr><Td mono>closeAriaLabel</Td><Td mono>PopoverHeader</Td><Td mono>string</Td><Td mono>「關閉」</Td><Td>右上 × 的讀屏名稱。沒傳時先看 <code>I18nProvider</code> 的 <code>popover.close</code>,再沒有才念「關閉」</Td></tr>
             </tbody>
           </table>
         </div>
@@ -293,6 +297,44 @@ export const StateBehavior: Story = {
   ),
 }
 
+// ── 可編輯標題的標題列 ─────────────────────────────────────────────────────
+// 規則住 patterns/overlay-surface/overlay-chrome-sizing.spec.md「可編輯標題的標題列」;× 讀屏名稱的取值順序住 popover.spec.md「A11y 預設」。
+// 看板卡片的任務預覽:標題可以就地改(InlineEdit sm),所以沒有 PopoverTitle 可以自動接浮層名字 → PopoverContent 自己傳 aria-label = 標題本身。
+// probe = 只給下方 test-only 量測用:兩個浮層同時開著(不搶焦點、點另一個不關),其餘與展示這則相同。
+function TaskQuickViewPopover({ defaultOpen = false, probeCase, closeAriaLabel }: { defaultOpen?: boolean; probeCase?: 'md' | 'lg'; closeAriaLabel?: string }) {
+  const [title, setTitle] = useState('結帳頁信用卡分期金額顯示錯誤')
+  const keepBothOpen = probeCase ? { 'data-probe-case': probeCase, onOpenAutoFocus: (e: Event) => e.preventDefault(), onInteractOutside: (e: Event) => e.preventDefault() } : null
+  return (
+    <Popover defaultOpen={defaultOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="tertiary">WM-142 任務預覽</Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" aria-label={title} {...keepBothOpen}>
+        <PopoverHeader className={EDITABLE_TITLE_HEADER_SLOT} closeAriaLabel={closeAriaLabel}>
+          {/* 清空後提交 = 維持原標題(任務一定要有標題) */}
+          <InlineEdit as="h2" size="sm" readClassName="font-medium" label="任務標題" value={title} onCommit={(next) => { if (next.trim() !== '') setTitle(next) }} />
+        </PopoverHeader>
+        <PopoverBody>
+          <p className="text-fg-secondary">指派給陳大明 · 11月28日到期</p>
+        </PopoverBody>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+export const EditableTitleHeader: Story = {
+  name: '可編輯標題的標題列',
+  render: () => (
+    <div className="flex flex-col gap-8">
+      <div>
+        <H3>標題可以就地修改時</H3>
+        <Desc>標題位放的不是 <code>PopoverTitle</code>,而是可以就地改的 <code>InlineEdit</code>(<code>size="sm"</code>,字樣照標題 <code>font-medium</code>)時,<code>PopoverHeader</code> 加上 <code>EDITABLE_TITLE_HEADER_SLOT</code>:右上 × 的佔位從「一行字高」換成「一列 sm 欄位高」(標題這時是一列欄位,不是一行字);標題欄尾端讓出一個欄位內距,滑過標題的底色停在 × 前方,點 × 一定是關閉、不會誤進編輯。沒有 <code>PopoverTitle</code> 可以自動接浮層的名字,所以 <code>PopoverContent</code> 自己傳 <code>aria-label</code> = 標題本身。點按鈕打開後,滑過或點標題試試看。</Desc>
+        <TaskQuickViewPopover />
+      </div>
+    </div>
+  ),
+}
+
 // ── Accessibility ─────────────────────────────────────────────────────────
 // 2026-05-17 ship per audit Dim 13(story-rules.md 6-canonical 含 Accessibility)
 export const Accessibility = {
@@ -300,7 +342,104 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"焦點 / 鍵盤 / ARIA 行為（部分為 DS 覆寫,部分為 Radix 內建）：\n\n-   開啟焦點（DS 覆寫）  ：DS 以  onOpenAutoFocus  覆寫 Radix 預設,開啟時把焦點落在 body 第一個表單控件(排除右上 close X;查無時退回 footer 按鈕、再無則 content 容器),避免 Radix 預設先 focus close X 觸發 tooltip leak\n-   關閉返回（Radix 內建）  ：關閉時 focus return to trigger\n-   Esc 關閉（Radix 內建）  ：按 Esc 自動關閉並返回焦點\n-   Focus trap（Radix 內建,僅 modal）  ： modal={true}  時焦點鎖在 content 內\n-   Tab 留在面板裡（Radix 內建,modal / non-modal 皆同）  ：最後一格按 Tab 回第一格、第一格按 Shift+Tab 回最後一格,離開面板 = 按 Esc(W3C 對話框規則;2026-09-25 更正:原寫「non-modal 不鎖焦點」與實作不符)\n-   點外 / 焦點被移走即關（Radix 內建,non-modal）  ：non-modal 不 trap 的意思是滑鼠點別處、程式把焦點移走時可以離開,一離開就自動關閉（dismiss,不是「Tab 可以走出去」）\n-   例外:選單類浮層按 Tab = 收起並往下走（DropdownMenu、單選下拉,見各自 spec）\n-   ARIA（Radix 內建）  ：trigger 自動  aria-expanded  /  aria-controls ，content  role=\"dialog\" \n-   Accessible name（DS 覆寫）  ：content  role=\"dialog\"  預設無 accessible name， PopoverTitle  掛載時自動接上 content 的  aria-labelledby （consumer 自傳 aria-label / aria-labelledby 優先）\n\n保留 Radix  data-state  屬性即可；無  PopoverTitle  的 naked popover 需 consumer 自傳  aria-label ，否則 role=\"dialog\" 無 accessible name。"}</p>
+      <p className="whitespace-pre-line">{"焦點 / 鍵盤 / ARIA 行為（部分為 DS 覆寫,部分為 Radix 內建）：\n\n-   開啟焦點（DS 覆寫）  ：DS 以  onOpenAutoFocus  覆寫 Radix 預設,開啟時把焦點落在 body 第一個表單控件(排除右上 close X;查無時退回 footer 按鈕、再無則 content 容器),避免 Radix 預設先 focus close X 觸發 tooltip leak\n-   關閉返回（Radix 內建）  ：關閉時 focus return to trigger\n-   Esc 關閉（Radix 內建）  ：按 Esc 自動關閉並返回焦點\n-   Focus trap（Radix 內建,僅 modal）  ： modal={true}  時焦點鎖在 content 內\n-   Tab 留在面板裡（Radix 內建,modal / non-modal 皆同）  ：最後一格按 Tab 回第一格、第一格按 Shift+Tab 回最後一格,離開面板 = 按 Esc(W3C 對話框規則;2026-09-25 更正:原寫「non-modal 不鎖焦點」與實作不符)\n-   點外 / 焦點被移走即關（Radix 內建,non-modal）  ：non-modal 不 trap 的意思是滑鼠點別處、程式把焦點移走時可以離開,一離開就自動關閉（dismiss,不是「Tab 可以走出去」）\n-   例外:選單類浮層按 Tab = 收起並往下走（DropdownMenu、單選下拉,見各自 spec）\n-   ARIA（Radix 內建）  ：trigger 自動  aria-expanded  /  aria-controls ，content  role=\"dialog\" \n-   Accessible name（DS 覆寫）  ：content  role=\"dialog\"  預設無 accessible name， PopoverTitle  掛載時自動接上 content 的  aria-labelledby （consumer 自傳 aria-label / aria-labelledby 優先）\n-   × 的讀屏名稱（DS 覆寫）  ： PopoverHeader  的  closeAriaLabel  >  I18nProvider  的 popover.close > 預設「關閉」;不傳時照舊念「關閉」\n\n保留 Radix  data-state  屬性即可；無  PopoverTitle  的 naked popover 需 consumer 自傳  aria-label ，否則 role=\"dialog\" 無 accessible name。"}</p>
     </div>
   ),
+}
+
+// ── 可編輯標題的標題列(量測;test-only)──────────────────────────────────────
+// 這則的 play 就是閘:story-demo-focus(ci.yml `npm run test:story-demo-focus`)逐支載入 story 並跑 play,斷言不成立 → 該 story 渲染失敗 → 紅。
+// 量的是 getBoundingClientRect / elementFromPoint 的數字(M32),不讀 class。一般密度與大密度(觸發點放在 data-density="lg" 那一區;
+// Popover 的控件大小跟觸發點,tokens/density/density.spec.md「浮層跟觸發點」)各開一個,兩個同時開著。
+//   (1) × 的讀屏名稱:一般密度那個傳 closeAriaLabel →「關閉任務預覽」;大密度那個不傳 → 預設「關閉」(預設不變)。
+//   (2) × 佔位 = 一列 sm 欄位高:× 中線離標題列內容區上緣 = --field-height-sm / 2(容許 0.5)。拿掉 slot 時差 −3.5(一般)/ −5.5(大)。
+//   (3) 標題欄尾端讓位:InlineEdit 外框右緣到 × 左緣 = 標題列的 gap;× 左緣內 1px 點到的是 ×。不讓位時 InlineEdit 蓋進 × 4px、那一點是隱形編輯鈕。
+//   (4) 靜止:InlineEdit 外框(含 1px 透明邊框)= --field-height-sm、標題列內容高 = 上下 tight + --field-height-sm(一般 52 / 大 56)、
+//       × 中線 = 標題外框中線(容許 0.5)。InlineEdit 靜止外框多算上下 1px 邊框時(2026-11-25 前):外框 30 / 34、標題列 54 / 58、差 −1.0。
+//   (5) 編輯中:標題列內容高同 (4)(兩態同高,calendar.spec.md「事件詳情浮層」標題列),× 中線 = 輸入框那一列的中線(容許 0.5)。
+const PROBE_CASES = [
+  { probeCase: 'md', closeName: '關閉任務預覽' },
+  { probeCase: 'lg', closeName: '關閉' },
+] as const
+
+/** 量一個 CSS 長度在這個節點那一區的實際 px(跟著密度):放一個高 = 該長度的隱形 div,量完移除 */
+function measureLength(host: HTMLElement, length: string): number {
+  const probe = document.createElement('div')
+  probe.style.cssText = `position:absolute;visibility:hidden;width:0;height:${length}`
+  host.appendChild(probe)
+  const px = probe.getBoundingClientRect().height
+  probe.remove()
+  return px
+}
+
+function assertNear(actual: number, expected: number, tolerance: number, label: string) {
+  if (!(Math.abs(actual - expected) <= tolerance)) throw new Error(`${label}:量到 ${actual.toFixed(2)},應 ${expected.toFixed(2)}(容許 ±${tolerance})`)
+}
+
+function headerGeometry(header: HTMLElement) {
+  const style = getComputedStyle(header)
+  const dismiss = header.querySelector<HTMLElement>('[data-dismiss]')
+  const row = header.querySelector<HTMLElement>('[data-editing]')
+  if (!dismiss || !row) throw new Error('標題列裡找不到 × 或 InlineEdit')
+  const xRect = dismiss.getBoundingClientRect()
+  return {
+    style,
+    dismiss,
+    xRect,
+    xMid: xRect.top + xRect.height / 2,
+    contentTop: header.getBoundingClientRect().top + parseFloat(style.borderTopWidth) + parseFloat(style.paddingTop),
+    rowRect: row.getBoundingClientRect(),
+  }
+}
+
+export const EditableTitleHeaderProbe: Story = {
+  name: '可編輯標題的標題列(量測)',
+  tags: ['test-only'],
+  render: () => (
+    <div className="grid grid-cols-2 w-[720px]">
+      <div><TaskQuickViewPopover defaultOpen probeCase="md" closeAriaLabel="關閉任務預覽" /></div>
+      <div data-density="lg"><TaskQuickViewPopover defaultOpen probeCase="lg" /></div>
+    </div>
+  ),
+  play: async () => {
+    for (const { probeCase, closeName } of PROBE_CASES) {
+      // 等那個浮層本身:出現、定位進畫面、開啟動畫跑完(zoom-in-95 期間量到的是縮放中的數字)—— 不用固定睡眠
+      const content = await waitFor(() => {
+        const el = document.querySelector<HTMLElement>(`[role="dialog"][data-probe-case="${probeCase}"]`)
+        if (!el) throw new Error(`${probeCase}:浮層還沒出現`)
+        const rect = el.getBoundingClientRect()
+        if (rect.top < 0 || rect.bottom > window.innerHeight) throw new Error(`${probeCase}:浮層還沒定位進畫面`)
+        if (el.getAnimations({ subtree: true }).some((a) => a.playState === 'running')) throw new Error(`${probeCase}:開啟動畫還在跑`)
+        return el
+      }, { timeout: 5000 })
+      const header = content.querySelector<HTMLElement>('[data-slot="surface-header"]')
+      if (!header) throw new Error(`${probeCase}:找不到標題列`)
+      const fieldHeight = measureLength(header, 'var(--field-height-sm)')
+      const headerHeight = 2 * measureLength(header, 'var(--layout-space-tight)') + fieldHeight
+      const view = headerGeometry(header)
+
+      // (1) × 的讀屏名稱
+      await expect(within(content).getByRole('button', { name: closeName })).toBe(view.dismiss)
+      // (2) × 佔位 = 一列 sm 欄位高
+      assertNear(view.xMid - view.contentTop, fieldHeight / 2, 0.5, `${probeCase}:× 中線離標題列內容區上緣`)
+      // (3) 標題欄尾端讓位
+      assertNear(view.xRect.left - view.rowRect.right, parseFloat(view.style.columnGap), 0.5, `${probeCase}:標題外框右緣 → × 左緣`)
+      const hit = document.elementFromPoint(view.xRect.left + 1, view.xMid)
+      if (!hit || !view.dismiss.contains(hit)) throw new Error(`${probeCase}:× 左緣內 1px 點到的是 ${hit ? `<${hit.tagName.toLowerCase()} aria-label="${hit.getAttribute('aria-label') ?? ''}">` : '空'},不是 ×`)
+      // (4) 靜止:標題外框 = 一列 sm 欄位高,標題列 = 上下 tight + 一列 sm 欄位高,× 對準標題外框
+      assertNear(view.rowRect.height, fieldHeight, 0.5, `${probeCase}:靜止標題外框高`)
+      assertNear(header.clientHeight, headerHeight, 0.5, `${probeCase}:靜止標題列內容高`)
+      assertNear(view.xMid, view.rowRect.top + view.rowRect.height / 2, 0.5, `${probeCase}:靜止 × 中線 − 標題外框中線`)
+
+      // (5) 編輯中:標題列 = 上下 tight + 一列 sm 欄位高(與靜止同高),× 對準輸入框那一列
+      await userEvent.click(within(header).getByRole('button', { name: '編輯 任務標題' }))
+      await waitFor(() => { if (!header.querySelector('[data-editing="true"] input')) throw new Error(`${probeCase}:沒有進入編輯`) })
+      const edit = headerGeometry(header)
+      assertNear(header.clientHeight, headerHeight, 0.5, `${probeCase}:編輯中標題列內容高`)
+      assertNear(edit.xMid, edit.rowRect.top + edit.rowRect.height / 2, 0.5, `${probeCase}:編輯中 × 中線 − 輸入框中線`)
+      // 點內文收回 view(InlineEdit 點外面 = 提交;標題沒改,不會呼叫 onCommit)
+      await userEvent.click(within(content).getByText('指派給陳大明 · 11月28日到期'))
+      await waitFor(() => { if (!header.querySelector('[data-editing="false"]')) throw new Error(`${probeCase}:沒有回到 view`) })
+    }
+  },
 }

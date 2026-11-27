@@ -256,6 +256,93 @@ run_hook "Write" "$APP_TSX" "content" \
 expect_silent "N15. grouped horizontal field pair gap-2 (rule 5) → silent"
 
 # ─────────────────────────────────────────────────────────────
+# 一排 assist chip(chip.spec.md「一排 assist chip(訊息附件以外)」;user 2026-11-26 決策卡 E2
+# 選「A:照附件列同一套寫進 chip 規格,閘放行」)。只放行這一個結構,每一格各有對照組:
+#   合法樣本 N18 / N19 綠;手刻 div(P17)、沒寫 role="list"(P18)、間距不是 4(P19)、
+#   清單裡不是 assist chip(P20 / P21)仍紅;拿掉放行(P22,同一份 N18 樣本)→ 紅。
+# ─────────────────────────────────────────────────────────────
+
+CHIP_ROW_MAPPED='const QuickPrompts = () => (
+  <ul role="list" className="flex flex-wrap gap-1">
+    {prompts.map((prompt) => (
+      <li key={prompt.id}>
+        <Chip variant="assist" onClick={() => ask(prompt.text)}>{prompt.text}</Chip>
+      </li>
+    ))}
+  </ul>
+);'
+
+# N18. 合法:ul role=list + flex-wrap + gap-1,每顆 li 包 assist chip(map 產生)→ silent
+run_hook "Write" "$APP_TSX" "content" "$CHIP_ROW_MAPPED"
+expect_silent "N18. 一排 assist chip(ul role=list / li / gap-1,map)→ silent"
+
+# N19. 合法:逐顆寫出、props 跨行、onClick(含 =>)寫在 variant 前面 → silent
+run_hook "Write" "$APP_TSX" "content" \
+'const QuickPrompts = () => (
+  <ul role="list" className="flex flex-wrap gap-1">
+    <li>
+      <Chip onClick={() => ask("摘要這份報告")} variant="assist">摘要這份報告</Chip>
+    </li>
+    <li>
+      <Chip
+        onClick={() => ask("列出待辦事項")}
+        variant="assist"
+      >
+        列出待辦事項
+      </Chip>
+    </li>
+  </ul>
+);'
+expect_silent "N19. 一排 assist chip(逐顆寫、props 跨行、onClick 在 variant 前)→ silent"
+
+# P17. 手刻 div 排一排 assist chip(沒有語意清單)→ BLOCK
+run_hook "Write" "$APP_TSX" "content" \
+'const QuickPrompts = () => (
+  <div className="flex flex-wrap gap-1">
+    {prompts.map((prompt) => (
+      <Chip key={prompt.id} variant="assist" onClick={() => ask(prompt.text)}>{prompt.text}</Chip>
+    ))}
+  </div>
+);'
+expect_block "P17. 手刻 div 排一排 assist chip → BLOCK"
+
+# P18. ul 沒寫 role="list"(Tailwind 拿掉清單符號後讀屏不當清單念)→ BLOCK
+run_hook "Write" "$APP_TSX" "content" "${CHIP_ROW_MAPPED/ role=\"list\"/}"
+expect_block "P18. 一排 assist chip 的 ul 沒寫 role=list → BLOCK"
+
+# P19. 間距不是 4(gap-2 = ChipGroup filter 的值,不是附件列的值)→ BLOCK
+run_hook "Write" "$APP_TSX" "content" "${CHIP_ROW_MAPPED/gap-1/gap-2}"
+expect_block "P19. 一排 assist chip 用 gap-2 → BLOCK"
+
+# P20. 清單裡是 filter Chip(沒寫 variant="assist")→ BLOCK
+run_hook "Write" "$APP_TSX" "content" "${CHIP_ROW_MAPPED/ variant=\"assist\"/ value=\"x\"}"
+expect_block "P20. 換行清單裡是 filter Chip → BLOCK"
+
+# P21. 換行清單裡不是 Chip(Badge 一排)→ BLOCK
+run_hook "Write" "$APP_TSX" "content" \
+'const Labels = () => (
+  <ul role="list" className="flex flex-wrap gap-1">
+    {labels.map((label) => (
+      <li key={label.id}><Badge>{label.name}</Badge></li>
+    ))}
+  </ul>
+);'
+expect_block "P21. 換行清單裡不是 assist chip(Badge)→ BLOCK"
+
+# P22. 拿掉放行:同一份 N18 合法樣本,consumer corpus 的 registry 把 assist_chip_row 的 item_variant
+#      換成不存在的值(等同這條放行不在)→ BLOCK。證明 N18 的綠來自這條放行,不是別條規則順手放過。
+CHIP_ROW_OFF_CORPUS="$TMP_DIR/chip-row-off-corpus"
+mkdir -p "$CHIP_ROW_OFF_CORPUS/references"
+python3 - "$SCRIPT_DIR/../../../src/tokens/utility-registry.json" "$CHIP_ROW_OFF_CORPUS/references/utility-registry.json" <<'PY'
+import json, sys
+registry = json.load(open(sys.argv[1], encoding="utf-8"))
+registry["spacing"]["canonical_micro_geometry"]["assist_chip_row"]["item_variant"] = "lane-removed"
+json.dump(registry, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+PY
+GOVERNANCE_CORPUS_ROOT="$CHIP_ROW_OFF_CORPUS" run_hook "Write" "$APP_TSX" "content" "$CHIP_ROW_MAPPED"
+expect_block "P22. 拿掉 assist_chip_row 放行 → 同一份合法樣本 BLOCK"
+
+# ─────────────────────────────────────────────────────────────
 # 幻覺 token:白名單從 layoutSpace.css 現讀(寫死 loose|tight|bottom 會漏掉之後新增的 tier)
 # ─────────────────────────────────────────────────────────────
 
@@ -304,6 +391,135 @@ else
   echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
   FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - P16. 讀不到 layoutSpace.css"
 fi
+
+# ── E16 + E14 (1)(2026-11-27):註解不是程式 —— 掃遮罩後的內容,豁免標記仍對原文判 ──
+# M1. 行尾註解提到 p-4 → 放行(舊實作逐行掃整段:紅)
+run_hook "Write" "$APP_TSX" "content" \
+  'export const Card = () => <div className="flex">內容</div>; // 以前是 p-4,已改 token'
+expect_silent "M1. 行尾 // 註解裡的 p-4 不算 → silent"
+# M2. JSX 註解 {/* gap-2 … */} → 放行
+run_hook "Write" "$APP_TSX" "content" \
+  'const A = () => <section className="flex">{/* 這裡不要用 gap-2,改用 token */}<span>x</span></section>;'
+expect_silent "M2. {/* … */} 裡的 gap-2 不算 → silent"
+# M3. 同一行程式真的寫 p-4、只是行尾也有說明 → 照擋(遮罩不吃程式)
+run_hook "Write" "$APP_TSX" "content" \
+  'export const Card = () => <div className="p-4">內容</div>; // 卡片內距'
+expect_block "M3. 程式裡的 p-4 + 行尾一般註解 → BLOCK"
+# M4. 同行豁免標記(本身是註解、遮罩後被抹掉)仍對原文判 → 放行
+run_hook "Write" "$APP_TSX" "content" \
+  'export const Card = () => <div className="p-4">內容</div>; // @layout-space-magic-ok: 第三方嵌入框固定內距'
+expect_silent "M4. 同行 @layout-space-magic-ok 仍有效 → silent"
+# M5. 字串裡的 https:// 不當註解起點(否則同一行後面的 p-4 會被遮掉 = 漏判)
+run_hook "Write" "$APP_TSX" "content" \
+  'export const L = () => <a href="https://example.com" className="p-4">x</a>;'
+expect_block "M5. href 裡的 // 不是註解,後面的 p-4 照擋 → BLOCK"
+
+# ── H2 + H3 + H4(2026-11-27):規格登記的寫法(utility-registry canonical_micro_geometry.spec_registered_patterns)──
+# 三種規格寫法放行(舊分類器:三格全紅 —— 對照組在交接紀錄);反例照擋。
+# S1. 檔案清單:flex flex-col gap-2,鄰近 .map( 產出 <FileItem(file-item.spec.md「List wrapper 本身不加視覺」)
+run_hook "Write" "$APP_TSX" "content" \
+  'const Attachments = () => (
+  <div className="flex flex-col gap-2">
+    {files.map((f) => <FileItem key={f.id} mode="rich" name={f.name} />)}
+  </div>
+);'
+expect_silent "S1. FileItem 清單 flex-col gap-2(規格寫法)→ silent"
+# S1b. compact 清單 gap-1 同一筆登記
+run_hook "Write" "$APP_TSX" "content" \
+  'const Attachments = () => (
+  <div className="flex flex-col gap-1">
+    {files.map((f) => <FileItem key={f.id} mode="compact" name={f.name} />)}
+  </div>
+);'
+expect_silent "S1b. FileItem 清單 flex-col gap-1(規格寫法)→ silent"
+# S2. 頁面列表列:flex items-start gap-3 px-4 py-3,鄰近頭像 / Item 零件(item-anatomy.spec.md「頁面列表」)
+run_hook "Write" "$APP_TSX" "content" \
+  'const MemberRow = ({ member }) => (
+  <div className="flex items-start gap-3 px-4 py-3">
+    <Avatar src={member.photo} alt={member.name} size={32} />
+    <ItemContent label={member.name} description={member.role} mode="reading" />
+  </div>
+);'
+expect_silent "S2. 頁面列表列 gap-3 px-4 py-3 + Avatar / ItemContent → silent"
+# S3. 浮層清單外框:role=list + flex flex-col py-2,在 DialogBody 底下(overlay-surface.spec.md「List-as-region」)
+run_hook "Write" "$APP_TSX" "content" \
+  'const Members = () => (
+  <Dialog open>
+    <DialogContent>
+      <DialogBody className="!px-0 !pt-0 !pb-0">
+        <div role="list" className="flex flex-col py-2">
+          {members.map((m) => <MemberRow key={m.id} member={m} />)}
+        </div>
+      </DialogBody>
+    </DialogContent>
+  </Dialog>
+);'
+expect_silent "S3. DialogBody 裡 role=list flex-col py-2 → silent"
+# S3b. <ul> + data-layout-region 在 SheetBody 底下
+run_hook "Write" "$APP_TSX" "content" \
+  'const Recent = () => (
+  <SheetBody>
+    <ul data-layout-region="unbounded" className="flex flex-col py-2">
+      {projects.map((p) => <li key={p.id}>{p.name}</li>)}
+    </ul>
+  </SheetBody>
+);'
+expect_silent "S3b. SheetBody 裡 ul flex-col py-2 → silent"
+# X1. 反例:沒有 FileItem 的 flex-col gap-2 → 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const Cards = () => (
+  <div className="flex flex-col gap-2">
+    {cards.map((c) => <ProjectCard key={c.id} card={c} />)}
+  </div>
+);'
+expect_block "X1. 沒有 FileItem 的 flex-col gap-2 → BLOCK"
+# X2. 反例:沒有頭像也沒有 Item 零件的 gap-3 px-4 py-3 → 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const Notice = () => (
+  <div className="flex items-start gap-3 px-4 py-3">
+    <Info size={16} />
+    <span>本週五 22:00 系統維護</span>
+  </div>
+);'
+expect_block "X2. 沒有頭像 / Item 零件的 gap-3 px-4 py-3 → BLOCK"
+# X3. 反例:不在浮層主體裡的 py-2 清單 → 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const Members = () => (
+  <section>
+    <div role="list" className="flex flex-col py-2">
+      {members.map((m) => <MemberRow key={m.id} member={m} />)}
+    </div>
+  </section>
+);'
+expect_block "X3. 不在 DialogBody / SheetBody / SurfaceBody 裡的 py-2 清單 → BLOCK"
+# X3b. 反例:DialogBody 已經關掉,後面那份清單不在它底下 → 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const Page = () => (
+  <>
+    <DialogBody>摘要</DialogBody>
+    <div role="list" className="flex flex-col py-2">
+      {members.map((m) => <MemberRow key={m.id} member={m} />)}
+    </div>
+  </>
+);'
+expect_block "X3b. DialogBody 已關閉後的 py-2 清單 → BLOCK"
+# X4. 反例:規格組合多帶一個 magic(mb-4)→ 整組對不上 → 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const MemberRow = ({ member }) => (
+  <div className="flex items-start gap-3 px-4 py-3 mb-4">
+    <Avatar src={member.photo} alt={member.name} size={32} />
+    <ItemContent label={member.name} mode="reading" />
+  </div>
+);'
+expect_block "X4. 頁面列表列多帶 mb-4 → BLOCK"
+# X5. 反例:FileItem 清單換成 gap-3(不在登記的 gap-1 / gap-2)→ 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const Attachments = () => (
+  <div className="flex flex-col gap-3">
+    {files.map((f) => <FileItem key={f.id} name={f.name} />)}
+  </div>
+);'
+expect_block "X5. FileItem 清單 gap-3(未登記)→ BLOCK"
 
 echo ""
 echo "=== Summary ==="

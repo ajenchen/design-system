@@ -1,6 +1,7 @@
 // @anatomy-exempt: anatomy 參考用靜態 props / 責任 / 色彩對照表（純文件,非互動資料表格,不需 DataTable runtime）
-import type { Meta, StoryObj } from '@storybook/react'
-import { Field, FieldLabel, FieldDescription, FieldError, FieldGroup } from './field'
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import * as React from 'react'
+import { Field, FieldLabel, FieldDescription, FieldError, FieldGroup, useFieldState } from './field'
 import { Input } from '@/design-system/components/Input/input'
 import { NumberInput } from '@/design-system/components/NumberInput/number-input'
 import { Select } from '@/design-system/components/Select/select'
@@ -379,7 +380,8 @@ export const ColorMatrix: Story = {
         <H3>Field 元素色彩 Token</H3>
         <Desc>
           Field 本身不擁有 control 邊框色(那由 Field Controls 管),但擁有 label / description /
-          error / required-star 的色彩。這裡列出 Field 容器的所有色彩 token。
+          error / required-star 的色彩。這裡列出 Field 容器的所有色彩 token。FieldLabel 的 Default 色是一般表單的樣子;
+          閱讀情境(同一組裡有就地編輯,或 Field 層純顯示 —— mode 設成 view)標籤改用 fg-secondary,停用仍是 fg-disabled(field.spec.md「閱讀情境」)。
         </Desc>
         <div className="overflow-x-auto mb-4">
           <table className="text-caption border-collapse">
@@ -526,6 +528,63 @@ export const FieldGroupBehavior: Story = {
           </div>
         </div>
       </div>
+    </div>
+  ),
+}
+
+// ── 自訂控件接上 Field(field.spec.md「FieldContext — 子元件如何讀 Field 狀態」的「公開給產品的值」;2026-11-26 ws-upstream C29)──
+// 情境:客服工單的「回覆客戶」用第三方富文字編輯器(DS 沒有),本例以 contentEditable 的可編輯區代表編輯器本體。
+// 控件用公開的 useFieldState 拿 id 與狀態,自己接 aria-*;不是原生表單元素 → 名字走 aria-labelledby = labelId。
+// 編輯器的外框是產品自己的(DS 不替第三方控件畫框),這裡只用 DS token 讓它跟旁邊的欄位一致。
+function ThirdPartyEditor({ onChange, onBlur }: { onChange: (text: string) => void; onBlur: () => void }) {
+  const field = useFieldState()
+  return (
+    <div
+      role="textbox"
+      aria-multiline="true"
+      contentEditable={!field?.disabled}
+      id={field?.id}
+      aria-labelledby={field?.labelId}
+      aria-describedby={field?.descriptionId}
+      aria-required={field?.required || undefined}
+      aria-invalid={field?.invalid || undefined}
+      aria-errormessage={field?.invalid ? field.errorId : undefined}
+      onInput={(e) => onChange(e.currentTarget.textContent ?? '')}
+      onBlur={onBlur}
+      className="min-h-20 w-full rounded-md border-[length:var(--field-border-width)] border-border bg-surface px-[var(--field-px)] py-2 text-body text-foreground aria-[invalid=true]:border-error"
+    />
+  )
+}
+
+function CustomControlWiringDemo() {
+  const [reply, setReply] = React.useState('')
+  const [touched, setTouched] = React.useState(false)
+  const invalid = touched && reply.trim() === ''
+  return (
+    <div className="max-w-md">
+      <Field required invalid={invalid}>
+        <FieldLabel>回覆客戶</FieldLabel>
+        <ThirdPartyEditor onChange={setReply} onBlur={() => setTouched(true)} />
+        <FieldDescription>會連同工單編號寄到客戶的信箱</FieldDescription>
+        <FieldError>{invalid ? '回覆內容必填' : undefined}</FieldError>
+      </Field>
+    </div>
+  )
+}
+
+export const CustomControlWiring: Story = {
+  name: '自訂控件接上 Field',
+  render: () => (
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+      <div>
+        <H3>DS 沒有的控件,用 useFieldState 接上標籤、說明與錯誤</H3>
+        <Desc>
+          useFieldState() 只給九個值:id、labelId、descriptionId、errorId、invalid、required、disabled、mode、size。
+          可編輯區接上 id、aria-labelledby(labelId)、aria-describedby(descriptionId)、aria-required、aria-invalid,
+          有錯時 aria-errormessage 指向錯誤訊息(errorId)。點進編輯區再離開、不打字,就會看到必填錯誤。
+        </Desc>
+      </div>
+      <CustomControlWiringDemo />
     </div>
   ),
 }

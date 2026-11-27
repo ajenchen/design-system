@@ -80,7 +80,7 @@ export const dsSourceDir = (root) => resolve(root, 'packages/design-system/src')
  *   包成 InstrumentError,訊息取第一行。2026-11-15 前突變錯在 esbuild 外掛裡被包成一般的 `Build failed`,呼叫端認不出來 →
  *   未捕捉例外、exit 1、沒有標記(審查 A 第 1、2 輪)。
  */
-export async function bundleDsHarness({ root, harness, harnessName, mutate }) {
+export async function bundleDsHarness({ root, harness, harnessName, mutate, platform = 'browser', format = 'iife' }) {
   const srcDir = dsSourceDir(root)
   /** 外掛裡突變函式丟的第一個錯(esbuild 只會給我們包過的 Build failed,這裡留原本那一個) */
   let mutateError = null
@@ -90,8 +90,10 @@ export async function bundleDsHarness({ root, harness, harnessName, mutate }) {
       stdin: { contents: harness, loader: 'tsx', resolveDir: srcDir, sourcefile: harnessName },
       bundle: true,
       write: false,
-      format: 'iife',
-      platform: 'browser',
+      // 預設 = 塞進空白頁的 IIFE(瀏覽器閘);`platform: 'node', format: 'cjs'` = node 端 react-dom/server 靜態渲染的閘
+      //(i18n-labels-override-invariant.mjs,2026-11-26)—— 同一份原始碼打包與突變外掛,不另寫第二份
+      format,
+      platform,
       jsx: 'automatic',
       absWorkingDir: root,
       tsconfig: resolve(root, 'packages/design-system/tsconfig.json'),

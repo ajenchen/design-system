@@ -1,8 +1,8 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // same-row-mixed-allow: file 含 toolbar Button iconOnly + row ItemInlineActionButton,但兩者在不同 row(toolbar 跟 panel row 分離)
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
-import { expect, userEvent, waitFor, within } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Pencil, Trash2, MoreVertical, Search, Filter, Eye, Download, Plus, ArrowUpDown, Copy } from 'lucide-react'
 import { DataTable, type DataTableColumnDef, type DataTableSelection } from './data-table'
@@ -557,6 +557,25 @@ export const EmptyState: Story = {
               }
             />
           </ExampleSection>
+          {/* 2026-11-26(產品 canary 回報 C2):釘選左右欄 + 列操作 + 欄寬總和(1000)比容器(640)寬的空表 ——
+              左釘選 100、右釘選 Updated 120 + 操作欄,兩邊不等寬。data-table-invariants.mjs I41 量這一格:Empty 對可見寬置中(捲到最右也是)、表身沒有凍結線與釘選面板。 */}
+          <ExampleSection title="釘選欄的空表" description="商品清單篩選後沒有符合的結果:SKU 釘在左側、更新日期與操作欄釘在右側,欄位總寬比容器寬。空狀態跨全部欄位、在看得到的範圍內置中,左右凍結線只畫在表頭。">
+            <div style={{ maxWidth: 640 }}>
+              <DataTable
+                columns={columnsWithPrice}
+                data={[]}
+                pinnedLeftColumns={['sku']}
+                pinnedRightColumns={['updatedAt']}
+                emptyState="找不到符合「藍牙耳機」的商品"
+                rowActions={() => (
+                  <>
+                    <Button variant="text" size="xs" iconOnly startIcon={Pencil} aria-label="編輯" />
+                    <Button variant="text" size="xs" iconOnly startIcon={Trash2} aria-label="刪除" />
+                  </>
+                )}
+              />
+            </div>
+          </ExampleSection>
         </ExampleStack>
         <NameFormDialog
           open={creating}
@@ -928,6 +947,8 @@ export const InlineEditWithSpreadsheetOverlay: Story = {
 //      根節點與格游標框恆只出現一個(修前:id 留著、格不在、根節點也不畫 = 鍵盤聚焦零指示)。
 //   2. 鍵盤移動時游標格捲進可視範圍(60 列、限高 → 虛擬捲動;修前:游標走到畫面外就沒有任何指示)。
 // 資料是 `editableSampleData` 複製 60 份、名稱加 `#序號`,篩「#2」會把第 1 列篩掉、留 #2 與 #20–#29。
+//   3. 點格裡頭像名片(portal)上的按鈕,格游標不搬到頭像那一格(I42,2026-11-26 workspace F 組 F1)——
+//      Owner(person)欄加在**最後**,不改 I32 量的第一格與 I39 挑的文字格。
 export const SpreadsheetCursorContract: Story = {
   name: '試算表游標契約',
   tags: ['test-only'],
@@ -944,6 +965,7 @@ export const SpreadsheetCursorContract: Story = {
         editCol.accessor('sku', { header: 'SKU', meta: { type: 'string', width: 110 } }),
         editCol.accessor('name', { header: 'Product', meta: { type: 'string', editable: true, width: 240 } }),
         editCol.accessor('qty', { header: 'Qty', meta: { type: 'number', editable: true, width: 110 } }),
+        editCol.accessor('owner', { header: 'Owner', meta: { type: 'person', people: SAMPLE_PEOPLE, editable: true, width: 160 } }),
       ],
       []
     )
@@ -1277,7 +1299,7 @@ export const VirtualScroll: Story = {
    Apple Mail / iOS Files / ref 圖 additive 派
 
    排版設計準則(本 showcase):
-   - Toolbar:左 search input / 右 ops 群(Gmail / Linear / Notion idiom)
+   - Toolbar:左 search input / 右 ops 群(action-bar.spec.md 七「搜尋框」;世界級出處在該檔,這裡不重抄)
    - 各 chrome 元件 self-pad px-loose;table mx-loose 對齊 chrome 內容左右邊界
    - bordered=true(maxHeight="100%" 為垂直滾動 trigger,per spec)
    - Alert variant="neutral"(資訊性 hint,非 info hue) */
@@ -1330,7 +1352,7 @@ export const WithBulkActions: Story = {
       // 撐滿 parent(layout=fullscreen);
       // toolbar 自帶 py = toolbar→table 間距(無父 gap);table→底部 chrome group = loose(footer 呼吸 canonical)
       <div className="flex flex-col w-full h-screen bg-canvas">
-        {/* Toolbar — 左 search / 右 ops(Gmail / Linear / Notion idiom);幾何住在 stories-helpers/scene/data-toolbar.tsx(搜尋框唯一可壓縮、下限 160px;2026-09-16)*/}
+        {/* Toolbar — 左 search / 右 ops(action-bar.spec.md 七「搜尋框」);幾何住在 stories-helpers/scene/data-toolbar.tsx(搜尋框唯一可壓縮、下限 160px、上限 320px;2026-09-16 / 2026-11-26)*/}
         <DataToolbar
           search={
             <Input
@@ -2215,6 +2237,98 @@ export const RowDragInteractive: Story = {
   },
 }
 
+// 列拖曳把手在 DS Dialog 裡(test-only,2026-11-26,workspace F 組 F3):給 `scripts/data-table-handle-clip-invariant.mjs` P5 量
+// 「把手中心 = 表格外框左緣、列中心」。Dialog 置中靠 `-translate-x/y-1/2`(獨立的 translate 屬性)→ fixed 把手的定位基準換成 Dialog,
+// 修前把手偏出 Dialog 的原點。設定照 workspace 回報的那一組(enableRowDrag、size="sm"、rowHeight="hug")。
+export const RowDragInDialog: Story = {
+  name: '列拖曳把手(對話框內)',
+  tags: ['test-only'],
+  render: () => {
+    const [list, setList] = React.useState<Product[]>(sampleData.slice(0, 6))
+    const handleReorder = (sourceId: string, targetId: string, position: 'before' | 'after') => {
+      setList((prev) => {
+        const next = prev.filter((r) => r.sku !== sourceId)
+        const moved = prev.find((r) => r.sku === sourceId)
+        const at = next.findIndex((r) => r.sku === targetId)
+        if (!moved || at === -1) return prev
+        next.splice(position === 'before' ? at : at + 1, 0, moved)
+        return next
+      })
+    }
+    return (
+      <Dialog defaultOpen>
+        <DialogContent width="lg" height="hug">
+          <DialogHeader>
+            <DialogTitle>調整商品上架順序</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            <DataTable
+              columns={columnsWithPrice}
+              data={list}
+              size="sm"
+              rowHeight="hug"
+              maxHeight="none"
+              getRowId={(row) => row.sku}
+              enableRowDrag
+              onRowReorder={handleReorder}
+            />
+          </DialogBody>
+        </DialogContent>
+      </Dialog>
+    )
+  },
+}
+
+// 每列操作數量不一(test-only,2026-11-27,workspace H 組 H8):給 `scripts/data-table-invariants.mjs` I43 量
+// 「每一列的操作格都沒被裁、表頭與表身右區同寬」。總部鎖定的商品(第一列)沒有操作、草稿商品(第三列)可編輯也可刪除、其他只能編輯;
+// 修前表頭佔位只畫第一列那一份(null)→ 右區只剩內距寬,第三列的兩顆鈕被裁掉。下面那張 200 列有虛擬捲動,走「虛擬範圍裡的列」那條路。
+export const RowActionsVaryingWidth: Story = {
+  name: '每列操作數量不一',
+  tags: ['test-only'],
+  render: function RowActionsVaryingWidthStory() {
+    const few = useProductRowActions(sampleData)
+    const manyRows = React.useMemo(() => generateLargeData(200), [])
+    const many = useProductRowActions(manyRows)
+    const lockedSku = sampleData[0].sku
+    const draftSku = sampleData[2].sku
+    return (
+      <>
+        <Toaster />
+        <ExampleStack>
+          <ExampleSection title="一頁 6 筆" description="總部鎖定的商品沒有操作;草稿商品可以編輯也可以刪除;其他只能編輯">
+            <div data-case="page" style={{ maxWidth: 760 }}>
+              <DataTable
+                columns={baseColumns}
+                data={few.rows}
+                maxHeight="none"
+                getRowId={(row) => row.sku}
+                rowActions={(row) => (row.sku === lockedSku ? null : row.sku === draftSku ? <>{few.editButton(row)}{few.deleteButton(row)}</> : few.editButton(row))}
+              />
+            </div>
+          </ExampleSection>
+          <ExampleSection title="200 筆(虛擬捲動)" description="第一筆鎖定沒有操作;每三筆一筆草稿,可編輯也可刪除">
+            <div data-case="virtual" style={{ maxWidth: 760 }}>
+              <DataTable
+                columns={baseColumns}
+                data={many.rows}
+                maxHeight={300}
+                getRowId={(row) => row.sku}
+                rowActions={(row) => {
+                  const i = manyRows.findIndex((r) => r.sku === row.sku)
+                  if (i === 0) return null
+                  return i % 3 === 2 ? <>{many.editButton(row)}{many.deleteButton(row)}</> : many.editButton(row)
+                }}
+              />
+            </div>
+          </ExampleSection>
+        </ExampleStack>
+        {few.dialogs}
+        {many.dialogs}
+      </>
+    )
+  },
+}
+
 /* ── 列拖曳 × 虛擬捲動（200 列）────────────────────────────────────────────
    v3 fix(2026-05-05)— scroll bug 修法:
    1. enableRowDrag 時 overscan 自動拉到 Math.max(overscan, 5)(避免 row unmount 時 useDraggable/useDroppable subscription 跟著
@@ -2305,6 +2419,18 @@ const STATUS_OPTIONS = [
   { value: 'cancelled', label: '取消' },
 ]
 
+// 狀態流轉:每一張單現在能切到哪些狀態(像 Jira 工作流:沒有流轉線的狀態不列在選單裡)。
+// 完成的單只能重新開啟回到進行中、不能回到未開始;取消的單重新開啟回到未開始。
+// 狀態欄的 meta.getRowOptions 用它只列這一列能選的值;格子顯示、篩選、排序仍用整欄 STATUS_OPTIONS(data-table.spec.md「七、Column Type」依列可選項)。
+const STATUS_TRANSITIONS: Record<RoadmapItem['status'], RoadmapItem['status'][]> = {
+  'not-started': ['in-progress', 'cancelled'],
+  'in-progress': ['blocked', 'done', 'cancelled'],
+  blocked: ['in-progress', 'cancelled'],
+  done: ['in-progress'],
+  cancelled: ['not-started'],
+}
+const statusOptionsForRow = (row: RoadmapItem) => STATUS_OPTIONS.filter((o) => STATUS_TRANSITIONS[row.status].includes(o.value as RoadmapItem['status']))
+
 const PRIORITY_OPTIONS = [
   { value: 'P0', label: 'P0', tagVariant: 'red' as const },
   { value: 'P1', label: 'P1', tagVariant: 'orange' as const },
@@ -2344,7 +2470,7 @@ function useRoadmapColumns() {
     () => [
       col.accessor('id', { header: 'ID', meta: { type: 'string', width: 100 } }),
       col.accessor('title', { header: '標題', meta: { type: 'string', editable: true, width: 240 } }),
-      col.accessor('status', { header: '狀態', meta: { type: 'select', options: STATUS_OPTIONS, editable: true, width: 130 } }),
+      col.accessor('status', { header: '狀態', meta: { type: 'select', options: STATUS_OPTIONS, getRowOptions: statusOptionsForRow, editable: true, width: 130 } }),
       col.accessor('priority', { header: '優先級', meta: { type: 'select', options: PRIORITY_OPTIONS, editable: true, width: 100 } }),
       col.accessor('owner', { header: '負責人', meta: { type: 'person', people: SELLERS, editable: true, width: 160 } }),
       col.accessor('reviewers', { header: '審核', meta: { type: 'multiPerson', people: SELLERS, editable: true, width: 140 } }),
@@ -2491,7 +2617,7 @@ export const RoadmapAllInOne: Story = {
       <div className="flex flex-col w-full h-screen bg-canvas">
         {/* 效能診斷面板:只有網址帶 `?perfdebug` 才出現(見 perf-debug-overlay.tsx 檔頭的來由)。 */}
         <PerfDebugOverlay />
-        {/* Toolbar — 左 search / 右 ops(對齊 WithBulkActions canonical L922+ Gmail/Linear/Notion idiom);幾何住在 stories-helpers/scene/data-toolbar.tsx(2026-09-16)*/}
+        {/* Toolbar — 左 search / 右 ops(對齊 WithBulkActions 同一個 DataToolbar;規則 = action-bar.spec.md 七「搜尋框」);幾何住在 stories-helpers/scene/data-toolbar.tsx(2026-09-16)*/}
         <DataToolbar
           search={
             <Input

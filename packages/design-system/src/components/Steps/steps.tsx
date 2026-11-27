@@ -5,8 +5,16 @@ import { Check, X } from 'lucide-react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import { ItemPrefix } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { STACK_GAP_PX } from '@/design-system/tokens/uiSize/stack-gap'
 import { STEP_STATUS_TEXT } from './step-status-text'
+
+// ── 消費的 SSOT ──
+// - patterns/element-anatomy/item-anatomy(ItemPrefix):indicator 欄 h-[1lh] 對齊 label 第一行
+// - patterns/element-anatomy/truncated-text(TruncatedText):水平版步驟名單行截斷 + 截斷才顯 tooltip
+//   (steps.spec.md「水平版步驟名放不下」;與 Breadcrumb / DataTable / TreeView 步驟導覽樹同一套,不另寫)
+// - tokens/uiSize/stack-gap(STACK_GAP_PX):焦點外環與圓之間的縫
+// - spec: steps.spec.md(本元件)/ steps-state-visuals.spec.md(狀態視覺)
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -46,17 +54,27 @@ const INDICATOR_BOX_WIDTH: Record<StepsSize, number> = {
   lg: INDICATOR_SIZE.lg,
 }
 
-// 連接線幾何(`steps.spec.md`「Connector 幾何」;2026-09-29 待辦總帳 N52):
+// 連接線幾何(`steps.spec.md`「Connector 幾何」;2026-09-29 待辦總帳 N52;水平最短寬 2026-11-26 E12w):
 // - 圓到線的縫兩端各 8px:MUI StepLabel vertical `padding: '8px 0'`(每側 8)/ Ant `marginXXS × 1.5` = 6 / Chakra gutter 12 的區間正中,
 //   與 DS 列內 prefix / suffix 的 `gap-2` 同一個數。
-// - 線最短 24px:唯一一手明文地板是 MUI StepConnector vertical `minHeight: 24`;也剛好等於 DS 的步間距 `pb-6`。
+// - 線最短 = 一個步間距(規格「線至少一個步間距」)。兩個方向的步間距本來就不同,所以是兩個常數、同一條規則:
+//   · 垂直 24 = 步與步之間的 `pb-6`。一手明文地板也剛好是 24:MUI StepConnector vertical `minHeight: 24`,只寫在垂直那一組
+//     (https://github.com/mui/material-ui/blob/9f8fe586afb3d81f4108a96f3b943a0990ee3f08/packages/mui-material/src/StepConnector/StepConnector.js#L84-L96)。
+//   · 水平 12 = 水平版的步間距 `gap-3`(字 → 線、線 → 下一步的圓都是 12,見下方 HorizontalLayout 註解「等距保證」)。
+//     世界級的水平線都沒有地板數字,空間不夠時可縮到 0:MUI 水平那一組只有 `borderTopWidth: 1`(同上連結)、
+//     Ant 6 水平線明寫 `minWidth: 0`(https://github.com/ant-design/ant-design/blob/6a3a64141af825983b418f81f2ed1ce97f015c5c/components/steps/style/horizontal.ts#L16-L25)、
+//     Chakra 分隔線 `width: "100%"` 加左右 margin、沒有最短寬(https://github.com/chakra-ui/chakra-ui/blob/f8694afccec28694c1940c55f06d6f56d30987eb/packages/react/src/theme/recipes/steps.ts#L101-L105)
+//     —— 沒有外部數字可依,以 DS 既有規則為準(meta-patterns M23)。
+//     在此之前水平也吃 24:那是把 MUI 垂直的地板外推到水平,沒有一手依據(M8 跨類別外推);user 定 12(steps.spec.md「Connector 幾何」來源)。
 // 線長原本是「列高的餘數」(li 高 − 2r − 16):沒有說明文字時 md 只剩 2.2px、lg 是 0 —— 而規格說指示欄節奏是元件本體、
-// 不得隨說明有無變動。所以非末項的垂直 li 給最小高度 = 圓 + 兩端縫 + 線地板(sm 48 / md 64 / lg 72;有說明時自然更高、不受影響);
-// 水平線的最短寬吃同一個常數(先前是 `min-w-4` 16px、規格沒寫,同元件同概念不該有兩個地板)。
+// 不得隨說明有無變動。所以非末項的垂直 li 給最小高度 = 圓 + 兩端縫 + 垂直線地板(sm 48 / md 64 / lg 72;有說明時自然更高、不受影響)。
+// 水平版放不下時先縮步驟名(單行截斷),線停在水平最短寬、不再被擠出去壓到下一步的圓(steps.spec.md「水平版步驟名放不下」)。
+// 要調最短寬只改對應的那一行(垂直列高 verticalItemMinHeight 讀垂直、水平線外層 minWidth 讀水平)。
 // 閘:`scripts/steps-connector-geometry-invariant.mjs`。
 const CONNECTOR_GAP_PX = 8
-const CONNECTOR_MIN_PX = 24
-const verticalItemMinHeight = (size: StepsSize) => INDICATOR_SIZE[size] + 2 * CONNECTOR_GAP_PX + CONNECTOR_MIN_PX
+const CONNECTOR_MIN_VERTICAL_PX = 24
+const CONNECTOR_MIN_HORIZONTAL_PX = 12
+const verticalItemMinHeight = (size: StepsSize) => INDICATOR_SIZE[size] + 2 * CONNECTOR_GAP_PX + CONNECTOR_MIN_VERTICAL_PX
 
 // ── Outer ring(outline + offset,不佔排版)─────────────────────────────────
 //
@@ -65,7 +83,7 @@ const verticalItemMinHeight = (size: StepsSize) => INDICATOR_SIZE[size] + 2 * CO
 // 是白 8% 半透明,底下那層環色透上來 —— 實測深色間隙 #58A5FF(應為頁面底 #0A0A0A),整顆看起來是一個大藍圓,
 // 淺色卻是「圓 + 白色間隙 + 外環」,兩主題長得不一樣。
 // outline-offset 那一圈本來就是透明的,露出的是**真正的背景**(不論放在頁面、卡片還是對話框上),
-// 兩主題同一個長相;而且這正是全 DS 焦點框的畫法(styles/base.css:52-54 `:focus-visible` 的
+// 兩主題同一個長相;而且這正是全 DS 焦點框的畫法(styles/base.css:61-63 `:focus-visible` 的
 // outline 2px + offset 2px),粗細與間隙逐字相同。outline 與 box-shadow 一樣不佔排版,連接線幾何不動。
 const RING_GAP_PX = STACK_GAP_PX // 「疊在一起的兩樣東西」之間的縫,全 DS 同一個值(tokens/uiSize/stack-gap.ts)
 const RING_WIDTH_PX = 2
@@ -355,9 +373,12 @@ const stepItemVariants = cva('group/step-item outline-none', {
     orientation: {
       // pb-6 on li provides spacing for next item; connector is absolute within li
       vertical: 'relative flex flex-col',
-      // Ant Design pattern:flex-1 等寬(最後一步用 last: 覆蓋成自然寬度)。
-      // Connector 在 item 內部(不是 items 之間的獨立元素)。
-      horizontal: 'flex-1 min-w-0 last:flex-none last:shrink-0',
+      // Ant Design pattern:flex-1 等寬;Connector 在 item 內部(不是 items 之間的獨立元素)。
+      // 最後一步 = 跟前面每一步一起分寬、但最多長到自己的自然寬(`last:max-w-max`):
+      // - 寬度夠時:分到的寬 > 自然寬 → 夾在自然寬,多出來的由前面每一步(連接線)吃掉 = 修前 `last:flex-none` 的畫面,一模一樣;
+      // - 放不下時:最後一步也縮、和前面每一步一樣寬,步驟名一起截斷。修前是 `last:flex-none last:shrink-0`(不准縮),
+      //   最後一步名字長時前面每一步都被擠成「…」(steps.spec.md「水平版步驟名放不下」;user 2026-11-26 E12「照你建議」)。
+      horizontal: 'flex-1 min-w-0 last:max-w-max',
     },
     size: {
       sm: 'text-body',
@@ -424,7 +445,7 @@ const StepItem = React.forwardRef<HTMLLIElement, StepItemProps>(
           aria-disabled={disabled || undefined}
           className={cn(
             stepItemVariants({ orientation: steps.orientation, size: steps.size }),
-            // 這一步 → 下一步(非末項):平常 24(pb-6,同連接線地板 CONNECTOR_MIN_PX);展開內容的那一步 = bottom 48 ——
+            // 這一步 → 下一步(非末項):平常 24(pb-6,同垂直連接線地板 CONNECTOR_MIN_VERTICAL_PX);展開內容的那一步 = bottom 48 ——
             // 這一步的內容就是一塊 body 的收尾(layoutSpace.spec.md token 表 `--layout-space-bottom`「結論留白」;user 2026-10-21 A3「照你建議」= 甲)。
             // 最後一步不給,交給外層容器(否則放在 Dialog 裡會跟 body 底的 48 疊成 96)。閘 steps-content-follows-current (4)
             isVertical && !__isLast && (showsContent ? 'pb-[var(--layout-space-bottom)]' : 'pb-6'),
@@ -434,7 +455,7 @@ const StepItem = React.forwardRef<HTMLLIElement, StepItemProps>(
             className,
           )}
           {...props}
-          // 垂直非末項的最小高度 = 圓 + 兩端縫 + 線地板(見 CONNECTOR_MIN_PX 註解);consumer 傳的 style 仍保留
+          // 垂直非末項的最小高度 = 圓 + 兩端縫 + 垂直線地板(見 CONNECTOR_MIN_VERTICAL_PX 註解);consumer 傳的 style 仍保留
           style={isVertical && !__isLast
             ? { minHeight: verticalItemMinHeight(steps.size), ...(props as { style?: React.CSSProperties }).style }
             : (props as { style?: React.CSSProperties }).style}
@@ -508,7 +529,7 @@ function StepItemHeader({ children, className, style }: { children: React.ReactN
         // leading-compact:scanning-family header 行高 = 1.3(item-anatomy.spec.md:770 掃描模式 label 行高)。
         // 設在 header 而非 li 根 → prefix h-[1lh] + 水平 connector h-[1lh] + label(StepLabel 亦 leading-compact)
         // 全用 1.3 對齊;li 根 text-body(1.5,`stepItemVariants` 的 size 變體)留給 StepContent 的 reading 行高,不被
-        // scanning 波及(避免 改A壞B)。對齊 MenuItem 把 leading-compact 放 row 容器之原則(item-anatomy.tsx:144-146)。
+        // scanning 波及(避免 改A壞B)。對齊 MenuItem 把 leading-compact 放 row 容器之原則(item-anatomy.tsx `ROW_PADDING_BY_SIZE`)。
         'leading-compact',
         // 2026-09-07 修 WCAG 2.4.7:原本這裡是**無條件** `outline-none`,而下一行的
         // `focus-visible:outline-2` 只設寬度、樣式吃 `var(--tw-outline-style)` —— 被上面那個
@@ -516,7 +537,7 @@ function StepItemHeader({ children, className, style }: { children: React.ReactN
         // 可點的 header 有 role="button" + tabIndex={0} + onClick + onKeyDown(上方同一個 div 的四個屬性)= 可操作,
         // 依 focus-canonical「可操作就必須有可見焦點指示」必須畫。
         // 修法是把 outline-none 收進「不可點」那一支,並刪掉本地那三個 class —— 全域
-        // `styles/base.css:44-47` 的 `outline: 2px solid var(--ring); outline-offset: 2px`
+        // `styles/base.css:61-64` 的 `outline: 2px solid var(--ring); outline-offset: 2px`
         // 與它們逐字等價,本地重寫一份只是把全域抄一遍(同 H1c 那類冗餘)。
         item.clickable
           ? 'cursor-pointer rounded-md'
@@ -657,10 +678,12 @@ function HorizontalLayout({
         <ItemPrefix>
           <StepIndicator />
         </ItemPrefix>
-        <div className="shrink-0 min-w-0">{label}</div>
+        {/* 步驟名:不長(多的寬給連接線)、可縮 —— 放不下時先縮它(StepLabel 在水平版單行截斷),連接線停在 CONNECTOR_MIN_HORIZONTAL_PX、圓不縮。
+            修前這裡是 `shrink-0`(不准縮):字照原寬撐出去,連接線被推到下一步的圓上(2026-11-26 E12 480 寬實測)。 */}
+        <div className="min-w-0">{label}</div>
         {/* Connector 在 item 內部,flex-1 填滿剩餘寬度 */}
         {!item.isLast && (
-          <div className="h-[1lh] flex-1 flex items-center" style={{ minWidth: CONNECTOR_MIN_PX }} aria-hidden>
+          <div className="h-[1lh] flex-1 flex items-center" style={{ minWidth: CONNECTOR_MIN_HORIZONTAL_PX }} aria-hidden>
             <div data-steps-connector="horizontal" className={cn('h-px w-full', isBlue ? 'bg-info' : 'bg-border')} />
           </div>
         )}
@@ -842,16 +865,22 @@ export interface StepLabelProps extends React.HTMLAttributes<HTMLSpanElement> {}
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const StepLabel = React.forwardRef<HTMLSpanElement, StepLabelProps>(
   ({ className, children, ...props }, ref) => {
-    const { size } = useStepsContext()
+    const { size, orientation } = useStepsContext()
     const { state, focused, disabled } = useStepItemContext()
+    // 水平版單行截斷、直式折行(steps.spec.md「水平版步驟名放不下」)
+    const horizontal = orientation === 'horizontal'
 
     return (
       <span
         ref={ref}
+        data-steps-label=""
         className={cn(
           // leading-compact:scanning-family label 行高 = 1.3(item-anatomy.spec.md:770);text-body utility
           // 自帶 lh:1.5,須顯式 leading-compact 蓋回 1.3,跟 MenuItem label(實測 14px/18px=1.3)一致。
-          'font-medium break-words leading-compact',
+          'font-medium leading-compact',
+          // 水平:block 才量得到 clientWidth(同 dialog.tsx / tree-view.tsx 消費 TruncatedText 的寫法:外層留給 ref 與 props,
+          // 截斷與量測在內層);直式:照舊折行
+          horizontal ? 'block' : 'break-words',
           size === 'lg' ? 'text-body-lg' : 'text-body',
           disabled
             ? 'text-fg-disabled'
@@ -864,7 +893,8 @@ const StepLabel = React.forwardRef<HTMLSpanElement, StepLabelProps>(
         )}
         {...props}
       >
-        {children}
+        {/* 截斷只是畫面:完整名稱仍在 DOM 裡,header 的可及名稱念全名;提示只在真的被截斷時滑過才出現(TruncatedText 的 open 控制) */}
+        {horizontal ? <TruncatedText display="block">{children}</TruncatedText> : children}
       </span>
     )
   },

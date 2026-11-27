@@ -120,8 +120,8 @@
         "engine": { "const": "utility-registry-rules-v1" },
         "block": {
           "type": "array",
-          "minItems": 18,
-          "maxItems": 18,
+          "minItems": 19,
+          "maxItems": 19,
           "items": { "$ref": "#/$defs/enforcementRule" }
         },
         "warn": {
@@ -247,11 +247,36 @@
             "field_group_elements",
             "field_group_roles",
             "field_control_elements",
+            "assist_chip_row",
             "nearby_line_limit",
             "rationale",
-            "rationale_path"
+            "rationale_path",
+            "spec_registered_patterns"
           ],
           "properties": {
+            "spec_registered_patterns": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "utilities", "source"],
+                "properties": {
+                  "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+                  "utilities": { "$ref": "#/$defs/tokenArray" },
+                  "utilities_any": { "$ref": "#/$defs/tokenArray" },
+                  "magic_tokens_exact": { "$ref": "#/$defs/tokenArray" },
+                  "magic_tokens_subset": { "$ref": "#/$defs/tokenArray" },
+                  "nearby_all": { "$ref": "#/$defs/tokenArray" },
+                  "nearby_components": { "$ref": "#/$defs/tokenArray" },
+                  "nearby_min": { "type": "integer", "minimum": 1, "maximum": 8 },
+                  "same_line_any": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/nonEmptyString" } },
+                  "ancestor_any": { "$ref": "#/$defs/tokenArray" },
+                  "ancestor_line_limit": { "type": "integer", "minimum": 1, "maximum": 64 },
+                  "source": { "$ref": "#/$defs/nonEmptyString" }
+                }
+              }
+            },
             "gap_utilities": { "$ref": "#/$defs/tokenArray" },
             "alignment_utilities": { "$ref": "#/$defs/tokenArray" },
             "inline_display_utilities": { "$ref": "#/$defs/tokenArray" },
@@ -263,6 +288,26 @@
             "field_group_elements": { "$ref": "#/$defs/tokenArray" },
             "field_group_roles": { "$ref": "#/$defs/tokenArray" },
             "field_control_elements": { "$ref": "#/$defs/tokenArray" },
+            "assist_chip_row": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "gap_utilities",
+                "wrap_utilities",
+                "item_component",
+                "item_variant",
+                "rationale",
+                "rationale_path"
+              ],
+              "properties": {
+                "gap_utilities": { "$ref": "#/$defs/tokenArray" },
+                "wrap_utilities": { "$ref": "#/$defs/tokenArray" },
+                "item_component": { "$ref": "#/$defs/nonEmptyString" },
+                "item_variant": { "$ref": "#/$defs/nonEmptyString" },
+                "rationale": { "$ref": "#/$defs/nonEmptyString" },
+                "rationale_path": { "$ref": "#/$defs/nonEmptyString" }
+              }
+            },
             "nearby_line_limit": { "type": "integer", "minimum": 1, "maximum": 32 },
             "rationale": { "$ref": "#/$defs/nonEmptyString" },
             "rationale_path": { "$ref": "#/$defs/nonEmptyString" }

@@ -14,20 +14,24 @@ import {
   addDays, addWeeks, addMonths, subDays,
 } from 'date-fns'
 import { OPERATOR_REGISTRY, type OperatorSpec } from './filter-operators'
+import { resolveWeekStartsOn, type WeekStartsOn } from '@/design-system/lib/date-locale'
 
 /**
  * 把 relative key 轉成 [start, end] 時間區間(local time,inclusive)。
  * 對齊 Notion / ClickUp idiom — 以「今天」為錨點計算。
+ * 週的三個 key 依 `weekStartsOn` 切(condition 帶的這一欄的值;沒帶 = DS 預設語系 zh-TW 的 CLDR = 週日)。
+ * 2026-11-24 前這三個 key 寫死週一,跟同一欄的日期選擇器(週日起)不一致 —— user 決策「跟語系的 CLDR (Recommended)」。
  */
-function relativeKeyToRange(key: string, now: Date = new Date()): [number, number] | null {
+function relativeKeyToRange(key: string, now: Date = new Date(), weekStartsOn: WeekStartsOn = resolveWeekStartsOn()): [number, number] | null {
   const today = startOfDay(now)
+  const week = { weekStartsOn }
   switch (key) {
     case 'today':        return [today.getTime(), endOfDay(now).getTime()]
     case 'yesterday':    return [startOfDay(subDays(now, 1)).getTime(), endOfDay(subDays(now, 1)).getTime()]
     case 'tomorrow':     return [startOfDay(addDays(now, 1)).getTime(), endOfDay(addDays(now, 1)).getTime()]
-    case 'this_week':    return [startOfWeek(now, { weekStartsOn: 1 }).getTime(), endOfWeek(now, { weekStartsOn: 1 }).getTime()]
-    case 'last_week':    return [startOfWeek(addWeeks(now, -1), { weekStartsOn: 1 }).getTime(), endOfWeek(addWeeks(now, -1), { weekStartsOn: 1 }).getTime()]
-    case 'next_week':    return [startOfWeek(addWeeks(now, 1), { weekStartsOn: 1 }).getTime(), endOfWeek(addWeeks(now, 1), { weekStartsOn: 1 }).getTime()]
+    case 'this_week':    return [startOfWeek(now, week).getTime(), endOfWeek(now, week).getTime()]
+    case 'last_week':    return [startOfWeek(addWeeks(now, -1), week).getTime(), endOfWeek(addWeeks(now, -1), week).getTime()]
+    case 'next_week':    return [startOfWeek(addWeeks(now, 1), week).getTime(), endOfWeek(addWeeks(now, 1), week).getTime()]
     case 'this_month':   return [startOfMonth(now).getTime(), endOfMonth(now).getTime()]
     case 'last_month':   return [startOfMonth(addMonths(now, -1)).getTime(), endOfMonth(addMonths(now, -1)).getTime()]
     case 'next_month':   return [startOfMonth(addMonths(now, 1)).getTime(), endOfMonth(addMonths(now, 1)).getTime()]
@@ -58,6 +62,10 @@ export interface FilterCondition {
    *  (AG Grid midnight-truncate / MUI X setHours(0,0,0,0) 共識;避 Airtable 邊界漏抓地雷)。
    *  非 date 欄位 / 舊 tree 無此欄 → undefined(date ops fallback 'day' 預設)。 */
   datePrecision?: 'day' | 'ms'
+  /** Date 欄位「本週 / 上週 / 下週」的週起始日(0 = 週日;2026-11-24):panel 建 condition 時依 column meta 寫入 ——
+   *  `meta.weekStartsOn` ?? 由 `meta.locale` 推(語系 → CLDR,`lib/date-locale.ts`)。沒有此欄(非 date 欄 / 舊 tree / consumer 自建)
+   *  → DS 預設語系 zh-TW 的 CLDR = 週日。寫入點與 datePrecision 同一組。 */
+  weekStartsOn?: WeekStartsOn
 }
 
 export interface FilterGroup {
@@ -281,7 +289,7 @@ function evaluateConditionsJoined(children: FilterCondition[], conjunction: Conj
 function evaluateCondition(cond: FilterCondition, prepared: PreparedCondition, row: any): boolean {
   if (!cond.field || !cond.op) return true
   const cellValue = row?.[cond.field]
-  return matchOperator(cond.op, cellValue, cond.value, cond.datePrecision, prepared)
+  return matchOperator(cond.op, cellValue, cond.value, cond.datePrecision, prepared, cond.weekStartsOn)
 }
 
 // PersonValue identity helper(2026-05-07):
@@ -313,7 +321,7 @@ function localDayKey(d: Date): number {
 }
 
 // code-quality-allow: long-function — 13-operator switch dispatch table,table-driven 重構會把 op-specific guards 拆出反增 indirection
-function matchOperator(op: string, cellValue: unknown, filterValue: unknown, datePrecision?: 'day' | 'ms', prepared?: PreparedCondition): boolean {
+function matchOperator(op: string, cellValue: unknown, filterValue: unknown, datePrecision?: 'day' | 'ms', prepared?: PreparedCondition, weekStartsOn?: WeekStartsOn): boolean {
   // 不需 value 的 op
   switch (op) {
     case 'is_set':     return cellValue !== null && cellValue !== undefined && cellValue !== ''
@@ -415,12 +423,12 @@ function matchOperator(op: string, cellValue: unknown, filterValue: unknown, dat
         const now = new Date()
         const dayKey = localDayKey(now)
         if (prepared.relDayKey !== dayKey) {
-          prepared.relRange = relativeKeyToRange(String(filterValue), now)
+          prepared.relRange = relativeKeyToRange(String(filterValue), now, weekStartsOn)
           prepared.relDayKey = dayKey
         }
         range = prepared.relRange
       } else {
-        range = relativeKeyToRange(String(filterValue))
+        range = relativeKeyToRange(String(filterValue), new Date(), weekStartsOn)
       }
       if (!range) return true  // unknown key,pass-through
       const cv = new Date(String(cellValue)).getTime()

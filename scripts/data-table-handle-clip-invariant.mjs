@@ -15,6 +15,13 @@
  *   P2 捲到整列滑出、指標不動 → 沒有把手
  *   P3 傳統 17px 捲軸幾何(Windows;headless 預設 --hide-scrollbars 量不到,要拿掉再用根規則造捲軸):
  *      把列捲到「列中心在 client 底上方 6px」→ 指標移過去 → 沒有把手(chip 會坐到捲軌上);再捲 10px 讓它放得進 → 有把手且底 ≤ client 底
+ *   (2026-11-26,workspace F 組 F3:把手是 position:fixed,祖先帶 transform / translate 時定位基準換成那個祖先 —— 修前用視窗座標,
+ *    偏出祖先原點,實測 +256 / +30;P0 原本只比 y,所以 x 偏了也綠)
+ *   P0 另比 x:把手中心 x = `[data-data-table-outer]` 左框(±1px)
+ *   P4  同一則 story,#storybook-root 加 `transform: translateZ(0)` 並位移(左 240 / 上 30)→ hover 完整可見的列 → 中心 = 表格左框、列中心(±1px)
+ *   P4b 同上,改用獨立的 `translate` 屬性(DS Dialog 置中用的就是它)
+ *   P5  真的 DS Dialog(test-only story「列拖曳把手(對話框內)」,size="sm"、rowHeight="hug",照 workspace 設定)→ 同 P4 斷言
+ *   修前建置跑 P0x / P4 / P4b / P5 必紅,修後必綠(對照組實跑結果記在 commit)。把手選擇器 = `[data-row-drag-handle]`(不再靠 aria-label 文字)。
  * `--selftest`:注入 `opacity:1 / pointer-events:auto !important` 讓所有把手強制顯示 → P1a / P1b / P2 / P3 必須紅(儀器先證明會紅)。
  *   node scripts/data-table-handle-clip-invariant.mjs [--static=<dir>] [--selftest]
  *
@@ -60,12 +67,13 @@ try {
     beforeSettle: async (p) => {
       // 傳統捲軸幾何(Windows / macOS 接滑鼠):17px;overlay 捲軸下 clientHeight = offsetHeight,P3 量不到差異
       await p.addStyleTag({ content: '::-webkit-scrollbar{width:17px;height:17px}::-webkit-scrollbar-thumb{background:#999}' })
-      if (SELFTEST) await p.addStyleTag({ content: 'button[aria-label*="拖"]{opacity:1!important;pointer-events:auto!important}' })
+      if (SELFTEST) await p.addStyleTag({ content: '[data-row-drag-handle]{opacity:1!important;pointer-events:auto!important}' })
     },
     settleFrames: 10, notFound: server.notFound,
   })
 
-  const handleSel = 'button[aria-label*="拖"]'
+  // 把手的專用記號(2026-11-26 前用 aria-label 文字選 —— 文案是「這是把手」的代理值,DataTable labels 一換字就選不到;M37)
+  const handleSel = '[data-row-drag-handle]'
   const sc = () => page.evaluate(() => { const e = document.querySelector('[data-datatable-hscroll]'); return { top: e.scrollTop, left: e.scrollLeft } })
   // 捲動後的 250ms 不是「已渲染」的代理:等的是捲動事件把閂鎖閂上、虛擬列重排,以及把手 150ms 的 opacity 過渡走完
   const scrollBy = async (px) => { await page.evaluate((d) => { document.querySelector('[data-datatable-hscroll]').scrollTop += d }, px); await page.waitForTimeout(250) }
@@ -81,8 +89,12 @@ try {
   /** 正在畫的把手(computed opacity > 0)。 */
   const painted = () => page.evaluate((sel) => {
     const hs = [...document.querySelectorAll(sel)].filter((b) => Number(getComputedStyle(b).opacity) > 0)
-    return hs.map((h) => { const r = h.getBoundingClientRect(); const at = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return { top: r.top, bottom: r.bottom, cy: (r.top + r.bottom) / 2, opacity: Number(getComputedStyle(h).opacity), clip: getComputedStyle(h).clipPath, hit: !!at && (at === h || h.contains(at)), row: h.closest('[data-row-index]')?.getAttribute('data-row-index') ?? null } })
+    // tableLeft = 表格外框左緣(把手水平置中的那條線,data-table.tsx RowDragHandle 註解「置中於 table outer border line」)
+    const outer = document.querySelector('[data-data-table-outer]')
+    const tableLeft = outer ? outer.getBoundingClientRect().left : NaN
+    return hs.map((h) => { const r = h.getBoundingClientRect(); const at = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return { top: r.top, bottom: r.bottom, cy: (r.top + r.bottom) / 2, cx: (r.left + r.right) / 2, tableLeft, opacity: Number(getComputedStyle(h).opacity), clip: getComputedStyle(h).clipPath, hit: !!at && (at === h || h.contains(at)), row: h.closest('[data-row-index]')?.getAttribute('data-row-index') ?? null } })
   }, handleSel)
+  const onTableEdge = (h) => Number.isFinite(h.tableLeft) && Math.abs(h.cx - h.tableLeft) <= 1
   const fullyVisibleRow = (g, skip = 0) => g.rows.filter((r) => r.top >= g.bandTop - 0.5 && r.bottom <= g.bandBottom + 0.5)[skip]
 
   // ── P0 ──
@@ -92,6 +104,7 @@ try {
   await page.mouse.move(r0.x, r0.cy); await page.waitForTimeout(450)
   let hs = await painted()
   check('P0 hover 完整可見的列 → 把手顯示、無 clip-path、中心 = 列中心、整顆在可視帶內', hs.length === 1 && hs[0].opacity === 1 && hs[0].clip === 'none' && Math.abs(hs[0].cy - r0.cy) <= 1 && hs[0].top >= g.bandTop - 0.5 && hs[0].bottom <= g.bandBottom + 0.5 && hs[0].hit, JSON.stringify({ hs, row: r0.cy, band: [g.bandTop, g.bandBottom] }))
+  check('P0x 把手中心 x = 表格外框左緣(±1px)', hs.length === 1 && onTableEdge(hs[0]), JSON.stringify(hs.map((h) => ({ cx: h.cx, tableLeft: h.tableLeft }))))
 
   // ── P1a 列一半滑進表頭底下、指標不動 ──
   await scrollBy(Math.round(r0.top - g.bandTop + r0.h / 2))
@@ -130,6 +143,33 @@ try {
   g = await geometry(); hs = await painted()
   const nearB = g.rows.find((r) => r.idx === last.idx)
   check('P3b 再捲 10px 讓 chip 放得進 → 有把手且底 ≤ client 底(不越過捲軌)', SELFTEST ? hs.some((h) => Math.abs(h.cy - nearB.cy) <= 1 && h.bottom <= g.bandBottom + 0.5) : hs.length === 1 && hs[0].bottom <= g.bandBottom + 0.5 && Math.abs(hs[0].cy - nearB.cy) <= 1, JSON.stringify({ hs, near: nearB?.cy, bandBottom: g.bandBottom }))
+
+  // ── P4 / P4b / P5:fixed 定位基準不是視窗時,把手仍置中在表格左框、列中心(2026-11-26,F3)──
+  // 儀器:先證明這一輪真的「有祖先換掉了基準」—— 表格左框離視窗左緣 > 100px(位移有生效),否則量的是沒有祖先的情況(空轉 → 紅)
+  const handleOnRowAt = async (label, storyId, waitFor, ancestorCss) => {
+    await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(storyId)}&viewMode=story`, {
+      waitFor,
+      beforeSettle: async (p) => {
+        if (ancestorCss) await p.addStyleTag({ content: ancestorCss })
+        if (SELFTEST) await p.addStyleTag({ content: '[data-row-drag-handle]{opacity:1!important;pointer-events:auto!important}' })
+      },
+      settleFrames: 10, notFound: server.notFound,
+    })
+    const gg = await geometry()
+    const row = fullyVisibleRow(gg, 1)
+    const tableLeft = await page.evaluate(() => document.querySelector('[data-data-table-outer]')?.getBoundingClientRect().left ?? NaN)
+    if (!row || !(tableLeft > 100)) { check(`${label}:儀器`, false, `INSTRUMENT-FAIL ${!row ? '找不到完整可見的列' : `表格左框 ${tableLeft}px —— 位移沒生效,量不到要守的事`}`); return }
+    await page.mouse.move(1, 1)
+    // 同 P0 的 450ms:等 hover 追蹤把把手掛上與 150ms 淡入走完(元素早已在畫面上,不是「已渲染」的代理)
+    await page.mouse.move(row.x, row.cy); await page.waitForTimeout(450)
+    const hh = await painted()
+    const ok = (h) => onTableEdge(h) && Math.abs(h.cy - row.cy) <= 1
+    check(`${label}:把手中心 = 表格外框左緣、列中心(±1px)`, SELFTEST ? hh.some(ok) : hh.length === 1 && ok(hh[0]), JSON.stringify({ hs: hh.map((h) => ({ cx: h.cx, cy: h.cy, tableLeft: h.tableLeft })), rowCy: row.cy }))
+  }
+  const ROW_READY = '[data-datatable-hscroll] [role="row"]'
+  await handleOnRowAt('P4 祖先帶 transform: translateZ(0)', STORY, ROW_READY, '#storybook-root{transform:translateZ(0);margin:30px 0 0 240px}')
+  await handleOnRowAt('P4b 祖先帶 translate 屬性(DS Dialog 置中用的形式)', STORY, ROW_READY, '#storybook-root{translate:0px 0px;margin:30px 0 0 240px}')
+  await handleOnRowAt('P5 DS Dialog 裡的表格(size="sm"、rowHeight="hug")', 'design-system-components-datatable-展示--row-drag-in-dialog', `[role="dialog"] ${ROW_READY}`, null)
 
 } catch (error) {
   if (!(error instanceof StoryRenderInstrumentError)) { printNotFound(); throw error }

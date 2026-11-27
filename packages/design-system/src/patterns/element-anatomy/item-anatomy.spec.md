@@ -87,7 +87,7 @@
 | **Ant Design** | `List.Item` + `List.Item.Meta` | avatar / title / description / actions |
 | **GitHub Primer** | `ActionList.Item`(+ `LeadingVisual` / `TrailingVisual` / `Description`) | leadingVisual / trailingVisual / description |
 
-**共識**:每家 DS 都 ship list item primitive + slot API,禁止 consumer 自刻 — 自刻 = 跨產品視覺語言斷裂。
+**共識**:每家 DS 都 ship list item primitive + slot API,禁止 consumer 自刻 — 自刻 = 跨產品視覺語言斷裂。本 DS 的閱讀式列(Family 2)由公開的 slot 零件 + 本檔推導規則提供(下方「判斷流程」),照這些組出來的列不算自刻。
 
 ### 判斷流程(content 類型 → primitive 選擇)
 
@@ -100,11 +100,11 @@
 │   │   → <MenuItem>(Family 1 scanning,SSOT) + slot components
 │   │
 │   ├─ 閱讀式(頁面上、overlay body 內、avatar+title+desc)?
-│   │   → Family 2(reading) — 目前沒有單一 <ListItem> primitive,
-│   │     先 compose:使用 slot components(<ItemIcon> / <ItemAvatar> /
-│   │     <ItemLabel> / <ItemSuffix> / <ItemInlineAction>)照 Family 2
-│   │     結構 + tokens 組裝;或直接消費既有 Family 2 consumer
-│   │     (FileItem rich / SelectionItem / Notice 的 anatomy)
+│   │   → Family 2(reading)— 不另做單一 <ListItem> 元件(成員清單、通訊錄也一樣),用 slot
+│   │     components(<ItemIcon> / <ItemAvatar> / <ItemLabel> / <ItemSuffix> / <ItemInlineAction>)
+│   │     照 Family 2 結構 + tokens 組;整列可點時照下方「整列可點時,誰當那顆控件」推;或直接消費既有
+│   │     Family 2 consumer(FileItem rich / SelectionItem / Notice 的 anatomy)。user 2026-11-26 第五輪決策卡
+│   │     C32 留言(逐字,問句):「不是都可以正確推導出來嗎？可以正確無漂移的推導出來或是複用就可以了吧」
 │   │
 │   └─ Key-Value 配對(Label: Value 形式的屬性展示 / metadata 列)?
 │       → <DescriptionList> + <DescriptionItem>(horizontal / vertical)
@@ -161,7 +161,7 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 ### Row primitives 必須共用的規格
 
 - **水平 padding**: `px-[var(--layout-space-loose)]`(sidebar context) / `px-3`(menu context),由 consumer 脈絡決定
-- **垂直 padding**: `py-[calc((var(--field-height-N) N∈{sm,md,lg}-1lh)/2)]` 的 item-layout 公式
+- **垂直 padding**: `py = (field-height − 1lh) / 2` 的 item-layout 公式;式子只住 `components/Field/field-wrapper.tsx` 的 `fieldRowPaddingY`,`ROW_PADDING_BY_SIZE`(掃描模式,加 `leading-compact`)與 SelectionItem / Switch 設定列(閱讀模式)都由它組成(2026-11-26 起;之前 `ROW_PADDING_BY_SIZE` 另寫一份)
 - **字重**(SidebarMenuButton、TreeItem): `font-medium`(500),**不隨 selected 變**
 - **預設文字色**(SidebarMenuButton、TreeItem): `text-fg-secondary`(neutral-8);icon 透過 currentColor 繼承
 - **Hover**(有列底色的列;沒有列底色的設定列 / 勾選框列不適用): `bg-neutral-hover` + `text-foreground`,**瞬間切換不做過渡**(owner = `tokens/motion/motion.spec.md`「hover 回饋不做過渡」,user 2026-09-10 拍板「全部瞬間」;機械閘 `hover-instant-invariant.mjs`)
@@ -304,7 +304,7 @@ user 2026-09-24 原始提問:「所以所有可以被點擊且其中提供按鈕
 
 ### 單行截斷 → tooltip(截斷才顯;2026-07-28)
 
-Row label / description 的**單行截斷**(`truncate`,或 `line-clamp-1` 單行 clamp)必配「僅實際截斷時顯示」的 tooltip 補全——owner = `components/Tooltip/tooltip.spec.md:32`,引擎 SSOT = `patterns/element-anatomy/truncated-text.spec.md`(`useTruncated` + 永遠 wrap、`open` 控制)。`<ItemLabel>` 與 `<ItemContent>` 已內建(量測含 MenuItem 的 `line-clamp-1` className escape),Sidebar / DropdownMenu / SelectMenu / FileItem / DataTable 欄位面板等 row consumer 免自接;手刻 label span 的 consumer 要自己消費 `useTruncated`。
+Row label / description 的**單行截斷**(`truncate`,或 `line-clamp-1` 單行 clamp)必配「僅實際截斷時顯示」的 tooltip 補全——owner = `components/Tooltip/tooltip.spec.md:30`,引擎 SSOT = `patterns/element-anatomy/truncated-text.spec.md`(`useTruncated` + 永遠 wrap、`open` 控制)。`<ItemLabel>` 與 `<ItemContent>` 已內建(量測含 MenuItem 的 `line-clamp-1` className escape),Sidebar / DropdownMenu / SelectMenu / FileItem / DataTable 欄位面板等 row consumer 免自接;手刻 label span 的 consumer 要自己消費 `useTruncated`。
 
 - **Hover-only**:trigger = label/description span 本身,不可聚焦、**不加 `tabIndex`**——Family 1 menu row 的 roving focus 在宿主 row 上,label 加 tab stop 會破壞 APG menu 鍵盤導航。先例:Tag 帶內建截斷 tooltip 渲染於 SelectMenu option 內(`select.tsx` renderLabel → `tag.tsx` open-controlled),menu 內無任何抑制(Tag 的 tooltip 抑制只存在於 closed-trigger 顯示 `pointer-events-none`,非 menu context)。鍵盤/SR 無損失:row 的 accessible name 本就含完整文字([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/menubar/menu-and-menubar-pattern.html#L60-L65))。
 - **多行 clamp(≥2 行)排除**:`truncated-text.spec.md`「何時不用」(a) 明文排除多行;`descriptionClamp >= 2` / `descMaxLines >= 2` 不顯 tooltip(DS 尚無多行截斷↔補全 canonical,owner 決策前維持排除)——由「可視高度 ≈ 1 行」量測 gate 機械保證,非 prop 判斷(MenuItem clamp 走 className escape,量 DOM 才能全蓋)。
@@ -538,7 +538,7 @@ MenuItem 承載 Switch 時,**整列 row 的 click = toggle 這個 control**(不�
 
 ```tsx
 // ✅ Canonical:row click 與 suffix Switch 同步 toggle(row 可點擊、Switch 視覺反映狀態)
-// (DropdownMenuItem 無任意 suffix slot——trailing 互動 control 用 MenuItem endContent)
+// (這是不在 DropdownMenu 裡的 MenuItem 容器的寫法;DropdownMenu 裡的開關一律用 DropdownMenuCheckboxItem —— dropdown-menu.spec.md:103,:211 禁在 item 內放 Switch;2026-11-27 上游判定 E24 (c))
 // row = 唯一 ARIA owner:role="menuitemcheckbox" + aria-checked 讓 AT 感知 on/off
 //(Switch aria-hidden 後,沒有這兩個屬性 toggle 狀態對 SR 完全隱形)
 <MenuItem
@@ -563,7 +563,7 @@ MenuItem 承載 Switch 時,**整列 row 的 click = toggle 這個 control**(不�
 
 | 情境 | 用 | 原因 |
 |------|---|------|
-| **Menu / Dropdown 內的 toggle 清單**(View menu / Display options / Page toolbar filter menu) | `MenuItem` + suffix Switch | 已在 overlay 容器,menu 整列 row 就是 click target,Switch 是狀態視覺 |
+| **DropdownMenu 內的 toggle 清單**(View menu / Display options / Page toolbar filter menu) | `DropdownMenuCheckboxItem`(`checked` + `onCheckedChange`);不在 DropdownMenu 裡的 MenuItem 容器才用 `MenuItem` + suffix Switch(上方 Canonical 範例) | 最近的同目的規格勝出(M23(d)):`../../components/DropdownMenu/dropdown-menu.spec.md:103`「CheckboxItem 切換開關狀態…選單保持開啟」,`:211` 禁在 item 內放 Switch;DS 內 DropdownMenu 的開關全是這種寫法。MenuItem 容器已在 overlay、整列 row 就是 click target,Switch 是狀態視覺 |
 | **Settings page 的獨立 toggle row**(不在 overlay,是 page layout) | `<Field orientation="horizontal">` + Switch 齊右 | 見 `components/Switch/switch.spec.md`「對齊情境:Settings list vs Form edit」 |
 
 兩者**結構一致**(label 左 / toggle 右齊),差別只在**容器層級**(menu item = overlay row / Field horizontal = page row)。
@@ -1001,7 +1001,7 @@ Primitive 直接封裝 scanning / reading 兩種 typography:
 | prefix ↔ content gap | 8px (`gap-2`) | 控件與 label 的標準間距 |
 | 閱讀模式 | 閱讀模式 | 表單內仔細閱讀 |
 
-### ListItem（頁面列表，未來元件）
+### 頁面列表（閱讀式列，以 slot 零件組）
 
 | 屬性 | 值 | 原因 |
 |---|---|---|
@@ -1132,7 +1132,7 @@ Selection control(Dropdown / Menu / List / SegmentedControl / Chip)的 item 視�
 6. ✅ 外層 `flex items-start`,prefix / suffix 各自包 `h-[1lh]`(或 block calc)wrapper
 7. ✅ Prefix 用 `<ItemIcon>` / `<ItemAvatar>` helper,**禁止**硬寫 `<Avatar size={N} />` 或 `<Icon size={N} />`
 8. ✅ Icon 尺寸用 `ICON_SIZE` 常數 + `size` prop 直接傳給 Lucide,不用 CSS `[&>svg]:size-*` selector
-9. ✅ Label span 有 `min-w-0 flex-1 truncate`(或用 `<ItemLabel>` helper);截斷必配「截斷才顯」tooltip(tooltip.spec.md:32)—— `<ItemLabel>` / `<ItemContent>` 已內建,手刻 span 要自己消費 `useTruncated`(見「單行截斷 → tooltip」節)
+9. ✅ Label span 有 `min-w-0 flex-1 truncate`(或用 `<ItemLabel>` helper);截斷必配「截斷才顯」tooltip(tooltip.spec.md:30)—— `<ItemLabel>` / `<ItemContent>` 已內建,手刻 span 要自己消費 `useTruncated`(見「單行截斷 → tooltip」節)
 10. ✅ Suffix inline action 用 `<ItemInlineAction>` / `<ItemInlineActionButton>`,**禁止**複製 hover-bg 絕對定位 JSX
 11. ✅ Row primitive 容器用 `<RowSizeProvider value={size}>` 包住所有 children,讓 helper 元件能讀到 size
 12. ✅ icon 色彩遵循「代表內容 = label 同色,指示方向 = fg-muted」

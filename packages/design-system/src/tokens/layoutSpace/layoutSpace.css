@@ -60,7 +60,7 @@
      沒有標記 = element(預設)。標記只描述元件的邊緣,不是元件級固定分類(spec「元件角色」:角色由該層判;容器只看最後一個東西的邊緣)。
    · 容器看最後一個佔版面的子孫(略過 sr-only / hidden / script / style / template,最多穿過兩層沒有標記、也不是巢狀容器的包層):
      bounded → loose、unbounded → 0、其餘 → fill = bottom(48)/ hug = 與頂部同值。
-   · 寫在 @layer base:consumer 的 pt-* / pb-* / !pb-0 一律蓋得過(既有寫法不必改)。上內距目前仍是規則 2 element 的 tight(頂部的自判未做)。
+   · 寫在 @layer base:consumer 的 pt-* / pb-* / !pb-0 一律蓋得過(既有寫法不必改)。上內距 2026-11-27 起也自判(下方「頂部」段:第一個是 unbounded → 0,其餘 tight)。
    機械:scripts/layout-body-edges-invariant.mjs 掃建置裡全部 story(含點開浮層),從 DOM 判最後一個東西與容器種類、量像素比規則 4;
    標記與 DOM 對不上(標 bounded 卻沒有框、宣告 hug 卻撐滿)也紅。:has() 只在 Chromium 上由閘實測;不支援的瀏覽器退回 element 的值(= 修前的行為)。 */
 @layer base {
@@ -70,8 +70,10 @@
     padding-top: var(--layout-body-start);
     padding-bottom: var(--layout-body-end);
   }
+  /* hug 的底 = 一般元素的頂(tight),不讀 --layout-body-start:頂部自判(下方「頂部」段)在第一個是 unbounded 清單時把 start 設 0,
+     讀它的話最後一個一般元素會跟著貼底(2026-11-27 規格核對 D;修前 start 恆 = tight,這裡值不變) */
   [data-layout-body="hug"] {
-    --layout-body-end: var(--layout-body-start);
+    --layout-body-end: var(--layout-space-tight);
   }
   [data-layout-body]:has(
     > [data-layout-region="bounded"]:nth-last-child(1 of :not(.sr-only, [hidden], script, style, template)),
@@ -92,5 +94,29 @@
       > [data-layout-region="unbounded"]:nth-last-child(1 of :not(.sr-only, [hidden], script, style, template))
   ) {
     --layout-body-end: 0px;
+  }
+  /* 頂部(規則 2)也由容器自己判(2026-11-27,產品 canary 回報 H4):第一個佔版面的東西是自帶上下內距的清單(unbounded)→ 頂 0,
+     清單自己的上內距就是那一段距離(規則 2 表第 2 列);其餘照舊 tight。判法與底部同一套:略過不佔版面的東西、最多穿過兩層沒有標記也不是巢狀容器的包層;
+     多略過 cmdk 的讀屏標籤([cmdk-label]:cmdk 一律畫在 Command 根的第一個、行內 sr-only 樣式,不佔版面 —— 否則 Command 放在主體最前面時頂部判不到清單)。
+     修前頂部寫死 tight,清單放在最前面要靠 consumer 寫 !pt-0,而 tabs 檢查 Check 3(a) 見 !pt-0 就擋 → 照規格寫必被擋。
+     有框的表格 / 卡片在最前面(規則 2 表第 1 列 loose)的頂部自判仍未做,照舊 tight。 */
+  [data-layout-body]:has(
+    > [data-layout-region="unbounded"]:nth-child(1 of :not(.sr-only, [hidden], script, style, template, [cmdk-label])),
+    > :nth-child(1 of :not(.sr-only, [hidden], script, style, template, [cmdk-label])):not([data-layout-body], [data-layout-region])
+      > [data-layout-region="unbounded"]:nth-child(1 of :not(.sr-only, [hidden], script, style, template, [cmdk-label])),
+    > :nth-child(1 of :not(.sr-only, [hidden], script, style, template, [cmdk-label])):not([data-layout-body], [data-layout-region])
+      > :nth-child(1 of :not(.sr-only, [hidden], script, style, template, [cmdk-label])):not([data-layout-body], [data-layout-region])
+      > [data-layout-region="unbounded"]:nth-child(1 of :not(.sr-only, [hidden], script, style, template, [cmdk-label]))
+  ) {
+    --layout-body-start: 0px;
+  }
+  /* 置中的狀態(2026-11-27,產品 canary 回報 H10;empty.spec.md「垂直定位」有框 → 垂直置中):撐滿的容器(fill)裡只放一個 Empty
+     → 在可視高裡垂直置中、上下同值 —— 垂直置中的狀態不套規則 4 的結論留白(layoutSpace.spec.md 規則 2「適用範圍與量法三點」(3),
+     user 2026-11-14 留言 ②)。容器要真的撐滿可視高才置中得了:DialogBody / SheetBody 的 ScrollArea fillY + 內層 min-h-full。【AI 推導 2026-11-27:既有規則的落地】 */
+  [data-layout-body="fill"]:has(> [data-empty]:only-child) {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    --layout-body-end: var(--layout-body-start);
   }
 }

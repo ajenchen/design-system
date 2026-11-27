@@ -3,7 +3,7 @@
 // @anatomy-exempt: Dialog footer Cancel/Delete buttons are action cancel (not overlay dismiss); preserved verbatim from pre-refactor structure
 // @overlay-open-skip: 本檔為設計原則頁 —— 範例的 Coachmark 卡片不預設打開、點錨點才出現(與 Popover / Sheet / HoverCard / DropdownMenu 設計原則頁同一個慣例)。打開的卡片 portal 到 body、320 寬約 300 高,畫在範例框外,靜止時就蓋住相鄰規則的標題與說明,捲動時還會翻到另一側蓋住別段(待辦總帳 P7b,2026-10-14 量到 6 張卡片在 18 個捲動位置全部蓋字);開著的樣子由 coachmark.stories.tsx(單步驟新功能介紹 / 多步新手導覽 / 多步提示,useState(true))與 coachmark.anatomy.stories.tsx Overview 負責。
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Bot, Sparkles, Users, FolderPlus, Filter, Trash2, Download } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Coachmark } from './coachmark'
@@ -190,9 +190,9 @@ export const UsageGuidance: Story = {
 
         <TutorialRule
           title="❌ 在 Coachmark 內放 nested Popover / Dialog"
-          note="浮層嵌套浮層 = 層級混亂 + 焦點管理崩壞 + Esc 不知道關哪個。複雜互動結束 tour 後再開啟;tour 的角色是「指向功能」不是「讓使用者在 tour 內完成任務」"
+          note="tour 的角色是「指向功能」不是「讓使用者在 tour 內完成任務」。要填資料、要選值的複雜互動,結束 tour 後再開啟"
         >
-          <ExampleCaption warn>❌ Coachmark 內放 Popover / Dialog — 焦點管理崩壞</ExampleCaption>
+          <ExampleCaption warn>❌ Coachmark 內放 Popover / Dialog — 指向功能的 tour 變成在 tour 裡辦事</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule

@@ -1,5 +1,6 @@
 // @story-history: Field 是 compound component(FieldLabel / FieldError / FieldDescription / FieldGroup),hasSizes / Default 由 anatomy.stories.tsx SizeMatrix + Inspector auto-compile owns(2026-05-15 F-migration);showcase 展示 Vertical / Horizontal 兩種 orientation 真實 form 情境。
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect, userEvent, within } from 'storybook/test'
 import * as React from 'react'
 import { Field, FieldLabel, FieldDescription, FieldError, FieldGroup, useFormValidation } from './field'
 import { Input } from '@/design-system/components/Input/input'
@@ -18,6 +19,7 @@ import { Rating } from '@/design-system/components/Rating/rating'
 import { FileUpload } from '@/design-system/components/FileUpload/file-upload'
 import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 import { InlineSearchYieldWidthProbe, ViewAlignmentProbe } from './_field-contract-probes'
+import { ReadingContextDemo, ReadingContextFixture } from './_demo-reading-context'
 import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
@@ -87,6 +89,40 @@ export const LabelInfo: Story = {
       </FieldGroup>
     </div>
   ),
+  // 點擊範圍(2026-11-26 C8 (b) 把 ⓘ 移出 <label> 之後):標籤列上 ⓘ 以外的地方 —— 文字右邊的空白、文字與 ⓘ 之間的 4px、文字本身 —— 點了都聚焦輸入框
+  //(同修前整列都是 <label>);點 ⓘ 是看說明,不聚焦。而且一下只交給控件一次:label 交給控件 = 對控件派一次 click,
+  // 勾選類控件就是切一次 —— 數控件收到幾次 click,文字上點一下若被原生與外層轉送各交一次就是 2(勾選框一下切兩次)。
+  // 最後移開焦點,畫面回到初始狀態
+  play: async ({ canvasElement }) => {
+    const doc = canvasElement.ownerDocument
+    const input = within(canvasElement).getByPlaceholderText('8 碼數字')
+    const row = canvasElement.querySelector<HTMLElement>('[data-field-slot="label"]')!
+    const info = within(row).getByRole('button')
+    const rowBox = row.getBoundingClientRect()
+    const infoBox = info.getBoundingClientRect()
+    const midY = infoBox.top + infoBox.height / 2
+    const blank = doc.elementFromPoint(rowBox.right - 4, midY) as HTMLElement
+    const gap = doc.elementFromPoint(infoBox.left - 2, midY) as HTMLElement
+    const text = within(row).getByText('統一編號')
+    // 量具先證明點到的真的是空白:文字右邊 = 外層本身、文字與 ⓘ 之間 = 那層 inline-flex
+    await expect(blank).toBe(row)
+    await expect(gap).toBe(row.firstElementChild)
+    let activations = 0
+    const countActivation = () => { activations += 1 }
+    input.addEventListener('click', countActivation)
+    const press = async (target: HTMLElement) => {
+      ;(doc.activeElement as HTMLElement | null)?.blur()
+      activations = 0
+      await userEvent.click(target)
+      return { focused: doc.activeElement === input, activations }
+    }
+    await expect(await press(info)).toEqual({ focused: false, activations: 0 })
+    await expect(await press(blank)).toEqual({ focused: true, activations: 1 })
+    await expect(await press(gap)).toEqual({ focused: true, activations: 1 })
+    await expect(await press(text)).toEqual({ focused: true, activations: 1 })
+    input.removeEventListener('click', countActivation)
+    input.blur()
+  },
 }
 
 // ── Field 狀態 cascade（2026-06-08 補：disabled / mode 透過 context 流給所有 field 控件）──────
@@ -780,4 +816,16 @@ export const ViewAlignmentContract: Story = {
   name: '純顯示齊標籤驗證',
   tags: ['test-only'],
   render: () => <ViewAlignmentProbe />,
+}
+
+// ── 閱讀情境(field.spec.md「閱讀情境」;畫面與夾具住 `_demo-reading-context.tsx`,閘 scripts/reading-context-invariant.mjs)── 只服務量測與
+// 前後對照圖 → test-only(story-rules.md「Technical probe visibility」);size 由閘以網址 args 切(不給 = 看同組同高怎麼解)。
+const readingArgTypes = { size: { control: 'inline-radio', options: ['sm', 'md'] } } as const
+export const ReadingContextDetail: StoryObj<{ size?: 'sm' | 'md' }> = {
+  name: '閱讀情境:工作項目與行事曆事件詳情', tags: ['test-only'], argTypes: readingArgTypes,
+  render: (args) => <ReadingContextDemo size={args.size} />,
+}
+export const ReadingContextContract: StoryObj<{ size?: 'sm' | 'md' }> = {
+  name: '閱讀情境驗證', tags: ['test-only'], argTypes: readingArgTypes,
+  render: (args) => <ReadingContextFixture size={args.size} />,
 }

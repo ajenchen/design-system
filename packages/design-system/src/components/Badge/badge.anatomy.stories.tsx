@@ -3,7 +3,7 @@
 //   StateBehavior N/A — Badge 是純展示元件(無互動),無 hover / focus / active /
 //     disabled。唯一行為層 logic 是 max overflow(99+),已由 SizeMatrix 與 Inspector
 //     涵蓋。
-import type { Meta } from '@storybook/react'
+import type { Meta } from '@storybook/react-vite'
 import { useState } from 'react'
 import { Badge } from './badge'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'

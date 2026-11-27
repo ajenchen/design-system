@@ -7,6 +7,11 @@
 // 2026-10-07:DataTable 游標不看欄 / 守門不驗收 / DatePicker 替 consumer 認領 / Combobox「+N」卡不算欄位 / 可聚焦停用保留 aria-disabled 長相
 // 2026-10-13:DataTable 連結格 / 開關格不宣告格內那一層
 // 2026-10-21(r1b fields F1 / N1):彈出層關掉的那一下不補量欄位的 blur / 收起動畫期間不提早還焦點
+// 2026-11-25:InlineEdit 自訂編輯容器不宣告 Esc 層 / 進編輯不把焦點補進編輯容器 / 編輯容器不看就近的那一層 / 不看 Radix 已用掉 / 只看不認領 /
+//   Calendar 出格回長條 DOM 所在那一天(不記進格那一天)
+// 2026-11-26(產品 canary 回報 C11 / C13 / C20):Dialog / Sheet 殼不抑制焦點框 / 背景頁側欄不看 modal / 不可收合側欄攔 ⌘B / 不可收合側欄寫 cookie /
+//   行內動作鈕不看自身停用
+// 2026-11-27(產品 canary 回報 H20):Popover 沒有觸發點時不還焦點 / 還焦點當成 modal(按在外面也搶回)
 // —— 各自必須剛好紅它負責的契約列,對照列全程綠)必紅。跑法與判準的單一實作住 scripts/lib/gate-selftest-meta.mjs。
 import { runGateSelftestMeta } from './lib/gate-selftest-meta.mjs'
 

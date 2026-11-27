@@ -31,7 +31,7 @@ import { STACK_GAP_PX } from '@/design-system/tokens/uiSize/stack-gap'
 // ── 色彩 ──
 // **消費 categorical-color SSOT**(CAT_SUBTLE_TOKENS / CAT_SOLID_TOKENS,key X 一律對 `--color-X-*`,
 // 1:1 零 offset)。subtle=step-1 底 + step-7 字;solid=step-6 全色底 + on-emphasis 字
-//(亮 hue yellow/amber/orange/lime 用 --on-emphasis-dark 深字;green 白字例外)。neutral 非色相,自處理(subtle=muted、solid=neutral-9)。
+//(白字對比低於綠色的 hue,目前 yellow/amber/lime,用 --on-emphasis-dark 深字;判準 = categorical-color.ts「實心底字色原則」)。neutral 非色相,自處理(subtle=muted、solid=neutral-9)。
 // 2026-06-04 修:原 `red` 誤接 `--color-deep-orange-*`(red=品牌紅 hue-25 ≠ deep-orange);
 // 改消費 SSOT 後 red→`--color-red-*`,並補齊全 12 色相。
 type ColorKey = CategoricalColor
@@ -280,7 +280,7 @@ export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   icon?: LucideIcon
   /** Icon / text fallback 的背景色，預設 neutral */
   color?: ColorKey
-  /** 深底模式（step-6 背景 + on-emphasis 配對前景；亮色 hue yellow/amber/orange/lime 用深字 --on-emphasis-dark），預設 false */
+  /** 深底模式（step-6 背景 + on-emphasis 配對前景；白字對比低於綠色的 hue（目前 yellow/amber/lime）用深字 --on-emphasis-dark,其餘白字），預設 false */
   solid?: boolean
   /**
    * 在線狀態指示器(presence),顯示在 avatar **右下角**。
@@ -491,7 +491,10 @@ const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
     // 所以要鎖寬只能用 w-fit。root 一被撐寬會同時壞三處:狀態圓點 / badgeCount(相對 root 絕對定位)、
     // :focus-visible 焦點框(畫在 root 的 border box,帶 rounded-full → 變膠囊)、hoverCard 的 Radix 錨點(浮層橫向偏移)。
     // fill 模式的語意就是填滿父容器,必須排除。機械閘:scripts/avatar-anchor-box-invariant.mjs。
-    const boxClass = isFill ? '' : 'w-fit'
+    // fill 模式最外層 = 父容器的寬高(size-full;有無 status / badge 兩條分支共用這一個 class):內層是 inline-size 容器查詢
+    // (containerType: inline-size),不貢獻寬度 —— 最外層若沒有自己的寬高,整顆量起來 0×0(2026-11-27,workspace H 組 H14;
+    // avatar.spec.md「兩種模式」'fill' 那列 = 填滿父容器)。
+    const boxClass = isFill ? 'size-full' : 'w-fit'
     const stackAttr = isStackItem ? { 'data-avatar-stack': '' } : {}
     const baseEl = !hasOverlay
       ? <div ref={ref} className={cn('inline-flex shrink-0', boxClass, focusableClass, className)} style={style} {...stackAttr} {...focusableProps} {...props}>{avatarEl}</div>
@@ -547,8 +550,8 @@ const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
         {/* HoverCardContent canonical(2026-04-23):
             - 無 inner padding(consumer ProfileCard 自帶 `px-4 py-3` chrome)
             - `overflow-hidden` + `rounded-lg` → child(ProfileCard)圓角裁切
-            - **不設 max-height**:ProfileCard 自己消費 `--radix-hover-card-content-available-height`
-              自約束高度 + 內部 ScrollArea 處理捲動
+            - **這裡不另設 max-height**:HoverCardContent 本身已夾到可用高,ProfileCard 也自己讀同一個
+              `OVERLAY_AVAILABLE_HEIGHT`(tokens/elevation/overlay-geometry.ts)自約束高度 + 內部 ScrollArea 處理捲動
             - `data-theme={documentTheme}`:ProfileCard 永遠跟隨 **app-level theme**(從 `<html data-theme>`
               動態讀),不受 trigger subtree theme 污染。範例:Avatar 位於 OverflowIndicator 的 dark
               tooltip 內,其 Portal 會繼承該 subtree dark theme → ProfileCard 變全黑。顯式設回 app theme

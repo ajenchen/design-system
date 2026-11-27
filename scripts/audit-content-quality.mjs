@@ -3,8 +3,10 @@
 /**
  * @gate-contract
  *   保證: Storybook story 的內容品質不漂移 —— 非 anatomy 的序號名、literal Markdown / 反引號(棘輪只准往下)、Autodocs 缺說明、
- *         anatomy 顯示名漂移、兩個 CSF 共用 title 等(下面 Detects 清單逐條),--check 在 PR 必過跑(2026-11-04 起,原本只在夜間 meta lane)
- *   紅: 注入任一條違規(序號名、literal 反引號、缺 Autodocs 說明…)→ --check 必須指名該檔並 exit 1;對照組 19 面在 scripts/test-audit-content-quality.mjs
+ *         anatomy 顯示名漂移、兩個 CSF 共用 title、複製到剪貼簿的 Toast 用了 success 等(下面 Detects 清單逐條),
+ *         --check 在 PR 必過跑(2026-11-04 起,原本只在夜間 meta lane)
+ *   紅: 注入任一條違規(序號名、literal 反引號、缺 Autodocs 說明、複製類 Toast 寫 success…)→ --check 必須指名該檔並 exit 1;
+ *       對照組在 scripts/test-audit-content-quality.mjs
  *   綠: 現況 0 筆時 exit 0;純靜態、不讀時間,同一棵樹重複跑結果相同
  */
 // Catches drift that write-time hooks miss — runs across ALL files, not single edit.
@@ -22,6 +24,12 @@
 //   6. Literal Markdown in JSX canvas: **emphasis** everywhere; `code` backticks on every story page
 //      (teaching pages = principles + Tokens / Patterns doc pages: always 0, 2026-10-20 teaching audit T12;
 //       design-spec / showcase pages since 2026-10-21 r1b fields F8, ratcheted by scripts/content-quality-backtick-baseline.json —— the canvas shows the backticks as-is)
+//   7. 複製到剪貼簿的 Toast 用了 success(2026-11-26):toast.spec.md 變體表 neutral 那一列的例子就是「已複製到剪貼簿」,
+//      toast.stories.tsx 檔頭「複製類一律 neutral」。範圍 = story 檔 + stories-helpers(範例共用的 done / DemoMenu 也會畫進 story)。
+//      認三種寫法:toast({ variant: 'success', title }) / done(title)(stories-helpers/examples/demo-actions.tsx 的 done 預設 success,
+//      第二個參數不是 neutral 等其他變體就算)/ DemoMenu 選單項 { done: title }(沒給 doneVariant 或給 success)。
+//      「複製類」= 標題提到剪貼簿,或「複製 / 拷貝」連同「連結 / 網址」—— 只認讀者在 Toast 上看得到的那句話;
+//      「已複製一份」「已複製專案範本」(另做一份新的東西)不是剪貼簿,不收。
 //
 // Usage from Stop hook: `node scripts/audit-content-quality.mjs --check` (silent if OK, warn if drift).
 
@@ -166,6 +174,62 @@ function findLiteralMarkdownCode(file, content) {
   return [...samples];
 }
 
+// Detects 7:複製到剪貼簿的 Toast 不得用 success(說明見檔頭)
+const isClipboardCopyTitle = text => /剪貼簿|clipboard/i.test(text) || (/複製|拷貝|copied/i.test(text) && /連結|網址|URL|link/i.test(text));
+const literalText = node => {
+  const n = unwrapExpression(node);
+  if (!n) return null;
+  if (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) return n.text;
+  if (ts.isTemplateExpression(n)) return [n.head.text, ...n.templateSpans.map(span => span.literal.text)].join('');
+  return null;
+};
+const objectProperty = (objectLiteral, name) => {
+  const property = objectLiteral.properties.find(p => ts.isPropertyAssignment(p) && propertyName(p) === name);
+  return property ? property.initializer : undefined;
+};
+function findCopyToastSuccess(file, content) {
+  const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const hits = [];
+  const record = (node, title, how) => {
+    const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
+    hits.push({ line: line + 1, title: title.slice(0, 60), how });
+  };
+  const visit = node => {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+      const callee = node.expression.text;
+      const [first, second] = node.arguments;
+      if (callee === 'toast' && first && ts.isObjectLiteralExpression(unwrapExpression(first))) {
+        const options = unwrapExpression(first);
+        const title = literalText(objectProperty(options, 'title'));
+        if (title !== null && literalText(objectProperty(options, 'variant')) === 'success' && isClipboardCopyTitle(title)) record(node, title, "toast({ variant: 'success' })");
+      } else if (callee === 'done' && first) {
+        const title = literalText(first);
+        const variant = second === undefined ? 'success' : literalText(second);
+        if (title !== null && variant === 'success' && isClipboardCopyTitle(title)) record(node, title, second === undefined ? 'done(title)(預設 success)' : "done(title, 'success')");
+      }
+    } else if (ts.isObjectLiteralExpression(node)) {
+      const doneInit = objectProperty(node, 'done');
+      const title = doneInit === undefined ? null : literalText(doneInit);
+      // DemoMenu 選單項 = 同一個物件有 label 與 done
+      if (title !== null && objectProperty(node, 'label') !== undefined) {
+        const variantInit = objectProperty(node, 'doneVariant');
+        const variant = variantInit === undefined ? 'success' : literalText(variantInit);
+        if (variant === 'success' && isClipboardCopyTitle(title)) record(node, title, variantInit === undefined ? 'DemoMenu { done }(沒給 doneVariant = success)' : "DemoMenu { doneVariant: 'success' }");
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return hits;
+}
+function* walkTsx(dir) {
+  for (const entry of readdirSync(dir)) {
+    const p = join(dir, entry);
+    if (statSync(p).isDirectory()) yield* walkTsx(p);
+    else if (p.endsWith('.tsx')) yield p;
+  }
+}
+
 const anatomyCanonicalDisplayNames = Object.freeze({
   Overview: '元件總覽',
   Inspector: '元件檢閱器',
@@ -274,6 +338,7 @@ const violations = {
   literalMarkdownEmphasis: [], // JSX canvas 會原樣顯示 **星號**,不是 Markdown renderer
   literalMarkdownCode: [],  // 教學頁 JSX canvas 會原樣顯示 `反引號`(2026-10-20 T12)
   storyVisibility: [],     // technical probes 必保留 index/test 但退出 sidebar + Autodocs
+  copyToastSuccess: [],    // 複製到剪貼簿的 Toast 用了 success(Detects 7,2026-11-26)
 };
 let autoFixed = 0;
 
@@ -327,6 +392,7 @@ for (const file of walk(STORIES_DIR)) {
   const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const exportedStories = exportedStoryDefinitions(sourceFile);
   checkStoryVisibility(file, content, exportedStories);
+  for (const hit of findCopyToastSuccess(file, content)) violations.copyToastSuccess.push({ file, ...hit });
   const csfTitle = csfMetaTitle(sourceFile);
   if (csfTitle) filesByTitle.set(csfTitle, [...(filesByTitle.get(csfTitle) ?? []), file]);
 
@@ -655,6 +721,11 @@ for (const [title, files] of filesByTitle) {
   });
 }
 
+// Detects 7 另掃範例共用的 stories-helpers(done / DemoMenu / 場景元件裡寫死的 Toast 也會畫進 story;story 檔上面已掃過)
+for (const file of walkTsx(join(STORIES_DIR, 'stories-helpers'))) {
+  for (const hit of findCopyToastSuccess(file, readFileSync(file, 'utf-8'))) violations.copyToastSuccess.push({ file, ...hit });
+}
+
 // Consumer-template technical probes share the same Storybook runtime but are
 // outside the DS content corpus above. Scan their tags without applying DS prose
 // or three-layer requirements.
@@ -789,6 +860,12 @@ if (violations.literalMarkdownCode.length > 0) {
 if (violations.storyVisibility.length > 0) {
   console.log(`\n[P0] Storybook technical-probe visibility drift: ${violations.storyVisibility.length}`);
   violations.storyVisibility.slice(0, 10).forEach(v => console.log(`  • ${v.file}: ${v.issue}`));
+}
+
+if (violations.copyToastSuccess.length > 0) {
+  console.log(`\n[P0] 複製到剪貼簿的 Toast 用了 success(toast.spec.md 變體表 neutral 例「已複製到剪貼簿」;toast.stories.tsx「複製類一律 neutral」): ${violations.copyToastSuccess.length}`);
+  console.log(`  改成 variant: 'neutral' / done(title, 'neutral') / DemoMenu 項加 doneVariant: 'neutral'`);
+  violations.copyToastSuccess.slice(0, 20).forEach(v => console.log(`  • ${v.file}:${v.line} ${v.how}「${v.title}」`));
 }
 
 if (violations.linkTo.length > 0) {

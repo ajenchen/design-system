@@ -36,8 +36,8 @@
  *       對照組(--selftest):合成新舊兩棵樹,二十一類各破一處(含審查列的七種縮窄:物件型別間收窄、回呼參數、必填位置參數、
  *       回傳型別、CSS 改值、預設搬進本體、搬到 base interface 同時收窄,與既有型別新增必填成員、只刪 dark 覆寫)—— 每一處都必紅且只指名那一處、
  *       選擇器清單拆開 + `:not()` 值不變必 0 差異(拆開後真的改值仍只指名那一個)、
- *       登記齊全必綠;帳本的十種紅各一面;發版端說明段少一行只指名那一條;真實資料:146→147 的 CalendarOwnProps.onCreateEvent、
- *       147→148 的 AppShellProps.mainMinWidth 與 FileUpload.buttonLabel、148→工作樹的 InputProps.height 與
+ *       登記齊全必綠;帳本的十種紅各一面;發版端說明(新增 / 行為與畫面變更 / 破壞性變更三段)少一行只指名那一條;真實資料:146→147 的 CalendarOwnProps.onCreateEvent、
+ *       147→148 的 AppShellProps.mainMinWidth 與 FileUpload.buttonLabel、148→149 的 InputProps.height 與
  *       DataTableFilterPanelLabels.clearAll —— 拿掉帳本那一條就只指名它。
  *   儀器失效(exit 2,印 INSTRUMENT-FAIL): 找不到上一個發布 tag(CI 要 fetch-depth: 0 帶 tag)、git archive 失敗、
  *       任一邊量到 0 個子路徑或 0 個出口、讀不到帳本或不是合法 JSON、版本號不是 semver —— 不讀成通過。
@@ -61,7 +61,7 @@ import { diffSurfaces, measureSurface, SurfaceInstrumentError, surfaceHas } from
 import {
   compareVersions, entriesBetween, LEDGER_DETECTED_CHANGES, LEDGER_REPO_PATH, LedgerError, ledgerSections, ledgerShapeProblems, parseSpecRef,
 } from '../packages/design-system/tools/changes/ledger.mjs'
-import { breakingIdsMissing, releaseBreakingNotes, releaseCreateArgs } from './release-github-release.mjs'
+import { releaseCreateArgs, releaseLedgerNotes, releaseNotesMissing } from './release-github-release.mjs'
 
 const PS_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const PS_PKG = 'packages/design-system'
@@ -222,7 +222,7 @@ export function lastReleaseTag(ref = 'HEAD') {
   const r = git(['describe', '--tags', '--abbrev=0', '--match', 'v[0-9]*', ref])
   return r.status === 0 ? r.stdout.trim() || null : null
 }
-function archiveTree(tag) {
+export function archiveTree(tag) {
   const dir = mkdtempSync(join(tmpdir(), 'public-surface-'))
   // 整個套件資料夾(src 量介面;ds-canonical / README 等出貨檔給 spec 欄查「是不是出貨檔、有沒有那個段名」)
   const a = spawnSync('sh', ['-c', 'git archive --format=tar "$0" "$1" | tar -x -C "$DEST"', tag, PS_PKG], { cwd: PS_ROOT, encoding: 'utf8', env: { ...process.env, DEST: dir } })
@@ -458,29 +458,35 @@ function selftest() {
     fails.push(`${e instanceof SurfaceInstrumentError ? '儀器失效' : '例外'}:合成樹那一段跑不完 —— ${e.stack ?? e.message}`)
   } finally { dirs.forEach((d) => rmSync(d, { recursive: true, force: true })) }
 
-  // 發版端(scripts/release-github-release.mjs):GitHub Release「破壞性變更」段由帳本那一節產生,讀回驗收逐條 id
+  // 發版端(scripts/release-github-release.mjs):GitHub Release 說明的「新增 / 行為與畫面變更 / 破壞性變更」三段由帳本那一節產生,
+  // 讀回驗收逐條 id 與三個段名(依序)。新增 / 行為與畫面變更兩類的對照組(含合成帳本)在 release-notes-coverage-invariant.mjs --selftest。
   try {
     const ledgerText = readFileSync(join(PS_ROOT, LEDGER_REPO_PATH), 'utf8')
     const head = '0'.repeat(40)
     const fakeGit = (args) => (args[0] === 'show' && args[1] === `${head}:${LEDGER_REPO_PATH}` ? { status: 0, stdout: ledgerText, stderr: '' } : { status: 128, stdout: '', stderr: 'fatal: bad object' })
-    const notes = releaseBreakingNotes(head, 'v0.1.0-beta.148', fakeGit)
-    expect(notes.entries.length > 0 && notes.section.includes('ds-changes.json') && breakingIdsMissing(notes, notes.section).length === 0,
-      `發版端:v0.1.0-beta.148 那一節 ${notes.entries.length} 條全部寫進說明段`)
+    const notes = releaseLedgerNotes(head, 'v0.1.0-beta.148', fakeGit)
+    expect(notes.entries.length > 0 && notes.section.includes('ds-changes.json') && releaseNotesMissing(notes, notes.section).length === 0,
+      `發版端:v0.1.0-beta.148 那一節 ${notes.entries.length} 條全部寫進說明、三段都在`)
     const victim = notes.entries[3].id
-    const missing = breakingIdsMissing(notes, notes.section.split('\n').filter((l) => !l.includes(`\`${victim}\``)).join('\n'))
+    const missing = releaseNotesMissing(notes, notes.section.split('\n').filter((l) => !l.includes(`\`${victim}\``)).join('\n'))
     expect(missing.length === 1 && missing[0] === victim, `發版端對照組:說明段少一行 → 只指名「${victim}」,實得 ${JSON.stringify(missing)}`)
-    expect(breakingIdsMissing(notes, '  ').length === notes.entries.length, '發版端:讀回空白說明 = 全部漏(不是通過)')
+    expect(releaseNotesMissing(notes, '  ').length === notes.entries.length + 3, '發版端:讀回空白說明 = 三段與全部條目都漏(不是通過)')
     const args = releaseCreateArgs({ tag: 'v0.1.0-beta.148', repository: 'ajenchen/design-system', gitHead: head }, notes.section)
     expect(args.includes('--generate-notes') && args[args.indexOf('--notes') + 1] === notes.section, '發版端:建 Release 的參數把同一段當 --notes')
-    expect(releaseBreakingNotes(head, 'v9.9.9', fakeGit).section === '', '發版端:帳本沒有那一節(這一版沒有破壞性變更)→ 不寫段落')
+    const none = releaseLedgerNotes(head, 'v9.9.9', fakeGit)
+    expect(none.entries.length === 0 && releaseNotesMissing(none, none.section).length === 0 && /^## 破壞性變更\(0 條\)$/m.test(none.section),
+      '發版端:帳本沒有那一節 → 三段照樣出、各寫「沒有登記」(段一個都不省)')
     let unreadable = false
-    try { releaseBreakingNotes('1'.repeat(40), 'v0.1.0-beta.148', fakeGit) } catch { unreadable = true }
-    expect(unreadable, '發版端:讀不到帳本要丟錯,不得當成「沒有破壞性變更」')
+    try { releaseLedgerNotes('1'.repeat(40), 'v0.1.0-beta.148', fakeGit) } catch { unreadable = true }
+    expect(unreadable, '發版端:讀不到帳本要丟錯,不得當成「沒有變更」')
   } catch (e) {
     fails.push(`例外:發版端那一段跑不完 —— ${e.message}`)
   }
 
-  // 真實資料(tag 上的 commit 永久不變;工作樹那一格量的是 0.1.0-beta.148 之後一直存在的差異):登記齊全綠、拿掉那幾條只指名它們
+  // 真實資料(tag 上的 commit 永久不變):登記齊全綠、拿掉那幾條只指名它們。
+  // 第三格 2026-11-24 前是「148 → 工作樹」對 149 節 —— 寫的時候 149 還沒發布、是「下一版」,工作樹的差異 = 149 節;149 發布後
+  // 下一版是 150,工作樹只要多一個機器量得到、登記在 150 節的差異(例 Calendar.locale 的預設值),這一格就誤紅成「149 節漏寫」。
+  // 改成兩個 tag 之間:149 已發布,148 → 149 的差異永久不變,正是 149 節該涵蓋的範圍(拿「工作樹」代「149」是只在發布前成立的代理,M37)。
   const measurer = makeMeasurer()
   try {
     const ledger = readJson(join(PS_ROOT, LEDGER_REPO_PATH), LEDGER_REPO_PATH)
@@ -499,7 +505,7 @@ function selftest() {
     }
     cell('v0.1.0-beta.146', 'v0.1.0-beta.147', '0.1.0-beta.147', ['CalendarOwnProps.onCreateEvent'])
     cell('v0.1.0-beta.147', 'v0.1.0-beta.148', '0.1.0-beta.148', ['AppShellProps.mainMinWidth', 'FileUpload.buttonLabel'])
-    cell('v0.1.0-beta.148', null, '0.1.0-beta.149', ['InputProps.height', 'DataTableFilterPanelLabels.clearAll'])
+    cell('v0.1.0-beta.148', 'v0.1.0-beta.149', '0.1.0-beta.149', ['InputProps.height', 'DataTableFilterPanelLabels.clearAll'])
   } catch (e) {
     fails.push(`${e instanceof SurfaceInstrumentError ? '儀器失效' : '例外'}:真實資料那一段跑不完(簽出要 fetch-depth: 0 帶 tag)—— ${String(e.message).split('\n')[0]}`)
   } finally { measurer.cleanup() }
@@ -513,7 +519,7 @@ function main() {
     if (args.includes('--selftest')) {
       const fails = selftest()
       if (fails.length) { console.error(`✗ public-surface selftest:\n  ${fails.join('\n  ')}`); process.exit(1) }
-      console.log(`✓ public-surface selftest:合成樹 ${ST_BREAKS.length} 類各破一處(含審查列的七種縮窄與新增必填)→ 都只指名那一處、登記齊全綠;同一棵樹量兩次 0 差異;帳本十種紅(寫了卻沒發生 / to 不存在 / spec 非出貨 / 段名不存在 / fix op / id 重複 / renamed 沒 to / do 超過三句 / 勘誤指錯 / 同名換義沒有 behavior 條目)與已發布節逐位元、下一版節判定;發版端說明段由帳本產生、少一行只指名那一條;真實資料三段(146→147、147→148、148→工作樹)登記齊全綠、拿掉指定條目只指名它們`)
+      console.log(`✓ public-surface selftest:合成樹 ${ST_BREAKS.length} 類各破一處(含審查列的七種縮窄與新增必填)→ 都只指名那一處、登記齊全綠;同一棵樹量兩次 0 差異;帳本十種紅(寫了卻沒發生 / to 不存在 / spec 非出貨 / 段名不存在 / fix op / id 重複 / renamed 沒 to / do 超過三句 / 勘誤指錯 / 同名換義沒有 behavior 條目)與已發布節逐位元、下一版節判定;發版端說明三段由帳本產生、少一行只指名那一條;真實資料三段(146→147、147→148、148→149)登記齊全綠、拿掉指定條目只指名它們`)
       return
     }
     const base = arg('base')

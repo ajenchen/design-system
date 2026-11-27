@@ -1,6 +1,6 @@
 // @story-baseline: tokens/density/density.stories.tsx#UISize — token bar 展示慣例同源;本頁展示 size-tier 軸(xs/sm/md/lg + icon 兩 tier),density md/lg 軸在 Tokens/Density 不重複
 import { useLayoutEffect, useRef, useState } from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Download } from 'lucide-react'
 import { ICON_SIZE } from './icon-size'
 import { Select } from '@/design-system/components/Select/select'

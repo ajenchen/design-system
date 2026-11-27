@@ -53,6 +53,7 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 ### SurfaceBody
 - 根節點帶 `data-slot="surface-body"`
 - 左右 `px-[var(--layout-space-loose)]`;上下內距由容器自己給 —— 根節點宣告 `data-layout-body="hug"`(不擋頁面、貼內容),底依最後一個東西照 `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 4「容器自己判,不由寫的人挑值」(實作 `layoutSpace.css`)。本規格不寫上下內距的值(2026-11-17 前這一行寫死 `py-[var(--layout-space-tight)]`)
+- **內文字級繼承整頁預設,外殼不另設**(2026-11-24):`SurfaceBody` 與各浮層外殼(`PopoverContent` / `HoverCardContent` / `DialogContent` / `SheetContent`,含 `DialogBody` / `SheetBody` 的 ScrollArea 內層)都不設字級;浮層經 Portal 掛在 `body` 底下,沒自己設字級的內文吃整頁預設字級 —— 值與住處只在 `../../tokens/typography/typography.spec.md`「整頁預設字級」,本檔不重述。要別的字級,在那段文字(或使用端自己包它的容器)上設 `text-*`(例:Coachmark 內文區的主標 `text-body-lg`、說明 `text-body`,`components/Coachmark/coachmark.tsx`);DS 的外殼與 `SurfaceBody` 原始碼不加字級 class,免得成為整頁預設以外的第二個住處。Tooltip 不在此列:泡泡本身就是那段文字,自帶 `text-body`(`components/Tooltip/tooltip.tsx` 的 `TooltipContent`)。
 - **永遠套 `flex-1 min-h-0 overflow-y-auto`**(viewport-aware scroll:視窗太小時 body 內捲動;非 flex-col parent 內 flex-1/min-h-0 不起作用,放在任何容器都安全)。2026-05-31 infra-audit 修:原寫「無額外 flex 屬性」與 code(overlay-surface.tsx#SurfaceBody 恆套)矛盾。consumer 依浮層類型:
 - **Focus ownership**:SurfaceBody 不預設 `tabIndex`——短內容時它不是 scroll region,一律塞進 sequential focus order 會製造多餘 tab stop。當 bare SurfaceBody 在定高/viewport 壓縮下**實際 overflow**時,consumer 必須傳 `tabIndex={0}` + `role="region"` + 語意明確的 `aria-label`;SurfaceBody runtime 內建 inset DS focus ring。`BodyScrollKeyboard` story(test-only)的 play assertion 機械驗證該具名節點確實 overflow 且可聚焦。Dialog / Sheet 正式 consumer 仍優先走下節 ScrollArea canonical。
   - **Popover**:多數 bare consume,padding 即是總 padding
@@ -94,7 +95,7 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 
 當 overlay body(Dialog / Sheet / Popover)**內容是一個 unbounded list**(contact picker / settings menu / command palette / nav)時 — body 不該有 chrome padding,讓 list 自管視覺節奏。
 
-**判定條件(唯一)**:body 撤掉 chrome padding(`!px-0 !pt-0 !pb-0`)+ list outer wrapper 自帶 `py-2` + item 自帶 `px-loose`。(2026-11-17:list outer wrapper 帶 `data-layout-region="unbounded"` 時,body 底部 0 由容器自己給 —— `layoutSpace.spec.md` 規則 4「容器自己判」;頂部仍要撤,頂部自判未做。)三件事全成立即是 List-as-region。**item 用不用 `MenuItem`、有沒有 hover 底色,都不是判定條件** —— hover / focus / selected 屬 state 視覺,跟隨永久視覺層分類,不獨立觸發分類(同向旁證:`../element-anatomy/item-anatomy.spec.md`「連續 item 貼邊合法性」段落的 state-follows-permanent-layer 原則;該段本身管的是相鄰 item 的 gap,不是本判定條件,故只作旁證不作條文)。
+**判定條件(唯一)**:body 撤掉左右 chrome padding(`!px-0`)+ list outer wrapper 自帶 `py-2`(並標 `data-layout-region="unbounded"`)+ item 自帶 `px-loose`。上下由容器自己給:清單在 body 最前面 → 頂 0、在最後面 → 底 0(`layoutSpace.spec.md` 規則 2 / 規則 4「容器自己判」;判法最多穿過兩層沒有標記的包層)。2026-11-17 起底部自判、**2026-11-27 起頂部也自動判斷**(產品 canary 回報 H4:修前頂部要 consumer 寫 `!pt-0`,而 tabs 檢查 Check 3(a) 見 `!pt-0` 就擋 —— 照規格寫必被擋),不再寫 `!pt-0` / `!pb-0`。三件事全成立即是 List-as-region。**item 用不用 `MenuItem`、有沒有 hover 底色,都不是判定條件** —— hover / focus / selected 屬 state 視覺,跟隨永久視覺層分類,不獨立觸發分類(同向旁證:`../element-anatomy/item-anatomy.spec.md`「連續 item 貼邊合法性」段落的 state-follows-permanent-layer 原則;該段本身管的是相鄰 item 的 gap,不是本判定條件,故只作旁證不作條文)。
 
 ### 為什麼**不**做成 body variant(`flush`)
 
@@ -102,13 +103,13 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 
 1. **Variant 不解決底層脆弱**:flush 只省一行 chrome padding override;consumer 仍要管 list outer `py-2` + item `px-loose rounded-md` — 加 1 row search/banner 就破功(body 反而沒 chrome padding,更難排版)。容器自判(2026-11-17,`data-layout-body`)不是 variant:看的是最後一個東西,清單後面多一列就自動回到那一列的值,不會破功。
 2. **世界級主流不做 universal flush**:Material M3 / Atlassian Dialog / Mantine Modal / shadcn Dialog 都讓 consumer 用 className override 處理。Polaris 有 flush API 但 scope 極窄(只 ResourceList in Modal)。Mainstream 把這個 case 歸 consumer 自管。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
-3. **Single API surface**:body 一律 chrome padded,list-only 場景用 `className="!px-0 !pt-0 !pb-0"` override + 自管 list outer wrapper — surface 概念清楚,不雙路徑。
+3. **Single API surface**:body 一律 chrome padded,list-only 場景用 `className="!px-0"` 撤左右 + 自管 list outer wrapper(標 `data-layout-region="unbounded"`,上下由容器自判成 0)— surface 概念清楚,不雙路徑。
 
 ### Canonical pattern
 
 ```tsx
-<DialogBody className="!px-0 !pt-0 !pb-0">    {/* body 撤 chrome padding */}
-  <div className="py-2">                       {/* list outer wrapper:menu group 8px breathing */}
+<DialogBody className="!px-0">                          {/* body 撤左右 chrome padding;上下由容器自判(清單在頭 / 尾 → 0)*/}
+  <div data-layout-region="unbounded" className="py-2">  {/* list outer wrapper:menu group 8px breathing */}
     {items.map(item => (
       <MenuItem key={item.id} className="px-[var(--layout-space-loose)]">{item.label}</MenuItem>
       // Family 2 row 請直接消費 item-anatomy primitives；utility 組合由其 source 擁有。
@@ -156,8 +157,8 @@ search 列放 body 外(不跟清單捲),自帶 `px-loose pt-tight`、下方不�
 <div className="shrink-0 px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)]">  {/* search 列:body 外、不捲 */}
   <Input search />
 </div>
-<DialogBody className="!px-0 !pt-0 !pb-0">  {/* body 撤 chrome padding */}
-  <div className="py-2">{items.map(...)}</div>  {/* list outer:自帶 8 */}
+<DialogBody className="!px-0">  {/* body 撤左右;上下由容器自判(清單在頭尾 → 0)*/}
+  <div data-layout-region="unbounded" className="py-2">{items.map(...)}</div>  {/* list outer:自帶 8 */}
 </DialogBody>
 ```
 
@@ -168,8 +169,8 @@ search 列放 body 外(不跟清單捲),自帶 `px-loose pt-tight`、下方不�
 用 `MenuItem` primitive,不自刻 `<button>` hand-craft:
 
 ```tsx
-<DialogBody className="!px-0 !pt-0 !pb-0">
-  <div className="py-2">
+<DialogBody className="!px-0">
+  <div data-layout-region="unbounded" className="py-2">
     {options.map(o => (
       // MenuItem 預設 px-3 → className override 為 px-loose 對齊 dialog header
       <MenuItem key={o.value} className="px-[var(--layout-space-loose)]" onSelect={...}>
@@ -197,7 +198,7 @@ search 列放 body 外(不跟清單捲),自帶 `px-loose pt-tight`、下方不�
 不要另外用表單控制項(`CheckboxGroup` + 裸 `Checkbox`)自組。
 
 - **為什麼**:同一個「從清單裡挑」的互動,不該因為容器是下拉選單還是浮層就長得不一樣。
-  `DropdownMenu` 已經是選單列(`dropdown-menu.tsx:383`),DataTable 的欄位顯示面板也已經是
+  `DropdownMenu` 已經是選單列(`dropdown-menu.tsx#DropdownMenuItem`),DataTable 的欄位顯示面板也已經是
   (`data-table-column-visibility-panel.tsx#DataTableColumnVisibilityPanel`)—— 篩選面板原本是唯一的例外,是漂移不是設計。
 - **點一下就生效、還是要按 CTA 才 commit,不影響本條**:那是上一段「更高層設計判斷」在決定容器,
   跟列用什麼元件是兩個獨立的軸。
@@ -324,8 +325,8 @@ DatePicker **不是**例外 —— 它的日曆格線有左緣,footer 的預設 
 
 ## Viewport-aware scroll chain invariant(2026-05-04 K11 升 SSOT)
 
-> **背景**:Popover / HoverCard content 設 `max-h-[var(--radix-{popover|hover-card}-content-available-height)] flex flex-col overflow-hidden`,讓 viewport 太小時 header/footer 永遠 in-viewport,body 壓縮 scroll。但**中間任何 wrapper div 沒 forward `flex flex-col h-full` 就斷鏈**,SurfaceBody flex-1 失效,body 不會 scroll。
-> **Dialog / Sheet 不走這條(2026-09-11 更正,原句把它們一起列進去是錯的)**:`--radix-dialog-content-available-height` 這個 CSS 變數**不存在** —— 它由 `@radix-ui/react-popper` 提供,而 Radix Dialog 不是 popper-based(全庫 grep 0 命中)。Dialog 的上限由 DialogContent 自己算(`min(100svh - inset*2, maxHeight)`),owner 是 `dialog.spec.md`「高度」段。
+> **背景**:Popover / HoverCard content 有高度上限(觸發點那一側的可用高,`maxHeight` 只能再往更矮調;公式與常數的唯一住處 `../../tokens/elevation/elevation.spec.md`「浮層高度上限」)+ `flex flex-col overflow-hidden`,讓 viewport 太小時 header/footer 永遠 in-viewport,body 壓縮 scroll。但**中間任何 wrapper div 沒 forward `flex flex-col h-full` 就斷鏈**,SurfaceBody flex-1 失效,body 不會 scroll。
+> **Dialog / Sheet 不走這條(2026-09-11 更正,原句把它們一起列進去是錯的)**:`--radix-dialog-content-available-height` 這個 CSS 變數**不存在** —— 它由 `@radix-ui/react-popper` 提供,而 Radix Dialog 不是 popper-based(全庫 grep 0 命中)。Dialog 的上限由 DialogContent 算(modal 的可用高 + 同一支 `capHeight`,`../../tokens/elevation/elevation.spec.md`「浮層高度上限」),規則的 owner 是 `dialog.spec.md`「高度」段。
 >
 > **真實 bug(2026-05-04)**:Filter / Sort panel 內 wrapper div 設 `w-[640px]` 無 flex-col → user 縮視窗時 body 不 scroll,內容被 clip。ProfileCard 之所以 work 因為它直接是 PopoverContent 唯一 child(無 wrapper)+ 自設 max-h flex-col。
 
@@ -362,24 +363,78 @@ DatePicker **不是**例外 —— 它的日曆格線有左緣,footer 的預設 
 
 ## 兩欄 dialog 組合 canonical(2026-07-10 user 拍板:組合,不做元件)
 
-「左內容 + 右 metadata」兩欄 dialog(工作項詳情類)**是產品層組合,不收進 DS 元件**——對齊
-Atlassian(modal-dialog 無宣告式兩欄 API,官方以 composition 範例示範:[101-full-height-illustration.tsx#L85-L107](https://github.com/pioug/atlassian-frontend-mirror/blob/cee82aa5ac9c07849d00ae757b15b07214cae59b/design-system/modal-dialog/examples/101-full-height-illustration.tsx#L85-L107))與 MUI(Dialog 無 split,[Dialog.js propTypes](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/Dialog/Dialog.js#L378)
+兩欄 dialog 涵蓋兩種:「左內容 + 右 metadata」(工作項詳情類)與「左導覽 + 右內容」(設定類,見下方「左導覽 + 右內容」;
+2026-11-26 起納入本段)。兩種都**是產品層組合,不收進 DS 元件**——對齊
+Atlassian(modal-dialog 無宣告式兩欄 API,官方以 composition 範例示範兩欄:[101-full-height-illustration.tsx#L85-L107](https://github.com/pioug/atlassian-frontend-mirror/blob/cee82aa5ac9c07849d00ae757b15b07214cae59b/design-system/modal-dialog/examples/101-full-height-illustration.tsx#L85-L107);
+這個範例只證明「兩欄做成組合」,它的標題列與底部都放在左半欄裡、× 另外浮在右上角(同檔 [#L88-L110](https://github.com/pioug/atlassian-frontend-mirror/blob/cee82aa5ac9c07849d00ae757b15b07214cae59b/design-system/modal-dialog/examples/101-full-height-illustration.tsx#L88-L110)),
+不是下方第 4 條「header 維持全寬」的依據;2026-11-26 前本句沒寫這一點)與 MUI(Dialog 無 split,[Dialog.js propTypes](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/Dialog/Dialog.js#L378)
 API,欄由 layout primitive 組)。DS 只 codify 組合鐵律(違規簽名由 consumer 防線
-`check_consumer_app_invariants.sh` r3 機械攔):
+`check_consumer_app_invariants.sh` r3 機械攔;本 DS 範例的幾何由 `scripts/overlay-story-contract-invariant.mjs` R21–R24 量):
 
 1. **各欄自帶 `<ScrollArea>` 獨立捲動**——禁兩欄共用單一 ScrollArea / 共用一條捲軸(每欄
    套上方「Body overflow canonical」模板,padding 進 viewport 內層 div)。
 2. **divider = 右欄(`<aside>`)自持 `border-l border-divider`,貫穿 body 頂到底**——非獨立
    div、非只切半高。
 3. **欄底 footer(如 comment composer)釘在所屬欄內**(欄內 `SurfaceFooter` chrome),
-   非 dialog 全寬 footer——對齊 Atlassian 官方兩欄範例把 ModalFooter 巢狀進左欄([101-full-height-illustration.tsx#L88-L106](https://github.com/pioug/atlassian-frontend-mirror/blob/cee82aa5ac9c07849d00ae757b15b07214cae59b/design-system/modal-dialog/examples/101-full-height-illustration.tsx#L88-L106))。
-4. **header 維持全寬**,分欄從 body 才開始。
+   非 dialog 全寬 footer——對齊 Atlassian 官方兩欄範例把 ModalFooter 巢狀進左欄([101-full-height-illustration.tsx#L88-L106](https://github.com/pioug/atlassian-frontend-mirror/blob/cee82aa5ac9c07849d00ae757b15b07214cae59b/design-system/modal-dialog/examples/101-full-height-illustration.tsx#L88-L106))。留言框本身**常駐在原地**:DS 沒有「收起的留言框、點了才展開成編輯器」這種設計,留言 / 回覆輸入框就是一直顯示在原地的輸入框 + 送出鈕,不論放在對話框欄底、側欄或頁面(範例 `../../components/Dialog/dialog.stories.tsx` ExtraLargeTwoColumn 的留言框)。出處:user 2026-11-26 第五輪決策卡 D1 留言(逐字,問句):「我們沒有收起的設計，那不是應該就是一個常駐在原地的輸入框嗎？」;協調者判讀為不做收合(問句的判讀 = AI)。
+   **多行留言框的高度上限**(2026-11-27,產品 canary 回報 H24):會隨打字長高的多行留言框,**預設最大高度 160px**(與 AI 面板輸入盒同值:`../../components/AgentPanel/agent-panel.tsx` 的 AgentPromptInput 文字框 `max-h-40`),
+   超過在框內捲動,框外的版面不再被往下推;**產品可以調整**:用 Textarea 的 `autoSize={{ maxRows }}` 以行數設上限(`../../components/Textarea/textarea.tsx`),或自己給別的上限值。
+   單行的留言框(`Input`,例:DS 範例 ExtraLargeTwoColumn)不長高,不適用。依據:user 2026-11-27 回 H 批決策卡 H24b,逐字「最大高度可以設一個預設，但應該還是可以被消費者調整才對吧？然後高度可以照你建議」
+   (建議 = 選項 A「統一 160px,跟 AI 面板輸入盒同值,超過就在框裡捲動」,選項文字由 AI 擬;前半句是問句,判讀為「要可調」= AI 判讀)。
+4. **header 維持全寬**,分欄從 body 才開始;× 留在這條標題列右端(`../../components/Dialog/dialog.spec.md`「關閉按鈕」)。
+   依據照實寫(2026-11-26 更正):工作項詳情類的來源是 WM 實作(`WorkItemDetailDialog.tsx` header 全寬放 breadcrumb + prev / next,
+   `governance/planning/2026-07-10-dialog-split-body-proposal.md:52`);同提案 :121 的「header/footer 全寬跨欄」是從兩家對話框元件
+   「header/body/footer 三 slot」的形狀推出來的,不是讀到兩欄範例;2026-07-10 user 逐字只有「應該不需要變為 DS 元件吧?」(同提案 :4),
+   沒有對這一條的原話。設定類由下方 C14 的 user 選擇定案,同類先例是 Salt 偏好設定對話框(頂端「Preferences」標題列與 × 跨全寬,
+   下面左欄選單、右欄內容;<https://www.saltdesignsystem.com/salt/patterns/preferences-dialog>)。
 
 **Archetype**(照抄結構,禁憑記憶手刻):WM `WorkItemDetailDialog.tsx`(產品實證,2026-07-08
 拍板落地)/ DS 內部同構先例 `file-viewer.tsx` InfoPanel(`<aside class="w-80 shrink-0 flex-col
 border-l border-divider">`)/ Atlassian [`modal-dialog/examples/101-full-height-illustration.tsx`](https://github.com/pioug/atlassian-frontend-mirror/blob/cee82aa5ac9c07849d00ae757b15b07214cae59b/design-system/modal-dialog/examples/101-full-height-illustration.tsx#L34-L42)
-(per-column `flex:1 + minHeight:0 + overflow auto`)。完整研究引文 →
+(per-column `flex:1 + minHeight:0 + overflow auto`)/ DS 範例 `../../components/Dialog/dialog.stories.tsx#ExtraLargeTwoColumn`(「超大檔位:兩欄記錄詳情」)。完整研究引文 →
 `governance/planning/2026-07-10-dialog-split-body-proposal.md`(元件化提案被 user 否決的紀錄)。
+
+### 左導覽 + 右內容(設定類,2026-11-26)
+
+**決定(逐字)**:2026-11-26 第六輪決策卡 C14,user 選「A:頂部全寬標題列 + 左分類 + 右內容(右欄頂端可選標題 = 選中分類)」
+(選項文字由 AI 擬、user 選定,意見欄空白)。上一輪推薦的
+「左選單從頂端畫到底、右欄自帶標題列」撤回(只讀到一家,且要讓 × 離開全寬標題列,與 `../../components/Dialog/dialog.spec.md`「關閉按鈕」衝突)。
+
+**什麼時候用**:只影響自己、低頻的個人偏好(主題、語言、通知),照 `../../components/Sidebar/sidebar.spec.md`「A 和 C 並用」的分流 ——
+需要協作、會分享連結給別人看的設定走整頁(路徑 A),只影響自己的低頻偏好才用對話框(路徑 C)。分類少、一排放得下時,也可以把分頁放進標題列
+(`../../components/Dialog/dialog.stories.tsx#WithTabsInHeader`「標頭內含分頁」);何時從分頁換成左欄沒有一手門檻,不另訂數字。
+
+上面四條照套,左導覽多出的部分:
+
+- **標題列** = 既有 `DialogHeader`(標題 + ×),跨全寬 = 第 4 條。
+- **左欄 = 分類導覽**:照本檔「List-as-region in overlay body」(從 body 頂起,上下留白由清單自己的 py 給,列自帶 `px-loose`);
+  外觀同 Sidebar —— 列直接消費 Sidebar 的列元件(`SidebarGroup` / `SidebarMenu` / `SidebarMenuItem` / `SidebarMenuButton`),
+  不手抄列幾何。依據:user 第五輪決策卡 C15 逐字「我不確定你程式上想要怎麼做比較 ssot,但視覺上肯定是要 ssot 的吧？類似概念或是操作應該都會跟 sidebar 長得很像？」
+  (問句;AI 讀成「視覺跟 Sidebar 同一套」)。列元件要的 context 由 `SidebarProvider` 給,用預設尺寸、不傳 `size="sm"`(sm 只給頁面內次導覽與緊湊空間,`../../components/Sidebar/sidebar.spec.md:13`;Dialog body 屬 md 檔)(寫法同
+  `../../components/ScrollArea/scroll-area.stories.tsx#SidebarNav`);**不放 `<Sidebar>` 外框** —— 它是版面上的 Menu,對話框在 AppShell 裡打開時仍在
+  AppShell 的元件樹裡,外框會去登記成 Menu(`../../components/Sidebar/sidebar.tsx` 的 `Sidebar`)【AI 推導】。
+- **分隔線由左欄畫**(`border-r border-divider`,貫穿 body 頂到底)—— 第 2 條原文寫右欄畫,換成左導覽時改由左欄畫,
+  與 Sidebar 自己畫右邊線一致(`sidebar.tsx` 的 `Sidebar`,左側 `border-r border-divider`)【AI 推導】。
+- **右欄**自帶 `<ScrollArea>`(第 1 條);頂端可放標題 = 選中分類的字,用文字樣式、隨內容捲動,**不做第二條標題列**
+  (`../header-canonical/header-canonical.spec.md`「何時不用」純內容區小標題、不可關閉的 side pane 標題);也可以省略
+  (Salt 窄版圖右欄直接從說明文字開始)。標題 → 第一個設定照 `../../tokens/layoutSpace/layoutSpace.spec.md`「標題區 → 內容」。
+- **兩欄頂端不要求對齊**(2026-11-27,產品 canary 回報 H24:左欄第一列離標題列 8、右欄標題離 12,差 4):左欄照 Sidebar 的規則(清單自帶上下內距,`../../components/Sidebar/sidebar.spec.md`),
+  右欄照 `../../tokens/layoutSpace/layoutSpace.spec.md`(內容區上方 = 規則 2,第一個是標題 / 欄位等一般元素 → `tight`);右欄若真的放了一條標題列(上面已說不建議),
+  那一條照 `../header-canonical/header-canonical.spec.md` 的高度 / 內距 / 字級。兩欄的頂不為了彼此對齊而另開例外。
+  依據:user 2026-11-27 回 H 批決策卡 H24a,逐字「確保左邊是 sidebar 右邊有按照 layout space 設計原則即可，若右邊有用到 header也是確保有維持header設計原則即可」。
+  閘:`scripts/overlay-story-contract-invariant.mjs` R25(右欄內容上方 = `tight`,md / lg;本 DS 兩則兩欄範例)。
+- **寬 `xl`、高 `fill`**:兩欄 → `xl`(`../../components/Dialog/dialog.spec.md`「寬度檔位」選檔規則);切換分類時內容高度會變 → `fill`(同檔「高度軸」)。
+- **底部**:改了就生效的設定不放頁腳,關閉走標題列的 ×;要另外按「儲存」的設定放 `DialogFooter`(取消 / 儲存)。
+  Salt 兩種都允許(「Display either a button bar at the bottom of the dialog, or a close button in the top-right.」,同上網址);× 照 Dialog 規格一律保留。
+- **子頁的返回鈕放哪裡:未定**。DS 沒有規則;Salt 唯一的返回鈕在對話框底部左側,而且是窄版收合導覽時回到選單用的,不是子頁。等產品真的有子頁再查。
+
+**世界級**:IBM Carbon for IBM Products Tearsheet 也是先畫標題列、側欄放在標題列下面的內文區
+(`TearsheetShell.js` 先建 `ModalHeader`、之後才在 `__body` 裡放 `__influencer`;
+<https://cdn.jsdelivr.net/npm/@carbon/ibm-products@2.104.0/es/components/Tearsheet/TearsheetShell.js>)。
+
+**範例**:`../../components/Dialog/dialog.stories.tsx#ExtraLargeSettings`(「超大檔位:兩欄個人設定」)。
+**閘**:`scripts/overlay-story-contract-invariant.mjs` R21–R24 量兩則兩欄範例(本節的設定類與上方的工作項詳情類)—— 標題列跨全寬、× 在標題列右端、
+兩欄各自捲動、右欄沒有第二條標題列,每列各有拆掉修法的對照組。
 
 ## 不屬本 primitive 的職責
 
@@ -395,7 +450,7 @@ overlay-surface 是 **layout pattern**(`SurfaceHeader` / `SurfaceBody` / `Surfac
 
 - **Role + ARIA**:`Dialog.Content` / `Sheet.Content`(皆 wrap Radix Dialog)自帶 `role="dialog"` + `aria-labelledby`(連 DialogTitle id)+ `aria-describedby`(optional Description)。**modality 機制**:Radix 不發 `aria-modal` 屬性,而是用 `hideOthers`(把背景 sibling subtree 套 `aria-hidden`)+ `RemoveScroll` 達成 modal — 對齊 WAI-ARIA APG「aria-hidden on background content」做法(APG 指出 `aria-modal` 的 AT 支援不一致,hideOthers 較穩健)。`Popover.Content` 同樣 wrap Radix(non-modal,Radix `modal` 預設 false)且**也帶** `role="dialog"`(Radix non-modal dialog,APG sanctioned)——Tab 在面板裡繞圈但滑鼠點外面可離開(見下一條)、**不**自動 `aria-labelledby`(consumer 需自設 `aria-label`)。`HoverCard.Content` 才是真的**無 role**(Radix react-hover-card 不發任何 role)
 - **Focus trap / Tab 走向**(2026-09-25 更正,原句「Popover / HoverCard 不 trap」被讀成 Tab 可以走出 Popover,與實測不符;待辦總帳 B11):**對話框型浮層 Tab 留在裡面** —— Dialog / Sheet 是 modal trap(Tab 繞圈,滑鼠點外面也出不去);Popover 是 non-modal:Tab / Shift+Tab 同樣在面板裡繞圈(Radix FocusScope `loop: true`,`@radix-ui/react-popover` 1.1.15 `dist/index.mjs:225-226`),只是滑鼠點外面 / 程式移焦可離開並關閉。依據 W3C「Like non-modal dialogs, modal dialogs contain their tab sequence.」(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/dialog-modal/dialog-modal-pattern.html#L29-L30>)。**選單類浮層 Tab = 收起並往下走**(DropdownMenu、單選下拉;規則在 `components/SelectMenu/select-menu.spec.md`「A11y 預設」與 `components/DropdownMenu/dropdown-menu.spec.md`)。HoverCard 焦點不進卡片(Radix 把卡片內可 Tab 節點設 `tabindex="-1"`),Tab 從觸發元素照頁面順序走
-- **Esc / 點外面關閉**:Radix 處理(可被 `onEscapeKeyDown` / `onPointerDownOutside` 攔截)。浮層疊浮層時點外面與 Esc 一樣一層一層關:點在外層上(裝著它的面板)、點在同一個外層裡的另一個欄位(連同那個欄位掛在另一層的零件)= 內層的外面;攔截只准認「這個元件自己的零件」—— 以**元件樹**認(這一下事件有沒有經過這個元件,含它 portal 出去的零件;Radix 判斷「按在這一層裡」也是這樣認),不得以「按在任何一層浮層裡」或「按在不裝著它的那一層」代替(判準 `../../lib/composite-field-focus.ts` `useOwnTreeEvents`;2026-11-03 SelectMenu / InlineEdit 修前就是前一種代理,讓面板裡的選單點外不關)
+- **Esc / 點外面關閉**:Radix 處理(可被 `onEscapeKeyDown` / `onPointerDownOutside` 攔截)。浮層疊浮層時點外面與 Esc 一樣一層一層關:點在外層上(裝著它的面板)、點在同一個外層裡的另一個欄位(連同那個欄位掛在另一層的零件)= 內層的外面;攔截只准認「這個元件自己的零件」—— 以**元件樹**認(這一下事件有沒有經過這個元件,含它 portal 出去的零件;Radix 判斷「按在這一層裡」也是這樣認),不得以「按在任何一層浮層裡」或「按在不裝著它的那一層」代替(判準 `../../lib/composite-field-focus.ts` `useOwnTreeEvents`;2026-11-03 SelectMenu / InlineEdit 修前就是前一種代理,讓面板裡的選單點外不關)。**只多認一種(2026-11-24)**:從這一層開出來、畫在它元件樹外的另一層 —— **錨點在這一層裡、而且比這一層晚開**(含它再往下開的層,鏈上每一層都要比這一層晚開)—— 算這一層的內部:點它、焦點搬進它都不關這一層;Esc 照舊一次一層(Radix 只讓最上層處理 Esc,跨元件樹也成立);點兩層以外全關。典型:清單浮層點一項,產品在那一項旁邊開詳情(`../../components/Popover/popover.spec.md`「禁止事項」允許的第 (2) 種用法;Calendar 把被點的那一列交給 `onEventClick` 當錨點)。兩個條件缺一不可:只看錨點,一個先開著、後來被改錨到這一層某一列的浮層會被誤認;只看先後,一個晚開但錨在頁面別處的浮層會被誤認 —— 同樣不得放寬成「按在任何一層浮層裡」。判準 `../../lib/overlay-nesting.ts` `isInChildLayer`(PopoverContent 在 `onInteractOutside` 問;Popover / DropdownMenu(含子選單)/ HoverCard 的內容都登記開啟順序與錨點);閘 `scripts/overlay-nested-dismiss-invariant.mjs` N 列(對照組:不認、放寬成任何一層、只看錨點、只看先後、只認一層,各自紅)。世界級:Radix 判斷「按在這一層裡」以元件樹認(<https://github.com/radix-ui/primitives/blob/d8b1ffadc6fe0bd2486816751953dfadf14b3357/packages/react/dismissable-layer/src/dismissable-layer.tsx#L221-L296>);FullCalendar 與 React Big Calendar 的「+more」清單外按下滑鼠就關,開發者自己開的詳情一被點,清單就關(<https://github.com/fullcalendar/fullcalendar/blob/main/packages/preact/src/common/MorePopover.tsx>、<https://github.com/jquense/react-big-calendar/blob/master/src/Month.js>);Google Calendar 從當天總覽點事件,詳情開在總覽旁、總覽留著、Esc 一次只關最上層(實測公開 embed:<https://calendar.google.com/calendar/embed?src=j7gov1cmnqr9tvg14k621j7t5c%40group.calendar.google.com&src=3haig2m9msslkpf2tn1h56nn9g%40group.calendar.google.com&src=en.usa%23holiday%40group.v.calendar.google.com&mode=MONTH&dates=20261201%2F20261228&ctz=UTC&hl=en>)。來源:總帳 C4 user「我覺得可以照你建議，但我好奇我們DS為何要禁止浮層開浮層？…」,採納的建議(AI 擬)= 從清單點事件、在旁邊再開詳情浮層;總帳更正 #4(`onEventClick` 那條路清單也不先關)與「錨點在這一層裡、比這一層晚開」這條判準【AI 判定,工程決策】
 - **AutoFocus on open**:consumer 自管 `onOpenAutoFocus`(Popover 範例:`handlePopoverOpenAutoFocus` 找 body 第一個 interactive 元素,跳過 close X 避免 tooltip leak)
 
 **SurfaceHeader Title 可被 ARIA 關聯**:consumer 把 `id` 傳到 SurfaceHeader 的 Title 元素,Radix Content 用 `aria-labelledby={id}`。本 pattern 不強制 id naming(consumer 自決)。
@@ -433,6 +488,7 @@ overlay-surface 是 **layout pattern**(`SurfaceHeader` / `SurfaceBody` / `Surfac
 - `action-bar.spec.md`
 - `agent-decision-card.spec.md`
 - `app-shell.spec.md`
+- `calendar.spec.md`
 - `coachmark.spec.md`
 - `date-picker.spec.md`
 - `dialog.spec.md`

@@ -60,11 +60,11 @@ const CASES = [
   { id: 'W3-fill', vp: DESKTOP, q: { w: 'xl', h: 'fill', stage: '600x700' }, what: '600×700 舞台 height="fill" 高 = 700 − 96 = 604', expect: { width: 504, height: 604, insets: true, stage: true } },
 ]
 
-/** 對照組:同一份夾具打包檔上的三種破法(regex 打在 dialog.tsx 的常數上;改寫數必須正好 1) */
+/** 對照組:同一份夾具打包檔上的三種破法(regex 打在常數上:寬 = dialog.tsx,高 = tokens/elevation/overlay-geometry.ts 的 MODAL_BLOCK_HEIGHT(2026-11-24 從 dialog.tsx 的 DIALOG_BLOCK_HEIGHT 搬過去);改寫數必須正好 1) */
 const MUTATIONS = [
   { name: 'tiers', what: '檔位表 lg 640 → 600', re: /(DIALOG_WIDTH_TIERS\d*\s*=\s*\{[^}]*\blg:\s*)640\b/g, to: '$1600', mustFail: ['W1-lg'] },
   { name: 'vw', what: '所在區塊寬改回 100vw', re: /(DIALOG_BLOCK_WIDTH\d*\s*=\s*)"100%"/g, to: '$1"100vw"', mustFail: ['W3-lg', 'W3-xl', 'W3-fill'] },
-  { name: 'svh', what: '所在區塊高改回 100svh', re: /(DIALOG_BLOCK_HEIGHT\d*\s*=\s*)"min\(100svh, 100%\)"/g, to: '$1"100svh"', mustFail: ['W3-fill'] },
+  { name: 'svh', what: '所在區塊高改回 100svh', re: /(MODAL_BLOCK_HEIGHT\d*\s*=\s*)"min\(100svh, 100%\)"/g, to: '$1"100svh"', mustFail: ['W3-fill'] },
 ]
 
 requireStorybookBuild(join(STATIC, 'index.json'))

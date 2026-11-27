@@ -315,6 +315,125 @@ function containedCanonicalPath(repositoryPath, label) {
   return absolute
 }
 
+// ── 入口前段的兩個早退(2026-11-26,gate-census C 組判定 B1 與 log_governance_fires)──────────────────
+// 只在一般模式(非 strict)的批次派工生效,而且都在載入任何治理模組、複製 hook 語料快照之前判斷 —— 省下的是
+// 入口自己的成本,不碰任何一支 hook 的判準。strict / CI lane 照舊走完整流程(改到 repo 外照舊拒絕)。
+// (1) 改的檔不在任何 git 工作樹或 git 目錄裡(scratch 筆記、研究檔)→ 沒有東西要檢查,靜默結束。判準是
+//     「往上找得到 .git 嗎」,不是路徑字串:別的 repo(例:work-management)找得到 .git,照舊走完整流程、
+//     「改到 repo 外」的通知照送;本專案的另一份副本也找得到,交給後段的副本改根(siblingCheckoutRoot)。
+// (2) 這一群只登記 activation telemetry-opt-in 的 hook(registrations.json 是哪些 hook 屬於這類的唯一住處,
+//     provider-runtime-contract 限定只能標在 outputMode diagnostic 上),而遙測沒開 → 結束。
+const earlyBatchSelection = !hookStrictIntegrity
+  && argumentValues('--hook').length === 0
+  && argumentValues('--authority-decision').length === 0
+  && argumentValues('--event').length === 1
+  && argumentValues('--group').length === 1
+const FILE_WRITE_TOOLS = new Set(['Write', 'Edit', 'MultiEdit', 'NotebookEdit'])
+let preReadProviderInput = null
+
+async function readProviderHookInput() {
+  const chunks = []
+  let bytes = 0
+  for await (const chunk of process.stdin) {
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+    bytes += buffer.length
+    if (bytes > MAX_PROVIDER_HOOK_INPUT_BYTES) return { chunks: [], bytes, overflow: true }
+    chunks.push(buffer)
+  }
+  return { chunks, bytes, overflow: false }
+}
+
+function parsedPreReadPayload() {
+  if (!preReadProviderInput || preReadProviderInput.overflow) return null
+  try {
+    const value = JSON.parse(Buffer.concat(preReadProviderInput.chunks, preReadProviderInput.bytes).toString('utf8') || '{}')
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : null
+  } catch {
+    return null
+  }
+}
+
+// 檔案寫入工具(Claude 形狀)帶的絕對路徑;其他工具、相對路徑、形狀不對一律回空 = 不做早退與改根。
+function absoluteWriteTargets(payload) {
+  if (!payload || !FILE_WRITE_TOOLS.has(payload.tool_name)) return []
+  const toolInput = payload.tool_input
+  if (!toolInput || typeof toolInput !== 'object' || Array.isArray(toolInput)) return []
+  const value = toolInput.file_path ?? toolInput.notebook_path
+  if (typeof value !== 'string' || !isAbsolute(value) || value.includes('\0')) return []
+  return [value]
+}
+
+function nearestExistingDirectory(path) {
+  let cursor = resolve(path)
+  for (;;) {
+    try {
+      if (statSync(cursor).isDirectory()) return realpathSync(cursor)
+    } catch (error) {
+      if (error?.code !== 'ENOENT' && error?.code !== 'ENOTDIR') return null
+    }
+    const parent = dirname(cursor)
+    if (parent === cursor) return null
+    cursor = parent
+  }
+}
+
+// 往上任何一層是 .git 本身、或底下有 .git(目錄 = 一般 checkout;檔案 = worktree / submodule)→ 在 git 裡。
+// 讀不到(權限等)一律當成「可能在」,交給完整流程。
+function insideAnyGitCheckout(directory) {
+  let cursor = directory
+  for (;;) {
+    if (cursor.split(/[\\/]/).pop() === '.git') return true
+    try {
+      lstatSync(join(cursor, '.git'))
+      return true
+    } catch (error) {
+      if (error?.code !== 'ENOENT' && error?.code !== 'ENOTDIR') return true
+    }
+    const parent = dirname(cursor)
+    if (parent === cursor) return false
+    cursor = parent
+  }
+}
+
+async function telemetryOnlyGroupWhileTelemetryOff() {
+  if (process.env.GOVERNANCE_TELEMETRY_OPT_IN === '1' && process.env.GOVERNANCE_READ_ONLY !== '1') return false
+  try {
+    const rawRegistry = JSON.parse(readFileSync(
+      containedCanonicalPath('packages/governance/canonical/providers.json', 'provider registry'),
+      'utf8',
+    ))
+    const rawRegistrations = JSON.parse(readFileSync(
+      containedCanonicalPath(rawRegistry.canonical.hookRegistrations, 'provider hook registrations'),
+      'utf8',
+    ))
+    const event = argumentValues('--event')[0]
+    let group = rawRegistrations.hooks?.[event]?.[Number(argumentValues('--group')[0])]
+    // 設定帶穩定 id 時照 id 找群組(B2,同 resolveRequestedGroupIndex);找不到就不早退,交給後段送「沒登記」通知。
+    const groupIds = argumentValues('--group-id')
+    if (groupIds.length) {
+      const { providerHookGroupId } = await import('./lib/provider-hook-output-transport.mjs')
+      const matches = (rawRegistrations.hooks?.[event] || []).filter((candidate) =>
+        providerHookGroupId(event, candidate) === groupIds[0])
+      group = matches.length === 1 ? matches[0] : null
+    }
+    return Array.isArray(group?.hooks) && group.hooks.length > 0
+      && group.hooks.every((descriptor) => descriptor?.activation === 'telemetry-opt-in'
+        && descriptor?.outputMode === 'diagnostic')
+  } catch {
+    return false
+  }
+}
+
+if (earlyBatchSelection) {
+  preReadProviderInput = await readProviderHookInput()
+  if (await telemetryOnlyGroupWhileTelemetryOff()) process.exit(0)
+  const earlyTargets = absoluteWriteTargets(parsedPreReadPayload())
+  if (earlyTargets.length && earlyTargets.every((target) => {
+    const directory = nearestExistingDirectory(target)
+    return directory !== null && !insideAnyGitCheckout(directory)
+  })) process.exit(0)
+}
+
 let registry
 let registrations
 let hasUsableVersionedTranscript
@@ -434,6 +553,9 @@ function warnDegraded(message) {
 // and whether batch output has begun on stdout (a second JSON record would corrupt it).
 let failureNoticeEvent = null
 let providerStdoutCommitted = false
+// Stop payload 的 stop_hook_active(布林才算數;讀到 payload 之前一律 undefined → Stop 的通知只給 user 看,見 transport 註解)。
+// 宣告放在 fail() 旁:not-registered 的通知在讀 payload 之前就可能送出,宣告在後面會撞 TDZ、通知被 try 吞掉(F3 實測)。
+let payloadStopHookActive
 
 function fail(message) {
   const rawDetail = String(message).startsWith('GOVERNANCE_INTEGRITY:')
@@ -1355,6 +1477,7 @@ const providerArguments = argumentValues('--provider')
 const hookArguments = argumentValues('--hook')
 const eventArguments = argumentValues('--event')
 const groupArguments = argumentValues('--group')
+const groupIdArguments = argumentValues('--group-id')
 const targetRoleArguments = argumentValues('--target-role')
 const authorityDecisionArguments = argumentValues('--authority-decision')
 if (providerArguments.length !== 1 || !providerArguments[0]) {
@@ -1384,7 +1507,9 @@ if (selectedModeCount !== 1
     || eventArguments.length !== 0
     || groupArguments.length !== 0
     || targetRole
-  ))) {
+  ))
+  || (!batchMode && groupIdArguments.length !== 0)
+  || groupIdArguments.length > 1) {
   fail('provider hook adapter blocked:select exactly one hook, event/group batch, or authority decision mode')
 }
 const hookName = singleHookMode ? hookArguments[0] : null
@@ -1393,11 +1518,12 @@ const requestedGroupText = batchMode ? groupArguments[0] : null
 if (singleHookMode && !/^[A-Za-z0-9_.-]+$/.test(hookName || '')) {
   fail('provider hook adapter blocked:invalid hook name')
 }
+const requestedGroupId = batchMode ? (groupIdArguments[0] ?? null) : null
 if (batchMode && (!/^[A-Za-z][A-Za-z0-9]*$/.test(requestedEvent || '')
-  || !/^(?:0|[1-9][0-9]*)$/.test(requestedGroupText || ''))) {
+  || !/^(?:0|[1-9][0-9]*)$/.test(requestedGroupText || '')
+  || (requestedGroupId !== null && !/^g[0-9a-f]{16}$/.test(requestedGroupId)))) {
   fail('provider hook adapter blocked:invalid event/group batch selector')
 }
-const requestedGroupIndex = batchMode ? Number(requestedGroupText) : null
 const hookCorpusSnapshot = createAuthenticatedHookCorpusSnapshot(registry)
 await awaitHookCorpusTestRelease(hookCorpusSnapshot.root)
 try {
@@ -1515,8 +1641,120 @@ for (const hint of explicitProjectHints) {
   else warnDegraded(`ignoring unverifiable project root hint:${hint}`)
 }
 if (new Set(projectRoots).size > 1) fail('provider hook adapter blocked:PROJECT_ROOT_MISMATCH')
-const PROJECT_ROOT = projectRoots[0] || verifiedProjectRoot(process.cwd())
+// let:一般模式下改到「同一個專案的另一份 git 副本」時,後段 siblingCheckoutRoot 會把它換成副本的根目錄。
+let PROJECT_ROOT = projectRoots[0] || verifiedProjectRoot(process.cwd())
 if (!PROJECT_ROOT) fail('provider hook adapter blocked:PROJECT_ROOT_UNVERIFIED')
+
+// 與 verifiedProjectRoot 同一套 git 呼叫方式(絕對路徑的 git、最小環境);失敗一律回空字串。
+function gitOutput(cwd, args) {
+  const gitExecutable = ['/usr/bin/git', '/opt/homebrew/bin/git', '/usr/local/bin/git']
+    .find((candidatePath) => existsSync(candidatePath)) || 'git'
+  const result = spawnSync(gitExecutable, args, {
+    cwd,
+    env: {
+      PATH: process.env.PATH || '/usr/bin:/bin',
+      HOME: process.env.HOME || '',
+      GIT_OPTIONAL_LOCKS: '0',
+      GIT_TERMINAL_PROMPT: '0',
+    },
+    encoding: 'utf8',
+    timeout: 5000,
+    maxBuffer: 1024 * 1024,
+  })
+  if (result.error || result.signal || result.status !== 0) return ''
+  return result.stdout
+}
+
+function gitRootCommits(root) {
+  return gitOutput(root, ['rev-list', '--max-parents=0', 'HEAD'])
+    .split('\n').map((line) => line.trim()).filter(Boolean).sort().join(',')
+}
+
+// 入口自己的通知去重(功能狀態,不看遙測開關):同一 session + 同一個 key 只回一次 true。
+// 記在 PROJECT_ROOT 的 .git/governance-runtime/adapter-notices/(與 hook 功能狀態同一個 Git 擁有的 root);
+// 沒有 session、唯讀(CI replay / hooks:test)、記不下來 → 一律回 true:寧可重複通知,不可漏通知。
+function firstAdapterNotice(key) {
+  const payload = parsedPreReadPayload()
+  const session = typeof payload?.session_id === 'string' ? payload.session_id : ''
+  if (!session || process.env.GOVERNANCE_READ_ONLY === '1') return true
+  try {
+    const gitDirectory = gitOutput(PROJECT_ROOT, ['rev-parse', '--absolute-git-dir']).trim()
+    if (!gitDirectory) return true
+    const parent = realpathSync(gitDirectory)
+    const runtime = resolve(parent, 'governance-runtime')
+    const directory = resolve(runtime, 'adapter-notices')
+    for (const segment of [runtime, directory]) {
+      try {
+        if (lstatSync(segment).isSymbolicLink()) return true
+      } catch {}
+    }
+    mkdirSync(directory, { recursive: true, mode: 0o700 })
+    const marker = resolve(directory, createHash('sha256').update(`${session}\0${key}`).digest('hex').slice(0, 32))
+    closeSync(openSync(marker, 'wx', 0o600))
+    return true
+  } catch (error) {
+    return error?.code !== 'EEXIST'
+  }
+}
+
+// ── 同一個專案的另一份 git 副本(2026-11-26,gate-census C 組判定甲)─────────────────────────────────────
+// 代理常在 repo 根目錄外的副本(scratchpad/<名字>/,本身是這個 repo 的 git clone)裡改檔。改前入口只認得 session
+// 的那一個專案根目錄,副本路徑一律記成「改到 repo 外」整批放行 —— 一天 600 多次 DS 原始碼寫入在寫檔當下零檢查。
+// 現在:改檔路徑落在 PROJECT_ROOT 外、而它所在的 git 工作樹與 PROJECT_ROOT 有同一組根 commit(同一個專案的歷史)
+// → 這一批改用副本的根目錄當 PROJECT_ROOT,跑同一套 hook。執行的入口與 hook 本身(.sh 與 hooks/lib)仍是 session
+// 專案這一份(hook 語料快照照舊取自 CORPUS_ROOT)。但下列 hook 會執行或載入 PROJECT_ROOT 底下的程式,副本模式下
+// 執行 / 載入的就是副本裡、代理寫得到的那一份(F3 核對更正改前「副本只當資料讀」與再驗前「只有三支」的錯誤說法):
+//   governance_control_plane.sh(PreToolUse 第 0 群,副本裡每次 Edit / Write 寫檔前都跑)
+//                           → node 執行 governance/generated/adapters/<provider>-hook.mjs,再經副本的 node_modules
+//                             載入 @qijenchen/governance/hook(副本的 node_modules 若是連結,載入的是連結指向的那一份);
+//   post_edit_dispatcher.sh → scripts/audit-preflight.mjs(lib/_governance_coverage_check.sh)、
+//                             scripts/compile-stories.mjs(lib/_story_compile_drift.sh);
+//   auto_regen_ds_barrel.sh → scripts/gen-component-indexes.mjs、scripts/gen-design-system-barrel.mjs;
+//   check_audit_post_report_validator.sh → scripts/verify-deep-audit-coverage.mjs;
+//   check_item_list_gap.sh 與 lib/_app_shell_primary_header_consistency.sh、_header_with_tabs_border.sh、
+//   _chrome_header_handcraft.sh → hooks/lib/tsx-governance-analysis.mjs(本身取自 session 專案)從副本的
+//                             node_modules 載入 typescript(createRequire 以 cwd 的 package.json 為準)。
+// 信任範圍跟在 session 專案裡相同(代理一樣寫得到 session 專案的 scripts/,也能自己 npm run 這些腳本),只是延伸到
+// 臨時副本;hook 本來就不是信任邊界(CLAUDE.md「Hooks」段),最終判定在 CI。
+// 只在一般模式;strict / CI lane 照舊拒絕改到 repo 外。別的 repo(根 commit 不同)照舊送「整批沒有執行」通知。
+function siblingCheckoutRoot(payload) {
+  const targets = absoluteWriteTargets(payload)
+  if (!targets.length) return null
+  let sibling = null
+  let realTarget = null
+  for (const target of targets) {
+    const directory = nearestExistingDirectory(target)
+    if (!directory) return null
+    const root = verifiedProjectRoot(directory)
+    if (!root || root === PROJECT_ROOT || (sibling && root !== sibling)) return null
+    sibling = root
+    // 路徑用實際路徑表示(/tmp → /private/tmp 這類符號連結),之後的正規化與 hook 才會把它算在副本裡。
+    realTarget = resolve(directory, relative(nearestExistingAncestorLiteral(target), target))
+  }
+  if (isContainedPath(PROJECT_ROOT, realTarget)) return null
+  const ownRoots = gitRootCommits(PROJECT_ROOT)
+  if (!ownRoots || gitRootCommits(sibling) !== ownRoots) return null
+  if (targetRole) {
+    try {
+      if (targetGovernanceRole(sibling, marketplaceTransport.targetRoleManifest) !== targetRole) return null
+    } catch {
+      return null
+    }
+  }
+  return { root: sibling, realTarget }
+}
+
+function nearestExistingAncestorLiteral(path) {
+  let cursor = resolve(path)
+  for (;;) {
+    try {
+      if (statSync(cursor).isDirectory()) return cursor
+    } catch {}
+    const parent = dirname(cursor)
+    if (parent === cursor) return cursor
+    cursor = parent
+  }
+}
 
 function targetGovernanceRole(root, repositoryPath) {
   const parts = String(repositoryPath || '').split('/')
@@ -1677,11 +1915,42 @@ if (singleHookMode
     item.descriptor.kind === 'hook' && item.descriptor.hook === hookName)) {
   fail(`provider hook adapter blocked:hook is not registered:${hookName}`)
 }
-const requestedGroup = batchMode
+// 2026-11-26(gate-census C 組判定 B2):設定帶 `--group-id` 時,群組照穩定 id 找,序號只是舊入口的相容欄位 ——
+// 只認序號時,session 載入的設定與工作樹版本一錯開就可能靜默派到另一組 hook。id 由 provider-hook-output-transport
+// 的 providerHookGroupId 算(產生器、本入口、可達性閘同一支)。找不到(群組內容變了或已刪)→ 走下面「沒登記」通知。
+// 沒帶 id 的設定照舊依序號,這是唯一的退路。
+// 兩段式上線(F3-fix-anchor,2026-11-26):PR #174 的 governance-anchor 用 protected main 那份 contract.mjs 驗候選樹,
+// 那份的派工命令形狀沒有 `--group-id`,帶 id 的 provider 檢視一律 GOV-CONTRACT-001 紅 —— 協定欄位得先讓 main 認得。
+//   第一段(本 PR):入口(這裡)與候選驗證器認得 `--group-id`、照 id 派工;沒帶 id 照序號。產生器不輸出 id、
+//     可達性閘不要求帶(開關 = transport 的 PROVIDER_HOOK_GROUP_ID_IN_VIEWS = false),provider 檢視與 main 預期逐字相同。
+//   第二段(本 PR 發版、main 上的 contract.mjs 認得 id 之後):把該開關改成 true → 重生 provider 檢視(每條帶 id)、
+//     可達性閘同時要求每條都帶;在那之前序號錯位的保護只有「群組可達性閘 + 沒登記通知」,照 id 派工尚未生效。
+const { providerHookGroupId } = batchMode && requestedGroupId !== null
+  ? await import('./lib/provider-hook-output-transport.mjs')
+  : {}
+const requestedGroupIndex = !batchMode
+  ? null
+  : requestedGroupId === null
+    ? Number(requestedGroupText)
+    : (() => {
+        const matches = (registrations.hooks?.[requestedEvent] || [])
+          .map((group, index) => [index, group])
+          .filter(([, group]) => providerHookGroupId(requestedEvent, group) === requestedGroupId)
+        return matches.length === 1 ? matches[0][0] : null
+      })()
+const requestedGroup = batchMode && requestedGroupIndex !== null
   ? registrations.hooks?.[requestedEvent]?.[requestedGroupIndex] ?? null
   : null
 if (batchMode && !requestedGroup) {
-  fail(`provider hook adapter blocked:event/group is not registered:${requestedEvent}:${requestedGroupText}`)
+  // 2026-11-26(gate-census C 組判定 B2):改前這裡發生在 failureNoticeEvent 設定之前,一般模式只寫 stderr,
+  // exit 0 時模型看不到 —— 11-23 到 11-25 用 shell 寫產品檔的那條批准閘路徑整整兩天沒跑,代理不知道。
+  // 現在送模型看得到的通知並附修法;同一 session、同一 event/群組只送一次(連續上千次呼叫不灌爆 context)。
+  if (!hookStrictIntegrity && firstAdapterNotice(`not-registered\0${requestedEvent}\0${requestedGroupText}`)) {
+    failureNoticeEvent = requestedEvent
+  }
+  fail(`provider hook adapter blocked:event/group is not registered:${requestedEvent}:${requestedGroupText}${requestedGroupId ? `#${requestedGroupId}` : ''}`
+    + '(session 載入的 hook 設定與工作樹的 registrations.json 版本不一致:把工作樹更新到與設定同一版,或重開 session;'
+    + '這一群在本 session 都不會執行,同一 session 只通知一次)')
 }
 // From here on an ordinary-lane failure is announced on this event's context channel (fail()).
 failureNoticeEvent = requestedEvent
@@ -1692,8 +1961,6 @@ failureNoticeEvent = requestedEvent
 // fail-open by design (hooks accelerate; protected CI is the trust boundary), so the honest outcome
 // is a model-visible notice through the provider's own context channel — stderr alone is invisible
 // to the model on exit 0 (M37: 沒觀察到 ≠ 沒發生).
-// Stop payload 的 stop_hook_active(布林才算數;讀到 payload 之前一律 undefined → Stop 的通知只給 user 看,見 transport 註解)。
-let payloadStopHookActive
 function emitGovernanceNotice(event, message, { stderr = true } = {}) {
   if (stderr) writeStderrRecord(`GOVERNANCE_WARNING: ${String(message).slice(0, 900)}`)
   let output = null
@@ -1719,16 +1986,13 @@ function emitGovernanceNotice(event, message, { stderr = true } = {}) {
   }
 }
 
-const inputChunks = []
-let inputBytes = 0
-for await (const chunk of process.stdin) {
-  const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
-  inputBytes += bytes.length
-  if (inputBytes > MAX_PROVIDER_HOOK_INPUT_BYTES) {
-    fail(`provider hook adapter blocked:input exceeds ${MAX_PROVIDER_HOOK_INPUT_BYTES} bytes`)
-  }
-  inputChunks.push(bytes)
+// 一般模式的批次派工已在入口前段讀過 stdin(早退要看 payload);其餘模式在這裡才讀,順序與改前相同。
+const providerInput = preReadProviderInput ?? await readProviderHookInput()
+if (providerInput.overflow) {
+  fail(`provider hook adapter blocked:input exceeds ${MAX_PROVIDER_HOOK_INPUT_BYTES} bytes`)
 }
+const inputChunks = providerInput.chunks
+const inputBytes = providerInput.bytes
 if (!targetRoleActive) {
   clearTimeout(providerHookBatchDeadline)
   cleanupPrivateSnapshots()
@@ -1834,6 +2098,21 @@ if (authorityDecisionMode) {
   }
 }
 
+let siblingCheckoutActive = false
+// 副本裡不派工的「讀對話紀錄」hook,併進後段給模型看的降級名單(degradedHooks 在後面才宣告)。
+const siblingDeferredRecords = []
+if (!hookStrictIntegrity && batchMode) {
+  const sibling = siblingCheckoutRoot(input)
+  if (sibling) {
+    siblingCheckoutActive = true
+    PROJECT_ROOT = sibling.root
+    input.tool_input = {
+      ...input.tool_input,
+      ...(typeof input.tool_input.file_path === 'string' ? { file_path: sibling.realTarget } : { notebook_path: sibling.realTarget }),
+    }
+    observeBatch(`sibling-checkout:${PROJECT_ROOT}`)
+  }
+}
 const hookInput = normalizeProviderHookInput({
   provider,
   input,
@@ -1876,6 +2155,29 @@ if (singleHookMode) {
       }),
     }))
     .filter((item) => item.eligibility.eligible)
+  // 副本裡要讀對話紀錄判定的 hook(registrations.json 有宣告 transcript 的:核准閘、ds-anchor)照舊不派工。
+  // 依據:F3 落地前的小樣本離線重放(gate-census C 組風險 ①)—— 今天工作流程子代理在副本改 DS 原始碼的真實 Edit / Write
+  // 抽 20 筆,不論拿子代理自己的對話紀錄、還是官方文件寫的主 session 對話紀錄餵核准閘,20 筆全擋
+  //(EXACT_UI_UX_TARGET_BINDING_MISSING 等):子代理的授權證據還沒有傳進來的方式。直接打開 = 所有工作流程的
+  // DS 改動卡死;所以這兩道閘在副本的覆蓋維持改前(沒有),判準一個字都沒動,session 專案裡照常擋。
+  // 不是靜默:同一 session、同一群告訴模型一次(firstAdapterNotice)。授權證據帶得進來之後拿掉這段即可。
+  let siblingDeferredHooks = []
+  if (siblingCheckoutActive) {
+    const readsConversation = (item) => typeof item.descriptor.transcript === 'string' && item.descriptor.transcript !== 'none'
+    siblingDeferredHooks = selectedRegistrations.filter(readsConversation).map((item) => item.descriptor.hook)
+    selectedRegistrations = selectedRegistrations.filter((item) => !readsConversation(item))
+  }
+  if (siblingDeferredHooks.length
+    && firstAdapterNotice(`sibling-deferred\0${requestedEvent}\0${requestedGroupText}`)) {
+    const notice = `副本寫檔:${siblingDeferredHooks.join('、')} 要讀對話紀錄判定授權,子代理的授權證據還帶不進副本,`
+      + '這幾支在副本裡不執行(與改前相同,判準未動;session 專案裡照常擋)。同組其他 hook 照常執行。同一 session 只通知一次。'
+    if (selectedRegistrations.length) {
+      for (const hookName of siblingDeferredHooks) siblingDeferredRecords.push({ hookName, detail: `${hookName}:SIBLING_CHECKOUT_CONVERSATION_EVIDENCE_NOT_CARRIED` })
+      warnDegraded(notice)
+    } else {
+      emitGovernanceNotice(requestedEvent, notice)
+    }
+  }
   if (!selectedRegistrations.length) {
     // Zero eligible hooks for this event payload is an ordinary no-op (for example a
     // transcript-bound or peer-bound hook in an environment without that capability),
@@ -2399,7 +2701,7 @@ async function runProviderHookChild({ prepared, environment: childEnvironment, i
 let governanceDecision = null
 // Every hook that did not complete its check this batch (N34). None of them is a clean pass, so the
 // list is surfaced to the model with the batch result instead of living only on stderr.
-const degradedHooks = []
+const degradedHooks = [...siblingDeferredRecords]
 function recordDegradedHook(hookName, detail) {
   warnDegraded(`hook degraded (this hook only): ${detail}`)
   degradedHooks.push({ hookName, detail: String(detail).slice(0, 300) })

@@ -1054,6 +1054,21 @@ rule_handcraft_overlay_header() {
     DISK_HEAD=$(head -10 "$FILE_PATH" 2>/dev/null || true)
     if grep -qE '@story-baseline-allow:' <<< "$DISK_HEAD"; then return 0; fi
   fi
+  # 頁面內不可關閉的有框區塊,標頭由消費者自組(header-canonical.spec.md「何時不用」;user 2026-11-26 E6),
+  # 可能也寫成 px-loose + border-divider。先用 lib/tsx-governance-analysis.mjs page-block-header-mask 把「正向認得出、
+  # 不在浮層裡」的區塊標頭遮掉,再跑下面原本的簽名;解析不了(片段、沒有 TypeScript)→ 用原文 = 照擋。
+  #   兩個字都沒出現就不叫 parser(大檔不付成本);輸入用 here-string,parser 提早結束也不會 broken pipe。
+  local R9_CONTENT="$NEW_CONTENT" R9_MASKED R9_ROOT R9_ANALYZER
+  if grep -qF 'border-divider' <<< "$NEW_CONTENT" && grep -qF 'px-[var(--layout-space-loose)]' <<< "$NEW_CONTENT"; then
+    R9_ANALYZER="$(cd "$(dirname "$0")" 2>/dev/null && pwd -P)/lib/tsx-governance-analysis.mjs"
+    for R9_ROOT in "$(governance_project_root 2>/dev/null)" "$(git -C "$(dirname "$0")" rev-parse --show-toplevel 2>/dev/null)"; do
+      [ -n "$R9_ROOT" ] && [ -f "$R9_ANALYZER" ] || continue
+      if R9_MASKED=$(cd "$R9_ROOT" && node -- "$R9_ANALYZER" page-block-header-mask 2>/dev/null <<< "$NEW_CONTENT"); then
+        R9_CONTENT="$R9_MASKED"
+        break
+      fi
+    done
+  fi
   local FLAT
   # 2026-06-04 adversarial workflow 抓 R9 regex 3 漏洞,robustify:
   #   (1) drop 純註解行(^//、^*、^/*、^{/*)再 flatten → 避免 commented-out / 描述用 JSX 含 pattern 誤判(FP-002);
@@ -1069,7 +1084,7 @@ rule_handcraft_overlay_header() {
       printf "%s", $0
       first=0
     }
-  ' <<< "$NEW_CONTENT") \
+  ' <<< "$R9_CONTENT") \
     || governance_hook_integrity_fail 'R9 story content flatten failed'
   if grep -qE '<div[^>]*px-\[var\(--layout-space-loose\)\][^">]*border-b[[:space:]]+border-divider|<div[^>]*border-b[[:space:]]+border-divider[^">]*px-\[var\(--layout-space-loose\)\]' <<< "$FLAT"; then
     {
@@ -1079,6 +1094,8 @@ rule_handcraft_overlay_header() {
       echo "   面板殼用 Popover 同款 chrome token(rounded-lg border-border bg-surface-raised elevation-200)。"
       echo "   理由:px-loose + divider border 的 header chrome 是 overlay-surface SSOT(px-loose py-tight + border-b);手刻 = drift。"
       echo "   Anchor:2026-06-04 upload-manager 面板手刻 header(py-2≠py-tight / 殼 token 全偏),user 抓。"
+      echo "   不在此限:頁面內不可關閉的有框區塊標頭(直接寫在 rounded-md + border 區塊最上方、不在浮層裡)由消費者自組,"
+      echo "   不會被擋(header-canonical.spec.md「何時不用」)。"
       echo "   豁免:檔頭加 // @story-baseline-allow: <reason>。"
     } >&2
     record_worst 2

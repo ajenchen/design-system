@@ -1,6 +1,6 @@
 // @story-trait-rationale: isInputLike -> InField — InField 已同時渲染 invalid Field chrome 與 FieldError；另開 error-only story 會重複相同表單情境。(2026-11-21 複查仍成立:InField 的「退件原因」欄是 `<Field invalid>` + FieldError;規則見 check_story_invariants.sh R3)
 // @story-history: hasSizes 由 textarea.anatomy.stories.tsx SizeMatrix auto-compile owns size showcase(2026-05-15 F-migration)。
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Textarea } from './textarea'
 import { Field, FieldLabel, FieldDescription, FieldError, FieldGroup } from '@/design-system/components/Field/field'
 
@@ -38,9 +38,10 @@ export const InField: Story = {
   name: '在 Field 內',
   render: () => (
     <FieldGroup className="max-w-md">
+      {/* 字數計數(field-controls.spec.md「字數計數」):有說明時計數在說明那一行的右端;摘要欄最多 200 字,打到上限就擋住 */}
       <Field required>
         <FieldLabel>專案說明</FieldLabel>
-        <Textarea placeholder="描述這個專案的目的、時程、關鍵議題..." rows={5} />
+        <Textarea placeholder="描述這個專案的目的、時程、關鍵議題..." rows={5} maxLength={200} showCount />
         <FieldDescription>會顯示在專案列表的摘要欄</FieldDescription>
       </Field>
 
@@ -51,9 +52,10 @@ export const InField: Story = {
         <FieldError>退件原因至少 10 字</FieldError>
       </Field>
 
+      {/* 沒有說明時那一行只有計數(右端) */}
       <Field orientation="horizontal" labelWidth="120px">
         <FieldLabel>補充說明</FieldLabel>
-        <Textarea placeholder="例:需要法務審核的條款" rows={4} />
+        <Textarea placeholder="例:需要法務審核的條款" rows={4} maxLength={500} showCount />
       </Field>
     </FieldGroup>
   ),

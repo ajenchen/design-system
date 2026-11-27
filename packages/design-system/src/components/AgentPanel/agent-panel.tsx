@@ -48,6 +48,7 @@ import {
   X as XIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/design-system/lib/i18n/i18n-context'
 import { useOverlayCoexistence, CoexistenceMask } from '@/design-system/lib/overlay-coexistence'
 import { useCursorMover } from '@/design-system/hooks/use-input-modality'
 
@@ -672,7 +673,7 @@ function HistoryRow({
             <ItemInlineAction
               action={{
                 icon: Pencil,
-                label: '改名', // i18n-allow: DS 預設文案(Dialog「關閉」同前例)
+                label: '改名', // i18n-allow: DS 預設文案,尚未接 i18n(Dialog「關閉」已接 t();本面板目前只有訊息工具列三顆鈕接上)
                 onClick: (e) => {
                   e?.stopPropagation()
                   onRename()
@@ -682,7 +683,7 @@ function HistoryRow({
             <ItemInlineAction
               action={{
                 icon: Trash2,
-                label: '刪除', // i18n-allow: DS 預設文案(Dialog「關閉」同前例)
+                label: '刪除', // i18n-allow: DS 預設文案,尚未接 i18n(Dialog「關閉」已接 t();本面板目前只有訊息工具列三顆鈕接上)
                 onClick: (e) => {
                   e?.stopPropagation()
                   onDelete()
@@ -724,9 +725,9 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
     const [renameTarget, setRenameTarget] = React.useState<AgentConversationSummary | null>(null)
     const [deleteTarget, setDeleteTarget] = React.useState<AgentConversationSummary | null>(null)
     const triggerRef = React.useRef<HTMLButtonElement>(null)
-    // 改名 / 刪除對話框關閉後焦點(WCAG 2.4.3):還給開啟它的那顆行內動作鈕;那一列已跟著歷史浮層收起(焦點外移)→ 回標題觸發鈕。
-    // 對話框是受控開啟、沒有 DialogTrigger,Radix 沒有東西可還 → 由 lib/overlay-focus-return.ts 還(全 DS 一支:沒有觸發點 + modal,
-    // 開啟者不在了走 fallback)。2026-09-30 前這裡另寫一份:關閉時 setTimeout 0 聚焦標題(浮層仍開就交給 Radix),是第六份平行實作。
+    // 改名 / 刪除對話框關閉後焦點(WCAG 2.4.3):還給開啟它的那顆行內動作鈕;那一列已跟著歷史浮層收起(焦點外移)→ 回標題觸發鈕。對話框是受控開啟、沒有 DialogTrigger,Radix 沒有東西可還 → 由 lib/overlay-focus-return.ts 還
+    // (全 DS 一支:沒有觸發點 + modal,開啟者不在了走 fallback)。2026-09-30 前這裡另寫一份:關閉時 setTimeout 0 聚焦標題(浮層仍開就交給 Radix),是第六份平行實作。下一行:刪除確認框後果句的 id(aria-describedby,dialog.spec.md「A11y 預設」確認框的後果句;H21)
+    const deleteConsequenceId = React.useId()
     const dialogOpenerRef = React.useRef<HTMLElement | null>(null)
     const openDialog = (open: () => void) => {
       dialogOpenerRef.current = captureFocusOrigin()
@@ -788,7 +789,7 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
                   'rounded-md',
                 )}
               >
-                {/* 單行截斷 → 截斷時才顯 tooltip 補全(tooltip.spec.md:32;引擎 truncated-text.spec.md),
+                {/* 單行截斷 → 截斷時才顯 tooltip 補全(tooltip.spec.md:30;引擎 truncated-text.spec.md),
                     禁手刻 truncate span。 */}
                 <TruncatedText className="text-body-lg font-medium">{title}</TruncatedText>
                 {/* 指示 chevron 與 Select 觸發器逐字同款:同色 text-fg-muted、同線粗、同「字級↔icon tier」
@@ -852,7 +853,7 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
             size="sm"
             iconOnly
             startIcon={Plus}
-            aria-label="新對話" // i18n-allow: DS 預設文案(Dialog「關閉」同前例)
+            aria-label="新對話" // i18n-allow: DS 預設文案,尚未接 i18n(Dialog「關閉」已接 t();本面板目前只有訊息工具列三顆鈕接上)
             disabled={conversationEmpty}
             onClick={onNewConversation}
           />
@@ -880,12 +881,12 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
             }}
           >
             {/* 確認框:height="hug" 隨內容(dialog.spec.md「高度軸」)、寬 sm(只有一件事:一句確認;dialog.spec.md「寬度檔位」,2026-11-15 前 440)。 */}
-            <DialogContent height="hug" width="sm" onCloseAutoFocus={returnFocusFromDialog}>
+            <DialogContent height="hug" width="sm" onCloseAutoFocus={returnFocusFromDialog} aria-describedby={deleteConsequenceId}>
               <DialogHeader>
                 <DialogTitle>刪除對話</DialogTitle>
               </DialogHeader>
               <DialogBody>
-                確定刪除「{deleteTarget.title}」?此動作立即生效且不可復原。
+                <p id={deleteConsequenceId}>確定刪除「{deleteTarget.title}」?此動作立即生效且不可復原。</p>
               </DialogBody>
               <DialogFooter>
                 <Button variant="tertiary" onClick={() => setDeleteTarget(null)}>
@@ -1094,6 +1095,29 @@ export interface AgentMessageProps extends React.HTMLAttributes<HTMLDivElement> 
   toolbar?: React.ReactNode
 }
 
+/**
+ * 代理那一側的內文樣式(agent-panel.spec.md「4. AgentMessage」的「代理回覆的內文」;E1 user 2026-11-26 選 A)。
+ * 產品直接放不加 class 的 p / ul / ol / blockquote(markdown 轉出來的樣子),間距、項目符號、引用線由這裡給。
+ * ── 消費的 SSOT ──
+ * - 連結:text-primary / hover text-primary-hover + 底線(spec「4. AgentMessage」第一條)
+ * - 段距:`--layout-space-tight`(tokens/layoutSpace/layoutSpace.css;與文件頁的文字 / 清單同一個值 ——
+ *   stories-helpers/examples/tutorial-page.tsx `createTutorialRule`「文字 / 清單 … 彼此照順序以 tight 排」)【AI 推導 2026-11-26】
+ * - 清單縮排 20(`ps-5`)、項目之間 4(`mt-1`):DS 清單既有值(stories-helpers/examples/tutorial-page.tsx `TutorialList` 的 `list-disc pl-5 space-y-1`)
+ * - 引用:AgentThinking 內文那條左線(本檔「5. AgentThinking」:`border-l border-divider` + 左縮排 12 + `text-fg-secondary`)
+ * 只管直接子節點之間(段距)與不帶 class 的清單 / 引用 —— DS 元件內部的清單都帶 class,不會被套上項目符號。
+ * 首尾不留外距:第一個子節點的上外距、最後一個的下外距歸零(三家世界級同做法,spec「世界級對照」);
+ * `flow-root` 讓外距留在這一則裡、量得到,不穿出去跟訊息之間的輪距疊在一起。
+ */
+const AGENT_PROSE_CLASSES = [
+  '[&_a]:text-primary [&_a:hover]:text-primary-hover [&_a]:underline-offset-2 [&_a]:underline', // spec:151 長文閱讀需要底線可掃描(2026-09-08 從 hover 才畫改回恆畫)
+  'flow-root [&>:first-child]:mt-0 [&>:last-child]:mb-0',
+  '[&>*+*]:mt-[var(--layout-space-tight)]',
+  '[&_ul:not([class])]:list-disc [&_ul:not([class])]:ps-5 [&_ul:not([class])>li+li]:mt-1',
+  '[&_ol:not([class])]:list-decimal [&_ol:not([class])]:ps-5 [&_ol:not([class])>li+li]:mt-1',
+  '[&_blockquote:not([class])]:border-s [&_blockquote:not([class])]:border-divider [&_blockquote:not([class])]:ps-3 [&_blockquote:not([class])]:text-fg-secondary',
+  '[&_blockquote:not([class])>*+*]:mt-[var(--layout-space-tight)]',
+]
+
 const AgentMessage = React.forwardRef<HTMLDivElement, AgentMessageProps>(
   (
     { role = 'agent', attachments, onAttachmentClick, toolbar, className, children, ...props },
@@ -1114,7 +1138,7 @@ const AgentMessage = React.forwardRef<HTMLDivElement, AgentMessageProps>(
                   'max-w-[85%] rounded-md bg-secondary px-3 py-2',
                   'animate-in fade-in-0 slide-in-from-bottom-2 duration-[var(--motion-duration-overlay)] motion-reduce:animate-none',
                 ]
-              : 'w-full [&_a]:text-primary [&_a:hover]:text-primary-hover [&_a]:underline-offset-2 [&_a]:underline' // spec:151 長文閱讀需要底線可掃描(2026-09-08 從 hover 才畫改回恆畫),
+              : ['w-full', AGENT_PROSE_CLASSES],
           )}
         >
           {attachments && attachments.length > 0 && (
@@ -1156,10 +1180,33 @@ export interface AgentThinkingProps
   /** 開合(未受控時:回覆中自動展開、回覆完自動收合)。 */
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  /**
+   * 標題的字(Partial 傳入;取值順序 = 本參數 → I18nProvider 的 `agent-panel` 那一組(整個 AgentPanel 家族共用一個 componentKey,
+   * 鍵 `titleThinking` / `titleDone`,同本介面)→ DS 預設中文,lib/i18n/README.md「Fallback chain」;2026-11-26 前寫死「思考中 / 思考過程」、產品換不了)。
+   */
+  labels?: Partial<AgentThinkingLabels>
+}
+
+/** 思考塊標題的字(全部可覆寫)。 */
+export interface AgentThinkingLabels {
+  /** 進行中(`thinking`)的標題,套微光 */
+  titleThinking: string
+  /** 完成後的標題(靜態) */
+  titleDone: string
+}
+
+// i18n-allow: DS 預設文案(中文;lib/i18n/README.md「Fallback chain」3)—— consumer 經 `labels` 或 I18nProvider `agent-panel.titleThinking` / `agent-panel.titleDone` 覆寫
+const DEFAULT_THINKING_LABELS: AgentThinkingLabels = {
+  titleThinking: '思考中',
+  titleDone: '思考過程',
 }
 
 const AgentThinking = React.forwardRef<HTMLDivElement, AgentThinkingProps>(
-  ({ thinking = false, steps, currentStep, open, onOpenChange, className, ...props }, ref) => {
+  ({ thinking = false, steps, currentStep, open, onOpenChange, labels: labelsOverride, className, ...props }, ref) => {
+    // 標題的字:prop(`labels`)→ I18nProvider `agent-panel` → DS 預設中文(同 ProfileCardDefaultActions 的逐鍵寫法)
+    const { t } = useI18n()
+    const titleThinking = labelsOverride?.titleThinking ?? t('agent-panel', 'titleThinking', DEFAULT_THINKING_LABELS.titleThinking)
+    const titleDone = labelsOverride?.titleDone ?? t('agent-panel', 'titleDone', DEFAULT_THINKING_LABELS.titleDone)
     // 非受控:AI 回覆中自動展開、回覆完自動收合(拍板;三套元件庫一致慣例)。
     const [uncontrolledOpen, setUncontrolledOpen] = React.useState(thinking)
     React.useEffect(() => {
@@ -1192,7 +1239,7 @@ const AgentThinking = React.forwardRef<HTMLDivElement, AgentThinkingProps>(
           )}
         >
           <span className={cn(thinking && 'agent-shimmer')}>
-            {thinking ? '思考中' : '思考過程'}
+            {thinking ? titleThinking : titleDone}
           </span>
           {/* chevron=裝飾指示(accordion 慣例),不吃微光;色同 Select 觸發器 chevron(fg-muted)。
               旋轉跟下方思考內容的高度動畫同一個時長與曲線(disclosureIndicatorMotion;motion.spec.md「展開箭頭跟它打開的東西同步」)。 */}
@@ -1238,6 +1285,9 @@ const AgentToolbar = React.forwardRef<HTMLDivElement, AgentToolbarProps>(
   ({ pinned: pinnedProp, onCopy, onLike, onDislike, className, children, ...props }, ref) => {
     const pinnedFromConversation = React.useContext(LastAgentMessageContext)
     const pinned = pinnedProp ?? pinnedFromConversation
+    // 三顆鈕的名稱(= iconOnly 的提示)接 i18n opt-in(2026-11-26,產品 canary 回報 C19;lib/i18n/README.md「Fallback chain」):
+    // 包了 I18nProvider 且有 labels['agent-panel'].copy / like / dislike 時用它,否則中文預設不變
+    const { t } = useI18n()
     return (
     <div
       ref={ref}
@@ -1256,10 +1306,10 @@ const AgentToolbar = React.forwardRef<HTMLDivElement, AgentToolbarProps>(
       )}
       {...props}
     >
-      <Button variant="text" size="xs" iconOnly startIcon={Copy} aria-label="複製" onClick={onCopy} />
+      <Button variant="text" size="xs" iconOnly startIcon={Copy} aria-label={t('agent-panel', 'copy', '複製')} onClick={onCopy} />
       <ButtonDivider />
-      <Button variant="text" size="xs" iconOnly startIcon={ThumbsUp} aria-label="讚" onClick={onLike} />
-      <Button variant="text" size="xs" iconOnly startIcon={ThumbsDown} aria-label="倒讚" onClick={onDislike} />
+      <Button variant="text" size="xs" iconOnly startIcon={ThumbsUp} aria-label={t('agent-panel', 'like', '讚')} onClick={onLike} />
+      <Button variant="text" size="xs" iconOnly startIcon={ThumbsDown} aria-label={t('agent-panel', 'dislike', '倒讚')} onClick={onDislike} />
       {children}
     </div>
     )
@@ -1326,7 +1376,7 @@ function PromptAttachmentRow({
     // 鍵盤停在 Tag / +N 時焦點框下緣被切掉(列底沒有內距)—— focus-canonical.md「框怎麼畫」:預設往外、四邊完整(SH-clip)。
     // 同 Combobox 單行 Tag 列的 `tagRowOverflowClass`(combobox.tsx:同一份 OverflowTagList、同一個理由;`clip` 不建捲動容器,
     // 不可改成 overflow-x-hidden —— 單軸 hidden 會把另一軸算成 auto)。
-    // @layout-space-magic-ok: Tag 相互間距 4、距內緣 4 = 本元件規格寫的值 —— agent-panel.spec.md:247「相互間距 4、距內緣 4」(「7. AgentPromptInput(複合輸入盒)」附件列那一行)
+    // @layout-space-magic-ok: Tag 相互間距 4、距內緣 4 = 本元件規格寫的值 —— agent-panel.spec.md:274「相互間距 4、距內緣 4」(「7. AgentPromptInput(複合輸入盒)」附件列那一行)
     <div ref={rowRef} className={cn(TAG_ROW_CONTAINER_CLASS, 'flex items-center gap-1 overflow-x-clip px-1 pt-1')}>
       <OverflowTagList
         items={items}
@@ -1421,10 +1471,10 @@ const AgentPromptInput = React.forwardRef<HTMLDivElement, AgentPromptInputProps>
             'block w-full resize-none bg-transparent outline-none',
             'px-[var(--field-px)] py-[var(--field-control-py-md)] text-body text-foreground',
             // @disabled-color-allow: 這個輸入盒沒有 disabled 狀態,placeholder 的 muted 不會跟 disabled 疊在一起(M24 管的是 disabled 元件內的字)——
-            // textarea(本檔 :1403)不帶 disabled;props(:1279 AgentPromptInputProps 只繼承 div 的 HTMLAttributes)沒有 disabled 可傳;
-            // 外框寫死 fieldChromeStyles({ mode: 'edit' })(:1391);代理進行中(busy,:1285)只把送出鈕換成停止,輸入框照常可打字。
-            // 規格 agent-panel.spec.md:241 外框 =「Textarea edit×default 同一組字串」,沒有停用態。日後若加 disabled,
-            // 照同族 textarea.tsx:45 的寫法補 disabled 時 placeholder 換 fg-disabled 的覆寫,並拿掉這段豁免。
+            // textarea(本檔 :1454)不帶 disabled;props(:1330 AgentPromptInputProps 只繼承 div 的 HTMLAttributes)沒有 disabled 可傳;
+            // 外框寫死 fieldChromeStyles({ mode: 'edit' })(:1442);代理進行中(busy,:1337)只把送出鈕換成停止,輸入框照常可打字。
+            // 規格 agent-panel.spec.md:268 外框 =「Textarea edit×default 同一組字串」,沒有停用態。日後若加 disabled,
+            // 照同族 textarea.tsx:46 的寫法補 disabled 時 placeholder 換 fg-disabled 的覆寫,並拿掉這段豁免。
             'placeholder:text-fg-muted',
             'field-sizing-content max-h-40',
           )}
@@ -1520,7 +1570,12 @@ export interface AgentDecisionCardProps
    * (留著 = 舊寫法照舊「拿建議繼續」);傳 `onSkip` 在型別層就會報錯(不是 props 裡的名字)。
    */
   onCancel: () => void
-  /** 卡上自帶的文字(Partial 傳入、與 DS 預設合併 —— 同 Coachmark / FileViewer `labels`);DS 預設中文,英文由 consumer 傳。 */
+  /**
+   * 卡上自帶的文字(Partial 傳入、與 DS 預設合併 —— 同 Coachmark / FileViewer `labels`);DS 預設中文,英文由 consumer 傳。
+   * 取值順序(每個鍵)= 本參數 → I18nProvider 的 `agent-panel` 那一組(整個 AgentPanel 家族共用一個 componentKey;鍵 = `decision` +
+   * `AgentDecisionCardLabels` 的鍵首字大寫,例:`cancel` → `decisionCancel`、`errorOther` → `decisionErrorOther`)→ DS 預設
+   * (lib/i18n/README.md「Fallback chain」;中間那一層 2026-11-26 起,與同家族 AgentThinking 一致)。
+   */
   labels?: Partial<AgentDecisionCardLabels>
 }
 
@@ -1589,6 +1644,26 @@ const DEFAULT_DECISION_LABELS: AgentDecisionCardLabels = {
   errorMulti: '請至少選擇一個選項',
   errorOther: '請輸入其他選項',
 }
+const DECISION_LABEL_KEYS = Object.keys(DEFAULT_DECISION_LABELS) as (keyof AgentDecisionCardLabels)[]
+
+/**
+ * I18nProvider 裡決策卡的鍵:`decision` + labels 鍵首字大寫。整個 AgentPanel 家族共用 componentKey `agent-panel`(同一支檔、同一個 namespace),
+ * 決策卡的鍵一律加前綴 —— 卡上的 `submit`「送出」/ `cancel` / `next` / `other` 跟面板其他零件(例:輸入盒的送出鈕)同字不同義,那些零件也接上 `agent-panel` 之後,不加前綴就會撞名。
+ */
+const decisionI18nKey = (key: keyof AgentDecisionCardLabels) => `decision${key.charAt(0).toUpperCase()}${key.slice(1)}`
+
+/** 每個鍵:consumer `labels` → I18nProvider `agent-panel.decision*` → DS 預設(lib/i18n/README.md「Fallback chain」;同 ProfileCardDefaultActions 的逐鍵寫法) */
+function resolveDecisionLabels(
+  override: Partial<AgentDecisionCardLabels> | undefined,
+  t: ReturnType<typeof useI18n>['t'],
+): AgentDecisionCardLabels {
+  // 逐鍵寫入(每個鍵都是 string),不用 Object.fromEntries + 轉型 —— 轉型會躲過「漏一個鍵」的型別檢查。
+  const resolved = { ...DEFAULT_DECISION_LABELS }
+  for (const key of DECISION_LABEL_KEYS) {
+    resolved[key] = override?.[key] ?? t('agent-panel', decisionI18nKey(key), DEFAULT_DECISION_LABELS[key])
+  }
+  return resolved
+}
 type DecisionError = 'empty' | 'other'
 
 /** 產題守則機械層(agent-decision-card.spec.md §8「產題守則」⚙ 條):DEV 只警告不阻擋,內容規則靠稽核。 */
@@ -1654,7 +1729,8 @@ const OPTION_CHECKBOX_HOVER =
 
 const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProps>(
   ({ questions, onSubmit, onCancel, labels: labelsOverride, className, onKeyDown, ...props }, ref) => {
-    const labels = { ...DEFAULT_DECISION_LABELS, ...labelsOverride }
+    const { t } = useI18n()
+    const labels = resolveDecisionLabels(labelsOverride, t)
     const titleId = React.useId()
     const otherInputId = React.useId()
     const optionIdBase = React.useId()

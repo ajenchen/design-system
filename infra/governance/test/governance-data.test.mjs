@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
@@ -156,8 +156,15 @@ test('live governance model encodes exact trust anchors, solo review settings, t
   assert.match(templateAuditWorkflow, /name: Verify consumer/)
   assert.match(templateAuditWorkflow, /npm ci --ignore-scripts/)
   for (const command of ['npm run typecheck', 'npm run lint:imports', 'npm run build']) assert.match(templateAuditWorkflow, new RegExp(command))
+  // 2026-11-27(上游判定 B2):受保護 CI 就是 hard authority 的一半(README「Hard authority」、consumer-governance.md「missing provider event
+  // falls back to the exact hooks-off checker and protected CI」),所以 Verify consumer 必須在安裝後、建置前跑同一支 hooks-off checker。
+  {
+    const at = (needle) => templateAuditWorkflow.indexOf(needle)
+    assert.ok(at('run: npm run governance:check') > at('npm ci --ignore-scripts') && at('npm ci --ignore-scripts') >= 0, 'Verify consumer must run the hooks-off governance:check after the locked install')
+    assert.ok(at('run: npm run governance:check') < at('run: npm run build'), 'Verify consumer must run governance:check before build')
+  }
   assert.doesNotMatch(templateAuditWorkflow, /setup:governance|audit:a11y|playwright|GOVERNANCE_(?:CHECK|WRITER)_APP/)
-  assert.equal(existsSync(resolve(ROOT, '../../template/ds-product-template/.github/workflows/sync-design-system.yml')), false)
+  // template 的接收升級 workflow(sync-design-system.yml)只由 scripts/test-setup-governance.mjs 一處守:0.1.0-beta.151 不出貨(R22),下一版連形狀測試一起回來。
   assert.match(authorityVersionWorkflow, /uses: changesets\/action@[a-f0-9]{40}/)
   assert.match(authorityVersionWorkflow, /^on:\s*\n(?:  #.*\n)*  workflow_dispatch:\s*$/m)
   assert.doesNotMatch(authorityVersionWorkflow, /^\s+push:\s*$/m)
@@ -289,6 +296,7 @@ test('every immutable sync-all managed file is upstream-owned for every template
     assert.equal(matches[0].owner, 'design-system-governance')
   }
   for (const path of [
+    'governance/schemas/content-debt-baseline.schema.json',
     'governance/schemas/issuer-registry.schema.json',
     'governance/schemas/visual-baseline-review-policy.schema.json',
     'governance/trust/issuers.json',

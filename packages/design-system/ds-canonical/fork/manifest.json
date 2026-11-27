@@ -104,20 +104,20 @@
   },
   "providerLifecycle": {
     "schemaVersion": 4,
-    "releaseVersion": "0.1.0-beta.150",
+    "releaseVersion": "0.1.0-beta.151",
     "immutableHead": {
       "providerInventorySha256": "86e9d0668cb54ad1bf05c36e78b4aa80417d5f468c929dd3ddcf69c1afbf32e4",
-      "releaseVersion": "0.1.0-beta.149",
-      "snapshotSha256": "cdb5fad9949185d3e6c8f78cbb30caa540402706c3bad876a6718d5795d6a000"
+      "releaseVersion": "0.1.0-beta.150",
+      "snapshotSha256": "cb70f50d2049688c9eb472f8e6e4d89372a24f29db24a1fa41983b1c45b80c94"
     },
-    "ledgerSha256": "8f7fb26d50c41159bac125eaa8a7ea317de8e92d5fa117285dd7f99476e078e6",
-    "previousSnapshotSha256": "cdb5fad9949185d3e6c8f78cbb30caa540402706c3bad876a6718d5795d6a000",
-    "currentSnapshotSha256": "cb70f50d2049688c9eb472f8e6e4d89372a24f29db24a1fa41983b1c45b80c94",
+    "ledgerSha256": "f5c6e58e1da41011dd34d198e824d42b962c717273c9fdfa8282b0b3b71063c8",
+    "previousSnapshotSha256": "cb70f50d2049688c9eb472f8e6e4d89372a24f29db24a1fa41983b1c45b80c94",
+    "currentSnapshotSha256": "7daad48d3412276959e0a25037c330c17b7457c020865c98b9b886f45adb7b23",
     "currentProviderInventorySha256": "86e9d0668cb54ad1bf05c36e78b4aa80417d5f468c929dd3ddcf69c1afbf32e4",
     "retiredProviders": [],
     "currentSnapshot": {
-      "releaseVersion": "0.1.0-beta.150",
-      "previousSnapshotSha256": "cdb5fad9949185d3e6c8f78cbb30caa540402706c3bad876a6718d5795d6a000",
+      "releaseVersion": "0.1.0-beta.151",
+      "previousSnapshotSha256": "cb70f50d2049688c9eb472f8e6e4d89372a24f29db24a1fa41983b1c45b80c94",
       "providers": [
         {
           "id": "claude",
@@ -193,8 +193,8 @@
       "retiredProviders": []
     },
     "immutableHeadSnapshot": {
-      "releaseVersion": "0.1.0-beta.149",
-      "previousSnapshotSha256": "fc1e9d964426e8f4e594f0a4beadc13ec9e26c78dcae3c7a0e3820ba431e261c",
+      "releaseVersion": "0.1.0-beta.150",
+      "previousSnapshotSha256": "cdb5fad9949185d3e6c8f78cbb30caa540402706c3bad876a6718d5795d6a000",
       "providers": [
         {
           "id": "claude",
@@ -1833,6 +1833,7 @@
       "governance/consumer-governance.md": "consumer/managed-files/884721550b56308812b20917adac7a12f36fdb4ecda6b02460a7f5a219c0c966.blob",
       "governance/provider-cli-toolchain.json": "consumer/managed-files/189e551431181e4a88783c02130d2787b801ef731c86e35bcde89a7313aa020e.blob",
       "governance/provider-cli-toolchain.package-lock.json": "consumer/managed-files/e930ebca6fd8eeb30802aac0930efae7bcc44cc0996f24de07c11ca6a081fedf.blob",
+      "governance/schemas/content-debt-baseline.schema.json": "consumer/managed-files/3c86a5e4ebab690ca3a4ea40e456036c6568190d900e57885b4da25a510c1352.blob",
       "governance/schemas/issuer-registry.schema.json": "consumer/managed-files/91f414b9462ddc1e4be1d4c6ca4ac7a7340a6eec9e98ee109cbc049d3b354b6a.blob",
       "governance/schemas/visual-baseline-review-policy.schema.json": "consumer/managed-files/7b17835d0ceb17cdcdcaf930540a3e5d0943a34a747ac43c12ca8cd485c11581.blob",
       "governance/trust/issuers.json": "consumer/managed-files/81037efa5b3b9f4a875704005fb268acdc9233bb901f44902e4e37e1da92b8e3.blob",
@@ -1845,6 +1846,7 @@
       "scripts/lib/canonical-path-containment.mjs": "consumer/managed-files/faa128c26102415dc5345e68698efbbd28a395c35ee278dceae044cf430692b2.blob",
       "scripts/lib/closed-tool-execution.mjs": "consumer/managed-files/2d1ef5617a5ce3c39ad9aae1c42af7d199f9270c0a0ccb490b63d62dbc6913db.blob",
       "scripts/lib/consumer-control-plane-policy.mjs": "consumer/managed-files/145aab4b4fc470fc9ba7679b4a1d87d4f6a6d604940bd40f8d675c8af696498f.blob",
+      "scripts/lib/consumer-output-roots.mjs": "consumer/managed-files/566d16c80543409d12c49b0979eb0c882106a4840b948820268b221dd85801ac.blob",
       "scripts/lib/exact-workspace-dependencies.mjs": "consumer/managed-files/5aeda1df235815f40dd755951f2b868d4e02035653d4536a8dde209cdc75b493.blob",
       "scripts/lib/governance-dependency-bootstrap.mjs": "consumer/managed-files/46f10bc55cdfdf834d0749eebff42ea0bb8576f361b36d2b6ba1851354c50150.blob",
       "scripts/lib/launch-browser.mjs": "consumer/managed-files/5af0a46760af338d51fd0f7950675f8e97f7d2f09386b8818fcd7a58e6654e75.blob",
@@ -1899,6 +1901,7 @@
         "governance/lock.schema.json",
         "governance/provider-cli-toolchain.json",
         "governance/provider-cli-toolchain.package-lock.json",
+        "governance/schemas/content-debt-baseline.schema.json",
         "governance/schemas/issuer-registry.schema.json",
         "governance/schemas/visual-baseline-review-policy.schema.json",
         "governance/trust/issuers.json",
@@ -1915,6 +1918,7 @@
         "scripts/lib/canonical-path-containment.mjs",
         "scripts/lib/closed-tool-execution.mjs",
         "scripts/lib/consumer-control-plane-policy.mjs",
+        "scripts/lib/consumer-output-roots.mjs",
         "scripts/lib/exact-workspace-dependencies.mjs",
         "scripts/lib/governance-dependency-bootstrap.mjs",
         "scripts/lib/launch-browser.mjs",

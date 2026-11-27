@@ -2,7 +2,7 @@
 // Per user「預設應該是 app shells 的範例」directive — fork user 看 Storybook 直接看到
 // 真實 product 起點(Sidebar + Header + Page),不是孤立 Button。
 
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import App from './App'
 
 const meta: Meta<typeof App> = {

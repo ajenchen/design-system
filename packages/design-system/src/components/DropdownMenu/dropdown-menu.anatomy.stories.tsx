@@ -1,7 +1,7 @@
-import type { Meta } from '@storybook/react'
+import type { Meta } from '@storybook/react-vite'
 import { useState, useEffect } from 'react'
 import { Copy, Pencil, Trash2, Download, Monitor, ChevronDown, ChevronRight, Check, type LucideIcon } from 'lucide-react'
-import { fn } from '@storybook/test'
+import { fn } from 'storybook/test'
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuCheckboxItem,
@@ -176,7 +176,7 @@ export const Overview = {
                 ['Content', 'sideOffset', 'number', '8', '浮層與觸發元件的間距 (px)'],
                 ['Content', 'align', "'start'|'center'|'end'", "'start'", '浮層對齊方式'],
                 ['Content', 'minWidth', 'number', 'max(180px, trigger-width)', '浮層最小寬度 (px)'],
-                ['Content', 'maxHeight', 'number', '—', '浮層最大高度，超過時捲動'],
+                ['Content', 'maxHeight', 'number | string', '—', '更低的高度上限:實際上限 = min(可用高, 此值),可用高 = 觸發元件那一側到碰撞邊界的剩餘高度(已扣間距與 collisionPadding);只能往更矮調,超過時捲動'],
                 ['Item', 'startIcon', 'LucideIcon', '—', '左側 icon，與 label 同色'],
                 ['Item', 'avatar', 'AvatarData', '—', '左側頭像資料，與 startIcon 互斥'],
                 ['Item', 'description', 'ReactNode', '—', '次要說明文字'],

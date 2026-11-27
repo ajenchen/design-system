@@ -64,6 +64,8 @@ const Empty = React.forwardRef<HTMLDivElement, EmptyProps>(
     return (
       <div
         ref={ref}
+        // data-empty:會給上下內距的容器(DialogBody / SheetBody)認得「主體只放一個 Empty」→ 在可視區正中(layoutSpace.css;empty.spec.md「垂直定位」)
+        data-empty=""
         className={cn('flex flex-col items-center text-center', className)}
         {...props}
       >

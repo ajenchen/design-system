@@ -33,6 +33,20 @@
 //        `aria-valuemax` 與 clamp 若不同源,螢幕閱讀器念的數字就是假的
 //        (視窗 900 時念 640、實際停 450)。跨三個視窗寬度驗。
 //
+//   (F7) **往內畫的焦點框不壓元件自己的字;補內距之後平常畫面零位移**(Tabs 分頁 / Accordion 標題,2026-11-27 E13 A)。
+//        框往內畫(focus-ring-inset:2px 線、往內退 2px),元件左右零內距時框就壓在字上。修法是元件自己補「框寬 + `--stack-gap`」
+//        的內距、再把同一個寬度借回來(tabs.spec.md / accordion.spec.md「焦點框不壓字」)。三種格:
+//        F7-距離   真按 Tab 聚焦後(等過渡停),框內緣到元素自己的內容(字 / 圖示 / 徽章)四邊都 ≥ 解析後的 `--stack-gap`;
+//                  同時框不得被任何會裁切的祖先切掉(溢出捲動模式的第一個分頁,捲動容器外推那一段就是為它做的)。
+//        F7-零位移 平常畫面(未聚焦)量內容本身,不量盒子:第一個分頁的字貼齊 tablist 內容左緣、字與字相距 `--layout-space-loose`、
+//                  選中底線兩端 = 字(含徽章)兩端、inlineAction 與字相距 8px;Accordion 標題字左緣 = 項目左緣、箭頭右緣 = 項目右緣。
+//                  這些正是補內距之前的幾何(盒子 = 內容)→ 修前修後都要綠;只補內距不借回 / 只借不補,這幾格就紅。
+//        F7-單獨使用 `tabsTriggerVariants` 是公開出口:套在 TabsList 外的按鈕上(沒有 `--tab-focus-room`),選中底線寬 = 按鈕寬 > 0
+//                  (變數讀取一律帶後備值 0px;2026-11-27 規格核對抓到沒後備值時底線寬 0)。
+//        對照組 `--selftest-focus-room`:把補的內距(與捲動容器外推)拿掉、把「單獨使用」的底線改回沒有後備值的寫法
+//        → 距離、零位移、不被裁、單獨使用四類各指定的格必紅。
+//        另一面「改回修前 → 距離格紅、零位移格綠」用 `--static-dir <修前建置>` 手動跑(CI 只有現行建置;收據寫在 progress / 交接)。
+//
 // 為什麼用真瀏覽器:F1 的「差異集合」與 F2 的「有幾個框」都只有 computed style 答得出來。
 // 起不了 Chromium 的受限環境回報 SKIPPED-ENV(同 data-table-invariants 先例),不假綠也不假紅。
 //
@@ -44,22 +58,32 @@
 // 「元件是否畫出某個零件」本身是產品裁決的地方(AgentPanel 並排態的調寬把手)不拿來當 waitFor,只等面板本身 + 版面靜止,
 // 缺把手照舊是那一條紅,不會被改寫成儀器失效。
 //
-// Run: `node scripts/focus-indicator-invariants.mjs`(讀 `<cwd>/storybook-static`)
+// Run: `node scripts/focus-indicator-invariants.mjs [--selftest | --selftest-focus-room] [--static-dir <建置目錄>]`(預設讀 `<cwd>/storybook-static`;
+//   `--static-dir` 只給對照組用 —— 例:量修前的建置證明 F7-距離會紅 —— 指定時不做 stale-build 守衛,CI 不用)
 
 import { statSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { launchBrowserOrSkip, openStory, requireStorybookBuild, requireFreshStorybookBuild, settleAfterInteraction, StoryRenderInstrumentError, waitForFocusStable } from './lib/launch-browser.mjs'
 
 const SELFTEST = process.argv.includes('--selftest')
-const STATIC = join(process.cwd(),'storybook-static')
+// F7 對照組:拿掉 Tabs / Accordion 補的焦點框內距(與溢出捲動容器的外推)→ F7 指定的格必紅。只跑 F7(其他段與這個對照無關)
+const SELFTEST_ROOM = process.argv.includes('--selftest-focus-room')
+const staticDirArg = (() => { const i = process.argv.findIndex((a) => a === '--static-dir' || a.startsWith('--static-dir='))
+  if (i < 0) return null
+  const v = process.argv[i].includes('=') ? process.argv[i].slice('--static-dir='.length) : process.argv[i + 1]
+  if (!v || v.startsWith('--')) { console.error('✗ --static-dir 後面要接建置目錄'); process.exit(1) }
+  return resolve(v) })()
+const STATIC = staticDirArg ?? join(process.cwd(),'storybook-static')
 // 沒有建置 → MISSING-BUILD exit 2(缺前置;lib/launch-browser.mjs 的共用標記)。原本下一行 statSync 直接 ENOENT 崩掉。
 requireStorybookBuild(join(STATIC,'index.json'))
 // stale-build 守衛:build 產物必須比任何被驗證的原始碼新,否則驗到的是舊 CSS/JS(假綠)
 // lib/roving-list-keyboard.ts:TreeView 的按鍵判定(2026-09-25 B9 拆出、2026-09-26 併入四宿主共用零件);只改判定時也要擋住舊建置
-const SRCS = ['packages/design-system/src/components/FileViewer/file-viewer.tsx','packages/design-system/src/components/FileItem/file-item.tsx','packages/design-system/src/components/TreeView/tree-view.tsx','packages/design-system/src/lib/roving-list-keyboard.ts','packages/design-system/src/components/RadioGroup/radio-group.tsx','packages/design-system/src/components/AgentPanel/agent-panel.tsx']
-// lib/launch-browser.mjs requireFreshStorybookBuild(全部瀏覽器閘同一份;2026-09-27,待辦總帳 C5)
-requireFreshStorybookBuild(STATIC, SRCS)
+// Tabs / Accordion(F7,2026-11-27):補焦點框內距的三個檔
+const SRCS = ['packages/design-system/src/components/FileViewer/file-viewer.tsx','packages/design-system/src/components/FileItem/file-item.tsx','packages/design-system/src/components/TreeView/tree-view.tsx','packages/design-system/src/lib/roving-list-keyboard.ts','packages/design-system/src/components/RadioGroup/radio-group.tsx','packages/design-system/src/components/AgentPanel/agent-panel.tsx','packages/design-system/src/components/Tabs/tabs.tsx','packages/design-system/src/components/Tabs/tabs-inline-action-geometry.ts','packages/design-system/src/components/Accordion/accordion.tsx']
+// lib/launch-browser.mjs requireFreshStorybookBuild(全部瀏覽器閘同一份;2026-09-27,待辦總帳 C5)。
+// `--static-dir` 指定的是對照用的另一份建置(例:修前),本來就比原始碼舊 —— 不守
+if (!staticDirArg) requireFreshStorybookBuild(STATIC, SRCS)
 
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
 const server=await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
@@ -79,6 +103,26 @@ if (SELFTEST) {
       const style = document.createElement('style')
       style.id = '__selftest_kill_focus'
       style.textContent = '*:focus,*:focus-visible{outline:none !important;box-shadow:none !important;}'
+      ;(document.head || document.documentElement).appendChild(style)
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply)
+    else apply()
+  })
+}
+if (SELFTEST_ROOM) {
+  // F7 對照組:把 Tabs / Accordion 補的焦點框內距拿掉(分頁的借位與間距縮減留著)、溢出捲動容器的外推也拿掉 ——
+  // 等於「修法只做一半」:框照樣壓字(距離格紅)、字整排往左偏(零位移格紅)、捲動模式第一個分頁的框被捲動容器切掉(不被裁格紅)。
+  // 樣式表的 !important 蓋得過 inlineAction 那個 tab 的行內 paddingRight(行內樣式沒有 !important)。
+  await pg.addInitScript(() => {
+    const apply = () => {
+      if (document.getElementById('__selftest_strip_focus_room')) return
+      const style = document.createElement('style')
+      style.id = '__selftest_strip_focus_room'
+      style.textContent = '[role="tab"]{padding-left:0!important;padding-right:0!important}' +
+        ':has(> [data-slot="tabs-list"]){margin-left:0!important;margin-right:0!important;padding-left:0!important;padding-right:0!important}' +
+        'h3[data-orientation] > button{padding-left:0!important;padding-right:0!important}' +
+        // 「單獨使用」那一格的對照:把底線兩端改回沒有後備值的寫法(= 規格核對前的 class),底線寬必須變 0、那一格紅
+        '[data-f7-standalone]::after{left:var(--tab-focus-room)!important;right:var(--tab-focus-room)!important}'
       ;(document.head || document.documentElement).appendChild(style)
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply)
@@ -108,6 +152,193 @@ const settle=async(label)=>{
   console.log(out.join('\n'))
   console.error(`✗ INSTRUMENT-FAIL ${label}:互動之後 ${r.framesWaited} 格內版面沒有靜止(變動 ${r.lateChanges} 次)—— 儀器失效,不是產品裁決`)
   await br.close();await server.stop();process.exit(2)
+}
+
+// ══ F7:往內畫的焦點框不壓自己的字 + 補內距之後平常畫面零位移(Tabs 分頁 / Accordion 標題;2026-11-27 E13 A)══
+// 規格:tabs.spec.md「焦點框不壓字」、accordion.spec.md「視覺規則」焦點框那一條。判準「框不切字」出自 user 2026-09-23 日期格選 D 的理由
+//(focus-canonical.md:677)。檔頭 (F7) 有三種格與對照組的說明。
+// 「內容」= 元素自己的直接子節點(元素子節點的盒子 + 非空白文字的字框),分頁再加上 portal 出去、疊在它上面的 inlineAction。
+// 量內容本身,不量 trigger 的盒子:盒子在這次修法裡本來就變大(左右各多一個焦點框的位置),拿盒子當代理會把「盒子變了」誤當「畫面變了」(M37)。
+const f7Probe = ({ kind, sel }) => {
+  const contentBox = (el) => {
+    const own = []
+    for (const n of el.childNodes) {
+      if (n.nodeType === 1) { const r = n.getBoundingClientRect(); if (r.width > 0 && r.height > 0) own.push(r) }
+      else if (n.nodeType === 3 && n.textContent.trim()) { const g = document.createRange(); g.selectNodeContents(n); for (const r of g.getClientRects()) if (r.width > 0 && r.height > 0) own.push(r) }
+    }
+    let action = null
+    if (el.getAttribute('role') === 'tab') {
+      const t = el.getBoundingClientRect()
+      const scope = el.closest('[data-slot="tabs-list"]')?.parentElement
+      for (const b of scope ? scope.querySelectorAll('.pointer-events-none.absolute button') : []) {
+        const r = b.getBoundingClientRect(), cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2
+        if (cx > t.left && cx < t.right && cy > t.top && cy < t.bottom) action = r
+      }
+    }
+    const all = action ? [...own, action] : own
+    if (!all.length) return null
+    const u = (rs, k, f) => f(...rs.map((r) => r[k]))
+    return { left: u(all, 'left', Math.min), right: u(all, 'right', Math.max), top: u(all, 'top', Math.min), bottom: u(all, 'bottom', Math.max),
+      ownLeft: own.length ? u(own, 'left', Math.min) : null, ownRight: own.length ? u(own, 'right', Math.max) : null,
+      actionLeft: action ? action.left : null, actionRight: action ? action.right : null }
+  }
+  if (kind === 'ring') {
+    const el = document.activeElement
+    if (!el || !el.matches(sel)) return { err: `焦點不在 ${sel} 上,停在 ${el?.tagName ?? 'null'}` }
+    const c = getComputedStyle(el), r = el.getBoundingClientRect()
+    const off = parseFloat(c.outlineOffset) || 0, w = parseFloat(c.outlineWidth) || 0
+    // outline 從邊框外緣往外 off 開始、再往外畫 w:內緣 = 盒子外擴 off(負值即內縮),外緣 = 外擴 off + w
+    const inner = { left: r.left - off, right: r.right + off, top: r.top - off, bottom: r.bottom + off }
+    const outer = { left: r.left - off - w, right: r.right + off + w, top: r.top - off - w, bottom: r.bottom + off + w }
+    const cb = contentBox(el)
+    const gaps = cb && { left: cb.left - inner.left, right: inner.right - cb.right, top: cb.top - inner.top, bottom: inner.bottom - cb.bottom }
+    const clipped = []
+    for (let p = el.parentElement; p && p !== document.documentElement; p = p.parentElement) {
+      const pc = getComputedStyle(p), cx = pc.overflowX !== 'visible', cy = pc.overflowY !== 'visible'
+      if (!cx && !cy) continue
+      const pr = p.getBoundingClientRect()
+      const ib = { left: pr.left + parseFloat(pc.borderLeftWidth), right: pr.right - parseFloat(pc.borderRightWidth), top: pr.top + parseFloat(pc.borderTopWidth), bottom: pr.bottom - parseFloat(pc.borderBottomWidth) }
+      const cut = []
+      if (cx && outer.left < ib.left - 0.1) cut.push(`左 ${(ib.left - outer.left).toFixed(2)}`)
+      if (cx && outer.right > ib.right + 0.1) cut.push(`右 ${(outer.right - ib.right).toFixed(2)}`)
+      if (cy && outer.top < ib.top - 0.1) cut.push(`上 ${(ib.top - outer.top).toFixed(2)}`)
+      if (cy && outer.bottom > ib.bottom + 0.1) cut.push(`下 ${(outer.bottom - ib.bottom).toFixed(2)}`)
+      if (cut.length) clipped.push(`${p.tagName.toLowerCase()}.${String(p.className).split(/\s+/).filter(Boolean).slice(0, 2).join('.')} 切掉 ${cut.join(' ')}`)
+    }
+    const list = el.closest('[data-slot="tabs-list"]')
+    return { drawn: c.outlineStyle !== 'none' && w > 0, fv: el.matches(':focus-visible'), off, w, gaps, clipped,
+      first: list ? list.querySelector('[role="tab"]') === el : null, name: el.textContent.trim().slice(0, 12),
+      stackGap: parseFloat(c.getPropertyValue('--stack-gap')) }
+  }
+  if (kind === 'tabs') {
+    const list = document.querySelector('[data-slot="tabs-list"]')
+    if (!list) return { err: '找不到 [data-slot="tabs-list"]' }
+    const lc = getComputedStyle(list), lr = list.getBoundingClientRect()
+    return { listContentLeft: lr.left + parseFloat(lc.borderLeftWidth) + parseFloat(lc.paddingLeft),
+      loose: parseFloat(lc.getPropertyValue('--layout-space-loose')),
+      tabs: [...list.querySelectorAll('[role="tab"]')].map((t) => {
+        const tr = t.getBoundingClientRect(), a = getComputedStyle(t, '::after')
+        return { name: t.textContent.trim().slice(0, 12), selected: t.getAttribute('aria-selected') === 'true', cb: contentBox(t),
+          ul: { left: tr.left + parseFloat(a.left), right: tr.right - parseFloat(a.right) } }
+      }) }
+  }
+  // kind === 'accordion':第一個標題的字左緣 / 箭頭右緣 vs 項目(底線那一層)的左右緣
+  const trig = document.querySelector(sel)
+  if (!trig) return { err: `找不到 ${sel}` }
+  const ir = trig.closest('h3').parentElement.getBoundingClientRect()
+  let textLeft = null
+  for (const n of trig.childNodes) if (n.nodeType === 3 && n.textContent.trim()) { const g = document.createRange(); g.selectNodeContents(n); textLeft = Math.min(...[...g.getClientRects()].map((r) => r.left)); break }
+  const svg = trig.querySelector(':scope > svg')?.getBoundingClientRect()
+  return { textLeft, itemLeft: ir.left, chevRight: svg ? svg.right : null, itemRight: ir.right }
+}
+const f2 = (v) => (typeof v === 'number' ? v.toFixed(2) : String(v))
+const near = (a, b, tol = 0.1) => typeof a === 'number' && typeof b === 'number' && Math.abs(a - b) <= tol
+/** 真按 Tab 直到焦點落在 sel 上(最多 12 下),再等過渡停 —— 量焦點框之前先等穩態(M32「量 focus 顏色不等 transition」) */
+const tabTo = async (sel, label) => {
+  for (let i = 0; i < 12; i++) {
+    await pg.keyboard.press('Tab')
+    const focus = await waitForFocusStable(pg, { frames: 3 })
+    if (!focus.ok) { check(`${label} 儀器:Tab 之後焦點一直在跳(沒量到)`, false, JSON.stringify(focus)); return false }
+    if (await pg.evaluate((s) => !!document.activeElement?.matches(s), sel)) { await settle(`${label} Tab 到 ${sel}`); return true }
+  }
+  check(`${label} 儀器:Tab 12 下都沒走到 ${sel}`, false); return false
+}
+const ringCheck = async (label, sel) => {
+  const m = await pg.evaluate(f7Probe, { kind: 'ring', sel })
+  if (m.err) { check(`${label}`, false, m.err); return m }
+  const g = m.gaps, gap = m.stackGap
+  check(`${label}:框內緣到自己的字 / 圖示四邊都 ≥ --stack-gap(${f2(gap)}px)`,
+    m.drawn && m.fv && !!g && Number.isFinite(gap) && Math.min(g.left, g.right, g.top, g.bottom) >= gap - 0.1,
+    `${m.name} outline ${f2(m.w)}@${f2(m.off)} focus-visible=${m.fv} 左 ${f2(g?.left)} 右 ${f2(g?.right)} 上 ${f2(g?.top)} 下 ${f2(g?.bottom)}`)
+  return m
+}
+{
+  const TAB = '[role="tab"]', ACC = 'h3[data-orientation] > button'
+  // ── Tabs 預設(none 模式):F7-距離(聚焦的是第一個分頁 = 往外借位的那一個)+ F7-零位移 ──
+  await go('design-system-components-tabs-展示--default', { waitFor: TAB })
+  const tl = await pg.evaluate(f7Probe, { kind: 'tabs' })
+  if (tl.err) check('F7-零位移 Tabs 預設', false, tl.err)
+  else {
+    const T = tl.tabs
+    check('F7-零位移 Tabs 預設:第一個字貼齊 tablist 內容左緣(下方內容的左緣)', near(T[0]?.cb?.ownLeft, tl.listContentLeft),
+      `字 ${f2(T[0]?.cb?.ownLeft)} / tablist 內容左緣 ${f2(tl.listContentLeft)}`)
+    const pairs = T.slice(1).map((t, i) => ({ a: T[i], b: t, d: t.cb.left - T[i].cb.right }))
+    check(`F7-零位移 Tabs 預設:字與字相距 --layout-space-loose(${f2(tl.loose)}px)`, pairs.length > 0 && pairs.every((p) => near(p.d, tl.loose)),
+      pairs.map((p) => `${p.a.name}→${p.b.name} ${f2(p.d)}`).join(' / '))
+    const sel = T.find((t) => t.selected)
+    check('F7-零位移 Tabs 預設:選中底線兩端 = 字(含徽章)兩端', !!sel && near(sel.ul.left, sel.cb.left) && near(sel.ul.right, sel.cb.right),
+      sel ? `${sel.name} 底線 ${f2(sel.ul.left)}–${f2(sel.ul.right)} / 字 ${f2(sel.cb.left)}–${f2(sel.cb.right)}` : '沒有選中的分頁')
+  }
+  // ── 單獨使用 tabsTriggerVariants(公開出口,index.ts):放在 TabsList 外、沒有 --tab-focus-room 時,選中底線仍要畫得出來 ──
+  // 2026-11-27 規格核對抓到:變數沒有後備值時 ::after 的 left / right 失效、寬度 0,底線整條消失(修前可用 = 改壞既有東西)。
+  // 做法:拿這頁選中分頁的 class(= cva 輸出)套到 body 底下的新按鈕上量 ::after 寬。後備值 0 → 底線寬 = 按鈕寬(補內距之前的樣子)。
+  const sa = await pg.evaluate(() => {
+    const src = document.querySelector('[role="tab"][aria-selected="true"]')
+    if (!src) return { err: '找不到選中的分頁(拿不到 class)' }
+    const b = document.createElement('button')
+    b.className = src.className; b.setAttribute('data-state', 'active'); b.setAttribute('data-f7-standalone', ''); b.textContent = '總覽'
+    document.body.appendChild(b)
+    const r = b.getBoundingClientRect(), a = getComputedStyle(b, '::after')
+    const out = { room: getComputedStyle(b).getPropertyValue('--tab-focus-room').trim(), ulWidth: parseFloat(a.width), boxWidth: r.width, bg: a.backgroundColor }
+    b.remove()
+    return out
+  })
+  if (sa.err) check('F7-單獨使用 tabsTriggerVariants', false, sa.err)
+  else check('F7-單獨使用 tabsTriggerVariants(TabsList 外,沒有 --tab-focus-room):選中底線寬 = 按鈕寬 > 0',
+    sa.room === '' && sa.ulWidth > 0 && near(sa.ulWidth, sa.boxWidth),
+    `--tab-focus-room「${sa.room}」 底線寬 ${f2(sa.ulWidth)} / 按鈕寬 ${f2(sa.boxWidth)} 底線色 ${sa.bg}`)
+  if (await tabTo(TAB, 'F7-距離 Tabs')) {
+    const m = await ringCheck('F7-距離 Tabs 預設', TAB)
+    if (!m.err) check('F7-距離 Tabs 預設:前提 —— 聚焦的是第一個分頁(往外借位的那一個)、框沒被祖先切掉', m.first === true && m.clipped.length === 0,
+      `first=${m.first} ${m.clipped.join(';') || '(沒被切)'}`)
+  }
+  // ── Tabs 帶後綴(none 模式;「更多」帶 inlineAction):零位移含 action 與徽章 ──
+  await go('design-system-components-tabs-展示--with-suffix', { waitFor: TAB })
+  const ts = await pg.evaluate(f7Probe, { kind: 'tabs' })
+  if (ts.err) check('F7-零位移 Tabs 帶後綴', false, ts.err)
+  else {
+    const T = ts.tabs, act = T.find((t) => t.cb?.actionLeft != null)
+    check('F7-零位移 Tabs 帶後綴:第一個字貼齊 tablist 內容左緣', near(T[0]?.cb?.ownLeft, ts.listContentLeft), `字 ${f2(T[0]?.cb?.ownLeft)} / ${f2(ts.listContentLeft)}`)
+    const pairs = T.slice(1).map((t, i) => ({ a: T[i], b: t, d: t.cb.left - T[i].cb.right }))
+    check(`F7-零位移 Tabs 帶後綴:字與字相距 --layout-space-loose(${f2(ts.loose)}px)`, pairs.length > 0 && pairs.every((p) => near(p.d, ts.loose)),
+      pairs.map((p) => `${p.a.name}→${p.b.name} ${f2(p.d)}`).join(' / '))
+    // 8 = tabs-inline-action-geometry.ts TABS_INLINE_ACTION_GAP(字到 action 的 canonical 間距;tabs.spec.md `inlineAction` 條)
+    check('F7-零位移 Tabs 帶後綴:inlineAction 渲染出來、與字相距 8px', !!act && near(act.cb.actionLeft - act.cb.ownRight, 8),
+      act ? `${act.name} 字右緣 ${f2(act.cb.ownRight)} → action 左緣 ${f2(act.cb.actionLeft)}` : '沒有任何分頁量到 inlineAction')
+    const sel = T.find((t) => t.selected)
+    check('F7-零位移 Tabs 帶後綴:選中底線兩端 = 字(含徽章)兩端', !!sel && near(sel.ul.left, sel.cb.left) && near(sel.ul.right, sel.cb.right),
+      sel ? `${sel.name} 底線 ${f2(sel.ul.left)}–${f2(sel.ul.right)} / 字 ${f2(sel.cb.left)}–${f2(sel.cb.right)}` : '沒有選中的分頁')
+  }
+  // ── Tabs 溢出捲動:第一個分頁借出去的那一段不能被捲動容器切掉 ──
+  await go('design-system-components-tabs-展示--overflow-scroll', { waitFor: TAB })
+  if (await tabTo(TAB, 'F7-不被裁 Tabs 溢出捲動')) {
+    const m = await ringCheck('F7-距離 Tabs 溢出捲動', TAB)
+    if (!m.err) check('F7-不被裁 Tabs 溢出捲動:第一個分頁聚焦時,框四邊都在捲動容器裡', m.first === true && m.clipped.length === 0,
+      `first=${m.first} ${m.clipped.join(';') || '(沒被切)'}`)
+  }
+  // ── Accordion 預設:F7-零位移(未聚焦)+ F7-距離 ──
+  await go('design-system-components-accordion-展示--default', { waitFor: ACC })
+  const ac = await pg.evaluate(f7Probe, { kind: 'accordion', sel: ACC })
+  if (ac.err) check('F7-零位移 Accordion', false, ac.err)
+  else {
+    check('F7-零位移 Accordion:字左緣 = 項目左緣(底線左端)', near(ac.textLeft, ac.itemLeft), `字 ${f2(ac.textLeft)} / 項目 ${f2(ac.itemLeft)}`)
+    check('F7-零位移 Accordion:箭頭右緣 = 項目右緣(底線右端)', near(ac.chevRight, ac.itemRight), `箭頭 ${f2(ac.chevRight)} / 項目 ${f2(ac.itemRight)}`)
+  }
+  if (await tabTo(ACC, 'F7-距離 Accordion')) {
+    const m = await ringCheck('F7-距離 Accordion 預設', ACC)
+    if (!m.err) check('F7-距離 Accordion 預設:前提 —— 框沒被祖先切掉', m.clipped.length === 0, m.clipped.join(';') || '(沒被切)')
+  }
+}
+if (SELFTEST_ROOM) {
+  console.log(out.join('\n'))
+  // 拿掉補的內距 → 三類格各指定一條必紅;少紅一條 = 那一類的綠燈不算證據
+  const MUST = ['F7-距離 Tabs 預設:框內緣', 'F7-距離 Accordion 預設:框內緣', 'F7-零位移 Tabs 預設:第一個字', 'F7-零位移 Accordion:字左緣', 'F7-不被裁 Tabs 溢出捲動:', 'F7-單獨使用 tabsTriggerVariants']
+  const reds = out.filter((l) => l.startsWith('✗ '))
+  const missing = MUST.filter((m) => !reds.some((l) => l.startsWith(`✗ ${m}`)))
+  await br.close(); await server.stop()
+  if (missing.length) { console.log(`\n✗ selftest-focus-room:拿掉焦點框內距後,這幾格沒紅 —— 該格量的不是內距:\n  ${missing.join('\n  ')}`); process.exit(1) }
+  console.log(`\n✓ selftest-focus-room:拿掉焦點框內距後 ${MUST.length} 格指定的格全部變紅(F7 共紅 ${reds.filter((l) => l.includes('F7-')).length} 條),量具會紅`)
+  process.exit(0)
 }
 
 // ══ J2d / C14 FileViewer 縮圖 ══

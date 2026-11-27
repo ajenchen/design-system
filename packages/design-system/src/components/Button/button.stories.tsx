@@ -1,5 +1,6 @@
 // @story-history: hasSizes 由 anatomy.stories.tsx SizeMatrix auto-compile owns size showcase(2026-05-15 F-migration);Default scenario 由 Pressed / IconOnly / 各 variant 真實業務情境 story 覆蓋。
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import { within } from 'storybook/test'
 import { Plus, Trash2, Search, ChevronDown, Settings, Download, Bell, RefreshCw, Maximize2, Save, X } from 'lucide-react'
 import { Button } from './button'
 import { Badge } from '@/design-system/components/Badge/badge'
@@ -386,7 +387,6 @@ export const HoverFocusState: Story = {
     </div>
   ),
   play: async ({ canvasElement }) => {
-    const { within } = await import('@storybook/test')
     const canvas = within(canvasElement)
     await canvas.findByTestId('hover-target')
     const focusEl = await canvas.findByTestId('focus-target')
@@ -408,7 +408,6 @@ export const TooltipVisible: Story = {
     </div>
   ),
   play: async ({ canvasElement }) => {
-    const { within } = await import('@storybook/test')
     const canvas = within(canvasElement)
     const btn = await canvas.findByTestId('tooltip-target')
     btn.focus()

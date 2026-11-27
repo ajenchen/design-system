@@ -1,6 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { DatePicker } from './date-picker'
 import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
@@ -63,7 +64,7 @@ export const TypedInput: Story = {
         </div>
         <div>
           <p className="text-caption text-fg-secondary mb-[var(--layout-space-tight)]">
-            日期 + 時間(showTime):支援 <code>2026-04-02 14:30</code> 這類輸入,月曆與時間欄仍可用。
+            日期 + 時間(showTime):框裡的時間跟語系(zh-TW「2026/04/02 下午2:30」),照這個寫法或 <code>2026-04-02 14:30</code> 打都收,月曆與時間欄仍可用。
           </p>
           <DatePicker typeable showTime value={showTimeValue} onChange={setShowTimeValue} />
         </div>
@@ -71,7 +72,6 @@ export const TypedInput: Story = {
     )
   },
   play: async ({ canvasElement }) => {
-    const { expect, userEvent, waitFor, within } = await import('@storybook/test')
     const canvas = within(canvasElement)
     const input = canvas.getByRole('combobox', { name: 'YYYY/MM/DD' })
     const visualWrapper = input.parentElement
@@ -184,6 +184,12 @@ export const WithError: Story = {
         <LiveDatePicker error value="2026-04-02" />
       </div>
       <LiveDatePicker error value={null} placeholder="必填日期" />
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <p className="text-caption text-fg-muted">
+          出差期間超過公司上限 14 天:點開其中一端時,那一端壓在外框下邊的線也是紅色,跟外框同色。
+        </p>
+        <LiveDatePickerRange error value={['2026-04-01', '2026-04-20']} placeholder={['出發日期', '返回日期']} />
+      </div>
     </div>
   ),
 }
@@ -197,7 +203,7 @@ export const ShowTime: Story = {
       <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
         <div className="flex flex-col gap-[var(--layout-space-tight)]">
           <p className="text-caption text-fg-muted">
-            日期加時間:展開後月曆右邊多出「時 / 分」兩欄可以捲動選;底下有「此刻」與「確定」,按「確定」才套用。選好的值同時帶日期與時間。
+            日期加時間:展開後月曆右邊多出時間欄可以捲動選 —— 12 小時的語系(預設 zh-TW)是「時(12、01…11)/ 分 / 上午下午」三欄、頂端寫「下午2:30」,24 小時的語系(例 en-GB)是「時(00–23)/ 分」兩欄;底下有「此刻」與「確定」,按「確定」才套用。選好的值同時帶日期與時間。
           </p>
           <DatePicker showTime value={single} onChange={setSingle} clearable />
         </div>
@@ -235,7 +241,7 @@ export const RangePopoverOpen: Story = {
 /* ── OpenSnapshot:showTime popover 內 TimePicker side panel(M15)── */
 export const ShowTimePopoverOpen: Story = {
   name: '日期加時間:浮層展開狀態',
-  parameters: { docs: { description: { story: '日期加時間打開的樣子:月曆右邊是時間欄(頂端顯示目前選的時:分,下面是「時 / 分」兩欄捲動選),底下是「此刻」與「確定」。時間欄跟月曆一樣高,頂端那列跟月曆的「年月」列對齊(2026-05-02 設計準則)。' } } },
+  parameters: { docs: { description: { story: '日期加時間打開的樣子:月曆右邊是時間欄(頂端用欄位同一種寫法顯示目前選的時間,預設 zh-TW 是「下午2:30」;下面是「時(12、01…11)/ 分 / 上午下午」三欄捲動選,24 小時的語系是「時 / 分」兩欄),底下是「此刻」與「確定」。時間欄跟月曆一樣高,頂端那列跟月曆的「年月」列對齊(2026-05-02 設計準則)。' } } },
   render: () => {
     const [v, setV] = React.useState<string>('2026-04-15T14:30:00')
     return (
@@ -260,12 +266,58 @@ export const NeedConfirmDateOnlyOpen: Story = {
         <p className="text-caption text-fg-muted">
           合約生效日選錯成本高:點日期先暫存,按「確定」才真正寫入。
         </p>
+        {/* 不在欄位下方放「已提交值」讀數:產品裡提交的值就在欄位本身(與 DateGrid 範例同一條,user 2026-11-27 確認頁「不可能會在元件內出現吧？」) */}
         <DatePicker needConfirm value={effectiveDate} onChange={setEffectiveDate} />
-        <p className="text-caption text-fg-muted">已提交值:{effectiveDate || '(空)'}</p>
       </div>
     )
   },
   play: openPopoverPlay('[role="combobox"]'),
+}
+
+/* ── 不可選日期(disabledDate,2026-11-26 產品 canary 回報 C33)── */
+// 門市維修預約:週末與 12/25(行憲紀念日)不開放。不可選的日子照 date-grid.spec.md「Disabled day」畫成灰底圓圈 + 淺灰字、點不動;
+// 欄位可打字,打進不可選的日期比照解析失敗(date-picker.spec.md「不可選日期」)。
+const STORE_CLOSED_DATES = new Set(['2026-12-25'])
+const isStoreClosed = (date: Date) => {
+  const day = date.getDay()
+  const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+  return day === 0 || day === 6 || STORE_CLOSED_DATES.has(iso)
+}
+export const DisabledDates: Story = {
+  name: '不可選日期:門市維修預約',
+  parameters: { docs: { description: { story: '週末與 12/25 不開放預約:這些日子在日曆上不可選(灰底圓圈 + 淺灰字、點不動、鍵盤跳過);直接打字輸入不開放的日期,欄位標成錯誤、保留打的字讓使用者修。' } } },
+  render: () => (
+    // @layout-space-magic-ok: 展開快照在欄位下方保留 420px 畫布高度,讓開著的月曆落在 story 畫布內(畫布留白,不是元素間距)—— 與「需確認:合約生效日確認」同一個畫布留白值,規格沒寫這個值、不由 AI 補進規格(F-S7;2026-11-26 新增,C33 範例)
+    <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-xs pb-[420px]">
+      <p className="text-caption text-fg-muted">預約到店維修(週末與 12/25 不開放)</p>
+      <LiveDatePicker typeable value="2026-12-08" disabledDate={isStoreClosed} aria-label="預約日期" />
+    </div>
+  ),
+  // 斷言 disabledDate 真的生效(C33):週六 12/5、週日 12/6、12/25 不可選,週一 12/7 可選;打進 2026-12-25 → 標錯、保留打的字。
+  // 最後改回 2026-12-08、月曆開著 = 快照與 a11y 基線量的畫面(與只打開浮層時相同)
+  play: async ({ canvasElement }) => {
+    const input = within(canvasElement).getByRole('combobox')
+    const page = within(canvasElement.ownerDocument.body)
+    await userEvent.click(input)
+    const dialog = await page.findByRole('dialog', { name: '日期選擇' })
+    const unavailable = (iso: string) => {
+      const day = dialog.querySelector<HTMLButtonElement>(`[data-day="${iso}"] button`)
+      if (!day) throw new Error(`月曆上找不到 ${iso}`)
+      return day.disabled || day.getAttribute('aria-disabled') === 'true'
+    }
+    for (const iso of ['2026-12-05', '2026-12-06', '2026-12-25']) await expect(unavailable(iso)).toBe(true)
+    await expect(unavailable('2026-12-07')).toBe(false)
+    // 打字一律 skipClick:焦點已在輸入框(clear 會聚焦),再點一下會切換日曆開關,打開時焦點可能被日曆接走、字打不進輸入框
+    await userEvent.clear(input)
+    await userEvent.type(input, '2026-12-25{Enter}', { skipClick: true })
+    await waitFor(() => expect(input).toHaveAttribute('aria-invalid', 'true'))
+    await expect(input).toHaveValue('2026-12-25')
+    await userEvent.clear(input)
+    await userEvent.type(input, '2026-12-08{Enter}', { skipClick: true })
+    await waitFor(() => expect(input).not.toHaveAttribute('aria-invalid', 'true'))
+    if (!page.queryByRole('dialog', { name: '日期選擇' })) await userEvent.click(input)
+    await page.findByRole('dialog', { name: '日期選擇' })
+  },
 }
 
 /* ── OpenSnapshot:showTime Range popover(activeEnd='start')── */
@@ -292,7 +344,6 @@ export const ShowTimeRangePopoverOpen: Story = {
    三則各教一個狀態(延長 / 縮小 / 重選開始日);play 只開對應那一端並標記停留目標,真實 CSS :hover 由
    visual-audit 的 Playwright 在截圖前建立;幾何由 scripts/datepicker-range-preview.mjs 逐格量。 */
 const rangePreviewPlay = (which: 'start' | 'end', hoverDay: string) => async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-  const { userEvent, waitFor } = await import('@storybook/test')
   const triggers = canvasElement.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="dialog"]')
   const trigger = triggers[which === 'start' ? 0 : 1]
   if (!trigger) throw new Error(`日期區間 ${which} trigger 不存在`)
@@ -381,7 +432,8 @@ export const View: Story = {
         <DatePicker mode="view" value="2026-04-02" />
       </DescriptionItem>
       <DescriptionItem label="完整日期">
-        <DatePicker mode="view" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
+        {/* 明寫 en-US:元件預設語系 2026-11-24 起是 zh-TW,不寫會跟下一列「中文日期」一模一樣 */}
+        <DatePicker mode="view" value="2026-04-02" locale="en-US" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
       </DescriptionItem>
       <DescriptionItem label="中文日期">
         <DatePicker mode="view" value="2026-04-02" locale="zh-TW" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />

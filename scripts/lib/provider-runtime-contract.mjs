@@ -658,6 +658,11 @@ export function validateHookRegistrationSemantics(registrations) {
         if (!peerRequirements.length && descriptor.reviewSkill !== undefined) {
           throw new Error(`${event}/${descriptor.hook} reviewSkill is allowed only with a peer requirement`)
         }
+        // activation telemetry-opt-in 讓入口在遙測關閉時整群不派工(scripts/run-provider-hook.mjs 前段)。
+        // 只准標在只寫遙測、輸出只供診斷的 hook 上:標在任何會擋或會送 context 的閘上 = 遙測一關閘就沒了。
+        if (descriptor.activation !== undefined && descriptor.outputMode !== 'diagnostic') {
+          throw new Error(`${event}/${descriptor.hook} activation ${descriptor.activation} is allowed only with outputMode diagnostic`)
+        }
         descriptors.add(identity)
       }
     }

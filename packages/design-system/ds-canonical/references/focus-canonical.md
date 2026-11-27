@@ -242,7 +242,7 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 | `hover:bg-` 全 DS(非 stories)| 16 檔 / 40 處 —— 其餘全是常駐元素(Sidebar 選單鈕與動作鈕 / TreeView 列與動作 / TimePicker 欄 / Calendar / DateGrid / InlineEdit / Button / Switch / Checkbox / Carousel / ScrollArea / PersonDisplay / DataTable 工具列),hover 與焦點框獨立,不在本節範疇 |
 | `data-[highlighted]` / `data-[selected=true]` 的 owner | 各只有一檔:`dropdown-menu.tsx` / `command.tsx`(反白畫法的單一來源) |
 | `focus-ring-inset-emphasis`(填色元素內描邊,2026-09-23 加)| 1 支 utility;掛在 3 個 modifier(DateGrid `selected`、DatePicker.Range `rangeStart` / `rangeEnd`);DateGrid `range_middle` 因同掛 selected,以 `[&>button]:focus-visible:!focus-ring-inset` 壓回一般內描邊 |
-| `focus-visible:` 的用法歸類(非 stories;2026-09-10 重數)| `focus-visible:focus-ring-inset` 20(真焦點內描邊;行內動作鈕改回往外 −1、Tag 移除鈕 +1;2026-09-23 DateGrid 日期格 +1 → 21)/ `focus-visible:outline-none` 10(全部登記在 `focus-suppression-registry`;含 `field-wrapper.tsx` 四個 wrapper compound —— edit / edit-error / naked-edit / readonly)/ `focus-visible:underline` 2(DatePicker 範圍模式共用承擔者的區分)/ `focus-visible:!border-primary` `focus-visible:hover:!border-primary` 各 1(Textarea naked 模式,C 類邊框轉色)/ `focus-visible:z-20` 1(SegmentedControl 疊層順序,不是指示器)/ 其餘出現在註解 |
+| `focus-visible:` 的用法歸類(非 stories;2026-09-10 重數)| `focus-visible:focus-ring-inset` 20(真焦點內描邊;行內動作鈕改回往外 −1、Tag 移除鈕 +1;2026-09-23 DateGrid 日期格 +1 → 21)/ `focus-visible:outline-none` 10(全部登記在 `focus-suppression-registry`;含 `field-wrapper.tsx` 四個 wrapper compound —— edit / edit-error / naked-edit / readonly)/ `focus-visible:[--range-end-bar:…]` 2(DatePicker 範圍模式共用承擔者的區分;2026-11-26 起那條線畫在文字段 `::after`、壓在欄位框下邊上,此前是 `focus-visible:underline` 2)/ `focus-visible:!border-primary` `focus-visible:hover:!border-primary` 各 1(Textarea naked 模式,C 類邊框轉色)/ `focus-visible:z-20` 1(SegmentedControl 疊層順序,不是指示器)/ 其餘出現在註解 |
 
 `bg-neutral-hover` 橫跨 131 處 / 56 檔,所以底色語彙本身是全 DS 共用的 —— 這正是它只能表達「滑鼠在這裡」與「選中」、不能再借給鍵盤游標當第三個意義的原因。
 
@@ -356,7 +356,7 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 
 **共同前提**:四類都要指得出**承擔者是誰**(file:line)。指不出來就是要畫,沒有第五類。
 **指標怎麼寫(2026-11-11)**:別檔的承擔者一律寫**宣告名** `檔名.tsx#宣告名`(物件裡的一項寫 `檔名.tsx#宣告名.鍵`),
-不准寫行號;`檔名.tsx:行號` 只准指同一個檔。原因是一次真實事故:data-table.tsx 的 A 類標記寫「承擔者:data-table-interaction-layer.tsx:379」,
+不准寫行號;`檔名.tsx:行號` 只准指同一個檔。原因是一次真實事故:data-table.tsx 的 A 類標記把承擔者寫成 data-table-interaction-layer.tsx 當時第 379 行,
 4bc1b6e9 在對方檔案上方加了 4 行註解,承擔者 `CELL_RING_STYLES.selected` 一字未改、只被推到 383 行,閘卻在**另一個檔**紅 ——
 行號只在寫下的那一刻剛好等於承擔者(M37 代理)。同次盤點 8 個行號指標有 4 個已過期,其中 3 個因為同檔另有證據而從沒被驗過。
 `scripts/focus-suppression-registry.mjs` 現在:跨檔寫行號 → 紅;標記裡寫出來的**每一個**指標(含旁白)都要指得到、而且指到的程式
@@ -367,7 +367,7 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 | **A. 虛擬游標／程式游標** | 它身上有 `aria-activedescendant`;或它是函式庫管理游標的項目(cmdk `data-selected` / Radix `data-highlighted`);或元件 state 管的程式游標(DataTable 試算表模式的格游標,框由 `data-table-interaction-layer.tsx` 畫,2026-09-26),而瀏覽器的 `:focus-visible` 看不到那個游標 | **元件自己**,畫在**被指到的那一項**上(`focus-ring-inset`;常駐清單的容器看自己的 `:focus-visible`、會搶反白的選單看反白來歷 `useCursorMover`;容器／項目抑制瀏覽器預設外框) | DataTable 根 / TimePicker 欄(`time-columns.tsx` 被指到的 option)/ DropdownMenu 項(`dropdown-menu.tsx` `radixCursorClass`)/ CommandItem(`command.tsx`)。TreeView 2026-09-25 起改列上真焦點(待辦總帳 B9),已不屬本類 |
 | **B. 插入點控件** | **可機械判別**:標籤名是 `input`(`type` 為文字類:未指定 / text / search / email / url / tel / password / number)或 `textarea`,或元素帶 `contenteditable`。Field 家族控件在此之上另有 wrapper 邊框轉色(`field-wrapper.tsx#fieldDefaultChromeCompounds` `focus-within:!border-primary`)。grep 判準 = `scripts/focus-suppression-registry.mjs` 的 `evidence.B`(往上 40 行找得到 `<input>` / `<textarea>`,或共用 style 常數所服務的檔案真的渲染該標籤) | **唯一不畫框的例外**。指示 = 閃動的插入點(caret);Field 家族再加欄位邊框轉 primary | Input / Textarea / Combobox / DatePicker / Command 與 SelectMenu 搜尋框 / AgentPromptInput |
 | **C. 祖先畫框(邊框轉色)** | 從**自己往上**找,有元素在聚焦時改邊框(`focus-within:` / `:has(…:focus-visible)` / `focus-visible:border-`) | **那個元素**(可以是自己這圈外框,也可以是祖先);它就是這個 tab stop 的框。自己的 `::before` 框圖層(「框怎麼畫」框圖層列)也算自己這圈 —— 元素本身抑制全域外描邊,承擔者寫成掛 `focus-visible:before:focus-ring-inset` 那一行的 `檔名.tsx:行號`(同檔;2026-09-26 FileUpload 清單列) | 欄位外框自己(Combobox / TimePicker 觸發器那一行,承擔者 `field-wrapper.tsx#fieldDefaultChromeCompounds`)/ 祖先畫(InlineEdit 外層 div 的 `[&:has(button:focus-visible)]:border-primary`)/ DatePicker 範圍模式兩顆鈕(另加底線區分,見下) |
-| **E. 浮層程式落點** | 它 `tabIndex=-1`,而且是浮層開啟時被程式 `.focus()` 的殼 | **回規則一(問題一)**:殼本身不可操作 → 不畫;它不在 Tab 順序裡(`-1` 是 Radix 設的,不必也不能拿掉)。若某個殼是 `tabIndex≥0` 的空焦點站,修法是**拿掉 tabIndex**,不是畫框。內部控件各自有指示 | Popover / HoverCard / DropdownMenuContent / FileViewer |
+| **E. 浮層程式落點** | 它 `tabIndex=-1`,而且是浮層開啟時被程式 `.focus()` 的殼 | **回規則一(問題一)**:殼本身不可操作 → 不畫;它不在 Tab 順序裡(`-1` 是 Radix 設的,不必也不能拿掉)。若某個殼是 `tabIndex≥0` 的空焦點站,修法是**拿掉 tabIndex**,不是畫框。內部控件各自有指示 | Popover / HoverCard / DropdownMenuContent / FileViewer / Dialog / Sheet(2026-11-26 補:裡面沒有可聚焦控件時開啟落點退回殼本身,修前畫出 2px 框) |
 
 > **這張表只收「可操作、但瀏覽器預設那圈不是它的框」的情況。**
 > 「**不可操作**的東西」不在這裡 —— 問題一已經答完了:它根本不該可聚焦,自然也不用畫。
@@ -393,27 +393,32 @@ Field 家族在此之上**額外**有欄位邊框轉 primary(`field-wrapper.tsx#
 ### 一個承擔者只能服務一個 tab stop
 
 判斷程序問「有沒有人畫」,但沒問「**畫的那一個分不分得出是誰**」。
-`combobox.tsx:667` 那種自己畫的情況沒問題(一個元素一個 tab stop),
+`combobox.tsx:673` 那種自己畫的情況沒問題(一個元素一個 tab stop),
 但 **DatePicker 的範圍模式**是兩顆 button 罩在同一圈欄位邊框裡 ——
 邊框只會說「焦點在這個欄位」,不會說「在起日還是迄日」。
 
 **規則:同一個承擔者被兩個以上 tab stop 共用時,每一顆必須另有自己的區分指示。**
 
-DatePicker 自己早就有那個指示 —— 作用端下方一條主色粗線
-(`decoration-primary decoration-2 underline-offset-4`),對照
+DatePicker 自己早就有那個指示 —— 作用端一條主色粗線,對照
 [Ant Design RangePicker 的 `-active-bar`](https://raw.githubusercontent.com/ant-design/ant-design/master/components/date-picker/style/index.ts)
 (`height: lineWidthBold, background: colorPrimary, bottom: -lineWidth`,一手 source)。
 問題只是那條線原本掛在 `data-active-end`(帶 `open &&` 條件),
 所以**面板關著用 Tab 在起訖之間移動時,兩顆長得一模一樣**。
-2026-09-08 補上 `focus-visible:underline` —— 用的是同一條線,不是第二種指示。
+2026-09-08 補上 focus-visible 這一半(當時寫 `focus-visible:underline`)—— 用的是同一條線,不是第二種指示。
+2026-11-26 起那條線**壓在欄位框的下邊上**(線的下緣 = 框外緣、粗 2px、蓋住那段框線;線長 = 該端文字寬;線色 = 框當下的顏色,
+欄位錯誤時紅),與 Ant 的 `bottom: -lineWidth` 同位置(RANGE-FOCUS-BAR(定),user 決策卡留言逐字:「應該是甲，但是你的圖片的底線長度應該要等同於上方的時間吧？」)。
+此前是文字底線(`decoration-primary decoration-2 underline-offset-4`),離框的距離隨字級而變。
+高對比模式(forced-colors)下線色換成系統色 `Highlight`:線畫在背景上,背景色在該模式會被強制換成底色(只有系統色不換),
+不換就整條消失、起訖兩顆又分不出來 —— 與本檔「高對比模式下完全沒有焦點框」(box-shadow 被強制 none)同一類。
+規則 owner = `packages/design-system/src/components/DatePicker/date-picker.spec.md`「Active-end 機制」視覺指示。
 
 機械強制:`scripts/focus-suppression-registry.mjs` 把同檔內承擔者字串相同的 C 類分組,
 ≥2 個就要求每一處後 8 行內有 `focus-visible:` 的非 `outline-none` 樣式。
-對照組驗過:拿掉 `focus-visible:underline` → 閘紅並指名兩行;補回 → 綠。
+對照組驗過(2026-09-08,當時的寫法):拿掉 `focus-visible:underline` → 閘紅並指名兩行;補回 → 綠。
 
 ### C 類為什麼是「從自己往上」而不是「往上」
 
-同一次對照又撞到第二面牆:`combobox.tsx:667`、`time-picker.tsx:391` 這兩行,
+同一次對照又撞到第二面牆:`combobox.tsx:673`、`time-picker.tsx:417` 這兩行,
 **元素本身就是那圈欄位外框**(`fieldWrapperStyles` + `focus-within:!border-primary`)。
 `:focus-within` 在元素自己取得焦點時也會命中,所以它們其實**有畫**,只是用邊框轉色而不是外框。
 寫成「往上找祖先」會把這種情況判成無承擔者 —— 但它是全 Field 家族觸發器的標準寫法。
@@ -522,7 +527,7 @@ DataTable 的 boolean 儲存格,量到勾選框四邊淨空 0px → 先前判「
 不是讓焦點框改成內描邊去遷就它。
 
 **判斷「正當」的問句**:如果這個障礙消失,畫面會不會壞?
-- 會壞(例:Tabs 的 tab 高度就等於分頁列高、Calendar 事件 tile 之間的 2px gap 就是格線)→ **正當,往內**(2026-09-09 訂正:原例「Avatar 的 16px 槽剛好包住」是錯的 —— 移除 × 是 12px 鈕、旁邊是疊在一起的頭像,不算鄰居,實測往外)
+- 會壞(例:Tabs 的 tab 高度就等於分頁列高)→ **正當,往內**(2026-09-09 訂正:原例「Avatar 的 16px 槽剛好包住」是錯的 —— 移除 × 是 12px 鈕、旁邊是疊在一起的頭像,不算鄰居,實測往外)
 - 不會壞、甚至更好(例:勾選框外面那層文字截斷 span)→ **不正當,去修它,然後往外**
 
 ### `overflow` / 可捲動與否**完全不進判準**(2026-09-07 三次訂正)
@@ -555,10 +560,10 @@ DataTable 的 boolean 儲存格,量到勾選框四邊淨空 0px → 先前判「
 **一個元件一種畫法。** 判準量的是「這個元素在它**設計上的位置**四周有多少正當淨空」,不是拿最極端的情況、
 也不是執行期逐個實例去量。所以:
 
-- 每個元件(元素種類)在規格裡只有一個答案:按鈕、SidebarMenuAction、PeoplePicker 的移除 ×(12px 鈕,左右是疊在一起的頭像,不算鄰居)往外;選單項、tab、Calendar 事件 tile(tile 之間 gap 2px)、DateGrid 日期格(格間 4px 縫裡跑著區間 track 與預覽框,2026-09-23 改判往內;藍底格另走「填色元素上的內描邊」)往內。
+- 每個元件(元素種類)在規格裡只有一個答案:按鈕、SidebarMenuAction、PeoplePicker 的移除 ×(12px 鈕,左右是疊在一起的頭像,不算鄰居)、Calendar 事件列與跨日長條(列距 4、格內距 4)往外;選單項、tab、Calendar 唯讀日期格(`readOnlyDates`,焦點在格子本身,格與格零間距)、DateGrid 日期格(格間 4px 縫裡跑著區間 track 與預覽框,2026-09-23 改判往內;藍底格另走「填色元素上的內描邊」)往內。
   答案寫在該元件的 class 上(往外 = 什麼都不寫;往內 = `focus-ring-inset`),閘 `scripts/focus-suppression-registry.mjs` 對著 class 查。
-- 同一個底層元件被**另一個元件**放進貼邊的位置(例:Calendar 把事件 tile 排成 gap 2px 的格子),往內的決定由**那個外層元件**的規格與 class 承擔,
-  底層元件本身維持預設往外 —— 不是底層元件自己長兩套。驗算表裡的「Calendar 事件 tile」(gap 2px → 內)與「SidebarMenuAction」(四周有餘 → 外)
+- 同一個底層元件被**另一個元件**放進貼邊的位置(例:Tag 把移除 × 放進 24 高、上下淨空 3px 的盒子裡),往內的決定由**那個外層元件**的規格與 class 承擔,
+  底層元件本身維持預設往外 —— 不是底層元件自己長兩套。驗算表裡的「Tag 的移除 ×」(上下淨空 3 → 內,寫在 TagDismiss)與「SidebarMenuAction」(四周有餘 → 外)
   就是同一種可聚焦元素在兩個宿主裡各有一個答案,而各自的答案都只有一個。
 - 「可能合法地被塞在四周沒有足夠視覺空間的地方」(判準原句)指的就是「規格允許的位置裡有一種是貼邊的」,那個元件就整個往內
   (選單項永遠撐滿列、tab 永遠等於列高),不是「大多數時候有空、偶爾貼邊就兩種都畫」。真的有兩種正當位置、淨空又不同,
@@ -606,7 +611,10 @@ user 2026-09-23 拍板 D(逐字:「我會想要選D,因為 c的白線幾乎要�
 | PeoplePicker 移除 × | 左右鄰居 1.64px / −0.02px,**但都是疊在一起的頭像** | 疊層不算鄰居 → 無限制;無裁切祖先 | **外 +2px** |
 | AgentPanel 思考過程 | 下方鄰距 **0.00px**(正常流內容) | A(0 < 4) | **內 −2px** |
 | DateGrid 日期格 | 上右下三面各 **4.00px**,**但那 4px 縫裡跑著區間 track(td `::before`)與預覽框(td `::after`)** | A:縫隙被正當障礙佔用(2026-09-23 重跑;09-16 的這一列只量了淨空、沒看縫裡有什麼) | **內 −2px**;藍底格白線退 3px(「填色元素上的內描邊」)|
-| Calendar 事件 tile | 上方 4.00px,但 **tile 之間 `gap-0.5` = 2px** | A(取最小 2 < 4) | **內 −2px** |
+| Calendar 事件列與跨日長條(含 `renderEventTile` 自訂方塊外層;長條的框畫在整段上)| 列距 4、格子內距 4(2026-11-25 起;之前 `gap-0.5` = 2px → 內)→ 四周最小淨空 **4.00px**(`scripts/calendar-month-invariant.mjs` 量列距與格內距,E3 事件列、E4 長條的焦點框往外)| 都不命中(4.00 算放得下)| **外 +2px** |
+| Calendar「+N」(2026-11-26 起是按鈕;佔第 k 列)| 上方列距 4、左右與下方格子內距 4 → 四周最小淨空 **4.00px**(`scripts/calendar-month-invariant.mjs` ML 區塊量「+N」的焦點框往外)| 都不命中(4.00 算放得下)| **外 +2px** |
+| Calendar「+N」清單裡的事件列(原生 `<button>`)| 上:內文捲動區的頂邊 **0**(標題列在捲動區外、body 頂部 0,第一列貼著頂邊;2026-11-27 前這一列把標題列算成上方淨空,鍵盤打開時第一列的框上緣被捲動區切掉)/ 下:列距 4、底部內距 12 / 左右清單內距 16 → 最小淨空 **0** | A(0 < 4;裁切邊就是元素貼著的捲動區頂邊,見「為什麼不必要」)| **內 −2px** |
+| Calendar 唯讀日期格(`readOnlyDates`,焦點在格子本身)| 格與格之間 **0**(格線相鄰)| A(0 < 4) | **內 −2px** |
 | Field 唯讀三兄弟 | 上方 FieldLabel **4.00px** | 都不命中(但 2026-09-10 起唯讀不畫外框,改邊框轉主色 —— 見規則二「唯讀的 Field 控件」列,這一列只留幾何結論)| **外 +2px**(若哪天要畫框)|
 | SidebarMenuAction | 四周有餘 | 淨空 ≥ 4 | **外 +2px** |
 | Tabs trigger | tab 高 = 分頁列高(`tabs.tsx#tabsTriggerVariants` 的 size 檔位)→ 上下淨空 **0** | 淨空 < 4 | **內 −2px** |

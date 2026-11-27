@@ -172,6 +172,20 @@ write_rail '<div className="px-[var(--layout-space-loose)] py-2 border-b border-
 expect_rc 'chrome block' 2
 teardown
 
+echo "Test 15a: Check 1 頁面內有框區塊的標頭(header-canonical.spec.md「何時不用」;user 2026-11-26 E6)→ 放行"
+write_rail 'export const S = () => (' '  <div className="rounded-md border border-border bg-surface">' \
+  '    <div className="flex items-center px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] border-b border-divider"><h2 className="text-h6">團隊成員</h2></div>' \
+  '    <p>共 12 人</p>' '  </div>' ')'
+expect_rc 'chrome page-block header' 0
+teardown
+
+echo "Test 15b: Check 1 同一個有框區塊放進 SheetContent(浮層內)→ 照擋"
+write_rail 'export const S = () => (' '  <SheetContent>' '    <div className="rounded-md border border-border bg-surface">' \
+  '      <div className="flex items-center px-[var(--layout-space-loose)] py-2 border-b border-divider"><span>團隊成員</span></div>' \
+  '    </div>' '  </SheetContent>' ')'
+expect_rc 'chrome page-block inside sheet' 2
+teardown
+
 echo "Test 16: Check 1 同一行豁免(有理由)→ 放行"
 write_rail '<div className="px-[var(--layout-space-loose)] border-b border-divider">x</div> // overlay-handcraft-allow: 非浮層 panel,只借 layout-space token'
 expect_rc 'chrome same-line escape' 0

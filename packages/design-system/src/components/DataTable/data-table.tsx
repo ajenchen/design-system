@@ -22,7 +22,7 @@ import { Empty } from '@/design-system/components/Empty/empty'
 import { Skeleton } from '@/design-system/components/Skeleton/skeleton'
 // L5 分頁(2026-07-06):Pagination = 分頁完整功能 SSOT(頁碼 + showTotal + 每頁筆數選單
 // 全 own 在 Pagination;共用模式,Ant Table 消費 Pagination 同派)—— DataTable 只轉發 config
-import { Pagination } from '@/design-system/components/Pagination/pagination'
+import { Pagination, type PaginationLabels } from '@/design-system/components/Pagination/pagination'
 import {
   useReactTable,
   getCoreRowModel,
@@ -68,7 +68,10 @@ import { RadioGroupItem } from '@/design-system/components/RadioGroup/radio-grou
 import * as RadioGroupPrimitive from '@radix-ui/react-radio-group'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
-import { isOwnPointerTarget } from '@/design-system/lib/pointer-press'
+import { isFocusLost } from '@/design-system/lib/overlay-focus-return'
+import { isOwnPointerTarget, pressLandedInDom } from '@/design-system/lib/pointer-press'
+import { FIXED_ORIGIN_PROBE_INNER_STYLE, FIXED_ORIGIN_PROBE_STYLE, originFromProbe, toLocal, VIEWPORT_ORIGIN, type FixedLayerOrigin } from '@/design-system/lib/fixed-layer-origin'
+import { useI18n } from '@/design-system/lib/i18n/i18n-context'
 import { pointerFocusGuard } from '@/design-system/lib/pointer-focus-guard'
 import { Button } from '@/design-system/components/Button/button'
 
@@ -157,6 +160,29 @@ type TableSize = 'sm' | 'md' | 'lg'
 // any-allow: TanStack ColumnDef TValue idiom(per-column value 型別異質,官方範例同)— 同下方 DataTableProps.columns(2026-11-18 複查仍成立:table-core 的 ColumnDef 預設 TValue = unknown,值型別不同的 accessor 欄放進同一個陣列會 TS2322)
 export type DataTableColumnDef<TData, TValue = any> =
   (DisplayColumnDef<TData, TValue> | AccessorColumnDef<TData, TValue>) & { columns?: never }
+
+/**
+ * DataTable 主體的字(2026-11-26,workspace F 組 F3):列拖曳把手的讀屏名與排序中的停用提示,原本寫死中文。
+ * 取值順序照 `lib/i18n/README.md`「Fallback chain」:`labels` prop → I18nProvider 的 `data-table` 那一組 → 下方預設(就是原本寫死的字,一字不改)。
+ * 表頭其他字串(隱藏欄位、自動調整寬度、依此欄篩選…)仍寫死,要開放是另一題(data-table.spec.md「文案」)。
+ */
+export interface DataTableLabels {
+  /** 列拖曳把手的讀屏名(可拖) */
+  rowDragHandle: string
+  /** 列拖曳把手的讀屏名(排序中不能拖) */
+  rowDragHandleDisabled: string
+  /** 排序中滑過把手的停用提示(Tooltip) */
+  rowDragDisabledTooltip: string
+  /** 多選時表頭「全選」勾選框的讀屏名(2026-11-27 起經 labels;之前寫死在元件裡) */
+  selectAllVisibleRows: string
+}
+
+export const DATA_TABLE_DEFAULT_LABELS: DataTableLabels = {
+  rowDragHandle: '拖曳重排此列', // i18n-allow: DS 預設(中文);labels prop / I18nProvider 可換
+  rowDragHandleDisabled: '排序中無法拖曳', // i18n-allow: DS 預設
+  rowDragDisabledTooltip: '排序中無法拖曳,清除排序後可重排', // i18n-allow: DS 預設
+  selectAllVisibleRows: '全選可見列', // i18n-allow: DS 預設
+}
 
 export interface DataTableProps<TData>
   extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'>,
@@ -324,6 +350,11 @@ export interface DataTableProps<TData>
    */
   onRowReorder?: (sourceId: string, targetId: string, position: 'before' | 'after') => void
   /**
+   * DataTable 主體的字(Partial,與 `DATA_TABLE_DEFAULT_LABELS` 合併;沒給的鍵再看 I18nProvider 的 `data-table` 那一組):
+   * 列拖曳把手的讀屏名與排序中的停用提示。2026-11-26 起(workspace F 組 F3),之前寫死中文。
+   */
+  labels?: Partial<DataTableLabels>
+  /**
    * 啟用全表 column resize(2026-05-06 v11):
    * - `true`: 所有 data columns 全 fixed width,header 右邊出現 resize handle(hover 顯色 +
    *   cursor:col-resize),user 拖拉調整 column width。System columns(checkbox / drag handle /
@@ -380,6 +411,12 @@ export interface DataTablePaginationOptions {
   defaultPage?: number
   onPageChange?: (page: number) => void
   onPageSizeChange?: (pageSize: number) => void
+  /** 分頁列帶數字的兩段字(range 資訊、「N 筆/頁」),原樣轉發 `<Pagination labels>`(pagination.spec.md「完整形態」;2026-11-26 前沒有轉發,表格裡的分頁列換不了字) */
+  labels?: Partial<PaginationLabels>
+  /** 上一頁鈕的 aria-label,原樣轉發 `<Pagination prevAriaLabel>`(不傳 = I18nProvider `pagination.previous` → 「上一頁」) */
+  prevAriaLabel?: string
+  /** 下一頁鈕的 aria-label,原樣轉發 `<Pagination nextAriaLabel>`(不傳 = I18nProvider `pagination.next` → 「下一頁」) */
+  nextAriaLabel?: string
 }
 
 // ── Cell Rendering(Phase C 2026-05-05 — type-keyed registry SSOT)─────────────
@@ -754,6 +791,14 @@ interface SortableRowCtxValue {
   handleAttributes: Record<string, unknown>
 }
 const SortableRowCtx = React.createContext<SortableRowCtxValue | null>(null)
+/**
+ * 表格的浮層宿主(2026-11-27,PR #174 CI layout-body-edges):**放在表格外框之前**的零尺寸元素,收 dnd-kit 的讀屏節點
+ * (HiddenText + LiveRegion,dnd-kit 預設就地接在 DndContext 子節點之後)與列拖曳把手 / 定位基準探針的 portal。
+ * 修前這些節點接在表格外框**後面**,容器自判底距(tokens/layoutSpace/layoutSpace.css `:nth-last-child(1 of …)`)看到的最後一個子元素
+ * 變成它們、不是有框的表格 → 底距從 loose 變 48(DialogBody 裡 enableRowDrag 的表格實測 48,應 16 / 24);
+ * 規格「容器看最後一個佔版面的子孫」(layoutSpace.spec.md),這些節點都不佔版面。放在前面同 sortLiveRegion 的理由(下方 return 註解)。
+ */
+const DataTableOverlayHostCtx = React.createContext<HTMLElement | null>(null)
 
 /** Per-region per-row drag wrapper(v15.4 architectural split)。
  *  同 row.id 在 left/center/right 三 region 各 mount 一次,但 hook mount tree 完全分離:
@@ -1137,8 +1182,9 @@ const rowDragScrollLatch = {
 // `hoverRowIndex` = 所屬列的 `data-row-index` 值,寫到把手的專用屬性 `data-hover-row-index` 上,
 // 讓表格層的 hover 代理把「指標在把手上」算成「指標還在這一列」(巢狀 hover;理由見 enterLeaveHandlers 的 findRowIndex 註解)。
 // 由父層直接傳,不在 render 裡讀 `rowEl.dataset.rowIndex`:render 時 DOM 還是上一輪的值,列換索引(排序 / 虛擬捲動)會差一拍。
-function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: boolean; anyDragActive: boolean; hoverRowIndex: number }) {
+function RowDragHandle({ disabled, anyDragActive, hoverRowIndex, labels }: { disabled: boolean; anyDragActive: boolean; hoverRowIndex: number; labels: DataTableLabels }) {
   const ctx = React.useContext(SortableRowCtx)
+  const overlayHost = React.useContext(DataTableOverlayHostCtx)
   const [rowEl, setRowEl] = React.useState<HTMLDivElement | null>(null)
   const [portalTarget, setPortalTarget] = React.useState<HTMLElement | null>(null)
   // fits = 24px 把手整顆落在所屬 body 面板的可視帶(client box,不含水平捲軸)內;放不下就不顯示(見 update())
@@ -1151,7 +1197,15 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
   // Fix:button 自帶 hover state,visibility = rowHovered || buttonHovered || isDragging。
   const [buttonHovered, setButtonHovered] = React.useState(false)
   const handleRef = React.useRef<HTMLButtonElement | null>(null)
+  // positionRef 存**視窗座標**(fits 的可視帶判定用);寫進把手 style 的是換算到 fixed 定位基準的座標(syncHandlePosition 與 render 的 styleAt,同一份 toLocal)。
   const positionRef = React.useRef<{ top: number; left: number; fits: boolean } | null>(null)
+  // fixed 把手此刻真正的定位基準(2026-11-26,workspace F 組 F3):表格祖先帶 transform / translate / filter(DS Dialog 的置中位移、
+  // AppShell portalContainer 舞台)時,fixed 不再以視窗為基準,視窗座標直接寫進 style 會多偏出那個祖先的原點(實測 +256 / +30)。
+  // 量跟把手放在同一個 portal 目標的常駐零尺寸探針反推(lib/fixed-layer-origin.ts originFromProbe,不列舉會產生基準的屬性 —— M37);
+  // **不量把手本身**:把手自己的位移(量具注入的偏移、誤套的 translate)會被當成基準扣掉、從此量不出來(2026-11-26 規格核對抓到)。
+  // 沒有這類祖先時 = VIEWPORT_ORIGIN,座標逐字不變。
+  const originRef = React.useRef<FixedLayerOrigin>(VIEWPORT_ORIGIN)
+  const probeRef = React.useRef<HTMLSpanElement | null>(null)
   // Logical hover ends before the existing opacity transition finishes painting.
   // Track only handles that have been visible; never measure every hidden row.
   const trackingPositionRef = React.useRef(false)
@@ -1166,8 +1220,16 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
     const handle = handleRef.current
     const position = positionRef.current
     if (!handle || !position) return
-    handle.style.top = `${position.top}px`
-    handle.style.left = `${position.left}px`
+    // React inline style(下方 render)與這裡寫同一份換算(toLocal),否則下一次 render 會把修正蓋回去
+    const local = toLocal(originRef.current, position.left, position.top)
+    handle.style.top = `${local.top}px`
+    handle.style.left = `${local.left}px`
+  }, [])
+  /** 量探針、反推定位基準(在**寫新座標之前**讀:版面乾淨,不多一次強制排版)。探針還沒掛上(第一次 update)就沿用目前的值。 */
+  const measureHandleOrigin = React.useCallback(() => {
+    const probe = probeRef.current
+    if (!probe) return
+    originRef.current = originFromProbe(probe)
   }, [])
   // A render caused by hover/DnD must not restore an earlier scroll position.
   React.useLayoutEffect(syncHandlePosition)
@@ -1188,8 +1250,8 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
   React.useLayoutEffect(() => {
     if (!rowEl || ctxRole !== 'primary') return
 
-    // Portal target = table outer 的 parent(保持 CSS variable / theme scope 繼承,
-    // 不 portal 到 document.body — body 沒 theme tokens 會使 Button tertiary 變透明)
+    // Portal target = 表格的浮層宿主(DataTableOverlayHostCtx;跟 table outer 同一個 parent、排在外框之前 → 同樣的 CSS variable / theme scope
+    // 與同一個 fixed 定位基準;沒有宿主時退回 table outer 的 parent)。不 portal 到 document.body — body 沒 theme tokens 會使 Button tertiary 變透明
     const tableEl = rowEl.closest<HTMLElement>('[data-data-table-outer]')
     const update = () => {
       if (!tableEl) return
@@ -1198,7 +1260,7 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
         rowDragScrollLatch.deferred.set(update, () => rowEl.isConnected && (rowEl.hasAttribute('data-hovered') || hasPosRef.current))
         return
       }
-      setPortalTarget(tableEl.parentElement)
+      setPortalTarget(overlayHost ?? tableEl.parentElement)
       const rRect = rowEl.getBoundingClientRect()
       const tRect = tableEl.getBoundingClientRect()
       // v15.1:drag 期間 source button hide(visible 邏輯已 guard isDragging),
@@ -1217,6 +1279,8 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
       const bandBottom = panelEl ? bandTop + panelEl.clientHeight : pRect.bottom
       const half = (handleRef.current?.offsetHeight || 24) / 2
       const fits = top - half >= bandTop - 0.5 && top + half <= bandBottom + 0.5
+      // 定位基準跟著這一次一起量(探針已掛上時;第一次掛上由下方 hasPos 的 layout effect 校正)
+      measureHandleOrigin()
       positionRef.current = { top, left, fits }
       if (fits && (rowHovered || buttonHovered || ctxDragging)) trackingPositionRef.current = true
       // Position belongs to the scroll event, not to a later React render/rAF.
@@ -1263,11 +1327,18 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
       rowDragScrollLatch.deferred.delete(update)
       updateRef.current = null
     }
-  }, [rowEl, ctxRole, ctxDragging, buttonHovered, syncHandlePosition])
+  }, [rowEl, ctxRole, ctxDragging, buttonHovered, syncHandlePosition, measureHandleOrigin, overlayHost])
 
   // 閂鎖訂閱:只有渲染過把手的實例(pos 非 null)訂閱。閂上 → 直接把 DOM 藏掉(不等 React commit、不淡出);
   // 鬆開 → 這列若仍被 hover 就重量位置(列在捲動期間移動過)再顯示;React 的 visible 也讀同一個閂鎖,兩邊一致。
   const hasPos = pos != null
+  // 把手與探針第一次掛上:量一次定位基準,不是視窗就改寫(layout effect = paint 之前,畫面不會先閃到偏掉的位置)。之後每次 update() 都順手重量。
+  React.useLayoutEffect(() => {
+    if (!hasPos) return
+    const before = originRef.current
+    measureHandleOrigin()
+    if (originRef.current !== before) syncHandlePosition()
+  }, [hasPos, measureHandleOrigin, syncHandlePosition])
   React.useEffect(() => {
     if (!hasPos) return
     return rowDragScrollLatch.subscribe((engaged) => {
@@ -1307,6 +1378,8 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
   //   - 捲動閂鎖(2026-09-10):捲動後、指標未真的移動前一律隱藏;放不進 body 可視帶(fits=false)也不顯示
   const latched = rowDragScrollLatch.active
   const visible = ctx.isDragging || (!anyDragActive && !latched && pos.fits && (pos.rowHovered || buttonHovered))
+  // 寫進 style 的座標 = 視窗座標換算到 fixed 定位基準(與 syncHandlePosition 同一份換算;沒有會產生基準的祖先時逐字等於視窗座標)
+  const styleAt = toLocal(originRef.current, positionRef.current?.left ?? pos.left, positionRef.current?.top ?? pos.top)
 
   // 2026-05-12 fix(user 抓 image 1):
   //   (a) tooltip 偶爾不出 — root cause:`disabled={!canDrag}` HTML attribute 阻 pointer events
@@ -1329,8 +1402,10 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
       iconOnly
       size="xs"
       startIcon={GripVertical}
-      aria-label={canDrag ? '拖曳重排此列' : '排序中無法拖曳'}
+      aria-label={canDrag ? labels.rowDragHandle : labels.rowDragHandleDisabled}
       aria-disabled={!canDrag || undefined}
+      // 量具認「這是列拖曳把手」用的記號(2026-11-26):閘原本用 aria-label 文字選把手 —— 文案是「這是把手」的代理值,換字就找不到(M37)
+      data-row-drag-handle=""
       // 2026-05-12 fix(a):移除 disabled HTML attr(改 aria-disabled);pointer events 必 fire 才能
       // 接 Tooltip pointerenter。Button cva 已 handle aria-disabled visual styling。
       onMouseEnter={() => setButtonHovered(true)}
@@ -1340,8 +1415,8 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
       data-hover-row-index={hoverRowIndex}
       style={{
         position: 'fixed',
-        top: positionRef.current?.top ?? pos.top,
-        left: positionRef.current?.left ?? pos.left,
+        top: styleAt.top,
+        left: styleAt.left,
         // 閂鎖期間隱藏是瞬時的(捲動中留一顆停在舊座標淡出的把手就是殘影);鬆開後回到 150ms 淡入
         transitionDuration: latched ? '0s' : undefined,
         transform: 'translate(-50%, -50%)',
@@ -1410,14 +1485,21 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
   const wrapped = disabled ? (
     <Tooltip>
       <TooltipTrigger asChild>{handle}</TooltipTrigger>
-      <TooltipContent>排序中無法拖曳,清除排序後可重排</TooltipContent>
+      <TooltipContent>{labels.rowDragDisabledTooltip}</TooltipContent>
     </Tooltip>
   ) : handle
+
+  // 定位基準探針:跟把手放在同一個 portal 目標 → 同一個 fixed 定位基準;零尺寸、看不見、不接指標,只給 originFromProbe 量
+  const probe = (
+    <span ref={probeRef} aria-hidden data-fixed-origin-probe="" style={FIXED_ORIGIN_PROBE_STYLE}>
+      <span style={FIXED_ORIGIN_PROBE_INNER_STYLE} />
+    </span>
+  )
 
   return (
     <>
       {anchor}
-      {portalTarget && createPortal(wrapped, portalTarget)}
+      {portalTarget && createPortal(<>{probe}{wrapped}</>, portalTarget)}
     </>
   )
 }
@@ -1483,11 +1565,13 @@ interface MemoCellSlotProps {
   onEnterEdit: (rowId: string, colId: string) => void
   /** 欄標題(`columnAccessibleName`)→ 格內編輯器的 accessible name(字串,不破壞 memo) */
   ariaLabel: string
+  /** 這一列的原始資料(`row.original`,身分隨資料穩定、不破壞 memo)→ select 欄編輯器的 `meta.getRowOptions(row)` */
+  row: unknown
 }
 
 const MemoCellSlot = React.memo(function MemoCellSlot({
   Cell, rowId, colId, value, meta, mode, size, autoRowHeight,
-  isEditable, onCommitCell, onCancelCell, onCellCommitLive, onEnterEdit, ariaLabel,
+  isEditable, onCommitCell, onCancelCell, onCellCommitLive, onEnterEdit, ariaLabel, row,
 }: MemoCellSlotProps) {
   const onCommit = React.useCallback((next: unknown) => onCommitCell(rowId, colId, next), [onCommitCell, rowId, colId])
   const onCommitLive = React.useCallback((next: unknown) => onCellCommitLive?.(rowId, colId, next), [onCellCommitLive, rowId, colId])
@@ -1506,6 +1590,7 @@ const MemoCellSlot = React.memo(function MemoCellSlot({
       onCancel={onCancel}
       onRequestEdit={onRequestEdit}
       ariaLabel={ariaLabel}
+      row={row}
     />
   )
 })
@@ -1526,6 +1611,7 @@ function DataTableInner<TData>(
     onCellCommit,
     enableRowDrag = false,
     onRowReorder,
+    labels: labelsProp,
     enableColumnResize = false,
     onColumnResize,
     enableColumnReorder = false,
@@ -1543,6 +1629,12 @@ function DataTableInner<TData>(
   // 未分頁 = 既有 '400px' 預設不變。顯式傳一律尊重(prop docblock 有完整規則)。
   // 下面的 `height` 是內部的 CSS 上限字串('auto' = 沒有上限),下游一整串判斷都吃它;對外參數叫 `maxHeight`(「尺寸:甲」)。
   const height = maxHeightToCss(maxHeightProp) ?? (pagination ? 'auto' : '400px')
+  // 主體的字:prop → I18nProvider `data-table` → DS 預設(lib/i18n/README.md「Fallback chain」;DataTableLabels 註解)
+  const { t } = useI18n()
+  const tableLabels = React.useMemo<DataTableLabels>(() => {
+    const pick = (key: keyof DataTableLabels) => labelsProp?.[key] ?? t('data-table', key, DATA_TABLE_DEFAULT_LABELS[key])
+    return { rowDragHandle: pick('rowDragHandle'), rowDragHandleDisabled: pick('rowDragHandleDisabled'), rowDragDisabledTooltip: pick('rowDragDisabledTooltip'), selectAllVisibleRows: pick('selectAllVisibleRows') }
+  }, [labelsProp, t])
   // 對外參數 `rowHeight="hug"`(2026-11-17 前叫 `autoRowHeight`);內部一整串判斷(列殼、儲存格、per-row 錯誤撐高、
   // scripts/audit-data-table-row-mode-ssot.mjs 盯的 cell-render 範圍)沿用這個布林名,意思 = 「整張表跟內容長高」。
   const autoRowHeight = rowHeightProp === 'hug'
@@ -1602,11 +1694,11 @@ function DataTableInner<TData>(
       // 修前直接 return:編輯器卸載後焦點掉到 <body>(keyboard-model-canonical.md「焦點不可因 DOM unmount 掉到 body」)。
       // 只在結算當下焦點還在編輯器裡(鍵盤 Enter / Esc / F2、在浮層清單裡選值)才接手;失焦結算(點了別處、Tab 走了)
       // 的那一刻焦點已經是 body(blur 期間)或別人,不搶 —— 同 LinkInput「只在焦點真的掉了才接手」。
-      const active = document.activeElement
-      if (!active || active === document.body) return
+      // 「焦點掉了沒」一律用 lib isFocusLost(2026-11-27,workspace H 組 H16):浮層(DS Dialog / Sheet)裡編輯器卸載後,
+      // Radix FocusScope 先把焦點搬到對話框外框 —— 修前只認 body,在浮層裡永遠不接手,焦點停在外框。
+      if (isFocusLost(document.activeElement, tableRef.current)) return
       requestAnimationFrame(() => {
-        const now = document.activeElement
-        if (now && now !== document.body && now.isConnected) return
+        if (!isFocusLost(document.activeElement, tableRef.current)) return
         const cellEl = tableRef.current?.querySelector<HTMLElement>(`[data-cell-id="${CSS.escape(cellId)}"]`)
         if (!cellEl) return
         const entry = cellEl.querySelector<HTMLElement>(`[${CELL_EDIT_ENTRY_ATTR}] button`)
@@ -1618,13 +1710,12 @@ function DataTableInner<TData>(
     setSelectedCellId(cellId)
     setRangeAnchor(cellId)
     setRangeFocus(null)
-    // 等 editor unmount 完成後才收回焦點;activeElement 非 body(user 點了其他 focusable /
-    // Tab 換格後下一格 editor autoFocus)時不搶焦點。
+    // 等 editor unmount 完成後才收回焦點;焦點已被別的東西接走(user 點了其他 focusable /
+    // Tab 換格後下一格 editor autoFocus)時不搶焦點。「掉了」= isFocusLost(含浮層外框接住的那種,H16)。
     requestAnimationFrame(() => {
       const el = tableRef.current
       if (!el) return
-      const active = document.activeElement
-      if (active === document.body || active === null) el.focus({ preventScroll: true })
+      if (isFocusLost(document.activeElement, el)) el.focus({ preventScroll: true })
     })
   }, [spreadsheetMode])
   const commitCell = React.useCallback(
@@ -1975,10 +2066,18 @@ function DataTableInner<TData>(
    * 的 `onVScroll` 也是在捲動事件裡把 `scrollTop` 記進 `nextScrollTop`,畫列時讀那個記錄,不回頭問 DOM。
    */
   const scrollGeomRef = React.useRef({ height: 0 })
+  // 空表(2026-11-26,產品 canary 回報 C2;data-table.spec.md「空表」):表身只畫中間區那一格、左右釘選面板不畫,
+  // 中間捲動區因此是整表的可見寬。欄寬分配要的仍是「表頭中間區的寬」→ 量表頭;Empty 置中要的是可見寬 → 另記一個值。
+  const isEmptyRef = React.useRef(isEmpty)
+  const [emptyVisibleWidth, setEmptyVisibleWidth] = React.useState(0)
   const measureScrollbarGutters = React.useCallback(() => {
     const body = centerBodyRef.current
     if (!body) return
-    setCenterBodyWidth((prev) => (prev === body.clientWidth ? prev : body.clientWidth))
+    const centerHeader = centerHeaderRef.current
+    const empty = isEmptyRef.current
+    const centerWidth = empty && centerHeader ? centerHeader.clientWidth : body.clientWidth
+    setCenterBodyWidth((prev) => (prev === centerWidth ? prev : centerWidth))
+    if (empty) setEmptyVisibleWidth((prev) => (prev === body.clientWidth ? prev : body.clientWidth))
     // 橫軸量的是**不變式本身**(header 與 body 的**內容盒等寬**),不是「捲軸多寬」這個代理值。
     // `clientWidth` = padding box 減捲軸(不含 border),所以兩者相減 = header 必須讓出的量。
     // **不可用 `body.offsetWidth − body.clientWidth`**(2026-09-03 抓到):那個式子把 body 自己的
@@ -2009,6 +2108,12 @@ function DataTableInner<TData>(
   // RO 會 fire)。原本無依賴 → **每次 render 都讀 clientWidth/offsetHeight**(強制 layout),
   // 捲動時虛擬列一換就 render、就量 —— 是「上一次大修正後變慢」的一半元兇。
   React.useLayoutEffect(measureScrollbarGutters, [measureScrollbarGutters])
+  // 有資料 ↔ 空表切換時(篩選到沒結果、資料載入):左右釘選面板掛上 / 卸下,量測的對象跟著換 → 當下重量一次
+  React.useLayoutEffect(() => {
+    if (isEmptyRef.current === isEmpty) return
+    isEmptyRef.current = isEmpty
+    measureScrollbarGutters()
+  }, [isEmpty, measureScrollbarGutters])
   React.useLayoutEffect(() => {
     const body = centerBodyRef.current
     if (!body) return
@@ -2104,9 +2209,12 @@ function DataTableInner<TData>(
   // 寫死時起始會說「已提起**項目**」而結束說「已移動**欄位**」,同一趟用兩個名字。
   // 2026-10-01 從 handleDragEnd 上方搬到這裡:表格根節點(下方 JSX)要讀 `drag.escapeLayer`(拖曳中 Esc 只取消拖曳),
   // 它在 JSX 之後宣告會踩到 TDZ;hook 順序照舊無條件。
+  // 浮層宿主(DataTableOverlayHostCtx):掛上後才有元素,所以用 state(ref 不觸發重畫,dnd-kit 的 container 與把手 portal 都要拿到它)
+  const [overlayHost, setOverlayHost] = React.useState<HTMLDivElement | null>(null)
   const drag = useDragAccessibility({
     getOutcome: () => reorderOutcomeRef.current,
     kind: (active) => (active.data?.current?.type === 'column' ? '欄位' : '列'),
+    container: overlayHost,
   })
 
   // 快速捲動的列殼 —— **自適應機器畫列能力**(2026-09-09,AD56:R17 的固定判準在慢機器失效)。
@@ -2971,7 +3079,8 @@ function DataTableInner<TData>(
    * 外層不捲動,軌道就不會飄。位置用 `--table-pinned-left-w` / `--table-pinned-right-w`,跟邊界線同一組變數、
    * 跟面板寬同一個 state,不可能對不齊。
    */
-  const scrollbarTroughs = hScrollbarGutter > 0 ? (
+  // 空表不畫:左右釘選面板不在表身,捲軸是中間區自己那一條、跨全寬(見下方空表段)
+  const scrollbarTroughs = hScrollbarGutter > 0 && !isEmpty ? (
     <>
       {hasLeft && (
         <div
@@ -3089,6 +3198,43 @@ function DataTableInner<TData>(
    * body 面板一定要拿到明確寬度:虛擬捲動時列是 `position:absolute`,面板沒有固有寬會塌成 0
    * (2026-09-04 實測:改成純算出來時,右區 body 面板寬 = 0,整區消失)。
    */
+  /**
+   * 表頭操作格的隱形佔位(2026-11-27,workspace H 組 H8):**目前畫出來的每一列**的 rowActions 疊在同一格
+   * (grid,每份 `[grid-area:1/1]`),格寬 = 最寬那一列 —— 右區寬是量這一格量出來的(上方說明),
+   * 修前只畫 `rows[0]` 一份:第一列沒有操作(回 null)或比較少,右區就只有第一列那麼寬,其他列的按鈕被裁掉。
+   * 「畫出來的列」= 沒有虛擬捲動時這一頁的全部列,有虛擬捲動時虛擬範圍裡的列(含 overscan,與表身同一份 `rowVirtualItems`);
+   * 空表 0 份。每列一份元素快取(列身分與 rowActions 都沒變就回同一個元素):捲動時範圍裡留著的列直接 bail out,只畫新進範圍的列。
+   * **捲動中沿用捲動前的範圍,停下後才換**(虛擬化器 isScrolling,最後一個 scroll 事件後 isScrollingResetDelay 250ms 才轉 false、觸發重畫):
+   * 捲動的每一幀不多畫一份操作鈕(快速捲動的主執行緒成本,data-table-scroll-cost 量的就是這個);代價是捲動途中新進範圍的列若操作比較多,
+   * 停下前那 250ms 內可能被裁【AI 推導】,停下後一定齊(I43 量的是靜止狀態)。
+   */
+  const liveActionsIdxKey = !hasRowActions ? '' : useVirtual ? rowVirtualItems.map((v) => v.index).join(',') : `all:${rows.length}`
+  const frozenActionsIdxKeyRef = React.useRef(liveActionsIdxKey)
+  const actionsScrollingNow = useVirtual && virtualizer.isScrolling
+  if (!actionsScrollingNow) frozenActionsIdxKeyRef.current = liveActionsIdxKey
+  const actionsPlaceholderIdxKey = actionsScrollingNow ? frozenActionsIdxKeyRef.current : liveActionsIdxKey
+  const actionsPlaceholderCacheRef = React.useRef<{ fn: unknown; map: Map<string, { original: unknown; el: React.ReactElement }> }>({ fn: null, map: new Map() })
+  const headerActionsPlaceholder = React.useMemo(() => {
+    if (!hasRowActions) return null
+    const cache = actionsPlaceholderCacheRef.current
+    if (cache.fn !== rowActions) { cache.fn = rowActions; cache.map = new Map() }
+    // 範圍由 key 本身表達(捲動中是凍結的那一份):虛擬 = 逗號分隔的列索引;非虛擬 = 這一頁全部列
+    const idxs = actionsPlaceholderIdxKey.startsWith('all:') ? rows.map((_, i) => i) : actionsPlaceholderIdxKey.split(',').filter(Boolean).map(Number)
+    const next = new Map<string, { original: unknown; el: React.ReactElement }>()
+    const out: React.ReactElement[] = []
+    for (const i of idxs) {
+      const row = rows[i]
+      if (!row) continue
+      const hit = cache.map.get(row.id)
+      const entry = hit && hit.original === row.original
+        ? hit
+        : { original: row.original, el: <div key={row.id} className="flex items-center justify-end gap-2 [grid-area:1/1]">{rowActions!(row.original)}</div> }
+      next.set(row.id, entry)
+      out.push(entry.el)
+    }
+    cache.map = next
+    return out
+  }, [hasRowActions, rowActions, rows, actionsPlaceholderIdxKey])
   const rightHeaderRef = React.useRef<HTMLDivElement>(null)
   const [measuredRightWidth, setMeasuredRightWidth] = React.useState(0)
   React.useLayoutEffect(() => {
@@ -3105,8 +3251,10 @@ function DataTableInner<TData>(
     const obs = new ResizeObserver(measure)
     obs.observe(el)
     return () => obs.disconnect()
-  }, [hasRowActions, rightCols, rows.length])
+  }, [hasRowActions, rightCols, rows.length, actionsPlaceholderIdxKey])
   const rightWidth = hasRowActions ? measuredRightWidth : rightColsWidth
+  // 空表會不會橫向捲動(欄寬總和 L + C + R 比可見寬寬):決定空表的捲動區要不要給 tab stop(見中間區 tabIndex)
+  const emptyScrollsX = isEmpty && emptyVisibleWidth > 0 && leftWidth + centerColsWidth + rightWidth > emptyVisibleWidth
 
   /* ── 缺陷 F:列高單一真相來源(2026-09-04)────────────────────────────────────────
    * 兩容器架構下,同一列在 left / center / right 是**三個各自獨立的 DOM row**。固定行高時它們
@@ -3321,6 +3469,7 @@ function DataTableInner<TData>(
           onCellCommitLive={onCellCommit}
           onEnterEdit={enterCellEdit}
           ariaLabel={columnAccessibleName(cell.column)}
+          row={cell.row.original}
         />
       )
     } else {
@@ -3533,8 +3682,13 @@ function DataTableInner<TData>(
       const selection = window.getSelection()
       return !!selection && !selection.isCollapsed && !!selection.anchorNode && e.currentTarget.contains(selection.anchorNode)
     }
+    // 兩支格子 click 都先過 `pressLandedInDom`(2026-11-26,workspace F 組 F1;data-table.spec.md「Inline Edit」段):
+    // 格裡頭像的名片、多人格的「+N」浮出清單畫在 portal(body),上面的點擊照元件樹冒到格子 —— 那不是點這一格:
+    // 修前點名片的「傳訊息 / 語音通話 / 查看更多」或名片空白處,格子就進編輯(檢視態卸載、名片跟著消失、選人清單打開),
+    // 試算表模式則把格游標搬到頭像那一格。判準全 DS 共用 lib/pointer-press.ts(Calendar 日期格、SelectMenu 觸發欄位同一支)。
     const onEditableCellClick = cellClickEntersEdit && !isEditingThisCell
       ? (e: React.MouseEvent<HTMLElement>) => {
+        if (!pressLandedInDom(e)) return
         if (clickIsForCellContent(e)) return
         // Default(non-spreadsheet)inline-edit behavior:click → enter edit
         setEditingCellId(cellEditId(cellRowId, cellColId))
@@ -3557,6 +3711,8 @@ function DataTableInner<TData>(
     // 鉛筆鈕 `stopPropagation` 進編輯 —— 這裡只負責「游標跟過去」。
     const onSpreadsheetCellClick = spreadsheetMode && !isEditingThisCell
       ? (e: React.MouseEvent<HTMLElement>) => {
+        // portal 浮層(名片 / 「+N」清單)冒上來的點擊不算點這一格 —— 放最上面,Shift+點延伸那一支一起擋(上方 onEditableCellClick 註解)
+        if (!pressLandedInDom(e)) return
         // Slice D Step 4 spreadsheet semantics(2026-05-10 user 拍板,2026-05-12 v2 fix):
         //   Shift+click → extend range(set focus,**anchor 保持 selectedCellId**)
         //   Click on already-selected → enter edit(只有點格即編輯的格;其餘沒有可進的編輯)
@@ -4097,7 +4253,7 @@ function DataTableInner<TData>(
               checked={headerCheckedState}
               onClick={(e) => e.stopPropagation()}
               onCheckedChange={() => toggleHeaderCheckbox()}
-              aria-label="全選可見列"
+              aria-label={tableLabels.selectAllVisibleRows}
               disabled={isHeaderDisabled}
             />
           )}
@@ -4239,14 +4395,14 @@ function DataTableInner<TData>(
               不在外層留 gap(寬 0 的節點仍會吃到 flex gap)。
             ItemInlineActionButton asChild-compatible,size="md" 因 header 不在 RowSizeProvider。 */}
         {/* `data-col-menu`:讓左側排序區用 `:has(~[data-col-menu]:hover)` 認出「指標在本欄 ⌄ 上」,保留自己的 hover 字色(巢狀 hover,見排序區 className 註解)。 */}
-        {/* @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:92「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給) */}
+        {/* @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:93「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給) */}
         <div data-col-menu className={cn(
           'shrink-0 inline-flex w-0 overflow-hidden opacity-0',
-          // @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:92「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給)
+          // @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:93「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給)
           'group-hover:w-auto group-hover:ml-2 group-hover:overflow-visible group-hover:opacity-100',
-          // @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:92「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給)
+          // @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:93「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給)
           'group-has-[:focus-visible:not([data-pointer-focus])]:w-auto group-has-[:focus-visible:not([data-pointer-focus])]:ml-2 group-has-[:focus-visible:not([data-pointer-focus])]:overflow-visible group-has-[:focus-visible:not([data-pointer-focus])]:opacity-100',
-          // @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:92「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給)
+          // @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:93「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給)
           'has-[[data-state=open]]:w-auto has-[[data-state=open]]:ml-2 has-[[data-state=open]]:overflow-visible has-[[data-state=open]]:opacity-100',
           // 沒有滑過能力的裝置(觸控)不另外處理,跟桌機同一套 —— user 2026-09-26 對「手機上滑過才出現的按鈕」已決「先維持」、不客製
           // (governance/planning/2026-09-25-interaction-and-hover-remediation.md 的 L11 那一列,含原話)。2026-11-12 AI 曾在這裡加過
@@ -4504,13 +4660,14 @@ function DataTableInner<TData>(
           )
         })}
         {isRight && hasRowActions && (
-          <div className="flex items-center justify-end shrink-0 gap-2 flex-1 invisible" aria-hidden="true" style={cellPadding}>
-            {/* 渲染一個假 row 的 actions 來佔位,確保 header 和 body 同寬(aria-hidden 避免 screen reader 讀出 invisible 內容)。
+          <div data-dt-actions-placeholder="" className="grid items-center shrink-0 flex-1 invisible" aria-hidden="true" style={cellPadding}>
+            {/* 畫出來的每一列的 actions 疊在同一格佔位(headerActionsPlaceholder,H8),格寬 = 最寬那一列,確保 header 和每一列的 body 都同寬
+                (aria-hidden 避免 screen reader 讀出 invisible 內容)。
                 **`flex-1` 必須跟 body 那格一致**(2026-09-03 稽核抓到):body 的操作格是 `flex-1`
                 (basis 0 且會 grow),header 這格若只有固有寬,右側 pinned 區的剩餘空間在兩邊會分給
                 不同的項目集合 → 同一欄的 header 比 body 窄 `(P−F)/(n+1)`(n=1、P≈80 時就是 40px)。
                 目前 stories 沒有「pinned right + rowActions」的組合,所以是 API 允許但沒被看見的地雷。*/}
-            {rows[0] && rowActions!(rows[0].original)}
+            {headerActionsPlaceholder}
           </div>
         )}
       </RowTag>
@@ -4539,6 +4696,8 @@ function DataTableInner<TData>(
     // Codex R7(2026-09-08)補:tableStateForEpoch.sorting(consumer 可經 tableOptions.state 覆蓋本地 sorting)、tableOptions(enableSorting /
     // enableHiding / meta 等 table options 都從它來;TanStack 改 options 時 rows / cols / column 身分全不變,快取不會順便失效)、setSelection(只依 isControlled)。
     rows, cellErrors, selection, onCellCommit, rowActions, editingCellId, editingDraft, selectedCellId, rangeAnchor, rangeFocus, columnSizingState, isResizingColumn, spreadsheetMode, size, bordered, autoRowHeight, dragDisabled, paginationEnabled, currentPage, pageSizeState, hasRowActions, enableRowDrag, sorting, columnVisibility, tableStateForEpoch.rowSelection, tableStateForEpoch.expanded, tableStateForEpoch.columnOrder, tableStateForEpoch.columnFilters, tableStateForEpoch.globalFilter, tableStateForEpoch.grouping, resolvedWidths, selectable, inlineEdit, enableColumnResize, experimentalActiveEditorController, experimentalSpreadsheetOverlay, dropIndicator, rangeCellIdSet, leftCols, rightCols, cancelCellEdit, commitCell, enterCellEdit, isCellEditable, isSelectedId, toggleRow, getRowAriaLabel, isRowSelectable, activeDragId, virtualizer, centerIds, leftIds, rightIds, enabled, mode, iconSize, rowHeight, tableStateForEpoch.sorting, tableOptions, setSelection, enableMultiSort,
+    // 2026-11-27(HB2 包尾):F3 起列拖曳把手讀 tableLabels(labels prop → I18nProvider → 預設中文),換字時舊列要重畫
+    tableLabels,
   ]
   // 診斷(閘設 window.__dtRowRenderStats 才計):記 epoch 是被哪一個依賴換掉的
   const prevEpochDepsRef = React.useRef<unknown[] | null>(null)
@@ -4559,7 +4718,8 @@ function DataTableInner<TData>(
   const headerElCacheRef = React.useRef<Map<string, { deps: unknown[]; el: React.ReactElement }>>(new Map())
   const renderHeaderRow = (cols: Column<TData, unknown>[], isRight: boolean) => {
     const key = cols === leftCols ? 'left' : cols === rightCols ? 'right' : 'center'
-    const deps: unknown[] = [cols, isRight, headerRenderEpoch]
+    // 右區另依「表頭操作格佔位」(H8):虛擬捲動換範圍時它會變,只讓右區這一列重畫,三區表頭不整批失效
+    const deps: unknown[] = [cols, isRight, headerRenderEpoch, isRight ? headerActionsPlaceholder : null]
     const hit = headerElCacheRef.current.get(key)
     if (hit && hit.deps.every((d, i) => Object.is(d, deps[i]))) return hit.el
     const el = renderHeaderRowFresh(cols, isRight)
@@ -4577,10 +4737,19 @@ function DataTableInner<TData>(
       const emptyContent = emptyState && typeof emptyState !== 'string'
         ? emptyState
         : <Empty description={typeof emptyState === 'string' ? emptyState : '沒有資料'} /> // i18n-allow: DS default fallback; consumer override via emptyState prop
+      // 2026-11-26(產品 canary 回報 C2):這一格跨**全部**欄 —— 左右釘選面板在空表時不畫表身,中間區撐成 L + C + R(見中間區內層 minWidth)。
+      // Empty 對「可見寬」置中:內層 sticky 貼左、寬 = 捲動區可見寬(measureScrollbarGutters 記的 emptyVisibleWidth),橫向捲動時 Empty 留在畫面中央;
+      // 修前只在中間區置中,左右釘選寬不同時偏一邊、欄寬總和比容器寬時捲到一半才看得到。
       return (
         <div role="row" aria-rowindex={2}>
-          <div role={spreadsheetMode ? 'gridcell' : 'cell'} aria-colspan={table.getVisibleLeafColumns().length} className="flex-1 flex items-center justify-center py-12">
-            {emptyContent}
+          <div role={spreadsheetMode ? 'gridcell' : 'cell'} aria-colspan={table.getVisibleLeafColumns().length} className="flex-1 flex">
+            <div
+              data-datatable-empty=""
+              className="sticky left-0 flex items-center justify-center py-12"
+              style={{ width: emptyVisibleWidth > 0 ? emptyVisibleWidth : '100%' }}
+            >
+              {emptyContent}
+            </div>
           </div>
         </div>
       )
@@ -4767,7 +4936,7 @@ function DataTableInner<TData>(
           {...(extra?.attributes ?? {})}
           {...(extra?.listeners ?? {})}
         >
-          {showDragHandle && <RowDragHandle disabled={dragDisabled} anyDragActive={anyDragActive} hoverRowIndex={idx} />}
+          {showDragHandle && <RowDragHandle disabled={dragDisabled} anyDragActive={anyDragActive} hoverRowIndex={idx} labels={tableLabels} />}
           {/* 2026-05-06 v14.6 row drop indicator(SSOT 對齊 TreeView):水平 2px primary line at top/bottom edge */}
           {dropIndicator?.type === 'row' && dropIndicator.id === row.id && dropIndicator.side === 'before' && (
             <div className={dropIndicatorRow.before} aria-hidden />
@@ -5189,15 +5358,16 @@ function DataTableInner<TData>(
           // 接縫消失且不產生新的明暗差。缺陷 R 性質不變:面板底部讓位用的透明 border 之下
           // 露出的仍是同一個 surface,只是由 root 提供。**面板不得再各自宣告底色。**
           isFillHeight && 'min-h-0 min-w-0',
-          hasLeft && 'dtLeftBoundary',
-          hasRight && 'dtRightBoundary',
+          // 空表:表身沒有左右釘選區(只有跨全欄的那一格),凍結線只畫在表頭那一段,不從空狀態列畫到底(2026-11-26 C2)
+          hasLeft && !isEmpty && 'dtLeftBoundary',
+          hasRight && !isEmpty && 'dtRightBoundary',
         )}
         style={{
           ...(hasLeft ? { ['--table-pinned-left-w' as string]: `${leftWidth}px` } : {}),
           ...(hasRight ? { ['--table-pinned-right-w' as string]: `${rightWidth}px` } : {}),
         }}
       >
-        {hasLeft && (
+        {hasLeft && !isEmpty && (
           <div
             ref={bindLeftPanel}
             data-datatable-panel="left"
@@ -5255,10 +5425,11 @@ function DataTableInner<TData>(
           // 打斷 table→row ownership(修 scrollable-region-focusable 反引爆 required-children,
           // 與 Tabs 2026-07-18 決策1 同型)。rowgroup = W3C ARIA 1.2 合法 table 子代 + 可具名
           // (Name from author §5.2.8.4)+ 容納 rows,兩規則唯一同時滿足解。
-          // 空表:Empty 塊包成一列一格(見 renderBodyRows),同樣是這個 rowgroup 的列;空表無 overflow,不需 tabIndex/名稱。
+          // 空表:Empty 塊包成一列一格(見 renderBodyRows),同樣是這個 rowgroup 的列。空表只有「欄寬總和比可見寬寬」時會橫向捲動
+          //(捲它才看得到右邊的表頭)→ 那時一樣要能用鍵盤聚焦捲動;捲不動就不給 tab stop(2026-11-26 C2 重新判斷;原句「空表無 overflow」只在欄窄時成立)。
           role="rowgroup"
-          tabIndex={enabled || spreadsheetMode || isEmpty ? undefined : 0}
-          aria-label={enabled || spreadsheetMode || isEmpty ? undefined : '表格內容,可捲動'}
+          tabIndex={enabled || spreadsheetMode || (isEmpty && !emptyScrollsX) ? undefined : 0}
+          aria-label={enabled || spreadsheetMode || (isEmpty && !emptyScrollsX) ? undefined : '表格內容,可捲動'}
           // overflow-x/y: auto — 沒 overflow 就不顯 bar。wrapper minWidth 仍 trigger H 真 overflow。
           // **不**用 scrollbar-gutter: stable — 那會永遠保留 V 軸 15px 空間,
           // content fit 時看起來像「永遠有 V 捲軸」(Image #5 bug)。
@@ -5282,11 +5453,12 @@ function DataTableInner<TData>(
           {/* 缺陷 S 的寬度觀測點 —— 0 高、不佔版面、不進無障礙樹。欄間線判準已改吃
               `data-dt-last-col` attribute(缺陷 M),不再依 DOM 位置,放哪裡都不會影響它。 */}
           <div ref={widthSentinelRef} role="presentation" aria-hidden className="h-0 w-full" />
-          <div style={{ minWidth: centerColsWidth }}>
+          {/* 空表:左右釘選面板不畫,中間區撐成 L + C + R —— 捲動範圍與表頭中間區相同((L+C+R) − 可見寬 = C − 表頭中間區寬),捲動同步不變 */}
+          <div style={{ minWidth: isEmpty ? leftWidth + centerColsWidth + rightWidth : centerColsWidth }}>
             {renderBodyRows(centerCols, true, false, centerColsWidth)}
           </div>
         </div>
-        {hasRight && (
+        {hasRight && !isEmpty && (
           <div
             ref={bindRightPanel}
             data-datatable-panel="right"
@@ -5435,6 +5607,7 @@ function DataTableInner<TData>(
                 onCancel={() => cancelCellEdit(rowId, colId)}  // 2026-07-05 D4:cancel 還原 selection(Contract 11)
                 onDraft={setEditingDraft}  // Phase 7:每 keystroke 寫 draft → preserve across virtualizer unmount
                 ariaLabel={colDef ? columnAccessibleName(colDef) : colId}  // 浮層編輯器同樣以欄標題為名(2026-10-13 Q3d J,兩條路同源)
+                row={row.original}  // select 欄依列可選項(meta.getRowOptions),與 MemoCellSlot 那條路同源
               />
             </div>
           )
@@ -5816,6 +5989,9 @@ function DataTableInner<TData>(
         }}
         showTotal={paginationOpts?.showTotal}
         pageSizeOptions={paginationOpts?.pageSizeOptions}
+        labels={paginationOpts?.labels}
+        prevAriaLabel={paginationOpts?.prevAriaLabel}
+        nextAriaLabel={paginationOpts?.nextAriaLabel}
       />
     </div>
   ) : null
@@ -5856,11 +6032,15 @@ function DataTableInner<TData>(
         // 繁中播報 + 誠實回報結果(C1/B2 修,2026-09-07)。
         // 先前四個 DndContext 全都沒傳 accessibility(全 DS grep = 0 命中),於是吃 dnd-kit
         // 的英文預設,而且是從它自己的生命週期發的 —— 會在我們根本沒重排時播「已放到 X」。
+        // dnd-kit 的讀屏節點(HiddenText + LiveRegion)portal 進表格外框之前的浮層宿主,不接在外框後面(DataTableOverlayHostCtx 註解)
         accessibility={drag.accessibility}
       >
+        {/* 浮層宿主:零尺寸、絕對定位(不佔版面),**排在表格外框之前**;把手 / 探針 / dnd-kit 讀屏節點都 portal 進來。不加 aria-hidden:
+            dnd-kit 的 LiveRegion 在裡面,藏起來就整趟拖曳無聲 */}
+        <div ref={setOverlayHost} data-dt-overlay-host="" style={{ position: 'absolute', width: 0, height: 0 }} />
         {/* v15.0 Path B:無 SortableContext(useDraggable + useDroppable 各自獨立,不需 sort context)。
             無 auto-shift visual reorder — source 留原位,indicator 顯 drop preview。 */}
-        {node}
+        <DataTableOverlayHostCtx.Provider value={overlayHost}>{node}</DataTableOverlayHostCtx.Provider>
         {/* 拖曳播報的 polite 區域(sr-only;lib/drag-announcements.ts useDragAccessibility)—— 沒渲染 = 整趟拖曳無聲 */}
         {drag.liveRegion}
         {/* DragOverlay 就地渲染(dnd-kit 的 `<DragOverlay>` 不是 portal:@dnd-kit/core `const DragOverlay` 沒有 createPortal)—— row 跟 column

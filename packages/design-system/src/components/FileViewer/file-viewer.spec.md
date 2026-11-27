@@ -346,7 +346,7 @@ Shell 看到 `pageNumber` capability 時自動在 toolbar 顯示 page navigator(
 
 ## 禁止事項
 
-- ❌ **不 nested FileViewer**——viewer 疊 viewer 焦點陷阱崩壞;要在 viewer 內展示另一個檔案,改 filmstrip 切換
+- ❌ **不 nested FileViewer**——要在 viewer 內展示另一個檔案,改 filmstrip 切換(filmstrip 的核心用途;viewer 只有一層)。2026-11-24 拿掉原本的理由「viewer 疊 viewer 焦點陷阱崩壞」:浮層疊浮層時 `Esc` 一層一層關、焦點回開它的那一項(`../../../ds-canonical/references/keyboard-model-canonical.md`「`Esc` 一次只關最內層」);viewer 工具列自己的縮放選單就是疊在 viewer 上的一層
 - ❌ **不用 FileViewer 做編輯**——viewer 是**檢視**殼,需 annotate / crop / mask 改用專屬編輯器
 - ❌ **不硬寫 shadow-md/lg 等 Tailwind 預設陰影**——用 `shadow-[var(--elevation-N)]` (N ∈ {100,200})(對齊 DS 陰影 token 系統)
 - ❌ **不繞過 registry 直接 switch file.mimeType 渲染**——破壞 extensibility,新檔案類型被迫改 shell;一律走 `registerFileRenderer`

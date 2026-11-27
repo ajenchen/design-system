@@ -17,7 +17,7 @@ import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncate
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { useTruncated } from '@/design-system/hooks/use-truncated'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
-import { SelectMenu, forwardKeyToListbox, useActiveDescendant, moveHighlightToFirst, isRemoveLastValueKey, routeTypingToSearch, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
+import { SelectMenu, forwardKeyToListbox, useActiveDescendant, moveHighlightToFirst, isRemoveLastValueKey, routeTypingToSearch, toSelectMenuOption, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
 import { RemovalStatus, useRemovalAnnouncement } from '@/design-system/components/SelectMenu/select-menu-removal-status'
 import { useIsTouchDevice } from '@/design-system/hooks/use-is-touch-device'
 import { useControllable } from '@/design-system/hooks/use-controllable'
@@ -26,6 +26,7 @@ import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { keepFocusOnPointerPress } from '@/design-system/lib/pointer-press'
 import { fieldOpenProps } from '@/design-system/lib/composite-field-focus'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
+import { CATEGORICAL_HUES, type CategoricalColor } from '@/design-system/tokens/categorical-color'
 
 // ── Tag padding per size ────────────────────────────────────────────────────
 // Tag 四邊內距的單一來源在 field-wrapper.tsx(`fieldTagInsetX`),Combobox 共用;理由與公式見該處。
@@ -47,8 +48,25 @@ const tagPadding = fieldTagInsetX
  * 此 wrapper-only concern,所以 wrapper 層 extend 加上,不污染 primitive。
  */
 export interface SelectOption extends SelectMenuOption {
-  /** Tag 模式的顏色。只在 display='tag' 時生效,對應 Tag 的 variant。Wrapper-only。 */
-  tagVariant?: string
+  /**
+   * tag 模式這個選項的 Tag 顏色(只在 `display='tag'` 生效;Wrapper-only)= Tag 的 `color`:`'neutral'` 或 12 個類別色相
+   * (`CategoricalColor`,唯一住所 `tokens/categorical-color.ts`)。不傳 → 欄位上是 neutral Tag、選單列是純文字。
+   * 2026-11-25 由 `string` 收窄(原本型別收任何字,內部再轉型成五色;認不得的值讓 Tag 沒有底色)。
+   */
+  tagVariant?: CategoricalColor
+}
+
+/** Tag 顏色認得的值:neutral + 12 類別色相(由 SSOT 衍生,不另列)。 */
+const TAG_COLORS: ReadonlySet<string> = new Set<CategoricalColor>(['neutral', ...CATEGORICAL_HUES])
+
+/**
+ * 選項的 Tag 顏色 —— tag 模式六個渲染點(桌機觸發欄位、唯讀 / 停用、檢視兩條路、手機原生、選單列)唯一的取值處(M17)。
+ * 型別已經只收 `CategoricalColor`;執行期再認一次(JS 或 `as` 繞過型別時):認不得的值當沒給 → 欄位上回到 neutral Tag、
+ * 選單列純文字,不讓 Tag 拿到不存在的 color 鍵而整顆沒有底色。
+ */
+function optionTagColor(option: SelectOption | undefined): CategoricalColor | undefined {
+  const color = option?.tagVariant
+  return color !== undefined && TAG_COLORS.has(color) ? color : undefined
 }
 
 /** 分組設定 — 對齊 SelectMenuGroupConfig SSOT */
@@ -131,6 +149,15 @@ export interface SelectProps
   startIcon?: LucideIcon
   /** 啟用搜尋（desktop 時 field 變 input，打字即篩選） */
   searchable?: boolean
+  /**
+   * 選單清單的高度上限(桌機;轉給 SelectMenu → CommandList,2026-11-24 總帳 C9):實際上限 = min(可用高, 此值),傳再大也不超出可用高;
+   * 不傳 = 半列原則的預設上限(`../Command/command.spec.md`「清單捲動上限(半列原則)」)。數字 = px,字串照原樣。手機走原生 `<select>`,不適用。
+   */
+  maxHeight?: number | string
+  /** 選單浮層的最小寬度(px,桌機;原樣轉給 SelectMenu `minWidth`,2026-11-26 產品 canary 回報 C1):**只能把下限往上拉** ——
+   *  有效下限 = max(觸發欄位寬, 15rem, minWidth),傳得比預設小照預設畫(`../SelectMenu/select-menu.spec.md`「視覺 vs 語意」;
+   *  規則住 `ds-canonical/references/props-naming.md`「尺寸參數」第 8 條)。手機走原生 `<select>`,不適用。 */
+  minWidth?: number
   /** 「這個值」在讀取 / 驗證 / 儲存(Field 家族 `loading` SSOT,`field-controls.spec.md`「Loading state」;2026-09-09 user 拍板
    *  收窄語意,與 Input `loading` 同義):觸發點右側、ChevronDown 左邊放列圖示尺寸的 CircularProgress(react-select / Atlassian
    *  的順序:清除 → 轉圈 → 箭頭)+ 觸發點 `aria-busy`;選單照常可開、可選。**不是**選項載入 —— 選項載入用 `optionsLoading`。 */
@@ -205,6 +232,26 @@ const getIconSize = (size: string) => ICON_SIZE[size as 'sm' | 'md' | 'lg']
 // ── Shared sub-components ───────────────────────────────────────────────────
 
 /**
+ * 已選值的前綴 = 選中項的前綴(select.spec.md 圖示對照表「Value icon」「Value 前綴節點」):有 `icon` 畫圖示(套選項的 `iconClassName`,
+ * 與選單列同色;停用時 `text-fg-disabled` 勝出 —— M24,同 menu-item.tsx 的 class 順序),沒有 `icon` 才畫 `startContent`(節點自帶顏色;
+ * 停用時外層帶 `text-fg-disabled`,給沒自帶顏色的部分繼承,同 ReadonlyDisplay renderer 路徑)。`startIcon` 有傳時呼叫端不畫(startIcon 勝、不疊兩個)。
+ * 編輯(桌機 / 手機原生)、檢視(無外框 / D-path)、唯讀 / 停用五條文字路徑唯一的畫法(M17)—— 2026-11-27 前只有兩條編輯路徑畫,
+ * 檢視 / 唯讀 / 停用只剩文字(workspace H33;field-controls.spec.md 共享 contract (a)「同一 value identity 不可因 mode 改變而丟失 renderer 資訊」)。
+ * tag 模式不畫前綴(欄位上是 Tag、選單列純文字,select-menu.spec.md `suppressPrefixIcon`)。
+ */
+function SelectedValuePrefix({ icon: Icon, iconClassName, startContent, iconSize, disabled = false }: {
+  icon?: LucideIcon
+  iconClassName?: string
+  startContent?: React.ReactNode
+  iconSize: number
+  disabled?: boolean
+}): React.ReactNode {
+  if (Icon) return <ItemPrefix><Icon size={iconSize} className={cn('pointer-events-none', iconClassName, disabled && 'text-fg-disabled')} aria-hidden /></ItemPrefix>
+  if (startContent) return <ItemPrefix className={disabled ? 'text-fg-disabled' : undefined}>{startContent}</ItemPrefix>
+  return null
+}
+
+/**
  * Inline clear button for Select trigger.
  * Native + Custom 兩變體統一消費;× 本身與「焦點交接 → 清」是 Field 家族共用的一份(`../Field/field-clear-button.tsx` FieldClearButton,
  * 2026-11-21 LINK-CLEAR 收成一份),這裡只加 Select 自己的外層(`relative z-10`:畫在原生 / tag 模式那層透明 `<select>` 上面)與 label。
@@ -252,6 +299,8 @@ type CustomSelectTriggerContentProps = {
   selectedLabel: string
   selectedOpt?: SelectOption
   SelectedIcon?: LucideIcon
+  /** 選中項的 `startContent`(沒有 icon 時畫在值前綴;與 SelectedIcon 同一條「起始圖示在時不畫」規則) */
+  SelectedStartContent?: React.ReactNode
   StartIcon?: LucideIcon
   iconSize: number
   placeholder?: string
@@ -278,6 +327,7 @@ function CustomSelectTriggerContent(props: CustomSelectTriggerContentProps): Rea
     selectedLabel,
     selectedOpt,
     SelectedIcon,
+    SelectedStartContent,
     StartIcon,
     iconSize,
     placeholder,
@@ -312,7 +362,7 @@ function CustomSelectTriggerContent(props: CustomSelectTriggerContentProps): Rea
     // 這一格的寬 = 兩者取大,輸入框填滿那一格、自己不帶寬(原生 input 的固有寬 —— size=20 約 150–200px —— 就是修前依內容寬的欄位一打開
     // 從 151 撐到 204px 的原因)。與 Combobox 欄位內搜尋框同一招(combobox.tsx 欄位內搜尋框那一格、`yieldedTagText`)。填滿寬的欄位看不出差別。
     // 關著時那一段值 = 關著的那一支本身(同一支函式、同一份 class,寬度逐像素相同);起始圖示在下面另外畫,量尺裡不再算一次
-    const closedValue = CustomSelectTriggerContent({ ...props, open: false, StartIcon: undefined, SelectedIcon: StartIcon ? undefined : SelectedIcon, truncationRef: undefined })
+    const closedValue = CustomSelectTriggerContent({ ...props, open: false, StartIcon: undefined, SelectedIcon: StartIcon ? undefined : SelectedIcon, SelectedStartContent: StartIcon ? undefined : SelectedStartContent, truncationRef: undefined })
     // 起始圖示與搜尋框那一格直接當觸發欄位的子項(Fragment)—— 與關著時同一個結構,圖示與那一格之間就是欄位外框的 gap-2(fieldWrapperStyles)。
     // 修前外面多包一層沒有間距的 span:有起始圖示時打開字往左跳 8px、依內容寬的欄位窄 8px,覆蓋的名字還壓在圖示上(K7 同一條:框線、互動、樣式不變)。
     return (
@@ -376,21 +426,20 @@ function CustomSelectTriggerContent(props: CustomSelectTriggerContentProps): Rea
     return (
       <>
         {StartIcon && <ItemPrefix><StartIcon size={iconSize} className="text-fg-muted pointer-events-none" aria-hidden /></ItemPrefix>}
-        {!StartIcon && SelectedIcon && value && <ItemPrefix><SelectedIcon size={iconSize} className="pointer-events-none" aria-hidden /></ItemPrefix>}
+        {/* 值前綴 = 選中項的前綴(select.spec.md 圖示對照表「Value icon」;畫法唯一住所 SelectedValuePrefix) */}
+        {!StartIcon && value && <SelectedValuePrefix icon={SelectedIcon} iconClassName={selectedOpt?.iconClassName} startContent={SelectedStartContent} iconSize={iconSize} />}
         <span ref={truncationRef} className={cn('flex-1 min-w-0 truncate', !value && 'text-fg-muted')}>
           {value ? selectedLabel : (placeholder ?? '選擇…')}
         </span>
       </>
     )
   }
-  // Tag display: 用 option 的 tagVariant
+  // Tag display: 用 option 的 tagVariant(沒給 / 認不得 → Tag 預設 neutral)
   return (
     <>
-      {value && selectedOpt?.tagVariant
-        ? <Tag size={size} color={selectedOpt.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral'} className="shrink-0 pointer-events-none">{selectedLabel}</Tag>
-        : value
-          ? <Tag size={size} className="shrink-0 pointer-events-none">{selectedLabel}</Tag>
-          : <span className="text-fg-muted">{placeholder ?? '選擇…'}</span>
+      {value
+        ? <Tag size={size} color={optionTagColor(selectedOpt)} className="shrink-0 pointer-events-none">{selectedLabel}</Tag>
+        : <span className="text-fg-muted">{placeholder ?? '選擇…'}</span>
       }
       <span className="flex-1" />
     </>
@@ -424,6 +473,11 @@ function ReadonlyDisplay({
   //   user canonical:disabled 顯著性優於 muted。同時 plain mode 必須 respect placeholder prop(之前忽略 = bug)
   const emptyColorCls = fieldEmptyColorClass(resolvedMode)
   const emptyText = placeholder ?? emptyDisplay
+  // 值前綴(選中項的 icon / startContent):與編輯態同一支 SelectedValuePrefix、同一條優先序(startIcon 有傳就不畫)。
+  // 三條文字路徑(view 無外框 / view D-path / readonly・disabled)都畫;2026-11-27 前只有編輯態畫(workspace H33,contract (a))。
+  const valuePrefix = !StartIcon && value && selectedOpt && (selectedOpt.icon || selectedOpt.startContent)
+    ? <SelectedValuePrefix icon={selectedOpt.icon} iconClassName={selectedOpt.iconClassName} startContent={selectedOpt.startContent} iconSize={iconSize} disabled={resolvedMode === 'disabled'} />
+    : null
 
   // mode='view':2 path(2026-05-08 D path Phase 1 Select canary)
   //   ❌ 預設(無 showDisplayEndIcon):純內容輸出 bare span/Tag(理由:檢視態只顯示值,跟表格 2026-07-08 A 案同一方向,見 field-controls.spec.md「LinkInput / PeoplePicker 預設 view 路徑不包 wrapper」)
@@ -448,14 +502,24 @@ function ReadonlyDisplay({
           </span>
         )
       }
-      // 截斷必附 tooltip(tooltip.spec.md:32)— 改消費 truncated-text primitive(同 input.tsx:198 同型修;
+      // 截斷必附 tooltip(tooltip.spec.md:30)— 改消費 truncated-text primitive(同 input.tsx:219 同型修;
       // display='tag' 路徑由 Tag 內建 useTruncated 自管,text 路徑原本裸 truncate = gap)
-      if (isTextDisplay) return <TruncatedText className={cn(fieldDisplayTextClass(sz), className)}>{label}</TruncatedText>
-      const tVariant = selectedOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
-      return <Tag size={sz} color={tVariant} className={className}>{label}</Tag>
+      if (isTextDisplay) {
+        // 有值前綴:包一層行內列放前綴 + 文字;字級留在外層(contract (e)),前綴 ↔ 文字 gap-2 = 編輯態欄位的 gap-2(contract (d) 編輯幾何減外框);
+        // 截斷仍由 TruncatedText 自管(變成 flex 子項後 min-w-0 讓它真的能縮)。沒有前綴照舊單獨回傳,DOM 不變。
+        if (valuePrefix) {
+          return (
+            <span className={cn(fieldDisplayTextClass(sz), 'inline-flex max-w-full items-center gap-2 min-w-0', nakedCellRowModeAlign, className)}>
+              {valuePrefix}
+              <TruncatedText>{label}</TruncatedText>
+            </span>
+          )
+        }
+        return <TruncatedText className={cn(fieldDisplayTextClass(sz), className)}>{label}</TruncatedText>
+      }
+      return <Tag size={sz} color={optionTagColor(selectedOpt)} className={className}>{label}</Tag>
     }
     // D path opt-in: Field naked-view wrapper + ItemSuffix ChevronDown
-    const tVariant = selectedOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
     return (
       <div
         className={cn(fieldWrapperStyles({ mode: 'view', variant, width: fieldWidthVariant(width), size: sz }), value && !isTextDisplay && tagPadding[sz], className)}
@@ -470,12 +534,15 @@ function ReadonlyDisplay({
             {selectedItemRenderer(selectedOpt)}
           </span>
         ) : isTextDisplay ? (
-          // 截斷必附 tooltip(tooltip.spec.md:32;data-table.spec.md「十一、Cell 單行截斷原則」view 態元件自管 truncation)
-          <TruncatedText className={cn(bareInputStyles, 'flex-1 min-w-0', !value && emptyColorCls)}>
-            {value ? label : emptyText}
-          </TruncatedText>
+          // 截斷必附 tooltip(tooltip.spec.md:30;data-table.spec.md「十一、Cell 單行截斷原則」view 態元件自管 truncation)
+          <>
+            {valuePrefix}
+            <TruncatedText className={cn(bareInputStyles, 'flex-1 min-w-0', !value && emptyColorCls)}>
+              {value ? label : emptyText}
+            </TruncatedText>
+          </>
         ) : value ? (
-          <Tag size={sz} color={tVariant}>{label}</Tag>
+          <Tag size={sz} color={optionTagColor(selectedOpt)}>{label}</Tag>
         ) : (
           <span className={cn('flex-1 min-w-0', emptyColorCls)}>{emptyText}</span>
         )}
@@ -512,7 +579,8 @@ function ReadonlyDisplay({
     return (
       <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width: fieldWidthVariant(width), size: sz }), className)} style={fieldWidthStyle(width)} data-field-mode={resolvedMode} aria-disabled={ariaDisabled} {...readonlyStop}>
         {StartIcon && <ItemPrefix><StartIcon size={iconSize} className={cn('pointer-events-none', iconColor)} aria-hidden /></ItemPrefix>}
-        {/* 截斷必附 tooltip(tooltip.spec.md:32)— readonly/disabled 無下拉入口,tooltip 是唯一補救路徑 */}
+        {valuePrefix}
+        {/* 截斷必附 tooltip(tooltip.spec.md:30)— readonly/disabled 無下拉入口,tooltip 是唯一補救路徑 */}
         <TruncatedText className={cn('flex-1', resolvedMode === 'disabled' && 'text-fg-disabled')}>
           {value ? label : <span className={emptyColorCls}>{emptyText}</span>}
         </TruncatedText>
@@ -521,12 +589,10 @@ function ReadonlyDisplay({
     )
   }
 
-  const tagVariant = selectedOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
-
   return (
     // 停用:Tag 自帶 cursor-text,指到 tag 上會蓋掉外框的 cursor-not-allowed(2026-09-29 全站掃出)→ 整塊釘成禁止符號(同 Combobox 非 edit 分支)
     <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width: fieldWidthVariant(width), size: sz }), value && tagPadding[sz], resolvedMode === 'disabled' && '[&_*]:cursor-not-allowed', className)} style={fieldWidthStyle(width, { paddingRight: 'var(--field-px)' })} data-field-mode={resolvedMode} aria-disabled={ariaDisabled} {...readonlyStop}>
-      {value ? <Tag size={sz} color={tagVariant}>{label}</Tag> : <span className={emptyColorCls}>{emptyText}</span>}
+      {value ? <Tag size={sz} color={optionTagColor(selectedOpt)}>{label}</Tag> : <span className={emptyColorCls}>{emptyText}</span>}
       {showIndicator && <ItemSuffix className="pointer-events-none"><ChevronDown size={iconSize} className={cn('shrink-0', iconColor)} aria-hidden /></ItemSuffix>}
     </div>
   )
@@ -542,7 +608,7 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
     // 2026-07-08 A 案回歸修正:selectedItemRenderer 從丟棄名單移出 — Native path 的
     // ReadonlyDisplay(view/readonly/disabled)同樣消費值內容 renderer(contract (a) 4-mode
     // 共享,值內容不因 pointer type 而異);native <select> edit 路徑仍不消費(原生 option 無法客製 render)。
-    searchable: _searchable, groups: _groups, loading: _loading, optionsLoading: _optionsLoading, filterOption: _filterOption, onSearchChange: _onSearchChange, suggestions: _suggestions, suggestionsLabel: _suggestionsLabel, searchHintText: _searchHintText, emptyText: _emptyText, creatable: _creatable, onCreate: _onCreate, createLabel: _createLabel, defaultOpen: _defaultOpen, onOpenChange: _onOpenChange, selectedItemRenderer,
+    searchable: _searchable, maxHeight: _maxHeight, minWidth: _minWidth, groups: _groups, loading: _loading, optionsLoading: _optionsLoading, filterOption: _filterOption, onSearchChange: _onSearchChange, suggestions: _suggestions, suggestionsLabel: _suggestionsLabel, searchHintText: _searchHintText, emptyText: _emptyText, creatable: _creatable, onCreate: _onCreate, createLabel: _createLabel, defaultOpen: _defaultOpen, onOpenChange: _onOpenChange, selectedItemRenderer,
     ...props }, ref) => {
     const fieldCtx = useFieldContext()
     const error = useResolvedFieldInvalid(errorProp)
@@ -607,7 +673,6 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
       </ItemSuffix>
     )
     const label = selectedOpt?.label ?? value
-    const nativeTagVariant = selectedOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
     const SelectedOptIcon = selectedOpt?.icon
 
     // Display-layer parity(2026-08-05 user 拍板):selectedItemRenderer 有值 → 渲 renderer 輸出為
@@ -639,7 +704,7 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
         <div className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width: fieldWidthVariant(width), size, error }), value && tagPadding[size], 'relative',
           className)}
           style={fieldWidthStyle(width, { paddingRight: 'var(--field-px)' })} data-field-mode="edit" data-error={error ? '' : undefined}>
-          {value ? <Tag size={size} color={nativeTagVariant} className="shrink-0 relative z-10 pointer-events-none">{label}</Tag> : <span className="text-fg-muted">{placeholder ?? '選擇...'}</span>}
+          {value ? <Tag size={size} color={optionTagColor(selectedOpt)} className="shrink-0 relative z-10 pointer-events-none">{label}</Tag> : <span className="text-fg-muted">{placeholder ?? '選擇...'}</span>}
           {selectEl}
           <span className="flex-1" />
           {clearEl}
@@ -654,7 +719,8 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
         style={fieldWidthStyle(width)}
         data-field-mode="edit" data-error={error ? '' : undefined}>
         {StartIcon && <ItemPrefix><StartIcon size={iconSize} className="text-fg-muted pointer-events-none" aria-hidden /></ItemPrefix>}
-        {!StartIcon && SelectedOptIcon && value && <ItemPrefix><SelectedOptIcon size={iconSize} className="pointer-events-none" aria-hidden /></ItemPrefix>}
+        {/* 與桌機同一條(select.spec.md「display-layer renderer props 必雙分支同消費」):值前綴 = 選中項的前綴(SelectedValuePrefix) */}
+        {!StartIcon && value && <SelectedValuePrefix icon={SelectedOptIcon} iconClassName={selectedOpt?.iconClassName} startContent={selectedOpt?.startContent} iconSize={iconSize} />}
         {selectEl}
         {clearEl}
         {chevronEl}
@@ -668,7 +734,7 @@ NativeSelect.displayName = 'NativeSelect'
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
-  ({ mode, variant: variantProp, filterOption = true, onSearchChange, width, error: errorProp = false, size: sizeProp, options, groups, value: valueProp, defaultValue, onChange, placeholder, className, disabled: disabledProp, name, required, form, clearable = false, display = 'plain', startIcon: StartIcon, searchable = false, loading, optionsLoading, suggestions, suggestionsLabel, searchHintText, emptyText, creatable = false, onCreate, createLabel, defaultOpen = false, onOpenChange, selectedItemRenderer, showDisplayEndIcon, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, 'aria-label': ariaLabel, onKeyDown: onKeyDownProp, onBlur: onBlurProp, style: styleProp,
+  ({ mode, variant: variantProp, filterOption = true, onSearchChange, width, maxHeight, minWidth, error: errorProp = false, size: sizeProp, options, groups, value: valueProp, defaultValue, onChange, placeholder, className, disabled: disabledProp, name, required, form, clearable = false, display = 'plain', startIcon: StartIcon, searchable = false, loading, optionsLoading, suggestions, suggestionsLabel, searchHintText, emptyText, creatable = false, onCreate, createLabel, defaultOpen = false, onOpenChange, selectedItemRenderer, showDisplayEndIcon, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, 'aria-label': ariaLabel, onKeyDown: onKeyDownProp, onBlur: onBlurProp, style: styleProp,
     // 2026-07-14 API 策展 D:mobile-only props(allowlist 註記)desktop 顯式丟棄 — div trigger 無原生
     // 對應,不 spread 進 DOM(對稱 NativeSelect 丟棄 custom-path-only props 的既有 pattern)
     autoFocus: _autoFocus, autoComplete: _autoComplete, ...rest }, ref) => {
@@ -729,10 +795,11 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     // 級 fallback `?? value`。
     const selectedLabel = selectedOpt?.label ?? value ?? ''
     const SelectedIcon = selectedOpt?.icon
-    // 截斷 tooltip(tooltip.spec.md:32 截斷 → 顯完整內容,僅實際截斷時):closed trigger text
+    const SelectedStartContent = selectedOpt?.startContent
+    // 截斷 tooltip(tooltip.spec.md:30 截斷 → 顯完整內容,僅實際截斷時):closed trigger text
     // display 的值 span 是截斷元素;trigger = 整個 combobox host(interactive host,hover 直達)、
     // 量測內層值 span — useTruncated 自組 pattern(truncated-text.spec.md「兩層架構(對齊世界級聯集)」:trigger ≠ 量測元素時只用 hook 自組;
-    // 範本 inline-edit.tsx:257。tag display 由 Tag 內建 useTruncated 自管,不經此路)。
+    // 範本 inline-edit.tsx:258。tag display 由 Tag 內建 useTruncated 自管,不經此路)。
     // deps 含 open:searchable && open 切搜尋 input branch 時值 span 會 unmount,關閉重掛後
     // effect 需重跑重新 observe(Tag always-wrap 教訓:RO 卡在 detached node → isTruncated 凍結)。
     // hook 必在下方 resolvedMode early return 之前(React #310 hook-count 鐵律,見上方註解)。
@@ -743,17 +810,12 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     // 過濾選項:搜尋字在觸發欄位時由 SelectMenu 依受控 `search` 過濾(label 含關鍵字、去頭尾空白;2026-09-30 自本檔與 combobox.tsx
     // 兩份收回 SelectMenu 一份,「不限」列同一條 —— select-menu.tsx labelMatchesSearch),這裡只轉換。
     // ── 轉換 SelectOption → SelectMenuOption(必在 early return 前) ──
-    // Issue 4(2026-05-10):forward avatar / description / disabled SSOT(per SelectMenuOption schema)。
-    // 同一份 mapping 給 options 與 suggestions(2026-09-09 建議清單),不複製第二份。
-    const toMenuOption = React.useCallback((opt: SelectOption): SelectMenuOption => ({
-      value: opt.value,
-      label: opt.label,
-      icon: isTextDisplay ? opt.icon : undefined,
-      avatar: opt.avatar,
-      description: opt.description,
-      disabled: opt.disabled,
-      group: opt.group,
-    }), [isTextDisplay])
+    // 全 DS 一支 `toSelectMenuOption`(select-menu.tsx,鍵表 + 型別斷言:SelectMenuOption 加欄位沒轉 → build:lib 紅;2026-11-26 前這裡手寫一份、漏轉 iconClassName)。
+    // tag 模式選單列是純文字(欄位上是 Tag):前綴圖形(icon / startContent)不給。同一份 mapping 給 options 與 suggestions(2026-09-09 建議清單)。
+    const toMenuOption = React.useCallback(
+      (opt: SelectOption): SelectMenuOption => toSelectMenuOption(opt, { suppressPrefixIcon: !isTextDisplay }),
+      [isTextDisplay],
+    )
     const menuOptions: SelectMenuOption[] = React.useMemo(
       () => options.map(toMenuOption),
       [options, toMenuOption]
@@ -766,11 +828,8 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     const renderLabel = React.useMemo(() => {
       if (isTextDisplay) return undefined
       return (menuOpt: SelectMenuOption) => {
-        const srcOpt = options.find(o => o.value === menuOpt.value)
-        if (srcOpt?.tagVariant) {
-          return <Tag size={size} color={srcOpt.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral'}>{menuOpt.label}</Tag>
-        }
-        return menuOpt.label
+        const color = optionTagColor(options.find(o => o.value === menuOpt.value))
+        return color ? <Tag size={size} color={color}>{menuOpt.label}</Tag> : menuOpt.label
       }
     }, [isTextDisplay, options, size])
 
@@ -856,6 +915,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         selectedLabel={selectedLabel}
         selectedOpt={selectedOpt}
         SelectedIcon={SelectedIcon}
+        SelectedStartContent={SelectedStartContent}
         StartIcon={StartIcon}
         iconSize={iconSize}
         placeholder={placeholder}
@@ -995,6 +1055,8 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
           searchHintText={searchHintText}
           emptyText={emptyText}
           size={size}
+          maxHeight={maxHeight}
+          minWidth={minWidth}
           open={open}
           onOpenChange={(o) => { setOpen(o); onOpenChange?.(o) }}
           contentId={listboxId}

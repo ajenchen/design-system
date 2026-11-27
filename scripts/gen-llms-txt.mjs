@@ -34,7 +34,7 @@ const DS = join(REPO_ROOT, 'packages/design-system')
 const SRC = join(DS, 'src')
 const LLMS = join(DS, 'llms.txt')
 const LLMS_FULL = join(DS, 'llms-full.txt')
-const SB_BASE = 'https://ajenchen-design-system.netlify.app'  // DS canonical public Storybook(同 AllDsComponents portal)
+const SB_BASE = 'https://ajenchen-design-system.netlify.app'  // DS canonical public Storybook(同 apps/template DsImportSmoke 的連結)
 const CHECK = process.argv.includes('--check')
 const SELFTEST = process.argv.includes('--selftest')
 
@@ -129,7 +129,7 @@ const llms = [
   `本檔由 source(spec.md frontmatter)build-time 自動生成,**禁手改**(CI --check drift gate 守)。`,
   `每元件 / pattern 的完整 variants / sizes / 禁止事項 全文見 [llms-full.txt](./llms-full.txt)。`,
   `元件原始範例 source:node_modules/@qijenchen/design-system/src/<dir>/*.stories.tsx;rendered:Storybook 連結。`,
-  `升版:各版的破壞性變更(改名 / 移除 / 必填 / 預設值 / 行為,每條附做法與規格段落)見 [ds-changes.json](./ds-changes.json);讀舊版之後到新版的各節,再跑 \`npx qijenchen-ds-codemod upgrade\`。`,
+  `升版:各版的新增(added)、行為與畫面變更(updated)、破壞性變更(changes:改名 / 移除 / 必填 / 預設值 / 行為,每條附做法與規格段落)見 [ds-changes.json](./ds-changes.json);讀舊版之後到新版的各節,再跑 \`npx qijenchen-ds-codemod upgrade\`。`,
   ``,
   `## Components`,
   ...components.map((s) => `- [${s.name}](${urlFor()}): ${oneLiner(s)} — src:${srcDir(s)}`),

@@ -1,8 +1,9 @@
 // @story-history: isOverlay OpenSnapshot / hasInteractiveStates Disabled 由 anatomy.stories.tsx StateBehavior + Inspector auto-compile owns(2026-05-15 F-migration);showcase 展示真實多選 / 角色切換 / Checkbox 整合情境。
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
 import { Trash2, Copy, Pencil, ExternalLink, ChevronDown, FileText, FileSpreadsheet, CalendarClock, MessageSquare, ListCollapse, Rows3, RotateCcw, FolderInput, Link, Share2, UserPlus, Eye } from 'lucide-react'
-import { fn } from '@storybook/test'
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
+import { WORK_ITEM_STATUSES, WORK_ITEM_TYPES, workItemTypeBadge } from '@/design-system/stories-helpers/scene/work-item-type'
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuCheckboxItem, DropdownMenuRadioGroup, DropdownMenuRadioItem,
@@ -275,6 +276,64 @@ const RadioDemo = () => {
 export const RadioItems: StoryObj = {
   name: '單選',
   render: () => <RadioDemo />,
+}
+
+// ── 選項前綴:工作項類型方塊 + 狀態色(2026-11-26,workspace F 組 F4-2)──
+// 工作項詳情頁的「變更類型」選單:類型項目前面是類型方塊(`startContent`);同一個選單下半段以「設定狀態」標題分組的項目是圖示 + 語意色
+//(`startIcon` + `startIconClassName`)。play 斷言:類型每一項都有自訂前綴節點、「已完成」的圖示是 success 色 —— 轉發一斷就紅,並點名是哪一項。
+function WorkItemTypeMenuDemo() {
+  const [type, setType] = useState('bug')
+  const [status, setStatus] = useState('in_progress')
+  const current = WORK_ITEM_TYPES.find((t) => t.value === type)
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="tertiary" endIcon={ChevronDown}>類型:{current?.label}</Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuLabel>變更類型</DropdownMenuLabel>
+        <DropdownMenuRadioGroup value={type} onValueChange={setType}>
+          {WORK_ITEM_TYPES.map((t) => (
+            <DropdownMenuRadioItem key={t.value} value={t.value} startContent={workItemTypeBadge(t.value)} description={t.description}>{t.label}</DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>設定狀態</DropdownMenuLabel>
+        {WORK_ITEM_STATUSES.map((s) => (
+          <DropdownMenuItem key={s.value} startIcon={s.icon} startIconClassName={s.iconClassName} selected={status === s.value}
+            onSelect={() => { setStatus(s.value); toast({ variant: 'success', title: `狀態已改為「${s.label}」` }) }}>{s.label}</DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+export const OptionPrefix: StoryObj = {
+  name: '選項前綴:工作項類型',
+  parameters: { docs: { description: { story: '工作項詳情頁的「變更類型」選單:類型項目前面是類型方塊(`startContent`),狀態項目是圖示加語意色(`startIcon` + `startIconClassName`)。' } } },
+  render: () => (<><WorkItemTypeMenuDemo /><Toaster /></>),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const body = within(canvasElement.ownerDocument.body)
+    const probe = canvasElement.ownerDocument.createElement('span')
+    probe.className = 'text-success'
+    canvasElement.appendChild(probe)
+    const successColor = getComputedStyle(probe).color
+    probe.remove()
+    await userEvent.click(canvas.getByRole('button', { name: /類型/ }))
+    const typeItems = await body.findAllByRole('menuitemradio')
+    await expect(typeItems).toHaveLength(WORK_ITEM_TYPES.length)
+    for (const item of typeItems) {
+      await expect(item.querySelector('[data-prefix-type="content"]'), `類型項目「${item.textContent}」沒有前綴節點`).not.toBeNull()
+    }
+    const done = body.getByRole('menuitem', { name: /已完成/ })
+    // MenuItem 的前綴圖示本身就是帶 data-prefix-type="icon" 的 svg(menu-item.tsx)
+    const doneIcon = done.querySelector('[data-prefix-type="icon"]')
+    await expect(doneIcon, '「已完成」沒有前綴圖示').not.toBeNull()
+    await expect(getComputedStyle(doneIcon!).color, '「已完成」的圖示沒有套 startIconClassName').toBe(successColor)
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(body.queryAllByRole('menuitemradio')).toHaveLength(0))
+  },
 }
 
 // ── OpenSnapshot(視覺稽核用) ──

@@ -1,6 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @story-baseline: packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx#AlignmentRule
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Skeleton } from './skeleton'
 import { DataTable, type DataTableColumnDef } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging
@@ -31,7 +31,7 @@ type Story = StoryObj
 export const UserProfileCard: Story = {
   name: '個人資料卡載入',
   render: () => (
-    // @layout-space-magic-ok: 頭像骨架 ↔ 文字區 = 載入後那一列的 prefix ↔ content,item-anatomy.spec.md「ListItem（頁面列表，未來元件）」表「prefix ↔ content gap」12px(`gap-3`)(已發布同值)
+    // @layout-space-magic-ok: 頭像骨架 ↔ 文字區 = 載入後那一列的 prefix ↔ content,item-anatomy.spec.md「頁面列表（閱讀式列，以 slot 零件組）」表「prefix ↔ content gap」12px(`gap-3`)(已發布同值)
     <div className="border border-border rounded-md p-[var(--layout-space-loose)] max-w-sm flex items-center gap-3">
       <Skeleton className="h-12 w-12 rounded-full" />
       {/* @layout-space-magic-ok: 骨架文字區兩行(名稱 / 副標)之間 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}

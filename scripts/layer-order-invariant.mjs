@@ -604,7 +604,7 @@ async function createTask(prefix) {
 
 // ── A 入口鈕的提示 vs Toast(回報的場景:面板關著、入口鈕在家)──────────────────────────────────
 // Toast 依 toast.spec.md「落點」甲以整個視窗為準、不避讓 → 入口鈕在家時 Toast 疊在入口鈕上,指標點不到被蓋住的那一大塊;
-// 鍵盤使用者 Tab 到入口鈕一樣會打開它的提示(Radix Tooltip 聚焦即開)。提示開在入口鈕上方,與單則 Toast 不一定重疊 →
+// 鍵盤使用者 Tab 到入口鈕一樣會打開它的提示(可見焦點即開;程式搬來的焦點不開,tooltip.spec.md「A11y 預設」)。提示開在入口鈕上方,與單則 Toast 不一定重疊 →
 // 跟 B 一樣把 Toast 平移到提示上(只動位置、不動 z-index),讓「重疊」是確定的前提。
 await scenario('A', DEMO, PANEL, async () => {
   if (SELFTEST) await setControl('old')
@@ -623,7 +623,18 @@ await scenario('A', DEMO, PANEL, async () => {
     return Math.round((w * h) / (f.width * f.height) * 100)
   }, { FAB, TOAST }))
   console.log(`ℹ A 報告(不判定):入口鈕的盒子 ${cover ?? '?'}% 在 Toast 的盒子底下 —— 甲:Toast 不避讓、疊在入口鈕上(toast.spec.md「落點」),指標點不到那一塊`)
-  await step('A7 鍵盤聚焦入口鈕', () => page.locator(FAB).first().focus({ timeout: WAIT_MS }))
+  // 真按 Tab 走到入口鈕(使用者的路徑),不用 locator.focus():前一步是滑鼠點「建立任務」,程式 focus() 拿到的不是 :focus-visible,
+  // 依 tooltip.spec.md「A11y 預設」程式搬來的焦點不開提示(2026-11-26 起)—— 舊寫法在 CI 等提示 30 秒逾時,量的不是使用者會遇到的情況。
+  await step('A7 鍵盤 Tab 走到入口鈕', async () => {
+    for (let i = 0; i < 80; i++) {
+      if (await page.evaluate((s) => document.activeElement?.matches(s) ?? false, FAB)) {
+        if (!(await page.evaluate(() => document.activeElement?.matches(':focus-visible') ?? false))) throw new Error('Tab 到了入口鈕,焦點卻不是 :focus-visible —— 量具前提不成立')
+        return
+      }
+      await page.keyboard.press('Tab')
+    }
+    throw new Error('按了 80 下 Tab 還沒走到入口鈕')
+  })
   await waitTooltip('A8', '問我或推走我')
   await settle('A9')
   const tip = await tooltipBox('A10', '問我或推走我')

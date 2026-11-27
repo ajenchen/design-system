@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { DescriptionList, DescriptionItem } from './description-list'
 
 const meta: Meta<typeof DescriptionList> = {
@@ -9,7 +9,7 @@ const meta: Meta<typeof DescriptionList> = {
     docs: {
       description: {
         component:
-          '用於顯示單一實體的多組唯讀屬性，並以 `dl / dt / dd` 保留「欄位—值」語意。需編輯時改用 Field 系統，多筆同結構資料改用 DataTable，只有一組值則用簡單 layout。',
+          '用於顯示單一實體的多組唯讀屬性，並以 `dl / dt / dd` 保留「欄位—值」語意。需編輯時改用 Field 系統，多筆同結構資料改用 DataTable；只有一組值也可以用，值空時自動顯示「-」。',
       },
     },
   },

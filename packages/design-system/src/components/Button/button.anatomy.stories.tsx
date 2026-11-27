@@ -1,4 +1,4 @@
-import type { Meta } from '@storybook/react'
+import type { Meta } from '@storybook/react-vite'
 import { useState, useEffect } from 'react'
 import { Plus, ChevronDown, Download, Trash2, Settings, Grid3x3, ListFilter, ArrowUpDown, UserMinus, ShieldOff } from 'lucide-react'
 import { Button } from './button'

@@ -6,7 +6,7 @@
 //   SizeMatrix N/A — 不提供 size prop;大小固定 text-body(14px reading mode),
 //     由 layout(cols / orientation / divided)而非 size 決定差異。ColsMatrix 已
 //     涵蓋 layout 變化。
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { DescriptionList, DescriptionItem } from './description-list'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
@@ -17,6 +17,9 @@ const meta: Meta = {
 }
 export default meta
 type Story = StoryObj
+
+// 空值示範的資料:這位成員的職稱、電話、直屬主管還沒填(API 回 null / 空字串);元件自動顯示「-」(description-list.spec.md「空值呈現」)
+const EMPTY_PROFILE: { title: string | null; phone: string; manager?: string } = { title: null, phone: '', manager: undefined }
 
 export const Overview: Story = {
   name: '元件總覽',
@@ -158,17 +161,18 @@ export const StateBehavior: Story = {
       <div>
         <H3>空值呈現 — 一律用半形 <code>-</code> 字元(hyphen)</H3>
         <Desc>
-          DescriptionList 是唯讀資訊展示,空值不留空白(會讓使用者以為資料沒載入完)。一律用半形連字號
-          (<code>-</code>,對齊 Field <code>EMPTY_DISPLAY</code>)明確表達「有查過,但這個欄位目前沒值」;色同 value <code>text-foreground</code>(「-」是供檢視的值,不是 placeholder 提示)。
+          DescriptionList 是唯讀資訊展示,空值不留空白(會讓使用者以為資料沒載入完)。值空時元件自動顯示半形連字號
+          (<code>-</code>,對齊 Field <code>EMPTY_DISPLAY</code>),明確表達「有查過,但這個欄位目前沒值」;色同 value <code>text-foreground</code>(「-」是供檢視的值,不是 placeholder 提示)。
+          下例「職稱」「電話」「直屬主管」三欄的資料是空的,沒有另外傳「-」。
         </Desc>
         <div className="border border-dashed border-divider rounded-md p-4 max-w-md">
           <DescriptionList cols={2}>
             <DescriptionItem label="姓名">Ada Chen</DescriptionItem>
-            <DescriptionItem label="職稱"><span className="text-foreground">-</span></DescriptionItem>
+            <DescriptionItem label="職稱">{EMPTY_PROFILE.title}</DescriptionItem>
             <DescriptionItem label="Email">user@example.com</DescriptionItem>
-            <DescriptionItem label="電話"><span className="text-foreground">-</span></DescriptionItem>
+            <DescriptionItem label="電話">{EMPTY_PROFILE.phone}</DescriptionItem>
             <DescriptionItem label="團隊">Engineering</DescriptionItem>
-            <DescriptionItem label="直屬主管"><span className="text-foreground">-</span></DescriptionItem>
+            <DescriptionItem label="直屬主管">{EMPTY_PROFILE.manager}</DescriptionItem>
           </DescriptionList>
         </div>
         <p className="text-footnote text-fg-muted mt-3">
@@ -246,7 +250,7 @@ export const Accessibility = {
     <div className="max-w-3xl text-body text-fg-secondary">
       {/* 標題 → 一段文字 = tight(A4 甲,寫死 mb-2 改 token、跟著密度)。完整條文在 description-list.spec.md「無障礙」段(不給讀者看檔名) */}
       <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"- 語意 HTML:外層 <dl>,每組 <dt>(term)+ <dd>(description)— screen reader 讀「term X, description Y」配對敘事\n- DT/DD 配對:DescriptionItem 強制一組配對,不分開暴露 <dt>/<dd> primitive\n- 空值:consumer 傳半形 - 占位(裸 - SR 敘事弱,宜補 sr-only「無資料」,比空 <dd> 明確)\n- 多欄 cols>1:視覺 grid、DOM 仍 item 順序,SR 依 DOM 敘事\n- 無互動:純唯讀呈現,無 keyboard / focus state(無 ARIA 補強需求,語意由原生 dl/dt/dd 承載)"}</p>
+      <p className="whitespace-pre-line">{"- 語意 HTML:外層 <dl>,每組 <dt>(term)+ <dd>(description)— screen reader 讀「term X, description Y」配對敘事\n- DT/DD 配對:DescriptionItem 強制一組配對,不分開暴露 <dt>/<dd> primitive\n- 空值:值空時元件自動顯示半形 -(不用自己傳;裸 - SR 敘事弱,宜補 sr-only「無資料」,比空 <dd> 明確)\n- 多欄 cols>1:視覺 grid、DOM 仍 item 順序,SR 依 DOM 敘事\n- 無互動:純唯讀呈現,無 keyboard / focus state(無 ARIA 補強需求,語意由原生 dl/dt/dd 承載)"}</p>
     </div>
   ),
 }

@@ -70,6 +70,7 @@ export const FORK_TEMPLATE_REQUIRED_EXACT_SOURCES = Object.freeze([
   'infra/governance/providers/provider-cli-toolchain.json',
   'infra/governance/providers/provider-cli-toolchain.package-lock.json',
   'infra/governance/schemas/consumer-upgrade-protocol.schema.json',
+  'infra/governance/schemas/content-debt-baseline.schema.json',
   'infra/governance/schemas/issuer-registry.schema.json',
   'infra/governance/schemas/managed-repos.schema.json',
   'infra/governance/schemas/provider-cli-toolchain.schema.json',

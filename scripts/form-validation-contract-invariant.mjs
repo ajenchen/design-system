@@ -1150,6 +1150,8 @@ function report({ label, checks }) {
 }
 
 const redIds = (checks) => checks.filter((c) => !c.pass).map((c) => c.id).sort()
+/** 判定紅的那一行 —— 判定模式與 selftest 基準共用(npm 別名與 CI 只跑 --selftest,基準紅就是產品裁決,不能只印「量具不可信」) */
+const verdictRedLine = (ids) => `\n✗ form-validation 契約:${ids.length} 條不符(${ids.join(' / ')})—— SSOT form-validation.spec.md 規則 1–8 / keyboard-model-canonical.md 兩節 / Toast`
 
 let browser
 const laneBrowsers = []
@@ -1165,7 +1167,7 @@ try {
     report(result)
     const red = result.checks.filter((c) => !c.pass)
     if (red.length) {
-      console.log(`\n✗ form-validation 契約:${red.length} 條不符(${redIds(result.checks).join(' / ')})—— SSOT form-validation.spec.md 規則 1–8 / keyboard-model-canonical.md 兩節 / Toast`)
+      console.log(verdictRedLine(redIds(result.checks)))
       process.exitCode = 1
     } else {
       console.log(`\n✓ form-validation 契約:${result.checks.length} 條全綠(規則 1 / 2 / 4 / 5 / 6 / 7 / 8 + 對話框 / 送出鈕焦點 / Toast + 對照列)`)
@@ -1174,7 +1176,10 @@ try {
     const baseline = await runVariant(page, '現行原始碼(selftest 基準,必須全綠)', makeMutate(hookOverride, null))
     report(baseline)
     const problems = []
-    if (redIds(baseline.checks).length) problems.push(`現行 hook 本身就紅(${redIds(baseline.checks).join(' / ')}),突變的紅燈無法歸因`)
+    if (redIds(baseline.checks).length) {
+      console.log(verdictRedLine(redIds(baseline.checks)))
+      problems.push(`現行 hook 本身就紅(${redIds(baseline.checks).join(' / ')}),突變的紅燈無法歸因`)
+    }
     const contractIds = baseline.checks.filter((c) => c.kind === 'contract').map((c) => c.id)
     const covered = new Set()
     // 突變彼此獨立:分 LANES 條 lane 並行跑(第一條 lane 沿用上面那個分頁),結果依 MUTANTS 的順序回報

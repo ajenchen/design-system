@@ -163,10 +163,14 @@ run_hook "Edit" "$CONSUMER_FILE" \
 export const Catalog = () => (<><DS.Button/><DS.Card/><DS.Input/><DS.Select/><DS.Avatar/></>);"
 expect_pass_silent "12. @consumer-catalog-allow escape → silent"
 
-# AllDsComponents basename BUT portal proxy(DsCanonicalPortal)→ silent(documented exception)
+# 13.(2026-11-27 上游判定 E18 改寫)AllDsComponents 的 portal 專屬例外拿掉:catalog 檔名一律擋(範本已改名 DsImportSmoke);
+# 改名後的 import smoke 檔名照常放行。
 run_hook "Write" "/repo/apps/template/src/AllDsComponents.stories.tsx" \
   "export const DsCanonicalPortal = () => <iframe src='/design-system/index.html' title='DS canonical' />;"
-expect_pass_silent "13. AllDsComponents + DsCanonicalPortal portal proxy → silent"
+expect_block "13. AllDsComponents 檔名(portal 例外已拿掉)→ BLOCK" "catalog pattern"
+run_hook "Write" "/repo/apps/template/src/DsImportSmoke.stories.tsx" \
+  "export const ImportSmoke = { render: () => <a href='https://ajenchen-design-system.netlify.app/'>DS</a> };"
+expect_pass_silent "13b. DsImportSmoke 檔名 → silent"
 
 # Near-miss P4: exactly 4 distinct <DS.X>(below ≥5 threshold)→ silent
 # (guard against over-broad regex firing on legit small composition)

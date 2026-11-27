@@ -193,7 +193,10 @@ try {
     },
   }, null, 2) + '\n')
 
+  // 2026-11-27(上游判定 B2(a) / B3):Verify consumer 的 timeout-minutes 要依一次 hooks-off 全量重播的實測秒數定,這裡印出來(template 規模)。
+  const positiveStarted = Date.now()
   const positive = runCheck()
+  const positiveSeconds = ((Date.now() - positiveStarted) / 1000).toFixed(1)
   if (positive.status !== 0 || !positive.report.ok || positive.report.hooksRequired !== false) {
     throw new Error(`positive clean-room failed:${JSON.stringify(positive.report, null, 2)}`)
   }
@@ -201,7 +204,7 @@ try {
     || !(positive.report.evidence?.staticReplay?.hookExecutions > 0)) {
     throw new Error(`positive clean-room did not execute the complete replay:${JSON.stringify(positive.report.evidence?.staticReplay)}`)
   }
-  console.log(`✅ positive: hooks-off immutable snapshot PASS(${positive.report.attestationDigest.slice(0, 16)})`)
+  console.log(`✅ positive: hooks-off immutable snapshot PASS(${positive.report.attestationDigest.slice(0, 16)})(一次全量重播 ${positiveSeconds} 秒、hook 執行 ${positive.report.evidence.staticReplay.hookExecutions} 次)`)
 
   const privateChecker = freezePrivateCheckerSnapshot(join(dsDest, 'ds-canonical/fork'), privateCheckerRoot)
   try {
@@ -348,6 +351,7 @@ try {
     'governance/provider-cli-toolchain.package-lock.json',
   ]
   const authenticatedNestedGovernanceData = [
+    'governance/schemas/content-debt-baseline.schema.json',
     'governance/schemas/issuer-registry.schema.json',
     'governance/schemas/visual-baseline-review-policy.schema.json',
     'governance/trust/issuers.json',
@@ -733,14 +737,183 @@ try {
   console.log('✅ negative: mutable semver range blocked')
 
   const bypassPath = join(mirror, 'apps/template/src/GovernanceBypass.tsx')
-  writeFileSync(bypassPath, `export const GovernanceBypass = () => <table style={{ padding: '13px', color: '#ff0000' }}><tbody><tr><td>x</td></tr></tbody></table>\n`)
+  // className 的 p-4 / opacity-50 讓同一個檔再違反 layout-space 與 opacity 兩支 hook(E15:每支各一筆)
+  writeFileSync(bypassPath, `export const GovernanceBypass = () => <table className="p-4 opacity-50" style={{ padding: '13px', color: '#ff0000' }}><tbody><tr><td>x</td></tr></tbody></table>\n`)
   const contentBlocked = expectFailure('GOV-CONTENT-001')
   if (contentBlocked.report.evidence?.staticReplay?.skippedForPreexistingBlocker !== false
     || !(contentBlocked.report.evidence?.staticReplay?.hookExecutions > 0)) {
     throw new Error(`content-only violation bypassed complete replay:${JSON.stringify(contentBlocked.report.evidence?.staticReplay)}`)
   }
+  // 2026-11-27(上游判定 E15):同一個檔違反兩支以上 hook 時,每支各記一筆(以前停在第一支)。
+  // 這個檔同時有原生 <table>(consumer app invariants)、className 的 p-4(layout-space)與 opacity-50(opacity),至少兩支 hook 會報。
+  // 改回 break 時這一條紅(只剩第一支)。
+  const bypassHooks = new Set((contentBlocked.report.diagnostics || [])
+    .map((d) => String(d.message || '').match(/^apps\/template\/src\/GovernanceBypass\.tsx violates (\S+)/)?.[1])
+    .filter(Boolean))
+  if (bypassHooks.size < 2) {
+    throw new Error(`E15: one file violating several hooks must yield one diagnostic per hook, got ${JSON.stringify([...bypassHooks])}`)
+  }
   rmSync(bypassPath)
   console.log('✅ negative: hooks-off exhaustive source replay blocks raw table/magic values')
+
+  // ── 2026-11-26 產品 canary 缺陷 1:workspace 版本分裂。對照組 = 升級只改了根目錄、app 還鎖舊版 ──
+  const appManifestPath = join(mirror, 'apps/template/package.json')
+  const originalAppManifest = readFileSync(appManifestPath)
+  const splitApp = JSON.parse(originalAppManifest.toString('utf8'))
+  splitApp.dependencies['@qijenchen/design-system'] = '0.1.0-beta.1'
+  writeFileSync(appManifestPath, JSON.stringify(splitApp, null, 2) + '\n')
+  const splitBlocked = expectFailure('GOV-WORKSPACE-VERSION-001')
+  if (!splitBlocked.report.diagnostics.some((d) => d.ruleId === 'GOV-WORKSPACE-VERSION-001'
+    && d.severity === 'BLOCKER'
+    && d.message.includes('apps/template/package.json')
+    && d.message.includes('0.1.0-beta.1')
+    && d.message.includes(dsVersion))) {
+    throw new Error(`workspace version split was not attributed to the app:${JSON.stringify(splitBlocked.report.diagnostics)}`)
+  }
+  writeFileSync(appManifestPath, originalAppManifest)
+  const workspaceLockPath = join(mirror, 'package-lock.json')
+  const originalWorkspaceLock = readFileSync(workspaceLockPath)
+  const nestedLock = JSON.parse(originalWorkspaceLock.toString('utf8'))
+  nestedLock.packages['apps/template/node_modules/@qijenchen/design-system'] = {
+    version: '0.1.0-beta.1',
+    resolved: 'https://registry.npmjs.org/@qijenchen/design-system/-/design-system-0.1.0-beta.1.tgz',
+    integrity: 'sha512-A3eSBeF7eSqCa3kuXymOstWCI9uLMcNxZY7glJosUTnvLJMsV9w6V8Ikirx08w6ch5bYT6BbUsQmJMyEkCfdDA==',
+  }
+  writeFileSync(workspaceLockPath, JSON.stringify(nestedLock, null, 2) + '\n')
+  const nestedBlocked = expectFailure('GOV-WORKSPACE-VERSION-002')
+  if (!nestedBlocked.report.diagnostics.some((d) => d.ruleId === 'GOV-WORKSPACE-VERSION-002'
+    && d.message.includes('apps/template/node_modules/@qijenchen/design-system'))) {
+    throw new Error(`nested second design-system copy was not named:${JSON.stringify(nestedBlocked.report.diagnostics)}`)
+  }
+  writeFileSync(workspaceLockPath, originalWorkspaceLock)
+  if (runCheck().status !== 0) throw new Error('workspace version fixture did not restore a passing snapshot')
+  console.log('✅ negative: an app pinned apart from the root, or a nested second design-system copy, blocks and names the app')
+
+  // ── 2026-11-26 產品 canary 缺陷 2:內容欠債基準(只擋新增 / 增加,基準只准縮小)──
+  const debtWriter = join(dsDest, 'ds-canonical/fork/consumer/governance-content-debt.mjs')
+  const runDebt = (...args) => spawnSync(process.execPath, ['--', debtWriter, '--repo', mirror, ...args], { cwd: root, encoding: 'utf8' })
+  const debtBaselinePath = join(mirror, 'governance/content-debt-baseline.json')
+  const legacyInvoice = join(mirror, 'apps/template/src/LegacyInvoiceTable.tsx')
+  const legacyRefund = join(mirror, 'apps/template/src/LegacyRefundBanner.tsx')
+  writeFileSync(legacyInvoice, `export const LegacyInvoiceTable = () => <table style={{ padding: '13px', color: '#ff0000' }}><tbody><tr><td>INV-2041</td></tr></tbody></table>\n`)
+  writeFileSync(legacyRefund, `export const LegacyRefundBanner = () => <div className="bg-popover text-popover-foreground">Refund pending</div>\n`)
+  const withoutBaseline = expectFailure('GOV-CONTENT-001')
+  if (existsSync(debtBaselinePath) || withoutBaseline.report.evidence?.contentDebt?.baseline !== null) {
+    throw new Error('a missing baseline must keep the previous all-blocking behavior')
+  }
+  const usage = runDebt('--record')
+  if (usage.status !== 64 || existsSync(debtBaselinePath)) throw new Error(`--record without --by/--reason must be refused:${usage.stdout}${usage.stderr}`)
+  // --list 在沒有基準時也要完整重播:它列的未登記集合 = 下一步 --record 登記的集合(轉換舊清單時靠它逐筆核對)。
+  // 對照組:checker 只在有基準 / record / prune 時完整重播的話,沒有基準的 --list 每檔只剩第一支違規的 hook,下面的比對紅。
+  const listed = runDebt('--list')
+  const listedCount = /未登記\(會擋;--record 會登記的就是這些\):(\d+) 格 \/ (\d+) 筆/.exec(listed.stdout)
+  if (listed.status !== 1 || !listedCount || existsSync(debtBaselinePath) || !listed.stdout.includes('LegacyInvoiceTable.tsx') || !listed.stdout.includes('LegacyRefundBanner.tsx')) {
+    throw new Error(`content-debt --list must list every unrecorded finding without writing:${listed.stdout}\n${listed.stderr}`)
+  }
+  const recorded = runDebt('--record', '--by', 'Ada Chen (payments lead)', '--reason', 'Existing invoice and refund screens predate the 0.1.0-beta.151 upgrade; cleanup planned for Q1')
+  if (recorded.status !== 0 || !existsSync(debtBaselinePath)) throw new Error(`content-debt record failed:${recorded.stdout}\n${recorded.stderr}`)
+  const recordedBaseline = JSON.parse(readFileSync(debtBaselinePath, 'utf8'))
+  const recordedCount = recordedBaseline.entries.length
+  if (
+    recordedCount < 2
+    || !recordedBaseline.entries.some((entry) => entry.file === 'apps/template/src/LegacyInvoiceTable.tsx')
+    || !recordedBaseline.entries.some((entry) => entry.file === 'apps/template/src/LegacyRefundBanner.tsx')
+    || recordedBaseline.registrations.length !== 1
+    || recordedBaseline.registrations[0].by !== 'Ada Chen (payments lead)'
+    || !recorded.stdout.includes(`recordedContentDebt=${recordedCount}`)
+    || !recorded.stdout.includes('Ada Chen (payments lead)')
+    || JSON.stringify(recordedBaseline).includes(mirror)
+  ) throw new Error(`content-debt record did not name its owner, count, or stay path-independent:${recorded.stdout}\n${JSON.stringify(recordedBaseline, null, 2)}`)
+  const recordedFindings = recordedBaseline.entries.reduce((total, entry) => total + entry.items.length, 0)
+  if (Number(listedCount[1]) !== recordedCount || Number(listedCount[2]) !== recordedFindings) {
+    throw new Error(`--list showed ${listedCount[1]} cells / ${listedCount[2]} findings but --record registered ${recordedCount} / ${recordedFindings}:\n${listed.stdout}`)
+  }
+  console.log(`✅ positive: --list without a baseline shows exactly what --record registers (${recordedCount} cells / ${recordedFindings} findings)`)
+  const baselined = runCheck()
+  const debtInfo = baselined.report.diagnostics.find((d) => d.ruleId === 'GOV-CONTENT-DEBT-003')
+  if (
+    baselined.status !== 0
+    || !baselined.report.ok
+    || debtInfo?.severity !== 'INFO'
+    || !debtInfo.message.includes(`recordedContentDebt=${recordedCount}`)
+    || !debtInfo.message.includes('not content compliance')
+    || baselined.report.evidence?.contentDebt?.recordedContentDebt !== recordedCount
+  ) throw new Error(`recorded content debt still blocks or is not reported:${JSON.stringify(baselined.report.diagnostics)}`)
+  console.log(`✅ positive: recorded content debt does not block and is reported as recordedContentDebt=${recordedCount}`)
+
+  const newPayout = join(mirror, 'apps/template/src/NewPayoutCard.tsx')
+  writeFileSync(newPayout, `export const NewPayoutCard = () => <table style={{ padding: '13px', color: '#ff0000' }}><tbody><tr><td>PO-118</td></tr></tbody></table>\n`)
+  const newBlocked = expectFailure('GOV-CONTENT-001')
+  const newContentDiagnostics = newBlocked.report.diagnostics.filter((d) => d.ruleId === 'GOV-CONTENT-001')
+  if (!newContentDiagnostics.some((d) => d.message.includes('NewPayoutCard.tsx')) || newContentDiagnostics.some((d) => d.message.includes('Legacy'))) {
+    throw new Error(`a new finding must block by name while recorded debt stays quiet:${JSON.stringify(newContentDiagnostics)}`)
+  }
+  rmSync(newPayout)
+  const originalInvoice = readFileSync(legacyInvoice)
+  // 同一格多一種發現(hook 逐行列出的另一類違規)→ 擋。指紋的粒度 = hook 報出的發現行:hook 把同類的多處合成
+  // 一行時(例:check_consumer_app_invariants.sh 對兩張手刻 <table> 只報一行),同類多一處看不出來 —— 量具的上限,寫在文件。
+  writeFileSync(legacyInvoice, `export const LegacyInvoiceTable = () => <table style={{ padding: '13px', color: '#ff0000' }}><tbody><tr><td>INV-2041</td></tr></tbody></table>\nexport const LegacyInvoiceStatus = () => <div className="bg-popover text-popover-foreground">Overdue</div>\n`)
+  const increasedBlocked = expectFailure('GOV-CONTENT-001')
+  if (!increasedBlocked.report.diagnostics.some((d) => d.ruleId === 'GOV-CONTENT-001' && d.message.includes('LegacyInvoiceTable.tsx') && d.message.includes('not in governance/content-debt-baseline.json'))) {
+    throw new Error(`more findings in a recorded cell must block:${JSON.stringify(increasedBlocked.report.diagnostics)}`)
+  }
+  writeFileSync(legacyInvoice, originalInvoice)
+  console.log('✅ negative: a finding in a new file, or a new kind of finding in a recorded cell, blocks and names the file')
+
+  rmSync(legacyRefund)
+  const staleBlocked = expectFailure('GOV-CONTENT-DEBT-002')
+  if (!staleBlocked.report.diagnostics.some((d) => d.ruleId === 'GOV-CONTENT-DEBT-002' && d.message.includes('LegacyRefundBanner.tsx') && d.message.includes('--prune'))) {
+    throw new Error(`a fixed recorded finding must be removed from the baseline:${JSON.stringify(staleBlocked.report.diagnostics)}`)
+  }
+  const pruned = runDebt('--prune')
+  const prunedBaseline = JSON.parse(readFileSync(debtBaselinePath, 'utf8'))
+  if (
+    pruned.status !== 0
+    || prunedBaseline.entries.some((entry) => entry.file.includes('LegacyRefundBanner'))
+    || prunedBaseline.entries.length >= recordedCount
+    || runCheck().status !== 0
+  ) throw new Error(`content-debt prune did not shrink the baseline to a passing state:${pruned.stdout}\n${pruned.stderr}`)
+  const prunedAgain = runDebt('--prune')
+  if (prunedAgain.status !== 0 || readFileSync(debtBaselinePath, 'utf8') !== JSON.stringify(prunedBaseline, null, 2) + '\n') {
+    throw new Error('an unchanged prune must not rewrite the baseline')
+  }
+  console.log('✅ ratchet: a fixed finding blocks as GOV-CONTENT-DEBT-002 until --prune shrinks the baseline')
+
+  const prunedBytes = readFileSync(debtBaselinePath)
+  const widened = JSON.parse(prunedBytes.toString('utf8'))
+  widened.entries.push({ ...structuredClone(widened.entries.at(-1)), file: 'apps/template/src/ZzHiddenPayoutTable.tsx' })
+  writeFileSync(debtBaselinePath, JSON.stringify(widened, null, 2) + '\n')
+  const widenedBlocked = expectFailure('GOV-CONTENT-DEBT-001')
+  if (!widenedBlocked.report.diagnostics.some((d) => d.ruleId === 'GOV-CONTENT-DEBT-001'
+    && String(d.evidence).includes('npm run governance:debt')
+    && d.message.includes('git checkout -- governance/content-debt-baseline.json')
+    && d.message.includes('--record'))) {
+    throw new Error(`a hand-widened baseline must block and name both ways out:${JSON.stringify(widenedBlocked.report.diagnostics)}`)
+  }
+  // GOV-CONTENT-DEBT-001 指的兩條路都要走得通。--prune 沒有有效的基準可縮小 → 拒絕、不動檔。
+  const widenedBytes = readFileSync(debtBaselinePath)
+  const pruneInvalid = runDebt('--prune')
+  if (pruneInvalid.status !== 1 || !pruneInvalid.stderr.includes('is invalid') || !readFileSync(debtBaselinePath).equals(widenedBytes)) {
+    throw new Error(`--prune on an invalid baseline must refuse without writing:${pruneInvalid.stdout}\n${pruneInvalid.stderr}`)
+  }
+  // 對照組:提案模式把 GOV-CONTENT-DEBT-001 算成結構性阻擋的話,這次 --record 會回 refused,訊息指的路走不通。
+  const phantomFile = widened.entries.at(-1).file
+  const rerecorded = runDebt('--record', '--by', 'Ada Chen (payments lead)', '--reason', 'Baseline was hand-edited in a merge; re-recorded from scratch')
+  const rerecordedBaseline = existsSync(debtBaselinePath) ? JSON.parse(readFileSync(debtBaselinePath, 'utf8')) : null
+  if (
+    rerecorded.status !== 0
+    || !rerecorded.stdout.includes('從頭重建')
+    || rerecordedBaseline?.registrations.length !== 1
+    || rerecordedBaseline.registrations[0].reason !== 'Baseline was hand-edited in a merge; re-recorded from scratch'
+    || rerecordedBaseline.entries.some((entry) => entry.file === phantomFile)
+    || runCheck().status !== 0
+  ) throw new Error(`--record must rebuild an invalid baseline as GOV-CONTENT-DEBT-001 says:${rerecorded.stdout}\n${rerecorded.stderr}`)
+  console.log('✅ recovery: an invalid baseline refuses --prune and is rebuilt from scratch by --record, as GOV-CONTENT-DEBT-001 says')
+  writeFileSync(debtBaselinePath, prunedBytes)
+  rmSync(legacyInvoice)
+  rmSync(debtBaselinePath)
+  if (runCheck().status !== 0) throw new Error('content-debt fixture did not restore a passing snapshot')
+  console.log('✅ negative: a baseline grown outside npm run governance:debt blocks as GOV-CONTENT-DEBT-001')
 
   const shadcnAliasPath = join(mirror, 'apps/template/src/ShadcnAliasBypass.tsx')
   writeFileSync(shadcnAliasPath, `export const ShadcnAliasBypass = () => <div className="bg-popover text-popover-foreground">x</div>\n`)

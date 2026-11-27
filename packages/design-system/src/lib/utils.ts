@@ -37,8 +37,8 @@ const twMerge = extendTailwindMerge<'animation-fill-mode'>({
         'text-fg-muted',
         'text-fg-disabled',
         'text-inverse-fg',
-        'text-on-emphasis',       // 白字於夠深的飽和色底(Avatar / Tag solid / Steps filled indicator)
-        'text-on-emphasis-dark',  // 深字於太亮的飽和色底(yellow/amber/orange/lime solid;原 warning-foreground)
+        'text-on-emphasis',       // 白字於白字對比不低於綠色的飽和色底(Avatar / Tag solid / Steps filled indicator)
+        'text-on-emphasis-dark',  // 深字於白字對比低於綠色的亮色底(目前 yellow/amber/lime solid;原 warning-foreground)
 
         // Status 基色(base)
         'text-primary',

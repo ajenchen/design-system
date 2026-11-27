@@ -113,7 +113,7 @@ Tabs trigger = **item-layout 橫向變體 + Button 高度系統**。對標 item-
 三處刻意偏離 item-layout:
 - **固定高度** `h-[var(--tab-height-N) N∈{sm,md,lg}]` + `items-center`(非 `h-[1lh]`)— Tabs 是 Button 樣的固定容器,非內容撐高 row
 - **無 `<ItemIcon>` / `<ItemLabel>` helper**,直接吃 `LucideIcon` prop + 裸 `<span>` label — slot 固定三格,無複雜 prefix mixing
-- **label 不包 `<span>` padding wrapper**(對比 Button 設計) — selected underline 必須 fit content,label 有橫向 padding 會讓 underline 多 8px 鬆散
+- **label 不包 `<span>` padding wrapper**(對比 Button 設計) — selected underline 必須 fit content,label 有橫向 padding 會讓 underline 多 8px 鬆散。2026-11-27 起 trigger 本身左右各有一個焦點框的位置(見「寬度行為」→「焦點框不壓字」),底線兩端各縮同一個寬度,仍貼字寬 —— 這一條的用意不變
 
 **漂移歸屬**:row primitive 漂移以 `item-anatomy.spec.md` 為主;inline 高度 / icon size / suffix 結構漂移以 `button.tsx` 為主。
 
@@ -181,14 +181,37 @@ menu = **scroll 模式 + 額外的 ⌄ quick-jump navigator**(show-all navigator
 
 ## 寬度行為
 
-**Trigger 寬度永遠由內容決定（hug content）**——Tabs 沒有 `width="fill"` / 等分模式。
+**Trigger 寬度永遠由內容決定（hug content）**——Tabs 沒有 `width="fill"` / 等分模式。(內容兩側各加一個焦點框的位置,見下方「焦點框不壓字」;不改變「跟著內容」這件事。)
 
 Tabs 是 **navigation anchor**，不是 compact control：
 - 它在視覺階層上是 section header 等級，用「文字流」的節奏左對齊排列，trigger 間以 `--layout-space-loose` 分隔，接近閱讀動線
 - 「各 segment 同寬」是本 DS SegmentedControl 的身份特徵，Tabs 沒有這層視覺契約
 - 需要 compact 的等寬互斥切換器 → 用 `SegmentedControl`；需要 section-level 的視圖導覽 → 用 Tabs
 
-**Triggers 之間 gap**：使用 `--layout-space-loose`（md density 16px / lg density 24px），與其他「pattern 層級的鬆散留白」共用同一 token。Tabs 的 gap 不是裝飾性空白，而是告訴使用者「每個 tab 是獨立的視圖入口」的視覺分隔。
+**Triggers 之間 gap**：**字與字的距離**使用 `--layout-space-loose`（md density 16px / lg density 24px），與其他「pattern 層級的鬆散留白」共用同一 token。Tabs 的 gap 不是裝飾性空白，而是告訴使用者「每個 tab 是獨立的視圖入口」的視覺分隔。(2026-11-27 起 trigger 左右各有一個焦點框的位置,TabsList 的 `gap` 本身寫成 `--layout-space-loose` 減兩份焦點框位置,字與字的距離不變;見下節。)
+
+### 焦點框不壓字(2026-11-27)
+
+**問題**:tab 的焦點框往內畫(`focus-ring-inset`:2px 線、往內退 2px;理由見「狀態」表 focus-visible 列),而 trigger 原本左右零內距 —— 鍵盤聚焦時框壓在字上。焦點框規則只量框**外面**有沒有空間(`../../ds-canonical/references/focus-canonical.md`「問題二」),沒有量框**裡面**離字多遠;2026-09-09 由往外改往內時沒有一起補內距。
+
+**尺寸**(全部由一個值推出 —— 焦點框的位置 = 框寬 2px + `--stack-gap` 2px = 4px;`tabs.tsx` `TABS_FOCUS_ROOM_PX`):
+
+| 項目 | 值 | 結果 |
+|---|---|---|
+| trigger 左右內距 | 各 4px | 框內緣離字 / 圖示 / 徽章 **2px** |
+| TabsList `gap` | `--layout-space-loose` − 2 × 4px(md 8 / lg 16) | 字與字仍相距 `--layout-space-loose` |
+| 第一個 / 最後一個 trigger | 各往外借 4px(負外距) | 第一個字仍對齊下方內容左緣(「TabsList 容器寬度」段) |
+| 選中底線 | 兩端各縮 4px | 仍貼字寬(「對標對象與故意的偏離」第三點) |
+| 溢出模式(scroll / menu)的捲動容器 | 左右各外推 4px、內距推回;遮罩與「選到就露出來」的預留寬 + 4 | 第一個 trigger 借出去的 4px 不被捲動容器切掉;箭頭、淡出位置不變 |
+| `inlineAction` | action 右緣 = trigger 右緣 − 4px(預留寬 = action + 8px + 4px) | 字到 action 仍是 8px,框不壓 action |
+
+**借出去的 4px 在元件盒子外**:第一個 trigger 往左借的 4px 落在 TabsList 左邊(往左的溢出不會產生捲動);溢出模式的捲動容器左右都外推 4px —— 放進**右側沒有內距的捲動容器**時,右邊這 4px 會讓那個容器多 4px 可捲寬度。DS 內放 Tabs 的容器(ChromeHeader `tabsSlot`、Dialog / Sheet / Popover 的 body)都有內距或裁切,不受影響;產品自己的捲動容器請留內距。借出 / 外推的 4px 仍接指標:每個 trigger 的滑過 / 點擊範圍左右各比字多 4px(第一個 trigger 伸到 TabsList 左邊 4px)。在 TabsList 外單獨套用公開出口 `tabsTriggerVariants` 時沒有這個值(CSS 讀它一律帶後備值 0),畫面與補之前相同、選中底線照常,但框也照舊壓字。【AI 推導,2026-11-27】
+
+**結果**:平常畫面(未聚焦)字、徽章、底線、action 的位置與長度跟補之前**一個像素都不變**;只有鍵盤聚焦時框往外退 2px、離字 2px。焦點框本身(粗細、顏色、往內 2px、圓角)一個字不改,改的是 Tabs 自己的尺寸 —— 框放不下時由元件改自己的尺寸、不另外發明框的畫法【AI 讀法,出自 E13 研究卡(交接資料夾 `notes/decisions/round7-followup.json` e13 answer 第三段),不是 focus-canonical.md 原文】;最接近的原文是 `focus-canonical.md:661`「那是設計問題不是幾何問題,單獨處理」(「不需要為它開分支的兩件事」,講元素太小畫不了內描邊)。
+
+**為什麼框內緣要離字至少 2px**:WCAG 2.4.7 / 2.4.11 / 2.4.13 都沒有「框不能壓到元件自己的字」這一條,依據是 DS 自己的判準 —— user 2026-09-23 在日期格焦點框 C / D 兩案之間選 D 的理由:「我會想要選D,因為 c的白線幾乎要切到文字了，你覺得呢？」(`focus-canonical.md:677` 逐字);D 案每邊淨空 2px(`focus-canonical.md`「填色元素上的內描邊」)。2px 這個縫與全域往外框的縫同一個 token `--stack-gap`(`tokens/uiSize/uiSize.css`)。同一種做法(內距 + 底線貼字寬 + 整排借回)Atlassian 也這樣做:分頁左右 8px 內距、選中底線兩端各縮 8px、整排往左借 8px,原文「._rmpau2gc [role=tab]{padding-inline-start:var(--ds-space-100,8px)」「._1jjcu2gc [role=tab][aria-selected=true]:after{inset-inline-start:var(--ds-space-100,8px)」「._ahbqx0bf{margin-inline-start:var(--ds-space-negative-100,-8px)」([來源](https://cdn.jsdelivr.net/npm/@atlaskit/tabs@21.3.1/dist/esm/components/tab-list.compiled.css))。本 DS 取 4px 而不是 8px:只補到框不壓字所需的最小寬度(框 2 + 縫 2)—— 往外借的寬度、溢出模式捲動容器外推的範圍、滑過 / 點擊範圍多出的寬度都跟著最小(取 8px 時這三樣都是兩倍,零位移照樣做得到)。【AI 推導】
+
+**來源**:user 2026-11-26 在畫面確認卡 E13 選了「A:零位移補內距(推薦)」(結構化選擇,沒有附意見);4px 的拆法、借位、溢出模式的外推與 `inlineAction` 退位是 AI 推導(依上段兩個 DS 先例與 Combobox 單行標籤列「負外距撐大、等量內距推回」的既有做法 `combobox.tsx` `tagRowFocusRoomClass`)。**閘**:`scripts/focus-indicator-invariants.mjs` F7(框內緣到字 ≥ `--stack-gap`、溢出捲動模式第一個 tab 的框不被切、平常畫面字 / 底線 / action 位置不變;對照組 `--selftest-focus-room` 拿掉內距必紅)。
 
 **TabsList 容器寬度(2026-06-12 user 拍板,解 L58 spec≠code)**:**跨滿父容器**(none 模式 `w-full`;scroll/menu 模式 inner list `min-w-full` 保留溢出成長)——底線連成整條、右端達內容區邊緣,與「跨父容器寬度、與 header border 對齊」的角色定義一致(對齊 Ant nav `left:0;right:0` 底線 / Primer UnderlineNav;shadcn 預設是 pill 式,另有 `line` 變體但 TabsList 仍是 `w-fit` 不跨滿,不適用)。Trigger 本身仍 hug content(上段不變)。**左右邊距 ownership**:TabsList **不自加水平 padding**——邊距由容器的 `--layout-space-loose` gutter 提供(standalone = 父容器 padding;經 header tabsSlot = 繼承 header padding,W2 lockstep),故 tab 左緣永遠對齊兄弟內容左緣([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tabs/style/index.ts#L417-L431)、[來源](https://github.com/primer/react/blob/62d32c94ac730847a4557441b65a6a48334201a3/packages/react/src/internal/components/UnderlineTabbedInterface.module.css#L14)、[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/tabs.tsx#L28-L33))。
 
@@ -237,7 +260,7 @@ DS 詞彙 **selected**（持續選中）；Radix DOM attr 為 `data-state="activ
 | selected | `text-foreground` + `font-medium` + 底部 2px `bg-primary` 底線（semantic.css 選中規則；2026-07-06 拍板持續選中站 base，Ant inkBarColor = colorPrimary 同款）([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tabs/style/index.ts#L1132)) |
 | 未選 | `text-fg-secondary` + `font-medium`（與 selected 同 weight，差異僅文字色 + 有無底線，非 weight）、無底線；hover 時文字色轉 `text-foreground`,**瞬間**切換、不過渡(`../../tokens/motion/motion.spec.md`「hover 回饋不做過渡」;2026-09-26 由底色延伸到字色,待辦總帳 L9)。選中切換時的底線換色(`after:transition-colors`)是「選中移動」,不是滑過,保留過渡 |
 | disabled | `text-fg-disabled`；無 hover 色變化、無底線；`cursor-not-allowed`；不接受鍵盤 focus |
-| focus-visible | 內描邊 `focus-visible:focus-ring-inset`(tab 高 = 分頁列高,上下淨空 0 → 往內;`focus-canonical.md`「問題二」;2026-09-09 訂正,原 `ring-offset-1` 是已退役的幾何);鍵盤導覽(左右箭頭)由 Radix 原生處理 |
+| focus-visible | 內描邊 `focus-visible:focus-ring-inset`(tab 高 = 分頁列高,上下淨空 0 → 往內;`focus-canonical.md`「問題二」;2026-09-09 訂正,原 `ring-offset-1` 是已退役的幾何);框內緣離字 2px(trigger 左右各一個焦點框的位置,見「寬度行為」→「焦點框不壓字」,2026-11-27);鍵盤導覽(左右箭頭)由 Radix 原生處理 |
 
 ---
 
@@ -317,6 +340,7 @@ Tabs anatomy 採 DS 標準結構 + 元件特有矩陣:
 - `button.spec.md`
 - `carousel.spec.md`
 - `data-table.spec.md`
+- `date-picker.spec.md`
 - `header-canonical.spec.md`
 - `horizontal-overflow.spec.md`
 - `segmented-control.spec.md`

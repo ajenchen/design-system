@@ -1,6 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { DescriptionList, DescriptionItem } from './description-list'
 import { Input } from '@/design-system/components/Input/input'
 import { Field, FieldLabel, FieldGroup } from '@/design-system/components/Field/field'
@@ -41,7 +41,7 @@ function EditInDdCounterExample() {
     )
   }
   return (
-    // @layout-space-magic-ok: 值 ↔ 行內編輯鈕 8px(inline-action.spec.md:92「**間距**:`gap-2`(8px)」)
+    // @layout-space-magic-ok: 值 ↔ 行內編輯鈕 8px(inline-action.spec.md:93「**間距**:`gap-2`(8px)」)
     <div className="flex items-center gap-2">
       <span>{email}</span>
       <Button variant="text" size="xs" onClick={() => setEditing(true)}>編輯</Button>
@@ -127,7 +127,7 @@ export const UsageGuidance: Story = {
         </TutorialRule>
         <TutorialList>
           <li>要編輯的「標籤 + 值」→ Field 系統(Input / Select / DatePicker):DescriptionList 只做唯讀展示</li>
-          <li>只有一組「標籤 + 值」→ 直接排版即可,不需要整個清單</li>
+          <li>整組按「編輯」才原地變成表單的區塊 → 平常用 Field 層純顯示(Field mode="view"),不用 DescriptionList</li>
         </TutorialList>
       </UsageSection>
 

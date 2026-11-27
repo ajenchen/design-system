@@ -101,21 +101,10 @@ EOF
   exit 2
 fi
 
-# ── Sanctioned portal 檔 allowlist(2026-06-11 R2 held-item #10)──────────────
-# AllDsComponents.stories.tsx 是 documented DS proxy portal(檔頭 @anatomy-exempt +
-# @consumer-catalog-allow per 2026-05-27 M31 codex synthesis + @layout-space-magic-ok
-# dev-artifact 豁免)— 3 個 marker 各帶 rationale 是它的 sanctioned 常態,數量 gate
-# (≥3 distinct)對它必誤擋 = hook-vs-hook 張力。只豁免數量 gate;justification gate
-# (空理由 BLOCK)上方已跑完照常生效,真保護不削弱。
-IS_SANCTIONED_PORTAL=0
-case "$FILE" in
-  *apps/*/src/AllDsComponents.stories.tsx) IS_SANCTIONED_PORTAL=1 ;;
-esac
-
 # ── 數量 gate(≥3 distinct / ≥5 total）— 僅 consumer(DS source 有大量 legit exception,只走上方 justification gate）──
-# 2026-06-11 R2 Phase B(codex b3 抓縫):portal 無限豁免會放走「第 4、5 個新增 marker」——
-# 改為提高閾值(portal ≥6 / 一般 ≥3)保留 ceiling,justification gate 不變。
-if [ "$IS_SANCTIONED_PORTAL" -eq 1 ]; then DISTINCT_CAP=6; else DISTINCT_CAP=3; fi
+# 2026-11-27(上游判定 E18):以前 AllDsComponents.stories.tsx(帶 3 種 marker 的 portal)有專屬放寬(distinct ≥6);
+# 範本改名成 DsImportSmoke.stories.tsx 並拿掉全部 marker(0 個)後不再需要,專屬例外刪除 —— 每個檔同一套門檻。
+DISTINCT_CAP=3
 if [ "$IS_CONSUMER" -eq 1 ]; then
   # 2026-05-31 廣化 marker family 仍在 shared classifier 裡閉包納管。layout-space marker
   # 若附著在 utility-registry 可機械證明的 canonical micro geometry,已沒有繞過
@@ -177,7 +166,34 @@ EOF
     if [ -L "$APPS_ROOT" ] || [ ! -d "$APPS_ROOT" ] || [ ! -r "$APPS_ROOT" ]; then
       governance_hook_integrity_fail 'escape-marker repository scan root is unavailable or unsafe'
     fi
-    REPO_MARKERS=$(governance_countable_repository_escape_markers "$APPS_ROOT") \
+    # 計數根 = 本次編輯檔所在的 apps/<name>(2026-11-27,上游判定 B1):template 本來就是一個 repo 放多個 app
+    #(package.json workspaces = apps/*),全 apps/** 合算會讓合規的 app 被別的 app 拖累而擋。取捨:全 repo 的總上限
+    # 因此是「每個 app 各 10」(N 個 app = N×10),同一 app 內「每檔 1-2 個、散多檔」的繞法照舊擋。
+    # 編輯檔不在 apps/<name>/ 底下(例:consumer/…)時照舊以整個 apps/ 為根。
+    SCAN_ROOT="$APPS_ROOT"
+    SCAN_LABEL='apps/**'
+    # app 名 = 編輯檔相對專案根的路徑在 apps/ 之後的**第一段**(2026-11-27 規格核對必修 1:以前用貪婪 sed 抓整條
+    # 路徑裡最後一個 apps/<x>/,巢狀路徑 apps/alpha/src/apps/zzz/… 取到 zzz、專案根本身在 …/apps/proj/ 底下時取到 proj)。
+    # 取法住 lib/_provider_paths.sh governance_app_name_for_path(r4_app_story_title 共用同一支)。
+    EDIT_APP=$(governance_app_name_for_path "$FILE")
+    if [ -n "$EDIT_APP" ]; then
+      SCAN_ROOT="$APPS_ROOT/$EDIT_APP"
+      SCAN_LABEL="apps/$EDIT_APP"
+      if [ -L "$SCAN_ROOT" ]; then
+        governance_hook_integrity_fail 'escape-marker app scan root is a symlink'
+      fi
+    fi
+    if [ "$SCAN_ROOT" != "$APPS_ROOT" ] && [ ! -e "$SCAN_ROOT" ]; then
+      # apps/<x> 還不存在 → 退回整個 apps/ 計數(必修 1 擇一:不 fail closed)。理由:新 app 由 npm run create-app 先建好
+      # 資料夾,不存在只剩手動第一筆或路徑異常;以前這裡把存量當 0 = ratchet 整個關掉。退回全 apps 計數讓 ratchet 不關、
+      # 最壞是多擋一次並指名 apps/**;fail closed 會把合法的第一筆報成「儀器失效」,訊息不實。
+      SCAN_ROOT="$APPS_ROOT"
+      SCAN_LABEL="apps/**(apps/$EDIT_APP 還不存在,以整個 apps/ 計)"
+    fi
+    if [ ! -d "$SCAN_ROOT" ] || [ ! -r "$SCAN_ROOT" ]; then
+      governance_hook_integrity_fail 'escape-marker app scan root is unavailable or unsafe'
+    fi
+    REPO_MARKERS=$(governance_countable_repository_escape_markers "$SCAN_ROOT") \
       || governance_hook_integrity_fail 'escape-marker repository scan failed'
     if [ -n "$REPO_MARKERS" ]; then
       governance_hook_grep_capture REPO_TOTAL 'escape-marker repository counter failed' "$REPO_MARKERS" -c .
@@ -197,7 +213,7 @@ EOF
         cat >&2 << EOF
 🚨 ESCAPE-MARKER-REPO-RATCHET BLOCKER(P0,2026-07-08 WM 戰役 R4)
 
-  apps/** 全 repo escape marker 存量已 $REPO_TOTAL 個(ceiling $REPO_CAP),本次 edit 又要新增 $EDIT_ADDS_MARKER 個。
+  $SCAN_LABEL escape marker 存量已 $REPO_TOTAL 個(ceiling 每個 app $REPO_CAP),本次 edit 又要新增 $EDIT_ADDS_MARKER 個。
   每檔 1-2 個散多檔 = 繞 per-file gate 的同型濫用 — repo 級 ratchet 攔。
 
   修法 2 選 1:

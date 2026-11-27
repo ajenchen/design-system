@@ -4,9 +4,9 @@ import { ChevronRight, type LucideIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import type { AvatarData } from "@/design-system/components/Avatar/avatar"
-import { MenuItem } from "@/design-system/components/Menu/menu-item"
+import { MenuItem, type MenuItemProps } from "@/design-system/components/Menu/menu-item"
 import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
-import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING, OVERLAY_HIDE_WHEN_DETACHED } from "@/design-system/tokens/elevation/overlay-geometry"
+import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING, OVERLAY_HIDE_WHEN_DETACHED, OVERLAY_AVAILABLE_HEIGHT, capHeight } from "@/design-system/tokens/elevation/overlay-geometry"
 import {
   RowSizeProvider,
   useRowSize,
@@ -14,7 +14,8 @@ import {
   type RowSize,
 } from "@/design-system/patterns/element-anatomy/item-anatomy"
 import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
-import { OverlayAnchorScope, useRegisterOverlayNode, useTriggerRegionDensity } from "@/design-system/lib/overlay-density"
+import { OverlayAnchorScope, regionSourceNode, useOverlayAnchorRegistry, useRegisterOverlayNode, useTriggerRegionDensity } from "@/design-system/lib/overlay-density"
+import { useOverlayLayer } from "@/design-system/lib/overlay-nesting"
 import { markPointerGrab, useCursorMover } from '@/design-system/hooks/use-input-modality'
 // 鍵盤接線(開關狀態 / Tab 離開 / 子選單 Esc)住在 dropdown-menu-keyboard.ts —— 本檔只留視覺層(2026-09-26 拆檔,見該檔檔頭)
 import {
@@ -241,10 +242,12 @@ interface DropdownMenuContentProps
    */
   minWidth?: number
   /**
-   * 最大高度（px）——**可選更低上限**。預設已 viewport-adaptive(夾到 trigger→視窗碰撞邊界的剩餘高度、
+   * 最大高度 ——**可選更低上限**。預設已 viewport-adaptive(夾到 trigger→視窗碰撞邊界的剩餘高度、
    * 離窗 ≥8px、超過即捲動);傳 `maxHeight` 只在「想比視窗剩餘更矮」時用(取 `min(視窗剩餘, maxHeight)`)。
+   * 數字 = px;2026-11-24 起另收字串(`60svh` / `calc(100svh - 120px)`),契約同 `DialogContent` / `PopoverContent` 的 `maxHeight`
+   * (公式住 `tokens/elevation/overlay-geometry.ts` 的 `capHeight`)。
    */
-  maxHeight?: number
+  maxHeight?: number | string
 }
 
 const DropdownMenuContent = React.forwardRef<
@@ -253,8 +256,11 @@ const DropdownMenuContent = React.forwardRef<
 >(({ className, size = 'md', sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, align = 'start', minWidth, maxHeight, children, onKeyDown, onCloseAutoFocus, ...props }, ref) => {
   // 記下根內容(觸發點是透明錨點時靠它的 id 找開啟者)+ 開著按 Tab(B11)+ Tab 離開時不自動還焦點(dropdown-menu-keyboard.ts)
   const menuKeyboard = useMenuContentKeyboard(ref, onKeyDown, onCloseAutoFocus)
+  // 登記進浮層疊(lib/overlay-nesting.ts):選單是從觸發鈕開出來的一層 —— 觸發鈕住在另一層浮層裡時(清單旁的詳情標題列的「⋯」),點選單不關那一層
+  const anchorRegistry = useOverlayAnchorRegistry("dropdown-menu")
+  const layerRef = useOverlayLayer<React.ElementRef<typeof DropdownMenuPrimitive.Content>>(() => regionSourceNode(anchorRegistry), menuKeyboard.ref)
   // 觸發點那一區的兩軸檔位(lib/overlay-density.tsx;內容根元素掛上去才讀、關著不讀)
-  const { attrs: regionDensity, ref: contentRef } = useTriggerRegionDensity("dropdown-menu", menuKeyboard.ref)
+  const { attrs: regionDensity, ref: contentRef } = useTriggerRegionDensity("dropdown-menu", layerRef)
   return (
   <DropdownMenuPrimitive.Portal>
     <DropdownMenuPrimitive.Content
@@ -283,10 +289,8 @@ const DropdownMenuContent = React.forwardRef<
         // 2026-07-18 viewport-adaptive max-h(對齊 HoverCard/Popover 既有 canonical):夾到「trigger 到
         //   碰撞邊界(已內縮 collisionPadding=8px)的剩餘高度」→ 高選單不溢出視窗、離視窗邊 ≥8px、
         //   短選單仍貼內容;consumer `maxHeight` 為**可選更低上限**(min 取小者)。inline style 非 class,
-        //   故動態 maxHeight 不觸 Tailwind 掃描陷阱。
-        maxHeight: maxHeight
-          ? `min(var(--radix-dropdown-menu-content-available-height, 100vh), ${maxHeight}px)`
-          : 'var(--radix-dropdown-menu-content-available-height, 100vh)',
+        //   故動態 maxHeight 不觸 Tailwind 掃描陷阱。2026-11-24 起公式讀 overlay-geometry 的 capHeight(全 DS 一條)。
+        maxHeight: capHeight(OVERLAY_AVAILABLE_HEIGHT, maxHeight),
       }}
       {...props}
       // 選單開著按 Tab = 收起全部、從開啟者往下 / 往上走(B11;蓋掉 Radix 的擋 Tab)
@@ -314,18 +318,28 @@ const DropdownMenuSubContent = React.forwardRef<
   const size = useRowSize()
   // 子選單裡 Tab 收起全部層(B11)、Esc 只關這一層(B10)—— dropdown-menu-keyboard.ts
   const subKeyboard = useSubMenuContentKeyboard(onKeyDown, onEscapeKeyDown)
+  // 登記進浮層疊(lib/overlay-nesting.ts):子選單的錨點 = 它的 SubTrigger(Radix 寫在子選單上的 aria-labelledby)
+  const layerRef = useOverlayLayer<React.ElementRef<typeof DropdownMenuPrimitive.SubContent>>((node) => {
+    const id = node.getAttribute('aria-labelledby')
+    return id ? node.ownerDocument.getElementById(id) : null
+  }, ref)
   return (
     <DropdownMenuPrimitive.SubContent
-      ref={ref}
+      ref={layerRef}
       sideOffset={OVERLAY_SIDE_OFFSET}
-      className={cn(floatingLayerClass, 'py-2', className)}
-      style={{ boxShadow: 'var(--elevation-200)', minWidth: 180 }}
+      // 高度上限與捲動同主選單(2026-11-24;elevation.spec.md「浮層高度上限」):修前子選單沒有任何上限、也沒有 ScrollArea,
+      // 比可用高還高時超出視窗被切掉而且捲不到。現在夾到可用高、超過就在 ScrollArea 裡捲;
+      // 短子選單 flex-1 貼內容,畫面與修前相同(py-2 搬到捲動區內層,跟 DropdownMenuContent 同一套)。
+      className={cn(floatingLayerClass, 'flex flex-col min-h-0', className)}
+      style={{ boxShadow: 'var(--elevation-200)', minWidth: 180, maxHeight: capHeight(OVERLAY_AVAILABLE_HEIGHT) }}
       {...props}
       onKeyDown={subKeyboard.onKeyDown}
       onEscapeKeyDown={subKeyboard.onEscapeKeyDown}
     >
       <RowSizeProvider value={size}>
-        {children}
+        <ScrollArea className="flex-1 min-h-0" viewportTabIndex={null}>
+          <div className="py-2">{children}</div>
+        </ScrollArea>
       </RowSizeProvider>
     </DropdownMenuPrimitive.SubContent>
   )
@@ -351,13 +365,20 @@ function buildEndContent(
   )
 }
 
+// ── 前綴槽(四種 item 共用)──
+// 仿 command.tsx `CommandItemMenuProps` 的 Pick 寫法:前綴槽的型別與說明直接取自 MenuItem(內層就是它),
+// MenuItem 以後新增前綴槽,型別自動跟上(2026-11-26,workspace F 組 F4-2;修前四種 item 只收 startIcon,
+// 2026-07-10 為類型徽章開的 MenuItem `startContent` 公開入口一個都用不到)。
+// startIcon / avatar / startContent 三選一(menu-item.spec.md「❌ startIcon / avatar / startContent 三者不可同時使用」);
+// startContent 節點尺寸 = ICON_SIZE[size],類型方塊每種 size 的規格待 C5 定案。
+type DropdownMenuPrefixProps = Pick<MenuItemProps, 'startIcon' | 'startIconClassName' | 'startContent'>
+
 // ── Item ──
 interface DropdownMenuItemProps
-  extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item>, 'children'> {
+  extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item>, 'children'>,
+    DropdownMenuPrefixProps {
   children: React.ReactNode
-  /** 左側 icon */
-  startIcon?: LucideIcon
-  /** 左側頭像資料（AvatarData），與 startIcon 互斥 */
+  /** 左側頭像資料（AvatarData），與 startIcon / startContent 互斥 */
   avatar?: AvatarData
   /** 次要說明文字 */
   description?: React.ReactNode
@@ -376,7 +397,7 @@ interface DropdownMenuItemProps
 const DropdownMenuItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Item>,
   DropdownMenuItemProps
->(({ className, children, startIcon, avatar, description, tag, badge, endIcon, shortcut, selected, disabled, ...props }, ref) => {
+>(({ className, children, startIcon, startIconClassName, startContent, avatar, description, tag, badge, endIcon, shortcut, selected, disabled, ...props }, ref) => {
   // 虛擬游標的框只在鍵盤模態下畫(對齊 :focus-visible 啟發式;SSOT = hooks/use-input-modality.ts)
   const cursorByKeyboard = useCursorMover() === 'keyboard'
   const size = useRowSize()
@@ -408,6 +429,8 @@ const DropdownMenuItem = React.forwardRef<
       <MenuItem
         size={size}
         startIcon={startIcon}
+        startIconClassName={startIconClassName}
+        startContent={startContent}
         avatar={avatar}
         description={description}
         tag={tag}
@@ -426,10 +449,9 @@ DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName
 
 // ── SubTrigger（子選單觸發器，自動附加 ChevronRight）──
 interface DropdownMenuSubTriggerProps
-  extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger>, 'children'> {
+  extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger>, 'children'>,
+    DropdownMenuPrefixProps {
   children: React.ReactNode
-  /** 左側 icon */
-  startIcon?: LucideIcon
   /** 子選單目前狀態值文字（如 "深色"） */
   value?: string
   /** 子選單狀態 badge */
@@ -439,7 +461,7 @@ interface DropdownMenuSubTriggerProps
 const DropdownMenuSubTrigger = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.SubTrigger>,
   DropdownMenuSubTriggerProps
->(({ className, children, startIcon, value, badge, ...props }, ref) => {
+>(({ className, children, startIcon, startIconClassName, startContent, value, badge, ...props }, ref) => {
   const size = useRowSize()
   const iconPx = ICON_SIZE[size]
   const cursorByKeyboard = useCursorMover() === 'keyboard'
@@ -473,6 +495,8 @@ const DropdownMenuSubTrigger = React.forwardRef<
       <MenuItem
         size={size}
         startIcon={startIcon}
+        startIconClassName={startIconClassName}
+        startContent={startContent}
         endContent={endContent}
         role="presentation"
         className="!bg-transparent hover:!bg-transparent pointer-events-none"
@@ -486,10 +510,9 @@ DropdownMenuSubTrigger.displayName = DropdownMenuPrimitive.SubTrigger.displayNam
 
 // ── CheckboxItem ──
 interface DropdownMenuCheckboxItemProps
-  extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>, 'children'> {
+  extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>, 'children'>,
+    DropdownMenuPrefixProps {
   children: React.ReactNode
-  /** 左側 icon */
-  startIcon?: LucideIcon
   /** 次要說明文字 */
   description?: React.ReactNode
 }
@@ -497,7 +520,7 @@ interface DropdownMenuCheckboxItemProps
 const DropdownMenuCheckboxItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>,
   DropdownMenuCheckboxItemProps
->(({ className, children, startIcon, description, checked, disabled, ...props }, ref) => {
+>(({ className, children, startIcon, startIconClassName, startContent, description, checked, disabled, ...props }, ref) => {
   const size = useRowSize()
   const cursorByKeyboard = useCursorMover() === 'keyboard'
 
@@ -518,6 +541,8 @@ const DropdownMenuCheckboxItem = React.forwardRef<
         checkbox
         checked={!!checked}
         startIcon={startIcon}
+        startIconClassName={startIconClassName}
+        startContent={startContent}
         description={description}
         disabled={disabled}
         role="presentation"
@@ -576,10 +601,9 @@ interface DropdownMenuRadioItemProps
   // children Omit + redeclare required(2026-07-18 決策2 一致性):對齊 sibling Item/SubTrigger/
   // CheckboxItem — menu item 必有 label,children 為 required 非 Radix optional。RadioItem 恆渲染
   // 固定 <MenuItem>{children}</MenuItem>,children 是合法 label(非 lie),此為 required 化一致性修。
-  extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem>, 'children'> {
+  extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem>, 'children'>,
+    DropdownMenuPrefixProps {
   children: React.ReactNode
-  /** Prefix icon(LucideIcon) */
-  startIcon?: LucideIcon
   /** 次要說明文字 */
   description?: React.ReactNode
 }
@@ -587,7 +611,7 @@ interface DropdownMenuRadioItemProps
 const DropdownMenuRadioItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.RadioItem>,
   DropdownMenuRadioItemProps
->(({ className, children, startIcon, description, disabled, ...props }, ref) => {
+>(({ className, children, startIcon, startIconClassName, startContent, description, disabled, ...props }, ref) => {
   // 虛擬游標的框只在鍵盤模態下畫(對齊 :focus-visible 啟發式;SSOT = hooks/use-input-modality.ts)
   const cursorByKeyboard = useCursorMover() === 'keyboard'
   const size = useRowSize()
@@ -610,6 +634,8 @@ const DropdownMenuRadioItem = React.forwardRef<
       <MenuItem
         size={size}
         startIcon={startIcon}
+        startIconClassName={startIconClassName}
+        startContent={startContent}
         description={description}
         disabled={disabled}
         role="presentation"

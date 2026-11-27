@@ -1,4 +1,5 @@
 import type { RowData } from '@tanstack/react-table'
+import type { WeekStartsOn } from '@/design-system/lib/date-locale'
 
 // ── Column Types ─────────────────────────────────────────────────────────────
 
@@ -120,11 +121,29 @@ declare module '@tanstack/react-table' {
     prefix?: string
     suffix?: string
     precision?: number
+    /**
+     * 語系(BCP 47)。number / currency 的數字格式、date / time 格的 `Intl.DateTimeFormat`(轉給 DatePicker / TimePicker 的 `locale`),
+     * 以及 date 欄的週起始日(沒傳 `weekStartsOn` 時由它推,語系 → CLDR;`locale` 也沒傳時用 DS 日期元件的預設語系 zh-TW = 週日)都讀它。
+     */
     locale?: string
     /** Select/multiSelect options — maps value to display label */
     /** select/multiSelect 選項:消費 Select 的 SelectOption 完整 schema(M30 wrapper-extends-primitive;
-     *  2026-07-08 原 {value,label} 窄型別讓 icon/description/iconClassName 傳不進 = 假 SSOT)*/
+     *  2026-07-08 原 {value,label} 窄型別讓 icon/description/iconClassName 傳不進 = 假 SSOT;
+     *  startContent(選項前綴節點)2026-11-26 起同樣轉發,iconClassName 也是那天起才真的轉進選單 —— select-menu.tsx `toSelectMenuOption`)*/
     options?: Array<import('../Select/select').SelectOption>
+    /**
+     * select 欄:這一列編輯時能選的選項(例:工單狀態流轉,已完成的單不能回到未開始)。只影響**編輯器的選單**;
+     * 格子顯示、篩選、排序仍用上面的整欄 `options`,所以 `options` 要放完整清單。
+     *
+     * - 不傳 = 每一列都用整欄 `options`(現況)。
+     * - 預設建議**只回傳這一列能選的值**(user 2026-11-26 第五輪決策卡 C4 選「B:只列可選的」);要「列出但停用」就讓回傳項目帶 `disabled`,
+     *   照 Select 既有的停用呈現(不可點、鍵盤跳過)。
+     * - 目前的值不在回傳清單裡時,編輯器會從整欄 `options` 補回那一項並顯示為已選(選它 = 不變),不會被清掉。
+     * - 只有 `type: 'select'` 讀這個欄位。
+     *
+     * 規則 → data-table.spec.md「七、Column Type」的「依列可選項」段。
+     */
+    getRowOptions?: (row: TData) => Array<import('../Select/select').SelectOption>
     /** select cell 的 trigger/display 自訂渲染(轉發 Select.selectedItemRenderer;status 彩色 icon 場景)*/
     selectedItemRenderer?: (opt: import('../Select/select').SelectOption) => React.ReactNode
     /** select cell 顯示模式(轉發 Select.display;cell-registry SelectCell 消費 `meta?.display`)。
@@ -145,6 +164,11 @@ declare module '@tanstack/react-table' {
      * `<DatePickerRange showTime>`(詳 `filter-operators.ts` `getValueShape`)。
      */
     includeTime?: boolean
+    /**
+     * Date: 這一欄的一週從哪天開始(0 = 週日 … 6 = 週六)。篩選「本週 / 上週 / 下週」的區間、日期格編輯器與篩選值的日曆面都用它;
+     * 沒傳 = 由 `locale` 推(語系 → CLDR,`lib/date-locale.ts`)。規則 → filter-operators.spec.md「8. 邊界案例」relative 區間邊界。
+     */
+    weekStartsOn?: WeekStartsOn
     /** Link: 自訂顯示文字（不設則自動從 URL 提取 hostname） */
     linkLabel?: string
     /**

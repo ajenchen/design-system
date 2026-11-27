@@ -26,6 +26,12 @@ jobs:
       - name: Install exact locked dependencies
         run: npm ci --ignore-scripts
 
+      # The same installed checker and the same governance/content-debt-baseline.json that
+      # `npm run setup:all` uses: recorded pre-existing content debt does not block, new or
+      # increased content findings fail this PR, and the baseline may only shrink.
+      - name: Provider-neutral governance check (hooks-off)
+        run: npm run governance:check
+
       - name: Type-check
         run: npm run typecheck
 

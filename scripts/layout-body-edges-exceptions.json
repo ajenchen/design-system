@@ -18,6 +18,29 @@
       "container": "[role=dialog] > [data-theme=\"dark\"] > div.flex-1.min-h-0.flex",
       "reason": "FileViewer 工具列底下那一列是結構分區(Viewport 貼齊外殼、圖置中,右邊可接資訊面板),不是標頭底下的 body 內容;資訊面板本身是 data-layout-body,照常量。這是 FileViewer 自己的結構、與從哪一則打開無關(FileItem / Chip 點開的同一個檢視器也是),所以 stories 不限、選擇器指 FileViewer 的殼(對話框 > 鎖深色的那一層 > 這一列)",
       "source": "layoutSpace.spec.md 規則 2「適用範圍與量法三點」(1);file-viewer.spec.md「Anatomy」;header-first-gap-invariant.mjs NOT_COVERED「FileViewer 工具列 → Viewport」"
+    },
+    {
+      "key": "appshell-full-page-state-centered",
+      "stories": [
+        "design-system-components-appshell-展示--full-page-not-found",
+        "design-system-components-appshell-展示--full-page-no-access"
+      ],
+      "container": "[data-app-shell-row]",
+      "reason": "整頁 404 / 403:主內容區只放一個置中的整頁狀態(Empty),不套規則 2 / 4 的上下距離(上下在不在主內容區正中、唯一的 h1、有動作由 header-first-gap 的 appshell-full-page-404 / -403 驗)。這兩則沒有本頁標頭,全域標頭的下一塊是整列(Menu + 主內容欄),所以登記整列",
+      "source": "empty.spec.md「整頁狀態」第 4 點;layoutSpace.spec.md 規則 2「適用範圍與量法三點」(3)。userQuote 是 user 在第六輪決策卡 C22 選的選項 A 的原文(意見欄空白)",
+      "userQuote": "A:不建元件;Empty 可用在整頁 + AppShell 範例,狀態置中",
+      "quoteDate": "2026-11-26"
+    },
+    {
+      "key": "dialog-empty-body-centered",
+      "stories": [
+        "design-system-components-dialog-展示--empty-body"
+      ],
+      "container": "[data-layout-body]:has(> [data-empty]:only-child), [data-dialog-body]:has([data-layout-body] > [data-empty]:only-child)",
+      "reason": "對話框主體只有一個空狀態(從分享連結打開已不存在的任務):主體撐滿可視高、空狀態垂直置中,上下同值,不套規則 4 的結論留白(上下在不在主體可視區正中由 header-first-gap 的 dialog-empty-centered 驗)。2026-11-27 產品 canary 回報 H10",
+      "source": "empty.spec.md「垂直定位」有框 → 垂直置中;layoutSpace.spec.md 規則 2「適用範圍與量法三點」(3)與規則 4 Note(第 2 列不給 48 那一段引的同一則留言)。userQuote 是 user 2026-11-14 在 A5 成品頁的留言 ② 原文(該則問的就是「垂直置中」的狀態為何還要下方 bottom)",
+      "userQuote": "bottom 是創造一個空間用來表示內容已經結束了吧？但當內容區的元素很明顯的就表示該區只有這些元素，像是’撐滿容器’的 table ，或是此類’垂直置中’的狀態，到底為何還要下方有bottom?",
+      "quoteDate": "2026-11-14"
     }
   ],
   "exceptions": [

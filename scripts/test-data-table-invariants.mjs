@@ -73,9 +73,20 @@ try {
   //            勾選框自己照常。不用 CSS pointer-events:none 做這件事:那會讓 elementFromPoint 落到列上,I34 的儀器對照(落點屬於那一格)
   //            先判儀器失效,紅在錯的地方(2026-09-29 第一版就是這樣,meta-test 自己抓到)。
   //   keydown —— Shift+方向鍵、以及輸入框裡的 F2 吞掉 = 2026-09-29 前「Shift 被忽略」「編輯中 F2 無作用」的形狀;其他鍵(I32 / I33 的方向鍵、Esc、Enter)照常。
+  // 第五~七個違規(2026-11-26,I40 瀏覽器那三條;select 欄依列可選項):一支 MutationObserver 把選單 / 觸發欄位改成壞掉時的長相 ——
+  //   ⑤ 完成那一列的狀態選單(有「完成」、沒有「未開始」「取消」的那份)多塞一項「未開始」= getRowOptions 沒被套用、不允許的值出現;
+  //   ⑥ RDM-103 狀態格的編輯觸發欄位文字換成原始值 done = 目前值沒補回、Select 只剩原值;
+  //   ⑦ 五個狀態都在的那份選單(篩選值清單)把「受阻」的 role 拿掉 = 篩選被換成某一列的清單、少了值。
+  //   優先級選單(I40 的儀器對照)不含這些字,不受影響 —— 對照組紅在產品斷言上,不是儀器失效。
   const BREAK = '<script>'
     + 'document.addEventListener("click",function(e){var t=e.target;if(t&&t.getAttribute&&t.getAttribute("data-column-id")==="__select__")e.stopImmediatePropagation()},true);'
-    + 'document.addEventListener("keydown",function(e){var t=e.target&&e.target.tagName;if((e.shiftKey&&/^Arrow/.test(e.key))||(e.key==="F2"&&(t==="INPUT"||t==="TEXTAREA")))e.stopImmediatePropagation()},true)'
+    + 'document.addEventListener("keydown",function(e){var t=e.target&&e.target.tagName;if((e.shiftKey&&/^Arrow/.test(e.key))||(e.key==="F2"&&(t==="INPUT"||t==="TEXTAREA")))e.stopImmediatePropagation()},true);'
+    + 'new MutationObserver(function(){'
+    + 'document.querySelectorAll("[cmdk-root]").forEach(function(root){var opts=[].slice.call(root.querySelectorAll("[role=\\"option\\"]"));if(!opts.length)return;var t=opts.map(function(o){return o.textContent.trim()});'
+    + 'if(t.indexOf("完成")>=0&&t.indexOf("未開始")<0&&t.indexOf("取消")<0&&!root.querySelector("[data-i40-injected]")){var c=opts[0].cloneNode(false);c.setAttribute("data-i40-injected","");c.textContent="未開始";opts[0].parentNode.appendChild(c)}'
+    + 'if(["未開始","進行中","受阻","完成","取消"].every(function(x){return t.indexOf(x)>=0})){opts.forEach(function(o){if(o.textContent.trim()==="受阻")o.setAttribute("role","none")})}});'
+    + 'var tr=document.querySelector("[data-cell-id=\\"RDM-103:status\\"] [role=\\"combobox\\"]");if(tr&&tr.textContent.trim()!=="done")tr.textContent="done"'
+    + '}).observe(document.documentElement,{childList:true,subtree:true,characterData:true})'
     + '</script>'
   const iframeHtml = join(copy, 'iframe.html')
   const html = readFileSync(iframeHtml, 'utf8')
@@ -89,7 +100,10 @@ try {
   else if (!/✗ I34 \| 勾選格空白處/.test(text)) { console.error('✗ 勾選格容器不接指標後 I34「空白處點下去」那條沒有紅 —— 不能證明 I34 會紅\n' + text.slice(-1500)); ok = false }
   else if (!/✗ I35 \| Shift\+↓ 一下/.test(text)) { console.error('✗ 吞掉 Shift+方向鍵後 I35「Shift+↓ 一下」那條沒有紅 —— 不能證明 I35 會紅\n' + text.slice(-1500)); ok = false }
   else if (!/✗ I36 \| 編輯中再按 F2:編輯器關閉/.test(text)) { console.error('✗ 吞掉輸入框裡的 F2 後 I36「編輯器關閉」那條沒有紅 —— 不能證明 I36 會紅\n' + text.slice(-1500)); ok = false }
-  else console.log('✓ 注入違規被抓(I6 @lg 字級崩 + I34 勾選格空白處點不到 + I35 Shift+方向鍵被吞 + I36 編輯中 F2 被吞,exit ' + code + ')')
+  else if (!/✗ I40 \| 瀏覽器\|完成的列\(RDM-103\):選單/.test(text)) { console.error('✗ 完成那一列的選單多了「未開始」後 I40「完成的列」那條沒有紅 —— 不能證明 I40 會抓到不允許的值\n' + text.slice(-1500)); ok = false }
+  else if (!/✗ I40 \| 瀏覽器\|完成的列:目前值不在該列清單也正確顯示/.test(text)) { console.error('✗ 觸發欄位換成原始值 done 後 I40「目前值正確顯示」那條沒有紅 —— 不能證明 I40 會抓到目前值被清掉\n' + text.slice(-1500)); ok = false }
+  else if (!/✗ I40 \| 瀏覽器\|篩選面板的狀態值清單/.test(text)) { console.error('✗ 篩選值清單少了「受阻」後 I40「篩選面板」那條沒有紅 —— 不能證明 I40 會抓到篩選沒列全部值\n' + text.slice(-1500)); ok = false }
+  else console.log('✓ 注入違規被抓(I6 @lg 字級崩 + I34 勾選格空白處點不到 + I35 Shift+方向鍵被吞 + I36 編輯中 F2 被吞 + I40 選單多一項不允許的值 / 觸發欄位只剩原始值 / 篩選值少一項,exit ' + code + ')')
 } finally {
   rmSync(copyRoot, { recursive: true, force: true })
 }

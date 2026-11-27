@@ -248,11 +248,20 @@ run_hook "$PROD_TSX" 'export const C = () => <button type="button" aria-pressed=
 expect_silent "30d. hover:bg-neutral-selected-hover(切換鈕)不算 menu-item 列簽名 → silent"
 
 # ── 2026-07-10 批次 A(治理覆蓋 matrix 收官)──
-# 31. C5 POSITIVE:亮色底 + text-white 對比配對違規 → BLOCK
+# 31. C5 POSITIVE:類別色實心底 + 寫死 text-white → BLOCK(深字桶 amber)
 run_hook "$PROD_TSX" 'export const T = () => <span className="bg-[var(--color-amber-6)] text-white size-4">A</span>'
 expect_block "31. C5 亮色底+text-white 配對 → BLOCK"
 
-# 32. C5 NEGATIVE:CAT_SOLID 正道(深字桶自帶 on-emphasis-dark)→ silent
+# 31b. C5 POSITIVE(2026-11-26):白字桶的 turquoise 寫死 text-white 也擋 —— 字色不得寫死,不看桶(桶由 categorical-color.ts 決定;
+#      舊版只認 yellow/amber/orange/lime 名單,這一格在舊版是 silent)
+run_hook "$PROD_TSX" 'export const T = () => <span className="bg-[var(--color-turquoise-6)] text-white size-4">A</span>'
+expect_block "31b. C5 turquoise-6 寫死 text-white → BLOCK"
+
+# 31c. C5 NEGATIVE(near-miss):step-1 淡底 + text-white 在別處 → 不是實心底,silent
+run_hook "$PROD_TSX" 'export const T = () => <><span className="bg-[var(--color-orange-1)] text-[var(--color-orange-7)]">A</span><span className="text-white-space">B</span></>'
+expect_silent "31c. C5 淡底 step-1 不算實心底 → silent"
+
+# 32. C5 NEGATIVE:CAT_SOLID 正道(字色由 SSOT 決定)→ silent
 run_hook "$PROD_TSX" 'export const T = () => <span className={`size-4 ${CAT_SOLID[hue]}`}>A</span>'
 expect_silent "32. C5 消費 CAT_SOLID → silent"
 
@@ -293,7 +302,8 @@ run_hook "$PROD_TSX" 'export const D = () => <DialogHeader><DialogTitle>Edit</Di
 expect_block "41. C11 DialogHeader 雙 X → BLOCK"
 
 # 42. C11 NEGATIVE:header 操作走 actions slot → silent
-run_hook "$PROD_TSX" 'export const D = () => <DialogHeader actions={<Button iconOnly startIcon={X} aria-label="Prev" />}><DialogTitle>Edit</DialogTitle></DialogHeader>'
+# (2026-11-27 起 header 控件一律 size="sm",C24;樣本補上 size="sm" 才是完全合規的 actions slot 寫法)
+run_hook "$PROD_TSX" 'export const D = () => <DialogHeader actions={<Button iconOnly size="sm" startIcon={X} aria-label="Prev" />}><DialogTitle>Edit</DialogTitle></DialogHeader>'
 expect_silent "42. C11 actions slot → silent"
 
 # 43. C12 POSITIVE:Select 硬寬 w-36 → BLOCK
@@ -421,6 +431,40 @@ expect_block "63. P10 mixed sanitized + raw innerHTML emission → BLOCK" "手�
 RICH_TEXT_WITH_APP_TABLE="$RICH_TEXT_DOCUMENT_TABLE"$'\nexport const AppGrid = () => <table><thead><tr><th>Name</th></tr></thead><tbody><tr><td>Ada</td></tr></tbody></table>'
 run_hook "$PROD_TSX" "$RICH_TEXT_WITH_APP_TABLE"
 expect_block "64. P10 rich editor plus raw JSX app table → BLOCK" "手刻 raw <table>"
+
+# ── C24(2026-11-27,上游判定 E21):header 內 field-height 控件一律 size="sm"(header-canonical.spec.md:73)──
+# 65. DialogHeader actions 裡的 Button 沒寫 size → BLOCK(Button 預設 md)
+run_hook "$PROD_TSX" 'export const D = () => <DialogHeader title="編輯成員" actions={<Button variant="secondary">匯出</Button>} />'
+expect_block "65. DialogHeader actions 的 Button 沒寫 size → BLOCK" 'header 內 field-height 控件'
+# 66. 同一顆寫 size="sm" → silent
+run_hook "$PROD_TSX" 'export const D = () => <DialogHeader title="編輯成員" actions={<Button variant="secondary" size="sm">匯出</Button>} />'
+expect_silent "66. DialogHeader actions 的 Button size=\"sm\" → silent"
+# 67. ChromeHeader 子樹裡的 Select size="md" → BLOCK;子樹外的 md 按鈕不算
+run_hook "$PROD_TSX" 'export const P = () => (<><ChromeHeader title="專案"><Select size="md" options={views} /></ChromeHeader><Button>新增</Button></>)'
+expect_block "67. ChromeHeader 裡 Select size=\"md\" → BLOCK" 'Select: <Select size="md"'
+run_hook "$PROD_TSX" 'export const P = () => (<><ChromeHeader title="專案"><Select size="sm" options={views} /></ChromeHeader><Button>新增</Button></>)'
+expect_silent "68. ChromeHeader 裡 sm、子樹外的預設按鈕 → silent"
+
+# ── C25(2026-11-27,上游判定 E24 (b)):DropdownMenuItem 裡放 Switch / Checkbox → 用 DropdownMenuCheckboxItem ──
+# 69. badge={<Switch …/>} → BLOCK
+run_hook "$PROD_TSX" 'export const M = () => <DropdownMenuContent><DropdownMenuItem badge={<Switch checked={dense} />}>緊湊顯示</DropdownMenuItem></DropdownMenuContent>'
+expect_block "69. DropdownMenuItem badge 放 Switch → BLOCK" 'DropdownMenuCheckboxItem'
+# 70. children 放 Checkbox → BLOCK
+run_hook "$PROD_TSX" 'export const M = () => <DropdownMenuContent><DropdownMenuItem onSelect={toggle}><Checkbox checked={showDone} />顯示已完成</DropdownMenuItem></DropdownMenuContent>'
+expect_block "70. DropdownMenuItem 子元素放 Checkbox → BLOCK" 'DropdownMenuCheckboxItem'
+# 71. DropdownMenuCheckboxItem → silent;自閉合的 DropdownMenuItem 之後另一處的 Switch 不算
+run_hook "$PROD_TSX" 'export const M = () => (<><DropdownMenuContent><DropdownMenuCheckboxItem checked={dense} onCheckedChange={setDense}>緊湊顯示</DropdownMenuCheckboxItem><DropdownMenuItem label="重新整理" /></DropdownMenuContent><Switch checked={on} /></>)'
+expect_silent "71. DropdownMenuCheckboxItem / 選單外的 Switch → silent"
+# 72.(2026-11-27 規格核對必修 2)自閉合 item 帶箭頭函式 onSelect={() => …}:=> 的 > 不是開標籤結尾;
+#     檔內別處(選單外)的 Checkbox 不算 → silent(舊判法停在 => 的 >,把後面整段當子元素 → 誤擋)
+run_hook "$PROD_TSX" 'export const Row = ({ row }) => (<><DropdownMenuContent><DropdownMenuItem onSelect={() => edit(row)} label="編輯" /></DropdownMenuContent><Checkbox checked={row.selected} aria-label="選取這一列" /></>)'
+expect_silent "72. 自閉合 item + 箭頭 onSelect + 選單外 Checkbox → silent"
+# 73. 對照:同樣的箭頭 onSelect,Checkbox 真的放在 item 裡 → BLOCK
+run_hook "$PROD_TSX" 'export const Row = ({ row }) => (<DropdownMenuContent><DropdownMenuItem onSelect={() => toggle(row)}><Checkbox checked={row.done} />標記完成</DropdownMenuItem></DropdownMenuContent>)'
+expect_block "73. 箭頭 onSelect + item 內 Checkbox → BLOCK" 'DropdownMenuCheckboxItem'
+# 74. 對照:箭頭 onSelect 在前、badge={<Switch />} 在後的屬性寫法 → BLOCK(舊第一式 [^>]* 停在 => 的 >,漏判)
+run_hook "$PROD_TSX" 'export const M = () => <DropdownMenuContent><DropdownMenuItem onSelect={() => setDense(!dense)} badge={<Switch checked={dense} />}>緊湊顯示</DropdownMenuItem></DropdownMenuContent>'
+expect_block "74. 箭頭 onSelect 之後 badge 放 Switch → BLOCK" 'DropdownMenuCheckboxItem'
 
 echo ""
 echo "=== Summary ==="

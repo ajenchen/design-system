@@ -1,5 +1,5 @@
 // @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。
-import type { Meta } from '@storybook/react'
+import type { Meta } from '@storybook/react-vite'
 import { useState, useEffect, type ComponentProps } from 'react'
 import { DatePicker } from './date-picker'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
@@ -62,6 +62,18 @@ const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
   md: { heightToken: 'h-field-md', height: '32px', pxToken: 'px-[var(--field-px)]', px: 12, gapToken: 'gap-2', gap: 8, fontToken: 'text-body',    font: '14px', icon: 16, clearHover: 18 },
   lg: { heightToken: 'h-field-lg', height: '36px', pxToken: 'px-[var(--field-px)]', px: 12, gapToken: 'gap-2', gap: 8, fontToken: 'text-body-lg', font: '16px', icon: 20, clearHover: 22 },
 }
+
+// DatePicker.Range view 的 formatRange 範例:判定表四種情況 + 一端空 + 一列 en-US(date-picker.spec.md「區間檢視合併(formatRange)」)
+const RANGE_VIEW_SAMPLES: { label: string; value: [string | null, string | null]; showTime: boolean; locale?: string }[] = [
+  { label: '產品週會（同一天有時段）', value: ['2026-07-15T10:00:00', '2026-07-15T11:00:00'], showTime: true },
+  { label: '台中客戶拜訪出差（跨日全天）', value: ['2026-07-15', '2026-07-17'], showTime: false },
+  { label: '資料庫遷移維護窗口（跨日有時段）', value: ['2026-07-15T22:00:00', '2026-07-16T01:00:00'], showTime: true },
+  { label: 'v2.4 正式上線（同一刻）', value: ['2026-07-15T10:00:00', '2026-07-15T10:00:00'], showTime: true },
+  { label: '季度預算審查（結束時間未定）', value: ['2026-07-15T10:00:00', null], showTime: true },
+  { label: '產品週會（locale en-US）', value: ['2026-07-15T10:00:00', '2026-07-15T11:00:00'], showTime: true, locale: 'en-US' },
+]
+
+const RANGE_VIEW_PLACEHOLDER: [string, string] = ['開始時間', '結束時間']
 
 const MODE_DESC: Record<ModeKey, string> = {
   edit:     'button trigger + Calendar icon — bg-surface + border + hover/focus 回饋,點擊開啟 Calendar Popover',
@@ -181,7 +193,9 @@ export const Overview = {
                 ['onChange', '(value: string) => void', '—', '值變更回調'],
                 ['clearable', 'boolean', 'false', '有值時顯示 X 清除按鈕，僅 edit 模式'],
                 ['formatOptions', 'Intl.DateTimeFormatOptions', '—', '未傳 → 預設 YYYY/MM/DD 直接組（locale-independent）；傳此 prop / locale 才走 Intl.DateTimeFormat（內部 fallback options 為 year:numeric / month,day:2-digit）'],
-                ['locale', 'string', '—', '僅在傳 formatOptions / locale 啟用 Intl 時生效（fallback en-US）；未傳任何格式 prop 時不影響顯示'],
+                ['locale', 'string', "'zh-TW'", '文字格式只在傳 formatOptions / locale 啟用 Intl 時生效（沒傳 = zh-TW）；未傳任何格式 prop 時直接組 YYYY/MM/DD。日曆面的週首日也由它推（語系的 CLDR）'],
+                ['weekStartsOn', '0 | 1 | 2 | 3 | 4 | 5 | 6', '由 locale 推', '日曆面一週從哪天開始（0 = 週日）；沒傳 = 語系的 CLDR（zh-TW = 週日）'],
+                ['formatRange', 'boolean', 'false', '僅 DatePicker.Range：mode="view" 兩端都有值時寫成一段（Intl formatRange：同一天合併、跨日寫兩端、起訖相同只寫一個值）；只有一端有值等合併不了時照兩段版面，日期寫法與合併相同（兩位數月日、時間跟語系）；edit / readonly / disabled 不變。範例見「狀態行為」'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}
@@ -622,21 +636,21 @@ export const StateBehavior = {
                   <td className="p-2 border-b border-divider"><DatePicker mode="view" value="2026-04-02" /></td>
                 </tr>
                 <tr>
-                  <Td mono>month: 'short'</Td>
+                  <Td mono>month: 'short' · locale: 'en-US'</Td>
                   <td className="p-2 border-b border-divider">
-                    <DatePicker mode="readonly" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'short', day: 'numeric' }} />
+                    <DatePicker mode="readonly" value="2026-04-02" locale="en-US" formatOptions={{ year: 'numeric', month: 'short', day: 'numeric' }} />
                   </td>
                   <td className="p-2 border-b border-divider">
-                    <DatePicker mode="view" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'short', day: 'numeric' }} />
+                    <DatePicker mode="view" value="2026-04-02" locale="en-US" formatOptions={{ year: 'numeric', month: 'short', day: 'numeric' }} />
                   </td>
                 </tr>
                 <tr>
-                  <Td mono>month: 'long'</Td>
+                  <Td mono>month: 'long' · locale: 'en-US'</Td>
                   <td className="p-2 border-b border-divider">
-                    <DatePicker mode="readonly" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
+                    <DatePicker mode="readonly" value="2026-04-02" locale="en-US" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
                   </td>
                   <td className="p-2 border-b border-divider">
-                    <DatePicker mode="view" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
+                    <DatePicker mode="view" value="2026-04-02" locale="en-US" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
                   </td>
                 </tr>
                 <tr>
@@ -652,6 +666,28 @@ export const StateBehavior = {
             </table>
           </div>
           <span className="text-[11px] text-fg-muted">edit trigger 顯示文字與 view 都用 Intl.DateTimeFormat 格式化（formatOptions / locale prop 對兩者皆生效,跨模式一致）。</span>
+        </ExampleSection>
+
+        {/* DatePicker.Range view:formatRange(date-picker.spec.md「區間檢視合併(formatRange)」) */}
+        <ExampleSection
+          title="區間檢視 — formatRange 把起訖寫成一段（同一天合併）"
+          description="DatePicker.Range 的 view 預設是起 → 終兩段各自格式化；開 formatRange 後兩端都有值時交給 Intl formatRange：同一天只寫一次日期、跨日寫兩端、起訖相同只寫一個值。只有一端有值時照兩段版面，日期仍用同一套寫法；edit / readonly / disabled 不受影響。"
+        >
+          <div className="overflow-x-auto">
+            <table className="border-collapse text-caption">
+              <thead><tr><Th>行程</Th><Th>預設（兩段）</Th><Th>formatRange</Th></tr></thead>
+              <tbody>
+                {RANGE_VIEW_SAMPLES.map(({ label, value, showTime, locale }) => (
+                  <tr key={label}>
+                    <Td>{label}</Td>
+                    <td className="p-2 border-b border-divider"><DatePicker.Range mode="view" value={value} showTime={showTime} locale={locale} placeholder={RANGE_VIEW_PLACEHOLDER} /></td>
+                    <td className="p-2 border-b border-divider"><DatePicker.Range mode="view" value={value} showTime={showTime} locale={locale} placeholder={RANGE_VIEW_PLACEHOLDER} formatRange /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <span className="text-[11px] text-fg-muted">合併與退回兩段時日期都寫成兩位數月日（瀏覽器在區間裡丟掉的零補回）、時間 12 / 24 小時跟語系（zh-TW「上午10:00」、en-US「10:00 AM」）—— 與預設兩段同一套寫法；判定表見 date-picker.spec.md「區間檢視合併（formatRange）」。結束日照舊是「含」。</span>
         </ExampleSection>
 
         {/* Empty value display */}

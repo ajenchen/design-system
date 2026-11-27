@@ -5,12 +5,13 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // M22 retrofit DONE 2026-05-03 v11(real source URLs added inline at lines 38 + 111)
 import * as React from 'react'
-import { DayPicker } from 'react-day-picker'
+import { DayPicker, defaultLocale } from 'react-day-picker'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import 'react-day-picker/style.css'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/design-system/components/Button/button'
+import { resolveWeekStartsOn } from '@/design-system/lib/date-locale'
 
 /**
  * DateGrid — DayPicker 包裝,用本 DS token 覆寫預設視覺。
@@ -211,6 +212,8 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
     onDayMouseEnter,
     onDayMouseLeave,
     onDayFocus,
+    locale,
+    weekStartsOn,
     ...props
   },
   _ref,
@@ -379,6 +382,13 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
       if (!isGapOrCorner(event.target, grid)) return
       gapConfirmTarget(grid)?.click()
     })
+  // ── 週起始日(2026-11-24,user 決策「跟語系的 CLDR (Recommended)」;規格 date-grid.spec.md「週起始日」)──
+  // 有傳 weekStartsOn 就用;沒傳時拿 date-fns 語系物件的**語系代碼**問 CLDR(lib/date-locale.ts),**不讀物件裡寫的 weekStartsOn**:
+  // date-fns 的 zhTW 寫週一、CLDR 的 TW 是週日,全 DS 以 CLDR 為準(決策總帳更正 #2,AI 判定,後由 WS(定) user 選「跟語系的 CLDR (Recommended)」確認)。
+  // 沒傳 locale 時 react-day-picker 用它的預設語系(defaultLocale = en-US)排字,週起始日跟著同一個語系。停留預覽每一步都會重畫,所以記住結果、不每次重問 Intl。
+  const localeCode = locale?.code ?? defaultLocale.code
+  const resolvedWeekStartsOn = React.useMemo(() => resolveWeekStartsOn(localeCode, weekStartsOn), [localeCode, weekStartsOn])
+
   // Note: react-day-picker v9 DayPicker 未對外 forward ref 到單一 DOM 節點(內部有多 div),
   // 故 ref 簽名保留但不附著(符合 DS 統一 forwardRef 慣例;真要取 DOM 用 wrapper 包)。
   return (
@@ -394,6 +404,9 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
     {/* 下方 <DayPicker> 刻意不隨這層 Provider 往內縮排:整塊兩百多行只為了多包一層 context 而全部位移,
         會讓 diff 看起來像整檔重寫。Provider 本身沒有任何視覺或結構作用,只把格陣的指標事件(見 GridPointerHandlers)遞給 AnchoredMonthGrid。 */}
     <DayPicker
+      // 週起始日:見上方 resolvedWeekStartsOn
+      locale={locale}
+      weekStartsOn={resolvedWeekStartsOn}
       // 兩月以上**不渲染鄰月日子**(2026-09-23 user 拍板):同一天會在相鄰兩張月曆各出現一次,區間 track / 端點藍圓 /
       // 預覽框就被畫兩次(user 圖一:4/26 在四月與五月面板各一顆藍圓)。MUI X(calendars > 1 時 filler 格 opacity 0,
       // 原註解「otherwise the same day would be rendered in two calendars」)/ Polaris(空格)/ flatpickr(hidden)與

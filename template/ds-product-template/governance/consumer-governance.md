@@ -64,37 +64,57 @@ mistaken for a verified release. The guarded apply path performs immutable-relea
 npm provenance, and signature verification before any live mutation. On a clean dedicated branch,
 `npm run sync-all -- --apply --to X.Y.Z` authenticates the exact release, reconstructs the complete
 managed snapshot, and transactionally updates eligible package, instruction, provider, skill, and
-non-executable governance data. This guide is one of those exact-hash upstream-managed files.
+non-executable governance data, including the exact `@qijenchen/*` versions declared by every
+`apps/*/package.json` (one lock, no nested second copy; `governance:check` blocks a split as
+`GOV-WORKSPACE-VERSION-001/002`). This guide is one of those exact-hash upstream-managed files.
 Consumers already established on the current runtime/bootstrap contract receive later guide updates
 through ordinary `sync-all`. A legacy v1 consumer cannot use its old updater to replace that updater
 or cross the v2 runtime boundary: it first needs one reviewed full-snapshot bootstrap PR.
 Product-owned root README and other root documents are never taken over.
 
-Changes to `.github/**`, `.npmrc`, `governance/bin/**`, `scripts/**`, or package scripts require a
-separately reviewed full-snapshot PR — ordinary `sync-all` cannot replace the control plane that
-authorizes its own next execution. Reviewed paths run from the DS authority, materialize only a
-fresh snapshot, execute no candidate code, and emit proposals rather than applying to the live
-consumer or inventory.
+Changes to `.github/**`, `.npmrc`, `governance/bin/**`, `scripts/**`, or package scripts travel
+through ordinary `sync-all` as data in the upgrade PR diff (`GOV-UPGRADE-BOOTSTRAP-001/002` retired
+2026-08-12; each such path prints an `INFO` line). The transaction still executes only the scripts on
+the protected base; incoming control-plane code runs only after the PR merges.
 
 ## Release mirror and protected PR trust chain
 
 Automatic template delivery is owned upstream by the release mirror. It opens a normal PR containing
-the exact published snapshot; a consumer does not carry a second release-dispatch/updater workflow.
-Repository Actions defaults remain read-only, and ordinary delivery requires no hosted environment or
-App credential in the consumer.
+the exact published snapshot. Product repositories do not carry an upgrade receiver in this release:
+the upstream-managed `.github/workflows/sync-design-system.yml` (on `repository_dispatch`
+`design-system-published` it validates the exact `{ version, tag, commit }` payload, runs
+`sync-all --apply` on a GitHub runner, and pushes only `automation/design-system-<version>`, holding
+nothing but `contents: write`) arrives in a later release. Until then each product upgrade runs
+`sync-all` on a local terminal (`docs/04-ds-upgrade.md`). Repository Actions defaults remain
+read-only, and ordinary delivery requires no hosted environment or App credential in the consumer.
 
 The provider-neutral standard release order is exactly
 `pr-checks → merge → publish → readback → consumer`. The upstream release mirror owns template
-delivery. A registered product receiver is downstream-only: it pins every manifest discovered from
-the root workspace declaration to the exact release, regenerates the single npm lock, and derives
-both status and staging paths from `sync-exact-workspace-dependencies.mjs --list-receiver-paths`.
-It may open a protected PR; it may not publish, direct-write `main`, or replace mirror authority.
+delivery. The product receiver, once shipped, is downstream-only: it pushes its automation branch,
+and the upstream release orchestrator opens the PR so that `Verify consumer` runs on it. The receiver
+may not open or merge that PR, publish, direct-write `main`, or replace mirror authority.
 
 Protected `main` requires the single `Verify consumer` context from `audit.yml`. That workflow performs
-one locked install followed by typecheck, import lint, and build. The normal PR review and protected
+one locked install followed by the hooks-off `governance:check`, typecheck, import lint, and build. The normal PR review and protected
 branch rules decide whether the mirror proposal can merge. Preview, visual, accessibility, canary, and
 external readback evidence are optional hardening lanes unless a repository explicitly opts into them;
 they are not hidden prerequisites for the standard release path.
+
+## Recorded content debt
+
+`governance/content-debt-baseline.json` is product-owned; its schema is the upstream-managed
+`governance/schemas/content-debt-baseline.schema.json`. The installed checker reads it in
+`setup:all`, `governance:check`, and `Verify consumer`: recorded findings do not block, findings the
+hooks did not report when the baseline was recorded block (by file, rule, hook, and reported finding
+line), recorded findings that no longer occur block until
+`npm run governance:debt -- --prune` removes them (the baseline only shrinks), and a hand edit fails
+`entriesSha256` (`GOV-CONTENT-DEBT-001`; restore it from Git, or rebuild it from scratch with
+`--record`, which does not keep the old registrations). It grows only through
+`npm run governance:debt -- --record --by <who> --reason <why>`, whose registration is reviewed in the
+PR diff. `npm run governance:debt -- --list` prints every finding without writing; its unrecorded part
+is exactly what `--record` registers. Without the file every content finding blocks. `recordedContentDebt=<N>` reports registered
+debt; it is not a content-compliance claim. Creating and shrinking it: `docs/01-first-time-setup.md`
+and `docs/04-ds-upgrade.md`.
 
 ## Verification boundary
 

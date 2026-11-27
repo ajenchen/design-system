@@ -1,6 +1,9 @@
 // ── 消費的 SSOT ──
 // - components/Field/field-controls.spec.md(「軸二 就地編輯 host」段:InlineEdit = view↔edit 二態疊在 Field 之上;edit-in-place + editable 閘)
 // - components/Field/field-edit-keys.ts(editSettleKeyProps = Enter/Esc + 中文 IME guard 結算 SSOT + Esc 層宣告,與 DataTable cell 同源)
+// - lib/overlay-escape.ts(escapeLayerProps / isEscapeForControl:自訂 renderEdit 的編輯容器宣告自己那一層 Esc,浮層守門留給它;Radix 已用掉的那一下不取消)
+// - lib/ime-composition.ts(isImeComposing:組字中的 Esc 是取消選字,不是取消編輯)
+// - lib/focus-after-trigger.ts(tabbableOrder:控件沒接 autoFocus 時,進編輯的焦點交給編輯容器裡第一個可 Tab 到的元素)
 // - components/Field/field-wrapper.tsx(fieldViewGeometry = view 幾何 class SSOT〔純值/標題路徑〕;fieldDisplayTextClass = view 字級)
 // - components/Input/input.tsx / Textarea/textarea.tsx(預設 renderEdit;不重刻 input chrome)
 // - components/Field/field-context.ts(useFieldContext / useResolvedFieldSize;接 size/orientation/labelId cascade)
@@ -17,7 +20,8 @@
 //   - 值-格式化(Select→Tag / Date / avatar)→ renderRead 委派 `<Control mode="view">` 取格式化與內部間距,
 //     外包 `fieldViewGeometry`(委派控件 view 左側皆 0 → 統一 field-px;見下方委派分支)→ 多 tag/avatar 間距零偏移。
 //   - 純值 / 標題 `<Tag as="h1">` → 套 `fieldViewGeometry(size, multiline)` helper(= view×default 幾何 SSOT)。
-//   InlineEdit 本體只給:`-mx`(orientation-aware,拉到欄左緣,= 上方 read-view 負邊距對照)+ hover bg + focus 藍框 + 隱形 Pressable。
+//   InlineEdit 本體只給:`-mx`(orientation-aware:垂直排外伸 `--field-bleed` 拉到欄左緣,= 上方 read-view 負邊距對照;水平排不外伸)
+//   + hover bg + focus 藍框 + 隱形 Pressable + 閱讀情境記號 data-field-reading(判斷住 components/Field/field.css)。
 //   read↔edit 零跳 = view 與 edit 同一顆控件、只差 chrome。
 // **格式化 read 鐵律**:renderRead 要顯示 Tag/日期/label,**渲染對應控件的 `mode="view"`**
 //   (如 `<Select mode="view" display="tag">`),不可自刻 —— 格式化 SSOT 住在該控件的 view mode。
@@ -30,6 +34,9 @@ import type { FieldSize } from '@/design-system/components/Field/field-context'
 import { useFieldContext, useResolvedFieldSize, useRegisterFieldPreferredSize, FieldSurfaceProvider } from '@/design-system/components/Field/field-context'
 import { fieldDisplayTextClass, fieldViewGeometry } from '@/design-system/components/Field/field-wrapper'
 import { editSettleKeyProps } from '@/design-system/components/Field/field-edit-keys'
+import { ESCAPE_LAYER_ATTR, escapeLayerProps, isEscapeForControl } from '@/design-system/lib/overlay-escape'
+import { isImeComposing } from '@/design-system/lib/ime-composition'
+import { tabbableOrder } from '@/design-system/lib/focus-after-trigger'
 import { useTruncated } from '@/design-system/hooks/use-truncated'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 
@@ -107,7 +114,9 @@ export interface InlineEditProps<T = string> {
  * - **hover(view,editable)** = 灰色底色 `bg-neutral-hover` + `rounded-md`(**非邊框**)+ cursor
  * - **鍵盤 focus(view,editable)** = 外框染 `border-primary` 藍框(Field focus 語言,非 Button ring)
  * - **click / Enter/Space** = 切 edit 態 = 真正的 Field 控件(mode="edit":border + focus + input);多行走 Textarea
- * - **退出**:blur(滑鼠)→ commit + 純 view 不搶焦;Enter(鍵盤)→ commit + 焦點回 view 按鈕 + 藍框;Esc → cancel 還原
+ * - **退出**:blur(滑鼠)→ commit + 純 view 不搶焦;Enter(鍵盤)→ commit + 焦點回 view 按鈕 + 藍框;Esc → cancel 還原;
+ *   編輯中被卸載(宿主浮層關掉)→ 同滑鼠離開,以草稿 commit
+ * - **Esc 層**:編輯中是焦點所在控件自己的一層 —— 預設控件經 editSettleKeyProps、自訂 renderEdit 由編輯容器宣告;放在浮層裡第一下 Esc 只取消編輯
  * - **鍵盤結算**:消費 `makeEditSettleKeyHandler`(含中文 IME guard,與 DataTable cell 同源)
  * - **editable=false**:view 無 hover / 無 Pressable / 不可進 edit、**不灰化**(detail-pane 鎖定語意)
  *
@@ -137,7 +146,7 @@ function InlineEditImpl<T = string>(
   const size = useResolvedFieldSize(sizeProp, 'sm')
   // 同時向外層 Field 註冊偏好,讓 Field 的控件槽高度跟上(靜態 fieldPreferredSize 被 wrapper 遮蔽時的補位)。
   useRegisterFieldPreferredSize('sm')
-  // orientation:vertical(值貼 label 左緣 → 用 -mx)/ horizontal(值落內容欄左緣+field-px = 對齊 sibling 控件 → 不用 -mx)。
+  // orientation:vertical(值貼 label 左緣 → 外伸 --field-bleed)/ horizontal(框 = 一般輸入框的位置,字落框內字線 → 不外伸)。
   const fieldCtx = useFieldContext()
   const orientation = fieldCtx?.orientation ?? 'vertical'
 
@@ -216,15 +225,7 @@ function InlineEditImpl<T = string>(
     })
   }, [commit, ownTree])
 
-  // 鍵盤結算後把 focus 送回 view 按鈕(commit(true)/cancel);滑鼠 blur(commit(false))刻意不送回——
-  //   對齊 inline-edit.spec.md「退出 edit 態(focus 分流)」:鍵盤結算焦點回 view 按鈕 + 藍框、
-  //   滑鼠 blur 回純 view 不搶焦。focus-visible 保證只有鍵盤路徑顯藍框。
-  React.useEffect(() => {
-    if (!editing && returnFocusRef.current) {
-      returnFocusRef.current = false
-      readButtonRef.current?.focus()
-    }
-  }, [editing])
+  // 焦點的兩支 effect(結算後送回檢視鈕 / 進編輯補進編輯容器)、卸載時提交、自訂編輯控件的 Esc 層:見下方「編輯中的保證」段(hook,在 `if (editing)` 之前)
 
   // ── Pointerdown-outside exit(2026-07-17,blur 殘留 root cause 真修)──────────────
   // focusout 不夠:overlay 控件(Select)點外面關 popover 時 Radix 把焦點送回 trigger(在 edit 子樹內)
@@ -283,18 +284,80 @@ function InlineEditImpl<T = string>(
   const delegatedTruncationActive = delegatedView && editable && !isEmpty && delegatedTruncated
   const truncationTooltipActive = plainTruncationActive || delegatedTruncationActive
 
-  // 對齊盒(orientation-aware,Model A;2026-07-17 移除 fieldCtx gate — root cause 修):
-  //   vertical(預設,含 standalone)→ `-mx-field-px` + `w-calc` 把整塊拉到欄左緣(值貼 label 左緣;
-  //     view 委派控件被 fieldViewGeometry 包住、左內距統一 field-px → 被 -mx 精準抵消 → 落 x=0 對齊 label)。
-  //   horizontal → 不用 -mx(純 `w-full`,值內縮 px = 對齊 sibling 控件)。
-  //   ⚠️ **移除舊 `fieldCtx &&` gate(root cause)**:standalone 預設 orientation='vertical'(:131),舊 gate 讓
-  //     standalone 掉到 `w-full` 無 -mx → 內容內縮 field-px 不對齊 label(圖一/圖二 bug)。spec Model A
-  //     (field-controls.spec.md「Field 框架地圖」InlineEdit 段:「orientation-aware `-mx`(vertical 含 standalone 貼 label / horizontal 對齊 sibling;不依 fieldCtx)」)只依 orientation、不依 fieldCtx。
-  //     -mx bleed field-px 到容器 padding = 刻意(hover/edit 才顯真實邊界)→ consumer 放 ≥field-px padding 容器
-  //     (detail panel / card;stories 容器 layout-space-loose 16px > field-px 12px 天然吸收)。
+  // ══ 編輯中的保證(焦點 / 卸載 / 自訂控件的 Esc 層)══════════════════════════════════
+  // 鍵盤結算後把 focus 送回 view 按鈕(commit(true)/cancel);滑鼠 blur(commit(false))刻意不送回——
+  //   對齊 inline-edit.spec.md「退出 edit 態(focus 分流)」:鍵盤結算焦點回 view 按鈕 + 藍框、
+  //   滑鼠 blur 回純 view 不搶焦。focus-visible 保證只有鍵盤路徑顯藍框。
+  React.useEffect(() => {
+    if (!editing && returnFocusRef.current) {
+      returnFocusRef.current = false
+      readButtonRef.current?.focus()
+    }
+  }, [editing])
+
+  // ── 卸載時仍在編輯 = 以草稿提交(2026-11-25;inline-edit.spec.md「退出 edit 態」卸載那一條,calendar.spec.md「點外面」(1))──
+  // 宿主(Popover / Dialog / 詳情面板)沒播收起動畫就被拿掉時,上面兩條結算路(handleEditBlur / 點外面那支 effect)都等不到:
+  //   被拿掉的輸入框不發 blur(focusInside 留在 true,blur 那條不結算),整棵子樹被移走(即時同步把這一筆移走、錨點那一列不在了)
+  //   與減少動態下的程式關閉(產品自己的快捷鍵)也都沒有 pointerdown。有收起動畫的程式關閉不在此列:修前就會提交(實測 1 次)。
+  //   2026-11-25 量(DS 原始碼空白頁 Popover):整棵移走(有 / 無減少動態)、減少動態下程式關閉,修前 onCommit 0 次、字遺失;修後皆 1 次。
+  // 卸載那一刻還沒結算 → 照「滑鼠離開」提交(草稿有變更才呼叫 onCommit、焦點不送回)。已按 Esc 取消、已 Enter / blur 結算的由 finalizedRef 擋;
+  //   點外面那一支稍後才到的 setTimeout 也被它擋,不重複提交。
+  // deps 只放 editing:consumer 每次重繪傳一支新的 onCommit,不能因此提早結算 → cleanup 讀最新的 commit。
+  const latestCommitRef = React.useRef(commit)
+  latestCommitRef.current = commit
+  React.useEffect(() => {
+    if (!editing) return undefined
+    return () => {
+      if (!finalizedRef.current) latestCommitRef.current(false)
+    }
+  }, [editing])
+
+  // ── 進編輯:焦點一定落在編輯控件上(2026-11-25;spec「A11y 預設」Focus 管理「進 edit 態自動 focus 控件」)──
+  // 預設的 Input / Textarea 自己 autoFocus;自訂 renderEdit 的控件不一定照做 —— 桌機 Select 的 autoFocus 是文件寫明的無作用
+  //   (select.tsx SelectProps 註解「mobile-only」)。這時檢視鈕已卸載,焦點掉到 body(放在 Dialog 裡則停在對話框本身),
+  //   編輯容器宣告的 Esc 層與控件的 Enter 都收不到,第一下 Esc 直接把外層浮層關掉(2026-11-25 量:Dialog 裡 renderEdit = Select,焦點停在對話框、Esc 一下就關)。
+  // 判準:焦點停在「裝著編輯容器的東西」上(body / 宿主浮層)= 沒有控件接手 → 交給容器裡第一個可 Tab 到的元素(lib/focus-after-trigger.ts tabbableOrder)。
+  //   控件已經拿到焦點(在容器裡)、或把焦點搬進自己 portal 出去的彈出層(defaultOpen 的選單)時,焦點不在容器的祖先上 → 不動。
+  React.useEffect(() => {
+    if (!editing) return
+    const box = editContainerRef.current
+    if (!box) return
+    const active = box.ownerDocument.activeElement
+    if (active && !active.contains(box)) return
+    tabbableOrder(box)[0]?.focus()
+  }, [editing])
+
+  // ── 自訂編輯控件的 Esc 層(2026-11-25;keyboard-model-canonical.md「焦點所在的控件自己那一層也算一層」)──
+  // 預設的 Input / Textarea 經 editSettleKeyProps 宣告這一層;自訂 renderEdit(Select / DatePicker / Combobox …)的控件不認得 InlineEdit 的
+  //   cancel,修前沒有任何人宣告 —— 放在 Dialog / Popover 裡按 Esc,Radix 直接關掉外層、草稿跟著丟。改由編輯容器宣告(只在自訂 renderEdit 時;
+  //   預設控件已由 helper 宣告,不重複),這一下歸本層才取消編輯、焦點回檢視鈕(cancel 的鍵盤分流)。
+  // 這一下不歸本層的兩種(一下只少一層):
+  //   1. 就近的那一層不是編輯容器 —— 焦點所在處自己宣告了更內層(可打字 DatePicker 有打了還沒存的字),或焦點在控件 portal 出去的彈出層裡
+  //      (DOM 上不在容器內;React 合成事件照元件樹冒泡到這裡)。判準同浮層守門(lib/overlay-escape.ts escapeLayerOf:就近的那一層)。
+  //   2. Radix 已用這一下關掉控件自己的彈出層 / 別的控件獨占(isEscapeForControl 回 false)。
+  const handleCustomEditKeyDown = React.useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key !== 'Escape' || isImeComposing(e)) return
+      const nearest = e.target instanceof Element ? e.target.closest(`[${ESCAPE_LAYER_ATTR}]`) : null
+      if (nearest !== e.currentTarget) return
+      if (!isEscapeForControl(e)) return
+      e.preventDefault()
+      cancel()
+    },
+    [cancel],
+  )
+
+  // 對齊盒(orientation-aware,Model A;規則住 inline-edit.spec.md「對齊盒」,閱讀情境的其餘幾何住 field.spec.md「閱讀情境」):
+  //   vertical(預設,含 standalone)→ 框(靜止外框 / 編輯中的輸入框)左右各外伸 `--field-bleed`(= 框寬 1 + field-px 12 = 13,
+  //     框外緣到框內字線的距離)→ 字 / Tag / 頭像左緣落在欄左緣 = 標籤左緣。2026-11-25 前外伸 --field-px(12)漏了 1px 框 → 字比標籤右 1px。
+  //   horizontal → 不外伸(`w-full`):框 = 一般輸入框的位置與寬(標籤欄 + 12 + 控件框),字在框內 13;同欄沒有框的值(開關 / 勾選框)
+  //     由 Field 內縮到同一條框內字線(field.spec.md「閱讀情境」)。
+  //   只依 orientation、不依 fieldCtx(2026-07-17 移除 `fieldCtx &&` gate:standalone 預設 vertical,舊 gate 讓它不外伸 → 不對齊)。
+  //   外伸進容器內距 = 刻意(滑過 / 編輯才顯真實邊界)→ consumer 的容器左右內距要 ≥ --field-bleed(detail panel / card 的 16 > 13;
+  //   閘 scripts/reading-context-invariant.mjs 量框不出容器內緣)。
   const alignBleed =
     orientation === 'vertical'
-      ? '-mx-[var(--field-px)] w-[calc(100%_+_2_*_var(--field-px))]'
+      ? '-mx-[var(--field-bleed)] w-[calc(100%_+_2_*_var(--field-bleed))]'
       : 'w-full min-w-0'
 
   if (editing) {
@@ -343,7 +406,18 @@ function InlineEditImpl<T = string>(
       // exit SSOT 雙保險:onBlur(focusout,tab-out / 非 overlay 控件)+ document pointerdown-outside(overlay
       //   點外面 Radix 送焦回 trigger 時 focusout 不觸發之補位)。任何 edit 控件離開 → 回 view。
       // edit 態**不套** surface='inline-edit'(完全繼承原 field,含 tagPadding —— 進入編輯就是那個欄位本人;user 2026-07-17 拍板)。
-      <div ref={setEditContainerRef} data-editing className={cn(alignBleed, className)} onBlur={handleEditBlur} {...ownTree.capture}>
+      // 自訂 renderEdit:容器宣告 Esc 層 + 收這一下(見上方 handleCustomEditKeyDown);預設控件由 editSettleKeyProps 自己宣告,容器不重複。
+      // 閱讀情境記號兩個根都掛(靜止外框 + 這個編輯容器):只掛靜止外框的話,範圍裡唯一的就地編輯一進編輯,整組就翻回表單
+      //(標籤變回 foreground、開關 / 勾選框跳回框邊)—— 判斷住 components/Field/field.css(field.spec.md「閱讀情境」)。
+      <div
+        ref={setEditContainerRef}
+        data-editing
+        data-field-reading=""
+        className={cn(alignBleed, className)}
+        onBlur={handleEditBlur}
+        {...ownTree.capture}
+        {...(renderEdit ? { ...escapeLayerProps(true), onKeyDown: handleCustomEditKeyDown } : null)}
+      >
         {editNode}
       </div>
     )
@@ -354,8 +428,8 @@ function InlineEditImpl<T = string>(
     // 格式化 view(consumer 傳 <Control mode="view"> 等)。**對齊 SSOT(2026-07-17)**:委派控件的
     // bare view 一律 0px 左內距(audit 證實 Select/Combobox/DatePicker/TimePicker/PeoplePicker/LinkInput
     // 預設 view 皆裸 span/Tag),故 InlineEdit 用**與純值路徑同一個 `fieldViewGeometry(field-px + min-h +
-    // py)`** 包住 renderRead → 委派控件 view 左 px 統一 field-px、高度統一 field-height → 固定
-    // `-mx-field-px` 精準抵消 → tag/avatar/值左緣落 label x=0。不碰任何控件 tagPadding(bare view 本就不用)。
+    // py)`** 包住 renderRead → 委派控件 view 左 px 統一 field-px、高度統一 field-height → 值 / tag / avatar 左緣都在框內字線(--field-bleed);
+    // 垂直排外框外伸 --field-bleed(上方 alignBleed)→ 落標籤左緣,水平排不外伸 → 落一般輸入框字線(舊的外伸 12 漏了框寬)。不碰任何控件 tagPadding。
     // surface='inline-edit' 保留為 per-control 逃生訊號(若某控件 bare view 有內部 inset 破壞對齊,該控件可
     // 讀 surface 自抑;目前全控件 bare view=0px 不需)。
     <FieldSurfaceProvider surface="inline-edit">
@@ -395,9 +469,13 @@ function InlineEditImpl<T = string>(
           ref={ref}
           data-editing={false}
           data-editable={editable || undefined}
+          // 閱讀情境記號(見上方編輯容器同一段註解);editable=false 也掛 —— 鎖定的值同樣是「被閱讀的值」(inline-edit.spec.md「editable 閘」:
+          // 同場或權限切換 → editable),整組照樣是閱讀情境,權限切換時版面不跳
+          data-field-reading=""
           className={cn(
             // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
-            'relative flex min-w-0 rounded-md border border-transparent',
+            // 框寬讀 --field-border-width(與編輯中的輸入框同一顆;欄位家族不寫裸 `border`,閘 scripts/reading-context-invariant.mjs 靜態段)
+            'relative flex min-w-0 rounded-md border-[length:var(--field-border-width)] border-transparent',
             alignBleed,
             // editable 才有 hover 底色 + 鍵盤 focus 藍框(Field focus 語言,非 Button ring);
             //   editable=false = 純 view 鎖定,無入口、無藍框、不灰化。
@@ -408,9 +486,9 @@ function InlineEditImpl<T = string>(
           {viewNode}
           {/* 隱形 Pressable(僅 editable):提供 click + 鍵盤 Tab focus + Enter/Space 進 edit;透明疊於內容上。
               hover 底色 + focus 藍框由外層 div 承載(Field focus 語言),故本 button 只需 outline-none 消瀏覽器預設外框。
-              `-inset-px`(不是 inset-0):外層 div 有 1px 透明邊框,滑過底色塗滿整個 border box(含那 1px),
+              往外蓋一個框寬(不是 inset-0):外層 div 有 1px 透明邊框,滑過底色塗滿整個 border box(含那 1px),
               而 absolute 的 inset-0 只蓋到 padding box —— 外圈那 1px 亮著、點了卻不進 edit(待辦總帳 N53⑤;
-              一般螢幕左 / 右 / 下三邊、Retina 8 點中 5 點點不到)。往外多蓋 1px = 恰好等於外框的 border box,
+              一般螢幕左 / 右 / 下三邊、Retina 8 點中 5 點點不到)。往外多蓋一個 --field-border-width = 恰好等於外框的 border box,
               「亮的範圍 = 點得到的範圍」(inline-edit.spec.md「點得到的範圍 = 底色範圍」;hit-area-canonical.md「看到亮起來卻點不到」)。
               不縮滑過底色:底色與 edit 輸入框逐 pixel 對齊是既有不變量,動的只能是命中區。 */}
           {editable && (
@@ -419,8 +497,8 @@ function InlineEditImpl<T = string>(
               type="button"
               aria-label={label ? `編輯 ${label}` : '編輯'}
               onClick={enterEdit}
-              // @focus-suppress C — C 隱形整列觸發器;承擔者:指示器在外層 div(見上方 inline-edit.tsx:404 的 `[&:has(button:focus-visible)]:border-primary`)
-              className="absolute -inset-px cursor-text rounded-md focus-visible:outline-none"
+              // @focus-suppress C — C 隱形整列觸發器;承擔者:指示器在外層 div(見上方 inline-edit.tsx:482 的 `[&:has(button:focus-visible)]:border-primary`)
+              className="absolute -inset-[var(--field-border-width)] cursor-text rounded-md focus-visible:outline-none"
             />
           )}
         </div>

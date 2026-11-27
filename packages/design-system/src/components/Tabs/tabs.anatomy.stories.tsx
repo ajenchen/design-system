@@ -1,5 +1,5 @@
 import * as React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Users, Settings, Bell, FileText, CreditCard, Plug, Shield, KeyRound } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs'
 import { Badge } from '@/design-system/components/Badge/badge'
@@ -437,7 +437,7 @@ export const SpacingTokens: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>Triggers 之間 gap</H3>
-        <Desc>gap = <code>--layout-space-loose</code>(16px md / 24px lg density)——density-aware,跟著系統密度切換。</Desc>
+        <Desc>字與字的距離 = <code>--layout-space-loose</code>(16px md / 24px lg density)——density-aware,跟著系統密度切換。TabsList 的 <code>gap</code> 本身是它減掉兩側焦點框的位置(各 4px),所以字與字仍是 16 / 24。</Desc>
       </div>
 
       <div>
@@ -446,8 +446,8 @@ export const SpacingTokens: Story = {
       </div>
 
       <div>
-        <H3>Trigger 無水平 padding</H3>
-        <Desc>Trigger 不加任何水平 padding——寬度 = 內容寬度(hug content)。selected underline(<code>::after left-0 right-0</code>)因此剛好 fit label;若加橫向 padding,underline 會多出鬆散空白。trigger 之間的分隔靠 TabsList 的 <code>gap-[var(--layout-space-loose)]</code>,不是 padding。</Desc>
+        <H3>Trigger 左右只有焦點框的位置</H3>
+        <Desc>Trigger 左右各 4px(焦點框 2px + <code>--stack-gap</code> 2px),只為了鍵盤聚焦時往內畫的框離字 2px、不壓字;第一個 / 最後一個 trigger 往外借回 4px,selected underline(<code>::after</code> 兩端各縮 4px)仍剛好 fit label —— 平常畫面跟沒有這 4px 時一樣。trigger 之間的分隔靠 TabsList 的 gap,不是 padding(tabs.spec.md「焦點框不壓字」)。</Desc>
       </div>
     </div>
   ),

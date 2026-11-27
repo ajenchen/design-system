@@ -232,6 +232,37 @@ test('manual diagnostic is read-only and recognizes the complete template wiring
   assert.match(output, /MANUAL ACTION REQUIRED/)
 })
 
+test('private-repository collaborator hint is always printed and points to the template section only when it exists', (t) => {
+  const hint = /私有 repo 有其他協作者時[^\n]*Pending approval[^\n]*Team Owner 放行/
+  const docPointer = /docs\/03-co-edit-workflow\.md「多人協作的私有 repo:協作者的預覽建置」/
+  const officialPointer = /放行方式、費用與風險（帳號擁有者決定）：https:\/\/docs\.netlify\.com\/deploy\/deploy-overview\/#deploy-permissions/
+
+  // 對照組 1:沒有範本文件(例:DS repo 根目錄)→ 提示照印,指向官方頁,不指不存在的路徑
+  const bare = fixture(t)
+  const bareDiagnostic = inspectNetlifyManualSetup(bare)
+  assert.equal(bareDiagnostic.collaboratorPreviewGuide, '')
+  const bareOutput = renderNetlifyManualSetup(bareDiagnostic)
+  assert.match(bareOutput, hint)
+  assert.match(bareOutput, officialPointer)
+  assert.doesNotMatch(bareOutput, docPointer)
+
+  // 對照組 2:檔案在、但沒有那一段 → 同樣不指過去(段名是 SSOT 指標,不能指空)
+  write(join(bare, 'docs/03-co-edit-workflow.md'), '# Co-Edit Workflow\n')
+  assert.equal(inspectNetlifyManualSetup(bare).collaboratorPreviewGuide, '')
+
+  // 有那一段 → 指向範本文件的段名
+  const withDoc = fixture(t)
+  write(join(withDoc, 'docs/03-co-edit-workflow.md'), '# Co-Edit Workflow\n\n## 多人協作的私有 repo:協作者的預覽建置\n')
+  const before = snapshot(withDoc)
+  const diagnostic = inspectNetlifyManualSetup(withDoc)
+  assert.deepEqual(snapshot(withDoc), before, 'collaborator guide detection must be read-only')
+  assert.equal(diagnostic.collaboratorPreviewGuide, 'docs/03-co-edit-workflow.md')
+  const output = renderNetlifyManualSetup(diagnostic)
+  assert.match(output, hint)
+  assert.match(output, docPointer)
+  assert.match(output, /Official deploy-permission guide: https:\/\/docs\.netlify\.com\/deploy\/deploy-overview\/#deploy-permissions/)
+})
+
 test('comments cannot masquerade as active edge-function wiring', (t) => {
   const root = fixture(t, { complete: false })
   write(join(root, 'netlify.toml'), '[build]\n  publish = "dist"\n# [[edge_functions]] path="/*" function="basic-auth"\n')
@@ -317,6 +348,8 @@ test('CLI entrypoint returns structured manual-required diagnostics with exit 2'
   assert.equal(diagnostic.checks.basicAuthEdgeFunctionPresent, true)
   assert.equal(diagnostic.checks.basicAuthFailClosed, true)
   assert.equal(diagnostic.accessControl.sharingAllowed, false)
+  // 範本本身帶著那一段:出貨的範本跑 setup:netlify 一定指得到文件
+  assert.equal(diagnostic.collaboratorPreviewGuide, 'docs/03-co-edit-workflow.md')
 
   const help = spawnSync(process.execPath, ['--', SCRIPT, '--help'], { cwd: TEMPLATE, encoding: 'utf8', shell: false, timeout: 10_000 })
   assert.equal(help.status, 0)

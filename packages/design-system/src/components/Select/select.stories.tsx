@@ -1,16 +1,19 @@
 // @story-baseline: packages/design-system/src/components/DataTable/data-table.stories.tsx#WithBulkActions
 // (per .claude/references/story-baseline-registry.json#DataTable)
 import React from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { createColumnHelper } from '@tanstack/react-table'
-import { Select } from './select'
+import { Flag } from 'lucide-react'
+import { Select, type SelectOption } from './select'
 import { Field, FieldError, FieldLabel } from '@/design-system/components/Field/field'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types'
 import { CATEGORY_OPTIONS as categoryOptions } from '@/design-system/stories-helpers/data/product-catalog'
 import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { WORK_ITEM_STATUSES, WORK_ITEM_TYPES, workItemTypeBadge } from '@/design-system/stories-helpers/scene/work-item-type'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 
-const statusOptions = [
+const statusOptions: SelectOption[] = [
   { value: 'in_stock', label: 'In stock', tagVariant: 'green' },
   { value: 'low_stock', label: 'Low stock', tagVariant: 'yellow' },
   { value: 'out_of_stock', label: 'Out of stock', tagVariant: 'red' },
@@ -335,6 +338,139 @@ export const RemoteSearch: Story = {
 }
 
 /* ── DataTable 整合 ── */
+/* ── 選項前綴:工作項類型方塊 + 狀態色(2026-11-26,workspace F 組 F4-2)── */
+// 建立工作項時選類型與狀態:類型選項前面是類型方塊(`startContent`,LucideIcon 表達不了的彩底 + glyph),
+// 狀態選項是圖示 + 語意色(`icon` + `iconClassName`)。欄位上的已選值前綴跟著選中項畫(select.spec.md 圖示對照表)。
+// play 斷言:類型清單每一列都有自訂前綴節點、已完成那一列與欄位上的圖示都是 success 色 —— 轉發一斷就紅,並點名是哪一列。
+const workItemTypeOptions: SelectOption[] = WORK_ITEM_TYPES.map((t) => ({ value: t.value, label: t.label, description: t.description, startContent: workItemTypeBadge(t.value) }))
+const workItemStatusOptions: SelectOption[] = WORK_ITEM_STATUSES.map((s) => ({ value: s.value, label: s.label, icon: s.icon, iconClassName: s.iconClassName }))
+
+export const OptionPrefix: Story = {
+  name: '選項前綴:工作項類型',
+  parameters: { docs: { description: { story: '建立工作項時選類型與狀態。類型選項前面是類型方塊(選項的 `startContent`),狀態選項是圖示加語意色(`icon` + `iconClassName`);欄位上已選的值前面也畫同一個方塊或同色圖示。' } } },
+  render: () => {
+    const [type, setType] = React.useState('bug')
+    const [status, setStatus] = React.useState('done')
+    return (
+      <div className="flex flex-wrap gap-[var(--layout-space-loose)]">
+        <Field className="w-56">
+          <FieldLabel>類型</FieldLabel>
+          <Select options={workItemTypeOptions} value={type} onChange={setType} />
+        </Field>
+        <Field className="w-56">
+          <FieldLabel>狀態</FieldLabel>
+          <Select options={workItemStatusOptions} value={status} onChange={setStatus} />
+        </Field>
+      </div>
+    )
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const body = within(canvasElement.ownerDocument.body)
+    const successColor = (() => {
+      const probe = canvasElement.ownerDocument.createElement('span')
+      probe.className = 'text-success'
+      canvasElement.appendChild(probe)
+      const c = getComputedStyle(probe).color
+      probe.remove()
+      return c
+    })()
+    // 欄位上的已選值:類型 = 方塊(startContent)、狀態 = 已完成的圖示是 success 色
+    const [typeTrigger, statusTrigger] = canvas.getAllByRole('combobox')
+    await expect(typeTrigger.querySelector('[aria-hidden].size-4')).not.toBeNull()
+    await expect(getComputedStyle(statusTrigger.querySelector('svg')!).color).toBe(successColor)
+    // 類型清單:每一列都有自訂前綴節點
+    await userEvent.click(typeTrigger)
+    const typeRows = await body.findAllByRole('option')
+    for (const row of typeRows) {
+      await expect(row.querySelector('[data-prefix-type="content"]'), `類型選項「${row.textContent}」沒有前綴節點`).not.toBeNull()
+    }
+    await userEvent.click(typeTrigger)
+    await waitFor(() => expect(body.queryAllByRole('option')).toHaveLength(0))
+    // 狀態清單:已完成那一列的圖示是 success 色
+    await userEvent.click(statusTrigger)
+    const doneRow = await body.findByRole('option', { name: /已完成/ })
+    // MenuItem 的前綴圖示本身就是帶 data-prefix-type="icon" 的 svg(menu-item.tsx)
+    const doneIcon = doneRow.querySelector('[data-prefix-type="icon"]')
+    await expect(doneIcon, '「已完成」那一列沒有前綴圖示').not.toBeNull()
+    await expect(getComputedStyle(doneIcon!).color, '「已完成」那一列的圖示沒有套 iconClassName').toBe(successColor)
+    await userEvent.click(statusTrigger)
+    await waitFor(() => expect(body.queryAllByRole('option')).toHaveLength(0))
+  },
+}
+
+// 回歸鎖的夾具(play 斷言),不是給讀者看的範例(story-rules「Technical probe visibility」):已選值前綴在每個 mode 都畫(workspace H33,2026-11-27)。
+// field-controls.spec.md 共享 contract (a)「同一 value identity 不可因 mode 改變而丟失 renderer 資訊」+ select.spec.md 圖示對照表「Value icon」:
+// 狀態(icon + iconClassName)與類型(startContent)× 編輯 / 檢視 / 檢視含下拉箭頭(表格格 opt-in)/ 唯讀 / 停用;起始圖示有傳時只畫起始圖示(不疊兩個)。
+// 修前只有編輯態畫,檢視 / 唯讀 / 停用只剩文字 —— 拿掉 ReadonlyDisplay 的前綴就紅,並點名是哪一格。
+const PREFIX_MODE_CELLS = [
+  { key: 'edit', title: '編輯', mode: 'edit' as const, showDisplayEndIcon: undefined },
+  { key: 'view', title: '檢視', mode: 'view' as const, showDisplayEndIcon: undefined },
+  { key: 'view-cell', title: '檢視(表格格)', mode: 'view' as const, showDisplayEndIcon: true },
+  { key: 'readonly', title: '唯讀', mode: 'readonly' as const, showDisplayEndIcon: undefined },
+  { key: 'disabled', title: '停用', mode: 'disabled' as const, showDisplayEndIcon: undefined },
+]
+
+export const OptionPrefixAcrossModes: Story = {
+  name: '選項前綴:各模式都畫(回歸鎖)',
+  tags: ['test-only'],
+  render: () => (
+    <div className="grid grid-cols-2 gap-[var(--layout-space-loose)] max-w-xl">
+      {PREFIX_MODE_CELLS.map((cell) => (
+        <React.Fragment key={cell.key}>
+          <div data-prefix-probe={`status-${cell.key}`}>
+            <Field mode={cell.mode}>
+              <FieldLabel>狀態({cell.title})</FieldLabel>
+              <Select options={workItemStatusOptions} value="done" showDisplayEndIcon={cell.showDisplayEndIcon} />
+            </Field>
+          </div>
+          <div data-prefix-probe={`type-${cell.key}`}>
+            <Field mode={cell.mode}>
+              <FieldLabel>類型({cell.title})</FieldLabel>
+              <Select options={workItemTypeOptions} value="bug" showDisplayEndIcon={cell.showDisplayEndIcon} />
+            </Field>
+          </div>
+        </React.Fragment>
+      ))}
+      <div data-prefix-probe="start-icon-readonly">
+        <Field mode="readonly">
+          <FieldLabel>優先處理的狀態</FieldLabel>
+          <Select options={workItemStatusOptions} value="done" startIcon={Flag} />
+        </Field>
+      </div>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const colorOf = (cls: string) => {
+      const probe = canvasElement.ownerDocument.createElement('span')
+      probe.className = cls
+      canvasElement.appendChild(probe)
+      const c = getComputedStyle(probe).color
+      probe.remove()
+      return c
+    }
+    const success = colorOf('text-success')
+    const disabled = colorOf('text-fg-disabled')
+    const muted = colorOf('text-fg-muted')
+    const cellOf = (key: string) => {
+      const el = canvasElement.querySelector(`[data-prefix-probe="${key}"]`)
+      if (!el) throw new Error(`找不到量測格 ${key}`)
+      return el
+    }
+    // 前綴圖示 = 欄位裡不是下拉箭頭的 svg(lucide 的 class 帶圖示名)
+    const prefixIcons = (el: Element) => [...el.querySelectorAll('svg')].filter((svg) => !svg.classList.contains('lucide-chevron-down'))
+    for (const cell of PREFIX_MODE_CELLS) {
+      const status = prefixIcons(cellOf(`status-${cell.key}`))
+      await expect(status, `狀態(${cell.title}):已選值「已完成」沒有畫選項圖示`).toHaveLength(1)
+      await expect(getComputedStyle(status[0]).color, `狀態(${cell.title}):選項圖示顏色不對(唯讀 / 檢視 = 選項的 iconClassName,停用 = fg-disabled)`).toBe(cell.mode === 'disabled' ? disabled : success)
+      await expect(cellOf(`type-${cell.key}`).querySelector('[aria-hidden].size-4'), `類型(${cell.title}):已選值「錯誤」沒有畫選項的前綴方塊`).not.toBeNull()
+    }
+    const startIconOnly = prefixIcons(cellOf('start-icon-readonly'))
+    await expect(startIconOnly, '起始圖示有傳時只畫起始圖示,不再疊選項圖示').toHaveLength(1)
+    await expect(getComputedStyle(startIconOnly[0]).color, '唯讀的起始圖示是 fg-muted').toBe(muted)
+  },
+}
+
 export const InDataTable: Story = {
   name: 'DataTable 整合',
   parameters: { docs: { description: { story: '表格裡的選項欄預設顯示選項的文字;需要彩色標籤時,在欄位設定裡改用標籤樣式。' } } },

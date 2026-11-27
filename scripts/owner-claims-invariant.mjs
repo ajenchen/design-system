@@ -33,7 +33,8 @@
  *   node scripts/owner-claims-invariant.mjs --fix-moved-cites   C6(b) 純位移的行號就地改成新位置(被刪改的仍要人看)
  */
 import { spawnSync } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { dirname, join, posix, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
@@ -295,9 +296,11 @@ export function findUnnamedSteps(file, text) {
 //       14 個行號 100% 過期)。原本是 data-table-tree-view-doc 的 P1(另一套正規式掃同一件事),2026-11-04 收進本條:引用怎麼解析、
 //       歷史引用 / 合成夾具怎麼排除只有 C6 一份實作,一條規則一支閘(M17)。
 // 範圍:DS 原始碼與文件(src、ds-canonical,不含產生的 fork / 執行期 .claude)與 scripts/ 的閘。governance/planning 是當天的紀錄,不掃。
+// scripts/.gate-bundles 是 gitignore 的暫存打包輸出(esbuild 把 .tsx 的純函式打包成 .mjs,見同目錄 README),內容是別處原始碼的副本、
+// 每台機器跑過哪些閘就留下哪些 —— 掃它會讓同一棵樹在不同機器紅綠不同(2026-11-27 起不掃,R8-E28;--selftest 有兩面對照)。
 export const CITE_ROOTS = ['packages/design-system/src', 'packages/design-system/ds-canonical', 'scripts']
 const CITE_RESOLVE_ROOTS = [...CITE_ROOTS, '.github/workflows']
-const CITE_SKIP_DIRS = new Set(['node_modules', 'dist', 'storybook-static', 'coverage', 'generated', '.claude', 'fork'])
+const CITE_SKIP_DIRS = new Set(['node_modules', 'dist', 'storybook-static', 'coverage', 'generated', '.claude', 'fork', '.gate-bundles'])
 const CITE_EXT = /\.(?:md|css|tsx|ts|mjs|js|cjs|sh)$/
 const GENERIC_BASENAMES = new Set(['index.ts', 'index.tsx', 'index.js', 'index.mjs', 'README.md', 'package.json', 'CHANGELOG.md', 'AGENTS.md', 'CLAUDE.md', 'SKILL.md'])
 export const LINE_CITE_RE = /((?:[\w.@-]+\/)*[\w.@-]+\.(?:md|tsx|ts|css|mjs|js|cjs|json|ya?ml|sh))`?[ \t]*:[ \t]*L?(\d+)(?:[ \t]*[-–][ \t]*L?(\d+))?(?![\d%A-Za-z])/g
@@ -740,6 +743,18 @@ export function runSelftest() {
   expect(symbolOnlyOf('正解是修 wrapper(`x.tsx:2` 的 `isKnownCompound` 補 `boolean`),') === 1 && symbolOnlyOf('    // (x.tsx:2-4),不再用 `ChevronDown` 反轉') === 1 && symbolOnlyOf('見 x.spec.md:3') === 0, 'C6(d):只准符號指法的檔被行號引用 → 紅(指得到也紅、範圍也紅);別的檔的行號不歸本條')
   expect(symbolOnlyOf('正解是修 wrapper(`x.tsx` 的 `isKnownCompound` 補 `boolean`),') === 0 && symbolOnlyOf('`x.tsx#A`') === 0 && symbolOnlyOf('`9935caf9:packages/design-system/src/components/X/x.tsx:2`') === 0, 'C6(d):符號指法 / 檔名#宣告 / 釘在 commit 的歷史引用 → 0 筆')
   expect(SYMBOL_ONLY_TARGETS.length === 2 && SYMBOL_ONLY_TARGETS.every((t) => /\/(data-table|tree-view)\.tsx$/.test(t)), 'C6(d):清單就是 DataTable / TreeView 兩支(與 active-editor-controller.ts 檔頭的範圍一致)')
+  // C6 範圍(R8-E28):同一棵暫存樹裡,gitignore 的 scripts/.gate-bundles 底下那支帶壞引用的打包檔不在掃描清單,旁邊的閘照掃
+  //(兩面:名單拿掉 .gate-bundles 時,這一題因為 bundle.mjs 出現在清單裡而紅)
+  const scratch = mkdtempSync(join(tmpdir(), 'owner-claims-selftest-'))
+  try {
+    mkdirSync(join(scratch, 'scripts', '.gate-bundles'), { recursive: true })
+    writeFileSync(join(scratch, 'scripts', '.gate-bundles', 'bundle.mjs'), '// @cite-fixture\n// 打包進來的別處原始碼註解:見 x.tsx:999\n')
+    writeFileSync(join(scratch, 'scripts', 'gate.mjs'), '// 一支普通的閘\n')
+    const listed = walkCiteRoot(scratch, 'scripts', [])
+    expect(listed.includes('scripts/gate.mjs') && !listed.some((f) => f.split('/').includes('.gate-bundles')), 'C6 範圍:scripts/.gate-bundles(gitignore 的暫存打包輸出)不掃,同層的閘照掃')
+  } finally {
+    rmSync(scratch, { recursive: true, force: true })
+  }
   return { ok, fails }
 }
 

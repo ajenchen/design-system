@@ -4,7 +4,7 @@
  *   保證: DS 原始碼(packages/design-system/src/**\/*.tsx,含 stories)裡沒有「手刻的行內動作鈕」——
  *         (A) 只放圖示的原生 `<button>`(inline-action.spec.md「Dismiss canonical — X close only」的「❌ 禁止」:「自刻 `<button><X /></button>`」);
  *         (B) 放在列 / 項目宿主(TreeItem / MenuItem / SidebarMenuButton / Tag / Chip / Breadcrumb …)子樹裡的
- *             icon-only `<Button>` 或原生 `<button>`(inline-action.spec.md:161-163、:217「Host 走宣告式 API … 不自刻 button JSX」)。
+ *             icon-only `<Button>` 或原生 `<button>`(inline-action.spec.md:162-164、:218「Host 走宣告式 API … 不自刻 button JSX」)。
  *         合法例外只准寫在 ALLOWLIST,每筆帶理由與 spec 出處;清單裡對不到任何命中的條目 = 過期豁免 → 紅。
  *   紅: --selftest 把合成的「TreeItem 裡的 <button><Trash2/></button>」「MenuItem 裡的 <Button iconOnly>」
  *       「Tag 裡 DropdownMenuTrigger asChild 包的 <Button iconOnly>」「抄 primitive 形狀(span 底色層 + 圖示)的原生鈕」
@@ -92,7 +92,7 @@ const ALLOWLIST = [
   {
     key: 'src/components/Field/field.tsx#InfoIcon',
     reason: 'FieldLabel 的 ⓘ 是「給資訊的觸發處」:點下去不做事(Radix Tooltip 點擊只會收起說明),只借行內動作「顏色退後、滑過深一階」的長相,游標明寫 cursor-default;spec 明文「不是行內動作」。',
-    spec: 'packages/design-system/src/components/Field/field.spec.md:278(設計定位:給資訊的觸發處 … 不是行內動作)+ ds-canonical/references/hit-area-canonical.md:54(三-1:觸發處若是 <button> 要明寫 cursor-default)',
+    spec: 'packages/design-system/src/components/Field/field.spec.md「FieldLabel `info` icon」的「設計定位」那一點(給資訊的觸發處 … 不是行內動作)+ ds-canonical/references/hit-area-canonical.md:54(三-1:觸發處若是 <button> 要明寫 cursor-default)',
   },
   {
     key: 'src/components/PeoplePicker/person-display.tsx#X',

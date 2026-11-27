@@ -2,6 +2,7 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 import { useFieldContext } from '@/design-system/components/Field/field-context'
+import { selectionGroupLayoutClass } from '@/design-system/components/SelectionControl/selection-item'
 
 // ── CheckboxGroupContext ────────────────────────────────────────────────────
 // 讓內部 `<Checkbox>` 知道「我在 CheckboxGroup 裡」→ 即使 Field context 也存在,
@@ -26,9 +27,8 @@ export const CheckboxGroupContext = React.createContext<{ inGroup: true } | null
  * **禁止**外層加 `gap-y-*` / `space-y-*` / margin —— 會 double padding,違反 canonical。
  *
  * ── 對齊 RadioGroup canonical ──
- * 本 DS `RadioGroup` wrapper 用 `grid`(無 gap;radio-group.tsx 自加——Radix primitive
- * 本身 unstyled,無預設 layout);本元件垂直也用 `grid`(無 gap),
- * horizontal 用 `flex flex-wrap gap-4`(短 label 並排才需水平 gap)。
+ * 版面字串由 `selectionGroupLayoutClass`(SelectionControl/selection-item.tsx)唯一提供,本元件與
+ * `RadioGroup` 共用:垂直 `grid`(無 gap),horizontal `flex flex-wrap gap-4`(短 label 並排才需水平 gap)。
  *
  * ── 為什麼 vertical 不給 gap 也能好看 ──
  * SelectionItem py 的公式讓每個 Checkbox row 的「單行高度 = field-height」。row 堆疊時
@@ -88,8 +88,8 @@ const CheckboxGroup = React.forwardRef<HTMLDivElement, CheckboxGroupProps>(
           aria-invalid={fieldCtx?.invalid || undefined}
           className={cn(
             // 垂直 CheckboxGroup:zero gap(間距由 SelectionItem py 獨家擁有,見 docblock canonical)
-            // 水平:短 label 並排需水平 gap-4(label 沒有 py 擴散,需要顯式 gap)
-            orientation === 'vertical' ? 'grid' : 'flex flex-wrap gap-4',
+            // 水平:短 label 並排需水平 gap-4(label 沒有 py 擴散,需要顯式 gap)—— 字串住 selectionGroupLayoutClass,與 RadioGroup 共用
+            selectionGroupLayoutClass(orientation),
             className
           )}
           {...props}

@@ -72,6 +72,12 @@ export interface DragAnnouncementArgs {
    * 同一趟拖曳用了兩個名字。
    */
   kind: string | ((active: ActiveLike) => string)
+  /**
+   * dnd-kit 讀屏節點(操作說明 + 它自己的播報區)要掛的位置(dnd-kit `accessibility.container`);不傳 = dnd-kit 預設就地接在
+   * DndContext 子節點之後。DataTable 傳表格外框之前的浮層宿主,讓這些不佔版面的節點不變成容器自判底距看到的「最後一個東西」
+   * (2026-11-27,PR #174 CI layout-body-edges;經這裡傳而不是在呼叫端拆開 accessibility,`drag-announcement-invariant` 認得的是整份交給 dnd-kit)。
+   */
+  container?: HTMLElement | null
 }
 
 /**
@@ -141,7 +147,7 @@ type DragAnnouncements = ReturnType<typeof createDragAnnouncements>
  *   - 同時在捕獲階段把這一下標成**獨占**(`claimEscape`):容器自己的 `Esc` handler 與其他控件的 `isEscapeForControl` 都讀到 false,只有 dnd-kit 取消拖曳。
  */
 export function useDragAccessibility(args: DragAnnouncementArgs): {
-  accessibility: { announcements: DragAnnouncements; screenReaderInstructions: typeof DRAG_SCREEN_READER_INSTRUCTIONS }
+  accessibility: { announcements: DragAnnouncements; screenReaderInstructions: typeof DRAG_SCREEN_READER_INSTRUCTIONS; container?: HTMLElement }
   liveRegion: React.ReactElement
   /** 拖曳中才有東西:spread 到裝著可拖項目的容器(見上方「拖曳中的 `Esc` 只取消拖曳」)。 */
   escapeLayer: EscapeLayerProps & { onKeyDownCapture?: (event: React.KeyboardEvent) => void }
@@ -154,7 +160,7 @@ export function useDragAccessibility(args: DragAnnouncementArgs): {
   // 所以 announcements 只建一份,讀取時再經 ref 取最新的 getOutcome / kind。
   const argsRef = React.useRef(args)
   argsRef.current = args
-  const accessibility = React.useMemo(() => {
+  const baseAccessibility = React.useMemo(() => {
     const inner = createDragAnnouncements({
       getOutcome: () => argsRef.current.getOutcome(),
       kind: (active) => { const k = argsRef.current.kind; return typeof k === 'function' ? k(active) : k },
@@ -171,6 +177,12 @@ export function useDragAccessibility(args: DragAnnouncementArgs): {
     }
     return { announcements, screenReaderInstructions: DRAG_SCREEN_READER_INSTRUCTIONS }
   }, [])
+  // container 是掛上後才有的元素(呼叫端用 state 傳進來)→ 只有它變時換一份物件,announcements 照舊只建一份
+  const container = args.container ?? undefined
+  const accessibility = React.useMemo(
+    () => (container ? { ...baseAccessibility, container } : baseAccessibility),
+    [baseAccessibility, container],
+  )
   const liveRegion = React.createElement(
     'div',
     { role: 'status', 'aria-live': 'polite', 'aria-atomic': true, className: 'sr-only', 'data-drag-live-region': '' },

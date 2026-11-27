@@ -1,6 +1,6 @@
 // @benchmark-cited: usage 分界與 placement 由 account-menu.spec.md「Benchmark(M8 / M22 cite)」表收斂(各家一手來源只住該表,這裡不抄);
 // 本檔只投影 canonical，不新增 email、account switcher 或其他 aspirational contract。
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { AccountMenu } from './account-menu'
 import { demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'

@@ -12,13 +12,14 @@ import type { AvatarData } from '@/design-system/components/Avatar/avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/design-system/components/Popover/popover'
 import { Command, CommandInput, CommandList, CommandEmpty, CommandLoading, CommandGroup, CommandItem, type CommandActiveOption } from '@/design-system/components/Command/command'
 import { returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
+import { pressLandedInDom } from '@/design-system/lib/pointer-press'
 import { useCompositeFieldBlur, useOwnTreeEvents } from '@/design-system/lib/composite-field-focus'
 // cmdk 的預設比對函式(公開匯出)。遠端模式 cmdk 不過濾,要自己比 ——
 // 用**同一支**函式,才不會本機一套標準、遠端另一套(見下方「不限與搜尋」)。
 import { defaultFilter } from 'cmdk'
 import { SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import { Button } from '@/design-system/components/Button/button'
-import { OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-geometry'
+import { OVERLAY_LIST_MAX_HEIGHT, OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-geometry'
 import { RowSizeProvider } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { applySelectAll, clearSelection } from '@/design-system/lib/multi-select-ordering'
 // 觸發欄位 ↔ 清單的鍵盤橋接(方向鍵轉送 / aria-activedescendant / 開著按 Tab / 不可打字單選的空白鍵)住在 select-menu-keyboard.ts
@@ -50,8 +51,42 @@ export interface SelectMenuOption {
   /** icon 染色 className(2026-07-08:status 類彩色 option;M30 primitive schema 擴充) */
   iconClassName?: string
   avatar?: AvatarData
+  /**
+   * 選項前綴的自訂節點(2026-11-26,workspace F 組 F4-2):例如工作項類型清單每列前面的類型方塊。轉給 MenuItem 的 `startContent`。
+   * - 與 `icon` / `avatar` 三選一(`../Menu/menu-item.spec.md`「❌ `startIcon` / `avatar` / `startContent` 三者不可同時使用」)。
+   * - 節點尺寸 = 該列的 `ICON_SIZE[size]`(`../Menu/menu-item.spec.md` 前綴尺寸那一列,與 `icon` 同一格)。
+   * - 類型方塊本身每種 size 的邊長、圖案大小、圓角、筆畫**待 C5 定案**(workspace F 組 F4-1),本欄位只開槽、不定方塊規格。
+   * - Select 欄位上的已選值前綴跟著選中項畫(同 `icon`,`../Select/select.spec.md` 圖示對照表)。
+   */
+  startContent?: React.ReactNode
   disabled?: boolean
   group?: string
+}
+
+/**
+ * SelectMenuOption 的全部鍵 —— 包裝元件(Select / Combobox)的轉換只住 `toSelectMenuOption`,照這份鍵表逐鍵轉發(M30(b))。
+ * 2026-11-26 前 Select / Combobox 各寫一份手寫物件,兩份都漏轉 `iconClassName`(git log -S 查無曾轉過),TypeScript 結構型別不報錯。
+ */
+const SELECT_MENU_OPTION_KEYS = ['value', 'label', 'description', 'icon', 'iconClassName', 'avatar', 'startContent', 'disabled', 'group'] as const
+type SelectMenuOptionKey = typeof SELECT_MENU_OPTION_KEYS[number]
+// 型別斷言:SelectMenuOption 新增欄位卻沒加進鍵表 → 第一行型別錯;鍵表寫了不存在的鍵 → 第二行型別錯(npm run build:lib 紅,CI 必跑)
+const optionKeysAllForwarded: [Exclude<keyof SelectMenuOption, SelectMenuOptionKey>] extends [never] ? true : Exclude<keyof SelectMenuOption, SelectMenuOptionKey> = true
+const optionKeysAllExist: [Exclude<SelectMenuOptionKey, keyof SelectMenuOption>] extends [never] ? true : Exclude<SelectMenuOptionKey, keyof SelectMenuOption> = true
+void optionKeysAllForwarded
+void optionKeysAllExist
+
+/**
+ * 包裝元件的選項(`extends SelectMenuOption`,可多帶自己的欄位)→ SelectMenu 的選項:只留 SelectMenuOption 的鍵、逐鍵照抄。
+ * `suppressPrefixIcon`:這一列不畫前綴圖形(Select tag 模式:選單列是純文字,欄位上是 Tag)—— `icon` 與 `startContent` 都是前綴圖形,一起收(AI 推導)。
+ */
+export function toSelectMenuOption(opt: SelectMenuOption, opts: { suppressPrefixIcon?: boolean } = {}): SelectMenuOption {
+  const out: Partial<Record<SelectMenuOptionKey, unknown>> = {}
+  for (const key of SELECT_MENU_OPTION_KEYS) out[key] = opt[key]
+  if (opts.suppressPrefixIcon) {
+    out.icon = undefined
+    out.startContent = undefined
+  }
+  return out as SelectMenuOption
 }
 
 export interface SelectMenuGroupConfig {
@@ -184,6 +219,13 @@ export interface SelectMenuProps {
    *(2026-11-17 A95;跟表格三個工具面板同一套,props-naming.md「尺寸參數」第 8 條。之前是整個取代預設下限)。
    */
   minWidth?: number
+  /**
+   * 清單的高度上限(2026-11-24,總帳 C9;契約同 `DropdownMenuContent` 的 `maxHeight`,公式 `capHeight`):實際上限 = min(可用高, 此值),
+   * 傳再大也不超出可用高。不傳 = 預設上限:半列原則(N.5 列、最後一列切在半列,依 `size`;選項帶 `description` 時用兩行列的列高;
+   * `../Command/command.spec.md`「清單捲動上限(半列原則)」)。
+   * 夾的是清單捲動區(轉給 `CommandList`);搜尋框、全選頁尾在清單外,不算在這個上限裡。數字 = px,字串照原樣。
+   */
+  maxHeight?: number | string
 
   /** 受控 open 狀態 */
   open?: boolean
@@ -261,6 +303,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   size = 'md',
   align = 'start',
   minWidth,
+  maxHeight,
   open: controlledOpen,
   defaultOpen,
   onOpenChange: controlledOnOpenChange,
@@ -477,6 +520,14 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
     return !options.some((o) => o.label.toLowerCase() === q) && !(isRemote && (suggestions ?? []).some((o) => o.label.toLowerCase() === q))
   }, [creatable, search, options, suggestions, isRemote, optionsLoading])
 
+  // ── 清單高度上限(2026-11-24 C9):使用端的 maxHeight 優先;沒傳時,選項帶說明(兩行列,例:PeoplePicker 的人名 + 信箱)
+  // 用兩行列的半列預設,其餘交給 CommandList 自己的單行列預設(tokens/elevation/overlay-geometry.ts OVERLAY_LIST_MAX_HEIGHT)
+  const describedRows = React.useMemo(
+    () => options.some((o) => !!o.description) || (suggestions ?? []).some((o) => !!o.description),
+    [options, suggestions],
+  )
+  const listMaxHeight = maxHeight ?? (describedRows ? OVERLAY_LIST_MAX_HEIGHT.described[size] : undefined)
+
   // ── Grouping ──
   // 沒填 group 的項目歸預設群組;預設群組在「建議」情境下必有標題(suggestionsLabel),其他情境無標題。
   const groupedOptions = React.useMemo(() => {
@@ -540,7 +591,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   // 旗標在這一次 click 的同步派發裡設,緊接著被 Radix 的開關(→ 下方 onOpenChange)用掉;事件已被別人 preventDefault 時 Radix 不開關,旗標也不設。
   const ignoreToggleRef = React.useRef(false)
   const handleTriggerClick = React.useCallback((e: React.MouseEvent<HTMLElement>) => {
-    ignoreToggleRef.current = !e.defaultPrevented && !e.currentTarget.contains(e.target as Node)
+    ignoreToggleRef.current = !e.defaultPrevented && !pressLandedInDom(e) // 判準全 DS 共用 lib/pointer-press.ts
   }, [])
   const handlePopoverOpenChange = React.useCallback((next: boolean) => {
     if (ignoreToggleRef.current) { ignoreToggleRef.current = false; return }
@@ -644,6 +695,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
           </CommandEmpty>
           <CommandList
             className="relative"
+            maxHeight={listMaxHeight}
             aria-busy={optionsLoading || undefined}
             // 2026-07-06 A11y:cmdk List 的 aria-label 由其 `label` prop 渲染(內部 spread 後 override,
             // 直接傳 aria-label 會被 cmdk default "Suggestions" 蓋掉 silent 失效)— 必走 label prop。
@@ -706,6 +758,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
                       startIcon={opt.icon}
                       startIconClassName={opt.iconClassName}
                       avatar={opt.avatar}
+                      startContent={opt.startContent}
                       description={opt.description}
                       checkbox={multiple}
                       checked={isSelected(opt.value)}

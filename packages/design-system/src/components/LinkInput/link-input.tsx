@@ -91,7 +91,7 @@ function formatHostname(url: string): string {
 // 盒子本身仍是文字寬(L1 量的那一個)。用 `::before` 不用 `::after`:文字那一層也設 `relative`(`[&>*]:relative`)後,
 // 兩者同在定位層、照樹的順序畫 —— ::before 在前、文字在上,截斷提示仍抓得到滑過,不必另開 z 值(疊放順序表,layer-order 閘)。
 // `data-link-stretch`:宿主要暫時收起延伸區時用(DataTable 試算表沒選中的格第一下只選格,見 data-table.css)。
-// `coverBorder`:框的 1px 邊框看得見、滑過會變深(編輯模式)時,延伸區多蓋那 1px(`-inset-px`,框沒有 overflow 裁切)——
+// `coverBorder`:框的邊框看得見、滑過會變深(編輯模式)時,延伸區往外多蓋一條框寬(`--field-border-width`,1px;框沒有 overflow 裁切)——
 // 變色的地方都點得開;其他模式的邊框透明、滑過不變,只蓋到內距。
 function renderLinkAnchor(value: string, label?: string, stretch = false, coverBorder = false) {
   const displayText = linkDisplayText(value, label)
@@ -105,10 +105,11 @@ function renderLinkAnchor(value: string, label?: string, stretch = false, coverB
       className={cn(
         'inline-block max-w-full align-top truncate min-w-0 text-primary hover:text-primary-hover hover:underline',
         stretch && "before:absolute before:content-[''] [&>*]:relative",
-        stretch && (coverBorder ? 'before:-inset-px' : 'before:inset-0'),
+        // 多蓋的那一圈 = 欄位框寬(--field-border-width;2026-11-25 前寫死 -inset-px,值不變)
+        stretch && (coverBorder ? 'before:-inset-[var(--field-border-width)]' : 'before:inset-0'),
       )}
     >
-      {/* 截斷必附 tooltip(tooltip.spec.md:32)— anchor 自身即 hover 目標、無疊層,TruncatedText
+      {/* 截斷必附 tooltip(tooltip.spec.md:30)— anchor 自身即 hover 目標、無疊層,TruncatedText
           放 anchor 內(trigger = 其 span child)即可;view/readonly/edit-showLink 共用本 helper 一處修。
           display="block":anchor 是 inline-block 容器,裡面照樣是 block formatting context,截斷照常運作(對照 breadcrumb.tsx anchor 內同型消費)。 */}
       <TruncatedText display="block">{displayText}</TruncatedText>

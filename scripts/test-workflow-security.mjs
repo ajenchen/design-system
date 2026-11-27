@@ -283,6 +283,38 @@ test('consumer template keeps only the native Verify consumer workflow', () => {
   assert.equal(existsSync('template/ds-product-template/.github/workflows/audit.yml'), true)
 })
 
+test('consumer upgrade receiver keeps registry signature verification and delegates vulnerability gating to the transaction', () => {
+  const path = 'template/ds-product-template/.github/workflows/sync-design-system.yml'
+  const receiver = (install) => `on:
+  repository_dispatch:
+    types: [design-system-published]
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    steps:
+      - run: |
+${install.map(line => `          ${line}`).join('\n')}
+`
+  const rules = (install) => auditWorkflowSources({ [path]: receiver(install) })
+    .filter(finding => finding.file === path)
+    .map(finding => finding.rule)
+  // 同一份 receiver 在別的路徑仍要兩道都過:豁免只綁這一個檔,不是對 repository_dispatch 開口
+  const otherPath = '.github/workflows/other-receiver.yml'
+  assert.deepEqual(
+    auditWorkflowSources({ [otherPath]: receiver(['npm ci --ignore-scripts', 'npm audit signatures']) })
+      .filter(finding => finding.file === otherPath)
+      .map(finding => finding.rule),
+    ['WF-VULNERABILITY-AUDIT'],
+  )
+  assert.deepEqual(rules(['npm ci --ignore-scripts', 'npm audit signatures']), [])
+  assert.deepEqual(rules(['npm ci --ignore-scripts']), ['WF-SIGNATURE-AUDIT'])
+  // 0.1.0-beta.151 只發這條例外與本測試(TRACKER R22 兩段式:PR 的「Verify authority candidate」跑 main 上的本閘,
+  // 不認 PR 裡新加的例外),receiver 本體下一版才進 template(「這一版不出貨」只由 scripts/test-setup-governance.mjs 守);
+  // 下一版放回本體時,把 962ec2ac 的「真實檔案也過」那兩行(existsSync 與讀檔稽核)一起放回來。
+})
+
 test('registry and OIDC authority cannot be co-located through inherited workflow permissions', () => {
   const path = '.github/workflows/inherited-authority-fixture.yml'
   const source = `on:

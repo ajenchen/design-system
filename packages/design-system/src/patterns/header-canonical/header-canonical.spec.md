@@ -13,7 +13,7 @@ benchmark:
 
 # Header Canonical 設計原則
 
-> **Foundational SSOT rationale**(行數上限以 `check_file_size_budget.sh` 的 case 表為準,本檔走一般 spec 那一檔;2026-05-17 建檔時寫的「cap 800」case 表從沒列過):本 pattern 統一**所有 header 家族**(chrome page header + overlay header)的視覺契約 — border ownership / padding / 高度策略 / tabs 連動 / dismiss canonical。consumer(`SidebarHeader` / `FileViewer Toolbar+InfoPanel` / `AppShell PageHeader+GlobalHeader` / `DialogHeader` / `SheetHeader` / `PopoverHeader` / `CoachmarkHeader` / 未來 Drawer)pointer 指向本 SSOT,**禁各自 hardcode**。
+> **Foundational SSOT rationale**(行數上限以 `check_file_size_budget.sh` 的 case 表為準,本檔走一般 spec 那一檔;2026-05-17 建檔時寫的「cap 800」case 表從沒列過):本 pattern 統一**所有 header 家族**(chrome page header + overlay header)的視覺契約 — border ownership / padding / 高度策略 / tabs 連動 / dismiss canonical。consumer(`SidebarHeader` / `FileViewer Toolbar+InfoPanel` / `AppShell PageHeader+GlobalHeader` / `Calendar 工具列` / `DialogHeader` / `SheetHeader` / `PopoverHeader` / `CoachmarkHeader` / 未來 Drawer)pointer 指向本 SSOT,**禁各自 hardcode**。
 
 ## 選哪個 header(decision — 做任何 header 前先回答這題)
 
@@ -32,9 +32,9 @@ benchmark:
 - ❌ 純內容區小標題(section heading)→ 用 typography(`text-h6` 等),不是 header primitive
 - ❌ **Dialog / 浮層內「不可關閉的 side pane」標題**(如 detail dialog 右欄 metadata 欄的「General info」)→ 走 typography,不消費 header primitive。**判準一句話:「這個 pane 能不能自己被關掉」**(2026-07-08 user 拍板 codify)—— **可獨立 dismiss**(自帶 close、自帶 ScrollArea、旁有等高 chrome 需對齊,如 FileViewer InfoPanel:I 鍵 + close X)→ `<ChromeHeader>`;**不可關閉** = pane 標題只是 content 的一部分 → 純 typography,間距跟著 layoutSpace 原則走(不 flush、無 border-b、隨內容捲動)。反例先例:DatePicker TimePickerSidePanel 同層級 caption 不消費 header primitive(date-picker.spec.md「TimePickerSidePanel header 下方無 divider」段)。外部對照:Carbon SidePanel(https://github.com/carbon-design-system/ibm-products/blob/main/packages/ibm-products-styles/src/components/SidePanel/_side-panel.scss)/ Material side sheet(https://github.com/material-components/material-components-android/blob/master/docs/components/SideSheet.md)皆「有 close affordance 才有正式 header + divider」。
 - ❌ 列表 row / menu item → 走 `item-anatomy`,不是 header
-- ❌ 卡片內標題列 → Card 自己的 header 區,不套本 pattern
+- ❌ **頁面內不可關閉的有框區塊**(設定卡、資訊區塊)的標題 → 不是 header primitive:標題由消費者用 typography(同上「內容區小標題」)+ token + item anatomy 自組,DS 不提供 Card 或區塊標頭元件(user 2026-11-26 原話:「這個由消費者自己定義了吧？反正我們都提供 token跟 item anatomy的設計原則了，應該就是依照那些去延伸就夠了吧？？？」;同一方向的先例見 `components/AppShell/app-shell.spec.md`「Main 內塞什麼」段 user 2026-11-06 原話)。手刻浮層標頭的閘(下方「機械防呆」)不擋這種標頭:直接寫在 `rounded-md` + `border` 區塊最上方、而且不在 Dialog / Sheet / Popover / HoverCard 等浮層裡;放進浮層裡就照擋(判法認得出的浮層限同一檔:直接寫在浮層底下,或寫成同檔的元件 / 變數再放進浮層;區塊元件在別的檔被放進浮層不在判法內)
 
-**機械防呆**(讓 AI 即使誤判也被擋):手刻 chrome header(`h-[var(--chrome-header-height)] border-b`)→ `_chrome_header_handcraft` 攔;手刻 overlay header(`px-loose + border-b border-divider` 簽名)→ `check_story_invariants.sh R9` BLOCKER。命名前綴(`chrome-` / `overlay`-surface)本身自帶 surface 語意,讀到名字即知用途。
+**機械防呆**(讓 AI 即使誤判也被擋):手刻 chrome header(`h-[var(--chrome-header-height)] border-b`)→ `_chrome_header_handcraft` 攔;手刻 overlay header(`px-loose + border-b border-divider` 簽名)→ `check_story_invariants.sh` 規則 R9 BLOCKER(產品端同一組簽名:`check_consumer_code_quality.sh` 浮層段;四支閘共用 `hooks/lib/tsx-governance-analysis.mjs` 的 `page-block-header-mask` 放行上一段的頁面區塊標頭)。命名前綴(`chrome-` / `overlay`-surface)本身自帶 surface 語意,讀到名字即知用途。
 
 ## 定位
 
@@ -43,7 +43,7 @@ benchmark:
 | Family | 實作 | Consumer | Spec home |
 |---|---|---|---|
 | **A. Padding-based**(overlay)| `py-[var(--layout-space-tight)]` + `data-unbounded` slot trick;高度由內容決定但對齊 `--chrome-header-height` | DialogHeader / SheetHeader / PopoverHeader / 未來 Drawer | `patterns/overlay-surface/overlay-surface.spec.md`(L1 SSOT)+ 本 spec(cross-family canonical) |
-| **B. Fixed-height**(chrome)| `h-[var(--chrome-header-height)]` + `items-center`,剛性高度 | SidebarHeader / FileViewer Toolbar / FileViewer InfoPanel / Page top bar | `tokens/uiSize/uiSize.spec.md` L242(`Fixed-height` 段)+ 本 spec(cross-family canonical) |
+| **B. Fixed-height**(chrome)| `h-[var(--chrome-header-height)]` + `items-center`,剛性高度 | SidebarHeader / FileViewer Toolbar / FileViewer InfoPanel / Calendar 工具列 / Page top bar | `tokens/uiSize/uiSize.spec.md` L242(`Fixed-height` 段)+ 本 spec(cross-family canonical) |
 
 **為什麼兩家族?** 因 overlay 標題區可能附小標 / 說明(Dialog / Sheet 標題 + 說明、決策卡小標 + 題目)— 剛性高度會切掉。Chrome 家族 永遠 single-row(toolbar / nav)— 剛性高度給 layout 預測性。兩 pattern 並存(對齊 `tokens/uiSize/uiSize.spec.md` L240-260「Padding-based vs Fixed-h decision tree」)。
 
@@ -93,7 +93,7 @@ benchmark:
 - WorkspaceBrand demo 即此 pattern 的 reference implementation(`components/AppShell/_demo-helpers.tsx:WorkspaceBrand`)
 - **帳號入口(account entry)同規則**:primary-header globalHeader 右側的個人設定 avatar 也用 raw `<Avatar size={24}>`(reference:`components/AccountMenu/account-menu.tsx`,2026-07-30 F9 升 public 元件;demo wrapper 在 `_demo-helpers.tsx`)。放置 / 開帳號選單 / 邊距對稱 canonical 見 `../../components/AppShell/app-shell.spec.md`「帳號入口(Account entry)放置 SSOT」段。
 
-**Sync invariant**:`--chrome-header-avatar-size` CSS 值 + `CHROME_HEADER_AVATAR_PX`(WorkspaceBrand `_demo-helpers.tsx` + AccountMenu `components/AccountMenu/account-menu.tsx` 兩處讀它;前兩者相等由 `scripts/token-twin-invariant.mjs` 擋)+ 產品範本 `apps/template` 的字面值 `size={24}` + `AVATAR_SIZE.inline.md = 24`(`item-anatomy.tsx:94`,L93 是 `export const AVATAR_SIZE = {` 宣告開頭)必同 24px 值。改 spec canonical 時 grep `--chrome-header-avatar-size` + `chrome header avatar canonical` keyword 找全 sync 點。
+**Sync invariant**:`--chrome-header-avatar-size` CSS 值 + `CHROME_HEADER_AVATAR_PX`(WorkspaceBrand `_demo-helpers.tsx` + AccountMenu `components/AccountMenu/account-menu.tsx` 兩處讀它;前兩者相等由 `scripts/token-twin-invariant.mjs` 擋)+ 產品範本 `apps/template` 的字面值 `size={24}` + `AVATAR_SIZE.inline.md = 24`(`item-anatomy.tsx:95`,L93 是 `export const AVATAR_SIZE = {` 宣告開頭)必同 24px 值。改 spec canonical 時 grep `--chrome-header-avatar-size` + `chrome header avatar canonical` keyword 找全 sync 點。
 
 ### 5. Title typography
 
@@ -330,13 +330,16 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 - `account-menu.spec.md`
 - `agent-panel.spec.md`
 - `app-shell.spec.md`
+- `calendar.spec.md`
 - `density.spec.md`
 - `dialog.spec.md`
+- `elevation.spec.md`
 - `file-viewer.spec.md`
 - `item-anatomy.spec.md`
 - `layoutSpace.spec.md`
 - `overlay-surface.spec.md`
 - `popover.spec.md`
+- `radius.spec.md`
 - `sheet.spec.md`
 - `sidebar.spec.md`
 - `tabs.spec.md`

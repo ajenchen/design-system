@@ -4,8 +4,8 @@
 // SurfaceHeader / SurfaceBody / SurfaceFooter 是 @internal primitive——end-user 用
 // DialogHeader / SheetHeader / PopoverHeader 等 wrapper,不直接 import;
 // 本頁給 DS contributor 看「overlay 三段式結構 + padding / 分隔線契約」長什麼樣。
-import type { Meta, StoryObj } from '@storybook/react'
-import { expect, within } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect, within } from 'storybook/test'
 import * as React from 'react'
 import type { ReactNode } from 'react'
 import { X, ChevronUp, ChevronDown, Link2, MoreVertical, RotateCcw } from 'lucide-react'
@@ -143,7 +143,7 @@ export const BodyScroll: Story = {
 export const BodyScrollKeyboard: Story = {
   name: '內文捲動(鍵盤)',
   tags: ['test-only'],
-  // @example-basis: overlay-surface.spec.md:57「機械驗證該具名節點確實 overflow 且可聚焦」
+  // @example-basis: overlay-surface.spec.md:58「機械驗證該具名節點確實 overflow 且可聚焦」
   parameters: { demoFocus: 'keep' },
   render: () => <BodyScrollDemo />,
   play: async ({ canvasElement }) => {

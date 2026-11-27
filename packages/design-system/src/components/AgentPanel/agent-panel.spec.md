@@ -62,6 +62,9 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 | 靜態說明/導覽提示 | Coachmark / Tooltip | 無對話回合 |
 | 全螢幕沉浸式對話產品 | 產品自建頁面 | 面板定位=側欄輔助,非主畫面 |
 | 一般表單輸入 | Field 家族 | AgentPromptInput 是代理複合輸入盒,非通用欄位 |
+| 代理面板以外的訊息預覽(例:簡訊預覽,呈現收件人手機上的樣子) | 產品用 DS token 自己組;DS 不提供通用訊息氣泡 | AgentMessage 是代理家族的訊息,帶代理語意,我方氣泡一掛上就淡入下滑(「4. AgentMessage」);拿去做非代理畫面會把兩者一起帶進去 |
+
+最後一列(2026-11-26 立)的由來:第六輪決策卡 E4 問 DS 要不要提供代理面板以外用的公開訊息氣泡(題目與甲 / 乙 / 丙三個選項由 AI 撰寫,AI 推薦丙:不提供、在本表補一列),user 沒有選選項,回覆(逐字)「這些東西是消費者自己要定義的東西吧？」。這是問句,把它讀成丙是【AI 推導 2026-11-26】,user 有不同意見就改這一列;「簡訊預覽要呈現的是收件人手機上的樣子」同樣是 AI 依一般用途推導,沒讀產品程式。
 
 ## 元件規格
 
@@ -178,7 +181,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   - 標誌+標題=側欄品牌區前例逐字(gap-2 + 24 標誌);標誌隨代理狀態動畫(思考=think 態)。
   - **標題+chevron 是同一顆觸發**(原生 button,幾何逐字沿用品牌區前例:`gap-2`、標題
     `text-body-lg font-medium` 單行截斷(消費 `<TruncatedText>`:截斷時才顯 tooltip 補全,
-    owner `tooltip.spec.md:32` / 引擎 `truncated-text.spec.md`;禁手刻 truncate span)、零 padding、無懸停底;focus-visible ring 同 AgentThinking
+    owner `tooltip.spec.md:30` / 引擎 `truncated-text.spec.md`;禁手刻 truncate span)、零 padding、無懸停底;focus-visible ring 同 AgentThinking
     標題列):點標題或 chevron 都開歷史浮層;chevron 只是指示,**與 Select 觸發器 chevron 逐字同款**:
     色 `text-fg-muted`(neutral-7,`../Field/field-controls.spec.md` icon 純指示方向)、線粗同全域 1.75、
     尺寸走「字級↔icon tier」= 標題 text-body-lg 對應 `ICON_SIZE.lg` 20(select.tsx lg 同款)、
@@ -216,11 +219,34 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 - 附件列(氣泡內文字上方):**`<Chip variant="assist">`**(按鈕語意;位置距氣泡緣左 12/
   上 8、與文字距 8;**chip 相互垂直/水平間距 4**=與 Combobox 內 Tag 區間距一致
   (combobox.tsx Tag area gap 預設 4;2026-09-02 拍板,非 ChipGroup filter 的 gap-2))。A11y:`aria-label="附件:{檔名}"`。
+- **代理回覆的內文**(2026-11-26 立):產品把回覆直接放成**不加 class** 的 `p` / `ul` / `ol` / `blockquote`(markdown 轉出來的樣子),當代理那一則的**直接子節點**;間距、項目符號、引用線由代理那一側給,產品不自己加。由來:user 2026-11-26 第六輪決策卡 E1 選「A:AgentMessage 代理那一側自帶內文樣式,產品直接放不加 class 的 p / ul / ol / blockquot」(回覆紀錄只存到這裡;選項文字由 AI 撰寫),附意見(逐字)「要確認樣式符合 ds 一致的設計語言且不違背世界級的設計」。下表的值是 AI 依這句意見查 DS 既有值與世界級對照後定的【AI 推導 2026-11-26】,對照與判讀見下一條。
+
+  | 項目 | 值 | 消費的 SSOT |
+  |---|---|---|
+  | 段距(直接子節點之間:段落、清單、引用,也含思考塊、決策回執)| `--layout-space-tight`(一般密度 12 / 大密度 16)| 文件頁的文字 / 清單之間同一個值(`../../stories-helpers/examples/tutorial-page.tsx` 的 `createTutorialRule`:「文字 / 清單…彼此照順序以 tight 排」)|
+  | 首尾 | 第一個子節點上面、最後一個下面不留外距 | 同一段距離只由一層給(`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 4 核心句);訊息之間的距離是「3. AgentConversation」的輪距 |
+  | 清單 | `ul` 實心圓點、`ol` 數字;左縮排 20、項目之間 4;巢狀清單照同一組 | DS 清單既有值(`../../stories-helpers/examples/tutorial-page.tsx` 的 `TutorialList`:`list-disc pl-5 space-y-1`)|
+  | 引用 | 左線 1px `border-divider`、線到字 12、字色 `text-fg-secondary`、不斜體;引用裡有好幾段時段距同上 | 同家族思考塊內文那條線(本檔「5. AgentThinking」Anatomy:`border-l border-divider` + 左縮排 12;完成步驟 `text-fg-secondary`)|
+  | 連結 | 見本節第一條 | — |
+
+  範圍:清單與引用只套**不帶 class** 的(DS 元件內部的清單都帶 class,不會被加上項目符號);段距只看直接子節點 —— 內文外面再包一層 `div` 就不生效,不要包。我方氣泡不套這組(使用者打的字照原樣顯示)。機械:`scripts/agent-panel-reopen-state.mjs` 的 P 系列(量「回覆內文」範例,`--selftest` 拿掉這組樣式 / 套到我方氣泡 / 首段加外距 / 段距改回 8 / 不分有沒有 class 套到所有清單都必須紅)。
+- **代理回覆的內文 —— 世界級對照**(2026-11-26 讀原檔逐行對照;數字換成 px,字級寫在第一欄):
+
+  | | 段距 | 清單縮排 | 項目之間 | 首尾 | 項目符號 | 引用 |
+  |---|---|---|---|---|---|---|
+  | GitHub(Primer `.markdown-body`,字 16)| 16(`margin-bottom: var(--base-size-16)`,[markdown-body.scss#L66-L76](https://github.com/primer/css/blob/36b09a05b75b46fd39364a52d1ad8995840c411a/src/markdown/markdown-body.scss#L66-L76))| 2em([lists.scss#L6-L9](https://github.com/primer/css/blob/36b09a05b75b46fd39364a52d1ad8995840c411a/src/markdown/lists.scss#L6-L9))| 0.25em = 4([lists.scss#L78-L81](https://github.com/primer/css/blob/36b09a05b75b46fd39364a52d1ad8995840c411a/src/markdown/lists.scss#L78-L81))| 第一個上 0、最後一個下 0([markdown-body.scss#L28-L34](https://github.com/primer/css/blob/36b09a05b75b46fd39364a52d1ad8995840c411a/src/markdown/markdown-body.scss#L28-L34))| 瀏覽器預設(圓點 / 數字)| 左線 0.25em、左右內距 1em、次要字色、不斜體([markdown-body.scss#L87-L92](https://github.com/primer/css/blob/36b09a05b75b46fd39364a52d1ad8995840c411a/src/markdown/markdown-body.scss#L87-L92))|
+  | Tailwind Typography `prose-sm`(字 14)| 16([styles.js#L35-L38](https://github.com/tailwindlabs/tailwindcss-typography/blob/e3714a3fe55551ce9d51eec4721183ed6b1d5cd1/src/styles.js#L35-L38))| 22([styles.js#L117-L126](https://github.com/tailwindlabs/tailwindcss-typography/blob/e3714a3fe55551ce9d51eec4721183ed6b1d5cd1/src/styles.js#L117-L126))| 上下各 4,相鄰重疊成 4([styles.js#L127-L130](https://github.com/tailwindlabs/tailwindcss-typography/blob/e3714a3fe55551ce9d51eec4721183ed6b1d5cd1/src/styles.js#L127-L130))| 第一個上 0、最後一個下 0([styles.js#L226-L231](https://github.com/tailwindlabs/tailwindcss-typography/blob/e3714a3fe55551ce9d51eec4721183ed6b1d5cd1/src/styles.js#L226-L231))| `ol` 數字、`ul` 圓點([styles.js#L1437-L1439](https://github.com/tailwindlabs/tailwindcss-typography/blob/e3714a3fe55551ce9d51eec4721183ed6b1d5cd1/src/styles.js#L1437-L1439)、[#L1467-L1469](https://github.com/tailwindlabs/tailwindcss-typography/blob/e3714a3fe55551ce9d51eec4721183ed6b1d5cd1/src/styles.js#L1467-L1469))| 左線 0.25rem、斜體、字重 500、字色用它自己的引用色 `--tw-prose-quotes`([styles.js#L1485-L1490](https://github.com/tailwindlabs/tailwindcss-typography/blob/e3714a3fe55551ce9d51eec4721183ed6b1d5cd1/src/styles.js#L1485-L1490))|
+  | Vercel AI Elements `MessageResponse`(Streamdown,字 14)| 16(`space-y-4`,[index.tsx#L1313-L1315](https://github.com/vercel/streamdown/blob/0433b9c40cee034620fcdfacd3b8ebafcb07c0da/packages/streamdown/index.tsx#L1313-L1315))| 標記放在行內(`list-inside`)、巢狀 `ps-6`([components.tsx#L268-L269](https://github.com/vercel/streamdown/blob/0433b9c40cee034620fcdfacd3b8ebafcb07c0da/packages/streamdown/lib/components.tsx#L268-L269))| 上下各 4 = 8(`py-1`,[components.tsx#L250](https://github.com/vercel/streamdown/blob/0433b9c40cee034620fcdfacd3b8ebafcb07c0da/packages/streamdown/lib/components.tsx#L250))| `[&>*:first-child]:mt-0 [&>*:last-child]:mb-0`([message.tsx#L326-L333](https://github.com/vercel/ai-elements/blob/ca8be600bfd01b3131f9bf6134b51602a71f4374/packages/elements/src/message.tsx#L326-L333))| 圓點 / 數字([components.tsx#L214-L215](https://github.com/vercel/streamdown/blob/0433b9c40cee034620fcdfacd3b8ebafcb07c0da/packages/streamdown/lib/components.tsx#L214-L215))| 左線 4px、`ps-4`、次要字色、斜體([components.tsx#L647-L652](https://github.com/vercel/streamdown/blob/0433b9c40cee034620fcdfacd3b8ebafcb07c0da/packages/streamdown/lib/components.tsx#L647-L652))|
+
+  判讀【AI 推導 2026-11-26】:段距三家都是 16 左右(約 1em),一般密度 12 / 大密度 16 落在同一帶;原本範例寫死的 8(豁免標記註明「規格沒寫這個值」)只有三家的一半,不採。首尾不留外距三家一致;項目之間 4 與其中兩家相同;`ul` 圓點、`ol` 數字三家一致。清單縮排 20 照 DS 既有值,介於三家之間(行內 0 ~ 2em)、與 22 相近。引用三家都是「左線 + 縮排」,只差線粗與字色(兩家用次要字色、一家用自己的引用色);線粗與字色照 DS 同家族的思考塊(`../../../ds-canonical/rules/meta-patterns.md` M23:DS 已有的優先於外部)。斜體不採:兩家用、一家不用,而中文字型沒有真正的斜體,瀏覽器只會把字形歪斜。
 
 ### 5. AgentThinking(思考塊)
 
 - Anatomy:`[標題+chevron][內文:border-l border-divider + 左縮排 12 + 上距 8 之步驟串流]`。
 - 標題狀態換字:進行中「思考中」/完成「思考過程」;AI 回覆中自動展開、回覆完自動收合。
+- 標題的字可換(2026-11-26 起,E11;之前寫死):`labels?: Partial<AgentThinkingLabels>` —— `titleThinking`(進行中)/ `titleDone`(完成);
+  取值順序 = `labels` → I18nProvider 的 `agent-panel` 那一組(AgentPanel 家族共用的 componentKey;鍵名同上)→ DS 預設「思考中 / 思考過程」(`../../lib/i18n/README.md`「Fallback chain」)。
+  同家族的 AgentDecisionCard 同一套三層(`./agent-decision-card.spec.md`「字」條);閘 `scripts/i18n-labels-override-invariant.mjs`(T 列)。
 - Chevron=accordion 慣例(Suffix 位、rotate-180、減少動態下不轉);旋轉跟下方思考內容同一份時長與曲線 —— `disclosureIndicatorMotion`,`--motion-duration-disclosure` 200ms、`ease-out`(本檔「動畫總表」;2026-10-13 起,原本 150ms 與內容 200ms 不同步;owner = `tokens/motion/motion.spec.md「展開箭頭跟它打開的東西同步」`);色=`text-fg-muted`
   恆定(同 Select/Combobox 觸發器 chevron:select.tsx `text-fg-muted`),**不吃微光、不隨懸停變色**
   (Accordion 亦僅 chevron 靜色;2026-09-02 拍板)。
@@ -235,6 +261,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 - 高 24;代理**最後一則**常駐(由 AgentConversation 判定,在流內佔位);其他訊息懸停 / 鍵盤聚焦(`has-[:focus-visible]`,滑鼠點過不常駐)時**瞬間出現**(滑過造成的變化一律不做過渡,`tokens/motion/motion.spec.md`;hover 底色瞬間 = user 2026-09-10「第三題改成全部瞬間」,延伸到所有滑過造成的變化 = 2026-09-26 待辦總帳 L9 那一題 user 答「確定這樣才是一致設計語言就做」),
   絕對定位於輪距內、不推擠版面。
 - `[複製][ButtonDivider][讚][倒讚]`=Button text xs + Tooltip;各鈕 aria-label。
+- **文案可換語系(2026-11-26,產品 canary 回報 C19)**:三顆鈕的名稱(iconOnly 的提示也由它產生)接 DS i18n opt-in —— key 為 `agent-panel.copy` / `agent-panel.like` / `agent-panel.dislike`,沒包 `I18nProvider` 或沒給這三個 key 時照舊顯示「複製 / 讚 / 倒讚」(`../../lib/i18n/README.md`「Fallback chain」)。面板其他字串尚未接,仍是 `// i18n-allow` 的 DS 預設。範例:`agent-panel.stories.tsx`「英文介面的訊息工具列」。
 
 ### 7. AgentPromptInput(複合輸入盒)
 

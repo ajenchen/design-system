@@ -1,5 +1,5 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import {
   Plus, Trash2, Settings, RefreshCw,
   MoreVertical, Save, Maximize2, Share2,
@@ -297,7 +297,7 @@ export const IconRule: Story = {
       >
         <ButtonGroup>
           <Button variant="text" size="sm" iconOnly startIcon={Download} aria-label="匯出" onClick={done('已匯出「Q3 訂單.csv」')} />
-          <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製分享連結')} />
+          <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製分享連結', 'neutral')} />
           <DemoMenu items={['移動到資料夾', { label: '複製一份', done: '已複製一份' }]}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多操作" /></DemoMenu>
         </ButtonGroup>
         <ExampleCaption>↑ MoreVertical 在群組末端，左側不加分隔線</ExampleCaption>
@@ -328,7 +328,7 @@ export const OrderRule: Story = {
         note={<>對齊方向看這一列有沒有標題：有標題（標題在左）→ 按鈕靠右、primary 最右；沒有標題 → 按鈕靠左、primary 最左；Dialog / Sheet / Popover 的頁腳一律靠右。排序規則不因對齊方向改變，只是方向鏡像。判準與工具層的位置見 <StoryLink kind="Design System/Patterns/Action Bar" name="排列與結構">Patterns / Action Bar(操作列)→ 排列與結構</StoryLink></>}
       >
         {/* 2026-10-20 R1b-T8:原本的說明是「靠左:表單送出;靠右:對話框底部」,不是 SSOT 的判準 —— 判準是這一列有沒有標題
-            (patterns/action-bar/action-bar.spec.md:109),浮層頁腳靠右另由 dialog.spec.md:238 / overlay-surface.spec.md:243 規定 */}
+            (patterns/action-bar/action-bar.spec.md:109),浮層頁腳靠右另由 dialog.spec.md:238 / overlay-surface.spec.md:244 規定 */}
         {/* 兩種對齊並列 = loose;每一列的 群組 ↔ 旁邊的說明 = tight(說明在替那一組命名,layoutSpace.spec.md 規則 3) */}
         <div className="flex flex-col gap-[var(--layout-space-loose)] w-full">
           <div className="flex items-center gap-[var(--layout-space-tight)]">

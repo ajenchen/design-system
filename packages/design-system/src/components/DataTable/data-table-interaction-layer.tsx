@@ -19,6 +19,7 @@
  */
 
 import * as React from 'react'
+import { originFromInsetLayer, toLocalRect, VIEWPORT_ORIGIN } from '@/design-system/lib/fixed-layer-origin'
 
 type CellId = string
 
@@ -33,7 +34,8 @@ interface DataTableInteractionLayerProps {
   /** Flag default false:不破現有 outline。enable 後 hover/editor 走 overlay。 */
   enabled: boolean
   /** Container ref;geometry source(getCellRect 由此 query cell DOM)。layer root 本身是
-   *  position:fixed inset:0 viewport-anchor(見 render),非 container-origin absolute */
+   *  position:fixed inset:0(見 render),非 container-origin absolute;定位基準不一定是視窗 —— 祖先帶 transform 等時是那個祖先,
+   *  量到的視窗座標經 lib/fixed-layer-origin.ts 換算(2026-11-26,F3) */
   containerRef: React.RefObject<HTMLDivElement | null>
   /**
    * Per Contract 15:hover overlay 顯示與否 = 這格**可以編輯**(field.spec.md L4;data-table.tsx 格上的 `cellShowsEditableHover` 同一條)。
@@ -237,7 +239,8 @@ function useHoveredCell(
  *
  * 現況:HoverCellRect(z 1)+ SelectionRing(z 2)+ ActiveEditorHost(z 3,portal edit Field);
  * range 視覺走 cell 自身 CSS `[data-range-cell]`(RangeRect / rangeCellIds prop 已 retire)。
- * layer root = position:fixed inset:0 viewport-anchor,pointerEvents:none(僅 ActiveEditorHost 開 auto)。
+ * layer root = position:fixed inset:0,pointerEvents:none(僅 ActiveEditorHost 開 auto);座標換算到圖層的 fixed 定位基準
+ * (視窗,或帶 transform 等的祖先 —— lib/fixed-layer-origin.ts,2026-11-26 F3)。
  */
 export function DataTableInteractionLayer({
   enabled,
@@ -252,6 +255,8 @@ export function DataTableInteractionLayer({
   // 2026-05-10 RWD/scroll sync(per user mandate:所有 overlay 在各種 RWD 和捲動時都處在正確位置(轉述)):
   // window scroll(capture)+ resize + ResizeObserver(container)→ rAF coalesced re-render → rect 重算
   useReactiveRect(containerRef, enabled)
+  // 圖層根節點:量它自己畫出來的框 = fixed 定位基準(下方 render 的 originFromInsetLayer)
+  const layerRef = React.useRef<HTMLDivElement | null>(null)
 
   // Contract 14 state precedence:editing > selected > hover(per RFC §State Precedence Matrix)
   const isEditingHovered = activeEditorCellId != null && activeEditorCellId === hoveredCellId
@@ -287,27 +292,35 @@ export function DataTableInteractionLayer({
 
   if (!enabled) return null
 
-  // Layer absolute fixed-position relative to viewport(避 outer container 缺 position:relative
-  // 找錯 reference frame)。getCellRect 已 return container-relative,但這裡 set top/left 用
-  // page coords 一致 — 改用 viewport-fixed 簡化。
+  // 圖層是 position:fixed inset:0(避 outer container 缺 position:relative 找錯 reference frame)。
+  // **fixed 的基準不一定是視窗**(2026-11-26,workspace F 組 F3):表格祖先帶 transform / translate / filter(DS Dialog 的置中位移、
+  // AppShell portalContainer 舞台)時,圖層的基準換成那個祖先的 padding box,上面量到的視窗座標直接拿來定位會多偏出那個祖先的原點
+  //(修前實測格子在 (1051,171)、選取框畫在 (1307,201))。用圖層自己畫出來的框當原點、畫出來的寬 ÷ 版面寬當縮放換算
+  //(lib/fixed-layer-origin.ts `originFromInsetLayer`,直接量、不列舉屬性 —— M37);沒有這類祖先時原點 = 視窗,rect 原物件照用、座標逐字不變。
+  // 圖層掛上之前(第一次 render)讀不到它 → 視窗;之後每次 render(捲動 / resize / 選取變動都會重畫)都重量。
+  const origin = layerRef.current ? originFromInsetLayer(layerRef.current) : VIEWPORT_ORIGIN
+  const hoverLocal = hoverGeo && { rect: toLocalRect(origin, hoverGeo.rect), clipRect: toLocalRect(origin, hoverGeo.clipRect) }
+  const selectedLocal = selectedGeo && { rect: toLocalRect(origin, selectedGeo.rect), clipRect: toLocalRect(origin, selectedGeo.clipRect) }
+  const activeEditorLocal = activeEditorRect && toLocalRect(origin, activeEditorRect)
   return (
     <div
+      ref={layerRef}
       aria-hidden
       style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 1 }}
     >
       {/* HoverRing — kind=hover(1px var(--border-hover)) z 1。Wrap 在 ClipMask(panel viewport)
           內 → cell scroll 出 panel 時 outline 自動被 mask 裁切,不會 leak 到 panel 外。 */}
-      {hoverGeo && (
-        <ClipMask clipRect={hoverGeo.clipRect}>
-          <CellRingOverlay rect={toRelRect(hoverGeo.rect, hoverGeo.clipRect)} kind="hover" />
+      {hoverLocal && (
+        <ClipMask clipRect={hoverLocal.clipRect}>
+          <CellRingOverlay rect={toRelRect(hoverLocal.rect, hoverLocal.clipRect)} kind="hover" />
         </ClipMask>
       )}
       {/* SelectionRing — kind=selected(DS 焦點框 `focus-ring-inset`)z 2;幾何與 hover 同一個 rect / ClipMask。
           格裡的控件被鍵盤聚焦、自己畫框時這一圈收起(data-table.css 的 `:has([role='gridcell'] :focus-visible)`,一次只一個指示器) */}
-      {selectedGeo && (
-        <ClipMask clipRect={selectedGeo.clipRect}>
+      {selectedLocal && (
+        <ClipMask clipRect={selectedLocal.clipRect}>
           <CellRingOverlay
-            rect={toRelRect(selectedGeo.rect, selectedGeo.clipRect)}
+            rect={toRelRect(selectedLocal.rect, selectedLocal.clipRect)}
             kind="selected"
             cellId={selectedCellId!}
           />
@@ -326,9 +339,9 @@ export function DataTableInteractionLayer({
       ))} */}
       {/* ActiveEditorHost — z 3,float rect,pointerEvents:auto opaque host(NOT a ring)。
           Issue 6:active editor 不 clip(editor 必可見) — user 滾出 viewport 自負責。 */}
-      {activeEditorRect && (
-        <ActiveEditorHost rect={activeEditorRect}>
-          {activeEditorRender ? activeEditorRender(activeEditorCellId!, activeEditorRect) : null}
+      {activeEditorLocal && (
+        <ActiveEditorHost rect={activeEditorLocal}>
+          {activeEditorRender ? activeEditorRender(activeEditorCellId!, activeEditorLocal) : null}
         </ActiveEditorHost>
       )}
     </div>

@@ -30,6 +30,7 @@
  * 用法:
  *   node scripts/data-table-click-outside-invariant.mjs                判定(現行原始碼)
  *   node scripts/data-table-click-outside-invariant.mjs --selftest     對照組(全部單一根因突變)
+ *   node scripts/data-table-click-outside-invariant.mjs --selftest --shard=<k>/<n>   CI matrix 用:只在第 0 片跑,其他片印略過、exit 0(見 SHARD)
  *   node scripts/data-table-click-outside-invariant.mjs --root=<dir>   改量另一棵原始碼(例:修改前的基準樹)
  *   node scripts/data-table-click-outside-invariant.mjs --shot=<dir>   另存每列動作後的畫面(前後圖用;不影響判定)
  */
@@ -50,6 +51,21 @@ import {
 } from './lib/ds-source-harness.mjs'
 
 const SELFTEST = process.argv.includes('--selftest')
+/**
+ * `--shard=<k>/<n>`(CI matrix 用,2026-11-26):整支只在第 0 片跑,其他片印略過原因、exit 0 —— 這支一趟(判定 + 對照組)只要數十秒,
+ * 不值得分片;同一個 matrix 每格都跑 = 同一份原始碼、同一組列一次 CI 跑 n 次。由閘自己依 k 判斷、與 n 無關(不在 workflow 寫
+ * `if: matrix.shard == …`:格數改了那種條件會讓步驟全被略過);matrix 必須剛好涵蓋 0..n−1,由 ci-workflow-scope.test.mjs 驗。不給 = 照常跑。
+ */
+const SHARD = (() => {
+  const raw = process.argv.find((a) => a.startsWith('--shard='))?.slice('--shard='.length)
+  if (raw == null) return null
+  const m = /^(\d+)\/(\d+)$/.exec(raw)
+  const k = m ? Number(m[1]) : NaN
+  const n = m ? Number(m[2]) : NaN
+  if (!m || !(n >= 1) || !(k >= 0 && k < n)) { console.error(`✗ --shard=${raw} 寫法不對(要 <k>/<n>,0 ≤ k < n)`); process.exit(2) }
+  return { k, n }
+})()
+if (SHARD && SHARD.k !== 0) { console.log(`· data-table-click-outside:分片 ${SHARD.k}/${SHARD.n} 不跑(只在第 0 片跑;一趟數十秒,各片都跑 = 重複)`); process.exit(0) }
 const SHOT_DIR = process.argv.find((a) => a.startsWith('--shot='))?.slice('--shot='.length)
 /** 「應該清掉 / 應該變成」的列最多等多久(成立就提早往下;慢機器上晚到也不會誤紅 —— M32 第四題) */
 const GRACE_MS = 3000
@@ -261,6 +277,8 @@ function report({ label, checks }) {
   }
 }
 const redIds = (checks) => checks.filter((c) => !c.pass).map((c) => c.id).sort()
+/** 判定紅的那一行 —— 判定模式與 selftest 基準共用(npm 別名與 CI 只跑 --selftest,基準紅就是產品裁決,不能只印「量具不可信」) */
+const verdictRedLine = (red) => `\n✗ 試算表點外清除:${red.length} 條不符(${red.join(' / ')})—— SSOT data-table.spec.md「試算表模式」、data-table.tsx 點外清除`
 
 let browser
 try {
@@ -273,7 +291,7 @@ try {
     report(result)
     const red = redIds(result.checks)
     if (red.length) {
-      console.log(`\n✗ 試算表點外清除:${red.length} 條不符(${red.join(' / ')})—— SSOT data-table.spec.md「試算表模式」、data-table.tsx 點外清除`)
+      console.log(verdictRedLine(red))
       process.exitCode = 1
     } else {
       console.log(`\n✓ 試算表點外清除:${result.checks.length} 條全綠(含 ${result.checks.filter((c) => c.kind === 'control').length} 條對照)`)
@@ -282,7 +300,10 @@ try {
     const baseline = await runVariant(page, '現行原始碼(selftest 基準,必須全綠)', null)
     report(baseline)
     const problems = []
-    if (redIds(baseline.checks).length) problems.push(`現行原始碼本身就紅(${redIds(baseline.checks).join(' / ')}),突變的紅燈無法歸因`)
+    if (redIds(baseline.checks).length) {
+      console.log(verdictRedLine(redIds(baseline.checks)))
+      problems.push(`現行原始碼本身就紅(${redIds(baseline.checks).join(' / ')}),突變的紅燈無法歸因`)
+    }
     const contractIds = baseline.checks.filter((c) => c.kind === 'contract').map((c) => c.id)
     const covered = new Set()
     for (const m of MUTANTS) {

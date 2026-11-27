@@ -40,7 +40,7 @@ paths:
 
 **先 `ls packages/design-system/src/{components,patterns}/`**。必查 spec:Tokens(`tokens/{color|typography|density|uiSize|layoutSpace|elevation|radius|opacity|motion}/*.spec.md`;**選 token 先判斷元素是哪一種東西,再查該類用途表**,不照 Tailwind 名字猜 —— 例:圓角看 `radius.spec.md`「四檔」,`rounded-sm` 在本系統是 2px、只給短邊 ≤ 10px 的指示,`scripts/radius-usage-invariant.mjs` 在建置好的 Storybook 上逐元素量)/ Row + List item(`item-anatomy.spec.md` Family 1+2 SSOT)/ Action bar / Overflow / Overlay(`patterns/{action-bar,horizontal-overflow,overlay-surface}/*.spec.md`)/ Field(`components/Field/*.spec.md`)。
 
-**既有 primitive 優先消費**:命中既有 → 必消費不 hand-craft。**自我檢查**:icon+text 垂直 → `<Empty>`;橫向 row → `<MenuItem>` + slot(消費 item-anatomy);chrome header(toolbar / page top bar / panel 標題列)→ `<ChromeHeader>`(消費 header-canonical,讀其 spec + `Patterns/Header Anatomy` story);浮層 → `overlay-surface`;跨 OS 捲軸 → `<ScrollArea>`;鎖長寬比 → `<AspectRatio>`。完整對照 → `packages/design-system/ds-canonical/references/build-ui-canonicals.md`。
+**既有 primitive 優先消費**:命中既有 → 必消費不 hand-craft。**自我檢查**:icon+text 垂直 → `<Empty>`;橫向 row → `<MenuItem>` + slot(消費 item-anatomy);chrome header(toolbar / page top bar / panel 標題列)→ `<ChromeHeader>`(消費 header-canonical,讀其 spec + `Patterns/Header Anatomy` story);頁面內不可關閉的有框區塊(設定卡、資訊區塊)的標題不是 chrome header → 消費者用 typography + token + item anatomy 自組,DS 不提供區塊標頭元件(`header-canonical.spec.md`「何時不用」);浮層 → `overlay-surface`;跨 OS 捲軸 → `<ScrollArea>`;鎖長寬比 → `<AspectRatio>`。完整對照 → `packages/design-system/ds-canonical/references/build-ui-canonicals.md`。
 
 ## UI 開發 4 條核心
 
@@ -83,7 +83,7 @@ paths:
 
 **尺寸參數**(2026-11-15 user「尺寸:甲」):寬怎麼長一律 `width`(`'fill'` 撐滿 / `'hug'` 跟內容 / 數字 px),高同理;上下限 `minWidth` / `maxWidth` / `minHeight` / `maxHeight`;`size` 只當檔位。禁 `fullWidth` / `block` / `autoWidth` 這類同義名。詳 `packages/design-system/ds-canonical/references/props-naming.md`「尺寸參數」(唯一住處),閘 `scripts/sizing-props-invariant.mjs`。
 
-**改名 / 移除(相容政策,2026-11-15 user)**:0.x / 預發布版**不留舊名** —— 不標 `@deprecated`、不在內部把舊名轉成新名、不寫「向後相容」當理由;同一版把 DS 自己的程式、範例、規格改完,同一個 PR 在變更帳本 `packages/design-system/ds-changes.json` 寫一條(隨 npm 出貨;GitHub Release「破壞性變更」由它產生)。詳 `packages/design-system/ds-canonical/references/props-naming.md`「相容政策」(唯一住處),版本判斷 `scripts/lib/compat-policy.mjs`,閘 `scripts/compat-policy-invariant.mjs`(舊名 / 相容理由)與 `scripts/public-surface-invariant.mjs`(帳本寫齊)。
+**改名 / 移除(相容政策,2026-11-15 user)**:0.x / 預發布版**不留舊名** —— 不標 `@deprecated`、不在內部把舊名轉成新名、不寫「向後相容」當理由;同一版把 DS 自己的程式、範例、規格改完,同一個 commit 在變更帳本 `packages/design-system/ds-changes.json` 寫一條(隨 npm 出貨;GitHub Release「新增 / 行為與畫面變更 / 破壞性變更」三段由它產生,新增與畫面 / 行為變化也登記)。詳 `packages/design-system/ds-canonical/references/props-naming.md`「相容政策」(唯一住處),版本判斷 `scripts/lib/compat-policy.mjs`,閘 `scripts/compat-policy-invariant.mjs`(舊名 / 相容理由)與 `scripts/public-surface-invariant.mjs`(帳本寫齊)、`scripts/release-notes-coverage-invariant.mjs`(改到預覽看得見的檔 / 新增出口都有登記)。
 
 **Badge 命名按放置**:`badge`(inline)/ `overlayBadge`(疊視覺重心 iconOnly)/ `badgeCount`(Avatar count)/ `status`(presence dot — Avatar / ProfileCard / PeoplePicker;另有 lifecycle value-set 用於 FileItem / FileUpload / ProgressBar,詳 `props-naming.md`)。
 

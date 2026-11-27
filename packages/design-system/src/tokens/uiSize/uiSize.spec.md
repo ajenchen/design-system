@@ -18,8 +18,9 @@ Button、Input、Checkbox/Radio SelectionItem 等互動元件。
 | `--field-height-md` | 2rem (32px) | 2.25rem (36px) |
 | `--field-height-lg` | 2.25rem (36px) | 2.5rem (40px) |
 
-清單型浮層的捲動上限(300px)**不是 token**:2026-11-11 user 拍板 token 第 3 題「3全收」,收回成 Command 自己的值,
-值與理由住 `../../components/Command/command.spec.md`「邊界案例」清單捲動上限。
+清單型浮層的捲動上限**不是 token**:2026-11-11 user 拍板 token 第 3 題「3全收」,收回成 Command 自己的值
+(只有 CommandList 在讀,仍不是 CSS 變數):值住 `../elevation/overlay-geometry.ts` 的 TS 常數 `OVERLAY_LIST_MAX_HEIGHT`(2026-11-24 起),
+理由住 `../../components/Command/command.spec.md`「清單捲動上限(半列原則)」。
 
 ### Field-height family 清單與共享 default（SSOT）
 
@@ -109,7 +110,7 @@ Form-context field 控件的左右水平內距。**固定 12px,不隨 size / den
 
 **消費者**:`Input` / `NumberInput` / `Select` / `Combobox` / `DatePicker` / `TimePicker` / `LinkInput` / `Textarea`(經 `fieldWrapperStyles` cva `px-[var(--field-px)]`)+ `PeoplePicker`(form-context inject `!px-[var(--field-px)]`)+ tag 模式右緣 re-assert(`paddingRight: var(--field-px)`,Select / Combobox readonly + edit)。
 
-**與 `--table-cell-px` 的關係**:同 `-px` 命名慣例。`--table-cell-px`(DataTable-scoped)預設 `var(--field-px)`(form / cell 同 12px content gutter SSOT),但仍是獨立 named token、可被 DataTable 單獨 override(per `components/Field/field-controls.spec.md` contract (c) scoped 決策)。
+**與 `--table-cell-px` 的關係**:同 `-px` 命名慣例。`--table-cell-px`(DataTable-scoped)預設 `var(--field-px)`(form / cell 同 12px content gutter SSOT),但仍是獨立 named token、可被 DataTable 單獨 override(per `components/Field/field-controls.spec.md` contract (c) scoped 決策)。格子裡看得見的內容(含格內欄位編輯中的字)也落在這條線上 = 表頭字(2026-11-25;`../../components/DataTable/data-table.spec.md`「一、Table Size」)。
 
 **Why 固定不隨 density**:density 本質是縱向密度(一屏幾列);橫向管可讀性(字離格線距離),目的不同不綁 —— 本 DS 刻意縱橫分離(Ant Table 換尺寸時縱橫內距一起縮,本 DS 不跟)+ 全 DS field 控件 12px 常數。M17「SSOT 必可傳播」:**form-context field 控件**散落的 `px-3` / inline `0.75rem` 收斂進此 token([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/table/style/index.ts#L457-L462))。
 
@@ -131,6 +132,15 @@ field-wrapper / Textarea / Select+Combobox,Menu 漏掉。
 (`components/Button/button.spec.md`「padding 跟著 role」),建本 token 的 commit 已明文排除 Chip
 (「pill 內距 ≠ field 內距,不同概念」);它們只共用 `--field-height-*`,不共用水平內距。
 
+## Field 外框寬與框內字線(2026-11-25)
+
+| Token | 值 | 說明 |
+|-------|-----|------|
+| `--field-border-width` | 1px | 欄位外框寬,不隨 size / density。欄位家族的框**直接讀它畫**(`../../components/Field/field-wrapper.tsx` `fieldWrapperStyles`、Textarea、InlineEdit 靜止外框),所以它是「框有多寬」的原因,不是旁邊另抄的一份數字 |
+| `--field-bleed` | `calc(var(--field-border-width) + var(--field-px))` = 13px | **框內字線**:欄位框外緣到框裡第一個字的距離。同一個距離三種用法 —— 標籤在上時,就地編輯的框往左右各外伸這麼多,字落在標籤左緣(`../../components/InlineEdit/inline-edit.spec.md`「對齊盒」;可編輯標題列的讓位同一顆,`../../patterns/overlay-surface/overlay-chrome-sizing.spec.md`「可編輯標題的標題列」);標籤在左的閱讀情境裡,沒有框的值(開關、單一勾選框)往右內縮這麼多,落在同一欄框內的字線上(`../../components/Field/field.spec.md`「閱讀情境」);DataTable 篩選面板的 Where / 唯讀 And / Or 文字標籤左內距也是它,字落在同一欄 And/Or 下拉框內的字線上(`../../components/DataTable/data-table.spec.md`「四、UI canonical」第一點) |
+
+**替框寬補位的算式都讀 `--field-border-width`**,不寫死 1px / 2px:本檔 `--field-control-py-*`、`--field-bleed`;`fieldTagInsetX` / `fieldTagInsetY`、`fieldViewGeometry` 的高度下限(`field-wrapper.tsx`);DataTable `--table-cell-py`(`components/DataTable/data-table.css`);Textarea 行數上限;InlineEdit 命中區與 LinkInput 延伸區多蓋的一圈;併排欄位組的重疊(`FieldControlGroup`)。2026-11-25 前這些都是寫死的 `1px` / `2px` / `-inset-px` / `-ml-px`,值相同、畫面不變。欄位家族的框不准寫裸 `border` 這類寫死寬度的樣式,閘 `scripts/reading-context-invariant.mjs` 靜態段(B1 / B2)與瀏覽器段 G9(畫出來的框寬 = 這顆、`--field-bleed` 公式、標題讓位解出來 = `--field-bleed`)。**分類**:兩顆都是共用刻度(Field 家族各元件、DataTable、浮層標題列都讀;第二個讀者見上表),`--field-bleed` 由公式組成,住 `uiSize.css`「衍生值」段在每個換密度的元素上重算。**產品不讀**(`../token-registry.json` `product: no`):它們是欄位內部的幾何,產品要對齊用 `--field-px` / `--field-height-*` 與元件本身(下方「產品對齊用」的 12 顆不變)。
+
 ## Stack Gap(2026-09-27 抽 token,M17;同日抽的頭像重疊量 2026-11-15 起說明住 Avatar 規格)
 
 | Token | 值 | 用法 |
@@ -145,7 +155,7 @@ field-wrapper / Textarea / Select+Combobox,Menu 漏掉。
 
 | Token | 值 | 用法 |
 |-------|-----|------|
-| `--field-control-py-sm` / `--field-control-py-md` / `--field-control-py-lg` | `calc((var(--field-height-*) - 1lh) / 2 - 1px)` | 讓「只有一行的多行盒」跟同 size 單行 Input 等高的上下內距。`1lh` 在使用端解析成那個元素自己的行高,`- 1px` 補 border-box 裡上下各 1px 的框。跟著 `--field-height-*` 隨密度變;公式住 `uiSize.css`「衍生值」段,在每個換密度的元素上重算(閘 `scripts/test-density-subtree-token-parity.mjs`)。讀者:Textarea 編輯態、多行 view(`Field/field-wrapper.tsx`;兩者相等 = InlineEdit 多行零跳,閘 `scripts/inline-edit-view-geometry-invariant.mjs`)、AgentPanel 輸入盒 |
+| `--field-control-py-sm` / `--field-control-py-md` / `--field-control-py-lg` | `calc((var(--field-height-*) - 1lh) / 2 - var(--field-border-width))` | 讓「只有一行的多行盒」跟同 size 單行 Input 等高的上下內距。`1lh` 在使用端解析成那個元素自己的行高,減一個 `--field-border-width` 補 border-box 裡上下各一條框。跟著 `--field-height-*` 隨密度變;公式住 `uiSize.css`「衍生值」段,在每個換密度的元素上重算(閘 `scripts/test-density-subtree-token-parity.mjs`)。讀者:Textarea 編輯態、多行 view(`Field/field-wrapper.tsx`;兩者相等 = InlineEdit 多行零跳,閘 `scripts/inline-edit-view-geometry-invariant.mjs`)、AgentPanel 輸入盒 |
 | `--tree-indent-sm` / `--tree-indent-md` / `--tree-indent-lg` | 1.5rem(24px)/ 1.5rem(24px)/ 1.75rem(28px) | 每一層巢狀往右縮的量 = 展開箭頭 + 箭頭與文字的間距(16 + 8 / 20 + 8)。級距跟元件 `size` 走、不隨密度變。讀者:DataTable 巢狀列縮排(`data-table.tsx`);TreeView 用同值的程式常數 `tree-view.tsx` `INDENT_STEP`,由 `scripts/token-twin-invariant.mjs` 鎖住兩邊相等 |
 
 ## 產品對齊用(讀來對齊、不可覆寫)
@@ -222,7 +232,7 @@ field-wrapper / Textarea / Select+Combobox,Menu 漏掉。
 | Slider thumb/track | `components/Slider/slider.spec.md:86` | thumb 16 / track 4px 固定不隨 size 變(視覺 single tier)| Material 3 / iOS / Ant / Radix 固定 thumb | <!-- @benchmark-unverified -->
 | Checkbox/Switch check | `components/Checkbox/checkbox.tsx:52` + `components/Switch/switch.tsx:83` | `{sm:12, md:12, lg:16}` form-control internal + stroke 下限 12 | iOS HIG / Material 3 / Polaris | <!-- @benchmark-unverified -->
 
-**程式化 SSOT**:`patterns/element-anatomy/item-anatomy.tsx:66` `ICON_SIZE = {sm:16, md:16, lg:20}` 是本 tier 的 type-safe const。**Form control 透過 `tokens/uiSize/icon-size.ts` re-export entry import**(避 components→patterns 反向 dependency)。
+**程式化 SSOT**:`patterns/element-anatomy/item-anatomy.tsx:67` `ICON_SIZE = {sm:16, md:16, lg:20}` 是本 tier 的 type-safe const。**Form control 透過 `tokens/uiSize/icon-size.ts` re-export entry import**(避 components→patterns 反向 dependency)。
 
 **新加 carve-out 流程**:必同時(1)在 owner spec 內部宣告 + cite(2)補本表 row。Audit dim 30 cross-doc consistency 抓 drift。
 
@@ -496,6 +506,7 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 - `breadcrumb.spec.md`
 - `button.spec.md`
 - `dialog.spec.md`
+- `field-controls.spec.md`
 - `header-canonical.spec.md`
 - `overlay-chrome-sizing.spec.md`
 - `popover.spec.md`
