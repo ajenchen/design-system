@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/DsImportSmoke.stories.tsx (ImportSmoke → DS Storybook link)"
     ],
-    "generatedAt": "2026-11-27T00:57:42.019Z"
+    "generatedAt": "2026-11-27T07:43:33.106Z"
   },
   "components": {
     "accordion": {
@@ -794,6 +794,7 @@
           "design-system-components-dropdownmenu-展示--sub-menu",
           "design-system-components-dropdownmenu-展示--nested-sub-menu",
           "design-system-components-dropdownmenu-展示--checkbox-items",
+          "design-system-components-dropdownmenu-展示--switch-items",
           "design-system-components-dropdownmenu-展示--radio-items",
           "design-system-components-dropdownmenu-展示--option-prefix",
           "design-system-components-dropdownmenu-展示--open-snapshot",
@@ -1910,5 +1911,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1073
+  "totalStories": 1074
 }

@@ -127,7 +127,7 @@ Checkbox 和 Radio 是**表單內的選擇控件**，視覺語言完全一致，
 | (c) 勾了還要按「套用」才生效 | 不放選單:Popover / 表單裡的 `Checkbox` + 套用鈕 | 第 1 角度:隨送出才套用 → Checkbox;選單項點了就生效,裝不下這個流程 |
 | (d) 互斥選一個 | `DropdownMenuRadioItem` | 不是布林(`../DropdownMenu/dropdown-menu.spec.md`「Item 類型」) |
 
-不在本段:DataTable 欄位顯示面板不是選單 —— 它是可拖曳排序的清單,顯示 / 隱藏是列上的副動作(眼睛圖示鈕),照 `../DataTable/data-table.spec.md`。不要把 `<Switch>` / `<Checkbox>` 放進 `DropdownMenuItem`(`../DropdownMenu/dropdown-menu.spec.md`「禁止事項」;產品 repo 由寫入檢查擋)。
+不在本段:DataTable 欄位顯示面板不是選單 —— 它是浮層裡可拖曳排序的清單,顯示 / 隱藏是列上的副動作(眼睛圖示鈕,`../DataTable/data-table-column-visibility-panel.tsx` 檔頭「固定零件」),零件清單照 `../DataTable/data-table.spec.md`「欄位顯示面板的固定零件」。不要把 `<Switch>` / `<Checkbox>` 放進 `DropdownMenuItem`(`../DropdownMenu/dropdown-menu.spec.md`「禁止事項」;產品 repo 由寫入檢查擋)。
 
 **來源**:(a) user 2026-11-27 原話(逐字,DS 對話;問題由協調者擬:「下拉選單裡『切了就立刻生效』的開關項目(例:Chat 房間選單的 Full width、Tasks 列表 ⋮ 的 Hide done and cancelled),要用哪種外觀?」,建議選項「用開關外觀」):「基本上可以照你建議，確保整個ds在相關的地方沒有衝突且任何情境都能合理解釋且不違背世界級的設計，就照你建議做」。(b)(c)(d)、「看第 2 角度」與上面的檢驗是 **AI 推導**(由本節三個角度與 switch.spec「何時不用」推出,回應 user 附的條件「任何情境都能合理解釋」);2026-11-27 前 DS 的判定是「選單裡的開關一律勾選」(AI 推導、非 user 定,已由本段取代)。
 

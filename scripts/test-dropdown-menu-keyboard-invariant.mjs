@@ -62,6 +62,7 @@ const cases = [
   ['整列切換:翻面、選單開著、開關跟著翻', judgeRowToggle({ before: 'false', after: 'true', openAfter: 1, switchStateAfter: 'checked' }), 'pass'],
   ['整列切換:沒翻面(鍵盤 / 點擊被吞)', judgeRowToggle({ before: 'false', after: 'false', openAfter: 1, switchStateAfter: 'unchecked' }), 'fail'],
   ['整列切換:翻了但選單關了(當成一般動作項)', judgeRowToggle({ before: 'false', after: 'true', openAfter: 0, switchStateAfter: 'checked' }), 'fail'],
+  ['整列切換:選單關了、列已卸載(切換後的值量不到)→ 量到「選了就關」', judgeRowToggle({ before: 'false', after: null, openAfter: 0, switchStateAfter: null }), 'fail'],
   ['整列切換:開關沒跟著翻', judgeRowToggle({ before: 'true', after: 'false', openAfter: 1, switchStateAfter: 'checked' }), 'fail'],
   ['整列切換:切換後 aria-checked 量不到', judgeRowToggle({ before: 'true', after: null, openAfter: 1, switchStateAfter: 'checked' }), 'instrument'],
   ['整列切換:層數量不到', judgeRowToggle({ before: 'true', after: 'false', openAfter: Number.NaN, switchStateAfter: 'unchecked' }), 'instrument'],

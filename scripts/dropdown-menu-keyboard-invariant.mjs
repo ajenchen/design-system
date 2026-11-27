@@ -103,9 +103,14 @@ export function judgeSwitchRow({ role, ariaChecked, switchState, switchHidden, s
   return mirrors && switchHidden && !switchFocused && switchAfterLabel && endGap >= 0 && endGap <= endGapMax ? 'pass' : 'fail'
 }
 
-/** 整列切換一次(點字 / 空白鍵 / Enter):aria-checked 必須翻面、選單仍開著(1 層)、列尾開關跟著翻面 */
+/**
+ * 整列切換一次(點字 / 空白鍵 / Enter):aria-checked 必須翻面、選單仍開著(1 層)、列尾開關跟著翻面。
+ * 選單量到已經關了(0 層)= 量到了「選了就關」,判 fail —— 那時列已卸載、切換後的值量不到是它的後果,不是儀器失效。
+ */
 export function judgeRowToggle({ before, after, openAfter, switchStateAfter }) {
-  if ([before, after, openAfter, switchStateAfter].some(unmeasured)) return 'instrument'
+  if (unmeasured(before) || unmeasured(openAfter)) return 'instrument'
+  if (openAfter === 0) return 'fail'
+  if (unmeasured(after) || unmeasured(switchStateAfter)) return 'instrument'
   if (!['true', 'false'].includes(before) || !['true', 'false'].includes(after)) return 'fail'
   const mirrors = switchStateAfter === (after === 'true' ? 'checked' : 'unchecked')
   return after !== before && openAfter === 1 && mirrors ? 'pass' : 'fail'
@@ -302,7 +307,8 @@ async function main() {
   const SWITCH_ROW = (name) => `[role="menuitemcheckbox"]:has-text("${name}")`
   const openSwitchMenu = async () => {
     if (!(await waitOpen(1, 1500))) { await page.locator(SWITCH_TRIGGER).first().click(); if (!(await waitOpen(1))) return '前提:開不了「行動 App 改版」選單' }
-    if (!(await waitFor((sel) => !!document.querySelector(sel), SWITCH_ROW('全寬顯示')))) return '前提:找不到「全寬顯示」那一列'
+    // `:has-text()` 只有 Playwright 認得,不能拿去 document.querySelector(會丟錯、被讀成「找不到」)—— 頁面端一律比 textContent
+    if (!(await waitFor((label) => [...document.querySelectorAll('[role="menuitemcheckbox"]')].some((r) => (r.textContent ?? '').includes(label)), '全寬顯示'))) return '前提:找不到「全寬顯示」那一列'
     // 等開啟動畫停(M32 等穩態再量):量的是列尾位置,動畫中的 scale 會讓座標偏
     if (!(await waitFor(() => { const m = document.querySelector('[role="menu"][data-state="open"]'); return !!m && m.getAnimations({ subtree: true }).length === 0 }))) return '前提:選單 3 秒內沒停在開好的樣子'
     return null
@@ -338,7 +344,7 @@ async function main() {
     const pre = await openSwitchMenu()
     if (pre) { rec('W1', 'instrument', pre); return }
     // 對照組 = 舊寫法「Switch 自己接點擊」:開關回到無障礙樹、可聚焦(只破壞「全寬顯示」;停用那一列照樣必須綠)
-    if (SELFTEST) await page.evaluate((sel) => { const sw = document.querySelector(sel)?.querySelector('button[role="switch"]'); if (sw) { sw.removeAttribute('inert'); sw.removeAttribute('aria-hidden'); sw.tabIndex = 0 } }, SWITCH_ROW('全寬顯示'))
+    if (SELFTEST) await page.evaluate((label) => { const sw = [...document.querySelectorAll('[role="menuitemcheckbox"]')].find((r) => (r.textContent ?? '').includes(label))?.querySelector('button[role="switch"]'); if (sw) { sw.removeAttribute('inert'); sw.removeAttribute('aria-hidden'); sw.tabIndex = 0 } }, '全寬顯示')
     const a = await readSwitchRow('全寬顯示')
     rec('W1a 「全寬顯示」整列 = menuitemcheckbox + aria-checked;列尾開關狀態一致、移出無障礙樹、拿不到焦點、畫在列尾', a ? judgeSwitchRow(a) : 'instrument', JSON.stringify(a))
     const d = await readSwitchRow('自動翻譯訊息')
@@ -353,7 +359,16 @@ async function main() {
       if (e.target instanceof Element && e.target.closest('[role="menuitemcheckbox"]')) setTimeout(() => document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })), 0)
     }, true))
     const before = await ariaCheckedOf('全寬顯示')
-    await page.locator(SWITCH_ROW('全寬顯示')).getByText('全寬顯示', { exact: true }).click()
+    // 點在字的位置上:字所在的內層是 pointer-events-none(整列才是點擊靶),Playwright 的 locator.click 對字會判「被列擋住」而重試到逾時 ——
+    // 改用滑鼠點那個座標,命中的是整列,跟真人點字一樣
+    const at = await page.evaluate((label) => {
+      const row = [...document.querySelectorAll('[role="menuitemcheckbox"]')].find((r) => (r.textContent ?? '').includes(label))
+      const text = row && [...row.querySelectorAll('*')].find((e) => e.children.length === 0 && (e.textContent ?? '').trim() === label)
+      const r = text?.getBoundingClientRect()
+      return r && r.width > 0 ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null
+    }, '全寬顯示')
+    if (!at) { rec('W2', 'instrument', '前提:量不到「全寬顯示」那幾個字的位置'); return }
+    await page.mouse.click(at.x, at.y)
     await waitChecked('全寬顯示', before === 'true' ? 'false' : 'true')
     await settleAfterInteraction(page, { frames: 6 })
     const after = await ariaCheckedOf('全寬顯示')
