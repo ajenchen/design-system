@@ -8,7 +8,10 @@
  *       7777b61c 的原始碼跑紅 140 格;a6390356 的原始碼紅停用 7 格(javascript: 三種寫法 / data: / mailto: / tel: 被畫成「-」,ftp: 只剩主機名,2026-10-21 r1b fields F2)
  *       2026-11-27 起(值的前綴圖示 `icon` / 表格 `meta.linkIcon`,link-input.spec.md「值的前綴圖示」):判定表 judgeIcon 對「圖示在連結外面」「停用沒畫圖示」
  *       「空值畫了圖示」「打字狀態畫了圖示」「圖示沒有 aria-hidden」「加圖示後連結的名字變了」各一個合成輸出必紅;eb985952(加 icon 前)的原始碼紅 43 格(要畫圖示的格全紅,原本的判定表那幾格照綠)
+ *       2026-11-27 起(新分頁預告,link-input.spec.md「新分頁預告」;user 152 決策頁第 11 題選甲「只給讀屏預告」):判定表 judgeNewTab 對「連結沒有讀屏名字」
+ *       「名字沒接預告」「名字不是以看得到的字開頭」「包了 I18nProvider 換語言卻沒生效」「換語言那格沒連結」各一個合成輸出必紅;3de7d4f6(加預告前)的原始碼每個連結格全紅
  *   綠: 修好的原始碼每一種模式 × 每一種值全綠(MODES × VALID / SAME_SITE / INVALID,數量以本檔為準);真的渲染時合法網址與站內路徑必須讀到連結(儀器有眼睛),否則 selftest 紅;
+ *       每個連結的 aria-label = 顯示的字 + 空格 +「(在新分頁開啟)」,包 I18nProvider(`link-input.opensInNewTab`)的格接換過的字;真的渲染時讀得到這兩種名字(儀器有眼睛);
  *       帶圖示的每一種模式 × ICON_VALUES 全綠,真的渲染時唯讀 / 表格格的合法網址必須讀到連結裡的圖示(儀器有眼睛)
  * ─────
  * 網址值的顯示:只有合法的 http(s) 網址畫成連結,其他一律一般文字(2026-10-13,待辦總帳 Q3e)。
@@ -77,6 +80,42 @@ export function judgeIcon(results) {
   return failures
 }
 
+/** 新分頁預告的 DS 預設字與換語言後的字(link-input.spec.md「新分頁預告」;探針換語言那一格用 NEW_TAB_TRANSLATED) */
+export const NEW_TAB_DEFAULT = '(在新分頁開啟)'
+export const NEW_TAB_TRANSLATED = '(opens in new tab)'
+/** 換語言那幾格:同一個值在這幾種模式包 I18nProvider 渲染,名字要接換過的字 */
+export const NEW_TAB_I18N_MODES = ['view', 'readonly', 'edit', 'cellReadonly']
+
+/**
+ * 純函式:新分頁預告(2026-11-27 起,link-input.spec.md「新分頁預告」)。
+ * 每格 r.links = [{ label, text }](label = <a> 的 aria-label,text = 連結裡看得到的字);每個連結的名字都要 = 顯示的字 + 空格 + 預告。
+ * 換語言的格(`i18n|<mode>`)名字要接 NEW_TAB_TRANSLATED;每一格至少要有一個連結(沒量到連結 = 儀器沒在看)。
+ */
+export function judgeNewTab(results) {
+  const failures = []
+  const check = (key, links, notice) => {
+    for (const l of links) {
+      if (!l.label) { failures.push(`${key}: 連結沒有讀屏名字(少了新分頁預告)`); continue }
+      if (l.label !== `${l.text} ${notice}`) failures.push(`${key}: 連結名字應為「${l.text} ${notice}」,實際「${l.label}」`)
+    }
+  }
+  for (const mode of MODES) {
+    for (const value of ALL) {
+      const key = `${mode}|${value}`
+      const r = results[key]
+      if (!r) { failures.push(`${key}: 沒量到`); continue }
+      check(key, r.links ?? [], NEW_TAB_DEFAULT)
+    }
+  }
+  for (const mode of NEW_TAB_I18N_MODES) {
+    const key = `i18n|${mode}`
+    const r = results[key]
+    if (!r || !(r.links?.length >= 1)) { failures.push(`${key}: 換語言那一格沒量到連結`); continue }
+    check(key, r.links, NEW_TAB_TRANSLATED)
+  }
+  return failures
+}
+
 /** 純函式:每格 { anchors: [{href}], text } → 不符的格(呼叫端與 selftest 共用,M37:判斷式只有一份) */
 export function judge(results) {
   const failures = []
@@ -116,6 +155,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { LinkInput } from '@/design-system/components/LinkInput/link-input'
 import { resolveCellComponent } from '@/design-system/components/DataTable/cell-registry'
 import { TooltipProvider } from '@/design-system/components/Tooltip/tooltip'
+import { I18nProvider } from '@/design-system/lib/i18n/i18n-context'
 import { Paperclip } from 'lucide-react'
 const UrlCell = resolveCellComponent('url')
 // icon:值的前綴圖示(LinkInput icon / 表格 meta.linkIcon);不給 = 原本的量法
@@ -135,13 +175,22 @@ const render = (node: unknown) => renderToStaticMarkup(<TooltipProvider>{node as
 const anchorInners = (html: string) => [...html.matchAll(/<a\\b[^>]*\\bhref="[^"]*"[^>]*>([\\s\\S]*?)<\\/a>/g)].map((m) => m[1])
 const textOf = (s: string) => decode(s.replace(/<[^>]+>/g, ' ')).replace(/\\s+/g, ' ').trim()
 const ICON_MARK = /data-link-value-icon=""/g
+// 新分頁預告:每個 <a href> 的 aria-label 與連結裡看得到的字
+const linksOf = (html: string) => [...html.matchAll(/<a\\b([^>]*\\bhref="[^"]*"[^>]*)>([\\s\\S]*?)<\\/a>/g)].map((m) => {
+  const label = /\\baria-label="([^"]*)"/.exec(m[1])
+  return { label: label ? decode(label[1]) : '', text: textOf(m[2]) }
+})
 const out: Record<string, unknown> = {}
 for (const mode of ${JSON.stringify(MODES)}) {
   for (const value of ${JSON.stringify(ALL)}) {
     const html = render(el(mode, value))
     const anchors = [...html.matchAll(/<a\\b[^>]*\\bhref="([^"]*)"/g)].map((m) => ({ href: decode(m[1]) }))
     const text = decode(html.replace(/<[^>]+>/g, ' ')).replace(/\\s+/g, ' ')
-    out[mode + '|' + value] = { anchors, text }
+    out[mode + '|' + value] = { anchors, text, links: linksOf(html) }
+  }
+  if (${JSON.stringify(NEW_TAB_I18N_MODES)}.includes(mode)) {
+    const html = render(<I18nProvider labels={{ 'link-input': { opensInNewTab: ${JSON.stringify(NEW_TAB_TRANSLATED)} } }}>{el(mode, ${JSON.stringify(VALID[0])}) as never}</I18nProvider>)
+    out['i18n|' + mode] = { links: linksOf(html) }
   }
   // 值的前綴圖示:同一格帶 / 不帶圖示各渲染一次(連結的名字 = 連結裡的字,兩者要相同)
   for (const value of ${JSON.stringify(ICON_VALUES)}) {
@@ -226,6 +275,25 @@ function selftest() {
     if (!judgeIcon(bad).some((f) => f.startsWith(key) && re.test(f))) { console.error(`✗ selftest:值的圖示「${name}」應紅`); ok = false }
   }
   if (judgeIcon({}).length < MODES.length) { console.error('✗ selftest:值的圖示空結果應每格都紅'); ok = false }
+  // 新分頁預告(judgeNewTab):正確形狀綠;少了名字 / 名字沒接預告 / 名字不是以看得到的字開頭 / 換語言沒生效 / 換語言那格沒連結 各紅
+  const goodNewTab = {}
+  for (const mode of MODES) for (const value of ALL) {
+    const linkable = mode !== 'disabled' && (VALID.includes(value) || LOOKS_LIKE.includes(value) || (SAME_SITE.includes(value) && mode !== 'edit'))
+    goodNewTab[`${mode}|${value}`] = { links: linkable ? [{ label: `github.com ${NEW_TAB_DEFAULT}`, text: 'github.com' }] : [] }
+  }
+  for (const mode of NEW_TAB_I18N_MODES) goodNewTab[`i18n|${mode}`] = { links: [{ label: `github.com ${NEW_TAB_TRANSLATED}`, text: 'github.com' }] }
+  if (judgeNewTab(goodNewTab).length !== 0) { console.error('✗ selftest:新分頁預告正確形狀應綠,實際:', judgeNewTab(goodNewTab)); ok = false }
+  const newTabBad = [
+    ['少了讀屏名字', 'readonly|https://github.com/acme/web', { links: [{ label: '', text: 'github.com' }] }, /沒有讀屏名字/],
+    ['名字沒接預告', 'cellEditable|acme.com', { links: [{ label: 'github.com', text: 'github.com' }] }, /連結名字應為/],
+    ['名字不是以看得到的字開頭', 'view|https://github.com/acme/web', { links: [{ label: `${NEW_TAB_DEFAULT} github.com`, text: 'github.com' }] }, /連結名字應為/],
+    ['換語言沒生效', 'i18n|cellReadonly', { links: [{ label: `github.com ${NEW_TAB_DEFAULT}`, text: 'github.com' }] }, /連結名字應為/],
+    ['換語言那格沒連結', 'i18n|view', { links: [] }, /沒量到連結/],
+  ]
+  for (const [name, key, patch, re] of newTabBad) {
+    const bad = { ...goodNewTab, [key]: { ...goodNewTab[key], ...patch } }
+    if (!judgeNewTab(bad).some((f) => f.startsWith(key) && re.test(f))) { console.error(`✗ selftest:新分頁預告「${name}」應紅`); ok = false }
+  }
   // 儀器有眼睛:真的渲染一次,合法網址在 view / readonly / 表格格都讀得到連結
   const out = measure()
   for (const k of ['view|https://github.com/acme/web', 'readonly|https://github.com/acme/web', 'cellEditable|https://github.com/acme/web', 'view|/projects/8821/tasks/4821', 'view|www.example.com/pricing']) {
@@ -235,6 +303,9 @@ function selftest() {
   for (const k of ['icon|readonly|https://github.com/acme/web', 'icon|cellReadonly|https://github.com/acme/web', 'icon|edit|https://github.com/acme/web']) {
     if (!(out[k]?.iconsInAnchor === 1)) { console.error(`✗ selftest:對照組 ${k} 應讀到連結裡 1 個值的圖示,實際`, out[k]); ok = false }
   }
+  // 儀器有眼睛:真的渲染時讀得到連結的 aria-label(預設字與換語言後的字各一格)
+  if (!(out['view|https://github.com/acme/web']?.links?.[0]?.label?.endsWith(NEW_TAB_DEFAULT))) { console.error('✗ selftest:對照組 view 應讀到接預告的連結名字,實際', out['view|https://github.com/acme/web']?.links); ok = false }
+  if (!(out['i18n|cellReadonly']?.links?.[0]?.label?.endsWith(NEW_TAB_TRANSLATED))) { console.error('✗ selftest:對照組 i18n|cellReadonly 應讀到換過語言的預告,實際', out['i18n|cellReadonly']?.links); ok = false }
   console.log(ok ? '✅ link-input-url-display selftest PASS' : '❌ link-input-url-display selftest FAIL')
   return ok
 }
@@ -243,11 +314,12 @@ const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPat
 if (isMain) {
   if (process.argv.includes('--selftest')) process.exit(selftest() ? 0 : 1)
   const measured = measure()
-  const failures = [...judge(measured), ...judgeIcon(measured)]
+  const failures = [...judge(measured), ...judgeIcon(measured), ...judgeNewTab(measured)]
   if (failures.length) {
     console.error(`✗ link-input-url-display:${failures.length} 格不符\n  ${failures.slice(0, 30).join('\n  ')}`)
     process.exit(1)
   }
   console.log(`✓ link-input-url-display:${MODES.length} 種模式 × ${ALL.length} 種值 —— 只有網頁網址(含補上 https:// 的網址樣字)與站內路徑畫成連結,其他是一般文字,沒有別的 href;` +
-    `帶值的前綴圖示 ${MODES.length} × ${ICON_VALUES.length} 格 —— 連結裡的圖示、停用與一般文字照畫、空值與打字狀態不畫、讀屏略過、連結名字不變`)
+    `帶值的前綴圖示 ${MODES.length} × ${ICON_VALUES.length} 格 —— 連結裡的圖示、停用與一般文字照畫、空值與打字狀態不畫、讀屏略過、連結名字不變;` +
+    `每個連結的讀屏名字 = 顯示的字 +「${NEW_TAB_DEFAULT}」,換語言 ${NEW_TAB_I18N_MODES.length} 格照用換過的字`)
 }
