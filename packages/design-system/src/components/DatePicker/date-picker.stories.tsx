@@ -266,8 +266,8 @@ export const NeedConfirmDateOnlyOpen: Story = {
         <p className="text-caption text-fg-muted">
           合約生效日選錯成本高:點日期先暫存,按「確定」才真正寫入。
         </p>
+        {/* 不在欄位下方放「已提交值」讀數:產品裡提交的值就在欄位本身(與 DateGrid 範例同一條,user 2026-11-27 確認頁「不可能會在元件內出現吧？」) */}
         <DatePicker needConfirm value={effectiveDate} onChange={setEffectiveDate} />
-        <p className="text-caption text-fg-muted">已提交值:{effectiveDate || '(空)'}</p>
       </div>
     )
   },
