@@ -16,7 +16,7 @@
     "div-heading": 0,
     "unknown-typography": 0,
     "story-counter-example": 4,
-    "layout-space-magic-ok": 282
+    "layout-space-magic-ok": 281
   },
   "files": {
     "packages/design-system/src/components/AccountMenu/account-menu.stories.tsx": {
@@ -130,14 +130,6 @@
           "96dcb223326f",
           "db1118f22972",
           "fb90923d5080"
-        ]
-      }
-    },
-    "packages/design-system/src/components/DateGrid/date-grid.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "61980984cfad"
         ]
       }
     },
