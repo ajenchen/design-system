@@ -518,7 +518,10 @@ export const pageKit = () => {
   }
   // 看得見框的欄位 / 按鈕(規則 4 T4「直接碰到貼內容小容器自己的框、最後是看得見框的欄位 / 按鈕 → loose」;user 2026-11-27):
   // 輸入框外框,或有框 / 有底色的按鈕 / 下拉觸發點 / 連結鈕;勾選框 / 單選 / 開關(勾選列)不算,維持與頂同值
-  const framedControl = (f) => !!f && !/^(checkbox|radio|switch)$/.test(f.role ?? '')
+  // 「一串同樣的條目」的最後一筆不算這一格(規則 2:跟在後面的「加一筆」那一排算最後一筆,底照韻律 = 筆與筆之間;
+  // 草案 5.2「篩選 / 排序…屬於一串同樣的條目,照韻律,不套這一格」)—— el 在 data-panel-add-row(DataTable 篩選 / 排序面板的「加一筆」那一排)裡就不算
+  const framedControl = (f, el = null) => !!f && !/^(checkbox|radio|switch)$/.test(f.role ?? '')
+    && !el?.closest?.('[data-panel-add-row]')
     && (f.fieldControl || (f.framed && (/^(button|a)$/.test(f.tag) || /^(button|combobox)$/.test(f.role ?? ''))))
   return { vis, transparent, effBg, LIST_ROLE, feat, isThing, boxedOf, topOf, bottomOf, scrollBody, scrollOffset, findHeader, findBody, bodyFor, collectThings, nextBlock, footerAfter, framedControl }
 }

@@ -13,6 +13,8 @@
  *         element:容器擋住頁面或高度撐滿 → bottom(48);不擋頁面、高度貼內容(含被上限卡住在捲 / 高度寫死)→ 後面接 footer = bottom(48)、
  *         沒有 footer 時看得見框的欄位 / 按鈕 = loose、其餘(文字 / 勾選列)與頂部同值(2026-11-27 user 定 T6 乙 / T4;「後面接 footer」與
  *         「看得見框的控件」判法住 header-first-gap 的 pageKit footerAfter / framedControl,姊妹閘 header-content-sides 同一份)。
+ *         「一串同樣的條目」的「加一筆」那一排(data-panel-add-row)裡的有框按鈕不算看得見框的控件(規則 2:那一排算最後一筆,底照韻律);
+ *         對照組 = 修前那一版沒有這一條時 header-content-sides 的 datatable-filter-panel 紅「應 16 / 24…T4」(2026-11-27 實跑)。
  *         頂另多一格(T4 上半):貼內容的容器沒有標頭、第一個是看得見框的欄位 / 按鈕 → 上內距 loose(容器自判未做,consumer 覆寫;沒覆寫才判)。
  *         md / lg 兩種密度各量一次。對照組:--selftest 判定表 cells2 / T4 上半三格;真建置 ν(三段範例 hug + footer 現況 48 綠、容器不看 footer 紅)、
  *         ξ(hug 容器頭尾是有框的按鈕、沒有標頭與 footer → 照舊 tight 頂底都紅;覆寫 loose → 綠)。
@@ -422,7 +424,7 @@ export const probeContainer = ({ k, followStep, exSel }) => {
     top: round(top), topFrom, bottom: round(e - bottomOf(last)), free: round(free), grow: round(grow),
     lastDesc: desc(last.el), lastF, regionMark: region ? region.getAttribute('data-layout-region') : null, regionF: region ? K.feat(region) : null,
     // 規則 4 表(2026-11-27 user T6 乙 / T4):後面接 footer、最後 / 第一個是看得見框的欄位 / 按鈕 —— 判法住 pageKit,姊妹閘同一份
-    footer: (() => { const ft = K.footerAfter(body); return ft ? desc(ft) : null })(), framedControl: K.framedControl(lastF), firstFramed: K.framedControl(first.f),
+    footer: (() => { const ft = K.footerAfter(body); return ft ? desc(ft) : null })(), framedControl: K.framedControl(lastF, last.el), firstFramed: K.framedControl(first.f, first.el),
     modal, scrolls, capped, pinned, boxDesc: boxEl === body ? null : desc(boxEl),
     loose: v('--layout-space-loose'), tight: v('--layout-space-tight'), bottomToken: v('--layout-space-bottom'),
     rootLoose: parseFloat(getComputedStyle(document.querySelector('#storybook-root') ?? document.documentElement).getPropertyValue('--layout-space-loose')),

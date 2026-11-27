@@ -486,7 +486,7 @@ export const probeSides = ({ header, headerText = null, nth = 0, followStep, scr
     // 角色由原閘 classifyFirst 判(有框就是 bounded,不看寬 ——【更正 2026-11-14】2026-11-13 這裡多帶的「撐不撐滿寬」隨原閘拿掉)
     lastF: last.f, firstF: first.f,
     // 規則 4 表 2026-11-27(user T6 乙 / T4):後面接 footer、最後是看得見框的欄位 / 按鈕 —— 判法住 pageKit(header-first-gap),兩支閘同一份
-    footer: Boolean(K.footerAfter(body)), framedControl: K.framedControl(last.f),
+    footer: Boolean(K.footerAfter(body)), framedControl: K.framedControl(last.f, last.el),
     pattern, rowLeft: round(rowLeft), rowRight: round(rowRight),
     modal, scrolls, capped, free: round(free), pinned, grow: round(grow),
     loose: v('--layout-space-loose'), tight: v('--layout-space-tight'), bottomToken: v('--layout-space-bottom'),
