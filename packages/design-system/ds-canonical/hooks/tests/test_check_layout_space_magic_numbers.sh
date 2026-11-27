@@ -413,6 +413,35 @@ expect_silent "M4. 同行 @layout-space-magic-ok 仍有效 → silent"
 run_hook "Write" "$APP_TSX" "content" \
   'export const L = () => <a href="https://example.com" className="p-4">x</a>;'
 expect_block "M5. href 裡的 // 不是註解,後面的 p-4 照擋 → BLOCK"
+# ── 字串先跳過再認註解(2026-11-27 h26 規格核對 + r72):151 的遮罩把字串裡的 /* 或 " // " 當註解開頭 ──
+# M7. accept="image/*" 之後的 p-4,再後面有 {/* */} → 照擋(151:從 image/* 一路遮到 */,p-4 漏判)
+run_hook "Write" "$APP_TSX" "content" \
+  'export const U = () => (
+  <div>
+    <FileUpload accept="image/*" />
+    <div className="p-4">內容</div>
+    {/* 附註 */}
+  </div>
+);'
+expect_block "M7. 字串裡的 /* 不是註解開頭,後面的 p-4 照擋 → BLOCK"
+# M8. 字串裡的 " // " 之後同一行的 p-4 → 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'export const C = () => <div title="上一步 // 下一步" className="p-4">內容</div>;'
+expect_block "M8. 字串裡的 // 不是註解開頭,同一行的 p-4 照擋 → BLOCK"
+# M9. 反引號字串裡的 /*(跨行)之後的 p-4,再後面有真註解 → 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const glob = `assets/*`
+export const G = () => <div className="p-4">{glob}</div>; /* 檔案清單 */'
+expect_block "M9. 反引號字串裡的 /* 不是註解開頭 → BLOCK"
+# M10. 字串之後的真註解照遮:字串裡有 //,同一行的 // 註解寫 gap-2 → 放行
+run_hook "Write" "$APP_TSX" "content" \
+  'const home = "https://example.com // 首頁"; // 這裡以前寫 gap-2
+export const H = () => <a href={home} className="flex">首頁</a>;'
+expect_silent "M10. 字串後面的 // 註解照遮 → silent"
+# M11. JSX 文字裡的 Don'"'"'t 不當字串開頭,後面的 {/* … */} 照遮 → 放行
+run_hook "Write" "$APP_TSX" "content" \
+  'export const D = () => <p>Don'"'"'t mix them {/* 不要寫 gap-2 */} up</p>;'
+expect_silent "M11. JSX 文字的撇號不吃掉後面的註解 → silent"
 
 # ── H2 + H3 + H4(2026-11-27):規格登記的寫法(utility-registry canonical_micro_geometry.spec_registered_patterns)──
 # 三種規格寫法放行(舊分類器:三格全紅 —— 對照組在交接紀錄);反例照擋。

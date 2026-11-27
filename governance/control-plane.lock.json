@@ -10,7 +10,7 @@
   "contractDigest": "sha256:2999aed4c75bc36823db0b4ea5729744c0920f74b1cd2b2e1bfb4110dd825ef1",
   "files": [
     {
-      "hash": "sha256:638bd4fe112151d8e93ed9ba611b7dff2294967007f319c95c0eeca03f508517",
+      "hash": "sha256:8b10f59285f9be8ba6e29d67f04e4e7754dbdd17ba6e01d7ba8143d08a573d93",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 59307,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:a1b811724c3457eadedc3a7b5aa6b8a47f0acd8005f539f8bc311a59b54a6010",
+      "hash": "sha256:15e005569f00cd1684aa8e11a0f617d89cd1aac94abf972aeda9d5ce40eda1e6",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 140204,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:9bd61c93c2093c47638121f4c437e904f91bd327a38174f667bb4be7bd1831d1",
+  "inputDigest": "sha256:6c44486ad01965fd30f0d3a35c392947460364a0f3a3e046013c8126aab67449",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:2df8ca89db10e463cc82122d737113f438fdfeb10c3084cb505b8bd6fa5bd331",
+  "snapshotDigest": "sha256:6db7628946ec319d5a9347ca05c452625a8abdd4fd3a65a7d3de721426de80d6",
   "sources": [
     {
       "hash": "sha256:f2452198c08c44c99dc7afcfb7f78f834d7cc2a8c97d041571db15779f388c6c",
@@ -654,7 +654,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 221,
-      "hash": "sha256:f9c5531ff950ad93a8fbb09e1753d05f28e30ea77ae1f4082a7178b7f45cad7e",
+      "hash": "sha256:08e78de04af09d2a9c1568923816e3694f9099f201b04db6ff817f099de1f4f8",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
