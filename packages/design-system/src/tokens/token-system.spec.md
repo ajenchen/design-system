@@ -208,5 +208,6 @@ C5 只看「名字有沒有出現在回復段」;「區塊裡的值真的等於�
 - `agent-panel.spec.md`
 - `command.spec.md`
 - `header-canonical.spec.md`
+- `layoutSpace.spec.md`
 - `motion.spec.md`
 - `orphan-tokens.spec.md`

@@ -69,6 +69,7 @@ const { t } = useI18n()
 | `sheet` | `close` | Sheet |
 | `popover` | `close` | PopoverHeader 的 ×(DataTable 欄位顯示面板的 × 也是它) |
 | `file-upload` | `buttonLabel` / `loadingTitle` / `title` / `descriptionMultiple` / `descriptionSingle` | FileUpload |
+| `link-input` | `opensInNewTab` | LinkInput 的連結(含 DataTable 網址格):讀屏名字後面接的新分頁預告,預設「(在新分頁開啟)」(2026-11-27,`../../components/LinkInput/link-input.spec.md`「新分頁預告」) |
 | `pagination` | `label` / `previous` / `next` / `pageSize` | Pagination(帶數字的 range 資訊與「N 筆/頁」只經 `labels` 函式,見 pagination.spec.md「完整形態」) |
 | `profile-card` | `chat` / `audioCall` / `viewMore` | ProfileCard |
 | `sidebar` | `resizeHandle` / `overlayTitle` | Sidebar |

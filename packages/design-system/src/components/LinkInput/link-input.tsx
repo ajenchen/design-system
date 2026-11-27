@@ -4,6 +4,7 @@
 //   尺寸 = tokens/uiSize/icon-size `ICON_SIZE`(sm / md 16、lg 20);顏色跟著值(select.spec.md 圖示對照表「Value icon」、field-controls.spec.md「Icon 色彩原則」)
 // - 截斷 + 提示:patterns/element-anatomy/truncated-text `TruncatedText`(tooltip.spec.md「截斷文字」)
 // - 命中區:ds-canonical/references/hit-area-canonical.md 一-4「懸停回饋形狀 ≡ 命中區」(圖示在連結裡)
+// - 新分頁預告的換字管道:lib/i18n/i18n-context `useI18n`(componentKey `link-input`,鍵 `opensInNewTab`;lib/i18n/README.md 表)
 import * as React from 'react'
 import { Pencil, type LucideIcon } from 'lucide-react'
 import type { VariantProps } from 'class-variance-authority'
@@ -21,6 +22,7 @@ import { FieldError } from '@/design-system/components/Field/field'
 import { keepFocusOnPointerPress } from '@/design-system/lib/pointer-press'
 import { isWithinCompositeField } from '@/design-system/lib/composite-field-focus'
 import { escapeLayerProps, isEscapeTakenElsewhere } from '@/design-system/lib/overlay-escape'
+import { useI18n } from '@/design-system/lib/i18n/i18n-context'
 
 // ── URL Validation ──────────────────────────────────────────────────────────
 
@@ -105,13 +107,26 @@ function formatHostname(url: string): string {
 // 圖示在 `<a>` 裡:顏色跟字一樣(lucide 用 currentColor → 吃連結的 text-primary / 滑過 text-primary-hover),滑過圖示就是滑過連結,
 // 盒子 = 圖示 + 間距 + 字(仍不撐滿整行)。底線只畫在字上(text-decoration 不畫在 svg 上)。沒傳 = 原本的 inline-block,DOM 不變。
 function renderLinkAnchor(value: string, label?: string, stretch = false, coverBorder = false, icon?: LinkValueIcon) {
+  return <LinkAnchor value={value} label={label} stretch={stretch} coverBorder={coverBorder} icon={icon} />
+}
+
+/** 新分頁預告的 DS 預設字(link-input.spec.md「新分頁預告」;換語言經 I18nProvider `link-input.opensInNewTab`) */
+const LINK_OPENS_IN_NEW_TAB_DEFAULT = '(在新分頁開啟)' // i18n-allow: DS 預設讀屏預告(決策頁第 11 題甲的字)
+
+// **新分頁預告(2026-11-27 user 決策頁第 11 題選「甲 只給讀屏預告」;link-input.spec.md「新分頁預告」)**:
+// 連結一律 target="_blank",讀屏名字 = 顯示的字 + 空格 + 預告(aria-label;名字以看得到的字開頭,WCAG 2.5.3 label-in-name)。
+// 畫面不變:不加圖示、不加看得到的字。寫成元件(不是純函式)只為了在這裡讀 useI18n,DOM 與修前相同、只多 aria-label。
+function LinkAnchor({ value, label, stretch, coverBorder, icon }: { value: string; label?: string; stretch: boolean; coverBorder: boolean; icon?: LinkValueIcon }) {
+  const { t } = useI18n()
   const displayText = linkDisplayText(value, label)
+  const newTabNotice = t('link-input', 'opensInNewTab', LINK_OPENS_IN_NEW_TAB_DEFAULT)
   return (
     <a
       // 看起來像網址的值補上 https://(toWebUrl);站內路徑原樣
       href={toWebUrl(value) ?? value}
       target="_blank"
       rel="noopener noreferrer"
+      aria-label={`${displayText} ${newTabNotice}`}
       data-link-stretch={stretch ? '' : undefined}
       className={cn(
         'inline-block max-w-full align-top truncate min-w-0 text-primary hover:text-primary-hover hover:underline',

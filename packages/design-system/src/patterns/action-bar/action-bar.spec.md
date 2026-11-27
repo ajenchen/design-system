@@ -258,7 +258,7 @@ Icon 的目的是幫助辨識，不是視覺對稱。
 
 | # | 理由 | 判準 | 加不加 |
 |---|------|------|--------|
-| 1 | **群組結束** | 群組溢出（···）的右側，無論右側是什麼 | **必加** |
+| 1 | **群組結束** | 群組溢出鈕(圖示表達那一群,見第六節「群組溢出」)的右側，無論右側是什麼 | **必加** |
 | 2 | **邊界看不見** | 相鄰兩側視覺同類（都無框 / 都有框），不畫線就分不出換群 | **必加** |
 | 3 | **誤觸保護** | 關閉 / 解除鈕的**左側緊鄰其他操作按鈕** | **必加** |
 | 4 | **功能域切換** | 兩側分屬不同功能域，且需要讓使用者看出這個切換 | **可加**（須具名理由） |
@@ -334,7 +334,7 @@ Icon 的目的是幫助辨識，不是視覺對稱。
 規則：
 - 溢出附著在所屬群組末端（左側直接接該群組按鈕，無分隔線），只收納該群組的項目
 - 溢出右側必須加分隔線（群組溢出邊界，見第五節）
-- 不與末端溢出混用——避免使用者分不清各個 ··· 的範疇
+- 不與末端溢出混用——避免使用者分不清各個 ··· 的範疇。**收合鈕的圖示表達那一群、讀屏名稱帶群組名,⋯ 只給末端溢出**(例:格式群 ∨「更多格式」、插入群 +「更多插入」= `action-bar.stories.tsx` 範例與 `useOverflowCollapse` 每群的 `trigger: { label, icon }`)。依據:user 152 決策頁第 13 題條件核准,原話(問句):「你確定有仔細研究過 action group 的設計原則？確定有研究過就照建議確保符合ds一致的設計語言」(交接資料夾 `notes/decisions/decide152-db/answers/latest.json` `q14`);查證判讀 = AI:Microsoft Ribbon 每群宣告自己的 `Header` 與 `SmallImageSource`、放不下時整群收成一顆下拉鈕(<https://learn.microsoft.com/en-us/previous-versions/ff701790(v=vs.110)>「When a group is collapsed into a drop-down button, its largest size variation is shown when the drop-down is opened.」);CKEditor 5 分群下拉可設 icon 與 label,沒設才用三點(<https://ckeditor.com/docs/ckeditor5/latest/getting-started/setup/toolbar.html>「If no icon is specified, `'threeVerticalDots'` will be used as a default.」);Adobe Spectrum ActionGroup 一個群組收合時進「more actions menu」,可選取的群組收合時改顯示代表圖示(<https://react-spectrum.adobe.com/react-spectrum/ActionGroup.html>「The icon displayed in the dropdown menu button when a selectable ActionGroup is collapsed.」)—— 只有一個溢出時「更多」不會混淆,同一列多群各自收合時才要分群圖示
 
 ### 共通規則
 
@@ -458,7 +458,7 @@ Icon 的目的是幫助辨識，不是視覺對稱。
 └── 跟任務無關，服務環境          →  工具操作  →  icon-only + tooltip
 
 這裡要不要分隔線？（逐條對理由，對不上就不加）
-├── 左邊是群組溢出（···）嗎？                    →  必加（群組結束）
+├── 左邊是群組溢出鈕嗎？                        →  必加（群組結束）
 ├── 兩側視覺同類、不畫就分不出換群嗎？            →  必加（邊界看不見）
 ├── 右邊是關閉鈕，且它左邊緊鄰其他操作按鈕嗎？    →  必加（誤觸保護）
 │     └── 只有關閉鈕 / 中間隔著文字 / 關閉鈕不在末端  →  不加
