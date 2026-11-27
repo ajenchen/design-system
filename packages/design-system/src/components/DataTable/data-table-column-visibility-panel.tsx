@@ -372,8 +372,10 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
           --item-prefix-slot = 16px(item-anatomy 的跨元件設定點,分類表登記;稽核 P14):每一列的前綴是 16px 的拖曳把手
           或鎖頭圖示(VisibilityRow),槽寬固定 16 讓兩種前綴的字起點同一條線。不呼叫 getUniformPrefixSlotStyle:
           那支算的是「圖示與頭像混排」時的頭像槽(AVATAR_SIZE.inline 20 / 24 / 24),這裡沒有頭像。 */}
+      {/* 清單外框標 data-layout-region="unbounded"(自帶上下內距的清單,layoutSpace.spec.md 規則 4 表第 3 列):2026-11-27 起後面接 footer 的一般元素
+          收尾 = 48,這一塊是清單、不是一般元素,底照舊 0(user 2026-11-27 定的範圍明列「自帶內距的清單,欄位顯示面板 = 0」)。只是標記,畫面不變。 */}
       <PopoverBody className="!px-0 !py-0">
-        <div className="py-2 flex flex-col" style={{ '--item-prefix-slot': '16px' } as React.CSSProperties}>
+        <div data-layout-region="unbounded" className="py-2 flex flex-col" style={{ '--item-prefix-slot': '16px' } as React.CSSProperties}>
           <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} accessibility={drag.accessibility}>
             {drag.liveRegion}
             <SortableContext

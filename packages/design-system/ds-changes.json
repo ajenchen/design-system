@@ -526,7 +526,8 @@
         {"paths":["packages/design-system/ds-canonical/hooks/check_story_invariants.sh"],"reason":"DS 自家寫入檢查 R12(secondary 沒有並存的負面選項)不再把同一個元素帶 danger 的 secondary 算成違規(button.spec.md「danger 組合」表明文允許 secondary + danger);只影響 DS repo 的寫入檢查,產品端出貨的 check_story_invariants 是另一份改寫版、沒有這條,元件與畫面都沒變。"},
         {"paths":["packages/design-system/src/components/Popover/popover.stories.tsx"],"reason":"只改檔內註解(說明為何沒有「頁面設定」範例的那段補上開關外觀的指向),範例與畫面不變。"},
         {"paths":["packages/design-system/src/components/Sidebar/sidebar.tsx","packages/design-system/src/components/TreeView/tree-view.tsx"],"reason":"只改註解裡的「menu-item.tsx:行號」引用:同一節 DropdownMenuCheckboxItem.indicator 在 menu-item.tsx 加了開關指示的屬性,被引用的行往下移,行號改成新位置(指的內容不變)。程式與畫面不變。"},
-        {"paths":["packages/design-system/src/patterns/overlay-surface/overlay-surface.tsx"],"reason":"只改 SurfaceBody 註解:底距的值改指 layoutSpace.spec.md 規則 4 表(同一節 0.1.0-beta.152/layoutSpace.hug-footer-bottom),不再在註解重述。程式與畫面不變。"}
+        {"paths":["packages/design-system/src/patterns/overlay-surface/overlay-surface.tsx"],"reason":"只改 SurfaceBody 註解:底距的值改指 layoutSpace.spec.md 規則 4 表(同一節 0.1.0-beta.152/layoutSpace.hug-footer-bottom),不再在註解重述。程式與畫面不變。"},
+        {"paths":["packages/design-system/src/components/DataTable/data-table-column-visibility-panel.tsx"],"reason":"欄位顯示面板的清單外框標 data-layout-region=\"unbounded\"(自帶上下內距的清單):同一節 0.1.0-beta.152/layoutSpace.hug-footer-bottom 讓後面接 footer 的一般元素收尾 48,這一塊是清單、底照舊 0;主體本來就寫 !py-0,畫面不變。"}
       ]
     }
   }
