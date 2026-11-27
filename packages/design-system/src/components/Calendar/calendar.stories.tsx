@@ -494,7 +494,7 @@ export const EventClickAnchor: Story = {
 }
 
 // 詳情只能看(test-only 夾具;calendar.spec.md「事件詳情浮層」內文欄位【AI 推導】「isEditable 為 false 時空欄位不列、各欄位 InlineEdit editable={false}」):
-// 客戶端行事曆同步進來的會議,本產品不能改 → isEditable 一律 false。這一筆沒有地點、說明、類別 → 詳情只列時間與全天;
+// 客戶端行事曆同步進來的會議,本產品不能改 → isEditable 一律 false。這一筆沒有地點、說明、類別,只能看時也不畫全天【ALLDAY-VIEW(定)】→ 詳情只列時間;
 // 每一欄都不可點(沒有隱形的編輯鈕)。scripts/calendar-month-invariant.mjs DT-readonly 量這一則。
 export const DetailViewOnly: Story = {
   name: '詳情只能看',
