@@ -26,11 +26,11 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-hook-provider-marker-regex-helper | `packages/design-system/ds-canonical/hooks/lib/provider-marker-regex.mjs` | `sha256:7395275574a3d3c1b65b6e6fc58aedbbd95caf157e0cd5cf07d0107a4531bd65` |
 | canonical-hook-registration-output-contract-helper | `packages/design-system/ds-canonical/hooks/tests/registration-output-contracts.mjs` | `sha256:96c5a30cf956ecd9471b106396e0b80823c9e8e1c29c5b21f052b3bcd68d7fa0` |
 | canonical-hook-tsx-governance-analysis-helper | `packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs` | `sha256:e1b26967fad39d9b7dbd4aac8eb2a568eca910cd6857e6fd1ffd4b1b99f0157b` |
-| canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:d17a26c89b587681a1a4448d3a5c4d3facfdbfb0325e0657b1a001776f87d16e` |
+| canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:4a73b5c0576bc8f6a4f68d71c19f890ebb70ac430026fbbb6e56ca4bedf69744` |
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:79415aaec40715aa1a90d7d9185faa52b9845893682f5d45087ea87d68149a03` |
 | canonical-references | `packages/design-system/ds-canonical/references` | `sha256:8db1b460c0539cccfd6b039861607a437f6e70792a91b249f00c0016c8d04f70` |
 | canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:f7d68913db89c3bb6a76e615b0885310a1034c04c386520860037ae83bb29054` |
-| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:84611e9bb06ac13a0618823983072cafdb15890d5a65806d334a3a209817db54` |
+| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:0dea41acc2cc7500358e1f1e4a5d76545a0961c346e7dccfce76266c44363623` |
 | changeset-release-policy | `.changeset/config.json` | `sha256:a65a7f9ee6dc6c56eab99f77876bb61297cc59909943ba4ab08705b2d110e86c` |
 | claude-instruction-adapter | `packages/design-system/ds-canonical/adapters/claude-root-instructions.md` | `sha256:6c2c5fb2d2ffe93c74d74d88c35596d6e360973fec6e058290742cb52b39d8b9` |
 | claude-managed-plugin-manifest | `.claude-plugin/plugin.json` | `sha256:7630ab8443c80ffd2e0c1cd4d47a481db93168aec21df1a8108babd009093d29` |

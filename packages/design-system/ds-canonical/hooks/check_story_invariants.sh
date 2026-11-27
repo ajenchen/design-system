@@ -283,18 +283,24 @@ footer_close = re.compile(rb'</(?:Dialog|Sheet|Popover|Surface|Coachmark|AlertDi
 # 數深度用遮過註解的內容(masked_bytes,上面 shell 端由共用 lib/_comment_mask.sh 產生):註解裡寫的 <DialogFooter> 不是頁腳,
 # 不能讓之後整檔的有字關閉鈕都被放行;字串裡的 /*、" // " 不是註解,不能把真的 </DialogFooter> 遮掉。
 # 2198a11a 在這裡另寫了一份不先跳過字串的正規式,accept="image/*" 會把後面的 </DialogFooter> 一起遮掉(h46 再驗 H1 / H2)。
-# 遮罩逐位元組換空白、換行保留 → 位置用位元組算:第幾行(以 \n 分)的開頭 + 該行裡按鈕前面那段的 UTF-8 長度。
-line_starts = []
+# 遮罩逐位元組換空白、換行保留 → 位置用位元組算,而且要在原文上算:上面的 lines 用 splitlines(另認 U+2028 / U+2029 / 單獨 \r / \x0c
+# 等換行,讀檔時 \r\n 也被轉成 \n),逐行累加會和只認 \n、逐位元組的遮罩錯位(fd654d52 前一個 U+2028 就把位置推到下一行,
+# 「關閉」下一行是 <DialogFooter> 時被當成在頁腳裡放行;h46 再驗 K2)。所以只給 in_footer 另讀一份原文(newline='' 不轉換行),
+# 用同一個 splitlines(keepends=True) 切 → 行號與 lines 一一對應,每行在原文的起點 + 行內字數 = 原文位置,再換成 UTF-8 位元組數。
+# 其他規則照舊用 lines。
+with open(source_path, encoding='utf-8', newline='') as raw_source:
+    raw_text = raw_source.read()
+raw_line_starts = []
 _offset = 0
-for _raw_line in masked_bytes.split(b'\n'):
-    line_starts.append(_offset)
-    _offset += len(_raw_line) + 1
+for _raw_line in raw_text.splitlines(keepends=True):
+    raw_line_starts.append(_offset)
+    _offset += len(_raw_line)
 
 
 def in_footer(index, char_start):
-    if index >= len(line_starts):  # splitlines 另認 \r、U+2028 等換行 → 行對不上就不放行(照 B 判)
+    if index >= len(raw_line_starts):  # 行數對不上(不該發生)→ 不放行(照 B 判)
         return False
-    position = line_starts[index] + len(lines[index][:char_start].encode('utf-8'))
+    position = len(raw_text[:raw_line_starts[index] + char_start].encode('utf-8'))
     before = masked_bytes[:position]
     depth = len(footer_open.findall(before)) - len(footer_self_closing.findall(before)) - len(footer_close.findall(before))
     return depth > 0

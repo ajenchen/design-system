@@ -400,6 +400,29 @@ EOF
 run_hook "/fake/src/design-system/components/Dialog/dialog.stories.tsx" "$T20_CONTENT"
 expect_pass "Test 20 https:// in a footer keeps the footer scope"
 
+# 21 = 行號錯位(h46 再驗 K2):前面字串裡有一個 U+2028,python 的 splitlines 把它當換行、遮罩只認 \n。
+#      fd654d52 逐行累加位置 → 「關閉」那一行的位置被推到下一行的 <DialogFooter> 之後 → 當成在頁腳裡放行。
+#      現在 in_footer 在原文上算位置(同一個 splitlines 切、行號一一對應),照擋。
+echo ""
+echo "Test 21: a U+2028 earlier in the file does not shift the labeled close into the next line's footer → block"
+LS=$'\xe2\x80\xa8'
+T21_CONTENT="const a = \"x${LS}y\"
+export const B = {
+  render: ({ onClose }: { onClose: () => void }) => (
+    <>
+      <DialogHeader>
+                              <Button variant=\"tertiary\">關閉</Button>
+<DialogFooter>
+        <Button variant=\"primary\">儲存</Button>
+      </DialogFooter>
+      </DialogHeader>
+    </>
+  ),
+}
+const w = onClose"
+run_hook "/fake/src/design-system/components/Dialog/dialog.stories.tsx" "$T21_CONTENT"
+expect_block "Test 21 U+2028 line separator does not shift the footer position" "[B dismiss via label]"
+
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""
 echo "════════════════════════════════════════"
