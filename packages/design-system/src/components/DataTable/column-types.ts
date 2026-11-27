@@ -172,6 +172,11 @@ declare module '@tanstack/react-table' {
     /** Link: 自訂顯示文字（不設則自動從 URL 提取 hostname） */
     linkLabel?: string
     /**
+     * Link: 值的前綴圖示(轉發 LinkInput `icon`;2026-11-27):整欄同一個圖示,畫在格裡網址文字前面、在連結裡、跟字同為連結色。
+     * 規則 → `../LinkInput/link-input.spec.md`「值的前綴圖示」。
+     */
+    linkIcon?: import('lucide-react').LucideIcon
+    /**
      * Inline edit:column 是否可編輯。
      * - `true`:可編
      * - `false`(default):唯讀

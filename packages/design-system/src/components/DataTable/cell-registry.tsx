@@ -507,6 +507,8 @@ function UrlCell({ value, meta, mode, size, isEditable, onRequestEdit, onCommit,
         mode="view"
         value={value as string | null}
         label={meta?.linkLabel}
+        // 值的前綴圖示(link-input.spec.md「值的前綴圖示」):在連結裡、跟字同色,LinkInput 自己畫
+        icon={meta?.linkIcon}
         size={size}
         showDisplayEndIcon={isEditable === true}
         viewEditAction={isEditable ? { onClick: () => onRequestEdit?.(), revealGroup: 'cell' } : undefined}
