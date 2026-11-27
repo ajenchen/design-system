@@ -190,8 +190,9 @@ $(printf '%b' "$UNJUSTIFIED" | sed 's/^/    /' | awk 'NR <= 10')
   <li><Chip variant="assist">;chip.spec.md「一排 assist chip(訊息附件以外)」)
   會由 utility-registry 結構規則自動辨識,不需 escape。
   標題塊(layoutSpace.spec.md 規則 3「標題塊」:標題字列 → 它標示的有框內容 = 8)認得三種寫法:
-  [標題, 有框內容] 同包一層 flex flex-col gap-2、標題(或只有無框按鈕的標題列)上 mb-2、有框內容上 mt-2;
-  有框按鈕的標題列 / 搜尋列 / 工具列 → 表用 gap-[var(--layout-space-tight)],塊與塊用 loose。
+  [標題, 有框內容] 同包一層 flex flex-col gap-2、標題(或一個標題 + 無框 / 連結樣式按鈕、ⓘ、連結的標題列)上 mb-2、
+  有框內容(DataTable、搜尋列 / 工具列、自帶 border、每張都帶框的選項卡群組)上 mt-2,兩邊不疊用;
+  標題列裡有其他東西(輸入控件、Chip、有框按鈕…)/ 搜尋列 / 工具列 → 表用 gap-[var(--layout-space-tight)],塊與塊用 loose。
   一般 flex/grid/section 的 gap-1/2 沒有這些語意證據時仍是 blocker(手刻 div 排一排 chip 也是)。
 
   完整 6 條規則 → packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md

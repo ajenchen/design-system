@@ -679,6 +679,110 @@ expect_block "TX9. 標題塊:標題列裡有搜尋框 mb-2 → BLOCK"
 run_hook "Write" "$APP_TSX" "content" \
   'const S = () => <div className="flex flex-col gap-2"><section className="flex flex-col gap-2"><h3 className="text-h6">Statuses</h3><DataTable columns={statusColumns} data={statuses} /></section><p>說明</p></div>;'
 expect_block "TX10. 同一行外層的 gap-2 不是標題塊 → BLOCK"
+# ── 規格核對對抗樣本(2026-11-27 h26 第一輪 P1 / P2 / P4 / P18–P22):標題列改白名單、有框內容只看元素本身 ──
+# TX11(P1). 整段內容(標題 + 說明 + 清單)當成標題列,mb-2 → 表 → 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const S = () => (
+  <>
+    <section className="mb-2">
+      <h3 className="text-h6">Members</h3>
+      <p>團隊成員與他們的角色</p>
+      <ul>
+        <li>Alice</li>
+        <li>Bob</li>
+      </ul>
+    </section>
+    <DataTable columns={memberColumns} data={members} />
+  </>
+);'
+expect_block "TX11. 整段內容(h3 + p + ul)不是標題列 → BLOCK"
+# TX12(P2). flex-col gap-2 包 [整段內容, 表] → 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const S = () => (
+  <div className="flex flex-col gap-2">
+    <section>
+      <h3 className="text-h6">Members</h3>
+      <p>團隊成員</p>
+      <ul><li>Alice</li><li>Bob</li></ul>
+    </section>
+    <DataTable columns={memberColumns} data={members} />
+  </div>
+);'
+expect_block "TX12. gap-2 [整段內容, 表] → BLOCK"
+# TX13(P4). 容器只有第一個子元素帶 border(容器本身不是有框內容)→ 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const S = () => (
+  <>
+    <h3 className="text-h6 mb-2">Projects</h3>
+    <div className="flex flex-col">
+      <div className="border rounded">Website redesign</div>
+      <p>其他說明文字</p>
+    </div>
+  </>
+);'
+expect_block "TX13. 只有第一個子元素帶 border 的容器 → BLOCK"
+# TX14(P18). TX6 的 .map( 有框卡外面多包一層 div → 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const Projects = () => (
+  <>
+    <h3 className="text-h6 mb-2">Projects</h3>
+    <div className="grid grid-cols-3 gap-[var(--layout-space-loose)]">
+      {projects.map((p) => <article key={p.id} className="border rounded-md">{p.name}</article>)}
+    </div>
+  </>
+);'
+expect_block "TX14. div 包 .map( 產生的好幾張有框卡 → BLOCK"
+# TX15–TX17(P19 / P20 / P21). 標題列裡放有框控件(TimePicker / PeoplePicker / Chip)= 有框控件列 → 照擋
+for CTRL in '<TimePicker size="sm" />' '<PeoplePicker size="sm" />' '<Chip variant="filter">只看我的</Chip>'; do
+  run_hook "Write" "$APP_TSX" "content" \
+    "const S = () => (
+  <>
+    <div className=\"flex justify-between mb-2\">
+      <h3 className=\"text-h6\">Shifts</h3>
+      $CTRL
+    </div>
+    <DataTable columns={shiftColumns} data={shifts} />
+  </>
+);"
+  expect_block "TX15–17. 標題列裡有 ${CTRL%% *} → BLOCK"
+done
+# TX18(P8). 標題列裡放 ToggleGroup(白名單外的元件)→ 照擋
+run_hook "Write" "$APP_TSX" "content" \
+  'const S = () => (
+  <>
+    <div className="flex justify-between mb-2">
+      <h3 className="text-h6">Statuses</h3>
+      <ToggleGroup type="single"><ToggleGroupItem value="a">全部</ToggleGroupItem></ToggleGroup>
+    </div>
+    <DataTable columns={statusColumns} data={statuses} />
+  </>
+);'
+expect_block "TX18. 標題列裡有 ToggleGroup → BLOCK"
+# TX19(P22). 標題 mb-2 + 表 mt-2 疊成 16 → 照擋(同一段只由一邊給)
+run_hook "Write" "$APP_TSX" "content" \
+  'const S = () => (
+  <>
+    <h3 className="text-h6 mb-2">Statuses</h3>
+    <DataTable className="mt-2" columns={statusColumns} data={statuses} />
+  </>
+);'
+expect_block "TX19. mb-2 + mt-2 疊成 16 → BLOCK"
+# T6. 白名單內:標題 + ⓘ(Tooltip 包無框 Button)+ 連結樣式按鈕,mb-2 → 表 → 放行
+run_hook "Write" "$APP_TSX" "content" \
+  'const S = () => (
+  <>
+    <div className="flex items-start gap-[var(--layout-space-tight)] mb-2">
+      <h3 className="text-h6 font-medium">Statuses</h3>
+      <Tooltip>
+        <TooltipTrigger asChild><Button size="xs" iconOnly variant="text" startIcon={Info} aria-label="說明" /></TooltipTrigger>
+        <TooltipContent>狀態會出現在任務卡片上</TooltipContent>
+      </Tooltip>
+      <Button size="xs" variant="link">管理</Button>
+    </div>
+    <DataTable columns={statusColumns} data={statuses} />
+  </>
+);'
+expect_silent "T6. 標題列白名單(ⓘ + 連結樣式按鈕)mb-2 → silent"
 # T9. 拿掉放行:consumer corpus 的 registry 把 title_block 的 bordered_components 換成不存在的元件 → 同一份 T1 樣本 BLOCK
 TITLE_OFF_CORPUS="$TMP_DIR/title-block-off-corpus"
 mkdir -p "$TITLE_OFF_CORPUS/references"

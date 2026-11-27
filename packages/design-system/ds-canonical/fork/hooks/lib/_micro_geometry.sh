@@ -18,16 +18,20 @@ governance_micro_geometry_registry_file() {
 }
 
 governance_micro_geometry_scan() {
-  local mode="$1" payload="${2:-}" candidates="${3:-}" root="${4:-}" registry
+  local mode="$1" payload="${2:-}" candidates="${3:-}" root="${4:-}" registry mask_lib
   registry="$(governance_micro_geometry_registry_file)" || return 1
-  python3 - "$mode" "$registry" "$root" 3<<<"$payload" 4<<<"$candidates" <<'PY'
+  # JSX 結構解析前的註解遮罩只用 _comment_mask.sh 那一份實作(不在這裡另寫正規式)
+  mask_lib="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_comment_mask.sh"
+  [ -f "$mask_lib" ] && [ -r "$mask_lib" ] && [ ! -L "$mask_lib" ] || return 1
+  python3 - "$mode" "$registry" "$root" "$mask_lib" 3<<<"$payload" 4<<<"$candidates" <<'PY'
 import json
 import os
 import re
 import stat
+import subprocess
 import sys
 
-mode, registry_path, scan_root = sys.argv[1:4]
+mode, registry_path, scan_root, mask_lib = sys.argv[1:5]
 payload = os.fdopen(3, encoding="utf-8").read()
 candidates = os.fdopen(4, encoding="utf-8").read()
 
@@ -147,10 +151,11 @@ if not re.fullmatch(r"[A-Z][A-Za-z0-9]*", chip_row["item_component"]) or not re.
 # layoutSpace.spec.md 規則 3「標題塊」(2026-11-27,H26):標題字列 → 它標示的有框內容 = 8 的三種寫法。
 title_block = policy["title_block"]
 TITLE_BLOCK_LIST_KEYS = {
-    "spacing_utilities", "heading_elements", "heading_utilities", "heading_row_disallowed_components",
-    "bordered_components", "bordered_utilities", "bordered_roles", "bordered_region_values",
+    "spacing_utilities", "heading_elements", "heading_utilities", "heading_row_button_variants",
+    "heading_row_text_elements", "heading_row_wrappers", "bordered_components", "bordered_utilities",
+    "bordered_roles", "bordered_region_values", "option_group_components", "option_group_roles",
 }
-TITLE_BLOCK_STR_KEYS = {"heading_row_button_component", "heading_row_button_variant", "rationale", "rationale_path"}
+TITLE_BLOCK_STR_KEYS = {"heading_row_button_component", "rationale", "rationale_path"}
 if not isinstance(title_block, dict) or set(title_block) != TITLE_BLOCK_LIST_KEYS | TITLE_BLOCK_STR_KEYS:
     raise ValueError("canonical micro-geometry title_block is invalid")
 for key in TITLE_BLOCK_LIST_KEYS:
@@ -263,16 +268,22 @@ def has_open_ancestor(lines, index, names, limit):
 
 
 # ── JSX 結構(2026-11-27,H26 標題塊 + H32 Item 零件列):需要「直屬子元素 / 上下兄弟」的判定才用。
-# 只做有界的標籤樹:註解先換成等長空白(同 _comment_mask.sh 的三種寫法,這裡只為了不把註解裡的 <h3> 當成標籤);
+# 只做有界的標籤樹:註解先換成等長空白(呼叫 _comment_mask.sh 的 governance_mask_comments —— 全庫唯一一份遮罩,
+# 先跳過字串再認註解;這裡只為了不把註解裡的 <h3> 當成標籤);
 # `<名字` 前一個字是識別字元(useState<string> / Promise<void> 這類型別參數)不算標籤;屬性裡的 {…} 與引號照層數跳過
 # (`=>` 的 > 不會被當成標籤結尾)。解析不出來的地方一律當成「沒有這個結構」= 不放行,不會因此多放。
-_COMMENT_RE = re.compile(r"(\{/\*.*?\*/\})|(/\*.*?\*/)|((?:^|(?<=[\s;,)}>]))//[^\n]*)", re.S | re.M)
 _TAG_RE = re.compile(r"<(/?)([A-Za-z][\w.]*)?")
 _tree_cache = {}
 
 
 def _mask_comments(text):
-    return _COMMENT_RE.sub(lambda m: re.sub(r"[^\n]", " ", m.group(0)), text)
+    done = subprocess.run(
+        ["bash", "-c", 'source "$1" && governance_mask_comments', "comment-mask", mask_lib],
+        input=text, capture_output=True, text=True, encoding="utf-8",
+    )
+    if done.returncode != 0 or done.stdout.count("\n") != text.count("\n"):
+        raise ValueError("comment mask failed or changed the line count")
+    return done.stdout
 
 
 def _scan_tag_end(text, pos):
@@ -396,24 +407,32 @@ def is_heading_node(node):
     return node["name"] in title_block["heading_elements"] or has_any_utility(node["attrs"], title_block["heading_utilities"])
 
 
+_TEXT_BUTTON_RE = re.compile(
+    rf"\bvariant\s*=\s*\{{?\s*['\"](?:{'|'.join(re.escape(v) for v in title_block['heading_row_button_variants'])})['\"]"
+)
+
+
+def is_heading_row_extra(node):
+    """標題列裡標題以外准放的東西(白名單):無框 / 連結樣式的 Button、<a>,或只包這些的 span / Tooltip 外層。"""
+    if node["name"] == title_block["heading_row_button_component"]:
+        return bool(_TEXT_BUTTON_RE.search(node["attrs"]))
+    if node["name"] in title_block["heading_row_text_elements"]:
+        return not is_bordered_self(node)
+    if node["name"] in title_block["heading_row_wrappers"]:
+        return not is_bordered_self(node) and all(is_heading_row_extra(kid) for kid in node["children"])
+    return False
+
+
 def is_heading_row(node):
-    """標題列:裡面有標題、按鈕全是無框(variant="text")、沒有輸入控件 —— 這一列算「字」(規則 3「標題塊」)。"""
+    """這一列算「字」(規則 3「標題塊」,白名單):它本身是標題;或它的直屬子元素剛好一個標題,
+    其餘全是 is_heading_row_extra 准放的東西。段落、清單、輸入控件、Chip、有框按鈕或任何沒列到的元素 → 不算。"""
     if is_heading_node(node):
         return True
-    subtree = list(iter_subtree(node))
-    if not any(is_heading_node(child) for child in subtree):
+    if is_bordered_self(node):
         return False
-    button = title_block["heading_row_button_component"]
-    variant_re = re.compile(rf"\bvariant\s*=\s*\{{?\s*['\"]{re.escape(title_block['heading_row_button_variant'])}['\"]")
-    for child in subtree:
-        if child["name"] in title_block["heading_row_disallowed_components"]:
-            return False
-        if child["name"] == button and not variant_re.search(child["attrs"]):
-            return False
-        # 列裡有自己帶框的東西(有框的卡、表格、工具列)= 不是一列字
-        if is_bordered_self(child):
-            return False
-    return True
+    kids = node["children"]
+    headings = [kid for kid in kids if is_heading_node(kid)]
+    return len(headings) == 1 and all(kid in headings or is_heading_row_extra(kid) for kid in kids)
 
 
 def is_bordered_self(node):
@@ -427,11 +446,16 @@ def is_bordered_self(node):
 
 
 def is_bordered_node(node):
+    """有框內容只看元素本身(規格列舉):DataTable / 搜尋列 / 工具列 / 自帶 border / bounded 邊緣標記;
+    或選項卡群組 —— 元素本身宣告是一組選項(RadioGroup / CheckboxGroup / role=radiogroup|group),而且直屬子元素每一張都自帶 border。
+    不從「第一個子元素有框」推:容器只是包著有框的東西,本身不是那一個有框內容。"""
     if is_bordered_self(node):
         return True
-    # 一組選項卡:群組本身沒框,第一張卡有框 → 內容頂端就是一條框
-    first = node["children"][0] if node["children"] else None
-    return bool(first) and has_any_utility(first["attrs"], title_block["bordered_utilities"])
+    is_group = node["name"] in title_block["option_group_components"] or any(
+        re.search(rf"\brole\s*=\s*['\"]{re.escape(role)}['\"]", node["attrs"]) for role in title_block["option_group_roles"]
+    )
+    kids = node["children"]
+    return is_group and bool(kids) and all(has_any_utility(kid["attrs"], title_block["bordered_utilities"]) for kid in kids)
 
 
 def matches_title_block(lines, index, tokens):
@@ -466,12 +490,19 @@ def title_block_node_ok(node, utility):
         if not is_heading_row(node) or at + 1 >= len(siblings):
             return False
         nxt = siblings[at + 1]
-        return not nxt["in_expr"] and is_bordered_node(nxt) and nxt["start_line"] - node["end_line"] <= nearby_limit
+        # 同一段距離只由一邊給:下一個兄弟再帶 mt-2 = 疊成 16
+        return (
+            not nxt["in_expr"] and not has_utility(nxt["attrs"], "mt-2") and is_bordered_node(nxt)
+            and nxt["start_line"] - node["end_line"] <= nearby_limit
+        )
     if utility == "mt-2":
         if not is_bordered_node(node) or at == 0:
             return False
         prev = siblings[at - 1]
-        return not prev["in_expr"] and is_heading_row(prev) and node["start_line"] - prev["end_line"] <= nearby_limit
+        return (
+            not prev["in_expr"] and not has_utility(prev["attrs"], "mb-2") and is_heading_row(prev)
+            and node["start_line"] - prev["end_line"] <= nearby_limit
+        )
     return False
 
 
