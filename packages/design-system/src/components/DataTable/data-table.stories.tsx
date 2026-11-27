@@ -1466,8 +1466,7 @@ export const WithBulkActions: Story = {
           <div className="flex flex-col">
             {showHint && (
               // 提示列的動作放 Alert 自己的 endContent,用 Button variant="link"(button.tsx「內文連結(inline reading)」那一型)——
-              // @anatomy-exempt-next 下一行是註解,描述修前的寫法,不是原生控件(R1 A.5 掃到註解裡的 tag 字樣)
-              // 之前是句子裡的原生 <button>,還附了「DS 尚無 inline text link primitive、Alert 無 action slot」的豁免標記,兩句都不成立
+              // 之前是句子裡的原生 button 元素,還附了「DS 尚無 inline text link primitive、Alert 無 action slot」的豁免標記,兩句都不成立
               <Alert
                 variant="neutral"
                 placement="fixed"

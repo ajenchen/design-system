@@ -479,7 +479,7 @@
         {"id":"0.1.0-beta.152/DataTable.column-menu-items","target":"DataTable 表頭 ⌄ 欄位選單","note":"選單沒有任何項目的欄(例:tableOptions.enableHiding: false 的不可排序欄,沒有傳 onColumnFilterTrigger、沒開 enableColumnResize)不再畫 ⌄,滑過與聚焦時也不留 ⌄ 與 8px 的位置(修前點開是只有上下內距的空選單)。分隔線只畫在排序項與其他項(依此欄篩選… / 隱藏欄位 / 自動調整寬度)之間,只有其中一組時不畫(修前關掉欄位隱藏後,可排序欄的選單底部多一條線)。兩組都有的選單與項目順序不變(workspace H42)。","spec":"src/components/DataTable/data-table.spec.md「九之二、Cell action primitive 分類」","paths":["packages/design-system/src/components/DataTable/data-table.tsx","packages/design-system/src/components/DataTable/lib/column-menu.ts","packages/design-system/src/components/DataTable/lib/sort-cycle.ts"]}
       ],
       "noVisibleChange": [
-        {"paths":["packages/design-system/src/components/DataTable/data-table.stories.tsx"],"reason":"新增 test-only 範例「表頭欄位選單的項目」(五張表,含 enableColumnMenu={false};不進側欄與 Autodocs,只給 data-table-multi-sort-invariant.mjs C 段量),另在 WithBulkActions 一段既有註解前加一行 @anatomy-exempt-next(寫入檢查把註解裡描述修前寫法的 tag 字樣當成原生控件)。讀者看得到的範例畫面不變。"}
+        {"paths":["packages/design-system/src/components/DataTable/data-table.stories.tsx"],"reason":"新增 test-only 範例「表頭欄位選單的項目」(五張表,含 enableColumnMenu={false};不進側欄與 Autodocs,只給 data-table-multi-sort-invariant.mjs C 段量),另把 WithBulkActions 一段既有註解裡帶角括號的 button 字樣改寫成「原生 button 元素」(寫入檢查把註解裡的 tag 字樣當成原生控件,擋住整個檔的編輯)。讀者看得到的範例畫面不變。"}
       ]
     }
   }

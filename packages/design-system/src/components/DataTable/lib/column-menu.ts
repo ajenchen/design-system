@@ -10,7 +10,7 @@
  *   - 兩組,依序:排序(升冪 / 降冪 / 取消排序 —— 出不出由 `sort-cycle.ts` `columnMenuSortItems` 算好交進來)、
  *     這一欄的其他動作(依此欄篩選… / 隱藏欄位 / 自動調整寬度)。
  *   - 沒有項目的組不列;分隔線只畫在兩組之間 = 兩組都有項目才畫(`../../DropdownMenu/dropdown-menu.spec.md`「Item 類型」:
- *     Separator「視覺分隔,劃分邏輯群組」)。
+ *     Separator「視覺分隔，劃分邏輯群組」)。
  *   - 一組都沒有 → 回空陣列,呼叫端不畫 ⌄(連外層與展開時的 8px 都不畫)。
  *   - 整張表 `enableColumnMenu={false}`(workspace 2026-11-27 追加:產品表頭一律不要 ⌄)→ 恆回空陣列;排序區照常可點,不經本檔。
  * 項目 id = 該項在 `DataTableLabels` 裡的字的鍵名,呼叫端直接拿 id 取字,不另寫對照。
