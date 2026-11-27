@@ -5,7 +5,7 @@ import { Plus, Search } from 'lucide-react'
 import { Button } from '@/design-system/components/Button/button'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import { Input } from '@/design-system/components/Input/input'
-import { TutorialPage, TutorialSection, TutorialList } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { TutorialPage, TutorialSection, TutorialList, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Tokens/LayoutSpace',
@@ -79,11 +79,27 @@ const labels: TaskType[] = [
   { name: '設計稿', category: '設計' },
 ]
 
+// 頁面外框照教學頁共用元件(TutorialPage → TutorialSection → TutorialRule;category-templates.md「教學框的間距與標題」),
+// 規則裡面的三塊是範例畫面本身(產品寫法,用 role="group" 的一般容器,不是教學頁的段落外框);量測只看 [data-title-block-probe] 裡面。
+const ProbeRule = createTutorialRule()
+
 function TitleBlockScene() {
+  return (
+    <TutorialPage>
+      <TutorialSection title="標題塊量測">
+        <ProbeRule title="任務類型設定:標題 → 表、標題 → 搜尋列 → 表、有框按鈕的標題列 → 表" paragraph={false}>
+          <TitleBlockBlocks />
+        </ProbeRule>
+      </TutorialSection>
+    </TutorialPage>
+  )
+}
+
+function TitleBlockBlocks() {
   return (
     <div className="flex max-w-3xl flex-col gap-[var(--layout-space-loose)]" data-title-block-probe="">
       {/* 塊 1:標題(右邊無框小圖示鈕,不撐高這一列)→ 表 = 8 */}
-      <section className="flex flex-col gap-2" data-tb-block="statuses" aria-labelledby="tb-statuses">
+      <div role="group" className="flex flex-col gap-2" data-tb-block="statuses" aria-labelledby="tb-statuses">
         <div className="flex items-start justify-between">
           <h3 id="tb-statuses" className="text-body font-medium" data-tb-gap="statuses:text">Statuses</h3>
           <span className="flex h-[1lh] items-center">
@@ -93,9 +109,9 @@ function TitleBlockScene() {
         <div data-tb-gap-to="statuses:text">
           <DataTable columns={typeColumns} data={statuses} maxHeight="none" />
         </div>
-      </section>
+      </div>
       {/* 塊 2:標題 → 搜尋列 → 表 = 8,再 tight */}
-      <section className="flex flex-col gap-2" data-tb-block="priorities" aria-labelledby="tb-priorities">
+      <div role="group" className="flex flex-col gap-2" data-tb-block="priorities" aria-labelledby="tb-priorities">
         <h3 id="tb-priorities" className="text-body font-medium" data-tb-gap="priorities:text">Priorities</h3>
         <div className="flex flex-col gap-[var(--layout-space-tight)]" data-tb-gap-to="priorities:text">
           <div className="flex" data-tb-gap="priorities:control">
@@ -105,9 +121,9 @@ function TitleBlockScene() {
             <DataTable columns={typeColumns} data={priorities} maxHeight="none" />
           </div>
         </div>
-      </section>
+      </div>
       {/* 塊 3:標題列放有框按鈕 = 有框控件列 → 表 = tight */}
-      <section className="flex flex-col gap-[var(--layout-space-tight)]" data-tb-block="labels" aria-labelledby="tb-labels">
+      <div role="group" className="flex flex-col gap-[var(--layout-space-tight)]" data-tb-block="labels" aria-labelledby="tb-labels">
         <div className="flex items-center justify-between" data-tb-gap="labels:control">
           <h3 id="tb-labels" className="text-body font-medium">Labels</h3>
           <Button size="sm" variant="tertiary" startIcon={Plus}>新增標籤</Button>
@@ -115,7 +131,7 @@ function TitleBlockScene() {
         <div data-tb-gap-to="labels:control">
           <DataTable columns={typeColumns} data={labels} maxHeight="none" />
         </div>
-      </section>
+      </div>
     </div>
   )
 }
