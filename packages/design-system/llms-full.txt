@@ -219,9 +219,9 @@ Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/InfoTooltip/
 
 ### Sizes
-- **sm**: 在 sm 列裡(跟著列自動,不用傳)—— 圖示 16
-- **md**: 預設:一般字級 text-body 旁(欄位標籤、設定列標題、md 列、列外的一般文字)—— 圖示 16
-- **lg**: text-body-lg 旁(lg 列裡自動;列外放在 text-body-lg 以上的標題旁才要傳)—— 圖示 20
+- **sm**: 容器傳下來的列尺寸是 sm 時(自動,不用傳)—— 圖示 16
+- **md**: 預設:沒有容器傳尺寸的地方、欄位標籤裡(固定)—— 圖示 16
+- **lg**: 容器傳下來的列尺寸是 lg 時(自動);其他地方是使用端覺得不夠大時自選 —— 圖示 20
 
 ## InlineEdit(family composite)
 

@@ -22,10 +22,10 @@ export const Overview: Story = {
       <div>
         <H3>Anatomy</H3>
         <Desc>一顆 <code>{'<button type="button">'}</code> 包 ⓘ 圖示,外面是 Tooltip。滑過或 Tab 聚焦時出說明;點下去不做事,所以游標是一般箭頭、不上底色。讀屏名稱就是說明文字。</Desc>
-        <div className="flex items-center gap-1">
+        <span className="inline-flex items-center gap-1">
           <span className="text-body text-foreground">帳單寄送 Email</span>
-          <InfoTooltip content="每月帳單與付款收據會寄到這個信箱" />
-        </div>
+          <InfoTooltip info="每月帳單與付款收據會寄到這個信箱" />
+        </span>
       </div>
 
       <div>
@@ -34,8 +34,8 @@ export const Overview: Story = {
           <table className="text-caption border-collapse">
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
-              <tr><Td mono>content</Td><Td mono>string</Td><Td mono>—(必填)</Td><Td>說明文字:Tooltip 顯示的那一句,同時是讀屏名稱</Td></tr>
-              <tr><Td mono>size</Td><Td mono>{"'sm' | 'md' | 'lg'"}</Td><Td mono>所在列的尺寸;列外 md</Td><Td>圖示照 icon tier:sm / md 16、lg 20。只有列外放在 text-body-lg 以上的標題旁才要傳 lg</Td></tr>
+              <tr><Td mono>info</Td><Td mono>string</Td><Td mono>—(必填)</Td><Td>說明文字:Tooltip 顯示的那一句,同時是讀屏名稱(同 FieldLabel 的 info);空字串時不要放這顆</Td></tr>
+              <tr><Td mono>size</Td><Td mono>{"'sm' | 'md' | 'lg'"}</Td><Td mono>容器傳下來的列尺寸;沒有 = md</Td><Td>圖示照 icon tier:sm / md 16、lg 20。預設就好;覺得不夠大再自己傳</Td></tr>
             </tbody>
           </table>
         </div>
@@ -64,22 +64,22 @@ export const SizeMatrix: Story = {
   render: () => (
     <div>
       <H3>尺寸</H3>
-      <Desc>尺寸照旁邊文字的字級(uiSize.spec.md「Icon 尺寸 Tier」);在列裡跟著列、在欄位標籤裡固定 md、其他地方預設 md。密度不改大小。</Desc>
+      <Desc>預設 md(16);放在會傳列尺寸的容器裡(Sidebar、選單 / 指令面板的內容區)跟著那個尺寸;欄位標籤裡固定 md。lg 是使用端自選:覺得不夠大再自己傳。密度不改大小。</Desc>
       <div className="overflow-x-auto">
         <table className="text-caption border-collapse">
           <thead><tr><Th>size</Th><Th>圖示</Th><Th>用在</Th><Th>範例</Th></tr></thead>
           <tbody>
             <tr>
-              <Td mono>sm</Td><Td mono>{ICON_SIZE.sm}px</Td><Td>sm 列裡(自動)</Td>
-              <Td><span className="inline-flex items-center gap-1 text-body">已封存<InfoTooltip size="sm" content="封存的任務可以在封存區找回" /></span></Td>
+              <Td mono>sm</Td><Td mono>{ICON_SIZE.sm}px</Td><Td>容器傳下來 sm 時(自動)</Td>
+              <Td><span className="inline-flex items-center gap-1 text-body">已封存<InfoTooltip size="sm" info="封存的任務可以在封存區找回" /></span></Td>
             </tr>
             <tr>
-              <Td mono>md</Td><Td mono>{ICON_SIZE.md}px</Td><Td>預設:一般字級 text-body 旁、欄位標籤</Td>
-              <Td><span className="inline-flex items-center gap-1 text-body">付款方式<InfoTooltip content="信用卡到期前 30 天會寄信提醒更新" /></span></Td>
+              <Td mono>md</Td><Td mono>{ICON_SIZE.md}px</Td><Td>預設;欄位標籤裡固定這一檔</Td>
+              <Td><span className="inline-flex items-center gap-1 text-body">付款方式<InfoTooltip info="信用卡到期前 30 天會寄信提醒更新" /></span></Td>
             </tr>
             <tr>
-              <Td mono>lg</Td><Td mono>{ICON_SIZE.lg}px</Td><Td>lg 列裡(自動);列外 text-body-lg 標題旁(要傳)</Td>
-              <Td><span className="inline-flex items-center gap-1 text-body-lg font-medium">帳單資訊<InfoTooltip size="lg" content="每月 1 號結算上個月的用量" /></span></Td>
+              <Td mono>lg</Td><Td mono>{ICON_SIZE.lg}px</Td><Td>容器傳下來 lg 時(自動);其他地方是使用端自選</Td>
+              <Td><span className="inline-flex items-center gap-1 text-body-lg font-medium">帳單資訊<InfoTooltip size="lg" info="每月 1 號結算上個月的用量" /></span></Td>
             </tr>
           </tbody>
         </table>

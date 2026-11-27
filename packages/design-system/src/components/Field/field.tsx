@@ -516,7 +516,7 @@ const FieldLabel = React.forwardRef<HTMLLabelElement, FieldLabelProps>(
           {/* ⓘ = 公開元件 InfoTooltip(長相、游標、讀屏名稱的理由都住 info-tooltip.tsx / info-tooltip.spec.md)。
               size="md" 明寫:標籤字級固定 text-body、不隨欄位尺寸變(field-context.ts FIELD_TEXT_CLASS),
               所以 ⓘ 固定 16,不跟著外面可能有的列尺寸走 */}
-          {showInfo && info && <InfoTooltip content={info} size="md" />}
+          {showInfo && info && <InfoTooltip info={info} size="md" />}
         </span>
       </RootTag>
     )

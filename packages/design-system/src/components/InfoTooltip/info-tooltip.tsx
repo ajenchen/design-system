@@ -19,18 +19,21 @@ import { useRowSize } from "@/design-system/patterns/element-anatomy/item-anatom
  */
 
 export interface InfoTooltipProps
-  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children" | "content" | "type"> {
-  /** 說明文字:滑過 / 聚焦時 Tooltip 顯示的那一句,同時是這顆的讀屏名稱。 */
-  content: string
+  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children" | "type"> {
   /**
-   * 圖示尺寸,照 icon tier(sm / md 16、lg 20)。不傳 = 跟著所在列(選單列、清單列、樹、側欄列等 row primitive)的尺寸;
-   * 不在列裡 = md(一般字級 text-body 旁)。列外放在 text-body-lg 的標題旁才傳 `lg`(info-tooltip.spec.md「尺寸」)。
+   * 說明文字:滑過 / 聚焦時 Tooltip 顯示的那一句,同時是這顆的讀屏名稱。
+   * 名字同 FieldLabel 的 `info`(同一句話在 DS 裡已叫 info,info-tooltip.spec.md「命名」)。空字串時不要放這顆。
+   */
+  info: string
+  /**
+   * 圖示尺寸,照 icon tier(sm / md 16、lg 20)。不傳 = 所在容器傳下來的列尺寸(Sidebar、選單 / 指令面板的內容區等),
+   * 都沒有 = md(16)。覺得不夠大再自己傳(info-tooltip.spec.md「尺寸」)。
    */
   size?: RowSize
 }
 
 const InfoTooltip = React.forwardRef<HTMLButtonElement, InfoTooltipProps>(
-  ({ content, size: sizeProp, className, ...props }, ref) => {
+  ({ info, size: sizeProp, className, ...props }, ref) => {
     const rowSize = useRowSize("md")
     const size = sizeProp ?? rowSize
     return (
@@ -39,7 +42,7 @@ const InfoTooltip = React.forwardRef<HTMLButtonElement, InfoTooltipProps>(
           <button
             ref={ref}
             type="button"
-            aria-label={content}
+            aria-label={info}
             data-slot="info-tooltip"
             // 滑過深一階 = 告訴你「這裡有說明可看」(hit-area-canonical.md 三-1);不上底色。
             // 游標明寫 cursor-default:點下去不做事(Radix Tooltip 點擊只會收起說明),不能用手形;
@@ -53,7 +56,7 @@ const InfoTooltip = React.forwardRef<HTMLButtonElement, InfoTooltipProps>(
             <Info size={ICON_SIZE[size]} aria-hidden />
           </button>
         </TooltipTrigger>
-        <TooltipContent>{content}</TooltipContent>
+        <TooltipContent>{info}</TooltipContent>
       </Tooltip>
     )
   },
