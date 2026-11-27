@@ -85,6 +85,7 @@
         {"pattern": "governance/lock.schema.json", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": "governance/consumer-governance.md", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": ".github/workflows/audit.yml", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": ".github/workflows/sync-design-system.yml", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": ".npmrc", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": ".devcontainer/devcontainer-lock.json", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": ".devcontainer/devcontainer.json", "mode": "upstream-managed", "owner": "design-system-governance"},

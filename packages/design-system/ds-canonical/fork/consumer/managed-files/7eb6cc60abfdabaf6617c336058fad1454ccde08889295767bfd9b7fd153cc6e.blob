@@ -408,6 +408,136 @@ export function openGovernanceProxyTunnel({
   })
 }
 
+// ── 升級鏈讀 GitHub Release / npm attestation 的 fetch 也走同一支代理路由(2026-11-27,TRACKER R74)──────────────
+// workspace 實測(雲端 Claude Code session,0.1.0-beta.150 → 0.1.0-beta.151):把 ajenchen/design-system 掛到 session 之後,
+// sync-all 仍停在「GitHub Release … readback failed with HTTP 401」—— Node 內建 fetch 不讀 HTTPS_PROXY,直連 api.github.com;
+// 同一網址 curl 經代理 200,加 NODE_USE_ENV_PROXY=1 重跑 exit 0。這裡不靠 NODE_USE_ENV_PROXY,理由:
+//   (1) Node 文件「Added in: v22.21.0」、「parses the HTTP_PROXY, HTTPS_PROXY and NO_PROXY environment variables during startup」
+//       (https://nodejs.org/docs/latest-v22.x/api/cli.html#node_use_env_proxy1)—— 契約最低版 22.13.0 到 22.20.x 沒有它,
+//       而且要在行程啟動前設,sync-all 是 `npm run sync-all` 直接叫起的同一個行程;
+//   (2) 它照 Node 自己的規則讀代理變數(含帶帳密的網址、HTTP_PROXY),與本檔「只轉送不帶帳密的 HTTPS_PROXY」是兩份平行規則。
+// 所以用同一支 resolveGovernanceProxyRoute:沒有可轉送的代理、或主機在 NO_PROXY → 原本的內建 fetch(直連,行為與修前相同);
+// 否則經不帶帳密的代理 CONNECT(openGovernanceProxyTunnel),隧道上的 TLS 用 verifiedRegistryTrustAnchors(內建 + 系統庫,
+// 與鎖定安裝鏈同一組),不新增信任錨。重導向(GitHub 的 release asset 會轉到下載主機)逐跳重新判定路由,換了 origin 就不帶
+// Authorization(與 fetch 規格同);`redirect: 'error'` 照樣拒絕。回傳的是標準 Response,呼叫端不分兩條路。
+const GOVERNANCE_ROUTED_FETCH_MAX_REDIRECTS = 5
+const GOVERNANCE_ROUTED_FETCH_MAX_BYTES = 64 * 1024 * 1024
+const GOVERNANCE_ROUTED_FETCH_REDIRECTS = new Set([301, 302, 303, 307, 308])
+
+function plainRequestHeaders(headers) {
+  const out = {}
+  for (const [name, value] of new Headers(headers || {})) out[name] = value
+  return out
+}
+
+function requestThroughTunnel({ url, method, headers, tunnel, ca, signal, requestImpl }) {
+  return new Promise((resolvePromise, rejectPromise) => {
+    let settled = false
+    const fail = (error) => {
+      if (settled) return
+      settled = true
+      tunnel.destroy()
+      rejectPromise(error instanceof Error ? error : new Error(String(error)))
+    }
+    const handle = requestImpl(url, {
+      method,
+      headers,
+      ...(ca ? { ca } : {}),
+      createConnection: () => tunnel,
+    }, (response) => {
+      const encoding = String(response.headers['content-encoding'] || 'identity').toLowerCase()
+      if (encoding !== 'identity') {
+        response.resume()
+        fail(new Error(`GOV-NPM-RUNTIME-001:${url.host} response used unexpected content encoding:${encoding}`))
+        return
+      }
+      const chunks = []
+      let length = 0
+      response.on('data', (chunk) => {
+        length += chunk.length
+        if (length > GOVERNANCE_ROUTED_FETCH_MAX_BYTES) {
+          response.destroy(new Error(`GOV-NPM-RUNTIME-001:${url.host} response exceeded the closed read budget`))
+          return
+        }
+        chunks.push(chunk)
+      })
+      response.on('error', fail)
+      response.on('end', () => {
+        if (settled) return
+        settled = true
+        tunnel.destroy()
+        resolvePromise({ status: response.statusCode || 0, statusText: response.statusMessage || '', headers: response.headers, body: Buffer.concat(chunks, length) })
+      })
+    })
+    if (signal) {
+      if (signal.aborted) { handle.destroy(signal.reason); fail(signal.reason) }
+      else signal.addEventListener('abort', () => { handle.destroy(signal.reason); fail(signal.reason) }, { once: true })
+    }
+    handle.on('error', fail)
+    handle.end()
+  })
+}
+
+/**
+ * fetch 相容(只用到 method / headers / signal / redirect):路由照 resolveGovernanceProxyRoute,直連段交回 directFetch。
+ * 判定與兩面對照在 scripts/test-verified-exact-npm-runtime.mjs。
+ */
+export function createGovernanceRoutedFetch({
+  environment = process.env,
+  directFetch = (...args) => globalThis.fetch(...args),
+  openTunnel = openGovernanceProxyTunnel,
+  trustAnchors = verifiedRegistryTrustAnchors,
+  requestImpl = request,
+  report = (line) => console.error(line),
+} = {}) {
+  return async function governanceRoutedFetch(input, options = {}) {
+    let url = new URL(String(input))
+    let headers = plainRequestHeaders(options.headers)
+    let method = String(options.method || 'GET').toUpperCase()
+    for (let hop = 0; ; hop += 1) {
+      const route = resolveGovernanceProxyRoute(url.href, environment)
+      reportGovernanceProxyNoticesOnce(route.forwarding, report)
+      if (route.mode !== 'connect') return directFetch(url.href, { ...options, method, headers })
+      invariant(url.protocol === 'https:' && !url.username && !url.password, `${url.host} proxied read requires a credential-free https URL`)
+      invariant(method === 'GET' || method === 'HEAD', `${url.host} proxied read only supports GET / HEAD`)
+      const ca = trustAnchors()
+      const port = url.port ? Number(url.port) : 443
+      const tunnel = await openTunnel({ proxy: route.proxy, host: url.hostname, port, ca, label: url.host })
+      const result = await requestThroughTunnel({
+        url,
+        method,
+        // 鍵一律小寫(plainRequestHeaders 已轉小寫):GitHub API 沒有 User-Agent 會拒絕;不收壓縮,位元組照原樣交給呼叫端驗。
+        headers: { 'user-agent': 'qijenchen-governance-upgrade/1', ...headers, 'accept-encoding': 'identity' },
+        tunnel,
+        ca,
+        signal: options.signal,
+        requestImpl,
+      })
+      if (GOVERNANCE_ROUTED_FETCH_REDIRECTS.has(result.status) && options.redirect !== 'manual') {
+        invariant(options.redirect !== 'error', `${url.host} redirect refused (redirect: 'error')`)
+        invariant(hop < GOVERNANCE_ROUTED_FETCH_MAX_REDIRECTS, `${url.host} exceeded ${GOVERNANCE_ROUTED_FETCH_MAX_REDIRECTS} redirects`)
+        invariant(typeof result.headers.location === 'string' && result.headers.location, `${url.host} redirect has no Location`)
+        const next = new URL(result.headers.location, url)
+        if (next.origin !== url.origin) {
+          headers = Object.fromEntries(Object.entries(headers).filter(([name]) => name.toLowerCase() !== 'authorization'))
+        }
+        if (result.status === 303) method = 'GET'
+        url = next
+        continue
+      }
+      const nullBody = method === 'HEAD' || [204, 205, 304].includes(result.status)
+      const responseHeaders = new Headers()
+      for (const [name, value] of Object.entries(result.headers)) {
+        for (const item of Array.isArray(value) ? value : [value]) if (item !== undefined) responseHeaders.append(name, String(item))
+      }
+      return new Response(nullBody ? null : result.body, { status: result.status, statusText: result.statusText, headers: responseHeaders })
+    }
+  }
+}
+
+/** 升級鏈預設用的那一支(行程環境、內建 fetch、內建 + 系統憑證庫)。 */
+export const governanceRoutedFetch = createGovernanceRoutedFetch()
+
 function regularUnaliasedFile(path, label) {
   try {
     const absolute = resolve(path)

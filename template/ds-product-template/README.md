@@ -147,11 +147,11 @@ npm run sync-all -- --apply --to X.Y.Z
 
 One `sync-all --apply` command authenticates and reconstructs the complete incoming snapshot before mutation. An ordinary upgrade may update exact dependencies plus authenticated non-executable governance data, instructions, and provider views. If the reconstructed release changes `.github/**`, `.npmrc`, `governance/bin/**`, `scripts/**`, or `package.json#scripts`, those changes travel through the same command as data in the upgrade PR diff (`GOV-UPGRADE-BOOTSTRAP-001/002` were retired on 2026-08-12 and now only print an `INFO` line per path): during the transaction only the scripts already on your protected `main` execute, and the incoming control-plane code runs only after the PR merges (`docs/04-ds-upgrade.md`). Its process-crash journal covers every path that the transaction might stage, the common instruction (`AGENTS.md`), and the prior installed tree; a failed install/materialization/check or a later invocation after SIGKILL restores the original snapshot. Run upgrades with editors and other writers quiesced: no filesystem transaction can promise to capture a non-cooperative process that keeps writing through an already-open old file descriptor. Review every permitted diff and merge through a protected PR.
 
-Automatic template delivery is owned upstream by the design-system release mirror. It opens a normal PR containing the exact published snapshot; this repository does not carry a release-dispatch/updater workflow. The product upgrade receiver (`.github/workflows/sync-design-system.yml`) is not part of this release and arrives in a later one; until then each product upgrade runs `sync-all` on a local terminal (`docs/04-ds-upgrade.md`). Protected `main` requires the single `Verify consumer` check from `audit.yml`, which performs one locked install followed by the hooks-off `governance:check`, typecheck, import lint, and build. Preview, visual, a11y, canary, and independent-review evidence remain optional or scheduled unless explicitly requested; they do not block the standard release path.
+Automatic template delivery is owned upstream by the design-system release mirror. It opens a normal PR containing the exact published snapshot; no dispatch reaches this template repository. The `.github/workflows/sync-design-system.yml` it carries (since 0.1.0-beta.152) is the upgrade receiver for the product repositories created from it: it validates the release dispatch, runs `sync-all` on a GitHub runner, and pushes an `automation/design-system-<version>` branch (`docs/04-ds-upgrade.md`). Protected `main` requires the single `Verify consumer` check from `audit.yml`, which performs one locked install followed by the hooks-off `governance:check`, typecheck, import lint, and build. Preview, visual, a11y, canary, and independent-review evidence remain optional or scheduled unless explicitly requested; they do not block the standard release path.
 
 The release authority is the provider-neutral five-step SSOT, in this exact order:
 `pr-checks → merge → publish → readback → consumer`. The upstream release mirror owns delivery to
-the template repository. The product receiver, once shipped, consumes the immutable release event
+the template repository. The product receiver consumes the immutable release event
 downstream only: it pins every dynamically discovered workspace manifest, regenerates the one npm
 lock, and pushes an automation branch; the upstream release orchestrator opens the PR so that
 `Verify consumer` runs on it. It never opens or merges that PR, publishes, writes `main`, or replaces
@@ -238,6 +238,7 @@ governance/lock.json            immutable release BOM
 governance/consumer-governance.md upstream-managed cross-provider/cloud guide
 .storybook/                     product-story configuration
 .github/workflows/audit.yml     locked install + typecheck + import lint + build gate
+.github/workflows/sync-design-system.yml  design-system release dispatch -> exact sync-all -> upgrade branch
 netlify/edge-functions/         free HTTP Basic Auth
 ```
 
@@ -245,7 +246,7 @@ netlify/edge-functions/         free HTTP Basic Auth
 
 - `audit.yml` publishes the single `Verify consumer` required context after one `npm ci --ignore-scripts`, typecheck, import lint, and all app builds.
 - Exact template updates arrive as normal protected-main PRs from the upstream release mirror.
-- Product repositories created from this template run each upgrade on a local terminal with `sync-all` for now; the upgrade receiver workflow (`sync-design-system.yml`) arrives in a later release (`docs/04-ds-upgrade.md`).
+- Product repositories created from this template receive exact upgrades through `sync-design-system.yml`, the upgrade receiver: it validates the release dispatch, runs `sync-all` on a GitHub runner, and pushes an `automation/design-system-<version>` branch; the upstream release orchestrator opens the PR. A product repository at 0.1.0-beta.151 or older gets the receiver with its next upgrade, which it runs itself (`docs/04-ds-upgrade.md`, First use).
 - Netlify builds Storybook from protected `main` and branch previews from working branches.
 
 See `docs/01-first-time-setup.md` through `docs/05-troubleshooting.md` for task-specific details.

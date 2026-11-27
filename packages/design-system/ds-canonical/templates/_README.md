@@ -16,7 +16,7 @@ DS protected `main` / immutable release → `mirror-to-published-template.yml`:
 1. 由 DS SSOT build allowlisted `ds-product-template` snapshot，綁定 release BOM、npm integrity 與 scaffold lock
 2. 在無寫入憑證的 job 完成 clean-room install / governance / typecheck / build / a11y conformance；這不會自動升級 provider runtime certification
 3. 獨立、environment-gated Writer App 只可建立或更新 deterministic mirror PR，禁止 direct push target `main`
-4. 產品 repo 的接收升級 workflow(`sync-design-system.yml`)0.1.0-beta.151 還不隨 template 出貨(TRACKER R22:先發 `scripts/audit-workflow-security.mjs` 的例外,本體下一版再進);在那之前產品 repo 在本機終端機跑 `sync-all`,一樣以 PR 升級
+4. 產品 repo 的接收升級 workflow(`sync-design-system.yml`,0.1.0-beta.152 起受管出貨)收到 release 的 `repository_dispatch` → 在 GitHub runner 跑 `sync-all` → 只推 `automation/design-system-<版>` 分支,PR 由 release orchestrator 開,一樣以 PR 升級
 
 Fork users 從 PW main fork → 取到當下最新 canonical baseline。Fork 後 diverge customization 是 fork user 自己責任。
 

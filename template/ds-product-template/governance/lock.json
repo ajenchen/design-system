@@ -42,7 +42,7 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "c737587c176339a10c86d89bab9edf20714c164ea5bfb9e6c42afdc4da4ae8b5",
+    "forkCorpusLockSha256": "6c106367b9987289a780b0f4403764cafdd57303d6c2c5d192ee783af99d5e56",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
     "providerLifecycleSha256": "69fa942cf9c3cddd5026b1844b5f2d943e8ceeb21f679b4089fd2701f6e0eae3",
@@ -93,8 +93,9 @@
       ".devcontainer/onboard-banner.sh": "762c1fda165b0f8c9d2f6e13ac313f37da65d427334328638f4445d29da50a63",
       ".devcontainer/post-create.mjs": "6bc05d2597a54e8f6a5a087901e92ccc89acc3d5873d96ad20814f8f539a146b",
       ".github/workflows/audit.yml": "ff1bb33e94c6de2f96e242c8853089565e292d9dbf183cb25151ec02e95eeff2",
+      ".github/workflows/sync-design-system.yml": "bdb40c97372782ccd2fe29890937a91fe8d99efebe2b321c7ebb6258bb49b2c8",
       ".npmrc": "2984e2fb8b6ba8fad758ad0e18c3bc49be706a1e1ed56e1fc2b45ec4dfdc7f07",
-      "governance/consumer-governance.md": "200d2e6c29e7bbde2be3a8d66c92fad1c6232d0ad4891bba06b299984d1eb932",
+      "governance/consumer-governance.md": "955302d1bc717728ebf34beb12a7ffe1f10ba0517fc5160520571d859d774a87",
       "governance/provider-cli-toolchain.json": "5280bc83de46486d6fd13e29349eee849d347970ed5fdf32412d463629124170",
       "governance/provider-cli-toolchain.package-lock.json": "d0a5fceebe21101b67848e7ace1856e9bc35f6532e4ba4deaf64462fe4fc81bb",
       "governance/schemas/content-debt-baseline.schema.json": "e57421ff52ee68510bf070009f25941aa5ff45126c08e32d571c57fd76b59d3a",
@@ -117,7 +118,7 @@
       "scripts/lib/provider-lifecycle.mjs": "9aabb2c98efc454b8555308a34830e6590b034b10a63f76f788fbd4cf37ce7e7",
       "scripts/lib/storybook-render-health.mjs": "583beac441f2f2bc88630da73a00d38bfb4da0b1c1e11152b1e9a87030837418",
       "scripts/lib/storybook-static-snapshot.mjs": "a6ed23c4285d57ded8b4943d276cb2b71bc1a545ab867b80c06eda7d59ea48b9",
-      "scripts/lib/verified-exact-npm-runtime.mjs": "09f884b5314d53c17c8cbb94edafdc9cb5679ba9f0a81af89a72af7e68cae57f",
+      "scripts/lib/verified-exact-npm-runtime.mjs": "5e3f57056598d4325342102124a815dc9193568db554d89d25411ca109651a25",
       "scripts/lib/workspace-post-create.mjs": "f3ddc6db740d5c4d48b1c6e16c55222325e4d1c16fe6644a455e7b7e5bea0a0d",
       "scripts/lib/worktree-fingerprint.mjs": "a2fe922b3be6ff1b782ffc7e76b0ebb61b3691ba9b46768c0d0349913228ce4a",
       "scripts/lint-ds-internal-imports.mjs": "9b046590c4664e58db920d5b54339ba57eeec563ce858602920cfcaffcdbc231",
@@ -133,8 +134,8 @@
       "scripts/sync-all.mjs": "0c948666421047abd708c9f677b0f6679481ba8005cc6cc6b455840582d9ba62",
       "scripts/sync-exact-workspace-dependencies.mjs": "29ce6aaab16fd7a939eff6e556e8548291fad28df88d578627153c9508bf6e31",
       "scripts/verify-consumer-css-entry.mjs": "a16545ea8d4f5224d8133f0bb0b68d5489d8e106fe7594488a78e0e5718b99cc",
-      "scripts/verify-upgrade-evidence.mjs": "db5345e305535705340963cac328e915413be208e6ada3c15498c897b394991b",
-      "scripts/verify-upgrade-provenance.mjs": "8a643a60eaf64bf131a2a4da197d5670a52e4705d11402b53fb32ae93302f6ef",
+      "scripts/verify-upgrade-evidence.mjs": "8e7368c4ede8d896f6e7aba5a030e94b6e5accc30bf4780835ef1c905a6255db",
+      "scripts/verify-upgrade-provenance.mjs": "1b9459f6b5a38d6d18c3bb57479cb640c0c668ad046ee38c619e890f6c2946d2",
       "scripts/workflow-static-validation.mjs": "8e12bf2d73fc5e1200ddc6cc8437b27433fcd71f7d85d79b56756dcaac667305"
     }
   },

@@ -173,7 +173,7 @@ function commandFor(view, hookName, eventName = null) {
   return matches[0]
 }
 
-// 產生的派工命令帶不帶 --group-id 跟產生器讀同一個開關(兩段式上線:第一段 false = 不帶,與 protected main 驗證器預期的形狀相同)。
+// 產生的派工命令帶不帶 --group-id 跟產生器讀同一個開關(現況 true = 每條都帶;0.1.0-beta.151 還是 false,經過在 transport 該常數旁)。
 function viewGroupIdArgv(event, group) {
   return PROVIDER_HOOK_GROUP_ID_IN_VIEWS ? ['--group-id', providerHookGroupId(event, group)] : []
 }
@@ -995,8 +995,8 @@ test('F3: an event/group the working tree does not register is announced to the 
 
 // B2(2026-11-26):群組照穩定 id 找,不照序號。兩面:序號指向別群、id 指向主分支閘 → 照 id 派工(主分支閘擋);
 // id 對不上任何群(群組內容變了)→ 不派工、告訴模型「沒登記」—— 而同一個序號不帶 id 會照舊派工(舊設定的退路)。
-// 兩段式上線(F3-fix-anchor):第一段產生器不輸出 id(PROVIDER_HOOK_GROUP_ID_IN_VIEWS = false),所以「沒帶 id 照序號」
-// 是第一段的正式路徑;入口認得 id 這一面仍要先上線,第二段才能開輸出 —— 兩面在這裡都驗。
+// 現況(0.1.0-beta.152 起,PROVIDER_HOOK_GROUP_ID_IN_VIEWS = true):產生的派工命令每條都帶 id,照 id 派工是正式路徑
+// (上面每一則用產生的 plugin 指令跑的測試都帶 id);不帶 id 照序號只剩舊設定的相容退路。正式路徑與退路在這裡都驗。
 test('F3 B2: the stable group id, not the position, selects the dispatched group', async (t) => {
   const { data, target } = await siblingFixture(t)
   const groups = registrations.hooks.PreToolUse
@@ -1005,6 +1005,12 @@ test('F3 B2: the stable group id, not the position, selects the dispatched group
     && item.hooks.every((descriptor) => descriptor.hook !== 'check_main_branch_workbench.sh')
     && new RegExp(`^(?:${item.matcher})$`).test('Edit'))
   assert.ok(mainGate >= 0 && other >= 0)
+  // 正式路徑:產生的 plugin 檢視替主分支閘那一群帶的,就是這一群算出的 id
+  assert.equal(PROVIDER_HOOK_GROUP_ID_IN_VIEWS, true)
+  assert.equal(
+    argumentValue(handlerForGroup({ config: data.view }, 'PreToolUse', mainGate).args || [], '--group-id'),
+    providerHookGroupId('PreToolUse', groups[mainGate]),
+  )
   const env = { GOVERNANCE_READ_ONLY: '0' }
   const payload = (session) => noteEdit(resolve(target, 'docs/note.md'), session)
   const mainGateId = providerHookGroupId('PreToolUse', groups[mainGate])

@@ -1096,7 +1096,7 @@ export function projectMatcherForProvider(matcher, providerId, registry = PROVID
   return matcherFor(matcher, provider.adapter.hookView?.matcherAliases || {})
 }
 
-// 派工命令帶不帶 `--group-id` 只看 PROVIDER_HOOK_GROUP_ID_IN_VIEWS(兩段式上線,理由在 transport 該常數旁)。
+// 派工命令帶不帶 `--group-id` 只看 PROVIDER_HOOK_GROUP_ID_IN_VIEWS(現況 true = 每條都帶;經過在 transport 該常數旁)。
 function viewGroupId(event, group) {
   return PROVIDER_HOOK_GROUP_ID_IN_VIEWS ? providerHookGroupId(event, group) : undefined
 }

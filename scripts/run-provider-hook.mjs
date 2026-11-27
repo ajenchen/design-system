@@ -1919,12 +1919,10 @@ if (singleHookMode
 // 只認序號時,session 載入的設定與工作樹版本一錯開就可能靜默派到另一組 hook。id 由 provider-hook-output-transport
 // 的 providerHookGroupId 算(產生器、本入口、可達性閘同一支)。找不到(群組內容變了或已刪)→ 走下面「沒登記」通知。
 // 沒帶 id 的設定照舊依序號,這是唯一的退路。
-// 兩段式上線(F3-fix-anchor,2026-11-26):PR #174 的 governance-anchor 用 protected main 那份 contract.mjs 驗候選樹,
-// 那份的派工命令形狀沒有 `--group-id`,帶 id 的 provider 檢視一律 GOV-CONTRACT-001 紅 —— 協定欄位得先讓 main 認得。
-//   第一段(本 PR):入口(這裡)與候選驗證器認得 `--group-id`、照 id 派工;沒帶 id 照序號。產生器不輸出 id、
-//     可達性閘不要求帶(開關 = transport 的 PROVIDER_HOOK_GROUP_ID_IN_VIEWS = false),provider 檢視與 main 預期逐字相同。
-//   第二段(本 PR 發版、main 上的 contract.mjs 認得 id 之後):把該開關改成 true → 重生 provider 檢視(每條帶 id)、
-//     可達性閘同時要求每條都帶;在那之前序號錯位的保護只有「群組可達性閘 + 沒登記通知」,照 id 派工尚未生效。
+// 現況(0.1.0-beta.152 起):DS repo 產生的 provider 檢視每條派工命令都帶 `--group-id`(開關 = transport 的
+// PROVIDER_HOOK_GROUP_ID_IN_VIEWS = true),可達性閘同時要求每條都帶,所以 DS repo 的 session 都照 id 派工。
+// 經過(F3-fix-anchor,2026-11-26):PR #174 的 governance-anchor 用 protected main 那份 contract.mjs 驗候選樹,當時那份
+// 不認得 `--group-id`,所以 0.1.0-beta.151 先讓入口(這裡)與驗證器認得 id、產出不帶;main 認得之後才打開輸出。
 const { providerHookGroupId } = batchMode && requestedGroupId !== null
   ? await import('./lib/provider-hook-output-transport.mjs')
   : {}
