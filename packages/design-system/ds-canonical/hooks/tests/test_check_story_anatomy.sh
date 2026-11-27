@@ -319,6 +319,25 @@ run_hook "/fake/src/design-system/components/Dialog/dialog.stories.tsx" \
   $'const f = ({ onClose }) => (\n  <DialogHeader>\n    <DialogFooter />\n    <Button onClick={onClose}>關閉</Button>\n  </DialogHeader>\n)'
 expect_block "Test 16 self-closing footer does not exempt a labeled close" "[B dismiss via label]"
 
+# 17 = 註解裡寫了一個沒關的頁腳標籤(// 與 {/* */} 兩種),下面標題列的有字關閉鈕照擋(規格核對樣本 S4;
+#      72fc04f8 的判法拿原文數深度 → 註解裡的 <DialogFooter> 讓之後整檔都被放行,exit 0)
+echo ""
+echo "Test 17: footer tag inside comments does not open a footer scope → block"
+read -r -d '' T17_CONTENT <<'EOF' || true
+// 頁腳 <DialogFooter> 放取消與儲存
+export const D = {
+  render: ({ onClose }: { onClose: () => void }) => (
+    <SheetHeader>
+      {/* 舊版是 <SheetFooter> 裡放關閉 */}
+      <Button variant="tertiary">關閉</Button>
+    </SheetHeader>
+  ),
+}
+const w = onClose
+EOF
+run_hook "/fake/src/design-system/components/Sheet/sheet.stories.tsx" "$T17_CONTENT"
+expect_block "Test 17 footer tags inside comments do not exempt a labeled close" "[B dismiss via label]"
+
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""
 echo "════════════════════════════════════════"

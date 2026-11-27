@@ -10,7 +10,7 @@
   "contractDigest": "sha256:2999aed4c75bc36823db0b4ea5729744c0920f74b1cd2b2e1bfb4110dd825ef1",
   "files": [
     {
-      "hash": "sha256:022ab951874e5b6a858ad0d15260faeeae8fa6971780b4b7e22914ad4dad742f",
+      "hash": "sha256:10a590c7cae342a3c97b77c52c3ccf0d7a9604289340a80878909ce98e2d671c",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 59307,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:896513f64bc8dca48f13f925df0dbe4c1fa1ee97c3b58ae42d2c5a10e8e45b8b",
+      "hash": "sha256:0315f4844d40b71f164974aa5ee1449ff5805d31346e734603e759f74f927e89",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 140204,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:28c474f59d0739b3e91d787b47f092bb2c21bf56e15341e2c90a56e108e860bf",
+  "inputDigest": "sha256:b48b9dc4b988422a08bd463f1d268680badc5e7c5ca6fc6cc6736ff18ffa316e",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -138,10 +138,10 @@
           "targetDigest": "sha256:38c2a2a5e29ab6a57591fa60f416886e33b52c1a18d3b2493a0f25f66d705374"
         },
         {
-          "expectedTargetDigest": "sha256:052409d5b0e90662da7622b84e9b162bf17c725a57cad528c02b2c13787b6400",
+          "expectedTargetDigest": "sha256:f31a4e85d2dfd2cbca4dce2f89f56aa90133dfcd9140c5239da2ef45c68cfc49",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:bff405852bd05df00de33e45558ba3eb5263de45a1147a0868b95e34f00fcc9d",
-          "targetDigest": "sha256:052409d5b0e90662da7622b84e9b162bf17c725a57cad528c02b2c13787b6400"
+          "sourceDigest": "sha256:49286bd3f825986111bccb98b4efdafb299c52a5c3be72de928edc8bf2c59bd9",
+          "targetDigest": "sha256:f31a4e85d2dfd2cbca4dce2f89f56aa90133dfcd9140c5239da2ef45c68cfc49"
         },
         {
           "expectedTargetDigest": "sha256:d590bde5b1ae393a8f79938900219eaf3e47ef709a99eb442a93dc680a075361",
@@ -361,10 +361,10 @@
           "targetDigest": "sha256:2deab250f13ab3747e03beeb622ac3316c71d4b70a98b498c961f35bcfb36442"
         },
         {
-          "expectedTargetDigest": "sha256:6860095826f3a86cf40ab168653b48041b20811bf05a1bf5bca165138277e4a7",
+          "expectedTargetDigest": "sha256:e21af7ff58108047c7be4456490d441f4fafbcff94eec77698af4178b9b6442b",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:bff405852bd05df00de33e45558ba3eb5263de45a1147a0868b95e34f00fcc9d",
-          "targetDigest": "sha256:6860095826f3a86cf40ab168653b48041b20811bf05a1bf5bca165138277e4a7"
+          "sourceDigest": "sha256:49286bd3f825986111bccb98b4efdafb299c52a5c3be72de928edc8bf2c59bd9",
+          "targetDigest": "sha256:e21af7ff58108047c7be4456490d441f4fafbcff94eec77698af4178b9b6442b"
         },
         {
           "expectedTargetDigest": "sha256:6a078b4b4921f4a116b81d49695d2449a2821df284f1304a70cbee3d379b1cb8",
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:388cef86c1f4eee38a8f4de44aa1220110728b12af61cf9b1c2397b29b8a8606",
+  "snapshotDigest": "sha256:4915ba6481f3f415a72e30d71778896d9c649eabeabb8b68f4f4d519b806df0a",
   "sources": [
     {
       "hash": "sha256:f2452198c08c44c99dc7afcfb7f78f834d7cc2a8c97d041571db15779f388c6c",
@@ -654,7 +654,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 221,
-      "hash": "sha256:19e119f548eb7c881ab872605d719e1f9fc61f3d2ed492914652f5a66c2928bd",
+      "hash": "sha256:b9a0f63def16a790877238294f7fc4cddb46e0a0db9f9c3e7612d64c68985566",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -698,7 +698,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 68,
-      "hash": "sha256:ac645f64de677d2a7ccd4e27535467a14cf926807448ce87c2de1b339249b8d4",
+      "hash": "sha256:c9284e55182369f71115f20c0c143231d1c0bddfbef4b41c67911d90d2198f82",
       "id": "canonical-skills",
       "mode": "0755",
       "ownerRepo": "design-system",

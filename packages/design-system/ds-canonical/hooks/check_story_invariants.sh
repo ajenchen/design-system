@@ -270,6 +270,10 @@ footer_open = re.compile(r'<(?:Dialog|Sheet|Popover|Surface|Coachmark|AlertDialo
 footer_self_closing = re.compile(r'<(?:Dialog|Sheet|Popover|Surface|Coachmark|AlertDialog|Drawer)Footer\b[^<>]*/>')
 footer_close = re.compile(r'</(?:Dialog|Sheet|Popover|Surface|Coachmark|AlertDialog|Drawer)Footer\s*>')
 full_text = '\n'.join(lines)
+# 數深度前先遮掉註解(同一支 hook 的 R9 也先丟掉純註解行):註解裡寫的 <DialogFooter> 不是頁腳,不能讓之後整檔的有字關閉鈕都被放行。
+# 遮法 = 換成等長空白、換行保留,位置與原文對得上:{/* … */}、/* … */、// 到行尾(前一個字是 : 或英數字的不算,避開 https://)。
+_comment = re.compile(r'\{/\*.*?\*/\}|/\*.*?\*/|(?<![:\w])//[^\n]*', re.S)
+masked_text = _comment.sub(lambda m: re.sub(r'[^\n]', ' ', m.group(0)), full_text)
 line_starts = []
 _offset = 0
 for _line in lines:
@@ -278,7 +282,7 @@ for _line in lines:
 
 
 def in_footer(position):
-    before = full_text[:position]
+    before = masked_text[:position]
     depth = len(footer_open.findall(before)) - len(footer_self_closing.findall(before)) - len(footer_close.findall(before))
     return depth > 0
 overlay_surface = re.compile(
