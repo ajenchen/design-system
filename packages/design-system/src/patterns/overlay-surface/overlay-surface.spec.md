@@ -415,12 +415,16 @@ border-l border-divider">`)/ Atlassian [`modal-dialog/examples/101-full-height-i
   AppShell 的元件樹裡,外框會去登記成 Menu(`../../components/Sidebar/sidebar.tsx` 的 `Sidebar`)【AI 推導】。
 - **分隔線由左欄畫**(`border-r border-divider`,貫穿 body 頂到底)—— 第 2 條原文寫右欄畫,換成左導覽時改由左欄畫,
   與 Sidebar 自己畫右邊線一致(`sidebar.tsx` 的 `Sidebar`,左側 `border-r border-divider`)【AI 推導】。
-- **右欄**自帶 `<ScrollArea>`(第 1 條);頂端可放標題 = 選中分類的字,用文字樣式、隨內容捲動,**不做第二條標題列**
-  (`../header-canonical/header-canonical.spec.md`「何時不用」純內容區小標題、不可關閉的 side pane 標題);也可以省略
-  (Salt 窄版圖右欄直接從說明文字開始)。標題 → 第一個設定照 `../../tokens/layoutSpace/layoutSpace.spec.md`「標題區 → 內容」。
+- **右欄**自帶 `<ScrollArea>`(第 1 條)。頂端用選中分類的字當標題,要不要標頭元件看內容(`../header-canonical/header-canonical.spec.md`「何時不用」第 ② 題),兩種寫法都可以:
+  (a)**欄內標頭** `DialogPaneHeader` + `DialogPaneTitle` —— 這一欄有自己的操作、標題列下要分頁時:不隨內容捲動、捲動區從它底下開始;
+  沒有 × 與其餘規則住 `../../components/Dialog/dialog.spec.md`「欄內標頭(DialogPaneHeader)」,本處不重述。
+  (b)**文字標題** —— 只有標題時:用文字樣式、隨內容捲動;也可以省略(Salt 窄版圖右欄直接從說明文字開始)。標題 → 第一個設定照 `../../tokens/layoutSpace/layoutSpace.spec.md`「標題區 → 內容」。
+  依據:user 2026-11-27 H24a(全文逐字見下一條「兩欄頂端不要求對齊」的依據)【判讀:協調者 2026-11-27 依 H24a 字面:右欄用了標頭就照標頭原則 → 右欄可以用標頭】。
+  2026-11-27 前本條寫「不做第二條標題列」,是把 `../header-canonical/header-canonical.spec.md`「何時不用」(舊判準「能不能自己被關掉」,原例是詳情對話框右欄的屬性欄;那一條本身也是 AI 歸納,已拆成「有沒有 ×」與「要不要標頭元件」兩題,見該處)
+  套到設定類右欄 —— 這一步外推是 AI 推導,不是 user 的話(M36、M8 跨類別外推),依 H24a 撤回;× 仍只在全寬的標題列(第 4 條,`../../components/Dialog/dialog.spec.md`「關閉按鈕」不變)。
 - **兩欄頂端不要求對齊**(2026-11-27,產品 canary 回報 H24:左欄第一列離標題列 8、右欄標題離 12,差 4):左欄照 Sidebar 的規則(清單自帶上下內距,`../../components/Sidebar/sidebar.spec.md`),
-  右欄照 `../../tokens/layoutSpace/layoutSpace.spec.md`(內容區上方 = 規則 2,第一個是標題 / 欄位等一般元素 → `tight`);右欄若真的放了一條標題列(上面已說不建議),
-  那一條照 `../header-canonical/header-canonical.spec.md` 的高度 / 內距 / 字級。兩欄的頂不為了彼此對齊而另開例外。
+  右欄照 `../../tokens/layoutSpace/layoutSpace.spec.md`(內容區上方 = 規則 2,第一個是標題 / 欄位等一般元素 → `tight`;有欄內標頭時從標頭底下算起);右欄放了欄內標頭時,
+  那一條照 `../header-canonical/header-canonical.spec.md` 的高度 / 內距 / 字級 / 底線(由 `DialogPaneHeader` 給,不另寫值)。兩欄的頂不為了彼此對齊而另開例外。
   依據:user 2026-11-27 回 H 批決策卡 H24a,逐字「確保左邊是 sidebar 右邊有按照 layout space 設計原則即可，若右邊有用到 header也是確保有維持header設計原則即可」。
   閘:`scripts/overlay-story-contract-invariant.mjs` R25(右欄內容上方 = `tight`,md / lg;本 DS 兩則兩欄範例)。
 - **寬 `xl`、高 `fill`**:兩欄 → `xl`(`../../components/Dialog/dialog.spec.md`「寬度檔位」選檔規則);切換分類時內容高度會變 → `fill`(同檔「高度軸」)。
@@ -434,7 +438,7 @@ border-l border-divider">`)/ Atlassian [`modal-dialog/examples/101-full-height-i
 
 **範例**:`../../components/Dialog/dialog.stories.tsx#ExtraLargeSettings`(「超大檔位:兩欄個人設定」)。
 **閘**:`scripts/overlay-story-contract-invariant.mjs` R21–R24 量兩則兩欄範例(本節的設定類與上方的工作項詳情類)—— 標題列跨全寬、× 在標題列右端、
-兩欄各自捲動、右欄沒有第二條標題列,每列各有拆掉修法的對照組。
+兩欄各自捲動、這兩則的右欄用寫法 (b)、沒有標頭,每列各有拆掉修法的對照組。
 
 ## 不屬本 primitive 的職責
 

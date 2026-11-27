@@ -212,7 +212,7 @@ Radix Tabs Root 是裸 `display: block` + `min-height: auto`,夾在中間時整�
 
 > **跨家族 SSOT pointer**:DialogHeader 屬 **Padding-based overlay header 家族**;border / padding / dismiss size / tabsSlot(tabs 經 tabsSlot 進 header 時 border auto-suppress)的跨家族視覺契約 SSOT 詳 `patterns/header-canonical/header-canonical.spec.md`。本節僅 codify Dialog 特有 close X size + chrome-unbounded rationale。
 
-永遠存在於 DialogHeader 右側。使用 `<Button data-dismiss iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />`(讀屏名稱可經 `I18nProvider` 的 `dialog.close` 換字,`../../lib/i18n/README.md`「Fallback chain」),不可移除——使用者永遠需要明確的關閉手段。
+永遠存在於 DialogHeader 右側。使用 `<Button data-dismiss iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />`(讀屏名稱可經 `I18nProvider` 的 `dialog.close` 換字,`../../lib/i18n/README.md`「Fallback chain」),不可移除——使用者永遠需要明確的關閉手段。整個對話框只有這一顆:兩欄對話框右欄的欄內標頭沒有 ×(本檔「欄內標頭(DialogPaneHeader)」)。
 
 **Size canonical(v5 chrome-unbounded)**:Button native size **sm**(隨 page density:28 md / 32 lg),命中區亦同(命中 ≡ 可視,owner = `ds-canonical/references/hit-area-canonical.md`;2026-09-24 把原文的「touch target」正名為命中區 —— 本 DS 以滑鼠指標的精度為前提,尺寸不以觸控門檻推導)。SurfaceHeader 的 `[data-unbounded]` CSS rule 自動對 text variant / dismiss 套負 my → **layout 佔位 = title line-box**(slot 衍生自 `--font-body-lg-size`×1.5=24,見 `overlay-surface.spec.md` slot 段)。效果:
 - Header 只有 title + close X → max layout = 24 → header = 24 + 2×`py-tight`(隨 page:md 12 / lg 16)= **48 md / 56 lg**(= `--chrome-header-height` 同 tier 對齊)✓
@@ -353,6 +353,20 @@ Consumer 必須保留 `<DialogTitle>`——即使視覺不顯示，也要用 `Vi
 
 ---
 
+## 欄內標頭(DialogPaneHeader)
+
+兩欄對話框「左導覽 + 右內容」(`../../patterns/overlay-surface/overlay-surface.spec.md`「左導覽 + 右內容」)右欄頂端的標頭(2026-11-27,產品 canary 回報 H46)。
+
+- **何時用**:右欄要一條標頭時 —— 標題 = 選中分類的字,右側有作用於這一欄的操作(例:「通知」分類的「全部重設」),或標題列下面要分頁(例:「電子郵件 / 推播」)。只要文字標題時不必用(overlay-surface 那一段的寫法 (b))。依據:user 2026-11-27 回 H 批決策卡 H24a,逐字「確保左邊是 sidebar 右邊有按照 layout space 設計原則即可，若右邊有用到 header也是確保有維持header設計原則即可」【判讀:協調者 2026-11-27 依 H24a 字面:右欄用了標頭就照標頭原則 → 右欄可以用標頭】。
+- **長相 = DialogHeader 少了 ×**:`DialogPaneHeader` 就是 `DialogHeader` 用的那個 `SurfaceHeader`(`../../patterns/overlay-surface/overlay-surface.tsx`)—— 高度、左右 / 上下內距、底線、右側操作位(`actions`)、標題列下的分頁(`tabsSlot`)同一份,不另寫值;標題用 `DialogPaneTitle`(字樣與 `DialogTitle` 共用同一個常數,單行截斷、截斷時滑過出全文)。跨家族規則(header 內控件一律 `sm`、tabsSlot 連動)→ `../../patterns/header-canonical/header-canonical.spec.md`。
+- **沒有 ×**:× 關的是它所在的那個容器 —— 每個能被單獨關掉的容器各有一顆,放在那個容器自己的標頭(對話框 / Sheet / Popover 最上面那條;可獨立收起的 pane,如 FileViewer InfoPanel);欄內標頭放在內容區裡,它所在的右欄不能單獨關掉,所以沒有 ×【理由:user 2026-11-27 問句,逐字「主要是因為這個 header 不是像 overlay 那種放在最上面可以關閉容器的header，而是放在內容區塊裡面才不放 close 吧？應該要先確認理由，你才能在未來的判斷正確吧？」;AI 對照本檔「關閉按鈕」、`../../patterns/overlay-surface/overlay-surface.spec.md`「不屬本 primitive 的職責」的「Close 按鈕綁哪個 Radix Close」、`../../patterns/header-canonical/header-canonical.spec.md`「何時不用」確認成立】。關閉只在跨全寬的那條 `DialogHeader`(本檔「關閉按鈕」),整個對話框一顆。要沒有 × 的標頭就用本元件,`DialogHeader` 的 × 不做成可省略(`ds-canonical/rules/meta-patterns.md` M23(f):可省略 callback ≠ 可省略 chrome)【AI 推導:做法由 AI 選;user 對右欄標頭的原話只有上一條「何時用」引的 H24a,沒有談到做法】。只有操作、沒有 × → 不畫分隔線(分隔線只隔在操作與 × 之間,`../../patterns/action-bar/action-bar.spec.md`「五、分隔線規則」第 3 條)。
+- **放法**:右欄 `flex flex-col`,`DialogPaneHeader` 在最上面、下面接該欄自己的 `<ScrollArea>` —— 標頭不隨內容捲,內容上方從標頭底下算 `tight`(`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 2)。有分頁時 `<Tabs>` 包住標頭與捲動區(TabsList ↔ TabsContent 同一個 root),`TabsContent` 放捲動區裡並 `mt-0`(同本檔範例「標頭內含分頁」)。底線貫穿右欄寬:沒有分頁時標頭自己畫、有分頁時 TabsList 畫(header-canonical W1)。
+- **標題層級**:`DialogPaneTitle` 是 `<h3>` —— 對話框的名稱只有 `DialogTitle`(h2,對話框的 `aria-labelledby` 指向它),欄標題是它底下的一節【AI 推導】。
+- **命名**:「pane」沿用本 DS 既有說法(header-canonical「何時不用」的「side pane」);Apple HIG Split views:「A split view manages the presentation of multiple adjacent panes of content, each of which can contain a variety of components, including tables, collections, images, and custom views.」(<https://developer.apple.com/design/human-interface-guidelines/split-views>);GitHub Primer `PageLayout.Pane`:「Which side of the page the pane should be on.」(<https://github.com/primer/react/blob/main/packages/react/src/PageLayout/PageLayout.docs.json>)。不叫「panel」:本 DS 的 Panel 已是浮層 / 面板(`AgentPanel`、`DataTableFilterPanel`)。
+- **產品端**:用本元件不是手刻,手刻浮層標頭的閘(header-canonical「機械防呆」:`check_story_invariants.sh` R9 / `check_consumer_code_quality.sh` 浮層段)不擋;自己寫 `px-loose + border-b border-divider` 的標頭照擋。
+
+---
+
 ## anatomy story 結構
 
 Dialog 是 modal 浮層元件,關鍵決策維度是 `width`(寬度檔位 sm 400 / md 480 / lg 640 / xl 960,見「寬度檔位」)× `height`(fill / hug)× `destructive` × open/close 行為。設計規格頁只放表格(登記簿 A32「dialog 的設計規格的範例給我拿掉」;Inspector N/A,理由寫在 anatomy 檔頭),開起來的樣子在展示頁(含「大檔位:對話框裡放表格」「超大檔位:兩欄記錄詳情」)。
@@ -383,6 +397,7 @@ Dialog 是 modal 浮層元件,關鍵決策維度是 `width`(寬度檔位 sm 400 
 - `dropdown-menu.spec.md`
 - `elevation.spec.md`
 - `file-viewer.spec.md`
+- `header-canonical.spec.md`
 - `motion.spec.md`
 - `overlay-chrome-sizing.spec.md`
 - `overlay-surface.spec.md`

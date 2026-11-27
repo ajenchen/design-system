@@ -492,6 +492,7 @@ Icon 的目的是幫助辨識，不是視覺對稱。
 - `calendar.spec.md`
 - `coachmark.spec.md`
 - `data-table.spec.md`
+- `dialog.spec.md`
 - `file-viewer.spec.md`
 - `header-canonical.spec.md`
 - `horizontal-overflow.spec.md`

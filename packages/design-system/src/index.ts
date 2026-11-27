@@ -277,12 +277,15 @@ export {
   DialogFooter,
   DialogHeader,
   DialogOverlay,
+  DialogPaneHeader,
+  DialogPaneTitle,
   DialogPortal,
   DialogTitle,
   DialogTrigger,
 } from './components/Dialog/index'
 export type {
   DialogHeaderProps,
+  DialogPaneHeaderProps,
 } from './components/Dialog/index'
 export {
   DropdownMenu,

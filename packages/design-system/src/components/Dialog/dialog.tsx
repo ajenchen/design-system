@@ -499,7 +499,7 @@ const DialogTitle = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
-    className={cn("text-body-lg font-medium truncate", className)}
+    className={cn(DIALOG_TITLE_CLASS, className)}
     {...props}
   >
     {/* 2026-07-28:截斷必附 tooltip(tooltip.spec.md「截斷文字 → 用 tooltip 顯示完整內容」)——
@@ -527,6 +527,41 @@ const DialogDescription = React.forwardRef<
   )
 })
 DialogDescription.displayName = DialogPrimitive.Description.displayName
+
+// 標題字樣只有一份:DialogTitle(對話框標題列)與 DialogPaneTitle(欄內標頭)共用。標題列高度 = 標題行高 + 上下 tight,
+// 行高由這個字級撐(overlay-surface.tsx CHROME_UNBOUNDED_SLOT 的佔位也衍生自 --font-body-lg-size),兩處字樣不同,兩條標頭就不同高。
+// (寫在檔尾:別處以行號引用本檔前段;module 層 const 在 render 時已初始化,DialogTitle 讀得到)
+const DIALOG_TITLE_CLASS = "text-body-lg font-medium truncate"
+
+// ── 欄內標頭(2026-11-27,產品 canary 回報 H46;規則住 dialog.spec.md「欄內標頭(DialogPaneHeader)」,本處不重述)──
+// 兩欄對話框(左導覽 + 右內容)的右欄頂端標頭:跟 DialogHeader 是同一個 SurfaceHeader —— 高度、左右 / 上下內距、底線、
+// 右側操作位(actions)、標題列下的分頁(tabsSlot)全是同一份,沒有另寫數值;唯一差別是沒有 ×。
+// × 只在跨全寬的那一條 DialogHeader(dialog.spec.md「關閉按鈕」:永遠存在、不可移除),所以 DialogHeader 的 × 不做成可省略
+// (meta-patterns M23(f):可省略 callback ≠ 可省略 chrome);要「沒有 × 的標頭」就是這個元件。
+// data-dialog-pane-header:量測與產品端辨認用的標記(同 DialogFooter 的 data-dialog-footer),不帶樣式。
+export type DialogPaneHeaderProps = Omit<SurfaceHeaderProps, "dismiss">
+
+const DialogPaneHeader = React.forwardRef<
+  HTMLDivElement,
+  DialogPaneHeaderProps
+>(({ children, ...props }, ref) => (
+  <SurfaceHeader ref={ref} data-dialog-pane-header {...props}>
+    {children}
+  </SurfaceHeader>
+))
+DialogPaneHeader.displayName = "DialogPaneHeader"
+
+// 欄內標頭的標題:字樣同 DialogTitle(DIALOG_TITLE_CLASS),單行截斷、截斷時滑過出全文(同 DialogTitle 的 TruncatedText)。
+// 用 <h3> 不用 Radix Title:對話框的名稱只有一個(DialogTitle 是 h2、綁 aria-labelledby),欄標題是它底下的一節。
+const DialogPaneTitle = React.forwardRef<
+  HTMLHeadingElement,
+  React.HTMLAttributes<HTMLHeadingElement>
+>(({ className, children, ...props }, ref) => (
+  <h3 ref={ref} className={cn(DIALOG_TITLE_CLASS, className)} {...props}>
+    <TruncatedText display="block">{children}</TruncatedText>
+  </h3>
+))
+DialogPaneTitle.displayName = "DialogPaneTitle"
 
 // Story auto-compile metadata — Phase 1 mechanical migration(2026-04-24)
 // Phase 2 fill needed: purpose descriptions + when rationale + world-class refs
@@ -565,4 +600,6 @@ export {
   DialogFooter,
   DialogTitle,
   DialogDescription,
+  DialogPaneHeader,
+  DialogPaneTitle,
 }

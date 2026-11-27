@@ -254,6 +254,175 @@ run_hook "/fake/packages/design-system/src/components/DataTable/data-table.stori
   '<table><tbody><tr><td>x</td></tr></tbody></table>'
 expect_pass "Test 12 DataTable raw-table family exemption is preserved"
 
+# ── Test 13-16: B 只管角落的關閉 ×,頁腳的「取消 / 關閉」動作鈕放行(2026-11-27,h46 線回報) ─────────
+# 13 = dialog.stories.tsx 標籤選擇 / 匯入預覽兩則的形狀:頁腳「取消」包 DialogClose、旁邊主鈕套用後 setOpen(false)。
+#      修前 B 只看上下 4 行有沒有 setOpen(false),把它當違規(對照組:修前 hook 對同一份內容 exit 2)。
+echo ""
+echo "Test 13: footer 取消 next to a primary that calls setOpen(false) → pass"
+read -r -d '' T13_CONTENT <<'EOF' || true
+import { Dialog, DialogContent, DialogFooter, DialogClose } from '@/design-system/components/Dialog/dialog'
+import { Button } from '@/design-system/components/Button/button'
+
+export const Picker = {
+  render: ({ setOpen, apply }: { setOpen: (v: boolean) => void; apply: () => void }) => (
+    <Dialog>
+      <DialogContent>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="tertiary">取消</Button>
+          </DialogClose>
+          <Button variant="primary" onClick={() => { apply(); setOpen(false) }}>套用</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  ),
+}
+EOF
+run_hook "/fake/src/design-system/components/Dialog/dialog.stories.tsx" "$T13_CONTENT"
+expect_pass "Test 13 footer cancel beside a closing primary is not dismiss-via-label"
+
+# 14 = 頁腳寫在同一行(dialog.stories.tsx 焦點鎖夾具的形狀)
+echo ""
+echo "Test 14: single-line footer 關閉 with onClose nearby → pass"
+run_hook "/fake/src/design-system/components/Dialog/dialog.stories.tsx" \
+  $'const f = ({ onClose }) => (\n  <DialogFooter><DialogClose asChild><Button variant="tertiary">關閉</Button></DialogClose></DialogFooter>\n)\nconst g = onClose'
+expect_pass "Test 14 single-line footer close button passes"
+
+# 15 = 頁腳已經關掉之後,標題列裡的有字關閉鈕照擋(深度要扣回 0,不能整檔一出現 Footer 就放行)
+echo ""
+echo "Test 15: labeled close in a header after a closed footer → block"
+read -r -d '' T15_CONTENT <<'EOF' || true
+export const A = {
+  render: () => (
+    <DialogFooter>
+      <Button variant="primary">儲存</Button>
+    </DialogFooter>
+  ),
+}
+export const B = {
+  render: ({ onClose }: { onClose: () => void }) => (
+    <SheetHeader>
+      <Button variant="tertiary" onClick={onClose}>關閉</Button>
+    </SheetHeader>
+  ),
+}
+EOF
+# (按鈕屬性裡有箭頭函式 `onClick={() => …}` 時,B 的按鈕比對 `<Button\b[^>]*>` 停在 `=>`、整顆按鈕比不到 —— 修前就是如此,
+#  本次只修頁腳誤判、不擴大比對範圍;已寫進 h46 回報)
+run_hook "/fake/src/design-system/components/Sheet/sheet.stories.tsx" "$T15_CONTENT"
+expect_block "Test 15 labeled header close after a closed footer is still blocked" "[B dismiss via label]"
+
+# 16 = 自閉合的 <DialogFooter /> 不算打開頁腳
+echo ""
+echo "Test 16: self-closing footer does not open a footer scope → block"
+run_hook "/fake/src/design-system/components/Dialog/dialog.stories.tsx" \
+  $'const f = ({ onClose }) => (\n  <DialogHeader>\n    <DialogFooter />\n    <Button onClick={onClose}>關閉</Button>\n  </DialogHeader>\n)'
+expect_block "Test 16 self-closing footer does not exempt a labeled close" "[B dismiss via label]"
+
+# 17 = 註解裡寫了一個沒關的頁腳標籤(// 與 {/* */} 兩種),下面標題列的有字關閉鈕照擋(規格核對樣本 S4;
+#      72fc04f8 的判法拿原文數深度 → 註解裡的 <DialogFooter> 讓之後整檔都被放行,exit 0)
+echo ""
+echo "Test 17: footer tag inside comments does not open a footer scope → block"
+read -r -d '' T17_CONTENT <<'EOF' || true
+// 頁腳 <DialogFooter> 放取消與儲存
+export const D = {
+  render: ({ onClose }: { onClose: () => void }) => (
+    <SheetHeader>
+      {/* 舊版是 <SheetFooter> 裡放關閉 */}
+      <Button variant="tertiary">關閉</Button>
+    </SheetHeader>
+  ),
+}
+const w = onClose
+EOF
+run_hook "/fake/src/design-system/components/Sheet/sheet.stories.tsx" "$T17_CONTENT"
+expect_block "Test 17 footer tags inside comments do not exempt a labeled close" "[B dismiss via label]"
+
+# 18–20 = 字串不是註解(h46 再驗 H1 / H2 / H4):2198a11a 自己寫的遮罩不先跳過字串,accept="image/*" 的 /* 一路遮到檔尾的 {/* */}、
+#         同一行 "說明 // 次要" 的 // 遮到行尾,真的 </DialogFooter> 被遮掉 → 之後標題列的有字關閉被當成在頁腳裡放行。
+#         現在改用共用 lib/_comment_mask.sh(先跳過字串再認註解)。20 = 頁腳裡 https:// 不是註解,取消照放行。
+echo ""
+echo "Test 18: /* inside a string attribute does not hide </DialogFooter> → block"
+read -r -d '' T18_CONTENT <<'EOF' || true
+export const A = {
+  render: ({ onClose }: { onClose: () => void }) => (
+    <>
+      <DialogFooter>
+        <FileUpload accept="image/*" />
+        <Button variant="tertiary">取消</Button>
+      </DialogFooter>
+      <DialogHeader>
+        <Button variant="tertiary">關閉</Button>
+      </DialogHeader>
+      {/* 備註 */}
+    </>
+  ),
+}
+const x = onClose
+EOF
+run_hook "/fake/src/design-system/components/Dialog/dialog.stories.tsx" "$T18_CONTENT"
+expect_block "Test 18 string /* does not hide the footer close tag" "[B dismiss via label]"
+
+echo ""
+echo "Test 19: // inside a string on the footer's closing line does not hide </DialogFooter> → block"
+read -r -d '' T19_CONTENT <<'EOF' || true
+export const B = {
+  render: ({ onClose }: { onClose: () => void }) => (
+    <>
+      <DialogFooter>
+        <Button variant="tertiary">取消</Button><span>{"說明 // 次要"}</span></DialogFooter>
+      <DialogHeader>
+        <Button variant="tertiary">關閉</Button>
+      </DialogHeader>
+    </>
+  ),
+}
+const x = onClose
+EOF
+run_hook "/fake/src/design-system/components/Dialog/dialog.stories.tsx" "$T19_CONTENT"
+expect_block "Test 19 string // does not hide the footer close tag" "[B dismiss via label]"
+
+echo ""
+echo "Test 20: https:// inside a footer is not a comment → footer 取消 passes"
+read -r -d '' T20_CONTENT <<'EOF' || true
+export const D = {
+  render: ({ setOpen }: { setOpen: (v: boolean) => void }) => (
+    <DialogFooter>
+      <a href="https://example.com/help">說明</a>
+      <DialogClose asChild>
+        <Button variant="tertiary">取消</Button>
+      </DialogClose>
+      <Button variant="primary" onClick={() => { setOpen(false) }}>完成</Button>
+    </DialogFooter>
+  ),
+}
+EOF
+run_hook "/fake/src/design-system/components/Dialog/dialog.stories.tsx" "$T20_CONTENT"
+expect_pass "Test 20 https:// in a footer keeps the footer scope"
+
+# 21 = 行號錯位(h46 再驗 K2):前面字串裡有一個 U+2028,python 的 splitlines 把它當換行、遮罩只認 \n。
+#      fd654d52 逐行累加位置 → 「關閉」那一行的位置被推到下一行的 <DialogFooter> 之後 → 當成在頁腳裡放行。
+#      現在 in_footer 在原文上算位置(同一個 splitlines 切、行號一一對應),照擋。
+echo ""
+echo "Test 21: a U+2028 earlier in the file does not shift the labeled close into the next line's footer → block"
+LS=$'\xe2\x80\xa8'
+T21_CONTENT="const a = \"x${LS}y\"
+export const B = {
+  render: ({ onClose }: { onClose: () => void }) => (
+    <>
+      <DialogHeader>
+                              <Button variant=\"tertiary\">關閉</Button>
+<DialogFooter>
+        <Button variant=\"primary\">儲存</Button>
+      </DialogFooter>
+      </DialogHeader>
+    </>
+  ),
+}
+const w = onClose"
+run_hook "/fake/src/design-system/components/Dialog/dialog.stories.tsx" "$T21_CONTENT"
+expect_block "Test 21 U+2028 line separator does not shift the footer position" "[B dismiss via label]"
+
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""
 echo "════════════════════════════════════════"
