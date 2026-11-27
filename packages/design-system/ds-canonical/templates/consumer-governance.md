@@ -77,22 +77,31 @@ through ordinary `sync-all` as data in the upgrade PR diff (`GOV-UPGRADE-BOOTSTR
 2026-08-12; each such path prints an `INFO` line). The transaction still executes only the scripts on
 the protected base; incoming control-plane code runs only after the PR merges.
 
+The guarded apply reads the design-system GitHub Release and tag through the GitHub API. A Claude
+Code cloud session reaches only the GitHub repositories attached to it, so there an upgrade first
+needs `ajenchen/design-system` attached (measured 2026-11-27: without it the read fails with HTTP
+401 / 403 even though the repository is public). Upgrade scripts from 0.1.0-beta.152 send those reads
+through a credential-free `HTTPS_PROXY` themselves; an upgrade run by older scripts also needs
+`NODE_USE_ENV_PROXY=1`. Otherwise let the receiver below run it on a GitHub runner or run it on a
+local terminal (`docs/04-ds-upgrade.md`, Where to run an upgrade).
+
 ## Release mirror and protected PR trust chain
 
 Automatic template delivery is owned upstream by the release mirror. It opens a normal PR containing
-the exact published snapshot. Product repositories do not carry an upgrade receiver in this release:
-the upstream-managed `.github/workflows/sync-design-system.yml` (on `repository_dispatch`
+the exact published snapshot. Product repositories carry one upstream-managed receiver,
+`.github/workflows/sync-design-system.yml` (since 0.1.0-beta.152): on `repository_dispatch`
 `design-system-published` it validates the exact `{ version, tag, commit }` payload, runs
 `sync-all --apply` on a GitHub runner, and pushes only `automation/design-system-<version>`, holding
-nothing but `contents: write`) arrives in a later release. Until then each product upgrade runs
-`sync-all` on a local terminal (`docs/04-ds-upgrade.md`). Repository Actions defaults remain
-read-only, and ordinary delivery requires no hosted environment or App credential in the consumer.
+nothing but `contents: write`. A product repository at 0.1.0-beta.151 or older receives it with its
+next upgrade, which it runs itself (`docs/04-ds-upgrade.md`, First use); later releases arrive through
+the receiver. Repository Actions defaults remain read-only, and ordinary delivery requires no hosted
+environment or App credential in the consumer.
 
 The provider-neutral standard release order is exactly
 `pr-checks → merge → publish → readback → consumer`. The upstream release mirror owns template
-delivery. The product receiver, once shipped, is downstream-only: it pushes its automation branch,
-and the upstream release orchestrator opens the PR so that `Verify consumer` runs on it. The receiver
-may not open or merge that PR, publish, direct-write `main`, or replace mirror authority.
+delivery. The product receiver is downstream-only: it pushes its automation branch, and the upstream
+release orchestrator opens the PR so that `Verify consumer` runs on it. The receiver may not open or
+merge that PR, publish, direct-write `main`, or replace mirror authority.
 
 Protected `main` requires the single `Verify consumer` context from `audit.yml`. That workflow performs
 one locked install followed by the hooks-off `governance:check`, typecheck, import lint, and build. The normal PR review and protected

@@ -388,8 +388,8 @@ test('actual clean-room mirror closes every generated provider/fork scaffold fil
   })
   assert.deepEqual(
     readdirSync(join(mirror, '.github/workflows')).sort(),
-    ['audit.yml'],
-    'published consumer mirror must contain exactly the native Verify consumer workflow (the upgrade receiver returns in the release after 0.1.0-beta.151, TRACKER R22)',
+    ['audit.yml', 'sync-design-system.yml'],
+    'published consumer mirror must contain exactly the native Verify consumer workflow and the upgrade receiver',
   )
   assert.equal(
     readdirSync(join(mirror, 'scripts')).includes('governance-anchor-preflight.mjs'),

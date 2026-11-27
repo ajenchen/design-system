@@ -19,6 +19,9 @@ import {
   validateProductTemplateScaffoldLock,
 } from './product-template-scaffold-lock.mjs'
 import { compareUtf8Bytes } from './lib/provider-lifecycle.mjs'
+// 讀 GitHub Release / npm attestation 的預設 fetch:有不帶帳密的 HTTPS_PROXY 就經代理 CONNECT,否則就是內建 fetch(TRACKER R74;
+// 理由與判定住 verified-exact-npm-runtime.mjs「升級鏈讀 GitHub Release / npm attestation 的 fetch」)。
+import { governanceRoutedFetch } from './lib/verified-exact-npm-runtime.mjs'
 
 export const PROVENANCE_TYPE = 'https://slsa.dev/provenance/v1'
 export const GITHUB_ACTIONS_BUILDER = 'https://github.com/actions/runner/github-hosted'
@@ -671,9 +674,27 @@ function githubHeaders(token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN)
   }
 }
 
+// GitHub 拒絕讀取(401 / 403)時多給一句怎麼走(TRACKER R74,workspace 2026-11-27 實測):Claude Code 雲端 session
+// 的 GitHub 代理只放行掛在該 session 的 repo,公開的設計系統 repo 照樣被擋,帶不帶 token 都一樣。只對 GitHub 的網址、
+// 只對這兩個狀態碼加;其他狀態碼與 npm registry 的錯誤訊息照舊。
+const GITHUB_READ_HOSTS = new Set(['api.github.com', 'github.com'])
+
+function githubReadAccessHint(url, status) {
+  if (status !== 401 && status !== 403) return ''
+  let parsed
+  try { parsed = new URL(String(url)) } catch { return '' }
+  if (!GITHUB_READ_HOSTS.has(parsed.hostname)) return ''
+  const [owner, repo] = parsed.pathname.replace(/^\/repos\//, '/').split('/').filter(Boolean)
+  const repository = owner && repo ? `${owner}/${repo}` : 'the design-system repository'
+  return ` (GitHub refused the read. In a Claude Code cloud session the GitHub proxy reaches only repositories attached to the session, even public ones: attach ${repository} to the session, or let the upgrade receiver .github/workflows/sync-design-system.yml run the upgrade on a GitHub runner, or run it on a local terminal; see docs/04-ds-upgrade.md, "Where to run an upgrade".)`
+}
+
 async function fetchOk(fetchImpl, url, options, label) {
   const response = await fetchImpl(url, { signal: AbortSignal.timeout(30_000), ...options })
-  if (!response?.ok) throw new Error(`${label} readback failed with HTTP ${response?.status ?? '<unknown>'}`)
+  if (!response?.ok) {
+    const status = response?.status ?? '<unknown>'
+    throw new Error(`${label} readback failed with HTTP ${status}${githubReadAccessHint(url, response?.status)}`)
+  }
   return response
 }
 
@@ -681,7 +702,7 @@ async function fetchOk(fetchImpl, url, options, label) {
 // own `audit signatures --json` never exposes the verified bundles, so the SLSA
 // provenance statements are read back from the registry attestations endpoint
 // and validated with the same DSSE/predicate closure as before.
-export async function fetchNpmAttestationReadback({ name, version }, { fetchImpl = fetch } = {}) {
+export async function fetchNpmAttestationReadback({ name, version }, { fetchImpl = governanceRoutedFetch } = {}) {
   const registry = 'https://registry.npmjs.org/'
   const url = `${registry}-/npm/v1/attestations/${encodeURIComponent(name)}@${encodeURIComponent(version)}`
   const response = await fetchOk(fetchImpl, url, { headers: { Accept: 'application/json' } }, `${name}@${version} npm attestation`)
@@ -693,7 +714,7 @@ export async function resolveImmutableReleaseSnapshot({
   repository,
   tag,
   assetName,
-  fetchImpl = fetch,
+  fetchImpl = governanceRoutedFetch,
   token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN,
   // 同 validateImmutableReleaseSnapshot:false = 高保證車道(簽章 + 8-asset 全集必要),
   // true = ordinary consumer 車道。預設 fail-closed。

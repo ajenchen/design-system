@@ -22,7 +22,10 @@ import { dirname, join, resolve } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { gzipSync } from 'node:zlib'
+import { EventEmitter } from 'node:events'
+import { Readable } from 'node:stream'
 import {
+  createGovernanceRoutedFetch,
   formatGovernanceProxyNotices,
   isGovernanceProxyFamilyName,
   matchesGovernanceNoProxy,
@@ -882,6 +885,74 @@ test('canonical downloads take the shared route: NO_PROXY hit goes direct, other
     restore()
   }
   assert.equal(tunnels.length, 1, 'direct routes must never open a tunnel')
+})
+
+// TRACKER R74(workspace 2026-11-27 雲端 session 實測):DS repo 掛到 session 之後 sync-all 仍 HTTP 401 —— 內建 fetch 不讀
+// HTTPS_PROXY、直連 api.github.com。升級鏈讀 GitHub Release / npm attestation 的預設 fetch 改走同一支路由判定。兩面:
+// 不帶帳密的代理 → CONNECT 隧道(同一組錨、重導向逐跳重判、跨 origin 不帶 Authorization);沒代理 / 帶帳密 / NO_PROXY → 內建 fetch。
+test('upgrade-chain reads take the shared route: a credential-free HTTPS_PROXY tunnels (same anchors, per-hop redirects); no proxy, a credentialed proxy, or a NO_PROXY hit stay on the built-in fetch', async () => {
+  const tunnels = []
+  const requests = []
+  const directCalls = []
+  const anchors = Object.freeze(['TEST-ANCHOR'])
+  const openTunnel = async (options) => {
+    tunnels.push(options)
+    return { destroyed: false, destroy() { this.destroyed = true } }
+  }
+  const release = 'https://api.github.com/repos/ajenchen/design-system/releases/tags/v0.1.0-beta.152'
+  const asset = 'https://release-assets.example.com/bom.json?sig=1'
+  const replies = {
+    [release]: { status: 302, headers: { location: asset } },
+    [asset]: { status: 200, headers: { 'content-type': 'application/json' }, body: '{"ok":true}' },
+  }
+  const requestImpl = (url, options, onResponse) => {
+    requests.push({ url: url.href, method: options.method, headers: options.headers, ca: options.ca, socket: options.createConnection() })
+    const handle = new EventEmitter()
+    handle.destroy = () => {}
+    handle.end = () => {
+      const reply = replies[url.href]
+      const response = Readable.from(reply.body ? [Buffer.from(reply.body)] : [])
+      Object.assign(response, { statusCode: reply.status, statusMessage: '', headers: reply.headers })
+      onResponse(response)
+    }
+    return handle
+  }
+  const directFetch = async (url, options) => {
+    directCalls.push({ url, options })
+    return new Response('direct', { status: 200 })
+  }
+  const routed = (environment) => createGovernanceRoutedFetch({ environment, directFetch, openTunnel, trustAnchors: () => anchors, requestImpl, report: () => {} })
+  const proxied = routed({ HTTPS_PROXY: 'http://proxy.internal:3128', NO_PROXY: 'registry.npmjs.org' })
+
+  const response = await proxied(release, { headers: { Authorization: 'Bearer test-token', Accept: 'application/vnd.github+json' } })
+  assert.equal(response.status, 200)
+  assert.deepEqual(await response.json(), { ok: true })
+  assert.deepEqual(tunnels.map((item) => [item.proxy.origin, item.host, item.port, item.ca]), [
+    ['http://proxy.internal:3128', 'api.github.com', 443, anchors],
+    ['http://proxy.internal:3128', 'release-assets.example.com', 443, anchors],
+  ])
+  assert.equal(requests[0].headers.authorization, 'Bearer test-token')
+  assert.equal(requests[0].headers['accept-encoding'], 'identity')
+  assert.ok(requests[0].headers['user-agent'], 'GitHub refuses API reads without a User-Agent')
+  assert.equal(requests[1].headers.authorization, undefined, 'a cross-origin redirect must not carry Authorization')
+  assert.equal(requests[0].ca, anchors)
+  assert.equal(directCalls.length, 0, 'a proxied route must never fall back to a direct read')
+  await assert.rejects(proxied(release, { redirect: 'error' }), /redirect refused/)
+
+  // NO_PROXY 命中 → 內建 fetch;沒有代理 / 帶帳密的代理(不轉送)→ 內建 fetch。三者都不開隧道。
+  const tunnelsBefore = tunnels.length
+  assert.equal(await (await proxied('https://registry.npmjs.org/-/npm/v1/attestations/x@1', {})).text(), 'direct')
+  for (const environment of [{}, { HTTPS_PROXY: 'http://user:secret@proxy.internal:3128' }]) {
+    assert.equal(await (await routed(environment)(release, {})).text(), 'direct')
+  }
+  assert.equal(directCalls.length, 3)
+  assert.deepEqual(directCalls.map((call) => call.url), ['https://registry.npmjs.org/-/npm/v1/attestations/x@1', release, release])
+  assert.equal(tunnels.length, tunnelsBefore, 'direct routes must never open a tunnel')
+
+  // 呼叫點(同族全修 M10):升級鏈兩個讀網路的預設 fetch 都是這一支,不再是裸的內建 fetch。
+  const provenance = readFileSync(join(REPOSITORY_ROOT, 'scripts/verify-upgrade-provenance.mjs'), 'utf8')
+  assert.equal([...provenance.matchAll(/fetchImpl = governanceRoutedFetch\b/g)].length, 2)
+  assert.doesNotMatch(provenance, /fetchImpl = (?:globalThis\.)?fetch\b/)
 })
 
 test('prepare hands its npm environment to every canonical download, so the download and the locked npm child route alike', async () => {

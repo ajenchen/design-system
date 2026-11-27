@@ -5,18 +5,59 @@ governance material, provider adapters, and skills—not an install-time lookup 
 
 ## Automated proposal
 
-The design-system authority owns the five-step release SSOT. Its last step (`consumer`) reaches this
-template repository: the upstream release mirror delivers the exact published snapshot as a normal
-protected-main PR, and no Governance App environment is needed.
+The design-system authority owns the five-step release SSOT. Its last step (`consumer`) reaches two
+kinds of repository, and neither needs a Governance App environment:
 
-Product repositories created from the template do not receive upgrades automatically yet. The
-upgrade receiver workflow (`.github/workflows/sync-design-system.yml`, started by the release's
-`repository_dispatch`) is not part of this release and arrives in a later one. Until then, run each
-upgrade on a local terminal with `sync-all` (Manual proposal below); the transaction moves the root
-**and every `apps/*/package.json`** to the exact version and recomputes one lock (see Workspace
-package versions below).
+- **This template repository** receives the exact published snapshot from the upstream release mirror
+  as a normal protected-main PR.
+- **Product repositories created from the template** receive upgrades through
+  `.github/workflows/sync-design-system.yml`, an upstream-managed file that `sync-all` keeps current
+  (shipped since 0.1.0-beta.152).
 
-Every upgrade PR, template mirror or manual, must pass exactly one required context, `Verify consumer`, from `audit.yml`. That job performs
+### Upgrade receiver (`sync-design-system.yml`)
+
+When a release is published, the release orchestrator sends `repository_dispatch` with event type
+`design-system-published` and `client_payload = { version, tag, commit }` to each product repository
+registered for automatic delivery. GitHub runs this event only from the workflow on the default
+branch, so the receiver must be on `main`. On a GitHub-hosted runner it:
+
+1. validates the payload: `version` is one exact SemVer (no `latest`, range, or `v` prefix), `tag`
+   equals `v<version>`, and `commit` is a lowercase 40-character SHA that the design-system tag
+   actually points at;
+2. installs the current lock with `npm ci --ignore-scripts`, then `npm audit signatures`;
+3. runs `npm run sync-all -- --apply --to <version>` on a new branch `automation/design-system-<version>`
+   (the transaction moves the root **and every `apps/*/package.json`** to the exact version and
+   recomputes one lock; see Workspace package versions below);
+4. commits the result and pushes only that branch.
+
+It holds only `contents: write`, reads no secrets, and does not open the PR. GitHub does not run
+workflows for a PR opened by the run's own `GITHUB_TOKEN`, so such a PR would never receive
+`Verify consumer`. Instead the orchestrator opens `chore(ds): sync v<version>` from the pushed branch
+with its own credential; if the branch arrives after the orchestrator has stopped waiting, its next
+run (`npm run release:auto` in the design-system repository) opens it. Merging stays with the product repository.
+
+**First use.** A product repository at 0.1.0-beta.151 or older does not have the receiver yet: it
+arrives as a new managed file with the upgrade to 0.1.0-beta.152 or later. Run that one upgrade
+yourself (Manual proposal below; Where to run an upgrade says where it can run), review the new
+`.github/workflows/sync-design-system.yml` in the upgrade PR, and merge it to `main`. From the next
+release on, the receiver runs when the release's dispatch arrives; it needs no secret, environment,
+or App set up in the product repository.
+
+A repository that the orchestrator does not dispatch to can send the same event itself and then open
+the PR from `automation/design-system-X.Y.Z`:
+
+```text
+printf '%s\n' '{"event_type":"design-system-published","client_payload":{"version":"X.Y.Z","tag":"vX.Y.Z","commit":"<40-character commit of tag vX.Y.Z>"}}' \
+  | gh api --method POST repos/<owner>/<repo>/dispatches --input -
+```
+
+Two limits. GitHub refuses workflow-file changes pushed with `GITHUB_TOKEN`, so when a release
+changes `.github/workflows/**` the receiver stops before pushing; run that upgrade on a local terminal
+(Manual proposal below). And the automated branch carries only the upgrade transaction: when
+`ds-changes.json` lists entries for the versions crossed, check out the branch and run
+`npm run ds:migrate` there before merging (see Manual proposal).
+
+Every upgrade PR, automated or manual, must pass exactly one required context, `Verify consumer`, from `audit.yml`. That job performs
 one `npm ci --ignore-scripts` followed by the hooks-off `npm run governance:check` (with the product's
 recorded content-debt baseline, the same checker and file `setup:all` uses), typecheck,
 import-boundary lint, and build. Review
@@ -39,9 +80,10 @@ authority accepts a workspace manifest only when the change is exactly those ver
 `GOV-WORKSPACE-VERSION-002` names a nested second copy in `package-lock.json`
 (`apps/<app>/node_modules/@qijenchen/design-system`), which is the copy that app would actually load.
 
-The receiving transaction runs the scripts already on your `main`. The first upgrade **to** the release
-that ships this fix therefore still runs the old transaction, which moves only the root; that PR fails
-`Verify consumer` with the two rules above. Repair it on the upgrade branch, once:
+The receiving transaction runs the scripts already on your `main`. The fix ships in 0.1.0-beta.151, so
+the first upgrade from 0.1.0-beta.150 or older (to 0.1.0-beta.151 or later) still runs the old
+transaction, which moves only the root; that PR fails `Verify consumer` with the two rules above.
+Repair it on the upgrade branch, once:
 
 ```text
 npm run sync:workspace-dependencies -- --set X.Y.Z
@@ -119,8 +161,13 @@ A release may also change protected control-plane paths (`.github/**`, `.npmrc`,
 This section answers the question「一般使用 ds template 的消費者也是用一樣的方式可以建置等價的雲端環境？」(asked by the design-system owner, 2026-11-26).
 
 - **New consumers.** The release workflow upgrades the template repository automatically at every release, so a repository created from the template starts at the template's current version (0.1.0-beta.150 or later). Follow the README Setup script (with your own folder name) and set network access to Full; there is no version gate to cross.
-- **Existing consumers at 0.1.0-beta.149 or older.** The first upgrade to 0.1.0-beta.150 runs the transaction scripts frozen on your own `main` (the older copies), not the ones fixed in 0.1.0-beta.150, and in a Claude Code cloud session those older scripts hit the certificate and proxy problems that 0.1.0-beta.150 fixed. Run that first upgrade on a local terminal; do not run `sync-all` inside a Claude Code cloud session. (The upgrade receiver that runs it on a GitHub runner is not part of this release; see Automated proposal above.)
-- **After 0.1.0-beta.150**, later upgrades and `setup:all` can also run in a Claude Code cloud session 【AI 推導,待實測】: nobody has yet upgraded from 0.1.0-beta.150 to a newer release inside a cloud session.
+- **Existing consumers at 0.1.0-beta.149 or older.** The first upgrade to 0.1.0-beta.150 runs the transaction scripts frozen on your own `main` (the older copies), not the ones fixed in 0.1.0-beta.150, and in a Claude Code cloud session those older scripts hit the certificate and proxy problems that 0.1.0-beta.150 fixed. Run that first upgrade on a local terminal; do not run `sync-all` inside a Claude Code cloud session. (Such a repository has no upgrade receiver yet; it arrives with 0.1.0-beta.152, see First use above.)
+- **Upgrades in a Claude Code cloud session (measured 2026-11-27, 0.1.0-beta.150 → 0.1.0-beta.151).** `sync-all --apply` reads the immutable GitHub Release and tag of `ajenchen/design-system` through the GitHub API, and a cloud session's GitHub proxy lets through only the repositories attached to that session. Three runs in one session:
+  1. Without the repository attached, the run stopped before changing anything, with `BLOCKER: transaction exception:GitHub Release v0.1.0-beta.151 readback failed with HTTP 401`; a direct read of `https://api.github.com/repos/ajenchen/design-system/releases/tags/v0.1.0-beta.151` returned 403 with or without a token (「GitHub access to this repository is not enabled for this session. Use add_repo to request access.」), although the repository is public.
+  2. With `ajenchen/design-system` attached to the session, the same command still failed with the same HTTP 401: the 0.1.0-beta.150 scripts read GitHub with Node.js's built-in `fetch`, which does not read `HTTPS_PROXY`, so the request went straight to `api.github.com` instead of through the session proxy (`curl` through the proxy returned 200 for the same URL).
+  3. With the repository attached and `NODE_USE_ENV_PROXY=1` set, it succeeded (`targetVerification=verified`, `ready=true`).
+
+  So in a cloud session, first attach `ajenchen/design-system` to the session's repository access. From 0.1.0-beta.152 on, the upgrade scripts send these reads through a credential-free `HTTPS_PROXY` themselves (`NO_PROXY` hosts stay direct; a proxy URL that carries credentials is still not used), so an upgrade run by the scripts of 0.1.0-beta.152 or later needs no extra variable (not yet measured in a cloud session 【AI 推導,待實測】). An upgrade whose `main` is still at 0.1.0-beta.151 or older runs the older scripts, so run it as `NODE_USE_ENV_PROXY=1 npm run sync-all -- --apply --to X.Y.Z` (the variable exists from Node.js 22.21.0, https://nodejs.org/docs/latest-v22.x/api/cli.html#node_use_env_proxy1; the cloud image measured 22.23.5). Otherwise let the upgrade receiver run the upgrade on a GitHub runner (Automated proposal above; the receiver must already be on `main`) or run it on a local terminal. `setup:all` does not read the GitHub API; its cloud network notes are in the README.
 - **Common conditions for a cloud session:** Node.js 22.15.0 or newer (the cloud image measured 22.23.5); network access set to Full; a proxy URL that carries credentials is not forwarded, by design. The README proxy and network notes have the details.
 
 ## Recurring reviewed control-plane updates

@@ -162,10 +162,10 @@ async function loadProviderHookGroupLaunchBuilder(repoRoot) {
 
 // 派工命令帶的穩定群組 id(2026-11-26,gate-census C 組判定 B2;算法只住 transport 的 providerHookGroupId)。
 // 帶了就必須逐字等於 registrations.json 該群算出的 id —— 錯的 id 會讓入口判成沒登記、整群不跑;
-// 沒帶照舊比對不帶 id 的形狀(consumer 與舊產生器的相容)。兩段式上線(F3-fix-anchor):第一段產生器不輸出 id ——
-// PR 的 governance-anchor 用 protected main 那份本檔驗候選樹,那份還不認得 id;等認得 id 的這份上了 main,
-// 第二段才開輸出,DS repo 裡「必須帶」同時由 provider-view-group-reachability-invariant 守(開關 =
-// transport 的 PROVIDER_HOOK_GROUP_ID_IN_VIEWS)。
+// 沒帶照舊比對不帶 id 的形狀(consumer 與舊產生器的相容)。DS repo 的產生器自 0.1.0-beta.152 起每條都輸出 id
+// (開關 = transport 的 PROVIDER_HOOK_GROUP_ID_IN_VIEWS),「必須帶」由 provider-view-group-reachability-invariant 守,
+// 不在本檔重寫一份。經過(F3-fix-anchor):PR 的 governance-anchor 用 protected main 那份本檔驗候選樹,所以本檔先
+// 在 0.1.0-beta.151 認得 id 並上了 main,產生器才打開輸出。
 function invocationGroupId(invocation) {
   const tokens = invocation.transport === 'command-string' ? invocation.value.split(' ') : invocation.value
   const at = tokens.indexOf('--group-id')
