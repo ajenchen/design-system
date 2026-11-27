@@ -1134,7 +1134,7 @@
       "design-system-tokens-uisize--product-alignment"
     ],
     "storyIdsSha256": "6271317a6e9e918b30ebd849427bcabe7e3134baffb3918c0ca643a7a9ecef56",
-    "fingerprints": 760,
+    "fingerprints": 761,
     "linuxOnly": {
       "design-system-components-combobox-設計規格--inspector|color-contrast": "藍圖區塊的 9px text-fg-muted 小標(anatomy-utils.tsx:174):macOS 等寬字溢出區塊、axe 歸 incomplete 不計,Linux 放得下才計入 —— 只有 Linux(CI)量得到;值 = 2f367ee3(A76)寫入的 CI 實測;main 的 a11y drift 排程 2026-11-19(run 44499310317)在 Linux 量到同值 23 / 41。--color-fg-muted 已定案例外(color.spec.md「已定案(禁再問)」)",
       "design-system-components-select-設計規格--inspector|color-contrast": "藍圖區塊的 9px text-fg-muted 小標(anatomy-utils.tsx:174):macOS 等寬字溢出區塊、axe 歸 incomplete 不計,Linux 放得下才計入 —— 只有 Linux(CI)量得到;值 = 2f367ee3(A76)寫入的 CI 實測;main 的 a11y drift 排程 2026-11-19(run 44499310317)在 Linux 量到同值 23 / 41。--color-fg-muted 已定案例外(color.spec.md「已定案(禁再問)」)"
@@ -1362,6 +1362,7 @@
     "design-system-components-combobox-設計規格--state-behavior|color-contrast": 6,
     "design-system-components-datatable-展示--cell-errors-fixed-row-override|color-contrast": 1,
     "design-system-components-datatable-展示--cell-errors|color-contrast": 1,
+    "design-system-components-datatable-展示--column-menu-items|color-contrast": 5,
     "design-system-components-datatable-展示--column-reorder|color-contrast": 3,
     "design-system-components-datatable-展示--column-resize|color-contrast": 2,
     "design-system-components-datatable-展示--column-visibility-panel-states|color-contrast": 6,

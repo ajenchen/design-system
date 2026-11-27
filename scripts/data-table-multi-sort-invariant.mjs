@@ -220,7 +220,8 @@ async function injectBreak(kind) {
           if (h.querySelector('[data-col-menu]') || (h.getAttribute('data-column-id') || '').startsWith('__')) continue
           const w = document.createElement('div'); w.setAttribute('data-col-menu', ''); w.className = '__ms-fake-col-menu'
           const b = document.createElement('button'); b.type = 'button'; b.style.cssText = 'width:24px;height:24px;flex-shrink:0'; b.setAttribute('aria-label', `${(h.textContent || '').trim()} 欄位選單`)
-          w.appendChild(b); h.appendChild(w)
+          // 放在排序區正後面(= 真的 ⌄ 的位置,欄寬把手之前):Tab 從排序區出來的下一站才會是它
+          w.appendChild(b); if (h.firstElementChild) h.firstElementChild.after(w); else h.appendChild(w)
         }
       }
       add()
@@ -250,6 +251,7 @@ async function injectBreak(kind) {
         for (const r of document.querySelectorAll('[data-sort-live-region]')) { const m = /^Sorted by (.+) (ascending|descending)$/.exec(r.textContent || ''); if (m) r.textContent = `已依 ${m[1]} ${m[2] === 'ascending' ? '升冪' : '降冪'}排序` }
         for (const d of document.querySelectorAll('[id$="-sort-priority"]')) { const m = /^Sort priority (\d+)$/.exec(d.textContent || ''); if (m) d.textContent = `排序順位 ${m[1]}` }
       }
+      revert() // ⌄ 的讀屏名在注入前就畫好了,先換一次;之後新長出來的(選單項、播報、順位描述)由下面的觀察者換
       new MutationObserver(revert).observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['aria-label'] })
     }
     if (kind === 'nine-plus-numeric') {
