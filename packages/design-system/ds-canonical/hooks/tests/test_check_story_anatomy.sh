@@ -338,6 +338,68 @@ EOF
 run_hook "/fake/src/design-system/components/Sheet/sheet.stories.tsx" "$T17_CONTENT"
 expect_block "Test 17 footer tags inside comments do not exempt a labeled close" "[B dismiss via label]"
 
+# 18–20 = 字串不是註解(h46 再驗 H1 / H2 / H4):2198a11a 自己寫的遮罩不先跳過字串,accept="image/*" 的 /* 一路遮到檔尾的 {/* */}、
+#         同一行 "說明 // 次要" 的 // 遮到行尾,真的 </DialogFooter> 被遮掉 → 之後標題列的有字關閉被當成在頁腳裡放行。
+#         現在改用共用 lib/_comment_mask.sh(先跳過字串再認註解)。20 = 頁腳裡 https:// 不是註解,取消照放行。
+echo ""
+echo "Test 18: /* inside a string attribute does not hide </DialogFooter> → block"
+read -r -d '' T18_CONTENT <<'EOF' || true
+export const A = {
+  render: ({ onClose }: { onClose: () => void }) => (
+    <>
+      <DialogFooter>
+        <FileUpload accept="image/*" />
+        <Button variant="tertiary">取消</Button>
+      </DialogFooter>
+      <DialogHeader>
+        <Button variant="tertiary">關閉</Button>
+      </DialogHeader>
+      {/* 備註 */}
+    </>
+  ),
+}
+const x = onClose
+EOF
+run_hook "/fake/src/design-system/components/Dialog/dialog.stories.tsx" "$T18_CONTENT"
+expect_block "Test 18 string /* does not hide the footer close tag" "[B dismiss via label]"
+
+echo ""
+echo "Test 19: // inside a string on the footer's closing line does not hide </DialogFooter> → block"
+read -r -d '' T19_CONTENT <<'EOF' || true
+export const B = {
+  render: ({ onClose }: { onClose: () => void }) => (
+    <>
+      <DialogFooter>
+        <Button variant="tertiary">取消</Button><span>{"說明 // 次要"}</span></DialogFooter>
+      <DialogHeader>
+        <Button variant="tertiary">關閉</Button>
+      </DialogHeader>
+    </>
+  ),
+}
+const x = onClose
+EOF
+run_hook "/fake/src/design-system/components/Dialog/dialog.stories.tsx" "$T19_CONTENT"
+expect_block "Test 19 string // does not hide the footer close tag" "[B dismiss via label]"
+
+echo ""
+echo "Test 20: https:// inside a footer is not a comment → footer 取消 passes"
+read -r -d '' T20_CONTENT <<'EOF' || true
+export const D = {
+  render: ({ setOpen }: { setOpen: (v: boolean) => void }) => (
+    <DialogFooter>
+      <a href="https://example.com/help">說明</a>
+      <DialogClose asChild>
+        <Button variant="tertiary">取消</Button>
+      </DialogClose>
+      <Button variant="primary" onClick={() => { setOpen(false) }}>完成</Button>
+    </DialogFooter>
+  ),
+}
+EOF
+run_hook "/fake/src/design-system/components/Dialog/dialog.stories.tsx" "$T20_CONTENT"
+expect_pass "Test 20 https:// in a footer keeps the footer scope"
+
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""
 echo "════════════════════════════════════════"

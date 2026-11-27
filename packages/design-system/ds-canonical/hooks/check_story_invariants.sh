@@ -34,6 +34,10 @@ source "$(dirname "$0")/lib/_hook_integrity.sh" 2>/dev/null || {
   printf 'GOVERNANCE_INTEGRITY: hook integrity helper unavailable\n' >&2
   exit 70
 }
+source "$(dirname "$0")/lib/_comment_mask.sh" 2>/dev/null || {
+  printf 'GOVERNANCE_INTEGRITY: story invariant comment mask unavailable\n' >&2
+  exit 70
+}
 
 set -uo pipefail
 
@@ -219,18 +223,25 @@ rule_anatomy() {
   fi
 
   TMP=$(mktemp "${TMPDIR:-/tmp}/check-story-invariants-anatomy.XXXXXX") || governance_hook_integrity_fail 'story invariant anatomy scratch file unavailable'
-  trap 'rm -f -- "$TMP"' RETURN
+  TMP_MASKED=$(mktemp "${TMPDIR:-/tmp}/check-story-invariants-anatomy-masked.XXXXXX") || { rm -f -- "$TMP"; governance_hook_integrity_fail 'story invariant anatomy masked scratch file unavailable'; }
+  trap 'rm -f -- "$TMP" "$TMP_MASKED"' RETURN
   printf '%s\n' "$NEW_CONTENT" > "$TMP" \
     || governance_hook_integrity_fail 'story invariant anatomy scratch write failed'
+  # B 數頁腳深度用的遮罩:共用 lib/_comment_mask.sh(先跳過字串再認註解;等長空白、位置不變),不在這裡另寫正規式
+  governance_mask_comments < "$TMP" > "$TMP_MASKED" \
+    || governance_hook_integrity_fail 'story invariant anatomy comment mask failed'
 
   local violations
-  violations=$(python3 - "$FILE_PATH" "$TMP" <<'PY'
+  violations=$(python3 - "$FILE_PATH" "$TMP" "$TMP_MASKED" <<'PY'
 import re
 import sys
 
-file_path, source_path = sys.argv[1:]
+file_path, source_path, masked_path = sys.argv[1:]
 with open(source_path, encoding='utf-8') as source:
     lines = source.read().splitlines()
+# 遮罩是逐位元組換成空白(perl 不解碼),所以用位元組算位置
+with open(masked_path, 'rb') as masked_source:
+    masked_bytes = masked_source.read()
 
 allowed_first_tags = {
     'MenuItem', 'ItemIcon', 'ItemAvatar', 'ItemLabel', 'ItemSuffix',
@@ -266,23 +277,25 @@ dismiss_context = re.compile(
 # 2026-11-27 前只看上下 4 行有沒有 setOpen(false) 等字,旁邊主鈕「套用後關閉」的 setOpen(false) 讓頁腳的取消被當成違規
 # (dialog.stories.tsx 標籤選擇 / 匯入預覽兩則;h46 線回報)。判準改成:按鈕在頁腳元素裡面 → 不是 B。
 # 頁腳深度 = 按鈕之前出現的 <XFooter 開頭 − 自閉合的 <XFooter … /> − </XFooter>,在整段文字上算(標籤可跨行、可同一行)。
-footer_open = re.compile(r'<(?:Dialog|Sheet|Popover|Surface|Coachmark|AlertDialog|Drawer)Footer\b')
-footer_self_closing = re.compile(r'<(?:Dialog|Sheet|Popover|Surface|Coachmark|AlertDialog|Drawer)Footer\b[^<>]*/>')
-footer_close = re.compile(r'</(?:Dialog|Sheet|Popover|Surface|Coachmark|AlertDialog|Drawer)Footer\s*>')
-full_text = '\n'.join(lines)
-# 數深度前先遮掉註解(同一支 hook 的 R9 也先丟掉純註解行):註解裡寫的 <DialogFooter> 不是頁腳,不能讓之後整檔的有字關閉鈕都被放行。
-# 遮法 = 換成等長空白、換行保留,位置與原文對得上:{/* … */}、/* … */、// 到行尾(前一個字是 : 或英數字的不算,避開 https://)。
-_comment = re.compile(r'\{/\*.*?\*/\}|/\*.*?\*/|(?<![:\w])//[^\n]*', re.S)
-masked_text = _comment.sub(lambda m: re.sub(r'[^\n]', ' ', m.group(0)), full_text)
+footer_open = re.compile(rb'<(?:Dialog|Sheet|Popover|Surface|Coachmark|AlertDialog|Drawer)Footer\b')
+footer_self_closing = re.compile(rb'<(?:Dialog|Sheet|Popover|Surface|Coachmark|AlertDialog|Drawer)Footer\b[^<>]*/>')
+footer_close = re.compile(rb'</(?:Dialog|Sheet|Popover|Surface|Coachmark|AlertDialog|Drawer)Footer\s*>')
+# 數深度用遮過註解的內容(masked_bytes,上面 shell 端由共用 lib/_comment_mask.sh 產生):註解裡寫的 <DialogFooter> 不是頁腳,
+# 不能讓之後整檔的有字關閉鈕都被放行;字串裡的 /*、" // " 不是註解,不能把真的 </DialogFooter> 遮掉。
+# 2198a11a 在這裡另寫了一份不先跳過字串的正規式,accept="image/*" 會把後面的 </DialogFooter> 一起遮掉(h46 再驗 H1 / H2)。
+# 遮罩逐位元組換空白、換行保留 → 位置用位元組算:第幾行(以 \n 分)的開頭 + 該行裡按鈕前面那段的 UTF-8 長度。
 line_starts = []
 _offset = 0
-for _line in lines:
+for _raw_line in masked_bytes.split(b'\n'):
     line_starts.append(_offset)
-    _offset += len(_line) + 1
+    _offset += len(_raw_line) + 1
 
 
-def in_footer(position):
-    before = masked_text[:position]
+def in_footer(index, char_start):
+    if index >= len(line_starts):  # splitlines 另認 \r、U+2028 等換行 → 行對不上就不放行(照 B 判)
+        return False
+    position = line_starts[index] + len(lines[index][:char_start].encode('utf-8'))
+    before = masked_bytes[:position]
     depth = len(footer_open.findall(before)) - len(footer_self_closing.findall(before)) - len(footer_close.findall(before))
     return depth > 0
 overlay_surface = re.compile(
@@ -343,7 +356,7 @@ for index, line in enumerate(lines):
         )
 
     dismiss_match = dismiss_button.search(line)
-    if dismiss_match and not in_footer(line_starts[index] + dismiss_match.start()):
+    if dismiss_match and not in_footer(index, dismiss_match.start()):
         context = '\n'.join(lines[max(0, index - 4):index + 5])
         if dismiss_context.search(context):
             findings.append(

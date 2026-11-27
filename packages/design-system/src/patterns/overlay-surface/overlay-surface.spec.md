@@ -415,12 +415,12 @@ border-l border-divider">`)/ Atlassian [`modal-dialog/examples/101-full-height-i
   AppShell 的元件樹裡,外框會去登記成 Menu(`../../components/Sidebar/sidebar.tsx` 的 `Sidebar`)【AI 推導】。
 - **分隔線由左欄畫**(`border-r border-divider`,貫穿 body 頂到底)—— 第 2 條原文寫右欄畫,換成左導覽時改由左欄畫,
   與 Sidebar 自己畫右邊線一致(`sidebar.tsx` 的 `Sidebar`,左側 `border-r border-divider`)【AI 推導】。
-- **右欄**自帶 `<ScrollArea>`(第 1 條)。頂端兩種寫法都可以,都用選中分類的字當標題:
-  (a)**欄內標頭** `DialogPaneHeader` + `DialogPaneTitle`(右側可放操作、標題列下可放分頁):與上面的標題列同一個 SurfaceHeader、**沒有 ×**,
-  不隨內容捲動、捲動區從它底下開始;規則住 `../../components/Dialog/dialog.spec.md`「欄內標頭(DialogPaneHeader)」。
-  (b)**文字標題**:用文字樣式、隨內容捲動;也可以省略(Salt 窄版圖右欄直接從說明文字開始)。標題 → 第一個設定照 `../../tokens/layoutSpace/layoutSpace.spec.md`「標題區 → 內容」。
+- **右欄**自帶 `<ScrollArea>`(第 1 條)。頂端用選中分類的字當標題,要不要標頭元件看內容(`../header-canonical/header-canonical.spec.md`「何時不用」第 ② 題),兩種寫法都可以:
+  (a)**欄內標頭** `DialogPaneHeader` + `DialogPaneTitle` —— 這一欄有自己的操作、標題列下要分頁時:不隨內容捲動、捲動區從它底下開始;
+  沒有 × 與其餘規則住 `../../components/Dialog/dialog.spec.md`「欄內標頭(DialogPaneHeader)」,本處不重述。
+  (b)**文字標題** —— 只有標題時:用文字樣式、隨內容捲動;也可以省略(Salt 窄版圖右欄直接從說明文字開始)。標題 → 第一個設定照 `../../tokens/layoutSpace/layoutSpace.spec.md`「標題區 → 內容」。
   依據:user 2026-11-27 H24a(全文逐字見下一條「兩欄頂端不要求對齊」的依據)【判讀:協調者 2026-11-27 依 H24a 字面:右欄用了標頭就照標頭原則 → 右欄可以用標頭】。
-  2026-11-27 前本條寫「不做第二條標題列」,是把 `../header-canonical/header-canonical.spec.md`「何時不用」(不可關閉的 side pane 標題走文字,原例是詳情對話框右欄的屬性欄;那一條本身也是 AI 歸納、範圍只到資料欄,見該處標記)
+  2026-11-27 前本條寫「不做第二條標題列」,是把 `../header-canonical/header-canonical.spec.md`「何時不用」(舊判準「能不能自己被關掉」,原例是詳情對話框右欄的屬性欄;那一條本身也是 AI 歸納,已拆成「有沒有 ×」與「要不要標頭元件」兩題,見該處)
   套到設定類右欄 —— 這一步外推是 AI 推導,不是 user 的話(M36、M8 跨類別外推),依 H24a 撤回;× 仍只在全寬的標題列(第 4 條,`../../components/Dialog/dialog.spec.md`「關閉按鈕」不變)。
 - **兩欄頂端不要求對齊**(2026-11-27,產品 canary 回報 H24:左欄第一列離標題列 8、右欄標題離 12,差 4):左欄照 Sidebar 的規則(清單自帶上下內距,`../../components/Sidebar/sidebar.spec.md`),
   右欄照 `../../tokens/layoutSpace/layoutSpace.spec.md`(內容區上方 = 規則 2,第一個是標題 / 欄位等一般元素 → `tight`;有欄內標頭時從標頭底下算起);右欄放了欄內標頭時,
