@@ -1989,6 +1989,8 @@ jobs:
     # 2026-11-27 拆自 verify-browser-horizontal-overflow(照 2026-10-14 待辦總帳 G10「照主題拆平行 job、不調高上限」,上限沿用原 job 的 25;
     # 準備步驟與原 job 逐字相同,ci-workflow-scope 斷言)。原 job 在 PR #174 0d2de1b5 跑 25.3 分撞上限被取消(實測與出處記在原 job 檔頭)。
     # 本 job = 原 job 第二步整步:DatePicker 區間線閘(只跑 --selftest,基準 + 七個突變同一趟),CI 最近六次 800–972 秒,加準備約 2 分,估 15.5–18.5 分。
+    # 2026-11-27 改量作用端盒子(RANGE-END):基準 + 十個突變(其中四個只跑相關的幾欄,閘檔 MUTANTS 的 scope),本機實測 667 秒(全跑一趟約 86 秒);
+    # 舊版 CI 每趟 100–121 秒,照同比例估 CI 約 13–16 分 + 準備。
     name: Verify browser(DatePicker range active-end underline gate)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -2021,8 +2023,8 @@ jobs:
       - name: DatePicker range active-end underline (browser)
         run: |
           npx --no-install playwright install chromium
-          # 日期區間作用端那條線壓在欄位框下邊上:下緣 = 框外緣、線長 = 文字寬、線色 = 框色(date-picker.spec.md「Active-end 機制」;RANGE-FOCUS-BAR)
-          # 高對比模式線色 = Highlight;+ --selftest(七個單一根因突變各自剛好紅該紅的列)。
+          # 日期區間作用端盒子(2026-11-27 RANGE-END 取代 RANGE-FOCUS-BAR 那條線;date-picker.spec.md「Active-end 機制」):Tag 內縮幾何、
+          # 開著淺藍底(錯誤時錯誤淡色、高對比 Highlight)、鍵盤自己的焦點框 + 外框主色、沒有線;+ --selftest(單一根因突變各自剛好紅該紅的列,清單 = 閘檔 MUTANTS)。
           # 2026-11-17 從 verify-browser-interaction 搬到 verify-browser-horizontal-overflow:那支 job 41622d91 撞 25 分上限被取消(d23df592 已 22.9 分);
           # 2026-11-27 再自 verify-browser-horizontal-overflow 拆成本 job(見本 job 檔頭)。
           npm run test:datepicker-range-active-underline
