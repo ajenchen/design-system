@@ -10,7 +10,7 @@
   "contractDigest": "sha256:2999aed4c75bc36823db0b4ea5729744c0920f74b1cd2b2e1bfb4110dd825ef1",
   "files": [
     {
-      "hash": "sha256:79cb76adb6f9b57a10454b757ca73de043451d08815dbd99829fbdc6efc8c097",
+      "hash": "sha256:638bd4fe112151d8e93ed9ba611b7dff2294967007f319c95c0eeca03f508517",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 59307,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:30207b752fd6b6b035e3d8be700e9b96870413500fcbe6d86f34f1fb3cefe101",
+      "hash": "sha256:a1b811724c3457eadedc3a7b5aa6b8a47f0acd8005f539f8bc311a59b54a6010",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 140204,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:ae058822de2b2a5f0399e991989cacaebc6453765f0d100397c0b1cd008ba26f",
+  "inputDigest": "sha256:9bd61c93c2093c47638121f4c437e904f91bd327a38174f667bb4be7bd1831d1",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:cd020868d5e2b1c4e13224673fb09deb1a16c98baa2675b62fee90e46399e5b6",
+  "snapshotDigest": "sha256:2df8ca89db10e463cc82122d737113f438fdfeb10c3084cb505b8bd6fa5bd331",
   "sources": [
     {
       "hash": "sha256:f2452198c08c44c99dc7afcfb7f78f834d7cc2a8c97d041571db15779f388c6c",
@@ -654,7 +654,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 221,
-      "hash": "sha256:b1d99a4dc4ce28dbeb067348a377881d2ef56e396c275d4eea914d9fb7851670",
+      "hash": "sha256:f9c5531ff950ad93a8fbb09e1753d05f28e30ea77ae1f4082a7178b7f45cad7e",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1239,21 +1239,21 @@
       "type": "file"
     },
     {
-      "hash": "sha256:473fb705e490b39739361c82f6063b80865990b01f3c35dd30a9cfa18e216e70",
+      "hash": "sha256:7ba71664b5cf1a6ed44b4ee57e3792d86111becc9e89455216808e986c9ffdfb",
       "id": "design-system-utility-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "packages/design-system/src/tokens/utility-registry.json",
-      "size": 20961,
+      "size": 24004,
       "type": "file"
     },
     {
-      "hash": "sha256:a6b5710fa0794f40733505b23cc6389988767188ac5f0f9410af95fab22fd0e2",
+      "hash": "sha256:33ca13c99c8715c581aaae82324a3875430adbcb5dfa9ae71e1034efca4ce481",
       "id": "design-system-utility-registry-schema",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "packages/design-system/src/tokens/utility-registry.schema.json",
-      "size": 16115,
+      "size": 17959,
       "type": "file"
     },
     {
@@ -2200,7 +2200,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 233,
-      "hash": "sha256:341a9435a5ad5a11aedb7977db6c63dec5c4d68477dcd6bd23b41c698a6de310",
+      "hash": "sha256:703919234868b454072088d8a6a1e87539f3087ce87a2fa0f0fef599f20b65d5",
       "id": "governance-baseline-authority",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3606,7 +3606,7 @@
         "scripts/generated/"
       ],
       "files": 819,
-      "hash": "sha256:9750385f3d5d8a04b75a3a857cf205f5eed8026ca0a900cc2fd138afaaa7c845",
+      "hash": "sha256:be4d48f93633286215523d7a96a24dc4a9a8281116d77555d08b13a327db9d47",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

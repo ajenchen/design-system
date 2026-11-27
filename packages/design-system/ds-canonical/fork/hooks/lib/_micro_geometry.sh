@@ -56,6 +56,7 @@ expected_keys = {
     "field_group_roles",
     "field_control_elements",
     "assist_chip_row",
+    "title_block",
     "nearby_line_limit",
     "rationale",
     "rationale_path",
@@ -68,10 +69,15 @@ if not isinstance(policy, dict) or set(policy) != expected_keys:
 # 浮層清單外框),每筆 = 完整 class 組合 + 鄰近必須出現的 DS 元件 / 結構 + 出處 spec 行號。只有整組對得上才放行,
 # 同一行混入別的 magic 不放行;反例(沒 FileItem 的 flex-col gap-2、沒頭像或 Item 零件的 gap-3 px-4 py-3、
 # 不在浮層主體裡的 py-2 清單)照擋。
+# 2026-11-27(H32):另登記規則 5 的 gap-4(不同組欄位並排)與 Item 零件組的一列(gap-2);新增兩個條件 ——
+# utilities_none(同一行不得有,例:flex-col 排除直排)、direct_children_all + direct_children_min(這一行那個元素的
+# 直屬子元素全是清單裡的元件、至少 N 個;用下方的 JSX 結構解析,不靠鄰近 16 行裡數到幾個)。
 SPEC_PATTERN_KEYS = {
-    "id", "utilities", "utilities_any", "magic_tokens_exact", "magic_tokens_subset", "nearby_all",
-    "nearby_components", "nearby_min", "same_line_any", "ancestor_any", "ancestor_line_limit", "source",
+    "id", "utilities", "utilities_any", "utilities_none", "magic_tokens_exact", "magic_tokens_subset", "nearby_all",
+    "nearby_components", "nearby_min", "same_line_any", "ancestor_any", "ancestor_line_limit",
+    "direct_children_all", "direct_children_min", "source",
 }
+SPEC_PATTERN_INT_KEYS = {"nearby_min": 8, "ancestor_line_limit": 64, "direct_children_min": 8}
 spec_patterns = policy["spec_registered_patterns"]
 if not isinstance(spec_patterns, list) or not spec_patterns:
     raise ValueError("canonical micro-geometry spec patterns are invalid")
@@ -83,21 +89,22 @@ for pattern in spec_patterns:
         or ("magic_tokens_exact" in pattern) == ("magic_tokens_subset" in pattern)
         or ("nearby_components" in pattern) != ("nearby_min" in pattern)
         or ("ancestor_any" in pattern) != ("ancestor_line_limit" in pattern)
+        or ("direct_children_all" in pattern) != ("direct_children_min" in pattern)
     ):
         raise ValueError("canonical micro-geometry spec pattern shape is invalid")
-    for key in SPEC_PATTERN_KEYS - {"id", "source", "nearby_min", "ancestor_line_limit"}:
+    for key in SPEC_PATTERN_KEYS - {"id", "source"} - set(SPEC_PATTERN_INT_KEYS):
         if key in pattern and (
             not isinstance(pattern[key], list) or not pattern[key]
             or any(not isinstance(item, str) or not item for item in pattern[key])
         ):
             raise ValueError(f"canonical micro-geometry spec pattern list is invalid:{pattern.get('id')}:{key}")
-    for key, upper in (("nearby_min", 8), ("ancestor_line_limit", 64)):
+    for key, upper in SPEC_PATTERN_INT_KEYS.items():
         if key in pattern and (not isinstance(pattern[key], int) or not 1 <= pattern[key] <= upper):
             raise ValueError(f"canonical micro-geometry spec pattern bound is invalid:{pattern.get('id')}:{key}")
     if not isinstance(pattern["source"], str) or not pattern["source"]:
         raise ValueError("canonical micro-geometry spec pattern source is invalid")
 
-array_keys = expected_keys - {"assist_chip_row", "nearby_line_limit", "rationale", "rationale_path", "spec_registered_patterns"}
+array_keys = expected_keys - {"assist_chip_row", "title_block", "nearby_line_limit", "rationale", "rationale_path", "spec_registered_patterns"}
 for key in array_keys:
     value = policy[key]
     if (
@@ -136,6 +143,31 @@ if not re.fullmatch(r"[A-Z][A-Za-z0-9]*", chip_row["item_component"]) or not re.
     r"[a-z][a-z0-9-]*", chip_row["item_variant"]
 ):
     raise ValueError("canonical micro-geometry assist_chip_row item identity is invalid")
+
+# layoutSpace.spec.md 規則 3「標題塊」(2026-11-27,H26):標題字列 → 它標示的有框內容 = 8 的三種寫法。
+title_block = policy["title_block"]
+TITLE_BLOCK_LIST_KEYS = {
+    "spacing_utilities", "heading_elements", "heading_utilities", "heading_row_disallowed_components",
+    "bordered_components", "bordered_utilities", "bordered_roles", "bordered_region_values",
+}
+TITLE_BLOCK_STR_KEYS = {"heading_row_button_component", "heading_row_button_variant", "rationale", "rationale_path"}
+if not isinstance(title_block, dict) or set(title_block) != TITLE_BLOCK_LIST_KEYS | TITLE_BLOCK_STR_KEYS:
+    raise ValueError("canonical micro-geometry title_block is invalid")
+for key in TITLE_BLOCK_LIST_KEYS:
+    value = title_block[key]
+    if (
+        not isinstance(value, list) or not value or len(value) != len(set(value))
+        or any(not isinstance(item, str) or not item for item in value)
+    ):
+        raise ValueError(f"canonical micro-geometry title_block list is invalid:{key}")
+for key in TITLE_BLOCK_STR_KEYS:
+    if not isinstance(title_block[key], str) or not title_block[key]:
+        raise ValueError(f"canonical micro-geometry title_block field is invalid:{key}")
+# 8 只有一個值:三種寫法都必須是同一個刻度(gap-2 / mt-2 / mb-2),不得藉這一格放寬成別的數字
+if {re.sub(r"^[a-z]+-", "", u) for u in title_block["spacing_utilities"]} != {"2"} or not all(
+    re.fullmatch(r"(?:gap|mt|mb)-2", u) for u in title_block["spacing_utilities"]
+):
+    raise ValueError("canonical micro-geometry title_block spacing must be gap-2 / mt-2 / mb-2 only")
 
 allowed_gaps = set(policy["gap_utilities"])
 alignments = set(policy["alignment_utilities"])
@@ -230,6 +262,219 @@ def has_open_ancestor(lines, index, names, limit):
     return False
 
 
+# ── JSX 結構(2026-11-27,H26 標題塊 + H32 Item 零件列):需要「直屬子元素 / 上下兄弟」的判定才用。
+# 只做有界的標籤樹:註解先換成等長空白(同 _comment_mask.sh 的三種寫法,這裡只為了不把註解裡的 <h3> 當成標籤);
+# `<名字` 前一個字是識別字元(useState<string> / Promise<void> 這類型別參數)不算標籤;屬性裡的 {…} 與引號照層數跳過
+# (`=>` 的 > 不會被當成標籤結尾)。解析不出來的地方一律當成「沒有這個結構」= 不放行,不會因此多放。
+_COMMENT_RE = re.compile(r"(\{/\*.*?\*/\})|(/\*.*?\*/)|((?:^|(?<=[\s;,)}>]))//[^\n]*)", re.S | re.M)
+_TAG_RE = re.compile(r"<(/?)([A-Za-z][\w.]*)?")
+_tree_cache = {}
+
+
+def _mask_comments(text):
+    return _COMMENT_RE.sub(lambda m: re.sub(r"[^\n]", " ", m.group(0)), text)
+
+
+def _scan_tag_end(text, pos):
+    """從屬性區開頭找標籤的 `>`(跳過 {…} 與引號);回傳 (> 的位置, 是否自閉合);找不到回傳 (None, False)。"""
+    depth, quote, i = 0, None, pos
+    while i < len(text):
+        ch = text[i]
+        if quote:
+            if ch == quote:
+                quote = None
+        elif ch in "'\"`" and depth == 0:
+            quote = ch
+        elif ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth = max(0, depth - 1)
+        elif ch == ">" and depth == 0:
+            return i, text[i - 1] == "/"
+        i += 1
+    return None, False
+
+
+def jsx_tree(lines):
+    key = id(lines)
+    if key in _tree_cache and _tree_cache[key][0] is lines:
+        return _tree_cache[key][1]
+    text = _mask_comments("\n".join(lines))
+    line_starts = [0]
+    for m in re.finditer("\n", text):
+        line_starts.append(m.end())
+
+    def line_of(offset):
+        lo, hi = 0, len(line_starts) - 1
+        while lo < hi:
+            mid = (lo + hi + 1) // 2
+            if line_starts[mid] <= offset:
+                lo = mid
+            else:
+                hi = mid - 1
+        return lo
+
+    # cursor / brace:父元素內文裡、子元素之間那幾段字的 { } 層數 —— 子元素寫在 {…} 運算式裡(條件或 .map( 產生)時 in_expr = True
+    root = {"name": None, "attrs": "", "children": [], "parent": None, "open_lines": (-1, -1), "end_line": len(lines), "cursor": 0, "brace": 0}
+    stack = [root]
+    pos = 0
+    while True:
+        m = _TAG_RE.search(text, pos)
+        if not m:
+            break
+        start = m.start()
+        prev = text[start - 1] if start > 0 else ""
+        closing, name = m.group(1) == "/", m.group(2) or ""
+        if not closing and prev and re.match(r"[\w$)\].]", prev):
+            pos = m.end()
+            continue
+        end, self_closing = _scan_tag_end(text, m.end())
+        if end is None:
+            break
+        parent = stack[-1]
+        segment = text[parent["cursor"]:start]
+        parent["brace"] = max(0, parent["brace"] + segment.count("{") - segment.count("}"))
+        parent["cursor"] = start
+        if closing:
+            for depth in range(len(stack) - 1, 0, -1):
+                if stack[depth]["name"] == name:
+                    for node in stack[depth:]:
+                        node["end_line"] = line_of(end)
+                    del stack[depth:]
+                    stack[-1]["cursor"] = end + 1
+                    break
+        else:
+            node = {
+                "name": name, "attrs": text[m.end():end], "children": [], "parent": parent,
+                "open_lines": (line_of(start), line_of(end)), "start_line": line_of(start), "end_line": line_of(end),
+                "in_expr": parent["brace"] > 0, "cursor": end + 1, "brace": 0,
+            }
+            parent["children"].append(node)
+            if self_closing:
+                parent["cursor"] = end + 1
+            else:
+                stack.append(node)
+        pos = end + 1
+    _tree_cache.clear()
+    _tree_cache[key] = (lines, root)
+    return root
+
+
+def nodes_at_line(lines, index, utilities):
+    """這一行落在哪些元素的開標籤裡、而且那個開標籤自己帶著這幾個 utility(className 可以寫在 `<DataTable` 的下一行;
+    同一行有好幾個開標籤時只算真的帶這個寫死間距的那幾個)。"""
+    found = []
+    todo = list(jsx_tree(lines)["children"])
+    while todo:
+        node = todo.pop()
+        first, last = node["open_lines"]
+        if first <= index <= last and all(has_utility(node["attrs"], u) for u in utilities):
+            found.append(node)
+        todo.extend(node["children"])
+    return found
+
+
+def node_has_tag_in(node, names):
+    todo = list(node["children"])
+    while todo:
+        child = todo.pop()
+        if child["name"] in names:
+            return True
+        todo.extend(child["children"])
+    return False
+
+
+def iter_subtree(node):
+    todo = list(node["children"])
+    while todo:
+        child = todo.pop()
+        yield child
+        todo.extend(child["children"])
+
+
+def is_heading_node(node):
+    return node["name"] in title_block["heading_elements"] or has_any_utility(node["attrs"], title_block["heading_utilities"])
+
+
+def is_heading_row(node):
+    """標題列:裡面有標題、按鈕全是無框(variant="text")、沒有輸入控件 —— 這一列算「字」(規則 3「標題塊」)。"""
+    if is_heading_node(node):
+        return True
+    subtree = list(iter_subtree(node))
+    if not any(is_heading_node(child) for child in subtree):
+        return False
+    button = title_block["heading_row_button_component"]
+    variant_re = re.compile(rf"\bvariant\s*=\s*\{{?\s*['\"]{re.escape(title_block['heading_row_button_variant'])}['\"]")
+    for child in subtree:
+        if child["name"] in title_block["heading_row_disallowed_components"]:
+            return False
+        if child["name"] == button and not variant_re.search(child["attrs"]):
+            return False
+        # 列裡有自己帶框的東西(有框的卡、表格、工具列)= 不是一列字
+        if is_bordered_self(child):
+            return False
+    return True
+
+
+def is_bordered_self(node):
+    attrs = node["attrs"]
+    return (
+        node["name"] in title_block["bordered_components"]
+        or has_any_utility(attrs, title_block["bordered_utilities"])
+        or any(re.search(rf"\brole\s*=\s*['\"]{re.escape(role)}['\"]", attrs) for role in title_block["bordered_roles"])
+        or any(re.search(rf"\bdata-layout-region\s*=\s*['\"]{re.escape(v)}['\"]", attrs) for v in title_block["bordered_region_values"])
+    )
+
+
+def is_bordered_node(node):
+    if is_bordered_self(node):
+        return True
+    # 一組選項卡:群組本身沒框,第一張卡有框 → 內容頂端就是一條框
+    first = node["children"][0] if node["children"] else None
+    return bool(first) and has_any_utility(first["attrs"], title_block["bordered_utilities"])
+
+
+def matches_title_block(lines, index, tokens):
+    """規則 3「標題塊」三種寫法之一 → True;其餘(缺標題、底下不是有框內容、數字不是 8、多帶別的寫死間距)→ False。
+    同一行有好幾個元素帶同一個寫死間距時,每一個都要是標題塊才放行。"""
+    token_set = set(tokens)
+    if len(token_set) != 1 or not token_set <= set(title_block["spacing_utilities"]):
+        return False
+    (utility,) = token_set
+    nodes = nodes_at_line(lines, index, [utility])
+    return bool(nodes) and all(title_block_node_ok(node, utility) for node in nodes)
+
+
+def title_block_node_ok(node, utility):
+    attrs = node["attrs"]
+    if not re.search(r"\bclass(?:Name)?\s*=", attrs):
+        return False
+    siblings = node["parent"]["children"] if node["parent"] else []
+    at = next((i for i, s in enumerate(siblings) if s is node), -1)
+    # 一對一:寫在 {…} 裡(條件 / .map( 產生好幾個)的元素不算這一塊的成員
+    if utility == "gap-2":
+        kids = node["children"]
+        return (
+            has_utility(attrs, "flex") and has_utility(attrs, "flex-col")
+            and len(kids) == 2 and not any(kid["in_expr"] for kid in kids)
+            and is_heading_row(kids[0]) and is_bordered_node(kids[1])
+            and kids[1]["start_line"] - kids[0]["end_line"] <= nearby_limit
+        )
+    if node["in_expr"] or at < 0:
+        return False
+    if utility == "mb-2":
+        if not is_heading_row(node) or at + 1 >= len(siblings):
+            return False
+        nxt = siblings[at + 1]
+        return not nxt["in_expr"] and is_bordered_node(nxt) and nxt["start_line"] - node["end_line"] <= nearby_limit
+    if utility == "mt-2":
+        if not is_bordered_node(node) or at == 0:
+            return False
+        prev = siblings[at - 1]
+        return not prev["in_expr"] and is_heading_row(prev) and node["start_line"] - prev["end_line"] <= nearby_limit
+    return False
+
+
 def matches_spec_registered_pattern(lines, index, line, tokens):
     if not re.search(r"\bclass(?:Name)?\s*=", line):
         return False
@@ -239,6 +484,8 @@ def matches_spec_registered_pattern(lines, index, line, tokens):
         if not all(has_utility(line, utility) for utility in pattern["utilities"]):
             continue
         if "utilities_any" in pattern and not has_any_utility(line, pattern["utilities_any"]):
+            continue
+        if "utilities_none" in pattern and has_any_utility(line, pattern["utilities_none"]):
             continue
         if "magic_tokens_exact" in pattern and token_set != set(pattern["magic_tokens_exact"]):
             continue
@@ -259,6 +506,14 @@ def matches_spec_registered_pattern(lines, index, line, tokens):
             lines, index, pattern["ancestor_any"], pattern["ancestor_line_limit"]
         ):
             continue
+        if "direct_children_all" in pattern:
+            owners = nodes_at_line(lines, index, list(token_set))
+            if not owners or any(
+                len(owner["children"]) < pattern["direct_children_min"]
+                or any(kid["name"] not in pattern["direct_children_all"] for kid in owner["children"])
+                for owner in owners
+            ):
+                continue
         return True
     return False
 
@@ -271,6 +526,8 @@ def is_canonical_micro_line(lines, index):
     if not tokens:
         return False
     if matches_spec_registered_pattern(lines, index, line, tokens):
+        return True
+    if matches_title_block(lines, index, tokens):
         return True
     if any(token not in allowed_gaps for token in tokens):
         return False

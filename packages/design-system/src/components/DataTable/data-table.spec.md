@@ -317,7 +317,7 @@ SSOT → `patterns/element-anatomy/inline-action.spec.md`「Real case 表」+ Pr
 
 ### 十、與 Toolbar 的關係
 
-DataTable 不內建 toolbar。Toolbar 是外部用 action-bar pattern 組合的，保持職責分離。篩選、排序、分組走統一入口（toolbar 按鈕），不做在表頭的 per-column filter。這些按鈕的 variant 規則見 `action-bar.spec.md`。
+DataTable 不內建 toolbar。Toolbar 是外部用 action-bar pattern 組合的，保持職責分離。篩選、排序、分組走統一入口（toolbar 按鈕），不做在表頭的 per-column filter。這些按鈕的 variant 規則見 `action-bar.spec.md`。表格上方的標題、搜尋列 / 工具列與表格之間的距離(與工具列的尺寸)→ `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 3「標題塊」。
 
 ### 十一之一、Cell 垂直對齊 + icon canonical
 

@@ -775,7 +775,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_layout_space_magic_numbers.sh",
-      "sha256": "700b54e8cbf15d396013c68afdf1da29eba2cb980aac3523c04108c3b1a3e6fe",
+      "sha256": "1171738645ee0547066303e634fc5c5398c0de440803206ffca3c828acf60021",
       "source": "check_layout_space_magic_numbers.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -871,7 +871,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/lib/_micro_geometry.sh",
-      "sha256": "8a510db276096b1b7ec9f36102e16165499c09abae36d11524097059d6621a97",
+      "sha256": "225dfb7757dc2f7c8971038f56211f958c043390aa266cc8b6284deb4f5378b3",
       "source": "lib/_micro_geometry.sh",
       "classification": "HELPER",
       "destination": null
@@ -1527,7 +1527,7 @@
     {
       "schemaVersion": 1,
       "file": "references/utility-registry.json",
-      "sha256": "473fb705e490b39739361c82f6063b80865990b01f3c35dd30a9cfa18e216e70",
+      "sha256": "7ba71664b5cf1a6ed44b4ee57e3792d86111becc9e89455216808e986c9ffdfb",
       "source": "packages/design-system/src/tokens/utility-registry.json",
       "classification": null,
       "destination": null
@@ -1535,7 +1535,7 @@
     {
       "schemaVersion": 1,
       "file": "references/utility-registry.schema.json",
-      "sha256": "a6b5710fa0794f40733505b23cc6389988767188ac5f0f9410af95fab22fd0e2",
+      "sha256": "33ca13c99c8715c581aaae82324a3875430adbcb5dfa9ae71e1034efca4ce481",
       "source": "packages/design-system/src/tokens/utility-registry.schema.json",
       "classification": null,
       "destination": null

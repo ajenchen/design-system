@@ -73,7 +73,7 @@ owner spec = `components/Dialog/dialog.spec.md`「高度」段。
 | 級別 | 條件 | layout rule? |
 |------|------|------------|
 | **同範疇 / bundled component family** | 元件 spec 寫成 bundle 並定 inter-component spacing(FileUpload+FileList、Pagination 內部、Toolbar+ButtonGroup) | 元件 spec own,layout rule **跳過** |
-| **跨範疇 + 直接 functional 交互 / 依賴** | search → filter list / toolbar → table / 標題(+ 說明)→ **那個位置只可能放的一個東西**(一張表 / 一張圖 / 一份清單 / 一個元件;規則 3「標題區 → 內容」第 2 題)| 規則 3 = **tight** |
+| **跨範疇 + 直接 functional 交互 / 依賴** | search → filter list / toolbar → table / 標題(+ 說明)→ **那個位置只可能放的一個東西**(一張表 / 一張圖 / 一份清單 / 一個元件;規則 3「標題區 → 內容」第 2 題;產品畫面裡那個東西有框、外面沒有文字標籤 → 見規則 3「標題塊」(8))| 規則 3 = **tight** |
 | **跨範疇 + parallel / independent** | form fields stack(parallel inputs)/ unrelated sections / 兩個獨立 functional groups / 標題(+ 說明)→ **會有好幾個的內容**(欄位 / 卡片 / 示範;規則 3「標題區 → 內容」第 3 題:標題到第一個 = 東西之間,至少 loose)| 規則 3 = **loose** |
 
 「**Bundled component family**」客觀判斷:**有沒有 spec 文件把這些 components 寫成 bundle 並定義它們之間 spacing**(不是「同種類 component instance 多個」)。
@@ -144,6 +144,26 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「List-as-region in overl
   | FieldGroup 裡的好幾個欄位(底下只有它)| 兩塊以上 → loose | 第 3 題;數法第 1 步:FieldGroup 是排版群組不是一個元件,往裡看;欄位 ↔ 欄位 = parallel。**維持一塊(tight)**【AI 推導 2026-11-17】:「FieldGroup + 說明它的文字」(含外面多包一層排版容器)與「只剩一個欄位的 FieldGroup」現在照上面「一則範例 + 說明」「一個 Field」兩列數成一塊 → tight;照第 1 題裡 AI 補的「表單只剩一個欄位仍是表單」則該 loose —— 兩種讀法都說得通;定案照 user 2026-11-11 原話「我覺得主要取決於那個標題和說明是否是完完全全在描述下方的東西？若是的話，那就是親近吧？如果是描述下方的多個東西，那確實是用loose沒錯？應該是我上述說的這樣？？」(後半是同一條判準的另一邊;本 DS 把文件頁『一則示範』算一個東西,所以取前半;user 不同意可改【AI 推導 2026-11-18】)—— 文件頁這種示範,標題描述的就是底下那一則示範 → 親近(tight);產品畫面的表單不靠數法,照第 1 題(版型)。只出現在文件頁、不影響使用元件的人 → 依 `governance/memory/feedback_propose_discipline.md` Sub-rule 7「要你看」的範圍由 AI 定,不另問。已知前者 8 處、現況都是 tight:DescriptionList 設計原則「❌ 需要編輯 → 用 Field 系統,不是 DescriptionList」、FileUpload 設計原則「✅ 表單內 inline field — 用 FileUpload variant="button"」、Field 設計原則 6 則(使用指引 3、方向 2、「Field 是資料輸入容器」1);後者 0 處。2026-11-17 曾把前兩則改 loose、同日撤回(上面數法那一段)。 |
 - 產品畫面:主區只有一塊內容時不在主區重複放標題與說明(SSOT 在 `../../components/AppShell/app-shell.spec.md`「主區只有一塊內容時」那段,含 user 原話);有區段標題的地方照上面三題寫(不用數法)。表單步驟(精靈)= 第 1 題的例子(2026-11-17 這裡先寫過一段【AI 推導】的「表單步驟一律 loose」,user 對 r12 第 1 題選乙後併進第 1 題)。浮層(Dialog / Sheet)標頭 → 第一個欄位不歸本段:chrome 標頭照規則 2 element = `tight`(user 2026-11-17「不要」,見規則 2 表下「一串同樣的條目」那一段的「不算這一列」)。
 - 機械:`scripts/section-gap-invariant.mjs` 的「標題區 → 內容」各列(四種標題區 —— 設計規格頁單獨的 H3、H3 + Desc、ExampleSection、TutorialRule —— × 一塊 / 兩塊以上,上面「幾塊怎麼數」每一條路至少一列 —— 往排版容器裡數那一條,只帶 class 的 grid 與 FieldGroup 各一列(2026-11-17 補 FieldGroup 那列);各量 md / lg 像素;`--selftest` 在頁面上把標記翻面必紅、數字正好是另一個 token;`heading-reveal` 四列量「什麼時候數」:先把整則藏起來請產品數一次、再顯示,距離要回到兩塊以上的 loose、過程中不得出現 ResizeObserver loop 錯誤,`--selftest` 把 ResizeObserver 換成空殼必紅;那四列真頁分不出產品是「下一格才寫」還是「在觀察者回呼裡直接寫」,另有夾具列(直接打包原始碼):兩列巢狀(外層區段裡放一個藏起來會翻面的內層區段)守「不得出現 loop」、兩列「排版容器裡的內容晚顯示」(ExampleSection / H3 → 只帶 class 的容器 → 第二塊從 display:none 顯示)守上面「什麼時候數」的觀察範圍、一列兩段式顯示(`heading-reveal-staged-es`:ExampleSection → 只帶 class 的容器 → 藏著的排版容器先顯示、數法這下才往它裡面數 → 它裡面的第二塊再顯示)守「重判之後觀察範圍跟著數法換路」;夾具藏起來 / 顯示那一刻的判定是產品自己做的,判錯 = 產品紅、不是儀器失效。`--selftest` 原始碼突變:回呼裡直接寫 → 巢狀兩列必因 loop 紅;拿掉重判 → 五列必產品紅;只觀察直屬節點 → 容器三列(含兩段式)必紅;拿掉重判後那一次重新觀察(開頁時的觀察保留)→ 剛好兩段式那一列紅、正好停在 tight);`scripts/doc-heading-inventory-invariant.mjs`(建置裡全部 story 的每一個標題區:兩種密度判定相同(本段「門檻是固定值」那一條)、頁面第一次畫出來時的判定 = 版面穩定後產品自己再判一次的【AI 推導】、判定 → 距離 = 本段的值、A4 標題區之後是好幾個上下疊且有自帶標題的區塊時「標題區底 → 第一塊」= 塊與塊之間、至少 loose(第 3 題;產品判成一塊的、段落模式的不在這一格;2026-11-17 起));`scripts/tutorial-page-invariant.mjs` R14(共用元件仍由 `headingContentOf` 判、值只寫在共用元件)。
+
+**標題塊(標題 + 它標示的有框內容)**(2026-11-27 立,H26;上面三題與本表一字不改,只補一個沒定義過的情境。範圍:產品畫面的內容區,不含 chrome 標頭 / 浮層標頭(規則 2);DS 文件頁先不改,照上面三題與數法):
+- **什麼是一塊**:一個標題,加上它一對一標示的那個東西 —— 那個東西自己有框(表格、一組選項卡、有框的清單或面板)、外面沒有自己的文字標籤。中間可以夾這個東西自己的搜尋列或工具列。
+- **塊裡面**(上下相鄰的兩列,看上面那一列):上面是字 → **8**(固定,不隨密度【AI 推導 2026-11-27:大密度下字到框約 13–15、框到框 16】;寫成 `gap-2` / `mt-2` / `mb-2`,同規則 5 的固定微距,不開 token);上面是有框的控件 → **`tight`**。
+- **塊外面**:這一整塊 ↔ 旁邊的東西 = **`loose`**。旁邊是「群組」(標題底下好幾個各有標籤的欄位)時,照下方「組 ↔ 組」的 loose × 2【AI 推導 2026-11-27】。
+- **為什麼是兩個數字**【AI 推導 2026-11-27】:字自己上下帶空白(14px 字、行高 21,行框底到字的基線約 5),8 + 5 ≈ 13,跟框到框的 12 看起來一樣遠 —— 兩個數字是同一個目視距離。標題貼著自己的內容、離上一塊遠(16 對 8),才看得出標題屬於誰。
+- **哪一列算「字」**:標題字、ⓘ、連結樣式的文字、無框的按鈕(`variant="text"`,不撐高這一列;預設 xs)。**哪一列算「有框的控件」**:搜尋列、工具列、放了有框或有底色按鈕的標題列。
+- **預設尺寸**:標題右邊的無框按鈕 xs;表格上方的搜尋列 / 工具列 sm(在對話框主體裡也是,見 `../../patterns/overlay-surface/overlay-chrome-sizing.spec.md`「Size canonical」);其他照各元件預設 md。標題底下是搜尋列時,標題列的按鈕放進搜尋列是建議、不是強制。
+- **這些是預設**:沒列到的組合照上面推;有理由要不一樣,產品自己決定並在該行寫理由(`@layout-space-magic-ok:`)。同一種新情況出現三次以上才補成例子。DS 不為標題塊另做元件,要包由產品包。
+
+  | 例子 | 距離 |
+  |---|---|
+  | 標題 → 表;標題 → 一組選項卡 | 8 |
+  | 標題(右邊有無框小圖示鈕)→ 表 | 8 |
+  | 標題(右邊有有框按鈕)→ 表 | `tight` |
+  | 標題 → 搜尋列 → 表 | 8,再 `tight` |
+  | 這種塊 ↔ 這種塊;這種塊 ↔ 一個欄位 | `loose` |
+  | 這種塊 ↔ 表單的欄位群組 | loose × 2(組 ↔ 組) |
+- 出處(user 原話逐字,記錄在交接資料夾 `notes/decisions/morning-151-answers.md`「H26」):「我覺得原本定義的東西在某些情境依然是適用的，只是排版方式就是很多種，目前我們遇到的是沒特別定義過的情境，我認為不是改原本的規格，而是把情境變得更包羅萬象吧」(原規則不改、補情境);「Ds不要包這個，這個真的要包也是消費者包」;字到內容 8 =「我自己是覺得就視覺上來說，文字到下方的內容 8px是可以接受的」(節錄,後半問加了按鈕之後怎麼定義);按鈕不撐高標題列 = 第四版 row 選「可以」;搜尋列 → 表 `tight` =「目前工具列到表格 tight的距離我覺得很合理視覺上也很好」(節錄,後半是問句);標題底下是搜尋列 = 選「方案一:一樣 8,按鈕放搜尋列」並留言「但應該不能強制按鈕放搜尋列吧？只能建議？」(節錄,問句);DS 文件頁 = 選「先不改」;「這些是預設」= model2 留言「…當消費者有合理的理由想要修正應該也要給予可以調整的空間吧？…」(節錄);有框按鈕的標題列 → `tight`、整段的寫法與粒度、預設尺寸三點(user 問「這樣是否合理」,AI 對過既有條文答合理)=「我覺得基本上可以照你建議去定義」(節錄,同一則後面問尺寸)「我覺得可以照你目前建議的定義⏎確保一氣呵成通盤解決各種情境且原則也是有脈絡言簡意賅且清楚有邏輯」。標【AI 推導】的句子是 AI 寫在定案頁、user 用這兩句採納的推論。
+- 機械:寫入當下 `check_layout_space_magic_numbers.sh` 認得 8 的三種寫法(`src/tokens/utility-registry.json` `canonical_micro_geometry.title_block`:標題與緊接的有框內容同包一層 `flex flex-col gap-2`、標題上的 `mb-2`、有框內容上的 `mt-2`;缺標題、底下不是有框內容、數值不是 8 照擋);CI `scripts/section-gap-invariant.mjs` 的「標題塊」列(test-only 範例,量字列 → 有框內容 8、有框控件列 → `tight`、塊與塊 `loose`)。
 
 **核心**:gap 只看親疏不看 role(原 v1「block-adjacent 一律 tight」過機械,違 Gestalt proximity)。 **「組 ↔ 組」(區塊 ↔ 區塊)另有一級(2026-10-14 先定在教學頁,2026-11-06 擴到產品畫面;後來加的範圍見本段後文)**:一塊內容本身已經用 loose / tight 排好 —— 教學頁的每則規則、每個段落;產品畫面裡分屬不同主題的一塊(例:FileViewer 資訊面板的「說明」欄位、「檔案資訊」標題 + 清單)—— 塊與塊之間要比塊內更開,才分得出標題屬於哪一塊。**區塊之間 = 一條分隔線的位置,上下各 loose**(合計 **loose × 2**:md 32 / lg 48);區塊感夠時不畫線,不夠時畫 `Separator`,間距不變。出處:教學頁的規則 ↔ 規則 = 段落 ↔ 段落 = user 2026-10-07「第一題照你建議」= 建議 ②;產品畫面 = user 2026-11-06 #18 原話「#18 可以照你建議，其實感覺就像是輸入框跟下方標題之間還有一條隱形的分隔線，然後線的上下間距依然都是loose的概念，然後可能有時候若區塊感不夠的話，這個分隔線就不會是隱形的，但間距都一如往常？」(「照你建議」= 決策頁乙:產品畫面的「區塊 ↔ 區塊」也用 loose 的兩倍;分隔線那段是 user 用自己的話確認理解,句尾問號是向 AI 確認,AI 回覆一致)。並列的元素(欄位 ↔ 欄位、卡片 ↔ 卡片)仍是本表 parallel = loose。這一級**不是公開 token**(值由 loose 推出),也**不借 `bottom`**(本表 `bottom` 列的結論留白)。閘 `scripts/section-gap-invariant.mjs`。教學頁的值與元件唯一住所 `stories-helpers/examples/tutorial-page.tsx`,規範 `ds-canonical/skills/story-writing/references/category-templates.md`「教學框的間距與標題」,閘 `scripts/tutorial-page-invariant.mjs`。**Tokens / Patterns 文件頁的段落同屬這一級**(2026-10-20 user「你提的問題可以都照你建議」核准 T7 甲:各 token 頁原本段落之間只剩 loose,與段落內同一個量級,段落分不開;改由同一個 `TutorialPage` / `TutorialSection` 給 loose × 2,閘 R12)。**展示頁 / 設計規格頁「一則一個標題」的範例堆疊,範例 ↔ 範例也屬這一級**(2026-10-27 user 回「Q2照你建議」—— 採 AI 建議 ①:原本範例之間只有 loose,與標題 → 自己的內容同一個量級,看不出標題屬於哪一則)([來源](https://www.nngroup.com/articles/gestalt-proximity/))。**設計規格頁 / Patterns 文件頁的「段落標題 → 底下第一個有標題的區段」也屬這一級**(2026-11-17【AI 推導】:同一個理由推出 —— 不是 user 對這一題逐字同意;教學頁那一格是 Q2 ②;落地 3 處:AppShell 設計規格「兩種布局模式對照圖」、Item Anatomy「對齊容器」「閱讀模式比較」;2026-11-17 重拍前確認再補 36 處 —— 15 支設計規格頁「ExampleSection 直接包一層 `flex-col gap-8` / `gap-10`、裡面是好幾個有小標的區塊」,標題 → 第一塊 16、塊與塊之間 32 / 40,改成 `ExampleStack`;寫法住 `tutorial-page.tsx` 檔頭)。**表單欄位 → 跟在後面的表單按鈕列(送出 / 儲存 / 取消 / 下一步)也屬這一級**(2026-11-10;修前寫成「內容 → 跟在後面的按鈕 = loose」):欄位與欄位之間是並列 = loose,按鈕列是整張表單的動作、不是再多一個欄位,所以離最後一個欄位要比欄位之間更開。出處:user 2026-11-10 PR #172 決策頁留言,指 Field 展示「表單驗證」的送出鈕,逐字「我現在覺得這個按鈕距離上方雖然按照之前訂的規則是loose token，但我總覺得看起來好像有點太近，感覺應該也是要跟 file viewer 那個說明跟檔案資訊區塊之間假裝之間有一條隱形的分隔線，所以實際是距離兩倍loose」;世界級同樣讓按鈕列比欄位間距大 —— Atlassian `@atlaskit/form@18.3.2` 表單按鈕列 `margin-block-start:var(--ds-space-300,24px)`([來源](https://cdn.jsdelivr.net/npm/@atlaskit/form@18.3.2/dist/es2019/form-footer.compiled.css))對欄位 `margin-block-start:var(--ds-space-100,8px)`([來源](https://cdn.jsdelivr.net/npm/@atlaskit/form@18.3.2/dist/es2019/field.compiled.css));Carbon 表單 Form items margin-bottom 32 / Buttons margin-top 48([來源](https://github.com/carbon-design-system/carbon-website/blob/main/src/pages/components/form/style.mdx))。**不適用**:浮層 chrome 的 footer(SurfaceFooter / DialogFooter / SheetFooter —— 按鈕在 footer 帶裡,上方是 body 的規則 4 收尾 + footer 自己的 chrome 內距)、單一欄位旁的行內按鈕、toolbar。閘:`scripts/section-gap-invariant.mjs` 的表單各列、`scripts/steps-content-follows-current-invariant.mjs` (5)。
 
@@ -382,6 +402,7 @@ document.documentElement.setAttribute('data-layout-space', 'lg')
 - `empty.spec.md`
 - `field.spec.md`
 - `file-item.spec.md`
+- `item-anatomy.spec.md`
 - `overlay-chrome-sizing.spec.md`
 - `overlay-surface.spec.md`
 - `pagination.spec.md`
