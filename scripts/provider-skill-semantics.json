@@ -173,6 +173,15 @@
       "allowedAssumptions": []
     },
     {
+      "name": "consumer-feedback-triage",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/consumer-feedback-triage/SKILL.md",
+      "classification": "provider-neutral",
+      "projection": "provider-copy",
+      "description": "Triage downstream consumer reports: verify every claim, classify, find the root cause, deduplicate, fix bugs, and route only genuine product or UI/UX trade-offs to the user.",
+      "declaredIdentifiers": [],
+      "allowedAssumptions": []
+    },
+    {
       "name": "component-quality-gate",
       "sourceWorkflow": "packages/design-system/ds-canonical/skills/component-quality-gate/SKILL.md",
       "classification": "provider-neutral",

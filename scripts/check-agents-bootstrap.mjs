@@ -183,7 +183,10 @@ try {
 //(governance/planning/2026-11-26-work-process-evidence-v4.md 第 1 節),每個代理開場都要讀到才會照做。
 // 2026-11-26 F1 規格核對必修明改 78,625 → 78,590(−35):Storybook 那句改成以 8 支原始碼 harness 閘提示字串裡的那串字辨認(+9;
 // 只有 2 支檔頭寫,本註解刻意不抄那串字,免得多命中),刪掉「依據」v4 與「本機檢查」a11y 那項重複的一句(−44)。開場變小,上限照釘回實量、不留空位。
-const OPENING_FILES_MAX_BYTES = 78_590
+// 2026-11-27 consumer-feedback-triage 明改 78,590 → 78,658(+68):AGENTS.md「任務導航表」加一列「收到下游／消費者回報 → /consumer-feedback-triage」,
+// 只有指向、沒有說明(初稿帶說明 +145,已縮);改前實量 78,589,可省的 1 byte 不夠一列。user 11-27:「確保 ds repo 接收到任何回饋永遠都會這樣做」——
+// hook 只認得另一個 session 傳來的訊息框,user 口頭轉述的回報只能靠每個 session 開場讀到這一列(governance/memory/feedback_propose_discipline.md Sub-rule 11)。
+const OPENING_FILES_MAX_BYTES = 78_658
 const RULES_DIR = path.join(ROOT, 'packages/design-system/ds-canonical/rules')
 const alwaysLoadedRules = fs.existsSync(RULES_DIR)
   ? fs.readdirSync(RULES_DIR).filter((name) => name.endsWith('.md')).sort().filter((name) => {

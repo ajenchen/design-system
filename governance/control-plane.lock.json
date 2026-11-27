@@ -10,7 +10,7 @@
   "contractDigest": "sha256:2999aed4c75bc36823db0b4ea5729744c0920f74b1cd2b2e1bfb4110dd825ef1",
   "files": [
     {
-      "hash": "sha256:79cb76adb6f9b57a10454b757ca73de043451d08815dbd99829fbdc6efc8c097",
+      "hash": "sha256:3e91af4b9f20855a144f4680e3f754087d66f18d36540faf7f2892f8e36d5e8d",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 59307,
@@ -38,10 +38,10 @@
       "type": "file"
     },
     {
-      "hash": "sha256:30207b752fd6b6b035e3d8be700e9b96870413500fcbe6d86f34f1fb3cefe101",
+      "hash": "sha256:9ba71430e503f301ff8ad0416ab2fb59e4dbd542e2d6d87e1fa7345c30743f88",
       "mode": "0644",
       "path": "control-plane.json",
-      "size": 140204,
+      "size": 141102,
       "type": "file"
     },
     {
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:ae058822de2b2a5f0399e991989cacaebc6453765f0d100397c0b1cd008ba26f",
+  "inputDigest": "sha256:aa4995169d62795ddbe6a0d7bfa0b0a3ee8e9887a9f7fac6485360bdf5bd133a",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -124,6 +124,12 @@
           "name": "component-quality-gate",
           "sourceDigest": "sha256:b609dbfb623fb77401bce069e326e71ee4f17075e739b4046de6cf4e22566912",
           "targetDigest": "sha256:140f0589f957d72dc59cac05404e7316e54535d5c8173f47a443de1db3bfc0d5"
+        },
+        {
+          "expectedTargetDigest": "sha256:63f3d0bed954e28d2a5aa6ff6ee132d8dcc7b5c061ebb5ac7290e4f13deb9f6b",
+          "name": "consumer-feedback-triage",
+          "sourceDigest": "sha256:a65cf48793bcc92018ccca8ff429f8af334542ed9df01a7f36614fb80204b994",
+          "targetDigest": "sha256:63f3d0bed954e28d2a5aa6ff6ee132d8dcc7b5c061ebb5ac7290e4f13deb9f6b"
         },
         {
           "expectedTargetDigest": "sha256:b79700476462c80e7d6f564522750c68554fdf3906532754e617a27de5666008",
@@ -244,6 +250,7 @@
         "codify-corrections",
         "codify-principle",
         "component-quality-gate",
+        "consumer-feedback-triage",
         "deep-audit-cross-codex",
         "delivery-handoff",
         "design-system-audit",
@@ -274,6 +281,7 @@
         "codify-corrections",
         "codify-principle",
         "component-quality-gate",
+        "consumer-feedback-triage",
         "deep-audit-cross-codex",
         "delivery-handoff",
         "design-system-audit",
@@ -347,6 +355,12 @@
           "name": "component-quality-gate",
           "sourceDigest": "sha256:b609dbfb623fb77401bce069e326e71ee4f17075e739b4046de6cf4e22566912",
           "targetDigest": "sha256:8dcabc3e179a460b19758b644d176883617ba72c87c922ed07bfcb9b6e28cff8"
+        },
+        {
+          "expectedTargetDigest": "sha256:26ac181125041811d50941113ff62598be8a39eeef41b0793c7e4e28753ed3a4",
+          "name": "consumer-feedback-triage",
+          "sourceDigest": "sha256:a65cf48793bcc92018ccca8ff429f8af334542ed9df01a7f36614fb80204b994",
+          "targetDigest": "sha256:26ac181125041811d50941113ff62598be8a39eeef41b0793c7e4e28753ed3a4"
         },
         {
           "expectedTargetDigest": "sha256:debd34d9533dcd11fe04c8da9a5947ffe048d8699d5ff657de7ab16dd325bb72",
@@ -467,6 +481,7 @@
         "codify-corrections",
         "codify-principle",
         "component-quality-gate",
+        "consumer-feedback-triage",
         "deep-audit-cross-codex",
         "delivery-handoff",
         "design-system-audit",
@@ -497,6 +512,7 @@
         "codify-corrections",
         "codify-principle",
         "component-quality-gate",
+        "consumer-feedback-triage",
         "deep-audit-cross-codex",
         "delivery-handoff",
         "design-system-audit",
@@ -518,15 +534,15 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:cd020868d5e2b1c4e13224673fb09deb1a16c98baa2675b62fee90e46399e5b6",
+  "snapshotDigest": "sha256:713854bbd44333dc431ca9a7ec21b576903fc6146f1d42831be9fb523ae76a16",
   "sources": [
     {
-      "hash": "sha256:f2452198c08c44c99dc7afcfb7f78f834d7cc2a8c97d041571db15779f388c6c",
+      "hash": "sha256:5d72bb8c9b26331af5dea0069c16ac30fe123cc7dcc582f2e5805ff5e628fedc",
       "id": "agent-bootstrap",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "AGENTS.md",
-      "size": 22619,
+      "size": 22688,
       "type": "file"
     },
     {
@@ -654,7 +670,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 221,
-      "hash": "sha256:b1d99a4dc4ce28dbeb067348a377881d2ef56e396c275d4eea914d9fb7851670",
+      "hash": "sha256:4de13bbad0f790d3dbb4b52c1759548b0bc3d5968f8d8135cfd95543b44682e2",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -697,8 +713,8 @@
     {
       "carrierProjections": [],
       "excludes": [],
-      "files": 68,
-      "hash": "sha256:ac645f64de677d2a7ccd4e27535467a14cf926807448ce87c2de1b339249b8d4",
+      "files": 69,
+      "hash": "sha256:37f1baa01bc58b589448aae8896752a2c25b7794a52cadbca5034b949ecee7e1",
       "id": "canonical-skills",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1475,12 +1491,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:b5226ed55f9c08affd75b65fb338cdb4fe47e6764e99c5fe8ae3953d8350047e",
+      "hash": "sha256:088903658ee3ff16001f5677f0e793c05ded3e0d24bf76e100392bb235b1f6e2",
       "id": "exact-fork-governance-classification",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/fork-governance-classification.json",
-      "size": 5673,
+      "size": 5713,
       "type": "file"
     },
     {
@@ -2280,7 +2296,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 53,
-      "hash": "sha256:85dfde50115b28ebed607a383bc64830f13a10bb6663243256f203b7805d8361",
+      "hash": "sha256:6b9c8f0cc0e1095a50ed90fa6b6ab44215792aa7493176764d49a382260d45a0",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2288,7 +2304,7 @@
       "type": "directory"
     },
     {
-      "hash": "sha256:e353dc81c2d5f849876ec3f1579a1e3304aaa1749f52a3b48ae36610406fa26a",
+      "hash": "sha256:0923bd7d3b24c52c5f9afebbdb50b0028680ddb05a6cce1386ac34cff52435cf",
       "id": "governance-counter-metadata",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2382,12 +2398,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:b7b99112668e55870253620217ff008bd46e4e26d2bf8767a1772c22606276f9",
+      "hash": "sha256:a683147e12b6ed26fdaac35174a4770de377935239609e3ab29e04084ebeaf23",
       "id": "governance-harness-registry-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/test/harness-registry.test.mjs",
-      "size": 45015,
+      "size": 45047,
       "type": "file"
     },
     {
@@ -3220,7 +3236,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 22,
-      "hash": "sha256:9ed0086c1d31d0872ca3d378c8ee9299c55b6edbf69881cd1d54d79339fb235e",
+      "hash": "sha256:f474a42f9ad3b0386f4e11d04282a8251a6ecefe296f9f02d66ec614d01e3ab7",
       "id": "provider-neutral-memory",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3338,12 +3354,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:b1abd26cd7a72158a04fd98cfd77c733517bba579b165cdc45b5f4a925d21dc4",
+      "hash": "sha256:92307d2b0bb83cf818e72396e5bcf72c457bdbc2065b7ef8b9241ae69ae04169",
       "id": "provider-skill-semantics",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/provider-skill-semantics.json",
-      "size": 17986,
+      "size": 18488,
       "type": "file"
     },
     {
@@ -3606,7 +3622,7 @@
         "scripts/generated/"
       ],
       "files": 819,
-      "hash": "sha256:9750385f3d5d8a04b75a3a857cf205f5eed8026ca0a900cc2fd138afaaa7c845",
+      "hash": "sha256:db46391d807318ee801f351ba0052b83f8b9aee481a0447056b15be577f87f97",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

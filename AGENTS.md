@@ -90,6 +90,7 @@
 | **Tailwind 出怪事** | `rules/ui-development.md`「Tailwind 5 條核心」+ `# 失敗記憶索引` |
 | **Stakeholder 產出／稽核** | `# 稽核 canonical` |
 | **User 糾正後** | `# 治理 canonical`(home 判斷) |
+| **收到下游／消費者回報** | `/consumer-feedback-triage` |
 | **跨 provider 討論 / 多輪震盪 / 任何 peer 輸出** | `# Independent second opinion`(`packages/governance/src/provider-review-binding.mjs` 的 `resolveProviderReviewBinding` 依 `packages/governance/canonical/providers.json`;`/independent-review`、`/deep-audit-cross-codex`) |
 | **多代理批次工作** | `rules/work-process.md` + bug-fix-rhythm 的 `references/multi-agent-orchestration.md` |
 | **PR merge 後／session start branch 健檢** | `# Git / release canonical` |
