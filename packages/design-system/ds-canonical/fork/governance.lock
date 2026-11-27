@@ -847,7 +847,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/lib/_comment_mask.sh",
-      "sha256": "b1f8401c2357583452da54739304900d060dcc250a98d073570eab96fc9f0599",
+      "sha256": "1040f6ae6d2ef4f550c778f8f59146c007eef7032b12c28938fd9bdc1620b782",
       "source": "lib/_comment_mask.sh",
       "classification": "HELPER",
       "destination": null

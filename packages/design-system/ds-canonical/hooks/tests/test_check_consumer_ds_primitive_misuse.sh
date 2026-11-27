@@ -481,6 +481,16 @@ run_hook "$PROD_TSX" 'export const A = () => (
   </ChromeHeader>
 )'
 expect_silent "77. 行尾 // 註解裡的範例 → 不報"
+# 77b / 77c(r72 規格核對必修 3 + h26 遮罩修正):字串裡的 /*(accept="image/*")或 " // " 不是註解開頭,
+#     後面的程式照判(以前遮罩一路遮到下一個 */ 或行尾 → C24 / C25 漏判)
+run_hook "$PROD_TSX" 'export const A = () => (<>
+  <FileUpload accept="image/*" />
+  <DialogHeader title="上傳" actions={<Button variant="text" iconOnly startIcon={X} aria-label="關閉" />} />
+  {/* 附註 */}
+</>)'
+expect_block "77b. 字串 image/* 之後 header 按鈕沒寫 size → BLOCK" 'header 內 field-height 控件'
+run_hook "$PROD_TSX" 'export const M = () => <DropdownMenuContent><DropdownMenuLabel>{"說明 // 次要"}</DropdownMenuLabel> <DropdownMenuItem onSelect={toggle}><Switch checked={on} />全寬</DropdownMenuItem></DropdownMenuContent>'
+expect_block "77c. 字串裡 \" // \" 之後同一行 DropdownMenuItem 放 Switch → BLOCK" 'DropdownMenuCheckboxItem'
 # 78. CI 重播是 LC_ALL=C:中文剛好落在第 80 位元組的違規片段,截斷後的訊息仍是合法 UTF-8(以前按位元組切出半個「釘」)
 LC_ALL=C LANG=C run_hook "$PROD_TSX" 'export const A = () => <DialogHeader title="代理" actions={<Button variant="text" iconOnly pressed={isPinned} startIcon={Pin} aria-label="釘選這段對話到側欄最上方方便之後找" />} />'
 if [ "$EXIT" = "2" ] && printf '%s' "$STDERR_TEXT" | python3 -c 'import sys; sys.stdin.buffer.read().decode("utf-8")' 2>/dev/null \
