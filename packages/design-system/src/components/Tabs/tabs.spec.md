@@ -340,7 +340,6 @@ Tabs anatomy 採 DS 標準結構 + 元件特有矩陣:
 - `button.spec.md`
 - `carousel.spec.md`
 - `data-table.spec.md`
-- `date-picker.spec.md`
 - `header-canonical.spec.md`
 - `horizontal-overflow.spec.md`
 - `segmented-control.spec.md`
