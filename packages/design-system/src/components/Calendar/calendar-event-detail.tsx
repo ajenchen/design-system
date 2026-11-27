@@ -18,7 +18,7 @@ import { CALENDAR_EVENT_DETAIL_WIDTH_PX } from './calendar-geometry'
  * - components: [Popover(PopoverAnchor virtualRef / PopoverContent side="right" + align="start"(子選單擺法,popover.spec.md「禁止事項」用法 (2);
  *   sideOffset / collisionPadding / 碰撞翻面 = Popover 預設,tokens/elevation/overlay-geometry.ts)+ aria-label / PopoverHeader closeAriaLabel + actions / PopoverBody),
  *   InlineEdit(標題 as="h2" size="sm" + 各欄 renderRead / renderEdit / multiline / editable 閘), Field + FieldLabel + FieldGroup(垂直排、閱讀情境),
- *   Switch(全天:可改時直接切換;只能看時 InlineEdit editable={false} 委派 Switch mode="view"), DatePicker.Range(檢視 formatRange、編輯 showTime), Select(類別:display="tag")]
+ *   Switch(全天:可改時直接切換;只能看時不畫這一欄【ALLDAY-VIEW(定)】), DatePicker.Range(檢視 formatRange、編輯 showTime), Select(類別:display="tag")]
  * - patterns: [overlay-surface `EDITABLE_TITLE_HEADER_SLOT`(標題是 InlineEdit sm 時的標題列 slot 與 × 讓位;overlay-chrome-sizing.spec.md「可編輯標題的標題列」)]
  * - tokens: 無直接讀取 —— 標題列高、欄位間距、body 上下左右內距、垂直排就地編輯外伸,全由上面的元件與 layoutSpace.css(PopoverBody = hug)給,本檔不寫任何間距
  * - 資料: ./calendar-layout.ts(detailRangeOf / rangeToTimePatch / toggleAllDayPatch:時間欄的值、全天 end 不含 ↔ Range 結束日含、全天切換)
@@ -59,7 +59,7 @@ export interface CalendarEventPatch {
 export interface CalendarEventDetail<E = unknown> {
   /** 詳情裡改了某一欄 → 交回這一筆與改到的欄位。必填(M23(f):沒有內建 fallback;事件資料是 consumer 的,calendar.spec.md「禁止事項」第 2 條) */
   onEventChange: (event: E, patch: CalendarEventPatch) => void
-  /** 這一筆能不能改(預設全部可改);false = 詳情照開、每一欄只能看,空的欄位不列 */
+  /** 這一筆能不能改(預設全部可改);false = 詳情照開、每一欄只能看,空的欄位不列,也不畫「全天」(時間欄已分得出全天;calendar.spec.md ALLDAY-VIEW(定)) */
   isEditable?: (event: E) => boolean
   /** 標題列右側操作位(〔操作〕〔分隔線〕〔×〕);刪除這類破壞性動作收進「⋯」選單(action-bar.spec.md:123) */
   actions?: (event: E) => React.ReactNode
@@ -214,7 +214,7 @@ function DetailTitle<E>({ entry, editable, label, onChange }: { entry: CalendarE
  * 內文欄位(calendar.spec.md「事件詳情浮層」內文欄位):**垂直排**(標籤在上;Field 預設方向)【FIELD-ORIENT(定)】,包在一個 FieldGroup 裡 ——
  * 組裡有就地編輯 = 閱讀情境(../Field/field.spec.md「閱讀情境」:標籤次要色、垂直外伸、同組同高,自動生效,本檔不另寫)。
  * 每一欄都是 Field;可改的值走 InlineEdit、不能改的值 InlineEdit editable={false}(不混放純顯示,inline-edit.spec.md:52 / :126);
- * 「全天」是自己一個 Field、Switch 直接切換【Q5(定)】。只能看時空欄位不列【AI 推導】。
+ * 「全天」是自己一個 Field、Switch 直接切換【Q5(定)】,只能看時不畫【ALLDAY-VIEW(定)】。只能看時空欄位不列【AI 推導】。
  */
 function DetailFields<E>({ entry, detail, labels, locale, readFormat, onChange, onToggleAllDay }: Omit<CalendarEventDetailPopoverProps<E>, 'anchor' | 'onClose' | 'onCloseAutoFocus'> & { entry: CalendarEventDetailEntry<E> }) {
   const editable = isEditableOf(detail, entry)
@@ -259,17 +259,14 @@ function DetailFields<E>({ entry, detail, labels, locale, readFormat, onChange, 
           )}
         />
       </Field>
-      <Field data-calendar-detail-field="allDay">
-        <FieldLabel>{labels.detailAllDay}</FieldLabel>
-        {/* 可改:直接切換(就地編輯沒有給布林值的編輯態;同 DataTable 布林欄 data-table.spec.md「Inline Edit — per-column opt-in」boolean 列)。
-            只能看:同組其他欄一樣是 InlineEdit editable={false}(同一場景不混放純顯示與就地編輯,inline-edit.spec.md:52 / :126),
-            值的格式化委派 Switch mode="view"(勾 / 叉,switch.spec.md:156;inline-edit.spec.md「值-格式化」委派路徑) */}
-        {editable ? (
+      {/* 只能看時不畫這一欄【ALLDAY-VIEW(定)】:時間欄的寫法已分得出全天(全天只寫日期、有時段寫到幾點),整欄不渲染 = 讀屏與 Tab 順序跟著少一欄 */}
+      {editable && (
+        <Field data-calendar-detail-field="allDay">
+          <FieldLabel>{labels.detailAllDay}</FieldLabel>
+          {/* 直接切換(就地編輯沒有給布林值的編輯態;同 DataTable 布林欄 data-table.spec.md「Inline Edit — per-column opt-in」boolean 列) */}
           <Switch checked={allDay} onCheckedChange={onToggleAllDay} />
-        ) : (
-          <InlineEdit<boolean> value={allDay} label={labels.detailAllDay} editable={false} onCommit={onToggleAllDay} renderRead={(value) => <Switch mode="view" checked={value} />} />
-        )}
-      </Field>
+        </Field>
+      )}
       {(editable || !!event.location) && (
         <Field data-calendar-detail-field="location">
           <FieldLabel>{labels.detailLocation}</FieldLabel>

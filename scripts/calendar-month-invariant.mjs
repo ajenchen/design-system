@@ -92,7 +92,9 @@
  *           DT-mark 打開詳情的那一段帶 data-detail-open;DT-esc Esc 關詳情、焦點回那一段;DT-outside 減少動態下改地點、點外面 = 先提交再關(再打開看得到新值);
  *           DT-commit 改標題 → 月格跟著換;DT-blank 清空提交 = 還原原值;
  *           DT-list 從清單開:清單不關、詳情左緣 − 清單右緣 = 8、上緣對齊那一列;DT-esc-layers 第一下 Esc 只關詳情(焦點回那一列)、第二下關清單(焦點回「+N」)。
- *           DT-readonly(test-only「詳情只能看」)isEditable 回 false:空的地點 / 說明 / 類別不列、欄位與標題沒有可聚焦 / 可點的元素、點值不進編輯;
+ *           DT-readonly(test-only「詳情只能看」)isEditable 回 false:空的地點 / 說明 / 類別不列、不畫全天【ALLDAY-VIEW(定)】(→ 只剩時間)、欄位與標題沒有可聚焦 / 可點的元素、點值不進編輯;
+ *           DT-allday【ALLDAY-VIEW(定)】展示「團隊行事曆:共享進來的事件只能看」:只能看的那一筆(業務部共享的全天事件)詳情沒有「全天」欄,
+ *           能編輯的那一筆(自己團隊的「設計審查」)「全天」欄是能切換的開關(role=switch、沒停用);
  *           DT-tip(test-only「詳情交回的修改」,標題被截斷)用滑鼠開、點 × 關 → 焦點由程式還給那一段,截斷提示不開(tooltip.spec.md「A11y 預設」);
  *           DT-tip-delay 接著滑過工具列「下個月」,提示仍等初始延遲(≥ MOTION_DELAY_PLAIN_MS;擋下程式焦點不得動到全站的開啟延遲,tooltip.spec.md「時間參數」);
  *           DT-commit-call 提交標題 → onEventChange 只呼叫一次、patch = { title };DT-move 產品把事件移到別天 → 詳情換新錨點跟過去(頂端對齊、隔 8、
@@ -246,6 +248,7 @@ const STORY = {
   detailFromList: storyId(/calendar-設計規格--detail-from-more-list$/u),
   detailViewOnly: storyId(/calendar-展示--detail-view-only$/u),
   detailChangeLog: storyId(/calendar-展示--detail-change-log$/u),
+  shared: storyId(/calendar-展示--shared-view-only-events$/u),
 }
 // 「+N」清單那一則(設計規格「狀態行為:「+N」清單開著」):年度使用者大會那天,與格內排序(calendar.spec.md「格內排序」)推出的清單順序
 const MORE_DAY = '2026-07-22'
@@ -575,7 +578,7 @@ async function detailDeep(mutate, { waitSel, detailSel, listSel }) {
     const a = document.activeElement
     return { body: a === document.body || a === null, id: a?.getAttribute('data-calendar-event-id') ?? null, day: a?.getAttribute('data-calendar-day') ?? null, more: a?.getAttribute('data-calendar-more') ?? null, field: a?.closest('[data-calendar-detail-field]')?.getAttribute('data-calendar-detail-field') ?? null }
   })
-  // DT-readonly(P13):isEditable 回 false → 空的地點 / 說明 / 類別不列;每一欄、標題都不可點(沒有隱形編輯鈕),點值不進編輯
+  // DT-readonly(P13):isEditable 回 false → 空的地點 / 說明 / 類別不列、全天不畫【ALLDAY-VIEW(定)】;每一欄、標題都不可點(沒有隱形編輯鈕),點值不進編輯
   if (runs(mutate, 'readonlyDom')) {
     const p = await open(STORY.detailViewOnly, { label: '詳情只能看', mutate })
     if (p && (await waitSel(detailSel, 'open'))) {
@@ -591,9 +594,44 @@ async function detailDeep(mutate, { waitSel, detailSel, listSel }) {
       await page.click(`${detailSel} [data-calendar-detail-field="time"]`).catch(() => {})
       await frames(4)
       const editing = await page.evaluate((s) => Boolean(document.querySelector(`${s} [data-calendar-detail-field] [data-editing="true"], ${s} [data-calendar-detail-field] input`)), detailSel)
-      check('DT-readonly', before.fields.join(',') === 'time,allDay' && before.focusables === 0 && before.titleButtons === 0 && !editing,
-        `只能看:欄位 ${before.fields.join(' / ')}(規格:空的地點 / 說明 / 類別不列 → 時間 / 全天)、欄位裡可聚焦的元素 ${before.focusables} 個(規格 0)、標題可編輯 ${before.titleButtons ? '是' : '否'}、點時間欄${editing ? '進了編輯' : '沒進編輯'}`)
+      check('DT-readonly', before.fields.join(',') === 'time' && before.focusables === 0 && before.titleButtons === 0 && !editing,
+        `只能看:欄位 ${before.fields.join(' / ')}(規格:空的地點 / 說明 / 類別不列、全天不畫 → 只剩時間)、欄位裡可聚焦的元素 ${before.focusables} 個(規格 0)、標題可編輯 ${before.titleButtons ? '是' : '否'}、點時間欄${editing ? '進了編輯' : '沒進編輯'}`)
     } else instrumentFails.push({ cell: 'DT-readonly', detail: 'play 打開的詳情等不到(story 改了?)' })
+  }
+  // DT-allday【ALLDAY-VIEW(定),calendar.spec.md「事件詳情浮層」內文欄位「全天」列】:展示「團隊行事曆:共享進來的事件只能看」——
+  // 只能看的那一筆(業務部共享的全天事件「經銷商年度大會」)詳情沒有「全天」欄;能編輯的那一筆(自己團隊的「設計審查」)「全天」欄是能切換的開關
+  //(role=switch、沒停用)。同一則範例、同一個詳情元件,兩筆的差別只在 isEditable。時間欄的字只印不判(這條的前提:全天只寫日期、有時段寫到幾點)。
+  // 對照組:alldayView 在只能看的詳情裡塞回一個全天欄 / alldayEdit 把能編輯詳情裡的開關改成不是開關 → 這一格紅
+  if (runs(mutate, 'alldayView') || runs(mutate, 'alldayEdit')) {
+    const p = await open(STORY.shared, { label: '共享進來的事件只能看(全天欄)', mutate })
+    const readOf = async (id, inject) => {
+      await page.click(`[data-calendar-tile][data-calendar-event-id="${id}"]`).catch(() => {})
+      if (!(await waitSel(detailSel, 'open'))) return null
+      if (inject) await page.evaluate(inject)
+      await frames(3)
+      const r = await page.evaluate((s) => {
+        const d = document.querySelector(s)
+        const all = d?.querySelector('[data-calendar-detail-field="allDay"]')
+        const sw = all?.querySelector('[role="switch"]')
+        return {
+          fields: [...(d?.querySelectorAll('[data-calendar-detail-field]') ?? [])].map((f) => f.getAttribute('data-calendar-detail-field')),
+          allDay: Boolean(all), switchOn: Boolean(sw && !sw.disabled && sw.getAttribute('aria-disabled') !== 'true'),
+          time: d?.querySelector('[data-calendar-detail-field="time"]')?.textContent?.trim() ?? '',
+        }
+      }, detailSel)
+      await page.keyboard.press('Escape')
+      await waitSel(detailSel, 'closed')
+      await frames(2)
+      return r
+    }
+    if (p) {
+      const view = await readOf('sales2', mutate?.alldayView)
+      const edit = await readOf('own1', mutate?.alldayEdit)
+      if (!view || !edit) instrumentFails.push({ cell: 'DT-allday', detail: `詳情等不到(只能看那一筆${view ? '開了' : '沒開'}、能編輯那一筆${edit ? '開了' : '沒開'})` })
+      else check('DT-allday', !view.allDay && edit.allDay && edit.switchOn,
+        `只能看(業務部共享「經銷商年度大會」):欄位 ${view.fields.join(' / ')}、${view.allDay ? '有' : '沒有'}全天欄(規格:不畫),時間欄「${view.time}」;`
+        + `能編輯(「設計審查」):${edit.allDay ? '有' : '沒有'}全天欄、${edit.switchOn ? '是能切換的開關' : '不是能切換的開關'}(規格:開關,直接切換),時間欄「${edit.time}」`)
+    }
   }
   // DT-tip / DT-commit-call / DT-move / DT-fallback:test-only「詳情交回的修改」(標題長到被截斷;onEventChange 每呼叫一次記一筆在 output[data-calendar-change-log])
   const tileSel = '[data-calendar-tile][data-calendar-event-id="mv1"]'
@@ -2455,6 +2493,9 @@ const MUTANTS = [
   { name: '起訖鈕被截斷(字距撐開 = Linux 字寬)時,關截斷提示那一下 Esc 連編輯一起取消', block: 'detail', expect: ['DT-esc4-tip'], escDoubleAt: 'tip', css: '[data-calendar-event-detail] [data-calendar-detail-field="time"] button span { letter-spacing: 3px !important; }' },
   { name: '滑過「下個月」之前「上個月」的提示剛開過(掃描窗口內立即開)', block: 'detail', expect: ['DT-tip-delay'], tipDelaySkip: true },
   { name: '點詳情改成點格子(清單外)', block: 'detail', expect: ['DT-nest'], nestClickGrid: true },
+  // ALLDAY-VIEW(定) 2026-11-27:排在 detail 突變的最後,既有突變的分片歸屬不動
+  { name: '只能看時照樣畫全天欄', block: 'detail', expect: ['DT-allday'], alldayView: () => { const t = document.querySelector('[data-calendar-event-detail] [data-calendar-detail-field="time"]'); const f = document.createElement('div'); f.setAttribute('data-calendar-detail-field', 'allDay'); t?.after(f) } },
+  { name: '能編輯時全天欄不是開關(拿掉 role=switch)', block: 'detail', expect: ['DT-allday'], alldayEdit: () => document.querySelector('[data-calendar-event-detail] [data-calendar-detail-field="allDay"] [role="switch"]')?.removeAttribute('role') },
   // 必須最後一個(todayFirst 會釘住時鐘,見該區塊註解)
   { name: '1 號的實心底被壓成 24 寬', block: 'todayFirst', expect: ['R1'], css: '[data-calendar-day="2026-07-01"] { padding: 0 !important; max-width: var(--tag-height-md) !important; }' },
 ]
