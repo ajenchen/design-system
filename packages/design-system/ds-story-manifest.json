@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/DsImportSmoke.stories.tsx (ImportSmoke → DS Storybook link)"
     ],
-    "generatedAt": "2026-11-27T09:11:56.054Z"
+    "generatedAt": "2026-11-27T10:57:10.123Z"
   },
   "components": {
     "accordion": {
@@ -333,6 +333,7 @@
           "design-system-components-calendar-展示--manufacturing-week-numbers",
           "design-system-components-calendar-展示--loading-while-switching-month",
           "design-system-components-calendar-展示--side-panel-narrow",
+          "design-system-components-calendar-展示--fill-main-area-borderless",
           "design-system-components-calendar-展示--read-only-dates-custom-tile-keyboard",
           "design-system-components-calendar-展示--event-click-anchor",
           "design-system-components-calendar-展示--detail-view-only",
@@ -1915,5 +1916,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1078
+  "totalStories": 1079
 }

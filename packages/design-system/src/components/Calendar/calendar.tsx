@@ -346,6 +346,13 @@ interface CalendarOwnProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'o
   loading?: boolean
 
   /**
+   * 外框(預設 `true`;calendar.spec.md「外殼」—— 名稱與預設同 DataTable `bordered`,data-table.spec.md「六、外框規則」)。
+   * 傳 `false`:拿掉外圍一圈框與圓角,格線保留;最後一週改畫底線收尾(同 DataTable「不加框時，最後一行保留底線自然收尾」)。
+   * 用在月曆填滿主畫面、或放進本身已有框的卡片(避免框中框)。拿掉框時根節點不標 `data-layout-region="bounded"`(那個標記 = 有完整外框)。
+   */
+  bordered?: boolean
+
+  /**
    * 工具列月份標題的標題層級(預設 `'h2'`)。字樣不隨層級變(`text-body-lg font-medium`,header-canonical.spec.md「Title typography」);
    * 只換文件大綱的層級,讓 Calendar 放在頁面上時接得上頁面自己的標題階層(calendar.spec.md「工具列」標題條)。
    * 命名:子部位前綴 `title` + 本 DS 既有的「換語意標籤」寫法 `as`(InlineEdit `as`,`inline-edit.tsx#InlineEditProps`)。
@@ -784,6 +791,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   hideWeekends = false,
   showWeekNumbers = false,
   loading = false,
+  bordered = true,
   titleAs: TitleTag = 'h2',
   renderEventTile,
   className,
@@ -1304,14 +1312,17 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
     <div
       ref={ref}
       className={cn(
-        'flex flex-col w-full h-full bg-surface rounded-md border border-divider overflow-hidden',
+        'flex flex-col w-full h-full bg-surface overflow-hidden',
+        // 外框(calendar.spec.md「外殼」bordered;同 DataTable dataTableVariants 的 bordered):拿掉時框與圓角一起拿掉,格線保留
+        bordered && 'rounded-md border border-divider',
         className,
       )}
       // 邊緣標記(2026-11-26,calendar.spec.md「外殼」):一圈完整外框 = bounded region 的邊緣 —— layoutSpace.spec.md:176
       // 「元件根部宣告自己的邊緣 `data-layout-region="bounded"`(有完整外框:表格 / 卡片 / 面板)」,與 DataTable 外框同一個標記(data-table.tsx)。
       // 放進會自己給上下內距的容器(DialogBody / SheetBody 等 data-layout-body)且是最後一塊時,容器底自動 = loose(規則 4 第 2 列;
-      // tokens/layoutSpace/layoutSpace.css),不是一般元素的 48。放在 {...props} 之前:consumer 改掉外框時可一併改標記。
-      data-layout-region="bounded"
+      // tokens/layoutSpace/layoutSpace.css),不是一般元素的 48。`bordered={false}` 沒有外框 → 不標(標了就跟 DOM 不一致)。
+      // 放在 {...props} 之前:consumer 改掉外框時可一併改標記。
+      data-layout-region={bordered ? 'bounded' : undefined}
       {...props}
       // 幾何常數設成元件內變數(--calendar-*,全部住 calendar-geometry.ts CALENDAR_GEOMETRY_STYLE)。
       // consumer 傳的 style 照併進來;這些名字只有 Calendar 自己讀(元件內變數,不是 token)。
@@ -1439,7 +1450,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                     className={cn(
                       'flex items-start justify-start p-[var(--calendar-gap)] text-body font-normal text-fg-secondary tabular-nums',
                       'border-r border-b border-divider',
-                      rowIdx === weekCount - 1 && 'border-b-0',
+                      bordered && rowIdx === weekCount - 1 && 'border-b-0',
                     )}
                   >
                     <span className={DATE_BOX_LAYOUT}>{week.number}</span>
@@ -1539,10 +1550,11 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                         // 回傳的內容比這一段寬 / 比一列高時裁在外層裡,不畫進隔壁格、不接走隔壁格的點擊)。2026-11-25 前是 overflow-hidden。
                         'flex flex-col gap-[var(--calendar-gap)] p-[var(--calendar-gap)] min-w-0 overflow-x-visible overflow-y-clip',
                         // 格線:每格右 / 下各一條;每一週最右那格不畫右線(每個 role=row 只裝自己那 7 格,last: 就是第 7 格);
-                        // 最後一週不畫下線 —— 根節點外框已經是那一條,兩條疊成 2px 雙線(稽核 D6)。
+                        // 最後一週不畫下線 —— 根節點外框已經是那一條,兩條疊成 2px 雙線(稽核 D6);`bordered={false}` 沒有外框,
+                        // 最後一週照畫底線收尾(同 DataTable「不加框時，最後一行保留底線自然收尾」)。
                         // 格子是 border-box,底線畫在格高裡面 → 格最小高把它算進去(calendar-geometry.ts CALENDAR_GRID_LINE_PX)。
                         'border-r border-b border-divider last:border-r-0',
-                        rowIdx === weekCount - 1 && 'border-b-0',
+                        bordered && rowIdx === weekCount - 1 && 'border-b-0',
                         // 非當月格**不加底色**【維持 U3】(calendar.spec.md「Cell 規則」非當月格條:與當月格可點性相同,
                         // `bg-muted` 這類「不可操作」的底留給真的不能操作的東西);非當月只靠日期數字的淡字區分,見下方日期鈕。
                         // 日期格滑過不變色【CELL-HOVER(定)】(calendar.spec.md「Cell 規則」滑過條;hit-area-canonical.md 滑過原則一-2

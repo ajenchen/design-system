@@ -100,6 +100,7 @@ Calendar 是**看事件的頁面 canvas**:在一段日期範圍裡瀏覽、定�
   loading                                 // 格內骨架【Q11(定)】
   hideWeekends                            // 隱藏週末,預設關【Q10(定)】
   showWeekNumbers                         // 左側週數欄,預設關【Q10(定)、Q10b(定)】
+  bordered                                // 外框,預設開;false = 拿掉框與圓角、格線保留(見「外殼」)
   moreListMaxHeight={number | string}     // 「+N」清單浮層的高度上限,只能往更矮調【C9】
   locale="zh-TW"                          // 預設 zh-TW【Q9(定)】
   weekStartsOn={0 | 1 | 2 | 3 | 4 | 5 | 6} // 沒傳 = 從語系推【WS(定)】
@@ -179,8 +180,9 @@ interface CalendarEvent {
 
 起因:user 問(逐字,問句,不是決定)「行事曆應該一整個像是一個 table 元件用邊框圈出範圍嗎？ 若是的話，那其上下左右是否也應該要保留邊距？我看分割畫面側欄的範例沒有保留下邊距 此外我也好奇世界級的設計是如何畫這個元件的邊？或是如何定義它的邊」。查證結果:外框早就有、與 DataTable 同一套,缺的是這一段規格與根節點的邊緣標記;本段只把既有規則寫下來,元件畫面不變(2026-11-26)。
 
-- **長相**:根節點 `bg-surface rounded-md border border-divider overflow-hidden` —— 一圈 1px 淡框加圓角,工具列與檢視內容都在框裡。與 DataTable 外框同一套(`../DataTable/data-table.tsx` `dataTableVariants`:`bg-surface rounded-md overflow-hidden` + 預設 `border border-divider`)。
-- **為什麼要框**:與 DataTable 同一個理由 ——「邊框標記「這裡有使用者看不到的內容」」(`../DataTable/data-table.spec.md:193`)。容器比「週數 × 格最小高」矮時格陣區會捲動(「Cell 規則」每一週等高那條),框就是捲動範圍的邊界。目前沒有拿掉外框的參數;放進本身已有框的容器、要避免框中框時再議(DS 先例 DataTable `bordered`,`../DataTable/data-table.spec.md:195`),第一段不開。
+- **長相**(預設 `bordered`):根節點 `bg-surface rounded-md border border-divider overflow-hidden` —— 一圈 1px 淡框加圓角,工具列與檢視內容都在框裡。與 DataTable 外框同一套(`../DataTable/data-table.tsx` `dataTableVariants`:`bg-surface rounded-md overflow-hidden` + 預設 `border border-divider`)。
+- **為什麼要框**:與 DataTable 同一個理由 ——「邊框標記「這裡有使用者看不到的內容」」(`../DataTable/data-table.spec.md:193`)。容器比「週數 × 格最小高」矮時格陣區會捲動(「Cell 規則」每一週等高那條),框就是捲動範圍的邊界。
+- **`bordered`(預設 `true`)**:名稱與預設同 DataTable `bordered`(`../DataTable/data-table.spec.md:195`)。傳 `false` → 外圍一圈框與圓角拿掉、格線保留;最後一週改畫底線收尾(同那一行「不加框時，最後一行保留底線自然收尾」)【AI 推導:照 DataTable】;根節點不標 `data-layout-region="bounded"`(沒有完整外框)。用在月曆填滿主畫面、或放進本身已有框的卡片(避免框中框)。出處:152 決策頁第 6 題 user 選「甲 預設有框 + bordered 可拿掉」(交接資料夾 `notes/decisions/decide152-db/answers/latest.json` q7);同題備註是問句(逐字)「然後貼邊的時候就要自動預設把框拿掉吧？因為捲動範圍就是整個容器啊？根本沒有看不出來捲動邊界的問題」—— 「貼邊時自動拿掉框」還沒定,現在只有手動 `bordered={false}`。
 - **工具列在框裡**(與 DataTable 唯一的差別):DataTable 的工具列是外部組合、放在框外(`../DataTable/data-table.spec.md:670`「Toolbar 不內建在 DataTable 裡——toolbar 是外部組合，職責分離」);月曆的工具列是元件的固定元素(見「工具列」),放在框裡、不畫底色,坐在外殼的 `bg-surface` 上 = 巢狀 chrome(`../../patterns/header-canonical/header-canonical.spec.md:111` Nested chrome header 那一列「transparent(不傳 bg className,繼承 parent)」),與格陣之間用 ChromeHeader 自己的底線分開。
 - **最外圈格線交給外框**:每一週最右那格不畫右線、最後一週不畫下線,那一條由外框當(`calendar.tsx` 格子 class 的註解「最後一週不畫下線 —— 根節點外框已經是那一條,兩條疊成 2px 雙線(稽核 D6)」)—— 與 DataTable「加框時最後一行底線去掉，避免與外框 double border」同一條(`../DataTable/data-table.spec.md:195`)。
 - **格陣貼齊外框**:格陣區(星期列與週列)左、右、下三邊不留內距,格子直接貼到框線;格內的空隙由格子自己的內距給(見「間距」)。只有工具列有自己的內距(ChromeHeader)。

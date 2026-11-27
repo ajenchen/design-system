@@ -394,6 +394,37 @@ export const SidePanelNarrow: Story = {
   },
 }
 
+/**
+ * 填滿主畫面、不加外框(`bordered={false}`;calendar.spec.md「外殼」bordered)。
+ * 排班頁的主畫面只放這一個月曆、而且填滿:容器的邊就是捲動範圍的邊,外面再一圈框是多的。
+ */
+export const FillMainAreaBorderless: Story = {
+  name: '填滿主畫面(不加外框)',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '排班頁的主畫面只放這一個月曆、填滿到邊:外圍一圈框與圓角拿掉,格線保留,最後一週照畫底線收尾(和表格不加框時的收尾一樣)。平常的月曆仍有框 —— 框標記捲動範圍的邊界,和其他內容並排時要留著。',
+      },
+    },
+  },
+  render: () => {
+    // 門市排班:早班 / 晚班(有時段)與盤點日(全天,end 不含 → 隔天)。全天長條用淡底上字對比 ≥ 4.5 的色相
+    //(淡底 step-7 的字有 5 個色相不到 4.5,calendar.spec.md「驗證」已知例外 (1)【維持 U10】;同「內容發佈月曆」的取法)
+    const events: CalendarEvent[] = [
+      { id: 's1', title: '早班:王小明', start: `${thisMonth}-06T08:00`, end: `${thisMonth}-06T16:00`, color: 'blue' },
+      { id: 's2', title: '晚班:林佳穎', start: `${thisMonth}-06T16:00`, end: `${thisMonth}-06T23:00`, color: 'purple' },
+      { id: 's3', title: '早班:陳志豪', start: `${thisMonth}-14T08:00`, end: `${thisMonth}-14T16:00`, color: 'blue' },
+      { id: 's4', title: '季度盤點', start: `${thisMonth}-24`, end: `${thisMonth}-25`, color: 'turquoise', allDay: true },
+    ]
+    return (
+      <div className="h-screen bg-surface">
+        <CalendarDemo bordered={false} defaultReferenceDate={now} today={now} events={events} locale={LOCALE} noun="班次" />
+      </div>
+    )
+  },
+}
+
 // 日期格唯讀 × 自訂事件方塊的鍵盤契約(test-only 夾具,原本寫在「內容發佈月曆」的 play):日期數字不是按鈕、格子本身是格陣的鍵盤停靠點;
 // `renderEventTile` 的外層由元件擁有按鈕角色與 Enter 觸發(calendar.spec.md「renderEventTile 的鍵盤責任歸屬」)。story-demo-focus 閘載入每支 story 並跑 play,斷言不成立就紅。
 export const ReadOnlyDatesCustomTileKeyboard: Story = {
@@ -557,7 +588,7 @@ function DetailChangeLogDemo() {
 export const DetailChangeLog: Story = {
   name: '詳情交回的修改',
   tags: ['test-only'],
-  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:115「eventDetail.onEventChange(event, patch) 必填;patch 只帶這一次改到的欄位」
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:116「eventDetail.onEventChange(event, patch) 必填;patch 只帶這一次改到的欄位」
   render: () => <DetailChangeLogDemo />,
 }
 
