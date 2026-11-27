@@ -190,7 +190,7 @@ Chip 的 overflow 處理有三種模式：
 - 所有 Chip 永遠渲染在水平 `overflow-x-auto` 容器（保留 Radix ToggleGroup 的 a11y），靠 scroll 顯示而非 hide/show；邊緣用 fade mask 軟化硬邊
 - 不偵測哪些 chip 溢出、不套 `invisible` / `visibility:hidden`——所有 chip 都正常可見可點
 - 容器可捲動時（`canScroll`），右側渲染 canonical `<OverflowMenuTriggerButton />`（= `<Button variant="text" size="sm" iconOnly startIcon={ChevronDown} />`，跟 Tabs menu trigger 共用同一 primitive，見 `horizontal-overflow.spec.md`）
-- 點擊開 DropdownMenu，內容是**全部 chip** 的 `DropdownMenuCheckboxItem` 陣列，checked 狀態跟 ChipGroup 當前 value 同步
+- 點擊開 DropdownMenu，內容是**全部 chip**:多選(`type="multiple"`)是 `DropdownMenuCheckboxItem` 陣列、checked 跟 ChipGroup 當前 value 同步;單選(`type="single"`,預設)是 `DropdownMenuItem` + `selected`(選中底色、選了就關,同 Tabs 溢出選單)—— 依 `../../patterns/element-anatomy/item-anatomy.spec.md` 規則 B「選擇語意必須對應指示器視覺」(單選 in dropdown 禁方塊勾);2026-11-27 前單選也畫勾選框
 - 點 menu item 時呼叫 ChipGroup 的 `onValueChange` toggle 選取；更新的值同時反映到可見 chips 和 menu checked state
 - **選到就露出來**(與 scroll 模式同一條):選單選取、直接點 chip、鍵盤方向鍵、容器尺寸改變 → 剛動到的那一顆**置中**,兩端到底時夾住。2026-11-11 前捲動只寫在選單的處理程式裡,直接點同一顆半露的 chip 不會捲 —— user 回報(逐字)「點擊選單的項目會直接調整chip的捲軸，使其更好被閱讀 然而直接在同樣的情況在非選單的地方點擊相同的項目卻不會有任何捲動」;根修與對齊 B 的出處見 `horizontal-overflow.spec.md`「選到就露出來」
 

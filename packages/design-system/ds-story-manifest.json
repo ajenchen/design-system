@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/DsImportSmoke.stories.tsx (ImportSmoke → DS Storybook link)"
     ],
-    "generatedAt": "2026-11-27T07:43:33.106Z"
+    "generatedAt": "2026-11-27T08:40:38.971Z"
   },
   "components": {
     "accordion": {
@@ -447,6 +447,7 @@
           "design-system-components-chip-展示--default",
           "design-system-components-chip-展示--with-badge",
           "design-system-components-chip-展示--single-selection",
+          "design-system-components-chip-展示--single-selection-menu",
           "design-system-components-chip-展示--assist-attachments"
         ],
         "設計規格": [
@@ -1911,5 +1912,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1074
+  "totalStories": 1075
 }

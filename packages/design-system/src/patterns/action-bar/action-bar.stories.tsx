@@ -70,7 +70,8 @@ const ToolbarFrame = ({ title, children }: { title?: string; children: ReactNode
 
 /**
  * 設定:打開檢視設定選單 —— 兩項各是一個獨立的即時設定(不是從一組裡挑幾個)→ 開關外觀 indicator="switch"
- *(checkbox.spec.md「與 Switch 的分界」的「選單裡」;2026-11-27 前是勾選外觀)
+ *(checkbox.spec.md「與 Switch 的分界」的「選單裡」;2026-11-27 前是勾選外觀)。這兩項判成「獨立設定」是【AI 推導】,user 定的是原則
+ *(單獨一個即時設定用開關外觀),不是這兩項
  */
 function SettingsMenuTrigger({ children }: { children: ReactNode }) {
   const [archived, setArchived] = useState(false)

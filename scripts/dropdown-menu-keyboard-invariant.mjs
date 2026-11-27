@@ -37,6 +37,9 @@
  *      aria-hidden、對它 focus() 拿不到焦點、在字的右邊且離列右緣 ≤ 列的右內距;停用列另要 aria-disabled(判定 judgeSwitchRow)
  *   W2 滑鼠點「全寬顯示」的字 → aria-checked 翻面、選單仍開 1 層、列尾開關跟著翻(judgeRowToggle)
  *   W3 焦點在「全寬顯示」按空白鍵、再按 Enter → 每次都同 W2
+ *   CH1 Chip 展示「單選:放不下時的選單」:溢出選單每一項是 menuitem、沒有 menuitemcheckbox 與勾選框,剛好一項帶選中底色(量算繪背景色)= 目前那一類
+ *       (item-anatomy.spec.md 規則 B;2026-11-27 前單選也畫勾選項 —— 對照組把角色改回 menuitemcheckbox 必紅)
+ *   CH2 同一則選「工程筆記」→ 選單關、那一顆 chip 選中(對照組吞掉選單項點擊必紅)
  * 對照組(--selftest):在頁面上掛 capture 監聽把舊行為造回來 ——
  *   Tab 被吞(= Radix 擋 Tab)、Esc 改成「點外面」(= 一次全關)、浮鈕選單**卸載後**下一個 macrotask 把焦點搶回浮鈕
  *   (= 舊 onCloseAutoFocus 的真實時序,不是閘自己睡完再 .focus())—— 每個情境都必須被判紅,儀器才算有效。
@@ -116,6 +119,22 @@ export function judgeRowToggle({ before, after, openAfter, switchStateAfter }) {
   return after !== before && openAfter === 1 && mirrors ? 'pass' : 'fail'
 }
 
+/**
+ * 單選 Chip 的溢出選單(2026-11-27,item-anatomy.spec.md 規則 B:單選 in dropdown = DropdownMenuItem selected、禁方塊勾):
+ * 每一項都是 menuitem(沒有 menuitemcheckbox、選單裡沒有勾選框),而且剛好一項帶選中底色、字 = 目前選中的那顆 chip。
+ */
+export function judgeChipSingleMenu({ items, checkboxItems, checkboxes, selectedTexts, chipOnText }) {
+  if ([items, checkboxItems, checkboxes, chipOnText].some(unmeasured) || !Array.isArray(selectedTexts)) return 'instrument'
+  if (items + checkboxItems === 0) return 'instrument'
+  return items > 0 && checkboxItems === 0 && checkboxes === 0 && selectedTexts.length === 1 && selectedTexts[0] === chipOnText ? 'pass' : 'fail'
+}
+
+/** 單選 Chip 溢出選單選了一項:選單關掉(0 層)、那一顆 chip 變成選中 */
+export function judgeChipSinglePick({ openAfter, chipOnText, picked }) {
+  if (unmeasured(openAfter) || unmeasured(picked)) return 'instrument'
+  return openAfter === 0 && chipOnText === picked ? 'pass' : 'fail'
+}
+
 // ── 瀏覽器量測 ──
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 if (isMain) await main()
@@ -129,7 +148,7 @@ async function main() {
   const root = path.resolve(REPO, arg('static', 'storybook-static'))
   // 建置存在、且不比被驗的原始碼舊:lib/launch-browser.mjs requireFreshStorybookBuild(全部瀏覽器閘同一份;2026-09-27,待辦總帳 C5)
   // dropdown-menu-keyboard.ts / lib/focus-after-trigger.ts:2026-09-26 從 dropdown-menu.tsx 拆出的鍵盤接線與共用落點計算,只改它們時也要擋住舊建置
-  requireFreshStorybookBuild(root, ['packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx', 'packages/design-system/src/components/Menu/menu-item.tsx', 'packages/design-system/src/components/DropdownMenu/dropdown-menu-keyboard.ts', 'packages/design-system/src/lib/focus-after-trigger.ts', 'packages/design-system/src/components/DropdownMenu/dropdown-menu.stories.tsx', 'packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx'])
+  requireFreshStorybookBuild(root, ['packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx', 'packages/design-system/src/components/Menu/menu-item.tsx', 'packages/design-system/src/components/Chip/chip.tsx', 'packages/design-system/src/components/Chip/chip.stories.tsx', 'packages/design-system/src/components/DropdownMenu/dropdown-menu-keyboard.ts', 'packages/design-system/src/lib/focus-after-trigger.ts', 'packages/design-system/src/components/DropdownMenu/dropdown-menu.stories.tsx', 'packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx'])
   const server = await startA11yStaticServer({ rootDirectory: root, defaultFile: 'iframe.html' })
   process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
   const browser = await launchBrowser(); const page = await browser.newPage({ viewport: { width: 1280, height: 800 } })
@@ -390,6 +409,50 @@ async function main() {
       const after = await ariaCheckedOf('全寬顯示')
       rec(`W3 焦點在「全寬顯示」按 ${key === ' ' ? '空白鍵' : 'Enter'} → 整列切換、選單不關、列尾開關跟著翻面`, judgeRowToggle({ before, after, openAfter: await openCount(), switchStateAfter: await switchState('全寬顯示') }), `aria-checked ${before} → ${after},開著 ${await openCount()} 層`)
     }
+  })
+
+  // CH1 / CH2:單選 Chip 的溢出選單(2026-11-27;規則 B)。觸發鈕 = OverflowMenuTriggerButton「選項選單(共 N 個)」
+  const CHIP_STORY = 'design-system-components-chip-展示--single-selection-menu'
+  const CHIP_TRIGGER = '#storybook-root button[aria-label^="選項選單"]'
+  const chipOnText = () => page.evaluate(() => [...document.querySelectorAll('#storybook-root button[data-state="on"]')].map((b) => (b.textContent ?? '').trim()).join('|') || null)
+  const openChipMenu = async () => {
+    await page.locator(CHIP_TRIGGER).first().click()
+    if (!(await waitOpen(1))) return '前提:按選單鈕開不了選單'
+    if (!(await waitFor(() => { const m = document.querySelector('[role="menu"][data-state="open"]'); return !!m && m.getAnimations({ subtree: true }).length === 0 }))) return '前提:選單 3 秒內沒停在開好的樣子'
+    return null
+  }
+  await scenario('CH1', CHIP_STORY, CHIP_TRIGGER, async () => {
+    const pre = await openChipMenu()
+    if (pre) { rec('CH1', 'instrument', pre); return }
+    // 對照組 = 2026-11-27 前的長相:單選也畫成勾選項(把選單項的角色改回 menuitemcheckbox)
+    if (SELFTEST) await page.evaluate(() => document.querySelectorAll('[role="menu"][data-state="open"] [role="menuitem"]').forEach((i) => i.setAttribute('role', 'menuitemcheckbox')))
+    const m = await page.evaluate(() => {
+      const menu = document.querySelector('[role="menu"][data-state="open"]')
+      if (!menu) return null
+      const items = menu.querySelectorAll('[role="menuitem"]').length
+      const checkboxItems = menu.querySelectorAll('[role="menuitemcheckbox"]').length
+      const checkboxes = menu.querySelectorAll('button[role="checkbox"]').length
+      // 選中底色量算繪出來的背景色:跟沒選中的項不同的那幾項 = 帶選中底色(不讀 class)
+      const rows = [...menu.querySelectorAll('[role="menuitem"], [role="menuitemcheckbox"]')]
+      const bg = rows.map((r) => getComputedStyle(r).backgroundColor)
+      const counts = bg.reduce((a, c) => ((a[c] = (a[c] ?? 0) + 1), a), {})
+      const common = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0]
+      const selectedTexts = rows.filter((_, i) => bg[i] !== common).map((r) => (r.textContent ?? '').trim())
+      return { items, checkboxItems, checkboxes, selectedTexts }
+    })
+    const on = await chipOnText()
+    rec('CH1 單選 Chip 溢出選單:每一項是 menuitem、沒有勾選框、只有目前那一類帶選中底色', m ? judgeChipSingleMenu({ ...m, chipOnText: on }) : 'instrument', `${JSON.stringify(m)} chip=${on}`)
+  })
+  await scenario('CH2', CHIP_STORY, CHIP_TRIGGER, async () => {
+    const pre = await openChipMenu()
+    if (pre) { rec('CH2', 'instrument', pre); return }
+    // 對照組 = 選了沒反應(吞掉選單項的點擊)
+    if (SELFTEST) await page.evaluate(() => document.addEventListener('click', (e) => { if (e.target instanceof Element && e.target.closest('[role="menu"] [role="menuitem"]')) { e.preventDefault(); e.stopImmediatePropagation() } }, true))
+    const picked = '工程筆記'
+    await page.locator('[role="menu"][data-state="open"] [role="menuitem"]').filter({ hasText: picked }).first().click()
+    await waitOpen(0)
+    await waitFor((t) => [...document.querySelectorAll('#storybook-root button[data-state="on"]')].some((b) => (b.textContent ?? '').trim() === t), picked)
+    rec('CH2 單選 Chip 溢出選單選「工程筆記」→ 選單關、那一顆 chip 選中', judgeChipSinglePick({ openAfter: await openCount(), chipOnText: await chipOnText(), picked }), `開著 ${await openCount()} 層,chip=${await chipOnText()}`)
   })
 
   // F1–F3:AI 浮鈕右鍵選單

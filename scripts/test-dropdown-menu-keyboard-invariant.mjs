@@ -12,7 +12,7 @@
  * 量不到必須回 'instrument',不得被讀成 pass 或 fail(M37 第八個形狀:沒觀察到 ≠ 沒發生)。
  */
 import assert from 'node:assert/strict'
-import { judgeEscStep, judgeFabReturn, judgeRowToggle, judgeSwitchRow, judgeTabOut } from './dropdown-menu-keyboard-invariant.mjs'
+import { judgeChipSingleMenu, judgeChipSinglePick, judgeEscStep, judgeFabReturn, judgeRowToggle, judgeSwitchRow, judgeTabOut } from './dropdown-menu-keyboard-invariant.mjs'
 
 /** 開關列契約全對的一格(其餘格各改一個欄位) */
 const SW_OK = { role: 'menuitemcheckbox', ariaChecked: 'false', switchState: 'unchecked', switchHidden: true, switchFocused: false, switchAfterLabel: true, endGap: 12, endGapMax: 13 }
@@ -66,6 +66,18 @@ const cases = [
   ['整列切換:開關沒跟著翻', judgeRowToggle({ before: 'true', after: 'false', openAfter: 1, switchStateAfter: 'checked' }), 'fail'],
   ['整列切換:切換後 aria-checked 量不到', judgeRowToggle({ before: 'true', after: null, openAfter: 1, switchStateAfter: 'checked' }), 'instrument'],
   ['整列切換:層數量不到', judgeRowToggle({ before: 'true', after: 'false', openAfter: Number.NaN, switchStateAfter: 'unchecked' }), 'instrument'],
+  // ── 單選 Chip 溢出選單(2026-11-27,規則 B)──
+  ['Chip 單選選單:全是 menuitem、一項選中底色 = 目前那類', judgeChipSingleMenu({ items: 8, checkboxItems: 0, checkboxes: 0, selectedTexts: ['設計規範'], chipOnText: '設計規範' }), 'pass'],
+  ['Chip 單選選單:舊長相 —— 全是勾選項', judgeChipSingleMenu({ items: 0, checkboxItems: 8, checkboxes: 0, selectedTexts: ['設計規範'], chipOnText: '設計規範' }), 'fail'],
+  ['Chip 單選選單:選單裡還有勾選框', judgeChipSingleMenu({ items: 8, checkboxItems: 0, checkboxes: 8, selectedTexts: ['設計規範'], chipOnText: '設計規範' }), 'fail'],
+  ['Chip 單選選單:沒有任何一項帶選中底色', judgeChipSingleMenu({ items: 8, checkboxItems: 0, checkboxes: 0, selectedTexts: [], chipOnText: '設計規範' }), 'fail'],
+  ['Chip 單選選單:選中底色在別的項', judgeChipSingleMenu({ items: 8, checkboxItems: 0, checkboxes: 0, selectedTexts: ['全部'], chipOnText: '設計規範' }), 'fail'],
+  ['Chip 單選選單:選單是空的(量不到項目)', judgeChipSingleMenu({ items: 0, checkboxItems: 0, checkboxes: 0, selectedTexts: [], chipOnText: '設計規範' }), 'instrument'],
+  ['Chip 單選選單:目前選中的 chip 量不到', judgeChipSingleMenu({ items: 8, checkboxItems: 0, checkboxes: 0, selectedTexts: ['設計規範'], chipOnText: null }), 'instrument'],
+  ['Chip 單選選了一項:選單關、chip 選中', judgeChipSinglePick({ openAfter: 0, chipOnText: '工程筆記', picked: '工程筆記' }), 'pass'],
+  ['Chip 單選選了一項:選單沒關', judgeChipSinglePick({ openAfter: 1, chipOnText: '工程筆記', picked: '工程筆記' }), 'fail'],
+  ['Chip 單選選了一項:chip 沒變', judgeChipSinglePick({ openAfter: 0, chipOnText: '設計規範', picked: '工程筆記' }), 'fail'],
+  ['Chip 單選選了一項:層數量不到', judgeChipSinglePick({ openAfter: null, chipOnText: '工程筆記', picked: '工程筆記' }), 'instrument'],
 ]
 
 let bad = 0
