@@ -1,8 +1,0 @@
-{
-  "schemaVersion": 1,
-  "branch": "feat/batch2-2026-11-24",
-  "update_baseline": true,
-  "reference_ref": "",
-  "reason": "PR #174 依 user 2026-11-27 確認頁回覆修正後重拍:DateGrid 範例拿掉讀數列(dategrid-single / dategrid-range 會變)、Steps 水平線最短 12、行事曆唯讀詳情不畫全天欄、Select 檢視 / 唯讀 / 停用畫選項圖示;其餘場景應與 0d2de1b5 審核包同圖,產出審核包給 user 確認變了的那幾張",
-  "requestedAt": "2026-11-27T09:40:00+08:00"
-}
