@@ -119,6 +119,23 @@ function Panel() { return <div className="w-[640px]"><SurfaceBody/></div> }
 '
 expect_exit "C.1.3 allowlist → silent" 0 ""
 
+# C.1.3b(2026-11-27 r72):CI 重播是 LC_ALL=C;違規行在第 100 個字附近有中文 → 截斷後仍要是合法 UTF-8(以前 awk substr 按位元組切)
+LC_ALL=C LANG=C run_hook "/r/src/app/foo.tsx" '
+function Panel() {
+  return (
+    <div className="w-[640px]" aria-label="選擇要匯出的欄位與格式設定面板選擇要匯出的欄位與格式設定面板選擇要匯出的欄位">
+      <SurfaceBody>y</SurfaceBody>
+    </div>
+  )
+}
+'
+if [ "$EXIT" = "2" ] && printf '%s' "$STDERR_TEXT" | python3 -c 'import sys; sys.stdin.buffer.read().decode("utf-8")' 2>/dev/null \
+  && printf '%s' "$STDERR_TEXT" | grep -qF 'aria-label="選擇'; then
+  echo "  PASS  C.1.3b LC_ALL=C 下截斷含中文的違規行 → 合法 UTF-8"; PASS=$((PASS+1))
+else
+  echo "  FAIL  C.1.3b LC_ALL=C 下截斷含中文的違規行 → 不是合法 UTF-8 或沒擋(exit=$EXIT)"; FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - C.1.3b"
+fi
+
 # 該放:shadow-[…] 不是寬度(2026-11-21 前子字串 /w-\[/ 把 sha-dow-[ 當固定寬;
 #   FileItem / header-canonical 兩支故事的卡片示意因此命中)
 run_hook "/r/packages/design-system/src/components/FileItem/file-item.principles.stories.tsx" '
@@ -418,6 +435,18 @@ run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
 const x = <div className="hover:bg-neutral-selected-active" />
 '
 expect_exit "C.6.6 @token-state-allow 豁免 → silent" 0 ""
+
+# 2026-11-27 r72:豁免要冒號 + 理由才算(以前檔內只要出現標記字串就放行,空理由、只在說明裡提到也過)
+run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
+// @token-state-allow
+const x = <div className="hover:bg-neutral-selected-active" />
+'
+expect_exit "C.6.6b 沒冒號沒理由的 @token-state-allow → 照擋" 2 ""
+run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
+{/* @token-state-allow: */}
+const x = <div className="hover:bg-neutral-selected-active" />
+'
+expect_exit "C.6.6c 空理由的 @token-state-allow: → 照擋" 2 ""
 
 # 2026-09-26 bug 形狀:輸入是含反引號的 template literal,而 hook 的訊息 heredoc 裡也有反引號。
 # 原本 heredoc 那行寫成兩個反斜線,反引號被當成指令替換 → 訊息在「例外」那行斷掉並印 syntax error。

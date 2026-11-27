@@ -187,6 +187,11 @@ def should_check(path):
         return False
     return normalized.endswith((".ts", ".tsx"))
 
+# 逐行豁免(2026-11-27 r72;以前這條沒有任何出口):import 那一行或它上一行寫 `@exploration-import-ok: <理由>`
+# (例:暫時把比稿頁接進產品 demo 給 stakeholder 看)。冒號後要有理由,只寫冒號或只剩註解收尾照擋。
+EXPLORATION_IMPORT_OK = re.compile(r'@exploration-import-ok:[ \t]*(?!\*/|-->)\S')
+
+
 def contains_exploration_import(content):
     patterns = [
         r'from\s+[\'"].*src/explorations/.*[\'"]',
@@ -194,7 +199,15 @@ def contains_exploration_import(content):
         r'import\s+[\'"].*src/explorations/.*[\'"]',
         r'import\s+[\'"].*explorations/.*[\'"]'
     ]
-    return any(re.search(p, content) for p in patterns)
+    lines = content.split('\n')
+    for index, line in enumerate(lines):
+        if not any(re.search(p, line) for p in patterns):
+            continue
+        previous = lines[index - 1] if index > 0 else ''
+        if EXPLORATION_IMPORT_OK.search(line) or EXPLORATION_IMPORT_OK.search(previous):
+            continue
+        return True
+    return False
 
 def main():
     event = load_event()
@@ -232,6 +245,10 @@ def main():
             "Blocked: 正式程式碼不得 import src/explorations/ 內的檔案。"
         ]
         lines.extend(f"- {p}" for p in offenders)
+        lines.append(
+            "有合理理由(例:暫時把比稿頁接進產品 demo)可自行豁免:在那一行 import 或它上一行寫 "
+            "// @exploration-import-ok: <理由>(理由必填;不必等 DS 同意,DS 會定期看豁免清單補情境)。"
+        )
         print("\n".join(lines), file=sys.stderr)
         sys.exit(2)
 

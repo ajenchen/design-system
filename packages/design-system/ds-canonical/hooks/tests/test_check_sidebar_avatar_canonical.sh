@@ -368,6 +368,29 @@ chmod +x "$POISON_BIN/python3"
 run_hook "$APP_FILE" "$BOTH_DRIFT" "content" "Write" "PreToolUse" PATH="$POISON_BIN:$PATH"
 expect_integrity "C-7. parser 失敗 → GOVERNANCE_INTEGRITY exit 70(fail closed)"
 
+# ── E-series(2026-11-27 r72):逐處豁免,附理由放行、空理由 / 沒標記照擋(CI 重播不帶 env,以前兩條只有 env 出口)──
+echo "--- E 逐處豁免 ---"
+HEADER_EXEMPT=$'<SidebarHeader>\n  {/* @chrome-header-avatar-ok: 品牌規定標頭用 Item 頭像的圓角版本 */}\n  <ItemAvatar alt="Acme" shape="square" color="blue" solid />\n</SidebarHeader>'
+run_hook "$APP_FILE" "$HEADER_EXEMPT"
+expect_silent "E-1. SidebarHeader 區塊內附理由的 @chrome-header-avatar-ok → 放行"
+HEADER_EXEMPT_ABOVE=$'{/* @chrome-header-avatar-ok: 品牌規定標頭用 Item 頭像的圓角版本 */}\n<SidebarHeader>\n  <ItemAvatar alt="Acme" shape="square" color="blue" solid />\n</SidebarHeader>'
+run_hook "$APP_FILE" "$HEADER_EXEMPT_ABOVE"
+expect_silent "E-2. 區塊上一行附理由的豁免 → 放行"
+HEADER_EXEMPT_EMPTY=$'<SidebarHeader>\n  {/* @chrome-header-avatar-ok: */}\n  <ItemAvatar alt="Acme" shape="square" color="blue" solid />\n</SidebarHeader>'
+run_hook "$APP_FILE" "$HEADER_EXEMPT_EMPTY"
+expect_block "E-3. 空理由的 @chrome-header-avatar-ok → 照擋" "$R1_NEEDLE"
+HEADER_EXEMPT_OTHER=$'{/* @chrome-header-avatar-ok: 只豁免第一個標頭 */}\n<SidebarHeader>\n  <ItemAvatar alt="A" />\n</SidebarHeader>\n<div />\n<div />\n<SidebarHeader>\n  <ItemAvatar alt="B" />\n</SidebarHeader>'
+run_hook "$APP_FILE" "$HEADER_EXEMPT_OTHER"
+expect_block "E-4. 豁免只管它所在 / 緊接的那一個區塊,另一個標頭照擋" "$R1_NEEDLE"
+WRAP_EXEMPT=$'<SidebarMenuButton id="acct">\n  {/* @sidebar-menu-button-wrap-ok: 唯讀展示列,頭像與名字刻意上下排 */}\n  <Avatar alt="x" />\n  <span>Ada</span>\n</SidebarMenuButton>'
+run_hook "$USER_FOOTER" "$WRAP_EXEMPT"
+expect_silent "E-5. SidebarMenuButton 區塊內附理由的 @sidebar-menu-button-wrap-ok → 放行"
+WRAP_EXEMPT_EMPTY=$'<SidebarMenuButton id="acct">\n  {/* @sidebar-menu-button-wrap-ok:   */}\n  <Avatar alt="x" />\n</SidebarMenuButton>'
+run_hook "$USER_FOOTER" "$WRAP_EXEMPT_EMPTY"
+expect_block "E-6. 空理由的 @sidebar-menu-button-wrap-ok → 照擋" "$R2_NEEDLE"
+run_hook "$USER_FOOTER" "$DRIFT_AVATAR"
+expect_block "E-7. 對照:沒標記 → 照擋,訊息教怎麼豁免" "@sidebar-menu-button-wrap-ok: <理由>"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

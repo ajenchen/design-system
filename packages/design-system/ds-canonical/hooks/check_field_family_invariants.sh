@@ -32,6 +32,8 @@
 #   A.4: `// @disabled-color-allow: <reason>`(寫完的整份檔任一行;Edit / MultiEdit 看原檔套上改動後的樣子)
 #   A.5: `// @group-fieldctx-allow: <reason>`
 #   A.6: `// @empty-display-allow: <reason>`
+#   (2026-11-27 r72:A.1 / A.3 / A.4 / A.5 / A.6 的豁免一律要「冒號 + 理由」才算 —— 以前檔內只要出現標記字串就放行,
+#    空理由、只在說明文字裡提到標記名也過;A.2 本來就要理由。理由必填、空理由照擋)
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 
@@ -146,7 +148,7 @@ case "$FILE_PATH" in
     case "$FILE_PATH" in
       */field-wrapper.tsx|*/textarea.tsx) ;; # SSOT host skip
       *)
-        if ! grep -q '@naked-row-mode-allow' <<<"$MERGED_CONTENT" \
+        if ! grep -q '@naked-row-mode-allow:[[:space:]]*[^[:space:]*]' <<<"$MERGED_CONTENT" \
            && echo "$MERGED_CONTENT" | grep -E "variant:\s*['\"]naked['\"]|variant=\{?['\"]naked['\"]" >/dev/null \
            && echo "$MERGED_CONTENT" | tr '\n' ' ' | grep -E "(inline-flex|flex)[^\"'\`]*items-center" >/dev/null \
            && ! grep -q "nakedCellRowModeAlign" <<<"$MERGED_CONTENT"; then
@@ -237,7 +239,7 @@ case "$FILE_PATH" in
     case "$FILE_PATH" in
       */field-wrapper.tsx|*/textarea.tsx|*.stories.tsx|*.test.*|*.spec.tsx) ;; # SSOT/test skip
       *)
-        if ! grep -q '@field-state-ring-allow' <<<"$NEW_CONTENT"; then
+        if ! grep -q '@field-state-ring-allow:[[:space:]]*[^[:space:]*]' <<<"$NEW_CONTENT"; then
           # A.3.1 舊 box-shadow inset
           if echo "$NEW_CONTENT" | grep -E "(hover|focus-within|data-\[state=open\]|data-\[field-open\]):shadow-\[inset" >/dev/null; then
             cat >&2 <<'EOF'
@@ -307,7 +309,7 @@ esac
 case "$FILE_PATH" in
   *.stories.tsx|*.test.*|*.spec.tsx) ;; # story / test skip(同 A.3.1 / A.3.2)
   *)
-    if ! grep -q '@field-state-ring-allow' <<<"$NEW_CONTENT"; then
+    if ! grep -q '@field-state-ring-allow:[[:space:]]*[^[:space:]*]' <<<"$NEW_CONTENT"; then
       # 純註解行剝離(2026-06-11 deep-audit R2:retire 註解會引用舊 pattern 文字)
       A33_CODE=$(printf '%s\n' "$NEW_CONTENT" | grep -vE '^[[:space:]]*(//|\*|/\*)')
       # 同一個 class 裡,變體之後到 utility 之前的那一段:不跨空白與引號,允許中間再夾變體與 `!`
@@ -484,7 +486,7 @@ if [ "$A4_MUTED_HIT" = 1 ] || [ "$A4_SPAN_HIT" = 1 ]; then
       A4_AFTER="$MERGED_CONTENT"
     fi
   fi
-  if ! grep -q '@disabled-color-allow' <<<"$A4_AFTER"; then
+  if ! grep -q '@disabled-color-allow:[[:space:]]*[^[:space:]*]' <<<"$A4_AFTER"; then
     SUSPECT_DP=""
     if [ "$A4_MUTED_HIT" = 1 ] \
        && ! echo "$A4_AFTER" | grep -E "(disabled:placeholder:text-fg-disabled|group-data-\[field-mode=disabled\].*placeholder:text-fg-disabled|resolvedMode\s*===\s*'disabled'.*text-fg-disabled)" >/dev/null; then
@@ -520,7 +522,7 @@ fi
 #   (3) 缺 `insideGroup ? generatedId` / `inGroup ? generatedId` group guard
 case "$FILE_PATH" in
   *components/*.tsx)
-    if ! grep -q '@group-fieldctx-allow' <<<"$MERGED_CONTENT" \
+    if ! grep -q '@group-fieldctx-allow:[[:space:]]*[^[:space:]*]' <<<"$MERGED_CONTENT" \
        && grep -qE 'useContext\([A-Za-z_]*GroupContext\)' <<<"$MERGED_CONTENT" \
        && grep -qE 'idProp[[:space:]]*\?\?[[:space:]]*fieldCtx\?\.id[[:space:]]*\?\?[[:space:]]*generatedId' <<<"$MERGED_CONTENT" \
        && ! grep -qE '(insideGroup|inGroup)[[:space:]]*\?[[:space:]]*generatedId' <<<"$MERGED_CONTENT"; then
@@ -554,7 +556,7 @@ esac
 #   A.6.2 components/ tsx display 路徑 hardcode 全形 em dash `'—'`/`"—"`(U+2014)字面。
 # M7 broad-vs-narrow:spec wording 廣(「禁 hardcode 空值符號」);hook 取「quoted em dash 字面」
 #   高信號 subset + owner skip + comment 剝離 + `@empty-display-allow` escape,零誤判導向。
-if ! grep -q '@empty-display-allow' <<<"$NEW_CONTENT"; then
+if ! grep -q '@empty-display-allow:[[:space:]]*[^[:space:]*]' <<<"$NEW_CONTENT"; then
   # A.6.1 非 owner 檔 import EMPTY_DISPLAY 常數(剝離註解行)
   case "$FILE_PATH" in
     */field-context.ts|*/field-wrapper.tsx) ;; # SSOT owner(定義 + 分流 hook)skip

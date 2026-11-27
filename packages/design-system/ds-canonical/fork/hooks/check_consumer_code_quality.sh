@@ -92,12 +92,33 @@ SHADCN_ALIASES=$(jq -er --arg owner "$CANONICAL_REGISTRY_OWNER" '
 ' "$REGISTRY" 2>/dev/null) || {
   governance_hook_integrity_fail 'consumer quality canonical alias registry is invalid'
 }
+# 逐行豁免(2026-11-27 r72;以前這條沒有任何出口):用到別名的每一行,同一行或上一行寫
+# `@shadcn-alias-ok: <理由>`(冒號後至少 8 個字,與本檔 has_rationale 同一個門檻)。判定照舊用去註解後的 BODY;
+# 豁免要「每一個用到該別名的程式行」都有標記才算,一行沒有就照擋(只出現在行尾註解、沒有程式行 = 不算豁免,照舊擋)。
+ALIAS_MASKED=$(governance_mask_comments < "$FILE_PATH") \
+  || governance_hook_integrity_fail 'consumer quality alias comment mask failed'
 while IFS= read -r ALIAS; do
   printf '%s' "$ALIAS" | grep -Eq '^[a-z][a-z0-9-]*$' || {
     governance_hook_integrity_fail 'consumer quality canonical alias registry is unsafe'
   }
   if grep -Eq "(^|[^A-Za-z0-9_-])${ALIAS}([^A-Za-z0-9_-]|$)" <<<"$BODY"; then
-    add_violation "shadcn compatibility alias ${ALIAS}; consume the direct design-system semantic token"
+    ALIAS_EXEMPT=$(ORIG_PATH="$FILE_PATH" ALIAS_NAME="$ALIAS" perl -e '
+      open(my $fh, "<", $ENV{ORIG_PATH}) or exit 3;
+      my @orig = <$fh>; close $fh;
+      my @masked = split /\n/, do { local $/; my $m = <STDIN>; defined $m ? $m : "" }, -1;
+      my $alias = quotemeta $ENV{ALIAS_NAME};
+      my $ok = qr/\@shadcn-alias-ok:\s*(?!\*\/)\S.{7,}/;
+      my ($seen, $all) = (0, 1);
+      for my $i (0 .. $#orig) {
+        my $code = defined $masked[$i] ? $masked[$i] : "";
+        next unless $code =~ /(^|[^A-Za-z0-9_-])$alias([^A-Za-z0-9_-]|$)/;
+        $seen = 1;
+        $all = 0 unless $orig[$i] =~ $ok || ($i > 0 && $orig[$i - 1] =~ $ok);
+      }
+      print(($seen && $all) ? "exempt" : "");
+    ' <<< "$ALIAS_MASKED" 2>/dev/null) || governance_hook_integrity_fail 'consumer quality alias exemption parser failed'
+    [ "$ALIAS_EXEMPT" = exempt ] \
+      || add_violation "shadcn compatibility alias ${ALIAS}; consume the direct design-system semantic token(真有理由:那一行或上一行寫 // @shadcn-alias-ok: <至少 8 個字的理由>)"
   fi
 done <<< "$SHADCN_ALIASES"
 
@@ -129,7 +150,7 @@ if printf '%s' "$FILE_PATH" | grep -qE '\.tsx$'; then
     || governance_hook_integrity_fail 'consumer quality line counter failed'
   FILE_HEAD=$(sed -n '1,20p' "$FILE_PATH")
   if [ "${LINES:-0}" -gt 800 ] && ! grep -Eq 'code-quality-allow:[[:space:]]*file-size[[:space:]]+.{8,}' <<<"$FILE_HEAD"; then
-    add_violation "tsx file has ${LINES} lines (>800) without a reasoned file-size exception"
+    add_violation "tsx file has ${LINES} lines (>800) without a reasoned file-size exception(真有理由:檔案前 20 行寫 // code-quality-allow: file-size <至少 8 個字的理由>)"
   fi
 fi
 
@@ -152,7 +173,7 @@ fi
 OVERLAY=$(printf '%s' "$OVERLAY_BODY" | perl -0777 -ne 'print "hit" if /<div\b[^>]*className="(?=[^"]*px-\[var\(--layout-space-loose\)\])(?=[^"]*border-(?:b|t))(?=[^"]*border-divider)[^"]*"/s') \
   || governance_hook_integrity_fail 'consumer quality overlay parser failed'
 if [ -n "$OVERLAY" ] && ! has_rationale 'overlay-handcraft-allow'; then
-  add_violation 'hand-crafted overlay chrome; consume Popover/Dialog/Sheet/Surface header/body/footer primitives(頁面內不可關閉的有框區塊標頭不在此限:直接寫在 rounded-md + border 區塊最上方、不在浮層裡,由你用 typography + token + item anatomy 自組,見 header-canonical.spec.md「何時不用」)'
+  add_violation 'hand-crafted overlay chrome; consume Popover/Dialog/Sheet/Surface header/body/footer primitives(頁面內不可關閉的有框區塊標頭不在此限:直接寫在 rounded-md + border 區塊最上方、不在浮層裡,由你用 typography + token + item anatomy 自組,見 header-canonical.spec.md「何時不用」;真有理由:檔內寫 // @overlay-handcraft-allow: <至少 8 個字的理由>)'
 fi
 
 # 滑過底色認任何 `-hover` 配對 token(2026-09-25;color.spec.md「Hover 換色配對總則」:有自己靜止底色的列換成那個底自己的 -hover,
@@ -160,14 +181,14 @@ fi
 RAW_ROW=$(printf '%s' "$BODY" | perl -0777 -ne 'print "hit" if /<div\b[^>]*className="(?=[^"]*\bflex\b)(?=[^"]*\bgap-[12]\b)(?=[^"]*px-\[var\(--layout-space-loose\)\])(?=[^"]*hover:!?bg-(?:\[var\(--)?[a-z0-9-]+-hover\b)(?=[^"]*rounded)[^"]*"/s') \
   || governance_hook_integrity_fail 'consumer quality row parser failed'
 if [ -n "$RAW_ROW" ] && ! has_rationale 'menu-item-handcraft-allow'; then
-  add_violation 'hand-crafted MenuItem-like row; consume the DS row/menu primitive'
+  add_violation 'hand-crafted MenuItem-like row; consume the DS row/menu primitive(真有理由:檔內寫 // @menu-item-handcraft-allow: <至少 8 個字的理由>)'
 fi
 
 if grep -q 'h-\[var(--chrome-header-height)\]' <<<"$FLAT" \
   && grep -q 'border-b' <<<"$FLAT" \
   && grep -q 'border-divider' <<<"$FLAT" \
   && ! has_rationale '@chrome-header-handcraft-allow'; then
-  add_violation 'hand-crafted chrome header; consume ChromeHeader'
+  add_violation 'hand-crafted chrome header; consume ChromeHeader(真有理由:檔內寫 // @chrome-header-handcraft-allow: <至少 8 個字的理由>)'
 fi
 
 if grep -Eq 'layout="primary-header"|layout=\{('\''|")primary-header('\''|")\}' <<<"$BODY"; then
@@ -183,7 +204,9 @@ if grep -Eq 'layout="primary-header"|layout=\{('\''|")primary-header('\''|")\}' 
   if grep -Eq '<SidebarFooter([^A-Za-z]|$)' <<<"$BODY"; then
     PRIMARY="${PRIMARY}\n- primary-header account entry belongs in the global header (or the Menu overlay header), not SidebarFooter"
   fi
-  if [ -n "$PRIMARY" ] && ! has_rationale '@app-shell-primary-header-allow'; then VIOLATIONS="${VIOLATIONS}${PRIMARY}"; fi
+  if [ -n "$PRIMARY" ] && ! has_rationale '@app-shell-primary-header-allow'; then
+    VIOLATIONS="${VIOLATIONS}${PRIMARY}\n- (真有理由:檔內寫 // @app-shell-primary-header-allow: <至少 8 個字的理由>)"
+  fi
 fi
 
 # 帳號入口 duplicate(2026-07-30 WM F9 layer 3;app-shell.spec.md「帳號入口放置 SSOT」:帳號入口只能出現一次)。

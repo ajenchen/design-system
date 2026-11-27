@@ -7,7 +7,7 @@
     {
       "schemaVersion": 1,
       "file": "AGENTS.md",
-      "sha256": "9ae94e3c9f0c8890045b3ab266a22a65ece89303b1be2661ee57c86bd4c7faf6",
+      "sha256": "bbf0081860e7f4cba3d38e76358c0fa266336d37f2e6af4745b25c4f1047a769",
       "source": "common instruction compatibility alias",
       "classification": null,
       "destination": null
@@ -279,7 +279,7 @@
     {
       "schemaVersion": 1,
       "file": "common/instruction.md",
-      "sha256": "9ae94e3c9f0c8890045b3ab266a22a65ece89303b1be2661ee57c86bd4c7faf6",
+      "sha256": "bbf0081860e7f4cba3d38e76358c0fa266336d37f2e6af4745b25c4f1047a769",
       "source": "scripts/fork-role-sources/AGENTS.product.md + AGENTS.md#canonical-decision-authority",
       "classification": null,
       "destination": null
@@ -287,7 +287,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/governance-check.mjs",
-      "sha256": "8d44e109b42a3032cf4d44d6408e0632e2ce45da1e3ec64cdc19954595c634ab",
+      "sha256": "ef727a964f344ec56701c4ee90c6a39fef2ed71f2404a083cfc903f851e8a676",
       "source": "scripts/governance-check.mjs",
       "classification": null,
       "destination": null
@@ -535,7 +535,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/884721550b56308812b20917adac7a12f36fdb4ecda6b02460a7f5a219c0c966.blob",
-      "sha256": "955302d1bc717728ebf34beb12a7ffe1f10ba0517fc5160520571d859d774a87",
+      "sha256": "8632a37f4290fa807abdb663e5164c1ffac9ad57a55a70600eafae9eab1e88ad",
       "source": "packages/design-system/ds-canonical/templates/consumer-governance.md",
       "classification": null,
       "destination": "governance/consumer-governance.md"
@@ -711,7 +711,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/block_prototype_imports.py",
-      "sha256": "f7d87dcc8dde09966c057ff1872fd67921e9f3a33d210cbc63115ff15b3ab05c",
+      "sha256": "62bf007a3233b7fdef41bcd6886d699408d6cfcd228585c785fd052eb615218b",
       "source": "block_prototype_imports.py",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -719,7 +719,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_app_invariants.sh",
-      "sha256": "08c593d902433ce7d7225fd1188905e1aaccce5ca643318cbc881237f1209ff8",
+      "sha256": "02ced5c29912dd228a835dae0270df5e8e65544e3a06f6ae4841b9278c7ce2f1",
       "source": "check_consumer_app_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -727,7 +727,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_code_quality.sh",
-      "sha256": "1a0c4309dd8db8c634e3dd269222398f0e177f868983a61f0b5e9efddff27f69",
+      "sha256": "44316d899454b93480202003ea3979510bbbfd0f791d5b10da792986fab470e6",
       "source": "check_consumer_code_quality.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -735,7 +735,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_ds_anchor_preflight.sh",
-      "sha256": "662601810cbe61171812be08925c653feba49139b7271e67f202547b3ebd6f06",
+      "sha256": "e1ffd921e1e90548fcae6ce3ab37b3690ea2f5a985f173ec5d623ae9e4594cce",
       "source": "check_ds_anchor_preflight.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -743,7 +743,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_dynamic_tailwind_class.sh",
-      "sha256": "34fd55dd1195d0cf36ffab3168547dd84a6f58a7f6bcfa9dde88194c1b8dca25",
+      "sha256": "b6848d1cd573ded8ff75adb25b825e4fadda305d5ed5ebf439c87a5eda1f0dfd",
       "source": "check_dynamic_tailwind_class.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -751,7 +751,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_escape_marker_abuse.sh",
-      "sha256": "d360dcc99d6619ff111114fa199785f47d7c35b5658c7a25c5ad66b8e3c0ced4",
+      "sha256": "8b40bc49fe79a999e168af575def33bda0efc4ac3bf03816c4322d3ed100b224",
       "source": "check_escape_marker_abuse.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -759,7 +759,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_field_family_invariants.sh",
-      "sha256": "82361f00cc9729d3171908b0e322a8c1c0b8d3bc3700cbf10c678e03fd616af9",
+      "sha256": "013842c95bbe87f99f8f100c5c77120f9ea006d4337d170504101ae730faef7c",
       "source": "check_field_family_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -799,7 +799,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_pattern_invariants.sh",
-      "sha256": "af9b3cab24f4d8e04101d2af11e7a65b090ea125d3a1e98129b1018a13dd3228",
+      "sha256": "fc19ea6ee49dfea327e633b0bdda16370cc5329cc6cb033bd4d11673ee03426f",
       "source": "check_pattern_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -807,7 +807,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_sidebar_avatar_canonical.sh",
-      "sha256": "d24c3d004e85c2cd49ed4e7d03617e216caf81a5954dcd5d407d13b78c656179",
+      "sha256": "305480790d2f6d71e09e324b75e67b655c7f92173e68ec3fb1f0c75622fe1fac",
       "source": "check_sidebar_avatar_canonical.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -839,7 +839,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_tailwind_wildcard_in_docs.sh",
-      "sha256": "c092d716135c905da757b8c3ac9508091b24e5f58dada132e0c6d08349f43410",
+      "sha256": "09c9a1050d346a6d0b79e6068db39a4d6ebfde5fcd59a011a9149533f6095159",
       "source": "check_tailwind_wildcard_in_docs.sh",
       "classification": "SHIP_AS_IS",
       "destination": null

@@ -3333,6 +3333,36 @@ evidence.contentDebt = {
   staleEntries: contentDebtStale.length,
   registrations: (contentDebtBaseline?.registrations || []).map((registration) => ({ ...registration })),
 }
+// 豁免清單(2026-11-27 r72;user 同日 model2 留言「當消費者有合理的理由想要修正應該也要給予可以調整的空間吧？…
+// 若所有特例都要經過 ds拍板決策同意 那ds的事情不是永遠做不完嗎？」,交接資料夾 notes/decisions/morning-151-answers.md)。
+// 只讀、不擋、不進 attestationDigest:產品程式碼裡每個「標記: 理由」形狀的豁免,依標記名計數,讓 DS 定期回看哪些規則常被豁免、
+// 回頭補規格沒想到的情境。evidence.exemptions 有逐筆清單(檔:行 + 理由);文字模式印一行各規則被豁免幾次。
+const EXEMPTION_MARKER_PATTERN = /(?:@((?:[a-z][a-z0-9]*-)+(?:ok|allow|skip))|(?<![\w@-])(any-allow|code-quality-allow|overlay-handcraft-allow|menu-item-handcraft-allow)):/g
+const exemptionEntries = []
+for (const file of sourceFiles) {
+  const rel = relative(repo, file).replaceAll('\\', '/')
+  if (!/\.(?:[cm]?[jt]sx?|css)$/.test(rel)) continue
+  let text
+  try {
+    text = readFileSync(file, 'utf8')
+  } catch {
+    continue
+  }
+  text.split(/\r?\n/).forEach((line, index) => {
+    for (const match of line.matchAll(EXEMPTION_MARKER_PATTERN)) {
+      const reason = line.slice(match.index + match[0].length).split(/\*\/|-->/)[0].trim().replace(/\}+$/, '').trim()
+      exemptionEntries.push({ file: rel, line: index + 1, marker: match[1] || match[2], reason })
+    }
+  })
+}
+const exemptionsByMarker = {}
+for (const entry of exemptionEntries) exemptionsByMarker[entry.marker] = (exemptionsByMarker[entry.marker] || 0) + 1
+evidence.exemptions = {
+  total: exemptionEntries.length,
+  files: new Set(exemptionEntries.map((entry) => entry.file)).size,
+  byMarker: Object.fromEntries(Object.entries(exemptionsByMarker).sort(([a, x], [b, y]) => y - x || compareUtf8Bytes(a, b))),
+  entries: exemptionEntries,
+}
 // 每一格「目前有、基準沒有」的發現:--list 印的、--record 登記的、GOV-CONTENT-001 / 003 擋的,都是這同一個集合。
 const contentDebtUnrecorded = () => [...contentDebtObserved.keys()].sort(compareUtf8Bytes).flatMap((key) => {
   const observed = contentDebtObserved.get(key)
@@ -3538,6 +3568,10 @@ if (asJson) process.stdout.write(JSON.stringify(report, null, 2) + '\n')
 else {
   console.log(`${ok ? '✅' : '❌'} provider-neutral governance check: ${ok ? 'PASS' : 'FAIL'} (${diagnostics.length} diagnostics)`)
   console.log(`   attestationDigest: ${attestationDigest}`)
+  if (evidence.exemptions.total > 0) {
+    const counts = Object.entries(evidence.exemptions.byMarker).map(([marker, count]) => `${marker} ×${count}`).join('、')
+    console.log(`   exemptions: ${evidence.exemptions.total} 個豁免標記、${evidence.exemptions.files} 個檔(${counts});逐筆(檔:行 + 理由)在 --json 的 evidence.exemptions`)
+  }
   for (const item of diagnostics) console.log(`   ${item.severity} ${item.ruleId}: ${item.message}${item.evidence ? ` (${item.evidence})` : ''}`)
 }
 // 2026-11-27(產品 canary 回報):stdout 是管線時 process.stdout.write 是非同步的,寫完立刻 process.exit() 會丟掉

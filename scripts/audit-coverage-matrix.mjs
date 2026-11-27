@@ -138,7 +138,7 @@ const COVERAGE = {
   73: { tier: 'HOOK-ENFORCED', mechanism: 'check_full_story_visual_interaction_sweep.sh(length === manifest.totalStories,sample = reject)' },
   74: { tier: 'HOOK-ENFORCED', mechanism: 'check_overlay_open_focus_escape_probe.sh BLOCKER' },
   75: { tier: 'DETERMINISTIC', mechanism: deterministicMechanism(75) + ';npm run test:setup-governance(scripts/test-setup-governance.mjs)驗 setup:all 依 committed exact lock 安裝、驗簽、高風險 audit 後才跑已安裝的 hooks-off checker,缺 lock / 多一份 shrinkwrap / 設定注入一律在安裝前擋;版本漂移由 checker 的 GOV-VERSION / GOV-PACKAGE-LOCK / GOV-SUPPLY / GOV-DEPS 擋。這一面只在夜間 governance-harnesses.yml 跑,PR 必過跑不到。2026-11-21 前另有 check_plugin_fork_health.sh 的 r2(legacy Claude plugin marketplace 版本差異提示,自述 non-authoritative),已 retired:只在 Claude + plugin + fork 才會跑,而 plugin 在非 ds-author target 一律不跑' },
-  76: { tier: 'HOOK-ENFORCED', mechanism: 'check_escape_marker_abuse.sh(≥3 distinct OR ≥5 total BLOCK [consumer] + per-line justification gate 空理由 BLOCK [consumer+DS] + 廣義 *-allow regex,2026-05-31)' },
+  76: { tier: 'HOOK-ENFORCED', mechanism: 'check_escape_marker_abuse.sh(≥3 distinct OR ≥5 total = 超過額度 [consumer]:2026-11-27 起超過時理由 ≥10 字且不重複才放行,否則 BLOCK + per-line justification gate 空理由 BLOCK [consumer+DS] + -allow / -ok / -skip 三種字尾,2026-05-31 / 2026-11-27)' },
   77: { tier: 'DETERMINISTIC', mechanism: deterministicMechanism(77) },
   78: { tier: 'HOOK-ENFORCED', mechanism: 'check_codex_brief_invariants.sh 4th invariant(禁列檔)' },
   79: { tier: 'HOOK-ENFORCED', mechanism: 'check_tailwind_wildcard_in_docs.sh P0 BLOCKER' },

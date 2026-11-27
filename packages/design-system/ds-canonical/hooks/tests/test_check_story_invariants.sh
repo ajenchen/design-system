@@ -637,6 +637,46 @@ run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/compone
 '
 expect_pass_silent "28j. R12 Button 自家展示場 → 不檢查"
 
+# 28k–28n(2026-11-27 r72):同一個元素帶 danger 的 secondary 是 button.spec.md:228 明文允許的組合 → 不算;照元素判
+# 28k. 單行 variant="secondary" danger → silent
+run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/Dialog/dialog.principles.stories.tsx" '
+<Button variant="secondary" danger startIcon={Trash2}>永久刪除專案</Button>
+'
+expect_pass_silent "28k. R12 secondary + danger(單行)→ silent"
+# 28l. 跨行的開始標籤,danger 在下一行(中間還有含 > 的箭頭函式)→ silent
+run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/FileViewer/file-viewer.principles.stories.tsx" '
+<Button
+  variant="secondary"
+  onClick={() => setOpen(n => n > 0)}
+  danger
+  startIcon={Trash2}
+>
+  刪除檔案
+</Button>
+'
+expect_pass_silent "28l. R12 secondary + danger(跨行元素)→ silent"
+# 28m. 對照:danger 在旁邊另一個元素(不是同一個)→ 照擋
+run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/Toast/toast.stories.tsx" '
+<Button variant="secondary" onClick={fire}>複製檔案</Button>
+<Button variant="text" danger>刪除</Button>
+'
+expect_block "28m. R12 danger 在別的元素 → P0 block" "R12 secondary_variant_pair"
+# 28n. 對照:danger={false} 不算 danger → 照擋
+run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/Toast/toast.stories.tsx" '
+<Button variant="secondary" danger={false}>複製檔案</Button>
+'
+expect_block "28n. R12 danger={false} → P0 block" "R12 secondary_variant_pair"
+# 28o. 對照(規格核對 E1):danger 只出現在字串值裡(aria-label)/ 別的屬性的運算式裡 → 不是 danger 屬性 → 照擋
+run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/Toast/toast.stories.tsx" '
+<Button variant="secondary" aria-label="danger zone 設定" onClick={() => warn(danger)}>設定</Button>
+'
+expect_block "28o. R12 danger 只在字串 / 運算式裡 → P0 block" "R12 secondary_variant_pair"
+# 28p. danger={isRisky}(動態)仍是 danger 屬性 → silent
+run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/Toast/toast.stories.tsx" '
+<Button variant="secondary" danger={isRisky}>移除成員</Button>
+'
+expect_pass_silent "28p. R12 danger={變數} → silent"
+
 # 29. Multiple PostToolUse warnings from independent rules must become one exact envelope.
 STORIES_MULTI="$TMP_DIR/multi-warning.stories.tsx"
 cat > "$STORIES_MULTI" <<'EOF'

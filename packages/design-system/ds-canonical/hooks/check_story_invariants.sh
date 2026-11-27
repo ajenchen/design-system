@@ -1180,7 +1180,76 @@ rule_secondary_variant_pair() {
   esac
   grep -q '@secondary-pair:' <<< "$NEW_CONTENT" && return 0
   local hits
-  hits=$(grep -nE 'variant="secondary"' <<< "$NEW_CONTENT" || true)
+  # 2026-11-27 r72(協調者追加):同一個 JSX 元素帶 `danger` 的 secondary 不算 —— button.spec.md「danger 組合」表
+  # 明文 `secondary` + `danger` =「有警示意圖，但點下去還可以反悔——後面還有一層確認」(:228),本來就不是「單獨的觸發鈕」。
+  # 照元素判(開始標籤可能跨多行):從 variant="secondary" 往前找到它所在的 `<Tag`,往後找到開始標籤結尾的 `>`
+  #(略過 {…} 與引號裡的 >),標籤裡有 `danger` 屬性(不是 danger={false})才排除。其餘照舊擋。
+  hits=$(printf '%s' "$NEW_CONTENT" | python3 -c '
+import re, sys
+text = sys.stdin.buffer.read().decode("utf-8", "replace")
+# danger 要是「屬性」本身:先把引號字串與 {…} 運算式的內容拿掉再找(aria-label="danger zone" / foo={danger}
+# 裡的字不算 —— 規格核對 E1 對抗樣本),danger={false} 不算 danger。
+danger_attr = re.compile(r"(?:^|\s)danger(?=\s*=\s*\{\}|[\s/>]|$)")
+danger_false = re.compile(r"(?<![\w$.-])danger\s*=\s*\{\s*false\s*\}")
+def scrub(tag):
+    out, depth, quote = [], 0, ""
+    for char in tag:
+        if quote:
+            if char == quote:
+                quote = ""
+            continue
+        if depth == 0 and char in "\"\x27`":
+            quote = char
+            out.append(char)
+            continue
+        if char == "{":
+            depth += 1
+            if depth == 1:
+                out.append(char)
+            continue
+        if char == "}":
+            depth = max(depth - 1, 0)
+            if depth == 0:
+                out.append(char)
+            continue
+        if depth == 0:
+            out.append(char)
+    return "".join(out)
+def has_danger(tag):
+    return bool(danger_attr.search(scrub(tag))) and not danger_false.search(tag)
+def open_tag(pos):
+    start = text.rfind("<", 0, pos)
+    while start >= 0 and not re.match(r"<[A-Za-z]", text[start:start + 2]):
+        start = text.rfind("<", 0, start)
+    if start < 0:
+        return ""
+    depth, quote, index = 0, "", start + 1
+    while index < len(text):
+        char = text[index]
+        if quote:
+            if char == quote:
+                quote = ""
+        elif char in "\"\x27`":
+            quote = char
+        elif char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+        elif char == ">" and depth <= 0:
+            return text[start:index + 1]
+        index += 1
+    return text[start:]
+lines = text.split("\n")
+out = []
+for match in re.finditer(r"variant=\"secondary\"", text):
+    if has_danger(open_tag(match.start())):
+        continue
+    number = text.count("\n", 0, match.start()) + 1
+    entry = f"{number}:{lines[number - 1]}"
+    if not out or out[-1] != entry:
+        out.append(entry)
+sys.stdout.buffer.write("\n".join(out).encode("utf-8"))
+') || governance_hook_integrity_fail 'R12 secondary element parser failed'
   if [ -n "$hits" ]; then
     {
       echo ""

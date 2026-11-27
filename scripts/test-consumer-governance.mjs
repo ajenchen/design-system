@@ -841,6 +841,31 @@ try {
   ) throw new Error(`recorded content debt still blocks or is not reported:${JSON.stringify(baselined.report.diagnostics)}`)
   console.log(`✅ positive: recorded content debt does not block and is reported as recordedContentDebt=${recordedCount}`)
 
+  // 2026-11-27 r72:豁免清單 —— 每次 governance:check 都列出各標記被用幾次(只讀、不擋、不進 attestationDigest)。
+  // 對照組:沒有這個檔時 cat-solid-ok 不在 byMarker 裡;加了之後計數與逐筆(檔:行 + 理由)都對得上。
+  if (baselined.report.evidence?.exemptions?.byMarker?.['cat-solid-ok'] !== undefined) {
+    throw new Error(`exemption census counted a marker that is not in the fixture:${JSON.stringify(baselined.report.evidence?.exemptions)}`)
+  }
+  const exemptionFixture = join(mirror, 'apps/template/src/CampaignBadges.tsx')
+  writeFileSync(exemptionFixture, [
+    '// @cat-solid-ok: 品牌活動色塊,白字對比已量過',
+    'export const SpringBadge = 1 // @cat-solid-ok: 第二處活動色塊,同樣量過對比',
+    'export const LiveClock = 2 /* @nondeterministic-ok: 只在使用者操作後產生,截圖不會出現 */',
+    '',
+  ].join('\n'))
+  const census = runCheck()
+  const exemptions = census.report.evidence?.exemptions
+  if (
+    census.status !== 0
+    || exemptions?.byMarker?.['cat-solid-ok'] !== 2
+    || exemptions?.byMarker?.['nondeterministic-ok'] !== 1
+    || !exemptions.entries.some((entry) => entry.file === 'apps/template/src/CampaignBadges.tsx' && entry.line === 2
+      && entry.marker === 'cat-solid-ok' && entry.reason === '第二處活動色塊,同樣量過對比')
+    || !exemptions.entries.some((entry) => entry.marker === 'nondeterministic-ok' && entry.reason === '只在使用者操作後產生,截圖不會出現')
+  ) throw new Error(`exemption census is missing or miscounted:${census.status}\n${JSON.stringify(exemptions, null, 2)}\n${JSON.stringify(census.report.diagnostics)}`)
+  rmSync(exemptionFixture)
+  console.log('✅ positive: governance:check lists every reasoned exemption and how often each marker is used')
+
   const newPayout = join(mirror, 'apps/template/src/NewPayoutCard.tsx')
   writeFileSync(newPayout, `export const NewPayoutCard = () => <table style={{ padding: '13px', color: '#ff0000' }}><tbody><tr><td>PO-118</td></tr></tbody></table>\n`)
   const newBlocked = expectFailure('GOV-CONTENT-001')

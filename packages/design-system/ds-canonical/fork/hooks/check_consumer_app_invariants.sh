@@ -10,6 +10,11 @@
 # 各規則跑在 pipeline 子 shell:規則內 exit 不中斷其他規則;任一 exit 2 → 整體 exit 2。
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
+# 共用註解遮罩(2026-11-27 r72:r3 的 C24 / C25 對遮掉註解後的內容判,註解裡引用的範例碼不算;豁免標記照舊對原文判)
+source "$(dirname "$0")/lib/_comment_mask.sh" 2>/dev/null || {
+  printf '🚨 GOVERNANCE_INTEGRITY: CONSUMER APP INVARIANTS FAILURE: comment mask helper unavailable\n' >&2
+  exit 70
+}
 
 set -uo pipefail
 INPUT=$(cat 2>/dev/null) || {
@@ -225,6 +230,14 @@ fi
 # 2026-06-03 修(同 R8 bug class):換行→空格 flatten。真實 JSX 屬性跨行(<DS.X\n  size={N}\n/>),
 # grep 逐行 + 各 pattern 用 [^>]+ 跨屬性匹配 → 不 flatten 的話多行 component 靜默繞過全部 anti-pattern 檢查
 # (= BLOCKER false-negative,consumer DS misuse 沒被擋)。[^>]+ 自帶 tag 邊界(遇 > 停),flatten 後不會跨 component。
+# 2026-11-27 r72(workspace 151 實測:apps/agent/src/TAgentPage.tsx 的 JSX 註解裡引用一段範例按鈕碼,被 C24 當成 header 裡
+# 沒寫 size="sm" 的控件):C24 / C25 改對 CODE_CONTENT 判 = 先用 lib/_comment_mask.sh 把 //…、/*…*/、{/*…*/} 換成等長空白
+#(必須在攤平換行之前遮,否則行尾 // 會吃掉後面整份內容),再攤平。豁免標記(@header-control-size-ok 等)照舊對原文 CONTENT 判。
+CODE_CONTENT=$(printf '%s' "$CONTENT" | governance_mask_comments) || {
+  printf '🚨 GOVERNANCE_INTEGRITY: consumer misuse comment mask failed\n' >&2
+  exit 70
+}
+CODE_CONTENT=$(printf '%s' "$CODE_CONTENT" | tr '\n' ' ')
 CONTENT=$(echo "$CONTENT" | tr '\n' ' ')
 
 # Global escape — file-wide allowlist
@@ -232,6 +245,7 @@ if grep -q '@ds-misuse-allow:' <<<"$CONTENT"; then exit 0; fi
 
 # 中和 consumer 自有 local 元件的裸 tag(N6 over-broad guard;shared helper SSOT,對齊 r2_story_baseline)
 CONTENT=$(neutralize_local_tags "$CONTENT")
+CODE_CONTENT=$(neutralize_local_tags "$CODE_CONTENT")
 
 VIOLATIONS=""
 
@@ -602,7 +616,7 @@ PERL_TAG_END='
     }
     return length($t) - 1;
   };'
-HEADER_SIZE_HITS=$(printf '%s' "$CONTENT" | perl -0777 -n -e "$PERL_TAG_END" -e '
+HEADER_SIZE_HITS=$(printf '%s' "$CODE_CONTENT" | perl -MEncode -0777 -n -e "$PERL_TAG_END" -e '
   my $s = $_;
   my @regions;
   while ($s =~ /<(?:DS\.)?(?:Surface|Dialog|Sheet|Popover)Header\b/g) {
@@ -620,7 +634,12 @@ HEADER_SIZE_HITS=$(printf '%s' "$CONTENT" | perl -0777 -n -e "$PERL_TAG_END" -e 
     while ($r =~ /<(?:DS\.)?(Button|Input|Select|SegmentedControl|Combobox)\b/g) {
       my ($name, $q) = ($1, $-[0]); my $e = $tag_end->($r, $q); my $tag = substr($r, $q, $e - $q + 1);
       next if $tag =~ /\bsize=(?:"sm"|\x27sm\x27|\{\s*["\x27]sm["\x27]\s*\})/;
-      (my $show = $tag) =~ s/\s+/ /g; print "$name: " . substr($show, 0, 80) . "\n";
+      # 截斷按字元、不按位元組(2026-11-27 r72:CI 重播 LC_ALL=C,按位元組切會把「釘選」切成半個字 → 輸出不是合法 UTF-8
+      # → governance-check 判成 GOV-CONTENT-002)。先以 UTF-8 解碼(不合法的位元組換成替代字)再切,印前編回 UTF-8。
+      (my $show = $tag) =~ s/\s+/ /g;
+      $show = Encode::decode("UTF-8", $show, Encode::FB_DEFAULT);
+      $show = Encode::encode("UTF-8", substr($show, 0, 80));
+      print "$name: $show\n";
     }
   }
 ' 2>/dev/null) || HEADER_SIZE_HITS='__PARSE_FAILED__'
@@ -636,7 +655,7 @@ fi
 # :211「不要在 item 內放獨立互動元素(如 Button、Switch)—— item 本身就是互動單位」)。DropdownMenuCheckboxItem 不在此列。
 # 開標籤結尾用 PERL_TAG_END(與 C24 同一支,大括號深度):onSelect={() => …} 的 > 不是結尾;自閉合 item 沒有子元素,
 # 只看它自己的屬性(badge={<Switch/>})。子元素範圍 = 開標籤之後到 </DropdownMenuItem> 或下一個 <DropdownMenuItem 為止。
-DROPDOWN_ITEM_CONTROL=$(printf '%s' "$CONTENT" | perl -0777 -n -e "$PERL_TAG_END" -e '
+DROPDOWN_ITEM_CONTROL=$(printf '%s' "$CODE_CONTENT" | perl -0777 -n -e "$PERL_TAG_END" -e '
   my $s = $_; my $hit = 0;
   while ($s =~ /<(?:DS\.)?DropdownMenuItem\b/g) {
     my $p = $-[0]; my $e = $tag_end->($s, $p); my $open = substr($s, $p, $e - $p + 1);

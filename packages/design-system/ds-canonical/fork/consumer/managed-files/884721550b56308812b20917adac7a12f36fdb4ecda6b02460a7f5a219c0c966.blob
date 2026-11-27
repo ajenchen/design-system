@@ -125,6 +125,25 @@ is exactly what `--record` registers. Without the file every content finding blo
 debt; it is not a content-compliance claim. Creating and shrinking it: `docs/01-first-time-setup.md`
 and `docs/04-ds-upgrade.md`.
 
+## Reasoned exemptions
+
+The shipped content checks (write-time hooks and the same hooks replayed by `governance:check` and
+`Verify consumer`) default to the DS norm and block deviations; they are never downgraded to warnings.
+The DS cannot foresee every product situation, so a product with a reasonable cause may exempt one
+place itself without waiting for DS approval:
+
+- Write the marker that the block message names, followed by a colon and a concrete reason, in a
+  comment on that line (or the line directly above), e.g. `// @<rule>-ok: <reason>` or
+  `{/* @<rule>-allow: <reason> */}`. An environment-variable bypass only works at write time; CI never
+  sees it, so the committed marker is the only exemption CI accepts.
+- An empty reason (only the colon, or only a comment closer after it) still blocks.
+- Within the quota (fewer than 3 marker kinds and fewer than 5 markers per file, at most 10 per
+  `apps/<name>`) any reasoned marker passes. Past the quota each marker needs a reason specific to its
+  line: at least 10 characters and not repeated within the same content.
+- Every `governance:check` run lists the exemptions: the text report prints how many times each marker
+  occurs, and `--json` carries every entry (file, line, marker, reason) in `evidence.exemptions`. The DS
+  reviews these lists periodically and turns recurring reasons into spec cases.
+
 ## Verification boundary
 
 Use `npm run governance:check -- --hooks-off` before a PR. A local or cloud run proves deterministic

@@ -46,8 +46,9 @@ CONTENT=$(printf '%s' "$INPUT" | jq -r '.tool_input.new_string // .tool_input.co
   || governance_hook_integrity_fail 'Tailwind wildcard content extraction failed'
 [ -z "$CONTENT" ] && exit 0
 
-# Escape clause
-if governance_hook_grep_q 'Tailwind wildcard escape matcher failed' "$CONTENT" -qE '@tailwind-wildcard-allow:'; then exit 0; fi
+# Escape clause(2026-11-27 r72:冒號後要有理由才算;以前只有冒號、空理由也放行。docs / md 不在
+# check_escape_marker_abuse 的空理由檢查範圍內,所以在這裡自己判)
+if governance_hook_grep_q 'Tailwind wildcard escape matcher failed' "$CONTENT" -qE '@tailwind-wildcard-allow:[[:space:]]*[^[:space:]*-]'; then exit 0; fi
 
 # Detect anti-patterns(class form with wildcard / slash enumeration in CSS var)
 # 2026-05-30 fix(test-surfaced M34 over-narrow):slash-segment 改 repeatable,
@@ -77,8 +78,8 @@ $(echo "$ANTI_PATTERNS" | sed 's/^/    /')
     var(--layout-space-*)      → var(--layout-space-N) N∈{loose,tight}
     var(--radix-*-available-height) → var(--radix-{popover|hover-card|dialog}-content-available-height)
 
-  Escape(極罕見,本 file 真需要 wildcard token literal):
-    add \`// @tailwind-wildcard-allow: <rationale>\` to file content
+  Escape(本 file 真需要 wildcard token literal,有合理理由可自行豁免、不必等 DS 同意):
+    add \`// @tailwind-wildcard-allow: <rationale>\` to file content(理由必填,只寫冒號照擋)
 EOF
   exit 2
 fi
