@@ -15,11 +15,13 @@
    範圍裡有 Field 層純顯示 → 也是閱讀情境,但**只動標籤色**:純顯示的值本來就在控件欄左緣(field-controls.spec.md「軸一 view mode」),
    內縮那條不認它。純顯示有兩種寫法:在組裡 = 範圍 :has() 到它;不在組裡 = 它自己就是範圍(:has() 不含自己,所以另寫一句)。
    三句判斷都寫在標籤那一條,S3 一併鎖(標籤那條三句都在、內縮那條只有就地編輯那一句、別的檔不寫)。
-   效果寫成兩顆元件內變數,只有 field.tsx 讀,而且**設在讀它的元素自己身上**,不設在範圍元素上:
+   效果寫成三顆元件內變數,只有 field.tsx 讀,而且**設在讀它的元素自己身上**,不設在範圍元素上:
      --scope-label-color  設在標籤上:閱讀情境 fg-secondary(與 DescriptionList dt、DataTable 表頭同色;三者同色的清單住
                           tokens/color/color.spec.md fg-secondary 用途列);停用仍 fg-disabled(停用優先寫在 field.tsx)
      --scope-value-inset  設在沒有框的值(開關、單一勾選框)上:閱讀情境 = --field-bleed(框外緣到框內字線),
                           水平排落在同一欄就地編輯框內的字線上;垂直排的控件欄不讀它(字線就是標籤左緣)
+     --scope-row-gap      設在 FieldGroup 自己身上(範圍本身與範圍裡的內層組):閱讀情境(只看就地編輯)= --layout-space-tight
+                          (2026-11-27 user 定 T2 甲);表單與純顯示組不設值,field.tsx 後備 loose
    為什麼設在讀者身上:var() 在宣告它的那個元素上就代換成值,子孫繼承的是代換後的結果(tokens/color/semantic.css
    「Nested Theme 架構」、tokens/uiSize/uiSize.css「衍生值」同一個理由)。2026-11-25 前設在範圍元素上 —— 組裡再套一層
    data-theme 時,標籤拿到的是範圍那一層主題算好的顏色(規格核對實測:深色列裡一般表單的標籤是黑字)。設在讀者身上,
@@ -44,6 +46,14 @@
 /* 閱讀情境 → 沒有框的值(只看就地編輯) */
 [data-field-scope]:has([data-field-reading]) [data-field-frameless-value] {
   --scope-value-inset: var(--field-bleed);
+}
+
+/* 閱讀情境 → 列距(只看就地編輯;field.spec.md「閱讀情境」效果 ④,user 2026-11-27 定 T2 甲)。讀者 = FieldGroup 自己:
+   範圍本身(最外層 FieldGroup,:has() 不含自己所以另寫一句)與範圍裡的內層 FieldGroup。整組切換的純顯示組不算(只認 data-field-reading)。
+   後備值 loose 寫在 field.tsx(一般表單不設值)。 */
+[data-field-scope][data-field-group]:has([data-field-reading]),
+[data-field-scope]:has([data-field-reading]) [data-field-group] {
+  --scope-row-gap: var(--layout-space-tight);
 }
 
 /* Field 層純顯示 → 沒有框的按鈕(Button text / link 在 Field 裡掛 data-field-frameless-action;只有圖示的、有框的都不掛)。

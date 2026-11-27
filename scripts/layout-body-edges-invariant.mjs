@@ -10,8 +10,12 @@
  *         Empty「建立任務」、TreeView「重新命名」、DataTable 列動作的對話框都量不到、也不報)。這些容器
  *         「最後一個東西 → 容器底」照 packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md 規則 4 ——
  *         bounded region(有完整外框:表格 / 卡片 / 面板)→ loose;unbounded region(無框、清單自帶上下內距)→ 0;
- *         element:容器擋住頁面或高度撐滿 → bottom(48);不擋頁面、高度貼內容(含被上限卡住在捲 / 高度寫死)→ 與頂部同值。
- *         md / lg 兩種密度各量一次。
+ *         element:容器擋住頁面或高度撐滿 → bottom(48);不擋頁面、高度貼內容(含被上限卡住在捲 / 高度寫死)→ 後面接 footer = bottom(48)、
+ *         沒有 footer 時看得見框的欄位 / 按鈕 = loose、其餘(文字 / 勾選列)與頂部同值(2026-11-27 user 定 T6 乙 / T4;「後面接 footer」與
+ *         「看得見框的控件」判法住 header-first-gap 的 pageKit footerAfter / framedControl,姊妹閘 header-content-sides 同一份)。
+ *         頂另多一格(T4 上半):貼內容的容器沒有標頭、第一個是看得見框的欄位 / 按鈕 → 上內距 loose(容器自判未做,consumer 覆寫;沒覆寫才判)。
+ *         md / lg 兩種密度各量一次。對照組:--selftest 判定表 cells2 / T4 上半三格;真建置 ν(三段範例 hug + footer 現況 48 綠、容器不看 footer 紅)、
+ *         ξ(hug 容器頭尾是有框的按鈕、沒有標頭與 footer → 照舊 tight 頂底都紅;覆寫 loose → 綠)。
  *   為什麼不用清單(2026-11-17,A102):header-content-sides-invariant.mjs 只量登記的 28 處;A18(35508c15)新增的
  *         「大檔位:對話框裡放表格」不在清單,底 48(應 16 / 24)在同一份建置上舊閘是綠的。清單的維護成本(行號)有人付,
  *         「涵蓋新範例」沒有任何東西逼人付。這支改成從 DOM 找容器:
@@ -417,6 +421,8 @@ export const probeContainer = ({ k, followStep, exSel }) => {
     })(),
     top: round(top), topFrom, bottom: round(e - bottomOf(last)), free: round(free), grow: round(grow),
     lastDesc: desc(last.el), lastF, regionMark: region ? region.getAttribute('data-layout-region') : null, regionF: region ? K.feat(region) : null,
+    // 規則 4 表(2026-11-27 user T6 乙 / T4):後面接 footer、最後 / 第一個是看得見框的欄位 / 按鈕 —— 判法住 pageKit,姊妹閘同一份
+    footer: (() => { const ft = K.footerAfter(body); return ft ? desc(ft) : null })(), framedControl: K.framedControl(lastF), firstFramed: K.framedControl(first.f),
     modal, scrolls, capped, pinned, boxDesc: boxEl === body ? null : desc(boxEl),
     loose: v('--layout-space-loose'), tight: v('--layout-space-tight'), bottomToken: v('--layout-space-bottom'),
     rootLoose: parseFloat(getComputedStyle(document.querySelector('#storybook-root') ?? document.documentElement).getPropertyValue('--layout-space-loose')),
@@ -489,6 +495,9 @@ export function judgeRow(r, ex) {
     if (r.firstMark === 'unbounded') {
       if (!Number.isFinite(r.topIn)) out.instrument.push(`${INSTRUMENT_FAIL_MARKER}:${where} 第一個東西標 unbounded,但沒量到它的頂`)
       else if (Math.abs(r.topIn) > TOL) out.failures.push(`${where} 頂 = ${r.topIn}px,應 0(規則 2 開頭「頂部也由容器自己判」:第一個東西標 unbounded = 自帶上內距的清單 → 容器頂 0;第一個 = ${r.firstDesc ?? '?'}、容器上內距 ${r.padTop})`)
+    } else if (firstRole === 'element' && r.firstFramed && r.topFrom === 'container' && box !== 'fill') {
+      // 2026-11-27 user 定 T4(上半):貼內容的小容器沒有標頭、第一個是看得見框的欄位 / 按鈕 → 頂 = loose(那一側是容器自己的框,框離四邊等距)
+      if (Math.abs(r.padTop - r.loose) > TOL) out.failures.push(`${where} 容器上內距 = ${r.padTop}px,應 loose ${r.loose}(規則 4 T4:貼內容的小容器沒有標頭、第一個是看得見框的欄位 / 按鈕 → 頂 loose;容器自判未做,consumer 覆寫;第一個 = ${r.firstDesc ?? '?'})`)
     } else if (firstRole === 'element' && Math.abs(r.padTop - r.tight) > TOL) {
       out.failures.push(`${where} 容器上內距 = ${r.padTop}px,應 tight ${r.tight}(規則 2 開頭:第一個東西是一般元素 → tight;第一個 = ${r.firstDesc ?? '?'})`)
     }
@@ -497,7 +506,7 @@ export function judgeRow(r, ex) {
   // 「與頂部同值」(規則 4 第 4 列)比的是容器給一般元素的頂(tight)。第一個是 unbounded 清單時頂由清單自己的上內距給、容器頂 0(規則 2 開頭),
   // 量到的 top = 0 不是「容器的頂部值」—— 拿它當期望值,最後一個一般元素貼底也會被判綠(2026-11-27 規格核對 D:hug 的底讀了頂部自判的變數,底從 12 變 0)
   const hugTop = r.firstMark === 'unbounded' ? r.tight : r.top
-  let { want, rule } = bottomWant({ last: role, box, top: hugTop }, t)
+  let { want, rule } = bottomWant({ last: role, box, top: hugTop, footer: Boolean(r.footer), framedControl: Boolean(r.framedControl) }, t)
   const exc = entry('exceptions')
   if (exc) { out.matched.push(exc.key); want = typeof exc.want === 'number' ? exc.want : t[exc.want]; rule = `例外 ${exc.key}:${exc.reason}` }
   const pend = entry('pending')
@@ -1107,6 +1116,27 @@ function selftestTable() {
       expect(red(row({ ...base, bottom: good })).length === 0, `${role} × ${box} @${d} 底 ${good} 應綠,實得 ${JSON.stringify(red(row({ ...base, bottom: good })))}`)
       expect(red(row({ ...base, bottom: bad })).some((s) => s.includes(`應 ${good}`)), `${role} × ${box} @${d} 底 ${bad} 應紅「應 ${good}」`)
     }
+    // 2026-11-27 user 定 T6 乙 / T4(規則 4 表):貼內容的容器 × 後面接 footer / 最後是看得見框的欄位或按鈕;有框的表格 / 自帶內距的清單不受 footer 影響
+    const cells2 = [
+      ['element', 'hug', { footer: '<div data-slot=surface-footer>' }, t.bottomToken, t.tight, '後面接 footer'],
+      ['element', 'capped', { footer: '<div data-slot=surface-footer>' }, t.bottomToken, t.tight, '後面接 footer'],
+      ['element', 'hug', { framedControl: true }, t.loose, t.tight, 'T4'],
+      ['element', 'hug', { framedControl: true, footer: '<div data-slot=surface-footer>' }, t.bottomToken, t.loose, '後面接 footer'],
+      ['bounded', 'hug', { footer: '<div data-slot=surface-footer>' }, t.loose, t.bottomToken, 'bounded region'],
+      ['unbounded', 'hug', { footer: '<div data-slot=surface-footer>' }, 0, t.bottomToken, 'unbounded region'],
+      ['element', 'fill', { framedControl: true }, t.bottomToken, t.loose, '撐滿'],
+    ]
+    for (const [role, box, extra, good, bad, ruleWord] of cells2) {
+      const base = { density: d, ...T[d], ...BOX[box], lastF: F[role], top: t.tight, ...extra }
+      const tag = `${role} × ${box} ${JSON.stringify(extra)} @${d}`
+      expect(red(row({ ...base, bottom: good })).length === 0, `${tag} 底 ${good} 應綠,實得 ${JSON.stringify(red(row({ ...base, bottom: good })))}`)
+      expect(red(row({ ...base, bottom: bad })).some((s) => s.includes(`應 ${good}`) && s.includes(ruleWord)), `${tag} 底 ${bad} 應紅「應 ${good}…${ruleWord}」`)
+    }
+    // T4 上半:貼內容的小容器沒有標頭、第一個是看得見框的控件 → 頂 loose(容器上內距沒被 consumer 覆寫時才判);有標頭、或撐滿的容器照舊 tight
+    const topRow = (over) => row({ density: d, ...T[d], ...BOX.hug, declared: 'hug', lastF: F.element, top: t.tight, bottom: t.tight, firstF: { tag: 'button', framed: true, control: true, border: 4 }, firstFramed: true, topFrom: 'container', ...over })
+    expect(red(topRow({ padTop: t.loose, startVar: t.loose, top: t.loose, bottom: t.loose })).length === 0, `T4 上半 @${d} 頂 loose 應綠,實得 ${JSON.stringify(red(topRow({ padTop: t.loose, startVar: t.loose, top: t.loose, bottom: t.loose })))}`)
+    expect(red(topRow({ padTop: t.tight, startVar: t.tight })).some((s) => s.includes(`應 loose ${t.loose}`) && s.includes('T4')), `T4 上半 @${d} 頂 tight 應紅「應 loose」`)
+    expect(red(topRow({ padTop: t.tight, startVar: t.tight, topFrom: 'header-box' })).length === 0, `T4 上半 @${d} 有標頭時頂 tight 應綠`)
   }
   // A18 形狀:對話框(modal)最後是有框表格、底 48 → 紅、指名規則 4 第 2 列;容器宣告 fill、沒有標記 → 訊息點名「缺標記」
   const a18 = red(row({ declared: 'fill', lastF: F.bounded, bottom: 48 }))
@@ -1259,12 +1289,18 @@ async function selftestBrowser(browser, server, ex) {
       const bRed = b.flatMap((r) => judgeRow(r, ex).failures)
       if (!(b.length === 1 && b[0].bottom === T[density].bottomToken && bRed.some((s) => s.includes(`應 ${want}`)))) problems.push(`β @${density}:容器不再自判應紅(底 48、應 ${want});實得 ${JSON.stringify(b.map((r) => r.bottom))} ${JSON.stringify(bRed)}`)
       else out(`  ✓ β @${density}:注入「容器不再自判」→ 對話框底 ${b[0].bottom}、紅「應 ${want}」`)
+      // ν(2026-11-27 user 定 T6 乙):SurfaceBody 三段(hug,後面接 SurfaceFooter)現況底 = bottom 48、綠;
+      // 對照組「容器不看 footer」(hug 的底一律與頂部同值 = 修前的 CSS)→ 底 tight、紅「後面接 footer」。
+      // (2026-11-27 前這一格的破法是「底一律 bottom」、期望紅「與頂部同值」;三段範例有 footer,新規則下 48 就是對的值,破法改成反方向)
+      const hugNow = (await measureStory(page, server.origin, server.notFound, HUG_STORY, density, { exSel, triggers: false })).rows.filter((r) => r.declared === 'hug')
+      const nowRedH = hugNow.flatMap((r) => judgeRow(r, ex).failures)
       const betaHug = await measureStory(page, server.origin, server.notFound, HUG_STORY, density, {
-        exSel, triggers: false, beforeMeasure: (p) => p.addStyleTag({ content: '[data-layout-body]{--layout-body-end:var(--layout-space-bottom)!important}' }),
+        exSel, triggers: false, beforeMeasure: (p) => p.addStyleTag({ content: '[data-layout-body="hug"]{--layout-body-end:var(--layout-space-tight)!important}' }),
       })
       const hRed = betaHug.rows.filter((r) => r.declared === 'hug').flatMap((r) => judgeRow(r, ex).failures)
-      if (!hRed.some((s) => s.includes('與頂部同值'))) problems.push(`β @${density}:SurfaceBody 三段(hug)容器不再自判應紅「與頂部同值」;實得 ${JSON.stringify(hRed)}`)
-      else out(`  ✓ β @${density}:SurfaceBody 三段(hug)同一個破法 → 紅「與頂部同值」`)
+      if (!(hugNow.length >= 1 && hugNow.every((r) => r.footer && Math.abs(r.bottom - T[density].bottomToken) <= TOL) && !nowRedH.length)) problems.push(`ν @${density}:SurfaceBody 三段(hug + footer)現況應底 48、綠;實得 ${JSON.stringify(hugNow.map((r) => ({ bottom: r.bottom, footer: r.footer })))} ${JSON.stringify(nowRedH)}`)
+      else if (!hRed.some((s) => s.includes('後面接 footer') && s.includes(`應 ${T[density].bottomToken}`))) problems.push(`ν @${density}:SurfaceBody 三段(hug)容器不看 footer 應紅「應 48…後面接 footer」;實得 ${JSON.stringify(hRed)}`)
+      else out(`  ✓ ν @${density}:SurfaceBody 三段(hug + footer)現況底 ${hugNow[0].bottom}、綠;容器不看 footer → 紅「應 48…後面接 footer」`)
     }
     // ε:一般按鈕 / 選單項目打開的對話框(審查 MF1)—— 點了量得到;不點(triggers:false)量不到
     for (const [story, want] of CLICK_STORIES) {
@@ -1387,7 +1423,36 @@ async function selftestBrowser(browser, server, ex) {
         list.className = 'py-2'
         for (const name of ['Ada Chen', 'Ben Lin']) { const row = document.createElement('div'); row.textContent = name; list.appendChild(row) }
         body.prepend(list)
+        // 2026-11-27:三段範例有 SurfaceFooter,後面接 footer 的底 = 48(T6 乙)—— 這一格驗的是「沒有 footer 時底不跟著頂部變 0」,拿掉 footer
+        for (const ft of body.parentElement?.querySelectorAll(':scope > [data-slot="surface-footer"]') ?? []) ft.remove()
       })
+    }
+    // ξ(2026-11-27 user 定 T4):同一個 hug 容器拿掉標頭與 footer,最前面與最後面各放一顆有框的按鈕 → 容器自判未做(頂 / 底照舊 tight)→ 頂、底都紅「應 loose」;
+    // consumer 覆寫成 loose(把容器自判的兩個變數設成 loose,上內距仍 = 自判變數 → 頂那一格照判)→ 綠
+    const withFramedEnds = (extraCss) => async (p) => {
+      if (extraCss) await p.addStyleTag({ content: extraCss })
+      await p.evaluate(() => {
+        const body = document.querySelector('[data-layout-body="hug"]')
+        if (!body) return
+        for (const x of body.parentElement?.querySelectorAll(':scope > [data-slot="surface-footer"], :scope > [data-slot="surface-header"]') ?? []) x.remove()
+        const mk = (label) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.style.cssText = 'display:block;height:32px;padding:0 12px;border:1px solid #8c8c8c;border-radius:6px;background:#fff'; return b }
+        body.prepend(mk('套用範本'))
+        body.append(mk('寄出邀請'))
+      })
+    }
+    for (const density of DENSITIES) {
+      const pick = (got) => got.rows.filter((r) => r.declared === 'hug' && r.firstFramed && r.framedControl)
+      const broken = pick(await measureStory(page, server.origin, server.notFound, HUG_STORY, density, { exSel, triggers: false, explore: false, beforeMeasure: withFramedEnds(null) }))
+      const bRed = broken.flatMap((r) => judgeRow(r, ex).failures)
+      const fixed = pick(await measureStory(page, server.origin, server.notFound, HUG_STORY, density, {
+        exSel, triggers: false, explore: false, beforeMeasure: withFramedEnds('[data-layout-body="hug"]{--layout-body-start:var(--layout-space-loose)!important;--layout-body-end:var(--layout-space-loose)!important}'),
+      }))
+      const fRed = fixed.flatMap((r) => [...judgeRow(r, ex).failures, ...judgeRow(r, ex).instrument])
+      const loose = broken[0]?.loose ?? NaN
+      const ok = broken.length === 1 && !broken[0].footer && bRed.some((s) => s.includes(`應 ${loose}`) && s.includes('T4')) && bRed.some((s) => s.includes(`應 loose ${loose}`))
+        && fixed.length === 1 && Math.abs(fixed[0].bottom - loose) <= TOL && !fRed.length
+      if (!ok) problems.push(`ξ @${density}:hug 容器沒有標頭 / footer、頭尾是有框的按鈕 → 照舊 tight 應頂底都紅「應 loose」,覆寫成 loose 應綠;實得 ${JSON.stringify(broken.map((r) => ({ top: r.padTop, bottom: r.bottom, footer: r.footer })))} ${JSON.stringify(bRed)} / ${JSON.stringify(fixed.map((r) => ({ top: r.padTop, bottom: r.bottom })))} ${JSON.stringify(fRed)}`)
+      else out(`  ✓ ξ @${density}:hug 容器頭尾是有框的按鈕、沒有標頭與 footer → 頂 ${broken[0].padTop} / 底 ${broken[0].bottom} 紅「應 loose」;覆寫成 loose → 綠(T4)`)
     }
     for (const density of DENSITIES) {
       const pick = (got) => got.rows.filter((r) => r.declared === 'hug' && r.firstMark === 'unbounded')

@@ -502,7 +502,25 @@ export const pageKit = () => {
   const nextBlock = (body) => { let s = body.nextElementSibling; while (s && !vis(s)) s = s.nextElementSibling; return s }
   // 標頭之後那一塊:CASES 寫了 body(選擇器)就用頁面上看得見的那一個(整頁狀態:全域標頭的下一塊是整列,指名主內容區),沒寫照 findBody
   const bodyFor = (h, sel) => (sel ? [...document.querySelectorAll(sel)].find(vis) ?? null : findBody(h))
-  return { vis, transparent, effBg, LIST_ROLE, feat, isThing, boxedOf, topOf, bottomOf, scrollBody, scrollOffset, findHeader, findBody, bodyFor, collectThings, nextBlock }
+  // 後面接 footer(layoutSpace.spec.md 規則 4 表第 1 列;user 2026-11-27 定 T6 乙):從容器往上走(最多 4 層,到外殼 role=dialog 那一層為止),
+  // 每一層之後同層第一個看得見的兄弟 —— 是 DS 的 footer 帶(SurfaceFooter / PopoverFooter / DialogFooter / SheetFooter 都帶 data-slot="surface-footer")→ 回它;
+  // 是別的東西 → 這個容器後面接的不是 footer,回 null。量的是畫面上「主體下面是不是 footer 帶」,不看主體與 footer 是不是同層兄弟(CSS 只認同層兄弟,
+  // 包在捲動區裡的 Coachmark 主體在這裡量得到 footer —— 它照 user 原話不動,登記在 layout-body-edges 例外)
+  const footerAfter = (body) => {
+    for (let n = body, up = 0; n && up < 4; n = n.parentElement, up++) {
+      let s = n.nextElementSibling
+      // 略過看不見的與絕對定位的(捲軸、浮出的提示 —— 同 collectThings 的判法)
+      while (s && (!vis(s) || /(absolute|fixed)/.test(getComputedStyle(s).position))) s = s.nextElementSibling
+      if (s) return s.matches('[data-slot="surface-footer"]') ? s : null
+      if (!n.parentElement || n.parentElement.matches('[role=dialog], [role=alertdialog], body')) return null
+    }
+    return null
+  }
+  // 看得見框的欄位 / 按鈕(規則 4 T4「直接碰到貼內容小容器自己的框、最後是看得見框的欄位 / 按鈕 → loose」;user 2026-11-27):
+  // 輸入框外框,或有框 / 有底色的按鈕 / 下拉觸發點 / 連結鈕;勾選框 / 單選 / 開關(勾選列)不算,維持與頂同值
+  const framedControl = (f) => !!f && !/^(checkbox|radio|switch)$/.test(f.role ?? '')
+    && (f.fieldControl || (f.framed && (/^(button|a)$/.test(f.tag) || /^(button|combobox)$/.test(f.role ?? ''))))
+  return { vis, transparent, effBg, LIST_ROLE, feat, isThing, boxedOf, topOf, bottomOf, scrollBody, scrollOffset, findHeader, findBody, bodyFor, collectThings, nextBlock, footerAfter, framedControl }
 }
 
 /** 把 pageKit 裝進目前頁面(window.__layoutKit);每次換頁後、量之前呼叫。 */

@@ -52,8 +52,8 @@ export const InField: Story = {
         <FieldError>退件原因至少 10 字</FieldError>
       </Field>
 
-      {/* 沒有說明時那一行只有計數(右端) */}
-      <Field orientation="horizontal" labelWidth="120px">
+      {/* 沒有說明時那一行只有計數(右端)。同一組欄位同一種方向(field-group.spec.md;2026-11-27 前這一列是水平排、沒有理由,改成跟前兩列一樣) */}
+      <Field>
         <FieldLabel>補充說明</FieldLabel>
         <Textarea placeholder="例:需要法務審核的條款" rows={4} maxLength={500} showCount />
       </Field>

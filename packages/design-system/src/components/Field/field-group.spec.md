@@ -8,8 +8,8 @@
 
 ```tsx
 <FieldGroup labelWidth={120}>
-  <Field><FieldLabel>姓名</FieldLabel><Input /></Field>
-  <Field><FieldLabel>Email</FieldLabel><Input /></Field>
+  <Field orientation="horizontal"><FieldLabel>姓名</FieldLabel><Input /></Field>
+  <Field orientation="horizontal"><FieldLabel>Email</FieldLabel><Input /></Field>
   <Field orientation="horizontal">
     <FieldLabel>訂閱通知</FieldLabel>
     <Switch />
@@ -21,9 +21,11 @@
 </FieldGroup>
 ```
 
-**欄位垂直間距 = `--layout-space-loose`,不開放 per-instance 選檔(2026-09-12 user 拍板〔UD-F19〕)。**
+**同一組欄位預設同一種方向(建議,不強制、不加閘)**:一組裡的欄位都用同一種 `orientation`,有合理理由才混搭。出處(user 2026-11-27,逐字):「因爲那是你沒經過我同意自己生的啊，我還是建議預設應該同一種方向，有合理理由才混搭」;同日前一輪「不要強制，我們這邊就是建議且預設如此，然後我們也不該生成非建議的範例吧？這是範例產生的規範吧？ds有說吧？」(問句;決策紀錄 `tmp/wip-2026-11-25-backup/notes/decisions/decide152-answers.md`「留白草案第 2、3 輪」)。上方範例 2026-11-27 前是「上下排的輸入框 + 左右排的開關」混在同一組,是 AI 自己生的、沒有理由,改成同一方向。「合理理由」目前沒有定義成清單(不替 user 列舉)。
 
-`FieldGroup` 直接消費 `gap-[var(--layout-space-loose)]`(md 16px / lg 24px),**沒有 `gap` prop**。
+**欄位垂直間距 = `--layout-space-loose`,不開放 per-instance 選檔。** 出處更正(2026-11-27,R87):修前寫「2026-09-12 user 拍板〔UD-F19〕」;user 當天原話是「照你建議並確保整個 ds 都有 ssot,不要有任何偏移」(`governance/planning/2026-09-06-focus-and-drag-remediation.md` AD105),採納的是 AI 的建議(拿掉三檔、改吃 loose)—— 「不開放 per-instance 選檔」這句是 AI 建議的內容 = **AI 建議、user 採納**。**閱讀情境(組裡有就地編輯)= `--layout-space-tight`**(2026-11-27 user 定 T2 甲),系統依內容自動判、仍沒有逐一選檔的參數;規則與出處只住 `./field.spec.md`「閱讀情境」效果 ④。
+
+`FieldGroup` 直接消費 `gap-[var(--scope-row-gap,var(--layout-space-loose))]`(一般表單 md 16px / lg 24px;`--scope-row-gap` 只在閱讀情境由 `field.css` 設成 tight),**沒有 `gap` prop**。
 表單間距是**系統級**設定:要調就整個 density 一起調,不是每個表單各自挑一檔。
 依據是 DS 自己早就寫下的規則 —— `tokens/layoutSpace/layoutSpace.spec.md`「親疏 3 級」表逐字把
 「跨範疇 + parallel / independent」的例子列為「**form fields stack(parallel inputs)**」→ 規則 3 = **loose**。

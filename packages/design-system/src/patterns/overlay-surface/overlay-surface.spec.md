@@ -83,7 +83,7 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 
 - `flex-1 min-h-0` → 撐滿 Content 剩餘高度(min-h-0 防止 flex child 撐破 container)
 - Padding 搬進 ScrollArea viewport 內的 inner div(因 ScrollArea Root 自己是 `overflow-hidden`,padding 應在捲動內容上)
-- 上下內距由容器自己給(`data-layout-body`;`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 4「容器自己判」):Dialog / Sheet 擋住頁面 = `fill` → 最後是一般元素時底部 `bottom` 48(「大容器底部多一拍」= 規則 4 第 1 列),最後是有框的表格 / 卡片 `loose`、自帶上下內距的清單 0;SurfaceBody(Popover 等)= `hug` → 最後是一般元素時與頂部同值(第 4 列)。本規格不寫底距的值(2026-11-17 前寫死 `pb-bottom`)
+- 上下內距由容器自己給(`data-layout-body`;`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 4「容器自己判」):Dialog / Sheet 擋住頁面 = `fill`(「大容器底部多一拍」= 規則 4 第 1 列);SurfaceBody(Popover 等)= `hug`,同層後面接 SurfaceFooter 時一般元素也照第 1 列(2026-11-27)。底依最後一個東西的值只住規則 4 表,本規格不寫底距的值(2026-11-17 前寫死 `pb-bottom`)
 
 **Popover 例外**:Popover 無 viewport-fill、內容預期短,PopoverBody 直接消費 SurfaceBody bare;若未來有長內容 Popover consumer,同樣應 wrap ScrollArea。
 

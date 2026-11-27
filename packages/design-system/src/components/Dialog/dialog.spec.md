@@ -80,7 +80,7 @@ Dialog **不自設任何 density attribute**,layout-space + ui-size 全繼承 pa
 
 - **水平 padding**：`px-[var(--layout-space-loose)]`（header / body / footer 統一）
 - **Header / Footer 垂直 padding**：`py-[var(--layout-space-tight)]`
-- **Body 垂直 padding**:由容器自己給,本規格不寫值 —— DialogBody 宣告 `data-layout-body="fill"`(對話框擋住頁面 = `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 4 第 1 列那種容器):上 = `tight`;底依最後一個東西照規則 4 —— 一般元素(文字 / 欄位 / 按鈕)`bottom` 48、有完整外框的表格 / 卡片(邊緣標記 `data-layout-region="bounded"`,DataTable 已帶)`loose`、自帶上下內距的清單(`unbounded`)0(規則 4「容器自己判」;實作 `layoutSpace.css`)。2026-11-17 前這一行寫死 `pb-[var(--layout-space-bottom)]`,「大檔位:對話框裡放表格」的表格底下因此是 48、照規則應 16 / 24【AI 推導 2026-11-17:照規則 4 既有的表落地,不是新規則】
+- **Body 垂直 padding**:由容器自己給,本規格不寫值 —— DialogBody 宣告 `data-layout-body="fill"`(對話框擋住頁面 = `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 4 第 1 列那種容器):上 = `tight`;底依最後一個東西,值只住規則 4 表(本規格不重述;有沒有 footer 都是第 1 列 —— 沒有 footer 的對話框維持 48 = user 2026-11-27 T7 甲,出處在規則 4 表後;有完整外框的表格靠邊緣標記 `data-layout-region="bounded"`,DataTable 已帶;實作 `layoutSpace.css`)。2026-11-17 前這一行寫死 `pb-[var(--layout-space-bottom)]`,「大檔位:對話框裡放表格」的表格底下因此是 48、照規則應 16 / 24【AI 推導 2026-11-17:照規則 4 既有的表落地,不是新規則】
 
 ## Viewport Inset
 
