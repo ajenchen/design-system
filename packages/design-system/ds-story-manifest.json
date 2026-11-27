@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/DsImportSmoke.stories.tsx (ImportSmoke → DS Storybook link)"
     ],
-    "generatedAt": "2026-11-27T09:11:56.054Z"
+    "generatedAt": "2026-11-27T10:22:45.670Z"
   },
   "components": {
     "accordion": {
@@ -1033,6 +1033,25 @@
       "openSnapshotIds": [],
       "exception": null
     },
+    "infotooltip": {
+      "tiers": {
+        "展示": [
+          "design-system-components-infotooltip-展示--section-heading",
+          "design-system-components-infotooltip-展示--settings-group-heading",
+          "design-system-components-infotooltip-展示--metric-label"
+        ],
+        "設計規格": [
+          "design-system-components-infotooltip-設計規格--overview",
+          "design-system-components-infotooltip-設計規格--size-matrix",
+          "design-system-components-infotooltip-設計規格--accessibility"
+        ],
+        "設計原則": [
+          "design-system-components-infotooltip-設計原則--usage-guidance"
+        ]
+      },
+      "openSnapshotIds": [],
+      "exception": null
+    },
     "inlineedit": {
       "tiers": {
         "展示": [
@@ -1914,6 +1933,6 @@
       "exception": null
     }
   },
-  "totalComponents": 66,
-  "totalStories": 1078
+  "totalComponents": 67,
+  "totalStories": 1085
 }

@@ -159,6 +159,7 @@ Tooltip 是**單一職責 hover 提示 primitive**(一句話補充),刻意無變
 - `date-picker.spec.md`
 - `dialog.spec.md`
 - `hover-card.spec.md`
+- `info-tooltip.spec.md`
 - `inline-edit.spec.md`
 - `item-anatomy.spec.md`
 - `link-input.spec.md`

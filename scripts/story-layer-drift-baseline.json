@@ -16,7 +16,7 @@
     "div-heading": 0,
     "unknown-typography": 0,
     "story-counter-example": 4,
-    "layout-space-magic-ok": 281
+    "layout-space-magic-ok": 284
   },
   "files": {
     "packages/design-system/src/components/AccountMenu/account-menu.stories.tsx": {
@@ -223,6 +223,16 @@
           "bdc291b6bbce",
           "f1474d938ee1",
           "fcf8cc5eb9d8"
+        ]
+      }
+    },
+    "packages/design-system/src/components/InfoTooltip/info-tooltip.stories.tsx": {
+      "layout-space-magic-ok": {
+        "count": 3,
+        "hits": [
+          "38747646988d",
+          "38747646988d",
+          "38747646988d"
         ]
       }
     },

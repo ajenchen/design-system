@@ -1,7 +1,7 @@
 # @qijenchen/design-system
 
 > World-class React design system(Radix/shadcn + Tailwind v4 + 自訂 design token)。
-> 60 components + 4 public patterns + design tokens。版號 = 本 npm 包的 package.json version。
+> 61 components + 4 public patterns + design tokens。版號 = 本 npm 包的 package.json version。
 
 本檔由 source(spec.md frontmatter)build-time 自動生成,**禁手改**(CI --check drift gate 守)。
 每元件 / pattern 的完整 variants / sizes / 禁止事項 全文見 [llms-full.txt](./llms-full.txt)。
@@ -40,6 +40,7 @@
 - [FileItem](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/FileItem
 - [FileUpload](https://ajenchen-design-system.netlify.app): variants:dropzone/button — src:components/FileUpload
 - [FileViewer](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/FileViewer
+- [InfoTooltip](https://ajenchen-design-system.netlify.app): sizes:sm/md/lg — src:components/InfoTooltip
 - [InlineEdit](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/InlineEdit
 - [Input](https://ajenchen-design-system.netlify.app): variants:default;sizes:sm/md/lg — src:components/Input
 - [LinkInput](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/LinkInput
