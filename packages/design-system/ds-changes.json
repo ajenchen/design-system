@@ -450,6 +450,15 @@
         {"paths":["packages/design-system/src/components/Tooltip/tooltip.spec.md","packages/design-system/src/components/Field/field.spec.md","packages/design-system/src/components/Field/form-validation.spec.md","packages/design-system/src/components/Select/select.spec.md"],"reason":"只改文件:Tooltip 規格補「觸發點是停用的控件」指向 Button aria-disabled 與 Field 外層掛 Tooltip 的兩處做法(C21);field.spec.md 寫出產品自訂控件用 Field id 推出的 label / description / error id 接 aria-* 的做法(C29 文件部分);form-validation 支援名單補 PeoplePicker;Select 規格補 minWidth 一行。元件行為不變。"},
         {"paths":["packages/design-system/src/tokens/uiSize/icon-size.ts","packages/design-system/src/components/Steps/steps.tsx","packages/design-system/src/components/Sidebar/sidebar.tsx","packages/design-system/src/components/PeoplePicker/person-display.tsx","packages/design-system/src/components/PeoplePicker/people-picker.stories.tsx"],"reason":"只改註解裡的「檔名:行號」引用:同一節的 C1 / C8 / C16 / C19 / C25 改動讓被引用的行往下移,owner-claims 的 --fix-moved-cites 把純位移的行號改成新位置(steps.tsx 那一處改寫成宣告名 `ROW_PADDING_BY_SIZE`)。程式與範例行為不變。"}
       ]
+    },
+    "0.1.0-beta.152": {
+      "changes": [],
+      "errata": [],
+      "added": [],
+      "updated": [],
+      "noVisibleChange": [
+        {"paths":["packages/design-system/src/components/Field/field.anatomy.stories.tsx","packages/design-system/src/components/Field/field.principles.stories.tsx"],"reason":"只改兩則 Field 範例裡指向規格的註解:FieldGroup 那一節(欄位垂直間距、labelWidth cascade)整段從 field.spec.md 搬到新的 field-group.spec.md(field.spec.md 超過規格行數上限,內容逐字不改),註解改指新位置。程式、範例與畫面都不變。"}
+      ]
     }
   }
 }
