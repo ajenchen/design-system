@@ -1148,6 +1148,36 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
     assert.throws(() => evaluate(mutate((v) => {
       v.npm.range = '<=10.9.8 || 12.0.0-pre.0.0 - 12.2.2'
     })), /npm metavulnerability differs/, '治理版 11.19.0 不在範圍必紅')
+
+    // 2026-11-27 形狀 (C):鎖檔把 npm 內建的 tar 記成修補層的 7.5.22(修補層換掉磁碟上的 tar 之後,同一棵樹又跑了一般的
+    // npm install)。npm 那筆的嚴重度 / range / via = workspace 以 0.1.0-beta.151 跑 setup:all 回報的那一筆(下面第一個反例
+    // 把形狀印出來,逐字比對回報原文)。兩個變體都是實跑報告:只有 tar 那列被改寫,以及 brace-expansion 那列也一起被改寫。
+    const workspaceReportedNpmRange = '6.6.0-next.0 - 6.10.1 || 7.21.0 - 8.5.4 || 8.19.0 - 8.19.2 || >=9.0.0-pre.0'
+    const lockedFixedTar = (alsoBrace, fn = () => {}) => mutate((v) => {
+      delete v.tar
+      if (alsoBrace) delete v['brace-expansion']
+      v.npm.severity = 'moderate'
+      v.npm.via = npmVia.filter((entry) => entry !== 'tar')
+      v.npm.range = workspaceReportedNpmRange
+      fn(v)
+    })
+    for (const alsoBrace of [false, true]) {
+      const names = evaluate(lockedFixedTar(alsoBrace)).remediatedFindings
+      assert.ok(names.includes('npm') && !names.includes('tar') && names.includes('minimatch') && names.includes('glob'), `形狀 (C)(alsoBrace=${alsoBrace})必須放行`)
+    }
+    assert.throws(() => evaluate(lockedFixedTar(false, (v) => { v.npm.via = [...v.npm.via, 'ssri'] })),
+      (error) => error.message.includes('npm metavulnerability differs from the verified tar overlay closure(severity=moderate range=6.6.0-next.0 - 6.10.1 || 7.21.0 - 8.5.4 || 8.19.0 - 8.19.2 || >=9.0.0-pre.0 nodes=node_modules/npm effects=<none> via=@npmcli/arborist|@npmcli/config|@npmcli/map-workspaces|@npmcli/metavuln-calculator|@npmcli/package-json|@npmcli/run-script)'),
+      '形狀 (C) via 多一個名字必紅(訊息的形狀與 workspace 回報逐字相同)')
+    assert.throws(() => evaluate(lockedFixedTar(false, (v) => { v.npm.via = v.npm.via.filter((entry) => entry !== 'minimatch') })),
+      /npm metavulnerability differs/, '形狀 (C) via 少一個名字必紅')
+    assert.throws(() => evaluate(lockedFixedTar(false, (v) => { v.npm.severity = 'high' })),
+      /npm metavulnerability differs/, '形狀 (C) 的 via 配 high = 不是 (B) 也不是 (C),必紅')
+    assert.throws(() => evaluate(lockedFixedTar(false, (v) => { v.tar = structuredClone(withGlobClosure.vulnerabilities.tar) })),
+      /npm metavulnerability differs/, '報告裡仍有受影響的 tar、npm 的 via 卻沒有它 = 形狀自相矛盾,必紅')
+    assert.throws(() => evaluate(lockedFixedTar(false, (v) => { v.npm.range = '<=10.9.8 || 12.0.0-pre.0.0 - 12.2.2' })),
+      /npm metavulnerability differs/, '形狀 (C) 治理版 11.19.0 不在範圍必紅')
+    assert.throws(() => evaluate(lockedFixedTar(false, (v) => { delete v['npm-profile'] })),
+      /npm metavulnerability differs/, '形狀 (C) via 指到的名字不在同一份報告必紅')
   }
   // 2026-10-06 對照組(M32):http-cache-semantics / postcss-selector-parser 的認列是 exact shape,不是名字白名單。
   // (a) 認列之前的判定 = 這兩筆一律是未處理 finding:把 evaluator 換回「沒有這兩段」等價於把它們改名 —— 必紅且指名。

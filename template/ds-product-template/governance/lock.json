@@ -42,7 +42,7 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "c737587c176339a10c86d89bab9edf20714c164ea5bfb9e6c42afdc4da4ae8b5",
+    "forkCorpusLockSha256": "e3181aec532240474078a2b8cd36a4ebe407affe532fd3a53748c01c93e0ccfc",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
     "providerLifecycleSha256": "69fa942cf9c3cddd5026b1844b5f2d943e8ceeb21f679b4089fd2701f6e0eae3",
@@ -72,7 +72,7 @@
     "mergeSurfaceDigests": {
       "claude": "b17888945b06f3433e8cbeb0b659d63e41dbd391906461b6453500d8ec8ecec1"
     },
-    "governanceCheckSha256": "cbb7207b3e504073384ca352cfb6a9074782e7de8da630de79132544a67794d2",
+    "governanceCheckSha256": "8d44e109b42a3032cf4d44d6408e0632e2ce45da1e3ec64cdc19954595c634ab",
     "utilityRegistrySha256": "473fb705e490b39739361c82f6063b80865990b01f3c35dd30a9cfa18e216e70",
     "sharedSkillsSha256": "9a7912ed1e261b1bbc259f141c5badb5d8f564f59fb2bb778e0b11c409bdf070",
     "sharedSkillCount": 11,
@@ -112,7 +112,7 @@
       "scripts/lib/consumer-control-plane-policy.mjs": "51aba211bb2f755eff7fa48bb060f9835356a62d2643ab5049147a9896c7bb72",
       "scripts/lib/consumer-output-roots.mjs": "440837081c3b8f714b099d91f0235b71ea5493ee8836697d559ef342f5cf7392",
       "scripts/lib/exact-workspace-dependencies.mjs": "40161bac07da3ce65b59f6d1e5439c1c43f398b4305c1ad5a0e1309d287c812f",
-      "scripts/lib/governance-dependency-bootstrap.mjs": "5414f385799cb5d52243be48bf62378cd572a7aa98d5e6064ae08e4c64379003",
+      "scripts/lib/governance-dependency-bootstrap.mjs": "c58fa8fcc31f4db0397e8ff2c2121487a66b13c63c2d915185207235742a6eab",
       "scripts/lib/launch-browser.mjs": "3656ff22ef06b3354e306047b00d1aa63c1e7cfb9bad9d38ab9e0dbc87dc1981",
       "scripts/lib/provider-lifecycle.mjs": "9aabb2c98efc454b8555308a34830e6590b034b10a63f76f788fbd4cf37ce7e7",
       "scripts/lib/storybook-render-health.mjs": "583beac441f2f2bc88630da73a00d38bfb4da0b1c1e11152b1e9a87030837418",
