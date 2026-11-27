@@ -257,8 +257,8 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 | Icon 角色 | Prop | 語意 | 色彩 | 優先序 |
 |---|---|---|---|---|
 | **Indicator icon**(field-level leading hint)| `startIcon` | 提示 field 類型 / 屬性(`Mail` / `Globe` / `Lock` / `Flag`),與選中值無關 | muted(對齊 `Input.startIcon` search-icon pattern)| 設定時恆顯,優先 |
-| **Value icon**(代表選中項)| `option.icon`(per-option)| 隨 selected option 變動 | fg-default(對齊 `MenuItem.startIcon` 跨元件 SSOT);選項帶 `iconClassName` 時欄位上同樣套(與選單列同色,2026-11-26 前欄位上沒套)| `startIcon` unset 時 fallback |
-| **Value 前綴節點**(代表選中項,2026-11-26,workspace F 組 F4-2)| `option.startContent`(per-option;例:工作項類型方塊)| 隨 selected option 變動;欄位上的值前綴 = 選中項的前綴(AI 推導,沿用上一列同一條規則)| 節點自帶 | `startIcon` unset 且選中項沒有 `icon` 時;桌機與觸控(NativeSelect)兩條分支都畫(「雙分支同 SSOT」段) |
+| **Value icon**(代表選中項)| `option.icon`(per-option)| 隨 selected option 變動 | fg-default(對齊 `MenuItem.startIcon` 跨元件 SSOT);選項帶 `iconClassName` 時欄位上同樣套(與選單列同色,2026-11-26 前欄位上沒套);編輯 / 檢視 / 唯讀 / 停用都畫(`field-controls.spec.md` 共享 contract (a);2026-11-27 前只有編輯態畫,workspace H33),停用時 fg-disabled 勝出(M24,同選單列的停用列)| `startIcon` unset 時 fallback |
+| **Value 前綴節點**(代表選中項,2026-11-26,workspace F 組 F4-2)| `option.startContent`(per-option;例:工作項類型方塊)| 隨 selected option 變動;欄位上的值前綴 = 選中項的前綴(AI 推導,沿用上一列同一條規則)| 節點自帶(停用時外層帶 fg-disabled,給沒自帶顏色的部分繼承【AI 推導 2026-11-27:同 `selectedItemRenderer` 唯讀 / 停用路徑的外層】)| `startIcon` unset 且選中項沒有 `icon` 時;桌機與觸控(NativeSelect)兩條分支、四個 mode 都畫(「雙分支同 SSOT」段;上一列同一條) |
 
 兩 prop 不互斥——同時設定時 `startIcon` 勝(渲染分支見 `select.tsx`)。
 

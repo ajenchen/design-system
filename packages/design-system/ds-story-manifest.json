@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/DsImportSmoke.stories.tsx (ImportSmoke → DS Storybook link)"
     ],
-    "generatedAt": "2026-11-26T22:31:52.335Z"
+    "generatedAt": "2026-11-27T00:57:42.019Z"
   },
   "components": {
     "accordion": {
@@ -447,8 +447,7 @@
           "design-system-components-chip-展示--default",
           "design-system-components-chip-展示--with-badge",
           "design-system-components-chip-展示--single-selection",
-          "design-system-components-chip-展示--assist-attachments",
-          "design-system-components-chip-展示--assist-suggestion-row"
+          "design-system-components-chip-展示--assist-attachments"
         ],
         "設計規格": [
           "design-system-components-chip-設計規格--overview",
@@ -862,7 +861,6 @@
           "design-system-components-field-展示--slider-aligns-with-other-fields",
           "design-system-components-field-展示--slider-with-live-number-input",
           "design-system-components-field-展示--form-validation",
-          "design-system-components-field-展示--view-then-edit",
           "design-system-components-field-展示--inline-search-yield-width-contract",
           "design-system-components-field-展示--view-alignment-contract",
           "design-system-components-field-展示--reading-context-detail",
@@ -1467,6 +1465,7 @@
           "design-system-components-select-展示--grouped-search",
           "design-system-components-select-展示--remote-search",
           "design-system-components-select-展示--option-prefix",
+          "design-system-components-select-展示--option-prefix-across-modes",
           "design-system-components-select-展示--in-data-table"
         ],
         "設計規格": [
@@ -1911,5 +1910,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1074
+  "totalStories": 1073
 }
