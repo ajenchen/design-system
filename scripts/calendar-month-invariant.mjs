@@ -751,11 +751,11 @@ async function detailDeep(mutate, { waitSel, detailSel, listSel }) {
     const p = await open(STORY.detailFromList, { label: '從清單開詳情(四層 Esc)', mutate })
     if (p && (await waitSel(detailSel, 'open'))) {
       const field = `${detailSel} [data-calendar-detail-field="time"]`
+      // 點時間欄一下 = 進編輯 + 日期浮層開好、焦點在浮層裡(2026-11-27 起 DatePicker.Range defaultOpen;inline-edit.spec.md「A11y 預設」Focus 管理)。
+      // 不再點起訖鈕:浮層已開時點它 = 點在浮層外,Radix 先關再開,後面每一下 Esc 都差一拍(PR #176 CI 紅的根因)
       await page.click(`${field} button`).catch(() => {})
-      await frames(4)
-      await page.click(`${field} button[aria-haspopup="dialog"]`).catch(() => {})
       const dateOpen = await waitSel(DATE_POPOVER, 'open')
-      if (!dateOpen) instrumentFails.push({ cell: 'DT-esc4', detail: '時間欄的日期浮層打不開 —— 量不到四層' })
+      if (!dateOpen) instrumentFails.push({ cell: 'DT-esc4', detail: '點時間欄進編輯後日期浮層沒開(應點一下就開)—— 量不到四層' })
       else {
         const state = () => page.evaluate(({ dp, d, l, f }) => ({
           date: Boolean(document.querySelector(dp)), detail: Boolean(document.querySelector(d)), list: Boolean(document.querySelector(l)),
@@ -825,9 +825,8 @@ async function detailDeep(mutate, { waitSel, detailSel, listSel }) {
       await page.waitForTimeout(300); await frames(4)
       const a1 = await alive()
       const field = `${detailSel} [data-calendar-detail-field="time"]`
+      // 點時間欄一下就開好日期浮層(同 DT-esc4;不再點起訖鈕)
       await page.click(`${field} button`).catch(() => {})
-      await frames(4)
-      await page.click(`${field} button[aria-haspopup="dialog"]`).catch(() => {})
       const dateOpen = await waitSel(DATE_POPOVER, 'open')
       let a2 = { detail: false, list: false }
       if (dateOpen) {
@@ -2113,11 +2112,10 @@ const BLOCKS = {
         else if (fit.ends.some((e) => !e.text.trim())) instrumentFails.push({ cell: `DT-time-fit${tag}`, detail: `編輯中兩端有一端沒有字(${fit.ends.map((e) => `「${e.text}」`).join(' / ')})—— 量不到截斷` })
         else check(`DT-time-fit${tag}`, fit.ends.every((e) => e.need <= e.have),
           `詳情寬 ${fmtPx(fit.width)};編輯中兩端 ${fit.ends.map((e) => `「${e.text}」要 ${e.need} / 分到 ${e.have}`).join('、')}(規格:兩端都不被裁)`)
-        // 收:第一下 Esc 取消編輯(焦點回時間欄,同 DT-esc4-L2)、還開著才按第二下關詳情
+        // 收:一下一層 —— 日期浮層(2026-11-27 起點一下就開)→ 取消編輯(焦點回時間欄,同 DT-esc4-L1 / L2)→ 關詳情;詳情還開著才再按
         if (reopened) {
-          await page.keyboard.press('Escape'); await frames(4)
-          if (await page.$(`${detailSel}[data-state="open"]`)) await page.keyboard.press('Escape')
-          if (!(await waitSel(detailSel, 'closed'))) { await page.keyboard.press('Escape'); await waitSel(detailSel, 'closed') }
+          for (let i = 0; i < 4 && (await page.$(`${detailSel}[data-state="open"]`)); i++) { await page.keyboard.press('Escape'); await page.waitForTimeout(350); await frames(4) }
+          await waitSel(detailSel, 'closed')
         }
       }
       // DT-outside(一般密度):減少動態下,地點改到一半點頁面空白 = 先提交再關(calendar.spec.md「點外面」(1));再打開看得到新的地點。
