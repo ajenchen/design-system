@@ -1164,6 +1164,7 @@ Selection control(Dropdown / Menu / List / SegmentedControl / Chip)的 item 視�
 - `header-canonical.spec.md`
 - `inline-action.spec.md`
 - `layoutSpace.spec.md`
+- `link-input.spec.md`
 - `menu-item.spec.md`
 - `motion.spec.md`
 - `notice.spec.md`

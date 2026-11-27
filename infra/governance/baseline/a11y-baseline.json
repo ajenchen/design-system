@@ -2,7 +2,7 @@
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
     "generatedAt": "2026-11-26T14:00:56.486Z",
-    "stories": 1127,
+    "stories": 1129,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
       "apps-template-appshell-dashboard--default",
@@ -613,6 +613,8 @@
       "design-system-components-linkinput-展示--error-text",
       "design-system-components-linkinput-展示--modes",
       "design-system-components-linkinput-展示--save-error",
+      "design-system-components-linkinput-展示--value-icon",
+      "design-system-components-linkinput-展示--value-icon-probe",
       "design-system-components-linkinput-設計原則--display-state-rule",
       "design-system-components-linkinput-設計原則--empty-rule",
       "design-system-components-linkinput-設計原則--usage-guidance",
@@ -1132,8 +1134,8 @@
       "design-system-tokens-uisize--overview",
       "design-system-tokens-uisize--product-alignment"
     ],
-    "storyIdsSha256": "bb7a7681bb7d558e47903cb7e2e3c08384e2090977e91c0c55a36339a290d35c",
-    "fingerprints": 760,
+    "storyIdsSha256": "a7de8f115509fb354dec11100eb42bb6bbea2f01c2ede4c23c523da740315d6f",
+    "fingerprints": 761,
     "linuxOnly": {
       "design-system-components-combobox-設計規格--inspector|color-contrast": "藍圖區塊的 9px text-fg-muted 小標(anatomy-utils.tsx:174):macOS 等寬字溢出區塊、axe 歸 incomplete 不計,Linux 放得下才計入 —— 只有 Linux(CI)量得到;值 = 2f367ee3(A76)寫入的 CI 實測;main 的 a11y drift 排程 2026-11-19(run 44499310317)在 Linux 量到同值 23 / 41。--color-fg-muted 已定案例外(color.spec.md「已定案(禁再問)」)",
       "design-system-components-select-設計規格--inspector|color-contrast": "藍圖區塊的 9px text-fg-muted 小標(anatomy-utils.tsx:174):macOS 等寬字溢出區塊、axe 歸 incomplete 不計,Linux 放得下才計入 —— 只有 Linux(CI)量得到;值 = 2f367ee3(A76)寫入的 CI 實測;main 的 a11y drift 排程 2026-11-19(run 44499310317)在 Linux 量到同值 23 / 41。--color-fg-muted 已定案例外(color.spec.md「已定案(禁再問)」)"
@@ -1538,6 +1540,7 @@
     "design-system-components-linkinput-展示--empty|color-contrast": 1,
     "design-system-components-linkinput-展示--error-text|color-contrast": 2,
     "design-system-components-linkinput-展示--save-error|color-contrast": 1,
+    "design-system-components-linkinput-展示--value-icon|color-contrast": 1,
     "design-system-components-linkinput-設計原則--display-state-rule|color-contrast": 5,
     "design-system-components-linkinput-設計原則--empty-rule|color-contrast": 2,
     "design-system-components-linkinput-設計原則--usage-guidance|color-contrast": 4,

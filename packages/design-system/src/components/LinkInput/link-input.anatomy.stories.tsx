@@ -198,6 +198,7 @@ export const Overview = {
                 ['placeholder', 'string', "'https://'", '空值時的佔位文字'],
                 ['disabled', 'boolean', 'false', '等同 mode="disabled"'],
                 ['label', 'string', '—', '自訂顯示文字（覆蓋自動 hostname 提取）'],
+                ['icon', 'LucideIcon', '—', '值的前綴圖示：畫在顯示的字前面、在連結裡，跟字同為連結色、滑過一起變色、點圖示也開連結（圖示 + 間距 8 + 字，同 Select 欄位上的值圖示）；截斷時字截斷、圖示不縮；停用時跟字一起灰；空值與按鉛筆後的打字狀態不畫。不是提示欄位用途的 startIcon，DS 不依網址自動換圖示'],
                 ['showDisplayEndIcon', 'boolean', 'false', 'view 態改包 Field naked wrapper（D-path opt-in，DataTable cell view↔edit 像素對齊；本元件沒有型別 icon，故只給 wrapper；DataTable 可編輯連結格的「編輯連結」鈕另由內部的 viewEditAction 畫在外殼右側槽，Button text xs、滑過格才出現）'],
                 ['clearable', 'boolean', 'false', '打字狀態、框裡有字時右側出現清除 ×：清掉草稿、焦點留在輸入框，不提交（跟原生輸入框清空一樣送出 input 事件，onInput 收得到），之後照失焦 / Enter 規則結算；連結狀態沒有 ×（同 Select / DatePicker 的 clearable，選填欄位才開）'],
                 ['errorText', 'string', "'請輸入網址,例如 acme.com'", '網址不合法時框下那一行說明的字（只能換字、不能關掉）；包在 Field 裡畫在 Field 的錯誤區，使用端自己的 FieldError 有字時以使用端為準'],

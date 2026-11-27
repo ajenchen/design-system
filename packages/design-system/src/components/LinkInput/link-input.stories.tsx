@@ -1,9 +1,11 @@
 // @story-trait-rationale: isInputLike -> ErrorText — 「錯誤說明」示範網址不合法時的紅框與框下一行說明,「儲存時查出的錯」示範使用端自己給的錯(link-input.spec.md「錯誤說明」,2026-11-23 展示頁範例稽核);另開 WithError 會重複同一情境。
 // @story-history: isInputLike WithError 由 Field 消費者處理(LinkInput 在 Field 內透過 fieldCtx.invalid 自動套 error border);showcase 不重複 Field state machine 覆蓋的 case。
 // 每則只教一件事(2026-11-23 範例稽核,story-rules.md「範例最高準則」):基本用法 = 有網址時的樣子;填寫網址 = 空白直接打、離開變連結;
-// 錯誤說明 = 不是網址時框下那一行(預設 / 換字);可清除 = ×;儲存時查出的錯 = 使用端的錯怎麼給、怎麼收;四模式 = mode 對照;自訂顯示文字 = label。
+// 錯誤說明 = 不是網址時框下那一行(預設 / 換字);可清除 = ×;儲存時查出的錯 = 使用端的錯怎麼給、怎麼收;四模式 = mode 對照;自訂顯示文字 = label;
+// 連結帶圖示 = icon(值的前綴圖示,2026-11-27)。
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { FileCheck, FileText } from 'lucide-react'
 import { LinkInput } from './link-input'
 import { Field, FieldLabel, FieldError } from '@/design-system/components/Field/field'
 import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
@@ -169,4 +171,78 @@ export const CustomLabel: Story = {
       <LinkInput mode="view" value="https://github.com/acme/storefront" label="前台網站原始碼" />
     </div>
   ),
+}
+
+/* ── 連結帶圖示(icon)── */
+// link-input.spec.md「值的前綴圖示」:圖示是值的一部分 —— 在連結裡、跟字同為連結色、點圖示也開連結;不是提示欄位用途的灰色 startIcon。
+export const ValueIcon: Story = {
+  name: '連結帶圖示',
+  render: () => <ValueIconDemo />,
+}
+
+function ValueIconDemo() {
+  const [contract, setContract] = React.useState('https://drive.acme.com/contracts/PO-2026-0417.pdf')
+  return (
+    <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-sm">
+      <p className="text-caption text-fg-muted">連結指向的東西有固定的樣子時(核准單、合約檔),在字前面加一個圖示(icon)。圖示跟字一起是連結:一起是藍色、滑過一起變色,點圖示也會打開連結。圖示依值由你決定,DS 不會看網址自動換。</p>
+      <Field>
+        <FieldLabel>核准紀錄</FieldLabel>
+        <LinkInput mode="readonly" value="https://erp.acme.com/approvals/AP-2026-1182" label="AP-2026-1182 採購核准單" icon={FileCheck} />
+      </Field>
+      <Field>
+        <FieldLabel>合約檔案</FieldLabel>
+        <LinkInput value={contract} onChange={setContract} label="採購合約(已簽署)" icon={FileText} />
+      </Field>
+    </div>
+  )
+}
+
+/* ── 值的前綴圖示 量測(test-only)── */
+// 只給 scripts/data-table-link-cell-invariant.mjs L11 量:每一種狀態各一格(data-probe = 狀態),讀者看的範例是上一則。
+export const ValueIconProbe: Story = {
+  name: '值的前綴圖示(量測)',
+  tags: ['test-only'],
+  parameters: { chromatic: { disableSnapshot: true } },
+  render: () => <ValueIconProbeDemo />,
+}
+
+function ValueIconProbeDemo() {
+  const [contract, setContract] = React.useState('https://drive.acme.com/contracts/PO-2026-0417.pdf')
+  const [contractLg, setContractLg] = React.useState('https://drive.acme.com/contracts/PO-2026-0417.pdf')
+  const [pending, setPending] = React.useState('合約還在法務審閱')
+  const approval = 'https://erp.acme.com/approvals/AP-2026-1182'
+  return (
+    <ExampleStack className="max-w-sm">
+      <ExampleSection title="編輯模式的連結狀態(md)">
+        <div data-probe="edit"><LinkInput value={contract} onChange={setContract} label="採購合約(已簽署)" icon={FileText} /></div>
+      </ExampleSection>
+      <ExampleSection title="編輯模式的連結狀態(lg)">
+        <div data-probe="edit-lg"><LinkInput size="lg" value={contractLg} onChange={setContractLg} label="採購合約(已簽署)" icon={FileText} /></div>
+      </ExampleSection>
+      <ExampleSection title="唯讀">
+        <div data-probe="readonly"><LinkInput mode="readonly" value={approval} label="AP-2026-1182 採購核准單" icon={FileCheck} /></div>
+      </ExampleSection>
+      <ExampleSection title="檢視">
+        <div data-probe="view"><LinkInput mode="view" value={approval} label="AP-2026-1182 採購核准單" icon={FileCheck} /></div>
+      </ExampleSection>
+      <ExampleSection title="檢視(外框)">
+        <div data-probe="view-shell"><LinkInput mode="view" showDisplayEndIcon value={approval} label="AP-2026-1182 採購核准單" icon={FileCheck} /></div>
+      </ExampleSection>
+      <ExampleSection title="停用">
+        <div data-probe="disabled"><LinkInput mode="disabled" value={approval} label="AP-2026-1182 採購核准單" icon={FileCheck} /></div>
+      </ExampleSection>
+      <ExampleSection title="唯讀、字太長被截斷">
+        <div data-probe="truncated"><LinkInput mode="readonly" width={200} value={approval} label="AP-2026-1182 採購核准單(第二季設備採購,含三家報價比較)" icon={FileCheck} /></div>
+      </ExampleSection>
+      <ExampleSection title="唯讀、值不是網址">
+        <div data-probe="plain"><LinkInput mode="readonly" value="合約還在法務審閱" icon={FileText} /></div>
+      </ExampleSection>
+      <ExampleSection title="唯讀、空值">
+        <div data-probe="empty"><LinkInput mode="readonly" value={null} icon={FileText} /></div>
+      </ExampleSection>
+      <ExampleSection title="編輯模式的打字狀態(值不是網址)">
+        <div data-probe="typing"><LinkInput value={pending} onChange={setPending} icon={FileText} aria-label="合約檔案" /></div>
+      </ExampleSection>
+    </ExampleStack>
+  )
 }

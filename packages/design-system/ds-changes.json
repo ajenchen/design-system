@@ -454,7 +454,10 @@
     "0.1.0-beta.152": {
       "changes": [],
       "errata": [],
-      "added": [],
+      "added": [
+        {"id":"0.1.0-beta.152/LinkInput.icon","target":"LinkInputProps.icon","note":"LinkInput 新增選填參數 icon(值的前綴圖示):畫在顯示的字前面、在連結裡,跟字同為連結色、滑過一起變色、點圖示也開連結(圖示 + 間距 8 + 字,同 Select 欄位上的值圖示);截斷時字截斷、圖示不縮,停用時跟字一起灰,值不是網址時跟一般文字同色照畫,空值與按鉛筆後的打字狀態不畫。它是值的一部分,不是提示欄位用途的 startIcon,DS 也不會看網址自動換圖示;不傳的地方畫面不變。範例:LinkInput 展示「連結帶圖示」。","spec":"src/components/LinkInput/link-input.spec.md「值的前綴圖示(`icon`)」","paths":["packages/design-system/src/components/LinkInput/link-input.tsx","packages/design-system/src/components/LinkInput/link-input.spec.md","packages/design-system/src/components/LinkInput/link-input.stories.tsx","packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx","packages/design-system/src/components/Field/field-controls.spec.md"]},
+        {"id":"0.1.0-beta.152/DataTable.meta.linkIcon","target":"ColumnMeta.linkIcon","note":"DataTable 網址欄(type: 'url')的欄設定新增選填 linkIcon:整欄的連結前面加同一個圖示,轉給格裡的 LinkInput icon(在連結裡、跟字同色,規則同 LinkInput 的 icon);不傳的欄畫面不變。","spec":"src/components/LinkInput/link-input.spec.md「值的前綴圖示(`icon`)」","paths":["packages/design-system/src/components/DataTable/column-types.ts","packages/design-system/src/components/DataTable/cell-registry.tsx"]}
+      ],
       "updated": [],
       "noVisibleChange": [
         {"paths":["packages/design-system/src/components/Field/field.anatomy.stories.tsx","packages/design-system/src/components/Field/field.principles.stories.tsx"],"reason":"只改兩則 Field 範例裡指向規格的註解:FieldGroup 那一節(欄位垂直間距、labelWidth cascade)整段從 field.spec.md 搬到新的 field-group.spec.md(field.spec.md 超過規格行數上限,內容逐字不改),註解改指新位置。程式、範例與畫面都不變。"}

@@ -6,7 +6,10 @@
  *       52abc933 的原始碼紅 18 格(網址樣字三種 × 停用以外六種模式:F2 乙前畫成一般文字);
  *       1d98db88 的原始碼紅 15 格(檔名 report.pdf / invoice-2026.xlsx / node.js × 檢視 / 外框檢視 / 唯讀 / 表格可編 / 表格不可編:補上 https:// 畫成連結,2026-11-04 fields 審查 12);
  *       7777b61c 的原始碼跑紅 140 格;a6390356 的原始碼紅停用 7 格(javascript: 三種寫法 / data: / mailto: / tel: 被畫成「-」,ftp: 只剩主機名,2026-10-21 r1b fields F2)
- *   綠: 修好的原始碼每一種模式 × 每一種值全綠(MODES × VALID / SAME_SITE / INVALID,數量以本檔為準);真的渲染時合法網址與站內路徑必須讀到連結(儀器有眼睛),否則 selftest 紅
+ *       2026-11-27 起(值的前綴圖示 `icon` / 表格 `meta.linkIcon`,link-input.spec.md「值的前綴圖示」):判定表 judgeIcon 對「圖示在連結外面」「停用沒畫圖示」
+ *       「空值畫了圖示」「打字狀態畫了圖示」「圖示沒有 aria-hidden」「加圖示後連結的名字變了」各一個合成輸出必紅;eb985952(加 icon 前)的原始碼紅 43 格(要畫圖示的格全紅,原本的判定表那幾格照綠)
+ *   綠: 修好的原始碼每一種模式 × 每一種值全綠(MODES × VALID / SAME_SITE / INVALID,數量以本檔為準);真的渲染時合法網址與站內路徑必須讀到連結(儀器有眼睛),否則 selftest 紅;
+ *       帶圖示的每一種模式 × ICON_VALUES 全綠,真的渲染時唯讀 / 表格格的合法網址必須讀到連結裡的圖示(儀器有眼睛)
  * ─────
  * 網址值的顯示:只有合法的 http(s) 網址畫成連結,其他一律一般文字(2026-10-13,待辦總帳 Q3e)。
  *
@@ -47,6 +50,32 @@ export const INVALID = ['ops@example.com', 'acme', 'javascript:alert(1)', 'JAVAS
   'report.pdf', 'invoice-2026.xlsx', 'node.js']
 const ALL = [...VALID, ...LOOKS_LIKE, ...SAME_SITE, ...INVALID]
 export const MODES = ['view', 'viewChrome', 'readonly', 'disabled', 'edit', 'cellEditable', 'cellReadonly']
+/** 帶值的前綴圖示渲染的值:網頁網址 / 網址樣字 / 站內路徑 / 不是網址 / 空值(link-input.spec.md「值的前綴圖示」「哪些地方畫」) */
+export const ICON_VALUES = [VALID[0], LOOKS_LIKE[1], SAME_SITE[0], 'ops@example.com', '']
+
+/**
+ * 純函式:值的前綴圖示每格 { icons, iconsInAnchor, iconsHidden, anchors, anchorText, anchorTextPlain } → 不符的格。
+ * 該畫的地方 = 值畫成連結的每一處(圖示在連結裡)+ 停用 + 值不是網址的一般文字;不畫 = 空值、編輯模式的打字狀態(link-input.spec.md「值的前綴圖示」)。
+ */
+export function judgeIcon(results) {
+  const failures = []
+  for (const mode of MODES) {
+    for (const value of ICON_VALUES) {
+      const key = `icon|${mode}|${value}`
+      const r = results[key]
+      if (!r) { failures.push(`${key}: 沒量到`); continue }
+      // 編輯模式只有網頁網址會是連結狀態(站內路徑、不是網址 = 打字狀態);其他模式網頁網址 / 網址樣字 / 站內路徑都是連結
+      const linkable = value !== '' && (VALID.includes(value) || LOOKS_LIKE.includes(value) || (SAME_SITE.includes(value) && mode !== 'edit'))
+      const shouldDraw = value !== '' && (mode === 'edit' ? linkable : true)
+      if (!shouldDraw && r.icons !== 0) failures.push(`${key}: ${value === '' ? '空值' : '打字狀態'}不畫值的圖示,實際 ${r.icons} 個`)
+      if (shouldDraw && r.icons !== 1) failures.push(`${key}: 應畫 1 個值的圖示,實際 ${r.icons} 個`)
+      if (shouldDraw && linkable && mode !== 'disabled' && r.iconsInAnchor !== 1) failures.push(`${key}: 值的圖示要在連結裡(實際連結裡 ${r.iconsInAnchor} 個)`)
+      if (r.icons !== r.iconsHidden) failures.push(`${key}: 值的圖示要 aria-hidden(${r.icons} 個裡 ${r.iconsHidden} 個有)`)
+      if (r.anchorText !== r.anchorTextPlain) failures.push(`${key}: 加圖示後連結的名字變了(「${r.anchorTextPlain}」→「${r.anchorText}」)`)
+    }
+  }
+  return failures
+}
 
 /** 純函式:每格 { anchors: [{href}], text } → 不符的格(呼叫端與 selftest 共用,M37:判斷式只有一份) */
 export function judge(results) {
@@ -87,26 +116,47 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { LinkInput } from '@/design-system/components/LinkInput/link-input'
 import { resolveCellComponent } from '@/design-system/components/DataTable/cell-registry'
 import { TooltipProvider } from '@/design-system/components/Tooltip/tooltip'
+import { Paperclip } from 'lucide-react'
 const UrlCell = resolveCellComponent('url')
-const el = (mode: string, value: string) => {
+// icon:值的前綴圖示(LinkInput icon / 表格 meta.linkIcon);不給 = 原本的量法
+const el = (mode: string, value: string, icon?: typeof Paperclip) => {
   switch (mode) {
-    case 'view': return <LinkInput mode="view" value={value} />
-    case 'viewChrome': return <LinkInput mode="view" value={value} showDisplayEndIcon />
-    case 'readonly': return <LinkInput mode="readonly" value={value} />
-    case 'disabled': return <LinkInput mode="disabled" value={value} />
-    case 'edit': return <LinkInput value={value} onChange={() => {}} />
-    case 'cellEditable': return <UrlCell value={value} meta={{}} mode="view" size="md" autoRowHeight={false} isEditable onRequestEdit={() => {}} />
-    default: return <UrlCell value={value} meta={{}} mode="view" size="md" autoRowHeight={false} isEditable={false} />
+    case 'view': return <LinkInput mode="view" value={value} icon={icon} />
+    case 'viewChrome': return <LinkInput mode="view" value={value} showDisplayEndIcon icon={icon} />
+    case 'readonly': return <LinkInput mode="readonly" value={value} icon={icon} />
+    case 'disabled': return <LinkInput mode="disabled" value={value} icon={icon} />
+    case 'edit': return <LinkInput value={value} onChange={() => {}} icon={icon} />
+    case 'cellEditable': return <UrlCell value={value} meta={{ linkIcon: icon }} mode="view" size="md" autoRowHeight={false} isEditable onRequestEdit={() => {}} />
+    default: return <UrlCell value={value} meta={{ linkIcon: icon }} mode="view" size="md" autoRowHeight={false} isEditable={false} />
   }
 }
 const decode = (s: string) => s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#x27;/g, "'")
+const render = (node: unknown) => renderToStaticMarkup(<TooltipProvider>{node as never}</TooltipProvider>)
+const anchorInners = (html: string) => [...html.matchAll(/<a\\b[^>]*\\bhref="[^"]*"[^>]*>([\\s\\S]*?)<\\/a>/g)].map((m) => m[1])
+const textOf = (s: string) => decode(s.replace(/<[^>]+>/g, ' ')).replace(/\\s+/g, ' ').trim()
+const ICON_MARK = /data-link-value-icon=""/g
 const out: Record<string, unknown> = {}
 for (const mode of ${JSON.stringify(MODES)}) {
   for (const value of ${JSON.stringify(ALL)}) {
-    const html = renderToStaticMarkup(<TooltipProvider>{el(mode, value)}</TooltipProvider>)
+    const html = render(el(mode, value))
     const anchors = [...html.matchAll(/<a\\b[^>]*\\bhref="([^"]*)"/g)].map((m) => ({ href: decode(m[1]) }))
     const text = decode(html.replace(/<[^>]+>/g, ' ')).replace(/\\s+/g, ' ')
     out[mode + '|' + value] = { anchors, text }
+  }
+  // 值的前綴圖示:同一格帶 / 不帶圖示各渲染一次(連結的名字 = 連結裡的字,兩者要相同)
+  for (const value of ${JSON.stringify(ICON_VALUES)}) {
+    const html = render(el(mode, value, Paperclip))
+    const plain = render(el(mode, value))
+    const inners = anchorInners(html)
+    out['icon|' + mode + '|' + value] = {
+      icons: (html.match(ICON_MARK) ?? []).length,
+      iconsInAnchor: inners.reduce((n, s) => n + (s.match(ICON_MARK) ?? []).length, 0),
+      // 圖示那一格(ItemPrefix)裡第一個 svg 帶 aria-hidden="true"
+      iconsHidden: [...html.matchAll(/data-link-value-icon=""[^>]*>\\s*<svg\\b[^>]*>/g)].filter((m) => /aria-hidden="true"/.test(m[0])).length,
+      anchors: inners.length,
+      anchorText: inners.map(textOf).join(' | '),
+      anchorTextPlain: anchorInners(plain).map(textOf).join(' | '),
+    }
   }
 }
 process.stdout.write(JSON.stringify(out))
@@ -154,10 +204,36 @@ function selftest() {
   const bad6 = { ...good, 'disabled|mailto:ops@example.com': { anchors: [], text: ' - ' } }
   if (!judge(bad6).some((f) => /停用只換顏色/.test(f))) { console.error('✗ selftest:停用時把有值的格畫成「-」應紅'); ok = false }
   if (judge({}).length < MODES.length) { console.error('✗ selftest:空結果應每格都紅'); ok = false }
+  // 值的前綴圖示(judgeIcon):正確形狀綠,六種壞法各紅
+  const goodIcon = {}
+  for (const mode of MODES) for (const value of ICON_VALUES) {
+    const linkable = value !== '' && (VALID.includes(value) || LOOKS_LIKE.includes(value) || (SAME_SITE.includes(value) && mode !== 'edit'))
+    const draw = value !== '' && (mode === 'edit' ? linkable : true)
+    const inAnchor = draw && linkable && mode !== 'disabled'
+    goodIcon[`icon|${mode}|${value}`] = { icons: draw ? 1 : 0, iconsInAnchor: inAnchor ? 1 : 0, iconsHidden: draw ? 1 : 0, anchors: inAnchor ? 1 : 0, anchorText: inAnchor ? 'github.com' : '', anchorTextPlain: inAnchor ? 'github.com' : '' }
+  }
+  if (judgeIcon(goodIcon).length !== 0) { console.error('✗ selftest:值的圖示正確形狀應綠,實際:', judgeIcon(goodIcon)); ok = false }
+  const iconBad = [
+    ['圖示在連結外面', 'icon|readonly|https://github.com/acme/web', { iconsInAnchor: 0 }, /要在連結裡/],
+    ['停用沒畫圖示', 'icon|disabled|https://github.com/acme/web', { icons: 0, iconsHidden: 0 }, /應畫 1 個/],
+    ['空值畫了圖示', 'icon|readonly|', { icons: 1, iconsHidden: 1 }, /空值不畫/],
+    ['打字狀態畫了圖示', 'icon|edit|ops@example.com', { icons: 1, iconsHidden: 1 }, /打字狀態不畫/],
+    ['圖示沒有 aria-hidden', 'icon|cellReadonly|https://github.com/acme/web', { iconsHidden: 0 }, /aria-hidden/],
+    ['加圖示後連結的名字變了', 'icon|view|acme.com', { anchorText: '圖示 github.com' }, /名字變了/],
+  ]
+  for (const [name, key, patch, re] of iconBad) {
+    const bad = { ...goodIcon, [key]: { ...goodIcon[key], ...patch } }
+    if (!judgeIcon(bad).some((f) => f.startsWith(key) && re.test(f))) { console.error(`✗ selftest:值的圖示「${name}」應紅`); ok = false }
+  }
+  if (judgeIcon({}).length < MODES.length) { console.error('✗ selftest:值的圖示空結果應每格都紅'); ok = false }
   // 儀器有眼睛:真的渲染一次,合法網址在 view / readonly / 表格格都讀得到連結
   const out = measure()
   for (const k of ['view|https://github.com/acme/web', 'readonly|https://github.com/acme/web', 'cellEditable|https://github.com/acme/web', 'view|/projects/8821/tasks/4821', 'view|www.example.com/pricing']) {
     if (!(out[k]?.anchors?.length === 1)) { console.error(`✗ selftest:對照組 ${k} 應讀到 1 個連結,實際`, out[k]); ok = false }
+  }
+  // 儀器有眼睛:帶圖示渲染時,唯讀與表格格的合法網址讀得到連結裡的圖示
+  for (const k of ['icon|readonly|https://github.com/acme/web', 'icon|cellReadonly|https://github.com/acme/web', 'icon|edit|https://github.com/acme/web']) {
+    if (!(out[k]?.iconsInAnchor === 1)) { console.error(`✗ selftest:對照組 ${k} 應讀到連結裡 1 個值的圖示,實際`, out[k]); ok = false }
   }
   console.log(ok ? '✅ link-input-url-display selftest PASS' : '❌ link-input-url-display selftest FAIL')
   return ok
@@ -166,10 +242,12 @@ function selftest() {
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 if (isMain) {
   if (process.argv.includes('--selftest')) process.exit(selftest() ? 0 : 1)
-  const failures = judge(measure())
+  const measured = measure()
+  const failures = [...judge(measured), ...judgeIcon(measured)]
   if (failures.length) {
     console.error(`✗ link-input-url-display:${failures.length} 格不符\n  ${failures.slice(0, 30).join('\n  ')}`)
     process.exit(1)
   }
-  console.log(`✓ link-input-url-display:${MODES.length} 種模式 × ${ALL.length} 種值 —— 只有網頁網址(含補上 https:// 的網址樣字)與站內路徑畫成連結,其他是一般文字,沒有別的 href`)
+  console.log(`✓ link-input-url-display:${MODES.length} 種模式 × ${ALL.length} 種值 —— 只有網頁網址(含補上 https:// 的網址樣字)與站內路徑畫成連結,其他是一般文字,沒有別的 href;` +
+    `帶值的前綴圖示 ${MODES.length} × ${ICON_VALUES.length} 格 —— 連結裡的圖示、停用與一般文字照畫、空值與打字狀態不畫、讀屏略過、連結名字不變`)
 }
