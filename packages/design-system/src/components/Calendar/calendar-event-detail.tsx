@@ -19,11 +19,13 @@ import { CALENDAR_EVENT_DETAIL_WIDTH_PX } from './calendar-geometry'
  *   (事件名稱;浮層名稱經 PopoverTitle 自動接 aria-labelledby)/ PopoverBody),
  *   InlineEdit(各欄 renderRead / renderEdit / multiline / editable 閘;可改時「標題」也是一欄), Field + FieldLabel + FieldGroup(垂直排、閱讀情境),
  *   Switch(全天:可改時直接切換;只能看時不畫這一欄【ALLDAY-VIEW(定)】), DatePicker.Range(檢視 formatRange、編輯 showTime + defaultOpen), Select(類別:display="tag")]
- * - tokens: 無直接讀取 —— 標題列高、欄位間距、body 上下左右內距、垂直排就地編輯外伸,全由上面的元件與 layoutSpace.css(PopoverBody = hug)給,本檔不寫任何間距
+ * - tokens: --layout-space-loose(標題列下內距 = 標題 → 第一欄)/ --layout-space-tight(欄與欄)/ --font-body-lg-size(標題列按鈕佔位 = 16px 標題那一行)
+ *   —— 都是事件詳情的客製(calendar.spec.md「事件詳情浮層」外殼 / 標題列 / 內距,2026-11-27 user 定;Popover / overlay-surface 通則不動);
+ *   版面間距大檔由外殼內一層 data-layout-space="lg"(density.spec.md「局部覆蓋」)給,其餘(左右內距、底、垂直排外伸)照元件與 layoutSpace.css
  * - 資料: ./calendar-layout.ts(detailRangeOf / rangeToTimePatch / toggleAllDayPatch:時間欄的值、全天 end 不含 ↔ Range 結束日含、全天切換)
  * - spec refs: calendar.spec.md「事件詳情浮層」(定位 / 外殼 / 標題列 / 內文欄位 / 位置 / 層次 / Esc / 點外面)、../Field/field.spec.md「閱讀情境」、
  *   ../InlineEdit/inline-edit.spec.md:52 / :126(同一場景不混放純顯示與就地編輯;不能改的值用 editable={false})、
- *   ../../tokens/layoutSpace/layoutSpace.spec.md 規則 2(標頭 → 第一個元素 tight)/ 規則 4(hug 容器底 = 頂)、
+ *   ../../tokens/layoutSpace/layoutSpace.spec.md 規則 2(通則:標頭 → 第一個元素 tight;本元件客製 loose)/ 規則 4(hug 容器底,本元件 = tight)、
  *   ../../../ds-canonical/references/keyboard-model-canonical.md「Esc 一次只關最內層」、lib/overlay-focus-return.ts returnFocusToOpener
  */
 
@@ -174,16 +176,30 @@ export function CalendarEventDetailPopover<E>({
           width={CALENDAR_EVENT_DETAIL_WIDTH_PX}
           onCloseAutoFocus={onCloseAutoFocus}
         >
-          {/* 標題列:一般浮層的樣子 —— 標準 PopoverHeader(內建 ×)+ PopoverTitle 放事件名稱,一律如此(可改 / 只能看都一樣;兩種密度同高)【DT-TITLE(定)】。
-              浮層的名字經 PopoverTitle 自動接 aria-labelledby = 事件名稱;內文「標題」欄提交後才換。
-              標題列右側 = eventDetail.actions(沒有「儲存」鈕、沒有 footer —— 每一欄自己提交) */}
-          <PopoverHeader closeAriaLabel={labels.detailClose} actions={detail.actions?.(shown.event)}>
-            <PopoverTitle>{shown.event.title}</PopoverTitle>
-          </PopoverHeader>
-          {/* 內文:PopoverBody 預設(左右 loose、上 tight、hug → 底 = 頂;layoutSpace.spec.md 規則 2 / 規則 4),不加任何內距 class */}
-          <PopoverBody>
-            <DetailFields entry={shown} detail={detail} labels={labels} locale={locale} readFormat={readFormat} onChange={onChange} onToggleAllDay={onToggleAllDay} />
-          </PopoverBody>
+          {/* 事件詳情的客製(calendar.spec.md「事件詳情浮層」外殼 / 標題列;只寫在本元件,不改 Popover / overlay-surface 通則 ——
+              user 2026-11-27「…如果要客製化的部分是很niche的，其實用不著推回主幹吧？」):
+              版面間距大檔只動 layout-space 一軸,控制項大小照舊(density.spec.md:91「局部覆蓋」<div data-layout-space="lg">;
+              不寫在 PopoverContent 上 —— 浮層內容根元素只准鎖 md,scripts/overlay-density-lock-invariant.mjs L2)。
+              這一層要把 flex-col / min-h-0 往下傳,內文才捲得動(M25 整鏈 forward:PopoverContent flex-col overflow-hidden → 這層 → PopoverBody flex-1 min-h-0)。 */}
+          <div data-layout-space="lg" className="flex flex-col flex-1 min-h-0">
+            {/* 標題列:一般浮層的樣子 —— 標準 PopoverHeader(內建 ×)+ PopoverTitle 放事件名稱,一律如此(可改 / 只能看都一樣)【DT-TITLE(定)】。
+                浮層的名字經 PopoverTitle 自動接 aria-labelledby = 事件名稱;內文「標題」欄提交後才換。
+                標題列右側 = eventDetail.actions(沒有「儲存」鈕、沒有 footer —— 每一欄自己提交)。
+                客製(calendar.spec.md「事件詳情浮層」標題列):不畫底線(border-b-0,先例 calendar-more-list.tsx「+N」清單、agent-panel.tsx 決策卡);
+                標題 16px = text-body-lg(同 Dialog / Sheet 標題,user 2026-11-27「1. 照你建議」);右側按鈕佔位 = 標題那一行的高 24
+                (overlay-chrome-sizing.spec.md:191「slot = 標題那一行的高」;= Dialog 標題列 slot,overlay-surface.tsx CHROME_UNBOUNDED_SLOT 的預設
+                calc(--font-body-lg-size × 1.5))→ ⋮ / × 中線 = 標題中線。標題字底 → 第一欄標籤頂 = loose,只由標題列的下內距給(內文頂 0;
+                同「+N」清單「只由標題列的下內距給」的寫法)。 */}
+            {/* @layout-space-magic-ok: 標題列下內距 loose(通則 tight)= 事件詳情客製,user 2026-11-27「詳情感覺可以照你建議」(標題 → 第一欄 = loose,calendar.spec.md「事件詳情浮層」標題列) */}
+            <PopoverHeader className="border-b-0 pb-[var(--layout-space-loose)] [--surface-chrome-slot-h:calc(var(--font-body-lg-size)*1.5)]" closeAriaLabel={labels.detailClose} actions={detail.actions?.(shown.event)}>
+              <PopoverTitle className="text-body-lg">{shown.event.title}</PopoverTitle>
+            </PopoverHeader>
+            {/* 內文:PopoverBody(左右 loose、hug → 底由容器自判 = tight;layoutSpace.spec.md 規則 4)。頂 0:標題 → 第一欄的 loose 由標題列下內距一個主人給 */}
+            {/* @layout-space-magic-ok: 內文頂 0(通則 tight)—— 標題列已無底線,這一段只由標題列下內距給(同 calendar-more-list.tsx「+N」清單 pt-0) */}
+            <PopoverBody className="pt-0">
+              <DetailFields entry={shown} detail={detail} labels={labels} locale={locale} readFormat={readFormat} onChange={onChange} onToggleAllDay={onToggleAllDay} />
+            </PopoverBody>
+          </div>
         </PopoverContent>
       )}
     </Popover>
@@ -210,7 +226,11 @@ function DetailFields<E>({ entry, detail, labels, locale, readFormat, onChange, 
     [categories],
   )
   return (
-    <FieldGroup>
+    // 欄與欄 = tight(事件詳情客製;FieldGroup 通則 loose,field-group.spec.md「欄位垂直間距」不改)—— 152 決策頁第 3 題 user 提法
+    //(問句)「就地編輯詳情 popover 開 lg、欄距 tight…」,留白草案 T2 照 AI 建議(user「我沒回應的就是沒有意見」),第 3 輪定為本元件客製
+    //(calendar.spec.md「事件詳情浮層」內距)。
+    // @layout-space-magic-ok: FieldGroup 欄距 tight(通則 loose)= 事件詳情客製,依據見上三行與 calendar.spec.md「事件詳情浮層」
+    <FieldGroup className="gap-[var(--layout-space-tight)]">
       {/* 標題:可改時才列,第一欄(Field + InlineEdit,與其他欄同一套);只能看時不列 —— 事件名稱已在標題列(同「全天」只能看時不畫的邏輯)【DT-TITLE(定)】。
           清空後提交 = 還原原值(不交回空標題) */}
       {editable && (

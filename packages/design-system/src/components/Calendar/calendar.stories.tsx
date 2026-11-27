@@ -395,16 +395,16 @@ export const SidePanelNarrow: Story = {
 }
 
 /**
- * 填滿主畫面、不加外框(`bordered={false}`;calendar.spec.md「外殼」bordered)。
- * 排班頁的主畫面只放這一個月曆、而且填滿:容器的邊就是捲動範圍的邊,外面再一圈框是多的。
+ * 填滿主畫面:貼邊擺法 + 不加外框(`flush` + `bordered={false}`;calendar.spec.md「外殼」)。
+ * 排班頁的主畫面只放這一個月曆、而且填滿:格子區左右下貼齊主畫面的邊,容器的邊就是捲動範圍的邊,外面再一圈框是多的。
  */
 export const FillMainAreaBorderless: Story = {
-  name: '填滿主畫面(不加外框)',
+  name: '填滿主畫面(貼邊、不加外框)',
   parameters: {
     docs: {
       description: {
         story:
-          '排班頁的主畫面只放這一個月曆、填滿到邊:外圍一圈框與圓角拿掉,格線保留,最後一週照畫底線收尾(和表格不加框時的收尾一樣)。平常的月曆仍有框 —— 框標記捲動範圍的邊界,和其他內容並排時要留著。',
+          '排班頁的主畫面只放這一個月曆、填滿到邊:格子區的左、右、下貼齊主畫面的邊(主畫面那三邊不給內距),工具列自己帶左右內距,「‹ 今天 ›」與「+ 新事件」對齊內容的左右邊距;不加框,格線保留,最後一週照畫底線收尾(和表格不加框時的收尾一樣)。平常的月曆仍有框、工具列在框外 —— 和表格一樣,框標記捲動範圍的邊界,和其他內容並排時要留著。',
       },
     },
   },
@@ -418,8 +418,9 @@ export const FillMainAreaBorderless: Story = {
       { id: 's4', title: '季度盤點', start: `${thisMonth}-24`, end: `${thisMonth}-25`, color: 'turquoise', allDay: true },
     ]
     return (
-      <div className="h-screen bg-surface">
-        <CalendarDemo bordered={false} defaultReferenceDate={now} today={now} events={events} locale={LOCALE} noun="班次" />
+      // 主畫面只給上方內距(左右下由月曆貼齊,工具列自己帶左右 loose —— 一段距離只有一個主人)
+      <div className="h-screen bg-surface pt-[var(--layout-space-loose)]">
+        <CalendarDemo flush bordered={false} defaultReferenceDate={now} today={now} events={events} locale={LOCALE} noun="班次" />
       </div>
     )
   },
@@ -588,7 +589,7 @@ function DetailChangeLogDemo() {
 export const DetailChangeLog: Story = {
   name: '詳情交回的修改',
   tags: ['test-only'],
-  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:116「eventDetail.onEventChange(event, patch) 必填;patch 只帶這一次改到的欄位」
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:117「eventDetail.onEventChange(event, patch) 必填;patch 只帶這一次改到的欄位」
   render: () => <DetailChangeLogDemo />,
 }
 

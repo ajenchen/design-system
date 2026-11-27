@@ -2,8 +2,11 @@
 /**
  * @gate-contract
  *   保證: Calendar 月檢視畫出來的骨架與間距照 calendar.spec.md(量像素與讀屏樹,不看 class —— M32):
- *         T 工具列 = ChromeHeader:高 = --chrome-header-height(一般密度 48、大密度 56);‹ / 今天 / › 包在 <nav>,名稱「行事曆月份導覽」;
- *           標題預設 h2、titleAs="h3" 時是 h3。
+ *         T 外殼與工具列(calendar.spec.md「外殼」「工具列」,2026-11-27 起框只圍格子區):T1 工具列 = 一列 sm 控件(高 = --field-height-sm);
+ *           T5 框只圍格子區(格陣四邊各 1、圓角、標 bounded;根節點沒有框與標記;工具列不在格子區裡、在它上方);T6 工具列 → 框 = tight;
+ *           T7 第一顆鈕左緣 = 框左緣、「新事件」右緣 = 框右緣(同表格工具列);一般 / 大密度各量。NB-*(元件檢閱器 bordered=false):格子區沒有框、
+ *           不標 bounded,T1 / T6 / T7 同上;FL-*(展示「填滿主畫面」flush + 不加框):F1 格子區左右下 = 容器的邊、F2 工具列兩端離容器邊 = loose,T1 / T6 同上。
+ *           ‹ / 今天 / › 包在 <nav>,名稱「行事曆月份導覽」;標題預設 h2、titleAs="h3" 時是 h3。
  *         H 星期列是 role=grid 裡的第一個 row、7 個 columnheader;讀屏名稱 = Intl 完整星期名(zh-TW「星期日」),看得見的字 = short(「週日」);
  *           星期列每格高 32(= 4 + 24 + 4)。
  *         W 各週等高(±0.5);最後一週的格子底線 0、其他週 1。
@@ -83,13 +86,14 @@
  *           ML-half 捲在頂端時可見底邊切在第 N + 1 列(N = 9)的一半(±1;訊息印各列高);ML-sticky 捲到底標題列不動、內文頂 = 標題列底;ML-bottom 捲到底最後一列 → 底 = tight;
  *           ML-outside 點清單外面關清單、焦點不被搶回「+N」。期望值由規格與 token 現算(tight 讀浮層上的 --layout-space-tight),不 import 元件常數。
  *         DT 事件詳情浮層(設計規格「狀態行為:事件詳情開著」「狀態行為:從清單開詳情」;calendar.spec.md「事件詳情浮層」;一般 / 大密度各一趟):
- *           DT-name 浮層名稱 = 事件標題本身(PopoverTitle 自動接 aria-labelledby);DT-head 標題列 = 一般浮層的標題列 = 2 × tight + 一行標題(--font-body-size × 1.5)、
- *           兩種密度同值、× 與標題同中線【DT-TITLE(定)2026-11-27;修前標題列放 sm 就地編輯框,2 × tight + sm 欄位高】;
+ *           DT-name 浮層名稱 = 事件標題本身(PopoverTitle 自動接 aria-labelledby);DT-head 標題列 = PopoverTitle 一行 16px 標題(--font-body-lg-size × 1.5)、
+ *           上 tight 下 loose、不畫底線、版面間距大檔(兩種密度都 16 + 24 + 24)、× 原生高 = 頁面 sm 欄位高(控制項大小不跟著放大)
+ *           【DT-TITLE(定)+ 2026-11-27 事件詳情客製;修前 14px 標題、上下 tight + 底線】;DT-center 標題中線 = 標題列每一顆鈕(⋯ / ×)中線;DT-width 寬 432;
  *           DT-side / DT-side-right / DT-side-flip 子選單擺法【DT-DIRECTION(定)】先開右、放不下翻左:左半邊的事件往右開、隔 8、頂端對齊;
  *           右半邊(最右一欄 7/25)但右側放得下(情境:Calendar 根元素收窄,右邊留出空位)也往右開;同一筆在原版面右側放不下 → 翻到左側、隔 8;
  *           DT-time-fit 時間欄進編輯 → DatePicker.Range showTime 兩端的字都不被裁(scrollWidth ≤ clientWidth;詳情寬 CALENDAR_EVENT_DETAIL_WIDTH_PX 唯一的目的,
  *           寬是推算的【AI 推導】,訊息印每端要的寬 / 分到的寬 = 實量);
- *           DT-vertical 欄位垂直排(標籤在上);DT-label 標籤 = fg-secondary(閱讀情境);DT-gap 標頭 → 第一欄 = tight、最後一欄 → 底 = tight(hug);
+ *           DT-vertical 欄位垂直排(標籤在上);DT-label 標籤 = fg-secondary(閱讀情境);DT-gap 標題字底 → 第一欄標籤頂 = loose、欄與欄 = tight、最後一欄 → 底 = tight;
  *           DT-mark 打開詳情的那一段帶 data-detail-open;DT-esc Esc 關詳情、焦點回那一段;DT-outside 減少動態下改地點、點外面 = 先提交再關(再打開看得到新值);
  *           DT-commit 改標題 → 月格跟著換;DT-blank 清空提交 = 還原原值;
  *           DT-list 從清單開:清單不關、詳情左緣 − 清單右緣 = 8、上緣對齊那一列;DT-esc-layers 第一下 Esc 只關詳情(焦點回那一列)、第二下關清單(焦點回「+N」)。
@@ -241,6 +245,7 @@ const STORY = {
   weekNumbers: storyId(/calendar-展示--manufacturing-week-numbers$/u),
   loading: storyId(/calendar-展示--loading-while-switching-month$/u),
   narrow: storyId(/calendar-展示--side-panel-narrow$/u),
+  fill: storyId(/calendar-展示--fill-main-area-borderless$/u),
   quarter: storyId(/calendar-展示--quarter-planning$/u),
   customTile: storyId(/calendar-展示--read-only-dates-custom-tile-keyboard$/u),
   matrix: storyId(/calendar-設計規格--color-matrix$/u),
@@ -263,7 +268,8 @@ const DETAIL_SIDE = { gap: 8, edge: 8, roomWidth: 720, eventId: 'd3' }
 // 格最小高 61 = 上內距 4 + 日期框 24 + 4 + 一列 24 + 下內距 4 + 格線 1(格子 border-box,底線在格高裡;calendar.spec.md「每一週等高」)
 // moreListRows = 「+N」清單完整看得到幾列(半列原則的 N,calendar.spec.md「「+N」清單浮層」高度與捲動;刻意不 import 元件常數)
 // line = 格線 1(Tailwind `border` 預設寬;週數欄寬「4 + 框 + 4 + 格線」的格線,calendar.spec.md「間距」週數欄寬列)
-const SPEC = { toolbar: { md: 48, lg: 56 }, gap: 4, row: 24, inset: 8, header: 32, cellMin: 61, line: 1, navName: '行事曆月份導覽', moreListRows: 9 }
+// detailWidth = 事件詳情寬(calendar.spec.md「事件詳情浮層」寬;刻意不 import CALENDAR_EVENT_DETAIL_WIDTH_PX)
+const SPEC = { gap: 4, row: 24, inset: 8, header: 32, cellMin: 61, line: 1, navName: '行事曆月份導覽', moreListRows: 9, detailWidth: 432 }
 // 窄寬度門檻(calendar-geometry.ts CALENDAR_NARROW_COLUMN_MAX_PX;calendar.spec.md「窄寬度」):欄寬 ≤ 60 = 窄。值照規格回寫的數字逐字寫,不 import 元件常數
 const NARROW_MAX = 60
 /** 窄寬掃描:欄寬 51…70(20 個寬度,跨過門檻),每個寬度連看幾幀 */
@@ -346,7 +352,25 @@ const PROBE = () => {
   })).filter(Boolean)
   const viewport = grid.querySelector('[data-radix-scroll-area-viewport]')
   const v = viewport ? r(viewport) : null
+  // 外殼(calendar.spec.md「外殼」):格子區 = 格陣本身(框、圓角、邊緣標記都在它上面),工具列在框外;token 在根節點上量
+  const probeH = (css) => { const el = document.createElement('div'); el.style.cssText = `position:absolute;visibility:hidden;${css}`; shell.append(el); const h = el.getBoundingClientRect().height; el.remove(); return h }
+  const gcs = getComputedStyle(grid), scs = getComputedStyle(shell)
+  const g = r(grid), sh = r(shell), cont = shell.parentElement ? r(shell.parentElement) : null
+  const controls = toolbar ? [...toolbar.querySelectorAll('button')] : []
+  const tb = toolbar ? r(toolbar) : null
+  const shellBox = {
+    tight: probeH('height: var(--layout-space-tight)'), loose: probeH('height: var(--layout-space-loose)'), sm: probeH('height: var(--field-height-sm)'),
+    gridBorders: ['Top', 'Right', 'Bottom', 'Left'].map((s) => parseFloat(gcs[`border${s}Width`])), gridRadius: parseFloat(gcs.borderTopLeftRadius),
+    rootBorders: ['Top', 'Right', 'Bottom', 'Left'].map((s) => parseFloat(scs[`border${s}Width`])),
+    gridMark: grid.getAttribute('data-layout-region'), rootMark: shell.getAttribute('data-layout-region'),
+    toolbarInside: Boolean(toolbar && grid.contains(toolbar)),
+    grid: { left: g.left, right: g.right, top: g.top, bottom: g.bottom }, root: { left: sh.left, right: sh.right, bottom: sh.bottom },
+    cont: cont ? { left: cont.left, right: cont.right, bottom: cont.bottom } : null,
+    toolbar: tb ? { top: tb.top, bottom: tb.bottom, height: tb.height } : null,
+    firstControlLeft: controls[0] ? r(controls[0]).left : NaN, lastControlRight: controls.length ? r(controls[controls.length - 1]).right : NaN,
+  }
   return {
+    shellBox,
     toolbarH: toolbar ? r(toolbar).height : NaN,
     toolbarTop: toolbar ? r(toolbar).top : NaN,
     navName: nav?.getAttribute('aria-label') ?? null,
@@ -411,8 +435,37 @@ const check = (id, ok, msg) => { results.push({ id, ok, msg }); console.log(`${o
 const zhLong = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
 const zhShort = ['週日', '週一', '週二', '週三', '週四', '週五', '週六']
 
+/**
+ * 外殼(calendar.spec.md「外殼」;2026-11-27 user「表格是只畫在表格上，行事曆是把工具列也整個包起來」→ 照表格改):
+ * T1 工具列 = 一列 sm 控件(高 = sm 欄位高,不另加上下內距);T5 框只圍格子區(格子區四邊各 1、圓角、標 bounded;根節點沒有框也沒有標記;
+ * 工具列不在格子區裡、在它上方);T6 工具列 → 框 = tight;T7 工具列兩端對齊框的兩緣(第一顆鈕左緣 = 框左緣、「新事件」右緣 = 框右緣,同表格工具列)。
+ */
+function judgeShell(p, density, { prefix = '', bordered = true, flush = false } = {}) {
+  const s = p.shellBox
+  const tbOk = Boolean(s.toolbar)
+  check(`${prefix}T1-${density}`, tbOk && near(s.toolbar.height, s.sm), `工具列高 ${s.toolbar?.height}(規格 = sm 欄位高 ${s.sm})`)
+  const frame = bordered
+    ? s.gridBorders.every((b) => b === 1) && s.gridRadius > 0 && s.gridMark === 'bounded'
+    : s.gridBorders.every((b) => b === 0) && s.gridMark === null
+  check(`${prefix}T5-${density}`, tbOk && frame && s.rootBorders.every((b) => b === 0) && s.rootMark === null && !s.toolbarInside && s.toolbar.bottom <= s.grid.top + 0.5,
+    `格子區框 ${s.gridBorders.join('/')}、圓角 ${s.gridRadius}、標記 ${s.gridMark}(規格 ${bordered ? '1/1/1/1、> 0、bounded' : '0/0/0/0、無標記'});根節點框 ${s.rootBorders.join('/')}、標記 ${s.rootMark}(規格 0、無);` +
+    `工具列${s.toolbarInside ? '在' : '不在'}格子區裡、工具列底 ${s.toolbar?.bottom} / 格子區頂 ${s.grid.top}`)
+  check(`${prefix}T6-${density}`, tbOk && near(s.grid.top - s.toolbar.bottom, s.tight), `工具列 → 格子區 ${tbOk ? (s.grid.top - s.toolbar.bottom).toFixed(2) : '?'}(規格 tight ${s.tight})`)
+  if (!flush) {
+    check(`${prefix}T7-${density}`, near(s.firstControlLeft, s.grid.left) && near(s.lastControlRight, s.grid.right),
+      `第一顆鈕左緣 ${s.firstControlLeft} / 框左緣 ${s.grid.left};「新事件」右緣 ${s.lastControlRight} / 框右緣 ${s.grid.right}(規格:對齊)`)
+  } else {
+    // F 貼邊擺法:格子區左右下 = 容器的邊;工具列兩端離容器邊 = loose(字對齊內容左右邊距)
+    const c = s.cont
+    check(`${prefix}F1-${density}`, Boolean(c) && near(s.grid.left, c.left) && near(s.grid.right, c.right) && near(s.grid.bottom, c.bottom),
+      c ? `格子區 左 ${s.grid.left} / 右 ${s.grid.right} / 下 ${s.grid.bottom};容器 ${c.left} / ${c.right} / ${c.bottom}(規格:貼齊)` : '量不到容器')
+    check(`${prefix}F2-${density}`, Boolean(c) && near(s.firstControlLeft - c.left, s.loose) && near(c.right - s.lastControlRight, s.loose),
+      c ? `第一顆鈕離容器左 ${(s.firstControlLeft - c.left).toFixed(2)}、「新事件」離容器右 ${(c.right - s.lastControlRight).toFixed(2)}(規格 loose ${s.loose})` : '量不到容器')
+  }
+}
+
 function judgeLayout(p, density) {
-  check(`T1-${density}`, near(p.toolbarH, SPEC.toolbar[density]), `工具列高 ${p.toolbarH}(${density} 規格 ${SPEC.toolbar[density]})`)
+  judgeShell(p, density)
   if (density !== 'md') return
   check('T3', p.navName === SPEC.navName, `‹ / 今天 / › 在 <nav>,名稱「${p.navName}」(規格「${SPEC.navName}」)`)
   check('T4', p.heading === 'H2', `月份標題預設 ${p.heading}(規格 h2)`)
@@ -864,6 +917,13 @@ const BLOCKS = {
       })
       check('E3', Boolean(ring) && ring.style !== 'none' && ring.width > 0 && ring.offset >= 0,
         ring ? `F2 進格後事件列焦點框:${ring.style} ${ring.width}px、offset ${ring.offset}px(往外 = offset ≥ 0)` : 'F2 之後焦點沒有落在事件列上')
+    }
+    // 外殼的另外兩種擺法(calendar.spec.md「外殼」):不加框(元件檢閱器 bordered=false)與貼邊(展示「填滿主畫面」flush + 不加框)
+    for (const density of ['md', 'lg']) {
+      const nb = await open(STORY.inspector, { label: `Inspector bordered=false @${density}`, args: 'bordered:!false', mutate, density })
+      if (nb) judgeShell(nb, density, { prefix: 'NB-', bordered: false })
+      const fl = await open(STORY.fill, { label: `填滿主畫面(貼邊)@${density}`, mutate, density })
+      if (fl) judgeShell(fl, density, { prefix: 'FL-', bordered: false, flush: true })
     }
   },
   async axe(mutate) {
@@ -1998,13 +2058,18 @@ const BLOCKS = {
         const d = document.querySelector(s)
         const tile = document.querySelector('[data-calendar-tile][data-calendar-event-id="d1"]')
         if (!d || !tile) return null
-        const probe = (css) => { const el = document.createElement('div'); el.style.cssText = `position:absolute;visibility:hidden;${css}`; d.append(el); const v = el.getBoundingClientRect().height; el.remove(); return v }
-        const tight = probe('height: var(--layout-space-tight)')
-        // 一行標題的高(PopoverTitle text-body 行高 1.5;= COMPACT_HEADER_SLOT 的衍生式,popover.spec.md「Close X 按鈕」)
-        const titleLine = probe('height: calc(var(--font-body-size) * 1.5)')
-        const ref = document.createElement('span'); ref.style.color = 'var(--fg-secondary)'; d.append(ref); const secondary = getComputedStyle(ref).color; ref.remove()
         const header = d.querySelector('[data-slot="surface-header"]')
         const body = d.querySelector('[data-popover-body]')
+        // token 在標題列那一層量(2026-11-27 起詳情外殼裡一層 data-layout-space="lg",浮層根元素本身仍鎖 md —— 量在根元素上會拿到 md 的值)
+        const host = header?.parentElement ?? d
+        const probe = (css) => { const el = document.createElement('div'); el.style.cssText = `position:absolute;visibility:hidden;${css}`; host.append(el); const v = el.getBoundingClientRect().height; el.remove(); return v }
+        const tight = probe('height: var(--layout-space-tight)')
+        const loose = probe('height: var(--layout-space-loose)')
+        // 一行標題的高(事件詳情客製:PopoverTitle text-body-lg 行高 1.5 = 24,同 Dialog 標題;calendar.spec.md「事件詳情浮層」標題列)
+        const titleLine = probe('height: calc(var(--font-body-lg-size) * 1.5)')
+        // 控制項大小照頁面密度(只動版面間距一軸):sm 欄位高在浮層外的頁面上量
+        const smOut = (() => { const el = document.createElement('div'); el.style.cssText = 'position:absolute;visibility:hidden;height:var(--field-height-sm)'; document.body.append(el); const v = el.getBoundingClientRect().height; el.remove(); return v })()
+        const ref = document.createElement('span'); ref.style.color = 'var(--fg-secondary)'; d.append(ref); const secondary = getComputedStyle(ref).color; ref.remove()
         const dismiss = header?.querySelector('[data-dismiss]')
         const title = header?.querySelector('h2')
         const titleBox = title
@@ -2013,34 +2078,55 @@ const BLOCKS = {
         const dr = r(d), tr = r(tile), hr = r(header), br = r(body), xr = r(dismiss), ttr = r(titleBox)
         const rows = fields.map((f) => {
           const label = f.querySelector('label'); const value = label?.nextElementSibling
-          return { field: f.getAttribute('data-calendar-detail-field'), labelBottom: r(label)?.bottom, labelLeft: r(label)?.left, valueTop: r(value)?.top, fieldLeft: r(f)?.left, color: label ? getComputedStyle(label).color : null }
+          return { field: f.getAttribute('data-calendar-detail-field'), labelTop: r(label)?.top, labelBottom: r(label)?.bottom, labelLeft: r(label)?.left, valueTop: r(value)?.top, fieldLeft: r(f)?.left, top: r(f)?.top, bottom: r(f)?.bottom, color: label ? getComputedStyle(label).color : null }
         })
-        const first = fields[0] ? r(fields[0]) : null, last = fields.length ? r(fields[fields.length - 1]) : null
+        const last = fields.length ? r(fields[fields.length - 1]) : null
+        // 標題列右側每一顆鈕(⋯ 操作、×)的中線
+        const buttonMids = header ? [...header.querySelectorAll('button')].map((b) => { const x = r(b); return x.top + x.height / 2 }) : []
         return {
-          tight, titleLine, secondary, rows,
-          detail: { left: dr.left, right: dr.right, top: dr.top }, tile: { left: tr.left, right: tr.right, top: tr.top },
-          // 標題列高不含它底下那條分隔線(標準 PopoverHeader 的 border-b;calendar.spec.md「標題列」的 45 = 21 + 上下 12)
-          headerH: hr ? hr.height - parseFloat(getComputedStyle(header).borderBottomWidth) : NaN, dismissMid: xr ? xr.top + xr.height / 2 : NaN, titleMid: ttr ? ttr.top + ttr.height / 2 : NaN,
-          firstGap: first && hr ? first.top - hr.bottom : NaN, bottomGap: last && br ? br.bottom - last.bottom : NaN,
+          tight, loose, titleLine, smOut, secondary, rows, buttonMids,
+          detail: { left: dr.left, right: dr.right, top: dr.top, bottom: dr.bottom, width: dr.width }, tile: { left: tr.left, right: tr.right, top: tr.top }, vh: innerHeight,
+          headerH: hr ? hr.height : NaN, headerLine: header ? parseFloat(getComputedStyle(header).borderBottomWidth) : NaN,
+          dismissMid: xr ? xr.top + xr.height / 2 : NaN, dismissH: xr ? xr.height : NaN, titleMid: ttr ? ttr.top + ttr.height / 2 : NaN,
+          titleFont: title ? parseFloat(getComputedStyle(title).fontSize) : NaN,
+          // 標題字底(h2 那一行的底)→ 第一欄標籤頂;欄與欄 = 上一欄外框底 → 下一欄外框頂
+          titleToFirst: ttr && rows[0] ? rows[0].labelTop - ttr.bottom : NaN,
+          fieldGaps: rows.slice(1).map((row, i) => row.top - rows[i].bottom),
+          bottomGap: last && br ? br.bottom - last.bottom : NaN,
           tileOpen: tile.hasAttribute('data-detail-open'),
         }
       }, detailSel)
       if (!g) { instrumentFails.push({ cell: `DT ${tag}`, detail: '找不到詳情浮層或「設計審查」那一段' }); continue }
-      // DT-head【DT-TITLE(定)】:標題列 = 一般浮層的標題列(PopoverTitle)= 2 × tight + 一行標題(一般 / 大都是 45),× 與標題中線對齊。
-      // 修前標題列放 sm 就地編輯框 = 2 × tight + sm 欄位高(52 / 56,跟著密度變)
-      check(`DT-head${tag}`, near(g.headerH, 2 * g.tight + g.titleLine) && near(g.dismissMid, g.titleMid),
-        `標題列高 ${fmtPx(g.headerH)}(規格 2 × ${g.tight} + ${g.titleLine})、× 中線 ${fmtPx(g.dismissMid)} / 標題中線 ${fmtPx(g.titleMid)}`)
-      // DT-side:7/5 在星期的左半邊 → 先開右側、與事件隔 8、頂端對齊(calendar.spec.md「事件詳情浮層」位置【DT-DIRECTION(定)】子選單擺法)
-      check(`DT-side${tag}`, near(g.detail.left - g.tile.right, 8) && near(g.detail.top, g.tile.top),
-        `詳情左緣 − 事件右緣 ${fmtPx(g.detail.left - g.tile.right)}(規格 8)、詳情上緣 ${fmtPx(g.detail.top)} / 事件上緣 ${fmtPx(g.tile.top)}`)
+      // DT-head【DT-TITLE(定)+ 2026-11-27 事件詳情客製】:標題列 = PopoverTitle 一行 16px 標題,上 tight、下 loose(標題 → 第一欄的 loose 只由標題列下內距給)、
+      // 不畫底線;版面間距大檔(兩種密度都是 16 + 24 + 24 = 64),控制項大小照頁面密度(× 原生高 = 頁面的 sm 欄位高)。
+      // 2026-11-27 前:14px 標題、上下 tight + 分隔線 1(45 + 1)
+      check(`DT-head${tag}`, near(g.headerH, g.tight + g.titleLine + g.loose) && g.headerLine === 0 && near(g.titleFont, 16) && near(g.loose, 24) && near(g.dismissH, g.smOut),
+        `標題列高 ${fmtPx(g.headerH)}(規格 上 ${g.tight} + 一行標題 ${g.titleLine} + 下 ${g.loose})、底線 ${g.headerLine}(規格 0)、標題字 ${g.titleFont}px(規格 16)、` +
+        `詳情裡 loose ${g.loose}(版面間距大檔 24)、× 高 ${fmtPx(g.dismissH)}(頁面 sm 欄位高 ${g.smOut})`)
+      // DT-center(2026-11-27 user「這個變大的標題會與右邊的操作項目垂直置中嗎？」→「1. 照你建議」):標題中線 = 標題列每一顆鈕(⋯ / ×)的中線
+      // (按鈕佔位 = 標題那一行的高 24,overlay-chrome-sizing.spec.md:191「slot = 標題那一行的高」)
+      const offMid = g.buttonMids.filter((m) => !near(m, g.titleMid))
+      check(`DT-center${tag}`, g.buttonMids.length >= 1 && offMid.length === 0,
+        `標題中線 ${fmtPx(g.titleMid)};標題列 ${g.buttonMids.length} 顆鈕中線 ${g.buttonMids.map(fmtPx).join(' / ')}(規格:全部 = 標題中線)`)
+      // DT-width:寬 432(版面間距大檔左右內距 24,內容寬同改前 416 − 2 × 16;calendar.spec.md「事件詳情浮層」寬)
+      check(`DT-width${tag}`, near(g.detail.width, SPEC.detailWidth), `詳情寬 ${fmtPx(g.detail.width)}(規格 ${SPEC.detailWidth})`)
+      // DT-side:7/5 在星期的左半邊 → 先開右側、與事件隔 8、頂端對齊(calendar.spec.md「事件詳情浮層」位置【DT-DIRECTION(定)】子選單擺法);
+      // 下方放不下時由 Popover 的碰撞往上推、底貼視窗留 collisionPadding(同 DT-side-right 的 topOk;2026-11-27 版面間距大檔後大密度的詳情變高,
+      // 在 900 高的視窗裡會被推上去幾 px —— 那是碰撞規則,不是擺法錯)
+      const sideTopOk = near(g.detail.top, g.tile.top) || (g.detail.top < g.tile.top && near(g.detail.bottom, g.vh - DETAIL_SIDE.edge))
+      check(`DT-side${tag}`, near(g.detail.left - g.tile.right, 8) && sideTopOk,
+        `詳情左緣 − 事件右緣 ${fmtPx(g.detail.left - g.tile.right)}(規格 8)、詳情上緣 ${fmtPx(g.detail.top)} / 事件上緣 ${fmtPx(g.tile.top)}(下方放不下時:詳情底 ${fmtPx(g.detail.bottom)} / 視窗底 − ${DETAIL_SIDE.edge} = ${fmtPx(g.vh - DETAIL_SIDE.edge)})`)
       // DT-vertical:每一欄標籤在上(標籤底 ≤ 值頂)、標籤左緣 = 欄位左緣【FIELD-ORIENT(定)】
       const notVertical = g.rows.filter((row) => !(row.labelBottom <= row.valueTop + 0.5 && near(row.labelLeft, row.fieldLeft)))
       check(`DT-vertical${tag}`, g.rows.length >= 4 && notVertical.length === 0, `欄位 ${g.rows.map((row) => row.field).join(' / ')};標籤不在上的:${notVertical.map((row) => row.field).join('、') || '無'}`)
       // DT-label:閱讀情境的標籤 = fg-secondary(../Field/field.spec.md「閱讀情境」)
       const wrongColor = g.rows.filter((row) => row.color !== g.secondary)
       check(`DT-label${tag}`, wrongColor.length === 0, `標籤色 ${[...new Set(g.rows.map((row) => row.color))].join(' / ')}(fg-secondary ${g.secondary})`)
-      // DT-gap:標頭 → 第一欄 = tight(規則 2)、最後一欄 → 底 = 與頂部同值(規則 4 第 4 列 hug)
-      check(`DT-gap${tag}`, near(g.firstGap, g.tight) && near(g.bottomGap, g.tight), `標頭 → 第一欄 ${fmtPx(g.firstGap)}、最後一欄 → 底 ${fmtPx(g.bottomGap)}(規格 tight ${g.tight})`)
+      // DT-gap(2026-11-27 事件詳情客製,calendar.spec.md「事件詳情浮層」內距):標題字底 → 第一欄標籤頂 = loose(user「詳情感覺可以照你建議」)、
+      // 欄與欄 = tight、最後一欄 → 底 = tight(版面間距大檔:24 / 16 / 16)
+      const offGaps = g.fieldGaps.filter((x) => !near(x, g.tight))
+      check(`DT-gap${tag}`, near(g.titleToFirst, g.loose) && g.fieldGaps.length >= 3 && offGaps.length === 0 && near(g.bottomGap, g.tight),
+        `標題字底 → 第一欄標籤頂 ${fmtPx(g.titleToFirst)}(規格 loose ${g.loose})、欄與欄 ${g.fieldGaps.map(fmtPx).join(' / ')}(規格 tight ${g.tight})、最後一欄 → 底 ${fmtPx(g.bottomGap)}(規格 tight ${g.tight})`)
       // DT-mark:打開詳情的那一段帶 data-detail-open(維持滑過色)
       check(`DT-mark${tag}`, g.tileOpen, `「設計審查」那一段${g.tileOpen ? '' : '沒有'}帶 data-detail-open`)
       // DT-esc:Esc 關詳情、焦點回打開它的那一段
@@ -2234,6 +2320,13 @@ const MUTANTS = [
   { name: '最後一週留底線', block: 'layout', expect: ['W2'], css: '[role="gridcell"] { border-bottom-width: 1px !important; }' },
   { name: '格子內距 6(p-1.5)', block: 'layout', expect: ['D1'], css: '[role="gridcell"] { padding: 6px !important; }' },
   { name: '工具列改回內距撐高', block: 'layout', expect: ['T1-md', 'T1-lg'], css: '[role="grid"] { } header { height: auto !important; padding-block: 12px !important; }' },
+  // 外殼(calendar.spec.md「外殼」2026-11-27):框只圍格子區、工具列在框外 → tight → 框;不加框 / 貼邊兩種擺法
+  { name: '框連工具列一起圍(2026-11-27 前的長相)', block: 'layout', expect: ['T5-md', 'T5-lg'], css: '[role="grid"] { border-width: 0 !important; border-radius: 0 !important; } div:has(> [role="grid"]) { border: 1px solid var(--divider) !important; }' },
+  { name: '工具列貼著框(工具列 → 格子區 0)', block: 'layout', expect: ['T6-md', 'T6-lg'], css: 'div:has(> [role="grid"]) { gap: 0 !important; }' },
+  { name: '有框時工具列也帶左右內距(沒對齊框的兩緣)', block: 'layout', expect: ['T7-md', 'T7-lg'], css: 'div:has(> [role="grid"]) > header { padding-inline: 16px !important; }' },
+  { name: '不加框時格子區照樣標 bounded', block: 'layout', expect: ['NB-T5-md', 'NB-T5-lg'], dom: () => document.querySelector('[role="grid"]')?.setAttribute('data-layout-region', 'bounded') },
+  { name: '貼邊時工具列沒有左右內距(字貼著容器邊)', block: 'layout', expect: ['FL-F2-md', 'FL-F2-lg'], css: 'header[data-flush] { padding-inline: 0 !important; }' },
+  { name: '貼邊時容器左右還留內距(格子區沒貼齊)', block: 'layout', expect: ['FL-F1-md', 'FL-F1-lg'], css: 'div:has(> div > header[data-flush]) { padding-inline: 16px !important; }' },
   { name: 'nav 沒有名稱', block: 'layout', expect: ['T3'], dom: () => document.querySelector('header nav')?.removeAttribute('aria-label') },
   { name: '欄頭名稱改成短字', block: 'layout', expect: ['H2'], dom: () => document.querySelectorAll('[role="columnheader"]').forEach((h) => h.setAttribute('aria-label', h.textContent)) },
   { name: '事件列高 20', block: 'layout', expect: ['E1'], css: '[data-calendar-tile] { height: 20px !important; }' },
@@ -2457,7 +2550,8 @@ const MUTANTS = [
   // DT 事件詳情浮層:每一格一個退步
   { name: '詳情拿掉 aria-labelledby(浮層沒有名字)', block: 'detail', expect: ['DT-name@md', 'DT-name@lg'], detailDom: () => document.querySelector('[data-calendar-event-detail]')?.removeAttribute('aria-labelledby') },
   { name: '標題列放回 sm 欄位高的佔位(2026-11-27 前可編輯標題列的高,52 / 56)', block: 'detail', expect: ['DT-head@md', 'DT-head@lg'], css: '[data-calendar-event-detail] [data-slot="surface-header"] { --surface-chrome-slot-h: var(--field-height-sm) !important; }' },
-  { name: '詳情開在事件下方(沒有側邊開、頂端對齊)', block: 'detail', expect: ['DT-side@md', 'DT-side@lg'], css: '[data-calendar-event-detail] { margin-top: 40px !important; }' },
+  // 用 translate 位移(不進定位器的量測):大密度的詳情 2026-11-27 起較高、會被碰撞往上推,改 margin 的話定位器會連 margin 一起推回、量不出錯位
+  { name: '詳情開在事件下方(沒有側邊開、頂端對齊)', block: 'detail', expect: ['DT-side@md', 'DT-side@lg'], css: '[data-calendar-event-detail] { translate: 0 40px !important; }' },
   // 以位移重現舊幾何(元件的 side 由 React 傳給定位器,頁面外改不到):在星期右半邊、左側放得下 → 搬到事件左側隔 8(= 2026-11-26 前 sideTowardCenter 的結果)
   { name: '改回朝格陣中央(右半邊的欄往左開)', block: 'detail', expect: ['DT-side-right@md', 'DT-side-right@lg'],
     sideDom: ({ d, t, gap, edge }) => {
@@ -2498,6 +2592,12 @@ const MUTANTS = [
   // ALLDAY-VIEW(定) 2026-11-27:排在 detail 突變的最後,既有突變的分片歸屬不動
   { name: '只能看時照樣畫全天欄', block: 'detail', expect: ['DT-allday'], alldayView: () => { const t = document.querySelector('[data-calendar-event-detail] [data-calendar-detail-field="time"]'); const f = document.createElement('div'); f.setAttribute('data-calendar-detail-field', 'allDay'); t?.after(f) } },
   { name: '能編輯時全天欄不是開關(拿掉 role=switch)', block: 'detail', expect: ['DT-allday'], alldayEdit: () => document.querySelector('[data-calendar-event-detail] [data-calendar-detail-field="allDay"] [role="switch"]')?.removeAttribute('role') },
+  // 事件詳情客製(2026-11-27,calendar.spec.md「事件詳情浮層」):排在 detail 突變的最後,既有突變的分片歸屬不動
+  { name: '標題列按鈕佔位回到 14px 標題那一行(21)—— 16px 標題與 ⋯ / × 錯開', block: 'detail', expect: ['DT-center@md', 'DT-center@lg'], css: '[data-calendar-event-detail] [data-slot="surface-header"] { --surface-chrome-slot-h: calc(var(--font-body-size) * 1.5) !important; }' },
+  { name: '標題列畫回底線', block: 'detail', expect: ['DT-head@md', 'DT-head@lg'], css: '[data-calendar-event-detail] [data-slot="surface-header"] { border-bottom-width: 1px !important; }' },
+  { name: '詳情外殼沒開版面間距大檔', block: 'detail', expect: ['DT-head@md', 'DT-head@lg'], detailDom: () => document.querySelector('[data-calendar-event-detail] [data-layout-space="lg"]')?.removeAttribute('data-layout-space') },
+  { name: '欄與欄改回 FieldGroup 通則 loose', block: 'detail', expect: ['DT-gap@md', 'DT-gap@lg'], css: '[data-calendar-event-detail] [data-field-group] { row-gap: var(--layout-space-loose) !important; }' },
+  { name: '詳情寬回到 416(版面間距大檔之前)', block: 'detail', expect: ['DT-width@md', 'DT-width@lg'], css: '[data-calendar-event-detail] { width: 416px !important; }' },
   // 必須最後一個(todayFirst 會釘住時鐘,見該區塊註解)
   { name: '1 號的實心底被壓成 24 寬', block: 'todayFirst', expect: ['R1'], css: '[data-calendar-day="2026-07-01"] { padding: 0 !important; max-width: var(--tag-height-md) !important; }' },
 ]

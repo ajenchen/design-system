@@ -53,6 +53,18 @@
       "want": "bottom",
       "reason": "AgentPanel 對話區底部恆 48、不看最後一則是誰(不宣告 data-layout-body,不讓容器自判);設計規格「狀態行為」那則面板貼內容,照規則 4 第 4 列會是與頂部同值,所以要登記",
       "source": "agent-panel.spec.md「3. AgentConversation」(user 2026-09-02 原話只講常駐工具列在最後;「不看最後一則是誰」是【AI 推導 2026-11-14】)"
+    },
+    {
+      "key": "calendar-event-detail-bottom-tight",
+      "stories": [
+        "design-system-components-calendar-*"
+      ],
+      "container": "[data-calendar-event-detail] [data-popover-body]",
+      "want": "tight",
+      "reason": "Calendar 事件詳情的客製:標題列不畫底線、標題字底 → 第一欄 = loose(頂量到 loose),最後一欄 → 底 = tight(版面間距大檔 16),不是 hug 的「底 = 頂」;只寫在行事曆規格,不改 Popover / overlay-surface 通則",
+      "source": "calendar.spec.md「事件詳情浮層」內距;交接資料夾 notes/decisions/decide152-answers.md「留白草案第 2 輪」(T5 甲 16 = AI 建議,user 對沒留言的項目「我沒回應的就是沒有意見」)與「留白草案第 3 輪」(客製留在元件:「…如果要客製化的部分是很niche的，其實用不著推回主幹吧？」;標題 → 第一欄 loose:「詳情感覺可以照你建議」)",
+      "userQuote": "我沒回應的就是沒有意見",
+      "quoteDate": "2026-11-27"
     }
   ],
   "pending": [],

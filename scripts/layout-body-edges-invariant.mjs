@@ -65,7 +65,8 @@
  *           對照組畫回分隔線 → 改量標頭外框、紅「與頂部同值」;決策卡(body 後面還有一樣拿掉線的 footer)照舊量標頭外框、綠;
  *         ι 就地編輯的框(InlineEdit 根 data-field-reading)算一個欄位、量框外框(Calendar 事件詳情,最後一欄是就地編輯):頂 = 底 = tight、綠;
  *           對照組拿掉 data-field-reading → 量到框裡的 Tag / 字、紅(field.spec.md「閱讀情境」表「就地編輯的框」;2026-11-26);
- *         κ Calendar 根節點的邊緣標記(calendar.spec.md「外殼」;2026-11-26):範例外層改成 data-layout-body="fill" 的容器、月曆是最後一塊
+ *         κ Calendar 格子區的邊緣標記(calendar.spec.md「外殼」;2026-11-26,2026-11-27 起框與標記只在格子區、根節點沒有標記 → 容器穿過根節點這一層看到它):
+ *           範例外層改成 data-layout-body="fill" 的容器、月曆是最後一塊
  *           → 標記 bounded、底 = loose、綠(月曆根節點沒有標記時這一格就紅);對照組拿掉標記 → 底 48、紅「應 loose…缺標記」;
  *         標記造假兩種(Sidebar 群組改標 bounded、表格外框改標 unbounded)→ 標記檢查紅。
  *   分片(--shard=i/n,i 從 0 起;CI 兩格 0/2、1/2):story id 依字碼穩定排序後取模。每片照常判(量測、標記、0 個容器 / 0 則 story = 儀器失效);
@@ -1319,8 +1320,10 @@ async function selftestBrowser(browser, server, ex) {
       if (!ok) problems.push(`θ @${density}:Calendar「+N」清單應從標頭內容底量、頂 = 底 = ${want}、綠;畫回分隔線應改量標頭外框、紅「與頂部同值」;決策卡應照舊量標頭外框、綠;實得 ${JSON.stringify(now.map((r) => ({ topFrom: r.topFrom, top: r.top, bottom: r.bottom })))} ${JSON.stringify(nowRed)} / 畫回線 ${JSON.stringify(lined.map((r) => ({ topFrom: r.topFrom, top: r.top, bottom: r.bottom })))} ${JSON.stringify(lRed)} / 決策卡 ${JSON.stringify(card.map((r) => ({ topFrom: r.topFrom, top: r.top, bottom: r.bottom })))} ${JSON.stringify(cardRed)}`)
       else out(`  ✓ θ @${density}:Calendar「+N」清單標頭沒有分隔線 → 從標頭內容底量,頂 ${now[0].top} = 底 ${now[0].bottom};畫回分隔線 → 量標頭外框、頂 ${lined[0].top}、紅「與頂部同值」;決策卡(後面還有 footer)照舊量標頭外框,頂 ${card[0].top} / 底 ${card[0].bottom}、綠`)
     }
-    // ι(2026-11-26):就地編輯的框算一個欄位(Calendar 事件詳情,最後一欄是就地編輯的類別 Tag;play 打開)→ 量框外框、底 = 頂 = tight、綠;
-    // 對照組拿掉 InlineEdit 根的 data-field-reading(= 不認得框)→ 量到框裡的 Tag / 字、紅
+    // ι(2026-11-26):就地編輯的框算一個欄位(Calendar 事件詳情,最後一欄是就地編輯的類別 Tag;play 打開)→ 量框外框、底 = tight、綠;
+    // 對照組拿掉 InlineEdit 根的 data-field-reading(= 不認得框)→ 量到框裡的 Tag / 字、紅。
+    // 2026-11-27 起事件詳情客製(calendar.spec.md「事件詳情浮層」):標題列無底線、標題 → 第一欄 = loose(頂量到 loose)、底 = tight ——
+    // 與「hug 底 = 頂」不同,登記在例外帳 calendar-event-detail-bottom-tight(帶 user 原話);底照樣量框外框 = tight。
     for (const density of DENSITIES) {
       const pick = (got) => got.rows.filter((r) => /data-slot=surface-body/.test(r.containerDesc ?? '') && (r.headerText ?? '') === INLINE_FRAME_HEADER)
       const now = pick(await measureStory(page, server.origin, server.notFound, INLINE_FRAME_STORY, density, { exSel, triggers: false, explore: false }))
@@ -1330,22 +1333,26 @@ async function selftestBrowser(browser, server, ex) {
         exSel, triggers: false, explore: false, beforeMeasure: (p) => p.evaluate(() => document.querySelectorAll('[data-field-reading]').forEach((el) => el.removeAttribute('data-field-reading'))),
       }))
       const bRed = bare.flatMap((r) => judgeRow(r, ex).failures)
-      const ok = now.length === 1 && Math.abs(now[0].bottom - want) <= TOL && Math.abs(now[0].top - want) <= TOL && !nowRed.length && bare.length === 1 && bRed.length > 0
-      if (!ok) problems.push(`ι @${density}:Calendar 詳情最後一欄是就地編輯 → 應量框外框、頂 = 底 = ${want}、綠;拿掉 data-field-reading 應紅;實得 ${JSON.stringify(now.map((r) => ({ top: r.top, bottom: r.bottom, last: r.lastDesc })))} ${JSON.stringify(nowRed)} / 拿掉 ${JSON.stringify(bare.map((r) => ({ bottom: r.bottom, last: r.lastDesc })))} ${JSON.stringify(bRed)}`)
-      else out(`  ✓ ι @${density}:Calendar 詳情最後一欄是就地編輯 → 量框外框,頂 ${now[0].top} = 底 ${now[0].bottom};拿掉 data-field-reading → 底 ${bare[0].bottom}、紅`)
+      const wantTop = now[0]?.loose ?? NaN
+      const ok = now.length === 1 && Math.abs(now[0].bottom - want) <= TOL && Math.abs(now[0].top - wantTop) <= TOL && !nowRed.length && bare.length === 1 && bRed.length > 0
+      if (!ok) problems.push(`ι @${density}:Calendar 詳情最後一欄是就地編輯 → 應量框外框、頂 = ${wantTop}(事件詳情客製 loose)、底 = ${want}、綠(例外帳登記);拿掉 data-field-reading 應紅;實得 ${JSON.stringify(now.map((r) => ({ top: r.top, bottom: r.bottom, last: r.lastDesc })))} ${JSON.stringify(nowRed)} / 拿掉 ${JSON.stringify(bare.map((r) => ({ bottom: r.bottom, last: r.lastDesc })))} ${JSON.stringify(bRed)}`)
+      else out(`  ✓ ι @${density}:Calendar 詳情最後一欄是就地編輯 → 量框外框,頂 ${now[0].top}(loose)、底 ${now[0].bottom}(tight);拿掉 data-field-reading → 底 ${bare[0].bottom}、紅`)
     }
     // κ(2026-11-26):Calendar 根節點的邊緣標記(calendar.spec.md「外殼」;layoutSpace.spec.md:176)。全庫還沒有範例把月曆放進會給上下內距的容器,
     // 這裡把「產品上線週」的外層 div 改成那種容器(拿掉範例自己的 p-*、宣告 data-layout-body="fill";月曆固定 600 高,下方留空白 = 撐滿的容器),
     // 月曆是最後一塊 → 標記 bounded、底 = loose、綠。月曆根節點沒有標記時這一格量不到容器、紅(這一格就是「Calendar 根節點標 bounded」);
-    // 對照組拿掉標記 → 容器把月曆當一般元素給 48、紅「應 loose…缺標記」(同 γ 的表格)。月曆根節點 = 格陣往上第一個帶標記的祖先。
+    // 對照組拿掉標記 → 容器把月曆當一般元素給 48、紅「應 loose…缺標記」(同 γ 的表格)。
+    // 2026-11-27 起框只圍格子區(calendar.spec.md「外殼」):標記在格子區(= 格陣本身)、根節點沒有標記 → 容器穿過根節點這一層包層看到它
+    //(layoutSpace.css「最多穿過兩層沒有標記的包層」);格子區要是根節點的最後一個子節點、根節點要是範例外層的最後一個子節點。
     const asFillBody = (strip) => (p) => p.evaluate((strip) => {
-      const cal = document.querySelector('#storybook-root [role=grid]')?.closest('[data-layout-region]')
+      const region = document.querySelector('#storybook-root [role=grid]')?.closest('[data-layout-region]')
+      const cal = region?.parentElement
       const wrap = cal?.parentElement
-      if (!cal || !wrap || wrap.lastElementChild !== cal) return
+      if (!region || !cal || !wrap || cal.lastElementChild !== region || wrap.lastElementChild !== cal || cal.hasAttribute('data-layout-region')) return
       for (const c of [...wrap.classList]) if (/^p[trblxy]?-/.test(c)) wrap.classList.remove(c)
       wrap.setAttribute('data-layout-body', 'fill')
       cal.style.setProperty('height', '600px')
-      if (strip) cal.removeAttribute('data-layout-region')
+      if (strip) region.removeAttribute('data-layout-region')
     }, strip)
     for (const density of DENSITIES) {
       const want = T[density].loose
