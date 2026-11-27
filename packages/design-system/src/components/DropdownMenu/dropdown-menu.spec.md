@@ -269,6 +269,7 @@ Item-level default / hover / focused / selected / disabled **色彩**由 MenuIte
 - `account-menu.spec.md`
 - `action-bar.spec.md`
 - `command.spec.md`
+- `data-table.spec.md`
 - `file-viewer.spec.md`
 - `menu-item.spec.md`
 - `popover.spec.md`

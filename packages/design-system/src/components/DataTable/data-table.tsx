@@ -41,7 +41,7 @@ import {
 import { useVirtualizer, type VirtualItem } from '@tanstack/react-virtual'
 import { TableScrollProvider } from '@/design-system/components/Field/field-context'
 import { cva, type VariantProps } from 'class-variance-authority'
-import { ChevronDown, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown, Filter as FilterIcon, EyeOff, X as XIcon, GripVertical } from 'lucide-react'
+import { ChevronDown, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown, Filter as FilterIcon, EyeOff, X as XIcon, GripVertical, type LucideIcon } from 'lucide-react'
 // **v15.0 Path B**(對齊 user:source 留原位 / indicator 為 drop preview / 不 auto-shift(轉述)directive):
 // 砍 useSortable + SortableContext 用 useDraggable + useDroppable 分離 hooks(對齊 DS 內 TreeView SSOT)。
 import { DndContext, DragOverlay, useDraggable, useDroppable, pointerWithin, rectIntersection, useSensor, useSensors, PointerSensor, KeyboardSensor, type DragEndEvent, type CollisionDetection } from '@dnd-kit/core'
@@ -58,7 +58,8 @@ import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncate
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { ItemInlineActionButton, ItemPrefix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { columnTypeDefaults, type ColumnType } from './column-types'
-import { nextSorting, columnMenuShowsCancelSort, columnMenuShowsSortDirection, sortPriorityLabel, sortPriorityDescription, sortChangeAnnouncement, DATA_TABLE_SORT_DEFAULT_LABELS, type SortAction } from './lib/sort-cycle'
+import { nextSorting, columnMenuSortItems, sortPriorityLabel, sortPriorityDescription, sortChangeAnnouncement, DATA_TABLE_SORT_DEFAULT_LABELS, type DataTableSortLabels, type SortAction } from './lib/sort-cycle'
+import { columnMenuGroups, type ColumnMenuItem } from './lib/column-menu'
 import { cellEditId, editingRowIndexesOf } from './lib/editing-rows'
 import { sortingFnForColumnType } from './lib/column-sorting'
 import { resolveCellComponent, CELL_EDIT_ENTRY_ATTR, type CellComponentProps } from './cell-registry'
@@ -71,7 +72,7 @@ import { isImeComposing } from '@/design-system/lib/ime-composition'
 import { isFocusLost } from '@/design-system/lib/overlay-focus-return'
 import { isOwnPointerTarget, pressLandedInDom } from '@/design-system/lib/pointer-press'
 import { FIXED_ORIGIN_PROBE_INNER_STYLE, FIXED_ORIGIN_PROBE_STYLE, originFromProbe, toLocal, VIEWPORT_ORIGIN, type FixedLayerOrigin } from '@/design-system/lib/fixed-layer-origin'
-import { useI18n } from '@/design-system/lib/i18n/i18n-context'
+import { useI18n, type I18nHookResult } from '@/design-system/lib/i18n/i18n-context'
 import { pointerFocusGuard } from '@/design-system/lib/pointer-focus-guard'
 import { Button } from '@/design-system/components/Button/button'
 
@@ -163,10 +164,14 @@ export type DataTableColumnDef<TData, TValue = any> =
 
 /**
  * DataTable 主體的字(2026-11-26,workspace F 組 F3):列拖曳把手的讀屏名與排序中的停用提示,原本寫死中文。
+ * 2026-11-27(workspace H42)起也涵蓋表頭 ⌄ 欄位選單與排序的字:選單六項、⌄ 的讀屏名,以及排序的順位描述與播報句
+ * (`DataTableSortLabels` 那一份,`lib/sort-cycle.ts`;鍵名照原樣併進來)。
  * 取值順序照 `lib/i18n/README.md`「Fallback chain」:`labels` prop → I18nProvider 的 `data-table` 那一組 → 下方預設(就是原本寫死的字,一字不改)。
- * 表頭其他字串(隱藏欄位、自動調整寬度、依此欄篩選…)仍寫死,要開放是另一題(data-table.spec.md「文案」)。
+ * 帶參數的句子是函式(`columnMenu`、`priorityDescription`、`announce…` 那幾句),I18nProvider 只收字串 → 只經 `labels` prop(同 Pagination `labels.range`)。
+ * 還寫死、沒有接上的(欄寬把手的讀屏名、列勾選框的 fallback 讀屏名、展開鈕、預設空狀態、捲動區名稱、開關格、播報句之間的逗號、拖曳播報)
+ * 列在 data-table.spec.md「九之二」表頭選單那一列。
  */
-export interface DataTableLabels {
+export interface DataTableLabels extends DataTableSortLabels {
   /** 列拖曳把手的讀屏名(可拖) */
   rowDragHandle: string
   /** 列拖曳把手的讀屏名(排序中不能拖) */
@@ -175,13 +180,41 @@ export interface DataTableLabels {
   rowDragDisabledTooltip: string
   /** 多選時表頭「全選」勾選框的讀屏名(2026-11-27 起經 labels;之前寫死在元件裡) */
   selectAllVisibleRows: string
+  /** 表頭 ⌄ 欄位選單鈕的讀屏名(「{欄名} 欄位選單」;欄名 = 欄標題,不是字串時用欄 id) */
+  columnMenu: (column: string) => string
+  /** ⌄ 選單項:依此欄篩選(有 `onColumnFilterTrigger` 才出現) */
+  filterByColumn: string
+  /** ⌄ 選單項:隱藏這一欄(`column.getCanHide()` 才出現) */
+  hideColumn: string
+  /** ⌄ 選單項:自動調整欄寬(`enableColumnResize` 才出現) */
+  autoFitColumnWidth: string
 }
 
 export const DATA_TABLE_DEFAULT_LABELS: DataTableLabels = {
+  ...DATA_TABLE_SORT_DEFAULT_LABELS,
   rowDragHandle: '拖曳重排此列', // i18n-allow: DS 預設(中文);labels prop / I18nProvider 可換
   rowDragHandleDisabled: '排序中無法拖曳', // i18n-allow: DS 預設
   rowDragDisabledTooltip: '排序中無法拖曳,清除排序後可重排', // i18n-allow: DS 預設
   selectAllVisibleRows: '全選可見列', // i18n-allow: DS 預設
+  columnMenu: (column) => `${column} 欄位選單`, // i18n-allow: DS 預設(帶參數的句子,只經 labels prop)
+  filterByColumn: '依此欄篩選…', // i18n-allow: DS 預設
+  hideColumn: '隱藏欄位', // i18n-allow: DS 預設
+  autoFitColumnWidth: '自動調整寬度', // i18n-allow: DS 預設
+}
+
+/**
+ * `labels` prop 與 I18nProvider、預設值合併成一份(每個鍵各自取):
+ * 字串 = prop → I18nProvider `data-table.<鍵>` → 預設;函式(帶參數的句子)= prop → 預設(I18nProvider 只收字串)。
+ * 鍵清單就是 `DATA_TABLE_DEFAULT_LABELS` 的鍵 —— 新增一個字只要在介面與預設值各加一行,不必再改這裡。
+ */
+function resolveDataTableLabels(overrides: Partial<DataTableLabels> | undefined, t: I18nHookResult['t']): DataTableLabels {
+  const resolved: DataTableLabels = { ...DATA_TABLE_DEFAULT_LABELS }
+  for (const key of Object.keys(DATA_TABLE_DEFAULT_LABELS) as (keyof DataTableLabels)[]) {
+    const fallback = DATA_TABLE_DEFAULT_LABELS[key]
+    const value = overrides?.[key] ?? (typeof fallback === 'string' ? t('data-table', key, fallback) : fallback)
+    Object.assign(resolved, { [key]: value })
+  }
+  return resolved
 }
 
 export interface DataTableProps<TData>
@@ -310,6 +343,12 @@ export interface DataTableProps<TData>
   // ── L3 Sort(排序)──
   /** 啟用多重排序(Shift+點擊 / Shift+Enter / Shift+Space 把這一欄加進排序、表頭顯示「箭頭 + 順位數字」;一般點擊仍只用這一欄);default true,對齊 AG Grid。規則 → data-table.spec.md「Multi-sort header」列 */
   enableMultiSort?: boolean
+  /**
+   * 表頭 ⌄ 欄位選單(排序 / 篩選 / 隱藏 / 自動調整寬度);default true。`false` = 整張表每一欄都不畫 ⌄(也不留排序區 ↔ ⌄ 的 8px),
+   * 排序區照常可點、Enter / Space(含 Shift)照舊。點表頭只在升冪 ↔ 降冪之間切、不會回到沒排序 —— 關掉之後要取消排序,
+   * 給使用者排序面板(`DataTableSortManager`)或由產品改受控的 `tableOptions.state.sorting`。規則 → data-table.spec.md「九之二」表頭選單那一列。
+   */
+  enableColumnMenu?: boolean
 
   // ── L3 Filter trigger(callback only — UI in consumer)──
   /** Cell ⌄ menu「Filter by this」點擊,emit columnId 讓 consumer 開 global filter panel + prefill。
@@ -350,8 +389,9 @@ export interface DataTableProps<TData>
    */
   onRowReorder?: (sourceId: string, targetId: string, position: 'before' | 'after') => void
   /**
-   * DataTable 主體的字(Partial,與 `DATA_TABLE_DEFAULT_LABELS` 合併;沒給的鍵再看 I18nProvider 的 `data-table` 那一組):
-   * 列拖曳把手的讀屏名與排序中的停用提示。2026-11-26 起(workspace F 組 F3),之前寫死中文。
+   * DataTable 主體的字(Partial,與 `DATA_TABLE_DEFAULT_LABELS` 合併;沒給的字串鍵再看 I18nProvider 的 `data-table` 那一組,函式鍵只經這裡):
+   * 列拖曳把手的讀屏名與排序中的停用提示(2026-11-26 起,workspace F 組 F3)、表頭 ⌄ 欄位選單的項目與讀屏名、排序的順位描述與播報句
+   * (2026-11-27 起,workspace H42)。之前寫死中文;預設值就是原本的字。
    */
   labels?: Partial<DataTableLabels>
   /**
@@ -655,6 +695,16 @@ function measureNaturalWidth(els: HTMLElement[], host: HTMLElement, cap: number)
 
 const SYSTEM_COL_IDS = new Set([SELECT_COL_ID, '__drag__', '__actions__'])
 const isSystemColumn = (colId: string) => SYSTEM_COL_IDS.has(colId)
+
+/** 表頭 ⌄ 欄位選單每一項的圖示(項目清單 = lib/column-menu.ts `columnMenuGroups`;圖示與 2026-11-27 前逐項寫死的那一份相同) */
+const COLUMN_MENU_ICONS: Record<ColumnMenuItem, LucideIcon> = {
+  sortAscending: ArrowUp,
+  sortDescending: ArrowDown,
+  cancelSort: XIcon,
+  filterByColumn: FilterIcon,
+  hideColumn: EyeOff,
+  autoFitColumnWidth: ArrowUpDown,
+}
 
 // ── 未掛載區的骨架底(2026-09-12;user 拍板:確認,改 data-table.tsx(轉述))──────────────
 // **這是「永不空白」的地板,不是加速器。** 它跟列殼(`renderShellRow`)解決的不是同一件事:
@@ -1607,6 +1657,7 @@ function DataTableInner<TData>(
     preserveSelectionOnFilter = false,
     columnVisibility: columnVisibilityProp, defaultColumnVisibility, onColumnVisibilityChange,
     enableMultiSort = true,
+    enableColumnMenu = true,
     onColumnFilterTrigger,
     onCellCommit,
     enableRowDrag = false,
@@ -1629,12 +1680,9 @@ function DataTableInner<TData>(
   // 未分頁 = 既有 '400px' 預設不變。顯式傳一律尊重(prop docblock 有完整規則)。
   // 下面的 `height` 是內部的 CSS 上限字串('auto' = 沒有上限),下游一整串判斷都吃它;對外參數叫 `maxHeight`(「尺寸:甲」)。
   const height = maxHeightToCss(maxHeightProp) ?? (pagination ? 'auto' : '400px')
-  // 主體的字:prop → I18nProvider `data-table` → DS 預設(lib/i18n/README.md「Fallback chain」;DataTableLabels 註解)
+  // 主體的字:prop → I18nProvider `data-table` → DS 預設(lib/i18n/README.md「Fallback chain」;DataTableLabels 註解;函式鍵只經 prop)
   const { t } = useI18n()
-  const tableLabels = React.useMemo<DataTableLabels>(() => {
-    const pick = (key: keyof DataTableLabels) => labelsProp?.[key] ?? t('data-table', key, DATA_TABLE_DEFAULT_LABELS[key])
-    return { rowDragHandle: pick('rowDragHandle'), rowDragHandleDisabled: pick('rowDragHandleDisabled'), rowDragDisabledTooltip: pick('rowDragDisabledTooltip'), selectAllVisibleRows: pick('selectAllVisibleRows') }
-  }, [labelsProp, t])
+  const tableLabels = React.useMemo<DataTableLabels>(() => resolveDataTableLabels(labelsProp, t), [labelsProp, t])
   // 對外參數 `rowHeight="hug"`(2026-11-17 前叫 `autoRowHeight`);內部一整串判斷(列殼、儲存格、per-row 錯誤撐高、
   // scripts/audit-data-table-row-mode-ssot.mjs 盯的 cell-render 範圍)沿用這個布林名,意思 = 「整張表跟內容長高」。
   const autoRowHeight = rowHeightProp === 'hug'
@@ -1926,8 +1974,8 @@ function DataTableInner<TData>(
     setSortAnnouncement(sortChangeAnnouncement(previous, next, columnId, (id) => {
       const column = table.getColumn(id)
       return column ? columnAccessibleName(column) : id
-    }))
-  }, [table])
+    }, tableLabels))
+  }, [table, tableLabels])
 
   // v13.2:onColumnResize callback 透過 useEffect 觀測 columnSizing state 變動 fire(uncontrolled state pattern)
   // 2026-07-06 D3 fix:兌現 prop docblock「commit-on-pointerup,非 live」契約 —
@@ -4275,7 +4323,7 @@ function DataTableInner<TData>(
     // 只有一欄排序時不顯示數字(`sortPriorityLabel` 回 null);0 欄自然不顯示(canSort && sortDir 短路)。
     const sortingState = table.getState().sorting ?? []
     const priorityLabel = canSort && sortDir ? sortPriorityLabel(sortingState, header.column.id) : null
-    const priorityDescription = canSort && sortDir ? sortPriorityDescription(sortingState, header.column.id) : null
+    const priorityDescription = canSort && sortDir ? sortPriorityDescription(sortingState, header.column.id, tableLabels) : null
     const priorityDescriptionId = priorityDescription ? `${columnHeaderDomId(headerIdBase, header.column.id)}-sort-priority` : undefined
     const SortIcon = sortDir === 'asc' ? ArrowUp : ArrowDown // 未套不渲染;套用後二擇一
     // 點擊 / Enter / Space 與 Shift+點擊 / Shift+Enter / Shift+Space 同一支;Shift 只在「這張表允許、這一欄也允許多重排序」時算數,
@@ -4283,6 +4331,67 @@ function DataTableInner<TData>(
     const activateSort = (shiftKey: boolean) => {
       const additive = shiftKey && enableMultiSort && header.column.getCanMultiSort()
       applyHeaderSorting(header.column.id, { kind: 'activate', additive })
+    }
+    // ⌄ 欄位選單的項目:一份清單(lib/column-menu.ts `columnMenuGroups`),觸發鈕畫不畫、選單畫哪幾項、分隔線畫在哪都讀它。
+    // 一組都沒有(例:關掉欄位隱藏的不可排序欄)→ 不畫 ⌄,連外層與展開時的 8px 都不畫;分隔線只在兩組之間(2026-11-27,workspace H42)。
+    const columnMenu = columnMenuGroups(canSort ? columnMenuSortItems(sortingState, header.column.id) : [], {
+      // `enableColumnMenu={false}` = 整張表關掉選單 → 清單恆空、每一欄都不畫 ⌄(排序區不受影響)
+      enabled: enableColumnMenu,
+      canFilter: Boolean(onColumnFilterTrigger),
+      canHide: header.column.getCanHide(),
+      // 2026-05-06 v11:Auto-fit 放 more menu(不綁 double-click,避免跟 click-to-sort 衝突);System columns 永遠 fixed 不顯此 item。
+      canAutoFit: enableColumnResize && !isSystemColumn(header.column.id),
+    })
+    // 「自動調整寬度」:scan column body cells max scrollWidth + cellPadding → reset column.size。
+    const autoFitColumnWidth = () => {
+      // 查詢限定在本表格內:同一頁若有兩個 DataTable 而欄位 id 相同(例如都叫 `name`),
+      // 掃全文件會讓這一欄的寬度被另一張表的內容決定。旁邊的 collision detection
+      // 早就因為同樣理由改用 tableRef,這裡補上(2026-09-03 稽核抓到)。
+      const host = tableRef.current
+      if (!host) return
+      const sel = `[data-column-id="${header.column.id}"]`
+      // **量 cell 本身,不是 `firstElementChild`**:樹狀列 cell 的第一個子元素是
+      // 縮排/chevron 前綴 span(w-4 + mr-2 = 24px),量它會讓欄寬塌到下限、名稱被截斷。
+      // **header 也要量**(v33 `skipHeaderOnAutoSize` 預設 false):標題比所有 cell 都長
+      // 很常見(數字欄配「上次更新時間」這種標題),不量的話 auto-fit 後反而看不到欄位名。
+      const targets = [
+        ...host.querySelectorAll<HTMLElement>(`[role="cell"]${sel}`),
+        ...host.querySelectorAll<HTMLElement>(`[role="gridcell"]${sel}`),
+        ...host.querySelectorAll<HTMLElement>(`[role="columnheader"]${sel}`),
+      ]
+      // 量測上限取 center body 的可視內容寬:一欄不該 auto-fit 到比看得見的表格還寬。
+      const natural = measureNaturalWidth(
+        targets,
+        host,
+        centerBodyRef.current?.clientWidth ?? host.clientWidth,
+      )
+      const meta = header.column.columnDef.meta as
+        | { minWidth?: number; maxWidth?: number }
+        | undefined
+      // 下限讀**公開契約** `meta.minWidth`(不是 TanStack 的 `columnDef.minSize` ——
+      // 它永遠被 defaultColumnSizing 填成 20,`??` 不會 fall back);上限同理只認 meta。
+      const lo = meta?.minWidth ?? MIN_COLUMN_WIDTH
+      const hi = meta?.maxWidth
+      let next = Math.max(lo, Math.ceil(natural) + AUTO_FIT_BUFFER)
+      if (hi != null) next = Math.min(next, hi)
+      header.column.resetSize?.()
+      table.setColumnSizing(prev => ({ ...prev, [header.column.id]: next }))
+      onColumnResize?.(header.column.id, next)
+    }
+    // 選單每一項做什麼。排序三項的結果都經 lib/sort-cycle.ts `nextSorting`(與表頭點擊同一支):
+    // 升冪 / 降冪只列這一欄目前不是的那個方向(`columnMenuShowsSortDirection`;選了沒變化的不列,多重排序也看這一欄自己;
+    // user 2026-11-10 PR #172 留言 + AG Grid / MUI X 同做法,出處在該函式)→ 已排序的欄只剩相反方向一項,點了只翻這一欄;
+    // 沒排序的欄兩項都列,點了取代全部(同一般點擊)。
+    // 取消排序 = 這一欄在排序裡就出現(`columnMenuShowsCancelSort`),按了只拿掉這一欄、後面順位往前補(user 2026-11-11 R16 定案)。
+    const runColumnMenuItem = (item: ColumnMenuItem) => {
+      switch (item) {
+        case 'sortAscending': return applyHeaderSorting(header.column.id, { kind: 'set', direction: 'asc' })
+        case 'sortDescending': return applyHeaderSorting(header.column.id, { kind: 'set', direction: 'desc' })
+        case 'cancelSort': return applyHeaderSorting(header.column.id, { kind: 'remove' })
+        case 'filterByColumn': return onColumnFilterTrigger?.(header.column.id)
+        case 'hideColumn': return header.column.toggleVisibility(false)
+        case 'autoFitColumnWidth': return autoFitColumnWidth()
+      }
     }
     return (
       <div
@@ -4394,9 +4503,10 @@ function DataTableInner<TData>(
             - 排序區 ↔ ⌄ 的 8px(inline-action.spec.md `gap-2`)只在展開時由這一層帶(`ml-2`),收起時 0 —— 同一段距離只由一層給,
               不在外層留 gap(寬 0 的節點仍會吃到 flex gap)。
             ItemInlineActionButton asChild-compatible,size="md" 因 header 不在 RowSizeProvider。 */}
-        {/* `data-col-menu`:讓左側排序區用 `:has(~[data-col-menu]:hover)` 認出「指標在本欄 ⌄ 上」,保留自己的 hover 字色(巢狀 hover,見排序區 className 註解)。 */}
+        {/* `data-col-menu`:讓左側排序區用 `:has(~[data-col-menu]:hover)` 認出「指標在本欄 ⌄ 上」,保留自己的 hover 字色(巢狀 hover,見排序區 className 註解)。
+            選單沒有任何項目(`columnMenu` 是空的)→ 整個外層不畫:沒有 ⌄,滑過 / 聚焦時也不給下面那 8px(2026-11-27,workspace H42;修前一律畫,點開是空選單)。 */}
         {/* @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:93「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給) */}
-        <div data-col-menu className={cn(
+        {columnMenu.length > 0 && <div data-col-menu className={cn(
           'shrink-0 inline-flex w-0 overflow-hidden opacity-0',
           // @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:93「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給)
           'group-hover:w-auto group-hover:ml-2 group-hover:overflow-visible group-hover:opacity-100',
@@ -4413,78 +4523,24 @@ function DataTableInner<TData>(
               <ItemInlineActionButton
                 icon={ChevronDown}
                 size="md"
-                aria-label={`${columnAccessibleName(header.column)} 欄位選單`}
+                aria-label={tableLabels.columnMenu(columnAccessibleName(header.column))}
                 overlayTrigger
               />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {canSort && (
-                <>
-                  {/* 三項的結果都經 lib/sort-cycle.ts `nextSorting`(與表頭點擊同一支):
-                      升冪 / 降冪只列這一欄目前不是的那個方向(`columnMenuShowsSortDirection`;選了沒變化的不列,多重排序也看這一欄自己;
-                      user 2026-11-10 PR #172 留言 + AG Grid / MUI X 同做法,出處在該函式)→ 已排序的欄只剩相反方向一項,點了只翻這一欄;
-                      沒排序的欄兩項都列,點了取代全部(同一般點擊)。
-                      取消排序 = 這一欄在排序裡就出現(`columnMenuShowsCancelSort`),按了只拿掉這一欄、後面順位往前補(user 2026-11-11 R16 定案)。 */}
-                  {columnMenuShowsSortDirection(sortingState, header.column.id, 'asc') && <DropdownMenuItem startIcon={ArrowUp} onClick={() => applyHeaderSorting(header.column.id, { kind: 'set', direction: 'asc' })}>{DATA_TABLE_SORT_DEFAULT_LABELS.sortAscending}</DropdownMenuItem>}
-                  {columnMenuShowsSortDirection(sortingState, header.column.id, 'desc') && <DropdownMenuItem startIcon={ArrowDown} onClick={() => applyHeaderSorting(header.column.id, { kind: 'set', direction: 'desc' })}>{DATA_TABLE_SORT_DEFAULT_LABELS.sortDescending}</DropdownMenuItem>}
-                  {columnMenuShowsCancelSort(sortingState, header.column.id) && <DropdownMenuItem startIcon={XIcon} onClick={() => applyHeaderSorting(header.column.id, { kind: 'remove' })}>{DATA_TABLE_SORT_DEFAULT_LABELS.cancelSort}</DropdownMenuItem>}
-                  <DropdownMenuSeparator />
-                </>
-              )}
-              {onColumnFilterTrigger && (
-                <DropdownMenuItem startIcon={FilterIcon} onClick={() => onColumnFilterTrigger(header.column.id)}>依此欄篩選…</DropdownMenuItem>
-              )}
-              {header.column.getCanHide() && (
-                <DropdownMenuItem startIcon={EyeOff} onClick={() => header.column.toggleVisibility(false)}>隱藏欄位</DropdownMenuItem>
-              )}
-              {/* 2026-05-06 v11:Auto-fit 放 more menu(不綁 double-click,避免跟 click-to-sort 衝突)。
-                  scan column body cells max scrollWidth + cellPadding → reset column.size。
-                  System columns 永遠 fixed 不顯此 item。 */}
-              {enableColumnResize && !isSystemColumn(header.column.id) && (
-                <DropdownMenuItem
-                  startIcon={ArrowUpDown}
-                  onClick={() => {
-                    // 查詢限定在本表格內:同一頁若有兩個 DataTable 而欄位 id 相同(例如都叫 `name`),
-                    // 掃全文件會讓這一欄的寬度被另一張表的內容決定。旁邊的 collision detection
-                    // 早就因為同樣理由改用 tableRef,這裡補上(2026-09-03 稽核抓到)。
-                    const host = tableRef.current
-                    if (!host) return
-                    const sel = `[data-column-id="${header.column.id}"]`
-                    // **量 cell 本身,不是 `firstElementChild`**:樹狀列 cell 的第一個子元素是
-                    // 縮排/chevron 前綴 span(w-4 + mr-2 = 24px),量它會讓欄寬塌到下限、名稱被截斷。
-                    // **header 也要量**(v33 `skipHeaderOnAutoSize` 預設 false):標題比所有 cell 都長
-                    // 很常見(數字欄配「上次更新時間」這種標題),不量的話 auto-fit 後反而看不到欄位名。
-                    const targets = [
-                      ...host.querySelectorAll<HTMLElement>(`[role="cell"]${sel}`),
-                      ...host.querySelectorAll<HTMLElement>(`[role="gridcell"]${sel}`),
-                      ...host.querySelectorAll<HTMLElement>(`[role="columnheader"]${sel}`),
-                    ]
-                    // 量測上限取 center body 的可視內容寬:一欄不該 auto-fit 到比看得見的表格還寬。
-                    const natural = measureNaturalWidth(
-                      targets,
-                      host,
-                      centerBodyRef.current?.clientWidth ?? host.clientWidth,
-                    )
-                    const meta = header.column.columnDef.meta as
-                      | { minWidth?: number; maxWidth?: number }
-                      | undefined
-                    // 下限讀**公開契約** `meta.minWidth`(不是 TanStack 的 `columnDef.minSize` ——
-                    // 它永遠被 defaultColumnSizing 填成 20,`??` 不會 fall back);上限同理只認 meta。
-                    const lo = meta?.minWidth ?? MIN_COLUMN_WIDTH
-                    const hi = meta?.maxWidth
-                    let next = Math.max(lo, Math.ceil(natural) + AUTO_FIT_BUFFER)
-                    if (hi != null) next = Math.min(next, hi)
-                    header.column.resetSize?.()
-                    table.setColumnSizing(prev => ({ ...prev, [header.column.id]: next }))
-                    onColumnResize?.(header.column.id, next)
-                  }}
-                >
-                  自動調整寬度
-                </DropdownMenuItem>
-              )}
+              {/* 項目與分組來自 `columnMenu`(上方 columnMenuGroups):組與組之間才畫分隔線(dropdown-menu.spec.md「Item 類型」Separator =
+                  劃分邏輯群組),只有一組時不畫 —— 修前分隔線固定畫在排序項後面,關掉隱藏後底部多一條沒有下文的線。字一律經 tableLabels。 */}
+              {columnMenu.map((group, groupIndex) => (
+                <React.Fragment key={group[0]}>
+                  {groupIndex > 0 && <DropdownMenuSeparator />}
+                  {group.map((item) => (
+                    <DropdownMenuItem key={item} startIcon={COLUMN_MENU_ICONS[item]} onClick={() => runColumnMenuItem(item)}>{tableLabels[item]}</DropdownMenuItem>
+                  ))}
+                </React.Fragment>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
+        </div>}
         {/* Header divider + resize handle(2026-05-06 v11,**2026-05-10 H2+H3 重構**):
             - **2026-05-10 split**(per user 抓:pinned 欄位右邊分隔線無法 resize(轉述)):
               `showDivider` 只 gate **idle 的 1px line**(panel boundary col 的 idle 線由凍結邊界線
@@ -4713,6 +4769,7 @@ function DataTableInner<TData>(
   // `headerEpochDeps` 由 scripts/data-table-row-cache-deps-invariant.mjs 機械對照 renderHeaderRowFresh 的外層變數。
   const headerEpochDeps: unknown[] = [
     rowRenderEpoch, enableColumnReorder, headerCheckedState, selectableVisibleIds, onColumnFilterTrigger, onColumnResize, toggleHeaderCheckbox,
+    enableColumnMenu,
   ]
   const headerRenderEpoch = useDepsEpoch(headerEpochDeps)
   const headerElCacheRef = React.useRef<Map<string, { deps: unknown[]; el: React.ReactElement }>>(new Map())

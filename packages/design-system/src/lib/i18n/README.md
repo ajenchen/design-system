@@ -64,6 +64,7 @@ const { t } = useI18n()
 |---|---|---|
 | `app-shell` | `skipLinks` / `skipToMain` / `closePanel` | AppShell |
 | `breadcrumb` | `navigation` / `showCollapsed` | Breadcrumb |
+| `data-table` | `DataTableLabels` 的每個字串鍵(列拖曳把手 `rowDragHandle` / `rowDragHandleDisabled` / `rowDragDisabledTooltip`、`selectAllVisibleRows`、表頭 ⌄ 選單 `sortAscending` / `sortDescending` / `cancelSort` / `filterByColumn` / `hideColumn` / `autoFitColumnWidth`、排序播報的 `ascending` / `descending` / `announceOthersCleared` / `announceNone`) | DataTable 主體(2026-11-26 F3 起;表頭選單與排序播報 2026-11-27 H42 起)。帶參數的句子(`columnMenu`、`priorityDescription`、`announce…` 其餘幾句)是函式,只經 `labels` prop;鍵清單 = `DATA_TABLE_DEFAULT_LABELS` 的鍵 |
 | `dialog` | `close` | Dialog |
 | `sheet` | `close` | Sheet |
 | `popover` | `close` | PopoverHeader 的 ×(DataTable 欄位顯示面板的 × 也是它) |

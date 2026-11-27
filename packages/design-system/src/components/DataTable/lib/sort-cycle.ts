@@ -71,10 +71,26 @@ export function columnMenuShowsSortDirection(sorting: SortingState, columnId: st
   return directionOf(sorting, columnId) !== direction
 }
 
+/** ⌄ 選單排序那一組的項目 id(= `DataTableLabels` / `DataTableSortLabels` 裡那個字的鍵名) */
+export type SortMenuItem = 'sortAscending' | 'sortDescending' | 'cancelSort'
+
+/**
+ * 能排序的欄,⌄ 選單排序那一組依序列哪幾項(上面兩支判定組起來;2026-11-27,workspace H42)。
+ * 只給能排序的欄呼叫;整份選單怎麼分組、有沒有分隔線、畫不畫 ⌄ 由 `./column-menu.ts` `columnMenuGroups` 判。
+ */
+export function columnMenuSortItems(sorting: SortingState, columnId: string): SortMenuItem[] {
+  const items: SortMenuItem[] = []
+  if (columnMenuShowsSortDirection(sorting, columnId, 'asc')) items.push('sortAscending')
+  if (columnMenuShowsSortDirection(sorting, columnId, 'desc')) items.push('sortDescending')
+  if (columnMenuShowsCancelSort(sorting, columnId)) items.push('cancelSort')
+  return items
+}
+
 /**
  * 排序相關的介面字串(選單項、讀屏描述、播報句)集中在這裡,同 `../data-table-filter-labels.ts` 的 labels 形狀
- * (介面 + 預設值;要帶參數的句子寫成函式)。這一份是**表頭**的(⌄ 選單、順位描述、播報):DataTable 目前沒有 `labels` prop,
- * 先由元件直接用預設值 —— 要開放覆寫時接這一份,不在各處另寫字串。排序**面板**的字在下面 `DataTableSortManagerLabels`(已開放)。
+ * (介面 + 預設值;要帶參數的句子寫成函式)。這一份是**表頭**的(⌄ 選單、順位描述、播報):2026-11-27(workspace H42)起整份併進
+ * DataTable 的 `labels`(`../data-table.tsx` `DataTableLabels extends DataTableSortLabels`,鍵名不變;字串鍵另可經 I18nProvider `data-table`),
+ * 元件把合併後的那一份交給下面兩支函式,不在各處另寫字串。排序**面板**的字在下面 `DataTableSortManagerLabels`(已開放)。
  * 字眼只用 DS 既有的「排序 / 升冪 / 降冪 / 取消排序」(user 2026-10-30「1. 就用ds的字眼就好」)。
  * 整組播報句(`announceSorted` / `announceRemoved` / `announceSummary*` / `announceOthersCleared` / `announceRemaining` / `announceNone`)與句型
  * 「這一欄發生了什麼 + 結果」都是【AI 推導 2026-11-15】,user 沒有逐字定過,後三句是後來補的(出處見 data-table.spec.md「Multi-sort header」列)。
