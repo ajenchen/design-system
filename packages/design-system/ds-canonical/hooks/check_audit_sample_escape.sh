@@ -50,6 +50,9 @@ esac
 # 記號寫法 = 在派工 prompt 放一行「派工預算:代理 <N> 個、花費 <上限>、牆鐘 <分鐘>」(同一行要有 代理 / 花費 / 牆鐘 三項),
 # 本 hook 看到就替這個 session 落記號(Git-owned runtime 狀態 dispatch-budget.jsonl,照 check_solo_workflow 的做法),之後靜默。
 # 不同 session 各自記;沒有 adapter 給的 runtime root(直接探測)時寫不了記號 —— 照樣看本次 prompt 有沒有那一行。
+# 提醒帶「品質前提」一句(2026-11-27;AGENTS.md「# 自主執行 canonical」第一段「品質是前提,其下才求快求省」,
+# user 原話在 governance/memory/feedback_orchestration_verify_before_scale.md):預算是省重工的上限,不是砍規格與驗證的理由。
+BUDGET_QUALITY_CLAUSE='預算用完就停派、交付已完成的,但規格項與驗證不得因省而略(品質是前提,其下才求快求省)。'
 BUDGET_REMINDER=''
 if [ "${EVENT:-}" != "PostToolUse" ]; then
   BUDGET_SESSION=$(jq -r '.session_id // empty' <<<"$INPUT" 2>/dev/null)
@@ -70,7 +73,7 @@ if [ "${EVENT:-}" != "PostToolUse" ]; then
     # 規格是「同 session 第一次」才提醒(2026-11-27 規格核對必修 3:以前沒記號時每次派工都提醒)→ 提醒**真的送出**時
     # (allow_exit)替這個 session 落一筆 kind=reminded,之後同 session 靜默。算出提醒但這次被抽樣條款擋下(exit 2、
     # stdout 不送)不落記號,下一次派工照樣提醒(再驗 nonMust:以前在這裡就寫,第一次被擋 → 整個 session 再也看不到)。
-    BUDGET_REMINDER='派工預算還沒寫(這個 session 第一次派工)。AGENTS.md「分診與預算」原文:「派工先寫預算(代理數/花費/牆鐘),用滿就停派、交付已完成的並回報。」要寫的三項:代理數、花費、牆鐘。寫法:在這一次或下一次派工的 prompt 放一行「派工預算:代理 <N> 個、花費 <上限>、牆鐘 <分鐘>」—— hook 看到這一行就替這個 session 落記號,之後不再提醒。(非阻擋提醒,本次派工照常進行)'
+    BUDGET_REMINDER='派工預算還沒寫(這個 session 第一次派工)。AGENTS.md「分診與預算」原文:「派工先寫預算(代理數/花費/牆鐘),用滿就停派、交付已完成的並回報。」要寫的三項:代理數、花費、牆鐘。寫法:在這一次或下一次派工的 prompt 放一行「派工預算:代理 <N> 個、花費 <上限>、牆鐘 <分鐘>」—— hook 看到這一行就替這個 session 落記號,之後不再提醒。'"$BUDGET_QUALITY_CLAUSE"'(非阻擋提醒,本次派工照常進行)'
   fi
 fi
 # 放行出口:有提醒就以 governance context 送出(stdout 只有這個 envelope;擋下時不送)

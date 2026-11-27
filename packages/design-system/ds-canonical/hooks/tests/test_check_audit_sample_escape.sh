@@ -120,6 +120,26 @@ expect_budget() { # expect_budget <name> reminder|silent
 }
 run_budget "sess-A" "幫我把 Button 的 spec 讀一遍"
 expect_budget "B1. session 第一次派工、沒寫預算 → 非阻擋提醒(引 AGENTS.md 原文)" reminder
+# B1b(2026-11-27):提醒帶「品質前提」一句 —— 預算用完就停派,但規格項與驗證不得因省而略(AGENTS.md「# 自主執行 canonical」第一段)
+QUALITY_CLAUSE='規格項與驗證不得因省而略'
+has_quality_clause() { printf '%s' "$1" | jq -e --arg c "$QUALITY_CLAUSE" '.governanceContext.message | contains($c)' >/dev/null 2>&1; }
+if has_quality_clause "$BUDGET_OUT"; then
+  echo "  PASS  B1b. 提醒含品質前提一句"; PASS=$((PASS+1))
+else
+  echo "  FAIL  B1b. 提醒缺品質前提一句(stdout=$BUDGET_OUT)"; FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - B1b"
+fi
+# B1c(對照組,M32):hook 副本把那一句拿掉 → 同一個判定要紅(證明 B1b 不是恆綠)
+mkdir -p "$BUDGET_TMP/broken"
+sed "s/^BUDGET_QUALITY_CLAUSE=.*/BUDGET_QUALITY_CLAUSE=''/" "$HOOK" >"$BUDGET_TMP/broken/check_audit_sample_escape.sh"
+BROKEN_OUT=$(jq -n '{hook_event_name:"PreToolUse", session_id:"sess-broken", tool_name:"Agent", tool_input:{prompt:"幫我把 Button 的 spec 讀一遍"}}' \
+  | GOVERNANCE_READ_ONLY=1 GOVERNANCE_TELEMETRY_OPT_IN=0 bash "$BUDGET_TMP/broken/check_audit_sample_escape.sh" 2>/dev/null)
+if grep -q "^BUDGET_QUALITY_CLAUSE=''" "$BUDGET_TMP/broken/check_audit_sample_escape.sh" \
+  && printf '%s' "$BROKEN_OUT" | jq -e '.governanceContext.message | contains("派工先寫預算(代理數/花費/牆鐘)")' >/dev/null 2>&1 \
+  && ! has_quality_clause "$BROKEN_OUT"; then
+  echo "  PASS  B1c. 對照組:拿掉那一句 → B1b 的判定認得出缺(會紅)"; PASS=$((PASS+1))
+else
+  echo "  FAIL  B1c. 對照組沒有如預期(stdout=$BROKEN_OUT)"; FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - B1c"
+fi
 run_budget "sess-A" "派工預算:代理 2 個、花費 1 包額度、牆鐘 30 分鐘
 幫我把 Button 的 spec 讀一遍"
 expect_budget "B2. prompt 寫了派工預算那一行 → 落記號、silent" silent

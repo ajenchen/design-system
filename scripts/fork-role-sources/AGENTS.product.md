@@ -21,7 +21,7 @@
   PRs with the regenerated lock/adapters (steps: DS package README).
 <!-- canonical-decision-authority:inject -->
 
-## Six working principles
+## Seven working principles
 
 1. **World-class, no shortcuts**: visual and interaction decisions must be defensible against at least
    three relevant systems (Polaris, Material, Atlassian, Ant, Carbon, Apple HIG).
@@ -35,6 +35,10 @@
    shipped DS spec; stop only when the remaining choice changes product UX or canonical meaning.
 6. **Fix the invariant, not one symptom**: search sibling occurrences, add a regression proof, and route
    reusable DS/template defects to their canonical upstream owner.
+7. **Quality first, then speed**: complete, correct output is the precondition; within it, finish as
+   fast and cheaply (time, compute, tokens) as possible by cutting rework and waiting, never checks.
+   Choose the approach for the current environment and effort; the user sets goals, not steps (same rule
+   as the DS root `AGENTS.md`).
 
 ## Before changing product UI
 
@@ -91,7 +95,6 @@ Missing required tooling is a failure, not a pass. Evidence must bind the checke
   then merge and verify under Standing Authorization — no self-approval or chat trigger. Preview, a11y,
   visual, canary, and independent-peer evidence are scheduled or optional unless the user explicitly
   requests them, and never block the standard release by default.
-- Product repos never publish the DS; exact-version upgrade PRs merge after `Verify consumer` passes.
 
 ## Pilot and upstream feedback
 
