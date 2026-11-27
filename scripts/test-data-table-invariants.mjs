@@ -81,6 +81,8 @@ try {
   const BREAK = '<script>'
     + 'document.addEventListener("click",function(e){var t=e.target;if(t&&t.getAttribute&&t.getAttribute("data-column-id")==="__select__")e.stopImmediatePropagation()},true);'
     + 'document.addEventListener("keydown",function(e){var t=e.target&&e.target.tagName;if((e.shiftKey&&/^Arrow/.test(e.key))||(e.key==="F2"&&(t==="INPUT"||t==="TEXTAREA")))e.stopImmediatePropagation()},true);'
+    // 第八個違規(2026-11-27,I44):目標在 role=switch 裡的 click 一律吞掉 = 開關格不接點擊(滑鼠與空白鍵都經 click);勾選框不受影響
+    + 'document.addEventListener("click",function(e){var t=e.target;if(t&&t.closest&&t.closest("[role=\\"switch\\"]"))e.stopImmediatePropagation()},true);'
     + 'new MutationObserver(function(){'
     + 'document.querySelectorAll("[cmdk-root]").forEach(function(root){var opts=[].slice.call(root.querySelectorAll("[role=\\"option\\"]"));if(!opts.length)return;var t=opts.map(function(o){return o.textContent.trim()});'
     + 'if(t.indexOf("完成")>=0&&t.indexOf("未開始")<0&&t.indexOf("取消")<0&&!root.querySelector("[data-i40-injected]")){var c=opts[0].cloneNode(false);c.setAttribute("data-i40-injected","");c.textContent="未開始";opts[0].parentNode.appendChild(c)}'
@@ -103,7 +105,10 @@ try {
   else if (!/✗ I40 \| 瀏覽器\|完成的列\(RDM-103\):選單/.test(text)) { console.error('✗ 完成那一列的選單多了「未開始」後 I40「完成的列」那條沒有紅 —— 不能證明 I40 會抓到不允許的值\n' + text.slice(-1500)); ok = false }
   else if (!/✗ I40 \| 瀏覽器\|完成的列:目前值不在該列清單也正確顯示/.test(text)) { console.error('✗ 觸發欄位換成原始值 done 後 I40「目前值正確顯示」那條沒有紅 —— 不能證明 I40 會抓到目前值被清掉\n' + text.slice(-1500)); ok = false }
   else if (!/✗ I40 \| 瀏覽器\|篩選面板的狀態值清單/.test(text)) { console.error('✗ 篩選值清單少了「受阻」後 I40「篩選面板」那條沒有紅 —— 不能證明 I40 會抓到篩選沒列全部值\n' + text.slice(-1500)); ok = false }
-  else console.log('✓ 注入違規被抓(I6 @lg 字級崩 + I34 勾選格空白處點不到 + I35 Shift+方向鍵被吞 + I36 編輯中 F2 被吞 + I40 選單多一項不允許的值 / 觸發欄位只剩原始值 / 篩選值少一項,exit ' + code + ')')
+  else if (!/✗ I44 \| 點開關 → 切換並存起來/.test(text)) { console.error('✗ 開關不接點擊後 I44「點開關」那條沒有紅 —— 不能證明 I44 會紅\n' + text.slice(-1500)); ok = false }
+  else if (!/✗ I44 \| 焦點在開關上按空白鍵/.test(text)) { console.error('✗ 開關不接點擊後 I44「空白鍵」那條沒有紅 —— 不能證明 I44 會抓到鍵盤切不動\n' + text.slice(-1500)); ok = false }
+  else if (/✗ I44 \| 對照:點勾選框/.test(text)) { console.error('✗ 只吞開關的注入卻讓 I44 勾選框對照也紅 —— 注入打到別的東西,對照組不成立\n' + text.slice(-1500)); ok = false }
+  else console.log('✓ 注入違規被抓(I6 @lg 字級崩 + I34 勾選格空白處點不到 + I35 Shift+方向鍵被吞 + I36 編輯中 F2 被吞 + I40 選單多一項不允許的值 / 觸發欄位只剩原始值 / 篩選值少一項 + I44 開關不接點擊,exit ' + code + ')')
 } finally {
   rmSync(copyRoot, { recursive: true, force: true })
 }
