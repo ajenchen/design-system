@@ -50,7 +50,7 @@
  *         MX / NE 色彩對照表:12 色相長條 step-1 底 / step-7 字、有時段 step-6 色條;neutral 長條 --secondary 底 / --foreground 字 / 滑過 --secondary-hover(NE1)、
  *           色條 --color-neutral-9(NE2)、唯讀的 neutral(團隊行事曆的公司假日)滑過不變、不是按鈕(NE3)。期望色一律由 token 在頁面上現算,不寫死色值。
  *         RO1 readOnlyEvents(元件檢閱器)兩種長相滑過都不變、不是按鈕。TF1 eventTimeFormat 覆寫(英文讀屏字串覆寫那則,24 小時制):畫面「10:00」、名稱同格式。
- *         NT 窄寬(分割畫面側欄):NT1 欄寬 ≤ 60 有時段列沒有時間、名稱照舊;NT2 同一則加寬到欄寬 70 時間出現(對照)。
+ *         NT 窄寬(展示「窄視窗(分割畫面)」):NT1 欄寬 ≤ 60 有時段列沒有時間、名稱照舊;NT2 同一則加寬到欄寬 70 時間出現(對照)。
  *         CR 時間字與標題在透明列 / 滑過底上的對比 ≥ 4.5,淺色與深色各量(畫面合成後的畫素)。
  *         CT renderEventTile 回傳過大的內容裁在這一段的外層裡(格子不裁左右,由外層裁;「唯讀日期 × 自訂事件方塊」的 Tag 撐成 60 高、400 寬、不換行):
  *           CT1 外層下一列的位置點不到這個方塊、沒畫到;CT2 隔壁格點不到、沒畫到;CT3 F2 進方塊後外層自己的焦點框照樣畫在外面(外 3px 兩點聚焦前後變色)。
@@ -73,7 +73,7 @@
  *           欄寬 = 2 × 4 + 日期框寬 + 格線 1(±0.5)、格線實量 1;兩位數週數 / 日期離格線的值只印不判(日期是比例字寬、週數是等寬數字,差多少看字型)。
  *         LD 載入中(展示「切換月份時載入」):LD1 格陣 aria-busy=true;LD2 每格事件區剛好一條高 24、aria-hidden 的骨架、沒有事件列;
  *           LD3 日期名稱不念筆數;LD4 點格內空白仍會開「新增事件」(onDateClick)。
- *         NW 窄寬度(展示「分割畫面側欄(窄寬)」):NW1 欄寬 ≤ 60 時星期一字、1 號「1」、讀屏名稱照舊;NW2 掃 20 個欄寬(51–70),
+ *         NW 窄寬度(展示「窄視窗(分割畫面)」:行事曆頁在 440 寬的模擬瀏覽器裡、貼邊不加框):NW1 欄寬 ≤ 60 時星期一字、1 號「1」、讀屏名稱照舊;NW2 掃 20 個欄寬(51–70),
  *           每個寬度連看 6 幀狀態不變、「窄」⇔ 欄寬 ≤ 60、只在 61 切一次;NW3 掛載當下祖先在縮放(Dialog / Popover 開場 zoom-in-95):
  *           欄寬 62 在 scale(0.95) 下重新掛載(Storybook forceRemount),拿掉縮放後必須是寬版 —— 先量前提(真的重新掛載、掛載時比例 0.95、
  *           日期格畫面寬 ≤ 60),前提不成立 = 儀器失效。斷點看的是版面上的欄寬,不是畫面上被縮放後的寬。
@@ -244,7 +244,7 @@ const STORY = {
   weekdays: storyId(/calendar-展示--customer-support-weekdays$/u),
   weekNumbers: storyId(/calendar-展示--manufacturing-week-numbers$/u),
   loading: storyId(/calendar-展示--loading-while-switching-month$/u),
-  narrow: storyId(/calendar-展示--side-panel-narrow$/u),
+  narrow: storyId(/calendar-展示--narrow-window$/u),
   fill: storyId(/calendar-展示--fill-main-area-borderless$/u),
   quarter: storyId(/calendar-展示--quarter-planning$/u),
   customTile: storyId(/calendar-展示--read-only-dates-custom-tile-keyboard$/u),
@@ -1208,7 +1208,7 @@ const BLOCKS = {
   },
   // ── 窄寬度(calendar.spec.md「窄寬度」【Q8(定)、總帳更正 #8;門檻 60 = AI 推導】)──
   async narrow(mutate) {
-    const p = await open(STORY.narrow, { label: '分割畫面側欄(窄寬)', mutate })
+    const p = await open(STORY.narrow, { label: '窄視窗(分割畫面)', mutate })
     if (!p) return
     const look = () => page.evaluate(() => {
       const g = document.querySelector('[role="grid"]')
@@ -1232,8 +1232,10 @@ const BLOCKS = {
           narrow: narrowHead && narrowFirst ? true : wideHead && wideFirst ? false : null, key: `${heads.join('')}|${firsts.join('/')}` }
       }
       const out = []
+      // 格子區左右框線寬照頁面實量(有框 1 + 1;這一則貼邊不加框 = 0),不寫死 2 —— 寫死時不加框的欄寬會多 2/7,門檻 60 被量成 60.29、切換點錯成 60
+      const cs = getComputedStyle(g), frameX = parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth)
       for (const col of cols) {
-        root.style.width = `${7 * col + 2}px`
+        root.style.width = `${7 * col + frameX}px`
         for (let i = 0; i < 3; i++) await frame()
         const seen = []
         for (let i = 0; i < samples; i++) { await frame(); seen.push(state()) }
@@ -1261,7 +1263,8 @@ const BLOCKS = {
       if (!host || !before) return { missing: '#storybook-root 或格陣' }
       // 欄寬寫在樣式表(重新掛載後的新根節點也吃得到),不寫在舊根節點的 style
       const sheet = document.createElement('style')
-      sheet.textContent = `:has(> [role="grid"] [data-calendar-day]) { width: ${7 * col + 2}px !important; }`
+      const gcs = getComputedStyle(before), frameX = parseFloat(gcs.borderLeftWidth) + parseFloat(gcs.borderRightWidth) // 格子區左右框線(同 NW2,照實量)
+      sheet.textContent = `:has(> [role="grid"] [data-calendar-day]) { width: ${7 * col + frameX}px !important; }`
       document.head.append(sheet)
       host.style.transformOrigin = '0 0'
       host.style.transform = `scale(${scale})`
@@ -1829,7 +1832,7 @@ const BLOCKS = {
     check('TF1', t?.time?.text === '10:00' && t?.name === 'Design review, 10:00' && b?.name === 'Offsite, July 8 – July 9, all day',
       `時間字「${t?.time?.text}」、名稱「${t?.name}」/「${b?.name}」(規格:eventTimeFormat 整份取代預設,畫面與名稱同一個格式;labels.event 覆寫生效)`)
   },
-  // ── 窄寬時拿掉時間(展示「分割畫面側欄(窄寬)」7/27「上線前審查」下午2:00)──
+  // ── 窄寬時拿掉時間(展示「窄視窗(分割畫面)」7/27「上線前審查」下午2:00)──
   // NT1 欄寬 ≤ 60:有色條、沒有時間,讀屏名稱照舊「上線前審查,下午2:00」;NT2 同一則把根節點加寬到欄寬 70:時間「下午2:00」出現(對照:證明時間是被窄寬拿掉的,不是本來就沒有)
   async narrowTime(mutate) {
     const p = await open(STORY.narrow, { label: '窄寬 有時段事件', mutate })
@@ -1839,7 +1842,10 @@ const BLOCKS = {
     if (!n || !(c0 <= NARROW_MAX)) { instrumentFails.push({ cell: 'NT1', detail: `前提沒成立:欄寬 ${c0}(要 ≤ ${NARROW_MAX})、找到「上線前審查」有時段列 ${Boolean(n)}` }); return }
     check('NT1', n.time === null && Boolean(n.accent) && n.name === '上線前審查,下午2:00',
       `欄寬 ${fmtPx(c0)}:「上線前審查」時間 ${n.time?.text ?? '無'}、色條 ${n.accent ? '有' : '無'}、名稱「${n.name}」(規格:窄寬拿掉時間、只留色條 + 標題,讀屏名稱照舊)`)
-    await page.evaluate((w) => { document.querySelector('[role="grid"]').parentElement.style.width = `${w}px` }, 7 * 70 + 2)
+    await page.evaluate((col) => {
+      const g = document.querySelector('[role="grid"]'), cs = getComputedStyle(g)
+      g.parentElement.style.width = `${7 * col + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth)}px` // 格子區左右框線照實量(同 NW2)
+    }, 70)
     await frames(6)
     const c1 = await col(), w = await pieceOf('上線前審查', 'timed')
     if (!(c1 > NARROW_MAX)) { instrumentFails.push({ cell: 'NT2', detail: `加寬後欄寬 ${c1} 仍 ≤ ${NARROW_MAX}` }); return }
