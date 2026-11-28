@@ -337,7 +337,7 @@
     {
       "id": "BL-013",
       "kind": "engineering",
-      "status": "open",
+      "status": "done",
       "verifiedAt": "a3330afe",
       "oldIds": [
         "R96",
@@ -354,7 +354,8 @@
       "suggestion": "一份 Node 版本正本讓 CI / devcontainer / engines / 雲端 Setup script 都讀它,並給雲端一個釘版本的正式寫法(workspace 暫時自己下載 Node 24.14.0 驗 SHA256,DS 定了就改用);T11 排錯文件補 SELF_SIGNED_CERT_IN_CHAIN / ENOTFOUND;T6 最低版要不要升 22.15 先做 consumer engines 遷移。排 0.1.0-beta.154。回報第 2 點(README 與 CLAUDE.md 說法不同)協調者查證是 Codex 與 Claude Code 兩種寫法分開寫、不衝突,不列(tmp/wip-2026-11-25-backup/notes/decisions/ws-env-parity-2026-11-28.md)",
       "evidence": [
         "template/ds-product-template/.github/workflows/audit.yml:23 與 sync-design-system.yml:47 `node-version: 24.14.0`;.devcontainer/devcontainer.json:4 映像 `javascript-node:1-22`;package.json:61 engines `>=22.13.0`;沒有 .node-version / .nvmrc —— 版本寫在多處、沒有正本"
-      ]
+      ],
+      "doneRef": "0.1.0-beta.153(合回 aebda668:pkg/r96 3877f587、77fdfd43;node-version-ssot-invariant 守)"
     },
     {
       "id": "BL-014",
