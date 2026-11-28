@@ -90,7 +90,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | deep-audit-waived-self-review-tests | `scripts/test-import-waived-self-review.mjs` | `sha256:c40f5c06ccfaafa54e6955b9c1e0eab34418760ac5e56c62b09add528b4b421b` |
 | design-system-migration-tools | `packages/design-system/tools` | `sha256:d178273fec1a3ded92be1af08a3189f5b6f1506142a1ec82c6220602d4352a37` |
 | design-system-package-contract | `packages/design-system/package.json` | `sha256:44a8ea7f9546827cabc7eccb2c3c6f9312b0a9f7b5e8ee5b23678442addd50d5` |
-| design-system-utility-registry | `packages/design-system/src/tokens/utility-registry.json` | `sha256:7709faa7ebdb84fd5b6e1b12e6c4c43dd3abbc50dd7d19c34d62af8228b66cd6` |
+| design-system-utility-registry | `packages/design-system/src/tokens/utility-registry.json` | `sha256:5b81c322555e4c4d9c4e522ef08312fb6cbdec82c3508673535d8f49513eaa51` |
 | design-system-utility-registry-schema | `packages/design-system/src/tokens/utility-registry.schema.json` | `sha256:d5b19868b99e916482330686abf584d3fe6ba8476fd9cb490d7263b31d44d786` |
 | development-container-contract | `.devcontainer/` | `sha256:61e19cd5eafeb2b6d8ee66f055f5dd3691c8e42cf91103056367917c059b36d7` |
 | eslint-plugin-package-contract | `packages/eslint-plugin/package.json` | `sha256:eb9ef794be8466ad96798d8e565e3807c2c23f912534c8a2ec0075160376d703` |

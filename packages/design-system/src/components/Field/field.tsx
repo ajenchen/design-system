@@ -601,7 +601,7 @@ export interface FieldGroupProps extends React.HTMLAttributes<HTMLDivElement> {
 // 閱讀情境(範圍裡有就地編輯)= `tight`:由 field.css 依範圍自動判、設在 FieldGroup 自己身上的 --scope-row-gap,仍沒有逐一選檔的參數
 //(2026-11-27 user 定 T2 甲;規則住 field.spec.md「閱讀情境」效果 ④)。
 //
-// 這是回歸 DS 自己早就寫下的規則:`layoutSpace.spec.md:77` 逐字把
+// 這是回歸 DS 自己早就寫下的規則:`layoutSpace.spec.md:126` 逐字把
 // 「跨範疇 + parallel / independent」的例子列為「**form fields stack(parallel inputs)**」→ 規則 3 = **loose**。
 // 表單間距是**系統級**設定,要調就整個 density 一起調(md 16px / lg 24px),不是每個表單各自挑。
 //

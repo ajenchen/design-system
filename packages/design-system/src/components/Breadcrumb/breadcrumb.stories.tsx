@@ -215,7 +215,7 @@ export const PairedWithPageTitle: Story = {
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {/* 麵包屑 → 它所在頁的標題 = tight:兩個不同元件,麵包屑替標題提供所在位置(layoutSpace 規則 3「跨範疇 + 直接 functional 交互 / 依賴」,
-          layoutSpace.spec.md:76 / :81 的 context dependency);不是同一個元件內部的 micro */}
+          layoutSpace.spec.md:125 / :130 的 context dependency);不是同一個元件內部的 micro */}
       <section>
         <Breadcrumb>
           <BreadcrumbList size="sm">

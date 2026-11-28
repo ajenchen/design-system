@@ -1610,7 +1610,7 @@ async function selftestBrowser(browser, server, ex) {
       if (!ok) problems.push(`ι @${density}:Calendar 詳情最後一欄是就地編輯 → 應量框外框、頂 = ${wantTop}(事件詳情客製 loose)、底 = ${want}、綠(例外帳登記);拿掉 data-field-reading 應紅;實得 ${JSON.stringify(now.map((r) => ({ top: r.top, bottom: r.bottom, last: r.lastDesc })))} ${JSON.stringify(nowRed)} / 拿掉 ${JSON.stringify(bare.map((r) => ({ bottom: r.bottom, last: r.lastDesc })))} ${JSON.stringify(bRed)}`)
       else out(`  ✓ ι @${density}:Calendar 詳情最後一欄是就地編輯 → 量框外框,頂 ${now[0].top}(loose)、底 ${now[0].bottom}(tight);拿掉 data-field-reading → 底 ${bare[0].bottom}、紅`)
     }
-    // κ(2026-11-26):Calendar 根節點的邊緣標記(calendar.spec.md「外殼」;layoutSpace.spec.md:176)。全庫還沒有範例把月曆放進會給上下內距的容器,
+    // κ(2026-11-26):Calendar 根節點的邊緣標記(calendar.spec.md「外殼」;layoutSpace.spec.md:225)。全庫還沒有範例把月曆放進會給上下內距的容器,
     // 這裡把「產品上線週」的外層 div 改成那種容器(拿掉範例自己的 p-*、宣告 data-layout-body="fill";月曆固定 600 高,下方留空白 = 撐滿的容器),
     // 月曆是最後一塊 → 標記 bounded、底 = loose、綠。月曆根節點沒有標記時這一格量不到容器、紅(這一格就是「Calendar 根節點標 bounded」);
     // 對照組拿掉標記 → 容器把月曆當一般元素給 48、紅「應 loose…缺標記」(同 γ 的表格)。
