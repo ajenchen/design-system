@@ -11,6 +11,7 @@ import {
 } from '@/design-system/components/AgentPanel/agent-panel'
 import { AgentLogo } from '@/design-system/components/AgentPanel/agent-panel-logo'
 import { Empty } from '@/design-system/components/Empty/empty'
+import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
 import { toast } from '@/design-system/components/Toast/toast'
 
 /**
@@ -243,17 +244,24 @@ export function decisionReceipt(questions: AgentDecisionQuestion[], answers: Rec
  * 「這種 result 或是 empty 就不是撐滿高度的元素，且當初定位就是把它放在正中間」),左右留 loose:只在面板很窄、說明很長時擋住字貼邊
  * (empty.spec.md「文字不限寬」:行寬由容器 padding 控制;現況字到面板邊 86,看不出差別 ——【AI 推導 2026-11-14】)。
  * 【更正 2026-11-14】2026-11-13(A5)包層補過上 tight / 下 bottom,空狀態因此往上 18 / 16px,已拿掉。agent-panel.spec.md「附:空狀態」。
+ * 放得下才置中、放不下從頂開始可捲動(empty.spec.md「垂直定位」有框那一列,2026-11-28):包層置中的是捲動區(寬高 = 內容的寬高,最多到包層的可用寬高
+ * max-w-full / max-h-full)—— 放得下時捲動區就是 Empty 那麼大、在正中(與修前同位置、像素相同);放不下時被夾在可用高、從頂開始,其餘捲得到
+ * (修前視窗 220 高時圖示被標頭蓋、說明被輸入框蓋)。
+ * 捲軸用 ScrollArea(同 AgentConversation;build-ui-canonicals.md「overflow 使用三規則」);viewportTabIndex={null} 不寫 tabindex:放得下時不多一個
+ * Tab 停點,放不下時瀏覽器自己讓它可聚焦(同 file-viewer.tsx FallbackRenderer 的註解與出處)。
  * 有訊息就照順序畫,代理訊息有 `copyText` 才帶工具列。
  */
 export function DemoConversation({ messages }: { messages: DemoMessage[] }) {
   if (messages.length === 0) {
     return (
       <div className="flex min-h-0 flex-1 items-center justify-center px-[var(--layout-space-loose)]">
-        <Empty
-          icon={<AgentLogo state="attract" size={48} label="智慧代理" />}
-          title="開始第一個對話"
-          description="丟一個任務給代理,或把檔案拖進來。"
-        />
+        <ScrollArea viewportTabIndex={null} className="max-h-full max-w-full">
+          <Empty
+            icon={<AgentLogo state="attract" size={48} label="智慧代理" />}
+            title="開始第一個對話"
+            description="丟一個任務給代理,或把檔案拖進來。"
+          />
+        </ScrollArea>
       </div>
     )
   }

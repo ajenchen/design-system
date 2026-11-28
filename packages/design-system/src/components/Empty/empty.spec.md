@@ -31,7 +31,7 @@ benchmark:
 - **Page section 無內容**：dashboard widget 暫無資料、設定頁未建立任何項目
 - **初次引導**：讓使用者首次使用時知道「這裡會放什麼」+ 有 CTA 建立
 - **容器級無權限提示**（2026-07-04 Q7 拍板）：卡片 / 區塊 / 面板內容因權限不可見 — **必附 request-access 類 action**（對齊 Atlassian「Request access」empty state 官方範例([empty-state examples](https://atlassian.design/components/empty-state/examples)「You don't have access to this work item … Request access」)+ Carbon error-management scenario([empty states pattern](https://www.carbondesignsystem.com/building-blocks/core/patterns/empty-states)「Permissions issue … Suggest steps or process to request access.」);皆 2026-11-05 讀回）；整頁 403 同樣必附這類 action，組法見「整頁狀態」
-- **整頁 404 / 403**:打開的那一頁不存在、或沒有權限看 —— Empty 放在 AppShell 主內容區正中,見「整頁狀態」
+- **整頁 404 / 403**:打開的那一頁不存在、或沒有權限看 —— Empty 放在 AppShell 主內容區、貼上方(「垂直定位」無框那一列),見「整頁狀態」
 
 ## 何時不用
 
@@ -85,10 +85,10 @@ Empty 只管**水平居中**。垂直定位由 consumer 的容器決定:
 
 | 容器類型 | 垂直定位 | 做法 |
 |---|---|---|
-| **有框**(Table / Dialog / Card,有明確 border 或 shadow 包圍) | **垂直置中** | `DialogBody` / `SheetBody` 裡只放一個 Empty 就好,不用寫 class:主體內層撐滿可視高(ScrollArea `fillY` + 內層 `min-h-full`),只放一個 Empty 時由 `layoutSpace.css` 在可視區正中、上下同值(2026-11-27,產品 canary 回報 H10;範例 Dialog 展示「主體只有空狀態」)【AI 推導:既有規則的落地】;其他有框容器 `flex items-center justify-center min-h-[...]` |
-| **無框**(Page section,沒有外框線) | **頂部對齊 + generous padding** | 容器 `py-[calc(var(--layout-space-bottom)*2)]` |
+| **有框**(Table / Dialog / Card,有明確 border 或 shadow 包圍) | **垂直置中** | `DialogBody` / `SheetBody` 裡只放一個 Empty 就好,不用寫 class:主體內層撐滿可視高(ScrollArea `fillY` + 內層 `min-h-full`),只放一個 Empty 時由 `layoutSpace.css` 在可視區正中、上下同值(2026-11-27,產品 canary 回報 H10;範例 Dialog 展示「主體只有空狀態」)【AI 推導:既有規則的落地】;其他有框容器 `flex items-center justify-center min-h-[...]`。**放得下才置中,放不下從頂開始、可捲動**:狀態比可用高還高(視窗很矮、說明很長)時不得上下兩頭溢出(被標頭 / 輸入框蓋住),改從頂開始排、捲得到;一般尺寸與置中畫面相同。寫法:`layoutSpace.css` 只放一個 Empty 那一條用 CSS `safe center`(寫在 `@supports` 裡、外面留 `center`,不認得 `safe` 的瀏覽器照舊置中);自己置中的包層(AgentPanel 新對話 `../../stories-helpers/scene/agent-demo.tsx#DemoConversation`、FileViewer 不支援的檔案 `../FileViewer/file-viewer.tsx#FallbackRenderer`)置中的是一個 `ScrollArea`(寬高 = 內容的寬高、最多到可用寬高 `max-w-full` / `max-h-full`)【AI 推導 2026-11-28:研究頁第 2 節「內容量」表那一列,實測 AI 面板 1440×220 兩頭溢出;user 選甲時沒逐字講這一點】 |
+| **無框**(Page section、整頁的 AppShell 主內容區,沒有外框線) | **頂部對齊 + generous padding** | 容器 `py-[calc(var(--layout-space-bottom)*2)]` |
 
-**例外:整頁狀態**(404 / 403,Empty 是 AppShell 主內容區裡唯一的東西)—— 主內容區沒有外框,但照 user 2026-11-26 的選擇垂直置中,不照上表「無框 → 頂部對齊」;見下方「整頁狀態」。
+世界級(這兩分):PatternFly([empty-state.md](https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/empty-state/empty-state.md)「On a desktop, a full-page empty state should contain a 3xl spacer at the top」「Empty states inside a table, card, or wizard should always be horizontally and vertically centered on their background.」);eBay Playbook([empty states](https://playbook.ebay.com/design-system/patterns/empty-states)「The empty state content is vertically aligned to the top of the page.」);皆 2026-11-28 讀回。
 
 ### 為什麼有框置中、無框不置中
 
@@ -98,23 +98,23 @@ Empty 只管**水平居中**。垂直定位由 consumer 的容器決定:
 
 ## 整頁狀態(404 / 403)
 
-打開的那一頁不存在(404)、或使用者沒有權限看(403)時,不另建元件,用 Empty 放在 AppShell 主內容區。出處:user 2026-11-26 在第六輪決策卡 C22 選 A,選項原文(逐字)「A:不建元件;Empty 可用在整頁 + AppShell 範例,狀態置中」(意見欄空白)。
+打開的那一頁不存在(404)、或使用者沒有權限看(403)時,不另建元件,用 Empty 放在 AppShell 主內容區。出處:不建元件、Empty 用在整頁 = user 2026-11-26 在第六輪決策卡 C22 選 A,選項原文(逐字)「A:不建元件;Empty 可用在整頁 + AppShell 範例,狀態置中」(選項文字是 AI 寫的、意見欄空白);其中「狀態置中」已由 user 2026-11-28 的選擇取代(第 4 點)。
 
 1. **位置**:AppShell 主內容區(`../AppShell/app-shell.spec.md`「Main slot」),導覽照常 —— 全域標頭、Menu、帳號入口都在,使用者可以直接去別的地方。
 2. **標題包 h1**:不傳 Empty 的 `title`,在外層自包 `<h1>`(同「A11y 預設」的 Title slot heading level);這是這一頁唯一的 h1。
 3. **一定附動作**(同「禁止事項」整頁 Empty 但無 action):404 → 回首頁或上一頁;403 → 申請權限 / 聯絡擁有者(同「何時用」容器級無權限提示那一條的 request-access 規則)。
-4. **在主內容區垂直置中**:user 的選擇(上方出處「狀態置中」);做法照 `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 2「適用範圍與量法三點」(3)(例:空狀態 / 結果頁)—— 標頭底 → 內容頂 = 內容底 → 主內容區底,上下不給「結論留白」,左右 `loose`。「垂直定位」表「無框 → 頂部對齊」那一列不適用這裡(該表下方的例外)。
+4. **貼上方,照「垂直定位」無框那一列**:主內容區沒有外框 → 頂部對齊,包層上下 `calc(var(--layout-space-bottom) * 2)`、左右 `loose`(`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 1);1440×900 時狀態頂 = 全域標頭底 48 + 96 = 144,視窗變高位置不動。整頁讀取(Empty + 轉圈,`../CircularProgress/circular-progress.spec.md`)、整頁 500、整頁結果之後也站同一個位置(讀完換上別的狀態時不跳)。出處:user 2026-11-28(逐字節錄)「我覺得是照你建議的甲，因為原本ds就這樣定義」—— 甲 = 交接資料夾研究頁 `notes/decisions/research-state-placement-2026-11-28.md` 第 6 節「整頁貼上、有框置中」(回到上方「垂直定位」的兩分);同一則後段是三個追問研究的問句,全文住同資料夾 `state-placement-answer-2026-11-28.md`。取代 C22 選項裡的「狀態置中」(2026-11-26 起整頁曾在主內容區正中)。
 
 【AI 推導 2026-11-26】以下是照上面四點與既有規格推出來的畫面細節,範例照這樣做、等 user 看預覽:
 - 主內容欄不放本頁標頭(那一頁不存在 / 看不到,沒有本頁的標題與動作可放);範例用 `primary-header` 版面,側欄開關住在全域標頭裡,拿掉本頁標頭不影響導覽。
 - h1 的外觀 = Empty 標題那一格(「Typography」Title:body-lg + medium / foreground),h1 → 說明的距離 = Empty 標題 → 說明的同一個 token(`--item-gap-label-desc-reading-lg`)—— 標題拿到外層,畫面仍是 Empty 的樣子。
 - 不放圖示:Empty 的圖示畫在 Empty 裡、標題上方;標題拿到外層後圖示會排到標題下面,順序顛倒,所以範例不放。要不要圖示、圖示怎麼放,尚未定。
 
-**500(載入失敗)尚未定**:「何時不用」的「錯誤 / 失敗狀態 → Alert」管的是容器內;整頁失敗要用什麼版面,本次沒有決定。
+**500(載入失敗)的版面尚未定**:「何時不用」的「錯誤 / 失敗狀態 → Alert」管的是容器內;整頁失敗用不用 Empty、配什麼動作,本次沒有決定(位置已定 = 第 4 點)。
 
 世界級:Atlassian EmptyState 把整頁與錯誤頁放進同一個空狀態元件([usage](https://atlassian.design/components/empty-state/usage)「An empty state can appear as a full screen message or within panels, tables, and other containers.」「Some error messages, such as not found errors, may also fit this component layout.」);Adobe Spectrum IllustratedMessage 同樣兼顧空狀態與錯誤頁([IllustratedMessage](https://react-spectrum.adobe.com/react-spectrum/IllustratedMessage.html)「An IllustratedMessage displays an illustration and a message, usually for an empty state or an error page.」,範例「Error 404: Page not found」「Error 403: Access not allowed」);皆 2026-11-26 讀回。
 
-範例:AppShell 展示「整頁 404 — 打開已刪除的專案連結」「整頁 403 — 沒有權限的私人專案」(`../AppShell/app-shell.stories.tsx#UnreachablePageShell`)。閘:`scripts/header-first-gap-invariant.mjs` 的 `appshell-full-page-404` / `appshell-full-page-403`(在主內容區正中、頁面唯一的 h1 = 狀態標題、有動作)。
+範例:AppShell 展示「整頁 404 — 打開已刪除的專案連結」「整頁 403 — 沒有權限的私人專案」(`../AppShell/app-shell.stories.tsx#UnreachablePageShell`)。閘:`scripts/header-first-gap-invariant.mjs` 的 `appshell-full-page-404` / `appshell-full-page-403`(全域標頭底 → 狀態頂 = 2 × `--layout-space-bottom`、頁面唯一的 h1 = 狀態標題、有動作)。
 
 **來源說明(2026-11-26 更正)**:2026-11-26 前本規格寫「整頁級別的 404 / 無權限 → 專屬錯誤頁面」,並在「何時用」容器級那一行寫「整頁級 403 / 404 仍禁用」。DS 從來沒有「專屬錯誤頁面」這個東西。整頁那句最早在 2026-04-18 的 commit 02f4141b 由 AI 寫入(commit 訊息「新增 何時不用 table(Skeleton loading / Alert error / 專屬 404 / …)」),沒有 user 原話;容器級那一行標的「2026-07-04 Q7 拍板」只涵蓋容器級(Q7 題目只問容器級可否用 Empty),「整頁級仍禁用」是 2026-07-05 commit 7e69aad7 一起寫進來的 AI 建議文字,不是拍板內容。之前的判讀把整頁禁令說成 2026-07-04 拍板,是誤植。
 
@@ -180,8 +180,8 @@ Empty primitive 不自帶 role；consumer 擁有 table、search region 或 initi
 | 元件 | 消費方式 | Padding 落點 |
 |---|---|---|
 | DataTable | 外層 `<div className="flex-1 flex items-center justify-center py-12">` 包 `<Empty description={emptyState} />`(有框置中) | wrapper div(非 Empty className) |
-| AgentPanel 新對話(DS 元件本身沒有空狀態容器,包層住在範例輔助檔 `stories-helpers/scene/agent-demo.tsx` 的 `DemoConversation`) | 外層 `<div className="flex min-h-0 flex-1 items-center justify-center px-[var(--layout-space-loose)]">` 包 `<Empty icon={<AgentLogo state="attract" size={48} />} title description />`(有框置中:在標頭與輸入框之間的可用範圍正中) | wrapper div(非 Empty className):只給左右 `--layout-space-loose`,上下不給 —— 垂直置中的狀態不套規則 2 / 4 的上下距離(user 2026-11-14 在 A5 成品頁的留言 ②,逐字住 `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 2「適用範圍與量法三點」(3);面板算有框、左右為什麼留著【AI 推導】住 `../AgentPanel/agent-panel.spec.md`「附:空狀態」)。【更正 2026-11-14】2026-11-13(A5)包層補過上 `tight` / 下 `bottom`,已拿掉;再之前包層沒有內距 |
-| AppShell 整頁 404 / 403(範例 `../AppShell/app-shell.stories.tsx#FullPageState`) | 主內容區裡撐滿高度的包層 `<div className="flex h-full flex-col items-center justify-center px-[var(--layout-space-loose)]">` 包 `<h1>` + `<Empty description action className="mt-[var(--item-gap-label-desc-reading-lg)]" />`(見「整頁狀態」) | wrapper div:只給左右 `--layout-space-loose`,上下不給(垂直置中的狀態,同 AgentPanel 那一列) |
+| AgentPanel 新對話(DS 元件本身沒有空狀態容器,包層住在範例輔助檔 `stories-helpers/scene/agent-demo.tsx` 的 `DemoConversation`) | 外層 `<div className="flex min-h-0 flex-1 items-center justify-center px-[var(--layout-space-loose)]">` 包 `<ScrollArea viewportTabIndex={null} className="max-h-full max-w-full">`(不寫 tabindex:放得下時不多一個 Tab 停點)包 `<Empty icon={<AgentLogo state="attract" size={48} />} title description />`(有框置中:在標頭與輸入框之間的可用範圍正中;放不下從頂開始、可捲動,見「垂直定位」有框那一列) | wrapper div(非 Empty className):只給左右 `--layout-space-loose`,上下不給 —— 垂直置中的狀態不套規則 2 / 4 的上下距離(user 2026-11-14 在 A5 成品頁的留言 ②,逐字住 `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 2「適用範圍與量法三點」(3);面板算有框、左右為什麼留著【AI 推導】住 `../AgentPanel/agent-panel.spec.md`「附:空狀態」)。【更正 2026-11-14】2026-11-13(A5)包層補過上 `tight` / 下 `bottom`,已拿掉;再之前包層沒有內距 |
+| AppShell 整頁 404 / 403(範例 `../AppShell/app-shell.stories.tsx#FullPageState`) | 主內容區裡的包層 `<div className="flex flex-col items-center px-[var(--layout-space-loose)] py-[calc(var(--layout-space-bottom)*2)]">` 包 `<h1>` + `<Empty description action className="mt-[var(--item-gap-label-desc-reading-lg)]" />`(無框 → 頂部對齊,見「整頁狀態」第 4 點) | wrapper div:左右 `--layout-space-loose`、上下 2 × `--layout-space-bottom`(「垂直定位」無框那一列) |
 | SelectMenu | **不再消費 Empty**(2026-09-08):選單訊息列走 `MenuItem message`,由 `CommandEmpty` own(`../SelectMenu/select-menu.spec.md`「Empty state」);spinner-only loading 走 `CommandLoading` 訊息列(列圖示尺寸轉圈) | —(無 Empty) |
 | Select / Combobox / PeoplePicker | 透過 SelectMenu → 同上,不消費 Empty | — |
 

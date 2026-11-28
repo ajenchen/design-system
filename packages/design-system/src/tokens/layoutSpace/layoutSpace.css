@@ -121,11 +121,20 @@
   }
   /* 置中的狀態(2026-11-27,產品 canary 回報 H10;empty.spec.md「垂直定位」有框 → 垂直置中):撐滿的容器(fill)裡只放一個 Empty
      → 在可視高裡垂直置中、上下同值 —— 垂直置中的狀態不套規則 4 的結論留白(layoutSpace.spec.md 規則 2「適用範圍與量法三點」(3),
-     user 2026-11-14 留言 ②)。容器要真的撐滿可視高才置中得了:DialogBody / SheetBody 的 ScrollArea fillY + 內層 min-h-full。【AI 推導 2026-11-27:既有規則的落地】 */
+     user 2026-11-14 留言 ②)。容器要真的撐滿可視高才置中得了:DialogBody / SheetBody 的 ScrollArea fillY + 內層 min-h-full。【AI 推導 2026-11-27:既有規則的落地】
+     放得下才置中、放不下從頂開始(2026-11-28,empty.spec.md「垂直定位」有框那一列):`safe center` 在狀態比容器高時改從頂排,不上下兩頭溢出;
+     min-h-full 的容器會跟著內容長高、本來就不溢出,下面 @supports 那一條管的是高度被寫死 / 夾住的 fill 容器。`safe` 寫在 @supports 裡、外面留 `center`:
+     不認得 `safe` 的瀏覽器(Chrome 115 / Firefox 63 / Safari 17.6 以前;MDN browser-compat-data css.properties.justify-content.safe)照舊置中。
+     不寫成同一條規則裡的兩行:建置的 CSS 壓縮會把前一行 `center` 當成被蓋掉的宣告刪掉(2026-11-28 讀建置產物實證),退路就不見了。 */
   [data-layout-body="fill"]:has(> [data-empty]:only-child) {
     display: flex;
     flex-direction: column;
     justify-content: center;
     --layout-body-end: var(--layout-body-start);
+  }
+  @supports (justify-content: safe center) {
+    [data-layout-body="fill"]:has(> [data-empty]:only-child) {
+      justify-content: safe center;
+    }
   }
 }
