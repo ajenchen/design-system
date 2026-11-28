@@ -139,6 +139,11 @@
           "date": "2026-11-28",
           "quote": "關於 calendar 後續，其他維度的檢視是否完全都可以按照目前月份檢視的設計語言合理且一致的推導出來？然後議程檢視是否可以直接先用表格來放就好？",
           "ref": "本 session 對話(問句,不是決定)"
+        },
+        {
+          "date": "2026-11-28",
+          "quote": "照你建議",
+          "ref": "決策頁 https://claude.ai/artifact/4bHAv9PWbbVxNGwUiDCUEf 第 4 題選項甲留言(逐字 tmp/wip-2026-11-25-backup/notes/decisions/calendar-answers-2026-11-28.md)"
         }
       ],
       "rootCause": "calendar-phase-2-not-built",
@@ -147,7 +152,8 @@
       "evidence": [
         "packages/design-system/src/components/Calendar/calendar.spec.md:23「第一段(月檢視)已在 0.1.0-beta.151 實作」",
         "packages/design-system/src/components/Calendar/calendar.tsx 沒有 view / defaultView / onViewChange(grep 0 筆);calendar.spec.md:53 第二段 API 形狀只寫到【AI 推導】",
-        "2026-11-28 開工前研究(45 分,一手來源逐字;notes/decisions/research-calendar-views-2026-11-28.md):27 項由既有規格 / 世界級一致推得(D1–D27,含現在時間線用 --info、議程不列空日子、上班時段不上色、開啟捲到 7 點)。依 DS 同目的既有做法(M23)AI 直接定:全天列塞不下 = 月格 +N 清單;空白時段滑過 = 同月格不變色只有手形(8 家 5 家同);拖選中 = DataTable 區間格淡藍反白(不撞今天實心底 C8)。先照建議做、做出圖給 user 看:議程一次 7 天、時間格整點線 + 半點淡虛線。問 user 4 題(決策頁 https://claude.ai/artifact/4bHAv9PWbbVxNGwUiDCUEf,product-ui-ux-decision):1 議程長相(建議丙)、2 週 / 日事件方塊(建議甲 淡底 + 左色條)、3 重疊(建議甲 並排等寬)、4 週 / 日鍵盤(建議甲 方向鍵走到每個時段)。開工前補查:時間格跨天拖(各只一家)。"
+        "2026-11-28 開工前研究(45 分,一手來源逐字;notes/decisions/research-calendar-views-2026-11-28.md):27 項由既有規格 / 世界級一致推得(D1–D27,含現在時間線用 --info、議程不列空日子、上班時段不上色、開啟捲到 7 點)。依 DS 同目的既有做法(M23)AI 直接定:全天列塞不下 = 月格 +N 清單;空白時段滑過 = 同月格不變色只有手形(8 家 5 家同);拖選中 = DataTable 區間格淡藍反白(不撞今天實心底 C8)。先照建議做、做出圖給 user 看:議程一次 7 天、時間格整點線 + 半點淡虛線。問 user 4 題(決策頁 https://claude.ai/artifact/4bHAv9PWbbVxNGwUiDCUEf,product-ui-ux-decision):1 議程長相(建議丙)、2 週 / 日事件方塊(建議甲 淡底 + 左色條)、3 重疊(建議甲 並排等寬)、4 週 / 日鍵盤(建議甲 方向鍵走到每個時段)。開工前補查:時間格跨天拖(各只一家)。",
+        "2026-11-28 user 回決策頁:第 4 題 週 / 日鍵盤 定案甲(方向鍵走得到每個時段、Enter 在該時段新增、F2 進格);第 1 題問丙的間距要畫給他看;第 2 題傾向甲(淺色、跟月一致)但先問時間欄佔位 / dark mode 不透格線 / 色條間距 / 實色是否 solid Tag;第 3 題問句傾向並排、問並排上限與溢出 +N。研究者做新頁回答(scratchpad/cal-page2)。"
       ],
       "parts": [
         {
