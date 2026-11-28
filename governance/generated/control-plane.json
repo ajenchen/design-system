@@ -1768,7 +1768,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 53,
-      "hash": "sha256:c9efa5e61a4269285f31b8e17e155215bfb68198122985d3430492e979060a79",
+      "hash": "sha256:3d6ce85ec56f16aa743e7fc00f3d07a0d02f477b5f9814f82b7974f12af30c61",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3094,7 +3094,7 @@
         "scripts/generated/"
       ],
       "files": 819,
-      "hash": "sha256:a21245f44c8afcfe6b76f147d3518b866d277b9bd46e4d3766f8dbc53396febe",
+      "hash": "sha256:9ab0df8a98214a7c03d6de47d530f1ec7d443b7222ae468f86306116448fc875",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3175,12 +3175,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:9473444fc4ff74b981200f20d8d6b17ff09aea5a5752f6f9c34de406c591c209",
+      "hash": "sha256:2e98b238ed4bdfaf132e6ab58922bef420d454f17518340672e03abc3b91e2e1",
       "id": "standard-release-orchestrator",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/release-orchestrator.mjs",
-      "size": 177524,
+      "size": 187733,
       "type": "file"
     },
     {
@@ -3202,12 +3202,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:9fd8b456aca714a5f5c246c3854de49813e5a752a10baee3e44b891f9d6aedc7",
+      "hash": "sha256:aff157988becdfe4b0a52c6e7e2e17e44fbe457e0e5e6db0f4d04fa20223ce64",
       "id": "standard-release-workflow-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/test/release-workflow.test.mjs",
-      "size": 149306,
+      "size": 157074,
       "type": "file"
     },
     {

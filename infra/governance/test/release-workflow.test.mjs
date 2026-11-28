@@ -60,6 +60,12 @@ import {
   releaseIncidentFromEnv,
   validateReleaseWorkflow,
   classifyVersionBump,
+  CI_TIMEOUT_HEADROOM_THRESHOLD,
+  ciJobTimeouts,
+  ciTimeoutHeadroomForReport,
+  classifyCiTimeoutHeadroom,
+  formatCiTimeoutHeadroomLines,
+  readCiTimeoutHeadroom,
   prHeadMerged,
   readVersionBump,
   versionBumpMessage,
@@ -391,6 +397,90 @@ test('R100:版號沒升在合併前(pr-checks)就擋,與 release-self-audit 共�
   const audit = readFileSync(resolve(ROOT, 'scripts/release-self-audit.mjs'), 'utf8')
   assert.match(audit, /readVersionBump\(\{ repository: workflow\.automation\.repository, version: packageVersion\(workflow\), headSha \}\)/,
     'release-self-audit 的 version-bump 用同一支讀回,不另寫判法')
+})
+
+test('R97 CI 時間餘裕(只講不擋):matrix 每格分開算、≥ 門檻才列、讀不到印讀不到', () => {
+  // 2026-11-28 錨:beta.152 發布兩次停在 CI 瀏覽器 job 撞 timeout-minutes 25(escape-and-focus (0/2) 25.2 分、layout spacing 25 分),
+  // 兩個 job 早就長期貼在上限(21–24.5 分),卻沒有任何機械預警。
+  assert.equal(CI_TIMEOUT_HEADROOM_THRESHOLD, 0.8, '門檻是具名常數 0.8')
+  const ciJobs = ciJobTimeouts({
+    jobs: {
+      'verify-browser-escape-focus-control': { name: 'Verify browser(escape and focus contract control group)', 'timeout-minutes': 25, strategy: { matrix: { shard: ['0/2', '1/2'] } } },
+      'verify-browser-layout': { name: 'Verify browser(layout spacing and density gates)', 'timeout-minutes': 25 },
+      'verify-browser-overlay': { name: 'Verify browser(overlay + theme gates)', 'timeout-minutes': 25 },
+      'verify-static': { name: 'Verify static(tsc + tests + build)', 'timeout-minutes': 15 },
+      'expr-timeout': { name: 'Expr timeout', 'timeout-minutes': '${{ matrix.minutes }}' },
+      'no-timeout': { name: 'No timeout' },
+      'templated': { name: 'Shard ${{ matrix.shard }} gate', 'timeout-minutes': 10 },
+    },
+  })
+  assert.deepEqual(ciJobs.find(job => job.key === 'expr-timeout').timeoutMinutes, null, '運算式上限 = 讀不到')
+  assert.equal(ciJobs.find(job => job.key === 'no-timeout').timeoutMinutes, 360, '沒寫 = GitHub 預設 360')
+  const at = minutes => ({ startedAt: '2026-11-28T00:00:00Z', completedAt: new Date(Date.parse('2026-11-28T00:00:00Z') + minutes * 60000).toISOString(), conclusion: 'success' })
+  const runJobs = [
+    { name: 'Verify browser(escape and focus contract control group) (0/2)', ...at(25.2), conclusion: 'cancelled' },
+    { name: 'Verify browser(escape and focus contract control group) (1/2)', ...at(10) },
+    { name: 'Verify browser(layout spacing and density gates)', ...at(20) },
+    { name: 'Verify browser(overlay + theme gates)', ...at(19.9) },
+    { name: 'Verify static(tsc + tests + build)', ...at(6) },
+    { name: 'Expr timeout', ...at(5) },
+    { name: 'Shard 2 gate', ...at(9) },
+    { name: 'Not in ci.yml', ...at(3) },
+    { name: 'Skipped job', startedAt: null, completedAt: null, conclusion: 'skipped' },
+    { name: 'Still running', startedAt: '2026-11-28T00:00:00Z', completedAt: null, conclusion: null },
+  ]
+  const verdict = classifyCiTimeoutHeadroom({ runJobs, ciJobs })
+  assert.deepEqual(verdict.near.map(item => [item.name, item.limit, Math.round(item.ratio * 100)]), [
+    ['Verify browser(escape and focus contract control group) (0/2)', 25, 101],
+    ['Shard 2 gate', 10, 90],
+    ['Verify browser(layout spacing and density gates)', 25, 80],
+  ], '≥ 80% 才列、由高到低;matrix 的 (1/2) 只有 40% 不列(每格分開算);79.6% 的 overlay 不列;運算式樣板的名字也對得到')
+  assert.deepEqual(verdict.unmatched.map(item => item.name), ['Expr timeout', 'Not in ci.yml'], '上限讀不到 / 對不到 ci.yml 的照實列出')
+  assert.deepEqual(verdict.unmeasured, ['Still running'], '沒有結束時間的照實列出;skipped 不算')
+  assert.equal(verdict.measured, 6)
+
+  // 格式:≥ 門檻那幾行 + 處理方式;讀不到印讀不到(不得印成沒有問題)
+  const lines = formatCiTimeoutHeadroomLines({ ok: true, run: { id: 1, headSha: '66c5139c'.padEnd(40, '0'), url: 'https://example.invalid/run/1' }, ...verdict })
+  assert.match(lines.join('\n'), /3 個 job 逼近上限 —— 處理:照既有做法拆平行\(matrix 分片\),不調高 timeout-minutes/)
+  assert.match(lines.join('\n'), /Verify browser\(escape and focus contract control group\) \(0\/2\):25\.2 分 \/ 上限 25 分\(101%\)/)
+  assert.doesNotMatch(lines.join('\n'), /\(1\/2\):/, '40% 那一格不列')
+  const quiet = formatCiTimeoutHeadroomLines({ ok: true, run: { id: 2 }, ...classifyCiTimeoutHeadroom({ runJobs: [{ name: 'Verify static(tsc + tests + build)', ...at(6) }], ciJobs }) })
+  assert.match(quiet.join('\n'), /量了 1 個 job,沒有一個用到上限的 80% 以上/)
+  const unreadable = formatCiTimeoutHeadroomLines({ ok: false, reason: '讀不到 main 的 ci.yml run(HTTP 0)' })
+  assert.match(unreadable.join('\n'), /⚠️ 讀不到:讀不到 main 的 ci\.yml run\(HTTP 0\) —— 讀不到不代表沒有 job 逼近上限/)
+  assert.doesNotMatch(unreadable.join('\n'), /沒有一個用到上限/, '讀不到不得印成沒有問題')
+
+  // 讀回接線(假 GitHub):最新一輪跑完的 run → 那一輪 commit 的 ci.yml → 全部 job(分頁);任一讀不到 → ok:false
+  const yamlText = 'jobs:\n  layout:\n    name: Verify browser(layout spacing and density gates)\n    timeout-minutes: 25\n'
+  const fake = (overrides = {}) => (path) => {
+    if (overrides[path.split('?')[0]]) return overrides[path.split('?')[0]]
+    if (path.includes('/actions/workflows/')) return { ok: true, code: 200, text: JSON.stringify({ workflow_runs: [{ id: 9, head_sha: 'e'.repeat(40), html_url: 'u', conclusion: 'success' }] }) }
+    if (path.includes('/contents/')) return { ok: true, code: 200, text: JSON.stringify({ encoding: 'base64', content: Buffer.from(yamlText).toString('base64') }) }
+    if (path.includes('/jobs')) return { ok: true, code: 200, text: JSON.stringify({ total_count: 1, jobs: [{ name: 'Verify browser(layout spacing and density gates)', started_at: '2026-11-28T00:00:00Z', completed_at: '2026-11-28T00:24:30Z', conclusion: 'success' }] }) }
+    return { ok: false, code: 404, text: '' }
+  }
+  const parseYaml = text => ({ jobs: { layout: { name: 'Verify browser(layout spacing and density gates)', 'timeout-minutes': text.includes('25') ? 25 : 1 } } })
+  const read = readCiTimeoutHeadroom('acme/ds', { github: fake(), parseYaml, workflow })
+  assert.equal(read.ok, true)
+  assert.deepEqual(read.near.map(item => [item.name, Math.round(item.ratio * 100)]), [['Verify browser(layout spacing and density gates)', 98]])
+  const noJobs = readCiTimeoutHeadroom('acme/ds', { github: fake({ 'repos/acme/ds/actions/runs/9/jobs': { ok: false, code: 502, text: '' } }), parseYaml, workflow })
+  assert.equal(noJobs.ok, false, 'job 清單讀不到 → 讀不到,不是沒有問題')
+  const noYaml = readCiTimeoutHeadroom('acme/ds', { github: fake({ 'repos/acme/ds/contents/.github/workflows/ci.yml': { ok: false, code: 404, text: '' } }), parseYaml, workflow })
+  assert.equal(noYaml.ok, false, '那一輪的 ci.yml 讀不到 → 讀不到')
+  // 報告入口:丟錯也只變成一行讀不到,不擋
+  const thrown = ciTimeoutHeadroomForReport('acme/never-cached', { read: () => { throw new Error('boom') } })
+  assert.equal(thrown.ok, false)
+  assert.match(thrown.reason, /boom/)
+
+  // 接線:printReport 印這一段;不進五步判定、runner 不因它丟錯
+  const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
+  const reportBlock = src.slice(src.indexOf('function printReport('), src.indexOf('function waitForRun('))
+  assert.match(reportBlock, /ciTimeoutHeadroomForReport\(observation\.repository\)/)
+  assert.match(reportBlock, /formatCiTimeoutHeadroomLines\(ciHeadroom\)/)
+  const statusBlock = src.slice(src.indexOf('export function buildFiveStepStatus('), src.indexOf('export function listReleaseTags('))
+  assert.doesNotMatch(statusBlock, /ciHeadroom|CiTimeoutHeadroom/, 'CI 時間餘裕不得進五步判定(只講不擋)')
+  const runnerBlock = src.slice(src.indexOf('export function executeAutomaticRelease('), src.indexOf('function main('))
+  assert.doesNotMatch(runnerBlock, /invariant\([^\n]*(ciHeadroom|CiTimeoutHeadroom)/, 'runner 不得因它丟錯')
 })
 
 test('consumer completion requires an Actions-bound producer matching the release target', () => {
