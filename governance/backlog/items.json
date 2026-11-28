@@ -226,7 +226,7 @@
       ],
       "order": 6,
       "orderReason": "你說「到時候有時間再統一出一個 rich text toolbar就好」;不擋其他項",
-      "suggestion": " 範圍補(ws-split 分流 scopeAdd):[object Object] 顏色鈕部分排在 BL-008 定案之後或同時。現行正式寫法:工具列下拉鈕 = Button + endIcon ChevronDown + DropdownMenu(button.spec.md:304、action-bar.spec.md:200 / :455 / :478),DS 不另出下拉鈕元件(M21)。 單一觸發點的格式下拉鈕保留箭頭(button.spec.md:274 / :304、action-bar.spec.md:455;Fluent、Atlassian、CKEditor、Polaris、Carbon 一致),只有 ⋯ / 群組溢出 ∨ 這種圖示本身代表選單的不加;button.spec.md:304 補寫明(畫面不變)。"
+      "suggestion": " 範圍補(ws-split 分流 scopeAdd):[object Object] 顏色鈕部分排在 BL-008 定案之後或同時。現行正式寫法:工具列下拉鈕 = Button + endIcon ChevronDown + DropdownMenu(button.spec.md:304、action-bar.spec.md:200 / :455 / :478),DS 不另出下拉鈕元件(M21)。 單一觸發點的格式下拉鈕留不留箭頭 = 決策頁 (a)(https://claude.ai/artifact/YJgStiDayrLU7WRjfAJzSU,product-ui-ux-decision;更正:先前「Fluent、Atlassian…一致保留」不成立 —— Fluent v9 只有圖示的 MenuButton 預設不畫箭頭、Atlassian 新工具列顏色鈕不畫;逐家見 page-a);照 user 選擇改 button.spec.md:304 / action-bar.spec.md:455。"
     },
     {
       "id": "BL-008",
@@ -1015,7 +1015,7 @@
       "title": "Button 的下拉箭頭(endIcon ChevronDown)跟主圖示 / 字一樣大、一樣顏色,無字「圖示 + 箭頭」看起來像兩顆並列圖示:箭頭要不要縮小 / 淡化(研究建議縮到 12px、同色;有字無字與 Chip / TabsTrigger 同家族)",
       "rootCause": "button-endicon-chevron-same-size-as-primary-icon",
       "valueGate": "①",
-      "suggestion": "做前後圖(A 維持 / B 12px 同色(研究建議)/ C 12px + 淡 / D 只改無字型)進下一份決策頁(product-ui-ux-decision);定案後 button.spec.md 補無字型間距算法(只把現況寫成規格)與 item-anatomy.spec.md「指示方向的圖示 → fg-muted」適用範圍。研究:tmp/wip-2026-11-25-backup/notes/migration/ws-icon-dropdown-trigger-triage.json(Fluent 0.6–0.67、Atlassian 0.75、CKEditor 0.5、TinyMCE 0.42 皆比主圖示小;顏色只有 TinyMCE 淡化)。",
+      "suggestion": "做前後圖(A 維持 / B 12px 同色、C 10px 同色(決策頁建議 C:比例 0.625,四家 0.42–0.625)/ C 12px + 淡 / D 只改無字型)= 決策頁 (b) https://claude.ai/artifact/M4EYQfbksTjrt19fMM3YDn(product-ui-ux-decision);定案後 button.spec.md 補無字型間距算法(只把現況寫成規格)與 item-anatomy.spec.md「指示方向的圖示 → fg-muted」適用範圍。研究:tmp/wip-2026-11-25-backup/notes/migration/ws-icon-dropdown-trigger-triage.json(Fluent 0.6–0.67、Atlassian 0.75、CKEditor 0.5、TinyMCE 0.42 皆比主圖示小;顏色只有 TinyMCE 淡化)。",
       "evidence": [
         "實量 storybook 0.1.0-beta.153:xs 50×24、px 8、gap 0,看得到距離 4.0–5.3px;sm/md 約 8.7px;箭頭與主圖示同色 --foreground",
         "item-anatomy.spec.md:966-976「指示方向的圖示 → fg-muted」與 Button / Chip endIcon 同字色不一致(規格未寫例外)"
