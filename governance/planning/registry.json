@@ -313,6 +313,12 @@
       "status": "reference",
       "executable": false,
       "reason": "Observed-quality evidence (one 2026-11-28 incident the user pointed out, quoted verbatim: a rule rollout changed two overlay examples whose spacing the user had already settled, and the implementer accepted the change) behind the sentence added to item 1 of packages/design-system/ds-canonical/rules/work-process.md v6; provenance only, the rule itself lives in that file."
+    },
+    {
+      "path": "governance/planning/user-directed-backlog.md",
+      "status": "active",
+      "executable": true,
+      "reason": "The only home for future work the user explicitly asked to be listed, each row with the user's verbatim words and date. It lives in the repo because these items were kept only in per-batch handoff folders under git-ignored tmp/, and the DataTable upgrade item was lost twice when a new folder replaced the old one (2026-09-05 to 11-17, and again on 11-25); handoff trackers reference its row ids instead of copying them."
     }
   ]
 }
