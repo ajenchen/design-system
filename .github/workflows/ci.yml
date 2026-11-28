@@ -2596,10 +2596,12 @@ jobs:
     # 本機同負載成對量測整趟 1059 → 1467 秒(且後段單跑、低估),照比例 CI 這一步 835 秒(a6390356)→ 約 1170–1250 秒,加準備 ~125 秒 = 上限的 86–92%。
     # 照 G10 的做法拆平行、不調高上限:同一個 job 開兩格 matrix,各跑一半突變(--shard,腳本檔頭);覆蓋率改由腳本靜態驗(每條契約列都在某個突變的 expectRed)。
     # 兩格都過 needs.<job>.result 才是 success(fan-in 不變)。
+    # 2026-11-28 改三格(同一做法,不調高上限):第 0 格實測 PR baabebc8 24.5 分、PR 670a7c00 21.2 分,protected main 66c5139c 跑到 25.2 分被取消 →
+    # main 那一輪沒有裁決、0.1.0-beta.152 發布停住(release:auto「沒有裁決」)。三格每格約 2/3 的量,留出機器慢時的餘裕。
     strategy:
       fail-fast: false
       matrix:
-        shard: ['0/2', '1/2']
+        shard: ['0/3', '1/3', '2/3']
     # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
     env:
       GOVERNANCE_BROWSER_REQUIRED: '1'
