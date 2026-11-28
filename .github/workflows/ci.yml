@@ -2316,9 +2316,18 @@ jobs:
     # 15 → 25(2026-09-17 同日修正):本機估 11 分鐘是錯的,CI runner 慢得多 ——
     # 實測 Avatar 掃描 7.3 分、選項列前緣掃描 ≥ 9 分,加上安裝與兩次 build 後 15 分鐘被取消。
     # 25 是掃描型 job 的既有檔位(datatable / dpr2 都是),也是 ci-workflow-scope 允許的上限。
+    # 2026-11-28 拆成兩格 matrix(同 verify-browser-overlay / verify-browser-layout 的做法:拆平行、不調高上限;job id 不變,verify 的 needs 照舊等兩格都成功):
+    # PR #179 457e61b7(run 46121554598,job 140907096133)跑滿 25 分被取消 —— 準備 2.4 分 + Avatar 掃描 958 秒 + 示範焦點掃描 435 秒,取消時兩支的判定與對照組都已綠;
+    # 同一 job 在 protected main a7c5e3d8 是 19.8 分(Avatar 773 秒 + 示範焦點 321 秒,上限 79%)。兩支互不相關,只共用同一份建置:
+    # 第 a 格跑 Avatar 外框掃描(主判定 + 自己的 --selftest),第 b 格跑示範焦點掃描(主判定 + 自己的 --selftest)—— 對照組跟著各自的閘走,一支都沒少。
+    # 依上面兩輪的實測估:a 格約 15.5–18.5 分(上限 62–74%)、b 格約 8–10 分;Avatar 掃描是單分頁逐則開,再逼近上限就該給它加 --shard(本次只拆 job)。
     name: Verify browser(DS-wide story sweeps)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        part: ['a', 'b']
     # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
     env:
       GOVERNANCE_BROWSER_REQUIRED: '1'
@@ -2345,14 +2354,18 @@ jobs:
       - name: Build the Storybook the browser gates load
         run: npm run build-storybook
 
+      - name: Install Chromium for the browser gates
+        run: npx --no-install playwright install chromium
+
       - name: Avatar anchor box sweep (browser)
+        if: matrix.part == 'a'
         run: |
-          npx --no-install playwright install chromium
           # Avatar 當 hover card 觸發點時,最外層的框必須等於看得見的圓(2026-09-16 user:「為何 avatar 觸發的
           # profile card 距離 avatar 這麼遠」)。同一個假外框也會讓狀態圓點飛走、焦點框變膠囊。
           # 修前的 build 跑這支會紅 2 個(dx=408 / dx=143.4),selftest 注入被拉寬的外框驗偵測力。
           npm run test:avatar-anchor-box
       - name: Demo focus sweep —— 示範 = 滑鼠使用者,沒用鍵盤就不該留著鍵盤焦點框(browser,全 story)
+        if: matrix.part == 'b'
         run: |
           npm run test:story-demo-focus
 
