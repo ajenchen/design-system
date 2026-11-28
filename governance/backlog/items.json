@@ -57,20 +57,30 @@
         "canary-C20",
         "tooltip.spec.md:106"
       ],
-      "title": "停用的選單項(與按鈕、欄位以外的元件)要不要、怎麼說明「為什麼不能按」",
-      "kind": "user-decision",
-      "scope": "product-ui-ux-decision",
+      "title": "停用的選單項(與按鈕、欄位以外的元件)也要說明「為什麼不能按」:方向已定(照 DS 一致的設計語言),剩選單項的做法(滑過 / 聚焦出 Tooltip,或項目內說明)先查世界級;還沒做的動作不改成停用",
+      "kind": "user-directed",
       "source": [
-        {"date":"2026-11-26","quote":"我們 ds 是做元件和 prototype的地方應該本來就會有很多地方沒反應吧？ 我們應該不用特別處理吧？ 反正我們就是要呈現該呈現的情境並確保想要強調的地方可以順利展示 就可以了吧？","ref":"tmp/wip-2026-11-25-backup/notes/decisions/round5-answers.md:14(第五輪決策卡 C18-C20 留言,問句;當時判讀「同意,不改」)"}
+        {
+          "date": "2026-11-26",
+          "quote": "我們 ds 是做元件和 prototype的地方應該本來就會有很多地方沒反應吧？ 我們應該不用特別處理吧？ 反正我們就是要呈現該呈現的情境並確保想要強調的地方可以順利展示 就可以了吧？",
+          "ref": "第五輪決策卡 C18-C20 留言;原題(tmp/wip-2026-11-25-backup/notes/decisions/ws-upstream-triage-final.json:697)= 產品還沒有、或暫時不能用的動作怎麼呈現(隱藏 / 停用並說明 / 依原因分流)"
+        },
+        {
+          "date": "2026-11-28",
+          "quote": "我當初是說可以不用改成 disable 狀態反正沒反應就先沒反應原因如原話，但是若是變成 disable 狀態按照我們ds的一致設計語言本來就建議要有說明吧？我上述說的合理吧？",
+          "ref": "本 session 對話(協調者確認合理);逐字全文 tmp/wip-2026-11-25-backup/notes/decisions/state-placement-answer-2026-11-28.md「BL-003」段"
+        }
       ],
       "rootCause": "disabled-reason-other-components-undefined",
       "status": "open",
-      "verifiedAt": "a3330afe",
+      "verifiedAt": "f4c47f36",
       "evidence": [
-        "packages/design-system/src/components/Tooltip/tooltip.spec.md:106「選單項等其他元件:停用時怎麼說明還沒定案(產品 canary 回報 C18 / C20,待 user 決定)」—— 規格仍寫待決"
+        "packages/design-system/src/components/Tooltip/tooltip.spec.md:100-105 按鈕(aria-disabled + Tooltip)、欄位(Tooltip 包 Field)已有停用說明;:106 選單項等其他元件做法未寫",
+        "去脈絡化更正:BL 搬遷曾把 C18/C20 寫成「停用的選單項要不要說明」,原題不是這個(2026-11-28 user 指出)"
       ],
       "order": 2,
-      "orderReason": "你上次的留言是問句(傾向不處理);你確認不處理,規格那行就能改成定案"
+      "orderReason": "方向你已定(停用就要說明,跟按鈕、欄位一致);只差選單項的做法,查完世界級一致就直接做",
+      "suggestion": "M8 子規則(跨類別外推 = 新主張):先 WebFetch ≥3 家一手(Radix / Material / Atlassian / Polaris / Fluent / Apple HIG)查停用選單項怎麼說明原因、鍵盤能不能停在停用項上;一致就照做(工程 AUTO)並寫進 tooltip.spec.md:106 與選單規格,分歧才列畫面取捨題(product-ui-ux-decision)。C18 / C20 那類還沒做的動作:維持沒反應、不改成停用。"
     },
     {
       "id": "BL-004",
