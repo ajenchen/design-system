@@ -1267,6 +1267,28 @@ function verifyInstalledNpmAuditClosure(repositoryRoot, securityOverlay) {
   })
 }
 
+// 修補層蓋掉的 npm 內附套件(2026-11-28):差集式弱點稽核(governance-dependency-bootstrap.mjs diffAuditFindings 的
+// overlaySlots)用它把 npm 內附的這幾份從「鎖檔記的版本」換成「磁碟上已驗過的修補層版本」的口徑。清單只住本檔上方的
+// NPM_RUNTIME_*OVERLAY_* 常數(setup:all、升級交易、anchor 套的是同一份),這裡只從**已驗過的安裝 receipt**
+//(applyInstalledSecurityOverlay / verifyInstalledSecurityOverlay 的回傳)取,並逐欄對回常數;receipt 不是現行修補層
+//(歷史版本、缺欄、換套件)一律 fail closed,不退回「不正規化」。
+export function npmBundledSecurityOverlaySlots(installedReceipt) {
+  invariant(
+    installedReceipt?.status === 'verified'
+      && installedReceipt.package === NPM_RUNTIME_OVERLAY_PACKAGE
+      && installedReceipt.version === NPM_RUNTIME_OVERLAY_VERSION
+      && installedReceipt.target === NPM_RUNTIME_OVERLAY_TARGET
+      && installedReceipt.secondaryPackage === NPM_RUNTIME_SECONDARY_OVERLAY_PACKAGE
+      && installedReceipt.secondaryVersion === NPM_RUNTIME_SECONDARY_OVERLAY_VERSION
+      && installedReceipt.secondaryTarget === NPM_RUNTIME_SECONDARY_OVERLAY_TARGET,
+    'npm bundled security overlay slots require the verified installed receipt of the current overlay',
+  )
+  return Object.freeze([
+    Object.freeze({ package: NPM_RUNTIME_OVERLAY_PACKAGE, version: NPM_RUNTIME_OVERLAY_VERSION, node: `node_modules/npm/${NPM_RUNTIME_OVERLAY_TARGET}` }),
+    Object.freeze({ package: NPM_RUNTIME_SECONDARY_OVERLAY_PACKAGE, version: NPM_RUNTIME_SECONDARY_OVERLAY_VERSION, node: `node_modules/npm/${NPM_RUNTIME_SECONDARY_OVERLAY_TARGET}` }),
+  ])
+}
+
 export function materializeVerifiedExactNpmRuntime({
   artifact,
   tarballBytes,

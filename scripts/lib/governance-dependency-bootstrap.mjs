@@ -6,6 +6,7 @@ import { join, resolve } from 'node:path'
 import {
   assertVerifiedExactNpmRuntimeCapability,
   isGovernanceProxyFamilyName,
+  npmBundledSecurityOverlaySlots,
   prepareVerifiedExactNpmRuntime,
   reportGovernanceProxyNoticesOnce,
   resolveExactNpmRuntimeContract,
@@ -1026,7 +1027,11 @@ export async function runVerifiedGovernanceDependencyBootstrap({
 const DIFFERENTIAL_AUDIT_ARGS = Object.freeze(['audit', '--audit-level=high', '--json', `--registry=${GOVERNANCE_DEPENDENCY_REGISTRY}`])
 export const DIFFERENTIAL_AUDIT_DEFAULT_PREFIX = 'GOV-CANDIDATE-DEPS-002'
 
-/** 純函式:`npm audit --json`(auditReportVersion 2)→ Map<套件, {severity, range, advisories:Set<advisory URL 或 source>}>。 */
+/**
+ * 純函式:`npm audit --json`(auditReportVersion 2)→ Map<套件, {severity, range, advisories:Set<advisory URL 或 source>,
+ * advisoryRanges:Map<同一個鍵, 該則通報的受影響範圍>, nodes:節點路徑, viaNames:經由哪些套件受影響}>。
+ * nodes / advisoryRanges / viaNames 只給 diffAuditFindings 的修補層口徑用(見該函式說明)。
+ */
 export function parseAuditFindings(stdout, label = 'candidate', prefix = DIFFERENTIAL_AUDIT_DEFAULT_PREFIX) {
   let report
   try { report = JSON.parse(String(stdout || '')) } catch {
@@ -1050,21 +1055,82 @@ export function parseAuditFindings(stdout, label = 'candidate', prefix = DIFFERE
       throw new Error(`${prefix}:${label} npm audit finding is malformed:${name}`)
     }
     const advisories = new Set()
+    const advisoryRanges = new Map()
+    const viaNames = []
     for (const via of finding.via) {
-      if (typeof via === 'string') continue // 經由別的套件傳染:那個套件自己有一筆,advisory 記在它那裡
+      if (typeof via === 'string') { // 經由別的套件傳染:那個套件自己有一筆,advisory 記在它那裡
+        viaNames.push(via)
+        continue
+      }
       if (!via || typeof via !== 'object' || (!Number.isInteger(via.source) && typeof via.url !== 'string')) {
         throw new Error(`${prefix}:${label} npm audit advisory is malformed:${name}`)
       }
-      advisories.add(typeof via.url === 'string' && via.url ? via.url : `source:${via.source}`)
+      const key = typeof via.url === 'string' && via.url ? via.url : `source:${via.source}`
+      advisories.add(key)
+      if (typeof via.range === 'string') advisoryRanges.set(key, via.range)
     }
-    findings.set(name, { severity: String(finding.severity ?? 'unknown'), range: String(finding.range ?? ''), advisories })
+    const nodes = Array.isArray(finding.nodes) ? finding.nodes.filter((node) => typeof node === 'string') : []
+    findings.set(name, { severity: String(finding.severity ?? 'unknown'), range: String(finding.range ?? ''), advisories, advisoryRanges, nodes, viaNames })
   }
   return findings
 }
 
-/** 純函式:候選相對 base 的差集。只有 introduced 會擋。 */
-export function diffAuditFindings(base, candidate) {
+// ── 修補層口徑(2026-11-28,workspace 0.1.0-beta.151 → 152 升級被誤擋)────────────────────────────────────────────
+// npm audit 讀的是**鎖檔**(arborist loadVirtual),不是磁碟。npm 內附的 tar / brace-expansion 在磁碟上一律被修補層換成
+// 修過的版本(verified-exact-npm-runtime.mjs 的 NPM_RUNTIME_*OVERLAY_* 常數;setup:all、升級交易、anchor 都套同一份),
+// 鎖檔記哪個版本卻取決於「最後一次 npm install 時磁碟上是什麼」:原裝磁碟上跑 → 記原裝(7.5.19 / 5.0.7);套過修補層的
+// 磁碟上跑(setup:all 或 sync-all 發佈的 node_modules 之後再一般 npm install)→ 記修補層版本(7.5.22 / 5.0.12)。
+// 升級交易的 base 稽核讀 consumer 的鎖檔、candidate 稽核讀交易在原裝磁碟上重算的鎖檔,於是同一份磁碟內容被比成
+// 「base 沒有、candidate 有」→ GOV-UPGRADE-DEPENDENCY-001 package-not-vulnerable-in-base。
+// 要保證的性質是「這次升級讓**實際裝出來的樹**多了弱點嗎」(M37:鎖檔記的內附版本只是代理)。所以兩邊用同一個口徑:
+// 只對「修補層那幾個 slot」—— 節點**剛好只有** npm 內附那一份(node_modules/npm/<slot target>)—— 拿掉範圍不含修補層版本的
+// 那幾則通報(磁碟上就是那個版本,已修);範圍含修補層版本的通報照留(修補層沒修到,照舊比)。拿完沒有通報、也沒有
+// 經由別的套件受影響 → 整筆移出比較,另列 overlayRemediated 印出。其餘一律照舊嚴格:別的套件、同名但有別的節點
+//(一般相依那份)、範圍解析不了(當成含修補層版本)。slot 只在 diffAuditFindings 內由已驗過的安裝 receipt 推導
+//(verified-exact-npm-runtime.mjs npmBundledSecurityOverlaySlots),呼叫端不能自帶清單,本檔也不另寫一份。
+// base 那邊在交易裡稽核時磁碟還沒套修補層,但對 base 正規化只會從 base 拿掉通報 —— 只會讓候選更容易被判「新增」,不會放寬;
+// 放寬只發生在候選那邊,而候選的修補層在稽核前已套上並驗過(installedOverlayReceipt)。
+function overlayExcludes(range, version) {
+  if (typeof range !== 'string' || !range.trim()) return false
+  try { return !metavulnerabilityRangeCovers(range, version) } catch { return false }
+}
+
+function normalizeOverlaySlotFindings(findings, overlaySlots) {
+  const normalized = new Map()
+  const remediated = []
+  for (const [name, finding] of findings) {
+    const slot = overlaySlots.find((entry) => entry.package === name)
+    const nodes = Array.isArray(finding.nodes) ? finding.nodes : []
+    if (!slot || nodes.length !== 1 || nodes[0] !== slot.node) {
+      normalized.set(name, finding)
+      continue
+    }
+    const kept = new Set()
+    const fixed = []
+    for (const advisory of finding.advisories) {
+      if (overlayExcludes(finding.advisoryRanges?.get(advisory), slot.version)) fixed.push(advisory)
+      else kept.add(advisory)
+    }
+    if (fixed.length) remediated.push({ name, node: slot.node, overlayVersion: slot.version, severity: finding.severity, range: finding.range, advisories: fixed.sort() })
+    if (kept.size === 0 && fixed.length && !(finding.viaNames?.length)) continue
+    normalized.set(name, fixed.length ? { ...finding, advisories: kept } : finding)
+  }
+  return { findings: normalized, remediated }
+}
+
+/**
+ * 純函式:候選相對 base 的差集。只有 introduced 會擋。
+ * installedOverlayReceipt(選填):候選樹上 applyInstalledSecurityOverlay / verifyInstalledSecurityOverlay 回的已驗 receipt。
+ * 有傳 → slot 由 npmBundledSecurityOverlaySlots 從它推導(不是現行修補層就 fail closed),兩邊先用同一個修補層口徑正規化
+ *(見上方「修補層口徑」),修補層已修的通報列進 overlayRemediated(只印不擋)。不傳 = 不正規化(舊行為)。
+ */
+export function diffAuditFindings(base, candidate, { installedOverlayReceipt } = {}) {
+  const overlaySlots = installedOverlayReceipt === undefined ? [] : npmBundledSecurityOverlaySlots(installedOverlayReceipt)
   const byName = (left, right) => (left.name < right.name ? -1 : left.name > right.name ? 1 : 0)
+  const baseSide = normalizeOverlaySlotFindings(base, overlaySlots)
+  const candidateSide = normalizeOverlaySlotFindings(candidate, overlaySlots)
+  base = baseSide.findings
+  candidate = candidateSide.findings
   const introduced = []
   const inherited = []
   for (const [name, finding] of candidate) {
@@ -1079,7 +1145,12 @@ export function diffAuditFindings(base, candidate) {
     else inherited.push({ name, severity: finding.severity, range: finding.range, advisories })
   }
   const resolved = [...base.keys()].filter((name) => !candidate.has(name)).sort()
-  return Object.freeze({ introduced: introduced.sort(byName), inherited: inherited.sort(byName), resolved })
+  return Object.freeze({
+    introduced: introduced.sort(byName),
+    inherited: inherited.sort(byName),
+    resolved,
+    overlayRemediated: candidateSide.remediated.sort(byName),
+  })
 }
 
 export function runAuditFindingsJson(cli, root, {
@@ -1130,6 +1201,7 @@ export function assertNoIntroducedAuditFindings(diff, {
   report = (line) => console.error(line),
 } = {}) {
   for (const item of diff.inherited) report(`·  繼承自 ${baseLabel}(不擋;owner 是 ${baseLabel} 自己的 CI / 安全更新):${item.name} ${item.severity} ${item.range} ← ${item.advisories.join(', ')}`)
+  for (const item of diff.overlayRemediated || []) report(`·  修補層已修(不擋;${item.node} 在磁碟上是 ${item.overlayVersion},兩邊同一口徑):${item.name} ${item.severity} ${item.range} ← ${item.advisories.join(', ')}`)
   for (const name of diff.resolved) report(`·  ${subject} 已修掉:${name}`)
   if (diff.introduced.length) {
     const lines = diff.introduced.map((item) => `${item.name} ${item.severity} ${item.range}(${item.reason})← ${item.advisories.join(', ') || '(經由其他套件)'}`)

@@ -541,6 +541,11 @@ jobs:
           node --test --test-name-pattern='canonical GitHub profile minima' infra/governance/test/model-validation.test.mjs
           node --test infra/governance/test/workflow-identity-sync.test.mjs
           node --test infra/governance/test/release-workflow.test.mjs
+          # consumer 升級交易(sync-all → verify-upgrade-evidence.mjs)的判定。2026-11-28 錨例:這支原本只在夜間 harness 跑(非必過),
+          # 而發版第 5 步的範本 base 鎖檔記的是 npm 內附 tar / brace-expansion 的原裝版本,永遠走不到「base 鎖檔記修補層版本」那一格 ——
+          # workspace 從 0.1.0-beta.151 升 152 才被 GOV-UPGRADE-DEPENDENCY-001 誤擋。兩面對照 fixture(錨例不擋 / 一般相依新增、修補層沒修到、
+          # 修補層範圍外的節點照擋 / 拿掉修法錨例重新被擋)與「差集帶修補層 receipt」的接線斷言都在這支,純 Node + 本機 git 臨時 repo,約 4 秒。
+          node --test scripts/test-verify-upgrade-evidence.mjs
           node --test scripts/test-deterministic-vite-output.mjs
           # build:dts 的別名改寫(2026-10-07 取代 tsc-alias):壞掉的 paths / 解析不到的別名必紅且整批不寫入,
           # 並對本 job 剛建好的 dist 跑 --check 模式 —— 宣告檔裡不得殘留任何 `@/` 別名。

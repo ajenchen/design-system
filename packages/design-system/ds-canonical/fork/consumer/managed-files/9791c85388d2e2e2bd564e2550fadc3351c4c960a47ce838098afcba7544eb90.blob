@@ -677,7 +677,12 @@ export async function reconstructExpectedUpgrade({
       label: 'candidate',
       prefix: 'GOV-UPGRADE-DEPENDENCY-001',
     })
-    assertNoIntroducedAuditFindings(diffAuditFindings(baseVulnerabilityAudit.findings, candidateVulnerabilityAudit.findings), {
+    // 2026-11-28(workspace 0.1.0-beta.151 → 152 被誤擋):npm 內附的 tar / brace-expansion 兩邊用同一個修補層口徑比
+    //(governance-dependency-bootstrap.mjs「修補層口徑」):base 鎖檔記修補層版本、交易在原裝磁碟上重算的鎖檔記原裝版本,
+    // 磁碟內容其實相同。slot 只由上一步已驗過的 installedOverlayReceipt 推導;修補層範圍外的套件與節點照舊嚴格。
+    assertNoIntroducedAuditFindings(diffAuditFindings(baseVulnerabilityAudit.findings, candidateVulnerabilityAudit.findings, {
+      installedOverlayReceipt,
+    }), {
       prefix: 'GOV-UPGRADE-DEPENDENCY-001',
       subject: `upgrade to ${expectedVersion}`,
       baseLabel: 'the consumer protected base',

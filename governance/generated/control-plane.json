@@ -1062,12 +1062,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:c58fa8fcc31f4db0397e8ff2c2121487a66b13c63c2d915185207235742a6eab",
+      "hash": "sha256:fbc04b2809e96baa6fe15e88628d537354478752d1f7d3e2048f6013b7f61d05",
       "id": "exact-governance-dependency-bootstrap-library",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/lib/governance-dependency-bootstrap.mjs",
-      "size": 69352,
+      "size": 74549,
       "type": "file"
     },
     {
@@ -1458,12 +1458,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:8e7368c4ede8d896f6e7aba5a030e94b6e5accc30bf4780835ef1c905a6255db",
+      "hash": "sha256:104bcb134fa13f8307c9d483fc36dbee1e7f6e711a323c9373e92bb661ee5c93",
       "id": "exact-upgrade-evidence-verifier",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/verify-upgrade-evidence.mjs",
-      "size": 54321,
+      "size": 54799,
       "type": "file"
     },
     {
@@ -1476,12 +1476,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:5e3f57056598d4325342102124a815dc9193568db554d89d25411ca109651a25",
+      "hash": "sha256:7398fa303164603e29374616368a58c191cb7fe320f7841490fea315497057ab",
       "id": "exact-verified-npm-runtime-library",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/lib/verified-exact-npm-runtime.mjs",
-      "size": 77544,
+      "size": 79242,
       "type": "file"
     },
     {
@@ -1623,7 +1623,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 16,
-      "hash": "sha256:2032815b842cc7539c6e3b4021d10de647146ce3c71b51666701e6324a900a82",
+      "hash": "sha256:7918747ce13f7074df55466d628e9bdede3cfc1dd250e08c2a59070c32886088",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2452,7 +2452,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 5,
-      "hash": "sha256:e26c93ef0e08dabfb2c05a70228263c67f7c84220bcf1ab1b5ffef8effb6230a",
+      "hash": "sha256:1a501c5caf1052381a26381f2da104fc0f1b6037c6de08e380a609be4c115dc3",
       "id": "product-template-documentation",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3094,7 +3094,7 @@
         "scripts/generated/"
       ],
       "files": 819,
-      "hash": "sha256:48f3026a80dc80cb4813047a988df9d0ea58fb701b5f1c2bd30cb98ad24ac08c",
+      "hash": "sha256:6c5a60b3799ce67d3d04028b9d625a150d6a1257ddb8465365cc0e5e744b324f",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
