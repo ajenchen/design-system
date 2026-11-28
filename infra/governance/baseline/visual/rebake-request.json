@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "branch": "pkg/b3",
+  "update_baseline": true,
+  "reference_ref": "v0.1.0-beta.152",
+  "reason": "0.1.0-beta.153 全部工作線合回後重拍一次,對 v0.1.0-beta.152 歸因:行事曆外框只圍格子區 / bordered / flush 與事件詳情客製、表格布林格整格點擊、日期區間作用端盒子、InfoTooltip 新場景、留白規則線(Popover 設計原則與設計規格的篩選 / 欄位顯示範例改 DS 元件)、SelectMenu 窄視窗上限;審核包只列有變與新增的圖給 user 確認",
+  "requestedAt": "2026-11-28T13:20:00+08:00"
+}
