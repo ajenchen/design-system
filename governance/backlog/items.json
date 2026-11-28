@@ -1240,6 +1240,21 @@
       "evidence": [
         "packages/design-system/src/tokens/token-registry.json:1048、:1056 `\"repo\": \"work-management\"`;GitHub repo 2026-11-28 讀回 404"
       ]
+    },
+    {
+      "id": "BL-052",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "9f328a04",
+      "oldIds": [],
+      "title": "分包時本機只跑「自己判斷改到的檔在 CI 對應的檢查」,漏掉 CI 實際會跑的閘,推上去才紅(同族兩次)",
+      "rootCause": "lane-local-checks-miss-ci-mapped-gates",
+      "valueGate": "②",
+      "suggestion": "做一支「改到的檔 → CI 會跑哪些步驟」的對照(讀 .github/workflows/ci.yml 每一步的指令與它們掃的路徑,或保守地:新增根目錄檔 / 新增內容相同的檔 / 動特權路徑時必跑 repository-hygiene、gate-contract、privileged closure),讓實作者、核對者與合回點照它跑;或合回點固定跑 Verify static 的純靜態步驟(本機約 1 分)。改 work-process 前照該檔「迭代」附量測證據。",
+      "evidence": [
+        "457e61b7 CI 紅:gate-contract 與 .node-version 在特權閉包外(R96,當時修在 e39ac6ea)",
+        "bbee1e67 CI 紅:Verify static 第 10 步 repository-hygiene R2 / R4(.node-version、scripts/.node-version 未登記),R96 / R96b 實作者與兩輪核對都沒跑;修在 9f328a04"
+      ]
     }
   ]
 }
