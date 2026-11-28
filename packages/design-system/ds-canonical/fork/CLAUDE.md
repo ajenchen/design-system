@@ -25,7 +25,7 @@ This file contains Claude Code mechanics only. Shared product rules, SSOT pointe
 
 On Claude Code on the web, set the **Setup script** to the script in README.md ("Local, cloud, and
 container setup"); that section is the only description of the cloud setup (exact Node.js from
-`.node-version`, which environment to use, network allowlist, cached setup results), so read it there
+`scripts/.node-version`, which environment to use, network allowlist, cached setup results), so read it there
 instead of restating it.
 `npm run setup:all` runs the shared locked install, signature audit, and exact installed hooks-off
 checker before work. Opening or resuming a Claude session does not mutate the checkout through repository

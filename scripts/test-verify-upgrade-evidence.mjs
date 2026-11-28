@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 /**
  * @gate-contract
- *   保證: consumer 升級交易(verify-upgrade-evidence.mjs)只擋這次升級真的新增的弱點,而且 npm 內附 tar / brace-expansion 兩邊用同一個修補層口徑比
- *   紅: 拿掉差集的 installedOverlayReceipt(或讓修補層口徑失效)→ 錨例(base 鎖檔記修補層版本)重現 workspace 回報的同兩筆 package-not-vulnerable-in-base 而紅
- *   綠: 錨例、兩邊都記原裝、反方向都不擋;一般相依新增、修補層沒修到的通報、修補層範圍外的節點、非現行 receipt 照擋 —— 純函式,重跑恆等
+ *   保證: consumer 升級交易(verify-upgrade-evidence.mjs)只擋這次升級真的新增的弱點,而且 npm 內附 tar / brace-expansion 兩邊用同一個修補層口徑比;
+ *         另外,這一版出貨的每個受管檔與共用 launcher 位置,都落在現行 sync-all 與上一個已發布版 sync-all 的 TRANSACTION_PATHS 內
+ *         (產品升級時跑的是上一版的交易程式,落在外面就整筆以 GOV-UPGRADE-008 中止)
+ *   紅: 拿掉差集的 installedOverlayReceipt(或讓修補層口徑失效)→ 錨例(base 鎖檔記修補層版本)重現 workspace 回報的同兩筆 package-not-vulnerable-in-base 而紅;
+ *       受管清單多一個根目錄檔(0.1.0-beta.153 候選 e39ac6ea 的 .node-version 錨例)→ 對現行與上一版兩份清單都指名它而紅
+ *   綠: 錨例、兩邊都記原裝、反方向都不擋;一般相依新增、修補層沒修到的通報、修補層範圍外的節點、非現行 receipt 照擋 —— 純函式,重跑恆等;
+ *       現行受管清單全在兩份 TRANSACTION_PATHS 內才綠,讀不到上一個發布 tag 或它的 sync-all 一律紅(儀器失效,不當通過)
  */
 
 import assert from 'node:assert/strict'
@@ -1049,5 +1053,39 @@ test('staged workspace manifests are verified as dependency-version-only changes
     )
   } finally {
     rmSync(root, { recursive: true, force: true })
+  }
+})
+
+// 2026-11-28 錨例(0.1.0-beta.153 候選 e39ac6ea):受管檔 .node-version 放在產品 repo 根目錄,而產品升級時跑的是
+// 「上一版」的 sync-all(scripts/sync-all.mjs 的 TRANSACTION_PATHS 與 incoming managed path 檢查),整筆以 GOV-UPGRADE-008
+// 「incoming managed path is outside fixed transaction authority」中止 —— 只改新版的清單救不了這一跳。
+// 所以這裡同時對「現行」與「上一個已發布版」兩份 TRANSACTION_PATHS 驗受管清單與共用 launcher 位置。
+test('every shipped managed file stays inside the current and the last released sync-all transaction authority', () => {
+  const repoRoot = join(import.meta.dirname, '..')
+  const transactionRoots = (source, label) => {
+    const match = /const TRANSACTION_PATHS = Object\.freeze\(\[([\s\S]*?)\]\)/.exec(source)
+    assert.ok(match, `${label}: scripts/sync-all.mjs 找不到 TRANSACTION_PATHS(儀器失效)`)
+    const roots = [...match[1].matchAll(/'([^']+)'/g)].map((item) => item[1])
+    assert.ok(roots.length > 0, `${label}: TRANSACTION_PATHS 是空的(儀器失效)`)
+    return roots
+  }
+  const outside = (paths, roots) => paths.filter((path) => !roots.some((root) => path === root || path.startsWith(`${root}/`)))
+  const gitOut = (args) => {
+    const result = spawnSync('git', ['-C', repoRoot, ...args], { encoding: 'utf8' })
+    assert.equal(result.status, 0, `git ${args.join(' ')} 失敗(讀不到上一個發布版 = 儀器失效,不是通過):${String(result.stderr).trim()}`)
+    return result.stdout
+  }
+  const manifest = JSON.parse(readFileSync(join(repoRoot, 'packages/design-system/ds-canonical/fork/manifest.json'), 'utf8'))
+  const shipped = [...Object.keys(manifest.consumer.managedFiles), manifest.consumer.launcherDestination]
+  assert.ok(shipped.length > 10, '受管清單少得不合理(儀器失效)')
+  const lastRelease = gitOut(['describe', '--tags', '--abbrev=0', '--match', 'v[0-9]*', 'HEAD']).trim()
+  const authorities = {
+    current: transactionRoots(readFileSync(join(repoRoot, 'scripts/sync-all.mjs'), 'utf8'), 'current'),
+    [lastRelease]: transactionRoots(gitOut(['show', `${lastRelease}:scripts/sync-all.mjs`]), lastRelease),
+  }
+  for (const [label, roots] of Object.entries(authorities)) {
+    assert.deepEqual(outside(shipped, roots), [], `${label} 的 sync-all 會以 GOV-UPGRADE-008 拒收這些受管檔`)
+    // 對照組:錨例的根目錄受管檔必須被這一份清單指名(證明判定在該紅時會紅,不是恆綠)
+    assert.deepEqual(outside([...shipped, '.node-version'], roots), ['.node-version'], `${label}: 根目錄受管檔沒被抓到`)
   }
 })

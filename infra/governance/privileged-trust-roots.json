@@ -26,6 +26,7 @@
     ".claude-plugin/plugin.json",
     ".github/CODEOWNERS",
     ".gitignore",
+    ".node-version",
     ".npmrc",
     "AGENTS.md",
     "CLAUDE.md",

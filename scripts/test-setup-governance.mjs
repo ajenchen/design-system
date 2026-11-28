@@ -1507,9 +1507,9 @@ test('canonical execution runtime is the single machine SSOT for setup, package 
 
   // 每個 workflow / dev container / Netlify 都等於 .node-version 那一版,由 scripts/node-version-ssot-invariant.mjs 守(CI verify-static);
   // 這裡只守另一條:那一版要滿足 canonical 最低 Node(確切版號,不准只寫主版號)。
-  const pinnedNode = readFileSync('template/ds-product-template/.node-version', 'utf8').trim()
-  assert.match(pinnedNode, /^\d+\.\d+\.\d+$/, 'template .node-version must pin an exact Node version')
-  assert.ok(atLeast(pinnedNode, runtime.minimumNodeVersion), 'template .node-version is below the canonical minimum')
+  const pinnedNode = readFileSync('scripts/.node-version', 'utf8').trim()
+  assert.match(pinnedNode, /^\d+\.\d+\.\d+$/, 'managed scripts/.node-version must pin an exact Node version')
+  assert.ok(atLeast(pinnedNode, runtime.minimumNodeVersion), 'managed scripts/.node-version is below the canonical minimum')
   assert.match(readFileSync('template/ds-product-template/.github/workflows/audit.yml', 'utf8'), /npm ci --ignore-scripts/)
   assert.equal(existsSync('template/ds-product-template/.github/workflows/governance-anchor.yml'), false)
 

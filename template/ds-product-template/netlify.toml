@@ -13,9 +13,14 @@
   command = "npm run build-storybook"
   publish = "storybook-static"
 
-# Node version: Netlify reads .node-version from the site's base directory (this repository root), the
-# same file CI (audit.yml) and the dev container are pinned to. Do not add NODE_VERSION here: it would be
-# a second source (https://docs.netlify.com/build/configure-builds/manage-dependencies/).
+# Node version: this repository's one source is the managed scripts/.node-version (CI audit.yml, the dev
+# container, and scripts/cloud-setup.sh use it). Netlify reads only a NODE_VERSION environment variable
+# or a .node-version / .nvmrc file in the site's base directory
+# (https://docs.netlify.com/build/configure-builds/manage-dependencies/), and upgrades cannot deliver a
+# managed file to the repository root, so pin Netlify in the Netlify UI: set the site environment
+# variable NODE_VERSION to the version in scripts/.node-version, and change it when a release note says
+# that file changed. Do not add NODE_VERSION here or a root .node-version: either would be a second copy
+# in this repository that upgrades never update.
 
 # 免費密碼保護 — Edge Function 自己做 HTTP Basic Auth(見下方「Access control」+ netlify/edge-functions/basic-auth.ts)。
 # 設 env var STORYBOOK_BASIC_AUTH="user:password"(多組空格分隔)→ 站台跳帳密彈窗;fail-closed-v1:未設或格式壞 → 503 鎖站。
