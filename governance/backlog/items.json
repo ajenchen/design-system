@@ -1005,9 +1005,8 @@
     {
       "id": "BL-043",
       "kind": "consumer-report",
-      "status": "open",
+      "status": "in-progress",
       "verifiedAt": "457e61b7",
-      "askUser": true,
       "oldIds": [
         "ws-icondd-q1a",
         "ws-icondd-q1b"
@@ -1015,10 +1014,11 @@
       "title": "Button 的下拉箭頭(endIcon ChevronDown)跟主圖示 / 字一樣大、一樣顏色,無字「圖示 + 箭頭」看起來像兩顆並列圖示:箭頭要不要縮小 / 淡化(研究建議縮到 12px、同色;有字無字與 Chip / TabsTrigger 同家族)",
       "rootCause": "button-endicon-chevron-same-size-as-primary-icon",
       "valueGate": "①",
-      "suggestion": "做前後圖(A 維持 / B 12px 同色、C 10px 同色(決策頁建議 C:比例 0.625,四家 0.42–0.625)/ C 12px + 淡 / D 只改無字型)= 決策頁 (b) https://claude.ai/artifact/M4EYQfbksTjrt19fMM3YDn(product-ui-ux-decision);定案後 button.spec.md 補無字型間距算法(只把現況寫成規格)與 item-anatomy.spec.md「指示方向的圖示 → fg-muted」適用範圍。研究:tmp/wip-2026-11-25-backup/notes/migration/ws-icon-dropdown-trigger-triage.json(Fluent 0.6–0.67、Atlassian 0.75、CKEditor 0.5、TinyMCE 0.42 皆比主圖示小;顏色只有 TinyMCE 淡化)。",
+      "suggestion": "已定 C:Button / Chip / TabsTrigger 下拉箭頭 xs/sm/md 10px、lg 12px,同字色,線粗維持 1.33px;item-anatomy.spec.md「指示方向的圖示 → fg-muted」寫明適用範圍(選單列 / 欄位);button.spec.md 補箭頭尺寸表與無字型間距算法(現況寫成規格)。排 154,畫面變化進基準圖審核。",
       "evidence": [
         "實量 storybook 0.1.0-beta.153:xs 50×24、px 8、gap 0,看得到距離 4.0–5.3px;sm/md 約 8.7px;箭頭與主圖示同色 --foreground",
-        "item-anatomy.spec.md:966-976「指示方向的圖示 → fg-muted」與 Button / Chip endIcon 同字色不一致(規格未寫例外)"
+        "item-anatomy.spec.md:966-976「指示方向的圖示 → fg-muted」與 Button / Chip endIcon 同字色不一致(規格未寫例外)",
+        "user 2026-11-28 條件核准 C(逐字:「箭頭尺寸那題確認過可以符合我們ds一致的設計語言且不違背世界級的設計就照你建議」;條件查證見 tmp/wip-2026-11-25-backup/notes/decisions/state-placement-answer-2026-11-28.md 末段):10px 同色、線粗 1.33;lg 主圖示 20(button.tsx:561)→ 箭頭 12(比例 0.6)"
       ]
     },
     {
