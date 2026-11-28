@@ -185,12 +185,17 @@
       "oldIds": [
         "R40",
         "E5(ws-upstream-triage-E)",
-        "todo-組21"
+        "todo-組21",
+        "ws-split-q2"
       ],
       "title": "統一一個 rich text 工具列",
       "kind": "user-directed",
       "source": [
-        {"date":"2026-11-26","quote":"到時候有時間再統一出一個 rich text toolbar就好","ref":"tmp/wip-2026-11-25-backup/notes/decisions/round6-answers.md:12(第六輪 E5)"}
+        {
+          "date": "2026-11-26",
+          "quote": "到時候有時間再統一出一個 rich text toolbar就好",
+          "ref": "tmp/wip-2026-11-25-backup/notes/decisions/round6-answers.md:12(第六輪 E5)"
+        }
       ],
       "rootCause": "no-shared-rich-text-toolbar",
       "status": "open",
@@ -199,26 +204,35 @@
         "DS 沒有 rich text 工具列元件:`RichTextToolbar` 只出現在 packages/design-system/src/patterns/action-bar/action-bar.stories.tsx(範例自組,git grep 3 處)"
       ],
       "order": 6,
-      "orderReason": "你說「到時候有時間再統一出一個 rich text toolbar就好」;不擋其他項"
+      "orderReason": "你說「到時候有時間再統一出一個 rich text toolbar就好」;不擋其他項",
+      "suggestion": " 範圍補(ws-split 分流 scopeAdd):[object Object] 顏色鈕部分排在 BL-008 定案之後或同時。現行正式寫法:工具列下拉鈕 = Button + endIcon ChevronDown + DropdownMenu(button.spec.md:304、action-bar.spec.md:200 / :455 / :478),DS 不另出下拉鈕元件(M21)。"
     },
     {
       "id": "BL-008",
       "oldIds": [
-        "N24"
+        "N24",
+        "ws-split-q1",
+        "ws-split-q3"
       ],
       "title": "Split button(分割按鈕)的樣式支援矩陣:文字型 primary / secondary / tertiary、圖示型 text",
       "kind": "user-directed",
       "source": [
-        {"date":"2026-08-28","quote":"這題先放在 backlog 之後再做","ref":"governance/planning/2026-09-25-interaction-and-hover-remediation.md:362(N24)"}
+        {
+          "date": "2026-08-28",
+          "quote": "這題先放在 backlog 之後再做",
+          "ref": "governance/planning/2026-09-25-interaction-and-hover-remediation.md:362(N24)"
+        }
       ],
       "rootCause": "no-split-button",
       "status": "open",
       "verifiedAt": "a3330afe",
       "evidence": [
-        "git grep「split button / split-button / 分割按鈕」於 packages/design-system/src 只有 action-bar.spec.md:293 一處對照說明,DS 沒有分割按鈕;當時的研究逐字稿已不在(N24 列 09-27 查證)"
+        "git grep「split button / split-button / 分割按鈕」於 packages/design-system/src 只有 action-bar.spec.md:293 一處對照說明,DS 沒有分割按鈕;當時研究部分可找回:user 08-26 三句原話(問句)與 AI 兩段摘要在 tmp/wip-2026-10-13/t10-reanswer/q4-ssot/data/user-corpus.jsonl:1801-1803;樣式矩陣評估全文已不在",
+        "2026-11-28 workspace 問 split button 現況(tmp/wip-2026-11-25-backup/notes/decisions/ws-split-button-q-2026-11-28.md);分流 notes/migration/ws-split-button-triage.json:DS 從未有 split button(git log --all -G 只有文字提及);工具列下拉鈕 / 群組溢出 ∨ = 單一點擊目標(Button + DropdownMenu),split = 兩個目標,WinUI / Fluent v9 / Atlassian / APG 一致"
       ],
       "order": 7,
-      "orderReason": "你說「這題先放在 backlog 之後再做」;開工時研究要重做(舊研究已遺失)"
+      "orderReason": "你說「這題先放在 backlog 之後再做」;開工時研究要重做(舊研究已遺失)",
+      "suggestion": " 範圍補(ws-split 分流 scopeAdd):[object Object] [object Object] 開工時把「文字色 / 底色鈕要不要 split」(各家分歧:Word / WinUI split、CKEditor 單一觸發)列進決策頁(product-ui-ux-decision);在那之前產品維持單一觸發鈕。"
     },
     {
       "id": "BL-009",
