@@ -226,7 +226,8 @@
         "R55",
         "R55-結",
         "ws-F4-3",
-        "todo-組32"
+        "todo-組32",
+        "ws152-3-icon"
       ],
       "title": "類型方塊 / IconBox 要不要做成可重用元件(下游 Avatar square icon 併在這)",
       "kind": "user-decision",
@@ -350,7 +351,8 @@
         "ws-H15",
         "ws-H19",
         "ws-H7",
-        "todo-組14"
+        "todo-組14",
+        "ws152-4a"
       ],
       "title": "workspace 已被承諾「下一版」的公開 API 缺口(FileUpload open() 與檔案列動作、格內控件列標題命名、focusCell、刪除後焦點接力、表格標題欄點擊)",
       "rootCause": "promised-public-api-gaps-to-workspace",
@@ -796,6 +798,134 @@
       "suggestion": "逐條讀 CI run / 排程紀錄 / 瀏覽器重現 / workspace 回覆查證:仍成立的照根因收進正本(併進既有項或另開),已解或前提不在的在本項 parts 記一行結案證據;先做 T17(main 排程 Governance harnesses nightly 連紅 = ②)與組 4 的核准閘誤擋(R81)",
       "evidence": [
         "governance/planning/2026-11-28-work-process-evidence-v7.md 第 3 節「本機查不到現況」那一條逐條列全這批與所屬組別;在 a3330afe 本機只有程式與規格,讀不到 CI run、排程結果、瀏覽器重現與外部回覆"
+      ]
+    },
+    {
+      "kind": "consumer-report",
+      "status": "open",
+      "verifiedAt": "49331693",
+      "id": "BL-036",
+      "oldIds": [
+        "ws152-1",
+        "ws-H26"
+      ],
+      "title": "標題列裡放 ⓘ(InfoTooltip)、沒寫 variant 的圖示鈕或多包一層 div 時,留白閘仍誤擋「標題直接接有框內容」(152 H26 白名單漏網)",
+      "rootCause": "M12:不變式 = 規格 3「標題塊」看的是「這一列畫出來是不是字(標題、ⓘ、連結、無框鈕)」;症狀在寫入閘;根因在 utility-registry 的 title_block 白名單用 JSX 字面代替畫出來的性質(M37 代理):元件名清單沒有 DS 自己的 ⓘ 元件 InfoTooltip、按鈕只認字面 variant 不認 iconOnly 的預設 text、標題列內再包一層不帶框的 div 就不認。修在白名單與分類器(根層),不是在產品加豁免。",
+      "valueGate": "①",
+      "suggestion": "工程,AUTO:utility-registry.json title_block 加 InfoTooltip 為標題列准放元件(它本身無框、不撐高列);`_TEXT_BUTTON_RE` 改成照 Button 的解析規則判無框(有寫 variant 照寫的;沒寫時 iconOnly / dismiss → text、其餘 → tertiary = 有框);is_heading_row 允許一層不帶框、子元素全是標題列准放物的 div / span 包層;Calendar(bordered 未傳 false)列入有框內容。測試:test_check_layout_space_magic_numbers.sh 加四格放行(InfoTooltip、無 variant iconOnly、左群包層、Calendar)+ 對照組(同結構換成 variant='tertiary' 照擋、Calendar bordered={false} 照擋),並跑 T9「拿掉放行 → 同樣本紅」的同型對照。回覆 workspace:153 起標題旁 ⓘ 用 InfoTooltip;DS 修好(154)後拿掉兩處 @layout-space-magic-ok。",
+      "evidence": [
+        "查證對象:DS 0.1.0-beta.153 整合頭副本(misc,HEAD 49331693)。workspace repo 非公開(GitHub API 404),產品原檔沒讀到;用同結構的樣本直接餵 hook(PostToolUse Write,app 路徑)實跑:",
+        "  [section flex-col gap-2 > div[h4, <InfoTooltip info=…/>] + DataTable] → exit 2,擋在 section 那一行;對照組 [section gap-2 > h4 + DataTable] → exit 0(= 回報的 Custom fields)",
+        "  [section gap-2 > div[h4, <Button iconOnly variant='text'>] + DataTable] → exit 0(DS 自己的 T2:packages/design-system/ds-canonical/hooks/tests/test_check_layout_space_magic_numbers.sh:566-576)",
+        "  [section gap-2 > div[h4, <Button iconOnly size='xs'>](不寫 variant)+ DataTable] → exit 2;但 iconOnly 不寫 variant 時畫成 text(button.tsx:535-537 `variantProp ?? (iconOnly ? 'text' : 'tertiary')`)= 無框鈕,照規格應放行",
+        "  [section gap-2 > div[div[h4, ⓘ], Button text] + DataTable](左群標題 + ⓘ、右側鈕)→ exit 2;同樣內容把 ⓘ 放進 h4 的 inline-flex 就 exit 0",
+        "  對照:[section gap-2 > div[h4, Button variant='tertiary'] + DataTable] → exit 2,這個擋是對的(有框按鈕的標題列 → tight,layoutSpace.spec.md:202、:210)",
+        "規格:packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md:202「哪一列算「字」:標題字、ⓘ、連結樣式的文字、無框的按鈕」;:209 例表「標題(右邊有無框小圖示鈕)→ 表 | 8」;:215 機械段寫「無框 / 連結樣式的按鈕(含 ⓘ)」",
+        "分類器:packages/design-system/src/tokens/utility-registry.json:386-388 heading_row_button_variants ['text','link']、heading_row_wrappers ['span','Tooltip','TooltipTrigger','TooltipContent'];ds-canonical/hooks/lib/_micro_geometry.sh:410-435 `_TEXT_BUTTON_RE` 只比對 JSX 上寫出來的 variant 字面、`is_heading_row_extra` 不認 InfoTooltip、wrapper 只認 span / Tooltip",
+        "InfoTooltip 是 0.1.0-beta.153 才出口(ds-changes.json `0.1.0-beta.153/InfoTooltip`),同版 `0.1.0-beta.153/FieldLabel.info-outside-label` 要求「區塊標題旁的 ⓘ 改用 InfoTooltip」;info-tooltip.spec.md:66 寫法 = 文字與 ⓘ 同包 inline-flex gap-1 —— 規則叫產品用的元件,寫入閘不認得"
+      ]
+    },
+    {
+      "kind": "consumer-report",
+      "status": "open",
+      "verifiedAt": "49331693",
+      "id": "BL-037",
+      "oldIds": [
+        "ws152-2",
+        "ws-H10b"
+      ],
+      "title": "對話框 / 側板主體最後是有框表格、但包了 3 層以上時,底部給 48 而不是 loose(layoutSpace.css 只穿兩層)",
+      "rootCause": "M12:不變式 = 容器看「最後一個佔版面的東西」的邊緣自己給底距(規則 4);症狀在產品對話框底部 48;根因在 layoutSpace.css 用逐層列舉的 :has() 選擇器,只寫到兩層,而 DS 自己的 TabsContent + 產品的分頁元件根 + section 是常見的三層 —— 實作範圍比規格窄。",
+      "valueGate": "①",
+      "suggestion": "工程,AUTO:layoutSpace.css 三組選擇器的穿層上限從 2 提高到能涵蓋 Tabs 用法的層數(至少 3,建議 4;由產生式寫出,不手抄),或讓 DS 的純包層元件(TabsContent 等)宣告「透明包層」標記、選擇器把它算成 0 層 —— 前者不需改元件、後者不受產品自己的包層數影響,實作時兩案量過再取一;規格 :152 / css 註解的層數同步改。閘:layout-body-edges-invariant 加一則 test-only story「對話框 > Tabs > 分頁根 > section > DataTable」量底 = loose,對照組 = 多包一層超過上限時必紅。帳本登記行為變更(超過兩層的產品底距會從 48 變 loose)。回覆 workspace:154 後拿掉手寫的 pb loose。",
+      "evidence": [
+        "瀏覽器實測(storybook-static 0.1.0-beta.153 / a3330afe 的 CSS,Chromium):在 data-layout-body='fill' 底下放 [h4, data-layout-region='bounded' 的框],包層 0 / 1 / 2 層 → padding-bottom 16px(= loose);包層 3 層 → 48px(= bottom)。workspace 的 TabsContent → 分頁根 → section 正好是 3 層",
+        "實作:packages/design-system/src/tokens/layoutSpace/layoutSpace.css:61 註解「最多穿過兩層沒有標記、也不是巢狀容器的包層」;:87-96(底 bounded)、:97-106(底 unbounded)、:112-121(頂 unbounded)都只列到兩層",
+        "規格:layoutSpace.spec.md:225 規則 4「容器看最後一個佔版面的子孫,自己給下表的值…元件與範例不再自己挑底距的值」(底部這句沒有層數上限;兩層只寫在頂部那段 :152 與 css 註解)",
+        "DS 自己的寫法就會吃掉一層:dialog.spec.md:363「有分頁時 <Tabs> 包住標頭與捲動區,TabsContent 放捲動區裡」;DataTable 根才帶 data-layout-region='bounded'(data-table.tsx:5194)",
+        "前一輪:ws-H-triage-2026-11-27.md:8 判「H10(b) 兩層上限規格有寫,workspace 實際層數未證實」—— 這次 workspace 給了實際層數,成立"
+      ]
+    },
+    {
+      "kind": "consumer-report",
+      "status": "open",
+      "verifiedAt": "49331693",
+      "id": "BL-038",
+      "oldIds": [
+        "ws152-3"
+      ],
+      "title": "對話框右欄子頁的返回鈕沒有位置(overlay-surface.spec.md 寫未定);標題前圖示放 children 是正式寫法(回覆 workspace)",
+      "rootCause": "返回鈕:規格對「浮層內子頁的返回」從沒定過位置(overlay-surface.spec.md:433 明寫未定),所以 SurfaceHeader 沒有對應的位;不是程式漏做。標題前圖示:SurfaceHeader 的左側本來就交給 children,缺的是「圖示 + 標題」的寫法說明(間距 / 尺寸)—— 而且圖示方塊本身(BL-010)user 尚未決定要不要做成元件。",
+      "valueGate": "①",
+      "suggestion": "標題前圖示(工程 / 文件,AUTO):回覆 workspace「圖示 + DialogPaneTitle 放在 children 是正式寫法(不是暫時)」,圖示尺寸與間距照 item-anatomy 前綴圖示(ItemIcon)那一套;不新增 prop,等 BL-010 有結論再看要不要收成元件。返回鈕:先照 M26 補 ≥ 3 家一手(Fluent 已讀;再讀 Polaris Page backAction、Material 3 top app bar、Apple HIG navigation bar、Atlassian / Carbon 浮層內子頁)—— 若一致(例如全是「標題同列、最前面、無框圖示鈕」)就直接照做:SurfaceHeader 加前置位(名稱過 naming-conventions 三重 test),不問;若分歧(目前已知 Fluent 放在標題上方另一列)才進決策頁,題目寫成「對話框右欄的子頁:返回鈕放在標題同一列最前面,還是標題上方另一列」。",
+      "evidence": [
+        "packages/design-system/src/patterns/overlay-surface/overlay-surface.tsx:82-100(tabsSlot)、:252-264(actions / dismiss)、:275-280 surfaceHeaderRow:有 actions 或 dismiss 時 children 包成左欄 `flex-1 min-w-0` —— 左側整塊就是 consumer 的 children,圖示 + DialogPaneTitle 放進去是設計內的寫法,不是繞路",
+        "packages/design-system/src/components/Dialog/dialog.tsx:542 `DialogPaneHeaderProps = Omit<SurfaceHeaderProps, 'dismiss'>`",
+        "返回鈕:overlay-surface.spec.md:433「子頁的返回鈕放哪裡:未定。DS 沒有規則…等產品真的有子頁再查。」—— 規格自己訂的觸發條件(產品真的有子頁)現在成立",
+        "DS 內沒有任何返回鈕先例(src 搜 ArrowLeft / ChevronLeft 返回鈕只有 stories-helpers/scene/simulated-browser.tsx:53 的模擬瀏覽器)",
+        "標題前圖示:header-canonical.spec.md / overlay-surface.spec.md / dialog.spec.md 都沒有「標題前圖示」的條文,DS story 也沒有先例;但圖示那顆方塊本身(IconBox)是 BL-010,user 說「先不決定,之後再說」",
+        "世界級(一手,只讀到一家):Fluent UI v9 Drawer 的返回鈕放在標題「之上」的導覽列(DrawerHeaderNavigation 內 `<Button aria-label='Back' appearance='subtle' icon={<ArrowLeft24Regular />} />`,之後才是 DrawerHeaderTitle;https://raw.githubusercontent.com/microsoft/fluentui/master/packages/react-components/react-drawer/stories/src/Drawer/DrawerWithNavigation.stories.tsx)。Polaris Page backAction / Material 頂部列導覽圖示是「標題同一列、標題前」—— 這兩家本次 WebFetch 沒讀到原文(重新導向 / 空頁),未證實"
+      ]
+    },
+    {
+      "kind": "consumer-report",
+      "status": "open",
+      "verifiedAt": "49331693",
+      "id": "BL-039",
+      "oldIds": [
+        "ws152-4b"
+      ],
+      "askUser": true,
+      "title": "開關欄(meta.control: switch)裡被規則鎖住、不能改的那幾列要畫什麼:✓/✗(現行)/ 鎖住的開關 / 淡化的停用開關 —— DataTable 與 Switch 兩份規格在這格互相矛盾,會改到 user 第 9 題核准過的畫面",
+      "rootCause": "(a) 格內控件的名字只到「欄」這一層,DataTable 沒有列標題語意、也沒有依列給名字的入口 —— 與 ws-H9 同一根因(格內控件只用欄名命名)。(b) 第 9 題定案時只分「檢視導向 / 編輯導向」整欄來看,唯讀格一律 ✓ / ✗;沒處理「編輯導向的開關欄裡某幾列被規則鎖住」這個情境,而 Switch 規格對設定清單的鎖定另有畫法 —— 兩份規格在這一格互相矛盾,現行規格答不了。",
+      "valueGate": "①",
+      "suggestion": "先補 M26 一手研究(Atlassian、Polaris、Material、Fluent、Carbon 設定類表格裡被鎖住的開關),整理成一題(product-ui-ux-decision)進下一份決策頁;定案前照現行規格 ✓/✗。(a) 依列讀屏名字併 BL-015。",
+      "evidence": [
+        "讀屏名字:packages/design-system/src/components/DataTable/cell-registry.tsx:471-505 BooleanCell(:488 / :502),開關與勾選都用 `aria-label={meta?.ariaLabel ?? ariaLabel ?? '切換'}`;meta.ariaLabel 是整欄一個字串、ariaLabel = 欄標題(cell-registry.tsx:81 `ariaLabel?: string`),沒有依列的入口;data-table.spec.md:716「Row headers:目前無對應(平面 row,無 row header 語意)」",
+        "唯讀列:cell-registry.tsx:471-477 `mode === 'view' && !isEditable` → `<Checkbox mode='view'>`(✓ / ✗),不分 meta.control;data-table.spec.md:273「只換可編輯格畫的控件,唯讀格兩種都畫 ✓ / ✗(沿用 editable,檢視導向 / 編輯導向不另開參數)」;column-types.ts:155-160 同句",
+        "這句是 user 核准過的 AI 建議:tmp/wip-2026-11-25-backup/notes/decisions/decide152-answers.md:25-27(第 9 題第 2 輪,user 逐字「…如此那就照你建議做」;定案行寫明「參數名與判準句 = AI 推導」),checkbox.spec.md:142 記「唯讀格同一組 ✓ / ✗ 是 AI 的建議」",
+        "相衝的規格:packages/design-system/src/components/Switch/switch.spec.md:140-148 standalone Readonly 的用途 =「settings list 鎖定呈現」(正常色、鎖互動),Disabled =「外部條件造成不可操作」(淡化);:156 view = ✓ / ✗ 純展示。Tasks 這一欄(在建立頁顯示)正是 checkbox.spec.md:138 判準裡的「這一列的某個功能要不要開 → 開關」= 設定清單,被鎖住的系統欄位照 Switch 規格會是鎖住的開關,照 DataTable 規格是 ✓ / ✗"
+      ]
+    },
+    {
+      "kind": "consumer-report",
+      "status": "open",
+      "verifiedAt": "49331693",
+      "id": "BL-040",
+      "oldIds": [
+        "ws152-5",
+        "Q2c-family"
+      ],
+      "title": "useOverflowCollapse:有觸發鈕的群組會被收到只剩一顆夾在兩條線間、不回報「收完仍放不下」、在 zoom-in-95 進場時量到縮小後的寬多收(同族 7 處量法)",
+      "rootCause": "①:不變式 = 第七節降級順序(群組留代表)與第五節孤立檢查;hook 只把 priority 當全域收起順序,沒有「有觸發鈕的群組至少留一顆代表」這條界線,也沒有常駐觸發鈕的模式。②:決定函式內部知道「收完仍放不下」,但沒有把它回傳。③:量法用畫面尺寸(受祖先 transform 影響)而不是版面尺寸,與 DS 在 Q2c 定下的量法規則不一致(M37:用「當下畫面上的寬」代替「版面寬」)。",
+      "valueGate": "①",
+      "suggestion": "工程,AUTO,一包做完:(1) decide() 對有觸發鈕的群組保留 priority 最高的一顆當代表(第七節第 2 條),只有沒有觸發鈕的單一按鈕群組可以整群藏;registerTrigger 加常駐選項(一律顯示、收起的項目接在它的選單後面;名稱過三重 test);(2) 回傳多一個「收完仍放不下」的布林(名稱過三重 test),hook 文件寫明窄寬改捲動由消費端決定(action-bar.spec.md:380 C30);(3) 量法改版面尺寸(抽共用 helper),同族照上表逐支改;(4) 閘:action-bar-toolbar-invariant「收合」段加三面對照 —— 極窄時不得出現兩側都有線的按鈕、收完仍放不下時旗標為真、在 scale(0.95) 祖先下掛載後收起數 = 不縮放時(拿掉修正必紅)。overflow-tag-list 同樣加縮放對照。帳本登記行為變更。",
+      "evidence": [
+        "① 瀏覽器實測(action-bar「收合量測:群組溢出」story,逐格縮寬):視窗 220px 時工具列只剩「∨格式 │ +插入 │ ∨段落」—— 中間「+插入」左右各一條線;300px 時段落群的代表鈕也收掉、只剩觸發鈕。違反 action-bar.spec.md:278「孤立檢查:任何一顆按鈕若左右兩側都有線,代表其中一條沒有真正的理由」與 :358-364 第七節「群組繼續收合:保留最高頻的按鈕作為群組代表,其餘進溢出;單一按鈕的群組…空間極端不足時整個隱藏」(只有單一按鈕的群組可以整群藏)",
+        "① 程式:packages/design-system/src/hooks/use-overflow-items.ts:483-560 decide() 只照 priority 排序一路收,群組代表也收得掉;:476 `el.hidden = !collapsedIn.get(g)` 觸發鈕只在有東西收起時出現 —— 規格 :332 允許「永久的」群組溢出(常駐觸發鈕)與響應式疊加,hook 沒有常駐觸發鈕的寫法(註冊了就會在全部放得下時被藏起來;不註冊,收起的項目就沒有地方放)。Tasks 的常駐「More formatting」屬於這種",
+        "② 程式:use-overflow-items.ts:338-353 回傳只有 overflowIndices / hasOverflow / overflowIndicesOf;:295-314 decideCollapsedCount 一個都放不下時回 count,呼叫端分不出「收完剛好放得下」與「收完仍放不下」。實測 110–160px 視窗:工具列寬 46–96px,剩 3 顆觸發鈕 + 2 條線(約 130px)仍溢出,hook 沒有任何訊號",
+        "③ 瀏覽器實測(同一則 story,#storybook-root 套 150ms scale(.95)→1 進場動畫後新掛載,等動畫結束 transform 已回 identity):門檻上方 0–6px 內多收 1–2 顆,動畫結束後不回復;例:視窗 575 / 577 / 581 對照組收 2、進場組收 4;539–545 對照 4、進場 6;611 對照 0、進場 2;431 / 433 對照 8、進場 9。本工具列實測範圍約 6px,workspace 估 10px 同量級(範圍隨間距數量變)",
+        "③ 程式:use-overflow-items.ts:360-370 用 getBoundingClientRect().width(縮放後)減 getComputedStyle 的 padding / margin / gap(版面值,不縮放)—— 兩種單位混用,縮放時可用寬被低估;:581-596 ResizeObserver 只在版面尺寸變時叫,transform 結束不會觸發 → 錯的決定留著",
+        "DS 已知同族:data-table.tsx:79-85(Q2c,2026-10-13 修:版面尺寸一律用不受 transform 影響的值)、calendar.tsx:463-475 layoutBorderBoxSize 註解逐字描述同一件事(「縮放結束版面尺寸沒變、ResizeObserver 不會再叫,旗標就一直錯」)"
+      ]
+    },
+    {
+      "kind": "consumer-report",
+      "status": "open",
+      "verifiedAt": "49331693",
+      "id": "BL-041",
+      "oldIds": [
+        "ws152-7"
+      ],
+      "title": "DatePicker / 日期格在已選中的那一天按 Enter 或點擊不會關(Range 同一行)",
+      "rootCause": "M12:不變式 = 在日曆上選一天就是「選」(送值、關閉),清空只由清除鈕做;症狀在日期格 / DatePicker 再選已選日沒反應;根因是 react-day-picker 單選模式的預設「再點已選日 = 取消選取」(送 undefined),DatePicker 用 `if (!date) return` 把它吞掉,沒有改用 lib 一起傳來的 triggerDate,也沒傳 required。",
+      "valueGate": "①",
+      "suggestion": "工程,AUTO:DatePicker 單日與 Range 的 onSelect 改用第二個參數 triggerDate(或給 DateGrid 傳 required,兩者擇一,實作時看哪個不動讀屏狀態);再選已選日 = 送同一天並照原規則關閉 / 前進。閘:scripts/data-table-invariants.mjs 或 DatePicker 鍵盤閘加一格「已選日按 Enter → 關閉、焦點回格 / 欄位」,對照組 = 拿掉修正必紅;Range 加「作用端已選日再點 → 前進到結束日」。帳本登記行為修正。",
+      "evidence": [
+        "瀏覽器實測(storybook-static 0.1.0-beta.153):DatePicker「基本用法」(值 2026-04-02)打開日曆、焦點在「2026年4月2日 星期四,已選取」→ 按 Enter:日曆仍開、焦點仍在那天按鈕、值不變;用滑鼠點那天:同樣不關;對照組 → 方向鍵右移到 4/3 再按 Enter:日曆關、值變 2026/04/03、焦點回欄位。DataTable「就地編輯」Release 欄(值 2025-01-15)打開編輯器在已選日按 Enter:日曆仍開、焦點停在「2025年1月15日 星期三,已選取」= 回報重現",
+        "根因程式:packages/design-system/src/components/DatePicker/date-picker.tsx:871-879 `onSelect={(date) => { if (!date) return …; if (!needConfirm) setOpen(false) }}`",
+        "M2 驗 lib 行為:node_modules/react-day-picker 9.14.0 dist/esm/selection/useSingle.js:20-30 —— mode='single' 且沒傳 required 時,點已選的那天 `newDate = undefined`(取消選取),呼叫 `onSelect(newDate, triggerDate, modifiers, e)`;DS 收到 undefined 就 return,所以不關也不送值",
+        "規格:date-picker.spec.md:455「picker pick → onChange 即時」;單日選完就關(date-picker.tsx:878);清空只走清除鈕(date-picker.spec.md:412「鍵盤清得掉:焦點在清除鈕上按 Enter / 空白 = 清除」)—— 再點已選日不是 DS 的清空路徑,應等同「選這一天」"
       ]
     }
   ]
