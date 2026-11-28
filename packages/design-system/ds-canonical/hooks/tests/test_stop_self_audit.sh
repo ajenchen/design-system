@@ -1446,7 +1446,10 @@ direct_case "Test 139i: 「可以幫忙跑一下 npm run release:auto 嗎」→ 
 direct_case "Test 139j: 「以後不會再請你在自己的終端機跑 git」→ no block" 0 '以後不會再請你在自己的終端機跑 git 指令了,主資料夾由我用底層指令切。'
 direct_case "Test 139k: 「之後不再叫你在終端機打 git switch」→ no block" 0 '之後不再叫你在終端機打 git switch,我自己處理。'
 direct_case "Test 139l: 「不要讓你在終端機跑 git」→ no block" 0 '這種事不要讓你在終端機跑 git,我會自己做。'
-direct_case "Test 139m: 事後敘述 + 撤回(沒加引號)→ no block" 0 '09:22 那則我叫你在自己的終端機跑 git switch,這是錯的,已撤回。'
+# 139m(2026-11-28 再驗必修 (e)):「撤回 / 是錯的」不再整句豁免 —— 否則「剛才那行撤回,改成請你在終端機跑 git …」這種撤回舊指令、
+# 同句給新指令的會漏(Test 142b)。事後敘述要放行就用引號引述那句;沒加引號的照擋(已知誤擋,寫在 hook 註解)。
+direct_case "Test 139m: 事後敘述用「」引述那句 + 撤回 → no block" 0 '09:22 那則我寫的「在你自己的終端機跑 git switch」是錯的,已撤回。'
+direct_case "Test 139m': 同一件事沒加引號(撤回不再整句豁免)→ block" 1 '09:22 那則我叫你在自己的終端機跑 git switch,這是錯的,已撤回。' "SELF-LOCK HANDOFF"
 direct_case "Test 139n: 「我已請執行代理跑 npm run hooks:test」→ no block" 0 '我已請執行代理跑 npm run hooks:test,結果等通知。'
 # 139o 的『…』裡是「你自己跑 git status」:有交辦字樣的引述整段拿掉,不當成裸指令留下(Mechanism 13 也要放行,所以不用「請你」)。
 direct_case "Test 139o: “…” 與『…』引述 user 的話 → no block" 0 'user 09:20 說過:“在你自己的終端機跑 git pull”,另一句是『你自己跑 git status 就好』,兩句都是 user 的話,我已自己跑完。'
@@ -1476,6 +1479,40 @@ direct_case "Test 141c: 同一句改成「在你自己的終端機貼這段」�
   "$(printf '%s' "$REPLY_0147" | sed 's/2. A 合回前先修/2. 先跑 npm run release:status 看狀態,再 A 合回前先修/; s/第一則訊息貼這段/在你自己的終端機貼這段/')" "SELF-LOCK HANDOFF"
 direct_case "Test 141d: 新 session 貼的那段是 ! 指令(貼進對話框的 ! 會被執行)→ block" 1 "$(printf '%s\n' '開新 session 後請貼上下面這段:' '```' '! git switch pkg/b3' '```')" "SELF-LOCK HANDOFF"
 direct_case "Test 141e: 新 session 貼的那段只是提到 git log → no block" 0 "$(printf '%s\n' '開新 session 後請貼上下面這段:' '```' '接手 153:先 git log --oneline -5 看基底,再照 NEXT-SESSION.md 做。' '```')"
+
+# Tests 142a-142n(2026-11-28 再驗必修):豁免字要緊貼交辦動詞才算、子句也按半形 , ; 與英文句尾切、「對話框」不算貼進對話、
+# 「訊息」收窄成接手訊息 / 第一則訊息。第一版是「子句裡任一處出現就整句豁免」+ 只按全形標點切,下面 12 句真交辦放走 11 句。
+# 每組:原句(核對者探針 cases6 / cases7,逐字)→ block;只改豁免字或貼到哪裡的放行句 → no block。
+direct_case "Test 142a: 「上一則給的指令是錯的,請在你自己的終端機跑 git switch」→ block" 1 '上一則給的指令是錯的,請在你自己的終端機跑 git switch -C pkg/b3。' "SELF-LOCK HANDOFF"
+direct_case "Test 142a': 同一句改成「不要再請你…了,我已改用底層指令切好」→ no block" 0 '上一則給的指令是錯的,不要再請你在自己的終端機跑 git switch -C pkg/b3 了,我已改用底層指令切好。'
+direct_case "Test 142b: 「剛才那行撤回,改成請你在自己的終端機跑 git switch」→ block" 1 '剛才那行撤回,改成請你在自己的終端機跑 git switch pkg/b3。' "SELF-LOCK HANDOFF"
+direct_case "Test 142b': 「剛才那行撤回了,不用再請你…」→ no block" 0 '剛才那行撤回了,不用再請你在自己的終端機跑 git switch pkg/b3,我已經切好。'
+direct_case "Test 142c: 「之後就不會再卡,請在你自己的終端機貼下面三行」+ git → block" 1 "$(printf '%s\n' '沙箱擋住了,之後就不會再卡,請在你自己的終端機貼下面三行:' '```sh' 'git fetch origin pkg/b3' 'git switch pkg/b3' '```')" "SELF-LOCK HANDOFF"
+direct_case "Test 142c': 「之後就不會再請你在終端機貼下面三行,我自己跑完了」+ git → no block" 0 "$(printf '%s\n' '沙箱擋住了,之後就不會再請你在終端機貼下面三行,我自己跑完了:' '```sh' 'git fetch origin pkg/b3' 'git switch pkg/b3' '```')"
+direct_case "Test 142d: 「不要再等了,請你在終端機跑 git pull」→ block" 1 '不要再等了,請你在終端機跑 git pull。' "SELF-LOCK HANDOFF"
+direct_case "Test 142d': 「不要再請你在終端機跑 git pull 了」→ no block" 0 '不要再請你在終端機跑 git pull 了,我已經跑完。'
+direct_case "Test 142e: 「請設定代理後在你自己的終端機跑 npm install」→ block" 1 '請設定代理後在你自己的終端機跑 npm install。' "SELF-LOCK HANDOFF"
+direct_case "Test 142e': 「我已請執行代理在背景跑 npm install」→ no block" 0 '我已請執行代理在背景跑 npm install,結果等通知。'
+direct_case "Test 142f: 「請貼上下面這行,有錯誤訊息再跟我說」+ git(訊息不是貼到哪裡)→ block" 1 "$(printf '%s\n' '請貼上下面這行,有錯誤訊息再跟我說:' '```' 'git pull --ff-only' '```')" "SELF-LOCK HANDOFF"
+direct_case "Test 142f': 「開新 session 後請貼上下面這行」+ 同一行 git → no block" 0 "$(printf '%s\n' '開新 session 後請貼上下面這行:' '```' 'git pull --ff-only' '```')"
+direct_case "Test 142g: 英文同一行有 (don't worry …)+ git → block" 1 "$(printf '%s\n' "Please run these commands in your own terminal (don't worry, they're safe):" '```' 'git fetch origin pkg/b3' '```')" "SELF-LOCK HANDOFF"
+direct_case "Test 142g': You don't need to run these commands … + git → no block" 0 "$(printf '%s\n' "You don't need to run these commands in your own terminal (I already ran them):" '```' 'git fetch origin pkg/b3' '```')"
+direct_case "Test 142h: 「Please run \`git pull\` in your terminal. It never touches your files.」→ block" 1 'Please run `git pull` in your terminal. It never touches your files.' "SELF-LOCK HANDOFF"
+direct_case "Test 142h': You never need to run \`git pull\` … → no block" 0 'You never need to run `git pull` in your terminal. It is already up to date.'
+direct_case "Test 142i: Please run \`git pull\` … so you don't hit the lock again → block" 1 "Please run \`git pull\` in your terminal so you don't hit the lock again." "SELF-LOCK HANDOFF"
+direct_case "Test 142i': You don't need to run \`git pull\` …; the lock is gone → no block" 0 "You don't need to run \`git pull\` in your terminal; the lock is gone."
+direct_case "Test 142j: 「在你自己的終端機跑我貼在下面的三行」+ git → block" 1 "$(printf '%s\n' '在你自己的終端機跑我貼在下面的三行:' '```' 'git fetch' 'git switch pkg/b3' '```')" "SELF-LOCK HANDOFF"
+direct_case "Test 142j': 「我貼了下面三行給你看,我已經在終端機跑過」+ git → no block" 0 "$(printf '%s\n' '我貼了下面三行給你看,我已經在終端機跑過:' '```' 'git fetch' 'git switch pkg/b3' '```')"
+direct_case "Test 142k: 「請你在終端機跑 git pull 就不會再卡住了」→ block" 1 '請你在終端機跑 git pull 就不會再卡住了。' "SELF-LOCK HANDOFF"
+direct_case "Test 142k': 「不會再請你在終端機跑 git pull 了」→ no block" 0 '不會再請你在終端機跑 git pull 了,鎖已經解開。'
+direct_case "Test 142l: 「在對話框打 ! 再貼上下面這行」+ 沒有 ! 的 git(對話框不算貼進對話)→ block" 1 "$(printf '%s\n' '在對話框打 ! 再貼上下面這行:' '```' 'git switch pkg/b3' '```')" "SELF-LOCK HANDOFF"
+direct_case "Test 142l': 「開新 session 後在第一則訊息貼上下面這行」+ 同一行 git → no block" 0 "$(printf '%s\n' '開新 session 後在第一則訊息貼上下面這行:' '```' 'git switch pkg/b3' '```')"
+# (d) 「請打」後面接「開」、「請輸入」後面不是指令代稱 → 不算交辦
+direct_case "Test 142m: 「請打 \`git pull\` 看最新的歷史」→ block" 1 '請打 `git pull` 看最新的歷史。' "SELF-LOCK HANDOFF"
+direct_case "Test 142m': 「請打開預覽連結看 git 歷史那一頁」→ no block" 0 '請打開預覽連結看 git 歷史那一頁。'
+direct_case "Test 142n: 「請輸入下面這行」+ git → block" 1 "$(printf '%s\n' '請輸入下面這行:' '```' 'git switch pkg/b3' '```')" "SELF-LOCK HANDOFF"
+# 142n' 的提示字放在「」裡:沒有引號時 Mechanism 13 會把「請輸入」當成請 user 動手;「」裡只有裸指令片段會留下來,仍走 (d) 的判定
+direct_case "Test 142n': 「我把輸入框的提示字改成「請輸入 git 分支名稱」了」→ no block" 0 '我把輸入框的提示字改成「請輸入 git 分支名稱」了。'
 
 echo "Results: $PASS PASS, $FAIL FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

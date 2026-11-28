@@ -740,18 +740,23 @@ if [ "${LAST_USER_LINE:-0}" -gt 0 ] || [ -n "$LAST_ASSISTANT" ]; then
   #   ① 先拿掉不是交辦的部分:「…」『…』“…”整段(引述)、以 > 開頭的引用行、```diff / ```patch 區塊(給 user 看的改動);
   #      其餘程式碼區塊的行另收成 DIRECT_CODE。引號裡若只是一條裸指令(有指令開頭、又沒有 終端機 / 對話框 / 請你 / 麻煩你 /
   #      幫我 / 幫忙 / 你自己 / 你要 / 貼 / 你跑 / 你執行 / 你打 / 你輸入)就保留 —— 否則「請你在終端機跑「git switch …」」會因為指令被當引述拿掉而漏網。
-  #   ② 不算交辦的子句先濾掉:否定(上面那組 + 禁止 / 不准 / 不得叫|把|交|讓|請|要 / 不應 / 不該 / 不會再 / 不再 / 不要讓|叫|請|再;
-  #      英文 do not / don't / no need to / never / won't)、撤回(撤回 / 是錯的)、第一人稱(我…貼、我…在終端機跑了 / 執行過、
-  #      請…代理)—— 讓「解釋規則」「以後不會再請你…」「我在終端機跑了 git status」「我已請執行代理跑…」這類句子不算。
+  #   ② 子句 = 全形。！？，;與半形 , ; 切開,英文句尾(字母 / 數字 / 括號 / 引號後的 . ? ! 再接空白)也切。
+  #      不算交辦的子句先濾掉 —— 豁免字一律要「緊貼交辦動詞」才算,子句裡別處出現不算(2026-11-28 規格核對:整句豁免放走 11 句真交辦):
+  #      否定 + (把…交給 / 留給)+(請 / 叫 / 讓 / 要 / 麻煩)+ 你 / user … + 跑 / 執行 / 打 / 輸入 / 貼;否定 + 直接動詞;
+  #      否定 + 在(自己的)終端機 / 對話框 + 動詞;你 / user + 否定 … + 動詞(否定 = 不用 / 不必 / 不需(要)/ 無需 / 無須 / 毋須 /
+  #      別(再)/ 禁止 / 不准 / 不得 / 不應(該)/ 不該 / 不會(再)/ 不再 / 不要(再));英文 don't / do not / never / won't /
+  #      no need to (+ need to) + run / type / paste / execute / enter;第一人稱:我(已經 / 先)貼(上)了 / 過 / … 給你看、
+  #      我 … 在終端機跑了 / 執行過、我(已)請 … 代理。「撤回」「是錯的」不豁免 —— 撤回舊指令、同句給新指令的照擋。
   #   ③ 交辦特徵(子句層級):在你(自己)(的)終端機;你 / 請 / 麻煩 / 幫我 / 幫忙 + 在(自己)(的)終端機 + 打 / 輸入 / 跑 / 執行 / 貼;
-  #      請你 / 麻煩你 / 請 / 幫我 / 幫忙 +(自己 / 手動)+ 跑 / 執行 / 貼(上)/ 輸入 / 打;你那邊 / 那裡 / 本機 + 跑 / 執行;
-  #      你(也)可以 / 能 +(自己)+ 跑 / 執行;貼(上)這 / 下面 / 以下 … 行 / 段 / 條 / 指令;你(要)(自己) + 動詞 + 指令代稱或指令開頭
-  #      (同上面 WEAK 那支);上面 STRONG(`! `、對話框 + 貼上 + 代稱);英文:上面那支 + please / can you / could you /
-  #      would you / you can / you should / you need to … + run / type / paste / execute / enter;程式碼區塊裡以 `!` 開頭的行。
-  #      不算:「你打開預覽連結」(後面不是指令)。
-  #   ③b 貼到哪裡:交辦子句有「貼 / paste」、又提到 session / 對話 / 訊息 / 聊天 / prompt / chat / Claude、而且沒提到
-  #      終端機 / terminal / shell / 命令列 = 請 user 把一段文字貼進對話(例:接手訊息貼到新 session),不是交給終端機。
-  #      這種子句與它後面的程式碼區塊只認以 `!` 開頭的指令(貼進對話框的 `!` 才會被執行);其餘交辦子句一律當成終端機。
+  #      請你 / 麻煩你 / 請 / 幫我 / 幫忙 +(自己 / 手動)+ 跑 / 執行 / 貼(上);同上 + 打 / 輸入 + 指令代稱(「請打開」「請輸入 git 分支名稱」
+  #      不算);你那邊 / 那裡 / 本機 + 跑 / 執行;你(也)可以 / 能 +(自己)+ 跑 / 執行;貼(上)這 / 下面 / 以下 … 行 / 段 / 條 / 指令;
+  #      你(要)(自己) + 動詞 + 指令代稱或指令開頭(同上面 WEAK 那支);以「! 」開頭的一行、對話框 + 貼上 / 打 + 代稱、貼到對話框;
+  #      英文:上面那支 + please / can you / could you / would you / you can / you should / you need to … + run / type / paste /
+  #      execute / enter;程式碼區塊裡以 `!` 開頭的行。行內 `! git …` 本身不算(「上次我是用 `! git status` 看過的」是敘述)。
+  #   ③b 貼到哪裡:交辦子句有「貼 / paste」、又提到 session / 接手訊息 / 第一則(訊息)/ 新對話 / 聊天 / prompt / chat / Claude、
+  #      而且沒提到終端機 / terminal / shell / 命令列 = 請 user 把一段文字貼進對話(例:接手訊息貼到新 session),不是交給終端機。
+  #      這種子句與它後面的程式碼區塊只認以 `!` 開頭的指令(貼進對話框的 `!` 才會被執行);其餘交辦子句一律當成終端機 ——
+  #      「對話框」不算貼進對話(「在對話框打 ! 再貼上下面這行」就是要 user 用 `!` 執行),單獨的「訊息」也不算(「有錯誤訊息再跟我說」)。
   #   ④ 交出去的指令 = 終端機交辦子句 + 程式碼區塊裡(有終端機交辦子句時才全收,否則只收 `!` 開頭的),含 git / npm / npx /
   #      node / pnpm / yarn / sh / bash / zsh / rm / cd / gh / curl / sudo / python / gcloud / claude / chmod / mv / cp 開頭
   #      的那幾行;沒有指令(例:「請你看預覽」)不算。
@@ -761,10 +766,11 @@ if [ "${LAST_USER_LINE:-0}" -gt 0 ] || [ -n "$LAST_ASSISTANT" ]; then
   #      credential-reference);帳單 / 法律 / 帳號權限不是要 user 打的指令。判法是把這幾條字串從指令行拿掉後,
   #      還剩任何指令開頭 = 擋 —— 寫了「登入」「account-holder-platform-action」都不算數。
   # 已知誤擋(改用引號或 > 引述就放行):同一則回覆裡交辦登入、另有一個與交辦無關的指令程式碼區塊(程式碼區塊不分是不是交辦那一段)。
-  # 已知不涵蓋:本則回覆只寫「貼上面那行」、指令本身在前一則(前一則交出指令時就已經擋過);否定 / 撤回 / 第一人稱字樣與交辦
-  # 寫在同一個子句(中文只用全形。！？，；切子句)時整句不算。
+  # 已知誤擋(改用引號或 > 引述就放行):不加引號的事後敘述(「09:22 那則我叫你在自己的終端機跑 git switch,這是錯的」)。
+  # 已知不涵蓋:本則回覆只寫「貼上面那行」、指令本身在前一則(前一則交出指令時就已經擋過);交辦字樣與指令被逗號切到兩個子句
+  # (「在你自己的終端機,跑 git pull」)時,指令那半不算交出去的指令(程式碼區塊不受影響)。
   # awk 不用區間 {m,n}(mawk 不支援);引號判斷用 index 找固定字串,LC_ALL=C 下逐位元組比對。
-  # 對照組:tests/test_stop_self_audit.sh Tests 130-141(含拿掉這段判定的複本 → 錨例改放行)。
+  # 對照組:tests/test_stop_self_audit.sh Tests 130-142(含拿掉這段判定的複本 → 錨例改放行)。
   if [ -n "$HANDOFF_SOURCE" ] && [ "${LAST_USER_LINE:-0}" -gt 0 ]; then
     DIRECT_SPLIT_AWK='
       function handoff_words(s) {
@@ -799,21 +805,36 @@ if [ "${LAST_USER_LINE:-0}" -gt 0 ] || [ -n "$LAST_ASSISTANT" ]; then
       }'
     DIRECT_PROSE=$(LC_ALL=C awk -v mode=prose "$DIRECT_SPLIT_AWK" <<< "$HANDOFF_SOURCE")
     DIRECT_CODE=$(LC_ALL=C awk -v mode=code "$DIRECT_SPLIT_AWK" <<< "$HANDOFF_SOURCE")
-    DIRECT_NOT_HANDOFF_RE='不用|不必|不需|無需|無須|毋須|別(再)?(在|貼|打|跑|執行|輸入)|禁止|不准|不得(叫|把|交|讓|請|要)|不應|不該|不會再|不再|不要(讓|叫|請|再)|撤回|是錯的|我(先|再|來|已經|已|會)?貼|我.{0,9}在(自己的)?終端機(裡|上)?(跑|執行|打|輸入)(了|過)|請.{0,6}代理'
-    DIRECT_EN_NOT_HANDOFF_RE="(do not|don't|don’t|no need to|never|won't|won’t)"
-    DIRECT_HANDOFF_RE="(在你(自己)?(的)?終端機|(你|請|麻煩|幫我|幫忙).{0,36}在(自己)?(的)?終端機(裡|上|中)?(打|輸入|跑|執行|貼)|(請你|麻煩你|請|幫我|幫忙)(自己|手動)?(跑|執行|貼上|貼|輸入|打)|你(那邊|那裡|本機)(跑|執行|打|輸入)|你(也)?(可以|能)(自己)?(跑|執行|打|輸入)|貼(上)?(這|下面|以下|底下).{0,12}(行|段|條|指令)|你(要)?(自己)?(跑|執行|打|輸入|貼)(${HANDOFF_CMD_REF}|(一下)?([[:space:]]|:|：)*${HANDOFF_CMD_HEAD}))"
+    # 中文字後面不得直接接 ? / {m,n}:LC_ALL=C 下只管最後一個位元組(本檔 Test 56 的教訓),一律包成 (字)?
+    DIRECT_NEG='(不用|不必|不需(要)?|無需|無須|毋須|別(再)?|禁止|不准|不得|不應(該)?|不該|不會(再)?|不再|不要(再)?)'
+    DIRECT_VERB='(跑|執行|打|輸入|貼)'
+    DIRECT_NOT_HANDOFF_RE="${DIRECT_NEG}(再)?${DIRECT_VERB}|${DIRECT_NEG}(再)?(把.{0,30}(交給|留給))?(請|叫|讓|要|麻煩)?(你|user|使用者).{0,24}${DIRECT_VERB}|${DIRECT_NEG}(再)?在(你)?(自己)?(的)?(終端機|對話框).{0,9}${DIRECT_VERB}|(你|user|使用者)${DIRECT_NEG}(再)?.{0,24}${DIRECT_VERB}|我(已經|已|先)?貼(上)?(了|過|.{0,12}給你看)|我.{0,9}在(自己的)?終端機(裡|上)?(跑|執行|打|輸入)(了|過)|我(已經|已|先|會)?請.{0,6}代理"
+    DIRECT_EN_NOT_HANDOFF_RE="(don't|don’t|do not|never|won't|won’t|no need to)([[:space:]]+need to)?[[:space:]]+(run|type|paste|execute|enter)([[:space:]]|$)"
+    DIRECT_KEY_HEAD="(${HANDOFF_CMD_REF}|(一下)?([[:space:]]|:|：)*${HANDOFF_CMD_HEAD})"
+    DIRECT_HANDOFF_RE="(在你(自己)?(的)?終端機|(你|請|麻煩|幫我|幫忙).{0,36}在(自己)?(的)?終端機(裡|上|中)?(打|輸入|跑|執行|貼)|(請你|麻煩你|請|幫我|幫忙)(自己|手動)?(跑|執行|貼上|貼)|(請你|麻煩你|請|幫我|幫忙)(自己|手動)?(打|輸入)${HANDOFF_CMD_REF}|你(那邊|那裡|本機)(跑|執行)|你(那邊|那裡|本機)(打|輸入)${DIRECT_KEY_HEAD}|你(也)?(可以|能)(自己)?(跑|執行)|你(也)?(可以|能)(自己)?(打|輸入)${DIRECT_KEY_HEAD}|貼(上)?(這|下面|以下|底下).{0,12}(行|段|條|指令)|你(要)?(自己)?(跑|執行|打|輸入|貼)${DIRECT_KEY_HEAD})"
+    DIRECT_STRONG_RE="(^![[:space:]]|對話框(裡|中|內)?(貼上|貼|輸入|執行|打)${HANDOFF_CMD_REF}|貼(到|進)(這個|你的)?對話框)"
     DIRECT_EN_HANDOFF_RE="(please|can you|could you|would you|you can|you could|you should|you need to|you'll need to|you will need to)[[:space:]]+(just[[:space:]]+)?(run|type|paste|execute|enter)([[:space:]]|$)"
     DIRECT_PASTE_RE='(貼|paste)'
-    DIRECT_MSG_DEST_RE='(session|對話|訊息|聊天|prompt|chat|claude)'
+    DIRECT_MSG_DEST_RE='(session|接手訊息|第一則|新對話|聊天|prompt|chat|claude)'
     DIRECT_TERMINAL_RE='(終端機|terminal|shell|命令列)'
     DIRECT_CMD_RE='(^|[^A-Za-z0-9_./-])(git|npm|npx|node|pnpm|yarn|sh|bash|zsh|rm|cd|gh|curl|sudo|python3?|gcloud|claude|chmod|mv|cp)([[:space:]]|$)'
     DIRECT_BANG_CMD_RE='(^|[^A-Za-z0-9_./-])![[:space:]]*(git|npm|npx|node|pnpm|yarn|sh|bash|zsh|rm|cd|gh|curl|sudo|python3?|gcloud|claude|chmod|mv|cp)([[:space:]]|$)'
     DIRECT_LOGIN_RE='(gh[[:space:]]+auth[[:space:]]+(login|refresh)|npm[[:space:]]+(login|adduser)|gcloud[[:space:]]+auth[[:space:]]+login|claude[[:space:]]+/?login)'
     # grep 沒比到回 1 = 沒有那一類的行,不是錯誤
-    DIRECT_CLAUSES=$(LC_ALL=C awk '{ gsub(/。|！|？|，|；/, "\n"); print }' <<< "$DIRECT_PROSE" \
+    # ② 子句:全形。！？，;、半形 , ;、英文句尾(\047 = 單引號;awk 字串裡寫成 octal 才不會結束外面的單引號字串)。
+    #    反引號後面只認 . ? —— 「`! git log`」的 `! 不是句尾,切開會讓交辦字樣與指令分家(Test 66)。
+    DIRECT_CLAUSE_AWK='
+      BEGIN { sentre = "([A-Za-z0-9)\"\047][.?!]+|`[.?]+)[ \t]+" }
+      {
+        s = $0; out = ""
+        gsub(/。|！|？|，|；|,|;/, "\n", s)
+        while (match(s, sentre)) { out = out substr(s, 1, RSTART + RLENGTH - 1) "\n"; s = substr(s, RSTART + RLENGTH) }
+        print out s
+      }'
+    DIRECT_CLAUSES=$(LC_ALL=C awk "$DIRECT_CLAUSE_AWK" <<< "$DIRECT_PROSE" \
       | LC_ALL=C grep -vE "$DIRECT_NOT_HANDOFF_RE" | LC_ALL=C grep -viE "$DIRECT_EN_NOT_HANDOFF_RE")
     DIRECT_HANDOFF_CLAUSES=$(
-      LC_ALL=C grep -E "${DIRECT_HANDOFF_RE}|${STRONG_HANDOFF_RE}" <<< "$DIRECT_CLAUSES"
+      LC_ALL=C grep -E "${DIRECT_HANDOFF_RE}|${DIRECT_STRONG_RE}" <<< "$DIRECT_CLAUSES"
       LC_ALL=C grep -iE "${EN_HANDOFF_RE}|${DIRECT_EN_HANDOFF_RE}" <<< "$DIRECT_CLAUSES"
     )
     # ③b 分成「貼進對話」與「終端機」兩類(逐行判;here-string 沒有寫端,grep -q 不會吃 SIGPIPE)
