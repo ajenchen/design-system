@@ -1262,6 +1262,35 @@
         "457e61b7 CI 紅:gate-contract 與 .node-version 在特權閉包外(R96,當時修在 e39ac6ea)",
         "bbee1e67 CI 紅:Verify static 第 10 步 repository-hygiene R2 / R4(.node-version、scripts/.node-version 未登記),R96 / R96b 實作者與兩輪核對都沒跑;修在 9f328a04"
       ]
+    },
+    {
+      "id": "BL-053",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "2f57c9f5",
+      "oldIds": [],
+      "title": "stop_self_audit Mechanism 10(自鎖後把動作推給 user)把否定句當交辦:「我沒有請你執行任何指令」「不會請你手動取檔」被判成交辦指令,2026-11-28 同一件事連擋 4 次",
+      "rootCause": "self-lock-handoff-negation-gap",
+      "valueGate": "②",
+      "suggestion": "154:否定詞過濾(stop_self_audit.sh :703 那組 不用|不必|不需|無需|無須|毋須|別…)補「(不|沒有?|不會|不再)請你」這類否定交辦;hook 測試加兩面:「我沒有請你執行任何指令」「也不會請你手動取檔交給我」不擋,「請你手動執行下面這行」仍擋。M32:指控不存在的問題比沉默更貴。",
+      "evidence": [
+        "stop_self_audit.sh:677 WEAK_HANDOFF_RE 含 請你(跑|執行|手動);:703 否定過濾只有 不用|不必|不需|無需|無須|毋須|別(再)?(在|貼|打|跑|執行|輸入),沒有「沒有請你 / 不會請你 / 不請你」",
+        "2026-11-28 下載 CI 審核包被分類器擋下後,回覆裡「我沒有請你執行任何指令」「也不會請你手動取檔交給我」觸發 SELF-LOCK HANDOFF BLOCKER 四次;回覆並未交辦任何指令"
+      ]
+    },
+    {
+      "id": "BL-054",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "2f57c9f5",
+      "oldIds": [],
+      "title": "試算表浮層編輯器(experimentalSpreadsheetOverlay + experimentalActiveEditorController)× 自動行高:單行列日期 / 時間 / 下拉進編輯 −1px;多行列浮層編輯器整列置中偏 31.5–37px",
+      "rootCause": "overlay-editor-auto-row-not-first-line",
+      "valueGate": "recordOnly",
+      "suggestion": "實驗旗標、程式明寫延後(data-table.tsx portal MVP 單行;auto-row defer 到 Phase 5),沒有任何範例同時開浮層與自動行高。併進浮層編輯器 Phase 5:浮層編輯器的第一行對到 BL-045 的第一行盒。154 審核頁列為已知限制。",
+      "evidence": [
+        "BL-045 實作者與規格核對者修前 / 修後實跑 editjump --overlay:日期 / 時間 / 下拉單行列位移 0 → −1(修前檢視與編輯都偏 1 剛好抵消);人員 1–1.5 → 0;多行列修前修後都偏 31.5–37"
+      ]
     }
   ]
 }
