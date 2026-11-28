@@ -636,8 +636,8 @@
       "id": "BL-022",
       "kind": "engineering",
       "status": "blocked",
-      "blockedReason": "只有 user 能做:刪 work-management repo 是 owner 動作;repo 搬出雲端硬碟要在 user 自己的終端機做、會改路徑。AI 需要時只問一個確切動作",
-      "verifiedAt": "a3330afe",
+      "blockedReason": "只有 user 能做:本機資料夾在專案資料夾外、權限禁止清單有 Bash(rm *),協調者不換指令繞過;repo 搬出雲端硬碟要在 user 自己的終端機做、會改路徑。AI 需要時只問一個確切動作",
+      "verifiedAt": "891474bb",
       "oldIds": [
         "H6",
         "R15",
@@ -646,13 +646,14 @@
         "N79",
         "todo-組29"
       ],
-      "title": "只有 user 能動手的:刪 work-management repo 後清外部登記;把 repo 搬出 Google 雲端硬碟",
+      "title": "只有 user 能動手的:本機 work-management 資料夾移到垃圾桶;把 repo 搬出 Google 雲端硬碟",
       "rootCause": "human-only-owner-actions",
       "valueGate": "recordOnly",
       "suggestion": "刪 repo 後清 packages/design-system/src/tokens/token-registry.json 兩筆 work-management 登記(N79 的 WM 速查表一併不必再改);搬資料夾照 reconcile-2026-11-28.md 第 9 列「發版後搬、先列清單」",
       "evidence": [
         "packages/design-system/src/tokens/token-registry.json:1032、:1040 仍有 `\"repo\": \"work-management\"` 兩筆",
-        "主資料夾仍在 /Users/…/GoogleDrive-…/我的雲端硬碟/my-project(本 session 環境路徑)"
+        "主資料夾仍在 /Users/…/GoogleDrive-…/我的雲端硬碟/my-project(本 session 環境路徑)",
+        "2026-11-28:user「Work management repo我已經移除了」;GitHub ajenchen/work-management 讀回 HTTP 404(對照 design-system 200)。本機 我的雲端硬碟/work-management:7.9M、無未提交、無 stash、沒有只在本機的 commit。發版第五步不含它(release-workflow.test.mjs:785 守);其餘 repo 內引用皆為註解 / 歷史。token 登記表兩筆 → BL-051"
       ]
     },
     {
@@ -735,17 +736,17 @@
       "id": "BL-027",
       "kind": "engineering",
       "status": "open",
-      "verifiedAt": "a3330afe",
+      "verifiedAt": "891474bb",
       "oldIds": [
         "date-picker.spec.md:398"
       ],
-      "title": "【要問你】showTime 面板底的「此刻」鈕在今天不可選時要不要停用",
+      "title": "DatePicker showTime 面板底的「此刻」鈕:今天不可選時停用(user 2026-11-28 定案),附原因 Tooltip",
       "rootCause": "datepicker-now-button-disabled-day",
-      "valueGate": "recordOnly",
-      "askUser": true,
-      "suggestion": "下一份決策頁問(附現況圖與 Ant / MUI 一手做法);沒問之前照規格「鈕照舊可按」",
+      "valueGate": "③",
+      "suggestion": "154 做:date-picker.tsx「此刻」鈕依今天可不可選(minDate / maxDate / disabledDate)停用;停用時照 tooltip.spec.md:106 用 Tooltip 說明原因(文字走 labels、可覆寫;預設文案隨 154 審核圖給 user 看);date-picker.spec.md:398「待 user 決定」改成定案並附原話;範例補一則今天不可選的情境。",
       "evidence": [
-        "packages/design-system/src/components/DatePicker/date-picker.spec.md:398「待 user 決定」;date-picker.tsx:911「此刻」鈕沒有依今天可不可選停用"
+        "packages/design-system/src/components/DatePicker/date-picker.spec.md:398「待 user 決定」;date-picker.tsx:911「此刻」鈕沒有依今天可不可選停用",
+        "user 2026-11-28「…「此刻」鈕，在今天不能選的時候要不要變成停用。\"好」(逐字 tmp/wip-2026-11-25-backup/notes/decisions/user-answers-2026-11-28-evening.md);停用附原因由既有 SSOT 推得(tooltip.spec.md:106、BL-003)"
       ]
     },
     {
@@ -1023,14 +1024,13 @@
     },
     {
       "kind": "consumer-report",
-      "status": "open",
-      "verifiedAt": "49331693",
+      "status": "done",
+      "verifiedAt": "891474bb",
       "id": "BL-039",
       "oldIds": [
         "ws152-4b"
       ],
-      "askUser": true,
-      "title": "開關欄(meta.control: switch)裡被規則鎖住、不能改的那幾列要畫什麼:✓/✗(現行)/ 鎖住的開關 / 淡化的停用開關 —— DataTable 與 Switch 兩份規格在這格互相矛盾,會改到 user 第 9 題核准過的畫面",
+      "title": "開關欄(meta.control: switch)裡被規則鎖住、不能改的那幾列畫什麼:照 SSOT data-table.spec.md:273 = ✓ / ✗(兩份規格不衝突;原標題「互相矛盾」是錯的)",
       "rootCause": "(a) 格內控件的名字只到「欄」這一層,DataTable 沒有列標題語意、也沒有依列給名字的入口 —— 與 ws-H9 同一根因(格內控件只用欄名命名)。(b) 第 9 題定案時只分「檢視導向 / 編輯導向」整欄來看,唯讀格一律 ✓ / ✗;沒處理「編輯導向的開關欄裡某幾列被規則鎖住」這個情境,而 Switch 規格對設定清單的鎖定另有畫法 —— 兩份規格在這一格互相矛盾,現行規格答不了。",
       "valueGate": "①",
       "suggestion": "先補 M26 一手研究(Atlassian、Polaris、Material、Fluent、Carbon 設定類表格裡被鎖住的開關),整理成一題(product-ui-ux-decision)進下一份決策頁;定案前照現行規格 ✓/✗。(a) 依列讀屏名字併 BL-015。",
@@ -1038,8 +1038,10 @@
         "讀屏名字:packages/design-system/src/components/DataTable/cell-registry.tsx:471-505 BooleanCell(:488 / :502),開關與勾選都用 `aria-label={meta?.ariaLabel ?? ariaLabel ?? '切換'}`;meta.ariaLabel 是整欄一個字串、ariaLabel = 欄標題(cell-registry.tsx:81 `ariaLabel?: string`),沒有依列的入口;data-table.spec.md:716「Row headers:目前無對應(平面 row,無 row header 語意)」",
         "唯讀列:cell-registry.tsx:471-477 `mode === 'view' && !isEditable` → `<Checkbox mode='view'>`(✓ / ✗),不分 meta.control;data-table.spec.md:273「只換可編輯格畫的控件,唯讀格兩種都畫 ✓ / ✗(沿用 editable,檢視導向 / 編輯導向不另開參數)」;column-types.ts:155-160 同句",
         "這句是 user 核准過的 AI 建議:tmp/wip-2026-11-25-backup/notes/decisions/decide152-answers.md:25-27(第 9 題第 2 輪,user 逐字「…如此那就照你建議做」;定案行寫明「參數名與判準句 = AI 推導」),checkbox.spec.md:142 記「唯讀格同一組 ✓ / ✗ 是 AI 的建議」",
-        "相衝的規格:packages/design-system/src/components/Switch/switch.spec.md:140-148 standalone Readonly 的用途 =「settings list 鎖定呈現」(正常色、鎖互動),Disabled =「外部條件造成不可操作」(淡化);:156 view = ✓ / ✗ 純展示。Tasks 這一欄(在建立頁顯示)正是 checkbox.spec.md:138 判準裡的「這一列的某個功能要不要開 → 開關」= 設定清單,被鎖住的系統欄位照 Switch 規格會是鎖住的開關,照 DataTable 規格是 ✓ / ✗"
-      ]
+        "相衝的規格:packages/design-system/src/components/Switch/switch.spec.md:140-148 standalone Readonly 的用途 =「settings list 鎖定呈現」(正常色、鎖互動),Disabled =「外部條件造成不可操作」(淡化);:156 view = ✓ / ✗ 純展示。Tasks 這一欄(在建立頁顯示)正是 checkbox.spec.md:138 判準裡的「這一列的某個功能要不要開 → 開關」= 設定清單,被鎖住的系統欄位照 Switch 規格會是鎖住的開關,照 DataTable 規格是 ✓ / ✗",
+        "2026-11-28 協調者複查(user 問「BL-039 SSOT到底是什麼？」):switch.spec.md:150「DataTable cell 非編輯態 = mode=\"view\"(勾/叉 icon),皆非本表 standalone readonly」—— Switch 規格自己把表格格子排除在「鎖住的開關」之外;data-table.spec.md:273、checkbox.spec.md:138 唯讀格一律 ✓ / ✗,而「某幾列被規則鎖住」就是 editable:(row)=>false 的唯讀格(data-table.spec.md:561)。SSOT = data-table.spec.md:273,不需 user 決定;先前對 user 說「兩份規格寫的不一樣」已更正。依列讀屏名字仍在 BL-015。"
+      ],
+      "doneRef": "891474bb"
     },
     {
       "kind": "consumer-report",
@@ -1223,6 +1225,20 @@
       "suggestion": "154::376 不再以「模板字串有 ${}」當違規捷徑,改讓它跟其他字串一樣走 :293-301 的文件內容證明(contentEditable 宿主 + 封閉白名單 + 清理器 + 只寫回清理後的值);兩面對照:同一個富文字檔用模板字串插表格要綠、沒有 contentEditable / 清理器的 app 檔用模板字串組資料表要紅。M37:判性質(是不是文件內容)不判寫法。",
       "evidence": [
         "屬實:check_consumer_app_invariants.sh:376 `raw_jsx_table or any(quote == chr(96) and \"${\" in value …)` → violation,不進 :381 之後的文件內容證明;字串串接沒有這條捷徑。workspace 回報逐字 tmp/wip-2026-11-25-backup/notes/decisions/ws-richtext-incubation-feedback-2026-11-28.md 第 2 條(改回字串串接就不擋)"
+      ]
+    },
+    {
+      "id": "BL-051",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "891474bb",
+      "oldIds": [],
+      "title": "token-registry.json 還有兩筆已刪除的 work-management 產品端覆寫紀錄(productExternal)",
+      "rootCause": "token-registry-stale-deleted-consumer",
+      "valueGate": "recordOnly",
+      "suggestion": "154 下次動 token 登記表時一起刪這兩筆(BL-022 原計畫「刪 repo 後清」);沒有程式讀它去連那個 repo,現在不單獨開一次改動。",
+      "evidence": [
+        "packages/design-system/src/tokens/token-registry.json:1048、:1056 `\"repo\": \"work-management\"`;GitHub repo 2026-11-28 讀回 404"
       ]
     }
   ]
