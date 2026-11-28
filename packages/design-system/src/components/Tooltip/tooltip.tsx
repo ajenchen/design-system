@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING, OVERLAY_HIDE_WHEN_DETACHED } from "@/design-system/tokens/elevation/overlay-geometry"
 import { MOTION_DELAY_PLAIN_MS } from "@/design-system/tokens/motion/motion"
 import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
-import { OverlayAnchorScope, useRegisterOverlayNode, useTriggerRegionDensity } from "@/design-system/lib/overlay-density"
+import { OverlayAnchorScope, useOverlayAnchorRegistry, useRegisterOverlayNode, useTriggerRegionDensity } from "@/design-system/lib/overlay-density"
 
 // 2026-05-18 ship per user 拍板 #3A:Tooltip Provider 預設 delayDuration 對齊 motion token SSOT。
 // Radix 預設 700ms 偏保守(MUI 預設 100ms、Atlassian 300ms、Material Components Web 500ms),DS 統一用(來源:https://github.com/mui/material-ui/blob/34d78acfd16dfe3426c0b2c7d9f94b7fb930f5f8/packages/mui-material/src/Tooltip/Tooltip.js#L247 https://cdn.jsdelivr.net/npm/@atlaskit/tooltip@24.4.3/dist/es2019/tooltip.js https://github.com/material-components/material-components-web/blob/6ceadb81df508ac08ab007c52c4d3dc1d811cc15/packages/mdc-tooltip/constants.ts#L42-L43)
@@ -63,6 +63,73 @@ function installScrollTracker() {
 type FocusScrollGuard = { el: HTMLElement; focusAt: number; lastAt: number } | null
 const FocusScrollGuardContext = React.createContext<React.MutableRefObject<FocusScrollGuard> | null>(null)
 
+// ── 說明跟觸發點的讀屏名稱同字時不掛描述(2026-11-28,tooltip.spec.md「A11y 預設」)──
+// Radix 在提示開著時一律替觸發點掛 aria-describedby = 提示的 id(本 repo 鎖的 react-tooltip 1.2.8 dist/index.mjs:180,寫在 consumer props 之前)。
+// 圖示鈕(aria-label = 提示字)、InfoTooltip(aria-label = 說明)這類觸發點,讀屏會先念名稱、再把同一句當描述念一次。
+// 做法:提示內容掛上去的那一刻(與內容換字時),拿 Radix 放在內容裡給讀屏的那份(`role="tooltip"` 的節點)比觸發點的讀屏名稱;
+// 同字 → 觸發點不掛;不同字(截斷字的全文 vs 欄位名稱、有補充的說明)照 Radix 掛。consumer 自己傳的 aria-describedby 一律照留。
+// 判不出來(找不到觸發點 / 內容節點)= 照 Radix 掛 —— 錯也只錯在「多念一次」,不會把該念的描述拿掉。
+type DescriptionEcho = { echoed: boolean; setEchoed: (echoed: boolean) => void }
+const TooltipDescriptionEchoContext = React.createContext<DescriptionEcho | null>(null)
+
+/** 比對用的字:連續空白(含換行、不換行空白、全形空白,即 JS `\s`)併成一個半形空白、去掉頭尾;其餘逐字比(大小寫、標點不同 = 不同字) */
+function flatText(text: string): string {
+  return text.replace(/\s+/g, " ").trim()
+}
+
+/** ARIA 1.2「Roles Supporting Name from Content」:這些角色沒有 aria-labelledby / aria-label 時,名稱 = 自己的文字 */
+const NAME_FROM_CONTENT_ROLES = new Set([
+  "button", "cell", "checkbox", "columnheader", "gridcell", "heading", "link", "menuitem", "menuitemcheckbox",
+  "menuitemradio", "option", "radio", "row", "rowheader", "switch", "tab", "tooltip", "treeitem",
+])
+
+/** 元素的角色:明寫的 role 取第一個字,沒寫看標籤(只列提示觸發點會用到的;其餘當作沒有名稱來源) */
+function roleOf(el: Element): string | null {
+  const explicit = el.getAttribute("role")?.trim().split(/\s+/)[0]
+  if (explicit) return explicit
+  const tag = el.tagName
+  if (tag === "BUTTON") return "button"
+  if (tag === "A") return el.hasAttribute("href") ? "link" : null
+  if (/^H[1-6]$/.test(tag)) return "heading"
+  if (tag === "TD") return "cell"
+  if (tag === "TH") return "columnheader"
+  if (tag === "OPTION") return "option"
+  return null
+}
+
+/** 子孫的文字(依 accname 1.2 的「名稱取自內容」):跳過 aria-hidden / hidden / 沒畫出來的;子孫自己有 aria-label 用它、圖片用 alt */
+function contentText(root: Element): string {
+  let out = ""
+  for (const node of Array.from(root.childNodes)) {
+    if (node.nodeType === Node.TEXT_NODE) { out += node.textContent ?? ""; continue }
+    if (!(node instanceof Element)) continue
+    if (node.getAttribute("aria-hidden") === "true" || node.hasAttribute("hidden")) continue
+    if (typeof (node as HTMLElement).checkVisibility === "function" && !(node as HTMLElement).checkVisibility()) continue
+    const label = node.getAttribute("aria-label")
+    if (label && flatText(label)) { out += ` ${label} `; continue }
+    if (node.tagName === "IMG") { out += ` ${node.getAttribute("alt") ?? ""} `; continue }
+    out += contentText(node)
+  }
+  return out
+}
+
+/** 觸發點的讀屏名稱(accname 1.2 的先後,只做提示觸發點會碰到的幾步):aria-labelledby → aria-label → 名稱取自內容的角色用自己的文字 → title */
+function accessibleNameOf(el: Element): string {
+  const ids = el.getAttribute("aria-labelledby")?.trim()
+  if (ids) {
+    const text = ids.split(/\s+/).map((id) => document.getElementById(id)?.textContent ?? "").join(" ")
+    if (flatText(text)) return text
+  }
+  const label = el.getAttribute("aria-label")
+  if (label && flatText(label)) return label
+  const role = roleOf(el)
+  if (role && NAME_FROM_CONTENT_ROLES.has(role)) {
+    const text = contentText(el)
+    if (flatText(text)) return text
+  }
+  return el.getAttribute("title") ?? ""
+}
+
 /** 這次關閉是不是「聚焦後緊接著的捲動」造成的(是 → 放過,並把放過的時間延長到現在)。 */
 function shouldKeepOpenThroughFocusScroll(guardRef: React.MutableRefObject<FocusScrollGuard>): boolean {
   const guard = guardRef.current
@@ -88,6 +155,9 @@ const Tooltip = ({
   const [internalOpen, setInternalOpen] = React.useState(defaultOpen ?? false)
   const open = openProp ?? internalOpen
   const guardRef = React.useRef<FocusScrollGuard>(null)
+  // 說明跟觸發點名稱同字(TooltipContent 比、TooltipTrigger 讀;見上方「說明跟觸發點的讀屏名稱同字時不掛描述」)
+  const [echoed, setEchoed] = React.useState(false)
+  const descriptionEcho = React.useMemo(() => ({ echoed, setEchoed }), [echoed])
   React.useEffect(installScrollTracker, [])
   const handleOpenChange = React.useCallback(
     (nextOpen: boolean) => {
@@ -100,15 +170,17 @@ const Tooltip = ({
 
   return (
     <FocusScrollGuardContext.Provider value={guardRef}>
-      {/* 觸發點登記處:Content 從觸發點那一區讀密度(lib/overlay-density.tsx;density.spec.md「浮層跟觸發點」) */}
-      <OverlayAnchorScope family="tooltip">
-        <TooltipPrimitive.Root
-          delayDuration={delayDuration}
-          open={open}
-          onOpenChange={handleOpenChange}
-          {...props}
-        />
-      </OverlayAnchorScope>
+      <TooltipDescriptionEchoContext.Provider value={descriptionEcho}>
+        {/* 觸發點登記處:Content 從觸發點那一區讀密度(lib/overlay-density.tsx;density.spec.md「浮層跟觸發點」),也從這裡拿觸發點比讀屏名稱 */}
+        <OverlayAnchorScope family="tooltip">
+          <TooltipPrimitive.Root
+            delayDuration={delayDuration}
+            open={open}
+            onOpenChange={handleOpenChange}
+            {...props}
+          />
+        </OverlayAnchorScope>
+      </TooltipDescriptionEchoContext.Provider>
     </FocusScrollGuardContext.Provider>
   )
 }
@@ -158,11 +230,15 @@ const TooltipTrigger = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Trigger>
 >(({ onFocus, onBlur, ...props }, ref) => {
   const guardRef = React.useContext(FocusScrollGuardContext)
+  const descriptionEcho = React.useContext(TooltipDescriptionEchoContext)
   const composedRef = useRegisterOverlayNode("tooltip", "trigger", ref)
+  // 說明跟名稱同字 → 蓋掉 Radix 的 aria-describedby(Radix 寫在 consumer props 之前,明寫 undefined 就蓋得掉);consumer 自己傳的照留
+  const omitDescribedBy = descriptionEcho?.echoed === true && !("aria-describedby" in props)
   return (
     <TooltipPrimitive.Trigger
       ref={composedRef}
       {...props}
+      {...(omitDescribedBy ? { "aria-describedby": undefined } : null)}
       onFocus={(event) => {
         onFocus?.(event)
         // 程式搬來的焦點不開提示(2026-11-26,truncated-text.spec.md「A11y 預設」;tooltip.spec.md「A11y 預設」):
@@ -198,7 +274,29 @@ const TooltipContent = React.forwardRef<
   // 觸發點那一區的兩軸檔位(lib/overlay-density.tsx)。hook 依 React 規則寫在提早 return 之前,但它關著時一次都不讀 DOM:
   // 只在內容根元素真的掛上去(= Tooltip 打開)那一刻讀一次,開著的期間才盯密度屬性。表格每一格的 TruncatedText 都包著
   // Tooltip,關著時的成本 = 兩個 useState + 兩個 useCallback + 一個 no-op effect(2026-11-12 修;原本每格每次重繪都爬祖先鏈)。
-  const { attrs: regionDensity, ref: contentRef } = useTriggerRegionDensity("tooltip", ref)
+  // 2026-11-28 加讀屏名稱比對(下方):關著時多一個 useRef + 兩個 useCallback + 一個立刻 return 的 layout effect,同樣不讀 DOM。
+  const { attrs: regionDensity, ref: densityRef } = useTriggerRegionDensity("tooltip", ref)
+  // 說明跟觸發點名稱同字時不掛描述(見檔上方同名段落):內容掛上去的那一刻(callback ref)與每次重繪(內容換字)比一次
+  const registry = useOverlayAnchorRegistry("tooltip")
+  const setEchoed = React.useContext(TooltipDescriptionEchoContext)?.setEchoed
+  const contentNodeRef = React.useRef<HTMLDivElement | null>(null)
+  const compareWithTriggerName = React.useCallback(() => {
+    const node = contentNodeRef.current
+    const trigger = registry?.trigger.current
+    if (!setEchoed || !node || !trigger) return
+    // Radix 放在內容裡給讀屏的那一份(aria-describedby 指的就是它;children 或 Content 的 aria-label)
+    const forScreenReader = node.querySelector(':scope > [role="tooltip"]')
+    if (!forScreenReader) return
+    const description = flatText(forScreenReader.textContent ?? "")
+    // 同值時 React 不重繪(useState 的 bail-out),所以每次都設不必先比
+    setEchoed(description !== "" && description === flatText(accessibleNameOf(trigger)))
+  }, [registry, setEchoed])
+  const contentRef = React.useCallback((node: HTMLDivElement | null) => {
+    contentNodeRef.current = node
+    densityRef(node)
+    if (node) compareWithTriggerName()
+  }, [densityRef, compareWithTriggerName])
+  React.useLayoutEffect(compareWithTriggerName)
   const isEmptyContent =
     children == null ||
     children === false ||
