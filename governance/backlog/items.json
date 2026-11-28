@@ -225,7 +225,8 @@
       "evidence": [
         "DS 沒有 rich text 工具列元件:`RichTextToolbar` 只出現在 packages/design-system/src/patterns/action-bar/action-bar.stories.tsx(範例自組,git grep 3 處)",
         "workspace 2026-11-28:Tasks RichTextEditor.tsx 1634 行、Chat 756 行、MNP 179 行,execCommand 8 / 9 / 5 處(workspace 自述,未在 DS 端驗)",
-        "blocked = 等 workspace 孵化完成交接(非 DS 端工作)"
+        "blocked = 等 workspace 孵化完成交接(非 DS 端工作)",
+        "workspace 2026-11-28 孵化中的實作決定(逐字 tmp/wip-2026-11-25-backup/notes/decisions/ws-richtext-incubation-feedback-2026-11-28.md):唯讀 / 純檢視照 Textarea 的 readonly / view、mode 跟 Field cascade;編輯區四邊內距 = --field-px(workspace 轉述 user 認可視覺);Aa 維持有字 + 箭頭(與 (a) 甲一致);框內底部列 showFooter / onCancel / onSave / saveDisabled / labels、無上分隔線。交接時 DS 要核:① 提交 callback 對齊 DS 就地編輯的 onCommit(inline-edit.tsx:69、cell-registry.tsx:90),放棄 = onCancel(props-naming.md:13);② showFooter 為真時取消 / 儲存鈕恆渲染、callback 型別層必填(M23(f),禁「有傳 callback 才畫鈕」);③ 四邊 --field-px 與 field-controls.spec.md 的 Field 幾何比對,有衝突再交 user(product-ui-ux-decision)。"
       ],
       "order": 6,
       "orderReason": "你說「到時候有時間再統一出一個 rich text toolbar就好」;不擋其他項",
@@ -1102,6 +1103,34 @@
       "suggestion": "現在不修(價值閘:沒有 user 看得到的錯、CI 不會紅、user 沒要求;發版說明換版時會提示)。日後若真的漂(Netlify 建置停在舊版造成錯),可在範本的 Netlify 建置指令只在 CONTEXT=production 時比對 node --version 與 scripts/.node-version、不符就失敗(預覽不受影響),再依價值閘處理。",
       "evidence": [
         "R96b 實作者自列的選擇、再驗核對者列 nonMustFix;Netlify 一手來源 docs.netlify.com/build/configure-builds/manage-dependencies/(只讀 NODE_VERSION 環境變數或 base 目錄的 .node-version / .nvmrc;UI 的 Dependency management 只能選主版號且會被前兩者蓋掉)"
+      ]
+    },
+    {
+      "id": "BL-049",
+      "kind": "consumer-report",
+      "status": "open",
+      "verifiedAt": "bbee1e67",
+      "oldIds": [],
+      "title": "產品自組的欄位控件沒有正當寫法掛「欄位自己的浮層開著」記號:fieldOpenProps 是 @internal、不在公開出口,但 check_field_family_invariants A.3.4 擋產品程式手寫 data-field-open",
+      "rootCause": "field-open-marker-no-public-api",
+      "valueGate": "①",
+      "suggestion": "154:開放公開寫法(把 fieldOpenProps 收進公開出口並照 props-naming / naming-conventions 定名,或讓公開的 useFieldState 帶 open 並給外框宿主一個設定方式),寫進 field.spec.md「產品自訂控件」一段;A.3.4 的提示改指向公開寫法;workspace 拿掉 @field-state-ring-allow。對照組:產品程式手寫 data-field-open 仍紅、用公開寫法綠。",
+      "evidence": [
+        "屬實:lib/composite-field-focus.ts:2 模組層 @internal、:51 export function fieldOpenProps;index.ts:729 寫明不進 root barrel;DS 內只有 Select / Combobox / DatePicker / TimePicker / field-wrapper 用;check_field_family_invariants.sh:299 A.3.4 不限 components/、產品程式也擋;公開的 useFieldState(field.tsx:688)沒有 open。workspace 回報逐字 tmp/wip-2026-11-25-backup/notes/decisions/ws-richtext-incubation-feedback-2026-11-28.md 第 1 條"
+      ]
+    },
+    {
+      "id": "BL-050",
+      "kind": "consumer-report",
+      "status": "open",
+      "verifiedAt": "bbee1e67",
+      "oldIds": [],
+      "title": "check_consumer_app_invariants 把富文字文件內容的表格 HTML 判成手刻資料表:模板字串帶 ${} 直接判違規,同樣動態的字串串接卻走文件內容豁免",
+      "rootCause": "consumer-table-gate-template-literal-proxy",
+      "valueGate": "②",
+      "suggestion": "154::376 不再以「模板字串有 ${}」當違規捷徑,改讓它跟其他字串一樣走 :293-301 的文件內容證明(contentEditable 宿主 + 封閉白名單 + 清理器 + 只寫回清理後的值);兩面對照:同一個富文字檔用模板字串插表格要綠、沒有 contentEditable / 清理器的 app 檔用模板字串組資料表要紅。M37:判性質(是不是文件內容)不判寫法。",
+      "evidence": [
+        "屬實:check_consumer_app_invariants.sh:376 `raw_jsx_table or any(quote == chr(96) and \"${\" in value …)` → violation,不進 :381 之後的文件內容證明;字串串接沒有這條捷徑。workspace 回報逐字 tmp/wip-2026-11-25-backup/notes/decisions/ws-richtext-incubation-feedback-2026-11-28.md 第 2 條(改回字串串接就不擋)"
       ]
     }
   ]
