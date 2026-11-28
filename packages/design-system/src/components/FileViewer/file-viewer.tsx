@@ -98,23 +98,20 @@ const FallbackRenderer: React.FC<FileRendererProps> = ({ file, onCapabilitiesCha
     onCapabilitiesChange({ zoom: false })
   }, [onCapabilitiesChange])
 
-  // 放得下才置中、放不下從頂開始可捲動(empty.spec.md「垂直定位」有框那一列,2026-11-28):置中的是捲動區(寬高 = 內容的寬高,最多到舞台的可用寬高
-  // max-w-full / max-h-full);放得下 → 捲動區就是 Empty 那麼大、在舞台正中(與修前同位置,像素相同);放不下 → 捲動區被夾在可用高、從頂開始,
-  // 其餘捲得到(不再上下兩頭被裁掉)。捲軸用 ScrollArea(build-ui-canonicals.md「overflow 使用三規則」;跨 OS 一致的 overlay 捲軸,不佔寬)。
-  // viewportTabIndex={null}:不寫 tabindex —— 放得下時不多一個 Tab 停點(一般尺寸行為不變)。放不下時滑鼠 / 觸控捲得到;鍵盤:一般頁面上瀏覽器會讓沒有
-  // 可聚焦子元素的捲動區可用 Tab 聚焦(Chrome 132 起「keyboard focusable scrollers」:https://developer.chrome.com/blog/keyboard-focusable-scrollers
-  // 「scrollers are keyboard focusable by default if they have no keyboard focusable children」);檢視器是對話框,2026-11-28 實測 1440×220
-  // Tab 進不去這個捲動區(那時只差 3px 放不下)—— 已知限制。原因【AI 推導】:對話框的焦點圈(Radix FocusScope getTabbableCandidates)只收 tabIndex ≥ 0 的元素。
+  // 放得下置中、放不下整區捲動(empty.spec.md「垂直定位」有框那一列,2026-11-28):同 DialogBody 的最小高度 + 整區捲動 —— 舞台本身是捲動區
+  // (ScrollArea fillX fillY,捲軸用 ScrollArea:build-ui-canonicals.md「overflow 使用三規則」),裡面一層 min-h-full 再垂直置中、p-8 在這一層裡;
+  // 放得下時 Empty 在舞台正中(與修前同位置),放不下時這一層跟著內容長高、整個舞台從頂開始捲,視窗縮放時位置連續、不跳。
+  // 捲動區照 ScrollArea 預設可用 Tab 聚焦(同 DialogBody;檢視器是對話框,焦點圈只輪 tabIndex ≥ 0 的元素,預設 0 才輪得到、放不下時鍵盤捲得到)。
   return (
-    <div className="w-full h-full flex items-center justify-center p-8">
-      <ScrollArea viewportTabIndex={null} className="max-h-full max-w-full">
+    <ScrollArea fillX fillY className="w-full h-full">
+      <div className="flex min-h-full flex-col items-center justify-center p-8">
         <Empty
           icon={FileText}
           title={file.name}
           description={`無法在瀏覽器中預覽此檔案類型（${file.mimeType || 'unknown'}）。請下載後檢視。`}
         />
-      </ScrollArea>
-    </div>
+      </div>
+    </ScrollArea>
   )
 }
 

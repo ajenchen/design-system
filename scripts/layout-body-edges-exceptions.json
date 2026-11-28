@@ -6,9 +6,11 @@
       "stories": [
         "design-system-components-agentpanel-展示--new-conversation"
       ],
-      "container": "div.flex-1.items-center.justify-center",
-      "reason": "新對話空白頁:空狀態在撐滿的包層裡垂直置中,不套規則 2 / 4 的上下距離(上下在不在可用範圍正中由 header-first-gap 的 centered 格驗)",
-      "source": "layoutSpace.spec.md 規則 2「適用範圍與量法三點」(3)(user 2026-11-14 在 A5 成品頁的留言 ②)"
+      "container": "[data-agent-panel-mode] header + div:has([data-empty])",
+      "reason": "新對話空白頁:空狀態在撐滿的那一區裡垂直置中,不套規則 2 / 4 的上下距離(上下在不在可用範圍正中由 header-first-gap 的 centered 格驗)。2026-11-28 起那一區本身是捲動區(ScrollArea fillY,裡面一層 min-h-full 置中;放不下整區捲動,同 DialogBody),標頭的下一塊從置中的包層 div.flex-1.items-center.justify-center 換成捲動區的外框,所以選擇器改指「AI 面板標頭的下一塊、裡面有 Empty」",
+      "source": "layoutSpace.spec.md 規則 2「適用範圍與量法三點」(3);empty.spec.md「垂直定位」有框那一列(放不下整區捲動)。userQuote 是 user 2026-11-14 在 A5 成品頁的留言 ② 原文節錄(貼在「新對話空白頁,改之前」那張圖,這一筆管的就是這一頁);2026-11-17 第一次登記時沒附原話",
+      "userQuote": "這種 result 或是 empty 就不是撐滿高度的元素，且當初定位就是把它放在正中間",
+      "quoteDate": "2026-11-14"
     },
     {
       "key": "fileviewer-viewport-row",
@@ -27,7 +29,7 @@
       ],
       "container": "[data-app-shell-row]",
       "reason": "整頁 404 / 403:主內容區只放一個整頁狀態(Empty),照 empty.spec.md「垂直定位」無框那一列貼上方、上下 2 × bottom,不套規則 4 的 48(頂距 = 2 × bottom、唯一的 h1、有動作由 header-first-gap 的 appshell-full-page-404 / -403 驗,底 = 2 × bottom 由 header-content-sides 同兩格驗)。這兩則沒有本頁標頭,全域標頭的下一塊是整列(Menu + 主內容欄),整列不是主體容器(它的最後一個東西會量到側欄的群組),所以登記整列、不比底。2026-11-26 ~ 11-28 這一筆叫 appshell-full-page-state-centered(當時狀態在主內容區正中)",
-      "source": "empty.spec.md「垂直定位」無框那一列與「整頁狀態」第 4 點。userQuote 是 user 2026-11-28 選研究頁甲的原話(逐字節錄;甲 = 整頁貼上、有框置中,研究頁 tmp/wip-2026-11-25-backup/notes/decisions/research-state-placement-2026-11-28.md 第 6 節,全文 state-placement-answer-2026-11-28.md),取代第六輪決策卡 C22 選項 A 的「狀態置中」",
+      "source": "empty.spec.md「垂直定位」無框那一列與「整頁狀態」第 4 點。userQuote 是 user 2026-11-28 在 0.1.0-beta.153 協調對話裡看過研究頁(https://claude.ai/artifact/WptDhHVVvqXnBDAs26mGaY)後選甲的原話(逐字節錄;甲 = 研究頁第 6 節「整頁貼上、有框置中」),取代第六輪決策卡 C22 選項 A 的「狀態置中」",
       "userQuote": "我覺得是照你建議的甲，因為原本ds就這樣定義",
       "quoteDate": "2026-11-28"
     },
