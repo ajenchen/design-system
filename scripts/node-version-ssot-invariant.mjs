@@ -19,13 +19,16 @@
  * N3 兩邊 `.github/workflows/*.yml` 的每一個 actions/setup-node 步驟:不寫 `node-version`(setup-node 兩個都給時用它、
  *    正本就被蓋掉),只寫 `node-version-file: [<簽出路徑>/].node-version`,而且同一個 job 裡它前面有對應路徑的 checkout;
  *    那個 checkout 若是稀疏簽出,清單要含 `.node-version`(否則檔案不在、setup-node 失敗)。
+ *    另一面:job 裡任何會跑 node / npm / npx 的步驟,前面都必須有這樣的 setup-node —— 否則整個刪掉 setup-node
+ *    (用 runner / 容器預設的 Node)反而沒有東西可判(2026-11-28 規格核對抓到;同時抓到 mirror workflow 在 setup-node 前就用 node 讀版號)。
  * N4 兩份 dev container 的 `image` 必須是下面 MEASURED_DEVCONTAINER_IMAGES 量過的映像,且量到的 Node = 正本。
  *    映像以 digest 釘死(內容不可變),但 Node 版本不在映像名稱裡,所以「這個 digest 裡是哪一版 Node」要量:
  *    `node scripts/node-version-ssot-invariant.mjs --measure-image <image@sha256:…>`(讀 registry 的映像設定 NODE_VERSION,
  *    linux/amd64 與 linux/arm64 都要相同;只讀、不在 CI 跑)。換映像 = 量完把結果加進表。
  * N5 兩份 netlify.toml 不寫 `NODE_VERSION`(Netlify 讀 base 目錄的 `.node-version`);根與範本都不准再有 `.nvmrc` / `.tool-versions`。
  * N6 兩份 package.json 的 `engines.node` 是消費者範圍 `>=X.Y.Z`,必須涵蓋正本(X.Y.Z ≤ 正本)。
- * N7 範本 README 的 Claude Code 雲端 Setup script 讀 `.node-version`,不寫死版號。
+ * N7 範本 README 的 Claude Code 雲端 Setup script(恰好一個 bash 區塊)讀 `.node-version`,不寫死版號;
+ *    範本其他 .md 不准再放 Setup script 的 bash 區塊(README 是唯一出處,其他檔只指過去)。
  *
  *   node scripts/node-version-ssot-invariant.mjs [--selftest] [--measure-image <ref>]
  */
@@ -51,6 +54,8 @@ export const MEASURED_DEVCONTAINER_IMAGES = Object.freeze({
 })
 
 const EXACT = /^(\d+)\.(\d+)\.(\d+)$/
+// 指令位置上的 node / npm / npx(不吃 node_modules、node-version 這類字)
+const RUNS_NODE = /(^|[\s;&|(`'"])(node|npm|npx)(?=[\s)'"`;]|$)/m
 const compareSemver = (a, b) => {
   const [x, y] = [EXACT.exec(a), EXACT.exec(b)]
   for (let i = 1; i <= 3; i += 1) {
@@ -70,8 +75,19 @@ export function loadFiles(root = REPO) {
   for (const dir of WORKFLOW_DIRS) {
     for (const name of readdirSync(join(root, dir)).filter((f) => /\.ya?ml$/.test(f)).sort()) read(`${dir}/${name}`)
   }
+  for (const entry of readdirSync(join(root, TEMPLATE_ROOT), { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith('.md')) continue
+    const rel = `${join(entry.parentPath ?? entry.path, entry.name).slice(join(root, TEMPLATE_ROOT).length + 1)}`
+    if (rel.split('/').includes('node_modules')) continue
+    read(`${TEMPLATE_ROOT}/${rel}`)
+  }
   return files
 }
+
+// 雲端 Setup script 的 bash 區塊(README 以外出現 = 第二份說明)
+const SETUP_SCRIPT_BLOCK = /```(?:bash|sh|shell)\n([\s\S]*?)```/g
+const setupScriptBlocks = (text) => [...String(text ?? '').matchAll(SETUP_SCRIPT_BLOCK)]
+  .map((m) => m[1]).filter((body) => /Setup script|REPO_DIR=/.test(body))
 
 function checkWorkflow(path, text, violations) {
   let doc
@@ -83,6 +99,17 @@ function checkWorkflow(path, text, violations) {
   }
   for (const [jobId, job] of Object.entries(doc?.jobs ?? {})) {
     const steps = job?.steps ?? []
+    // 會跑 node / npm / npx 的步驟,前面必須有 setup-node(否則用的是 runner 或容器預設的 Node,正本管不到;
+    // 2026-11-28 核對者抓到:只檢查「有 setup-node 的步驟寫對」時,整個刪掉 setup-node 反而綠)。
+    const firstSetupNode = steps.findIndex((s) => String(s?.uses ?? '').startsWith('actions/setup-node@'))
+    steps.forEach((step, index) => {
+      if (typeof step?.run !== 'string') return
+      const commands = step.run.split('\n').filter((line) => !/^\s*#/.test(line)).join('\n')
+      if (!RUNS_NODE.test(commands)) return
+      if (firstSetupNode === -1 || firstSetupNode > index) {
+        violations.push(`N3 ${path} jobs.${jobId} 第 ${index + 1} 步(${step.name ?? 'run'}):跑 node / npm / npx,但前面沒有讀 .node-version 的 setup-node`)
+      }
+    })
     steps.forEach((step, index) => {
       if (!String(step?.uses ?? '').startsWith('actions/setup-node@')) return
       const where = `${path} jobs.${jobId} 第 ${index + 1} 步(setup-node)`
@@ -158,12 +185,17 @@ export function checkNodeVersionSsot(files) {
     else if (compareSemver(floor[1], canonical) > 0) violations.push(`N6 ${path}: engines.node ${range} 不涵蓋正本 ${canonical}`)
   }
 
-  const readme = files.get(README) ?? ''
-  const setupScript = [...readme.matchAll(/```bash\n([\s\S]*?)```/g)].map((m) => m[1]).find((body) => body.includes('Claude Code Setup script'))
-  if (!setupScript) violations.push(`N7 ${README}: 找不到 Claude Code Setup script 的 bash 區塊(儀器失效)`)
+  const readmeBlocks = setupScriptBlocks(files.get(README))
+  if (readmeBlocks.length !== 1) violations.push(`N7 ${README}: Setup script 的 bash 區塊要恰好一個(找到 ${readmeBlocks.length} 個${readmeBlocks.length ? '' : ',儀器失效'})`)
   else {
+    const [setupScript] = readmeBlocks
     if (!setupScript.includes(CANONICAL_PATH)) violations.push(`N7 ${README}: Setup script 沒有讀 .node-version`)
     if (setupScript.includes(canonical)) violations.push(`N7 ${README}: Setup script 寫死了版號 ${canonical},要讀 .node-version`)
+  }
+  const docs = [...files.keys()].filter((path) => path.startsWith(`${TEMPLATE_ROOT}/`) && path.endsWith('.md') && path !== README)
+  if (!docs.length) violations.push(`N7 讀不到 ${TEMPLATE_ROOT} 的其他 .md(儀器失效,不是通過)`)
+  for (const path of docs) {
+    if (setupScriptBlocks(files.get(path)).length) violations.push(`N7 ${path}: 有 Setup script 的 bash 區塊;唯一出處是 README「Local, cloud, and container setup」,這裡只准指過去`)
   }
   return violations
 }
@@ -217,6 +249,18 @@ function selftest() {
       f.set(PACKAGES[0], JSON.stringify(pkg, null, 2))
     }],
     ['N7', 'Setup script 寫死版號', (f) => f.set(README, f.get(README).replace('# Claude Code Setup script', `# Claude Code Setup script (node ${f.get(CANONICAL_PATH).trim()})`))],
+    ['N3', '刪掉範本 audit.yml 的 setup-node(job 照樣跑 npm)', (f) => {
+      const path = `${TEMPLATE_ROOT}/.github/workflows/audit.yml`
+      const before = f.get(path)
+      const after = before.replace(/\n {6}- uses: actions\/setup-node@[^\n]*\n(?: {8}[^\n]*\n)+/, '\n')
+      if (after === before) throw new Error(`selftest 前提不成立:${path} 找不到 setup-node 步驟`)
+      f.set(path, after)
+    }],
+    ['N7', 'README 以外再放一份 Setup script(docs/01 舊版)', (f) => {
+      const path = `${TEMPLATE_ROOT}/docs/01-first-time-setup.md`
+      if (!f.has(path)) throw new Error(`selftest 前提不成立:讀不到 ${path}`)
+      f.set(path, `${f.get(path)}\n  \`\`\`bash\n  #!/bin/bash\n  # Claude Code Setup script (shared Default environment): runs setup:all only for <repository-folder>\n  REPO_DIR="<repository-folder>"\n  exec npm run setup:all\n  \`\`\`\n`)
+    }],
   ]
   for (const [id, name, mutate] of cases) {
     const files = new Map(base)

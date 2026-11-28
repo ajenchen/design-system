@@ -61,33 +61,49 @@ keeps them equal before a release ships. `engines.node` is the wider range consu
   scripts run with internet access, as described in the [official Codex Cloud environment guide](https://developers.openai.com/codex/cloud/environments);
   its **Set package versions** setting does not document exact-patch pins, so the script installs the
   exact `.node-version` itself.
-- Claude Code on the web: the Setup script below can go in the shared **Default** environment.
-  For the repository `<repository-folder>` it installs the exact Node.js in `.node-version` from the
-  official release on nodejs.org, verifies the archive against the release's `SHASUMS256.txt`, runs
+- Claude Code on the web: put the Setup script below in an environment used only for this
+  repository's sessions. The official guide says the setup script runs the first time you start a
+  session in an environment; when it finishes within roughly five minutes the filesystem is saved as a
+  snapshot that later sessions start from, skipping the setup script, and the script runs again only
+  when the environment's setup script or allowed network hosts change or the cache expires after
+  roughly seven days. The guide does not say the cache is kept per repository, so in an environment
+  shared with other repositories (such as **Default**) a first session for another repository makes
+  the script skip, and this repository's later sessions start from a snapshot with neither the exact
+  Node.js nor a completed `setup:all` (not yet measured). To add the environment: on the new-session
+  screen at claude.ai/code open the environment selector (the first control in the row under the
+  message box), select **New environment**, set **Network access** to **Limited** with **Allow package
+  managers** checked, paste the script into **Setup script**, select **Add environment**, and choose
+  that environment in the selector whenever you start a session for this repository.
+  For the repository `<repository-folder>` the script installs the exact Node.js in `.node-version` from
+  the official release on nodejs.org, verifies the archive against the release's `SHASUMS256.txt`, runs
   `npm run setup:all` with that Node.js, and returns that command's own exit status; a failed download
-  or checksum exits non-zero. For any other repository it prints one skip line and exits 0, so it never
-  blocks another repository's session. The official guide documents that the script runs as root on
-  Ubuntu 24.04 before Claude Code launches, that the environment's own variables are not set yet, that
-  a script that exits non-zero makes the session fail to start or start without what it failed to
-  install, and that the preinstalled Node.js versions are 20, 21, and 22 (22 on `PATH`). The guide does not
+  or checksum exits non-zero. For any other repository it prints one skip line and exits 0, so a script
+  left in the wrong environment never blocks another repository's session. The official guide documents
+  that the script runs as root on Ubuntu 24.04 before Claude Code launches, that each session's VM is
+  x86_64, that the environment's own variables are not set yet, that a script that exits non-zero makes
+  the session fail to start or start without what it failed to install, and that the preinstalled
+  Node.js versions are 20, 21, and 22 (22 on `PATH`). The guide does not
   document the script's working directory, so the script handles both starting at the repository root
   and starting one level up with the checkout in a subfolder (a Setup script run on Claude Code on the web started in the directory that
   contains the checkout, with the repository in its own subfolder). Replace
   `<repository-folder>` with this repository's folder name; left unreplaced, the script only skips.
   `nodejs.org` is on the default allowlist of **Limited** network access with **Allow package
-  managers** checked (the setting a new environment starts with); if that box is cleared, add
-  `nodejs.org` under **Allowed domains**. The installed Node.js is linked into `/usr/local/bin`; whether a
-  session's own `PATH` puts it ahead of the preinstalled `/opt/node22` is not documented (not yet
-  measured), so check `node --version` in the session and prepend `/opt/node-v<version>/bin` to `PATH` when
-  it differs. A successful run is cached as a filesystem snapshot and is re-run only when the
-  script or allowed hosts change or the cache expires, so after a committed-lock change run
-  `npm run setup:all` in the session. See [Setup scripts](https://code.claude.com/docs/en/cloud-environments#setup-scripts),
+  managers** checked; if that box is cleared, add `nodejs.org` under **Allowed domains**.
+  To check a new session, run `node --version` (expected: the version in `.node-version`) and
+  `npm run governance:check` (it runs the checker that `setup:all` installs, so it fails when setup did
+  not complete). The installed Node.js is linked into `/usr/local/bin`; whether a session's own `PATH`
+  puts it ahead of the preinstalled `/opt/node22` is not documented (not yet measured), so when
+  `node --version` differs, prepend `/opt/node-v<version>/bin` to `PATH`. Because later sessions start
+  from the snapshot, run `npm run setup:all` in the session after a committed-lock change. See
+  [Setup scripts](https://code.claude.com/docs/en/cloud-environments#setup-scripts),
+  [Environment caching](https://code.claude.com/docs/en/cloud-environments#environment-caching),
+  [Configure your environment](https://code.claude.com/docs/en/cloud-environments#configure-your-environment),
   [Default allowed domains](https://code.claude.com/docs/en/cloud-environments#default-allowed-domains),
   and [Setup script failed](https://code.claude.com/docs/en/web-quickstart#setup-script-failed).
 
   ```bash
   #!/bin/bash
-  # Claude Code Setup script (shared Default environment): for <repository-folder> only, installs the
+  # Claude Code Setup script (environment for <repository-folder> only): for <repository-folder>, installs the
   # exact Node.js in .node-version (official release, SHA-256 verified) and runs setup:all with it.
   set -uo pipefail
   REPO_DIR="<repository-folder>"  # this repository's folder name

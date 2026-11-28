@@ -15,8 +15,8 @@ install or repair dependencies.
 
 On Claude Code on the web and Codex Cloud, use the Setup script in the template README ("Local,
 cloud, and container setup"; Codex Cloud also as its maintenance script). That section is the only
-description of it: it installs the exact `.node-version` Node.js and runs `npm run setup:all` for
-this repository only, so it can go in a Default environment shared with other repositories.
+description of it (exact `.node-version` Node.js, then `npm run setup:all`; which environment to put
+it in and how cached setup results behave).
 
 Hosts whose outbound HTTPS is re-signed by a proxy work when the proxy CA is in the host system
 trust store and Node.js is 22.15.0 or newer: every registry request in the locked setup chain then

@@ -38,6 +38,13 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      # 下一步就用 node 讀版號,所以 setup-node 要在它前面(node-version-ssot-invariant N3:跑 node 的步驟前面必須有讀 .node-version 的 setup-node)。
+      - name: Set up locked Node toolchain
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: trusted/.node-version
+          package-manager-cache: false
+
       - name: Bind release identity to main and package version
         id: identity
         shell: bash
@@ -76,12 +83,6 @@ jobs:
             <<<"$release_json" >/dev/null
           echo "commit=$release_commit" >> "$GITHUB_OUTPUT"
           echo "tree=$release_tree" >> "$GITHUB_OUTPUT"
-
-      - name: Set up locked Node toolchain
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version-file: trusted/.node-version
-          package-manager-cache: false
 
       - name: Install source dependencies
         working-directory: source
