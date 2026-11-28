@@ -1,8 +1,0 @@
-{
-  "schemaVersion": 1,
-  "branch": "pkg/b3",
-  "update_baseline": true,
-  "reference_ref": "v0.1.0-beta.152",
-  "reason": "0.1.0-beta.153 最終內容重拍,對 v0.1.0-beta.152 歸因(上次重拍 3b6bcf22 之後併入:U5A 狀態擺放甲 —— 整頁 404 / 403 貼上方、有框容器置中、放不下改最小高度 + 整區捲動;Empty / AppShell 範例、FileViewer、Agent 範例場景);審核包只列有變與新增的圖給 user 確認",
-  "requestedAt": "2026-11-28T18:26:05+08:00"
-}
