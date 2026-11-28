@@ -1499,8 +1499,8 @@ jobs:
           node scripts/color-scheme-invariant.mjs
           node scripts/data-table-scrollbar-color.mjs --selftest
           node scripts/data-table-scrollbar-color.mjs
-          # 表單欄位垂直間距 = --layout-space-loose,全 DS 無例外(2026-09-12 user 拍板移除
-          # FieldGroup 的 compact/normal/loose 三檔)。兩段式:S 靜態掃 312 個 .tsx 抓 className/prop 覆寫
+          # 表單欄位垂直間距 = --layout-space-loose(2026-09-12 移除 FieldGroup 的 compact/normal/loose 三檔,AI 建議、user 採納;
+          # 閱讀組 = tight 由 reading-context-invariant G10 守,這支逐組略過)。兩段式:S 靜態掃 312 個 .tsx 抓 className/prop 覆寫
           # (連 consumer 程式碼都蓋得到),R 用瀏覽器驗元件自己渲染的 computed row-gap(兩個 density)。
           # 全掃 1033 支 story 要 2 分 22 秒,但「className 蓋掉」已由 S 全面覆蓋,不需要用 6 倍瀏覽器時間再驗。
           node scripts/form-gap-token-invariant.mjs --selftest
