@@ -1148,7 +1148,7 @@
     {
       "id": "BL-045",
       "kind": "consumer-report",
-      "status": "open",
+      "status": "in-progress",
       "verifiedAt": "847391be",
       "oldIds": [
         "ws-hug-row"
@@ -1161,7 +1161,8 @@
         "部分屬實:缺陷成立(hug 單行列的文字確實不在列中線,且列高不等於 token),但 workspace 的歸因不實 —— 不是拖曳把手那一區;是三件事疊加:(1) DS 的格子內距公式只對 Field/Textarea 檢視載體成立,自訂格(規格 :327 叫消費端直接放 inline-flex)少 2px;(2) DS 自己建議的 rowActions xs 按鈕(24)比格子假設的內容高(1lh+2 = 23)多 1px,經 sharedRowHeights 廣播把整列撐高、多出來的都落在下方;(3) workspace 的 StatusIndicator 外面多包一層 inline span,產生 23.5px 的行盒(固定行高下也偏上 1.25px),這一份屬消費端寫法。更正版提出的「:134 與 :327 矛盾」成立。",
         "Fable 5.2 研究(29 一手來源;tmp/wip-2026-11-25-backup/notes/decisions/research-table-alignment-2026-11-28.md;給 user 的白話頁 https://claude.ai/artifact/AB1ntwBAcJquWzwHm2SbC6):固定行高全 0;自動行高下拉 / 日期 / 時間 / 人員 / 多人 / 唯讀網址 −1、勾選 −3.5、開關 −1.5、唯讀 ✓✗ −4.5、標籤 +0.5;進編輯下拉 / 日期 / 時間 +1、人員 +1、多人 +0.5~2.5、標籤 +1 且列 +2",
         "協調者先前 J1–J6 判斷經研究審查:J4、J5 對;J1、J2、J3、J6 部分對 —— 範圍說小了(不只自訂格,DS 9 種註冊格也不符公式前提)、lg 成因是 rowActions 格缺字級、修法要用「第一行盒最小高 + 置中」而非補內距(補內距會讓 24px 自訂內容更糟)",
-        "user 2026-11-28 在表格研究頁留言「如果一行只有純文字的 row,和一行有很多24px圖片的 row,兩者高度都是一樣的？」;對話中「修完又還有bl011？這兩個不是一起的？…完整配套之後,當有圖片的東西變成兩行之後該圖片的y應該是不變的對吧？」→ 拆批取消"
+        "user 2026-11-28 在表格研究頁留言「如果一行只有純文字的 row,和一行有很多24px圖片的 row,兩者高度都是一樣的？」;對話中「修完又還有bl011？這兩個不是一起的？…完整配套之後,當有圖片的東西變成兩行之後該圖片的y應該是不變的對吧？」→ 拆批取消",
+        "2026-11-28 實作完成:w/bl045 pkg/bl045 29cbae9b(主體)+ 24121524(核對必修 4 條:夾具拿掉 3 個豁免標記、token-registry 補 --table-first-line、帳本 paths 補 index.ts、⑦ 截圖重拍)。對照組:91a56393 紅 88 / 修後綠 736 / 拿掉最小高紅 63;研究 7.3 固定 10 組 + 載體 5 組 × sm/md/lg = 45 張 0 像素差(核對者重拍確認)。規格核對 + 再驗 0 必修。待做:153 發布後併入 154(package.json 升 154 後 public-surface / release-notes-coverage 才會綠)、154 審核頁放 visible 前後圖(agents/impl-bl045-r4t7/shots)。已知限制 → BL-054。非必修:夾具的 declare global 會進 dist 的 .d.ts(出口不 import,不影響消費端)。"
       ]
     },
     {
