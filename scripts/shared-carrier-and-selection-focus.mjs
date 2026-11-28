@@ -3,12 +3,10 @@
  * 兩題的真瀏覽器取證(2026-09-08):
  *
  * H2c — DatePicker 範圍模式的起訖兩顆 button 罩在同一圈欄位邊框裡。
- *   邊框只說「焦點在這個欄位」,不說「在起日還是迄日」。修法是把元件自己既有的
- *   作用端那條線(對照 Ant Design RangePicker 的 -active-bar)也套到鍵盤焦點上。
- *   這裡驗:Tab 到起日 → 只有起日有那條線;再 Tab → 只有迄日有。
- *   2026-11-26 起那條線畫在文字段的 `::after`、壓在欄位框下邊上(RANGE-FOCUS-BAR(定);date-picker.spec.md「Active-end 機制」
- *   視覺指示),這裡改讀文字段 `::after` 的 computed 背景色(此前讀按鈕的 text-decoration)。這支只驗「哪一顆有線」;
- *   線的位置、線長、線色由 datepicker-range-active-underline-invariant.mjs 量像素。
+ *   邊框只說「焦點在這個欄位」,不說「在起日還是迄日」。2026-11-27 起每一顆自己畫焦點框(RANGE-END(定);
+ *   date-picker.spec.md「Active-end 機制」視覺指示,focus-canonical.md 規則二;此前是作用端那條線,已由它取代)。
+ *   這裡驗:Tab 到起日 → 只有起日畫了焦點框(computed outline);再 Tab → 只有迄日畫。
+ *   這支只驗「哪一顆有框」;框的幾何、底色、外框顏色由 datepicker-range-active-underline-invariant.mjs 量像素。
  *
  * A4 — 純選取模式(非 spreadsheet)有沒有「列游標沒有指示」的問題。
  *   先確認方向鍵在該模式下**不移動任何游標**(沒有游標就沒有「指示不了」的問題),
@@ -55,19 +53,17 @@ try {
   console.log('\nH2c DatePicker 範圍:起訖兩顆要分得出來')
   await open(page, 'design-system-components-datepicker-展示--range-picker', 'button[aria-haspopup="dialog"]')
 
-  // 作用端那條線 = 文字段(按鈕的直接子 span)的 ::after:絕對定位、有高度、背景不是透明 = 畫了
+  // 那一顆自己的焦點框 = 按鈕本身的 computed outline:實線、寬 ≥ 2px(往內 focus-ring-inset)= 畫了
   const readEnds = () => page.evaluate(() => {
     const btns = [...document.querySelectorAll('button[aria-haspopup="dialog"]')]
     return btns.map((b) => {
-      const text = b.querySelector(':scope > span')
-      const bar = text ? getComputedStyle(text, '::after') : null
-      const color = bar ? bar.backgroundColor : '(找不到文字段)'
+      const cs = getComputedStyle(b)
       return {
         label: b.getAttribute('aria-label'),
         focused: b === document.activeElement,
-        drawn: !!bar && bar.position === 'absolute' && parseFloat(bar.height) > 0 && !/^(transparent|rgba\(0, 0, 0, 0\))$/.test(color),
-        color,
-        thick: bar ? bar.height : '',
+        drawn: cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) >= 2,
+        color: cs.outlineColor,
+        thick: `${cs.outlineWidth} offset ${cs.outlineOffset}`,
       }
     })
   })
@@ -85,8 +81,8 @@ try {
   if (!firstFocused) bad('Tab 25 次都沒走到起訖任一顆 button')
   else {
     const underlined = first.filter((s) => s.drawn)
-    if (underlined.length === 1 && underlined[0].focused) ok(`焦點在「${firstFocused.label}」,作用端那條線只有它一條(${underlined[0].color} / ${underlined[0].thick})`)
-    else bad(`焦點在「${firstFocused.label}」,但有作用端那條線的是 ${underlined.length} 顆:${underlined.map((u) => u.label).join(' / ') || '(無)'}`)
+    if (underlined.length === 1 && underlined[0].focused) ok(`焦點在「${firstFocused.label}」,焦點框只有它一顆(${underlined[0].color} / ${underlined[0].thick})`)
+    else bad(`焦點在「${firstFocused.label}」,但畫了焦點框的是 ${underlined.length} 顆:${underlined.map((u) => u.label).join(' / ') || '(無)'}`)
 
     await page.keyboard.press('Tab')
     const second = await readEnds()
@@ -96,9 +92,9 @@ try {
     } else {
       const u2 = second.filter((s) => s.drawn)
       if (u2.length === 1 && u2[0].focused && u2[0].label !== underlined[0]?.label) {
-        ok(`Tab 之後焦點移到「${secondFocused.label}」,作用端那條線跟著移過去(前一顆已無線)`)
+        ok(`Tab 之後焦點移到「${secondFocused.label}」,焦點框跟著移過去(前一顆已無框)`)
       } else {
-        bad(`Tab 之後焦點在「${secondFocused.label}」,作用端那條線卻在 ${u2.map((u) => u.label).join(' / ') || '(無)'}`)
+        bad(`Tab 之後焦點在「${secondFocused.label}」,焦點框卻在 ${u2.map((u) => u.label).join(' / ') || '(無)'}`)
       }
     }
   }

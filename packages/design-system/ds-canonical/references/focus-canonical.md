@@ -242,7 +242,7 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 | `hover:bg-` 全 DS(非 stories)| 16 檔 / 40 處 —— 其餘全是常駐元素(Sidebar 選單鈕與動作鈕 / TreeView 列與動作 / TimePicker 欄 / Calendar / DateGrid / InlineEdit / Button / Switch / Checkbox / Carousel / ScrollArea / PersonDisplay / DataTable 工具列),hover 與焦點框獨立,不在本節範疇 |
 | `data-[highlighted]` / `data-[selected=true]` 的 owner | 各只有一檔:`dropdown-menu.tsx` / `command.tsx`(反白畫法的單一來源) |
 | `focus-ring-inset-emphasis`(填色元素內描邊,2026-09-23 加)| 1 支 utility;掛在 3 個 modifier(DateGrid `selected`、DatePicker.Range `rangeStart` / `rangeEnd`);DateGrid `range_middle` 因同掛 selected,以 `[&>button]:focus-visible:!focus-ring-inset` 壓回一般內描邊 |
-| `focus-visible:` 的用法歸類(非 stories;2026-09-10 重數)| `focus-visible:focus-ring-inset` 20(真焦點內描邊;行內動作鈕改回往外 −1、Tag 移除鈕 +1;2026-09-23 DateGrid 日期格 +1 → 21)/ `focus-visible:outline-none` 10(全部登記在 `focus-suppression-registry`;含 `field-wrapper.tsx` 四個 wrapper compound —— edit / edit-error / naked-edit / readonly)/ `focus-visible:[--range-end-bar:…]` 2(DatePicker 範圍模式共用承擔者的區分;2026-11-26 起那條線畫在文字段 `::after`、壓在欄位框下邊上,此前是 `focus-visible:underline` 2)/ `focus-visible:!border-primary` `focus-visible:hover:!border-primary` 各 1(Textarea naked 模式,C 類邊框轉色)/ `focus-visible:z-20` 1(SegmentedControl 疊層順序,不是指示器)/ 其餘出現在註解 |
+| `focus-visible:` 的用法歸類(非 stories;2026-09-10 重數)| `focus-visible:focus-ring-inset` 20(真焦點內描邊;行內動作鈕改回往外 −1、Tag 移除鈕 +1;2026-09-23 DateGrid 日期格 +1 → 21;2026-11-27 DatePicker 範圍模式起訖兩顆 +1 —— 兩顆共用同一個常數 `RANGE_END_BOX`,寫法只出現一次)/ `focus-visible:outline-none` 10(全部登記在 `focus-suppression-registry`;含 `field-wrapper.tsx` 四個 wrapper compound —— edit / edit-error / naked-edit / readonly)/ 範圍模式共用承擔者的區分樣式(2026-09-08 `focus-visible:underline` 2 → 2026-11-26 `focus-visible:[--range-end-bar:…]` 2 → 2026-11-27 移除,兩顆改成各自畫焦點框、併入第一項)/ `focus-visible:!border-primary` `focus-visible:hover:!border-primary` 各 1(Textarea naked 模式,C 類邊框轉色)/ `focus-visible:z-20` 1(SegmentedControl 疊層順序,不是指示器)/ 其餘出現在註解 |
 
 `bg-neutral-hover` 橫跨 131 處 / 56 檔,所以底色語彙本身是全 DS 共用的 —— 這正是它只能表達「滑鼠在這裡」與「選中」、不能再借給鍵盤游標當第三個意義的原因。
 
@@ -366,7 +366,7 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 |---|---|---|---|
 | **A. 虛擬游標／程式游標** | 它身上有 `aria-activedescendant`;或它是函式庫管理游標的項目(cmdk `data-selected` / Radix `data-highlighted`);或元件 state 管的程式游標(DataTable 試算表模式的格游標,框由 `data-table-interaction-layer.tsx` 畫,2026-09-26),而瀏覽器的 `:focus-visible` 看不到那個游標 | **元件自己**,畫在**被指到的那一項**上(`focus-ring-inset`;常駐清單的容器看自己的 `:focus-visible`、會搶反白的選單看反白來歷 `useCursorMover`;容器／項目抑制瀏覽器預設外框) | DataTable 根 / TimePicker 欄(`time-columns.tsx` 被指到的 option)/ DropdownMenu 項(`dropdown-menu.tsx` `radixCursorClass`)/ CommandItem(`command.tsx`)。TreeView 2026-09-25 起改列上真焦點(待辦總帳 B9),已不屬本類 |
 | **B. 插入點控件** | **可機械判別**:標籤名是 `input`(`type` 為文字類:未指定 / text / search / email / url / tel / password / number)或 `textarea`,或元素帶 `contenteditable`。Field 家族控件在此之上另有 wrapper 邊框轉色(`field-wrapper.tsx#fieldDefaultChromeCompounds` `focus-within:!border-primary`)。grep 判準 = `scripts/focus-suppression-registry.mjs` 的 `evidence.B`(往上 40 行找得到 `<input>` / `<textarea>`,或共用 style 常數所服務的檔案真的渲染該標籤) | **唯一不畫框的例外**。指示 = 閃動的插入點(caret);Field 家族再加欄位邊框轉 primary | Input / Textarea / Combobox / DatePicker / Command 與 SelectMenu 搜尋框 / AgentPromptInput |
-| **C. 祖先畫框(邊框轉色)** | 從**自己往上**找,有元素在聚焦時改邊框(`focus-within:` / `:has(…:focus-visible)` / `focus-visible:border-`) | **那個元素**(可以是自己這圈外框,也可以是祖先);它就是這個 tab stop 的框。自己的 `::before` 框圖層(「框怎麼畫」框圖層列)也算自己這圈 —— 元素本身抑制全域外描邊,承擔者寫成掛 `focus-visible:before:focus-ring-inset` 那一行的 `檔名.tsx:行號`(同檔;2026-09-26 FileUpload 清單列) | 欄位外框自己(Combobox / TimePicker 觸發器那一行,承擔者 `field-wrapper.tsx#fieldDefaultChromeCompounds`)/ 祖先畫(InlineEdit 外層 div 的 `[&:has(button:focus-visible)]:border-primary`)/ DatePicker 範圍模式兩顆鈕(另加底線區分,見下) |
+| **C. 祖先畫框(邊框轉色)** | 從**自己往上**找,有元素在聚焦時改邊框(`focus-within:` / `:has(…:focus-visible)` / `focus-visible:border-`) | **那個元素**(可以是自己這圈外框,也可以是祖先);它就是這個 tab stop 的框。自己的 `::before` 框圖層(「框怎麼畫」框圖層列)也算自己這圈 —— 元素本身抑制全域外描邊,承擔者寫成掛 `focus-visible:before:focus-ring-inset` 那一行的 `檔名.tsx:行號`(同檔;2026-09-26 FileUpload 清單列) | 欄位外框自己(Combobox / TimePicker 觸發器那一行,承擔者 `field-wrapper.tsx#fieldDefaultChromeCompounds`)/ 祖先畫(InlineEdit 外層 div 的 `[&:has(button:focus-visible)]:border-primary`)/ DatePicker 範圍模式兩顆鈕(各自另畫焦點框,見下) |
 | **E. 浮層程式落點** | 它 `tabIndex=-1`,而且是浮層開啟時被程式 `.focus()` 的殼 | **回規則一(問題一)**:殼本身不可操作 → 不畫;它不在 Tab 順序裡(`-1` 是 Radix 設的,不必也不能拿掉)。若某個殼是 `tabIndex≥0` 的空焦點站,修法是**拿掉 tabIndex**,不是畫框。內部控件各自有指示 | Popover / HoverCard / DropdownMenuContent / FileViewer / Dialog / Sheet(2026-11-26 補:裡面沒有可聚焦控件時開啟落點退回殼本身,修前畫出 2px 框) |
 
 > **這張表只收「可操作、但瀏覽器預設那圈不是它的框」的情況。**
@@ -399,22 +399,18 @@ Field 家族在此之上**額外**有欄位邊框轉 primary(`field-wrapper.tsx#
 
 **規則:同一個承擔者被兩個以上 tab stop 共用時,每一顆必須另有自己的區分指示。**
 
-DatePicker 自己早就有那個指示 —— 作用端一條主色粗線,對照
-[Ant Design RangePicker 的 `-active-bar`](https://raw.githubusercontent.com/ant-design/ant-design/master/components/date-picker/style/index.ts)
-(`height: lineWidthBold, background: colorPrimary, bottom: -lineWidth`,一手 source)。
-問題只是那條線原本掛在 `data-active-end`(帶 `open &&` 條件),
-所以**面板關著用 Tab 在起訖之間移動時,兩顆長得一模一樣**。
-2026-09-08 補上 focus-visible 這一半(當時寫 `focus-visible:underline`)—— 用的是同一條線,不是第二種指示。
-2026-11-26 起那條線**壓在欄位框的下邊上**(線的下緣 = 框外緣、粗 2px、蓋住那段框線;線長 = 該端文字寬;線色 = 框當下的顏色,
-欄位錯誤時紅),與 Ant 的 `bottom: -lineWidth` 同位置(RANGE-FOCUS-BAR(定),user 決策卡留言逐字:「應該是甲，但是你的圖片的底線長度應該要等同於上方的時間吧？」)。
-此前是文字底線(`decoration-primary decoration-2 underline-offset-4`),離框的距離隨字級而變。
-高對比模式(forced-colors)下線色換成系統色 `Highlight`:線畫在背景上,背景色在該模式會被強制換成底色(只有系統色不換),
-不換就整條消失、起訖兩顆又分不出來 —— 與本檔「高對比模式下完全沒有焦點框」(box-shadow 被強制 none)同一類。
+那個區分指示照規則二回答:**每一顆畫自己的焦點框**(鍵盤游標停在按鈕上 → 畫框、不上底色)。
+DatePicker 範圍模式的起訖兩顆 = `focus-visible:focus-ring-inset`,幾何照「框怎麼畫」:按鈕是欄位裡 Tag 的四邊等距盒子,
+四周淨空 3px < 4 → 往內(與 Tag 的 × 同一條);欄位外框照 Field state machine 一起轉主色(框中框)。
+RANGE-END(定)2026-11-27,user 原話(逐字,問句;⏎ = 原文換行):「那為何不能直接以原本焦點框的視覺定義原則去決定到底焦點框⏎要怎麼長？為何要執著在那一條線？⏎那一條線不就是因為不清楚才被淘汰掉的嗎？？？？？」
+2026-09-08 → 2026-11-26 這裡用的是作用端一條主色粗線(對照 [Ant Design RangePicker 的 `-active-bar`](https://raw.githubusercontent.com/ant-design/ant-design/master/components/date-picker/style/index.ts);
+最後一版壓在欄位框下邊上,RANGE-FOCUS-BAR(定)),那條線不在規則二允許的指示裡,由上述原話取代;外框要不要一起亮的確認結果與歷程住 owner。
 規則 owner = `packages/design-system/src/components/DatePicker/date-picker.spec.md`「Active-end 機制」視覺指示。
 
 機械強制:`scripts/focus-suppression-registry.mjs` 把同檔內承擔者字串相同的 C 類分組,
 ≥2 個就要求每一處後 8 行內有 `focus-visible:` 的非 `outline-none` 樣式。
 對照組驗過(2026-09-08,當時的寫法):拿掉 `focus-visible:underline` → 閘紅並指名兩行;補回 → 綠。
+範圍模式的兩顆 2026-11-27 起不再抑制焦點框(自己畫),不經過這道分組;它們的框由 `scripts/datepicker-range-active-underline-invariant.mjs` 量像素(K 列)。
 
 ### C 類為什麼是「從自己往上」而不是「往上」
 

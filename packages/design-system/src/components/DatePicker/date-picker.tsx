@@ -8,11 +8,10 @@
  *   `formatPanelTime` / `timePlaceholder`(TIME-12H-PANEL(定)2026-11-26,與欄位裡的字同一份判斷);面板寬
  *   `../TimePicker/time-columns.tsx` `timeColumnsWidthClass`(date-picker.spec.md「showTime」)
  * - 預設語系與週起始日: `../../lib/date-locale.ts`
- * - Range 作用端那條線(RANGE-FOCUS-BAR(定)2026-11-26;date-picker.spec.md「Active-end 機制」視覺指示,見 RANGE_END_BAR_CLASS 註解):
- *   畫法 = `../Tabs/tabs.tsx` 選中線(`::after` 絕對定位、`after:h-0.5`、壓住下面那條 1px 框線 —— tabs.spec.md「這兩條線視覺上必須是同一條」);
- *   位置 = `tokens/uiSize/uiSize.css` 的 `--field-control-py-{sm,md,lg}` + `--field-border-width`(文字行盒下緣 → 框外緣);
- *   顏色 = 框的同一組顏色 token `--color-primary` / `--color-error`(`../Field/field-wrapper.tsx` 聚焦 `!border-primary`、錯誤 `border-error`);
- *   高對比模式(forced-colors)改用 CSS 系統色 `Highlight`(DS 沒有高對比 token;見 RANGE_END_BAR_CLASS 註解)
+ * - Range 作用端(RANGE-END(定)2026-11-27;date-picker.spec.md「Active-end 機制」視覺指示,見 RANGE_END_BOX 註解):
+ *   盒子 = 欄位裡 Tag 的四邊等距矩形(`../Field/field-wrapper.tsx` `fieldTagInsetX` 同一個式子;高 = `--tag-height-*`;圓角同 Tag `rounded-md`);
+ *   面板開著那一端鋪 `--primary-subtle`(欄位錯誤時 `--error-subtle`,顏色跟外框走);面板關著時鍵盤停在那一顆 = `focus-ring-inset`
+ *   (`styles/base.css`;focus-canonical.md 規則二 + 「框怎麼畫」);高對比模式(forced-colors)淺藍底換系統色 `Highlight` / `HighlightText`
  */
 import * as React from 'react'
 import { escapeLayerProps, isEscapeForControl, isEscapeTakenElsewhere } from '@/design-system/lib/overlay-escape'
@@ -944,35 +943,35 @@ DatePicker.displayName = 'DatePicker'
 //   - Full range track 視覺(start / middle / end)
 //   - 走原 RDP mode='range' 配對 click 邏輯 + auto-swap
 //
-// **Trigger**:2 input button,作用端那條線壓在欄位框的下邊上(見下方 RANGE_END_BAR_CLASS)
+// **Trigger**:2 input button,每一顆是一個「作用端盒子」(見下方 RANGE_END_BOX)
 
-// 起訖兩顆按鈕裡的文字:**只裁水平**(長日期照樣「…」截斷),垂直不裁 —— 作用端那條線從文字往下伸到欄位框外緣(見下方),
-// 雙軸裁切(`truncate`)會把它整條裁掉(2026-11-17 A50 是同一類:當時文字底線的下半被裁、2px 只畫出 1px)。
-// 同一招與理由見 combobox.tsx `tagRowOverflowClass`:`clip` 不建捲動容器;**不可**改成 overflow-x-hidden(另一軸會算成 auto,變得可捲)。
-// 截斷提示(useTruncated 量 scrollWidth > clientWidth)在 `overflow-x: clip` 下照常量得到。
-// 文字段**不撐滿按鈕**(按鈕是 flex、文字段沒有 flex-1):文字段的寬 = 文字寬(放不下時 = 看得到的那一段),線長跟著它。
-const RANGE_END_TEXT_CLASS = 'relative min-w-0 overflow-x-clip text-ellipsis whitespace-nowrap'
+// 起訖兩顆按鈕裡的文字:長日期照樣「…」截斷(截斷提示 useTruncated 量 scrollWidth > clientWidth)。
+// 文字段不撐滿按鈕(按鈕是 flex、文字段沒有 flex-1):量截斷用的是文字段本身。
+const RANGE_END_TEXT_CLASS = 'min-w-0 truncate'
 
-// 作用端那條線(RANGE-FOCUS-BAR(定)2026-11-26;date-picker.spec.md「Active-end 機制」視覺指示):
-//   · 壓在欄位框的下邊上 —— 線的下緣 = 框外緣、粗 2px,蓋住那一段 1px 框線,與框線合成一條(不是框線上方再一條)。
-//     畫法照 Tabs 選中線(tabs.tsx `after:absolute … after:h-0.5`,tabs.spec.md「這兩條線視覺上必須是同一條」);
-//     Ant RangePicker 的 active bar 同向:`bottom: -lineWidth`、`height: lineWidthBold`、`background: colorPrimary`
-//     (https://github.com/ant-design/ant-design/blob/master/components/date-picker/style/index.ts 約 L272-L290)。
-//   · 線長 = 該端文字寬(user 第四輪卡留言,逐字:「應該是甲，但是你的圖片的底線長度應該要等同於上方的時間吧？」)—— 掛在文字段上、左右貼齊文字段。
-//   · 下緣位置 = 文字行盒下緣往下「欄位上下內距 + 框寬」:欄位高度固定、內容垂直置中,行盒下緣到框內緣正好是 `--field-control-py-*`
-//     (uiSize.css 的定義就是 (欄位高 − 1lh) / 2 − 框寬;`lh` 在這條線自己身上解析 = 文字的行高),再加一條框寬就到框外緣。
-//     全部讀 token,換尺寸 / 換密度都跟著走,不寫死 px。
-//   · 顏色 = 框當下的顏色:外框掛 `--range-end-bar-color`(一般主色、欄位錯誤時紅,同 field-wrapper.tsx 聚焦 `!border-primary` / 錯誤 `border-error`
-//     那兩個 token);作用端(面板開著那一端 / 鍵盤聚焦那一顆)才把它交給 `--range-end-bar`,其餘時候沒設 = 背景透明、看不到線。
-//     高對比模式(forced-colors)下 background-color 會被強制換成底色(W3C css-color-adjust-1,只有系統色不換),
-//     所以外框在該模式把 `--range-end-bar-color` 換成系統色 `Highlight`(框線在該模式由瀏覽器換成 CanvasText,線用 Highlight 才分得出作用端)。
-//   閘:scripts/datepicker-range-active-underline-invariant.mjs(像素量:線下緣 = 框外緣、線長 = 文字寬、線色 = 框色)。
-const RANGE_END_BAR_CLASS = 'after:absolute after:inset-x-0 after:h-0.5 after:bg-[color:var(--range-end-bar,transparent)]'
-const RANGE_END_BAR_BOTTOM = {
-  sm: 'after:bottom-[calc(-1*(var(--field-control-py-sm)_+_var(--field-border-width)))]',
-  md: 'after:bottom-[calc(-1*(var(--field-control-py-md)_+_var(--field-border-width)))]',
-  lg: 'after:bottom-[calc(-1*(var(--field-control-py-lg)_+_var(--field-border-width)))]',
+// 作用端盒子(RANGE-END(定)2026-11-27;date-picker.spec.md「Active-end 機制」視覺指示;2026-11-26 RANGE-FOCUS-BAR 那條線由它取代):
+//   · 幾何 = 欄位裡 Tag 的四邊等距矩形:高 = `--tag-height-*`(欄位 items-center → 上下離框 = 內縮),離框 / 離箭頭 / 離右側圖示的距離 = 內縮
+//     `--range-end-inset` = (欄位高 − 2 × 框寬 − Tag 高) / 2(field-wrapper.tsx `fieldTagInsetX` 同一個式子:小 3 / 中 3 / 大 5);圓角同 Tag(`rounded-md`)。
+//     做法:按鈕用負外距把盒子往外撐、再用同量內距把字推回原位 —— 字的位置與改前相同(外側撐到「欄位內距 − 內縮」;靠箭頭那側撐到
+//     「gap-2 + 箭頭 mx-2 − 內縮」;結束端右側撐到「gap-2 − 內縮」,不碰右側圖示)。
+//   · 面板開著那一端(`data-active-end`)= 狀態 → 鋪 `--primary-subtle`(focus-canonical.md「底色只有兩個主人:滑鼠 hover 與『選中』」);
+//     欄位錯誤時換 `--error-subtle`(作用端指示的顏色跟外框走,同 2026-11-26 線色 = 框色的原則)【AI 推導】。
+//   · 面板關著、鍵盤停在那一顆 = 規則二畫框:`focus-visible:focus-ring-inset`(淨空 = 內縮 < 4 → 往內;一個元件一種畫法,大尺寸 5 也往內);
+//     欄位外框照 field-wrapper.tsx `focus-within:!border-primary` 一起轉主色(框中框,同 Combobox 裡 Tag 的 × 被 Tab 到的長相)。
+//   · 高對比模式(forced-colors):背景色會被強制換成底色(W3C css-color-adjust-1),淺藍底改用系統色 `Highlight` 鋪底、`HighlightText` 字
+//     (`forced-color-adjust: none` 只開在作用端;React Spectrum 同做法 https://unpkg.com/@react-spectrum/datepicker@3.14.1/src/styles.css L185-190);
+//     焦點框是 outline,該模式照畫。
+//   閘:scripts/datepicker-range-active-underline-invariant.mjs(像素量:盒子幾何、底色、焦點框、外框、無線、錯誤態、高對比)。
+// 內縮量掛在外框上(兩顆共用);盒高 = Tag 高
+const RANGE_END_INSET = {
+  sm: '[--range-end-inset:calc((var(--field-height-sm)_-_2_*_var(--field-border-width)_-_var(--tag-height-sm))_/_2)]',
+  md: '[--range-end-inset:calc((var(--field-height-md)_-_2_*_var(--field-border-width)_-_var(--tag-height-md))_/_2)]',
+  lg: '[--range-end-inset:calc((var(--field-height-lg)_-_2_*_var(--field-border-width)_-_var(--tag-height-lg))_/_2)]',
 } as const
+const RANGE_END_HEIGHT = { sm: 'h-tag-sm', md: 'h-tag-md', lg: 'h-tag-lg' } as const
+const RANGE_END_BOX = 'rounded-md focus-visible:focus-ring-inset forced-colors:data-[active-end=true]:forced-color-adjust-none forced-colors:data-[active-end=true]:bg-[color:Highlight] forced-colors:data-[active-end=true]:text-[color:HighlightText]'
+const RANGE_END_BOX_START = '-ml-[calc(var(--field-px)_-_var(--range-end-inset))] pl-[calc(var(--field-px)_-_var(--range-end-inset))] -mr-[calc(var(--spacing)_*_4_-_var(--range-end-inset))] pr-[calc(var(--spacing)_*_4_-_var(--range-end-inset))]'
+const RANGE_END_BOX_END = '-ml-[calc(var(--spacing)_*_4_-_var(--range-end-inset))] pl-[calc(var(--spacing)_*_4_-_var(--range-end-inset))] -mr-[calc(var(--spacing)_*_2_-_var(--range-end-inset))] pr-[calc(var(--spacing)_*_2_-_var(--range-end-inset))]'
 
 export interface DatePickerRangeProps
   extends DateFormatOptions,
@@ -1345,10 +1344,8 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
               // 外框本身就是點擊目標(下方 onMouseDown),點了會開面板 → 手形(hit-area-canonical.md 一-3);
               // 2026-09-27 前寫 `cursor-text`,但起訖是兩顆按鈕、不能打字,文字游標是錯的
               'cursor-pointer',
-              // 作用端那條線的顏色 = 這圈框的顏色(見 RANGE_END_BAR_CLASS 註解)
-              error ? '[--range-end-bar-color:var(--color-error)]' : '[--range-end-bar-color:var(--color-primary)]',
-              // 高對比模式(forced-colors):背景色會被強制換成底色、線就消失(起訖兩顆又分不出焦點在哪一顆);換成系統色 Highlight 才畫得出來
-              'forced-colors:[--range-end-bar-color:Highlight]',
+              // 作用端盒子的內縮量(見 RANGE_END_BOX 註解;欄位裡 Tag 的四邊等距)
+              RANGE_END_INSET[size ?? 'md'],
               className,
             )}
             // 外框的內距與 1px 邊框底下沒有按鈕:指到那裡外框會亮(hover:border-border-hover),2026-09-27 前點下去
@@ -1386,19 +1383,17 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   aria-label={resolvedPlaceholder[0]}
                   aria-haspopup="dialog"
                   aria-expanded={open && activeEnd === 'start'}
+                  data-range-end="start"
                   className={cn(
                     bareInputStyles,
-                    // `flex` + `overflow-visible`(蓋掉 bareInputStyles 的 truncate):按鈕本身不裁,截斷交給裡面的文字段(RANGE_END_TEXT_CLASS)——
-                    // 作用端那條線從文字段往下伸到欄位框外緣,按鈕一裁就沒了;`flex` 讓文字段收成文字寬(線長 = 文字寬)。寬度仍由 bareInputStyles 的 min-w-0 收
-                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx#fieldDefaultChromeCompounds);起訖兩顆靠作用端那條線區分(見下一行)
-                    'flex overflow-visible text-left cursor-pointer focus-visible:outline-none',
-                    // 起訖兩顆共用同一圈欄位邊框,邊框分不出焦點在哪一顆,所以作用端另有一條線(畫在文字段上,RANGE_END_BAR_CLASS):
-                    // 面板開著的那一端(data-active-end)與面板關著用 Tab 到的那一顆(focus-visible,2026-09-08 補)是同一條線,不是第二種指示。
-                    'data-[active-end=true]:[--range-end-bar:var(--range-end-bar-color)] focus-visible:[--range-end-bar:var(--range-end-bar-color)]',
+                    // 作用端盒子(RANGE_END_BOX):Tag 內縮矩形、面板開著鋪淺藍底、鍵盤停在這一顆畫往內焦點框;字的位置不變
+                    'flex items-center text-left cursor-pointer',
+                    RANGE_END_HEIGHT[size ?? 'md'], RANGE_END_BOX, RANGE_END_BOX_START,
+                    error ? 'data-[active-end=true]:bg-error-subtle' : 'data-[active-end=true]:bg-primary-subtle',
                     !startIso && 'text-fg-muted',
                   )}
                 >
-                  <span ref={startTruncationRef} className={cn(RANGE_END_TEXT_CLASS, RANGE_END_BAR_CLASS, RANGE_END_BAR_BOTTOM[size ?? 'md'])}>{startText}</span>
+                  <span ref={startTruncationRef} className={RANGE_END_TEXT_CLASS}>{startText}</span>
                 </button>
               </TooltipTrigger>
               <TooltipContent>{startTooltipActive ? startText : null}</TooltipContent>
@@ -1414,18 +1409,17 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   aria-label={resolvedPlaceholder[1]}
                   aria-haspopup="dialog"
                   aria-expanded={open && activeEnd === 'end'}
+                  data-range-end="end"
                   className={cn(
                     bareInputStyles,
-                    // `flex` + `overflow-visible`:同起始端那顆(按鈕不裁、文字段收成文字寬)
-                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx#fieldDefaultChromeCompounds);起訖兩顆靠作用端那條線區分(見下一行)
-                    'flex overflow-visible text-left cursor-pointer focus-visible:outline-none',
-                    // 起訖兩顆共用同一圈欄位邊框,邊框分不出焦點在哪一顆,所以作用端另有一條線(畫在文字段上,RANGE_END_BAR_CLASS):
-                    // 面板開著的那一端(data-active-end)與面板關著用 Tab 到的那一顆(focus-visible,2026-09-08 補)是同一條線,不是第二種指示。
-                    'data-[active-end=true]:[--range-end-bar:var(--range-end-bar-color)] focus-visible:[--range-end-bar:var(--range-end-bar-color)]',
+                    // 作用端盒子:同起始端那顆(靠箭頭那側撐到箭頭 + 內縮、右側撐到右側圖示 − 內縮)
+                    'flex items-center text-left cursor-pointer',
+                    RANGE_END_HEIGHT[size ?? 'md'], RANGE_END_BOX, RANGE_END_BOX_END,
+                    error ? 'data-[active-end=true]:bg-error-subtle' : 'data-[active-end=true]:bg-primary-subtle',
                     !endIso && 'text-fg-muted',
                   )}
                 >
-                  <span ref={endTruncationRef} className={cn(RANGE_END_TEXT_CLASS, RANGE_END_BAR_CLASS, RANGE_END_BAR_BOTTOM[size ?? 'md'])}>{endText}</span>
+                  <span ref={endTruncationRef} className={RANGE_END_TEXT_CLASS}>{endText}</span>
                 </button>
               </TooltipTrigger>
               <TooltipContent>{endTooltipActive ? endText : null}</TooltipContent>
