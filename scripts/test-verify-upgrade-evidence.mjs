@@ -503,6 +503,11 @@ test('upgrade differential still blocks what the overlay does not cover', () => 
   )
   assert.equal(verdict(inheritedPast).blocked, null)
   assert.deepEqual(inheritedPast.inherited.find((item) => item.name === 'tar')?.advisories, ['https://github.com/advisories/GHSA-test-tar-past-overlay'])
+  // 修補層沒蓋到的 npm 內附套件(minimatch:節點只有 npm 內附那一份,但不是修補層的 slot)只在候選出現 → 照擋,只點名它;
+  // 同一份候選裡 tar / brace-expansion 仍算修補層已修(slot 只認修補層那兩個,不因為「也是 npm 內附」就放寬)。
+  const unslottedBundledDiff = diffAuditFindings(upgradeAudit('protected-base', [npmMetavulnerability('moderate', [])]), pristineCandidate(), { installedOverlayReceipt })
+  assert.match(verdict(unslottedBundledDiff).blocked, /introduces 1 vulnerability finding\(s\)[^\n]*:\n {2}minimatch moderate 7\.0\.0 - 11\.0\.0\(package-not-vulnerable-in-base\)← https:\/\/github\.com\/advisories\/GHSA-g3hv-75wg-m249$/)
+  assert.deepEqual(unslottedBundledDiff.overlayRemediated.map((item) => item.name), ['brace-expansion', 'tar'])
   // 同名但多一個修補層範圍外的節點(一般相依帶進來的那一份)→ 整筆照舊嚴格。
   const hoisted = verdict(diffAuditFindings(lockedOverlayBase(), upgradeAudit('candidate', [npmMetavulnerability('high', ['minimatch', 'tar']), BUNDLED_MINIMATCH, BUNDLED_TAR, { ...BUNDLED_BRACE_EXPANSION, nodes: ['node_modules/brace-expansion', 'node_modules/npm/node_modules/brace-expansion'] }]), { installedOverlayReceipt }))
   assert.match(hoisted.blocked, /introduces 1 vulnerability finding\(s\)[^\n]*:\n {2}brace-expansion high 4\.0\.0 - 5\.0\.11\(package-not-vulnerable-in-base\)/)

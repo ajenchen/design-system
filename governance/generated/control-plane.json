@@ -990,12 +990,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:0f83f461a8a750fb4512c71438d075e268d55a15b0c1999ed0c4740534ffa4e8",
+      "hash": "sha256:d6a4d831b18e940243a9917693bc40d9b16dc135c256dbd655eccbedd697d476",
       "id": "exact-gate-meta-test-baseline",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/audit-gate-meta-test-coverage.baseline.json",
-      "size": 2080,
+      "size": 2047,
       "type": "file"
     },
     {
@@ -3094,7 +3094,7 @@
         "scripts/generated/"
       ],
       "files": 819,
-      "hash": "sha256:6c5a60b3799ce67d3d04028b9d625a150d6a1257ddb8465365cc0e5e744b324f",
+      "hash": "sha256:4807aab19c364af2d8e8949c0a0800d4a12cbf9fc10fc91f4e5f8c00dec84614",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
