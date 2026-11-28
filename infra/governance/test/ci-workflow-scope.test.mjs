@@ -88,9 +88,10 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // 2026-11-17:verify-browser-layout-edges(新 job,A102 容器底距全站盤點)25:同 doc-headings 的全 story 掃描等級(另加每個觸發點重開一次、
   // 一般按鈕 / 選單項目逐一點),不分片本機 721 秒 → 同一個 job 開兩格 matrix(--shard 0/2、1/2,照 escape-focus-control 的做法,不調高上限;
   // 每片實測記在 ci.yml 該 job)。兩格都要帶 --shard 跑主閘與 --selftest(只准變少與 selftest 由閘自己限定在第 0 片)。
+  // 2026-11-28 兩格 → 三格(同一做法,不調高上限):protected main 66c5139c 第 1 格 21.8 分 = 上限 87%,同族 verify-browser-layout 在 PR #178 撞滿 25 分被取消。
   {
     const raw = loadYaml(source).jobs['verify-browser-layout-edges']
-    assert.deepEqual(raw.strategy, { 'fail-fast': false, matrix: { shard: ['0/2', '1/2'] } })
+    assert.deepEqual(raw.strategy, { 'fail-fast': false, matrix: { shard: ['0/3', '1/3', '2/3'] } })
     const run = raw.steps.map((s) => s.run ?? '').join('\n')
     assert.match(run, /node scripts\/layout-body-edges-invariant\.mjs --shard="\$SHARD"/)
     assert.match(run, /node scripts\/layout-body-edges-invariant\.mjs --selftest --shard="\$SHARD"/)

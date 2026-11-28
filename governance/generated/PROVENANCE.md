@@ -189,7 +189,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | github-mutation-boundary-contract | `infra/governance/providers/github-mutation-boundary-contract.json` | `sha256:fab980731bdc2e9d7a36654411d91bf9c60641bd5d752f451dcc60aea045b39c` |
 | github-mutation-boundary-contract-schema | `infra/governance/schemas/github-mutation-boundary-contract.schema.json` | `sha256:4dcb67ba79814a0afa7ee4f520de231d4fa1bba82faab932d6b90045698827b9` |
 | github-mutation-boundary-library | `scripts/lib/github-mutation-boundary.mjs` | `sha256:5f403db0db88d9b2c30221c23d6217c535ea9bd78c7c1ace67ddbcfd4fc48023` |
-| github-repository-governance | `.github/` | `sha256:9a40340324cdec72630b97813bb6327c5d48d0ebb8b0eab6ebe68d387f0bc730` |
+| github-repository-governance | `.github/` | `sha256:e591c8bad489d84b08023d32fb388df104b63ae32cbdb31f0e7b5313b7e84b92` |
 | governance-anchor-preflight | `scripts/governance-anchor-preflight.mjs` | `sha256:1803d168923ed43b1002468610ac8cd207c5506e739bd4d9649c74cf6bf2da47` |
 | governance-anchor-preflight-tests | `scripts/test-governance-anchor-preflight.mjs` | `sha256:51a3d4a5132552deca51b2964acc01644c478797df93bd3f84600688c3be4abb` |
 | governance-anchor-workflow | `.github/workflows/governance-anchor.yml` | `sha256:200f38523d42ff626182ccb19cfa17ead00d912e8b43b137aba39daf2844c03f` |
@@ -204,7 +204,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-control-plane-clis | `infra/governance/bin/` | `sha256:359a7796f09ba1851a7497730151890948c2c1be6137f9f374b76558fd5742dc` |
 | governance-control-plane-libraries | `infra/governance/lib/` | `sha256:3a3557632f81403571db6b58ce2393670d7c367de06f8f04ceb629cc2e9701eb` |
 | governance-control-plane-schemas | `infra/governance/schemas/` | `sha256:14efd29417158eaa44cb8e0e9978b0e9ce0148cc396438fd2f2444bcd37448d1` |
-| governance-control-plane-tests | `infra/governance/test/` | `sha256:72e8fa1628b94692f148de1c511e348dcecdb7d2c88a9e50c0dbc6b60a11f827` |
+| governance-control-plane-tests | `infra/governance/test/` | `sha256:6ff7ae18b3a5456ec51189fb8c18fd3d7f67efdbfdbd94ca5fccc06625c5b5f2` |
 | governance-counter-metadata | `generated/governance/governance-counters.json` | `sha256:0923bd7d3b24c52c5f9afebbdb50b0028680ddb05a6cce1386ac34cff52435cf` |
 | governance-fleet-inventory | `infra/governance/inventory/` | `sha256:b7e439def8817b4284fb86012df2325651b66eca583a9766a410c3f72691704f` |
 | governance-github-desired-state | `infra/governance/desired/` | `sha256:a1d095d29e654c479abbb915ecc643f0f118cb0aa1c83c3d3a8b3263786e4c7a` |
