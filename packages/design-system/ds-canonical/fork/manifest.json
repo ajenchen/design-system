@@ -107,17 +107,17 @@
     "releaseVersion": "0.1.0-beta.153",
     "immutableHead": {
       "providerInventorySha256": "86e9d0668cb54ad1bf05c36e78b4aa80417d5f468c929dd3ddcf69c1afbf32e4",
-      "releaseVersion": "0.1.0-beta.151",
-      "snapshotSha256": "7daad48d3412276959e0a25037c330c17b7457c020865c98b9b886f45adb7b23"
+      "releaseVersion": "0.1.0-beta.152",
+      "snapshotSha256": "65fd55970f092ebf9cfffe54e955ca956b5c721967cd7d57c7a40f143e642bbd"
     },
-    "ledgerSha256": "e7b3de3d890d7c6e6055cdc7241e0730d7d55a27456abd442b533d0e51a598da",
-    "previousSnapshotSha256": "7daad48d3412276959e0a25037c330c17b7457c020865c98b9b886f45adb7b23",
-    "currentSnapshotSha256": "210c10c3894eeb30b9c13bb87a5b9e36889cdede57fac15a27a171b24fba356a",
+    "ledgerSha256": "acaffa970fa6f32f7f133f04d5b143e84521e5751e5abca44da27b60d65022c3",
+    "previousSnapshotSha256": "65fd55970f092ebf9cfffe54e955ca956b5c721967cd7d57c7a40f143e642bbd",
+    "currentSnapshotSha256": "18fcec10c60640286be50377d79b80d4907b919ad07b68c8214f60bbae56a678",
     "currentProviderInventorySha256": "86e9d0668cb54ad1bf05c36e78b4aa80417d5f468c929dd3ddcf69c1afbf32e4",
     "retiredProviders": [],
     "currentSnapshot": {
       "releaseVersion": "0.1.0-beta.153",
-      "previousSnapshotSha256": "7daad48d3412276959e0a25037c330c17b7457c020865c98b9b886f45adb7b23",
+      "previousSnapshotSha256": "65fd55970f092ebf9cfffe54e955ca956b5c721967cd7d57c7a40f143e642bbd",
       "providers": [
         {
           "id": "claude",
@@ -193,8 +193,8 @@
       "retiredProviders": []
     },
     "immutableHeadSnapshot": {
-      "releaseVersion": "0.1.0-beta.151",
-      "previousSnapshotSha256": "cb70f50d2049688c9eb472f8e6e4d89372a24f29db24a1fa41983b1c45b80c94",
+      "releaseVersion": "0.1.0-beta.152",
+      "previousSnapshotSha256": "7daad48d3412276959e0a25037c330c17b7457c020865c98b9b886f45adb7b23",
       "providers": [
         {
           "id": "claude",

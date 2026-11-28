@@ -303,7 +303,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | provider-hook-registrations | `packages/design-system/ds-canonical/hooks/registrations.json` | `sha256:7d14566be989cf9544f366cb41e1cb78433fc837a3ca939dccf1efedb828efd4` |
 | provider-hook-registrations-schema | `packages/design-system/ds-canonical/hooks/registrations.schema.json` | `sha256:7f27f4ebd5248d85658dc8973a0ae60722a05851dd7a043d25a117b5581029df` |
 | provider-hook-runner | `scripts/run-provider-hook.mjs` | `sha256:556e60656c9592962eda6c31e974b89dd704a213ef4a3f4e219fd12f2232476b` |
-| provider-lifecycle-ledger | `packages/governance/canonical/provider-lifecycle.json` | `sha256:fe686eaa25ba9f5105d1d61a0e730f7b85ef92e937fabcf4f7ca93de5fe6b762` |
+| provider-lifecycle-ledger | `packages/governance/canonical/provider-lifecycle.json` | `sha256:2d84d7d2b85d23dcb6f9d1e1f4219e336fe154a3d0f75f539d07b8dbab3f252e` |
 | provider-lifecycle-schema | `packages/governance/canonical/schemas/provider-lifecycle.schema.json` | `sha256:807e126ffac67694193029f19b94e1b8d3e97282e70372b65bdd094a0604c2de` |
 | provider-lifecycle-validator | `scripts/lib/provider-lifecycle.mjs` | `sha256:9aabb2c98efc454b8555308a34830e6590b034b10a63f76f788fbd4cf37ce7e7` |
 | provider-neutral-benchmark-policy | `governance/benchmarks` | `sha256:1fe38dd17649ef0074fdeab8ec0aed8a876ef22293d81d74c29baaa565c460f2` |
