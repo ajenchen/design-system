@@ -9,12 +9,12 @@
   },
   "canonicalSources": [
     {
-      "hash": "sha256:0253d910c921f5b16b51e8cb107fc4417e67013f24cd43cf1d7b66a2909cdfee",
+      "hash": "sha256:ea9c7fced5b3a6e193fa492d0465cef700d595fe8f41ee016b83af9bd098c3a0",
       "id": "agent-bootstrap",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "AGENTS.md",
-      "size": 22599,
+      "size": 22675,
       "type": "file"
     },
     {
@@ -2719,7 +2719,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 55,
-      "hash": "sha256:31d37316af0d6fabdd6df3bef59d31da11e3b6ab96afe2b8a6badc7818ac022b",
+      "hash": "sha256:861501917108ae9204f82024eae1a68e6e85769744c42a676146c605929f75b6",
       "id": "provider-neutral-planning-ledger",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3094,7 +3094,7 @@
         "scripts/generated/"
       ],
       "files": 820,
-      "hash": "sha256:a1812fee7dac473f194fcd00f2c680d4a07632d8175f41b02b37f852ae0cb4b9",
+      "hash": "sha256:d8cb41b6b2999c491b54c922744f9912537c912edcb99ddf4921770f9208333f",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

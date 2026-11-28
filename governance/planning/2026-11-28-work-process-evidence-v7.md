@@ -1,7 +1,7 @@
 <!-- Authority/status: governance/planning/registry.json -->
 # 多包 / 多步工作流程 v7 的證據(2026-11-28)
 
-> 用途:`packages/design-system/ds-canonical/rules/work-process.md` v7「適用」段補的那半句(待辦只住 `governance/backlog/`,交接資料夾只寫 BL 編號)的出處,加上這次搬遷的對照帳。只當出處,不是規則、也不是待辦;流程只住在那一檔,待辦只住 `governance/backlog/items.json`。
+> 用途:`packages/design-system/ds-canonical/rules/work-process.md` v7「適用」段補的那半句(待辦只住 `governance/backlog/`,交接資料夾只寫 BL 編號)的出處,加上這次搬遷的對照帳。只當出處,不是規則;流程只住在那一檔,待辦只住 `governance/backlog/items.json`(第 3 節「本機查不到現況」那一批由 BL-035 追蹤)。
 > 證據類別:實測事故 —— 同一件 user 交代的事在換交接資料夾時遺失兩次,是 user 指出的。不是同任務對照,也沒有花費量測。
 
 ## 1. 「表格一次到位升級」兩度遺失
@@ -35,7 +35,7 @@
 
 - 已修 / 已定(HEAD 查得到):R1b-DT1(data-table.tsx 已無 `group-focus-within`)、R1b-DT3(簽名 class 0 筆)、R1b-DT8(focus-canonical 那一列已不在)、G13(avatar-anchor-box-invariant.mjs:164 已有 coverageControl)、OE27 / K3b(select.tsx 那句「另案」註解已不在)、N75(steps.spec.md:217 已有 `readOnly`)、J(OE21)、N12(a)、A17(已決或已出貨)。
 - 前提已不在:N73(steps.spec.md:62 / :217 內容已換,原矛盾不在)。
-- 本機查不到現況(要 CI / 排程 / 瀏覽器 / 外部讀回,協調者另查):組 1(R97、R105、R86、R44)、組 4(R59、R81、R47、R19、F-f、H10 後半)、組 5(T17、E7)、組 6 的 R102、組 7(R77)、組 8(R103、T12)、組 9(R91)與 Q3c、組 10(R98、R99)、組 11(R68)、組 13(D1–D3)、組 16(R72b、R76)、組 17 的 R78 同族掃描、組 18 的 R92、組 22 的 T3 / T8 / T10、組 24(R20、F-i、F-h、T7(b)(c)、B3)、組 25 的 R69、組 26(B6(b))、組 28(R16、R43、C6、T20(2));remediation 的 R1b-DT2(person-display.tsx 已不在原路徑)、DT5、DT7、FN1b、K5、Q4b、Q5、R1f、G1、G2、G9 補丁、N74、N76、N77、N85、OE28、OE32、OB1–OB3、N41。
+- 本機查不到現況(要 CI / 排程 / 瀏覽器 / 外部讀回;整批由 BL-035 追蹤,查證後逐條收進正本或結案):組 1(R97、R105、R86、R44)、組 4(R59、R81、R47、R19、F-f、H10 後半)、組 5(T17、E7)、組 6 的 R102、組 7(R77)、組 8(R103、T12)、組 9(R91)與 Q3c、組 10(R98、R99)、組 11(R68)、組 13(D1–D3)、組 16(R72b、R76)、組 17 的 R78 同族掃描、組 18 的 R92、組 22 的 T3 / T8 / T10、組 24(R20、F-i、F-h、T7(b)(c)、B3)、組 25 的 R69、組 26(B6(b))、組 28(R16、R43、C6、T20(2));remediation 的 R1b-DT2(person-display.tsx 已不在原路徑)、DT5、DT7、FN1b、K5、Q4b、Q5、R1f、G1、G2、G9 補丁、N74、N76、N77、N85、OE28、OE32、OB1–OB3、N41。
 - 現況成立但不是問題(AI 推導未實測或條件未觸發):組 12 E4(typography.css:81 日文字型排在 :85 中文前面,「Windows 用到日文字形」未實測)、組 22 的 T5(npm 仍是 11.19.0,升 12 才觸發)、組 27(T13、T15、T16、R28、R95、H37 殘留)、組 29 的 T7(a)(可選)。
 - 不是待辦:N1(F6 區段鍵,AI 推導的點子)、N78、N80(記錄)。
 - user 說先不做(只記錄、不問):A19「可以先不管嗎？」、N5、N28「logo先不做聆聽,其他可以」、N29「1.我覺得先不動」。

@@ -36,9 +36,8 @@
         "C15",
         "sidebar.spec.md:168"
       ],
-      "title": "設定頁的左側子頁選單:長相已定(跟 Sidebar 選單列同一套),程式上 DS 要不要提供一個公開的頁內導覽元件",
-      "kind": "user-decision",
-      "scope": "product-ui-ux-decision",
+      "title": "設定頁的左側子頁選單:長相 user 已定(跟 Sidebar 選單列同一套),程式上怎麼給(DS 提供公開的頁內導覽元件或產品自組)由 AI 定",
+      "kind": "engineering",
       "source": [
         {"date":"2026-11-26","quote":"我不確定你程式上想要怎麼做比較 ssot,但視覺上肯定是要 ssot 的吧？類似概念或是操作應該都會跟 sidebar 長得很像？","ref":"packages/design-system/src/components/Sidebar/sidebar.spec.md:168(第五輪決策卡 C15 留言)"}
       ],
@@ -48,8 +47,8 @@
       "evidence": [
         "sidebar.spec.md:168「只定了長相、還沒實作:程式上怎麼給(DS 要不要提供公開的頁內導覽元件)仍待決」;目前照 menu-item.spec.md 經子路徑包 MenuItem 自建"
       ],
-      "order": 2,
-      "orderReason": "長相你已經定了,只差「DS 給一個元件 / 產品自己組」二選一;一題就能定"
+      "valueGate": "③",
+      "suggestion": "user 原話只定視覺、程式做法明說交給 AI(「我不確定你程式上想要怎麼做比較 ssot」);依 AGENTS.md「自主執行 canonical」architecture = AUTO、feedback_propose_discipline.md Sub-rule 6 (1),由 AI 對照 Sidebar 規格選一種給法並落地,長相照 user 定的不變"
     },
     {
       "id": "BL-003",
@@ -70,8 +69,8 @@
       "evidence": [
         "packages/design-system/src/components/Tooltip/tooltip.spec.md:106「選單項等其他元件:停用時怎麼說明還沒定案(產品 canary 回報 C18 / C20,待 user 決定)」—— 規格仍寫待決"
       ],
-      "order": 3,
-      "orderReason": "你上次的留言是問句(傾向不處理);確認一句「不處理」就能把規格那行改成定案"
+      "order": 2,
+      "orderReason": "你上次的留言是問句(傾向不處理);你確認不處理,規格那行就能改成定案"
     },
     {
       "id": "BL-004",
@@ -101,7 +100,7 @@
         {"oldId":"Q13","text":"週 / 日 / 議程的版面細節:時段刻度、預設捲到幾點、上班時段與「現在時間」線、頂部全天列放不下時怎麼收、重疊事件怎麼排、議程預設幾天與沒事件的日子要不要列、清單標題日期要不要做成「前往這一天」。開工前問。"},
         {"oldId":"Q14b","text":"拖選新增的細節:拖選中的樣子(不得與今天的實心底相同【C8(定)】;DateGrid 區間端點是藍底白字圓,直接沿用會撞)、放開後直接呼叫新增回呼還是先出快速新增。開工前問。"}
       ],
-      "order": 4,
+      "order": 3,
       "orderReason": "你明確要做、規格已定一半;大,開工前先把 Q12 / Q13 / Q14b 三題一次問你"
     },
     {
@@ -128,8 +127,8 @@
       ],
       "verifyCmd": "grep -rqE '自動解凍|unfreeze' packages/design-system/src/components/DataTable && echo FIXED || echo STILL-OPEN",
       "fixedSignal": "FIXED",
-      "order": 5,
-      "orderReason": "你說「之後」用 RWD 解;跟 BL-011 是同一個元件,可以排在升級前或併進升級一起規劃"
+      "order": 4,
+      "orderReason": "你問「先不動？我們之後待辦rwd會解決這個問題？」;跟 BL-011 是同一個元件,可以排在升級前或併進升級一起規劃"
     },
     {
       "id": "BL-006",
@@ -144,16 +143,22 @@
       "source": [
         {"date":"2026-09-25","quote":"先維持，很多都是手機不會出現的功能，且如果真的要解也完全不想動desktop web 的所有元件，反而可能會考慮是否全面讓手機也有hover事件，然後整個行為都跟desktop web一樣，沒有任何客製。","ref":"governance/planning/2026-09-25-interaction-and-hover-remediation.md:186(L11)"},
         {"date":"2026-11-14","quote":"「全面讓手機也有hover事件」這個工很大嗎？我以為只是移除禁止這個行為而已","ref":"governance/planning/user-directed-backlog.md U4(a3330afe)"},
+        {"date":"2026-11-28","quote":"你把這題先記著列為待辦到時候再仔細通盤研究解決 root cause並達到預期目標就好","ref":"tmp/wip-2026-11-25-backup/TRACKER.md:154(R94 定案;remediation :311)"},
         {"date":"2026-11-28","quote":"手機上hover的行為調整","ref":"governance/planning/user-directed-backlog.md U4(a3330afe)"}
       ],
+      "parts": [
+        {"oldId":"R94","text":"根因方案(2026-11-28,TRACKER.md:153):手機沒有滑過 = 兩個源頭,各在共用層改一次,不逐元件:① 樣式:Tailwind 4 hover: / group-hover: / peer-hover: 的「能滑過裝置」條件 → base.css 一行 `@custom-variant hover (&:hover);`,全部元件一次生效;DS 手寫同條件 / 觸控略過要一起對齊:data-table.tsx:4460-4461、sidebar.tsx:1538-1541、tabs.tsx:618、tabs.tsx:624(非觸控才標 data-action-hover)。② 程式:Radix 會跳出的滑過型元件主動略過觸控(hover-card dist/index.mjs:89-90 / :120-121 excludeTouch;tooltip 同類)→ 只改 DS 三個包裝處:Tooltip(tooltip.tsx)、HoverCard(hover-card.tsx)、Button 直接用的 Radix Tooltip(button.tsx);22 個使用它們的元件(含 InfoTooltip、頭像名片)一起好。共約 7 處。真機要看:點過停在滑過樣子;iPhone 點兩下;有提示的按鈕點一下時提示閃現 + 動作同時發生是否可接受。","userQuote":"那每個元件都像這樣擋掉觸控，那加那一行的意義何在？⏎這都是同樣的問題吧？為何不能通盤解決root cause就好"},
+        {"oldId":"R94-定案","text":"不在 152 做;列為待辦,之後通盤研究 root cause(R94 根因方案為起點),達到 user 09-26 目標「全面讓手機也有hover事件，然後整個行為都跟desktop web一樣，沒有任何客製」(TRACKER.md:154)"}
+      ],
+      "suggestion": "以 R94 根因方案為起點通盤研究:兩個源頭各在共用層改一次(base.css 的 hover custom-variant + DS 三個 Radix 包裝處),不逐元件,約 7 處;做完放預覽給 user 真機看",
       "rootCause": "hover-gated-to-hover-capable-devices",
       "status": "open",
       "verifiedAt": "a3330afe",
       "evidence": [
         "DS 的 hover 樣式走 Tailwind 4 `hover:`(只在 `@media (hover:hover)` 生效):packages/design-system/src/components/Tabs/tabs.tsx:618、Sidebar/sidebar.tsx:1538-1541、DataTable/data-table.tsx:4463 都照這個條件寫,觸控裝置沒有 hover"
       ],
-      "order": 6,
-      "orderReason": "你說「之後再仔細通盤研究」;要先盤點所有只在滑過才出現的東西,工比「移除禁止」大"
+      "order": 5,
+      "orderReason": "你說「你把這題先記著列為待辦到時候再仔細通盤研究解決 root cause並達到預期目標就好」;起點是 R94 根因方案:兩個源頭各在共用層改一次、不逐元件、約 7 處"
     },
     {
       "id": "BL-007",
@@ -173,8 +178,8 @@
       "evidence": [
         "DS 沒有 rich text 工具列元件:`RichTextToolbar` 只出現在 packages/design-system/src/patterns/action-bar/action-bar.stories.tsx(範例自組,git grep 3 處)"
       ],
-      "order": 7,
-      "orderReason": "你說「有時間再做」;不擋其他項"
+      "order": 6,
+      "orderReason": "你說「到時候有時間再統一出一個 rich text toolbar就好」;不擋其他項"
     },
     {
       "id": "BL-008",
@@ -192,8 +197,8 @@
       "evidence": [
         "git grep「split button / split-button / 分割按鈕」於 packages/design-system/src 只有 action-bar.spec.md:293 一處對照說明,DS 沒有分割按鈕;當時的研究逐字稿已不在(N24 列 09-27 查證)"
       ],
-      "order": 8,
-      "orderReason": "你說「之後再做」;開工時研究要重做(舊研究已遺失)"
+      "order": 7,
+      "orderReason": "你說「這題先放在 backlog 之後再做」;開工時研究要重做(舊研究已遺失)"
     },
     {
       "id": "BL-009",
@@ -211,8 +216,8 @@
       "evidence": [
         "packages/design-system/src 沒有區段切換鍵(git grep \"F6\" 0 筆);AgentPanel 與舞台浮層之間沒有鍵盤往返"
       ],
-      "order": 9,
-      "orderReason": "你說「很次要」;排在其他 user 交代項之後"
+      "order": 8,
+      "orderReason": "你說「若鍵盤的設計和成本負擔很大也可以拆為 backlog,agent 鍵盤的互動很次要,我已經講過了」;排在其他 user 交代項之後"
     },
     {
       "id": "BL-010",
@@ -236,8 +241,8 @@
       "evidence": [
         "packages/design-system/src 沒有 IconBox(git grep 0 筆)"
       ],
-      "order": 10,
-      "orderReason": "你說先不決定;放在最後、不主動問"
+      "order": 9,
+      "orderReason": "你說「先不決定,之後再說」;放在最後、不主動問"
     },
     {
       "id": "BL-011",
@@ -267,8 +272,8 @@
       "parts": [
         {"oldId":"Q2b","text":"捲動當下表頭落後表身一格畫面:表頭與表身是兩個捲動盒子、表頭由程式跟上;根治 = 表頭放進表身同一個捲動盒子、sticky 固定。併進本項一起做(user 11-17「把整個架構更新包括捲動的機制與設計」)。"}
       ],
-      "order": 11,
-      "orderReason": "你定的時機:其他任務都做完之後(11-17「等你把所有該做的任務都做完再說」)"
+      "order": 10,
+      "orderReason": "你定的時機:其他任務都做完之後(11-17「等你把所有該做的任務都做完再說吧？」)"
     },
     {
       "id": "BL-012",
@@ -595,11 +600,10 @@
       "oldIds": [
         "header-canonical.spec.md:88"
       ],
-      "title": "【要問你】產品端 chrome header 頭像尺寸要給一個可讀的名字(現在寫字面值 24)",
+      "title": "產品端 chrome header 頭像尺寸要給一個可讀的公開名字(現在寫字面值 24)",
       "rootCause": "chrome-header-avatar-size-no-public-name",
       "valueGate": "recordOnly",
-      "askUser": true,
-      "suggestion": "先過 naming-conventions 三重 test 產出候選名,下一份決策頁問;定了之後 apps/template 改讀它",
+      "suggestion": "對外 API 命名屬工程(AGENTS.md「自主執行 canonical」;user 2026-11-28「你自己發現然後自己列的任務，那些不動 ssot ui/ux的就是照你建議自己逐步修好」):AI 照 naming-conventions 三重 test 定名、匯出,apps/template 改讀它;畫面不變",
       "evidence": [
         "packages/design-system/src/patterns/header-canonical/header-canonical.spec.md:88「要給產品一個名字讀,是對外 API 命名,待 user 決定」;apps/template/src/App.tsx:83 `<Avatar … size={24}>`"
       ]
@@ -613,11 +617,10 @@
         "OD1",
         "data-table.spec.md:732"
       ],
-      "title": "【要問你】表格 / 樹列拖曳的「上移 / 下移」替代路徑(WCAG 2.5.7):DS 在開了列拖曳時自動加,還是產品自己加",
+      "title": "表格 / 樹列拖曳的「上移 / 下移」替代路徑(WCAG 2.5.7):API 歸屬(DS 在開了列拖曳時自動加,或產品自己加)由 AI 定並實作",
       "rootCause": "row-drag-alternative-path-owner",
       "valueGate": "recordOnly",
-      "askUser": true,
-      "suggestion": "選單項形式已定(該列 rowActions 溢出選單多兩項,樣式沿用);只問 API 歸屬。remediation OD1 記「user 已排 backlog」但沒有逐字原話,問時一併補原話",
+      "suggestion": "選單項形式已定(該列 rowActions 溢出選單多兩項,樣式沿用);API 歸屬屬工程(AGENTS.md「自主執行 canonical」),AI 對照 TreeView / DataTable 既有 API 定一種並實作",
       "evidence": [
         "packages/design-system/src/components/DataTable/data-table.spec.md:732「僅 API 歸屬(DS 於 enableRowDrag 時自動注入 vs consumer 自加)待定」;data-table.tsx:1107 替代路徑仍只登記、未實作"
       ]
@@ -631,11 +634,10 @@
         "R101",
         "todo-組30"
       ],
-      "title": "【要問你】Popover 使用指引「依狀態篩選」「篩選」兩則改用 DS 清單元件(上下留白會從 12 / 12 變 0 / 0)",
+      "title": "Popover 使用指引「依狀態篩選」「篩選」兩則還是勾選群組自組,跟規格對不上:改用 DS 清單元件(上下留白 12 / 12 → 0 / 0)",
       "rootCause": "popover-filter-examples-handcrafted-checkbox-group",
-      "valueGate": "recordOnly",
-      "askUser": true,
-      "suggestion": "照 overlay-surface.spec.md:195(2026-09-17 定「浮層 body 是可選清單 → 走選單列」)改是機械落地,但會改到畫面,依 user 11-28「改到我已經定過的畫面就停下來回報」先問;擴 overlay-list-as-region / checkbox-group-handcraft 閘同時做,自我測試 ρ 的對照組要換",
+      "valueGate": "①",
+      "suggestion": "overlay-surface.spec.md:195-202 是 user 2026-09-17 定的規則(浮層 body 是可選清單 → 走選單列),明寫篩選面板是漂移 → 程式跟規格對不上照修;畫面變化放基準圖審核頁。擴 overlay-list-as-region / checkbox-group-handcraft 閘同時做,自我測試 ρ 的對照組要換",
       "evidence": [
         "packages/design-system/src/components/Popover/popover.principles.stories.tsx:193-195「依狀態篩選」仍是 `<CheckboxGroup>` 自組"
       ]
@@ -778,6 +780,22 @@
       "suggestion": "接在 governance/memory/feedback_propose_discipline.md Sub-rule 7「要你看的範圍」同一行;查無 user 原話,標【AI 推導】",
       "parts": [
         {"oldId":"A36","text":"常設:給 user 看的每張「之後」圖都附量到的數字對規則","evidence":"grep governance/memory、ds-canonical/rules、ds-canonical/references 的「量到 / 實量 / 前後圖 / 數字對照」:只有 feedback_propose_discipline.md:73、:76 要附前後圖,沒有「之後圖附量到的數字」;meta-patterns.md:52 M32 只管稽核腳本要量 pixel"}
+      ]
+    },
+    {
+      "id": "BL-035",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "oldIds": [
+        "R97", "R105", "R86", "R44", "R59", "R81", "R47", "R19", "F-f", "H10(後半)", "T17", "E7", "R102", "R77", "R103", "T12", "R91", "Q3c", "R98", "R99", "R68", "D1", "D2", "D3", "R72b", "R76", "R78(同族掃描)", "R92", "T3", "T8", "T10", "R20", "F-i", "F-h", "T7(b)", "T7(c)", "B3", "R69", "B6(b)", "R16", "R43", "C6", "T20(2)", "R1b-DT2", "R1b-DT5", "R1b-DT7", "R1b-FN1b", "K5", "Q4b", "Q5", "R1f", "G1", "G2", "G9(補丁)", "N74", "N76", "N77", "N85", "OE28", "OE32", "OB1", "OB2", "OB3", "N41"
+      ],
+      "title": "2026-11-28 搬遷時本機查不到現況的舊編號(要讀 CI / 排程 / 瀏覽器 / 外部才能確認):逐條查證後收進正本或結案",
+      "rootCause": "舊清單項的現況只能從 CI / 排程 / 瀏覽器 / 外部讀回確認,搬遷時本機查證不到",
+      "valueGate": "②",
+      "suggestion": "逐條讀 CI run / 排程紀錄 / 瀏覽器重現 / workspace 回覆查證:仍成立的照根因收進正本(併進既有項或另開),已解或前提不在的在本項 parts 記一行結案證據;先做 T17(main 排程 Governance harnesses nightly 連紅 = ②)與組 4 的核准閘誤擋(R81)",
+      "evidence": [
+        "governance/planning/2026-11-28-work-process-evidence-v7.md 第 3 節「本機查不到現況」那一條逐條列全這批與所屬組別;在 a3330afe 本機只有程式與規格,讀不到 CI run、排程結果、瀏覽器重現與外部回覆"
       ]
     }
   ]

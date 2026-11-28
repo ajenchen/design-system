@@ -194,10 +194,11 @@ try {
 // 停下回報、不得自行接受;user 沒要求的不動)+ 版本紀錄一列(+307);AGENTS.md「品質是前提」那句補「完整、正確、如期」,同句全形斜線改半形、
 // 拿掉「(不在此重述)」、「再以…完成」改「再求…」,淨 −11。A1 鏈 32,762 / 32,768(含產品端第 7 條補 on-time 的 +9)。改前開場正好等於上限,
 // 再縮就要刪規則;user 11-28 指出規則落地改掉已定的兩則浮層留白(governance/planning/2026-11-28-work-process-evidence-v6.md),要每個實作者開場就讀到。
-// 2026-11-28 BL(0.1.0-beta.153)明改 78,950 → 79,047(+97):待辦唯一住處 governance/backlog/。AGENTS.md「任務導航表」加一列「記 / 列待辦」
-// (只有指向)+ work-process.md v7「適用」補「不另列待辦」與版本紀錄一列;同時把導航表「跨 provider 討論」那列與「# Independent second opinion」
-// 重複的 owner 路徑拿掉(指向全留),抵掉 A1 鏈的增量(加前 A1 超 105 bytes)。user 11-28「確保整個 repo 的待辦都有統一管理」—— 每個代理開場要讀到住處。
-const OPENING_FILES_MAX_BYTES = 79_047
+// 2026-11-28 BL(0.1.0-beta.153)明改 78,950 → 79,123(+173):待辦唯一住處 governance/backlog/。work-process.md v7「適用」補「不另列待辦」
+// 與版本紀錄一列(+167);AGENTS.md 只在「**找不到**」那行接「待辦:`governance/backlog/`」(+33),同時把「# Rule Index」標題的
+// 「progressive disclosure — 」拿掉(−27)抵 A1 鏈,淨 +6 → A1 32,764 / 32,768。「跨 provider 討論」那列必須保留(check-provider-neutral-ssot-residue.mjs
+// 要那五串字,規格核對抓到第一版拿掉它會紅)。user 11-28「確保整個 repo 的待辦都有統一管理」—— 每個代理開場要讀到住處。
+const OPENING_FILES_MAX_BYTES = 79_123
 const RULES_DIR = path.join(ROOT, 'packages/design-system/ds-canonical/rules')
 const alwaysLoadedRules = fs.existsSync(RULES_DIR)
   ? fs.readdirSync(RULES_DIR).filter((name) => name.endsWith('.md')).sort().filter((name) => {

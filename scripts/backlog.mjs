@@ -29,6 +29,7 @@ export const ALLOWED_LIST_FILES = new Map([
   ['governance/planning/m22-citation-backlog.md', '歷史優先序快照;未結的驗證債已搬到 BL-025'],
   ['.claude/tracker/m22-citation-backlog.md', '同上一份的舊版鏡像(本機狀態區);檔頭指向 BL-025'],
   ['.claude/logs/dim74-overlay-backlog.md', '2026-07-16 重掃紀錄;未結的 7 檔已搬到 BL-026'],
+  ['infra/governance/schemas/backlog.schema.json', '正本自己的欄位規格,不是另開的清單'],
 ])
 // 規格裡含「待決 / 待定」字樣、但不是未決事項的句子(歷史敘述或禁令)。以「路徑 + 句中片段」精確比對。
 export const SPEC_PENDING_ALLOWLIST = [
@@ -117,7 +118,8 @@ export function renderUserView(doc) {
 }
 
 function trackedFiles(root) {
-  const result = runClosedGit(['ls-files', '-z'], { cwd: root, maxOutputBytes: 16 * 1024 * 1024, timeoutMs: 30_000 })
+  // 連「還沒 git add、沒被忽略」的新檔一起看:提交前跑 --check 就要抓得到,不能等提交後才紅(2026-11-28 規格核對必修 1)。
+  const result = runClosedGit(['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { cwd: root, maxOutputBytes: 16 * 1024 * 1024, timeoutMs: 30_000 })
   if (result.error || result.status !== 0) throw new Error(`git ls-files failed (${result.status ?? result.error?.message})`)
   return result.stdout.split('\0').filter(Boolean)
 }
@@ -234,7 +236,7 @@ function selftest(root = ROOT) {
   expect('弄壞:同一句原話出現在兩個未結項', validateBacklog(broken, schema), true)
   broken = clone(); { const a = firstOpen(() => true); const b = doc.items.findIndex((item, index) => index > a && OPEN_STATUSES.has(item.status)); broken.items[b].rootCause = broken.items[a].rootCause }
   expect('弄壞:兩個未結項同一個 rootCause', validateBacklog(broken, schema), true)
-  broken = clone(); { const index = firstOpen(item => item.kind === 'engineering'); broken.items[index].kind = 'user-directed'; delete broken.items[index].valueGate; delete broken.items[index].suggestion; delete broken.items[index].askUser; broken.items[index].order = 99; broken.items[index].orderReason = '沒有原話的冒充' }
+  broken = clone(); { const index = firstOpen(item => item.kind === 'engineering' && !item.source); broken.items[index].kind = 'user-directed'; delete broken.items[index].valueGate; delete broken.items[index].suggestion; delete broken.items[index].askUser; broken.items[index].order = 99; broken.items[index].orderReason = '沒有原話的冒充' }
   expect('弄壞:沒有原話卻標 user-directed', validateBacklog(broken, schema), true)
   const scan = (extra, registry = snapshot.registry) => scanSingleHome({ files: [...materialized, ...extra], registry, knownIds })
   expect('弄壞:提交一份 tmp/notes/TRACKER.md', scan([{ path: 'tmp/notes/TRACKER.md', text: '' }]), true)
