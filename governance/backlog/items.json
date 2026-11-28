@@ -229,7 +229,8 @@
       ],
       "order": 6,
       "orderReason": "你說「到時候有時間再統一出一個 rich text toolbar就好」;不擋其他項",
-      "suggestion": "結論更新(workspace 轉述 user 2026-11-28 決定,逐字 tmp/wip-2026-11-25-backup/notes/decisions/ws-richtext-editor-proposal-2026-11-28.md 末段):workspace 在 apps/platform-ui 孵化(先文件 / 表單編輯器,Tasks、MNP 換上;聊天輸入框排後),編輯核心選型動工前把結論與依據傳 DS;穩定後交 DS,過 component-quality-gate 升格。DS 這邊:給硬性限制(正本路徑,見回 tt 的訊息)、工具列 (a)(b) 結論照通知、交接時審。工具列決策:(b) 已定 10px 同色 / lg 12(BL-043);(a) 決策頁 https://claude.ai/artifact/PAzW5MQGsV2EtrDaNCnw6a。"
+      "suggestion": "結論更新(workspace 轉述 user 2026-11-28 決定,逐字 tmp/wip-2026-11-25-backup/notes/decisions/ws-richtext-editor-proposal-2026-11-28.md 末段):workspace 在 apps/platform-ui 孵化(先文件 / 表單編輯器,Tasks、MNP 換上;聊天輸入框排後),編輯核心選型動工前把結論與依據傳 DS;穩定後交 DS,過 component-quality-gate 升格。DS 這邊:給硬性限制(正本路徑,見回 tt 的訊息)、工具列 (a)(b) 結論照通知、交接時審。工具列決策:(b) 已定 10px 同色 / lg 12(BL-043);(a) 決策頁 https://claude.ai/artifact/PAzW5MQGsV2EtrDaNCnw6a。",
+      "blockedReason": "等 workspace 孵化完成交接:workspace 在 apps/platform-ui 照 DS 標準先做,穩定後交 DS 升格(workspace 轉述 user 2026-11-28 決定);DS 端不另做一套"
     },
     {
       "id": "BL-008",
@@ -1055,7 +1056,7 @@
       "suggestion": "154 做(只作用在自動行高的列,純 CSS / class,不新增量測、不動三區列高同步):① 格內層在「非編輯中、內容不是自帶框的檢視載體」時給第一行盒(最小高 = 一行字 + 2×框寬、置中、不撐滿整列);② rowActions 格靠上 + 鈕在第一行盒置中 + 補字級(lg);③ 選取勾選 / 單選放第一行;④ 展開箭頭補一條框寬;⑤ DS Tag 區(單選標籤 / 多選 / 多人)檢視與編輯都只佔一行字高(Select / Combobox / PeoplePicker class);規格 :134 / :327 / :303 / :124 改一致。零回歸:擴 I14(13 種註冊格唯讀 + 可編輯、自訂、選取、展開、rowActions、釘選、三尺寸、大密度)與 I1–I4(進編輯位移 ≤ 0.5、列高變化 0),修前紅修後綠、拿掉最小高再紅;逐像素不變清單 25 組(固定 10 + 載體自動行高 15)。畫面變化三項給 user 看(多行列勾選框移到第一行;有操作鈕 / 標籤欄的單行列 42→41;各格移 1–3.5px)。併 BL-011:自訂多行內容與直接放的 24px Tag / 頭像的精確對齊(要公開第一行寫法 = API)、透明框從內容搬到格子、自動列比固定列高 1px 殘差、三區列高改版面等高、空多行文字格塌成 20(R80)。不用 user 決定(11-27 已定靠上維持現狀;AG Grid / Carbon 一致)。",
       "evidence": [
         "部分屬實:缺陷成立(hug 單行列的文字確實不在列中線,且列高不等於 token),但 workspace 的歸因不實 —— 不是拖曳把手那一區;是三件事疊加:(1) DS 的格子內距公式只對 Field/Textarea 檢視載體成立,自訂格(規格 :327 叫消費端直接放 inline-flex)少 2px;(2) DS 自己建議的 rowActions xs 按鈕(24)比格子假設的內容高(1lh+2 = 23)多 1px,經 sharedRowHeights 廣播把整列撐高、多出來的都落在下方;(3) workspace 的 StatusIndicator 外面多包一層 inline span,產生 23.5px 的行盒(固定行高下也偏上 1.25px),這一份屬消費端寫法。更正版提出的「:134 與 :327 矛盾」成立。",
-        "Fable 5.2 研究(29 一手來源;tmp/wip-2026-11-25-backup/notes/decisions/research-table-alignment-2026-11-28.md;給 user 的白話頁 https://claude.ai/artifact/ —— 見協調者紀錄):固定行高全 0;自動行高下拉 / 日期 / 時間 / 人員 / 多人 / 唯讀網址 −1、勾選 −3.5、開關 −1.5、唯讀 ✓✗ −4.5、標籤 +0.5;進編輯下拉 / 日期 / 時間 +1、人員 +1、多人 +0.5~2.5、標籤 +1 且列 +2",
+        "Fable 5.2 研究(29 一手來源;tmp/wip-2026-11-25-backup/notes/decisions/research-table-alignment-2026-11-28.md;給 user 的白話頁 https://claude.ai/artifact/AB1ntwBAcJquWzwHm2SbC6):固定行高全 0;自動行高下拉 / 日期 / 時間 / 人員 / 多人 / 唯讀網址 −1、勾選 −3.5、開關 −1.5、唯讀 ✓✗ −4.5、標籤 +0.5;進編輯下拉 / 日期 / 時間 +1、人員 +1、多人 +0.5~2.5、標籤 +1 且列 +2",
         "協調者先前 J1–J6 判斷經研究審查:J4、J5 對;J1、J2、J3、J6 部分對 —— 範圍說小了(不只自訂格,DS 9 種註冊格也不符公式前提)、lg 成因是 rowActions 格缺字級、修法要用「第一行盒最小高 + 置中」而非補內距(補內距會讓 24px 自訂內容更糟)"
       ]
     }
