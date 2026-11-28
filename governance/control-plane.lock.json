@@ -10,7 +10,7 @@
   "contractDigest": "sha256:2999aed4c75bc36823db0b4ea5729744c0920f74b1cd2b2e1bfb4110dd825ef1",
   "files": [
     {
-      "hash": "sha256:711b061e51d6a12b22959c5da70c1e6ac6ec356d41fa31c0e9d987bbf0e768d9",
+      "hash": "sha256:c6aa2f0e95f3dabde889997d825db89bf39bc101ca6e7dddf552565352c57934",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 59307,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:eff9eead07edc90b3005f24256e7f22b0b846699692724cf6423ba016718d573",
+      "hash": "sha256:c1bd67b2bd3cc0db4a125f36d1fa9784296c5baa68d44e0cf43247a0043d6919",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 141102,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:a494e6d5b4844ac381d748fe3fe3211e93dec59a5d7ceaaa44b5d952d11e9111",
+  "inputDigest": "sha256:67b102e02ba6105f8096a4de7f9c9945574cb486699eaa22b643ce4eea554361",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -534,7 +534,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:f53be06a4d351ef5f90cad5c6bed92a6791acb601ebd4999f89e68f8cbd3d321",
+  "snapshotDigest": "sha256:96768b724e8f82ccc59fce3bee33ed710ee688a65bc706ddac00bbf60ed3637c",
   "sources": [
     {
       "hash": "sha256:9f0010c6c373ebb48ce40860d45c3890feb3984d7fdb7130eb643ff6a5b667d6",
@@ -670,7 +670,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 221,
-      "hash": "sha256:fddaecabbefd5522a5dfc0306d9392c32019ef90d560aa787dfa02729eaaee1e",
+      "hash": "sha256:01f31c539d66711ee029a0f015f60fa24f8b51cbca5750a8f8a0e2bbe5e8fe00",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3236,7 +3236,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 22,
-      "hash": "sha256:c94d3349ab62e4a1bd12dd5d53e8f8619dfb0e79cbd55e19b37441a3d4cd717f",
+      "hash": "sha256:db8048b4ba79619b59ab776acc87361c33e2163df86323cd79be5a8a1deb599a",
       "id": "provider-neutral-memory",
       "mode": "0755",
       "ownerRepo": "design-system",
