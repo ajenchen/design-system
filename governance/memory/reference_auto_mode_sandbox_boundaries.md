@@ -43,7 +43,7 @@ originSessionId: 1920833e-4609-44e2-b985-811901d75155
 
 1. **鎖的主人**:上表一、三是平台;二是自家設計(但改它等於放寬安全邊界,不改)。
 2. **有沒有等價傳輸**:git 走 Basic token、npm 走代理、瀏覽器走代理、GitHub 讀取走 curl(`gh` 在沙箱 TLS 不通)。
-3. **交給 user 的指令**必須在沙箱外才成立:一般 session 的 `!` 在沙箱外(官方 https://code.claude.com/docs/en/sandboxing.md ,2026-11-16 讀:「a command you enter at the `!` shell-mode prompt runs unsandboxed in most sessions」);背景 session 的 `!` 仍在沙箱內,不算。v2.1.260 之前嚴格沙箱模式下每種 session 都在沙箱內,本條舊版「`!` 與 Bash 同一個沙箱」即出於此。**2026-11-28 起**:就算在沙箱外,git / npm / node / sh 指令也不交給 user 跑,只有互動登入(`gh auth login`、`npm login`、`gcloud auth login`、`claude` 的 `/login`)例外 —— `stop_self_audit.sh` Mechanism 10 不論本輪有沒有被擋都擋。
+3. **交給 user 的指令**必須在沙箱外才成立:一般 session 的 `!` 在沙箱外(官方 https://code.claude.com/docs/en/sandboxing.md ,2026-11-16 讀:「a command you enter at the `!` shell-mode prompt runs unsandboxed in most sessions」);背景 session 的 `!` 仍在沙箱內,不算。v2.1.260 之前嚴格沙箱模式下每種 session 都在沙箱內,本條舊版「`!` 與 Bash 同一個沙箱」即出於此。**2026-11-28 起**:就算在沙箱外,git / npm / node / sh 指令也不交給 user 跑,只有互動登入 / 授權(`gh auth login`、`gh auth refresh`、`npm login` / `npm adduser`、`gcloud auth login`、`claude` 的 `/login`)例外;請 user 把接手訊息貼進新 session 不算交給終端機 —— `stop_self_audit.sh` Mechanism 10 不論本輪有沒有被擋都擋。
 4. **分類器擋下 = 停在該處並回報**,把準備好的 diff / 分支 / PR 連結交出去;不拆小、不換分身、不下一 turn 再試。
 
 ## 五、clone 必先裝 hooks,否則快照在提交時就過期(2026-09-29 同一天兩次)

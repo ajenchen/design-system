@@ -1410,8 +1410,12 @@ T133C=$(direct_transcript '請你在自己的終端機跑「git switch pkg/b3」
 run_test_locales "Test 133c: 指令包在「」裡交辦(裸指令不當引述拿掉)→ block" 1 "$T133C" "SELF-LOCK HANDOFF"
 T133D=$(direct_transcript '上一則我給的「git switch pkg/b3」已撤回,主資料夾由我自己用 git 底層指令切好了。')
 run_test_locales "Test 133d: 引述過去給過的裸指令、本則沒有交辦字樣 → no block" 0 "$T133D"
-T134=$(direct_transcript '規則:禁止把 git / npm 指令交給 user 在自己的終端機跑；不得叫 user 用 ! 執行 git,只有 gh auth login 這類互動登入例外。')
-run_test_locales "Test 134: 解釋規則(禁止 / 不得叫)→ no block" 0 "$T134"
+# 134 / 134b 只差「不得」兩個字 = 否定字濾網的兩面(第一版的例句「交給 user」會被 Mechanism 13 判成請 user 決定,而且拿掉否定字也不擋,
+# 等於沒練到濾網;2026-11-28 規格核對必修 1)。
+T134=$(direct_transcript '規則:不得請你在自己的終端機跑 git / npm 指令,只有 gh auth login 這類互動登入例外。')
+run_test_locales "Test 134: 解釋規則(不得請你…)→ no block" 0 "$T134"
+T134B=$(direct_transcript '規則:請你在自己的終端機跑 git / npm 指令,只有 gh auth login 這類互動登入例外。')
+run_test_locales "Test 134b: 同一句拿掉「不得」→ block(否定字濾網的對照組)" 1 "$T134B" "SELF-LOCK HANDOFF"
 T135=$(direct_transcript "$(printf '%s\n' '請你在自己的終端機跑 `gh auth login` 完成登入(account-holder-platform-action;出處 AGENTS.md#canonical-decision-authority)。這次的改動如下:' '```diff' '- git switch -C pkg/b3 --track origin/pkg/b3' '+ git update-ref refs/heads/pkg/b3 baabebc8' '```')")
 run_test_locales "Test 135: 交辦登入 + 給 user 看的 diff 裡有 git(diff 不算交出去的指令)→ no block" 0 "$T135"
 T136=$(direct_transcript '我在終端機跑了 git status,工作樹乾淨;主資料夾已用 git 底層指令切到 pkg/b3。')
@@ -1423,6 +1427,55 @@ run_test_locales "Test 137b: 程式碼區塊裡以 ! 開頭的 git 指令,本輪
 T138=$(printf '%s\n' "$(rec_user '收尾')" "$(rec_push '請你在自己的終端機跑 git switch pkg/b3')" \
   "$(rec_result 'Terminal notification sent. Mobile push requested.')" "$(rec_text '已通知。')")
 run_test_locales "Test 138: 交辦只寫在推播、本輪沒被擋 → block" 1 "$T138" "SELF-LOCK HANDOFF"
+
+# Tests 139-142(2026-11-28 規格核對必修 2-4):每組都是「會擋 / 不擋」兩面,只差交辦或否定 / 第一人稱 / 貼到哪裡那幾個字。
+direct_case() { run_test_locales "$1" "$2" "$(direct_transcript "$3")" "${4:-}"; }
+# 139:交辦說法補齊(幫我 / 幫忙 / 手動 / 你那邊 / 你也可以 / 英文 please run、can you run)
+direct_case "Test 139a: 「幫我在終端機跑 git switch」→ block" 1 '幫我在終端機跑 git switch pkg/b3,跑完跟我說。' "SELF-LOCK HANDOFF"
+direct_case "Test 139a': 「我在終端機幫你跑了 git switch」(第一人稱)→ no block" 0 '我在終端機幫你跑了 git switch pkg/b3,工作樹乾淨。'
+direct_case "Test 139b: 「幫我執行下面這行」+ git 程式碼區塊 → block" 1 "$(printf '%s\n' '幫我執行下面這行:' '```sh' 'git switch pkg/b3' '```')" "SELF-LOCK HANDOFF"
+direct_case "Test 139b': 「我貼上這段輸出給你看」+ git 程式碼區塊(轉錄)→ no block" 0 "$(printf '%s\n' '我貼上這段輸出給你看:' '```' '$ git status --short' '(空)' '```')"
+direct_case "Test 139c: Please run \`npm run release:auto\` → block" 1 'Please run `npm run release:auto` and let me know.' "SELF-LOCK HANDOFF"
+direct_case "Test 139c': You do not need to run … in your own terminal → no block" 0 'You do not need to run `git pull` in your own terminal; I already did it.'
+direct_case "Test 139d: Can you run \`git pull\` for me? → block" 1 'Can you run `git pull` for me?' "SELF-LOCK HANDOFF"
+direct_case "Test 139e: 「請手動執行 git pull」→ block" 1 '請手動執行 git pull。' "SELF-LOCK HANDOFF"
+direct_case "Test 139f: 「請你手動跑 git pull」→ block" 1 '請你手動跑 git pull。' "SELF-LOCK HANDOFF"
+direct_case "Test 139g: 「你那邊跑一下 git pull」→ block" 1 '你那邊跑一下 git pull 就好。' "SELF-LOCK HANDOFF"
+direct_case "Test 139h: 「你也可以跑 git log 自己確認」→ block" 1 '你也可以跑 git log 自己確認。' "SELF-LOCK HANDOFF"
+direct_case "Test 139i: 「可以幫忙跑一下 npm run release:auto 嗎」→ block" 1 '可以幫忙跑一下 npm run release:auto 嗎' "SELF-LOCK HANDOFF"
+direct_case "Test 139j: 「以後不會再請你在自己的終端機跑 git」→ no block" 0 '以後不會再請你在自己的終端機跑 git 指令了,主資料夾由我用底層指令切。'
+direct_case "Test 139k: 「之後不再叫你在終端機打 git switch」→ no block" 0 '之後不再叫你在終端機打 git switch,我自己處理。'
+direct_case "Test 139l: 「不要讓你在終端機跑 git」→ no block" 0 '這種事不要讓你在終端機跑 git,我會自己做。'
+direct_case "Test 139m: 事後敘述 + 撤回(沒加引號)→ no block" 0 '09:22 那則我叫你在自己的終端機跑 git switch,這是錯的,已撤回。'
+direct_case "Test 139n: 「我已請執行代理跑 npm run hooks:test」→ no block" 0 '我已請執行代理跑 npm run hooks:test,結果等通知。'
+# 139o 的『…』裡是「你自己跑 git status」:有交辦字樣的引述整段拿掉,不當成裸指令留下(Mechanism 13 也要放行,所以不用「請你」)。
+direct_case "Test 139o: “…” 與『…』引述 user 的話 → no block" 0 'user 09:20 說過:“在你自己的終端機跑 git pull”,另一句是『你自己跑 git status 就好』,兩句都是 user 的話,我已自己跑完。'
+# 140:授權類放行清單(gh auth refresh = OAuth 授權範圍;npm adduser = npm login 別名)。同句寫 scope id 與出處(Mechanism 13)。
+direct_case "Test 140a: gh auth refresh → no block" 0 '這一步是 OAuth 授權,只有你本人能做(account-holder-platform-action;出處 AGENTS.md#canonical-decision-authority):請你在自己的終端機跑 `gh auth refresh -h github.com -s workflow`,之後我自動續跑。'
+direct_case "Test 140b: npm adduser → no block" 0 '這一步要你本人登入 npm(account-holder-platform-action;出處 AGENTS.md#canonical-decision-authority):請你在自己的終端機跑 `npm adduser`,之後我自動續跑。'
+direct_case "Test 140c: gh auth refresh 之後又交 git push → block" 1 '請你在自己的終端機跑 `gh auth refresh -s workflow` 再跑 `git push`。' "SELF-LOCK HANDOFF"
+# 141:請 user 把接手訊息貼進新 session ≠ 交給終端機。原句 = session e3ca5721 2026-11-28 01:47(台灣時間)那則回覆,逐字。
+REPLY_0147=$(cat <<'REPLY_0147_EOF'
+可以交接了。交接檔的最終段落、對帳清單、你的決定紀錄、待辦清單，以及 29 個備份包都已確認在位。
+
+在這台電腦、同一個專案資料夾開一個新的 Claude Code session(本機開，不要開雲端),第一則訊息貼這段:
+
+```
+接手 0.1.0-beta.152。讀 tmp/wip-2026-11-25-backup/NEXT-SESSION.md 第 136 行「最終版:下一個 session 從這裡開始」到檔尾,包含其後所有更正,照這個順序做:
+1. 先對帳(第 154 行):逐條核對 notes/asked-user-scan-2026-11-28.txt。只回報真的遺漏的,格式照第 155 行;沒有遺漏就只回一句。
+2. A 合回前先修 → B 合回五條線 → C 補做 → D 推送、讀 CI、給我預覽連結與改動清單。
+user 決定的唯一來源是 notes/decisions/decide152-answers.md;待辦在 TRACKER.md。暫存副本如果被清掉,從 bundles/ 還原。
+我沒要求的不要動;改到我已經定過的畫面就停下來回報。
+```
+REPLY_0147_EOF
+)
+direct_case "Test 141a: 01:47 原句(接手訊息貼進新 session)→ no block" 0 "$REPLY_0147"
+direct_case "Test 141b: 同上,接手訊息裡多一句「先跑 npm run release:status 看狀態」→ no block" 0 \
+  "$(printf '%s' "$REPLY_0147" | sed 's/2. A 合回前先修/2. 先跑 npm run release:status 看狀態,再 A 合回前先修/')"
+direct_case "Test 141c: 同一句改成「在你自己的終端機貼這段」→ block(貼到哪裡決定算不算)" 1 \
+  "$(printf '%s' "$REPLY_0147" | sed 's/2. A 合回前先修/2. 先跑 npm run release:status 看狀態,再 A 合回前先修/; s/第一則訊息貼這段/在你自己的終端機貼這段/')" "SELF-LOCK HANDOFF"
+direct_case "Test 141d: 新 session 貼的那段是 ! 指令(貼進對話框的 ! 會被執行)→ block" 1 "$(printf '%s\n' '開新 session 後請貼上下面這段:' '```' '! git switch pkg/b3' '```')" "SELF-LOCK HANDOFF"
+direct_case "Test 141e: 新 session 貼的那段只是提到 git log → no block" 0 "$(printf '%s\n' '開新 session 後請貼上下面這段:' '```' '接手 153:先 git log --oneline -5 看基底,再照 NEXT-SESSION.md 做。' '```')"
 
 echo "Results: $PASS PASS, $FAIL FAIL"
 [ "$FAIL" -eq 0 ] || exit 1
