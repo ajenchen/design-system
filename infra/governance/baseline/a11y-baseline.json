@@ -2,7 +2,7 @@
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
     "generatedAt": "2026-11-26T14:00:56.486Z",
-    "stories": 1136,
+    "stories": 1137,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
       "apps-template-appshell-dashboard--default",
@@ -324,6 +324,7 @@
       "design-system-components-combobox-設計規格--size-matrix",
       "design-system-components-combobox-設計規格--state-behavior",
       "design-system-components-datatable-展示--boolean-control",
+      "design-system-components-datatable-展示--boolean-control-spreadsheet",
       "design-system-components-datatable-展示--cell-errors",
       "design-system-components-datatable-展示--cell-errors-fixed-row-override",
       "design-system-components-datatable-展示--column-menu-items",
@@ -1141,7 +1142,7 @@
       "design-system-tokens-uisize--overview",
       "design-system-tokens-uisize--product-alignment"
     ],
-    "storyIdsSha256": "b7d8d4aeb62fffa9c2a2375c92973dae24c17ac2fe8ebe0a20ad9fbcd4775d19",
+    "storyIdsSha256": "15fba597bdc6324ec88100960900fca23a2019627d1f1a1eb26ad481beb09924",
     "fingerprints": 764,
     "linuxOnly": {
       "design-system-components-combobox-設計規格--inspector|color-contrast": "藍圖區塊的 9px text-fg-muted 小標(anatomy-utils.tsx:174):macOS 等寬字溢出區塊、axe 歸 incomplete 不計,Linux 放得下才計入 —— 只有 Linux(CI)量得到;值 = 2f367ee3(A76)寫入的 CI 實測;main 的 a11y drift 排程 2026-11-19(run 44499310317)在 Linux 量到同值 23 / 41。--color-fg-muted 已定案例外(color.spec.md「已定案(禁再問)」)",

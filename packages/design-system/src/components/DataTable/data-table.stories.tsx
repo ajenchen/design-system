@@ -856,7 +856,7 @@ export const InlineEdit: Story = {
         <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           所有資料型別都能就地編輯:文字、數字、金額、日期、時間、單/多選、人員、人員列表、開關、連結。
           SKU 是唯讀的;PRD-004 的供應商網址由採購部維護、不能在這裡改,整格點了開連結;
-          開關欄位直接點即可切換;連結欄位滑過跟其他可編輯欄位一樣出淺框,格裡鉛筆以外點了開連結,按鉛筆才編輯;
+          開關欄位格裡任何地方點了就切換;連結欄位滑過跟其他可編輯欄位一樣出淺框,格裡鉛筆以外點了開連結,按鉛筆才編輯;
           其他點一下進編輯,Enter 或失焦存檔,Esc 取消。
         </p>
         <DataTable
@@ -875,13 +875,23 @@ export const InlineEdit: Story = {
 
 // ── 布林欄的控件(meta.control,2026-11-27 決策頁第 9 題乙;判準 checkbox.spec.md「表格格子裡」)──
 // 「已付款」是這一筆的資料屬性 → 預設勾選框;「自動續約」是這一筆的一個功能開不開 → 開關;
-// 合約客戶的續約由業務管理(editable 回 false)→ 唯讀格,兩種欄都畫 ✓ / ✗。scripts/data-table-invariants.mjs I44 量這一則。
+// 合約客戶的續約由業務管理(editable 回 false)→ 唯讀格,兩種欄都畫 ✓ / ✗。
+// 點擊範圍(2026-11-27,data-table.spec.md「格的主要動作:整格是點擊範圍」):一般模式格裡任何地方點了都切換;
+// 試算表模式點控件本身一下就切換、點空白處第一下選格、已選的格再點一下切換,選取欄一下就勾。
+// scripts/data-table-invariants.mjs I44 量這兩則。
 interface SubscriptionRow { id: string; customer: string; plan: string; paid: boolean; autoRenew: boolean; contract: boolean }
 const SUBSCRIPTION_ROWS: SubscriptionRow[] = [
   { id: 'C-1001', customer: 'ACME 股份有限公司', plan: '企業版', paid: true, autoRenew: true, contract: true },
   { id: 'C-1002', customer: '青田設計工作室', plan: '專業版', paid: true, autoRenew: false, contract: false },
   { id: 'C-1003', customer: '北辰物流', plan: '專業版', paid: false, autoRenew: true, contract: false },
   { id: 'C-1004', customer: '小島咖啡', plan: '入門版', paid: true, autoRenew: true, contract: false },
+]
+const subscriptionCol = createColumnHelper<SubscriptionRow>()
+const SUBSCRIPTION_COLUMNS = [
+  subscriptionCol.accessor('customer', { header: '客戶', meta: { type: 'string', width: 200 } }),
+  subscriptionCol.accessor('plan', { header: '方案', meta: { type: 'string', width: 120 } }),
+  subscriptionCol.accessor('paid', { header: '已付款', meta: { type: 'boolean', editable: (row: SubscriptionRow) => !row.contract, width: 110 } }),
+  subscriptionCol.accessor('autoRenew', { header: '自動續約', meta: { type: 'boolean', control: 'switch', editable: (row: SubscriptionRow) => !row.contract, width: 120 } }),
 ]
 
 export const BooleanControl: Story = {
@@ -891,28 +901,49 @@ export const BooleanControl: Story = {
       description: {
         story:
           '布林欄可編輯時畫哪一種控件由 `meta.control` 決定:「已付款」是這一筆的資料屬性,用預設的勾選框;「自動續約」是這一筆的一個功能開不開,用 `control: \'switch\'`。' +
-          '兩種點了都立刻存;合約客戶的續約由業務管理、這裡不能改,唯讀格兩種欄都畫 ✓ / ✗。',
+          '兩種都是格裡任何地方點了就切換、立刻存(滑過整格,控件跟著變色);合約客戶的續約由業務管理、這裡不能改,唯讀格兩種欄都畫 ✓ / ✗。',
       },
     },
   },
   render: () => {
     const [data, setData] = React.useState(SUBSCRIPTION_ROWS)
-    const subCol = createColumnHelper<SubscriptionRow>()
-    const columns = React.useMemo(
-      () => [
-        subCol.accessor('customer', { header: '客戶', meta: { type: 'string', width: 200 } }),
-        subCol.accessor('plan', { header: '方案', meta: { type: 'string', width: 120 } }),
-        subCol.accessor('paid', { header: '已付款', meta: { type: 'boolean', editable: (row: SubscriptionRow) => !row.contract, width: 110 } }),
-        subCol.accessor('autoRenew', { header: '自動續約', meta: { type: 'boolean', control: 'switch', editable: (row: SubscriptionRow) => !row.contract, width: 120 } }),
-      ],
-      []
-    )
     return (
       <DataTable
-        columns={columns}
+        columns={SUBSCRIPTION_COLUMNS}
         data={data}
         maxHeight="none"
         inlineEdit
+        tableOptions={{ getRowId: (row) => row.id }}
+        getRowId={(row) => row.id}
+        onCellCommit={(rowId, colId, value) => setData((prev) => prev.map((row) => (row.id === rowId ? { ...row, [colId]: value } : row)))}
+      />
+    )
+  },
+}
+
+export const BooleanControlSpreadsheet: Story = {
+  name: '布林欄:試算表模式',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '同一份訂閱資料改用試算表模式、可勾選列(要批次寄續約通知)。點勾選框或開關本身一下就切換;點格裡空白處第一下只選格(藍框),' +
+          '已選的格再點一下才切換(選中後滑過整格,控件跟著變色)—— 第一下要留給「只選這一格」去複製或框選。最前面的選取欄點了就勾選這一列,不先選格。',
+      },
+    },
+  },
+  render: () => {
+    const [data, setData] = React.useState(SUBSCRIPTION_ROWS)
+    return (
+      <DataTable
+        columns={SUBSCRIPTION_COLUMNS}
+        data={data}
+        maxHeight="none"
+        inlineEdit
+        experimentalSpreadsheetOverlay
+        spreadsheetMode
+        experimentalActiveEditorController
+        selectable
         tableOptions={{ getRowId: (row) => row.id }}
         getRowId={(row) => row.id}
         onCellCommit={(rowId, colId, value) => setData((prev) => prev.map((row) => (row.id === rowId ? { ...row, [colId]: value } : row)))}

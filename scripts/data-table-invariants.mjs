@@ -2465,7 +2465,8 @@ const settled = async () => (await settleAfterInteraction(page, { frames: 10 }))
 
 /* ── I33:試算表模式點任何格,格游標都跟過去(2026-09-26,user 同意 R21 第 5 題 (c))──────────
  * 要保證的性質(逐字):點唯讀格、開關格的空白處、連結格的空白處,格游標(`[data-selected-cell-id]`)都移到
- * 被點的那一格,之後按 ↓ 從**新位置**往下走;點開關格空白處不得切換值、點連結格空白處不得開連結;
+ * 被點的那一格,之後按 ↓ 從**新位置**往下走;點開關格空白處**第一下**不得切換值(已選的格再點一下切換,2026-11-27 起,下方「I33 續」)、
+ * 點連結格空白處不得開連結;
  * 唯讀格再點一次不進編輯(沒有可進的編輯)。滑過樣式不在本條範圍(不變)。
  * SSOT:data-table.spec.md「試算表模式」段(W3C APG grid:每一格都可聚焦,不論能不能編輯)。
  * 修前:只有「可編輯、非開關、非連結」的格掛點擊,三者點了游標都留在原格,↓ 從舊位置走(R21 實測)。
@@ -2547,6 +2548,47 @@ for (const [label, r, c, kind] of [
   ok = await settled()
   const afterDown = await cursorOf()
   record('I33', `${label}:之後按 ↓ 從新位置往下走(→ ${belowId})`, ok && afterDown === belowId, `↓ 後 ${afterDown}`)
+}
+
+/* I33 續:開關格(布林格)**已選的格再點空白處 = 切換**(2026-11-27,data-table.spec.md「格的主要動作:整格是點擊範圍」;
+ * 取代 2026-09-26「boolean 再點一次:沒有可進的編輯,游標留在原格」)。
+ * 要保證的性質(逐字):試算表模式點布林格的空白處,第一下只選格(值不變,上面那條);同一處再點一下切換值並送出,再點一下又切回來。
+ * 儀器對照:(1) 第一下之後格游標真的在這一格(否則第二下量的是「沒選中」的那一下);(2) 落點在勾選框的盒子外面至少 6px
+ *   —— 證明點的是空白處,不是勾選框本身(那條「點控件一下就切換」由 I44 量);(3) 讀得到 aria-checked。
+ * 對照組:test-data-table-invariants.mjs 注入 `[data-bool-stretch]::before{display:none}`(= 修前:空白處不是勾選框的範圍)→ 本條必紅。 */
+{
+  await loadStory(SHEET_URL, SHEET_READY)
+  const targetId = await sheetCellId(1, 4)
+  const geo = targetId ? await page.evaluate((id) => {
+    const cell = document.querySelector(`[data-cell-id="${CSS.escape(id)}"]`)
+    const box = cell?.querySelector('[role="checkbox"]')?.getBoundingClientRect()
+    if (!cell || !box) return null
+    const b = cell.getBoundingClientRect()
+    const x = b.right - 6
+    return { x, y: b.top + b.height / 2, gap: x - box.right }
+  }, targetId) : null
+  const checkedOf = () => page.evaluate((id) => document.querySelector(`[data-cell-id="${CSS.escape(id)}"] [role="checkbox"]`)?.getAttribute('aria-checked') ?? null, targetId)
+  const cursorOf = () => page.evaluate(() => document.querySelector('[data-selected-cell-id]')?.getAttribute('data-selected-cell-id') ?? null)
+  if (!geo || geo.gap < 6) record('I33', '開關格已選再點:儀器', false, `INSTRUMENT-FAIL 找不到開關格或空白處離勾選框不到 6px(${JSON.stringify({ targetId, geo })})`)
+  else {
+    const v0 = await checkedOf()
+    await page.mouse.click(geo.x, geo.y)
+    let ok = await settled()
+    const c1 = await cursorOf(); const v1 = await checkedOf()
+    if (!ok || c1 !== targetId || v0 == null) record('I33', '開關格已選再點:儀器', false, `INSTRUMENT-FAIL 第一下之後格游標不在 ${targetId}(${c1})或讀不到值(${v0})`)
+    else {
+      await page.mouse.click(geo.x, geo.y)
+      ok = await settled()
+      const v2 = await checkedOf()
+      record('I33', '開關格已選的格再點空白處 → 切換值', ok && v1 === v0 && v2 != null && v2 !== v1, `aria-checked ${v0} →(第一下)${v1} →(第二下)${v2}`)
+      await page.mouse.click(geo.x, geo.y)
+      ok = await settled()
+      const v3 = await checkedOf()
+      record('I33', '開關格再點一下 → 又切回來(格已選中,每一下都切換)', ok && v3 === v1, `aria-checked ${v2} → ${v3}`)
+    }
+  }
+  console.log('\n--- I33 試算表點格(含已選再點切換)---')
+  console.log([...passes, ...failures].filter((l) => l.includes(' I33 | ')).join('\n'))
 }
 
 /* ── I34:勾選格整格可點(2026-09-29,待辦總帳 N13 ②)──────────────────────────────────────
@@ -3253,6 +3295,133 @@ for (const [label, r, c, kind] of [
       const ok = await settled()
       const after = (await read('C-1003', 'paid'))?.checked ?? null
       record('I44', '對照:點勾選框 → 切換(已付款 false → true)', ok && after === 'true', `aria-checked ${cb3.checked} → ${after}`)
+    }
+  }
+
+  /* I44 續:格的主要動作整格都是點擊範圍(2026-11-27,data-table.spec.md「格的主要動作:整格是點擊範圍」;user 原話見該段)。
+   * 要保證的性質(逐字):
+   *   一般模式 —— 可編輯布林格(勾選框、開關兩種)點格裡空白處就切換並送出;滑過空白處,控件出自己的滑過色(與滑過控件本身同色)、游標手形;
+   *     唯讀格點空白處沒有變化、沒有手形。
+   *   試算表模式(「布林欄:試算表模式」)—— 點控件本身一下就切換;點空白處第一下只選格(值不變)、已選的格再點一下切換;
+   *     選取欄點空白處 / 點勾選框都一下就切換這一列的勾選,格游標不動(不搬進選取欄、也不搬到別格)。
+   * 儀器對照:(1) 空白落點在控件盒子外面至少 6px、在格裡(證明不是點到控件本身);(2) 每一條先讀「之前」的值,讀不到 = 儀器失效;
+   *   (3) 滑過色等控件自己的過渡跑完再讀(`getAnimations().finished`;M32 (c) 過渡中間值),而且先證明「滑過控件本身」顏色真的會變
+   *   —— 不會變就量不出「空白處同色」,記儀器失效;(4) 試算表選取欄那條先證明格游標在一格資料格上(「不動」才分得出來)。
+   * 對照組(test-data-table-invariants.mjs):`[data-bool-stretch]::before{display:none}`(= 修前:只有控件本身能點)→ 一般模式空白處兩條、
+   *   滑過那條、試算表「已選再點」必紅,「點控件本身」照綠;`[data-dt-select-first] [data-bool-stretch]::before{display:block}`(= 試算表第一下就切換)
+   *   → 「第一下只選格」必紅;選取欄的勾選框被點後順手點同列客戶格(= 游標被搬走)→ 「格游標不動」必紅;既有 I34 注入(選取格容器吞點擊)→ 選取欄空白處那條必紅。 */
+  const blankOf = (sel) => page.evaluate((sel) => {
+    const cell = document.querySelector(sel)
+    const ctl = cell?.querySelector('[role="checkbox"], [role="switch"], [role="img"]')
+    if (!cell || !ctl) return null
+    const b = cell.getBoundingClientRect(); const c = ctl.getBoundingClientRect()
+    const x = b.right - 6; const y = b.top + b.height / 2
+    return { x, y, gap: x - c.right, inCell: x > b.left && x < b.right && y > b.top && y < b.bottom }
+  }, sel)
+  const ctlCenter = (sel) => page.evaluate((sel) => {
+    const el = document.querySelector(sel)?.querySelector('[role="checkbox"], [role="switch"]')
+    if (!el) return null
+    const b = el.getBoundingClientRect()
+    return { x: b.left + b.width / 2, y: b.top + b.height / 2 }
+  }, sel)
+  const ctlState = (sel) => page.evaluate(async (sel) => {
+    const el = document.querySelector(sel)?.querySelector('[role="checkbox"], [role="switch"]')
+    if (!el) return null
+    await Promise.all(el.getAnimations().map((a) => a.finished.catch(() => null)))
+    return { bg: getComputedStyle(el).backgroundColor, checked: el.getAttribute('aria-checked') }
+  }, sel)
+  const pointInfo = (p) => page.evaluate((p) => {
+    const el = document.elementFromPoint(p.x, p.y)
+    const ctl = el?.closest('[role="checkbox"], [role="switch"], button')
+    return { ctl: ctl ? (ctl.getAttribute('role') ?? ctl.tagName.toLowerCase()) : null, cursor: el ? getComputedStyle(el).cursor : null }
+  }, p)
+  const okBlank = (p) => p && p.inCell && p.gap >= 6
+  // ── 一般模式(「布林欄:開關與勾選」,上面已動過 C-1002 / C-1003;這裡只用 C-1004 與唯讀的 C-1001)──
+  for (const [col, role, label] of [['paid', 'checkbox', '勾選格'], ['autoRenew', 'switch', '開關格']]) {
+    const sel = cellSel('C-1004', col)
+    const p = await blankOf(sel); const q = await ctlCenter(sel)
+    await page.mouse.move(2, 2); await settled()
+    const rest = await ctlState(sel)
+    if (!okBlank(p) || !q || !rest || rest.checked !== 'true') { record('I44', `一般模式 ${label}:儀器`, false, `INSTRUMENT-FAIL 空白落點 / 控件 / 起始值 true 有缺(${JSON.stringify({ p, q, rest })})`); continue }
+    await page.mouse.move(q.x, q.y); await settled()
+    const onCtl = await ctlState(sel)
+    await page.mouse.move(p.x, p.y); await settled()
+    const onBlank = await ctlState(sel); const info = await pointInfo(p)
+    if (onCtl.bg === rest.bg) record('I44', `一般模式 ${label} 滑過:儀器`, false, `INSTRUMENT-FAIL 滑過控件本身顏色沒變(${rest.bg}),量不出空白處的滑過`)
+    else record('I44', `一般模式 ${label}:滑過格裡空白處 → 控件出自己的滑過色(與滑過控件本身同色)、游標手形`,
+      onBlank.bg === onCtl.bg && info.ctl === role && info.cursor === 'pointer', `靜止 ${rest.bg} / 滑過控件 ${onCtl.bg} / 滑過空白處 ${onBlank.bg};落點 ${JSON.stringify(info)}`)
+    await page.mouse.click(p.x, p.y)
+    const ok = await settled()
+    const after = await ctlState(sel)
+    record('I44', `一般模式 ${label}:點格裡空白處(控件盒子外 ${Math.round(p.gap)}px)→ 切換並存起來(C-1004 true → false)`, ok && after?.checked === 'false', `aria-checked true → ${after?.checked}`)
+  }
+  {
+    const sel = cellSel('C-1001', 'paid')
+    const p = await blankOf(sel)
+    const label = () => page.evaluate((sel) => document.querySelector(sel)?.querySelector('[role="img"]')?.getAttribute('aria-label') ?? null, sel)
+    const before = await label()
+    if (!okBlank(p) || before == null) record('I44', '一般模式 唯讀格:儀器', false, `INSTRUMENT-FAIL 找不到唯讀格的值圖示或空白落點(${JSON.stringify({ p, before })})`)
+    else {
+      await page.mouse.move(p.x, p.y); await settled()
+      const info = await pointInfo(p)
+      await page.mouse.click(p.x, p.y)
+      const ok = await settled()
+      record('I44', '一般模式 唯讀格(合約客戶):點空白處沒有變化、落點不是控件、沒有手形', ok && (await label()) === before && info.ctl == null && info.cursor !== 'pointer', `值 ${before} → ${await label()};落點 ${JSON.stringify(info)}`)
+    }
+  }
+  // ── 試算表模式(「布林欄:試算表模式」)──
+  const BC2_URL = `${BASE}/iframe.html?id=design-system-components-datatable-展示--boolean-control-spreadsheet&viewMode=story`
+  await loadStory(BC2_URL, `${cellSel('C-1002', 'autoRenew')} [role="switch"]`)
+  const cursorOf = () => page.evaluate(() => document.querySelector('[data-selected-cell-id]')?.getAttribute('data-selected-cell-id') ?? null)
+  // 點控件本身(格沒選中)→ 一下就切換:C-1003 已付款 false → true、C-1002 自動續約 false → true
+  for (const [row, col, label, from, to] of [['C-1003', 'paid', '勾選框', 'false', 'true'], ['C-1002', 'autoRenew', '開關', 'false', 'true']]) {
+    const sel = cellSel(row, col)
+    const q = await ctlCenter(sel); const before = await ctlState(sel)
+    if (!q || before?.checked !== from || (await cursorOf()) === `${row}:${col}`) { record('I44', `試算表 點${label}本身:儀器`, false, `INSTRUMENT-FAIL 起始值不是 ${from}、量不到位置,或格已選中(${JSON.stringify({ q, before, cursor: await cursorOf() })})`); continue }
+    await page.mouse.click(q.x, q.y)
+    const ok = await settled()
+    record('I44', `試算表 點${label}本身(格沒選中)→ 一下就切換(${row} ${from} → ${to})`, ok && (await ctlState(sel))?.checked === to, `aria-checked ${from} → ${(await ctlState(sel))?.checked}`)
+  }
+  // 點空白處:第一下只選格、已選的格再點一下切換(C-1004 已付款 / 自動續約,起始都是 true)
+  for (const [col, label] of [['paid', '勾選格'], ['autoRenew', '開關格']]) {
+    const sel = cellSel('C-1004', col)
+    const p = await blankOf(sel); const v0 = (await ctlState(sel))?.checked
+    if (!okBlank(p) || v0 !== 'true' || (await cursorOf()) === `C-1004:${col}`) { record('I44', `試算表 ${label}空白處:儀器`, false, `INSTRUMENT-FAIL 空白落點 / 起始值 true / 格未選中 有缺(${JSON.stringify({ p, v0, cursor: await cursorOf() })})`); continue }
+    await page.mouse.click(p.x, p.y)
+    let ok = await settled()
+    const c1 = await cursorOf(); const v1 = (await ctlState(sel))?.checked
+    record('I44', `試算表 ${label}:點空白處第一下只選格(格游標到 C-1004:${col}、值不變)`, ok && c1 === `C-1004:${col}` && v1 === 'true', `游標 ${c1};aria-checked true → ${v1}`)
+    if (c1 !== `C-1004:${col}`) continue
+    await page.mouse.click(p.x, p.y)
+    ok = await settled()
+    record('I44', `試算表 ${label}:已選的格再點空白處 → 切換(true → false)`, ok && (await ctlState(sel))?.checked === 'false', `aria-checked ${v1} → ${(await ctlState(sel))?.checked}`)
+  }
+  // 選取欄:點空白處 / 點勾選框都一下就切換,格游標不動(先把游標放在 C-1002 客戶格)
+  {
+    // 選取欄可能畫在另一個釘選面板的同一列(同 data-row-index、不同 role=row 元素)—— 用列序配對,不靠 closest 同一個列元素
+    const selCellOf = (row) => page.evaluate((row) => {
+      const idx = document.querySelector(`[data-cell-id="${row}:customer"]`)?.closest('[data-row-index]')?.getAttribute('data-row-index')
+      const c = idx == null ? null : [...document.querySelectorAll(`[data-row-index="${idx}"] [data-column-id="__select__"]`)][0]
+      const box = c?.querySelector('[role="checkbox"]')
+      if (!c || !box) return null
+      const b = c.getBoundingClientRect(); const k = box.getBoundingClientRect()
+      return { blank: { x: b.right - 4, y: b.top + 4, gap: b.right - 4 - k.right }, box: { x: k.left + k.width / 2, y: k.top + k.height / 2 }, checked: box.getAttribute('aria-checked') }
+    }, row)
+    const start = await page.evaluate(() => { const b = document.querySelector('[data-cell-id="C-1002:customer"]')?.getBoundingClientRect(); return b ? { x: b.left + 20, y: b.top + b.height / 2 } : null })
+    if (start) { await page.mouse.click(start.x, start.y); await settled() }
+    const c0 = await cursorOf(); const s0 = await selCellOf('C-1003')
+    if (c0 !== 'C-1002:customer' || !s0 || s0.checked !== 'false' || s0.blank.gap < 3) record('I44', '試算表 選取欄:儀器', false, `INSTRUMENT-FAIL 格游標沒先放在 C-1002:customer(${c0})、或選取格 / 空白落點 / 起始未勾 有缺(${JSON.stringify(s0)})`)
+    else {
+      await page.mouse.click(s0.blank.x, s0.blank.y)
+      let ok = await settled()
+      const s1 = await selCellOf('C-1003'); const c1 = await cursorOf()
+      record('I44', '試算表 選取欄:點空白處一下就勾選這一列', ok && s1?.checked === 'true', `aria-checked false → ${s1?.checked}`)
+      record('I44', '試算表 選取欄:點空白處後格游標不動(仍在 C-1002:customer)', ok && c1 === c0, `游標 ${c0} → ${c1}`)
+      await page.mouse.click(s0.box.x, s0.box.y)
+      ok = await settled()
+      const s2 = await selCellOf('C-1003'); const c2 = await cursorOf()
+      record('I44', '試算表 選取欄:點勾選框一下就切換(取消勾選)', ok && s2?.checked === 'false', `aria-checked ${s1?.checked} → ${s2?.checked}`)
+      record('I44', '試算表 選取欄:點勾選框後格游標不動(仍在 C-1002:customer)', ok && c2 === c0, `游標 ${c0} → ${c2}`)
     }
   }
   console.log('\n--- I44 布林欄的控件 ---')
