@@ -85,10 +85,11 @@ jobs:
           sparse-checkout: |
             infra/governance/baseline/visual/rebake-request.json
             scripts/visual-rebake-request.mjs
+            .node-version
           sparse-checkout-cone-mode: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
       - name: Decide whether this push is a rebake request for this branch
         id: gate
         run: node scripts/visual-rebake-request.mjs --gate --file infra/governance/baseline/visual/rebake-request.json --github-output "$GITHUB_OUTPUT"
@@ -140,7 +141,7 @@ jobs:
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       # 這個映像(Playwright noble)沒有 jq;治理的依賴安裝走 closed 工具組,bash / git / jq / node / perl / python3

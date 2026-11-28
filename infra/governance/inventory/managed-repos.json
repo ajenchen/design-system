@@ -87,6 +87,7 @@
         {"pattern": ".github/workflows/audit.yml", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": ".github/workflows/sync-design-system.yml", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": ".npmrc", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": ".node-version", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": ".devcontainer/devcontainer-lock.json", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": ".devcontainer/devcontainer.json", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": ".devcontainer/onboard-banner.sh", "mode": "upstream-managed", "owner": "design-system-governance"},

@@ -6,7 +6,9 @@
   publish = "storybook-static"
 
 [build.environment]
-  NODE_VERSION = "22"
+  # Node 版本不在這裡寫:Netlify 讀站台 base 目錄(= repo 根)的 .node-version(唯一出處,scripts/node-version-ssot-invariant.mjs 守;
+  # 官方文件 https://docs.netlify.com/build/configure-builds/manage-dependencies/ 「Add a .node-version or .nvmrc file to the site's base directory」)。
+  # 這裡再寫 NODE_VERSION 就是第二份出處(2026-11-28 前是 "22",CI 是 24.14.0)。
   # 2026-11-26:PR #174 的預覽建置時好時壞(efce5630 / a94583d4 / 1e468c7d 敗,612c7097 / cc2d70a6 成;成敗都約 1.5 分)。
   # 部署 6b07d38c5bfd1e21dc11b26f 的日誌:storybook build 預覽建完後「FATAL ERROR: Ineffective mark-compacts near heap limit … JavaScript heap out of memory」,
   # 堆積用到 1955 MB —— Node 依機器記憶體自訂的預設上限(約 2 GB)。本機與 GitHub CI 機器記憶體較大、預設上限較高,所以從沒失敗。

@@ -34,7 +34,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -538,6 +538,11 @@ jobs:
       - name: Focused governance and release SSOT checks
         run: |
           node --test infra/governance/test/ci-workflow-scope.test.mjs
+          # Node 版本唯一出處(2026-11-28,R96;workspace 回報範本 CI 24.14.0 / dev container 22 / Netlify "22" 各寫各的):
+          # 兩邊 workflow 的 setup-node 只准 node-version-file 讀 .node-version(稀疏簽出要含它)、範本副本逐位元組相同、
+          # dev container 映像是量過 Node = 正本的 digest、netlify.toml 不寫 NODE_VERSION、engines 涵蓋正本、雲端 Setup script 讀 .node-version。
+          # --selftest 先判現行原始碼(必綠,即主判定)、再每一格注入一種漂移各自必紅;同一次 CI 只跑這一趟。純靜態,約 1 秒。
+          node scripts/node-version-ssot-invariant.mjs --selftest
           node --test --test-name-pattern='canonical GitHub profile minima' infra/governance/test/model-validation.test.mjs
           node --test infra/governance/test/workflow-identity-sync.test.mjs
           node --test infra/governance/test/release-workflow.test.mjs
@@ -603,7 +608,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -801,7 +806,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -906,7 +911,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -1006,7 +1011,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -1075,7 +1080,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -1177,7 +1182,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -1254,7 +1259,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -1310,7 +1315,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -1363,7 +1368,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -1446,7 +1451,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -1557,7 +1562,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -1632,7 +1637,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -1702,7 +1707,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -1777,7 +1782,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -1879,7 +1884,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -1991,7 +1996,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -2040,7 +2045,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -2095,7 +2100,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -2164,7 +2169,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -2221,7 +2226,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -2272,7 +2277,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -2328,7 +2333,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -2376,7 +2381,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -2438,7 +2443,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -2489,7 +2494,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -2539,7 +2544,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -2582,7 +2587,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -2651,7 +2656,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -2702,7 +2707,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -2787,7 +2792,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -2838,7 +2843,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -2939,7 +2944,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -2976,7 +2981,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install locked dependencies once
@@ -3021,7 +3026,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           cache: npm
 
       # 這個映像(Playwright noble)沒有 jq;治理的依賴安裝走 closed 工具組,bash / git / jq / node / perl / python3

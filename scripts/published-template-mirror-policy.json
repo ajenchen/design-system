@@ -3,6 +3,7 @@
   "exactPaths": [
     ".env.example",
     ".gitignore",
+    ".node-version",
     ".npmrc",
     "README.md",
     "netlify.toml",

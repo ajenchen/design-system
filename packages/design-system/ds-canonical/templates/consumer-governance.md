@@ -8,20 +8,15 @@ product rules belong only in `governance/overlay.md`.
 
 ## One setup path in every environment
 
-Run `npm run setup:all` from a fresh checkout on local macOS/Linux, Codex Cloud, Codespaces, or
-another Linux devcontainer host. Configure that same command as each
-hosted environment's setup command; Codex Cloud also uses it as the maintenance command after a
-cached container is restored. Session-start hooks never install or repair dependencies.
+Run `npm run setup:all` from a fresh checkout on local macOS/Linux, Codespaces, or another Linux
+devcontainer host, with the exact Node.js version in `.node-version` (the one Node.js version
+source: CI `setup-node`, the dev container image, and Netlify all use it). Session-start hooks never
+install or repair dependencies.
 
-On Claude Code on the web, use the Setup script in the template README ("Local, cloud, and
-container setup"). It can go in the shared Default environment: it runs `npm run setup:all` only
-when the session's repository is this one and returns that command's exit status, and for any other
-repository it prints one skip line and exits 0, because a setup script that exits non-zero makes the
-session fail to start or start without what it failed to install
-(https://code.claude.com/docs/en/cloud-environments#setup-scripts). The guide does not document the
-script's working directory, so the script handles both starting at the repository root and starting
-one level up with the repository in a subfolder (a Setup script run there started in the directory that
-contains the checkout, with the repository in its own subfolder).
+On Claude Code on the web and Codex Cloud, use the Setup script in the template README ("Local,
+cloud, and container setup"; Codex Cloud also as its maintenance script). That section is the only
+description of it (exact `.node-version` Node.js, then `npm run setup:all`; which environment to put
+it in and how cached setup results behave).
 
 Hosts whose outbound HTTPS is re-signed by a proxy work when the proxy CA is in the host system
 trust store and Node.js is 22.15.0 or newer: every registry request in the locked setup chain then

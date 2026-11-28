@@ -927,12 +927,14 @@ test('Visual Regression 的 PR 分支重拍路徑:push 只在非 main + 只看�
   assert.equal(gateCheckout.uses, visualJob.steps[0].uses, '閘的 checkout 與重拍 job 用同一個釘死的版本')
   assert.deepEqual(gateCheckout.with, {
     'persist-credentials': false,
-    'sparse-checkout': `${REBAKE_REQUEST_PATH}\nscripts/visual-rebake-request.mjs\n`,
+    // .node-version:setup-node 讀 Node 版本正本(scripts/node-version-ssot-invariant.mjs 守「稀疏簽出要含它」)
+    'sparse-checkout': `${REBAKE_REQUEST_PATH}\nscripts/visual-rebake-request.mjs\n.node-version\n`,
     'sparse-checkout-cone-mode': false,
-  }, '閘只稀疏簽出請求檔與判定腳本')
+  }, '閘只稀疏簽出請求檔、判定腳本與 Node 版本正本')
   const visualNode = visualJob.steps.find((step) => String(step.uses).startsWith('actions/setup-node@'))
   assert.equal(gateNode.uses, visualNode.uses, '閘的 setup-node 與重拍 job 用同一個釘死的版本')
-  assert.equal(gateNode.with['node-version'], visualNode.with['node-version'], '閘與重拍 job 用同一個 node 版本')
+  assert.equal(gateNode.with['node-version-file'], '.node-version', '閘讀 Node 版本正本')
+  assert.equal(visualNode.with['node-version-file'], '.node-version', '重拍 job 讀同一份 Node 版本正本')
   assert.equal(gateStep.id, 'gate')
   assert.equal(gateStep.run, `node scripts/visual-rebake-request.mjs --gate --file ${REBAKE_REQUEST_PATH} --github-output "$GITHUB_OUTPUT"`)
   assert.deepEqual(visualJob.needs, ['rebake-gate'])

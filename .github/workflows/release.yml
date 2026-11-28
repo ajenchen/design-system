@@ -96,7 +96,7 @@ jobs:
       - name: Set up Node and npm registry
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           registry-url: 'https://registry.npmjs.org'
           package-manager-cache: false
 
@@ -216,7 +216,7 @@ jobs:
       - name: Set up verification-only Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: '24.14.0'
+          node-version-file: .node-version
           package-manager-cache: false
 
       - name: Download exact release assets
