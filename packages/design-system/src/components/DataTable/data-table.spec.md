@@ -118,7 +118,7 @@ Table 分三層:
 
 ### 四、行高模式
 
-Table 層級的模式切換，不是 column 層級:同一張表的列高只有一套規則,不會一欄自動長高、另一欄固定。(AG Grid 的固定列高 `rowHeight` 在表格層級,但自動列高 `autoHeight` 是逐欄設定,https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/entities/colDef.ts#L603-L608 —— 本 DS 刻意不跟。)
+Table 層級的模式切換，不是 column 層級:同一張表的列高只有一套規則,不會一欄自動長高、另一欄固定。(AG Grid 的固定列高 `rowHeight` 在表格層級,但自動列高 `autoHeight` 是逐欄設定,https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/entities/colDef.ts#L603-L608 —— 本 DS 刻意不跟。)**怎麼選**【AI 推導:由下面兩條推得,2026-11-27】:有任何一格要完整顯示超過一行(描述、備註,或自訂儲存格裡上下兩行的內容,例:頭像 + 名字 + email)→ `rowHeight="hug"`;全部單行 → 不寫(固定行高)。選了就照那一條的對齊,不另設:固定 = 垂直置中;自動 = 頂部對齊,單行的格與多行格的第一行同高(兩者上內距相同)。不另開「自動行高時整列置中」【AI 判讀:問句方向】—— 152 決策頁第 10 題 user(問句)「我們的 table很明確就是分兩種吧？消費者看到底是要固定高的還是動態高的table row,然後就自動依循對應的ds設計原則就好？若是的話只要確保從決策到進入這兩條路都是通的且合乎規範就好吧？」(交接資料夾 `notes/decisions/decide152-db/answers/latest.json` q11)。
 
 - **固定行高（預設，適合大多數場景）**：所有 row 同高、內容垂直置中——文字、tag、badge、avatar 等不同高度的元件都自然居中，不需處理對齊；文字一律截斷不換行（column 的 `wrap: true` 被忽略）
 - **自動行高（適合描述、備註等需完整顯示的欄位）**：row 高度由最高的 cell 決定、內容頂部對齊；垂直 padding 由目標行高推導（單行時製造置中效果，多行時保持頂部對齊）；`wrap: true` 的欄位可換行撐高 row
