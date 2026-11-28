@@ -119,7 +119,7 @@ governance_hook_grep_capture MAGIC_LINES_FILTERED 'layout-space canonical-divide
   "$MAGIC_LINES" -vE '(Separator|ButtonDivider)'
 MAGIC_LINES="$MAGIC_LINES_FILTERED"
 
-# layoutSpace.spec.md L150-163:token scaling owns macro structure, while fixed micro/control/list
+# layoutSpace.spec.md L265-284:token scaling owns macro structure, while fixed micro/control/list
 # geometry and rule-5 grouped horizontal fields must not be over-tokenized. The shared classifier
 # consumes the authenticated utility registry and admits only same-line/bounded-nearby structural
 # evidence. It also requires every magic token on the line to be a registered gap-1/2, so an inline

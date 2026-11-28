@@ -671,7 +671,7 @@ run_warning_case "Test 45: 問句(這頁你看過了嗎)→ 不提醒" 0 \
   "$(quote_turn_transcript '收尾' '這頁你看過了嗎?')"
 
 # Tests 46-51: Mechanism 10b —— 分類器擋下卻沒在回覆講(稽核 #8;
-# governance/memory/reference_auto_mode_sandbox_boundaries.md:46「分類器擋下 = 停在該處並回報」)。
+# governance/memory/reference_auto_mode_sandbox_boundaries.md:47「分類器擋下 = 停在該處並回報」)。
 classifier_transcript() {
   # $1 = 工具結果文字;$2 = is_error(true / false);$3 = assistant reply;$4(可省)= 記錄層額外欄位(JSON 物件)
   local extra="${4:-}"

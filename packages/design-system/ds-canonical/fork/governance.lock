@@ -783,7 +783,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_layout_space_magic_numbers.sh",
-      "sha256": "c2c6cbd5c9300e1358d5c8541154e0da11506678c71f3fe3bc6f8f5d8fc98f09",
+      "sha256": "55299679e734dca6a5a755c82bfaf4bef3fed61a5c8786e4be88e580ce5c459a",
       "source": "check_layout_space_magic_numbers.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -1535,7 +1535,7 @@
     {
       "schemaVersion": 1,
       "file": "references/utility-registry.json",
-      "sha256": "5b81c322555e4c4d9c4e522ef08312fb6cbdec82c3508673535d8f49513eaa51",
+      "sha256": "515b3dce16cd158e2c5884a4aa6f23332a815ea00765d980dea4e4042ae788ec",
       "source": "packages/design-system/src/tokens/utility-registry.json",
       "classification": null,
       "destination": null

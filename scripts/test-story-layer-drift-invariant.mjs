@@ -11,7 +11,7 @@
  *       ci.yml 出現 --write-baseline、CI 不再呼叫 test:story-layer-drift → 紅;
  *       「基準不得比 base 寬」以 HEAD 那棵樹的真資料走:多記一筆 / 替新檔預留 → 紅,反例標記多 → 只列 review;--base 打錯 → 儀器失效;
  *       基準裡出現「還沒輪到的九個資料夾」以外的漂移數字(反例標記 / 逃生口放行除外)→ 紅;任一個 story 標記引用的 `*.spec.md:N` 指到不存在的檔或
- *       超出檔尾、或 2026-10-01 掃除標記最常引用的那幾行(layoutSpace.spec.md :166 :140 :165–:168 :176、tag.spec.md:234、
+ *       超出檔尾、或 2026-10-01 掃除標記最常引用的那幾行(layoutSpace.spec.md :166 :246 :271–:274 :282、tag.spec.md:234、
  *       file-item.spec.md:264、category-templates.md:168)內容被改掉 → 紅。
  *       CLI 接線端到端(2026-10-06 審查:13 個突變只碰純函式,把「有新增就紅」改成 if (false) 沒有任何檢查發現):在臨時 git repo
  *       (閘 + 分類器 + 字級 token + 出處原文 + 三層各一支夾具 story,基準由閘自己寫、提交成 base)裡跑 runCli 與真的 `node 閘`:
@@ -218,8 +218,8 @@ check('規則出處仍在(spec 行被改掉,閘的說明就會指錯地方)', ()
   const line = (rel, n) => readFileSync(join(REPO, rel), 'utf8').split('\n')[n - 1] ?? ''
   const cites = [
     ['packages/design-system/src/tokens/typography/typography.spec.md', 43, '視覺標題 ≠ 語義標題'],
-    ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 306, '元素間 gap 硬寫'],
-    ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 159, '刻意固定'],
+    ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 389, '元素間 gap 硬寫'],
+    ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 265, '刻意固定'],
     ['packages/design-system/src/components/Field/form-validation.spec.md', 15, '不看填了沒、填對沒,一律 enabled'],
     ['packages/design-system/src/components/Field/form-validation.spec.md', 140, 'disabled-until-dirty'],
     // (c) 不收 span 的出處:chrome 文字(workspace brand / user name)明文用 span + text-body-lg font-medium
@@ -233,13 +233,13 @@ check('規則出處仍在(spec 行被改掉,閘的說明就會指錯地方)', ()
     // @story-counter-example 綁的第二句出處(do/don't 只住 principles)
     ['packages/design-system/ds-canonical/skills/story-writing/references/category-templates.md', 168, "do/don't 對照放 showcase(屬 principles)"],
     // 2026-10-01 掃除留下的 @layout-space-magic-ok 標記最常引用的幾行(右欄「刻意固定」的各類 + 判準一句話)
-    ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 113, '同範疇 / bundled'],
-    ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 140, '緊密相關(同一組值的起迄)'],
-    ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 165, '同質 list 的列間距'],
-    ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 166, 'micro / icon / 控件內部'],
-    ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 167, '為視覺平衡 / 對稱 刻意調的值'],
-    ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 168, '元件自身刻意固定'],
-    ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 176, '判準一句話'],
+    ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 166, '同範疇 / bundled'],
+    ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 246, '緊密相關(同一組值的起迄)'],
+    ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 271, '同質 list 的列間距'],
+    ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 272, 'micro / icon / 控件內部'],
+    ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 273, '為視覺平衡 / 對稱 刻意調的值'],
+    ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 274, '元件自身刻意固定'],
+    ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 282, '判準一句話'],
     ['packages/design-system/src/components/Tag/tag.spec.md', 234, 'Tag 與 Tag 之間：`gap-1`'],
     ['packages/design-system/src/components/FileItem/file-item.spec.md', 264, 'compact form `gap-1`'],
   ]

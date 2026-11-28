@@ -1381,7 +1381,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
 
       {/* 格子區 = 月格陣(role="grid")= 星期列(第一個 row,不捲)+ 週列(在 ScrollArea 裡捲)。
           外框只圍這一塊(calendar.spec.md「外殼」bordered;同 DataTable dataTableVariants:bg-surface rounded-md overflow-hidden + 預設 border border-divider);
-          拿掉時框與圓角一起拿掉,格線保留。邊緣標記 data-layout-region="bounded" 跟著框走(layoutSpace.spec.md:176「元件根部宣告自己的邊緣」——
+          拿掉時框與圓角一起拿掉,格線保留。邊緣標記 data-layout-region="bounded" 跟著框走(layoutSpace.spec.md:225「元件根部宣告自己的邊緣」——
           有完整外框的是這一塊;根節點沒有標記、容器自判穿得過去,layoutSpace.css「最多穿過兩層沒有標記的包層」):放進 DialogBody / SheetBody 這類
           會自己給上下內距的容器且是最後一塊時,容器底自動 = loose。`bordered={false}` 沒有外框 → 不標(標了就跟 DOM 不一致)。
           星期列 2026-11-25 前在格陣外、沒有任何角色(稽核 D14);依 calendar.spec.md「A11y 預設」它是格陣的第一個 row、每格 columnheader。
