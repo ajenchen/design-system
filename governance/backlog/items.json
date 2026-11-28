@@ -57,7 +57,7 @@
         "canary-C20",
         "tooltip.spec.md:106"
       ],
-      "title": "停用的選單項(與按鈕、欄位以外的元件)也要說明「為什麼不能按」:方向已定(照 DS 一致的設計語言),剩選單項的做法(滑過 / 聚焦出 Tooltip,或項目內說明)先查世界級;還沒做的動作不改成停用",
+      "title": "停用的選單項(與按鈕、欄位以外的元件)也要說明「為什麼不能按」:用 Tooltip、不寫在項目裡(方向已定),Tooltip 的配套先查世界級;還沒做的動作不改成停用",
       "kind": "user-directed",
       "source": [
         {
@@ -69,6 +69,11 @@
           "date": "2026-11-28",
           "quote": "我當初是說可以不用改成 disable 狀態反正沒反應就先沒反應原因如原話，但是若是變成 disable 狀態按照我們ds的一致設計語言本來就建議要有說明吧？我上述說的合理吧？",
           "ref": "本 session 對話(協調者確認合理);逐字全文 tmp/wip-2026-11-25-backup/notes/decisions/state-placement-answer-2026-11-28.md「BL-003」段"
+        },
+        {
+          "date": "2026-11-28",
+          "quote": "「有些設計是把原因直接寫在選項裡，不用 tooltip。」盡量不要這樣做？如果原因很長沒辦法完整顯示或是得壓縮其他選項的空間？⏎⏎可能盡量去想如果要出現 tooltip 該如何配套？",
+          "ref": "本 session 對話(協調者回:同意,不寫在項目裡、用 Tooltip)"
         }
       ],
       "rootCause": "disabled-reason-other-components-undefined",
@@ -79,8 +84,8 @@
         "去脈絡化更正:BL 搬遷曾把 C18/C20 寫成「停用的選單項要不要說明」,原題不是這個(2026-11-28 user 指出)"
       ],
       "order": 2,
-      "orderReason": "方向你已定(停用就要說明,跟按鈕、欄位一致);只差選單項的做法,查完世界級一致就直接做",
-      "suggestion": "M8 子規則(跨類別外推 = 新主張):先 WebFetch ≥3 家一手(Radix / Material / Atlassian / Polaris / Fluent / Apple HIG)查停用選單項怎麼說明原因、鍵盤能不能停在停用項上;一致就照做(工程 AUTO)並寫進 tooltip.spec.md:106 與選單規格,分歧才列畫面取捨題(product-ui-ux-decision)。C18 / C20 那類還沒做的動作:維持沒反應、不改成停用。"
+      "orderReason": "方向你已定(停用就要說明、用 Tooltip 不寫在項目裡);只差 Tooltip 的配套(鍵盤停得到、出在哪一側、讀屏、觸控、長原因),查完世界級一致就直接做",
+      "suggestion": "M8 子規則(跨類別外推 = 新主張)+ M26:研究(notes/decisions/research-disabled-menu-tooltip-2026-11-28.md)回答 Tooltip 配套:鍵盤能否停在停用項、Tooltip 出在選單哪一側不蓋到其他選項、出現 / 切換時機、讀屏念得到原因、觸控裝置、子選單與可搜尋選單同一套、長原因的寬度與換行。一致就照做(工程 AUTO)寫進 tooltip.spec.md:106 與選單規格;分歧才列畫面取捨題(product-ui-ux-decision)。C18 / C20 那類還沒做的動作:維持沒反應、不改成停用。"
     },
     {
       "id": "BL-004",
