@@ -5,6 +5,7 @@
 // 為什麼不是 story:要量的是「傳了 maxHeight 數字 / 字串 / 比可用高還大」與「子選單比可用高還高」這些邊界幾何,
 // DS 裡沒有任何範例傳 maxHeight(2026-11-24 盤點 0 處),寫成 story 等於拿量具的極端內容(60 列子選單)當範例。
 // 清單(CommandList)另量半列原則的預設上限與它的 maxHeight 參數(2026-11-24 C9)。
+// W 列(2026-11-28 R93)另量 SelectMenu 面板寬的視窗上限:選項字比手機視窗還長,DS 範例沒有這種極端長字(寫成 story 等於拿量具內容當範例)。
 // 一次只開一個浮層,參數走網址:?case=<CASES 的 id>。內容一律比可用高還高,才量得到「上限有沒有夾住」。
 // 夾具自己的版面用行內樣式:這個檔不在 Tailwind 的 @source 範圍裡,寫 class 不會產生樣式;DS 元件的樣式來自元件本身。
 import { createRoot } from 'react-dom/client'
@@ -25,6 +26,8 @@ const cap = capParam == null ? undefined : /^\d+$/.test(capParam) ? Number(capPa
 const rows = (n: number, label: (i: number) => string) => Array.from({ length: n }, (_, i) => label(i))
 const PROJECTS = rows(60, (i) => `專案 ${String(i + 1).padStart(2, '0')}・行動版改版`)
 const ISSUES = rows(40, (i) => `PLAT-${1200 + i} 匯出報表逾時`)
+/** W 列:選項字比手機視窗還長(閘從第一列的字量截斷,改這裡要改閘的 LONG_LABEL) */
+const LONG_ISSUES = ['PLAT-1204 匯出報表在資料量超過十萬筆時逾時並回傳空白檔案,需調整查詢分頁與背景佇列', 'PLAT-1205 行動版結帳頁在 iOS Safari 捲不到付款按鈕', 'PLAT-1206 權限設定']
 // 觸發點固定在左上附近:可用高 = 視窗高 − 觸發點底 − sideOffset − collisionPadding,夠大才看得出「上限」與「可用高」的差別
 const triggerStyle = { position: 'absolute' as const, left: 80, top: 64, padding: '4px 12px' }
 
@@ -93,6 +96,14 @@ function Case() {
       return (
         <SelectMenu defaultOpen contentId="oh-content" value={null} onValueChange={() => {}}
           options={ISSUES.map((t, i) => ({ value: t, label: t, description: `owner${i + 1}@acme.example` }))}>
+          <button type="button" style={triggerStyle}>指派給</button>
+        </SelectMenu>
+      )
+    // 選項字比視窗長(W 列;閘自己設視窗寬):面板寬的視窗上限 OVERLAY_VIEWPORT_MAX_WIDTH(select-menu.spec.md「架構」)
+    case 'select-menu-long':
+      return (
+        <SelectMenu defaultOpen contentId="oh-content" value={null} onValueChange={() => {}}
+          options={LONG_ISSUES.map((t) => ({ value: t, label: t }))}>
           <button type="button" style={triggerStyle}>指派給</button>
         </SelectMenu>
       )
