@@ -59,7 +59,9 @@
    · 元件根部宣告自己的邊緣 data-layout-region="bounded"(有完整外框:表格 / 卡片 / 面板)或 "unbounded"(無框、清單自帶上下內距);
      沒有標記 = element(預設)。標記只描述元件的邊緣,不是元件級固定分類(spec「元件角色」:角色由該層判;容器只看最後一個東西的邊緣)。
    · 容器看最後一個佔版面的子孫(略過 sr-only / hidden / script / style / template,最多穿過兩層沒有標記、也不是巢狀容器的包層):
-     bounded → loose、unbounded → 0、其餘 → fill = bottom(48)/ hug = 與頂部同值。
+     bounded → loose、unbounded → 0、其餘 → fill = bottom(48)/ hug 後面接 footer = bottom(48)/ hug 沒有 footer = 與頂部同值。
+     hug 沒有 footer、最後是看得見框的欄位 / 按鈕 → loose(T4)與沒有標頭、第一個是這種控件 → 頂 loose:容器自判未做(沒有標記認得出
+     「看得見框的控件」),照舊給 tight、由 consumer 覆寫;閘照規則量(2026-11-27,同「有框的表格在最前面」那一格的做法)。
    · 寫在 @layer base:consumer 的 pt-* / pb-* / !pb-0 一律蓋得過(既有寫法不必改)。上內距 2026-11-27 起也自判(下方「頂部」段:第一個是 unbounded → 0,其餘 tight)。
    機械:scripts/layout-body-edges-invariant.mjs 掃建置裡全部 story(含點開浮層),從 DOM 判最後一個東西與容器種類、量像素比規則 4;
    標記與 DOM 對不上(標 bounded 卻沒有框、宣告 hug 卻撐滿)也紅。:has() 只在 Chromium 上由閘實測;不支援的瀏覽器退回 element 的值(= 修前的行為)。 */
@@ -74,6 +76,13 @@
      讀它的話最後一個一般元素會跟著貼底(2026-11-27 規格核對 D;修前 start 恆 = tight,這裡值不變) */
   [data-layout-body="hug"] {
     --layout-body-end: var(--layout-space-tight);
+  }
+  /* 貼內容的容器後面接 footer → 一般元素收尾 = bottom(2026-11-27 user 定 T6 乙;layoutSpace.spec.md 規則 4 表第 1 列):
+     「與頂部同值」只留給直接碰到小容器自己的框的那一格。只認主體與 footer 是同層兄弟(SurfaceBody + SurfaceFooter / PopoverFooter);
+     主體包在捲動區裡、footer 在捲動區外的(Coachmark)不在這一條 —— Coachmark 照 user 原話不動,閘登記成例外(scripts/layout-body-edges-exceptions.json)。
+     有框的表格 / 自帶內距的清單照下面兩條(選擇器比這條具體,不論先後都蓋過)。 */
+  [data-layout-body="hug"]:has(~ [data-slot="surface-footer"]) {
+    --layout-body-end: var(--layout-space-bottom);
   }
   [data-layout-body]:has(
     > [data-layout-region="bounded"]:nth-last-child(1 of :not(.sr-only, [hidden], script, style, template)),

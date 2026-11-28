@@ -35,6 +35,9 @@
  *             重拍帶 reference_ref 時同一個容器比改動前後),不是 PR 必過檢查。本閘只比同一份建置算出來的值。
  *         G5  編輯中不翻轉:範圍裡唯一的就地編輯進編輯後,同範圍的標籤色、開關 / 勾選框位置、列高都不變;點外面回到靜止(取代探針的 blur-exit)
  *         G6  同組同高:閱讀範圍裡每一列的控件槽高 = 該尺寸欄位高(不指定 = sm,跟 InlineEdit 的偏好)
+ *         G10 列距(2026-11-27 user 定 T2 甲;field.spec.md「閱讀情境」效果 ④):夾具裡每個 FieldGroup 相鄰兩個子元素之間的像素距離 ——
+ *             閱讀組(範圍 = 最外層組,裡面有就地編輯;從 DOM 直接判)= 該組所在位置解出來的 --layout-space-tight,一般表單與純顯示組 = loose;
+ *             內層組照範圍(格名「G10:<組>:內層」)。對照組:拿掉判斷 / 判斷過寬 / 只算範圍本身(內層漏了)各紅指定格;靜態段 S3 另鎖列距那條只認就地編輯
  *         G7  DataTable 內容線 = 表頭字(data-table.spec.md「一、Table Size」;12 的出處 uiSize.spec.md「與 --table-cell-px 的關係」):
  *             表頭字左緣 = 格子左緣 + 頁面上解出來的 --table-cell-px;每一欄第一列格裡第一個看得見的東西(字用 DOM 文字範圍、輸入框用內容盒 + 字寬、
  *             圖 / svg / 有底色或看得見的框的盒子;欄位自己的框不算)靠左欄 = 表頭字、靠右欄 = 格子右緣往內 --table-cell-px;
@@ -150,8 +153,12 @@ function staticChecks(files) {
   // 只認它控件槽的直接子元素;改認範圍(組裡別列是純顯示就收)= 一般表單裡的按鈕也被收內距
   const ACTION_JUDGE = '[data-field-orientation][data-field-mode="view"] [data-field-slot="control"] > [data-field-frameless-action]'
   const actionSel = judged.filter((s) => s.includes('[data-field-frameless-action]'))
+  // 列距那條(2026-11-27 T2 甲):讀者 = FieldGroup 自己,只准就地編輯那一句(純顯示組不算);範圍本身(:has() 不含自己)與範圍裡的內層組兩句都要在
+  const GAP_JUDGES = ['[data-field-scope][data-field-group]:has([data-field-reading])', `${JUDGE} [data-field-group]`]
+  const gapSel = judged.filter((s) => s.endsWith('[data-field-group]') || s.startsWith('[data-field-scope][data-field-group]'))
   const drift = [
-    ...judged.filter((s) => !labelSel.includes(s) && !insetSel.includes(s) && !actionSel.includes(s)),
+    ...judged.filter((s) => !labelSel.includes(s) && !insetSel.includes(s) && !actionSel.includes(s) && !gapSel.includes(s)),
+    ...gapSel.filter((s) => !GAP_JUDGES.includes(s)),
     ...labelSel.filter((s) => !opens(s, LABEL_JUDGES)),
     ...insetSel.filter((s) => !opens(s, [JUDGE])),
     ...actionSel.filter((s) => !(s === ACTION_JUDGE || s.startsWith(`${ACTION_JUDGE} `))),
@@ -160,12 +167,13 @@ function staticChecks(files) {
     ...LABEL_JUDGES.filter((j) => !labelSel.some((s) => s.startsWith(`${j} `))).map((j) => `標籤那條缺「${j}」`),
     ...(insetSel.some((s) => s.startsWith(`${JUDGE} `)) ? [] : [`沒有框的值那條缺「${JUDGE}」`]),
     ...(actionSel.includes(ACTION_JUDGE) ? [] : [`檢視態按鈕那條缺「${ACTION_JUDGE}」`]),
+    ...GAP_JUDGES.filter((j) => !gapSel.includes(j)).map((j) => `列距那條缺「${j}」`),
   ]
   const elsewhere = [...files].filter(([f, src]) => f !== owner
     && /(:has\(\[data-field-reading|has-\[\[data-field-reading|:has\(\[data-field-scope|:has\(\[data-field-orientation\]\[data-field-mode|has-\[\[data-field-orientation\]\[data-field-mode|\[data-field-scope\]\[data-field-mode)/.test(stripComments(src))).map(([f]) => f)
   const aggregated = (files.get(`${DS}/styles/tokens.css`) ?? '').includes("@import './../components/Field/field.css';")
   put('S3:判斷只住 field.css', judged.length > 0 && drift.length === 0 && missing.length === 0 && elsewhere.length === 0 && aggregated,
-    `field.css 用到判斷的選擇器 ${judged.length} 條${drift.length ? `,其中開頭不是允許的判斷:${drift.join(' / ')}` : '(標籤那條 = 就地編輯 + 純顯示、內縮那條 = 只有就地編輯、檢視態按鈕那條 = 這一個 Field 自己是純顯示)'}${missing.length ? `;${missing.join(';')}` : ''};別處 ${elsewhere.length ? elsewhere.join(', ') : '0'};彙總檔${aggregated ? '有' : '沒有'}匯入`)
+    `field.css 用到判斷的選擇器 ${judged.length} 條${drift.length ? `,其中開頭不是允許的判斷:${drift.join(' / ')}` : '(標籤那條 = 就地編輯 + 純顯示、內縮那條 = 只有就地編輯、檢視態按鈕那條 = 這一個 Field 自己是純顯示、列距那條 = 只有就地編輯)'}${missing.length ? `;${missing.join(';')}` : ''};別處 ${elsewhere.length ? elsewhere.join(', ') : '0'};彙總檔${aggregated ? '有' : '沒有'}匯入`)
   // S4 token 公式與讀者
   const ui = files.get(`${DS}/tokens/uiSize/uiSize.css`) ?? ''
   const ie = files.get(`${DS}/components/InlineEdit/inline-edit.tsx`) ?? ''
@@ -205,6 +213,11 @@ const STATIC_MUTANTS = [
     from: '[data-field-orientation][data-field-mode="view"] [data-field-slot="control"] > [data-field-frameless-action] {', to: '[data-field-scope]:has([data-field-orientation][data-field-mode="view"]) [data-field-slot="control"] > [data-field-frameless-action] {' },
   { name: '按鈕記號改名(field.css 那條認不到)', expect: 'S2:沒有框的按鈕記號同名', file: `${DS}/components/Field/field-context.ts`,
     from: "FIELD_FRAMELESS_ACTION_ATTR = 'data-field-frameless-action'", to: "FIELD_FRAMELESS_ACTION_ATTR = 'data-field-frameless-button'" },
+  // 2026-11-27 T2 甲:列距那條只認就地編輯(整組切換的純顯示組不算)、兩句都要在
+  { name: '列距那條也認純顯示組', expect: 'S3:判斷只住 field.css', file: `${DS}/components/Field/field.css`,
+    from: '[data-field-scope]:has([data-field-reading]) [data-field-group] {', to: '[data-field-scope]:has([data-field-reading]) [data-field-group],\n[data-field-scope]:has([data-field-orientation][data-field-mode="view"]) [data-field-group] {' },
+  { name: '列距那條漏了範圍本身', expect: 'S3:判斷只住 field.css', file: `${DS}/components/Field/field.css`,
+    from: '[data-field-scope][data-field-group]:has([data-field-reading]),\n', to: '' },
 ]
 
 const staticBase = runStatic()
@@ -377,8 +390,18 @@ const PROBE = (titleSlotClass) => {
   const inner = document.createElement('div'); inner.style.cssText = 'position:absolute;visibility:hidden;width:var(--surface-title-bleed, 0px)'
   slotProbe.appendChild(inner); body.appendChild(slotProbe)
   const titleBleed = inner.getBoundingClientRect().width; slotProbe.remove()
+  // G10 列距(2026-11-27 T2 甲):每個 FieldGroup 相鄰兩個看得見的子元素之間的像素距離;期望值在這個組自己的位置解(密度 / 檔位照它所在那一層)。
+  // 閱讀與否從 DOM 直接判:範圍 = 最外層 FieldGroup(含自己),範圍裡有就地編輯(data-field-reading)= 閱讀組;純顯示組不算
+  const groups = [...document.querySelectorAll('[data-reading-set] [data-field-group]')].map((g) => {
+    const kids = [...g.children].filter((c) => getComputedStyle(c).display !== 'none' && !/(absolute|fixed)/.test(getComputedStyle(c).position) && c.getBoundingClientRect().height > 0)
+    const gaps = kids.slice(1).map((c, i) => c.getBoundingClientRect().top - kids[i].getBoundingClientRect().bottom)
+    let outer = g
+    for (let n = g.parentElement; n && n !== body; n = n.parentElement) if (n.hasAttribute('data-field-group')) outer = n
+    const at = (expr) => { const el = document.createElement('div'); el.style.cssText = `position:absolute;visibility:hidden;width:${expr}`; g.appendChild(el); const v = parseFloat(getComputedStyle(el).width); el.remove(); return v }
+    return { set: g.closest('[data-reading-set]').dataset.readingSet, nested: outer !== g, reading: Boolean(outer.querySelector('[data-field-reading]')), gaps, tight: at('var(--layout-space-tight)'), loose: at('var(--layout-space-loose)') }
+  })
   return {
-    rows,
+    rows, groups,
     nestedScopes: document.querySelectorAll('[data-field-scope] [data-field-scope]').length,
     refs: {
       formGap: resolveLen('calc(var(--spacing) * 3)'),
@@ -477,6 +500,19 @@ function judgeStatic(p, run, { only = null } = {}) {
     const expectLeft = r.kind === 'input' ? r.slot.left + refs.bleed : r.slot.left
     check(`G4:位置:${r.probe}`, near(r.valueLeft, expectLeft), `${tag} 值左緣 − ${r.kind === 'input' ? '框內字線' : '控件欄左緣'} = ${f2(r.valueLeft - expectLeft)}`)
     check(`G4:列高:${r.probe}`, near(r.slot.height, formH), `${tag} 控件槽高 ${f2(r.slot.height)} vs ${run.size === 'sm' ? 'sm' : 'md'} ${f2(formH)}`)
+  }
+  // G10 列距(field.spec.md「閱讀情境」效果 ④;user 2026-11-27 定 T2 甲):閱讀組(範圍裡有就地編輯)相鄰列 = tight,一般表單與純顯示組 = loose
+  if (want('G10') && p.groups) {
+    const multi = p.groups.filter((g) => g.gaps.length > 0)
+    if (!multi.length) instrumentFails.push({ cell: 'G10', detail: `${tag} 沒有量到任何有兩列以上的 FieldGroup` })
+    const seen = {}
+    for (const g of multi) {
+      const k = `${g.set}${g.nested ? ':內層' : ''}`
+      seen[k] = (seen[k] ?? 0) + 1
+      const name = `G10:${k}${seen[k] > 1 ? `#${seen[k]}` : ''}`
+      const wantGap = g.reading ? g.tight : g.loose
+      check(name, g.gaps.every((x) => near(x, wantGap)), `${tag} ${g.reading ? '閱讀組' : '表單 / 純顯示組'}列距 ${[...new Set(g.gaps.map(f2))].join(' / ')} vs ${g.reading ? 'tight' : 'loose'} ${f2(wantGap)}`)
+    }
   }
   if (want('G6')) for (const set of READING) {
     const hs = reading.filter((r) => r.set === set).map((r) => r.slot?.height)
@@ -999,6 +1035,13 @@ const MUTANTS = [
     css: '[data-title-slot-probe] { --surface-title-bleed: var(--field-px) !important; }' },
   { name: '範圍改成最近一層 FieldGroup', block: 'statics', only: ['SC'], runs: ONE_RUN, expect: ['SC:N2'],
     css: '[data-field-group] [data-field-group] [data-field-slot="label"] { --scope-label-color: var(--foreground) !important; } [data-field-group] [data-field-group] [data-field-frameless-value] { --scope-value-inset: 0px !important; }' },
+  // 2026-11-27 T2 甲(field.spec.md「閱讀情境」效果 ④):列距設在 FieldGroup 自己身上(讀者),破法也注入在讀者身上
+  { name: '拿掉列距判斷(閱讀組留在 loose)', block: 'statics', only: ['G10'], runs: ONE_RUN, expect: ['G10:RH', 'G10:RV', 'G10:ONE'], greenToo: ['G10:FH', 'G10:VG'],
+    css: '[data-field-group] { --scope-row-gap: var(--layout-space-loose) !important; }' },
+  { name: '列距判斷過寬(一般表單與純顯示組也 tight)', block: 'statics', only: ['G10'], runs: ONE_RUN, expect: ['G10:FH', 'G10:FV', 'G10:VG'], greenToo: ['G10:RH'],
+    css: '[data-field-group] { --scope-row-gap: var(--layout-space-tight) !important; }' },
+  { name: '列距只算範圍本身(內層組漏了)', block: 'statics', only: ['G10'], runs: ONE_RUN, expect: ['G10:N2:內層'], greenToo: ['G10:N2', 'G10:RH'],
+    css: '[data-field-group] [data-field-group] { --scope-row-gap: var(--layout-space-loose) !important; }' },
   { name: '純顯示補回左內距 13(C1 甲之前)', block: 'view', expect: ['G1-V:vertical/input', 'G1-V:horizontal/input'],
     dom: () => { for (const el of document.querySelectorAll('[data-view-case="input"] [data-field-slot="control"] > *')) el.style.setProperty('padding-left', '13px', 'important') } },
   // 2026-11-26 純顯示進閱讀情境(只動標籤色):破法注入在標籤自己身上(變數設在讀者身上,同「拿掉標籤判斷」)

@@ -78,6 +78,30 @@
       "source": "calendar.spec.md「外殼」貼邊擺法(格子區左、右、下貼齊容器的邊);交接資料夾 notes/decisions/decide152-answers.md「2026-11-27 晚」:user(問句)「但行事曆確實在市面上很常看到延伸到容器邊界緊貼著左右下邊的，如果畫框那應該就是長得跟表格十分類似吧」,AI 照它做貼邊擺法;user 看過 cal2 預覽後對「貼邊時格子左右要不要內縮」回「1. 不要」。底 = 0 是 AI 依「左右下」貼齊推的【AI 推導】",
       "userQuote": "但行事曆確實在市面上很常看到延伸到容器邊界緊貼著左右下邊的，如果畫框那應該就是長得跟表格十分類似吧",
       "quoteDate": "2026-11-27"
+    },
+    {
+      "key": "coachmark-body-before-footer",
+      "stories": [
+        "*"
+      ],
+      "container": "[data-coachmark-content] [data-layout-body]",
+      "want": "tight",
+      "reason": "Coachmark 主體(PopoverBody)包在捲動區裡、footer 在捲動區外:畫面上後面接 footer,照規則 4 表第 1 列會是 48;user 2026-11-27 明說 Coachmark 不納入留白改動,維持與頂部同值(tight)。容器選擇器只對到 Coachmark 自己的內容區,所以 stories 不限(其他元件的範例裡出現的 Coachmark 也是同一個元件)",
+      "source": "layoutSpace.spec.md 規則 4 表後「2026-11-27 改版」例外;coachmark.spec.md:34(footer 不畫上線,主體底 12 + footer 上 12);決策紀錄 notes/decisions/decide152-answers.md「留白草案第 2 輪」",
+      "userQuote": "「Coachmark 導覽提示」這個不要動，目前它的設計就是特化過也確認過的",
+      "quoteDate": "2026-11-27"
+    },
+    {
+      "key": "agent-decision-card-body-before-footer",
+      "stories": [
+        "design-system-components-agentpanel-*"
+      ],
+      "container": "[role=\"group\"].rounded-b-none > [data-slot=\"surface-header\"] + div",
+      "want": 0,
+      "reason": "AI 面板決策卡:主體上下無內距,與 footer 之間只由 footer 的上內距給(標頭、footer 的線都拿掉);畫面上後面接 footer,照規則 4 表第 1 列會是 48。user 2026-11-27 明說決策卡是已定義好的版型、不要動,維持主體底 0",
+      "source": "agent-decision-card.spec.md:11;layoutSpace.spec.md 規則 4 表後「2026-11-27 改版」例外;決策紀錄 notes/decisions/decide152-answers.md「留白草案第 3 輪」(原話節錄,取不含省略號的前段)",
+      "userQuote": "AI 面板的決策卡不要給我動，那就是已經定義好確認版型的東西了",
+      "quoteDate": "2026-11-27"
     }
   ],
   "pending": [],

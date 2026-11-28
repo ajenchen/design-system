@@ -65,7 +65,7 @@ Density 由**兩個獨立維度**構成,並配合一個 convenience attribute �
 
 | 浮層 | 密度來源 | 鎖 | 理由 |
 |------|---------|----|------|
-| Popover(含 Select / Combobox / SelectMenu / DatePicker / TimePicker / Coachmark / DataTable 排序·篩選·欄位面板 / AgentPanel 歷史) | 觸發點那一區 | `data-layout-space="md"` | 輕量浮層 → header py-tight 保持精簡(只鎖間距,控制項大小跟觸發點 → 內部 field 控件對齊觸發點)。建在 Popover 上的元件自動繼承這一列 |
+| Popover(含 Select / Combobox / SelectMenu / DatePicker / TimePicker / Coachmark / DataTable 排序·篩選·欄位面板 / AgentPanel 歷史) | 觸發點那一區 | `data-layout-space="md"` | 輕量浮層 → header py-tight 保持精簡(只鎖間距,控制項大小跟觸發點 → 內部 field 控件對齊觸發點)。【出處更正 2026-11-27,R87:鎖一般密度這一格與這個理由查無 user 原話 = AI 推導;user 2026-11-11 定的是浮層密度「跟按鈕」(本檔「浮層跟觸發點」開頭),不是這一格】建在 Popover 上的元件自動繼承這一列 |
 | DropdownMenu(含子選單) | 觸發點那一區 | 不鎖 | 不消費 layout-space token(RowSize + py-2);選單 item = field-height-{size},鎖 ui-size 會對不上觸發點。子選單不經 Portal、長在主選單裡,跟主選單同檔 |
 | HoverCard | 觸發點那一區 | 不鎖 | 照本節預設「不鎖」(稽核 R7-04 甲:兩份規格說法打架,主規格的預設是繼承;`overlay-chrome-sizing.spec.md` 已改正) |
 | Tooltip | 觸發點那一區 | 不鎖 | 目前不消費任何 density / layout-space token(px-3 py-2 寫死);照小浮層同一條規則蓋上檔位,以後內容消費密度 token 時不必再補 |
@@ -153,7 +153,7 @@ document.documentElement.setAttribute('data-layout-space', 'md')
 - ❌ **用 `data-density` master switch 鎖浮層**(連 ui-size 一起鎖 → 內部控件 / 選單 item 對不上觸發點)。只鎖該元件真正消費的 dial(見情境 1 表)
 - ❌ **把 density/layout-space lock 設在 header primitive(ChromeHeader / SurfaceHeader)而非 surface 根**——header 鎖、body 沒鎖 → 左緣不對齊(FileViewer 圖二 bug)。lock 一律放 surface 根容器(頁面上的一塊見情境 3;浮層要不要鎖、鎖在哪見情境 1)。ChromeHeader 原本專做這件事的 `lockDensity` 參數 2026-11-14 移除(AI 建議;user 沒說過要拿掉);閘 `scripts/overlay-density-lock-invariant.mjs` L3 擋標題列元件(含把屬性轉交給它的 DialogHeader / SidebarHeader 等)上直接寫 `data-density` / `data-ui-size` / `data-layout-space`
 - ❌ 為了追求表面一致性硬把 Dialog button 綁 lg ui-size(犧牲 header 高度 / strapline 彈性)
-- ❌ **鎖 Dialog 的 layout-space**(2026-06-16 定論)—— 本 spec 開頭維度表「Layout Space」列寫明 layout-space 就管「dialog body padding」,鎖 Dialog = 令自家 dial 對它點名要管的對象失效 = 自相矛盾。modal 寬鬆需求在 lg 階自然滿足(md 已是 16),不靠鎖。Popover/Coachmark 鎖 md 是另一回事(空間效率、消費 layout-space token、且為非阻斷錨定浮層)
+- ❌ **鎖 Dialog 的 layout-space**(2026-06-16 定論;【出處更正 2026-11-27,R87】「定論」沒有附 user 原話,查無 = AI 推導)—— 本 spec 開頭維度表「Layout Space」列寫明 layout-space 就管「dialog body padding」,鎖 Dialog = 令自家 dial 對它點名要管的對象失效 = 自相矛盾。modal 寬鬆需求在 lg 階自然滿足(md 已是 16),不靠鎖。Popover/Coachmark 鎖 md 是另一回事(空間效率、消費 layout-space token、且為非阻斷錨定浮層)
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 

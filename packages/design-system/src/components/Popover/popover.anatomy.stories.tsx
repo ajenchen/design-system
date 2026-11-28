@@ -6,6 +6,7 @@ import { EDITABLE_TITLE_HEADER_SLOT } from '@/design-system/patterns/overlay-sur
 import { Button } from '@/design-system/components/Button/button'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
+import { Command, CommandList, CommandGroup, CommandItem } from '@/design-system/components/Command/command'
 import { InlineEdit } from '@/design-system/components/InlineEdit/inline-edit'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 import { StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
@@ -22,6 +23,10 @@ const TYPE_OPTIONS = ['待處理', '進行中', '已完成'] as const
 /**
  * 元件總覽與元件檢閱器共用的「依類型篩選」浮層(同一份內容,不抄兩次)。
  * 清除 = 全部取消勾選、套用 = 收起浮層(2026-10-28 前兩顆都沒有作用;登記簿 A16「一堆按鈕都無法正常反應」)。
+ * 選項 = Command 勾選清單(自帶上下內距的清單,同 Popover 展示「篩選面板」):浮層的主體就是一份可選清單 → 走選單列、不用勾選群組自組
+ * (../../patterns/overlay-surface/overlay-surface.spec.md「預設:浮層的 body 是一份可選清單 → 走選單列(2026-09-17 user 拍板)」);
+ * 清單外框由 CommandList 帶 data-layout-region="unbounded",主體頂 / 底由容器自判 = 0(../../tokens/layoutSpace/layoutSpace.spec.md 規則 4 表 unbounded 列),
+ * 主體只撤左右內距(列的左右由 gutter="surface" 給 loose)。2026-11-28 前是勾選群組,2026-11-27 留白改版時被當成一般元素 + footer、底變成 48。
  */
 function TypeFilterPopover({
   defaultOpen = false, side, align, sideOffset, width, showHeader = true, showFooter = true,
@@ -47,12 +52,18 @@ function TypeFilterPopover({
         {showHeader && (
           <PopoverHeader><PopoverTitle>依類型篩選</PopoverTitle></PopoverHeader>
         )}
-        <PopoverBody>
-          <CheckboxGroup>
-            {TYPE_OPTIONS.map((option) => (
-              <Checkbox key={option} label={option} checked={checked.includes(option)} onCheckedChange={() => toggle(option)} />
-            ))}
-          </CheckboxGroup>
+        <PopoverBody className="!px-0">
+          <Command label="篩選類型" gutter="surface">
+            <CommandList>
+              <CommandGroup>
+                {TYPE_OPTIONS.map((option) => (
+                  <CommandItem key={option} value={option} checkbox checked={checked.includes(option)} onSelect={() => toggle(option)}>
+                    {option}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
         </PopoverBody>
         {showFooter && (
           <PopoverFooter>

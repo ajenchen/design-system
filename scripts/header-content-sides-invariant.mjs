@@ -92,7 +92,7 @@ export const SIDES = {
   'sheet-body': { last: 'element', box: 'fill', pattern: 'AB' },
   'surface-body': { last: 'element', box: 'hug', pattern: 'AB' },
   'header-anatomy-surface': { last: 'element', box: 'hug', pattern: 'AB' },
-  'popover-inspector': { last: 'element', box: 'hug', pattern: 'AB' },
+  'popover-inspector': { last: 'unbounded', box: 'hug', pattern: 'C' }, // 2026-11-28 改 Command 勾選清單(同 popover-list-region)
   'datatable-filter-panel': { last: 'element', box: 'hug', pattern: 'AB' },
   'fileitem-upload-manager': { last: 'element', box: 'hug', pattern: 'C' },
   'popover-list-region': { last: 'unbounded', box: 'hug', pattern: 'C' },
@@ -116,11 +116,15 @@ export const SIDES = {
  * 這兩種的高度是元件上的固定值或上下限、不擋頁面 → 與 Popover 同一邊 = 第 4 列,與頂部同值。2026-11-11 前 want = NaN,由 judge 紅「待規格」。
  * centered(原閘 CASES 登記的置中格)→ want = null:不套規則 4 的底(user 2026-11-14 在 A5 成品頁的留言 ②;上下在不在可用範圍正中由原閘判),judge 不比底。
  */
-export function bottomWant({ last, box, top, centered }, t) {
+export function bottomWant({ last, box, top, centered, footer = false, framedControl = false }, t) {
   if (centered) return { want: null, rule: '置中的格不套規則 4 的底(垂直置中的狀態不需要表示「內容結束了」的 bottom;上下由 header-first-gap 驗在可用範圍正中)' }
   if (last === 'bounded') return { want: t.loose, rule: '規則 4:bounded region → 容器底 = loose' }
   if (last === 'unbounded') return { want: 0, rule: '規則 4:unbounded region → 容器底 = 0(清單自帶 py)' }
   if (box === 'fill') return { want: t.bottom, rule: '規則 4:element → 容器底,容器擋住頁面或撐滿 = bottom' }
+  // 2026-11-27 user 定 T6 乙 / T4(layoutSpace.spec.md 規則 4 表):後面接 footer 的一般元素 = bottom;沒有 footer、直接碰到貼內容小容器自己的框時,
+  // 看得見框的欄位 / 按鈕 = loose,文字 / 勾選列維持與頂部同值(下面幾列)
+  if (footer) return { want: t.bottom, rule: '規則 4:element → 容器底,後面接 footer = bottom(user 2026-11-27 T6 乙)' }
+  if (framedControl) return { want: t.loose, rule: '規則 4:element → 容器底,直接碰到貼內容小容器自己的框、最後是看得見框的欄位 / 按鈕 = loose(user 2026-11-27 T4)' }
   if (box === 'hug') return { want: top, rule: `規則 4:element → 容器底,容器不擋頁面、貼著內容 = 與頂部同值(頂 ${top})` }
   if (box === 'capped') return { want: top, rule: `規則 4「沒寫到的三種容器」:被 max-height 卡住在捲、不擋頁面、高度不是視窗 / 版面欄給的 = 與頂部同值(頂 ${top})` }
   if (box === 'pinned') return { want: top, rule: `規則 4「沒寫到的三種容器」:高度寫死或被 min-height 撐住、不擋頁面、高度不是視窗 / 版面欄給的 = 與頂部同值(頂 ${top})` }
@@ -481,6 +485,8 @@ export const probeSides = ({ header, headerText = null, nth = 0, followStep, scr
     leftDesc: desc(L.t.el), rightDesc: desc(R.t.el), lastDesc: desc(last.el), owner: owner ? desc(owner) : null,
     // 角色由原閘 classifyFirst 判(有框就是 bounded,不看寬 ——【更正 2026-11-14】2026-11-13 這裡多帶的「撐不撐滿寬」隨原閘拿掉)
     lastF: last.f, firstF: first.f,
+    // 規則 4 表 2026-11-27(user T6 乙 / T4):後面接 footer、最後是看得見框的欄位 / 按鈕 —— 判法住 pageKit(header-first-gap),兩支閘同一份
+    footer: Boolean(K.footerAfter(body)), framedControl: K.framedControl(last.f, last.el),
     pattern, rowLeft: round(rowLeft), rowRight: round(rowRight),
     modal, scrolls, capped, free: round(free), pinned, grow: round(grow),
     loose: v('--layout-space-loose'), tight: v('--layout-space-tight'), bottomToken: v('--layout-space-bottom'),

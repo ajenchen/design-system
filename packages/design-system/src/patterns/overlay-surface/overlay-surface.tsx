@@ -178,7 +178,7 @@ export const SurfaceBody = React.forwardRef<
   //   header / footer shrink-0;Body flex-1 min-h-0 overflow-y-auto → 視窗太小時 body 內 scroll
   //   非 flex-col parent 內 flex-1/min-h-0 不起作用(放在任何容器都安全)【AI 推導 2026-11-16:讀 CSS 行為推出來的說法,原註解只寫了相容】
   // 上下內距由容器自己給(2026-11-17 A102):data-layout-body="hug" = 不擋頁面、高度貼內容(layoutSpace.spec.md 規則 4 第 4 列),
-  //   上 = tight;底依最後一個東西的邊緣 —— element = 與頂部同值、有框的表格 / 卡片 = loose、自帶上下內距的清單 = 0。
+  //   上 = tight;底依最後一個東西的邊緣與後面接不接 SurfaceFooter(2026-11-27 起接 footer 的一般元素 = bottom 48),值只住規則 4 表。
   //   實作 tokens/layoutSpace/layoutSpace.css(本檔不寫上下內距的值);consumer 的 !py-* / !pb-0 照樣蓋得過。
   <div
     ref={ref}

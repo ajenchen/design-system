@@ -486,7 +486,7 @@ export const FieldGroupBehavior: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>FieldGroup — 管理多 Field 垂直間距</H3>
-        <Desc>FieldGroup 統一管理欄位垂直間距 —— 單一值 <code>--layout-space-loose</code>(md 16px / lg 24px),隨 density 一起縮放。沒有 per-instance 選檔:表單間距是系統級設定,不需 consumer 手算,也不該每個表單各自挑。</Desc>
+        <Desc>FieldGroup 統一管理欄位垂直間距 —— 一般表單 <code>--layout-space-loose</code>(md 16px / lg 24px),隨 density 一起縮放;組裡有就地編輯(閱讀情境)時系統自動改成 <code>--layout-space-tight</code>。沒有 per-instance 選檔:表單間距是系統級設定,不需 consumer 手算,也不該每個表單各自挑。</Desc>
         <div className="grid grid-cols-2 gap-6 max-w-4xl">
           <div className="border border-dashed border-divider rounded-md p-4">
             <div className="text-caption text-fg-muted mb-3 font-mono">vertical orientation</div>

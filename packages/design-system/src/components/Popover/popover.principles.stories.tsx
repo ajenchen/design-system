@@ -1,7 +1,9 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @overlay-open-skip: 本檔為 usage-guidance(設計原則)story——每個 Rule 卡片以「關閉的 trigger 按鈕」並排比較 Popover / Dialog / DropdownMenu / Tooltip 何時用;全部 defaultOpen 會讓多個 portal 疊在一起、視覺全毀。overlay 開啟狀態的視覺覆蓋由 popover.stories.tsx(展示)+ popover.anatomy.stories.tsx(Inspector defaultOpen)負責。
+// @story-baseline: components/DataTable/data-table.stories.tsx#FilterPanelStates —「進階篩選」直接消費 DataTableFilterPanel(放在 PopoverContent width="hug" p-0,同 DataTable 展示工具列的篩選鈕);components/Popover/popover.stories.tsx#OpenSnapshot —「欄位顯示」的選項用同一份 Command 勾選清單(gutter="surface"、主體只撤左右內距)
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { createColumnHelper } from '@tanstack/react-table'
 import { Filter, Copy, Edit, Trash2, ChevronDown } from 'lucide-react'
 import {
   Popover,
@@ -29,6 +31,9 @@ import {
   DropdownMenuItem,
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { FieldLabel } from '@/design-system/components/Field/field'
+import { Command, CommandList, CommandGroup, CommandItem } from '@/design-system/components/Command/command'
+import { DataTableFilterPanel, type FilterTree } from '@/design-system/components/DataTable/data-table-filter-panel'
+import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging(type / options / filterable)
 import { Button } from '@/design-system/components/Button/button'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
@@ -48,29 +53,40 @@ type Story = StoryObj
 
 const TutorialRule = createTutorialRule({ examples: true, layout: 'wrap' })
 
-/** 進階篩選:清除 = 全部取消勾選、套用 = 收起(2026-10-28 前兩顆都沒有作用、還多一行規格沒有的「最多 3 個條件」;稽核 L065) */
+/**
+ * 進階篩選 = DS 的進階篩選面板(DataTableFilterPanel;data-table.spec.md「L4:Advanced Filter」):條件列是「一串同樣的條目」、
+ * 「加篩選」那一排算最後一筆,頂 = 筆與筆之間 = 底(layoutSpace.spec.md 規則 2「一串同樣的條目」,user 2026-11-14 原話在該段)。
+ * 2026-11-28 前這裡手寫勾選群組 + 清除 / 套用 footer,沒消費 DS 元件(story-rules.md「Production-grade composition fidelity」),
+ * 2026-11-27 留白改版時被當成一般元素 + footer、底被改成 48(user 2026-11-28:「進階篩選,欄位顯示早就定好了…」)。
+ */
+type TaskRow = { status: string; assignee: string; dueDate: string }
+const taskCol = createColumnHelper<TaskRow>()
+const ADVANCED_FILTER_COLUMNS = [
+  taskCol.accessor('status', { header: '狀態', meta: { type: 'select', filterable: true, options: [
+    { value: 'todo', label: '待處理' }, { value: 'doing', label: '進行中' }, { value: 'done', label: '已完成' },
+  ] } }),
+  taskCol.accessor('assignee', { header: '負責人', meta: { type: 'select', filterable: true, options: [
+    { value: 'me', label: '我' }, { value: 'mei', label: '林美君' }, { value: 'wei', label: '陳志偉' },
+  ] } }),
+  taskCol.accessor('dueDate', { header: '到期日', meta: { type: 'date', filterable: true } }),
+] as const
+
 function AdvancedFilterPopover() {
-  const [open, setOpen] = useState(false)
-  const [checked, setChecked] = useState<string[]>(['我指派的'])
-  const toggle = (v: string) => setChecked((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]))
+  const [value, setValue] = useState<FilterTree>(() => ({
+    mode: 'flat', conjunction: 'and',
+    children: [
+      { kind: 'cond', id: 'c1', field: 'status', op: 'is', value: ['doing'] },
+      { kind: 'cond', id: 'c2', field: 'assignee', op: 'is', value: ['me'] },
+    ],
+  }))
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover>
       <PopoverTrigger asChild>
         <Button variant="tertiary" endIcon={ChevronDown}>進階篩選</Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-80">
-        <PopoverHeader><PopoverTitle>進階篩選</PopoverTitle></PopoverHeader>
-        <PopoverBody>
-          <CheckboxGroup>
-            {['我指派的', '我建立的', '我追蹤的'].map((v) => (
-              <Checkbox key={v} label={v} checked={checked.includes(v)} onCheckedChange={() => toggle(v)} />
-            ))}
-          </CheckboxGroup>
-        </PopoverBody>
-        <PopoverFooter>
-          <Button variant="tertiary" size="sm" className="flex-1" onClick={() => setChecked([])}>清除</Button>
-          <Button variant="primary" size="sm" className="flex-1" onClick={() => setOpen(false)}>套用</Button>
-        </PopoverFooter>
+      {/* 面板自帶標題列(× 恆在,關閉走 PopoverClose)與內距:外殼不給內距、寬度跟面板(同 DataTable 展示的篩選鈕) */}
+      <PopoverContent align="start" width="hug" className="p-0">
+        <DataTableFilterPanel columns={[...ADVANCED_FILTER_COLUMNS]} value={value} onChange={setValue} labels={{ title: '進階篩選' }} />
       </PopoverContent>
     </Popover>
   )
@@ -79,14 +95,25 @@ function AdvancedFilterPopover() {
 const COLUMN_OPTIONS = ['狀態', '負責人', '到期日'] as const
 const COLUMN_DEFAULTS: string[] = ['狀態', '負責人']
 
-/** 「欄位顯示」同一份內容分別放進 Popover / Dialog:重設 = 回到預設欄位、套用 = 收起(2026-10-28 前兩顆都沒有作用) */
+/**
+ * 「欄位顯示」同一份內容分別放進 Popover / Dialog:重設 = 回到預設欄位、套用 = 收起(2026-10-28 前兩顆都沒有作用)。
+ * 選項 = DS 自帶上下內距的清單(Command 勾選列,同 Popover 展示「篩選面板」):清單外框自己帶 data-layout-region="unbounded",
+ * 主體頂 / 底由容器自判 = 0(layoutSpace.spec.md 規則 2 開頭、規則 4 表「unbounded region → 0」);主體只撤左右內距(列的左右由 gutter="surface" 給 loose)。
+ * 2026-11-28 前手寫勾選群組,2026-11-27 留白改版時被當成一般元素 + footer、底被改成 48(同上方進階篩選)。
+ */
 function ColumnVisibilityFields({ value, onChange }: { value: string[]; onChange: (next: string[]) => void }) {
   return (
-    <CheckboxGroup>
-      {COLUMN_OPTIONS.map((c) => (
-        <Checkbox key={c} label={c} checked={value.includes(c)} onCheckedChange={() => onChange(value.includes(c) ? value.filter((x) => x !== c) : [...value, c])} />
-      ))}
-    </CheckboxGroup>
+    <Command label="顯示的欄位" gutter="surface">
+      <CommandList>
+        <CommandGroup>
+          {COLUMN_OPTIONS.map((c) => (
+            <CommandItem key={c} value={c} checkbox checked={value.includes(c)} onSelect={() => onChange(value.includes(c) ? value.filter((x) => x !== c) : [...value, c])}>
+              {c}
+            </CommandItem>
+          ))}
+        </CommandGroup>
+      </CommandList>
+    </Command>
   )
 }
 
@@ -100,7 +127,7 @@ function ColumnVisibilityPopover() {
       </PopoverTrigger>
       <PopoverContent align="start">
         <PopoverHeader><PopoverTitle>欄位顯示</PopoverTitle></PopoverHeader>
-        <PopoverBody>
+        <PopoverBody className="!px-0">
           <ColumnVisibilityFields value={columns} onChange={setColumns} />
         </PopoverBody>
         <PopoverFooter>
@@ -121,7 +148,7 @@ function ColumnVisibilityDialog() {
       </DialogTrigger>
       <DialogContent height="hug" width="sm">
         <DialogHeader><DialogTitle>欄位顯示</DialogTitle></DialogHeader>
-        <DialogBody>
+        <DialogBody className="!px-0">
           <ColumnVisibilityFields value={columns} onChange={setColumns} />
         </DialogBody>
         <DialogFooter>
@@ -253,7 +280,7 @@ export const UsageGuidance: Story = {
           note="語意是「這裡給我一塊可組自訂內容的浮層」。內容完全由 consumer 決定,可放輸入框、多個 section、圖表。典型案例:Jira advanced filter、Notion 屬性編輯、Linear date range picker"
         >
           <AdvancedFilterPopover />
-          <ExampleCaption>↑ 多種控制元件並存(勾選群組 + 按鈕列)→ Popover</ExampleCaption>
+          <ExampleCaption>↑ 多種控制元件並存(欄位 / 條件 / 值的下拉 + 加篩選)→ Popover</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
