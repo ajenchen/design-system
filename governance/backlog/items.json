@@ -1018,11 +1018,12 @@
       "title": "Button 的下拉箭頭(endIcon ChevronDown)跟主圖示 / 字一樣大、一樣顏色,無字「圖示 + 箭頭」看起來像兩顆並列圖示:箭頭要不要縮小 / 淡化(研究建議縮到 12px、同色;有字無字與 Chip / TabsTrigger 同家族)",
       "rootCause": "button-endicon-chevron-same-size-as-primary-icon",
       "valueGate": "①",
-      "suggestion": "已定 C:Button / Chip / TabsTrigger 下拉箭頭 xs/sm/md 10px、lg 12px,同字色,線粗維持 1.33px;item-anatomy.spec.md「指示方向的圖示 → fg-muted」寫明適用範圍(選單列 / 欄位);button.spec.md 補箭頭尺寸表與無字型間距算法(現況寫成規格)。排 154,畫面變化進基準圖審核。",
+      "suggestion": "已定 C:Button / Chip / TabsTrigger 下拉箭頭 xs/sm/md 10px、lg 12px,同字色,線粗維持 1.33px;item-anatomy.spec.md「指示方向的圖示 → fg-muted」寫明適用範圍(選單列 / 欄位);button.spec.md 補箭頭尺寸表與無字型間距算法(現況寫成規格)。排 154,畫面變化進基準圖審核。 154 一起落地 (a) 甲:button.spec.md:274 加「只在有字的鈕上」、:304「圖示 + 下拉箭頭」型改成只放圖示、action-bar.spec.md:455 改「有字時加」;只有圖示、會開選單的鈕(含 ⋯、群組收合 ∨)不畫箭頭,有字的(篩選條件、建立、Chip、分頁標籤)不變;前後圖隨 154 基準圖給 user 看。",
       "evidence": [
         "實量 storybook 0.1.0-beta.153:xs 50×24、px 8、gap 0,看得到距離 4.0–5.3px;sm/md 約 8.7px;箭頭與主圖示同色 --foreground",
         "item-anatomy.spec.md:966-976「指示方向的圖示 → fg-muted」與 Button / Chip endIcon 同字色不一致(規格未寫例外)",
-        "user 2026-11-28 條件核准 C(逐字:「箭頭尺寸那題確認過可以符合我們ds一致的設計語言且不違背世界級的設計就照你建議」;條件查證見 tmp/wip-2026-11-25-backup/notes/decisions/state-placement-answer-2026-11-28.md 末段):10px 同色、線粗 1.33;lg 主圖示 20(button.tsx:561)→ 箭頭 12(比例 0.6)"
+        "user 2026-11-28 條件核准 C(逐字:「箭頭尺寸那題確認過可以符合我們ds一致的設計語言且不違背世界級的設計就照你建議」;條件查證見 tmp/wip-2026-11-25-backup/notes/decisions/state-placement-answer-2026-11-28.md 末段):10px 同色、線粗 1.33;lg 主圖示 20(button.tsx:561)→ 箭頭 12(比例 0.6)",
+        "(a) user 2026-11-28 核准甲「工具列箭頭照你建議」(決策頁 https://claude.ai/artifact/PAzW5MQGsV2EtrDaNCnw6a;逐字 tmp/wip-2026-11-25-backup/notes/decisions/toolbar-a-answer-2026-11-28.md):有字的選單鈕才畫箭頭、只有圖示的不畫(Quill / Fluent 同一條)"
       ]
     },
     {
