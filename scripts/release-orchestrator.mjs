@@ -1020,6 +1020,14 @@ function releaseTagCommit(repository, tag) {
   } catch { return null }
 }
 
+/**
+ * 這個 head 的 PR 是否已經合併(= 不再是「合併前」)。版號判定只在合併前做,讀回與五步狀態共用這一支。
+ * 與 merge 那一步的 mergedThisHead 同一個性質:state 是 MERGED,而且 PR 帶的正是現在這個 head。
+ */
+export function prHeadMerged({ pullRequest, headSha } = {}) {
+  return Boolean(pullRequest && pullRequest.state === 'MERGED' && headSha && pullRequest.headRefOid === headSha)
+}
+
 /** 讀回 + 判定;讀取方式可注入(測試用合成讀回)。 */
 export function readVersionBump({
   repository, version, headSha,
@@ -2183,7 +2191,10 @@ export function buildFiveStepStatus(workflow, observation) {
   // 2026-11-28 R100:版號有沒有升在**合併前**就判,fail-fast(不等 CI 跑完、不等合併後的 publish 才判 stale-version)。
   // 判法只有一份:classifyVersionBump(collectLiveObservation 讀回、release-self-audit 共用)。
   // 讀不到(versionBump 缺或 unresolved 但不是 not-bumped)= version-unverified,也不得當成通過(M37 第八種形狀)。
-  const versionBumpStatus = observation.onProtectedMain || observation.versionBump?.status === 'ok'
+  // 只有**真的合併前**才判:在 protected main 上,或這個 head 的 PR 已經 MERGED(合併後本機仍在 PR 分支 —— 本 repo 主資料夾
+  // 就是在 PR 分支上跑 release:auto)都跳過,交給 publish 的 stale-version。2026-11-28 規格核對必修:發布後 tag 指向 main 上的
+  // squash commit、本機沒 fetch → 指紋讀不到 → 原本在 readback / consumer 之前誤丟「合併前版號檢查沒過」。
+  const versionBumpStatus = observation.onProtectedMain || prHeadMerged(observation) || observation.versionBump?.status === 'ok'
     ? null
     : observation.versionBump?.reason === 'not-bumped' ? 'version-not-bumped' : 'version-unverified'
   const prChecksResolved = versionBumpStatus ?? prChecksRollup
@@ -2300,9 +2311,11 @@ export function collectLiveObservation(workflow = loadReleaseWorkflow()) {
   const version = packageVersion(workflow)
   const tag = `v${version}`
   const onProtectedMain = branch === defaultBranch && headSha === main?.sha
-  // 合併前判版號有沒有升(R100;合併後由 publish 的 stale-version 管,這裡不重讀)
-  const versionBump = onProtectedMain ? null : readVersionBump({ repository, version, headSha })
   const pullRequest = currentPullRequest(repository, branch, defaultBranch)
+  // 合併前判版號有沒有升(R100;合併後 —— 在 protected main 上,或這個 head 的 PR 已 MERGED —— 由 publish 的 stale-version 管,這裡不重讀)
+  const versionBump = onProtectedMain || prHeadMerged({ pullRequest, headSha })
+    ? null
+    : readVersionBump({ repository, version, headSha })
   const tagRef = ghJson(['api', `repos/${repository}/git/ref/tags/${encodeURIComponent(tag)}`], { allowFailure: true })
   const tagCommitSha = tagRef?.object?.sha || null
   const releaseCommitSha = tagCommitSha || main?.sha || null

@@ -60,6 +60,7 @@ import {
   releaseIncidentFromEnv,
   validateReleaseWorkflow,
   classifyVersionBump,
+  prHeadMerged,
   readVersionBump,
   versionBumpMessage,
 } from '../../../scripts/release-orchestrator.mjs'
@@ -360,6 +361,21 @@ test('R100:版號沒升在合併前(pr-checks)就擋,與 release-self-audit 共�
     'version-not-bumped')
   // 合併後(在 protected main 上)不在這裡判,交給 publish 的 stale-version
   assert.equal(buildFiveStepStatus(workflow, { ...before, onProtectedMain: true, versionBump: null })[0].status, 'complete')
+  // 合併後本機仍在 PR 分支(本 repo 主資料夾在 PR 分支上跑 release:auto):發布後 tag 指向 main 上的 squash commit、
+  // 本機沒 fetch → 指紋讀不到(digest-unavailable)。2026-11-28 規格核對必修:原本這一格在 readback / consumer 之前
+  // 誤丟「合併前版號檢查沒過」。兩面只差 PR 的 state。
+  const postMergeUnreadable = classifyVersionBump({ version: '0.1.0-beta.153', publishedState: true, tagCommitSha: T, headDigest: HEAD_DIGEST, tagDigest: null })
+  assert.equal(postMergeUnreadable.reason, 'digest-unavailable')
+  const merged = { ...before, pullRequest: { ...before.pullRequest, state: 'MERGED' } }
+  assert.equal(buildFiveStepStatus(workflow, { ...merged, versionBump: postMergeUnreadable })[0].status, 'complete',
+    'PR 已 MERGED 且 head 相同 = 合併後,不在 pr-checks 判版號')
+  assert.equal(buildFiveStepStatus(workflow, { ...before, versionBump: postMergeUnreadable })[0].status, 'version-unverified',
+    '另一面:同樣讀回、PR 還 OPEN = 合併前,讀不到照擋')
+  assert.equal(buildFiveStepStatus(workflow, { ...merged, headSha: 'c'.repeat(40), versionBump: postMergeUnreadable })[0].status, 'version-unverified',
+    'MERGED 的 PR 帶的是別份內容(之後又疊 commit)= 仍是合併前')
+  assert.equal(prHeadMerged({ pullRequest: merged.pullRequest, headSha: 'a'.repeat(40) }), true)
+  assert.equal(prHeadMerged({ pullRequest: before.pullRequest, headSha: 'a'.repeat(40) }), false)
+  assert.equal(prHeadMerged({ pullRequest: null, headSha: 'a'.repeat(40) }), false)
 
   // runner 與讀回的接線
   const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
@@ -370,6 +386,8 @@ test('R100:版號沒升在合併前(pr-checks)就擋,與 release-self-audit 共�
   assert.match(prBlock, /versionBumpMessage\(observation\.versionBump/, '丟錯訊息用共用的那一句')
   const collect = src.slice(src.indexOf('export function collectLiveObservation('), src.indexOf('export function productChangeSinceBaseline('))
   assert.match(collect, /readVersionBump\(\{ repository, version, headSha \}\)/, '讀回用共用的 readVersionBump')
+  assert.match(collect, /onProtectedMain \|\| prHeadMerged\(\{ pullRequest, headSha \}\)\s*\?\s*null/,
+    '讀回也只在真的合併前才做(在 protected main 上或 PR 已 MERGED 就不讀),與五步狀態用同一支 prHeadMerged')
   const audit = readFileSync(resolve(ROOT, 'scripts/release-self-audit.mjs'), 'utf8')
   assert.match(audit, /readVersionBump\(\{ repository: workflow\.automation\.repository, version: packageVersion\(workflow\), headSha \}\)/,
     'release-self-audit 的 version-bump 用同一支讀回,不另寫判法')
