@@ -2452,7 +2452,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 5,
-      "hash": "sha256:1a501c5caf1052381a26381f2da104fc0f1b6037c6de08e380a609be4c115dc3",
+      "hash": "sha256:53864a3b000f17e8330f3ded1d197b95c3012d0fb3e331993cd5e474c80f33ca",
       "id": "product-template-documentation",
       "mode": "0755",
       "ownerRepo": "design-system",

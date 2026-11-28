@@ -278,7 +278,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | product-seed-package-contract | `apps/template/package.json` | `sha256:ac43e9255a933da736e672e21d25370773f84632210110e47a118f379e40c66b` |
 | product-shared-instruction | `scripts/fork-role-sources/AGENTS.product.md` | `sha256:632947698156849c285b40880aa128a09d1374fe5f3c6eb97b26f412080e81f8` |
 | product-template-audit-workflow | `template/ds-product-template/.github/workflows/audit.yml` | `sha256:ff1bb33e94c6de2f96e242c8853089565e292d9dbf183cb25151ec02e95eeff2` |
-| product-template-documentation | `template/ds-product-template/docs` | `sha256:1a501c5caf1052381a26381f2da104fc0f1b6037c6de08e380a609be4c115dc3` |
+| product-template-documentation | `template/ds-product-template/docs` | `sha256:53864a3b000f17e8330f3ded1d197b95c3012d0fb3e331993cd5e474c80f33ca` |
 | product-template-npm-policy | `template/ds-product-template/.npmrc` | `sha256:2984e2fb8b6ba8fad758ad0e18c3bc49be706a1e1ed56e1fc2b45ec4dfdc7f07` |
 | product-template-onboarding-banner | `template/ds-product-template/.devcontainer/onboard-banner.sh` | `sha256:762c1fda165b0f8c9d2f6e13ac313f37da65d427334328638f4445d29da50a63` |
 | product-template-package-contract | `template/ds-product-template/package.json` | `sha256:d28bd634910a8e705180b52a806b3ef4171ad654ed874cae733762d3a1dcbb09` |
