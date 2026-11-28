@@ -213,6 +213,16 @@ Source(AI 讀此看官方範例): src/components/FileUpload/
 Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/FileViewer/
 
+## InfoTooltip(family self-contained)
+
+Storybook: https://ajenchen-design-system.netlify.app
+Source(AI 讀此看官方範例): src/components/InfoTooltip/
+
+### Sizes
+- **sm**: 容器傳下來的列尺寸是 sm 時(自動,不用傳)—— 圖示 16
+- **md**: 預設:沒有容器傳尺寸的地方、欄位標籤裡(固定)—— 圖示 16
+- **lg**: 容器傳下來的列尺寸是 lg 時(自動);其他地方是使用端覺得不夠大時自選 —— 圖示 20
+
 ## InlineEdit(family composite)
 
 Storybook: https://ajenchen-design-system.netlify.app

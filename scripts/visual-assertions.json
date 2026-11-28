@@ -816,6 +816,45 @@
           "rationale": "同淺色版(取消 tertiary / 確認刪除 danger)。"
         }
       ]
+    },
+    {
+      "id": "design-system-components-infotooltip-展示--section-heading",
+      "file": "info-tooltip-section-heading.png",
+      "rationale": "InfoTooltip(2026-11-27 線 I):兩個區塊標題旁的 ⓘ,平常淡色(fg-muted)、預設 16、不上底色。",
+      "assertions": [
+        {
+          "name": "標題 ↔ ⓘ 間距 = 4px(行內容器 inline-flex gap-1)",
+          "type": "gap",
+          "selector": "#storybook-root .inline-flex:has(> [data-slot=\"info-tooltip\"])",
+          "expected": 4,
+          "axis": "column",
+          "rationale": "info-tooltip.spec.md「與旁邊文字的距離」:4px = gap-1,同 FieldLabel 那一行(field.spec.md「FieldLabel `info` icon」);元件本身不帶外距。"
+        }
+      ]
+    },
+    {
+      "id": "design-system-components-infotooltip-展示--metric-label",
+      "file": "info-tooltip-metric-label-hover.png",
+      "interaction": {
+        "action": "hover",
+        "selector": "[data-slot=\"info-tooltip\"]"
+      },
+      "rationale": "InfoTooltip 滑過:ⓘ 深一階(fg-secondary)、不上底色、游標一般箭頭,Tooltip 顯示 info 那一句(info-tooltip.spec.md「長相與互動」)。這一則只有一顆 ⓘ,hover selector 唯一。",
+      "assertions": [
+        {
+          "name": "數值標籤 ↔ ⓘ 間距 = 4px",
+          "type": "gap",
+          "selector": "#storybook-root .inline-flex:has(> [data-slot=\"info-tooltip\"])",
+          "expected": 4,
+          "axis": "column",
+          "rationale": "同上一則(info-tooltip.spec.md「與旁邊文字的距離」)。"
+        }
+      ]
+    },
+    {
+      "id": "design-system-components-infotooltip-設計規格--size-matrix",
+      "file": "info-tooltip-size-matrix.png",
+      "rationale": "InfoTooltip 尺寸對照表:sm / md 16、lg 20(ICON_SIZE;info-tooltip.spec.md「尺寸」)。只留影像,尺寸數值由表格讀 ICON_SIZE。"
     }
   ]
 }

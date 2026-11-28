@@ -1,8 +1,8 @@
 // code-quality-allow: file-size — foundational composite(Field + FieldLabel + FieldDescription + FieldError + context + 8 layout variants),拆檔會讓 Field 家族互相 import 循環
 import * as React from 'react'
-import { Info as InfoIcon } from 'lucide-react'
+import { InfoTooltip } from '@/design-system/components/InfoTooltip/info-tooltip'
 import { cn } from '@/lib/utils'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/design-system/components/Tooltip/tooltip'
+// (本行原是 Tooltip 的 import;2026-11-27 標籤旁的 ⓘ 改用公開元件 InfoTooltip,這一行保留成註解,別處以行號引用本檔不位移)
 
 /**
  * Field — 表單欄位佈局容器（shadcn Field 風格:https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/field.tsx#L81 ）
@@ -513,23 +513,10 @@ const FieldLabel = React.forwardRef<HTMLLabelElement, FieldLabelProps>(
             )}
             {children}
           </TextTag>
-          {showInfo && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  aria-label={info}
-                  // 滑過深一階 = 告訴你「這裡有說明可看」(hit-area-canonical.md 三-1)。
-                  // 游標明寫 cursor-default:ⓘ 點下去不做事(Radix Tooltip 點擊只會收起說明),
-                  // 不能用手形;base.css 讓所有 <button> 預設手形,只刪 cursor-pointer 蓋不掉(2026-09-26)
-                  className="inline-flex items-center text-fg-muted hover:text-fg-secondary bg-transparent border-0 p-0 cursor-default"  /* 2026-09-07 刪本地 outline-* — 與全域 base.css:61-64 逐字等價,本區塊無 outline-none */
-                >
-                  <InfoIcon size={16} aria-hidden />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>{info}</TooltipContent>
-            </Tooltip>
-          )}
+          {/* ⓘ = 公開元件 InfoTooltip(長相、游標、讀屏名稱的理由都住 info-tooltip.tsx / info-tooltip.spec.md)。
+              size="md" 明寫:標籤字級固定 text-body、不隨欄位尺寸變(field-context.ts FIELD_TEXT_CLASS),
+              所以 ⓘ 固定 16,不跟著外面可能有的列尺寸走 */}
+          {showInfo && info && <InfoTooltip info={info} size="md" />}
         </span>
       </RootTag>
     )
