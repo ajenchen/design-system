@@ -727,7 +727,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:7709faa7ebdb84fd5b6e1b12e6c4c43dd3abbc50dd7d19c34d62af8228b66cd6",
+      "hash": "sha256:5b81c322555e4c4d9c4e522ef08312fb6cbdec82c3508673535d8f49513eaa51",
       "id": "design-system-utility-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -3094,7 +3094,7 @@
         "scripts/generated/"
       ],
       "files": 819,
-      "hash": "sha256:e7342fbb83d85645b4bfb78b889c09748ed52fa4d0bb6d3432eda4148f3a0b6f",
+      "hash": "sha256:b54345e5e6831e9818124b65ad67bcd7cb20a6611af0139bf70d737b56904d92",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

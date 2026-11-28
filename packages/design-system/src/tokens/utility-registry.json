@@ -432,7 +432,7 @@
           "same_line_any": ["\\brole\\s*=\\s*['\"]group['\"]", "<fieldset\\b"],
           "nearby_components": ["Field", "input", "select", "textarea"],
           "nearby_min": 2,
-          "source": "packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md:198 規則 5「橫排 Input Gap」非緊密(不同組值並列)gap-4(16,固定不隨 density;證據要求同 gap-2 那一格:橫排 + fieldset / role=group + 鄰近兩個以上欄位)"
+          "source": "packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md:247 規則 5「橫排 Input Gap」非緊密(不同組值並列)gap-4(16,固定不隨 density;證據要求同 gap-2 那一格:橫排 + fieldset / role=group + 鄰近兩個以上欄位)"
         },
         {
           "id": "item-slot-row",
