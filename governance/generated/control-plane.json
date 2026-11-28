@@ -2676,12 +2676,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:fe686eaa25ba9f5105d1d61a0e730f7b85ef92e937fabcf4f7ca93de5fe6b762",
+      "hash": "sha256:2d84d7d2b85d23dcb6f9d1e1f4219e336fe154a3d0f75f539d07b8dbab3f252e",
       "id": "provider-lifecycle-ledger",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "packages/governance/canonical/provider-lifecycle.json",
-      "size": 109081,
+      "size": 111023,
       "type": "file"
     },
     {

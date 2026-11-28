@@ -4,8 +4,8 @@
   "kind": "provider-lifecycle-ledger",
   "immutableHead": {
     "providerInventorySha256": "86e9d0668cb54ad1bf05c36e78b4aa80417d5f468c929dd3ddcf69c1afbf32e4",
-    "releaseVersion": "0.1.0-beta.151",
-    "snapshotSha256": "7daad48d3412276959e0a25037c330c17b7457c020865c98b9b886f45adb7b23"
+    "releaseVersion": "0.1.0-beta.152",
+    "snapshotSha256": "65fd55970f092ebf9cfffe54e955ca956b5c721967cd7d57c7a40f143e642bbd"
   },
   "snapshots": [
     {
@@ -4244,8 +4244,85 @@
       "retiredProviders": []
     },
     {
-      "releaseVersion": "0.1.0-beta.153",
+      "releaseVersion": "0.1.0-beta.152",
       "previousSnapshotSha256": "7daad48d3412276959e0a25037c330c17b7457c020865c98b9b886f45adb7b23",
+      "providers": [
+        {
+          "id": "claude",
+          "discovery": {
+            "providerRootNames": [
+              ".claude"
+            ],
+            "instructionNames": [
+              "CLAUDE.md"
+            ],
+            "instructionOverrideNames": [
+              "CLAUDE.local.md",
+              "CLAUDE.override.md"
+            ],
+            "configPaths": [
+              ".claude/settings.json",
+              ".claude/settings.local.json",
+              ".mcp.json"
+            ],
+            "pluginRootNames": [
+              ".claude-plugin"
+            ]
+          },
+          "surfaces": [
+            {
+              "path": ".claude/settings.json",
+              "kind": "file"
+            },
+            {
+              "path": ".claude/skills",
+              "kind": "tree"
+            },
+            {
+              "path": "CLAUDE.md",
+              "kind": "file"
+            }
+          ]
+        },
+        {
+          "id": "codex",
+          "discovery": {
+            "providerRootNames": [
+              ".agents",
+              ".codex"
+            ],
+            "instructionNames": [
+              "AGENTS.md"
+            ],
+            "instructionOverrideNames": [
+              "AGENTS.local.md",
+              "AGENTS.override.md"
+            ],
+            "configPaths": [
+              ".codex/config.toml",
+              ".codex/hooks.json"
+            ],
+            "pluginRootNames": [
+              ".codex-plugin"
+            ]
+          },
+          "surfaces": [
+            {
+              "path": ".agents/skills",
+              "kind": "tree"
+            },
+            {
+              "path": ".codex/hooks.json",
+              "kind": "file"
+            }
+          ]
+        }
+      ],
+      "retiredProviders": []
+    },
+    {
+      "releaseVersion": "0.1.0-beta.153",
+      "previousSnapshotSha256": "65fd55970f092ebf9cfffe54e955ca956b5c721967cd7d57c7a40f143e642bbd",
       "providers": [
         {
           "id": "claude",
