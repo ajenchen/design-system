@@ -12,7 +12,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 
 | ID | Owner path | Digest |
 |---|---|---|
-| agent-bootstrap | `AGENTS.md` | `sha256:ea9c7fced5b3a6e193fa492d0465cef700d595fe8f41ee016b83af9bd098c3a0` |
+| agent-bootstrap | `AGENTS.md` | `sha256:c3b712cc5de8aa987fe255177a672d3a44b6049190496fe681b731c4a50b631b` |
 | audit-coverage-matrix-source | `scripts/audit-coverage-matrix.mjs` | `sha256:e8bb1af0d8020a8635eccb0fec2127b39fbbbea1a40c996e35c9781c1a5ffe40` |
 | audit-rubric | `packages/design-system/ds-canonical/skills/design-system-audit/references/audit-prompts.md` | `sha256:ccf0c8f2d9771e76075d21f6789dc746d06435355fcbbe4307a59651661ac9f8` |
 | authority-decision-evidence-library | `packages/governance/src/authority-decision-evidence.mjs` | `sha256:00c046c927cc7e3f32e50c9f7acec88a6bff2d741cf2db270336a24e42c33ae1` |
@@ -26,11 +26,11 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-hook-provider-marker-regex-helper | `packages/design-system/ds-canonical/hooks/lib/provider-marker-regex.mjs` | `sha256:7395275574a3d3c1b65b6e6fc58aedbbd95caf157e0cd5cf07d0107a4531bd65` |
 | canonical-hook-registration-output-contract-helper | `packages/design-system/ds-canonical/hooks/tests/registration-output-contracts.mjs` | `sha256:96c5a30cf956ecd9471b106396e0b80823c9e8e1c29c5b21f052b3bcd68d7fa0` |
 | canonical-hook-tsx-governance-analysis-helper | `packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs` | `sha256:e1b26967fad39d9b7dbd4aac8eb2a568eca910cd6857e6fd1ffd4b1b99f0157b` |
-| canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:803c1f6bed96c4640ac77a3628c57f70f2db4cb2bc9abb7b5883928f0d74929a` |
+| canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:d23df48d19e57b4647cd117b24d27c2df995f103c877381b0df2d2874506e56b` |
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:35a451d58926f74877af9630e2f750bfeb83a70cf7718ac8147d74baf5191be1` |
 | canonical-references | `packages/design-system/ds-canonical/references` | `sha256:420fbd4016e3a1824f95acb42697806696bec1ffdb95dfb1327564f3000bbe78` |
 | canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:0c5db139f022540a2a27158c276c997db1e7a30a9637beba288c808dd56e5d39` |
-| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:d1cac4438f9d717e772ba52dedd48e52315f1ae2bdbf8280737549adb1febd46` |
+| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:2b69591620a965fcd1a86186d45d0dde18885ebc807f2c32f9d7accbf553f942` |
 | changeset-release-policy | `.changeset/config.json` | `sha256:a65a7f9ee6dc6c56eab99f77876bb61297cc59909943ba4ab08705b2d110e86c` |
 | claude-instruction-adapter | `packages/design-system/ds-canonical/adapters/claude-root-instructions.md` | `sha256:6c2c5fb2d2ffe93c74d74d88c35596d6e360973fec6e058290742cb52b39d8b9` |
 | claude-managed-plugin-manifest | `.claude-plugin/plugin.json` | `sha256:addc50279cccb8587c982af54b3ef2eac2edc5bf0a2cdb27147192a3c41bfccc` |
