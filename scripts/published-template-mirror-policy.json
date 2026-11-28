@@ -10,6 +10,7 @@
     "package.json",
     "scripts/audit-consumer-a11y.mjs",
     "scripts/check-plugin-installed.mjs",
+    "scripts/cloud-setup.sh",
     "scripts/consumer-source-harness.mjs",
     "scripts/create-app.mjs",
     "scripts/deploy-url.mjs",

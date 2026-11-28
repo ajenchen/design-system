@@ -2,6 +2,15 @@
 /**
  * Node 版本唯一出處閘(2026-11-28,0.1.0-beta.153,TRACKER R96)
  *
+ * @gate-contract
+ *   保證: 設計系統 repo 與產品範本裡,每一處決定用哪一版 Node 的設定(CI 的 setup-node、dev container 映像、Netlify、
+ *         engines、雲端 Setup script)都等於 .node-version 那一版;雲端 Setup script 只有 README 一份短的、真正的安裝邏輯只在受管的
+ *         scripts/cloud-setup.sh,而且兩者都不寫死版號
+ *   紅: --selftest 在記憶體裡各注入一種漂移(正本只寫主版號、範本副本不同、workflow 改回字面版號或刪掉 setup-node、
+ *       稀疏簽出漏檔、映像換回 Node 22、Netlify 寫回 NODE_VERSION、多一份 .nvmrc、engines 不涵蓋、README 短腳本寫死版號 / 不執行受管腳本 / 變長、
+ *       受管腳本寫死版號 / 拿掉 SHA-256 驗證、別的 .md 再放一份 Setup script),每一種都必須紅且指名那一格
+ *   綠: 現行原始碼(selftest 基準)必須綠 —— 同一趟先判現行檔案、零違規才往下注入;讀不到 workflow 或範本 .md 時以儀器失效紅,不當通過
+ *
  * ## 保證的性質(逐字)
  *
  * 設計系統 repo 與產品範本裡,每一處「決定要用哪一版 Node」的設定,用的都是 `.node-version` 那一版;
@@ -27,8 +36,10 @@
  *    linux/amd64 與 linux/arm64 都要相同;只讀、不在 CI 跑)。換映像 = 量完把結果加進表。
  * N5 兩份 netlify.toml 不寫 `NODE_VERSION`(Netlify 讀 base 目錄的 `.node-version`);根與範本都不准再有 `.nvmrc` / `.tool-versions`。
  * N6 兩份 package.json 的 `engines.node` 是消費者範圍 `>=X.Y.Z`,必須涵蓋正本(X.Y.Z ≤ 正本)。
- * N7 範本 README 的 Claude Code 雲端 Setup script(恰好一個 bash 區塊)讀 `.node-version`,不寫死版號;
- *    範本其他 .md 不准再放 Setup script 的 bash 區塊(README 是唯一出處,其他檔只指過去)。
+ * N7 範本 README 的雲端 Setup script 恰好一個 bash 區塊、而且是短版:指令不超過 4 行、`exec bash scripts/cloud-setup.sh`、
+ *    不寫死版號(2026-11-28 user:「那麼長？本來很短欸？」)。安裝邏輯只在受管的 `scripts/cloud-setup.sh`:讀 `.node-version`、
+ *    不寫死版號、對 SHASUMS256.txt 驗 SHA-256、最後 `exec npm run setup:all`。範本其他 .md 不准再放 Setup script 的 bash 區塊
+ *    (README 是唯一出處,其他檔只指過去)。
  *
  *   node scripts/node-version-ssot-invariant.mjs [--selftest] [--measure-image <ref>]
  */
@@ -46,6 +57,8 @@ const NETLIFY = ['netlify.toml', `${TEMPLATE_ROOT}/netlify.toml`]
 const PACKAGES = ['package.json', `${TEMPLATE_ROOT}/package.json`]
 const SECOND_SOURCES = ['.nvmrc', '.tool-versions', `${TEMPLATE_ROOT}/.nvmrc`, `${TEMPLATE_ROOT}/.tool-versions`]
 const README = `${TEMPLATE_ROOT}/README.md`
+export const CLOUD_SETUP = 'scripts/cloud-setup.sh'
+const MAX_SETUP_SCRIPT_COMMANDS = 4
 
 // 量過的映像 → 映像設定裡的 NODE_VERSION(2026-11-28 以 --measure-image 讀 mcr.microsoft.com:amd64 / arm64 都是 24.14.0)。
 // 同一系列的鄰近版:4.0.8-24 = 24.13.0、4.0.10-24 = 24.15.0、1-22(換掉前那個 digest)= 22.16.0。
@@ -71,7 +84,7 @@ export function loadFiles(root = REPO) {
     const abs = join(root, path)
     if (existsSync(abs)) files.set(path, readFileSync(abs, 'utf8'))
   }
-  for (const path of [CANONICAL_PATH, `${TEMPLATE_ROOT}/${CANONICAL_PATH}`, ...DEVCONTAINERS, ...NETLIFY, ...PACKAGES, ...SECOND_SOURCES, README]) read(path)
+  for (const path of [CANONICAL_PATH, `${TEMPLATE_ROOT}/${CANONICAL_PATH}`, ...DEVCONTAINERS, ...NETLIFY, ...PACKAGES, ...SECOND_SOURCES, README, CLOUD_SETUP]) read(path)
   for (const dir of WORKFLOW_DIRS) {
     for (const name of readdirSync(join(root, dir)).filter((f) => /\.ya?ml$/.test(f)).sort()) read(`${dir}/${name}`)
   }
@@ -87,7 +100,8 @@ export function loadFiles(root = REPO) {
 // 雲端 Setup script 的 bash 區塊(README 以外出現 = 第二份說明)
 const SETUP_SCRIPT_BLOCK = /```(?:bash|sh|shell)\n([\s\S]*?)```/g
 const setupScriptBlocks = (text) => [...String(text ?? '').matchAll(SETUP_SCRIPT_BLOCK)]
-  .map((m) => m[1]).filter((body) => /Setup script|REPO_DIR=/.test(body))
+  .map((m) => m[1]).filter((body) => /Setup script|REPO_DIR=|cloud-setup\.sh/.test(body))
+const commandLines = (body) => body.split('\n').map((line) => line.trim()).filter((line) => line && !line.startsWith('#'))
 
 function checkWorkflow(path, text, violations) {
   let doc
@@ -189,8 +203,18 @@ export function checkNodeVersionSsot(files) {
   if (readmeBlocks.length !== 1) violations.push(`N7 ${README}: Setup script 的 bash 區塊要恰好一個(找到 ${readmeBlocks.length} 個${readmeBlocks.length ? '' : ',儀器失效'})`)
   else {
     const [setupScript] = readmeBlocks
-    if (!setupScript.includes(CANONICAL_PATH)) violations.push(`N7 ${README}: Setup script 沒有讀 .node-version`)
-    if (setupScript.includes(canonical)) violations.push(`N7 ${README}: Setup script 寫死了版號 ${canonical},要讀 .node-version`)
+    const commands = commandLines(setupScript)
+    if (commands.length > MAX_SETUP_SCRIPT_COMMANDS) violations.push(`N7 ${README}: Setup script 有 ${commands.length} 行指令,短版最多 ${MAX_SETUP_SCRIPT_COMMANDS} 行;安裝邏輯放受管的 ${CLOUD_SETUP}`)
+    if (!commands.includes(`exec bash ${CLOUD_SETUP}`)) violations.push(`N7 ${README}: Setup script 沒有 exec bash ${CLOUD_SETUP}`)
+    if (setupScript.includes(canonical)) violations.push(`N7 ${README}: Setup script 寫死了版號 ${canonical},版本只在 .node-version`)
+  }
+  const cloudSetup = files.get(CLOUD_SETUP)
+  if (cloudSetup === undefined) violations.push(`N7 ${CLOUD_SETUP}: 讀不到(受管的雲端 Setup 實作不見了)`)
+  else {
+    if (!/<\s*\.node-version\b/.test(cloudSetup)) violations.push(`N7 ${CLOUD_SETUP}: 沒有從 .node-version 讀版本`)
+    if (cloudSetup.includes(canonical)) violations.push(`N7 ${CLOUD_SETUP}: 寫死了版號 ${canonical},要讀 .node-version`)
+    if (!cloudSetup.includes('SHASUMS256.txt') || !/sha256sum --check/.test(cloudSetup)) violations.push(`N7 ${CLOUD_SETUP}: 沒有對 SHASUMS256.txt 驗 SHA-256`)
+    if (!/\nexec npm run setup:all\n?$/.test(cloudSetup)) violations.push(`N7 ${CLOUD_SETUP}: 最後一行必須是 exec npm run setup:all(回傳它的結束碼)`)
   }
   const docs = [...files.keys()].filter((path) => path.startsWith(`${TEMPLATE_ROOT}/`) && path.endsWith('.md') && path !== README)
   if (!docs.length) violations.push(`N7 讀不到 ${TEMPLATE_ROOT} 的其他 .md(儀器失效,不是通過)`)
@@ -248,7 +272,30 @@ function selftest() {
       pkg.engines.node = '22 || 24'
       f.set(PACKAGES[0], JSON.stringify(pkg, null, 2))
     }],
-    ['N7', 'Setup script 寫死版號', (f) => f.set(README, f.get(README).replace('# Claude Code Setup script', `# Claude Code Setup script (node ${f.get(CANONICAL_PATH).trim()})`))],
+    ['N7', 'README 短腳本寫死版號', (f) => {
+      const needle = firstWith(README, `exec bash ${CLOUD_SETUP}`) && `exec bash ${CLOUD_SETUP}`
+      f.set(README, f.get(README).replace(needle, `${needle}  # Node ${f.get(CANONICAL_PATH).trim()}`).replace(`${needle}  # Node`, `${needle}\n  # Node`))
+    }, '寫死了版號'],
+    ['N7', 'README 短腳本不執行受管腳本', (f) => {
+      const needle = firstWith(README, `exec bash ${CLOUD_SETUP}`) && `exec bash ${CLOUD_SETUP}`
+      f.set(README, f.get(README).replace(needle, 'exec npm run setup:all'))
+    }, `沒有 exec bash ${CLOUD_SETUP}`],
+    ['N7', 'README 短腳本塞回安裝邏輯(變長)', (f) => {
+      const needle = firstWith(README, `exec bash ${CLOUD_SETUP}`) && `exec bash ${CLOUD_SETUP}`
+      f.set(README, f.get(README).replace(needle, `NODE_VERSION="$(cat .node-version)"\n  curl -fsSLO "https://nodejs.org/dist/v$NODE_VERSION/SHASUMS256.txt"\n  ${needle}`))
+    }, '短版最多'],
+    ['N7', '受管腳本寫死版號(不讀 .node-version)', (f) => {
+      const path = firstWith(CLOUD_SETUP, '< .node-version)')
+      f.set(path, f.get(path).replace(/NODE_VERSION="\$\(tr -d[^\n]*< \.node-version\)"/, `NODE_VERSION="${f.get(CANONICAL_PATH).trim()}"`))
+    }, '寫死了版號'],
+    ['N7', '受管腳本拿掉 SHA-256 驗證', (f) => {
+      const path = firstWith(CLOUD_SETUP, 'sha256sum --check')
+      f.set(path, f.get(path).replace(/sha256sum --check[^\n]*/, 'true); then'))
+    }, 'SHA-256'],
+    ['N7', '受管腳本不再回傳 setup:all 的結束碼', (f) => {
+      const path = firstWith(CLOUD_SETUP, '\nexec npm run setup:all')
+      f.set(path, f.get(path).replace('\nexec npm run setup:all', '\nnpm run setup:all || true'))
+    }, 'exec npm run setup:all'],
     ['N3', '刪掉範本 audit.yml 的 setup-node(job 照樣跑 npm)', (f) => {
       const path = `${TEMPLATE_ROOT}/.github/workflows/audit.yml`
       const before = f.get(path)
@@ -260,13 +307,14 @@ function selftest() {
       const path = `${TEMPLATE_ROOT}/docs/01-first-time-setup.md`
       if (!f.has(path)) throw new Error(`selftest 前提不成立:讀不到 ${path}`)
       f.set(path, `${f.get(path)}\n  \`\`\`bash\n  #!/bin/bash\n  # Claude Code Setup script (shared Default environment): runs setup:all only for <repository-folder>\n  REPO_DIR="<repository-folder>"\n  exec npm run setup:all\n  \`\`\`\n`)
-    }],
+    }, '只准指過去'],
   ]
-  for (const [id, name, mutate] of cases) {
+  // 第 4 欄(選填)= 該紅的那一句必須含的字:同一格有兩條規則時,證明紅的是被注入的那一條,不是旁邊那條。
+  for (const [id, name, mutate, expect] of cases) {
     const files = new Map(base)
     mutate(files)
     const hits = checkNodeVersionSsot(files)
-    const named = hits.filter((line) => line.startsWith(`${id} `))
+    const named = hits.filter((line) => line.startsWith(`${id} `) && (!expect || line.includes(expect)))
     console.log(`${named.length ? 'RED ok ' : 'MISSED '} ${id} ${name}${named.length ? `:${named[0]}` : ''}`)
     if (!named.length) failed.push(`${id} ${name}:該紅沒紅(${hits.join(' | ') || '零違規'})`)
   }

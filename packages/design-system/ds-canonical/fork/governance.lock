@@ -526,6 +526,14 @@
     },
     {
       "schemaVersion": 1,
+      "file": "consumer/managed-files/7eb56443c6dde979aa3c77d69af4edda1bcb2299bfb05e902754aab36d89c033.blob",
+      "sha256": "0b8ec7c59a9a3658ca8b035d31d3bedf99cffc806c262d3ec4b24f9f309915bc",
+      "source": "scripts/cloud-setup.sh",
+      "classification": null,
+      "destination": "scripts/cloud-setup.sh"
+    },
+    {
+      "schemaVersion": 1,
       "file": "consumer/managed-files/7eb6cc60abfdabaf6617c336058fad1454ccde08889295767bfd9b7fd153cc6e.blob",
       "sha256": "7398fa303164603e29374616368a58c191cb7fe320f7841490fea315497057ab",
       "source": "scripts/lib/verified-exact-npm-runtime.mjs",
@@ -1007,7 +1015,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "5d28f108facb0df3fbcb9c88bfe909b19f9cc66814c2dbb6aa6ef4820530e6cd",
+      "sha256": "63c17ff6287e4575fb7accfd454e5b73c3212fb785528f88fe5be1514d26c303",
       "source": null,
       "classification": null,
       "destination": null
