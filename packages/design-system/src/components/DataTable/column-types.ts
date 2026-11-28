@@ -151,6 +151,13 @@ declare module '@tanstack/react-table' {
      *  搭配 options 的 `tagVariant`)。2026-07-14 deep-audit 補型別:runtime 一直消費此欄位
      *  (cell-registry.tsx SelectCell displayMode),但 ColumnMeta 漏宣告 → typed consumer 傳不進(假 SSOT)。 */
     display?: 'plain' | 'tag'
+    /**
+     * boolean 欄可編輯時用哪一種控件(2026-11-27 決策頁第 9 題,user 採乙):`'checkbox'`(預設)| `'switch'`。
+     * 資料型別仍是 boolean —— 排序、篩選運算子、試算表按鍵、讀屏全部共用;唯讀格兩種都畫 ✓ / ✗。
+     * 判準(一列的某個功能開不開 → switch;一列的資料屬性 → checkbox)住 `../Checkbox/checkbox.spec.md`「表格格子裡」。
+     * 只對 `type: 'boolean'` 有作用;名字取 item-anatomy 的 `control` 槽(selection 機制)同義。
+     */
+    control?: 'checkbox' | 'switch'
     /** Date: Intl.DateTimeFormat options */
     formatOptions?: Intl.DateTimeFormatOptions
     /**
@@ -172,6 +179,11 @@ declare module '@tanstack/react-table' {
     /** Link: 自訂顯示文字（不設則自動從 URL 提取 hostname） */
     linkLabel?: string
     /**
+     * Link: 值的前綴圖示(轉發 LinkInput `icon`;2026-11-27):整欄同一個圖示,畫在格裡網址文字前面、在連結裡、跟字同為連結色。
+     * 規則 → `../LinkInput/link-input.spec.md`「值的前綴圖示」。
+     */
+    linkIcon?: import('lucide-react').LucideIcon
+    /**
      * Inline edit:column 是否可編輯。
      * - `true`:可編
      * - `false`(default):唯讀
@@ -180,7 +192,7 @@ declare module '@tanstack/react-table' {
      * 互動 per type(對齊 Notion / Airtable):
      * - string / number / currency:click cell → inline `<Input>` autoFocus + selected
      * - date / select / multiSelect / person / multiPerson:click cell → 進 edit mode 的 Field control(用戶按 trigger 開 picker)
-     * - boolean:不分 read/edit mode,直接 `<Checkbox>` 點即 toggle + commit
+     * - boolean:不分 read/edit mode,直接 `<Checkbox>`(`meta.control: 'switch'` 時 `<Switch>`)點即 toggle + commit
      * - url:read = 連結(盒子只有網址文字寬,點擊範圍延伸到整格)+ 滑過格 / 鍵盤聚焦時出現的 Pencil;格裡 Pencil 以外開連結,Pencil 進 `<Input>` edit mode(空值 / 不是網址時點格也進)
      *
      * Esc cancel / blur or Enter commit。Commit 觸發 `onCellCommit`。

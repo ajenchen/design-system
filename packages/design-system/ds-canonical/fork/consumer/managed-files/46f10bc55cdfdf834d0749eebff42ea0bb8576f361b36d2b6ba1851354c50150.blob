@@ -374,6 +374,10 @@ const NPM_METAVULNERABILITY_VIA_WITH_GLOB_CLOSURE = Object.freeze([
   'libnpmsearch', 'libnpmteam', 'libnpmversion', 'make-fetch-happen', 'minimatch', 'npm-profile',
   'npm-registry-fetch', 'pacote', 'tar',
 ])
+// 形狀 (C) 的 via = 上面那份拿掉 tar(見 npm 分支 2026-11-27 說明);由同一份清單推導,不另抄一份名單。
+const NPM_METAVULNERABILITY_VIA_WITH_GLOB_CLOSURE_LOCKED_FIXED_TAR = Object.freeze(
+  NPM_METAVULNERABILITY_VIA_WITH_GLOB_CLOSURE.filter((name) => name !== 'tar'),
+)
 
 function sameNameSet(value, expected) {
   return Array.isArray(value)
@@ -728,21 +732,41 @@ function assertRemediatedFinding(name, finding, findings = {}) {
     //   (A) 只經 tar:原本三件性質照驗;
     //   (B) via 剛好等於 NPM_METAVULNERABILITY_VIA_WITH_GLOB_CLOSURE,而且 via 的每個名字都在同一份報告裡(各自另有認列):
     //       治理版仍被列為受影響;不再要求下一個 patch 不在範圍。多一條、少一條 via 都 fail closed。
+    //
+    // 2026-11-27(產品 canary workspace 以 0.1.0-beta.151 跑 setup:all,exit 1):「npm metavulnerability differs from the
+    // verified tar overlay closure(severity=moderate range=6.6.0-next.0 - 6.10.1 || 7.21.0 - 8.5.4 || 8.19.0 - 8.19.2 ||
+    // >=9.0.0-pre.0 nodes=node_modules/npm effects=<none> via=@npmcli/arborist|…)」。不是新通報:同一天以治理版 npm 11.19.0
+    // 對 DS 與 workspace 已提交的鎖檔實跑,回的都是 (B);把鎖檔裡 npm 內建 tar 那一列(node_modules/npm/node_modules/tar)
+    // 從 7.5.19 改成修補層的 7.5.22 再跑,回的就逐字是上面那一筆。成因也實測過:修補層把 npm 內建的 tar 目錄整個換成
+    // 7.5.22 之後,在同一棵樹再跑一次一般的 `npm install`(例如手動升 DS 版本),npm 讀磁碟,把 7.5.22 寫回 package-lock.json
+    // —— 之後 audit 讀鎖檔就看不到受影響的 tar(GHSA-r292-9mhp-454m,<=7.5.20),npm 那筆少了 tar 這條 via,
+    // 嚴重度只剩 minimatch / glob 兩則的 moderate(GHSA-g3hv-75wg-m249、GHSA-3g3m-2fjr-6pw4),range 也不再是 `*`。
+    // 換 npm 版本解不了:那份 range 自己就列到 >=9.0.0-pre.0;npm 最新的 11.21.3 / 12.2.3(2026-11-18)仍宣告
+    // minimatch ^10.2.5、glob ^13.0.6,都在兩則的受影響範圍(修正只在 minimatch 11.0.1 / glob 14.0.2)。
+    // 曝險與 (B) 相同:磁碟上的 tar 本來就是修補層的 7.5.22(呼叫本檔之前 installedOverlayReceipt 已驗過),只是鎖檔也這樣寫了。
+    //   (C) 嚴重度剛好 moderate、via 剛好等於 (B) 拿掉 tar、via 的每個名字都在同一份報告裡(各自另有認列)、
+    //       同一份報告裡**沒有** tar 那筆(有 tar 卻不在 npm 的 via = 形狀自相矛盾)、治理版仍被列為受影響。
+    //       多一條 / 少一條 via、嚴重度不是 moderate、報告裡仍有 tar —— 一律 fail closed。
     const governed = GOVERNANCE_DEPENDENCY_EXACT_NPM_VERSION
-    const common = finding.severity === 'high'
-      && finding.isDirect === true
+    const shared = finding.isDirect === true
       && exactArray(finding.nodes, ['node_modules/npm'])
       && exactArray(finding.effects, [])
       && typeof finding.range === 'string'
       && metavulnerabilityRangeCovers(finding.range, governed)
+    const common = shared && finding.severity === 'high'
     const tarOnly = common
       && exactArray(finding.via, ['tar'])
       && !metavulnerabilityRangeCovers(finding.range, nextPatchVersion(governed))
     const withGlobClosure = common
       && sameNameSet(finding.via, NPM_METAVULNERABILITY_VIA_WITH_GLOB_CLOSURE)
       && finding.via.every((entry) => Object.hasOwn(findings, entry))
+    const withGlobClosureLockedFixedTar = shared
+      && finding.severity === 'moderate'
+      && sameNameSet(finding.via, NPM_METAVULNERABILITY_VIA_WITH_GLOB_CLOSURE_LOCKED_FIXED_TAR)
+      && finding.via.every((entry) => Object.hasOwn(findings, entry))
+      && !Object.hasOwn(findings, 'tar')
     invariant(
-      tarOnly || withGlobClosure,
+      tarOnly || withGlobClosure || withGlobClosureLockedFixedTar,
       `npm audit npm metavulnerability differs from the verified tar overlay closure(${shape})`,
     )
     return

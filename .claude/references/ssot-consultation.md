@@ -20,7 +20,7 @@ AGENTS.md `# SSOT 消費 canonical` 的詳表 + 反例。主章留核心 + point
 | **Header 跨家族視覺契約**(border / padding / tabsSlot / dismiss size 連動)| `patterns/header-canonical/header-canonical.spec.md` — SSOT for chrome + overlay header 兩家族;含 tabsSlot 6 lockstep rules(W1 border auto-suppress / W2 padding align / W3 tabs size 對應 / W4 flush stack / W5 md future tier / W6 default sm)|
 | **Overlay chrome dismiss / unbounded button**| `patterns/overlay-surface/overlay-surface.spec.md`「Chrome dismiss size canonical v5」 |
 | **Overlay title size**(modal 16 vs non-modal 14)| `patterns/overlay-surface/overlay-surface.spec.md`「Overlay title typography canonical」 |
-| **Form field gap**| `components/Field/field.spec.md` + 看關係 → `tokens/layoutSpace/layoutSpace.spec.md`「規則 3:元素間 gap(只看親疏,role 無關)」 |
+| **Form field gap**| `components/Field/field-group.spec.md` + 看關係 → `tokens/layoutSpace/layoutSpace.spec.md`「規則 3:元素間 gap(只看親疏,role 無關)」 |
 | **Icon 選擇 / 尺寸**| `packages/design-system/ds-canonical/rules/ui-development.md`「元件 Props 命名」「Icon canonical」+ `ui-dev-rules.md`「Icon size 來源分層規則」 |
 | **浮層 header / body / footer**| `patterns/overlay-surface/overlay-surface.spec.md` |
 | **Scrollbar / 滾動**| `components/ScrollArea/scroll-area.spec.md` +「horizontal-overflow pattern」 |

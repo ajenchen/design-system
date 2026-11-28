@@ -2,8 +2,7 @@
 // (scripts/gen-component-indexes.mjs findFeatureSiblings:檔頭 10 行含 @internal 的 `calendar-*.tsx` 不 re-export)。只給 calendar.tsx 用。
 import * as React from 'react'
 import type { CategoricalColor } from '@/design-system/tokens/categorical-color'
-import { Popover, PopoverAnchor, PopoverBody, PopoverContent, PopoverHeader } from '@/design-system/components/Popover/popover'
-import { EDITABLE_TITLE_HEADER_SLOT } from '@/design-system/patterns/overlay-surface/overlay-surface'
+import { Popover, PopoverAnchor, PopoverBody, PopoverContent, PopoverHeader, PopoverTitle } from '@/design-system/components/Popover/popover'
 import { InlineEdit } from '@/design-system/components/InlineEdit/inline-edit'
 import { Field, FieldGroup, FieldLabel } from '@/design-system/components/Field/field'
 import { Switch } from '@/design-system/components/Switch/switch'
@@ -16,10 +15,10 @@ import { CALENDAR_EVENT_DETAIL_WIDTH_PX } from './calendar-geometry'
 /**
  * ── 消費的 SSOT ──
  * - components: [Popover(PopoverAnchor virtualRef / PopoverContent side="right" + align="start"(子選單擺法,popover.spec.md「禁止事項」用法 (2);
- *   sideOffset / collisionPadding / 碰撞翻面 = Popover 預設,tokens/elevation/overlay-geometry.ts)+ aria-label / PopoverHeader closeAriaLabel + actions / PopoverBody),
- *   InlineEdit(標題 as="h2" size="sm" + 各欄 renderRead / renderEdit / multiline / editable 閘), Field + FieldLabel + FieldGroup(垂直排、閱讀情境),
- *   Switch(全天:可改時直接切換;只能看時不畫這一欄【ALLDAY-VIEW(定)】), DatePicker.Range(檢視 formatRange、編輯 showTime), Select(類別:display="tag")]
- * - patterns: [overlay-surface `EDITABLE_TITLE_HEADER_SLOT`(標題是 InlineEdit sm 時的標題列 slot 與 × 讓位;overlay-chrome-sizing.spec.md「可編輯標題的標題列」)]
+ *   sideOffset / collisionPadding / 碰撞翻面 = Popover 預設,tokens/elevation/overlay-geometry.ts)/ PopoverHeader closeAriaLabel + actions + PopoverTitle
+ *   (事件名稱;浮層名稱經 PopoverTitle 自動接 aria-labelledby)/ PopoverBody),
+ *   InlineEdit(各欄 renderRead / renderEdit / multiline / editable 閘;可改時「標題」也是一欄), Field + FieldLabel + FieldGroup(垂直排、閱讀情境),
+ *   Switch(全天:可改時直接切換;只能看時不畫這一欄【ALLDAY-VIEW(定)】), DatePicker.Range(檢視 formatRange、編輯 showTime + defaultOpen), Select(類別:display="tag")]
  * - tokens: 無直接讀取 —— 標題列高、欄位間距、body 上下左右內距、垂直排就地編輯外伸,全由上面的元件與 layoutSpace.css(PopoverBody = hug)給,本檔不寫任何間距
  * - 資料: ./calendar-layout.ts(detailRangeOf / rangeToTimePatch / toggleAllDayPatch:時間欄的值、全天 end 不含 ↔ Range 結束日含、全天切換)
  * - spec refs: calendar.spec.md「事件詳情浮層」(定位 / 外殼 / 標題列 / 內文欄位 / 位置 / 層次 / Esc / 點外面)、../Field/field.spec.md「閱讀情境」、
@@ -73,7 +72,7 @@ export interface CalendarEventDetail<E = unknown> {
 export interface CalendarEventDetailLabels {
   /** 事件詳情浮層右上角 × 的讀屏名稱(calendar.spec.md「A11y 預設」字串可覆寫「清單 / 詳情的關閉」;經 PopoverHeader `closeAriaLabel`) */
   detailClose: string
-  /** 詳情標題(就地編輯)的欄位名稱:讀屏念「編輯 {此字}」、編輯中輸入框的名稱(看得見的是標題本身) */
+  /** 內文「標題」欄的標籤(可改時才有這一欄;看得見的字,也是讀屏念「編輯 {此字}」、編輯中輸入框的名稱)。事件名稱本身放在標題列 */
   detailTitle: string
   /** 詳情各欄的標籤(看得見的字,也是該欄的名稱;calendar.spec.md「事件詳情浮層」內文欄位) */
   detailTime: string
@@ -173,15 +172,13 @@ export function CalendarEventDetailPopover<E>({
           align="start"
           // 寬:Popover 預設 288 放不下時間欄編輯中的 DatePicker.Range showTime(實量見 calendar-geometry.ts CALENDAR_EVENT_DETAIL_WIDTH_PX)
           width={CALENDAR_EVENT_DETAIL_WIDTH_PX}
-          // 浮層的名字 = 事件標題本身(標題是 InlineEdit、沒有 PopoverTitle 可自動接線;consumer aria-label 優先,popover.tsx PopoverContent)——
-          // 不念隱形編輯鈕的「編輯 …」,編輯中也不會變空
-          aria-label={shown.event.title}
           onCloseAutoFocus={onCloseAutoFocus}
         >
-          {/* 標題列:標準 PopoverHeader(內建 ×)+ 可編輯標題的 slot(× 佔位 = 一列 sm 欄位高,標題列 52 / 56、兩態同高;標題欄尾端讓出欄位內距,
-              點 × 一定是關閉)。標題列右側 = eventDetail.actions(沒有「儲存」鈕、沒有 footer —— 每一欄自己提交) */}
-          <PopoverHeader className={EDITABLE_TITLE_HEADER_SLOT} closeAriaLabel={labels.detailClose} actions={detail.actions?.(shown.event)}>
-            <DetailTitle entry={shown} editable={isEditableOf(detail, shown)} label={labels.detailTitle} onChange={onChange} />
+          {/* 標題列:一般浮層的樣子 —— 標準 PopoverHeader(內建 ×)+ PopoverTitle 放事件名稱,一律如此(可改 / 只能看都一樣;兩種密度同高)【DT-TITLE(定)】。
+              浮層的名字經 PopoverTitle 自動接 aria-labelledby = 事件名稱;內文「標題」欄提交後才換。
+              標題列右側 = eventDetail.actions(沒有「儲存」鈕、沒有 footer —— 每一欄自己提交) */}
+          <PopoverHeader closeAriaLabel={labels.detailClose} actions={detail.actions?.(shown.event)}>
+            <PopoverTitle>{shown.event.title}</PopoverTitle>
           </PopoverHeader>
           {/* 內文:PopoverBody 預設(左右 loose、上 tight、hug → 底 = 頂;layoutSpace.spec.md 規則 2 / 規則 4),不加任何內距 class */}
           <PopoverBody>
@@ -195,26 +192,12 @@ export function CalendarEventDetailPopover<E>({
 
 const isEditableOf = <E,>(detail: CalendarEventDetail<E>, entry: CalendarEventDetailEntry<E>) => detail.isEditable?.(entry.event) ?? true
 
-/** 標題:InlineEdit(預設 Input)放在標題位置、不包成 Field;清空後提交 = 還原原值(不交回空標題) */
-function DetailTitle<E>({ entry, editable, label, onChange }: { entry: CalendarEventDetailEntry<E>; editable: boolean; label: string; onChange: (patch: CalendarEventPatch) => void }) {
-  return (
-    <InlineEdit
-      as="h2"
-      size="sm"
-      readClassName="font-medium"
-      label={label}
-      value={entry.event.title}
-      editable={editable}
-      onCommit={(next) => { if (next.trim() !== '') onChange({ title: next }) }}
-    />
-  )
-}
-
 /**
  * 內文欄位(calendar.spec.md「事件詳情浮層」內文欄位):**垂直排**(標籤在上;Field 預設方向)【FIELD-ORIENT(定)】,包在一個 FieldGroup 裡 ——
  * 組裡有就地編輯 = 閱讀情境(../Field/field.spec.md「閱讀情境」:標籤次要色、垂直外伸、同組同高,自動生效,本檔不另寫)。
  * 每一欄都是 Field;可改的值走 InlineEdit、不能改的值 InlineEdit editable={false}(不混放純顯示,inline-edit.spec.md:52 / :126);
- * 「全天」是自己一個 Field、Switch 直接切換【Q5(定)】,只能看時不畫【ALLDAY-VIEW(定)】。只能看時空欄位不列【AI 推導】。
+ * 「全天」是自己一個 Field、Switch 直接切換【Q5(定)】,只能看時不畫【ALLDAY-VIEW(定)】。可改時第一欄是「標題」,只能看時不列【DT-TITLE(定)】。
+ * 只能看時空欄位不列【AI 推導】。
  */
 function DetailFields<E>({ entry, detail, labels, locale, readFormat, onChange, onToggleAllDay }: Omit<CalendarEventDetailPopoverProps<E>, 'anchor' | 'onClose' | 'onCloseAutoFocus'> & { entry: CalendarEventDetailEntry<E> }) {
   const editable = isEditableOf(detail, entry)
@@ -228,6 +211,14 @@ function DetailFields<E>({ entry, detail, labels, locale, readFormat, onChange, 
   )
   return (
     <FieldGroup>
+      {/* 標題:可改時才列,第一欄(Field + InlineEdit,與其他欄同一套);只能看時不列 —— 事件名稱已在標題列(同「全天」只能看時不畫的邏輯)【DT-TITLE(定)】。
+          清空後提交 = 還原原值(不交回空標題) */}
+      {editable && (
+        <Field data-calendar-detail-field="title">
+          <FieldLabel>{labels.detailTitle}</FieldLabel>
+          <InlineEdit value={event.title} label={labels.detailTitle} onCommit={(next) => { if (next.trim() !== '') onChange({ title: next }) }} />
+        </Field>
+      )}
       <Field data-calendar-detail-field="time">
         <FieldLabel>{labels.detailTime}</FieldLabel>
         <InlineEdit<[string, string]>
@@ -242,8 +233,11 @@ function DetailFields<E>({ entry, detail, labels, locale, readFormat, onChange, 
           )}
           // 編輯:一個 DatePicker.Range,有時段時加 showTime(date-picker.spec.md:69)。兩端都選好才提交(Range 自己的 onChange 在完成時才呼叫)
           // 兩端的字與平常同一份寫法(readFormat;日期兩位數月日、時間同月格)—— 看和改不會是兩種寫法(DATE-TIME(定)2026-11-26)
+          // defaultOpen:點一下進編輯就開日曆、焦點在日曆裡(同下方類別欄的 Select defaultOpen、DataTable 日期格;2026-11-27 前只把焦點交給
+          // 開始端、日曆沒開,要再點一次)
           renderEdit={(p) => (
             <DatePicker.Range
+              defaultOpen
               size={p.size}
               value={p.value}
               showTime={showTime}

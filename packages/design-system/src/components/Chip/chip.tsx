@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuCheckboxItem,
+  DropdownMenuItem,
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import {
   useScrollEdges,
@@ -254,7 +255,7 @@ ScrollChipGroup.displayName = 'ScrollChipGroup'
 
 // ── MenuChipGroup ────────────────────────────────────────────────────────────
 // Show-all navigator pattern (Chrome tab dropdown / VS Code editor tabs):
-//   - Menu 永遠顯示全部 chips,每個都用 DropdownMenuCheckboxItem + checked 反映 selection
+//   - Menu 永遠顯示全部 chips:多選用 DropdownMenuCheckboxItem + checked、單選用 DropdownMenuItem + selected 反映 selection
 //   - 點 menu item = toggle selection;捲到中央由 useRevealSelected 看選中狀態做(直接點 chip / 方向鍵同一條,
 //     2026-11-11 前捲動只寫在這裡的選單處理程式 → 直接點同一個 chip 不捲,user 回報的不一致)
 //   - 不用動態 overflow 計算,menu 內容穩定
@@ -357,6 +358,21 @@ const MenuChipGroup = React.forwardRef<
               const chipProps = chip.props as { value?: string; children?: React.ReactNode; disabled?: boolean }
               const chipValue = chipProps.value
               if (typeof chipValue !== 'string') return null
+              // 單選(type='single',預設)= 互斥選一 → DropdownMenuItem selected(選中底色、選了就關),同 Tabs 溢出選單;
+              // 多選才用勾選項。依據 item-anatomy.spec.md 規則 B「選擇語意必須對應指示器視覺」(單選 in dropdown 禁方塊勾)
+              // 與 checkbox.spec.md「選單裡」(d);2026-11-27 前單選也畫勾選框。
+              if (groupType !== 'multiple') {
+                return (
+                  <DropdownMenuItem
+                    key={chipValue}
+                    selected={isSelected(chipValue)}
+                    disabled={chipProps.disabled}
+                    onSelect={() => toggleFromMenu(chipValue)}
+                  >
+                    {chipProps.children}
+                  </DropdownMenuItem>
+                )
+              }
               return (
                 <DropdownMenuCheckboxItem
                   key={chipValue}

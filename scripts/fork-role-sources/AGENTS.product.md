@@ -21,7 +21,7 @@
   PRs with the regenerated lock/adapters (steps: DS package README).
 <!-- canonical-decision-authority:inject -->
 
-## Six working principles
+## Seven working principles
 
 1. **World-class, no shortcuts**: visual and interaction decisions must be defensible against at least
    three relevant systems (Polaris, Material, Atlassian, Ant, Carbon, Apple HIG).
@@ -35,6 +35,10 @@
    shipped DS spec; stop only when the remaining choice changes product UX or canonical meaning.
 6. **Fix the invariant, not one symptom**: search sibling occurrences, add a regression proof, and route
    reusable DS/template defects to their canonical upstream owner.
+7. **Quality first, then speed**: complete, correct output is the precondition; within it, finish as
+   fast and cheaply (time, compute, tokens) as possible by cutting rework and waiting, never checks.
+   Choose the approach for the current environment and effort; the user sets goals, not steps (same rule
+   as DS root `AGENTS.md`).
 
 ## Before changing product UI
 
@@ -61,13 +65,14 @@ allowed only when the shipped spec makes it intentional and the exception is nar
 
 ## Verification contract
 
-Run every check this product has and report its real outcome. The minimum repository-wide contract is
+Run every check this product has and report its real outcome. The minimum contract is
 `npm run governance:check` (exact installed, hooks-off authority), `npm run typecheck`, `npm run build`,
-product lint/test/a11y scripts when present, and browser or Storybook visual verification for
-user-visible changes.
+product lint/test/a11y scripts if present, and browser/Storybook visual verification of user-visible
+changes.
 
-Never replace a check with `true`, an empty script, a notice-only waiver, or an unverified claim.
-Missing required tooling is a failure, not a pass. Evidence must bind the checked source snapshot.
+Never replace a check with `true`, an empty script, a notice-only waiver, or an unverified claim;
+reasoned exemptions: `governance/consumer-governance.md`. Missing required tooling fails.
+Evidence must bind the checked source snapshot.
 
 ## Claude, Codex, and future agents
 
@@ -91,7 +96,6 @@ Missing required tooling is a failure, not a pass. Evidence must bind the checke
   then merge and verify under Standing Authorization — no self-approval or chat trigger. Preview, a11y,
   visual, canary, and independent-peer evidence are scheduled or optional unless the user explicitly
   requests them, and never block the standard release by default.
-- Product repos never publish the DS; exact-version upgrade PRs merge after `Verify consumer` passes.
 
 ## Pilot and upstream feedback
 

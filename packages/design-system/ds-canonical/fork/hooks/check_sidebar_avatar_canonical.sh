@@ -5,6 +5,9 @@
 #   (fork 分類 SHIP_AS_IS —— 不併進 chrome_header_dispatcher.sh,那支是 DROP,併進去 consumer 就沒人擋)。
 #   r1_chrome_header_avatar = 原 check_chrome_header_avatar_canonical.sh(規則、escape、exit 2、訊息逐字搬入)
 #   r2_menu_button_wrap     = 原 check_sidebar_menu_button_implicit_wrap.sh(規則、escape、exit 2、訊息逐字搬入)
+#   逐處豁免(2026-11-27 r72;以前兩條只有 env 出口,CI 重播不帶 env = 產品在 CI 完全沒有出口):
+#     r1 `@chrome-header-avatar-ok: <理由>`、r2 `@sidebar-menu-button-wrap-ok: <理由>`,寫在該區塊內或它開頭的上一行;
+#     冒號後要有理由,空理由照擋。依據:user 2026-11-27 model2 留言(交接資料夾 notes/decisions/morning-151-answers.md)。
 #   兩條共用同一份事件 / matcher / *.tsx 篩選(原兩支本來就相同);各自的 bypass 只放行自己那條。
 #   兩條都中 → 兩則訊息都印、exit 2;任一條的 parser 失敗 → GOVERNANCE_INTEGRITY exit 70(與原兩支相同)。
 #
@@ -77,17 +80,29 @@ r1_chrome_header_avatar() {
   local has_drift
   has_drift=$(printf '%s' "$NEW" | python3 -c '
 import sys, re
-content = sys.stdin.read()
+content = sys.stdin.buffer.read().decode("utf-8", "replace")
+# 逐處豁免(2026-11-27 r72):該 SidebarHeader 區塊內、或它開頭那一行的上一行,寫 `@chrome-header-avatar-ok: <理由>`
+#(冒號後要有理由;空理由不算)。含豁免的註解先換成記號再剝註解,記號留在原位置判斷屬於哪一個區塊。
+exempt = re.compile(r"@chrome-header-avatar-ok:[ \t]*(?!\*/|-->)\S")
+SENTINEL = "\x00EXEMPT\x00"
+def strip(match):
+    return SENTINEL if exempt.search(match.group(0)) else ""
 # Strip comments(citation 註解含 <ItemAvatar> 字樣不是 drift)
-content = re.sub(r"\{/\*.*?\*/\}", "", content, flags=re.DOTALL)
-content = re.sub(r"/\*.*?\*/", "", content, flags=re.DOTALL)
-content = re.sub(r"(?m)^[ \t]*//.*$", "", content)
+content = re.sub(r"\{/\*.*?\*/\}", strip, content, flags=re.DOTALL)
+content = re.sub(r"/\*.*?\*/", strip, content, flags=re.DOTALL)
+content = re.sub(r"(?m)^[ \t]*//.*$", strip, content)
 # Find SidebarHeader blocks(opening tag → closing tag,non-greedy)
-blocks = re.findall(r"<SidebarHeader[^>]*>.*?</SidebarHeader>", content, re.DOTALL)
-for block in blocks:
-    if re.search(r"<ItemAvatar\b", block):
-        print("DRIFT")
-        sys.exit(0)
+for found in re.finditer(r"<SidebarHeader[^>]*>.*?</SidebarHeader>", content, re.DOTALL):
+    block = found.group(0)
+    if not re.search(r"<ItemAvatar\b", block):
+        continue
+    opening_line = content.rfind("\n", 0, found.start())
+    previous_line = content.rfind("\n", 0, opening_line) if opening_line > 0 else -1
+    scope = content[previous_line + 1:found.end()]
+    if SENTINEL in scope or exempt.search(scope):
+        continue
+    print("DRIFT")
+    sys.exit(0)
 ' 2>/dev/null) || governance_hook_integrity_fail 'chrome-header parser failed'
 
   [ "$has_drift" != "DRIFT" ] && return 0
@@ -122,7 +137,9 @@ Canonical citation:
 
 注意:SidebarFooter 內 ItemAvatar OK(footer 是 SidebarMenu row context)。本 hook 只攔 SidebarHeader。
 
-Bypass(極罕見):GOVERNANCE_BYPASS_CHROME_HEADER_AVATAR=1 env var(audit-logged)。
+有合理理由要例外:在該 <SidebarHeader> 區塊內或它上一行寫 {/* @chrome-header-avatar-ok: <理由> */}
+  (理由必填、寫這一處為什麼要例外;不必等 DS 同意,DS 會定期看豁免清單補情境;CI 重播也認)。
+Bypass(只在本機寫入當下有效,CI 重播不認):GOVERNANCE_BYPASS_CHROME_HEADER_AVATAR=1 env var(audit-logged)。
 EOF
   # 2026-05-31:exit 0 → exit 2(folded-hook-audit:原宣稱 BLOCKER 但 exit 0 = 假 enforcement;
   # chrome-header avatar 是 SSOT canonical [feedback_ssot_mechanical_p0_not_p1 = 必 P0 BLOCK],
@@ -136,7 +153,10 @@ r2_menu_button_wrap() {
   # Python multiline regex:`<SidebarMenuButton` 不含 `asChild` 的 block + 內含 Avatar/ItemAvatar prefix
   has_drift=$(printf '%s' "$NEW" | python3 -c '
 import sys, re
-content = sys.stdin.read()
+content = sys.stdin.buffer.read().decode("utf-8", "replace")
+# 逐處豁免(2026-11-27 r72):該 SidebarMenuButton 區塊內、或它開頭那一行的上一行,寫
+# `@sidebar-menu-button-wrap-ok: <理由>`(冒號後要有理由;空理由不算)。
+exempt = re.compile(r"@sidebar-menu-button-wrap-ok:[ \t]*(?!\*/|-->)\S")
 # Find SidebarMenuButton blocks(opening tag → closing tag,non-greedy multiline)
 # match opening `<SidebarMenuButton ...>` capture full open tag
 for m in re.finditer(r"<SidebarMenuButton\b([^>]*)>(.*?)</SidebarMenuButton>", content, re.DOTALL):
@@ -146,6 +166,10 @@ for m in re.finditer(r"<SidebarMenuButton\b([^>]*)>(.*?)</SidebarMenuButton>", c
         continue
     # Drift = body 含 <ItemAvatar 或 <Avatar(both = avatar prefix)
     if re.search(r"<(ItemAvatar|Avatar)\b", body):
+        opening_line = content.rfind("\n", 0, m.start())
+        previous_line = content.rfind("\n", 0, opening_line) if opening_line > 0 else -1
+        if exempt.search(content[previous_line + 1:m.end()]):
+            continue
         print("DRIFT")
         sys.exit(0)
 ' 2>/dev/null) || governance_hook_integrity_fail 'sidebar-wrap parser failed'
@@ -177,7 +201,9 @@ for m in re.finditer(r"<SidebarMenuButton\b([^>]*)>(.*?)</SidebarMenuButton>", c
 Or use startIcon prop(自動 layout,不 wrap):
   ✅ SidebarMenuButton startIcon={SomeLucideIcon} 直接 children 為純文字
 
-Bypass(極罕見):GOVERNANCE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP=1 env var(audit-logged)。
+有合理理由要例外:在該 SidebarMenuButton 區塊內或它上一行寫 {/* @sidebar-menu-button-wrap-ok: <理由> */}
+  (理由必填、寫這一處為什麼要例外;不必等 DS 同意,DS 會定期看豁免清單補情境;CI 重播也認)。
+Bypass(只在本機寫入當下有效,CI 重播不認):GOVERNANCE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP=1 env var(audit-logged)。
 
 Citation:
   - packages/design-system/src/components/Sidebar/sidebar.tsx#SidebarMenuButton(asChild docblock)

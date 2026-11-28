@@ -1743,7 +1743,7 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
               // ── Multi mode ──
               //   - default text 維持 fg-secondary muted(跟 single 對齊 hierarchy)
               //   - selected → 視覺信號只在 checkbox(auto-render below),text 不變、bg 不變
-              //   - 對齊 SelectMenu multi pattern(menu-item.tsx:194-195 selected → bg only;multi → checkbox only)
+              //   - 對齊 SelectMenu multi pattern(menu-item.tsx:202-203 selected → bg only;multi → checkbox only)
               // multi-selected 也維持 fg-secondary(上方註解「text 不變」;原 !isSelected 條件讓 multi-selected 掉到繼承色)
               // 灰底那一列(單選選中的列;步驟導覽樹另含收起時代顯的大步驟,見 stepMarker)= text-foreground,其餘 muted
               !disabled && mutedText && 'text-fg-secondary',
@@ -1797,7 +1797,7 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
                 *     (對齊 SelectMenu multi pattern;consumer 不用手寫 checkbox)
                 *   - selectionMode='multiple' + consumer 傳 checkbox → 用 consumer 的(parent-child cascade 等 advanced)
                 *   - selectionMode='single' / 'none' → 不 render checkbox(text-foreground + bg 雙信號表 selected)
-                * 對齊 cite:menu-item.tsx:194-195(MenuItem selected bg)+ select-menu.tsx#SelectMenu(multi = `checkbox={multiple}`) */}
+                * 對齊 cite:menu-item.tsx:202-203(MenuItem selected bg)+ select-menu.tsx#SelectMenu(multi = `checkbox={multiple}`) */}
               {(checkbox || selectionMode === 'multiple') && (
                 <ItemPrefix className="pointer-events-none">
                   {/* 2026-07-05 D4 修:auto-render Checkbox 補 tabIndex={-1} — 勾選框的 root 是原生 button

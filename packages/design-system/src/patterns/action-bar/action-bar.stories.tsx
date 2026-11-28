@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import { createContext, Fragment, useContext, useState, type ReactNode } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import {
   Plus, Trash2, Settings, RefreshCw, MoreVertical,
@@ -6,13 +6,15 @@ import {
   ArrowUpDown, Layers, HelpCircle, X as XIcon, Share2, Edit,
   Bold, Italic, Underline, ChevronDown, CheckSquare,
   ImageIcon, AtSign, Smile, Link2, Undo2, Redo2,
+  Strikethrough, Code, List, ListOrdered, Quote, type LucideIcon,
 } from 'lucide-react'
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup, ButtonDivider } from '@/design-system/components/Button/button-group'
 import { Alert } from '@/design-system/components/Alert/alert'
 import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem,
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuItem,
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
+import { useOverflowCollapse } from '@/design-system/hooks/use-overflow-items'
 import {
   Popover, PopoverTrigger, PopoverContent, PopoverHeader, PopoverTitle, PopoverBody,
 } from '@/design-system/components/Popover/popover'
@@ -68,7 +70,11 @@ const ToolbarFrame = ({ title, children }: { title?: string; children: ReactNode
   )
 }
 
-/** 設定:打開檢視設定選單(勾選項就是設定本身) */
+/**
+ * 設定:打開檢視設定選單 —— 兩項各是一個獨立的即時設定(不是從一組裡挑幾個)→ 開關外觀 indicator="switch"
+ *(checkbox.spec.md「與 Switch 的分界」的「選單裡」;2026-11-27 前是勾選外觀)。這兩項判成「獨立設定」是【AI 推導】,user 定的是原則
+ *(單獨一個即時設定用開關外觀),不是這兩項
+ */
 function SettingsMenuTrigger({ children }: { children: ReactNode }) {
   const [archived, setArchived] = useState(false)
   const [compact, setCompact] = useState(false)
@@ -76,8 +82,8 @@ function SettingsMenuTrigger({ children }: { children: ReactNode }) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuCheckboxItem checked={archived} onCheckedChange={setArchived}>顯示已封存</DropdownMenuCheckboxItem>
-        <DropdownMenuCheckboxItem checked={compact} onCheckedChange={setCompact}>緊湊列高</DropdownMenuCheckboxItem>
+        <DropdownMenuCheckboxItem indicator="switch" checked={archived} onCheckedChange={setArchived}>顯示已封存</DropdownMenuCheckboxItem>
+        <DropdownMenuCheckboxItem indicator="switch" checked={compact} onCheckedChange={setCompact}>緊湊列高</DropdownMenuCheckboxItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -676,5 +682,94 @@ export const DismissVsDanger: Story = {
           <ExampleCaption warn>❌ 關閉 X 套 danger —— X close 是 dismiss 語意，不該紅色警示(應用 dismiss prop)</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
+  ),
+}
+
+/* ── 收合量測(test-only)── 客服回覆編輯器的富文字工具列,群組溢出(action-bar.spec.md 第六節)+ 空間不足時的降級(第七節)。
+   量法是公開 hook `useOverflowCollapse`(hooks/use-overflow-items.ts):格式 / 插入 / 段落三群各自一顆觸發鈕,
+   「全螢幕」是單一按鈕的群組(第七節第 3 條:不需要溢出,空間極端不足時整個隱藏,它左邊那條分隔線一起藏)。
+   誰先收(priority,數字越大越晚收)由產品決定;這裡的值是示範【AI 推導】:插入群的低頻項 0 → 格式群的低頻項 1 → 各群次要項 2–4
+   → 全螢幕 5 → 群組代表 6(第七節的順序:先收各群低頻項、再收到只剩群組代表、單一按鈕的群組在極窄時整個隱藏)。
+   閘 scripts/action-bar-toolbar-invariant.mjs「收合」段改第一個 [data-collapse-frame] 的寬逐格量:
+   全部放得下 → 不收、沒有觸發鈕;放不下 → 依 priority 收、收了東西的那一組才出觸發鈕、再放回一顆就放不下。 */
+interface RichTextAction { id: string; label: string; icon: LucideIcon; priority: number }
+interface RichTextGroup { group: string; actions: RichTextAction[]; trigger?: { label: string; icon: LucideIcon } }
+const RICH_TEXT_GROUPS: RichTextGroup[] = [
+  {
+    group: 'format', trigger: { label: '更多格式', icon: ChevronDown },
+    actions: [
+      { id: 'bold', label: '粗體', icon: Bold, priority: 6 },
+      { id: 'italic', label: '斜體', icon: Italic, priority: 4 },
+      { id: 'underline', label: '底線', icon: Underline, priority: 3 },
+      { id: 'strike', label: '刪除線', icon: Strikethrough, priority: 1 },
+      { id: 'code', label: '行內程式碼', icon: Code, priority: 1 },
+    ],
+  },
+  {
+    group: 'insert', trigger: { label: '更多插入', icon: Plus },
+    actions: [
+      { id: 'link', label: '連結', icon: Link2, priority: 6 },
+      { id: 'image', label: '圖片', icon: ImageIcon, priority: 4 },
+      { id: 'mention', label: '提及同事', icon: AtSign, priority: 2 },
+      { id: 'emoji', label: '表情符號', icon: Smile, priority: 0 },
+      { id: 'checklist', label: '待辦清單', icon: CheckSquare, priority: 0 },
+    ],
+  },
+  {
+    group: 'paragraph', trigger: { label: '更多段落樣式', icon: ChevronDown },
+    actions: [
+      { id: 'bullets', label: '項目符號清單', icon: List, priority: 6 },
+      { id: 'numbers', label: '編號清單', icon: ListOrdered, priority: 3 },
+      { id: 'quote', label: '引言', icon: Quote, priority: 2 },
+    ],
+  },
+  { group: 'fullscreen', actions: [{ id: 'fullscreen', label: '全螢幕編輯', icon: Maximize2, priority: 5 }] },
+]
+const RICH_TEXT_ACTIONS = RICH_TEXT_GROUPS.flatMap((g) => g.actions)
+const RICH_TEXT_OFFSET = RICH_TEXT_GROUPS.map((_, gi) => RICH_TEXT_GROUPS.slice(0, gi).reduce((sum, g) => sum + g.actions.length, 0))
+
+// @overlay-open-skip: 收合量測是 test-only 的寬度量測 story,量的是工具列本身(哪些鈕收起、哪一組出觸發鈕);觸發鈕的選單預設打開會 portal 蓋住被量的工具列,
+// 而且收起時才有內容、寬度足時觸發鈕根本不出現。選單打開的樣子由 dropdown-menu.stories.tsx 負責。
+function CollapsingRichTextToolbar() {
+  const { containerRef, registerItem, registerTrigger, registerDivider, overflowIndicesOf } = useOverflowCollapse<HTMLDivElement>()
+  return (
+    <ChromeHeader>
+      <ButtonGroup ref={containerRef} className="flex-1 min-w-0" data-collapse-toolbar="">
+        {RICH_TEXT_GROUPS.map((g, gi) => (
+          <Fragment key={g.group}>
+            {/* 群組之間的線:前一組有觸發鈕 → 第五節理由 1(群組溢出右側必加);沒出觸發鈕時兩側都是無框圖示鈕 → 理由 2。
+                單一按鈕的群組(沒有觸發鈕)整組收起時,這條線交給 hook 一起藏(不留在列尾變成孤立的線) */}
+            {gi > 0 && <ButtonDivider ref={g.trigger ? undefined : registerDivider(g.group)} data-collapse-divider={g.trigger ? undefined : g.group} />}
+            {g.actions.map((a, j) => (
+              <Button key={a.id} ref={registerItem(RICH_TEXT_OFFSET[gi] + j, { priority: a.priority, group: g.group })}
+                variant="text" size="sm" iconOnly startIcon={a.icon} aria-label={a.label}
+                data-collapse-item={RICH_TEXT_OFFSET[gi] + j} data-collapse-priority={a.priority} data-collapse-group={g.group} />
+            ))}
+            {g.trigger && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button ref={registerTrigger(g.group)} variant="text" size="sm" iconOnly startIcon={g.trigger.icon} aria-label={g.trigger.label}
+                    data-collapse-trigger={g.group} />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {overflowIndicesOf(g.group).map((i) => <DropdownMenuItem key={RICH_TEXT_ACTIONS[i].id}>{RICH_TEXT_ACTIONS[i].label}</DropdownMenuItem>)}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </Fragment>
+        ))}
+      </ButtonGroup>
+    </ChromeHeader>
+  )
+}
+
+export const CollapseMeasureContract: Story = {
+  name: '收合量測:群組溢出',
+  tags: ['test-only'],
+  render: () => (
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+      <div data-collapse-frame="" className="w-full"><CollapsingRichTextToolbar /></div>
+      <div className="w-[320px]"><CollapsingRichTextToolbar /></div>
+    </div>
   ),
 }

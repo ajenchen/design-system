@@ -179,13 +179,20 @@ $(printf '%b' "$UNJUSTIFIED" | sed 's/^/    /' | awk 'NR <= 10')
 
   修法 2 選 1:
     (a) 改 token:換成 var(--layout-space-N) N∈{loose,tight} family per 6 規則 + 親疏 3 級
-    (b) Escape:在該 line 加 \`// @layout-space-magic-ok: <rationale>\` 顯式 documented
+    (b) Escape(有理由要跟規格不一樣時;理由寫具體):
+        .ts / JSX 外:同一行行尾 \`// @layout-space-magic-ok: <理由>\`
+        JSX 裡(className 那一行不能放 //):上一行單獨一行 \`{/* @layout-space-magic-ok: <理由> */}\`
         (eg.「\`gap-1\` 是 4px stack icon — non-spacing context,not consumer layout」)
 
   注意:canonical inline item/control、semantic homogeneous list、toolbar、rule-5 grouped
-  horizontal fields 與一排 assist chip(<ul role="list" className="flex flex-wrap gap-1">,每顆
-  <li><Chip variant="assist">;chip.spec.md「一排 assist chip(訊息附件以外)」)的 gap-1/2
+  horizontal fields(gap-2 / 不同組並排 gap-4)、Item 零件組的一列(直屬子元素全是 ItemContent /
+  ItemSuffix 等、gap-2)與一排 assist chip(<ul role="list" className="flex flex-wrap gap-1">,每顆
+  <li><Chip variant="assist">;chip.spec.md「一排 assist chip(訊息附件以外)」)
   會由 utility-registry 結構規則自動辨識,不需 escape。
+  標題塊(layoutSpace.spec.md 規則 3「標題塊」:標題字列 → 它標示的有框內容 = 8)認得三種寫法:
+  [標題, 有框內容] 同包一層 flex flex-col gap-2、標題(或一個標題 + 無框 / 連結樣式按鈕、ⓘ、連結的標題列)上 mb-2、
+  有框內容(DataTable、搜尋列 / 工具列、自帶 border、每張都帶框的選項卡群組)上 mt-2,兩邊不疊用;
+  標題列裡有其他東西(輸入控件、Chip、有框按鈕…)/ 搜尋列 / 工具列 → 表用 gap-[var(--layout-space-tight)],塊與塊用 loose。
   一般 flex/grid/section 的 gap-1/2 沒有這些語意證據時仍是 blocker(手刻 div 排一排 chip 也是)。
 
   完整 6 條規則 → packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md

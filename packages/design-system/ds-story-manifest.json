@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/DsImportSmoke.stories.tsx (ImportSmoke → DS Storybook link)"
     ],
-    "generatedAt": "2026-11-27T00:57:42.019Z"
+    "generatedAt": "2026-11-27T10:56:35.737Z"
   },
   "components": {
     "accordion": {
@@ -447,6 +447,7 @@
           "design-system-components-chip-展示--default",
           "design-system-components-chip-展示--with-badge",
           "design-system-components-chip-展示--single-selection",
+          "design-system-components-chip-展示--single-selection-menu",
           "design-system-components-chip-展示--assist-attachments"
         ],
         "設計規格": [
@@ -598,6 +599,7 @@
           "design-system-components-datatable-展示--row-actions",
           "design-system-components-datatable-展示--pinned-columns",
           "design-system-components-datatable-展示--inline-edit",
+          "design-system-components-datatable-展示--boolean-control",
           "design-system-components-datatable-展示--inline-edit-with-spreadsheet-overlay",
           "design-system-components-datatable-展示--spreadsheet-cursor-contract",
           "design-system-components-datatable-展示--cell-errors",
@@ -618,6 +620,7 @@
           "design-system-components-datatable-展示--row-drag-interactive",
           "design-system-components-datatable-展示--row-drag-in-dialog",
           "design-system-components-datatable-展示--row-actions-varying-width",
+          "design-system-components-datatable-展示--column-menu-items",
           "design-system-components-datatable-展示--row-drag-with-virtualization",
           "design-system-components-datatable-展示--roadmap-all-in-one",
           "design-system-components-datatable-展示--roadmap-perf-budget",
@@ -794,6 +797,7 @@
           "design-system-components-dropdownmenu-展示--sub-menu",
           "design-system-components-dropdownmenu-展示--nested-sub-menu",
           "design-system-components-dropdownmenu-展示--checkbox-items",
+          "design-system-components-dropdownmenu-展示--switch-items",
           "design-system-components-dropdownmenu-展示--radio-items",
           "design-system-components-dropdownmenu-展示--option-prefix",
           "design-system-components-dropdownmenu-展示--open-snapshot",
@@ -1096,7 +1100,9 @@
           "design-system-components-linkinput-展示--clearable",
           "design-system-components-linkinput-展示--save-error",
           "design-system-components-linkinput-展示--modes",
-          "design-system-components-linkinput-展示--custom-label"
+          "design-system-components-linkinput-展示--custom-label",
+          "design-system-components-linkinput-展示--value-icon",
+          "design-system-components-linkinput-展示--value-icon-probe"
         ],
         "設計規格": [
           "design-system-components-linkinput-設計規格--overview",
@@ -1910,5 +1916,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1073
+  "totalStories": 1079
 }

@@ -59,7 +59,7 @@ Switch 是**即時套用的布林開關**——切換即生效，心智模型是
 
 簡言：
 - **Form 內、有 submit 流程、使用者可反悔** → `Checkbox`
-- **獨立 inline、切換即生效、無 submit** → `Switch`
+- **獨立 inline、切換即生效、無 submit** → `Switch`;**選單裡**(DropdownMenu)不要把 `<Switch>` 放進選單項:單獨一個即時生效的設定用 `<DropdownMenuCheckboxItem indicator="switch">`(列尾開關外觀,整列才是互動單位),一組裡挑幾個用勾選 —— 判準住 `../Checkbox/checkbox.spec.md`「選單裡」;**表格格子裡**(DataTable 布林欄)由消費端用 `meta.control` 選,預設勾選,判準住同檔「表格格子裡」
 
 ---
 
@@ -187,7 +187,7 @@ Switch 可透過 `label` / `description` props 內部直接渲染一整列設定
 
 自帶標題的設定列視覺上等同於 horizontal `<DescriptionItem>`(label 左 / value 右 `justify-between`)——同一個心智模型:**label 描述、trailing slot 呈現狀態**(value 或 toggle)。
 
-**同一畫面多個 horizontal Switch Field → 必搭配 `FieldGroup labelWidth={...}`**:否則每個 label 會被內容撐到不同寬度,Switch 左邊緣不對齊,整排參差不齊(世界級 UI 通病,Settings 類型畫面特別明顯)。見 `../Field/field.spec.md`「FieldGroup labelWidth cascade」。
+**同一畫面多個 horizontal Switch Field → 必搭配 `FieldGroup labelWidth={...}`**:否則每個 label 會被內容撐到不同寬度,Switch 左邊緣不對齊,整排參差不齊(世界級 UI 通病,Settings 類型畫面特別明顯)。見 `../Field/field-group.spec.md`「FieldGroup labelWidth cascade」。
 
 ### 對齊情境:Settings list vs Form edit(2026-04-20)
 

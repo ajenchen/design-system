@@ -56,7 +56,7 @@ DropdownMenu                    ← Radix Root，管理開關狀態
   DropdownMenuContent           ← 浮層容器，提供 size context
     DropdownMenuGroup           ← 邏輯群組容器（自動分隔相鄰 Group，見下）
       DropdownMenuItem          ← 基本動作項目
-      DropdownMenuCheckboxItem  ← 可勾選的切換項目（如顯示/隱藏欄位）
+      DropdownMenuCheckboxItem  ← 布林切換項目:勾選外觀(一組裡挑幾個,如顯示/隱藏欄位)/ indicator="switch" 開關外觀(單獨一個設定,如全寬顯示)
     DropdownMenuRadioGroup      ← 單選群組容器
       DropdownMenuRadioItem     ← 單選項目（如排序方式）
     DropdownMenuSub             ← 子選單容器
@@ -100,7 +100,7 @@ DropdownMenu                    ← Radix Root，管理開關狀態
 | 類型 | 用途 | 選中行為 |
 |---|---|---|
 | **Item** | 執行一次性動作（複製、刪除、開啟連結） | 執行後關閉選單 |
-| **CheckboxItem** | 切換開關狀態（顯示/隱藏欄位） | 勾選/取消，選單保持開啟 |
+| **CheckboxItem** | 切換一個布林:預設勾選外觀 = 從一組裡挑幾個(顯示/隱藏欄位);`indicator="switch"` 開關外觀 = 單獨一個即時生效的設定(全寬顯示)。選哪個外觀的判準只住 `../Checkbox/checkbox.spec.md`「與 Switch 的分界」的「選單裡」 | 整列點了就切換，選單保持開啟(兩種外觀同一套行為) |
 | **RadioItem** | 從互斥選項中選一（排序方式） | 選中後選單保持開啟 |
 | **SubTrigger** | 展開下一層選單 | 不執行動作，展開子選單 |
 | **Label** | 群組標題，提供語義分類 | 不可互動 |
@@ -159,13 +159,13 @@ SubContent 使用相同規格，包括 sideOffset,以及高度上限與捲動(20
 
 透過 `DropdownMenuContent` 的 `size` prop 設定，經 SizeContext 向下傳遞，所有子項目自動套用。
 
-| Size | Label | Icon | Checkbox 控件 |
-|---|---|---|---|
-| sm | `text-body leading-compact` (14px, 1.3) | 16px | 16px |
-| md | `text-body leading-compact` (14px, 1.3) | 16px | 16px |
-| lg | `text-body-lg leading-compact` (16px, 1.3) | 20px | 20px |
+| Size | Label | Icon | Checkbox 控件 | 開關控件(`indicator="switch"`,列尾) |
+|---|---|---|---|---|
+| sm | `text-body leading-compact` (14px, 1.3) | 16px | 16px | 20×40 |
+| md | `text-body leading-compact` (14px, 1.3) | 16px | 16px | 20×40 |
+| lg | `text-body-lg leading-compact` (16px, 1.3) | 20px | 20px | 24×48 |
 
-RadioItem 不渲染 radio 控件——選中以 `bg-neutral-selected` 背景高亮(見 `../Menu/menu-item.spec.md`「選中指示器」),故控件尺寸欄僅適用 CheckboxItem。
+RadioItem 不渲染 radio 控件——選中以 `bg-neutral-selected` 背景高亮(見 `../Menu/menu-item.spec.md`「選中指示器」),故控件尺寸欄僅適用 CheckboxItem。開關尺寸 = 同 size 的 Switch(`../Switch/switch.spec.md`),在列尾 `h-[1lh]` 對齊第一行字(`../../patterns/element-anatomy/item-anatomy.spec.md`「互動 control 在 suffix」);停用時整列照 MenuItem(字 `text-fg-disabled`、列尾 `opacity-disabled`,開關不再另外降一次)。
 
 DropdownMenu 是掃描模式——使用者快速瀏覽選項，所有尺寸使用 `leading-compact`。
 
@@ -208,7 +208,7 @@ DropdownMenu 是掃描模式——使用者快速瀏覽選項，所有尺寸使�
 ## 禁止事項
 
 - ❌ 不要用 DropdownMenu 做選值——「選一個值填回 field」用 SelectMenu
-- ❌ 不要在 item 內放獨立互動元素（如 Button、Switch）——item 本身就是互動單位
+- ❌ 不要在 item 內放獨立互動元素（如 Button、Switch）——item 本身就是互動單位;要列尾開關的樣子用 `<DropdownMenuCheckboxItem indicator="switch">`(整列是唯一的互動單位,開關只是畫面;2026-11-27 起)
 - ❌ disabled item 不可有 hover 效果
 - ❌ Label 不可被點擊或取得焦點
 - ❌ 不要手動在 SubTrigger 內加 ChevronRight——元件自動渲染
@@ -218,7 +218,7 @@ DropdownMenu 是掃描模式——使用者快速瀏覽選項，所有尺寸使�
 
 ## StateBehavior(DropdownMenu 層級特有)
 
-Item-level default / hover / focused / selected / disabled **色彩**由 MenuItem primitive SSOT 擁有(`patterns/element-anatomy/item-anatomy.spec.md`「選擇 / 狀態視覺規則」),在本元件 `ColorMatrix` story 承載並直接引用 MenuItem token。**selected × highlighted 疊加**:owner = `item-anatomy.spec.md`「選中 × 互動疊加」格(2026-08-11 全家族統一)——**滑鼠 hover 釘住 `bg-neutral-selected` 不變;鍵盤模態的反白(highlighted)畫框 `focus-ring-inset`,框疊在選中底色上**(2026-09-07 user 在 A5 選了畫框;原深一階底色已退役;2026-09-09 起框由 `radixCursorClass` 統一畫在所有反白列上、不分選中與否,`not-hover:` 分流一併移除);**僅 RadioItem checked 走此 selected-bg 規則**(checked 底色套外層 Radix RadioItem)。CheckboxItem checked **不套 row bg**——checked 由內層 checkbox 控件表達,反白時同一般列(指標模態底色、鍵盤模態框)。DropdownMenu 的 `StateBehavior` story 展示**浮層層級特有的動態行為**:open / close 動畫(Radix `data-state` 驅動)、Submenu 展開 / 收起、CheckboxItem toggle(多選不 close)——這些是 item primitive 沒有的維度。
+Item-level default / hover / focused / selected / disabled **色彩**由 MenuItem primitive SSOT 擁有(`patterns/element-anatomy/item-anatomy.spec.md`「選擇 / 狀態視覺規則」),在本元件 `ColorMatrix` story 承載並直接引用 MenuItem token。**selected × highlighted 疊加**:owner = `item-anatomy.spec.md`「選中 × 互動疊加」格(2026-08-11 全家族統一)——**滑鼠 hover 釘住 `bg-neutral-selected` 不變;鍵盤模態的反白(highlighted)畫框 `focus-ring-inset`,框疊在選中底色上**(2026-09-07 user 在 A5 選了畫框;原深一階底色已退役;2026-09-09 起框由 `radixCursorClass` 統一畫在所有反白列上、不分選中與否,`not-hover:` 分流一併移除);**僅 RadioItem checked 走此 selected-bg 規則**(checked 底色套外層 Radix RadioItem)。CheckboxItem checked **不套 row bg**——checked 由內層 checkbox 控件(開關外觀 = 列尾開關)表達,反白時同一般列(指標模態底色、鍵盤模態框)。DropdownMenu 的 `StateBehavior` story 展示**浮層層級特有的動態行為**:open / close 動畫(Radix `data-state` 驅動)、Submenu 展開 / 收起、CheckboxItem toggle(多選不 close)——這些是 item primitive 沒有的維度。
 
 ---
 
@@ -269,6 +269,7 @@ Item-level default / hover / focused / selected / disabled **色彩**由 MenuIte
 - `account-menu.spec.md`
 - `action-bar.spec.md`
 - `command.spec.md`
+- `data-table.spec.md`
 - `file-viewer.spec.md`
 - `menu-item.spec.md`
 - `popover.spec.md`

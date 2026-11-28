@@ -509,18 +509,36 @@ const DropdownMenuSubTrigger = React.forwardRef<
 DropdownMenuSubTrigger.displayName = DropdownMenuPrimitive.SubTrigger.displayName
 
 // ── CheckboxItem ──
-interface DropdownMenuCheckboxItemProps
-  extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>, 'children'>,
-    DropdownMenuPrefixProps {
-  children: React.ReactNode
-  /** 次要說明文字 */
-  description?: React.ReactNode
-}
+// 兩種外觀、同一種行為(2026-11-27 H41;判準 SSOT = checkbox.spec.md「與 Switch 的分界」的「選單裡」):
+//   indicator="checkbox"(預設)= 從一組裡挑幾個(顯示哪幾欄、篩選哪幾個狀態)→ 前綴勾選框;
+//   indicator="switch" = 單獨一個即時生效的設定(全寬顯示、隱藏已完成)→ 列尾開關。
+// 兩者都是整列點擊切換、選單不關(onSelect preventDefault)、row = role="menuitemcheckbox" + aria-checked(Radix CheckboxItem:
+// https://github.com/radix-ui/primitives/blob/eb3a2b7091293e27df8f9ba906632d8daa3d81a3/packages/react/menu/src/menu.tsx#L844-L845 );
+// 指示器只是畫面(MenuItem 內 aria-hidden + inert)。對齊 Fluent MenuItemSwitch = MenuItemCheckbox 換外觀(同 role、persistOnClick)——
+// https://github.com/microsoft/fluentui/blob/b9b6302a1b00e739e18c799cd1e74a62cd2a7ea7/packages/react-components/react-menu/library/src/components/MenuItemSwitch/useMenuItemSwitch.tsx#L44
+type DropdownMenuCheckboxItemProps =
+  Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>, 'children' | 'checked'> &
+  DropdownMenuPrefixProps & {
+    children: React.ReactNode
+    /** 次要說明文字 */
+    description?: React.ReactNode
+  } & (
+    | {
+        /** 指示器外觀:`checkbox`(預設,前綴勾選框)= 一組裡挑幾個;`switch`(列尾開關)= 單獨一個即時生效的設定 */
+        indicator?: 'checkbox'
+        checked?: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>['checked']
+      }
+    | {
+        indicator: 'switch'
+        /** 開關只有開 / 關 —— 沒有 indeterminate(型別擋掉) */
+        checked?: boolean
+      }
+  )
 
 const DropdownMenuCheckboxItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>,
   DropdownMenuCheckboxItemProps
->(({ className, children, startIcon, startIconClassName, startContent, description, checked, disabled, ...props }, ref) => {
+>(({ className, children, startIcon, startIconClassName, startContent, description, checked, disabled, indicator = 'checkbox', ...props }, ref) => {
   const size = useRowSize()
   const cursorByKeyboard = useCursorMover() === 'keyboard'
 
@@ -538,8 +556,10 @@ const DropdownMenuCheckboxItem = React.forwardRef<
     >
       <MenuItem
         size={size}
-        checkbox
-        checked={!!checked}
+        checkbox={indicator === 'checkbox'}
+        switchIndicator={indicator === 'switch'}
+        // indeterminate 原樣交給勾選框(2026-11-27 前寫 `!!checked`:'indeterminate' 被轉成 true,畫成打勾、讀屏卻念 mixed)
+        checked={checked === 'indeterminate' ? 'indeterminate' : checked === true}
         startIcon={startIcon}
         startIconClassName={startIconClassName}
         startContent={startContent}

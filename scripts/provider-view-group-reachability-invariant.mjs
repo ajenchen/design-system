@@ -4,7 +4,8 @@
  *   保證: 每個 provider 的產生檢視,都派工得到**該 provider 適用的**每一個 hook 群組;沒有派工入口的群組等於整群 hook 從未被呼叫
  *   紅: 從任一 provider 檢視刪掉最後一群的派工命令(或把某群的 --group 序號改掉)→ 本閘必須指名該 event/群組序號與該群的 hook 名單並紅;
  *       派工命令帶的 --group-id 與 registrations.json 該群算出的穩定 id 對不上(2026-11-26 B2)→ 也紅並指名;
- *       派工命令沒帶 --group-id → 只在第二段(PROVIDER_HOOK_GROUP_ID_IN_VIEWS = true,產生器輸出 id 之後)紅並指名
+ *       派工命令沒帶 --group-id → 也紅並指名(PROVIDER_HOOK_GROUP_ID_IN_VIEWS = true,0.1.0-beta.152 起產生器每條都輸出 id;
+ *       開關關著時不要求帶,那一面只在 selftest 驗)
  *   綠: 檢視派工的序號集合 = 該 provider 適用的群組序號集合時必須綠。**包含「該群唯一的 hook 對這個 provider 不適用」時不得報紅** —— 這一格正是本閘第一版對 codex 報假紅的地方;selftest 以合成文件雙向驗,不看真檔
  *
  * ── 為什麼有這支 ──
@@ -68,12 +69,14 @@ export function readDispatchedGroups(view) {
 
 /**
  * 每一條派工命令帶的穩定群組 id(2026-11-26,gate-census C 組判定 B2)。入口照 id 找群組、序號只是舊入口的相容欄位,
- * 所以「派工到哪一群」真正由 id 決定:id 缺席或與 registrations.json 該群算出的 id 不同,入口會送「沒登記」通知、
- * 整群不跑。id 的算法只住 provider-hook-output-transport 的 providerHookGroupId(產生器、入口、本閘同一支)。
+ * 所以「派工到哪一群」真正由 id 決定:id 與 registrations.json 該群算出的 id 不同,入口會送「沒登記」通知、整群不跑;
+ * id 缺席時入口退回照序號派工(舊設定的相容路徑),設定與工作樹版本一錯開就可能靜默派到另一組。
+ * id 的算法只住 provider-hook-output-transport 的 providerHookGroupId(產生器、入口、本閘同一支)。
  *
- * 兩段式上線(F3-fix-anchor):帶了 id 就必須對得上,兩段都查;「每條都必須帶」只在第二段查 ——
- * 第一段產生器不輸出 id(protected main 的 contract.mjs 還不認得這個欄位),要求帶等於要求產生器先壞掉 anchor。
- * 是否要求跟產生器是否輸出讀同一個 PROVIDER_HOOK_GROUP_ID_IN_VIEWS,不能只開一邊。
+ * 現況(0.1.0-beta.152 起,PROVIDER_HOOK_GROUP_ID_IN_VIEWS = true):帶了 id 就必須對得上,而且每條都必須帶。
+ * 是否要求跟產生器是否輸出讀同一個開關,不能只開一邊;開關關著(0.1.0-beta.151 的形狀:產生器不輸出、只查帶了的
+ * 對不對得上)那一面仍由 selftest 驗,開關是退路不是死碼。經過(F3-fix-anchor):protected main 的 contract.mjs
+ * 先認得 id(151 上了 main),產生器才打開輸出,否則 PR 的 governance-anchor 會紅。
  */
 export function readDispatchedGroupIds(view) {
   const out = []
@@ -148,7 +151,7 @@ export function findGroupReachabilityDrift({
       const group = (declared[event] || [])[groupIndex]
       if (!group) continue // 序號本身就不存在 → 上面已記成 orphan
       if (groupId === providerHookGroupId(event, group)) continue
-      if (groupId === null && !requireGroupId) continue // 第一段:沒帶 id 照序號派工是現行形狀
+      if (groupId === null && !requireGroupId) continue // 開關關著(0.1.0-beta.151 的形狀):沒帶 id 照序號派工不算錯
       problems.push({
         providerId,
         event,
@@ -224,14 +227,14 @@ function selftest() {
       Stop: [entry('Stop', 0)],
     },
   }
-  // B2(2026-11-26):序號齊全、但第 2 群沒帶 --group-id(只能靠序號派工)→ 第二段紅並指名、第一段綠
+  // B2(2026-11-26):序號齊全、但第 2 群沒帶 --group-id(只能靠序號派工)→ 開關開(現況)紅並指名、開關關綠
   const missingId = {
     hooks: {
       PreToolUse: [entry('PreToolUse', 0), entry('PreToolUse', 1), entry('PreToolUse', 2, null)],
       Stop: [entry('Stop', 0)],
     },
   }
-  // B2:第 2 群的 id 是舊內容算的(session 載入的設定比 registrations.json 舊)→ 兩段都紅並指名
+  // B2:第 2 群的 id 是舊內容算的(session 載入的設定比 registrations.json 舊)→ 開關開關都紅並指名
   const staleId = {
     hooks: {
       PreToolUse: [
@@ -242,24 +245,25 @@ function selftest() {
       Stop: [entry('Stop', 0)],
     },
   }
-  // 第一段的真實形狀:每條派工命令都沒帶 id(與 protected main 驗證器預期的形狀逐字相同)
+  // 0.1.0-beta.151 的產出形狀(開關關著):每條派工命令都沒帶 id
   const noIds = {
     hooks: {
       PreToolUse: [entry('PreToolUse', 0, null), entry('PreToolUse', 1, null), entry('PreToolUse', 2, null)],
       Stop: [entry('Stop', 0, null)],
     },
   }
-  // 第 5 欄 = requireGroupId:兩段各驗一次,第二段的要求不因第一段關著而變成沒人驗的死碼
+  // 第 5 欄 = requireGroupId:開關開(現況)與關(退路)各驗一次,關著那一面不因現況開著而變成沒人驗的死碼
   const cases = [
     ['齊全 → 必須綠', complete, 0, null, true],
     ['少掉最後一群(2026-09-24 實況)→ 必須指名 group 2 並紅', stale, 1, 'approval.sh', true],
     ['群組數相同但序號錯位 → 必須紅(一缺一多)', misnumbered, 2, 'approval.sh', true],
-    ['第二段:派工命令沒帶 --group-id → 必須指名 group 2 並紅', missingId, 1, 'approval.sh', true],
-    ['--group-id 是舊群組內容算的 → 必須指名 group 2 並紅(第二段)', staleId, 1, 'approval.sh', true],
-    ['第一段:全部沒帶 --group-id(現行產出形狀)→ 必須綠', noIds, 0, null, false],
-    ['第一段:只有一群沒帶 --group-id → 必須綠', missingId, 0, null, false],
-    ['第一段:帶了但 --group-id 是舊群組內容算的 → 照樣指名 group 2 並紅', staleId, 1, 'approval.sh', false],
-    ['第一段:少掉最後一群 → 照樣指名 group 2 並紅', { hooks: { PreToolUse: noIds.hooks.PreToolUse.slice(0, 2), Stop: noIds.hooks.Stop } }, 1, 'approval.sh', false],
+    ['開關開(現況):派工命令沒帶 --group-id → 必須指名 group 2 並紅', missingId, 1, 'approval.sh', true],
+    ['開關開(現況):全部沒帶 --group-id(151 的形狀)→ 每群都指名並紅', noIds, 4, 'approval.sh', true],
+    ['--group-id 是舊群組內容算的 → 必須指名 group 2 並紅(開關開)', staleId, 1, 'approval.sh', true],
+    ['開關關:全部沒帶 --group-id(151 的產出形狀)→ 必須綠', noIds, 0, null, false],
+    ['開關關:只有一群沒帶 --group-id → 必須綠', missingId, 0, null, false],
+    ['開關關:帶了但 --group-id 是舊群組內容算的 → 照樣指名 group 2 並紅', staleId, 1, 'approval.sh', false],
+    ['開關關:少掉最後一群 → 照樣指名 group 2 並紅', { hooks: { PreToolUse: noIds.hooks.PreToolUse.slice(0, 2), Stop: noIds.hooks.Stop } }, 1, 'approval.sh', false],
   ]
   let failed = 0
   // 適用性那一維:假設 approval.sh 對 'codex' 不適用。同一份 stale 檢視 ——

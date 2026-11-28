@@ -10,7 +10,7 @@
 
 **核心特徵**:只在相關或 user invoke 時載入(不佔每 session context)；採 Agent Skills 共用形式，並投影到所有已認證 provider surface。只有改變產品／UI／UX SSOT 且仍有真實選擇或取捨時才設 user checkpoint；純工程／治理決策依 shared governance 的 Engineering Decision Policy 與 Standing Authorization 自動收斂，純讀、deterministic 的 one-shot 檢查可無 checkpoint。
 
-## 當前居民(25 skills,2026-07-22 update)
+## 當前居民(26 skills,2026-11-27 update)
 
 **Audit / Quality(5)**:
 | Skill | Invoke 時機 | Scope |
@@ -34,12 +34,13 @@
 | `story-writing/` | 「寫 story / 補 anatomy / principles story」 | 6-story 結構 + 範例品質 |
 | `story-auto-compile-migrate/` | 「migrate 元件到 auto-compile」/ auto-chained by audit Dim 23 | 批次加 `componentMeta` export + spec YAML frontmatter(Phase 1+2 migration) |
 
-**Governance(8)**:
+**Governance(9)**:
 | `knowledge-prune/` | 季度 / shared instructions 超過預算 / memory index 超過預算 / audit 報 sprawl | 治理冗贅深度 prune |
 | `governance-health/` | 月度 / auto-chain by audit | continuous metric monitor + auto-propose |
 | `propose-options/` | 給 option A/B/C 前必走 M18 自檢題(清單以 propose-options SKILL 的 Q0–Q5 為準) | M8 benchmark / M17 SSOT / Rule-of-3 / M10 下游 |
 | `scan-similar-bugs/` | 修 bug 後 M10 mechanical exhaustive scan | DS-wide 同類 bug 全清 |
 | `codify-corrections/` | user 糾正後 codify 到正確 home(memory / shared instructions / spec / hook) | 跨 home 路由 |
+| `consumer-feedback-triage/` | 收到下游 / 消費者回報(其他 session 傳來的回報由 UserPromptSubmit 注入提示) | 逐條查證 → 分類 → 根因 → 去重;bug 直接修,只有產品 / UI / UX 真取捨進決策頁 |
 | `ensure-canonical/` | user 說「確保 X 一定要 / 永不漂移」trigger phrase(M19)| 自動規劃 5-layer defense-in-depth(canonical+hook+skill+audit+verify),至少 3 層落地 |
 | `canonical-reviewer/` | 治理檔案實質變更後 / 詢問 SSOT 位置 | 唯讀 7-Q SSOT/provider/downstream 審查；所有已認證 provider 共用同一 rubric |
 | `governance-status/` | 詢問 governance 狀態 / adapter drift / provider parity | 快速、deterministic、不修檔的健康檢查 |

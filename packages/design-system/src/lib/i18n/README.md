@@ -64,10 +64,12 @@ const { t } = useI18n()
 |---|---|---|
 | `app-shell` | `skipLinks` / `skipToMain` / `closePanel` | AppShell |
 | `breadcrumb` | `navigation` / `showCollapsed` | Breadcrumb |
+| `data-table` | `DataTableLabels` 的每個字串鍵(列拖曳把手 `rowDragHandle` / `rowDragHandleDisabled` / `rowDragDisabledTooltip`、`selectAllVisibleRows`、表頭 ⌄ 選單 `sortAscending` / `sortDescending` / `cancelSort` / `filterByColumn` / `hideColumn` / `autoFitColumnWidth`、排序播報的 `ascending` / `descending` / `announceOthersCleared` / `announceNone`) | DataTable 主體(2026-11-26 F3 起;表頭選單與排序播報 2026-11-27 H42 起)。帶參數的句子(`columnMenu`、`priorityDescription`、`announce…` 其餘幾句)是函式,只經 `labels` prop;鍵清單 = `DATA_TABLE_DEFAULT_LABELS` 的鍵 |
 | `dialog` | `close` | Dialog |
 | `sheet` | `close` | Sheet |
 | `popover` | `close` | PopoverHeader 的 ×(DataTable 欄位顯示面板的 × 也是它) |
 | `file-upload` | `buttonLabel` / `loadingTitle` / `title` / `descriptionMultiple` / `descriptionSingle` | FileUpload |
+| `link-input` | `opensInNewTab` | LinkInput 的連結(含 DataTable 網址格):讀屏名字後面接的新分頁預告,預設「(在新分頁開啟)」(2026-11-27,`../../components/LinkInput/link-input.spec.md`「新分頁預告」) |
 | `pagination` | `label` / `previous` / `next` / `pageSize` | Pagination(帶數字的 range 資訊與「N 筆/頁」只經 `labels` 函式,見 pagination.spec.md「完整形態」) |
 | `profile-card` | `chat` / `audioCall` / `viewMore` | ProfileCard |
 | `sidebar` | `resizeHandle` / `overlayTitle` | Sidebar |

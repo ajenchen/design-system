@@ -133,6 +133,30 @@ URL 格式要求：`http://` 或 `https://` 開頭的網址;**沒寫協定、但
 
 ---
 
+## 值的前綴圖示(`icon`)
+
+2026-11-27 起。依據 user 2026-11-27 DS 對話原話(逐字):「連結的那個問題就只是，值要可以在同樣的 layout（一般值加上 icon的那種 layout） 下加上前綴 icon,然後值包括icon都是可以被點擊的連結,所以 icon 也要一起變藍色，這個東西很合理吧？應該完全沒有任何違背 ds ssot的地方吧？」(協調者回答合理、不衝突)。
+
+- **它是值的一部分,不是欄位的提示**:跟 `../Field/field-controls.spec.md`「startIcon」(提示欄位用途、`fg-muted`、不屬於 value)不同,這裡是「代表 value 的 icon」(同檔「Icon 色彩原則」:與值同色)—— 所以不叫 `startIcon`。名字 `icon` 與 `label` 一對(值的顯示字 / 值的圖示),同 `../Select/select.tsx` `SelectOption` 的 `label` / `icon`;表格網址欄用 `meta.linkIcon`(同 `meta.linkLabel`,`../DataTable/column-types.ts`)。圖示由使用端依值傳入,**DS 不依網址自動判類型**(`../Field/field-controls.spec.md`「LinkInput 沒有類型身份 indicator」仍成立)
+- **排法**(user 定「同樣的 layout（一般值加上 icon的那種 layout）」):圖示 + 間距 8 + 字 —— `ItemPrefix` + 內容、`gap-2`(`../../patterns/element-anatomy/item-anatomy.spec.md`「消費元件預設」prefix ↔ content gap 8px),同 `../Select/select.spec.md` 圖示對照表「Value icon」在欄位上的排法;尺寸 = 欄位圖示尺寸(`ICON_SIZE`:sm / md 16、lg 20)
+- **在連結裡**(user 定「值包括icon都是可以被點擊的連結」「icon 也要一起變藍色」):圖示畫在 `<a>` 裡,顏色跟字一樣(`text-primary`,滑過一起變 `text-primary-hover`);滑過圖示 = 滑過連結,連結盒子 = 圖示 + 間距 + 字(上方「Link 狀態」的「連結盒子 = 網址文字本身」在有圖示時含圖示;點擊範圍照舊是框裡 Pencil 以外全部)。圖示旁另放、不在連結裡 = 滑過圖示沒有變化、顏色也不同,違反 `../../../ds-canonical/references/hit-area-canonical.md` 一-4「懸停回饋形狀 ≡ 命中區」。底線只畫在字上、不含圖示【AI 推導:user 原話沒提底線;有圖示時連結是 flex,瀏覽器只在字下畫底線、不畫在 svg 上;DS 前例 `../AgentPanel/agent-panel.stories.tsx:1225` 代理回覆裡那個帶外部連結圖示的客服單連結,同樣是圖示在連結裡、底線不含圖示】
+- **哪些地方畫**:值畫成連結的每一處 —— 編輯模式的連結狀態、readonly、view(裸 / 外殼)、DataTable 網址格;**停用**:跟字一起 `text-fg-disabled`(M24,同 Select「Value icon」停用時 fg-disabled 勝出);**值不是網址**(畫成一般文字的 readonly / view / 表格格):照畫,跟字同為一般文字色【AI 推導 2026-11-27:`../Field/field-controls.spec.md`「Icon 色彩原則」代表 value 的 icon「icon 本身就是 value 的一部分」—— 值還在,它的圖示就在】;**空值**:不畫【AI 推導:Select 沒有選值就沒有值的前綴】;**打字狀態**(按 Pencil 後、空值、網址不合法):不畫 —— 框裡是正在改的完整網址、不是值的顯示,進編輯時字往左移一個圖示 + 間距(user 在 152 決策頁第 14 題選「甲 打字狀態不畫圖示」,交接資料夾 `notes/decisions/decide152-db/answers/latest.json` 的 `q15`;理由【AI 推導:同 Select 可搜尋的欄位打開打字時只留 `startIcon`、不畫值的圖示(`../Select/select.tsx` `searchable && open` 那一支)】)
+- **截斷**:字截斷、圖示不縮(`ItemPrefix` `shrink-0`;同 `../DataTable/data-table.spec.md`「十一、Cell 單行截斷原則」Person「avatar 不縮 name truncate」);截斷提示照舊在字上(`TruncatedText`)【AI 推導:沿用該條既有規則,不是 user 這次的原話】
+- **讀屏**:圖示 `aria-hidden`,連結的名字仍是顯示的字(`label` 或主機名)加下方「新分頁預告」,不因加圖示改變(同 `../Field/field-controls.spec.md`「startIcon」的 `aria-hidden` —— 圖示不另帶意思,意思在字上)
+- **範例**:展示頁「連結帶圖示」;閘 `scripts/link-input-url-display-invariant.mjs`(各模式 × 各種值:圖示在不在連結裡、讀屏略過、名字不變;靜態)+ `scripts/data-table-link-cell-invariant.mjs` L11(圖示在連結裡、顏色 = 字色、滑過圖示 = 滑過連結、圖示 ↔ 字 8、截斷不縮、停用同色;瀏覽器)
+
+## 新分頁預告
+
+2026-11-27 起。依據:user 在 152 決策頁第 11 題「網址欄的連結會開新分頁,要不要預告」選「甲 只給讀屏預告」(交接資料夾 `notes/decisions/decide152-db/answers/latest.json` 的 `q12`)。
+
+- **連結一律開新分頁**(`target="_blank"`,`rel="noopener noreferrer"`),**讀屏要先知道**:連結的名字 = 顯示的字 + 空格 +「(在新分頁開啟)」(`aria-label`;名字以看得到的字開頭,WCAG 2.5.3 label in name)。GOV.UK Design System「Opening links in a new tab」:「If you need a link to open in a new tab, include the words ‘opens in new tab’ as part of the link.」(https://design-system.service.gov.uk/styles/links/;範圍:GOV.UK 預設把這幾個字放在看得到的連結文字裡,同一處列出很多連結時才建議改成只給讀屏的隱藏字 —— 本 DS 只給讀屏是 user 選甲,見上方依據);W3C G201:「The name or label that describes a control can include the warning about opening in a new window.」(https://www.w3.org/WAI/WCAG22/Techniques/general/G201)
+- **畫面不變**:不加外開圖示、不加看得到的字(甲;乙「讀屏預告 + 外開圖示」沒有選)
+- **換語言**:`I18nProvider` 的 `link-input.opensInNewTab`(`../../lib/i18n/README.md`「已 opt-in I18nProvider 的元件」);沒包時是 DS 預設「(在新分頁開啟)」
+- **哪些地方**:畫成連結的每一處 —— 編輯模式的連結狀態、readonly、view(裸 / 外殼)、DataTable 網址格(同一支 `link-input.tsx` `LinkAnchor`);不是連結的值(一般文字、停用)沒有預告
+- **閘**:`scripts/link-input-url-display-invariant.mjs`(每個連結的名字 = 顯示的字 + 預告;換語言後的字照用;靜態)
+
+---
+
 ## readonly / disabled
 
 與其他 Field 一致：
@@ -147,6 +171,7 @@ URL 格式要求：`http://` 或 `https://` 開頭的網址;**沒寫協定、但
 
 - ❌ 不在 link 狀態下讓點擊 value 進入編輯——點擊連結必須開啟連結
 - ❌ 不讓連結盒子撐滿整行(整框可點用延伸連結,盒子仍是文字寬)
+- ❌ 不把值的前綴圖示放在連結外面——圖示在 `<a>` 裡、跟字同色、一起算滑過與點擊範圍(見「值的前綴圖示」);也不拿 `startIcon` 的灰色畫它
 - ❌ 不在網址框裡留下「滑過沒變化卻點得開」或「滑過有底線卻點不開」的區塊——底線 + 手形的範圍 = 點擊範圍(Pencil 除外)
 - ❌ 不讓 link 狀態外框裡滑過會變色的地方點下去沒有反應——Pencil 以外都是連結
 - ❌ 不在打字過程中即時驗證格式——等 blur

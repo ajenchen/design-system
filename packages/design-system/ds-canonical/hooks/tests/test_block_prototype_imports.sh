@@ -135,6 +135,37 @@ EOF
 run_hook "${F2#$PROJECT_ROOT/}"
 expect_block "Test 2 explorations import blocked" "Blocked"
 
+# ── Test 2b–2d(2026-11-27 r72):逐行豁免 @exploration-import-ok,附理由放行、空理由 / 只豁免另一行照擋 ──
+echo ""
+echo "Test 2b: reasoned @exploration-import-ok on the line above → pass"
+F2B="$SANDBOX/violation-exempt.tsx"
+cat >"$F2B" <<'EOF'
+// @exploration-import-ok: 比稿頁暫時接進產品 demo 給 stakeholder 看
+import { ProtoX } from '@/explorations/foo/bar'
+export const X = () => <ProtoX />
+EOF
+run_hook "${F2B#$PROJECT_ROOT/}"
+expect_pass "Test 2b reasoned exemption passes"
+echo "Test 2c: empty @exploration-import-ok: → block"
+F2C="$SANDBOX/violation-empty.tsx"
+cat >"$F2C" <<'EOF'
+import { ProtoX } from '@/explorations/foo/bar' // @exploration-import-ok:
+export const X = () => <ProtoX />
+EOF
+run_hook "${F2C#$PROJECT_ROOT/}"
+expect_block "Test 2c empty-reason exemption still blocked" "@exploration-import-ok: <理由>"
+echo "Test 2d: exemption covers only its own import; a second import still blocks"
+F2D="$SANDBOX/violation-partial.tsx"
+cat >"$F2D" <<'EOF'
+// @exploration-import-ok: 比稿頁暫時接進產品 demo 給 stakeholder 看
+import { ProtoX } from '@/explorations/foo/bar'
+import { Button } from '@/design-system/components/Button/button'
+import { ProtoY } from '@/explorations/foo/baz'
+export const X = () => <ProtoX />
+EOF
+run_hook "${F2D#$PROJECT_ROOT/}"
+expect_block "Test 2d unexempted second import still blocked" "Blocked"
+
 # ── Test 3: file inside src/explorations/ itself → exempt (pass) ──────────────
 echo ""
 echo "Test 3: file IN src/explorations/ importing from explorations → pass (allowed)"

@@ -41,6 +41,11 @@
  *           它裡面的第二塊再顯示;第二塊不在開頁時的觀察範圍裡,只有重判後把觀察範圍換到新路徑才看得到 —— 2026-11-15 審查 F5:那一支原本沒有任何一列守)。
  *           夾具沒有 storybook 的重畫通道,藏起來 / 顯示那一刻的判定都是產品自己做的 → 判錯是產品紅(exit 1),只有夾具沒掛上 / 沒照設計排出來 /
  *           讀不到標記才是儀器失效(同日審查 A 第 2 輪:修前把「藏起來沒重判」判成儀器失效、exit 2)。
+ *         · 標題塊(2026-11-27,layoutSpace.spec.md 規則 3「標題塊」;H26 user 定案):產品畫面「標題 + 它標示的有框內容」——
+ *           字列 → 下一列 = 8(固定,兩種密度都是 8;量標題字本身的框底 → 下一列頂,右邊的無框小圖示鈕撐高那一列也會紅)、
+ *           有框控件列(搜尋列、放有框按鈕的標題列)→ 下一列 = tight、塊與塊 = loose。量測對象 = LayoutSpace 的 test-only 範例
+ *           「標題塊量測」(DS 文件頁先不改,不做讀者範例)。`--selftest`:判定表(8 → 12、字列跟著密度、控件列寫成 8、塊與塊 32 必紅;
+ *           少一段 / 讀不到 tight 判儀器失效)+ 頁面對照(把第一塊的 row-gap 改成 12px → 只紅那一段、量到 12 → 還原 → 綠)。
  *   紅: 任一處距離與期望差 > 0.6px(subpixel)→ 指名 case / 密度 / 數字並 exit 1。
  *       歷史紅燈(修前 main 8eb473c7 建置實測):FileViewer 資訊面板 md 16 / lg 24(= 只有一份 loose,標題比離自己的清單還近上一塊)。
  *       量不到(找不到那個標題 / 按鈕 / 線、讀不到 loose / tight、兩種密度同一個 loose、story 開不起來、等不到被量的元素、夾具打包不起來或
@@ -154,7 +159,40 @@ export const CASES = [
   { id: 'heading-reveal-rule', kind: 'heading-reveal', story: 'design-system-components-badge-設計原則--default-low-rule', at: 'rule', text: '選 level 時問', label: 'Badge 設計原則「選 level 時問…」藏起來判一次 → 顯示(TutorialRule)' },
   { id: 'heading-reveal-h3', kind: 'heading-reveal', story: 'design-system-components-progressbar-設計規格--overview', at: 'h3', text: 'Status 一覽', label: 'ProgressBar 設計規格「Status 一覽」藏起來判一次 → 顯示(單獨的 H3)' },
   { id: 'heading-reveal-desc', kind: 'heading-reveal', story: 'design-system-components-tabs-設計規格--size-matrix', at: 'h3+desc', text: '三種 Size', label: 'Tabs 設計規格「三種 Size」藏起來判一次 → 顯示(H3 + Desc)' },
+  // 標題塊(2026-11-27,layoutSpace.spec.md 規則 3「標題塊」;H26):產品畫面的「標題 + 它標示的有框內容」。量測對象 = test-only 範例
+  // (DS 文件頁先不改)。pairs = 上下相鄰的兩列(`<塊>:<上面那一列>`;text = 字列 → 8 固定、control = 有框控件列 → tight),
+  // blocks = 依序的三塊(塊與塊之間 loose)。
+  { id: 'title-block-probe', kind: 'title-block', story: 'design-system-tokens-layoutspace--title-block-probe', pairs: ['statuses:text', 'priorities:text', 'priorities:control', 'labels:control'], blocks: ['statuses', 'priorities', 'labels'], label: 'LayoutSpace 標題塊量測:標題 → 表 / 標題 → 搜尋列 → 表 / 有框按鈕的標題列 → 表,三塊之間' },
 ]
+
+/** 標題塊:字列 → 它標示的有框內容 = 8,固定、不隨密度(layoutSpace.spec.md 規則 3「標題塊」;寫法 gap-2 / mt-2 / mb-2)。 */
+export const TITLE_BLOCK_TEXT_GAP = 8
+const isTitleBlock = (c) => c.kind === 'title-block'
+/** 純函式:標題塊那一列每一段距離要的是哪一種(text / control / block)與它的名字(訊息用)。 */
+export function titleBlockSegments(c) {
+  return [
+    ...c.pairs.map((p) => ({ kind: p.split(':')[1], name: `${p.split(':')[0]} 的${p.endsWith(':text') ? '字列' : '有框控件列'} → 下一列` })),
+    ...c.blocks.slice(1).map((b, i) => ({ kind: 'block', name: `${c.blocks[i]} ↔ ${b}(塊與塊)` })),
+  ]
+}
+/** 頁面端:標題塊量測(純讀)。 */
+const readTitleBlock = ({ pairs, blocks }) => {
+  const root = document.querySelector('[data-title-block-probe]')
+  const round = (v) => Math.round(v * 10) / 10
+  const css = root ? getComputedStyle(root) : null
+  const gaps = pairs.map((id) => {
+    const from = root?.querySelector(`[data-tb-gap="${id}"]`)
+    const to = root?.querySelector(`[data-tb-gap-to="${id}"]`)
+    return from && to ? round(to.getBoundingClientRect().top - from.getBoundingClientRect().bottom) : NaN
+  })
+  const els = blocks.map((id) => root?.querySelector(`[data-tb-block="${id}"]`))
+  for (let i = 1; i < els.length; i++) gaps.push(els[i] && els[i - 1] ? round(els[i].getBoundingClientRect().top - els[i - 1].getBoundingClientRect().bottom) : NaN)
+  return {
+    loose: css ? parseFloat(css.getPropertyValue('--layout-space-loose')) : NaN,
+    tight: css ? parseFloat(css.getPropertyValue('--layout-space-tight')) : NaN,
+    gaps,
+  }
+}
 
 /** 頁面上把標記翻面的對照組:四種標題區各一列(兩列 one → many、兩列 many → one)。 */
 export const FLIP_CASES = ['heading-h3-one-table', 'heading-h3-one-demo-prose', 'heading-es-many-sections', 'heading-rule-many-examples']
@@ -431,7 +469,23 @@ export function judge(rows) {
     const where = `${r.id} @${r.density}`
     if (r.missing) { failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} ${r.missing}`); continue }
     if (!(r.loose > 0)) { failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 讀不到 --layout-space-loose`); continue }
-    if (r.kind === 'heading-one' && !(r.tight > 0)) { failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 讀不到 --layout-space-tight`); continue }
+    if ((r.kind === 'heading-one' || r.kind === 'title-block') && !(r.tight > 0)) { failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 讀不到 --layout-space-tight`); continue }
+    if (r.kind === 'title-block') {
+      // 標題塊:字列 → 8(固定)、有框控件列 → tight、塊與塊 → loose(layoutSpace.spec.md 規則 3「標題塊」)
+      const segs = Array.isArray(r.segments) ? r.segments : []
+      if (!segs.length || !Array.isArray(r.gaps) || r.gaps.length !== segs.length || r.gaps.some((g) => !Number.isFinite(g))) {
+        failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 標題塊沒量到每一段(應 ${segs.length} 段,實得 ${JSON.stringify(r.gaps)})—— 範例的 data-tb-* 標記不見了?`)
+        continue
+      }
+      segs.forEach((s, i) => {
+        const want = s.kind === 'text' ? TITLE_BLOCK_TEXT_GAP : s.kind === 'control' ? r.tight : r.loose
+        if (Math.abs(r.gaps[i] - want) > TOL) {
+          const why = s.kind === 'text' ? `8:上面是字(固定,不隨密度)` : s.kind === 'control' ? 'tight:上面是有框的控件' : 'loose:這一整塊 ↔ 旁邊的東西'
+          failures.push(`${where} 標題塊 ${s.name} = ${r.gaps[i]}px,應 ${want}(${why},layoutSpace 規則 3「標題塊」)`)
+        }
+      })
+      continue
+    }
     if (r.kind === 'heading-reveal' || r.kind === 'heading-reveal-inner') {
       if (r.selfRejudge) {
         if (r.premise) { failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 夾具沒照設計排出來:${r.premise}`); continue }
@@ -638,6 +692,26 @@ function selftest() {
   const hiddenBlk = (late = false) => ({ w: 0, h: 0, top: 0, bottom: 0, late })
   expect(fixturePremise({ blocks: [hiddenBlk(), hiddenBlk(true)], tight: 12 }, { allHidden: true }) === null, '夾具前提(兩段式開頁):兩塊都藏著 → 成立')
   expect(/一開始就看得到/.test(fixturePremise({ blocks: [blk(0), hiddenBlk(true)], tight: 12 }, { allHidden: true }) ?? ''), '夾具前提(兩段式開頁):包著兩塊的容器沒藏起來 → 不成立')
+  // 標題塊(2026-11-27,H26):修後形狀(字列 8 兩種密度都是 8、有框控件列 tight、塊與塊 loose)綠;
+  // 字列 8 → 12(改前 workspace 現況:標題列約 24 → 12 → 表)紅並指名那一段;字列跟著密度變成 tight 紅;有框控件列寫成 8 紅;
+  // 塊與塊用 loose × 2(改前 32)紅;少一段 / 讀不到 tight 判儀器失效
+  const tbCase = CASES.find(isTitleBlock)
+  const tbSegs = titleBlockSegments(tbCase)
+  const tbGaps = (density, patch = {}) => tbSegs.map((s, i) => (i in patch ? patch[i] : s.kind === 'text' ? 8 : s.kind === 'control' ? (density === 'md' ? 12 : 16) : (density === 'md' ? 16 : 24)))
+  const tbRow = (density, gaps, extra = {}) => ({ id: tbCase.id, kind: 'title-block', density, loose: density === 'md' ? 16 : 24, tight: density === 'md' ? 12 : 16, gaps, segments: tbSegs, ...extra })
+  const textAt = tbSegs.findIndex((s) => s.kind === 'text')
+  const controlAt = tbSegs.findIndex((s) => s.kind === 'control')
+  const blockAt = tbSegs.findIndex((s) => s.kind === 'block')
+  expect(tbSegs.filter((s) => s.kind === 'text').length >= 2 && controlAt >= 0 && blockAt >= 0, '標題塊那一列要有字列(≥ 2 段)、有框控件列、塊與塊三種距離')
+  expect(judge([tbRow('md', tbGaps('md')), tbRow('lg', tbGaps('lg'))]).length === 0, `標題塊修後形狀應綠,實得 ${JSON.stringify(judge([tbRow('md', tbGaps('md')), tbRow('lg', tbGaps('lg'))]))}`)
+  const tb12 = judge([tbRow('md', tbGaps('md', { [textAt]: 12 }))])
+  expect(tb12.length === 1 && tb12[0].startsWith(`${tbCase.id} @md`) && tb12[0].includes(tbSegs[textAt].name) && tb12[0].includes('= 12px') && !tb12[0].includes(INSTRUMENT_FAIL_MARKER), `標題塊字列 8 → 12 應紅並指名那一段,實得 ${JSON.stringify(tb12)}`)
+  expect(judge([tbRow('lg', tbGaps('lg', { [textAt]: 16 }))]).some((s) => s.includes('不隨密度')), '標題塊字列在大密度跟著變成 tight(16)應紅(8 固定、不隨密度)')
+  expect(judge([tbRow('md', tbGaps('md', { [controlAt]: 8 }))]).some((s) => s.includes('有框的控件')), '標題塊有框控件列寫成 8 應紅')
+  expect(judge([tbRow('md', tbGaps('md', { [blockAt]: 32 }))]).some((s) => s.includes('塊與塊') && s.includes('= 32px')), '標題塊塊與塊 loose × 2(32)應紅')
+  expect(judge([tbRow('md', tbGaps('md').slice(1))]).some((s) => s.includes(INSTRUMENT_FAIL_MARKER) && s.includes('標題塊沒量到')), '標題塊少一段 → 儀器失效')
+  expect(judge([tbRow('md', tbGaps('md', { [textAt]: NaN }))]).some((s) => s.includes(INSTRUMENT_FAIL_MARKER)), '標題塊某一段量不到(NaN)→ 儀器失效')
+  expect(judge([tbRow('md', tbGaps('md'), { tight: NaN })]).some((s) => s.includes(INSTRUMENT_FAIL_MARKER) && s.includes('tight')), '標題塊讀不到 tight → 儀器失效')
   if (ok) printSelftestLine('✓ section-gap 判定表 PASS(修前實測必紅、修後必綠、每一列標題區餵相反距離都指名紅、四種標題區 × 一塊 / 兩塊以上都有列、量不到判沒量到;後來才顯示四列:修前停在 tight 必紅、前提不成立判儀器失效、ResizeObserver loop 必紅;夾具列:拿掉重判 = 產品紅結束碼 1、夾具沒排好 = 儀器失效結束碼 2、容器裡晚顯示修前必紅、兩段式停在 tight 指名 rAF 回呼裡的重新觀察)')
   else console.log('❌ section-gap 判定表 FAIL')
   return ok
@@ -661,6 +735,11 @@ async function measureCase(page, origin, c, density) {
     const { hidden, shown } = await revealHeadingZones(page, { label })
     const resizeLoop = await readResizeLoopErrors(page)
     return { ...headingRowFrom(shown, c), visibleMark, hiddenMark: findHeadingZone(hidden, c)?.zone.mark ?? null, resizeLoop }
+  }
+  if (isTitleBlock(c)) {
+    // 等最後一段的下一列本身出現(表格畫出來)→ 版面靜止 → 量
+    await openStory(page, url, { waitFor: `[data-title-block-probe] [data-tb-gap-to="${c.pairs.at(-1)}"] [role="table"]`, label, settleFrames: SECTION_GAP_SETTLE_FRAMES })
+    return { ...(await page.evaluate(readTitleBlock, { pairs: c.pairs, blocks: c.blocks })), segments: titleBlockSegments(c) }
   }
   if (c.kind === 'form') {
     // 等被量的按鈕本身出現(openStory 的 waitFor:等不到 = 儀器失效);按鈕列 = 從按鈕往上第一個「有前一個兄弟」的節點(ButtonGroup / 包按鈕的 div),
@@ -798,6 +877,44 @@ async function flipControls() {
 }
 
 /**
+ * --selftest 標題塊對照(2026-11-27,H26):開 md、量現況(必綠)→ 在頁面上把第一塊「字列 → 表」的 8 改成 12(那一塊的 row-gap)、
+ * 等版面靜止 → 同一支量法再量 → 必紅、只指名那一段、量到正好 12 → 拿掉改動再量 → 回到綠。證明量的是那一段,不只是判定函式會紅。
+ */
+async function titleBlockControls() {
+  return withBrowser(async (page, origin) => {
+    const problems = []
+    const c = CASES.find(isTitleBlock)
+    const density = 'md'
+    const row = async () => ({ id: c.id, kind: c.kind, density, ...(await measureCase(page, origin, c, density)) })
+    const base = await row()
+    const baseRed = judge([base])
+    if (baseRed.length) return [`${c.id}:改之前就不綠 —— 前提不成立(${baseRed.join(' ; ').replaceAll(INSTRUMENT_FAIL_MARKER, '[標記]')})`]
+    const textSeg = base.segments.findIndex((s) => s.kind === 'text')
+    const blockId = c.pairs[textSeg].split(':')[0]
+    const setGap = async (value) => {
+      await page.evaluate(([id, v]) => {
+        const el = document.querySelector(`[data-tb-block="${id}"]`)
+        if (v === null) el.style.removeProperty('row-gap')
+        else el.style.setProperty('row-gap', v)
+      }, [blockId, value])
+      const s = await settleAfterInteraction(page, { frames: SECTION_GAP_SETTLE_FRAMES })
+      if (!s.ok) throw instrumentFrom(page, `${c.story} @${density}(標題塊對照)`, '改 row-gap 之後版面等不到靜止', `等了 ${s.framesWaited} 格`)
+      return { id: c.id, kind: c.kind, density, ...(await page.evaluate(readTitleBlock, { pairs: c.pairs, blocks: c.blocks })), segments: titleBlockSegments(c) }
+    }
+    const broken = await setGap('12px')
+    const red = judge([broken])
+    if (red.length === 1 && red[0].includes(base.segments[textSeg].name) && Math.abs(broken.gaps[textSeg] - 12) <= TOL) {
+      printSelftestLine(`✓ 標題塊對照:${base.segments[textSeg].name} 8 → 12(量到 ${broken.gaps[textSeg]})→ 紅並只指名那一段`)
+    } else problems.push(`${c.id}:把 8 改成 12 之後應只紅「${base.segments[textSeg].name}」、量到 12;實得距離 ${JSON.stringify(broken.gaps)}、判定 ${JSON.stringify(red).replaceAll(INSTRUMENT_FAIL_MARKER, '[標記]')}`)
+    const restored = await setGap(null)
+    const back = judge([restored])
+    if (!back.length && Math.abs(restored.gaps[textSeg] - TITLE_BLOCK_TEXT_GAP) <= TOL) printSelftestLine(`✓ 標題塊對照:還原後 ${restored.gaps[textSeg]} → 綠`)
+    else problems.push(`${c.id}:還原之後應回到綠、量到 8;實得距離 ${JSON.stringify(restored.gaps)}、判定 ${JSON.stringify(back).replaceAll(INSTRUMENT_FAIL_MARKER, '[標記]')}`)
+    return problems
+  })
+}
+
+/**
  * --selftest 第 2 層之二(2026-11-15 A11):「後來才顯示」那幾列的兩個對照組 ——
  * (1) 收集器看得到:頁面上故意造一個必然引發「ResizeObserver loop」的觀察者,收集器必須收到(否則「沒有引發錯誤」是零證據);
  * (2) 產品看不到「看不到 ↔ 看得到」:每份文件第一支腳本之前把 ResizeObserver 換成空殼(= 修前只在 render 後判的產品),
@@ -902,6 +1019,8 @@ if (isDirectRun(import.meta.url)) {
       requireFreshBuildForCases()
       const problems = await flipControls()
       if (problems.length) { console.log(`❌ section-gap selftest FAIL(頁面翻面對照):\n  ${problems.join('\n  ')}`); process.exit(1) }
+      const titleProblems = await titleBlockControls()
+      if (titleProblems.length) { console.log(`❌ section-gap selftest FAIL(標題塊對照):\n  ${titleProblems.join('\n  ')}`); process.exit(1) }
       const revealProblems = await revealControls()
       if (revealProblems.length) { console.log(`❌ section-gap selftest FAIL(後來才顯示的對照):\n  ${revealProblems.join('\n  ')}`); process.exit(1) }
       printSelftestLine('✅ section-gap selftest PASS(判定表 + 四種標題區在頁面上翻面都指名紅、數字正好是另一個 token + 後來才顯示:收集器看得到 ResizeObserver 迴圈、觀察者換空殼後四列都紅;夾具列:回呼裡直接寫 → 巢狀兩列因 loop 紅、拿掉重判 → 五列產品紅(不是儀器失效)、只觀察直屬節點 → 容器三列紅、拿掉 rAF 重判後的重新觀察 → 剛好兩段式一列紅、夾具畫不出來 → 儀器失效)')
@@ -925,7 +1044,7 @@ if (isDirectRun(import.meta.url)) {
       if (code === 2) console.error(`✗ section-gap:${instrument.length} 處量不到 —— 儀器失效(exit 2;不是產品裁決,也不算通過)${failures.length > instrument.length ? `;另有 ${failures.length - instrument.length} 處產品紅(上面照印)` : ''}`)
       process.exit(code)
     }
-    console.log('✅ section-gap PASS(區塊 ↔ 區塊 = 一條分隔線的位置、上下各 loose;不畫線 = loose × 2;標題區 → 內容 一塊 tight / 兩塊以上 loose)')
+    console.log('✅ section-gap PASS(區塊 ↔ 區塊 = 一條分隔線的位置、上下各 loose;不畫線 = loose × 2;標題區 → 內容 一塊 tight / 兩塊以上 loose;標題塊 字列 8 / 有框控件列 tight / 塊與塊 loose)')
   } catch (error) {
     if (error instanceof StoryRenderInstrumentError || error instanceof InstrumentError) {
       console.error(`✗ ${error instanceof InstrumentError ? `${INSTRUMENT_FAIL_MARKER}:` : ''}${error.message}`)

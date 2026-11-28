@@ -206,6 +206,7 @@ export const ItemTypeRule: Story = {
     const [showStatus, setShowStatus] = React.useState(true)
     const [showAssignee, setShowAssignee] = React.useState(true)
     const [showDue, setShowDue] = React.useState(false)
+    const [hideDone, setHideDone] = React.useState(true)
     const [sortBy, setSortBy] = React.useState('created')
     return (
       <TutorialPage>
@@ -227,8 +228,8 @@ export const ItemTypeRule: Story = {
         </TutorialRule>
 
         <TutorialRule
-          title="CheckboxItem — 即時生效的 on/off toggle（選單保持開啟）"
-          note="顯示 / 隱藏欄位、篩選條件等。選了不關閉選單，讓使用者可一次切多個"
+          title="CheckboxItem(勾選外觀)— 從一組裡挑幾個（選單保持開啟）"
+          note="顯示哪幾欄、篩選哪幾個狀態:每一項都是同一組的成員。點了立刻生效、選單不關，讓使用者一次切多個"
         >
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -244,6 +245,26 @@ export const ItemTypeRule: Story = {
             </DropdownMenuContent>
           </DropdownMenu>
           <ExampleCaption>↑ 即時套用的設定——改了立刻生效,選單保持開啟可繼續切</ExampleCaption>
+        </TutorialRule>
+
+        <TutorialRule
+          title={'CheckboxItem indicator="switch"(開關外觀)— 單獨一個即時生效的設定'}
+          note="跟一般動作並列的單一開 / 關(全寬顯示、隱藏已完成):字是功能名,用列尾開關。整列點了就切換、選單不關;開關只是畫面,不能單獨點。判準住 checkbox.spec.md「選單裡」"
+        >
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="tertiary" startIcon={MoreVertical} aria-label="任務列表選項" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuGroup>
+                <DropdownMenuItem startIcon={Download}>匯出 CSV</DropdownMenuItem>
+              </DropdownMenuGroup>
+              <DropdownMenuGroup>
+                <DropdownMenuCheckboxItem indicator="switch" checked={hideDone} onCheckedChange={setHideDone}>隱藏已完成和已取消</DropdownMenuCheckboxItem>
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <ExampleCaption>↑ 把這一項單獨搬到設定頁會是「一列開關」→ 開關外觀;會是「勾選清單裡的一個勾」→ 上一則的勾選外觀</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule

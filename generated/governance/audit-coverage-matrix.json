@@ -653,7 +653,7 @@
     },
     "76": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_escape_marker_abuse.sh(≥3 distinct OR ≥5 total BLOCK [consumer] + per-line justification gate 空理由 BLOCK [consumer+DS] + 廣義 *-allow regex,2026-05-31)",
+      "mechanism": "check_escape_marker_abuse.sh(≥3 distinct OR ≥5 total = 超過額度 [consumer]:2026-11-27 起超過時理由 ≥10 字且不重複才放行,否則 BLOCK + per-line justification gate 空理由 BLOCK [consumer+DS] + -allow / -ok / -skip 三種字尾,2026-05-31 / 2026-11-27)",
       "enforcement": "block",
       "enforcement_source": "registrations.outputMode",
       "hook_events": [

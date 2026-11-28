@@ -919,6 +919,7 @@ test('product-template classification keeps every DS-author workflow out of the 
     'governance-status',
     'codify-corrections',
     'codify-principle',
+    'consumer-feedback-triage',
     'ensure-canonical',
     'codex-collab',
     'deep-audit-cross-codex',

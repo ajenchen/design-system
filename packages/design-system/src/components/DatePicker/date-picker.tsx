@@ -1002,6 +1002,11 @@ export interface DatePickerRangeProps
   minuteStep?: TimeStep
   secondStep?: TimeStep
   needConfirm?: boolean
+  /**
+   * 掛上時面板就開著(非受控初始值,同單日 DatePicker 的 `defaultOpen`;作用端從開始端起)。給就地編輯用:
+   * 點一下進編輯就是控件的輸入處 —— 日曆開好、焦點在日曆裡,不必再點一次(date-picker.spec.md「Open-pair rationale」)。
+   */
+  defaultOpen?: boolean
   /** 日曆面一週從哪天開始(0 = 週日 … 6 = 週六);沒傳 = 由 `locale` 推。同單日 DatePicker 的 `weekStartsOn`。 */
   weekStartsOn?: WeekStartsOn
   /**
@@ -1039,6 +1044,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
       minuteStep = 1,
       secondStep = 1,
       needConfirm: needConfirmProp,
+      defaultOpen = false,
       weekStartsOn,
       formatRange = false,
       disabledDate,
@@ -1072,7 +1078,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
       [locale, formatOptions, showSeconds],
     )
 
-    const [open, setOpen] = React.useState(false)
+    const [open, setOpen] = React.useState(defaultOpen)
     const [draft, setDraft] = React.useState<[string | null, string | null]>(value ?? [null, null])
     const [activeEnd, setActiveEnd] = React.useState<'start' | 'end'>('start')
 

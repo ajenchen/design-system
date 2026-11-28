@@ -72,6 +72,29 @@ export const SingleSelection: Story = {
   },
 }
 
+// ── 單選 + 放不下時的選單(2026-11-27)──
+// 單選的溢出選單 = 一般選單項 + 選中底色、選了就關(同分頁溢出選單),不是勾選框 —— item-anatomy.spec.md 規則 B;
+// 多選的選單(設計原則「layout」那則)才是勾選項。scripts/dropdown-menu-keyboard-invariant.mjs 的 CH 情境量這一則。
+const KB_CATEGORIES = [
+  ['all', '全部'], ['release', '產品公告'], ['design', '設計規範'], ['eng', '工程筆記'],
+  ['case', '客戶案例'], ['security', '資安通報'], ['hr', '人資公告'], ['finance', '財務報表'],
+] as const
+
+export const SingleSelectionMenu: Story = {
+  name: '單選:放不下時的選單',
+  parameters: { docs: { description: { story: '知識庫文章分類,一次只看一類。放不下時右側出現選單鈕:選單列出全部分類,目前那一類有選中底色,選了就關、那一顆 chip 捲到中間。' } } },
+  render: () => {
+    const [value, setValue] = useState('design')
+    return (
+      <div className="max-w-80">
+        <ChipGroup type="single" layout="menu" value={value} onValueChange={(v) => v && setValue(v as string)}>
+          {KB_CATEGORIES.map(([v, label]) => <Chip key={v} value={v}>{label}</Chip>)}
+        </ChipGroup>
+      </div>
+    )
+  },
+}
+
 // @story-history: LayoutWrap / LayoutScroll / LayoutMenu retired 2026-05-17 per audit Dim 24 —
 //   anatomy.stories.tsx LayoutMatrix(3 layout values side-by-side)+ principles.stories.tsx LayoutRule
 //   已 cover layout 機制比較與業務情境。展示層保留 typical 情境(Default / WithBadge / SingleSelection)。

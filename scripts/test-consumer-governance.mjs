@@ -841,6 +841,31 @@ try {
   ) throw new Error(`recorded content debt still blocks or is not reported:${JSON.stringify(baselined.report.diagnostics)}`)
   console.log(`✅ positive: recorded content debt does not block and is reported as recordedContentDebt=${recordedCount}`)
 
+  // 2026-11-27 r72:豁免清單 —— 每次 governance:check 都列出各標記被用幾次(只讀、不擋、不進 attestationDigest)。
+  // 對照組:沒有這個檔時 cat-solid-ok 不在 byMarker 裡;加了之後計數與逐筆(檔:行 + 理由)都對得上。
+  if (baselined.report.evidence?.exemptions?.byMarker?.['cat-solid-ok'] !== undefined) {
+    throw new Error(`exemption census counted a marker that is not in the fixture:${JSON.stringify(baselined.report.evidence?.exemptions)}`)
+  }
+  const exemptionFixture = join(mirror, 'apps/template/src/CampaignBadges.tsx')
+  writeFileSync(exemptionFixture, [
+    '// @cat-solid-ok: 品牌活動色塊,白字對比已量過',
+    'export const SpringBadge = 1 // @cat-solid-ok: 第二處活動色塊,同樣量過對比',
+    'export const LiveClock = 2 /* @nondeterministic-ok: 只在使用者操作後產生,截圖不會出現 */',
+    '',
+  ].join('\n'))
+  const census = runCheck()
+  const exemptions = census.report.evidence?.exemptions
+  if (
+    census.status !== 0
+    || exemptions?.byMarker?.['cat-solid-ok'] !== 2
+    || exemptions?.byMarker?.['nondeterministic-ok'] !== 1
+    || !exemptions.entries.some((entry) => entry.file === 'apps/template/src/CampaignBadges.tsx' && entry.line === 2
+      && entry.marker === 'cat-solid-ok' && entry.reason === '第二處活動色塊,同樣量過對比')
+    || !exemptions.entries.some((entry) => entry.marker === 'nondeterministic-ok' && entry.reason === '只在使用者操作後產生,截圖不會出現')
+  ) throw new Error(`exemption census is missing or miscounted:${census.status}\n${JSON.stringify(exemptions, null, 2)}\n${JSON.stringify(census.report.diagnostics)}`)
+  rmSync(exemptionFixture)
+  console.log('✅ positive: governance:check lists every reasoned exemption and how often each marker is used')
+
   const newPayout = join(mirror, 'apps/template/src/NewPayoutCard.tsx')
   writeFileSync(newPayout, `export const NewPayoutCard = () => <table style={{ padding: '13px', color: '#ff0000' }}><tbody><tr><td>PO-118</td></tr></tbody></table>\n`)
   const newBlocked = expectFailure('GOV-CONTENT-001')
@@ -878,6 +903,46 @@ try {
     throw new Error('an unchanged prune must not rewrite the baseline')
   }
   console.log('✅ ratchet: a fixed finding blocks as GOV-CONTENT-DEBT-002 until --prune shrinks the baseline')
+
+  // 2026-11-27(產品 canary 回報):workspace 的 checker --json 報告 182,001 bytes,governance:debt 經 spawnSync 的管線
+  // 只收到 146,176 bytes —— checker 寫完立刻 process.exit(),還沒送出的部分被丟掉,JSON.parse 失敗,--list / --record 都做不了。
+  // 這裡讓基準多出 1,000 筆已修好的發現,--list 的 checker 報告超過 200 KB,兩條讀法都要拿到完整 JSON:
+  // checker 直接經 spawnSync 讀,以及 debt writer 逐筆列出。對照組:checker 結尾改回 `process.exit(ok ? 0 : 1)`,這一格紅。
+  {
+    const original = readFileSync(debtBaselinePath)
+    const inflated = JSON.parse(original.toString('utf8'))
+    const target = inflated.entries[0]
+    const registration = target.items[0].registration
+    const extraCount = 1000
+    const extra = Array.from({ length: extraCount }, (_, index) => ({
+      fingerprint: sha(`historical-finding-${index}`).slice(0, 16),
+      text: `${target.file}: inline style padding 13px / color #ff0000 on a hand-built table cell (historical finding #, fixed in a later release; padding text so the report exceeds the pipe buffer)`,
+      registration,
+    }))
+    target.items = [...target.items, ...extra].sort((left, right) => compareUtf8Bytes(left.fingerprint, right.fingerprint)
+      || compareUtf8Bytes(left.text, right.text)
+      || (left.registration ?? 0) - (right.registration ?? 0))
+    inflated.entriesSha256 = sha(JSON.stringify({ schemaVersion: 1, kind: inflated.kind, registrations: inflated.registrations, entries: inflated.entries }))
+    writeFileSync(debtBaselinePath, JSON.stringify(inflated, null, 2) + '\n')
+    const direct = spawnSync(process.execPath, ['--', checkScript, '--repo', mirror, '--hooks-off', '--json', '--content-debt-proposal', 'list'], {
+      cwd: mirror,
+      encoding: 'utf8',
+      maxBuffer: 256 * 1024 * 1024,
+    })
+    let directReport = null
+    try { directReport = JSON.parse(direct.stdout) } catch { /* 下面帶著長度報錯 */ }
+    if (Buffer.byteLength(direct.stdout) <= 200 * 1024 || !directReport?.evidence?.contentDebt?.proposal?.listing) {
+      throw new Error(`a >200 KB checker report must reach a spawnSync reader intact (got ${Buffer.byteLength(direct.stdout)} bytes, parsed=${Boolean(directReport)}):${String(direct.stderr).slice(0, 2000)}`)
+    }
+    const bigList = runDebt('--list')
+    if (
+      bigList.status !== 1
+      || !bigList.stdout.includes(`已修好、待從基準移除(會擋,跑 --prune):1 格 / ${extraCount} 筆`)
+      || bigList.stderr.includes('did not return a JSON report')
+    ) throw new Error(`content-debt --list must read a >200 KB checker report in full:${bigList.stdout.slice(0, 2000)}\n${bigList.stderr.slice(0, 2000)}`)
+    writeFileSync(debtBaselinePath, original)
+    console.log(`✅ positive: a ${Buffer.byteLength(direct.stdout)}-byte checker report reaches spawnSync readers intact (checker and governance:debt --list)`)
+  }
 
   const prunedBytes = readFileSync(debtBaselinePath)
   const widened = JSON.parse(prunedBytes.toString('utf8'))

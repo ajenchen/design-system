@@ -21,7 +21,7 @@ git push -u origin feat/<your-feature-name>
 ## CI 自動跑(每 PR / push)
 
 - `audit.yml`:單次 locked install + hooks-off `governance:check` + tsc + lint:imports + build all apps，發布唯一 required context `Verify consumer`
-- Exact template 更新由上游 release mirror 建立一般 protected-main PR；template 不帶 release-dispatch/updater workflow。產品 repo 的接收升級 workflow(`sync-design-system.yml`)這一版不出貨、下一版才進，在那之前每次升級在本機終端機跑 `sync-all`(`docs/04-ds-upgrade.md`)
+- Exact template 更新由上游 release mirror 建立一般 protected-main PR；template repo 本身不收 dispatch。產品 repo 的接收升級 workflow(`sync-design-system.yml`,0.1.0-beta.152 起受管出貨)收到設計系統新版的 `repository_dispatch` → 在 GitHub runner 跑 `sync-all` → 推 `automation/design-system-<版>` 分支,PR 由設計系統的發布流程開;0.1.0-beta.151 以前的產品 repo 下一次升級自己跑一次才會帶進它(`docs/04-ds-upgrade.md`「First use」)
 - Storybook deploy 走 `netlify.toml` Git integration auto-build,不需 workflow file
 
 ## Code review(CODEOWNERS)

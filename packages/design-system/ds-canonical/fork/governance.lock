@@ -7,7 +7,7 @@
     {
       "schemaVersion": 1,
       "file": "AGENTS.md",
-      "sha256": "d60911d6b1983d69588a927b37decd15d8b0bf6457e0bbd7e54752978651ccb6",
+      "sha256": "bbf0081860e7f4cba3d38e76358c0fa266336d37f2e6af4745b25c4f1047a769",
       "source": "common instruction compatibility alias",
       "classification": null,
       "destination": null
@@ -279,7 +279,7 @@
     {
       "schemaVersion": 1,
       "file": "common/instruction.md",
-      "sha256": "d60911d6b1983d69588a927b37decd15d8b0bf6457e0bbd7e54752978651ccb6",
+      "sha256": "bbf0081860e7f4cba3d38e76358c0fa266336d37f2e6af4745b25c4f1047a769",
       "source": "scripts/fork-role-sources/AGENTS.product.md + AGENTS.md#canonical-decision-authority",
       "classification": null,
       "destination": null
@@ -287,7 +287,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/governance-check.mjs",
-      "sha256": "cbb7207b3e504073384ca352cfb6a9074782e7de8da630de79132544a67794d2",
+      "sha256": "ef727a964f344ec56701c4ee90c6a39fef2ed71f2404a083cfc903f851e8a676",
       "source": "scripts/governance-check.mjs",
       "classification": null,
       "destination": null
@@ -383,7 +383,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/46f10bc55cdfdf834d0749eebff42ea0bb8576f361b36d2b6ba1851354c50150.blob",
-      "sha256": "5414f385799cb5d52243be48bf62378cd572a7aa98d5e6064ae08e4c64379003",
+      "sha256": "c58fa8fcc31f4db0397e8ff2c2121487a66b13c63c2d915185207235742a6eab",
       "source": "scripts/lib/governance-dependency-bootstrap.mjs",
       "classification": null,
       "destination": "scripts/lib/governance-dependency-bootstrap.mjs"
@@ -478,6 +478,14 @@
     },
     {
       "schemaVersion": 1,
+      "file": "consumer/managed-files/77e06f62670dfee01e9b5e8b0f8dad085ce711d75538c1fb0679d9818acaca82.blob",
+      "sha256": "bdb40c97372782ccd2fe29890937a91fe8d99efebe2b321c7ebb6258bb49b2c8",
+      "source": "template/ds-product-template/.github/workflows/sync-design-system.yml",
+      "classification": null,
+      "destination": ".github/workflows/sync-design-system.yml"
+    },
+    {
+      "schemaVersion": 1,
       "file": "consumer/managed-files/7937321877e5c34c27dae36c0d507d21cd42fa3f46a8f11a284b8b4a52b6faa4.blob",
       "sha256": "9b046590c4664e58db920d5b54339ba57eeec563ce858602920cfcaffcdbc231",
       "source": "scripts/lint-ds-internal-imports.mjs",
@@ -487,7 +495,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/794bb911ba8ebef58ab0d44a55b9968a19d2c62bcfb310b1ee3a84166f087f21.blob",
-      "sha256": "8a643a60eaf64bf131a2a4da197d5670a52e4705d11402b53fb32ae93302f6ef",
+      "sha256": "1b9459f6b5a38d6d18c3bb57479cb640c0c668ad046ee38c619e890f6c2946d2",
       "source": "scripts/verify-upgrade-provenance.mjs",
       "classification": null,
       "destination": "scripts/verify-upgrade-provenance.mjs"
@@ -511,7 +519,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/7eb6cc60abfdabaf6617c336058fad1454ccde08889295767bfd9b7fd153cc6e.blob",
-      "sha256": "09f884b5314d53c17c8cbb94edafdc9cb5679ba9f0a81af89a72af7e68cae57f",
+      "sha256": "5e3f57056598d4325342102124a815dc9193568db554d89d25411ca109651a25",
       "source": "scripts/lib/verified-exact-npm-runtime.mjs",
       "classification": null,
       "destination": "scripts/lib/verified-exact-npm-runtime.mjs"
@@ -527,7 +535,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/884721550b56308812b20917adac7a12f36fdb4ecda6b02460a7f5a219c0c966.blob",
-      "sha256": "200d2e6c29e7bbde2be3a8d66c92fad1c6232d0ad4891bba06b299984d1eb932",
+      "sha256": "8632a37f4290fa807abdb663e5164c1ffac9ad57a55a70600eafae9eab1e88ad",
       "source": "packages/design-system/ds-canonical/templates/consumer-governance.md",
       "classification": null,
       "destination": "governance/consumer-governance.md"
@@ -567,7 +575,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/9791c85388d2e2e2bd564e2550fadc3351c4c960a47ce838098afcba7544eb90.blob",
-      "sha256": "db5345e305535705340963cac328e915413be208e6ada3c15498c897b394991b",
+      "sha256": "8e7368c4ede8d896f6e7aba5a030e94b6e5accc30bf4780835ef1c905a6255db",
       "source": "scripts/verify-upgrade-evidence.mjs",
       "classification": null,
       "destination": "scripts/verify-upgrade-evidence.mjs"
@@ -703,7 +711,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/block_prototype_imports.py",
-      "sha256": "f7d87dcc8dde09966c057ff1872fd67921e9f3a33d210cbc63115ff15b3ab05c",
+      "sha256": "62bf007a3233b7fdef41bcd6886d699408d6cfcd228585c785fd052eb615218b",
       "source": "block_prototype_imports.py",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -711,7 +719,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_app_invariants.sh",
-      "sha256": "08c593d902433ce7d7225fd1188905e1aaccce5ca643318cbc881237f1209ff8",
+      "sha256": "8a0e8f85823d311944941f4d4ac771a9395ce11de69cc4dd507674669e6a60ea",
       "source": "check_consumer_app_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -719,7 +727,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_code_quality.sh",
-      "sha256": "1a0c4309dd8db8c634e3dd269222398f0e177f868983a61f0b5e9efddff27f69",
+      "sha256": "44316d899454b93480202003ea3979510bbbfd0f791d5b10da792986fab470e6",
       "source": "check_consumer_code_quality.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -727,7 +735,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_ds_anchor_preflight.sh",
-      "sha256": "662601810cbe61171812be08925c653feba49139b7271e67f202547b3ebd6f06",
+      "sha256": "e1ffd921e1e90548fcae6ce3ab37b3690ea2f5a985f173ec5d623ae9e4594cce",
       "source": "check_ds_anchor_preflight.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -735,7 +743,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_dynamic_tailwind_class.sh",
-      "sha256": "34fd55dd1195d0cf36ffab3168547dd84a6f58a7f6bcfa9dde88194c1b8dca25",
+      "sha256": "b6848d1cd573ded8ff75adb25b825e4fadda305d5ed5ebf439c87a5eda1f0dfd",
       "source": "check_dynamic_tailwind_class.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -743,7 +751,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_escape_marker_abuse.sh",
-      "sha256": "d360dcc99d6619ff111114fa199785f47d7c35b5658c7a25c5ad66b8e3c0ced4",
+      "sha256": "8b40bc49fe79a999e168af575def33bda0efc4ac3bf03816c4322d3ed100b224",
       "source": "check_escape_marker_abuse.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -751,7 +759,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_field_family_invariants.sh",
-      "sha256": "82361f00cc9729d3171908b0e322a8c1c0b8d3bc3700cbf10c678e03fd616af9",
+      "sha256": "013842c95bbe87f99f8f100c5c77120f9ea006d4337d170504101ae730faef7c",
       "source": "check_field_family_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -775,7 +783,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_layout_space_magic_numbers.sh",
-      "sha256": "700b54e8cbf15d396013c68afdf1da29eba2cb980aac3523c04108c3b1a3e6fe",
+      "sha256": "c2c6cbd5c9300e1358d5c8541154e0da11506678c71f3fe3bc6f8f5d8fc98f09",
       "source": "check_layout_space_magic_numbers.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -791,7 +799,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_pattern_invariants.sh",
-      "sha256": "af9b3cab24f4d8e04101d2af11e7a65b090ea125d3a1e98129b1018a13dd3228",
+      "sha256": "fc19ea6ee49dfea327e633b0bdda16370cc5329cc6cb033bd4d11673ee03426f",
       "source": "check_pattern_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -799,7 +807,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_sidebar_avatar_canonical.sh",
-      "sha256": "d24c3d004e85c2cd49ed4e7d03617e216caf81a5954dcd5d407d13b78c656179",
+      "sha256": "305480790d2f6d71e09e324b75e67b655c7f92173e68ec3fb1f0c75622fe1fac",
       "source": "check_sidebar_avatar_canonical.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -831,7 +839,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_tailwind_wildcard_in_docs.sh",
-      "sha256": "c092d716135c905da757b8c3ac9508091b24e5f58dada132e0c6d08349f43410",
+      "sha256": "09c9a1050d346a6d0b79e6068db39a4d6ebfde5fcd59a011a9149533f6095159",
       "source": "check_tailwind_wildcard_in_docs.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -847,7 +855,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/lib/_comment_mask.sh",
-      "sha256": "b1f8401c2357583452da54739304900d060dcc250a98d073570eab96fc9f0599",
+      "sha256": "1040f6ae6d2ef4f550c778f8f59146c007eef7032b12c28938fd9bdc1620b782",
       "source": "lib/_comment_mask.sh",
       "classification": "HELPER",
       "destination": null
@@ -871,7 +879,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/lib/_micro_geometry.sh",
-      "sha256": "8a510db276096b1b7ec9f36102e16165499c09abae36d11524097059d6621a97",
+      "sha256": "697fbd14eb1b2eb170348f16920ca58fec1b65550fb1fd6a76b995b6fa19c2d9",
       "source": "lib/_micro_geometry.sh",
       "classification": "HELPER",
       "destination": null
@@ -975,7 +983,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/provider-hook-output-transport.mjs",
-      "sha256": "c25a95883ef98dedbc32eb9a80ff9632b726f5e4e21607ff85243ee2cca67413",
+      "sha256": "0cd67de61a49b7a0b822df368d5430fff44b9addf85150784d7d63ba323ed178",
       "source": "scripts/lib/provider-hook-output-transport.mjs",
       "classification": null,
       "destination": null
@@ -991,7 +999,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "a35a4eb9a60971a2612562019c7fd384293862a7c6b989bc20d331e0cbe46a0e",
+      "sha256": "a5534119f6262b87d2fd17f8f7caa04c999f054ab1537fed8c1fc81d152ea69d",
       "source": null,
       "classification": null,
       "destination": null
@@ -1527,7 +1535,7 @@
     {
       "schemaVersion": 1,
       "file": "references/utility-registry.json",
-      "sha256": "473fb705e490b39739361c82f6063b80865990b01f3c35dd30a9cfa18e216e70",
+      "sha256": "7709faa7ebdb84fd5b6e1b12e6c4c43dd3abbc50dd7d19c34d62af8228b66cd6",
       "source": "packages/design-system/src/tokens/utility-registry.json",
       "classification": null,
       "destination": null
@@ -1535,7 +1543,7 @@
     {
       "schemaVersion": 1,
       "file": "references/utility-registry.schema.json",
-      "sha256": "a6b5710fa0794f40733505b23cc6389988767188ac5f0f9410af95fab22fd0e2",
+      "sha256": "d5b19868b99e916482330686abf584d3fe6ba8476fd9cb490d7263b31d44d786",
       "source": "packages/design-system/src/tokens/utility-registry.schema.json",
       "classification": null,
       "destination": null

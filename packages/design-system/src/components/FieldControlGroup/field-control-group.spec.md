@@ -206,7 +206,7 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 
 ## 相關
 
-- `../Field/field.spec.md` — FieldGroup(多 Field 垂直堆疊近親,gap 分離)的 home
+- `../Field/field-group.spec.md` — FieldGroup(多 Field 垂直堆疊近親,gap 分離)的 home
 - `../Button/button-group.tsx` — 命名 idiom 近親(`<X>Group`);但 ButtonGroup 是 **gap 分離**(`flex gap-2`),非 border-collapse 接合,兩者機制不同(無獨立 spec)
 - `../Field/field-controls.spec.md` — children(Input / Select / DatePicker 等)共用 Field control 規則
 - `../Checkbox/checkbox.spec.md` / `../RadioGroup/radio-group.spec.md` — semantic group 近親(1 question 多 options,非本元件 scope)

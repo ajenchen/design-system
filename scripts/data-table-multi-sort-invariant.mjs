@@ -24,12 +24,20 @@
  *          「桌機維持現況:已排序欄的 ⌄ 仍是滑過才出現」(user 2026-11-12 逐字「第四批成品的問題都照你建議，但清除全部的按鈕用TERTIARY」,
  *          那一頁「排序取消」題的建議選項是「甲：維持現況」)。「⌄ 收著沒」的量法只有一份:lib/data-table-column-menu-state.mjs
  *          (modifier-click-focus-invariant.mjs 用同一份)。觸控不另外處理(同一列「觸控」句:user 2026-09-26「先維持」),本閘沒有觸控格。
+ *        C ⌄ 選單的項目(2026-11-27 加,workspace H42;項目清單唯一住所 = DataTable lib/column-menu.ts `columnMenuGroups`,判定表在
+ *          scripts/test-data-table-sort-cycle.mjs):test-only story「表頭欄位選單的項目」—— 選單沒有任何項目的欄(關掉欄位隱藏的不可排序欄)
+ *          不畫 ⌄、滑過時排序區寬度不變;分隔線只在兩組之間(只有排序項 / 只有隱藏欄位時沒有,兩組都有時剛好一條在中間);
+ *          labels prop 換掉選單的字、⌄ 的讀屏名、播報句與順位描述,I18nProvider 換得掉字串鍵(函式鍵照預設);每一項仍做原本的事;
+ *          整張表 `enableColumnMenu={false}`:每一欄都沒有 ⌄(能排序、能隱藏、有篩選與欄寬也一樣)、滑過不留位置、Tab 沒有 ⌄ 這一站,
+ *          點表頭 / Enter 照常排序(兩態)。
  *   紅: --selftest 在頁面注入各組破法(丟掉 Shift 的點擊與按鍵 / 數字藏起來 / 間距改 4px / 數字換字級與顏色 / 數字搬到箭頭左邊 /
  *        指示往右推 / 數字撐高表頭 / 拿掉 aria-describedby 與 aria-hidden / 播報區清空 / 藏起「取消排序」/ 只在多重排序時藏起「取消排序」/
  *        選單補回「這一欄目前已經是的那個方向」/ ⌄ 拿出 Tab 順序(tabindex=-1)/
  *        「9+」改寫成數字 / 數字變成沒有名字的圖(axe role-img-alt);sm、lg 各再跑一種長相破法 /
  *        只讓已排序的欄 ⌄ 恆顯示(chevron-sorted-always = 成品頁沒被選的「乙」→ D2 紅、D1 是對照列必綠)/
- *        每一欄 ⌄ 都恆顯示(chevron-always → D1、D2 都紅)),各組必紅,對照列必綠;
+ *        每一欄 ⌄ 都恆顯示(chevron-always → D1、D2 都紅)/
+ *        C 段三種 = 0.1.0-beta.151 的三個症狀:沒有項目的欄也補一個 ⌄(menu-empty-trigger → C1、C5 的 ⌄ 格紅)/ 選單最後多一條分隔線
+ *        (menu-trailing-separator → C2 紅)/ 畫出來的英文換回預設中文(labels-ignored → C3、C4 篩選那格紅)),各組必紅,對照列必綠;
  *        **規則本身的對照組 = 修前的建置**(`--build=<那份建置>`):R16 之前(5db512f2,三態 + 一般點擊清掉其他欄 + 選單「取消排序」清掉全部)
  *        的建置跑本閘,P / M / K / A / U 的規則列必紅(2026-11-11 實測數字寫在 commit,不抄進這裡);判定另由判定表
  *        `scripts/test-data-table-sort-cycle.mjs --selftest` 以同一份修前行為當對照組。
@@ -202,6 +210,50 @@ async function injectBreak(kind) {
       const mark = () => { for (const n of document.querySelectorAll('[data-sort-priority]')) if (n.getAttribute('role') !== 'img') { n.removeAttribute('aria-hidden'); n.setAttribute('role', 'img') } }
       new MutationObserver(mark).observe(document.body, { subtree: true, childList: true, characterData: true })
     }
+    if (kind === 'menu-empty-trigger') {
+      // C 段:選單沒有項目的欄也畫 ⌄(= 0.1.0-beta.151 的寫法:觸發鈕一律畫,滑過時撐開 ⌄ + 8px)。沒有 ⌄ 的資料欄補一個同樣行為的假外層
+      const style = document.createElement('style')
+      style.textContent = '.__ms-fake-col-menu{display:inline-flex;flex-shrink:0;width:0;overflow:hidden;opacity:0}[role="columnheader"]:hover>.__ms-fake-col-menu{width:auto;margin-left:8px;overflow:visible;opacity:1}'
+      document.head.appendChild(style)
+      const add = () => {
+        for (const h of document.querySelectorAll('[role="columnheader"][data-column-id]')) {
+          if (h.querySelector('[data-col-menu]') || (h.getAttribute('data-column-id') || '').startsWith('__')) continue
+          const w = document.createElement('div'); w.setAttribute('data-col-menu', ''); w.className = '__ms-fake-col-menu'
+          const b = document.createElement('button'); b.type = 'button'; b.style.cssText = 'width:24px;height:24px;flex-shrink:0'; b.setAttribute('aria-label', `${(h.textContent || '').trim()} 欄位選單`)
+          // 放在排序區正後面(= 真的 ⌄ 的位置,欄寬把手之前):Tab 從排序區出來的下一站才會是它
+          w.appendChild(b); if (h.firstElementChild) h.firstElementChild.after(w); else h.appendChild(w)
+        }
+      }
+      add()
+      new MutationObserver(add).observe(document.body, { subtree: true, childList: true })
+    }
+    if (kind === 'menu-trailing-separator') {
+      // C 段:分隔線固定畫在排序項後面、不看後面有沒有東西(= 0.1.0-beta.151)的同一個症狀 —— 打開的選單最後多一條分隔線
+      const add = () => {
+        for (const m of document.querySelectorAll('[role="menu"]')) {
+          const items = m.querySelectorAll('[role="menuitem"]')
+          if (!items.length || m.querySelector('[data-ms-fake-sep]')) continue
+          const sep = document.createElement('div'); sep.setAttribute('role', 'separator'); sep.setAttribute('data-ms-fake-sep', '')
+          items[items.length - 1].after(sep)
+        }
+      }
+      new MutationObserver(add).observe(document.body, { subtree: true, childList: true })
+    }
+    if (kind === 'labels-ignored') {
+      // C 段:labels / I18nProvider 沒接上(= 0.1.0-beta.151:表頭選單的字直接用 DS 預設中文)—— 畫出來的英文一律換回預設
+      const zh = { 'Sort ascending': '升冪排序', 'Sort descending': '降冪排序', 'Clear sort': '取消排序', 'Filter by this column…': '依此欄篩選…', 'Hide column': '隱藏欄位', 'Autosize column': '自動調整寬度' }
+      const revert = () => {
+        for (const m of document.querySelectorAll('[role="menuitem"]')) {
+          const walker = document.createTreeWalker(m, NodeFilter.SHOW_TEXT)
+          for (let n = walker.nextNode(); n; n = walker.nextNode()) { const t = n.nodeValue.trim(); if (zh[t]) n.nodeValue = zh[t] }
+        }
+        for (const b of document.querySelectorAll('[data-col-menu] button[aria-label$=" column menu"]')) b.setAttribute('aria-label', b.getAttribute('aria-label').replace(/ column menu$/, ' 欄位選單'))
+        for (const r of document.querySelectorAll('[data-sort-live-region]')) { const m = /^Sorted by (.+) (ascending|descending)$/.exec(r.textContent || ''); if (m) r.textContent = `已依 ${m[1]} ${m[2] === 'ascending' ? '升冪' : '降冪'}排序` }
+        for (const d of document.querySelectorAll('[id$="-sort-priority"]')) { const m = /^Sort priority (\d+)$/.exec(d.textContent || ''); if (m) d.textContent = `排序順位 ${m[1]}` }
+      }
+      revert() // ⌄ 的讀屏名在注入前就畫好了,先換一次;之後新長出來的(選單項、播報、順位描述)由下面的觀察者換
+      new MutationObserver(revert).observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['aria-label'] })
+    }
     if (kind === 'nine-plus-numeric') {
       // 「9+」改寫成實際順位(= 沒有上限)
       const fix = () => {
@@ -245,9 +297,10 @@ const readHeaders = () => page.evaluate(() => {
   return { state: rows.map((r) => `${r.id}${r.dir}${r.num}`).join(' '), rows, outOfSync }
 })
 
-const sortButton = (col) => page.locator(`[role="columnheader"][data-column-id="${col}"] [role="button"]`).first()
-async function act(kind, col) {
-  const btn = sortButton(col)
+/** `scope` = 限定在哪一張表裡(同一頁有好幾張表、欄 id 相同時用,例 `[data-case="labels"]`);不給 = 頁面上第一個 */
+const sortButton = (col, scope = '') => page.locator(`${scope} [role="columnheader"][data-column-id="${col}"] [role="button"]`.trim()).first()
+async function act(kind, col, scope = '') {
+  const btn = sortButton(col, scope)
   if ((await btn.count()) === 0) { instrument(`排序區 ${col}`, '找不到'); return false }
   await btn.scrollIntoViewIfNeeded()
   if (kind === 'click') await btn.click()
@@ -714,6 +767,123 @@ for (const breaks of SELFTEST ? [['chevron-sorted-always'], ['chevron-always']] 
   check('D', `已排序的欄(${sorted[0].column})靜止時 ⌄ 也收起(user 2026-11-12 選「甲：維持現況」)`, sorted.every(isColumnMenuCollapsed), sorted.map(describeColumnMenu).join(';'))
 }
 
+// ═══ C ⌄ 選單的項目(2026-11-27,workspace H42;項目清單的唯一住所 = DataTable lib/column-menu.ts `columnMenuGroups`)═══════════
+// test-only story「表頭欄位選單的項目」四張表(`data-case`):no-hiding = workspace 回報的設定(tableOptions.enableHiding: false、SKU 不可排序);
+// hiding = 同一份欄、開著隱藏(對照);labels = 英文 labels prop(含 onColumnFilterTrigger、enableColumnResize,六項全出);i18n = 只包 I18nProvider。
+// C1 選單沒有任何項目的欄不畫 ⌄(連外層都沒有),滑過時排序區寬度不變(不留 ⌄ 與 8px 的位置);
+// C2 分隔線只在兩組之間:只有排序項時沒有分隔線、排序項 + 隱藏欄位時剛好一條在中間、只有隱藏欄位時沒有;
+// C3 選單的字與 ⌄ 的讀屏名、順位描述、播報句經 labels prop 換掉;I18nProvider 換得掉字串鍵(函式鍵只經 prop,⌄ 讀屏名照預設);
+// C4 重構後每一項仍做原本的事(依此欄篩選 → onColumnFilterTrigger、隱藏欄位 → 那一欄消失)。
+// 修前(0.1.0-beta.151):SKU 有 ⌄、點開空選單(C1 兩格紅)、no-hiding 的 Product 選單底部多一條分隔線(C2 第一格紅)、英文 labels 全部沒換(C3 紅)。
+const COLUMN_MENU_STORY = `iframe.html?id=${encodeURIComponent('design-system-components-datatable-展示--column-menu-items')}&viewMode=story`
+const caseHead = (caseId, col) => `[data-case="${caseId}"] [role="columnheader"][data-column-id="${col}"]`
+/** 打開某一張表某一欄的 ⌄,回 { name: ⌄ 的讀屏名, menu: 選單裡依序的項目字('|' = 分隔線) };找不到 ⌄ = null(呼叫端決定那算紅還是儀器失效) */
+async function openCaseMenu(caseId, col) {
+  await page.locator(caseHead(caseId, col)).first().hover(); await settle()
+  const trigger = page.locator(`${caseHead(caseId, col)} [data-col-menu] button`)
+  if ((await trigger.count()) === 0) return null
+  const name = await trigger.first().getAttribute('aria-label')
+  await trigger.first().click(); await settle()
+  const menu = await page.evaluate(() => {
+    const m = [...document.querySelectorAll('[role="menu"]')].at(-1)
+    return m ? [...m.querySelectorAll('[role="menuitem"], [role="separator"]')].map((el) => (el.getAttribute('role') === 'separator' ? '|' : (el.textContent || '').trim())) : null
+  })
+  return { name, menu }
+}
+const closeMenu = async () => { await page.keyboard.press('Escape'); await parkPointer(page); await settle() }
+const itemsOnly = (menu) => (menu ?? []).filter((t) => t !== '|')
+const leftAreaWidth = (caseId, col) => page.evaluate((sel) => document.querySelector(sel)?.firstElementChild?.getBoundingClientRect().width ?? null, caseHead(caseId, col))
+for (const breaks of SELFTEST ? [['menu-empty-trigger'], ['menu-trailing-separator'], ['labels-ignored']] : [[]]) {
+  if (!(await open(COLUMN_MENU_STORY, breaks))) continue
+  const emptyBreak = breaks.includes('menu-empty-trigger'); const sepBreak = breaks.includes('menu-trailing-separator'); const labelBreak = breaks.includes('labels-ignored')
+  // ── C1:no-hiding 的 SKU(不可排序、不能隱藏、沒有篩選與欄寬)= 沒有任何項目 ──
+  const sku = await page.evaluate((sel) => { const h = document.querySelector(sel); return h ? { menu: !!h.querySelector('[data-col-menu]'), buttons: h.querySelectorAll('button').length } : null }, caseHead('no-hiding', 'sku'))
+  if (!sku) { instrument('C1 no-hiding SKU', '找不到表頭'); continue }
+  check('C', 'C1 關掉欄位隱藏的不可排序欄(SKU):沒有 ⌄,連外層都不畫', !sku.menu && sku.buttons === 0, JSON.stringify(sku), { control: !emptyBreak })
+  const restW = await leftAreaWidth('no-hiding', 'sku')
+  await page.locator(caseHead('no-hiding', 'sku')).first().hover(); await settle()
+  const hoverW = await leftAreaWidth('no-hiding', 'sku')
+  await parkPointer(page); await settle()
+  if (restW == null || hoverW == null) instrument('C1 SKU 排序區寬', `量不到(靜止 ${restW} / 滑過 ${hoverW})`)
+  else check('C', 'C1 滑過 SKU 表頭時排序區寬度不變(不留 ⌄ 與 8px 的位置)', Math.abs(hoverW - restW) <= 0.5, `靜止 ${restW} / 滑過 ${hoverW}`, { control: !emptyBreak })
+  // ── C2:分隔線只在兩組之間 ──
+  const noHidingProduct = await openCaseMenu('no-hiding', 'name')
+  if (!noHidingProduct) instrument('C2 no-hiding Product', '找不到 ⌄')
+  else {
+    check('C', 'C2 關掉欄位隱藏的可排序欄(Product):選單只有升冪 / 降冪、沒有分隔線', JSON.stringify(noHidingProduct.menu) === JSON.stringify(['升冪排序', '降冪排序']), `實得 ${JSON.stringify(noHidingProduct.menu)}`, { control: !sepBreak })
+    await closeMenu()
+  }
+  const hidingProduct = await openCaseMenu('hiding', 'name')
+  if (!hidingProduct) instrument('C2 hiding Product', '找不到 ⌄')
+  else {
+    check('C', 'C2 開著隱藏的可排序欄:升冪 / 降冪 | 隱藏欄位(分隔線剛好一條、在兩組之間)', JSON.stringify(hidingProduct.menu) === JSON.stringify(['升冪排序', '降冪排序', '|', '隱藏欄位']), `實得 ${JSON.stringify(hidingProduct.menu)}`, { control: !sepBreak })
+    await closeMenu()
+  }
+  const hidingSku = await openCaseMenu('hiding', 'sku')
+  if (!hidingSku) check('C', 'C2 開著隱藏的不可排序欄(SKU):有 ⌄、只有「隱藏欄位」、沒有分隔線', false, '找不到 ⌄(這一欄有「隱藏欄位」,應該要有)', { control: !sepBreak })
+  else {
+    check('C', 'C2 開著隱藏的不可排序欄(SKU):有 ⌄、只有「隱藏欄位」、沒有分隔線', JSON.stringify(hidingSku.menu) === JSON.stringify(['隱藏欄位']), `實得 ${JSON.stringify(hidingSku.menu)}`, { control: !sepBreak })
+    await closeMenu()
+  }
+  // ── C3:labels prop / I18nProvider 換字 ──
+  const english = await openCaseMenu('labels', 'name')
+  if (!english) instrument('C3 labels Product', '找不到 ⌄')
+  else {
+    check('C', 'C3 labels:⌄ 的讀屏名 = labels.columnMenu("Product")', english.name === 'Product column menu', `實得「${english.name}」`, { control: !labelBreak })
+    const want = ['Sort ascending', 'Sort descending', 'Filter by this column…', 'Hide column', 'Autosize column']
+    check('C', 'C3 labels:選單五項都是傳進去的字', JSON.stringify(itemsOnly(english.menu)) === JSON.stringify(want), `實得 ${JSON.stringify(english.menu)}`, { control: !labelBreak })
+    const picked = await pickMenuItem('Sort ascending')
+    const t = await page.evaluate(() => document.querySelector('[data-case="labels"] [data-sort-live-region]')?.textContent ?? null)
+    if (t === null) instrument('C3 labels 播報區', '[data-case="labels"] 裡找不到 [data-sort-live-region]')
+    else check('C', 'C3 labels:選單排序後的播報 = labels.announceSorted', picked && t === 'Sorted by Product ascending', picked ? `實得「${t}」` : '按不到「Sort ascending」', { control: !labelBreak })
+    if (picked) {
+      await act('shift', 'category', '[data-case="labels"]')
+      const desc = await page.evaluate((sel) => { const b = document.querySelector(`${sel} [role="button"]`); const id = b?.getAttribute('aria-describedby'); return id ? document.getElementById(id)?.textContent ?? null : null }, caseHead('labels', 'category'))
+      check('C', 'C3 labels:Shift 加第二欄後順位描述 = labels.priorityDescription(2)', desc === 'Sort priority 2', `實得「${desc}」`, { control: !labelBreak })
+    }
+  }
+  const viaProvider = await openCaseMenu('i18n', 'name')
+  if (!viaProvider) instrument('C3 i18n Product', '找不到 ⌄')
+  else {
+    check('C', 'C3 I18nProvider:字串鍵(升冪 / 降冪 / 隱藏欄位)換掉', JSON.stringify(itemsOnly(viaProvider.menu)) === JSON.stringify(['Sort ascending', 'Sort descending', 'Hide column']), `實得 ${JSON.stringify(viaProvider.menu)}`, { control: !labelBreak })
+    check('C', 'C3 I18nProvider:⌄ 的讀屏名是函式鍵,只經 labels prop → 照預設「Product 欄位選單」', viaProvider.name === 'Product 欄位選單', `實得「${viaProvider.name}」`, { control: true })
+    await closeMenu()
+  }
+  // ── C4:每一項仍做原本的事 ──
+  if (await openCaseMenu('labels', 'stock')) {
+    const picked = await pickMenuItem('Filter by this column…')
+    const requested = await page.evaluate(() => document.querySelector('[data-case="labels"] [data-filter-requested]')?.getAttribute('data-filter-requested') ?? null)
+    check('C', 'C4「依此欄篩選…」→ onColumnFilterTrigger 收到這一欄的 id', picked && requested === 'stock', `按到=${picked} / 收到「${requested}」`, { control: !labelBreak })
+  } else instrument('C4 labels Stock', '找不到 ⌄')
+  if (await openCaseMenu('hiding', 'category')) {
+    const picked = await pickMenuItem('隱藏欄位')
+    const still = await page.locator(caseHead('hiding', 'category')).count()
+    check('C', 'C4「隱藏欄位」→ 那一欄從表頭消失', picked && still === 0, `按到=${picked} / 還在的表頭 ${still} 個`, { control: true })
+  } else instrument('C4 hiding Category', '找不到 ⌄')
+  // ── C5:整張表 enableColumnMenu={false}(workspace 2026-11-27 追加)—— 每一欄都沒有 ⌄、點表頭 / 鍵盤照常排序 ──
+  const OFF = '[data-case="menu-off"]'
+  const off = await page.evaluate((scope) => [...document.querySelectorAll(`${scope} [role="columnheader"][data-column-id]`)].map((h) => ({ id: h.getAttribute('data-column-id'), menu: !!h.querySelector('[data-col-menu]'), buttons: h.querySelectorAll('button').length })), OFF)
+  if (off.length < 4) instrument('C5 menu-off 表頭', `只找到 ${off.length} 個表頭(應 4 個)`)
+  else check('C', 'C5 enableColumnMenu={false}:四欄都沒有 ⌄(連外層都不畫;能排序、能隱藏、有篩選與欄寬也一樣)', off.every((h) => !h.menu && h.buttons === 0), JSON.stringify(off.filter((h) => h.menu || h.buttons)), { control: !emptyBreak })
+  const offRest = await leftAreaWidth('menu-off', 'name')
+  await page.locator(caseHead('menu-off', 'name')).first().hover(); await settle()
+  const offHover = await leftAreaWidth('menu-off', 'name')
+  await parkPointer(page); await settle()
+  if (offRest == null || offHover == null) instrument('C5 Product 排序區寬', `量不到(靜止 ${offRest} / 滑過 ${offHover})`)
+  else check('C', 'C5 滑過可排序欄時排序區寬度不變(不留 ⌄ 與 8px)', Math.abs(offHover - offRest) <= 0.5, `靜止 ${offRest} / 滑過 ${offHover}`, { control: !emptyBreak })
+  const sortOf = (col) => page.evaluate((sel) => document.querySelector(sel)?.getAttribute('aria-sort') ?? null, caseHead('menu-off', col))
+  await act('click', 'name', OFF); const s1 = await sortOf('name')
+  await act('click', 'name', OFF); const s2 = await sortOf('name')
+  check('C', 'C5 點表頭照常排序:第一下升冪、第二下降冪(兩態,不會回到沒排序)', s1 === 'ascending' && s2 === 'descending', `第一下 ${s1} / 第二下 ${s2}`, { control: true })
+  await act('Enter', 'category', OFF)
+  const s3 = { category: await sortOf('category'), name: await sortOf('name') }
+  check('C', 'C5 鍵盤 Enter 照常排序(沒排序的欄 → 取代全部)', s3.category === 'ascending' && s3.name === 'none', JSON.stringify(s3), { control: true })
+  await sortButton('category', OFF).focus(); await waitForFocusStable(page, { frames: 4, capMs: 3000 })
+  await page.keyboard.press('Tab'); await waitForFocusStable(page, { frames: 4, capMs: 3000 })
+  const afterTab = await page.evaluate((sel) => { const a = document.activeElement; return { inMenu: !!a?.closest('[data-col-menu]'), inCategory: !!a?.closest(sel), label: a?.getAttribute('aria-label') ?? (a?.textContent || '').trim().slice(0, 20) } }, caseHead('menu-off', 'category'))
+  check('C', 'C5 排序區按 Tab 不會停在 ⌄(沒有 ⌄ 這一站)', !afterTab.inMenu, JSON.stringify(afterTab), { control: !emptyBreak })
+}
+
 await browser.close()
 if (server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', '))
 await server.stop()
@@ -721,5 +891,5 @@ if (instrumentFail) {
   console.error(`\n✗ data-table-multi-sort:${INSTRUMENT_FAIL_MARKER} —— 有量測沒有真的量到${SELFTEST ? '(對照組沒有真的跑,不得讀成「如預期紅」)' : ''}`)
   process.exit(2)
 }
-console.log(failCount ? `\n✗ ${failCount} 項未通過` : `\n✓ ${SELFTEST ? '對照組:各組破法注入後 P / N / G / M / A / S / U / D 如預期變紅、對照列仍綠(儀器有效)' : '多重排序:狀態轉移、數字與 9+、長相、⌄ 選單、讀屏、與排序面板雙向同步、不受控表格、桌機靜止時 ⌄ 收起(含已排序的欄),全通過'}`)
+console.log(failCount ? `\n✗ ${failCount} 項未通過` : `\n✓ ${SELFTEST ? '對照組:各組破法注入後 P / N / G / M / A / S / U / D / C 如預期變紅、對照列仍綠(儀器有效)' : '多重排序:狀態轉移、數字與 9+、長相、⌄ 選單、讀屏、與排序面板雙向同步、不受控表格、桌機靜止時 ⌄ 收起(含已排序的欄)、⌄ 選單的項目(沒有項目不畫 ⌄、分隔線只在兩組之間、labels 換字),全通過'}`)
 process.exit(failCount ? 1 : 0)

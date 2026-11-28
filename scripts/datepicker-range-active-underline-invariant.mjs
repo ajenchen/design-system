@@ -448,6 +448,13 @@ async function runOnce(dpr, mutate) {
       await page.waitForFunction((s) => document.querySelectorAll(s).length === 2, rangeBtns, { timeout: WAIT_CAP_MS })
         .catch(() => { throw new InstrumentError('Calendar 詳情:時間欄沒進編輯(等不到 DatePicker.Range 兩端)') })
       await d.settle()
+      // 2026-11-27 起點時間欄一下就開好日期面板(DatePicker.Range defaultOpen):先按一下 Esc 收起(仍在編輯、焦點回開始端),
+      // 回到「面板關著、逐端點開」的量法 —— 面板開著時直接點起訖鈕 = 點在面板外,Radix 先關再開,量到的是動畫中間
+      await page.waitForSelector('[role="dialog"][aria-label="日期區間選擇"]', { timeout: WAIT_CAP_MS })
+        .catch(() => { throw new InstrumentError('Calendar 詳情:點時間欄進編輯後日期面板沒開(應點一下就開)') })
+      await d.press('Escape')
+      await page.waitForFunction((s) => !document.querySelector('[role="dialog"][aria-label="日期區間選擇"]') && document.querySelectorAll(s).length === 2, rangeBtns, { timeout: WAIT_CAP_MS })
+        .catch(() => { throw new InstrumentError('Calendar 詳情:Esc 後日期面板沒收起 / 時間欄離開了編輯') })
       for (const end of ENDS) {
         await page.locator(rangeBtns).nth(end === 'start' ? 0 : 1).click({ timeout: WAIT_CAP_MS })
           .catch(() => { throw new InstrumentError(`Calendar 詳情:點不到 ${end} 端`) })

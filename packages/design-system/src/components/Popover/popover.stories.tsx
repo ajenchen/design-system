@@ -114,7 +114,8 @@ export const OpenSnapshot: Story = {
 //
 //   B13 決策(user 回饋):頁面設定這類純開關清單,實際產品的做法是 `<DropdownMenu>` +
 //   `<DropdownMenuCheckboxItem>` — menu 內 binary toggle 已由 CheckboxItem 覆蓋
-//   (見 `../DropdownMenu/dropdown-menu.stories.tsx` 的 `CheckboxItems` story)。
+//   (見 `../DropdownMenu/dropdown-menu.stories.tsx` 的 `CheckboxItems` / `SwitchItems` story;
+//   2026-11-27 起單獨一個設定用開關外觀 `indicator="switch"`,判準 checkbox.spec.md「選單裡」)。
 //   Popover 的 canonical 是「自由組合 UI 面板」(filter / form / 圖表),純 toggle
 //   列表用 DropdownMenu 語意更準確 + 鍵盤上下導覽更自然。
 //

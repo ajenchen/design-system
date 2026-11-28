@@ -30,6 +30,7 @@ import { TimePicker as TimePickerPublic } from '@/design-system/components/TimeP
 import { PeoplePicker as PeoplePickerPublic } from '@/design-system/components/PeoplePicker/people-picker'
 import { LinkInput as LinkInputPublic, LINK_INPUT_EDIT_ENTRY_ATTR } from '@/design-system/components/LinkInput/link-input'
 import { Checkbox as CheckboxPublic } from '@/design-system/components/Checkbox/checkbox'
+import { Switch as SwitchPublic } from '@/design-system/components/Switch/switch'
 import type { PersonValue } from '@/design-system/components/PeoplePicker/person-display'
 import { FieldSurfaceProvider, FieldSurfaceSizeProvider, FieldSurfaceEditableProvider } from '@/design-system/components/Field/field-context'
 import { editSettleKeyProps } from '@/design-system/components/Field/field-edit-keys'
@@ -463,7 +464,21 @@ function BooleanCell({ value, mode, meta, size, isEditable, onCommit, ariaLabel 
   // 不可編(!isEditable)→ 走 view branch,Checkbox mode="view" 純展示不接 onCheckedChange。
   if (mode === 'view' && !isEditable) {
     // size 傳入 → boolean 值 icon(Check/X)@lg 縮放對齊其他 cell(對齊 editable 分支同 size 邏輯)
+    // 唯讀格不分 meta.control:開關欄、勾選欄都畫同一組 ✓ / ✗(資料型別是 boolean,控件只是可編輯時的寫法;2026-11-27 決策頁第 9 題乙)
     return <Checkbox variant="naked" size={size === 'lg' ? 'lg' : 'md'} mode="view" checked={value === true} />
+  }
+  if (meta?.control === 'switch') {
+    // 開關欄(meta.control 'switch',2026-11-27 決策頁第 9 題乙;判準 checkbox.spec.md「表格格子裡」):
+    // 跟勾選格同一套 —— 點控件就切換並送出、格裡空白處只移格游標、Enter / F2 把焦點放進控件(CELL_WIDGET_SELECTOR 認 button)、
+    // 讀屏名字同勾選格(meta.ariaLabel > 欄標題 > 預設)。尺寸對齊勾選框:sm / md 用 Switch md(20×40)、lg 用 Switch lg(24×48)。
+    return (
+      <SwitchPublic
+        size={size === 'lg' ? 'lg' : 'md'}
+        checked={value === true}
+        onCheckedChange={(checked) => onCommit?.(checked === true)}
+        aria-label={meta?.ariaLabel ?? ariaLabel ?? '切換'} // i18n-allow: DS default switch label(最後一層 fallback,同下方勾選格)
+      />
+    )
   }
   return (
     <Checkbox
@@ -507,6 +522,8 @@ function UrlCell({ value, meta, mode, size, isEditable, onRequestEdit, onCommit,
         mode="view"
         value={value as string | null}
         label={meta?.linkLabel}
+        // 值的前綴圖示(link-input.spec.md「值的前綴圖示」):在連結裡、跟字同色,LinkInput 自己畫
+        icon={meta?.linkIcon}
         size={size}
         showDisplayEndIcon={isEditable === true}
         viewEditAction={isEditable ? { onClick: () => onRequestEdit?.(), revealGroup: 'cell' } : undefined}

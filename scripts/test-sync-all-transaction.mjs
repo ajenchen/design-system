@@ -260,7 +260,7 @@ const mode = fixture.FAKE_NPM_MODE
 const DS = '@qijenchen/design-system'
 const SB = '@qijenchen/storybook-config'
 // npm 11.19 的 \`audit signatures --json\` 只吐封閉的 {invalid, missing} 失敗集合,沒有 verified
-// bundle 陣列(verify-upgrade-provenance.mjs:406-411)。SLSA provenance 改由 registry 的
+// bundle 陣列(verify-upgrade-provenance.mjs:409-414)。SLSA provenance 改由 registry 的
 // attestations endpoint 讀回,由 fakeFetchSource 提供 —— 這裡刻意不再偽造 verified,否則 fixture
 // 會比真 npm 多給資訊,掩蓋 readback 路徑的回歸。
 if (process.argv[2] === 'audit' && process.argv[3] === 'signatures') {

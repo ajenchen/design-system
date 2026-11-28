@@ -7,7 +7,11 @@
  *        2026-11-06 起(user「照①乙②b」):網址框(LinkInput 各模式、DataTable 網址格,能不能編輯都一樣)裡鉛筆以外點了開連結、滑過整框出底線 + 手形,
  *        試算表沒選中的格第一下只選格、選中後再點才開(L2 / L10;L1 的「文字寬」從此只量連結盒子,點擊範圍看 L2 / L10);
  *        2026-11-10 起(user「…這樣不是跟輸入框一致？」):能編輯的網址格滑過出淺框(= 這格可以編輯,兩種模式;點了照樣開連結、不進編輯),
- *        不能編輯的網址格滑過不出淺框(L2 / L10)
+ *        不能編輯的網址格滑過不出淺框(L2 / L10);
+ *        2026-11-27 起(user 定案,link-input.spec.md「值的前綴圖示」):值的前綴圖示在連結裡、顏色 = 字色 = 連結色(靜止與滑過)、滑過圖示 = 滑過連結、
+ *        圖示 ↔ 字 8、尺寸 = 欄位圖示尺寸、截斷時圖示不縮、連結盒子 = 圖示 + 8 + 字;停用 / 值不是網址照畫且同色;空值 / 打字狀態不畫(L11)
+ *   紅(L11): --selftest 六種破法(圖示搬到連結外面 / 圖示改色 / 間距改 4 / 截斷時圖示會縮 / 連結撐滿 / 空值與打字狀態塞圖示)各只紅自己那幾項,其餘當對照列必綠;
+ *       eb985952 的建置沒有這則量測頁 → 開不起來 = 儀器失效(exit 2),不讀成通過
  *   紅(L2 / L10): --selftest 拿掉延伸區 → 框裡文字以外那幾列必紅;讓試算表沒選中的格也延伸 → 「第一下只選格」必紅;52ec0b6a 建置的 LinkInput 唯讀 / 檢視那幾列、8eb473c7 建置的編輯模式與可編輯格那幾列必紅;
  *       --selftest L2 同時收掉格的滑過外框與浮層外框 → 「能編輯的網址格滑過出淺框」那幾列必紅;214fc699 的建置跑那幾列必紅(當時有連結的網址格一律不出淺框)
  *   紅: --selftest 注入連結改回 block、攔下格的點擊、攔下根節點 Enter / F2、把焦點丟回 body、一般模式可編輯格拿掉 Tab 停靠 + 攔下格上的 Enter / F2(L4 鍵盤)、拿掉名字、鉛筆改 24px 有框、塞 javascript: 連結、
@@ -131,7 +135,27 @@ async function injectBreaks(kind) {
   // L10:拿掉連結的延伸區(= 修前:不能編輯的框只有網址文字能點);L10s:試算表沒選中的格也延伸(= 第一下就開分頁)
   if (kind === 'L10') await page.addStyleTag({ content: '[data-link-stretch]::before{display:none!important}' })
   if (kind === 'L10s') await page.addStyleTag({ content: '[data-dt-link-select-first] [data-link-stretch]::before{display:block!important}' })
+  // L11(值的前綴圖示):圖示改色 / 間距改 4 / 截斷時圖示會縮 / 連結撐滿外層 —— 各只打自己那幾項
+  if (kind === 'L11color') await page.addStyleTag({ content: '[data-link-value-icon] svg{color:rgb(255,0,0)!important}' })
+  if (kind === 'L11gap') await page.addStyleTag({ content: 'a[href]:has([data-link-value-icon]){gap:4px!important}' })
+  if (kind === 'L11shrink') await page.addStyleTag({ content: '[data-link-value-icon]{flex-shrink:1!important;min-width:0!important;overflow:hidden!important}' })
+  if (kind === 'L11box') await page.addStyleTag({ content: 'a[href]:has([data-link-value-icon]){display:flex!important;width:100%!important}' })
   await page.evaluate(([kind, linkCols]) => {
+    if (kind === 'L11out') {
+      // 圖示搬到欄位框外面、放在框前(= 加 icon 前使用端只能「旁邊另放圖示」:不在 <a> 裡、也不在連結延伸區鋪得到的框裡)。
+      // 只搬到連結外、留在框裡不夠:框裡整片都是延伸區,滑過照樣是連結 —— 那不是使用端當時遇到的狀況
+      for (const icon of document.querySelectorAll('a[href] [data-link-value-icon]')) {
+        const a = icon.closest('a[href]')
+        const frame = a.closest('[data-field-mode]') ?? a.parentElement
+        frame.parentElement.insertBefore(icon, frame)
+      }
+    }
+    if (kind === 'L11draw') {
+      // 空值與打字狀態各塞一個值的圖示(= 不該畫的地方畫了):儀器要看得到
+      for (const probe of document.querySelectorAll('[data-probe="empty"], [data-probe="typing"]')) {
+        const s = document.createElement('span'); s.setAttribute('data-link-value-icon', ''); probe.querySelector('[data-field-mode]')?.prepend(s)
+      }
+    }
     if (kind === 'L3') {
       // 攔下表格根節點上的 Enter / F2(格游標那一層)
       document.addEventListener('keydown', (e) => {
@@ -958,6 +982,103 @@ for (const brk of ['L10', 'L10s']) {
   const editors = await editorCount()
   check('L10', `${TABLES.sheet.label} 選中後:滑過空白出底線、再點開連結、不進編輯`, after && r2.link === 1 && editors === 0, `底線 ${after}、開分頁 ${r2.link}、編輯器 ${editors}`, { control: brk === 'L10s' })
 }
+
+// ── L11:值的前綴圖示(2026-11-27 user 定案;link-input.spec.md「值的前綴圖示」)──────────────────────────────────
+// 量 LinkInput 展示頁 test-only「值的前綴圖示(量測)」每一格(data-probe = 狀態):
+//   a 圖示在連結裡 / b 靜止時圖示顏色 = 字色 = 連結色 / c 滑過圖示 = 滑過連結(命中連結、字出底線、手形)/ d 滑過時圖示顏色 = 字色 /
+//   e 圖示 ↔ 字 8 / f 圖示尺寸 = 欄位圖示尺寸(md 16、lg 20)/ g 截斷時字截斷、圖示不縮 / h 連結盒子 = 圖示 + 8 + 字(不撐滿)/
+//   i 停用與值不是網址:照畫、跟字同色、沒有連結 / j 空值與打字狀態不畫
+// --selftest 每一種破法只打自己那幾項(其餘當對照列必綠):L11out 圖示搬到欄位框外面 → a b c d e g;L11color → b d i;L11gap → e;
+//   L11shrink → g;L11box 連結撐滿外層 → h;L11draw 空值 / 打字狀態塞一個圖示 → j
+const VALUE_ICON = LI('value-icon-probe')
+const LINKED_PROBES = ['edit', 'edit-lg', 'readonly', 'view', 'view-shell', 'truncated']
+const valueIconReport = () => page.evaluate(() => {
+  const out = {}
+  const rect = (el) => { const b = el.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, r: b.right } }
+  for (const probe of document.querySelectorAll('[data-probe]')) {
+    const icon = probe.querySelector('[data-link-value-icon]')
+    const svg = icon?.querySelector('svg') ?? null
+    const a = probe.querySelector('a[href]')
+    // 值的字 = 圖示以外、有字的最內層 span(連結裡的 TruncatedText / 一般文字 / 停用的灰字)
+    const textEl = [...probe.querySelectorAll('span')].find((s) => !s.closest('[data-link-value-icon]') && s.children.length === 0 && s.textContent.trim()) ?? null
+    let glyphW = null
+    if (textEl) { const range = document.createRange(); range.selectNodeContents(textEl); glyphW = range.getBoundingClientRect().width }
+    out[probe.getAttribute('data-probe')] = {
+      hasIcon: !!icon, iconInLink: !!(a && icon && a.contains(icon)), hasLink: !!a, input: !!probe.querySelector('input'),
+      icon: icon ? rect(icon) : null, svgW: svg ? +svg.getBoundingClientRect().width.toFixed(2) : null,
+      text: textEl ? rect(textEl) : null, glyphW, anchor: a ? rect(a) : null,
+      iconColor: svg ? getComputedStyle(svg).color : null, textColor: textEl ? getComputedStyle(textEl).color : null, linkColor: a ? getComputedStyle(a).color : null,
+      truncated: textEl ? textEl.scrollWidth > textEl.clientWidth + 0.5 : false,
+    }
+  }
+  return out
+})
+/** 滑到某一格的圖示中心:命中的是不是連結、字有沒有底線、游標、滑過時圖示 / 字 / 連結的顏色 */
+async function hoverValueIcon(key) {
+  const pt = await page.evaluate((key) => {
+    const icon = document.querySelector(`[data-probe="${key}"] [data-link-value-icon]`)
+    if (!icon) return null
+    icon.scrollIntoView({ block: 'center' })
+    const b = icon.getBoundingClientRect()
+    return { x: b.x + b.width / 2, y: b.y + b.height / 2 }
+  }, key)
+  if (!pt) return null
+  await page.mouse.move(pt.x, pt.y); await settle()
+  return page.evaluate(({ key, x, y }) => {
+    const probe = document.querySelector(`[data-probe="${key}"]`)
+    const a = probe.querySelector('a[href]')
+    const svg = probe.querySelector('[data-link-value-icon] svg')
+    const textEl = a ? [...a.querySelectorAll('span')].find((s) => !s.closest('[data-link-value-icon]') && s.children.length === 0 && s.textContent.trim()) : null
+    const hit = document.elementFromPoint(x, y)
+    return {
+      onLink: !!(a && hit && (hit === a || a.contains(hit))), hovered: !!a?.matches(':hover'),
+      underline: !!a && getComputedStyle(a).textDecorationLine.includes('underline'), cursor: hit ? getComputedStyle(hit).cursor : null,
+      iconColor: svg ? getComputedStyle(svg).color : null, textColor: textEl ? getComputedStyle(textEl).color : null, linkColor: a ? getComputedStyle(a).color : null,
+    }
+  }, { key, ...pt })
+}
+const near = (a, b, tol = 0.5) => a != null && b != null && Math.abs(a - b) <= tol
+const L11_TARGETS = { L11out: 'abcdeg', L11color: 'bdi', L11gap: 'e', L11shrink: 'g', L11box: 'h', L11draw: 'j' }
+for (const brk of SELFTEST ? Object.keys(L11_TARGETS) : [null]) {
+  currentBreak = brk
+  const ctl = (letter) => ({ control: brk != null && !L11_TARGETS[brk].includes(letter) })
+  if (!(await open(VALUE_ICON, '[data-probe="readonly"] a[href]'))) continue
+  await page.mouse.move(0, 0)
+  const rep = await valueIconReport()
+  const missing = [...LINKED_PROBES, 'disabled', 'plain', 'empty', 'typing'].filter((k) => !rep[k])
+  if (missing.length) { instrument(`L11 ${brk ?? ''}`, `量測頁少了 ${missing.join('、')} 這幾格`); continue }
+  if (LINKED_PROBES.some((k) => !rep[k].hasLink || !rep[k].text)) { instrument(`L11 ${brk ?? ''}`, `有連結的格量不到連結或字:${JSON.stringify(LINKED_PROBES.map((k) => [k, rep[k].hasLink, !!rep[k].text]))}`); continue }
+  const tag = brk ? `[${brk}] ` : ''
+  for (const k of LINKED_PROBES) {
+    const r = rep[k]
+    check('L11', `${tag}${k}:a 值的圖示在連結裡`, r.hasIcon && r.iconInLink, `圖示 ${r.hasIcon}、在連結裡 ${r.iconInLink}`, ctl('a'))
+    check('L11', `${tag}${k}:b 靜止時圖示顏色 = 字色 = 連結色`, !!r.iconColor && r.iconColor === r.textColor && r.textColor === r.linkColor, `圖示 ${r.iconColor} / 字 ${r.textColor} / 連結 ${r.linkColor}`, ctl('b'))
+    const gap = r.icon && r.text ? +(r.text.x - r.icon.r).toFixed(2) : null
+    check('L11', `${tag}${k}:e 圖示 ↔ 字 = 8px`, near(gap, 8), `間距 ${gap}`, ctl('e'))
+    // 截斷那一格:尺寸併在 g 量(圖示不縮);它本來就撐到欄寬,分不出「撐滿」,不量 h
+    if (k === 'truncated') continue
+    const want = k === 'edit-lg' ? 20 : 16
+    check('L11', `${tag}${k}:f 圖示尺寸 = ${want}px(欄位圖示尺寸)`, near(r.svgW, want), `寬 ${r.svgW}`, ctl('f'))
+    const boxMax = r.icon && r.glyphW != null ? r.icon.w + 8 + r.glyphW + 1 : null
+    check('L11', `${tag}${k}:h 連結盒子 = 圖示 + 8 + 字(不撐滿)`, boxMax != null && r.anchor.w <= boxMax, `連結寬 ${r.anchor.w.toFixed(1)}、上限 ${boxMax?.toFixed(1)}`, ctl('h'))
+  }
+  const t = rep.truncated
+  check('L11', `${tag}truncated:g 字太長 → 字截斷、圖示不縮(16px)`, t.truncated && near(t.svgW, 16) && near(t.icon?.w, 16), `截斷 ${t.truncated}、圖示 ${t.svgW} / 格 ${t.icon?.w}`, ctl('g'))
+  for (const k of ['disabled', 'plain']) {
+    const r = rep[k]
+    check('L11', `${tag}${k}:i 照畫圖示、跟字同色、沒有連結`, r.hasIcon && !r.hasLink && !!r.iconColor && r.iconColor === r.textColor, `圖示 ${r.hasIcon}、連結 ${r.hasLink}、圖示 ${r.iconColor} / 字 ${r.textColor}`, ctl('i'))
+  }
+  for (const k of ['empty', 'typing']) {
+    const r = rep[k]
+    check('L11', `${tag}${k}:j 不畫值的圖示`, !r.hasIcon && (k !== 'typing' || r.input), `圖示 ${r.hasIcon}${k === 'typing' ? `、輸入框 ${r.input}` : ''}`, ctl('j'))
+  }
+  for (const k of ['edit', 'readonly', 'view', 'view-shell']) {
+    const h = await hoverValueIcon(k)
+    if (!h) { instrument(`L11 ${tag}${k}`, '滑不到圖示(找不到 [data-link-value-icon])'); continue }
+    check('L11', `${tag}${k}:c 滑過圖示 = 滑過連結(命中連結、字出底線、手形)`, h.onLink && h.hovered && h.underline && h.cursor === 'pointer', JSON.stringify({ onLink: h.onLink, hovered: h.hovered, underline: h.underline, cursor: h.cursor }), ctl('c'))
+    check('L11', `${tag}${k}:d 滑過時圖示顏色 = 字色 = 連結色`, !!h.iconColor && h.iconColor === h.textColor && h.textColor === h.linkColor, `圖示 ${h.iconColor} / 字 ${h.textColor} / 連結 ${h.linkColor}`, ctl('d'))
+  }
+}
 currentBreak = null
 
 await browser.close()
@@ -967,5 +1088,5 @@ if (instrumentFail) {
   console.error(`\n✗ data-table-link-cell:${INSTRUMENT_FAIL_MARKER} —— 有量測沒有真的量到${SELFTEST ? '(對照組沒有真的跑,不得讀成「如預期紅」)' : ''}`)
   process.exit(2)
 }
-console.log(failCount ? `\n✗ ${failCount} 項未通過` : `\n✓ ${SELFTEST ? '對照組:各組破法注入後 L1–L9 如預期變紅(儀器有效)' : '網址欄點擊範圍、表格連結格四區 × 兩模式、能編輯才出淺框、格內鍵盤、編輯結束焦點、編輯器名字、鉛筆、不合法網址顯示、焦點框四邊、格內只有一個指示,全通過'}`)
+console.log(failCount ? `\n✗ ${failCount} 項未通過` : `\n✓ ${SELFTEST ? '對照組:各組破法注入後 L1–L11 如預期變紅(儀器有效)' : '網址欄點擊範圍、表格連結格四區 × 兩模式、能編輯才出淺框、格內鍵盤、編輯結束焦點、編輯器名字、鉛筆、不合法網址顯示、焦點框四邊、格內只有一個指示、值的前綴圖示,全通過'}`)
 process.exit(failCount ? 1 : 0)

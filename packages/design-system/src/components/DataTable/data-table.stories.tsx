@@ -5,7 +5,8 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Pencil, Trash2, MoreVertical, Search, Filter, Eye, Download, Plus, ArrowUpDown, Copy } from 'lucide-react'
-import { DataTable, type DataTableColumnDef, type DataTableSelection } from './data-table'
+import { DataTable, type DataTableColumnDef, type DataTableLabels, type DataTableSelection } from './data-table'
+import { I18nProvider } from '@/design-system/lib/i18n/i18n-context'
 import { demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 import { PerfDebugOverlay } from './perf-debug-overlay'
 import { DataTableSortManager } from './data-table-sort-manager'
@@ -872,6 +873,54 @@ export const InlineEdit: Story = {
   },
 }
 
+// ── 布林欄的控件(meta.control,2026-11-27 決策頁第 9 題乙;判準 checkbox.spec.md「表格格子裡」)──
+// 「已付款」是這一筆的資料屬性 → 預設勾選框;「自動續約」是這一筆的一個功能開不開 → 開關;
+// 合約客戶的續約由業務管理(editable 回 false)→ 唯讀格,兩種欄都畫 ✓ / ✗。scripts/data-table-invariants.mjs I44 量這一則。
+interface SubscriptionRow { id: string; customer: string; plan: string; paid: boolean; autoRenew: boolean; contract: boolean }
+const SUBSCRIPTION_ROWS: SubscriptionRow[] = [
+  { id: 'C-1001', customer: 'ACME 股份有限公司', plan: '企業版', paid: true, autoRenew: true, contract: true },
+  { id: 'C-1002', customer: '青田設計工作室', plan: '專業版', paid: true, autoRenew: false, contract: false },
+  { id: 'C-1003', customer: '北辰物流', plan: '專業版', paid: false, autoRenew: true, contract: false },
+  { id: 'C-1004', customer: '小島咖啡', plan: '入門版', paid: true, autoRenew: true, contract: false },
+]
+
+export const BooleanControl: Story = {
+  name: '布林欄:開關與勾選',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '布林欄可編輯時畫哪一種控件由 `meta.control` 決定:「已付款」是這一筆的資料屬性,用預設的勾選框;「自動續約」是這一筆的一個功能開不開,用 `control: \'switch\'`。' +
+          '兩種點了都立刻存;合約客戶的續約由業務管理、這裡不能改,唯讀格兩種欄都畫 ✓ / ✗。',
+      },
+    },
+  },
+  render: () => {
+    const [data, setData] = React.useState(SUBSCRIPTION_ROWS)
+    const subCol = createColumnHelper<SubscriptionRow>()
+    const columns = React.useMemo(
+      () => [
+        subCol.accessor('customer', { header: '客戶', meta: { type: 'string', width: 200 } }),
+        subCol.accessor('plan', { header: '方案', meta: { type: 'string', width: 120 } }),
+        subCol.accessor('paid', { header: '已付款', meta: { type: 'boolean', editable: (row: SubscriptionRow) => !row.contract, width: 110 } }),
+        subCol.accessor('autoRenew', { header: '自動續約', meta: { type: 'boolean', control: 'switch', editable: (row: SubscriptionRow) => !row.contract, width: 120 } }),
+      ],
+      []
+    )
+    return (
+      <DataTable
+        columns={columns}
+        data={data}
+        maxHeight="none"
+        inlineEdit
+        tableOptions={{ getRowId: (row) => row.id }}
+        getRowId={(row) => row.id}
+        onCellCommit={(rowId, colId, value) => setData((prev) => prev.map((row) => (row.id === rowId ? { ...row, [colId]: value } : row)))}
+      />
+    )
+  },
+}
+
 // (開發備忘,用一般註解:不進 Autodocs 的說明;2026-10-28 前寫成 JSDoc,讀者在 docs 頁看到的是這段開發備忘)
 // Slice D spreadsheet semantics + overlay 整合 demo(2026-05-10 Issue 7 移過來)。
 //
@@ -1465,7 +1514,7 @@ export const WithBulkActions: Story = {
           <div className="flex flex-col">
             {showHint && (
               // 提示列的動作放 Alert 自己的 endContent,用 Button variant="link"(button.tsx「內文連結(inline reading)」那一型)——
-              // 之前是句子裡的原生 <button>,還附了「DS 尚無 inline text link primitive、Alert 無 action slot」的豁免標記,兩句都不成立
+              // 之前是句子裡的原生 button 元素,還附了「DS 尚無 inline text link primitive、Alert 無 action slot」的豁免標記,兩句都不成立
               <Alert
                 variant="neutral"
                 placement="fixed"
@@ -2325,6 +2374,87 @@ export const RowActionsVaryingWidth: Story = {
         {few.dialogs}
         {many.dialogs}
       </>
+    )
+  },
+}
+
+// 表頭 ⌄ 欄位選單的項目(test-only,2026-11-27,workspace H42):給 `scripts/data-table-multi-sort-invariant.mjs` C 段量
+// 「選單沒有任何項目的欄不畫 ⌄」「分隔線只在兩組之間」「labels / I18nProvider 換掉選單與排序的字」。
+// 第一張照 workspace 回報的設定:關掉欄位隱藏(tableOptions.enableHiding: false)、SKU 不可排序 —— 修前 SKU 滑過仍出現 ⌄、點開是空選單,
+// 可排序欄的選單底部多一條分隔線;第二張同一份欄、開著隱藏(對照:分隔線在排序與「隱藏欄位」之間);
+// 第三張是英文介面,經 `labels` 換字(含帶參數的讀屏名與播報句);第四張只包 I18nProvider(字串鍵);
+// 第五張整張表 `enableColumnMenu={false}`(workspace 2026-11-27 追加:產品表頭一律不要 ⌄,排序只靠點表頭)。
+const COLUMN_MENU_COLUMNS = [
+  col.accessor('sku', { header: 'SKU', enableSorting: false, meta: { type: 'string', width: 110, minWidth: 80 } }),
+  col.accessor('name', { header: 'Product', meta: { type: 'string', width: 280, minWidth: 120 } }),
+  col.accessor('category', { header: 'Category', meta: { type: 'select', width: 140 } }),
+  col.accessor('stock', { header: 'Stock', meta: { type: 'select', width: 130 } }),
+]
+const COLUMN_MENU_ENGLISH_LABELS: Partial<DataTableLabels> = {
+  columnMenu: (column) => `${column} column menu`,
+  sortAscending: 'Sort ascending',
+  sortDescending: 'Sort descending',
+  cancelSort: 'Clear sort',
+  filterByColumn: 'Filter by this column…',
+  hideColumn: 'Hide column',
+  autoFitColumnWidth: 'Autosize column',
+  ascending: 'ascending',
+  descending: 'descending',
+  priorityDescription: (priority) => `Sort priority ${priority}`,
+  announceSorted: (column, direction) => `Sorted by ${column} ${direction}`,
+  announceRemoved: (column) => `Sort removed from ${column}`,
+  announceOthersCleared: 'other sorts cleared',
+  announceSummary: (count, entries) => `${count} sorted columns: ${entries}`,
+  announceSummaryEntry: (priority, column, direction) => `${priority} ${column} ${direction}`,
+  announceRemaining: (column, direction) => `now sorted by ${column} ${direction}`,
+  announceNone: 'no sorting',
+}
+const COLUMN_MENU_I18N = { 'data-table': { sortAscending: 'Sort ascending', sortDescending: 'Sort descending', hideColumn: 'Hide column' } }
+export const ColumnMenuItems: Story = {
+  name: '表頭欄位選單的項目',
+  tags: ['test-only'],
+  render: function ColumnMenuItemsStory() {
+    const rows = sampleData.slice(0, 4)
+    const [filterColumn, setFilterColumn] = React.useState<string | null>(null)
+    return (
+      <ExampleStack>
+        <ExampleSection title="關掉欄位隱藏" description="SKU 不可排序,選單沒有任何項目 → 不畫 ⌄;可排序的欄只有排序項,沒有分隔線">
+          <div data-case="no-hiding" style={{ maxWidth: 760 }}>
+            <DataTable columns={COLUMN_MENU_COLUMNS} data={rows} maxHeight="none" getRowId={(row) => row.sku} tableOptions={{ enableHiding: false }} />
+          </div>
+        </ExampleSection>
+        <ExampleSection title="開著欄位隱藏" description="SKU 只有「隱藏欄位」;可排序的欄排序項與「隱藏欄位」之間一條分隔線">
+          <div data-case="hiding" style={{ maxWidth: 760 }}>
+            <DataTable columns={COLUMN_MENU_COLUMNS} data={rows} maxHeight="none" getRowId={(row) => row.sku} />
+          </div>
+        </ExampleSection>
+        <ExampleSection title="English labels" description="labels prop: menu items, the ⌄ accessible name, priority description and sort announcements">
+          <div data-case="labels" style={{ maxWidth: 760 }}>
+            <DataTable
+              columns={COLUMN_MENU_COLUMNS}
+              data={rows}
+              maxHeight="none"
+              getRowId={(row) => row.sku}
+              labels={COLUMN_MENU_ENGLISH_LABELS}
+              enableColumnResize
+              onColumnFilterTrigger={setFilterColumn}
+            />
+            <p data-filter-requested={filterColumn ?? ''} className="mt-2 text-body text-fg-secondary">{filterColumn ? `Filter requested: ${filterColumn}` : 'No filter requested'}</p>
+          </div>
+        </ExampleSection>
+        <ExampleSection title="I18nProvider" description="只包 I18nProvider:字串鍵(升冪 / 降冪 / 隱藏欄位)換掉,其餘照 DS 預設">
+          <div data-case="i18n" style={{ maxWidth: 760 }}>
+            <I18nProvider labels={COLUMN_MENU_I18N}>
+              <DataTable columns={COLUMN_MENU_COLUMNS} data={rows} maxHeight="none" getRowId={(row) => row.sku} />
+            </I18nProvider>
+          </div>
+        </ExampleSection>
+        <ExampleSection title="整張表關掉欄位選單" description="enableColumnMenu={false}:每一欄都沒有 ⌄,點表頭照常排序(只在升冪 / 降冪之間切)">
+          <div data-case="menu-off" style={{ maxWidth: 760 }}>
+            <DataTable columns={COLUMN_MENU_COLUMNS} data={rows} maxHeight="none" getRowId={(row) => row.sku} enableColumnMenu={false} enableColumnResize onColumnFilterTrigger={setFilterColumn} />
+          </div>
+        </ExampleSection>
+      </ExampleStack>
     )
   },
 }

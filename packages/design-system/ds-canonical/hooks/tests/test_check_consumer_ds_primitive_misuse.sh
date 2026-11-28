@@ -465,6 +465,47 @@ expect_block "73. 箭頭 onSelect + item 內 Checkbox → BLOCK" 'DropdownMenuCh
 # 74. 對照:箭頭 onSelect 在前、badge={<Switch />} 在後的屬性寫法 → BLOCK(舊第一式 [^>]* 停在 => 的 >,漏判)
 run_hook "$PROD_TSX" 'export const M = () => <DropdownMenuContent><DropdownMenuItem onSelect={() => setDense(!dense)} badge={<Switch checked={dense} />}>緊湊顯示</DropdownMenuItem></DropdownMenuContent>'
 expect_block "74. 箭頭 onSelect 之後 badge 放 Switch → BLOCK" 'DropdownMenuCheckboxItem'
+# ── C25 續(2026-11-27 H41):開關外觀的新寫法 indicator="switch" 不擋;被擋訊息要指向它 ──
+# 75. Chat 房間選單的舊寫法(Switch 自己接點擊,放在 DropdownMenuItem 子元素)→ BLOCK,訊息指名 indicator="switch"
+run_hook "$PROD_TSX" 'export const RoomMenu = () => (<DropdownMenuContent><DropdownMenuItem onSelect={(e) => e.preventDefault()}>Full width<Switch checked={fullWidth} onCheckedChange={setFullWidth} /></DropdownMenuItem></DropdownMenuContent>)'
+expect_block "75. DropdownMenuItem 子元素放會自己接點擊的 Switch → BLOCK、訊息指向 indicator=\"switch\"" 'indicator="switch"'
+# 76. 新寫法:<DropdownMenuCheckboxItem indicator="switch"> → silent(選單外另有一顆 Switch 也不算)
+run_hook "$PROD_TSX" 'export const RoomMenu = () => (<><DropdownMenuContent><DropdownMenuItem onSelect={() => copyLink()}>Copy link</DropdownMenuItem><DropdownMenuCheckboxItem indicator="switch" checked={fullWidth} onCheckedChange={setFullWidth}>Full width</DropdownMenuCheckboxItem></DropdownMenuContent><Switch checked={notify} aria-label="Notify" /></>)'
+expect_silent "76. DropdownMenuCheckboxItem indicator=\"switch\" / 選單外的 Switch → silent"
+
+# ── 2026-11-27 r72(workspace 151 實測 apps/agent/src/TAgentPage.tsx):C24 / C25 對遮掉註解的內容判;違規片段按字元截斷 ──
+# 75. JSX 註解裡引用的範例按鈕碼(沒寫 size)→ 不報;真的按鈕寫了 size="sm"
+run_hook "$PROD_TSX" 'export const A = () => (<ChromeHeader title="代理">{/* 釘選鈕寫法:<Button variant="text" iconOnly pressed={isPinned} startIcon={Pin} aria-label="釘選" /> */}<Button variant="text" size="sm" iconOnly pressed={isPinned} startIcon={Pin} aria-label="釘選" /></ChromeHeader>)'
+expect_silent "75. ChromeHeader 內 JSX 註解裡的範例碼 → 不報"
+# 76. 對照:同一段,真的按鈕沒寫 size → 照報
+run_hook "$PROD_TSX" 'export const A = () => (<ChromeHeader title="代理">{/* 釘選鈕寫法見規格 */}<Button variant="text" iconOnly pressed={isPinned} startIcon={Pin} aria-label="釘選" /></ChromeHeader>)'
+expect_block "76. ChromeHeader 內真的按鈕沒寫 size → BLOCK" 'header 內 field-height 控件'
+# 77. 行尾 // 註解裡的範例(跨行內容)→ 不報;遮罩在攤平換行之前做,// 不會吃掉後面的程式
+run_hook "$PROD_TSX" 'export const A = () => (
+  <ChromeHeader title="代理">
+    {/* 檢視切換 */}
+    <Select size="sm" options={views} /> // 舊寫法 <Select size="md" /> 已改
+  </ChromeHeader>
+)'
+expect_silent "77. 行尾 // 註解裡的範例 → 不報"
+# 77b / 77c(r72 規格核對必修 3 + h26 遮罩修正):字串裡的 /*(accept="image/*")或 " // " 不是註解開頭,
+#     後面的程式照判(以前遮罩一路遮到下一個 */ 或行尾 → C24 / C25 漏判)
+run_hook "$PROD_TSX" 'export const A = () => (<>
+  <FileUpload accept="image/*" />
+  <DialogHeader title="上傳" actions={<Button variant="text" iconOnly startIcon={X} aria-label="關閉" />} />
+  {/* 附註 */}
+</>)'
+expect_block "77b. 字串 image/* 之後 header 按鈕沒寫 size → BLOCK" 'header 內 field-height 控件'
+run_hook "$PROD_TSX" 'export const M = () => <DropdownMenuContent><DropdownMenuLabel>{"說明 // 次要"}</DropdownMenuLabel> <DropdownMenuItem onSelect={toggle}><Switch checked={on} />全寬</DropdownMenuItem></DropdownMenuContent>'
+expect_block "77c. 字串裡 \" // \" 之後同一行 DropdownMenuItem 放 Switch → BLOCK" 'DropdownMenuCheckboxItem'
+# 78. CI 重播是 LC_ALL=C:中文剛好落在第 80 位元組的違規片段,截斷後的訊息仍是合法 UTF-8(以前按位元組切出半個「釘」)
+LC_ALL=C LANG=C run_hook "$PROD_TSX" 'export const A = () => <DialogHeader title="代理" actions={<Button variant="text" iconOnly pressed={isPinned} startIcon={Pin} aria-label="釘選這段對話到側欄最上方方便之後找" />} />'
+if [ "$EXIT" = "2" ] && printf '%s' "$STDERR_TEXT" | python3 -c 'import sys; sys.stdin.buffer.read().decode("utf-8")' 2>/dev/null \
+  && printf '%s' "$STDERR_TEXT" | grep -qF 'aria-label="釘'; then
+  echo "  PASS  78. LC_ALL=C 下截斷含中文的違規片段 → 合法 UTF-8"; PASS=$((PASS+1))
+else
+  echo "  FAIL  78. LC_ALL=C 下截斷含中文的違規片段 → 不是合法 UTF-8 或沒擋(exit=$EXIT)"; FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 78"
+fi
 
 echo ""
 echo "=== Summary ==="

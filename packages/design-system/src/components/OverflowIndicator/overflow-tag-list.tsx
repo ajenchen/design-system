@@ -10,6 +10,7 @@ import * as React from 'react'
 import { flushSync } from 'react-dom'
 import { cn } from '@/lib/utils'
 import { Tag } from '@/design-system/components/Tag/tag'
+import { decideCollapsedCount, FIT_EPSILON_PX } from '@/design-system/hooks/use-overflow-items'
 import { OverflowIndicator, OverflowIndicatorMeasure } from './overflow-indicator'
 
 /** Tag 列的預設間距(px;Combobox 的 Tag 區、唯讀欄位外框與 AgentPanel 附件列都是 4) */
@@ -33,8 +34,8 @@ export const TAG_ROW_CONTAINER_CLASS = 'relative isolate'
  * 由 `useOverflowCount` 直接寫在 DOM 上(與 Tag 的 `hidden` 同一批、同一個 task),不經 React —— 收不收、幾個,一次定案。
  */
 const OVERFLOW_MEASURE_ATTR = 'data-overflow-measure'
-/** 寬度比較的容差(px):量測值是 1/64px 的倍數,這個容差只吃浮點誤差,不吃任何真的版面差 */
-const FIT_EPSILON_PX = 0.01
+// 寬度比較的容差 FIT_EPSILON_PX 與「收起幾個」的決定 decideCollapsedCount 住在 hooks/use-overflow-items.ts(2026-11-27 H31 抽出,
+// 公開的工具列收合 useOverflowCollapse 用同一份,M17)
 
 /**
  * 單行 Tag 列看得見幾個(其餘收進「+N」)。規則 combobox.spec.md「單行溢出」;2026-10-13 重寫(待辦 Q1 / K6)。
@@ -186,22 +187,17 @@ function useOverflowCount({
         return w
       }
       // ⑤ 決定:全部放得下 → 全顯示、不留「+N」的位;否則找最多能放幾顆 c,使「c 顆 Tag + 它自己的『+(總數 − c)』」放得下
-      //(**#3 fix 2026-05-04**:含第一顆 —— 一顆自己就太寬時 c = 0,全部進 +N)
+      //(**#3 fix 2026-05-04**:含第一顆 —— 一顆自己就太寬時 c = 0,全部進 +N)。
+      // 決定本身是全 DS 一份的 decideCollapsedCount(收起順序 = 從尾端收,收起 k 顆時看得見前 n − k 顆):
+      // 內容寬已經放不下的候選不量「+N」,所以只在邊界附近量一兩個數字(2026-11-27 前這裡是同一條規則的本地版本)
       const prefix = [0] // prefix[c] = 前 c 顆 Tag 連同中間間距的寬
       for (let i = 0; i < totalCount; i++) prefix.push(prefix[i] + (i > 0 ? gap : 0) + widths[i])
-      let count = 0
-      if (prefix[totalCount] + reserve <= available + FIT_EPSILON_PX) count = totalCount
-      else {
-        const fits = (c: number): boolean => {
-          const tags = prefix[c] + gap + reserve
-          if (tags > available + FIT_EPSILON_PX) return false // 不用量「+N」就知道放不下
-          return tags + plusWidth(totalCount - c) <= available + FIT_EPSILON_PX
-        }
-        // 起點:用「+總數」的寬(已量到)估,再用每個候選自己的「+N」往下 / 往上修 —— 只在邊界附近多量一兩個數字
-        while (count + 1 < totalCount && prefix[count + 1] + gap + allCollapsedW + reserve <= available + FIT_EPSILON_PX) count++
-        while (count > 0 && !fits(count)) count--
-        while (count + 1 < totalCount && fits(count + 1)) count++
-      }
+      const count = totalCount - decideCollapsedCount({
+        count: totalCount,
+        available,
+        contentWidth: (k) => prefix[totalCount - k] + reserve,
+        triggerWidth: (k) => gap + plusWidth(k),
+      })
       // 決定之後「+N」那一格會是多寬(ResizeObserver 拿來比):有收 → 顯示的那個數字(上面判它放得下時量過);沒收 → 量尺,React 畫的是「+總數」
       const indicatorW = count < totalCount ? plusWidth(totalCount - count) : allCollapsedW
       if (countNode) countNode.data = shownText // React 給的字放回去(React 只在數字變了時才寫這個節點)

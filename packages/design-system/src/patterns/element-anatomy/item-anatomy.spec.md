@@ -186,7 +186,7 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 - **Row header(分組標題)**: 用 `MenuItem header={true}` 模式,`font-medium text-fg-muted pointer-events-none` + 與 items **完全相同**的 row geometry(同 px / 同 py / 同 text size)
 - **Row header 計數 suffix**(2026-07-08 WM 戰役 codify,user 拍板):分組標題帶總數時 = **標題靠左、純數字靠右**(space-between,即 suffix slot 位置 `ml-auto`)。數字規格走既有 suffix value canonical(下方 metadata 表「fg-muted、字體大小與 label 相同」)+ `font-normal` + `tabular-nums`;count = 0 不渲染。**禁**把 count 串進 label 字串相鄰放(「Unstarted (2)」—— 數字要能單獨套 suffix value 樣式(fg-muted、`tabular-nums`)、count = 0 時整個不渲染,串進字串就做不到);字串層(aria-label / 純文字匯出)可用括號形。互動導覽元素(tab / segmented / sidebar item)的計數仍走 `badge` slot(tabs.spec.md「`badge` 傳達該 tab 底下的待處理計數」),不適用本條。
 - **Row message(訊息列,2026-09-08 user 拍板)**: 用 `MenuItem message={true}` 模式——選單裡「不是選項的列」(沒有結果 / 沒有選項 / 載入中)。與 Row header 同族:`text-fg-muted pointer-events-none` + 與 items **完全相同**的 row geometry;差別是**一般字重**、內容**置中**、可帶前綴槽(列圖示尺寸的 `CircularProgress` 等)。必住在 group 裡(見「Group auto-separation」);一列訊息與一列選項等高,不撐最小高度。owner `components/SelectMenu/select-menu.spec.md`「Empty state」;樣式 `components/Menu/menu-item.spec.md`「Message row」
-- **可收合 section header 組合 canonical**(2026-07-08 R3-7 拍板 + 2026-07-10 codify 進 DS;**組合非元件** — SectionHeader 留產品客製,但 layout 全消費本 canonical):(1) chevron = **title 後的 suffix inline action**(非 prefix、非獨立按鈕群);(2) 可選 description 與 title 間距用 `--item-gap-label-desc-*` token;(3) endSlot(操作鈕)只有 title 一行時垂直置中;(4) 同構標題列 ≥ 2 份必抽共用元件(WM `SectionHeader.tsx` 錨例 — Description / Attachments / Child work items 三份同構收斂)。手刻簽名(Chevron + justify-between + 可點且無共用元件)由 consumer 防線攔(escape `@section-header-ok:`)。
+- **可收合 section header 組合 canonical**(2026-07-08 R3-7 拍板 + 2026-07-10 codify 進 DS;**組合非元件** — SectionHeader 留產品客製,但 layout 全消費本 canonical):(1) chevron = **title 後的 suffix inline action**(非 prefix、非獨立按鈕群);(2) 可選 description 與 title 間距用 `--item-gap-label-desc-*` token;(3) endSlot(操作鈕)只有 title 一行時垂直置中;(4) 同構標題列 ≥ 2 份必抽共用元件(WM `SectionHeader.tsx` 錨例 — Description / Attachments / Child work items 三份同構收斂)。手刻簽名(Chevron + justify-between + 可點且無共用元件)由 consumer 防線攔(escape `@section-header-ok:`)。標題列到它底下那個有框內容的距離 → `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 3「標題塊」。
 
 ### 整列可點時,誰當那顆控件(2026-09-24 立;本節是全家族唯一 owner,消費者禁自行發明)
 
@@ -538,7 +538,7 @@ MenuItem 承載 Switch 時,**整列 row 的 click = toggle 這個 control**(不�
 
 ```tsx
 // ✅ Canonical:row click 與 suffix Switch 同步 toggle(row 可點擊、Switch 視覺反映狀態)
-// (這是不在 DropdownMenu 裡的 MenuItem 容器的寫法;DropdownMenu 裡的開關一律用 DropdownMenuCheckboxItem —— dropdown-menu.spec.md:103,:211 禁在 item 內放 Switch;2026-11-27 上游判定 E24 (c))
+// (這是不在 DropdownMenu 裡的 MenuItem 容器的寫法;DropdownMenu 裡同一套語意由元件做好:<DropdownMenuCheckboxItem indicator="switch">,不要在 DropdownMenuItem 裡放 Switch —— dropdown-menu.spec.md「禁止事項」;外觀判準 checkbox.spec.md「選單裡」,2026-11-27 H41 取代同日 E24 (c)「一律勾選」)
 // row = 唯一 ARIA owner:role="menuitemcheckbox" + aria-checked 讓 AT 感知 on/off
 //(Switch aria-hidden 後,沒有這兩個屬性 toggle 狀態對 SR 完全隱形)
 <MenuItem
@@ -563,7 +563,7 @@ MenuItem 承載 Switch 時,**整列 row 的 click = toggle 這個 control**(不�
 
 | 情境 | 用 | 原因 |
 |------|---|------|
-| **DropdownMenu 內的 toggle 清單**(View menu / Display options / Page toolbar filter menu) | `DropdownMenuCheckboxItem`(`checked` + `onCheckedChange`);不在 DropdownMenu 裡的 MenuItem 容器才用 `MenuItem` + suffix Switch(上方 Canonical 範例) | 最近的同目的規格勝出(M23(d)):`../../components/DropdownMenu/dropdown-menu.spec.md:103`「CheckboxItem 切換開關狀態…選單保持開啟」,`:211` 禁在 item 內放 Switch;DS 內 DropdownMenu 的開關全是這種寫法。MenuItem 容器已在 overlay、整列 row 就是 click target,Switch 是狀態視覺 |
+| **DropdownMenu 內的 toggle 清單**(View menu / Display options / Page toolbar filter menu) | `DropdownMenuCheckboxItem`(`checked` + `onCheckedChange`):單獨一個設定加 `indicator="switch"`(列尾開關,即上方 Canonical 語意),一組裡挑幾個用預設勾選;不在 DropdownMenu 裡的 MenuItem 容器才自己用 `MenuItem` + suffix Switch(上方 Canonical 範例) | 最近的同目的規格勝出(M23(d)):`../../components/DropdownMenu/dropdown-menu.spec.md`「Item 類型」CheckboxItem 列與「禁止事項」(item 內不放 Switch);選哪個外觀只看 `../../components/Checkbox/checkbox.spec.md`「選單裡」(2026-11-27 user 定開關外觀,H41)。MenuItem 容器已在 overlay、整列 row 就是 click target,Switch 是狀態視覺 |
 | **Settings page 的獨立 toggle row**(不在 overlay,是 page layout) | `<Field orientation="horizontal">` + Switch 齊右 | 見 `components/Switch/switch.spec.md`「對齊情境:Settings list vs Form edit」 |
 
 兩者**結構一致**(label 左 / toggle 右齊),差別只在**容器層級**(menu item = overlay row / Field horizontal = page row)。
@@ -1099,7 +1099,8 @@ Selection control(Dropdown / Menu / List / SegmentedControl / Chip)的 item 視�
 | Selection Model | Canonical 視覺 | 禁止 |
 |---|---|---|
 | **多選**(checkbox semantic) | `DropdownMenuCheckboxItem`(方塊勾)、SelectionItem checkbox | radio 圓圈、bg 高亮(無方塊會誤以為單選) |
-| **單選 in dropdown / menu** | `DropdownMenuItem` 的 `selected` prop → `bg-neutral-selected` 持續選中背景(跟 SelectMenu 單選同一套) | **checkbox 方塊**(暗示多選)、**radio 圓圈**(dropdown 不用 radio 指示器,RadioGroup 才用) |
+| **單獨一個布林設定 in dropdown / menu**(開 / 關一個功能) | `DropdownMenuCheckboxItem indicator="switch"`(列尾開關;判準 `../../components/Checkbox/checkbox.spec.md`「選單裡」) | 方塊勾(暗示從一組裡挑)、`DropdownMenuItem` 裡自己放 Switch(兩個互動單位) |
+| **單選 in dropdown / menu** | `DropdownMenuItem` 的 `selected` prop → `bg-neutral-selected` 持續選中背景(跟 SelectMenu 單選同一套);選了要留在選單裡的用 `DropdownMenuRadioItem`(選中同樣是底色),怎麼分照 `../../components/Checkbox/checkbox.spec.md`「選單裡」(d) | **checkbox 方塊**(暗示多選)、**radio 圓圈**(dropdown 不用 radio 指示器,RadioGroup 才用) |
 | **單選 as always-visible form control** | `RadioGroup` + `RadioGroupItem`(圓圈) | — |
 
 #### 為什麼 dropdown 單選不用 radio 圓圈
@@ -1164,6 +1165,7 @@ Selection control(Dropdown / Menu / List / SegmentedControl / Chip)的 item 視�
 - `header-canonical.spec.md`
 - `inline-action.spec.md`
 - `layoutSpace.spec.md`
+- `link-input.spec.md`
 - `menu-item.spec.md`
 - `motion.spec.md`
 - `notice.spec.md`

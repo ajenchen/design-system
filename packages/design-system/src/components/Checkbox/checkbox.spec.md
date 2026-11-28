@@ -114,6 +114,35 @@ Checkbox 和 Radio 是**表單內的選擇控件**，視覺語言完全一致，
 | is_public / is_featured（編輯表單）| Checkbox | form field，送出才生效 |
 | is_public（admin 即時切換）| Switch | 切換立刻套用 |
 
+### 選單裡(DropdownMenu 的布林項目,2026-11-27)
+
+**一句話:選單裡的布林項目,這一項本身是一個功能 / 設定的開關 → 開關外觀;這一項是一組同類東西裡的一員、使用者在挑「要哪幾個」→ 勾選外觀。** 兩種都用 `DropdownMenuCheckboxItem`(整列點了就切換、立刻生效、選單不關、整列 `role="menuitemcheckbox"` + `aria-checked`),只差指示器的外觀(參數 `indicator`;參數名與開關畫在列尾是【AI 推導】,user 定的是「開關外觀」)。
+
+為什麼看第 2 角度:選單沒有送出鈕,選單裡的布林項目點了**一律**立刻生效 —— 第 1 角度「套用時機」在選單裡兩邊都一樣、分不出來(上方 Fallback heuristic 的「套用時機優先」在選單裡不適用),剩下第 2 角度「心智模型」能分。拿不準時的檢驗:把這一項單獨搬到設定頁,它會是「一列開關」(→ 開關),還是「一組勾選清單裡的一個勾」(→ 勾選)?
+
+| 情境 | 用 | 理由 |
+|------|-------|------|
+| (a) 單獨一個即時生效的設定,跟一般動作並列:聊天室選單「全寬顯示」、任務列表 ⋮「隱藏已完成和已取消」 | 開關外觀(user 定);寫法 `indicator="switch"`、開關畫在列尾【AI 推導】 | 字是功能名,心裡想的是「開 / 關它」(上方「Dark mode 切換 → Switch」同一題) |
+| (b) 從一組裡挑幾個:顯示哪幾欄、篩選哪幾個狀態、多選的 Chip 溢出選單 | 預設 `indicator="checkbox"`(前綴勾選框) | 字是成員名,心裡想的是「選這幾個」;`../Switch/switch.spec.md`「何時不用」:多選用 Checkbox。一組裡的每一項雖然也點了就生效,仍用勾選 |
+| (c) 勾了還要按「套用」才生效 | 不放選單:Popover / 表單裡的 `Checkbox` + 套用鈕 | 第 1 角度:隨送出才套用 → Checkbox;選單項點了就生效,裝不下這個流程 |
+| (d) 互斥選一個 | 只看一題:選了之後要不要留在選單裡。留著看結果、可能再改(列密度、排序方式、變更類型)→ `DropdownMenuRadioItem`;選了就完成、回到頁面(切分頁、單選的 Chip 溢出選單、設定狀態)→ `DropdownMenuItem` + `selected` 【AI 推導:判準取既有 `../DropdownMenu/dropdown-menu.spec.md`「Item 類型」表兩者的選中行為(RadioItem 選中後選單保持開啟;Item 執行後關閉)】 | 不是布林,不用勾選框(`../../patterns/element-anatomy/item-anatomy.spec.md` 規則 B「選擇語意必須對應指示器視覺」:單選 in dropdown 禁方塊勾)。例:DropdownMenu 展示「選項前綴:工作項類型」上半「變更類型」= RadioItem、下半「設定狀態」= Item + `selected`;Tabs 的溢出選單、Chip 展示「單選:放不下時的選單」= Item + `selected` |
+
+不在本段:DataTable 欄位顯示面板不是選單 —— 它是浮層裡可拖曳排序的清單,顯示 / 隱藏是列上的副動作(眼睛圖示鈕,`../DataTable/data-table-column-visibility-panel.tsx` 檔頭「固定零件」),零件清單照 `../DataTable/data-table.spec.md`「欄位顯示面板的固定零件」。不要把 `<Switch>` / `<Checkbox>` 放進 `DropdownMenuItem`(`../DropdownMenu/dropdown-menu.spec.md`「禁止事項」;產品 repo 由寫入檢查擋)。
+
+**來源**:(a) user 2026-11-27 原話(逐字,DS 對話;問題由協調者擬:「下拉選單裡『切了就立刻生效』的開關項目(例:Chat 房間選單的 Full width、Tasks 列表 ⋮ 的 Hide done and cancelled),要用哪種外觀?」,建議選項「用開關外觀」):「基本上可以照你建議，確保整個ds在相關的地方沒有衝突且任何情境都能合理解釋且不違背世界級的設計，就照你建議做」。(a) 的寫法(參數名、列尾)、(b)(c)(d)、「看第 2 角度」與上面的檢驗是 **AI 推導**(由本節三個角度、switch.spec「何時不用」與 item-anatomy 規則 B 推出,回應 user 附的條件「任何情境都能合理解釋」);2026-11-27 前 DS 的判定原文是「DropdownMenu 裡的開關一律用 DropdownMenuCheckboxItem」(`../../patterns/element-anatomy/item-anatomy.spec.md:541`,eb985952 版;AI 推導、非 user 定,已由本段取代)。
+
+**世界級對照**:Fluent UI 的 `MenuItemSwitch` 就是 (a):「A variant of `MenuItemCheckbox` that displays selection using a switch design. This is commonly used for menus that don't really have strong selection function but needs to support an exceptional selected option.」(https://github.com/microsoft/fluentui/blob/b9b6302a1b00e739e18c799cd1e74a62cd2a7ea7/packages/react-components/react-menu/stories/src/Menu/MenuSwitchItem.stories.tsx#L30-L32 ),行為與勾選項同一套(`role: 'menuitemcheckbox'`、`persistOnClick: true`,https://github.com/microsoft/fluentui/blob/b9b6302a1b00e739e18c799cd1e74a62cd2a7ea7/packages/react-components/react-menu/library/src/components/MenuItemCheckbox/useMenuItemCheckbox.tsx#L44-L47 )。Apple HIG「Toggled items」是另一派:屬性正在生效用勾號,單一屬性也是 ——「Consider using a checkmark to show that an attribute is currently in effect. It's easy for people to scan for checkmarks in a list of attributes to find the ones that are selected.」;單一切換也可以改字 ——「For example, instead of listing two menu items like Show Map and Hide Map, you could include one menu item whose label changes from Show Map to Hide Map, depending on whether the map is visible.」(https://developer.apple.com/design/human-interface-guidelines/menus#Toggled-items );Apple 沒有開關外觀。Jira 的「Hide done work items」:選項存在、位置與作用照 Atlassian 文件 ——「In the relevant Space, go to All work → View settings and ensure Hide done work items is enabled.」「causing work items in a done status to be hidden from List view while still appearing in Detail view.」(https://jira.atlassian.com/browse/JRACLOUD-97958 ,2026-03-30 建立的問題單,標題「Inconsistent results between Detail and List views in "Search for work items" when "Hide done work items" is enabled」);它在選單裡畫成開關,是 user 2026-11-27 實際看到的(原話逐字:「Jira 的選單就有在選項放 switch 也是在 hide done work items 那個選項裡」)—— Atlassian 那份文字只叫它 option、沒寫控件型別。所以 (a) 世界級有分歧:開關外觀有 Fluent `MenuItemSwitch`(元件文件,https://github.com/microsoft/fluentui/blob/b9b6302a1b00e739e18c799cd1e74a62cd2a7ea7/packages/react-components/react-menu/stories/src/Menu/MenuSwitchItem.stories.tsx#L30-L32 )與 Jira「Hide done work items」(產品實例,外觀依 user 觀察)兩家一手支持;Apple 用勾號或改字(同上 https://developer.apple.com/design/human-interface-guidelines/menus#Toggled-items );(a) 採開關是 user 定的取捨。(b) 這種「即時生效的多選」世界級兩派都有、同一家也換過:MUI X 表格欄位面板 v6 用開關(`rootProps.slots.baseSwitch`,https://github.com/mui/mui-x/blob/v6.19.0/packages/grid/x-data-grid/src/components/panel/GridColumnsPanel.tsx#L234 ),現行改成勾選框(`rootProps.slots.baseCheckbox`,https://github.com/mui/mui-x/blob/acf1c383cc9547ba210598cbc7db1672c01ac667/packages/x-data-grid/src/components/columnsManagement/GridColumnsManagement.tsx#L304 );AG Grid 欄位工具面板用勾選框(`AgCheckboxSelector`,https://github.com/ag-grid/ag-grid/blob/9a24add90b3f6327bc67ffb49a99479d007ea71a/packages/ag-grid-enterprise/src/columnToolPanel/toolPanelColumnComp.ts#L92 )。本 DS 採勾選那一派,理由是上面第 2 角度與 switch.spec「多選用 Checkbox」(AI 推導)。
+
+### 表格格子裡(DataTable 的布林欄,2026-11-27)
+
+**一句話:表格的布林欄由消費端決定可編輯時畫勾選框還是開關(`meta.control`),預設勾選框;唯讀格兩種都畫 ✓ / ✗。** 選哪一種的判準【AI 推導】:這一欄是「這一列的某個功能要不要開」(在建立頁顯示、啟用、上架)→ 開關;是「這一列的一項資料屬性」(有庫存、已付款、已完成)→ 勾選。寫法與行為住 `../DataTable/data-table.spec.md`「七、Column Type」的「布林欄的控件」。
+
+不搬上一段「選單裡」:選單是動作清單、表格格子是資料,換一類東西就要自己的依據(跨類別外推本身就是新主張)。表格裡兩種控件點了都立刻送出,第 1 角度「套用時機」分不出來;判準取第 2 角度「心智模型」,依據是下面的世界級對照。
+
+**來源**:user 2026-11-27 原話(逐字,DS 對話,決策頁第 9 題):「開關可以照你建議，反正確保符合我們一致的設計語言且不違背世界級的設計且符合我們設計需求即可吧？」「我們本來的需求就是想要可以讓消費者決定表格的布林欄位」「到底該以 switch 呈現還是 checkbox,反正你建議的做法也可以滿足需求？」「如此那就照你建議做」(原訊息分四行)。「消費端決定」是 user 的需求;「預設勾選框」user 第 1 輪先問過(決策頁第 9 題備註,問句:「預設給checkbox?」);用欄的選項而不是新欄型別、判準句、唯讀格同一組 ✓ / ✗ 是 AI 的建議、user 採用;參數名 `control`【AI 推導】。
+
+**世界級對照**:AG Grid 把布林當資料型別、控件是它的顯示 ——「The Checkbox Cell Renderer is used for rendering, which displays a checkbox.」「The Checkbox Cell Editor is used for editing (similar to the renderer).」「If you wish to override one of the properties set below for all types, you can do so by creating a Column Type」(https://www.ag-grid.com/javascript-data-grid/cell-data-types/ )。MUI X 同一型別、顯示與編輯各一個可換的寫法:`type: 'boolean', … renderCell: renderBooleanCell, renderEditCell: renderEditBooleanCell,`(https://github.com/mui/mui-x/blob/acf1c383cc9547ba210598cbc7db1672c01ac667/packages/x-data-grid/src/colDef/gridBooleanColDef.tsx#L33-L40 ;檢視是 ✓ / ✗ 圖示、編輯是勾選框)。Carbon 開關可以放進表格列,但只給點了立刻發生的二元動作 ——「For example, inside data table rows.」「Toggles are only used for these binary actions that occur immediately after the user “flips the switch”.」(https://carbondesignsystem.com/components/toggle/usage/ )。反例:Ant ProComponents 把 `switch` 當成一種值型別(`switch: sameRenderPair((text, props) => ( <FieldSwitch {...props} text={text} /> )),`,https://github.com/ant-design/pro-components/blob/1541b7e4781a7cca387c42a46954c5c9c3d44c95/src/field/ValueTypeToComponent.tsx#L291 ),它的值型別本來就照控件命名;本 DS 的欄型別照資料命名(`../DataTable/column-types.ts` 的 `columnTypes`),所以走選項。
+
 **本節是 Checkbox vs Switch 的 SSOT**，未來 Switch 建立 spec 時用一行 pointer 指回本節。
 
 ---
@@ -362,6 +391,7 @@ Horizontal 需 `gap-4` 因 row 的 py 不擴散到左右。
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `combobox.spec.md`
+- `data-table.spec.md`
 - `field-control-group.spec.md`
 - `menu-item.spec.md`
 - `radio-group.spec.md`

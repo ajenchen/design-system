@@ -17,6 +17,7 @@ import {
   NPM_FINALIZATION_RECEIPT_ASSET,
   RELEASE_TRUST_PREFLIGHT_ASSET,
   TRUSTED_UPGRADE_POLICY,
+  fetchNpmAttestationReadback,
   resolveImmutableReleaseSnapshot,
 } from './verify-upgrade-provenance.mjs'
 import {
@@ -636,3 +637,37 @@ for (const [label, mutate, pattern] of [
     }), pattern)
   })
 }
+
+// TRACKER R74(workspace 2026-11-27 實測):Claude Code 雲端 session 的 GitHub 代理只放行掛在 session 的 repo,
+// sync-all 停在「GitHub Release v0.1.0-beta.151 readback failed with HTTP 401」、沒有任何下一步。
+// 兩面:GitHub 的 401 / 403 多一句指名三條路(掛 repo / 接收 workflow / 本機終端機);500 與 npm registry 的 403 照舊。
+test('GitHub 401 / 403 readback errors name the three ways out; other statuses and npm registry errors stay unchanged', async () => {
+  const tag = 'v0.1.0-beta.151'
+  const resolveWith = status => resolveImmutableReleaseSnapshot({
+    repository: TRUSTED_UPGRADE_POLICY.repository,
+    tag,
+    assetName: TRUSTED_UPGRADE_POLICY.releaseBomAsset,
+    fetchImpl: async () => ({ ok: false, status }),
+    ordinaryRelease: true,
+  })
+  for (const status of [401, 403]) {
+    await assert.rejects(resolveWith(status), (error) => {
+      assert.ok(error.message.startsWith(`GitHub Release ${tag} readback failed with HTTP ${status} (`), error.message)
+      assert.match(error.message, /attach ajenchen\/design-system to the session/)
+      assert.match(error.message, /\.github\/workflows\/sync-design-system\.yml run the upgrade on a GitHub runner/)
+      assert.match(error.message, /run it on a local terminal/)
+      return true
+    })
+  }
+  await assert.rejects(resolveWith(500), (error) => {
+    assert.equal(error.message, `GitHub Release ${tag} readback failed with HTTP 500`)
+    return true
+  })
+  await assert.rejects(
+    fetchNpmAttestationReadback({ name: DS, version: '0.1.0-beta.151' }, { fetchImpl: async () => ({ ok: false, status: 403 }) }),
+    (error) => {
+      assert.equal(error.message, `${DS}@0.1.0-beta.151 npm attestation readback failed with HTTP 403`)
+      return true
+    },
+  )
+})

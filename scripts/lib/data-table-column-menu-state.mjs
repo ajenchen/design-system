@@ -15,6 +15,8 @@
 /**
  * 頁面端(以 page.evaluate 序列化傳入,**不得引用外部變數**):每個看得到的表頭一筆。
  * `found: false` = 這一欄沒有 `[data-col-menu]` 或裡面沒有按鈕 —— 呼叫端必須當**儀器失效**,不得當成「收起」也不得當成「沒收起」。
+ * (2026-11-27 起選單沒有任何項目的欄本來就不畫 ⌄(DataTable lib/column-menu.ts,workspace H42)—— 這個前提只在量的表每一欄都有選單項目時成立;
+ *   兩個消費者量的表(設計規格「功能特性」、展示「Roadmap」,都開著欄位隱藏)每一欄都有「隱藏欄位」。沒有項目的欄由 data-table-multi-sort-invariant.mjs C 段量。)
  * @returns {{ index: number, column: string|null, found: boolean, sort?: string|null, label?: string|null, width?: number, opacity?: string, hasFocus?: boolean }[]}
  */
 export function columnMenuStatesInPage() {

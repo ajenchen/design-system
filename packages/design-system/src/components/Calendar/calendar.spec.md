@@ -14,7 +14,7 @@ benchmark:
 
 # Calendar 設計原則
 
-> 標記:【C1】【Q6(定)】這類代號 = user 的決定,原話與選項逐字收在文末「決定來源總帳」;【總帳更正 #n】= 2026-11-24 草稿核對後 AI 依已定決定字面推出的判定(不是 user 新決定;#1–#9 原文逐字收在文末「決定來源總帳」的「總帳更正 #1–#9」表);【AI 推導】= 由既有規範或已驗證的世界級證據推出,user 可推翻。
+> 標記:【C1】【Q6(定)】這類代號 = user 的決定,原話與選項逐字收在 `./calendar-decision-ledger.spec.md`(決定來源總帳);【總帳更正 #n】= 2026-11-24 草稿核對後 AI 依已定決定字面推出的判定(不是 user 新決定;#1–#9 原文逐字收在同一檔的「總帳更正 #1–#9」表);【AI 推導】= 由既有規範或已驗證的世界級證據推出,user 可推翻。
 
 ## 定位
 
@@ -181,10 +181,10 @@ interface CalendarEvent {
 
 - **長相**:根節點 `bg-surface rounded-md border border-divider overflow-hidden` —— 一圈 1px 淡框加圓角,工具列與檢視內容都在框裡。與 DataTable 外框同一套(`../DataTable/data-table.tsx` `dataTableVariants`:`bg-surface rounded-md overflow-hidden` + 預設 `border border-divider`)。
 - **為什麼要框**:與 DataTable 同一個理由 ——「邊框標記「這裡有使用者看不到的內容」」(`../DataTable/data-table.spec.md:193`)。容器比「週數 × 格最小高」矮時格陣區會捲動(「Cell 規則」每一週等高那條),框就是捲動範圍的邊界。目前沒有拿掉外框的參數;放進本身已有框的容器、要避免框中框時再議(DS 先例 DataTable `bordered`,`../DataTable/data-table.spec.md:195`),第一段不開。
-- **工具列在框裡**(與 DataTable 唯一的差別):DataTable 的工具列是外部組合、放在框外(`../DataTable/data-table.spec.md:669`「Toolbar 不內建在 DataTable 裡——toolbar 是外部組合，職責分離」);月曆的工具列是元件的固定元素(見「工具列」),放在框裡、不畫底色,坐在外殼的 `bg-surface` 上 = 巢狀 chrome(`../../patterns/header-canonical/header-canonical.spec.md:111` Nested chrome header 那一列「transparent(不傳 bg className,繼承 parent)」),與格陣之間用 ChromeHeader 自己的底線分開。
+- **工具列在框裡**(與 DataTable 唯一的差別):DataTable 的工具列是外部組合、放在框外(`../DataTable/data-table.spec.md:672`「Toolbar 不內建在 DataTable 裡——toolbar 是外部組合，職責分離」);月曆的工具列是元件的固定元素(見「工具列」),放在框裡、不畫底色,坐在外殼的 `bg-surface` 上 = 巢狀 chrome(`../../patterns/header-canonical/header-canonical.spec.md:111` Nested chrome header 那一列「transparent(不傳 bg className,繼承 parent)」),與格陣之間用 ChromeHeader 自己的底線分開。
 - **最外圈格線交給外框**:每一週最右那格不畫右線、最後一週不畫下線,那一條由外框當(`calendar.tsx` 格子 class 的註解「最後一週不畫下線 —— 根節點外框已經是那一條,兩條疊成 2px 雙線(稽核 D6)」)—— 與 DataTable「加框時最後一行底線去掉，避免與外框 double border」同一條(`../DataTable/data-table.spec.md:195`)。
 - **格陣貼齊外框**:格陣區(星期列與週列)左、右、下三邊不留內距,格子直接貼到框線;格內的空隙由格子自己的內距給(見「間距」)。只有工具列有自己的內距(ChromeHeader)。
-- **四周距離:元件不帶外距,由容器給**:同一段距離只由一層給 ——「容器給內距,元件不再加外距去推容器」(`../../tokens/layoutSpace/layoutSpace.spec.md:154`)。左右 = `loose`(同檔 `:95`「任何內容左右 padding 最終 = `loose`」);底:月曆是有完整外框的 bounded region → 容器底 = `loose`(同檔 `:161`)。容器認得出這一點,靠根節點的邊緣標記 `data-layout-region="bounded"`(同檔 `:156`「元件根部宣告自己的邊緣 `data-layout-region="bounded"`(有完整外框:表格 / 卡片 / 面板)」;與 DataTable 外框同一個標記)—— 放進 DialogBody / SheetBody 這類會自己給上下內距的容器、又是最後一塊時,底自動 = `loose`,不是一般元素的 `bottom` 48(`../../tokens/layoutSpace/layoutSpace.css`)。上方沒有標頭時規格沒寫,範例照 `loose` 給。範例外層一律 `p-[var(--layout-space-loose)]`(一般密度 16 / 大密度 24,`../../tokens/layoutSpace/layoutSpace.spec.md:11`)。機械:`scripts/layout-body-edges-invariant.mjs` —— 全部 story 驗標記實不實(標 bounded 就要量得到完整外框);`--selftest` κ 把月曆範例的外層改成 `data-layout-body="fill"` 的容器,量到底 = `loose`,對照組拿掉標記 → 底 48、紅「缺標記」。
+- **四周距離:元件不帶外距,由容器給**:同一段距離只由一層給 ——「容器給內距,元件不再加外距去推容器」(`../../tokens/layoutSpace/layoutSpace.spec.md:174`)。左右 = `loose`(同檔 `:95`「任何內容左右 padding 最終 = `loose`」);底:月曆是有完整外框的 bounded region → 容器底 = `loose`(同檔 `:161`)。容器認得出這一點,靠根節點的邊緣標記 `data-layout-region="bounded"`(同檔 `:156`「元件根部宣告自己的邊緣 `data-layout-region="bounded"`(有完整外框:表格 / 卡片 / 面板)」;與 DataTable 外框同一個標記)—— 放進 DialogBody / SheetBody 這類會自己給上下內距的容器、又是最後一塊時,底自動 = `loose`,不是一般元素的 `bottom` 48(`../../tokens/layoutSpace/layoutSpace.css`)。上方沒有標頭時規格沒寫,範例照 `loose` 給。範例外層一律 `p-[var(--layout-space-loose)]`(一般密度 16 / 大密度 24,`../../tokens/layoutSpace/layoutSpace.spec.md:11`)。機械:`scripts/layout-body-edges-invariant.mjs` —— 全部 story 驗標記實不實(標 bounded 就要量得到完整外框);`--selftest` κ 把月曆範例的外層改成 `data-layout-body="fill"` 的容器,量到底 = `loose`,對照組拿掉標記 → 底 48、紅「缺標記」。
 - **世界級的三種畫法**(背景;DS 照上面的 DS 規則,M23):
   - 甲 框只圍格子區、工具列在框外 —— React Big Calendar 月檢視 `.rbc-month-view { position: relative; border: 1px solid #ddd;`(<https://unpkg.com/react-big-calendar@1.19.4/lib/css/react-big-calendar.css>);MUI X Scheduler 月檢視外層 `borderRadius: theme.shape.borderRadius,` + ``border: `1px solid ${(theme.vars || theme).palette.divider}`,`` + `overflow: 'hidden',`(<https://github.com/mui/mui-x/blob/542cd5511402a67693008684a6d00a22c977a014/packages/x-scheduler/src/month-view/MonthView.tsx#L32-L45>);FullCalendar v6 格子區外框由 `.fc-scrollgrid` 本身(上、左)與區段格(右、下)拼成 —— `.fc-theme-standard .fc-scrollgrid{border:1px solid var(--fc-border-color)}` 再 `.fc .fc-scrollgrid{border-bottom-width:0;border-collapse:separate;border-right-width:0}`,`.fc-theme-standard td,.fc-theme-standard th{border:1px solid var(--fc-border-color)}` 再 `.fc .fc-scrollgrid-section>*{border-left-width:0;border-top-width:0}`;內層格子表把最外圈藏起來 `.fc .fc-scrollgrid table{border-left-style:hidden;border-right-style:hidden;border-top-style:hidden}`、`.fc .fc-scrollgrid-section-body table,.fc .fc-scrollgrid-section-footer table{border-bottom-style:hidden}`(<https://unpkg.com/@fullcalendar/core@6.1.19/index.global.js>)。
   - 乙 框連工具列一起圍(DS 屬這一派)—— Syncfusion Schedule 根節點 `.e-schedule { background: #fff; border: 1px solid rgba(0, 0, 0, 0.12); }`(<https://unpkg.com/@syncfusion/ej2-schedule@31.1.17/styles/material.css>);FullCalendar v7 breezy 主題工具列與格子區分段畫框、拼成一圈 `border-radius: 8px` 的框(<https://unpkg.com/fullcalendar@7.1.5/themes/breezy/theme.css>)。
@@ -319,7 +319,7 @@ interface CalendarEvent {
 
 **位置 = 展開型**【Q2(定)、Q2b(定)】:定位依據是那一格的外框(不是「+N」那顆鈕);**浮層中心 = 格子中心(水平 + 垂直)**,蓋在那一格上;碰到視窗邊推回、留 8(`collisionPadding`);寬 ≥ 格寬(= max(格寬, Popover 預設寬))【寬的取法 AI 推導】;關閉後焦點回「+N」。這是 Popover 規格的「展開型」例外(`../Popover/popover.spec.md`「蓋在錨點上(展開型)」,用 `PopoverContent` 的 `coverAnchor`),不套「與觸發點隔 8」與「align 跟著觸發點位置」兩條;位置與可用高(視窗高 − 上下各 8)由浮層幾何 SSOT 算(`../../tokens/elevation/elevation.spec.md`「浮層高度上限」)。世界級:Google Calendar 疊在該格上、水平置中、寬大於格(<https://calendar.google.com/calendar/embed?src=j7gov1cmnqr9tvg14k621j7t5c%40group.calendar.google.com&src=3haig2m9msslkpf2tn1h56nn9g%40group.calendar.google.com&src=en.usa%23holiday%40group.v.calendar.google.com&mode=MONTH&dates=20261201%2F20261228&ctz=UTC&hl=en>);Toast UI 水平置中、頂端對齊格子、寬 max(格寬 + 10, 280)(<https://github.com/nhn/tui.calendar/blob/main/apps/calendar/src/components/dayGridMonth/gridCell.tsx>);MUI X 蓋在格上、對齊按鈕左上(<https://github.com/mui/mui-x/blob/master/packages/x-scheduler/src/internals/components/more-events-popover/MoreEventsPopover.tsx>)。
 
-**標題列與內距**【Q4(定)、總帳更正 #1】:照決策卡做法 —— 標題列 = 標準 `PopoverHeader`(SurfaceHeader;一般密度 45 = 標題行高 21 + 上下 `--layout-space-tight` 12)、內建 ×;**標題列底下不畫分隔線、body 頂部 0**:標題到頂部(12)= 標題到第一筆(12),這一段只由標題列的下內距給(`../AgentPanel/agent-decision-card.spec.md:10-11`;`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 2「適用範圍與量法三點」(2));最後一筆到底 = 12(`layoutSpace.spec.md:163`:容器不擋頁面、高度貼著內容 → 與頂部同值);**左右 16**(`--layout-space-loose`,SurfaceBody 預設;列的前緣因此對齊標題左緣)。總帳 Q4(定) 備註原寫「四周 12」是 AI 記總帳時的筆誤,AI 當時給 user 的規格是「上下 12、左右 16」。世界級:Google Calendar 標題是星期 + 日期 + Close(<https://calendar.google.com/calendar/embed?src=j7gov1cmnqr9tvg14k621j7t5c%40group.calendar.google.com&src=3haig2m9msslkpf2tn1h56nn9g%40group.calendar.google.com&src=en.usa%23holiday%40group.v.calendar.google.com&mode=MONTH&dates=20261201%2F20261228&ctz=UTC&hl=en>);Toast UI 的標題列在捲動區外(<https://github.com/nhn/tui.calendar/blob/main/apps/calendar/src/components/dayGridMonth/gridCell.tsx>)、Syncfusion 也是(<https://cdn.jsdelivr.net/npm/@syncfusion/ej2-schedule/styles/material.css>)。
+**標題列與內距**【Q4(定)、總帳更正 #1】:照決策卡做法 —— 標題列 = 標準 `PopoverHeader`(SurfaceHeader;一般密度 45 = 標題行高 21 + 上下 `--layout-space-tight` 12)、內建 ×;**標題列底下不畫分隔線、body 頂部 0**:標題到頂部(12)= 標題到第一筆(12),這一段只由標題列的下內距給(`../AgentPanel/agent-decision-card.spec.md:10-11`;`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 2「適用範圍與量法三點」(2));最後一筆到底 = 12(`layoutSpace.spec.md:183`:容器不擋頁面、高度貼著內容 → 與頂部同值);**左右 16**(`--layout-space-loose`,SurfaceBody 預設;列的前緣因此對齊標題左緣)。總帳 Q4(定) 備註原寫「四周 12」是 AI 記總帳時的筆誤,AI 當時給 user 的規格是「上下 12、左右 16」。世界級:Google Calendar 標題是星期 + 日期 + Close(<https://calendar.google.com/calendar/embed?src=j7gov1cmnqr9tvg14k621j7t5c%40group.calendar.google.com&src=3haig2m9msslkpf2tn1h56nn9g%40group.calendar.google.com&src=en.usa%23holiday%40group.v.calendar.google.com&mode=MONTH&dates=20261201%2F20261228&ctz=UTC&hl=en>);Toast UI 的標題列在捲動區外(<https://github.com/nhn/tui.calendar/blob/main/apps/calendar/src/components/dayGridMonth/gridCell.tsx>)、Syncfusion 也是(<https://cdn.jsdelivr.net/npm/@syncfusion/ej2-schedule/styles/material.css>)。
 
 **列距 4 = 韻律規則的例外**【Q4b(定)】:清單是上 12 / 列與列 4 / 下 12;照 `layoutSpace.spec.md:111`「一串同樣的條目」的韻律本該「上 = 列與列 = 下」,這裡刻意不照。理由是 user 原話:「這邊比較是例外吧？為了要跟格子裡的視覺語言一致，所以筆距保持跟格子裡一樣比較合理吧」。本例外只住本檔。
 
@@ -331,24 +331,25 @@ interface CalendarEvent {
 
 ## 事件詳情浮層
 
-**定位**【C7、Q5(定)】:閱讀為主、偶爾就地改一欄 —— 正是 `../InlineEdit/inline-edit.spec.md:119-120`「detail pane metadata 就地編輯」「這個值大部分時間是被閱讀的,偶爾才編輯」;同檔 `:127`「多欄位一次編輯 → 用表單(進入一次編輯全部欄位)」講的是一次進入編輯全部欄位的表單,不適用這裡。所以詳情浮層由 `Field` 組成,可編輯的欄位走 `InlineEdit`;「全天」是自己一個 Field(開關),**只能看時不畫**(時間那欄的寫法已分得出全天:全天只寫日期,有時段寫到幾點)【ALLDAY-VIEW(定),原話見「決定來源總帳」】。這不是「內容多」:內容多 = 要一次填寫多個欄位(表單)或篩選資料(`../Popover/popover.spec.md`「禁止事項」)。世界級:Notion Calendar 在面板就地改欄位(<https://www.notion.com/help/manage-your-calendars-and-events>)、MUI X 點事件開對話框直接改、有全天開關(官方文件「Click any event in the demo below to open the dialog. From there you can edit the event details or delete it.」「General: title, start/end date and time, all-day toggle, resource and color selectors, and description.」,<https://mui.com/x/react-scheduler/event-calendar/editing/>;2026-11-26 前引的 `dialog-utils.ts` 只算浮層位置、不支持這句,已換)、Apple 打開事件後直接改時間地點(<https://support.apple.com/guide/calendar/add-modify-or-delete-events-icalwr13-events/27.0/mac/27>)。反例:Google Calendar 要按 Edit event 進編輯再存(<https://support.google.com/calendar/answer/72143?hl=en&co=GENIE.Platform%3DDesktop>)、Outlook 選事件後按 Edit(<https://support.microsoft.com/en-US/outlook/create-modify-or-delete-a-meeting-request-or-appointment-in-outlook-on-the-web>)。
+**定位**【C7、Q5(定)】:閱讀為主、偶爾就地改一欄 —— 正是 `../InlineEdit/inline-edit.spec.md:119-120`「detail pane metadata 就地編輯」「這個值大部分時間是被閱讀的,偶爾才編輯」;同檔 `:127`「多欄位一次編輯 → 用表單(進入一次編輯全部欄位)」講的是一次進入編輯全部欄位的表單,不適用這裡。所以詳情浮層由 `Field` 組成,可編輯的欄位走 `InlineEdit`;「全天」是自己一個 Field(開關),**只能看時不畫**(時間那欄的寫法已分得出全天:全天只寫日期,有時段寫到幾點)【ALLDAY-VIEW(定),原話見 `./calendar-decision-ledger.spec.md`】。這不是「內容多」:內容多 = 要一次填寫多個欄位(表單)或篩選資料(`../Popover/popover.spec.md`「禁止事項」)。世界級:Notion Calendar 在面板就地改欄位(<https://www.notion.com/help/manage-your-calendars-and-events>)、MUI X 點事件開對話框直接改、有全天開關(官方文件「Click any event in the demo below to open the dialog. From there you can edit the event details or delete it.」「General: title, start/end date and time, all-day toggle, resource and color selectors, and description.」,<https://mui.com/x/react-scheduler/event-calendar/editing/>;2026-11-26 前引的 `dialog-utils.ts` 只算浮層位置、不支持這句,已換)、Apple 打開事件後直接改時間地點(<https://support.apple.com/guide/calendar/add-modify-or-delete-events-icalwr13-events/27.0/mac/27>)。反例:Google Calendar 要按 Edit event 進編輯再存(<https://support.google.com/calendar/answer/72143?hl=en&co=GENIE.Platform%3DDesktop>)、Outlook 選事件後按 Edit(<https://support.microsoft.com/en-US/outlook/create-modify-or-delete-a-meeting-request-or-appointment-in-outlook-on-the-web>)。
 
 **外殼**:`PopoverContent`(非 modal)+ `PopoverHeader` + `PopoverBody`;寬先用 Popover 預設,不夠才傳 `width` 數字,不新增寬度檔位(實量結果見下方「寬」)。字級吃整頁預設字級 14px【F1(定)】,欄位的字由 Field / InlineEdit 自帶。**內距**:標題列是標準 `PopoverHeader`(標題列下有分隔線),body 用 `PopoverBody` 預設,不加任何內距 class —— 標頭 → 第一個欄位 = `tight`(`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 2)、最後一個欄位 → 底 = 與頂部同值(同檔規則 4 第 4 列:浮層不擋頁面、高度貼著內容 = hug)、左右 `loose`;垂直排的就地編輯框外伸 `--field-bleed`(13)進這 16 裡(`../Field/field.spec.md`「閱讀情境」容器內距 ≥ `--field-bleed`)。
 
-**標題列**【AI 推導,預覽時請 user 看】:事件標題是 `InlineEdit`(預設 `<Input>`),放在 `PopoverTitle` 的位置、不包成 Field —— DS 浮層標題只住標題區、不得在內容裡手刻標題(`../Popover/popover.spec.md`「Title typography canonical」),InlineEdit「何時用」第一條就是標題就地編輯(`inline-edit.spec.md:118`)。字級 14 + `font-medium`;InlineEdit `sm` view 態 28 高,所以標題列 = 28 + 上下 12 = 52、view / edit 兩態同高,× 的佔位跟這一行同高(標題列掛 `../../patterns/overlay-surface/overlay-surface.tsx` 的 `EDITABLE_TITLE_HEADER_SLOT`,`calendar-event-detail.tsx` 消費)。浮層的名字 = 事件標題本身(不得把隱形編輯鈕的「編輯 …」字樣算進去,編輯中也不能變空)。標題清空後提交 = 還原原值。標題列操作位(〔操作〕〔分隔線〕〔×〕)放 `eventDetail.actions(event)` 的內容;刪除這類破壞性動作預設收進「⋯」選單(`../../patterns/action-bar/action-bar.spec.md:123`),刪除後給復原(Toast 的 action,`../Toast/toast.spec.md:50`)—— 範例的示範殼這樣做;`actions` 是產品的操作位,元件不強制放什麼【DT-DELETE(定)】;沒有「儲存」鈕、沒有 footer(每個欄位自己提交)。
+**標題列**【DT-TITLE(定)】:跟一般浮層一樣 —— 標準 `PopoverHeader` + `PopoverTitle` 放**事件名稱**,可改與只能看都一樣,不在標題列就地編輯(`../Popover/popover.spec.md`「Title typography canonical」:14 + `font-medium`)。標題列高兩種密度相同 = 上下 tight + 一行標題 = 45,外加分隔線 1(`../../tokens/density/density.spec.md`「Tier alignment」;2026-11-27 前標題列放 sm 就地編輯框,52 / 56 跟著密度變)。浮層的名字 = 事件名稱(`PopoverTitle` 自動接 `aria-labelledby`)。可改時改名字的地方是內文第一欄「標題」(見下表),**提交後**標題列與浮層名字才換成新名稱;編輯中照舊顯示已存的名稱【AI 推導】。可改時名稱會出現兩次(標題列 + 「標題」欄,浮層多一欄的高)—— 研究回報時已告知 user。user 原話(逐字):第 1 輪「Calendar 詳情的標題編輯不要做在 header,直接多一個 field 就好了吧？」(問句);第 2 輪「為何不能維持原本 popover的樣子？然後header標題一律放事件名稱,可編輯的話才在body出現事件編輯的 field,這樣如何？」(問句);拍板「標題放哪確認可以照我提的做法就照做」。user 定的是「標題列一律放事件名稱、可改時內文出現改名字的欄、只能看時不列」;以下細節是 AI 補的:欄位標籤字「標題」、排第一、提交後才換名稱、標題清空後提交 = 還原原值【AI 推導】。標題列操作位(〔操作〕〔分隔線〕〔×〕)放 `eventDetail.actions(event)` 的內容;刪除這類破壞性動作預設收進「⋯」選單(`../../patterns/action-bar/action-bar.spec.md:123`),刪除後給復原(Toast 的 action,`../Toast/toast.spec.md:50`)—— 範例的示範殼這樣做;`actions` 是產品的操作位,元件不強制放什麼【DT-DELETE(定)】;沒有「儲存」鈕、沒有 footer(每個欄位自己提交)。
 
 **內文欄位**(**垂直排**:`Field` + `FieldLabel`、標籤在上(Field 預設方向),包在一個 `FieldGroup` 裡)【由 Field 組成、可編輯欄位走 InlineEdit、全天自己一個 Field = Q5(定);垂直排 = FIELD-ORIENT(定);有哪些欄位、各欄平常 / 編輯的長相 = AI 推導,除非另標】。組裡有就地編輯 = **閱讀情境**(標籤次要色、垂直排框外伸、同組同高),規則與理由的唯一住所是 `../Field/field.spec.md`「閱讀情境」,本元件不另寫。同一組不混放純顯示與就地編輯:不能改的值一律 `InlineEdit editable={false}`(`../InlineEdit/inline-edit.spec.md:52`、`:126`)。
 
 | 欄位 | 平常 | 編輯 | 依據 |
 |---|---|---|---|
+| 標題 | 文字(事件名稱);**可改時才列**、排第一;只能看時不列(名稱已在標題列,同「全天」只能看時不畫) | InlineEdit 預設 `<Input>`;提交後標題列跟著換;清空提交 = 還原原值 | 可改時才列、只能看時不列 = 【DT-TITLE(定)】;排第一、提交後才換、清空 = 還原、標籤字 `labels.detailTitle` 預設「標題」=【AI 推導】;`../InlineEdit/inline-edit.spec.md:118`「標題就地編輯」 |
 | 時間 | 一段文字:`DatePicker.Range` 檢視 + `formatRange`(同一天自動合併、跨日寫兩端)【TIMEFIELD(定)】;日期段 = DatePicker 的預設日期寫法(兩位數月日)、時間段 = 月格同一份 `eventTimeFormat`(預設 zh-TW「上午10:00」)—— 有時段例「2026/07/15 上午10:00至11:00」,全天例「2026/07/15至2026/07/17」(分隔字隨瀏覽器 ICU;ICU 在區間丟掉的零由 `../DatePicker/range-format.ts` 補回)【DATE-TIME(定)2026-11-26,已實作:日期一律補零、時間 12 / 24 跟語系,`eventTimeFormat` 覆寫】 | InlineEdit → **一個** `DatePicker.Range`,有時段時加 `showTime`(`../DatePicker/date-picker.spec.md:69`);兩端選好才提交 | 時間寫法與月格同一份,平常與編輯中兩端的字都用它(Calendar 傳給 `DatePicker.Range` 的 `formatOptions`;編輯中例「2026/07/15 上午10:00」)—— 同一個詳情看和改是同一種寫法【DATE-TIME(定)2026-11-26;改前編輯中是 DatePicker 的 24 小時 `2026/07/15 10:00`】;全天的 `end` 不含、`DatePicker.Range` 的結束日含 → 進出換算一天(`calendar-layout.ts` `detailRangeOf` / `rangeToTimePatch`) |
-| 全天 | 可改時 `Switch`,**直接切換**(不走 InlineEdit 的檢視 / 編輯兩態);**只能看時不畫**(`isEditable(event)` 回 false:整個 Field 不渲染,讀屏與 `Tab` 順序跟著少一欄、不留空位) | 同左 | 【Q5(定)】自己一個 Field;直接切換【AI 推導,預覽時請 user 看】:DS 就地編輯對 boolean 的既有規則是 direct toggle(`../DataTable/data-table.spec.md`「Inline Edit — per-column opt-in」boolean 列);只能看時不畫【ALLDAY-VIEW(定)】:時間那欄的寫法已分得出全天(全天只寫日期,有時段寫到幾點,見上一列),原話見「決定來源總帳」 |
+| 全天 | 可改時 `Switch`,**直接切換**(不走 InlineEdit 的檢視 / 編輯兩態);**只能看時不畫**(`isEditable(event)` 回 false:整個 Field 不渲染,讀屏與 `Tab` 順序跟著少一欄、不留空位) | 同左 | 【Q5(定)】自己一個 Field;直接切換【AI 推導,預覽時請 user 看】:DS 就地編輯對 boolean 的既有規則是 direct toggle(`../DataTable/data-table.spec.md`「Inline Edit — per-column opt-in」boolean 列);只能看時不畫【ALLDAY-VIEW(定)】:時間那欄的寫法已分得出全天(全天只寫日期,有時段寫到幾點,見上一列),原話見 `./calendar-decision-ledger.spec.md` |
 | 地點 | 文字;空值顯示「加上地點…」 | InlineEdit 預設 `<Input>` | `inline-edit.spec.md`「空值」 |
 | 說明 | 多行文字;空值顯示「加上說明…」 | InlineEdit `multiline` | `inline-edit.spec.md`「型別化 view + 多行 + 鍵盤 SSOT」 |
 | 類別 | 類別 Tag(字 = 類別名、色 = 類別色;`Select` 檢視 `display="tag"`);空值顯示「選擇類別…」 | InlineEdit → `Select`(`display="tag"`,選項帶類別色 = `SelectOption.tagVariant`);選了 → `categoryId` 與 `color` 一起交回 | 【COLORFIELD(定)】欄名「類別」、產品傳 `{ id, name, color }` 清單、沒傳就不顯示;`color` 一起換【AI 推導:月格畫的是 `event.color`,同一下換才不會一筆事件兩種顏色】;不用圓點(Badge dot 已佔用) |
 | 額外 | `eventDetail.renderExtra(event)` | 產品自己放 | 例:與會者、會議連結;放在同一個 FieldGroup 裡(同一個閱讀情境範圍) |
 
-欄位順序 = 上表由上而下(時間 → 全天 → 地點 → 說明 → 類別 → 額外)【AI 推導】;只能看時少「全天」(【ALLDAY-VIEW(定)】),其餘順序不變。
+欄位順序 = 上表由上而下(標題 → 時間 → 全天 → 地點 → 說明 → 類別 → 額外)【AI 推導,含標題排第一】;只能看時少「標題」(【DT-TITLE(定)】)與「全天」(【ALLDAY-VIEW(定)】),其餘順序不變。
 
 **寬**【AI 推導的算式;user 2026-11-26 第三輪決策卡 detail-width 選 A「可以,改成 416」】:26rem = 416(PopoverContent `width` 數字,常數 `calendar-geometry.ts` `CALENDAR_EVENT_DETAIL_WIDTH_PX`)。唯一目的:時間欄進編輯的 `DatePicker.Range showTime` 兩端的字不被裁(平常的一段合併文字在 Popover 預設 288 就放得下)。量法:兩端平分多出來的寬,每端分到 = 91 + (寬 − 288) ÷ 2(2026-11-26 在 1280 × 900 實量:288 時每端 91)。當時的字「2026/07/05 10:00」每端要 113–115 → 曾取 22rem = 352;同日 DATE-TIME(定)後預設 zh-TW 編輯中的字是「2026/07/05 上午10:00」,多兩個中文字(字級 14,約 +28)、2026-11-26 實量 352 時兩端要 143 / 141、只分到 123 → 被裁→ 照同一套量法至少 392,加同樣 16 的餘量(字型 / 語系差異)取整數 rem 416。實量 = `scripts/calendar-month-invariant.mjs` DT-time-fit(一般 / 大密度,編輯中兩端不被裁,訊息印每端要的寬與分到的寬)。浮層寬不隨編輯或全天切換變。
 
@@ -402,98 +403,13 @@ DS 以桌機為主(`../../tokens/typography/typography.spec.md`「DS 主場景�
 
 ## 第一段實作範圍(相對 2026-11-24 程式)
 
-已在 0.1.0-beta.151 實作。畫面看得見的變化、行為變化與對產品工程師的破壞性變更(含 `renderEventTile` 第二個參數 `segment` 的形狀,帳本 `CalendarEventSegment`)逐條登記在變更帳本 `../../../ds-changes.json` 的 `Calendar.*` / `CalendarEvent.*` / `CalendarEventSegment` / `CalendarLabels*` / `CAT_*` 條目,本節不重述。**依賴的跨元件工作(已完成)**:Popover 展開型定位與可用高;清單類浮層高度上限可調 + 半列原則【C9】;浮層標題列 × 佔位跟著標題行高(`EDITABLE_TITLE_HEADER_SLOT`);InlineEdit「卸載時仍在編輯 = 提交」;Select 選項帶類別色(`SelectOption.tagVariant`,不上擴到 SelectMenu,`../Select/select.spec.md:271`);`categorical-color.ts` 的 `CAT_ACCENT` 改給有時段色條、補 neutral 事件色;全 DS 日期元件預設 zh-TW 與週起始日從 `Intl` 推【Q9(定)、WS(定)】;focus-canonical / keyboard-model-canonical 的 Calendar 列隨實作更新。
+已在 0.1.0-beta.151 實作。畫面看得見的變化、行為變化與對產品工程師的破壞性變更(含 `renderEventTile` 第二個參數 `segment` 的形狀,帳本 `CalendarEventSegment`)逐條登記在變更帳本 `../../../ds-changes.json` 的 `Calendar.*` / `CalendarEvent.*` / `CalendarEventSegment` / `CalendarLabels*` / `CAT_*` 條目,本節不重述。**依賴的跨元件工作(已完成)**:Popover 展開型定位與可用高;清單類浮層高度上限可調 + 半列原則【C9】;浮層標題列 × 佔位跟著標題行高(`EDITABLE_TITLE_HEADER_SLOT`;0.1.0-beta.152 起 Calendar 不再使用,見「標題列」【DT-TITLE(定)】);InlineEdit「卸載時仍在編輯 = 提交」;Select 選項帶類別色(`SelectOption.tagVariant`,不上擴到 SelectMenu,`../Select/select.spec.md:271`);`categorical-color.ts` 的 `CAT_ACCENT` 改給有時段色條、補 neutral 事件色;全 DS 日期元件預設 zh-TW 與週起始日從 `Intl` 推【Q9(定)、WS(定)】;focus-canonical / keyboard-model-canonical 的 Calendar 列隨實作更新。
 
 ---
 
-## 決定來源總帳
+## 決定來源總帳 → `calendar-decision-ledger.spec.md`(2026-11-27 抽出)
 
-### user 決定(2026-11-24 決策總帳;選項文字帶「(Recommended)」的 = 選項與建議是 AI 擬的、user 選定)
-
-| 代號 | 決定 | user 原話 / 選項(逐字) |
-|---|---|---|
-| C1 | 跨日畫成橫跨多格的長條,換週切段 | 「畫成橫跨多格的長條 (Recommended)」 |
-| C2 | 全天 / 跨日 = 淡底長條;有時段 = 無底 + 色條 + 時間 + 標題 | 「A基本上可以，但到底是用圓點好還是用我本來給你的圖稿上的那種像是垂直槓線好？」→ 選「垂直槓線 (Recommended)」 |
-| C3 | 每格筆數依格高;放不下時最後一列換成計數列(與事件同高、無底);各週等高 | 「依格子高度自動決定 (Recommended)」 |
-| C4 | 從清單點事件 → 旁邊再開詳情浮層 | 「我覺得可以照你建議，但我好奇我們DS為何要禁止浮層開浮層？是我定義的嗎？根據是什麼？是否有合理具體理由？世界級的設計有禁止嗎？我想確認一下上述問題的答案」 |
-| C4b | 浮層疊浮層少用、不寫死層數 | 「需要限制嗎？世界級的設計都有限制層數？我認為可以建議少用，但不確定是否要限制層數」→ 選「建議少用，不寫死層數 (Recommended)」 |
-| C5 | 規格定四種檢視,實作分兩段 | 「規格一次定四種，實作分兩段 (Recommended)」 |
-| C6 | 計數文字一律「+N」 | 「一律「+N」」 |
-| C7 | 詳情浮層閱讀為主、各欄位就地編輯 | 「你指的設計系統寫的那個原則是我說的嗎？你是不是又不按照工作流程，然後去脈絡化亂解讀？整個內容是以檢視為主同時支援編輯的情況就會使用就地編輯這類元件吧？你仔細查證ds是否這樣說？以及這樣說是否合理？…」 |
-| C8(定) | 今天維持實心底 | 「維持實心底 (Recommended)」 |
-| C9 | 清單浮層高度上限可調,預設取最適合的 | 「這個最大高度本來就是可以讓消費者調整的對吧？那我們預設的最大高度就是取一個我們覺得最適合的吧？」 |
-| C10(改) | 日期數字左上、星期置中 | 「我覺得日期置放左邊比較好讀，所以星期可能置中，這樣跟 clickup planner的設計是一樣的」 |
-| Q2(定) / Q2b(定) | 「+N」清單蓋在那一格上、定位依據是格子、以格子為中心(水平 + 垂直) | 「蓋在那一格上，定位依據是格子 (Recommended)」;再選「以格子為中心(水平 + 垂直) (Recommended)」 |
-| Q3(定) | 長條斷開端一律直角 | 「斷開端一律改直角 (Recommended)」 |
-| Q4(定) | 清單標題列照決策卡做法 | 「照決策卡做法 (Recommended)」 |
-| Q4b(定) | 清單列距 4 = 韻律例外 | 「這邊比較是例外吧？為了要跟格子裡的視覺語言一致，所以筆距保持跟格子裡一樣比較合理吧」 |
-| Q5(定) | 詳情由 Field 組成、可編輯欄位走 InlineEdit、全天自己一個 Field | 「這個表單雖然是檢視用，但應該都是 field 元件？然後是套用inline edit的field元件？我是覺得開關要自己是一個field吧？」 |
-| Q6(定) | 單擊空白即新增;事件列與 +N 阻止冒泡 | 「維持單擊空白就新增 (Recommended)」 |
-| Q7(定) | 過夜事件只畫在開始那天;滿 24 小時或全天才是長條 | 「只畫在開始那天 (Recommended)」 |
-| Q8(定) | 只做桌機 RWD(縮內容) | 「我們ds難道沒說過我們是以支援桌機為主嗎？你是否忘記這件事？若是如此，root cuase?以及若有rwd也是以桌機的rwd為主吧？」 |
-| Q9(定) | 全 DS 日期元件預設 zh-TW | 「全 DS 日期元件一起改 zh-TW (Recommended)」 |
-| Q10(定) | 週末不加底;隱藏週末、週數欄為選用(預設關);假日用唯讀全天事件 | 「我覺得可以照你建議，但是週數欄的設計規格應該要在確認？…」 |
-| Q10b(定) | 週數欄長相(見「Cell 規則」) | 「我覺得可以照你建議，反正週數跟日期字體 token 一樣但可以不加粗，然後標頭的字體 token 也是跟其他標頭一樣，粗細則可以討論，週數的標題和週數的顏色也可以討論，但我想知道的是為何日期框左邊距是6px?…」→ 欄頭選「弱化：不加粗 + fg-secondary (Recommended)」 |
-| Q11(定) | 只內建載入中(格內骨架) | 「只內建載入中(格內骨架) (Recommended)」 |
-| Q14(定) | 第一段不做選取,第二段做拖選新增 | 「第一段不做，第二段做拖選新增 (Recommended)」 |
-| Q15(定) | 每月 1 號帶月份 | 「照你建議」 |
-| Q16(定) | 切換全天:記住並還原;原本全天的給 09:00 起一小時 | 「記住並還原;原本全天的給 09:00 起一小時 (Recommended)」 |
-| SPACING(定) | 整套間距(見「間距」) | 起因「…為何日期框左邊距是6px?這感覺不是我們ds會出現的數字，依據是什麼？我好奇」「此外我想問calendar是否還有其他類似'亂用6px'的地方？」;事件列選「Tag md:24px、14px 字」,其餘照 AI 提案 |
-| WS(定) | 週起始日:各元件參數 + 沒傳時跟語系的 CLDR | 「應該是不同的設定？但都可以有預設？世界級的設計如何設計？」→「你確定中文語系的起始通常預設都是週日？世界級的設計是這樣？」→ 選「跟語系的 CLDR (Recommended)」 |
-| F1(定) | 整頁預設字級 14px,浮層經 Portal 繼承 | 「照全域做 (Recommended)」,原話「確定是世界級的設計就照你建議」 |
-| BAR(定) | 有時段事件的色條 = 字高、上下置中、圓頭(寬 4、間隔 4 不變);2026-11-25 決策總帳 | 「選 a 字高+圓頭好了，把色條視為字的一部分也一樣是有韻律的，且撐滿的話跟文字的落差有點太大且事件之間的間隔也不明顯」(A 字高圓頭 / B 撐滿圓頭 / C 撐滿直角三個對照版本是 AI 做的圖) |
-| TIMECOLOR(定) | 有時段事件的時間 `text-fg-secondary`、標題 `text-foreground`;2026-11-25 決策總帳 | 選「時間灰、標題主色 (Recommended)」 |
-| DT-DIRECTION(定) | 事件詳情在格陣與「+N」清單都照 DS 子選單擺法:開在右側、對齊上緣、隔 8,右邊放不下翻左(見「事件詳情浮層」位置;2026-11-26 已實作,閘 `scripts/calendar-month-invariant.mjs` DT-side / DT-side-right / DT-side-flip / DT-list);2026-11-26 決策卡 | 第一輪留言「詳情的觸發點很明確就是事件吧？為何不是按照ds既有pattern?」;第二輪 user 點選「格陣和清單都照子選單擺法:先開右側」(2026-11-26 決策卡;選項與建議是 AI 擬的),同卡留言「可以照你建議，但一般 popover 在下方空間不足時也會往上開，對吧？跟 select menu 的行為是同一個 ssot?」(問句;協調者回覆:是,Popover / SelectMenu / DropdownMenu 同一套 Radix 碰撞翻面,詳情照子選單先開右、放不下翻左) |
-| CELL-HOVER(定) | 月檢視可點的日期格滑過不變色、只留手形游標;鍵盤焦點框、事件 /「+N」自己的滑過、點空白新增、唯讀照舊(見「Cell 規則」滑過條;2026-11-26 已實作,閘 `scripts/calendar-month-invariant.mjs` HV1–HV4);2026-11-26 第五輪決策卡 | user 點選「A:拿掉日期格的滑過底色,只留手形游標」(選項與建議是 AI 擬的;留言欄空白) |
-| DATE-TIME(定) | 時間 12 / 24 跟語系、可用既有參數覆寫(本元件 `eventTimeFormat`);數字日期一律補零、不給補零開關(見「資料語意」時間顯示、「事件詳情浮層」時間欄;2026-11-26 已實作,DatePicker / TimePicker 同一條);2026-11-26 決策卡 | 第一輪兩則留言「為何不補零？」「可以跟著語系有一個預設？但是一樣可以獨立調整？然後跟著中文語系預設是12小時，英文的話是24小時？」;第二輪 user 點選「時間跟語系(12 / 24)、日期一律補零,兩者都能單獨覆寫」(2026-11-26 決策卡;選項與建議是 AI 擬的;跟語系時 en-US 也是 12 小時,卡上 en-US 例字「10:00 AM」),同卡留言「補零這件事應該可以不用給覆寫？一律都補零？」(問句;協調者依此回覆「日期一律補零、不另給補零開關」) |
-| TIMEFIELD(定) | 詳情時間欄平常的顯示 = `DatePicker.Range` 檢視加選填的「自動合併」(`Intl` `formatRange`:同一天合併、跨日寫兩端;DatePicker 預設關),Calendar 詳情打開它(見「事件詳情浮層」時間欄);2026-11-25 決策總帳 | 先問(問句)「世界級的設計是怎樣？他們也都有選填設定？還是他們在檢視時一律都改成同天合併？或是其他？」;看過研究後選「日期元件檢視加「自動合併」選項，行事曆開啟 (Recommended)」 |
-| COLORFIELD(定) | 詳情的「類別」欄:欄名「類別」,產品傳 `{ id, name, color }` 清單、Tag 顯示類別名;沒傳就不顯示這一欄(見「API(第一段)」`categories`、「事件詳情浮層」類別欄);2026-11-25 決策總帳 | 前兩次是問句:「先看世界級的設計到底真的怎麼做？若是適合由消費者定義是否就是照你建議的那一套？」「我看不懂，這題講得不夠具體，差異到底是啥，以及世界級的設計和可擴充性的研究到底要怎樣？沒有範例可以看？」;看過三種做法的範例圖後選 ①「類別 (Recommended)」,同時留言「照你建議，但為何詳情的 field 不用垂直要用水平的？因為空間考量？」(後半是問句,引出 FIELD-ORIENT) |
-| FIELD-ORIENT(定) | 詳情欄位垂直排(標籤在上);值欄對齊不論方向都要成立、寫進 SSOT(`../Field/field.spec.md`「閱讀情境」);2026-11-25 決策總帳 | 「我覺得可以改成垂直，但是開關對齊的問題無論什麼排列方式都要解決根本問題吧？都要確保是能夠對齊的吧？要確保 ssot 吧？我們ssot沒寫過嗎？此外，你目前這個詳情表單確定有遵照 layout space 設計原則？…」 |
-| WEEKNUM-BOX(定) | 週數格與日期格同一套結構:格子內距 4 + 24 寬的框置中,欄寬 33(見「Cell 規則」週數欄、「間距」週數欄寬列);2026-11-26 | 先問(問句)「你確定目前 calendar 週數欄位的寬度是取決於最大週數的寬度加上左右邊距？然後左右邊距跟日期距離左邊的邊距是一樣的？」,追問(問句)「日期框內距是怎麼來的？根據是什麼？」;AskUserQuestion 選「跟日期格同一套」並寫「所以現在日期已經放在24*24格子裡了？若是的話，照你建議」(選項由 AI 提) |
-| MORE-CAP(定) / MORE-BTN(定) | 2026-11-26 決策卡第一輪(卡與選項是 AI 擬的)。MORE-CAP:「+N」清單最多 9 列(一般密度高 311,第 10 列只露一半;見「「+N」清單浮層」高度與捲動)。MORE-BTN:「+N」按鈕的樣子與清單外觀維持卡上寫的現狀 —— 按鈕字 14、次要灰、圓角、滑過有底色、寬度鋪滿那一列、字是「+N」;清單以那一格為中心展開、標題「7月15日 週三」、沒有分隔線、列距 4、寬至少 288 | MORE-CAP 點選「維持 9 列」;MORE-BTN 點選「可以」 |
-| DT-BOTTOM(定) / DT-DELETE(定) / TOOLTIP-PF(定) | 2026-11-26 決策卡第一輪(卡與選項是 AI 擬的)。DT-BOTTOM:詳情底部留白量就地編輯的框,框底到浮層內文底 = 12(看得見的類別標籤到浮層內緣 16 / 大密度 18)。DT-DELETE:範例的示範殼在標題列「⋯」裡放「刪除」、刪除後可以復原,產品可以換成自己的動作(見「事件詳情浮層」標題列)。TOOLTIP-PF:用滑鼠關掉浮層、焦點由程式還給被截斷的項目時不跳完整文字提示;鍵盤 Tab、鍵盤 Esc 關浮層、滑鼠滑過照常出現(全 DS,改在 Tooltip) | DT-BOTTOM 點選「量框(現在的做法)」;DT-DELETE 點選「可以」;TOOLTIP-PF 點選「可以」 |
-| DETAIL-WIDTH(定) | 事件詳情寬 416(26rem,見「事件詳情浮層」寬;取代第一輪 detail-width 點選「可以」的 352);2026-11-26 第三輪決策卡 | 卡上選「A:放寬到 416,照同一條「進編輯不被裁」規則」;對話 AskUserQuestion 點「可以,改成 416」 |
-| ALLDAY-VIEW(定) | 事件詳情整筆只能看(`eventDetail.isEditable(event)` 回 false)時不畫「全天」那一欄;能編輯時照舊是開關(見「事件詳情浮層」內文欄位「全天」列;2026-11-27 已實作,閘 `scripts/calendar-month-invariant.mjs` DT-allday / DT-readonly);2026-11-27 確認頁留言 + 對話選擇題(問題與選項是 AI 擬的) | 確認頁留言(問句)「共享詳情不能編輯的話，其實不用有全天欄位吧？因為看時間就知道全天與否了？」;對話選擇題問題原文「行事曆事件詳情「只能看」的時候(例:共享進來的事件),要拿掉「全天」那一欄嗎?時間那欄本來就分得出來:全天只寫日期(例「2026/07/15至2026/07/17」),有時段的會寫到幾點(calendar.spec.md:344)。能編輯的時候照舊保留開關。(product-ui-ux-decision)」→ user 選「拿掉,這版就做 (Recommended)」 |
-
-**維持(先前的 user 決定,預設不重議)**:user 2026-11-23 原話「我決定過的部分基本上就不用重議了吧？除非跟研究或是擴充性有關或是有衝突或是違背ds一致的設計語言 才需要重新評估吧？」
-
-| 代號 | 決定 | 原話 / 出處 |
-|---|---|---|
-| U1 | 右上角「新事件」= 全域新增、恆渲染、`onCreateEvent` 必填 | 「第三題，右上角那是全域新增，表示點了之後要先選了日期才能新增啊，那肯定會擋住不能新增的日期啊，所以我不確定你到底要我決定什麼」(2026-09-29) |
-| U2 | 滑過瞬間切換、不做過渡(全 DS) | 「第三題改成全部瞬間」(2026-09-10) |
-| U3 | 非當月格不加底色 | 選『可以，拿掉底色 (Recommended)』(2026-09-25,選項由 AI 提供) |
-| U4 | 格子是非互動容器 | 2026-06-11「2c 修 code」(程式註記;逐字原話引不出) |
-| U6 | 巢狀滑過:卡片保留、按鈕往上一階(全 DS;2026-11-26 起月曆格子沒有滑過色,格內事件不再疊在格子的滑過上【CELL-HOVER(定)】) | 選『卡片保留、按鈕再亮一層 (Recommended)』(2026-09-25;原文在 `color.spec.md`「巢狀滑過」) |
-| U7 | 月格鍵盤:一個停靠點、方向鍵、F2 進格 | 「符合我們一致的設計語言且不違背世界級的設計就照建議」(有條件同意) |
-| U8 | 唯讀日期格 / 事件方塊 | 「確保符合我們一致的設計語言且不違背世界級的設計且都有確保整個ds 是SSOT,避免漂移就照你建議做」 |
-| U9 | 深色滑過格上 7 個色相對比 < 4.5 擱置(2026-11-26 起格子不上滑過底【CELL-HOVER(定)】,月曆不再出現這個組合) | 「這個先忽略」(2026-09-26) |
-| U10 | 淺色類別淡底上的字維持 step-7 | 「要我拍板的第一題就照舊規格」(2026-09-29) |
-| U11 | `--fg-muted` 維持現狀 | 「這個問題你很早之前就問過我了,而且上次我就說維持現狀。這次也是,等我要改再等我主動」(2026-09-21) |
-| U12 | 今天用 `--info` | commit 96f75ac1 記 user 選『改用 --info(對齊 token 字典)』(原對話已不存在) |
-| U15 | 深色淡底改半透明,事件方塊滑過 = 同色濃一格 | 「確保這符合我們一致的設計語言且不違背世界級的設計就照你建議做」 |
-| P6 | 星期標題字樣 `text-foreground text-body font-medium` 維持 | 2026-09-07 user 問星期標題為何那麼淺 → 依既有規範改深;AI 先前說的「你 2026-05-03 定的」引不出原話,已撤回(M36(a)) |
-
-被取代的舊決定:2026-06-01「A 補實作」全天(user 只決定要做,視覺是 AI 選的)→ 視覺由 C2 取代;示範殼「點事件開浮層看名稱與日期」(2026-10-21「d13照你建議」)→ 內容由 C7 擴充;「+N more」先暫緩 → 由 C3 / C6 / Q2(定) / Q2b(定) 取代。
-
-### 總帳更正 #1–#9(AI 判定,不是 user 決定)
-
-本規格裡的【總帳更正 #n】指下表。原文逐字取自 2026-11-24 決策總帳「2026-11-24 草稿 v1 核對後的更正與 AI 判定(不需 user 決定;依據附後)」那一段,編號 = 那一段的條目順序(總帳本身不進 repo);原文裡的行號是 2026-11-24 當時的。
-
-| # | 總帳原文(逐字) | 性質 |
-|---|---|---|
-| 1 | Q4(定) 備註「四周 12」是 AI 記總帳時的筆誤:AI 當時給 user 的規格是「標題列上方 / 標題→第一筆 / 最後一筆→底 = 12,左右 16(loose)」,user 問的也是上下等距 → 更正為「上下 12、左右 16」。 | AI 判定 |
-| 2 | Q9 週起始日:date-fns zh-TW = 週一(locale/zh-TW.js:24),Intl zh-TW = 週日(node 實測 firstDay 7)。user 同意的前提是「現況不變(週日)」→ 全 DS 以 Intl(CLDR)為準。 | AI 判定;後由 WS(定) user 選「跟語系的 CLDR (Recommended)」確認 |
-| 3 | X18 / P2 / P2':依 Q6(定)「事件列與 +N 阻止冒泡」字面,唯讀事件列也阻止冒泡(點了不新增),格子在唯讀列上不亮(hit-area-canonical.md:34 懸停 = 命中)。同時解掉多日長條冒泡到第一格的錯日問題。 | AI 判定 |
-| 4 | P3:為了讓 C4「清單留著、旁邊開詳情」對所有 consumer 成立,onEventClick 要帶事件列的錨點元素、清單不先關。 | AI 判定 |
-| 5 | P4:popover.spec.md 的「內容多」措辭改成「要一次填寫多個欄位(表單)或篩選資料」,與 inline-edit.spec.md:119-120「閱讀為主、偶爾編輯」區分,詳情浮層屬後者。 | AI 判定 |
-| 6 | P6:U5 星期標題字樣(text-foreground text-body font-medium)維持,寫進維持清單。 | AI 判定 |
-| 7 | P7:每格放不放得下以「最高佔用的車道」算,不是事件筆數。 | AI 判定 |
-| 8 | X4:窄到拿掉時間的門檻,1 號同時只顯示「1」。 | AI 判定 |
-| 9 | Q17 星期列灰底:沒有證據顯示是問題 → 維持現狀,不提問(feedback_propose_discipline.md Sub-rule 9)。 | AI 判定 |
-
-### AI 推導清單(user 可推翻;看得見的列進發版確認頁)
-
-第一段不開 `view`;第一段不開顯示用時區 `timeZone`(格子、「今天」與時間字一律瀏覽器時區);第二段 API 形狀 `view` / `defaultView` / `onViewChange` / `views`;事件方塊第三種選項 `eventDetail` 與單筆 `readOnly`;重複事件不進資料模型(產品先展開);只有日期沒標全天 → 全天;`end` 不含;時區 / 日光節約 / 異常資料;月格只顯示開始時間(滿 24 小時的有時段長條只在含真起點那一段、窄寬時不顯示)、`eventTimeFormat` 整份取代預設;有時段事件時間與標題同一行一起截斷、中間隔 4;全天長條拿掉左側色條(色條只給有時段);neutral 事件色(`--secondary` 長條 / `--secondary-hover` 滑過 / `--color-neutral-9` 色條)、沒傳或認不得的顏色 = blue;車道分配、格內排序、逐格切;「+N」切開處與清單裡跨日列的斷開端也直角(依 Q3(定)「一律」);長條 DOM 放第一個可見日的格子;每格列數算式、「+1」出現條件;「+N」的內距、窄時不另換字;焦點框往外;格子下內距 4、格最小高(含格線 1)、事件列不被壓扁(放不下由格子裁掉)、容器太矮時捲動;日期框寬於 24 時左右內距 8;`renderEventTile` 限一列高、多收 `segment`;格內鍵盤為「+N」與跨日長條補的順序、從每一天進格、`Esc` 回進格那一天;清單裡唯讀事件照列、純文字不可點;以格為中心的可用高、開啟焦點、半列公式;被點那一列在詳情開著時維持滑過色;詳情的標題放標題列、全天開關直接切換、時間用一個 `DatePicker.Range`;詳情有哪些欄位(地點 / 說明 / 類別 / 額外)與各欄平常 / 編輯的長相;詳情可編輯時空欄位照列(顯示 placeholder)、只能看時空欄位不列;詳情錨點(被點的那個元素)、本元件的層次、點外面先提交再關;載入中一條骨架、仍可操作;窄寬斷點看欄寬、不自動切議程、檢視切換不換下拉;工具列改 ChromeHeader、導覽群到標題 8(ChromeHeader 子項間距,改前 16)、「今天」只搬鍵盤停靠點不搶焦點、檢視切換用 SegmentedControl、不內建快捷鍵;星期列內距(四邊 4、列高 32);隱藏週末的鍵盤落點(方向鍵 / Home / End / PageUp / PageDown 跳過被藏的日子、今天或 1 號被藏時的停靠點);週數第一週的資料來源 = CLDR `minDays`、週數欄格線同日期格、灰底條延伸到欄頭;載入中日期名稱不念筆數;窄寬門檻欄寬 ≤ 60;A11y:週數欄欄頭 `columnheader`、週數格 `rowheader`(名稱「第 N 週」、不是操作目標);星期列移進格陣(`row` / `columnheader`)、今天 `aria-current` 與名稱前的「今天,」、日期停靠點與事件列的讀屏名稱格式、「+N」讀屏名稱、`labels` 物件收全部讀屏字串;四種檢視各自的用途描述;詳情時間欄的時間寫法與月格同一份(日期段 = DatePicker 的預設日期寫法,補零由 DATE-TIME(定)決定)、選了類別 `color` 一起換、欄位順序與三個佔位字、詳情寬的算式(值由 user 2026-11-26 選 416【DETAIL-WIDTH(定)】)、從清單開的虛擬錨點、事件移走時跟過去、全天切換的記憶只存在 Calendar 存活期間、詳情開著時那一段維持滑過色(格陣與清單都套);`eventDetail.isEditable`(詳情只能看)與它的第三種情況(外部同步寫不回去)。2026-11-26 起改由 user 決定(見上方 user 決定表):詳情往哪一側開(原本這裡的「側邊朝格陣中央、用點擊點 / 進格那一天所在的欄判斷」已撤)→ DT-DIRECTION(定,2026-11-26 已實作);詳情時間欄日期段不補零 → DATE-TIME(定,2026-11-26 已實作:一律補零、時間 12 / 24 跟語系);週數欄寬(原本這裡的「週數欄寬用 `calc(2 × 4 + 2ch)`」已撤)→ WEEKNUM-BOX(定,欄寬 33,見「Cell 規則」週數欄);「+N」的圓角與字色 secondary、清單標題文字格式與寬的取法 → MORE-BTN(定,維持現狀);截斷提示只在滑過或看得見的焦點時開(用滑鼠關詳情後不跳)→ TOOLTIP-PF(定)。
+「user 決定」表、「維持」表(先前的 user 決定)、「總帳更正 #1–#9」與「AI 推導清單」四塊整段住在 `./calendar-decision-ledger.spec.md`(本檔各處【代號】的原話與判定都查那裡);本檔只留這個指標。
 
 ## Anatomy N/A rationale
 
@@ -544,5 +460,7 @@ DS 以桌機為主(`../../tokens/typography/typography.spec.md`「DS 主場景�
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `calendar-decision-ledger.spec.md`
 - `color.spec.md`
 - `layoutSpace.spec.md`
+- `overlay-chrome-sizing.spec.md`

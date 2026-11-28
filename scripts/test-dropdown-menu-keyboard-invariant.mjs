@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * @gate-contract
- *   保證: dropdown-menu-keyboard-invariant 的三支純判定(judgeEscStep / judgeTabOut / judgeFabReturn)分得出 pass / fail / instrument 三種結論,
+ *   保證: dropdown-menu-keyboard-invariant 的五支純判定(judgeEscStep / judgeTabOut / judgeFabReturn / judgeSwitchRow / judgeRowToggle)分得出 pass / fail / instrument 三種結論,
  *         量不到(null / undefined / NaN / 焦點身分不明)一律回 instrument,不會被讀成通過或失敗
  *   紅: 舊行為的每一格(Esc 一次全關、Tab 被擋選單不動、點外面後焦點被搶回浮鈕、焦點掉到 body)都必須判 fail,
  *       量不到的每一格都必須判 instrument;任一格不符 → exit 1;寫錯情境(未知的關法)必須丟錯
@@ -12,7 +12,10 @@
  * 量不到必須回 'instrument',不得被讀成 pass 或 fail(M37 第八個形狀:沒觀察到 ≠ 沒發生)。
  */
 import assert from 'node:assert/strict'
-import { judgeEscStep, judgeFabReturn, judgeTabOut } from './dropdown-menu-keyboard-invariant.mjs'
+import { judgeChipSingleMenu, judgeChipSinglePick, judgeEscStep, judgeFabReturn, judgeRowToggle, judgeSwitchRow, judgeTabOut } from './dropdown-menu-keyboard-invariant.mjs'
+
+/** 開關列契約全對的一格(其餘格各改一個欄位) */
+const SW_OK = { role: 'menuitemcheckbox', ariaChecked: 'false', switchState: 'unchecked', switchHidden: true, switchFocused: false, switchAfterLabel: true, endGap: 12, endGapMax: 13 }
 
 const cases = [
   // ── Esc 一步:少一層 + 焦點在上一層那一項 ──
@@ -44,6 +47,37 @@ const cases = [
   ['浮鈕點外面 → 舊行為搶回浮鈕', judgeFabReturn({ how: 'outside', openAfter: 0, focusOnFab: true }), 'fail'],
   ['浮鈕點外面 → 選單沒關', judgeFabReturn({ how: 'outside', openAfter: 1, focusOnFab: false }), 'fail'],
   ['浮鈕:焦點身分量不到', judgeFabReturn({ how: 'outside', openAfter: 0, focusOnFab: undefined }), 'instrument'],
+  // ── 開關外觀的項目(indicator="switch",2026-11-27 H41):整列 = menuitemcheckbox,列尾開關只是畫面 ──
+  ['開關列:契約全對', judgeSwitchRow(SW_OK), 'pass'],
+  ['開關列:整列不是 menuitemcheckbox(例:menuitem)', judgeSwitchRow({ ...SW_OK, role: 'menuitem' }), 'fail'],
+  ['開關列:開關狀態跟整列不一致', judgeSwitchRow({ ...SW_OK, switchState: 'checked' }), 'fail'],
+  ['開關列:舊寫法 —— 開關還在無障礙樹裡', judgeSwitchRow({ ...SW_OK, switchHidden: false }), 'fail'],
+  ['開關列:舊寫法 —— 開關拿得到焦點', judgeSwitchRow({ ...SW_OK, switchFocused: true }), 'fail'],
+  ['開關列:開關不在字的右邊', judgeSwitchRow({ ...SW_OK, switchAfterLabel: false }), 'fail'],
+  ['開關列:開關離列右緣超過右內距(沒貼列尾)', judgeSwitchRow({ ...SW_OK, endGap: 40 }), 'fail'],
+  ['開關列:aria-checked 不是 true / false', judgeSwitchRow({ ...SW_OK, ariaChecked: 'mixed' }), 'fail'],
+  ['開關列:開關元素量不到(null)', judgeSwitchRow({ ...SW_OK, switchState: null }), 'instrument'],
+  ['開關列:位置量不到(NaN)', judgeSwitchRow({ ...SW_OK, endGap: Number.NaN }), 'instrument'],
+  ['開關列:可否聚焦沒量到', judgeSwitchRow({ ...SW_OK, switchFocused: undefined }), 'instrument'],
+  ['整列切換:翻面、選單開著、開關跟著翻', judgeRowToggle({ before: 'false', after: 'true', openAfter: 1, switchStateAfter: 'checked' }), 'pass'],
+  ['整列切換:沒翻面(鍵盤 / 點擊被吞)', judgeRowToggle({ before: 'false', after: 'false', openAfter: 1, switchStateAfter: 'unchecked' }), 'fail'],
+  ['整列切換:翻了但選單關了(當成一般動作項)', judgeRowToggle({ before: 'false', after: 'true', openAfter: 0, switchStateAfter: 'checked' }), 'fail'],
+  ['整列切換:選單關了、列已卸載(切換後的值量不到)→ 量到「選了就關」', judgeRowToggle({ before: 'false', after: null, openAfter: 0, switchStateAfter: null }), 'fail'],
+  ['整列切換:開關沒跟著翻', judgeRowToggle({ before: 'true', after: 'false', openAfter: 1, switchStateAfter: 'checked' }), 'fail'],
+  ['整列切換:切換後 aria-checked 量不到', judgeRowToggle({ before: 'true', after: null, openAfter: 1, switchStateAfter: 'checked' }), 'instrument'],
+  ['整列切換:層數量不到', judgeRowToggle({ before: 'true', after: 'false', openAfter: Number.NaN, switchStateAfter: 'unchecked' }), 'instrument'],
+  // ── 單選 Chip 溢出選單(2026-11-27,規則 B)──
+  ['Chip 單選選單:全是 menuitem、一項選中底色 = 目前那類', judgeChipSingleMenu({ items: 8, checkboxItems: 0, checkboxes: 0, selectedTexts: ['設計規範'], chipOnText: '設計規範' }), 'pass'],
+  ['Chip 單選選單:舊長相 —— 全是勾選項', judgeChipSingleMenu({ items: 0, checkboxItems: 8, checkboxes: 0, selectedTexts: ['設計規範'], chipOnText: '設計規範' }), 'fail'],
+  ['Chip 單選選單:選單裡還有勾選框', judgeChipSingleMenu({ items: 8, checkboxItems: 0, checkboxes: 8, selectedTexts: ['設計規範'], chipOnText: '設計規範' }), 'fail'],
+  ['Chip 單選選單:沒有任何一項帶選中底色', judgeChipSingleMenu({ items: 8, checkboxItems: 0, checkboxes: 0, selectedTexts: [], chipOnText: '設計規範' }), 'fail'],
+  ['Chip 單選選單:選中底色在別的項', judgeChipSingleMenu({ items: 8, checkboxItems: 0, checkboxes: 0, selectedTexts: ['全部'], chipOnText: '設計規範' }), 'fail'],
+  ['Chip 單選選單:選單是空的(量不到項目)', judgeChipSingleMenu({ items: 0, checkboxItems: 0, checkboxes: 0, selectedTexts: [], chipOnText: '設計規範' }), 'instrument'],
+  ['Chip 單選選單:目前選中的 chip 量不到', judgeChipSingleMenu({ items: 8, checkboxItems: 0, checkboxes: 0, selectedTexts: ['設計規範'], chipOnText: null }), 'instrument'],
+  ['Chip 單選選了一項:選單關、chip 選中', judgeChipSinglePick({ openAfter: 0, chipOnText: '工程筆記', picked: '工程筆記' }), 'pass'],
+  ['Chip 單選選了一項:選單沒關', judgeChipSinglePick({ openAfter: 1, chipOnText: '工程筆記', picked: '工程筆記' }), 'fail'],
+  ['Chip 單選選了一項:chip 沒變', judgeChipSinglePick({ openAfter: 0, chipOnText: '設計規範', picked: '工程筆記' }), 'fail'],
+  ['Chip 單選選了一項:層數量不到', judgeChipSinglePick({ openAfter: null, chipOnText: '工程筆記', picked: '工程筆記' }), 'instrument'],
 ]
 
 let bad = 0

@@ -507,7 +507,7 @@ export const FieldGroupBehavior: Story = {
           </div>
           <div className="border border-dashed border-divider rounded-md p-4">
             <div className="text-caption text-fg-muted mb-3 font-mono">horizontal orientation</div>
-            {/* labelWidth:同表單 horizontal Field 必統一 label 寬(field.spec.md「FieldGroup labelWidth cascade」硬規則)*/}
+            {/* labelWidth:同表單 horizontal Field 必統一 label 寬(field-group.spec.md「FieldGroup labelWidth cascade」;硬規則在 field.spec.md「horizontal」)*/}
             <FieldGroup labelWidth={120}>
               <Field orientation="horizontal" required>
                 <FieldLabel>姓名</FieldLabel>

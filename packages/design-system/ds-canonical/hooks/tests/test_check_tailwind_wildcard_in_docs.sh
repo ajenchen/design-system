@@ -161,6 +161,14 @@ run_hook "Write" "/repo/escaped.md" \
   'token var(--elevation-*) here // @tailwind-wildcard-allow: documenting raw token form'
 expect_silent "N6. @tailwind-wildcard-allow escape → silent"
 
+# N6b / N6c(2026-11-27 r72):只寫冒號、或冒號後只剩 md 註解收尾 → 照擋(理由必填)
+run_hook "Write" "/repo/escaped.md" \
+  'token var(--elevation-*) here // @tailwind-wildcard-allow:'
+expect_block "N6b. 空理由的 @tailwind-wildcard-allow: → BLOCK"
+run_hook "Write" "/repo/escaped.md" \
+  'token var(--elevation-*) here <!-- @tailwind-wildcard-allow: -->'
+expect_block "N6c. 冒號後只剩 --> 的 @tailwind-wildcard-allow: → BLOCK"
+
 # N7. out-of-scope file extension (.txt) → silent even with wildcard
 run_hook "Write" "/repo/raw.txt" 'var(--elevation-*) shorthand'
 expect_silent "N7. .txt out-of-scope extension → silent"

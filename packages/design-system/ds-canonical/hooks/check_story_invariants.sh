@@ -34,6 +34,10 @@ source "$(dirname "$0")/lib/_hook_integrity.sh" 2>/dev/null || {
   printf 'GOVERNANCE_INTEGRITY: hook integrity helper unavailable\n' >&2
   exit 70
 }
+source "$(dirname "$0")/lib/_comment_mask.sh" 2>/dev/null || {
+  printf 'GOVERNANCE_INTEGRITY: story invariant comment mask unavailable\n' >&2
+  exit 70
+}
 
 set -uo pipefail
 
@@ -219,18 +223,25 @@ rule_anatomy() {
   fi
 
   TMP=$(mktemp "${TMPDIR:-/tmp}/check-story-invariants-anatomy.XXXXXX") || governance_hook_integrity_fail 'story invariant anatomy scratch file unavailable'
-  trap 'rm -f -- "$TMP"' RETURN
+  TMP_MASKED=$(mktemp "${TMPDIR:-/tmp}/check-story-invariants-anatomy-masked.XXXXXX") || { rm -f -- "$TMP"; governance_hook_integrity_fail 'story invariant anatomy masked scratch file unavailable'; }
+  trap 'rm -f -- "$TMP" "$TMP_MASKED"' RETURN
   printf '%s\n' "$NEW_CONTENT" > "$TMP" \
     || governance_hook_integrity_fail 'story invariant anatomy scratch write failed'
+  # B 數頁腳深度用的遮罩:共用 lib/_comment_mask.sh(先跳過字串再認註解;等長空白、位置不變),不在這裡另寫正規式
+  governance_mask_comments < "$TMP" > "$TMP_MASKED" \
+    || governance_hook_integrity_fail 'story invariant anatomy comment mask failed'
 
   local violations
-  violations=$(python3 - "$FILE_PATH" "$TMP" <<'PY'
+  violations=$(python3 - "$FILE_PATH" "$TMP" "$TMP_MASKED" <<'PY'
 import re
 import sys
 
-file_path, source_path = sys.argv[1:]
+file_path, source_path, masked_path = sys.argv[1:]
 with open(source_path, encoding='utf-8') as source:
     lines = source.read().splitlines()
+# 遮罩是逐位元組換成空白(perl 不解碼),所以用位元組算位置
+with open(masked_path, 'rb') as masked_source:
+    masked_bytes = masked_source.read()
 
 allowed_first_tags = {
     'MenuItem', 'ItemIcon', 'ItemAvatar', 'ItemLabel', 'ItemSuffix',
@@ -259,6 +270,40 @@ dismiss_context = re.compile(
     r'onClose\b|onDismiss\b|<(Dialog|Sheet|Popover|Coachmark|Surface)Header\b'
     r'|setOpen\(false\)|dismiss',
 )
+# B 只管「拿有字的按鈕當角落的關閉 ×」(button.spec.md「Dismiss 視覺類(X close only)」、
+# inline-action.spec.md「Dismiss canonical — X close only」的位置表:Chrome corner 才是 dismiss)。
+# 頁腳的「取消 / 關閉」是頁腳的動作鈕,不是 ×:dialog.spec.md「Footer 按鈕」、overlay-surface.spec.md
+# 「底部區域:按鈕列 vs 列式」典型內容「取消 / 儲存 / … / 套用」、「左導覽 + 右內容」底部「DialogFooter(取消 / 儲存)」。
+# 2026-11-27 前只看上下 4 行有沒有 setOpen(false) 等字,旁邊主鈕「套用後關閉」的 setOpen(false) 讓頁腳的取消被當成違規
+# (dialog.stories.tsx 標籤選擇 / 匯入預覽兩則;h46 線回報)。判準改成:按鈕在頁腳元素裡面 → 不是 B。
+# 頁腳深度 = 按鈕之前出現的 <XFooter 開頭 − 自閉合的 <XFooter … /> − </XFooter>,在整段文字上算(標籤可跨行、可同一行)。
+footer_open = re.compile(rb'<(?:Dialog|Sheet|Popover|Surface|Coachmark|AlertDialog|Drawer)Footer\b')
+footer_self_closing = re.compile(rb'<(?:Dialog|Sheet|Popover|Surface|Coachmark|AlertDialog|Drawer)Footer\b[^<>]*/>')
+footer_close = re.compile(rb'</(?:Dialog|Sheet|Popover|Surface|Coachmark|AlertDialog|Drawer)Footer\s*>')
+# 數深度用遮過註解的內容(masked_bytes,上面 shell 端由共用 lib/_comment_mask.sh 產生):註解裡寫的 <DialogFooter> 不是頁腳,
+# 不能讓之後整檔的有字關閉鈕都被放行;字串裡的 /*、" // " 不是註解,不能把真的 </DialogFooter> 遮掉。
+# 2198a11a 在這裡另寫了一份不先跳過字串的正規式,accept="image/*" 會把後面的 </DialogFooter> 一起遮掉(h46 再驗 H1 / H2)。
+# 遮罩逐位元組換空白、換行保留 → 位置用位元組算,而且要在原文上算:上面的 lines 用 splitlines(另認 U+2028 / U+2029 / 單獨 \r / \x0c
+# 等換行,讀檔時 \r\n 也被轉成 \n),逐行累加會和只認 \n、逐位元組的遮罩錯位(fd654d52 前一個 U+2028 就把位置推到下一行,
+# 「關閉」下一行是 <DialogFooter> 時被當成在頁腳裡放行;h46 再驗 K2)。所以只給 in_footer 另讀一份原文(newline='' 不轉換行),
+# 用同一個 splitlines(keepends=True) 切 → 行號與 lines 一一對應,每行在原文的起點 + 行內字數 = 原文位置,再換成 UTF-8 位元組數。
+# 其他規則照舊用 lines。
+with open(source_path, encoding='utf-8', newline='') as raw_source:
+    raw_text = raw_source.read()
+raw_line_starts = []
+_offset = 0
+for _raw_line in raw_text.splitlines(keepends=True):
+    raw_line_starts.append(_offset)
+    _offset += len(_raw_line)
+
+
+def in_footer(index, char_start):
+    if index >= len(raw_line_starts):  # 行數對不上(不該發生)→ 不放行(照 B 判)
+        return False
+    position = len(raw_text[:raw_line_starts[index] + char_start].encode('utf-8'))
+    before = masked_bytes[:position]
+    depth = len(footer_open.findall(before)) - len(footer_self_closing.findall(before)) - len(footer_close.findall(before))
+    return depth > 0
 overlay_surface = re.compile(
     r'<div[^>]*className="[^"]*\babsolute\b[^"]*(bg-|shadow-|border)',
 )
@@ -316,7 +361,8 @@ for index, line in enumerate(lines):
             '  改用 <Input> / <NumberInput> / <Select> / <Combobox>'
         )
 
-    if dismiss_button.search(line):
+    dismiss_match = dismiss_button.search(line)
+    if dismiss_match and not in_footer(index, dismiss_match.start()):
         context = '\n'.join(lines[max(0, index - 4):index + 5])
         if dismiss_context.search(context):
             findings.append(
@@ -1180,7 +1226,76 @@ rule_secondary_variant_pair() {
   esac
   grep -q '@secondary-pair:' <<< "$NEW_CONTENT" && return 0
   local hits
-  hits=$(grep -nE 'variant="secondary"' <<< "$NEW_CONTENT" || true)
+  # 2026-11-27 r72(協調者追加):同一個 JSX 元素帶 `danger` 的 secondary 不算 —— button.spec.md「danger 組合」表
+  # 明文 `secondary` + `danger` =「有警示意圖，但點下去還可以反悔——後面還有一層確認」(:228),本來就不是「單獨的觸發鈕」。
+  # 照元素判(開始標籤可能跨多行):從 variant="secondary" 往前找到它所在的 `<Tag`,往後找到開始標籤結尾的 `>`
+  #(略過 {…} 與引號裡的 >),標籤裡有 `danger` 屬性(不是 danger={false})才排除。其餘照舊擋。
+  hits=$(printf '%s' "$NEW_CONTENT" | python3 -c '
+import re, sys
+text = sys.stdin.buffer.read().decode("utf-8", "replace")
+# danger 要是「屬性」本身:先把引號字串與 {…} 運算式的內容拿掉再找(aria-label="danger zone" / foo={danger}
+# 裡的字不算 —— 規格核對 E1 對抗樣本),danger={false} 不算 danger。
+danger_attr = re.compile(r"(?:^|\s)danger(?=\s*=\s*\{\}|[\s/>]|$)")
+danger_false = re.compile(r"(?<![\w$.-])danger\s*=\s*\{\s*false\s*\}")
+def scrub(tag):
+    out, depth, quote = [], 0, ""
+    for char in tag:
+        if quote:
+            if char == quote:
+                quote = ""
+            continue
+        if depth == 0 and char in "\"\x27`":
+            quote = char
+            out.append(char)
+            continue
+        if char == "{":
+            depth += 1
+            if depth == 1:
+                out.append(char)
+            continue
+        if char == "}":
+            depth = max(depth - 1, 0)
+            if depth == 0:
+                out.append(char)
+            continue
+        if depth == 0:
+            out.append(char)
+    return "".join(out)
+def has_danger(tag):
+    return bool(danger_attr.search(scrub(tag))) and not danger_false.search(tag)
+def open_tag(pos):
+    start = text.rfind("<", 0, pos)
+    while start >= 0 and not re.match(r"<[A-Za-z]", text[start:start + 2]):
+        start = text.rfind("<", 0, start)
+    if start < 0:
+        return ""
+    depth, quote, index = 0, "", start + 1
+    while index < len(text):
+        char = text[index]
+        if quote:
+            if char == quote:
+                quote = ""
+        elif char in "\"\x27`":
+            quote = char
+        elif char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+        elif char == ">" and depth <= 0:
+            return text[start:index + 1]
+        index += 1
+    return text[start:]
+lines = text.split("\n")
+out = []
+for match in re.finditer(r"variant=\"secondary\"", text):
+    if has_danger(open_tag(match.start())):
+        continue
+    number = text.count("\n", 0, match.start()) + 1
+    entry = f"{number}:{lines[number - 1]}"
+    if not out or out[-1] != entry:
+        out.append(entry)
+sys.stdout.buffer.write("\n".join(out).encode("utf-8"))
+') || governance_hook_integrity_fail 'R12 secondary element parser failed'
   if [ -n "$hits" ]; then
     {
       echo ""

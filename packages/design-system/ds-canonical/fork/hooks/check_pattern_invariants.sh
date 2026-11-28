@@ -29,6 +29,8 @@
 #   C.4: `// @row-slot-handcraft-allow: <reason>`(any line)
 #   C.5: `// @hover-ramp-allow: <reason>`(any line)
 #   C.6: `// @token-state-allow: <reason>`(any line)
+#   (2026-11-27 r72:C.1 / C.2 / C.4 / C.5 / C.6 / C.7 的豁免一律要「冒號 + 理由」才算 —— 以前檔內只要出現標記字串就放行,
+#    空理由、只在說明文字裡提到標記名也過;C.3 本來就要冒號。理由必填、空理由照擋)
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 
@@ -125,7 +127,7 @@ record_worst() { local lvl=$1; [ "$lvl" -gt "$WORST" ] && WORST=$lvl; }
 #   (2026-09-25 更正本段過期說法;SSOT = color.spec.md「Selected state family」+ semantic.css 選中家族註解)
 # 兩年偏移錨:2026-07-05 D4 借 -active 裝反白、滑鼠搭便車,選單 vs sidebar 因此不一致。
 # 本規則攔「-active/-hover 出現在 hover/焦點/反白修飾鏈」的借用寫法(零誤判:合法用途已窮舉排除)。
-if ! grep -q '@token-state-allow' <<<"$NEW_CONTENT"; then
+if ! grep -q '@token-state-allow:[[:space:]]*[^[:space:]*]' <<<"$NEW_CONTENT"; then
   SUSPECT_C6=$(printf '%s' "$NEW_CONTENT" | grep -oE "[][A-Za-z0-9_=:.-]*bg-neutral-selected-(active|hover)" | while IFS= read -r tok; do
     case "$tok" in
       (*active:*) ;;                                # 修飾鏈含按壓(active:)= 合法按壓用途
@@ -173,7 +175,7 @@ fi
 # 2026-09-08 之前 SelectMenu、AgentPanel 各手刻一份、Command 自家 story 是裸文字 —— 三種長相(user 抓到)。
 # 攔:`<CommandEmpty` 標籤內出現 items-center / justify-center / minHeight,或它的下一行手放 <Empty。
 # 例外:行尾 `// @command-empty-handcraft-ok: <reason>`
-if ! grep -q '@command-empty-handcraft-ok' <<<"$NEW_CONTENT"; then
+if ! grep -q '@command-empty-handcraft-ok:[[:space:]]*[^[:space:]*]' <<<"$NEW_CONTENT"; then
   SUSPECT_C7=$(printf '%s' "$NEW_CONTENT" | tr '\n' ' ' | grep -oE "<CommandEmpty[^>]*(items-center|justify-center|minHeight)[^>]*>|<CommandEmpty[^>]*>[[:space:]]*<Empty\b" | head -3)
   if [ -n "$SUSPECT_C7" ]; then
     cat >&2 <<EOF
@@ -206,7 +208,7 @@ fi
 #       ContextMenu / AlertDialog),那個 div 在 Portal 外面,不在 root → SurfaceBody 的鏈上(M3 Portal 逃逸),不算。
 #       目前樹裡 0 筆是這種,但故事 / 產品頁「固定寬示範框裡放一個 Popover」是常見寫法,升擋前先排除。
 #   兩者都是收窄;真正的違規形狀(浮層 Content 裡的固定寬 root 缺 flex 鏈)仍擋 —— 測試 C.1.1 / C.1.6 / C.1.7。
-if ! grep -q '@scroll-chain-allow' <<<"$NEW_CONTENT" \
+if ! grep -q '@scroll-chain-allow:[[:space:]]*[^[:space:]*]' <<<"$NEW_CONTENT" \
    && grep -q '<SurfaceBody' <<<"$NEW_CONTENT"; then
   SUSPECT_C1=$(printf '%s' "$NEW_CONTENT" | awk '
     /^[[:space:]]*<div[[:space:]]/ {
@@ -216,13 +218,19 @@ if ! grep -q '@scroll-chain-allow' <<<"$NEW_CONTENT" \
         for (k = 0; k < 30 && (getline next_line) > 0; k++) {
           if (next_line ~ /<(Popover|Dialog|Sheet|HoverCard|DropdownMenu|ContextMenu|AlertDialog)Content([^A-Za-z0-9_]|$)/) break
           if (next_line ~ /<SurfaceBody/) {
-            print "[panel root w-[...] 缺 flex flex-col h-full min-h-0]: " substr(line, 1, 100)
+            print "[panel root w-[...] 缺 flex flex-col h-full min-h-0]: " line
             break
           }
           if (next_line ~ /<\/div>/) break
         }
       }
     }
+  ' | perl -MEncode -ne '
+    # 截斷按字元、不按位元組(2026-11-27 r72:CI 重播 LC_ALL=C,awk substr 按位元組切會把中文切成半個字 →
+    # 輸出不是合法 UTF-8 → governance-check 判成 GOV-CONTENT-002)。原本 awk substr(line, 1, 100) 改到這裡做。
+    chomp; my ($head, $rest) = split /\]: /, $_, 2; $rest = "" unless defined $rest;
+    my $text = Encode::decode("UTF-8", $rest, Encode::FB_DEFAULT);
+    print "$head]: " . Encode::encode("UTF-8", substr($text, 0, 100)) . "\n";
   ')
   if [ -n "$SUSPECT_C1" ]; then
     cat >&2 <<EOF
@@ -262,13 +270,13 @@ case "$FILE_PATH" in
     case "$FILE_PATH" in
       */item-anatomy.tsx|*.stories.tsx|*.test.*) ;; # SSOT/test skip
       *)
-        if ! grep -q '@inline-action-gap-allow' <<<"$NEW_CONTENT" \
+        if ! grep -q '@inline-action-gap-allow:[[:space:]]*[^[:space:]*]' <<<"$NEW_CONTENT" \
            && grep -qE '<ItemInlineAction(Button)?([^A-Za-z0-9_]|$)' <<<"$NEW_CONTENT"; then
           if ! command -v perl >/dev/null 2>&1; then
             echo '🚨 check_pattern_invariants: required interpreter perl is unavailable — C.2 gate cannot run(fail-closed)' >&2
             exit 2
           fi
-          WRONG_GAP=$(printf '%s' "$NEW_CONTENT" | perl -0777 -ne '
+          WRONG_GAP=$(printf '%s' "$NEW_CONTENT" | perl -MEncode -0777 -ne '
             my $src = $_;
             # 剝註解但保留換行(行號才對得上)
             $src =~ s{/\*.*?\*/}{ (my $m = $&) =~ s/[^\n]//g; $m }gse;
@@ -308,7 +316,9 @@ case "$FILE_PATH" in
                   if ($anc->{attrs} =~ /(?<![\w-])(gap-(?:1|3|4|5|6|8|10|12))(?![\w-])/) {
                     my $gap = $1;
                     my $line = (substr($src, 0, $anc->{start}) =~ tr/\n//) + 1;
-                    my $head = $anc->{attrs}; $head =~ s/\s+/ /g; $head = substr($head, 0, 100);
+                    # 截斷按字元(2026-11-27 r72:LC_ALL=C 下按位元組切會切出半個中文字 → 輸出不是合法 UTF-8)
+                    my $head = $anc->{attrs}; $head =~ s/\s+/ /g;
+                    $head = Encode::encode("UTF-8", substr(Encode::decode("UTF-8", $head, Encode::FB_DEFAULT), 0, 100));
                     print "$line: $head … ($gap)\n" unless $seen{$anc->{start}}++;
                   }
                   last;
@@ -351,7 +361,7 @@ esac
 # rest 已是 fg-secondary 的整列/文字 hover(→ foreground)本身就是一階,不在射程內。
 case "$FILE_PATH" in
   *components/*.tsx|*patterns/*.tsx|*.css)
-    if ! grep -q '@hover-ramp-allow' <<<"$NEW_CONTENT"; then
+    if ! grep -q '@hover-ramp-allow:[[:space:]]*[^[:space:]*]' <<<"$NEW_CONTENT"; then
       SKIP_RAMP=$(grep -m 3 -nE 'text-fg-muted[^"'"'"'\`]*hover:text-foreground|hover:text-foreground[^"'"'"'\`]*text-fg-muted' <<<"$NEW_CONTENT" || true)
       if [ -n "$SKIP_RAMP" ]; then
         cat >&2 <<EOF
@@ -436,7 +446,7 @@ case "$FILE_PATH" in
       *)
         # 2026-05-30(dim 39 M7/M34 fix):order-INDEPENDENT — extract className attrs,require ALL 4 tokens
         # present(natural Tailwind 序 `flex items-center gap-2 shrink-0 h-[1lh]` 之前漏抓)。BSD/GNU grep 通用。
-        if ! grep -q '@row-slot-handcraft-allow' <<<"$NEW_CONTENT" \
+        if ! grep -q '@row-slot-handcraft-allow:[[:space:]]*[^[:space:]*]' <<<"$NEW_CONTENT" \
            && echo "$NEW_CONTENT" | grep -oE 'class(Name)?="[^"]*"' | grep -F 'h-[1lh]' | grep -F 'shrink-0' | grep -F 'flex' | grep -F 'items-center' >/dev/null 2>&1; then
           cat >&2 <<EOF
 

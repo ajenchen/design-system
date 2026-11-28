@@ -79,6 +79,8 @@ Overlay family 的 header title typography 依「modal vs non-modal」分級,**�
 | **Sheet** | (同 Dialog)| **md** | 同 | **md** |
 | **BulkActionBar** | N/A | N/A | N/A | **md**(default footer placement);未來 top-toolbar variant → sm |
 
+**緊接表格上方的搜尋列 / 工具列**(2026-11-27,workspace H38):照工具列用 **sm**(`../action-bar/action-bar.spec.md`「Size」那列「Toolbar 用小尺寸維持緊湊」),在 Dialog / Sheet 主體裡也是 —— 它是表格的工具列,不算上表的 body field controls。距離見 `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 3「標題塊」。出處:user 2026-11-27 問「那表格上方或是其上方標題附近的操作是否預設和建議使用 sm 以下的元件？」(問句,節錄;AI 對過既有條文答合理),之後回「我覺得可以照你目前建議的定義」(逐字節錄;全文記在交接資料夾 `notes/decisions/morning-151-answers.md`「H26」)。
+
 **核心 invariant**:overlay surface 內 **body field controls + footer Buttons 同一 size**(per-surface 一致)。違反 = 視覺重量割裂。
 
 **為什麼 Popover all-sm 而非 mix**:Popover 整體已是「輕量浮層」設計語言(chrome 短、title 小、版面間距鎖 md)。如果 body 用 md fields(一般密度 32 / 大密度 36 高)+ footer sm Buttons(28 / 32 高),視覺重量割裂破壞「輕量」一致性。**all-sm 是內部一致性**(body 與 footer 同高:一般密度 28、大密度 32,延伸 chrome 輕一級的密度)。
@@ -176,7 +178,7 @@ const CHROME_UNBOUNDED_SLOT =
 
 ## 可編輯標題的標題列(2026-11-25)
 
-**何時用**:浮層標題位放的是可以就地改的 `InlineEdit`(`size="sm"`,字樣照標題 `font-medium`),不是 `PopoverTitle` / `DialogTitle`。例:Calendar 事件詳情的標題列(`../../components/Calendar/calendar.spec.md`「事件詳情浮層」的「標題列」)、Popover 規格頁「可編輯標題的標題列」。
+**何時用**:浮層標題位放的是可以就地改的 `InlineEdit`(`size="sm"`,字樣照標題 `font-medium`),不是 `PopoverTitle` / `DialogTitle`。例:Popover 規格頁「可編輯標題的標題列」。(Calendar 事件詳情 0.1.0-beta.152 起標題列改回 `PopoverTitle`、改名字移到內文「標題」欄 —— `../../components/Calendar/calendar.spec.md`「事件詳情浮層」標題列【DT-TITLE(定)】,不再是本段的例子)
 
 **做法**:Header 的 className 加 `EDITABLE_TITLE_HEADER_SLOT`(`overlay-surface.tsx` 檔尾;`<PopoverHeader className={EDITABLE_TITLE_HEADER_SLOT}>`,DialogHeader / SheetHeader / raw SurfaceHeader 用同一個常數)。它只設兩個變數,縮位公式沿用上方「Chrome dismiss size canonical」:
 
@@ -186,7 +188,7 @@ const CHROME_UNBOUNDED_SLOT =
 | 標題欄尾端讓位(`--surface-title-bleed` = SurfaceHeader 左欄的右外距,沒設時 0) | `--field-bleed`(= InlineEdit 垂直外伸的同一顆,`../../tokens/uiSize/uiSize.spec.md`「Field 外框寬與框內字線」) | 13 / 13 |
 | 標題列內容高 | 2 × `--layout-space-tight` + `--field-height-sm`(Popover 版面間距鎖 md,tight = 12) | 52 / 56(外加 1px 底線;靜止 / 編輯中同高,實量) |
 
-**為什麼佔位 = sm 欄位高**【AI 推導】:本檔的規則是「slot = 標題那一行的高」;標題是 InlineEdit 時,那一行是一列 sm 欄位(InlineEdit 編輯態就是 `<Input size="sm">`),不是一行 14px 字(21)。沿用 21 時 × 中線比標題那一列高 3.5(一般)/ 5.5(大)(2026-11-25 實測)。出處:`calendar.spec.md`「事件詳情浮層」標題列「× 的佔位要跟這一行同高」(該段標【AI 推導,預覽時請 user 看】)。
+**為什麼佔位 = sm 欄位高**【AI 推導】:本檔的規則是「slot = 標題那一行的高」;標題是 InlineEdit 時,那一行是一列 sm 欄位(InlineEdit 編輯態就是 `<Input size="sm">`),不是一行 14px 字(21)。沿用 21 時 × 中線比標題那一列高 3.5(一般)/ 5.5(大)(2026-11-25 實測)。出處:2026-11-25 版 `calendar.spec.md`「事件詳情浮層」標題列「× 的佔位要跟這一行同高」(當時標【AI 推導,預覽時請 user 看】;該段 2026-11-27 已改成 PopoverTitle,這條推導留給本段的其他消費者)。
 
 **為什麼讓位 = 外伸量**【AI 推導】:InlineEdit 直向排列(獨立使用的預設)把滑過底色、外框與隱形編輯鈕往左右各外伸 `--field-bleed`(框寬 1 + 內距 12 = 13),讓字貼齊欄左緣(`../../components/InlineEdit/inline-edit.spec.md`「對齊盒」)。讓位直接讀同一顆 token,外伸量改了讓位跟著改(2026-11-25 前兩者都是 `--field-px` 12,字比欄左緣右 1px;同日一起改成 `--field-bleed`)。左邊吃進標題列左內距(loose 16 > 13);右邊沒讓位時穿過 8px 的 gap、蓋進 ×(外伸 12 時實測 4px),而 × 在一般流、隱形編輯鈕是絕對定位,點 × 左緣那 4px 進的是編輯、不是關閉(2026-11-25 實測,一般 / 大密度相同)。讓位後外框右緣到 × 左緣 = 標題列的 gap(8),點 × 的任何一點都是關閉。
 

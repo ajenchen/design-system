@@ -1,11 +1,19 @@
+// ── 消費的 SSOT ──
+// - Family 4 外殼 / 字級:Field/field-wrapper.tsx `fieldWrapperStyles` `fieldDisplayTextClass`(field-controls.spec.md 共享 contract (d)(e))
+// - 值的前綴圖示(`icon`):排法 = item-anatomy `ItemPrefix` + 內容、間距 gap-2 = 8(item-anatomy.spec.md「消費元件預設」prefix ↔ content gap);
+//   尺寸 = tokens/uiSize/icon-size `ICON_SIZE`(sm / md 16、lg 20);顏色跟著值(select.spec.md 圖示對照表「Value icon」、field-controls.spec.md「Icon 色彩原則」)
+// - 截斷 + 提示:patterns/element-anatomy/truncated-text `TruncatedText`(tooltip.spec.md「截斷文字」)
+// - 命中區:ds-canonical/references/hit-area-canonical.md 一-4「懸停回饋形狀 ≡ 命中區」(圖示在連結裡)
+// - 新分頁預告的換字管道:lib/i18n/i18n-context `useI18n`(componentKey `link-input`,鍵 `opensInNewTab`;lib/i18n/README.md 表)
 import * as React from 'react'
-import { Pencil } from 'lucide-react'
+import { Pencil, type LucideIcon } from 'lucide-react'
 import type { VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
 import { fieldWrapperStyles, fieldWidthVariant, fieldWidthStyle, bareInputStyles, fieldDisplayTextClass, FIELD_TEXT_ENTRY_CURSOR, focusFieldInputFromChrome } from '@/design-system/components/Field/field-wrapper'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
-import { ItemInlineAction, ItemSuffix, type ItemSuffixHoverGroup } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { ItemInlineAction, ItemPrefix, ItemSuffix, type ItemSuffixHoverGroup } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { Button } from '@/design-system/components/Button/button'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { editSettleKeyProps } from '@/design-system/components/Field/field-edit-keys'
@@ -14,6 +22,7 @@ import { FieldError } from '@/design-system/components/Field/field'
 import { keepFocusOnPointerPress } from '@/design-system/lib/pointer-press'
 import { isWithinCompositeField } from '@/design-system/lib/composite-field-focus'
 import { escapeLayerProps, isEscapeTakenElsewhere } from '@/design-system/lib/overlay-escape'
+import { useI18n } from '@/design-system/lib/i18n/i18n-context'
 
 // ── URL Validation ──────────────────────────────────────────────────────────
 
@@ -93,28 +102,61 @@ function formatHostname(url: string): string {
 // `data-link-stretch`:宿主要暫時收起延伸區時用(DataTable 試算表沒選中的格第一下只選格,見 data-table.css)。
 // `coverBorder`:框的邊框看得見、滑過會變深(編輯模式)時,延伸區往外多蓋一條框寬(`--field-border-width`,1px;框沒有 overflow 裁切)——
 // 變色的地方都點得開;其他模式的邊框透明、滑過不變,只蓋到內距。
-function renderLinkAnchor(value: string, label?: string, stretch = false, coverBorder = false) {
+// **值的前綴圖示(`icon`,2026-11-27 user 定案;link-input.spec.md「值的前綴圖示」)**:有傳時連結改成 `inline-flex items-center gap-2`
+// —— 圖示(ItemPrefix,不縮)+ 間距 8 + 字(TruncatedText,截斷的是字),排法同 Select 欄位上的值圖示(select.tsx SelectedValuePrefix + 欄位 gap-2)。
+// 圖示在 `<a>` 裡:顏色跟字一樣(lucide 用 currentColor → 吃連結的 text-primary / 滑過 text-primary-hover),滑過圖示就是滑過連結,
+// 盒子 = 圖示 + 間距 + 字(仍不撐滿整行)。底線只畫在字上(text-decoration 不畫在 svg 上)。沒傳 = 原本的 inline-block,DOM 不變。
+function renderLinkAnchor(value: string, label?: string, stretch = false, coverBorder = false, icon?: LinkValueIcon) {
+  return <LinkAnchor value={value} label={label} stretch={stretch} coverBorder={coverBorder} icon={icon} />
+}
+
+/** 新分頁預告的 DS 預設字(link-input.spec.md「新分頁預告」;換語言經 I18nProvider `link-input.opensInNewTab`) */
+const LINK_OPENS_IN_NEW_TAB_DEFAULT = '(在新分頁開啟)' // i18n-allow: DS 預設讀屏預告(決策頁第 11 題甲的字)
+
+// **新分頁預告(2026-11-27 user 決策頁第 11 題選「甲 只給讀屏預告」;link-input.spec.md「新分頁預告」)**:
+// 連結一律 target="_blank",讀屏名字 = 顯示的字 + 空格 + 預告(aria-label;名字以看得到的字開頭,WCAG 2.5.3 label-in-name)。
+// 畫面不變:不加圖示、不加看得到的字。寫成元件(不是純函式)只為了在這裡讀 useI18n,DOM 與修前相同、只多 aria-label。
+function LinkAnchor({ value, label, stretch, coverBorder, icon }: { value: string; label?: string; stretch: boolean; coverBorder: boolean; icon?: LinkValueIcon }) {
+  const { t } = useI18n()
   const displayText = linkDisplayText(value, label)
+  const newTabNotice = t('link-input', 'opensInNewTab', LINK_OPENS_IN_NEW_TAB_DEFAULT)
   return (
     <a
       // 看起來像網址的值補上 https://(toWebUrl);站內路徑原樣
       href={toWebUrl(value) ?? value}
       target="_blank"
       rel="noopener noreferrer"
+      aria-label={`${displayText} ${newTabNotice}`}
       data-link-stretch={stretch ? '' : undefined}
       className={cn(
         'inline-block max-w-full align-top truncate min-w-0 text-primary hover:text-primary-hover hover:underline',
+        // 有圖示:inline-flex 取代 inline-block(cn 的 tailwind-merge 去掉後者);truncate 留著無害 —— 截斷由裡面的字自己做,
+        // 延伸區(::before)的定位祖先在連結外面,不受連結的 overflow 裁切(同修前)
+        icon && 'inline-flex items-center gap-2',
         stretch && "before:absolute before:content-[''] [&>*]:relative",
         // 多蓋的那一圈 = 欄位框寬(--field-border-width;2026-11-25 前寫死 -inset-px,值不變)
         stretch && (coverBorder ? 'before:-inset-[var(--field-border-width)]' : 'before:inset-0'),
       )}
     >
+      {icon && renderValueIcon(icon)}
       {/* 截斷必附 tooltip(tooltip.spec.md:30)— anchor 自身即 hover 目標、無疊層,TruncatedText
           放 anchor 內(trigger = 其 span child)即可;view/readonly/edit-showLink 共用本 helper 一處修。
-          display="block":anchor 是 inline-block 容器,裡面照樣是 block formatting context,截斷照常運作(對照 breadcrumb.tsx anchor 內同型消費)。 */}
+          display="block":anchor 是 inline-block 容器(有圖示時是 inline-flex,字是 flex 子項、min-w-0 讓它縮),截斷照常運作(對照 breadcrumb.tsx anchor 內同型消費)。 */}
       <TruncatedText display="block">{displayText}</TruncatedText>
     </a>
   )
+}
+
+/** 值的前綴圖示(`LinkInputProps.icon`):圖示元件 + 這個欄位的圖示尺寸 */
+interface LinkValueIcon { Icon: LucideIcon; size: number }
+
+/**
+ * 值的前綴圖示那一格(連結 / 一般文字 / 停用三處同一支):ItemPrefix(`h-[1lh] shrink-0` —— 跟第一行字置中、截斷時不縮)+ 圖示。
+ * 顏色不寫:吃外層(連結色 / 一般文字色 / 停用色),跟字永遠同一個顏色。讀屏略過(aria-hidden),連結的名字仍是顯示的字。
+ * `data-link-value-icon`:閘用(data-table-link-cell-invariant L11 / link-input-url-display-invariant)。
+ */
+function renderValueIcon({ Icon, size }: LinkValueIcon) {
+  return <ItemPrefix data-link-value-icon=""><Icon size={size} className="pointer-events-none" aria-hidden /></ItemPrefix>
 }
 
 /** 站內路徑:以 `/` 開頭、解析後仍在同一個網站(擋掉 `//host`、`/\\host`、夾 tab 換行的那些被瀏覽器正規化成別的網站的寫法)。 */
@@ -136,9 +178,16 @@ function isSameSitePath(value: string): boolean {
  * 唯讀 / 檢視模式與表格連結格(`DataTable/cell-registry.tsx` UrlCell 用檢視模式)都經這裡 ——
  * `javascript:` / `data:` / `mailto:` 等別的協定、信箱、中間有空白的字,一律不會成為 `href`。編輯模式不收站內路徑(只收網頁網址)。
  */
-function renderLinkValue(value: string, label?: string, stretch = false) {
-  if (isLinkable(value)) return renderLinkAnchor(value, label, stretch)
-  return <TruncatedText display="block">{linkDisplayText(value, label)}</TruncatedText>
+function renderLinkValue(value: string, label?: string, stretch = false, icon?: LinkValueIcon) {
+  if (isLinkable(value)) return renderLinkAnchor(value, label, stretch, false, icon)
+  const text = <TruncatedText display="block">{linkDisplayText(value, label)}</TruncatedText>
+  // 不是連結的值也畫值的圖示(同 Select 值圖示「四個 mode 都畫、顏色跟著值」:這裡跟字同為一般文字色)【AI 推導 2026-11-27,link-input.spec.md「值的前綴圖示」】
+  return icon ? renderIconRow(icon, text) : text
+}
+
+/** 不是連結的值(一般文字 / 停用的灰字)帶圖示:同一套排法(圖示 + 間距 8 + 字),顏色由外層給 */
+function renderIconRow(icon: LinkValueIcon, text: React.ReactNode, className?: string) {
+  return <span className={cn('flex min-w-0 items-center gap-2', className)}>{renderValueIcon(icon)}{text}</span>
 }
 
 /** 能安全點的值(網頁網址或站內路徑;見上方 renderLinkValue) */
@@ -227,12 +276,21 @@ export interface LinkInputProps
   /** 自訂顯示文字（非編輯時） */
   label?: string
   /**
+   * 值的前綴圖示(2026-11-27 user 定案;link-input.spec.md「值的前綴圖示」):畫在顯示的字前面、**在連結裡**,
+   * 跟字同為連結色(滑過一起變色)、一起算點擊與滑過範圍;排法同「一般值加圖示」(Select 欄位上的值圖示:圖示 + 間距 8 + 字),
+   * 截斷時圖示不縮、字截斷;停用時跟字一起變停用色。值不是網址時跟一般文字同色照畫;空值與打字狀態不畫【後三者 AI 推導】。
+   * 讀屏略過圖示,連結的名字仍是顯示的字。
+   * **不是 `startIcon`**(field-controls.spec.md「startIcon」= 提示欄位用途的灰色圖示、不屬於值):這個圖示是值的一部分,由使用端依值傳入,
+   * DS 不依網址自動判類型。與 `label` 一對(值的顯示字 / 值的圖示,同 `SelectOption` 的 `label` / `icon`)。表格網址欄用 `meta.linkIcon`。
+   */
+  icon?: LucideIcon
+  /**
    * View 態是否包 Field naked wrapper(D-path opt-in,2026-05-08)
    * — DataTable cell view↔edit 像素級對齊用。預設 false(檢視態只畫值:裸 anchor;理由:檢視態只顯示值,跟表格 2026-07-08 A 案同一方向,
    *   見 field-controls.spec.md「LinkInput / PeoplePicker 預設 view 路徑不包 wrapper」)。
    * 設 true 時 view 走 fieldWrapperStyles(naked variant)包覆 anchor,
    * 與 cell edit (`<Input naked>`) 同 DOM 結構,消除 Layer-B padding mismatch。
-   * **本元件沒有型別 icon**(edit 無 endIcon,UrlCell 用 plain Input edit)→ 這個開關只給 wrapper;
+   * **本元件沒有型別 icon**(edit 無 endIcon,UrlCell 用 plain Input edit;`icon` 是值的圖示、畫在連結裡,不是型別 icon)→ 這個開關只給 wrapper;
    * 可編輯時的編輯入口另由 `viewEditAction` 畫(那是 action,不是型別 icon)。
    */
   showDisplayEndIcon?: boolean
@@ -285,6 +343,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       className,
       disabled: disabledProp,
       label,
+      icon,
       showDisplayEndIcon = false,
       viewEditAction,
       linkHitAreaFromHost = false,
@@ -309,6 +368,8 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     const resolvedMode: FieldMode = useResolvedFieldMode({ mode: modeProp, disabled, readOnly })
     const emptyDisplay = useFieldEmptyDisplay()
     const isEditable = resolvedMode === 'edit'
+    // 值的前綴圖示:尺寸 = 這個欄位的圖示尺寸(ICON_SIZE:sm / md 16、lg 20,同 Select 欄位上的值圖示)
+    const valueIcon: LinkValueIcon | undefined = icon ? { Icon: icon, size: ICON_SIZE[size] } : undefined
     // chrome resolution:per-prop > context > 'default'
     const resolvedVariant: FieldVariantInternal = useResolvedFieldVariant(variantProp)
 
@@ -401,7 +462,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
         if (!value) return <span className={cn(fieldDisplayTextClass(size), fieldEmptyColorClass(resolvedMode), 'block truncate')}>{emptyDisplay}</span>
         // 外層不裁:截斷由裡面的連結 / TruncatedText 自己做(見 LINK_HOST_CLASS)
         // 沒有編輯入口 → 整行開連結(見 renderLinkAnchor);`relative` = 延伸範圍到這一行為止(宿主接手時拿掉,延伸到宿主)
-        return <span className={cn(fieldDisplayTextClass(size), 'block', LINK_HOST_CLASS, !linkHitAreaFromHost && 'relative')}>{renderLinkValue(value, label, true)}</span>
+        return <span className={cn(fieldDisplayTextClass(size), 'block', LINK_HOST_CLASS, !linkHitAreaFromHost && 'relative')}>{renderLinkValue(value, label, true, valueIcon)}</span>
       }
       return (
         <div
@@ -412,7 +473,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
         >
           <span className={cn('flex-1', LINK_HOST_CLASS)}>
             {value
-              ? renderLinkValue(value, label, true)
+              ? renderLinkValue(value, label, true, valueIcon)
               : <span className={cn('block truncate', fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span>
             }
           </span>
@@ -537,10 +598,13 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
           <span className={cn('flex-1', LINK_HOST_CLASS)}>
             {resolvedMode === 'disabled'
               ? (displayText
-                  ? <span className="block truncate text-fg-disabled">{displayText}</span>
+                  // 停用:圖示跟字一起是停用色(M24;同 Select 值圖示停用時 fg-disabled 勝出)
+                  ? (valueIcon
+                      ? renderIconRow(valueIcon, <span className="block truncate min-w-0">{displayText}</span>, 'text-fg-disabled')
+                      : <span className="block truncate text-fg-disabled">{displayText}</span>)
                   : <span className={cn('block truncate', fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span>)
               : (value
-                  ? renderLinkValue(value, label, true)
+                  ? renderLinkValue(value, label, true, valueIcon)
                   : <span className={cn('block truncate', fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span>)
             }
           </span>
@@ -565,7 +629,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
           {/* 連結盒子 = 文字本身、太長時縮到欄寬截斷 —— 由連結自己保證(renderLinkAnchor 的 inline-block + max-w-full),所有模式同一句;
               點擊範圍另由延伸區鋪滿外框。flex 外層保留:讓截斷吃得到外框扣掉鉛筆後的寬度。 */}
           <span className="flex-1 min-w-0 flex">
-            {value && renderLinkAnchor(value, label, true, true)}
+            {value && renderLinkAnchor(value, label, true, true, valueIcon)}
           </span>
           <ItemInlineAction
             ref={pencilRef}
