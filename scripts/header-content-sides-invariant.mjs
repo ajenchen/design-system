@@ -92,7 +92,7 @@ export const SIDES = {
   'sheet-body': { last: 'element', box: 'fill', pattern: 'AB' },
   'surface-body': { last: 'element', box: 'hug', pattern: 'AB' },
   'header-anatomy-surface': { last: 'element', box: 'hug', pattern: 'AB' },
-  'popover-inspector': { last: 'element', box: 'hug', pattern: 'AB' },
+  'popover-inspector': { last: 'unbounded', box: 'hug', pattern: 'C' }, // 2026-11-28 改 Command 勾選清單(同 popover-list-region)
   'datatable-filter-panel': { last: 'element', box: 'hug', pattern: 'AB' },
   'fileitem-upload-manager': { last: 'element', box: 'hug', pattern: 'C' },
   'popover-list-region': { last: 'unbounded', box: 'hug', pattern: 'C' },

@@ -57,3 +57,4 @@ user 原話沒有點名這個參數;依據是盤點 audit-r7 INV-14 列在甲案
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `field-control-group.spec.md`
+- `layoutSpace.spec.md`

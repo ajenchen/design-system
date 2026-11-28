@@ -478,6 +478,7 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 - `element-anatomy.spec.md`
 - `field-control-group.spec.md`
 - `field-controls.spec.md`
+- `field-group.spec.md`
 - `form-validation.spec.md`
 - `inline-action.spec.md`
 - `inline-edit.spec.md`

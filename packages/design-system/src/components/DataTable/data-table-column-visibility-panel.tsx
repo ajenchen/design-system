@@ -373,7 +373,9 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
           或鎖頭圖示(VisibilityRow),槽寬固定 16 讓兩種前綴的字起點同一條線。不呼叫 getUniformPrefixSlotStyle:
           那支算的是「圖示與頭像混排」時的頭像槽(AVATAR_SIZE.inline 20 / 24 / 24),這裡沒有頭像。 */}
       {/* 清單外框標 data-layout-region="unbounded"(自帶上下內距的清單,layoutSpace.spec.md 規則 4 表第 3 列):2026-11-27 起後面接 footer 的一般元素
-          收尾 = 48,這一塊是清單、不是一般元素,底照舊 0(user 2026-11-27 定的範圍明列「自帶內距的清單,欄位顯示面板 = 0」)。只是標記,畫面不變。 */}
+          收尾 = 48,這一塊是清單、不是一般元素,底照舊 0。依據是規格:layoutSpace.spec.md 規則 4 表 unbounded 列「0(list 自帶 py 撐)」、
+          overlay-surface.spec.md「預設:浮層的 body 是一份可選清單 → 走選單列(2026-09-17 user 拍板)」。user 2026-11-27 對這個面板問的是問句(逐字):
+          「…他不應該變吧？那種浮層內選項的layout 我們不是有定義過了嗎？」—— AI 查證:上兩條就是那個定義。只是標記,畫面不變。 */}
       <PopoverBody className="!px-0 !py-0">
         <div data-layout-region="unbounded" className="py-2 flex flex-col" style={{ '--item-prefix-slot': '16px' } as React.CSSProperties}>
           <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} accessibility={drag.accessibility}>

@@ -23,7 +23,8 @@
  *         沒有邊緣標記、沒有例外登記的容器,從畫面量最後一塊(probeContainer 的 tailRun → visualRole):列貼列 + 每列自帶上下內距 + 貼齊容器左右 = 清單;
  *         同結構同高、等距、筆距 = tight / loose、每筆有框或帶只放圖示的動作鈕(尾端「加一筆」同筆距算最後一筆)= 一串條目;列裡有看得見的 label
  *         (表單欄位 / 設定列 / 勾選群組的選項)不算。量到「像清單 / 條目卻沒走那條規則」→ 紅(沒標記的清單另點名缺標記)。
- *         守門列 GUARDS:user 已定義的情境(DataTable 篩選面板、欄位顯示面板、+N 清單、AI 面板決策卡、Coachmark、Popover 設計原則「進階篩選」「欄位顯示」(Popover 版與 Dialog 版))
+ *         守門列 GUARDS:已定義的情境(DataTable 篩選面板、欄位顯示面板、+N 清單、AI 面板決策卡、Coachmark、Popover 設計原則「進階篩選」「欄位顯示」(Popover 版與 Dialog 版)、
+ *         Popover 設計規格「元件總覽」「元件檢閱器」的依類型篩選;每列的出處分清楚哪一句是 user 原話、哪一句是規格 / 協調者判)
  *         頂 / 底的值固定,值一變就紅、範例換了對不到也紅。--compare=<json>:同一次量測裡新舊判法(judgeRow legacy)一起算、寫出判得不同的每一筆。
  *         對照組:--selftest 判定表 visualRole 13 格 + 判定 / 守門列;真建置 ο(Command 清單拿掉標記仍認得出、紅「應 0…缺標記」;再拿掉 role 照樣認得出,舊判法認不出、當一般元素要 48)、
  *         π(手寫三筆「檔名 + 移除鈕」+ footer → 紅,舊判法綠;底改筆距 → 綠)、ρ(三個表單欄位 + footer、勾選群組 → 不誤判、綠)。
@@ -655,10 +656,10 @@ const POPOVER_MD = (top, bottom) => ({ md: { top, bottom }, lg: { top, bottom } 
 export const GUARDS = [
   { key: 'datatable-filter-panel', story: 'design-system-components-datatable-展示--filter-panel-states', pick: { header: '篩選', container: BODY },
     want: { md: { top: 12, bottom: 12 }, lg: { top: 16, bottom: 16 } }, // 範例把面板放在 Popover 根裡、不開浮層(沒有鎖密度):大密度 tight = 16
-    source: '一串同樣的條目 頂 = 筆與筆之間 = 底:layoutSpace.spec.md 規則 2 表下(user 2026-11-14「…第一個條件距離頂部距離應該對齊篩選條件與篩選條件之間的gap?…」)' },
+    source: '一串同樣的條目 頂 = 筆與筆之間 = 底:layoutSpace.spec.md 規則 2 表下(該段引 user 2026-11-14 原話,是問句、AI 評估同意:「…第一個條件距離頂部距離應該對齊篩選條件與篩選條件之間的gap?…」)' },
   { key: 'datatable-column-visibility-panel', story: 'design-system-components-datatable-展示--column-visibility-panel-states', pick: { container: BODY },
     want: { md: { bottom: 0 }, lg: { bottom: 0 } },
-    source: '自帶內距的清單 → 容器底 0:layoutSpace.spec.md 規則 4 表 unbounded 列(決策紀錄 decide152-answers.md 第 3 輪:欄位顯示面板 = 0);頂由搜尋列決定,不在這一列' },
+    source: '自帶內距的清單 → 容器底 0:layoutSpace.spec.md 規則 4 表 unbounded 列;overlay-surface.spec.md「預設:浮層的 body 是一份可選清單 → 走選單列(2026-09-17 user 拍板)」。user 2026-11-27 對這個面板問(問句,逐字):「…他不應該變吧？那種浮層內選項的layout 我們不是有定義過了嗎？」—— AI 查證:上兩條規格就是那個定義;頂由搜尋列決定,不在這一列' },
   { key: 'calendar-more-list', story: 'design-system-components-calendar-展示--launch-week', pick: { trigger: '還有', container: BODY }, want: POPOVER_MD(12, 12),
     source: '「+N」清單:calendar.spec.md「列距 4 = 韻律規則的例外」(user 原話在該段;calendar-decision-ledger.spec.md:26 user 11-24 Q4 不動)' },
   { key: 'agent-decision-card', story: 'design-system-components-agentpanel-展示--decision-card-single', pick: { header: '公告要用哪種語氣' }, want: { md: { top: 0, bottom: 0 }, lg: { top: 0, bottom: 0 } },
@@ -666,13 +667,19 @@ export const GUARDS = [
   { key: 'coachmark', story: 'design-system-components-coachmark-設計規格--overview', pick: { container: BODY }, want: POPOVER_MD(12, 12),
     source: 'Coachmark:coachmark.spec.md:34;user 2026-11-27「「Coachmark 導覽提示」這個不要動，目前它的設計就是特化過也確認過的」' },
   { key: 'popover-principles-advanced-filter', story: 'design-system-components-popover-設計原則--usage-guidance', pick: { trigger: '進階篩選', header: '進階篩選', container: BODY }, want: POPOVER_MD(12, 12),
-    source: 'Popover 設計原則「使用指引」的進階篩選 = DS 進階篩選面板(一串同樣的條目,頂 = 筆距 = 底);user 2026-11-28「進階篩選,欄位顯示早就定好了…拜託我沒有要求就不要再給我亂動」' },
+    source: 'Popover 設計原則「使用指引」的進階篩選 = DS 進階篩選面板(一串同樣的條目,頂 = 筆距 = 底:layoutSpace.spec.md 規則 2 表下);user 2026-11-28(節錄,含問句):「進階篩選,欄位顯示早就定好了，且原因老早也都講清楚且也都有放進原則裡吧？…拜託我沒有要求就不要再給我亂動,好嗎？」' },
   { key: 'popover-principles-column-visibility', story: 'design-system-components-popover-設計原則--visual-alignment-rule', pick: { trigger: '欄位顯示', header: '欄位顯示', container: BODY }, want: POPOVER_MD(0, 0),
-    source: 'Popover 設計原則的欄位顯示 = 自帶內距的清單 → 頂 0、底 0(layoutSpace.spec.md 規則 2 開頭 / 規則 4 表 unbounded 列);user 2026-11-28 同上一列' },
-  // 同一份「欄位顯示」內容放進 Dialog(同一則的第二個觸發點;DialogBody = fill,不鎖密度,清單 → 0 兩種密度都一樣)。協調者 2026-11-28 判:依 user 已定的「欄位顯示 = 自帶內距清單 → 0」套用,不是新的畫面決定
+    source: 'Popover 設計原則的欄位顯示 = 自帶內距的清單 → 頂 0、底 0(layoutSpace.spec.md 規則 2 開頭 / 規則 4 表 unbounded 列;overlay-surface.spec.md「預設:浮層的 body 是一份可選清單 → 走選單列(2026-09-17 user 拍板)」);user 2026-11-28 原話同上一列' },
+  // 同一份「欄位顯示」內容放進 Dialog(同一則的第二個觸發點;DialogBody = fill,不鎖密度,清單 → 0 兩種密度都一樣)。
+  // 協調者 2026-11-28 判可套用:依上一列的兩條規格機械落地(不是新的畫面決定;user 沒有對 Dialog 版單獨講過)
   { key: 'popover-principles-column-visibility-dialog', story: 'design-system-components-popover-設計原則--visual-alignment-rule', pick: { trigger: '欄位顯示', container: 'data-layout-body=fill' },
     want: { md: { top: 0, bottom: 0 }, lg: { top: 0, bottom: 0 } },
-    source: 'Popover 設計原則「視覺對齊 Dialog」的 Dialog 版欄位顯示 = 同一份自帶內距的清單 → 頂 0、底 0(同上一列;DataTable 欄位顯示面板 data-table-column-visibility-panel.tsx 也是 0)' },
+    source: 'Popover 設計原則「視覺對齊 Dialog」的 Dialog 版欄位顯示 = 同一份自帶內距的清單 → 頂 0、底 0(規格同上一列;DataTable 欄位顯示面板 data-table-column-visibility-panel.tsx 也是 0)' },
+  // Popover 設計規格「元件總覽」(點「篩選設定」開)與「元件檢閱器」(一開就開著)的「依類型篩選」:浮層的主體是一份可選清單 → Command 勾選清單 → 頂 0、底 0
+  { key: 'popover-spec-overview-type-filter', story: 'design-system-components-popover-設計規格--overview', pick: { trigger: '篩選設定', header: '依類型篩選', container: BODY }, want: POPOVER_MD(0, 0),
+    source: 'overlay-surface.spec.md「預設:浮層的 body 是一份可選清單 → 走選單列(2026-09-17 user 拍板)」+ layoutSpace.spec.md 規則 4 表 unbounded 列;交接 NEXT-SESSION.md:126「不得讓這類浮層變 48」(協調者 2026-11-28 判機械落地)' },
+  { key: 'popover-spec-inspector-type-filter', story: 'design-system-components-popover-設計規格--inspector', pick: { header: '依類型篩選', container: BODY }, want: POPOVER_MD(0, 0),
+    source: '同上一列(元件檢閱器與元件總覽共用同一份 TypeFilterPopover)' },
 ]
 
 /** 新舊判法比對(同一份量測):角色、期望值、量到的值、紅綠任一不同就列出;每一筆附量畫面判看到的那一串(tailRun),供逐則寫原因。 */
