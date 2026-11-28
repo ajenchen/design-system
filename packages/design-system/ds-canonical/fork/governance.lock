@@ -383,7 +383,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/46f10bc55cdfdf834d0749eebff42ea0bb8576f361b36d2b6ba1851354c50150.blob",
-      "sha256": "c58fa8fcc31f4db0397e8ff2c2121487a66b13c63c2d915185207235742a6eab",
+      "sha256": "fbc04b2809e96baa6fe15e88628d537354478752d1f7d3e2048f6013b7f61d05",
       "source": "scripts/lib/governance-dependency-bootstrap.mjs",
       "classification": null,
       "destination": "scripts/lib/governance-dependency-bootstrap.mjs"
@@ -519,7 +519,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/7eb6cc60abfdabaf6617c336058fad1454ccde08889295767bfd9b7fd153cc6e.blob",
-      "sha256": "5e3f57056598d4325342102124a815dc9193568db554d89d25411ca109651a25",
+      "sha256": "7398fa303164603e29374616368a58c191cb7fe320f7841490fea315497057ab",
       "source": "scripts/lib/verified-exact-npm-runtime.mjs",
       "classification": null,
       "destination": "scripts/lib/verified-exact-npm-runtime.mjs"
@@ -575,7 +575,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/9791c85388d2e2e2bd564e2550fadc3351c4c960a47ce838098afcba7544eb90.blob",
-      "sha256": "8e7368c4ede8d896f6e7aba5a030e94b6e5accc30bf4780835ef1c905a6255db",
+      "sha256": "104bcb134fa13f8307c9d483fc36dbee1e7f6e711a323c9373e92bb661ee5c93",
       "source": "scripts/verify-upgrade-evidence.mjs",
       "classification": null,
       "destination": "scripts/verify-upgrade-evidence.mjs"

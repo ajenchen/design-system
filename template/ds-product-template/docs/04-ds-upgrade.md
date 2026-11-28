@@ -168,6 +168,23 @@ This section answers the question「一般使用 ds template 的消費者也是�
   3. With the repository attached and `NODE_USE_ENV_PROXY=1` set, it succeeded (`targetVerification=verified`, `ready=true`).
 
   So in a cloud session, first attach `ajenchen/design-system` to the session's repository access. From 0.1.0-beta.152 on, the upgrade scripts send these reads through a credential-free `HTTPS_PROXY` themselves (`NO_PROXY` hosts stay direct; a proxy URL that carries credentials is still not used), so an upgrade run by the scripts of 0.1.0-beta.152 or later needs no extra variable (not yet measured in a cloud session 【AI 推導,待實測】). An upgrade whose `main` is still at 0.1.0-beta.151 or older runs the older scripts, so run it as `NODE_USE_ENV_PROXY=1 npm run sync-all -- --apply --to X.Y.Z` (the variable exists from Node.js 22.21.0, https://nodejs.org/docs/latest-v22.x/api/cli.html#node_use_env_proxy1; the cloud image measured 22.23.5). Otherwise let the upgrade receiver run the upgrade on a GitHub runner (Automated proposal above; the receiver must already be on `main`) or run it on a local terminal. `setup:all` does not read the GitHub API; its cloud network notes are in the README.
+- **Leaving 0.1.0-beta.151 or 0.1.0-beta.152 when `package-lock.json` records npm's patched bundled packages (measured 2026-11-28).** Check with a read-only command on the upgrade branch:
+
+  ```text
+  node -e "const p=require('./package-lock.json').packages;console.log(p['node_modules/npm/node_modules/tar']?.version, p['node_modules/npm/node_modules/brace-expansion']?.version)"
+  ```
+
+  `7.5.19 5.0.7` (what npm 11.19.0 ships) needs nothing. `7.5.22 5.0.12` means an ordinary `npm install` ran after `setup:all` or a previous `sync-all --apply` had replaced npm's bundled `tar` / `brace-expansion` on disk with the security overlay's fixed copies, and npm wrote those versions into the lock. Up to 0.1.0-beta.152 the upgrade transaction then compares that lock (no `tar` / `brace-expansion` finding) with the target lock it recomputes on an unpatched npm (7.5.19 / 5.0.7) and stops before changing anything with `GOV-UPGRADE-DEPENDENCY-001 … introduces 2 vulnerability finding(s)`, naming `brace-expansion` and `tar` with `package-not-vulnerable-in-base`. From 0.1.0-beta.153 the transaction compares both sides by what the overlay puts on disk, but the upgrade that leaves 0.1.0-beta.151 / 152 still runs the transaction scripts on your own `main` (the older copies). So for that one upgrade, first put the two lock entries back to what npm ships and commit that on the upgrade branch (the transaction binds to a clean `HEAD`), then upgrade straight to 0.1.0-beta.153 or later:
+
+  ```text
+  npm ci --ignore-scripts
+  node node_modules/npm/bin/npm-cli.js install --ignore-scripts --no-audit --no-fund
+  git diff --stat
+  git commit -am "Restore npm bundled tar / brace-expansion lock entries"
+  npm run sync-all -- --apply --to 0.1.0-beta.153
+  ```
+
+  Right after `npm ci` the bundled copies on disk are npm's own, and npm 11.19.0 (`node_modules/npm`) writes them back; the diff must touch only `package-lock.json`, and only `node_modules/npm/node_modules/tar` and `node_modules/npm/node_modules/brace-expansion`. If it shows anything else, discard it with `git checkout -- package-lock.json` and report it instead of committing. This was measured on a synthetic tree with npm 11.19.0 (the lock went from 7.5.22 / 5.0.12 back to 7.5.19 / 5.0.7, those two entries only, and the transaction then passed); it has not yet been run on a product repository 【AI 推導,待實測】. `setup:all` accepts the restored lock (it is what the DS and template repositories record); it accepts the patched one only from 0.1.0-beta.152 on. In a cloud session the older scripts also need `NODE_USE_ENV_PROXY=1` (previous item).
 - **Common conditions for a cloud session:** Node.js 22.15.0 or newer (the cloud image measured 22.23.5); network access set to Full; a proxy URL that carries credentials is not forwarded, by design. The README proxy and network notes have the details.
 
 ## Recurring reviewed control-plane updates

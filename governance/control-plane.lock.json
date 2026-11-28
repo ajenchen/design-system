@@ -10,7 +10,7 @@
   "contractDigest": "sha256:2999aed4c75bc36823db0b4ea5729744c0920f74b1cd2b2e1bfb4110dd825ef1",
   "files": [
     {
-      "hash": "sha256:bc1e3b9bbf93efdc0ada438bbfbb009d72a311b4e6f6493b2d787a1360fa63a8",
+      "hash": "sha256:b8b1a9349404c5d74a16413dfb1fbda3c7585edee255a41de45997d2e4271667",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 59307,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:33964f8b15bc324292828d60eff828e062f9b5beabe692fb064455b2399e8e69",
+      "hash": "sha256:de1446e330eb758aae7f27b7275d1d34c76decc25a37fd8ee33d75dd9bc2afdd",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 141102,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:052b1bc1860f18fcc851e93395f828d8b737781361013649038f0234b4d0b7cd",
+  "inputDigest": "sha256:778bd24b02af5fa1846875b1e000c00c2441dabe514a9a95705d1dab25cd11c9",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -534,7 +534,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:b7fcf9f86448be18e5fe5094214a96a63d7ced31f62f89d4c62c7fa477479e07",
+  "snapshotDigest": "sha256:7755412b7dba2ec1ad0d0e6c263e633b4a0bd7c61fce3d1da9a22e312965878a",
   "sources": [
     {
       "hash": "sha256:9f0010c6c373ebb48ce40860d45c3890feb3984d7fdb7130eb643ff6a5b667d6",
@@ -1518,12 +1518,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:0f83f461a8a750fb4512c71438d075e268d55a15b0c1999ed0c4740534ffa4e8",
+      "hash": "sha256:d6a4d831b18e940243a9917693bc40d9b16dc135c256dbd655eccbedd697d476",
       "id": "exact-gate-meta-test-baseline",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/audit-gate-meta-test-coverage.baseline.json",
-      "size": 2080,
+      "size": 2047,
       "type": "file"
     },
     {
@@ -1590,12 +1590,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:c58fa8fcc31f4db0397e8ff2c2121487a66b13c63c2d915185207235742a6eab",
+      "hash": "sha256:fbc04b2809e96baa6fe15e88628d537354478752d1f7d3e2048f6013b7f61d05",
       "id": "exact-governance-dependency-bootstrap-library",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/lib/governance-dependency-bootstrap.mjs",
-      "size": 69352,
+      "size": 74549,
       "type": "file"
     },
     {
@@ -1986,12 +1986,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:8e7368c4ede8d896f6e7aba5a030e94b6e5accc30bf4780835ef1c905a6255db",
+      "hash": "sha256:104bcb134fa13f8307c9d483fc36dbee1e7f6e711a323c9373e92bb661ee5c93",
       "id": "exact-upgrade-evidence-verifier",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/verify-upgrade-evidence.mjs",
-      "size": 54321,
+      "size": 54799,
       "type": "file"
     },
     {
@@ -2004,12 +2004,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:5e3f57056598d4325342102124a815dc9193568db554d89d25411ca109651a25",
+      "hash": "sha256:7398fa303164603e29374616368a58c191cb7fe320f7841490fea315497057ab",
       "id": "exact-verified-npm-runtime-library",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/lib/verified-exact-npm-runtime.mjs",
-      "size": 77544,
+      "size": 79242,
       "type": "file"
     },
     {
@@ -2151,7 +2151,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 16,
-      "hash": "sha256:84bd25dbf62179c87ee08113a35793c5e95a228b1bb7ea0b4535eecb7854cd9d",
+      "hash": "sha256:c1862dca45c8c38337c94a3678b232e6dbba7d063df2d7954973d77cad0b60b6",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2980,7 +2980,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 5,
-      "hash": "sha256:e26c93ef0e08dabfb2c05a70228263c67f7c84220bcf1ab1b5ffef8effb6230a",
+      "hash": "sha256:1a501c5caf1052381a26381f2da104fc0f1b6037c6de08e380a609be4c115dc3",
       "id": "product-template-documentation",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3622,7 +3622,7 @@
         "scripts/generated/"
       ],
       "files": 819,
-      "hash": "sha256:f792b862479e683321ef72d7b6cb1b9980ea2aba3c223b5d14b9f01c8dc0bdb5",
+      "hash": "sha256:bf194669de68e234bd32096d0eb22509382fe19fe4f98ce3eb9cdf8b9b541191",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

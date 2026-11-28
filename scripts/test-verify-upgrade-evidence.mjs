@@ -1,4 +1,10 @@
 #!/usr/bin/env node
+/**
+ * @gate-contract
+ *   保證: consumer 升級交易(verify-upgrade-evidence.mjs)只擋這次升級真的新增的弱點,而且 npm 內附 tar / brace-expansion 兩邊用同一個修補層口徑比
+ *   紅: 拿掉差集的 installedOverlayReceipt(或讓修補層口徑失效)→ 錨例(base 鎖檔記修補層版本)重現 workspace 回報的同兩筆 package-not-vulnerable-in-base 而紅
+ *   綠: 錨例、兩邊都記原裝、反方向都不擋;一般相依新增、修補層沒修到的通報、修補層範圍外的節點、非現行 receipt 照擋 —— 純函式,重跑恆等
+ */
 
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
@@ -21,6 +27,12 @@ import {
   validateUpgradeReceipt,
   verifyAndApplyUpgradeEvidence,
 } from './verify-upgrade-evidence.mjs'
+import {
+  assertNoIntroducedAuditFindings,
+  diffAuditFindings,
+  parseAuditFindings,
+} from './lib/governance-dependency-bootstrap.mjs'
+import { resolveExactNpmRuntimeContract } from './lib/verified-exact-npm-runtime.mjs'
 import {
   REVIEWED_CONTROL_PLANE_UPDATE_COMMAND,
   REVIEWED_CONTROL_PLANE_UPDATE_ROUTE,
@@ -368,7 +380,7 @@ test('protected-base reconstruction uses the independent lock-digested npm runti
   const baseAudit = source.indexOf('const baseVulnerabilityAudit = runAuditFindingsJson(cli, sandbox', baseInstall)
   const signatureAudit = source.indexOf("'audit', 'signatures'", overlayApply)
   const candidateAudit = source.indexOf('const candidateVulnerabilityAudit = runAuditFindingsJson(cli, sandbox', signatureAudit)
-  const differential = source.indexOf('assertNoIntroducedAuditFindings(diffAuditFindings(baseVulnerabilityAudit.findings, candidateVulnerabilityAudit.findings)', candidateAudit)
+  const differential = source.indexOf('assertNoIntroducedAuditFindings(diffAuditFindings(baseVulnerabilityAudit.findings, candidateVulnerabilityAudit.findings', candidateAudit)
   // 2026-09-30:升級交易的弱點裁決改為差集 —— base 稽核必須在 protected base 安裝後、目標版安裝前;
   // candidate 稽核在 overlay 與簽章稽核之後;裁決只擋 introduced(與 DS anchor 同一份 lib 實作)。
   assert.ok(
@@ -382,6 +394,12 @@ test('protected-base reconstruction uses the independent lock-digested npm runti
       && candidateAudit < differential,
   )
   assert.doesNotMatch(source, /runVerifiedHighVulnerabilityAudit/, 'the upgrade transaction must not fall back to the exact-shape enforce audit')
+  // 2026-11-28:差集帶上候選樹已驗過的修補層 receipt(npm 內附 tar / brace-expansion 兩邊同一個口徑);拿掉這個參數 = 錨例重新被擋。
+  assert.match(
+    source.slice(differential),
+    /^assertNoIntroducedAuditFindings\(diffAuditFindings\(baseVulnerabilityAudit\.findings, candidateVulnerabilityAudit\.findings, \{\s*installedOverlayReceipt,\s*\}\)/,
+    'the upgrade differential must compare npm bundled overlay slots with the verified installed overlay receipt',
+  )
 })
 
 test('upgrade transaction blocks only findings the upgrade introduces and reports inherited ones', async () => {
@@ -398,6 +416,113 @@ test('upgrade transaction blocks only findings the upgrade introduces and report
   ]), 'candidate', 'GOV-UPGRADE-DEPENDENCY-001'))
   assert.throws(() => assertNoIntroducedAuditFindings(introduced, { prefix: 'GOV-UPGRADE-DEPENDENCY-001', subject: 'upgrade to 0.1.0-beta.148', report: () => {} }), /GOV-UPGRADE-DEPENDENCY-001:upgrade to 0\.1\.0-beta\.148 introduces 1 vulnerability finding\(s\)[\s\S]*fast-uri/)
   assert.throws(() => parseAuditFindings('not json', 'candidate', 'GOV-UPGRADE-DEPENDENCY-001'), /GOV-UPGRADE-DEPENDENCY-001:candidate npm audit did not produce JSON/, 'a broken audit is never read as "no findings"')
+})
+
+// 2026-11-28 workspace 0.1.0-beta.151 → 152 被擋(GOV-UPGRADE-DEPENDENCY-001 brace-expansion / tar package-not-vulnerable-in-base):
+// base 鎖檔記 npm 內附的修補層版本(tar 7.5.22 / brace-expansion 5.0.12,稽核沒有這兩筆;修補層套上後再跑一般 npm install
+// 就會這樣記),交易在原裝磁碟上重算的鎖檔記原裝版本(7.5.19 / 5.0.7)。下面的通報形狀取自同一天以 npm 11.19.0 對合成樹實跑的
+// npm audit --json(tar / brace-expansion 兩筆逐字;npm 那筆只留比對用得到的欄位)。
+const UPGRADE_PREFIX = 'GOV-UPGRADE-DEPENDENCY-001'
+const BUNDLED_TAR = Object.freeze({
+  name: 'tar', severity: 'high', isDirect: false, range: '<=7.5.20', nodes: ['node_modules/npm/node_modules/tar'], effects: ['npm'],
+  via: [{ source: 1145647, name: 'tar', dependency: 'tar', url: 'https://github.com/advisories/GHSA-r292-9mhp-454m', severity: 'high', range: '<=7.5.20' }],
+})
+const BUNDLED_BRACE_EXPANSION = Object.freeze({
+  name: 'brace-expansion', severity: 'high', isDirect: false, range: '4.0.0 - 5.0.11', nodes: ['node_modules/npm/node_modules/brace-expansion'], effects: [],
+  via: [
+    { source: 1130591, name: 'brace-expansion', dependency: 'brace-expansion', url: 'https://github.com/advisories/GHSA-mh99-v99m-4gvg', severity: 'high', range: '>=4.0.0 <5.0.8' },
+    { source: 1130734, name: 'brace-expansion', dependency: 'brace-expansion', url: 'https://github.com/advisories/GHSA-rgw5-rvv9-x895', severity: 'high', range: '>=4.0.0 <5.0.9' },
+    { source: 1240103, name: 'brace-expansion', dependency: 'brace-expansion', url: 'https://github.com/advisories/GHSA-q2hr-2g5m-vwhr', severity: 'moderate', range: '>=4.0.0 <5.0.12' },
+    { source: 1240107, name: 'brace-expansion', dependency: 'brace-expansion', url: 'https://github.com/advisories/GHSA-qhr7-859c-m2p7', severity: 'high', range: '>=4.0.0 <5.0.11' },
+    { source: 1240111, name: 'brace-expansion', dependency: 'brace-expansion', url: 'https://github.com/advisories/GHSA-6j4f-fj2g-mc7p', severity: 'high', range: '>=4.0.0 <5.0.10' },
+  ],
+})
+const BUNDLED_MINIMATCH = Object.freeze({
+  name: 'minimatch', severity: 'moderate', isDirect: false, range: '7.0.0 - 11.0.0', nodes: ['node_modules/npm/node_modules/minimatch'], effects: ['npm'],
+  via: [{ source: 1244623, name: 'minimatch', dependency: 'minimatch', url: 'https://github.com/advisories/GHSA-g3hv-75wg-m249', severity: 'moderate', range: '>=7.0.0 <11.0.1' }],
+})
+const npmMetavulnerability = (severity, via) => ({ name: 'npm', severity, isDirect: true, range: '*', nodes: ['node_modules/npm'], effects: [], via })
+const upgradeAudit = (label, vulnerabilities) => parseAuditFindings(
+  JSON.stringify({ auditReportVersion: 2, vulnerabilities: Object.fromEntries(vulnerabilities.map((finding) => [finding.name, finding])) }),
+  label,
+  UPGRADE_PREFIX,
+)
+// 候選樹上 applyInstalledSecurityOverlay 回的已驗 receipt:欄位取自 repo 自己的修補層契約(與正式碼同一份來源)。
+const installedOverlayReceipt = Object.freeze({ ...resolveExactNpmRuntimeContract(join(import.meta.dirname, '..')).securityOverlay, status: 'verified' })
+const lockedOverlayBase = () => upgradeAudit('protected-base', [npmMetavulnerability('moderate', ['minimatch']), BUNDLED_MINIMATCH])
+const pristineCandidate = (extra = []) => upgradeAudit('candidate', [npmMetavulnerability('high', ['minimatch', 'tar']), BUNDLED_MINIMATCH, BUNDLED_TAR, BUNDLED_BRACE_EXPANSION, ...extra])
+const verdict = (diff) => {
+  const lines = []
+  try {
+    assertNoIntroducedAuditFindings(diff, { prefix: UPGRADE_PREFIX, subject: 'upgrade to 0.1.0-beta.153', baseLabel: 'the consumer protected base', report: (line) => lines.push(line) })
+    return { blocked: null, lines }
+  } catch (error) {
+    return { blocked: String(error.message), lines }
+  }
+}
+
+test('upgrade differential compares npm bundled overlay slots on the same basis on both sides (anchor: base lock records the overlay versions)', () => {
+  const fixedDiff = diffAuditFindings(lockedOverlayBase(), pristineCandidate(), { installedOverlayReceipt })
+  const fixed = verdict(fixedDiff)
+  assert.equal(fixed.blocked, null, 'the anchor case must not be blocked')
+  assert.deepEqual(fixedDiff.introduced, [])
+  assert.deepEqual(fixedDiff.overlayRemediated.map((item) => [item.name, item.node, item.overlayVersion]), [
+    ['brace-expansion', 'node_modules/npm/node_modules/brace-expansion', '5.0.12'],
+    ['tar', 'node_modules/npm/node_modules/tar', '7.5.22'],
+  ])
+  assert.deepEqual(fixedDiff.inherited.map((item) => item.name), ['minimatch', 'npm'])
+  assert.ok(fixed.lines.some((line) => line.includes('修補層已修') && line.includes('tar high <=7.5.20')), 'overlay-remediated findings are still printed')
+  // 拿掉修法(不帶 receipt)= 0.1.0-beta.152 以前的口徑:重現 workspace 回報的 BLOCKER(同兩筆、同順序、同 reason 與 advisory;只有版號是測試用的)。
+  const unfixed = verdict(diffAuditFindings(lockedOverlayBase(), pristineCandidate()))
+  assert.match(unfixed.blocked, /GOV-UPGRADE-DEPENDENCY-001:upgrade to 0\.1\.0-beta\.153 introduces 2 vulnerability finding\(s\) that the consumer protected base does not have:\n {2}brace-expansion high 4\.0\.0 - 5\.0\.11\(package-not-vulnerable-in-base\)← https:\/\/github\.com\/advisories\/GHSA-6j4f-fj2g-mc7p, [^\n]+\n {2}tar high <=7\.5\.20\(package-not-vulnerable-in-base\)← https:\/\/github\.com\/advisories\/GHSA-r292-9mhp-454m$/)
+  // 對稱:兩邊都記原裝版本(DS / 範本 main 的鎖檔)→ 兩邊同樣拿掉,不擋、也不誤報成「已修掉」。
+  const pristineBase = upgradeAudit('protected-base', [npmMetavulnerability('high', ['minimatch', 'tar']), BUNDLED_MINIMATCH, BUNDLED_TAR, BUNDLED_BRACE_EXPANSION])
+  const symmetric = diffAuditFindings(pristineBase, pristineCandidate(), { installedOverlayReceipt })
+  assert.equal(verdict(symmetric).blocked, null)
+  assert.deepEqual(symmetric.resolved, [])
+  // 反方向:base 記原裝、候選記修補層版本 → 照舊不擋(候選沒有那兩筆)。
+  const reverse = diffAuditFindings(pristineBase, upgradeAudit('candidate', [npmMetavulnerability('moderate', ['minimatch']), BUNDLED_MINIMATCH]), { installedOverlayReceipt })
+  assert.equal(verdict(reverse).blocked, null)
+})
+
+test('upgrade differential still blocks what the overlay does not cover', () => {
+  // 一般相依真的新增(lodash 4.17.20 實跑的通報之一)→ 照擋,只點名 lodash。
+  const lodash = { name: 'lodash', severity: 'high', isDirect: true, range: '<=4.17.23', nodes: ['node_modules/lodash'], effects: [], via: [{ source: 1106913, name: 'lodash', dependency: 'lodash', url: 'https://github.com/advisories/GHSA-35jh-r3h4-6jhm', severity: 'high', range: '<4.17.21' }] }
+  const general = verdict(diffAuditFindings(lockedOverlayBase(), pristineCandidate([lodash]), { installedOverlayReceipt }))
+  assert.match(general.blocked, /introduces 1 vulnerability finding\(s\)[^\n]*:\n {2}lodash high <=4\.17\.23\(package-not-vulnerable-in-base\)← https:\/\/github\.com\/advisories\/GHSA-35jh-r3h4-6jhm$/)
+  // 修補層版本也在範圍內的通報(修補層沒修到)→ 照擋,只點名那一則;範圍外的那則仍算修補層已修。
+  const pastOverlay = { source: 1, name: 'tar', dependency: 'tar', url: 'https://github.com/advisories/GHSA-test-tar-past-overlay', severity: 'high', range: '<=7.5.23' }
+  const uncoveredDiff = diffAuditFindings(lockedOverlayBase(), upgradeAudit('candidate', [npmMetavulnerability('high', ['minimatch', 'tar']), BUNDLED_MINIMATCH, { ...BUNDLED_TAR, range: '<=7.5.23', via: [...BUNDLED_TAR.via, pastOverlay] }, BUNDLED_BRACE_EXPANSION]), { installedOverlayReceipt })
+  assert.match(verdict(uncoveredDiff).blocked, /introduces 1 vulnerability finding\(s\)[^\n]*:\n {2}tar high <=7\.5\.23\(package-not-vulnerable-in-base\)← https:\/\/github\.com\/advisories\/GHSA-test-tar-past-overlay$/)
+  assert.deepEqual(uncoveredDiff.overlayRemediated.find((item) => item.name === 'tar')?.advisories, ['https://github.com/advisories/GHSA-r292-9mhp-454m'])
+  // 同一則修補層沒修到的通報 base 也有(base 記修補層版本照樣受影響)→ 繼承,不因候選多列了修補層已修的那則而擋。
+  const inheritedPast = diffAuditFindings(
+    upgradeAudit('protected-base', [npmMetavulnerability('high', ['minimatch', 'tar']), BUNDLED_MINIMATCH, { ...BUNDLED_TAR, range: '7.5.21 - 7.5.23', via: [pastOverlay] }]),
+    upgradeAudit('candidate', [npmMetavulnerability('high', ['minimatch', 'tar']), BUNDLED_MINIMATCH, { ...BUNDLED_TAR, range: '<=7.5.23', via: [...BUNDLED_TAR.via, pastOverlay] }, BUNDLED_BRACE_EXPANSION]),
+    { installedOverlayReceipt },
+  )
+  assert.equal(verdict(inheritedPast).blocked, null)
+  assert.deepEqual(inheritedPast.inherited.find((item) => item.name === 'tar')?.advisories, ['https://github.com/advisories/GHSA-test-tar-past-overlay'])
+  // 修補層沒蓋到的 npm 內附套件(minimatch:節點只有 npm 內附那一份,但不是修補層的 slot)只在候選出現 → 照擋,只點名它;
+  // 同一份候選裡 tar / brace-expansion 仍算修補層已修(slot 只認修補層那兩個,不因為「也是 npm 內附」就放寬)。
+  const unslottedBundledDiff = diffAuditFindings(upgradeAudit('protected-base', [npmMetavulnerability('moderate', [])]), pristineCandidate(), { installedOverlayReceipt })
+  assert.match(verdict(unslottedBundledDiff).blocked, /introduces 1 vulnerability finding\(s\)[^\n]*:\n {2}minimatch moderate 7\.0\.0 - 11\.0\.0\(package-not-vulnerable-in-base\)← https:\/\/github\.com\/advisories\/GHSA-g3hv-75wg-m249$/)
+  assert.deepEqual(unslottedBundledDiff.overlayRemediated.map((item) => item.name), ['brace-expansion', 'tar'])
+  // 同名但多一個修補層範圍外的節點(一般相依帶進來的那一份)→ 整筆照舊嚴格。
+  const hoisted = verdict(diffAuditFindings(lockedOverlayBase(), upgradeAudit('candidate', [npmMetavulnerability('high', ['minimatch', 'tar']), BUNDLED_MINIMATCH, BUNDLED_TAR, { ...BUNDLED_BRACE_EXPANSION, nodes: ['node_modules/brace-expansion', 'node_modules/npm/node_modules/brace-expansion'] }]), { installedOverlayReceipt }))
+  assert.match(hoisted.blocked, /introduces 1 vulnerability finding\(s\)[^\n]*:\n {2}brace-expansion high 4\.0\.0 - 5\.0\.11\(package-not-vulnerable-in-base\)/)
+  // 範圍解析不了 → 當成含修補層版本(嚴格)。
+  const unparsable = verdict(diffAuditFindings(lockedOverlayBase(), upgradeAudit('candidate', [npmMetavulnerability('high', ['minimatch', 'tar']), BUNDLED_MINIMATCH, { ...BUNDLED_TAR, via: [{ ...BUNDLED_TAR.via[0], range: '~7.5' }] }, BUNDLED_BRACE_EXPANSION]), { installedOverlayReceipt }))
+  assert.match(unparsable.blocked, /introduces 1 vulnerability finding\(s\)[^\n]*:\n {2}tar high <=7\.5\.20\(package-not-vulnerable-in-base\)/)
+  // slot 只認現行修補層的已驗 receipt:沒驗過、歷史版本、換套件一律 fail closed,不退回「不正規化」。
+  for (const receipt of [
+    { ...installedOverlayReceipt, status: 'applied' },
+    { ...installedOverlayReceipt, version: '5.0.9' },
+    { ...installedOverlayReceipt, secondaryPackage: 'lodash', secondaryTarget: 'node_modules/lodash' },
+    null,
+  ]) {
+    assert.throws(() => diffAuditFindings(lockedOverlayBase(), pristineCandidate(), { installedOverlayReceipt: receipt }), /GOV-NPM-RUNTIME-001:npm bundled security overlay slots require the verified installed receipt of the current overlay/)
+  }
 })
 
 const git = (cwd, args, input = undefined) => {
