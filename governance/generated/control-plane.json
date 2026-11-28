@@ -9,12 +9,12 @@
   },
   "canonicalSources": [
     {
-      "hash": "sha256:c3b712cc5de8aa987fe255177a672d3a44b6049190496fe681b731c4a50b631b",
+      "hash": "sha256:ea9c7fced5b3a6e193fa492d0465cef700d595fe8f41ee016b83af9bd098c3a0",
       "id": "agent-bootstrap",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "AGENTS.md",
-      "size": 22769,
+      "size": 22675,
       "type": "file"
     },
     {

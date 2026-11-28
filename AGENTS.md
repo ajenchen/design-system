@@ -161,7 +161,7 @@
 | `tsc -b` 在本 repo composite 設定下不檢查 DS 原始碼(根目錄 `tsc --noEmit` 是 0 個檔)/ 清 unused imports 後 runtime | 型別以 `npm run build:lib` 為準,runtime 需 storybook。詳 historical-bugs.md |
 | shadcn compat alias 回流 | dark mode 不聯動 |
 | `asChild ? Slot : Native` 內部 JSX 仍渲染多 children | React.Children.only runtime fail;asChild 分支只傳 consumer child |
-| 工具靜默陷阱:`rsync -a` 等長同秒跳過 / `rg -rn` 的 `-r`=replace / `mktemp -d` 失敗回空 / `git commit -- <路徑>`(部分提交)鎖 index 讓 pre-commit 掛掉 / zsh 當 sh 寫(`$V` 不拆字、`echo ====` 吃掉後面每一行、萬用字元沒匹配整行不跑)/ Bash 工具裡 `set -e` 不生效、失敗後照跑 / `<(…)` 的 /dev/fd 被沙箱擋 | `--checksum`、flag 分開寫、mktemp 後驗非空、`git add` 後不帶路徑 commit、zsh 先 `emulate sh`、要失敗即停整串交 `bash -e -s`、兩份輸出各存成檔再比;「0 筆／不支援」先證明工具真的跑了;參數要問「正式流程裡是誰算的」並跑兩面對照。詳 historical-bugs.md |
+| 工具靜默陷阱:`rsync -a` 等長同秒跳過 / `rg -rn` 的 `-r`=replace / `mktemp -d` 失敗回空 / `git commit -- <路徑>`(部分提交)鎖 index 讓 pre-commit 掛掉 / zsh 當 sh 寫(`$V` 不拆字、`echo ====` 吃掉後面每一行、萬用字元沒匹配整行不跑)/ `<(…)` 的 /dev/fd 被沙箱擋 | `--checksum`、flag 分開寫、mktemp 後驗非空、`git add` 後不帶路徑 commit、zsh 先 `emulate sh`、兩份輸出各存成檔再比;「0 筆／不支援」先證明工具真的跑了;參數要問「正式流程裡是誰算的」並跑兩面對照。詳 historical-bugs.md |
 | DS css 不在 tokens.css aggregator 也沒被 tsx import = orphan | consumer 靜默拿不到 |
 | 驗證環境陷阱:storybook-smoke 驗舊 build = 假綠 / `file://` 開 storybook 不渲染不報錯 / hook 測試直跑留 fixture `.git/` 進 corpus | smoke 有 stale-build guard;瀏覽器閘起本機靜態站(含 `var()` 的簡寫用 `r.cssText`);hook 測試:run-all.sh 每支 suite 後的汙染偵測 + CI 的 `scripts/hook-test-fixture-guard-invariant.mjs`。詳 historical-bugs.md |
 | SMIL `begin="indefinite"` 掛上後沒人 `beginElement()` = 永不起跑 | 觸發 key 必含每個會新掛動畫的狀態段;驗 `getStartTime()`。詳 historical-bugs.md |
