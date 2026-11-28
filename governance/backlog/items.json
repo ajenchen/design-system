@@ -125,8 +125,21 @@
       "title": "Calendar 完整功能第二段:週 / 日 / 議程三種檢視、拖選新增、時區(第一段月檢視已在 0.1.0-beta.151 出貨)",
       "kind": "user-directed",
       "source": [
-        {"date":"2026-11-23","quote":"規格一次定四種，實作分兩段 (Recommended)","ref":"tmp/wip-2026-11-25-backup/notes/CALENDAR-AGENDA-2026-11-24.md:111"},
-        {"date":"2026-11-28","quote":"Calendar 完整的功能包括各種視角等","ref":"governance/planning/user-directed-backlog.md U3(a3330afe)"}
+        {
+          "date": "2026-11-23",
+          "quote": "規格一次定四種，實作分兩段 (Recommended)",
+          "ref": "tmp/wip-2026-11-25-backup/notes/CALENDAR-AGENDA-2026-11-24.md:111"
+        },
+        {
+          "date": "2026-11-28",
+          "quote": "Calendar 完整的功能包括各種視角等",
+          "ref": "governance/planning/user-directed-backlog.md U3(a3330afe)"
+        },
+        {
+          "date": "2026-11-28",
+          "quote": "關於 calendar 後續，其他維度的檢視是否完全都可以按照目前月份檢視的設計語言合理且一致的推導出來？然後議程檢視是否可以直接先用表格來放就好？",
+          "ref": "本 session 對話(問句,不是決定)"
+        }
       ],
       "rootCause": "calendar-phase-2-not-built",
       "status": "open",
@@ -136,9 +149,22 @@
         "packages/design-system/src/components/Calendar/calendar.tsx 沒有 view / defaultView / onViewChange(grep 0 筆);calendar.spec.md:53 第二段 API 形狀只寫到【AI 推導】"
       ],
       "parts": [
-        {"oldId":"Q12","text":"週 / 日 / 議程的鍵盤:月檢視模型(一個停靠點、方向鍵、F2 進格)是對月格陣的條件式同意【維持 U7】;套到其他檢視是新的設計主張、要 user 拍板(keyboard-model-canonical.md「適用範圍 —— 只有這些」)。開工前問。"},
-        {"oldId":"Q13","text":"週 / 日 / 議程的版面細節:時段刻度、預設捲到幾點、上班時段與「現在時間」線、頂部全天列放不下時怎麼收、重疊事件怎麼排、議程預設幾天與沒事件的日子要不要列、清單標題日期要不要做成「前往這一天」。開工前問。"},
-        {"oldId":"Q14b","text":"拖選新增的細節:拖選中的樣子(不得與今天的實心底相同【C8(定)】;DateGrid 區間端點是藍底白字圓,直接沿用會撞)、放開後直接呼叫新增回呼還是先出快速新增。開工前問。"}
+        {
+          "oldId": "Q12",
+          "text": "週 / 日 / 議程的鍵盤:月檢視模型(一個停靠點、方向鍵、F2 進格)是對月格陣的條件式同意【維持 U7】;套到其他檢視是新的設計主張、要 user 拍板(keyboard-model-canonical.md「適用範圍 —— 只有這些」)。開工前問。"
+        },
+        {
+          "oldId": "Q13",
+          "text": "週 / 日 / 議程的版面細節:時段刻度、預設捲到幾點、上班時段與「現在時間」線、頂部全天列放不下時怎麼收、重疊事件怎麼排、議程預設幾天與沒事件的日子要不要列、清單標題日期要不要做成「前往這一天」。開工前問。"
+        },
+        {
+          "oldId": "Q14b",
+          "text": "拖選新增的細節:拖選中的樣子(不得與今天的實心底相同【C8(定)】;DateGrid 區間端點是藍底白字圓,直接沿用會撞)、放開後直接呼叫新增回呼還是先出快速新增。開工前問。"
+        },
+        {
+          "oldId": "Q13b",
+          "text": "議程用表格還是分組清單(user 11-28 問「議程檢視是否可以直接先用表格來放就好？」;隨 Q13 開工前一起問)。AI 研究 3 家一手:React Big Calendar 是有表頭的表格(Agenda.js `<th>{messages.date}</th>` / time / event,日期格 rowSpan,沒事件的日子不列,預設 30 天);FullCalendar 是分組清單(list-view 文件「A list view displays events in a simple vertical list」、listDayHeader「the row that displays the date above a group of events」);MUI X 是分組清單(views 頁「lets users manage events in a list layout」、預設 12 天、空日子預設列出可隱藏)。Google Schedule、Outlook 清單本次沒取到一手原文。DS 現況:DataTable 分組未做(data-table.spec.md:62「分組…待 v2」);閱讀式清單有 item-anatomy Family 2(item-anatomy.spec.md:54)+ 分組標題做法(:186)。AI 建議:分組清單(消費 Family 2),不用 DataTable —— 2:1 世界級、DataTable 不能分組、議程不需要排序 / 勾選 / 表格鍵盤。"
+        }
       ],
       "order": 3,
       "orderReason": "你明確要做、規格已定一半;大,開工前先把 Q12 / Q13 / Q14b 三題一次問你"
