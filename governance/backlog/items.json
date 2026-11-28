@@ -1037,6 +1037,22 @@
         "packages/design-system/src/components/ProfileCard/profile-card.tsx:81 語音通話鈕 ChevronDown + onCall(研究代理實讀)",
         "packages/design-system/src/components/Button/button.spec.md:274 endIcon 指示會開啟下一層"
       ]
+    },
+    {
+      "id": "BL-045",
+      "kind": "consumer-report",
+      "status": "open",
+      "verifiedAt": "847391be",
+      "oldIds": [
+        "ws-hug-row"
+      ],
+      "title": "DataTable rowHeight=\"hug\" 單行列文字不在列中線(偏上 1–2px):格子內距公式假設內容是帶 1px 透明框的檢視載體,自訂格 / rowActions xs 鈕 / 選取格沒有正規化成同一個第一行盒",
+      "rootCause": "hug-cell-first-line-box-not-normalized",
+      "valueGate": "①",
+      "suggestion": "責任歸屬 A(DS 的格子負責,spec:124 / :138 承諾 + item-anatomy.spec.md:281-283 第一行槽;AG Grid 格子自帶透明框、Carbon 由 DS 補自己的選單格與勾選格內距):純 CSS —— 自訂格包裝補 padding-block = 框寬、rowActions 鈕第一行槽 23px(margin-block -0.5px)、選取欄勾選框對齊第一行;不改 sharedRowHeights、不新增量測。:134 與 :327 改成一致。閘:I14 擴到自訂格 + rowActions + 多區 hug 表(含 test-only row-auto-height #3),兩面對照。回覆 workspace:外層 inline span 改 inline-flex(照 :327 現文),其餘等 DS 修。",
+      "evidence": [
+        "部分屬實:缺陷成立(hug 單行列的文字確實不在列中線,且列高不等於 token),但 workspace 的歸因不實 —— 不是拖曳把手那一區;是三件事疊加:(1) DS 的格子內距公式只對 Field/Textarea 檢視載體成立,自訂格(規格 :327 叫消費端直接放 inline-flex)少 2px;(2) DS 自己建議的 rowActions xs 按鈕(24)比格子假設的內容高(1lh+2 = 23)多 1px,經 sharedRowHeights 廣播把整列撐高、多出來的都落在下方;(3) workspace 的 StatusIndicator 外面多包一層 inline span,產生 23.5px 的行盒(固定行高下也偏上 1.25px),這一份屬消費端寫法。更正版提出的「:134 與 :327 矛盾」成立。"
+      ]
     }
   ]
 }
