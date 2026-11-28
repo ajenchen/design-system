@@ -26,12 +26,15 @@
  *         右欄沒有 SurfaceHeader / <header>、捲動區從右欄頂端開始、欄內標題都在捲動區裡(R24);右欄內容上方 = tight(R25,2026-11-27 user 回 H24a
  *         「確保左邊是 sidebar 右邊有按照 layout space 設計原則即可…」:兩欄頂端不要求對齊,右欄照 layoutSpace 規則 2)。為什麼擴這支、不另開:同一條規則只由一支閘守,
  *         這支已是「浮層範例契約」的住處(按開 Dialog、量像素、每列各自拆修法),兩欄的幾何此前沒有任何閘量(consumer 端 check_consumer_app_invariants.sh C19 只看原始碼簽名)。
- *   紅: 任一列不符 → 逐列點名 exit 1。`--selftest`:靜態每列注入一個修前形狀(2026-10-20 前的原始碼片段)必須紅在那一列;
+ *         提示的讀屏描述(2026-11-28,R26;tooltip.spec.md「A11y 預設」):滑過觸發點打開提示後讀無障礙樹 —— 說明跟觸發點的讀屏名稱同字
+ *         (InfoTooltip ⓘ、Button / SegmentedControl 純圖示)時觸發點沒有描述,不同字(Tag 截斷全文、Calendar 事件方塊)時描述 = 提示全文。
+ *         為什麼擴這支、不另開:Tooltip 在本閘「浮層家族」範圍、R7 已守浮層的 aria-describedby,沒有別支閘量提示開著時的讀屏名稱與描述。
+ *   紅:任一列不符 → 逐列點名 exit 1。`--selftest`:靜態每列注入一個修前形狀(2026-10-20 前的原始碼片段)必須紅在那一列;
  *       真建置每列在頁面上拆掉修法(拿掉字色 / 陰影、移一則說明、把觸發點設成不可聚焦、換掉 CTA 的事件、拿掉欄的主題、
  *       寫回懸空的 aria-describedby、把卡片移開、把標題改回舊名、把地標名稱改回英文、把按鈕字改回英文、把兩個欄位值對調、拿掉欄位值的 break-words、
  *       把 break-words 換成 break-all、把溢出清單改成橫排、把 Coachmark 頁腳改成靠左、Coachmark 媒體區上方 / 左邊各多 4px、
  *       Coachmark 外殼壓回置中觸發點時的可用高度 370px、Coachmark 內容區改成不縮、兩欄 dialog 的標題列只蓋左半 / × 搬到右欄右上角浮著 /
- *       兩欄共用一條捲軸 / 右欄頂端多一條標題列 / 右欄上方改成 8)必須紅在那一列 —— 少一列沒紅 = 量具沒在量它宣稱的東西 → exit 1;
+ *       兩欄共用一條捲軸 / 右欄頂端多一條標題列 / 右欄上方改成 8、提示的觸發點同字時寫回 aria-describedby 而不同字時拿掉它)必須紅在那一列 —— 少一列沒紅 = 量具沒在量它宣稱的東西 → exit 1;
  *       另有「乾淨對照」:注入本來就正確的歷史句(S5)不得讓任何一列紅 —— 防止量具把對的東西判錯、逼人改寫正確的句子(M37)。
  *       對修前建置(`--build=<修前 storybook-static>`)跑 = 天然對照組。
  *   綠: 現行原始碼與建置每列都量到且符合;找不到要量的元素、story 開不起來、建置缺 = 儀器失效(exit 2,M37:沒量到 ≠ 沒發生),不讀成通過。
@@ -456,6 +459,7 @@ const ROWS = {
   R23: '兩欄 dialog:兩欄各有自己的捲動區、各自捲 —— 捲一欄時另一欄與標題列不動(overlay-surface.spec.md「兩欄 dialog 組合 canonical」第 1 條)',
   R24: '兩欄 dialog:右欄沒有第二條標題列 —— 沒有 SurfaceHeader / <header>,捲動區從右欄頂端開始,欄內標題在捲動區裡隨內容捲(overlay-surface.spec.md「左導覽 + 右內容」+ header-canonical.spec.md「何時不用」)',
   R25: '兩欄 dialog:右欄內容上方 = tight(右欄照 layoutSpace 規則 2,第一個是標題 / 屬性清單等一般元素;兩欄頂端不要求對齊 —— overlay-surface.spec.md「左導覽 + 右內容」,user 2026-11-27 H24a)',
+  R26: '開著的提示:說明跟觸發點的讀屏名稱同字時觸發點沒有描述(讀屏不念兩次),不同字時描述 = 提示全文(tooltip.spec.md「A11y 預設」2026-11-28)',
 }
 const results = new Map()
 const mark = (id, ok, detail = []) => {
@@ -751,6 +755,68 @@ async function runRuntime({ mutateRow = null } = {}) {
         return { ids, text }
       }, phrase)
       rec('R7', got.text.includes(phrase), `${id.split('--').join(' ')}:確認框 aria-describedby = ${got.ids.join(' ') || '(沒有)'},指到的字「${got.text.slice(0, 40)}」不含後果句「${phrase}」`)
+    }
+
+    // R26 提示的讀屏描述不重複名稱(2026-11-28,tooltip.spec.md「A11y 預設」;0.1.0-beta.152 A2):
+    // 滑過觸發點、提示打開後,讀瀏覽器算好的無障礙樹(CDP Accessibility.getPartialAXTree,不讀屬性 —— M37)裡觸發點的名稱與描述。
+    // 同字的三格(InfoTooltip ⓘ、Button 純圖示、SegmentedControl 純圖示)描述必須是空的;不同字的兩格(Tag 截斷:div 沒有名稱、描述 = 全文;
+    // Calendar 事件方塊:名稱 = 標題 + 時間、提示 = 標題)描述必須 = 提示全文 —— 防止把該念的描述一起拿掉。
+    // 格子的前提(同字格名稱真的 = 提示、不同字格真的不同)不成立 = 儀器失效,不讀成通過。
+    {
+      const cdp = await page.context().newCDPSession(page)
+      await cdp.send('Accessibility.enable')
+      const flat = (s) => String(s ?? '').replace(/\s+/g, ' ').trim()
+      const OPEN_TIP = '[data-radix-popper-content-wrapper] > :not([data-state="closed"]) > [role="tooltip"]'
+      const ECHO_CASES = [
+        ['design-system-components-infotooltip-展示--section-heading', '[data-slot="info-tooltip"]', 'same', 'InfoTooltip 展示「區塊標題旁」的 ⓘ', null],
+        ['design-system-components-button-展示--icon-only', 'button[aria-label="新增"]', 'same', 'Button 展示「純圖示」的「新增」', null],
+        ['design-system-components-segmentedcontrol-設計規格--icon-only-matrix', '[role="radio"][aria-label="靠左"]', 'same', 'SegmentedControl 設計規格「純圖示」的「靠左」', null],
+        // 截斷的 Tag:範例本身就截斷(不注入);取第一個字真的被截斷的標籤
+        ['design-system-components-tag-展示--truncation', '[data-tag-root]', 'differ', 'Tag 展示「截斷 + Tooltip」第一個截斷的標籤', 'truncated-tag'],
+        // Calendar 事件方塊:閘把標題那一段擠窄到截斷(範例在 1280 寬不截斷;截斷才開提示,truncated-text.spec.md)
+        ['design-system-components-calendar-展示--team-calendar', '[role="button"][aria-label]', 'differ', 'Calendar 展示「團隊行事曆」第一個有時段的事件方塊(擠窄到截斷)', 'squeeze-event'],
+      ]
+      for (const [id, sel, kind, what, pick] of ECHO_CASES) {
+        await open(id)
+        const marked = await page.evaluate(({ sel, pick }) => {
+          document.querySelectorAll('[data-r26-probe]').forEach((x) => x.removeAttribute('data-r26-probe'))
+          const all = [...document.querySelectorAll(`#storybook-root ${sel}`)]
+          let el = all[0]
+          if (pick === 'truncated-tag') el = all.find((x) => { const t = x.querySelector('[data-tag-text]'); return t && t.scrollWidth > t.clientWidth })
+          if (pick === 'squeeze-event') {
+            el = all.find((x) => x.querySelector('[data-calendar-time]') && x.querySelector('.truncate'))
+            if (el) el.querySelector('.truncate').style.maxWidth = '30px'
+          }
+          if (!el) return false
+          el.setAttribute('data-r26-probe', '')
+          return true
+        }, { sel, pick })
+        if (!marked) fail(`R26 ${what}:找不到觸發點(${sel})`)
+        await settle(200)
+        await page.hover('[data-r26-probe]', { timeout: 10_000 })
+        // 開著 = 有一份開著的提示內容,且它屬於這個觸發點(Radix 寫在觸發點上的開關狀態是開,或觸發點的 aria-describedby 指到它)
+        await waitFor((tip) => {
+          const t = document.querySelector('[data-r26-probe]'), node = document.querySelector(tip)
+          return !!node && (/^(delayed|instant)-open$/.test(t?.getAttribute('data-state') ?? '') || t?.getAttribute('aria-describedby') === node.id)
+        }, OPEN_TIP, `${what} 的提示打開`)
+        await settle(200)
+        await mutate('R26')
+        const tipText = flat(await page.evaluate((tip) => document.querySelector(tip)?.textContent, OPEN_TIP))
+        const { result } = await cdp.send('Runtime.evaluate', { expression: 'document.querySelector("[data-r26-probe]")' })
+        if (!result.objectId) fail(`R26 ${what}:CDP 拿不到觸發點`)
+        const { nodes } = await cdp.send('Accessibility.getPartialAXTree', { objectId: result.objectId, fetchRelatives: false })
+        const name = flat(nodes[0]?.name?.value), desc = flat(nodes[0]?.description?.value)
+        if (!tipText) fail(`R26 ${what}:提示開著卻讀不到提示字`)
+        if (kind === 'same') {
+          if (name !== tipText) fail(`R26 ${what}:讀屏名稱「${name}」≠ 提示「${tipText}」—— 這一格量不到「同字」`)
+          rec('R26', desc === '' || desc !== name, `${what}:讀屏名稱「${name}」、描述「${desc}」—— 同一句念兩次`)
+        } else {
+          if (name === tipText) fail(`R26 ${what}:讀屏名稱與提示同字「${name}」—— 這一格量不到「不同字」`)
+          rec('R26', desc === tipText, `${what}:讀屏名稱「${name}」、描述「${desc}」≠ 提示全文「${tipText}」—— 不同字的說明被拿掉了`)
+        }
+        await page.mouse.move(0, 0)
+      }
+      await cdp.detach().catch(() => {})
     }
 
     // R8 Elevation 層級對比
@@ -1238,6 +1304,14 @@ const MUTATIONS = {
     const body = document.querySelector('[role="dialog"][data-state="open"] [data-dialog-body]')?.lastElementChild?.querySelector('[data-radix-scroll-area-viewport] [data-layout-body]')
     if (body) body.style.setProperty('padding-top', '8px', 'important')
   },
+  // R26:拿掉修法 = 回到 Radix 預設 —— 同字格寫回 aria-describedby(指到開著的提示);不同字格反過來拿掉它(= 把該念的描述一起拿掉的錯修法)
+  R26: () => {
+    const t = document.querySelector('[data-r26-probe]')
+    const tip = document.querySelector('[data-radix-popper-content-wrapper] > :not([data-state="closed"]) > [role="tooltip"]')
+    if (!t || !tip) return
+    if (t.hasAttribute('aria-describedby')) t.removeAttribute('aria-describedby')
+    else t.setAttribute('aria-describedby', tip.id)
+  },
   // R16:照 action-bar :109「沒有標題 → 靠左」的錯誤推論把頁腳改成靠左(單步卡)
   R16: () => { const card = document.querySelector('[role="dialog"].w-80'); const g = [...(card?.querySelectorAll('button') ?? [])].at(-1)?.closest('div')?.parentElement; if (g) g.style.justifyContent = 'flex-start' },
   // R15:2026-10-20 第一版修法 —— 溢出清單的名字直接放進 OverflowIndicator(ShrinkWrapList 橫排成一行)
@@ -1374,10 +1448,12 @@ if (!STATIC_ONLY) {
   // 現行建置那一趟(上面)全綠 = 紅燈來自拆法,不是頁面本來就壞
   const rt = await runRuntime({ mutateRow: 'ALL' })
   if (instrument.length) { for (const l of instrument) console.error(`✗ INSTRUMENT-FAIL(對照組)${l}`); process.exit(2) }
+  // 一列量好幾格、每一格都有自己的對照時,拆法要讓每一格都紅(R26:同字三格 + 不同字兩格,拆法對兩種格各自反過來)
+  const MIN_RED_CELLS = { R26: 5 }
   for (const row of Object.keys(MUTATIONS)) {
     const r = rt.get(row)
-    const ok = r && !r.ok
-    console.log(`  ${ok ? '✓' : '✗'} 頁面對照 ${row}:拆掉修法 → ${ok ? `紅(${r.detail[0]?.slice(0, 90) ?? ''})` : '沒紅'}`)
+    const ok = r && !r.ok && r.detail.length >= (MIN_RED_CELLS[row] ?? 1)
+    console.log(`  ${ok ? '✓' : '✗'} 頁面對照 ${row}:拆掉修法 → ${r && !r.ok ? `紅 ${r.detail.length} 格${MIN_RED_CELLS[row] ? `(應 ≥ ${MIN_RED_CELLS[row]})` : ''}(${r.detail[0]?.slice(0, 90) ?? ''})` : '沒紅'}`)
     if (!ok) missed.push(`頁面 ${row}`)
   }
 }

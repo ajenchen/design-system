@@ -77,7 +77,7 @@ benchmark:
 ## A11y 預設
 
 - `<button type="button">`:Tab 走得到,聚焦時開說明(`../Tooltip/tooltip.spec.md`「A11y 預設」);焦點框用全域 `:focus-visible`。
-- **讀屏名稱 = 說明文字本身**(`aria-label={info}`):讀屏念到這顆時直接念出說明;圖示 `aria-hidden`。
+- **讀屏名稱 = 說明文字本身**(`aria-label={info}`):讀屏念到這顆時直接念出說明;圖示 `aria-hidden`。說明開著時不再念一次(名稱與說明同字,不掛描述;`../Tooltip/tooltip.spec.md`「A11y 預設」)。
 - 放在 `<label>` 外面(HTML 不准 `<label>` 含其他可被標籤的元素):`FieldLabel` 的做法見 `../Field/field.spec.md`「FieldLabel `info` icon」。
 
 ## 禁止事項

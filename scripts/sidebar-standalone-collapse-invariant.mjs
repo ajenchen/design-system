@@ -438,8 +438,12 @@ function railProbe({ kind, op, role }) {
     const bar = vp?.parentElement.querySelector(':scope > [data-orientation="vertical"]')
     if (op === 'reachState') {
       const t = document.querySelector('[data-reach-probe]')
+      // 提示開著 = 觸發點 aria-describedby 指到 role="tooltip",或 Radix 寫在觸發點上的開關狀態是開、且有一份開著的提示內容
+      // (說明跟觸發點的讀屏名稱同字時觸發點不掛 aria-describedby,tooltip.spec.md「A11y 預設」2026-11-28;細列列鈕就是同字)
       const id = t?.getAttribute('aria-describedby')
-      return { scrollTop: vp ? r2(vp.scrollTop) : null, hover: !!t?.matches(':hover'), tip: !!id && document.getElementById(id)?.getAttribute('role') === 'tooltip', thumbHover: !!bar?.firstElementChild?.matches(':hover') }
+      const tip = (!!id && document.getElementById(id)?.getAttribute('role') === 'tooltip')
+        || (/^(delayed|instant)-open$/.test(t?.getAttribute('data-state') ?? '') && !!document.querySelector('[data-radix-popper-content-wrapper] > :not([data-state="closed"]) > [role="tooltip"]'))
+      return { scrollTop: vp ? r2(vp.scrollTop) : null, hover: !!t?.matches(':hover'), tip, thumbHover: !!bar?.firstElementChild?.matches(':hover') }
     }
     if (!bar) return { err: '沒有直捲軸' }
     document.querySelectorAll('[data-reach-probe]').forEach((el) => el.removeAttribute('data-reach-probe'))
@@ -483,10 +487,13 @@ function railProbe({ kind, op, role }) {
     return { x: (v.left + v.right) / 2, y: b.top + b.height / 2 }
   }
   if (op === 'tip') {
-    // Radix Tooltip 開著時,觸發點掛 aria-describedby → role="tooltip" 的節點;泡泡 = 它所在 popper 外殼的第一個子元素
+    // 這顆的提示節點:觸發點 aria-describedby 指到的 role="tooltip";說明跟觸發點的讀屏名稱同字時觸發點不掛它(tooltip.spec.md「A11y 預設」
+    // 2026-11-28;細列列鈕就是同字)→ 改認 Radix 寫在觸發點上的開關狀態是開、開著的那一份提示內容。泡泡 = 它所在 popper 外殼的第一個子元素
     const id = t.getAttribute('aria-describedby')
-    const node = id ? document.getElementById(id) : null
-    const bubble = node?.getAttribute('role') === 'tooltip' ? node.closest('[data-radix-popper-content-wrapper]')?.firstElementChild : null
+    const byId = id ? document.getElementById(id) : null
+    const node = byId?.getAttribute('role') === 'tooltip' ? byId
+      : /^(delayed|instant)-open$/.test(t.getAttribute('data-state') ?? '') ? document.querySelector('[data-radix-popper-content-wrapper] > :not([data-state="closed"]) > [role="tooltip"]') : null
+    const bubble = node ? node.closest('[data-radix-popper-content-wrapper]')?.firstElementChild : null
     if (!bubble) return { open: false }
     return { open: true, left: r2(bubble.getBoundingClientRect().left), visRight: visibleX(t).right, right: r2(t.getBoundingClientRect().right) }
   }
@@ -519,7 +526,10 @@ function tipState({ role, open }) {
   const t = document.querySelector(`[data-rail-probe="${role}"]`)
   const id = t?.getAttribute('aria-describedby')
   const node = id ? document.getElementById(id) : null
+  // 開:aria-describedby 指到 role="tooltip",或(說明跟讀屏名稱同字、不掛 aria-describedby 時;tooltip.spec.md「A11y 預設」2026-11-28)
+  // Radix 寫在觸發點上的開關狀態是開、且有一份開著的提示內容
   if (open) return node?.getAttribute('role') === 'tooltip'
+    || (/^(delayed|instant)-open$/.test(t?.getAttribute('data-state') ?? '') && !!document.querySelector('[data-radix-popper-content-wrapper] > :not([data-state="closed"]) > [role="tooltip"]'))
   return !node && !document.querySelector('[data-radix-popper-content-wrapper] [role="tooltip"]')
 }
 
@@ -721,7 +731,8 @@ async function reachCell(page, kind, prefix, shown, tooltip) {
     await page.mouse.move(r.cand.x, r.cand.y)
     const hovered = await page.waitForFunction(() => !!document.querySelector('[data-reach-probe]')?.matches(':hover'), null, { timeout: 3000 }).then(() => true, () => false)
     const tipOpen = tooltip
-      ? await page.waitForFunction(() => { const t = document.querySelector('[data-reach-probe]'); const id = t?.getAttribute('aria-describedby'); return !!id && document.getElementById(id)?.getAttribute('role') === 'tooltip' }, null, { timeout: 5000 }).then(() => true, () => false)
+      // 開著的判準同 railProbe 的 reachState(同字不掛 aria-describedby 時認 Radix 的開關狀態 + 開著的提示內容)
+      ? await page.waitForFunction(() => { const t = document.querySelector('[data-reach-probe]'); const id = t?.getAttribute('aria-describedby'); return (!!id && document.getElementById(id)?.getAttribute('role') === 'tooltip') || (/^(delayed|instant)-open$/.test(t?.getAttribute('data-state') ?? '') && !!document.querySelector('[data-radix-popper-content-wrapper] > :not([data-state="closed"]) > [role="tooltip"]')) }, null, { timeout: 5000 }).then(() => true, () => false)
       : null
     if (!hovered || tipOpen === false) ok = false
     notes.push(`指標停在軌道上(${r.cand.x}, ${r.cand.y},「${r.cand.label}」):列鈕 :hover ${hovered}${tooltip ? `、Tooltip ${tipOpen ? '開' : '沒開'}` : ''}`)
@@ -917,7 +928,8 @@ async function tabCells(page, c, prefix) {
   if (!reached.focusVisible) throw new RailInstrumentError(`${prefix}:Tab 到的細列列鈕不是 :focus-visible`)
   const maxScroll = await page.evaluate(() => window.__r3kMaxScroll)
   if (!(maxScroll > 0)) throw new RailInstrumentError(`${prefix}:Tab 途中外層捲動容器一次都沒捲(scrollLeft 最大 ${maxScroll}),這一格量不到聚焦帶來的捲動`)
-  const isOpen = (role) => { const t = document.querySelector(`[data-rail-probe="${role}"]`); const id = t?.getAttribute('aria-describedby'); return !!t && t.getAttribute('data-state') !== 'closed' && document.getElementById(id ?? '')?.getAttribute('role') === 'tooltip' }
+  // 同字不掛 aria-describedby 時(tooltip.spec.md「A11y 預設」2026-11-28)認 Radix 的開關狀態 + 開著的提示內容
+  const isOpen = (role) => { const t = document.querySelector(`[data-rail-probe="${role}"]`); const id = t?.getAttribute('aria-describedby'); return !!t && t.getAttribute('data-state') !== 'closed' && (document.getElementById(id ?? '')?.getAttribute('role') === 'tooltip' || (/^(delayed|instant)-open$/.test(t.getAttribute('data-state') ?? '') && !!document.querySelector('[data-radix-popper-content-wrapper] > :not([data-state="closed"]) > [role="tooltip"]'))) }
   const opened = await page.waitForFunction(isOpen, TAB_ROLE, { timeout: 5000 }).then(() => true, () => false)
   await page.waitForTimeout(TAB_PERSIST_MS)
   const still = await page.evaluate(isOpen, TAB_ROLE)
