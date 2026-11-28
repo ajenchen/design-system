@@ -98,14 +98,20 @@ const FallbackRenderer: React.FC<FileRendererProps> = ({ file, onCapabilitiesCha
     onCapabilitiesChange({ zoom: false })
   }, [onCapabilitiesChange])
 
+  // 放得下置中、放不下整區捲動(empty.spec.md「垂直定位」有框那一列,2026-11-28):同 DialogBody 的最小高度 + 整區捲動 —— 舞台本身是捲動區
+  // (ScrollArea fillX fillY,捲軸用 ScrollArea:build-ui-canonicals.md「overflow 使用三規則」),裡面一層 min-h-full 再垂直置中、p-8 在這一層裡;
+  // 放得下時 Empty 在舞台正中(與修前同位置),放不下時這一層跟著內容長高、整個舞台從頂開始捲,視窗縮放時位置連續、不跳。
+  // 捲動區照 ScrollArea 預設可用 Tab 聚焦(同 DialogBody;檢視器是對話框,焦點圈只輪 tabIndex ≥ 0 的元素,預設 0 才輪得到、放不下時鍵盤捲得到)。
   return (
-    <div className="w-full h-full flex items-center justify-center p-8">
-      <Empty
-        icon={FileText}
-        title={file.name}
-        description={`無法在瀏覽器中預覽此檔案類型（${file.mimeType || 'unknown'}）。請下載後檢視。`}
-      />
-    </div>
+    <ScrollArea fillX fillY className="w-full h-full">
+      <div className="flex min-h-full flex-col items-center justify-center p-8">
+        <Empty
+          icon={FileText}
+          title={file.name}
+          description={`無法在瀏覽器中預覽此檔案類型（${file.mimeType || 'unknown'}）。請下載後檢視。`}
+        />
+      </div>
+    </ScrollArea>
   )
 }
 

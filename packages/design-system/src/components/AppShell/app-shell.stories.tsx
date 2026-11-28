@@ -379,17 +379,17 @@ export const PrimaryHeader: Story = {
 //   - Empty(說明 + 動作;不傳 title,標題在外層包 h1 —— empty.spec.md「A11y 預設」Title slot heading level、「整頁狀態」)
 //   - h1 的字級 / 字重 / 色 = Empty 標題那一格(empty.spec.md「Typography」Title:body-lg + medium / foreground);h1 → 說明的距離 = Empty 標題 → 說明
 //     的同一個 token `--item-gap-label-desc-reading-lg`(empty.tsx、item-anatomy.spec.md)—— 標題拿到外層,畫面仍是 Empty 的樣子
-//   - 主內容區撐滿高度、狀態在正中:layoutSpace.spec.md 規則 2「適用範圍與量法三點」(3)(標頭底 → 內容頂 = 內容底 → 主內容區底;上下不給「結論留白」),
-//     左右照規則 1 = `--layout-space-loose`
+//   - 主內容區沒有外框 → 貼上方:empty.spec.md「垂直定位」無框那一列(頂部對齊、上下 `calc(var(--layout-space-bottom) * 2)`;「整頁狀態」第 4 點,
+//     user 2026-11-28 選研究頁的甲、取代 C22 的「狀態置中」),左右照 layoutSpace.spec.md 規則 1 = `--layout-space-loose`
 //   - 導覽照常:primary-header 的 GlobalHeader(品牌、側欄開關、帳號)+ AcmeSidebar 與「主標頭佈局」那一則同一份(@story-baseline 同檔 PrimaryHeader)
 //   - 動作:404 = 回首頁(Dashboard);403 = 申請存取(empty.spec.md「何時用」容器級無權限提示那一條的 request-access 規則,整頁同樣適用)
 //   - Toast(申請送出的回饋;每個獨立 story root 掛一個 Toaster,toast.spec.md)
-// 閘:scripts/header-first-gap-invariant.mjs 的 appshell-full-page-404 / appshell-full-page-403(在主內容區正中、頁面唯一的 h1 = 狀態標題、有動作)。
+// 閘:scripts/header-first-gap-invariant.mjs 的 appshell-full-page-404 / appshell-full-page-403(全域標頭底 → 狀態頂 = 2 × --layout-space-bottom、頁面唯一的 h1 = 狀態標題、有動作)。
 
-/** 整頁狀態:主內容區撐滿高度、內容在正中;標題包 h1(頁面上唯一的 h1),說明與動作交給 Empty。 */
+/** 整頁狀態:主內容區沒有外框 → 貼上方、上下 2 × bottom(empty.spec.md「垂直定位」無框);標題包 h1(頁面上唯一的 h1),說明與動作交給 Empty。 */
 function FullPageState({ title, description, action }: { title: string; description: string; action: React.ReactNode }) {
   return (
-    <div className="flex h-full flex-col items-center justify-center px-[var(--layout-space-loose)]">
+    <div className="flex flex-col items-center px-[var(--layout-space-loose)] py-[calc(var(--layout-space-bottom)*2)]">
       <h1 className="text-center text-body-lg font-medium text-foreground">{title}</h1>
       <Empty className="mt-[var(--item-gap-label-desc-reading-lg)]" description={description} action={action} />
     </div>
@@ -440,7 +440,7 @@ function UnreachablePageShell({ state }: { state: (goTo: (id: string) => void) =
 export const FullPageNotFound: Story = {
   name: '整頁 404 — 打開已刪除的專案連結',
   parameters: {
-    docs: { description: { story: '從聊天訊息點開一個專案連結,那個專案已被刪除:全域標頭與 Menu 照常,主內容區正中放 Empty 說明原因與下一步,標題是這一頁的 h1。按「回到 Dashboard」回到首頁。' } },
+    docs: { description: { story: '從聊天訊息點開一個專案連結,那個專案已被刪除:全域標頭與 Menu 照常,主內容區上方放 Empty 說明原因與下一步,標題是這一頁的 h1。按「回到 Dashboard」回到首頁。' } },
   },
   render: () => (
     <UnreachablePageShell
@@ -456,7 +456,7 @@ export const FullPageNotFound: Story = {
 export const FullPageNoAccess: Story = {
   name: '整頁 403 — 沒有權限的私人專案',
   parameters: {
-    docs: { description: { story: '打開同事分享的「2027 年度預算」專案,那是只有成員看得到的私人專案:全域標頭與 Menu 照常,主內容區正中放 Empty 說明原因,並附「申請存取」。' } },
+    docs: { description: { story: '打開同事分享的「2027 年度預算」專案,那是只有成員看得到的私人專案:全域標頭與 Menu 照常,主內容區上方放 Empty 說明原因,並附「申請存取」。' } },
   },
   render: () => (
     <UnreachablePageShell

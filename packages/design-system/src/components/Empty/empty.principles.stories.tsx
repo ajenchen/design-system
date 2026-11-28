@@ -50,7 +50,7 @@ export const UsageGuidance: Story = {
             <li>
               <StoryLink kind="Design System/Components/Empty/展示" name="空清單">空清單</StoryLink>
             </li>
-            {/* 整頁 404 / 403(user 2026-11-26 第六輪決策卡 C22 選 A,empty.spec.md「整頁狀態」):範例住 AppShell,Empty 放在主內容區正中 */}
+            {/* 整頁 404 / 403(user 2026-11-26 第六輪決策卡 C22 選 A;位置 2026-11-28 改成貼上方,empty.spec.md「整頁狀態」第 4 點):範例住 AppShell,Empty 放在主內容區上方 */}
             <li>
               <StoryLink kind="Design System/Components/AppShell/展示" name="整頁 404 — 打開已刪除的專案連結">整頁 404:打開已刪除的專案連結</StoryLink>
             </li>
