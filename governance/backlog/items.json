@@ -143,10 +143,11 @@
       ],
       "rootCause": "calendar-phase-2-not-built",
       "status": "open",
-      "verifiedAt": "2fcd28fa",
+      "verifiedAt": "564d6377",
       "evidence": [
         "packages/design-system/src/components/Calendar/calendar.spec.md:23「第一段(月檢視)已在 0.1.0-beta.151 實作」",
-        "packages/design-system/src/components/Calendar/calendar.tsx 沒有 view / defaultView / onViewChange(grep 0 筆);calendar.spec.md:53 第二段 API 形狀只寫到【AI 推導】"
+        "packages/design-system/src/components/Calendar/calendar.tsx 沒有 view / defaultView / onViewChange(grep 0 筆);calendar.spec.md:53 第二段 API 形狀只寫到【AI 推導】",
+        "2026-11-28 開工前研究(45 分,一手來源逐字;notes/decisions/research-calendar-views-2026-11-28.md):27 項由既有規格 / 世界級一致推得(D1–D27,含現在時間線用 --info、議程不列空日子、上班時段不上色、開啟捲到 7 點)。依 DS 同目的既有做法(M23)AI 直接定:全天列塞不下 = 月格 +N 清單;空白時段滑過 = 同月格不變色只有手形(8 家 5 家同);拖選中 = DataTable 區間格淡藍反白(不撞今天實心底 C8)。先照建議做、做出圖給 user 看:議程一次 7 天、時間格整點線 + 半點淡虛線。問 user 4 題(決策頁 https://claude.ai/artifact/4bHAv9PWbbVxNGwUiDCUEf,product-ui-ux-decision):1 議程長相(建議丙)、2 週 / 日事件方塊(建議甲 淡底 + 左色條)、3 重疊(建議甲 並排等寬)、4 週 / 日鍵盤(建議甲 方向鍵走到每個時段)。開工前補查:時間格跨天拖(各只一家)。"
       ],
       "parts": [
         {
@@ -163,7 +164,7 @@
         },
         {
           "oldId": "Q13b",
-          "text": "議程用表格還是分組清單(user 11-28 問「議程檢視是否可以直接先用表格來放就好？」;隨 Q13 開工前一起問)。AI 研究 3 家一手:React Big Calendar 是有表頭的表格(Agenda.js `<th>{messages.date}</th>` / time / event,日期格 rowSpan,沒事件的日子不列,預設 30 天);FullCalendar 是分組清單(list-view 文件「A list view displays events in a simple vertical list」、listDayHeader「the row that displays the date above a group of events」);MUI X 是分組清單(views 頁「lets users manage events in a list layout」、預設 12 天、空日子預設列出可隱藏)。Google Schedule、Outlook 清單本次沒取到一手原文。DS 現況:DataTable 分組未做(data-table.spec.md:62「分組…待 v2」);閱讀式清單有 item-anatomy Family 2(item-anatomy.spec.md:54)+ 分組標題做法(:186)。AI 建議:分組清單(消費 Family 2),不用 DataTable —— 2:1 世界級、DataTable 不能分組、議程不需要排序 / 勾選 / 表格鍵盤。"
+          "text": "議程用表格還是分組清單(user 11-28 問「議程檢視是否可以直接先用表格來放就好？」;隨 Q13 開工前一起問)。AI 研究 3 家一手:React Big Calendar 是有表頭的表格(Agenda.js `<th>{messages.date}</th>` / time / event,日期格 rowSpan,沒事件的日子不列,預設 30 天);FullCalendar 是分組清單(list-view 文件「A list view displays events in a simple vertical list」、listDayHeader「the row that displays the date above a group of events」);MUI X 是日期在左欄(AgendaView.tsx gridTemplateColumns 190px 1fr;2026-11-28 研究更正,先前「分組清單」是錯的)。Google Schedule、Outlook 清單本次沒取到一手原文。DS 現況:DataTable 分組未做(data-table.spec.md:62「分組…待 v2」);閱讀式清單有 item-anatomy Family 2(item-anatomy.spec.md:54)+ 分組標題做法(:186)。研究後三個選項:甲 表格日期每列寫 / 乙 日期當標題 / 丙 日期左欄同一天只寫一次(MUI X、Syncfusion、RBC),AI 建議丙 —— 決策頁第 1 題。"
         }
       ],
       "order": 3,
