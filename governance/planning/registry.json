@@ -307,6 +307,12 @@
       "status": "reference",
       "executable": false,
       "reason": "Measured evidence (2026-11-26 local full axe gate run and its baseline control group, nightly a11y workflow run durations, CI job timings) behind moving the axe baseline-regression gate from the nightly a11y-and-size.yml into the PR CI job verify-browser-a11y and behind packages/design-system/ds-canonical/rules/work-process.md v5 dropping the reviewer's local axe re-run; provenance only, the rule itself lives in that file."
+    },
+    {
+      "path": "governance/planning/2026-11-28-work-process-evidence-v6.md",
+      "status": "reference",
+      "executable": false,
+      "reason": "Observed-quality evidence (one 2026-11-28 incident the user pointed out, quoted verbatim: a rule rollout changed two overlay examples whose spacing the user had already settled, and the implementer accepted the change) behind the sentence added to item 1 of packages/design-system/ds-canonical/rules/work-process.md v6; provenance only, the rule itself lives in that file."
     }
   ]
 }

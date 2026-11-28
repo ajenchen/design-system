@@ -42,6 +42,8 @@ Tag creation/push is owned by `release:auto` + the registered Release workflow, 
 
 `AGENTS.md` `# 自主執行 canonical` is the authority SSOT. Commit, push, PR, merge, release, propagation, rollout, and rollback are delegated engineering actions; none is itself an External Authorization Boundary. Stop only for a genuine product/UI/UX SSOT tradeoff or a human-only platform/credential/spend/legal-account-business boundary. A platform-only human action never transfers the engineering decision back to the user.
 
+**user 要做的只有四件(2026-11-28)**:產品／UI／UX SSOT 真取捨、視覺基準說「可以改」、發版同意(說「發版」)、真 human-only(登入 / MFA / OAuth、付費、帳號 / 組織權限)。清單出處是 `AGENTS.md#canonical-decision-authority`(「# 自主執行 canonical」分權表、「Visual baseline」、「Human-only boundaries」)與「# Git / release canonical」1.5,不是 user 逐字。切分支、快轉、清殘留這類 git 動作被平台鎖擋住時,照 `reference_auto_mode_sandbox_boundaries.md` 第一節找等價做法,不把指令交給 user 跑(`stop_self_audit.sh` Mechanism 10 擋,只有互動登入例外)。起因:2026-11-28 主資料夾要切到 PR 分支,協調者沒先試就把三行 git 交給 user、標成 account-holder-platform-action。user 原話(2026-11-28 09:25 台灣時間,session 17e82e93,逐字):「那就分兩次發，但為何又要我下指令？按照工作流程規範不是不應該作繭自縛嗎？root cause?我的工作不是用來幫你在終端機下指令的欸，你應該記得哪些工作才是我真的要做的吧？」
+
 ## Release hard gate
 
 The standard release gate is the machine-readable five-step graph in `infra/governance/release-workflow.json`, executed by `npm run release:auto` and read by `npm run release:status -- --json`. Required PR CI, protected merge, immutable npm publish, GitHub/npm exact readback, and template exact-version protected-main readback are the only standard blockers (the product canary `ajenchen/workspace` is `merge: consumer-owned` since 2026-11-25 — its upgrade PR is opened automatically, merging is its own decision, and it never blocks). Optional assurance never rewrites this graph.

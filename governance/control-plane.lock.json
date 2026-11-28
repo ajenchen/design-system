@@ -537,12 +537,12 @@
   "snapshotDigest": "sha256:7760f876bfa519d06c869d66a22c3d06a23166704a616d8890f79493a1cd8eaa",
   "sources": [
     {
-      "hash": "sha256:fa36b497d8c9d84fbda0ae85a6fb42f1786bcd1940a7a58620f31c96e5c90bcf",
+      "hash": "sha256:9f0010c6c373ebb48ce40860d45c3890feb3984d7fdb7130eb643ff6a5b667d6",
       "id": "agent-bootstrap",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "AGENTS.md",
-      "size": 22684,
+      "size": 22673,
       "type": "file"
     },
     {
@@ -670,7 +670,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 221,
-      "hash": "sha256:fddaecabbefd5522a5dfc0306d9392c32019ef90d560aa787dfa02729eaaee1e",
+      "hash": "sha256:c7213b6d5954ada42560129ec5665add7af57fdd407bda4c2c21f2ce6a8ad8cf",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -703,7 +703,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 7,
-      "hash": "sha256:f7d68913db89c3bb6a76e615b0885310a1034c04c386520860037ae83bb29054",
+      "hash": "sha256:5ec9184f7ad702fb48602afca0a89ef3555ee6e765dffcf12f2e2df5d6a2330b",
       "id": "canonical-rules",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2959,12 +2959,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:c838dff07d0f6aa53ddba9e5362e419ed198763cc7f86bb5558c75687f8292c7",
+      "hash": "sha256:632947698156849c285b40880aa128a09d1374fe5f3c6eb97b26f412080e81f8",
       "id": "product-shared-instruction",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/fork-role-sources/AGENTS.product.md",
-      "size": 7118,
+      "size": 7127,
       "type": "file"
     },
     {
@@ -3236,7 +3236,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 22,
-      "hash": "sha256:cfe2838d0dfe98ea4ae7d04346df4c5338cc0c02b119b8264f7fadbd9a22cffa",
+      "hash": "sha256:06d38b7a6f90a7081799c1b1404f1e7f2bce3a4ec0ca624c2eb1b26770f97caa",
       "id": "provider-neutral-memory",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3246,8 +3246,8 @@
     {
       "carrierProjections": [],
       "excludes": [],
-      "files": 53,
-      "hash": "sha256:06eea1b767d584f9e0bd46f92b0284e974570dc8730bc08b7dce28cc675e8869",
+      "files": 54,
+      "hash": "sha256:42145e00998b262c7d7b8b0259e2717166efae046b276e6c25a798c9b32507c5",
       "id": "provider-neutral-planning-ledger",
       "mode": "0755",
       "ownerRepo": "design-system",

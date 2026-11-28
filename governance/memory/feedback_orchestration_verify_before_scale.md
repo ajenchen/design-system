@@ -40,9 +40,9 @@ metadata:
 
 「1-3%」這個數字只在 2026-11-25 這句找得到原文;前面幾句是這幾點的來源(AI 歸納,非原話):不因額度中斷或遺漏、可被接手、別浪費、快重置就用完。
 
-## 品質是前提,其下才求快求省(2026-11-27 加;下列三點是 AI 依原話整理,原話在本節 Why)
+## 品質是前提,其下才求快求省(2026-11-27 加,11-28 補「如期」;下列三點是 AI 依原話整理,原話在本節 Why)
 
-1. **先後**:產出如預期、完整、完美是前提(規格全做、驗證完整);在此之下以最快、最省時間 / 資源 / token 完成。省的只能是沒有產出價值的重工與等待(重跑別人已驗過的、本機重跑 CI 全套、無證據的新戰場、反覆輪詢、超過預算還派工),不能省規格項或驗證;兩者衝突時品質優先。
+1. **先後**:產出如預期、完整、如期、完美是前提(規格全做、驗證完整);在此之下以最快、最省時間 / 資源 / token 完成。省的只能是沒有產出價值的重工與等待(重跑別人已驗過的、本機重跑 CI 全套、無證據的新戰場、反覆輪詢、超過預算還派工),不能省規格項或驗證;兩者衝突時品質優先。
 2. **做法依環境定**:動手前依當下的機器與環境(本機 / 雲端 session、沙箱與權限邊界、可用工具與傳輸、平行能力與共用資源鎖、模型與 effort 設定)判斷最能達成目標的做法再執行;user 給目標,不逐項下指令(與 `AGENTS.md`「Default = autonomous + complete」、mindset #5「不得用問 user 代替工程判斷」同方向)。已知限制與已驗證的解 → `reference_auto_mode_sandbox_boundaries.md`。
 3. **住處**:DS 端 = `AGENTS.md`「# 自主執行 canonical」第一段;產品端同一條 = `scripts/fork-role-sources/AGENTS.product.md`「Seven working principles」第 7 條(改一處必改另一處);派工沒寫預算的提醒 = `packages/design-system/ds-canonical/hooks/check_audit_sample_escape.sh`。世界級(2026-11-27 讀原文 https://dora.dev/guides/dora-metrics/ ):"DORA's research has repeatedly demonstrated that speed and stability are not tradeoffs." / 同頁引 Dave Farley:"the real trade-off, over long periods of time, is between better software faster and worse software slower." / "Teams should make each change as small as possible to make the delivery process fast and stable."
 
@@ -50,6 +50,7 @@ metadata:
 - 2026-11-26 e3ca5721「確保在以產出品質如預期完整完美為前提之下盡可能加速,不要浪費資源,不要浪費時間,不要浪費token」
 - 2026-11-27 e3ca5721「確保這個 repo 的每一個  session 的工作流程永遠都會以產出品質如預期完整完美為前提之下，盡可能地加速且不浪費時間且不浪費資源且不浪費token。上述應該有在工作流程規範內？確保」(原訊息分兩行)
 - 2026-11-27 e3ca5721「但每個機器每個環境每個effort 設定都可能有不同的最佳實務，這個要確保在執行目標之前都要先判斷該怎麼做吧？這個應該也有寫進去對吧？應該不是我一個指令一個動作吧？反正我的目標很明確，你就是要看怎樣才可以達到我要的目標」
+- 2026-11-28 17e82e93「確保所有任務永遠都以產出品質如期完美為前提盡可能地加速且不浪費資源且不浪費時間且不浪費token」
 
 相關:[[feedback_audit_discipline_full_sweep_deterministic_preflight]]、[[feedback_ai_ground_truth_unreliable_mechanical_primary]]、[[reference_auto_mode_sandbox_boundaries]]
 
