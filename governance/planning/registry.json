@@ -268,9 +268,9 @@
     },
     {
       "path": "governance/planning/2026-09-25-interaction-and-hover-remediation.md",
-      "status": "active",
-      "executable": true,
-      "reason": "Live backlog for the 2026-09-25 interaction-model and hover-pairing work: every pending user decision (with the research conclusion written inline, because the research lives in a session scratchpad), every decided-but-unimplemented item, and every engineering follow-up, each with its closing commit. Opened because the user asked that every unresolved issue be tracked to closure after the previous session lost its open questions."
+      "status": "reference",
+      "executable": false,
+      "reason": "Former live backlog for the 2026-09-25 interaction-model and hover-pairing work (pending user decisions with inline research conclusions, decided-but-unimplemented items, engineering follow-ups with closing commits). Closed 2026-11-28: every row still open was re-verified at a3330afe and the ones still true moved into governance/backlog/items.json (mapping at the top of the document); retained as decision provenance only, must not be re-executed or updated."
     },
     {
       "path": "governance/planning/2026-10-14-app-shell-layout-user-spec.md",
@@ -315,10 +315,10 @@
       "reason": "Observed-quality evidence (one 2026-11-28 incident the user pointed out, quoted verbatim: a rule rollout changed two overlay examples whose spacing the user had already settled, and the implementer accepted the change) behind the sentence added to item 1 of packages/design-system/ds-canonical/rules/work-process.md v6; provenance only, the rule itself lives in that file."
     },
     {
-      "path": "governance/planning/user-directed-backlog.md",
-      "status": "active",
-      "executable": true,
-      "reason": "The only home for future work the user explicitly asked to be listed, each row with the user's verbatim words and date. It lives in the repo because these items were kept only in per-batch handoff folders under git-ignored tmp/, and the DataTable upgrade item was lost twice when a new folder replaced the old one (2026-09-05 to 11-17, and again on 11-25); handoff trackers reference its row ids instead of copying them."
+      "path": "governance/planning/2026-11-28-work-process-evidence-v7.md",
+      "status": "reference",
+      "executable": false,
+      "reason": "Observed-incident evidence behind the sentence added to the scope section of packages/design-system/ds-canonical/rules/work-process.md v7 (open work lives only in governance/backlog/): the DataTable upgrade item lost twice when handoff folders were replaced, the inventory of eleven separate homes, and the migration ledger of which old ids moved to which BL id or were not moved and why; provenance only, the rule itself lives in that file."
     }
   ]
 }

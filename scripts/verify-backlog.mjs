@@ -24,14 +24,21 @@ if (!file) {
   process.exit(1)
 }
 const raw = readFileSync(file, 'utf8').trim()
-const items = raw.startsWith('[')
-  ? JSON.parse(raw)
-  : raw.split('\n').filter(Boolean).map((l) => JSON.parse(l))
+// 待辦正本 governance/backlog/items.json(2026-11-28)是 { items: [...] }:只重跑未結項(open / in-progress / blocked);
+// 正本的 verifyCmd 是可選欄,沒有的照該項 evidence 人工核對(governance/backlog/README.md 規則 6)。
+const canonical = raw.startsWith('{')
+const items = canonical
+  ? JSON.parse(raw).items.filter((it) => ['open', 'in-progress', 'blocked'].includes(it.status)).map((it) => ({ ...it, desc: it.desc ?? it.title }))
+  : raw.startsWith('[')
+    ? JSON.parse(raw)
+    : raw.split('\n').filter(Boolean).map((l) => JSON.parse(l))
 
 let open = 0
 for (const it of items) {
   if (!it.verifyCmd) {
-    console.log(`⚠️  ${it.id ?? '?'} 無 verifyCmd — 不合格 backlog 項(出生時必附),視為 OPEN`)
+    console.log(canonical
+      ? `📝 ${it.id ?? '?'} 無 verifyCmd — 照 evidence 人工核對,先記 OPEN`
+      : `⚠️  ${it.id ?? '?'} 無 verifyCmd — 不合格 backlog 項(出生時必附),視為 OPEN`)
     open++
     continue
   }

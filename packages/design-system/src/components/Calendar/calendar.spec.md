@@ -18,7 +18,7 @@ benchmark:
 
 ## 定位
 
-Calendar 是**看事件的頁面 canvas**:在一段日期範圍裡瀏覽、定位、新增事件,並在詳情浮層裡就地修改。本規格一次定**月 / 週 / 日 / 議程**四種檢視,實作分兩段 —— 第一段重做月檢視並發一版,第二段做週 / 日 / 議程【C5】。週 / 日 / 議程只寫到決策總帳已定的程度,未定的列在「待定」,不先自訂。
+Calendar 是**看事件的頁面 canvas**:在一段日期範圍裡瀏覽、定位、新增事件,並在詳情浮層裡就地修改。本規格一次定**月 / 週 / 日 / 議程**四種檢視,實作分兩段 —— 第一段重做月檢視並發一版,第二段做週 / 日 / 議程【C5】。週 / 日 / 議程只寫到決策總帳已定的程度,未定的列在「待定」(題目住 BL-004),不先自訂。
 
 **實作狀態**:第一段(月檢視)已在 0.1.0-beta.151 實作,相對改寫前程式的破壞性、新增與畫面變更逐條登記在變更帳本 `../../../ds-changes.json` 的 `Calendar.*` / `CalendarEvent.*` / `CalendarEventSegment` / `CalendarLabels*` / `CAT_*` 條目(登記規則 `../../../ds-canonical/references/props-naming.md`「相容政策」);週 / 日 / 議程尚未實作。
 
@@ -50,7 +50,7 @@ Calendar 是**看事件的頁面 canvas**:在一段日期範圍裡瀏覽、定�
 四種都有的世界級:Google Calendar 有日 / 週 / 月 / Schedule 等檢視、右上角切換(<https://support.google.com/calendar/answer/37189?hl=en&co=GENIE.Platform%3DDesktop>);new Outlook 有 Day / Work Week / Week / Month(<https://support.microsoft.com/en-us/office/change-how-you-view-your-outlook-calendar-a4e0dfd2-89a1-4770-9197-a3e786f4cd8f>);Apple 行事曆有日 / 週 / 月 / 年(<https://support.apple.com/en-au/guide/calendar/ical002/27.0/mac/27>);MUI X Scheduler 有 day / week / month / agenda,agenda 預設 12 天(<https://mui.com/x/react-scheduler/event-calendar/views/>);React Big Calendar 預設 month / week / day / agenda(<https://github.com/jquense/react-big-calendar/blob/master/src/Calendar.js>)。
 
 - **第一段不開 `view` 參數**【AI 推導】:只有一個值的參數沒有用;第二段加上是新增、不破壞(未實作的能力不預佔 API)。
-- **第二段 API 形狀**【AI 推導】:`view` / `defaultView` / `onViewChange` / `views`,與 MUI X 同名(<https://mui.com/x/react-scheduler/event-calendar/views/>)、Mantine 也用 `view` / `onViewChange`(<https://mantine.dev/llms/schedule-schedule.md>);週 / 日的時段參數與拖選新增的回呼等「待定」定案後再列。
+- **第二段 API 形狀**【AI 推導】:`view` / `defaultView` / `onViewChange` / `views`,與 MUI X 同名(<https://mui.com/x/react-scheduler/event-calendar/views/>)、Mantine 也用 `view` / `onViewChange`(<https://mantine.dev/llms/schedule-schedule.md>);週 / 日的時段參數與拖選新增的回呼等「待定」(BL-004)定案後再列。
 - **不在四種裡**:年檢視、自訂天數、資源檢視、手機版面(手機版面見「窄寬度」【Q8(定)】)。
 
 ## 何時用
@@ -204,7 +204,7 @@ interface CalendarEvent {
 - **一列 `sm` 控件,在格子區的框外**(2026-11-27 起,見「外殼」;user「2. 可以」確認,原話在「外殼」貼邊擺法那條):與 DataTable 表格上方的工具列同一種 —— `../../tokens/layoutSpace/layoutSpace.spec.md`「標題塊」預設尺寸「表格上方的搜尋列 / 工具列 sm」;高 = `sm` 控件高(一般 28 / 大密度 32),不另加上下內距(工具列 → 格子區的 `tight` 量的是控件到框);不畫底色、不畫底線,坐在容器上;子項間距 `gap-2`。2026-11-27 前是框裡的 `<ChromeHeader>`(固定高 48 / 56 + 底線),框移出工具列後,工具列 → 框的 `tight` 要從控件量,固定高的帶子會多出上下 8【AI 推導】。左右內距預設 0、貼邊擺法 `loose`(見「外殼」)。
 - **排法**:左 =〔‹〕〔今天〕〔›〕+ 期間標題;右 =〔檢視切換(第二段)〕〔+ 新事件〕。標題在左、按鈕靠右(`../../patterns/action-bar/action-bar.spec.md:109`),primary 在業務層最右(同檔 `:121`)。
 - **標題**:`text-body-lg font-medium`(`header-canonical.spec.md:100`);截斷才顯完整文字提示(消費 `<TruncatedText>`);層級由 `titleAs` 指定(預設 `h2`)。月檢視標題 = `Intl` `{ year: 'numeric', month: 'long' }`(zh-TW「2026年7月」)。
-- **‹ › 與「今天」**:月檢視 ±1 個月;「今天」跳到今天所在的月,鍵盤停靠點落在今天。週 / 日 / 議程各自的跳幅與標題格式在第二段定(議程的天數屬「待定」Q13)。
+- **‹ › 與「今天」**:月檢視 ±1 個月;「今天」跳到今天所在的月,鍵盤停靠點落在今天。週 / 日 / 議程各自的跳幅與標題格式在第二段定(議程的天數屬「待定」BL-004 Q13)。
 - **「新事件」**:`<Button variant="primary" startIcon={Plus}>`,全域新增入口、恆渲染、`onCreateEvent` 必填、文字由 `createLabel` 換【維持 U1】。
 - **檢視切換(第二段)**:`SegmentedControl` `sm`,放「新事件」左邊 —— DS 已明列「Filter / toolbar 的分段切換:…日 / 週 / 月」(`../SegmentedControl/segmented-control.spec.md:47`);四種檢視共用同一條工具列、切的是內容不是整塊容器,所以不是 Tabs(同檔 `:57`)。只開一種檢視時不畫(看 `views` 有幾個,不是看回呼有沒有傳)。窄寬時不換成下拉。不內建單字母快捷鍵(會與產品自己的快捷鍵打架;產品要做就用 `onViewChange` / `onReferenceDateChange` 接)。
 
@@ -231,7 +231,7 @@ interface CalendarEvent {
 
 - **格子是非互動容器**:`role="gridcell"`,格內有日期鈕、事件列、「+N」各自的目標(button 語意禁互動後代)【維持 U4】。
 - **日期數字在左上**【C10(改)】:今天的實心底與 1 號的「7月1日」一起在左上。這是 user 的可讀性判斷;研究查不到任何來源寫過「數字置左或置右」的理由,數字在左上的事件月曆有 Mantine(<https://github.com/mantinedev/mantine/blob/master/packages/@mantine/schedule/src/components/MonthView/MonthView.module.css>)、Toast UI(<https://unpkg.com/@toast-ui/calendar@2.1.3/dist/toastui-calendar.css>)、Syncfusion(<https://unpkg.com/@syncfusion/ej2-schedule@31.1.17/styles/material.css>)、FullCalendar v7 breezy / forma 主題(<https://unpkg.com/fullcalendar@7.1.5/themes/breezy/index.js>),只當背景。
-- **今天 = 實心底**【C8(定)】:日期框 `bg-info text-on-emphasis`(`--info`,不得改用 `--primary` 家族,`scripts/status-color-invariant.mjs` 守)【維持 U12】;讀屏見「A11y 預設」。事件月曆今天用實心的:MUI X 實心圓角方塊(<https://github.com/mui/mui-x/blob/master/packages/x-scheduler/src/month-view/month-view-row/MonthViewCell.tsx#L53-L109>)、Mantine 實心圓(<https://github.com/mantinedev/mantine/blob/master/packages/@mantine/schedule/src/components/MonthView/MonthView.module.css#L76-L131>)、Google Calendar 藍色實心圓(<https://workspaceupdates.googleblog.com/2024/10/new-look-and-feel-and-dark-mode-google-calendar.html>)、Apple 行事曆紅色實心圓(官方截圖是週檢視,<https://support.apple.com/guide/calendar/icl1010/mac>)、Notion 資料庫月曆紅色實心圓(<https://www.notion.com/help/calendars>)。**同一家的日期選擇器與事件月曆今天長得不同是常態**:MUI(<https://github.com/mui/mui-x/blob/master/packages/x-date-pickers/src/PickerDay/PickerDay.tsx#L93-L141>)、Ant Design(<https://github.com/ant-design/ant-design/blob/5d2ba41768697a3bc8912e9ab84590db44dc9b4c/components/calendar/style/index.ts#L133-L218>)、Mantine(<https://github.com/mantinedev/mantine/blob/master/packages/@mantine/dates/src/components/Day/Day.module.css#L58-L109>)—— 所以 `../DateGrid/date-grid.spec.md` 的今天短線不動。日後行事曆加「選取日期」時,選取的樣子**不得**與今天的實心底相同(待定 Q14b)。
+- **今天 = 實心底**【C8(定)】:日期框 `bg-info text-on-emphasis`(`--info`,不得改用 `--primary` 家族,`scripts/status-color-invariant.mjs` 守)【維持 U12】;讀屏見「A11y 預設」。事件月曆今天用實心的:MUI X 實心圓角方塊(<https://github.com/mui/mui-x/blob/master/packages/x-scheduler/src/month-view/month-view-row/MonthViewCell.tsx#L53-L109>)、Mantine 實心圓(<https://github.com/mantinedev/mantine/blob/master/packages/@mantine/schedule/src/components/MonthView/MonthView.module.css#L76-L131>)、Google Calendar 藍色實心圓(<https://workspaceupdates.googleblog.com/2024/10/new-look-and-feel-and-dark-mode-google-calendar.html>)、Apple 行事曆紅色實心圓(官方截圖是週檢視,<https://support.apple.com/guide/calendar/icl1010/mac>)、Notion 資料庫月曆紅色實心圓(<https://www.notion.com/help/calendars>)。**同一家的日期選擇器與事件月曆今天長得不同是常態**:MUI(<https://github.com/mui/mui-x/blob/master/packages/x-date-pickers/src/PickerDay/PickerDay.tsx#L93-L141>)、Ant Design(<https://github.com/ant-design/ant-design/blob/5d2ba41768697a3bc8912e9ab84590db44dc9b4c/components/calendar/style/index.ts#L133-L218>)、Mantine(<https://github.com/mantinedev/mantine/blob/master/packages/@mantine/dates/src/components/Day/Day.module.css#L58-L109>)—— 所以 `../DateGrid/date-grid.spec.md` 的今天短線不動。日後行事曆加「選取日期」時,選取的樣子**不得**與今天的實心底相同(待定 BL-004 Q14b)。
 - **每月 1 號帶月份**【Q15(定)】:每月 1 號(含前後月溢出的那幾格)顯示 `Intl` `{ month: 'short', day: 'numeric' }`(zh-TW「7月1日」);今天剛好是 1 號時實心底包住整段字。窄到拿掉時間時只顯示「1」【總帳更正 #8】。讀屏名稱不受影響。世界級:Google Calendar「Nov 1」(<https://calendar.google.com/calendar/embed?src=j7gov1cmnqr9tvg14k621j7t5c%40group.calendar.google.com&src=3haig2m9msslkpf2tn1h56nn9g%40group.calendar.google.com&mode=MONTH&dates=20261101%2F20261128&ctz=UTC&hl=en>)、MUI X 1 號顯示「月 日」(<https://github.com/mui/mui-x/blob/master/packages/x-scheduler/src/month-view/month-view-row/MonthViewCell.tsx>)、Notion 資料庫「Feb 1」(<https://www.notion.com/help/calendars>)、Trello「Jun 1」(<https://support.atlassian.com/trello/docs/calendar-view/>)。
 - **非當月格**:只用淡字(日期數字 `fg-muted`),**不加底色** —— 非當月格與當月格可點性相同(一樣手形游標、滑過一樣不變色、點了一樣在那天新增),disabled 字色與 `bg-muted`(「不可操作」的底,`../../tokens/color/color.spec.md`「Static Subtle Background」)留給真的不能操作的東西【維持 U3】。
 - **星期列**:是格陣的第一列(每格 `role="columnheader"`,見「A11y 預設」);文字**置中**【C10(改)】;字樣 `text-foreground text-body font-medium` 維持【P6,總帳更正 #6】;灰底條 `bg-muted` 維持現狀(沒有證據顯示是問題,【總帳更正 #9】)。內距【AI 推導,預覽時回報 user】:每格四邊 = 格子內距 4,內容盒高 = 列高單位 24(`h-tag-md`,字在盒內垂直置中)→ 列高 = 4 + 24 + 4 = 32,與日期列同一個列高單位,不跟字型行高走(「間距」表沒有列到這一格;改前寫死 `px-2 py-1.5`,列高 33)。星期列不跟週列捲、不做 sticky:`--muted` 是半透明,捲過去的內容會從灰底透出來。
@@ -389,13 +389,11 @@ DS 以桌機為主(`../../tokens/typography/typography.spec.md`「DS 主場景�
 
 ## 選取與拖拉【Q14(定)】
 
-第一段不做任何選取或拖拉;第二段做拖選多天新增(細節「待定」Q14b);拖曳移動 / 拉長之後再議。第二段實作提醒:單擊空白新增與拖選共存,點擊或拖曳一律看「放開點離按下點的距離」(AGENTS.md 失敗記憶索引)。世界級:Apple 月檢視從開始日拖到結束日建多日事件(<https://support.apple.com/guide/calendar/icl1018/mac>)、React Big Calendar `selectable`(<https://github.com/jquense/react-big-calendar/blob/master/src/Calendar.js>)。
+第一段不做任何選取或拖拉;第二段做拖選多天新增(細節「待定」BL-004 Q14b);拖曳移動 / 拉長之後再議。第二段實作提醒:單擊空白新增與拖選共存,點擊或拖曳一律看「放開點離按下點的距離」(AGENTS.md 失敗記憶索引)。世界級:Apple 月檢視從開始日拖到結束日建多日事件(<https://support.apple.com/guide/calendar/icl1018/mac>)、React Big Calendar `selectable`(<https://github.com/jquense/react-big-calendar/blob/master/src/Calendar.js>)。
 
-## 待定(第二段開工前定,不在本規格自編)
+## 待定(BL-004;第二段開工前定,不在本規格自編)
 
-- **Q12 週 / 日 / 議程的鍵盤**:月檢視模型(一個停靠點、方向鍵、F2 進格)是對月格陣的條件式同意【維持 U7】;把「一串一站」這類模型套到月曆事件以外的檢視是新的設計主張、要 user 拍板(`keyboard-model-canonical.md`「適用範圍 —— 只有這些」)。
-- **Q13 週 / 日 / 議程的版面細節**:時段刻度、預設捲到幾點、上班時段與「現在時間」線、頂部全天列放不下時怎麼收、重疊事件怎麼排、議程預設幾天與沒事件的日子要不要列、清單標題日期要不要做成「前往這一天」。已定的只有:議程整段沒有事件寫「沒有事件」【Q11(定)】、不做「月格 + 清單」【Q8(定)】、週數第二段點了切週檢視【Q10b(定)】。
-- **Q14b 拖選新增的細節**:拖選中的樣子(不得與今天的實心底相同【C8(定)】;DateGrid 區間端點是藍底白字圓,直接沿用會撞)、放開後直接呼叫新增回呼還是先出快速新增。
+- Q12 週 / 日 / 議程的鍵盤、Q13 版面細節、Q14b 拖選新增的細節:題目與狀態只住待辦正本 BL-004(`governance/backlog/items.json`),開工前問 user。已定、不在待定裡的:議程整段沒有事件寫「沒有事件」【Q11(定)】、不做「月格 + 清單」【Q8(定)】、週數第二段點了切週檢視【Q10b(定)】、拖選中的樣子不得與今天的實心底相同【C8(定)】。
 
 ## 禁止事項
 

@@ -124,6 +124,55 @@ else
 fi
 rm -rf "$TMP_PROJ"
 
+# Tests 7-10:待辦唯一住處(2026-11-28)。有正本的 repo 擋正本外新建的清單檔;consumer repo(沒有正本)不擋。
+TMP_PROJ=$(mktemp -d)
+[ -n "${TMP_PROJ:-}" ] && [ -d "$TMP_PROJ" ] || { echo "❌ mktemp -d failed(TMP_PROJ;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
+mkdir -p "$TMP_PROJ/governance/backlog" "$TMP_PROJ/tmp/wip/notes"
+echo '{}' > "$TMP_PROJ/governance/backlog/items.json"
+
+echo "Test 7: new tmp/wip/notes/TRACKER.md in a repo with the backlog canonical → block"
+GOVERNANCE_PROJECT_DIR="$TMP_PROJ" GOVERNANCE_PROVIDER=codex run_hook "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$TMP_PROJ/tmp/wip/notes/TRACKER.md\"}}"
+if [ "$EXIT" = "2" ] && echo "$STDOUT" | grep -q 'governance/backlog/items.json'; then
+  echo "  PASS  Test 7 handoff tracker blocked"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 7 (exit=$EXIT, output=$STDOUT)"; FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 7"
+fi
+
+echo "Test 8: new docs/MASTER-TODO.md and 待辦清單.md → block"
+GOVERNANCE_PROJECT_DIR="$TMP_PROJ" GOVERNANCE_PROVIDER=codex run_hook "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$TMP_PROJ/docs/MASTER-TODO.md\"}}"
+E1="$EXIT"
+GOVERNANCE_PROJECT_DIR="$TMP_PROJ" GOVERNANCE_PROVIDER=codex run_hook "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$TMP_PROJ/tmp/待辦清單.md\"}}"
+if [ "$E1" = "2" ] && [ "$EXIT" = "2" ]; then
+  echo "  PASS  Test 8 todo-named lists blocked"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 8 (exit=$E1/$EXIT, output=$STDOUT)"; FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 8"
+fi
+
+echo "Test 9: control — canonical home file, code named todo-*.ts, ordinary notes file → pass"
+GOVERNANCE_PROJECT_DIR="$TMP_PROJ" GOVERNANCE_PROVIDER=codex run_hook "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$TMP_PROJ/governance/backlog/notes.md\"}}"
+E1="$EXIT"
+GOVERNANCE_PROJECT_DIR="$TMP_PROJ" GOVERNANCE_PROVIDER=codex run_hook "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$TMP_PROJ/src/todo-utils.ts\"}}"
+E2="$EXIT"
+GOVERNANCE_PROJECT_DIR="$TMP_PROJ" GOVERNANCE_PROVIDER=codex run_hook "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$TMP_PROJ/tmp/wip/notes/progress-bl.md\"}}"
+if [ "$E1" = "0" ] && [ "$E2" = "0" ] && [ "$EXIT" = "0" ]; then
+  echo "  PASS  Test 9 non-list writes pass"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 9 (exit=$E1/$E2/$EXIT, output=$STDOUT)"; FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 9"
+fi
+rm -rf "$TMP_PROJ"
+
+echo "Test 10: consumer repo without the backlog canonical → same TRACKER.md passes"
+TMP_PROJ=$(mktemp -d)
+[ -n "${TMP_PROJ:-}" ] && [ -d "$TMP_PROJ" ] || { echo "❌ mktemp -d failed(TMP_PROJ;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
+mkdir -p "$TMP_PROJ/tmp/wip/notes"
+GOVERNANCE_PROJECT_DIR="$TMP_PROJ" GOVERNANCE_PROVIDER=codex run_hook "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$TMP_PROJ/tmp/wip/notes/TRACKER.md\"}}"
+if [ "$EXIT" = "0" ]; then
+  echo "  PASS  Test 10 consumer repo not blocked"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 10 (exit=$EXIT, output=$STDOUT)"; FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 10"
+fi
+rm -rf "$TMP_PROJ"
+
 echo ""
 echo "════ Results: $PASS PASS, $FAIL FAIL ════"
 if [ "$FAIL" -gt 0 ]; then

@@ -1,5 +1,7 @@
 <!-- Authority/status: governance/planning/registry.json -->
-# 互動模型與滑過色 — 待辦總帳(2026-09-25 開,live)
+# 互動模型與滑過色 — 待辦總帳(2026-09-25 開;2026-11-28 起為歷史 reference)
+
+> **2026-11-28 起本檔不再是清單**(`governance/planning/registry.json` 改為 reference):整個 repo 的待辦只住 `governance/backlog/items.json`。本檔仍寫著待做 / 待查 / 待篩 / 待決 / 暫緩的列,已在 a3330afe 逐項查證,現在仍成立的搬過去:L11 / R94 → BL-006;N24 → BL-008;OD2 → BL-009;Q2b / N25 → BL-011;Q4a → BL-023;R1b-DT4 / DT6 → BL-024;K8 → BL-025;OD1 → BL-029。其餘(已修、前提已不在、本機查不到現況、或 user 說先不做)逐條列在 `governance/planning/2026-11-28-work-process-evidence-v7.md`「搬遷紀錄」。下文各處「唯一的 live 清單」「完成一項就在這裡標記」是當時的做法,現已不適用;本檔只留作決策出處。
 
 user 2026-09-25 原話:「此外，你他媽之前沒處理完的問題到底有沒有持續追蹤，請確保所有問題都有給我持續追蹤直到完美收尾」。
 前一個 session(5dfb4960)的未決題就是因為只放在對話裡而掉了。**本檔是唯一的 live 清單**:完成一項就在這裡標記並附 commit;
