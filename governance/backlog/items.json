@@ -79,6 +79,11 @@
           "date": "2026-11-28",
           "quote": "我指的是原因可能不適合出現在選項內⏎你有理解對齁",
           "ref": "本 session 對話(澄清上一則:原因本身不屬於選項內容,不只是長度問題;協調者確認理解一致)"
+        },
+        {
+          "date": "2026-11-28",
+          "quote": "盡量不要蓋住其他選項",
+          "ref": "本 session 對話,回 S2(Tooltip 出在選項側邊還是上下)→ 側邊"
         }
       ],
       "rootCause": "disabled-reason-other-components-undefined",
@@ -90,8 +95,8 @@
         "研究(35 一手來源)tmp/wip-2026-11-25-backup/notes/decisions/research-disabled-menu-tooltip-2026-11-28.md:DS 停用列 pointer-events:none(dropdown-menu.tsx:83、command.tsx:657)、Radix / cmdk 方向鍵跳過停用項(本機實測 SelectMenu 跳過 Cindy),Tooltip 出不來;3 則範例把原因寫在選項裡(dropdown-menu.stories.tsx:270、select-menu.stories.tsx:109、select-menu.anatomy.stories.tsx:795-796)"
       ],
       "order": 2,
-      "orderReason": "方向你已定(停用就要說明、用 Tooltip 不寫在項目裡);研究已做完,大部分可照 DS 一致語言直接做,只剩 Tooltip 出在側邊還是上下要附圖給你看",
-      "suggestion": "照研究做(工程 AUTO):① 有原因的停用項用 aria-disabled、方向鍵 / Home/End / 打字跳轉停得到、擋執行(APG「Disabled menu items are focusable but cannot be activated」、Fluent、Spectrum、Primer);② 收得到滑過、不畫滑過底色、禁止游標;③ 有子選單的項目不停用;④ 時機沿用 DS Tooltip 0.5 秒 + 掃描窗口、移到下一項立即換、Esc 第一下只收 Tooltip、選單關一起收;⑤ 讀屏固定 aria-describedby 原因;⑥ DropdownMenu(含子選單、右鍵、表格欄位選單)/ Command / SelectMenu 同一套,cmdk 改由元件打開停用選項的 Tooltip;⑦ 長原因沿用 Tooltip 最寬 280、換行;⑧ 四份規格的「鍵盤 skip」改寫(dropdown-menu.spec.md:228、command.spec.md:112、select-menu.spec.md:269、menu-item.spec.md:291);⑨ 3 則把原因寫在選項裡的範例改成 Tooltip(user 2026-11-28「原因可能不適合出現在選項內」)。可從 DS 一致語言推出、不問:S1 鍵盤停到就自動出現(同 DS 按鈕);S4 不加資訊圖示(同按鈕);S3 觸控點一下顯示 → 併 BL-006(user 09-25「整個行為都跟desktop web一樣」)。真取捨、做出前後圖再問(product-ui-ux-decision):S2 Tooltip 出在側邊(研究建議,不蓋相鄰選項)還是上下(DS Tooltip 預設)。C18 / C20 那類還沒做的動作:維持沒反應、不改成停用。"
+      "orderReason": "方向與配套都已定(停用就要說明、用 Tooltip 不寫在項目裡、出在側邊不蓋其他選項);研究完成,直接實作",
+      "suggestion": "照研究做(工程 AUTO):① 有原因的停用項用 aria-disabled、方向鍵 / Home/End / 打字跳轉停得到、擋執行(APG「Disabled menu items are focusable but cannot be activated」、Fluent、Spectrum、Primer);② 收得到滑過、不畫滑過底色、禁止游標;③ 有子選單的項目不停用;④ 時機沿用 DS Tooltip 0.5 秒 + 掃描窗口、移到下一項立即換、Esc 第一下只收 Tooltip、選單關一起收;⑤ 讀屏固定 aria-describedby 原因;⑥ DropdownMenu(含子選單、右鍵、表格欄位選單)/ Command / SelectMenu 同一套,cmdk 改由元件打開停用選項的 Tooltip;⑦ 長原因沿用 Tooltip 最寬 280、換行;⑧ 四份規格的「鍵盤 skip」改寫(dropdown-menu.spec.md:228、command.spec.md:112、select-menu.spec.md:269、menu-item.spec.md:291);⑨ 3 則把原因寫在選項裡的範例改成 Tooltip(user 2026-11-28「原因可能不適合出現在選項內」)。可從 DS 一致語言推出、不問:S1 鍵盤停到就自動出現(同 DS 按鈕);S4 不加資訊圖示(同按鈕);S3 觸控點一下顯示 → 併 BL-006(user 09-25「整個行為都跟desktop web一樣」)。S2 已定(user 2026-11-28「盡量不要蓋住其他選項」):Tooltip 出在選項側邊(行尾側、撞邊翻到另一側),不蓋相鄰選項;選單元件指定 side,不用 Tooltip 預設的上方。C18 / C20 那類還沒做的動作:維持沒反應、不改成停用。"
     },
     {
       "id": "BL-004",
