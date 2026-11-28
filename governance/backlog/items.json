@@ -16,19 +16,33 @@
       "title": "空狀態 / 讀取 / 結果狀態放在容器的哪裡:已選甲(整頁貼上、頂距 96;有框置中、放不下從頂開始),落地中",
       "kind": "user-directed",
       "source": [
-        {"date":"2026-11-27","quote":"我是想要研究世界級的設計到底怎麼擺放畫面中的空狀態或是結果狀態或是讀取狀態，以及是否有區分其位置而有所不同，邏輯到底是什麼，是否有一氣呵成的整個配套？所有情況都可以有著落都不會讓人猶豫，同時空狀態的位置與視覺也可以讓人一目瞭然,但這題比較 minor,你可以決定看何時要處理","ref":"governance/planning/user-directed-backlog.md U5(a3330afe;確認頁 v-dialog,TRACKER R64)"},
-        {"date":"2026-11-28","quote":"…我目前是覺得某些撐滿螢幕高度的容器中的狀態直接放在容器正中間有點太偏下了，世界級的設計都沒有此類問題？通盤的情境盤點後到底該如何按照條件擺放是最世界級的設計？我想要你的研究是包括上述的，這是這項任務的該做的東西","ref":"governance/planning/user-directed-backlog.md U5(a3330afe)"},
-        {"date":"2026-11-28","quote":"我覺得是照你建議的甲，因為原本ds就這樣定義，但我還是很好奇到底根據世界級的設計通盤研究最一氣呵成通用可以滿足各種情境的是否最大公約數是甲，以及到底是否有世界級設計做乙？乙如果遇到容器高度非常小的情況又會如何處理？你有仔細研究過嗎？","ref":"tmp/wip-2026-11-25-backup/notes/decisions/state-placement-answer-2026-11-28.md(15:2x;研究頁 https://claude.ai/artifact/WptDhHVVvqXnBDAs26mGaY)"}
+        {
+          "date": "2026-11-27",
+          "quote": "我是想要研究世界級的設計到底怎麼擺放畫面中的空狀態或是結果狀態或是讀取狀態，以及是否有區分其位置而有所不同，邏輯到底是什麼，是否有一氣呵成的整個配套？所有情況都可以有著落都不會讓人猶豫，同時空狀態的位置與視覺也可以讓人一目瞭然,但這題比較 minor,你可以決定看何時要處理",
+          "ref": "governance/planning/user-directed-backlog.md U5(a3330afe;確認頁 v-dialog,TRACKER R64)"
+        },
+        {
+          "date": "2026-11-28",
+          "quote": "…我目前是覺得某些撐滿螢幕高度的容器中的狀態直接放在容器正中間有點太偏下了，世界級的設計都沒有此類問題？通盤的情境盤點後到底該如何按照條件擺放是最世界級的設計？我想要你的研究是包括上述的，這是這項任務的該做的東西",
+          "ref": "governance/planning/user-directed-backlog.md U5(a3330afe)"
+        },
+        {
+          "date": "2026-11-28",
+          "quote": "我覺得是照你建議的甲，因為原本ds就這樣定義，但我還是很好奇到底根據世界級的設計通盤研究最一氣呵成通用可以滿足各種情境的是否最大公約數是甲，以及到底是否有世界級設計做乙？乙如果遇到容器高度非常小的情況又會如何處理？你有仔細研究過嗎？",
+          "ref": "tmp/wip-2026-11-25-backup/notes/decisions/state-placement-answer-2026-11-28.md(15:2x;研究頁 https://claude.ai/artifact/WptDhHVVvqXnBDAs26mGaY)"
+        }
       ],
       "rootCause": "state-placement-no-container-matrix",
-      "status": "in-progress",
+      "status": "done",
       "verifiedAt": "a3330afe",
       "evidence": [
         "packages/design-system/src/components/Empty/empty.spec.md:91 整頁狀態(404 / 403)仍是「照 user 2026-11-26 的選擇垂直置中」—— 甲(整頁貼上、頂距 96)還沒落地",
-        "user 2026-11-28 15:2x 選甲:整頁 404 / 403(及之後的整頁錯誤、讀取、結果)貼上方、頂距 96(empty.spec.md 無框規則);有框的撐滿容器維持置中,放不下時從頂開始、可捲動;取代 C22「狀態置中」。落地排 0.1.0-beta.153(另一條線,任務單 tmp/wip-2026-11-25-backup/notes/b4/task-u5a.md);user 同則三個追問由協調者回覆"
+        "user 2026-11-28 15:2x 選甲:整頁 404 / 403(及之後的整頁錯誤、讀取、結果)貼上方、頂距 96(empty.spec.md 無框規則);有框的撐滿容器維持置中,放不下時從頂開始、可捲動;取代 C22「狀態置中」。落地排 0.1.0-beta.153(另一條線,任務單 tmp/wip-2026-11-25-backup/notes/b4/task-u5a.md);user 同則三個追問由協調者回覆",
+        "結案:0.1.0-beta.153 合回 3f49fd18(pkg/u5a 97a3eb08、37443fa6):整頁貼上頂距 96、有框放不下同 DialogBody 整區捲動;header-first-gap / layout-body-edges 守"
       ],
       "order": 1,
-      "orderReason": "你已選甲、這一版正在落地;做完讀回就結案"
+      "orderReason": "你已選甲、這一版正在落地;做完讀回就結案",
+      "doneRef": "3f49fd18"
     },
     {
       "id": "BL-002",
@@ -968,6 +982,23 @@
         "根因程式:packages/design-system/src/components/DatePicker/date-picker.tsx:871-879 `onSelect={(date) => { if (!date) return …; if (!needConfirm) setOpen(false) }}`",
         "M2 驗 lib 行為:node_modules/react-day-picker 9.14.0 dist/esm/selection/useSingle.js:20-30 —— mode='single' 且沒傳 required 時,點已選的那天 `newDate = undefined`(取消選取),呼叫 `onSelect(newDate, triggerDate, modifiers, e)`;DS 收到 undefined 就 return,所以不關也不送值",
         "規格:date-picker.spec.md:455「picker pick → onChange 即時」;單日選完就關(date-picker.tsx:878);清空只走清除鈕(date-picker.spec.md:412「鍵盤清得掉:焦點在清除鈕上按 Enter / 空白 = 清除」)—— 再點已選日不是 DS 的清空路徑,應等同「選這一天」"
+      ]
+    },
+    {
+      "id": "BL-042",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "3f49fd18",
+      "oldIds": [
+        "u5a-tabstop"
+      ],
+      "title": "捲動區只有放不下時才當 Tab 停點(對話框主體、AI 面板新對話、FileViewer 不支援的檔案一般尺寸也多一站)",
+      "rootCause": "scrollarea-viewport-tabindex-always-0",
+      "valueGate": "①",
+      "suggestion": "ScrollArea viewport 依「實際有捲動」切換 tabIndex(或照 Chrome keyboard-focusable scrollers 的做法),DialogBody / SheetBody / AgentPanel 新對話 / FileViewer fallback 同一套;先查 axe scrollable-region-focusable 與世界級(M26),兩面對照:放得下不停、放不下停得到。",
+      "evidence": [
+        "packages/design-system/src/components/ScrollArea/scroll-area.tsx:49 viewport tabIndex 預設 0(axe scrollable-region-focusable fix)",
+        "U5A 實測(notes/progress-u5a.md):AI 面板新對話與 FileViewer 不支援的檔案一般尺寸 Tab 多一站,同 DialogBody 現況"
       ]
     }
   ]
