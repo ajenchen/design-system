@@ -206,7 +206,8 @@
         "R40",
         "E5(ws-upstream-triage-E)",
         "todo-組21",
-        "ws-split-q2"
+        "ws-split-q2",
+        "ws-icondd-q2"
       ],
       "title": "統一一個 rich text 工具列",
       "kind": "user-directed",
@@ -225,7 +226,7 @@
       ],
       "order": 6,
       "orderReason": "你說「到時候有時間再統一出一個 rich text toolbar就好」;不擋其他項",
-      "suggestion": " 範圍補(ws-split 分流 scopeAdd):[object Object] 顏色鈕部分排在 BL-008 定案之後或同時。現行正式寫法:工具列下拉鈕 = Button + endIcon ChevronDown + DropdownMenu(button.spec.md:304、action-bar.spec.md:200 / :455 / :478),DS 不另出下拉鈕元件(M21)。"
+      "suggestion": " 範圍補(ws-split 分流 scopeAdd):[object Object] 顏色鈕部分排在 BL-008 定案之後或同時。現行正式寫法:工具列下拉鈕 = Button + endIcon ChevronDown + DropdownMenu(button.spec.md:304、action-bar.spec.md:200 / :455 / :478),DS 不另出下拉鈕元件(M21)。 單一觸發點的格式下拉鈕保留箭頭(button.spec.md:274 / :304、action-bar.spec.md:455;Fluent、Atlassian、CKEditor、Polaris、Carbon 一致),只有 ⋯ / 群組溢出 ∨ 這種圖示本身代表選單的不加;button.spec.md:304 補寫明(畫面不變)。"
     },
     {
       "id": "BL-008",
@@ -999,6 +1000,42 @@
       "evidence": [
         "packages/design-system/src/components/ScrollArea/scroll-area.tsx:49 viewport tabIndex 預設 0(axe scrollable-region-focusable fix)",
         "U5A 實測(notes/progress-u5a.md):AI 面板新對話與 FileViewer 不支援的檔案一般尺寸 Tab 多一站,同 DialogBody 現況"
+      ]
+    },
+    {
+      "id": "BL-043",
+      "kind": "consumer-report",
+      "status": "open",
+      "verifiedAt": "457e61b7",
+      "askUser": true,
+      "oldIds": [
+        "ws-icondd-q1a",
+        "ws-icondd-q1b"
+      ],
+      "title": "Button 的下拉箭頭(endIcon ChevronDown)跟主圖示 / 字一樣大、一樣顏色,無字「圖示 + 箭頭」看起來像兩顆並列圖示:箭頭要不要縮小 / 淡化(研究建議縮到 12px、同色;有字無字與 Chip / TabsTrigger 同家族)",
+      "rootCause": "button-endicon-chevron-same-size-as-primary-icon",
+      "valueGate": "①",
+      "suggestion": "做前後圖(A 維持 / B 12px 同色(研究建議)/ C 12px + 淡 / D 只改無字型)進下一份決策頁(product-ui-ux-decision);定案後 button.spec.md 補無字型間距算法(只把現況寫成規格)與 item-anatomy.spec.md「指示方向的圖示 → fg-muted」適用範圍。研究:tmp/wip-2026-11-25-backup/notes/migration/ws-icon-dropdown-trigger-triage.json(Fluent 0.6–0.67、Atlassian 0.75、CKEditor 0.5、TinyMCE 0.42 皆比主圖示小;顏色只有 TinyMCE 淡化)。",
+      "evidence": [
+        "實量 storybook 0.1.0-beta.153:xs 50×24、px 8、gap 0,看得到距離 4.0–5.3px;sm/md 約 8.7px;箭頭與主圖示同色 --foreground",
+        "item-anatomy.spec.md:966-976「指示方向的圖示 → fg-muted」與 Button / Chip endIcon 同字色不一致(規格未寫例外)"
+      ]
+    },
+    {
+      "id": "BL-044",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "457e61b7",
+      "oldIds": [
+        "icondd-family-profilecard"
+      ],
+      "title": "ProfileCard 語音通話鈕畫了下拉箭頭,按下卻直接撥出、不開選單(違反「endIcon 箭頭 = 會開下一層」)",
+      "rootCause": "chevron-without-menu",
+      "valueGate": "①",
+      "suggestion": "拿掉箭頭或改成真的開選單(看 profile-card 規格的意圖);M10 全 DS grep endIcon={ChevronDown} 但沒有 DropdownMenu / Popover 觸發的同族一起修;加閘。",
+      "evidence": [
+        "packages/design-system/src/components/ProfileCard/profile-card.tsx:81 語音通話鈕 ChevronDown + onCall(研究代理實讀)",
+        "packages/design-system/src/components/Button/button.spec.md:274 endIcon 指示會開啟下一層"
       ]
     }
   ]
