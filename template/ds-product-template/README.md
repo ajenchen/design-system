@@ -49,28 +49,46 @@ runtime. Native hook absence never counts as certification and protected CI rema
 
 Use the same canonical fresh-checkout bootstrap everywhere; run it locally and configure it explicitly in each hosted environment:
 
-- Local macOS/Linux: run `npm run setup:all` from the repository root.
-- Codex Cloud: set both the environment **Setup script** and **Maintenance script** to
-  `npm run setup:all`. Codex runs setup after checkout and maintenance after restoring a
-  cached container, as described in the [official Codex Cloud environment guide](https://developers.openai.com/codex/cloud/environments).
+The Node.js version has one source: `.node-version` (an exact `X.Y.Z`). CI (`actions/setup-node`
+`node-version-file`), the dev container image, and Netlify (which reads `.node-version` from the site's
+base directory) all use it, and `scripts/node-version-ssot-invariant.mjs` in the design-system repository
+keeps them equal before a release ships. `engines.node` is the wider range consumers may run.
+
+- Local macOS/Linux: install the Node.js version in `.node-version` (nvm, fnm, mise, or the official
+  installer), then run `npm run setup:all` from the repository root.
+- Codex Cloud: set both the environment **Setup script** and **Maintenance script** to the script
+  below. Codex runs setup after checkout and maintenance after restoring a cached container, and setup
+  scripts run with internet access, as described in the [official Codex Cloud environment guide](https://developers.openai.com/codex/cloud/environments);
+  its **Set package versions** setting does not document exact-patch pins, so the script installs the
+  exact `.node-version` itself.
 - Claude Code on the web: the Setup script below can go in the shared **Default** environment.
-  It runs `npm run setup:all` only when this session's repository is `<repository-folder>` and
-  returns that command's own exit status; for any other repository it prints one skip line and exits
-  0, so it never blocks another repository's session. The official guide documents that the script
-  runs as root on Ubuntu 24.04 after the repository is cloned and before Claude Code launches, that
-  the environment's own variables are not set yet, and that a script that exits non-zero makes the
-  session fail to start or start without what it failed to install. The guide does not document the
-  script's working directory, so the script handles both starting at the repository root and
-  starting one level up with the checkout in a subfolder (a Setup script run on Claude Code on the web started in the directory that
+  For the repository `<repository-folder>` it installs the exact Node.js in `.node-version` from the
+  official release on nodejs.org, verifies the archive against the release's `SHASUMS256.txt`, runs
+  `npm run setup:all` with that Node.js, and returns that command's own exit status; a failed download
+  or checksum exits non-zero. For any other repository it prints one skip line and exits 0, so it never
+  blocks another repository's session. The official guide documents that the script runs as root on
+  Ubuntu 24.04 before Claude Code launches, that the environment's own variables are not set yet, that
+  a script that exits non-zero makes the session fail to start or start without what it failed to
+  install, and that the preinstalled Node.js versions are 20, 21, and 22 (22 on `PATH`). The guide does not
+  document the script's working directory, so the script handles both starting at the repository root
+  and starting one level up with the checkout in a subfolder (a Setup script run on Claude Code on the web started in the directory that
   contains the checkout, with the repository in its own subfolder). Replace
-  `<repository-folder>` with this repository's folder name; left unreplaced, the script only skips. A successful run is cached as a filesystem snapshot and is re-run only when the
+  `<repository-folder>` with this repository's folder name; left unreplaced, the script only skips.
+  `nodejs.org` is on the default allowlist of **Limited** network access with **Allow package
+  managers** checked (the setting a new environment starts with); if that box is cleared, add
+  `nodejs.org` under **Allowed domains**. The installed Node.js is linked into `/usr/local/bin`; whether a
+  session's own `PATH` puts it ahead of the preinstalled `/opt/node22` is not documented (not yet
+  measured), so check `node --version` in the session and prepend `/opt/node-v<version>/bin` to `PATH` when
+  it differs. A successful run is cached as a filesystem snapshot and is re-run only when the
   script or allowed hosts change or the cache expires, so after a committed-lock change run
-  `npm run setup:all` in the session. See [Setup scripts](https://code.claude.com/docs/en/cloud-environments#setup-scripts)
+  `npm run setup:all` in the session. See [Setup scripts](https://code.claude.com/docs/en/cloud-environments#setup-scripts),
+  [Default allowed domains](https://code.claude.com/docs/en/cloud-environments#default-allowed-domains),
   and [Setup script failed](https://code.claude.com/docs/en/web-quickstart#setup-script-failed).
 
   ```bash
   #!/bin/bash
-  # Claude Code Setup script (shared Default environment): runs setup:all only for <repository-folder>
+  # Claude Code Setup script (shared Default environment): for <repository-folder> only, installs the
+  # exact Node.js in .node-version (official release, SHA-256 verified) and runs setup:all with it.
   set -uo pipefail
   REPO_DIR="<repository-folder>"  # this repository's folder name
   if [ "$(basename "$PWD")" = "$REPO_DIR" ] && [ -f package.json ]; then
@@ -85,6 +103,40 @@ Use the same canonical fresh-checkout bootstrap everywhere; run it locally and c
     echo "setup:all: $(pwd)/package.json has no setup:all script" >&2
     exit 1
   fi
+  NODE_VERSION="$(tr -d '[:space:]' 2>/dev/null < .node-version)"
+  if ! [[ "$NODE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo "setup:all: $(pwd)/.node-version must hold one exact X.Y.Z version" >&2
+    exit 1
+  fi
+  case "$(uname -m)" in
+    x86_64) NODE_ARCH=x64 ;;
+    aarch64 | arm64) NODE_ARCH=arm64 ;;
+    *) echo "setup:all: no official Node.js build for $(uname -m)" >&2; exit 1 ;;
+  esac
+  NODE_ROOT=/opt
+  NODE_HOME="$NODE_ROOT/node-v$NODE_VERSION"
+  NODE_TARBALL="node-v$NODE_VERSION-linux-$NODE_ARCH.tar.gz"
+  if [ "$("$NODE_HOME/bin/node" --version 2>/dev/null)" != "v$NODE_VERSION" ]; then
+    work="$(mktemp -d)" && [ -n "$work" ] || { echo "setup:all: mktemp failed" >&2; exit 1; }
+    url="https://nodejs.org/dist/v$NODE_VERSION"
+    if ! curl -fsSL --retry 3 -o "$work/SHASUMS256.txt" "$url/SHASUMS256.txt" ||
+      ! curl -fsSL --retry 3 -o "$work/$NODE_TARBALL" "$url/$NODE_TARBALL"; then
+      echo "setup:all: cannot download Node.js v$NODE_VERSION from nodejs.org" >&2
+      exit 1
+    fi
+    if ! (cd "$work" && grep -E "^[0-9a-f]{64}  $NODE_TARBALL\$" SHASUMS256.txt | sha256sum --check --strict --status -); then
+      echo "setup:all: $NODE_TARBALL does not match the release SHASUMS256.txt" >&2
+      exit 1
+    fi
+    rm -rf "$NODE_HOME.partial" && mkdir -p "$NODE_HOME.partial" &&
+      tar -xzf "$work/$NODE_TARBALL" -C "$NODE_HOME.partial" --strip-components=1 &&
+      rm -rf "$NODE_HOME" && mv "$NODE_HOME.partial" "$NODE_HOME" ||
+      { echo "setup:all: cannot install Node.js into $NODE_HOME" >&2; exit 1; }
+    rm -rf "$work"
+  fi
+  for tool in node npm npx; do ln -sfn "$NODE_HOME/bin/$tool" "/usr/local/bin/$tool" || exit 1; done
+  export PATH="$NODE_HOME/bin:$PATH"
+  echo "setup:all: Node.js $(node --version) from $NODE_HOME"
   exec npm run setup:all
   ```
 - GitHub Codespaces/devcontainer: the committed `postCreateCommand` invokes the same

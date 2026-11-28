@@ -31,6 +31,7 @@
     "package.json",
     "package-lock.json",
     ".gitignore",
+    ".node-version",
     ".npmrc",
     ".changeset",
     ".husky",
@@ -81,6 +82,15 @@
       "excludes": [],
       "allowAbsent": false,
       "reason": "Repository state-boundary policy."
+    },
+    {
+      "id": "root-node-version",
+      "path": ".node-version",
+      "match": "file",
+      "classification": "canonical-source",
+      "excludes": [],
+      "allowAbsent": false,
+      "reason": "Canonical Node.js version read by every workflow setup-node step, the dev container, and Netlify (scripts/node-version-ssot-invariant.mjs)."
     },
     {
       "id": "root-npmrc",

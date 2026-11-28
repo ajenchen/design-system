@@ -361,6 +361,9 @@ const MANAGED_FILE_SOURCES = {
   // 0.1.0-beta.152 起受管出貨(TRACKER R22 第二段;151 先發 audit-workflow-security 的例外)。
   '.github/workflows/sync-design-system.yml': join(ROOT, 'template/ds-product-template/.github/workflows/sync-design-system.yml'),
   '.npmrc': join(ROOT, 'template/ds-product-template/.npmrc'),
+  // Node 版本唯一出處(0.1.0-beta.153 起受管出貨):audit.yml / sync-design-system.yml 的 setup-node 讀它、
+  // dev container 映像與 Netlify 對齊它、README 的雲端 Setup script 照它裝 Node(scripts/node-version-ssot-invariant.mjs)。
+  '.node-version': join(ROOT, 'template/ds-product-template/.node-version'),
   '.devcontainer/devcontainer.json': join(ROOT, 'template/ds-product-template/.devcontainer/devcontainer.json'),
   '.devcontainer/devcontainer-lock.json': join(ROOT, 'template/ds-product-template/.devcontainer/devcontainer-lock.json'),
   '.devcontainer/onboard-banner.sh': join(ROOT, 'template/ds-product-template/.devcontainer/onboard-banner.sh'),

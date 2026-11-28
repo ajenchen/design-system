@@ -80,7 +80,7 @@ jobs:
       - name: Set up locked Node toolchain
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: '24.14.0'
+          node-version-file: trusted/.node-version
           package-manager-cache: false
 
       - name: Install source dependencies

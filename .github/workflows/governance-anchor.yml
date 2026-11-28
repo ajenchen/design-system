@@ -35,7 +35,7 @@ jobs:
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.14.0'
+          node-version-file: trusted/.node-version
 
       - name: Install protected-base verifier dependencies without lifecycle execution
         working-directory: trusted

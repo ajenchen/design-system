@@ -122,6 +122,7 @@ const ALLOWLIST = [
   'template/ds-product-template/.storybook',
   'template/ds-product-template/.github',
   'template/ds-product-template/.gitignore',
+  'template/ds-product-template/.node-version', // Node 版本唯一出處(CI setup-node / dev container / Netlify / 雲端 Setup script 都讀它)
   'template/ds-product-template/.npmrc',
   'template/ds-product-template/.env.example',
   'template/ds-product-template/netlify.toml',
