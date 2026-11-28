@@ -764,7 +764,7 @@ if [ "${LAST_USER_LINE:-0}" -gt 0 ] || [ -n "$LAST_ASSISTANT" ]; then
   # 已知不涵蓋:本則回覆只寫「貼上面那行」、指令本身在前一則(前一則交出指令時就已經擋過);否定 / 撤回 / 第一人稱字樣與交辦
   # 寫在同一個子句(中文只用全形。！？，；切子句)時整句不算。
   # awk 不用區間 {m,n}(mawk 不支援);引號判斷用 index 找固定字串,LC_ALL=C 下逐位元組比對。
-  # 對照組:tests/test_stop_self_audit.sh Tests 130-142(含拿掉這段判定的複本 → 錨例改放行)。
+  # 對照組:tests/test_stop_self_audit.sh Tests 130-141(含拿掉這段判定的複本 → 錨例改放行)。
   if [ -n "$HANDOFF_SOURCE" ] && [ "${LAST_USER_LINE:-0}" -gt 0 ]; then
     DIRECT_SPLIT_AWK='
       function handoff_words(s) {

@@ -1428,7 +1428,7 @@ T138=$(printf '%s\n' "$(rec_user '收尾')" "$(rec_push '請你在自己的終�
   "$(rec_result 'Terminal notification sent. Mobile push requested.')" "$(rec_text '已通知。')")
 run_test_locales "Test 138: 交辦只寫在推播、本輪沒被擋 → block" 1 "$T138" "SELF-LOCK HANDOFF"
 
-# Tests 139-142(2026-11-28 規格核對必修 2-4):每組都是「會擋 / 不擋」兩面,只差交辦或否定 / 第一人稱 / 貼到哪裡那幾個字。
+# Tests 139-141(2026-11-28 規格核對必修 2-4):每組都是「會擋 / 不擋」兩面,只差交辦或否定 / 第一人稱 / 貼到哪裡那幾個字。
 direct_case() { run_test_locales "$1" "$2" "$(direct_transcript "$3")" "${4:-}"; }
 # 139:交辦說法補齊(幫我 / 幫忙 / 手動 / 你那邊 / 你也可以 / 英文 please run、can you run)
 direct_case "Test 139a: 「幫我在終端機跑 git switch」→ block" 1 '幫我在終端機跑 git switch pkg/b3,跑完跟我說。' "SELF-LOCK HANDOFF"

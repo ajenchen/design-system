@@ -26,7 +26,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-hook-provider-marker-regex-helper | `packages/design-system/ds-canonical/hooks/lib/provider-marker-regex.mjs` | `sha256:7395275574a3d3c1b65b6e6fc58aedbbd95caf157e0cd5cf07d0107a4531bd65` |
 | canonical-hook-registration-output-contract-helper | `packages/design-system/ds-canonical/hooks/tests/registration-output-contracts.mjs` | `sha256:96c5a30cf956ecd9471b106396e0b80823c9e8e1c29c5b21f052b3bcd68d7fa0` |
 | canonical-hook-tsx-governance-analysis-helper | `packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs` | `sha256:e1b26967fad39d9b7dbd4aac8eb2a568eca910cd6857e6fd1ffd4b1b99f0157b` |
-| canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:756a765074e1923c02e4acfcbd03ae556f872d8faea1e7f38f1372edd97a9e71` |
+| canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:df9799c7a611cbf60ee92f46bc2b93adf8eebbb0de2582fa7e709e71270c86d1` |
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:d4b05f704b7b02a9e73cccd9bd6969040dd37496e9bd6e84d3438ed2b0d0ccd4` |
 | canonical-references | `packages/design-system/ds-canonical/references` | `sha256:1c72f86e0d41c5010b5104308ce756832879adf498d798f59793757b1da67823` |
 | canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:5ec9184f7ad702fb48602afca0a89ef3555ee6e765dffcf12f2e2df5d6a2330b` |
