@@ -102,7 +102,7 @@
       ],
       "rootCause": "disabled-reason-other-components-undefined",
       "status": "open",
-      "verifiedAt": "f4c47f36",
+      "verifiedAt": "2fcd28fa",
       "evidence": [
         "packages/design-system/src/components/Tooltip/tooltip.spec.md:100-105 按鈕(aria-disabled + Tooltip)、欄位(Tooltip 包 Field)已有停用說明;:106 選單項等其他元件做法未寫",
         "去脈絡化更正:BL 搬遷曾把 C18/C20 寫成「停用的選單項要不要說明」,原題不是這個(2026-11-28 user 指出)",
@@ -143,7 +143,7 @@
       ],
       "rootCause": "calendar-phase-2-not-built",
       "status": "open",
-      "verifiedAt": "a3330afe",
+      "verifiedAt": "2fcd28fa",
       "evidence": [
         "packages/design-system/src/components/Calendar/calendar.spec.md:23「第一段(月檢視)已在 0.1.0-beta.151 實作」",
         "packages/design-system/src/components/Calendar/calendar.tsx 沒有 view / defaultView / onViewChange(grep 0 筆);calendar.spec.md:53 第二段 API 形狀只寫到【AI 推導】"
@@ -181,13 +181,25 @@
       "title": "DataTable 凍結欄 RWD:視窗窄時凍結欄自動解凍、夠寬恢復(仿 Notion)",
       "kind": "user-directed",
       "source": [
-        {"date":"2026-11-27","quote":"先不動？我們之後待辦rwd會解決這個問題？","ref":"tmp/wip-2026-11-25-backup/notes/decisions/decide152-answers.md 第 7 題"},
-        {"date":"2026-11-27","quote":"凍結欄 rwd 不就是之前從下游傳回來的待辦嗎？跟notion 一樣的設計啊？你是否遺漏了？","ref":"governance/planning/user-directed-backlog.md U2(a3330afe)"},
-        {"date":"2026-11-28","quote":"凍結欄位的 RWD","ref":"governance/planning/user-directed-backlog.md U2(a3330afe)"}
+        {
+          "date": "2026-11-27",
+          "quote": "先不動？我們之後待辦rwd會解決這個問題？",
+          "ref": "tmp/wip-2026-11-25-backup/notes/decisions/decide152-answers.md 第 7 題"
+        },
+        {
+          "date": "2026-11-27",
+          "quote": "凍結欄 rwd 不就是之前從下游傳回來的待辦嗎？跟notion 一樣的設計啊？你是否遺漏了？",
+          "ref": "governance/planning/user-directed-backlog.md U2(a3330afe)"
+        },
+        {
+          "date": "2026-11-28",
+          "quote": "凍結欄位的 RWD",
+          "ref": "governance/planning/user-directed-backlog.md U2(a3330afe)"
+        }
       ],
       "rootCause": "datatable-pinned-columns-no-responsive-rule",
       "status": "open",
-      "verifiedAt": "a3330afe",
+      "verifiedAt": "2fcd28fa",
       "evidence": [
         "grep「自動解凍 / unfreeze」於 packages/design-system/src/components/DataTable/ 0 筆:凍結欄沒有隨寬度調整的行為"
       ],
@@ -207,19 +219,42 @@
       "title": "手機上的 hover:全面讓手機 / 觸控也有 hover 事件,行為跟桌機一樣、不客製(InfoTooltip 觸控點不開併在這)",
       "kind": "user-directed",
       "source": [
-        {"date":"2026-09-25","quote":"先維持，很多都是手機不會出現的功能，且如果真的要解也完全不想動desktop web 的所有元件，反而可能會考慮是否全面讓手機也有hover事件，然後整個行為都跟desktop web一樣，沒有任何客製。","ref":"governance/planning/2026-09-25-interaction-and-hover-remediation.md:186(L11)"},
-        {"date":"2026-11-14","quote":"「全面讓手機也有hover事件」這個工很大嗎？我以為只是移除禁止這個行為而已","ref":"governance/planning/user-directed-backlog.md U4(a3330afe)"},
-        {"date":"2026-11-28","quote":"你把這題先記著列為待辦到時候再仔細通盤研究解決 root cause並達到預期目標就好","ref":"tmp/wip-2026-11-25-backup/TRACKER.md:154(R94 定案;remediation :311)"},
-        {"date":"2026-11-28","quote":"手機上hover的行為調整","ref":"governance/planning/user-directed-backlog.md U4(a3330afe)"}
+        {
+          "date": "2026-09-25",
+          "quote": "先維持，很多都是手機不會出現的功能，且如果真的要解也完全不想動desktop web 的所有元件，反而可能會考慮是否全面讓手機也有hover事件，然後整個行為都跟desktop web一樣，沒有任何客製。",
+          "ref": "governance/planning/2026-09-25-interaction-and-hover-remediation.md:186(L11)"
+        },
+        {
+          "date": "2026-11-14",
+          "quote": "「全面讓手機也有hover事件」這個工很大嗎？我以為只是移除禁止這個行為而已",
+          "ref": "governance/planning/user-directed-backlog.md U4(a3330afe)"
+        },
+        {
+          "date": "2026-11-28",
+          "quote": "你把這題先記著列為待辦到時候再仔細通盤研究解決 root cause並達到預期目標就好",
+          "ref": "tmp/wip-2026-11-25-backup/TRACKER.md:154(R94 定案;remediation :311)"
+        },
+        {
+          "date": "2026-11-28",
+          "quote": "手機上hover的行為調整",
+          "ref": "governance/planning/user-directed-backlog.md U4(a3330afe)"
+        }
       ],
       "parts": [
-        {"oldId":"R94","text":"根因方案(2026-11-28,TRACKER.md:153):手機沒有滑過 = 兩個源頭,各在共用層改一次,不逐元件:① 樣式:Tailwind 4 hover: / group-hover: / peer-hover: 的「能滑過裝置」條件 → base.css 一行 `@custom-variant hover (&:hover);`,全部元件一次生效;DS 手寫同條件 / 觸控略過要一起對齊:data-table.tsx:4460-4461、sidebar.tsx:1538-1541、tabs.tsx:618、tabs.tsx:624(非觸控才標 data-action-hover)。② 程式:Radix 會跳出的滑過型元件主動略過觸控(hover-card dist/index.mjs:89-90 / :120-121 excludeTouch;tooltip 同類)→ 只改 DS 三個包裝處:Tooltip(tooltip.tsx)、HoverCard(hover-card.tsx)、Button 直接用的 Radix Tooltip(button.tsx);22 個使用它們的元件(含 InfoTooltip、頭像名片)一起好。共約 7 處。真機要看:點過停在滑過樣子;iPhone 點兩下;有提示的按鈕點一下時提示閃現 + 動作同時發生是否可接受。","userQuote":"那每個元件都像這樣擋掉觸控，那加那一行的意義何在？⏎這都是同樣的問題吧？為何不能通盤解決root cause就好"},
-        {"oldId":"R94-定案","text":"不在 152 做;列為待辦,之後通盤研究 root cause(R94 根因方案為起點),達到 user 09-26 目標「全面讓手機也有hover事件，然後整個行為都跟desktop web一樣，沒有任何客製」(TRACKER.md:154)"}
+        {
+          "oldId": "R94",
+          "text": "根因方案(2026-11-28,TRACKER.md:153):手機沒有滑過 = 兩個源頭,各在共用層改一次,不逐元件:① 樣式:Tailwind 4 hover: / group-hover: / peer-hover: 的「能滑過裝置」條件 → base.css 一行 `@custom-variant hover (&:hover);`,全部元件一次生效;DS 手寫同條件 / 觸控略過要一起對齊:data-table.tsx:4460-4461、sidebar.tsx:1538-1541、tabs.tsx:618、tabs.tsx:624(非觸控才標 data-action-hover)。② 程式:Radix 會跳出的滑過型元件主動略過觸控(hover-card dist/index.mjs:89-90 / :120-121 excludeTouch;tooltip 同類)→ 只改 DS 三個包裝處:Tooltip(tooltip.tsx)、HoverCard(hover-card.tsx)、Button 直接用的 Radix Tooltip(button.tsx);22 個使用它們的元件(含 InfoTooltip、頭像名片)一起好。共約 7 處。真機要看:點過停在滑過樣子;iPhone 點兩下;有提示的按鈕點一下時提示閃現 + 動作同時發生是否可接受。",
+          "userQuote": "那每個元件都像這樣擋掉觸控，那加那一行的意義何在？⏎這都是同樣的問題吧？為何不能通盤解決root cause就好"
+        },
+        {
+          "oldId": "R94-定案",
+          "text": "不在 152 做;列為待辦,之後通盤研究 root cause(R94 根因方案為起點),達到 user 09-26 目標「全面讓手機也有hover事件，然後整個行為都跟desktop web一樣，沒有任何客製」(TRACKER.md:154)"
+        }
       ],
       "suggestion": "以 R94 根因方案為起點通盤研究:兩個源頭各在共用層改一次(base.css 的 hover custom-variant + DS 三個 Radix 包裝處),不逐元件,約 7 處;做完放預覽給 user 真機看",
       "rootCause": "hover-gated-to-hover-capable-devices",
       "status": "open",
-      "verifiedAt": "a3330afe",
+      "verifiedAt": "2fcd28fa",
       "evidence": [
         "DS 的 hover 樣式走 Tailwind 4 `hover:`(只在 `@media (hover:hover)` 生效):packages/design-system/src/components/Tabs/tabs.tsx:618、Sidebar/sidebar.tsx:1538-1541、DataTable/data-table.tsx:4463 都照這個條件寫,觸控裝置沒有 hover"
       ],
@@ -247,7 +282,7 @@
       ],
       "rootCause": "no-shared-rich-text-toolbar",
       "status": "blocked",
-      "verifiedAt": "a3330afe",
+      "verifiedAt": "2fcd28fa",
       "evidence": [
         "DS 沒有 rich text 工具列元件:`RichTextToolbar` 只出現在 packages/design-system/src/patterns/action-bar/action-bar.stories.tsx(範例自組,git grep 3 處)",
         "workspace 2026-11-28:Tasks RichTextEditor.tsx 1634 行、Chat 756 行、MNP 179 行,execCommand 8 / 9 / 5 處(workspace 自述,未在 DS 端驗)",
@@ -277,7 +312,7 @@
       ],
       "rootCause": "no-split-button",
       "status": "open",
-      "verifiedAt": "a3330afe",
+      "verifiedAt": "2fcd28fa",
       "evidence": [
         "git grep「split button / split-button / 分割按鈕」於 packages/design-system/src 只有 action-bar.spec.md:293 一處對照說明,DS 沒有分割按鈕;當時研究部分可找回:user 08-26 三句原話(問句)與 AI 兩段摘要在 tmp/wip-2026-10-13/t10-reanswer/q4-ssot/data/user-corpus.jsonl:1801-1803;樣式矩陣評估全文已不在",
         "2026-11-28 workspace 問 split button 現況(tmp/wip-2026-11-25-backup/notes/decisions/ws-split-button-q-2026-11-28.md);分流 notes/migration/ws-split-button-triage.json:DS 從未有 split button(git log --all -G 只有文字提及);工具列下拉鈕 / 群組溢出 ∨ = 單一點擊目標(Button + DropdownMenu),split = 兩個目標,WinUI / Fluent v9 / Atlassian / APG 一致"
@@ -294,11 +329,15 @@
       "title": "AI 面板與舞台浮層之間的鍵盤往返、區段切換鍵",
       "kind": "user-directed",
       "source": [
-        {"date":"2026-09-25","quote":"若鍵盤的設計和成本負擔很大也可以拆為 backlog,agent 鍵盤的互動很次要,我已經講過了","ref":"governance/planning/2026-09-25-interaction-and-hover-remediation.md:494(OD2;原紀錄沒寫日期,日期取併入 D 區的 09-25)"}
+        {
+          "date": "2026-09-25",
+          "quote": "若鍵盤的設計和成本負擔很大也可以拆為 backlog,agent 鍵盤的互動很次要,我已經講過了",
+          "ref": "governance/planning/2026-09-25-interaction-and-hover-remediation.md:494(OD2;原紀錄沒寫日期,日期取併入 D 區的 09-25)"
+        }
       ],
       "rootCause": "agent-panel-stage-keyboard-roundtrip",
       "status": "open",
-      "verifiedAt": "a3330afe",
+      "verifiedAt": "2fcd28fa",
       "evidence": [
         "packages/design-system/src 沒有區段切換鍵(git grep \"F6\" 0 筆);AgentPanel 與舞台浮層之間沒有鍵盤往返"
       ],
@@ -319,12 +358,16 @@
       "kind": "user-decision",
       "scope": "product-ui-ux-decision",
       "source": [
-        {"date":"2026-11-26","quote":"先不決定,之後再說","ref":"tmp/wip-2026-11-25-backup/notes/decisions/round5-answers.md:8(第五輪 C5)"}
+        {
+          "date": "2026-11-26",
+          "quote": "先不決定,之後再說",
+          "ref": "tmp/wip-2026-11-25-backup/notes/decisions/round5-answers.md:8(第五輪 C5)"
+        }
       ],
       "rootCause": "icon-box-not-a-component",
       "status": "blocked",
       "blockedReason": "user 說「先不決定,之後再說」:不主動再問,user 提起再拿出來",
-      "verifiedAt": "a3330afe",
+      "verifiedAt": "2fcd28fa",
       "evidence": [
         "packages/design-system/src 沒有 IconBox(git grep 0 筆)"
       ],
@@ -343,21 +386,44 @@
       "title": "DataTable 一次到位升級:研究 AG Grid 與 TanStack 最新版定標竿;用到的套件全部一起更新到最新;架構一起改(含捲動機制,表頭與表身放進同一個捲動盒)。不拆階段",
       "kind": "user-directed",
       "source": [
-        {"date":"2026-09-04","quote":"…甚至是可以考慮追上最新版本的 ag grid吧?…","ref":"governance/planning/user-directed-backlog.md U1(a3330afe)"},
-        {"date":"2026-09-05","quote":"…並仔細研究 ag grid 的最新版和 TanStack的最新版,然後仔細評估我們若要升版到底應該以誰為標竿…","ref":"governance/planning/user-directed-backlog.md U1(a3330afe)"},
-        {"date":"2026-09-05","quote":"關於升級的部分我則要一次就到位的方案，請勿給我拆階段，且做完就是完美包括所有都是最新的，包括tanStack 的套件所有該更新的都要一起更新，應該是基於這個概念給我方案，等到目前的問題都修正完成之後才會開始考慮升級方案的進行","ref":"governance/planning/user-directed-backlog.md U1(a3330afe)"},
-        {"date":"2026-11-17","quote":"先不上啊，之前不是說表格更新有很多任務要一起規劃？包括所有我們有用的套件都要更新並重新對標最新版的 ag grid 然後把整個架構更新包括捲動的機制與設計，反正要全部對標才符合我們之前定義的修改標準吧？因為這樣有問題才有東西可以查證啊，我記得上述這些本來就有記載吧？所以現在還不是時機吧？等你把所有該做的任務都做完再說吧？","ref":"governance/planning/user-directed-backlog.md U1(a3330afe;決策頁 r10 留言)"},
-        {"date":"2026-11-28","quote":"table 框架更新並對齊最新版 ag grid","ref":"governance/planning/user-directed-backlog.md U1(a3330afe)"}
+        {
+          "date": "2026-09-04",
+          "quote": "…甚至是可以考慮追上最新版本的 ag grid吧?…",
+          "ref": "governance/planning/user-directed-backlog.md U1(a3330afe)"
+        },
+        {
+          "date": "2026-09-05",
+          "quote": "…並仔細研究 ag grid 的最新版和 TanStack的最新版,然後仔細評估我們若要升版到底應該以誰為標竿…",
+          "ref": "governance/planning/user-directed-backlog.md U1(a3330afe)"
+        },
+        {
+          "date": "2026-09-05",
+          "quote": "關於升級的部分我則要一次就到位的方案，請勿給我拆階段，且做完就是完美包括所有都是最新的，包括tanStack 的套件所有該更新的都要一起更新，應該是基於這個概念給我方案，等到目前的問題都修正完成之後才會開始考慮升級方案的進行",
+          "ref": "governance/planning/user-directed-backlog.md U1(a3330afe)"
+        },
+        {
+          "date": "2026-11-17",
+          "quote": "先不上啊，之前不是說表格更新有很多任務要一起規劃？包括所有我們有用的套件都要更新並重新對標最新版的 ag grid 然後把整個架構更新包括捲動的機制與設計，反正要全部對標才符合我們之前定義的修改標準吧？因為這樣有問題才有東西可以查證啊，我記得上述這些本來就有記載吧？所以現在還不是時機吧？等你把所有該做的任務都做完再說吧？",
+          "ref": "governance/planning/user-directed-backlog.md U1(a3330afe;決策頁 r10 留言)"
+        },
+        {
+          "date": "2026-11-28",
+          "quote": "table 框架更新並對齊最新版 ag grid",
+          "ref": "governance/planning/user-directed-backlog.md U1(a3330afe)"
+        }
       ],
       "rootCause": "datatable-upgrade-all-at-once",
       "status": "open",
-      "verifiedAt": "a3330afe",
+      "verifiedAt": "2fcd28fa",
       "evidence": [
         "packages/design-system/package.json:105-106 `@tanstack/react-table` ^8.21.3、`@tanstack/react-virtual` ^3.13.23;:83 `@dnd-kit/core` ^6.3.1 —— 還沒做升級評估",
         "packages/design-system/src/components/DataTable/data-table.spec.md:102 表頭仍在捲動容器外、用 JS 同步 scrollLeft(舊 Q2b 要改的結構)"
       ],
       "parts": [
-        {"oldId":"Q2b","text":"捲動當下表頭落後表身一格畫面:表頭與表身是兩個捲動盒子、表頭由程式跟上;根治 = 表頭放進表身同一個捲動盒子、sticky 固定。併進本項一起做(user 11-17「把整個架構更新包括捲動的機制與設計」)。"}
+        {
+          "oldId": "Q2b",
+          "text": "捲動當下表頭落後表身一格畫面:表頭與表身是兩個捲動盒子、表頭由程式跟上;根治 = 表頭放進表身同一個捲動盒子、sticky 固定。併進本項一起做(user 11-17「把整個架構更新包括捲動的機制與設計」)。"
+        }
       ],
       "order": 10,
       "orderReason": "你定的時機:其他任務都做完之後(11-17「等你把所有該做的任務都做完再說吧？」)"
