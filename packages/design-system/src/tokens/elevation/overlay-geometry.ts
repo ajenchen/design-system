@@ -14,7 +14,7 @@ export const OVERLAY_COLLISION_PADDING = 8
 
 /**
  * 浮層寬的視窗夾限(CSS 長度;2026-11-15 抽出):產品用 `width` 指定寬的浮層(PopoverContent `width={數字}`、
- * 表格三個工具面板 `DataTable/lib/panel-width.ts`)一律夾在這個值以內 —— 視窗再窄,浮層也不超出視窗(左右各留 1rem,
+ * 表格三個工具面板 `DataTable/lib/panel-width.ts`;2026-11-28 起 SelectMenu 面板也夾,它跟內容寬)一律夾在這個值以內 —— 視窗再窄,浮層也不超出視窗(左右各留 1rem,
  * 大於上面的 collisionPadding 8px,Radix 推得回視窗內)。值沿用篩選面板 2026-05-04 起寫在自己根元素上的
  * `min(640px, calc(100vw - 2rem))`(`components/DataTable/data-table-filter-panel.tsx`),畫面不變;收成一份免得三個面板各寫一次。
  * 字串不是數字:要放進 `min()` / `max()`,Radix 不讀它。

@@ -12,6 +12,9 @@
  *                    選項帶說明(兩行列,列高 49.6)時 N = 5 → 280.8px,同樣切在第 N + 1 列的一半(SelectMenu 自己帶的預設);
  *                    傳 maxHeight = min(可用高, 此值)(取代預設、可比預設高);外殼不超過可用高。
  *         C          放在 Popover 裡的 ProfileCard 根元素上限 = 它讀到的可用高。
+ *         W          SelectMenu 面板寬的視窗上限(2026-11-28 R93;select-menu.spec.md「架構」:視窗不夠寬時照浮層通則縮,上限 = 視窗寬 − 2rem):
+ *                    選項字比視窗長、視窗 360 寬 → 面板寬 = 視窗寬 − 2rem、整個在視窗內、第一列的字在列內截斷(有省略號、不凸出面板);
+ *                    對照列:同一份選項在 1280 寬 → 面板比上限窄(上限不作用)、字不截斷(一般寬度畫面不變)。
  *         (Calendar「+N」清單的半列上限 —— 標題列 + N 列 + 半列、上限寫在 PopoverContent 外殼上 —— 由 scripts/calendar-month-invariant.mjs
  *          ML-half 在真的月曆上量「捲在頂端時可見底邊切在第 N + 1 列的一半」,對照組 = maxHeight 不設;公式 halfRowCap 與本閘 L 列同一支。2026-11-26)
  *         量的是夾具裡真的渲染出來的浮層(getComputedStyle + getBoundingClientRect),期望值由本檔照規格算、不 import 元件常數 ——
@@ -26,6 +29,7 @@
  *       (c′) list-whole-row  半列公式少了那半列(最後一列切在列與列之間)          → L-list、L-list-half、L-list-described 紅
  *       (c″) list-cap  CommandList 不理會 maxHeight 參數                           → L-list-cap、L-list-cap-tall 紅
  *       (d) submenu    DropdownMenuSubContent 拿掉 maxHeight(修前的缺口)           → S 紅
+ *       (e) select-menu-width  SelectMenu 面板拿掉 maxWidth(修前:沒有視窗上限,360 寬時面板 665、右緣超出 313)→ W-select-menu-narrow 紅(W-select-menu-wide 是對照列,照綠)
  *       任一種沒改寫到 / 改寫了卻沒紅 = 儀器失效,exit 1。
  *       夾具打包失敗、找不到建置 CSS、浮層沒開起來、可用高讀不到(NaN)= INSTRUMENT-FAIL(exit 1),不是通過也不是產品裁決;
  *       沒有 storybook 建置 = MISSING-BUILD(exit 2)。
@@ -76,7 +80,11 @@ const CASES = [
   { id: 'L-list-cap', q: { case: 'command-list', cap: '200' }, list: true, listCap: 200, what: 'CommandList maxHeight={200} → 清單上限 min(可用高, 200)(比預設矮)' },
   { id: 'L-list-cap-tall', q: { case: 'command-list', cap: '400' }, list: true, listCap: 400, what: 'CommandList maxHeight={400} → 清單上限 min(可用高, 400)(比預設高:取代預設,不是再取小)' },
   { id: 'C-profile', q: { case: 'profile-card' }, standalone: true, what: 'Popover 裡的 ProfileCard 根元素上限 = 它讀到的可用高' },
+  { id: 'W-select-menu-narrow', q: { case: 'select-menu-long' }, width: 'clamped', viewport: { width: 360, height: 600 }, what: 'SelectMenu 選項字比視窗長、視窗 360 寬 → 面板寬 = 視窗寬 − 2rem、整個在視窗內、長字在列內截斷' },
+  { id: 'W-select-menu-wide', q: { case: 'select-menu-long' }, width: 'natural', what: '對照列:同一份選項、視窗 1280 寬 → 面板比上限窄、字不截斷(一般寬度畫面不變)' },
 ]
+/** W 列第一個選項的字(= 夾具 LONG_ISSUES[0];量它所在的元素有沒有截斷) */
+const LONG_LABEL = 'PLAT-1204 匯出報表在資料量超過十萬筆時逾時並回傳空白檔案,需調整查詢分頁與背景佇列'
 
 /** 對照組:同一份夾具打包檔上的四種破法(esbuild 未壓縮的 IIFE;regex 打在常數 / 函式上;改寫數必須正好 1) */
 const MUTATIONS = [
@@ -87,6 +95,7 @@ const MUTATIONS = [
   { name: 'list-whole-row', what: '清單預設上限少了半列(最後一列切在列與列之間 —— 半列原則失效)', re: /( \+ \$\{rowHeight\d*\} \/ 2\))/g, to: ')', mustFail: ['L-list', 'L-list-half', 'L-list-described'] },
   { name: 'list-cap', what: 'CommandList 不理會 maxHeight 參數(一律用預設)', re: /(capHeight\d*\(OVERLAY_AVAILABLE_HEIGHT\d*, )maxHeight\d* \?\? (OVERLAY_LIST_MAX_HEIGHT\d*\.single\[\w+\]\))/g, to: '$1$2', mustFail: ['L-list-cap', 'L-list-cap-tall'] },
   { name: 'submenu', what: 'DropdownMenuSubContent 拿掉 maxHeight(修前的缺口)', re: /(minWidth: 180), maxHeight: capHeight\d*\(OVERLAY_AVAILABLE_HEIGHT\d*\)/g, to: '$1', mustFail: ['S-available'] },
+  { name: 'select-menu-width', what: 'SelectMenu 面板拿掉 maxWidth(修前:沒有視窗上限)', re: /(: "max\(var\(--radix-popover-trigger-width\), 15rem\)"),\s*maxWidth: OVERLAY_VIEWPORT_MAX_WIDTH\d*/g, to: '$1', mustFail: ['W-select-menu-narrow'] },
 ]
 
 requireStorybookBuild(join(STATIC, 'index.json'))
@@ -105,7 +114,7 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol
 // 整支閘只開一個分頁:沙箱參數 --single-process 下關掉最後一個分頁會連瀏覽器一起收掉(同 dialog-width-invariant);各輪之間換路由攔截,不換分頁
 const page = await browser.newPage({ viewport: VIEWPORT, reducedMotion: 'reduce' })
 
-const MEASURE = () => {
+const MEASURE = (longLabel) => {
   const c = document.getElementById('oh-content')
   if (!c) return null
   const cs = getComputedStyle(c)
@@ -124,8 +133,17 @@ const MEASURE = () => {
     const s = getComputedStyle(p)
     return { maxH: px(s.maxHeight), avail: px(s.getPropertyValue('--radix-popper-available-height')), h: p.getBoundingClientRect().height }
   })()
+  // W 列:長選項的字所在的最內層元素(找字,不靠 class);截斷 = 內容比框寬 / 高,省略號 = text-overflow 或單行 line-clamp
+  const label = (() => {
+    const el = [...c.querySelectorAll('[cmdk-item] *')].filter((e) => e.textContent === longLabel).pop()
+    if (!el) return null
+    const s = getComputedStyle(el)
+    const b = el.getBoundingClientRect()
+    return { right: b.right, truncated: el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1, ellipsis: s.textOverflow === 'ellipsis' || s.webkitLineClamp === '1' }
+  })()
   return { avail: px(cs.getPropertyValue('--radix-popper-available-height')), maxH: px(cs.maxHeight), maxHraw: cs.maxHeight, h: r.height, inner: c.clientHeight, top: r.top, bottom: r.bottom,
-    vh: window.innerHeight, rootFs: px(getComputedStyle(document.documentElement).fontSize), list, standalone }
+    left: r.left, right: r.right, w: r.width, vw: window.innerWidth,
+    vh: window.innerHeight, rootFs: px(getComputedStyle(document.documentElement).fontSize), list, standalone, label }
 }
 /** 子選單捲到底,回傳最後一項與內容框的位置 */
 const SCROLL_TO_END = () => {
@@ -156,8 +174,9 @@ async function runAll(mutation = null) {
   }
   const rows = []
   for (const c of CASES) {
+    await page.setViewportSize(c.viewport ?? VIEWPORT)
     await openStory(page, urlOf(c.q), { waitFor: '#oh-content', settleFrames: 5, notFound: fx.notFound, label: `夾具 ${c.id}` })
-    const m = await page.evaluate(MEASURE)
+    const m = await page.evaluate(MEASURE, LONG_LABEL)
     if (!m) throw new StoryRenderInstrumentError({ storyId: `夾具 ${c.id}`, url: urlOf(c.q), kind: 'missing-overlay', reason: '等到 #oh-content 之後量測當下它不在了', failedRequests: [] })
     if (!Number.isFinite(m.avail) || m.avail <= 0) {
       throw new StoryRenderInstrumentError({ storyId: `夾具 ${c.id}`, url: urlOf(c.q), kind: 'no-available-height', reason: `浮層上讀不到 --radix-popper-available-height(實得 ${m.avail})—— 不在 Radix popper 裡,量不到「可用高」`, failedRequests: [] })
@@ -166,7 +185,20 @@ async function runAll(mutation = null) {
     const cp = capPx(c.cap, m.rootFs)
     const want = cp == null ? m.avail : Math.min(m.avail, cp)
     if (!near(m.maxH, want, 0.5)) problems.push(`上限 ${m.maxHraw} ≠ ${want.toFixed(1)}px(可用高 ${m.avail}${cp == null ? '' : `、maxHeight ${cp}px`})`)
-    if (c.list) {
+    if (c.width) {
+      // 寬的上限 = 視窗寬 − 2rem(規格值,不 import OVERLAY_VIEWPORT_MAX_WIDTH)
+      const wCap = m.vw - 2 * m.rootFs
+      if (!m.label) throw new StoryRenderInstrumentError({ storyId: `夾具 ${c.id}`, url: urlOf(c.q), kind: 'missing-label', reason: `面板裡找不到字為「${LONG_LABEL}」的元素 —— 夾具與閘的 LONG_LABEL 對不上`, failedRequests: [] })
+      if (m.left < -0.5 || m.right > m.vw + 0.5) problems.push(`面板 ${m.left.toFixed(1)}–${m.right.toFixed(1)} 超出視窗 0–${m.vw}`)
+      if (m.label.right > m.right + 0.5) problems.push(`選項字右緣 ${m.label.right.toFixed(1)} 凸出面板右緣 ${m.right.toFixed(1)}`)
+      if (c.width === 'clamped') {
+        if (!near(m.w, wCap, 0.5)) problems.push(`面板寬 ${m.w.toFixed(1)} ≠ 視窗寬 − 2rem = ${wCap}(選項字比視窗長,應被夾住)`)
+        if (!(m.label.truncated && m.label.ellipsis)) problems.push(`長選項沒有在列內截斷(截斷 ${m.label.truncated}、省略號 ${m.label.ellipsis})`)
+      } else {
+        if (!(m.w < wCap - 0.5)) problems.push(`一般寬度:面板寬 ${m.w.toFixed(1)} 碰到上限 ${wCap}(上限不該作用)`)
+        if (m.label.truncated) problems.push('一般寬度:長選項被截斷(上限不該作用)')
+      }
+    } else if (c.list) {
       // 清單的上限:傳 maxHeight = min(可用高, 此值);不傳 = 半列原則(也經 capHeight,一般視窗裡可用高比它大)
       const listWant = Math.min(m.avail, c.listCap ?? LIST_CAP_PX)
       if (!m.list) problems.push('找不到 CommandList 的捲動區')
@@ -206,7 +238,7 @@ async function runAll(mutation = null) {
         if (!(s2.lastBottom <= s2.boxBottom + 0.5 && s2.lastTop >= s2.boxTop - 0.5)) problems.push(`捲到底最後一項 ${s2.lastTop.toFixed(1)}–${s2.lastBottom.toFixed(1)} 不在子選單框 ${s2.boxTop.toFixed(1)}–${s2.boxBottom.toFixed(1)} 內`)
       }
     }
-    rows.push({ id: c.id, what: c.what, ok: problems.length === 0, detail: problems.join(';') || `上限 ${m.maxHraw}、實際高 ${m.h.toFixed(1)}、可用高 ${m.avail}${m.list ? `、清單 ${m.list.maxH}/${m.list.h.toFixed(1)}` : ''}${m.standalone ? `、ProfileCard ${m.standalone.maxH}/${m.standalone.h.toFixed(1)}` : ''}` })
+    rows.push({ id: c.id, what: c.what, ok: problems.length === 0, detail: problems.join(';') || `上限 ${m.maxHraw}、實際高 ${m.h.toFixed(1)}、可用高 ${m.avail}${m.list ? `、清單 ${m.list.maxH}/${m.list.h.toFixed(1)}` : ''}${m.standalone ? `、ProfileCard ${m.standalone.maxH}/${m.standalone.h.toFixed(1)}` : ''}${c.width ? `、面板 ${m.left.toFixed(1)}–${m.right.toFixed(1)}(寬 ${m.w.toFixed(1)}、視窗 ${m.vw}、字截斷 ${m.label.truncated})` : ''}` })
   }
   return { rows, rewrites }
 }
@@ -217,7 +249,7 @@ try {
     const { rows } = await runAll()
     for (const r of rows) console.log(`${r.ok ? '✓' : '✗'} ${r.id} ${r.what} | ${r.detail}`)
     const bad = rows.filter((r) => !r.ok)
-    console.log(bad.length ? `\n✗ overlay-height-cap-invariant:${bad.length} / ${rows.length} 格不符(規格:packages/design-system/src/tokens/elevation/elevation.spec.md「浮層高度上限」)` : `\n✓ overlay-height-cap-invariant:${rows.length} 格全部相符`)
+    console.log(bad.length ? `\n✗ overlay-height-cap-invariant:${bad.length} / ${rows.length} 格不符(規格:packages/design-system/src/tokens/elevation/elevation.spec.md「浮層高度上限」;W 列 packages/design-system/src/components/SelectMenu/select-menu.spec.md「架構」)` : `\n✓ overlay-height-cap-invariant:${rows.length} 格全部相符`)
     exitCode = bad.length ? 1 : 0
   } else {
     const verdicts = []
@@ -234,7 +266,7 @@ try {
       console.error(`\n✗ overlay-height-cap-invariant --selftest:${broken.length} 種破法沒有套上或沒讓該紅的格紅 —— 這支閘量的不是它宣稱的東西`)
       exitCode = 1
     } else {
-      printSelftestLine(`\n✓ overlay-height-cap-invariant --selftest:${MUTATIONS.length} 種破法(可用高改 100vh / 不理會 cap / 單行列的 N 改 12 / 兩行列的 N 改 7 / 少了半列 / CommandList 不理會 maxHeight / 子選單拿掉上限)各自讓指定的格紅`)
+      printSelftestLine(`\n✓ overlay-height-cap-invariant --selftest:${MUTATIONS.length} 種破法(可用高改 100vh / 不理會 cap / 單行列的 N 改 12 / 兩行列的 N 改 7 / 少了半列 / CommandList 不理會 maxHeight / 子選單拿掉上限 / SelectMenu 拿掉寬的視窗上限)各自讓指定的格紅`)
     }
   }
 } catch (error) {
