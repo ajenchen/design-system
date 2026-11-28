@@ -859,7 +859,7 @@ function sleep(milliseconds) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds)
 }
 
-function packageVersion(workflow) {
+export function packageVersion(workflow) {
   const versions = workflow.automation.packages.map(name => {
     const path = PACKAGE_PATHS[name]
     invariant(path, `no local manifest is registered for ${name}`)
@@ -956,6 +956,93 @@ export function releaseDefinitelyMissing(repository, tag) {
 /** 這一版算不算消耗掉一次發布(有 release,或讀不到 → 都算)。 */
 export function releaseCountsAsPublished(repository, tag) {
   return countsAsPublishedFromState(releasePublishedState(repository, tag))
+}
+
+/**
+ * 版號有沒有升 —— **合併之前**就判(2026-11-28 R100,beta.152 錨)。
+ *
+ * 錨:PR #176(beta.152 的內容)與 #177 合併後 main CI 綠,release:auto 卻到 publish 才判 stale-version ——
+ * packages/design-system/package.json 仍是 0.1.0-beta.151(= 已發布的 tag)。發版前機器可讀項目自我稽核三項全過、
+ * pr-checks / merge 也都沒擋,協調者照規則向 user 要了同意,結果得再開 PR #178 升版號,152 晚約一小時。
+ * publish 那一格(buildFiveStepStatus 的 staleVersion)判的是同一件事,只是在合併**之後**;這裡把它提前到合併前,
+ * 來源同一份:這個版號的 GitHub Release(releasePublishedState,三值)+ 這個 tag 指向的 commit。
+ *
+ * 要保證的性質:「這次要發的內容,用的是一個還沒發布過的版號」。判法:
+ *   這個版號**還沒有** release(明確 404)                    → ok(版號已升,或首發)
+ *   讀不到 release(非 404 的失敗)                           → unresolved(儀器失效;讀不到 ≠ 沒發過,M37 第八種形狀)
+ *   已經有 release,HEAD 與該 tag 的產品指紋相同(只改治理)   → ok
+ *   已經有 release,產品指紋不同                              → unresolved(要先升版號)
+ *   已經有 release,但讀不到 tag 的 commit 或任一邊的指紋     → unresolved(儀器失效;本機沒有那個 commit 就先 git fetch --tags)
+ * 純函式;release-self-audit.mjs 的 version-bump 項目與 pr-checks 共用這一支,不另寫第二份判法。
+ */
+export function classifyVersionBump({ version, publishedState, tagCommitSha = null, headDigest = null, tagDigest = null } = {}) {
+  const tag = `v${version}`
+  const evidence = {
+    version: version ?? null,
+    tag,
+    publishedState: publishedState === true || publishedState === false ? publishedState : null,
+    tagCommitSha: tagCommitSha || null,
+    headDigest: headDigest || null,
+    tagDigest: tagDigest || null,
+  }
+  if (!version) return { ...evidence, status: 'unresolved', reason: 'version-unreadable' }
+  if (publishedState === false) return { ...evidence, status: 'ok', reason: 'version-unpublished' }
+  if (publishedState !== true) return { ...evidence, status: 'unresolved', reason: 'release-unreadable' }
+  if (!tagCommitSha || !headDigest || !tagDigest) return { ...evidence, status: 'unresolved', reason: 'digest-unavailable' }
+  if (headDigest === tagDigest) return { ...evidence, status: 'ok', reason: 'product-unchanged' }
+  return { ...evidence, status: 'unresolved', reason: 'not-bumped' }
+}
+
+const VERSION_BUMP_HOWTO = '改 packages/design-system/package.json 的 version(例:beta.151 → beta.152)後跑 ' +
+  'node scripts/sync-version-to-all-manifests.mjs,與內容放在同一個 PR'
+
+/** classifyVersionBump 結果的一句話(release-self-audit 的 detail 與 runner 丟錯共用)。 */
+export function versionBumpMessage(verdict = {}) {
+  const tag = verdict.tag || '(讀不到版號)'
+  switch (verdict.reason) {
+    case 'version-unpublished': return `${tag} 還沒有發布過,版號已升`
+    case 'product-unchanged': return `${tag} 已發布,但 HEAD 與它的產品指紋相同(只改治理),不必升版號`
+    case 'not-bumped': return `${tag} 早就發布過,而 HEAD 的產品內容與它不同 —— 版號沒升。要先升版號:${VERSION_BUMP_HOWTO}`
+    case 'digest-unavailable': return `${tag} 已發布,但算不出它或 HEAD 的產品指紋(本機可能沒有那個 tag 的 commit:先 git fetch origin --tags)—— 讀不到不等於沒問題`
+    case 'release-unreadable': return `讀不到 ${tag} 有沒有發布過(GitHub 讀不到)—— 讀不到不等於沒發過`
+    default: return '讀不到 packages/design-system/package.json 的版號'
+  }
+}
+
+/** 這個版本 tag 指向的 commit(40 碼);讀不到回 null。 */
+function releaseTagCommit(repository, tag) {
+  if (!repository) return null
+  const response = curlGitHub('GET', `repos/${repository}/git/ref/tags/${encodeURIComponent(tag)}`)
+  if (!response.ok) return null
+  try {
+    const sha = JSON.parse(response.text)?.object?.sha
+    return /^[0-9a-f]{40}$/.test(sha || '') ? sha : null
+  } catch { return null }
+}
+
+/**
+ * 這個 head 的 PR 是否已經合併(= 不再是「合併前」)。版號判定只在合併前做,讀回與五步狀態共用這一支。
+ * 與 merge 那一步的 mergedThisHead 同一個性質:state 是 MERGED,而且 PR 帶的正是現在這個 head。
+ */
+export function prHeadMerged({ pullRequest, headSha } = {}) {
+  return Boolean(pullRequest && pullRequest.state === 'MERGED' && headSha && pullRequest.headRefOid === headSha)
+}
+
+/** 讀回 + 判定;讀取方式可注入(測試用合成讀回)。 */
+export function readVersionBump({
+  repository, version, headSha,
+  readPublishedState = releasePublishedState, readTagCommit = releaseTagCommit, digest = productContentDigest,
+} = {}) {
+  const tag = `v${version}`
+  const publishedState = version ? readPublishedState(repository, tag) : null
+  const tagCommitSha = publishedState === true ? readTagCommit(repository, tag) : null
+  return classifyVersionBump({
+    version,
+    publishedState,
+    tagCommitSha,
+    headDigest: headSha ? digest(headSha) : null,
+    tagDigest: tagCommitSha ? digest(tagCommitSha) : null,
+  })
 }
 
 /**
@@ -1616,6 +1703,156 @@ export function formatScheduledMonitorLines(readout) {
   return lines
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// CI 時間餘裕(2026-11-28 R97 根層,只講不擋 —— 與上面的排程監看同一種做法)
+// ─────────────────────────────────────────────────────────────────────────────
+// 錨:0.1.0-beta.152 發布兩次停住,都是 CI 瀏覽器 job 撞 timeout-minutes 25 被取消(escape-and-focus (0/2) 在 main 66c5139c
+// 25.2 分;layout spacing and density 在 PR #178 25 分)。兩個 job 早就長期貼在上限(21–24.5 分),同族還有 layout body edges (1/2)
+// 21.8、overlay + theme 21.8;早上看到 87% 卻只記追蹤 —— 逼近上限沒有任何機械預警。這一段讀 protected main 最新一輪(跑完的)
+// CI 每個 job 的實際時長(matrix 每格各算),對照**那一輪 commit 的** ci.yml 裡該 job 的 timeout-minutes,列出用到門檻以上的。
+// 處理方式只有一種:照既有做法拆平行(matrix 分片),不調高上限。讀不到 = 印「讀不到」,不得印成沒有問題(M37 第八種形狀)。
+
+/** 用到上限的幾成就列出來(具名常數;改門檻只改這裡)。 */
+export const CI_TIMEOUT_HEADROOM_THRESHOLD = 0.8
+/** job 沒寫 timeout-minutes 時 GitHub Actions 的預設上限(分鐘)。 */
+export const GITHUB_DEFAULT_JOB_TIMEOUT_MINUTES = 360
+const CI_HEADROOM_REMEDY = '照既有做法拆平行(matrix 分片),不調高 timeout-minutes'
+
+/** ci.yml(已解析)每個 job 的顯示名樣板與上限;timeout-minutes 不是正數(例如寫成運算式)→ null = 讀不到上限。純函式。 */
+export function ciJobTimeouts(doc) {
+  const jobs = doc && typeof doc === 'object' && doc.jobs && typeof doc.jobs === 'object' ? doc.jobs : {}
+  return Object.entries(jobs).map(([key, job]) => {
+    const raw = job && typeof job === 'object' ? job['timeout-minutes'] : undefined
+    const timeoutMinutes = raw === undefined
+      ? GITHUB_DEFAULT_JOB_TIMEOUT_MINUTES
+      : (typeof raw === 'number' && raw > 0 ? raw : null)
+    return { key, name: typeof job?.name === 'string' && job.name ? job.name : key, timeoutMinutes }
+  })
+}
+
+const escapeRegExpText = text => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+/** GitHub 給 run 裡的 job 取的名字:顯示名(運算式換成實際值),matrix 且名字沒用到 matrix 時再接「 (值, 值)」。 */
+function ciJobNameMatcher(template) {
+  const pattern = template.split(/\$\{\{[^}]*\}\}/).map(escapeRegExpText).join('.+?')
+  return new RegExp(`^${pattern}(?: \\(.*\\))?$`)
+}
+
+/**
+ * 判定(純函式):runJobs = 那一輪 CI 的 job(含 matrix 每格,各自一筆:{ name, startedAt, completedAt, conclusion });
+ * ciJobs = ciJobTimeouts 的輸出。每一筆各自算「實際分鐘 / 該 job 的上限」,≥ threshold 就列進 near(由高到低)。
+ * 對不到 ci.yml 的 job 或上限讀不到 → unmatched;沒有開始 / 結束時間(還沒跑完、讀不到)→ unmeasured。skipped 不算。
+ */
+export function classifyCiTimeoutHeadroom({ runJobs = [], ciJobs = [], threshold = CI_TIMEOUT_HEADROOM_THRESHOLD } = {}) {
+  const owners = ciJobs.map(job => ({
+    ...job,
+    matcher: ciJobNameMatcher(job.name),
+    literalLength: job.name.replace(/\$\{\{[^}]*\}\}/g, '').length,
+  }))
+  const near = []
+  const unmatched = []
+  const unmeasured = []
+  let measured = 0
+  for (const job of runJobs) {
+    if (lower(job?.conclusion) === 'skipped') continue
+    const start = Date.parse(job?.startedAt || '')
+    const end = Date.parse(job?.completedAt || '')
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) { unmeasured.push(job?.name || '(沒有名字)'); continue }
+    const minutes = (end - start) / 60000
+    const owner = owners.filter(item => item.matcher.test(job.name || '')).sort((a, b) => b.literalLength - a.literalLength)[0]
+    if (!owner || owner.timeoutMinutes === null) { unmatched.push({ name: job.name, minutes }); continue }
+    measured += 1
+    const ratio = minutes / owner.timeoutMinutes
+    if (ratio >= threshold) near.push({ name: job.name, key: owner.key, minutes, limit: owner.timeoutMinutes, ratio })
+  }
+  near.sort((a, b) => b.ratio - a.ratio)
+  return { threshold, measured, near, unmatched, unmeasured }
+}
+
+/** 讀回:protected main 最新一輪**跑完的** CI run、它的全部 job、那一輪 commit 的 ci.yml。任一讀不到 → { ok: false, reason }。 */
+export function readCiTimeoutHeadroom(repository, {
+  github = path => curlGitHub('GET', path), parseYaml = null, workflow = null,
+} = {}) {
+  const automation = (workflow || loadReleaseWorkflow()).automation
+  const file = automation.ciWorkflow.file
+  const branch = automation.defaultBranch
+  if (!repository) return { ok: false, reason: '沒有目標 repo' }
+  const json = (response) => { try { return JSON.parse(response.text) } catch { return null } }
+  const runs = github(`repos/${repository}/actions/workflows/${encodeURIComponent(file)}/runs?branch=${encodeURIComponent(branch)}&status=completed&per_page=1`)
+  const run = runs.ok ? json(runs)?.workflow_runs?.[0] : null
+  if (!runs.ok) return { ok: false, reason: `讀不到 ${branch} 的 ${file} run(HTTP ${runs.code})` }
+  if (!run?.id) return { ok: false, reason: `${branch} 上找不到跑完的 ${file} run` }
+  const runInfo = { id: run.id, headSha: run.head_sha || null, url: run.html_url || null, conclusion: run.conclusion || null }
+  const contents = github(`repos/${repository}/contents/.github/workflows/${encodeURIComponent(file)}?ref=${runInfo.headSha}`)
+  const payload = contents.ok ? json(contents) : null
+  if (!payload || payload.encoding !== 'base64' || typeof payload.content !== 'string') {
+    return { ok: false, run: runInfo, reason: `讀不到那一輪 commit 的 .github/workflows/${file}(HTTP ${contents.code})` }
+  }
+  let ciJobs
+  try {
+    ciJobs = ciJobTimeouts((parseYaml || loadWorkflowYamlParser())(Buffer.from(payload.content, 'base64').toString('utf8')))
+  } catch (error) {
+    return { ok: false, run: runInfo, reason: `解析 ${file} 失敗:${error instanceof Error ? error.message : error}` }
+  }
+  if (!ciJobs.length) return { ok: false, run: runInfo, reason: `${file} 解析出來沒有任何 job(量具失效)` }
+  const runJobs = []
+  let total = null
+  for (let page = 1; page <= 5; page += 1) {
+    const response = github(`repos/${repository}/actions/runs/${run.id}/jobs?per_page=100&page=${page}`)
+    const body = response.ok ? json(response) : null
+    if (!body || !Array.isArray(body.jobs)) return { ok: false, run: runInfo, reason: `讀不到 run ${run.id} 的 job 清單(HTTP ${response.code})` }
+    total = Number.isInteger(body.total_count) ? body.total_count : total
+    for (const job of body.jobs) runJobs.push({ name: job.name, startedAt: job.started_at, completedAt: job.completed_at, conclusion: job.conclusion })
+    if (!body.jobs.length || (total !== null && runJobs.length >= total)) break
+  }
+  if (!runJobs.length || (total !== null && runJobs.length < total)) {
+    return { ok: false, run: runInfo, reason: `run ${run.id} 的 job 清單不完整(讀到 ${runJobs.length} / ${total ?? '?'})` }
+  }
+  return { ok: true, run: runInfo, totalJobs: runJobs.length, ...classifyCiTimeoutHeadroom({ runJobs, ciJobs }) }
+}
+
+let ciHeadroomCache = null
+/** printReport 用的入口:只講不擋 —— 任何失敗都變成一行「讀不到」。完整讀回 10 分鐘內重用(release:auto 每輪都印)。 */
+export function ciTimeoutHeadroomForReport(repository, { read = readCiTimeoutHeadroom, nowMs = Date.now() } = {}) {
+  if (ciHeadroomCache && ciHeadroomCache.repository === repository && nowMs - ciHeadroomCache.at < MONITOR_CACHE_TTL_MS) {
+    return ciHeadroomCache.readout
+  }
+  try {
+    const readout = read(repository)
+    ciHeadroomCache = readout?.ok === true ? { repository, at: nowMs, readout } : null
+    return readout
+  } catch (error) {
+    return { ok: false, reason: `讀 CI 時間餘裕時丟錯:${error instanceof Error ? error.message : error}` }
+  }
+}
+
+/** CI 時間餘裕印給人看的幾行(純函式)。 */
+export function formatCiTimeoutHeadroomLines(readout) {
+  const percent = ratio => `${Math.round(ratio * 100)}%`
+  const threshold = readout?.threshold ?? CI_TIMEOUT_HEADROOM_THRESHOLD
+  const head = `   CI 時間餘裕(不擋發布;protected main 最新一輪跑完的 CI,每個 job 含 matrix 每格,用到 timeout-minutes 的 ${percent(threshold)} 以上就列)`
+  if (!readout?.ok) {
+    return [head, `   ⚠️ 讀不到:${readout?.reason || '沒有讀回'} —— 讀不到不代表沒有 job 逼近上限`]
+  }
+  const run = readout.run?.headSha ? `run ${readout.run.id}(${String(readout.run.headSha).slice(0, 8)})` : `run ${readout.run?.id}`
+  const lines = [head]
+  if (!readout.near.length) {
+    lines.push(`   ⓘ ${run}:量了 ${readout.measured} 個 job,沒有一個用到上限的 ${percent(threshold)} 以上`)
+  } else {
+    lines.push(`   ⚠️ ${run}:${readout.near.length} 個 job 逼近上限 —— 處理:${CI_HEADROOM_REMEDY}`)
+    for (const item of readout.near) {
+      lines.push(`      ${item.name}:${item.minutes.toFixed(1)} 分 / 上限 ${item.limit} 分(${percent(item.ratio)})`)
+    }
+  }
+  for (const item of readout.unmatched || []) {
+    lines.push(`   ⚠️ ${item.name}:${item.minutes.toFixed(1)} 分,對不到 ci.yml 的 timeout-minutes(上限讀不到)`)
+  }
+  if ((readout.unmeasured || []).length) {
+    lines.push(`   ⚠️ ${readout.unmeasured.length} 個 job 讀不到開始 / 結束時間:${readout.unmeasured.slice(0, 5).join('、')}`)
+  }
+  if (readout.run?.url) lines.push(`      ${readout.run.url}`)
+  return lines
+}
+
 /** canonical 宣告的目標 repo;讀不到就回 null,呼叫端一律 fail closed。 */
 function releaseRepository() {
   try { return loadReleaseWorkflow().automation.repository } catch { return null }
@@ -2100,7 +2337,17 @@ export function buildFiveStepStatus(workflow, observation) {
   // 資料一直都在 observation 裡(第 540 行就在算 mergeable),只是沒有人看它。
   // 「還沒有結果」與「結構上不會有結果」必須是兩種狀態。
   const conflicting = observation.pullRequest?.mergeable === 'CONFLICTING'
-  const prChecksResolved = prChecks === 'pending' && conflicting ? 'conflicting' : prChecks
+  const prChecksRollup = prChecks === 'pending' && conflicting ? 'conflicting' : prChecks
+  // 2026-11-28 R100:版號有沒有升在**合併前**就判,fail-fast(不等 CI 跑完、不等合併後的 publish 才判 stale-version)。
+  // 判法只有一份:classifyVersionBump(collectLiveObservation 讀回、release-self-audit 共用)。
+  // 讀不到(versionBump 缺或 unresolved 但不是 not-bumped)= version-unverified,也不得當成通過(M37 第八種形狀)。
+  // 只有**真的合併前**才判:在 protected main 上,或這個 head 的 PR 已經 MERGED(合併後本機仍在 PR 分支 —— 本 repo 主資料夾
+  // 就是在 PR 分支上跑 release:auto)都跳過,交給 publish 的 stale-version。2026-11-28 規格核對必修:發布後 tag 指向 main 上的
+  // squash commit、本機沒 fetch → 指紋讀不到 → 原本在 readback / consumer 之前誤丟「合併前版號檢查沒過」。
+  const versionBumpStatus = observation.onProtectedMain || prHeadMerged(observation) || observation.versionBump?.status === 'ok'
+    ? null
+    : observation.versionBump?.reason === 'not-bumped' ? 'version-not-bumped' : 'version-unverified'
+  const prChecksResolved = versionBumpStatus ?? prChecksRollup
   // 2026-09-02 user directive:合併前必須有 user 對「當前 PR head」的發版同意 receipt;沒有 → 停在預覽階段。
   const consentRequired = workflow.releaseConsent?.required !== false
   // **incident release 也要能合併進去**(2026-09-21 缺口):canonical 允許「綁定已發布版本的
@@ -2213,7 +2460,12 @@ export function collectLiveObservation(workflow = loadReleaseWorkflow()) {
   const main = ghJson(['api', `repos/${repository}/commits/${defaultBranch}`])
   const version = packageVersion(workflow)
   const tag = `v${version}`
+  const onProtectedMain = branch === defaultBranch && headSha === main?.sha
   const pullRequest = currentPullRequest(repository, branch, defaultBranch)
+  // 合併前判版號有沒有升(R100;合併後 —— 在 protected main 上,或這個 head 的 PR 已 MERGED —— 由 publish 的 stale-version 管,這裡不重讀)
+  const versionBump = onProtectedMain || prHeadMerged({ pullRequest, headSha })
+    ? null
+    : readVersionBump({ repository, version, headSha })
   const tagRef = ghJson(['api', `repos/${repository}/git/ref/tags/${encodeURIComponent(tag)}`], { allowFailure: true })
   const tagCommitSha = tagRef?.object?.sha || null
   const releaseCommitSha = tagCommitSha || main?.sha || null
@@ -2254,9 +2506,10 @@ export function collectLiveObservation(workflow = loadReleaseWorkflow()) {
     branch,
     headSha,
     protectedMainSha: main?.sha || null,
-    onProtectedMain: branch === defaultBranch && headSha === main?.sha,
+    onProtectedMain,
     version,
     tag,
+    versionBump,
     pullRequest,
     releaseConsent: readReleaseConsent({ branch, headSha: pullRequest?.headRefOid || headSha }),
     tagCommitSha,
@@ -2348,6 +2601,9 @@ function printReport(workflow, observation, json) {
   const monitors = scheduledMonitorsForReport(observation.repository)
   report.scheduledMonitors = monitors.monitors
   report.scheduledMonitorListing = { ...monitors.listing, control: monitors.control, transientFailures: monitors.transientFailures ?? null }
+  // CI 時間餘裕:**只講不擋**(R97 根層;job 逼近 timeout-minutes 時先講出來,處理方式是拆平行、不調高上限)
+  const ciHeadroom = ciTimeoutHeadroomForReport(observation.repository)
+  report.ciTimeoutHeadroom = ciHeadroom
   if (json) console.log(JSON.stringify(report, null, 2))
   else {
     console.log(`${observation.repository} ${observation.tag}`)
@@ -2362,6 +2618,7 @@ function printReport(workflow, observation, json) {
     }
     for (const line of formatConsumerOwnedUpgradeLines(report.consumerOwnedUpgrades)) console.log(line)
     for (const line of formatScheduledMonitorLines(monitors)) console.log(line)
+    for (const line of formatCiTimeoutHeadroomLines(ciHeadroom)) console.log(line)
   }
   return report
 }
@@ -2511,6 +2768,9 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
     }
 
     if (incomplete.id === 'pr-checks') {
+      // R100:版號沒升 / 讀不到版號狀態 → 合併前就停(exit 1),不推、不開 PR、不等 CI。
+      invariant(incomplete.status !== 'version-not-bumped' && incomplete.status !== 'version-unverified',
+        `合併前版號檢查沒過(${incomplete.status}):${versionBumpMessage(observation.versionBump ?? {})}`)
       if (!observation.pullRequest) {
         run('git', buildBranchPushArgs(workflow, observation.branch))
         gh(buildPullRequestCreateArgs(workflow, observation.branch))
