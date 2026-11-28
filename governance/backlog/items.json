@@ -1059,6 +1059,34 @@
         "Fable 5.2 研究(29 一手來源;tmp/wip-2026-11-25-backup/notes/decisions/research-table-alignment-2026-11-28.md;給 user 的白話頁 https://claude.ai/artifact/AB1ntwBAcJquWzwHm2SbC6):固定行高全 0;自動行高下拉 / 日期 / 時間 / 人員 / 多人 / 唯讀網址 −1、勾選 −3.5、開關 −1.5、唯讀 ✓✗ −4.5、標籤 +0.5;進編輯下拉 / 日期 / 時間 +1、人員 +1、多人 +0.5~2.5、標籤 +1 且列 +2",
         "協調者先前 J1–J6 判斷經研究審查:J4、J5 對;J1、J2、J3、J6 部分對 —— 範圍說小了(不只自訂格,DS 9 種註冊格也不符公式前提)、lg 成因是 rowActions 格缺字級、修法要用「第一行盒最小高 + 置中」而非補內距(補內距會讓 24px 自訂內容更糟)"
       ]
+    },
+    {
+      "id": "BL-046",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "52663e83",
+      "oldIds": [],
+      "title": "CI job「Verify browser(field edges + combobox single path + field open border)」用掉時間上限 87%(13.0 / 15 分)",
+      "rootCause": "ci-job-timeout-headroom-field-edges",
+      "valueGate": "recordOnly",
+      "suggestion": "現在不修(價值閘:沒有 CI 紅、user 看不到、沒人要求)。哪天被取消(CI 紅,價值閘 ②)就照 CIFIX2 的做法拆 matrix / 分片,不准調高上限(ci-workflow-scope.test.mjs 釘結構)。",
+      "evidence": [
+        "CIFIX2 規格核對者用 release-orchestrator 的 classifyCiTimeoutHeadroom 算 run 46121554598(head 457e61b7,48 個 job,unmatched 0):除已修的 DS-wide story sweeps(101%)外只有這一個 ≥ 80%"
+      ]
+    },
+    {
+      "id": "BL-047",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "52663e83",
+      "oldIds": [],
+      "title": "a11y 基線 select 設計規格 overview|scrollable-region-focusable 記 1、CI Linux 實測 0:Linux 上這一格多出 1 的空間",
+      "rootCause": "a11y-baseline-macos-only-slack",
+      "valueGate": "recordOnly",
+      "suggestion": "現在不修(價值閘:舊基線就是 1、不是新放寬;user 看不到、不會讓 CI 紅、沒人要求)。下次因別的原因要用 Linux 報告重寫基線時順帶收緊到 0。",
+      "evidence": [
+        "CIFIX2 規格核對者逐格比對 Linux a11y-audit.json(job 140907095997 的 artifact)與 c083e183 的新基線;這格舊基線也是 1(只有 macOS 量得到)"
+      ]
     }
   ]
 }
