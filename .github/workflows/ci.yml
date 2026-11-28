@@ -1421,7 +1421,13 @@ jobs:
     # 15.1 / 15.1 / 15.2 分三次撞 15 分預算被取消 —— 每一次被砍的那輪,砍掉前的判定全是綠的,砍掉之後 verify 紅、
     # 發布閘 fail closed。依 2026-09-21 interaction job 的先例(timeout 是執行時間預算不是正確性門檻)改 25,
     # 並列入 infra/governance/test/ci-workflow-scope.test.mjs 的 SLOW_BROWSER_JOBS(仍在 25 分硬上限內,真的卡死照樣抓得到)。
+    # 2026-11-28 再拆成兩格 matrix(拆平行、不調高上限;job id 不變,verify 的 needs 照舊等兩格都成功):protected main 66c5139c 這一 job 21.8 分(上限 87%),
+    # 同族的 verify-browser-layout 在 PR #178 撞滿 25 分被取消。第 a 格跑 Dialog 高 / 寬、浮層高度上限、hover 配色,第 b 格跑其餘。
     timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        part: ['a', 'b']
     # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
     env:
       GOVERNANCE_BROWSER_REQUIRED: '1'
@@ -1447,9 +1453,12 @@ jobs:
       - name: Build the Storybook the browser gates load
         run: npm run build-storybook
 
+      - name: Install Chromium for the browser gates
+        run: npx --no-install playwright install chromium
+
       - name: Overlay and theme invariants (browser)
+        if: matrix.part == 'a'
         run: |
-          npx --no-install playwright install chromium
           # Dialog 高度不變式(2026-09-11;user 重述的高度模型逐條變成斷言)。先對照組再判定。
           node scripts/dialog-height-invariant.mjs --selftest
           # H5 需要自己的對照組:上面那個 --selftest 把高度上限拿掉後 dialog 變 99904px 高,
@@ -1473,6 +1482,10 @@ jobs:
           # 對照組把邊框凍回修前的值,必須抓到;掃到 0 組配對也判紅(代表什麼都沒驗到)。
           node scripts/hover-color-pair-invariant.mjs --selftest
           node scripts/hover-color-pair-invariant.mjs
+
+      - name: Overlay and theme invariants (browser, part b)
+        if: matrix.part == 'b'
+        run: |
           # Switch thumb 外圈必須渲染成 track 本身(2026-09-11)。這條量真實像素,因為兩次事故
           # (hover 漏升階 / dark mode 白疊白使外圈消失)在 computed style 下**都是綠的**。
           # 對照組把 background-clip 改回 border-box 並把外圈塗白 = 原樣重放 dark mode 那次事故。
@@ -1837,9 +1850,16 @@ jobs:
     # 2026-11-12 曾從 verify-browser-interaction 搬來水平溢出閘(那支在原 job 第 16 分 55 秒才開始跑);2026-11-14 再搬到 verify-browser-horizontal-overflow(見該 job 檔頭)。
     # 2026-11-14 A7 ①④:浮層密度閘 4 → 28 格,本機主跑 + --selftest 合計 11 → 68 秒;⑤ section-gap 主跑 8 → 16 秒、--selftest 不到 1 → 2 秒。
     # 1859b728 那一輪本 job 19 分 45 秒(上限 25;含後來搬走的水平溢出閘)。
+    # 2026-11-28 再拆成兩格 matrix(同一做法:拆平行、不調高上限;job id 不變,verify 的 needs 照舊等兩格都成功):
+    # protected main 66c5139c 這一 job 21.6 分(上限 87%),PR #178(6e066254)跑滿 25 分被取消 → 0.1.0-beta.152 發布又停一次。
+    # 第 a 格跑前六支(列尾小圖形 → 浮層密度跟觸發點),第 b 格跑後六支(區塊間距 → 側欄字 = 標頭字);兩格都先做同一份準備步驟。
     name: Verify browser(layout spacing and density gates)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        part: ['a', 'b']
     # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
     env:
       GOVERNANCE_BROWSER_REQUIRED: '1'
@@ -1866,9 +1886,12 @@ jobs:
       - name: Build the Storybook the browser gates load
         run: npm run build-storybook
 
+      - name: Install Chromium for the browser gates
+        run: npx --no-install playwright install chromium
+
       - name: Layout spacing and density invariants (browser)
+        if: matrix.part == 'a'
         run: |
-          npx --no-install playwright install chromium
           # 列上的小圖形中線 = 第一行文字中線(2026-10-27,user 抓側欄「所有專案」右邊的 + 偏上):SidebarGroupAction / 收合箭頭量 sm / md / lg,
           # 加 Switch 帶標籤、示範列的列尾動作與列首轉圈、Slider 原則頁的開關狀態矩陣、DropdownMenu 元件檢閱器的快捷鍵後綴、
           # SidebarMenuAction / 列尾 inlineActions / DateGrid 上下月箭頭,以及 Alert / Toast(共用底座 Notice)多行時的前置狀態圖示、
@@ -1898,6 +1921,10 @@ jobs:
           # 本機(2026-11-14)主跑 4 → 22 秒、--selftest 7 → 46 秒;CI 約本機 1.2–1.4 倍 → 這一步多約 70–80 秒。
           npm run test:overlay-density-follows-trigger
           node scripts/overlay-density-follows-trigger-invariant.mjs --selftest
+
+      - name: Layout spacing and density invariants (browser, part b)
+        if: matrix.part == 'b'
+        run: |
           # 區塊 ↔ 區塊(2026-11-06 user #18):一條分隔線的位置、上下各 loose —— 不畫線 = loose × 2(FileViewer 資訊面板 說明 → 檔案資訊),
           # 畫 Separator = 線兩側各 loose;表單欄位 → 表單按鈕列 8 處;標題區 → 內容(文件頁「幾塊」= 規格三題的自動近似:一塊 tight / 兩塊以上 loose)四種標題區 × 兩種判定、「幾塊怎麼數」每條路一列。md / lg 量像素。
           # selftest:判定表(修前實測必紅、每一列標題區餵相反判定的距離必紅)+ 在頁面上把四種標題區的標記翻面必紅、數字正好是另一個 token(這一段要建置)。
@@ -2388,7 +2415,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: ['0/2', '1/2']
+        # 2026-11-28 兩格 → 三格(拆平行、不調高上限):protected main 66c5139c 第 1 格 21.8 分 = 上限 87%,同族 escape-focus / layout / overlay 同日處理。
+        shard: ['0/3', '1/3', '2/3']
     # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
     env:
       GOVERNANCE_BROWSER_REQUIRED: '1'
