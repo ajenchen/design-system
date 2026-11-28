@@ -27,6 +27,23 @@ governance_provider_string_field instructionEntry >/dev/null 2>&1 || {
   exit 70
 }
 
+# 待辦唯一住處(2026-11-28;規則 governance/backlog/README.md,提交後由 scripts/backlog.mjs 守):
+# 在正本以外(含 tmp/** 交接資料夾)新建檔名像待辦清單的文件 → 擋。只在有正本的 repo 生效,
+# consumer repo 沒有 governance/backlog/items.json 就不擋。
+if [ -f "$PROJECT_DIR/governance/backlog/items.json" ]; then
+  BASE="${REL##*/}"
+  case "$REL" in
+    governance/backlog/*) ;;
+    *)
+      if printf '%s' "$BASE" | grep -Eiq '\.(md|json|jsonl|txt|csv|ya?ml|html)$' \
+        && printf '%s' "${BASE%.*}" | grep -Eiq '(^|[-_. ])(todos?|tracker|open-items|backlog)([-_. ]|$)|待辦'; then
+        echo "❌ 待辦只住 governance/backlog/items.json(規則 governance/backlog/README.md)。不要另開清單檔:$REL —— 在正本加一項,交接資料夾只寫 BL 編號。" >&2
+        exit 2
+      fi
+      ;;
+  esac
+fi
+
 # Classification homes come from the canonical/provider registry. Adding a concrete future
 # provider therefore requires only registry data + generated surfaces,not a new shell branch.
 DIRS=(packages/design-system/src/components packages/design-system/src/patterns packages/design-system/src/tokens)

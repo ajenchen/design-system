@@ -409,6 +409,39 @@
       "sourceOutputOverlaps": []
     },
     {
+      "id": "backlog",
+      "auditScope": "none",
+      "generate": [
+        "node",
+        "scripts/backlog.mjs",
+        "--generate"
+      ],
+      "check": [
+        "node",
+        "scripts/backlog.mjs",
+        "--check"
+      ],
+      "runtimeEntrypoints": [
+        "scripts/backlog.mjs"
+      ],
+      "sources": [
+        "governance/backlog/",
+        "infra/governance/schemas/backlog.schema.json",
+        "packages/governance/src/closed-tool-execution.mjs",
+        "scripts/backlog.mjs",
+        "scripts/lib/closed-tool-execution.mjs"
+      ],
+      "sourceResolvers": [],
+      "sourceExcludes": [
+        "governance/backlog/user-view.md"
+      ],
+      "outputs": [
+        "governance/backlog/user-view.md"
+      ],
+      "outputResolvers": [],
+      "sourceOutputOverlaps": []
+    },
+    {
       "id": "control-plane",
       "auditScope": "deep-audit-rubric",
       "generate": [

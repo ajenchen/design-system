@@ -1,5 +1,7 @@
 # M22 Benchmark Citation Backlog
 
+> **2026-11-28**:舊版鏡像,只留歷史。仍未結的驗證債在待辦正本 `governance/backlog/items.json` 的 BL-025;待辦只住那裡。
+
 **M22 canonical**(2026-05-02 起):spec.md / tsx 內含 world-class DS claim 必附 inline source citation 之一:(a) URL / (b) GitHub `#L42` / (c) screenshot / (d) `@benchmark-unverified` 顯式撤回。
 
 **現況(2026-05-03 v11/v12 收尾)**:**全 135 files BACKLOG CLOSED via M22 (d) blanket retraction**。檔頭 marker 從 `@benchmark-citation-allow`(暫掛)→ `@benchmark-unverified-blanket`(M22 (d) 正式撤回 file-level)。

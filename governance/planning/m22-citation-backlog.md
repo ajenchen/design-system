@@ -1,6 +1,8 @@
 <!-- Authority/status: governance/planning/registry.json -->
 # M22 Benchmark Citation Backlog
 
+> **2026-11-28**:本檔只是歷史快照。仍未結的驗證債(整檔撤回的檔數、引用閘關鍵字缺 MUI 等)已在 a3330afe 查證後搬到待辦正本 `governance/backlog/items.json` 的 BL-025;待辦只住那裡,本檔不再追加。
+
 **M22 canonical**(2026-05-02 起):spec.md / tsx 內含 world-class DS claim 必附 inline source citation 之一:(a) URL / (b) GitHub `#L42` / (c) screenshot / (d) `@benchmark-unverified` 顯式撤回。
 
 **現況語意（2026-08-02 重驗）**:`@benchmark-unverified-blanket` 讓檔案在 M22 **compliance** 上有顯式撤回，因此沒有「未分類 claim」；但撤回不等於 source verification，所有 blanket／inline unverified marker 仍是 knowledge-prune D9 的 **verification debt**。數量必由當次 repo scan 動態計，不沿用本文件的歷史總數。

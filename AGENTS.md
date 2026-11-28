@@ -16,7 +16,7 @@
 5. **先證據、再分權**——證據照 `# 遇不確定時的協議`,分權照 `#canonical-decision-authority`;**不得用問 user 代替工程判斷**,禁憑直覺造新 pattern。
 6. **大原則吸收瑣碎**——同類 bug 反覆糾正 = meta 層沒抓住。**權威清單與各條完整內容只有一個住所**:`packages/design-system/ds-canonical/rules/meta-patterns.md`(本行不重述條號,三處列舉必然漂移)。**AI 不需 user 提醒才找 root invariant**:rule 震盪 → 自跑 benchmark + invariant test;user 第 2 次問 → 必截圖 verify;對話結論 → AUTO 落地;visual/behavior decision 前必先查 ≥3 家世界級;**視覺／結構 propose 前必 grep DS spec.md 找 owner SSOT 並出 3-column 表,否則提案不被接受**。使用者 tell me once 不該要 tell me twice。
 
-# Rule Index(progressive disclosure — 編對應檔案前必先讀)
+# Rule Index(編對應檔案前必先讀)
 
 | 檔案 | 何時必讀 |
 |---|---|
@@ -95,7 +95,7 @@
 | **多代理批次工作** | `rules/work-process.md` + bug-fix-rhythm 的 `references/multi-agent-orchestration.md` |
 | **PR merge 後／session start branch 健檢** | `# Git / release canonical` |
 
-**找不到** → `# 遇不確定時的協議`。
+**找不到** → `# 遇不確定時的協議`;待辦:`governance/backlog/`。
 
 # Git / release canonical(machine SSOT → `infra/governance/release-workflow.json`)
 

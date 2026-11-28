@@ -1,0 +1,802 @@
+{
+  "$schema": "../../infra/governance/schemas/backlog.schema.json",
+  "schemaVersion": 1,
+  "_authority": "governance/backlog/README.md",
+  "items": [
+    {
+      "id": "BL-001",
+      "oldIds": [
+        "U5",
+        "R64",
+        "R58-H25",
+        "ws-H25",
+        "C22",
+        "todo-組31"
+      ],
+      "title": "空狀態 / 讀取 / 結果狀態放在容器的哪裡:已選甲(整頁貼上、頂距 96;有框置中、放不下從頂開始),落地中",
+      "kind": "user-directed",
+      "source": [
+        {"date":"2026-11-27","quote":"我是想要研究世界級的設計到底怎麼擺放畫面中的空狀態或是結果狀態或是讀取狀態，以及是否有區分其位置而有所不同，邏輯到底是什麼，是否有一氣呵成的整個配套？所有情況都可以有著落都不會讓人猶豫，同時空狀態的位置與視覺也可以讓人一目瞭然,但這題比較 minor,你可以決定看何時要處理","ref":"governance/planning/user-directed-backlog.md U5(a3330afe;確認頁 v-dialog,TRACKER R64)"},
+        {"date":"2026-11-28","quote":"…我目前是覺得某些撐滿螢幕高度的容器中的狀態直接放在容器正中間有點太偏下了，世界級的設計都沒有此類問題？通盤的情境盤點後到底該如何按照條件擺放是最世界級的設計？我想要你的研究是包括上述的，這是這項任務的該做的東西","ref":"governance/planning/user-directed-backlog.md U5(a3330afe)"},
+        {"date":"2026-11-28","quote":"我覺得是照你建議的甲，因為原本ds就這樣定義，但我還是很好奇到底根據世界級的設計通盤研究最一氣呵成通用可以滿足各種情境的是否最大公約數是甲，以及到底是否有世界級設計做乙？乙如果遇到容器高度非常小的情況又會如何處理？你有仔細研究過嗎？","ref":"tmp/wip-2026-11-25-backup/notes/decisions/state-placement-answer-2026-11-28.md(15:2x;研究頁 https://claude.ai/artifact/WptDhHVVvqXnBDAs26mGaY)"}
+      ],
+      "rootCause": "state-placement-no-container-matrix",
+      "status": "in-progress",
+      "verifiedAt": "a3330afe",
+      "evidence": [
+        "packages/design-system/src/components/Empty/empty.spec.md:91 整頁狀態(404 / 403)仍是「照 user 2026-11-26 的選擇垂直置中」—— 甲(整頁貼上、頂距 96)還沒落地",
+        "user 2026-11-28 15:2x 選甲:整頁 404 / 403(及之後的整頁錯誤、讀取、結果)貼上方、頂距 96(empty.spec.md 無框規則);有框的撐滿容器維持置中,放不下時從頂開始、可捲動;取代 C22「狀態置中」。落地排 0.1.0-beta.153(另一條線,任務單 tmp/wip-2026-11-25-backup/notes/b4/task-u5a.md);user 同則三個追問由協調者回覆"
+      ],
+      "order": 1,
+      "orderReason": "你已選甲、這一版正在落地;做完讀回就結案"
+    },
+    {
+      "id": "BL-002",
+      "oldIds": [
+        "C15",
+        "sidebar.spec.md:168"
+      ],
+      "title": "設定頁的左側子頁選單:長相 user 已定(跟 Sidebar 選單列同一套),程式上怎麼給(DS 提供公開的頁內導覽元件或產品自組)由 AI 定",
+      "kind": "engineering",
+      "source": [
+        {"date":"2026-11-26","quote":"我不確定你程式上想要怎麼做比較 ssot,但視覺上肯定是要 ssot 的吧？類似概念或是操作應該都會跟 sidebar 長得很像？","ref":"packages/design-system/src/components/Sidebar/sidebar.spec.md:168(第五輪決策卡 C15 留言)"}
+      ],
+      "rootCause": "in-page-subnav-no-public-component",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "evidence": [
+        "sidebar.spec.md:168「只定了長相、還沒實作:程式上怎麼給(DS 要不要提供公開的頁內導覽元件)仍待決」;目前照 menu-item.spec.md 經子路徑包 MenuItem 自建"
+      ],
+      "valueGate": "③",
+      "suggestion": "user 原話只定視覺、程式做法明說交給 AI(「我不確定你程式上想要怎麼做比較 ssot」);依 AGENTS.md「自主執行 canonical」architecture = AUTO、feedback_propose_discipline.md Sub-rule 6 (1),由 AI 對照 Sidebar 規格選一種給法並落地,長相照 user 定的不變"
+    },
+    {
+      "id": "BL-003",
+      "oldIds": [
+        "canary-C18",
+        "canary-C20",
+        "tooltip.spec.md:106"
+      ],
+      "title": "停用的選單項(與按鈕、欄位以外的元件)要不要、怎麼說明「為什麼不能按」",
+      "kind": "user-decision",
+      "scope": "product-ui-ux-decision",
+      "source": [
+        {"date":"2026-11-26","quote":"我們 ds 是做元件和 prototype的地方應該本來就會有很多地方沒反應吧？ 我們應該不用特別處理吧？ 反正我們就是要呈現該呈現的情境並確保想要強調的地方可以順利展示 就可以了吧？","ref":"tmp/wip-2026-11-25-backup/notes/decisions/round5-answers.md:14(第五輪決策卡 C18-C20 留言,問句;當時判讀「同意,不改」)"}
+      ],
+      "rootCause": "disabled-reason-other-components-undefined",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "evidence": [
+        "packages/design-system/src/components/Tooltip/tooltip.spec.md:106「選單項等其他元件:停用時怎麼說明還沒定案(產品 canary 回報 C18 / C20,待 user 決定)」—— 規格仍寫待決"
+      ],
+      "order": 2,
+      "orderReason": "你上次的留言是問句(傾向不處理);你確認不處理,規格那行就能改成定案"
+    },
+    {
+      "id": "BL-004",
+      "oldIds": [
+        "U3",
+        "E6",
+        "todo-組19",
+        "Q12",
+        "Q13",
+        "Q14b"
+      ],
+      "title": "Calendar 完整功能第二段:週 / 日 / 議程三種檢視、拖選新增、時區(第一段月檢視已在 0.1.0-beta.151 出貨)",
+      "kind": "user-directed",
+      "source": [
+        {"date":"2026-11-23","quote":"規格一次定四種，實作分兩段 (Recommended)","ref":"tmp/wip-2026-11-25-backup/notes/CALENDAR-AGENDA-2026-11-24.md:111"},
+        {"date":"2026-11-28","quote":"Calendar 完整的功能包括各種視角等","ref":"governance/planning/user-directed-backlog.md U3(a3330afe)"}
+      ],
+      "rootCause": "calendar-phase-2-not-built",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "evidence": [
+        "packages/design-system/src/components/Calendar/calendar.spec.md:23「第一段(月檢視)已在 0.1.0-beta.151 實作」",
+        "packages/design-system/src/components/Calendar/calendar.tsx 沒有 view / defaultView / onViewChange(grep 0 筆);calendar.spec.md:53 第二段 API 形狀只寫到【AI 推導】"
+      ],
+      "parts": [
+        {"oldId":"Q12","text":"週 / 日 / 議程的鍵盤:月檢視模型(一個停靠點、方向鍵、F2 進格)是對月格陣的條件式同意【維持 U7】;套到其他檢視是新的設計主張、要 user 拍板(keyboard-model-canonical.md「適用範圍 —— 只有這些」)。開工前問。"},
+        {"oldId":"Q13","text":"週 / 日 / 議程的版面細節:時段刻度、預設捲到幾點、上班時段與「現在時間」線、頂部全天列放不下時怎麼收、重疊事件怎麼排、議程預設幾天與沒事件的日子要不要列、清單標題日期要不要做成「前往這一天」。開工前問。"},
+        {"oldId":"Q14b","text":"拖選新增的細節:拖選中的樣子(不得與今天的實心底相同【C8(定)】;DateGrid 區間端點是藍底白字圓,直接沿用會撞)、放開後直接呼叫新增回呼還是先出快速新增。開工前問。"}
+      ],
+      "order": 3,
+      "orderReason": "你明確要做、規格已定一半;大,開工前先把 Q12 / Q13 / Q14b 三題一次問你"
+    },
+    {
+      "id": "BL-005",
+      "oldIds": [
+        "U2",
+        "R58-H27",
+        "ws-H27",
+        "todo-組20(凍結欄那半)",
+        "152 決策頁第 7 題"
+      ],
+      "title": "DataTable 凍結欄 RWD:視窗窄時凍結欄自動解凍、夠寬恢復(仿 Notion)",
+      "kind": "user-directed",
+      "source": [
+        {"date":"2026-11-27","quote":"先不動？我們之後待辦rwd會解決這個問題？","ref":"tmp/wip-2026-11-25-backup/notes/decisions/decide152-answers.md 第 7 題"},
+        {"date":"2026-11-27","quote":"凍結欄 rwd 不就是之前從下游傳回來的待辦嗎？跟notion 一樣的設計啊？你是否遺漏了？","ref":"governance/planning/user-directed-backlog.md U2(a3330afe)"},
+        {"date":"2026-11-28","quote":"凍結欄位的 RWD","ref":"governance/planning/user-directed-backlog.md U2(a3330afe)"}
+      ],
+      "rootCause": "datatable-pinned-columns-no-responsive-rule",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "evidence": [
+        "grep「自動解凍 / unfreeze」於 packages/design-system/src/components/DataTable/ 0 筆:凍結欄沒有隨寬度調整的行為"
+      ],
+      "verifyCmd": "grep -rqE '自動解凍|unfreeze' packages/design-system/src/components/DataTable && echo FIXED || echo STILL-OPEN",
+      "fixedSignal": "FIXED",
+      "order": 4,
+      "orderReason": "你問「先不動？我們之後待辦rwd會解決這個問題？」;跟 BL-011 是同一個元件,可以排在升級前或併進升級一起規劃"
+    },
+    {
+      "id": "BL-006",
+      "oldIds": [
+        "U4",
+        "R94",
+        "L11",
+        "todo-組20(手機滑過那半)"
+      ],
+      "title": "手機上的 hover:全面讓手機 / 觸控也有 hover 事件,行為跟桌機一樣、不客製(InfoTooltip 觸控點不開併在這)",
+      "kind": "user-directed",
+      "source": [
+        {"date":"2026-09-25","quote":"先維持，很多都是手機不會出現的功能，且如果真的要解也完全不想動desktop web 的所有元件，反而可能會考慮是否全面讓手機也有hover事件，然後整個行為都跟desktop web一樣，沒有任何客製。","ref":"governance/planning/2026-09-25-interaction-and-hover-remediation.md:186(L11)"},
+        {"date":"2026-11-14","quote":"「全面讓手機也有hover事件」這個工很大嗎？我以為只是移除禁止這個行為而已","ref":"governance/planning/user-directed-backlog.md U4(a3330afe)"},
+        {"date":"2026-11-28","quote":"你把這題先記著列為待辦到時候再仔細通盤研究解決 root cause並達到預期目標就好","ref":"tmp/wip-2026-11-25-backup/TRACKER.md:154(R94 定案;remediation :311)"},
+        {"date":"2026-11-28","quote":"手機上hover的行為調整","ref":"governance/planning/user-directed-backlog.md U4(a3330afe)"}
+      ],
+      "parts": [
+        {"oldId":"R94","text":"根因方案(2026-11-28,TRACKER.md:153):手機沒有滑過 = 兩個源頭,各在共用層改一次,不逐元件:① 樣式:Tailwind 4 hover: / group-hover: / peer-hover: 的「能滑過裝置」條件 → base.css 一行 `@custom-variant hover (&:hover);`,全部元件一次生效;DS 手寫同條件 / 觸控略過要一起對齊:data-table.tsx:4460-4461、sidebar.tsx:1538-1541、tabs.tsx:618、tabs.tsx:624(非觸控才標 data-action-hover)。② 程式:Radix 會跳出的滑過型元件主動略過觸控(hover-card dist/index.mjs:89-90 / :120-121 excludeTouch;tooltip 同類)→ 只改 DS 三個包裝處:Tooltip(tooltip.tsx)、HoverCard(hover-card.tsx)、Button 直接用的 Radix Tooltip(button.tsx);22 個使用它們的元件(含 InfoTooltip、頭像名片)一起好。共約 7 處。真機要看:點過停在滑過樣子;iPhone 點兩下;有提示的按鈕點一下時提示閃現 + 動作同時發生是否可接受。","userQuote":"那每個元件都像這樣擋掉觸控，那加那一行的意義何在？⏎這都是同樣的問題吧？為何不能通盤解決root cause就好"},
+        {"oldId":"R94-定案","text":"不在 152 做;列為待辦,之後通盤研究 root cause(R94 根因方案為起點),達到 user 09-26 目標「全面讓手機也有hover事件，然後整個行為都跟desktop web一樣，沒有任何客製」(TRACKER.md:154)"}
+      ],
+      "suggestion": "以 R94 根因方案為起點通盤研究:兩個源頭各在共用層改一次(base.css 的 hover custom-variant + DS 三個 Radix 包裝處),不逐元件,約 7 處;做完放預覽給 user 真機看",
+      "rootCause": "hover-gated-to-hover-capable-devices",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "evidence": [
+        "DS 的 hover 樣式走 Tailwind 4 `hover:`(只在 `@media (hover:hover)` 生效):packages/design-system/src/components/Tabs/tabs.tsx:618、Sidebar/sidebar.tsx:1538-1541、DataTable/data-table.tsx:4463 都照這個條件寫,觸控裝置沒有 hover"
+      ],
+      "order": 5,
+      "orderReason": "你說「你把這題先記著列為待辦到時候再仔細通盤研究解決 root cause並達到預期目標就好」;起點是 R94 根因方案:兩個源頭各在共用層改一次、不逐元件、約 7 處"
+    },
+    {
+      "id": "BL-007",
+      "oldIds": [
+        "R40",
+        "E5(ws-upstream-triage-E)",
+        "todo-組21"
+      ],
+      "title": "統一一個 rich text 工具列",
+      "kind": "user-directed",
+      "source": [
+        {"date":"2026-11-26","quote":"到時候有時間再統一出一個 rich text toolbar就好","ref":"tmp/wip-2026-11-25-backup/notes/decisions/round6-answers.md:12(第六輪 E5)"}
+      ],
+      "rootCause": "no-shared-rich-text-toolbar",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "evidence": [
+        "DS 沒有 rich text 工具列元件:`RichTextToolbar` 只出現在 packages/design-system/src/patterns/action-bar/action-bar.stories.tsx(範例自組,git grep 3 處)"
+      ],
+      "order": 6,
+      "orderReason": "你說「到時候有時間再統一出一個 rich text toolbar就好」;不擋其他項"
+    },
+    {
+      "id": "BL-008",
+      "oldIds": [
+        "N24"
+      ],
+      "title": "Split button(分割按鈕)的樣式支援矩陣:文字型 primary / secondary / tertiary、圖示型 text",
+      "kind": "user-directed",
+      "source": [
+        {"date":"2026-08-28","quote":"這題先放在 backlog 之後再做","ref":"governance/planning/2026-09-25-interaction-and-hover-remediation.md:362(N24)"}
+      ],
+      "rootCause": "no-split-button",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "evidence": [
+        "git grep「split button / split-button / 分割按鈕」於 packages/design-system/src 只有 action-bar.spec.md:293 一處對照說明,DS 沒有分割按鈕;當時的研究逐字稿已不在(N24 列 09-27 查證)"
+      ],
+      "order": 7,
+      "orderReason": "你說「這題先放在 backlog 之後再做」;開工時研究要重做(舊研究已遺失)"
+    },
+    {
+      "id": "BL-009",
+      "oldIds": [
+        "OD2"
+      ],
+      "title": "AI 面板與舞台浮層之間的鍵盤往返、區段切換鍵",
+      "kind": "user-directed",
+      "source": [
+        {"date":"2026-09-25","quote":"若鍵盤的設計和成本負擔很大也可以拆為 backlog,agent 鍵盤的互動很次要,我已經講過了","ref":"governance/planning/2026-09-25-interaction-and-hover-remediation.md:494(OD2;原紀錄沒寫日期,日期取併入 D 區的 09-25)"}
+      ],
+      "rootCause": "agent-panel-stage-keyboard-roundtrip",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "evidence": [
+        "packages/design-system/src 沒有區段切換鍵(git grep \"F6\" 0 筆);AgentPanel 與舞台浮層之間沒有鍵盤往返"
+      ],
+      "order": 8,
+      "orderReason": "你說「若鍵盤的設計和成本負擔很大也可以拆為 backlog,agent 鍵盤的互動很次要,我已經講過了」;排在其他 user 交代項之後"
+    },
+    {
+      "id": "BL-010",
+      "oldIds": [
+        "C5",
+        "R55",
+        "R55-結",
+        "ws-F4-3",
+        "todo-組32"
+      ],
+      "title": "類型方塊 / IconBox 要不要做成可重用元件(下游 Avatar square icon 併在這)",
+      "kind": "user-decision",
+      "scope": "product-ui-ux-decision",
+      "source": [
+        {"date":"2026-11-26","quote":"先不決定,之後再說","ref":"tmp/wip-2026-11-25-backup/notes/decisions/round5-answers.md:8(第五輪 C5)"}
+      ],
+      "rootCause": "icon-box-not-a-component",
+      "status": "blocked",
+      "blockedReason": "user 說「先不決定,之後再說」:不主動再問,user 提起再拿出來",
+      "verifiedAt": "a3330afe",
+      "evidence": [
+        "packages/design-system/src 沒有 IconBox(git grep 0 筆)"
+      ],
+      "order": 9,
+      "orderReason": "你說「先不決定,之後再說」;放在最後、不主動問"
+    },
+    {
+      "id": "BL-011",
+      "oldIds": [
+        "U1",
+        "A101",
+        "A25",
+        "Q2b",
+        "N25"
+      ],
+      "title": "DataTable 一次到位升級:研究 AG Grid 與 TanStack 最新版定標竿;用到的套件全部一起更新到最新;架構一起改(含捲動機制,表頭與表身放進同一個捲動盒)。不拆階段",
+      "kind": "user-directed",
+      "source": [
+        {"date":"2026-09-04","quote":"…甚至是可以考慮追上最新版本的 ag grid吧?…","ref":"governance/planning/user-directed-backlog.md U1(a3330afe)"},
+        {"date":"2026-09-05","quote":"…並仔細研究 ag grid 的最新版和 TanStack的最新版,然後仔細評估我們若要升版到底應該以誰為標竿…","ref":"governance/planning/user-directed-backlog.md U1(a3330afe)"},
+        {"date":"2026-09-05","quote":"關於升級的部分我則要一次就到位的方案，請勿給我拆階段，且做完就是完美包括所有都是最新的，包括tanStack 的套件所有該更新的都要一起更新，應該是基於這個概念給我方案，等到目前的問題都修正完成之後才會開始考慮升級方案的進行","ref":"governance/planning/user-directed-backlog.md U1(a3330afe)"},
+        {"date":"2026-11-17","quote":"先不上啊，之前不是說表格更新有很多任務要一起規劃？包括所有我們有用的套件都要更新並重新對標最新版的 ag grid 然後把整個架構更新包括捲動的機制與設計，反正要全部對標才符合我們之前定義的修改標準吧？因為這樣有問題才有東西可以查證啊，我記得上述這些本來就有記載吧？所以現在還不是時機吧？等你把所有該做的任務都做完再說吧？","ref":"governance/planning/user-directed-backlog.md U1(a3330afe;決策頁 r10 留言)"},
+        {"date":"2026-11-28","quote":"table 框架更新並對齊最新版 ag grid","ref":"governance/planning/user-directed-backlog.md U1(a3330afe)"}
+      ],
+      "rootCause": "datatable-upgrade-all-at-once",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "evidence": [
+        "packages/design-system/package.json:105-106 `@tanstack/react-table` ^8.21.3、`@tanstack/react-virtual` ^3.13.23;:83 `@dnd-kit/core` ^6.3.1 —— 還沒做升級評估",
+        "packages/design-system/src/components/DataTable/data-table.spec.md:102 表頭仍在捲動容器外、用 JS 同步 scrollLeft(舊 Q2b 要改的結構)"
+      ],
+      "parts": [
+        {"oldId":"Q2b","text":"捲動當下表頭落後表身一格畫面:表頭與表身是兩個捲動盒子、表頭由程式跟上;根治 = 表頭放進表身同一個捲動盒子、sticky 固定。併進本項一起做(user 11-17「把整個架構更新包括捲動的機制與設計」)。"}
+      ],
+      "order": 10,
+      "orderReason": "你定的時機:其他任務都做完之後(11-17「等你把所有該做的任務都做完再說吧？」)"
+    },
+    {
+      "id": "BL-012",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "oldIds": [
+        "R75",
+        "ws-H44",
+        "ws-H22",
+        "R79",
+        "OE22",
+        "todo-組2"
+      ],
+      "title": "元件內建字寫死中文,沒有一份字表:全部改走 I18nProvider(含 DatePicker.Range 起訖讀屏名)",
+      "rootCause": "component-strings-hardcoded-no-dictionary",
+      "valueGate": "①",
+      "suggestion": "R75 列內整套(鍵清單、英文字表、開發模式警告、掃 src 中文字串的棘輪閘);R79 DatePicker.Range 起訖讀屏名稱一起。鍵名要和 152 的 `DataTableLabels.*` 一致(tmp/wip-2026-11-25-backup/notes/todo-consolidated-2026-11-28.md 組 2)",
+      "evidence": [
+        "packages/design-system/src/components/DatePicker/date-picker.tsx:911 寫死「此刻」",
+        "`git grep -l \"此刻\\|確定\\|清除日期區間\"` 於元件 .tsx(不含 stories)20 個檔"
+      ],
+      "verifyCmd": "grep -q '>此刻</Button>' packages/design-system/src/components/DatePicker/date-picker.tsx && echo STILL-OPEN || echo FIXED",
+      "fixedSignal": "FIXED"
+    },
+    {
+      "id": "BL-013",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "oldIds": [
+        "R96",
+        "ws-env-parity-1",
+        "ws-env-parity-3",
+        "T6",
+        "T11",
+        "T14",
+        "todo-組3"
+      ],
+      "title": "產品範本的 Node 版本沒有唯一出處,雲端也沒有釘 Node 版本的正式寫法(workspace 2026-11-28 回報「環境等價」)",
+      "rootCause": "範本的 Node 版本沒有唯一出處(CI / devcontainer / engines / 雲端 Setup script 各寫各的)",
+      "valueGate": "①",
+      "suggestion": "一份 Node 版本正本讓 CI / devcontainer / engines / 雲端 Setup script 都讀它,並給雲端一個釘版本的正式寫法(workspace 暫時自己下載 Node 24.14.0 驗 SHA256,DS 定了就改用);T11 排錯文件補 SELF_SIGNED_CERT_IN_CHAIN / ENOTFOUND;T6 最低版要不要升 22.15 先做 consumer engines 遷移。排 0.1.0-beta.154。回報第 2 點(README 與 CLAUDE.md 說法不同)協調者查證是 Codex 與 Claude Code 兩種寫法分開寫、不衝突,不列(tmp/wip-2026-11-25-backup/notes/decisions/ws-env-parity-2026-11-28.md)",
+      "evidence": [
+        "template/ds-product-template/.github/workflows/audit.yml:23 與 sync-design-system.yml:47 `node-version: 24.14.0`;.devcontainer/devcontainer.json:4 映像 `javascript-node:1-22`;package.json:61 engines `>=22.13.0`;沒有 .node-version / .nvmrc —— 版本寫在多處、沒有正本"
+      ]
+    },
+    {
+      "id": "BL-014",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "oldIds": [
+        "T1",
+        "todo-組6"
+      ],
+      "title": "發版同意 hook 的提示沒包外殼,代理訊息也可能被判成同意",
+      "rootCause": "consent-hook-prompt-unwrapped",
+      "valueGate": "②",
+      "suggestion": "T1 列內修法:提示改走 governanceContext 外殼 +「代理訊息 / task-notification 必不落收據」兩面對照組(todo-consolidated 組 6;R102 Mechanism 10 兩個漏擋句型未在本次查證,查到再併入)",
+      "evidence": [
+        "packages/design-system/ds-canonical/hooks/record_release_consent.sh:49-52 仍直接 `echo` 提示(沒有 governanceContext 外殼)"
+      ]
+    },
+    {
+      "id": "BL-015",
+      "kind": "consumer-report",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "oldIds": [
+        "ws-H5",
+        "ws-H9",
+        "ws-H12",
+        "ws-H15",
+        "ws-H19",
+        "ws-H7",
+        "todo-組14"
+      ],
+      "title": "workspace 已被承諾「下一版」的公開 API 缺口(FileUpload open() 與檔案列動作、格內控件列標題命名、focusCell、刪除後焦點接力、表格標題欄點擊)",
+      "rootCause": "promised-public-api-gaps-to-workspace",
+      "valueGate": "③",
+      "suggestion": "照 ws-H-triage-2026-11-27.md 逐項做;新公開 API 命名照 naming-conventions 三重 test(AUTO);做完回 workspace",
+      "evidence": [
+        "`git grep focusCell` 於 packages/design-system/src 的 .tsx 只有 data-table.tsx:3751 一段註解,沒有公開 API",
+        "packages/design-system/src/components/FileUpload 沒有公開 `open()`(git grep 0 筆)"
+      ]
+    },
+    {
+      "id": "BL-016",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "oldIds": [
+        "R65-H35(b)",
+        "R27-C31(b)",
+        "todo-組15"
+      ],
+      "title": "Field 次要動作位置 `<FieldLabelAction>`:user 2026-08-05 已定,規格寫「尚未實作」",
+      "rootCause": "field-label-action-decided-not-built",
+      "valueGate": "③",
+      "suggestion": "動工前照 M36 先找 08-05 原話;新公開零件過 /component-quality-gate(todo-consolidated 組 15)",
+      "evidence": [
+        "packages/design-system/src/components/Field/field.spec.md:70「2026-08-05 user 拍板記錄,尚未實作」;`FieldLabelAction` 只出現在 field.spec.md(2 處),沒有 .tsx"
+      ],
+      "verifyCmd": "grep -rq 'FieldLabelAction' packages/design-system/src/components/Field --include=*.tsx && echo FIXED || echo STILL-OPEN",
+      "fixedSignal": "FIXED"
+    },
+    {
+      "id": "BL-017",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "oldIds": [
+        "R37",
+        "R85",
+        "G8",
+        "todo-組17"
+      ],
+      "title": "治理檔超過上限讓每次開場都提醒 /knowledge-prune;沒有產品消費者的 `EDITABLE_TITLE_HEADER_SLOT` 判退不退",
+      "rootCause": "governance-over-budget-and-dead-exports",
+      "valueGate": "recordOnly",
+      "suggestion": "跑 /knowledge-prune(只移除有證據的噪音);R85 先查 apps/ 與下游有沒有讀它再判退役(todo-consolidated 組 17;R78 的 M36 同族掃描本次未查證,沒有併入)",
+      "evidence": [
+        "packages/design-system/ds-canonical/hooks/registrations.json 有 53 個 `\"hook\":` 登記",
+        "`EDITABLE_TITLE_HEADER_SLOT` 只在 packages/design-system/src/patterns/overlay-surface/overlay-surface.tsx:303 定義、:295 註解,src 與 apps/ 沒有其他讀者"
+      ]
+    },
+    {
+      "id": "BL-018",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "oldIds": [
+        "R60",
+        "E21",
+        "E12",
+        "todo-組18"
+      ],
+      "title": "Calendar 收尾:給讀者看的 renderEventTile 真實情境範例、本體拆 hooks",
+      "rootCause": "calendar-phase-1-leftovers",
+      "valueGate": "③",
+      "suggestion": "R60 ② 加真實情境範例(工單編號 + 優先度、鋪滿外層、可點時畫滑過、只佔一列);③ calendar.tsx 拆 hooks 後拿掉 code-quality-allow(todo-consolidated 組 18;R92 窄視窗浮層本次未查證,沒有併入)",
+      "evidence": [
+        "packages/design-system/src/components/Calendar/calendar.stories.tsx:469 renderEventTile 唯一範例是鍵盤測試用 `<Tag>`",
+        "packages/design-system/src/components/Calendar/calendar.tsx:2 `code-quality-allow: file-size`(本體一個函式約 940 行)"
+      ]
+    },
+    {
+      "id": "BL-019",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "oldIds": [
+        "R67(量具那半)",
+        "todo-組25"
+      ],
+      "title": "焦點幾何量具的 countTabbable 盲點(同 R67 已修的那一半)",
+      "rootCause": "focus-geometry-count-tabbable-blind-spot",
+      "valueGate": "recordOnly",
+      "suggestion": "改到 focus-geometry-browser-audit.mjs 時順手照 R67 已修的判法改(todo-consolidated 組 25;G13 的 avatar-anchor-box 已加 coverageControl,不再列)",
+      "evidence": [
+        "scripts/focus-geometry-browser-audit.mjs:115 `countTabbable` 仍以選擇器清單直接數,沒排除不可聚焦 / 隱藏元素"
+      ]
+    },
+    {
+      "id": "BL-020",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "oldIds": [
+        "T9",
+        "todo-組22"
+      ],
+      "title": "安裝鏈註解與實作不符:瀏覽器下載的 TLS 說明寫「不取自環境變數」",
+      "rootCause": "install-chain-comment-drift",
+      "valueGate": "recordOnly",
+      "suggestion": "照實改註解(todo-consolidated 組 22;T3 / T5 / T8 / T10 本次未查證或屬未來觸發條件,沒有併入)",
+      "evidence": [
+        "scripts/ensure-playwright-browsers.mjs:92 註解「不取自環境變數」"
+      ],
+      "verifyCmd": "grep -q '不取自環境變數' scripts/ensure-playwright-browsers.mjs && echo STILL-OPEN || echo FIXED",
+      "fixedSignal": "FIXED"
+    },
+    {
+      "id": "BL-021",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "oldIds": [
+        "R90",
+        "todo-組23"
+      ],
+      "title": "雲端環境跑不了瀏覽器閘:setup 沒有安裝對版的 Playwright 瀏覽器",
+      "rootCause": "cloud-setup-no-playwright-browsers",
+      "valueGate": "recordOnly",
+      "suggestion": "要在雲端跑閘或量速度時才做:setup-workspace.mjs 補安裝步驟(todo-consolidated 組 23)",
+      "evidence": [
+        "scripts/setup-workspace.mjs 不含 playwright(grep -ci 0)"
+      ],
+      "verifyCmd": "grep -qi playwright scripts/setup-workspace.mjs && echo FIXED || echo STILL-OPEN",
+      "fixedSignal": "FIXED"
+    },
+    {
+      "id": "BL-022",
+      "kind": "engineering",
+      "status": "blocked",
+      "blockedReason": "只有 user 能做:刪 work-management repo 是 owner 動作;repo 搬出雲端硬碟要在 user 自己的終端機做、會改路徑。AI 需要時只問一個確切動作",
+      "verifiedAt": "a3330afe",
+      "oldIds": [
+        "H6",
+        "R15",
+        "H9",
+        "E5(notes)",
+        "N79",
+        "todo-組29"
+      ],
+      "title": "只有 user 能動手的:刪 work-management repo 後清外部登記;把 repo 搬出 Google 雲端硬碟",
+      "rootCause": "human-only-owner-actions",
+      "valueGate": "recordOnly",
+      "suggestion": "刪 repo 後清 packages/design-system/src/tokens/token-registry.json 兩筆 work-management 登記(N79 的 WM 速查表一併不必再改);搬資料夾照 reconcile-2026-11-28.md 第 9 列「發版後搬、先列清單」",
+      "evidence": [
+        "packages/design-system/src/tokens/token-registry.json:1032、:1040 仍有 `\"repo\": \"work-management\"` 兩筆",
+        "主資料夾仍在 /Users/…/GoogleDrive-…/我的雲端硬碟/my-project(本 session 環境路徑)"
+      ]
+    },
+    {
+      "id": "BL-023",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "oldIds": [
+        "Q4a",
+        "C9"
+      ],
+      "parts": [
+        {"oldId":"Q4a","text":"拖曳影像就地渲染(@dnd-kit DragOverlay 沒有 createPortal),拖曳元件的祖先有疊放脈絡時影像被那一層封頂"},
+        {"oldId":"C9","text":"拖曳影像在 Dialog / Sheet 裡被封頂","evidence":"handoff-2026-11-12/OPEN-ITEMS.md:169 找不到重現,只記"}
+      ],
+      "title": "拖曳影像就地渲染、不走 portal:樹或表格放在 Dialog / Sheet / Popover 裡拖曳時影像會被那一層封頂",
+      "rootCause": "drag-overlay-not-portaled",
+      "valueGate": "recordOnly",
+      "suggestion": "拖曳影像改 portal 到 body,並帶上拖曳元件所在處的 data-theme / data-density;閘延伸 layer-order-invariant(容器裡拖曳)與 drag-runtime-contract(remediation Q4a);C9 當時找不到重現,先寫重現再修",
+      "evidence": [
+        "packages/design-system/src/components/DataTable/data-table.tsx:6111 與 TreeView/tree-view.tsx:1226 `<DragOverlay dropAnimation={null} zIndex={999}>`;tree-view.tsx 沒有 createPortal(grep -c 0)"
+      ],
+      "verifyCmd": "grep -q 'zIndex={999}' packages/design-system/src/components/TreeView/tree-view.tsx && echo STILL-OPEN || echo FIXED",
+      "fixedSignal": "FIXED"
+    },
+    {
+      "id": "BL-024",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "oldIds": [
+        "R1b-DT4",
+        "R1b-DT6"
+      ],
+      "title": "說明頁文字沒有閘守:story 名稱中文字之間的機翻空格、展示頁區段標題手抄",
+      "rootCause": "doc-text-not-gated",
+      "valueGate": "recordOnly",
+      "suggestion": "DT4:清掉剩下的名稱後把 data-table-tree-view-doc-invariant.mjs P7 的範圍擴到全 DS;DT6:剩下的手抄 `<h3 className=\"text-h6 font-semibold` 改用既有的區段標題元件(remediation R1b-DT4 / DT6)",
+      "evidence": [
+        "story `name:` 中文字之間有空格(P7 正規式 `[一-鿿] [一-鿿]`):全 DS 還有 6 則",
+        "`<h3 className=\"text-h6 font-semibold` 逐字相同:packages/design-system/src 還有 10 處(10-21 是 97 處)"
+      ]
+    },
+    {
+      "id": "BL-025",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "oldIds": [
+        "K8",
+        "M22-backlog",
+        "D9(verification debt)"
+      ],
+      "title": "benchmark 引用的驗證債:120 份檔頭整檔撤回、引用閘的關鍵字表沒有 MUI 等名稱",
+      "rootCause": "benchmark-claims-unverified",
+      "valueGate": "recordOnly",
+      "suggestion": "先補來源、再擴 benchmark-citation.mjs 的關鍵字與官網網域(避免一擴就擋住正在改的檔);整檔撤回的 claim 成為設計驅動時就地升級成一手來源(governance/planning/m22-citation-backlog.md 的 3-tier 路徑)",
+      "evidence": [
+        "`git grep -l @benchmark-unverified-blanket -- packages/design-system/src` 120 個檔",
+        "packages/design-system/ds-canonical/hooks/lib/benchmark-citation.mjs 不含 MUI / mui.com(grep -c 0)"
+      ]
+    },
+    {
+      "id": "BL-026",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "oldIds": [
+        "DIM74-overlay-backlog"
+      ],
+      "title": "7 個 story 檔只有浮層觸發點、沒有打開狀態的範例(視覺稽核拍不到浮層內容)",
+      "rootCause": "overlay-stories-trigger-only",
+      "valueGate": "recordOnly",
+      "suggestion": "各檔補 OpenSnapshot 變體(defaultOpen / useState(true) / play())或逐檔 `@overlay-open-skip` + 理由;順手把 check_overlay_open_focus_escape_probe.sh 的判定加寬到 controlled `open={var}` 與 bare `open`(.claude/logs/dim74-overlay-backlog.md)",
+      "evidence": [
+        "下列檔 grep `defaultOpen|open={|play:|useState(true)|@overlay-open-skip` 為 0:Breadcrumb/breadcrumb.principles、Dialog/dialog.principles、Input/input.principles、Input/input、Separator/separator.principles、Sheet/sheet.anatomy、Tooltip/tooltip.principles(.stories.tsx)"
+      ]
+    },
+    {
+      "id": "BL-027",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "oldIds": [
+        "date-picker.spec.md:398"
+      ],
+      "title": "【要問你】showTime 面板底的「此刻」鈕在今天不可選時要不要停用",
+      "rootCause": "datepicker-now-button-disabled-day",
+      "valueGate": "recordOnly",
+      "askUser": true,
+      "suggestion": "下一份決策頁問(附現況圖與 Ant / MUI 一手做法);沒問之前照規格「鈕照舊可按」",
+      "evidence": [
+        "packages/design-system/src/components/DatePicker/date-picker.spec.md:398「待 user 決定」;date-picker.tsx:911「此刻」鈕沒有依今天可不可選停用"
+      ]
+    },
+    {
+      "id": "BL-028",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "oldIds": [
+        "header-canonical.spec.md:88"
+      ],
+      "title": "產品端 chrome header 頭像尺寸要給一個可讀的公開名字(現在寫字面值 24)",
+      "rootCause": "chrome-header-avatar-size-no-public-name",
+      "valueGate": "recordOnly",
+      "suggestion": "對外 API 命名屬工程(AGENTS.md「自主執行 canonical」;user 2026-11-28「你自己發現然後自己列的任務，那些不動 ssot ui/ux的就是照你建議自己逐步修好」):AI 照 naming-conventions 三重 test 定名、匯出,apps/template 改讀它;畫面不變",
+      "evidence": [
+        "packages/design-system/src/patterns/header-canonical/header-canonical.spec.md:88「要給產品一個名字讀,是對外 API 命名,待 user 決定」;apps/template/src/App.tsx:83 `<Avatar … size={24}>`"
+      ]
+    },
+    {
+      "id": "BL-029",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "oldIds": [
+        "OD1",
+        "data-table.spec.md:732"
+      ],
+      "title": "表格 / 樹列拖曳的「上移 / 下移」替代路徑(WCAG 2.5.7):API 歸屬(DS 在開了列拖曳時自動加,或產品自己加)由 AI 定並實作",
+      "rootCause": "row-drag-alternative-path-owner",
+      "valueGate": "recordOnly",
+      "suggestion": "選單項形式已定(該列 rowActions 溢出選單多兩項,樣式沿用);API 歸屬屬工程(AGENTS.md「自主執行 canonical」),AI 對照 TreeView / DataTable 既有 API 定一種並實作",
+      "evidence": [
+        "packages/design-system/src/components/DataTable/data-table.spec.md:732「僅 API 歸屬(DS 於 enableRowDrag 時自動注入 vs consumer 自加)待定」;data-table.tsx:1107 替代路徑仍只登記、未實作"
+      ]
+    },
+    {
+      "id": "BL-030",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "oldIds": [
+        "R101",
+        "todo-組30"
+      ],
+      "title": "Popover 使用指引「依狀態篩選」「篩選」兩則還是勾選群組自組,跟規格對不上:改用 DS 清單元件(上下留白 12 / 12 → 0 / 0)",
+      "rootCause": "popover-filter-examples-handcrafted-checkbox-group",
+      "valueGate": "①",
+      "suggestion": "overlay-surface.spec.md:195-202 是 user 2026-09-17 定的規則(浮層 body 是可選清單 → 走選單列),明寫篩選面板是漂移 → 程式跟規格對不上照修;畫面變化放基準圖審核頁。擴 overlay-list-as-region / checkbox-group-handcraft 閘同時做,自我測試 ρ 的對照組要換",
+      "evidence": [
+        "packages/design-system/src/components/Popover/popover.principles.stories.tsx:193-195「依狀態篩選」仍是 `<CheckboxGroup>` 自組"
+      ]
+    },
+    {
+      "id": "BL-031",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "oldIds": [
+        "A30",
+        "A43"
+      ],
+      "title": "T5 防線(線 A / B / C / D 與各閘 hook 那一半):AI 提的大方案,因成本暫停",
+      "rootCause": "T5 防線是 AI 為回答 user「要如何避免?」提的大方案,因成本暫停、查無 user 要做整套的原話",
+      "valueGate": "recordOnly",
+      "suggestion": "不開工;user 要做整套才重估(量出 21–22 代理工作天)",
+      "evidence": [
+        "tmp/wip-2026-11-25-backup/notes/migration/open-items-carryover.json(對 a3330afe 查證;本線未改動所列檔)"
+      ],
+      "parts": [
+        {"oldId":"A30","text":"T5 防線(線 A / B / C + 整合)","evidence":"handoff-2026-11-12/OPEN-ITEMS.md:41 暫停理由(量出 21–22 代理工作天、查無 user 要做整套的原話);新表與 governance/planning/user-directed-backlog.md 都沒有 T5;squash 2e5c1b0c(#172)訊息 grep A30 0 筆","userQuote":"「…你擅自作主張的那種,難道都不用解釋給我聽讓我過目確認檢查嗎?」「要如何避免?」"},
+        {"oldId":"A43","text":"T5 線 D「送達」三件 + 各閘 hook 那一半","evidence":"handoff-2026-11-12/OPEN-ITEMS.md:54 與 A30 一起停;新表與 backlog 都沒有;squash 2e5c1b0c(#172)訊息 grep A43 0 筆"}
+      ]
+    },
+    {
+      "id": "BL-032",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "oldIds": [
+        "A34",
+        "A39",
+        "A41",
+        "A44",
+        "A49",
+        "A51",
+        "A53",
+        "A54",
+        "A60",
+        "A62",
+        "A63",
+        "A64",
+        "A65",
+        "A71",
+        "A73",
+        "A74",
+        "A75",
+        "A77",
+        "A79",
+        "A89",
+        "A92",
+        "A93",
+        "A116",
+        "B8",
+        "B11",
+        "C8",
+        "C10",
+        "D6",
+        "D12",
+        "D13",
+        "D19",
+        "D22"
+      ],
+      "title": "AI 自查找到的閘 / 量具 / 註解 / 範例尾巴(舊 OPEN-ITEMS 32 列;同根因的 C9 併在 BL-023)",
+      "rootCause": "AI 自查找到的閘 / 量具 / 註解 / 範例尾巴,沒有使用者看得到的錯、CI 不紅、user 沒要求(價值閘只記)",
+      "valueGate": "recordOnly",
+      "suggestion": "改到對應的檔或閘時順手修;單獨不開工",
+      "evidence": [
+        "tmp/wip-2026-11-25-backup/notes/migration/open-items-carryover.json(對 a3330afe 查證;本線未改動所列檔)"
+      ],
+      "parts": [
+        {"oldId":"A34","text":"總帳寫回(MASTER-TODO 3d §1–§3、§2b 結案狀態)","evidence":"ci.yml job 名、總帳時區、others 更正已做(68c99f45);剩帳本整理,handoff-2026-11-12/OPEN-ITEMS.md:128 A116 ① 已判只記"},
+        {"oldId":"A39","text":"發版後本機收尾(已發版分支、empty-home/)","evidence":"主資料夾已在工作分支(本次 gitStatus = pkg/b3;wip-2026-11-25-backup/notes/TRACKER.md:31 C1 主目錄正常);`git branch -a --list '*post-release-closure*'` 仍有 claude/post-release-closure-2026-09-27、`ls -d empty-home` 仍在;.claude 5 個舊檔 = wip-2026-11-25-backup/notes/TRACKER.md:53 E8"},
+        {"oldId":"A41","text":"工作資料夾歸檔 + 合併後三項讀回","evidence":"`git worktree list` 13 個、無 r4a 暫存 worktree(已清);tmp/ 歸檔與讀回 ②③ 屬讀回、未證明有問題(Sub-rule 9 ③);讀回 ① 排程紅燈已在 wip-2026-11-25-backup/TRACKER.md:36 T17"},
+        {"oldId":"A44","text":"決策卡清除選取閘的 Tab 步數寬容改精確值","evidence":"scripts/agent-decision-card-clear-invariant.mjs:336 tabUntil 仍是「最多 8 步」(HEAD a3330afe)"},
+        {"oldId":"A49","text":"表格格內編輯註解寫「同 pixel」與實量不符","evidence":"packages/design-system/src/components/DataTable/data-table.tsx:3930 註解仍寫「同 pixel」(HEAD a3330afe)"},
+        {"oldId":"A51","text":"外面浮層直接拿欄位元件當觸發點的副作用","evidence":"handoff-2026-11-12/OPEN-ITEMS.md:63 DS 0 處、當時下游 0 處這樣用;packages/design-system/src/components/Coachmark/coachmark.spec.md:106 仍寫 Popover asChild 定位,沒有使用者踩到"},
+        {"oldId":"A53","text":"欄位框線 hook 6 種換寫法放行、1 種誤擋","evidence":"handoff-2026-11-12/OPEN-ITEMS.md:65 價值閘只記;squash 2e5c1b0c(#172)訊息 grep A53 0 筆"},
+        {"oldId":"A54","text":"欄位框線閘找欄位沒核對種類","evidence":"handoff-2026-11-12/OPEN-ITEMS.md:66 價值閘只記;squash 2e5c1b0c(#172)訊息 grep A54 0 筆"},
+        {"oldId":"A60","text":"AppShell 版面模型沒閘量細列寬、SidebarProvider 包錯沒警告","evidence":"handoff-2026-11-12/OPEN-ITEMS.md:72 價值閘只記;squash 2e5c1b0c(#172)訊息 grep A60 0 筆"},
+        {"oldId":"A62","text":"併排欄位組與側欄收合閘的既有小出入 ①–⑤","evidence":"① 已修:packages/design-system/src/components/FieldControlGroup/field-control-group.tsx:104-112(停用成員被滑過 = 0;squash 2e5c1b0c(#172)訊息:2146 PV4);②–④ 閘品質 / 重現不出只記;⑤「標準 / 寬鬆」vs「一般 / 大」用字若要全庫統一屬 UI 文案、要 user 點頭"},
+        {"oldId":"A63","text":"A5 研究順手量到的 9 件小事","evidence":"② coachmark.spec.md:134-140 已定內容區捲動(user 2026-11-22 丙);③ coachmark.spec.md:34、:36 已照程式更正;④ 已修(squash 2e5c1b0c(#172)訊息:2186 PV4);⑥ empty.spec.md 空狀態級距題併 wip-2026-11-25-backup/TRACKER.md:115 R64 / backlog U5;①⑤⑦⑧⑨ 只記"},
+        {"oldId":"A64","text":"A5 審查帶出的 3 件","evidence":"① 已修(48c92756);② packages/design-system/src/components/Dialog/dialog.tsx:26 Body pt 仍是 tight、③ 極矮面板 → 都沒有真實使用情境,只記"},
+        {"oldId":"A65","text":"A5 留下的 2 件(定義句三處同步、決策卡錯誤狀態間距補格)","evidence":"handoff-2026-11-12/OPEN-ITEMS.md:77 只記;squash 2e5c1b0c(#172)訊息 grep A65 0 筆"},
+        {"oldId":"A71","text":"A70 驗證留下的 3 件閘量不足","evidence":"handoff-2026-11-12/OPEN-ITEMS.md:83 價值閘只記;squash 2e5c1b0c(#172)訊息 grep A71 0 筆"},
+        {"oldId":"A73","text":"A7 審查留下的 6 件閘品質","evidence":"handoff-2026-11-12/OPEN-ITEMS.md:85 價值閘只記;squash 2e5c1b0c(#172)訊息 grep A73 0 筆"},
+        {"oldId":"A74","text":"A11–A13 同族尾巴 ①–⑪","evidence":"③ AspectRatio 佔位字已改(git grep「這裡有一些說明文字」0 筆;squash 2e5c1b0c(#172)訊息:7660);④ data-table-column-visibility-panel.tsx:155 已有 labels;⑤ 已做(squash 2e5c1b0c(#172)訊息:7638);⑥ 寫死的讀屏字併 wip-2026-11-25-backup/TRACKER.md:129 R75;⑦ dropdown-menu.stories.tsx:141「重設檢視」仍在(文案語意,若要改需 user 定);①②⑧–⑪ 只記"},
+        {"oldId":"A75","text":"A14 同族尾巴 ①–⑥","evidence":"① packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx:628 alt 已改組織名;② file-item.anatomy.stories.tsx:13 已換;③ 併 A56 已接 CI;④⑤ 量具 / 名冊容量只記;⑥ 側欄各項各有內容屬範例內容取捨,只記"},
+        {"oldId":"A77","text":"A17 / A19 尾巴 ①–⑥","evidence":"① 閘夾具已無 height=\"auto\"(git grep 0 筆;squash 2e5c1b0c(#172)訊息:2007 E3);②–⑥ 只記"},
+        {"oldId":"A79","text":"表格快速捲動效能閘第二次誤紅","evidence":"handoff-2026-11-12/OPEN-ITEMS.md:91 前兩輪未再誤紅;新表與 squash 2e5c1b0c(#172)訊息 都沒有再紅的紀錄"},
+        {"oldId":"A89","text":"消費端 rounded-sm 沒有用途檢查","evidence":"handoff-2026-11-12/OPEN-ITEMS.md:101 價值閘只記;squash 2e5c1b0c(#172)訊息 grep A89 0 筆"},
+        {"oldId":"A92","text":"--item-px 沒有住處、各檔帶後備值","evidence":"仍有 13 個 src 檔帶 var(--item-px, 後備值;packages/design-system/src/tokens/token-registry.json:741 仍登記 --item-px (HEAD a3330afe)"},
+        {"oldId":"A93","text":"overlay-footer-gutter 量具把 rem 讀成數字","evidence":"scripts/overlay-footer-gutter-invariant.mjs:185-187 對 --layout-space-loose / tight / --item-px 仍直接 parseFloat(只有 --field-px 換 px);A92 未做,目前不會因此紅"},
+        {"oldId":"A116","text":"commit 說另記卻沒進追蹤的尾巴 ①②③","evidence":"③ E4 已做(squash 2e5c1b0c(#172)訊息:5862);① 帳本整理、② 閘品質 → 只記"},
+        {"oldId":"B8","text":"注音輸入第一鍵真機驗證","evidence":"handoff-2026-11-12/OPEN-ITEMS.md:148 改判不做真機手測;根治 OE27 已登記在 governance/planning/2026-09-25-interaction-and-hover-remediation.md:131(不在新表),沒有使用者回報"},
+        {"oldId":"B11","text":"要不要規定外面浮層不可拿欄位當觸發點","evidence":"handoff-2026-11-12/OPEN-ITEMS.md:151 改列 A51(工程正確性,不問 user);A51 判只記"},
+        {"oldId":"C8","text":"Alert 窄視窗標題被截成「付…」","evidence":"handoff-2026-11-12/OPEN-ITEMS.md:168 重現不到,只記"},
+        {"oldId":"C10","text":"只記不做的八項(Chart 減少動態、FileItem 列尾閘等)","evidence":"handoff-2026-11-12/OPEN-ITEMS.md:170 有新證據才動"},
+        {"oldId":"D6","text":"標頭下第一個就是區段標題的地方還有沒有漏查","evidence":"handoff-2026-11-12/OPEN-ITEMS.md:181 只記:header-first-gap 閘已全 DS 盤點,沒有 user 反映"},
+        {"oldId":"D12","text":"每個 commit 前跑 governance:check 有沒有機械檢查","evidence":".github/workflows/ci.yml:551 每次跑 `node scripts/governance-build-graph.mjs --check`;本機 .husky 未啟用(可選),只記"},
+        {"oldId":"D13","text":"header-content-sides 1px 來源「Linux 字型」是 AI 推導","evidence":"handoff-2026-11-12/OPEN-ITEMS.md:186 只記:閘已改直接量、已標 AI 推導"},
+        {"oldId":"D19","text":"G10 / R1d / R1e 只讀回 CI 數字","evidence":"handoff-2026-11-12/OPEN-ITEMS.md:191 只記:之後 CI 多輪 0 紅"},
+        {"oldId":"D22","text":"Select 開著一直藍、切分頁才消失","evidence":"handoff-2026-11-12/OPEN-ITEMS.md:193 只記:A1 後開著維持聚焦框是設計;「切分頁才消失」畫面無錯"}
+      ]
+    },
+    {
+      "id": "BL-033",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "oldIds": [
+        "C2",
+        "C3"
+      ],
+      "title": "user 已決定維持的兩處(表頭排序箭頭低半像素、Tag 淡底綠字對比先從寬):規格與現況的文字要對齊",
+      "rootCause": "user 已決定維持 / 先不做,依 feedback_propose_discipline.md Sub-rule 9 不翻冷飯",
+      "valueGate": "recordOnly",
+      "suggestion": "不翻案;只在 deep audit 時把 tag.spec.md:282 的「≥ 4.5:1」改寫成照實(先從寬的那幾格)",
+      "evidence": [
+        "tmp/wip-2026-11-25-backup/notes/migration/open-items-carryover.json(對 a3330afe 查證;本線未改動所列檔)",
+        "packages/design-system/src/components/Tag/tag.spec.md:282 仍寫「WCAG AA contrast ≥ 4.5:1(text)」"
+      ],
+      "parts": [
+        {"oldId":"C2","text":"表頭排序箭頭低半像素不改(丙)","evidence":"handoff-2026-11-12/OPEN-ITEMS.md:162 user 決定維持","userQuote":"只要奇數高和偶數高要垂直對齊就一定會有這個問題？若是如此的話，就先維持現狀"},
+        {"oldId":"C3","text":"Tag 淡底綠字對比 3.7 : 1,對比先從寬","evidence":"packages/design-system/src/components/Tag/tag.spec.md:282 仍寫 ≥ 4.5:1,user 說對比先從寬;等 deep audit 或專題研究","userQuote":"我認為就只是針對某些地方的對比度的檢查可以先從寬 而不是叫你完全耍廢忽視真的是問題的問題欸"}
+      ]
+    },
+    {
+      "id": "BL-034",
+      "kind": "engineering",
+      "status": "done",
+      "doneRef": "0.1.0-beta.153",
+      "oldIds": [
+        "A36"
+      ],
+      "title": "常設規則「給 user 看的每張『之後』圖都附量到的數字對規則」只寫在交接檔",
+      "rootCause": "常設規則只寫在交接檔,沒寫進 repo 正本",
+      "valueGate": "recordOnly",
+      "suggestion": "接在 governance/memory/feedback_propose_discipline.md Sub-rule 7「要你看的範圍」同一行;查無 user 原話,標【AI 推導】",
+      "parts": [
+        {"oldId":"A36","text":"常設:給 user 看的每張「之後」圖都附量到的數字對規則","evidence":"grep governance/memory、ds-canonical/rules、ds-canonical/references 的「量到 / 實量 / 前後圖 / 數字對照」:只有 feedback_propose_discipline.md:73、:76 要附前後圖,沒有「之後圖附量到的數字」;meta-patterns.md:52 M32 只管稽核腳本要量 pixel"}
+      ]
+    },
+    {
+      "id": "BL-035",
+      "kind": "engineering",
+      "status": "open",
+      "verifiedAt": "a3330afe",
+      "oldIds": [
+        "R97", "R105", "R86", "R44", "R59", "R81", "R47", "R19", "F-f", "H10(後半)", "T17", "E7", "R102", "R77", "R103", "T12", "R91", "Q3c", "R98", "R99", "R68", "D1", "D2", "D3", "R72b", "R76", "R78(同族掃描)", "R92", "T3", "T8", "T10", "R20", "F-i", "F-h", "T7(b)", "T7(c)", "B3", "R69", "B6(b)", "R16", "R43", "C6", "T20(2)", "R1b-DT2", "R1b-DT5", "R1b-DT7", "R1b-FN1b", "K5", "Q4b", "Q5", "R1f", "G1", "G2", "G9(補丁)", "N74", "N76", "N77", "N85", "OE28", "OE32", "OB1", "OB2", "OB3", "N41"
+      ],
+      "title": "2026-11-28 搬遷時本機查不到現況的舊編號(要讀 CI / 排程 / 瀏覽器 / 外部才能確認):逐條查證後收進正本或結案",
+      "rootCause": "舊清單項的現況只能從 CI / 排程 / 瀏覽器 / 外部讀回確認,搬遷時本機查證不到",
+      "valueGate": "②",
+      "suggestion": "逐條讀 CI run / 排程紀錄 / 瀏覽器重現 / workspace 回覆查證:仍成立的照根因收進正本(併進既有項或另開),已解或前提不在的在本項 parts 記一行結案證據;先做 T17(main 排程 Governance harnesses nightly 連紅 = ②)與組 4 的核准閘誤擋(R81)",
+      "evidence": [
+        "governance/planning/2026-11-28-work-process-evidence-v7.md 第 3 節「本機查不到現況」那一條逐條列全這批與所屬組別;在 a3330afe 本機只有程式與規格,讀不到 CI run、排程結果、瀏覽器重現與外部回覆"
+      ]
+    }
+  ]
+}

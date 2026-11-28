@@ -103,7 +103,7 @@ Tooltip 靠觸發點收到指標事件才出現;原生 `disabled` 的元素靠�
 
 - **按鈕**:改用 `aria-disabled`,保留指標事件讓 Tooltip 能出現 → `../Button/button.spec.md`「狀態疊加」表的 `aria-disabled` 列
 - **欄位**:Tooltip 包住整個 Field(外層 `<div>` 不是停用元素)→ `../Field/field-controls.spec.md`「disabled 的停用原因」
-- **選單項等其他元件**:停用時怎麼說明還沒定案(產品 canary 回報 C18 / C20,待 user 決定),定案前不在本規格寫做法
+- **選單項等其他元件**:停用時怎麼說明還沒定案(產品 canary 回報 C18 / C20,待 user 決定,BL-003),定案前不在本規格寫做法
 
 ## 禁止事項
 

@@ -85,7 +85,7 @@ benchmark:
 
 **程式表達**(local pattern token,對齊 `data-table.css` 既有 local-token 先例):
 - CSS:`--chrome-header-avatar-size: 1.5rem`(`header-canonical.css`)— 供 SidebarHeader 收合對齊公式消費
-- JS 端:設計系統內部讀程式對照常數 `CHROME_HEADER_AVATAR_PX = 24`(`chrome-header-avatar.ts`,`@internal`、不經 pattern index 對外匯出;Avatar API `size: number | 'fill'` 不接 CSS var)。CSS 值與這個常數由 `scripts/token-twin-invariant.mjs` 機器鎖住相等(2026-11-15 起;之前 AccountMenu 與範例各寫字面值 24、只靠註解同步 —— 稽核 P03)。產品端(含 `apps/template`)仍寫字面值 `size={24}`:要給產品一個名字讀,是對外 API 命名,待 user 決定
+- JS 端:設計系統內部讀程式對照常數 `CHROME_HEADER_AVATAR_PX = 24`(`chrome-header-avatar.ts`,`@internal`、不經 pattern index 對外匯出;Avatar API `size: number | 'fill'` 不接 CSS var)。CSS 值與這個常數由 `scripts/token-twin-invariant.mjs` 機器鎖住相等(2026-11-15 起;之前 AccountMenu 與範例各寫字面值 24、只靠註解同步 —— 稽核 P03)。產品端(含 `apps/template`)仍寫字面值 `size={24}`:要給產品一個名字讀,是對外 API 命名,待定(BL-028)
 
 **Consumer rule**:
 - 在 chrome header 內放 avatar → **必用 raw `<Avatar size={24}>`**,**禁用 `<ItemAvatar>`**(會誤啟動 row anatomy lookup)

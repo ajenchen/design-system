@@ -183,11 +183,21 @@
       "classification": "canonical-source",
       "excludes": [
         "governance/archive",
+        "governance/backlog/user-view.md",
         "governance/generated",
         "governance/control-plane.lock.json"
       ],
       "allowAbsent": false,
-      "reason": "Provider-neutral memory, planning ledger, and benchmark authority."
+      "reason": "Provider-neutral memory, planning ledger, backlog, and benchmark authority."
+    },
+    {
+      "id": "governance-backlog-user-view",
+      "path": "governance/backlog/user-view.md",
+      "match": "file",
+      "classification": "generated-output",
+      "excludes": [],
+      "allowAbsent": false,
+      "reason": "User-facing backlog view generated from governance/backlog/items.json by scripts/backlog.mjs."
     },
     {
       "id": "governance-archive",
