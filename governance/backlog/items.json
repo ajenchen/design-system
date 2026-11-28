@@ -144,6 +144,11 @@
           "date": "2026-11-28",
           "quote": "照你建議",
           "ref": "決策頁 https://claude.ai/artifact/4bHAv9PWbbVxNGwUiDCUEf 第 4 題選項甲留言(逐字 tmp/wip-2026-11-25-backup/notes/decisions/calendar-answers-2026-11-28.md)"
+        },
+        {
+          "date": "2026-11-28",
+          "quote": "行事曆我覺得基本上可以照你建議，但是第三題我可以明白邏輯，但是樣式還沒確定吧？你畫的圖感覺很不切實際",
+          "ref": "本 session 對話(第三頁 https://claude.ai/artifact/QbW7BXddrrVfHGnRQ2wc92 頁尾三題;逐字 tmp/wip-2026-11-25-backup/notes/decisions/calendar-answers-2026-11-28.md 第三輪)"
         }
       ],
       "rootCause": "calendar-phase-2-not-built",
@@ -153,7 +158,8 @@
         "packages/design-system/src/components/Calendar/calendar.spec.md:23「第一段(月檢視)已在 0.1.0-beta.151 實作」",
         "packages/design-system/src/components/Calendar/calendar.tsx 沒有 view / defaultView / onViewChange(grep 0 筆);calendar.spec.md:53 第二段 API 形狀只寫到【AI 推導】",
         "2026-11-28 開工前研究(45 分,一手來源逐字;notes/decisions/research-calendar-views-2026-11-28.md):27 項由既有規格 / 世界級一致推得(D1–D27,含現在時間線用 --info、議程不列空日子、上班時段不上色、開啟捲到 7 點)。依 DS 同目的既有做法(M23)AI 直接定:全天列塞不下 = 月格 +N 清單;空白時段滑過 = 同月格不變色只有手形(8 家 5 家同);拖選中 = DataTable 區間格淡藍反白(不撞今天實心底 C8)。先照建議做、做出圖給 user 看:議程一次 7 天、時間格整點線 + 半點淡虛線。問 user 4 題(決策頁 https://claude.ai/artifact/4bHAv9PWbbVxNGwUiDCUEf,product-ui-ux-decision):1 議程長相(建議丙)、2 週 / 日事件方塊(建議甲 淡底 + 左色條)、3 重疊(建議甲 並排等寬)、4 週 / 日鍵盤(建議甲 方向鍵走到每個時段)。開工前補查:時間格跨天拖(各只一家)。",
-        "2026-11-28 user 回決策頁:第 4 題 週 / 日鍵盤 定案甲(方向鍵走得到每個時段、Enter 在該時段新增、F2 進格);第 1 題問丙的間距要畫給他看;第 2 題傾向甲(淺色、跟月一致)但先問時間欄佔位 / dark mode 不透格線 / 色條間距 / 實色是否 solid Tag;第 3 題問句傾向並排、問並排上限與溢出 +N。研究者做新頁回答(scratchpad/cal-page2)。"
+        "2026-11-28 user 回決策頁:第 4 題 週 / 日鍵盤 定案甲(方向鍵走得到每個時段、Enter 在該時段新增、F2 進格);第 1 題問丙的間距要畫給他看;第 2 題傾向甲(淺色、跟月一致)但先問時間欄佔位 / dark mode 不透格線 / 色條間距 / 實色是否 solid Tag;第 3 題問句傾向並排、問並排上限與溢出 +N。研究者做新頁回答(scratchpad/cal-page2)。",
+        "2026-11-28 定案:議程 = 丙(日期左欄、同一天寫一次)+ 間距全部 layoutSpace loose(16 / 24)、拿掉日期與事件之間的直線、日期左右等距(日期框左右 8 對稱);週 / 日事件 = 丙 淡底(= 月格全天長條 CAT_EVENT)、沒有色條,深色墊不透明底;重疊 = 乙,塞法照 FullCalendar eventMaxStack(每天各自算、排序同月格 :306、放最左空道、只相接不算重疊、到上限整筆收、收起的依重疊連鎖併組一個 +N、+N 貼欄右緣、點開清單只列該組)、上限依欄寬算。待定:重疊時 +N 與窄事件的實際樣式(user:圖不切實際)→ 照真實比例重做(第四頁)。鍵盤甲已定。"
       ],
       "parts": [
         {
