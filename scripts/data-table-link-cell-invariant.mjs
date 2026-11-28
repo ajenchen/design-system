@@ -134,7 +134,7 @@ async function injectBreaks(kind) {
   if (kind === 'L9') await page.addStyleTag({ content: '[data-selected-cell-id]{visibility:visible!important}' })
   // L10:拿掉連結的延伸區(= 修前:不能編輯的框只有網址文字能點);L10s:試算表沒選中的格也延伸(= 第一下就開分頁)
   if (kind === 'L10') await page.addStyleTag({ content: '[data-link-stretch]::before{display:none!important}' })
-  if (kind === 'L10s') await page.addStyleTag({ content: '[data-dt-link-select-first] [data-link-stretch]::before{display:block!important}' })
+  if (kind === 'L10s') await page.addStyleTag({ content: '[data-dt-select-first] [data-link-stretch]::before{display:block!important}' })
   // L11(值的前綴圖示):圖示改色 / 間距改 4 / 截斷時圖示會縮 / 連結撐滿外層 —— 各只打自己那幾項
   if (kind === 'L11color') await page.addStyleTag({ content: '[data-link-value-icon] svg{color:rgb(255,0,0)!important}' })
   if (kind === 'L11gap') await page.addStyleTag({ content: 'a[href]:has([data-link-value-icon]){gap:4px!important}' })

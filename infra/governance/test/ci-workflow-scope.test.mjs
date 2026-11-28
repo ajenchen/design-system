@@ -128,6 +128,22 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
     assert.match(run('verify-browser-overlay-rows-control'), /^\s*node scripts\/overlay-list-as-region-invariant\.mjs --selftest\s*$/m, '選項列前緣閘的對照組在 verify-browser-overlay-rows-control')
     assert.equal(source.split('\n').filter((line) => !line.trimStart().startsWith('#') && /overlay-list-as-region-invariant\.mjs|test:overlay-list-as-region/.test(line)).length, 2, 'ci.yml 只准上面那兩行跑選項列前緣閘(同一支閘一次 CI 只跑一次)')
   }
+  // 2026-11-28:verify-browser-sweeps 拆成兩格 matrix(part a / b;同 verify-browser-overlay / verify-browser-layout 的做法,不調高上限、job id 不變):
+  // PR #179 457e61b7 這一 job 跑滿 25 分被取消(Avatar 掃描 958 秒 + 示範焦點掃描 435 秒;實測與出處記在 ci.yml 該 job 檔頭)。
+  // 兩支全 story 掃描各只在自己那一格跑一次,而且對照組跟著閘走:別名本身是「判定 && --selftest」,拆格不得讓任何一支的 --selftest 消失。
+  {
+    const raw = loadYaml(source).jobs['verify-browser-sweeps']
+    assert.deepEqual(raw.strategy, { 'fail-fast': false, matrix: { part: ['a', 'b'] } })
+    const pkgScripts = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf8')).scripts
+    for (const [alias, file, part] of [['test:avatar-anchor-box', 'avatar-anchor-box-invariant', 'a'], ['test:story-demo-focus', 'story-demo-focus-invariant', 'b']]) {
+      const steps = raw.steps.filter((s) => new RegExp(`^\\s*npm run ${alias}\\s*$`, 'm').test(s.run ?? ''))
+      assert.equal(steps.length, 1, `verify-browser-sweeps 必須剛好一步跑 ${alias}`)
+      assert.equal(steps[0].if, `matrix.part == '${part}'`, `${alias} 只在第 ${part} 格跑(兩格都跑 = 同一支全 story 掃描一次 CI 跑兩次)`)
+      assert.match(pkgScripts[alias], new RegExp(`node scripts/${file}\\.mjs && node scripts/${file}\\.mjs --selftest`), `${alias} 必須是「判定 && --selftest」(對照組跟著閘走)`)
+      assert.equal(source.split('\n').filter((line) => !line.trimStart().startsWith('#') && new RegExp(`${alias}|${file}`).test(line)).length, 1, `ci.yml 只准一處跑 ${alias}(同一支閘一次 CI 只跑一次)`)
+    }
+    assert.ok(raw.steps.some((s) => !s.if && /^npx --no-install playwright install chromium$/.test((s.run ?? '').trim())), 'Chromium 安裝是兩格共用的一步(不帶 if),每格只裝一次')
+  }
   // 2026-11-27:verify-browser-focus-inputs(自 verify-browser-interaction)沿用原 job 的 25(不是調高):原 job 在 PR #174 8a508469 跑 25.2 分撞上限被取消
   //(瀏覽器閘那一步 main 1055 秒 → 本 PR 1394 秒;逐支計時記在 ci.yml 原 job 檔頭)。後半七支(焦點指示起,CI 合計 558 秒)搬到新 job。
   // 2026-11-27:verify-browser-datepicker-range-underline(自 verify-browser-horizontal-overflow)沿用原 job 的 25(不是調高):原 job 在 PR #174 0d2de1b5
@@ -927,12 +943,14 @@ test('Visual Regression 的 PR 分支重拍路徑:push 只在非 main + 只看�
   assert.equal(gateCheckout.uses, visualJob.steps[0].uses, '閘的 checkout 與重拍 job 用同一個釘死的版本')
   assert.deepEqual(gateCheckout.with, {
     'persist-credentials': false,
-    'sparse-checkout': `${REBAKE_REQUEST_PATH}\nscripts/visual-rebake-request.mjs\n`,
+    // .node-version:setup-node 讀 Node 版本正本(scripts/node-version-ssot-invariant.mjs 守「稀疏簽出要含它」)
+    'sparse-checkout': `${REBAKE_REQUEST_PATH}\nscripts/visual-rebake-request.mjs\n.node-version\n`,
     'sparse-checkout-cone-mode': false,
-  }, '閘只稀疏簽出請求檔與判定腳本')
+  }, '閘只稀疏簽出請求檔、判定腳本與 Node 版本正本')
   const visualNode = visualJob.steps.find((step) => String(step.uses).startsWith('actions/setup-node@'))
   assert.equal(gateNode.uses, visualNode.uses, '閘的 setup-node 與重拍 job 用同一個釘死的版本')
-  assert.equal(gateNode.with['node-version'], visualNode.with['node-version'], '閘與重拍 job 用同一個 node 版本')
+  assert.equal(gateNode.with['node-version-file'], '.node-version', '閘讀 Node 版本正本')
+  assert.equal(visualNode.with['node-version-file'], '.node-version', '重拍 job 讀同一份 Node 版本正本')
   assert.equal(gateStep.id, 'gate')
   assert.equal(gateStep.run, `node scripts/visual-rebake-request.mjs --gate --file ${REBAKE_REQUEST_PATH} --github-output "$GITHUB_OUTPUT"`)
   assert.deepEqual(visualJob.needs, ['rebake-gate'])

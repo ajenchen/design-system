@@ -99,7 +99,7 @@ const allIds = (path) => affectedStages(graph, [path]).map((stage) => stage.id).
 // Preserve the focused producer/consumer assertions below; governance-metadata
 // intentionally observes broad repository inputs and is asserted separately.
 const ids = (path) => allIds(path).filter((id) => id !== 'governance-metadata')
-assert.deepEqual(graph.stages.map((stage) => stage.id), ['release-version', 'provider-adapters', 'plugin-aliases', 'harness-authority-bindings', 'fork-template', 'baseline-mirrors', 'governance-metadata', 'control-plane'])
+assert.deepEqual(graph.stages.map((stage) => stage.id), ['release-version', 'provider-adapters', 'plugin-aliases', 'harness-authority-bindings', 'fork-template', 'baseline-mirrors', 'governance-metadata', 'backlog', 'control-plane'])
 assert.equal(graph.schemaVersion, 5)
 assert.deepEqual(missingForkTemplateExactSources(graph.stages), [])
 assert.deepEqual(validateForkTemplateRuntimeBoundary(graph.stages), { missing: [], forbidden: [], generated: [] })
@@ -751,8 +751,8 @@ assert.equal(
 )
 assert.deepEqual(ids('governance/generated/control-plane.json'), ['control-plane'])
 assert.deepEqual(ids('governance/control-plane.lock.json'), ['control-plane'])
-assert.deepEqual(ids('scripts/governance-build-graph.json'), ['baseline-mirrors', 'control-plane', 'fork-template', 'harness-authority-bindings', 'plugin-aliases', 'provider-adapters', 'release-version'])
-assert.deepEqual(ids('scripts/test-governance-build-graph.mjs'), ['baseline-mirrors', 'control-plane', 'fork-template', 'harness-authority-bindings', 'plugin-aliases', 'provider-adapters', 'release-version'])
+assert.deepEqual(ids('scripts/governance-build-graph.json'), ['backlog', 'baseline-mirrors', 'control-plane', 'fork-template', 'harness-authority-bindings', 'plugin-aliases', 'provider-adapters', 'release-version'])
+assert.deepEqual(ids('scripts/test-governance-build-graph.mjs'), ['backlog', 'baseline-mirrors', 'control-plane', 'fork-template', 'harness-authority-bindings', 'plugin-aliases', 'provider-adapters', 'release-version'])
 assert.deepEqual(allIds('packages/governance/node_modules/fixture/index.js'), [])
 assert.deepEqual(allIds('packages/design-system/dist/index.js'), [])
 assert.deepEqual(allIds('scripts/generated/obsolete.mjs'), [])

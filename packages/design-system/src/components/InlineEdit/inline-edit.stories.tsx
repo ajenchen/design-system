@@ -43,7 +43,7 @@ export const TaskTitle: Story = {
     const [title, setTitle] = React.useState('修正 Safari 上結帳 e2e 測試偶發失敗')
     return (
       <div className="w-[560px] rounded-md border border-border bg-surface p-[var(--layout-space-loose)]">
-        {/* 議題編號 → 標題 = tight:編號替標題提供所在脈絡(layoutSpace 規則 3,layoutSpace.spec.md:76 / :81 context dependency) */}
+        {/* 議題編號 → 標題 = tight:編號替標題提供所在脈絡(layoutSpace 規則 3,layoutSpace.spec.md:125 / :130 context dependency) */}
         <p className="mb-[var(--layout-space-tight)] text-caption text-fg-secondary">PROJ-482</p>
         <InlineEdit
           as="h1"

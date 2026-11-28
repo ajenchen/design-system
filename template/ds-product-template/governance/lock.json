@@ -3,8 +3,8 @@
   "schemaVersion": 1,
   "role": "template-consumer",
   "release": {
-    "designSystem": "0.1.0-beta.152",
-    "storybookConfig": "0.1.0-beta.152"
+    "designSystem": "0.1.0-beta.153",
+    "storybookConfig": "0.1.0-beta.153"
   },
   "upgradeTrust": {
     "schemaVersion": 1,
@@ -42,22 +42,22 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "a872a9dcba668186565bead763ded8b578271707db42f2512200871aebbb5c59",
+    "forkCorpusLockSha256": "49badb69fc657654e6a6afb1ef32a00c997c70df06762ccaa647eab731bb297e",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
-    "providerLifecycleSha256": "27a5811afb053b0dd2f58f6ee686d48735e9f96d6e5ac7e754467b8d8a9fe5af",
+    "providerLifecycleSha256": "11dccb49caebfd67f96636f07199f3bb2c49e6e2df2d004489667f8ba36f4873",
     "providerInventorySha256": "00adf1c4f6b3367055a9cc3fdfe658660771b4c9931f696e12761a95076ad92c",
     "executionRuntimeSha256": "d9377cc45308731f287d7b1711b7c38fc4e02ff8f84729bcbbf01bb52d136904",
-    "commonInstructionSha256": "bbf0081860e7f4cba3d38e76358c0fa266336d37f2e6af4745b25c4f1047a769",
+    "commonInstructionSha256": "a024ca5227b784e7a66a6a1dde5baf7044c2362351af7ce5b5b04ca1163948ae",
     "providerArtifactDigests": {
       "claude": {
-        "instructionSha256": "b3590d8b3dfa4cafec559d6682b32b1c9702d68fbc2d08ab5f1d04df3d1ff304",
+        "instructionSha256": "6b7a991ec643aea50295b80a16d29cd1cf3a4079ad41c07c2326a809ccf10f23",
         "hookSha256": "b17888945b06f3433e8cbeb0b659d63e41dbd391906461b6453500d8ec8ecec1",
         "skillsSha256": "3856ad27088b2a2f5398592e101a55531287cd425fb667d0d42522e972014028",
         "treeDigests": {}
       },
       "codex": {
-        "instructionSha256": "bbf0081860e7f4cba3d38e76358c0fa266336d37f2e6af4745b25c4f1047a769",
+        "instructionSha256": "a024ca5227b784e7a66a6a1dde5baf7044c2362351af7ce5b5b04ca1163948ae",
         "hookSha256": "78748b0379593f8575a7937c84a70671367ed1d58448b0de70f94cd584ac2996",
         "skillsSha256": "c6ab99bc6a0a5728b35b59e59f44a70358854e9a3bd62cf2c4528de709139d74",
         "treeDigests": {}
@@ -73,7 +73,7 @@
       "claude": "b17888945b06f3433e8cbeb0b659d63e41dbd391906461b6453500d8ec8ecec1"
     },
     "governanceCheckSha256": "ef727a964f344ec56701c4ee90c6a39fef2ed71f2404a083cfc903f851e8a676",
-    "utilityRegistrySha256": "7709faa7ebdb84fd5b6e1b12e6c4c43dd3abbc50dd7d19c34d62af8228b66cd6",
+    "utilityRegistrySha256": "515b3dce16cd158e2c5884a4aa6f23332a815ea00765d980dea4e4042ae788ec",
     "sharedSkillsSha256": "9a7912ed1e261b1bbc259f141c5badb5d8f564f59fb2bb778e0b11c409bdf070",
     "sharedSkillCount": 11,
     "requiredScripts": {
@@ -89,13 +89,13 @@
     },
     "managedFiles": {
       ".devcontainer/devcontainer-lock.json": "f2ba8f75963ada855fef0707be6313fec9dce6742d32f414f79c4c370d8de3f3",
-      ".devcontainer/devcontainer.json": "79ebd4ccf0f1207a7ce1f31e51c40b052feeb1b8d51467d7e4e171410c70db24",
+      ".devcontainer/devcontainer.json": "4cdd732f050c8ce9715bd626e637aa60be5ecb48d871105182853dbb82715227",
       ".devcontainer/onboard-banner.sh": "762c1fda165b0f8c9d2f6e13ac313f37da65d427334328638f4445d29da50a63",
       ".devcontainer/post-create.mjs": "6bc05d2597a54e8f6a5a087901e92ccc89acc3d5873d96ad20814f8f539a146b",
-      ".github/workflows/audit.yml": "ff1bb33e94c6de2f96e242c8853089565e292d9dbf183cb25151ec02e95eeff2",
-      ".github/workflows/sync-design-system.yml": "bdb40c97372782ccd2fe29890937a91fe8d99efebe2b321c7ebb6258bb49b2c8",
+      ".github/workflows/audit.yml": "970c5562267aab4a952e8517cc4e8c535b2c8d0341944004fef7ec8b1b9f3c73",
+      ".github/workflows/sync-design-system.yml": "69cb1b5a7891abab0d8f43ec7449eec4f4912a08b05ef083c979dc8744b66d23",
       ".npmrc": "2984e2fb8b6ba8fad758ad0e18c3bc49be706a1e1ed56e1fc2b45ec4dfdc7f07",
-      "governance/consumer-governance.md": "8632a37f4290fa807abdb663e5164c1ffac9ad57a55a70600eafae9eab1e88ad",
+      "governance/consumer-governance.md": "2f00f9f4b4cb01aacc551960ee6eec41bc6f091b29acaf8893557d9daddab788",
       "governance/provider-cli-toolchain.json": "5280bc83de46486d6fd13e29349eee849d347970ed5fdf32412d463629124170",
       "governance/provider-cli-toolchain.package-lock.json": "d0a5fceebe21101b67848e7ace1856e9bc35f6532e4ba4deaf64462fe4fc81bb",
       "governance/schemas/content-debt-baseline.schema.json": "e57421ff52ee68510bf070009f25941aa5ff45126c08e32d571c57fd76b59d3a",
@@ -104,8 +104,10 @@
       "governance/trust/issuers.json": "b4da935a9d39239f99fdb15f9ee0a05b538ac0c427b32b77fce8010560fdef2b",
       "governance/visual-baseline-review-policy.json": "339179f3bb7805f067c40cb22509734fa3f1cf2834129e64f6e0bf08aa70b334",
       "schemas/provider-cli-toolchain.schema.json": "7e5c6c14c8a9295373f56df968afdb8cb8888764ce1b060993a655ccec8ac61d",
+      "scripts/.node-version": "75daa0bc10dae1f22b2d13386b55b232adf16930d4325902f37b5033b3a7ca93",
       "scripts/audit-consumer-a11y.mjs": "8ff8e74774dbe04ed69cbb18ecf5abd3d8b60d24527e7af751d74f9341a1d076",
       "scripts/check-plugin-installed.mjs": "f2a673cc011743fe51f87746b9aebbd3332378cd2732088eda621e16a3c74386",
+      "scripts/cloud-setup.sh": "c5573a11298e5af6a1f86b5330145a43e9610fae1729e0d61487b254105fb11c",
       "scripts/consumer-source-harness.mjs": "98ad59797d13bca7be2b39005a89b4dc27dbc51344ad12ffde14d5f49f0b93f2",
       "scripts/lib/a11y-static-server.mjs": "c22322959d2898bc8ebb6c95077bd4c97499f49a690e1fe00f2220e8f809f4ef",
       "scripts/lib/canonical-path-containment.mjs": "0244e31dc3be5015bed3efd65a5a77086a2e4676e9ac79cd0801c8cde6a74fcd",
@@ -113,12 +115,12 @@
       "scripts/lib/consumer-control-plane-policy.mjs": "51aba211bb2f755eff7fa48bb060f9835356a62d2643ab5049147a9896c7bb72",
       "scripts/lib/consumer-output-roots.mjs": "440837081c3b8f714b099d91f0235b71ea5493ee8836697d559ef342f5cf7392",
       "scripts/lib/exact-workspace-dependencies.mjs": "40161bac07da3ce65b59f6d1e5439c1c43f398b4305c1ad5a0e1309d287c812f",
-      "scripts/lib/governance-dependency-bootstrap.mjs": "c58fa8fcc31f4db0397e8ff2c2121487a66b13c63c2d915185207235742a6eab",
+      "scripts/lib/governance-dependency-bootstrap.mjs": "fbc04b2809e96baa6fe15e88628d537354478752d1f7d3e2048f6013b7f61d05",
       "scripts/lib/launch-browser.mjs": "3656ff22ef06b3354e306047b00d1aa63c1e7cfb9bad9d38ab9e0dbc87dc1981",
       "scripts/lib/provider-lifecycle.mjs": "9aabb2c98efc454b8555308a34830e6590b034b10a63f76f788fbd4cf37ce7e7",
       "scripts/lib/storybook-render-health.mjs": "583beac441f2f2bc88630da73a00d38bfb4da0b1c1e11152b1e9a87030837418",
       "scripts/lib/storybook-static-snapshot.mjs": "a6ed23c4285d57ded8b4943d276cb2b71bc1a545ab867b80c06eda7d59ea48b9",
-      "scripts/lib/verified-exact-npm-runtime.mjs": "5e3f57056598d4325342102124a815dc9193568db554d89d25411ca109651a25",
+      "scripts/lib/verified-exact-npm-runtime.mjs": "7398fa303164603e29374616368a58c191cb7fe320f7841490fea315497057ab",
       "scripts/lib/workspace-post-create.mjs": "f3ddc6db740d5c4d48b1c6e16c55222325e4d1c16fe6644a455e7b7e5bea0a0d",
       "scripts/lib/worktree-fingerprint.mjs": "a2fe922b3be6ff1b782ffc7e76b0ebb61b3691ba9b46768c0d0349913228ce4a",
       "scripts/lint-ds-internal-imports.mjs": "9b046590c4664e58db920d5b54339ba57eeec563ce858602920cfcaffcdbc231",
@@ -134,7 +136,7 @@
       "scripts/sync-all.mjs": "0c948666421047abd708c9f677b0f6679481ba8005cc6cc6b455840582d9ba62",
       "scripts/sync-exact-workspace-dependencies.mjs": "29ce6aaab16fd7a939eff6e556e8548291fad28df88d578627153c9508bf6e31",
       "scripts/verify-consumer-css-entry.mjs": "a16545ea8d4f5224d8133f0bb0b68d5489d8e106fe7594488a78e0e5718b99cc",
-      "scripts/verify-upgrade-evidence.mjs": "8e7368c4ede8d896f6e7aba5a030e94b6e5accc30bf4780835ef1c905a6255db",
+      "scripts/verify-upgrade-evidence.mjs": "104bcb134fa13f8307c9d483fc36dbee1e7f6e711a323c9373e92bb661ee5c93",
       "scripts/verify-upgrade-provenance.mjs": "1b9459f6b5a38d6d18c3bb57479cb640c0c668ad046ee38c619e890f6c2946d2",
       "scripts/workflow-static-validation.mjs": "8e12bf2d73fc5e1200ddc6cc8437b27433fcd71f7d85d79b56756dcaac667305"
     }

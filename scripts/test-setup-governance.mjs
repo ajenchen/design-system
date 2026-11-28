@@ -1505,22 +1505,16 @@ test('canonical execution runtime is the single machine SSOT for setup, package 
     `npm@${runtime.exactNpmVersion} ${PRODUCT_TEMPLATE_PACKAGE_LOCK_NPM_COMMAND.join(' ')}`,
   )
 
-  const workflowPaths = [
-    'template/ds-product-template/.github/workflows/audit.yml',
-    'template/ds-product-template/.github/workflows/sync-design-system.yml',
-  ]
-  for (const path of workflowPaths) {
-    const body = readFileSync(path, 'utf8')
-    const declared = [...body.matchAll(/node-version:\s*['"]?(\d+\.\d+\.\d+)['"]?/g)].map(match => match[1])
-    assert.ok(declared.length > 0, `${path}: every consumer workflow must pin an exact Node version`)
-    assert.ok(declared.every(version => atLeast(version, runtime.minimumNodeVersion)), `${path}: Node pin is below the canonical minimum`)
-    assert.doesNotMatch(body, /node-version:\s*['"]?22['"]?\s*$/m, `${path}: ambiguous major-only Node channel`)
-  }
-  assert.match(readFileSync(workflowPaths[0], 'utf8'), /npm ci --ignore-scripts/)
+  // 每個 workflow / dev container / Netlify 都等於 .node-version 那一版,由 scripts/node-version-ssot-invariant.mjs 守(CI verify-static);
+  // 這裡只守另一條:那一版要滿足 canonical 最低 Node(確切版號,不准只寫主版號)。
+  const pinnedNode = readFileSync('scripts/.node-version', 'utf8').trim()
+  assert.match(pinnedNode, /^\d+\.\d+\.\d+$/, 'managed scripts/.node-version must pin an exact Node version')
+  assert.ok(atLeast(pinnedNode, runtime.minimumNodeVersion), 'managed scripts/.node-version is below the canonical minimum')
+  assert.match(readFileSync('template/ds-product-template/.github/workflows/audit.yml', 'utf8'), /npm ci --ignore-scripts/)
   assert.equal(existsSync('template/ds-product-template/.github/workflows/governance-anchor.yml'), false)
 
   const devcontainer = JSON.parse(readFileSync('template/ds-product-template/.devcontainer/devcontainer.json', 'utf8'))
-  assert.match(devcontainer.image, /javascript-node:1-22@sha256:[a-f0-9]{64}$/)
+  assert.match(devcontainer.image, /javascript-node:[0-9.]+-\d+@sha256:[a-f0-9]{64}$/)
   assert.deepEqual(devcontainer.postCreateCommand, ['node', '.devcontainer/post-create.mjs'])
 
   const setupSource = readFileSync('scripts/setup-governance.mjs', 'utf8')
@@ -2023,7 +2017,7 @@ test('template, cloud, devcontainer, mirror and managed-file wiring share the on
   const devcontainerLock = JSON.parse(readFileSync('template/ds-product-template/.devcontainer/devcontainer-lock.json', 'utf8'))
   assert.equal(
     devcontainer.image,
-    'mcr.microsoft.com/devcontainers/javascript-node:1-22@sha256:0d29e5fdc64f8397cd502223e0c4679f1e60877ca0fd2db4f2e2e0028e4271af',
+    'mcr.microsoft.com/devcontainers/javascript-node:4.0.9-24@sha256:21f15d367bfc5ceadabb9989be48029cba1e6bd80da323405232614a267a9c45',
   )
   assert.deepEqual(Object.keys(devcontainer.features), ['ghcr.io/devcontainers/features/github-cli:1.1.0'])
   assert.deepEqual(devcontainerLock, {

@@ -19,7 +19,7 @@
       "packages/design-system/src/tokens/opacity/opacity.spec.md L53-57",
       "packages/design-system/src/tokens/color/color.spec.md(hardcoded hex/rgb canonical)",
       "packages/design-system/src/tokens/elevation/elevation.spec.md(shadow-{sm,md,lg,xl,2xl} 禁)",
-      "packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md L125-134,L150-163"
+      "packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md L240-249,L265-284"
     ],
     "rationale": "World-class DS(Atlassian @atlaskit/tokens / Carbon @carbon/themes / Ant ConfigProvider / Polaris polaris-tokens)用 registry + lint, 不靠 grep 各處 spec.md。Rule-of-3 violation 已存在(典型禁止 list 在 3 個 spec.md 各寫一份)— 本檔抽 SSOT。",
     "exceptions": {
@@ -397,7 +397,7 @@
       },
       "nearby_line_limit": 16,
       "rationale": "gap-1/2 只在同行或有界 nearby 證據可機械證明為 inline item/control、semantic homogeneous list、toolbar、layoutSpace rule-5 grouped horizontal fields、或一排 assist chip(assist_chip_row)時是固定 micro geometry。一般 flex/grid/section gap-1/2 仍屬 macro 候選並阻擋；同行混入 p-/m-/space-* magic 也不能被 micro 證據隱藏。",
-      "rationale_path": "packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md L125-134,L150-163; packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md L869-900; packages/design-system/src/components/Button/button.spec.md L87-122; packages/design-system/src/components/Chip/chip.spec.md「一排 assist chip(訊息附件以外)」",
+      "rationale_path": "packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md L240-249,L265-284;packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md L869-900; packages/design-system/src/components/Button/button.spec.md L87-122; packages/design-system/src/components/Chip/chip.spec.md「一排 assist chip(訊息附件以外)」",
       "spec_registered_patterns": [
         {
           "id": "file-item-list",
@@ -432,7 +432,7 @@
           "same_line_any": ["\\brole\\s*=\\s*['\"]group['\"]", "<fieldset\\b"],
           "nearby_components": ["Field", "input", "select", "textarea"],
           "nearby_min": 2,
-          "source": "packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md:198 規則 5「橫排 Input Gap」非緊密(不同組值並列)gap-4(16,固定不隨 density;證據要求同 gap-2 那一格:橫排 + fieldset / role=group + 鄰近兩個以上欄位)"
+          "source": "packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md:247 規則 5「橫排 Input Gap」非緊密(不同組值並列)gap-4(16,固定不隨 density;證據要求同 gap-2 那一格:橫排 + fieldset / role=group + 鄰近兩個以上欄位)"
         },
         {
           "id": "item-slot-row",

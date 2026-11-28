@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/DsImportSmoke.stories.tsx (ImportSmoke → DS Storybook link)"
     ],
-    "generatedAt": "2026-11-27T10:56:35.737Z"
+    "generatedAt": "2026-11-28T04:13:14.927Z"
   },
   "components": {
     "accordion": {
@@ -332,7 +332,8 @@
           "design-system-components-calendar-展示--customer-support-weekdays",
           "design-system-components-calendar-展示--manufacturing-week-numbers",
           "design-system-components-calendar-展示--loading-while-switching-month",
-          "design-system-components-calendar-展示--side-panel-narrow",
+          "design-system-components-calendar-展示--narrow-window",
+          "design-system-components-calendar-展示--fill-main-area-borderless",
           "design-system-components-calendar-展示--read-only-dates-custom-tile-keyboard",
           "design-system-components-calendar-展示--event-click-anchor",
           "design-system-components-calendar-展示--detail-view-only",
@@ -600,6 +601,7 @@
           "design-system-components-datatable-展示--pinned-columns",
           "design-system-components-datatable-展示--inline-edit",
           "design-system-components-datatable-展示--boolean-control",
+          "design-system-components-datatable-展示--boolean-control-spreadsheet",
           "design-system-components-datatable-展示--inline-edit-with-spreadsheet-overlay",
           "design-system-components-datatable-展示--spreadsheet-cursor-contract",
           "design-system-components-datatable-展示--cell-errors",
@@ -1029,6 +1031,25 @@
         "設計原則": [
           "design-system-internal-hovercard-設計原則--usage-guidance",
           "design-system-internal-hovercard-設計原則--pure-behavior-primitive-rule"
+        ]
+      },
+      "openSnapshotIds": [],
+      "exception": null
+    },
+    "infotooltip": {
+      "tiers": {
+        "展示": [
+          "design-system-components-infotooltip-展示--section-heading",
+          "design-system-components-infotooltip-展示--settings-group-heading",
+          "design-system-components-infotooltip-展示--metric-label"
+        ],
+        "設計規格": [
+          "design-system-components-infotooltip-設計規格--overview",
+          "design-system-components-infotooltip-設計規格--size-matrix",
+          "design-system-components-infotooltip-設計規格--accessibility"
+        ],
+        "設計原則": [
+          "design-system-components-infotooltip-設計原則--usage-guidance"
         ]
       },
       "openSnapshotIds": [],
@@ -1915,6 +1936,6 @@
       "exception": null
     }
   },
-  "totalComponents": 66,
-  "totalStories": 1079
+  "totalComponents": 67,
+  "totalStories": 1088
 }

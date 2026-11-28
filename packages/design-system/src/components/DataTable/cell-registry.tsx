@@ -459,9 +459,18 @@ function MultiPersonCell({ value, mode, size, onCommitLive, onCancel, meta, aria
   )
 }
 
+/**
+ * 布林格的主要動作(切換)= 整格都是點擊範圍(2026-11-27,data-table.spec.md「格的主要動作:整格是點擊範圍」)。
+ * 做法同網址格的延伸連結(LinkInput `renderLinkAnchor` 的 `stretch`):控件自己的 `::before` 鋪滿最近的定位祖先(格本來就 `relative`),
+ * 所以點格裡任何地方 = 點控件本身(Radix 照常切換、照常送出),滑過整格 = 滑過控件(控件自己的滑過色 + 手形)——
+ * 懸停回饋與點擊範圍同一塊(hit-area-canonical「懸停回饋 ≡ 命中區」)。控件盒子本身不變(勾選框 16 / 開關 20×40),焦點框仍畫在盒子上。
+ * `data-bool-stretch`:試算表沒選中的格第一下只選格 —— 格帶 `data-dt-select-first` 時 data-table.css 先收起延伸區(同網址格)。
+ */
+const BOOLEAN_CELL_STRETCH = "cursor-pointer before:absolute before:inset-0 before:content-['']"
+
 function BooleanCell({ value, mode, meta, size, isEditable, onCommit, ariaLabel }: CellComponentProps) {
   // boolean 不分 read/edit mode — view 渲 mode='view' 純展示;editable 時直接 toggle Checkbox。
-  // 不可編(!isEditable)→ 走 view branch,Checkbox mode="view" 純展示不接 onCheckedChange。
+  // 不可編(!isEditable)→ 走 view branch,Checkbox mode="view" 純展示不接 onCheckedChange(唯讀格沒有主要動作,不鋪延伸區)。
   if (mode === 'view' && !isEditable) {
     // size 傳入 → boolean 值 icon(Check/X)@lg 縮放對齊其他 cell(對齊 editable 分支同 size 邏輯)
     // 唯讀格不分 meta.control:開關欄、勾選欄都畫同一組 ✓ / ✗(資料型別是 boolean,控件只是可編輯時的寫法;2026-11-27 決策頁第 9 題乙)
@@ -469,7 +478,7 @@ function BooleanCell({ value, mode, meta, size, isEditable, onCommit, ariaLabel 
   }
   if (meta?.control === 'switch') {
     // 開關欄(meta.control 'switch',2026-11-27 決策頁第 9 題乙;判準 checkbox.spec.md「表格格子裡」):
-    // 跟勾選格同一套 —— 點控件就切換並送出、格裡空白處只移格游標、Enter / F2 把焦點放進控件(CELL_WIDGET_SELECTOR 認 button)、
+    // 跟勾選格同一套 —— 整格都切換並送出(試算表模式點空白處第一下選格,見 BOOLEAN_CELL_STRETCH)、Enter / F2 把焦點放進控件(CELL_WIDGET_SELECTOR 認 button)、
     // 讀屏名字同勾選格(meta.ariaLabel > 欄標題 > 預設)。尺寸對齊勾選框:sm / md 用 Switch md(20×40)、lg 用 Switch lg(24×48)。
     return (
       <SwitchPublic
@@ -477,6 +486,8 @@ function BooleanCell({ value, mode, meta, size, isEditable, onCommit, ariaLabel 
         checked={value === true}
         onCheckedChange={(checked) => onCommit?.(checked === true)}
         aria-label={meta?.ariaLabel ?? ariaLabel ?? '切換'} // i18n-allow: DS default switch label(最後一層 fallback,同下方勾選格)
+        data-bool-stretch=""
+        className={BOOLEAN_CELL_STRETCH}
       />
     )
   }
@@ -484,6 +495,8 @@ function BooleanCell({ value, mode, meta, size, isEditable, onCommit, ariaLabel 
     <Checkbox
       size={size === 'lg' ? 'lg' : 'md'}
       checked={value === true}
+      data-bool-stretch=""
+      className={BOOLEAN_CELL_STRETCH}
       onCheckedChange={(checked) => onCommit?.(checked === true)}
       // 名字:consumer 明給的 meta.ariaLabel > 欄標題(ariaLabel)> DS 預設「切換」(此前欄標題沒接上,一律唸「切換」)
       aria-label={meta?.ariaLabel ?? ariaLabel ?? '切換'} // i18n-allow: DS default checkbox label(最後一層 fallback)

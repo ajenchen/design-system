@@ -89,8 +89,11 @@ export const CALENDAR_NARROW_COLUMN_MAX_PX = 60
  *   2026-11-26 實量 352 時兩端要 143 / 141、只分到 123 → 被裁。照同一套量法:至少 288 + 2 × (143 − 91) = 392,
  *   加同樣 16 的餘量 = 408,取整數 rem 26rem = 416(實量每端分到 155、兩端放得下;en-US「07/05/2026, 10:00 AM」估每端約 146 也放得下)。
  *   實量由 scripts/calendar-month-invariant.mjs DT-time-fit(一般 / 大密度,編輯中兩端 scrollWidth ≤ clientWidth,訊息印每端要的寬與分到的寬)在 CI 讀回。
+ * - 2026-11-27 起詳情外殼開版面間距大檔(calendar.spec.md「事件詳情浮層」外殼):左右內距 16 → 24,內容寬少 2 × 8 = 16 → 寬 416 + 16 = 432
+ *   (27rem;內容寬與改前相同,上面那套「兩端不被裁」的量法照舊成立)。出處:留白草案 T1b 乙 432(AI 建議;user 2026-11-27「我沒回應的就是沒有意見」,
+ *   交接資料夾 notes/decisions/decide152-answers.md「留白草案第 2 輪」;第 3 輪定為本元件客製)【432 的算式是 AI 推導】。
  */
-export const CALENDAR_EVENT_DETAIL_WIDTH_PX = 416
+export const CALENDAR_EVENT_DETAIL_WIDTH_PX = 432
 
 /**
  * 量到的版面尺寸是 Chromium 的 LayoutUnit(1/64 px)取整後的值:高 117 的格子可能量成 116.984。

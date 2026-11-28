@@ -62,7 +62,8 @@ const WEEK_START_OPTIONS = [0, 1, 2, 3, 4, 5, 6]
 // ── 1. 元件總覽 ────────────────────────────────────────────────────────────────
 // 部位與參數速查照 calendar.spec.md「月檢視 Anatomy」與「API(第一段)」;浮層兩個部位點了才出現,畫面在「狀態行為」那幾則
 const OVERVIEW_PARTS: [string, string][] = [
-  ['工具列', 'ChromeHeader:左〔‹〕〔今天〕〔›〕+ 月份標題,右〔+ 新事件〕(恆渲染)'],
+  ['工具列', '在格子區的框外、一列小尺寸控件:左〔‹〕〔今天〕〔›〕+ 月份標題,右〔+ 新事件〕(恆渲染);到格子區隔 tight'],
+  ['格子區外框', '只圍星期列與週列(同表格的框只圍表格);bordered={false} 拿掉框、格線保留;flush 時格子區貼齊容器左右下'],
   ['星期列', '格陣第一列,文字置中、灰底;窄寬時縮成一個字'],
   ['週數欄', '選用(showWeekNumbers),左側 33 寬,週數放在與日期框同一個 24 框裡'],
   ['日期框', '24 × 24、左上;今天實心底;每月 1 號寫「7月1日」'],
@@ -139,9 +140,14 @@ export const Inspector: Story = {
     showWeekNumbers: false,
     loading: false,
     readOnlyEvents: false,
+    bordered: true,
+    flush: false,
   },
   argTypes: {
     readOnlyEvents: { control: 'boolean' },
+    // 外殼(calendar.spec.md「外殼」):bordered = 格子區的框;flush = 貼邊擺法(容器那三邊不給內距、工具列自己帶 loose)
+    bordered: { control: 'boolean' },
+    flush: { control: 'boolean' },
     // 帶 mapping(數字對數字):沒有 mapping 時 Storybook 依元件型別轉換網址參數(?args=weekStartsOn:1),這個聯集型別轉不過去、整個參數被丟掉(實測)
     weekStartsOn: { control: { type: 'select', labels: WEEK_START_LABELS }, options: WEEK_START_OPTIONS, mapping: Object.fromEntries(WEEK_START_OPTIONS.map((n) => [n, n])) },
     locale: { control: 'select', options: ['en-US', 'en-GB', 'en-IL', 'zh-TW', 'ja-JP'] },
@@ -152,8 +158,9 @@ export const Inspector: Story = {
     events: { control: 'object' },
   },
   // 可點模式的三個回調由示範殼接上(點得出真的結果);Controls 只切外觀與資料
+  // 貼邊擺法時容器左右下不給內距(格子區貼齊容器邊、工具列自己帶 loose;calendar.spec.md「外殼」貼邊擺法),其餘照一般內距
   render: (args) => (
-    <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
+    <div className={args.flush ? 'h-screen pt-[var(--layout-space-loose)] bg-surface' : 'h-screen p-[var(--layout-space-loose)] bg-canvas'}>
       <CalendarDemo
         defaultReferenceDate={now}
         today={args.today}
@@ -165,6 +172,8 @@ export const Inspector: Story = {
         showWeekNumbers={args.showWeekNumbers}
         loading={args.loading}
         readOnlyEvents={args.readOnlyEvents}
+        bordered={args.bordered}
+        flush={args.flush}
       />
     </div>
   ),
@@ -453,7 +462,8 @@ export const DetailOpen: Story = {
     <div className="h-screen p-[var(--layout-space-loose)] bg-canvas flex flex-col gap-2">
       <div className="text-body text-fg-muted space-y-1" data-story-notes>
         <div>• <b>位置</b>:與選單的子選單同一種擺法 —— 開在事件右側、頂端對齊、與事件隔 8;右邊放不下才翻到左側(例:最右一欄 7/25 的「客戶會議」)</div>
-        <div>• <b>寬與標題列</b>:寬 26rem = 416(時間欄進編輯兩端不被裁);標題列跟一般浮層一樣放事件名稱(兩種密度同高),右側〔⋯〕〔×〕;沒有儲存鈕,每一欄自己提交</div>
+        <div>• <b>寬與標題列</b>:寬 27rem = 432(版面間距用大檔,時間欄進編輯兩端不被裁);標題列放事件名稱、字和對話框標題一樣大(16),右側〔⋯〕〔×〕與標題同一條中線,標題列下不畫線;沒有儲存鈕,每一欄自己提交</div>
+        <div>• <b>間距</b>:標題到第一欄 24、欄與欄 16、最後一欄到底 16(兩種密度相同;按鈕與欄位大小跟著頁面密度)</div>
         <div>• <b>欄位</b>:標題(可改時才有;改完標題列跟著換)、時間(同一天合併成一段)、全天(開關直接切)、地點、說明、類別,標籤在上;Esc 一次關一層,焦點回打開它的那一段</div>
       </div>
       <div className="flex-1 min-h-0">

@@ -36,6 +36,7 @@
         ".github": "GitHub workflows and repository policy",
         ".gitignore": "Git ignore policy",
         ".husky": "local Git hook entrypoints",
+        ".node-version": "exact Node.js version for the design system's own workflows, dev container and Netlify build (node-version-ssot invariant)",
         ".npmrc": "npm policy",
         ".size-limit.mjs": "size-limit configuration derived from packages/design-system/bundle-budget.json (read by the scheduled bundle-size monitor, npm run size and deep audit Dim 50; check:bundle-size verifies it stays derived)",
         ".storybook": "Storybook host configuration",
@@ -91,6 +92,13 @@
             "packages/design-system/ds-canonical/templates/dashboard-app.tsx"
           ],
           "reason": "first-party dogfood app intentionally proves the canonical dashboard template byte-for-byte"
+        },
+        {
+          "paths": [
+            ".node-version",
+            "scripts/.node-version"
+          ],
+          "reason": "the design system's own Node pin and the managed copy shipped to products (sync-all can only deliver files under scripts/); node-version-ssot N2 requires the two to stay byte-identical"
         }
       ]
     },

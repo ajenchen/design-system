@@ -377,6 +377,13 @@ const MANAGED_FILE_SOURCES = {
   'schemas/provider-cli-toolchain.schema.json': join(ROOT, 'infra/governance/schemas/provider-cli-toolchain.schema.json'),
   'scripts/audit-consumer-a11y.mjs': join(ROOT, 'scripts/audit-consumer-a11y.mjs'),
   'scripts/check-plugin-installed.mjs': join(ROOT, 'scripts/check-plugin-installed.mjs'),
+  // 雲端 Setup script 的實作(0.1.0-beta.153 起受管出貨):照 .node-version 裝確切 Node、驗 SHA-256、跑 setup:all;
+  // 環境設定只留 README 那幾行(scripts/node-version-ssot-invariant.mjs N7)。
+  'scripts/cloud-setup.sh': join(ROOT, 'scripts/cloud-setup.sh'),
+  // 產品端的 Node 版本唯一出處(0.1.0-beta.153 起受管出貨):audit.yml / sync-design-system.yml 的 setup-node 與 cloud-setup.sh 讀它、
+  // dev container 映像對齊它。放 scripts/ 而不是 repo 根:產品升級時跑的是上一版的 sync-all,受管檔必須落在它的
+  // TRANSACTION_PATHS 內(根目錄 .node-version 會被 GOV-UPGRADE-008 整筆中止;test-verify-upgrade-evidence.mjs 守)。
+  'scripts/.node-version': join(ROOT, 'scripts/.node-version'),
   'scripts/consumer-source-harness.mjs': join(ROOT, 'scripts/consumer-source-harness.mjs'),
   'scripts/lint-ds-internal-imports.mjs': join(ROOT, 'scripts/lint-ds-internal-imports.mjs'),
   'scripts/lib/a11y-static-server.mjs': join(ROOT, 'scripts/lib/a11y-static-server.mjs'),

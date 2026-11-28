@@ -353,7 +353,7 @@ Main 內塞什麼(table / field / card / page header / list)由產品決定 —�
 
 **主區只有一塊內容時,不在主區重複放標題與說明**:頁面標頭(`PageHeader` / ChromeHeader 的標題)已經說明這頁是什麼時,主區不再放區段標題 + 說明,內容直接接在標頭下 —— 例:整頁一張 DataTable → 標頭 → 表格 `loose`(規則 2 bounded region)、左右 `loose`(規則 1)、表格 → 主區底 `loose`(規則 4 第 2 列),表格用 `aria-label` 命名。出處:user 2026-11-11 在 Insights 頁(當時表格上方有區段標題 + 一句說明)留言(逐字):「標題距離上方標頭和描述距離下方表格的距離都是一樣的？按照layout space設計原則都是tight? 此外我覺得其實大部分的情境根本不用在主內容區又放上標題和描述，因為通常的情境是標頭的標題就可以完整表示這個頁面要幹嘛了吧」。主區有兩塊以上並列內容時,各塊才有自己的標題(用來分出哪塊是哪塊;塊與塊之間照 `layoutSpace.spec.md` 規則 3「組 ↔ 組」;各塊的標題 → 自己的內容照同檔規則 3「標題區 → 內容」的三題)【AI 推導】。標頭的字要說得出那塊內容,側欄選中項的字 = 標頭的字(規則住 `../Sidebar/sidebar.spec.md`「選中項的字 = 那一頁標頭的字」,本段不重述)。範例:AppShell `_demo-helpers.tsx` ActiveSprintView(2026-11-15 前叫 InsightsView)、Sidebar 展示的主區、範本 `apps/template/src/App.tsx` DashboardPage(= `ds-canonical/templates/dashboard-app.tsx`);閘 `scripts/header-first-gap-invariant.mjs`(這幾處登記的第一個內容 = bounded,主區若又放回標題,角色變 element → 紅)+ `scripts/sidebar-main-follows-selection-invariant.mjs`(Sidebar 展示每一步主區都不得有區段標題)。
 
-**整頁 404 / 403**:打開的那一頁不存在或沒有權限看時,主內容區只放一個 Empty、在主內容區正中,導覽照常(user 2026-11-26 第六輪決策卡 C22 選 A,選項原文(逐字)「A:不建元件;Empty 可用在整頁 + AppShell 範例,狀態置中」)。組法(h1、動作、置中、本頁標頭)只住 `../Empty/empty.spec.md`「整頁狀態」,本段不重述;範例:展示「整頁 404 — 打開已刪除的專案連結」「整頁 403 — 沒有權限的私人專案」。
+**整頁 404 / 403**:打開的那一頁不存在或沒有權限看時,主內容區只放一個 Empty、貼上方(照 `../Empty/empty.spec.md`「垂直定位」無框那一列),導覽照常(不建元件 = user 2026-11-26 第六輪決策卡 C22 選 A,選項原文(逐字)「A:不建元件;Empty 可用在整頁 + AppShell 範例,狀態置中」;其中 AI 寫的「狀態置中」由 user 2026-11-28 選研究頁的甲取代)。組法(h1、動作、位置、本頁標頭)只住 `../Empty/empty.spec.md`「整頁狀態」,本段不重述;範例:展示「整頁 404 — 打開已刪除的專案連結」「整頁 403 — 沒有權限的私人專案」。
 
 **禁止**:AppShell.Main 強制 padding(會跟內部 DataTable / naked list 衝突 + 違反規則 1B「純 layout primitive 無邊界 → 父層管」)。
 

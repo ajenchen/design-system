@@ -39,6 +39,8 @@ type CalendarDemoProps = Omit<CalendarProps, 'onDateClick' | 'onEventClick' | 'e
   onEventChange?: (event: CalendarEvent, patch: Partial<CalendarEvent>) => void
   /** 產品自己開詳情(onEventClick + 自己的 Popover),不用內建詳情 */
   productDetail?: boolean
+  /** 「新增事件」對話框傳送到哪裡(整頁示範放進模擬瀏覽器時 = 畫布,對話框只蓋這個瀏覽器視窗;story-rules.md「整頁情境」) */
+  portalContainer?: HTMLElement | null
 }
 
 const isoOf = (d: Date) => format(d, 'yyyy-MM-dd')
@@ -59,7 +61,7 @@ const eventWhen = (event: CalendarEvent, locale: string) => {
 
 /** 月曆 + 三個點擊目標的結果 + 這一則 story 自己的 Toaster(toast.spec.md「app-level-one」允許 Storybook 每個 story root 一個) */
 export function CalendarDemo({
-  events: initialEvents = [], readOnlyDates, readOnlyEvents, noun = '事件', today, categories, isEditable, renderExtra, extraActions, onEventChange, productDetail = false, ...rest
+  events: initialEvents = [], readOnlyDates, readOnlyEvents, noun = '事件', today, categories, isEditable, renderExtra, extraActions, onEventChange, productDetail = false, portalContainer, ...rest
 }: CalendarDemoProps) {
   const [events, setEvents] = React.useState<CalendarEvent[]>(initialEvents)
   const [createOpen, setCreateOpen] = React.useState(false)
@@ -148,7 +150,7 @@ export function CalendarDemo({
       )}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         {/* 兩個欄位的短表單,開著的時候內容高度不變 → hug(dialog.spec「高度軸」判準,同建立專案) */}
-        <DialogContent height="hug">
+        <DialogContent height="hug" portalContainer={portalContainer}>
           <DialogHeader><DialogTitle>新增{noun}</DialogTitle></DialogHeader>
           <DialogBody>
             <div className="flex flex-col gap-[var(--layout-space-loose)]">

@@ -59,6 +59,16 @@ import {
   writeReleaseConsent,
   releaseIncidentFromEnv,
   validateReleaseWorkflow,
+  classifyVersionBump,
+  CI_TIMEOUT_HEADROOM_THRESHOLD,
+  ciJobTimeouts,
+  ciTimeoutHeadroomForReport,
+  classifyCiTimeoutHeadroom,
+  formatCiTimeoutHeadroomLines,
+  readCiTimeoutHeadroom,
+  prHeadMerged,
+  readVersionBump,
+  versionBumpMessage,
 } from '../../../scripts/release-orchestrator.mjs'
 import { loadGovernanceBuildGraph } from '../../../scripts/governance-build-graph.mjs'
 
@@ -75,7 +85,8 @@ test('canonical release workflow validates and exposes exactly five AUTO steps',
   assert.equal(validateReleaseWorkflow(workflow), workflow)
   assert.deepEqual(workflow.steps.map(step => step.id), ['pr-checks', 'merge', 'publish', 'readback', 'consumer'])
   assert.ok(workflow.steps.every(step => step.authority === 'AUTO'))
-  assert.deepEqual(workflow.steps[0].completion, ['required-ci-check-green', 'conversation-resolved'])
+  // 2026-11-28 R100:合併前就判版號有沒有升(release-orchestrator.mjs classifyVersionBump;beta.152 到 publish 才判 stale-version 的錨)
+  assert.deepEqual(workflow.steps[0].completion, ['required-ci-check-green', 'conversation-resolved', 'version-bumped-before-merge'])
   // 2026-09-02 user directive:合併前必有 user 對當前 PR head 的發版同意 receipt(預覽 → user 說「發版」→ 才合併)。
   assert.equal(workflow.steps[1].gate, 'user-release-consent')
   assert.equal(workflow.steps.filter(step => 'gate' in step).length, 1, 'only the merge step carries the human consent gate')
@@ -195,6 +206,8 @@ test('live readbacks alone support safe resume without local candidate receipts'
     // headSha 是必要欄位,不是裝飾:pr-checks / merge 都要求「PR 帶的正是現在這個 head」。
     // 原本 fixture 沒給,於是它同時也代表「PR 講的是別份內容」那個假綠狀態。
     headSha: 'a'.repeat(40),
+    // 2026-11-28 R100:合併前要讀得到「版號已升」,否則 pr-checks 是 version-unverified(讀不到 ≠ 通過)
+    versionBump: classifyVersionBump({ version: '1.2.4', publishedState: false }),
     pullRequest: {
       state: 'OPEN',
       headRefOid: 'a'.repeat(40),
@@ -293,6 +306,181 @@ test('live readbacks alone support safe resume without local candidate receipts'
     consumers: workflow.automation.consumers.map(target => ({ ...target, exactVersion: true })),
   })
   assert.deepEqual(draft.map(step => step.status), ['complete', 'complete', 'ready', 'blocked', 'blocked'])
+})
+
+test('R100:版號沒升在合併前(pr-checks)就擋,與 release-self-audit 共用同一支判定', () => {
+  // 2026-11-28 錨:PR #176(beta.152 內容)合併後 main CI 綠,release:auto 到 publish 才判 stale-version ——
+  // package.json 仍是 0.1.0-beta.151(= 已發布的 tag)。pr-checks / merge 都沒擋,多開 PR #178 升版號,152 晚約一小時。
+  const T = 'd'.repeat(40)
+  const HEAD_DIGEST = '1'.repeat(64)
+  const TAG_DIGEST = '2'.repeat(64)
+  // 判定表(純函式)
+  const notBumped = classifyVersionBump({ version: '0.1.0-beta.151', publishedState: true, tagCommitSha: T, headDigest: HEAD_DIGEST, tagDigest: TAG_DIGEST })
+  assert.deepEqual([notBumped.status, notBumped.reason], ['unresolved', 'not-bumped'], '產品變了 + 版號沒升 → 未解')
+  assert.match(versionBumpMessage(notBumped), /packages\/design-system\/package\.json/, '訊息要寫怎麼升')
+  assert.match(versionBumpMessage(notBumped), /node scripts\/sync-version-to-all-manifests\.mjs/, '訊息要寫同步指令')
+  const bumped = classifyVersionBump({ version: '0.1.0-beta.152', publishedState: false, headDigest: HEAD_DIGEST })
+  assert.deepEqual([bumped.status, bumped.reason], ['ok', 'version-unpublished'], '產品變了 + 版號升了 → 通過')
+  const governanceOnly = classifyVersionBump({ version: '0.1.0-beta.151', publishedState: true, tagCommitSha: T, headDigest: HEAD_DIGEST, tagDigest: HEAD_DIGEST })
+  assert.deepEqual([governanceOnly.status, governanceOnly.reason], ['ok', 'product-unchanged'], '只改治理、版號沒升 → 通過')
+  const unreadable = classifyVersionBump({ version: '0.1.0-beta.151', publishedState: null, headDigest: HEAD_DIGEST })
+  assert.deepEqual([unreadable.status, unreadable.reason], ['unresolved', 'release-unreadable'], '讀不到 release → 未解(不是通過)')
+  const noTagCommit = classifyVersionBump({ version: '0.1.0-beta.151', publishedState: true, tagCommitSha: null, headDigest: HEAD_DIGEST, tagDigest: null })
+  assert.deepEqual([noTagCommit.status, noTagCommit.reason], ['unresolved', 'digest-unavailable'], '讀不到 tag 的 commit / 指紋 → 未解')
+  assert.equal(classifyVersionBump({ version: null, publishedState: false }).status, 'unresolved', '讀不到版號 → 未解')
+
+  // 讀回接線:只在「已發布」時才讀 tag 的 commit;兩邊指紋都用同一支 digest
+  const calls = []
+  const wired = readVersionBump({
+    repository: 'acme/ds', version: '0.1.0-beta.151', headSha: 'a'.repeat(40),
+    readPublishedState: (repository, tag) => { calls.push(['release', repository, tag]); return true },
+    readTagCommit: (repository, tag) => { calls.push(['tag', repository, tag]); return T },
+    digest: (ref) => (ref === T ? TAG_DIGEST : HEAD_DIGEST),
+  })
+  assert.deepEqual(calls, [['release', 'acme/ds', 'v0.1.0-beta.151'], ['tag', 'acme/ds', 'v0.1.0-beta.151']])
+  assert.equal(wired.reason, 'not-bumped')
+  const unpublishedCalls = []
+  readVersionBump({
+    repository: 'acme/ds', version: '0.1.0-beta.152', headSha: 'a'.repeat(40),
+    readPublishedState: () => false, readTagCommit: () => { unpublishedCalls.push('tag'); return T }, digest: () => HEAD_DIGEST,
+  })
+  assert.deepEqual(unpublishedCalls, [], '還沒發布就不必讀 tag')
+
+  // 五步狀態:合併前 fail-fast
+  const before = {
+    onProtectedMain: false,
+    headSha: 'a'.repeat(40),
+    pullRequest: { state: 'OPEN', headRefOid: 'a'.repeat(40), requiredChecks: [{ bucket: 'pass', state: 'SUCCESS' }] },
+    releaseConsent: { headSha: 'a'.repeat(40), quote: '發版', source: 'user-prompt-hook' },
+    release: null, publishRun: null,
+    npmPackages: workflow.automation.packages.map(name => ({ name, exactVersion: false })),
+    consumers: workflow.automation.consumers.map(target => ({ ...target, exactVersion: false })),
+  }
+  const prStatus = versionBump => buildFiveStepStatus(workflow, { ...before, versionBump })[0].status
+  assert.equal(prStatus(notBumped), 'version-not-bumped', 'beta.152 那一格:CI 綠也要在合併前擋')
+  assert.equal(prStatus(bumped), 'complete', '另一面:版號升了 → 照 CI 判')
+  assert.equal(prStatus(governanceOnly), 'complete', '只改治理 → 照 CI 判')
+  assert.equal(prStatus(unreadable), 'version-unverified', '讀不到 → 不得當成通過')
+  assert.equal(prStatus(undefined), 'version-unverified', '觀察裡沒有版號讀回(拿掉新判定的讀回)→ 不得當成通過')
+  // CI 還在跑也一樣先擋(fail-fast,不等 CI 跑完)
+  assert.equal(buildFiveStepStatus(workflow, { ...before, versionBump: notBumped, pullRequest: { ...before.pullRequest, requiredChecks: [] } })[0].status,
+    'version-not-bumped')
+  // 合併後(在 protected main 上)不在這裡判,交給 publish 的 stale-version
+  assert.equal(buildFiveStepStatus(workflow, { ...before, onProtectedMain: true, versionBump: null })[0].status, 'complete')
+  // 合併後本機仍在 PR 分支(本 repo 主資料夾在 PR 分支上跑 release:auto):發布後 tag 指向 main 上的 squash commit、
+  // 本機沒 fetch → 指紋讀不到(digest-unavailable)。2026-11-28 規格核對必修:原本這一格在 readback / consumer 之前
+  // 誤丟「合併前版號檢查沒過」。兩面只差 PR 的 state。
+  const postMergeUnreadable = classifyVersionBump({ version: '0.1.0-beta.153', publishedState: true, tagCommitSha: T, headDigest: HEAD_DIGEST, tagDigest: null })
+  assert.equal(postMergeUnreadable.reason, 'digest-unavailable')
+  const merged = { ...before, pullRequest: { ...before.pullRequest, state: 'MERGED' } }
+  assert.equal(buildFiveStepStatus(workflow, { ...merged, versionBump: postMergeUnreadable })[0].status, 'complete',
+    'PR 已 MERGED 且 head 相同 = 合併後,不在 pr-checks 判版號')
+  assert.equal(buildFiveStepStatus(workflow, { ...before, versionBump: postMergeUnreadable })[0].status, 'version-unverified',
+    '另一面:同樣讀回、PR 還 OPEN = 合併前,讀不到照擋')
+  assert.equal(buildFiveStepStatus(workflow, { ...merged, headSha: 'c'.repeat(40), versionBump: postMergeUnreadable })[0].status, 'version-unverified',
+    'MERGED 的 PR 帶的是別份內容(之後又疊 commit)= 仍是合併前')
+  assert.equal(prHeadMerged({ pullRequest: merged.pullRequest, headSha: 'a'.repeat(40) }), true)
+  assert.equal(prHeadMerged({ pullRequest: before.pullRequest, headSha: 'a'.repeat(40) }), false)
+  assert.equal(prHeadMerged({ pullRequest: null, headSha: 'a'.repeat(40) }), false)
+
+  // runner 與讀回的接線
+  const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
+  const prBlock = src.slice(src.indexOf("if (incomplete.id === 'pr-checks')"), src.indexOf("if (incomplete.id === 'merge')"))
+  assert.ok(prBlock.indexOf("incomplete.status !== 'version-not-bumped'") >= 0
+    && prBlock.indexOf("incomplete.status !== 'version-not-bumped'") < prBlock.indexOf('if (!observation.pullRequest)'),
+  'runner 在推分支 / 開 PR 之前就要因版號沒升丟錯')
+  assert.match(prBlock, /versionBumpMessage\(observation\.versionBump/, '丟錯訊息用共用的那一句')
+  const collect = src.slice(src.indexOf('export function collectLiveObservation('), src.indexOf('export function productChangeSinceBaseline('))
+  assert.match(collect, /readVersionBump\(\{ repository, version, headSha \}\)/, '讀回用共用的 readVersionBump')
+  assert.match(collect, /onProtectedMain \|\| prHeadMerged\(\{ pullRequest, headSha \}\)\s*\?\s*null/,
+    '讀回也只在真的合併前才做(在 protected main 上或 PR 已 MERGED 就不讀),與五步狀態用同一支 prHeadMerged')
+  const audit = readFileSync(resolve(ROOT, 'scripts/release-self-audit.mjs'), 'utf8')
+  assert.match(audit, /readVersionBump\(\{ repository: workflow\.automation\.repository, version: packageVersion\(workflow\), headSha \}\)/,
+    'release-self-audit 的 version-bump 用同一支讀回,不另寫判法')
+})
+
+test('R97 CI 時間餘裕(只講不擋):matrix 每格分開算、≥ 門檻才列、讀不到印讀不到', () => {
+  // 2026-11-28 錨:beta.152 發布兩次停在 CI 瀏覽器 job 撞 timeout-minutes 25(escape-and-focus (0/2) 25.2 分、layout spacing 25 分),
+  // 兩個 job 早就長期貼在上限(21–24.5 分),卻沒有任何機械預警。
+  assert.equal(CI_TIMEOUT_HEADROOM_THRESHOLD, 0.8, '門檻是具名常數 0.8')
+  const ciJobs = ciJobTimeouts({
+    jobs: {
+      'verify-browser-escape-focus-control': { name: 'Verify browser(escape and focus contract control group)', 'timeout-minutes': 25, strategy: { matrix: { shard: ['0/2', '1/2'] } } },
+      'verify-browser-layout': { name: 'Verify browser(layout spacing and density gates)', 'timeout-minutes': 25 },
+      'verify-browser-overlay': { name: 'Verify browser(overlay + theme gates)', 'timeout-minutes': 25 },
+      'verify-static': { name: 'Verify static(tsc + tests + build)', 'timeout-minutes': 15 },
+      'expr-timeout': { name: 'Expr timeout', 'timeout-minutes': '${{ matrix.minutes }}' },
+      'no-timeout': { name: 'No timeout' },
+      'templated': { name: 'Shard ${{ matrix.shard }} gate', 'timeout-minutes': 10 },
+    },
+  })
+  assert.deepEqual(ciJobs.find(job => job.key === 'expr-timeout').timeoutMinutes, null, '運算式上限 = 讀不到')
+  assert.equal(ciJobs.find(job => job.key === 'no-timeout').timeoutMinutes, 360, '沒寫 = GitHub 預設 360')
+  const at = minutes => ({ startedAt: '2026-11-28T00:00:00Z', completedAt: new Date(Date.parse('2026-11-28T00:00:00Z') + minutes * 60000).toISOString(), conclusion: 'success' })
+  const runJobs = [
+    { name: 'Verify browser(escape and focus contract control group) (0/2)', ...at(25.2), conclusion: 'cancelled' },
+    { name: 'Verify browser(escape and focus contract control group) (1/2)', ...at(10) },
+    { name: 'Verify browser(layout spacing and density gates)', ...at(20) },
+    { name: 'Verify browser(overlay + theme gates)', ...at(19.9) },
+    { name: 'Verify static(tsc + tests + build)', ...at(6) },
+    { name: 'Expr timeout', ...at(5) },
+    { name: 'Shard 2 gate', ...at(9) },
+    { name: 'Not in ci.yml', ...at(3) },
+    { name: 'Skipped job', startedAt: null, completedAt: null, conclusion: 'skipped' },
+    { name: 'Still running', startedAt: '2026-11-28T00:00:00Z', completedAt: null, conclusion: null },
+  ]
+  const verdict = classifyCiTimeoutHeadroom({ runJobs, ciJobs })
+  assert.deepEqual(verdict.near.map(item => [item.name, item.limit, Math.round(item.ratio * 100)]), [
+    ['Verify browser(escape and focus contract control group) (0/2)', 25, 101],
+    ['Shard 2 gate', 10, 90],
+    ['Verify browser(layout spacing and density gates)', 25, 80],
+  ], '≥ 80% 才列、由高到低;matrix 的 (1/2) 只有 40% 不列(每格分開算);79.6% 的 overlay 不列;運算式樣板的名字也對得到')
+  assert.deepEqual(verdict.unmatched.map(item => item.name), ['Expr timeout', 'Not in ci.yml'], '上限讀不到 / 對不到 ci.yml 的照實列出')
+  assert.deepEqual(verdict.unmeasured, ['Still running'], '沒有結束時間的照實列出;skipped 不算')
+  assert.equal(verdict.measured, 6)
+
+  // 格式:≥ 門檻那幾行 + 處理方式;讀不到印讀不到(不得印成沒有問題)
+  const lines = formatCiTimeoutHeadroomLines({ ok: true, run: { id: 1, headSha: '66c5139c'.padEnd(40, '0'), url: 'https://example.invalid/run/1' }, ...verdict })
+  assert.match(lines.join('\n'), /3 個 job 逼近上限 —— 處理:照既有做法拆平行\(matrix 分片\),不調高 timeout-minutes/)
+  assert.match(lines.join('\n'), /Verify browser\(escape and focus contract control group\) \(0\/2\):25\.2 分 \/ 上限 25 分\(101%\)/)
+  assert.doesNotMatch(lines.join('\n'), /\(1\/2\):/, '40% 那一格不列')
+  const quiet = formatCiTimeoutHeadroomLines({ ok: true, run: { id: 2 }, ...classifyCiTimeoutHeadroom({ runJobs: [{ name: 'Verify static(tsc + tests + build)', ...at(6) }], ciJobs }) })
+  assert.match(quiet.join('\n'), /量了 1 個 job,沒有一個用到上限的 80% 以上/)
+  const unreadable = formatCiTimeoutHeadroomLines({ ok: false, reason: '讀不到 main 的 ci.yml run(HTTP 0)' })
+  assert.match(unreadable.join('\n'), /⚠️ 讀不到:讀不到 main 的 ci\.yml run\(HTTP 0\) —— 讀不到不代表沒有 job 逼近上限/)
+  assert.doesNotMatch(unreadable.join('\n'), /沒有一個用到上限/, '讀不到不得印成沒有問題')
+
+  // 讀回接線(假 GitHub):最新一輪跑完的 run → 那一輪 commit 的 ci.yml → 全部 job(分頁);任一讀不到 → ok:false
+  const yamlText = 'jobs:\n  layout:\n    name: Verify browser(layout spacing and density gates)\n    timeout-minutes: 25\n'
+  const fake = (overrides = {}) => (path) => {
+    if (overrides[path.split('?')[0]]) return overrides[path.split('?')[0]]
+    if (path.includes('/actions/workflows/')) return { ok: true, code: 200, text: JSON.stringify({ workflow_runs: [{ id: 9, head_sha: 'e'.repeat(40), html_url: 'u', conclusion: 'success' }] }) }
+    if (path.includes('/contents/')) return { ok: true, code: 200, text: JSON.stringify({ encoding: 'base64', content: Buffer.from(yamlText).toString('base64') }) }
+    if (path.includes('/jobs')) return { ok: true, code: 200, text: JSON.stringify({ total_count: 1, jobs: [{ name: 'Verify browser(layout spacing and density gates)', started_at: '2026-11-28T00:00:00Z', completed_at: '2026-11-28T00:24:30Z', conclusion: 'success' }] }) }
+    return { ok: false, code: 404, text: '' }
+  }
+  const parseYaml = text => ({ jobs: { layout: { name: 'Verify browser(layout spacing and density gates)', 'timeout-minutes': text.includes('25') ? 25 : 1 } } })
+  const read = readCiTimeoutHeadroom('acme/ds', { github: fake(), parseYaml, workflow })
+  assert.equal(read.ok, true)
+  assert.deepEqual(read.near.map(item => [item.name, Math.round(item.ratio * 100)]), [['Verify browser(layout spacing and density gates)', 98]])
+  const noJobs = readCiTimeoutHeadroom('acme/ds', { github: fake({ 'repos/acme/ds/actions/runs/9/jobs': { ok: false, code: 502, text: '' } }), parseYaml, workflow })
+  assert.equal(noJobs.ok, false, 'job 清單讀不到 → 讀不到,不是沒有問題')
+  const noYaml = readCiTimeoutHeadroom('acme/ds', { github: fake({ 'repos/acme/ds/contents/.github/workflows/ci.yml': { ok: false, code: 404, text: '' } }), parseYaml, workflow })
+  assert.equal(noYaml.ok, false, '那一輪的 ci.yml 讀不到 → 讀不到')
+  // 報告入口:丟錯也只變成一行讀不到,不擋
+  const thrown = ciTimeoutHeadroomForReport('acme/never-cached', { read: () => { throw new Error('boom') } })
+  assert.equal(thrown.ok, false)
+  assert.match(thrown.reason, /boom/)
+
+  // 接線:printReport 印這一段;不進五步判定、runner 不因它丟錯
+  const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
+  const reportBlock = src.slice(src.indexOf('function printReport('), src.indexOf('function waitForRun('))
+  assert.match(reportBlock, /ciTimeoutHeadroomForReport\(observation\.repository\)/)
+  assert.match(reportBlock, /formatCiTimeoutHeadroomLines\(ciHeadroom\)/)
+  const statusBlock = src.slice(src.indexOf('export function buildFiveStepStatus('), src.indexOf('export function listReleaseTags('))
+  assert.doesNotMatch(statusBlock, /ciHeadroom|CiTimeoutHeadroom/, 'CI 時間餘裕不得進五步判定(只講不擋)')
+  const runnerBlock = src.slice(src.indexOf('export function executeAutomaticRelease('), src.indexOf('function main('))
+  assert.doesNotMatch(runnerBlock, /invariant\([^\n]*(ciHeadroom|CiTimeoutHeadroom)/, 'runner 不得因它丟錯')
 })
 
 test('consumer completion requires an Actions-bound producer matching the release target', () => {

@@ -16,7 +16,7 @@
 5. **先證據、再分權**——證據照 `# 遇不確定時的協議`,分權照 `#canonical-decision-authority`;**不得用問 user 代替工程判斷**,禁憑直覺造新 pattern。
 6. **大原則吸收瑣碎**——同類 bug 反覆糾正 = meta 層沒抓住。**權威清單與各條完整內容只有一個住所**:`packages/design-system/ds-canonical/rules/meta-patterns.md`(本行不重述條號,三處列舉必然漂移)。**AI 不需 user 提醒才找 root invariant**:rule 震盪 → 自跑 benchmark + invariant test;user 第 2 次問 → 必截圖 verify;對話結論 → AUTO 落地;visual/behavior decision 前必先查 ≥3 家世界級;**視覺／結構 propose 前必 grep DS spec.md 找 owner SSOT 並出 3-column 表,否則提案不被接受**。使用者 tell me once 不該要 tell me twice。
 
-# Rule Index(progressive disclosure — 編對應檔案前必先讀)
+# Rule Index(編對應檔案前必先讀)
 
 | 檔案 | 何時必讀 |
 |---|---|
@@ -95,7 +95,7 @@
 | **多代理批次工作** | `rules/work-process.md` + bug-fix-rhythm 的 `references/multi-agent-orchestration.md` |
 | **PR merge 後／session start branch 健檢** | `# Git / release canonical` |
 
-**找不到** → `# 遇不確定時的協議`。
+**找不到** → `# 遇不確定時的協議`;待辦:`governance/backlog/`。
 
 # Git / release canonical(machine SSOT → `infra/governance/release-workflow.json`)
 
@@ -125,7 +125,7 @@
 
 # 自主執行 canonical(Autonomy Default)
 
-**Default = autonomous + complete**;多包 / 多步工作照 `packages/design-system/ds-canonical/rules/work-process.md`(不在此重述)。**品質是前提,其下才求快求省**:規格全做、驗證完整(跳過 = 省工,違 mindset #1),再以最快、最省時間／資源／token 完成,省的只能是重工與等待,衝突時品質優先;動手前依當下機器／環境／權限／工具／effort 判斷怎麼做最能達標,user 給目標、不逐項下指令(原話、產品端同一條、環境限制 → 下段記憶檔)。
+**Default = autonomous + complete**;多包 / 多步工作照 `packages/design-system/ds-canonical/rules/work-process.md`。**品質是前提,其下才求快求省**:完整、正確、如期(規格全做、驗證完整;跳過 = 省工,違 mindset #1),再求最快、最省時間/資源/token,省的只能是重工與等待,衝突時品質優先;動手前依當下機器/環境/權限/工具/effort 判斷怎麼做最能達標,user 給目標、不逐項下指令(原話、產品端同一條、環境限制 → 下段記憶檔)。
 
 **分診與預算**(開工前):只開工 ① user/產品看得到的錯 ② CI 紅或弄壞已做好的 ③ user 明確要求(附原話 檔:行);其餘記一行進追蹤。派工先寫預算(代理數/花費/牆鐘),用滿就停派、交付已完成的並回報。只驗改到的檔在 CI 對應的檢查;改畫面加預覽讀回,AI 推導的先給 user 看再加固。小修不新寫閘,能擴既有閘就擴;與 M14/M19/M23/M32 的補閘、多層落地衝突時本段優先;user 原話定的規則(例 05-27「那為何不全部 ssot 都要強制吻合?」)除外。品質前提、交接與額度 → `governance/memory/feedback_orchestration_verify_before_scale.md`。
 

@@ -728,6 +728,145 @@ if [ "${LAST_USER_LINE:-0}" -gt 0 ] || [ -n "$LAST_ASSISTANT" ]; then
       WARNINGS="${WARNINGS}\n  • M36(b) 自鎖後把動作推給 user:本輪(強交辦含上一輪)有工具被擋,而你在回覆 / 推播 / 提問選項裡請 user 自己跑指令。"
     fi
   fi
+
+  # ── 2026-11-28 擴充:直接把 git / npm / node / sh 指令交給 user 跑 = 擋,不論本輪有沒有被擋、也不因寫了 scope id 放行 ──
+  # 錨例(session 17e82e93,2026-11-28 09:22 台灣時間):主資料夾要切到 PR 分支,`.claude/settings.json` 與 `.claude/skills/**`
+  # 被平台沙箱鎖住;協調者**沒先試**就寫「在你自己的終端機貼這三行」+ 三行 `cd` / `git fetch` / `git switch` 的程式碼區塊,
+  # 還標成 account-holder-platform-action。上面那條要「本輪有工具被擋」才擋,沒試就交 = 沒被擋 = 漏網;HUMAN_ONLY_RE 又只看
+  # 有沒有字樣(標籤 ≠ 性質,M37)。正解是不碰被鎖路徑的 git 底層做法(governance/memory/reference_auto_mode_sandbox_boundaries.md
+  # 第一節「主資料夾要切到候選分支」那一列)。user 09:25 原話:「那就分兩次發，但為何又要我下指令？按照工作流程規範不是不應該作繭自縛嗎？
+  # root cause?我的工作不是用來幫你在終端機下指令的欸，你應該記得哪些工作才是我真的要做的吧？」
+  # 判準(同一份交辦文字 HANDOFF_SOURCE:可見回覆 + 推播 + 提問選項):
+  #   ① 先拿掉不是交辦的部分:「…」『…』“…”整段(引述)、以 > 開頭的引用行、```diff / ```patch 區塊(給 user 看的改動);
+  #      其餘程式碼區塊的行另收成 DIRECT_CODE。引號裡若只是一條裸指令(有指令開頭、又沒有 終端機 / 對話框 / 請你 / 麻煩你 /
+  #      幫我 / 幫忙 / 你自己 / 你要 / 貼 / 你跑 / 你執行 / 你打 / 你輸入)就保留 —— 否則「請你在終端機跑「git switch …」」會因為指令被當引述拿掉而漏網。
+  #   ② 子句 = 全形。！？，;與半形 , ; 切開,英文句尾(字母 / 數字 / 括號 / 引號後的 . ? ! 再接空白)也切。
+  #      不算交辦的子句先濾掉 —— 豁免字一律要「緊貼交辦動詞」才算,子句裡別處出現不算(2026-11-28 規格核對:整句豁免放走 11 句真交辦):
+  #      否定 + (把…交給 / 留給)+(請 / 叫 / 讓 / 要 / 麻煩)+ 你 / user … + 跑 / 執行 / 打 / 輸入 / 貼;否定 + 直接動詞;
+  #      否定 + 在(自己的)終端機 / 對話框 + 動詞;你 / user + 否定 … + 動詞(否定 = 不用 / 不必 / 不需(要)/ 無需 / 無須 / 毋須 /
+  #      別(再)/ 禁止 / 不准 / 不得 / 不應(該)/ 不該 / 不會(再)/ 不再 / 不要(再));英文 don't / do not / never / won't /
+  #      no need to (+ need to) + run / type / paste / execute / enter;第一人稱:我(已經 / 先)貼(上)了 / 過 / … 給你看、
+  #      我 … 在終端機跑了 / 執行過、我(已)請 … 代理。「撤回」「是錯的」不豁免 —— 撤回舊指令、同句給新指令的照擋。
+  #   ③ 交辦特徵(子句層級):在你(自己)(的)終端機;你 / 請 / 麻煩 / 幫我 / 幫忙 + 在(自己)(的)終端機 + 打 / 輸入 / 跑 / 執行 / 貼;
+  #      請你 / 麻煩你 / 請 / 幫我 / 幫忙 +(自己 / 手動)+ 跑 / 執行 / 貼(上);同上 + 打 / 輸入 + 指令代稱(「請打開」「請輸入 git 分支名稱」
+  #      不算);你那邊 / 那裡 / 本機 + 跑 / 執行;你(也)可以 / 能 +(自己)+ 跑 / 執行;貼(上)這 / 下面 / 以下 … 行 / 段 / 條 / 指令;
+  #      你(要)(自己) + 動詞 + 指令代稱或指令開頭(同上面 WEAK 那支);以「! 」開頭的一行、對話框 + 貼上 / 打 + 代稱、貼到對話框;
+  #      英文:上面那支 + please / can you / could you / would you / you can / you should / you need to … + run / type / paste /
+  #      execute / enter;程式碼區塊裡以 `!` 開頭的行。行內 `! git …` 本身不算(「上次我是用 `! git status` 看過的」是敘述)。
+  #   ③b 貼到哪裡:交辦子句有「貼 / paste」、又提到 session / 接手訊息 / 第一則(訊息)/ 新對話 / 聊天 / prompt / chat / Claude、
+  #      而且沒提到終端機 / terminal / shell / 命令列 = 請 user 把一段文字貼進對話(例:接手訊息貼到新 session),不是交給終端機。
+  #      這種子句與它後面的程式碼區塊只認以 `!` 開頭的指令(貼進對話框的 `!` 才會被執行);其餘交辦子句一律當成終端機 ——
+  #      「對話框」不算貼進對話(「在對話框打 ! 再貼上下面這行」就是要 user 用 `!` 執行),單獨的「訊息」也不算(「有錯誤訊息再跟我說」)。
+  #   ④ 交出去的指令 = 終端機交辦子句 + 程式碼區塊裡(有終端機交辦子句時才全收,否則只收 `!` 開頭的),含 git / npm / npx /
+  #      node / pnpm / yarn / sh / bash / zsh / rm / cd / gh / curl / sudo / python / gcloud / claude / chmod / mv / cp 開頭
+  #      的那幾行;沒有指令(例:「請你看預覽」)不算。
+  #   ⑤ 唯一豁免 = 交出去的每一條都是互動登入 / 授權:`gh auth login`、`gh auth refresh`(OAuth 授權範圍)、`npm login` /
+  #      `npm adduser`(同一個指令的別名)、`gcloud auth login`、`claude` 的 `/login`。依據 AGENTS.md「Human-only boundaries」
+  #      的 login / MFA / OAuth 與 infra/governance/release-workflow.json decisionAuthority.humanOnly(login / mfa / oauth /
+  #      credential-reference);帳單 / 法律 / 帳號權限不是要 user 打的指令。判法是把這幾條字串從指令行拿掉後,
+  #      還剩任何指令開頭 = 擋 —— 寫了「登入」「account-holder-platform-action」都不算數。
+  # 已知誤擋(改用引號或 > 引述就放行):同一則回覆裡交辦登入、另有一個與交辦無關的指令程式碼區塊(程式碼區塊不分是不是交辦那一段)。
+  # 已知誤擋(改用引號或 > 引述就放行):不加引號的事後敘述(「09:22 那則我叫你在自己的終端機跑 git switch,這是錯的」)。
+  # 已知不涵蓋:本則回覆只寫「貼上面那行」、指令本身在前一則(前一則交出指令時就已經擋過);交辦字樣與指令被逗號切到兩個子句
+  # (「在你自己的終端機,跑 git pull」)時,指令那半不算交出去的指令(程式碼區塊不受影響)。
+  # awk 不用區間 {m,n}(mawk 不支援);引號判斷用 index 找固定字串,LC_ALL=C 下逐位元組比對。
+  # 對照組:tests/test_stop_self_audit.sh Tests 130-142(含拿掉這段判定的複本 → 錨例改放行)。
+  if [ -n "$HANDOFF_SOURCE" ] && [ "${LAST_USER_LINE:-0}" -gt 0 ]; then
+    DIRECT_SPLIT_AWK='
+      function handoff_words(s) {
+        return index(s, "終端機") || index(s, "對話框") || index(s, "請你") || index(s, "麻煩你") || index(s, "貼") \
+          || index(s, "幫我") || index(s, "幫忙") || index(s, "你自己") || index(s, "你要") \
+          || index(s, "你跑") || index(s, "你執行") || index(s, "你打") || index(s, "你輸入")
+      }
+      function strip_quotes(line, qo, qc,    out, i, j, rest, span) {
+        out = ""
+        while ((i = index(line, qo)) > 0) {
+          rest = substr(line, i + length(qo)); j = index(rest, qc)
+          out = out substr(line, 1, i - 1)
+          if (j == 0) return out
+          span = substr(rest, 1, j - 1)
+          if (span ~ cmdre && !handoff_words(span)) out = out span
+          line = substr(rest, j + length(qc))
+        }
+        return out line
+      }
+      BEGIN {
+        fence = 0; skip = 0
+        cmdre = "(^|[^A-Za-z0-9_./-])(git|npm|npx|node|pnpm|yarn|sh|bash|zsh|rm|cd|gh|curl|sudo|python|python3|gcloud|claude|chmod|mv|cp)([ \t]|$)"
+      }
+      /^[ \t]*```/ {
+        if (!fence) { fence = 1; skip = ($0 ~ /^[ \t]*```[ \t]*(diff|patch)([ \t]|$)/) } else { fence = 0; skip = 0 }
+        next
+      }
+      {
+        if (fence) { if (mode == "code" && !skip) print; next }
+        if (mode != "prose" || $0 ~ /^[ \t]*>/) next
+        print strip_quotes(strip_quotes(strip_quotes($0, "「", "」"), "『", "』"), "“", "”")
+      }'
+    DIRECT_PROSE=$(LC_ALL=C awk -v mode=prose "$DIRECT_SPLIT_AWK" <<< "$HANDOFF_SOURCE")
+    DIRECT_CODE=$(LC_ALL=C awk -v mode=code "$DIRECT_SPLIT_AWK" <<< "$HANDOFF_SOURCE")
+    # 中文字後面不得直接接 ? / {m,n}:LC_ALL=C 下只管最後一個位元組(本檔 Test 56 的教訓),一律包成 (字)?
+    DIRECT_NEG='(不用|不必|不需(要)?|無需|無須|毋須|別(再)?|禁止|不准|不得|不應(該)?|不該|不會(再)?|不再|不要(再)?)'
+    DIRECT_VERB='(跑|執行|打|輸入|貼)'
+    DIRECT_NOT_HANDOFF_RE="${DIRECT_NEG}(再)?${DIRECT_VERB}|${DIRECT_NEG}(再)?(把.{0,30}(交給|留給))?(請|叫|讓|要|麻煩)?(你|user|使用者).{0,24}${DIRECT_VERB}|${DIRECT_NEG}(再)?在(你)?(自己)?(的)?(終端機|對話框).{0,9}${DIRECT_VERB}|(你|user|使用者)${DIRECT_NEG}(再)?.{0,24}${DIRECT_VERB}|我(已經|已|先)?貼(上)?(了|過|.{0,12}給你看)|我.{0,9}在(自己的)?終端機(裡|上)?(跑|執行|打|輸入)(了|過)|我(已經|已|先|會)?請.{0,6}代理"
+    DIRECT_EN_NOT_HANDOFF_RE="(don't|don’t|do not|never|won't|won’t|no need to)([[:space:]]+need to)?[[:space:]]+(run|type|paste|execute|enter)([[:space:]]|$)"
+    DIRECT_KEY_HEAD="(${HANDOFF_CMD_REF}|(一下)?([[:space:]]|:|：)*${HANDOFF_CMD_HEAD})"
+    DIRECT_HANDOFF_RE="(在你(自己)?(的)?終端機|(你|請|麻煩|幫我|幫忙).{0,36}在(自己)?(的)?終端機(裡|上|中)?(打|輸入|跑|執行|貼)|(請你|麻煩你|請|幫我|幫忙)(自己|手動)?(跑|執行|貼上|貼)|(請你|麻煩你|請|幫我|幫忙)(自己|手動)?(打|輸入)${HANDOFF_CMD_REF}|你(那邊|那裡|本機)(跑|執行)|你(那邊|那裡|本機)(打|輸入)${DIRECT_KEY_HEAD}|你(也)?(可以|能)(自己)?(跑|執行)|你(也)?(可以|能)(自己)?(打|輸入)${DIRECT_KEY_HEAD}|貼(上)?(這|下面|以下|底下).{0,12}(行|段|條|指令)|你(要)?(自己)?(跑|執行|打|輸入|貼)${DIRECT_KEY_HEAD})"
+    DIRECT_STRONG_RE="(^![[:space:]]|對話框(裡|中|內)?(貼上|貼|輸入|執行|打)${HANDOFF_CMD_REF}|貼(到|進)(這個|你的)?對話框)"
+    DIRECT_EN_HANDOFF_RE="(please|can you|could you|would you|you can|you could|you should|you need to|you'll need to|you will need to)[[:space:]]+(just[[:space:]]+)?(run|type|paste|execute|enter)([[:space:]]|$)"
+    DIRECT_PASTE_RE='(貼|paste)'
+    DIRECT_MSG_DEST_RE='(session|接手訊息|第一則|新對話|聊天|prompt|chat|claude)'
+    DIRECT_TERMINAL_RE='(終端機|terminal|shell|命令列)'
+    DIRECT_CMD_RE='(^|[^A-Za-z0-9_./-])(git|npm|npx|node|pnpm|yarn|sh|bash|zsh|rm|cd|gh|curl|sudo|python3?|gcloud|claude|chmod|mv|cp)([[:space:]]|$)'
+    DIRECT_BANG_CMD_RE='(^|[^A-Za-z0-9_./-])![[:space:]]*(git|npm|npx|node|pnpm|yarn|sh|bash|zsh|rm|cd|gh|curl|sudo|python3?|gcloud|claude|chmod|mv|cp)([[:space:]]|$)'
+    DIRECT_LOGIN_RE='(gh[[:space:]]+auth[[:space:]]+(login|refresh)|npm[[:space:]]+(login|adduser)|gcloud[[:space:]]+auth[[:space:]]+login|claude[[:space:]]+/?login)'
+    # grep 沒比到回 1 = 沒有那一類的行,不是錯誤
+    # ② 子句:全形。！？，;、半形 , ;、英文句尾(\047 = 單引號;awk 字串裡寫成 octal 才不會結束外面的單引號字串)。
+    #    反引號後面只認 . ? —— 「`! git log`」的 `! 不是句尾,切開會讓交辦字樣與指令分家(Test 66)。
+    DIRECT_CLAUSE_AWK='
+      BEGIN { sentre = "([A-Za-z0-9)\"\047][.?!]+|`[.?]+)[ \t]+" }
+      {
+        s = $0; out = ""
+        gsub(/。|！|？|，|；|,|;/, "\n", s)
+        while (match(s, sentre)) { out = out substr(s, 1, RSTART + RLENGTH - 1) "\n"; s = substr(s, RSTART + RLENGTH) }
+        print out s
+      }'
+    DIRECT_CLAUSES=$(LC_ALL=C awk "$DIRECT_CLAUSE_AWK" <<< "$DIRECT_PROSE" \
+      | LC_ALL=C grep -vE "$DIRECT_NOT_HANDOFF_RE" | LC_ALL=C grep -viE "$DIRECT_EN_NOT_HANDOFF_RE")
+    DIRECT_HANDOFF_CLAUSES=$(
+      LC_ALL=C grep -E "${DIRECT_HANDOFF_RE}|${DIRECT_STRONG_RE}" <<< "$DIRECT_CLAUSES"
+      LC_ALL=C grep -iE "${EN_HANDOFF_RE}|${DIRECT_EN_HANDOFF_RE}" <<< "$DIRECT_CLAUSES"
+    )
+    # ③b 分成「貼進對話」與「終端機」兩類(逐行判;here-string 沒有寫端,grep -q 不會吃 SIGPIPE)
+    DIRECT_TERM_CLAUSES=""; DIRECT_MSG_CLAUSES=""
+    while IFS= read -r DIRECT_CLAUSE; do
+      [ -n "$DIRECT_CLAUSE" ] || continue
+      if LC_ALL=C grep -qiE "$DIRECT_PASTE_RE" <<< "$DIRECT_CLAUSE" \
+        && LC_ALL=C grep -qiE "$DIRECT_MSG_DEST_RE" <<< "$DIRECT_CLAUSE" \
+        && ! LC_ALL=C grep -qiE "$DIRECT_TERMINAL_RE" <<< "$DIRECT_CLAUSE"; then
+        DIRECT_MSG_CLAUSES="${DIRECT_MSG_CLAUSES}${DIRECT_CLAUSE}
+"
+      else
+        DIRECT_TERM_CLAUSES="${DIRECT_TERM_CLAUSES}${DIRECT_CLAUSE}
+"
+      fi
+    done <<< "$DIRECT_HANDOFF_CLAUSES"
+    DIRECT_CODE_BANG=$(LC_ALL=C grep -E '^[[:space:]]*!' <<< "$DIRECT_CODE")
+    if [ -n "${DIRECT_TERM_CLAUSES}${DIRECT_MSG_CLAUSES}${DIRECT_CODE_BANG}" ]; then
+      # ④ 有終端機交辦子句 → 程式碼區塊全收;只有「貼進對話」→ 程式碼區塊與那些子句只收 `!` 開頭的指令
+      DIRECT_FULL_SCOPE="$DIRECT_TERM_CLAUSES"; DIRECT_BANG_SCOPE="${DIRECT_MSG_CLAUSES}${DIRECT_CODE}"
+      [ -n "$DIRECT_TERM_CLAUSES" ] && { DIRECT_FULL_SCOPE="${DIRECT_TERM_CLAUSES}${DIRECT_CODE}"; DIRECT_BANG_SCOPE="$DIRECT_MSG_CLAUSES"; }
+      DIRECT_CMD_LINES=$(
+        printf '%s\n' "$DIRECT_FULL_SCOPE" | LC_ALL=C sed -E "s#${DIRECT_LOGIN_RE}##g" | LC_ALL=C grep -E "$DIRECT_CMD_RE"
+        printf '%s\n' "$DIRECT_BANG_SCOPE" | LC_ALL=C sed -E "s#${DIRECT_LOGIN_RE}##g" | LC_ALL=C grep -E "$DIRECT_BANG_CMD_RE"
+      )
+      if [ -n "$DIRECT_CMD_LINES" ]; then
+        SELF_LOCK_DIRECT=1
+        CRITICAL_SELF_LOCK_HANDOFF=1  # direct-handoff verdict(2026-11-28)
+        WARNINGS="${WARNINGS}\n  • M36(b) 把 git / npm / node / sh 指令交給 user 在自己的終端機或 '!' 跑(不論本輪有沒有被擋;只有互動登入類豁免)。"
+      fi
+    fi
+  fi
 fi
 
 # ── Mechanism 10b: 分類器擋下卻沒在回覆講(2026-11-18,工作包 E2 / 稽核 #8)────────────────
@@ -781,8 +920,9 @@ fi
 #      選項 label 直接交給同一份判準。
 #   ② 在要 → 紀錄(<git-dir>/governance-runtime/release-self-audit/current.json)必須 (a) 綁現在這一份:產品指紋 = 現在 HEAD 的
 #      (preview-binding;release-orchestrator.mjs productContentDigest,與發版同意同一個單位),record.headSha = 現在的 HEAD
-#      (git-worktree / pr-checks 量的是那一刻的 HEAD;只改治理檔把 CI 弄紅也要失效)(b) 未解 0(由逐項清單重算)
-#      (c) 由該腳本照機器讀回產生(腳本版本 + 整份 sha256 + 三個必備來源各帶證據);路徑有符號連結 / 硬連結 → 拒讀。
+#      (git-worktree / pr-checks / version-bump 量的是那一刻的 HEAD;只改治理檔把 CI 弄紅也要失效)(b) 未解 0(由逐項清單重算)
+#      (c) 由該腳本照機器讀回產生(腳本版本 + 整份 sha256 + 必備來源各帶證據;清單只住 release-self-audit.mjs 的 REQUIRED_SOURCES);
+#      路徑有符號連結 / 硬連結 → 拒讀。
 # 範圍 = 本回合(LAST_USER_LINE 之後;推播、提問、回覆文字、user 原話都用同一個起點 —— 舊草稿推播從「最後一筆 role=user」抓、
 #   user 原話從真 user 提問抓,同一個機制兩種「本回合」,中間夾一則 hook 回饋就看不到前面那則請說發版的推播)。
 #   例外:本機制已經擋過一次(本回合有一則含 RELEASE-SELF-AUDIT BLOCKER 的 hook 回饋),那一則之前的不再重擋 ——
@@ -1224,9 +1364,11 @@ if [ "${CRITICAL_SELF_LOCK_HANDOFF:-0}" = "1" ] && [ -n "$HANDOFF_SOURCE" ]; the
   [ "$STATE_WRITES" = "1" ] && [ -f "$LAST_BLOCKED_LOCK_FILE" ] && LAST_BLOCKED_LOCK=$(cat "$LAST_BLOCKED_LOCK_FILE" 2>/dev/null || echo "")
   if [ "$LOCK_HASH" != "$LAST_BLOCKED_LOCK" ]; then
     [ "$STATE_WRITES" = "1" ] && { mkdir -p "$STATE_DIR" 2>/dev/null; echo "$LOCK_HASH" > "$LAST_BLOCKED_LOCK_FILE" 2>/dev/null || true; }
+    SELF_LOCK_LEAD="本輪(交辦 '!' 指令或叫 user 在對話框貼上的,含上一輪)有工具被擋,而你在回覆、推播或提問選項裡請 user 自己跑指令。"
+    [ "${SELF_LOCK_DIRECT:-0}" = "1" ] && SELF_LOCK_LEAD="你在回覆、推播或提問選項裡把 git / npm / node / sh 指令交給 user 在自己的終端機或 '!' 跑 —— 不論本輪有沒有工具被擋,寫了 scope id 或「登入」字樣也不算豁免;唯一豁免是交出去的每一條都是互動登入 / 授權(gh auth login / gh auth refresh / npm login / npm adduser / gcloud auth login / claude 的 /login);請 user 把接手訊息貼進新 session 不算。user 要做的只有產品／UI／UX 真取捨、視覺基準「可以改」、發版同意與真 human-only(登入 / 付費 / 帳號權限);被平台鎖住的路徑先查 governance/memory/reference_auto_mode_sandbox_boundaries.md 第一節的等價做法(例:主資料夾切分支用 git 底層、被鎖的檔 skip-worktree)。"
     REASON=$(printf '%s' \
-      "🚨 SELF-LOCK HANDOFF BLOCKER(M36(b)):本輪(交辦 '!' 指令或叫 user 在對話框貼上的,含上一輪)有工具被擋,而你在回覆、推播或提問選項裡請 user 自己跑指令。先答 M36(b') 三問 — (1) 憑證真的缺嗎?(2) 體檢測的是真實需要的能力嗎?(3) 有沒有已驗證可通的等價傳輸?尤其 git plumbing(update-ref -d / update-index --cacheinfo,只寫 .git 可寫區)、harness 檔案工具、index-authoritative generator。'!' 在不在牆內看 session:一般 session 的 '!' 在沙箱外(官方 sandboxing 文件,v2.1.260 起),背景 session 仍在沙箱內、指它 = 把死路交給 user;不論哪種,上面三問沒答完就交出去,都是把動作丟回 user。真 human-only 只有 AGENTS.md#canonical-decision-authority「Human-only boundaries」列的那幾類。做到了,或確認是真 human-only 邊界,才可結束 turn。" \
-      "本機制 = M36(b) 從純散文升為 mechanical BLOCKER(2026-09-19;規則 2026-08-08 就立、2026-08-28 已明文禁指路 '!',仍於 2026-09-19 再犯且是 user 反問才發現)。")
+      "🚨 SELF-LOCK HANDOFF BLOCKER(M36(b)):${SELF_LOCK_LEAD}先答 M36(b') 三問 — (1) 憑證真的缺嗎?(2) 體檢測的是真實需要的能力嗎?(3) 有沒有已驗證可通的等價傳輸?尤其 git plumbing(update-ref -d / update-index --cacheinfo,只寫 .git 可寫區)、harness 檔案工具、index-authoritative generator。'!' 在不在牆內看 session:一般 session 的 '!' 在沙箱外(官方 sandboxing 文件,v2.1.260 起),背景 session 仍在沙箱內、指它 = 把死路交給 user;不論哪種,上面三問沒答完就交出去,都是把動作丟回 user。真 human-only 只有 AGENTS.md#canonical-decision-authority「Human-only boundaries」列的那幾類。做到了,或確認是真 human-only 邊界,才可結束 turn。" \
+      "本機制 = M36(b) 從純散文升為 mechanical BLOCKER(2026-09-19;規則 2026-08-08 就立、2026-08-28 已明文禁指路 '!',仍於 2026-09-19 再犯且是 user 反問才發現;2026-11-28 擴充成交出 git / npm / node / sh 指令不論有沒有被擋都擋 —— 那次沒先試就交給 user,user:「我的工作不是用來幫你在終端機下指令的欸」)。")
     emit_governance_block "$REASON"
   fi
 fi

@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainer.schema.json",
   "name": "Design System Consumer",
-  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22@sha256:0d29e5fdc64f8397cd502223e0c4679f1e60877ca0fd2db4f2e2e0028e4271af",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:4.0.9-24@sha256:21f15d367bfc5ceadabb9989be48029cba1e6bd80da323405232614a267a9c45",
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1.1.0": {}
   },

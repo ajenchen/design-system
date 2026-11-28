@@ -43,7 +43,7 @@ benchmark:
 | Family | 實作 | Consumer | Spec home |
 |---|---|---|---|
 | **A. Padding-based**(overlay)| `py-[var(--layout-space-tight)]` + `data-unbounded` slot trick;高度由內容決定但對齊 `--chrome-header-height` | DialogHeader / SheetHeader / PopoverHeader / 未來 Drawer | `patterns/overlay-surface/overlay-surface.spec.md`(L1 SSOT)+ 本 spec(cross-family canonical) |
-| **B. Fixed-height**(chrome)| `h-[var(--chrome-header-height)]` + `items-center`,剛性高度 | SidebarHeader / FileViewer Toolbar / FileViewer InfoPanel / Calendar 工具列 / Page top bar | `tokens/uiSize/uiSize.spec.md` L242(`Fixed-height` 段)+ 本 spec(cross-family canonical) |
+| **B. Fixed-height**(chrome)| `h-[var(--chrome-header-height)]` + `items-center`,剛性高度 | SidebarHeader / FileViewer Toolbar / FileViewer InfoPanel / Page top bar(Calendar 工具列 2026-11-27 移到格子區的框外、改成一列 sm 控件,同表格上方的工具列,不再是這一家;`../../components/Calendar/calendar.spec.md`「外殼」「工具列」) | `tokens/uiSize/uiSize.spec.md` L242(`Fixed-height` 段)+ 本 spec(cross-family canonical) |
 
 **為什麼兩家族?** 因 overlay 標題區可能附小標 / 說明(Dialog / Sheet 標題 + 說明、決策卡小標 + 題目)— 剛性高度會切掉。Chrome 家族 永遠 single-row(toolbar / nav)— 剛性高度給 layout 預測性。兩 pattern 並存(對齊 `tokens/uiSize/uiSize.spec.md` L240-260「Padding-based vs Fixed-h decision tree」)。
 
@@ -85,7 +85,7 @@ benchmark:
 
 **程式表達**(local pattern token,對齊 `data-table.css` 既有 local-token 先例):
 - CSS:`--chrome-header-avatar-size: 1.5rem`(`header-canonical.css`)— 供 SidebarHeader 收合對齊公式消費
-- JS 端:設計系統內部讀程式對照常數 `CHROME_HEADER_AVATAR_PX = 24`(`chrome-header-avatar.ts`,`@internal`、不經 pattern index 對外匯出;Avatar API `size: number | 'fill'` 不接 CSS var)。CSS 值與這個常數由 `scripts/token-twin-invariant.mjs` 機器鎖住相等(2026-11-15 起;之前 AccountMenu 與範例各寫字面值 24、只靠註解同步 —— 稽核 P03)。產品端(含 `apps/template`)仍寫字面值 `size={24}`:要給產品一個名字讀,是對外 API 命名,待 user 決定
+- JS 端:設計系統內部讀程式對照常數 `CHROME_HEADER_AVATAR_PX = 24`(`chrome-header-avatar.ts`,`@internal`、不經 pattern index 對外匯出;Avatar API `size: number | 'fill'` 不接 CSS var)。CSS 值與這個常數由 `scripts/token-twin-invariant.mjs` 機器鎖住相等(2026-11-15 起;之前 AccountMenu 與範例各寫字面值 24、只靠註解同步 —— 稽核 P03)。產品端(含 `apps/template`)仍寫字面值 `size={24}`:要給產品一個名字讀,是對外 API 命名,待定(BL-028)
 
 **Consumer rule**:
 - 在 chrome header 內放 avatar → **必用 raw `<Avatar size={24}>`**,**禁用 `<ItemAvatar>`**(會誤啟動 row anatomy lookup)

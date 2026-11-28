@@ -367,6 +367,12 @@ export type {
   FileViewerProps,
 } from './components/FileViewer/index'
 export {
+  InfoTooltip,
+} from './components/InfoTooltip/index'
+export type {
+  InfoTooltipProps,
+} from './components/InfoTooltip/index'
+export {
   InlineEdit,
 } from './components/InlineEdit/index'
 export type {

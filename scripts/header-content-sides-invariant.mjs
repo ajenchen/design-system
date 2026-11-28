@@ -10,8 +10,10 @@
  *           頂距本身對不對是規則 2 的事,由原閘判)。容器被 max-height 卡住而在捲動、高度寫死、被 min-height 撐住(規則 4 表沒逐字寫的三種)
  *           → 依規則 4「沒寫到的三種容器」(Note 的理由推導,【AI 推導】):不擋頁面、高度不是視窗 / 版面欄給的 = 與頂部同值。
  *           2026-11-11 前這三種一律紅「待規格」。
- *           原閘登記 centered 的格(內容在撐滿的容器裡垂直置中:AgentPanel 新對話空白頁、2026-11-26 起 AppShell 整頁 404 / 403):不套規則 4 的底 —— 垂直置中的狀態不是從上往下排到底的內容,
+ *           原閘登記 centered 的格(內容在撐滿的容器裡垂直置中:AgentPanel 新對話空白頁、對話框主體只有空狀態):不套規則 4 的底 —— 垂直置中的狀態不是從上往下排到底的內容,
  *           不需要表示「內容結束了」的 bottom(user 2026-11-14 在 A5 成品頁的留言 ②);上下在不在可用範圍正中由原閘判。左右照舊 = loose。
+ *           原閘登記 unframed 的格(無框容器裡的狀態:AppShell 整頁 404 / 403;2026-11-26 建時登記 centered,2026-11-28 改):底 = 2 × bottom
+ *           (empty.spec.md「垂直定位」無框 → 頂部對齊 + 上下 2 × bottom;2026-11-28 user 選研究頁的甲)。左右照舊 = loose。
  *           【更正 2026-11-14】2026-11-13(A5)這一格期望底 = bottom 48(包層補了 pb-bottom),把空狀態往上推了 18 / 16px;留言 ② 問垂直置中的狀態為何還要 bottom(問句),AI 評估同意,改成不比底。
  *         盤點 = 原閘的 CASES(同一份,import;不在盤點裡的理由同原閘 NOT_COVERED),本檔只補每處的 SIDES 登記
  *         (最後一個東西的角色、容器種類、左右 pattern)。
@@ -92,7 +94,7 @@ export const SIDES = {
   'sheet-body': { last: 'element', box: 'fill', pattern: 'AB' },
   'surface-body': { last: 'element', box: 'hug', pattern: 'AB' },
   'header-anatomy-surface': { last: 'element', box: 'hug', pattern: 'AB' },
-  'popover-inspector': { last: 'element', box: 'hug', pattern: 'AB' },
+  'popover-inspector': { last: 'unbounded', box: 'hug', pattern: 'C' }, // 2026-11-28 改 Command 勾選清單(同 popover-list-region)
   'datatable-filter-panel': { last: 'element', box: 'hug', pattern: 'AB' },
   'fileitem-upload-manager': { last: 'element', box: 'hug', pattern: 'C' },
   'popover-list-region': { last: 'unbounded', box: 'hug', pattern: 'C' },
@@ -102,8 +104,8 @@ export const SIDES = {
   'agentpanel-chat-user-first': { last: 'element', box: 'fill', pattern: 'AB' },
   'agentpanel-chat-agent-first': { last: 'element', box: 'fill', pattern: 'AB' },
   'agentpanel-new-conversation': { last: 'element', box: 'fill', pattern: 'AB' },
-  // 整頁 404 / 403(2026-11-26;empty.spec.md「整頁狀態」):主內容區撐滿、狀態在正中 → 底不套規則 4(原閘 centered),左右由撐滿的包層給 loose(規則 1);
-  // 最後一個東西是動作鈕(控件 = element)。原閘用 CASES body 指名主內容區(全域標頭的下一塊是整列),本檔量同一塊。
+  // 整頁 404 / 403(2026-11-26 建;2026-11-28 改貼上方,empty.spec.md「整頁狀態」第 4 點):主內容區撐滿、沒有外框 → 底 = 2 × bottom(原閘 unframed;
+  // empty.spec.md「垂直定位」無框那一列),左右由包層給 loose(規則 1);最後一個東西是動作鈕(控件 = element)。原閘用 CASES body 指名主內容區(全域標頭的下一塊是整列),本檔量同一塊。
   'appshell-full-page-404': { last: 'element', box: 'fill', pattern: 'AB' },
   'appshell-full-page-403': { last: 'element', box: 'fill', pattern: 'AB' },
 }
@@ -115,12 +117,19 @@ export const SIDES = {
  * (layoutSpace.spec.md 規則 4「沒寫到的三種容器」【AI 推導】):48 只給擋住頁面(modal,classifyBox 先判成 fill)或高度由視窗 / 版面欄決定的容器;
  * 這兩種的高度是元件上的固定值或上下限、不擋頁面 → 與 Popover 同一邊 = 第 4 列,與頂部同值。2026-11-11 前 want = NaN,由 judge 紅「待規格」。
  * centered(原閘 CASES 登記的置中格)→ want = null:不套規則 4 的底(user 2026-11-14 在 A5 成品頁的留言 ②;上下在不在可用範圍正中由原閘判),judge 不比底。
+ * unframed(原閘 CASES 登記的無框狀態格,整頁 404 / 403)→ want = 2 × bottom:empty.spec.md「垂直定位」無框 → 頂部對齊 + 上下 2 × bottom
+ * (2026-11-28 user 選研究頁的甲;頂距由原閘比,本檔比底)。
  */
-export function bottomWant({ last, box, top, centered }, t) {
+export function bottomWant({ last, box, top, centered, unframed = false, footer = false, framedControl = false }, t) {
   if (centered) return { want: null, rule: '置中的格不套規則 4 的底(垂直置中的狀態不需要表示「內容結束了」的 bottom;上下由 header-first-gap 驗在可用範圍正中)' }
+  if (unframed) return { want: 2 * t.bottom, rule: '無框容器裡的狀態:empty.spec.md「垂直定位」無框 → 頂部對齊 + 上下 2 × bottom(「整頁狀態」第 4 點)' }
   if (last === 'bounded') return { want: t.loose, rule: '規則 4:bounded region → 容器底 = loose' }
   if (last === 'unbounded') return { want: 0, rule: '規則 4:unbounded region → 容器底 = 0(清單自帶 py)' }
   if (box === 'fill') return { want: t.bottom, rule: '規則 4:element → 容器底,容器擋住頁面或撐滿 = bottom' }
+  // 2026-11-27 user 定 T6 乙 / T4(layoutSpace.spec.md 規則 4 表):後面接 footer 的一般元素 = bottom;沒有 footer、直接碰到貼內容小容器自己的框時,
+  // 看得見框的欄位 / 按鈕 = loose,文字 / 勾選列維持與頂部同值(下面幾列)
+  if (footer) return { want: t.bottom, rule: '規則 4:element → 容器底,後面接 footer = bottom(user 2026-11-27 T6 乙)' }
+  if (framedControl) return { want: t.loose, rule: '規則 4:element → 容器底,直接碰到貼內容小容器自己的框、最後是看得見框的欄位 / 按鈕 = loose(user 2026-11-27 T4)' }
   if (box === 'hug') return { want: top, rule: `規則 4:element → 容器底,容器不擋頁面、貼著內容 = 與頂部同值(頂 ${top})` }
   if (box === 'capped') return { want: top, rule: `規則 4「沒寫到的三種容器」:被 max-height 卡住在捲、不擋頁面、高度不是視窗 / 版面欄給的 = 與頂部同值(頂 ${top})` }
   if (box === 'pinned') return { want: top, rule: `規則 4「沒寫到的三種容器」:高度寫死或被 min-height 撐住、不擋頁面、高度不是視窗 / 版面欄給的 = 與頂部同值(頂 ${top})` }
@@ -195,7 +204,7 @@ function selftest() {
   // centered 照 measureCase 的做法從原閘 CASES 帶進來;置中的格底不比(want = null),預設給修後實量的 0
   const row = (id, density, over = {}) => {
     const s = SIDES[id] ?? { last: 'element', box: 'hug', pattern: 'AB' }
-    const r = { id, density, declared: s, last: s.last, box: s.box, pattern: s.pattern, ...T[density], rowLeft: 0, rowRight: 0, lastDesc: 'x', scrolled: 0, centered: CASES.find((c) => c.id === id)?.centered, ...over }
+    const r = { id, density, declared: s, last: s.last, box: s.box, pattern: s.pattern, ...T[density], rowLeft: 0, rowRight: 0, lastDesc: 'x', scrolled: 0, centered: CASES.find((c) => c.id === id)?.centered, unframed: CASES.find((c) => c.id === id)?.unframed, ...over }
     const t = { loose: r.loose, tight: r.tight, bottom: r.bottomToken }
     const top = 'top' in over ? over.top : expectedGap(firstOf(id), t)
     return { left: r.loose, right: r.loose, ...r, top, bottom: 'bottom' in over ? over.bottom : (bottomWant({ ...r, top }, t).want ?? 0) }
@@ -228,11 +237,20 @@ function selftest() {
   // 置中的格(原閘 centered;user 2026-11-14 在 A5 成品頁的留言 ②):底不套規則 4 —— 修後實量 0 綠;A5 建置的 48 也不在本閘紅(上下由原閘驗在可用範圍正中);
   // 左右照舊(改 tight 必紅);底沒量到照樣儀器失效。對照組:拿掉 centered(= A5 的判法:撐滿 → 第 1 列 48)→ 修後的底 0 必紅「應 48」,證明這一支真的在起作用
   const CENTERED = CASES.filter((c) => c.centered).map((c) => c.id)
-  expect(JSON.stringify([...CENTERED].sort()) === JSON.stringify(['agentpanel-new-conversation', 'appshell-full-page-403', 'appshell-full-page-404', 'dialog-empty-centered']), `置中的格應是新對話空白頁、整頁 404 / 403 與對話框主體只有空狀態(與原閘同一份登記),實得 ${CENTERED.join(', ')}`)
-  // 整頁 404 / 403(2026-11-26):同一套置中判法 —— 底 0 / 48 都不在本閘紅、左改 tight 紅
+  expect(JSON.stringify([...CENTERED].sort()) === JSON.stringify(['agentpanel-new-conversation', 'dialog-empty-centered']), `置中的格應是新對話空白頁與對話框主體只有空狀態(與原閘同一份登記;整頁 404 / 403 2026-11-28 起是 unframed),實得 ${CENTERED.join(', ')}`)
   for (const id of CENTERED.filter((x) => x !== 'agentpanel-new-conversation')) {
     expect(judge(DENSITIES.map((d) => row(id, d, { bottom: 0 }))).length === 0, `${id} 置中的格底 0 應綠`)
     expect(judge([row(id, 'md', { left: 12 })]).some((s) => s.includes('左 = 12px')), `${id} 左改 tight 應紅`)
+  }
+  // 整頁 404 / 403(2026-11-28 起原閘登記 unframed;empty.spec.md「垂直定位」無框 → 上下 2 × bottom):底 = 96 綠;改回置中的底 0、規則 4 第 1 列的 48 都紅「無框」;
+  // 左改 tight 紅;對照組:拿掉 unframed(= 當一般撐滿容器)→ 修後的底 96 紅「應 48」,證明這一支真的在起作用
+  const UNFRAMED = CASES.filter((c) => c.unframed).map((c) => c.id)
+  expect(JSON.stringify([...UNFRAMED].sort()) === JSON.stringify(['appshell-full-page-403', 'appshell-full-page-404']), `無框的格應是整頁 404 / 403(與原閘同一份登記),實得 ${UNFRAMED.join(', ')}`)
+  for (const id of UNFRAMED) {
+    expect(judge(DENSITIES.map((d) => row(id, d, { bottom: 96 }))).length === 0, `${id} 無框的格底 96 應綠,實得 ${JSON.stringify(judge(DENSITIES.map((d) => row(id, d, { bottom: 96 }))))}`)
+    for (const b of [0, 48]) expect(judge(DENSITIES.map((d) => row(id, d, { bottom: b }))).filter((s) => s.includes(`底 = ${b}px,應 96`) && s.includes('無框')).length === DENSITIES.length, `${id} 無框的格底 ${b} 應兩密度都紅「應 96 … 無框」`)
+    expect(judge([row(id, 'md', { left: 12 })]).some((s) => s.includes('左 = 12px')), `${id} 左改 tight 應紅`)
+    expect(judge([row(id, 'md', { unframed: false, bottom: 96 })]).some((s) => s.includes('底 = 96px,應 48')), `${id} 拿掉 unframed 時底 96 應紅「應 48」(證明 unframed 這一支在起作用)`)
   }
   expect(judge(DENSITIES.map((d) => row(CENTERED[0], d, { bottom: 0 }))).length === 0, `置中的格底 0 應綠,實得 ${JSON.stringify(judge(DENSITIES.map((d) => row(CENTERED[0], d, { bottom: 0 }))))}`)
   expect(judge(DENSITIES.map((d) => row(CENTERED[0], d, { bottom: 48 }))).length === 0, '置中的格底 48 不在本閘紅(上下由原閘驗在可用範圍正中)')
@@ -481,6 +499,8 @@ export const probeSides = ({ header, headerText = null, nth = 0, followStep, scr
     leftDesc: desc(L.t.el), rightDesc: desc(R.t.el), lastDesc: desc(last.el), owner: owner ? desc(owner) : null,
     // 角色由原閘 classifyFirst 判(有框就是 bounded,不看寬 ——【更正 2026-11-14】2026-11-13 這裡多帶的「撐不撐滿寬」隨原閘拿掉)
     lastF: last.f, firstF: first.f,
+    // 規則 4 表 2026-11-27(user T6 乙 / T4):後面接 footer、最後是看得見框的欄位 / 按鈕 —— 判法住 pageKit(header-first-gap),兩支閘同一份
+    footer: Boolean(K.footerAfter(body)), framedControl: K.framedControl(last.f, last.el),
     pattern, rowLeft: round(rowLeft), rowRight: round(rowRight),
     modal, scrolls, capped, free: round(free), pinned, grow: round(grow),
     loose: v('--layout-space-loose'), tight: v('--layout-space-tight'), bottomToken: v('--layout-space-bottom'),
@@ -496,7 +516,7 @@ export async function measureCase(page, origin, c, density, { scroll = 'top' } =
   const r = await page.evaluate(probeSides, { header: c.header, headerText: c.headerText ?? null, nth: c.nth ?? 0, followStep: FOLLOW_STEP, scroll, body: c.body ?? null })
   if (r.err) return r
   const { lastF, firstF, ...rest } = r
-  return { ...rest, box: classifyBox(rest), last: classifyFirst(lastF), first: classifyFirst(firstF), centered: c.centered }
+  return { ...rest, box: classifyBox(rest), last: classifyFirst(lastF), first: classifyFirst(firstF), centered: c.centered, unframed: c.unframed }
 }
 
 async function measure() {

@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Node 22.13.0+, npm 10+ as the launcher, Git, Bash, `jq`, and Python 3. Governance npm operations use exact lock-verified npm 11.19.0.
+- Node 22.13.0+ (`engines.node`; CI, the dev container, and hosted setup use the exact version in the managed `scripts/.node-version`, so install that one to match them; Netlify is pinned in its UI, see README "Local, cloud, and container setup"), npm 10+ as the launcher, Git, Bash, `jq`, and Python 3. Governance npm operations use exact lock-verified npm 11.19.0.
 - Claude Code, Codex, or another agent that can read `AGENTS.md`
 
 The exact governance checker intentionally fails closed when Bash, `jq`, or Python 3 is unavailable,
@@ -92,43 +92,11 @@ are activated.
 
 ## Hosted setup
 
-- In Codex Cloud, configure both the environment **Setup script** and cached-container
-  **Maintenance script** as `npm run setup:all`. The ordering and cache behavior are defined
-  by the [official Codex Cloud environment guide](https://developers.openai.com/codex/cloud/environments).
-- In Claude Code on the web, the Setup script below can go in the shared **Default** environment.
-  It runs `npm run setup:all` only when this session's repository is `<repository-folder>` and
-  returns that command's own exit status; for any other repository it prints one skip line and exits
-  0, so it never blocks another repository's session. The official guide documents that the script
-  runs as root on Ubuntu 24.04 after the repository is cloned and before Claude Code launches, that
-  the environment's own variables are not set yet, and that a script that exits non-zero makes the
-  session fail to start or start without what it failed to install. The guide does not document the
-  script's working directory, so the script handles both starting at the repository root and
-  starting one level up with the checkout in a subfolder (a Setup script run on Claude Code on the web started in the directory that
-  contains the checkout, with the repository in its own subfolder). Replace
-  `<repository-folder>` with this repository's folder name; left unreplaced, the script only skips. A successful run is cached as a filesystem snapshot and is re-run only when the
-  script or allowed hosts change or the cache expires, so after a committed-lock change run
-  `npm run setup:all` in the session. See [Setup scripts](https://code.claude.com/docs/en/cloud-environments#setup-scripts)
-  and [Setup script failed](https://code.claude.com/docs/en/web-quickstart#setup-script-failed).
-
-  ```bash
-  #!/bin/bash
-  # Claude Code Setup script (shared Default environment): runs setup:all only for <repository-folder>
-  set -uo pipefail
-  REPO_DIR="<repository-folder>"  # this repository's folder name
-  if [ "$(basename "$PWD")" = "$REPO_DIR" ] && [ -f package.json ]; then
-    :
-  elif [ -f "$REPO_DIR/package.json" ]; then
-    cd "$REPO_DIR" || exit 1
-  else
-    echo "setup:all: $REPO_DIR is not this session's repository (cwd $(pwd)); skipping" >&2
-    exit 0
-  fi
-  if ! grep -q '"setup:all"' package.json; then
-    echo "setup:all: $(pwd)/package.json has no setup:all script" >&2
-    exit 1
-  fi
-  exec npm run setup:all
-  ```
+- Claude Code on the web and Codex Cloud: use the Setup script in [README.md](../README.md)
+  ("Local, cloud, and container setup"; Codex Cloud also as its **Maintenance script**). That
+  section is the only description of the hosted setup (exact Node.js from `scripts/.node-version`,
+  which environment to put it in, network allowlist, cached results); it installs that Node.js and
+  then runs `npm run setup:all`.
 - Codespaces and other devcontainer clients invoke the same setup implementation from the committed
   `.devcontainer/devcontainer.json`.
 

@@ -49,43 +49,78 @@ runtime. Native hook absence never counts as certification and protected CI rema
 
 Use the same canonical fresh-checkout bootstrap everywhere; run it locally and configure it explicitly in each hosted environment:
 
-- Local macOS/Linux: run `npm run setup:all` from the repository root.
-- Codex Cloud: set both the environment **Setup script** and **Maintenance script** to
-  `npm run setup:all`. Codex runs setup after checkout and maintenance after restoring a
-  cached container, as described in the [official Codex Cloud environment guide](https://developers.openai.com/codex/cloud/environments).
-- Claude Code on the web: the Setup script below can go in the shared **Default** environment.
-  It runs `npm run setup:all` only when this session's repository is `<repository-folder>` and
-  returns that command's own exit status; for any other repository it prints one skip line and exits
-  0, so it never blocks another repository's session. The official guide documents that the script
-  runs as root on Ubuntu 24.04 after the repository is cloned and before Claude Code launches, that
-  the environment's own variables are not set yet, and that a script that exits non-zero makes the
-  session fail to start or start without what it failed to install. The guide does not document the
-  script's working directory, so the script handles both starting at the repository root and
-  starting one level up with the checkout in a subfolder (a Setup script run on Claude Code on the web started in the directory that
-  contains the checkout, with the repository in its own subfolder). Replace
-  `<repository-folder>` with this repository's folder name; left unreplaced, the script only skips. A successful run is cached as a filesystem snapshot and is re-run only when the
-  script or allowed hosts change or the cache expires, so after a committed-lock change run
-  `npm run setup:all` in the session. See [Setup scripts](https://code.claude.com/docs/en/cloud-environments#setup-scripts)
+The Node.js version has one source: the managed `scripts/.node-version` (an exact `X.Y.Z`, delivered
+and updated by `npm run sync-all`; it lives under `scripts/` because an upgrade can only deliver managed
+files inside the paths its transaction owns). CI (`actions/setup-node` `node-version-file`), the dev
+container image, and `scripts/cloud-setup.sh` use it, and the design-system repository checks they
+agree before a release ships. Netlify cannot read it (Netlify reads only a `NODE_VERSION` environment
+variable or a `.node-version` / `.nvmrc` in the site's base directory), so set the site environment
+variable `NODE_VERSION` in the Netlify UI to the version in `scripts/.node-version` and update it when
+a release note says that file changed (`netlify.toml` repeats this). `engines.node` is the wider range
+consumers may run.
+
+- Local macOS/Linux: install the Node.js version in `scripts/.node-version` (nvm, fnm, mise, or the
+  official installer), then run `npm run setup:all` from the repository root.
+- Hosted environments run the managed `scripts/cloud-setup.sh` (delivered and updated by
+  `npm run sync-all`): it installs the exact Node.js in `scripts/.node-version` from the official release on
+  nodejs.org, verifies the archive against the release's `SHASUMS256.txt`, runs `npm run setup:all`
+  with that Node.js, and returns that command's own exit status; a failed download or checksum exits
+  non-zero. The environment itself keeps only the short Setup script below: it enters
+  `<repository-folder>` when the session starts one level above the checkout (the official guide does
+  not document the script's working directory; a Setup script run on Claude Code on the web started in the directory that
+  contains the checkout, with the repository in its own subfolder), skips with exit 0 when that folder has no
+  `scripts/cloud-setup.sh` (another repository, or this one before it reached 0.1.0-beta.153), and
+  otherwise returns `cloud-setup.sh`'s exit status. Replace `<repository-folder>` with this
+  repository's folder name; left unreplaced, it still works when the session starts at the repository root.
+- Codex Cloud: set both the environment **Setup script** and **Maintenance script** to the script
+  below. Codex runs setup after checkout and maintenance after restoring a cached container, and setup
+  scripts run with internet access, as described in the [official Codex Cloud environment guide](https://developers.openai.com/codex/cloud/environments);
+  its **Set package versions** setting does not document exact-patch pins, so `cloud-setup.sh` installs
+  the exact `scripts/.node-version` itself.
+- Claude Code on the web: put the Setup script below in an environment used only for this
+  repository's sessions. The official guide says the setup script runs the first time you start a
+  session in an environment; when it finishes within roughly five minutes the filesystem is saved as a
+  snapshot that later sessions start from, skipping the setup script, and the script runs again only
+  when the environment's setup script or allowed network hosts change or the cache expires after
+  roughly seven days. The guide does not say the cache is kept per repository, so in an environment
+  shared with other repositories (such as **Default**) a first session for another repository makes
+  the script skip, and this repository's later sessions start from a snapshot with neither the exact
+  Node.js nor a completed `setup:all` (not yet measured). To add the environment: on the new-session
+  screen at claude.ai/code open the environment selector (the first control in the row under the
+  message box), select **New environment**, set **Network access** to **Limited** with **Allow package
+  managers** checked, paste the script into **Setup script**, select **Add environment**, and choose
+  that environment in the selector whenever you start a session for this repository. The official
+  guide documents that the script runs as root on Ubuntu 24.04 before Claude Code launches, that each
+  session's VM is x86_64, that the environment's own variables are not set yet, that a script that exits
+  non-zero makes the session fail to start or start without what it failed to install, and that the
+  preinstalled Node.js versions are 20, 21, and 22 (22 on `PATH`). `nodejs.org` is on the default
+  allowlist of **Limited** network access with **Allow package managers** checked; if that box is
+  cleared, add `nodejs.org` under **Allowed domains**.
+  Because the short script itself does not change when `scripts/cloud-setup.sh`, `scripts/.node-version`,
+  or the committed lock change in the repository, such a change does not rebuild the cached snapshot
+  (only an edit to the environment's setup script or allowed hosts, or the roughly seven-day expiry,
+  does). `setup:all` only requires Node.js 22.13.0 or newer, so it does not flag a session that still
+  has the previous `scripts/.node-version`. After such a change (for example a design-system upgrade),
+  either run `bash scripts/cloud-setup.sh` in the session (the same approach the guide gives for a
+  setup script change: run the commands in the session), or save any edit to the environment's Setup
+  script so the next session rebuilds the snapshot. If the environment's first session ran before this
+  repository had `scripts/cloud-setup.sh`, the cached snapshot holds that skip; rebuild it the same way.
+  To check a new session, run `node --version` (expected: the version in `scripts/.node-version`) and
+  `npm run governance:check` (it runs the checker that `setup:all` installs, so it fails when setup did
+  not complete). The installed Node.js is linked into `/usr/local/bin`; whether a session's own `PATH`
+  puts it ahead of the preinstalled `/opt/node22` is not documented (not yet measured), so when
+  `node --version` differs, prepend `/opt/node-v<version>/bin` to `PATH`. See
+  [Setup scripts](https://code.claude.com/docs/en/cloud-environments#setup-scripts),
+  [Environment caching](https://code.claude.com/docs/en/cloud-environments#environment-caching),
+  [Configure your environment](https://code.claude.com/docs/en/cloud-environments#configure-your-environment),
+  [Default allowed domains](https://code.claude.com/docs/en/cloud-environments#default-allowed-domains),
   and [Setup script failed](https://code.claude.com/docs/en/web-quickstart#setup-script-failed).
 
+  One line (enters the repository folder when the session starts one level above it; skips quietly
+  when `scripts/cloud-setup.sh` is absent):
+
   ```bash
-  #!/bin/bash
-  # Claude Code Setup script (shared Default environment): runs setup:all only for <repository-folder>
-  set -uo pipefail
-  REPO_DIR="<repository-folder>"  # this repository's folder name
-  if [ "$(basename "$PWD")" = "$REPO_DIR" ] && [ -f package.json ]; then
-    :
-  elif [ -f "$REPO_DIR/package.json" ]; then
-    cd "$REPO_DIR" || exit 1
-  else
-    echo "setup:all: $REPO_DIR is not this session's repository (cwd $(pwd)); skipping" >&2
-    exit 0
-  fi
-  if ! grep -q '"setup:all"' package.json; then
-    echo "setup:all: $(pwd)/package.json has no setup:all script" >&2
-    exit 1
-  fi
-  exec npm run setup:all
+  cd "<repository-folder>" 2>/dev/null; [ ! -f scripts/cloud-setup.sh ] || exec bash scripts/cloud-setup.sh
   ```
 - GitHub Codespaces/devcontainer: the committed `postCreateCommand` invokes the same
   `setup:all` implementation after checking the pinned system tools.

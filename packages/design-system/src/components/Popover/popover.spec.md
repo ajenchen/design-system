@@ -61,7 +61,7 @@ Popover 是**點擊觸發的浮層容器**——提供定位、動畫、焦點�
 - **來源**:總帳 Q2(定) user 選「蓋在那一格上，定位依據是格子 (Recommended)」;Q2b(定) user 先問「還是其實應該是以格子為中心長？我不太確定到底是怎樣比較好」,量 Google 兩張截圖後選「以格子為中心(水平 + 垂直) (Recommended)」(選項與建議是 AI 擬的)。可用高「視窗高 − 上下各 8」、動畫從中心縮放、錨點不在畫面上時藏起來【AI 推導 2026-11-24】。
 
 **結構化組合（可選）**：PopoverContent 外殼無內距，consumer 可選擇：
-- **單一 body**:包 `<PopoverBody>` 取得 SurfaceBody canonical padding(左右 `px-loose`;上下由容器自己給 —— `data-layout-body="hug"`,上 `tight`、最後是一般元素時底與頂同值、最後是有框的表格 `loose`、自帶內距的清單 0;`overlay-surface.spec.md` SSOT、`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 4。Dialog body 是擋住頁面的容器,最後是一般元素時底部 48 —— 同一條規則的第 1 列,不是特化)
+- **單一 body**:包 `<PopoverBody>` 取得 SurfaceBody canonical padding(左右 `px-loose`;上下由容器自己給 —— `data-layout-body="hug"`,底依最後一個東西與後面接不接 footer,值只住 `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 4 表(本規格不重述;2026-11-27 起後面接 PopoverFooter 的一般元素 = 48);`overlay-surface.spec.md` SSOT)
 - **含標題**：組合 `<PopoverHeader>` + `<PopoverBody>`（下分隔線由 Header 提供）
 - **含操作按鈕列**：再加 `<PopoverFooter>`（上分隔線由 Footer 提供）
 

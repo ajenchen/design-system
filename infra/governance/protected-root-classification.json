@@ -31,6 +31,7 @@
     "package.json",
     "package-lock.json",
     ".gitignore",
+    ".node-version",
     ".npmrc",
     ".changeset",
     ".husky",
@@ -81,6 +82,15 @@
       "excludes": [],
       "allowAbsent": false,
       "reason": "Repository state-boundary policy."
+    },
+    {
+      "id": "root-node-version",
+      "path": ".node-version",
+      "match": "file",
+      "classification": "canonical-source",
+      "excludes": [],
+      "allowAbsent": false,
+      "reason": "Canonical Node.js version read by every workflow setup-node step, the dev container, and Netlify (scripts/node-version-ssot-invariant.mjs)."
     },
     {
       "id": "root-npmrc",
@@ -183,11 +193,21 @@
       "classification": "canonical-source",
       "excludes": [
         "governance/archive",
+        "governance/backlog/user-view.md",
         "governance/generated",
         "governance/control-plane.lock.json"
       ],
       "allowAbsent": false,
-      "reason": "Provider-neutral memory, planning ledger, and benchmark authority."
+      "reason": "Provider-neutral memory, planning ledger, backlog, and benchmark authority."
+    },
+    {
+      "id": "governance-backlog-user-view",
+      "path": "governance/backlog/user-view.md",
+      "match": "file",
+      "classification": "generated-output",
+      "excludes": [],
+      "allowAbsent": false,
+      "reason": "User-facing backlog view generated from governance/backlog/items.json by scripts/backlog.mjs."
     },
     {
       "id": "governance-archive",

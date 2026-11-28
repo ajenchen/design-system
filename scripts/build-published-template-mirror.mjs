@@ -100,6 +100,8 @@ const ALLOWLIST = [
   'scripts/setup-governance.mjs',
   'scripts/setup-provider-cli-toolchain.mjs',
   'scripts/setup-workspace.mjs',
+  'scripts/cloud-setup.sh', // 雲端 Setup script 的實作(README「Local, cloud, and container setup」的短腳本執行它)
+  'scripts/.node-version', // 產品端 Node 版本唯一出處(範本 workflow 的 setup-node 與 cloud-setup.sh 讀它)
   'scripts/workflow-static-validation.mjs',
   'scripts/sync-exact-workspace-dependencies.mjs',
   'scripts/lib/exact-workspace-dependencies.mjs',

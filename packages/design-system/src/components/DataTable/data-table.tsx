@@ -297,7 +297,7 @@ export interface DataTableProps<TData>
    * Enable 後 cell click 行為(**每一格都一樣**,含唯讀格、開關格與連結格的空白處;user 2026-09-26
    * 點任何格,藍框都跟過去(轉述)):
    *   - Plain click → setSelectedCellId(格游標移到這一格),**不**進 edit mode
-   *   - Click on already-selected → enter edit(只有「點格即編輯」的格;唯讀 / boolean 沒有可進的編輯,不動;url 點網址文字開連結、點格的其他地方進編輯)
+   *   - Click on already-selected → 執行這一格的主要動作:「點格即編輯」的格進 edit;可編輯的 boolean 格切換並送出;有連結的 url 格開連結;唯讀格不動(data-table.spec.md「格的主要動作:整格是點擊範圍」)
    *   - Shift+click → extend range from anchor
    *   - Double-click / Enter / F2 / printable(deferred) → enter edit on selected
    *   - Click empty area → clear selection
@@ -3706,7 +3706,7 @@ function DataTableInner<TData>(
     //   `showDisplayEndIcon` opt-in(per-picker `<ItemSuffix>` 渲 ChevronDown/Calendar/Clock)。
     //   DataTable cellEl 不再 render parallel indicator — SSOT 對齊 Field family。
     //   詳 `governance/planning/cell-indicator-ssot-rfc.md` Step 9。
-    // Cell click → 進 edit mode(boolean 不需 — 勾選框自己切換)。
+    // Cell click → 進 edit mode(boolean 不需 — 勾選框 / 開關自己切換,它的延伸區鋪滿整格,點格裡任何地方都是點控件;cell-registry.tsx BOOLEAN_CELL_STRETCH)。
     // url(2026-11-06 user「照①乙②b」;data-table.spec.md「Navigate-valued cell 通用類別」第 1 條):有連結的網址格,格裡鉛筆以外
     // 點了開連結(LinkInput 的延伸連結鋪滿整格,瀏覽器照常開),鉛筆 = 滑鼠唯一的編輯入口 → 它**不是**「點格即編輯」的格:點格不進編輯。
     // 空值 / 不是網址 = 沒有連結可開,照其他可編輯格(點格進編輯)。判斷與 LinkInput 畫不畫連結同一支。
@@ -3775,7 +3775,9 @@ function DataTableInner<TData>(
           return
         }
         if (isSelectedCell) {
-          // 唯讀 / boolean 再點一次:沒有可進的編輯,游標留在原格;連結格點到網址文字(開連結)或在選字:也不進編輯
+          // 唯讀 / boolean 再點一次:沒有可進的編輯,游標留在原格 —— 可編輯的布林格選中後控件延伸區鋪滿整格(data-dt-select-first 拿掉),
+          // 這一下其實點在控件上:控件自己切換並送出(2026-11-27,data-table.spec.md「格的主要動作:整格是點擊範圍」),這裡不必再管;
+          // 連結格點到網址文字(開連結)或在選字:也不進編輯
           if (!cellClickEntersEdit || clickIsForCellContent(e)) return
           // 2nd click on already-selected → enter edit(Excel-like)
           setEditingCellId(cellEditId(cellRowId, cellColId))
@@ -3887,9 +3889,10 @@ function DataTableInner<TData>(
         // 試算表模式:焦點進到連結格 / 開關格裡的控件時,那是「格內模式」—— 焦點所在控件自己的一層:Esc 先回到格導覽,
         // 不關外面的 Dialog / Sheet(keyboard-model-canonical.md「焦點所在的控件自己那一層也算一層」;處理在 tableKeyboardHandler)
         {...escapeLayerProps(spreadsheetMode && !isEditingThisCell && (colType === 'url' || colType === 'boolean'), 'subtree')}
-        // 試算表模式:不能編輯的網址格整格開連結(②b,user 2026-11-06「照①乙②b」),但**沒選中時第一下只選格**
-        // (不然沒辦法只選這一格去複製 / 框選)—— 這個標記讓 data-table.css 先收起連結的延伸區,選中後才鋪滿
-        data-dt-link-select-first={spreadsheetMode && colType === 'url' && !isSelectedCell ? '' : undefined}
+        // 試算表模式:格的主要動作(網址格開連結、布林格切換)整格都是點擊範圍,但**沒選中時點空白處第一下只選格**
+        // (不然沒辦法只選這一格去複製 / 框選)—— 這個標記讓 data-table.css 先收起控件的延伸區,選中後才鋪滿,再點一下就執行。
+        // 規則 = data-table.spec.md「格的主要動作:整格是點擊範圍」(2026-11-27;網址格 2026-11-06 user「照①乙②b」是它的第一個實例)
+        data-dt-select-first={spreadsheetMode && (colType === 'url' || colType === 'boolean') && !isSelectedCell ? '' : undefined}
         className={cn(
           // Cell box(2026-05-05 v6 — A4 canonical: Field frame seamlessly replaces cell border):
           //   - `self-stretch`: cell 永遠填 row 高

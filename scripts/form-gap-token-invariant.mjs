@@ -1,10 +1,18 @@
 #!/usr/bin/env node
 /**
- * 表單欄位垂直間距 = `--layout-space-loose`,全 DS 無例外(2026-09-12 user 拍板)
+ * 表單欄位垂直間距 = `--layout-space-loose`,不開放逐一選檔(2026-09-12;出處 = AI 建議、user 採納,
+ * user 當天原話「照你建議並確保整個 ds 都有 ssot,不要有任何偏移」—— `components/Field/field-group.spec.md`「欄位垂直間距」的出處更正)
  *
  * SSOT:`tokens/layoutSpace/layoutSpace.spec.md`「親疏 3 級」表逐字把
  * 「跨範疇 + parallel / independent」的例子列為「form fields stack(parallel inputs)」→ 規則 3 = loose。
  * 表單間距是**系統級**設定:要調就整個 density 一起調,不是每個表單各自挑一檔。
+ *
+ * 閱讀組不歸這支量(2026-11-28 CIFIX):範圍(最外層 FieldGroup,含自己)裡有就地編輯(`data-field-reading`)的組是閱讀區塊、
+ * 不是表單,列距 = `--layout-space-tight`(`components/Field/field.spec.md`「閱讀情境」效果 ④;2026-11-27 user 定 T2 甲 ——
+ * 留白草案頁 T2 沒留言,user 原話「我沒回應的就是沒有意見」→ 照 AI 建議甲,草案頁 T2 列明現有閱讀型欄位組一般密度 16 → 12)。
+ * 這條由 `scripts/reading-context-invariant.mjs` G10 守(閱讀組 tight、表單與純顯示組 loose、內層組照範圍);本閘照同一個判法
+ * (G10 的 outer / reading)把閱讀組略過,其餘組(含純顯示組)照舊期望 loose。對照組另驗兩面:閱讀組真的被認出來(略過數 > 0)、
+ * 有閱讀組的那則 story 裡其他組注入後照樣紅(逐組略過,不是整則跳過)。
  *
  * 為什麼型別擋不住:`FieldGroup` 的 `gap` prop 已經移除(傳 `gap=` 會被 tsc 擋),
  * 但 `className="gap-4"` 仍然會蓋掉元件自己的 `gap-[var(--layout-space-loose)]` —— 那是 runtime 才看得到的漂移。
@@ -69,6 +77,8 @@ const browser = await launchBrowser()
 const violations = []
 const instrumentFailures = []
 let seen = 0
+let readingSkipped = 0 // 閱讀組 × density(G10 守,這裡不量)
+const readingStories = new Set()
 
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
@@ -101,7 +111,14 @@ try {
       await page.evaluate((d) => document.documentElement.setAttribute('data-density', d), density)
       // 元素早已在畫面上;給 density 切換後可能的 JS 端重算一小段時間(純 CSS 變數本身在 getComputedStyle 時就已同步生效)
       await page.waitForTimeout(90)
-      for (const gap of await page.evaluate(() => [...document.querySelectorAll('[data-field-group]')].map((n) => getComputedStyle(n).rowGap))) {
+      const groups = await page.evaluate(() => [...document.querySelectorAll('[data-field-group]')].map((g) => {
+        // 範圍 = 最外層 FieldGroup(含自己);範圍裡有就地編輯 = 閱讀組(同 reading-context-invariant.mjs G10 的 outer / reading)
+        let outer = g
+        for (let n = g.parentElement; n; n = n.parentElement) if (n.hasAttribute('data-field-group')) outer = n
+        return { gap: getComputedStyle(g).rowGap, reading: Boolean(outer.querySelector('[data-field-reading]')) }
+      }))
+      for (const { gap, reading } of groups) {
+        if (reading) { readingSkipped += 1; readingStories.add(id); continue }
         seen += 1
         if (gap !== EXPECTED[density]) violations.push({ id, density, gap, 期望: EXPECTED[density] })
       }
@@ -113,7 +130,7 @@ try {
 }
 
 console.log(`S 段:掃了 ${tsxFiles.length} 個 .tsx,找到 ${staticViolations.length} 處 className / prop 覆寫`)
-console.log(`R 段:量了 ${seen} 個 (FieldGroup × density) 組合`)
+console.log(`R 段:量了 ${seen} 個 (FieldGroup × density) 組合;閱讀組 ${readingSkipped} 個組合(${readingStories.size} 則 story)交給 reading-context-invariant G10`)
 if (instrumentFailures.length) {
   // 沒量到 ≠ 沒有 FieldGroup:任何一則開不起來,這次的綠燈就不成立(一般與 selftest 皆同)
   console.error(`✗ 儀器失效:${instrumentFailures.length} 則 story 開不起來 —— 它們有沒有 FieldGroup、間距對不對,這次都沒量到(exit 2,不是產品裁決,也不算通過):`)
@@ -127,6 +144,11 @@ if (SELFTEST) {
   if (staticViolations.length === 0) { console.error('✗ 對照組:S 段注入 className="gap-4" 之後仍然沒抓到 —— 靜態那半失效'); process.exit(1) }
   if (violations.length === 0) { console.error('✗ 對照組:注入固定 row-gap 之後仍然綠 —— 儀器失效'); process.exit(1) }
   console.log(`✓ 對照組:如預期紅(${violations.length} 個組合被抓到)`)
+  // 閱讀組略過的兩面:認得出來(否則「略過」這半從沒被驗過)、只略過那一組(同一則裡的表單 / 純顯示組照量)
+  if (readingSkipped === 0) { console.error('✗ 對照組:一個閱讀組都沒認出來 —— 略過閱讀組那一半沒驗到(field.stories.tsx 的閱讀情境夾具應該有)'); process.exit(1) }
+  const sameStory = violations.filter((v) => readingStories.has(v.id))
+  if (sameStory.length === 0) { console.error(`✗ 對照組:有閱讀組的 ${readingStories.size} 則 story 裡,其他組注入後沒有一個紅 —— 略過範圍過寬(整則跳過,不是逐組)`); process.exit(1) }
+  console.log(`✓ 對照組:閱讀組認出 ${readingSkipped} 個組合並略過;同一則 story 裡的其他組照樣紅 ${sameStory.length} 個組合(逐組略過)`)
   process.exit(0)
 }
 if (staticViolations.length > 0) {
@@ -139,4 +161,4 @@ if (violations.length > 0) {
   process.exit(1)
 }
 if (staticViolations.length > 0 || violations.length > 0) process.exit(1)
-console.log('✓ 全 DS 的表單欄位間距都等於 --layout-space-loose(md 16px / lg 24px),且沒有任何 className 覆寫')
+console.log('✓ 全 DS 的表單欄位間距都等於 --layout-space-loose(md 16px / lg 24px),且沒有任何 className 覆寫(閱讀組的 tight 由 reading-context-invariant G10 驗)')

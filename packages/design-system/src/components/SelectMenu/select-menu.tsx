@@ -19,7 +19,7 @@ import { useCompositeFieldBlur, useOwnTreeEvents } from '@/design-system/lib/com
 import { defaultFilter } from 'cmdk'
 import { SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import { Button } from '@/design-system/components/Button/button'
-import { OVERLAY_LIST_MAX_HEIGHT, OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-geometry'
+import { OVERLAY_LIST_MAX_HEIGHT, OVERLAY_SIDE_OFFSET, OVERLAY_VIEWPORT_MAX_WIDTH } from '@/design-system/tokens/elevation/overlay-geometry'
 import { RowSizeProvider } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { applySelectAll, clearSelection } from '@/design-system/lib/multi-select-ordering'
 // 觸發欄位 ↔ 清單的鍵盤橋接(方向鍵轉送 / aria-activedescendant / 開著按 Tab / 不可打字單選的空白鍵)住在 select-menu-keyboard.ts
@@ -618,15 +618,14 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
         // w-auto override PopoverContent default w-72(rich-popover canonical)— SelectMenu 走「跟 trigger 同寬」
         // canonical(spec L72)。minWidth = max(trigger-width, 240px sensible-min)— 對齊 shadcn / Material / Ant
         // select dropdown 共識(2026-05-04 D1 verify SelectMenu spec implementation)。
-        className={cn(
-          'p-0 w-auto rounded-lg border border-border bg-surface-raised overflow-hidden',
-          className
-        )}
+        // maxWidth(2026-11-28 R93):視窗不夠寬時照浮層通則縮(overlay-geometry.ts OVERLAY_VIEWPORT_MAX_WIDTH);下限仍優先(CSS min-width 勝 max-width)
+        className={cn('p-0 w-auto rounded-lg border border-border bg-surface-raised overflow-hidden', className)}
         style={{
           boxShadow: 'var(--elevation-200)',
           minWidth: minWidth != null
             ? `max(var(--radix-popover-trigger-width), 15rem, ${minWidth}px)`
             : 'max(var(--radix-popover-trigger-width), 15rem)',
+          maxWidth: OVERLAY_VIEWPORT_MAX_WIDTH,
         }}
         align={align}
         sideOffset={OVERLAY_SIDE_OFFSET}

@@ -4244,7 +4244,7 @@
       "retiredProviders": []
     },
     {
-      "releaseVersion": "0.1.0-beta.152",
+      "releaseVersion": "0.1.0-beta.153",
       "previousSnapshotSha256": "7daad48d3412276959e0a25037c330c17b7457c020865c98b9b886f45adb7b23",
       "providers": [
         {

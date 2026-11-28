@@ -156,7 +156,7 @@ const settle=async(label)=>{
 
 // ══ F7:往內畫的焦點框不壓自己的字 + 補內距之後平常畫面零位移(Tabs 分頁 / Accordion 標題;2026-11-27 E13 A)══
 // 規格:tabs.spec.md「焦點框不壓字」、accordion.spec.md「視覺規則」焦點框那一條。判準「框不切字」出自 user 2026-09-23 日期格選 D 的理由
-//(focus-canonical.md:677)。檔頭 (F7) 有三種格與對照組的說明。
+//(focus-canonical.md:673)。檔頭 (F7) 有三種格與對照組的說明。
 // 「內容」= 元素自己的直接子節點(元素子節點的盒子 + 非空白文字的字框),分頁再加上 portal 出去、疊在它上面的 inlineAction。
 // 量內容本身,不量 trigger 的盒子:盒子在這次修法裡本來就變大(左右各多一個焦點框的位置),拿盒子當代理會把「盒子變了」誤當「畫面變了」(M37)。
 const f7Probe = ({ kind, sel }) => {

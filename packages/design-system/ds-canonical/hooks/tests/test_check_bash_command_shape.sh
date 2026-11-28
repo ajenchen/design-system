@@ -5,8 +5,9 @@
 #   2. 對照組:判定表改壞一格 → selftest 紅(結束碼 1);deny 清單跟判定表的 denySha256 對不上 → 儀器失效(2)
 #   3. hook 介面:換寫法的丟改動指令 → exit 2 且點名規則;開分支 / 切分支 / 唯讀 → 放行
 #   4. deny 檔讀不到 → 放行但經 context 通道告訴模型「這次沒比對」(不能靜默)
-#   5. emulate sh 提示:有 $ / * / =開頭的字且第一行不是 emulate sh → 提示;反之安靜
+#   5. emulate sh 提示:有 $ / * / =開頭的字且第一行不是 emulate sh → 提示;反之安靜;第一行把加引號的 heredoc 交給 bash / sh → 安靜(沒加引號仍提示)
 #   6. 不是 Bash → 安靜
+#   7. set -e 提示:有一行 set -e / set -o errexit 且沒交給 bash / sh 子程序 → 提示;交給子程序、set +e、字串裡的 set -e → 安靜
 
 set -u
 
@@ -97,13 +98,23 @@ else
 fi
 
 echo "Test 5: emulate sh 提示"
-for cmd in 'ls $HOME' 'echo *.md' '[ a == b ] && echo x' $'cd /x\nls $HOME'; do
+for cmd in 'ls $HOME' 'echo *.md' '[ a == b ] && echo x' $'cd /x\nls $HOME' $'bash -s <<EOS\nls $HOME\nEOS'; do
   run_hook "$cmd"
   if [ "$RC" = 0 ] && jq -e '.governanceContext.message | test("emulate sh")' <<<"$OUT" >/dev/null 2>&1; then ok "提示:$(head -1 <<<"$cmd")"; else bad "應提示卻沒有:rc=$RC out=$OUT:$cmd"; fi
 done
-for cmd in $'emulate sh\nls $HOME' 'emulate sh; echo *.md' 'ls -la /x' 'git -C /x status --short'; do
+for cmd in $'emulate sh\nls $HOME' 'emulate sh; echo *.md' 'ls -la /x' 'git -C /x status --short' $'bash -e -o pipefail -s <<\'EOS\'\nls $HOME\nEOS' $'sh -s <<"EOS"\necho *.md\nEOS'; do
   run_hook "$cmd"
   if [ "$RC" = 0 ] && [ -z "$OUT" ]; then ok "安靜:$(head -1 <<<"$cmd")"; else bad "不該提示:rc=$RC out=$OUT:$cmd"; fi
+done
+
+echo "Test 7: set -e 提示"
+for cmd in $'emulate sh\nset -e\nfalse' 'set -euo pipefail; false' $'cd /x && set -o errexit\nfalse'; do
+  run_hook "$cmd"
+  if [ "$RC" = 0 ] && jq -e '.governanceContext.message | test("set -e")' <<<"$OUT" >/dev/null 2>&1; then ok "提示:$(tr '\n' ' ' <<<"$cmd")"; else bad "應提示卻沒有:rc=$RC out=$OUT:$cmd"; fi
+done
+for cmd in $'bash -e -o pipefail -s <<\'EOS\'\nset -e\nfalse\nEOS' $'emulate sh\nset +e\nfalse' 'echo "use set -e here"' 'git commit -m "fix (set -e; false)"'; do
+  run_hook "$cmd"
+  if [ "$RC" = 0 ] && [ -z "$OUT" ]; then ok "安靜:$(tr '\n' ' ' <<<"$cmd")"; else bad "不該提示:rc=$RC out=$OUT:$cmd"; fi
 done
 
 echo "Test 6: 不是 Bash → 安靜"

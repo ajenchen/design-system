@@ -106,6 +106,8 @@
         {"pattern": "scripts/governance-check.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": "scripts/lint-ds-internal-imports.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": "scripts/lib/a11y-static-server.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/.node-version", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/cloud-setup.sh", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": "scripts/lib/canonical-path-containment.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": "scripts/lib/consumer-output-roots.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": "scripts/lib/storybook-static-snapshot.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},

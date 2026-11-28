@@ -963,6 +963,17 @@
       "why": "清單列前綴槽寬(ItemPrefix 讀,沒設 = auto):跨元件的設定點 —— item-anatomy 的公開 helper getUniformPrefixSlotStyle 寫(頭像槽 20 / 24 / 24)、Sidebar 混排圖示與頭像時用 :has() 寫、DataTable 欄位顯示面板寫 16px(拖曳把手 / 鎖頭的寬)。拿掉 item-anatomy 就沒有意義 → item-anatomy 的值。2026-11-15 前沒有登記:每個讀寫的資料夾自己也有宣告,閘 C1 看不到跨資料夾傳值(稽核 P14 / P23 第 4 個盲點,C1 同日補上)。產品不直接寫名字,要設定就呼叫公開 helper(user 2026-11-10 token 第 4 題選甲;甲案的意思轉述為「產品要設定元件的值走元件參數、不覆寫 token」—— 這是 AI 寫在選項文件裡的寫法,不是 user 原話,見 token-system.spec.md「誰可以讀」第一條;【AI 推導 2026-11-15】product 填 no、把 helper 當參數)"
     },
     {
+      "match": "--surface-chrome-slot-h",
+      "class": "component",
+      "owner": "overlay-surface",
+      "home": "patterns/overlay-surface/overlay-surface.tsx",
+      "target": "patterns/overlay-surface/overlay-surface.tsx",
+      "spec": "patterns/overlay-surface/overlay-chrome-sizing.spec.md",
+      "product": "no",
+      "dsReaders": "any",
+      "why": "浮層標頭右側操作區(× / 文字鈕)的版面佔位高:overlay-surface 讀(縮位 = (佔位 − sm 欄位高) / 2;沒設 = 標題 body-lg 一行 calc(--font-body-lg-size × 1.5) = 24),overlay-surface 自己的常數 COMPACT_HEADER_SLOT(Popover 一級 21)/ EDITABLE_TITLE_HEADER_SLOT(sm 欄位高)寫。0.1.0-beta.153 起行事曆事件詳情(components/Calendar/calendar-event-detail.tsx)自己寫 body-lg 一行 24(標題 16px 的元件客製,依據與 user 原話住 calendar.spec.md「事件詳情浮層」標題列;客製只寫在行事曆、不推回浮層通則)—— 主人以外的元件寫它 = token-system.spec.md 第 0 題 (c),要登記;之前只有 overlay-surface 自己讀寫,是元件內變數、不登記。拿掉 overlay-surface 就沒有意義 → overlay-surface 的值。開頭 --surface- 與語意色 --surface-* 同開頭、不同主人(2026-11-15 稽核 P20 從 --chrome-slot-h 改名時取 pattern 名的後半);是既有名字,這次只登記、不改名【AI 推導 2026-11-28,CIFIX】。user 2026-11-10 拍板 token 第 4 題甲:元件的值產品不讀不覆寫,除非主人規格點名"
+    },
+    {
       "match": "--tw-",
       "class": "ignore",
       "why": "Tailwind 自己的內部變數(--tw-duration 等),不是設計數值"
@@ -971,6 +982,11 @@
       "match": "--radix-",
       "class": "ignore",
       "why": "Radix 執行期提供的變數(--radix-popover-content-available-height 等),元件只讀不宣告"
+    },
+    {
+      "match": "--spacing",
+      "class": "ignore",
+      "why": "Tailwind 自己的間距單位(tailwindcss 主題宣告,設計系統不宣告它);數字間距 class(gap-2、mx-2、pr-4…)編譯出來就是 calc(var(--spacing) * N)。設計系統只在算式裡讀它,讓值跟同一處的數字 class 是同一個來源(DatePicker 區間作用端盒子撐到「gap-2 + 箭頭 mx-2」= calc(var(--spacing) * 4)、「gap-2」= calc(var(--spacing) * 2),date-picker.tsx RANGE_END_BOX_*),不是設計數值"
     }
   ],
   "known": {

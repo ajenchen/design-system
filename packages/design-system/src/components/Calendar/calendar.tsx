@@ -32,7 +32,6 @@ import {
   resolveWeekStartsOn,
   type WeekStartsOn,
 } from '@/design-system/lib/date-locale'
-import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
 import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
 import { Skeleton } from '@/design-system/components/Skeleton/skeleton'
 import { CALENDAR_GEOMETRY_STYLE, CALENDAR_NARROW_COLUMN_MAX_PX, calendarPieceWidth, calendarRowsThatFit } from './calendar-geometry'
@@ -75,8 +74,10 @@ import { pressLandedInDom } from '@/design-system/lib/pointer-press'
  * ── 消費的 SSOT ──
  * - components: [Button, ScrollArea(格陣捲動區), Tooltip, Tag(列高,經 calendar-geometry.ts), Skeleton(載入中每格一條,skeleton.spec.md:64、:86-87),
  *   Popover(「+N」清單浮層,經 ./calendar-more-list.tsx;展開型 coverAnchor)]
- * - patterns: [header-canonical(工具列 = ChromeHeader), element-anatomy/truncated-text]
- * - tokens: [--chrome-header-height, --tag-height-md(h-tag-md / min-w-tag-md), --divider, --muted, --info, --neutral-hover,
+ * - patterns: [action-bar(工具列排法:標題在左、按鈕靠右;action-bar.spec.md:109 / :121), element-anatomy/truncated-text]
+ *   (工具列在格子區的框外、一列 sm 控件,同 DataTable 表格上方的工具列 —— layoutSpace.spec.md「標題塊」預設尺寸「表格上方的搜尋列 / 工具列 sm」;
+ *   2026-11-27 前是框裡的 ChromeHeader 固定高 48 / 56,calendar.spec.md「外殼」)
+ * - tokens: [--layout-space-tight(工具列 → 格子區)/ --layout-space-loose(貼邊擺法時工具列左右內距), --tag-height-md(h-tag-md / min-w-tag-md), --divider, --muted, --info, --neutral-hover,
  *   --fg-secondary / --foreground(有時段事件的時間 / 標題【TIMECOLOR(定)】), --font-body-size(色條高 = 字高【BAR(定)】), --radius-sm(色條圓頭,radius.css 短邊 ≤ 10px),
  *   categorical-color.ts(長條 CAT_EVENT / 唯讀 CAT_SUBTLE / 色條 CAT_ACCENT;neutral CAT_EVENT_NEUTRAL)]
  * - 幾何常數: ./calendar-geometry.ts(格內所有空隙、文字內距、色條寬、格最小高、週數欄寬、窄寬度門檻、每格列數 k 的算式、跨日長條的寬;元件內變數 --calendar-*)
@@ -344,6 +345,21 @@ interface CalendarOwnProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'o
    * `Skeleton`(不畫事件與「+N」);格陣 `aria-busy="true"`。點空白新增、鍵盤走格照常【AI 推導】;日期停靠點的讀屏名稱載入中不念筆數【AI 推導】。
    */
   loading?: boolean
+
+  /**
+   * 格子區的外框(預設 `true`;calendar.spec.md「外殼」—— 名稱、預設與意思同 DataTable `bordered`,data-table.spec.md「六、外框規則」)。
+   * 框只圍格子區(星期列 + 週列),工具列在框外(同 DataTable 工具列在表格框外)。
+   * 傳 `false`:拿掉框與圓角,格線保留;最後一週改畫底線收尾(同 DataTable「不加框時，最後一行保留底線自然收尾」)。
+   * 拿掉框時格子區不標 `data-layout-region="bounded"`(那個標記 = 有完整外框)。
+   */
+  bordered?: boolean
+
+  /**
+   * 貼邊擺法(預設 `false`;calendar.spec.md「外殼」貼邊擺法):格子區左、右、下貼齊容器的邊,工具列自己帶左右內距 `--layout-space-loose`,
+   * 字對齊內容的左右邊距。容器那三邊不給內距(DS 既有「子元件貼齊有內距容器邊」的做法:容器撤內距、子元件自己帶 —— overlay-surface.spec.md
+   * 「List-as-region in overlay body」)。只管位置,不管框:框照 `bordered`(貼邊時通常一起傳 `bordered={false}`,容器的邊就是捲動範圍的邊)。
+   */
+  flush?: boolean
 
   /**
    * 工具列月份標題的標題層級(預設 `'h2'`)。字樣不隨層級變(`text-body-lg font-medium`,header-canonical.spec.md「Title typography」);
@@ -784,6 +800,8 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   hideWeekends = false,
   showWeekNumbers = false,
   loading = false,
+  bordered = true,
+  flush = false,
   titleAs: TitleTag = 'h2',
   renderEventTile,
   className,
@@ -1303,27 +1321,26 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   return (
     <div
       ref={ref}
-      className={cn(
-        'flex flex-col w-full h-full bg-surface rounded-md border border-divider overflow-hidden',
-        className,
-      )}
-      // 邊緣標記(2026-11-26,calendar.spec.md「外殼」):一圈完整外框 = bounded region 的邊緣 —— layoutSpace.spec.md:176
-      // 「元件根部宣告自己的邊緣 `data-layout-region="bounded"`(有完整外框:表格 / 卡片 / 面板)」,與 DataTable 外框同一個標記(data-table.tsx)。
-      // 放進會自己給上下內距的容器(DialogBody / SheetBody 等 data-layout-body)且是最後一塊時,容器底自動 = loose(規則 4 第 2 列;
-      // tokens/layoutSpace/layoutSpace.css),不是一般元素的 48。放在 {...props} 之前:consumer 改掉外框時可一併改標記。
-      data-layout-region="bounded"
+      // 根節點 = 工具列 + 格子區兩塊(calendar.spec.md「外殼」,2026-11-27 user「表格是只畫在表格上，行事曆是把工具列也整個包起來」→ 照表格改):
+      // 根節點不畫框、不畫底(工具列坐在容器上,同 DataTable 工具列在表格框外);工具列 → 格子區 = tight(layoutSpace.spec.md 規則 3
+      // 「toolbar → table」tight;user 11-27 P12「目前工具列到表格 tight的距離我覺得很合理」)。不 overflow-hidden:工具列左右貼著根節點邊,
+      // 裁掉會把頭尾兩顆鈕的焦點框裁掉(捲動與裁切由格子區自己做)。
+      className={cn('flex flex-col w-full h-full gap-[var(--layout-space-tight)]', className)}
       {...props}
       // 幾何常數設成元件內變數(--calendar-*,全部住 calendar-geometry.ts CALENDAR_GEOMETRY_STYLE)。
       // consumer 傳的 style 照併進來;這些名字只有 Calendar 自己讀(元件內變數,不是 token)。
       style={{ ...CALENDAR_GEOMETRY_STYLE, ...style }}
     >
-      {/* 工具列 = ChromeHeader(calendar.spec.md「工具列」【AI 推導】):常駐 chrome → B 家族固定高 48 / 56
-          (header-canonical.spec.md:26 / :68),裡面控件一律 sm(同檔 :73)。不傳底色:Calendar 根節點已是 bg-surface,
-          工具列坐在它上面 = 巢狀 chrome、透明(header-canonical.spec.md「6. Background ownership」巢狀那一列);
-          底線用 ChromeHeader 自畫的 border-b。2026-11-25 前是手刻的 div(內距撐高,實測 53 / 大密度 64,稽核 D17)。
+      {/* 工具列(calendar.spec.md「工具列」):在格子區的框外、一列 sm 控件(高 = sm 控件高,不另加上下內距)—— 與 DataTable 表格上方的工具列同一種
+          (layoutSpace.spec.md「標題塊」預設尺寸「表格上方的搜尋列 / 工具列 sm」);2026-11-27 前是框裡的 ChromeHeader(固定高 48 / 56 + 底線)。
+          左右內距:預設 0 → 第一顆鈕左緣 = 格子區左緣、「新事件」右緣 = 格子區右緣(同表格工具列對齊表格兩緣);貼邊擺法(flush)時格子區貼齊容器邊、
+          容器不給內距,工具列自己帶 loose,字對齊內容左右邊距(一段距離只有一個主人:容器 0、工具列 loose)。
           排法:左 =〔‹〕〔今天〕〔›〕+ 標題,右 =〔+ 新事件〕(action-bar.spec.md:109 標題在左、按鈕靠右;:121 primary 在業務層最右)。
-          導覽群到標題的距離 = ChromeHeader 子項的 gap-2(8);2026-11-25 前標題另帶 ml-2,合計 16【AI 推導】。 */}
-      <ChromeHeader>
+          子項間距 gap-2(8)= 原本 ChromeHeader 子項的 gap-2(utility-registry canonical_micro_geometry;calendar-geometry-invariant 只在帶 data-calendar-toolbar
+          的工具列與 <nav> 上放行,所以 className 寫成一個字串、貼邊的內距用 data-flush 開,不經 cn)。
+          元素用 div、不用 <header>:它不是 chrome 標頭了(header-canonical.spec.md B 家族已拿掉 Calendar 工具列),與 DataTable 上方的工具列同一種;
+          <header> 會被版面閘當成 chrome 標頭、把下一塊(格子區)當成要給內距的容器(layout-body-edges (c))。 */}
+      <div data-calendar-toolbar="" data-flush={flush || undefined} className="flex items-center gap-2 shrink-0 min-w-0 data-[flush]:px-[var(--layout-space-loose)]">
         {/* 月份導覽 landmark:‹ / 今天 / › 包成 <nav aria-label>(calendar.spec.md「A11y 預設」第一條);標題與「新事件」留在 nav 外。
             gap-2 = 按鈕群 8px(utility-registry canonical_micro_geometry;calendar-geometry-invariant 只在 <nav> 上放行) */}
         <nav className="flex items-center gap-2" aria-label={navAriaLabel}>
@@ -1360,16 +1377,21 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
         <Button variant="primary" size="sm" startIcon={Plus} onClick={onCreateEvent}>
           {createLabel}
         </Button>
-      </ChromeHeader>
+      </div>
 
-      {/* 月格陣(role="grid")= 星期列(第一個 row,不捲)+ 週列(在 ScrollArea 裡捲)。
+      {/* 格子區 = 月格陣(role="grid")= 星期列(第一個 row,不捲)+ 週列(在 ScrollArea 裡捲)。
+          外框只圍這一塊(calendar.spec.md「外殼」bordered;同 DataTable dataTableVariants:bg-surface rounded-md overflow-hidden + 預設 border border-divider);
+          拿掉時框與圓角一起拿掉,格線保留。邊緣標記 data-layout-region="bounded" 跟著框走(layoutSpace.spec.md:225「元件根部宣告自己的邊緣」——
+          有完整外框的是這一塊;根節點沒有標記、容器自判穿得過去,layoutSpace.css「最多穿過兩層沒有標記的包層」):放進 DialogBody / SheetBody 這類
+          會自己給上下內距的容器且是最後一塊時,容器底自動 = loose。`bordered={false}` 沒有外框 → 不標(標了就跟 DOM 不一致)。
           星期列 2026-11-25 前在格陣外、沒有任何角色(稽核 D14);依 calendar.spec.md「A11y 預設」它是格陣的第一個 row、每格 columnheader。
           sticky 表頭不採用:灰底 --muted 是半透明(semantic.css),捲過去的內容會從底下透出來 —— 所以星期列放在捲動區外。
           ARIA 的 grid > row 之間夾著 ScrollArea 的三層 div(Radix Root / Viewport / 內層):都沒有角色、沒有 aria 屬性、不可聚焦
           → 讀屏與 axe 都穿透它們(viewportTabIndex={null}:格陣是 composite,捲動包層不得多一個 Tab 停靠點,scroll-area.tsx 註解)。 */}
       <div
         ref={gridRef}
-        className="flex flex-col flex-1 min-h-0"
+        className={cn('flex flex-col flex-1 min-h-0 bg-surface overflow-hidden', bordered && 'rounded-md border border-divider')}
+        data-layout-region={bordered ? 'bounded' : undefined}
         role="grid"
         aria-label={labels.grid(monthTitle)}
         // 載入中(calendar.spec.md「狀態與邊界案例」;skeleton.spec.md:86 aria-busy 由容器 own)
@@ -1439,7 +1461,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                     className={cn(
                       'flex items-start justify-start p-[var(--calendar-gap)] text-body font-normal text-fg-secondary tabular-nums',
                       'border-r border-b border-divider',
-                      rowIdx === weekCount - 1 && 'border-b-0',
+                      bordered && rowIdx === weekCount - 1 && 'border-b-0',
                     )}
                   >
                     <span className={DATE_BOX_LAYOUT}>{week.number}</span>
@@ -1539,10 +1561,11 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                         // 回傳的內容比這一段寬 / 比一列高時裁在外層裡,不畫進隔壁格、不接走隔壁格的點擊)。2026-11-25 前是 overflow-hidden。
                         'flex flex-col gap-[var(--calendar-gap)] p-[var(--calendar-gap)] min-w-0 overflow-x-visible overflow-y-clip',
                         // 格線:每格右 / 下各一條;每一週最右那格不畫右線(每個 role=row 只裝自己那 7 格,last: 就是第 7 格);
-                        // 最後一週不畫下線 —— 根節點外框已經是那一條,兩條疊成 2px 雙線(稽核 D6)。
+                        // 最後一週不畫下線 —— 根節點外框已經是那一條,兩條疊成 2px 雙線(稽核 D6);`bordered={false}` 沒有外框,
+                        // 最後一週照畫底線收尾(同 DataTable「不加框時，最後一行保留底線自然收尾」)。
                         // 格子是 border-box,底線畫在格高裡面 → 格最小高把它算進去(calendar-geometry.ts CALENDAR_GRID_LINE_PX)。
                         'border-r border-b border-divider last:border-r-0',
-                        rowIdx === weekCount - 1 && 'border-b-0',
+                        bordered && rowIdx === weekCount - 1 && 'border-b-0',
                         // 非當月格**不加底色**【維持 U3】(calendar.spec.md「Cell 規則」非當月格條:與當月格可點性相同,
                         // `bg-muted` 這類「不可操作」的底留給真的不能操作的東西);非當月只靠日期數字的淡字區分,見下方日期鈕。
                         // 日期格滑過不變色【CELL-HOVER(定)】(calendar.spec.md「Cell 規則」滑過條;hit-area-canonical.md 滑過原則一-2

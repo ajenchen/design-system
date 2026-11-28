@@ -6,9 +6,11 @@
       "stories": [
         "design-system-components-agentpanel-展示--new-conversation"
       ],
-      "container": "div.flex-1.items-center.justify-center",
-      "reason": "新對話空白頁:空狀態在撐滿的包層裡垂直置中,不套規則 2 / 4 的上下距離(上下在不在可用範圍正中由 header-first-gap 的 centered 格驗)",
-      "source": "layoutSpace.spec.md 規則 2「適用範圍與量法三點」(3)(user 2026-11-14 在 A5 成品頁的留言 ②)"
+      "container": "[data-agent-panel-mode] header + div:has([data-empty])",
+      "reason": "新對話空白頁:空狀態在撐滿的那一區裡垂直置中,不套規則 2 / 4 的上下距離(上下在不在可用範圍正中由 header-first-gap 的 centered 格驗)。2026-11-28 起那一區本身是捲動區(ScrollArea fillY,裡面一層 min-h-full 置中;放不下整區捲動,同 DialogBody),標頭的下一塊從置中的包層 div.flex-1.items-center.justify-center 換成捲動區的外框,所以選擇器改指「AI 面板標頭的下一塊、裡面有 Empty」",
+      "source": "layoutSpace.spec.md 規則 2「適用範圍與量法三點」(3);empty.spec.md「垂直定位」有框那一列(放不下整區捲動)。userQuote 是 user 2026-11-14 在 A5 成品頁的留言 ② 原文節錄(貼在「新對話空白頁,改之前」那張圖,這一筆管的就是這一頁);2026-11-17 第一次登記時沒附原話",
+      "userQuote": "這種 result 或是 empty 就不是撐滿高度的元素，且當初定位就是把它放在正中間",
+      "quoteDate": "2026-11-14"
     },
     {
       "key": "fileviewer-viewport-row",
@@ -20,16 +22,16 @@
       "source": "layoutSpace.spec.md 規則 2「適用範圍與量法三點」(1);file-viewer.spec.md「Anatomy」;header-first-gap-invariant.mjs NOT_COVERED「FileViewer 工具列 → Viewport」"
     },
     {
-      "key": "appshell-full-page-state-centered",
+      "key": "appshell-full-page-state-unframed",
       "stories": [
         "design-system-components-appshell-展示--full-page-not-found",
         "design-system-components-appshell-展示--full-page-no-access"
       ],
       "container": "[data-app-shell-row]",
-      "reason": "整頁 404 / 403:主內容區只放一個置中的整頁狀態(Empty),不套規則 2 / 4 的上下距離(上下在不在主內容區正中、唯一的 h1、有動作由 header-first-gap 的 appshell-full-page-404 / -403 驗)。這兩則沒有本頁標頭,全域標頭的下一塊是整列(Menu + 主內容欄),所以登記整列",
-      "source": "empty.spec.md「整頁狀態」第 4 點;layoutSpace.spec.md 規則 2「適用範圍與量法三點」(3)。userQuote 是 user 在第六輪決策卡 C22 選的選項 A 的原文(意見欄空白)",
-      "userQuote": "A:不建元件;Empty 可用在整頁 + AppShell 範例,狀態置中",
-      "quoteDate": "2026-11-26"
+      "reason": "整頁 404 / 403:主內容區只放一個整頁狀態(Empty),照 empty.spec.md「垂直定位」無框那一列貼上方、上下 2 × bottom,不套規則 4 的 48(頂距 = 2 × bottom、唯一的 h1、有動作由 header-first-gap 的 appshell-full-page-404 / -403 驗,底 = 2 × bottom 由 header-content-sides 同兩格驗)。這兩則沒有本頁標頭,全域標頭的下一塊是整列(Menu + 主內容欄),整列不是主體容器(它的最後一個東西會量到側欄的群組),所以登記整列、不比底。2026-11-26 ~ 11-28 這一筆叫 appshell-full-page-state-centered(當時狀態在主內容區正中)",
+      "source": "empty.spec.md「垂直定位」無框那一列與「整頁狀態」第 4 點。userQuote 是 user 2026-11-28 在 0.1.0-beta.153 協調對話裡看過研究頁(https://claude.ai/artifact/WptDhHVVvqXnBDAs26mGaY)後選甲的原話(逐字節錄;甲 = 研究頁第 6 節「整頁貼上、有框置中」),取代第六輪決策卡 C22 選項 A 的「狀態置中」",
+      "userQuote": "我覺得是照你建議的甲，因為原本ds就這樣定義",
+      "quoteDate": "2026-11-28"
     },
     {
       "key": "dialog-empty-body-centered",
@@ -53,6 +55,55 @@
       "want": "bottom",
       "reason": "AgentPanel 對話區底部恆 48、不看最後一則是誰(不宣告 data-layout-body,不讓容器自判);設計規格「狀態行為」那則面板貼內容,照規則 4 第 4 列會是與頂部同值,所以要登記",
       "source": "agent-panel.spec.md「3. AgentConversation」(user 2026-09-02 原話只講常駐工具列在最後;「不看最後一則是誰」是【AI 推導 2026-11-14】)"
+    },
+    {
+      "key": "calendar-event-detail-bottom-tight",
+      "stories": [
+        "design-system-components-calendar-*"
+      ],
+      "container": "[data-calendar-event-detail] [data-popover-body]",
+      "want": "tight",
+      "reason": "Calendar 事件詳情的客製:標題列不畫底線、標題字底 → 第一欄 = loose(頂量到 loose),最後一欄 → 底 = tight(版面間距大檔 16),不是 hug 的「底 = 頂」;只寫在行事曆規格,不改 Popover / overlay-surface 通則",
+      "source": "calendar.spec.md「事件詳情浮層」內距;交接資料夾 notes/decisions/decide152-answers.md「留白草案第 2 輪」(T5 甲 16 = AI 建議,user 對沒留言的項目「我沒回應的就是沒有意見」)與「留白草案第 3 輪」(客製留在元件:「…如果要客製化的部分是很niche的，其實用不著推回主幹吧？」;標題 → 第一欄 loose:「詳情感覺可以照你建議」)",
+      "userQuote": "我沒回應的就是沒有意見",
+      "quoteDate": "2026-11-27"
+    },
+    {
+      "key": "calendar-flush-main-bottom-0",
+      "stories": [
+        "design-system-components-calendar-展示--narrow-window",
+        "design-system-components-calendar-展示--fill-main-area-borderless"
+      ],
+      "container": "main#app-shell-main",
+      "want": 0,
+      "reason": "行事曆貼邊擺法(flush + 不加框)住在 AppShell 主區:格子區左、右、下貼齊主區的邊,主區那三邊不給內距,底 = 0(最後一週照畫底線收尾);不是一般元素的「底 = 頂」。只登記這兩則行事曆頁,不改規則 4 通則",
+      "source": "calendar.spec.md「外殼」貼邊擺法(格子區左、右、下貼齊容器的邊);交接資料夾 notes/decisions/decide152-answers.md「2026-11-27 晚」:user(問句)「但行事曆確實在市面上很常看到延伸到容器邊界緊貼著左右下邊的，如果畫框那應該就是長得跟表格十分類似吧」,AI 照它做貼邊擺法;user 看過 cal2 預覽後對「貼邊時格子左右要不要內縮」回「1. 不要」。底 = 0 是 AI 依「左右下」貼齊推的【AI 推導】",
+      "userQuote": "但行事曆確實在市面上很常看到延伸到容器邊界緊貼著左右下邊的，如果畫框那應該就是長得跟表格十分類似吧",
+      "quoteDate": "2026-11-27"
+    },
+    {
+      "key": "coachmark-body-before-footer",
+      "stories": [
+        "*"
+      ],
+      "container": "[data-coachmark-content] [data-layout-body]",
+      "want": "tight",
+      "reason": "Coachmark 主體(PopoverBody)包在捲動區裡、footer 在捲動區外:畫面上後面接 footer,照規則 4 表第 1 列會是 48;user 2026-11-27 明說 Coachmark 不納入留白改動,維持與頂部同值(tight)。容器選擇器只對到 Coachmark 自己的內容區,所以 stories 不限(其他元件的範例裡出現的 Coachmark 也是同一個元件)",
+      "source": "layoutSpace.spec.md 規則 4 表後「2026-11-27 改版」例外;coachmark.spec.md:34(footer 不畫上線,主體底 12 + footer 上 12);決策紀錄 notes/decisions/decide152-answers.md「留白草案第 2 輪」",
+      "userQuote": "「Coachmark 導覽提示」這個不要動，目前它的設計就是特化過也確認過的",
+      "quoteDate": "2026-11-27"
+    },
+    {
+      "key": "agent-decision-card-body-before-footer",
+      "stories": [
+        "design-system-components-agentpanel-*"
+      ],
+      "container": "[role=\"group\"].rounded-b-none > [data-slot=\"surface-header\"] + div",
+      "want": 0,
+      "reason": "AI 面板決策卡:主體上下無內距,與 footer 之間只由 footer 的上內距給(標頭、footer 的線都拿掉);畫面上後面接 footer,照規則 4 表第 1 列會是 48。user 2026-11-27 明說決策卡是已定義好的版型、不要動,維持主體底 0",
+      "source": "agent-decision-card.spec.md:11;layoutSpace.spec.md 規則 4 表後「2026-11-27 改版」例外;決策紀錄 notes/decisions/decide152-answers.md「留白草案第 3 輪」(原話節錄,取不含省略號的前段)",
+      "userQuote": "AI 面板的決策卡不要給我動，那就是已經定義好確認版型的東西了",
+      "quoteDate": "2026-11-27"
     }
   ],
   "pending": [],

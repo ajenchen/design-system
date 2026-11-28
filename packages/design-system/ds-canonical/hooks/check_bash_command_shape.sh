@@ -13,7 +13,14 @@
 #
 # (2) 提示 emulate sh(不擋,只走 governance-context —— 模型看得到的管道)
 #   只用一個條件(process-audit 第 430 行):指令裡出現 `$`、`*`,或有以 `=` 開頭的字,而第一行不是 `emulate sh`。
-#   不判斷變數內容(那會大量誤擋)。zsh 當 sh 寫的三種形狀見 AGENTS.md「失敗記憶索引」工具靜默陷阱那列。
+#   不判斷變數內容(那會大量誤擋)。第一行把「加引號的 heredoc」交給 bash / sh(`bash -e -s <<'EOS'`)也算已處理:
+#   內容整段由 bash 讀,zsh 不展開(2026-11-28 加,否則 (3) 建議的寫法每次都被 (2) 誤提示)。zsh 當 sh 寫的三種形狀見 AGENTS.md「失敗記憶索引」工具靜默陷阱那列。
+#
+# (3) 提示 set -e(不擋,同一個 governance-context 管道)
+#   Bash 工具裡 `set -e` 實測不生效(`emulate sh; set -e; false; echo after` 照印 after,2026-11-28):失敗後的步驟照跑,
+#   曾因此推出 backlog --check 紅的 commit(2474b0f0),同日又在本地 commit 一次(56661b73)。條件:有一行 `set -e…` /
+#   `set -o errexit`,而且整串沒有交給 bash / sh 子程序(子程序裡 set -e 有效)。只要指令裡任何地方有 `bash -…` / `sh -…`
+#   就當成交給子程序而安靜 —— 子程序外另寫的 set -e 會漏提示(只是提示、不擋,照實列)。
 #
 # 已知範圍:deny 清單本身只能表達 glob;`git checkout README.md`(不帶 `--`)跟切分支同形,兩邊都分不出 → 放行
 #(判定表 P16 照實列)。不收 Read / Edit 等其他工具(deny 的 Read(...) 規則由 provider 自己比)。
@@ -75,8 +82,21 @@ if [ "$SHAPE" = 0 ] && [[ "$COMMAND" =~ (^|[[:space:]])= ]]; then SHAPE=1; fi
 FIRST_LINE="${COMMAND%%$'\n'*}"
 EMULATED=0
 if [[ "$FIRST_LINE" =~ ^[[:space:]]*emulate[[:space:]]+sh([[:space:]]*$|[[:space:]]*\;|[[:space:]]*\&\&) ]]; then EMULATED=1; fi
+BASH_HEREDOC_RE="^[[:space:]]*(bash|sh)[[:space:]][^<]*<<-?[[:space:]]*['\"]"
+if [[ "$FIRST_LINE" =~ $BASH_HEREDOC_RE ]]; then EMULATED=1; fi
 if [ "$SHAPE" = 1 ] && [ "$EMULATED" = 0 ]; then
   HINT="提示(emulate sh):這則 Bash 指令有 \`\$\`、\`*\` 或以 \`=\` 開頭的字,第一行卻不是 \`emulate sh\`。Bash 工具底下是 zsh:\`\$V\` 不拆字、萬用字元沒匹配整行不跑、\`=字\` 會被當成指令路徑展開(\`[ a == b ]\` 直接報錯)。第一行加 \`emulate sh\` 就照 sh 的規則跑。"
+  NOTICES="${NOTICES:+$NOTICES
+
+}$HINT"
+fi
+
+# ── (3) set -e 提示 ─────────────────────────────────────────────────────────
+NL=$'\n'
+SETE_RE="(^|[${NL};&|])[[:space:]]*set[[:space:]]+(-[[:alpha:]]*e|-o[[:space:]]+errexit)"
+SUBSHELL_RE="(^|[[:space:]${NL};&|(])(bash|sh)[[:space:]]+-"
+if [[ "$COMMAND" =~ $SETE_RE ]] && ! [[ "$COMMAND" =~ $SUBSHELL_RE ]]; then
+  HINT="提示(set -e):Bash 工具裡 \`set -e\` 不生效(實測 \`set -e; false; echo\` 照印),失敗後的步驟照跑 —— commit、push 也照跑。要中途失敗就停,把整串交給 bash 子程序:第一行 \`bash -e -o pipefail -s <<'EOS'\`、最後一行 \`EOS\`(子程序裡 set -e 有效)。"
   NOTICES="${NOTICES:+$NOTICES
 
 }$HINT"

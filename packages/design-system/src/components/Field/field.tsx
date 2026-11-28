@@ -1,8 +1,8 @@
 // code-quality-allow: file-size — foundational composite(Field + FieldLabel + FieldDescription + FieldError + context + 8 layout variants),拆檔會讓 Field 家族互相 import 循環
 import * as React from 'react'
-import { Info as InfoIcon } from 'lucide-react'
+import { InfoTooltip } from '@/design-system/components/InfoTooltip/info-tooltip'
 import { cn } from '@/lib/utils'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/design-system/components/Tooltip/tooltip'
+// (本行原是 Tooltip 的 import;2026-11-27 標籤旁的 ⓘ 改用公開元件 InfoTooltip,這一行保留成註解,別處以行號引用本檔不位移)
 
 /**
  * Field — 表單欄位佈局容器（shadcn Field 風格:https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/field.tsx#L81 ）
@@ -513,23 +513,10 @@ const FieldLabel = React.forwardRef<HTMLLabelElement, FieldLabelProps>(
             )}
             {children}
           </TextTag>
-          {showInfo && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  aria-label={info}
-                  // 滑過深一階 = 告訴你「這裡有說明可看」(hit-area-canonical.md 三-1)。
-                  // 游標明寫 cursor-default:ⓘ 點下去不做事(Radix Tooltip 點擊只會收起說明),
-                  // 不能用手形;base.css 讓所有 <button> 預設手形,只刪 cursor-pointer 蓋不掉(2026-09-26)
-                  className="inline-flex items-center text-fg-muted hover:text-fg-secondary bg-transparent border-0 p-0 cursor-default"  /* 2026-09-07 刪本地 outline-* — 與全域 base.css:61-64 逐字等價,本區塊無 outline-none */
-                >
-                  <InfoIcon size={16} aria-hidden />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>{info}</TooltipContent>
-            </Tooltip>
-          )}
+          {/* ⓘ = 公開元件 InfoTooltip(長相、游標、讀屏名稱的理由都住 info-tooltip.tsx / info-tooltip.spec.md)。
+              size="md" 明寫:標籤字級固定 text-body、不隨欄位尺寸變(field-context.ts FIELD_TEXT_CLASS),
+              所以 ⓘ 固定 16,不跟著外面可能有的列尺寸走 */}
+          {showInfo && info && <InfoTooltip info={info} size="md" />}
         </span>
       </RootTag>
     )
@@ -610,9 +597,11 @@ export interface FieldGroupProps extends React.HTMLAttributes<HTMLDivElement> {
   labelWidth?: number | string
 }
 
-// 欄位垂直間距 = `--layout-space-loose`,**不開放 per-instance 選檔**(2026-09-12 user 拍板)。
+// 欄位垂直間距 = `--layout-space-loose`,**不開放 per-instance 選檔**(2026-09-12 AI 建議、user 採納;出處住 field-group.spec.md)。
+// 閱讀情境(範圍裡有就地編輯)= `tight`:由 field.css 依範圍自動判、設在 FieldGroup 自己身上的 --scope-row-gap,仍沒有逐一選檔的參數
+//(2026-11-27 user 定 T2 甲;規則住 field.spec.md「閱讀情境」效果 ④)。
 //
-// 這是回歸 DS 自己早就寫下的規則:`layoutSpace.spec.md:77` 逐字把
+// 這是回歸 DS 自己早就寫下的規則:`layoutSpace.spec.md:126` 逐字把
 // 「跨範疇 + parallel / independent」的例子列為「**form fields stack(parallel inputs)**」→ 規則 3 = **loose**。
 // 表單間距是**系統級**設定,要調就整個 density 一起調(md 16px / lg 24px),不是每個表單各自挑。
 //
@@ -662,7 +651,7 @@ const FieldGroup = React.forwardRef<HTMLDivElement, FieldGroupProps>(
       <FieldGroupContext.Provider value={groupCtxValue}>
         <div
           ref={ref}
-          className={cn('flex flex-col min-w-0 gap-[var(--layout-space-loose)]', className)}
+          className={cn('flex flex-col min-w-0 gap-[var(--scope-row-gap,var(--layout-space-loose))]', className)}
           data-field-group=""
           data-field-scope={parent.scope ? undefined : ''}
           {...props}

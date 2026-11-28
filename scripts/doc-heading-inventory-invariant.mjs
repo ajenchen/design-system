@@ -2,14 +2,14 @@
 /**
  * @gate-contract
  *   保證: 說明頁(設計原則頁、展示頁、設計規格頁)**每一個**標題區 —— 建置裡全部 story 逐則開、不抽樣 —— 「標題底下幾塊」的判定:
- *         A1 一般密度(md)與大密度(lg)判得一樣。依據 packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md:133
- *            「『一格版面間距』的門檻是固定值、不跟密度走」與 :143「兩塊以上 → loose(md、lg 相同)」;:126 記 user 2026-11-12 採的選項頁上寫
- *            「兩種密度結果一致」(user 逐字見同一行 :126)。「幾塊怎麼數」本身是【AI 推導】(:127)—— 2026-11-17 起它是文件頁對規格三題(:121–124,
+ *         A1 一般密度(md)與大密度(lg)判得一樣。依據 packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md:182
+ *            「『一格版面間距』的門檻是固定值、不跟密度走」與 :192「兩塊以上 → loose(md、lg 相同)」;:175 記 user 2026-11-12 採的選項頁上寫
+ *            「兩種密度結果一致」(user 逐字見同一行 :175)。「幾塊怎麼數」本身是【AI 推導】(:176)—— 2026-11-17 起它是文件頁對規格三題(:170–173,
  *            user 對 r12 第 1 題選乙)的自動近似、不是定義 —— 只住在產品 tutorial-page.tsx `headingContentOf`,本閘不抄。
  *         A2 頁面第一次畫出來時標的 = 版面穩定後產品自己再判一次的。【AI 推導】—— 規格沒有逐字寫這句;依據是產品每次 render 後重判的設計
  *            (stories-helpers/examples/tutorial-page.tsx `useHeadingContent` 的註解「每次 render 後…重判」):畫面上的距離不會因為任何一次重畫而跳動。
  *         A3 判定 → 距離:每個看得到、後面有內容的標題區,重判後「標題區底 → 內容頂」= 一塊 / 段落 tight、兩塊以上 loose(容許 0.6px;
- *            layoutSpace.spec.md:121–124 與邊角表 :134–144)。**A3 2026-11-14 起計入紅綠**(檔內 GAP_CHECK_COUNTS = true):之前不計入,因為 Pagination 設計規格三則
+ *            layoutSpace.spec.md:170–173 與邊角表 :183–193)。**A3 2026-11-14 起計入紅綠**(檔內 GAP_CHECK_COUNTS = true):之前不計入,因為 Pagination 設計規格三則
  *            會紅;那三則與 tutorial-page.tsx 的數法同一批修好、重建後全站 --enforce-gap 0 筆,才打開。改回 false 時照樣量、照樣印(標「未計入紅綠」)。
  *         量法(scripts/lib/doc-heading-zones.mjs,section-gap 共用):每則 story 開 md 取「首次」標記 → 把標記全部打亂成 pending、送 Storybook
  *         `forceReRender`,等產品自己把每個標記寫回(頁面上沒有 pending)再等版面靜止 → 「重判」;有標題區的再開 lg 做同一件事。

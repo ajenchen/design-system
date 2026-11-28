@@ -219,7 +219,8 @@ export function scan(files) {
   // 於是每一顆都必須另有自己的區分指示。
   // 錨:DatePicker range 的起訖兩顆(2026-09-08)。本元件自己早有一條主色底線
   // (對照 Ant Design RangePicker 的 -active-bar),但被 `open &&` 擋住,
-  // 面板關著用 Tab 移動時兩顆長得一模一樣。
+  // 面板關著用 Tab 移動時兩顆長得一模一樣。2026-11-27 起兩顆各自畫焦點框(focus-ring-inset)、
+  // 不再抑制,已不經過這段;規則本身照舊(focus-canonical.md「一個承擔者只能服務一個 tab stop」)。
   const groups = new Map()
   for (const c of shared) groups.set(c.key, [...(groups.get(c.key) ?? []), c])
   for (const [, members] of groups) {

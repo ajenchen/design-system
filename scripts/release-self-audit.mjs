@@ -31,13 +31,18 @@
  *         (交接 process-audit 根因 9 第 1 點;對照組在兩支測試裡)。
  *   (b) 未解 = 0:由紀錄裡的逐項清單**重算**,不信紀錄自己寫的數字。
  *   (c) 由本腳本照可驗證來源產生:紀錄記下產生它的腳本 blob(換版即失效)、整份內容的 sha256(手改即失效),
- *       必備的三個來源一個都不能少,每個「沒問題」都要帶得出機器形狀的證據(例:CI 那一項要有 PR head 與必過檢查清單)。
+ *       必備的四個來源(2026-11-28 加 version-bump)一個都不能少,每個「沒問題」都要帶得出機器形狀的證據
+ *       (例:CI 那一項要有 PR head 與必過檢查清單;版號那一項要有版號、release 讀回、兩邊的產品指紋,驗證端照證據重判一次)。
  *
  * ── 清單來源(全部是機器讀回,沒有任何一項是 AI 寫的一句話)──
  *   git-worktree     `git status --porcelain`:有沒提交 / 沒追蹤的檔 = 未解(做了沒交代,或亂做的殘留)。
  *   preview-binding  upstream 分支的產品指紋 = HEAD 的產品指紋:不相等 = user 在預覽上看到的不是這一份。
  *   pr-checks        release-orchestrator.mjs 的 collectLiveObservation + buildFiveStepStatus(= `release:status` 同一份讀回):
  *                    PR head 必須是這個 HEAD、必過檢查非空且全綠。讀不到(沒網路 / 沒憑證)= 未解,不是沒問題(M37)。
+ *   version-bump     release-orchestrator.mjs 的 readVersionBump / classifyVersionBump(pr-checks 合併前判版號的同一支,2026-11-28 R100):
+ *                    這個版號已經發布過、而 HEAD 的產品指紋與那個 tag 不同 = 版號沒升 = 未解;只改治理(指紋相同)不算;
+ *                    讀不到 release 或 tag 的 commit = 未解(儀器失效)。錨:beta.152 三項全過、照規則要了同意,
+ *                    合併後 publish 才判 stale-version,多開 PR #178 升版號。
  *   product-visible-changes(只列、不計入未解):merge-base 以來改到的預覽看得見的檔,讓 AI 把清單照實擺給 user 看。
  * 交接檔 OPEN-ITEMS、workflow journal 的 notDone 之類 AI 自己維護的待辦**不是**來源:它們不在 repo、跨不了 provider,
  * 而且 AI 隨手就能改,拿它當來源就是自我證明。帳本「未指派 = 0」是編排層的前置條件,不在這支(process-audit 根因 9 修法)。
@@ -64,7 +69,8 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { classifyConsentPrompt, isReleaseRequestPhrase, loadConsentPolicy } from './lib/release-consent-language.mjs'
 import {
-  PRODUCT_VISIBLE, buildFiveStepStatus, collectLiveObservation, loadReleaseWorkflow, productContentDigest,
+  PRODUCT_VISIBLE, buildFiveStepStatus, classifyVersionBump, collectLiveObservation, loadReleaseWorkflow, packageVersion,
+  productContentDigest, readVersionBump, versionBumpMessage,
 } from './release-orchestrator.mjs'
 
 const SELF_PATH = fileURLToPath(import.meta.url)
@@ -74,10 +80,10 @@ export const SELF_AUDIT_NAME = '發版前機器可讀項目自我稽核'
 export const SELF_AUDIT_SCHEMA_VERSION = 1
 export const SELF_AUDIT_KIND = 'release-self-audit'
 export const SELF_AUDIT_GENERATOR = 'scripts/release-self-audit.mjs'
-export const REQUIRED_SOURCES = Object.freeze(['git-worktree', 'preview-binding', 'pr-checks'])
+export const REQUIRED_SOURCES = Object.freeze(['git-worktree', 'preview-binding', 'pr-checks', 'version-bump'])
 export const INFO_SOURCES = Object.freeze(['product-visible-changes'])
 /** 量的是「那一刻的 HEAD」的項目:record.headSha 必須等於現在的 HEAD(產品指紋只給 preview-binding)。 */
-export const HEAD_BOUND_SOURCES = Object.freeze(['git-worktree', 'pr-checks'])
+export const HEAD_BOUND_SOURCES = Object.freeze(['git-worktree', 'pr-checks', 'version-bump'])
 export const BLOCK_MARKER = 'RELEASE-SELF-AUDIT BLOCKER'
 const MAX_RECORD_BYTES = 1024 * 1024
 const MAX_LISTED_PATHS = 200
@@ -408,6 +414,14 @@ export function readPullRequestChecksLive() {
   }
 }
 
+/** version-bump 的正式讀回:與 pr-checks 合併前判版號同一支(release-orchestrator.mjs readVersionBump)。 */
+export function readVersionBumpLive({ headSha }) {
+  const workflow = loadReleaseWorkflow()
+  return readVersionBump({ repository: workflow.automation.repository, version: packageVersion(workflow), headSha })
+}
+
+const VERSION_BUMP_EVIDENCE_KEYS = Object.freeze(['version', 'tag', 'publishedState', 'tagCommitSha', 'headDigest', 'tagDigest', 'reason'])
+
 function defaultBranchName() {
   try { return loadReleaseWorkflow().automation?.defaultBranch || 'main' } catch { return 'main' }
 }
@@ -428,7 +442,9 @@ export function currentHeadSha({ root = ROOT } = {}) {
  * 依可驗證來源收集逐項清單並組出紀錄(不寫檔)。readPullRequestChecks 可注入:測試用合成讀回,
  * 正式一律走 readPullRequestChecksLive。
  */
-export function collectSelfAudit({ readPullRequestChecks = readPullRequestChecksLive, now = () => new Date() } = {}) {
+export function collectSelfAudit({
+  readPullRequestChecks = readPullRequestChecksLive, readVersionBump: readVersionBumpFor = readVersionBumpLive, now = () => new Date(),
+} = {}) {
   // 產品指紋一律由 release-orchestrator.mjs 在它自己的 repo 根算(同一份算法),所以這裡也只看本 repo 根。
   const root = ROOT
   const headSha = currentHeadSha({ root })
@@ -505,6 +521,28 @@ export function collectSelfAudit({ readPullRequestChecks = readPullRequestChecks
   }
   items.push(prItem)
 
+  // version-bump(量的是這個 HEAD:版號在 package.json、指紋在 HEAD;判法與 pr-checks 合併前那一格同一支)
+  let versionItem
+  try {
+    const verdict = readVersionBumpFor({ headSha })
+    const evidence = { headSha }
+    for (const key of VERSION_BUMP_EVIDENCE_KEYS) evidence[key] = verdict?.[key] ?? null
+    versionItem = {
+      source: 'version-bump',
+      status: verdict?.status === 'ok' ? 'ok' : 'unresolved',
+      detail: versionBumpMessage(verdict ?? {}),
+      evidence,
+    }
+  } catch (error) {
+    versionItem = {
+      source: 'version-bump',
+      status: 'unresolved',
+      detail: `讀不到版號檢查(${String(error?.message || error).split('\n')[0].slice(0, 400)})—— 讀不到不等於沒問題`,
+      evidence: { headSha, ...Object.fromEntries(VERSION_BUMP_EVIDENCE_KEYS.map((key) => [key, null])) },
+    }
+  }
+  items.push(versionItem)
+
   // product-visible-changes(info)
   const mainRef = `origin/${defaultBranchName()}`
   const base = git(['merge-base', 'HEAD', mainRef], { root })
@@ -560,6 +598,15 @@ function okEvidenceProblem(item, record) {
     return evidence.status === 'complete' && evidence.pullRequest?.headRefOid === record.headSha
       && Array.isArray(evidence.requiredChecks) && evidence.requiredChecks.length > 0
       ? null : '標 ok 但沒有「PR head = 紀錄的 HEAD、狀態 complete、必過檢查非空」這組讀回'
+  }
+  if (item.source === 'version-bump') {
+    // 照證據重判一次(同一支 classifyVersionBump):手把 not-bumped 改成 ok、或拿別份指紋的證據都過不了
+    const again = classifyVersionBump(evidence)
+    if (again.status !== 'ok' || again.reason !== evidence.reason) return '標 ok 但照證據重判不是 ok(版號沒升,或讀不到)'
+    if (evidence.publishedState === true && evidence.headDigest !== record.productDigest) {
+      return '標 ok 但證據裡 HEAD 的產品指紋不是紀錄的產品指紋'
+    }
+    return null
   }
   return null
 }

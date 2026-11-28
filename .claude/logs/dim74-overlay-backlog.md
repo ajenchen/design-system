@@ -1,5 +1,7 @@
 # Dim 74 overlay-open 存量 backlog(2026-07-16 DA3 A.3 重掃;列帳不改)
 
+> **2026-11-28**:本檔只留 07-16 的重掃紀錄。a3330afe 重查後仍只有觸發點、沒有打開狀態的 7 檔已搬到待辦正本 `governance/backlog/items.json` 的 BL-026(其餘 5 檔已補打開途徑);待辦只住那裡。
+
 **判準(加廣版,取代 hook 舊窄 regex)**:檔內任一 `open={<任何值/變數>}` / bare `open` JSX attr / `defaultOpen` / `play()` / `useState(true)` 皆算「有 open 機制」→ 不列帳。**真違規 = 檔內有真實 `<XxxTrigger>` JSX 使用 + 全檔零 open 途徑 + 無 `@overlay-open-skip` escape**(M15:overlay content 必須 visual-audit coverable)。
 
 **方法**:全掃 `packages/design-system/src/**/*.stories.tsx`(64 檔含 overlay trigger 字樣 → 37 檔真實 JSX 使用)→ 逐檔驗 mechanism;prose 誤匹配(props 表 / 註解提及 trigger 或 open)逐檔人工排除。

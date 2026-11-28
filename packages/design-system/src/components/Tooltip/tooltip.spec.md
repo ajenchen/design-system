@@ -103,7 +103,7 @@ Tooltip 靠觸發點收到指標事件才出現;原生 `disabled` 的元素靠�
 
 - **按鈕**:改用 `aria-disabled`,保留指標事件讓 Tooltip 能出現 → `../Button/button.spec.md`「狀態疊加」表的 `aria-disabled` 列
 - **欄位**:Tooltip 包住整個 Field(外層 `<div>` 不是停用元素)→ `../Field/field-controls.spec.md`「disabled 的停用原因」
-- **選單項等其他元件**:停用時怎麼說明還沒定案(產品 canary 回報 C18 / C20,待 user 決定),定案前不在本規格寫做法
+- **選單項等其他元件**:停用時同樣要說明原因(與按鈕、欄位同一套設計語言;user 2026-11-28 原話「若是變成 disable 狀態按照我們ds的一致設計語言本來就建議要有說明吧？」,問句、協調者確認合理後定案);選單項用 Tooltip 說明、不把原因寫在項目裡(user 2026-11-28 原話「「有些設計是把原因直接寫在選項裡，不用 tooltip。」盡量不要這樣做？如果原因很長沒辦法完整顯示或是得壓縮其他選項的空間？」,問句、協調者同意);Tooltip 出在選項側邊、不蓋住其他選項(user 2026-11-28 原話「盡量不要蓋住其他選項」);其餘配套(鍵盤停得到、讀屏、觸控、長原因)照研究落地時寫進本段(BL-003)。產品還沒做的動作(產品 canary 回報 C18 / C20)不改成停用,沒反應就先沒反應(user 2026-11-26 原話「我們應該不用特別處理吧？」)
 
 ## 禁止事項
 
@@ -139,6 +139,8 @@ Tooltip 是**單一職責 hover 提示 primitive**(一句話補充),刻意無變
 
 **ARIA / Pattern**:繼承 Radix `tooltip` primitive a11y 預設(role / aria-* / 鍵盤導覽)。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/tooltip#accessibility)。
 
+**說明跟觸發點的讀屏名稱同字時不掛描述**(2026-11-28):提示開著時,Radix 一律替觸發點掛 `aria-describedby` 指向提示(本 repo 鎖的 1.2.8:<https://unpkg.com/@radix-ui/react-tooltip@1.2.8/dist/index.mjs> `TooltipTrigger`);圖示鈕(`aria-label` = 提示字)、`InfoTooltip`(讀屏名稱 = 說明)這類觸發點,讀屏會念完名稱再把同一句當描述念一次。**規則**:提示給讀屏的那一份字與觸發點的讀屏名稱同字 → 觸發點不掛 `aria-describedby`;不同字(截斷字的全文 vs 欄位名稱、有補充的說明)照掛;consumer 自己傳的 `aria-describedby` 一律照留。「同字」= 兩邊都把連續空白(含換行、不換行空白、全形空白)併成一個半形空白、去掉頭尾後逐字相等(大小寫、標點不同算不同字);讀屏名稱照 accname 的先後取 `aria-labelledby` → `aria-label` → 按鈕 / 連結等「名稱取自內容」角色自己的文字(略過 `aria-hidden` 與沒畫出來的子孫)→ `title`,沒有角色的 `<span>` / `<div>` 不算有名稱。依據:APG 把提示定為觸發點的描述 ——「The element that triggers the tooltip references the tooltip element with aria-describedby.」(<https://www.w3.org/WAI/ARIA/apg/patterns/tooltip/>);HTML 原生 `title` 用來當名稱就不再當描述 ——「Otherwise, use the flat string of the `title` attribute if it was not used as the accessible name for the element.」(HTML-AAM「Accessible Description Computation」,<https://www.w3.org/TR/html-aam-1.0/#accdesc-computation>);MUI Tooltip 同一句話只擔一個角色 ——「By default, the tooltip only labels its child element.」「If you want the tooltip to act as an accessible description, you can pass the `describeChild` prop.」(<https://mui.com/material-ui/react-tooltip/>)。實作:`tooltip.tsx`「說明跟觸發點的讀屏名稱同字時不掛描述」;機械閘:`scripts/overlay-story-contract-invariant.mjs` R26。
+
 **Keyboard 行為**:
 
 - Tab — focus trigger 時顯示
@@ -159,6 +161,7 @@ Tooltip 是**單一職責 hover 提示 primitive**(一句話補充),刻意無變
 - `date-picker.spec.md`
 - `dialog.spec.md`
 - `hover-card.spec.md`
+- `info-tooltip.spec.md`
 - `inline-edit.spec.md`
 - `item-anatomy.spec.md`
 - `link-input.spec.md`

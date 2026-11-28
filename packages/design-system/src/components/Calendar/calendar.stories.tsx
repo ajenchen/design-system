@@ -1,4 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
+// @story-baseline: packages/design-system/src/components/AppShell/app-shell.stories.tsx#PrimarySidebar (AppShell 完整佈局:AcmeSidebar + PageHeader + Main;「填滿主畫面」「窄視窗」的行事曆頁)
+// @story-baseline: packages/design-system/src/components/AppShell/app-shell.stories.tsx#AgentOverlay (模擬瀏覽器裡的窄視窗:FourRegionShell frameWidth 的接法)
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
@@ -6,8 +8,10 @@ import { Calendar, type CalendarEvent, type CalendarLabels } from './calendar'
 import { CalendarDemo } from './_calendar-demo'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { Button } from '@/design-system/components/Button/button'
-import { DataTable, type DataTableColumnDef } from '@/design-system/components/DataTable/data-table'
-import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging
+import { AppShell } from '@/design-system/components/AppShell/app-shell'
+import { AcmeSidebar, PageHeader, navLabel } from '@/design-system/components/AppShell/_demo-helpers'
+import { SidebarProvider } from '@/design-system/components/Sidebar/sidebar'
+import { SimulatedBrowser } from '@/design-system/stories-helpers/scene/simulated-browser'
 
 const meta: Meta<typeof Calendar> = {
   title: 'Design System/Components/Calendar/展示',
@@ -343,36 +347,63 @@ export const LoadingWhileSwitchingMonth: Story = {
   ),
 }
 
-// 分割畫面:左邊是這次改版的工作項目(DataTable,同 rating.stories.tsx「商品列表平均分」的精簡表格),右側欄是同一份工作的月曆
-interface ReleaseTask { id: string; title: string; owner: string; due: string }
-const releaseTasks: ReleaseTask[] = [
-  { id: 't1', title: '結帳頁改版設計定稿', owner: '黃雅婷', due: '7月10日' },
-  { id: 't2', title: '金流串接測試', owner: '張家豪', due: '7月17日' },
-  { id: 't3', title: '客服常見問答更新', owner: '陳怡君', due: '7月22日' },
-  { id: 't4', title: '結帳頁改版上線', owner: '王小明', due: '7月28日' },
-]
-const releaseTaskColumns: DataTableColumnDef<ReleaseTask>[] = [
-  { accessorKey: 'title', header: '工作項目', meta: { width: 240 } },
-  { accessorKey: 'owner', header: '負責人', meta: { width: 120 } },
-  { accessorKey: 'due', header: '截止日', meta: { width: 120 } },
-]
+// ── 行事曆頁:月曆佔滿主區(calendar.spec.md「何時用」放在哪裡)──────────────────────
+// 2026-11-27 前「分割畫面側欄(窄寬)」把同一份工作的表格與月曆左右並排、月曆擠在 400 寬的側欄;user(逐字,問句)
+// 「你目前把同一個data source的不同 view 左右放反而超奇怪的吧？感覺沒有看過這樣的設計？」「…所以其實這個行事曆非常多數的情況根本不會放在側邊欄內？反而佔滿整個畫面的情況更多？」
+// (交接資料夾 notes/decisions/decide152-answers.md「2026-11-27 晚」)→ 改成住在 AppShell 主區的行事曆頁;窄寬示範改成同一種頁在較窄的瀏覽器視窗。
+// 骨架照 AppShell 展示「主側欄佈局」(AcmeSidebar / PageHeader / navLabel 同一份;側欄選中「Calendar」,標頭字 = 選中項的字);
+// `frameWidth` = 放進模擬瀏覽器、畫布寬 = 這個瀏覽器視窗的寬(同 AppShell 展示 FourRegionShell:SidebarProvider 取消 min-h-svh、AppShell 撐滿畫布、
+// Menu 浮層與「新增事件」對話框傳送進畫布)。
+// Main 最小寬 360 = 示範產品的值【AI 推導】:這個產品允許視窗窄到跟別的視窗並排(「窄視窗」那一則的 440),
+// Main 最小寬 + 細列 48 ≤ 440 才不出水平捲軸(app-shell.spec.md「版面規則」§8 消費者指引)。
+const CALENDAR_PAGE_MAIN_MIN_WIDTH = 360
+function CalendarPage({ frameWidth, children }: { frameWidth?: number; children: (portalContainer: HTMLElement | null) => React.ReactNode }) {
+  const [activeId, setActiveId] = React.useState<string>('calendar')
+  const [canvas, setCanvas] = React.useState<HTMLDivElement | null>(null)
+  const shell = (
+    <SidebarProvider activeId={activeId} onActiveChange={setActiveId} style={frameWidth ? { minHeight: 'auto', height: '100%' } : undefined}>
+      <AppShell
+        layout="primary-sidebar"
+        mainMinWidth={CALENDAR_PAGE_MAIN_MIN_WIDTH}
+        className={frameWidth ? 'h-full' : undefined}
+        portalContainer={frameWidth ? canvas : undefined}
+        sidebar={<AcmeSidebar />}
+        header={<PageHeader title={navLabel(activeId)} />}
+      >
+        {/* 主區只給上方內距:左右下由月曆貼齊(貼邊擺法),工具列自己帶左右 loose —— 一段距離只有一個主人(calendar.spec.md「外殼」貼邊擺法) */}
+        <div className="h-full pt-[var(--layout-space-loose)]">{children(frameWidth ? canvas : null)}</div>
+      </AppShell>
+    </SidebarProvider>
+  )
+  if (!frameWidth) return shell
+  return (
+    <div className="flex h-dvh flex-col p-[var(--layout-space-loose)]">
+      {/* 畫布左右各 1px 邊框:外框寬 = frameWidth + 2,畫布(= 這個瀏覽器視窗)剛好 frameWidth */}
+      <div className="flex min-h-0 flex-1 flex-col" style={{ width: frameWidth + 2 }}>
+        <SimulatedBrowser url="/calendar" height="fill" canvasRef={setCanvas}>
+          {shell}
+        </SimulatedBrowser>
+      </div>
+    </div>
+  )
+}
 
 /**
- * 分割畫面側欄 — 窄寬度
- * 專案頁左邊是工作項目、右邊側欄放同一份工作的月曆;側欄窄,欄寬不到 60,月曆只縮內容、不換版面。
+ * 窄視窗(分割畫面)— 同一種行事曆頁,瀏覽器視窗拉窄到 440、跟別的視窗並排
+ * 月曆照樣佔滿主區;欄寬不到 60,月曆只縮內容、不換版面。
  */
-export const SidePanelNarrow: Story = {
-  name: '分割畫面側欄(窄寬)',
+export const NarrowWindow: Story = {
+  name: '窄視窗(分割畫面)',
   parameters: {
     docs: {
       description: {
         story:
-          '容器變窄時只縮內容、不換版面(桌機 RWD):欄寬 ≤ 60 時星期縮成一個字(「日」「一」)、每月 1 號只顯示「1」、有時段的事件拿掉開始時間(只留色條與標題,例:7/27 的上線前審查);斷點看的是月曆自己的欄寬,不是視窗寬。讀屏名稱不受影響(仍念完整日期與事件的開始時間)。',
+          '專案的行事曆頁,瀏覽器視窗拉窄到 440、跟會議記錄並排(分割畫面):左側 Menu 收成細列,月曆照樣佔滿主區、貼邊不加框。容器變窄時只縮內容、不換版面(桌機 RWD):欄寬 ≤ 60 時星期縮成一個字(「日」「一」)、每月 1 號只顯示「1」、有時段的事件拿掉開始時間(只留色條與標題,例:7/27 的上線前審查);斷點看的是月曆自己的欄寬,不是視窗寬。讀屏名稱不受影響(仍念完整日期與事件的開始時間)。',
       },
     },
   },
   render: () => {
-    // 工作項目的截止日(全天,end 不含 → 隔天;與左邊表格的截止日同一天),加上線前一天的審查會議(有時段)
+    // 結帳頁改版的里程碑(全天,end 不含 → 隔天),加上線前一天的審查會議(有時段)
     const events: CalendarEvent[] = [
       { id: 'n1', title: '設計定稿', start: `${thisMonth}-10`, end: `${thisMonth}-11`, color: 'purple', allDay: true },
       { id: 'n2', title: '金流測試', start: `${thisMonth}-17`, end: `${thisMonth}-18`, color: 'blue', allDay: true },
@@ -380,16 +411,44 @@ export const SidePanelNarrow: Story = {
       { id: 'n5', title: '上線前審查', start: `${thisMonth}-27T14:00`, end: `${thisMonth}-27T15:00`, color: 'red' },
       { id: 'n4', title: '改版上線', start: `${thisMonth}-28`, end: `${thisMonth}-29`, color: 'red', allDay: true },
     ]
+    // 視窗 440:細列 48 之後主區 392,月曆欄寬 = 392 ÷ 7 = 56 ≤ 60 → 窄(2026-11-28 實量 56.0);工具列的「2026年7月」仍放得下
     return (
-      <div className="h-screen p-[var(--layout-space-loose)] bg-canvas flex gap-[var(--layout-space-loose)]">
-        <div className="flex-1 min-w-0">
-          <DataTable columns={releaseTaskColumns} data={releaseTasks} getRowId={(r) => r.id} maxHeight="none" />
-        </div>
-        {/* 側欄 400:月曆欄寬 (400 − 外框 2) ÷ 7 ≈ 56.9 ≤ 60 → 窄;工具列的「2026年7月」仍放得下 */}
-        <aside aria-label="本月時程" className="w-[400px] shrink-0">
-          <CalendarDemo defaultReferenceDate={now} today={now} events={events} locale={LOCALE} />
-        </aside>
-      </div>
+      <CalendarPage frameWidth={440}>
+        {(portalContainer) => (
+          <CalendarDemo flush bordered={false} defaultReferenceDate={now} today={now} events={events} locale={LOCALE} portalContainer={portalContainer} />
+        )}
+      </CalendarPage>
+    )
+  },
+}
+
+/**
+ * 填滿主畫面:貼邊擺法 + 不加外框(`flush` + `bordered={false}`;calendar.spec.md「外殼」)。
+ * 排班頁的主畫面只放這一個月曆、而且填滿:格子區左右下貼齊主畫面的邊,容器的邊就是捲動範圍的邊,外面再一圈框是多的。
+ */
+export const FillMainAreaBorderless: Story = {
+  name: '填滿主畫面(貼邊、不加外框)',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '排班的行事曆頁:左側 Menu、頁面標頭,主區只放這一個月曆、填滿到邊 —— 格子區的左、右、下貼齊主區的邊(主區那三邊不給內距),工具列自己帶左右內距,「‹ 今天 ›」與「+ 新事件」對齊內容的左右邊距;不加框,格線保留,最後一週照畫底線收尾(和表格不加框時的收尾一樣)。平常的月曆仍有框、工具列在框外 —— 和表格一樣,框標記捲動範圍的邊界,和其他內容並排時要留著。',
+      },
+    },
+  },
+  render: () => {
+    // 門市排班:早班 / 晚班(有時段)與盤點日(全天,end 不含 → 隔天)。全天長條用淡底上字對比 ≥ 4.5 的色相
+    //(淡底 step-7 的字有 5 個色相不到 4.5,calendar.spec.md「驗證」已知例外 (1)【維持 U10】;同「內容發佈月曆」的取法)
+    const events: CalendarEvent[] = [
+      { id: 's1', title: '早班:王小明', start: `${thisMonth}-06T08:00`, end: `${thisMonth}-06T16:00`, color: 'blue' },
+      { id: 's2', title: '晚班:林佳穎', start: `${thisMonth}-06T16:00`, end: `${thisMonth}-06T23:00`, color: 'purple' },
+      { id: 's3', title: '早班:陳志豪', start: `${thisMonth}-14T08:00`, end: `${thisMonth}-14T16:00`, color: 'blue' },
+      { id: 's4', title: '季度盤點', start: `${thisMonth}-24`, end: `${thisMonth}-25`, color: 'turquoise', allDay: true },
+    ]
+    return (
+      <CalendarPage>
+        {() => <CalendarDemo flush bordered={false} defaultReferenceDate={now} today={now} events={events} locale={LOCALE} noun="班次" />}
+      </CalendarPage>
     )
   },
 }
@@ -444,7 +503,7 @@ const ANCHOR_EVENTS: CalendarEvent[] = [
 export const EventClickAnchor: Story = {
   name: '點事件交出錨點',
   tags: ['test-only'],
-  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:96「onEventClick={(event, { anchor }) => …}」
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:98「onEventClick={(event, { anchor }) => …}」
   parameters: { demoFocus: 'keep' },
   render: () => (
     <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
@@ -557,7 +616,7 @@ function DetailChangeLogDemo() {
 export const DetailChangeLog: Story = {
   name: '詳情交回的修改',
   tags: ['test-only'],
-  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:115「eventDetail.onEventChange(event, patch) 必填;patch 只帶這一次改到的欄位」
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:119「eventDetail.onEventChange(event, patch) 必填;patch 只帶這一次改到的欄位」
   render: () => <DetailChangeLogDemo />,
 }
 

@@ -1043,6 +1043,12 @@
       "required": true
     },
     {
+      "id": "node-runtime-version",
+      "ownerRepo": "design-system",
+      "path": ".node-version",
+      "required": true
+    },
+    {
       "id": "product-seed-package-contract",
       "ownerRepo": "design-system",
       "path": "apps/template/package.json",
