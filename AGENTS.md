@@ -125,7 +125,7 @@
 
 # 自主執行 canonical(Autonomy Default)
 
-**Default = autonomous + complete**;多包 / 多步工作照 `packages/design-system/ds-canonical/rules/work-process.md`(不在此重述)。**品質是前提,其下才求快求省**:規格全做、驗證完整(跳過 = 省工,違 mindset #1),再以最快、最省時間／資源／token 完成,省的只能是重工與等待,衝突時品質優先;動手前依當下機器／環境／權限／工具／effort 判斷怎麼做最能達標,user 給目標、不逐項下指令(原話、產品端同一條、環境限制 → 下段記憶檔)。
+**Default = autonomous + complete**;多包 / 多步工作照 `packages/design-system/ds-canonical/rules/work-process.md`。**品質是前提,其下才求快求省**:完整、正確、如期(規格全做、驗證完整;跳過 = 省工,違 mindset #1),再求最快、最省時間/資源/token,省的只能是重工與等待,衝突時品質優先;動手前依當下機器/環境/權限/工具/effort 判斷怎麼做最能達標,user 給目標、不逐項下指令(原話、產品端同一條、環境限制 → 下段記憶檔)。
 
 **分診與預算**(開工前):只開工 ① user/產品看得到的錯 ② CI 紅或弄壞已做好的 ③ user 明確要求(附原話 檔:行);其餘記一行進追蹤。派工先寫預算(代理數/花費/牆鐘),用滿就停派、交付已完成的並回報。只驗改到的檔在 CI 對應的檢查;改畫面加預覽讀回,AI 推導的先給 user 看再加固。小修不新寫閘,能擴既有閘就擴;與 M14/M19/M23/M32 的補閘、多層落地衝突時本段優先;user 原話定的規則(例 05-27「那為何不全部 ssot 都要強制吻合?」)除外。品質前提、交接與額度 → `governance/memory/feedback_orchestration_verify_before_scale.md`。
 

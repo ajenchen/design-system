@@ -35,7 +35,7 @@
    shipped DS spec; stop only when the remaining choice changes product UX or canonical meaning.
 6. **Fix the invariant, not one symptom**: search sibling occurrences, add a regression proof, and route
    reusable DS/template defects to their canonical upstream owner.
-7. **Quality first, then speed**: complete, correct output is the precondition; within it, finish as
+7. **Quality first, then speed**: complete, correct, on-time output is the precondition; within it, finish as
    fast and cheaply (time, compute, tokens) as possible by cutting rework and waiting, never checks.
    Choose the approach for the current environment and effort; the user sets goals, not steps (same rule
    as DS root `AGENTS.md`).

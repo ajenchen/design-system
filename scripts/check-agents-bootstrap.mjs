@@ -190,7 +190,11 @@ try {
 // (user 11-27 原話在 governance/memory/feedback_orchestration_verify_before_scale.md),「行數預算」「Anti-bloat」兩段只拿掉與 owner 重複的說明
 //(指向全留),抵掉增加的字。這次縮的主因不是 A6 而是 A1:root + packages/design-system + fork 的 AGENTS 鏈只剩 13 bytes(32,755 / 32,768),
 // 產品端 AGENTS.product.md 第 7 條同一原則也算在這條鏈上 —— 之後兩邊再加字,先量 A1。
-const OPENING_FILES_MAX_BYTES = 78_654
+// 2026-11-28 GOV(0.1.0-beta.152)明改 78,654 → 78,950(+296):work-process.md v6「每一包」第 1 點加一句(規則落地若改變 user 已定過的畫面,
+// 停下回報、不得自行接受;user 沒要求的不動)+ 版本紀錄一列(+307);AGENTS.md「品質是前提」那句補「完整、正確、如期」,同句全形斜線改半形、
+// 拿掉「(不在此重述)」、「再以…完成」改「再求…」,淨 −11。A1 鏈 32,762 / 32,768(含產品端第 7 條補 on-time 的 +9)。改前開場正好等於上限,
+// 再縮就要刪規則;user 11-28 指出規則落地改掉已定的兩則浮層留白(governance/planning/2026-11-28-work-process-evidence-v6.md),要每個實作者開場就讀到。
+const OPENING_FILES_MAX_BYTES = 78_950
 const RULES_DIR = path.join(ROOT, 'packages/design-system/ds-canonical/rules')
 const alwaysLoadedRules = fs.existsSync(RULES_DIR)
   ? fs.readdirSync(RULES_DIR).filter((name) => name.endsWith('.md')).sort().filter((name) => {

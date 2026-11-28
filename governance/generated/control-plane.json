@@ -9,12 +9,12 @@
   },
   "canonicalSources": [
     {
-      "hash": "sha256:fa36b497d8c9d84fbda0ae85a6fb42f1786bcd1940a7a58620f31c96e5c90bcf",
+      "hash": "sha256:9f0010c6c373ebb48ce40860d45c3890feb3984d7fdb7130eb643ff6a5b667d6",
       "id": "agent-bootstrap",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "AGENTS.md",
-      "size": 22684,
+      "size": 22673,
       "type": "file"
     },
     {
@@ -175,7 +175,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 7,
-      "hash": "sha256:f7d68913db89c3bb6a76e615b0885310a1034c04c386520860037ae83bb29054",
+      "hash": "sha256:5ec9184f7ad702fb48602afca0a89ef3555ee6e765dffcf12f2e2df5d6a2330b",
       "id": "canonical-rules",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2431,12 +2431,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:c838dff07d0f6aa53ddba9e5362e419ed198763cc7f86bb5558c75687f8292c7",
+      "hash": "sha256:632947698156849c285b40880aa128a09d1374fe5f3c6eb97b26f412080e81f8",
       "id": "product-shared-instruction",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/fork-role-sources/AGENTS.product.md",
-      "size": 7118,
+      "size": 7127,
       "type": "file"
     },
     {
@@ -2708,7 +2708,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 22,
-      "hash": "sha256:cfe2838d0dfe98ea4ae7d04346df4c5338cc0c02b119b8264f7fadbd9a22cffa",
+      "hash": "sha256:c94d3349ab62e4a1bd12dd5d53e8f8619dfb0e79cbd55e19b37441a3d4cd717f",
       "id": "provider-neutral-memory",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2718,8 +2718,8 @@
     {
       "carrierProjections": [],
       "excludes": [],
-      "files": 53,
-      "hash": "sha256:06eea1b767d584f9e0bd46f92b0284e974570dc8730bc08b7dce28cc675e8869",
+      "files": 54,
+      "hash": "sha256:42145e00998b262c7d7b8b0259e2717166efae046b276e6c25a798c9b32507c5",
       "id": "provider-neutral-planning-ledger",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3094,7 +3094,7 @@
         "scripts/generated/"
       ],
       "files": 819,
-      "hash": "sha256:7257e5d6488969ac8632ac84cb8dfdf66a735c9304cf9f609581a3137e07e0e7",
+      "hash": "sha256:967dd0637b9f69fecebf011f3d0fc0af12b1805b39ecc371c3f2fef3c9f447d7",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
