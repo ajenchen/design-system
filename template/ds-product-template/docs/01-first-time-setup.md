@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Node 22.13.0+ (`engines.node`; CI, the dev container, and Netlify use the exact version in `.node-version`, so install that one to match them), npm 10+ as the launcher, Git, Bash, `jq`, and Python 3. Governance npm operations use exact lock-verified npm 11.19.0.
+- Node 22.13.0+ (`engines.node`; CI, the dev container, and hosted setup use the exact version in the managed `scripts/.node-version`, so install that one to match them; Netlify is pinned in its UI, see README "Local, cloud, and container setup"), npm 10+ as the launcher, Git, Bash, `jq`, and Python 3. Governance npm operations use exact lock-verified npm 11.19.0.
 - Claude Code, Codex, or another agent that can read `AGENTS.md`
 
 The exact governance checker intentionally fails closed when Bash, `jq`, or Python 3 is unavailable,
@@ -94,9 +94,9 @@ are activated.
 
 - Claude Code on the web and Codex Cloud: use the Setup script in [README.md](../README.md)
   ("Local, cloud, and container setup"; Codex Cloud also as its **Maintenance script**). That
-  section is the only description of the hosted setup (exact Node.js from `.node-version`, which
-  environment to put it in, network allowlist, cached results); it installs that Node.js and then
-  runs `npm run setup:all`.
+  section is the only description of the hosted setup (exact Node.js from `scripts/.node-version`,
+  which environment to put it in, network allowlist, cached results); it installs that Node.js and
+  then runs `npm run setup:all`.
 - Codespaces and other devcontainer clients invoke the same setup implementation from the committed
   `.devcontainer/devcontainer.json`.
 

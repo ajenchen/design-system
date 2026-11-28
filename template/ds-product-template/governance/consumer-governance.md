@@ -9,14 +9,15 @@ product rules belong only in `governance/overlay.md`.
 ## One setup path in every environment
 
 Run `npm run setup:all` from a fresh checkout on local macOS/Linux, Codespaces, or another Linux
-devcontainer host, with the exact Node.js version in `.node-version` (the one Node.js version
-source: CI `setup-node`, the dev container image, and Netlify all use it). Session-start hooks never
-install or repair dependencies.
+devcontainer host, with the exact Node.js version in the managed `scripts/.node-version` (the one
+Node.js version source: CI `setup-node`, the dev container image, and `scripts/cloud-setup.sh` use it;
+Netlify is pinned in its UI as the template README says). Session-start hooks never install or repair
+dependencies.
 
 On Claude Code on the web and Codex Cloud, use the Setup script in the template README ("Local,
 cloud, and container setup"; Codex Cloud also as its maintenance script). That section is the only
-description of it (exact `.node-version` Node.js, then `npm run setup:all`; which environment to put
-it in and how cached setup results behave).
+description of it (it runs the managed `scripts/cloud-setup.sh`: exact `scripts/.node-version` Node.js,
+then `npm run setup:all`; which environment to put it in and how cached setup results behave).
 
 Hosts whose outbound HTTPS is re-signed by a proxy work when the proxy CA is in the host system
 trust store and Node.js is 22.15.0 or newer: every registry request in the locked setup chain then

@@ -281,7 +281,6 @@
         "scripts/",
         "template/ds-product-template/.devcontainer/",
         "template/ds-product-template/.github/workflows/",
-        "template/ds-product-template/.node-version",
         "template/ds-product-template/.npmrc",
         "template/ds-product-template/package.json"
       ],

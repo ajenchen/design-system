@@ -3,11 +3,11 @@
   "exactPaths": [
     ".env.example",
     ".gitignore",
-    ".node-version",
     ".npmrc",
     "README.md",
     "netlify.toml",
     "package.json",
+    "scripts/.node-version",
     "scripts/audit-consumer-a11y.mjs",
     "scripts/check-plugin-installed.mjs",
     "scripts/cloud-setup.sh",

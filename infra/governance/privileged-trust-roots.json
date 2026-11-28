@@ -39,7 +39,6 @@
     "packages/design-system/src/tokens/utility-registry.schema.json",
     "packages/eslint-plugin/package.json",
     "packages/storybook-config/package.json",
-    "template/ds-product-template/.node-version",
     "template/ds-product-template/.npmrc",
     "template/ds-product-template/README.md",
     "template/ds-product-template/package.json"

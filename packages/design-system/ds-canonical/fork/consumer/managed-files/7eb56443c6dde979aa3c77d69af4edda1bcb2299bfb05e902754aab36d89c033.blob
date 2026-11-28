@@ -1,14 +1,14 @@
 #!/bin/bash
 # Cloud setup for Claude Code on the web and Codex Cloud (README "Local, cloud, and container setup"
 # holds the only description and the environment's few-line Setup script that runs this file).
-# Installs the exact Node.js in .node-version from the official nodejs.org release, verified against
-# the release's SHASUMS256.txt, then runs `npm run setup:all` with it and returns that exit status.
-# Any failure exits non-zero. Managed file: delivered by `npm run sync-all`; do not edit by hand.
+# Installs the exact Node.js in scripts/.node-version from the official nodejs.org release, verified
+# against the release's SHASUMS256.txt, then runs `npm run setup:all` with it and returns that exit
+# status. Any failure exits non-zero. Managed file: delivered by `npm run sync-all`; do not edit by hand.
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
-NODE_VERSION="$(tr -d '[:space:]' 2>/dev/null < .node-version)"
+NODE_VERSION="$(tr -d '[:space:]' 2>/dev/null < scripts/.node-version)"
 if ! [[ "$NODE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  echo "cloud-setup: $(pwd)/.node-version must hold one exact X.Y.Z version" >&2
+  echo "cloud-setup: $(pwd)/scripts/.node-version must hold one exact X.Y.Z version" >&2
   exit 1
 fi
 case "$(uname -m)" in

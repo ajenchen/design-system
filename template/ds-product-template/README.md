@@ -49,15 +49,20 @@ runtime. Native hook absence never counts as certification and protected CI rema
 
 Use the same canonical fresh-checkout bootstrap everywhere; run it locally and configure it explicitly in each hosted environment:
 
-The Node.js version has one source: `.node-version` (an exact `X.Y.Z`). CI (`actions/setup-node`
-`node-version-file`), the dev container image, and Netlify (which reads `.node-version` from the site's
-base directory) all use it, and `scripts/node-version-ssot-invariant.mjs` in the design-system repository
-keeps them equal before a release ships. `engines.node` is the wider range consumers may run.
+The Node.js version has one source: the managed `scripts/.node-version` (an exact `X.Y.Z`, delivered
+and updated by `npm run sync-all`; it lives under `scripts/` because an upgrade can only deliver managed
+files inside the paths its transaction owns). CI (`actions/setup-node` `node-version-file`), the dev
+container image, and `scripts/cloud-setup.sh` use it, and the design-system repository checks they
+agree before a release ships. Netlify cannot read it (Netlify reads only a `NODE_VERSION` environment
+variable or a `.node-version` / `.nvmrc` in the site's base directory), so set the site environment
+variable `NODE_VERSION` in the Netlify UI to the version in `scripts/.node-version` and update it when
+a release note says that file changed (`netlify.toml` repeats this). `engines.node` is the wider range
+consumers may run.
 
-- Local macOS/Linux: install the Node.js version in `.node-version` (nvm, fnm, mise, or the official
-  installer), then run `npm run setup:all` from the repository root.
+- Local macOS/Linux: install the Node.js version in `scripts/.node-version` (nvm, fnm, mise, or the
+  official installer), then run `npm run setup:all` from the repository root.
 - Hosted environments run the managed `scripts/cloud-setup.sh` (delivered and updated by
-  `npm run sync-all`): it installs the exact Node.js in `.node-version` from the official release on
+  `npm run sync-all`): it installs the exact Node.js in `scripts/.node-version` from the official release on
   nodejs.org, verifies the archive against the release's `SHASUMS256.txt`, runs `npm run setup:all`
   with that Node.js, and returns that command's own exit status; a failed download or checksum exits
   non-zero. The environment itself keeps only the short Setup script below: it enters
@@ -71,7 +76,7 @@ keeps them equal before a release ships. `engines.node` is the wider range consu
   below. Codex runs setup after checkout and maintenance after restoring a cached container, and setup
   scripts run with internet access, as described in the [official Codex Cloud environment guide](https://developers.openai.com/codex/cloud/environments);
   its **Set package versions** setting does not document exact-patch pins, so `cloud-setup.sh` installs
-  the exact `.node-version` itself.
+  the exact `scripts/.node-version` itself.
 - Claude Code on the web: put the Setup script below in an environment used only for this
   repository's sessions. The official guide says the setup script runs the first time you start a
   session in an environment; when it finishes within roughly five minutes the filesystem is saved as a
@@ -91,16 +96,16 @@ keeps them equal before a release ships. `engines.node` is the wider range consu
   preinstalled Node.js versions are 20, 21, and 22 (22 on `PATH`). `nodejs.org` is on the default
   allowlist of **Limited** network access with **Allow package managers** checked; if that box is
   cleared, add `nodejs.org` under **Allowed domains**.
-  Because the short script itself does not change when `scripts/cloud-setup.sh`, `.node-version`, or
-  the committed lock change in the repository, such a change does not rebuild the cached snapshot
+  Because the short script itself does not change when `scripts/cloud-setup.sh`, `scripts/.node-version`,
+  or the committed lock change in the repository, such a change does not rebuild the cached snapshot
   (only an edit to the environment's setup script or allowed hosts, or the roughly seven-day expiry,
   does). `setup:all` only requires Node.js 22.13.0 or newer, so it does not flag a session that still
-  has the previous `.node-version`. After such a change (for example a design-system upgrade), either
-  run `bash scripts/cloud-setup.sh` in the session, which the guide's "run the commands in the
-  session" covers, or save any edit to the environment's Setup script so the next session rebuilds the
-  snapshot. If the environment's first session ran before this repository had `scripts/cloud-setup.sh`,
-  the cached snapshot holds that skip; rebuild it the same way.
-  To check a new session, run `node --version` (expected: the version in `.node-version`) and
+  has the previous `scripts/.node-version`. After such a change (for example a design-system upgrade),
+  either run `bash scripts/cloud-setup.sh` in the session (the same approach the guide gives for a
+  setup script change: run the commands in the session), or save any edit to the environment's Setup
+  script so the next session rebuilds the snapshot. If the environment's first session ran before this
+  repository had `scripts/cloud-setup.sh`, the cached snapshot holds that skip; rebuild it the same way.
+  To check a new session, run `node --version` (expected: the version in `scripts/.node-version`) and
   `npm run governance:check` (it runs the checker that `setup:all` installs, so it fails when setup did
   not complete). The installed Node.js is linked into `/usr/local/bin`; whether a session's own `PATH`
   puts it ahead of the preinstalled `/opt/node22` is not documented (not yet measured), so when

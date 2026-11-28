@@ -42,7 +42,7 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "a17b63e7e3250c6ac1a17ea989b86ad251ca63b2b5b0d17888808c62c3336f32",
+    "forkCorpusLockSha256": "49badb69fc657654e6a6afb1ef32a00c997c70df06762ccaa647eab731bb297e",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
     "providerLifecycleSha256": "11dccb49caebfd67f96636f07199f3bb2c49e6e2df2d004489667f8ba36f4873",
@@ -51,7 +51,7 @@
     "commonInstructionSha256": "a024ca5227b784e7a66a6a1dde5baf7044c2362351af7ce5b5b04ca1163948ae",
     "providerArtifactDigests": {
       "claude": {
-        "instructionSha256": "19551814207edb2a87c8cea9ccae717db37a23f3c292ac5cf51d62ff107938ba",
+        "instructionSha256": "6b7a991ec643aea50295b80a16d29cd1cf3a4079ad41c07c2326a809ccf10f23",
         "hookSha256": "b17888945b06f3433e8cbeb0b659d63e41dbd391906461b6453500d8ec8ecec1",
         "skillsSha256": "3856ad27088b2a2f5398592e101a55531287cd425fb667d0d42522e972014028",
         "treeDigests": {}
@@ -92,11 +92,10 @@
       ".devcontainer/devcontainer.json": "4cdd732f050c8ce9715bd626e637aa60be5ecb48d871105182853dbb82715227",
       ".devcontainer/onboard-banner.sh": "762c1fda165b0f8c9d2f6e13ac313f37da65d427334328638f4445d29da50a63",
       ".devcontainer/post-create.mjs": "6bc05d2597a54e8f6a5a087901e92ccc89acc3d5873d96ad20814f8f539a146b",
-      ".github/workflows/audit.yml": "c82ae3d7f0edc650273302a80120748f4ff616d366541fce6fc785105fac7c02",
-      ".github/workflows/sync-design-system.yml": "262905c87e7232c42435e232f672b52f957cb2e1813385b057fd418ed5bd1d79",
-      ".node-version": "75daa0bc10dae1f22b2d13386b55b232adf16930d4325902f37b5033b3a7ca93",
+      ".github/workflows/audit.yml": "970c5562267aab4a952e8517cc4e8c535b2c8d0341944004fef7ec8b1b9f3c73",
+      ".github/workflows/sync-design-system.yml": "69cb1b5a7891abab0d8f43ec7449eec4f4912a08b05ef083c979dc8744b66d23",
       ".npmrc": "2984e2fb8b6ba8fad758ad0e18c3bc49be706a1e1ed56e1fc2b45ec4dfdc7f07",
-      "governance/consumer-governance.md": "aa2f86213ed2172cb3df781fc023e2cb7704c15e501ce0b3bb18a7e3d640bd06",
+      "governance/consumer-governance.md": "2f00f9f4b4cb01aacc551960ee6eec41bc6f091b29acaf8893557d9daddab788",
       "governance/provider-cli-toolchain.json": "5280bc83de46486d6fd13e29349eee849d347970ed5fdf32412d463629124170",
       "governance/provider-cli-toolchain.package-lock.json": "d0a5fceebe21101b67848e7ace1856e9bc35f6532e4ba4deaf64462fe4fc81bb",
       "governance/schemas/content-debt-baseline.schema.json": "e57421ff52ee68510bf070009f25941aa5ff45126c08e32d571c57fd76b59d3a",
@@ -105,9 +104,10 @@
       "governance/trust/issuers.json": "b4da935a9d39239f99fdb15f9ee0a05b538ac0c427b32b77fce8010560fdef2b",
       "governance/visual-baseline-review-policy.json": "339179f3bb7805f067c40cb22509734fa3f1cf2834129e64f6e0bf08aa70b334",
       "schemas/provider-cli-toolchain.schema.json": "7e5c6c14c8a9295373f56df968afdb8cb8888764ce1b060993a655ccec8ac61d",
+      "scripts/.node-version": "75daa0bc10dae1f22b2d13386b55b232adf16930d4325902f37b5033b3a7ca93",
       "scripts/audit-consumer-a11y.mjs": "8ff8e74774dbe04ed69cbb18ecf5abd3d8b60d24527e7af751d74f9341a1d076",
       "scripts/check-plugin-installed.mjs": "f2a673cc011743fe51f87746b9aebbd3332378cd2732088eda621e16a3c74386",
-      "scripts/cloud-setup.sh": "0b8ec7c59a9a3658ca8b035d31d3bedf99cffc806c262d3ec4b24f9f309915bc",
+      "scripts/cloud-setup.sh": "c5573a11298e5af6a1f86b5330145a43e9610fae1729e0d61487b254105fb11c",
       "scripts/consumer-source-harness.mjs": "98ad59797d13bca7be2b39005a89b4dc27dbc51344ad12ffde14d5f49f0b93f2",
       "scripts/lib/a11y-static-server.mjs": "c22322959d2898bc8ebb6c95077bd4c97499f49a690e1fe00f2220e8f809f4ef",
       "scripts/lib/canonical-path-containment.mjs": "0244e31dc3be5015bed3efd65a5a77086a2e4676e9ac79cd0801c8cde6a74fcd",
