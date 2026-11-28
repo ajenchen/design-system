@@ -16,6 +16,7 @@ import { linkSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { classifyConsentPrompt, loadConsentPolicy } from './lib/release-consent-language.mjs'
+import { classifyVersionBump, versionBumpMessage } from './release-orchestrator.mjs'
 import {
   BLOCK_MARKER, HEAD_BOUND_SOURCES, INFO_SOURCES, REQUIRED_SOURCES, SELF_AUDIT_GENERATOR, SELF_AUDIT_KIND,
   SELF_AUDIT_NAME, SELF_AUDIT_SCHEMA_VERSION,
@@ -173,6 +174,12 @@ for (const text of ['先不發版', '這次不發版', '延後發版', '還不�
 const DIGEST = 'a'.repeat(64)
 const HEAD = 'b'.repeat(40)
 const BLOB = generatorBlobSha()
+// version-bump 的證據形狀 = classifyVersionBump 的輸出(驗證端照證據重判同一支)
+const vbEvidence = (input) => {
+  const { status: _status, ...rest } = classifyVersionBump(input)
+  return rest
+}
+const VB_UNPUBLISHED = vbEvidence({ version: '0.1.0-beta.152', publishedState: false, headDigest: DIGEST })
 function makeRecord(mutate = () => {}) {
   const record = {
     schemaVersion: SELF_AUDIT_SCHEMA_VERSION,
@@ -188,6 +195,7 @@ function makeRecord(mutate = () => {}) {
       { source: 'preview-binding', status: 'ok', detail: 'ok', evidence: { upstream: 'origin/claude/feature', upstreamSha: HEAD, upstreamDigest: DIGEST, headDigest: DIGEST } },
       { source: 'pr-checks', status: 'ok', detail: 'ok', evidence: { headSha: HEAD, status: 'complete', pullRequest: { number: 172, headRefOid: HEAD }, requiredChecks: [{ name: 'Verify static', bucket: 'pass' }] } },
       { source: 'product-visible-changes', status: 'info', detail: '2 個檔', evidence: { base: HEAD, count: 0, files: [] } },
+      { source: 'version-bump', status: 'ok', detail: 'v0.1.0-beta.152 還沒有發布過,版號已升', evidence: { headSha: HEAD, ...VB_UNPUBLISHED } },
     ],
   }
   mutate(record)
@@ -248,10 +256,43 @@ check('(c) 產生它的腳本換版 → generator-changed', () => assert.deepEqu
 check('(c) 不是這支腳本產生的 → generator-unknown', () => assert.deepEqual(codes(makeRecord((r) => { r.generator.path = 'hand-written' })), ['generator-unknown']))
 check('(c) 不是物件 → record-shape', () => assert.deepEqual(codes(null), ['record-shape']))
 check('必備 / 清單 / 綁 HEAD 的來源與判定表一致', () => {
-  assert.deepEqual([...REQUIRED_SOURCES], ['git-worktree', 'preview-binding', 'pr-checks'])
+  assert.deepEqual([...REQUIRED_SOURCES], ['git-worktree', 'preview-binding', 'pr-checks', 'version-bump'])
   assert.deepEqual([...INFO_SOURCES], ['product-visible-changes'])
-  assert.deepEqual([...HEAD_BOUND_SOURCES], ['git-worktree', 'pr-checks'])
+  assert.deepEqual([...HEAD_BOUND_SOURCES], ['git-worktree', 'pr-checks', 'version-bump'])
 })
+
+// version-bump(2026-11-28 R100):beta.152 三項全過、照規則要了同意,合併後 publish 才判 stale-version,多開 PR #178 升版號。
+// 判定只有一支(release-orchestrator.mjs classifyVersionBump,pr-checks 合併前那一格同一支);這裡驗紀錄層的兩面。
+const TAG_COMMIT = 'd'.repeat(40)
+const OTHER_DIGEST = 'f'.repeat(64)
+const VB_NOT_BUMPED = vbEvidence({ version: '0.1.0-beta.151', publishedState: true, tagCommitSha: TAG_COMMIT, headDigest: DIGEST, tagDigest: OTHER_DIGEST })
+const VB_GOVERNANCE_ONLY = vbEvidence({ version: '0.1.0-beta.151', publishedState: true, tagCommitSha: TAG_COMMIT, headDigest: DIGEST, tagDigest: DIGEST })
+const VB_UNREADABLE = vbEvidence({ version: '0.1.0-beta.151', publishedState: null, headDigest: DIGEST })
+const setVersionItem = (status, evidence) => (r) => {
+  const index = r.items.findIndex((item) => item.source === 'version-bump')
+  r.items[index] = { source: 'version-bump', status, detail: versionBumpMessage(evidence), evidence: { headSha: HEAD, ...evidence } }
+}
+check('version-bump:產品變了 + 版號沒升 → 未解,訊息寫怎麼升', () => {
+  assert.equal(VB_NOT_BUMPED.reason, 'not-bumped')
+  assert.deepEqual(codes(makeRecord(setVersionItem('unresolved', VB_NOT_BUMPED))), ['unresolved'])
+  assert.match(versionBumpMessage(VB_NOT_BUMPED), /packages\/design-system\/package\.json.*node scripts\/sync-version-to-all-manifests\.mjs/)
+})
+check('version-bump:產品變了 + 版號升了 → 成立', () => assert.deepEqual(codes(makeRecord(setVersionItem('ok', VB_UNPUBLISHED))), []))
+check('version-bump:只改治理、版號沒升(指紋相同)→ 成立', () => assert.deepEqual(codes(makeRecord(setVersionItem('ok', VB_GOVERNANCE_ONLY))), []))
+check('version-bump:讀不到 release → 未解(不是通過)', () => {
+  assert.equal(VB_UNREADABLE.reason, 'release-unreadable')
+  assert.deepEqual(codes(makeRecord(setVersionItem('unresolved', VB_UNREADABLE))), ['unresolved'])
+})
+check('version-bump:手把 not-bumped 標成 ok(sha256 照算)→ 照證據重判不是 ok(item-evidence)', () => assert.deepEqual(
+  codes(makeRecord(setVersionItem('ok', VB_NOT_BUMPED))), ['item-evidence']))
+check('version-bump:讀不到也標 ok → item-evidence', () => assert.deepEqual(codes(makeRecord(setVersionItem('ok', VB_UNREADABLE))), ['item-evidence']))
+check('version-bump:已發布、標 ok,但證據的 HEAD 指紋不是紀錄的 → item-evidence', () => assert.deepEqual(
+  codes(makeRecord(setVersionItem('ok', vbEvidence({ version: '0.1.0-beta.151', publishedState: true, tagCommitSha: TAG_COMMIT, headDigest: OTHER_DIGEST, tagDigest: OTHER_DIGEST })))),
+  ['item-evidence']))
+// 對照組(拿掉新判定):beta.152 那次的紀錄形狀 —— 只有舊的三項、全過、沒有版號項。新判定之前它成立(所以照規則要了同意);
+// 現在少了 version-bump 這個必備來源就不成立。把 version-bump 從 REQUIRED_SOURCES 拿掉,這一格就會變回成立而紅。
+check('對照組:beta.152 那次的三項全過紀錄(沒有版號項)→ 現在不成立(item-missing)', () => assert.deepEqual(
+  codes(makeRecord((r) => { r.items = r.items.filter((item) => item.source !== 'version-bump') })), ['item-missing']))
 check('名稱照實:機器可讀項目,不是「零問題」', () => {
   assert.equal(SELF_AUDIT_NAME, '發版前機器可讀項目自我稽核')
   assert.doesNotMatch(readFileSync(new URL('./release-self-audit.mjs', import.meta.url), 'utf8').split('\n').filter((line) => !line.includes('名不副實')).join('\n'), /零問題自我稽核/)

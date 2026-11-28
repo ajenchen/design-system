@@ -869,9 +869,12 @@ RSA_RECORD_DIR="$(cd "$(git -C "$RSA_PROJECT" rev-parse --absolute-git-dir)" && 
 # tampered = 拿未解的紀錄,手把 pr-checks 改成 ok、未解數改成 0,不重算 sha256(模擬 AI 手改紀錄)。
 cat > "$TMPDIR/rsa-write-record.mjs" <<RSA_WRITER
 import { collectSelfAudit, writeSelfAuditRecord } from '$RSA_PROJECT/scripts/release-self-audit.mjs'
+import { classifyVersionBump } from '$RSA_PROJECT/scripts/release-orchestrator.mjs'
 const mode = process.argv[2]
 const green = mode === 'green'
 const record = collectSelfAudit({
+  // 版號讀回也換成合成的(2026-11-28 R100 加的 version-bump 必備來源):fixture 不碰網路,版號一律「還沒發布過」
+  readVersionBump: () => classifyVersionBump({ version: '0.0.1', publishedState: false }),
   readPullRequestChecks: ({ headSha }) => ({
     status: green ? 'complete' : 'failed',
     pullRequest: { number: 172, headRefOid: headSha, url: 'https://example.invalid/pull/172', mergeable: 'MERGEABLE' },

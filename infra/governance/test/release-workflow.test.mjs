@@ -59,6 +59,9 @@ import {
   writeReleaseConsent,
   releaseIncidentFromEnv,
   validateReleaseWorkflow,
+  classifyVersionBump,
+  readVersionBump,
+  versionBumpMessage,
 } from '../../../scripts/release-orchestrator.mjs'
 import { loadGovernanceBuildGraph } from '../../../scripts/governance-build-graph.mjs'
 
@@ -75,7 +78,8 @@ test('canonical release workflow validates and exposes exactly five AUTO steps',
   assert.equal(validateReleaseWorkflow(workflow), workflow)
   assert.deepEqual(workflow.steps.map(step => step.id), ['pr-checks', 'merge', 'publish', 'readback', 'consumer'])
   assert.ok(workflow.steps.every(step => step.authority === 'AUTO'))
-  assert.deepEqual(workflow.steps[0].completion, ['required-ci-check-green', 'conversation-resolved'])
+  // 2026-11-28 R100:合併前就判版號有沒有升(release-orchestrator.mjs classifyVersionBump;beta.152 到 publish 才判 stale-version 的錨)
+  assert.deepEqual(workflow.steps[0].completion, ['required-ci-check-green', 'conversation-resolved', 'version-bumped-before-merge'])
   // 2026-09-02 user directive:合併前必有 user 對當前 PR head 的發版同意 receipt(預覽 → user 說「發版」→ 才合併)。
   assert.equal(workflow.steps[1].gate, 'user-release-consent')
   assert.equal(workflow.steps.filter(step => 'gate' in step).length, 1, 'only the merge step carries the human consent gate')
@@ -195,6 +199,8 @@ test('live readbacks alone support safe resume without local candidate receipts'
     // headSha 是必要欄位,不是裝飾:pr-checks / merge 都要求「PR 帶的正是現在這個 head」。
     // 原本 fixture 沒給,於是它同時也代表「PR 講的是別份內容」那個假綠狀態。
     headSha: 'a'.repeat(40),
+    // 2026-11-28 R100:合併前要讀得到「版號已升」,否則 pr-checks 是 version-unverified(讀不到 ≠ 通過)
+    versionBump: classifyVersionBump({ version: '1.2.4', publishedState: false }),
     pullRequest: {
       state: 'OPEN',
       headRefOid: 'a'.repeat(40),
@@ -293,6 +299,80 @@ test('live readbacks alone support safe resume without local candidate receipts'
     consumers: workflow.automation.consumers.map(target => ({ ...target, exactVersion: true })),
   })
   assert.deepEqual(draft.map(step => step.status), ['complete', 'complete', 'ready', 'blocked', 'blocked'])
+})
+
+test('R100:版號沒升在合併前(pr-checks)就擋,與 release-self-audit 共用同一支判定', () => {
+  // 2026-11-28 錨:PR #176(beta.152 內容)合併後 main CI 綠,release:auto 到 publish 才判 stale-version ——
+  // package.json 仍是 0.1.0-beta.151(= 已發布的 tag)。pr-checks / merge 都沒擋,多開 PR #178 升版號,152 晚約一小時。
+  const T = 'd'.repeat(40)
+  const HEAD_DIGEST = '1'.repeat(64)
+  const TAG_DIGEST = '2'.repeat(64)
+  // 判定表(純函式)
+  const notBumped = classifyVersionBump({ version: '0.1.0-beta.151', publishedState: true, tagCommitSha: T, headDigest: HEAD_DIGEST, tagDigest: TAG_DIGEST })
+  assert.deepEqual([notBumped.status, notBumped.reason], ['unresolved', 'not-bumped'], '產品變了 + 版號沒升 → 未解')
+  assert.match(versionBumpMessage(notBumped), /packages\/design-system\/package\.json/, '訊息要寫怎麼升')
+  assert.match(versionBumpMessage(notBumped), /node scripts\/sync-version-to-all-manifests\.mjs/, '訊息要寫同步指令')
+  const bumped = classifyVersionBump({ version: '0.1.0-beta.152', publishedState: false, headDigest: HEAD_DIGEST })
+  assert.deepEqual([bumped.status, bumped.reason], ['ok', 'version-unpublished'], '產品變了 + 版號升了 → 通過')
+  const governanceOnly = classifyVersionBump({ version: '0.1.0-beta.151', publishedState: true, tagCommitSha: T, headDigest: HEAD_DIGEST, tagDigest: HEAD_DIGEST })
+  assert.deepEqual([governanceOnly.status, governanceOnly.reason], ['ok', 'product-unchanged'], '只改治理、版號沒升 → 通過')
+  const unreadable = classifyVersionBump({ version: '0.1.0-beta.151', publishedState: null, headDigest: HEAD_DIGEST })
+  assert.deepEqual([unreadable.status, unreadable.reason], ['unresolved', 'release-unreadable'], '讀不到 release → 未解(不是通過)')
+  const noTagCommit = classifyVersionBump({ version: '0.1.0-beta.151', publishedState: true, tagCommitSha: null, headDigest: HEAD_DIGEST, tagDigest: null })
+  assert.deepEqual([noTagCommit.status, noTagCommit.reason], ['unresolved', 'digest-unavailable'], '讀不到 tag 的 commit / 指紋 → 未解')
+  assert.equal(classifyVersionBump({ version: null, publishedState: false }).status, 'unresolved', '讀不到版號 → 未解')
+
+  // 讀回接線:只在「已發布」時才讀 tag 的 commit;兩邊指紋都用同一支 digest
+  const calls = []
+  const wired = readVersionBump({
+    repository: 'acme/ds', version: '0.1.0-beta.151', headSha: 'a'.repeat(40),
+    readPublishedState: (repository, tag) => { calls.push(['release', repository, tag]); return true },
+    readTagCommit: (repository, tag) => { calls.push(['tag', repository, tag]); return T },
+    digest: (ref) => (ref === T ? TAG_DIGEST : HEAD_DIGEST),
+  })
+  assert.deepEqual(calls, [['release', 'acme/ds', 'v0.1.0-beta.151'], ['tag', 'acme/ds', 'v0.1.0-beta.151']])
+  assert.equal(wired.reason, 'not-bumped')
+  const unpublishedCalls = []
+  readVersionBump({
+    repository: 'acme/ds', version: '0.1.0-beta.152', headSha: 'a'.repeat(40),
+    readPublishedState: () => false, readTagCommit: () => { unpublishedCalls.push('tag'); return T }, digest: () => HEAD_DIGEST,
+  })
+  assert.deepEqual(unpublishedCalls, [], '還沒發布就不必讀 tag')
+
+  // 五步狀態:合併前 fail-fast
+  const before = {
+    onProtectedMain: false,
+    headSha: 'a'.repeat(40),
+    pullRequest: { state: 'OPEN', headRefOid: 'a'.repeat(40), requiredChecks: [{ bucket: 'pass', state: 'SUCCESS' }] },
+    releaseConsent: { headSha: 'a'.repeat(40), quote: '發版', source: 'user-prompt-hook' },
+    release: null, publishRun: null,
+    npmPackages: workflow.automation.packages.map(name => ({ name, exactVersion: false })),
+    consumers: workflow.automation.consumers.map(target => ({ ...target, exactVersion: false })),
+  }
+  const prStatus = versionBump => buildFiveStepStatus(workflow, { ...before, versionBump })[0].status
+  assert.equal(prStatus(notBumped), 'version-not-bumped', 'beta.152 那一格:CI 綠也要在合併前擋')
+  assert.equal(prStatus(bumped), 'complete', '另一面:版號升了 → 照 CI 判')
+  assert.equal(prStatus(governanceOnly), 'complete', '只改治理 → 照 CI 判')
+  assert.equal(prStatus(unreadable), 'version-unverified', '讀不到 → 不得當成通過')
+  assert.equal(prStatus(undefined), 'version-unverified', '觀察裡沒有版號讀回(拿掉新判定的讀回)→ 不得當成通過')
+  // CI 還在跑也一樣先擋(fail-fast,不等 CI 跑完)
+  assert.equal(buildFiveStepStatus(workflow, { ...before, versionBump: notBumped, pullRequest: { ...before.pullRequest, requiredChecks: [] } })[0].status,
+    'version-not-bumped')
+  // 合併後(在 protected main 上)不在這裡判,交給 publish 的 stale-version
+  assert.equal(buildFiveStepStatus(workflow, { ...before, onProtectedMain: true, versionBump: null })[0].status, 'complete')
+
+  // runner 與讀回的接線
+  const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
+  const prBlock = src.slice(src.indexOf("if (incomplete.id === 'pr-checks')"), src.indexOf("if (incomplete.id === 'merge')"))
+  assert.ok(prBlock.indexOf("incomplete.status !== 'version-not-bumped'") >= 0
+    && prBlock.indexOf("incomplete.status !== 'version-not-bumped'") < prBlock.indexOf('if (!observation.pullRequest)'),
+  'runner 在推分支 / 開 PR 之前就要因版號沒升丟錯')
+  assert.match(prBlock, /versionBumpMessage\(observation\.versionBump/, '丟錯訊息用共用的那一句')
+  const collect = src.slice(src.indexOf('export function collectLiveObservation('), src.indexOf('export function productChangeSinceBaseline('))
+  assert.match(collect, /readVersionBump\(\{ repository, version, headSha \}\)/, '讀回用共用的 readVersionBump')
+  const audit = readFileSync(resolve(ROOT, 'scripts/release-self-audit.mjs'), 'utf8')
+  assert.match(audit, /readVersionBump\(\{ repository: workflow\.automation\.repository, version: packageVersion\(workflow\), headSha \}\)/,
+    'release-self-audit 的 version-bump 用同一支讀回,不另寫判法')
 })
 
 test('consumer completion requires an Actions-bound producer matching the release target', () => {

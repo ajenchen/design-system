@@ -859,7 +859,7 @@ function sleep(milliseconds) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds)
 }
 
-function packageVersion(workflow) {
+export function packageVersion(workflow) {
   const versions = workflow.automation.packages.map(name => {
     const path = PACKAGE_PATHS[name]
     invariant(path, `no local manifest is registered for ${name}`)
@@ -956,6 +956,85 @@ export function releaseDefinitelyMissing(repository, tag) {
 /** 這一版算不算消耗掉一次發布(有 release,或讀不到 → 都算)。 */
 export function releaseCountsAsPublished(repository, tag) {
   return countsAsPublishedFromState(releasePublishedState(repository, tag))
+}
+
+/**
+ * 版號有沒有升 —— **合併之前**就判(2026-11-28 R100,beta.152 錨)。
+ *
+ * 錨:PR #176(beta.152 的內容)與 #177 合併後 main CI 綠,release:auto 卻到 publish 才判 stale-version ——
+ * packages/design-system/package.json 仍是 0.1.0-beta.151(= 已發布的 tag)。發版前機器可讀項目自我稽核三項全過、
+ * pr-checks / merge 也都沒擋,協調者照規則向 user 要了同意,結果得再開 PR #178 升版號,152 晚約一小時。
+ * publish 那一格(buildFiveStepStatus 的 staleVersion)判的是同一件事,只是在合併**之後**;這裡把它提前到合併前,
+ * 來源同一份:這個版號的 GitHub Release(releasePublishedState,三值)+ 這個 tag 指向的 commit。
+ *
+ * 要保證的性質:「這次要發的內容,用的是一個還沒發布過的版號」。判法:
+ *   這個版號**還沒有** release(明確 404)                    → ok(版號已升,或首發)
+ *   讀不到 release(非 404 的失敗)                           → unresolved(儀器失效;讀不到 ≠ 沒發過,M37 第八種形狀)
+ *   已經有 release,HEAD 與該 tag 的產品指紋相同(只改治理)   → ok
+ *   已經有 release,產品指紋不同                              → unresolved(要先升版號)
+ *   已經有 release,但讀不到 tag 的 commit 或任一邊的指紋     → unresolved(儀器失效;本機沒有那個 commit 就先 git fetch --tags)
+ * 純函式;release-self-audit.mjs 的 version-bump 項目與 pr-checks 共用這一支,不另寫第二份判法。
+ */
+export function classifyVersionBump({ version, publishedState, tagCommitSha = null, headDigest = null, tagDigest = null } = {}) {
+  const tag = `v${version}`
+  const evidence = {
+    version: version ?? null,
+    tag,
+    publishedState: publishedState === true || publishedState === false ? publishedState : null,
+    tagCommitSha: tagCommitSha || null,
+    headDigest: headDigest || null,
+    tagDigest: tagDigest || null,
+  }
+  if (!version) return { ...evidence, status: 'unresolved', reason: 'version-unreadable' }
+  if (publishedState === false) return { ...evidence, status: 'ok', reason: 'version-unpublished' }
+  if (publishedState !== true) return { ...evidence, status: 'unresolved', reason: 'release-unreadable' }
+  if (!tagCommitSha || !headDigest || !tagDigest) return { ...evidence, status: 'unresolved', reason: 'digest-unavailable' }
+  if (headDigest === tagDigest) return { ...evidence, status: 'ok', reason: 'product-unchanged' }
+  return { ...evidence, status: 'unresolved', reason: 'not-bumped' }
+}
+
+const VERSION_BUMP_HOWTO = '改 packages/design-system/package.json 的 version(例:beta.151 → beta.152)後跑 ' +
+  'node scripts/sync-version-to-all-manifests.mjs,與內容放在同一個 PR'
+
+/** classifyVersionBump 結果的一句話(release-self-audit 的 detail 與 runner 丟錯共用)。 */
+export function versionBumpMessage(verdict = {}) {
+  const tag = verdict.tag || '(讀不到版號)'
+  switch (verdict.reason) {
+    case 'version-unpublished': return `${tag} 還沒有發布過,版號已升`
+    case 'product-unchanged': return `${tag} 已發布,但 HEAD 與它的產品指紋相同(只改治理),不必升版號`
+    case 'not-bumped': return `${tag} 早就發布過,而 HEAD 的產品內容與它不同 —— 版號沒升。要先升版號:${VERSION_BUMP_HOWTO}`
+    case 'digest-unavailable': return `${tag} 已發布,但算不出它或 HEAD 的產品指紋(本機可能沒有那個 tag 的 commit:先 git fetch origin --tags)—— 讀不到不等於沒問題`
+    case 'release-unreadable': return `讀不到 ${tag} 有沒有發布過(GitHub 讀不到)—— 讀不到不等於沒發過`
+    default: return '讀不到 packages/design-system/package.json 的版號'
+  }
+}
+
+/** 這個版本 tag 指向的 commit(40 碼);讀不到回 null。 */
+function releaseTagCommit(repository, tag) {
+  if (!repository) return null
+  const response = curlGitHub('GET', `repos/${repository}/git/ref/tags/${encodeURIComponent(tag)}`)
+  if (!response.ok) return null
+  try {
+    const sha = JSON.parse(response.text)?.object?.sha
+    return /^[0-9a-f]{40}$/.test(sha || '') ? sha : null
+  } catch { return null }
+}
+
+/** 讀回 + 判定;讀取方式可注入(測試用合成讀回)。 */
+export function readVersionBump({
+  repository, version, headSha,
+  readPublishedState = releasePublishedState, readTagCommit = releaseTagCommit, digest = productContentDigest,
+} = {}) {
+  const tag = `v${version}`
+  const publishedState = version ? readPublishedState(repository, tag) : null
+  const tagCommitSha = publishedState === true ? readTagCommit(repository, tag) : null
+  return classifyVersionBump({
+    version,
+    publishedState,
+    tagCommitSha,
+    headDigest: headSha ? digest(headSha) : null,
+    tagDigest: tagCommitSha ? digest(tagCommitSha) : null,
+  })
 }
 
 /**
@@ -2100,7 +2179,14 @@ export function buildFiveStepStatus(workflow, observation) {
   // 資料一直都在 observation 裡(第 540 行就在算 mergeable),只是沒有人看它。
   // 「還沒有結果」與「結構上不會有結果」必須是兩種狀態。
   const conflicting = observation.pullRequest?.mergeable === 'CONFLICTING'
-  const prChecksResolved = prChecks === 'pending' && conflicting ? 'conflicting' : prChecks
+  const prChecksRollup = prChecks === 'pending' && conflicting ? 'conflicting' : prChecks
+  // 2026-11-28 R100:版號有沒有升在**合併前**就判,fail-fast(不等 CI 跑完、不等合併後的 publish 才判 stale-version)。
+  // 判法只有一份:classifyVersionBump(collectLiveObservation 讀回、release-self-audit 共用)。
+  // 讀不到(versionBump 缺或 unresolved 但不是 not-bumped)= version-unverified,也不得當成通過(M37 第八種形狀)。
+  const versionBumpStatus = observation.onProtectedMain || observation.versionBump?.status === 'ok'
+    ? null
+    : observation.versionBump?.reason === 'not-bumped' ? 'version-not-bumped' : 'version-unverified'
+  const prChecksResolved = versionBumpStatus ?? prChecksRollup
   // 2026-09-02 user directive:合併前必須有 user 對「當前 PR head」的發版同意 receipt;沒有 → 停在預覽階段。
   const consentRequired = workflow.releaseConsent?.required !== false
   // **incident release 也要能合併進去**(2026-09-21 缺口):canonical 允許「綁定已發布版本的
@@ -2213,6 +2299,9 @@ export function collectLiveObservation(workflow = loadReleaseWorkflow()) {
   const main = ghJson(['api', `repos/${repository}/commits/${defaultBranch}`])
   const version = packageVersion(workflow)
   const tag = `v${version}`
+  const onProtectedMain = branch === defaultBranch && headSha === main?.sha
+  // 合併前判版號有沒有升(R100;合併後由 publish 的 stale-version 管,這裡不重讀)
+  const versionBump = onProtectedMain ? null : readVersionBump({ repository, version, headSha })
   const pullRequest = currentPullRequest(repository, branch, defaultBranch)
   const tagRef = ghJson(['api', `repos/${repository}/git/ref/tags/${encodeURIComponent(tag)}`], { allowFailure: true })
   const tagCommitSha = tagRef?.object?.sha || null
@@ -2254,9 +2343,10 @@ export function collectLiveObservation(workflow = loadReleaseWorkflow()) {
     branch,
     headSha,
     protectedMainSha: main?.sha || null,
-    onProtectedMain: branch === defaultBranch && headSha === main?.sha,
+    onProtectedMain,
     version,
     tag,
+    versionBump,
     pullRequest,
     releaseConsent: readReleaseConsent({ branch, headSha: pullRequest?.headRefOid || headSha }),
     tagCommitSha,
@@ -2511,6 +2601,9 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
     }
 
     if (incomplete.id === 'pr-checks') {
+      // R100:版號沒升 / 讀不到版號狀態 → 合併前就停(exit 1),不推、不開 PR、不等 CI。
+      invariant(incomplete.status !== 'version-not-bumped' && incomplete.status !== 'version-unverified',
+        `合併前版號檢查沒過(${incomplete.status}):${versionBumpMessage(observation.versionBump ?? {})}`)
       if (!observation.pullRequest) {
         run('git', buildBranchPushArgs(workflow, observation.branch))
         gh(buildPullRequestCreateArgs(workflow, observation.branch))

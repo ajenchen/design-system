@@ -35,7 +35,8 @@
       "authority": "AUTO",
       "completion": [
         "required-ci-check-green",
-        "conversation-resolved"
+        "conversation-resolved",
+        "version-bumped-before-merge"
       ]
     },
     {

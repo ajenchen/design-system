@@ -920,8 +920,9 @@ fi
 #      選項 label 直接交給同一份判準。
 #   ② 在要 → 紀錄(<git-dir>/governance-runtime/release-self-audit/current.json)必須 (a) 綁現在這一份:產品指紋 = 現在 HEAD 的
 #      (preview-binding;release-orchestrator.mjs productContentDigest,與發版同意同一個單位),record.headSha = 現在的 HEAD
-#      (git-worktree / pr-checks 量的是那一刻的 HEAD;只改治理檔把 CI 弄紅也要失效)(b) 未解 0(由逐項清單重算)
-#      (c) 由該腳本照機器讀回產生(腳本版本 + 整份 sha256 + 三個必備來源各帶證據);路徑有符號連結 / 硬連結 → 拒讀。
+#      (git-worktree / pr-checks / version-bump 量的是那一刻的 HEAD;只改治理檔把 CI 弄紅也要失效)(b) 未解 0(由逐項清單重算)
+#      (c) 由該腳本照機器讀回產生(腳本版本 + 整份 sha256 + 必備來源各帶證據;清單只住 release-self-audit.mjs 的 REQUIRED_SOURCES);
+#      路徑有符號連結 / 硬連結 → 拒讀。
 # 範圍 = 本回合(LAST_USER_LINE 之後;推播、提問、回覆文字、user 原話都用同一個起點 —— 舊草稿推播從「最後一筆 role=user」抓、
 #   user 原話從真 user 提問抓,同一個機制兩種「本回合」,中間夾一則 hook 回饋就看不到前面那則請說發版的推播)。
 #   例外:本機制已經擋過一次(本回合有一則含 RELEASE-SELF-AUDIT BLOCKER 的 hook 回饋),那一則之前的不再重擋 ——
